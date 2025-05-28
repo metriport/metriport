@@ -202,7 +202,8 @@ export class S3Utils {
   ): Promise<
     | {
         exists: true;
-        size: number;
+        size: number /** @deprecated Use `sizeInBytes` instead */;
+        //sizeInBytes: number; // TODO Enable this when testing something that uses this code
         contentType: string;
         eTag?: string;
         createdAt: Date | undefined;
@@ -211,6 +212,7 @@ export class S3Utils {
     | {
         exists: false;
         size?: never;
+        //sizeInBytes?: never;
         contentType?: never;
         eTag?: never;
         createdAt?: never;
@@ -233,6 +235,8 @@ export class S3Utils {
       return {
         exists: true,
         size: head.ContentLength ?? 0,
+        // TODO Enable this when testing something that uses this code
+        // sizeInBytes: head.ContentLength ?? 0,
         contentType: head.ContentType ?? "",
         eTag: head.ETag ?? "",
         createdAt: head.LastModified,
