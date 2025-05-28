@@ -5,12 +5,12 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { setPatientJobEntryStatus } from "../../../command/job/patient/set-entry-status";
-import { contributeResourceDiffBundle } from "../../../external/ehr/shared/command/bundle/contribute-resource-diff-bundle";
 import { refreshEhrBundles } from "../../../external/ehr/shared/command/bundle/refresh-ehr-bundles";
 import {
   getLatestResourceDiffBundlesJobPayload,
   getResourceDiffBundlesJobPayload,
 } from "../../../external/ehr/shared/job/bundle/create-resource-diff-bundles/get-job-payload";
+import { contributeResourceDiffBundle } from "../../../external/ehr/shared/command/bundle/contribute-resource-diff-bundle";
 import { startCreateResourceDiffBundlesJob } from "../../../external/ehr/shared/job/bundle/create-resource-diff-bundles/start-job";
 import { requestLogger } from "../../helpers/request-logger";
 import { getUUIDFrom } from "../../schemas/uuid";
@@ -181,9 +181,6 @@ router.post(
       jobId,
       cxId,
       entryStatus,
-      onCompleted: async () => {
-        //TODO: Contribute EHR-only bundles
-      },
     });
     return res.sendStatus(httpStatus.OK);
   })

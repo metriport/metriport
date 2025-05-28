@@ -1,20 +1,26 @@
 import { BadRequestError } from "@metriport/shared";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import ElationHealthApi, { isElationEnv } from ".";
+import { getSecrets } from "../api/get-client-key-and-secret";
 import { getTokenInfo } from "../api/get-token-info";
-import { getOauthSecrets } from "../shared";
+import { getSecretsOauthSchema } from "../shared";
 
 export async function createElationHealthClient({
-  environment,
   cxId,
   practiceId,
   tokenId,
 }: {
-  environment: string;
   cxId: string;
   practiceId: string;
   tokenId?: string;
 }) {
+  const secrets = await getSecrets({
+    cxId,
+    practiceId,
+    ehr: EhrSources.elation,
+    schema: getSecretsOauthSchema,
+  });
+  const environment = secrets.environment;
   if (!isElationEnv(environment)) {
     throw new BadRequestError("Invalid environment", undefined, {
       ehr: EhrSources.elation,
@@ -26,6 +32,7 @@ export async function createElationHealthClient({
     twoLeggedAuthTokenInfo,
     practiceId,
     environment,
-    getSecrets: async () => getOauthSecrets({ cxId, practiceId, ehr: EhrSources.elation }),
+    clientKey: secrets.clientKey,
+    clientSecret: secrets.clientSecret,
   });
 }

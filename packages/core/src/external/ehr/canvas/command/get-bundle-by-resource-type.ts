@@ -6,7 +6,6 @@ export async function getBundleByResourceType(
   params: GetBundleByResourceTypeClientRequest
 ): Promise<Bundle> {
   const {
-    environment,
     tokenId,
     cxId,
     practiceId,
@@ -16,7 +15,6 @@ export async function getBundleByResourceType(
     useCachedBundle,
   } = params;
   const client = await createCanvasClient({
-    environment,
     cxId,
     practiceId,
     ...(tokenId && { tokenId }),

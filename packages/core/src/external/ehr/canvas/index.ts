@@ -51,10 +51,8 @@ import {
   getConditionIcd10Coding,
   getConditionStartDate,
   getConditionStatus,
-  GetSecretsOauthFunction,
   makeRequest,
   MakeRequestParamsInEhr,
-  processOauthSecrets,
 } from "../shared";
 
 dayjs.extend(duration);
@@ -107,7 +105,6 @@ class CanvasApi {
   private axiosInstanceFhirApi: AxiosInstance;
   private axiosInstanceCustomApi: AxiosInstance;
   private twoLeggedAuthTokenInfo: JwtTokenInfo | undefined;
-  private getSecrets: GetSecretsOauthFunction | undefined;
   private baseUrl: string;
   private practiceId: string;
 
@@ -117,7 +114,6 @@ class CanvasApi {
     this.axiosInstanceFhirApi = axios.create({});
     this.axiosInstanceCustomApi = axios.create({});
     this.baseUrl = `${config.environment}${canvasDomainExtension}`;
-    this.getSecrets = config.getSecrets;
   }
 
   public static async create(config: CanvasApiConfig): Promise<CanvasApi> {
@@ -131,16 +127,8 @@ class CanvasApi {
   }
 
   private async fetchTwoLeggedAuthToken(): Promise<JwtTokenInfo> {
-    const secrets = await processOauthSecrets({
-      ehr: EhrSources.canvas,
-      secrets: {
-        ...(this.config.clientKey && { clientKey: this.config.clientKey }),
-        ...(this.config.clientSecret && { clientSecret: this.config.clientSecret }),
-      },
-      getSecrets: this.getSecrets,
-    });
     const url = `https://${this.baseUrl}/auth/token/`;
-    const payload = `grant_type=client_credentials&client_id=${secrets.clientKey}&client_secret=${secrets.clientSecret}`;
+    const payload = `grant_type=client_credentials&client_id=${this.config.clientKey}&client_secret=${this.config.clientSecret}`;
 
     try {
       const response = await axios.post(url, payload, {

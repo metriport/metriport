@@ -28,7 +28,6 @@ import { uuidv7 } from "../../util/uuid-v7";
 import { S3Utils } from "../aws/s3";
 import { BundleType } from "./bundle/bundle-shared";
 import { createOrReplaceBundle } from "./bundle/command/create-or-replace-bundle";
-import { getSecrets } from "./api/get-client-key-and-secret";
 import { FetchBundleParams, fetchBundle } from "./bundle/command/fetch-bundle";
 
 dayjs.extend(duration);
@@ -45,69 +44,24 @@ function getS3UtilsInstance(): S3Utils {
 export const getSecretsOauthSchema = z.object({
   clientKey: z.string(),
   clientSecret: z.string(),
+  environment: z.string(),
 });
 export type GetSecretsOauthResult = z.infer<typeof getSecretsOauthSchema>;
 
 export const getSecretsApiKeySchema = z.object({
   apiKey: z.string(),
+  environment: z.string(),
 });
 export type GetSecretsApiKeyResult = z.infer<typeof getSecretsApiKeySchema>;
 
 export type GetSecretsOauthFunction = () => Promise<GetSecretsOauthResult>;
 export type GetSecretsApiKeyFunction = () => Promise<GetSecretsApiKeyResult>;
 
-export async function getOauthSecrets({
-  ehr,
-  cxId,
-  practiceId,
-}: {
-  ehr: EhrSource;
-  cxId: string;
-  practiceId: string;
-}) {
-  const secrets = await getSecrets<GetSecretsOauthResult>({
-    ehr,
-    cxId,
-    practiceId,
-    schema: getSecretsOauthSchema,
-  });
-  return {
-    clientKey: secrets.clientKey,
-    clientSecret: secrets.clientSecret,
-  };
-}
-
-export async function processOauthSecrets({
-  ehr,
-  secrets,
-  getSecrets,
-}: {
-  ehr: EhrSource;
-  secrets: Partial<GetSecretsOauthResult>;
-  getSecrets: GetSecretsOauthFunction | undefined;
-}): Promise<GetSecretsOauthResult> {
-  if (secrets.clientKey && secrets.clientSecret) {
-    return {
-      clientKey: secrets.clientKey,
-      clientSecret: secrets.clientSecret,
-    };
-  }
-  if (!getSecrets) {
-    throw new MetriportError(
-      "getSecrets function is required if clientKey and clientSecret are not provided",
-      undefined,
-      { ehr }
-    );
-  }
-  return await getSecrets();
-}
-
 export interface ApiConfig {
   twoLeggedAuthTokenInfo?: JwtTokenInfo | undefined;
   practiceId: string;
-  clientKey?: string;
-  clientSecret?: string;
-  getSecrets?: GetSecretsOauthFunction;
+  clientKey: string;
+  clientSecret: string;
 }
 
 export type RequestData = { [key: string]: string | boolean | object | undefined };
@@ -342,6 +296,16 @@ export function getConditionStatus(condition: Condition): string | undefined {
   if (status) return status.replace(qualifierSuffix, "").trim();
   return undefined;
 }
+
+export type GetResourceBundleByResourceParams = {
+  cxId: string;
+  practiceId: string;
+  metriportPatientId: string;
+  ehrPatientId: string;
+  resourceType: string;
+  resourceId: string;
+  useCachedBundle?: boolean;
+};
 
 type FetchEhrBundleParams = Omit<FetchBundleParams, "bundleType">;
 
