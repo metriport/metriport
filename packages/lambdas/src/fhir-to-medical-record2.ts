@@ -278,8 +278,8 @@ async function storeMrSummaryAndBriefInS3({
     throw new MetriportError(message, null, additionalInfo);
   }
 
-  const version = "VersionId" in mrResp ? (mrResp.VersionId as string) : undefined;
-  return { location: mrResp.Location, version };
+  const version = "versionId" in mrResp ? (mrResp.versionId as string) : undefined;
+  return { location: mrResp.location, version };
 }
 
 async function createFeedbackForBrief({

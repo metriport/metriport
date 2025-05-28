@@ -76,7 +76,7 @@ export async function searchLexical({
   const patientEntry = buildBundleEntry(patientToFhir(patient));
   sliced.push(patientEntry);
 
-  const filteredBundle = buildSearchSetBundle({ entries: sliced });
+  const filteredBundle = buildSearchSetBundle(sliced);
   const hydrated = addMissingReferences(filteredBundle, consolidated);
 
   log(`Done, returning ${hydrated.entry?.length} filtered resources...`);

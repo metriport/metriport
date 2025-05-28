@@ -72,7 +72,7 @@ export async function searchSemantic({
 
   log(`Done, returning ${sliced.length} filtered resources...`);
 
-  const bundle = buildSearchSetBundle({ entries: sliced });
+  const bundle = buildSearchSetBundle(sliced);
   return bundle;
 }
 
