@@ -1,5 +1,5 @@
 import { Bundle } from "@medplum/fhirtypes";
-import { BadRequestError } from "@metriport/shared/dist/error/bad-request";
+import { BadRequestError } from "@metriport/shared";
 import { EhrSource, EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { getBundleByResourceType as getBundleByResourceTypeCanvas } from "../../canvas/command/get-bundle-by-resource-type";
 import {
