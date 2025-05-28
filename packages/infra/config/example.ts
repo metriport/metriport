@@ -149,6 +149,7 @@ export const config: EnvConfigNonSandbox = {
       maxConcurrency: 5,
       timeout: Duration.minutes(2),
     },
+    consolidatedDataIngestionInitialDate: "2025-01-01",
   },
   generalBucketName: "test-bucket",
   hl7Notification: {
