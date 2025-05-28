@@ -37,9 +37,6 @@ describe("Patient load file testing", () => {
       patientLoadDetailOrder
     );
 
-    console.log(testRow.toString("ascii"));
-    console.log(expected);
-
     expect(Buffer.compare(testRow, Buffer.from(expected, "ascii"))).toEqual(0);
   });
 
@@ -69,9 +66,6 @@ describe("Patient load file testing", () => {
       patientLoadDetailSchema,
       patientLoadDetailOrder
     );
-
-    // console.log(testRow.toString("ascii"));
-    // console.log(outputRow);
 
     expect(Buffer.compare(testRow, Buffer.from(outputRow, "ascii"))).toEqual(0);
   });

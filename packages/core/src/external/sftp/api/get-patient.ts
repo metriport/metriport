@@ -2,39 +2,19 @@ import { errorToString, executeWithNetworkRetries, MetriportError } from "@metri
 import axios, { AxiosInstance } from "axios";
 import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
-import { validateAndLogResponse } from "./shared";
-import { z } from "zod";
+import { patientSchema, validateAndLogResponse, GetPatientResponse } from "./shared";
 
 interface GetPatientParams {
   cxId: string;
   patientId: string;
 }
 
-const patientSchema = z.object({
-  id: z.string(),
-  facilityIds: z.array(z.string()),
-  firstName: z.string(),
-  lastName: z.string(),
-  dob: z.string(),
-  genderAtBirth: z.enum(["M", "F", "O", "U"]),
-  address: z.array(
-    z.object({
-      addressLine1: z.string().optional(),
-      addressLine2: z.string().optional(),
-      city: z.string().optional(),
-      state: z.string().optional(),
-      zip: z.string(),
-    })
-  ),
-});
-
-export type GetPatientResponse = z.infer<typeof patientSchema>;
-
 /**
- * Sends a request to the API to get a patient with Metriport.
+ * Sends an API request to retrieve the patient with the given ID.
  *
  * @param cxId - The CX ID.
  * @param patientId - The patient ID.
+ * @returns {GetPatientResponse} patient demographic data
  */
 export async function getPatient(
   { cxId, patientId }: GetPatientParams,
@@ -56,7 +36,7 @@ export async function getPatient(
     });
     return result;
   } catch (error) {
-    const msg = "Failure while syncing patient @ Api";
+    const msg = "Failure while getting patient @ Api";
     log(`${msg}. Cause: ${errorToString(error)}`);
     throw new MetriportError(msg, error, {
       cxId,

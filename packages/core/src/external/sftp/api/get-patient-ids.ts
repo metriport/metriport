@@ -2,25 +2,23 @@ import { errorToString, executeWithNetworkRetries, MetriportError } from "@metri
 import axios, { AxiosInstance } from "axios";
 import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
-import { validateAndLogResponse } from "./shared";
-import { z } from "zod";
+import {
+  validateAndLogResponse,
+  getPatientIdsResponseSchema,
+  GetPatientIdsResponse,
+} from "./shared";
 
 interface GetPatientIdsParams {
   cxId: string;
   facilityId?: string | undefined;
 }
 
-const getPatientIdsResponseSchema = z.object({
-  patientIds: z.array(z.string()),
-});
-
-export type GetPatientIdsResponse = z.infer<typeof getPatientIdsResponseSchema>;
-
 /**
- * Sends a request to the API to get a patient with Metriport.
+ * Retrieves an array of patient IDs for a given customer and facility.
  *
- * @param cxId - The CX ID.
- * @param patientId - The patient ID.
+ * @param cxId - The customer ID.
+ * @param facilityId - The facility ID
+ * @returns {GetPatientIdsResponse} contains an array of patient IDs
  */
 export async function getPatientIds(
   { cxId, facilityId }: GetPatientIdsParams,
@@ -28,7 +26,7 @@ export async function getPatientIds(
 ) {
   const { log, debug } = out(`Surescripts getPatientIds - cxId ${cxId}`);
   const api = axiosInstance ?? axios.create({ baseURL: Config.getApiUrl() });
-  const queryParams = new URLSearchParams({ cxId, facilityId: facilityId ?? "" });
+  const queryParams = new URLSearchParams({ cxId, ...(facilityId ? { facilityId } : {}) });
   const getPatientUrl = `/internal/patient/ids?${queryParams.toString()}`;
   try {
     const response = await executeWithNetworkRetries(async () => {

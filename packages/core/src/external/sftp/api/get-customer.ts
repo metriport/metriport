@@ -2,30 +2,14 @@ import { errorToString, executeWithNetworkRetries, MetriportError } from "@metri
 import axios, { AxiosInstance } from "axios";
 import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
-import { validateAndLogResponse } from "./shared";
-import { z } from "zod";
+import { validateAndLogResponse, getCustomerResponseSchema, GetCustomerResponse } from "./shared";
 
 export interface GetCustomerParams {
   cxId: string;
 }
 
-const getCustomerResponseSchema = z.object({
-  cxId: z.string(),
-  facilities: z.array(
-    z.object({
-      id: z.string(),
-      oid: z.string(),
-      name: z.string(),
-      npi: z.string(),
-    })
-  ),
-});
-
-export type GetCustomerResponse = z.infer<typeof getCustomerResponseSchema>;
-export type FacilityResponse = GetCustomerResponse["facilities"][number];
-
 /**
- * Sends a request to the API to get customer data.
+ * Sends an API request to cx-data, which returns the customer's data (facilities).
  *
  * @param cxId - The CX ID.
  */
