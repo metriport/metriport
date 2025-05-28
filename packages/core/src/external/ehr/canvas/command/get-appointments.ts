@@ -1,7 +1,7 @@
 import { BadRequestError } from "@metriport/shared";
 import { SlimBookedAppointment } from "@metriport/shared/interface/external/ehr/canvas/appointment";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
-import { GetAppointmentsClientRequest } from "../../lambdas/appointment/get-appointments/ehr-get-appointments";
+import { GetAppointmentsClientRequest } from "../../command/appointment/get-appointments/ehr-get-appointments";
 import { createCanvasClient } from "../shared";
 
 export async function getAppointments(
