@@ -1,5 +1,5 @@
-import { buildElationLinkPatientHandler } from "@metriport/core/external/ehr/lambdas/elation/link-patient/elation-link-patient-factory";
-import { buildEhrSyncPatientHandler } from "@metriport/core/external/ehr/lambdas/sync-patient/ehr-sync-patient-factory";
+import { buildElationLinkPatientHandler } from "@metriport/core/external/ehr/command/elation/link-patient/elation-link-patient-factory";
+import { buildEhrSyncPatientHandler } from "@metriport/core/external/ehr/command/sync-patient/ehr-sync-patient-factory";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
