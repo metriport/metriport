@@ -47,14 +47,14 @@ async function main() {
   for (const [cxId, entries] of Object.entries(cxIds)) {
     let cxSize = 0;
     const patientIds = entries.map(v => v[1]);
-    totalPatients = +patientIds.length;
+    totalPatients += patientIds.length;
     await executeAsynchronously(
       patientIds,
       async patientId => {
         const res = await getFileInfo(cxId, patientId);
-        if (res.size != undefined && !isNaN(res.size)) {
-          totalSize += res.size;
-          cxSize += res.size;
+        if (res.sizeInBytes != undefined && !isNaN(res.sizeInBytes)) {
+          totalSize += res.sizeInBytes;
+          cxSize += res.sizeInBytes;
         } else {
           idsWithoutSize.push({ cxId, patientId });
         }
@@ -79,18 +79,21 @@ async function main() {
   );
 }
 
-async function getFileInfo(cxId: string, patientId: string): Promise<{ size: number | undefined }> {
+async function getFileInfo(
+  cxId: string,
+  patientId: string
+): Promise<{ sizeInBytes: number | undefined }> {
   const s3FilePrefix = createFilePath(cxId, patientId, suffix);
   try {
     const resp = await s3Utils.getFileInfoFromS3(s3FilePrefix, bucketName);
-    return { size: resp.size };
+    return { sizeInBytes: resp.size };
   } catch (e) {
-    return { size: undefined };
+    return { sizeInBytes: undefined };
   }
 }
 
 function inGigabyteStr(bytes: number): string {
-  return (bytes / 1_048_576).toFixed(2) + " GB";
+  return (bytes / 1_048_576_000).toFixed(2) + " GB";
 }
 
 main();
