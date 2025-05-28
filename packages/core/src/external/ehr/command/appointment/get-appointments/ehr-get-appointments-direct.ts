@@ -2,7 +2,11 @@ import { BadRequestError } from "@metriport/shared";
 import { SlimBookedAppointment } from "@metriport/shared/interface/external/ehr/canvas/appointment";
 import { EhrSource, EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { getAppointments as getAppointmentsCanvas } from "../../../canvas/command/get-appointments";
-import { EhrGetAppointmentsHandler, GetAppointmentsRequest } from "./ehr-get-appointments";
+import {
+  EhrGetAppointmentsHandler,
+  GetAppointmentsClientRequest,
+  GetAppointmentsRequest,
+} from "./ehr-get-appointments";
 
 export class EhrGetAppointmentsDirect implements EhrGetAppointmentsHandler {
   async getAppointments<T>({ ehr, method, ...params }: GetAppointmentsRequest): Promise<T[]> {
@@ -13,8 +17,6 @@ export class EhrGetAppointmentsDirect implements EhrGetAppointmentsHandler {
     return await handler({ ...params });
   }
 }
-
-export type GetAppointmentsClientRequest = Omit<GetAppointmentsRequest, "ehr" | "method">;
 
 export enum AppointmentMethods {
   canvasGetAppointments = "canvasGetAppointments",

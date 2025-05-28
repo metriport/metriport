@@ -11,6 +11,8 @@ export type GetAppointmentsRequest = {
   toDate?: Date;
 };
 
+export type GetAppointmentsClientRequest = Omit<GetAppointmentsRequest, "ehr" | "method">;
+
 export interface EhrGetAppointmentsHandler {
   getAppointments<T>(request: GetAppointmentsRequest): Promise<T[]>;
 }
