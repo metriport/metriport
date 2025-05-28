@@ -1,7 +1,7 @@
+import { Config } from "../../../util/config";
 import { z } from "zod";
 import { Patient } from "../../../domain/patient";
-
-import { SURESCRIPTS_VERSION, METRIPORT_OID } from "./constants";
+import { SURESCRIPTS_VERSION } from "./constants";
 
 import {
   patientLoadHeaderSchema,
@@ -21,7 +21,7 @@ import {
   isPatientVerificationFooter,
 } from "./schema/verification";
 
-import { isValidNpiNumber } from "@metriport/shared/common/npi-number";
+import { validateNPI } from "@metriport/shared/common/validate-npi";
 
 import { OutgoingFileRowSchema, IncomingFileRowSchema } from "./schema/shared";
 import { SurescriptsSftpClient, Transmission, TransmissionType } from "./client";
@@ -33,7 +33,7 @@ export function canGenerateSurescriptsMessage(
   patients: Patient[]
 ): boolean {
   if (patients.length === 0) return false;
-  if (!isValidNpiNumber(transmission.npiNumber)) return false;
+  if (!validateNPI(transmission.npiNumber)) return false;
   return true;
 }
 
@@ -74,7 +74,7 @@ export function toSurescriptsPatientLoadFile(
         {
           recordType: "PNM",
           recordSequenceNumber: index + 1,
-          assigningAuthority: METRIPORT_OID,
+          assigningAuthority: Config.getSystemRootOID(),
           patientId: patient.id,
           lastName,
           firstName,

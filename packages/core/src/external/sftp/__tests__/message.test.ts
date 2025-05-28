@@ -1,3 +1,4 @@
+import { Config } from "../../../util/config";
 import { toSurescriptsPatientLoadRow } from "../surescripts/message";
 import {
   patientLoadDetailSchema,
@@ -6,7 +7,7 @@ import {
   patientLoadFooterOrder,
 } from "../surescripts/schema/load";
 
-import { METRIPORT_OID } from "../surescripts/constants";
+const METRIPORT_OID = Config.getSystemRootOID();
 
 // Note: These are test patients that do not actually exist.
 describe("Patient load file testing", () => {
