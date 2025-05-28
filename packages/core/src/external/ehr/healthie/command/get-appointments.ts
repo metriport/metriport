@@ -1,11 +1,11 @@
 import { BadRequestError, EhrSources } from "@metriport/shared";
-import { AppointmentAttendee } from "@metriport/shared/interface/external/ehr/healthie/appointment";
+import { AppointmentWithAttendee } from "@metriport/shared/interface/external/ehr/healthie/appointment";
 import { GetAppointmentsClientRequest } from "../../command/get-appointments/ehr-get-appointments";
 import { createHealthieClient } from "../shared";
 
 export async function getAppointments(
   params: GetAppointmentsClientRequest
-): Promise<AppointmentAttendee[]> {
+): Promise<AppointmentWithAttendee[]> {
   const { cxId, practiceId, fromDate, toDate, environment } = params;
   if (!fromDate || !toDate) {
     throw new BadRequestError("fromDate and toDate are required", undefined, {

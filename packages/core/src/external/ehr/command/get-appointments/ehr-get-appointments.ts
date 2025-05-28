@@ -1,7 +1,7 @@
 import { BookedAppointment as BookedAppointmentAthena } from "@metriport/shared/interface/external/ehr/athenahealth/appointment";
 import { SlimBookedAppointment } from "@metriport/shared/interface/external/ehr/canvas/appointment";
 import { BookedAppointment as BookedAppointmentElation } from "@metriport/shared/interface/external/ehr/elation/appointment";
-import { AppointmentAttendee } from "@metriport/shared/interface/external/ehr/healthie/appointment";
+import { AppointmentWithAttendee } from "@metriport/shared/interface/external/ehr/healthie/appointment";
 import { EhrSource } from "@metriport/shared/interface/external/ehr/source";
 
 export type GetAppointmentsRequest = {
@@ -25,5 +25,5 @@ export interface EhrGetAppointmentsHandler {
 export type Appointment =
   | BookedAppointmentAthena
   | BookedAppointmentElation
-  | AppointmentAttendee
+  | AppointmentWithAttendee
   | SlimBookedAppointment;
