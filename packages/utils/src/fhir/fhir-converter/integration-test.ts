@@ -22,8 +22,8 @@ import {
   makeDir,
   makeDirIfNeeded,
   writeFileContents,
-} from "../shared/fs";
-import { uuidv7 } from "../shared/uuid-v7";
+} from "../../shared/fs";
+import { uuidv7 } from "../../shared/uuid-v7";
 import { ProcessingOptions, convertCDAsToFHIR } from "./convert";
 import { countResourcesPerDirectory } from "./shared";
 

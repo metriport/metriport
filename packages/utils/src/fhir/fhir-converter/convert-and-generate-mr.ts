@@ -7,7 +7,7 @@ import { sleep } from "@metriport/shared";
 import Axios from "axios";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import { getFileContentsAsync, getFileNames, makeDir, writeFileContents } from "../shared/fs";
+import { getFileContentsAsync, getFileNames, makeDir, writeFileContents } from "../../shared/fs";
 import { convertCDAsToFHIR } from "./convert";
 import { countResourcesPerDirectory } from "./shared";
 
