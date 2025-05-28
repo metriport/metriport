@@ -1,3 +1,5 @@
+# That's not to actually be used directly, but via OS' console or Postman.
+
 # Create index
 # Update properties with _
 curl -XPUT "/medical-resources-fhir-1" -H 'Content-Type: application/json' -d'

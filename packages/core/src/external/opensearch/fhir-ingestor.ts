@@ -50,6 +50,8 @@ export type DeleteRequest = Pick<FhirIndexFields, "cxId" | "patientId">;
 
 export type OpenSearchFhirIngestorConfig = OpenSearchConfigDirectAccess;
 
+type BulkRequestItem = [Record<string, { _id: string }>, FhirIndexFields];
+
 /**
  * Ingests text documents/entries in OpenSearch.
  */
@@ -228,7 +230,7 @@ function resourceToBulkRequest({
   resource: Resource;
   operation: BulkOperation;
   getEntryId: (cxId: string, patientId: string, resourceId: string) => string;
-}) {
+}): BulkRequestItem | undefined {
   const { id: resourceId } = resource;
   if (!resourceId) throw new MetriportError("Resource id is required");
   const entryId = getEntryId(cxId, patientId, resourceId);
