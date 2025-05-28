@@ -1,5 +1,5 @@
-import { ContributeResourceDiffBundlesRequest } from "@metriport/core/external/ehr/jobs/create-resource-diff-bundles/steps/contribute/ehr-contribute-resource-diff-bundles";
-import { EhrContributeResourceDiffBundlesLocal } from "@metriport/core/external/ehr/jobs/create-resource-diff-bundles/steps/contribute/ehr-contribute-resource-diff-bundles-local";
+import { ContributeResourceDiffBundlesRequest } from "@metriport/core/external/ehr/job/create-resource-diff-bundles/steps/contribute/ehr-contribute-resource-diff-bundles";
+import { EhrContributeResourceDiffBundlesDirect } from "@metriport/core/external/ehr/job/create-resource-diff-bundles/steps/contribute/ehr-contribute-resource-diff-bundles-direct";
 import { MetriportError } from "@metriport/shared";
 import * as Sentry from "@sentry/serverless";
 import { SQSEvent } from "aws-lambda";
@@ -41,7 +41,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
   const reportError = receiveCount >= maxAttempts;
   log(`Receive count: ${receiveCount}, max attempts: ${maxAttempts}, reportError: ${reportError}`);
 
-  const ehrContributeResourceDiffHandler = new EhrContributeResourceDiffBundlesLocal(
+  const ehrContributeResourceDiffHandler = new EhrContributeResourceDiffBundlesDirect(
     waitTimeInMillis
   );
   await ehrContributeResourceDiffHandler.contributeResourceDiffBundles({

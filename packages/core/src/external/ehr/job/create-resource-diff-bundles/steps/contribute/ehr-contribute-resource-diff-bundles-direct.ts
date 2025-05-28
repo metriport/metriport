@@ -11,7 +11,7 @@ import {
   EhrContributeResourceDiffBundlesHandler,
 } from "./ehr-contribute-resource-diff-bundles";
 
-export class EhrContributeResourceDiffBundlesLocal
+export class EhrContributeResourceDiffBundlesDirect
   implements EhrContributeResourceDiffBundlesHandler
 {
   constructor(private readonly waitTimeInMillis: number) {}

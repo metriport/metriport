@@ -7,7 +7,7 @@ import { createOrReplaceBundle as createOrReplaceBundleOnS3 } from "../../../../
 import { buildEhrComputeResourceDiffBundlesHandler } from "../compute/ehr-compute-resource-diff-bundles-factory";
 import { EhrRefreshEhrBundlesHandler, RefreshEhrBundlesRequest } from "./ehr-refresh-ehr-bundles";
 
-export class EhrRefreshEhrBundlesLocal implements EhrRefreshEhrBundlesHandler {
+export class EhrRefreshEhrBundlesDirect implements EhrRefreshEhrBundlesHandler {
   private readonly next = buildEhrComputeResourceDiffBundlesHandler();
 
   constructor(private readonly waitTimeInMillis: number) {}

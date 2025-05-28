@@ -15,7 +15,7 @@ import {
   EhrComputeResourceDiffBundlesHandler,
 } from "./ehr-compute-resource-diff-bundles";
 
-export class EhrComputeResourceDiffBundlesLocal implements EhrComputeResourceDiffBundlesHandler {
+export class EhrComputeResourceDiffBundlesDirect implements EhrComputeResourceDiffBundlesHandler {
   private readonly next = buildEhrContributeResourceDiffBundlesHandler();
 
   constructor(private readonly waitTimeInMillis: number) {}

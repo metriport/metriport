@@ -1,5 +1,5 @@
-import { RefreshEhrBundlesRequest } from "@metriport/core/external/ehr/jobs/create-resource-diff-bundles/steps/refresh/ehr-refresh-ehr-bundles";
-import { EhrRefreshEhrBundlesLocal } from "@metriport/core/external/ehr/jobs/create-resource-diff-bundles/steps/refresh/ehr-refresh-ehr-bundles-local";
+import { RefreshEhrBundlesRequest } from "@metriport/core/external/ehr/job/create-resource-diff-bundles/steps/refresh/ehr-refresh-ehr-bundles";
+import { EhrRefreshEhrBundlesDirect } from "@metriport/core/external/ehr/job/create-resource-diff-bundles/steps/refresh/ehr-refresh-ehr-bundles-direct";
 import { MetriportError } from "@metriport/shared";
 import * as Sentry from "@sentry/serverless";
 import { SQSEvent } from "aws-lambda";
@@ -41,7 +41,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
   const reportError = receiveCount >= maxAttempts;
   log(`Receive count: ${receiveCount}, max attempts: ${maxAttempts}, reportError: ${reportError}`);
 
-  const ehrRefreshEhrBundlesHandler = new EhrRefreshEhrBundlesLocal(waitTimeInMillis);
+  const ehrRefreshEhrBundlesHandler = new EhrRefreshEhrBundlesDirect(waitTimeInMillis);
   await ehrRefreshEhrBundlesHandler.refreshEhrBundles({ ...parsedBody, reportError });
 
   const finishedAt = new Date().getTime();
