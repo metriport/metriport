@@ -33,7 +33,7 @@ export class SearchConsolidatedDirect implements SearchConsolidated {
     const searchResult =
       query != undefined
         ? await searchPatientConsolidated({ patient, query })
-        : // TODO eng-268 Consider always getting data from OpenSearch, if no query then only filter by cxId and patientId
+        : // TODO eng-363 Consider always getting data from OpenSearch, if no query then only filter by cxId and patientId
           await getConsolidatedPatientData({ patient });
 
     if (!searchResult || !searchResult.entry || searchResult.entry.length < 1) {

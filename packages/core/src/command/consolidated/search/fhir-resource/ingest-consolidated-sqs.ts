@@ -48,7 +48,6 @@ export class IngestConsolidatedSqs implements IngestConsolidated {
         {
           numberOfParallelExecutions: SQS_MESSAGE_BATCH_SIZE_STANDARD,
           delay: SQS_MESSAGE_BATCH_MILLIS_TO_SLEEP,
-          minJitterMillis: 100,
           maxJitterMillis: 100,
         }
       );
