@@ -1,3 +1,15 @@
+import { CodeSystem } from "@medplum/fhirtypes";
+import {
+  cpt,
+  cvx,
+  icd10cm,
+  icd10pcs,
+  loinc,
+  ndcCodeSystem,
+  rxnorm,
+  snomed,
+} from "../operations/definitions/codeSystem";
+
 /** @see https://www.ncbi.nlm.nih.gov/books/NBK9685/table/ch03.T.simple_concept_and_atom_attribute */
 export class UmlsAttribute {
   /** Unique identifier for concept (if METAUI is a relationship identifier, this will be CUI1 for that relationship). */
@@ -166,3 +178,31 @@ export class UmlsConcept {
     ].join("|");
   }
 }
+
+export type UmlsSource = { system: string; tty: string[]; resource: CodeSystem };
+export const umlsSources: Record<string, UmlsSource> = {
+  SNOMEDCT_US: { system: "http://snomed.info/sct", tty: ["FN", "PT", "SY"], resource: snomed },
+  LNC: {
+    system: "http://loinc.org",
+    tty: ["LC", "LPDN", "LA", "DN", "HC", "LN", "LG"],
+    resource: loinc,
+  },
+  RXNORM: {
+    system: "http://www.nlm.nih.gov/research/umls/rxnorm",
+    tty: ["PSN", "MIN", "SBD", "SCD", "SBDG", "SCDG", "GPCK", "SY"],
+    resource: rxnorm,
+  },
+  CPT: {
+    system: "http://www.ama-assn.org/go/cpt",
+    tty: ["PT", "HT", "POS", "MP", "GLP"],
+    resource: cpt,
+  },
+  CVX: { system: "http://hl7.org/fhir/sid/cvx", tty: ["PT"], resource: cvx },
+  ICD10PCS: { system: "http://hl7.org/fhir/sid/icd-10-pcs", tty: ["PT", "HT"], resource: icd10pcs },
+  ICD10CM: { system: "http://hl7.org/fhir/sid/icd-10-cm", tty: ["PT", "HT"], resource: icd10cm },
+  NDC: {
+    system: "http://hl7.org/fhir/sid/ndc",
+    tty: ["SCD", "SBD", "GPCK", "BPCK"],
+    resource: ndcCodeSystem,
+  },
+};
