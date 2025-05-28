@@ -1,4 +1,8 @@
-import { makeNameDemographics, makeGenderDemographics } from "../surescripts/shared";
+import {
+  makeNameDemographics,
+  shiftMiddleNameToFirstName,
+  makeGenderDemographics,
+} from "../surescripts/shared";
 
 describe("makeNameDemographics", () => {
   it("should parse simple names", () => {
@@ -30,17 +34,27 @@ describe("makeNameDemographics", () => {
   });
 
   it("should shift middle name parts to first name", () => {
+    let johnDoe = makeNameDemographics({
+      firstName: "John Jacob",
+      lastName: "Doe",
+    });
+    johnDoe = shiftMiddleNameToFirstName(johnDoe);
+    expect(johnDoe).toEqual({
+      lastName: "Doe",
+      firstName: "John Jacob",
+      middleName: "",
+      prefix: "",
+      suffix: "",
+    });
+  });
+
+  it("should produce a new object from shifting middle name parts to first name", () => {
     const johnDoe = makeNameDemographics({
       firstName: "John Jacob",
       lastName: "Doe",
     });
-    expect(johnDoe).toEqual({
-      lastName: "Doe",
-      firstName: "John",
-      middleName: "Jacob",
-      prefix: "",
-      suffix: "",
-    });
+    const johnJacobDoe = shiftMiddleNameToFirstName(johnDoe);
+    expect(johnDoe).not.toBe(johnJacobDoe);
   });
 
   it("should parse prefixes and suffixes", () => {
@@ -69,6 +83,20 @@ describe("makeNameDemographics", () => {
       lastName: "Johnson",
       middleName: "Cornelius",
       suffix: "III",
+    });
+  });
+
+  it("should parse prefixes", () => {
+    const mrJohnKennedy = makeNameDemographics({
+      firstName: "Mr. John F",
+      lastName: "Kennedy",
+    });
+    expect(mrJohnKennedy).toEqual({
+      firstName: "John",
+      prefix: "Mr.",
+      lastName: "Kennedy",
+      middleName: "F",
+      suffix: "",
     });
   });
 

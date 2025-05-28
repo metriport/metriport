@@ -7,6 +7,7 @@ import { SurescriptsReplica } from "@metriport/core/external/sftp/surescripts/re
 import { getSurescriptSecrets } from "./shared/surescripts";
 import { GetPatientResponse, FacilityResponse } from "@metriport/core/external/sftp/api/shared";
 import { toSurescriptsPatientLoadFile } from "@metriport/core/external/sftp/surescripts/message";
+import { MetriportError } from "@metriport/shared";
 
 capture.init();
 
@@ -24,7 +25,6 @@ export const handler = capture.wrapHandler(
   async ({ cxId, facilityId, allPatients, patientId }: SurescriptsSendPatientRequestEvent) => {
     const { surescriptsPublicKey, surescriptsPrivateKey, surescriptsSenderPassword } =
       await getSurescriptSecrets();
-    const api = new SurescriptsApi();
     const client = new SurescriptsSftpClient({
       production: Config.isCloudEnv(),
       senderPassword: surescriptsSenderPassword,
@@ -44,13 +44,18 @@ export const handler = capture.wrapHandler(
 
     const patientIdsForFacility: string[] = [];
     if (allPatients) {
-      const { patientIds } = await api.getPatientIds(cxId, facilityId);
+      const patientIds = await getPatientIdsForFacility(cxId, facilityId);
       patientIdsForFacility.push(...patientIds);
     } else if (patientId) {
       patientIdsForFacility.push(patientId);
-    } else throw new Error("Invalid request");
+    } else throw new MetriportError("Invalid request");
 
     const patients = await getPatientsByIds(cxId, patientIdsForFacility);
+    if (patients.length === 0) {
+      log(`No patients found for facility ${facilityId}`);
+      return;
+    }
+
     const file = toSurescriptsPatientLoadFile(client, transmission, patients);
     await replica.writePatientLoadFileToStorage(transmission, file);
     log(`Uploaded ${patients.length} patients to ${Config.getSurescriptsReplicaBucketName()}`);
@@ -61,10 +66,18 @@ export const handler = capture.wrapHandler(
 async function getFacilityById(cxId: string, facilityId: string): Promise<FacilityResponse> {
   const api = new SurescriptsApi();
   const customer = await api.getCustomer(cxId);
-  if (!customer) throw new Error("Customer not found");
+  if (!customer)
+    throw new MetriportError("Customer not found", "customer_not_found", { cxId, facilityId });
   const facility = customer.facilities.find(f => f.id === facilityId);
-  if (!facility) throw new Error("Facility not found");
+  if (!facility)
+    throw new MetriportError("Facility not found", "facility_not_found", { cxId, facilityId });
   return facility;
+}
+
+async function getPatientIdsForFacility(cxId: string, facilityId: string): Promise<string[]> {
+  const api = new SurescriptsApi();
+  const { patientIds } = await api.getPatientIds(cxId, facilityId);
+  return patientIds;
 }
 
 async function getPatientsByIds(cxId: string, patientIds: string[]): Promise<GetPatientResponse[]> {

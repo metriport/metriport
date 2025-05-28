@@ -1,7 +1,8 @@
 import { Config } from "../../../util/config";
 import { S3Utils } from "../../../external/aws/s3";
 import { SurescriptsSftpClient, Transmission, TransmissionType } from "./client";
-import { SurescriptsDirectory, SurescriptsSynchronizeEvent } from "./types";
+import { SurescriptsSynchronizeEvent } from "./types";
+import { getS3Key, getSftpFileName } from "./shared";
 import { INCOMING_NAME, OUTGOING_NAME, HISTORY_NAME } from "./constants";
 
 export class SurescriptsReplica {
@@ -25,7 +26,7 @@ export class SurescriptsReplica {
     const fileName = this.sftpClient.getPatientLoadFileName(transmission);
     await this.s3.uploadFile({
       bucket: this.bucket,
-      key: "to_surescripts/" + fileName,
+      key: getS3Key(OUTGOING_NAME, fileName),
       file: message,
     });
   }
@@ -33,7 +34,7 @@ export class SurescriptsReplica {
   async receiveVerificationResponse(transmission: Transmission<TransmissionType>) {
     const fileName = await this.sftpClient.findVerificationFileName(transmission);
     if (fileName) {
-      const content = await this.sftpClient.read(`/${INCOMING_NAME}/${fileName}`);
+      const content = await this.sftpClient.read(getSftpFileName(INCOMING_NAME, fileName));
       await this.s3.uploadFile({
         bucket: this.bucket,
         key: getS3Key(INCOMING_NAME, fileName),
@@ -45,7 +46,7 @@ export class SurescriptsReplica {
   async receiveFlatFileResponse(transmission: Transmission) {
     const fileName = await this.sftpClient.findFlatFileResponseName(transmission);
     if (fileName) {
-      const content = await this.sftpClient.read(`/${INCOMING_NAME}/${fileName}`);
+      const content = await this.sftpClient.read(getSftpFileName(INCOMING_NAME, fileName));
       await this.s3.uploadFile({
         bucket: this.bucket,
         key: getS3Key(INCOMING_NAME, fileName),
@@ -57,8 +58,7 @@ export class SurescriptsReplica {
   async synchronize(event: SurescriptsSynchronizeEvent) {
     if (event.fromSurescripts) {
       await this.copyFromSurescripts(event.dryRun);
-    }
-    if (event.toSurescripts) {
+    } else if (event.toSurescripts) {
       await this.copyToSurescripts(event.dryRun);
     } else if (event.fileName) {
       await this.copyFileFromSurescripts(event.fileName, event.dryRun);
@@ -142,12 +142,4 @@ export class SurescriptsReplica {
     }
     return content;
   }
-}
-
-function getS3Key(directory: SurescriptsDirectory, fileName: string) {
-  return `${directory}/${fileName}`;
-}
-
-function getSftpFileName(directory: SurescriptsDirectory, fileName: string) {
-  return `/${directory}/${fileName}`;
 }

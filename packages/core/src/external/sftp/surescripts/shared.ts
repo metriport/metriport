@@ -1,6 +1,6 @@
 import { isPrefix, isSuffix } from "./codes";
 import { GenderAtBirth } from "../../../domain/patient";
-import { SurescriptsGender, NameDemographics } from "./types";
+import { SurescriptsGender, NameDemographics, SurescriptsDirectory } from "./types";
 
 export function makeNameDemographics({
   firstName,
@@ -47,4 +47,12 @@ export function makeGenderDemographics(gender?: GenderAtBirth): SurescriptsGende
   if (!gender) return "U";
   if (gender === "O") return "N";
   return gender;
+}
+
+export function getS3Key(directory: SurescriptsDirectory, fileName: string) {
+  return `${directory}/${fileName}`;
+}
+
+export function getSftpFileName(directory: SurescriptsDirectory, fileName: string) {
+  return `/${directory}/${fileName}`;
 }
