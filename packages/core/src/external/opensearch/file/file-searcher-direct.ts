@@ -19,19 +19,24 @@ export class OpenSearchFileSearcherDirect implements OpenSearchFileSearcher {
     const client = new Client({ node: endpoint, auth });
 
     debug(`Searching on index ${indexName}...`);
+    const actualQuery = cleanupQuery(query);
     const queryPayload = {
       size: 1_000,
       query: {
         bool: {
           must: [
-            {
-              // https://docs.opensearch.org/docs/latest/query-dsl/full-text/simple-query-string/
-              simple_query_string: {
-                query: cleanupQuery(query),
-                fields: ["content"],
-                analyze_wildcard: true,
-              },
-            },
+            ...(actualQuery.length > 0
+              ? [
+                  {
+                    // https://docs.opensearch.org/docs/latest/query-dsl/full-text/simple-query-string/
+                    simple_query_string: {
+                      query: cleanupQuery(actualQuery),
+                      fields: ["content"],
+                      analyze_wildcard: true,
+                    },
+                  },
+                ]
+              : []),
             { match: { cxId } },
             { match: { patientId } },
           ],
