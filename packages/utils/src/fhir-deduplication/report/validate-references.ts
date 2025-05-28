@@ -7,7 +7,9 @@ const missingRefsFileName = "missing-refs.csv";
 /**
  * Go through each resource, find other resources it references, and check if they are present in the bundle.
  */
-export function validateReferences(resources: Resource[], dirName: string): boolean {
+export function getMissingReferences(
+  resources: Resource[]
+): { resource: Resource; missingRefs: string[] }[] {
   const resourceMap = new Map<string, Resource>();
   resources.forEach(r => resourceMap.set(r.id ?? "", r));
 
@@ -17,6 +19,15 @@ export function validateReferences(resources: Resource[], dirName: string): bool
     if (localMissingRefs.length) missingRefs.push({ resource: r, missingRefs: localMissingRefs });
   });
 
+  return missingRefs;
+}
+
+/**
+ * Find missing references, store them on 'dirName' if any, return a boolean indicating if
+ * there references are valid.
+ */
+export function validateReferences(resources: Resource[], dirName: string): boolean {
+  const missingRefs = getMissingReferences(resources);
   if (missingRefs.length) {
     const outputFileName = dirName + "/" + missingRefsFileName;
 
@@ -300,7 +311,8 @@ function stringReferenceOrArrayToStringArr(
   obj?: string | string[] | Reference | Reference[]
 ): string[] {
   if (typeof obj === "string") {
-    return [obj];
+    if (obj.startsWith("#") || obj.includes("/")) return [obj];
+    return [];
   } else if (Array.isArray(obj)) {
     return obj.flatMap(stringReferenceOrArrayToStringArr);
   } else {
