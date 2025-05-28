@@ -109,7 +109,12 @@ export function sortDate(
     : buildDayjs(date2).diff(buildDayjs(date1));
 }
 
-// Convert to YYYYMMDD or YYYY-MM-DD format
+/**
+ * Convert to YYYYMMDD or YYYY-MM-DD format
+ * @param date - The date to convert
+ * @param separator - The separator to use between the date components
+ * @returns The date in YYYYMMDD or YYYY-MM-DD format (if separator is "-")
+ */
 export function convertDateToString(date: Date, separator = "") {
   const year = date.getFullYear();
   const month = (date.getMonth() + 1).toString().padStart(2, "0");
@@ -117,7 +122,12 @@ export function convertDateToString(date: Date, separator = "") {
   return [year, month, dateOfMonth].join(separator);
 }
 
-// Convert to HHMMSS or HHMMSSCC format
+/**
+ * Convert to HHMMSS or HHMMSSCC format
+ * @param date - The date to convert
+ * @param includeCentisecond - Whether to include the centisecond in the time string
+ * @returns The date in HHMMSS or HHMMSSCC format (if includeCentisecond is true)
+ */
 export function convertDateToTimeString(
   date: Date,
   { includeCentisecond = false }: { includeCentisecond?: boolean } = {}
