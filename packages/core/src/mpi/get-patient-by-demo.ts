@@ -1,5 +1,6 @@
-import { Patient, PatientData } from "../domain/patient";
 import { PatientLoader } from "../command/patient-loader";
+import { Patient, PatientData } from "../domain/patient";
+import { log } from "../util/log";
 import {
   jaroWinklerSimilarity,
   matchingContactDetailsRule,
@@ -9,8 +10,6 @@ import {
 import { useFirstMatchingPatient } from "./merge-patients";
 import { normalizePatient } from "./normalize-patient";
 import { patientToPatientMPI } from "./shared";
-import { log } from "../util/log";
-import { capture } from "../util/notifications";
 
 const SIMILARITY_THRESHOLD = 0.96;
 
@@ -61,15 +60,7 @@ export const getPatientByDemo = async ({
 
   if (matchingPatients.length > 1) {
     const msg = `matchPatients returned more than one patient`;
-    log(`WARN: ${msg} - demo: ${JSON.stringify(demo)}, cxId: ${cxId}`);
-    capture.message(msg, {
-      extra: {
-        context: `mpi.getPatientByDemo`,
-        cxId,
-        demo,
-      },
-      level: "warning",
-    });
+    log(`WARN: ${msg} - cxId: ${cxId}, ids: [${matchingPatients.map(p => p.id).join(", ")}]`);
   }
   // Merge the matching patients
   const mpiPatient = useFirstMatchingPatient(matchingPatients);

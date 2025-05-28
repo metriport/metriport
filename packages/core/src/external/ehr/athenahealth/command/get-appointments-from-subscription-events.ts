@@ -1,5 +1,5 @@
 import { BookedAppointment } from "@metriport/shared/interface/external/ehr/athenahealth/appointment";
-import { GetAppointmentsClientRequest } from "../../lambdas/get-appointments/ehr-get-appointments";
+import { GetAppointmentsClientRequest } from "../../command/get-appointments/ehr-get-appointments";
 import { createAthenaHealthClient } from "../shared";
 
 export async function getAppointmentsFromSubscriptionEvents(

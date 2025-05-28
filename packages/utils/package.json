@@ -1,6 +1,6 @@
 {
   "name": "utils",
-  "version": "1.25.3",
+  "version": "1.25.6",
   "description": "",
   "private": true,
   "scripts": {
@@ -41,12 +41,12 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@aws-sdk/client-athena": "^3.658.1",
-    "@aws-sdk/client-bedrock-agent-runtime": "^3.616.0",
-    "@aws-sdk/client-bedrock-runtime": "^3.616.0",
-    "@aws-sdk/client-cloudwatch-logs": "^3.658.1",
-    "@aws-sdk/client-cognito-identity-provider": "^3.301.0",
-    "@aws-sdk/client-healthlake": "^3.645.0",
+    "@aws-sdk/client-athena": "^3.800.1",
+    "@aws-sdk/client-bedrock-agent-runtime": "^3.800.0",
+    "@aws-sdk/client-bedrock-runtime": "^3.800.0",
+    "@aws-sdk/client-cloudwatch-logs": "^3.800.1",
+    "@aws-sdk/client-cognito-identity-provider": "^3.800.0",
+    "@aws-sdk/client-healthlake": "^3.800.0",
     "@langchain/community": "^0.3.16",
     "@langchain/core": "^0.3.19",
     "@metriport/api-sdk": "file:packages/api-sdk",

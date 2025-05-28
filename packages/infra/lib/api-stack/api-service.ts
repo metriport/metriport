@@ -34,6 +34,7 @@ import { buildSecrets, Secrets, secretsToECS } from "../shared/secrets";
 import { provideAccessToQueue } from "../shared/sqs";
 import { addDefaultMetricsToTargetGroup } from "../shared/target-group";
 import { isProd, isSandbox } from "../shared/util";
+import { SurescriptsAssets } from "../surescripts/types";
 
 interface ApiProps extends StackProps {
   config: EnvConfig;
@@ -134,6 +135,7 @@ export function createAPIService({
   semanticSearchModelId,
   featureFlagsTable,
   cookieStore,
+  surescriptsAssets,
 }: {
   stack: Construct;
   props: ApiProps;
@@ -182,6 +184,7 @@ export function createAPIService({
   semanticSearchAuth: { userName: string; secret: string } | undefined;
   featureFlagsTable: dynamodb.Table;
   cookieStore: secret.ISecret | undefined;
+  surescriptsAssets: SurescriptsAssets | undefined;
 }): {
   cluster: ecs.Cluster;
   service: ecs_patterns.ApplicationLoadBalancedFargateService;
@@ -336,6 +339,8 @@ export function createAPIService({
               SEMANTIC_SEARCH_PASSWORD: semanticSearchAuth.secret,
               SEMANTIC_SEARCH_INDEX: semanticSearchIndexName,
               SEMANTIC_SEARCH_MODEL_ID: semanticSearchModelId,
+              // TODO eng-268 move this out of the API when we have it running on lambdas
+              LEXICAL_SEARCH_INDEX: semanticSearchIndexName,
             }),
           ...(props.config.carequality?.envVars?.CQ_ORG_URLS && {
             CQ_ORG_URLS: props.config.carequality.envVars.CQ_ORG_URLS,
@@ -364,6 +369,7 @@ export function createAPIService({
             EHR_ATHENA_ENVIRONMENT: props.config.ehrIntegration.athenaHealth.env,
             EHR_ELATION_ENVIRONMENT: props.config.ehrIntegration.elation.env,
             EHR_HEALTHIE_ENVIRONMENT: props.config.ehrIntegration.healthie.env,
+            EHR_ECLINICALWORKS_ENVIRONMENT: props.config.ehrIntegration.eclinicalworks.env,
           }),
           ...(!isSandbox(props.config) && {
             DASH_URL: props.config.dashUrl,
@@ -371,6 +377,17 @@ export function createAPIService({
           }),
           ...(props.config.cqDirectoryRebuilder?.heartbeatUrl && {
             CQ_DIR_REBUILD_HEARTBEAT_URL: props.config.cqDirectoryRebuilder.heartbeatUrl,
+          }),
+          ...(surescriptsAssets && {
+            MEDICATION_BUNDLE_BUCKET_NAME: surescriptsAssets.medicationBundleBucket.bucketName,
+            SURESCRIPTS_REPLICA_BUCKET_NAME: surescriptsAssets.surescriptsReplicaBucket.bucketName,
+            SURESCRIPTS_SYNCHRONIZE_SFTP_QUEUE_URL: surescriptsAssets.synchronizeSftpQueue.queueUrl,
+            SURESCRIPTS_SEND_PATIENT_REQUEST_QUEUE_URL:
+              surescriptsAssets.sendPatientRequestQueue.queueUrl,
+            SURESCRIPTS_RECEIVE_VERIFICATION_RESPONSE_QUEUE_URL:
+              surescriptsAssets.receiveVerificationResponseQueue.queueUrl,
+            SURESCRIPTS_RECEIVE_FLAT_FILE_RESPONSE_QUEUE_URL:
+              surescriptsAssets.receiveFlatFileResponseQueue.queueUrl,
           }),
         },
       },
@@ -458,6 +475,14 @@ export function createAPIService({
   conversionBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   medicalDocumentsUploadBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   ehrBundleBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
+
+  if (surescriptsAssets) {
+    surescriptsAssets.medicationBundleBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
+    surescriptsAssets.surescriptsReplicaBucket.grantReadWrite(
+      fargateService.taskDefinition.taskRole
+    );
+  }
+
   if (ehrResponsesBucket) {
     ehrResponsesBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   }
@@ -491,6 +516,22 @@ export function createAPIService({
     queue: ehrRefreshEhrBundlesQueue,
     resource: fargateService.taskDefinition.taskRole,
   });
+
+  if (surescriptsAssets) {
+    const queuesToProvideAccessTo = [
+      surescriptsAssets.synchronizeSftpQueue,
+      surescriptsAssets.sendPatientRequestQueue,
+      surescriptsAssets.receiveVerificationResponseQueue,
+      surescriptsAssets.receiveFlatFileResponseQueue,
+    ];
+    queuesToProvideAccessTo.forEach(queue => {
+      provideAccessToQueue({
+        accessType: "send",
+        queue,
+        resource: fargateService.taskDefinition.taskRole,
+      });
+    });
+  }
 
   // Allow access to search services/infra
   provideAccessToQueue({

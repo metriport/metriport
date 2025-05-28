@@ -10,23 +10,35 @@ export type SftpConfig = {
   remotePath: string;
 };
 
-export const addressFields = ["addressLine1", "addressLine2", "city", "state", "zip"] as const;
-export type AddressField = (typeof addressFields)[number];
-export type HieAddressFieldMapping = {
-  [K in AddressField]: string;
-};
-
-export type MetriportToHieFieldMapping = {
-  scrambledId: string;
+export type RosterRowData = {
+  id: string;
+  cxId: string;
+  rosterGenerationDate: string;
   firstName: string;
   lastName: string;
   dob: string;
-  genderAtBirth: string;
-  ssn?: string;
-  phone?: string;
-  email?: string;
-  driversLicense?: string;
-  address: HieAddressFieldMapping[];
+  middleName: string | undefined;
+  genderAtBirth: string | undefined;
+  scrambledId: string;
+  ssn: string | undefined;
+  driversLicense: string | undefined;
+  phone: string | undefined;
+  email: string | undefined;
+  address1AddressLine1: string | undefined;
+  address1AddressLine2: string | undefined;
+  address1City: string | undefined;
+  address1State: string | undefined;
+  address1Zip: string | undefined;
+  insuranceId: string | undefined;
+  insuranceCompanyId: string | undefined;
+  insuranceCompanyName: string | undefined;
+  authorizingParticipantFacilityCode: string | undefined;
+  authorizingParticipantMrn: string | undefined;
+  assigningAuthorityIdentifier: string | undefined;
+};
+
+export type MetriportToHieFieldMapping = {
+  [K in keyof RosterRowData]?: string;
 };
 
 export type HieConfig = {

@@ -32,7 +32,7 @@ export async function uploadConsolidatedSnapshotToS3({
   s3BucketName,
   type,
 }: Omit<ConsolidatedSnapshotRequest, "requestId" | "isAsync" | "conversionType"> & {
-  requestId?: string;
+  requestId?: string | undefined;
   bundle: unknown;
   s3BucketName: string;
   type: ConsolidatedFileType;
