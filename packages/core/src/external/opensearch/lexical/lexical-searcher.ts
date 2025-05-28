@@ -1,6 +1,6 @@
 import { errorToString } from "@metriport/shared";
 import { Client } from "@opensearch-project/opensearch";
-import { out } from "../../../util";
+import { capture, out } from "../../../util";
 import {
   OpenSearchConfigDirectAccess,
   OpenSearchResponseGet,
@@ -83,7 +83,10 @@ export class OpenSearchFhirSearcher {
       if (!response.found) return undefined;
       return response._source;
     } catch (error) {
-      log(`Error getting by id ${entryId} on index ${indexName}: ${errorToString(error)}`);
+      const msg = `Error getting by ID from OpenSearch`;
+      const extra = { entryId, indexName, error: errorToString(error) };
+      log(`${msg} - ${JSON.stringify(extra)}`);
+      capture.error(msg, { extra: { ...extra, context: this.constructor.name } });
       return undefined;
     }
   }
