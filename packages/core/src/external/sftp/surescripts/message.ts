@@ -26,7 +26,7 @@ import { isValidNpiNumber } from "@metriport/shared/common/npi-number";
 import { OutgoingFileRowSchema, IncomingFileRowSchema } from "./schema/shared";
 import { SurescriptsSftpClient, Transmission, TransmissionType } from "./client";
 import { makeNameDemographics, makeGenderDemographics } from "./shared";
-import { GetPatientResponse } from "../api/get-patient";
+import { GetPatientResponse } from "../api/shared";
 
 export function canGenerateSurescriptsMessage(
   transmission: Transmission<TransmissionType>,

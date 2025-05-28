@@ -1,8 +1,9 @@
 import axios, { AxiosInstance } from "axios";
-import { getPatient, GetPatientResponse } from "../api/get-patient";
-import { getPatientIds, GetPatientIdsResponse } from "../api/get-patient-ids";
+import { getPatient } from "../api/get-patient";
+import { getPatientIds } from "../api/get-patient-ids";
 import { Config } from "../../../util/config";
-import { getCustomer, GetCustomerResponse } from "../api/get-customer";
+import { getCustomer } from "../api/get-customer";
+import { GetPatientResponse, GetPatientIdsResponse, GetCustomerResponse } from "../api/shared";
 
 export class SurescriptsApi {
   axiosInstance: AxiosInstance;
