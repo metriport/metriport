@@ -9,19 +9,17 @@ export function makeNameDemographics({
   firstName: string;
   lastName: string;
 }): NameDemographics {
-  const firstNamePart = firstName.split(" ");
-  const lastNamePart = lastName.split(" ");
+  const firstNamePart = firstName.trim().split(" ");
+  const lastNamePart = lastName.trim().split(" ");
 
   let prefix = "",
     suffix = "";
   if (firstNamePart.length > 1 && isPrefix(firstNamePart[0]?.toLowerCase() ?? "")) {
     prefix = firstNamePart.shift() ?? "";
   }
-  if (
-    lastNamePart.length > 1 &&
-    isSuffix(lastNamePart[lastNamePart.length - 1]?.toLowerCase() ?? "")
-  ) {
+  if (lastNamePart.length > 1 && isSuffix(lastNamePart[lastNamePart.length - 1] ?? "")) {
     suffix = lastNamePart.pop() ?? "";
+    lastName = lastNamePart.join(" ");
   }
 
   let middleName = "";

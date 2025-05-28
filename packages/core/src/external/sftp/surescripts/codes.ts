@@ -7,14 +7,12 @@ export const PREFIXES = [
   "rev",
   "st",
   "hon",
-  "honorable",
-  "honorable mr",
-  "honorable mrs",
-  "honorable ms",
-  "honorable dr",
-  "honorable prof",
-  "honorable rev",
-  "honorable st",
+  "senator",
+  "sen",
+  "rep",
+  "congressman",
+  "congresswoman",
+  "gov",
 ] as const;
 export const SUFFIXES = [
   "jr",
@@ -45,10 +43,18 @@ export const PREFIX_SET = new Set(PREFIXES);
 export const SUFFIX_SET = new Set(SUFFIXES);
 
 export function isPrefix(prefix: string): prefix is Prefix {
-  return PREFIX_SET.has(prefix as Prefix);
+  const normalizedPrefix = prefix
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]/g, "");
+  return PREFIX_SET.has(normalizedPrefix as Prefix);
 }
 export function isSuffix(suffix: string): suffix is Suffix {
-  return SUFFIX_SET.has(suffix as Suffix);
+  const normalizedSuffix = suffix
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]/g, "");
+  return SUFFIX_SET.has(normalizedSuffix as Suffix);
 }
 
 export const DEA_SCHEDULE_CODES = [
