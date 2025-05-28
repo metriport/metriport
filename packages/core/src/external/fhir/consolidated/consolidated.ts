@@ -126,7 +126,7 @@ export async function getConsolidatedFhirBundle({
     }
     return { resource: entry };
   });
-  return buildSearchSetBundle({ entries });
+  return buildSearchSetBundle(entries);
 }
 
 const searchResources = async <K extends ResourceType>(

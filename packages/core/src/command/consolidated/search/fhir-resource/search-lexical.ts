@@ -93,7 +93,7 @@ export async function searchPatientConsolidated({
   hydratedMutable.push(patientResource);
 
   const entries = hydratedMutable.map(buildBundleEntry);
-  const resultBundle = buildSearchSetBundle({ entries });
+  const resultBundle = buildSearchSetBundle(entries);
 
   log(
     `Done in ${elapsedTimeFromNow(startedAt)} ms, returning ${

@@ -6,15 +6,12 @@ import { capture } from "./shared/capture";
 import { getEnvOrFail } from "./shared/env";
 import { prefixedLog } from "./shared/log";
 import { getSingleMessageOrFail } from "./shared/sqs";
-import { Config } from "@metriport/core/util/config";
 
 // Keep this as early on the file as possible
 capture.init();
 
 // Automatically set by AWS
 const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
-const oldBucketName = Config.getHl7OutgoingMessageBucketName();
-const bucketName = Config.getHl7ConversionBucketName();
 const apiUrl = getEnvOrFail("API_URL");
 
 // TODO move to capture.wrapHandler()
@@ -35,9 +32,7 @@ export const handler = capture.wrapHandler(async (event: SQSEvent): Promise<void
     context: "hl7-notification-webhook-sender-cloud.execute",
   });
 
-  await new Hl7NotificationWebhookSenderDirect(apiUrl, oldBucketName, bucketName).execute(
-    parsedBody
-  );
+  await new Hl7NotificationWebhookSenderDirect(apiUrl).execute(parsedBody);
 });
 
 const parseBody = (body: string): Hl7Notification => {

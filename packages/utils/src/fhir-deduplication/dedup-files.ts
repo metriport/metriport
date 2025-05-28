@@ -3,12 +3,12 @@ dotenv.config();
 // keep that ^ on top
 import { Bundle, Resource, Patient } from "@medplum/fhirtypes";
 import { MetriportMedicalApi } from "@metriport/api-sdk";
-import {
-  buildConsolidatedBundle,
-  merge,
-} from "@metriport/core/command/consolidated/consolidated-create";
+import { merge } from "@metriport/core/command/consolidated/consolidated-create";
 import { toFHIR as patientToFhir } from "@metriport/core/external/fhir/patient/conversion";
-import { buildBundleEntry } from "@metriport/core/external/fhir/shared/bundle";
+import {
+  buildBundleEntry,
+  buildCollectionBundle,
+} from "@metriport/core/external/fhir/shared/bundle";
 import { dangerouslyDeduplicateFhir } from "@metriport/core/fhir-deduplication/deduplicate-fhir";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { getFileContents, getFileNames, makeDir } from "@metriport/core/util/fs";
@@ -110,7 +110,7 @@ async function createOrGetBundles(createBundle: boolean, patientId?: string) {
 
   const patientEntry = buildBundleEntry(fhirPatient);
 
-  const mergedBundle = buildConsolidatedBundle();
+  const mergedBundle = buildCollectionBundle();
   await executeAsynchronously(fileNames, async filePath => {
     console.log(`Getting conversion bundle from filePath ${filePath}`);
     const contents = getFileContents(filePath);
@@ -124,7 +124,7 @@ async function createOrGetBundles(createBundle: boolean, patientId?: string) {
   });
 
   const conversions = mergedBundle.entry ?? [];
-  const withDups = buildConsolidatedBundle();
+  const withDups = buildCollectionBundle();
   withDups.entry = [...conversions, patientEntry]; // Missing ...docRefs.map(buildBundleEntry)
   withDups.total = withDups.entry.length;
   const bundleFileName = `${samplesFolderPath}/generatedBundle${patientId}`;
