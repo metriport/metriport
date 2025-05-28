@@ -1,3 +1,4 @@
+import { timed } from "@metriport/shared/util/duration";
 import { Patient } from "../../../../domain/patient";
 import { OpenSearchFhirIngestor } from "../../../../external/opensearch/fhir-ingestor";
 import { OnBulkItemError } from "../../../../external/opensearch/shared/bulk";
@@ -23,7 +24,7 @@ export async function ingestPatientConsolidated({
 
   log("Getting consolidated and cleaning up the index...");
   const [bundle] = await Promise.all([
-    getConsolidatedPatientData({ patient }),
+    timed(() => getConsolidatedPatientData({ patient }), "getConsolidatedPatientData", log),
     ingestor.delete({ cxId: patient.cxId, patientId: patient.id }),
   ]);
 

@@ -22,7 +22,7 @@ curl -XPUT "/ccda-files-1" -H 'Content-Type: application/json' -d'
   },
   "settings": {
     "number_of_shards": _,
-    "number_of_replicas": _
+    "number_of_replicas": 1
   }
 }'
 

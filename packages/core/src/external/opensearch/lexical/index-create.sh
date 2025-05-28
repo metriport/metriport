@@ -2,7 +2,7 @@
 
 # Create index
 # Update properties with _
-curl -XPUT "/medical-resources-1" -H 'Content-Type: application/json' -d'
+curl -XPUT "/consolidated-data-1" -H 'Content-Type: application/json' -d'
 {
   "mappings": {
     "properties": {
@@ -28,7 +28,7 @@ curl -XPUT "/medical-resources-1" -H 'Content-Type: application/json' -d'
   },
   "settings": {
     "number_of_shards": _,
-    "number_of_replicas": _
+    "number_of_replicas": 1
   }
 }'
 
@@ -40,8 +40,8 @@ curl -XPOST "/_aliases" -H 'Content-Type: application/json' -d'
   "actions": [
     {
       "add": {
-        "index": "medical-resources-1",
-        "alias": "medical-resources"
+        "index": "consolidated-data-1",
+        "alias": "consolidated-data"
       }
     }
   ]
