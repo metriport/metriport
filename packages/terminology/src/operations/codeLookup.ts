@@ -8,6 +8,7 @@ import {
   Parameters,
 } from "@medplum/fhirtypes";
 import { getTermServerClient } from "../init-term-server";
+import { normalizeNdcCode } from "../util";
 import { codeLookupOperationDefinition } from "./definitions/codeLookupOperation";
 import { ndcCodeSystem } from "./definitions/codeSystem";
 import { findCodeSystemResource } from "./utils/codeSystemLookup";
@@ -35,7 +36,7 @@ export type CodeSystemLookupOutput = {
  */
 function normalizeCode(code: string, system: string): string {
   if (system === ndcCodeSystem.url) {
-    return code.replace(/-/g, "");
+    return normalizeNdcCode(code, true);
   }
   return code;
 }
@@ -171,7 +172,7 @@ export async function lookupPartialCoding(
     WHERE cs.id = ? AND c.code LIKE ?
   `;
 
-  const params = [codeSystem.id, normalizedCode];
+  const params = [codeSystem.id, `${normalizedCode}%`];
   const result = await dbClient.select(query, params);
 
   if (result.length === 0) {

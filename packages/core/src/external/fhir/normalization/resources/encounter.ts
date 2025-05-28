@@ -80,6 +80,9 @@ function hasEncounterType(encounter: Encounter): boolean {
   return false;
 }
 
+/**
+ * TODO Check if we can reuse isUsefulDisplay()
+ */
 function isDisplayUseful(display: string | undefined) {
   return display != undefined && display.trim() !== "unknown";
 }

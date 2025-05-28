@@ -1,6 +1,6 @@
 {
   "name": "terminology",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "embedded term server",
   "main": "app.js",
   "private": true,
@@ -12,6 +12,8 @@
     "prettier-fix": "npx prettier '**/*.ts' --write",
     "seed-lookup": "npx --node-options='--max-old-space-size=8192' ts-node src/seed/seedUmlsLookup.ts",
     "seed-crosswalk": "npx --node-options='--max-old-space-size=8192' ts-node src/seed/seedUmlsCrosswalk.ts",
+    "seed-ndc-lookup": "npx --node-options='--max-old-space-size=8192' ts-node src/seed/seed-ndc-from-nlm.ts",
+    "seed-fda-descriptions": "npx --node-options='--max-old-space-size=8192' ts-node src/seed/seed-ndc-from-fda.ts",
     "load-test": "artillery run src/__tests__/load-test.yml"
   },
   "repository": {
@@ -28,9 +30,10 @@
     "@medplum/core": "^3.2.5",
     "@medplum/fhir-router": "^3.2.5",
     "@medplum/fhirtypes": "^3.2.5",
-    "@metriport/shared": "^0.12.2",
+    "@metriport/shared": "^0.23.3",
     "aws-sdk": "^2.1243.0",
     "axios": "^1.8.2",
+    "csv-parser": "^3.2.0",
     "dayjs": "^1.11.9",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
@@ -44,10 +47,11 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@aws-sdk/client-s3": "^3.627.0",
+    "@aws-sdk/client-s3": "^3.800.0",
     "@tsconfig/node18": "^18.2.4",
     "@types/express": "^4.17.21",
     "@types/jest": "^29.5.12",
+    "@types/lodash": "^4.14.x",
     "@types/unzip-stream": "^0.3.4",
     "@types/uuid": "^10.0.0",
     "ts-jest": "^29.2.5",

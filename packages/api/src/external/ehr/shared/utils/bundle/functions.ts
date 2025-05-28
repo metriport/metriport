@@ -50,6 +50,7 @@ const bundleFunctionsByEhr: Record<EhrSources, BundleFunctions | undefined> = {
   [EhrSources.athena]: undefined,
   [EhrSources.elation]: undefined,
   [EhrSources.healthie]: undefined,
+  [EhrSources.eclinicalworks]: undefined,
 };
 
 export function getBundleFunctions(ehr: EhrSources): BundleFunctions {

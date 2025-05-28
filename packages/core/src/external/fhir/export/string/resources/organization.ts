@@ -1,63 +1,40 @@
 import { Organization } from "@medplum/fhirtypes";
-import { FHIRResourceToString } from "../types";
+import { FHIRResourceToString } from "../fhir-resource-to-string";
+import { formatAddresses } from "../shared/address";
+import { formatCodings } from "../shared/coding";
+import { formatNpiIdentifiers } from "../shared/identifier";
 import { FIELD_SEPARATOR } from "../shared/separator";
-import { formatIdentifiers } from "../shared/identifier";
+import { formatTelecoms } from "../shared/telecom";
 
 /**
  * Converts a FHIR Organization resource to a string representation
  */
 export class OrganizationToString implements FHIRResourceToString<Organization> {
-  toString(organization: Organization): string {
+  toString(organization: Organization, isDebug?: boolean): string | undefined {
     const parts: string[] = [];
 
-    // Add identifier
-    const identifierStr = formatIdentifiers(organization.identifier);
-    if (identifierStr) {
-      parts.push(identifierStr);
-    }
+    const identifierStr = formatNpiIdentifiers({ identifiers: organization.identifier });
+    if (identifierStr) parts.push(identifierStr);
 
-    // Add name
-    if (organization.name) {
-      parts.push(`Name: ${organization.name}`);
-    }
+    if (organization.name) parts.push(isDebug ? `Name: ${organization.name}` : organization.name);
 
-    // Add alias
     if (organization.alias) {
-      parts.push(`Alias: ${organization.alias.join(FIELD_SEPARATOR)}`);
+      const aliasStr = organization.alias.join(FIELD_SEPARATOR);
+      parts.push(isDebug ? `Alias: ${aliasStr}` : aliasStr);
     }
 
-    // Add telecom
-    if (organization.telecom) {
-      const telecoms = organization.telecom
-        .map(t => `${t.system ?? "unknown"}: ${t.value}`)
-        .join(FIELD_SEPARATOR);
-      parts.push(`Contact: ${telecoms}`);
-    }
+    const telecoms = formatTelecoms({ telecoms: organization.telecom, isDebug });
+    if (telecoms) parts.push(telecoms);
 
-    // Add address
-    if (organization.address) {
-      const addresses = organization.address
-        .map(addr => {
-          const components = [
-            addr.line?.join(", "),
-            addr.city,
-            addr.state,
-            addr.postalCode,
-            addr.country,
-          ].filter(Boolean);
-          return components.join(", ");
-        })
-        .join(FIELD_SEPARATOR);
-      parts.push(`Address: ${addresses}`);
-    }
+    const addresses = formatAddresses({
+      addresses: organization.address,
+      label: "Address",
+      isDebug,
+    });
+    if (addresses) parts.push(addresses);
 
-    // Add type
-    if (organization.type) {
-      const types = organization.type
-        .map(t => t.coding?.map(c => c.display ?? c.code).join(FIELD_SEPARATOR) ?? "")
-        .join(FIELD_SEPARATOR);
-      parts.push(`Type: ${types}`);
-    }
+    const types = formatCodings({ codings: organization.type, label: "Type", isDebug });
+    if (types) parts.push(types);
 
     return parts.join(FIELD_SEPARATOR);
   }

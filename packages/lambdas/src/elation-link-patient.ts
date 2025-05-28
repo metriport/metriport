@@ -1,5 +1,5 @@
-import { ProcessLinkPatientRequest } from "@metriport/core/external/ehr/lambdas/elation/link-patient/elation-link-patient";
-import { ElationLinkPatientLocal } from "@metriport/core/external/ehr/lambdas/elation/link-patient/elation-link-patient-local";
+import { ProcessLinkPatientRequest } from "@metriport/core/external/ehr/command/elation/link-patient/elation-link-patient";
+import { ElationLinkPatientLocal } from "@metriport/core/external/ehr/command/elation/link-patient/elation-link-patient-local";
 import { MetriportError } from "@metriport/shared";
 import * as Sentry from "@sentry/serverless";
 import { SQSEvent } from "aws-lambda";

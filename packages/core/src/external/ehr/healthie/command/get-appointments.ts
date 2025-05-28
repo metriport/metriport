@@ -1,6 +1,6 @@
 import { BadRequestError, EhrSources } from "@metriport/shared";
 import { AppointmentAttendee } from "@metriport/shared/interface/external/ehr/healthie/appointment";
-import { GetAppointmentsClientRequest } from "../../lambdas/get-appointments/ehr-get-appointments";
+import { GetAppointmentsClientRequest } from "../../command/get-appointments/ehr-get-appointments";
 import { createHealthieClient } from "../shared";
 
 export async function getAppointments(

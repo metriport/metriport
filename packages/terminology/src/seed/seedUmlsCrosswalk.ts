@@ -1,10 +1,11 @@
-import { ConceptMap, Parameters } from "@medplum/fhirtypes";
+import { ConceptMap } from "@medplum/fhirtypes";
 import { createReadStream } from "node:fs";
-import { createInterface } from "node:readline";
 import { argv } from "node:process";
+import { createInterface } from "node:readline";
 import { Readable, Transform, TransformCallback } from "node:stream";
 import * as unzip from "unzip-stream";
 import { TerminologyClient } from "../client";
+import { createLookupParameters, lookupDisplay } from "./shared";
 
 const IFA_RULE_REGEX = /^IFA \d+ &#x7C;/;
 
@@ -13,13 +14,22 @@ class EOF extends Error {
 }
 
 type UmlsConceptMapConfig = {
-  system: string;
+  source: string;
   target: string;
 };
 
-const C5885096: UmlsConceptMapConfig = {
-  system: "http://snomed.info/sct",
-  target: "http://hl7.org/fhir/sid/icd-10-cm",
+/**
+ * Configuration for UMLS mapping sets.
+ * Each MAPSETCUI (Mapping Set CUI) represents a specific type of mapping between code systems.
+ * For example, C5979685 represents SNOMED CT to ICD-10-CM mappings.
+ *
+ * The MAPSETCUI values can be found in the UMLS documentation or by examining the MRMAP.RRF file.
+ */
+const CONCEPT_MAP_CONFIGS: Record<string, UmlsConceptMapConfig> = {
+  C5979685: {
+    source: "http://snomed.info/sct",
+    target: "http://hl7.org/fhir/sid/icd-10-cm",
+  },
 };
 
 /** @see https://www.ncbi.nlm.nih.gov/books/NBK9685/table/ch03.T.concept_names_and_sources_file_mr */
@@ -146,16 +156,6 @@ class UmlsConceptMap {
   }
 }
 
-function createLookupParameters(system: string, code: string): Parameters {
-  return {
-    resourceType: "Parameters",
-    parameter: [
-      { name: "system", valueUri: system },
-      { name: "code", valueCode: code },
-    ],
-  };
-}
-
 async function createConceptMap({
   concept,
   config,
@@ -174,7 +174,7 @@ async function createConceptMap({
     status: "active",
     group: [
       {
-        source: config.system,
+        source: config.source,
         target: config.target,
         element: [
           {
@@ -234,74 +234,98 @@ async function processConceptMap(inStream: Readable): Promise<void> {
   const client = new TerminologyClient();
 
   const mappedConcepts: Record<string, ConceptMap> = Object.create(null);
+  let processedCount = 0;
+  let skippedCount = 0;
+
   for await (const line of rl) {
     const concept = new UmlsConceptMap(line);
-    if (concept.MAPSETCUI != "C5885096") {
-      continue;
-    }
-    if (concept.MAPRULE && IFA_RULE_REGEX.test(concept.MAPRULE)) {
-      continue;
-    }
-    if (concept.REL != "RO") {
+    const config = CONCEPT_MAP_CONFIGS[concept.MAPSETCUI];
+
+    // Conditional mappings, dependent on other mappings, are not supported
+    const isConditionalMapping = !!(concept.MAPRULE && IFA_RULE_REGEX.test(concept.MAPRULE));
+
+    // Only support mappings with a relationship of "RO"
+    // see https://www.nlm.nih.gov/research/umls/knowledge_sources/metathesaurus/release/abbreviations.html#mrdoc_REL:~:text=RO,narrower%2C%20or%20broader
+    const isRelationshipMapping = concept.REL === "RO";
+
+    if (!config || isConditionalMapping || !isRelationshipMapping) {
+      skippedCount++;
       continue;
     }
 
     const key = concept.MAPSETCUI + "|" + concept.FROMID;
+    const existingMap = mappedConcepts[key];
 
-    const sourceParameters = createLookupParameters(C5885096.system, concept.FROMID);
-    const sourceLookup = await client.lookupCode(sourceParameters);
-    const sourceDisplay = sourceLookup[0].display;
+    try {
+      const sourceDisplay = await lookupDisplay(client, config.source, concept.FROMID);
 
-    if (concept.TOID.endsWith("?")) {
-      const partialCode = concept.TOID.slice(0, -1);
-      const targetParameters = createLookupParameters(C5885096.target, partialCode);
-      const partialTargetLookup = await client.lookupPartialCode(targetParameters);
-      for (const partialTarget of partialTargetLookup) {
-        const targetDisplay = partialTarget.display;
-        const targetCode = partialTarget.code;
-        if (!mappedConcepts[key]) {
-          mappedConcepts[key] = await createConceptMap({
-            concept,
-            config: C5885096,
-            sourceDisplay,
-            targetDisplay,
-            targetCode,
-          });
-        } else {
+      if (concept.TOID.endsWith("?")) {
+        const partialCode = concept.TOID.slice(0, -1);
+        const lookupParameters = createLookupParameters(config.target, partialCode);
+        const partialTargetLookup = await client.lookupPartialCode(lookupParameters);
+
+        for (const partialTarget of partialTargetLookup) {
+          const targetDisplay = partialTarget.display;
+          const targetCode = partialTarget.code;
+
+          if (existingMap) {
+            mappedConcepts[key] = updateConceptMap({
+              umlsConcept: concept,
+              conceptMap: mappedConcepts[key],
+              targetDisplay,
+              targetCode,
+            });
+          } else {
+            mappedConcepts[key] = await createConceptMap({
+              concept,
+              config,
+              sourceDisplay,
+              targetDisplay,
+              targetCode,
+            });
+          }
+        }
+      } else {
+        const targetDisplay = await lookupDisplay(client, config.target, concept.TOID);
+
+        if (existingMap) {
           mappedConcepts[key] = updateConceptMap({
             umlsConcept: concept,
             conceptMap: mappedConcepts[key],
             targetDisplay,
-            targetCode,
+          });
+        } else {
+          mappedConcepts[key] = await createConceptMap({
+            concept,
+            config,
+            sourceDisplay,
+            targetDisplay,
           });
         }
       }
-    } else {
-      const targetParameters = createLookupParameters(C5885096.target, concept.TOID);
-      const targetLookup = await client.lookupCode(targetParameters);
-      const targetDisplay = targetLookup[0]?.display;
+      processedCount++;
 
-      if (!mappedConcepts[key]) {
-        mappedConcepts[key] = await createConceptMap({
-          concept,
-          config: C5885096,
-          sourceDisplay,
-          targetDisplay,
-        });
-      } else {
-        mappedConcepts[key] = updateConceptMap({
-          umlsConcept: concept,
-          conceptMap: mappedConcepts[key],
-          targetDisplay,
-        });
+      if (processedCount % 1000 === 0) {
+        console.log(`Processed ${processedCount} mappings (skipped ${skippedCount})`);
       }
+    } catch (error) {
+      console.error(`Error processing mapping: ${error}`);
+      skippedCount++;
     }
   }
-  for (const conceptMap of Object.values(mappedConcepts)) {
+
+  console.log(`\nProcessing complete:`);
+  console.log(`- Processed: ${processedCount} mappings`);
+  console.log(`- Skipped: ${skippedCount} mappings`);
+  console.log(`- Total concept maps: ${Object.keys(mappedConcepts).length}`);
+
+  // Import all concept maps
+  for (const [key, conceptMap] of Object.entries(mappedConcepts)) {
     try {
-      await client.importConceptMap(conceptMap);
+      await client.importConceptMap(conceptMap, true);
+      console.log(`Imported concept map for ${key}`);
     } catch (error) {
-      console.log(`Error importing concept map: ${error}`);
+      console.error(`Error importing concept map for ${key}: ${error}`);
     }
   }
 }

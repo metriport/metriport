@@ -1,5 +1,5 @@
-import { GetBundleByResourceTypeRequest } from "@metriport/core/external/ehr/lambdas/get-bundle-by-resource-type/ehr-get-bundle-by-resource-type";
-import { EhrGetBundleByResourceTypeLocal } from "@metriport/core/external/ehr/lambdas/get-bundle-by-resource-type/ehr-get-bundle-by-resource-type-local";
+import { GetBundleByResourceTypeRequest } from "@metriport/core/external/ehr/command/get-bundle-by-resource-type/ehr-get-bundle-by-resource-type";
+import { EhrGetBundleByResourceTypeDirect } from "@metriport/core/external/ehr/command/get-bundle-by-resource-type/ehr-get-bundle-by-resource-type-direct";
 import { MetriportError } from "@metriport/shared";
 import * as Sentry from "@sentry/serverless";
 import { SQSEvent } from "aws-lambda";
@@ -30,7 +30,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
   const log = prefixedLog(`ehr ${ehr}, cxId ${cxId}, practiceId ${practiceId}`);
   log(`Parsed: ${JSON.stringify(parsedBody)}`);
 
-  const ehrGetBundleByResourceTypeHandler = new EhrGetBundleByResourceTypeLocal();
+  const ehrGetBundleByResourceTypeHandler = new EhrGetBundleByResourceTypeDirect();
   const bundle = await ehrGetBundleByResourceTypeHandler.getBundleByResourceType(parsedBody);
 
   const finishedAt = new Date().getTime();
