@@ -1,89 +1,56 @@
-import { Practitioner, HumanName } from "@medplum/fhirtypes";
-import { FHIRResourceToString } from "../types";
+import { Practitioner } from "@medplum/fhirtypes";
+import { FHIRResourceToString } from "../fhir-resource-to-string";
+import { formatAddresses } from "../shared/address";
+import { formatCodeableConcept } from "../shared/codeable-concept";
+import { formatHumanNames } from "../shared/human-name";
+import { formatNpiIdentifiers } from "../shared/identifier";
 import { FIELD_SEPARATOR } from "../shared/separator";
-import { formatIdentifiers } from "../shared/identifier";
+import { formatTelecoms } from "../shared/telecom";
 
 /**
  * Converts a FHIR Practitioner resource to a string representation
  */
 export class PractitionerToString implements FHIRResourceToString<Practitioner> {
-  toString(practitioner: Practitioner): string {
+  toString(practitioner: Practitioner, isDebug?: boolean): string | undefined {
     const parts: string[] = [];
 
-    // Add identifier
-    const identifierStr = formatIdentifiers(practitioner.identifier);
-    if (identifierStr) {
-      parts.push(identifierStr);
-    }
+    const identifierStr = formatNpiIdentifiers({ identifiers: practitioner.identifier });
+    if (identifierStr) parts.push(identifierStr);
 
-    // Add name
-    if (practitioner.name) {
-      const names = practitioner.name
-        .map((name: HumanName) => {
-          const given = name.given?.join(" ") ?? "";
-          const family = name.family ?? "";
-          return `${given} ${family}`.trim();
-        })
-        .join(FIELD_SEPARATOR);
-      parts.push(`Name: ${names}`);
-    }
+    const names = formatHumanNames({ names: practitioner.name, isDebug });
+    if (names) parts.push(names);
 
-    // Add telecom
-    if (practitioner.telecom) {
-      const telecoms = practitioner.telecom
-        .map(t => `${t.system ?? "unknown"}: ${t.value}`)
-        .join(FIELD_SEPARATOR);
-      parts.push(`Contact: ${telecoms}`);
-    }
+    const telecoms = formatTelecoms({ telecoms: practitioner.telecom, label: "Contact", isDebug });
+    if (telecoms) parts.push(telecoms);
 
-    // Add address
-    if (practitioner.address) {
-      const addresses = practitioner.address
-        .map(addr => {
-          const components = [
-            addr.line?.join(", "),
-            addr.city,
-            addr.state,
-            addr.postalCode,
-            addr.country,
-          ].filter(Boolean);
-          return components.join(", ");
-        })
-        .join(FIELD_SEPARATOR);
-      parts.push(`Address: ${addresses}`);
-    }
+    const addresses = formatAddresses({
+      addresses: practitioner.address,
+      label: "Address",
+      isDebug,
+    });
+    if (addresses) parts.push(addresses);
 
-    // Add gender
     if (practitioner.gender) {
-      parts.push(`Gender: ${practitioner.gender}`);
+      parts.push(isDebug ? `Gender: ${practitioner.gender}` : practitioner.gender);
     }
 
-    // Add birth date
     if (practitioner.birthDate) {
-      parts.push(`DOB: ${practitioner.birthDate}`);
+      parts.push(isDebug ? `DOB: ${practitioner.birthDate}` : practitioner.birthDate);
     }
 
-    // Add qualification
-    if (practitioner.qualification) {
-      const qualifications = practitioner.qualification
-        .map(q => {
-          const parts: string[] = [];
-          if (q.code) {
-            const codes = q.code.coding?.map(c => c.display ?? c.code).join(FIELD_SEPARATOR) ?? "";
-            parts.push(codes);
-          }
-          if (q.period) {
-            const start = q.period.start ?? "unknown";
-            const end = q.period.end ?? "ongoing";
-            parts.push(`${start} to ${end}`);
-          }
-          if (q.issuer) {
-            parts.push(`Issuer: ${q.issuer.display ?? q.issuer.reference}`);
-          }
-          return parts.join(FIELD_SEPARATOR);
-        })
-        .join(FIELD_SEPARATOR);
-      parts.push(`Qualification: ${qualifications}`);
+    const qualifications = practitioner.qualification?.map(q => {
+      const parts: string[] = [];
+      const codes = formatCodeableConcept({ concept: q.code, isDebug });
+      if (codes) parts.push(codes);
+      // const period = formatPeriod(q.period);
+      // if (period) parts.push(period);
+      // const issuer = formatReference(q.issuer, "Issuer");
+      // if (issuer) parts.push(issuer);
+      return parts.join(FIELD_SEPARATOR);
+    });
+    if (qualifications && qualifications.length > 0) {
+      const joined = qualifications.join(FIELD_SEPARATOR);
+      parts.push(isDebug ? `Qualification: ${joined}` : joined);
     }
 
     return parts.join(FIELD_SEPARATOR);

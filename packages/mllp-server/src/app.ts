@@ -10,9 +10,11 @@ import {
   getOrCreateMessageDatetime,
 } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/msh";
 import {
-  buildHl7MessageFileKey,
+  createFileKeyHl7Message,
   getCxIdAndPatientIdOrFail,
 } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
+import { basicToExtendedIso8601 } from "@metriport/shared/common/date";
+import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { capture } from "@metriport/core/util";
 import { Config } from "@metriport/core/util/config";
@@ -20,7 +22,6 @@ import type { Logger } from "@metriport/core/util/log";
 import { out } from "@metriport/core/util/log";
 import { initSentry } from "./sentry";
 import { withErrorHandling } from "./utils";
-import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 
 initSentry();
 
@@ -42,7 +43,7 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
     connection.addEventListener(
       "message",
       withErrorHandling(async ({ message }) => {
-        const timestamp = getOrCreateMessageDatetime(message);
+        const timestamp = basicToExtendedIso8601(getOrCreateMessageDatetime(message));
         const messageId = getMessageUniqueIdentifier(message);
         log(
           `${timestamp}> New Message (id: ${messageId}) from ${connection.socket.remoteAddress}:${connection.socket.remotePort}`
@@ -71,7 +72,7 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
         log("Init S3 upload");
         s3Utils.uploadFile({
           bucket: bucketName,
-          key: buildHl7MessageFileKey({
+          key: createFileKeyHl7Message({
             cxId,
             patientId,
             timestamp,

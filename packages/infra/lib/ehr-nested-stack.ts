@@ -389,7 +389,7 @@ export class EhrNestedStack extends NestedStack {
         EHR_BUNDLE_BUCKET_NAME: ehrBundleBucket.bucketName,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
-      layers: [lambdaLayers.shared],
+      layers: [lambdaLayers.shared, lambdaLayers.langchain],
       vpc,
       alarmSnsAction: alarmAction,
     });
@@ -627,7 +627,7 @@ export class EhrNestedStack extends NestedStack {
       name,
       fifo: true,
       createDLQ: true,
-      lambdaLayers: [lambdaLayers.shared],
+      lambdaLayers: [lambdaLayers.shared, lambdaLayers.langchain],
       envType,
       alarmSnsAction: alarmAction,
     });
@@ -648,7 +648,7 @@ export class EhrNestedStack extends NestedStack {
         MAX_ATTEMPTS: queueSettings.maxReceiveCount.toString(),
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
-      layers: [lambdaLayers.shared],
+      layers: [lambdaLayers.shared, lambdaLayers.langchain],
       vpc,
       alarmSnsAction: alarmAction,
     });
@@ -687,7 +687,7 @@ export class EhrNestedStack extends NestedStack {
       name,
       fifo: true,
       createDLQ: true,
-      lambdaLayers: [lambdaLayers.shared],
+      lambdaLayers: [lambdaLayers.shared, lambdaLayers.langchain],
       envType,
       alarmSnsAction: alarmAction,
     });
@@ -707,7 +707,7 @@ export class EhrNestedStack extends NestedStack {
         MAX_ATTEMPTS: queueSettings.maxReceiveCount.toString(),
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
-      layers: [lambdaLayers.shared],
+      layers: [lambdaLayers.shared, lambdaLayers.langchain],
       vpc,
       alarmSnsAction: alarmAction,
     });

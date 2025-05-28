@@ -1,44 +1,29 @@
 import { Patient } from "@medplum/fhirtypes";
-import { FHIRResourceToString } from "../types";
-import { FIELD_SEPARATOR } from "../shared/separator";
-import { formatIdentifiers } from "../shared/identifier";
-import { formatHumanNames } from "../shared/human-name";
+import { FHIRResourceToString } from "../fhir-resource-to-string";
 import { formatAddresses } from "../shared/address";
+import { formatHumanNames } from "../shared/human-name";
+import { formatIdentifiers } from "../shared/identifier";
+import { FIELD_SEPARATOR } from "../shared/separator";
 
 /**
  * Converts a FHIR Patient resource to a string representation
  */
 export class PatientToString implements FHIRResourceToString<Patient> {
-  toString(patient: Patient): string {
+  toString(patient: Patient, isDebug?: boolean): string | undefined {
     const parts: string[] = [];
 
-    // Add identifier
-    const identifierStr = formatIdentifiers(patient.identifier);
-    if (identifierStr) {
-      parts.push(identifierStr);
-    }
+    const identifierStr = formatIdentifiers({ identifiers: patient.identifier });
+    if (identifierStr) parts.push(identifierStr);
 
-    // Add name
-    const nameStr = formatHumanNames(patient.name);
-    if (nameStr) {
-      parts.push(nameStr);
-    }
+    const nameStr = formatHumanNames({ names: patient.name, isDebug });
+    if (nameStr) parts.push(nameStr);
 
-    // Add address
-    const addressStr = formatAddresses(patient.address);
-    if (addressStr) {
-      parts.push(addressStr);
-    }
+    const addressStr = formatAddresses({ addresses: patient.address, label: "Address", isDebug });
+    if (addressStr) parts.push(addressStr);
 
-    // Add birth date
-    if (patient.birthDate) {
-      parts.push(`DOB: ${patient.birthDate}`);
-    }
+    if (patient.birthDate) parts.push(isDebug ? `DOB: ${patient.birthDate}` : patient.birthDate);
 
-    // Add gender
-    if (patient.gender) {
-      parts.push(`Gender: ${patient.gender}`);
-    }
+    if (patient.gender) parts.push(isDebug ? `Gender: ${patient.gender}` : patient.gender);
 
     return parts.join(FIELD_SEPARATOR);
   }

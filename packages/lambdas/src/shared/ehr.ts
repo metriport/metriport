@@ -1,8 +1,6 @@
-import { ProcessLinkPatientRequest as ElationProcessLinkPatientRequest } from "@metriport/core/external/ehr/lambdas/elation/link-patient/elation-link-patient";
-import { AppointmentMethods } from "@metriport/core/external/ehr/lambdas/get-appointments/ehr-get-appointments";
-import { GetBundleByResourceTypeMethods } from "@metriport/core/external/ehr/lambdas/get-bundle-by-resource-type/ehr-get-bundle-by-resource-type";
-import { ProcessLinkPatientRequest as HealthieProcessLinkPatientRequest } from "@metriport/core/external/ehr/lambdas/healthie/link-patient/healthie-link-patient";
-import { ProcessSyncPatientRequest } from "@metriport/core/external/ehr/lambdas/sync-patient/ehr-sync-patient";
+import { ProcessLinkPatientRequest as ElationProcessLinkPatientRequest } from "@metriport/core/external/ehr/command/elation/link-patient/elation-link-patient";
+import { ProcessLinkPatientRequest as HealthieProcessLinkPatientRequest } from "@metriport/core/external/ehr/command/healthie/link-patient/healthie-link-patient";
+import { ProcessSyncPatientRequest } from "@metriport/core/external/ehr/command/sync-patient/ehr-sync-patient";
 import { MetriportError } from "@metriport/shared";
 import { EhrSources, isEhrSource } from "@metriport/shared/interface/external/ehr/source";
 import { z } from "zod";
@@ -36,7 +34,7 @@ export function parseSyncPatient(bodyAsJson: SyncPatientPayload): ProcessSyncPat
 
   const departmentIdRaw = bodyAsJson.departmentId;
   const isValidDeparmentId = departmentIdRaw === undefined || typeof departmentIdRaw === "string";
-  if (!isValidDeparmentId) throw new MetriportError("Invalid patientId");
+  if (!isValidDeparmentId) throw new MetriportError("Invalid departmentId");
 
   const triggerDqRaw = bodyAsJson.triggerDq;
   if (triggerDqRaw === undefined) throw new MetriportError("Missing triggerDq");
@@ -93,7 +91,7 @@ export const ehrCreateResourceDiffBundlesSchema = z.object({
 export const ehrGetAppointmentsSchema = z.object({
   ehr: z.nativeEnum(EhrSources),
   environment: z.string(),
-  method: z.nativeEnum(AppointmentMethods),
+  method: z.string(),
   tokenId: z.string().optional(),
   cxId: z.string(),
   practiceId: z.string(),
@@ -104,7 +102,7 @@ export const ehrGetAppointmentsSchema = z.object({
 export const ehrGetBundleByResourceTypeSchema = z.object({
   ehr: z.nativeEnum(EhrSources),
   environment: z.string(),
-  method: z.nativeEnum(GetBundleByResourceTypeMethods),
+  method: z.string(),
   tokenId: z.string().optional(),
   cxId: z.string(),
   practiceId: z.string(),

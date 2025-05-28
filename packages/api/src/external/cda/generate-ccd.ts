@@ -1,4 +1,5 @@
 import { Bundle, BundleEntry, Resource } from "@medplum/fhirtypes";
+import { getConsolidatedPatientData } from "@metriport/core/command/consolidated/consolidated-get";
 import {
   CCD_SUFFIX,
   createUploadFilePath,
@@ -13,13 +14,12 @@ import { out } from "@metriport/core/util/log";
 import { JSON_APP_MIME_TYPE } from "@metriport/core/util/mime";
 import { capture } from "@metriport/core/util/notifications";
 import { errorToString } from "@metriport/shared";
-import { getConsolidatedPatientData } from "../../command/medical/patient/consolidated-get";
 import { convertFhirToCda } from "../../command/medical/patient/convert-fhir-to-cda";
+import { normalizeBundle } from "../../command/medical/patient/data-contribution/shared";
 import { bundleSchema } from "../../routes/medical/schemas/fhir";
 import { Config } from "../../shared/config";
 import { validateFhirEntries } from "../fhir/shared/json-validator";
 import { generateEmptyCcd } from "./generate-empty-ccd";
-import { normalizeBundle } from "../../command/medical/patient/data-contribution/shared";
 
 const region = Config.getAWSRegion();
 const bucket = Config.getMedicalDocumentsBucketName();

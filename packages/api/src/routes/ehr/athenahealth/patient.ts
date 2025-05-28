@@ -78,7 +78,6 @@ router.post(
  * The job is started asynchronously.
  * @param req.params.id The ID of AthenaHealth Patient.
  * @param req.query.practiceId The ID of AthenaHealth Practice.
- * @param req.query.direction The direction of the resource diff bundles to create.
  * @returns The job ID of the resource diff job
  */
 router.post(
@@ -105,7 +104,6 @@ router.post(
  * Retrieves the latest resource diff job and pre-signed URLs for the bundles if completed
  * @param req.params.id The ID of AthenaHealth Patient.
  * @param req.query.practiceId The ID of AthenaHealth Practice.
- * @param req.query.direction The direction of the resource diff bundles to fetch.
  * @returns Resource diff job and pre-signed URLs for the bundles if completed
  */
 router.get(
@@ -134,7 +132,6 @@ router.get(
  * @param req.params.id The ID of AthenaHealth Patient.
  * @param req.params.jobId The job ID of the job
  * @param req.query.practiceId The ID of AthenaHealth Practice.
- * @param req.query.direction The direction of the resource diff bundles to fetch.
  * @returns Resource diff job and pre-signed URLs for the bundles if completed
  */
 router.get(

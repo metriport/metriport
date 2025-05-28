@@ -1,7 +1,6 @@
-import { GetAppointmentsRequest } from "@metriport/core/external/ehr/lambdas/get-appointments/ehr-get-appointments";
-import { EhrGetAppointmentsLocal } from "@metriport/core/external/ehr/lambdas/get-appointments/ehr-get-appointments-local";
+import { GetAppointmentsRequest } from "@metriport/core/external/ehr/command/get-appointments/ehr-get-appointments";
+import { EhrGetAppointmentsDirect } from "@metriport/core/external/ehr/command/get-appointments/ehr-get-appointments-direct";
 import { MetriportError } from "@metriport/shared";
-import * as Sentry from "@sentry/serverless";
 import { SQSEvent } from "aws-lambda";
 import { capture } from "./shared/capture";
 import { ehrGetAppointmentsSchema } from "./shared/ehr";
@@ -16,7 +15,7 @@ capture.init();
 const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
 
 // TODO move to capture.wrapHandler()
-export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
+export const handler = capture.wrapHandler(async (event: SQSEvent) => {
   capture.setExtra({ event, context: lambdaName });
 
   const startedAt = new Date().getTime();
@@ -30,7 +29,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
   const log = prefixedLog(`ehr ${ehr}, cxId ${cxId}, practiceId ${practiceId}`);
   log(`Parsed: ${JSON.stringify(parsedBody)}`);
 
-  const ehrGetAppointmentsHandler = new EhrGetAppointmentsLocal();
+  const ehrGetAppointmentsHandler = new EhrGetAppointmentsDirect();
   const appointments = await ehrGetAppointmentsHandler.getAppointments(parsedBody);
 
   const finishedAt = new Date().getTime();

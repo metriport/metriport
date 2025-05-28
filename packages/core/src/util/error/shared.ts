@@ -53,12 +53,16 @@ export function getErrorMessage(error: unknown) {
   return errorToString(error);
 }
 
-export function processAsyncError(msg: string, log?: typeof console.log | undefined) {
+export function processAsyncError(
+  msg: string,
+  log?: typeof console.log | undefined,
+  useMsgAsTitle = false
+) {
   if (!log) log = out().log;
-  return (err: unknown) => {
+  return (error: unknown) => {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    log!(`${msg}: ${getErrorMessage(err)}`);
-    if (err instanceof BadRequestError || err instanceof NotFoundError) return;
-    capture.error(err, { extra: { message: msg, err } });
+    log!(`${msg}: ${getErrorMessage(error)}`);
+    if (error instanceof BadRequestError || error instanceof NotFoundError) return;
+    capture.error(useMsgAsTitle ? msg : error, { extra: { message: msg, error } });
   };
 }

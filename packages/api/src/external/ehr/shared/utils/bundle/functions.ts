@@ -49,6 +49,7 @@ const bundleClientFunctionsByEhr: Record<EhrSources, BundleClientFunctions | und
   },
   [EhrSources.elation]: undefined,
   [EhrSources.healthie]: undefined,
+  [EhrSources.eclinicalworks]: undefined,
 };
 
 export function getBundleClientFunctions(ehr: EhrSources): BundleClientFunctions {
