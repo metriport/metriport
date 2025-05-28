@@ -1,8 +1,8 @@
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { NotFoundError } from "@metriport/shared";
+import { Op } from "sequelize";
 import { JwtToken, JwtTokenData, JwtTokenPerSource, JwtTokenSource } from "../domain/jwt-token";
 import { JwtTokenModel } from "../models/jwt-token";
-import { Op } from "sequelize";
 
 export type JwtTokenParams = JwtTokenPerSource;
 

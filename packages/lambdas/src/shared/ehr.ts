@@ -35,7 +35,7 @@ export function parseSyncPatient(bodyAsJson: SyncPatientPayload): ProcessSyncPat
 
   const departmentIdRaw = bodyAsJson.departmentId;
   const isValidDeparmentId = departmentIdRaw === undefined || typeof departmentIdRaw === "string";
-  if (!isValidDeparmentId) throw new MetriportError("Invalid patientId");
+  if (!isValidDeparmentId) throw new MetriportError("Invalid departmentId");
 
   const triggerDqRaw = bodyAsJson.triggerDq;
   if (triggerDqRaw === undefined) throw new MetriportError("Missing triggerDq");

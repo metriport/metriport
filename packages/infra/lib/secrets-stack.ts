@@ -78,6 +78,13 @@ export class SecretsStack extends Stack {
       logSecretInfo(this, secret, secretName);
     }
 
+    if (props.config.surescripts) {
+      for (const secretName of Object.values(props.config.surescripts.secrets)) {
+        const secret = makeSecret(secretName);
+        logSecretInfo(this, secret, secretName);
+      }
+    }
+
     if (!isSandbox(props.config)) {
       for (const secretName of Object.values(props.config.hl7Notification.secrets)) {
         const secret = makeSecret(secretName);

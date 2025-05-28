@@ -5,19 +5,18 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { createOrganization } from "../../../command/medical/organization/create-organization";
+import { getOrganizationsOrFail } from "../../../command/medical/organization/get-organization";
 import { updateOrganization } from "../../../command/medical/organization/update-organization";
 import { createOrUpdateOrganization as cqCreateOrUpdateOrganization } from "../../../external/carequality/command/create-or-update-organization";
 import { createOrUpdateCWOrganization } from "../../../external/commonwell/command/create-or-update-cw-organization";
 import { requestLogger } from "../../helpers/request-logger";
-import { getUUIDFrom } from "../../schemas/uuid";
-import { asyncHandler, getFromQueryAsBoolean } from "../../util";
 import { internalDtoFromModel } from "../../medical/dtos/organizationDTO";
 import { organiationInternalDetailsSchema } from "../../medical/schemas/organization";
-
+import { getUUIDFrom, validateUUID } from "../../schemas/uuid";
+import { asyncHandler, getFromQueryAsArrayOrFail, getFromQueryAsBoolean } from "../../util";
 const router = Router();
 
 /** ---------------------------------------------------------------------------
- *
  * PUT /internal/organization
  *
  * Creates or updates a organization and registers it within HIEs if new.
@@ -41,6 +40,7 @@ router.put(
       cxId,
       type: orgDetails.businessType,
       data: {
+        shortcode: orgDetails.shortcode,
         name: orgDetails.nameInMetriport,
         type: orgDetails.type,
         location: {
@@ -80,6 +80,22 @@ router.put(
       }).catch(processAsyncError("cw.internal.organization"));
     }
     return res.status(httpStatus.OK).json(internalDtoFromModel(org));
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * GET /internal/organization/
+ *
+ * Returns an organization from the db.
+ */
+router.get(
+  "/",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxIds = getFromQueryAsArrayOrFail("cxIds", req).map<string>(id => validateUUID(id));
+    const orgs = await getOrganizationsOrFail({ cxIds });
+
+    return res.status(httpStatus.OK).json(orgs.map(internalDtoFromModel));
   })
 );
 
