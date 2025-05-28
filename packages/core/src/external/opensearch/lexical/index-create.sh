@@ -2,7 +2,7 @@
 
 # Create index
 # Update properties with _
-curl -XPUT "/medical-resources-fhir-1" -H 'Content-Type: application/json' -d'
+curl -XPUT "/medical-resources-1" -H 'Content-Type: application/json' -d'
 {
   "mappings": {
     "properties": {
@@ -40,8 +40,8 @@ curl -XPOST "/_aliases" -H 'Content-Type: application/json' -d'
   "actions": [
     {
       "add": {
-        "index": "medical-resources-fhir-1",
-        "alias": "medical-resources-fhir"
+        "index": "medical-resources-1",
+        "alias": "medical-resources"
       }
     }
   ]

@@ -14,7 +14,7 @@ export type LambdaConfig = {
 export type OpenSearchConnectorConfig = {
   openSearch: Omit<OpenSearchConstructProps, "region" | "vpc" | "awsAccount"> & {
     indexName: string;
-    lexicalIndexName: string; // TODO eng-268 rename this to consolidatedSearchIndexName
+    consolidatedIndexName: string;
   };
   lambda: LambdaConfig;
 };

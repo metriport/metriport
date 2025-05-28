@@ -5,12 +5,8 @@ export function getConfigs(): OpenSearchFhirSearcherConfig {
   return {
     region: Config.getAWSRegion(),
     endpoint: Config.getSearchEndpoint(),
-    indexName: getFhirIndexName(Config.getConsolidatedSearchIndexName()),
+    indexName: Config.getConsolidatedSearchIndexName(),
     username: Config.getSearchUsername(),
     password: Config.getSearchPassword(),
   };
-}
-
-function getFhirIndexName(indexName: string) {
-  return indexName + "-fhir";
 }

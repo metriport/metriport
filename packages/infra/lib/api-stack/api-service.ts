@@ -128,7 +128,6 @@ export function createAPIService({
   searchAuth,
   searchIndexName,
   consolidatedSearchLambda,
-  consolidatedSearchIndexName,
   consolidatedIngestionQueue,
   featureFlagsTable,
   cookieStore,
@@ -173,7 +172,6 @@ export function createAPIService({
   searchAuth: { userName: string; secret: ISecret };
   searchIndexName: string;
   consolidatedSearchLambda: ILambda;
-  consolidatedSearchIndexName: string;
   consolidatedIngestionQueue: IQueue;
   featureFlagsTable: dynamodb.Table;
   cookieStore: secret.ISecret | undefined;
@@ -319,7 +317,6 @@ export function createAPIService({
           SEARCH_INDEX: searchIndexName,
           CONSOLIDATED_SEARCH_LAMBDA_NAME: consolidatedSearchLambda.functionName,
           CONSOLIDATED_INGESTION_QUEUE_URL: consolidatedIngestionQueue.queueUrl,
-          CONSOLIDATED_SEARCH_INDEX: consolidatedSearchIndexName, // sent to API so it can create the index if needed
           ...(props.config.carequality?.envVars?.CQ_ORG_URLS && {
             CQ_ORG_URLS: props.config.carequality.envVars.CQ_ORG_URLS,
           }),
