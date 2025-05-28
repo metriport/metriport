@@ -413,7 +413,7 @@ export class APIStack extends Stack {
           userName: searchDomainUserName,
           secret: searchDomainSecret,
         },
-        consolidatedIndexName: props.config.openSearch.openSearch.lexicalIndexName,
+        consolidatedIndexName: props.config.openSearch.openSearch.consolidatedIndexName,
         documentIndexName: props.config.openSearch.openSearch.indexName,
       },
     });
@@ -598,7 +598,6 @@ export class APIStack extends Stack {
       fhirToBundleCountLambda,
       consolidatedSearchLambda,
       consolidatedIngestionQueue,
-      consolidatedSearchIndexName: props.config.openSearch.openSearch.lexicalIndexName,
       rateLimitTable,
       searchIngestionQueue: ccdaSearchIngestionQueue,
       searchEndpoint: searchDomainEndpoint,
