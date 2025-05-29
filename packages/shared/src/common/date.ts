@@ -115,8 +115,11 @@ export function sortDate(
  * @param separator - The separator to use between the date components
  * @returns The date in YYYYMMDD or YYYY-MM-DD format (if separator is "-")
  */
-export function convertDateToString(date: Date, separator = "") {
-  return dayjs(date).utc().format(["YYYY", "MM", "DD"].join(separator));
+export function convertDateToString(
+  date: Date,
+  { separator = "", useUtc = true }: { separator?: string; useUtc?: boolean } = {}
+) {
+  return (useUtc ? dayjs(date).utc() : dayjs(date)).format(["YYYY", "MM", "DD"].join(separator));
 }
 
 /**
@@ -127,11 +130,14 @@ export function convertDateToString(date: Date, separator = "") {
  */
 export function convertDateToTimeString(
   date: Date,
-  { includeCentisecond = false }: { includeCentisecond?: boolean } = {}
+  {
+    useUtc = true,
+    includeCentisecond = false,
+  }: { useUtc?: boolean; includeCentisecond?: boolean } = {}
 ) {
-  return dayjs(date)
-    .utc()
-    .format(includeCentisecond ? "HHmmssSS" : "HHmmss");
+  return (useUtc ? dayjs(date).utc() : dayjs(date)).format(
+    includeCentisecond ? "HHmmssSS" : "HHmmss"
+  );
 }
 /**
  * Validates if timestamp adheres to YYYYMMDDHHMMSS format
