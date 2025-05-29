@@ -1,4 +1,3 @@
-import { GetBundleByResourceTypeMethods } from "@metriport/core/external/ehr/command/get-bundle-by-resource-type/ehr-get-bundle-by-resource-type-direct";
 import { buildEhrGetBundleByResourceTypeHandler } from "@metriport/core/external/ehr/command/get-bundle-by-resource-type/ehr-get-bundle-by-resource-type-factory";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { RefreshEhrBundleParamsForClient } from "../../../shared/utils/bundle/types";
@@ -19,7 +18,6 @@ export async function refreshEhrBundle({
   await handler.getBundleByResourceType({
     ehr: EhrSources.athena,
     environment,
-    method: GetBundleByResourceTypeMethods.athenaGetBundleByResourceType,
     tokenId,
     cxId,
     practiceId,
