@@ -192,42 +192,48 @@ export class SurescriptsSftpClient extends SftpClient {
   }
 
   async synchronize(event: SurescriptsSynchronizeEvent) {
+    const debug = event.debug ?? console.debug;
+
     if (event.fromSurescripts) {
-      await this.copyFromSurescripts(event.dryRun);
+      debug("Copying from Surescripts...");
+      await this.copyFromSurescripts(event);
     } else if (event.toSurescripts) {
-      await this.copyToSurescripts(event.dryRun);
+      await this.copyToSurescripts(event);
     } else if (event.fileName) {
-      await this.copyFileFromSurescripts(event.fileName, event.dryRun);
+      await this.copyFileFromSurescripts(event.fileName, event);
     }
   }
 
-  async copyFromSurescripts(dryRun = false) {
+  async copyFromSurescripts(event: SurescriptsSynchronizeEvent) {
     const sftpFiles = await this.list("/" + INCOMING_NAME);
     const s3Files = await this.s3.listObjects(this.bucket, INCOMING_NAME + "/");
     const s3FileSet = new Set(s3Files.map(file => file.Key));
+    event.debug?.("Found " + s3Files.length + " files in S3");
 
     for (const fileName of sftpFiles) {
       const key = getS3Key(INCOMING_NAME, fileName);
 
       if (!s3FileSet.has(key)) {
-        await this.copyFileFromSurescripts(fileName, dryRun);
+        await this.copyFileFromSurescripts(fileName, event);
       }
     }
   }
 
   async copyFileFromSurescripts(
     fileName: string, // the base file name, without any directory prefixes
-    dryRun = false // only return the content without copying to S3
+    { dryRun, debug }: SurescriptsSynchronizeEvent = {}
   ): Promise<Buffer | null> {
     const sftpFileName = getSftpFileName(INCOMING_NAME, fileName);
     const exists = await this.exists(sftpFileName);
     if (!exists) {
+      debug?.("File does not exist in SFTP: " + sftpFileName);
       return null;
-    }
+    } else debug?.("File exists in SFTP: " + sftpFileName);
 
     const content = await this.read(sftpFileName);
     if (!dryRun) {
       const s3Key = getS3Key(INCOMING_NAME, fileName);
+      debug?.("Copying to S3: " + s3Key);
       await this.s3.uploadFile({
         bucket: this.bucket,
         key: s3Key,
@@ -237,12 +243,11 @@ export class SurescriptsSftpClient extends SftpClient {
     return content;
   }
 
-  async copyToSurescripts(dryRun = false) {
+  async copyToSurescripts(event: SurescriptsSynchronizeEvent) {
     const sftpHistory = await this.list("/" + HISTORY_NAME);
     const sftpHistorySet = new Set(sftpHistory);
 
     console.log("Found SFTP history with length " + sftpHistory.length);
-
     const s3Files = await this.s3.listObjects(this.bucket, OUTGOING_NAME + "/");
 
     for (const s3File of s3Files) {
@@ -252,19 +257,19 @@ export class SurescriptsSftpClient extends SftpClient {
       const sftpHistoryName = `${outgoingFileName}.${this.senderId}`;
       if (!sftpHistorySet.has(sftpHistoryName)) {
         console.log("DRY RUN: will copy to Surescripts: " + outgoingFileName);
-        await this.copyFileToSurescripts(outgoingFileName, dryRun);
+        await this.copyFileToSurescripts(outgoingFileName, event);
       }
     }
   }
 
   async copyFileToSurescripts(
     fileName: string, // the base file name, without any directory prefixes
-    dryRun = false // only return the content without uploading to SFTP
+    { dryRun, debug }: SurescriptsSynchronizeEvent = {}
   ): Promise<Buffer | null> {
     const s3Key = getS3Key(OUTGOING_NAME, fileName);
     const s3FileExists = await this.s3.fileExists(this.bucket, s3Key);
     if (!s3FileExists) {
-      console.log("File does not exist in S3: " + s3Key);
+      debug?.("File does not exist in S3: " + s3Key);
       return null;
     }
 

@@ -6,6 +6,7 @@ export interface SurescriptsSynchronizeEvent {
   transmissionId?: string;
   fromSurescripts?: boolean;
   toSurescripts?: boolean;
+  debug?: typeof console.debug;
 }
 
 export interface SurescriptsPatientLoadEvent {
