@@ -13,10 +13,6 @@ export type FetchBundleParams = BaseBundleParams & { bundleType: BundleType; job
 
 export type RefreshEhrBundleParams = BaseBundleParams;
 
-export type ContributeEhrOnlyBundleParams = Omit<BaseBundleParams, "resourceType"> & {
-  jobId: string;
-};
-
 type BaseBundleParamsForClient = Omit<BaseBundleParams, "ehr" | "resourceType"> & {
   resourceType: string;
   metriportPatientId: string;

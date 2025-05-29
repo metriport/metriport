@@ -98,14 +98,3 @@ export const ehrGetAppointmentsSchema = z.object({
   fromDate: z.coerce.date().optional(),
   toDate: z.coerce.date().optional(),
 });
-
-export const ehrGetBundleByResourceTypeSchema = z.object({
-  ehr: z.nativeEnum(EhrSources),
-  tokenId: z.string().optional(),
-  cxId: z.string(),
-  practiceId: z.string(),
-  metriportPatientId: z.string(),
-  ehrPatientId: z.string(),
-  resourceType: z.string(),
-  useCachedBundle: z.boolean(),
-});

@@ -1,9 +1,9 @@
 import { sleep } from "@metriport/shared";
 import { getDefaultBundle } from "@metriport/shared/interface/external/ehr/fhir-resource";
-import { refreshEhrBundle } from "../../../../api/bundle/refresh-ehr-bundle";
 import { setCreateResourceDiffBundlesJobEntryStatus } from "../../../../api/job/create-resource-diff-bundles/set-entry-status";
 import { BundleType } from "../../../../bundle/bundle-shared";
 import { createOrReplaceBundle as createOrReplaceBundleOnS3 } from "../../../../bundle/command/create-or-replace-bundle";
+import { getBundleByResourceType } from "../../../../command/ehr-get-bundle-by-resource-type";
 import { buildEhrComputeResourceDiffBundlesHandler } from "../compute/ehr-compute-resource-diff-bundles-factory";
 import { EhrRefreshEhrBundlesHandler, RefreshEhrBundlesRequest } from "./ehr-refresh-ehr-bundles";
 
@@ -32,12 +32,14 @@ export class EhrRefreshEhrBundlesLocal implements EhrRefreshEhrBundlesHandler {
     };
     try {
       await Promise.all([
-        refreshEhrBundle({
+        getBundleByResourceType({
           ehr,
           cxId,
           practiceId,
-          patientId: ehrPatientId,
+          ehrPatientId,
           resourceType,
+          metriportPatientId,
+          useCachedBundle: false,
         }),
         ...[BundleType.RESOURCE_DIFF_METRIPORT_ONLY, BundleType.RESOURCE_DIFF_EHR_ONLY].map(
           bundleType =>
