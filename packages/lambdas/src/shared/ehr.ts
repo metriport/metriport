@@ -94,6 +94,7 @@ export const ehrGetAppointmentsSchema = z.object({
   tokenId: z.string().optional(),
   cxId: z.string(),
   practiceId: z.string(),
+  departmentId: z.string().array().optional(),
   fromDate: z.coerce.date().optional(),
   toDate: z.coerce.date().optional(),
 });
