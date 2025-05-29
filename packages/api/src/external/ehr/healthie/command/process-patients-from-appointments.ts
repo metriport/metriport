@@ -25,7 +25,7 @@ import {
   parallelPatients,
   parallelPractices,
 } from "../../shared/utils/appointment";
-import { createHealthieClientWithEnvironment, LookupMode, LookupModes } from "../shared";
+import { LookupMode, LookupModes } from "../shared";
 import {
   SyncHealthiePatientIntoMetriportParams,
   UpdateHealthiePatientQuickNotesParams,
@@ -176,10 +176,8 @@ async function getAppointments({
   const { log } = out(
     `Healthie getAppointments - cxId ${cxId} practiceId ${practiceId} lookupMode ${lookupMode}`
   );
-  const { environment } = await createHealthieClientWithEnvironment({ cxId, practiceId });
   try {
     const appointments = await getAppointmentsFromApi({
-      environment,
       cxId,
       practiceId,
       lookupMode,
