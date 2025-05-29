@@ -4,8 +4,6 @@ import { MetriportError } from "@metriport/shared";
 import { EhrSource, EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { getCxMappingOrFail, getCxMappingsByCustomer } from "../../../../../../command/mapping/cx";
 import { getPatientMappings } from "../../../../../../command/mapping/patient";
-import { createCanvasClientWithTokenIdAndEnvironment } from "../../../../canvas/shared";
-import { createAthenaClientWithTokenIdAndEnvironment } from "../../../../athenahealth/shared";
 import { startCreateResourceDiffBundlesJob } from "./start-job";
 
 export type CreateResourceDiffBundlesParams = {
@@ -31,13 +29,8 @@ export async function startCreateResourceDiffBundlesJobsAcrossEhrs({
   const requestId = requestIdParam ?? uuidv7();
   for (const patientMapping of patientMappings) {
     if (patientMapping.source === EhrSources.canvas) {
-      const { tokenId } = await createCanvasClientWithTokenIdAndEnvironment({
-        cxId,
-        practiceId: patientMapping.externalId,
-      });
       startCreateResourceDiffBundlesJobAtEhr({
         ehr: EhrSources.canvas,
-        tokenId,
         cxId,
         ehrPatientId: patientMapping.externalId,
         requestId,
@@ -50,13 +43,8 @@ export async function startCreateResourceDiffBundlesJobsAcrossEhrs({
         });
       }
       const athenaPracticeId = `a-1.${patientPrefix}`;
-      const { tokenId } = await createAthenaClientWithTokenIdAndEnvironment({
-        cxId,
-        practiceId: patientMapping.externalId,
-      });
       startCreateResourceDiffBundlesJobAtEhr({
         ehr: EhrSources.athena,
-        tokenId,
         cxId,
         practiceId: athenaPracticeId,
         ehrPatientId: patientMapping.externalId,
@@ -68,14 +56,12 @@ export async function startCreateResourceDiffBundlesJobsAcrossEhrs({
 
 async function startCreateResourceDiffBundlesJobAtEhr({
   ehr,
-  tokenId,
   cxId,
   practiceId,
   ehrPatientId,
   requestId,
 }: {
   ehr: EhrSource;
-  tokenId: string;
   cxId: string;
   practiceId?: string;
   ehrPatientId: string;
@@ -86,7 +72,6 @@ async function startCreateResourceDiffBundlesJobAtEhr({
     : await getCxMappingWithoutPracticeId({ cxId, ehr });
   await startCreateResourceDiffBundlesJob({
     ehr,
-    tokenId,
     cxId,
     practiceId: cxMapping.externalId,
     ehrPatientId,
