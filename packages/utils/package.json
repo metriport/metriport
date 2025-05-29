@@ -25,6 +25,7 @@
     "get-consolidated": "ts-node src/customer-requests/get-consolidated",
     "download-docs": "ts-node src/customer-requests/download-docs",
     "mock-ihe-gateway": "ts-node src/carequality/mock-ihe-gateway",
+    "comprehend": "ts-node src/comprehend/index.ts",
     "integration-test-and-compare-total-resource-counts": "bash src/fhir-converter/scripts/run_integration_and_compare.sh",
     "compare-total-resource-counts": "bash src/fhir-converter/scripts/compare_total_resource_counts.sh",
     "compare-resource-counts-per-file": "bash src/fhir-converter/scripts/compare_resource_counts_per_file.sh",
