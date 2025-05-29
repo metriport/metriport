@@ -12,7 +12,7 @@ import {
 import { startCreateResourceDiffBundlesJob } from "../../../external/ehr/shared/job/bundle/create-resource-diff-bundles/start-job";
 import { requestLogger } from "../../helpers/request-logger";
 import { getUUIDFrom } from "../../schemas/uuid";
-import { asyncHandler, getFrom, getFromQueryOrFail } from "../../util";
+import { asyncHandler, getFrom, getFromQuery, getFromQueryOrFail } from "../../util";
 
 const router = Router();
 
@@ -25,6 +25,7 @@ const router = Router();
  * @param req.query.cxId - The CX ID of the patient.
  * @param req.params.id - The patient id of the EHR patient.
  * @param req.query.practiceId - The practice id of the EHR patient.
+ * @param req.query.tokenId - The token id of the JWT token to use in the job clients. Optional.
  * @returns The job ID of the resource diff job
  */
 router.post(
@@ -36,8 +37,10 @@ router.post(
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const patientId = getFrom("params").orFail("id", req);
     const practiceId = getFromQueryOrFail("practiceId", req);
+    const tokenId = getFromQuery("tokenId", req);
     const jobId = await startCreateResourceDiffBundlesJob({
       ehr,
+      ...(tokenId ? { tokenId } : {}),
       cxId,
       ehrPatientId: patientId,
       practiceId,

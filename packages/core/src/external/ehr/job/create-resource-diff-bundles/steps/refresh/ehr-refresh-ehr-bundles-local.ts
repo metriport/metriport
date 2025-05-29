@@ -15,6 +15,7 @@ export class EhrRefreshEhrBundlesLocal implements EhrRefreshEhrBundlesHandler {
   async refreshEhrBundles(payload: RefreshEhrBundlesRequest): Promise<void> {
     const {
       ehr,
+      tokenId,
       cxId,
       practiceId,
       metriportPatientId,
@@ -34,6 +35,7 @@ export class EhrRefreshEhrBundlesLocal implements EhrRefreshEhrBundlesHandler {
       await Promise.all([
         getBundleByResourceType({
           ehr,
+          ...(tokenId ? { tokenId } : {}),
           cxId,
           practiceId,
           ehrPatientId,
