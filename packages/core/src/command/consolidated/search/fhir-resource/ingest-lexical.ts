@@ -1,24 +1,17 @@
+import { timed } from "@metriport/shared/util/duration";
 import { Patient } from "../../../../domain/patient";
-import {
-  OpenSearchLexicalSearcher,
-  OpenSearchLexicalSearcherConfig,
-} from "../../../../external/opensearch/lexical/lexical-searcher";
+import { OpenSearchFhirIngestor } from "../../../../external/opensearch/fhir-ingestor";
 import { OnBulkItemError } from "../../../../external/opensearch/shared/bulk";
-import {
-  convertFhirResourceToTextToIngestRequestResource,
-  OpenSearchTextIngestor,
-} from "../../../../external/opensearch/text-ingestor";
 import { capture, out } from "../../../../util";
-import { Config } from "../../../../util/config";
-import { getConsolidatedAsText } from "../../consolidated-get";
+import { getConsolidatedPatientData } from "../../consolidated-get";
+import { getConfigs } from "./fhir-config";
 
 /**
  * Ingest a patient's consolidated resources into OpenSearch for lexical search.
  *
  * @param patient The patient to ingest.
- * @param onItemError A callback to handle errors when ingesting a resource.
  */
-export async function ingestLexical({
+export async function ingestPatientConsolidated({
   patient,
   onItemError,
 }: {
@@ -27,18 +20,24 @@ export async function ingestLexical({
 }) {
   const { log } = out(`ingestLexical - cx ${patient.cxId}, pt ${patient.id}`);
 
-  const ingestor = new OpenSearchTextIngestor({
-    ...getConfigs(),
-    settings: { logLevel: "info" },
-  });
+  const ingestor = new OpenSearchFhirIngestor(getConfigs());
 
-  const [convertedResources] = await Promise.all([
-    getConsolidatedAsText({ patient }),
+  log("Getting consolidated and cleaning up the index...");
+  const [bundle] = await Promise.all([
+    timed(() => getConsolidatedPatientData({ patient }), "getConsolidatedPatientData", log),
     ingestor.delete({ cxId: patient.cxId, patientId: patient.id }),
   ]);
 
+  const resources =
+    bundle.entry?.flatMap(entry => {
+      const resource = entry.resource;
+      if (!resource) return [];
+      if (resource.resourceType === "Patient") return [];
+      return resource;
+    }) ?? [];
+
+  log("Done, calling ingestBulk...");
   const startedAt = Date.now();
-  const resources = convertedResources.map(convertFhirResourceToTextToIngestRequestResource);
   const errors = await ingestor.ingestBulk({
     cxId: patient.cxId,
     patientId: patient.id,
@@ -49,25 +48,7 @@ export async function ingestLexical({
 
   if (errors.size > 0) captureErrors({ cxId: patient.cxId, patientId: patient.id, errors, log });
 
-  log(`Ingested ${convertedResources.length} resources in ${elapsedTime} ms`);
-}
-
-/**
- * Initialize the lexical index in OpenSearch.
- */
-export async function initializeLexicalIndex() {
-  const searchService = new OpenSearchLexicalSearcher(getConfigs());
-  await searchService.createIndexIfNotExists();
-}
-
-function getConfigs(): OpenSearchLexicalSearcherConfig {
-  return {
-    region: Config.getAWSRegion(),
-    endpoint: Config.getSearchEndpoint(),
-    indexName: Config.getLexicalSearchIndexName(),
-    username: Config.getSearchUsername(),
-    password: Config.getSearchPassword(),
-  };
+  log(`Ingested ${resources.length} resources in ${elapsedTime} ms`);
 }
 
 function captureErrors({

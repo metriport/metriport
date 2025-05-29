@@ -6,10 +6,9 @@ import { SQSEvent } from "aws-lambda";
 import { capture } from "./shared/capture";
 import { getEnvOrFail } from "./shared/env";
 import { prefixedLog } from "./shared/log";
+import { parseCxIdAndJob, parseFacilityId } from "./shared/parse-body";
 import {
-  parseCxIdAndJob,
   parseDisableWebhooksOrFail,
-  parseFacilityId,
   parseRerunPdOnNewDemos,
   parseTriggerConsolidatedOrFail,
 } from "./shared/patient-import";
@@ -86,7 +85,7 @@ function parseBody(body?: unknown): Omit<ProcessPatientCreateRequest, "rowCsv" |
   const bodyAsJson = JSON.parse(bodyString);
 
   const { cxIdRaw, jobIdRaw } = parseCxIdAndJob(bodyAsJson);
-  const { facilityIdRaw } = parseFacilityId(bodyAsJson);
+  const facilityIdRaw = parseFacilityId(bodyAsJson);
   const triggerConsolidatedRaw = parseTriggerConsolidatedOrFail(bodyAsJson);
   const disableWebhooksRaw = parseDisableWebhooksOrFail(bodyAsJson);
   const rerunPdOnNewDemographicsRaw = parseRerunPdOnNewDemos(bodyAsJson);
