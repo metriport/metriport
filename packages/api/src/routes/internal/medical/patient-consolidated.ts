@@ -146,24 +146,37 @@ router.post(
  *
  * Initializes the indexes (if needed).
  *
+ * Either patientIds or all must be provided.
+ *
  * @param req.query.cxId The customer ID.
  * @param req.query.patientIds The patient IDs to ingest, if not provided, ALL PATIENTS will be ingested!
+ * @param req.query.all Flag to confirm we want to ingest all patients for the given customer.
  */
 router.post(
   "/search/ingest",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const patientIds = getFromQueryAsArray("patientIds", req) ?? [];
+    const patientIdsRaw = getFromQueryAsArray("patientIds", req);
+    const allRaw = getFromQueryAsBoolean("all", req);
+    if (!patientIdsRaw && !allRaw) {
+      throw new BadRequestError("Either 'patientIds' or 'all' must be provided");
+    }
+    const allPatients = allRaw ?? false;
+    const patientIds = (patientIdsRaw ?? []).filter(Boolean);
 
     const { log } = out(`internal ingest - cx ${cxId}`);
 
     log(`Initialized indexes (if needed), patient IDs count: ${patientIds.length}`);
 
     if (patientIds.length < 1) {
-      log(`No patientIds provided, getting all patients for this customer`);
-      const allPatientIds = await getPatientIds({ cxId });
-      patientIds.push(...allPatientIds);
+      if (allPatients) {
+        log(`No patientIds provided, getting all patients for this customer`);
+        const allPatientIds = await getPatientIds({ cxId });
+        patientIds.push(...allPatientIds);
+      } else {
+        throw new BadRequestError("No 'patientIds' provided and 'all' is false");
+      }
     }
 
     log(`Requesting ingestion of ${patientIds.length} patients (asynchronously)...`);
