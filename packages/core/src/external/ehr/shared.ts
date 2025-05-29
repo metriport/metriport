@@ -302,6 +302,7 @@ export function getConditionStatus(condition: Condition): string | undefined {
 }
 
 export type GetResourceBundleByResourceIdParams = {
+  tokenId?: string;
   cxId: string;
   practiceId: string;
   metriportPatientId: string;

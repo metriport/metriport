@@ -27,6 +27,7 @@ export class EhrContributeResourceDiffBundlesDirect
   ): Promise<void> {
     const {
       ehr,
+      tokenId,
       cxId,
       practiceId,
       metriportPatientId,
@@ -55,7 +56,8 @@ export class EhrContributeResourceDiffBundlesDirect
       const getResourceBundleByResourceId = getEhrResourceBundleByResourceId(ehr);
       for (const { id, type } of references.missingReferences) {
         try {
-          const resource = await getResourceBundleByResourceId({
+          const bundle = await getResourceBundleByResourceId({
+            ...(tokenId && { tokenId }),
             cxId,
             practiceId,
             metriportPatientId,
@@ -63,6 +65,7 @@ export class EhrContributeResourceDiffBundlesDirect
             resourceType: type,
             resourceId: id,
           });
+          const resource = bundle.entry?.[0]?.resource;
           if (!resource) continue;
           ehrOnlyResources.push(resource);
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -146,7 +149,7 @@ async function getEhrOnlyResourcesFromS3({
 
 type GetResourceBundleByResourceId = (
   params: GetResourceBundleByResourceIdParams
-) => Promise<Bundle | undefined>;
+) => Promise<Bundle>;
 
 const ehrGetResourceBundleByResourceIdMap: Record<
   EhrSource,

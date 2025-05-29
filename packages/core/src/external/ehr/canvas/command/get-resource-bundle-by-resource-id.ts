@@ -4,8 +4,9 @@ import { GetResourceBundleByResourceIdParams } from "../../shared";
 
 export async function getResourceBundleByResourceId(
   params: GetResourceBundleByResourceIdParams
-): Promise<Bundle | undefined> {
+): Promise<Bundle> {
   const {
+    tokenId,
     cxId,
     practiceId,
     metriportPatientId,
@@ -14,7 +15,11 @@ export async function getResourceBundleByResourceId(
     resourceId,
     useCachedBundle,
   } = params;
-  const client = await createCanvasClient({ cxId, practiceId });
+  const client = await createCanvasClient({
+    cxId,
+    practiceId,
+    ...(tokenId && { tokenId }),
+  });
   const bundle = await client.getResourceBundleByResourceId({
     cxId,
     metriportPatientId,
