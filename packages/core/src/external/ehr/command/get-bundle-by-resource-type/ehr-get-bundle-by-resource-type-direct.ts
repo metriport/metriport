@@ -12,53 +12,33 @@ import {
 export class EhrGetBundleByResourceTypeDirect implements EhrGetBundleByResourceTypeHandler {
   async getBundleByResourceType({
     ehr,
-    method,
     ...params
   }: GetBundleByResourceTypeRequest): Promise<Bundle> {
-    if (!isGetBundleByResourceTypeMethod(method)) {
-      throw new BadRequestError(`Invalid get bundle by resource type method`, undefined, {
-        method,
-      });
-    }
-    const handler = getEhrGetBundleByResourceTypeHandler(ehr, method);
+    const handler = getEhrGetBundleByResourceTypeHandler(ehr);
     return await handler({ ...params });
   }
 }
 
-export enum GetBundleByResourceTypeMethods {
-  canvasGetBundleByResourceType = "canvasGetBundleByResourceType",
-  athenaGetBundleByResourceType = "athenaGetBundleByResourceType",
-}
-
-function isGetBundleByResourceTypeMethod(method: string): method is GetBundleByResourceTypeMethods {
-  return Object.values(GetBundleByResourceTypeMethods).includes(
-    method as GetBundleByResourceTypeMethods
-  );
-}
+type GetBundleByResourceType = (params: GetBundleByResourceTypeClientRequest) => Promise<Bundle>;
 
 export type GetBundleByResourceTypeMethodsMap = Record<
-  string,
-  Record<string, (params: GetBundleByResourceTypeClientRequest) => Promise<Bundle>>
+  EhrSource,
+  GetBundleByResourceType | undefined
 >;
 
 export const ehrGetBundleByResourceTypeMap: GetBundleByResourceTypeMethodsMap = {
-  [EhrSources.athena]: {
-    [GetBundleByResourceTypeMethods.athenaGetBundleByResourceType]: getBundleByResourceTypeAthena,
-  },
-  [EhrSources.canvas]: {
-    [GetBundleByResourceTypeMethods.canvasGetBundleByResourceType]: getBundleByResourceTypeCanvas,
-  },
+  [EhrSources.canvas]: getBundleByResourceTypeCanvas,
+  [EhrSources.athena]: getBundleByResourceTypeAthena,
+  [EhrSources.elation]: undefined,
+  [EhrSources.healthie]: undefined,
+  [EhrSources.eclinicalworks]: undefined,
 };
 
-export function getEhrGetBundleByResourceTypeHandler(
-  ehr: EhrSource,
-  method: GetBundleByResourceTypeMethods
-): (params: GetBundleByResourceTypeClientRequest) => Promise<Bundle> {
-  const handler = ehrGetBundleByResourceTypeMap[ehr]?.[method];
+export function getEhrGetBundleByResourceTypeHandler(ehr: EhrSource): GetBundleByResourceType {
+  const handler = ehrGetBundleByResourceTypeMap[ehr];
   if (!handler) {
-    throw new BadRequestError(`No get bundle by resource type handler found`, undefined, {
+    throw new BadRequestError("No get bundle by resource type handler found", undefined, {
       ehr,
-      method,
     });
   }
   return handler;

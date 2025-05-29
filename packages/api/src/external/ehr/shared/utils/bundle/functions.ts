@@ -3,7 +3,7 @@ import {
   isSupportedResourceTypeByEhr,
 } from "@metriport/core/external/ehr/bundle/bundle-shared";
 import { BadRequestError } from "@metriport/shared";
-import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
+import { EhrSource, EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { getPatientMappingOrFail } from "../../../../../command/mapping/patient";
 import { refreshEhrBundle as refreshEhrBundleAthena } from "../../../athenahealth/command/bundle/refresh-ehr-bundle";
 import { refreshEhrBundle as refreshEhrBundleCanvas } from "../../../canvas/command/bundle/refresh-ehr-bundle";
@@ -40,7 +40,7 @@ export type BundleClientFunctions = {
   refreshEhrBundle: (params: RefreshEhrBundleParamsForClient) => Promise<void>;
 };
 
-const bundleClientFunctionsByEhr: Record<EhrSources, BundleClientFunctions | undefined> = {
+const bundleClientFunctionsByEhr: Record<EhrSource, BundleClientFunctions | undefined> = {
   [EhrSources.canvas]: {
     refreshEhrBundle: refreshEhrBundleCanvas,
   },
@@ -52,7 +52,7 @@ const bundleClientFunctionsByEhr: Record<EhrSources, BundleClientFunctions | und
   [EhrSources.eclinicalworks]: undefined,
 };
 
-export function getBundleClientFunctions(ehr: EhrSources): BundleClientFunctions {
+export function getBundleClientFunctions(ehr: EhrSource): BundleClientFunctions {
   const bundleClientFunctions = bundleClientFunctionsByEhr[ehr];
   if (!bundleClientFunctions) {
     throw new BadRequestError("No bundle client functions found @ Ehr", undefined, { ehr });

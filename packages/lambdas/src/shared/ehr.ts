@@ -1,4 +1,5 @@
 import { ProcessLinkPatientRequest as ElationProcessLinkPatientRequest } from "@metriport/core/external/ehr/command/elation/link-patient/elation-link-patient";
+import { AppointmentMethods } from "@metriport/core/external/ehr/command/get-appointments/ehr-get-appointments";
 import { ProcessLinkPatientRequest as HealthieProcessLinkPatientRequest } from "@metriport/core/external/ehr/command/healthie/link-patient/healthie-link-patient";
 import { ProcessSyncPatientRequest } from "@metriport/core/external/ehr/command/sync-patient/ehr-sync-patient";
 import { MetriportError } from "@metriport/shared";
@@ -89,9 +90,8 @@ export const ehrCreateResourceDiffBundlesSchema = z.object({
 });
 
 export const ehrGetAppointmentsSchema = z.object({
-  ehr: z.nativeEnum(EhrSources),
+  method: z.nativeEnum(AppointmentMethods),
   environment: z.string(),
-  method: z.string(),
   tokenId: z.string().optional(),
   cxId: z.string(),
   practiceId: z.string(),
@@ -102,7 +102,6 @@ export const ehrGetAppointmentsSchema = z.object({
 export const ehrGetBundleByResourceTypeSchema = z.object({
   ehr: z.nativeEnum(EhrSources),
   environment: z.string(),
-  method: z.string(),
   tokenId: z.string().optional(),
   cxId: z.string(),
   practiceId: z.string(),

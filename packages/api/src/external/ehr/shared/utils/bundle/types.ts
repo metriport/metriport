@@ -1,8 +1,8 @@
 import { BundleType } from "@metriport/core/external/ehr/bundle/bundle-shared";
-import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
+import { EhrSource } from "@metriport/shared/interface/external/ehr/source";
 
 type BaseBundleParams = {
-  ehr: EhrSources;
+  ehr: EhrSource;
   cxId: string;
   practiceId: string;
   ehrPatientId: string;
