@@ -11,7 +11,7 @@ import { BundleType } from "../../../../bundle/bundle-shared";
 import { createOrReplaceBundle } from "../../../../bundle/command/create-or-replace-bundle";
 import { fetchBundle, FetchBundleParams } from "../../../../bundle/command/fetch-bundle";
 import { getResourceBundleByResourceId as getCanvasResourceBundleByResourceId } from "../../../../canvas/command/get-resource-bundle-by-resource-id";
-import { GetResourceBundleByResourceParams } from "../../../../shared";
+import { GetResourceBundleByResourceIdParams } from "../../../../shared";
 import {
   ContributeResourceDiffBundlesRequest,
   EhrContributeResourceDiffBundlesHandler,
@@ -136,10 +136,10 @@ async function getEhrOnlyResourcesFromS3({
 }
 
 type GetResourceBundleByResourceId = (
-  params: GetResourceBundleByResourceParams
+  params: GetResourceBundleByResourceIdParams
 ) => Promise<Bundle | undefined>;
 
-export const ehrGetResourceBundleByResourceIdMap: Record<
+const ehrGetResourceBundleByResourceIdMap: Record<
   EhrSource,
   GetResourceBundleByResourceId | undefined
 > = {
@@ -150,7 +150,7 @@ export const ehrGetResourceBundleByResourceIdMap: Record<
   [EhrSources.eclinicalworks]: undefined,
 };
 
-export function getEhrResourceBundleByResourceId(ehr: EhrSource): GetResourceBundleByResourceId {
+function getEhrResourceBundleByResourceId(ehr: EhrSource): GetResourceBundleByResourceId {
   const handler = ehrGetResourceBundleByResourceIdMap[ehr];
   if (!handler) {
     throw new BadRequestError(`No get resource bundle by resource id handler found`, undefined, {

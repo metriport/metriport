@@ -123,6 +123,7 @@ router.get(
  * POST /internal/ehr/:ehrId/patient/:id/resource/diff/:jobId/contribute
  *
  * Contributes the resource diff bundle.
+ *
  * @param req.query.ehrId - The EHR source.
  * @param req.query.cxId - The CX ID of the patient.
  * @param req.params.id - The patient id of the EHR patient.

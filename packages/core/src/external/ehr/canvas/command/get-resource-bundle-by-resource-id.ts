@@ -1,9 +1,9 @@
 import { Bundle } from "@medplum/fhirtypes";
 import { createCanvasClient } from "../shared";
-import { GetResourceBundleByResourceParams } from "../../shared";
+import { GetResourceBundleByResourceIdParams } from "../../shared";
 
 export async function getResourceBundleByResourceId(
-  params: GetResourceBundleByResourceParams
+  params: GetResourceBundleByResourceIdParams
 ): Promise<Bundle | undefined> {
   const {
     cxId,

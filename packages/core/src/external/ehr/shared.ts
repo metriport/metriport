@@ -301,7 +301,7 @@ export function getConditionStatus(condition: Condition): string | undefined {
   return undefined;
 }
 
-export type GetResourceBundleByResourceParams = {
+export type GetResourceBundleByResourceIdParams = {
   cxId: string;
   practiceId: string;
   metriportPatientId: string;
