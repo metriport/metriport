@@ -48,13 +48,13 @@ export function createIdGenerator(totalLength: number): IdGenerator {
     // Generate random entropy
     else {
       for (let i = 0; i < entropyLength; i++) {
-        lastEntropy.writeUInt8(Math.floor(Math.random() * 64), i);
+        lastEntropy.writeUInt8(LEXICON.charCodeAt(Math.floor(Math.random() * 64)), i);
       }
     }
 
     // Insert the entropy characters
     for (let i = 0; i < entropyLength; i++) {
-      id.writeUint8(LEXICON.charCodeAt(lastEntropy.readUInt8(i)), i + 8);
+      id.writeUint8(lastEntropy.readUInt8(i), i + 8);
     }
     return id;
   };
