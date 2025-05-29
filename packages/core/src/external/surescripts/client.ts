@@ -1,5 +1,5 @@
 import { Config } from "../../util/config";
-import { IdGenerator, createIdGenerator } from "../sftp/id-generator";
+import { IdGenerator, createIdGenerator } from "./id-generator";
 import { SftpClient, SftpConfig } from "../sftp/client";
 import { convertDateToString, convertDateToTimeString } from "@metriport/shared/common/date";
 import { SurescriptsSynchronizeEvent } from "./types";
@@ -8,6 +8,7 @@ import { INCOMING_NAME, OUTGOING_NAME, HISTORY_NAME } from "./constants";
 import { S3Utils } from "../aws/s3";
 import { toSurescriptsPatientLoadFile } from "./message";
 import { GetPatientResponse } from "./api/shared";
+import dayjs from "dayjs";
 
 export interface SurescriptsSftpConfig extends Partial<Omit<SftpConfig, "password">> {
   senderId?: string;
@@ -90,7 +91,7 @@ export class SurescriptsSftpClient extends SftpClient {
     const dateString = convertDateToString(now);
     const timeString = convertDateToTimeString(now, { includeCentisecond: true });
 
-    const requestFileName = ["Metriport_PMA_", dateString, "-", transmissionId].join("");
+    const requestFileName = this.getPatientLoadFileName(transmissionId, now, compression);
 
     return {
       type,
@@ -105,10 +106,18 @@ export class SurescriptsSftpClient extends SftpClient {
     };
   }
 
-  getPatientLoadFileName(transmission: Transmission): string {
-    return `Metriport_PMA_${convertDateToString(transmission.date)}-${transmission.id}${
-      transmission.compression ? "." + transmission.compression : ""
-    }`;
+  getPatientLoadFileName(
+    transmissionId: string,
+    transmissionDate: Date,
+    compression = true
+  ): string {
+    return [
+      "Metriport_PMA_",
+      dayjs(transmissionDate).format("YYYYMMDD"),
+      "-",
+      transmissionId,
+      compression ? ".gz" : "",
+    ].join("");
   }
 
   async findVerificationFileName(transmission: Transmission): Promise<string | undefined> {
@@ -146,7 +155,11 @@ export class SurescriptsSftpClient extends SftpClient {
     transmission: Transmission<TransmissionType>,
     message: Buffer
   ) {
-    const fileName = this.getPatientLoadFileName(transmission);
+    const fileName = this.getPatientLoadFileName(
+      transmission.id,
+      transmission.date,
+      transmission.compression === "gzip"
+    );
     await this.s3.uploadFile({
       bucket: this.bucket,
       key: getS3Key(OUTGOING_NAME, fileName),
