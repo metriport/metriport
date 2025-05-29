@@ -62,6 +62,12 @@ class HealthieApi {
   }
 
   async initialize(): Promise<void> {
+    const { log } = out(`Healthie initialize - practiceId ${this.practiceId}`);
+    if (!this.apiKey) {
+      log(`API key not found @ Healthie`);
+      throw new MetriportError("API key not found @ Healthie");
+    }
+
     const headers = {
       Authorization: `Basic ${this.apiKey}`,
       AuthorizationSource: "API",
