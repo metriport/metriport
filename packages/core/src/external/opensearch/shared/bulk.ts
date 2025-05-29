@@ -1,5 +1,4 @@
 import { ApiResponse } from "@opensearch-project/opensearch";
-import { IngestRequest, IngestRequestResource } from "../text-ingestor";
 
 export type BulkOperation = "index" | "create" | "update" | "delete";
 export type BulkRequest = Partial<Record<BulkOperation, { _id: string }>>;
@@ -54,40 +53,4 @@ export function processErrorsFromBulkResponse(
     }
   });
   return errorCount;
-}
-
-export function bulkResponseErrorToString(
-  singleItem: RawBulkResponseErrorItem,
-  operation: BulkOperation
-): string | undefined {
-  const itemOp = singleItem[operation];
-  if (!itemOp) return undefined;
-  const errorAsAny = itemOp.error?.reason;
-  if (!errorAsAny) return undefined;
-  return typeof errorAsAny === "string" ? errorAsAny : JSON.stringify(errorAsAny);
-}
-
-export function resourceToBulkRequest({
-  cxId,
-  patientId,
-  resource,
-  operation,
-  getEntryId,
-}: {
-  cxId: string;
-  patientId: string;
-  resource: IngestRequestResource;
-  operation: BulkOperation;
-  getEntryId: (cxId: string, patientId: string, resourceId: string) => string;
-}): [BulkRequest, IngestRequest] {
-  const entryId = getEntryId(cxId, patientId, resource.resourceId);
-  const document: IngestRequest = {
-    cxId,
-    patientId,
-    resourceType: resource.resourceType,
-    resourceId: resource.resourceId,
-    content: resource.content,
-  };
-  const cmd = { [operation]: { _id: entryId } };
-  return [cmd, document];
 }

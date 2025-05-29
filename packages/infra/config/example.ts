@@ -141,6 +141,7 @@ export const config: EnvConfigNonSandbox = {
       },
       encryptionAtRest: true,
       indexName: "test-index-name",
+      consolidatedIndexName: "test-lexical-index-name",
     },
     lambda: {
       memory: 512,
@@ -148,6 +149,7 @@ export const config: EnvConfigNonSandbox = {
       maxConcurrency: 5,
       timeout: Duration.minutes(2),
     },
+    consolidatedDataIngestionInitialDate: "2025-01-01",
   },
   generalBucketName: "test-bucket",
   hl7Notification: {

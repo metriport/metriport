@@ -1,24 +1,24 @@
+import { Resource } from "@medplum/fhirtypes";
+import { MetriportError } from "@metriport/shared";
 import { Client } from "@opensearch-project/opensearch";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { chunk } from "lodash";
 import { out } from "../../util/log";
-import { FhirResourceToText } from "../fhir/export/string/bundle-to-string";
+import { resourceToString } from "../fhir/export/string/bundle-to-string";
 import { OpenSearchConfigDirectAccess } from "./index";
-import { IndexFields } from "./index-based-on-resource";
+import { FhirIndexFields } from "./index-based-on-fhir";
 import {
+  BulkOperation,
   BulkResponseErrorItem,
-  processErrorsFromBulkResponse,
   OnBulkItemError,
-  resourceToBulkRequest,
+  processErrorsFromBulkResponse,
 } from "./shared/bulk";
 import { createDeleteQuery } from "./shared/delete";
 import { getEntryId } from "./shared/id";
-import { getLog, OpenSearchLogLevel } from "./shared/log";
 
 dayjs.extend(duration);
 
-const DEFAULT_INGESTION_TIMEOUT = dayjs.duration(20, "seconds").asMilliseconds();
 const DEFAULT_BULK_INGESTION_TIMEOUT = dayjs.duration(2, "minute").asMilliseconds();
 const MAX_BULK_RETRIES = 3;
 
@@ -33,82 +33,39 @@ const MAX_BULK_RETRIES = 3;
 // on each bulk request (~5MB)
 const bulkChunkSize = 500;
 
-export type IngestRequest = IndexFields;
-export type IngestRequestResource = Omit<IndexFields, "cxId" | "patientId">;
+export type IngestRequest = {
+  cxId: string;
+  patientId: string;
+  resource: Resource;
+};
 
 export type IngestBulkRequest = {
   cxId: string;
   patientId: string;
-  resources: IngestRequestResource[];
+  resources: Resource[];
   onItemError?: OnBulkItemError | undefined;
 };
 
-export type DeleteRequest = Pick<IndexFields, "cxId" | "patientId">;
+export type DeleteRequest = Pick<FhirIndexFields, "cxId" | "patientId">;
 
-export type OpenSearchTextIngestorSettings = {
-  logLevel?: OpenSearchLogLevel;
-};
+export type OpenSearchFhirIngestorConfig = OpenSearchConfigDirectAccess;
 
-export type OpenSearchTextIngestorConfig = OpenSearchConfigDirectAccess & {
-  settings?: OpenSearchTextIngestorSettings;
-};
+type BulkRequestItem = [Record<string, { _id: string }>, FhirIndexFields];
 
 /**
  * Ingests text documents/entries in OpenSearch.
  */
-export class OpenSearchTextIngestor {
+export class OpenSearchFhirIngestor {
   private readonly endpoint: string;
   private readonly username: string;
   private readonly password: string;
-  private readonly settings: OpenSearchTextIngestorSettings;
+  private readonly indexName: string;
 
-  constructor(readonly config: OpenSearchTextIngestorConfig) {
+  constructor(config: OpenSearchFhirIngestorConfig) {
     this.endpoint = config.endpoint;
     this.username = config.username;
     this.password = config.password;
-    this.settings = {
-      logLevel: config.settings?.logLevel ?? "none",
-    };
-  }
-
-  async ingestSingle({
-    cxId,
-    patientId,
-    resourceType,
-    resourceId,
-    content,
-  }: IngestRequest): Promise<void> {
-    const defaultLogger = out(`${this.constructor.name}.ingest - cx ${cxId}, pt ${patientId}`);
-    const { log, debug } = getLog(defaultLogger, this.settings.logLevel);
-
-    const { indexName } = this.config;
-    const auth = { username: this.username, password: this.password };
-    const client = new Client({ node: this.endpoint, auth });
-
-    // Rebuild to make sure we're only sending the minimum amount of data
-    const document: IngestRequest = {
-      cxId,
-      patientId,
-      resourceType,
-      resourceId,
-      content,
-    };
-    const entryId = getEntryId(cxId, patientId, resourceId);
-
-    log(`Ingesting resource ${resourceType} ${resourceId} into index ${indexName}...`);
-    const startedAt = Date.now();
-    // upsert
-    const response = await client.index(
-      {
-        index: indexName,
-        id: entryId,
-        body: { doc: document, doc_as_upsert: true },
-      },
-      { requestTimeout: DEFAULT_INGESTION_TIMEOUT }
-    );
-    const time = Date.now() - startedAt;
-    log(`Successfully ingested in ${time} milliseconds: ${resourceType} ${resourceId}`);
-    debug(`Response: `, () => JSON.stringify(response.body));
+    this.indexName = config.indexName;
   }
 
   /**
@@ -127,10 +84,15 @@ export class OpenSearchTextIngestor {
     resources,
     onItemError,
   }: IngestBulkRequest): Promise<Map<string, number>> {
-    const defaultLogger = out(`${this.constructor.name}.ingestBulk - cx ${cxId}, pt ${patientId}`);
-    const { log } = getLog(defaultLogger, this.settings.logLevel);
+    const { log } = out(`${this.constructor.name}.ingestBulk - cx ${cxId}, pt ${patientId}`);
 
-    const { indexName } = this.config;
+    const errors: Map<string, number> = new Map();
+    if (resources.length < 1) {
+      log(`No resources to ingest`);
+      return errors;
+    }
+
+    const indexName = this.indexName;
     const auth = { username: this.username, password: this.password };
     const client = new Client({ node: this.endpoint, auth });
 
@@ -138,8 +100,8 @@ export class OpenSearchTextIngestor {
     const startedAt = Date.now();
 
     let errorCount = 0;
-    const errors: Map<string, number> = new Map();
     const _onItemError = onItemError ?? buildOnItemError(errors);
+    const mutatingMissingResourceIdsByType: Record<string, string[]> = {};
 
     const chunks = chunk(resources, bulkChunkSize);
     for (const resourceChunk of chunks) {
@@ -150,12 +112,18 @@ export class OpenSearchTextIngestor {
         indexName,
         client,
         onItemError: _onItemError,
+        mutatingMissingResourceIdsByType,
       });
       errorCount += errorCountChunk;
     }
 
     const time = Date.now() - startedAt;
     log(`Ingested ${resources.length} resources in ${time} ms, ${errorCount} errors`);
+    if (Object.keys(mutatingMissingResourceIdsByType).length > 0) {
+      log(`WARNING - Resources not ingested, either missing relevant info or not ingestible:`, () =>
+        JSON.stringify(mutatingMissingResourceIdsByType)
+      );
+    }
     return errors;
   }
 
@@ -166,28 +134,41 @@ export class OpenSearchTextIngestor {
     indexName,
     client,
     onItemError,
+    mutatingMissingResourceIdsByType,
   }: IngestBulkRequest & {
     indexName: string;
     client: Client;
+    mutatingMissingResourceIdsByType: Record<string, string[]>;
   }): Promise<number> {
-    const defaultLogger = out(
+    const { debug } = out(
       `${this.constructor.name}.ingestBulkInternal - cx ${cxId}, pt ${patientId}`
     );
-    const { debug } = getLog(defaultLogger, this.settings.logLevel);
 
     const operation = "index";
 
     debug(`Ingesting ${resources.length} resources into index ${indexName}...`);
 
-    const bulkRequest = resources.flatMap(resource =>
-      resourceToBulkRequest({
+    const bulkRequest = resources.flatMap(resource => {
+      const resourceToRequest = resourceToBulkRequest({
         cxId,
         patientId,
         resource,
         operation,
         getEntryId,
-      })
-    );
+      });
+      if (resourceToRequest) return resourceToRequest;
+      const missingResourceIds = mutatingMissingResourceIdsByType[resource.resourceType];
+      if (resource.id) {
+        if (missingResourceIds) missingResourceIds.push(resource.id);
+        else mutatingMissingResourceIdsByType[resource.resourceType] = [resource.id];
+      }
+      return [];
+    });
+
+    if (bulkRequest.length === 0) {
+      debug(`No converted resources to ingest`);
+      return 0;
+    }
 
     const startedAt = Date.now();
     const response = await client.bulk(
@@ -203,12 +184,11 @@ export class OpenSearchTextIngestor {
   }
 
   async delete({ cxId, patientId }: DeleteRequest): Promise<void> {
-    const defaultLogger = out(`${this.constructor.name}.delete - cx ${cxId}, pt ${patientId}`);
-    const { log, debug } = getLog(defaultLogger, this.settings.logLevel);
+    const { log, debug } = out(`${this.constructor.name}.delete - cx ${cxId}, pt ${patientId}`);
 
-    const { indexName } = this.config;
-    const auth = { username: this.config.username, password: this.config.password };
-    const client = new Client({ node: this.config.endpoint, auth });
+    const indexName = this.indexName;
+    const auth = { username: this.username, password: this.password };
+    const client = new Client({ node: this.endpoint, auth });
 
     log(`Deleting resources from index ${indexName}...`);
     const startedAt = Date.now();
@@ -238,12 +218,54 @@ function buildOnItemError(errors: Map<string, number>): OnBulkItemError {
   };
 }
 
-export function convertFhirResourceToTextToIngestRequestResource(
-  resource: FhirResourceToText
-): IngestRequestResource {
-  return {
-    resourceType: resource.type,
-    resourceId: resource.id,
-    content: resource.text,
+function resourceToBulkRequest({
+  cxId,
+  patientId,
+  resource,
+  operation,
+  getEntryId,
+}: {
+  cxId: string;
+  patientId: string;
+  resource: Resource;
+  operation: BulkOperation;
+  getEntryId: (cxId: string, patientId: string, resourceId: string) => string;
+}): BulkRequestItem | undefined {
+  const { id: resourceId } = resource;
+  if (!resourceId) throw new MetriportError("Resource id is required");
+  const entryId = getEntryId(cxId, patientId, resourceId);
+  const document = resourceToIndexField({ cxId, patientId, resource });
+  if (!document) return undefined;
+  const cmd = { [operation]: { _id: entryId } };
+  return [cmd, document];
+}
+
+function resourceToIndexField({
+  cxId,
+  patientId,
+  resource,
+}: {
+  cxId: string;
+  patientId: string;
+  resource: Resource;
+}): FhirIndexFields | undefined {
+  const { resourceType, id: resourceId } = resource;
+  if (!resourceType || !resourceId) {
+    throw new MetriportError("Resource type and id are required", undefined, {
+      resourceType,
+      resourceId,
+    });
+  }
+  const content = resourceToString(resource);
+  if (!content) return undefined;
+
+  const document: FhirIndexFields = {
+    cxId,
+    patientId,
+    resourceType,
+    resourceId,
+    content: content,
+    rawContent: JSON.stringify(resource),
   };
+  return document;
 }
