@@ -28,7 +28,7 @@ router.get(
     if (!isEhrSource(ehr)) throw new BadRequestError("Invalid EHR", undefined, { ehr });
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const practiceId = getFrom("params").orFail("id", req);
-    const secrets = await getSecrets({
+    const secrets = getSecrets({
       ehr,
       cxId,
       practiceId,
