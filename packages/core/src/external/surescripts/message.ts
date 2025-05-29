@@ -1,8 +1,7 @@
 import { Config } from "../../util/config";
 import { z } from "zod";
-import { Patient } from "../../domain/patient";
-import { SURESCRIPTS_VERSION } from "./constants";
-
+import { Patient } from "@metriport/shared/domain/patient";
+import { validateNPI } from "@metriport/shared/common/validate-npi";
 import {
   patientLoadHeaderSchema,
   patientLoadHeaderOrder,
@@ -11,7 +10,6 @@ import {
   patientLoadFooterSchema,
   patientLoadFooterOrder,
 } from "./schema/load";
-
 import {
   patientVerificationHeaderOrder,
   patientVerificationDetailOrder,
@@ -20,15 +18,12 @@ import {
   patientVerificationFooterOrder,
   isPatientVerificationFooter,
 } from "./schema/verification";
-
-import { validateNPI } from "@metriport/shared/common/validate-npi";
-
 import { OutgoingFileRowSchema, IncomingFileRowSchema } from "./schema/shared";
 import { SurescriptsSftpClient, Transmission, TransmissionType } from "./client";
 import { makeNameDemographics, makeGenderDemographics } from "./shared";
-import { GetPatientResponse } from "./api/shared";
+import { SURESCRIPTS_VERSION } from "./constants";
 
-export function canGenerateSurescriptsMessage(
+export function canGeneratePatientLoadFile(
   transmission: Transmission<TransmissionType>,
   patients: Patient[]
 ): boolean {
@@ -40,7 +35,7 @@ export function canGenerateSurescriptsMessage(
 export function toSurescriptsPatientLoadFile(
   client: SurescriptsSftpClient,
   transmission: Transmission<TransmissionType>,
-  patients: GetPatientResponse[]
+  patients: Patient[]
 ): Buffer {
   const header = toSurescriptsPatientLoadRow(
     {
@@ -70,29 +65,35 @@ export function toSurescriptsPatientLoadFile(
       const address = Array.isArray(patient.address) ? patient.address[0] : patient.address;
       if (!address) return null;
 
-      return toSurescriptsPatientLoadRow(
-        {
-          recordType: "PNM",
-          recordSequenceNumber: index + 1,
-          assigningAuthority: Config.getSystemRootOID(),
-          patientId: patient.id,
-          lastName,
-          firstName,
-          middleName,
-          prefix,
-          suffix,
-          addressLine1: address.addressLine1,
-          addressLine2: address.addressLine2,
-          city: address.city,
-          state: address.state,
-          zip: address.zip,
-          dateOfBirth: patient.dob.replace(/-/g, ""),
-          genderAtBirth,
-          npiNumber: transmission.npiNumber,
-        },
-        patientLoadDetailSchema,
-        patientLoadDetailOrder
-      );
+      try {
+        return toSurescriptsPatientLoadRow(
+          {
+            recordType: "PNM",
+            recordSequenceNumber: index + 1,
+            assigningAuthority: Config.getSystemRootOID(),
+            patientId: patient.id,
+            lastName,
+            firstName,
+            middleName,
+            prefix,
+            suffix,
+            addressLine1: address.addressLine1,
+            addressLine2: address.addressLine2,
+            city: address.city,
+            state: address.state,
+            zip: address.zip,
+            dateOfBirth: patient.dob.replace(/-/g, ""),
+            genderAtBirth,
+            npiNumber: transmission.npiNumber,
+          },
+          patientLoadDetailSchema,
+          patientLoadDetailOrder
+        );
+      } catch (error) {
+        console.log("Error generating patient load row", error);
+        console.log(JSON.stringify(patient, null, 2));
+        return null;
+      }
     })
     .filter(Boolean) as Buffer[];
 

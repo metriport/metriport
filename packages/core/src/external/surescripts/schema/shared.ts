@@ -101,6 +101,9 @@ export function toSurescriptsString<T extends object>(
         return escapePipe(value).substring(0, maxLength);
       }
       if (minLength != null && value.length < minLength) {
+        if (optional) {
+          return "";
+        }
         throw new MetriportError(`Value is too short: ${value}`, "to_surescripts_string", {
           value: String(value),
           key: String(key),

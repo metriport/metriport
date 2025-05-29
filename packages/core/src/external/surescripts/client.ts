@@ -5,9 +5,10 @@ import { SurescriptsSynchronizeEvent } from "./types";
 import { getS3Key, getSftpFileName } from "./shared";
 import { INCOMING_NAME, OUTGOING_NAME, HISTORY_NAME } from "./constants";
 import { S3Utils } from "../aws/s3";
-import { toSurescriptsPatientLoadFile } from "./message";
-import { GetPatientResponse } from "./api/shared";
+import { toSurescriptsPatientLoadFile, canGeneratePatientLoadFile } from "./message";
+import { Patient } from "@metriport/shared/domain/patient";
 import dayjs from "dayjs";
+import { MetriportError } from "@metriport/shared";
 
 export interface SurescriptsSftpConfig extends Partial<Omit<SftpConfig, "password">> {
   senderId?: string;
@@ -139,8 +140,16 @@ export class SurescriptsSftpClient extends SftpClient {
 
   generatePatientLoadFile(
     transmission: Transmission<TransmissionType>,
-    patients: GetPatientResponse[]
+    patients: Patient[]
   ): Buffer {
+    if (!canGeneratePatientLoadFile(transmission, patients)) {
+      throw new MetriportError("Cannot generate patient load file", "generate_patient_load_file", {
+        npiNumber: transmission.npiNumber,
+        cxId: transmission.cxId,
+        patientCount: patients.length,
+      });
+    }
+
     return toSurescriptsPatientLoadFile(this, transmission, patients);
   }
 

@@ -7,7 +7,7 @@ dotenv.config();
 import { Command } from "commander";
 import { SurescriptsSftpClient } from "@metriport/core/external/surescripts/client";
 import { SurescriptsApi } from "@metriport/core/external/surescripts/api";
-import { GetPatientResponse } from "@metriport/core/external/surescripts/api/shared";
+import { Patient } from "@metriport/shared/domain/patient";
 import { filePathIsInGitRepository } from "./shared";
 
 const program = new Command();
@@ -81,9 +81,9 @@ async function generatePatientLoadFileFromCsv(
   console.log("Patient load file written to storage");
 }
 
-async function getPatientsFromCsv(csvData: string): Promise<GetPatientResponse[]> {
+async function getPatientsFromCsv(csvData: string): Promise<Patient[]> {
   return new Promise((resolve, reject) => {
-    const patients: GetPatientResponse[] = [];
+    const patients: Patient[] = [];
     fs.createReadStream(csvData)
       .pipe(csv())
       .on("data", row => {
@@ -97,6 +97,7 @@ async function getPatientsFromCsv(csvData: string): Promise<GetPatientResponse[]
           firstName: data.firstName,
           lastName: data.lastName,
           dob: data.dob,
+          dateCreated: data.dateCreated,
           genderAtBirth: data.genderAtBirth,
           address: data.address,
           facilityIds: data.facilityIds,

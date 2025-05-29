@@ -113,23 +113,23 @@ export const patientLoadDetailSchema = z.object({
   patientId: z.string().min(1).max(36),
   lastName: z.string(),
   firstName: z.string(),
-  middleName: z.string().max(36).optional(),
-  prefix: z.string().max(10).optional(),
-  suffix: z.string().max(20).optional(),
+  middleName: z.string().optional(),
+  prefix: z.string().optional(),
+  suffix: z.string().optional(),
   addressLine1: z.string().optional(),
   addressLine2: z.string().optional(),
-  city: z.string().max(30).optional(),
-  state: z.string().max(55).optional(),
-  zip: z.string().max(10),
+  city: z.string().optional(),
+  state: z.string().optional(),
+  zip: z.string(),
   dateOfBirth: z
     .string()
     .min(8)
     .max(10)
     .regex(/^\d{4}-?\d{2}-?\d{2}$/),
   genderAtBirth: z.enum(["M", "F", "N", "U"]), // n - non-binary, u - unknown
-  npiNumber: z.string().min(1).max(10),
+  npiNumber: z.string(),
   endMonitoringDate: z.date().optional(),
-  primaryPhone: z.string().max(10).optional(),
+  primaryPhone: z.string().optional(),
 });
 
 export const patientLoadDetailOrder: OutgoingFileRowSchema<PatientLoadDetail> = [
