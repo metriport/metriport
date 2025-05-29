@@ -42,6 +42,7 @@ function getS3UtilsInstance(): S3Utils {
 }
 
 export const getSecretsOauthSchema = z.object({
+  environment: z.string(),
   clientKey: z.string(),
   clientSecret: z.string(),
   environment: z.string(),
@@ -49,6 +50,7 @@ export const getSecretsOauthSchema = z.object({
 export type GetSecretsOauthResult = z.infer<typeof getSecretsOauthSchema>;
 
 export const getSecretsApiKeySchema = z.object({
+  environment: z.string(),
   apiKey: z.string(),
   environment: z.string(),
 });
@@ -177,8 +179,10 @@ export async function makeRequest<T>({
             file: Buffer.from(JSON.stringify({ error, message }), "utf8"),
             contentType: "application/json",
           });
-        } catch (e) {
-          log(`Error saving error to s3 @ ${ehr} - ${method} ${url}`, () => JSON.stringify(e));
+        } catch (error) {
+          log(
+            `Error saving error to s3 @ ${ehr} - ${method} ${url}. Cause: ${errorToString(error)}`
+          );
         }
       }
       const fullAdditionalInfoWithError = { ...fullAdditionalInfo, error: errorToString(error) };
@@ -224,8 +228,10 @@ export async function makeRequest<T>({
         file: Buffer.from(JSON.stringify(response.data), "utf8"),
         contentType: "application/json",
       });
-    } catch (e) {
-      log(`Error saving response to s3 @ ${ehr} - ${method} ${url}`, () => JSON.stringify(e));
+    } catch (error) {
+      log(
+        `Error saving response to s3 @ ${ehr} - ${method} ${url}. Cause: ${errorToString(error)}`
+      );
     }
   }
   const outcome = schema.safeParse(body);

@@ -167,7 +167,6 @@ export const supportedAthenaHealthResources = [
   "ServiceRequest",
   "Encounter",
   "Coverage",
-  "RelatedPerson",
   "CareTeam",
 ];
 
@@ -176,6 +175,7 @@ export const scopes = [
   "Media",
   "Medication",
   "Binary",
+  "RelatedPerson",
   "Location",
   "Organization",
   "Practitioner",
@@ -745,6 +745,7 @@ class AthenaHealthApi {
     );
     const params = {
       patient: `${this.createPatientId(athenaPatientId)}`,
+      "ah-practice": this.createPracticetId(this.practiceId),
       _count: resourceType === "Coverage" ? coverageCount : "1000",
       ...(resourceType === "MedicationRequest"
         ? { intent: medicationRequestIntents.join(",") }

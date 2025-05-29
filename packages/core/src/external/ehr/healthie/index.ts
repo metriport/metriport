@@ -29,7 +29,7 @@ import { ApiConfig, formatDate, makeRequest, MakeRequestParamsInEhr } from "../s
 const apiUrl = Config.getApiUrl();
 
 interface HealthieApiConfig
-  extends Omit<ApiConfig, "twoLeggedAuthTokenInfo" | "clientKey" | "clientSecret" | "getSecrets"> {
+  extends Omit<ApiConfig, "twoLeggedAuthTokenInfo" | "clientKey" | "clientSecret"> {
   apiKey: string;
   environment: HealthieEnv;
 }
@@ -45,7 +45,7 @@ export function isHealthieEnv(env: string): env is HealthieEnv {
 class HealthieApi {
   private axiosInstance: AxiosInstance;
   private baseUrl: string;
-  private apiKey: string | undefined;
+  private apiKey: string;
   private practiceId: string;
 
   private constructor(config: HealthieApiConfig) {
@@ -62,6 +62,12 @@ class HealthieApi {
   }
 
   async initialize(): Promise<void> {
+    const { log } = out(`Healthie initialize - practiceId ${this.practiceId}`);
+    if (!this.apiKey) {
+      log(`API key not found @ Healthie`);
+      throw new MetriportError("API key not found @ Healthie");
+    }
+
     const headers = {
       Authorization: `Basic ${this.apiKey}`,
       AuthorizationSource: "API",

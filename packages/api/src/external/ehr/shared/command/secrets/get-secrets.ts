@@ -1,11 +1,15 @@
-import { EhrSource } from "@metriport/shared/interface/external/ehr/source";
+import { BadRequestError } from "@metriport/shared";
+import { EhrSource, EhrSources } from "@metriport/shared/interface/external/ehr/source";
+import { getAthenaEnv } from "../../../athenahealth/shared";
+import { getCanvasEnv } from "../../../canvas/shared";
+import { getElationEnv } from "../../../elation/shared";
+import { getHealthieEnv } from "../../../healthie/shared";
 import {
   EhrEnv,
   EhrEnvAndApiKey,
   EhrEnvAndClientCredentials,
   EhrPerPracticeParams,
 } from "../../utils/client";
-import { getSecretsFunction } from "../../utils/secrets";
 
 /**
  * Get the secrets for the EHR
@@ -21,6 +25,31 @@ export function getSecrets({
 }: EhrPerPracticeParams & { ehr: EhrSource }):
   | EhrEnvAndClientCredentials<EhrEnv>
   | EhrEnvAndApiKey<EhrEnv> {
-  const getSecrets = getSecretsFunction(ehr);
-  return getSecrets({ cxId, practiceId });
+  const handler = getSecretsHandler(ehr);
+  return handler({ cxId, practiceId });
+}
+
+type OauthSecretsMethod<T extends EhrEnv> = (
+  params: EhrPerPracticeParams
+) => EhrEnvAndClientCredentials<T>;
+type ApiKeySecretsMethod<T extends EhrEnv> = (params: EhrPerPracticeParams) => EhrEnvAndApiKey<T>;
+
+type GetSecrets<T extends EhrEnv> = OauthSecretsMethod<T> | ApiKeySecretsMethod<T>;
+
+type SecretsMethodMap = Record<EhrSource, GetSecrets<EhrEnv> | undefined>;
+
+const secretsMethodsBy: SecretsMethodMap = {
+  [EhrSources.canvas]: getCanvasEnv,
+  [EhrSources.athena]: getAthenaEnv,
+  [EhrSources.elation]: getElationEnv,
+  [EhrSources.healthie]: getHealthieEnv,
+  [EhrSources.eclinicalworks]: undefined,
+};
+
+function getSecretsHandler(ehr: EhrSources): GetSecrets<EhrEnv> {
+  const handler = secretsMethodsBy[ehr];
+  if (!handler) {
+    throw new BadRequestError("No secrets handler found", undefined, { ehr });
+  }
+  return handler;
 }
