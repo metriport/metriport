@@ -7,6 +7,7 @@ import {
   toSurescriptsUUID,
   toSurescriptsDate,
   toSurescriptsTime,
+  toSurescriptsUnused,
 } from "./shared";
 
 // The first row of a patient load file
@@ -261,6 +262,10 @@ export const patientLoadDetailOrder: OutgoingFileRowSchema<PatientLoadDetail> = 
     field: 17,
     key: "endMonitoringDate",
     toSurescripts: toSurescriptsDate("endMonitoringDate", { optional: true }),
+  },
+  {
+    field: 18,
+    toSurescripts: toSurescriptsUnused,
   },
   {
     field: 19,

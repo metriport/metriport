@@ -50,7 +50,7 @@ export function createIdGenerator(totalLength: number): IdGenerator {
 
     // Insert the entropy characters
     for (let i = 0; i < entropyLength; i++) {
-      id.writeUint8(lastEntropy.readUInt8(i), i + 8);
+      id.writeUint8(LEXICON.charCodeAt(lastEntropy.readUInt8(i)), i + 8);
     }
     return id;
   };

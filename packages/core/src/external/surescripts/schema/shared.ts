@@ -122,6 +122,10 @@ export function toSurescriptsString<T extends object>(
   };
 }
 
+export function toSurescriptsUnused() {
+  return "";
+}
+
 export function fromSurescriptsString<O extends FieldOption>(option: O = {} as O) {
   return function (value: string): FieldTypeFromSurescripts<string, O> {
     const pipeUnescaped = unescapePipe(value).trim();
@@ -164,10 +168,12 @@ export function fromSurescriptsDate<O extends FieldOption>(option: O = {} as O) 
         throw new MetriportError(`Invalid date: ${value}`);
       }
     }
-    const year = value.substring(0, 4);
-    const month = value.substring(4, 6);
-    const day = value.substring(6, 8);
-    return new Date(`${year}-${month}-${day}`);
+    const date = new Date();
+    date.setUTCFullYear(parseInt(value.substring(0, 4), 10));
+    date.setUTCMonth(parseInt(value.substring(4, 6), 10) - 1);
+    date.setUTCDate(parseInt(value.substring(6, 8), 10));
+    date.setUTCHours(0, 0, 0, 0);
+    return date;
   };
 }
 
@@ -206,7 +212,12 @@ export function fromSurescriptsTime({ centisecond = true }: { centisecond?: bool
     if (value.length !== 6 + (centisecond ? 2 : 0)) {
       throw new Error(`Invalid time: ${value}`);
     }
-    return dayjs(value, "HHmmssSS").toDate();
+    const date = new Date();
+    date.setHours(parseInt(value.substring(0, 2), 10));
+    date.setMinutes(parseInt(value.substring(2, 4), 10));
+    date.setSeconds(parseInt(value.substring(4, 6), 10));
+    date.setMilliseconds(centisecond ? parseInt(value.substring(6, 8), 10) * 10 : 0);
+    return date;
   };
 }
 
