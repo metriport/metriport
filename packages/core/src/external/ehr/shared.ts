@@ -309,7 +309,7 @@ export type GetResourceBundleByResourceIdParams = {
   ehrPatientId: string;
   resourceType: string;
   resourceId: string;
-  useCachedBundle?: boolean;
+  useCachedBundle: boolean;
 };
 
 type FetchEhrBundleParams = Omit<FetchBundleParams, "bundleType">;

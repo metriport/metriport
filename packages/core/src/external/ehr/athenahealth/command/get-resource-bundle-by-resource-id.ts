@@ -26,7 +26,7 @@ export async function getResourceBundleByResourceId(
     athenaPatientId: ehrPatientId,
     resourceId,
     resourceType,
-    ...(useCachedBundle && { useCachedBundle }),
+    useCachedBundle,
   });
   return bundle;
 }

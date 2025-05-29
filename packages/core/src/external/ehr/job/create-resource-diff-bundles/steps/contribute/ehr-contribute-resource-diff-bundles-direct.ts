@@ -64,6 +64,7 @@ export class EhrContributeResourceDiffBundlesDirect
             ehrPatientId,
             resourceType: type,
             resourceId: id,
+            useCachedBundle: true,
           });
           const resource = bundle.entry?.[0]?.resource;
           if (!resource) continue;
