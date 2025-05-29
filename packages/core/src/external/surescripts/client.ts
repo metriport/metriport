@@ -202,7 +202,6 @@ export class SurescriptsSftpClient extends SftpClient {
   }
 
   async copyFromSurescripts(dryRun = false) {
-    await this.connect();
     const sftpFiles = await this.list("/" + INCOMING_NAME);
     const s3Files = await this.s3.listObjects(this.bucket, INCOMING_NAME + "/");
     const s3FileSet = new Set(s3Files.map(file => file.Key));
@@ -239,8 +238,6 @@ export class SurescriptsSftpClient extends SftpClient {
   }
 
   async copyToSurescripts(dryRun = false) {
-    await this.connect();
-
     const sftpHistory = await this.list("/" + HISTORY_NAME);
     const sftpHistorySet = new Set(sftpHistory);
 
