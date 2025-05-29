@@ -29,7 +29,7 @@ import { ApiConfig, formatDate, makeRequest, MakeRequestParamsInEhr } from "../s
 const apiUrl = Config.getApiUrl();
 
 interface HealthieApiConfig
-  extends Omit<ApiConfig, "twoLeggedAuthTokenInfo" | "clientKey" | "clientSecret" | "getSecrets"> {
+  extends Omit<ApiConfig, "twoLeggedAuthTokenInfo" | "clientKey" | "clientSecret"> {
   apiKey: string;
   environment: HealthieEnv;
 }
