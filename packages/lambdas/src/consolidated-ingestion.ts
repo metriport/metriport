@@ -24,7 +24,6 @@ FeatureFlags.init(region, featureFlagsTableName);
 export const handler = capture.wrapHandler(async (event: SQSEvent): Promise<void> => {
   const message = getSingleMessageOrFail(event.Records, lambdaName);
   if (!message) return;
-  console.log(`Running w/ unparsed body: ${message.body}`);
 
   const params = parseBody(message.body);
   const { cxId, patientId } = params;
@@ -48,14 +47,8 @@ function parseBody(body: string): IngestConsolidatedParams {
 
   const bodyAsJson = JSON.parse(bodyString);
 
-  const cxIdRaw = parseCxId(bodyAsJson);
-  const patientIdRaw = parsePatientId(bodyAsJson);
+  const cxId = parseCxId(bodyAsJson);
+  const patientId = parsePatientId(bodyAsJson);
 
-  const cxId = cxIdRaw;
-  const patientId = patientIdRaw;
-
-  return {
-    cxId,
-    patientId,
-  };
+  return { cxId, patientId };
 }

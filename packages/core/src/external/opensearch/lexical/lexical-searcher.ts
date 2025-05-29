@@ -11,7 +11,7 @@ import { FhirSearchResult } from "../index-based-on-fhir";
 import { paginatedSearch } from "../paginate";
 import { getEntryId } from "../shared/id";
 import { createSearchByIdsQuery } from "../shared/query";
-import { createQueryHasData, createLexicalSearchQuery } from "./lexical-search";
+import { createLexicalSearchQuery, createQueryHasData } from "./lexical-search";
 
 export type OpenSearchFhirSearcherConfig = OpenSearchConfigDirectAccess;
 
@@ -148,13 +148,15 @@ export class OpenSearchFhirSearcher {
 function mapResults(input: OpenSearchResponseHit<FhirSearchResult>[]): FhirSearchResult[] {
   if (!input) return [];
   return input.map(hit => {
+    const entryId = hit._id;
+    const source = hit._source;
     return {
-      entryId: hit._id,
-      cxId: hit._source.cxId,
-      patientId: hit._source.patientId,
-      resourceType: hit._source.resourceType,
-      resourceId: hit._source.resourceId,
-      rawContent: hit._source.rawContent,
+      entryId,
+      cxId: source.cxId,
+      patientId: source.patientId,
+      resourceType: source.resourceType,
+      resourceId: source.resourceId,
+      rawContent: source.rawContent,
     };
   });
 }

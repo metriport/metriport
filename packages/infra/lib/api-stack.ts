@@ -359,7 +359,7 @@ export class APIStack extends Stack {
     //-------------------------------------------
     const {
       ccdaIngestionQueue: ccdaSearchIngestionQueue,
-      searchDomainEndpoint: searchDomainEndpoint,
+      searchDomainEndpoint,
       searchDomainUserName,
       searchDomainSecret,
       ccdaIndexName: ccdaSearchIndexName,

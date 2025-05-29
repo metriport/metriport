@@ -1,7 +1,7 @@
 import { Duration } from "aws-cdk-lib";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 
-export const getConsolidatedIngestionConnectorSettings = () => {
+export function getConsolidatedIngestionConnectorSettings() {
   const lambdaTimeout = Duration.minutes(3);
   return {
     name: "ConsolidatedIngestion",
@@ -27,4 +27,4 @@ export const getConsolidatedIngestionConnectorSettings = () => {
       reportBatchItemFailures: false,
     },
   };
-};
+}

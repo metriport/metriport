@@ -13,7 +13,11 @@ import { ingestPatientConsolidated } from "./ingest-lexical";
  * Ingests a patient's consolidated data directly into OpenSearch.
  */
 export class IngestConsolidatedDirect implements IngestConsolidated {
-  constructor(private readonly apiUrl = Config.getApiUrl()) {}
+  private readonly patientLoader: PatientLoaderMetriportAPI;
+
+  constructor(private readonly apiUrl = Config.getApiUrl()) {
+    this.patientLoader = new PatientLoaderMetriportAPI(this.apiUrl);
+  }
 
   async ingestConsolidatedIntoSearchEngine({
     cxId,
@@ -44,8 +48,7 @@ export class IngestConsolidatedDirect implements IngestConsolidated {
   }: IngestConsolidatedParams): Promise<IngestConsolidatedResult> {
     const { log } = out(`cx ${cxId}, pt ${patientId}`);
 
-    const patientLoader = new PatientLoaderMetriportAPI(this.apiUrl);
-    const patient = await patientLoader.getOneOrFail({ cxId, id: patientId });
+    const patient = await this.patientLoader.getOneOrFail({ cxId, id: patientId });
 
     log(`Retrieved patient, indexing its consolidated data...`);
     await ingestPatientConsolidated({ patient });

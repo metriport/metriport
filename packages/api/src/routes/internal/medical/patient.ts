@@ -804,8 +804,9 @@ router.get(
     const id = getFromParamsOrFail("id", req);
 
     const patient = await getPatientReadOnlyOrFail({ cxId, patientId: id });
+    const dto = dtoFromModel(patient);
 
-    return res.status(status.OK).json(dtoFromModel(patient));
+    return res.status(status.OK).json(dto);
   })
 );
 
