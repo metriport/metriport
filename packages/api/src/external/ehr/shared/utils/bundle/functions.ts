@@ -6,13 +6,7 @@ import { BadRequestError } from "@metriport/shared";
 import { EhrSource, EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { getPatientMappingOrFail } from "../../../../../command/mapping/patient";
 import { fetchBundlePreSignedUrl as fetchBundlePreSignedUrlCanvas } from "../../../canvas/command/bundle/fetch-bundle-presigned-url";
-import { refreshEhrBundle as refreshEhrBundleCanvas } from "../../../canvas/command/bundle/refresh-ehr-bundle";
-import {
-  FetchBundleParams,
-  FetchBundleParamsForClient,
-  FetchedBundlePreSignedUrls,
-  RefreshEhrBundleParamsForClient,
-} from "./types";
+import { FetchBundleParams, FetchBundleParamsForClient, FetchedBundlePreSignedUrls } from "./types";
 
 export async function validateAndPrepareBundleFetchOrRefresh({
   ehr,
@@ -39,13 +33,11 @@ export async function validateAndPrepareBundleFetchOrRefresh({
 
 export type BundleFunctions = {
   fetchBundlePreSignedUrl: (params: FetchBundleParamsForClient) => Promise<string | undefined>;
-  refreshEhrBundle: (params: RefreshEhrBundleParamsForClient) => Promise<void>;
 };
 
 const bundleFunctionsByEhr: Record<EhrSource, BundleFunctions | undefined> = {
   [EhrSources.canvas]: {
     fetchBundlePreSignedUrl: fetchBundlePreSignedUrlCanvas,
-    refreshEhrBundle: refreshEhrBundleCanvas,
   },
   [EhrSources.athena]: undefined,
   [EhrSources.elation]: undefined,
