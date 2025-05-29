@@ -48,7 +48,7 @@ program
     });
 
     const patientIds = await api.getPatientIds(cxId);
-    const patients = await Promise.all(patientIds.patientIds.map(id => api.getPatient(cxId, id)));
+    const patients = await Promise.all(patientIds.map(id => api.getPatient(cxId, id)));
     console.log("Found " + patients.length + " patients");
 
     const message = client.generatePatientLoadFile(transmission, patients);

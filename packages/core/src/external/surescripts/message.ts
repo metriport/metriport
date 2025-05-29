@@ -53,7 +53,7 @@ export function toSurescriptsPatientLoadFile(
       patientPopulationId: transmission.cxId,
       lookBackInMonths: 12,
       transmissionId: transmission.id,
-      transmissionDate: transmission.date,
+      transmissionDate: new Date(transmission.timestamp),
       transmissionFileType: "PMA",
       transmissionAction: "U",
       fileSchedule: "ADHOC",

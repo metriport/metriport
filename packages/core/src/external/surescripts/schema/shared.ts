@@ -149,12 +149,12 @@ export function fromSurescriptsDate<O extends FieldOption>(option: O = {} as O) 
 
 export function toSurescriptsDate<T extends object>(
   key: keyof T,
-  { optional = false }: { optional?: boolean } = {}
+  { optional = false, useUtc = true }: { optional?: boolean; useUtc?: boolean } = {}
 ) {
   return function (sourceObject: T): string {
     const value = sourceObject[key];
     if (value instanceof Date) {
-      return convertDateToString(value);
+      return convertDateToString(value, { useUtc });
     } else if (typeof value === "string") {
       return value.replace(/-/g, "");
     } else if (optional && value == null) {
@@ -169,11 +169,11 @@ export function fromSurescriptsUtcDate<O extends FieldOption>({
   useUtc = false,
 }: { useUtc?: boolean } = {}) {
   return function (value: string): FieldTypeFromSurescripts<Date, O> {
-    const timestamp = Date.parse(value);
-    if (Number.isNaN(timestamp)) {
+    const date = dayjs(value);
+    if (!date.isValid()) {
       throw new Error(`Invalid date: ${value}`);
     }
-    return new Date(timestamp + (useUtc ? 0 : new Date().getTimezoneOffset() * 60000));
+    return (useUtc ? date.utc() : date.local()).toDate();
   };
 }
 

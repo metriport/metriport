@@ -134,12 +134,12 @@ describe("convertDateToString", () => {
 
   it("converts date to YYYY-MM-DD format", () => {
     const date = new Date("2024-02-26");
-    expect(convertDateToString(date, "-")).toBe("2024-02-26");
+    expect(convertDateToString(date, { separator: "-" })).toBe("2024-02-26");
   });
 
   it("converts date to YYYYMMDD format with separator", () => {
     const date = new Date("2024-02-26");
-    expect(convertDateToString(date, "-")).toBe("2024-02-26");
+    expect(convertDateToString(date, { separator: "-" })).toBe("2024-02-26");
   });
 });
 
