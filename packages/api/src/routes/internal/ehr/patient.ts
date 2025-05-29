@@ -12,7 +12,7 @@ import {
 import { startCreateResourceDiffBundlesJob } from "../../../external/ehr/shared/job/bundle/create-resource-diff-bundles/start-job";
 import { requestLogger } from "../../helpers/request-logger";
 import { getUUIDFrom } from "../../schemas/uuid";
-import { asyncHandler, getFrom, getFromQuery, getFromQueryOrFail } from "../../util";
+import { asyncHandler, getFrom, getFromQueryOrFail } from "../../util";
 
 const router = Router();
 
@@ -37,10 +37,8 @@ router.post(
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const patientId = getFrom("params").orFail("id", req);
     const practiceId = getFromQueryOrFail("practiceId", req);
-    const tokenId = getFromQuery("tokenId", req);
     const jobId = await startCreateResourceDiffBundlesJob({
       ehr,
-      ...(tokenId ? { tokenId } : {}),
       cxId,
       ehrPatientId: patientId,
       practiceId,
