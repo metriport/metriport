@@ -86,11 +86,27 @@ export const supportedCanvasResources = [
   "Observation",
   "Procedure",
 ];
+export const supportedCanvasResourcesById = [
+  "Medication",
+  "Location",
+  "Organization",
+  "Patient",
+  "Practitioner",
+  "Provenance",
+];
+
 export type SupportedCanvasResource = (typeof supportedCanvasResources)[number];
 export function isSupportedCanvasResource(
   resourceType: string
 ): resourceType is SupportedCanvasResource {
   return supportedCanvasResources.includes(resourceType);
+}
+
+export type SupportedCanvasResourceById = (typeof supportedCanvasResourcesById)[number];
+export function isSupportedCanvasResourceById(
+  resourceType: string
+): resourceType is SupportedCanvasResourceById {
+  return supportedCanvasResourcesById.includes(resourceType);
 }
 
 const problemStatusesMap = new Map<string, string>();
@@ -796,10 +812,12 @@ class CanvasApi {
     useCachedBundle?: boolean;
   }): Promise<Bundle> {
     const { debug } = out(
-      `Canvas getResourceBundleById - cxId ${cxId} practiceId ${this.practiceId} metriportPatientId ${metriportPatientId} canvasPatientId ${canvasPatientId} resourceType ${resourceType}`
+      `Canvas getResourceBundleByResourceId - cxId ${cxId} practiceId ${this.practiceId} metriportPatientId ${metriportPatientId} canvasPatientId ${canvasPatientId} resourceType ${resourceType}`
     );
-    if (!isSupportedCanvasResource(resourceType)) {
+    if (!isSupportedCanvasResource(resourceType) && !isSupportedCanvasResourceById(resourceType)) {
       throw new BadRequestError("Invalid resource type", undefined, {
+        canvasPatientId,
+        resourceId,
         resourceType,
       });
     }

@@ -169,24 +169,32 @@ export const supportedAthenaHealthResources = [
   "Coverage",
   "CareTeam",
 ];
-
-export const scopes = [
-  ...supportedAthenaHealthResources,
+export const supportedAthenaHealthResourcesById = [
   "Media",
   "Medication",
   "Binary",
   "RelatedPerson",
   "Location",
   "Organization",
+  "Patient",
   "Practitioner",
   "Provenance",
 ];
+
+export const scopes = [...supportedAthenaHealthResources, ...supportedAthenaHealthResourcesById];
 
 export type SupportedAthenaHealthResource = (typeof supportedAthenaHealthResources)[number];
 export function isSupportedAthenaHealthResource(
   resourceType: string
 ): resourceType is SupportedAthenaHealthResource {
   return supportedAthenaHealthResources.includes(resourceType);
+}
+
+export type SupportedAthenaHealthResourceById = (typeof supportedAthenaHealthResourcesById)[number];
+export function isSupportedAthenaHealthResourceById(
+  resourceType: string
+): resourceType is SupportedAthenaHealthResourceById {
+  return supportedAthenaHealthResourcesById.includes(resourceType);
 }
 
 class AthenaHealthApi {
@@ -803,10 +811,15 @@ class AthenaHealthApi {
     useCachedBundle?: boolean;
   }): Promise<Bundle> {
     const { debug } = out(
-      `AthenaHealth getBundleByResourceType - cxId ${cxId} practiceId ${this.practiceId} metriportPatientId ${metriportPatientId} athenaPatientId ${athenaPatientId} resourceType ${resourceType}`
+      `AthenaHealth getResourceBundleByResourceId - cxId ${cxId} practiceId ${this.practiceId} metriportPatientId ${metriportPatientId} athenaPatientId ${athenaPatientId} resourceType ${resourceType}`
     );
-    if (!isSupportedAthenaHealthResource(resourceType)) {
+    if (
+      !isSupportedAthenaHealthResource(resourceType) &&
+      !isSupportedAthenaHealthResourceById(resourceType)
+    ) {
       throw new BadRequestError("Invalid resource type", undefined, {
+        athenaPatientId,
+        resourceId,
         resourceType,
       });
     }

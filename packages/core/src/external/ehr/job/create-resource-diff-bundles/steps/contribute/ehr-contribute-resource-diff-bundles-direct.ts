@@ -49,20 +49,27 @@ export class EhrContributeResourceDiffBundlesDirect
         metriportPatientId,
         ehrPatientId,
         resourceType,
+        jobId,
       });
       const references = getReferencesFromResources({ resources: ehrOnlyResources });
       const getResourceBundleByResourceId = getEhrResourceBundleByResourceId(ehr);
       for (const { id, type } of references.missingReferences) {
-        const resource = await getResourceBundleByResourceId({
-          cxId,
-          practiceId,
-          metriportPatientId,
-          ehrPatientId,
-          resourceType: type,
-          resourceId: id,
-        });
-        if (!resource) continue;
-        ehrOnlyResources.push(resource);
+        try {
+          const resource = await getResourceBundleByResourceId({
+            cxId,
+            practiceId,
+            metriportPatientId,
+            ehrPatientId,
+            resourceType: type,
+            resourceId: id,
+          });
+          if (!resource) continue;
+          ehrOnlyResources.push(resource);
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } catch (error: any) {
+          if (error.message === "Invalid resource type") continue;
+          throw error;
+        }
       }
       const validResources = ehrOnlyResources
         .map(resource => adjustPatient(resource, metriportPatientId))
@@ -118,6 +125,7 @@ async function getEhrOnlyResourcesFromS3({
   metriportPatientId,
   ehrPatientId,
   resourceType,
+  jobId,
 }: Omit<FetchBundleParams, "bundleType">): Promise<Resource[]> {
   const bundle = await fetchBundle({
     ehr,
@@ -126,6 +134,7 @@ async function getEhrOnlyResourcesFromS3({
     ehrPatientId,
     resourceType,
     bundleType: BundleType.RESOURCE_DIFF_EHR_ONLY,
+    jobId,
   });
   if (!bundle?.bundle.entry) return [];
   if (bundle.bundle.entry.length < 1) return [];
