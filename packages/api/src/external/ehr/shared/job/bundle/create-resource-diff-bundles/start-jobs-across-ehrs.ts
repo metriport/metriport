@@ -36,10 +36,10 @@ export async function startCreateResourceDiffBundlesJobsAcrossEhrs({
       });
       startCreateResourceDiffBundlesJobAtEhr({
         ehr: EhrSources.canvas,
+        tokenId,
         cxId,
         ehrPatientId: patientMapping.externalId,
         requestId,
-        tokenId,
       }).catch(processAsyncError(`${EhrSources.canvas} startCreateResourceDiffBundlesJobAtEhr`));
     }
   }
@@ -53,7 +53,7 @@ async function startCreateResourceDiffBundlesJobAtEhr({
   requestId,
 }: {
   ehr: EhrSource;
-  tokenId?: string;
+  tokenId: string;
   cxId: string;
   ehrPatientId: string;
   requestId: string;
