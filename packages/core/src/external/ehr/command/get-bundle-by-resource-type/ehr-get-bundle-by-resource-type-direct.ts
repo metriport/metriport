@@ -21,12 +21,9 @@ export class EhrGetBundleByResourceTypeDirect implements EhrGetBundleByResourceT
 
 type GetBundleByResourceType = (params: GetBundleByResourceTypeClientRequest) => Promise<Bundle>;
 
-export type GetBundleByResourceTypeMethodsMap = Record<
-  EhrSource,
-  GetBundleByResourceType | undefined
->;
+type GetBundleByResourceTypeMethodsMap = Record<EhrSource, GetBundleByResourceType | undefined>;
 
-export const ehrGetBundleByResourceTypeMap: GetBundleByResourceTypeMethodsMap = {
+const ehrGetBundleByResourceTypeMap: GetBundleByResourceTypeMethodsMap = {
   [EhrSources.canvas]: getBundleByResourceTypeCanvas,
   [EhrSources.athena]: getBundleByResourceTypeAthena,
   [EhrSources.elation]: undefined,
@@ -34,7 +31,7 @@ export const ehrGetBundleByResourceTypeMap: GetBundleByResourceTypeMethodsMap = 
   [EhrSources.eclinicalworks]: undefined,
 };
 
-export function getEhrGetBundleByResourceTypeHandler(ehr: EhrSource): GetBundleByResourceType {
+function getEhrGetBundleByResourceTypeHandler(ehr: EhrSource): GetBundleByResourceType {
   const handler = ehrGetBundleByResourceTypeMap[ehr];
   if (!handler) {
     throw new BadRequestError("No get bundle by resource type handler found", undefined, {

@@ -79,10 +79,8 @@ import {
   getConditionSnomedCode,
   getConditionStartDate,
   getConditionStatus,
-  GetSecretsOauthFunction,
   makeRequest,
   MakeRequestParamsInEhr,
-  processOauthSecrets,
 } from "../shared";
 
 const parallelRequests = 5;
@@ -196,7 +194,6 @@ class AthenaHealthApi {
   private axiosInstanceProprietary: AxiosInstance;
   private baseUrl: string;
   private twoLeggedAuthTokenInfo: JwtTokenInfo | undefined;
-  private getSecrets: GetSecretsOauthFunction | undefined;
   private practiceId: string;
 
   private constructor(private config: AthenaHealthApiConfig) {
@@ -205,7 +202,6 @@ class AthenaHealthApi {
     this.axiosInstanceFhir = axios.create({});
     this.axiosInstanceProprietary = axios.create({});
     this.baseUrl = `https://${config.environment}.platform.athenahealth.com`;
-    this.getSecrets = config.getSecrets;
   }
 
   public static async create(config: AthenaHealthApiConfig): Promise<AthenaHealthApi> {
@@ -219,14 +215,6 @@ class AthenaHealthApi {
   }
 
   private async fetchTwoLeggedAuthToken(): Promise<JwtTokenInfo> {
-    const secrets = await processOauthSecrets({
-      ehr: EhrSources.athena,
-      secrets: {
-        ...(this.config.clientKey && { clientKey: this.config.clientKey }),
-        ...(this.config.clientSecret && { clientSecret: this.config.clientSecret }),
-      },
-      getSecrets: this.getSecrets,
-    });
     const url = `${this.baseUrl}/oauth2/v1/token`;
     const fhirScopes = scopes.map(resource => `system/${resource}.read`).join(" ");
     const data = {
@@ -238,8 +226,8 @@ class AthenaHealthApi {
       const response = await axios.post(url, createDataParams(data), {
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         auth: {
-          username: secrets.clientKey,
-          password: secrets.clientSecret,
+          username: this.config.clientKey,
+          password: this.config.clientSecret,
         },
       });
       if (!response.data) throw new MetriportError("No body returned from token endpoint");

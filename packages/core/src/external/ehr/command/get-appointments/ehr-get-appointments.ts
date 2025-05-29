@@ -5,7 +5,6 @@ import { AppointmentWithAttendee } from "@metriport/shared/interface/external/eh
 
 export type GetAppointmentsRequest = {
   method: AppointmentMethods;
-  environment: string;
   tokenId?: string;
   cxId: string;
   practiceId: string;

@@ -11,14 +11,16 @@ import {
   EhrPerPracticeParams,
 } from "./client";
 
-type OauthSecretsFunction<T extends EhrEnv> = (
+type OauthSecretsMethod<T extends EhrEnv> = (
   params: EhrPerPracticeParams
 ) => EhrEnvAndClientCredentials<T>;
-type ApiKeySecretsFunction<T extends EhrEnv> = (params: EhrPerPracticeParams) => EhrEnvAndApiKey<T>;
+type ApiKeySecretsMethod<T extends EhrEnv> = (params: EhrPerPracticeParams) => EhrEnvAndApiKey<T>;
 
-export type SecretsFunction<T extends EhrEnv> = OauthSecretsFunction<T> | ApiKeySecretsFunction<T>;
+type GetSecrets<T extends EhrEnv> = OauthSecretsMethod<T> | ApiKeySecretsMethod<T>;
 
-const secretsFunctionsBy: Record<EhrSource, SecretsFunction<EhrEnv> | undefined> = {
+export type SecretsMethodMap = Record<EhrSource, GetSecrets<EhrEnv> | undefined>;
+
+const secretsMethodsBy: SecretsMethodMap = {
   [EhrSources.canvas]: getCanvasEnv,
   [EhrSources.athena]: getAthenaEnv,
   [EhrSources.elation]: getElationEnv,
@@ -26,10 +28,10 @@ const secretsFunctionsBy: Record<EhrSource, SecretsFunction<EhrEnv> | undefined>
   [EhrSources.eclinicalworks]: undefined,
 };
 
-export function getSecretsFunction(ehr: EhrSources): SecretsFunction<EhrEnv> {
-  const secretsFunction = secretsFunctionsBy[ehr];
-  if (!secretsFunction) {
-    throw new BadRequestError("No secrets function found @ Ehr", undefined, { ehr });
+export function getSecretsHandler(ehr: EhrSources): GetSecrets<EhrEnv> {
+  const handler = secretsMethodsBy[ehr];
+  if (!handler) {
+    throw new BadRequestError("No secrets handler found", undefined, { ehr });
   }
-  return secretsFunction;
+  return handler;
 }

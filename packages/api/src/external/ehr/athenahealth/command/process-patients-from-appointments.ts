@@ -1,6 +1,5 @@
-import { AthenaEnv } from "@metriport/core/external/ehr/athenahealth/index";
-import { buildEhrGetAppointmentsHandler } from "@metriport/core/external/ehr/command/get-appointments/ehr-get-appointments-factory";
 import { AppointmentMethods } from "@metriport/core/external/ehr/command/get-appointments/ehr-get-appointments";
+import { buildEhrGetAppointmentsHandler } from "@metriport/core/external/ehr/command/get-appointments/ehr-get-appointments-factory";
 import { buildEhrSyncPatientHandler } from "@metriport/core/external/ehr/command/sync-patient/ehr-sync-patient-factory";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { out } from "@metriport/core/util/log";
@@ -151,13 +150,12 @@ async function getAppointments({
   const { log } = out(
     `AthenaHealth getAppointments - cxId ${cxId} practiceId ${practiceId} departmentIds ${departmentIds} lookupMode ${lookupMode}`
   );
-  const { tokenId, environment, client } = await createAthenaClientWithTokenIdAndEnvironment({
+  const { tokenId, client } = await createAthenaClientWithTokenIdAndEnvironment({
     cxId,
     practiceId,
   });
   try {
     let appointments = await getAppointmentsFromApi({
-      environment,
       tokenId,
       cxId,
       practiceId,
@@ -188,13 +186,11 @@ async function getAppointments({
 }
 
 type GetAppointmentsFromApiParams = GetAppointmentsParams & {
-  environment: AthenaEnv;
   tokenId: string;
   log: typeof console.log;
 };
 
 async function getAppointmentsFromApi({
-  environment,
   tokenId,
   cxId,
   practiceId,
@@ -204,7 +200,6 @@ async function getAppointmentsFromApi({
 }: GetAppointmentsFromApiParams): Promise<BookedAppointment[]> {
   const handler = buildEhrGetAppointmentsHandler();
   const handlerParams = {
-    environment,
     tokenId,
     cxId,
     practiceId,

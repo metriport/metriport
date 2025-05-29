@@ -2,7 +2,6 @@ import { AppointmentMethods } from "@metriport/core/external/ehr/command/get-app
 import { buildEhrGetAppointmentsHandler } from "@metriport/core/external/ehr/command/get-appointments/ehr-get-appointments-factory";
 import { buildHealthieLinkPatientHandler } from "@metriport/core/external/ehr/command/healthie/link-patient/healthie-link-patient-factory";
 import { buildEhrSyncPatientHandler } from "@metriport/core/external/ehr/command/sync-patient/ehr-sync-patient-factory";
-import { HealthieEnv } from "@metriport/core/external/ehr/healthie/index";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
@@ -26,7 +25,7 @@ import {
   parallelPatients,
   parallelPractices,
 } from "../../shared/utils/appointment";
-import { createHealthieClientWithEnvironment, LookupMode, LookupModes } from "../shared";
+import { LookupMode, LookupModes } from "../shared";
 import {
   SyncHealthiePatientIntoMetriportParams,
   UpdateHealthiePatientQuickNotesParams,
@@ -177,10 +176,8 @@ async function getAppointments({
   const { log } = out(
     `Healthie getAppointments - cxId ${cxId} practiceId ${practiceId} lookupMode ${lookupMode}`
   );
-  const { environment } = await createHealthieClientWithEnvironment({ cxId, practiceId });
   try {
     const appointments = await getAppointmentsFromApi({
-      environment,
       cxId,
       practiceId,
       lookupMode,
@@ -199,12 +196,10 @@ async function getAppointments({
 }
 
 type GetAppointmentsFromApiParams = GetAppointmentsParams & {
-  environment: HealthieEnv;
   log: typeof console.log;
 };
 
 async function getAppointmentsFromApi({
-  environment,
   cxId,
   practiceId,
   lookupMode,
@@ -212,7 +207,6 @@ async function getAppointmentsFromApi({
 }: GetAppointmentsFromApiParams): Promise<AppointmentWithAttendee[]> {
   const handler = buildEhrGetAppointmentsHandler();
   const handlerParams = {
-    environment,
     cxId,
     practiceId,
   };

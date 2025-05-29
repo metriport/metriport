@@ -24,20 +24,13 @@ import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import axios, { AxiosInstance } from "axios";
 import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
-import {
-  ApiConfig,
-  formatDate,
-  GetSecretsApiKeyFunction,
-  makeRequest,
-  MakeRequestParamsInEhr,
-} from "../shared";
+import { ApiConfig, formatDate, makeRequest, MakeRequestParamsInEhr } from "../shared";
 
 const apiUrl = Config.getApiUrl();
 
 interface HealthieApiConfig
-  extends Omit<ApiConfig, "twoLeggedAuthTokenInfo" | "clientKey" | "clientSecret" | "getSecrets"> {
-  getSecrets?: GetSecretsApiKeyFunction;
-  apiKey?: string;
+  extends Omit<ApiConfig, "twoLeggedAuthTokenInfo" | "clientKey" | "clientSecret"> {
+  apiKey: string;
   environment: HealthieEnv;
 }
 
@@ -52,8 +45,7 @@ export function isHealthieEnv(env: string): env is HealthieEnv {
 class HealthieApi {
   private axiosInstance: AxiosInstance;
   private baseUrl: string;
-  private apiKey: string | undefined;
-  private getSecrets: GetSecretsApiKeyFunction | undefined;
+  private apiKey: string;
   private practiceId: string;
 
   private constructor(config: HealthieApiConfig) {
@@ -61,7 +53,6 @@ class HealthieApi {
     this.practiceId = config.practiceId;
     this.axiosInstance = axios.create({});
     this.baseUrl = `https://${config.environment}.gethealthie.com/graphql`;
-    this.getSecrets = config.getSecrets;
   }
 
   public static async create(config: HealthieApiConfig): Promise<HealthieApi> {
@@ -71,18 +62,10 @@ class HealthieApi {
   }
 
   async initialize(): Promise<void> {
+    const { log } = out(`Healthie initialize - practiceId ${this.practiceId}`);
     if (!this.apiKey) {
-      if (!this.getSecrets) {
-        throw new MetriportError(
-          "getSecrets function is required if apiKey is not provided",
-          undefined,
-          {
-            ehr: EhrSources.healthie,
-          }
-        );
-      }
-      const secrets = await this.getSecrets();
-      this.apiKey = secrets.apiKey;
+      log(`API key not found @ Healthie`);
+      throw new MetriportError("API key not found @ Healthie");
     }
 
     const headers = {

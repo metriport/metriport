@@ -5,9 +5,8 @@ import { createAthenaHealthClient } from "../shared";
 export async function getAppointmentsFromSubscriptionEvents(
   params: GetAppointmentsClientRequest
 ): Promise<BookedAppointment[]> {
-  const { cxId, practiceId, environment, tokenId, fromDate, toDate, departmentIds } = params;
+  const { cxId, practiceId, tokenId, fromDate, toDate, departmentIds } = params;
   const client = await createAthenaHealthClient({
-    environment,
     cxId,
     practiceId,
     ...(tokenId && { tokenId }),

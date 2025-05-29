@@ -2,17 +2,22 @@ import { BadRequestError } from "@metriport/shared";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import HealthieApi, { isHealthieEnv } from ".";
 import { getSecrets } from "../api/get-client-key-and-secret";
-import { GetSecretsApiKeyResult, getSecretsApiKeySchema } from "../shared";
+import { getSecretsApiKeySchema } from "../shared";
 
 export async function createHealthieClient({
-  environment,
   cxId,
   practiceId,
 }: {
-  environment: string;
   cxId: string;
   practiceId: string;
 }) {
+  const secrets = await getSecrets({
+    cxId,
+    practiceId,
+    ehr: EhrSources.healthie,
+    schema: getSecretsApiKeySchema,
+  });
+  const environment = secrets.environment;
   if (!isHealthieEnv(environment)) {
     throw new BadRequestError("Invalid environment", undefined, {
       ehr: EhrSources.healthie,
@@ -22,12 +27,6 @@ export async function createHealthieClient({
   return await HealthieApi.create({
     practiceId,
     environment,
-    getSecrets: async () =>
-      getSecrets<GetSecretsApiKeyResult>({
-        ehr: EhrSources.healthie,
-        cxId,
-        practiceId,
-        schema: getSecretsApiKeySchema,
-      }),
+    apiKey: secrets.apiKey,
   });
 }

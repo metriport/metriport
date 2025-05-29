@@ -3,7 +3,6 @@ import { EhrSource } from "@metriport/shared/interface/external/ehr/source";
 
 export type GetBundleByResourceTypeRequest = {
   ehr: EhrSource;
-  environment: string;
   tokenId?: string;
   cxId: string;
   practiceId: string;
@@ -13,10 +12,7 @@ export type GetBundleByResourceTypeRequest = {
   useCachedBundle: boolean;
 };
 
-export type GetBundleByResourceTypeClientRequest = Omit<
-  GetBundleByResourceTypeRequest,
-  "ehr" | "method"
->;
+export type GetBundleByResourceTypeClientRequest = Omit<GetBundleByResourceTypeRequest, "ehr">;
 
 export interface EhrGetBundleByResourceTypeHandler {
   getBundleByResourceType(request: GetBundleByResourceTypeRequest): Promise<Bundle>;
