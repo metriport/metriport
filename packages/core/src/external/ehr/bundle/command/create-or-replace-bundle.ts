@@ -11,6 +11,7 @@ import { BundleKeyBaseParams, createKeyMap, getS3UtilsInstance } from "../bundle
 
 export type CreateOrReplaceBundleParams = Omit<BundleKeyBaseParams, "getLastModified"> & {
   bundle: Bundle;
+  mixedResourceTypes?: boolean;
 };
 
 /**
@@ -26,6 +27,7 @@ export type CreateOrReplaceBundleParams = Omit<BundleKeyBaseParams, "getLastModi
  * @param jobId - The job ID of the bundle. If not provided, the tag 'latest' will be used.
  * @param resourceId - The resource ID of the bundle.
  * @param s3BucketName - The S3 bucket name (optional, defaults to the EHR bundle bucket)
+ * @param mixedResourceTypes - Whether the bundle contains resources with different resource types. Default is false.
  */
 export async function createOrReplaceBundle({
   ehr,
@@ -38,18 +40,23 @@ export async function createOrReplaceBundle({
   resourceId,
   jobId,
   s3BucketName = Config.getEhrBundleBucketName(),
+  mixedResourceTypes = false,
 }: CreateOrReplaceBundleParams): Promise<void> {
   const { log } = out(
     `Ehr createOrReplaceBundle - ehr ${ehr} cxId ${cxId} metriportPatientId ${metriportPatientId} ehrPatientId ${ehrPatientId} bundleType ${bundleType} resourceType ${resourceType} resourceId ${resourceId}`
   );
   if (!bundle.entry) return;
-  const invalidResource = bundle.entry.find(entry => entry.resource?.resourceType !== resourceType);
-  if (invalidResource) {
-    throw new BadRequestError("Invalid resource type in bundle", undefined, {
-      bundleType,
-      resourceType,
-      invalidResourceResourceType: invalidResource.resource?.resourceType,
-    });
+  if (!mixedResourceTypes) {
+    const invalidResource = bundle.entry.find(
+      entry => entry.resource?.resourceType !== resourceType
+    );
+    if (invalidResource) {
+      throw new BadRequestError("Invalid resource type in bundle", undefined, {
+        bundleType,
+        resourceType,
+        invalidResourceResourceType: invalidResource.resource?.resourceType,
+      });
+    }
   }
   const s3Utils = getS3UtilsInstance();
   const createKey = createKeyMap[bundleType];

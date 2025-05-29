@@ -47,5 +47,6 @@ export async function contributeResourceDiffBundle({
       type: "collection",
       entry: bundle.bundle.entry,
     },
+    enforceUuid: false,
   });
 }

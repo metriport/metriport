@@ -2,7 +2,6 @@ import { Bundle, Resource } from "@medplum/fhirtypes";
 import { BadRequestError, sleep } from "@metriport/shared";
 import { createBundleFromResourceList } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { EhrSource, EhrSources } from "@metriport/shared/interface/external/ehr/source";
-import { isValidUuid } from "../../../../../../util/uuid-v7";
 import { getReferencesFromResources } from "../../../../../fhir/shared/bundle";
 import { contributeResourceDiffBundle } from "../../../../api/bundle/contribute-resource-diff-bundle";
 import { setJobEntryStatus } from "../../../../api/job/set-entry-status";
@@ -75,9 +74,9 @@ export class EhrContributeResourceDiffBundlesDirect
           throw error;
         }
       }
-      const validResources = ehrOnlyResources
-        .map(resource => adjustPatient(resource, metriportPatientId))
-        .filter(resource => isValidUuid(resource.id ?? ""));
+      const validResources = ehrOnlyResources.map(resource =>
+        adjustPatientDangerous(resource, metriportPatientId)
+      );
       if (validResources.length < 1) {
         throw new BadRequestError(`No valid resources found`, undefined, {
           cxId,
@@ -98,6 +97,7 @@ export class EhrContributeResourceDiffBundlesDirect
         bundle: dataContributionBundle,
         resourceType,
         jobId,
+        mixedResourceTypes: true,
       });
       await contributeResourceDiffBundle({
         ehr,
@@ -173,7 +173,10 @@ function getEhrResourceBundleByResourceId(ehr: EhrSource): GetResourceBundleByRe
   return handler;
 }
 
-function adjustPatient(resource: Resource, metriportPatientId: string): Resource {
+function adjustPatientDangerous(resource: Resource, metriportPatientId: string): Resource {
+  if (resource.resourceType === "Patient") {
+    resource.id = metriportPatientId;
+  }
   if ("subject" in resource) {
     const subject = resource.subject;
     if ("reference" in subject) {

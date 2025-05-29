@@ -13,14 +13,16 @@ import { Bundle as ValidBundle } from "../../../routes/medical/schemas/fhir";
 export function hydrateBundle(
   bundle: ValidBundle,
   patient: Patient,
-  fhirBundleDestinationKey: string
+  fhirBundleDestinationKey: string,
+  enforceUuid = true
 ): ValidBundle {
   const bundleWithoutPatient = removePatientResource(bundle, patient.id);
   const docExtension = buildDocIdFhirExtension(fhirBundleDestinationKey);
   const bundleWithExtensions = validateUuidsAndAddExtensions(
     bundleWithoutPatient,
     docExtension,
-    patient.id
+    patient.id,
+    enforceUuid
   );
 
   return bundleWithExtensions;
@@ -29,7 +31,8 @@ export function hydrateBundle(
 function validateUuidsAndAddExtensions(
   bundle: ValidBundle,
   docExtension: Extension,
-  patientId: string
+  patientId: string,
+  enforceUuid?: boolean
 ): ValidBundle {
   const uniqueIds = new Set<string>();
   bundle.entry.forEach(entry => {
@@ -38,7 +41,7 @@ function validateUuidsAndAddExtensions(
     if (!oldId) {
       throw new BadRequestError(`${entry.resource.resourceType} resource is missing the ID!`);
     }
-    if (!isValidUuid(oldId)) {
+    if (enforceUuid && !isValidUuid(oldId)) {
       throw new BadRequestError(`Invalid UUID: ${oldId}`);
     }
     if (uniqueIds.has(oldId)) {
