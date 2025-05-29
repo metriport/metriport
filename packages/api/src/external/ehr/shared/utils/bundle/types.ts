@@ -4,27 +4,19 @@ import { EhrSource } from "@metriport/shared/interface/external/ehr/source";
 type BaseBundleParams = {
   ehr: EhrSource;
   cxId: string;
-  practiceId: string;
   ehrPatientId: string;
-  resourceType?: string;
 };
 
-export type FetchBundleParams = Omit<BaseBundleParams, "practiceId"> & {
+export type FetchBundleParams = BaseBundleParams & {
+  resourceType?: string;
   bundleType: BundleType;
   jobId?: string;
 };
 
-export type ContributeBundleParams = Omit<BaseBundleParams, "practiceId"> & {
+export type ContributeBundleParams = BaseBundleParams & {
   resourceType: string;
   jobId: string;
 };
-
-type BaseBundleParamsForClient = Omit<BaseBundleParams, "ehr" | "resourceType"> & {
-  resourceType: string;
-  metriportPatientId: string;
-};
-
-export type FetchBundleParamsForClient = FetchBundleParams & BaseBundleParamsForClient;
 
 export type FetchedBundlePreSignedUrls = {
   preSignedUrls: string[];
