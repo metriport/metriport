@@ -1,10 +1,14 @@
-import { timed } from "@metriport/shared/util/duration";
+import { Features } from "../../../../domain/features";
 import { Patient } from "../../../../domain/patient";
+import { CloudWatchUtils, Metrics, withMetrics } from "../../../../external/aws/cloudwatch";
 import { OpenSearchFhirIngestor } from "../../../../external/opensearch/fhir-ingestor";
 import { OnBulkItemError } from "../../../../external/opensearch/shared/bulk";
 import { capture, out } from "../../../../util";
+import { Config } from "../../../../util/config";
 import { getConsolidatedPatientData } from "../../consolidated-get";
 import { getConfigs } from "./fhir-config";
+
+const cloudWatchUtils = new CloudWatchUtils(Config.getAWSRegion(), Features.ConsolidatedIngestion);
 
 /**
  * Ingest a patient's consolidated resources into OpenSearch for lexical search.
@@ -18,15 +22,25 @@ export async function ingestPatientConsolidated({
   patient: Patient;
   onItemError?: OnBulkItemError;
 }) {
-  const { log } = out(`ingestLexical - cx ${patient.cxId}, pt ${patient.id}`);
+  const { cxId, id: patientId } = patient;
+  const { log } = out(`ingestPatientConsolidated - cx ${cxId}, pt ${patientId}`);
+  const metrics: Metrics = {};
+  const startedAt = Date.now();
 
   const ingestor = new OpenSearchFhirIngestor(getConfigs());
 
   log("Getting consolidated and cleaning up the index...");
+  const localStartedAt = Date.now();
   const [bundle] = await Promise.all([
-    timed(() => getConsolidatedPatientData({ patient }), "getConsolidatedPatientData", log),
-    ingestor.delete({ cxId: patient.cxId, patientId: patient.id }),
+    withMetrics(
+      () => getConsolidatedPatientData({ patient }),
+      "ingest_getConsolidated",
+      metrics,
+      log
+    ),
+    withMetrics(() => ingestor.delete({ cxId, patientId }), "ingest_deleteIngested", metrics, log),
   ]);
+  metrics.ingest_preIngest = { duration: Date.now() - localStartedAt, timestamp: new Date() };
 
   const resources =
     bundle.entry?.flatMap(entry => {
@@ -37,14 +51,15 @@ export async function ingestPatientConsolidated({
     }) ?? [];
 
   log("Done, calling ingestBulk...");
-  const startedAt = Date.now();
-  const errors = await ingestor.ingestBulk({
-    cxId: patient.cxId,
-    patientId: patient.id,
-    resources,
-    onItemError,
-  });
+  const errors = await withMetrics(
+    () => ingestor.ingestBulk({ cxId, patientId, resources, onItemError }),
+    "ingest_ingestBulk",
+    metrics
+  );
+
   const elapsedTime = Date.now() - startedAt;
+  metrics.ingest_total = { duration: elapsedTime, timestamp: new Date() };
+  await cloudWatchUtils.reportMetrics(metrics);
 
   if (errors.size > 0) captureErrors({ cxId: patient.cxId, patientId: patient.id, errors, log });
 
