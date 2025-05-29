@@ -90,15 +90,25 @@ export function toSurescriptsEnum<T extends object>(
   };
 }
 
-export function toSurescriptsString<T extends object>(key: keyof T, option: FieldOption = {}) {
+export function toSurescriptsString<T extends object>(
+  key: keyof T,
+  { optional = false, minLength = 0, maxLength = 0, truncate = false }: FieldOption = {}
+) {
   return function (sourceObject: T): string {
     const value = sourceObject[key];
     if (typeof value === "string") {
-      if (option.maxLength != null && value.length > option.maxLength) {
-        return escapePipe(value).substring(0, option.maxLength);
+      if (truncate && maxLength != null && value.length > maxLength) {
+        return escapePipe(value).substring(0, maxLength);
+      }
+      if (minLength != null && value.length < minLength) {
+        throw new MetriportError(`Value is too short: ${value}`, "to_surescripts_string", {
+          value: String(value),
+          key: String(key),
+          minLength,
+        });
       }
       return escapePipe(value);
-    } else if (option.optional && value == null) {
+    } else if (optional && value == null) {
       return "";
     } else {
       throw new MetriportError(`Invalid value: ${value}`, "to_surescripts_string", {
