@@ -264,6 +264,7 @@ export class SurescriptsSftpClient extends SftpClient {
     const s3Key = getS3Key(OUTGOING_NAME, fileName);
     const s3FileExists = await this.s3.fileExists(this.bucket, s3Key);
     if (!s3FileExists) {
+      console.log("File does not exist in S3: " + s3Key);
       return null;
     }
 
