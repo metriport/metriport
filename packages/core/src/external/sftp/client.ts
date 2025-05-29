@@ -15,7 +15,7 @@ export interface SftpClientImpl {
   connect(): Promise<void>;
   disconnect(): Promise<void>;
   read(remotePath: string): Promise<Buffer>;
-  write(remotePath: string, content: Buffer): Promise<boolean>;
+  write(remotePath: string, content: Buffer): Promise<void>;
   list(remotePath: string): Promise<string[]>;
   exists(remotePath: string): Promise<boolean>;
 }
@@ -25,7 +25,7 @@ type SftpExecutionHandler<T> = (this: SftpClient, client: SshSftpClient) => Prom
 export class SftpClient implements SftpClientImpl {
   protected readonly client: SshSftpClient;
   private sshError: unknown[] = [];
-  private sshErrorHandler: (...args: unknown[]) => void;
+  private sshErrorHandler: (error?: unknown) => void;
 
   protected readonly host: string;
   protected readonly port: number;
@@ -37,8 +37,8 @@ export class SftpClient implements SftpClientImpl {
 
   constructor({ host, port, username, password, privateKey }: SftpConfig) {
     this.client = new SshSftpClient();
-    this.sshErrorHandler = (error: unknown) => {
-      this.sshError.push(error);
+    this.sshErrorHandler = (error?: unknown) => {
+      if (error != null) this.sshError.push(error);
     };
 
     this.host = host;
@@ -53,7 +53,7 @@ export class SftpClient implements SftpClientImpl {
   ): Promise<T> {
     if (this.connectionEnded) {
       throw new MetriportError(
-        "The SftpClient has been disconnected and should not be reused. Re-initialize a new SftpClient to perform further operations.",
+        "The SftpClient has been disconnected and should not be reused.",
         "disconnected",
         {
           context: "sftp.client.executeWithSshListeners",
@@ -62,20 +62,10 @@ export class SftpClient implements SftpClientImpl {
     }
 
     this.sshError = [];
-    let executionError: unknown;
-
-    let result: T | undefined;
-    try {
-      result = await executionHandler.call(this, this.client);
-    } catch (error) {
-      executionError = error;
-    }
-
-    if (executionError) {
-      throw executionError;
-    } else if (this.sshError.length > 0) {
-      throw this.sshError[0];
-    } else return result as T;
+    const result = await executionHandler.call(this, this.client);
+    const unexpectedSshError = this.sshError[0];
+    if (unexpectedSshError) throw unexpectedSshError;
+    return result as T;
   }
 
   async connect(): Promise<void> {
@@ -127,36 +117,31 @@ export class SftpClient implements SftpClientImpl {
   }
 
   async list(remotePath: string, filter?: SshSftpClient.ListFilterFunction): Promise<string[]> {
-    const files: string[] = await this.executeWithSshListeners(async function (client) {
+    const fileNames: string[] = await this.executeWithSshListeners(async function (client) {
       const files = await client.list(remotePath, filter);
       return files.map(file => file.name);
     });
-    return files;
+    return fileNames;
   }
 
   async exists(remotePath: string): Promise<boolean> {
-    try {
-      const info = await this.executeWithSshListeners(async function (client) {
-        return client.exists(remotePath);
-      });
-      return info !== false;
-    } catch (error) {
-      return false;
-    }
+    const exists = await this.executeWithSshListeners(async function (client) {
+      return client.exists(remotePath);
+    });
+    return exists !== false;
   }
 
   async write(
     remotePath: string,
     content: Buffer,
     { compress = false }: { compress?: boolean } = {}
-  ): Promise<boolean> {
+  ): Promise<void> {
     if (compress) {
       content = await gzip(content);
     }
     await this.executeWithSshListeners(async function (client) {
       return client.put(content, remotePath);
     });
-    return true;
   }
 }
 
