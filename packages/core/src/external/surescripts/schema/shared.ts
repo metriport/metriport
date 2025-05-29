@@ -94,7 +94,10 @@ export function toSurescriptsString<T extends object>(key: keyof T, option: Fiel
   return function (sourceObject: T): string {
     const value = sourceObject[key];
     if (typeof value === "string") {
-      return value.replace(/\|/g, "\\F\\");
+      if (option.maxLength != null && value.length > option.maxLength) {
+        return escapePipe(value).substring(0, option.maxLength);
+      }
+      return escapePipe(value);
     } else if (option.optional && value == null) {
       return "";
     } else {
@@ -108,13 +111,21 @@ export function toSurescriptsString<T extends object>(key: keyof T, option: Fiel
 
 export function fromSurescriptsString<O extends FieldOption>(option: O = {} as O) {
   return function (value: string): FieldTypeFromSurescripts<string, O> {
-    const pipeUnescaped = value.replace(/\\F\\/g, "|").trim();
+    const pipeUnescaped = unescapePipe(value).trim();
     if (option.optional && pipeUnescaped.length === 0) {
       return undefined as FieldTypeFromSurescripts<string, O>;
     } else {
       return pipeUnescaped;
     }
   };
+}
+
+function escapePipe(value: string): string {
+  return value.replace(/\|/g, "\\F\\");
+}
+
+function unescapePipe(value: string): string {
+  return value.replace(/\\F\\/g, "|");
 }
 
 // Surescripts limits patient ID length to 35 characters, and a UUID is 36 >:(

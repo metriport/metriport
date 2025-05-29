@@ -156,12 +156,12 @@ export const patientLoadDetailOrder: OutgoingFileRowSchema<PatientLoadDetail> = 
   {
     field: 4,
     key: "lastName",
-    toSurescripts: toSurescriptsString("lastName"),
+    toSurescripts: toSurescriptsString("lastName", { maxLength: 35 }),
   },
   {
     field: 5,
     key: "firstName",
-    toSurescripts: toSurescriptsString("firstName"),
+    toSurescripts: toSurescriptsString("firstName", { maxLength: 35 }),
   },
   {
     field: 6,
