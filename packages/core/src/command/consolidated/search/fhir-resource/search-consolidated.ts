@@ -2,9 +2,10 @@ import { Resource } from "@medplum/fhirtypes";
 import { errorToString } from "@metriport/shared";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { SearchSetBundle } from "@metriport/shared/medical";
-import { timed } from "@metriport/shared/util/duration";
 import { uniq } from "lodash";
+import { Features } from "../../../../domain/features";
 import { Patient } from "../../../../domain/patient";
+import { CloudWatchUtils, Metrics, withMetrics } from "../../../../external/aws/cloudwatch";
 import { toFHIR as patientToFhir } from "../../../../external/fhir/patient/conversion";
 import {
   buildBundleEntry,
@@ -15,13 +16,16 @@ import {
   FhirSearchResult,
   rawContentFieldName,
 } from "../../../../external/opensearch/index-based-on-fhir";
-import { OpenSearchFhirSearcher } from "../../../../external/opensearch/lexical/fhir-searcher";
+import { OpenSearchConsolidatedSearcher } from "../../../../external/opensearch/lexical/fhir-searcher";
 import { getEntryId } from "../../../../external/opensearch/shared/id";
 import { out } from "../../../../util";
+import { Config } from "../../../../util/config";
 import { searchDocuments } from "../document-reference/search";
 import { getConfigs } from "./fhir-config";
 
 const maxHydrationAttempts = 5;
+
+const cloudWatchUtils = new CloudWatchUtils(Config.getAWSRegion(), Features.ConsolidatedSearch);
 
 export type SearchConsolidatedParams = {
   patient: Patient;
@@ -55,10 +59,11 @@ export async function searchPatientConsolidated({
   const { log } = out(`searchPatientConsolidated - cx ${patient.cxId}, pt ${patient.id}`);
 
   log(`Getting consolidated and searching OS...`);
-  const startedAt = new Date();
+  const metrics: Metrics = {};
+  const startedAt = Date.now();
 
-  const searchFhirResourcesPromise = () =>
-    searchFhirResources({
+  const searchConsolidatedPromise = () =>
+    searchConsolidated({
       cxId: patient.cxId,
       patientId: patient.id,
       query,
@@ -67,15 +72,15 @@ export async function searchPatientConsolidated({
   const searchDocumentsPromise = () =>
     searchDocuments({ cxId: patient.cxId, patientId: patient.id, contentFilter: query });
 
+  let localStartedAt = Date.now();
   const [fhirResourcesResults, docRefResults] = await Promise.all([
-    timed(searchFhirResourcesPromise, "searchFhirResources", log),
-    timed(searchDocumentsPromise, "searchDocuments", log),
+    withMetrics(searchConsolidatedPromise, "search_consolidated", metrics, log),
+    withMetrics(searchDocumentsPromise, "search_documents", metrics, log),
   ]);
-
+  let elapsedTime = Date.now() - localStartedAt;
+  metrics.search_subTotal = { duration: elapsedTime, timestamp: new Date() };
   log(
-    `Got ${fhirResourcesResults.length} resources and ${
-      docRefResults.length
-    } DocRefs in ${elapsedTimeFromNow(startedAt)} ms`
+    `Got ${fhirResourcesResults.length} resources and ${docRefResults.length} DocRefs in ${elapsedTime} ms, hydrating search results...`
   );
 
   let subStartedAt = new Date();
@@ -89,13 +94,15 @@ export async function searchPatientConsolidated({
     )} ms, hydrating search results...`
   );
 
-  subStartedAt = new Date();
+  localStartedAt = Date.now();
   const hydratedMutable = await hydrateMissingReferences({
     cxId: patient.cxId,
     patientId: patient.id,
     resources: resourcesMutable,
   });
-  log(`Hydrated to ${hydratedMutable.length} resources in ${elapsedTimeFromNow(subStartedAt)} ms.`);
+  elapsedTime = Date.now() - localStartedAt;
+  metrics.search_hydrate = { duration: elapsedTime, timestamp: new Date() };
+  log(`Hydrated to ${hydratedMutable.length} resources in ${elapsedTime} ms.`);
 
   const patientResource = patientToFhir(patient);
   hydratedMutable.push(patientResource);
@@ -103,16 +110,15 @@ export async function searchPatientConsolidated({
   const entries = hydratedMutable.map(buildBundleEntry);
   const resultBundle = buildSearchSetBundle(entries);
 
-  log(
-    `Done in ${elapsedTimeFromNow(startedAt)} ms, returning ${
-      resultBundle.entry?.length
-    } resources...`
-  );
+  elapsedTime = Date.now() - startedAt;
+  metrics.search_total = { duration: elapsedTime, timestamp: new Date() };
+  await cloudWatchUtils.reportMetrics(metrics);
+  log(`Done in ${elapsedTime} ms, returning ${resultBundle.entry?.length} resources...`);
 
   return resultBundle;
 }
 
-async function searchFhirResources({
+async function searchConsolidated({
   cxId,
   patientId,
   query,
@@ -121,7 +127,7 @@ async function searchFhirResources({
   patientId: string;
   query: string;
 }): Promise<FhirSearchResult[]> {
-  const searchService = new OpenSearchFhirSearcher(getConfigs());
+  const searchService = new OpenSearchConsolidatedSearcher(getConfigs());
   return await searchService.search({
     cxId,
     patientId,
@@ -152,7 +158,7 @@ export async function hydrateMissingReferences({
 
   const uniqueIds = uniq(missingRefIds);
 
-  const searchService = new OpenSearchFhirSearcher(getConfigs());
+  const searchService = new OpenSearchConsolidatedSearcher(getConfigs());
   const openSearchResults = await searchService.getByIds({
     cxId,
     patientId,

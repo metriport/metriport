@@ -1,7 +1,7 @@
-import { OpenSearchFhirSearcherConfig } from "../../../../external/opensearch/lexical/fhir-searcher";
+import { OpenSearchConsolidatedSearcherConfig } from "../../../../external/opensearch/lexical/fhir-searcher";
 import { Config } from "../../../../util/config";
 
-export function getConfigs(): OpenSearchFhirSearcherConfig {
+export function getConfigs(): OpenSearchConsolidatedSearcherConfig {
   return {
     region: Config.getAWSRegion(),
     endpoint: Config.getSearchEndpoint(),
