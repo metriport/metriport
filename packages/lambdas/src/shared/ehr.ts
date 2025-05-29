@@ -91,10 +91,10 @@ export const ehrCreateResourceDiffBundlesSchema = z.object({
 
 export const ehrGetAppointmentsSchema = z.object({
   method: z.nativeEnum(AppointmentMethods),
-  environment: z.string(),
   tokenId: z.string().optional(),
   cxId: z.string(),
   practiceId: z.string(),
+  departmentId: z.string().array().optional(),
   fromDate: z.coerce.date().optional(),
   toDate: z.coerce.date().optional(),
 });
