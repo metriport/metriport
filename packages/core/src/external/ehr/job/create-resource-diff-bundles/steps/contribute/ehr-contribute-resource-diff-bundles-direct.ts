@@ -5,7 +5,7 @@ import { EhrSource, EhrSources } from "@metriport/shared/interface/external/ehr/
 import { isValidUuid } from "../../../../../../util/uuid-v7";
 import { getReferencesFromResources } from "../../../../../fhir/shared/bundle";
 import { contributeResourceDiffBundle } from "../../../../api/bundle/contribute-resource-diff-bundle";
-import { setCreateResourceDiffBundlesJobEntryStatus } from "../../../../api/job/create-resource-diff-bundles/set-entry-status";
+import { setJobEntryStatus } from "../../../../api/job/set-entry-status";
 import { getResourceBundleByResourceId as getAthenaResourceBundleByResourceId } from "../../../../athenahealth/command/get-resource-bundle-by-resource-id";
 import { BundleType } from "../../../../bundle/bundle-shared";
 import { createOrReplaceBundle } from "../../../../bundle/command/create-or-replace-bundle";
@@ -95,13 +95,13 @@ export class EhrContributeResourceDiffBundlesDirect
         resourceType,
         jobId,
       });
-      await setCreateResourceDiffBundlesJobEntryStatus({
+      await setJobEntryStatus({
         ...entryStatusParams,
         entryStatus: "successful",
       });
     } catch (error) {
       if (reportError) {
-        await setCreateResourceDiffBundlesJobEntryStatus({
+        await setJobEntryStatus({
           ...entryStatusParams,
           entryStatus: "failed",
         });

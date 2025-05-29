@@ -1,4 +1,3 @@
-import { AthenaEnv } from "@metriport/core/external/ehr/athenahealth/index";
 import { AppointmentMethods } from "@metriport/core/external/ehr/command/get-appointments/ehr-get-appointments-direct";
 import { buildEhrGetAppointmentsHandler } from "@metriport/core/external/ehr/command/get-appointments/ehr-get-appointments-factory";
 import { buildEhrSyncPatientHandler } from "@metriport/core/external/ehr/command/sync-patient/ehr-sync-patient-factory";
@@ -151,13 +150,12 @@ async function getAppointments({
   const { log } = out(
     `AthenaHealth getAppointments - cxId ${cxId} practiceId ${practiceId} departmentIds ${departmentIds} lookupMode ${lookupMode}`
   );
-  const { tokenId, environment, client } = await createAthenaClientWithTokenIdAndEnvironment({
+  const { tokenId, client } = await createAthenaClientWithTokenIdAndEnvironment({
     cxId,
     practiceId,
   });
   try {
     let appointments = await getAppointmentsFromApi({
-      environment,
       tokenId,
       cxId,
       practiceId,
@@ -188,7 +186,6 @@ async function getAppointments({
 }
 
 type GetAppointmentsFromApiParams = GetAppointmentsParams & {
-  environment: AthenaEnv;
   tokenId: string;
   log: typeof console.log;
 };
