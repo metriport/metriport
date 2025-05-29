@@ -1,7 +1,6 @@
 import { Config } from "../../util/config";
 import { IdGenerator, createIdGenerator } from "./id-generator";
 import { SftpClient, SftpConfig } from "../sftp/client";
-import { convertDateToString, convertDateToTimeString } from "@metriport/shared/common/date";
 import { SurescriptsSynchronizeEvent } from "./types";
 import { getS3Key, getSftpFileName } from "./shared";
 import { INCOMING_NAME, OUTGOING_NAME, HISTORY_NAME } from "./constants";
@@ -14,7 +13,6 @@ export interface SurescriptsSftpConfig extends Partial<Omit<SftpConfig, "passwor
   senderId?: string;
   senderPassword?: string;
   receiverId?: string;
-  production?: boolean; // defaults to false
   publicKey?: string;
   privateKey?: string;
   replicaBucket?: string;
@@ -35,9 +33,8 @@ export interface Transmission<T extends TransmissionType = TransmissionType> {
   npiNumber: string;
   cxId: string;
   id: string;
-  date: Date;
-  dateString: string; // YYYYMMDD
-  timeString: string; // HHMMSSCC (with centiseconds)
+  idBytes: number[];
+  timestamp: number; // UTC
   requestFileName: string;
   compression?: "gzip" | undefined;
 }
@@ -69,7 +66,7 @@ export class SurescriptsSftpClient extends SftpClient {
 
     this.senderId = config.senderId ?? Config.getSurescriptsSftpSenderId();
     this.senderPassword = config.senderPassword ?? Config.getSurescriptsSftpSenderPassword();
-    this.usage = config.production ? "P" : "T";
+    this.usage = Config.isCloudEnv() ? "P" : "T";
     this.receiverId = config.receiverId ?? Config.getSurescriptsSftpReceiverId();
   }
 
@@ -86,36 +83,32 @@ export class SurescriptsSftpClient extends SftpClient {
     { npiNumber, cxId }: SurescriptsRequester,
     compression = true
   ): Transmission<T> {
-    const transmissionId = this.transmissionIdGenerator().toString("ascii");
+    const transmissionId = this.transmissionIdGenerator();
     const now = new Date();
-    const dateString = convertDateToString(now);
-    const timeString = convertDateToTimeString(now, { includeCentisecond: true });
-
     const requestFileName = this.getPatientLoadFileName(transmissionId, now, compression);
 
     return {
       type,
       npiNumber,
       cxId,
-      id: transmissionId,
-      date: now,
-      dateString,
-      timeString,
+      id: transmissionId.toString(),
+      idBytes: Array.from(transmissionId),
+      timestamp: now.getTime(),
       requestFileName,
       compression: compression ? "gzip" : undefined,
     };
   }
 
   getPatientLoadFileName(
-    transmissionId: string,
+    transmissionId: Buffer,
     transmissionDate: Date,
     compression = true
   ): string {
     return [
       "Metriport_PMA_",
-      dayjs(transmissionDate).format("YYYYMMDD"),
+      dayjs(transmissionDate).utc().format("YYYYMMDD"),
       "-",
-      transmissionId,
+      transmissionId.toString(),
       compression ? ".gz" : "",
     ].join("");
   }
@@ -132,8 +125,8 @@ export class SurescriptsSftpClient extends SftpClient {
   async findFlatFileResponseName(transmission: Transmission): Promise<string | undefined> {
     const transmissionDateTimeSuffix = [
       "_",
-      transmission.dateString,
-      transmission.timeString.substring(0, 6), // remove centiseconds
+      dayjs(transmission.timestamp).utc().format("YYYYMMDD"),
+      dayjs(transmission.timestamp).utc().format("HHmmss"),
       ".gz",
     ].join("");
     const results = await this.list("/from_surescripts", info => {
@@ -156,8 +149,8 @@ export class SurescriptsSftpClient extends SftpClient {
     message: Buffer
   ) {
     const fileName = this.getPatientLoadFileName(
-      transmission.id,
-      transmission.date,
+      Buffer.from(transmission.idBytes),
+      new Date(transmission.timestamp),
       transmission.compression === "gzip"
     );
     await this.s3.uploadFile({
