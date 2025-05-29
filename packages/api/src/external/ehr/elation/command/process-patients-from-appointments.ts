@@ -1,4 +1,4 @@
-import { buildElationLinkPatientHandler } from "@metriport/core/external/ehr/command/elation/link-patient/elation-link-patient-factory";
+import { buildElationLinkPatientHandler } from "@metriport/core/external/ehr/elation/command/link-patient/elation-link-patient-factory";
 import { AppointmentMethods } from "@metriport/core/external/ehr/command/get-appointments/ehr-get-appointments";
 import { buildEhrGetAppointmentsHandler } from "@metriport/core/external/ehr/command/get-appointments/ehr-get-appointments-factory";
 import { buildEhrSyncPatientHandler } from "@metriport/core/external/ehr/command/sync-patient/ehr-sync-patient-factory";
