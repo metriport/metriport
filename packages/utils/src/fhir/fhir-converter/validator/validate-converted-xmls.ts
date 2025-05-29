@@ -2,7 +2,7 @@ import { Bundle, Resource } from "@medplum/fhirtypes";
 import Axios from "axios";
 import fs from "fs";
 import { ValidationError, Validator } from "jsonschema";
-import { getFileNames } from "../../shared/fs";
+import { getFileNames } from "../../../shared/fs";
 import { convert } from "../convert";
 
 const schema = JSON.parse(fs.readFileSync("fhir.schema.json", "utf8"));
