@@ -116,10 +116,7 @@ export function sortDate(
  * @returns The date in YYYYMMDD or YYYY-MM-DD format (if separator is "-")
  */
 export function convertDateToString(date: Date, separator = "") {
-  const year = date.getFullYear();
-  const month = (date.getMonth() + 1).toString().padStart(2, "0");
-  const dateOfMonth = date.getDate().toString().padStart(2, "0");
-  return [year, month, dateOfMonth].join(separator);
+  return dayjs(date).utc().format(["YYYY", "MM", "DD"].join(separator));
 }
 
 /**
@@ -132,18 +129,9 @@ export function convertDateToTimeString(
   date: Date,
   { includeCentisecond = false }: { includeCentisecond?: boolean } = {}
 ) {
-  const hour = date.getHours().toString().padStart(2, "0");
-  const minute = date.getMinutes().toString().padStart(2, "0");
-  const second = date.getSeconds().toString().padStart(2, "0");
-
-  if (includeCentisecond) {
-    const centisecond = Math.round(date.getMilliseconds() / 10)
-      .toString()
-      .padStart(2, "0");
-    return [hour, minute, second, centisecond].join("");
-  } else {
-    return [hour, minute, second].join("");
-  }
+  return dayjs(date)
+    .utc()
+    .format(includeCentisecond ? "HHmmssSS" : "HHmmss");
 }
 /**
  * Validates if timestamp adheres to YYYYMMDDHHMMSS format
