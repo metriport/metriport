@@ -2,11 +2,9 @@ import { BookedAppointment as BookedAppointmentAthena } from "@metriport/shared/
 import { SlimBookedAppointment } from "@metriport/shared/interface/external/ehr/canvas/appointment";
 import { BookedAppointment as BookedAppointmentElation } from "@metriport/shared/interface/external/ehr/elation/appointment";
 import { AppointmentWithAttendee } from "@metriport/shared/interface/external/ehr/healthie/appointment";
-import { EhrSource } from "@metriport/shared/interface/external/ehr/source";
 
 export type GetAppointmentsRequest = {
-  ehr: EhrSource;
-  method: string;
+  method: AppointmentMethods;
   tokenId?: string;
   cxId: string;
   practiceId: string;
@@ -15,7 +13,7 @@ export type GetAppointmentsRequest = {
   toDate?: Date;
 };
 
-export type GetAppointmentsClientRequest = Omit<GetAppointmentsRequest, "ehr" | "method">;
+export type GetAppointmentsClientRequest = Omit<GetAppointmentsRequest, "method">;
 
 export interface EhrGetAppointmentsHandler {
   getAppointments<T extends Appointment>(request: GetAppointmentsRequest): Promise<T[]>;
@@ -26,3 +24,12 @@ export type Appointment =
   | BookedAppointmentElation
   | AppointmentWithAttendee
   | SlimBookedAppointment;
+
+export enum AppointmentMethods {
+  athenaGetAppointments = "athenaGetAppointments",
+  athenaGetAppointmentFromSubscriptionEvents = "athenaGetAppointmentFromSubscriptionEvents",
+  canvasGetAppointments = "canvasGetAppointments",
+  elationGetAppointments = "elationGetAppointments",
+  healthieGetAppointments = "healthieGetAppointments",
+  eclinicalworksGetAppointments = "eclinicalworksGetAppointments",
+}

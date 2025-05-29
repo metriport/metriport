@@ -3,7 +3,6 @@ import { EhrSource } from "@metriport/shared/interface/external/ehr/source";
 
 export type GetBundleByResourceTypeRequest = {
   ehr: EhrSource;
-  method: string;
   tokenId?: string;
   cxId: string;
   practiceId: string;

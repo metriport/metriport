@@ -1,4 +1,4 @@
-import { AppointmentMethods } from "@metriport/core/external/ehr/command/get-appointments/ehr-get-appointments-direct";
+import { AppointmentMethods } from "@metriport/core/external/ehr/command/get-appointments/ehr-get-appointments";
 import { buildEhrGetAppointmentsHandler } from "@metriport/core/external/ehr/command/get-appointments/ehr-get-appointments-factory";
 import { buildEhrSyncPatientHandler } from "@metriport/core/external/ehr/command/sync-patient/ehr-sync-patient-factory";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
@@ -200,7 +200,6 @@ async function getAppointmentsFromApi({
 }: GetAppointmentsFromApiParams): Promise<BookedAppointment[]> {
   const handler = buildEhrGetAppointmentsHandler();
   const handlerParams = {
-    ehr: EhrSources.athena,
     tokenId,
     cxId,
     practiceId,
