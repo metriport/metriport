@@ -17,7 +17,7 @@ import {
  * the resources in Metriport that are not in the EHR and vice versa.
  *
  * @param ehr - The EHR source.
- * @param tokenId - The token id to be used in any job clients.
+ * @param tokenId - The token id to be used in job EHR clients. Optional.
  * @param cxId - The CX ID of the patient.
  * @param practiceId - The practice id of the EHR patient.
  * @param ehrPatientId - The patient id of the EHR patient.
