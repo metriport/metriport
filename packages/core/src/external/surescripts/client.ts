@@ -244,6 +244,8 @@ export class SurescriptsSftpClient extends SftpClient {
     const sftpHistory = await this.list("/" + HISTORY_NAME);
     const sftpHistorySet = new Set(sftpHistory);
 
+    console.log("Found SFTP history with length " + sftpHistory.length);
+
     const s3Files = await this.s3.listObjects(this.bucket, OUTGOING_NAME + "/");
 
     for (const s3File of s3Files) {
@@ -252,6 +254,7 @@ export class SurescriptsSftpClient extends SftpClient {
       const outgoingFileName = s3File.Key.substring(OUTGOING_NAME.length + 1);
       const sftpHistoryName = `${outgoingFileName}.${this.senderId}`;
       if (!sftpHistorySet.has(sftpHistoryName)) {
+        console.log("DRY RUN: will copy to Surescripts: " + outgoingFileName);
         await this.copyFileToSurescripts(outgoingFileName, dryRun);
       }
     }
