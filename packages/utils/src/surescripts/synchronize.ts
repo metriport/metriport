@@ -19,6 +19,7 @@ program
   .action(async () => {
     console.log("Synchronizing with Surescripts...");
     const { dryRun, fromSurescripts, toSurescripts } = program.opts();
+    console.log(program.opts());
 
     const client = new SurescriptsSftpClient({});
     await client.connect();

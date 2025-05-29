@@ -33,13 +33,17 @@ export function createIdGenerator(totalLength: number): IdGenerator {
         id.writeUint8((entropy === 1 ? "z" : "-").charCodeAt(0), i + 8);
       }
     }
-    // If this is a duplicate timestamp (i.e. the current process is generating more than 1 event in the same timestamp)
+    // If this is a duplicate timestamp
     else if (duplicateWithinMs) {
+      // Apply a carry to every right-bit that is a "z"
       let i = entropyLength - 1;
       for (; i >= 0 && lastEntropy.readUInt8(i) === LEXICON_END; i--) {
         lastEntropy.writeUInt8(LEXICON_START, i);
       }
-      lastEntropy.writeUInt8(lastEntropy.readUInt8(i) + 1, i);
+      // Increment the left-most bit if there is one, otherwise allow the entropy to simply overflow
+      if (i >= 0) {
+        lastEntropy.writeUInt8(lastEntropy.readUInt8(i) + 1, i);
+      }
     }
     // Generate random entropy
     else {
