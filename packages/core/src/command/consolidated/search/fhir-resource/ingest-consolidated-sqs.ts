@@ -1,4 +1,5 @@
 import { executeWithNetworkRetries } from "@metriport/shared";
+import { nanoid } from "nanoid";
 import { SQSClient } from "../../../../external/aws/sqs";
 import { executeAsynchronously } from "../../../../util/concurrency";
 import { Config } from "../../../../util/config";
@@ -59,6 +60,14 @@ export class IngestConsolidatedSqs implements IngestConsolidated {
 
   private async ingestSingle({ cxId, patientId }: IngestConsolidatedParams): Promise<void> {
     const payload: IngestConsolidatedParams = { cxId, patientId };
-    await this.sqsClient.sendMessageToQueue(this.queueUrl, JSON.stringify(payload));
+    await this.sqsClient.sendMessageToQueue(this.queueUrl, JSON.stringify(payload), {
+      fifo: true,
+      // only a single message per pt will be processed in parallel ("virtual queue" per pt)
+      messageGroupId: patientId,
+      // if we use patientId, only a single message per pt will be processed in a 5 minute window
+      // which means loading the dash for a pt not ingested and triggering DQ wouldn't update
+      // the search engine after DQ is complete
+      messageDeduplicationId: nanoid(),
+    });
   }
 }

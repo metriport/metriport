@@ -6,7 +6,7 @@ export function getConsolidatedIngestionConnectorSettings() {
   return {
     name: "ConsolidatedIngestion",
     queue: {
-      fifo: false,
+      fifo: true,
       createRetryLambda: false,
       maxReceiveCount: 2,
       alarmMaxAgeOfOldestMessage: Duration.seconds(lambdaTimeout.toSeconds() * 3),
