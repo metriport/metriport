@@ -1,6 +1,6 @@
 import { AthenaEnv } from "@metriport/core/external/ehr/athenahealth/index";
 import { buildEhrGetAppointmentsHandler } from "@metriport/core/external/ehr/command/get-appointments/ehr-get-appointments-factory";
-import { AppointmentMethods } from "@metriport/core/external/ehr/command/get-appointments/ehr-get-appointments-direct";
+import { AppointmentMethods } from "@metriport/core/external/ehr/command/get-appointments/ehr-get-appointments";
 import { buildEhrSyncPatientHandler } from "@metriport/core/external/ehr/command/sync-patient/ehr-sync-patient-factory";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { out } from "@metriport/core/util/log";
@@ -204,7 +204,6 @@ async function getAppointmentsFromApi({
 }: GetAppointmentsFromApiParams): Promise<BookedAppointment[]> {
   const handler = buildEhrGetAppointmentsHandler();
   const handlerParams = {
-    ehr: EhrSources.athena,
     environment,
     tokenId,
     cxId,

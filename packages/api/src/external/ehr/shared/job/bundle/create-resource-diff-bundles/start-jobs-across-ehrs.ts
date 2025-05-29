@@ -1,7 +1,7 @@
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { MetriportError } from "@metriport/shared";
-import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
+import { EhrSources, EhrSource } from "@metriport/shared/interface/external/ehr/source";
 import { getCxMappingsByCustomer } from "../../../../../../command/mapping/cx";
 import { getPatientMappings } from "../../../../../../command/mapping/patient";
 import { startCreateResourceDiffBundlesJob } from "./start-job";
@@ -45,7 +45,7 @@ async function startCreateResourceDiffBundlesJobAtEhr({
   ehrPatientId,
   requestId,
 }: {
-  ehr: EhrSources;
+  ehr: EhrSource;
   cxId: string;
   ehrPatientId: string;
   requestId: string;
