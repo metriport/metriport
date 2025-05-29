@@ -3,7 +3,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 import { Command } from "commander";
-import { SurescriptsReplica } from "@metriport/core/external/sftp/surescripts/replica";
+import { SurescriptsSftpClient } from "@metriport/core/external/surescripts/client";
 const program = new Command();
 
 program
@@ -19,8 +19,8 @@ program
   .action(async () => {
     const { dryRun, fromSurescripts, toSurescripts } = program.opts();
 
-    const replica = new SurescriptsReplica();
-    await replica.synchronize({
+    const client = new SurescriptsSftpClient({});
+    await client.synchronize({
       dryRun,
       fromSurescripts,
       toSurescripts,
