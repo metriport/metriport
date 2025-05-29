@@ -103,7 +103,6 @@ router.post(
  *
  * Retrieves the latest resource diff job and pre-signed URLs for the bundles if completed
  * @param req.params.id The ID of AthenaHealth Patient.
- * @param req.query.practiceId The ID of AthenaHealth Practice.
  * @returns Resource diff job and pre-signed URLs for the bundles if completed
  */
 router.get(
@@ -113,12 +112,10 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const athenaPatientId = getFrom("params").orFail("id", req);
-    const athenaPracticeId = getFromQueryOrFail("practiceId", req);
     const bundle = await getLatestResourceDiffBundlesJobPayload({
       ehr: EhrSources.athena,
       cxId,
       ehrPatientId: athenaPatientId,
-      practiceId: athenaPracticeId,
       bundleType: BundleType.RESOURCE_DIFF_METRIPORT_ONLY,
     });
     return res.status(httpStatus.OK).json(bundle);
@@ -131,7 +128,6 @@ router.get(
  * Retrieves the resource diff job and pre-signed URLs for the bundles if completed
  * @param req.params.id The ID of AthenaHealth Patient.
  * @param req.params.jobId The job ID of the job
- * @param req.query.practiceId The ID of AthenaHealth Practice.
  * @returns Resource diff job and pre-signed URLs for the bundles if completed
  */
 router.get(
@@ -141,13 +137,11 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const athenaPatientId = getFrom("params").orFail("id", req);
-    const athenaPracticeId = getFromQueryOrFail("practiceId", req);
     const jobId = getFrom("params").orFail("jobId", req);
     const bundle = await getResourceDiffBundlesJobPayload({
       ehr: EhrSources.athena,
       cxId,
       ehrPatientId: athenaPatientId,
-      practiceId: athenaPracticeId,
       jobId,
       bundleType: BundleType.RESOURCE_DIFF_METRIPORT_ONLY,
     });
