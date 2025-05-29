@@ -1,9 +1,10 @@
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { MetriportError } from "@metriport/shared";
-import { EhrSources, EhrSource } from "@metriport/shared/interface/external/ehr/source";
+import { EhrSource, EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { getCxMappingsByCustomer } from "../../../../../../command/mapping/cx";
 import { getPatientMappings } from "../../../../../../command/mapping/patient";
+import { createCanvasClientWithTokenIdAndEnvironment } from "../../../../canvas/shared";
 import { startCreateResourceDiffBundlesJob } from "./start-job";
 
 export type CreateResourceDiffBundlesParams = {
@@ -29,11 +30,16 @@ export async function startCreateResourceDiffBundlesJobsAcrossEhrs({
   const requestId = requestIdParam ?? uuidv7();
   for (const patientMapping of patientMappings) {
     if (patientMapping.source === EhrSources.canvas) {
+      const { tokenId } = await createCanvasClientWithTokenIdAndEnvironment({
+        cxId,
+        practiceId: patientMapping.externalId,
+      });
       startCreateResourceDiffBundlesJobAtEhr({
         ehr: EhrSources.canvas,
         cxId,
         ehrPatientId: patientMapping.externalId,
         requestId,
+        tokenId,
       }).catch(processAsyncError(`${EhrSources.canvas} startCreateResourceDiffBundlesJobAtEhr`));
     }
   }
@@ -41,11 +47,13 @@ export async function startCreateResourceDiffBundlesJobsAcrossEhrs({
 
 async function startCreateResourceDiffBundlesJobAtEhr({
   ehr,
+  tokenId,
   cxId,
   ehrPatientId,
   requestId,
 }: {
   ehr: EhrSource;
+  tokenId?: string;
   cxId: string;
   ehrPatientId: string;
   requestId: string;
@@ -58,6 +66,7 @@ async function startCreateResourceDiffBundlesJobAtEhr({
   }
   await startCreateResourceDiffBundlesJob({
     ehr,
+    tokenId,
     cxId,
     practiceId: cxMapping.externalId,
     ehrPatientId,

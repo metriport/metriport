@@ -13,6 +13,7 @@ import { startCreateResourceDiffBundlesJob } from "../../../external/ehr/shared/
 import { handleParams } from "../../helpers/handle-params";
 import { requestLogger } from "../../helpers/request-logger";
 import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../../util";
+import { createCanvasClientWithTokenIdAndEnvironment } from "../../../external/ehr/canvas/shared";
 
 const router = Router();
 
@@ -83,8 +84,13 @@ router.post(
     const cxId = getCxIdOrFail(req);
     const canvasPatientId = getFrom("params").orFail("id", req);
     const canvasPracticeId = getFromQueryOrFail("practiceId", req);
+    const { tokenId } = await createCanvasClientWithTokenIdAndEnvironment({
+      cxId,
+      practiceId: canvasPracticeId,
+    });
     const jobId = await startCreateResourceDiffBundlesJob({
       ehr: EhrSources.canvas,
+      tokenId,
       cxId,
       practiceId: canvasPracticeId,
       ehrPatientId: canvasPatientId,

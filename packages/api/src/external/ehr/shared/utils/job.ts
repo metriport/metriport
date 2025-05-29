@@ -5,6 +5,7 @@ import { FetchedBundlePreSignedUrls } from "./bundle/types";
 
 export type StartCreateResourceDiffBundlesJobParams = {
   ehr: EhrSource;
+  tokenId?: string;
   cxId: string;
   practiceId: string;
   ehrPatientId: string;
