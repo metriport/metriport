@@ -20,9 +20,9 @@ export class EhrGetAppointmentsDirect implements EhrGetAppointmentsHandler {
 
 type GetAppointments = (params: GetAppointmentsClientRequest) => Promise<Appointment[]>;
 
-export type AppointmentMethodsMap = Record<AppointmentMethods, GetAppointments | undefined>;
+type AppointmentMethodsMap = Record<AppointmentMethods, GetAppointments | undefined>;
 
-export const ehrGetAppointmentsMap: AppointmentMethodsMap = {
+const ehrGetAppointmentsMap: AppointmentMethodsMap = {
   [AppointmentMethods.canvasGetAppointments]: getAppointmentsCanvas,
 };
 

@@ -5,7 +5,7 @@ import {
   EhrEnvAndClientCredentials,
   EhrPerPracticeParams,
 } from "../../utils/client";
-import { getSecretsFunction } from "../../utils/secrets";
+import { getSecretsHandler } from "../../utils/secrets";
 
 /**
  * Get the secrets for the EHR
@@ -21,6 +21,6 @@ export function getSecrets({
 }: EhrPerPracticeParams & { ehr: EhrSource }):
   | EhrEnvAndClientCredentials<EhrEnv>
   | EhrEnvAndApiKey<EhrEnv> {
-  const getSecrets = getSecretsFunction(ehr);
-  return getSecrets({ cxId, practiceId });
+  const handler = getSecretsHandler(ehr);
+  return handler({ cxId, practiceId });
 }
