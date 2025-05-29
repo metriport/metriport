@@ -2,7 +2,7 @@ import {
   fetchBundlePreSignedUrl,
   FetchBundlePreSignedUrlParams,
 } from "@metriport/core/external/ehr/bundle/command/fetch-bundle";
-import { validateAndPrepareBundleFetchOrRefresh } from "../../utils/bundle/functions";
+import { validateAndPrepareBundleFetch } from "../../utils/bundle/functions";
 import { FetchBundleParams, FetchedBundlePreSignedUrls } from "../../utils/bundle/types";
 
 /**
@@ -24,7 +24,7 @@ export async function fetchBundlePreSignedUrls({
   bundleType,
   jobId,
 }: FetchBundleParams): Promise<FetchedBundlePreSignedUrls> {
-  const { metriportPatientId, resourceTypes } = await validateAndPrepareBundleFetchOrRefresh({
+  const { metriportPatientId, resourceTypes } = await validateAndPrepareBundleFetch({
     ehr,
     cxId,
     ehrPatientId,

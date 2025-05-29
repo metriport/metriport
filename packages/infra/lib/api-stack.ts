@@ -424,7 +424,6 @@ export class APIStack extends Stack {
     //-------------------------------------------
     const {
       getAppointmentsLambda: ehrGetAppointmentsLambda,
-      getBundleByResourceTypeLambda: ehrGetBundleByResourceTypeLambda,
       syncPatientQueue: ehrSyncPatientQueue,
       syncPatientLambda: ehrSyncPatientLambda,
       elationLinkPatientQueue,
@@ -573,7 +572,6 @@ export class APIStack extends Stack {
       healthieLinkPatientQueue,
       ehrRefreshEhrBundlesQueue,
       ehrGetAppointmentsLambda,
-      ehrGetBundleByResourceTypeLambda,
       ehrBundleBucket,
       generalBucket,
       conversionBucket: fhirConverterBucket,
@@ -680,7 +678,6 @@ export class APIStack extends Stack {
       ehrComputeResourceDiffBundlesLambda,
       ehrRefreshEhrBundlesLambda,
       ehrGetAppointmentsLambda,
-      ehrGetBundleByResourceTypeLambda,
       fhirConverterLambda,
       conversionResultNotifierLambda,
     ];

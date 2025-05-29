@@ -177,8 +177,10 @@ export async function makeRequest<T>({
             file: Buffer.from(JSON.stringify({ error, message }), "utf8"),
             contentType: "application/json",
           });
-        } catch (e) {
-          log(`Error saving error to s3 @ ${ehr} - ${method} ${url}`, () => JSON.stringify(e));
+        } catch (error) {
+          log(
+            `Error saving error to s3 @ ${ehr} - ${method} ${url}. Cause: ${errorToString(error)}`
+          );
         }
       }
       const fullAdditionalInfoWithError = { ...fullAdditionalInfo, error: errorToString(error) };
@@ -224,8 +226,10 @@ export async function makeRequest<T>({
         file: Buffer.from(JSON.stringify(response.data), "utf8"),
         contentType: "application/json",
       });
-    } catch (e) {
-      log(`Error saving response to s3 @ ${ehr} - ${method} ${url}`, () => JSON.stringify(e));
+    } catch (error) {
+      log(
+        `Error saving response to s3 @ ${ehr} - ${method} ${url}. Cause: ${errorToString(error)}`
+      );
     }
   }
   const outcome = schema.safeParse(body);
