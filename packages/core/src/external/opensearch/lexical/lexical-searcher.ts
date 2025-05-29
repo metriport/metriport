@@ -3,6 +3,7 @@ import { Client } from "@opensearch-project/opensearch";
 import { capture, out } from "../../../util";
 import {
   OpenSearchConfigDirectAccess,
+  OpenSearchResponse,
   OpenSearchResponseGet,
   OpenSearchResponseHit,
 } from "../index";
@@ -10,7 +11,7 @@ import { FhirSearchResult } from "../index-based-on-fhir";
 import { paginatedSearch } from "../paginate";
 import { getEntryId } from "../shared/id";
 import { createSearchByIdsQuery } from "../shared/query";
-import { createLexicalSearchQuery } from "./lexical-search";
+import { createQueryHasData, createLexicalSearchQuery } from "./lexical-search";
 
 export type OpenSearchFhirSearcherConfig = OpenSearchConfigDirectAccess;
 
@@ -52,6 +53,24 @@ export class OpenSearchFhirSearcher {
 
     log(`Successfully searched, got ${response.count} results`);
     return response.items;
+  }
+
+  async hasData({ cxId, patientId }: { cxId: string; patientId: string }): Promise<boolean> {
+    const { log } = out(`${this.constructor.name}.hasData - cx ${cxId}, pt ${patientId}`);
+
+    const { indexName, endpoint, username, password } = this.config;
+    const auth = { username, password };
+    const client = new Client({ node: endpoint, auth });
+
+    log(`Checking if data exists on index ${indexName}...`);
+    const searchRequest = createQueryHasData({ cxId, patientId });
+
+    const response = await client.search({ index: indexName, body: searchRequest });
+
+    const body = response.body as OpenSearchResponse<FhirSearchResult>;
+    const hasData = body.hits.hits ? body.hits.hits.length > 0 : false;
+    log(`Data exists: ${hasData}`);
+    return hasData;
   }
 
   async getById(id: string): Promise<FhirSearchResult | undefined>;

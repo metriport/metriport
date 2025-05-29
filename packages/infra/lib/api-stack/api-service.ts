@@ -317,6 +317,8 @@ export function createAPIService({
           SEARCH_INDEX: searchIndexName,
           CONSOLIDATED_SEARCH_LAMBDA_NAME: consolidatedSearchLambda.functionName,
           CONSOLIDATED_INGESTION_QUEUE_URL: consolidatedIngestionQueue.queueUrl,
+          CONSOLIDATED_INGESTION_INITIAL_DATE:
+            props.config.openSearch.consolidatedDataIngestionInitialDate,
           ...(props.config.carequality?.envVars?.CQ_ORG_URLS && {
             CQ_ORG_URLS: props.config.carequality.envVars.CQ_ORG_URLS,
           }),

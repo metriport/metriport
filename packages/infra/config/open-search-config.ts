@@ -17,4 +17,5 @@ export type OpenSearchConnectorConfig = {
     consolidatedIndexName: string;
   };
   lambda: LambdaConfig;
+  consolidatedDataIngestionInitialDate: string;
 };

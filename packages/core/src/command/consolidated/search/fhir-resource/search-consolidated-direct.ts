@@ -11,6 +11,7 @@ import {
   TXT_MIME_TYPE,
 } from "../../../../util/mime";
 import { getConsolidatedPatientData } from "../../consolidated-get";
+import { ingestIfNeeded } from "./ingest-if-needed";
 import {
   SearchConsolidated,
   SearchConsolidatedParams,
@@ -30,6 +31,8 @@ const searchFolderName = "searches";
  */
 export class SearchConsolidatedDirect implements SearchConsolidated {
   async search({ patient, query }: SearchConsolidatedParams): Promise<SearchConsolidatedResult> {
+    await ingestIfNeeded(patient);
+
     const searchResult =
       query != undefined
         ? await searchPatientConsolidated({ patient, query })

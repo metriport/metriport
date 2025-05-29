@@ -71,6 +71,9 @@ export class Config {
   static getConsolidatedIngestionQueueUrl(): string {
     return getEnvVarOrFail("CONSOLIDATED_INGESTION_QUEUE_URL");
   }
+  static getConsolidatedDataIngestionInitialDate(): string | undefined {
+    return getEnvVar("CONSOLIDATED_INGESTION_INITIAL_DATE");
+  }
 
   static getSystemRootOID(): string {
     return getEnvVarOrFail("SYSTEM_ROOT_OID");

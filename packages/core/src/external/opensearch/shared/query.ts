@@ -1,6 +1,7 @@
 import { contentFieldName, OpenSearchRequestBody } from "..";
 
 export const simpleQueryStringPrefix = "$";
+export const defaultExcludeFields = ["content_embedding", contentFieldName];
 
 export type SearchByIdsParams = {
   cxId: string;
@@ -24,12 +25,18 @@ export function createSearchByIdsQuery({
   };
 }
 
-export function getGeneralParams(): OpenSearchRequestBody {
+/**
+ * Return general OpenSearch search parameters used in all/most queries.
+ *
+ * @param excludeFields Fields to exclude from the response. Optional, defaults to defaultExcludeFields.
+ */
+export function getGeneralParams({
+  excludeFields = defaultExcludeFields,
+}: {
+  excludeFields?: string[];
+} = {}): OpenSearchRequestBody {
   return {
-    _source: {
-      // removes these from the response
-      exclude: ["content_embedding", contentFieldName],
-    },
+    _source: { exclude: excludeFields },
   };
 }
 

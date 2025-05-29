@@ -221,6 +221,8 @@ export class LambdasNestedStack extends NestedStack {
       openSearchAuth: props.openSearch.auth,
       openSearchConsolidatedIndexName: props.openSearch.consolidatedIndexName,
       openSearchDocumentsIndexName: props.openSearch.documentIndexName,
+      consolidatedDataIngestionInitialDate:
+        props.config.openSearch.consolidatedDataIngestionInitialDate,
       featureFlagsTable: props.featureFlagsTable,
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: props.alarmAction,
@@ -713,6 +715,7 @@ export class LambdasNestedStack extends NestedStack {
     openSearchAuth: { userName: string; secret: ISecret };
     openSearchDocumentsIndexName: string;
     openSearchConsolidatedIndexName: string;
+    consolidatedDataIngestionInitialDate: string;
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
   }): Lambda {
@@ -731,6 +734,7 @@ export class LambdasNestedStack extends NestedStack {
       openSearchAuth,
       openSearchConsolidatedIndexName,
       openSearchDocumentsIndexName,
+      consolidatedDataIngestionInitialDate,
       sentryDsn,
       alarmAction,
     } = ownProps;
@@ -751,6 +755,7 @@ export class LambdasNestedStack extends NestedStack {
         SEARCH_PASSWORD_SECRET_ARN: openSearchAuth.secret.secretArn,
         SEARCH_INDEX: openSearchDocumentsIndexName,
         CONSOLIDATED_SEARCH_INDEX: openSearchConsolidatedIndexName,
+        CONSOLIDATED_INGESTION_INITIAL_DATE: consolidatedDataIngestionInitialDate,
         FHIR_TO_BUNDLE_LAMBDA_NAME: fhirToBundleLambda.functionName,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },

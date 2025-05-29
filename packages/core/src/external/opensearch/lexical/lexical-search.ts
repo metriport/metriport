@@ -1,6 +1,8 @@
 import { contentFieldName, OpenSearchRequestBody } from "../index";
+import { FhirIndexFields } from "../index-based-on-fhir";
 import {
   cleanupQuery,
+  defaultExcludeFields,
   getGeneralParams,
   getPatientFilters,
   simpleQueryStringPrefix,
@@ -67,6 +69,32 @@ export function createLexicalSearchQuery({
           ...getPatientFilters(cxId, patientId),
         ],
       },
+    },
+  };
+}
+
+export function createQueryHasData({
+  cxId,
+  patientId,
+}: {
+  cxId: string;
+  patientId: string;
+}): OpenSearchRequestBody {
+  const allConsolidatedDataFields: (keyof FhirIndexFields)[] = [
+    "cxId",
+    "patientId",
+    "resourceType",
+    "resourceId",
+    "content",
+  ];
+  const generalParams = getGeneralParams({
+    excludeFields: [...defaultExcludeFields, ...allConsolidatedDataFields],
+  });
+  return {
+    ...generalParams,
+    size: 1,
+    query: {
+      bool: { must: getPatientFilters(cxId, patientId) },
     },
   };
 }
