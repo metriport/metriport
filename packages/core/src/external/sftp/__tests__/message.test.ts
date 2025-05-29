@@ -1,11 +1,11 @@
 import { Config } from "../../../util/config";
-import { toSurescriptsPatientLoadRow } from "../surescripts/message";
+import { toSurescriptsPatientLoadRow } from "../../surescripts/message";
 import {
   patientLoadDetailSchema,
   patientLoadDetailOrder,
   patientLoadFooterSchema,
   patientLoadFooterOrder,
-} from "../surescripts/schema/load";
+} from "../../surescripts/schema/load";
 
 const METRIPORT_OID = Config.getSystemRootOID();
 

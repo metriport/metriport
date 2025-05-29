@@ -1,11 +1,7 @@
 import { capture } from "./shared/capture";
 import { prefixedLog } from "./shared/log";
-import { SurescriptsReplica } from "@metriport/core/external/sftp/surescripts/replica";
 import { Config } from "@metriport/core/util/config";
-import {
-  SurescriptsSftpClient,
-  Transmission,
-} from "@metriport/core/external/sftp/surescripts/client";
+import { SurescriptsSftpClient, Transmission } from "@metriport/core/external/surescripts/client";
 import { getSurescriptSecrets } from "./shared/surescripts";
 
 capture.init();
@@ -24,10 +20,7 @@ export const handler = capture.wrapHandler(async (transmission: Transmission) =>
     privateKey: surescriptsPrivateKey,
   });
 
-  const replica = new SurescriptsReplica({
-    sftpClient: client,
-    bucket: Config.getSurescriptsReplicaBucketName(),
-  });
   log(`Receiving flat file response for transmission ${transmission.id}`);
-  await replica.receiveFlatFileResponse(transmission);
+  await client.receiveFlatFileResponse(transmission);
+  log(`Received flat file response for transmission ${transmission.id}`);
 });

@@ -3,7 +3,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 import { Command } from "commander";
-import { SurescriptsSftpClient } from "@metriport/core/external/sftp/surescripts/client";
+import { SurescriptsSftpClient } from "@metriport/core/external/surescripts/client";
 const program = new Command();
 
 program

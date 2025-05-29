@@ -1,12 +1,13 @@
 import { Config } from "@metriport/core/util/config";
 import { capture } from "./shared/capture";
 import { prefixedLog } from "./shared/log";
-import { SurescriptsApi } from "@metriport/core/external/sftp/surescripts/api";
-import { SurescriptsSftpClient } from "@metriport/core/external/sftp/surescripts/client";
-import { SurescriptsReplica } from "@metriport/core/external/sftp/surescripts/replica";
+import { SurescriptsApi } from "@metriport/core/external/surescripts/api";
+import { SurescriptsSftpClient } from "@metriport/core/external/surescripts/client";
 import { getSurescriptSecrets } from "./shared/surescripts";
-import { GetPatientResponse, FacilityResponse } from "@metriport/core/external/sftp/api/shared";
-import { toSurescriptsPatientLoadFile } from "@metriport/core/external/sftp/surescripts/message";
+import {
+  GetPatientResponse,
+  FacilityResponse,
+} from "@metriport/core/external/surescripts/api/shared";
 import { MetriportError } from "@metriport/shared";
 
 capture.init();
@@ -31,10 +32,6 @@ export const handler = capture.wrapHandler(
       publicKey: surescriptsPublicKey,
       privateKey: surescriptsPrivateKey,
     });
-    const replica = new SurescriptsReplica({
-      sftpClient: client,
-      bucket: Config.getSurescriptsReplicaBucketName(),
-    });
 
     const facility = await getFacilityById(cxId, facilityId);
     const transmission = client.createEnrollment({
@@ -56,8 +53,8 @@ export const handler = capture.wrapHandler(
       return;
     }
 
-    const file = toSurescriptsPatientLoadFile(client, transmission, patients);
-    await replica.writePatientLoadFileToStorage(transmission, file);
+    const file = client.generatePatientLoadFile(transmission, patients);
+    await client.writePatientLoadFileToStorage(transmission, file);
     log(`Uploaded ${patients.length} patients to ${Config.getSurescriptsReplicaBucketName()}`);
     log(`Transmission ID: ${transmission.id}`);
   }

@@ -6,7 +6,7 @@ import {
   fromSurescriptsInteger,
   fromSurescriptsString,
   fromSurescriptsEnum,
-} from "../surescripts/schema/shared";
+} from "../../surescripts/schema/shared";
 
 describe("Surescripts schema parsing", () => {
   it("should parse dates", () => {

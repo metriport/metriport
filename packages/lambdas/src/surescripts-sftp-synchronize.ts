@@ -1,10 +1,9 @@
 import { Config } from "@metriport/core/util/config";
+import { SurescriptsSftpClient } from "@metriport/core/external/surescripts/client";
+import { SurescriptsSynchronizeEvent } from "@metriport/core/external/surescripts/types";
 import { capture } from "./shared/capture";
 import { prefixedLog } from "./shared/log";
-import { SurescriptsSftpClient } from "@metriport/core/external/sftp/surescripts/client";
-import { SurescriptsReplica } from "@metriport/core/external/sftp/surescripts/replica";
 import { getSurescriptSecrets } from "./shared/surescripts";
-import { SurescriptsSynchronizeEvent } from "@metriport/core/external/sftp/surescripts/types";
 
 capture.init();
 
@@ -21,11 +20,7 @@ export const handler = capture.wrapHandler(async (event: SurescriptsSynchronizeE
     publicKey: surescriptsPublicKey,
     privateKey: surescriptsPrivateKey,
   });
-  const replica = new SurescriptsReplica({
-    sftpClient: client,
-    bucket: Config.getSurescriptsReplicaBucketName(),
-  });
 
-  await replica.synchronize(event);
+  await client.synchronize(event);
   log(`Synchronized surescripts`);
 });

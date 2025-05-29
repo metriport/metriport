@@ -2,7 +2,7 @@ import {
   makeNameDemographics,
   shiftMiddleNameToFirstName,
   makeGenderDemographics,
-} from "../surescripts/shared";
+} from "../../surescripts/shared";
 
 describe("makeNameDemographics", () => {
   it("should parse simple names", () => {
