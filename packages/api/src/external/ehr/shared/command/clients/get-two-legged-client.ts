@@ -6,7 +6,7 @@ import { createElationClientWithTokenIdAndEnvironment } from "../../../elation/s
 import { EhrClientTwoLeggedClient, EhrEnv, EhrPerPracticeParams } from "../../utils/client";
 
 /**
- * Get the client with token id and environmen  t for the EHR
+ * Get the client with token id and environment for the EHRs that support two-legged auth
  *
  * @param ehr - The EHR source.
  * @param cxId - The CX ID.
