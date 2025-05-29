@@ -187,6 +187,15 @@ export class EhrNestedStack extends NestedStack {
 
     this.terminationProtection = true;
 
+    this.getAppointmentsLambda = this.setupGetAppointmentslambda({
+      lambdaLayers: props.lambdaLayers,
+      vpc: props.vpc,
+      envType: props.config.environmentType,
+      sentryDsn: props.config.lambdasSentryDSN,
+      alarmAction: props.alarmAction,
+      ehrResponsesBucket: props.ehrResponsesBucket,
+    });
+
     const ehrBundleBucket = new s3.Bucket(this, "EhrBundleBucket", {
       bucketName: props.config.ehrBundleBucketName,
       publicReadAccess: false,
@@ -200,15 +209,6 @@ export class EhrNestedStack extends NestedStack {
       ],
     });
     this.ehrBundleBucket = ehrBundleBucket;
-
-    this.getAppointmentsLambda = this.setupGetAppointmentslambda({
-      lambdaLayers: props.lambdaLayers,
-      vpc: props.vpc,
-      envType: props.config.environmentType,
-      sentryDsn: props.config.lambdasSentryDSN,
-      alarmAction: props.alarmAction,
-      ehrResponsesBucket: props.ehrResponsesBucket,
-    });
 
     const syncPatient = this.setupSyncPatient({
       lambdaLayers: props.lambdaLayers,
