@@ -1,9 +1,10 @@
 import axios, { AxiosInstance } from "axios";
+import { Patient } from "@metriport/shared/domain/patient";
+import { CustomerData } from "@metriport/shared/domain/facility";
+import { Config } from "../../util/config";
 import { getPatient } from "./api/get-patient";
 import { getPatientIds } from "./api/get-patient-ids";
-import { Config } from "../../util/config";
 import { getCustomer } from "./api/get-customer";
-import { GetPatientResponse, GetPatientIdsResponse, GetCustomerResponse } from "./api/shared";
 
 export class SurescriptsApi {
   axiosInstance: AxiosInstance;
@@ -14,18 +15,16 @@ export class SurescriptsApi {
     });
   }
 
-  async getCustomer(cxId: string): Promise<GetCustomerResponse> {
+  async getCustomer(cxId: string): Promise<CustomerData> {
     return getCustomer({ cxId }, this.axiosInstance);
   }
 
-  async getPatientIds(
-    cxId: string,
-    facilityId?: string | undefined
-  ): Promise<GetPatientIdsResponse> {
-    return getPatientIds({ cxId, facilityId }, this.axiosInstance);
+  async getPatientIds(cxId: string, facilityId?: string | undefined): Promise<string[]> {
+    const { patientIds } = await getPatientIds({ cxId, facilityId }, this.axiosInstance);
+    return patientIds;
   }
 
-  async getPatient(cxId: string, patientId: string): Promise<GetPatientResponse> {
+  async getPatient(cxId: string, patientId: string): Promise<Patient> {
     return getPatient(
       {
         cxId,

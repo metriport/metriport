@@ -1,8 +1,9 @@
 import { errorToString, executeWithNetworkRetries, MetriportError } from "@metriport/shared";
+import { CustomerData, customerDataSchema } from "@metriport/shared/domain/facility";
 import axios, { AxiosInstance } from "axios";
 import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
-import { validateAndLogResponse, getCustomerResponseSchema, GetCustomerResponse } from "./shared";
+import { validateAndLogResponse } from "./shared";
 
 export interface GetCustomerParams {
   cxId: string;
@@ -16,7 +17,7 @@ export interface GetCustomerParams {
 export async function getCustomer(
   { cxId }: GetCustomerParams,
   axiosInstance?: AxiosInstance
-): Promise<GetCustomerResponse> {
+): Promise<CustomerData> {
   const { log, debug } = out(`Surescripts getCustomer - cxId ${cxId}`);
   const api = axiosInstance ?? axios.create({ baseURL: Config.getApiUrl() });
   const queryParams = new URLSearchParams({ cxId });
@@ -25,10 +26,10 @@ export async function getCustomer(
     const response = await executeWithNetworkRetries(async () => {
       return api.get(getCustomerUrl);
     });
-    return validateAndLogResponse<GetCustomerResponse>({
+    return validateAndLogResponse<CustomerData>({
       url: getCustomerUrl,
       response,
-      schema: getCustomerResponseSchema,
+      schema: customerDataSchema,
       debug,
     });
   } catch (error) {
