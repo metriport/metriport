@@ -12,7 +12,7 @@ import { FetchBundleParams, FetchedBundlePreSignedUrls } from "../../utils/bundl
  * @param cxId - The CX ID of the patient.
  * @param ehrPatientId - The patient id of the EHR patient.
  * @param resourceType - The resource type to fetch. Optional, all supported resource types will be fetched if not provided.
- * @param bundleType - The bundle type to fetch. Optional, the EHR bundle will be fetched if not provided.
+ * @param bundleType - The bundle type to fetch.
  * @param jobId - The job id of the resource diff bundles job. Required for fetching resource diffs bundles. Ignored for EHR bundles.
  * @returns the bundle pre-signed URLs
  */
