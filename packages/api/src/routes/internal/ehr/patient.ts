@@ -25,7 +25,6 @@ const router = Router();
  * @param req.query.cxId - The CX ID of the patient.
  * @param req.params.id - The patient id of the EHR patient.
  * @param req.query.practiceId - The practice id of the EHR patient.
- * @param req.query.tokenId - The token id of the JWT token to use in the job clients. Optional.
  * @returns The job ID of the resource diff job
  */
 router.post(
