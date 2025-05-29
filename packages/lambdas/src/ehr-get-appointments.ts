@@ -1,5 +1,5 @@
-import { GetAppointmentsRequest } from "@metriport/core/external/ehr/command/appointment/get-appointments/ehr-get-appointments";
-import { EhrGetAppointmentsDirect } from "@metriport/core/external/ehr/command/appointment/get-appointments/ehr-get-appointments-direct";
+import { GetAppointmentsRequest } from "@metriport/core/external/ehr/command/get-appointments/ehr-get-appointments";
+import { EhrGetAppointmentsDirect } from "@metriport/core/external/ehr/command/get-appointments/ehr-get-appointments-direct";
 import { MetriportError } from "@metriport/shared";
 import { SQSEvent } from "aws-lambda";
 import { capture } from "./shared/capture";
@@ -24,9 +24,9 @@ export const handler = capture.wrapHandler(async (event: SQSEvent) => {
 
   console.log(`Running with unparsed body: ${message.body}`);
   const parsedBody = parseBody(message.body);
-  const { ehr, cxId, practiceId } = parsedBody;
+  const { method, cxId, practiceId } = parsedBody;
 
-  const log = prefixedLog(`ehr ${ehr}, cxId ${cxId}, practiceId ${practiceId}`);
+  const log = prefixedLog(`method ${method}, cxId ${cxId}, practiceId ${practiceId}`);
   log(`Parsed: ${JSON.stringify(parsedBody)}`);
 
   const ehrGetAppointmentsHandler = new EhrGetAppointmentsDirect();

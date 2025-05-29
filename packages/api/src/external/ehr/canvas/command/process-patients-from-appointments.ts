@@ -1,5 +1,5 @@
-import { AppointmentMethods } from "@metriport/core/external/ehr/command/appointment/get-appointments/ehr-get-appointments-direct";
-import { buildEhrGetAppointmentsHandler } from "@metriport/core/external/ehr/command/appointment/get-appointments/ehr-get-appointments-factory";
+import { AppointmentMethods } from "@metriport/core/external/ehr/command/get-appointments/ehr-get-appointments";
+import { buildEhrGetAppointmentsHandler } from "@metriport/core/external/ehr/command/get-appointments/ehr-get-appointments-factory";
 import { buildEhrSyncPatientHandler } from "@metriport/core/external/ehr/command/sync-patient/ehr-sync-patient-factory";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { out } from "@metriport/core/util/log";
@@ -96,7 +96,7 @@ async function getAppointments({
   practiceId,
 }: GetAppointmentsParams): Promise<{ appointments?: Appointment[]; error?: unknown }> {
   const { log } = out(`Canvas getAppointments - cxId ${cxId} practiceId ${practiceId}`);
-  const { tokenId, environment } = await createCanvasClientWithTokenIdAndEnvironment({
+  const { tokenId } = await createCanvasClientWithTokenIdAndEnvironment({
     cxId,
     practiceId,
   });
@@ -107,8 +107,6 @@ async function getAppointments({
   try {
     const handler = buildEhrGetAppointmentsHandler();
     const appointments = await handler.getAppointments<SlimBookedAppointment>({
-      ehr: EhrSources.canvas,
-      environment,
       method: AppointmentMethods.canvasGetAppointments,
       tokenId,
       cxId,

@@ -1,4 +1,4 @@
-import { Config } from "../../../../../util/config";
+import { Config } from "../../../../util/config";
 import { EhrGetAppointmentsHandler } from "./ehr-get-appointments";
 import { EhrGetAppointmentsCloud } from "./ehr-get-appointments-cloud";
 import { EhrGetAppointmentsDirect } from "./ehr-get-appointments-direct";
