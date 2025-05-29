@@ -2,10 +2,9 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
 import { MetriportMedicalApi } from "@metriport/api-sdk";
+import { ingestPatientConsolidated } from "@metriport/core/command/consolidated/search/fhir-resource/ingest-lexical";
 import { getDomainFromDTO } from "@metriport/core/command/patient-loader-metriport-api";
 import { BulkResponseErrorItem } from "@metriport/core/external/opensearch/shared/bulk";
-// import { ingestSemantic } from "@metriport/core/command/consolidated/search/fhir-resource/ingest-semantic";
-import { ingestLexical } from "@metriport/core/command/consolidated/search/fhir-resource/ingest-lexical";
 import { sleep } from "@metriport/core/util/sleep";
 import { getEnvVarOrFail } from "@metriport/shared";
 import dayjs from "dayjs";
@@ -52,8 +51,7 @@ async function main() {
   const patientDto = await metriportAPI.getPatient(patientId);
   const patient = getDomainFromDTO(patientDto, cxId);
 
-  // await ingestSemantic({ patient, onItemError });
-  await ingestLexical({ patient, onItemError });
+  await ingestPatientConsolidated({ patient, onItemError });
 
   console.log(`>>> Done in ${elapsedTimeAsStr(startedAt)}`);
 }

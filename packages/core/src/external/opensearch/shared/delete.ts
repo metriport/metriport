@@ -1,4 +1,4 @@
-import { getPatientFilters } from "./filters";
+import { getPatientFilters } from "./query";
 
 export type DeleteParams = {
   cxId: string;

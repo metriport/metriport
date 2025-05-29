@@ -11,12 +11,13 @@ import {
   TXT_MIME_TYPE,
 } from "../../../../util/mime";
 import { getConsolidatedPatientData } from "../../consolidated-get";
+import { ingestIfNeeded } from "./ingest-if-needed";
 import {
   SearchConsolidated,
   SearchConsolidatedParams,
   SearchConsolidatedResult,
 } from "./search-consolidated";
-import { searchLexical } from "./search-lexical";
+import { searchPatientConsolidated } from "./search-lexical";
 
 dayjs.extend(duration);
 
@@ -30,9 +31,13 @@ const searchFolderName = "searches";
  */
 export class SearchConsolidatedDirect implements SearchConsolidated {
   async search({ patient, query }: SearchConsolidatedParams): Promise<SearchConsolidatedResult> {
-    const searchResult = query
-      ? await searchLexical({ patient, query })
-      : await getConsolidatedPatientData({ patient });
+    await ingestIfNeeded(patient);
+
+    const searchResult =
+      query != undefined
+        ? await searchPatientConsolidated({ patient, query })
+        : // TODO eng-363 Consider always getting data from OpenSearch, if no query then only filter by cxId and patientId
+          await getConsolidatedPatientData({ patient });
 
     if (!searchResult || !searchResult.entry || searchResult.entry.length < 1) {
       return { resourceCount: 0 };
@@ -47,6 +52,7 @@ export class SearchConsolidatedDirect implements SearchConsolidated {
   }
 }
 
+// TODO ENG-269 store those in a diff repository (RDS or DDB)
 async function storeSearchResult({
   cxId,
   patientId,
@@ -60,7 +66,6 @@ async function storeSearchResult({
 }): Promise<string> {
   const s3 = new S3Utils(Config.getAWSRegion());
 
-  // TODO eng-268 create a dedicated bucket for this
   const bucket = Config.getMedicalDocumentsBucketName();
   const keyPrefix = buildNewS3KeyPrefix(cxId, patientId);
   const resultKey = `${keyPrefix}-result.${JSON_FILE_EXTENSION}`;

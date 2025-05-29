@@ -1,137 +1,165 @@
+import { Resource } from "@medplum/fhirtypes";
+import { errorToString } from "@metriport/shared";
+import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { SearchSetBundle } from "@metriport/shared/medical";
+import { timed } from "@metriport/shared/util/duration";
 import { Patient } from "../../../../domain/patient";
-import { DocumentReferenceWithId } from "../../../../external/fhir/document/document-reference";
 import { toFHIR as patientToFhir } from "../../../../external/fhir/patient/conversion";
-import { buildBundleEntry, buildSearchSetBundle } from "../../../../external/fhir/shared/bundle";
-import { SearchResult } from "../../../../external/opensearch/index-based-on-resource";
-import { OpenSearchLexicalSearcher } from "../../../../external/opensearch/lexical/lexical-searcher";
+import {
+  buildBundleEntry,
+  buildSearchSetBundle,
+  getReferencesFromResources,
+} from "../../../../external/fhir/shared/bundle";
+import {
+  FhirSearchResult,
+  rawContentFieldName,
+} from "../../../../external/opensearch/index-based-on-fhir";
+import { OpenSearchFhirSearcher } from "../../../../external/opensearch/lexical/lexical-searcher";
+import { getEntryId } from "../../../../external/opensearch/shared/id";
 import { out } from "../../../../util";
-import { Config } from "../../../../util/config";
-import { addMissingReferences } from "../../consolidated-filter";
-import { getConsolidatedPatientData } from "../../consolidated-get";
 import { searchDocuments } from "../document-reference/search";
+import { getConfigs } from "./fhir-config";
+
+const maxHydrationAttempts = 5;
 
 /**
- * Performs a lexical search on a patient's consolidated resources in OpenSearch
- * and returns the resources from consolidated that match the search results.
+ * Performs a search on a patient's consolidated resources in OpenSearch/OS
+ * and returns the resources stored in the OS results.
  *
  * @param patient The patient to search.
  * @param query The query to search for.
- * @param maxNumberOfResults The maximum number of results to return. From 0 to 10_000.
- *                           Optional, defaults to 10_000.
  * @returns The search results.
  */
-export async function searchLexical({
+export async function searchPatientConsolidated({
   patient,
   query,
-  maxNumberOfResults = 10_000,
 }: {
   patient: Patient;
   query: string;
-  /** From 0 to 10_000, optional, defaults to 10_000 */
-  maxNumberOfResults?: number | undefined;
 }): Promise<SearchSetBundle> {
-  const { log } = out(`searchLexical - cx ${patient.cxId}, pt ${patient.id}`);
+  const { log } = out(`searchPatientConsolidated - cx ${patient.cxId}, pt ${patient.id}`);
 
   log(`Getting consolidated and searching OS...`);
-  const startedAt = Date.now();
+  const startedAt = new Date();
 
-  const getConsolidatedPromise = () => getConsolidatedPatientData({ patient });
-
-  const searchOpenSearchPromise = () =>
-    searchOpenSearch({
+  const searchFhirResourcesPromise = () =>
+    searchFhirResources({
       cxId: patient.cxId,
       patientId: patient.id,
       query,
-      maxNumberOfResults,
     });
 
   const searchDocumentsPromise = () =>
     searchDocuments({ cxId: patient.cxId, patientId: patient.id, contentFilter: query });
 
-  const [consolidated, searchResults, docRefResults] = await Promise.all([
-    timed(getConsolidatedPromise, "getConsolidatedPatientData", log),
-    timed(searchOpenSearchPromise, "searchOpenSearch", log),
+  const [fhirResourcesResults, docRefResults] = await Promise.all([
+    timed(searchFhirResourcesPromise, "searchFhirResources", log),
     timed(searchDocumentsPromise, "searchDocuments", log),
   ]);
-  const elapsedTime = Date.now() - startedAt;
+
   log(
-    `Done, got ${searchResults.length} search results and ${consolidated.entry?.length} consolidated ` +
-      `resources in ${elapsedTime} ms, filtering consolidated based on search results...`
+    `Got ${fhirResourcesResults.length} resources and ${
+      docRefResults.length
+    } DocRefs in ${elapsedTimeFromNow(startedAt)} ms, hydrating search results...`
   );
 
-  const filteredResources =
-    consolidated.entry?.filter(entry => {
-      const resourceId = entry.resource?.id;
-      const resourceType = entry.resource?.resourceType;
-      if (!resourceId || !resourceType) return false;
-      return (
-        resourceType !== "Patient" &&
-        (isInLexicalResults(searchResults, resourceId, resourceType) ||
-          isInDocRefResults(docRefResults, resourceId, resourceType))
-      );
-    }) ?? [];
+  let subStartedAt = new Date();
+  const resourcesMutable = fhirResourcesResults.flatMap(r => {
+    const resourceAsString = r[rawContentFieldName];
+    if (!resourceAsString) return [];
+    try {
+      return JSON.parse(resourceAsString) as Resource;
+    } catch (error) {
+      log(`Error parsing resource ${resourceAsString}: ${errorToString(error)}`);
+      return [];
+    }
+  });
+  resourcesMutable.push(...docRefResults);
+  log(
+    `Loaded/converted ${resourcesMutable.length} resources in ${elapsedTimeFromNow(
+      subStartedAt
+    )} ms.`
+  );
 
-  const sliced = filteredResources.slice(0, maxNumberOfResults - 1);
-  const patientEntry = buildBundleEntry(patientToFhir(patient));
-  sliced.push(patientEntry);
+  subStartedAt = new Date();
+  const hydratedMutable = await hydrateMissingReferences({
+    cxId: patient.cxId,
+    patientId: patient.id,
+    resources: resourcesMutable,
+  });
+  log(`Hydrated to ${hydratedMutable.length} resources in ${elapsedTimeFromNow(subStartedAt)} ms.`);
 
-  const filteredBundle = buildSearchSetBundle(sliced);
-  const hydrated = addMissingReferences(filteredBundle, consolidated);
+  const patientResource = patientToFhir(patient);
+  hydratedMutable.push(patientResource);
 
-  log(`Done, returning ${hydrated.entry?.length} filtered resources...`);
+  const entries = hydratedMutable.map(buildBundleEntry);
+  const resultBundle = buildSearchSetBundle(entries);
 
-  return hydrated as SearchSetBundle;
+  log(
+    `Done in ${elapsedTimeFromNow(startedAt)} ms, returning ${
+      resultBundle.entry?.length
+    } resources...`
+  );
+
+  return resultBundle;
 }
 
-function isInLexicalResults(
-  searchResults: SearchResult[],
-  resourceId: string,
-  resourceType: string
-) {
-  return searchResults.some(r => r.resourceId === resourceId && r.resourceType === resourceType);
-}
-
-function isInDocRefResults(
-  docRefResults: DocumentReferenceWithId[],
-  resourceId: string,
-  resourceType: string
-) {
-  if (resourceType !== "DocumentReference") return false;
-  return docRefResults.some(r => r.id === resourceId);
-}
-
-async function searchOpenSearch({
-  query,
+async function searchFhirResources({
   cxId,
   patientId,
-  maxNumberOfResults,
+  query,
 }: {
-  query: string;
   cxId: string;
   patientId: string;
-  maxNumberOfResults?: number | undefined;
-}): Promise<SearchResult[]> {
-  // TODO eng-41 make this a factory so we can delegate the processing to a lambda
-  const searchService = new OpenSearchLexicalSearcher({
-    region: Config.getAWSRegion(),
-    endpoint: Config.getSearchEndpoint(),
-    indexName: Config.getLexicalSearchIndexName(),
-    username: Config.getSearchUsername(),
-    password: Config.getSearchPassword(),
-  });
+  query: string;
+}): Promise<FhirSearchResult[]> {
+  const searchService = new OpenSearchFhirSearcher(getConfigs());
   return await searchService.search({
-    query,
     cxId,
     patientId,
-    maxNumberOfResults,
+    query,
   });
 }
 
-async function timed<T>(fn: () => Promise<T>, name: string, log: typeof console.log) {
-  const startedAt = Date.now();
-  const res = await fn();
-  const elapsedTime = Date.now() - startedAt;
-  log(`Done ${name} in ${elapsedTime} ms`);
-  return res;
+async function hydrateMissingReferences({
+  cxId,
+  patientId,
+  resources,
+  iteration = 1,
+}: {
+  cxId: string;
+  patientId: string;
+  resources: Resource[];
+  iteration?: number;
+}): Promise<Resource[]> {
+  const { missingReferences } = getReferencesFromResources({ resources });
+  if (missingReferences.length < 1 || iteration >= maxHydrationAttempts) return resources;
+
+  const missingRefIds = missingReferences.flatMap(r => {
+    const referenceId = r.id;
+    if (!referenceId || referenceId === patientId) return [];
+    return getEntryId(cxId, patientId, referenceId);
+  });
+
+  const searchService = new OpenSearchFhirSearcher(getConfigs());
+  const openSearchResults = await searchService.getByIds({
+    cxId,
+    patientId,
+    ids: missingRefIds,
+  });
+  if (!openSearchResults || openSearchResults.length < 1) return resources;
+  const resourcesToAdd = openSearchResults.map(r => {
+    const resource = JSON.parse(r[rawContentFieldName]) as Resource;
+    return resource;
+  });
+
+  const hydratedResourcesToAdd = await hydrateMissingReferences({
+    cxId,
+    patientId,
+    resources: resourcesToAdd,
+    iteration: ++iteration,
+  });
+
+  const result = [...resources, ...hydratedResourcesToAdd];
+  return result;
 }

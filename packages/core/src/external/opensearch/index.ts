@@ -17,9 +17,20 @@ export type OpenSearchResponseHit<T> = {
   _score: number;
   _source: T;
 };
+
 // https://github.com/opensearch-project/opensearch-js/issues/269
 export type OpenSearchResponse<T> = {
   hits: {
     hits?: OpenSearchResponseHit<T>[];
   };
 };
+
+export type OpenSearchResponseGet<T> = {
+  _index: string;
+  _id: string;
+  found: boolean;
+  _source: T;
+};
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type OpenSearchRequestBody = Record<string, any>;
