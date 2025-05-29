@@ -16,6 +16,8 @@ import {
   EhrContributeResourceDiffBundlesHandler,
 } from "./ehr-contribute-resource-diff-bundles";
 
+const hydrateEhrOnlyResourceRounds = 3;
+
 export class EhrContributeResourceDiffBundlesDirect
   implements EhrContributeResourceDiffBundlesHandler
 {
@@ -51,31 +53,17 @@ export class EhrContributeResourceDiffBundlesDirect
         resourceType,
         jobId,
       });
-      const references = getReferencesFromResources({ resources: ehrOnlyResources });
-      const getResourceBundleByResourceId = getEhrResourceBundleByResourceId(ehr);
-      for (const { id, type } of references.missingReferences) {
-        try {
-          const bundle = await getResourceBundleByResourceId({
-            ...(tokenId && { tokenId }),
-            cxId,
-            practiceId,
-            metriportPatientId,
-            ehrPatientId,
-            resourceType: type,
-            resourceId: id,
-            useCachedBundle: true,
-          });
-          const resource = bundle.entry?.[0]?.resource;
-          if (!resource) continue;
-          ehrOnlyResources.push(resource);
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } catch (error: any) {
-          if (error.message === "Invalid resource type") continue;
-          throw error;
-        }
-      }
+      await dangerouslyFetchMissingResources({
+        ehr,
+        tokenId,
+        cxId,
+        practiceId,
+        metriportPatientId,
+        ehrPatientId,
+        ehrOnlyResources,
+      });
       const validResources = ehrOnlyResources.map(resource =>
-        adjustPatientDangerous(resource, metriportPatientId)
+        dangerouslyAdjustPatient(resource, metriportPatientId)
       );
       if (validResources.length < 1) {
         throw new BadRequestError(`No valid resources found`, undefined, {
@@ -148,6 +136,72 @@ async function getEhrOnlyResourcesFromS3({
   });
 }
 
+async function dangerouslyFetchMissingResources({
+  ehr,
+  tokenId,
+  cxId,
+  practiceId,
+  metriportPatientId,
+  ehrPatientId,
+  ehrOnlyResources,
+}: {
+  ehr: EhrSource;
+  tokenId: string | undefined;
+  cxId: string;
+  practiceId: string;
+  metriportPatientId: string;
+  ehrPatientId: string;
+  ehrOnlyResources: Resource[];
+}): Promise<void> {
+  const fetchedResourceIds = new Set<string>([
+    ...ehrOnlyResources.flatMap(resource => resource.id ?? []),
+  ]);
+  for (let i = 0; i < hydrateEhrOnlyResourceRounds; i++) {
+    const references = getReferencesFromResources({ resources: ehrOnlyResources });
+    if (references.missingReferences.length < 1) break;
+    const getResourceBundleByResourceId = getEhrResourceBundleByResourceId(ehr);
+    for (const { id, type } of references.missingReferences) {
+      if (fetchedResourceIds.has(id)) continue;
+      try {
+        const bundle = await getResourceBundleByResourceId({
+          ...(tokenId && { tokenId }),
+          cxId,
+          practiceId,
+          metriportPatientId,
+          ehrPatientId,
+          resourceType: type,
+          resourceId: id,
+          useCachedBundle: true,
+        });
+        fetchedResourceIds.add(id);
+        const resource = bundle.entry?.[0]?.resource;
+        if (!resource) continue;
+        ehrOnlyResources.push(resource);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } catch (error: any) {
+        if (error.message === "Invalid resource type") continue;
+        throw error;
+      }
+    }
+  }
+}
+
+function dangerouslyAdjustPatient(resource: Resource, metriportPatientId: string): Resource {
+  if (resource.resourceType === "Patient") {
+    resource.id = metriportPatientId;
+  }
+  if ("subject" in resource) {
+    const subject = resource.subject;
+    if ("reference" in subject) {
+      subject.reference = `Patient/${metriportPatientId}`;
+    }
+  }
+  if ("patient" in resource) {
+    resource.patient.reference = `Patient/${metriportPatientId}`;
+  }
+  return resource;
+}
+
 type GetResourceBundleByResourceId = (
   params: GetResourceBundleByResourceIdParams
 ) => Promise<Bundle>;
@@ -171,20 +225,4 @@ function getEhrResourceBundleByResourceId(ehr: EhrSource): GetResourceBundleByRe
     });
   }
   return handler;
-}
-
-function adjustPatientDangerous(resource: Resource, metriportPatientId: string): Resource {
-  if (resource.resourceType === "Patient") {
-    resource.id = metriportPatientId;
-  }
-  if ("subject" in resource) {
-    const subject = resource.subject;
-    if ("reference" in subject) {
-      subject.reference = `Patient/${metriportPatientId}`;
-    }
-  }
-  if ("patient" in resource) {
-    resource.patient.reference = `Patient/${metriportPatientId}`;
-  }
-  return resource;
 }
