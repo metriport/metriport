@@ -823,7 +823,10 @@ class AthenaHealthApi {
         resourceType,
       });
     }
-    const params = { _id: resourceId };
+    const params = {
+      _id: resourceId,
+      "ah-practice": this.createPracticetId(this.practiceId),
+    };
     const urlParams = new URLSearchParams(params);
     const resourceTypeUrl = `/${resourceType}?${urlParams.toString()}`;
     const additionalInfo = {

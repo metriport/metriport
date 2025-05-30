@@ -1,9 +1,9 @@
 import { Bundle } from "@medplum/fhirtypes";
+import { GetBundleByResourceTypeClientRequest } from "../../command/ehr-get-rresouce-bundle-by-resource-id";
 import { createAthenaHealthClient } from "../shared";
-import { GetResourceBundleByResourceIdParams } from "../../shared";
 
 export async function getResourceBundleByResourceId(
-  params: GetResourceBundleByResourceIdParams
+  params: GetBundleByResourceTypeClientRequest
 ): Promise<Bundle> {
   const {
     tokenId,

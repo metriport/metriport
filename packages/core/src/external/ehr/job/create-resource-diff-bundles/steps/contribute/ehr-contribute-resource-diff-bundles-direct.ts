@@ -1,16 +1,14 @@
-import { Bundle, Resource } from "@medplum/fhirtypes";
+import { Resource } from "@medplum/fhirtypes";
 import { BadRequestError, sleep } from "@metriport/shared";
 import { createBundleFromResourceList } from "@metriport/shared/interface/external/ehr/fhir-resource";
-import { EhrSource, EhrSources } from "@metriport/shared/interface/external/ehr/source";
+import { EhrSource } from "@metriport/shared/interface/external/ehr/source";
 import { getReferencesFromResources } from "../../../../../fhir/shared/bundle";
 import { contributeResourceDiffBundle } from "../../../../api/bundle/contribute-resource-diff-bundle";
 import { setJobEntryStatus } from "../../../../api/job/set-entry-status";
-import { getResourceBundleByResourceId as getAthenaResourceBundleByResourceId } from "../../../../athenahealth/command/get-resource-bundle-by-resource-id";
 import { BundleType } from "../../../../bundle/bundle-shared";
 import { createOrReplaceBundle } from "../../../../bundle/command/create-or-replace-bundle";
 import { fetchBundle, FetchBundleParams } from "../../../../bundle/command/fetch-bundle";
-import { getResourceBundleByResourceId as getCanvasResourceBundleByResourceId } from "../../../../canvas/command/get-resource-bundle-by-resource-id";
-import { GetResourceBundleByResourceIdParams } from "../../../../shared";
+import { getResourceBundleByResourceId } from "../../../../command/ehr-get-rresouce-bundle-by-resource-id";
 import {
   ContributeResourceDiffBundlesRequest,
   EhrContributeResourceDiffBundlesHandler,
@@ -159,11 +157,11 @@ async function dangerouslyFetchMissingResources({
   for (let i = 0; i < hydrateEhrOnlyResourceRounds; i++) {
     const references = getReferencesFromResources({ resources: ehrOnlyResources });
     if (references.missingReferences.length < 1) break;
-    const getResourceBundleByResourceId = getEhrResourceBundleByResourceId(ehr);
     for (const { id, type } of references.missingReferences) {
       if (fetchedResourceIds.has(id)) continue;
       try {
         const bundle = await getResourceBundleByResourceId({
+          ehr,
           ...(tokenId && { tokenId }),
           cxId,
           practiceId,
@@ -179,7 +177,9 @@ async function dangerouslyFetchMissingResources({
         ehrOnlyResources.push(resource);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (error: any) {
-        if (error.message === "Invalid resource type") continue;
+        if (error instanceof BadRequestError && error.message === "Invalid resource type") {
+          continue;
+        }
         throw error;
       }
     }
@@ -200,29 +200,4 @@ function dangerouslyAdjustPatient(resource: Resource, metriportPatientId: string
     resource.patient.reference = `Patient/${metriportPatientId}`;
   }
   return resource;
-}
-
-type GetResourceBundleByResourceId = (
-  params: GetResourceBundleByResourceIdParams
-) => Promise<Bundle>;
-
-const ehrGetResourceBundleByResourceIdMap: Record<
-  EhrSource,
-  GetResourceBundleByResourceId | undefined
-> = {
-  [EhrSources.athena]: getAthenaResourceBundleByResourceId,
-  [EhrSources.elation]: undefined,
-  [EhrSources.healthie]: undefined,
-  [EhrSources.canvas]: getCanvasResourceBundleByResourceId,
-  [EhrSources.eclinicalworks]: undefined,
-};
-
-function getEhrResourceBundleByResourceId(ehr: EhrSource): GetResourceBundleByResourceId {
-  const handler = ehrGetResourceBundleByResourceIdMap[ehr];
-  if (!handler) {
-    throw new BadRequestError(`No get resource bundle by resource id handler found`, undefined, {
-      ehr,
-    });
-  }
-  return handler;
 }

@@ -86,13 +86,13 @@ export function isBundleType(bundleType: string): bundleType is BundleType {
 
 export type ResourceDiffBundleType =
   | BundleType.RESOURCE_DIFF_EHR_ONLY
-  | BundleType.RESOURCE_DIFF_METRIPORT_ONLY;
-export function isResourceDiffBundleType(
-  bundleType: string
-): bundleType is BundleType.RESOURCE_DIFF_EHR_ONLY | BundleType.RESOURCE_DIFF_METRIPORT_ONLY {
+  | BundleType.RESOURCE_DIFF_METRIPORT_ONLY
+  | BundleType.RESOURCE_DIFF_DATA_CONTRIBUTION;
+export function isResourceDiffBundleType(bundleType: string): bundleType is ResourceDiffBundleType {
   return (
     bundleType === BundleType.RESOURCE_DIFF_EHR_ONLY ||
-    bundleType === BundleType.RESOURCE_DIFF_METRIPORT_ONLY
+    bundleType === BundleType.RESOURCE_DIFF_METRIPORT_ONLY ||
+    bundleType === BundleType.RESOURCE_DIFF_DATA_CONTRIBUTION
   );
 }
 

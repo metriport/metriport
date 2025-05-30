@@ -38,9 +38,9 @@ export class EhrRefreshEhrBundlesDirect implements EhrRefreshEhrBundlesHandler {
           ...(tokenId ? { tokenId } : {}),
           cxId,
           practiceId,
+          metriportPatientId,
           ehrPatientId,
           resourceType,
-          metriportPatientId,
           useCachedBundle: false,
         }),
         ...[BundleType.RESOURCE_DIFF_METRIPORT_ONLY, BundleType.RESOURCE_DIFF_EHR_ONLY].map(
