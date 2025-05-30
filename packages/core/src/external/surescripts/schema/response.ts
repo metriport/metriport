@@ -23,6 +23,10 @@ export const flatFileHeaderSchema = z.object({
 
 export type FlatFileHeader = z.infer<typeof flatFileHeaderSchema>;
 
+export function isFlatFileHeader(data: object): data is FlatFileHeader {
+  return flatFileHeaderSchema.safeParse(data).success;
+}
+
 export const flatFileHeaderOrder: IncomingFileRowSchema<FlatFileHeader> = [
   {
     field: 0,
@@ -145,9 +149,13 @@ export const flatFileRowSchema = z.object({
   ndcNumber: z.string().optional(),
 });
 
-export type FlatFileRow = z.infer<typeof flatFileRowSchema>;
+export type FlatFileDetail = z.infer<typeof flatFileRowSchema>;
 
-export const flatFileRowOrder: IncomingFileRowSchema<FlatFileRow> = [
+export function isFlatFileDetail(data: object): data is FlatFileDetail {
+  return flatFileRowSchema.safeParse(data).success;
+}
+
+export const flatFileDetailOrder: IncomingFileRowSchema<FlatFileDetail> = [
   {
     field: 0,
     key: "recordType",
@@ -574,6 +582,10 @@ export const flatFileFooterSchema = z.object({
 });
 
 type FlatFileFooter = z.infer<typeof flatFileFooterSchema>;
+
+export function isFlatFileFooter(data: object): data is FlatFileFooter {
+  return flatFileFooterSchema.safeParse(data).success;
+}
 
 export const flatFileFooterOrder: IncomingFileRowSchema<FlatFileFooter> = [
   {

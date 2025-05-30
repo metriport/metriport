@@ -19,6 +19,14 @@ import {
   patientVerificationFooterOrder,
   isPatientVerificationFooter,
 } from "./schema/verification";
+import {
+  flatFileHeaderOrder,
+  isFlatFileHeader,
+  flatFileDetailOrder,
+  isFlatFileDetail,
+  flatFileFooterOrder,
+  isFlatFileFooter,
+} from "./schema/response";
 import { OutgoingFileRowSchema, IncomingFileRowSchema } from "./schema/shared";
 import { SurescriptsSftpClient, Transmission, TransmissionType } from "./client";
 import { makeNameDemographics, makeGenderDemographics } from "./shared";
@@ -133,14 +141,7 @@ export function toSurescriptsPatientLoadRow<T extends object>(
 }
 
 export function fromSurescriptsVerificationFile(message: Buffer) {
-  const lines = message.toString("ascii").split("\n");
-  const table = lines.map(line => line.split("|"));
-  const header = table.shift();
-  const details = table.slice(0, -1);
-  const footer = table.pop();
-
-  if (!header) throw new Error("Header is missing");
-  if (!footer) throw new Error("Footer is missing");
+  const { header, details, footer } = parseTableFromFile(message);
 
   const headerData = fromSurescriptsRow(
     header,
@@ -155,6 +156,20 @@ export function fromSurescriptsVerificationFile(message: Buffer) {
     patientVerificationFooterOrder,
     isPatientVerificationFooter
   );
+
+  return { header: headerData, details: detailsData, footer: footerData };
+}
+
+export function fromSurescriptsFlatFileResponse(message: Buffer) {
+  const { header, details, footer } = parseTableFromFile(message);
+
+  const headerData = fromSurescriptsRow(header, flatFileHeaderOrder, isFlatFileHeader);
+
+  const detailsData = details.map(detail =>
+    fromSurescriptsRow(detail, flatFileDetailOrder, isFlatFileDetail)
+  );
+
+  const footerData = fromSurescriptsRow(footer, flatFileFooterOrder, isFlatFileFooter);
 
   return { header: headerData, details: detailsData, footer: footerData };
 }
@@ -180,4 +195,29 @@ function fromSurescriptsRow<T extends object>(
       data: JSON.stringify(data),
     });
   }
+}
+
+function parseTableFromFile(message: Buffer): {
+  header: string[];
+  details: string[][];
+  footer: string[];
+} {
+  const lines = message.toString("ascii").split("\n").filter(nonEmptyLine);
+  const table = lines.map(line => line.split("|"));
+  const header = table.shift();
+  const details = table.slice(0, -1);
+  const footer = table.pop();
+  if (!header)
+    throw new MetriportError("Header is missing", "parse_table_from_file", {
+      message: message.toString("ascii"),
+    });
+  if (!footer)
+    throw new MetriportError("Footer is missing", "parse_table_from_file", {
+      message: message.toString("ascii"),
+    });
+  return { header, details, footer };
+}
+
+function nonEmptyLine(line: string): boolean {
+  return line.trim() !== "";
 }
