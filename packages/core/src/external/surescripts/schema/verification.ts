@@ -107,11 +107,11 @@ export const patientVerificationDetailSchema = z.object({
   recordType: z.enum(["SDT"]),
   recordSequenceNumber: z.number(),
   sourceRecordSequenceNumber: z.number().optional(),
-  assigningAuthority: z.string().min(1).max(64).optional(),
+  assigningAuthority: z.string().optional(),
   patientId: z.string().min(1).max(35),
   errorType: z.enum(["W", "E", "F"]), // W = warning, E = error, F = fatal
-  errorCode: z.string().min(1).max(10),
-  errorDescription: z.string().min(1).max(250),
+  errorCode: z.string().optional(),
+  errorDescription: z.string().optional(),
 });
 
 export type PatientVerificationDetail = z.infer<typeof patientVerificationDetailSchema>;
@@ -139,7 +139,7 @@ export const patientVerificationDetailOrder: IncomingFileRowSchema<PatientVerifi
   {
     field: 3,
     key: "assigningAuthority",
-    fromSurescripts: fromSurescriptsString(),
+    fromSurescripts: fromSurescriptsString({ optional: true }),
   },
   {
     field: 4,
@@ -154,12 +154,12 @@ export const patientVerificationDetailOrder: IncomingFileRowSchema<PatientVerifi
   {
     field: 6,
     key: "errorCode",
-    fromSurescripts: fromSurescriptsString(),
+    fromSurescripts: fromSurescriptsString({ optional: true }),
   },
   {
     field: 7,
     key: "errorDescription",
-    fromSurescripts: fromSurescriptsString(),
+    fromSurescripts: fromSurescriptsString({ optional: true }),
   },
 ];
 
