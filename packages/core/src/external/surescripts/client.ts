@@ -2,7 +2,7 @@ import { Config } from "../../util/config";
 import { IdGenerator, createIdGenerator } from "./id-generator";
 import { SftpClient, SftpConfig } from "../sftp/client";
 import { SurescriptsSynchronizeEvent } from "./types";
-import { getS3Key, getSftpFileName } from "./shared";
+import { getS3Key, getSftpDirectory, getSftpFileName } from "./shared";
 import { INCOMING_NAME, OUTGOING_NAME, HISTORY_NAME } from "./constants";
 import { S3Utils } from "../aws/s3";
 import { toSurescriptsPatientLoadFile, canGeneratePatientLoadFile } from "./message";
@@ -34,14 +34,13 @@ export interface Transmission<T extends TransmissionType = TransmissionType> {
   npiNumber: string;
   cxId: string;
   id: string;
-  idBytes: number[];
   timestamp: number; // UTC
   requestFileName: string;
-  compression?: "gzip" | undefined;
+  compression?: boolean;
 }
 
 export class SurescriptsSftpClient extends SftpClient {
-  private transmissionIdGenerator: IdGenerator;
+  private generateTransmissionId: IdGenerator;
   private readonly s3: S3Utils;
   private readonly bucket: string;
 
@@ -61,7 +60,7 @@ export class SurescriptsSftpClient extends SftpClient {
     });
 
     // 10 byte ID generator
-    this.transmissionIdGenerator = createIdGenerator(10);
+    this.generateTransmissionId = createIdGenerator(10);
     this.s3 = new S3Utils(process.env.AWS_REGION ?? "us-east-2");
     this.bucket = config.replicaBucket ?? Config.getSurescriptsReplicaBucketName();
 
@@ -84,40 +83,48 @@ export class SurescriptsSftpClient extends SftpClient {
     { npiNumber, cxId }: SurescriptsRequester,
     compression = true
   ): Transmission<T> {
-    const transmissionId = this.transmissionIdGenerator();
-    const now = new Date();
+    const transmissionId = this.generateTransmissionId().toString("ascii");
+
+    const now = Date.now();
     const requestFileName = this.getPatientLoadFileName(transmissionId, now, compression);
 
     return {
       type,
       npiNumber,
       cxId,
-      id: transmissionId.toString(),
-      idBytes: Array.from(transmissionId),
-      timestamp: now.getTime(),
+      id: transmissionId,
+      timestamp: now,
       requestFileName,
-      compression: compression ? "gzip" : undefined,
+      compression: compression,
     };
   }
 
   getPatientLoadFileName(
-    transmissionId: Buffer,
-    transmissionDate: Date,
+    id: string, // the UUID of the transmission
+    timestamp: number,
     compression = true
   ): string {
     return [
       "Metriport_PMA_",
-      dayjs(transmissionDate).utc().format("YYYYMMDD"),
+      dayjs(timestamp).format("YYYYMMDD"),
       "-",
-      transmissionId.toString(),
+      id,
       compression ? ".gz" : "",
     ].join("");
   }
 
+  getExpectedPatientLoadFileNameInAuditLogs(id: string, timestamp: number, compression = true) {
+    const fileName = this.getPatientLoadFileName(id, timestamp, compression);
+    return `${fileName}.${this.senderId}`;
+  }
+
   async findVerificationFileName(transmission: Transmission): Promise<string | undefined> {
-    const results = await this.list("/from_surescripts", info => {
+    const verificationFileSuffix = transmission.compression ? ".gz-extract.rsp" : ".rsp";
+
+    const results = await this.list(getSftpDirectory(INCOMING_NAME), info => {
       return (
-        info.name.startsWith(transmission.requestFileName) && info.name.endsWith(".gz-extract.rsp")
+        info.name.startsWith(transmission.requestFileName) &&
+        info.name.endsWith(verificationFileSuffix)
       );
     });
     return results[0];
@@ -126,11 +133,10 @@ export class SurescriptsSftpClient extends SftpClient {
   async findFlatFileResponseName(transmission: Transmission): Promise<string | undefined> {
     const transmissionDateTimeSuffix = [
       "_",
-      dayjs(transmission.timestamp).utc().format("YYYYMMDD"),
-      dayjs(transmission.timestamp).utc().format("HHmmss"),
+      dayjs(transmission.timestamp).format("YYYYMMDDHHmmss"),
       ".gz",
     ].join("");
-    const results = await this.list("/from_surescripts", info => {
+    const results = await this.list(getSftpDirectory(INCOMING_NAME), info => {
       return (
         info.name.startsWith(transmission.cxId) && info.name.endsWith(transmissionDateTimeSuffix)
       );
@@ -158,9 +164,9 @@ export class SurescriptsSftpClient extends SftpClient {
     message: Buffer
   ) {
     const fileName = this.getPatientLoadFileName(
-      Buffer.from(transmission.idBytes),
-      new Date(transmission.timestamp),
-      transmission.compression === "gzip"
+      transmission.id,
+      transmission.timestamp,
+      transmission.compression
     );
     await this.s3.uploadFile({
       bucket: this.bucket,
@@ -285,5 +291,28 @@ export class SurescriptsSftpClient extends SftpClient {
       await this.write(sftpFileName, content);
     }
     return content;
+  }
+
+  async didCopyPatientLoadFileToSurescripts(transmission: Transmission<TransmissionType>) {
+    const fileName = this.getExpectedPatientLoadFileNameInAuditLogs(
+      transmission.id,
+      transmission.timestamp,
+      transmission.compression
+    );
+    const sftpFileName = getSftpFileName(HISTORY_NAME, fileName);
+    const exists = await this.exists(sftpFileName);
+    return exists;
+  }
+
+  async didReceiveVerificationResponseFromSurescripts(
+    transmission: Transmission<TransmissionType>
+  ) {
+    const fileName = await this.findVerificationFileName(transmission);
+    return fileName != null;
+  }
+
+  async didReceiveFlatFileResponseFromSurescripts(transmission: Transmission) {
+    const fileName = await this.findFlatFileResponseName(transmission);
+    return fileName != null;
   }
 }

@@ -3,22 +3,28 @@ const LEXICON = "-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxy
 const LEXICON_START = LEXICON.charCodeAt(0);
 const LEXICON_END = LEXICON.charCodeAt(LEXICON.length - 1);
 
-export function createIdGenerator(totalLength: number): IdGenerator {
+export function createIdGenerator(
+  totalLength: number,
+  initialState: {
+    lastTime?: number; // for testing purposes
+    lastEntropy?: Buffer;
+  } = {}
+): IdGenerator {
   if (totalLength < 8) throw new Error("Total length must be at least 8");
   const entropyLength = totalLength - 8;
 
   // Within an ID generator context, these shared vars enforce an invariant that
   // two sequentially generated IDs will *always* be lexicographically ordered correctly.
-  let lastTime: number | null = null;
-  const lastEntropy: Buffer = Buffer.alloc(entropyLength);
+  let lastTime: number | null = initialState.lastTime ?? null;
+  const lastEntropy: Buffer = initialState.lastEntropy ?? Buffer.alloc(entropyLength);
 
   return function (time?: number, entropy?: 0 | 1): Buffer {
     const id: Buffer = Buffer.alloc(totalLength);
-    let duplicateWithinMs = false;
+    let sameMillisecondAsLastId = false;
 
     let now: number = time ?? Date.now();
+    sameMillisecondAsLastId = now === lastTime;
     if (time == null) {
-      duplicateWithinMs = now === lastTime;
       lastTime = now;
     }
 
@@ -34,7 +40,7 @@ export function createIdGenerator(totalLength: number): IdGenerator {
       }
     }
     // If this is a duplicate timestamp
-    else if (duplicateWithinMs) {
+    else if (sameMillisecondAsLastId) {
       // Apply a carry to every right-bit that is a "z"
       let i = entropyLength - 1;
       for (; i >= 0 && lastEntropy.readUInt8(i) === LEXICON_END; i--) {
