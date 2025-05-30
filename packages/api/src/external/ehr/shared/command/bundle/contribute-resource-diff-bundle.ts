@@ -27,11 +27,12 @@ export async function contributeResourceDiffBundle({
     externalId: ehrPatientId,
     source: ehr,
   });
-  const patient = await getPatientOrFail({ cxId, id: patientMapping.patientId });
+  const metriportPatientId = patientMapping.patientId;
+  const metriportPatient = await getPatientOrFail({ cxId, id: metriportPatientId });
   const bundle = await fetchBundle({
     ehr,
     cxId,
-    metriportPatientId: patientMapping.patientId,
+    metriportPatientId,
     ehrPatientId,
     bundleType: BundleType.RESOURCE_DIFF_DATA_CONTRIBUTION,
     resourceType,
@@ -40,7 +41,7 @@ export async function contributeResourceDiffBundle({
   if (!bundle || !bundle.bundle || !bundle.bundle.entry) return;
   await handleDataContribution({
     requestId: uuidv7(),
-    patient,
+    patient: metriportPatient,
     cxId,
     bundle: {
       resourceType: "Bundle",
