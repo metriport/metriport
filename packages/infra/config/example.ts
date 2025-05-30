@@ -211,7 +211,7 @@ export const config: EnvConfigNonSandbox = {
   },
   medicalDocumentsBucketName: "test-bucket",
   medicalDocumentsUploadBucketName: "test-upload-bucket",
-  medicationBundleBucketName: "test-medication-bundle-bucket",
+  pharmacyBundleBucketName: "test-pharmacy-bundle-bucket",
   surescriptsReplicaBucketName: "test-surescripts-replica-bucket",
   ehrBundleBucketName: "test-ehr-bundle-bucket",
   ehrResponsesBucketName: "test-ehr-responses-bucket",

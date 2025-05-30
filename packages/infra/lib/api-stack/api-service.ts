@@ -356,7 +356,7 @@ export function createAPIService({
             CQ_DIR_REBUILD_HEARTBEAT_URL: props.config.cqDirectoryRebuilder.heartbeatUrl,
           }),
           ...(surescriptsAssets && {
-            MEDICATION_BUNDLE_BUCKET_NAME: surescriptsAssets.medicationBundleBucket.bucketName,
+            PHARMACY_BUNDLE_BUCKET_NAME: surescriptsAssets.pharmacyBundleBucket.bucketName,
             SURESCRIPTS_REPLICA_BUCKET_NAME: surescriptsAssets.surescriptsReplicaBucket.bucketName,
             SURESCRIPTS_SYNCHRONIZE_SFTP_QUEUE_URL: surescriptsAssets.synchronizeSftpQueue.queueUrl,
             SURESCRIPTS_SEND_PATIENT_REQUEST_QUEUE_URL:
@@ -453,7 +453,7 @@ export function createAPIService({
   ehrBundleBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
 
   if (surescriptsAssets) {
-    surescriptsAssets.medicationBundleBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
+    surescriptsAssets.pharmacyBundleBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
     surescriptsAssets.surescriptsReplicaBucket.grantReadWrite(
       fargateService.taskDefinition.taskRole
     );
