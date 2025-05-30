@@ -8,7 +8,7 @@ import { setJobEntryStatus } from "../../../../api/job/set-entry-status";
 import { BundleType } from "../../../../bundle/bundle-shared";
 import { createOrReplaceBundle } from "../../../../bundle/command/create-or-replace-bundle";
 import { fetchBundle, FetchBundleParams } from "../../../../bundle/command/fetch-bundle";
-import { getResourceBundleByResourceId } from "../../../../command/ehr-get-rresouce-bundle-by-resource-id";
+import { getResourceBundleByResourceId } from "../../../../command/ehr-get-resouce-bundle-by-resource-id";
 import {
   ContributeResourceDiffBundlesRequest,
   EhrContributeResourceDiffBundlesHandler,
