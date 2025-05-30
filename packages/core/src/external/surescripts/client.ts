@@ -26,8 +26,8 @@ export enum TransmissionType {
 
 export type TransmissionData = Pick<Transmission, "cxId" | "npiNumber" | "compression">;
 
-export interface Transmission<T extends TransmissionType = TransmissionType> {
-  type: T;
+export interface Transmission {
+  type: TransmissionType;
   npiNumber: string;
   cxId: string;
   id: string;
@@ -67,18 +67,18 @@ export class SurescriptsSftpClient extends SftpClient {
     this.receiverId = config.receiverId ?? Config.getSurescriptsSftpReceiverId();
   }
 
-  createEnrollment(data: TransmissionData): Transmission<TransmissionType.Enroll> {
+  createEnrollment(data: TransmissionData): Transmission {
     return this.createTransmission(TransmissionType.Enroll, data);
   }
 
-  createUnenrollment(data: TransmissionData): Transmission<TransmissionType.Unenroll> {
+  createUnenrollment(data: TransmissionData): Transmission {
     return this.createTransmission(TransmissionType.Unenroll, data);
   }
 
-  createTransmission<T extends TransmissionType>(
-    type: T,
+  createTransmission(
+    type: TransmissionType,
     { npiNumber, cxId, compression }: TransmissionData
-  ): Transmission<T> {
+  ): Transmission {
     const transmissionId = this.generateTransmissionId().toString("ascii");
 
     const now = Date.now();
@@ -96,7 +96,7 @@ export class SurescriptsSftpClient extends SftpClient {
   }
 
   generatePatientLoadFile(
-    transmission: Transmission<TransmissionType>,
+    transmission: Transmission,
     patients: Patient[]
   ): { content: Buffer; requestedPatientIds: string[] } {
     if (!canGeneratePatientLoadFile(transmission, patients)) {
@@ -110,10 +110,7 @@ export class SurescriptsSftpClient extends SftpClient {
     return toSurescriptsPatientLoadFile(this, transmission, patients);
   }
 
-  async writePatientLoadFileToStorage(
-    transmission: Transmission<TransmissionType>,
-    message: Buffer
-  ) {
+  async writePatientLoadFileToStorage(transmission: Transmission, message: Buffer) {
     const fileName = this.getPatientLoadFileName(
       transmission.id,
       transmission.timestamp,
@@ -126,7 +123,7 @@ export class SurescriptsSftpClient extends SftpClient {
     });
   }
 
-  async receiveVerificationResponse(transmission: Transmission<TransmissionType>) {
+  async receiveVerificationResponse(transmission: Transmission) {
     const fileName = await this.findVerificationFileName(transmission.requestFileName);
     if (fileName) {
       const content = await this.read(getSftpFileName(INCOMING_NAME, fileName));
@@ -267,7 +264,7 @@ export class SurescriptsSftpClient extends SftpClient {
     };
   }
 
-  async didCopyPatientLoadFileToSurescripts(transmission: Transmission<TransmissionType>) {
+  async didCopyPatientLoadFileToSurescripts(transmission: Transmission) {
     const fileName = this.getExpectedPatientLoadFileNameInAuditLogs(
       transmission.id,
       transmission.timestamp,
@@ -278,9 +275,7 @@ export class SurescriptsSftpClient extends SftpClient {
     return exists;
   }
 
-  async didReceiveVerificationResponseFromSurescripts(
-    transmission: Transmission<TransmissionType>
-  ) {
+  async didReceiveVerificationResponseFromSurescripts(transmission: Transmission) {
     const fileName = await this.findVerificationFileName(transmission.requestFileName);
     return fileName != null;
   }

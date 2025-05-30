@@ -28,12 +28,12 @@ import {
   isFlatFileFooter,
 } from "./schema/response";
 import { OutgoingFileRowSchema, IncomingFileRowSchema } from "./schema/shared";
-import { SurescriptsSftpClient, Transmission, TransmissionType } from "./client";
+import { SurescriptsSftpClient, Transmission } from "./client";
 import { makeNameDemographics, makeGenderDemographics } from "./shared";
 import { SURESCRIPTS_VERSION } from "./constants";
 
 export function canGeneratePatientLoadFile(
-  transmission: Transmission<TransmissionType>,
+  transmission: Transmission,
   patients: Patient[]
 ): boolean {
   if (patients.length === 0) return false;
@@ -43,7 +43,7 @@ export function canGeneratePatientLoadFile(
 
 export function toSurescriptsPatientLoadFile(
   client: SurescriptsSftpClient,
-  transmission: Transmission<TransmissionType>,
+  transmission: Transmission,
   patients: Patient[]
 ): { content: Buffer; requestedPatientIds: string[] } {
   const requestedPatientIds: string[] = [];
