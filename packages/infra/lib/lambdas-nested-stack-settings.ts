@@ -21,7 +21,6 @@ export function getConsolidatedIngestionConnectorSettings() {
     },
     eventSource: {
       batchSize: 1,
-      maxBatchingWindow: Duration.seconds(0),
       maxConcurrency: 5, // how many lambdas can hit the OpenSearch service at once
       // Partial batch response: https://docs.aws.amazon.com/prescriptive-guidance/latest/lambda-event-filtering-partial-batch-responses-for-sqs/welcome.html
       reportBatchItemFailures: false,
