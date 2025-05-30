@@ -1,5 +1,7 @@
-import { buildEhrSyncPatientHandler } from "@metriport/core/external/ehr/command/sync-patient/ehr-sync-patient-factory";
 import { buildElationLinkPatientHandler } from "@metriport/core/external/ehr/elation/command/link-patient/elation-link-patient-factory";
+import { AppointmentMethods } from "@metriport/core/external/ehr/command/get-appointments/ehr-get-appointments";
+import { buildEhrGetAppointmentsHandler } from "@metriport/core/external/ehr/command/get-appointments/ehr-get-appointments-factory";
+import { buildEhrSyncPatientHandler } from "@metriport/core/external/ehr/command/sync-patient/ehr-sync-patient-factory";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
@@ -8,6 +10,7 @@ import {
   ElationSecondaryMappings,
   elationSecondaryMappingsSchema,
 } from "@metriport/shared/interface/external/ehr/elation/cx-mapping";
+import { BookedAppointment } from "@metriport/shared/interface/external/ehr/elation/index";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -21,7 +24,7 @@ import {
   parallelPatients,
   parallelPractices,
 } from "../../shared/utils/appointment";
-import { createElationClient } from "../shared";
+import { createElationClientWithTokenIdAndEnvironment } from "../shared";
 import {
   CreateOrUpdateElationPatientMetadataParams,
   SyncElationPatientIntoMetriportParams,
@@ -143,14 +146,21 @@ async function getAppointments({
   practiceId,
 }: GetAppointmentsParams): Promise<{ appointments?: Appointment[]; error?: unknown }> {
   const { log } = out(`Elation getAppointments - cxId ${cxId} practiceId ${practiceId}`);
-  const api = await createElationClient({ cxId, practiceId });
+  const { tokenId } = await createElationClientWithTokenIdAndEnvironment({
+    cxId,
+    practiceId,
+  });
   const { startRange, endRange } = getLookForwardTimeRange({
     lookForward: appointmentsLookForward,
   });
   log(`Getting appointments from ${startRange} to ${endRange}`);
   try {
-    const appointments = await api.getAppointments({
+    const handler = buildEhrGetAppointmentsHandler();
+    const appointments = await handler.getAppointments<BookedAppointment>({
+      method: AppointmentMethods.elationGetAppointments,
+      tokenId,
       cxId,
+      practiceId,
       fromDate: startRange,
       toDate: endRange,
     });

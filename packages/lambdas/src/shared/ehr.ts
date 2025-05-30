@@ -81,6 +81,7 @@ export function parseLinkPatient(
 
 export const ehrCreateResourceDiffBundlesSchema = z.object({
   ehr: z.nativeEnum(EhrSources),
+  tokenId: z.string().optional(),
   cxId: z.string(),
   practiceId: z.string(),
   metriportPatientId: z.string(),

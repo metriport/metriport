@@ -22,7 +22,7 @@ export type EhrEnvAndApiKey<Env extends EhrEnv> = {
   apiKey: string;
 };
 
-type EhrClientTwoLeggedAuth = AthenaHealthApi | ElationApi | CanvasApi;
+export type EhrClientTwoLeggedClient = AthenaHealthApi | ElationApi | CanvasApi;
 export type EhrClientParams<Env extends EhrEnv> = {
   twoLeggedAuthTokenInfo: JwtTokenInfo | undefined;
   practiceId: string;
@@ -55,7 +55,7 @@ export type GetEnvParams<Env extends EhrEnv, EnvArgs> = {
 
 export async function createEhrClient<
   Env extends EhrEnv,
-  Client extends EhrClientTwoLeggedAuth,
+  Client extends EhrClientTwoLeggedClient,
   EnvArgs = undefined
 >({
   cxId,

@@ -8,6 +8,10 @@ import { updatePatientJobTotal } from "../../../../../../command/job/patient/upd
 import { getPatientMappingOrFail } from "../../../../../../command/mapping/patient";
 import { getPatientOrFail } from "../../../../../../command/medical/patient/get-patient";
 import {
+  getTwoLeggedClientWithTokenIdAndEnvironment,
+  isTwoLeggedEhrSource,
+} from "../../../command/clients/get-two-legged-client";
+import {
   StartCreateResourceDiffBundlesJobParams,
   getCreateResourceDiffBundlesJobType,
 } from "../../../utils/job";
@@ -57,10 +61,20 @@ export async function startCreateResourceDiffBundlesJob({
   }
   await updatePatientJobTotal({ cxId, jobId, total: resourceTypes.length });
   const ehrResourceDiffHandler = buildEhrRefreshEhrBundlesHandler();
+  let tokenId: string | undefined;
+  if (isTwoLeggedEhrSource(ehr)) {
+    const clientWithTokenIdAndEnvironment = await getTwoLeggedClientWithTokenIdAndEnvironment({
+      ehr,
+      cxId,
+      practiceId,
+    });
+    tokenId = clientWithTokenIdAndEnvironment.tokenId;
+  }
   for (const resourceType of resourceTypes) {
     ehrResourceDiffHandler
       .refreshEhrBundles({
         ehr,
+        tokenId,
         cxId,
         practiceId,
         metriportPatientId,
