@@ -122,7 +122,7 @@ type EnvConfigBase = {
   generalBucketName: string;
   medicalDocumentsBucketName: string;
   medicalDocumentsUploadBucketName: string;
-  pharmacyBundleBucketName: string;
+  pharmacyConversionBucketName: string;
   surescriptsReplicaBucketName: string;
   ehrResponsesBucketName?: string;
   ehrBundleBucketName: string;

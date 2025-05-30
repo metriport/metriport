@@ -124,12 +124,12 @@ function surescriptsEnvironmentVariablesAndSecrets({
   nestedStack,
   surescripts,
   surescriptsReplicaBucket,
-  pharmacyBundleBucket,
+  pharmacyConversionBucket,
 }: {
   nestedStack: SurescriptsNestedStack;
   surescripts: EnvConfig["surescripts"];
   surescriptsReplicaBucket: s3.Bucket;
-  pharmacyBundleBucket: s3.Bucket;
+  pharmacyConversionBucket: s3.Bucket;
 }): { envVars: Record<string, string>; secrets: secret.ISecret[] } {
   if (!surescripts) {
     return { envVars: {}, secrets: [] };
@@ -140,7 +140,7 @@ function surescriptsEnvironmentVariablesAndSecrets({
     SURESCRIPTS_SFTP_SENDER_ID: surescripts.surescriptsSenderId,
     SURESCRIPTS_SFTP_RECEIVER_ID: surescripts.surescriptsReceiverId,
     SURESCRIPTS_REPLICA_BUCKET_NAME: surescriptsReplicaBucket.bucketName,
-    PHARMACY_BUNDLE_BUCKET_NAME: pharmacyBundleBucket.bucketName,
+    PHARMACY_CONVERSION_BUCKET_NAME: pharmacyConversionBucket.bucketName,
   };
 
   const secrets: secret.ISecret[] = [];
@@ -186,7 +186,7 @@ export class SurescriptsNestedStack extends NestedStack {
   private readonly receiveFlatFileResponseLambda: Lambda;
   private readonly receiveFlatFileResponseQueue: Queue;
   private readonly surescriptsReplicaBucket: s3.Bucket;
-  private readonly pharmacyBundleBucket: s3.Bucket;
+  private readonly pharmacyConversionBucket: s3.Bucket;
 
   constructor(scope: Construct, id: string, props: SurescriptsNestedStackProps) {
     super(scope, id, props);
@@ -200,8 +200,8 @@ export class SurescriptsNestedStack extends NestedStack {
       versioned: true,
     });
 
-    this.pharmacyBundleBucket = new s3.Bucket(this, "PharmacyBundleBucket", {
-      bucketName: props.config.pharmacyBundleBucketName,
+    this.pharmacyConversionBucket = new s3.Bucket(this, "PharmacyBundleBucket", {
+      bucketName: props.config.pharmacyConversionBucketName,
       publicReadAccess: false,
       encryption: s3.BucketEncryption.S3_MANAGED,
       versioned: true,
@@ -211,7 +211,7 @@ export class SurescriptsNestedStack extends NestedStack {
       nestedStack: this,
       surescripts: props.config.surescripts,
       surescriptsReplicaBucket: this.surescriptsReplicaBucket,
-      pharmacyBundleBucket: this.pharmacyBundleBucket,
+      pharmacyConversionBucket: this.pharmacyConversionBucket,
     });
 
     const commonConfig = {
@@ -248,7 +248,7 @@ export class SurescriptsNestedStack extends NestedStack {
     const receiveFlatFileResponse = this.setupLambdaAndQueue("receiveFlatFileResponse", {
       ...commonConfig,
       surescriptsReplicaBucket: this.surescriptsReplicaBucket,
-      pharmacyBundleBucket: this.pharmacyBundleBucket,
+      pharmacyConversionBucket: this.pharmacyConversionBucket,
     });
     this.receiveFlatFileResponseLambda = receiveFlatFileResponse.lambda;
     this.receiveFlatFileResponseQueue = receiveFlatFileResponse.queue;
@@ -272,7 +272,7 @@ export class SurescriptsNestedStack extends NestedStack {
       receiveFlatFileResponseLambda: this.receiveFlatFileResponseLambda,
       receiveFlatFileResponseQueue: this.receiveFlatFileResponseQueue,
       surescriptsReplicaBucket: this.surescriptsReplicaBucket,
-      pharmacyBundleBucket: this.pharmacyBundleBucket,
+      pharmacyConversionBucket: this.pharmacyConversionBucket,
     };
   }
 
@@ -296,7 +296,7 @@ export class SurescriptsNestedStack extends NestedStack {
       sentryDsn: string | undefined;
       alarmAction: SnsAction | undefined;
       surescriptsReplicaBucket: s3.Bucket;
-      pharmacyBundleBucket?: s3.Bucket;
+      pharmacyConversionBucket?: s3.Bucket;
     }
   ): { lambda: Lambda; queue: Queue } {
     const {
@@ -307,7 +307,7 @@ export class SurescriptsNestedStack extends NestedStack {
       sentryDsn,
       alarmAction,
       surescriptsReplicaBucket,
-      pharmacyBundleBucket,
+      pharmacyConversionBucket,
     } = props;
 
     const {
@@ -347,7 +347,7 @@ export class SurescriptsNestedStack extends NestedStack {
     });
 
     surescriptsReplicaBucket.grantReadWrite(lambda);
-    pharmacyBundleBucket?.grantReadWrite(lambda);
+    pharmacyConversionBucket?.grantReadWrite(lambda);
 
     lambda.addEventSource(
       new SqsEventSource(queue, {
