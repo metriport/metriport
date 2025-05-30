@@ -5,6 +5,7 @@ import {
   Condition,
   Immunization,
   Observation,
+  Procedure,
 } from "@medplum/fhirtypes";
 import {
   AdditionalInfo,
@@ -337,6 +338,10 @@ export function getObservationReferenceRange(observation: Observation): string |
   return undefined;
 }
 
+export function getObservationObservedDate(observation: Observation): string | undefined {
+  return observation.effectiveDateTime ?? observation.effectivePeriod?.start;
+}
+
 export function getAllergyIntoleranceReactionSnomedCoding(
   allergyIntoleranceReaction: AllergyIntoleranceReaction
 ): Coding | undefined {
@@ -354,6 +359,26 @@ export function getAllergyIntoleranceOnsetDate(
   allergyIntolerance: AllergyIntolerance
 ): string | undefined {
   return allergyIntolerance.onsetDateTime ?? allergyIntolerance.onsetPeriod?.start;
+}
+
+export function getProcedureLoincCoding(procedure: Procedure): Coding | undefined {
+  const code = procedure.code;
+  const loincCoding = code?.coding?.find(coding => {
+    const system = fetchCodingCodeOrDisplayOrSystem(coding, "system");
+    return system?.includes(LOINC_CODE);
+  });
+  if (!loincCoding) return undefined;
+  return loincCoding;
+}
+
+export function getProcedureLoincCode(procedure: Procedure): string | undefined {
+  const loincCoding = getProcedureLoincCoding(procedure);
+  if (!loincCoding) return undefined;
+  return loincCoding.code;
+}
+
+export function getProcedurePerformedDate(procedure: Procedure): string | undefined {
+  return procedure.performedDateTime ?? procedure.performedPeriod?.start;
 }
 
 /**
