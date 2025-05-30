@@ -1,0 +1,58 @@
+---
+title: "Search Patient Data"
+description: "Search through a Patient's data and return matching resources"
+api: "GET /medical/v1/patient/{id}/consolidated/search"
+---
+
+Searches through a Patient's consolidated data and returns resources that match the query. This
+endpoint also includes CCDA documents.
+
+The response contains a URL to a FHIR `searchset` bundle which contains the results of the search.
+
+<Info>
+  The URL will only be valid for 60 seconds before you need
+  to request a new one.
+</Info>
+
+### How to use it
+
+- the search is case-insensitive
+- you can include multiple terms/words, separated by spaces
+- it will include keywords that are very similar to the search criteria, accounting for typos
+- it will return related resources
+
+Example:
+- serch term: "pain medication"
+- will include all resources with the words "pain" and "medication"
+
+
+## Path Params
+
+<ParamField path="id" type="string" required>
+  The ID of the Patient.
+</ParamField>
+
+## Query Params
+
+<ParamField query="query" type="string" optional>
+  The search query to match against the Patient's consolidated data resources. If not provided, all
+  resources will be returned.
+</ParamField>
+
+## Response
+
+Returns a URL to download the FHIR bundle with the search results.
+
+<ResponseField name="url" type="string" optional>
+  The URL to download the FHIR `searchset` bundle. Not present if no results where found.
+</ResponseField>
+<ResponseField name="resourceCount" type="number" required>
+  The amount of resources resulting from the search.
+</ResponseField>
+
+```json
+{
+  "url": "https://<url-to-download-the-search-bundle>",
+  "resourceCount": 5
+}
+```
