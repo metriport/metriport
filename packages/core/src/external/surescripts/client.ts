@@ -313,26 +313,32 @@ export class SurescriptsSftpClient extends SftpClient {
     return `${fileName}.${this.senderId}`;
   }
 
-  private async findVerificationFileName(requestFileName: string): Promise<string | undefined> {
-    const requestFileNameWithoutExtension = requestFileName.replace(/\.gz$/, "");
+  private async findVerificationFileName(fileName: string): Promise<string | undefined> {
+    const fileNameWithoutExtension = fileName.replace(/\.gz$/, "");
 
     const results = await this.list(getSftpDirectory(INCOMING_NAME), info => {
       const parsedFileName = this.parseVerificationFileName(info.name);
       return (
-        parsedFileName != null && parsedFileName.requestFileName === requestFileNameWithoutExtension
+        parsedFileName != null &&
+        parsedFileName.requestFileNameWithoutExtension === fileNameWithoutExtension
       );
     });
     return results[0];
   }
 
   private parseVerificationFileName(remoteFileName: string): {
-    requestFileName: string;
+    requestFileNameWithoutExtension: string;
     acceptedBySurescripts: Date;
     processedBySurescripts: Date;
     compression: boolean;
   } | null {
-    const [requestFileName, sstimestamp1, sstimestamp2, maybeGzExtract] = remoteFileName.split(".");
-    if (!requestFileName || !sstimestamp1?.match(/^\d+$/) || !sstimestamp2?.match(/^\d+$/)) {
+    const [requestFileNameWithoutExtension, sstimestamp1, sstimestamp2, maybeGzExtract] =
+      remoteFileName.split(".");
+    if (
+      !requestFileNameWithoutExtension ||
+      !sstimestamp1?.match(/^\d+$/) ||
+      !sstimestamp2?.match(/^\d+$/)
+    ) {
       return null;
     }
     const compression = maybeGzExtract === "gz-extract";
@@ -343,7 +349,7 @@ export class SurescriptsSftpClient extends SftpClient {
     const acceptedBySurescripts = dayjs(sstimestamp1).toDate();
     const processedBySurescripts = dayjs(sstimestamp2).toDate();
     return {
-      requestFileName,
+      requestFileNameWithoutExtension,
       compression,
       acceptedBySurescripts,
       processedBySurescripts,
