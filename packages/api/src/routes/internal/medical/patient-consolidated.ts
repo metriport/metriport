@@ -167,8 +167,6 @@ router.post(
 
     const { log } = out(`internal ingest - cx ${cxId}`);
 
-    log(`Initialized indexes (if needed), patient IDs count: ${patientIds.length}`);
-
     if (patientIds.length < 1) {
       if (allPatients) {
         log(`No patientIds provided, getting all patients for this customer`);
