@@ -5,7 +5,7 @@ import fs from "fs";
 dotenv.config();
 
 import { Command } from "commander";
-import { SurescriptsSftpClient } from "@metriport/core/external/surescripts/client";
+import { SurescriptsSftpClient, Transmission } from "@metriport/core/external/surescripts/client";
 import { SurescriptsApi } from "@metriport/core/external/surescripts/api";
 import { Patient } from "@metriport/shared/domain/patient";
 import { filePathIsInGitRepository } from "./shared";
@@ -22,70 +22,62 @@ program
   .showHelpAfterError()
   .version("1.0.0")
   .action(async () => {
-    const { cxId, facilityId, csvData, npiNumber } = program.opts();
+    const { cxId, facilityId, csvData } = program.opts();
+    let { npiNumber } = program.opts();
     console.log("Generating patient load file...");
 
     if (!cxId) throw new Error("CX ID is required");
     if (!facilityId) throw new Error("Facility ID is required");
 
-    const api = new SurescriptsApi();
     const client = new SurescriptsSftpClient({});
+    let patients: Patient[] = [];
 
     if (csvData) {
       if (!npiNumber) throw new Error("NPI number is required when using CSV data");
-      await generatePatientLoadFileFromCsv(client, { cxId, npiNumber, csvData });
-      return;
+      patients = await getPatientsFromCsv(csvData);
+    } else {
+      const { npi, patients: apiPatients } = await getPatientsFromApi(cxId, facilityId);
+      patients = apiPatients;
+      npiNumber = npi;
     }
 
-    const customer = await api.getCustomer(cxId);
-    const facility = customer.facilities.find(f => f.id === facilityId);
-
-    if (!facility) throw new Error(`Facility ${facilityId} not found`);
-
     const transmission = client.createEnrollment({
-      npiNumber: facility.npi,
+      npiNumber,
       cxId,
     });
-
-    const patientIds = await api.getPatientIds(cxId, facilityId);
-    const patients = await Promise.all(patientIds.map(id => api.getPatient(cxId, id)));
-    console.log("Found " + patients.length + " patients");
-
     const message = client.generatePatientLoadFile(transmission, patients);
     console.log(message.toString("ascii"));
 
     await client.writePatientLoadFileToStorage(transmission, message);
-    console.log("Patient load file written to storage.");
-    console.log("      Transmission ID:  " + transmission.id);
-    console.log("    Request file name:  " + transmission.requestFileName);
-    console.log("Tranmission timestamp:  " + transmission.timestamp);
-    console.log("            File size:  " + message.length + " bytes");
+    logTransmissionCreated(transmission, message);
   });
 
-async function generatePatientLoadFileFromCsv(
-  client: SurescriptsSftpClient,
-  { cxId, npiNumber, csvData }: { npiNumber: string; cxId: string; csvData: string }
-): Promise<void> {
+async function getPatientsFromApi(
+  cxId: string,
+  facilityId: string
+): Promise<{ npi: string; patients: Patient[] }> {
+  const api = new SurescriptsApi();
+  const customer = await api.getCustomer(cxId);
+  const facility = customer.facilities.find(f => f.id === facilityId);
+  if (!facility) throw new Error(`Facility ${facilityId} not found`);
+  const patientIds = await api.getPatientIds(cxId, facilityId);
+  const patients = await Promise.all(patientIds.map(id => api.getPatient(cxId, id)));
+  return { npi: facility.npi, patients };
+}
+
+function logTransmissionCreated(transmission: Transmission, message: Buffer) {
+  console.log("Patient load file written to storage");
+  console.log("      Transmission ID:  " + transmission.id);
+  console.log("    Request file name:  " + transmission.requestFileName);
+  console.log("Tranmission timestamp:  " + transmission.timestamp);
+  console.log("            File size:  " + message.length + " bytes");
+}
+
+async function getPatientsFromCsv(csvData: string): Promise<Patient[]> {
   if (filePathIsInGitRepository(csvData)) {
     throw new Error("CSV data file must not be in a git repository");
   }
 
-  const patients = await getPatientsFromCsv(csvData);
-  console.log("Found " + patients.length + " patients");
-
-  const transmission = client.createEnrollment({
-    npiNumber,
-    cxId,
-  });
-
-  const message = client.generatePatientLoadFile(transmission, patients);
-  // console.log(message.toString("ascii"));
-
-  await client.writePatientLoadFileToStorage(transmission, message);
-  console.log("Patient load file written to storage");
-}
-
-async function getPatientsFromCsv(csvData: string): Promise<Patient[]> {
   return new Promise((resolve, reject) => {
     const patients: Patient[] = [];
     fs.createReadStream(csvData)
