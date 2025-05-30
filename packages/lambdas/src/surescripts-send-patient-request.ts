@@ -1,4 +1,3 @@
-import { Config } from "@metriport/core/util/config";
 import { capture } from "./shared/capture";
 import { prefixedLog } from "./shared/log";
 import { SurescriptsApi } from "@metriport/core/external/surescripts/api";
@@ -49,9 +48,12 @@ export const handler = capture.wrapHandler(
       return;
     }
 
-    const file = client.generatePatientLoadFile(transmission, patients);
-    await client.writePatientLoadFileToStorage(transmission, file);
-    log(`Uploaded ${patients.length} patients to ${Config.getSurescriptsReplicaBucketName()}`);
+    const { content, requestedPatientIds: requested } = client.generatePatientLoadFile(
+      transmission,
+      patients
+    );
+    await client.writePatientLoadFileToStorage(transmission, content);
+    log(`Wrote ${requested.length} / ${patients.length} patients to S3 replica bucket`);
     log(`Transmission ID: ${transmission.id}`);
   }
 );

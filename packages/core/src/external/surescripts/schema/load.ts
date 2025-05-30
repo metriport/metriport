@@ -97,7 +97,7 @@ export const patientLoadHeaderOrder: OutgoingFileRowSchema<PatientLoadHeader> = 
   {
     field: 13,
     key: "fileSchedule",
-    toSurescripts: toSurescriptsEnum("fileSchedule", ["ADHOC"]),
+    toSurescripts: toSurescriptsEnum("fileSchedule", ["ADHOC"], { optional: true }),
   },
   {
     field: 14,

@@ -98,7 +98,7 @@ export class SurescriptsSftpClient extends SftpClient {
   generatePatientLoadFile(
     transmission: Transmission<TransmissionType>,
     patients: Patient[]
-  ): Buffer {
+  ): { content: Buffer; requestedPatientIds: string[] } {
     if (!canGeneratePatientLoadFile(transmission, patients)) {
       throw new MetriportError("Cannot generate patient load file", "generate_patient_load_file", {
         npiNumber: transmission.npiNumber,

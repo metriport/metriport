@@ -2,6 +2,7 @@ import { Config } from "../../util/config";
 import { z } from "zod";
 import { Patient } from "@metriport/shared/domain/patient";
 import { validateNPI } from "@metriport/shared/common/validate-npi";
+import { MetriportError } from "@metriport/shared";
 import {
   patientLoadHeaderSchema,
   patientLoadHeaderOrder,
@@ -36,7 +37,8 @@ export function toSurescriptsPatientLoadFile(
   client: SurescriptsSftpClient,
   transmission: Transmission<TransmissionType>,
   patients: Patient[]
-): Buffer {
+): { content: Buffer; requestedPatientIds: string[] } {
+  const requestedPatientIds: string[] = [];
   const header = toSurescriptsPatientLoadRow(
     {
       recordType: "HDR",
@@ -58,7 +60,7 @@ export function toSurescriptsPatientLoadFile(
   );
 
   const details = patients
-    .map((patient, index) => {
+    .map(function (patient, index) {
       const { firstName, middleName, lastName, prefix, suffix } = makeNameDemographics(patient);
       const genderAtBirth = makeGenderDemographics(patient.genderAtBirth);
 
@@ -66,7 +68,7 @@ export function toSurescriptsPatientLoadFile(
       if (!address) return null;
 
       try {
-        return toSurescriptsPatientLoadRow(
+        const requestRow = toSurescriptsPatientLoadRow(
           {
             recordType: "PNM",
             recordSequenceNumber: index + 1,
@@ -89,9 +91,9 @@ export function toSurescriptsPatientLoadFile(
           patientLoadDetailSchema,
           patientLoadDetailOrder
         );
+        requestedPatientIds.push(patient.id);
+        return requestRow;
       } catch (error) {
-        console.log("Error generating patient load row", error);
-        console.log(JSON.stringify(patient, null, 2));
         return null;
       }
     })
@@ -106,7 +108,10 @@ export function toSurescriptsPatientLoadFile(
     patientLoadFooterOrder
   );
 
-  return Buffer.concat([header, ...details, footer]);
+  return {
+    content: Buffer.concat([header, ...details, footer]),
+    requestedPatientIds,
+  };
 }
 
 export function toSurescriptsPatientLoadRow<T extends object>(
@@ -117,7 +122,10 @@ export function toSurescriptsPatientLoadRow<T extends object>(
   const parsed = objectSchema.safeParse(data);
   if (!parsed.success) {
     console.log(parsed.error, parsed.error.issues);
-    throw new Error("Invalid data");
+    throw new MetriportError("Invalid data", "to_surescripts_patient_load_row", {
+      data: JSON.stringify(data),
+      errors: JSON.stringify(parsed.error.issues),
+    });
   }
   const fields = fieldSchema.map(field => field.toSurescripts(data));
   const outputRow = fields.join("|") + "\n";
