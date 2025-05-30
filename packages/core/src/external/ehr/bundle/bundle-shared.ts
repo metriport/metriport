@@ -14,6 +14,7 @@ type CreateBundlePrefixParams = {
   ehrPatientId: string;
   resourceType: string;
   jobId?: string | undefined;
+  resourceId?: string | undefined;
 };
 
 function createBundlePrefix({
@@ -23,10 +24,11 @@ function createBundlePrefix({
   ehrPatientId,
   resourceType,
   jobId,
+  resourceId,
 }: CreateBundlePrefixParams): string {
   return `${globalPrefix}/ehr=${ehr}/cxid=${cxId}/metriportpatientid=${metriportPatientId}/ehrpatientid=${ehrPatientId}/resourcetype=${resourceType}/jobId=${
     jobId ?? "latest"
-  }`;
+  }${resourceId ? `/resourceid=${resourceId}` : ""}`;
 }
 
 export function createFileKeyEhr(params: CreateBundlePrefixParams): string {
@@ -47,6 +49,12 @@ export function createFileKeyEhrOnly(params: CreateBundlePrefixParams): string {
 
 export function createFileKeyMetriportOnly(params: CreateBundlePrefixParams): string {
   return `${createBundlePrefix(params)}/metriport-only.json`;
+}
+
+export function createFileKeyResourceDiffDataContribution(
+  params: CreateBundlePrefixParams
+): string {
+  return `${createBundlePrefix(params)}/ehr-data-contribution.json`;
 }
 
 export function getSupportedResourcesByEhr(ehr: EhrSource): string[] {
@@ -70,6 +78,7 @@ export enum BundleType {
   METRIPORT = "Metriport",
   RESOURCE_DIFF_EHR_ONLY = "ResourceDiffEhrOnly",
   RESOURCE_DIFF_METRIPORT_ONLY = "ResourceDiffMetriportOnly",
+  RESOURCE_DIFF_DATA_CONTRIBUTION = "ResourceDiffDataContribution",
 }
 export function isBundleType(bundleType: string): bundleType is BundleType {
   return Object.values(BundleType).includes(bundleType as BundleType);
@@ -77,13 +86,13 @@ export function isBundleType(bundleType: string): bundleType is BundleType {
 
 export type ResourceDiffBundleType =
   | BundleType.RESOURCE_DIFF_EHR_ONLY
-  | BundleType.RESOURCE_DIFF_METRIPORT_ONLY;
-export function isResourceDiffBundleType(
-  bundleType: string
-): bundleType is BundleType.RESOURCE_DIFF_EHR_ONLY | BundleType.RESOURCE_DIFF_METRIPORT_ONLY {
+  | BundleType.RESOURCE_DIFF_METRIPORT_ONLY
+  | BundleType.RESOURCE_DIFF_DATA_CONTRIBUTION;
+export function isResourceDiffBundleType(bundleType: string): bundleType is ResourceDiffBundleType {
   return (
     bundleType === BundleType.RESOURCE_DIFF_EHR_ONLY ||
-    bundleType === BundleType.RESOURCE_DIFF_METRIPORT_ONLY
+    bundleType === BundleType.RESOURCE_DIFF_METRIPORT_ONLY ||
+    bundleType === BundleType.RESOURCE_DIFF_DATA_CONTRIBUTION
   );
 }
 
@@ -93,6 +102,7 @@ export const createKeyMap: Record<BundleType, (params: CreateBundlePrefixParams)
   [BundleType.METRIPORT]: createFileKeyMetriport,
   [BundleType.RESOURCE_DIFF_EHR_ONLY]: createFileKeyEhrOnly,
   [BundleType.RESOURCE_DIFF_METRIPORT_ONLY]: createFileKeyMetriportOnly,
+  [BundleType.RESOURCE_DIFF_DATA_CONTRIBUTION]: createFileKeyResourceDiffDataContribution,
 };
 
 export type BundleKeyBaseParams = {
@@ -103,6 +113,7 @@ export type BundleKeyBaseParams = {
   bundleType: BundleType;
   resourceType: string;
   jobId?: string | undefined;
+  resourceId?: string | undefined;
   getLastModified?: boolean;
   s3BucketName?: string;
 };

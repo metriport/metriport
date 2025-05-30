@@ -1,4 +1,4 @@
-import { Bundle, Coding, Condition, Resource } from "@medplum/fhirtypes";
+import { Bundle, Coding, Condition, Extension, Resource } from "@medplum/fhirtypes";
 import {
   AdditionalInfo,
   BadRequestError,
@@ -26,6 +26,7 @@ import { ICD_10_CODE, SNOMED_CODE } from "../../util/constants";
 import { out } from "../../util/log";
 import { uuidv7 } from "../../util/uuid-v7";
 import { S3Utils } from "../aws/s3";
+import { dataSourceExtensionDefaults } from "../fhir/shared/extensions/extension";
 import { BundleType } from "./bundle/bundle-shared";
 import { createOrReplaceBundle } from "./bundle/command/create-or-replace-bundle";
 import { FetchBundleParams, fetchBundle } from "./bundle/command/fetch-bundle";
@@ -380,4 +381,14 @@ export async function fetchEhrFhirResourcesWithPagination({
   acc.push(...(fhirResourceBundle.entry ?? []).map(e => e.resource));
   const nextUrl = fhirResourceBundle.link?.find(l => l.relation === "next")?.url;
   return fetchEhrFhirResourcesWithPagination({ makeRequest, url: nextUrl, acc });
+}
+
+export function getEhrDataSourceExtension(ehr: EhrSource): Extension {
+  return {
+    ...dataSourceExtensionDefaults,
+    valueCoding: {
+      ...dataSourceExtensionDefaults.valueCoding,
+      code: ehr.toUpperCase(),
+    },
+  };
 }
