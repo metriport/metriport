@@ -24,7 +24,8 @@ dayjs.extend(duration);
  */
 
 const bundlesFolder = ``;
-const outputFolder = `${bundlesFolder}/consolidated`;
+
+const outputFolder = `${bundlesFolder}/consolidated-create`;
 
 // Not necessary - just used for logging / analytics on dedup
 const cxId = ``;

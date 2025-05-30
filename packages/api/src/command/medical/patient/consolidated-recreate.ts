@@ -2,6 +2,7 @@ import { ConsolidationConversionType } from "@metriport/api-sdk";
 import { deleteConsolidated } from "@metriport/core/command/consolidated/consolidated-delete";
 import { ConsolidatedSnapshotRequestSync } from "@metriport/core/command/consolidated/get-snapshot";
 import { buildConsolidatedSnapshotConnector } from "@metriport/core/command/consolidated/get-snapshot-factory";
+import { makeIngestConsolidated } from "@metriport/core/command/consolidated/search/fhir-resource/ingest-consolidated-factory";
 import { Patient } from "@metriport/core/domain/patient";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
@@ -52,6 +53,17 @@ export async function recreateConsolidated({
       const connector = buildConsolidatedSnapshotConnector();
       await connector.execute(payload);
     }
+
+    log(`Consolidated recreated`);
+
+    const ingestor = makeIngestConsolidated();
+    ingestor
+      .ingestConsolidatedIntoSearchEngine({
+        cxId: patient.cxId,
+        patientId: patient.id,
+      })
+      .catch(processAsyncError("Post-DQ ingestConsolidatedIntoSearchEngine"));
+
     if (isDq) {
       startCreateResourceDiffBundlesJobsAcrossEhrs({
         cxId: patient.cxId,

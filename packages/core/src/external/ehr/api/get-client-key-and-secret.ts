@@ -5,7 +5,9 @@ import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
 import { ApiBaseParams, validateAndLogResponse } from "./api-shared";
 
-export type GetSecretsParams = Omit<ApiBaseParams, "departmentId" | "patientId">;
+export type GetSecretsParams = Omit<ApiBaseParams, "departmentId" | "patientId"> & {
+  schema: z.ZodSchema<T>;
+};
 
 /**
  * Sends a request to the API to get the client key and secret (or api key) for a practice.
@@ -13,13 +15,14 @@ export type GetSecretsParams = Omit<ApiBaseParams, "departmentId" | "patientId">
  * @param ehr - The EHR source.
  * @param cxId - The CX ID.
  * @param practiceId - The practice ID.
+ * @param schema - The schema to validate the response against.
  */
 export async function getSecrets<T>({
   ehr,
   cxId,
   practiceId,
   schema,
-}: GetSecretsParams & { schema: z.ZodSchema<T> }): Promise<T> {
+}: GetSecretsParams): Promise<T> {
   const { log, debug } = out(`Ehr getSecrets - cxId ${cxId}`);
   const api = axios.create({ baseURL: Config.getApiUrl() });
   const queryParams = new URLSearchParams({ cxId });
