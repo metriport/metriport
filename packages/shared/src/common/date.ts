@@ -123,7 +123,7 @@ export function convertDateToString(
 }
 
 /**
- * Convert to HHMMSS or HHMMSSCC format
+ * Convert to HHMMSS or HHMMSSCC format. Dayjs does not support CC
  * @param date - The date to convert
  * @param includeCentisecond - Whether to include the centisecond in the time string
  * @returns The date in HHMMSS or HHMMSSCC format (if includeCentisecond is true)
@@ -135,15 +135,11 @@ export function convertDateToTimeString(
     includeCentisecond = false,
   }: { useUtc?: boolean; includeCentisecond?: boolean } = {}
 ) {
-  const hours = (useUtc ? date.getUTCHours() : date.getHours()).toString().padStart(2, "0");
-  const minutes = (useUtc ? date.getUTCMinutes() : date.getMinutes()).toString().padStart(2, "0");
-  const seconds = (useUtc ? date.getUTCSeconds() : date.getSeconds()).toString().padStart(2, "0");
-  const centiseconds = Math.round(
-    (useUtc ? date.getUTCMilliseconds() : date.getMilliseconds()) / 10
-  )
-    .toString()
-    .padStart(2, "0");
-  return `${hours}${minutes}${seconds}${includeCentisecond ? centiseconds : ""}`;
+  const dayjsDate = useUtc ? dayjs(date).utc() : dayjs(date);
+  if (includeCentisecond) {
+    return dayjsDate.format("HHmmssSSS").substring(0, 8);
+  }
+  return dayjsDate.format("HHmmss");
 }
 /**
  * Validates if timestamp adheres to YYYYMMDDHHMMSS format
