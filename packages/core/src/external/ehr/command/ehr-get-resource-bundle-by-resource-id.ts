@@ -16,7 +16,7 @@ export type GetResourceBundleByResourceIdRequest = {
   useCachedBundle: boolean;
 };
 
-export type GetBundleByResourceTypeClientRequest = Omit<
+export type GetResourceBundleByResourceIdClientRequest = Omit<
   GetResourceBundleByResourceIdRequest,
   "ehr"
 >;
@@ -30,7 +30,7 @@ export async function getResourceBundleByResourceId({
 }
 
 type GetResourceBundleByResourceId = (
-  params: GetBundleByResourceTypeClientRequest
+  params: GetResourceBundleByResourceIdClientRequest
 ) => Promise<Bundle>;
 
 type GetResourceBundleByResourceIdMethodsMap = Record<
