@@ -127,10 +127,7 @@ export class SurescriptsSftpClient extends SftpClient {
   }
 
   async receiveVerificationResponse(transmission: Transmission<TransmissionType>) {
-    const fileName = await this.findVerificationFileName(
-      transmission.requestFileName,
-      transmission.compression
-    );
+    const fileName = await this.findVerificationFileName(transmission.requestFileName);
     if (fileName) {
       const content = await this.read(getSftpFileName(INCOMING_NAME, fileName));
       await this.s3.uploadFile({
@@ -256,12 +253,9 @@ export class SurescriptsSftpClient extends SftpClient {
     fileName: string;
     timestamp: number;
   }): Promise<{ didSend: boolean; didVerify: boolean; didReceive: boolean }> {
-    const compression = fileName.endsWith(".gz");
     const expectedFileNameInHistory = getSftpFileName(HISTORY_NAME, `${fileName}.${this.senderId}`);
     const didSend = await this.exists(expectedFileNameInHistory);
-    const didVerify = didSend
-      ? (await this.findVerificationFileName(fileName, compression)) != null
-      : false;
+    const didVerify = didSend ? (await this.findVerificationFileName(fileName)) != null : false;
     const didReceive = didVerify
       ? (await this.findFlatFileResponseName(cxId, timestamp)) != null
       : false;
@@ -287,10 +281,7 @@ export class SurescriptsSftpClient extends SftpClient {
   async didReceiveVerificationResponseFromSurescripts(
     transmission: Transmission<TransmissionType>
   ) {
-    const fileName = await this.findVerificationFileName(
-      transmission.requestFileName,
-      transmission.compression
-    );
+    const fileName = await this.findVerificationFileName(transmission.requestFileName);
     return fileName != null;
   }
 
@@ -322,16 +313,41 @@ export class SurescriptsSftpClient extends SftpClient {
     return `${fileName}.${this.senderId}`;
   }
 
-  private async findVerificationFileName(
-    requestFileName: string,
-    compression?: boolean
-  ): Promise<string | undefined> {
-    const verificationFileSuffix = compression ? ".gz-extract.rsp" : ".rsp";
+  private async findVerificationFileName(requestFileName: string): Promise<string | undefined> {
+    const requestFileNameWithoutExtension = requestFileName.replace(/\.gz$/, "");
 
     const results = await this.list(getSftpDirectory(INCOMING_NAME), info => {
-      return info.name.startsWith(requestFileName) && info.name.endsWith(verificationFileSuffix);
+      const parsedFileName = this.parseVerificationFileName(info.name);
+      return (
+        parsedFileName != null && parsedFileName.requestFileName === requestFileNameWithoutExtension
+      );
     });
     return results[0];
+  }
+
+  private parseVerificationFileName(remoteFileName: string): {
+    requestFileName: string;
+    acceptedBySurescripts: Date;
+    processedBySurescripts: Date;
+    compression: boolean;
+  } | null {
+    const [requestFileName, sstimestamp1, sstimestamp2, maybeGzExtract] = remoteFileName.split(".");
+    if (!requestFileName || !sstimestamp1?.match(/^\d+$/) || !sstimestamp2?.match(/^\d+$/)) {
+      return null;
+    }
+    const compression = maybeGzExtract === "gz-extract";
+    if (!compression && maybeGzExtract !== "rsp") {
+      return null;
+    }
+
+    const acceptedBySurescripts = dayjs(sstimestamp1).toDate();
+    const processedBySurescripts = dayjs(sstimestamp2).toDate();
+    return {
+      requestFileName,
+      compression,
+      acceptedBySurescripts,
+      processedBySurescripts,
+    };
   }
 
   private async findFlatFileResponseName(
