@@ -99,51 +99,6 @@ export class SurescriptsSftpClient extends SftpClient {
     };
   }
 
-  getPatientLoadFileName(
-    id: string, // the UUID of the transmission
-    timestamp: number,
-    compression = true
-  ): string {
-    return [
-      "Metriport_PMA_",
-      dayjs(timestamp).format("YYYYMMDD"),
-      "-",
-      id,
-      compression ? ".gz" : "",
-    ].join("");
-  }
-
-  getExpectedPatientLoadFileNameInAuditLogs(id: string, timestamp: number, compression = true) {
-    const fileName = this.getPatientLoadFileName(id, timestamp, compression);
-    return `${fileName}.${this.senderId}`;
-  }
-
-  async findVerificationFileName(transmission: Transmission): Promise<string | undefined> {
-    const verificationFileSuffix = transmission.compression ? ".gz-extract.rsp" : ".rsp";
-
-    const results = await this.list(getSftpDirectory(INCOMING_NAME), info => {
-      return (
-        info.name.startsWith(transmission.requestFileName) &&
-        info.name.endsWith(verificationFileSuffix)
-      );
-    });
-    return results[0];
-  }
-
-  async findFlatFileResponseName(transmission: Transmission): Promise<string | undefined> {
-    const transmissionDateTimeSuffix = [
-      "_",
-      dayjs(transmission.timestamp).format("YYYYMMDDHHmmss"),
-      ".gz",
-    ].join("");
-    const results = await this.list(getSftpDirectory(INCOMING_NAME), info => {
-      return (
-        info.name.startsWith(transmission.cxId) && info.name.endsWith(transmissionDateTimeSuffix)
-      );
-    });
-    return results[0];
-  }
-
   generatePatientLoadFile(
     transmission: Transmission<TransmissionType>,
     patients: Patient[]
@@ -176,7 +131,10 @@ export class SurescriptsSftpClient extends SftpClient {
   }
 
   async receiveVerificationResponse(transmission: Transmission<TransmissionType>) {
-    const fileName = await this.findVerificationFileName(transmission);
+    const fileName = await this.findVerificationFileName(
+      transmission.requestFileName,
+      transmission.compression
+    );
     if (fileName) {
       const content = await this.read(getSftpFileName(INCOMING_NAME, fileName));
       await this.s3.uploadFile({
@@ -188,7 +146,7 @@ export class SurescriptsSftpClient extends SftpClient {
   }
 
   async receiveFlatFileResponse(transmission: Transmission) {
-    const fileName = await this.findFlatFileResponseName(transmission);
+    const fileName = await this.findFlatFileResponseName(transmission.cxId, transmission.timestamp);
     if (fileName) {
       const content = await this.read(getSftpFileName(INCOMING_NAME, fileName));
       await this.s3.uploadFile({
@@ -200,15 +158,15 @@ export class SurescriptsSftpClient extends SftpClient {
   }
 
   async synchronize(event: SurescriptsSynchronizeEvent) {
-    const debug = event.debug ?? console.debug;
-
     if (event.fromSurescripts) {
-      debug("Copying from Surescripts...");
+      event.debug?.("Copying from Surescripts...");
       await this.copyFromSurescripts(event);
     } else if (event.toSurescripts) {
+      event.debug?.("Copying to Surescripts...");
       await this.copyToSurescripts(event);
-    } else if (event.fileName) {
-      await this.copyFileFromSurescripts(event.fileName, event);
+    } else if (event.checkFileStatus) {
+      event.debug?.("Checking file status with Surescripts: " + event.checkFileStatus.fileName);
+      await this.checkFileStatusWithSurescripts(event.checkFileStatus);
     }
   }
 
@@ -255,7 +213,7 @@ export class SurescriptsSftpClient extends SftpClient {
     const sftpHistory = await this.list("/" + HISTORY_NAME);
     const sftpHistorySet = new Set(sftpHistory);
 
-    console.log("Found SFTP history with length " + sftpHistory.length);
+    event.debug?.("Found SFTP history with length " + sftpHistory.length);
     const s3Files = await this.s3.listObjects(this.bucket, OUTGOING_NAME + "/");
 
     for (const s3File of s3Files) {
@@ -264,7 +222,7 @@ export class SurescriptsSftpClient extends SftpClient {
       const outgoingFileName = s3File.Key.substring(OUTGOING_NAME.length + 1);
       const sftpHistoryName = `${outgoingFileName}.${this.senderId}`;
       if (!sftpHistorySet.has(sftpHistoryName)) {
-        console.log("DRY RUN: will copy to Surescripts: " + outgoingFileName);
+        event.debug?.("DRY RUN: will copy to Surescripts: " + outgoingFileName);
         await this.copyFileToSurescripts(outgoingFileName, event);
       }
     }
@@ -293,6 +251,32 @@ export class SurescriptsSftpClient extends SftpClient {
     return content;
   }
 
+  async checkFileStatusWithSurescripts({
+    cxId,
+    fileName,
+    timestamp,
+  }: {
+    cxId: string;
+    fileName: string;
+    timestamp: number;
+  }): Promise<{ didSend: boolean; didVerify: boolean; didReceive: boolean }> {
+    const compression = fileName.endsWith(".gz");
+    const expectedFileNameInHistory = getSftpFileName(HISTORY_NAME, `${fileName}.${this.senderId}`);
+    const didSend = await this.exists(expectedFileNameInHistory);
+    const didVerify = didSend
+      ? (await this.findVerificationFileName(fileName, compression)) != null
+      : false;
+    const didReceive = didVerify
+      ? (await this.findFlatFileResponseName(cxId, timestamp)) != null
+      : false;
+
+    return {
+      didSend,
+      didVerify,
+      didReceive,
+    };
+  }
+
   async didCopyPatientLoadFileToSurescripts(transmission: Transmission<TransmissionType>) {
     const fileName = this.getExpectedPatientLoadFileNameInAuditLogs(
       transmission.id,
@@ -307,12 +291,63 @@ export class SurescriptsSftpClient extends SftpClient {
   async didReceiveVerificationResponseFromSurescripts(
     transmission: Transmission<TransmissionType>
   ) {
-    const fileName = await this.findVerificationFileName(transmission);
+    const fileName = await this.findVerificationFileName(
+      transmission.requestFileName,
+      transmission.compression
+    );
     return fileName != null;
   }
 
   async didReceiveFlatFileResponseFromSurescripts(transmission: Transmission) {
-    const fileName = await this.findFlatFileResponseName(transmission);
+    const fileName = await this.findFlatFileResponseName(transmission.cxId, transmission.timestamp);
     return fileName != null;
+  }
+
+  private getPatientLoadFileName(
+    id: string, // the UUID of the transmission
+    timestamp: number,
+    compression = true
+  ): string {
+    return [
+      "Metriport_PMA_",
+      dayjs(timestamp).format("YYYYMMDD"),
+      "-",
+      id,
+      compression ? ".gz" : "",
+    ].join("");
+  }
+
+  private getExpectedPatientLoadFileNameInAuditLogs(
+    id: string,
+    timestamp: number,
+    compression = true
+  ) {
+    const fileName = this.getPatientLoadFileName(id, timestamp, compression);
+    return `${fileName}.${this.senderId}`;
+  }
+
+  private async findVerificationFileName(
+    requestFileName: string,
+    compression?: boolean
+  ): Promise<string | undefined> {
+    const verificationFileSuffix = compression ? ".gz-extract.rsp" : ".rsp";
+
+    const results = await this.list(getSftpDirectory(INCOMING_NAME), info => {
+      return info.name.startsWith(requestFileName) && info.name.endsWith(verificationFileSuffix);
+    });
+    return results[0];
+  }
+
+  private async findFlatFileResponseName(
+    cxId: string,
+    timestamp: number
+  ): Promise<string | undefined> {
+    const transmissionDateTimeSuffix = ["_", dayjs(timestamp).format("YYYYMMDDHHmmss"), ".gz"].join(
+      ""
+    );
+    const results = await this.list(getSftpDirectory(INCOMING_NAME), info => {
+      return info.name.startsWith(cxId) && info.name.endsWith(transmissionDateTimeSuffix);
+    });
+    return results[0];
   }
 }

@@ -86,7 +86,7 @@ async function getPatientsFromCsv(csvData: string): Promise<Patient[]> {
     const patients: Patient[] = [];
     fs.createReadStream(csvData)
       .pipe(csv())
-      .on("data", row => {
+      .on("data", function (row) {
         const data = JSON.parse(row.data);
         data.id = row.id;
         data.facilityIds = row.facility_ids
@@ -104,10 +104,10 @@ async function getPatientsFromCsv(csvData: string): Promise<Patient[]> {
           phoneNumber: data.consolidatedLinkDemographics?.telephoneNumbers?.[0],
         });
       })
-      .on("end", () => {
+      .on("end", function () {
         resolve(patients);
       })
-      .on("error", error => {
+      .on("error", function (error) {
         reject(error);
       });
   });

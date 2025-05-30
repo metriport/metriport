@@ -11,6 +11,9 @@ program
   .option("-d, --dry-run", "Dry run the synchronization")
   .option("--from-surescripts", "Synchronize all incoming files")
   .option("--to-surescripts", "Synchronize all outgoing files")
+  .option("--file-name <fileName>", "Check the status of a specific file")
+  .option("--cx-id <cxId>", "The CX ID to check the status of")
+  .option("--timestamp <timestamp>", "The timestamp for the file to check the status of")
   .description(
     "Ensure one or all files are synchronized between the Surescripts SFTP server and the S3 bucket"
   )
@@ -18,8 +21,14 @@ program
   .version("1.0.0")
   .action(async () => {
     console.log("Synchronizing with Surescripts...");
-    const { dryRun, fromSurescripts, toSurescripts } = program.opts();
+    const { dryRun, fromSurescripts, toSurescripts, fileName, cxId, timestamp } = program.opts();
     console.log(program.opts());
+
+    if (fileName && (!cxId || !timestamp)) {
+      throw new Error(
+        "CX ID and timestamp are required when checking the status of a specific file"
+      );
+    }
 
     const client = new SurescriptsSftpClient({});
     await client.connect();
@@ -27,6 +36,15 @@ program
       dryRun,
       fromSurescripts,
       toSurescripts,
+      ...(fileName
+        ? {
+            checkFileStatus: {
+              fileName,
+              cxId,
+              timestamp,
+            },
+          }
+        : null),
     });
     await client.disconnect();
   });

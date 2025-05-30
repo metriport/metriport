@@ -1,6 +1,7 @@
 import axios, { AxiosInstance } from "axios";
+import { MetriportError } from "@metriport/shared";
 import { Patient } from "@metriport/shared/domain/patient";
-import { CustomerData } from "@metriport/shared/domain/facility";
+import { CustomerData, FacilityData } from "@metriport/shared/domain/facility";
 import { Config } from "../../util/config";
 import { getPatient } from "./api/get-patient";
 import { getPatientIds } from "./api/get-patient-ids";
@@ -19,9 +20,28 @@ export class SurescriptsApi {
     return getCustomer({ cxId }, this.axiosInstance);
   }
 
+  async getFacility(cxId: string, facilityId: string): Promise<FacilityData> {
+    const customer = await this.getCustomer(cxId);
+    if (!customer)
+      throw new MetriportError("Customer not found", "customer_not_found", { cxId, facilityId });
+    const facility = customer.facilities.find(f => f.id === facilityId);
+    if (!facility)
+      throw new MetriportError("Facility not found", "facility_not_found", { cxId, facilityId });
+    return facility;
+  }
+
   async getPatientIds(cxId: string, facilityId?: string | undefined): Promise<string[]> {
     const { patientIds } = await getPatientIds({ cxId, facilityId }, this.axiosInstance);
     return patientIds;
+  }
+
+  async getEachPatientById(cxId: string, patientIds: string[]): Promise<Patient[]> {
+    const patients: Patient[] = [];
+    for (const patientId of patientIds) {
+      const patient = await this.getPatient(cxId, patientId);
+      if (patient) patients.push(patient);
+    }
+    return patients;
   }
 
   async getPatient(cxId: string, patientId: string): Promise<Patient> {

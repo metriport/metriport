@@ -2,8 +2,11 @@ export type SurescriptsDirectory = "from_surescripts" | "to_surescripts" | "hist
 
 export interface SurescriptsSynchronizeEvent {
   dryRun?: boolean;
-  fileName?: string;
-  transmissionId?: string;
+  checkFileStatus?: {
+    fileName: string;
+    cxId: string;
+    timestamp: number;
+  };
   fromSurescripts?: boolean;
   toSurescripts?: boolean;
   debug?: typeof console.debug;

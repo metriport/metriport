@@ -4,10 +4,6 @@ import { prefixedLog } from "./shared/log";
 import { SurescriptsApi } from "@metriport/core/external/surescripts/api";
 import { SurescriptsSftpClient } from "@metriport/core/external/surescripts/client";
 import { getSurescriptSecrets } from "./shared/surescripts";
-import {
-  GetPatientResponse,
-  FacilityResponse,
-} from "@metriport/core/external/surescripts/api/shared";
 import { MetriportError } from "@metriport/shared";
 
 capture.init();
@@ -27,13 +23,13 @@ export const handler = capture.wrapHandler(
     const { surescriptsPublicKey, surescriptsPrivateKey, surescriptsSenderPassword } =
       await getSurescriptSecrets();
     const client = new SurescriptsSftpClient({
-      production: Config.isCloudEnv(),
       senderPassword: surescriptsSenderPassword,
       publicKey: surescriptsPublicKey,
       privateKey: surescriptsPrivateKey,
     });
 
-    const facility = await getFacilityById(cxId, facilityId);
+    const api = new SurescriptsApi();
+    const facility = await api.getFacility(cxId, facilityId);
     const transmission = client.createEnrollment({
       cxId,
       npiNumber: facility.npi,
@@ -41,15 +37,15 @@ export const handler = capture.wrapHandler(
 
     const patientIdsForFacility: string[] = [];
     if (allPatients) {
-      const patientIds = await getPatientIdsForFacility(cxId, facilityId);
+      const patientIds = await api.getPatientIds(cxId, facilityId);
       patientIdsForFacility.push(...patientIds);
     } else if (patientId) {
       patientIdsForFacility.push(patientId);
     } else throw new MetriportError("Invalid request");
 
-    const patients = await getPatientsByIds(cxId, patientIdsForFacility);
+    const patients = await api.getEachPatientById(cxId, patientIdsForFacility);
     if (patients.length === 0) {
-      log(`No patients found for facility ${facilityId}`);
+      log(`No patients retrieved for facility ${facilityId}`);
       return;
     }
 
@@ -59,30 +55,3 @@ export const handler = capture.wrapHandler(
     log(`Transmission ID: ${transmission.id}`);
   }
 );
-
-async function getFacilityById(cxId: string, facilityId: string): Promise<FacilityResponse> {
-  const api = new SurescriptsApi();
-  const customer = await api.getCustomer(cxId);
-  if (!customer)
-    throw new MetriportError("Customer not found", "customer_not_found", { cxId, facilityId });
-  const facility = customer.facilities.find(f => f.id === facilityId);
-  if (!facility)
-    throw new MetriportError("Facility not found", "facility_not_found", { cxId, facilityId });
-  return facility;
-}
-
-async function getPatientIdsForFacility(cxId: string, facilityId: string): Promise<string[]> {
-  const api = new SurescriptsApi();
-  const { patientIds } = await api.getPatientIds(cxId, facilityId);
-  return patientIds;
-}
-
-async function getPatientsByIds(cxId: string, patientIds: string[]): Promise<GetPatientResponse[]> {
-  const api = new SurescriptsApi();
-  const patients: GetPatientResponse[] = [];
-  for (const patientId of patientIds) {
-    const patient = await api.getPatient(cxId, patientId);
-    if (patient) patients.push(patient);
-  }
-  return patients;
-}

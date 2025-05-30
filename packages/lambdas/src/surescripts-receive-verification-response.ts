@@ -1,6 +1,5 @@
 import { capture } from "./shared/capture";
 import { prefixedLog } from "./shared/log";
-import { Config } from "@metriport/core/util/config";
 import { SurescriptsSftpClient, Transmission } from "@metriport/core/external/surescripts/client";
 import { getSurescriptSecrets } from "./shared/surescripts";
 
@@ -14,7 +13,6 @@ export const handler = capture.wrapHandler(async (transmission: Transmission) =>
     await getSurescriptSecrets();
 
   const client = new SurescriptsSftpClient({
-    production: Config.isCloudEnv(),
     senderPassword: surescriptsSenderPassword,
     publicKey: surescriptsPublicKey,
     privateKey: surescriptsPrivateKey,

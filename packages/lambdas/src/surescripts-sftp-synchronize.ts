@@ -1,4 +1,3 @@
-import { Config } from "@metriport/core/util/config";
 import { SurescriptsSftpClient } from "@metriport/core/external/surescripts/client";
 import { SurescriptsSynchronizeEvent } from "@metriport/core/external/surescripts/types";
 import { capture } from "./shared/capture";
@@ -15,12 +14,12 @@ export const handler = capture.wrapHandler(async (event: SurescriptsSynchronizeE
     await getSurescriptSecrets();
 
   const client = new SurescriptsSftpClient({
-    production: Config.isCloudEnv(),
     senderPassword: surescriptsSenderPassword,
     publicKey: surescriptsPublicKey,
     privateKey: surescriptsPrivateKey,
   });
 
+  event.debug = log;
   await client.synchronize(event);
   log(`Synchronized surescripts`);
 });
