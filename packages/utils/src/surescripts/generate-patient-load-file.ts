@@ -55,7 +55,7 @@ program
     console.log(message.toString("ascii"));
 
     await client.writePatientLoadFileToStorage(transmission, message);
-    console.log("Patient load file written to storage");
+    console.log("Patient load file written to storage.");
     console.log("      Transmission ID:  " + transmission.id);
     console.log("    Request file name:  " + transmission.requestFileName);
     console.log("Tranmission timestamp:  " + transmission.timestamp);
