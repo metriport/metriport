@@ -21,10 +21,16 @@ program
   .version("1.0.0")
   .action(async () => {
     console.log("Synchronizing with Surescripts...");
-    const { dryRun, fromSurescripts, toSurescripts, fileName, cxId, timestamp } = program.opts();
-    console.log(program.opts());
+    const { dryRun, fromSurescripts, toSurescripts, fileName, cxId, timestamp } = program.opts<{
+      dryRun: boolean;
+      fromSurescripts: boolean;
+      toSurescripts: boolean;
+      fileName: string;
+      cxId: string;
+      timestamp: string;
+    }>();
 
-    if (fileName && (!cxId || !timestamp)) {
+    if (fileName && (!cxId || !timestamp || Number.isNaN(Number.parseInt(timestamp)))) {
       throw new Error(
         "CX ID and timestamp are required when checking the status of a specific file"
       );
@@ -41,7 +47,7 @@ program
             checkFileStatus: {
               fileName,
               cxId,
-              timestamp,
+              timestamp: Number.parseInt(timestamp),
             },
           }
         : null),
