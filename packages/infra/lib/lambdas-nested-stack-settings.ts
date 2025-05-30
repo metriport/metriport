@@ -2,7 +2,7 @@ import { Duration } from "aws-cdk-lib";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 
 export function getConsolidatedIngestionConnectorSettings() {
-  const lambdaTimeout = Duration.minutes(3);
+  const lambdaTimeout = Duration.minutes(5);
   return {
     name: "ConsolidatedIngestion",
     queue: {
