@@ -1,6 +1,6 @@
 import { convertDateToString, convertDateToTimeString } from "@metriport/shared/common/date";
 import { MetriportError } from "@metriport/shared";
-import dayjs from "dayjs";
+import { buildDayjs } from "@metriport/shared/common/date";
 
 // Describes a single field mapping from an object to a row in a pipe-delimited file
 interface FileField<T extends object, K extends keyof T = keyof T> {
@@ -195,15 +195,13 @@ export function toSurescriptsDate<T extends object>(
   };
 }
 
-export function fromSurescriptsUtcDate<O extends FieldOption>({
-  useUtc = false,
-}: { useUtc?: boolean } = {}) {
+export function fromSurescriptsUtcDate<O extends FieldOption>() {
   return function (value: string): FieldTypeFromSurescripts<Date, O> {
-    const date = dayjs(value);
+    const date = buildDayjs(value);
     if (!date.isValid()) {
       throw new Error(`Invalid date: ${value}`);
     }
-    return (useUtc ? date.utc() : date.local()).toDate();
+    return date.toDate();
   };
 }
 
