@@ -13,6 +13,7 @@ export type GetSecretsParams = Omit<ApiBaseParams, "departmentId" | "patientId">
  * @param ehr - The EHR source.
  * @param cxId - The CX ID.
  * @param practiceId - The practice ID.
+ * @param schema - The schema to validate the response against.
  */
 export async function getSecrets<T>({
   ehr,

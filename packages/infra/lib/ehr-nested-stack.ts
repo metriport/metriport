@@ -10,7 +10,7 @@ import { EnvConfig } from "../config/env-config";
 import { EnvType } from "./env-type";
 import { createLambda } from "./shared/lambda";
 import { LambdaLayers } from "./shared/lambda-layers";
-import { QueueAndLambdaSettings } from "./shared/settings";
+import { QueueAndLambdaSettings, LambdaSettings } from "./shared/settings";
 import { createQueue } from "./shared/sqs";
 
 const waitTimePatientSync = Duration.seconds(10); // 6 patients/min
@@ -19,8 +19,6 @@ const waitTimeHealthieLinkPatient = Duration.seconds(10); // 6 patients/min
 const waitTimeComputeResourceDiff = Duration.millis(0); // No limit
 const waitTimeRefreshBundle = Duration.seconds(0); // No limit
 const waitTimeContributeResourceDiffBundles = Duration.seconds(0); // No limit
-
-type LambdaSettings = Pick<QueueAndLambdaSettings, "name" | "entry" | "lambda">;
 
 function settings(): {
   getAppointments: LambdaSettings;

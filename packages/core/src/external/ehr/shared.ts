@@ -54,9 +54,6 @@ export const getSecretsApiKeySchema = z.object({
 });
 export type GetSecretsApiKeyResult = z.infer<typeof getSecretsApiKeySchema>;
 
-export type GetSecretsOauthFunction = () => Promise<GetSecretsOauthResult>;
-export type GetSecretsApiKeyFunction = () => Promise<GetSecretsApiKeyResult>;
-
 export interface ApiConfig {
   twoLeggedAuthTokenInfo?: JwtTokenInfo | undefined;
   practiceId: string;
