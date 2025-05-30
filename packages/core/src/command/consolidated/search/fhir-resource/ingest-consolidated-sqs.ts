@@ -1,5 +1,4 @@
 import { executeWithNetworkRetries } from "@metriport/shared";
-import { nanoid } from "nanoid";
 import { SQSClient } from "../../../../external/aws/sqs";
 import { executeAsynchronously } from "../../../../util/concurrency";
 import { Config } from "../../../../util/config";
@@ -7,6 +6,7 @@ import {
   SQS_MESSAGE_BATCH_MILLIS_TO_SLEEP,
   SQS_MESSAGE_BATCH_SIZE_STANDARD,
 } from "../../../../util/sqs";
+import { uuidv7 } from "../../../../util/uuid-v7";
 import {
   IngestConsolidated,
   IngestConsolidatedParams,
@@ -67,7 +67,7 @@ export class IngestConsolidatedSqs implements IngestConsolidated {
       // if we use patientId, only a single message per pt will be processed in a 5 minute window
       // which means loading the dash for a pt not ingested and triggering DQ wouldn't update
       // the search engine after DQ is complete
-      messageDeduplicationId: nanoid(),
+      messageDeduplicationId: uuidv7(),
     });
   }
 }
