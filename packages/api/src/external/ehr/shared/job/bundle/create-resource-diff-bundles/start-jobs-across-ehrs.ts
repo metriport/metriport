@@ -36,13 +36,7 @@ export async function startCreateResourceDiffBundlesJobsAcrossEhrs({
         requestId,
       }).catch(processAsyncError(`${EhrSources.canvas} startCreateResourceDiffBundlesJobAtEhr`));
     } else if (patientMapping.source === EhrSources.athena) {
-      const patientPrefix = patientMapping.externalId.split(".")[0];
-      if (!patientPrefix) {
-        throw new MetriportError("Invalid patient ID", undefined, {
-          ehrPatientId: patientMapping.externalId,
-        });
-      }
-      const athenaPracticeId = `a-1.${patientPrefix}`;
+      const athenaPracticeId = getAthenaPracticeId(patientMapping.externalId);
       startCreateResourceDiffBundlesJobAtEhr({
         ehr: EhrSources.athena,
         cxId,
@@ -87,4 +81,15 @@ async function getCxMappingWithoutPracticeId({ cxId, ehr }: { cxId: string; ehr:
     throw new MetriportError("Multiple CX mappings found", undefined, { ehr, cxId });
   }
   return cxMapping;
+}
+
+export function getAthenaPracticeId(ehrPatientId: string) {
+  const [patientPrefix, patientId] = ehrPatientId.split(".");
+  if (!patientPrefix || !patientId) {
+    throw new MetriportError("Invalid patient ID", undefined, { ehrPatientId });
+  }
+  if (!patientPrefix.startsWith("a-")) {
+    throw new MetriportError("Invalid patient ID", undefined, { ehrPatientId });
+  }
+  return `a-1.${patientPrefix.replace("a-", "Practice-")}`;
 }
