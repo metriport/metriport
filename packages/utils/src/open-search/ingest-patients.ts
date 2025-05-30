@@ -10,6 +10,7 @@ import { chunk, groupBy } from "lodash";
 import { normalizeExternalIdUtils } from "../bulk-insert-patients";
 import { elapsedTimeAsStr } from "../shared/duration";
 import { buildGetDirPathInside } from "../shared/folder";
+import { initFile } from "../shared/file";
 
 /**
  * Trigger ingestion of patients' consolidated into OpenSearch.
@@ -29,7 +30,7 @@ interface PatientRecord {
   patientId: string;
 }
 
-const getFolderName = buildGetDirPathInside(`ingest-patients`);
+const getFolderName = buildGetDirPathInside(`consolidated-ingestion`);
 const outputFolderName = getFolderName("");
 
 async function main() {
@@ -118,6 +119,7 @@ async function main() {
 
   if (failedIngestions.length > 0) {
     const errorFilePath = `${outputFolderName}/failed-ingestions.json`;
+    initFile(errorFilePath);
     fs.writeFileSync(errorFilePath, JSON.stringify(failedIngestions, null, 2));
     console.log(``);
     console.log(`Failed ingestions: ${failedIngestions.length} (written to ${errorFilePath})`);
