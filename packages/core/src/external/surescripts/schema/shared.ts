@@ -190,7 +190,10 @@ export function toSurescriptsDate<T extends object>(
     } else if (optional && value == null) {
       return "";
     } else {
-      throw new Error(`Invalid value: ${value}`);
+      throw new MetriportError(`Invalid value: ${value}`, "to_surescripts_date", {
+        value: String(value),
+        key: String(key),
+      });
     }
   };
 }
@@ -199,7 +202,9 @@ export function fromSurescriptsUtcDate<O extends FieldOption>() {
   return function (value: string): FieldTypeFromSurescripts<Date, O> {
     const date = buildDayjs(value);
     if (!date.isValid()) {
-      throw new Error(`Invalid date: ${value}`);
+      throw new MetriportError(`Invalid date: ${value}`, "from_surescripts_utc_date", {
+        value,
+      });
     }
     return date.toDate();
   };
@@ -208,7 +213,9 @@ export function fromSurescriptsUtcDate<O extends FieldOption>() {
 export function fromSurescriptsTime({ centisecond = true }: { centisecond?: boolean } = {}) {
   return function (value: string): Date {
     if (value.length !== 6 + (centisecond ? 2 : 0)) {
-      throw new Error(`Invalid time: ${value}`);
+      throw new MetriportError(`Invalid time: ${value}`, "from_surescripts_time", {
+        value,
+      });
     }
     const date = new Date();
     date.setHours(parseInt(value.substring(0, 2), 10));
@@ -230,7 +237,10 @@ export function toSurescriptsTime<T extends object>(
     } else if (optional && value == null) {
       return "";
     } else {
-      throw new Error(`Invalid value: ${value}`);
+      throw new MetriportError(`Invalid value: ${value}`, "to_surescripts_time", {
+        value: String(value),
+        key: String(key),
+      });
     }
   };
 }
@@ -241,7 +251,9 @@ export function fromSurescriptsInteger<O extends FieldOption>(option: O = {} as 
       if (option.optional) {
         return undefined as FieldTypeFromSurescripts<number, O>;
       } else {
-        throw new Error(`Missing required field`);
+        throw new MetriportError(`Missing required field`, "from_surescripts_integer", {
+          value,
+        });
       }
     }
 
@@ -249,7 +261,9 @@ export function fromSurescriptsInteger<O extends FieldOption>(option: O = {} as 
     if (Number.isFinite(parsed)) {
       return parsed;
     } else {
-      throw new Error(`Invalid integer: ${value}`);
+      throw new MetriportError(`Invalid integer: ${value}`, "from_surescripts_integer", {
+        value,
+      });
     }
   };
 }
@@ -260,12 +274,15 @@ export function toSurescriptsInteger<T extends object>(
 ) {
   return function (sourceObject: T): string {
     const value = sourceObject[key];
-    if (typeof value === "number" && isFinite(value)) {
+    if (typeof value === "number" && Number.isFinite(value)) {
       return value.toFixed(0);
     } else if (optional && value == null) {
       return "";
     } else {
-      throw new Error(`Invalid value: ${value}`);
+      throw new MetriportError(`Invalid value: ${value}`, "to_surescripts_integer", {
+        value: String(value),
+        key: String(key),
+      });
     }
   };
 }

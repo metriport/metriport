@@ -19,7 +19,7 @@ export const patientVerificationHeaderSchema = z.object({
   transactionFileType: z.enum(["PMA"]),
   transmissionControlNumber: z.string().min(1).max(10), // generated during file load
   transmissionDate: z.date(),
-  transmissionTime: z.array(z.number()),
+  transmissionTime: z.date(),
   usage: z.enum(["T", "P"]),
   // 01 = success, 02 = partial success, 03 = failure
   loadStatus: z.enum(["01", "02", "03"]),
