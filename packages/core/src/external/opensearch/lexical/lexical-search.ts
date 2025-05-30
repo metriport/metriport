@@ -36,7 +36,7 @@ export function createLexicalSearchQuery({
                   {
                     // https://docs.opensearch.org/docs/latest/query-dsl/full-text/match/
                     match: {
-                      content: {
+                      [contentFieldName]: {
                         query: actualQuery,
                         fuzziness: "AUTO",
                       },

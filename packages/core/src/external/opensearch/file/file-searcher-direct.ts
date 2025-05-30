@@ -30,7 +30,7 @@ export class OpenSearchFileSearcherDirect implements OpenSearchFileSearcher {
                   {
                     // https://docs.opensearch.org/docs/latest/query-dsl/full-text/simple-query-string/
                     simple_query_string: {
-                      query: cleanupQuery(actualQuery),
+                      query: actualQuery,
                       fields: ["content"],
                       analyze_wildcard: true,
                     },
