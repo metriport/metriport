@@ -234,6 +234,7 @@ router.post(
 );
 
 const noteSchema = z.object({
+  date: z.string(),
   encounterText: z.string(),
 });
 
@@ -263,6 +264,7 @@ router.post(
       athenaPracticeId,
       athenaDepartmentId,
       encounterText: note.encounterText,
+      date: note.date,
     });
     return res.status(httpStatus.OK).json(noteDetails);
   })

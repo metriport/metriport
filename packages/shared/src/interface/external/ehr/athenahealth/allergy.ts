@@ -3,22 +3,12 @@ import { z } from "zod";
 export const createdAllergySchema = z.object({
   success: z.boolean(),
   errormessage: z.string().optional(),
-  allergyid: z.coerce.string().optional(),
 });
 export type CreatedAllergy = z.infer<typeof createdAllergySchema>;
 export const createdAllergySuccessSchema = z.object({
   success: z.literal(true),
-  allergyid: z.coerce.string(),
 });
 export type CreatedAllergySuccess = z.infer<typeof createdAllergySuccessSchema>;
-
-const allergenReferenceSchema = z.object({
-  allergenid: z.coerce.string(),
-  allergenname: z.string(),
-});
-export type AllergenReference = z.infer<typeof allergenReferenceSchema>;
-export const allergenReferencesSchema = allergenReferenceSchema.array();
-export type AllergenReferences = z.infer<typeof allergenReferencesSchema>;
 
 const allergySchema = z.object({
   allergenid: z.coerce.string(),
@@ -26,9 +16,9 @@ const allergySchema = z.object({
   reactions: z
     .object({
       reactionname: z.string(),
-      severity: z.string(),
-      severitysnomedcode: z.coerce.string(),
       snomedcode: z.coerce.string(),
+      severity: z.string().optional(),
+      severitysnomedcode: z.coerce.string().optional(),
     })
     .array(),
 });
@@ -38,8 +28,15 @@ export const allergiesSchema = z.object({
 });
 export type Allergies = z.infer<typeof allergiesSchema>;
 
+const allergenReferenceSchema = z.object({
+  allergenid: z.coerce.string(),
+  allergenname: z.string(),
+});
+export type AllergenReference = z.infer<typeof allergenReferenceSchema>;
+export const allergenReferencesSchema = allergenReferenceSchema.array();
+export type AllergenReferences = z.infer<typeof allergenReferencesSchema>;
+
 export const allergyReactionReferenceSchema = z.object({
-  reactionid: z.coerce.number(),
   reactionname: z.string(),
   snomedcode: z.coerce.string(),
 });

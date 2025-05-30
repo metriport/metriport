@@ -1,13 +1,10 @@
 import { z } from "zod";
 
 export const createdVaccineSchema = z.object({
-  success: z.boolean(),
-  errormessage: z.string().optional(),
-  vaccineids: z.coerce.string().optional(),
+  vaccineids: z.coerce.string().array().optional(),
 });
-export type CreatedVaccine = z.infer<typeof createdVaccineSchema>;
-export const createdVaccineSuccessSchema = z.object({
-  success: z.literal(true),
-  vaccineids: z.coerce.string(),
+export type CreatedVaccines = z.infer<typeof createdVaccineSchema>;
+export const createdVaccinesSuccessSchema = z.object({
+  vaccineids: z.coerce.string().array().min(1),
 });
-export type CreatedVaccineSuccess = z.infer<typeof createdVaccineSuccessSchema>;
+export type CreatedVaccinesSuccess = z.infer<typeof createdVaccinesSuccessSchema>;
