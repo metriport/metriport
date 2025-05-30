@@ -1,7 +1,9 @@
 import { Resource } from "@medplum/fhirtypes";
 import { BadRequestError, sleep } from "@metriport/shared";
+import { createUuidFromText } from "@metriport/shared/common/uuid";
 import { createBundleFromResourceList } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { EhrSource } from "@metriport/shared/interface/external/ehr/source";
+import { isValidUuid } from "../../../../../../util/uuid-v7";
 import { getReferencesFromResources } from "../../../../../fhir/shared/bundle";
 import { contributeResourceDiffBundle } from "../../../../api/bundle/contribute-resource-diff-bundle";
 import { setJobEntryStatus } from "../../../../api/job/set-entry-status";
@@ -9,6 +11,7 @@ import { BundleType } from "../../../../bundle/bundle-shared";
 import { createOrReplaceBundle } from "../../../../bundle/command/create-or-replace-bundle";
 import { fetchBundle, FetchBundleParams } from "../../../../bundle/command/fetch-bundle";
 import { getResourceBundleByResourceId } from "../../../../command/ehr-get-resource-bundle-by-resource-id";
+import { getEhrDataSourceExtension } from "../../../../shared";
 import {
   ContributeResourceDiffBundlesRequest,
   EhrContributeResourceDiffBundlesHandler,
@@ -60,9 +63,11 @@ export class EhrContributeResourceDiffBundlesDirect
         ehrPatientId,
         ehrOnlyResources,
       });
-      const validResources = ehrOnlyResources.map(resource =>
-        dangerouslyAdjustPatient(resource, metriportPatientId)
-      );
+      const validResources = ehrOnlyResources
+        .map(resource => dangerouslyAdjustPatient(resource, metriportPatientId))
+        .map(resource => dangerouslyAdjustId(resource, metriportPatientId, ehr))
+        .map(resource => dangerouslyAddEhrDataSourceExtension(resource, ehr))
+        .filter(resource => isValidUuid(resource.id ?? ""));
       if (validResources.length < 1) {
         throw new BadRequestError(`No valid resources found`, undefined, {
           cxId,
@@ -187,9 +192,6 @@ async function dangerouslyFetchMissingResources({
 }
 
 function dangerouslyAdjustPatient(resource: Resource, metriportPatientId: string): Resource {
-  if (resource.resourceType === "Patient") {
-    resource.id = metriportPatientId;
-  }
   if ("subject" in resource) {
     const subject = resource.subject;
     if ("reference" in subject) {
@@ -199,5 +201,26 @@ function dangerouslyAdjustPatient(resource: Resource, metriportPatientId: string
   if ("patient" in resource) {
     resource.patient.reference = `Patient/${metriportPatientId}`;
   }
+  return resource;
+}
+
+function dangerouslyAdjustId(
+  resource: Resource,
+  metriportPatientId: string,
+  ehr: EhrSource
+): Resource {
+  if (resource.resourceType === "Patient") {
+    resource.id = metriportPatientId;
+  } else {
+    if (!resource.id) return resource;
+    resource.id = createUuidFromText(`${ehr}_${resource.id}`);
+  }
+  return resource;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function dangerouslyAddEhrDataSourceExtension(resource: any, ehr: EhrSource) {
+  const ehrExtension = getEhrDataSourceExtension(ehr);
+  resource.extension = [...(resource.extension ?? []), ehrExtension];
   return resource;
 }

@@ -21,13 +21,11 @@ export async function handleDataContribution({
   patient,
   cxId,
   bundle,
-  enforceUuid = true,
 }: {
   requestId: string;
   patient: Patient;
   cxId: string;
   bundle: ValidBundle;
-  enforceUuid?: boolean;
 }): Promise<Bundle<Resource> | undefined> {
   const patientId = patient.id;
   const { log } = out(`handleDataContribution - cxId ${cxId}, patientId ${patientId}`);
@@ -39,12 +37,7 @@ export async function handleDataContribution({
   const mainStartedAt = Date.now();
 
   const normalizedBundle = normalizeBundle(bundle);
-  const fullBundle = hydrateBundle(
-    normalizedBundle,
-    patient,
-    fhirBundleDestinationKey,
-    enforceUuid
-  );
+  const fullBundle = hydrateBundle(normalizedBundle, patient, fhirBundleDestinationKey);
   const validatedBundle = validateFhirEntries(fullBundle);
 
   const [, organization] = await Promise.all([
