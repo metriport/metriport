@@ -133,16 +133,13 @@ export function toSurescriptsPatientLoadRow<T extends object>(
 }
 
 export function fromSurescriptsVerificationFile(message: Buffer) {
-  const rows = message
-    .toString("ascii")
-    .split("\n")
-    .map(row => row.split("|").map(cell => cell.trim().replace(/\\F\\/g, "|")));
-  const header = rows.shift();
-  const details = rows.slice(0, -1);
-  const footer = rows.pop();
+  const lines = message.toString("ascii").split("\n");
+  const table = lines.map(line => line.split("|"));
+  const header = table.shift();
+  const details = table.slice(0, -1);
+  const footer = table.pop();
 
   if (!header) throw new Error("Header is missing");
-  if (!details || details.length === 0) throw new Error("Details are missing");
   if (!footer) throw new Error("Footer is missing");
 
   const headerData = fromSurescriptsRow(
@@ -175,5 +172,12 @@ function fromSurescriptsRow<T extends object>(
   }
   if (objectValidator(data)) {
     return data;
-  } else throw new Error("Invalid row");
+  } else {
+    console.log(data);
+    console.log(row);
+    throw new MetriportError("Invalid row", "from_surescripts_row", {
+      row: row.join("|"),
+      data: JSON.stringify(data),
+    });
+  }
 }

@@ -14,10 +14,11 @@ export const patientVerificationHeaderSchema = z.object({
   version: z.enum(["3.0"]),
   receiverId: z.string().min(3).max(30),
   senderId: z.string().min(3).max(30),
-  transactionControlNumber: z.string().min(1).max(36),
+  transactionId: z.string().min(1).max(36),
   transactionDate: z.date(),
+  transactionTime: z.date(),
   transactionFileType: z.enum(["PMA"]),
-  transmissionControlNumber: z.string().min(1).max(10), // generated during file load
+  transmissionId: z.string().min(1).max(10), // generated during file load
   transmissionDate: z.date(),
   transmissionTime: z.date(),
   usage: z.enum(["T", "P"]),
@@ -55,7 +56,7 @@ export const patientVerificationHeaderOrder: IncomingFileRowSchema<PatientVerifi
   },
   {
     field: 4,
-    key: "transactionControlNumber",
+    key: "transactionId",
     fromSurescripts: fromSurescriptsString(),
   },
   {
@@ -65,6 +66,7 @@ export const patientVerificationHeaderOrder: IncomingFileRowSchema<PatientVerifi
   },
   {
     field: 6,
+    key: "transactionTime",
     fromSurescripts: fromSurescriptsTime(),
   },
   {
@@ -74,7 +76,7 @@ export const patientVerificationHeaderOrder: IncomingFileRowSchema<PatientVerifi
   },
   {
     field: 8,
-    key: "transmissionControlNumber",
+    key: "transmissionId",
     fromSurescripts: fromSurescriptsString(),
   },
   {
@@ -84,6 +86,7 @@ export const patientVerificationHeaderOrder: IncomingFileRowSchema<PatientVerifi
   },
   {
     field: 10,
+    key: "transmissionTime",
     fromSurescripts: fromSurescriptsTime(),
   },
   {
