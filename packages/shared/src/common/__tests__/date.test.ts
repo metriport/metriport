@@ -145,12 +145,14 @@ describe("convertDateToString", () => {
 
 describe("convertDateToTimeString", () => {
   it("converts date to HHMMSS format", () => {
-    const date = new Date("2024-02-26T12:30:00");
-    expect(convertDateToTimeString(date)).toBe("123000");
+    const date = new Date(Date.UTC(2024, 1, 26, 12, 30, 0));
+    expect(convertDateToTimeString(date, { useUtc: true })).toBe("123000");
   });
 
   it("converts date to HHMMSSCC format", () => {
-    const date = new Date("2024-02-26T12:30:00.123");
-    expect(convertDateToTimeString(date, { includeCentisecond: true })).toBe("12300012");
+    const date = new Date(Date.UTC(2024, 1, 26, 12, 30, 0, 123));
+    expect(convertDateToTimeString(date, { useUtc: true, includeCentisecond: true })).toBe(
+      "12300012"
+    );
   });
 });

@@ -135,9 +135,15 @@ export function convertDateToTimeString(
     includeCentisecond = false,
   }: { useUtc?: boolean; includeCentisecond?: boolean } = {}
 ) {
-  return (useUtc ? dayjs(date).utc() : dayjs(date)).format(
-    includeCentisecond ? "HHmmssSS" : "HHmmss"
-  );
+  const hours = (useUtc ? date.getUTCHours() : date.getHours()).toString().padStart(2, "0");
+  const minutes = (useUtc ? date.getUTCMinutes() : date.getMinutes()).toString().padStart(2, "0");
+  const seconds = (useUtc ? date.getUTCSeconds() : date.getSeconds()).toString().padStart(2, "0");
+  const centiseconds = Math.round(
+    (useUtc ? date.getUTCMilliseconds() : date.getMilliseconds()) / 10
+  )
+    .toString()
+    .padStart(2, "0");
+  return `${hours}${minutes}${seconds}${includeCentisecond ? centiseconds : ""}`;
 }
 /**
  * Validates if timestamp adheres to YYYYMMDDHHMMSS format

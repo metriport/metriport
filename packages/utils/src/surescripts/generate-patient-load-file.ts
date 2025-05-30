@@ -44,6 +44,7 @@ program
     const transmission = client.createEnrollment({
       npiNumber,
       cxId,
+      compression: false,
     });
     const message = client.generatePatientLoadFile(transmission, patients);
     console.log(message.toString("ascii"));

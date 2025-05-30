@@ -24,10 +24,7 @@ export enum TransmissionType {
   Unenroll = "UNR",
 }
 
-export interface SurescriptsRequester {
-  cxId: string;
-  npiNumber: string;
-}
+export type TransmissionData = Pick<Transmission, "cxId" | "npiNumber" | "compression">;
 
 export interface Transmission<T extends TransmissionType = TransmissionType> {
   type: T;
@@ -70,18 +67,17 @@ export class SurescriptsSftpClient extends SftpClient {
     this.receiverId = config.receiverId ?? Config.getSurescriptsSftpReceiverId();
   }
 
-  createEnrollment(requester: SurescriptsRequester): Transmission<TransmissionType.Enroll> {
-    return this.createTransmission(TransmissionType.Enroll, requester);
+  createEnrollment(data: TransmissionData): Transmission<TransmissionType.Enroll> {
+    return this.createTransmission(TransmissionType.Enroll, data);
   }
 
-  createUnenrollment(requester: SurescriptsRequester): Transmission<TransmissionType.Unenroll> {
-    return this.createTransmission(TransmissionType.Unenroll, requester);
+  createUnenrollment(data: TransmissionData): Transmission<TransmissionType.Unenroll> {
+    return this.createTransmission(TransmissionType.Unenroll, data);
   }
 
   createTransmission<T extends TransmissionType>(
     type: T,
-    { npiNumber, cxId }: SurescriptsRequester,
-    compression = true
+    { npiNumber, cxId, compression }: TransmissionData
   ): Transmission<T> {
     const transmissionId = this.generateTransmissionId().toString("ascii");
 
@@ -95,7 +91,7 @@ export class SurescriptsSftpClient extends SftpClient {
       id: transmissionId,
       timestamp: now,
       requestFileName,
-      compression: compression,
+      compression: compression ?? true,
     };
   }
 
