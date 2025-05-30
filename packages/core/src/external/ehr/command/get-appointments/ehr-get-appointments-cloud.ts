@@ -6,7 +6,11 @@ import {
   LambdaClient,
   makeLambdaClient,
 } from "../../../aws/lambda";
-import { EhrGetAppointmentsHandler, GetAppointmentsRequest } from "./ehr-get-appointments";
+import {
+  Appointment,
+  EhrGetAppointmentsHandler,
+  GetAppointmentsRequest,
+} from "./ehr-get-appointments";
 
 export class EhrGetAppointmentsCloud implements EhrGetAppointmentsHandler {
   private readonly lambdaClient: LambdaClient;
@@ -19,7 +23,7 @@ export class EhrGetAppointmentsCloud implements EhrGetAppointmentsHandler {
     this.lambdaClient = lambdaClient ?? makeLambdaClient(region ?? Config.getAWSRegion());
   }
 
-  async getAppointments<T>(params: GetAppointmentsRequest): Promise<T[]> {
+  async getAppointments<T extends Appointment>(params: GetAppointmentsRequest): Promise<T[]> {
     const { cxId } = params;
     const { log } = out(`EhrGetAppointments.cloud - cx ${cxId}`);
 

@@ -1,5 +1,12 @@
-import { contentFieldName } from "../index";
-import { getPatientFilters } from "../shared/filters";
+import { contentFieldName, OpenSearchRequestBody } from "../index";
+import { FhirIndexFields } from "../index-based-on-fhir";
+import {
+  cleanupQuery,
+  defaultExcludeFields,
+  getGeneralParams,
+  getPatientFilters,
+  simpleQueryStringPrefix,
+} from "../shared/query";
 
 export type LexicalSearchParams = {
   query: string;
@@ -10,27 +17,33 @@ export type LexicalSearchParams = {
 /**
  * Generates a lexical search query to be executed against an OpenSearch index.
  */
-export function createLexicalSearchQuery({ query, cxId, patientId }: LexicalSearchParams) {
-  const isMatchQuery = query.startsWith("$");
-  const actualQuery = query.replace(new RegExp(`^\\$\\s*`, "g"), "");
+export function createLexicalSearchQuery({
+  query,
+  cxId,
+  patientId,
+}: LexicalSearchParams): OpenSearchRequestBody {
+  const isMatchQuery = !query.startsWith(simpleQueryStringPrefix);
+  const actualQuery = cleanupQuery(query);
+  const generalParams = getGeneralParams();
   if (isMatchQuery) {
     return {
-      _source: {
-        // removes these from the response
-        exclude: ["content_embedding", contentFieldName],
-      },
-      // size: k,
+      ...generalParams,
       query: {
         bool: {
           must: [
-            {
-              match: {
-                content: {
-                  query: actualQuery,
-                  fuzziness: "AUTO",
-                },
-              },
-            },
+            ...(actualQuery.length > 0
+              ? [
+                  {
+                    // https://docs.opensearch.org/docs/latest/query-dsl/full-text/match/
+                    match: {
+                      [contentFieldName]: {
+                        query: actualQuery,
+                        fuzziness: "AUTO",
+                      },
+                    },
+                  },
+                ]
+              : []),
             ...getPatientFilters(cxId, patientId),
           ],
         },
@@ -38,23 +51,50 @@ export function createLexicalSearchQuery({ query, cxId, patientId }: LexicalSear
     };
   }
   return {
-    _source: {
-      // removes these from the response
-      exclude: ["content_embedding", contentFieldName],
-    },
-    // size: k,
+    ...generalParams,
     query: {
       bool: {
         must: [
-          {
-            simple_query_string: {
-              query: actualQuery,
-              fields: [contentFieldName],
-            },
-          },
+          ...(actualQuery.length > 0
+            ? [
+                {
+                  // https://docs.opensearch.org/docs/latest/query-dsl/full-text/simple-query-string/
+                  simple_query_string: {
+                    query: actualQuery,
+                    fields: [contentFieldName],
+                  },
+                },
+              ]
+            : []),
           ...getPatientFilters(cxId, patientId),
         ],
       },
+    },
+  };
+}
+
+export function createQueryHasData({
+  cxId,
+  patientId,
+}: {
+  cxId: string;
+  patientId: string;
+}): OpenSearchRequestBody {
+  const allConsolidatedDataFields: (keyof FhirIndexFields)[] = [
+    "cxId",
+    "patientId",
+    "resourceType",
+    "resourceId",
+    "content",
+  ];
+  const generalParams = getGeneralParams({
+    excludeFields: [...defaultExcludeFields, ...allConsolidatedDataFields],
+  });
+  return {
+    ...generalParams,
+    size: 1,
+    query: {
+      bool: { must: getPatientFilters(cxId, patientId) },
     },
   };
 }
