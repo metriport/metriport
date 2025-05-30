@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
-import { writeConditionToChart } from "../../../external/ehr/elation/command/write-condition-to-chart";
+import { writeConditionToChart } from "../../../external/ehr/elation/command/write-back/condition";
 import { handleParams } from "../../helpers/handle-params";
 import { requestLogger } from "../../helpers/request-logger";
 import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../../util";
