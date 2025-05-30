@@ -32,7 +32,7 @@ function validateUuidsAndAddExtensions(
   bundle: ValidBundle,
   docExtension: Extension,
   patientId: string,
-  enforceUuid?: boolean
+  enforceUuid = true
 ): ValidBundle {
   const uniqueIds = new Set<string>();
   bundle.entry.forEach(entry => {
