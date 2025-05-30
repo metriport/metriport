@@ -298,17 +298,6 @@ export function getConditionStatus(condition: Condition): string | undefined {
   return undefined;
 }
 
-export type GetResourceBundleByResourceIdParams = {
-  tokenId?: string;
-  cxId: string;
-  practiceId: string;
-  metriportPatientId: string;
-  ehrPatientId: string;
-  resourceType: string;
-  resourceId: string;
-  useCachedBundle: boolean;
-};
-
 type FetchEhrBundleParams = Omit<FetchBundleParams, "bundleType">;
 
 async function fetchEhrBundleIfYoungerThanMaxAge(

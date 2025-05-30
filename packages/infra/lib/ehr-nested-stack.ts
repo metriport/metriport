@@ -149,18 +149,21 @@ function settings(): {
     },
     waitTime: waitTimeRefreshBundle,
   };
+  const contributeResourceDiffBundlesLambdaTimeout = Duration.minutes(12);
   const contributeResourceDiffBundles: QueueAndLambdaSettings = {
     name: "EhrContributeResourceDiffBundles",
     entry: "ehr-contribute-resource-diff-bundles",
     lambda: {
       memory: 512,
-      timeout: Duration.minutes(12),
+      timeout: contributeResourceDiffBundlesLambdaTimeout,
     },
     queue: {
       alarmMaxAgeOfOldestMessage: Duration.hours(1),
       maxMessageCountAlarmThreshold: 15_000,
       maxReceiveCount: 3,
-      visibilityTimeout: Duration.seconds(refreshEhrBundlesLambdaTimeout.toSeconds() * 2 + 1),
+      visibilityTimeout: Duration.seconds(
+        contributeResourceDiffBundlesLambdaTimeout.toSeconds() * 2 + 1
+      ),
       createRetryLambda: false,
     },
     eventSource: {
