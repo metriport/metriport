@@ -5,7 +5,6 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { setPatientJobEntryStatus } from "../../../command/job/patient/set-entry-status";
-import { refreshEhrBundles } from "../../../external/ehr/shared/command/bundle/refresh-ehr-bundles";
 import {
   getLatestResourceDiffBundlesJobPayload,
   getResourceDiffBundlesJobPayload,
@@ -55,7 +54,6 @@ router.post(
  * @param req.query.ehrId - The EHR source.
  * @param req.query.cxId - The CX ID of the patient.
  * @param req.params.id - The patient id of the EHR patient.
- * @param req.query.practiceId - The practice id of the EHR patient.
  * @param req.query.bundleType - The type of bundle to fetch.
  * @returns Resource diff job and pre-signed URLs for the bundles if completed
  */
@@ -67,7 +65,6 @@ router.get(
     if (!isEhrSource(ehr)) throw new BadRequestError("Invalid EHR", undefined, { ehr });
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const patientId = getFrom("params").orFail("id", req);
-    const practiceId = getFromQueryOrFail("practiceId", req);
     const bundleType = getFromQueryOrFail("bundleType", req);
     if (!isResourceDiffBundleType(bundleType)) {
       throw new BadRequestError("Invalid bundle type", undefined, {
@@ -78,7 +75,6 @@ router.get(
       ehr,
       cxId,
       ehrPatientId: patientId,
-      practiceId,
       bundleType,
     });
     return res.status(httpStatus.OK).json(bundle);
@@ -93,7 +89,6 @@ router.get(
  * @param req.query.ehrId - The EHR source.
  * @param req.query.cxId - The CX ID of the patient.
  * @param req.params.id - The patient id of the EHR patient.
- * @param req.query.practiceId - The practice id of the EHR patient.
  * @param req.query.bundleType - The type of bundle to fetch.
  * @param req.params.jobId - The job ID of the resource diff job.
  * @returns Resource diff job and pre-signed URLs for the bundles if completed
@@ -106,7 +101,6 @@ router.get(
     if (!isEhrSource(ehr)) throw new BadRequestError("Invalid EHR", undefined, { ehr });
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const patientId = getFrom("params").orFail("id", req);
-    const practiceId = getFromQueryOrFail("practiceId", req);
     const bundleType = getFromQueryOrFail("bundleType", req);
     if (!isResourceDiffBundleType(bundleType)) {
       throw new BadRequestError("Invalid bundle type", undefined, {
@@ -118,7 +112,6 @@ router.get(
       ehr,
       cxId,
       ehrPatientId: patientId,
-      practiceId,
       bundleType,
       jobId,
     });
@@ -157,38 +150,6 @@ router.post(
       onCompleted: async () => {
         //TODO: Contribute EHR-only bundles
       },
-    });
-    return res.sendStatus(httpStatus.OK);
-  })
-);
-
-/**
- * POST /internal/ehr/:ehrId/patient/:id/resource/bundle/refresh
- *
- * Refreshes the EHR bundle.
- * @param req.query.ehrId - The EHR source.
- * @param req.query.cxId - The CX ID of the patient.
- * @param req.params.id - The patient id of the EHR patient.
- * @param req.query.practiceId - The practice id of the EHR patient.
- * @param req.query.resourceType - The resource type to refresh.
- * @returns 200 OK
- */
-router.post(
-  "/:id/resource/bundle/refresh",
-  requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    const ehr = getFromQueryOrFail("ehrId", req);
-    if (!isEhrSource(ehr)) throw new BadRequestError("Invalid EHR", undefined, { ehr });
-    const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const patientId = getFrom("params").orFail("id", req);
-    const practiceId = getFromQueryOrFail("practiceId", req);
-    const resourceType = getFromQueryOrFail("resourceType", req);
-    await refreshEhrBundles({
-      ehr,
-      cxId,
-      ehrPatientId: patientId,
-      practiceId,
-      resourceType,
     });
     return res.sendStatus(httpStatus.OK);
   })

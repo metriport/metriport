@@ -1,4 +1,4 @@
-import { buildEhrSyncPatientHandler } from "@metriport/core/external/ehr/sync-patient/ehr-sync-patient-factory";
+import { buildEhrSyncPatientHandler } from "@metriport/core/external/ehr/command/sync-patient/ehr-sync-patient-factory";
 import { MetriportError } from "@metriport/shared";
 import { healthieSecondaryMappingsSchema } from "@metriport/shared/interface/external/ehr/healthie/cx-mapping";
 import { healthieAppointmentCreatedEventSchema } from "@metriport/shared/interface/external/ehr/healthie/event";

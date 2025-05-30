@@ -1,6 +1,7 @@
-import { ProcessLinkPatientRequest as ElationProcessLinkPatientRequest } from "@metriport/core/external/ehr/elation/link-patient/elation-link-patient";
-import { ProcessLinkPatientRequest as HealthieProcessLinkPatientRequest } from "@metriport/core/external/ehr/healthie/link-patient/healthie-link-patient";
-import { ProcessSyncPatientRequest } from "@metriport/core/external/ehr/sync-patient/ehr-sync-patient";
+import { AppointmentMethods } from "@metriport/core/external/ehr/command/get-appointments/ehr-get-appointments";
+import { ProcessSyncPatientRequest } from "@metriport/core/external/ehr/command/sync-patient/ehr-sync-patient";
+import { ProcessLinkPatientRequest as ElationProcessLinkPatientRequest } from "@metriport/core/external/ehr/elation/command/link-patient/elation-link-patient";
+import { ProcessLinkPatientRequest as HealthieProcessLinkPatientRequest } from "@metriport/core/external/ehr/healthie/command/link-patient/healthie-link-patient";
 import { MetriportError } from "@metriport/shared";
 import { EhrSources, isEhrSource } from "@metriport/shared/interface/external/ehr/source";
 import { z } from "zod";
@@ -80,10 +81,21 @@ export function parseLinkPatient(
 
 export const ehrCreateResourceDiffBundlesSchema = z.object({
   ehr: z.nativeEnum(EhrSources),
+  tokenId: z.string().optional(),
   cxId: z.string(),
   practiceId: z.string(),
   metriportPatientId: z.string(),
   ehrPatientId: z.string(),
   resourceType: z.string(),
   jobId: z.string(),
+});
+
+export const ehrGetAppointmentsSchema = z.object({
+  method: z.nativeEnum(AppointmentMethods),
+  tokenId: z.string().optional(),
+  cxId: z.string(),
+  practiceId: z.string(),
+  departmentId: z.string().array().optional(),
+  fromDate: z.coerce.date().optional(),
+  toDate: z.coerce.date().optional(),
 });

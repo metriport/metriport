@@ -83,7 +83,7 @@ export function createNames(patient: ElationPatient): { firstName: string; lastN
   };
 }
 
-function getElationEnv({
+export function getElationEnv({
   cxId,
   practiceId,
 }: EhrPerPracticeParams): EhrEnvAndClientCredentials<ElationEnv> {
@@ -121,15 +121,22 @@ function getCxIdAndPracticeIdFromElationApplicationId(applicationId: string): {
   return { cxId, practiceId };
 }
 
-export async function createElationClient(
+export async function createElationClientWithTokenIdAndEnvironment(
   perPracticeParams: EhrPerPracticeParams
-): Promise<ElationApi> {
+): Promise<{ client: ElationApi; tokenId: string; environment: ElationEnv }> {
   return await createEhrClient<ElationEnv, ElationApi, EhrPerPracticeParams>({
     ...perPracticeParams,
     source: elationClientJwtTokenSource,
     getEnv: { params: perPracticeParams, getEnv: getElationEnv },
     getClient: ElationApi.create,
   });
+}
+
+export async function createElationClient(
+  perPracticeParams: EhrPerPracticeParams
+): Promise<ElationApi> {
+  const { client } = await createElationClientWithTokenIdAndEnvironment(perPracticeParams);
+  return client;
 }
 
 export async function getElationSigningKeyInfo(
