@@ -13,8 +13,10 @@ import { EnvConfigNonSandbox } from "../../config/env-config";
 import { buildSecrets, secretsToECS } from "../shared/secrets";
 import {
   MLLP_DEFAULT_PORT,
-  MLLP_SERVER_NLB_INTERNAL_IP_A,
-  MLLP_SERVER_NLB_INTERNAL_IP_B,
+  MLLP_SERVER_NLB_PROD_INTERNAL_IP_A,
+  MLLP_SERVER_NLB_PROD_INTERNAL_IP_B,
+  MLLP_SERVER_NLB_STAGING_INTERNAL_IP_A,
+  MLLP_SERVER_NLB_STAGING_INTERNAL_IP_B,
 } from "./constants";
 
 interface MllpStackProps extends cdk.StackProps {
@@ -103,13 +105,6 @@ export class MllpStack extends cdk.NestedStack {
       internetFacing: false,
     });
 
-    /**
-     * We're using an empty string for the first setupNlb call to maintain identifiers and
-     * avoid having to recreate a new listener and target group for the existing NLB.
-     */
-    const targetGroupA = setupNlb("", vpc, nlbA, MLLP_SERVER_NLB_INTERNAL_IP_A);
-    const targetGroupB = setupNlb("B", vpc, nlbB, MLLP_SERVER_NLB_INTERNAL_IP_B);
-
     const taskRole = new iam.Role(this, "MllpServerTaskRole", {
       assumedBy: new iam.ServicePrincipal("ecs-tasks.amazonaws.com"),
     });
@@ -162,8 +157,24 @@ export class MllpStack extends cdk.NestedStack {
       }),
     });
 
-    targetGroupA.addTarget(fargateService);
-    targetGroupB.addTarget(fargateService);
+    let nlb1Ip: string;
+    let nlb2Ip: string;
+    if (config.environmentType === "production") {
+      nlb1Ip = MLLP_SERVER_NLB_PROD_INTERNAL_IP_A;
+      nlb2Ip = MLLP_SERVER_NLB_PROD_INTERNAL_IP_B;
+    } else if (config.environmentType === "staging") {
+      nlb1Ip = MLLP_SERVER_NLB_STAGING_INTERNAL_IP_A;
+      nlb2Ip = MLLP_SERVER_NLB_STAGING_INTERNAL_IP_B;
+    } else {
+      throw new Error(`Invalid environment type for MllpStack: ${config.environmentType}`);
+    }
+
+    /**
+     * We're using an empty string for the first setupNlb call to maintain identifiers and
+     * avoid having to recreate a new listener and target group for the existing NLB.
+     */
+    setupNlb("", vpc, nlbA, nlb1Ip).addTarget(fargateService);
+    setupNlb("B", vpc, nlbB, nlb2Ip).addTarget(fargateService);
     incomingHl7NotificationBucket.grantWrite(fargateService.taskDefinition.taskRole);
 
     const scaling = fargateService.autoScaleTaskCount({
@@ -205,12 +216,12 @@ export class MllpStack extends cdk.NestedStack {
     });
 
     new cdk.CfnOutput(this, "MllpNlbInternalIpA", {
-      value: MLLP_SERVER_NLB_INTERNAL_IP_A,
+      value: MLLP_SERVER_NLB_PROD_INTERNAL_IP_A,
       description: "Internal IP address of the MLLP Network Load Balancer A",
     });
 
     new cdk.CfnOutput(this, "MllpNlbInternalIpB", {
-      value: MLLP_SERVER_NLB_INTERNAL_IP_B,
+      value: MLLP_SERVER_NLB_PROD_INTERNAL_IP_B,
       description: "Internal IP address of the MLLP Network Load Balancer B",
     });
   }
