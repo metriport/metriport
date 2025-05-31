@@ -18,6 +18,8 @@ export interface Hl7NotificationConfig {
     fargateMemoryLimitMiB: number;
     fargateTaskCountMin: number;
     fargateTaskCountMax: number;
+    nlbInternalIpAddressA: string;
+    nlbInternalIpAddressB: string;
   };
   hl7v2RosterUploadLambda: {
     bucketName: string;
