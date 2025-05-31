@@ -3,7 +3,7 @@ import { Patient } from "../../../../domain/patient";
 import { OpenSearchFhirIngestor } from "../../../../external/opensearch/fhir-ingestor";
 import { OnBulkItemError } from "../../../../external/opensearch/shared/bulk";
 import { capture, out } from "../../../../util";
-import { getConsolidatedPatientData } from "../../consolidated-get";
+import { getConsolidatedFile } from "../../consolidated-get";
 import { getConfigs } from "./fhir-config";
 
 /**
@@ -17,16 +17,28 @@ export async function ingestPatientConsolidated({
 }: {
   patient: Patient;
   onItemError?: OnBulkItemError;
-}) {
-  const { log } = out(`ingestLexical - cx ${patient.cxId}, pt ${patient.id}`);
+}): Promise<void> {
+  const { cxId, id: patientId } = patient;
+  const { log } = out(`ingestPatientConsolidated - cx ${cxId}, pt ${patientId}`);
 
   const ingestor = new OpenSearchFhirIngestor(getConfigs());
 
   log("Getting consolidated and cleaning up the index...");
-  const [bundle] = await Promise.all([
-    timed(() => getConsolidatedPatientData({ patient }), "getConsolidatedPatientData", log),
-    ingestor.delete({ cxId: patient.cxId, patientId: patient.id }),
+  const [consolidated] = await Promise.all([
+    timed(() => getConsolidatedFile({ cxId, patientId }), "getConsolidatedFile", log),
+    ingestor.delete({ cxId, patientId }),
   ]);
+
+  const bundle = consolidated.bundle;
+  if (!bundle) {
+    const bucket = consolidated.fileLocation;
+    const key = consolidated.fileName;
+    const msg = `No consolidated bundle found`;
+    log(`${msg} for patient ${patientId} w/ key ${key}, skipping ingestion`);
+    const context = "ingestPatientConsolidated";
+    capture.message(msg, { extra: { cxId, patientId, key, bucket, context }, level: "warning" });
+    return;
+  }
 
   const resources =
     bundle.entry?.flatMap(entry => {
@@ -39,14 +51,14 @@ export async function ingestPatientConsolidated({
   log("Done, calling ingestBulk...");
   const startedAt = Date.now();
   const errors = await ingestor.ingestBulk({
-    cxId: patient.cxId,
-    patientId: patient.id,
+    cxId,
+    patientId,
     resources,
     onItemError,
   });
   const elapsedTime = Date.now() - startedAt;
 
-  if (errors.size > 0) captureErrors({ cxId: patient.cxId, patientId: patient.id, errors, log });
+  if (errors.size > 0) captureErrors({ cxId, patientId, errors, log });
 
   log(`Ingested ${resources.length} resources in ${elapsedTime} ms`);
 }
