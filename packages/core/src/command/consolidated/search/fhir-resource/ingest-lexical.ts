@@ -28,11 +28,7 @@ export async function ingestPatientConsolidated({
 
   log("Getting consolidated and cleaning up the index...");
   const [bundle] = await Promise.all([
-    timed(
-      () => getConsolidatedBundle({ cxId, patientId }),
-      "getConsolidatedBundleAndNotifyWhenMissing",
-      log
-    ),
+    timed(() => getConsolidatedBundle({ cxId, patientId }), "getConsolidatedBundle", log),
     ingestor.delete({ cxId, patientId }),
   ]);
 
