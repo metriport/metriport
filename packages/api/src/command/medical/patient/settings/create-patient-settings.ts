@@ -6,9 +6,8 @@ import {
 import { capture } from "@metriport/core/util";
 import { out } from "@metriport/core/util/log";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import { BadRequestError, errorToString } from "@metriport/shared";
+import { BadRequestError, errorToString, UpsertPatientSettingsBulk } from "@metriport/shared";
 import { chunk } from "lodash";
-import { Op } from "sequelize";
 import { PatientModel } from "../../../../models/medical/patient";
 import { PatientSettingsModel } from "../../../../models/patient-settings";
 import { getPatientOrFail } from "../get-patient";
@@ -19,16 +18,6 @@ type PatientSettingsUpsertResults = {
   patientsFoundAndUpdated: number;
   failedCount?: number;
   failedIds?: string[];
-};
-
-type PatientSettingsUpsertForCxProps = {
-  cxId: string;
-  facilityId?: string;
-  settings: PatientSettingsData;
-};
-
-type PatientSettingsUpsertProps = PatientSettingsUpsertForCxProps & {
-  patientIds: string[];
 };
 
 type BatchProcessingResult = {
@@ -70,26 +59,15 @@ export async function createPatientSettings({
   return newPatientSettings.dataValues;
 }
 
-/**
- * Upserts patient settings for the given customer and patient IDs.
- *
- * @param cxId The customer ID
- * @param facilityId The facility ID. Optional.
- * @param patientIds The patient IDs to upsert patient settings for.
- * @param settings Patient settings object, which includes subscriptions
- * @returns The number of patients updated and the list of patients not found
- */
-export async function upsertPatientSettingsForPatientList({
+export async function upsertPatientSettingsByPatientIds({
   cxId,
-  facilityId,
   patientIds,
   settings,
-}: PatientSettingsUpsertProps): Promise<PatientSettingsUpsertResults> {
+}: UpsertPatientSettingsBulk): Promise<PatientSettingsUpsertResults> {
   const { log } = out(`upsertPatientSettingsForPatientList - cx ${cxId}`);
 
   const { validPatientIds, invalidPatientIds: patientsNotFound } = await verifyPatients({
     cxId,
-    facilityId,
     patientIds,
   });
 
@@ -160,12 +138,11 @@ async function processBatch({
  */
 export async function upsertPatientSettingsForCx({
   cxId,
-  facilityId,
   settings,
-}: PatientSettingsUpsertForCxProps): Promise<PatientSettingsUpsertResults> {
+}: UpsertPatientSettingsBase): Promise<PatientSettingsUpsertResults> {
   const { log } = out(`upsertPatientSettingsForCx - cx ${cxId}`);
 
-  const patientIds = await getPatientIds({ cxId, facilityId });
+  const patientIds = await getPatientIds({ cxId });
   if (patientIds.length === 0) {
     log(`No patients found for cx ${cxId}`);
     return { patientsFoundAndUpdated: 0 };
@@ -204,7 +181,6 @@ export async function upsertPatientSettingsForCx({
     capture.error(msg, {
       extra: {
         cxId,
-        facilityId,
         failedIds,
       },
     });
@@ -216,35 +192,22 @@ export async function upsertPatientSettingsForCx({
 
 async function verifyPatients({
   patientIds,
-  facilityId,
   cxId,
 }: {
   patientIds: string[];
-  facilityId?: string;
   cxId: string;
 }): Promise<{
   validPatientIds: string[];
   invalidPatientIds: string[];
 }> {
-  if (patientIds.length < 1) {
-    return {
-      validPatientIds: [],
-      invalidPatientIds: [],
-    };
-  }
-
   const patients = await PatientModel.findAll({
-    where: {
-      id: patientIds,
-      cxId,
-      ...(facilityId && {
-        facilityIds: { [Op.contains]: [facilityId] },
-      }),
-    },
+    where: { cxId, id: patientIds },
     attributes: ["id"],
   });
+
   const foundPatientIds = new Set(patients.map(p => p.id));
-  const invalidPatientIds = patientIds.filter(id => !foundPatientIds.has(id));
+  const invalidPatientIds = patientIds?.filter(id => !foundPatientIds.has(id)) ?? [];
+
   return {
     validPatientIds: Array.from(foundPatientIds),
     invalidPatientIds,
