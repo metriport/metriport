@@ -826,6 +826,7 @@ export class LambdasNestedStack extends NestedStack {
       envVars: {
         // API_URL set on the api-stack after the OSS API is created
         FEATURE_FLAGS_TABLE_NAME: featureFlagsTable.tableName,
+        MEDICAL_DOCUMENTS_BUCKET_NAME: bundleBucket.bucketName,
         SEARCH_ENDPOINT: openSearchEndpoint,
         SEARCH_USERNAME: openSearchAuth.userName,
         SEARCH_PASSWORD_SECRET_ARN: openSearchAuth.secret.secretArn,
