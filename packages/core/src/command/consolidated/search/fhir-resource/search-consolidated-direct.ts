@@ -16,8 +16,8 @@ import {
   SearchConsolidated,
   SearchConsolidatedParams,
   SearchConsolidatedResult,
+  searchPatientConsolidated,
 } from "./search-consolidated";
-import { searchPatientConsolidated } from "./search-lexical";
 
 dayjs.extend(duration);
 

@@ -1,12 +1,10 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
-import { MetriportMedicalApi } from "@metriport/api-sdk";
-import { getConsolidatedAsText } from "@metriport/core/command/consolidated/consolidated-get";
-import { getDomainFromDTO } from "@metriport/core/command/patient-loader-metriport-api";
+import { Bundle, Resource } from "@medplum/fhirtypes";
 import {
-  bundleToString,
   FhirResourceToText,
+  resourceToString,
 } from "@metriport/core/external/fhir/export/string/bundle-to-string";
 import { getFileContents } from "@metriport/core/util/fs";
 import { sleep } from "@metriport/core/util/sleep";
@@ -33,8 +31,6 @@ dayjs.extend(duration);
 
 const bundleFilePath: string | undefined = undefined;
 const patientId = getEnvVar("PATIENT_ID");
-const apiKey = getEnvVar("API_KEY");
-const apiUrl = getEnvVar("API_URL");
 const cxId = getEnvVar("CX_ID");
 
 const outputRootFolderName = `semantic-text-from-consolidated`;
@@ -53,18 +49,6 @@ async function main() {
     const bundleContents = getFileContents(bundleFilePath);
     const bundle = JSON.parse(bundleContents);
     resources = bundleToString(bundle);
-  } else {
-    if (!apiKey || !apiUrl || !patientId || !cxId) {
-      throw new Error("Environment variables must be set if bundleFilePath is not set");
-    }
-    console.log("Getting consolidated resources from the API...");
-    const metriportAPI = new MetriportMedicalApi(apiKey, {
-      baseAddress: apiUrl,
-      timeout: 120_000,
-    });
-    const patientDto = await metriportAPI.getPatient(patientId);
-    const patient = getDomainFromDTO(patientDto, cxId);
-    resources = await getConsolidatedAsText({ patient });
   }
 
   const headers = ["id", "type", "text"];
@@ -74,6 +58,32 @@ async function main() {
 
   console.log(`>>> Done in ${elapsedTimeAsStr(startedAt)}`);
   console.log(`>>> Output file: ${outputFilePath}`);
+}
+
+/**
+ * Converts a FHIR Bundle to a list of string representations of its resources.
+ * Focused on searching, so not a complete representation of the FHIR resources.
+ * Skips unsupported resources - @see isSupportedResource
+ *
+ * @param bundle - FHIR Bundle to convert
+ * @param isDebug - Whether to include debug information in the output
+ * @returns List of string representations of the resources in the bundle
+ */
+function bundleToString(bundle: Bundle<Resource>, isDebug = false): FhirResourceToText[] {
+  if (!bundle.entry?.length) return [];
+
+  const resp = bundle.entry.flatMap(entry => {
+    const resource = entry.resource;
+    if (!resource || !resource.id) return [];
+    const text = resourceToString(resource, isDebug);
+    if (!text) return [];
+    return {
+      id: resource.id,
+      type: resource.resourceType,
+      text,
+    };
+  });
+  return resp;
 }
 
 if (require.main === module) {

@@ -4,7 +4,7 @@ import { buildCompleteBundleEntry, extractFhirTypesFromBundle } from "../shared/
 import { sortCodings } from "./coding";
 import { normalizeConditions } from "./resources/condition";
 import { normalizeCoverages } from "./resources/coverage";
-import { normalizeEncounters } from "./resources/encounter";
+import { filterInvalidEncounters } from "./resources/encounter";
 import { normalizeObservations } from "./resources/observation";
 
 /**
@@ -33,11 +33,11 @@ export function normalizeFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> {
   const normalizedConditions = normalizeConditions(resourceArrays.conditions);
   resourceArrays.conditions = normalizedConditions;
 
-  const normalizedEncounters = normalizeEncounters(
+  const validEncounters = filterInvalidEncounters(
     resourceArrays.encounters,
     resourceArrays.locations
   );
-  resourceArrays.encounters = normalizedEncounters;
+  resourceArrays.encounters = validEncounters;
 
   normalizedBundle.entry = Object.entries(resourceArrays).flatMap(([, resources]) => {
     const entriesArray = Array.isArray(resources) ? resources : [resources];

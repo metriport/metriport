@@ -4,10 +4,6 @@ import { parseFhirBundle, SearchSetBundle } from "@metriport/shared/medical";
 import { createConsolidatedDataFilePath } from "../../domain/consolidated/filename";
 import { Patient } from "../../domain/patient";
 import { executeWithRetriesS3, returnUndefinedOn404, S3Utils } from "../../external/aws/s3";
-import {
-  bundleToString,
-  FhirResourceToText,
-} from "../../external/fhir/export/string/bundle-to-string";
 import { out } from "../../util";
 import { Config } from "../../util/config";
 import { processAsyncError } from "../../util/error/shared";
@@ -137,21 +133,4 @@ export async function getConsolidatedPatientDataAsync({
   connector
     .execute(payload)
     .catch(processAsyncError("Failed to get consolidated patient data async", undefined, true));
-}
-
-/**
- * Get consolidated patient data as a list of FHIR resources in string/text format.
- *
- * The output is focused on searching, not a complete representation of the FHIR resources.
- *
- * @param patient The patient to get the consolidated data for.
- * @returns The consolidated data as text.
- */
-export async function getConsolidatedAsText({
-  patient,
-}: {
-  patient: Patient;
-}): Promise<FhirResourceToText[]> {
-  const consolidated = await getConsolidatedPatientData({ patient });
-  return bundleToString(consolidated);
 }

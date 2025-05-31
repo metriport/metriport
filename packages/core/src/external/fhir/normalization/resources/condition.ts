@@ -3,8 +3,9 @@ import { cloneDeep } from "lodash";
 import { ICD_10_URL } from "../../../../util/constants";
 import { chronicityMap } from "../../shared/chronicity-map";
 import {
-  ChronicityExtension,
   buildChronicityExtension,
+  ChronicityExtension,
+  findChronicityExtension,
 } from "../../shared/extensions/chronicity-extension";
 
 export function normalizeConditions(conditions: Condition[]): Condition[] {
@@ -18,6 +19,10 @@ export function normalizeConditions(conditions: Condition[]): Condition[] {
       if (coding.code) {
         const chronicity = chronicityMap[coding.code.replace(".", "")];
         if (chronicity) {
+          const existingChronicityExtension = findChronicityExtension(updCondition.extension ?? []);
+          if (existingChronicityExtension) {
+            return;
+          }
           chronicityExtension = buildChronicityExtension(chronicity);
         }
       }
