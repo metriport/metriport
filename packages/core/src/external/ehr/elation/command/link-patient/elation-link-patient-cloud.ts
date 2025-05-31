@@ -1,14 +1,14 @@
 import { executeWithNetworkRetries } from "@metriport/shared";
 import { createUuidFromText } from "@metriport/shared/common/uuid";
-import { Config } from "../../../../util/config";
-import { SQSClient } from "../../../aws/sqs";
-import { HealthieLinkPatientHandler, ProcessLinkPatientRequest } from "./healthie-link-patient";
+import { SQSClient } from "../../../../../external/aws/sqs";
+import { Config } from "../../../../../util/config";
+import { ElationLinkPatientHandler, ProcessLinkPatientRequest } from "./elation-link-patient";
 
-export class HealthieLinkPatientCloud implements HealthieLinkPatientHandler {
+export class ElationLinkPatientCloud implements ElationLinkPatientHandler {
   private readonly sqsClient: SQSClient;
 
   constructor(
-    private readonly healthieLinkPatientQueueUrl: string,
+    private readonly elationLinkPatientQueueUrl: string,
     region?: string,
     sqsClient?: SQSClient
   ) {
@@ -19,7 +19,7 @@ export class HealthieLinkPatientCloud implements HealthieLinkPatientHandler {
     const { cxId } = params;
     const payload = JSON.stringify(params);
     await executeWithNetworkRetries(async () => {
-      await this.sqsClient.sendMessageToQueue(this.healthieLinkPatientQueueUrl, payload, {
+      await this.sqsClient.sendMessageToQueue(this.elationLinkPatientQueueUrl, payload, {
         fifo: true,
         messageDeduplicationId: createUuidFromText(payload),
         messageGroupId: cxId,

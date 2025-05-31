@@ -1,10 +1,9 @@
-import { ProcessSyncPatientRequest } from "@metriport/core/external/ehr/command/sync-patient/ehr-sync-patient";
-import { EhrSyncPatientLocal } from "@metriport/core/external/ehr/command/sync-patient/ehr-sync-patient-local";
+import { GetAppointmentsRequest } from "@metriport/core/external/ehr/command/get-appointments/ehr-get-appointments";
+import { EhrGetAppointmentsDirect } from "@metriport/core/external/ehr/command/get-appointments/ehr-get-appointments-direct";
 import { MetriportError } from "@metriport/shared";
-import * as Sentry from "@sentry/serverless";
 import { SQSEvent } from "aws-lambda";
 import { capture } from "./shared/capture";
-import { parseSyncPatient } from "./shared/ehr";
+import { ehrGetAppointmentsSchema } from "./shared/ehr";
 import { getEnvOrFail } from "./shared/env";
 import { prefixedLog } from "./shared/log";
 import { getSingleMessageOrFail } from "./shared/sqs";
@@ -14,12 +13,9 @@ capture.init();
 
 // Automatically set by AWS
 const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
-// Set by us
-const waitTimeInMillisRaw = getEnvOrFail("WAIT_TIME_IN_MILLIS");
-const waitTimeInMillis = parseInt(waitTimeInMillisRaw);
 
 // TODO move to capture.wrapHandler()
-export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
+export const handler = capture.wrapHandler(async (event: SQSEvent) => {
   capture.setExtra({ event, context: lambdaName });
 
   const startedAt = new Date().getTime();
@@ -28,21 +24,20 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
 
   console.log(`Running with unparsed body: ${message.body}`);
   const parsedBody = parseBody(message.body);
-  const { ehr, cxId, practiceId, patientId } = parsedBody;
+  const { method, cxId, practiceId } = parsedBody;
 
-  const log = prefixedLog(
-    `ehr ${ehr}, cxId ${cxId}, practiceId ${practiceId}, patientId ${patientId}`
-  );
-  log(`Parsed: ${JSON.stringify(parsedBody)}, waitTimeInMillis ${waitTimeInMillis}`);
+  const log = prefixedLog(`method ${method}, cxId ${cxId}, practiceId ${practiceId}`);
+  log(`Parsed: ${JSON.stringify(parsedBody)}`);
 
-  const ehrSyncPatientHandler = new EhrSyncPatientLocal(waitTimeInMillis);
-  await ehrSyncPatientHandler.processSyncPatient(parsedBody);
+  const ehrGetAppointmentsHandler = new EhrGetAppointmentsDirect();
+  const appointments = await ehrGetAppointmentsHandler.getAppointments(parsedBody);
 
   const finishedAt = new Date().getTime();
   log(`Done local duration: ${finishedAt - startedAt}ms`);
+  return appointments;
 });
 
-function parseBody(body?: unknown): ProcessSyncPatientRequest {
+function parseBody(body?: unknown): GetAppointmentsRequest {
   if (!body) throw new MetriportError(`Missing message body`);
 
   const bodyString = typeof body === "string" ? (body as string) : undefined;
@@ -50,5 +45,5 @@ function parseBody(body?: unknown): ProcessSyncPatientRequest {
 
   const bodyAsJson = JSON.parse(bodyString);
 
-  return parseSyncPatient(bodyAsJson);
+  return ehrGetAppointmentsSchema.parse(bodyAsJson);
 }

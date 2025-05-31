@@ -1,9 +1,9 @@
 import { sleep } from "@metriport/shared";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
-import { linkPatient } from "../../api/link-patient";
-import { HealthieLinkPatientHandler, ProcessLinkPatientRequest } from "./healthie-link-patient";
+import { linkPatient } from "../../../api/link-patient";
+import { ElationLinkPatientHandler, ProcessLinkPatientRequest } from "./elation-link-patient";
 
-export class HealthieLinkPatientLocal implements HealthieLinkPatientHandler {
+export class ElationLinkPatientLocal implements ElationLinkPatientHandler {
   constructor(private readonly waitTimeInMillis: number) {}
 
   async processLinkPatient({
@@ -12,7 +12,7 @@ export class HealthieLinkPatientLocal implements HealthieLinkPatientHandler {
     patientId,
   }: ProcessLinkPatientRequest): Promise<void> {
     await linkPatient({
-      ehr: EhrSources.healthie,
+      ehr: EhrSources.elation,
       cxId,
       practiceId,
       patientId,

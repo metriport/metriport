@@ -1,14 +1,12 @@
 import CanvasApi, { CanvasEnv } from "@metriport/core/external/ehr/canvas/index";
 import { cxClientKeyAndSecretMapSecretSchema, MetriportError } from "@metriport/shared";
+import { canvasClientSource } from "@metriport/shared/interface/external/ehr/canvas/jwt-token";
 import { Config } from "../../../shared/config";
 import {
   createEhrClient,
   EhrEnvAndClientCredentials,
   EhrPerPracticeParams,
 } from "../shared/utils/client";
-
-export const canvasClientJwtTokenSource = "canvas-client";
-export const canvasWebhookJwtTokenSource = "canvas-webhook";
 
 export function getCanvasEnv({
   cxId,
@@ -38,13 +36,20 @@ export function getCanvasEnv({
   };
 }
 
-export async function createCanvasClient(
+export async function createCanvasClientWithTokenIdAndEnvironment(
   perPracticeParams: EhrPerPracticeParams
-): Promise<CanvasApi> {
+): Promise<{ client: CanvasApi; tokenId: string; environment: CanvasEnv }> {
   return await createEhrClient<CanvasEnv, CanvasApi, EhrPerPracticeParams>({
     ...perPracticeParams,
-    source: canvasClientJwtTokenSource,
+    source: canvasClientSource,
     getEnv: { params: perPracticeParams, getEnv: getCanvasEnv },
     getClient: CanvasApi.create,
   });
+}
+
+export async function createCanvasClient(
+  perPracticeParams: EhrPerPracticeParams
+): Promise<CanvasApi> {
+  const { client } = await createCanvasClientWithTokenIdAndEnvironment(perPracticeParams);
+  return client;
 }

@@ -1,14 +1,14 @@
 import { Resource } from "@medplum/fhirtypes";
 import { errorToString, sleep } from "@metriport/shared";
 import { createBundleFromResourceList } from "@metriport/shared/interface/external/ehr/fhir-resource";
-import { getConsolidatedFile } from "../../../../../../../command/consolidated/consolidated-get";
-import { computeResourcesXorAlongResourceType } from "../../../../../../../fhir-deduplication/compute-resources-xor";
-import { deduplicateResources } from "../../../../../../../fhir-deduplication/dedup-resources";
-import { out } from "../../../../../../../util/log";
-import { setCreateResourceDiffBundlesJobEntryStatus } from "../../../../../api/job/create-resource-diff-bundles/set-entry-status";
-import { BundleType } from "../../../../bundle-shared";
-import { createOrReplaceBundle } from "../../../../command/create-or-replace-bundle";
-import { fetchBundle, FetchBundleParams } from "../../../../command/fetch-bundle";
+import { getConsolidatedFile } from "../../../../../../command/consolidated/consolidated-get";
+import { computeResourcesXorAlongResourceType } from "../../../../../../fhir-deduplication/compute-resources-xor";
+import { deduplicateResources } from "../../../../../../fhir-deduplication/dedup-resources";
+import { out } from "../../../../../../util/log";
+import { setCreateResourceDiffBundlesJobEntryStatus } from "../../../../api/job/create-resource-diff-bundles/set-entry-status";
+import { BundleType } from "../../../../bundle/bundle-shared";
+import { createOrReplaceBundle } from "../../../../bundle/command/create-or-replace-bundle";
+import { fetchBundle, FetchBundleParams } from "../../../../bundle/command/fetch-bundle";
 import {
   ComputeResourceDiffBundlesRequest,
   EhrComputeResourceDiffBundlesHandler,
