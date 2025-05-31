@@ -47,14 +47,10 @@ async function main() {
 
       const [cxId, patientId] = processIdentifier(identifier);
       rows.push({ [identifierColumnName]: identifier, cxId, patientId, ...rest });
-      if (rows.length > 10) {
-        console.log(`Processed ${rows.length} rows:`);
-        console.log(rows);
-        process.exit(0);
-      }
     })
     .on("end", () => {
       console.log("Done processing identifiers");
+      console.log(rows);
     });
 }
 
