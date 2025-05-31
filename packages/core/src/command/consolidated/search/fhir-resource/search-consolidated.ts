@@ -79,16 +79,9 @@ export async function searchPatientConsolidated({
   );
 
   let subStartedAt = new Date();
-  const resourcesMutable = fhirResourcesResults.flatMap(r => {
-    const resourceAsString = r[rawContentFieldName];
-    if (!resourceAsString) return [];
-    try {
-      return JSON.parse(resourceAsString) as Resource;
-    } catch (error) {
-      log(`Error parsing resource ${resourceAsString}: ${errorToString(error)}`);
-      return [];
-    }
-  });
+  const resourcesMutable = fhirResourcesResults.flatMap(
+    r => fhirSearchResultToResource(r, log) ?? []
+  );
   resourcesMutable.push(...docRefResults);
   log(
     `Loaded/converted ${resourcesMutable.length} resources in ${elapsedTimeFromNow(
@@ -147,6 +140,8 @@ export async function hydrateMissingReferences({
   resources: Resource[];
   iteration?: number;
 }): Promise<Resource[]> {
+  const { log } = out("OS.hydrateMissingReferences");
+
   const { missingReferences } = getReferencesFromResources({ resources });
   const missingRefIds = missingReferences.flatMap(r => {
     const referenceId = r.id;
@@ -164,14 +159,10 @@ export async function hydrateMissingReferences({
     ids: uniqueIds,
   });
   if (!openSearchResults || openSearchResults.length < 1) {
-    const { log } = out("OS.hydrateMissingReferences");
     log(`No results found for ${missingRefIds.join(", ")}`);
     return resources;
   }
-  const resourcesToAdd = openSearchResults.map(r => {
-    const resource = JSON.parse(r[rawContentFieldName]) as Resource;
-    return resource;
-  });
+  const resourcesToAdd = openSearchResults.flatMap(r => fhirSearchResultToResource(r, log) ?? []);
 
   const mergedResources = [...resources, ...resourcesToAdd];
 
@@ -183,4 +174,18 @@ export async function hydrateMissingReferences({
   });
 
   return hydratedResources;
+}
+
+function fhirSearchResultToResource<T extends Resource>(
+  fhirSearchResult: FhirSearchResult,
+  log: typeof console.log
+): T | undefined {
+  const resourceAsString = fhirSearchResult[rawContentFieldName];
+  if (!resourceAsString) return undefined;
+  try {
+    return JSON.parse(resourceAsString) as T;
+  } catch (error) {
+    log(`Error parsing resource ${resourceAsString}: ${errorToString(error)}`);
+    return undefined;
+  }
 }

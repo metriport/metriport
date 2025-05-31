@@ -19,10 +19,10 @@ export function makeCondition(params: Partial<Condition> = {}, patientId?: strin
       ],
       text: "NICOTINE DEPENDENCE, UNSP, UNCOMPLI",
     },
-    ...(params.encounter
+    ...(params.encounter?.id
       ? {
           encounter: {
-            reference: `Encounter/${params.encounter?.id}`,
+            reference: `Encounter/${params.encounter.id}`,
           },
         }
       : {}),
