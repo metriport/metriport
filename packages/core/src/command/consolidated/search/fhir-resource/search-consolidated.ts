@@ -3,6 +3,7 @@ import { errorToString } from "@metriport/shared";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { SearchSetBundle } from "@metriport/shared/medical";
 import { timed } from "@metriport/shared/util/duration";
+import { uniq } from "lodash";
 import { Patient } from "../../../../domain/patient";
 import { toFHIR as patientToFhir } from "../../../../external/fhir/patient/conversion";
 import {
@@ -74,7 +75,7 @@ export async function searchPatientConsolidated({
   log(
     `Got ${fhirResourcesResults.length} resources and ${
       docRefResults.length
-    } DocRefs in ${elapsedTimeFromNow(startedAt)} ms, hydrating search results...`
+    } DocRefs in ${elapsedTimeFromNow(startedAt)} ms`
   );
 
   let subStartedAt = new Date();
@@ -92,7 +93,7 @@ export async function searchPatientConsolidated({
   log(
     `Loaded/converted ${resourcesMutable.length} resources in ${elapsedTimeFromNow(
       subStartedAt
-    )} ms.`
+    )} ms, hydrating search results...`
   );
 
   subStartedAt = new Date();
@@ -135,7 +136,7 @@ async function searchFhirResources({
   });
 }
 
-async function hydrateMissingReferences({
+export async function hydrateMissingReferences({
   cxId,
   patientId,
   resources,
@@ -147,33 +148,39 @@ async function hydrateMissingReferences({
   iteration?: number;
 }): Promise<Resource[]> {
   const { missingReferences } = getReferencesFromResources({ resources });
-  if (missingReferences.length < 1 || iteration >= maxHydrationAttempts) return resources;
-
   const missingRefIds = missingReferences.flatMap(r => {
     const referenceId = r.id;
     if (!referenceId || referenceId === patientId) return [];
     return getEntryId(cxId, patientId, referenceId);
   });
+  if (missingRefIds.length < 1 || iteration >= maxHydrationAttempts) return resources;
+
+  const uniqueIds = uniq(missingRefIds);
 
   const searchService = new OpenSearchFhirSearcher(getConfigs());
   const openSearchResults = await searchService.getByIds({
     cxId,
     patientId,
-    ids: missingRefIds,
+    ids: uniqueIds,
   });
-  if (!openSearchResults || openSearchResults.length < 1) return resources;
+  if (!openSearchResults || openSearchResults.length < 1) {
+    const { log } = out("OS.hydrateMissingReferences");
+    log(`No results found for ${missingRefIds.join(", ")}`);
+    return resources;
+  }
   const resourcesToAdd = openSearchResults.map(r => {
     const resource = JSON.parse(r[rawContentFieldName]) as Resource;
     return resource;
   });
 
-  const hydratedResourcesToAdd = await hydrateMissingReferences({
+  const mergedResources = [...resources, ...resourcesToAdd];
+
+  const hydratedResources = await hydrateMissingReferences({
     cxId,
     patientId,
-    resources: resourcesToAdd,
+    resources: mergedResources,
     iteration: ++iteration,
   });
 
-  const result = [...resources, ...hydratedResourcesToAdd];
-  return result;
+  return hydratedResources;
 }

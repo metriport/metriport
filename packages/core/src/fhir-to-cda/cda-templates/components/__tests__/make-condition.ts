@@ -2,6 +2,7 @@ import { faker } from "@faker-js/faker";
 import { Condition } from "@medplum/fhirtypes";
 import { makeBaseDomain, makeSubjectReference } from "./shared";
 
+// TODO move this to external/fhir/__tests__/condition.ts
 export function makeCondition(params: Partial<Condition> = {}, patientId?: string): Condition {
   return {
     ...makeBaseDomain(),
@@ -18,6 +19,13 @@ export function makeCondition(params: Partial<Condition> = {}, patientId?: strin
       ],
       text: "NICOTINE DEPENDENCE, UNSP, UNCOMPLI",
     },
+    ...(params.encounter
+      ? {
+          encounter: {
+            reference: `Encounter/${params.encounter?.id}`,
+          },
+        }
+      : {}),
     ...params,
   };
 }
