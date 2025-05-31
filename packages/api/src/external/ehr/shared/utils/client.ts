@@ -1,8 +1,10 @@
 import AthenaHealthApi, { AthenaEnv } from "@metriport/core/external/ehr/athenahealth/index";
 import CanvasApi, { CanvasEnv } from "@metriport/core/external/ehr/canvas/index";
-import { EClinicalWorksEnv } from "@metriport/core/external/ehr/eclinicalworks/index";
+import EClinicalWorksApi, {
+  EClinicalWorksEnv,
+} from "@metriport/core/external/ehr/eclinicalworks/index";
 import ElationApi, { ElationEnv } from "@metriport/core/external/ehr/elation/index";
-import { HealthieEnv } from "@metriport/core/external/ehr/healthie/index";
+import HealthieApi, { HealthieEnv } from "@metriport/core/external/ehr/healthie/index";
 import { JwtTokenInfo, MetriportError } from "@metriport/shared";
 import {
   findOrCreateJwtToken,
@@ -22,6 +24,7 @@ export type EhrEnvAndApiKey<Env extends EhrEnv> = {
   apiKey: string;
 };
 
+export type EhrClient = AthenaHealthApi | ElationApi | CanvasApi | HealthieApi | EClinicalWorksApi;
 type EhrClientTwoLeggedAuth = AthenaHealthApi | ElationApi | CanvasApi;
 export type EhrClientParams<Env extends EhrEnv> = {
   twoLeggedAuthTokenInfo: JwtTokenInfo | undefined;

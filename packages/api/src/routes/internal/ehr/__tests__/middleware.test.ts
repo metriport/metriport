@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from "express";
-import { processEhrId } from "../middleware";
+import { processEhrId } from "../../../middlewares/ehr/middleware";
 
 const dummyResp = {} as unknown as Response;
 const dummyNext: NextFunction = function () {

@@ -14,7 +14,7 @@ import patient from "../patient";
 
 const routes = Router();
 
-const documentSkipPathsForEClinicalWorksIdCheck = [documentDownloadUrlRegex];
+const documentSkipPathsForTouchWorksIdCheck = [documentDownloadUrlRegex];
 
 routes.use("/patient", patient);
 routes.use(
@@ -28,11 +28,7 @@ routes.use(
 routes.use(
   "/medical/v1/document",
   processDocumentRoute,
-  processEhrPatientId(
-    tokenEhrPatientIdQueryParam,
-    "query",
-    documentSkipPathsForEClinicalWorksIdCheck
-  ),
+  processEhrPatientId(tokenEhrPatientIdQueryParam, "query", documentSkipPathsForTouchWorksIdCheck),
   medicalDocument
 );
 routes.use("/settings", settings);

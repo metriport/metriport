@@ -12,9 +12,9 @@ const router = Router();
  * GET /ehr/eclinicalworks/patient/:id
  *
  * Tries to retrieve the matching Metriport patient
- * @param req.params.id The ID of Eclinicalworks Patient.
- * @param req.query.practiceId The ID of Eclinicalworks Practice.
- * @param req.query.tokenId The ID of Eclinicalworks Token.
+ * @param req.params.id The ID of EClinicalWorks Patient.
+ * @param req.query.practiceId The ID of EClinicalWorks Practice.
+ * @param req.query.tokenId The ID of EClinicalWorks Token.
  * @returns Metriport Patient if found.
  */
 router.get(
@@ -40,9 +40,9 @@ router.get(
  * POST /ehr/eclinicalworks/patient/:id
  *
  * Tries to retrieve the matching Metriport patient
- * @param req.params.id The ID of Eclinicalworks Patient.
- * @param req.query.practiceId The ID of Eclinicalworks Practice.
- * @param req.query.tokenId The ID of Eclinicalworks Token.
+ * @param req.params.id The ID of EClinicalWorks Patient.
+ * @param req.query.practiceId The ID of EClinicalWorks Practice.
+ * @param req.query.tokenId The ID of EClinicalWorks Token.
  * @returns Metriport Patient if found.
  */
 router.post(
