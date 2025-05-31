@@ -22,6 +22,12 @@ const scrambler = new Base64Scrambler(Config.getHl7Base64ScramblerSeed());
  * 3. The script will output the new CSV data to the console..
  */
 const fileName = process.argv[2];
+if (!fileName) {
+  console.error(
+    "Usage: npx ts-node unpack-patient-roster-identifier.ts <path-to-csv-file>"
+  );
+  process.exit(1);
+}
 const identifierColumnName = "IDENTIFIER";
 
 async function main() {
