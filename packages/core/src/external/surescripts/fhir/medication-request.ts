@@ -1,34 +1,58 @@
 import { MedicationRequest } from "@medplum/fhirtypes";
 import { FlatFileDetail } from "../schema/response";
 
-export async function parseMedicationRequest(detail: FlatFileDetail): Promise<MedicationRequest> {
-  const dosageInstruction = await parseMedicationRequestTiming(detail);
-  const substitution = await parseMedicationRequestSubstitution(detail);
+export function getMedicationRequest(detail: FlatFileDetail): MedicationRequest {
+  const dispenseRequest = getDispenseRequest(detail);
+  const substitution = getMedicationRequestSubstitution(detail);
+  const dosageInstruction = getDosageInstruction(detail);
+  const authoredOn = getAuthoredOn(detail);
 
   return {
     resourceType: "MedicationRequest",
-    ...(dosageInstruction && dosageInstruction.length > 0 ? { dosageInstruction } : null),
-    ...(detail.dateWritten ? { authoredOn: detail.dateWritten.toISOString() } : null),
+    ...(dispenseRequest ? { dispenseRequest } : null),
+    ...(dosageInstruction ? { dosageInstruction } : null),
+    ...(authoredOn ? { authoredOn } : null),
     ...(substitution ? { substitution } : null),
   };
 }
 
-async function parseMedicationRequestTiming(
+function getDispenseRequest(detail: FlatFileDetail): MedicationRequest["dispenseRequest"] {
+  const dispenseRequest: MedicationRequest["dispenseRequest"] = {};
+  if (detail.fillNumber) {
+    dispenseRequest.numberOfRepeatsAllowed = detail.fillNumber;
+  }
+  return dispenseRequest;
+}
+
+function getAuthoredOn(detail: FlatFileDetail): MedicationRequest["authoredOn"] | undefined {
+  if (!detail.dateWritten) return undefined;
+  return detail.dateWritten.toISOString();
+}
+
+function getDosageInstruction(
   detail: FlatFileDetail
-): Promise<MedicationRequest["dosageInstruction"]> {
-  if (!detail.startDate || !detail.endDate) return [];
+): MedicationRequest["dosageInstruction"] | undefined {
+  if (!detail.directions) return undefined;
   return [
     {
-      timing: {},
+      text: detail.directions,
     },
   ];
 }
 
-async function parseMedicationRequestSubstitution(
+// Field 36 of the FFM specification
+function getMedicationRequestSubstitution(
   detail: FlatFileDetail
-): Promise<MedicationRequest["substitution"]> {
-  if (!detail.substitutions) return undefined;
-  return {
-    // allowedBoolean: detail.substitutions === "Y",
-  };
+): MedicationRequest["substitution"] {
+  if (detail.substitutions === "1") {
+    return {
+      allowedBoolean: true,
+    };
+  }
+  if (detail.substitutions === "0") {
+    return {
+      allowedBoolean: false,
+    };
+  }
+  return undefined;
 }

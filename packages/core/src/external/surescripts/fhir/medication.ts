@@ -1,66 +1,71 @@
-import { Medication, MedicationIngredient } from "@medplum/fhirtypes";
+import { Medication, MedicationIngredient, Coding } from "@medplum/fhirtypes";
 import { FlatFileDetail } from "../schema/response";
 
-export async function parseMedication(detail: FlatFileDetail): Promise<Medication> {
-  const [code, ingredient] = await Promise.all([
-    parseMedicationCode(detail),
-    parseMedicationIngredient(detail),
-  ]);
+import { DEA_SCHEDULE_NAME } from "../codes";
+
+export function getMedication(detail: FlatFileDetail): Medication {
+  const code = getMedicationCode(detail);
+  const ingredient = getMedicationIngredient(detail);
 
   return {
     resourceType: "Medication",
     ...(code ? { code } : null),
     ...(ingredient && ingredient.length > 0 ? { ingredient } : null),
-    extension: [
-      {
-        url: "http://hl7.org/fhir/StructureDefinition/medication-package-item",
-        valueCodeableConcept: {
-          coding: [
-            {
-              system: "http://www.nlm.nih.gov/research/umls/",
-              code: detail.deaSchedule ?? "",
-              display: detail.deaSchedule ?? "",
-            },
-          ],
-        },
-      },
-    ],
   };
 }
 
-async function parseMedicationCode(detail: FlatFileDetail): Promise<Medication["code"]> {
+function getMedicationCode(detail: FlatFileDetail): Medication["code"] {
   if (!detail.ndcNumber) return undefined;
-  // TODO: do a terminology lookup
 
-  // TODO: incorporate these
-  detail.productCode;
-  detail.productCodeQualifier;
+  const text = detail.drugDescription;
+  const ndcCode = getMedicationNdcCode(detail);
+  const productCode = getMedicationProductCode(detail);
+  const deaCode = getMedicationDeaScheduleCode(detail);
+  const coding = [ndcCode, productCode, deaCode].filter(Boolean) as Coding[];
+  return {
+    ...(text ? { text } : null),
+    coding,
+  };
+}
+
+function getMedicationNdcCode(detail: FlatFileDetail): Coding | undefined {
+  if (!detail.ndcNumber) return undefined;
+  return {
+    system: "http://hl7.org/fhir/sid/ndc",
+    code: detail.ndcNumber,
+  };
+}
+
+function getMedicationProductCode(detail: FlatFileDetail): Coding | undefined {
+  if (!detail.productCode) return undefined;
+  // + detail.productCodeQualifier
 
   return {
-    coding: [
-      {
-        system: "http://www.nlm.nih.gov/research/umls/",
-        code: detail.ndcNumber,
-        display: detail.drugDescription ?? "",
-      },
-    ],
+    system: "http://hl7.org/fhir/sid/ndc",
+    code: detail.productCode,
   };
 }
 
-async function parseMedicationIngredient(
-  detail: FlatFileDetail
-): Promise<MedicationIngredient[] | null> {
+function getMedicationDeaScheduleCode(detail: FlatFileDetail): Coding | undefined {
+  if (!detail.deaSchedule) return undefined;
+  return {
+    system: "http://terminology.hl7.org/CodeSystem/v3-substanceAdminSubstitution",
+    code: detail.deaSchedule,
+    display: detail.deaSchedule ? DEA_SCHEDULE_NAME[detail.deaSchedule] : "",
+  };
+}
+
+function getMedicationIngredient(detail: FlatFileDetail): MedicationIngredient[] | undefined {
   if (!detail.strengthValue || !detail.strengthFormCode || !detail.strengthUnitOfMeasure)
-    return null;
+    return undefined;
 
   return [
     {
       strength: {
         numerator: {
           value: Number(detail.strengthValue),
-          unit: detail.strengthUnitOfMeasure,
-          system: "http://unitsofmeasure.org",
-          code: detail.strengthFormCode,
+          system: "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl",
+          code: detail.strengthUnitOfMeasure,
         },
         denominator: {
           value: 1,

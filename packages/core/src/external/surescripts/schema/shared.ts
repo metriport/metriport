@@ -2,7 +2,9 @@ import { convertDateToString, convertDateToTimeString } from "@metriport/shared/
 import { MetriportError } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 
-// Describes a single field mapping from an object to a row in a pipe-delimited file
+/**
+ * Describes a single field mapping from an object to a row in a pipe-delimited file
+ */
 interface FileField<T extends object, K extends keyof T = keyof T> {
   field: number;
   key?: K;
@@ -10,7 +12,9 @@ interface FileField<T extends object, K extends keyof T = keyof T> {
   leaveEmpty?: boolean;
 }
 
-// Fields of outgoing files have a toSurescripts function
+/**
+ * Fields of outgoing files have a toSurescripts function
+ */
 export interface OutgoingFileSchema<H extends object, D extends object, F extends object> {
   header: OutgoingFileRowSchema<H>;
   detail: OutgoingFileRowSchema<D>;
@@ -26,11 +30,22 @@ export interface OutgoingFileField<T extends object, K extends keyof T = keyof T
   toSurescripts: (row: T) => string;
 }
 
-// Fields of incoming files have a defined fromSurescripts function defined
+/**
+ * Fields of incoming files have a defined fromSurescripts function defined
+ */
 export interface IncomingFileSchema<H extends object, D extends object, F extends object> {
   header: IncomingFileRowSchema<H>;
   detail: IncomingFileRowSchema<D>;
   footer: IncomingFileRowSchema<F>;
+}
+
+/**
+ * The incoming file data parsed from the schema
+ */
+export interface IncomingFile<H extends object, D extends object, F extends object> {
+  header: H;
+  detail: D[];
+  footer: F;
 }
 
 export type IncomingFileRowSchema<T extends object> = {

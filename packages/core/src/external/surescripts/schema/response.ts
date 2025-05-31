@@ -2,6 +2,7 @@ import { z } from "zod";
 import { DEA_SCHEDULE_CODES, PAYMENT_CODES, PLAN_CODES } from "../codes";
 
 import {
+  IncomingFile,
   fromSurescriptsDate,
   fromSurescriptsUtcDate,
   fromSurescriptsEnum,
@@ -10,6 +11,9 @@ import {
   IncomingFileRowSchema,
   fromSurescriptsUUID,
 } from "./shared";
+
+// Type specification for the parsed response file
+export type IncomingFlatFile = IncomingFile<FlatFileHeader, FlatFileDetail, FlatFileFooter>;
 
 export const flatFileHeaderSchema = z.object({
   recordType: z.enum(["HDR"]),
@@ -145,7 +149,7 @@ export const flatFileRowSchema = z.object({
   planNetworkGroupId: z.string().optional(),
   insuranceIdNumber: z.string().optional(),
   sexAssignedAtBirth: z.enum(["M", "F", "U", "I"]).optional(),
-  diagnosisDetails: z.string().optional(),
+  diagnosisICD10Code: z.string().optional(),
   ndcNumber: z.string().optional(),
 });
 
@@ -556,7 +560,7 @@ export const flatFileDetailOrder: IncomingFileRowSchema<FlatFileDetail> = [
   },
   {
     field: 84,
-    key: "diagnosisDetails",
+    key: "diagnosisICD10Code",
     fromSurescripts: fromSurescriptsString({ optional: true }),
   },
   {

@@ -1,14 +1,18 @@
-import { MedicationDispense, MedicationDispensePerformer } from "@medplum/fhirtypes";
+import { Extension, MedicationDispense, MedicationDispensePerformer } from "@medplum/fhirtypes";
 import { FlatFileDetail } from "../schema/response";
 
-export function parseMedicationDispense(detail: FlatFileDetail): MedicationDispense {
-  const daysSupply = parseDaysSupply(detail);
-  const performer = parseMedicationDispensePerformer(detail);
+export function getMedicationDispense(detail: FlatFileDetail): MedicationDispense {
+  const daysSupply = getDaysSupply(detail);
+  const performer = getMedicationDispensePerformer(detail);
+
+  const fillNumber = getFillNumberAsExtension(detail);
+  const extensions = [fillNumber].filter(Boolean) as Extension[];
 
   const medicationDispense: MedicationDispense = {
     resourceType: "MedicationDispense",
     subject: { reference: detail.patientId },
     status: "completed",
+    ...(extensions.length > 0 ? { extension: extensions } : null),
     ...(daysSupply ? { daysSupply } : null),
     ...(performer.length > 0 ? { performer } : null),
   };
@@ -16,20 +20,20 @@ export function parseMedicationDispense(detail: FlatFileDetail): MedicationDispe
   return medicationDispense;
 }
 
-function parseMedicationDispensePerformer(detail: FlatFileDetail): MedicationDispensePerformer[] {
+function getMedicationDispensePerformer(detail: FlatFileDetail): MedicationDispensePerformer[] {
   return [
     {
       id: "",
 
       actor: {
         reference: `Practitioner/${detail.prescriberNPI}`,
-        display: detail.prescriberNPI,
+        display: detail.prescriberName,
       },
     },
   ];
 }
 
-function parseDaysSupply(detail: FlatFileDetail): MedicationDispense["daysSupply"] | null {
+function getDaysSupply(detail: FlatFileDetail): MedicationDispense["daysSupply"] | null {
   if (!detail.daysSupply) return null;
 
   const value = parseInt(detail.daysSupply);
@@ -40,5 +44,18 @@ function parseDaysSupply(detail: FlatFileDetail): MedicationDispense["daysSupply
     unit: "day",
     system: "http://unitsofmeasure.org",
     code: "d",
+  };
+}
+
+/**
+ * Surescripts zero-indexes the fill number, so we need to add 1 to meet the FHIR specification.
+ * https://build.fhir.org/medicationdispense-definitions.html#MedicationDispense.fillNumber
+ */
+function getFillNumberAsExtension(detail: FlatFileDetail): Extension | undefined {
+  if (detail.fillNumber == null) return undefined;
+
+  return {
+    url: "http://hl7.org/fhir/StructureDefinition/medicationdispense-fillNumber",
+    valuePositiveInt: detail.fillNumber + 1,
   };
 }

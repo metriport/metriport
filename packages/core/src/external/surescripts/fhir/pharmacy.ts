@@ -1,27 +1,48 @@
-import { Organization } from "@medplum/fhirtypes";
+import { Organization, Identifier } from "@medplum/fhirtypes";
 import { FlatFileDetail } from "../schema/response";
 
-export function parsePharmacy(detail: FlatFileDetail): Organization | undefined {
-  if (!detail.pharmacyNpiNumber || !detail.pharmacyName) return undefined;
+export function getPharmacy(detail: FlatFileDetail): Organization | undefined {
+  if (!detail.pharmacyNpiNumber && !detail.ncpdpId) return undefined;
 
-  const address = parsePharmacyAddress(detail);
-  const telecom = parsePharmacyTelecom(detail);
+  const name = getPharmacyName(detail);
+  const address = getPharmacyAddress(detail);
+  const telecom = getPharmacyTelecom(detail);
+  const identifiers = getPharmacyIdentifiers(detail);
 
   return {
     resourceType: "Organization",
-    identifier: [
-      {
-        system: "http://hl7.org/fhir/sid/us-npi",
-        value: detail.pharmacyNpiNumber,
-      },
-    ],
-    name: detail.pharmacyName,
+    name,
+    ...(identifiers.length > 0 ? { identifier: identifiers } : null),
     ...(address && address.length > 0 ? { address } : null),
     ...(telecom && telecom.length > 0 ? { telecom } : null),
   };
 }
 
-function parsePharmacyAddress(detail: FlatFileDetail): Organization["address"] {
+function getPharmacyName(detail: FlatFileDetail): string {
+  if (detail.pharmacyName) return detail.pharmacyName;
+  if (detail.pharmacyNpiNumber) return `NPI: ${detail.pharmacyNpiNumber}`;
+  if (detail.ncpdpId) return `NCPDP: ${detail.ncpdpId}`;
+  return "Unknown Pharmacy";
+}
+
+function getPharmacyIdentifiers(detail: FlatFileDetail): Identifier[] {
+  const identifiers: Identifier[] = [];
+  if (detail.pharmacyNpiNumber) {
+    identifiers.push({
+      system: "http://hl7.org/fhir/sid/us-npi",
+      value: detail.pharmacyNpiNumber,
+    });
+  }
+  if (detail.ncpdpId) {
+    identifiers.push({
+      system: "http://terminology.hl7.org/CodeSystem/NCPDPProviderIdentificationNumber",
+      value: detail.ncpdpId,
+    });
+  }
+  return identifiers;
+}
+
+function getPharmacyAddress(detail: FlatFileDetail): Organization["address"] {
   if (
     !detail.pharmacyAddressLine1 ||
     !detail.pharmacyCity ||
@@ -42,7 +63,7 @@ function parsePharmacyAddress(detail: FlatFileDetail): Organization["address"] {
   ];
 }
 
-function parsePharmacyTelecom(detail: FlatFileDetail): Organization["telecom"] {
+function getPharmacyTelecom(detail: FlatFileDetail): Organization["telecom"] {
   const telecom: Organization["telecom"] = [];
   if (detail.pharmacyPhoneNumber)
     telecom.push({
