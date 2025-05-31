@@ -1,9 +1,12 @@
+import { Bundle, Resource } from "@medplum/fhirtypes";
+import { MetriportError } from "@metriport/shared";
 import { timed } from "@metriport/shared/util/duration";
 import { Patient } from "../../../../domain/patient";
+import { normalize } from "../../../../external/fhir/consolidated/normalize";
 import { OpenSearchFhirIngestor } from "../../../../external/opensearch/fhir-ingestor";
 import { OnBulkItemError } from "../../../../external/opensearch/shared/bulk";
 import { capture, out } from "../../../../util";
-import { getConsolidatedPatientData } from "../../consolidated-get";
+import { getConsolidatedFile } from "../../consolidated-get";
 import { getConfigs } from "./fhir-config";
 
 /**
@@ -17,15 +20,20 @@ export async function ingestPatientConsolidated({
 }: {
   patient: Patient;
   onItemError?: OnBulkItemError;
-}) {
-  const { log } = out(`ingestLexical - cx ${patient.cxId}, pt ${patient.id}`);
+}): Promise<void> {
+  const { cxId, id: patientId } = patient;
+  const { log } = out(`ingestPatientConsolidated - cx ${cxId}, pt ${patientId}`);
 
   const ingestor = new OpenSearchFhirIngestor(getConfigs());
 
   log("Getting consolidated and cleaning up the index...");
   const [bundle] = await Promise.all([
-    timed(() => getConsolidatedPatientData({ patient }), "getConsolidatedPatientData", log),
-    ingestor.delete({ cxId: patient.cxId, patientId: patient.id }),
+    timed(
+      () => getConsolidatedBundle({ cxId, patientId }),
+      "getConsolidatedBundleAndNotifyWhenMissing",
+      log
+    ),
+    ingestor.delete({ cxId, patientId }),
   ]);
 
   const resources =
@@ -39,14 +47,14 @@ export async function ingestPatientConsolidated({
   log("Done, calling ingestBulk...");
   const startedAt = Date.now();
   const errors = await ingestor.ingestBulk({
-    cxId: patient.cxId,
-    patientId: patient.id,
+    cxId,
+    patientId,
     resources,
     onItemError,
   });
   const elapsedTime = Date.now() - startedAt;
 
-  if (errors.size > 0) captureErrors({ cxId: patient.cxId, patientId: patient.id, errors, log });
+  if (errors.size > 0) captureErrors({ cxId, patientId, errors, log });
 
   log(`Ingested ${resources.length} resources in ${elapsedTime} ms`);
 }
@@ -67,4 +75,30 @@ function captureErrors({
   capture.error("Errors ingesting resources into OpenSearch", {
     extra: { cxId, patientId, countPerErrorType: JSON.stringify(errorMapToObj, null, 2) },
   });
+}
+
+async function getConsolidatedBundle({
+  cxId,
+  patientId,
+}: {
+  cxId: string;
+  patientId: string;
+}): Promise<Bundle<Resource>> {
+  const { log } = out(`getConsolidatedBundle - cx ${cxId}, pt ${patientId}`);
+
+  const consolidated = await getConsolidatedFile({ cxId, patientId });
+
+  const bundle = consolidated.bundle;
+  if (!bundle) {
+    const bucket = consolidated.fileLocation;
+    const key = consolidated.fileName;
+    const msg = `No consolidated bundle found during ingestion in OS`;
+    log(`${msg} for patient ${patientId} w/ key ${key}, skipping ingestion`);
+    throw new MetriportError(msg, undefined, { cxId, patientId, key, bucket });
+  }
+
+  // TODO ENG-316 Remove this step when we implement normalization on consolidated
+  const normalizedBundle = await normalize({ cxId, patientId, bundle });
+
+  return normalizedBundle;
 }
