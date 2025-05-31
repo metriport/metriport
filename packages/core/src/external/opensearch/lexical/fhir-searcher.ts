@@ -11,7 +11,7 @@ import { FhirSearchResult } from "../index-based-on-fhir";
 import { paginatedSearch } from "../paginate";
 import { getEntryId } from "../shared/id";
 import { createSearchByIdsQuery } from "../shared/query";
-import { createLexicalSearchQuery, createQueryHasData } from "./lexical-search";
+import { createLexicalSearchQuery, createQueryHasData } from "./query";
 
 export type OpenSearchFhirSearcherConfig = OpenSearchConfigDirectAccess;
 
