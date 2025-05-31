@@ -199,7 +199,7 @@ export function createRosterRowInput(
   const scrambledId = createScrambledId(p.cxId, p.id);
   const rosterGenerationDate = buildDayjs(new Date()).format("YYYY-MM-DD");
   const dob = data.dob;
-  const dobNoDelimiter = data.dob.replace(/[-]/g, "");
+  const dobNoDelimiter = dob.replace(/[-]/g, "");
   const authorizingParticipantFacilityCode = org.shortcode;
   const authorizingParticipantMrn = p.externalId || createUuidFromText(scrambledId);
   const assigningAuthorityIdentifier = METRIPORT_ASSIGNING_AUTHORITY_IDENTIFIER;
