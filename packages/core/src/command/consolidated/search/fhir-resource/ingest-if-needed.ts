@@ -1,6 +1,6 @@
 import { buildDayjs } from "@metriport/shared/common/date";
 import { Patient } from "../../../../domain/patient";
-import { OpenSearchFhirSearcher } from "../../../../external/opensearch/lexical/lexical-searcher";
+import { OpenSearchFhirSearcher } from "../../../../external/opensearch/lexical/fhir-searcher";
 import { Config } from "../../../../util/config";
 import { getConfigs } from "./fhir-config";
 import { IngestConsolidatedDirect } from "./ingest-consolidated-direct";

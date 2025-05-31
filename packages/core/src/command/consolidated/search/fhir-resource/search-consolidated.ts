@@ -1,4 +1,27 @@
+import { Resource } from "@medplum/fhirtypes";
+import { errorToString } from "@metriport/shared";
+import { elapsedTimeFromNow } from "@metriport/shared/common/date";
+import { SearchSetBundle } from "@metriport/shared/medical";
+import { timed } from "@metriport/shared/util/duration";
+import { uniq } from "lodash";
 import { Patient } from "../../../../domain/patient";
+import { toFHIR as patientToFhir } from "../../../../external/fhir/patient/conversion";
+import {
+  buildBundleEntry,
+  buildSearchSetBundle,
+  getReferencesFromResources,
+} from "../../../../external/fhir/shared/bundle";
+import {
+  FhirSearchResult,
+  rawContentFieldName,
+} from "../../../../external/opensearch/index-based-on-fhir";
+import { OpenSearchFhirSearcher } from "../../../../external/opensearch/lexical/fhir-searcher";
+import { getEntryId } from "../../../../external/opensearch/shared/id";
+import { out } from "../../../../util";
+import { searchDocuments } from "../document-reference/search";
+import { getConfigs } from "./fhir-config";
+
+const maxHydrationAttempts = 5;
 
 export type SearchConsolidatedParams = {
   patient: Patient;
@@ -12,4 +35,157 @@ export type SearchConsolidatedResult = {
 
 export interface SearchConsolidated {
   search({ patient, query }: SearchConsolidatedParams): Promise<SearchConsolidatedResult>;
+}
+
+/**
+ * Performs a search on a patient's consolidated resources in OpenSearch/OS
+ * and returns the resources stored in the OS results.
+ *
+ * @param patient The patient to search.
+ * @param query The query to search for.
+ * @returns The search results.
+ */
+export async function searchPatientConsolidated({
+  patient,
+  query,
+}: {
+  patient: Patient;
+  query: string;
+}): Promise<SearchSetBundle> {
+  const { log } = out(`searchPatientConsolidated - cx ${patient.cxId}, pt ${patient.id}`);
+
+  log(`Getting consolidated and searching OS...`);
+  const startedAt = new Date();
+
+  const searchFhirResourcesPromise = () =>
+    searchFhirResources({
+      cxId: patient.cxId,
+      patientId: patient.id,
+      query,
+    });
+
+  const searchDocumentsPromise = () =>
+    searchDocuments({ cxId: patient.cxId, patientId: patient.id, contentFilter: query });
+
+  const [fhirResourcesResults, docRefResults] = await Promise.all([
+    timed(searchFhirResourcesPromise, "searchFhirResources", log),
+    timed(searchDocumentsPromise, "searchDocuments", log),
+  ]);
+
+  log(
+    `Got ${fhirResourcesResults.length} resources and ${
+      docRefResults.length
+    } DocRefs in ${elapsedTimeFromNow(startedAt)} ms`
+  );
+
+  let subStartedAt = new Date();
+  const resourcesMutable = fhirResourcesResults.flatMap(
+    r => fhirSearchResultToResource(r, log) ?? []
+  );
+  resourcesMutable.push(...docRefResults);
+  log(
+    `Loaded/converted ${resourcesMutable.length} resources in ${elapsedTimeFromNow(
+      subStartedAt
+    )} ms, hydrating search results...`
+  );
+
+  subStartedAt = new Date();
+  const hydratedMutable = await hydrateMissingReferences({
+    cxId: patient.cxId,
+    patientId: patient.id,
+    resources: resourcesMutable,
+  });
+  log(`Hydrated to ${hydratedMutable.length} resources in ${elapsedTimeFromNow(subStartedAt)} ms.`);
+
+  const patientResource = patientToFhir(patient);
+  hydratedMutable.push(patientResource);
+
+  const entries = hydratedMutable.map(buildBundleEntry);
+  const resultBundle = buildSearchSetBundle(entries);
+
+  log(
+    `Done in ${elapsedTimeFromNow(startedAt)} ms, returning ${
+      resultBundle.entry?.length
+    } resources...`
+  );
+
+  return resultBundle;
+}
+
+async function searchFhirResources({
+  cxId,
+  patientId,
+  query,
+}: {
+  cxId: string;
+  patientId: string;
+  query: string;
+}): Promise<FhirSearchResult[]> {
+  const searchService = new OpenSearchFhirSearcher(getConfigs());
+  return await searchService.search({
+    cxId,
+    patientId,
+    query,
+  });
+}
+
+export async function hydrateMissingReferences({
+  cxId,
+  patientId,
+  resources,
+  iteration = 1,
+}: {
+  cxId: string;
+  patientId: string;
+  resources: Resource[];
+  iteration?: number;
+}): Promise<Resource[]> {
+  const { log } = out("OS.hydrateMissingReferences");
+
+  const { missingReferences } = getReferencesFromResources({ resources });
+  const missingRefIds = missingReferences.flatMap(r => {
+    const referenceId = r.id;
+    if (!referenceId || referenceId === patientId) return [];
+    return getEntryId(cxId, patientId, referenceId);
+  });
+  if (missingRefIds.length < 1 || iteration >= maxHydrationAttempts) return resources;
+
+  const uniqueIds = uniq(missingRefIds);
+
+  const searchService = new OpenSearchFhirSearcher(getConfigs());
+  const openSearchResults = await searchService.getByIds({
+    cxId,
+    patientId,
+    ids: uniqueIds,
+  });
+  if (!openSearchResults || openSearchResults.length < 1) {
+    log(`No results found for ${missingRefIds.join(", ")}`);
+    return resources;
+  }
+  const resourcesToAdd = openSearchResults.flatMap(r => fhirSearchResultToResource(r, log) ?? []);
+
+  const mergedResources = [...resources, ...resourcesToAdd];
+
+  const hydratedResources = await hydrateMissingReferences({
+    cxId,
+    patientId,
+    resources: mergedResources,
+    iteration: ++iteration,
+  });
+
+  return hydratedResources;
+}
+
+function fhirSearchResultToResource<T extends Resource>(
+  fhirSearchResult: FhirSearchResult,
+  log: typeof console.log
+): T | undefined {
+  const resourceAsString = fhirSearchResult[rawContentFieldName];
+  if (!resourceAsString) return undefined;
+  try {
+    return JSON.parse(resourceAsString) as T;
+  } catch (error) {
+    log(`Error parsing resource ${resourceAsString}: ${errorToString(error)}`);
+    return undefined;
+  }
 }
