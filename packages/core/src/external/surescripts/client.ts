@@ -151,12 +151,15 @@ export class SurescriptsSftpClient extends SftpClient {
     if (event.fromSurescripts) {
       event.debug?.("Copying from Surescripts...");
       await this.copyFromSurescripts(event);
+      event.debug?.("Finished copying from Surescripts");
     } else if (event.toSurescripts) {
       event.debug?.("Copying to Surescripts...");
       await this.copyToSurescripts(event);
+      event.debug?.("Finished copying to Surescripts");
     } else if (event.checkFileStatus) {
       event.debug?.("Checking file status with Surescripts: " + event.checkFileStatus.fileName);
-      await this.checkFileStatusWithSurescripts(event.checkFileStatus);
+      const status = await this.checkFileStatusWithSurescripts(event.checkFileStatus);
+      event.debug?.(JSON.stringify(status, null, 2));
     }
   }
 
@@ -212,7 +215,9 @@ export class SurescriptsSftpClient extends SftpClient {
       const outgoingFileName = s3File.Key.substring(OUTGOING_NAME.length + 1);
       const sftpHistoryName = `${outgoingFileName}.${this.senderId}`;
       if (!sftpHistorySet.has(sftpHistoryName)) {
-        event.debug?.("DRY RUN: will copy to Surescripts: " + outgoingFileName);
+        event.debug?.(
+          (event.dryRun ? "DRY RUN: " : "") + "Copying to Surescripts: " + outgoingFileName
+        );
         await this.copyFileToSurescripts(outgoingFileName, event);
       }
     }
@@ -237,6 +242,7 @@ export class SurescriptsSftpClient extends SftpClient {
     if (!dryRun) {
       const sftpFileName = getSftpFileName(OUTGOING_NAME, fileName);
       await this.write(sftpFileName, content);
+      debug?.("Copied to Surescripts: " + sftpFileName);
     }
     return content;
   }
