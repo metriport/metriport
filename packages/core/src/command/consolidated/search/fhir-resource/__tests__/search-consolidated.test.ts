@@ -124,7 +124,7 @@ describe("search-consolidated", () => {
         cxId,
         patientId,
         resources,
-        iteration: 5, // Start at max attempts
+        iteration: 6, // Start over max attempts
       });
 
       expect(res).toBeTruthy();
@@ -149,7 +149,7 @@ describe("search-consolidated", () => {
       });
     });
 
-    it(`ignores patient references`, async () => {
+    it(`ignores patient references by default`, async () => {
       const missingEncounter = makeEncounter(undefined, patientId);
       const condition = makeCondition({ encounter: makeReference(missingEncounter) }, patient.id);
       if (!condition.subject) throw new Error("Condition subject is required");
@@ -170,6 +170,35 @@ describe("search-consolidated", () => {
         cxId,
         patientId,
         ids: firstLevelReferenceIds,
+      });
+    });
+
+    it(`includes patient reference when hydratePatient is true`, async () => {
+      const missingEncounter = makeEncounter(undefined, patientId);
+      const condition = makeCondition({ encounter: makeReference(missingEncounter) }, patient.id);
+      if (!condition.subject) throw new Error("Condition subject is required");
+      const patientIdFromCondition = getIdFromReference(condition.subject);
+      if (patientIdFromCondition !== patientId) {
+        throw new Error("Patient ID not matched on Condition");
+      }
+      const resources = [condition];
+      const firstLevelReferenceIds = [missingEncounter, patient].map(toEntryId);
+      const getByIdsResponse = [missingEncounter, patient].map(toGetByIdsResultEntry);
+      getByIds_mock.mockResolvedValueOnce(getByIdsResponse);
+
+      const res = await hydrateMissingReferences({
+        cxId,
+        patientId,
+        resources,
+        hydratePatient: true,
+      });
+
+      expect(res).toBeTruthy();
+      expect(res).toEqual(expect.arrayContaining([...resources, missingEncounter, patient]));
+      expect(getByIds_mock).toHaveBeenCalledWith({
+        cxId,
+        patientId,
+        ids: expect.arrayContaining(firstLevelReferenceIds),
       });
     });
 

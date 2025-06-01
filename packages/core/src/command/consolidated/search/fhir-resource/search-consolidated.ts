@@ -90,17 +90,19 @@ export async function searchPatientConsolidated({
   );
 
   subStartedAt = new Date();
-  const hydratedMutable = await hydrateMissingReferences({
+  const hydrated = await hydrateMissingReferences({
     cxId: patient.cxId,
     patientId: patient.id,
     resources: resourcesMutable,
   });
-  log(`Hydrated to ${hydratedMutable.length} resources in ${elapsedTimeFromNow(subStartedAt)} ms.`);
+  log(`Hydrated to ${hydrated.length} resources in ${elapsedTimeFromNow(subStartedAt)} ms.`);
+
+  const withoutPatient = hydrated.filter(r => r.resourceType !== "Patient");
 
   const patientResource = patientToFhir(patient);
-  hydratedMutable.push(patientResource);
+  const withPatient = [...withoutPatient, patientResource];
 
-  const entries = hydratedMutable.map(buildBundleEntry);
+  const entries = withPatient.map(buildBundleEntry);
   const resultBundle = buildSearchSetBundle(entries);
 
   log(
@@ -129,26 +131,42 @@ async function searchFhirResources({
   });
 }
 
+/**
+ * Hydrates the missing references in the resources.
+ *
+ * Doesn't hydrate the Patient resource in the resources array.
+ *
+ * @param cxId - The customer ID.
+ * @param patientId - The patient ID.
+ * @param resources - The resources to hydrate.
+ * @param iteration - The iteration of the hydration.
+ * @param hydratePatient - Whether to hydrate the Patient resource. Optional, defaults to false.
+ * @returns The hydrated resources.
+ */
 export async function hydrateMissingReferences({
   cxId,
   patientId,
   resources,
   iteration = 1,
+  hydratePatient = false,
 }: {
   cxId: string;
   patientId: string;
   resources: Resource[];
   iteration?: number;
+  hydratePatient?: boolean;
 }): Promise<Resource[]> {
   const { log } = out("OS.hydrateMissingReferences");
+
+  if (iteration > maxHydrationAttempts) return resources;
 
   const { missingReferences } = getReferencesFromResources({ resources });
   const missingRefIds = missingReferences.flatMap(r => {
     const referenceId = r.id;
-    if (!referenceId || referenceId === patientId) return [];
+    if (!referenceId || (!hydratePatient && referenceId === patientId)) return [];
     return getEntryId(cxId, patientId, referenceId);
   });
-  if (missingRefIds.length < 1 || iteration >= maxHydrationAttempts) return resources;
+  if (missingRefIds.length < 1) return resources;
 
   const uniqueIds = uniq(missingRefIds);
 
@@ -171,6 +189,7 @@ export async function hydrateMissingReferences({
     patientId,
     resources: mergedResources,
     iteration: ++iteration,
+    hydratePatient,
   });
 
   return hydratedResources;
