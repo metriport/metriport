@@ -5,7 +5,7 @@ import { Patient } from "../../../../domain/patient";
 import { normalize } from "../../../../external/fhir/consolidated/normalize";
 import { OpenSearchFhirIngestor } from "../../../../external/opensearch/fhir-ingestor";
 import { OnBulkItemError } from "../../../../external/opensearch/shared/bulk";
-import { capture, out } from "../../../../util";
+import { out } from "../../../../util";
 import { getConsolidatedFile } from "../../consolidated-get";
 import { getConfigs } from "./fhir-config";
 
@@ -50,12 +50,15 @@ export async function ingestPatientConsolidated({
   });
   const elapsedTime = Date.now() - startedAt;
 
-  if (errors.size > 0) captureErrors({ cxId, patientId, errors, log });
+  if (errors.size > 0) processErrors({ cxId, patientId, errors, log });
 
   log(`Ingested ${resources.length} resources in ${elapsedTime} ms`);
 }
 
-function captureErrors({
+/**
+ * Throws an error if there are errors ingesting resources into OpenSearch.
+ */
+function processErrors({
   cxId,
   patientId,
   errors,
@@ -68,8 +71,12 @@ function captureErrors({
 }) {
   const errorMapToObj = Object.fromEntries(errors.entries());
   log(`Errors: `, () => JSON.stringify(errorMapToObj));
-  capture.error("Errors ingesting resources into OpenSearch", {
-    extra: { cxId, patientId, countPerErrorType: JSON.stringify(errorMapToObj, null, 2) },
+  throw new MetriportError("Errors ingesting resources into OpenSearch", {
+    extra: {
+      cxId,
+      patientId,
+      countPerErrorType: JSON.stringify(errorMapToObj),
+    },
   });
 }
 
