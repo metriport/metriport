@@ -10,10 +10,12 @@ export function getPrescriber(detail: FlatFileDetail): Practitioner {
 
   return {
     resourceType: "Practitioner",
-    ...(identifiers.length > 0 ? { identifier: identifiers } : null),
-    ...(prescriberName && prescriberName.length > 0 ? { name: prescriberName } : null),
-    ...(prescriberAddress && prescriberAddress.length > 0 ? { address: prescriberAddress } : null),
-    ...(telecom && telecom.length > 0 ? { telecom } : null),
+    ...(identifiers.length > 0 ? { identifier: identifiers } : undefined),
+    ...(prescriberName && prescriberName.length > 0 ? { name: prescriberName } : undefined),
+    ...(prescriberAddress && prescriberAddress.length > 0
+      ? { address: prescriberAddress }
+      : undefined),
+    ...(telecom && telecom.length > 0 ? { telecom } : undefined),
   };
 }
 
@@ -50,8 +52,8 @@ function getPrescriberName(detail: FlatFileDetail): Practitioner["name"] {
     {
       given: givenNames,
       family: detail.prescriberLastName,
-      ...(detail.prescriberPrefix ? { prefix: [detail.prescriberPrefix] } : null),
-      ...(detail.prescriberSuffix ? { suffix: [detail.prescriberSuffix] } : null),
+      ...(detail.prescriberPrefix ? { prefix: [detail.prescriberPrefix] } : undefined),
+      ...(detail.prescriberSuffix ? { suffix: [detail.prescriberSuffix] } : undefined),
     },
   ];
 }

@@ -12,9 +12,9 @@ export function getPharmacy(detail: FlatFileDetail): Organization | undefined {
   return {
     resourceType: "Organization",
     name,
-    ...(identifiers.length > 0 ? { identifier: identifiers } : null),
-    ...(address && address.length > 0 ? { address } : null),
-    ...(telecom && telecom.length > 0 ? { telecom } : null),
+    ...(identifiers.length > 0 ? { identifier: identifiers } : undefined),
+    ...(address && address.length > 0 ? { address } : undefined),
+    ...(telecom && telecom.length > 0 ? { telecom } : undefined),
   };
 }
 

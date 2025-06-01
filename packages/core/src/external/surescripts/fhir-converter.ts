@@ -6,6 +6,7 @@ import { getMedicationRequest } from "./fhir/medication-request";
 import { getPrescriber } from "./fhir/prescriber";
 import { getPharmacy } from "./fhir/pharmacy";
 import { getPatient } from "./fhir/patient";
+import { getCondition } from "./fhir/condition";
 import { IncomingFlatFile } from "./schema/response";
 import { Bundle, BundleEntry, Resource } from "@medplum/fhirtypes";
 
@@ -52,9 +53,9 @@ export function parseFlatFileDetail(detail: FlatFileDetail): BundleEntry<Resourc
   const patient = getPatient(detail);
   const practitioner = getPrescriber(detail);
   const pharmacy = getPharmacy(detail);
-
-  const medicationDispense = getMedicationDispense(detail);
+  const condition = getCondition(detail);
   const medication = getMedication(detail);
+  const medicationDispense = getMedicationDispense(detail);
   const medicationRequest = getMedicationRequest(detail);
 
   const entries: BundleEntry<Resource>[] = [];
@@ -86,6 +87,11 @@ export function parseFlatFileDetail(detail: FlatFileDetail): BundleEntry<Resourc
   if (pharmacy) {
     entries.push({
       resource: pharmacy,
+    });
+  }
+  if (condition) {
+    entries.push({
+      resource: condition,
     });
   }
 

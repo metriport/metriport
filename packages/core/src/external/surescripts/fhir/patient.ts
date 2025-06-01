@@ -10,9 +10,9 @@ export function getPatient(detail: FlatFileDetail): Patient {
   return {
     resourceType: "Patient",
     id: detail.patientId,
-    ...(name ? { name } : null),
-    ...(gender ? { gender } : null),
-    ...(birthDate ? { birthDate } : null),
+    ...(name ? { name } : undefined),
+    ...(gender ? { gender } : undefined),
+    ...(birthDate ? { birthDate } : undefined),
   };
 }
 

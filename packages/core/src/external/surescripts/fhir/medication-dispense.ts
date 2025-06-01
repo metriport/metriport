@@ -12,9 +12,9 @@ export function getMedicationDispense(detail: FlatFileDetail): MedicationDispens
     resourceType: "MedicationDispense",
     subject: { reference: detail.patientId },
     status: "completed",
-    ...(extensions.length > 0 ? { extension: extensions } : null),
-    ...(daysSupply ? { daysSupply } : null),
-    ...(performer.length > 0 ? { performer } : null),
+    ...(extensions.length > 0 ? { extension: extensions } : undefined),
+    ...(daysSupply ? { daysSupply } : undefined),
+    ...(performer.length > 0 ? { performer } : undefined),
   };
 
   return medicationDispense;
@@ -33,11 +33,11 @@ function getMedicationDispensePerformer(detail: FlatFileDetail): MedicationDispe
   ];
 }
 
-function getDaysSupply(detail: FlatFileDetail): MedicationDispense["daysSupply"] | null {
-  if (!detail.daysSupply) return null;
+function getDaysSupply(detail: FlatFileDetail): MedicationDispense["daysSupply"] | undefined {
+  if (!detail.daysSupply) return undefined;
 
   const value = parseInt(detail.daysSupply);
-  if (!Number.isFinite(value)) return null;
+  if (!Number.isFinite(value)) return undefined;
 
   return {
     value,

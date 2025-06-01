@@ -212,7 +212,7 @@ export class SurescriptsSftpClient extends SftpClient {
       const outgoingFileName = s3File.Key.substring(OUTGOING_NAME.length + 1);
       const sftpHistoryName = `${outgoingFileName}.${this.senderId}`;
       if (!sftpHistorySet.has(sftpHistoryName)) {
-        event.debug?.("DRY RUN: will copy to Surescripts: " + outgoingFileName);
+        event.debug?.("Will copy to Surescripts: " + outgoingFileName);
         await this.copyFileToSurescripts(outgoingFileName, event);
       }
     }

@@ -10,7 +10,7 @@ export function getMedication(detail: FlatFileDetail): Medication {
   return {
     resourceType: "Medication",
     ...(code ? { code } : null),
-    ...(ingredient && ingredient.length > 0 ? { ingredient } : null),
+    ...(ingredient && ingredient.length > 0 ? { ingredient } : undefined),
   };
 }
 
@@ -23,7 +23,7 @@ function getMedicationCode(detail: FlatFileDetail): Medication["code"] {
   const deaCode = getMedicationDeaScheduleCode(detail);
   const coding = [ndcCode, productCode, deaCode].filter(Boolean) as Coding[];
   return {
-    ...(text ? { text } : null),
+    ...(text ? { text } : undefined),
     coding,
   };
 }

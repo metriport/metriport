@@ -23,7 +23,7 @@ export async function parseCoverage(detail: FlatFileDetail): Promise<Coverage | 
         },
       ],
     },
-    ...(identifier && identifier.length > 0 ? { identifier } : null),
+    ...(identifier && identifier.length > 0 ? { identifier } : undefined),
   };
 }
 
@@ -31,7 +31,7 @@ function parseCoverageIdentifiers(detail: FlatFileDetail): Identifier[] {
   const identifiers: Identifier[] = [];
   if (detail.planNetworkBIN) {
     identifiers.push({
-      system: "http://hl7.org/fhir/sid/us-npi",
+      system: "http://terminology.hl7.org/CodeSystem/NCPDPProviderIdentificationNumber",
       value: detail.planNetworkBIN?.toString() ?? "",
     });
   }

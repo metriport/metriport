@@ -1,7 +1,7 @@
 import { Condition } from "@medplum/fhirtypes";
 import { FlatFileDetail } from "../schema/response";
 
-export async function getCondition(detail: FlatFileDetail): Promise<Condition | undefined> {
+export function getCondition(detail: FlatFileDetail): Condition | undefined {
   if (!detail.diagnosisICD10Code) return undefined;
   return {
     resourceType: "Condition",

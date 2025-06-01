@@ -9,10 +9,10 @@ export function getMedicationRequest(detail: FlatFileDetail): MedicationRequest 
 
   return {
     resourceType: "MedicationRequest",
-    ...(dispenseRequest ? { dispenseRequest } : null),
-    ...(dosageInstruction ? { dosageInstruction } : null),
-    ...(authoredOn ? { authoredOn } : null),
-    ...(substitution ? { substitution } : null),
+    ...(dispenseRequest ? { dispenseRequest } : undefined),
+    ...(dosageInstruction ? { dosageInstruction } : undefined),
+    ...(authoredOn ? { authoredOn } : undefined),
+    ...(substitution ? { substitution } : undefined),
   };
 }
 
