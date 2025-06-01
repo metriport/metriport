@@ -1,10 +1,12 @@
 import { buildDayjs } from "@metriport/shared/common/date";
+import { sleep } from "@metriport/shared/common/sleep";
 import { Patient } from "../../../../domain/patient";
 import { OpenSearchFhirSearcher } from "../../../../external/opensearch/lexical/fhir-searcher";
 import { Config } from "../../../../util/config";
 import { getConfigs } from "./fhir-config";
 import { IngestConsolidatedDirect } from "./ingest-consolidated-direct";
 
+const WAIT_AFTER_INGESTION_IN_MILLIS = 1_000;
 const consolidatedDataIngestionInitialDate = Config.getConsolidatedDataIngestionInitialDate();
 
 /**
@@ -35,5 +37,7 @@ export async function ingestIfNeeded(patient: Patient): Promise<void> {
   if (!isIngested) {
     const ingestor = new IngestConsolidatedDirect();
     await ingestor.ingestConsolidatedIntoSearchEngine({ cxId, patientId });
+
+    await sleep(WAIT_AFTER_INGESTION_IN_MILLIS);
   }
 }
