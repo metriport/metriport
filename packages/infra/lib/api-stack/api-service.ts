@@ -585,7 +585,7 @@ export function createAPIService({
     maxCapacity: maxTaskCount,
   });
   scaling.scaleOnCpuUtilization("autoscale_cpu", {
-    targetUtilizationPercent: 10,
+    targetUtilizationPercent: 15,
     scaleInCooldown: Duration.minutes(2),
     scaleOutCooldown: Duration.minutes(1),
   });
