@@ -52,10 +52,7 @@ import {
   getPatients,
   getPatientStates,
 } from "../../../command/medical/patient/get-patient";
-import {
-  getPatientIds,
-  getPatientReadOnlyOrFail,
-} from "../../../command/medical/patient/get-patient-read-only";
+import { getPatientIds } from "../../../command/medical/patient/get-patient-read-only";
 import { processHl7FhirBundleWebhook } from "../../../command/medical/patient/hl7-fhir-webhook";
 import {
   PatientUpdateCmd,
@@ -803,7 +800,8 @@ router.get(
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const id = getFromParamsOrFail("id", req);
 
-    const patient = await getPatientReadOnlyOrFail({ cxId, patientId: id });
+    // Not using the RO instance w/ getPatientReadOnlyOrFail b/c of replication lag
+    const patient = await getPatientOrFail({ cxId, id });
     const dto = dtoFromModel(patient);
 
     return res.status(status.OK).json(dto);
