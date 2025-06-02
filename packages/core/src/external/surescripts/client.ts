@@ -247,6 +247,24 @@ export class SurescriptsSftpClient extends SftpClient {
     return content;
   }
 
+  async sendPatientLoadFileByName(fileName: string) {
+    const s3Key = getS3Key(OUTGOING_NAME, fileName);
+    const s3FileExists = await this.s3.fileExists(this.bucket, s3Key);
+    if (!s3FileExists) {
+      throw new MetriportError("File does not exist in S3: " + s3Key);
+    }
+
+    console.log("Downloading patient load file from S3: " + fileName);
+    const content = await this.s3.downloadFile({
+      bucket: this.bucket,
+      key: s3Key,
+    });
+
+    console.log("Sending patient load file to Surescripts: " + fileName);
+    await this.write(getSftpFileName(OUTGOING_NAME, fileName), content);
+    console.log("Sent patient load file to Surescripts: " + fileName);
+  }
+
   async checkFileStatusWithSurescripts({
     cxId,
     fileName,
