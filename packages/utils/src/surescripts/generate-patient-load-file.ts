@@ -5,7 +5,7 @@ import fs from "fs";
 dotenv.config();
 
 import { Command } from "commander";
-import { SurescriptsSftpClient, Transmission } from "@metriport/core/external/surescripts/client";
+import { SurescriptsSftpClient } from "@metriport/core/external/surescripts/client";
 import { SurescriptsApi } from "@metriport/core/external/surescripts/api";
 import { Patient } from "@metriport/shared/domain/patient";
 import { filePathIsInGitRepository } from "./shared";
@@ -40,14 +40,14 @@ program
       npiNumber = npi;
     }
 
-    const transmission = client.createTransmission({
-      npiNumber,
-      cxId,
-      compression: false,
+    const { requestedPatientIds, requestFileName, requestFileContent, transmissionId } =
+      await client.generateAndWritePatientLoadFile({ npiNumber, cxId }, patients);
+    logTransmissionCreated({
+      transmissionId,
+      requestFileName,
+      requestFileContent,
+      requestedPatientIds,
     });
-    const { requestedPatientIds, requestFileContent } =
-      await client.generateAndWritePatientLoadFile(transmission, patients);
-    logTransmissionCreated(transmission, requestFileContent, requestedPatientIds);
   });
 
 async function getPatientsFromApi(
@@ -63,17 +63,22 @@ async function getPatientsFromApi(
   return { npi: facility.npi, patients };
 }
 
-function logTransmissionCreated(
-  transmission: Transmission,
-  message: Buffer,
-  requestedPatientIds: string[]
-) {
+function logTransmissionCreated({
+  transmissionId,
+  requestFileName,
+  requestFileContent,
+  requestedPatientIds,
+}: {
+  transmissionId: string;
+  requestFileName: string;
+  requestFileContent: Buffer;
+  requestedPatientIds: string[];
+}) {
   console.log("Patient load file written to storage");
-  console.log("      Transmission ID:  " + transmission.id);
-  console.log("    Request file name:  " + transmission.requestFileName);
-  console.log("Tranmission timestamp:  " + transmission.timestamp);
+  console.log("      Transmission ID:  " + transmissionId);
+  console.log("    Request file name:  " + requestFileName);
   console.log("   Requested patients:  " + requestedPatientIds.length);
-  console.log("            File size:  " + message.length + " bytes");
+  console.log("            File size:  " + requestFileContent.length + " bytes");
 }
 
 async function getPatientsFromCsv(csvData: string): Promise<Patient[]> {
