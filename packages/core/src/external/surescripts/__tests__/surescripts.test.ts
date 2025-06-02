@@ -1,5 +1,4 @@
 import { SurescriptsSftpClient } from "../client";
-import { TransmissionType } from "../client";
 
 describe("Surescripts SFTP Client", () => {
   it("should fail to create a client without environment variables", () => {
@@ -33,7 +32,7 @@ describe("Surescripts SFTP Client", () => {
       replicaBucket: "test",
     });
 
-    const transmission = client.createTransmission(TransmissionType.Enroll, {
+    const transmission = client.createTransmission({
       npiNumber: "1234567890",
       cxId: "CustomerId",
     });

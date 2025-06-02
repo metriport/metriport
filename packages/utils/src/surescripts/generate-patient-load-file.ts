@@ -41,7 +41,7 @@ program
       npiNumber = npi;
     }
 
-    const transmission = client.createEnrollment({
+    const transmission = client.createTransmission({
       npiNumber,
       cxId,
       compression: false,

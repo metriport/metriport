@@ -28,8 +28,8 @@ export const handler = capture.wrapHandler(
     });
 
     const api = new SurescriptsApi();
-    const facility = await api.getFacility(cxId, facilityId);
-    const transmission = client.createEnrollment({
+    const facility = await api.getFacilityData(cxId, facilityId);
+    const transmission = client.createTransmission({
       cxId,
       npiNumber: facility.npi,
     });

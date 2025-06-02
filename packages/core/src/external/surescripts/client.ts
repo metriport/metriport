@@ -17,6 +17,7 @@ export interface SurescriptsSftpConfig extends Partial<Omit<SftpConfig, "passwor
   publicKey?: string;
   privateKey?: string;
   replicaBucket?: string;
+  replicaBucketRegion?: string;
 }
 
 export enum SurescriptsEnvironment {
@@ -63,7 +64,7 @@ export class SurescriptsSftpClient extends SftpClient {
 
     // 10 byte ID generator
     this.generateTransmissionId = createIdGenerator(10);
-    this.s3 = new S3Utils(process.env.AWS_REGION ?? "us-east-2");
+    this.s3 = new S3Utils(config.replicaBucketRegion ?? Config.getAWSRegion());
     this.bucket = config.replicaBucket ?? Config.getSurescriptsReplicaBucketName();
 
     this.senderId = config.senderId ?? Config.getSurescriptsSftpSenderId();
@@ -74,31 +75,20 @@ export class SurescriptsSftpClient extends SftpClient {
     this.receiverId = config.receiverId ?? Config.getSurescriptsSftpReceiverId();
   }
 
-  createEnrollment(data: TransmissionData): Transmission {
-    return this.createTransmission(TransmissionType.Enroll, data);
-  }
-
-  createUnenrollment(data: TransmissionData): Transmission {
-    return this.createTransmission(TransmissionType.Unenroll, data);
-  }
-
-  createTransmission(
-    type: TransmissionType,
-    { npiNumber, cxId, compression }: TransmissionData
-  ): Transmission {
+  createTransmission({ npiNumber, cxId, compression }: TransmissionData): Transmission {
     const transmissionId = this.generateTransmissionId().toString("ascii");
 
     const now = Date.now();
     const requestFileName = this.getPatientLoadFileName(transmissionId, now, compression);
 
     return {
-      type,
+      type: TransmissionType.Enroll,
       npiNumber,
       cxId,
       id: transmissionId,
       timestamp: now,
       requestFileName,
-      compression: compression ?? true,
+      compression: compression ?? false,
     };
   }
 
