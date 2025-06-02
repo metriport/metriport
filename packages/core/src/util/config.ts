@@ -66,24 +66,17 @@ export class Config {
     return getEnvVarOrFail("SEARCH_INGESTION_QUEUE_URL");
   }
 
-  static getLexicalSearchIndexName(): string {
-    return getEnvVarOrFail("LEXICAL_SEARCH_INDEX");
+  static getConsolidatedSearchIndexName(): string {
+    return getEnvVarOrFail("CONSOLIDATED_SEARCH_INDEX");
   }
-
-  static getSemanticSearchEndpoint(): string {
-    return getEnvVarOrFail("SEMANTIC_SEARCH_ENDPOINT");
+  static getConsolidatedSearchLambdaName(): string {
+    return getEnvVarOrFail("CONSOLIDATED_SEARCH_LAMBDA_NAME");
   }
-  static getSemanticSearchUsername(): string {
-    return getEnvVarOrFail("SEMANTIC_SEARCH_USERNAME");
+  static getConsolidatedIngestionQueueUrl(): string {
+    return getEnvVarOrFail("CONSOLIDATED_INGESTION_QUEUE_URL");
   }
-  static getSemanticSearchPassword(): string {
-    return getEnvVarOrFail("SEMANTIC_SEARCH_PASSWORD");
-  }
-  static getSemanticSearchIndexName(): string {
-    return getEnvVarOrFail("SEMANTIC_SEARCH_INDEX");
-  }
-  static getSemanticSearchModelId(): string {
-    return getEnvVarOrFail("SEMANTIC_SEARCH_MODEL_ID");
+  static getConsolidatedDataIngestionInitialDate(): string | undefined {
+    return getEnvVar("CONSOLIDATED_INGESTION_INITIAL_DATE");
   }
 
   static getSystemRootOID(): string {

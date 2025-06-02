@@ -46,6 +46,7 @@ import { EnvType } from "./env-type";
 import { FeatureFlagsNestedStack } from "./feature-flags-nested-stack";
 import { Hl7NotificationWebhookSenderNestedStack } from "./hl7-notification-webhook-sender-nested-stack";
 import { IHEGatewayV2LambdasNestedStack } from "./ihe-gateway-v2-stack";
+import { LambdasLayersNestedStack } from "./lambda-layers-nested-stack";
 import { CDA_TO_VIS_TIMEOUT, LambdasNestedStack } from "./lambdas-nested-stack";
 import { PatientImportNestedStack } from "./patient-import-nested-stack";
 import { RateLimitingNestedStack } from "./rate-limiting-nested-stack";
@@ -349,10 +350,33 @@ export class APIStack extends Stack {
       : undefined;
 
     //-------------------------------------------
+    // Lambda Layers
+    //-------------------------------------------
+    const { lambdaLayers } = new LambdasLayersNestedStack(this, "LambdasLayersNestedStack");
+
+    //-------------------------------------------
+    // OPEN SEARCH Domains
+    //-------------------------------------------
+    const {
+      ccdaIngestionQueue: ccdaSearchIngestionQueue,
+      searchDomainEndpoint,
+      searchDomainUserName,
+      searchDomainSecret,
+      ccdaIndexName: ccdaSearchIndexName,
+    } = ccdaSearch.setup({
+      stack: this,
+      vpc: this.vpc,
+      awsAccount,
+      ccdaS3Bucket: medicalDocumentsBucket,
+      lambdaLayers,
+      envType: props.config.environmentType,
+      alarmSnsAction: slackNotification?.alarmAction,
+    });
+
+    //-------------------------------------------
     // General lambdas
     //-------------------------------------------
     const {
-      lambdaLayers,
       cdaToVisualizationLambda,
       documentDownloaderLambda,
       fhirToCdaConverterLambda,
@@ -368,9 +392,13 @@ export class APIStack extends Stack {
       },
       hl7v2RosterUploadLambdas,
       conversionResultNotifierLambda,
+      consolidatedSearchLambda,
+      consolidatedIngestionLambda,
+      consolidatedIngestionQueue,
     } = new LambdasNestedStack(this, "LambdasNestedStack", {
       config: props.config,
       vpc: this.vpc,
+      lambdaLayers,
       dbCluster,
       dbCredsSecret,
       secrets,
@@ -379,6 +407,15 @@ export class APIStack extends Stack {
       alarmAction: slackNotification?.alarmAction,
       bedrock: props.config.bedrock,
       featureFlagsTable,
+      openSearch: {
+        endpoint: searchDomainEndpoint,
+        auth: {
+          userName: searchDomainUserName,
+          secret: searchDomainSecret,
+        },
+        consolidatedIndexName: props.config.openSearch.openSearch.consolidatedIndexName,
+        documentIndexName: props.config.openSearch.openSearch.indexName,
+      },
     });
 
     //-------------------------------------------
@@ -460,25 +497,6 @@ export class APIStack extends Stack {
     const { rateLimitTable } = new RateLimitingNestedStack(this, "RateLimitingNestedStack", {
       config: props.config,
       alarmAction: slackNotification?.alarmAction,
-    });
-
-    //-------------------------------------------
-    // OPEN SEARCH Domains
-    //-------------------------------------------
-    const {
-      queue: ccdaSearchQueue,
-      searchDomain: ccdaSearchDomain,
-      searchDomainUserName: ccdaSearchUserName,
-      searchDomainSecret: ccdaSearchSecret,
-      indexName: ccdaSearchIndexName,
-    } = ccdaSearch.setup({
-      stack: this,
-      vpc: this.vpc,
-      awsAccount,
-      ccdaS3Bucket: medicalDocumentsBucket,
-      lambdaLayers,
-      envType: props.config.environmentType,
-      alarmSnsAction: slackNotification?.alarmAction,
     });
 
     //-------------------------------------------
@@ -578,20 +596,13 @@ export class APIStack extends Stack {
       fhirToCdaConverterLambda,
       fhirToBundleLambda,
       fhirToBundleCountLambda,
+      consolidatedSearchLambda,
+      consolidatedIngestionQueue,
       rateLimitTable,
-      searchIngestionQueue: ccdaSearchQueue,
-      searchEndpoint: "https://" + ccdaSearchDomain.domainEndpoint,
-      searchAuth: { userName: ccdaSearchUserName, secret: ccdaSearchSecret },
+      searchIngestionQueue: ccdaSearchIngestionQueue,
+      searchEndpoint: searchDomainEndpoint,
+      searchAuth: { userName: searchDomainUserName, secret: searchDomainSecret },
       searchIndexName: ccdaSearchIndexName,
-      semanticSearchEndpoint: props.config.semanticOpenSearch?.endpoint,
-      semanticSearchIndexName: props.config.semanticOpenSearch?.indexName,
-      semanticSearchModelId: props.config.semanticOpenSearch?.modelId,
-      semanticSearchAuth: props.config.semanticOpenSearch
-        ? {
-            userName: props.config.semanticOpenSearch.userName,
-            secret: props.config.semanticOpenSearch.password,
-          }
-        : undefined,
       featureFlagsTable,
       cookieStore,
       surescriptsAssets: surescriptsStack?.getAssets(),
@@ -676,6 +687,8 @@ export class APIStack extends Stack {
       ehrRefreshEhrBundlesLambda,
       fhirConverterLambda,
       conversionResultNotifierLambda,
+      consolidatedSearchLambda,
+      consolidatedIngestionLambda,
     ];
     const apiUrl = `http://${apiDirectUrl}`;
     lambdasToGetApiUrl.forEach(lambda => lambda?.addEnvironment("API_URL", apiUrl));
@@ -889,10 +902,10 @@ export class APIStack extends Stack {
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: slackNotification?.alarmAction,
-      searchEndpoint: ccdaSearchDomain.domainEndpoint,
+      searchEndpoint: searchDomainEndpoint,
       searchIndex: ccdaSearchIndexName,
-      searchUserName: ccdaSearchUserName,
-      searchPassword: ccdaSearchSecret.secretValue.unsafeUnwrap(),
+      searchUserName: searchDomainUserName,
+      searchPassword: searchDomainSecret.secretValue.unsafeUnwrap(),
       apiTaskRole: apiService.service.taskDefinition.taskRole,
       apiAddress: apiDirectUrl,
     });

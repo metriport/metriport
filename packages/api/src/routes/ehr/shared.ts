@@ -61,6 +61,10 @@ export const validPatientPaths: PathDetails[] = [
     pathParamKey: "id",
   },
   {
+    pathRegex: new RegExp(`^/consolidated/search$`),
+    pathParamKey: "id",
+  },
+  {
     pathRegex: new RegExp(`^/consolidated/webhook$`),
     pathParamKey: "id",
   },

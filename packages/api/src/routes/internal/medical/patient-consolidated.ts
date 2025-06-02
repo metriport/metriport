@@ -1,7 +1,4 @@
-import {
-  ingestLexical,
-  initializeLexicalIndex,
-} from "@metriport/core/command/consolidated/search/fhir-resource/ingest-lexical";
+import { makeIngestConsolidated } from "@metriport/core/command/consolidated/search/fhir-resource/ingest-consolidated-factory";
 import { out } from "@metriport/core/util/log";
 import { BadRequestError } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
@@ -14,7 +11,7 @@ import {
   ConsolidatedQueryParams,
   startConsolidatedQuery,
 } from "../../../command/medical/patient/consolidated-get";
-import { getPatientIds, getPatientOrFail } from "../../../command/medical/patient/get-patient";
+import { getPatientIds } from "../../../command/medical/patient/get-patient-read-only";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { requestLogger } from "../../helpers/request-logger";
@@ -144,31 +141,45 @@ router.post(
  *
  * Ingest patients' consolidated resources into OpenSearch for lexical search.
  *
- * To process a small amount of patients. If we need a larger amount of patients, we should
- * move this to a queue-based design, one pt per message.
+ * WARNING: if no patient IDs are provided, ALL PATIENTS of the given customer will be ingested!
+ * To stop this process, all you can do is to throttle the ingestion lambda.
+ *
+ * Initializes the indexes (if needed).
+ *
+ * Either patientIds or all must be provided.
  *
  * @param req.query.cxId The customer ID.
- * @param req.query.patientIds The patient IDs.
+ * @param req.query.patientIds The patient IDs to ingest, if not provided, ALL PATIENTS will be ingested!
+ * @param req.query.all Flag to confirm we want to ingest all patients for the given customer.
  */
 router.post(
   "/search/ingest",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const patientIds = getFromQueryAsArray("patientIds", req) ?? [];
+    const patientIdsRaw = getFromQueryAsArray("patientIds", req);
+    const allRaw = getFromQueryAsBoolean("all", req);
+    if (!patientIdsRaw && !allRaw) {
+      throw new BadRequestError("Either 'patientIds' or 'all' must be provided");
+    }
+    const allPatients = allRaw ?? false;
+    const patientIds = (patientIdsRaw ?? []).filter(Boolean);
 
-    await initializeLexicalIndex();
+    const { log } = out(`internal ingest - cx ${cxId}`);
 
     if (patientIds.length < 1) {
-      out(`cx ${cxId}`).log(`no patientIds provided, getting all patients for this customer`);
-      const allPatientIds = await getPatientIds({ cxId });
-      patientIds.push(...allPatientIds);
+      if (allPatients) {
+        log(`No patientIds provided, getting all patients for this customer`);
+        const allPatientIds = await getPatientIds({ cxId });
+        patientIds.push(...allPatientIds);
+      } else {
+        throw new BadRequestError("No 'patientIds' provided and 'all' is false");
+      }
     }
 
-    for (const patientId of patientIds) {
-      const patient = await getPatientOrFail({ cxId, id: patientId });
-      await ingestLexical({ patient });
-    }
+    log(`Requesting ingestion of ${patientIds.length} patients (asynchronously)...`);
+    await makeIngestConsolidated().ingestConsolidatedIntoSearchEngine({ cxId, patientIds });
+    log(`Done`);
 
     return res.sendStatus(status.OK);
   })
