@@ -6,7 +6,7 @@ import {
 import { isDocumentReference } from "@metriport/core/external/fhir/document/document-reference";
 import { toFHIR as orgToFHIR } from "@metriport/core/external/fhir/organization/conversion";
 import { toFHIR as patientToFHIR } from "@metriport/core/external/fhir/patient/conversion";
-import { buildBundle } from "@metriport/core/external/fhir/shared/bundle";
+import { buildSearchSetBundle } from "@metriport/core/external/fhir/shared/bundle";
 import { ensureCcdExists } from "@metriport/core/shareback/ensure-ccd-exists";
 import { getMetadataDocumentContents } from "@metriport/core/shareback/metadata/get-metadata-xml";
 import { parseExtrinsicObjectXmlToDocumentReference } from "@metriport/core/shareback/metadata/parse-metadata-xml";
@@ -132,13 +132,13 @@ function getAllowedSearchParams(searchParams: URLSearchParams): URLSearchParams 
 export function prepareBundle(resources: Resource[], params: URLSearchParams): Bundle<Resource> {
   const { documentReferences, otherResources } = splitResources(resources);
   const filteredDocRefs = applyFilterParams(documentReferences, params);
-  if (filteredDocRefs.length < 1) return buildBundle();
+  if (filteredDocRefs.length < 1) return buildSearchSetBundle();
 
   const updatedDocRefs = adjustAttachmentURLs(filteredDocRefs);
   const consolidatedResources = [...updatedDocRefs, ...otherResources];
   const uniqueResources = uniqBy(consolidatedResources, r => r.id);
   const bundleEntries: BundleEntry[] = uniqueResources.map(r => ({ resource: r }));
-  const bundle = buildBundle({ entries: bundleEntries });
+  const bundle = buildSearchSetBundle(bundleEntries);
   return bundle;
 }
 

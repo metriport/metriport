@@ -2,10 +2,8 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
 import { Bundle, BundleEntry, Patient } from "@medplum/fhirtypes";
-import {
-  buildConsolidatedBundle,
-  merge,
-} from "@metriport/core/command/consolidated/consolidated-create";
+import { buildCollectionBundle } from "@metriport/core/external/fhir/shared/bundle";
+import { merge } from "@metriport/core/command/consolidated/consolidated-create";
 import { dangerouslyDeduplicate } from "@metriport/core/external/fhir/consolidated/deduplicate";
 import { normalize } from "@metriport/core/external/fhir/consolidated/normalize";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
@@ -26,7 +24,8 @@ dayjs.extend(duration);
  */
 
 const bundlesFolder = ``;
-const outputFolder = `${bundlesFolder}/consolidated`;
+
+const outputFolder = `${bundlesFolder}/consolidated-create`;
 
 // Not necessary - just used for logging / analytics on dedup
 const cxId = ``;
@@ -64,7 +63,7 @@ export async function createConsolidatedFromLocal(
   });
   console.log(`Found ${jsonFileNames.length} JSON files.`);
 
-  const bundle = buildConsolidatedBundle();
+  const bundle = buildCollectionBundle();
   await executeAsynchronously(
     jsonFileNames,
     async filePath => {

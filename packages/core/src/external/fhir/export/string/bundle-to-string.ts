@@ -1,6 +1,5 @@
 import {
   AllergyIntolerance,
-  Bundle,
   Communication,
   Composition,
   Condition,
@@ -50,7 +49,7 @@ import { PractitionerToString } from "./resources/practitioner";
 import { ProcedureToString } from "./resources/procedure";
 import { RelatedPersonToString } from "./resources/related-person";
 
-const resourceTypesToSkip: string[] = ["Patient"];
+const resourceTypesToSkip: string[] = ["Patient", "Binary"];
 
 type ResourceTypeMap = {
   AllergyIntolerance: AllergyIntolerance;
@@ -75,7 +74,6 @@ type ResourceTypeMap = {
   Practitioner: Practitioner;
   Procedure: Procedure;
   RelatedPerson: RelatedPerson;
-  // TODO REMOVE THIS
   Patient: Patient;
 };
 
@@ -120,31 +118,16 @@ export type FhirResourceToText = {
 };
 
 /**
- * Converts a FHIR Bundle to a list of string representations of its resources.
- * Focused on searching, so not a complete representation of the FHIR resources.
+ * Converts a FHIR resource to a string representation.
+ * Focused on searching, so not a complete representation of the FHIR resource.
  * Skips unsupported resources - @see isSupportedResource
  *
- * @param bundle - FHIR Bundle to convert
+ * @param resource - FHIR resource to convert
  * @param isDebug - Whether to include debug information in the output
- * @returns List of string representations of the resources in the bundle
+ * @returns String representation of the resource
  */
-export function bundleToString(bundle: Bundle, isDebug = false): FhirResourceToText[] {
-  if (!bundle.entry?.length) return [];
 
-  return bundle.entry.flatMap(entry => {
-    const resource = entry.resource;
-    if (!resource || !resource.id) return [];
-    const text = resourceToString(resource, isDebug);
-    if (!text) return [];
-    return {
-      id: resource.id,
-      type: resource.resourceType,
-      text,
-    };
-  });
-}
-
-function resourceToString(resource: Resource, isDebug?: boolean): string | undefined {
+export function resourceToString(resource: Resource, isDebug?: boolean): string | undefined {
   if (!isSupportedResource(resource)) return undefined;
   const converter = resourceToStringMap[resource.resourceType as ResourceType];
   if (!converter) return undefined;

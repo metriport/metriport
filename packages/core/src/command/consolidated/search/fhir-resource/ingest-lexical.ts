@@ -1,76 +1,64 @@
+import { Bundle, Resource } from "@medplum/fhirtypes";
+import { MetriportError } from "@metriport/shared";
+import { timed } from "@metriport/shared/util/duration";
 import { Patient } from "../../../../domain/patient";
-import {
-  OpenSearchLexicalSearcher,
-  OpenSearchLexicalSearcherConfig,
-} from "../../../../external/opensearch/lexical/lexical-searcher";
+import { normalize } from "../../../../external/fhir/consolidated/normalize";
+import { OpenSearchFhirIngestor } from "../../../../external/opensearch/fhir-ingestor";
 import { OnBulkItemError } from "../../../../external/opensearch/shared/bulk";
-import {
-  convertFhirResourceToTextToIngestRequestResource,
-  OpenSearchTextIngestor,
-} from "../../../../external/opensearch/text-ingestor";
-import { capture, out } from "../../../../util";
-import { Config } from "../../../../util/config";
-import { getConsolidatedAsText } from "../../consolidated-get";
+import { out } from "../../../../util";
+import { getConsolidatedFile } from "../../consolidated-get";
+import { getConfigs } from "./fhir-config";
 
 /**
  * Ingest a patient's consolidated resources into OpenSearch for lexical search.
  *
  * @param patient The patient to ingest.
- * @param onItemError A callback to handle errors when ingesting a resource.
  */
-export async function ingestLexical({
+export async function ingestPatientConsolidated({
   patient,
   onItemError,
 }: {
   patient: Patient;
   onItemError?: OnBulkItemError;
-}) {
-  const { log } = out(`ingestLexical - cx ${patient.cxId}, pt ${patient.id}`);
+}): Promise<void> {
+  const { cxId, id: patientId } = patient;
+  const { log } = out(`ingestPatientConsolidated - cx ${cxId}, pt ${patientId}`);
 
-  const ingestor = new OpenSearchTextIngestor({
-    ...getConfigs(),
-    settings: { logLevel: "info" },
-  });
+  const ingestor = new OpenSearchFhirIngestor(getConfigs());
 
-  const [convertedResources] = await Promise.all([
-    getConsolidatedAsText({ patient }),
-    ingestor.delete({ cxId: patient.cxId, patientId: patient.id }),
+  log("Getting consolidated and cleaning up the index...");
+  const [bundle] = await Promise.all([
+    timed(() => getConsolidatedBundle({ cxId, patientId }), "getConsolidatedBundle", log),
+    ingestor.delete({ cxId, patientId }),
   ]);
 
+  const resources =
+    bundle.entry?.flatMap(entry => {
+      const resource = entry.resource;
+      if (!resource) return [];
+      if (resource.resourceType === "Patient") return [];
+      return resource;
+    }) ?? [];
+
+  log("Done, calling ingestBulk...");
   const startedAt = Date.now();
-  const resources = convertedResources.map(convertFhirResourceToTextToIngestRequestResource);
   const errors = await ingestor.ingestBulk({
-    cxId: patient.cxId,
-    patientId: patient.id,
+    cxId,
+    patientId,
     resources,
     onItemError,
   });
   const elapsedTime = Date.now() - startedAt;
 
-  if (errors.size > 0) captureErrors({ cxId: patient.cxId, patientId: patient.id, errors, log });
+  if (errors.size > 0) processErrors({ cxId, patientId, errors, log });
 
-  log(`Ingested ${convertedResources.length} resources in ${elapsedTime} ms`);
+  log(`Ingested ${resources.length} resources in ${elapsedTime} ms`);
 }
 
 /**
- * Initialize the lexical index in OpenSearch.
+ * Throws an error if there are errors ingesting resources into OpenSearch.
  */
-export async function initializeLexicalIndex() {
-  const searchService = new OpenSearchLexicalSearcher(getConfigs());
-  await searchService.createIndexIfNotExists();
-}
-
-function getConfigs(): OpenSearchLexicalSearcherConfig {
-  return {
-    region: Config.getAWSRegion(),
-    endpoint: Config.getSearchEndpoint(),
-    indexName: Config.getLexicalSearchIndexName(),
-    username: Config.getSearchUsername(),
-    password: Config.getSearchPassword(),
-  };
-}
-
-function captureErrors({
+function processErrors({
   cxId,
   patientId,
   errors,
@@ -83,7 +71,37 @@ function captureErrors({
 }) {
   const errorMapToObj = Object.fromEntries(errors.entries());
   log(`Errors: `, () => JSON.stringify(errorMapToObj));
-  capture.error("Errors ingesting resources into OpenSearch", {
-    extra: { cxId, patientId, countPerErrorType: JSON.stringify(errorMapToObj, null, 2) },
+  throw new MetriportError("Errors ingesting resources into OpenSearch", {
+    extra: {
+      cxId,
+      patientId,
+      countPerErrorType: JSON.stringify(errorMapToObj),
+    },
   });
+}
+
+async function getConsolidatedBundle({
+  cxId,
+  patientId,
+}: {
+  cxId: string;
+  patientId: string;
+}): Promise<Bundle<Resource>> {
+  const { log } = out(`getConsolidatedBundle - cx ${cxId}, pt ${patientId}`);
+
+  const consolidated = await getConsolidatedFile({ cxId, patientId });
+
+  const bundle = consolidated.bundle;
+  if (!bundle) {
+    const bucket = consolidated.fileLocation;
+    const key = consolidated.fileName;
+    const msg = `No consolidated bundle found during ingestion in OS`;
+    log(`${msg} for patient ${patientId} w/ key ${key}, skipping ingestion`);
+    throw new MetriportError(msg, undefined, { cxId, patientId, key, bucket });
+  }
+
+  // TODO ENG-316 Remove this step when we implement normalization on consolidated
+  const normalizedBundle = await normalize({ cxId, patientId, bundle });
+
+  return normalizedBundle;
 }

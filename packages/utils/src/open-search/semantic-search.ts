@@ -2,8 +2,8 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
 import { MetriportMedicalApi } from "@metriport/api-sdk";
+import { searchPatientConsolidated } from "@metriport/core/command/consolidated/search/fhir-resource/search-consolidated";
 import { getDomainFromDTO } from "@metriport/core/command/patient-loader-metriport-api";
-import { searchSemantic } from "@metriport/core/command/consolidated/search/fhir-resource/search-semantic";
 import { sleep } from "@metriport/core/util/sleep";
 import { getEnvVarOrFail } from "@metriport/shared";
 import dayjs from "dayjs";
@@ -13,7 +13,7 @@ import { elapsedTimeAsStr } from "../shared/duration";
 dayjs.extend(duration);
 
 /**
- * Script to search a patient's consolidated resources using OpenSearch semantic search.
+ * Script to search a patient's consolidated resources using OpenSearch search.
  */
 
 const patientId = getEnvVarOrFail("PATIENT_ID");
@@ -41,11 +41,9 @@ async function main() {
 
   console.log("Running search with: ", searchQuery);
 
-  const searchResult = await searchSemantic({
+  const searchResult = await searchPatientConsolidated({
     patient,
     query: searchQuery,
-    maxNumberOfResults: 1_234,
-    similarityThreshold: 0.2,
   });
   const searchResultIds = searchResult.entry?.map(r => r.resource?.id) ?? [];
   console.log("Search result: ", searchResultIds.join(", "));

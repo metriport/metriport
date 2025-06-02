@@ -1,3 +1,4 @@
+import * as AWS from "aws-sdk";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { getLambdaResultPayload, makeLambdaClient } from "../../external/aws/lambda";

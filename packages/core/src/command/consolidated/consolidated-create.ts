@@ -7,17 +7,19 @@ import { generateAiBriefBundleEntry } from "../../domain/ai-brief/generate";
 import { createConsolidatedDataFilePath } from "../../domain/consolidated/filename";
 import { createFolderName } from "../../domain/filename";
 import { Patient } from "../../domain/patient";
-import { S3Utils, executeWithRetriesS3 } from "../../external/aws/s3";
+import { executeWithRetriesS3, S3Utils } from "../../external/aws/s3";
 import { dangerouslyDeduplicate } from "../../external/fhir/consolidated/deduplicate";
 import { getDocuments as getDocumentReferences } from "../../external/fhir/document/get-documents";
 import { toFHIR as patientToFhir } from "../../external/fhir/patient/conversion";
-import { buildBundle, buildBundleEntry } from "../../external/fhir/shared/bundle";
+import { buildBundleEntry, buildCollectionBundle } from "../../external/fhir/shared/bundle";
 import { insertSourceDocumentToAllDocRefMeta } from "../../external/fhir/shared/meta";
 import { capture, executeAsynchronously, out } from "../../util";
 import { Config } from "../../util/config";
+import { processAsyncError } from "../../util/error/shared";
 import { controlDuration } from "../../util/race-control";
 import { isAiBriefFeatureFlagEnabledForCx } from "../feature-flags/domain-ffs";
 import { getConsolidatedLocation, getConsolidatedSourceLocation } from "./consolidated-shared";
+import { makeIngestConsolidated } from "./search/fhir-resource/ingest-consolidated-factory";
 
 dayjs.extend(duration);
 
@@ -63,7 +65,7 @@ export async function createConsolidatedFromConversions({
   ]);
   log(`Got ${conversions.length} resources from conversions`);
 
-  const bundle = buildConsolidatedBundle();
+  const bundle = buildCollectionBundle();
   const docRefsWithUpdatedMeta = insertSourceDocumentToAllDocRefMeta(docRefs);
   bundle.entry = [...conversions, ...docRefsWithUpdatedMeta.map(buildBundleEntry), patientEntry];
   bundle.total = bundle.entry.length;
@@ -90,12 +92,13 @@ export async function createConsolidatedFromConversions({
     log(errorToString(e));
   }
 
+  // TODO(ENG-328): Before continuing to make changes to this command and duplicative operations,
+  // I recommend you write a unit test to verify the sequencing of these mutative operations
   log(`Deduplicating consolidated bundle...`);
   await dangerouslyDeduplicate({ cxId, patientId, bundle });
   log(`...done, from ${lengthWithDups} to ${bundle.entry?.length} resources`);
 
   log(`isAiBriefFeatureFlagEnabled: ${isAiBriefFeatureFlagEnabled}`);
-
   if (isAiBriefFeatureFlagEnabled && bundle.entry && bundle.entry.length > 0) {
     const binaryBundleEntry = await Promise.race([
       generateAiBriefBundleEntry(bundle, cxId, patientId, log),
@@ -122,12 +125,18 @@ export async function createConsolidatedFromConversions({
     contentType: "application/json",
   });
 
+  try {
+    const ingestor = makeIngestConsolidated();
+    await ingestor.ingestConsolidatedIntoSearchEngine({ cxId, patientId });
+  } catch (error) {
+    // intentionally not re-throwing
+    processAsyncError("createConsolidatedFromConversions.ingestConsolidatedIntoSearchEngine")(
+      error
+    );
+  }
+
   log(`Done`);
   return bundle;
-}
-
-export function buildConsolidatedBundle(entries: BundleEntry[] = []): Bundle {
-  return buildBundle({ type: "collection", entries });
 }
 
 async function getConversions({
@@ -149,7 +158,7 @@ async function getConversions({
     return [];
   }
 
-  const mergedBundle = buildConsolidatedBundle();
+  const mergedBundle = buildCollectionBundle();
   await executeAsynchronously(
     conversionBundles,
     async inputBundle => {
