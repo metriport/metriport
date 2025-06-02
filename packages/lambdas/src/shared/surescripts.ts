@@ -1,5 +1,6 @@
 import { Config } from "@metriport/core/util/config";
 import { getSecretValue } from "@metriport/core/external/aws/secret-manager";
+import { BadRequestError } from "@metriport/shared";
 
 export async function getSurescriptSecrets() {
   const [surescriptsPublicKey, surescriptsPrivateKey, surescriptsSenderPassword] =
@@ -8,8 +9,8 @@ export async function getSurescriptSecrets() {
       getSecretValue("SurescriptsPrivateKey", Config.getAWSRegion()),
       getSecretValue("SurescriptsSenderPassword", Config.getAWSRegion()),
     ]);
-  if (!surescriptsPublicKey) throw new Error("Missing surescripts public key");
-  if (!surescriptsPrivateKey) throw new Error("Missing surescripts private key");
-  if (!surescriptsSenderPassword) throw new Error("Missing surescripts sender password");
+  if (!surescriptsPublicKey) throw new BadRequestError("Missing surescripts public key");
+  if (!surescriptsPrivateKey) throw new BadRequestError("Missing surescripts private key");
+  if (!surescriptsSenderPassword) throw new BadRequestError("Missing surescripts sender password");
   return { surescriptsPublicKey, surescriptsPrivateKey, surescriptsSenderPassword };
 }

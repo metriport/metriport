@@ -123,19 +123,18 @@ export function toSurescriptsPatientLoadFile(
 }
 
 export function toSurescriptsPatientLoadRow<T extends object>(
-  data: T,
+  row: T,
   objectSchema: z.ZodObject<z.ZodRawShape>,
   fieldSchema: OutgoingFileRowSchema<T>
 ): Buffer {
-  const parsed = objectSchema.safeParse(data);
+  const parsed = objectSchema.safeParse(row);
   if (!parsed.success) {
-    console.log(parsed.error, parsed.error.issues);
     throw new MetriportError("Invalid data", "to_surescripts_patient_load_row", {
-      data: JSON.stringify(data),
+      data: JSON.stringify(row),
       errors: JSON.stringify(parsed.error.issues),
     });
   }
-  const fields = fieldSchema.map(field => field.toSurescripts(data));
+  const fields = fieldSchema.map(field => field.toSurescripts(row));
   const outputRow = fields.join("|") + "\n";
   return Buffer.from(outputRow, "ascii");
 }
@@ -188,11 +187,9 @@ function fromSurescriptsRow<T extends object>(
   if (objectValidator(data)) {
     return data;
   } else {
-    console.log(data);
-    console.log(row);
     throw new MetriportError("Invalid row", "from_surescripts_row", {
       row: row.join("|"),
-      data: JSON.stringify(data),
+      data: JSON.stringify(row),
     });
   }
 }
