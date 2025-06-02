@@ -50,6 +50,15 @@ describe("Surescripts schema parsing", () => {
     expect(date.getMilliseconds()).toEqual(0);
   });
 
+  it("should parse time with centiseconds", () => {
+    const converter = fromSurescriptsTime({ centisecond: true });
+    const date = converter("12345699");
+    expect(date.getHours()).toEqual(12);
+    expect(date.getMinutes()).toEqual(34);
+    expect(date.getSeconds()).toEqual(56);
+    expect(date.getMilliseconds()).toEqual(990);
+  });
+
   it("should parse uuid", () => {
     expect(fromSurescriptsUUID("12345678123412341234123456789012")).toEqual(
       "12345678-1234-1234-1234-123456789012"

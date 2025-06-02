@@ -50,15 +50,10 @@ describe("ID Generator", () => {
       lastTime: currentTimestamp,
       lastEntropy: Buffer.from("aa", "ascii"),
     });
-    const currentTimestampId = idGenerator(currentTimestamp).toString("ascii");
-
-    const anotherIdGenerator = createIdGenerator(10, {
-      lastTime: currentTimestamp,
-      lastEntropy: Buffer.from(currentTimestampId.substring(8), "ascii"),
-    });
-    const anotherId = anotherIdGenerator(currentTimestamp).toString("ascii");
-    expect(anotherId.substring(0, 8)).toEqual(currentTimestampId.substring(0, 8));
-    expect(anotherId.substring(8)).not.toEqual(currentTimestampId.substring(8));
+    const timestampId = idGenerator(currentTimestamp).toString("ascii");
+    const timestampIdInSameMilli = idGenerator(currentTimestamp).toString("ascii");
+    expect(timestampIdInSameMilli.substring(0, 8)).toEqual(timestampId.substring(0, 8));
+    expect(timestampIdInSameMilli.substring(8)).not.toEqual(timestampId.substring(8));
   });
 
   it("maintains an invariant that all generated IDs are unique and increasing", () => {
