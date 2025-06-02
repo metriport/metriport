@@ -96,7 +96,7 @@ import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { getObservationCode, getObservationUnits } from "@metriport/shared/medical";
 import axios, { AxiosInstance } from "axios";
 import dayjs from "dayjs";
-import { uniqBy } from "lodash";
+import _, { uniqBy } from "lodash";
 import { executeAsynchronously } from "../../../util/concurrency";
 import { out } from "../../../util/log";
 import { capture } from "../../../util/notifications";
@@ -104,13 +104,14 @@ import {
   ApiConfig,
   createDataParams,
   formatDate,
-  getAllergyIntoleranceOnsetDate,
   getAllergyIntoleranceManifestationSnomedCode,
+  getAllergyIntoleranceOnsetDate,
   getConditionSnomedCode,
   getConditionStartDate,
   getConditionStatus,
   getImmunizationAdministerDate,
   getImmunizationCvxCode,
+  getObservationInterpretation,
   getObservationLoincCoding,
   getObservationObservedDate,
   getObservationReferenceRange,
@@ -118,7 +119,6 @@ import {
   getObservationUnitAndValue,
   getProcedureCptCode,
   getProcedurePerformedDate,
-  getObservationInterpretation,
   makeRequest,
   MakeRequestParamsInEhr,
 } from "../shared";
@@ -450,13 +450,12 @@ class AthenaHealthApi {
       departmentId,
       medicationId: medication.medication.id,
     };
-    const medicationOptions = await this.searchForMedication({
+    const medicationReference = await this.searchForMedication({
       cxId,
       patientId,
       medication: medication.medication,
     });
-    const firstOption = medicationOptions[0];
-    if (!firstOption) {
+    if (!medicationReference) {
       throw new BadRequestError(
         "No medication options found via search",
         undefined,
@@ -467,7 +466,7 @@ class AthenaHealthApi {
       departmentid: this.stripDepartmentId(departmentId),
       providernote: "Added via Metriport App",
       unstructuredsig: "Metriport",
-      medicationid: `${firstOption.medicationid}`,
+      medicationid: `${medicationReference.medicationid}`,
       hidden: false,
       startdate: this.formatDate(medication.statement?.effectivePeriod?.start),
       stopdate: this.formatDate(medication.statement?.effectivePeriod?.end),
@@ -865,20 +864,19 @@ class AthenaHealthApi {
     if (!allergyIntolerance.reaction || allergyIntolerance.reaction.length < 1) {
       throw new BadRequestError("No reactions found for allergy", undefined, additionalInfo);
     }
-    const allergenOptions = await this.searchForAllergen({
+    const allergenReference = await this.searchForAllergen({
       cxId,
       patientId,
       allergyIntolerance: allergyIntolerance,
     });
-    const firstOption = allergenOptions[0];
-    if (!firstOption) {
+    if (!allergenReference) {
       throw new BadRequestError("No allergen options found via search", undefined, additionalInfo);
     }
     const existingAllergy = await this.getAllergyForPatient({
       cxId,
       patientId,
       departmentId,
-      allergenId: firstOption.allergenid,
+      allergenId: allergenReference.allergenid,
     });
     const existingReactions = existingAllergy?.reactions ?? [];
     const newReactions = allergyIntolerance.reaction;
@@ -917,8 +915,8 @@ class AthenaHealthApi {
     const criticality = allergyIntolerance.criticality;
     const allergies = [
       {
-        allergenid: firstOption.allergenid,
-        allergenname: firstOption.allergenname,
+        allergenid: allergenReference.allergenid,
+        allergenname: allergenReference.allergenname,
         criticality,
         note: "Added via Metriport App",
         onsetdate: this.formatDate(onsetDate),
@@ -1082,7 +1080,7 @@ class AthenaHealthApi {
     cxId: string;
     patientId: string;
     medication: Medication;
-  }): Promise<MedicationReference[]> {
+  }): Promise<MedicationReference | undefined> {
     const { log, debug } = out(
       `AthenaHealth searchForMedication - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
     );
@@ -1157,7 +1155,13 @@ class AthenaHealthApi {
         level: "warning",
       });
     }
-    return allMedicationReferences;
+    if (allMedicationReferences.length < 1) return undefined;
+    if (allMedicationReferences.length === 1) return allMedicationReferences[0];
+    const mostCommonMedication = _.head(
+      _(allMedicationReferences).countBy("medicationid").entries().maxBy(_.last)
+    ) as { medication: string; medicationid: string } | undefined;
+    if (!mostCommonMedication) return undefined;
+    return mostCommonMedication;
   }
 
   async searchForAllergen({
@@ -1168,7 +1172,7 @@ class AthenaHealthApi {
     cxId: string;
     patientId: string;
     allergyIntolerance: AllergyIntolerance;
-  }): Promise<AllergenReference[]> {
+  }): Promise<AllergenReference | undefined> {
     const { log, debug } = out(
       `AthenaHealth searchForAllergen - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
     );
@@ -1250,7 +1254,13 @@ class AthenaHealthApi {
         level: "warning",
       });
     }
-    return allAllergenReferences;
+    if (allAllergenReferences.length < 1) return undefined;
+    if (allAllergenReferences.length === 1) return allAllergenReferences[0];
+    const mostCommonAllergen = _.head(
+      _(allAllergenReferences).countBy("allergyid").entries().maxBy(_.last)
+    ) as { allergenid: string; allergenname: string } | undefined;
+    if (!mostCommonAllergen) return undefined;
+    return mostCommonAllergen;
   }
 
   async getCompleteAllergyReactions({
