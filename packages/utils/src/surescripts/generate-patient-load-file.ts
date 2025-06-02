@@ -24,11 +24,10 @@ program
   .action(async () => {
     const { cxId, facilityId, csvData } = program.opts();
     let { npiNumber } = program.opts();
-    console.log("Generating patient load file...");
-
     if (!cxId) throw new Error("CX ID is required");
     if (!facilityId) throw new Error("Facility ID is required");
 
+    console.log("Generating patient load file...");
     const client = new SurescriptsSftpClient({});
     let patients: Patient[] = [];
 
@@ -46,11 +45,9 @@ program
       cxId,
       compression: false,
     });
-    const { content, requestedPatientIds } = client.generatePatientLoadFile(transmission, patients);
-    console.log(content.toString("ascii"));
-
-    await client.writePatientLoadFileToStorage(transmission, content);
-    logTransmissionCreated(transmission, content, requestedPatientIds);
+    const { requestedPatientIds, requestFileContent } =
+      await client.generateAndWritePatientLoadFile(transmission, patients);
+    logTransmissionCreated(transmission, requestFileContent, requestedPatientIds);
   });
 
 async function getPatientsFromApi(
@@ -58,7 +55,7 @@ async function getPatientsFromApi(
   facilityId: string
 ): Promise<{ npi: string; patients: Patient[] }> {
   const api = new SurescriptsApi();
-  const customer = await api.getCustomer(cxId);
+  const customer = await api.getCustomerData(cxId);
   const facility = customer.facilities.find(f => f.id === facilityId);
   if (!facility) throw new Error(`Facility ${facilityId} not found`);
   const patientIds = await api.getPatientIds(cxId, facilityId);

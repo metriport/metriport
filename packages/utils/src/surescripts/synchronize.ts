@@ -42,15 +42,6 @@ program
       dryRun,
       fromSurescripts,
       toSurescripts,
-      ...(fileName
-        ? {
-            checkFileStatus: {
-              fileName,
-              cxId,
-              timestamp: Number.parseInt(timestamp),
-            },
-          }
-        : null),
     });
     await client.disconnect();
   });
