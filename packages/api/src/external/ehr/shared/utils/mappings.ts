@@ -25,4 +25,5 @@ export const ehrCxMappingSecondaryMappingsSchemaMap: {
   [EhrSources.canvas]: undefined,
   [EhrSources.healthie]: healthieSecondaryMappingsSchema,
   [EhrSources.eclinicalworks]: undefined,
+  [EhrSources.touchworks]: undefined,
 };
