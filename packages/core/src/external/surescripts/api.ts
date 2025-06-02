@@ -5,7 +5,7 @@ import { CustomerData, FacilityData } from "@metriport/shared/domain/facility";
 import { Config } from "../../util/config";
 import { getPatient } from "./api/get-patient";
 import { getPatientIds } from "./api/get-patient-ids";
-import { getCustomer } from "./api/get-customer";
+import { getCustomerData } from "./api/get-customer";
 import { executeAsynchronously } from "../../util/concurrency";
 
 export class SurescriptsApi {
@@ -17,12 +17,12 @@ export class SurescriptsApi {
     });
   }
 
-  async getCustomer(cxId: string): Promise<CustomerData> {
-    return getCustomer({ cxId }, this.axiosInstance);
+  async getCustomerData(cxId: string): Promise<CustomerData> {
+    return getCustomerData({ cxId }, this.axiosInstance);
   }
 
-  async getFacility(cxId: string, facilityId: string): Promise<FacilityData> {
-    const customer = await this.getCustomer(cxId);
+  async getFacilityData(cxId: string, facilityId: string): Promise<FacilityData> {
+    const customer = await this.getCustomerData(cxId);
     const facility = customer.facilities.find(f => f.id === facilityId);
     if (!facility) {
       throw new MetriportError("Facility not found", undefined, { cxId, facilityId });

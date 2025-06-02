@@ -29,7 +29,7 @@ describe("Surescripts schema parsing", () => {
 
   it("should parse utc dates", () => {
     const converter = fromSurescriptsUtcDate();
-    expect(converter("2025-01-01T12:34:56.00")).toEqual(new Date("2025-01-01T12:34:56.00"));
+    expect(converter("2025-01-01T12:34:56.00")).toEqual(new Date(Date.UTC(2025, 0, 1, 12, 34, 56)));
   });
 
   it("should parse time", () => {

@@ -21,3 +21,8 @@ export const patientSchema = z.object({
 });
 
 export type Patient = z.infer<typeof patientSchema>;
+
+export const patientIdsSchema = z.object({
+  patientIds: z.array(z.string()),
+});
+export type PatientIdsResponse = z.infer<typeof patientIdsSchema>;

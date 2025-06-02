@@ -10,11 +10,12 @@ export interface GetCustomerParams {
 }
 
 /**
- * Sends an API request to cx-data, which returns the customer's data (facilities).
+ * Sends an API request to cx-data, which returns the customer's data (facilities)
  *
- * @param cxId - The CX ID.
+ * @param cxId - The CX ID
+ * @returns The customer's data
  */
-export async function getCustomer(
+export async function getCustomerData(
   { cxId }: GetCustomerParams,
   axiosInstance?: AxiosInstance
 ): Promise<CustomerData> {
