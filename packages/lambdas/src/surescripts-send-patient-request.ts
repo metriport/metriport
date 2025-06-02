@@ -29,11 +29,6 @@ export const handler = capture.wrapHandler(
 
     const api = new SurescriptsApi();
     const facility = await api.getFacilityData(cxId, facilityId);
-    const transmission = client.createTransmission({
-      cxId,
-      npiNumber: facility.npi,
-    });
-
     const patientIdsForFacility: string[] = [];
     if (allPatients) {
       const patientIds = await api.getPatientIds(cxId, facilityId);
@@ -48,12 +43,12 @@ export const handler = capture.wrapHandler(
       return;
     }
 
-    const { content, requestedPatientIds: requested } = client.generatePatientLoadFile(
-      transmission,
-      patients
-    );
-    await client.writePatientLoadFileToS3(transmission, content);
-    log(`Wrote ${requested.length} / ${patients.length} patients to S3 replica bucket`);
-    log(`Transmission ID: ${transmission.id}`);
+    const { requestedPatientIds, requestFileName, requestFileContent, transmissionId } =
+      await client.generateAndWritePatientLoadFile({ npiNumber: facility.npi, cxId }, patients);
+
+    log(`Wrote ${requestedPatientIds.length} / ${patients.length} patients to S3 replica bucket`);
+    log(`Transmission ID: ${transmissionId}`);
+    log(`Request file name: ${requestFileName}`);
+    log(`Request file size: ${requestFileContent.length} bytes`);
   }
 );

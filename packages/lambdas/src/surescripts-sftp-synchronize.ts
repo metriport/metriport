@@ -20,6 +20,11 @@ export const handler = capture.wrapHandler(async (event: SurescriptsSynchronizeE
   });
 
   event.debug = log;
+  log(`Connecting to Surescripts...`);
+  await client.connect();
+  log(`Connected to Surescripts`);
   await client.synchronize(event);
   log(`Synchronized surescripts`);
+  await client.disconnect();
+  log(`Disconnected from Surescripts`);
 });
