@@ -763,7 +763,7 @@ class AthenaHealthApi {
       departmentid: this.stripDepartmentId(departmentId),
       analytes,
       observationdate: this.formatDate(observedDate),
-      internalnote: "Lab Result Added via Metriport App",
+      internalnote: loincCoding.display,
       documenttypeid: labResultDocumentId,
     };
     const createdLabResult = await this.makeRequest<CreatedLabResult>({
@@ -818,6 +818,7 @@ class AthenaHealthApi {
       documenttypeid: clinicalNoteDocumentId,
       internalnote: "Note Added via Metriport App",
       observationdate: this.formatDate(date),
+      autoclose: "true",
     };
     const createdClinicalDocument = await this.makeRequest<CreatedClinicalDocument>({
       cxId,
