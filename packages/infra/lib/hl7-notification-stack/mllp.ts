@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import * as cdk from "aws-cdk-lib";
 import { Duration } from "aws-cdk-lib";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
@@ -68,8 +69,8 @@ export class MllpStack extends cdk.NestedStack {
       fargateMemoryLimitMiB,
       fargateTaskCountMin,
       fargateTaskCountMax,
-      nlbInternalIpAddressA,
-      nlbInternalIpAddressB,
+      nlbInternalIpAddress1,
+      nlbInternalIpAddress2,
     } = props.config.hl7Notification.mllpServer;
 
     const cluster = new ecs.Cluster(this, "MllpServerCluster", {
@@ -161,8 +162,9 @@ export class MllpStack extends cdk.NestedStack {
      * We're using an empty string for the first setupNlb call to maintain identifiers and
      * avoid having to recreate a new listener and target group for the existing NLB.
      */
-    setupNlb("", vpc, nlbA, nlbInternalIpAddressA).addTarget(fargateService);
-    setupNlb("B", vpc, nlbB, nlbInternalIpAddressB).addTarget(fargateService);
+    setupNlb("1", vpc, nlbA, nlbInternalIpAddress1).addTarget(fargateService);
+    setupNlb("2", vpc, nlbB, nlbInternalIpAddress2).addTarget(fargateService);
+
     incomingHl7NotificationBucket.grantWrite(fargateService.taskDefinition.taskRole);
 
     const scaling = fargateService.autoScaleTaskCount({
@@ -193,24 +195,14 @@ export class MllpStack extends cdk.NestedStack {
       description: "ARN of the MLLP Fargate Service",
     });
 
-    new cdk.CfnOutput(this, "MllpNlbDnsName", {
-      value: nlbA.loadBalancerDnsName,
-      description: "DNS name of the Network Load Balancer for MLLP",
+    new cdk.CfnOutput(this, "MllpNlbInternalIp1", {
+      value: nlbInternalIpAddress1,
+      description: "Internal IP address of the MLLP Network Load Balancer 1",
     });
 
-    new cdk.CfnOutput(this, "MllpNlbDnsNameB", {
-      value: nlbB.loadBalancerDnsName,
-      description: "DNS name of the Network Load Balancer for MLLP B",
-    });
-
-    new cdk.CfnOutput(this, "MllpNlbInternalIpA", {
-      value: nlbInternalIpAddressA,
-      description: "Internal IP address of the MLLP Network Load Balancer A",
-    });
-
-    new cdk.CfnOutput(this, "MllpNlbInternalIpB", {
-      value: nlbInternalIpAddressB,
-      description: "Internal IP address of the MLLP Network Load Balancer B",
+    new cdk.CfnOutput(this, "MllpNlbInternalIp2", {
+      value: nlbInternalIpAddress2,
+      description: "Internal IP address of the MLLP Network Load Balancer 2",
     });
   }
 }
