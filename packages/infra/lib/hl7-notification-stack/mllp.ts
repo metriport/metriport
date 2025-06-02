@@ -69,8 +69,8 @@ export class MllpStack extends cdk.NestedStack {
       fargateMemoryLimitMiB,
       fargateTaskCountMin,
       fargateTaskCountMax,
-      nlbInternalIpAddress1,
-      nlbInternalIpAddress2,
+      nlbInternalIpAddressA,
+      nlbInternalIpAddressB,
     } = props.config.hl7Notification.mllpServer;
 
     const cluster = new ecs.Cluster(this, "MllpServerCluster", {
@@ -162,8 +162,8 @@ export class MllpStack extends cdk.NestedStack {
      * We're using an empty string for the first setupNlb call to maintain identifiers and
      * avoid having to recreate a new listener and target group for the existing NLB.
      */
-    setupNlb("1", vpc, nlbA, nlbInternalIpAddress1).addTarget(fargateService);
-    setupNlb("2", vpc, nlbB, nlbInternalIpAddress2).addTarget(fargateService);
+    setupNlb("", vpc, nlbA, nlbInternalIpAddressA).addTarget(fargateService);
+    setupNlb("B", vpc, nlbB, nlbInternalIpAddressB).addTarget(fargateService);
 
     incomingHl7NotificationBucket.grantWrite(fargateService.taskDefinition.taskRole);
 
@@ -196,12 +196,12 @@ export class MllpStack extends cdk.NestedStack {
     });
 
     new cdk.CfnOutput(this, "MllpNlbInternalIp1", {
-      value: nlbInternalIpAddress1,
+      value: nlbInternalIpAddressA,
       description: "Internal IP address of the MLLP Network Load Balancer 1",
     });
 
     new cdk.CfnOutput(this, "MllpNlbInternalIp2", {
-      value: nlbInternalIpAddress2,
+      value: nlbInternalIpAddressB,
       description: "Internal IP address of the MLLP Network Load Balancer 2",
     });
   }
