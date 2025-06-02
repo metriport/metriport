@@ -17,6 +17,7 @@ export type RosterRowData = {
   firstName: string;
   lastName: string;
   dob: string;
+  dobNoDelimiter: string;
   middleName: string | undefined;
   genderAtBirth: string | undefined;
   scrambledId: string;
