@@ -1,8 +1,9 @@
-import { BadRequestError } from "@metriport/shared/dist/error/bad-request";
+import { BadRequestError } from "@metriport/shared";
 import { isEhrSource } from "@metriport/shared/interface/external/ehr/source";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
+import z from "zod";
 import {
   checkJwtToken,
   getDashJwtTokenDataSchema,
@@ -11,7 +12,6 @@ import {
 } from "../../../external/ehr/shared/utils/jwt-token";
 import { requestLogger } from "../../helpers/request-logger";
 import { asyncHandler, getAuthorizationToken, getFromQueryOrFail } from "../../util";
-import z from "zod";
 
 const router = Router();
 
