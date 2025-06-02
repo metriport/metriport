@@ -1,4 +1,4 @@
-import { BadRequestError } from "@metriport/shared/dist/error/bad-request";
+import { BadRequestError } from "@metriport/shared";
 import {
   AthenaClientJwtTokenData,
   athenaClientSource,
