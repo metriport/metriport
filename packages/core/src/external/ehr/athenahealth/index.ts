@@ -67,7 +67,7 @@ import {
   CreatedSurgicalHistorySuccess,
   createdSurgicalHistorySuccessSchema,
   CreatedVaccines,
-  createdVaccineSchema,
+  createdVaccinesSchema,
   CreatedVaccinesSuccess,
   createdVaccinesSuccessSchema,
   CreatedVitals,
@@ -607,7 +607,7 @@ class AthenaHealthApi {
       method: "POST",
       data,
       url: chartVaccineUrl,
-      schema: createdVaccineSchema,
+      schema: createdVaccinesSchema,
       additionalInfo,
       debug,
     });

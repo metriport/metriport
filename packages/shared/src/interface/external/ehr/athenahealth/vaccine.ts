@@ -1,9 +1,9 @@
 import { z } from "zod";
 
-export const createdVaccineSchema = z.object({
+export const createdVaccinesSchema = z.object({
   vaccineids: z.coerce.string().array().optional(),
 });
-export type CreatedVaccines = z.infer<typeof createdVaccineSchema>;
+export type CreatedVaccines = z.infer<typeof createdVaccinesSchema>;
 export const createdVaccinesSuccessSchema = z.object({
   vaccineids: z.coerce.string().array().min(1),
 });
