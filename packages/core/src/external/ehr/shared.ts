@@ -27,7 +27,7 @@ import { z } from "zod";
 import { createHivePartitionFilePath } from "../../domain/filename";
 import { fetchCodingCodeOrDisplayOrSystem } from "../../fhir-deduplication/shared";
 import { Config } from "../../util/config";
-import { CVX_CODE, ICD_10_CODE, LOINC_CODE, SNOMED_CODE, CPT_CODE } from "../../util/constants";
+import { CPT_CODE, CVX_CODE, ICD_10_CODE, LOINC_CODE, SNOMED_CODE } from "../../util/constants";
 import { processAsyncError } from "../../util/error/shared";
 import { out } from "../../util/log";
 import { uuidv7 } from "../../util/uuid-v7";
@@ -307,42 +307,29 @@ export function getImmunizationAdministerDate(immunization: Immunization): strin
   return parsedDate.toISOString();
 }
 
-export function getObservationLoincCoding(observation: Observation): Coding | undefined {
-  const code = observation.code;
-  const loincCoding = code?.coding?.find(coding => {
-    const system = fetchCodingCodeOrDisplayOrSystem(coding, "system");
-    return system?.includes(LOINC_CODE);
-  });
-  if (!loincCoding) return undefined;
-  return loincCoding;
+function getObservationUnit(observation: Observation): string | undefined {
+  const firstReference = observation.referenceRange?.[0];
+  return (
+    observation.valueQuantity?.unit?.toString() ??
+    firstReference?.low?.unit?.toString() ??
+    firstReference?.high?.unit?.toString()
+  );
 }
 
-export function getObservationResultStatus(observation: Observation): string | undefined {
-  const status = observation.status;
-  if (!status) return undefined;
-  return toTitleCase(status.toLowerCase());
-}
-
-export function getObservationUnitAndValue(observation: Observation): [string, string] | undefined {
-  const unit = observation.valueQuantity?.unit;
-  if (!unit) return undefined;
-  const value = observation.valueQuantity?.value;
-  if (!value) return undefined;
-  return [unit, value.toString()];
-}
-
-export function getObservationReferenceRange(observation: Observation): string | undefined {
-  const referenceRange = observation.referenceRange?.[0];
-  if (!referenceRange) return undefined;
-  if (referenceRange.text) return referenceRange.text;
-  if (referenceRange.low && referenceRange.high) {
-    return `${referenceRange.low.value} - ${referenceRange.high.value}`;
+const blacklistedValues = ["see below", "see text", "see comments", "see note"];
+function getObservationValue(observation: Observation): number | string | undefined {
+  let value: number | string | undefined;
+  if (observation.valueQuantity) {
+    value = observation.valueQuantity.value;
+  } else if (observation.valueCodeableConcept) {
+    value = observation.valueCodeableConcept.text;
+  } else if (observation.valueString) {
+    const parsedNumber = parseFloat(observation.valueString);
+    value = isNaN(parsedNumber) ? observation.valueString : parsedNumber;
+    if (blacklistedValues.includes(value?.toString().toLowerCase().trim())) value = undefined;
   }
-  return undefined;
-}
-
-export function getObservationObservedDate(observation: Observation): string | undefined {
-  return observation.effectiveDateTime ?? observation.effectivePeriod?.start;
+  if (!value) return undefined;
+  return value;
 }
 
 type ReferenceRange = {
@@ -351,6 +338,17 @@ type ReferenceRange = {
   unit: string | undefined;
   text?: string | undefined;
 };
+function buildObservationReferenceRange(observation: Observation): ReferenceRange | undefined {
+  const firstReference = observation.referenceRange?.[0];
+  if (!firstReference) return undefined;
+  const range: ReferenceRange = {
+    low: firstReference?.low?.value,
+    high: firstReference?.high?.value,
+    unit: firstReference?.low?.unit?.toString() ?? firstReference?.high?.unit?.toString(),
+    text: firstReference?.text?.toLowerCase().trim(),
+  };
+  return range;
+}
 
 const highInterpretations = ["high", "critical"];
 const lowInterpretations = ["low"];
@@ -380,7 +378,54 @@ function normalizeStringInterpretation(interpretation: string): string {
   return interpretation;
 }
 
-export function calculateLabResultInterpretation(
+export function getObservationLoincCoding(observation: Observation): Coding | undefined {
+  const code = observation.code;
+  const loincCoding = code?.coding?.find(coding => {
+    const system = fetchCodingCodeOrDisplayOrSystem(coding, "system");
+    return system?.includes(LOINC_CODE);
+  });
+  if (!loincCoding) return undefined;
+  return loincCoding;
+}
+
+export function getObservationUnitAndValue(
+  observation: Observation
+): [string, number | string] | undefined {
+  const unit = getObservationUnit(observation);
+  if (!unit) return undefined;
+  const value = getObservationValue(observation);
+  if (!value) return undefined;
+  return [unit, value];
+}
+
+export function getObservationReferenceRange(observation: Observation): string | undefined {
+  const range = buildObservationReferenceRange(observation);
+  const unit = getObservationUnit(observation);
+
+  if (range?.low != undefined && range?.high != undefined) {
+    return `${range?.low} - ${range?.high} ${unit}`;
+  } else if (range?.low != undefined) {
+    return `>= ${range?.low} ${unit}`;
+  } else if (range?.high != undefined) {
+    return `<= ${range?.high} ${unit}`;
+  } else if (range?.text && range?.text !== "unknown") {
+    return range?.text;
+  } else {
+    return "-";
+  }
+}
+
+export function getObservationResultStatus(observation: Observation): string | undefined {
+  const resultStatus = observation.status;
+  if (!resultStatus) return undefined;
+  return toTitleCase(resultStatus.toLowerCase());
+}
+
+export function getObservationObservedDate(observation: Observation): string | undefined {
+  return observation.effectiveDateTime ?? observation.effectivePeriod?.start;
+}
+
+export function getObservationInterpretation(
   obs: Observation,
   value: number | string | undefined
 ): string | undefined {
@@ -389,17 +434,7 @@ export function calculateLabResultInterpretation(
     return normalizeStringInterpretation(explicitInterpretation);
   }
 
-  let referenceRange: ReferenceRange | undefined;
-  if (obs.referenceRange) {
-    const firstRefernce = obs.referenceRange[0];
-    referenceRange = {
-      low: firstRefernce?.low?.value,
-      high: firstRefernce?.high?.value,
-      unit: firstRefernce?.low?.unit?.toString() ?? firstRefernce?.high?.unit?.toString(),
-      text: firstRefernce?.text?.toLowerCase().trim(),
-    };
-  }
-
+  const referenceRange = buildObservationReferenceRange(obs);
   if (typeof value === "number" && referenceRange) {
     const low = referenceRange.low;
     const high = referenceRange.high;
@@ -427,7 +462,7 @@ export function calculateLabResultInterpretation(
   return undefined;
 }
 
-export function getAllergyIntoleranceReactionSnomedCoding(
+export function getAllergyIntoleranceManifestationSnomedCoding(
   allergyIntoleranceReaction: AllergyIntoleranceReaction
 ): Coding | undefined {
   const manifestations = allergyIntoleranceReaction.manifestation;
@@ -441,10 +476,10 @@ export function getAllergyIntoleranceReactionSnomedCoding(
   return snomedCoding;
 }
 
-export function getAllergyIntoleranceReactionSnomedCode(
+export function getAllergyIntoleranceManifestationSnomedCode(
   allergyIntoleranceReaction: AllergyIntoleranceReaction
 ): string | undefined {
-  const snomedCoding = getAllergyIntoleranceReactionSnomedCoding(allergyIntoleranceReaction);
+  const snomedCoding = getAllergyIntoleranceManifestationSnomedCoding(allergyIntoleranceReaction);
   if (!snomedCoding) return undefined;
   return snomedCoding.code;
 }

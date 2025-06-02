@@ -105,7 +105,7 @@ import {
   createDataParams,
   formatDate,
   getAllergyIntoleranceOnsetDate,
-  getAllergyIntoleranceReactionSnomedCode,
+  getAllergyIntoleranceManifestationSnomedCode,
   getConditionSnomedCode,
   getConditionStartDate,
   getConditionStatus,
@@ -118,7 +118,7 @@ import {
   getObservationUnitAndValue,
   getProcedureCptCode,
   getProcedurePerformedDate,
-  calculateLabResultInterpretation,
+  getObservationInterpretation,
   makeRequest,
   MakeRequestParamsInEhr,
 } from "../shared";
@@ -135,6 +135,9 @@ const athenaPatientPrefix = "E";
 const athenaDepartmentPrefix = "Department";
 const athenaDateFormat = "MM/DD/YYYY";
 const athenaDateTimeFormat = "MM/DD/YYYY HH:mm:ss";
+const labResultDocumentId = "386265";
+const clinicalNoteDocumentSubclass = "CLINICALDOCUMENT";
+const clinicalNoteDocumentId = "423482";
 
 const athenaEnv = ["api", "api.preview"] as const;
 export type AthenaEnv = (typeof athenaEnv)[number];
@@ -743,7 +746,7 @@ class AthenaHealthApi {
         additionalInfo
       );
     }
-    const interpretation = calculateLabResultInterpretation(observation, value);
+    const interpretation = getObservationInterpretation(observation, value);
     const analytes = [
       {
         abnormalflag: interpretation?.toUpperCase(),
@@ -751,7 +754,7 @@ class AthenaHealthApi {
         loinc: loincCoding.code,
         referencerange: referenceRange,
         units: unit,
-        value,
+        value: value.toString(),
         resultstatus: resultStatus,
         note: "Added via Metriport App",
       },
@@ -761,7 +764,7 @@ class AthenaHealthApi {
       analytes,
       observationdate: this.formatDate(observedDate),
       internalnote: "Lab Result Added via Metriport App",
-      documenttypeid: "386265",
+      documenttypeid: labResultDocumentId,
     };
     const createdLabResult = await this.makeRequest<CreatedLabResult>({
       cxId,
@@ -811,8 +814,8 @@ class AthenaHealthApi {
     const data = {
       departmentid: this.stripDepartmentId(departmentId),
       documentdata: encounterText,
-      documentsubclass: "CLINICALDOCUMENT",
-      documenttypeid: "423482",
+      documentsubclass: clinicalNoteDocumentSubclass,
+      documenttypeid: clinicalNoteDocumentId,
       internalnote: "Note Added via Metriport App",
       observationdate: this.formatDate(date),
     };
@@ -858,6 +861,9 @@ class AthenaHealthApi {
       departmentId,
       allergyIntoleranceId: allergyIntolerance.id,
     };
+    if (!allergyIntolerance.reaction || allergyIntolerance.reaction.length < 1) {
+      throw new BadRequestError("No reactions found for allergy", undefined, additionalInfo);
+    }
     const allergenOptions = await this.searchForAllergen({
       cxId,
       patientId,
@@ -874,16 +880,13 @@ class AthenaHealthApi {
       allergenId: firstOption.allergenid,
     });
     const existingReactions = existingAllergy?.reactions ?? [];
-    const newReactions = allergyIntolerance.reaction ?? [];
-    if (existingReactions.length < 1 && newReactions.length < 1) {
-      throw new BadRequestError("No reactions found for allergy", undefined, additionalInfo);
-    }
+    const newReactions = allergyIntolerance.reaction;
     const possibleReactions = await this.getCompleteAllergyReactions({ cxId });
     const possibleSeverities = await this.getCompleteAllergySeverities({ cxId });
-    const reactions = [
+    const allReactions = [
       ...existingReactions,
       ...newReactions.flatMap(reaction => {
-        const snomedCode = getAllergyIntoleranceReactionSnomedCode(reaction);
+        const snomedCode = getAllergyIntoleranceManifestationSnomedCode(reaction);
         if (!snomedCode) return [];
         const reactionReference = possibleReactions.find(r => r.snomedcode === snomedCode);
         if (!reactionReference) return [];
@@ -906,14 +909,11 @@ class AthenaHealthApi {
         ];
       }),
     ];
-    if (reactions.length === 0) {
-      throw new BadRequestError("No reactions found for allergy", undefined, additionalInfo);
-    }
-    const criticality = allergyIntolerance.criticality;
     const onsetDate = getAllergyIntoleranceOnsetDate(allergyIntolerance);
     if (!onsetDate) {
       throw new BadRequestError("No onset date found for allergy", undefined, additionalInfo);
     }
+    const criticality = allergyIntolerance.criticality;
     const allergies = [
       {
         allergenid: firstOption.allergenid,
@@ -921,7 +921,7 @@ class AthenaHealthApi {
         criticality,
         note: "Added via Metriport App",
         onsetdate: this.formatDate(onsetDate),
-        reactions: uniqBy(reactions, "snomedcode"),
+        reactions: uniqBy(allReactions, "snomedcode"),
       },
     ];
     const data = {
@@ -1093,7 +1093,7 @@ class AthenaHealthApi {
       medicationId: medication.id,
     };
     const searchValues = medication.code?.coding?.flatMap(c => c.display?.split("/") ?? []);
-    if (!searchValues || searchValues.length === 0) {
+    if (!searchValues || searchValues.length < 1) {
       throw new BadRequestError(
         "No search values for searching medication references",
         undefined,
@@ -1103,7 +1103,7 @@ class AthenaHealthApi {
     const searchValuesWithAtLeastTwoParts = searchValues.filter(
       searchValue => searchValue.length >= 2
     );
-    if (searchValuesWithAtLeastTwoParts.length === 0) {
+    if (searchValuesWithAtLeastTwoParts.length < 1) {
       throw new BadRequestError(
         "No search values with at least two parts",
         undefined,
@@ -1178,13 +1178,15 @@ class AthenaHealthApi {
       patientId,
       allergyIntoleranceId: allergyIntolerance.id,
     };
-    const searchValues = allergyIntolerance.reaction
-      ?.flatMap(r => r.substance?.text?.toLowerCase().split(" ") ?? [])
-      .map(r => {
-        if (r.endsWith("s")) return r.slice(0, -1);
-        return r;
-      });
-    if (!searchValues || searchValues.length === 0) {
+    if (!allergyIntolerance.reaction || allergyIntolerance.reaction.length < 1) {
+      throw new BadRequestError("No reactions found for allergy", undefined, additionalInfo);
+    }
+    const searchValues = allergyIntolerance.reaction.flatMap(reaction => {
+      const searchValues = reaction.substance?.text?.toLowerCase().split(" ");
+      if (!searchValues || searchValues.length < 1) return [];
+      return searchValues.map(v => (v.endsWith("s") ? v.slice(0, -1) : v));
+    });
+    if (!searchValues || searchValues.length < 1) {
       throw new BadRequestError(
         "No search values for searching allergy references",
         undefined,
@@ -1194,7 +1196,7 @@ class AthenaHealthApi {
     const searchValuesWithAtLeastTwoParts = searchValues.filter(
       searchValue => searchValue.length >= 2
     );
-    if (searchValuesWithAtLeastTwoParts.length === 0) {
+    if (searchValuesWithAtLeastTwoParts.length < 1) {
       throw new BadRequestError(
         "No search values with at least two parts",
         undefined,
