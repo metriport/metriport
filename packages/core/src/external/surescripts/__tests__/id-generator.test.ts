@@ -47,8 +47,8 @@ describe("ID Generator", () => {
   it("should generate a random ID within the same millisecond", () => {
     const currentTimestamp = 1746844013337;
     const idGenerator = createIdGenerator(10, {
-      lastTime: currentTimestamp,
-      lastEntropy: Buffer.from("aa", "ascii"),
+      lastGenerationTime: currentTimestamp,
+      entropyOfLastGeneratedId: Buffer.from("aa", "ascii"),
     });
     const timestampId = idGenerator(currentTimestamp).toString("ascii");
     const timestampIdInSameMilli = idGenerator(currentTimestamp).toString("ascii");
@@ -72,8 +72,8 @@ describe("ID Generator", () => {
   it("should overflow the entropy buffer", () => {
     const currentTimestamp = 1746844013337;
     const idGenerator = createIdGenerator(10, {
-      lastTime: currentTimestamp,
-      lastEntropy: Buffer.from("zz", "ascii"),
+      lastGenerationTime: currentTimestamp,
+      entropyOfLastGeneratedId: Buffer.from("zz", "ascii"),
     });
     expect(idGenerator(currentTimestamp).toString("ascii")).toBe("-OPs04BO--");
   });

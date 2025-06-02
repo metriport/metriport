@@ -6,6 +6,7 @@ import { Config } from "../../util/config";
 import { getPatient } from "./api/get-patient";
 import { getPatientIds } from "./api/get-patient-ids";
 import { getCustomer } from "./api/get-customer";
+import { executeAsynchronously } from "../../util/concurrency";
 
 export class SurescriptsApi {
   axiosInstance: AxiosInstance;
@@ -22,11 +23,10 @@ export class SurescriptsApi {
 
   async getFacility(cxId: string, facilityId: string): Promise<FacilityData> {
     const customer = await this.getCustomer(cxId);
-    if (!customer)
-      throw new MetriportError("Customer not found", "customer_not_found", { cxId, facilityId });
     const facility = customer.facilities.find(f => f.id === facilityId);
-    if (!facility)
-      throw new MetriportError("Facility not found", "facility_not_found", { cxId, facilityId });
+    if (!facility) {
+      throw new MetriportError("Facility not found", undefined, { cxId, facilityId });
+    }
     return facility;
   }
 
@@ -37,10 +37,10 @@ export class SurescriptsApi {
 
   async getEachPatientById(cxId: string, patientIds: string[]): Promise<Patient[]> {
     const patients: Patient[] = [];
-    for (const patientId of patientIds) {
+    await executeAsynchronously(patientIds, async patientId => {
       const patient = await this.getPatient(cxId, patientId);
-      if (patient) patients.push(patient);
-    }
+      patients.push(patient);
+    });
     return patients;
   }
 

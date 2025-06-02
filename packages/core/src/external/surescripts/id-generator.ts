@@ -6,8 +6,9 @@ const LEXICON_END = LEXICON.charCodeAt(LEXICON.length - 1);
 export function createIdGenerator(
   totalLength: number,
   initialState: {
-    lastTime?: number; // for testing purposes
-    lastEntropy?: Buffer;
+    // for testing purposes
+    lastGenerationTime?: number;
+    entropyOfLastGeneratedId?: Buffer;
   } = {}
 ): IdGenerator {
   if (totalLength < 8) throw new Error("Total length must be at least 8");
@@ -15,8 +16,8 @@ export function createIdGenerator(
 
   // Within an ID generator context, these shared vars enforce an invariant that
   // two sequentially generated IDs will *always* be lexicographically ordered correctly.
-  let lastTime: number | null = initialState.lastTime ?? null;
-  const lastEntropy: Buffer = initialState.lastEntropy ?? Buffer.alloc(entropyLength);
+  let lastTime: number | null = initialState.lastGenerationTime ?? null;
+  const lastEntropy: Buffer = initialState.entropyOfLastGeneratedId ?? Buffer.alloc(entropyLength);
 
   return function (time?: number, entropy?: 0 | 1): Buffer {
     const id: Buffer = Buffer.alloc(totalLength);
