@@ -19,6 +19,11 @@ export interface SurescriptsSftpConfig extends Partial<Omit<SftpConfig, "passwor
   replicaBucket?: string;
 }
 
+export enum SurescriptsEnvironment {
+  Production = "P",
+  Test = "T",
+}
+
 export enum TransmissionType {
   Enroll = "ENR",
   Unenroll = "UNR",
@@ -44,7 +49,7 @@ export class SurescriptsSftpClient extends SftpClient {
   senderId: string;
   senderPassword: string;
   receiverId: string;
-  usage: "T" | "P"; // test or production
+  usage: SurescriptsEnvironment;
 
   constructor(config: SurescriptsSftpConfig) {
     super({
@@ -63,7 +68,9 @@ export class SurescriptsSftpClient extends SftpClient {
 
     this.senderId = config.senderId ?? Config.getSurescriptsSftpSenderId();
     this.senderPassword = config.senderPassword ?? Config.getSurescriptsSftpSenderPassword();
-    this.usage = Config.isCloudEnv() ? "P" : "T";
+    this.usage = Config.isProduction()
+      ? SurescriptsEnvironment.Production
+      : SurescriptsEnvironment.Test;
     this.receiverId = config.receiverId ?? Config.getSurescriptsSftpReceiverId();
   }
 

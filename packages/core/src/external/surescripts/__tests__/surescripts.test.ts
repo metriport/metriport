@@ -2,6 +2,10 @@ import { SurescriptsSftpClient } from "../client";
 import { TransmissionType } from "../client";
 
 describe("Surescripts SFTP Client", () => {
+  it("should fail to create a client without environment variables", () => {
+    expect(() => new SurescriptsSftpClient({})).toThrowError();
+  });
+
   it("should create a client", () => {
     const client = new SurescriptsSftpClient({
       host: "TestHost",

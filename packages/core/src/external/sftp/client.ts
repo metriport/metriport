@@ -38,7 +38,7 @@ export class SftpClient implements SftpClientImpl {
   constructor({ host, port, username, password, privateKey }: SftpConfig) {
     this.client = new SshSftpClient();
     this.sshErrorHandler = (error?: unknown) => {
-      if (error != null) this.sshError.push(error);
+      if (error) this.sshError.push(error);
     };
 
     this.host = host;
@@ -65,7 +65,7 @@ export class SftpClient implements SftpClientImpl {
     const result = await executionHandler.call(this, this.client);
     const unexpectedSshError = this.sshError[0];
     if (unexpectedSshError) throw unexpectedSshError;
-    return result as T;
+    return result;
   }
 
   async connect(): Promise<void> {

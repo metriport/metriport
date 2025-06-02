@@ -16,6 +16,10 @@ export class Config {
     return process.env.NODE_ENV === this.PROD_ENV;
   }
 
+  static isProduction(): boolean {
+    return Config.getEnvType() === this.PROD_ENV;
+  }
+
   static isSandbox(): boolean {
     return Config.getEnvType() === this.SANDBOX_ENV;
   }
