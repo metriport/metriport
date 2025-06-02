@@ -52,7 +52,7 @@ export const handler = capture.wrapHandler(
       transmission,
       patients
     );
-    await client.writePatientLoadFileToStorage(transmission, content);
+    await client.writePatientLoadFileToS3(transmission, content);
     log(`Wrote ${requested.length} / ${patients.length} patients to S3 replica bucket`);
     log(`Transmission ID: ${transmission.id}`);
   }

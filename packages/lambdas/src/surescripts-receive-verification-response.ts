@@ -1,6 +1,6 @@
 import { capture } from "./shared/capture";
 import { prefixedLog } from "./shared/log";
-import { SurescriptsSftpClient, Transmission } from "@metriport/core/external/surescripts/client";
+import { SurescriptsSftpClient } from "@metriport/core/external/surescripts/client";
 import { getSurescriptSecrets } from "./shared/surescripts";
 
 capture.init();
@@ -8,16 +8,30 @@ capture.init();
 const log = prefixedLog("surescripts");
 
 // Stub which will be integrated with Surescripts commands
-export const handler = capture.wrapHandler(async (transmission: Transmission) => {
-  const { surescriptsPublicKey, surescriptsPrivateKey, surescriptsSenderPassword } =
-    await getSurescriptSecrets();
+export const handler = capture.wrapHandler(
+  async ({ requestFileName }: { requestFileName: string }) => {
+    const { surescriptsPublicKey, surescriptsPrivateKey, surescriptsSenderPassword } =
+      await getSurescriptSecrets();
 
-  const client = new SurescriptsSftpClient({
-    senderPassword: surescriptsSenderPassword,
-    publicKey: surescriptsPublicKey,
-    privateKey: surescriptsPrivateKey,
-  });
+    const client = new SurescriptsSftpClient({
+      senderPassword: surescriptsSenderPassword,
+      publicKey: surescriptsPublicKey,
+      privateKey: surescriptsPrivateKey,
+    });
 
-  log(`Receiving verification response for transmission ${transmission.id}`);
-  await client.receiveVerificationResponse(transmission);
-});
+    await client.connect();
+    log("Connected to Surescripts");
+
+    const response = await client.receiveVerificationResponse(requestFileName);
+    if (response) {
+      log("Received verification response");
+      log(`Verification file name: ${response.verificationFileName}`);
+      log(`Verification file size: ${response.verificationFileContent.length} bytes`);
+    } else {
+      log("No verification response found");
+    }
+
+    await client.disconnect();
+    log("Disconnected from Surescripts");
+  }
+);
