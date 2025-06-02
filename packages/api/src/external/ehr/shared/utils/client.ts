@@ -5,6 +5,7 @@ import EClinicalWorksApi, {
 } from "@metriport/core/external/ehr/eclinicalworks/index";
 import ElationApi, { ElationEnv } from "@metriport/core/external/ehr/elation/index";
 import HealthieApi, { HealthieEnv } from "@metriport/core/external/ehr/healthie/index";
+import TouchWorksApi, { TouchWorksEnv } from "@metriport/core/external/ehr/touchworks/index";
 import { JwtTokenInfo, MetriportError } from "@metriport/shared";
 import {
   findOrCreateJwtToken,
@@ -12,7 +13,7 @@ import {
 } from "../../../../command/jwt-token";
 import { EhrClientJwtTokenSource } from "./jwt-token";
 
-type EhrEnv = AthenaEnv | ElationEnv | CanvasEnv | HealthieEnv | EClinicalWorksEnv;
+type EhrEnv = AthenaEnv | ElationEnv | CanvasEnv | HealthieEnv | EClinicalWorksEnv | TouchWorksEnv;
 export type EhrEnvAndClientCredentials<Env extends EhrEnv> = {
   environment: Env;
   clientKey: string;
@@ -24,7 +25,13 @@ export type EhrEnvAndApiKey<Env extends EhrEnv> = {
   apiKey: string;
 };
 
-export type EhrClient = AthenaHealthApi | ElationApi | CanvasApi | HealthieApi | EClinicalWorksApi;
+export type EhrClient =
+  | AthenaHealthApi
+  | ElationApi
+  | CanvasApi
+  | HealthieApi
+  | EClinicalWorksApi
+  | TouchWorksApi;
 type EhrClientTwoLeggedAuth = AthenaHealthApi | ElationApi | CanvasApi;
 export type EhrClientParams<Env extends EhrEnv> = {
   twoLeggedAuthTokenInfo: JwtTokenInfo | undefined;

@@ -27,7 +27,7 @@ class TouchWorksApi {
     this.practiceId = config.practiceId;
     this.baseFhirUrl = `https://${
       config.environment === "production" ? "" : "staging-"
-    }fhir.ecwcloud.com`;
+    }fhir.touchworks.com`;
     this.axiosFhirInstance = axios.create({});
     this.token = config.authToken;
   }
