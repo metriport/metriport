@@ -97,7 +97,7 @@ export const specializedHydration = {
     missingResType: "Encounter",
   },
 
-  diagosticReportAndObservation: {
+  diagnosticReportAndObservation: {
     makeInputResource: (missingObservation: Observation) =>
       makeDiagnosticReport({ result: [makeReference(missingObservation)] }),
     resourceType: "DiagnosticReport",
@@ -105,7 +105,7 @@ export const specializedHydration = {
     missingResType: "Observation",
   },
 
-  diagosticReportAndPractitioner: {
+  diagnosticReportAndPractitioner: {
     makeInputResource: (missingPractitioner: Practitioner) =>
       makeDiagnosticReport({ performer: [makeReference(missingPractitioner)] }),
     resourceType: "DiagnosticReport",
@@ -113,7 +113,7 @@ export const specializedHydration = {
     missingResType: "Practitioner",
   },
 
-  diagosticReportAndOrganization: {
+  diagnosticReportAndOrganization: {
     makeInputResource: (missingOrganization: Organization) =>
       makeDiagnosticReport({ performer: [makeReference(missingOrganization)] }),
     resourceType: "DiagnosticReport",

@@ -50,8 +50,8 @@ describe("search-consolidated", () => {
       runTest(genericHydration.conditionAndPractitioner);
       runTest(genericHydration.practitionerAndOrganization);
       runTest(genericHydration.medicationAdministrationAndPractitioner);
-      runTest(specializedHydration.diagosticReportAndPractitioner);
-      runTest(specializedHydration.diagosticReportAndOrganization);
+      runTest(specializedHydration.diagnosticReportAndPractitioner);
+      runTest(specializedHydration.diagnosticReportAndOrganization);
 
       function runTest<T extends Resource, M extends Resource>({
         makeInputResource,
@@ -153,7 +153,7 @@ describe("search-consolidated", () => {
 
     describe("specialized hydration", () => {
       runTest(specializedHydration.diagnosticReportAndEncounter);
-      runTest(specializedHydration.diagosticReportAndObservation);
+      runTest(specializedHydration.diagnosticReportAndObservation);
       runTest(specializedHydration.medicationAdministrationAndMedication);
       runTest(specializedHydration.medicationRequestAndMedication);
       runTest(specializedHydration.medicationDispenseAndMedication);
