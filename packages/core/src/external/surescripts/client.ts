@@ -52,7 +52,7 @@ export class SurescriptsSftpClient extends SftpClient {
   receiverId: string;
   usage: SurescriptsEnvironment;
 
-  constructor(config: SurescriptsSftpConfig) {
+  constructor(config: SurescriptsSftpConfig = {}) {
     super({
       ...config,
       host: config.host ?? Config.getSurescriptsHost(),

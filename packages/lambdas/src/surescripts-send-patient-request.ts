@@ -35,7 +35,9 @@ export const handler = capture.wrapHandler(
       patientIdsForFacility.push(...patientIds);
     } else if (patientId) {
       patientIdsForFacility.push(patientId);
-    } else throw new MetriportError("Invalid request");
+    } else {
+      throw new MetriportError("Invalid request");
+    }
 
     const patients = await api.getEachPatientById(cxId, patientIdsForFacility);
     if (patients.length === 0) {
