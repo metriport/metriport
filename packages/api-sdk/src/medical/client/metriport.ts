@@ -588,6 +588,7 @@ export class MetriportMedicalApi {
    * Returns the medical record summary for a given patient.
    *
    * @param patientId The ID of the patient whose medical record summary is to be returned.
+   * @param conversionType The format of the medical record summary to be returned. Accepts "html" or "pdf".
    * @return The medical record summary for the given patient.
    */
   async getPatientMedicalRecord(
