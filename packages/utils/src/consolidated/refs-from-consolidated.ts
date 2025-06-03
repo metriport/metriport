@@ -41,7 +41,7 @@ async function main() {
   const bundle = JSON.parse(bundleContents) as Bundle<Resource>;
 
   const { references, missingReferences } = getReferencesFromResources({
-    resources: (bundle.entry ?? [])?.flatMap(e => e.resource ?? []),
+    resourcesToCheckRefs: (bundle.entry ?? [])?.flatMap(e => e.resource ?? []),
   });
 
   const refsAsString = JSON.stringify(references, null, 2);

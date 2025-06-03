@@ -1,15 +1,16 @@
-import { Resource } from "@medplum/fhirtypes";
+import { Resource, ResourceType } from "@medplum/fhirtypes";
 import { errorToString } from "@metriport/shared";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { SearchSetBundle } from "@metriport/shared/medical";
 import { timed } from "@metriport/shared/util/duration";
-import { uniq } from "lodash";
+import { Dictionary, groupBy, uniq } from "lodash";
 import { Patient } from "../../../../domain/patient";
 import { toFHIR as patientToFhir } from "../../../../external/fhir/patient/conversion";
 import {
   buildBundleEntry,
   buildSearchSetBundle,
   getReferencesFromResources,
+  ReferenceWithIdAndType,
 } from "../../../../external/fhir/shared/bundle";
 import {
   FhirSearchResult,
@@ -22,6 +23,13 @@ import { searchDocuments } from "../document-reference/search";
 import { getConfigs } from "./fhir-config";
 
 const maxHydrationAttempts = 5;
+
+const medRelatedResourceTypes: ResourceType[] = [
+  "Medication",
+  "MedicationRequest",
+  "MedicationDispense",
+  "MedicationAdministration",
+];
 
 export type SearchConsolidatedParams = {
   patient: Patient;
@@ -148,22 +156,63 @@ export async function hydrateMissingReferences({
   patientId,
   resources,
   iteration = 1,
-  hydratePatient = false,
 }: {
   cxId: string;
   patientId: string;
   resources: Resource[];
   iteration?: number;
-  hydratePatient?: boolean;
 }): Promise<Resource[]> {
   const { log } = out("OS.hydrateMissingReferences");
 
   if (iteration > maxHydrationAttempts) return resources;
 
-  const { missingReferences } = getReferencesFromResources({ resources });
-  const missingRefIds = missingReferences.flatMap(r => {
+  const resourcesToHydrate: ReferenceWithIdAndType<Resource>[] = [];
+
+  const resourcesByType = groupBy(resources, "resourceType");
+  Object.entries(resourcesByType).forEach(([currentResourceType, resourcesOfCurrentType]) => {
+    const { missingReferences } = getReferencesFromResources({
+      resourcesToCheckRefs: resourcesOfCurrentType,
+      sourceResources: resources,
+    });
+
+    if (missingReferences.length < 1) return;
+
+    const missingRefsByType = groupBy(missingReferences, "type");
+
+    const missingPractitioners = get(missingRefsByType, "Practitioner");
+    if (missingPractitioners && missingPractitioners.length > 0) {
+      resourcesToHydrate.push(...missingPractitioners);
+    }
+
+    const missingOrgs = get(missingRefsByType, "Organization");
+    if (missingOrgs && missingOrgs.length > 0) {
+      resourcesToHydrate.push(...missingOrgs);
+    }
+
+    if (currentResourceType === "DiagnosticReport") {
+      const missingEncounters = get(missingRefsByType, "Encounter");
+      if (missingEncounters && missingEncounters.length > 0) {
+        resourcesToHydrate.push(...missingEncounters);
+      }
+      const missingObservations = get(missingRefsByType, "Observation");
+      if (missingObservations && missingObservations.length > 0) {
+        resourcesToHydrate.push(...missingObservations);
+      }
+    }
+
+    if (medRelatedResourceTypes.includes(currentResourceType as ResourceType)) {
+      medRelatedResourceTypes.forEach(medRelatedResourceType => {
+        const missingMedRelatedResources = get(missingRefsByType, medRelatedResourceType);
+        if (missingMedRelatedResources && missingMedRelatedResources.length > 0) {
+          resourcesToHydrate.push(...missingMedRelatedResources);
+        }
+      });
+    }
+  });
+
+  const missingRefIds = resourcesToHydrate.flatMap(r => {
     const referenceId = r.id;
-    if (!referenceId || (!hydratePatient && referenceId === patientId)) return [];
+    if (!referenceId || referenceId === patientId) return [];
     return getEntryId(cxId, patientId, referenceId);
   });
   if (missingRefIds.length < 1) return resources;
@@ -189,10 +238,16 @@ export async function hydrateMissingReferences({
     patientId,
     resources: mergedResources,
     iteration: ++iteration,
-    hydratePatient,
   });
 
   return hydratedResources;
+}
+
+function get<K extends ResourceType, T extends ReferenceWithIdAndType<Resource>[]>(
+  obj: Dictionary<T>,
+  key: K
+): T | undefined {
+  return obj[key];
 }
 
 function fhirSearchResultToResource<T extends Resource>(

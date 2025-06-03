@@ -113,7 +113,9 @@ export function addMissingReferences(
 ): Bundle {
   const filteredResources = (filteredBundle.entry ?? []).flatMap(e => e.resource ?? []);
 
-  const { missingReferences } = getReferencesFromResources({ resources: filteredResources });
+  const { missingReferences } = getReferencesFromResources({
+    resourcesToCheckRefs: filteredResources,
+  });
 
   const resourcesToAdd = getResourcesFromBundle(missingReferences, originalBundle);
 
@@ -125,7 +127,7 @@ export function addMissingReferences(
   };
 
   const { missingReferences: missingRefsFromAddedResources } = getReferencesFromResources({
-    resources: resourcesToAdd,
+    resourcesToCheckRefs: resourcesToAdd,
   });
 
   if (missingRefsFromAddedResources.length && iteration < maxHydrationIterations) {
