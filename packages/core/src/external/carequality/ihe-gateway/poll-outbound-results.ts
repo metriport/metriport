@@ -3,19 +3,22 @@ import {
   OutboundDocumentRetrievalResp,
   OutboundPatientDiscoveryResp,
 } from "@metriport/ihe-gateway-sdk";
+import { dbCredsSchemaReadOnly } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { QueryTypes, Sequelize } from "sequelize";
+import { Config } from "../../../util/config";
 import { MetriportError } from "../../../util/error/metriport-error";
 import { errorToString } from "../../../util/error/shared";
 import { capture } from "../../../util/notifications";
 import { checkIfRaceIsComplete, controlDuration, RaceControl } from "../../../util/race-control";
-import { initDbPool } from "../../../util/sequelize";
+import { initDbPool, parseDbCreds } from "../../../util/sequelize";
 import {
   OutboundDocumentQueryRespTableEntry,
   OutboundDocumentRetrievalRespTableEntry,
   OutboundPatientDiscoveryRespTableEntry,
 } from "./outbound-result";
+import { PollOutboundResults } from "./outbound-result-poller";
 
 dayjs.extend(duration);
 
@@ -27,17 +30,10 @@ const PATIENT_DISCOVERY_RESULT_TABLE_NAME = "patient_discovery_result";
 const DOC_QUERY_RESULT_TABLE_NAME = "document_query_result";
 const DOC_RETRIEVAL_RESULT_TABLE_NAME = "document_retrieval_result";
 
-type PollOutboundResults = {
-  requestId: string;
-  patientId: string;
-  cxId: string;
-  numOfGateways: number;
-  dbCreds: string;
-  maxPollingDuration?: number;
-};
+type PollOutboundResultsWithDbCreds = PollOutboundResults & { dbCreds: string };
 
 export async function pollOutboundPatientDiscoveryResults(
-  params: PollOutboundResults
+  params: PollOutboundResultsWithDbCreds
 ): Promise<OutboundPatientDiscoveryResp[]> {
   const results = await pollResults({
     ...params,
@@ -49,7 +45,7 @@ export async function pollOutboundPatientDiscoveryResults(
 }
 
 export async function pollOutboundDocQueryResults(
-  params: PollOutboundResults
+  params: PollOutboundResultsWithDbCreds
 ): Promise<OutboundDocumentQueryResp[]> {
   const results = await pollResults({
     ...params,
@@ -61,7 +57,7 @@ export async function pollOutboundDocQueryResults(
 }
 
 export async function pollOutboundDocRetrievalResults(
-  params: PollOutboundResults
+  params: PollOutboundResultsWithDbCreds
 ): Promise<OutboundDocumentRetrievalResp[]> {
   const results = await pollResults({
     ...params,
@@ -81,11 +77,17 @@ async function pollResults({
   dbCreds,
   resultsTable,
   context,
-}: PollOutboundResults & {
+}: PollOutboundResultsWithDbCreds & {
   resultsTable: string;
   context: string;
 }): Promise<object[]> {
-  const sequelize = initDbPool(dbCreds);
+  const parsedDbCreds = parseDbCreds(dbCreds);
+  const parsedReadReplicaDbCreds = dbCredsSchemaReadOnly.parse(Config.getDbReadReplicaEndpoint());
+  const sequelize = initDbPool({
+    ...parsedDbCreds,
+    host: parsedReadReplicaDbCreds.host,
+    port: parsedReadReplicaDbCreds.port,
+  });
   const raceControl: RaceControl = { isRaceInProgress: true };
   const maxTimeout = maxPollingDuration ?? CONTROL_TIMEOUT.asMilliseconds();
 

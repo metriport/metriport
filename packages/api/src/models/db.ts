@@ -215,7 +215,7 @@ function getDbCreds(): DbCreds {
 function getDbReadReplicaEndpoint(): DbCredsReadOnly {
   function getAndParseReaderEndpoint(): DbCredsReadOnly {
     try {
-      const rawProps = Config.getDbReadReplicaEndpoint();
+      const rawProps = ConfigCore.getDbReadReplicaEndpoint();
       const parsedProps = dbCredsSchemaReadOnly.parse(JSON.parse(rawProps));
       return parsedProps;
     } catch (error) {

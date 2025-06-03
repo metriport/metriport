@@ -46,6 +46,10 @@ export class Config {
     return getEnvVarOrFail("AWS_REGION");
   }
 
+  static getDbReadReplicaEndpoint(): string {
+    return getEnvVarOrFail("DB_READ_REPLICA_ENDPOINT");
+  }
+
   static getSearchEndpoint(): string {
     return getEnvVarOrFail("SEARCH_ENDPOINT");
   }
