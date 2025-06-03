@@ -8,7 +8,7 @@ export interface SftpConfig {
   port: number;
   username: string;
   password: string;
-  privateKey: string;
+  privateKey?: string;
 }
 
 export interface SftpClientImpl {
@@ -31,7 +31,7 @@ export class SftpClient implements SftpClientImpl {
   protected readonly port: number;
   protected readonly username: string;
   protected readonly password: string;
-  protected readonly privateKey: string;
+  protected readonly privateKey?: string | undefined;
   private connected = false;
   private connectionEnded = false;
 
@@ -75,7 +75,7 @@ export class SftpClient implements SftpClientImpl {
         port: this.port,
         username: this.username,
         password: this.password,
-        privateKey: this.privateKey,
+        ...(this.privateKey ? { privateKey: this.privateKey } : {}),
         tryKeyboard: false,
         agentForward: false,
       });
