@@ -3,13 +3,13 @@ import { EhrSource, EhrSources } from "@metriport/shared/interface/external/ehr/
 import { getAthenaEnv } from "../athenahealth/environment";
 import { getCanvasEnv } from "../canvas/environment";
 import { getElationEnv } from "../elation/environment";
-import { getHealthieEnv } from "../healthie/environment";
 import {
   EhrEnv,
   EhrEnvAndApiKey,
   EhrEnvAndClientCredentials,
   EhrPerPracticeParams,
 } from "../environment";
+import { getHealthieEnv } from "../healthie/environment";
 
 /**
  * Get the secrets for the EHR
