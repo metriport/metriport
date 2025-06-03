@@ -1,12 +1,10 @@
 import { Address } from "@metriport/core/domain/address";
 import { Contact } from "@metriport/core/domain/contact";
-import HealthieApi, {
-  HealthieEnv,
-  isHealthieEnv,
-} from "@metriport/core/external/ehr/healthie/index";
+import { EhrPerPracticeParams } from "@metriport/core/external/ehr/environment";
+import { getHealthieEnv } from "@metriport/core/external/ehr/healthie/environment";
+import HealthieApi, { HealthieEnv } from "@metriport/core/external/ehr/healthie/index";
 import {
   BadRequestError,
-  cxApiKeyMapSecretSchema,
   MetriportError,
   normalizeCountrySafe,
   normalizedCountryUsa,
@@ -23,8 +21,6 @@ import { SubscriptionResource } from "@metriport/shared/interface/external/ehr/h
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import dayjs from "dayjs";
 import { getCxMappingOrFail } from "../../../command/mapping/cx";
-import { Config } from "../../../shared/config";
-import { EhrEnvAndApiKey, EhrPerPracticeParams } from "../shared/utils/client";
 
 export const healthieWebhookCreatedDateDiffSeconds = dayjs.duration(5, "seconds");
 
@@ -81,25 +77,6 @@ export function createNames(patient: HealthiePatient): { firstName: string; last
   };
 }
 
-export function getHealthieEnv({
-  cxId,
-  practiceId,
-}: EhrPerPracticeParams): EhrEnvAndApiKey<HealthieEnv> {
-  const environment = Config.getHealthieEnv();
-  if (!environment) throw new MetriportError("Healthie environment not set");
-  if (!isHealthieEnv(environment)) {
-    throw new MetriportError("Invalid Healthie environment", undefined, { environment });
-  }
-  const apiKeyMap = getApiKeyMap();
-  const key = `${cxId}_${practiceId}_apiKey`;
-  const keyEntry = apiKeyMap[key];
-  if (!keyEntry) throw new MetriportError("Healthie credentials not found");
-  return {
-    environment,
-    apiKey: keyEntry,
-  };
-}
-
 export async function createHealthieClientWithEnvironment(
   perPracticeParams: EhrPerPracticeParams
 ): Promise<{ client: HealthieApi; environment: HealthieEnv }> {
@@ -146,14 +123,6 @@ export async function getHealthieSecretKeyInfo(
     });
   }
   return { cxId: cxMapping.cxId, practiceId, secretKey };
-}
-
-function getApiKeyMap() {
-  const rawApiKeyMap = Config.getHealthieApiKeyMap();
-  if (!rawApiKeyMap) throw new MetriportError("Healthie secrets map not set");
-  const apiKeyMap = cxApiKeyMapSecretSchema.safeParse(JSON.parse(rawApiKeyMap));
-  if (!apiKeyMap.success) throw new MetriportError("Healthie api key map has invalid format");
-  return apiKeyMap.data;
 }
 
 export enum LookupModes {

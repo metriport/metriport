@@ -27,19 +27,19 @@ function settings(): {
   computeResourceDiffBundles: QueueAndLambdaSettings;
   refreshEhrBundles: QueueAndLambdaSettings;
 } {
-  const getAppointmentsLambdaTimeout = Duration.minutes(12);
+  const getAppointmentsLambdaTimeout = Duration.minutes(15);
   const getAppointments: LambdaSettings = {
     name: "EhrGetAppointments",
-    entry: "ehr-get-appointments",
+    entry: "ehr/get-appointments",
     lambda: {
-      memory: 4096,
+      memory: 1024,
       timeout: getAppointmentsLambdaTimeout,
     },
   };
   const syncPatientLambdaTimeout = waitTimePatientSync.plus(Duration.seconds(25));
   const syncPatient: QueueAndLambdaSettings = {
     name: "EhrSyncPatient",
-    entry: "ehr-sync-patient",
+    entry: "ehr/sync-patient",
     lambda: {
       memory: 512,
       timeout: syncPatientLambdaTimeout,
@@ -60,7 +60,7 @@ function settings(): {
   const elationLinkPatientLambdaTimeout = waitTimeElationLinkPatient.plus(Duration.seconds(25));
   const elationLinkPatient: QueueAndLambdaSettings = {
     name: "EhrElationLinkPatient",
-    entry: "elation-link-patient",
+    entry: "ehr/elation/link-patient",
     lambda: {
       memory: 512,
       timeout: elationLinkPatientLambdaTimeout,
@@ -81,7 +81,7 @@ function settings(): {
   const healthieLinkPatientLambdaTimeout = waitTimeHealthieLinkPatient.plus(Duration.seconds(25));
   const healthieLinkPatient: QueueAndLambdaSettings = {
     name: "EhrHealthieLinkPatient",
-    entry: "healthie-link-patient",
+    entry: "ehr/healthie/link-patient",
     lambda: {
       memory: 512,
       timeout: healthieLinkPatientLambdaTimeout,
@@ -100,10 +100,10 @@ function settings(): {
     waitTime: waitTimeHealthieLinkPatient,
   };
   // Skip adding the wait time to the lambda timeout because it's already sub 1 second
-  const computeResourceDiffBundlesLambdaTimeout = Duration.minutes(12);
+  const computeResourceDiffBundlesLambdaTimeout = Duration.minutes(15);
   const computeResourceDiffBundles: QueueAndLambdaSettings = {
     name: "EhrComputeResourceDiffBundles",
-    entry: "ehr-compute-resource-diff-bundles",
+    entry: "ehr/compute-resource-diff-bundles",
     lambda: {
       memory: 4096,
       timeout: computeResourceDiffBundlesLambdaTimeout,
@@ -125,10 +125,10 @@ function settings(): {
     waitTime: waitTimeComputeResourceDiff,
   };
   // Skip adding the wait time to the lambda timeout because it's already sub 1 second
-  const refreshEhrBundlesLambdaTimeout = Duration.minutes(12);
+  const refreshEhrBundlesLambdaTimeout = Duration.minutes(15);
   const refreshEhrBundles: QueueAndLambdaSettings = {
     name: "EhrRefreshEhrBundles",
-    entry: "ehr-refresh-ehr-bundles",
+    entry: "ehr/refresh-ehr-bundles",
     lambda: {
       memory: 512,
       timeout: refreshEhrBundlesLambdaTimeout,

@@ -1,34 +1,16 @@
-import AthenaHealthApi, { AthenaEnv } from "@metriport/core/external/ehr/athenahealth/index";
-import CanvasApi, { CanvasEnv } from "@metriport/core/external/ehr/canvas/index";
-import { EClinicalWorksEnv } from "@metriport/core/external/ehr/eclinicalworks/index";
-import ElationApi, { ElationEnv } from "@metriport/core/external/ehr/elation/index";
-import { HealthieEnv } from "@metriport/core/external/ehr/healthie/index";
+import {
+  EhrClientTwoLeggedAuth,
+  EhrClientTwoLeggedAuthParams,
+  EhrEnv,
+  EhrEnvAndClientCredentials,
+  EhrPerPracticeParams,
+} from "@metriport/core/external/ehr/environment";
 import { JwtTokenInfo, MetriportError } from "@metriport/shared";
 import {
   findOrCreateJwtToken,
   getLatestExpiringJwtTokenBySourceAndData,
 } from "../../../../command/jwt-token";
 import { EhrClientJwtTokenSource } from "./jwt-token";
-
-export type EhrEnv = AthenaEnv | ElationEnv | CanvasEnv | HealthieEnv | EClinicalWorksEnv;
-export type EhrEnvAndClientCredentials<Env extends EhrEnv> = {
-  environment: Env;
-  clientKey: string;
-  clientSecret: string;
-};
-
-export type EhrEnvAndApiKey<Env extends EhrEnv> = {
-  environment: Env;
-  apiKey: string;
-};
-
-export type EhrClientTwoLeggedClient = AthenaHealthApi | ElationApi | CanvasApi;
-export type EhrClientParams<Env extends EhrEnv> = {
-  twoLeggedAuthTokenInfo: JwtTokenInfo | undefined;
-  practiceId: string;
-} & EhrEnvAndClientCredentials<Env>;
-
-export type EhrPerPracticeParams = { cxId: string; practiceId: string };
 
 /**
  * Expiration checks are handled by the clients themselves.
@@ -55,7 +37,7 @@ export type GetEnvParams<Env extends EhrEnv, EnvArgs> = {
 
 export async function createEhrClient<
   Env extends EhrEnv,
-  Client extends EhrClientTwoLeggedClient,
+  Client extends EhrClientTwoLeggedAuth,
   EnvArgs = undefined
 >({
   cxId,
@@ -66,7 +48,7 @@ export async function createEhrClient<
 }: EhrPerPracticeParams & {
   source: EhrClientJwtTokenSource;
   getEnv: GetEnvParams<Env, EnvArgs>;
-  getClient: (params: EhrClientParams<Env>) => Promise<Client>;
+  getClient: (params: EhrClientTwoLeggedAuthParams<Env>) => Promise<Client>;
 }): Promise<{ client: Client; tokenId: string; environment: Env }> {
   const [environment, twoLeggedAuthTokenInfo] = await Promise.all([
     getEnv.getEnv(getEnv.params),

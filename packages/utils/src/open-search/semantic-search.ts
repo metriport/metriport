@@ -2,7 +2,7 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
 import { MetriportMedicalApi } from "@metriport/api-sdk";
-import { searchPatientConsolidated } from "@metriport/core/command/consolidated/search/fhir-resource/search-lexical";
+import { searchPatientConsolidated } from "@metriport/core/command/consolidated/search/fhir-resource/search-consolidated";
 import { getDomainFromDTO } from "@metriport/core/command/patient-loader-metriport-api";
 import { sleep } from "@metriport/core/util/sleep";
 import { getEnvVarOrFail } from "@metriport/shared";
