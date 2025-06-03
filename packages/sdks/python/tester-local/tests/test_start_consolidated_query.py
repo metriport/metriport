@@ -20,6 +20,7 @@ def test_start_consolidated_query():
     print("Calling start_consolidated_query...")
     response = metriport.medical.fhir.start_consolidated_query(
         id=patient_id,
+        conversion_type="json",
         resources="DocumentReference,Appointment",
         date_from="2021-03-01",
         date_to="2023-04-23"

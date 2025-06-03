@@ -36,7 +36,7 @@ export type QueryStatus = z.infer<typeof queryStatusSchema>;
 export type GetConsolidatedQueryProgressResponse = {
   /** @deprecated status should no longer be used. Refer to queries array instead. */
   status: QueryStatus;
-  queries: ConsolidatedQuery[] | null;
+  queries: ConsolidatedQuery[];
   message?: string;
 };
 

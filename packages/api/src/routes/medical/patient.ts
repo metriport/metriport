@@ -221,13 +221,13 @@ router.get(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const { patient } = getPatientInfoOrFail(req);
-    const consolidatedQueries = patient.data.consolidatedQueries ?? null;
+    const consolidatedQueries = patient.data.consolidatedQueries ?? [];
     const mostRecentQuery = orderBy(consolidatedQueries, "startedAt", "desc")[0];
 
     const respPayload: GetConsolidatedQueryProgressResponse = {
       /** @deprecated status should no longer be used. Refer to queries in the consolidatedQueries array instead. */
       status: mostRecentQuery?.status ?? null,
-      queries: consolidatedQueries ?? null,
+      queries: consolidatedQueries,
       message:
         "Trigger a new query by POST /patient/:id/consolidated/query; data will be sent through Webhook",
     };
