@@ -27,12 +27,12 @@ function settings(): {
   computeResourceDiffBundles: QueueAndLambdaSettings;
   refreshEhrBundles: QueueAndLambdaSettings;
 } {
-  const getAppointmentsLambdaTimeout = Duration.minutes(12);
+  const getAppointmentsLambdaTimeout = Duration.minutes(15);
   const getAppointments: LambdaSettings = {
     name: "EhrGetAppointments",
     entry: "ehr/get-appointments",
     lambda: {
-      memory: 4096,
+      memory: 1024,
       timeout: getAppointmentsLambdaTimeout,
     },
   };
@@ -100,7 +100,7 @@ function settings(): {
     waitTime: waitTimeHealthieLinkPatient,
   };
   // Skip adding the wait time to the lambda timeout because it's already sub 1 second
-  const computeResourceDiffBundlesLambdaTimeout = Duration.minutes(12);
+  const computeResourceDiffBundlesLambdaTimeout = Duration.minutes(15);
   const computeResourceDiffBundles: QueueAndLambdaSettings = {
     name: "EhrComputeResourceDiffBundles",
     entry: "ehr/compute-resource-diff-bundles",
@@ -125,7 +125,7 @@ function settings(): {
     waitTime: waitTimeComputeResourceDiff,
   };
   // Skip adding the wait time to the lambda timeout because it's already sub 1 second
-  const refreshEhrBundlesLambdaTimeout = Duration.minutes(12);
+  const refreshEhrBundlesLambdaTimeout = Duration.minutes(15);
   const refreshEhrBundles: QueueAndLambdaSettings = {
     name: "EhrRefreshEhrBundles",
     entry: "ehr/refresh-ehr-bundles",
