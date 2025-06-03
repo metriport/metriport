@@ -4,6 +4,7 @@ import {
   Coding,
   Condition,
   Immunization,
+  Medication,
   Observation,
   Procedure,
 } from "@medplum/fhirtypes";
@@ -27,7 +28,14 @@ import { z } from "zod";
 import { createHivePartitionFilePath } from "../../domain/filename";
 import { fetchCodingCodeOrDisplayOrSystem } from "../../fhir-deduplication/shared";
 import { Config } from "../../util/config";
-import { CPT_CODE, CVX_CODE, ICD_10_CODE, LOINC_CODE, SNOMED_CODE } from "../../util/constants";
+import {
+  CPT_CODE,
+  CVX_CODE,
+  ICD_10_CODE,
+  LOINC_CODE,
+  RXNORM_CODE,
+  SNOMED_CODE,
+} from "../../util/constants";
 import { processAsyncError } from "../../util/error/shared";
 import { out } from "../../util/log";
 import { uuidv7 } from "../../util/uuid-v7";
@@ -236,6 +244,16 @@ export function createDataParams(data: RequestData): string {
 
 export function isNotRetriableAxiosError(error: unknown): boolean {
   return isAxiosError(error) && (error.response?.status === 400 || error.response?.status === 404);
+}
+
+export function getMedicationRxnormCoding(medication: Medication): Coding | undefined {
+  const code = medication.code;
+  const rxnormCoding = code?.coding?.find(coding => {
+    const system = fetchCodingCodeOrDisplayOrSystem(coding, "system");
+    return system?.includes(RXNORM_CODE);
+  });
+  if (!rxnormCoding) return undefined;
+  return rxnormCoding;
 }
 
 export function getConditionIcd10Coding(condition: Condition): Coding | undefined {
@@ -469,6 +487,20 @@ export function getAllergyIntoleranceManifestationSnomedCoding(
   if (!manifestations) return undefined;
   const manifestationCodings = manifestations.flatMap(manifestation => manifestation.coding ?? []);
   const snomedCoding = manifestationCodings.find(coding => {
+    const system = fetchCodingCodeOrDisplayOrSystem(coding, "system");
+    return system?.includes(SNOMED_CODE);
+  });
+  if (!snomedCoding) return undefined;
+  return snomedCoding;
+}
+
+export function getAllergyIntoleranceSubstanceSnomedCoding(
+  allergyIntoleranceReaction: AllergyIntoleranceReaction
+): Coding | undefined {
+  const substance = allergyIntoleranceReaction.substance;
+  if (!substance) return undefined;
+  const substanceCodings = substance.coding ?? [];
+  const snomedCoding = substanceCodings.find(coding => {
     const system = fetchCodingCodeOrDisplayOrSystem(coding, "system");
     return system?.includes(SNOMED_CODE);
   });

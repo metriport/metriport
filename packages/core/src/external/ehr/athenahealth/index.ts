@@ -1,5 +1,6 @@
 import {
   AllergyIntolerance,
+  Coding,
   Condition,
   Immunization,
   Medication,
@@ -96,7 +97,8 @@ import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { getObservationCode, getObservationUnits } from "@metriport/shared/medical";
 import axios, { AxiosInstance } from "axios";
 import dayjs from "dayjs";
-import _, { uniqBy } from "lodash";
+import jaroWinkler from "jaro-winkler";
+import { uniqBy } from "lodash";
 import { executeAsynchronously } from "../../../util/concurrency";
 import { out } from "../../../util/log";
 import { capture } from "../../../util/notifications";
@@ -104,13 +106,15 @@ import {
   ApiConfig,
   createDataParams,
   formatDate,
-  getAllergyIntoleranceManifestationSnomedCode,
+  getAllergyIntoleranceManifestationSnomedCoding,
   getAllergyIntoleranceOnsetDate,
+  getAllergyIntoleranceSubstanceSnomedCoding,
   getConditionSnomedCode,
   getConditionStartDate,
   getConditionStatus,
   getImmunizationAdministerDate,
   getImmunizationCvxCode,
+  getMedicationRxnormCoding,
   getObservationInterpretation,
   getObservationLoincCoding,
   getObservationObservedDate,
@@ -362,7 +366,7 @@ class AthenaHealthApi {
     allergenId: string;
   }): Promise<Allergy | undefined> {
     const { debug } = out(
-      `AthenaHealth getAllergies - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
+      `AthenaHealth getAllergyForPatient - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
     );
     const params = {
       departmentid: this.stripDepartmentId(departmentId),
@@ -393,7 +397,7 @@ class AthenaHealthApi {
   }: {
     cxId: string;
     patientId: string;
-    departmentId?: string;
+    departmentId: string;
   }): Promise<PatientCustomField[]> {
     const { debug } = out(
       `AthenaHealth getCustomFieldsForPatient - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
@@ -401,7 +405,7 @@ class AthenaHealthApi {
     const params = {
       showprivacycustomfields: "true",
       showcustomfields: "true",
-      ...(departmentId ? { departmentid: this.stripDepartmentId(departmentId) } : {}),
+      departmentid: this.stripDepartmentId(departmentId),
     };
     const queryParams = new URLSearchParams(params);
     const patientsUrl = `/patients/${this.stripPatientId(patientId)}?${queryParams.toString()}`;
@@ -450,10 +454,14 @@ class AthenaHealthApi {
       departmentId,
       medicationId: medication.medication.id,
     };
+    const rxnormCoding = getMedicationRxnormCoding(medication.medication);
+    if (!rxnormCoding) {
+      throw new BadRequestError("No RXNORM code found for medication", undefined, additionalInfo);
+    }
     const medicationReference = await this.searchForMedication({
       cxId,
       patientId,
-      medication: medication.medication,
+      coding: rxnormCoding,
     });
     if (!medicationReference) {
       throw new BadRequestError(
@@ -466,7 +474,7 @@ class AthenaHealthApi {
       departmentid: this.stripDepartmentId(departmentId),
       providernote: "Added via Metriport App",
       unstructuredsig: "Metriport",
-      medicationid: `${medicationReference.medicationid}`,
+      medicationid: medicationReference.medicationid,
       hidden: false,
       startdate: this.formatDate(medication.statement?.effectivePeriod?.start),
       stopdate: this.formatDate(medication.statement?.effectivePeriod?.end),
@@ -861,13 +869,30 @@ class AthenaHealthApi {
       departmentId,
       allergyIntoleranceId: allergyIntolerance.id,
     };
-    if (!allergyIntolerance.reaction || allergyIntolerance.reaction.length < 1) {
+    const reaction = allergyIntolerance.reaction;
+    if (!reaction || reaction.length < 1) {
       throw new BadRequestError("No reactions found for allergy", undefined, additionalInfo);
     }
+    const snomedCodingsPairs: [Coding, Coding, string | undefined][] = reaction.flatMap(r => {
+      const substanceSnomedCoding = getAllergyIntoleranceSubstanceSnomedCoding(r);
+      if (!substanceSnomedCoding) return [];
+      const manifestationSnomedCoding = getAllergyIntoleranceManifestationSnomedCoding(r);
+      if (!manifestationSnomedCoding) return [];
+      return [[substanceSnomedCoding, manifestationSnomedCoding, r.severity]];
+    });
+    const snomedCodings = snomedCodingsPairs[0];
+    if (!snomedCodings) {
+      throw new BadRequestError(
+        "No SNOMED codes found for allergy reaction",
+        undefined,
+        additionalInfo
+      );
+    }
+    const [substanceSnomedCoding, manifestationSnomedCoding, severity] = snomedCodings;
     const allergenReference = await this.searchForAllergen({
       cxId,
       patientId,
-      allergyIntolerance: allergyIntolerance,
+      coding: substanceSnomedCoding,
     });
     if (!allergenReference) {
       throw new BadRequestError("No allergen options found via search", undefined, additionalInfo);
@@ -879,35 +904,32 @@ class AthenaHealthApi {
       allergenId: allergenReference.allergenid,
     });
     const existingReactions = existingAllergy?.reactions ?? [];
-    const newReactions = allergyIntolerance.reaction;
     const possibleReactions = await this.getCompleteAllergyReactions({ cxId });
+    const reactionReference = possibleReactions.find(
+      r => r.snomedcode === manifestationSnomedCoding.code
+    );
+    if (!reactionReference) {
+      throw new BadRequestError(
+        "No reaction reference found for allergy reaction manifestation",
+        undefined,
+        additionalInfo
+      );
+    }
     const possibleSeverities = await this.getCompleteAllergySeverities({ cxId });
-    const allReactions = [
-      ...existingReactions,
-      ...newReactions.flatMap(reaction => {
-        const snomedCode = getAllergyIntoleranceManifestationSnomedCode(reaction);
-        if (!snomedCode) return [];
-        const reactionReference = possibleReactions.find(r => r.snomedcode === snomedCode);
-        if (!reactionReference) return [];
-        const reactionOnly = {
-          reactionname: reactionReference.reactionname,
-          snomedcode: +reactionReference.snomedcode,
-        };
-        const severity = reaction.severity;
-        if (!severity) return [reactionOnly];
-        const severityReference = possibleSeverities.find(
-          s => s.severity.toLowerCase() === severity.toLowerCase()
-        );
-        if (!severityReference) return [reactionOnly];
-        return [
-          {
-            ...reactionOnly,
+    const severityReference = severity
+      ? possibleSeverities.find(s => s.severity.toLowerCase() === severity.toLowerCase())
+      : undefined;
+    const newReaction = {
+      reactionname: reactionReference.reactionname,
+      snomedcode: reactionReference.snomedcode,
+      ...(severityReference
+        ? {
             severity: severityReference.severity,
             severitysnomedcode: severityReference.snomedcode,
-          },
-        ];
-      }),
-    ];
+          }
+        : {}),
+    };
+    const allReactions = uniqBy([...existingReactions, newReaction], "snomedcode");
     const onsetDate = getAllergyIntoleranceOnsetDate(allergyIntolerance);
     if (!onsetDate) {
       throw new BadRequestError("No onset date found for allergy", undefined, additionalInfo);
@@ -920,7 +942,7 @@ class AthenaHealthApi {
         criticality,
         note: "Added via Metriport App",
         onsetdate: this.formatDate(onsetDate),
-        reactions: uniqBy(allReactions, "snomedcode"),
+        reactions: allReactions,
       },
     ];
     const data = {
@@ -1075,11 +1097,11 @@ class AthenaHealthApi {
   async searchForMedication({
     cxId,
     patientId,
-    medication,
+    coding,
   }: {
     cxId: string;
     patientId: string;
-    medication: Medication;
+    coding: Coding;
   }): Promise<MedicationReference | undefined> {
     const { log, debug } = out(
       `AthenaHealth searchForMedication - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
@@ -1089,29 +1111,18 @@ class AthenaHealthApi {
       cxId,
       practiceId: this.practiceId,
       patientId,
-      medicationId: medication.id,
+      code: coding.code,
+      system: coding.system,
+      display: coding.display,
     };
-    const searchValues = medication.code?.coding?.flatMap(c => c.display?.split("/") ?? []);
-    if (!searchValues || searchValues.length < 1) {
-      throw new BadRequestError(
-        "No search values for searching medication references",
-        undefined,
-        additionalInfo
-      );
+    const codingDisplay = coding.display;
+    if (!codingDisplay) {
+      throw new BadRequestError("No display found for coding", undefined, additionalInfo);
     }
-    const searchValuesWithAtLeastTwoParts = searchValues.filter(
-      searchValue => searchValue.length >= 2
-    );
-    if (searchValuesWithAtLeastTwoParts.length < 1) {
-      throw new BadRequestError(
-        "No search values with at least two parts",
-        undefined,
-        additionalInfo
-      );
-    }
+    const searchValues = this.getSearchvaluesFromCoding(codingDisplay, additionalInfo);
     const allMedicationReferences: MedicationReference[] = [];
     const searchMedicationErrors: { error: unknown; searchValue: string }[] = [];
-    const searchMedicationArgs: string[] = searchValuesWithAtLeastTwoParts;
+    const searchMedicationArgs: string[] = searchValues;
     await executeAsynchronously(
       searchMedicationArgs,
       async (searchValue: string) => {
@@ -1157,21 +1168,22 @@ class AthenaHealthApi {
     }
     if (allMedicationReferences.length < 1) return undefined;
     if (allMedicationReferences.length === 1) return allMedicationReferences[0];
-    const mostCommonMedication = _.head(
-      _(allMedicationReferences).countBy("medicationid").entries().maxBy(_.last)
-    ) as { medication: string; medicationid: string } | undefined;
-    if (!mostCommonMedication) return undefined;
-    return mostCommonMedication;
+    const mostSimilarMedication = this.calculateJaroWinklerSimilarity(
+      codingDisplay,
+      allMedicationReferences.map(m => m.medication)
+    );
+    if (!mostSimilarMedication) return undefined;
+    return allMedicationReferences.find(m => m.medication === mostSimilarMedication);
   }
 
   async searchForAllergen({
     cxId,
     patientId,
-    allergyIntolerance,
+    coding,
   }: {
     cxId: string;
     patientId: string;
-    allergyIntolerance: AllergyIntolerance;
+    coding: Coding;
   }): Promise<AllergenReference | undefined> {
     const { log, debug } = out(
       `AthenaHealth searchForAllergen - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
@@ -1181,36 +1193,18 @@ class AthenaHealthApi {
       cxId,
       practiceId: this.practiceId,
       patientId,
-      allergyIntoleranceId: allergyIntolerance.id,
+      code: coding.code,
+      system: coding.system,
+      display: coding.display,
     };
-    if (!allergyIntolerance.reaction || allergyIntolerance.reaction.length < 1) {
-      throw new BadRequestError("No reactions found for allergy", undefined, additionalInfo);
+    const codingDisplay = coding.display;
+    if (!codingDisplay) {
+      throw new BadRequestError("No display found for coding", undefined, additionalInfo);
     }
-    const searchValues = allergyIntolerance.reaction.flatMap(reaction => {
-      const searchValues = reaction.substance?.text?.toLowerCase().split(" ");
-      if (!searchValues || searchValues.length < 1) return [];
-      return searchValues.map(v => (v.endsWith("s") ? v.slice(0, -1) : v));
-    });
-    if (!searchValues || searchValues.length < 1) {
-      throw new BadRequestError(
-        "No search values for searching allergy references",
-        undefined,
-        additionalInfo
-      );
-    }
-    const searchValuesWithAtLeastTwoParts = searchValues.filter(
-      searchValue => searchValue.length >= 2
-    );
-    if (searchValuesWithAtLeastTwoParts.length < 1) {
-      throw new BadRequestError(
-        "No search values with at least two parts",
-        undefined,
-        additionalInfo
-      );
-    }
+    const searchValues = this.getSearchvaluesFromCoding(codingDisplay, additionalInfo);
     const allAllergenReferences: AllergenReference[] = [];
     const searchAllergenErrors: { error: unknown; searchValue: string }[] = [];
-    const searchAllergenArgs: string[] = searchValuesWithAtLeastTwoParts;
+    const searchAllergenArgs: string[] = searchValues;
     await executeAsynchronously(
       searchAllergenArgs,
       async (searchValue: string) => {
@@ -1256,11 +1250,12 @@ class AthenaHealthApi {
     }
     if (allAllergenReferences.length < 1) return undefined;
     if (allAllergenReferences.length === 1) return allAllergenReferences[0];
-    const mostCommonAllergen = _.head(
-      _(allAllergenReferences).countBy("allergyid").entries().maxBy(_.last)
-    ) as { allergenid: string; allergenname: string } | undefined;
-    if (!mostCommonAllergen) return undefined;
-    return mostCommonAllergen;
+    const mostSimilarAllergen = this.calculateJaroWinklerSimilarity(
+      codingDisplay,
+      allAllergenReferences.map(a => a.allergenname)
+    );
+    if (!mostSimilarAllergen) return undefined;
+    return allAllergenReferences.find(a => a.allergenname === mostSimilarAllergen);
   }
 
   async getCompleteAllergyReactions({
@@ -1629,6 +1624,38 @@ class AthenaHealthApi {
 
   private convertCelciusToFahrenheit(value: number): number {
     return value * (9 / 5) + 32;
+  }
+
+  private getSearchvaluesFromCoding(
+    codingDisplay: string,
+    additionalInfo: Record<string, string | undefined>
+  ): string[] {
+    const searchValues = codingDisplay.split("/").flatMap(v => v.split(" "));
+    const searchValuesWithAtLeastTwoParts = searchValues.filter(
+      searchValue => searchValue.length >= 2
+    );
+    if (searchValuesWithAtLeastTwoParts.length < 1) {
+      throw new BadRequestError(
+        "No search values with at least two parts",
+        undefined,
+        additionalInfo
+      );
+    }
+    return searchValuesWithAtLeastTwoParts;
+  }
+
+  private calculateJaroWinklerSimilarity(target: string, options: string[]): string | undefined {
+    let mostSimilarOption = options[0];
+    if (!mostSimilarOption) return undefined;
+    let maxSimilarity = jaroWinkler(target, mostSimilarOption);
+    for (const option of options) {
+      const similarity = jaroWinkler(target, option);
+      if (similarity > maxSimilarity) {
+        maxSimilarity = similarity;
+        mostSimilarOption = option;
+      }
+    }
+    return mostSimilarOption;
   }
 }
 
