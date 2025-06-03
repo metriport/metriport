@@ -42,6 +42,7 @@ import {
   PatientHieOptOutResponse,
   PatientUpdate,
   StartConsolidatedQueryProgressResponse,
+  medicalRecordUrlResponseSchema,
 } from "../models/patient";
 import { PatientDTO } from "../models/patientDTO";
 import { SettingsResponse } from "../models/settings-response";
@@ -596,7 +597,7 @@ export class MetriportMedicalApi {
     const resp = await this.api.get(`${PATIENT_URL}/${patientId}/medical-record`, {
       params: { conversionType },
     });
-    return resp.data;
+    return medicalRecordUrlResponseSchema.parse(resp.data);
   }
 
   /**
