@@ -389,7 +389,7 @@ export class SurescriptsSftpClient extends SftpClient {
   private getPatientLoadFileName(
     id: string, // the unique 10-byte transmission ID
     timestamp: number,
-    compression = true
+    compression = false
   ): string {
     return [
       "Metriport_PMA_",
