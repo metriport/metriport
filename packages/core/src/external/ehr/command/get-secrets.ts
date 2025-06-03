@@ -22,7 +22,7 @@ export function getSecrets({
   ehr,
   cxId,
   practiceId,
-}: EhrPerPracticeParams & { ehr: EhrSource }):
+}: EhrPerPracticeParams & { ehr: EhrSourcesWithDynamicSecrets }):
   | EhrEnvAndClientCredentials<EhrEnv>
   | EhrEnvAndApiKey<EhrEnv> {
   const handler = getSecretsHandler(ehr);
@@ -36,17 +36,18 @@ type ApiKeySecretsMethod<T extends EhrEnv> = (params: EhrPerPracticeParams) => E
 
 type GetSecrets<T extends EhrEnv> = OauthSecretsMethod<T> | ApiKeySecretsMethod<T>;
 
-type SecretsMethodMap = Record<EhrSource, GetSecrets<EhrEnv> | undefined>;
+type EhrSourcesWithDynamicSecrets = Exclude<EhrSource, EhrSources.eclinicalworks>;
+
+type SecretsMethodMap = Record<EhrSourcesWithDynamicSecrets, GetSecrets<EhrEnv> | undefined>;
 
 const secretsMethodsBy: SecretsMethodMap = {
   [EhrSources.canvas]: getCanvasEnv,
   [EhrSources.athena]: getAthenaEnv,
   [EhrSources.elation]: getElationEnv,
   [EhrSources.healthie]: getHealthieEnv,
-  [EhrSources.eclinicalworks]: undefined,
 };
 
-function getSecretsHandler(ehr: EhrSources): GetSecrets<EhrEnv> {
+function getSecretsHandler(ehr: EhrSourcesWithDynamicSecrets): GetSecrets<EhrEnv> {
   const handler = secretsMethodsBy[ehr];
   if (!handler) {
     throw new BadRequestError("No secrets handler found", undefined, { ehr });
