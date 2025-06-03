@@ -37,6 +37,7 @@ import { Organization, OrganizationCreate, organizationSchema } from "../models/
 import {
   GetConsolidatedQueryProgressResponse,
   GetSingleConsolidatedQueryProgressResponse,
+  MedicalRecordUrlResponse,
   PatientCreate,
   PatientHieOptOutResponse,
   PatientUpdate,
@@ -591,7 +592,7 @@ export class MetriportMedicalApi {
   async getPatientMedicalRecord(
     patientId: string,
     conversionType: "html" | "pdf"
-  ): Promise<{ url: string }> {
+  ): Promise<MedicalRecordUrlResponse> {
     const resp = await this.api.get(`${PATIENT_URL}/${patientId}/medical-record`, {
       params: { conversionType },
     });

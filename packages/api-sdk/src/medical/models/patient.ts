@@ -49,3 +49,7 @@ export type PatientHieOptOutResponse = {
   hieOptOut: boolean;
   message: string;
 };
+
+export type MedicalRecordUrlResponse = {
+  url: string;
+};
