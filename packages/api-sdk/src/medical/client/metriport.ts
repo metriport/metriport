@@ -583,6 +583,22 @@ export class MetriportMedicalApi {
   }
 
   /**
+   * Returns the medical record summary for a given patient.
+   *
+   * @param patientId The ID of the patient whose medical record summary is to be returned.
+   * @return The medical record summary for the given patient.
+   */
+  async getPatientMedicalRecord(
+    patientId: string,
+    conversionType: "html" | "pdf"
+  ): Promise<{ url: string }> {
+    const resp = await this.api.get(`${PATIENT_URL}/${patientId}/medical-record`, {
+      params: { conversionType },
+    });
+    return resp.data;
+  }
+
+  /**
    * Removes a patient at Metriport and at HIEs the patient is linked to.
    *
    * @param patientId The ID of the patient to be deleted.
