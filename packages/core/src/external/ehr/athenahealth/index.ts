@@ -1630,7 +1630,14 @@ class AthenaHealthApi {
     codingDisplay: string,
     additionalInfo: Record<string, string | undefined>
   ): string[] {
-    const searchValues = codingDisplay.split("/").flatMap(v => v.split(" "));
+    const searchValues = codingDisplay
+      .split("/")
+      .flatMap(v => v.split(" "))
+      .map(v => v.toLowerCase())
+      .map(v => {
+        if (v.endsWith("s")) return v.slice(0, -1);
+        return v;
+      });
     const searchValuesWithAtLeastTwoParts = searchValues.filter(
       searchValue => searchValue.length >= 2
     );
