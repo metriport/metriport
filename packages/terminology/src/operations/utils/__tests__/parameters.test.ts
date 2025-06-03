@@ -1,4 +1,4 @@
-import { isValidParameter, isValidParametersResource } from "../parameters";
+import { isValidParameter, isValidLookupParametersResource } from "../parameters";
 
 describe("parameters utils", () => {
   describe("isValidParameter", () => {
@@ -57,7 +57,7 @@ describe("parameters utils", () => {
           },
         ],
       };
-      expect(isValidParametersResource(resource)).toBe(true);
+      expect(isValidLookupParametersResource(resource)).toBe(true);
     });
 
     it("returns false for Parameters resource without id", () => {
@@ -74,7 +74,7 @@ describe("parameters utils", () => {
           },
         ],
       };
-      expect(isValidParametersResource(resource)).toBe(false);
+      expect(isValidLookupParametersResource(resource)).toBe(false);
     });
 
     it("returns false for resource with wrong resourceType", () => {
@@ -87,14 +87,14 @@ describe("parameters utils", () => {
           },
         ],
       };
-      expect(isValidParametersResource(resource)).toBe(false);
+      expect(isValidLookupParametersResource(resource)).toBe(false);
     });
 
     it("returns false for resource without parameters", () => {
       const resource = {
         resourceType: "Parameters",
       };
-      expect(isValidParametersResource(resource)).toBe(false);
+      expect(isValidLookupParametersResource(resource)).toBe(false);
     });
 
     it("returns false for resource with empty parameters array", () => {
@@ -102,7 +102,7 @@ describe("parameters utils", () => {
         resourceType: "Parameters",
         parameter: [],
       };
-      expect(isValidParametersResource(resource)).toBe(false);
+      expect(isValidLookupParametersResource(resource)).toBe(false);
     });
 
     it("returns false for resource with invalid parameter", () => {
@@ -119,7 +119,7 @@ describe("parameters utils", () => {
           },
         ],
       };
-      expect(isValidParametersResource(resource)).toBe(false);
+      expect(isValidLookupParametersResource(resource)).toBe(false);
     });
   });
 });
