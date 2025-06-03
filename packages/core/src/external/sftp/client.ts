@@ -1,7 +1,7 @@
 import SshSftpClient from "ssh2-sftp-client";
-import { gzip, ungzip } from "node-gzip";
 import { Writable } from "stream";
 import { MetriportError } from "@metriport/shared";
+import { compressGzip, decompressGzip } from "./compression";
 
 export interface SftpConfig {
   host: string;
@@ -111,7 +111,7 @@ export class SftpClient implements SftpClientImpl {
     });
     const content = getBuffer();
     if (decompress) {
-      return ungzip(content);
+      return decompressGzip(content);
     }
     return content;
   }
@@ -137,7 +137,7 @@ export class SftpClient implements SftpClientImpl {
     { compress = false }: { compress?: boolean } = {}
   ): Promise<void> {
     if (compress) {
-      content = await gzip(content);
+      content = await compressGzip(content);
     }
     await this.executeWithSshListeners(async function (client) {
       return client.put(content, remotePath);
