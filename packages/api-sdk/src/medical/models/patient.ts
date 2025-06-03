@@ -49,3 +49,9 @@ export type PatientHieOptOutResponse = {
   hieOptOut: boolean;
   message: string;
 };
+
+export const medicalRecordUrlResponseSchema = z.object({
+  url: z.string(),
+});
+
+export type MedicalRecordUrlResponse = z.infer<typeof medicalRecordUrlResponseSchema>;
