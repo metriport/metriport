@@ -1,7 +1,7 @@
 import axios, { AxiosInstance } from "axios";
 import { MetriportError } from "@metriport/shared";
 import { Patient } from "@metriport/shared/domain/patient";
-import { CustomerData, FacilityData } from "@metriport/shared/domain/facility";
+import { CustomerData, FacilityData } from "@metriport/shared/domain/customer";
 import { Config } from "../../util/config";
 import { getPatient } from "./api/get-patient";
 import { getPatientIds } from "./api/get-patient-ids";

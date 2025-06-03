@@ -1,5 +1,5 @@
 import { errorToString, executeWithNetworkRetries, MetriportError } from "@metriport/shared";
-import { CustomerData, customerDataSchema } from "@metriport/shared/domain/facility";
+import { CustomerData, customerDataSchema } from "@metriport/shared/domain/customer";
 import axios, { AxiosInstance } from "axios";
 import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
