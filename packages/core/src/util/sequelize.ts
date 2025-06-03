@@ -20,21 +20,10 @@ export type DbReadReplicaEndpoint = z.infer<typeof dbReadReplicaEndpointSchema>;
 /**
  * This function is used to initialize the DB pool for raw queries that can't rely on Models.
  */
-export function initDbPool(
-  dbCreds: string | DbCreds,
-  poolOptions?: PoolOptions,
-  logging?: boolean
-) {
-  if (typeof dbCreds === "string") {
-    const parsedDbCreds = parseDbCreds(dbCreds);
-    return initDbPoolFromCreds(parsedDbCreds, poolOptions, logging);
-  }
-  return initDbPoolFromCreds(dbCreds, poolOptions, logging);
-}
-
-export function parseDbCreds(dbCreds: string): DbCreds {
+export function initDbPool(dbCreds: string, poolOptions?: PoolOptions, logging?: boolean) {
   const sqlDBCreds = JSON.parse(dbCreds);
-  return dbCredsSchema.parse(sqlDBCreds);
+  const parsedDbCreds = dbCredsSchema.parse(sqlDBCreds);
+  return initDbPoolFromCreds(parsedDbCreds, poolOptions, logging);
 }
 
 /**

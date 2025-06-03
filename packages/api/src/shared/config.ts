@@ -128,6 +128,10 @@ export class Config {
     return getEnvVar("DB_POOL_SETTINGS");
   }
 
+  static getDbReadReplicaEndpoint(): string {
+    return getEnvVarOrFail("DB_READ_REPLICA_ENDPOINT");
+  }
+
   static getCronometerClientId(): string {
     return getEnvVarOrFail("CRONOMETER_CLIENT_ID");
   }

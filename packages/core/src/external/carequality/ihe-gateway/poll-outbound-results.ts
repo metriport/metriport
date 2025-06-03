@@ -3,16 +3,14 @@ import {
   OutboundDocumentRetrievalResp,
   OutboundPatientDiscoveryResp,
 } from "@metriport/ihe-gateway-sdk";
-import { dbCredsSchemaReadOnly } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { QueryTypes, Sequelize } from "sequelize";
-import { Config } from "../../../util/config";
 import { MetriportError } from "../../../util/error/metriport-error";
 import { errorToString } from "../../../util/error/shared";
 import { capture } from "../../../util/notifications";
 import { checkIfRaceIsComplete, controlDuration, RaceControl } from "../../../util/race-control";
-import { initDbPool, parseDbCreds } from "../../../util/sequelize";
+import { initDbPool } from "../../../util/sequelize";
 import {
   OutboundDocumentQueryRespTableEntry,
   OutboundDocumentRetrievalRespTableEntry,
@@ -81,13 +79,7 @@ async function pollResults({
   resultsTable: string;
   context: string;
 }): Promise<object[]> {
-  const parsedDbCreds = parseDbCreds(dbCreds);
-  const parsedReadReplicaDbCreds = dbCredsSchemaReadOnly.parse(Config.getDbReadReplicaEndpoint());
-  const sequelize = initDbPool({
-    ...parsedDbCreds,
-    host: parsedReadReplicaDbCreds.host,
-    port: parsedReadReplicaDbCreds.port,
-  });
+  const sequelize = initDbPool(dbCreds);
   const raceControl: RaceControl = { isRaceInProgress: true };
   const maxTimeout = maxPollingDuration ?? CONTROL_TIMEOUT.asMilliseconds();
 

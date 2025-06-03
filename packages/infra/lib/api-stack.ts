@@ -237,6 +237,7 @@ export class APIStack extends Stack {
       dbConfig,
       slackNotification?.alarmAction
     );
+    const dbReadReplicaEndpoint = dbCluster.clusterReadEndpoint;
 
     //----------------------------------------------------------
     // DynamoDB
@@ -401,6 +402,7 @@ export class APIStack extends Stack {
       lambdaLayers,
       dbCluster,
       dbCredsSecret,
+      dbReadReplicaEndpoint,
       secrets,
       medicalDocumentsBucket,
       sandboxSeedDataBucket,
@@ -568,7 +570,7 @@ export class APIStack extends Stack {
       secrets,
       vpc: this.vpc,
       dbCredsSecret,
-      dbReadReplicaEndpoint: dbCluster.clusterReadEndpoint,
+      dbReadReplicaEndpoint,
       dynamoDBTokenTable,
       alarmAction: slackNotification?.alarmAction,
       dnsZones,

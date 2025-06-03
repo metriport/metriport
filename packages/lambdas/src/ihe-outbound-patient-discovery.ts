@@ -1,8 +1,9 @@
+import { getSecretValueOrFail } from "@metriport/core/external/aws/secret-manager";
 import { PollOutboundResults } from "@metriport/core/external/carequality/ihe-gateway/outbound-result-poller";
 import { OutboundResultPollerDirect } from "@metriport/core/external/carequality/ihe-gateway/outbound-result-poller-direct";
 import { getEnvType, getEnvVar, getEnvVarOrFail } from "@metriport/core/util/env-var";
 import { errorToString } from "@metriport/core/util/error/shared";
-import { getSecretValueOrFail } from "@metriport/core/external/aws/secret-manager";
+import { dbCredsSchema, dbCredsSchemaReadOnly } from "@metriport/shared";
 import * as Sentry from "@sentry/serverless";
 import { capture } from "./shared/capture";
 
@@ -14,6 +15,7 @@ const dbCredsArn = getEnvVarOrFail("DB_CREDS");
 const apiUrl = getEnvVarOrFail("API_URL");
 const region = getEnvVarOrFail("AWS_REGION");
 const maxPollingDuration = getEnvVarOrFail("MAX_POLLING_DURATION");
+const dbReadReplicaCreds = getEnvVarOrFail("DB_READ_REPLICA_ENDPOINT");
 
 capture.setExtra({ lambdaName: lambdaName });
 
@@ -27,7 +29,14 @@ export const handler = Sentry.AWSLambda.wrapHandler(
     try {
       const dbCreds = await getSecretValueOrFail(dbCredsArn, region);
 
-      const poller = new OutboundResultPollerDirect(apiUrl, dbCreds);
+      const parsedDbCreds = dbCredsSchema.parse(JSON.parse(dbCreds));
+      const parsedDbReadReplicaCreds = dbCredsSchemaReadOnly.parse(JSON.parse(dbReadReplicaCreds));
+      const readReplicaDbCreds = {
+        ...parsedDbCreds,
+        host: parsedDbReadReplicaCreds.host,
+        port: parsedDbReadReplicaCreds.port,
+      };
+      const poller = new OutboundResultPollerDirect(apiUrl, JSON.stringify(readReplicaDbCreds));
       await poller.pollOutboundPatientDiscoveryResults({
         requestId,
         patientId,
