@@ -3,7 +3,10 @@ import { toTitleCase } from "@metriport/shared";
 import { getValidCodings } from "../../codeable-concept";
 import { buildReferenceFromStringRelative } from "../../shared/bundle";
 
-export function normalizeEncounters(encounters: Encounter[], locations: Location[]): Encounter[] {
+export function filterInvalidEncounters(
+  encounters: Encounter[],
+  locations: Location[]
+): Encounter[] {
   return encounters.flatMap(encounter => {
     const hasReason = hasEncounterReason(encounter);
     const hasLocation = hasEncounterLocation(encounter, locations);

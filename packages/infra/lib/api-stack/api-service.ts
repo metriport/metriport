@@ -359,7 +359,7 @@ export function createAPIService({
             CQ_DIR_REBUILD_HEARTBEAT_URL: props.config.cqDirectoryRebuilder.heartbeatUrl,
           }),
           ...(surescriptsAssets && {
-            MEDICATION_BUNDLE_BUCKET_NAME: surescriptsAssets.medicationBundleBucket.bucketName,
+            PHARMACY_CONVERSION_BUCKET_NAME: surescriptsAssets.pharmacyConversionBucket.bucketName,
             SURESCRIPTS_REPLICA_BUCKET_NAME: surescriptsAssets.surescriptsReplicaBucket.bucketName,
             SURESCRIPTS_SYNCHRONIZE_SFTP_QUEUE_URL: surescriptsAssets.synchronizeSftpQueue.queueUrl,
             SURESCRIPTS_SEND_PATIENT_REQUEST_QUEUE_URL:
@@ -457,7 +457,9 @@ export function createAPIService({
   ehrBundleBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
 
   if (surescriptsAssets) {
-    surescriptsAssets.medicationBundleBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
+    surescriptsAssets.pharmacyConversionBucket.grantReadWrite(
+      fargateService.taskDefinition.taskRole
+    );
     surescriptsAssets.surescriptsReplicaBucket.grantReadWrite(
       fargateService.taskDefinition.taskRole
     );
@@ -587,7 +589,7 @@ export function createAPIService({
     maxCapacity: maxTaskCount,
   });
   scaling.scaleOnCpuUtilization("autoscale_cpu", {
-    targetUtilizationPercent: 10,
+    targetUtilizationPercent: 15,
     scaleInCooldown: Duration.minutes(2),
     scaleOutCooldown: Duration.minutes(1),
   });

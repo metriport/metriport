@@ -12,5 +12,5 @@ export type SurescriptsAssets = {
   receiveFlatFileResponseLambda: Lambda;
   receiveFlatFileResponseQueue: Queue;
   surescriptsReplicaBucket: Bucket;
-  medicationBundleBucket: Bucket;
+  pharmacyConversionBucket: Bucket;
 };
