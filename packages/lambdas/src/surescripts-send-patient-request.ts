@@ -45,6 +45,11 @@ export const handler = capture.wrapHandler(
       return;
     }
 
+    log(`Connecting to Surescripts...`);
+    await client.connect();
+    log(`Connected to Surescripts`);
+
+    log(`Generating patient load file...`);
     const { requestedPatientIds, requestFileName, requestFileContent, transmissionId } =
       await client.generateAndWritePatientLoadFile({ npiNumber: facility.npi, cxId }, patients);
 
@@ -52,5 +57,8 @@ export const handler = capture.wrapHandler(
     log(`Transmission ID: ${transmissionId}`);
     log(`Request file name: ${requestFileName}`);
     log(`Request file size: ${requestFileContent.length} bytes`);
+
+    await client.disconnect();
+    log(`Disconnected from Surescripts`);
   }
 );
