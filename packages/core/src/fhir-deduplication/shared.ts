@@ -1,4 +1,11 @@
-import { CodeableConcept, Coding, Identifier, Period, Resource } from "@medplum/fhirtypes";
+import {
+  CodeableConcept,
+  Coding,
+  Extension,
+  Identifier,
+  Period,
+  Resource,
+} from "@medplum/fhirtypes";
 import { errorToString } from "@metriport/shared";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
@@ -13,6 +20,11 @@ const MISSING_ATTR = "-";
 
 const dateFormats = ["datetime", "date"] as const;
 const unknownValues = ["unknown", "unk", "no known"];
+
+const derivedFromType = "derived-from";
+
+export const artifactRelatedArtifactUrl =
+  "http://hl7.org/fhir/StructureDefinition/artifact-relatedArtifact";
 
 export const UNK_CODE = "UNK";
 export const UNKNOWN_DISPLAY = "unknown";
@@ -40,14 +52,15 @@ export function getDateFromString(dateString: string, dateFormat?: "date" | "dat
   }
 }
 
-export const artifactRelatedArtifactUrl =
-  "http://hl7.org/fhir/StructureDefinition/artifact-relatedArtifact";
-
 function createExtensionRelatedArtifact(resourceType: string, id: string | undefined) {
   return {
     url: artifactRelatedArtifactUrl,
-    valueRelatedArtifact: { type: "derived-from", display: `${resourceType}/${id}` },
+    valueRelatedArtifact: { type: derivedFromType, display: `${resourceType}/${id}` },
   };
+}
+
+export function isDerivedFromExtension(extension: Extension | undefined): boolean {
+  return extension?.valueRelatedArtifact?.type === derivedFromType;
 }
 
 //eslint-disable-next-line @typescript-eslint/no-explicit-any

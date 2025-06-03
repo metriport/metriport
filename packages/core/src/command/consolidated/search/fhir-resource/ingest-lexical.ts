@@ -5,6 +5,7 @@ import { Patient } from "../../../../domain/patient";
 import { normalize } from "../../../../external/fhir/consolidated/normalize";
 import { OpenSearchFhirIngestor } from "../../../../external/opensearch/fhir-ingestor";
 import { OnBulkItemError } from "../../../../external/opensearch/shared/bulk";
+import { isDerivedFromExtension } from "../../../../fhir-deduplication/shared";
 import { out } from "../../../../util";
 import { getConsolidatedFile } from "../../consolidated-get";
 import { getConfigs } from "./fhir-config";
@@ -34,10 +35,8 @@ export async function ingestPatientConsolidated({
 
   const resources =
     bundle.entry?.flatMap(entry => {
-      const resource = entry.resource;
-      if (!resource) return [];
-      if (resource.resourceType === "Patient") return [];
-      return resource;
+      const resource = filterOutPatientAndRemoveDerivedFromExtensions(entry.resource);
+      return resource ?? [];
     }) ?? [];
 
   log("Done, calling ingestBulk...");
@@ -53,6 +52,17 @@ export async function ingestPatientConsolidated({
   if (errors.size > 0) processErrors({ cxId, patientId, errors, log });
 
   log(`Ingested ${resources.length} resources in ${elapsedTime} ms`);
+}
+
+export function filterOutPatientAndRemoveDerivedFromExtensions(
+  resource?: Resource
+): Resource | undefined {
+  if (!resource) return undefined;
+  if (resource.resourceType === "Patient") return undefined;
+  if ("extension" in resource && resource.extension) {
+    resource.extension = resource.extension.filter(e => !isDerivedFromExtension(e));
+  }
+  return resource;
 }
 
 /**
