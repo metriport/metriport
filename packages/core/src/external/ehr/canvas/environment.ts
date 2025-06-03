@@ -8,7 +8,7 @@ export function getCanvasEnv({
   practiceId,
 }: EhrPerPracticeParams): EhrEnvAndClientCredentials<CanvasEnv> {
   const rawClientsMap = Config.getCanvasClientKeyAndSecretMap();
-  if (!rawClientsMap) throw new Error("Canvas secrets map not set");
+  if (!rawClientsMap) throw new MetriportError("Canvas secrets map not set");
   const clientMap = cxClientKeyAndSecretMapSecretSchema.safeParse(JSON.parse(rawClientsMap));
   if (!clientMap.success) throw new MetriportError("Canvas clients map has invalid format");
   const env = `${cxId}_${practiceId}_env`;
