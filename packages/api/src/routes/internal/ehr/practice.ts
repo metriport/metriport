@@ -1,9 +1,9 @@
+import { getSecrets } from "@metriport/core/external/ehr/command/get-secrets";
 import { BadRequestError } from "@metriport/shared";
 import { isEhrSource } from "@metriport/shared/interface/external/ehr/source";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
-import { getSecrets } from "../../../external/ehr/shared/command/secrets/get-secrets";
 import { requestLogger } from "../../helpers/request-logger";
 import { getUUIDFrom } from "../../schemas/uuid";
 import { asyncHandler, getFrom, getFromQueryOrFail } from "../../util";

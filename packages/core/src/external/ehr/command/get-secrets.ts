@@ -1,15 +1,15 @@
 import { BadRequestError } from "@metriport/shared";
 import { EhrSource, EhrSources } from "@metriport/shared/interface/external/ehr/source";
-import { getAthenaEnv } from "../../../athenahealth/shared";
-import { getCanvasEnv } from "../../../canvas/shared";
-import { getElationEnv } from "../../../elation/shared";
-import { getHealthieEnv } from "../../../healthie/shared";
+import { getAthenaEnv } from "../athenahealth/environment";
+import { getCanvasEnv } from "../canvas/environment";
+import { getElationEnv } from "../elation/environment";
+import { getHealthieEnv } from "../healthie/environment";
 import {
   EhrEnv,
   EhrEnvAndApiKey,
   EhrEnvAndClientCredentials,
   EhrPerPracticeParams,
-} from "../../utils/client";
+} from "../environment";
 
 /**
  * Get the secrets for the EHR
