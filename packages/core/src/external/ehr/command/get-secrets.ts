@@ -38,6 +38,15 @@ type GetSecrets<T extends EhrEnv> = OauthSecretsMethod<T> | ApiKeySecretsMethod<
 
 type EhrSourcesWithDynamicSecrets = Exclude<EhrSource, EhrSources.eclinicalworks>;
 
+export function isEhrSourceWithDynamicSecrets(ehr: EhrSource): ehr is EhrSourcesWithDynamicSecrets {
+  return (
+    ehr === EhrSources.canvas ||
+    ehr === EhrSources.athena ||
+    ehr === EhrSources.elation ||
+    ehr === EhrSources.healthie
+  );
+}
+
 type SecretsMethodMap = Record<EhrSourcesWithDynamicSecrets, GetSecrets<EhrEnv> | undefined>;
 
 const secretsMethodsBy: SecretsMethodMap = {
