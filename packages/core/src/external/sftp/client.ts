@@ -20,7 +20,7 @@ export interface SftpClientImpl {
   exists(remotePath: string): Promise<boolean>;
 }
 
-type SftpExecutionHandler<T> = (this: SftpClient, client: SshSftpClient) => Promise<T>;
+type SftpMethod<T> = (this: SftpClient, client: SshSftpClient) => Promise<T>;
 
 export class SftpClient implements SftpClientImpl {
   protected readonly client: SshSftpClient;
@@ -48,7 +48,7 @@ export class SftpClient implements SftpClientImpl {
     this.privateKey = privateKey;
   }
 
-  private async executeWithSshListeners<T, F extends SftpExecutionHandler<T>>(
+  private async executeWithSshListeners<T, F extends SftpMethod<T>>(
     executionHandler: F
   ): Promise<T> {
     if (this.connectionEnded) {
