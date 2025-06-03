@@ -219,4 +219,36 @@ export class Config {
   static getWriteToS3QueueUrl(): string {
     return getEnvVarOrFail("WRITE_TO_S3_QUEUE_URL");
   }
+
+  static getAthenaHealthEnv(): string | undefined {
+    return getEnvVar("EHR_ATHENA_ENVIRONMENT");
+  }
+  static getAthenaHealthClientKey(): string | undefined {
+    return getEnvVar("EHR_ATHENA_CLIENT_KEY");
+  }
+  static getAthenaHealthClientSecret(): string | undefined {
+    return getEnvVar("EHR_ATHENA_CLIENT_SECRET");
+  }
+
+  static getElationEnv(): string | undefined {
+    return getEnvVar("EHR_ELATION_ENVIRONMENT");
+  }
+  static getElationClientKeyAndSecretMap(): string | undefined {
+    return getEnvVar("EHR_ELATION_CLIENT_KEY_AND_SECRET_MAP");
+  }
+
+  static getCanvasClientKeyAndSecretMap(): string | undefined {
+    return getEnvVar("EHR_CANVAS_CLIENT_KEY_AND_SECRET_MAP");
+  }
+
+  static getHealthieEnv(): string | undefined {
+    return getEnvVar("EHR_HEALTHIE_ENVIRONMENT");
+  }
+  static getHealthieApiKeyMap(): string | undefined {
+    return getEnvVar("EHR_HEALTHIE_API_KEY_MAP");
+  }
+
+  static getEClinicalWorksEnv(): string | undefined {
+    return getEnvVar("EHR_ECLINICALWORKS_ENVIRONMENT");
+  }
 }
