@@ -2,11 +2,11 @@ import { GetAppointmentsRequest } from "@metriport/core/external/ehr/command/get
 import { EhrGetAppointmentsDirect } from "@metriport/core/external/ehr/command/get-appointments/ehr-get-appointments-direct";
 import { MetriportError } from "@metriport/shared";
 import { SQSEvent } from "aws-lambda";
-import { capture } from "./shared/capture";
-import { ehrGetAppointmentsSchema } from "./shared/ehr";
-import { getEnvOrFail } from "./shared/env";
-import { prefixedLog } from "./shared/log";
-import { getSingleMessageOrFail } from "./shared/sqs";
+import { capture } from "../shared/capture";
+import { ehrGetAppointmentsSchema } from "../shared/ehr";
+import { getEnvOrFail } from "../shared/env";
+import { prefixedLog } from "../shared/log";
+import { getSingleMessageOrFail } from "../shared/sqs";
 
 // Keep this as early on the file as possible
 capture.init();

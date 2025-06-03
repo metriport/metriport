@@ -1,13 +1,13 @@
-import { ProcessLinkPatientRequest } from "@metriport/core/external/ehr/healthie/command/link-patient/healthie-link-patient";
-import { HealthieLinkPatientLocal } from "@metriport/core/external/ehr/healthie/command/link-patient/healthie-link-patient-local";
+import { ProcessLinkPatientRequest } from "@metriport/core/external/ehr/elation/command/link-patient/elation-link-patient";
+import { ElationLinkPatientLocal } from "@metriport/core/external/ehr/elation/command/link-patient/elation-link-patient-local";
 import { MetriportError } from "@metriport/shared";
 import * as Sentry from "@sentry/serverless";
 import { SQSEvent } from "aws-lambda";
-import { capture } from "./shared/capture";
-import { parseLinkPatient } from "./shared/ehr";
-import { getEnvOrFail } from "./shared/env";
-import { prefixedLog } from "./shared/log";
-import { getSingleMessageOrFail } from "./shared/sqs";
+import { capture } from "../../shared/capture";
+import { parseLinkPatient } from "../../shared/ehr";
+import { getEnvOrFail } from "../../shared/env";
+import { prefixedLog } from "../../shared/log";
+import { getSingleMessageOrFail } from "../../shared/sqs";
 
 // Keep this as early on the file as possible
 capture.init();
@@ -33,8 +33,8 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
   const log = prefixedLog(`cxId ${cxId}, practiceId ${practiceId}, patientId ${patientId}`);
   log(`Parsed: ${JSON.stringify(parsedBody)}, waitTimeInMillis ${waitTimeInMillis}`);
 
-  const healthieLinkPatientHandler = new HealthieLinkPatientLocal(waitTimeInMillis);
-  await healthieLinkPatientHandler.processLinkPatient(parsedBody);
+  const elationLinkPatientHandler = new ElationLinkPatientLocal(waitTimeInMillis);
+  await elationLinkPatientHandler.processLinkPatient(parsedBody);
 
   const finishedAt = new Date().getTime();
   log(`Done local duration: ${finishedAt - startedAt}ms`);
