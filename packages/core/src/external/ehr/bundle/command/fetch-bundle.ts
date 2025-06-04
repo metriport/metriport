@@ -51,9 +51,7 @@ export async function fetchBundle({
   getLastModified = false,
   s3BucketName = Config.getEhrBundleBucketName(),
 }: FetchBundleParams): Promise<BundleWithLastModified | undefined> {
-  const { log } = out(
-    `Ehr fetchBundle - ehr ${ehr} cxId ${cxId} metriportPatientId ${metriportPatientId} ehrPatientId ${ehrPatientId} bundleType ${bundleType} resourceType ${resourceType} resourceId ${resourceId}`
-  );
+  const { log } = out(`Ehr fetchBundle - ehr ${ehr} cxId ${cxId} ehrPatientId ${ehrPatientId}`);
   if (isResourceDiffBundleType(bundleType) && !jobId) {
     throw new BadRequestError(
       "Job ID must be provided when fetching resource diff bundles",
@@ -132,7 +130,7 @@ export async function fetchBundlePreSignedUrl({
   s3BucketName = Config.getEhrBundleBucketName(),
 }: FetchBundlePreSignedUrlParams): Promise<string | undefined> {
   const { log } = out(
-    `Ehr fetchBundlePreSignedUrl - ehr ${ehr} cxId ${cxId} metriportPatientId ${metriportPatientId} ehrPatientId ${ehrPatientId} bundleType ${bundleType} resourceType ${resourceType} resourceId ${resourceId} `
+    `Ehr fetchBundlePreSignedUrl - ehr ${ehr} cxId ${cxId} ehrPatientId ${ehrPatientId}`
   );
   if (isResourceDiffBundleType(bundleType) && !jobId) {
     throw new BadRequestError(

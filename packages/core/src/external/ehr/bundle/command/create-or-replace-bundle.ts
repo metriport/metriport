@@ -43,7 +43,7 @@ export async function createOrReplaceBundle({
   mixedResourceTypes = false,
 }: CreateOrReplaceBundleParams): Promise<void> {
   const { log } = out(
-    `Ehr createOrReplaceBundle - ehr ${ehr} cxId ${cxId} metriportPatientId ${metriportPatientId} ehrPatientId ${ehrPatientId} bundleType ${bundleType} resourceType ${resourceType} resourceId ${resourceId}`
+    `Ehr createOrReplaceBundle - ehr ${ehr} cxId ${cxId} ehrPatientId ${ehrPatientId}`
   );
   if (!bundle.entry) return;
   if (!mixedResourceTypes) {
