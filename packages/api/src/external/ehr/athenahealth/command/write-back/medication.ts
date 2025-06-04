@@ -14,7 +14,7 @@ export async function writeMedicationToChart({
   athenaPracticeId: string;
   athenaDepartmentId: string;
   medication: MedicationWithRefs;
-}): Promise<CreatedMedicationSuccess> {
+}): Promise<CreatedMedicationSuccess[]> {
   const api = await createAthenaClient({ cxId, practiceId: athenaPracticeId });
   return await api.createMedication({
     cxId,
