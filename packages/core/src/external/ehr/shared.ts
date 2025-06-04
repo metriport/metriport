@@ -328,13 +328,6 @@ export async function fetchEhrBundleUsingCache({
     if (cachedBundle) return cachedBundle;
   }
   const fhirResources = await fetchResourcesFromEhr();
-  const invalidEntry = fhirResources.find(r => r.resourceType !== params.resourceType);
-  if (invalidEntry) {
-    throw new BadRequestError("Invalid bundle", undefined, {
-      resourceType: params.resourceType,
-      resourceTypeInBundle: invalidEntry.resourceType,
-    });
-  }
   const bundle = createBundleFromResourceList(fhirResources as Resource[]);
   await createOrReplaceBundle({
     ...params,

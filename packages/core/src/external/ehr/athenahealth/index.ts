@@ -771,8 +771,8 @@ class AthenaHealthApi {
     };
     const fetchResourcesFromEhr = () =>
       fetchEhrFhirResourcesWithPagination({
-        makeRequest: (url: string) =>
-          this.makeRequest<EhrFhirResourceBundle>({
+        makeRequest: async (url: string) => {
+          const bundle = await this.makeRequest<EhrFhirResourceBundle>({
             cxId,
             patientId: athenaPatientId,
             s3Path: `fhir-resources-${resourceType}`,
@@ -782,7 +782,16 @@ class AthenaHealthApi {
             additionalInfo,
             debug,
             useFhir: true,
-          }),
+          });
+          const invalidResource = bundle.entry?.find(e => e.resource.resourceType !== resourceType);
+          if (invalidResource) {
+            throw new BadRequestError("Invalid bundle", undefined, {
+              resourceType,
+              resourceTypeInBundle: invalidResource.resource.resourceType,
+            });
+          }
+          return bundle;
+        },
         url: resourceTypeUrl,
       });
     const bundle = await fetchEhrBundleUsingCache({
