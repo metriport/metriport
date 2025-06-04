@@ -5,6 +5,7 @@ import {
   Condition,
   Immunization,
   Medication,
+  MedicationStatement,
   Observation,
   Procedure,
 } from "@medplum/fhirtypes";
@@ -254,6 +255,12 @@ export function getMedicationRxnormCoding(medication: Medication): Coding | unde
   });
   if (!rxnormCoding) return undefined;
   return rxnormCoding;
+}
+
+export function getMedicationStatementStartDate(
+  statement: MedicationStatement
+): string | undefined {
+  return statement.effectiveDateTime ?? statement.effectivePeriod?.start;
 }
 
 export function getConditionIcd10Coding(condition: Condition): Coding | undefined {
