@@ -463,8 +463,13 @@ export class SurescriptsSftpClient extends SftpClient {
     };
   }
 
-  async isPatientLoadFileInSurescriptsHistory(requestFileName: string): Promise<boolean> {
-    const historyFileName = `${requestFileName}.${this.senderId}`;
+  async isPatientLoadFileInSurescriptsHistory(
+    requestFileName: string,
+    timestamp: number
+  ): Promise<boolean> {
+    const dateString = dayjs(timestamp).format("YYMMDD");
+    const timeString = dayjs(timestamp).format("HHmmss");
+    const historyFileName = `${dateString}_${timeString}_${requestFileName}.${this.senderId}`;
     return await this.exists(getSftpFileName(HISTORY_NAME, historyFileName));
   }
 
