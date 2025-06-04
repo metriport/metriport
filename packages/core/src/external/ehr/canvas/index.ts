@@ -88,7 +88,7 @@ export const supportedCanvasResources: ResourceType[] = [
   "Observation",
   "Procedure",
 ];
-export const supportedCanvasResourcesById = [
+export const supportedCanvasReferenceResources: ResourceType[] = [
   "Medication",
   "Location",
   "Organization",
@@ -101,14 +101,14 @@ export type SupportedCanvasResource = (typeof supportedCanvasResources)[number];
 export function isSupportedCanvasResource(
   resourceType: string
 ): resourceType is SupportedCanvasResource {
-  return supportedCanvasResources.includes(resourceType as SupportedCanvasResource);
+  return supportedCanvasResources.includes(resourceType as ResourceType);
 }
 
-export type SupportedCanvasResourceById = (typeof supportedCanvasResourcesById)[number];
-export function isSupportedCanvasResourceById(
+export type SupportedCanvasReferenceResource = (typeof supportedCanvasReferenceResources)[number];
+export function isSupportedCanvasReferenceResource(
   resourceType: string
-): resourceType is SupportedCanvasResourceById {
-  return supportedCanvasResourcesById.includes(resourceType);
+): resourceType is SupportedCanvasReferenceResource {
+  return supportedCanvasReferenceResources.includes(resourceType as ResourceType);
 }
 
 const problemStatusesMap = new Map<string, string>();

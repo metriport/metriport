@@ -200,9 +200,7 @@ export type SupportedAthenaHealthReferenceResource =
 export function isSupportedAthenaHealthReferenceResource(
   resourceType: string
 ): resourceType is SupportedAthenaHealthReferenceResource {
-  return supportedAthenaHealthReferenceResources.includes(
-    resourceType as SupportedAthenaHealthReferenceResource
-  );
+  return supportedAthenaHealthReferenceResources.includes(resourceType as ResourceType);
 }
 
 class AthenaHealthApi {
