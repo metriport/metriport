@@ -6,6 +6,7 @@ import {
   MedicationDispense,
   MedicationStatement,
   Observation,
+  ResourceType,
 } from "@medplum/fhirtypes";
 import {
   BadRequestError,
@@ -151,7 +152,7 @@ type DataPoint = {
   bp?: BloodPressure | undefined;
 };
 
-export const supportedAthenaHealthResources = [
+export const supportedAthenaHealthResources: ResourceType[] = [
   "AllergyIntolerance",
   "CarePlan",
   "Condition",
@@ -170,8 +171,7 @@ export const supportedAthenaHealthResources = [
   "CareTeam",
 ];
 
-export const scopes = [
-  ...supportedAthenaHealthResources,
+export const supportedAthenaHealthReferenceResources: ResourceType[] = [
   "Media",
   "Medication",
   "Binary",
@@ -181,12 +181,16 @@ export const scopes = [
   "Practitioner",
   "Provenance",
 ];
+export const scopes = [
+  ...supportedAthenaHealthResources,
+  ...supportedAthenaHealthReferenceResources,
+];
 
 export type SupportedAthenaHealthResource = (typeof supportedAthenaHealthResources)[number];
 export function isSupportedAthenaHealthResource(
   resourceType: string
 ): resourceType is SupportedAthenaHealthResource {
-  return supportedAthenaHealthResources.includes(resourceType);
+  return supportedAthenaHealthResources.includes(resourceType as SupportedAthenaHealthResource);
 }
 
 class AthenaHealthApi {
@@ -737,12 +741,17 @@ class AthenaHealthApi {
     cxId: string;
     metriportPatientId: string;
     athenaPatientId: string;
-    resourceType: SupportedAthenaHealthResource;
+    resourceType: string;
     useCachedBundle?: boolean;
   }): Promise<Bundle> {
     const { debug } = out(
       `AthenaHealth getBundleByResourceType - cxId ${cxId} practiceId ${this.practiceId} metriportPatientId ${metriportPatientId} athenaPatientId ${athenaPatientId} resourceType ${resourceType}`
     );
+    if (!isSupportedAthenaHealthResource(resourceType)) {
+      throw new BadRequestError("Invalid resource type", undefined, {
+        resourceType,
+      });
+    }
     const params = {
       patient: `${this.createPatientId(athenaPatientId)}`,
       "ah-practice": this.createPracticetId(this.practiceId),
