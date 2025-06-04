@@ -22,11 +22,11 @@ export class EhrGetAppointmentsDirect implements EhrGetAppointmentsHandler {
   }
 }
 
-type GetAppointments = (params: GetAppointmentsClientRequest) => Promise<Appointment[]>;
+type GetAppointmentsFn = (params: GetAppointmentsClientRequest) => Promise<Appointment[]>;
 
-type AppointmentMethodsMap = Record<AppointmentMethods, GetAppointments | undefined>;
+type AppointmentFnMap = Record<AppointmentMethods, GetAppointmentsFn | undefined>;
 
-const ehrGetAppointmentsMap: AppointmentMethodsMap = {
+const ehrGetAppointmentsMap: AppointmentFnMap = {
   [AppointmentMethods.athenaGetAppointments]: getAppointmentsAthena,
   [AppointmentMethods.athenaGetAppointmentFromSubscriptionEvents]:
     getAppointmentsSubscriptionEventsAthena,
@@ -36,10 +36,10 @@ const ehrGetAppointmentsMap: AppointmentMethodsMap = {
   [AppointmentMethods.eclinicalworksGetAppointments]: undefined,
 };
 
-function getEhrGetAppointmentsHandler(method: AppointmentMethods): GetAppointments {
+function getEhrGetAppointmentsHandler(method: AppointmentMethods): GetAppointmentsFn {
   const handler = ehrGetAppointmentsMap[method];
   if (!handler) {
-    throw new BadRequestError("No get appointments handler found", undefined, { method });
+    throw new BadRequestError("Could not find handler to get appointments", undefined, { method });
   }
   return handler;
 }

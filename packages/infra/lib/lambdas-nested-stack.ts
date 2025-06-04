@@ -214,7 +214,6 @@ export class LambdasNestedStack extends NestedStack {
       lambdaLayers: props.lambdaLayers,
       vpc: props.vpc,
       envType: props.config.environmentType,
-      fhirToBundleLambda: this.fhirToBundleLambda,
       fhirServerUrl: props.config.fhirServerUrl,
       bundleBucket: props.medicalDocumentsBucket,
       openSearchEndpoint: props.openSearch.endpoint,
@@ -232,7 +231,6 @@ export class LambdasNestedStack extends NestedStack {
       lambdaLayers: props.lambdaLayers,
       vpc: props.vpc,
       envType: props.config.environmentType,
-      fhirToBundleLambda: this.fhirToBundleLambda,
       bundleBucket: props.medicalDocumentsBucket,
       openSearchEndpoint: props.openSearch.endpoint,
       openSearchAuth: props.openSearch.auth,
@@ -707,7 +705,6 @@ export class LambdasNestedStack extends NestedStack {
     lambdaLayers: LambdaLayers;
     vpc: ec2.IVpc;
     envType: EnvType;
-    fhirToBundleLambda: lambda.Function;
     fhirServerUrl: string;
     bundleBucket: s3.IBucket;
     featureFlagsTable: dynamodb.Table;
@@ -726,7 +723,6 @@ export class LambdasNestedStack extends NestedStack {
       lambdaLayers,
       vpc,
       envType,
-      fhirToBundleLambda,
       fhirServerUrl,
       bundleBucket,
       featureFlagsTable,
@@ -756,7 +752,6 @@ export class LambdasNestedStack extends NestedStack {
         SEARCH_INDEX: openSearchDocumentsIndexName,
         CONSOLIDATED_SEARCH_INDEX: openSearchConsolidatedIndexName,
         CONSOLIDATED_INGESTION_INITIAL_DATE: consolidatedDataIngestionInitialDate,
-        FHIR_TO_BUNDLE_LAMBDA_NAME: fhirToBundleLambda.functionName,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared, lambdaLayers.langchain],
@@ -768,7 +763,6 @@ export class LambdasNestedStack extends NestedStack {
     });
 
     bundleBucket.grantReadWrite(theLambda);
-    fhirToBundleLambda.grantInvoke(theLambda);
     openSearchAuth.secret.grantRead(theLambda);
     featureFlagsTable.grantReadData(theLambda);
 
@@ -798,7 +792,6 @@ export class LambdasNestedStack extends NestedStack {
     lambdaLayers: LambdaLayers;
     vpc: ec2.IVpc;
     envType: EnvType;
-    fhirToBundleLambda: lambda.Function;
     bundleBucket: s3.IBucket;
     featureFlagsTable: dynamodb.Table;
     openSearchEndpoint: string;
@@ -815,7 +808,6 @@ export class LambdasNestedStack extends NestedStack {
       lambdaLayers,
       vpc,
       envType,
-      fhirToBundleLambda,
       bundleBucket,
       featureFlagsTable,
       openSearchEndpoint,
@@ -834,12 +826,12 @@ export class LambdasNestedStack extends NestedStack {
       envVars: {
         // API_URL set on the api-stack after the OSS API is created
         FEATURE_FLAGS_TABLE_NAME: featureFlagsTable.tableName,
+        MEDICAL_DOCUMENTS_BUCKET_NAME: bundleBucket.bucketName,
         SEARCH_ENDPOINT: openSearchEndpoint,
         SEARCH_USERNAME: openSearchAuth.userName,
         SEARCH_PASSWORD_SECRET_ARN: openSearchAuth.secret.secretArn,
         SEARCH_INDEX: openSearchDocumentsIndexName,
         CONSOLIDATED_SEARCH_INDEX: openSearchConsolidatedIndexName,
-        FHIR_TO_BUNDLE_LAMBDA_NAME: fhirToBundleLambda.functionName,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared, lambdaLayers.langchain],
@@ -854,7 +846,6 @@ export class LambdasNestedStack extends NestedStack {
     );
 
     bundleBucket.grantReadWrite(theLambda);
-    fhirToBundleLambda.grantInvoke(theLambda);
     openSearchAuth.secret.grantRead(theLambda);
     featureFlagsTable.grantReadData(theLambda);
 

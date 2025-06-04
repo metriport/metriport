@@ -6,7 +6,6 @@ import {
   SQS_MESSAGE_BATCH_MILLIS_TO_SLEEP,
   SQS_MESSAGE_BATCH_SIZE_STANDARD,
 } from "../../../../util/sqs";
-import { uuidv7 } from "../../../../util/uuid-v7";
 import {
   IngestConsolidated,
   IngestConsolidatedParams,
@@ -64,10 +63,15 @@ export class IngestConsolidatedSqs implements IngestConsolidated {
       fifo: true,
       // only a single message per pt will be processed in parallel ("virtual queue" per pt)
       messageGroupId: patientId,
-      // if we use patientId, only a single message per pt will be processed in a 5 minute window
-      // which means loading the dash for a pt not ingested and triggering DQ wouldn't update
-      // the search engine after DQ is complete
-      messageDeduplicationId: uuidv7(),
+      /*
+      We use patientId so only a single message per pt will be processed in a 5 minute window,
+      which means loading the dash for a pt not ingested and triggering DQ won't update
+      the search engine after DQ is complete.
+      We do this because OS takes some time to actually finish updating the index after it returns
+      and we get errors if we try to reingest the same pt right after we got an OK from a previous
+      ingestion (that's still in progress).
+      */
+      messageDeduplicationId: patientId,
     });
   }
 }

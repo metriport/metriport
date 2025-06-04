@@ -1,13 +1,13 @@
-import { ProcessSyncPatientRequest } from "@metriport/core/external/ehr/command/sync-patient/ehr-sync-patient";
-import { EhrSyncPatientLocal } from "@metriport/core/external/ehr/command/sync-patient/ehr-sync-patient-local";
+import { ProcessLinkPatientRequest } from "@metriport/core/external/ehr/healthie/command/link-patient/healthie-link-patient";
+import { HealthieLinkPatientLocal } from "@metriport/core/external/ehr/healthie/command/link-patient/healthie-link-patient-local";
 import { MetriportError } from "@metriport/shared";
 import * as Sentry from "@sentry/serverless";
 import { SQSEvent } from "aws-lambda";
-import { capture } from "./shared/capture";
-import { parseSyncPatient } from "./shared/ehr";
-import { getEnvOrFail } from "./shared/env";
-import { prefixedLog } from "./shared/log";
-import { getSingleMessageOrFail } from "./shared/sqs";
+import { capture } from "../../shared/capture";
+import { parseLinkPatient } from "../../shared/ehr";
+import { getEnvOrFail } from "../../shared/env";
+import { prefixedLog } from "../../shared/log";
+import { getSingleMessageOrFail } from "../../shared/sqs";
 
 // Keep this as early on the file as possible
 capture.init();
@@ -28,21 +28,19 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
 
   console.log(`Running with unparsed body: ${message.body}`);
   const parsedBody = parseBody(message.body);
-  const { ehr, cxId, practiceId, patientId } = parsedBody;
+  const { cxId, practiceId, patientId } = parsedBody;
 
-  const log = prefixedLog(
-    `ehr ${ehr}, cxId ${cxId}, practiceId ${practiceId}, patientId ${patientId}`
-  );
+  const log = prefixedLog(`cxId ${cxId}, practiceId ${practiceId}, patientId ${patientId}`);
   log(`Parsed: ${JSON.stringify(parsedBody)}, waitTimeInMillis ${waitTimeInMillis}`);
 
-  const ehrSyncPatientHandler = new EhrSyncPatientLocal(waitTimeInMillis);
-  await ehrSyncPatientHandler.processSyncPatient(parsedBody);
+  const healthieLinkPatientHandler = new HealthieLinkPatientLocal(waitTimeInMillis);
+  await healthieLinkPatientHandler.processLinkPatient(parsedBody);
 
   const finishedAt = new Date().getTime();
   log(`Done local duration: ${finishedAt - startedAt}ms`);
 });
 
-function parseBody(body?: unknown): ProcessSyncPatientRequest {
+function parseBody(body?: unknown): ProcessLinkPatientRequest {
   if (!body) throw new MetriportError(`Missing message body`);
 
   const bodyString = typeof body === "string" ? (body as string) : undefined;
@@ -50,5 +48,5 @@ function parseBody(body?: unknown): ProcessSyncPatientRequest {
 
   const bodyAsJson = JSON.parse(bodyString);
 
-  return parseSyncPatient(bodyAsJson);
+  return parseLinkPatient(bodyAsJson);
 }

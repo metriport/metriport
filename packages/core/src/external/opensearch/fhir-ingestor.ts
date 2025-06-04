@@ -184,7 +184,7 @@ export class OpenSearchFhirIngestor {
   }
 
   async delete({ cxId, patientId }: DeleteRequest): Promise<void> {
-    const { log, debug } = out(`${this.constructor.name}.delete - cx ${cxId}, pt ${patientId}`);
+    const { log } = out(`${this.constructor.name}.delete - cx ${cxId}, pt ${patientId}`);
 
     const indexName = this.indexName;
     const auth = { username: this.username, password: this.password };
@@ -193,13 +193,12 @@ export class OpenSearchFhirIngestor {
     log(`Deleting resources from index ${indexName}...`);
     const startedAt = Date.now();
 
-    const response = await client.deleteByQuery({
+    await client.deleteByQuery({
       index: indexName,
       body: createDeleteQuery({ cxId, patientId }),
     });
     const time = Date.now() - startedAt;
     log(`Successfully deleted in ${time} milliseconds`);
-    debug(`Response: `, () => JSON.stringify(response.body));
   }
 }
 

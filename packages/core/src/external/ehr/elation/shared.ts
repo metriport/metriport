@@ -3,7 +3,7 @@ import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import ElationHealthApi, { isElationEnv } from ".";
 import { getSecrets } from "../api/get-client-key-and-secret";
 import { getTokenInfo } from "../api/get-token-info";
-import { getSecretsOauthSchema } from "../shared";
+import { getSecretsOauthSchema } from "../secrets";
 
 export async function createElationHealthClient({
   cxId,
