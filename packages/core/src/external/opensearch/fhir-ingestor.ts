@@ -266,7 +266,7 @@ function resourceToIndexField({
     resourceId,
     content: content,
     rawContent: JSON.stringify(resource),
-    ingestionDate: buildDayjs().toISOString(),
+    ingestedAt: buildDayjs().toISOString(),
   };
   return document;
 }

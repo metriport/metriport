@@ -24,7 +24,7 @@ curl -XPUT "/consolidated-data-2" -H 'Content-Type: application/json' -d'
       "rawContent": {
         "type": "text"
       },
-      "ingestionDate": {
+      "ingestedAt": {
         "type": "date"
       }
     }
