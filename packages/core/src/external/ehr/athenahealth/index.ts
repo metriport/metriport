@@ -142,6 +142,7 @@ const athenaDateTimeFormat = "MM/DD/YYYY HH:mm:ss";
 const labResultDocumentId = "386265";
 const clinicalNoteDocumentSubclass = "CLINICALDOCUMENT";
 const clinicalNoteDocumentId = "423482";
+const minSimilarity = 0.8;
 
 const athenaEnv = ["api", "api.preview"] as const;
 export type AthenaEnv = (typeof athenaEnv)[number];
@@ -1661,6 +1662,12 @@ class AthenaHealthApi {
         maxSimilarity = similarity;
         mostSimilarOption = option;
       }
+    }
+    if (maxSimilarity < minSimilarity) {
+      throw new BadRequestError("No similar enough option found", undefined, {
+        target,
+        maxSimilarity,
+      });
     }
     return mostSimilarOption;
   }
