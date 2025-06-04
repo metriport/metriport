@@ -4,7 +4,7 @@ export type SearchRequest = {
   cxId: string;
   patientId: string;
   // https://www.elastic.co/guide/en/elasticsearch/reference/8.5/query-dsl-query-string-query.html#_boolean_operators
-  query: string;
+  query: string | undefined;
 };
 
 export interface OpenSearchFileSearcher {
