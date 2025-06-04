@@ -2,11 +2,14 @@ import {
   AllergyIntolerance,
   Appointment as AppointmentFhir,
   Bundle,
+  Coding,
   Condition,
   Encounter,
+  Immunization,
   Location,
   Medication,
   MedicationStatement,
+  Observation,
   Patient as PatientFhir,
   Practitioner as PractitionerFhir,
   Resource,
@@ -41,8 +44,10 @@ import axios, { AxiosError, AxiosInstance, AxiosResponse } from "axios";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { z } from "zod";
+import { ObservationStatus } from "../../../fhir-deduplication/resources/observation-shared";
 import { RXNORM_URL as RXNORM_SYSTEM } from "../../../util/constants";
 import { out } from "../../../util/log";
+import { uuidv7 } from "../../../util/uuid-v7";
 import { BundleType, isResourceDiffBundleType } from "../bundle/bundle-shared";
 import {
   createOrReplaceBundle,
@@ -51,13 +56,25 @@ import {
 import { FetchBundleParams, fetchBundlePreSignedUrl } from "../bundle/command/fetch-bundle";
 import {
   ApiConfig,
+  DataPoint,
   fetchBundleUsingTtl,
   formatDate,
+  getAllergyIntoleranceOnsetDate,
+  getAllergyIntoleranceSubstanceSnomedCoding,
   getConditionIcd10Coding,
   getConditionStartDate,
   getConditionStatus,
+  getImmunizationAdministerDate,
+  getImmunizationCvxCoding,
+  getMedicationRxnormCoding,
+  getMedicationStatementStartDate,
+  getObservationLoincCoding,
+  getObservationObservedDate,
+  getObservationResultStatus,
+  GroupedVitals,
   makeRequest,
   MakeRequestParamsInEhr,
+  MedicationWithRefs,
 } from "../shared";
 
 dayjs.extend(duration);
@@ -99,6 +116,18 @@ problemStatusesMap.set("recurrence", "active");
 problemStatusesMap.set("remission", "resolved");
 problemStatusesMap.set("resolved", "resolved");
 problemStatusesMap.set("inactive", "resolved");
+
+const medicationStatementStatuses = [
+  "active",
+  "entered-in-error",
+  "stopped",
+  "on-hold",
+  "unknown",
+  "not-taken",
+];
+const allergyIntoleranceSeverityCodes = ["mild", "moderate", "severe"];
+const immunizationStatuses = ["completed", "entered-in-error", "not-done"];
+const observationResultStatuses = ["final", "unknown", "entered-in-error"];
 
 class CanvasApi {
   private axiosInstanceFhirApi: AxiosInstance;
@@ -282,7 +311,7 @@ class CanvasApi {
     return response.headers["location"]?.split("/").pop() ?? "";
   }
 
-  async createMedicationStatement({
+  async createMedicationStatementLegacy({
     medication,
     patientId,
     noteId,
@@ -304,7 +333,7 @@ class CanvasApi {
     return response.headers["location"]?.split("/").pop() ?? "";
   }
 
-  async createAllergy({
+  async createAllergyLegacy({
     allergy,
     patientId,
     noteId,
@@ -341,7 +370,7 @@ class CanvasApi {
     return response.data.entry[0].resource;
   }
 
-  async getMedication(medicationId: string): Promise<Medication> {
+  async getMedicationLegacy(medicationId: string): Promise<Medication> {
     const response = await this.handleAxiosRequest(() =>
       this.axiosInstanceFhirApi.get(`Medication/${medicationId}`)
     );
@@ -432,6 +461,45 @@ class CanvasApi {
       useFhir: true,
     });
     return practitioner;
+  }
+
+  async getMedicationFromRxNorm({
+    cxId,
+    patientId,
+    practitionerId,
+    rxnormCoding,
+  }: {
+    cxId: string;
+    patientId: string;
+    practitionerId: string;
+    rxnormCoding: Coding;
+  }): Promise<Medication> {
+    const { debug } = out(
+      `Canvas getMedicationReference - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} practitionerId ${practitionerId} rxnormCoding ${rxnormCoding}`
+    );
+    const code = `${rxnormCoding.system}|${rxnormCoding.code}`;
+    const additionalInfo = { cxId, practiceId: this.practiceId, patientId, practitionerId, code };
+    const params = { code: `${rxnormCoding.system}|${rxnormCoding.code}` };
+    const urlParams = new URLSearchParams(params);
+    const medicationUrl = `/Medication?${urlParams.toString()}`;
+    const medicationBundle = await this.makeRequest<EhrFhirResourceBundle>({
+      cxId,
+      patientId,
+      s3Path: `/medication-reference/${code}`,
+      method: "GET",
+      url: medicationUrl,
+      schema: ehrFhirResourceBundleSchema,
+      additionalInfo,
+      headers: { "content-type": "application/json" },
+      debug,
+      useFhir: true,
+      emptyResponse: true,
+    });
+    const medicationReference = medicationBundle.entry?.[0]?.resource;
+    if (!medicationReference) {
+      throw new BadRequestError("Medication not found", undefined, additionalInfo);
+    }
+    return medicationReference as Medication;
   }
 
   async createNote({
@@ -712,6 +780,307 @@ class CanvasApi {
       method: "POST",
       url: conditionUrl,
       data: { ...formattedCondition },
+      schema: z.undefined(),
+      additionalInfo: { ...additionalInfo, noteId },
+      headers: { "content-type": "application/json" },
+      debug,
+      useFhir: true,
+      emptyResponse: true,
+    });
+  }
+
+  async createMedicationStatement({
+    cxId,
+    patientId,
+    practitionerId,
+    medicationRef,
+  }: {
+    cxId: string;
+    patientId: string;
+    practitionerId: string;
+    medicationRef: MedicationWithRefs;
+  }): Promise<void> {
+    const { debug } = out(
+      `Canvas createMedication - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} practitionerId ${practitionerId}`
+    );
+    const medicationStatement = medicationRef.statement;
+    const medication = medicationRef.medication;
+    if (!medicationStatement || !medication) {
+      throw new BadRequestError("Medication statement and medication are required", undefined, {
+        cxId,
+        practiceId: this.practiceId,
+        patientId,
+        practitionerId,
+      });
+    }
+    const additionalInfo = {
+      cxId,
+      practiceId: this.practiceId,
+      patientId,
+      medicationStatementId: medicationStatement.id,
+    };
+    const rxnormCoding = getMedicationRxnormCoding(medication);
+    if (!rxnormCoding) {
+      throw new BadRequestError(
+        "Medication does not have an RXNORM coding",
+        undefined,
+        additionalInfo
+      );
+    }
+    if (!rxnormCoding.display) {
+      throw new BadRequestError("Medication does not have a display", undefined, additionalInfo);
+    }
+    const medicationReference = await this.getMedicationFromRxNorm({
+      cxId,
+      patientId,
+      practitionerId,
+      rxnormCoding,
+    });
+    if (!medicationReference) {
+      throw new BadRequestError("Medication reference not found", undefined, additionalInfo);
+    }
+    if (!medicationReference.id) {
+      throw new BadRequestError("Medication reference ID is missing", undefined, additionalInfo);
+    }
+    const formattedMedicationStatement = this.formatMedicationStatement(
+      medicationStatement,
+      additionalInfo
+    );
+    formattedMedicationStatement.medicationReference = {
+      reference: medicationReference.id,
+      display: rxnormCoding.display,
+    };
+    const practiceLocationId = await this.getPractitionerPrimaryLocation({
+      cxId,
+      patientId,
+      practitionerId,
+    });
+    const note = await this.getOrCreateMetriportImportNote({
+      cxId,
+      patientId,
+      practitionerId,
+      practiceLocationId,
+    });
+    const noteId = note.noteKey;
+    const medicationStatementUrl = `/MedicationStatement`;
+    formattedMedicationStatement.subject = { reference: `Patient/${patientId}` };
+    formattedMedicationStatement.extension = [
+      ...(formattedMedicationStatement.extension ?? []),
+      {
+        url: "http://schemas.canvasmedical.com/fhir/extensions/note-id",
+        valueId: noteId,
+      },
+    ];
+    await this.makeRequest<undefined>({
+      cxId,
+      patientId,
+      s3Path: `/medication-statement/${additionalInfo.medicationStatementId}`,
+      method: "POST",
+      url: medicationStatementUrl,
+      data: { ...formattedMedicationStatement },
+      schema: z.undefined(),
+      additionalInfo: { ...additionalInfo, noteId },
+      headers: { "content-type": "application/json" },
+      debug,
+      useFhir: true,
+      emptyResponse: true,
+    });
+  }
+
+  async createAllergyIntolerance({
+    cxId,
+    patientId,
+    practitionerId,
+    allergyIntolerance,
+  }: {
+    cxId: string;
+    patientId: string;
+    practitionerId: string;
+    allergyIntolerance: AllergyIntolerance;
+  }): Promise<void> {
+    const { debug } = out(
+      `Canvas createMedication - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} practitionerId ${practitionerId}`
+    );
+    const additionalInfo = {
+      cxId,
+      practiceId: this.practiceId,
+      patientId,
+      allergyIntoleranceId: allergyIntolerance.id,
+    };
+    const formattedAllergyIntolerance = this.formatAllergyIntolerance(
+      allergyIntolerance,
+      additionalInfo
+    );
+    const practiceLocationId = await this.getPractitionerPrimaryLocation({
+      cxId,
+      patientId,
+      practitionerId,
+    });
+    const note = await this.getOrCreateMetriportImportNote({
+      cxId,
+      patientId,
+      practitionerId,
+      practiceLocationId,
+    });
+    const noteId = note.noteKey;
+    const allergyIntoleranceUrl = `/AllergyIntolerance`;
+    formattedAllergyIntolerance.patient = { reference: `Patient/${patientId}` };
+    formattedAllergyIntolerance.extension = [
+      ...(formattedAllergyIntolerance.extension ?? []),
+      {
+        url: "http://schemas.canvasmedical.com/fhir/extensions/note-id",
+        valueId: noteId,
+      },
+    ];
+    await this.makeRequest<undefined>({
+      cxId,
+      patientId,
+      s3Path: `/allergy-intolerance/${additionalInfo.allergyIntoleranceId}`,
+      method: "POST",
+      url: allergyIntoleranceUrl,
+      schema: z.undefined(),
+      additionalInfo: { ...additionalInfo, noteId },
+      headers: { "content-type": "application/json" },
+      debug,
+      useFhir: true,
+      emptyResponse: true,
+    });
+  }
+
+  async createImmunization({
+    cxId,
+    patientId,
+    practitionerId,
+    immunization,
+  }: {
+    cxId: string;
+    patientId: string;
+    practitionerId: string;
+    immunization: Immunization;
+  }): Promise<void> {
+    const { debug } = out(
+      `Canvas createImmunization - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} practitionerId ${practitionerId}`
+    );
+    const additionalInfo = {
+      cxId,
+      practiceId: this.practiceId,
+      patientId,
+      immunizationId: immunization.id,
+    };
+    const formattedImmunization = this.formatImmunization(immunization, additionalInfo);
+    const practiceLocationId = await this.getPractitionerPrimaryLocation({
+      cxId,
+      patientId,
+      practitionerId,
+    });
+    const note = await this.getOrCreateMetriportImportNote({
+      cxId,
+      patientId,
+      practitionerId,
+      practiceLocationId,
+    });
+    const noteId = note.noteKey;
+    const immunizationUrl = `/Immunization`;
+    formattedImmunization.patient = { reference: `Patient/${patientId}` };
+    formattedImmunization.extension = [
+      ...(formattedImmunization.extension ?? []),
+      {
+        url: "http://schemas.canvasmedical.com/fhir/extensions/note-id",
+        valueId: noteId,
+      },
+    ];
+    await this.makeRequest<undefined>({
+      cxId,
+      patientId,
+      s3Path: `/immunization/${additionalInfo.immunizationId}`,
+      method: "POST",
+      url: immunizationUrl,
+      data: { ...formattedImmunization },
+      schema: z.undefined(),
+      additionalInfo: { ...additionalInfo, noteId },
+      headers: { "content-type": "application/json" },
+      debug,
+      useFhir: true,
+      emptyResponse: true,
+    });
+  }
+
+  async createVitals({
+    cxId,
+    patientId,
+    practitionerId,
+    vitals,
+  }: {
+    cxId: string;
+    patientId: string;
+    practitionerId: string;
+    vitals: GroupedVitals;
+  }): Promise<void> {
+    const { debug } = out(
+      `Canvas createVitals - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} practitionerId ${practitionerId}`
+    );
+    const observation = vitals.mostRecentObservation;
+    const additionalInfo = {
+      cxId,
+      practiceId: this.practiceId,
+      patientId,
+      vitalsId: observation.id,
+    };
+    const practiceLocationId = await this.getPractitionerPrimaryLocation({
+      cxId,
+      patientId,
+      practitionerId,
+    });
+    const note = await this.getOrCreateMetriportImportNote({
+      cxId,
+      patientId,
+      practitionerId,
+      practiceLocationId,
+    });
+    const noteId = note.noteKey;
+    const observationsUrl = `/Observation`;
+    const observationsIds: string[] = [];
+    for (const point of vitals.sortedPoints ?? []) {
+      const formattedPoint = this.formatVitalDataPoint(observation, point, additionalInfo);
+      const newId = uuidv7();
+      observationsIds.push(newId);
+      formattedPoint.id = `Observation/${newId}`;
+      formattedPoint.subject = { reference: `Patient/${patientId}` };
+      formattedPoint.extension = [
+        ...(formattedPoint.extension ?? []),
+        {
+          url: "http://schemas.canvasmedical.com/fhir/extensions/note-id",
+          valueId: noteId,
+        },
+      ];
+      await this.makeRequest<undefined>({
+        cxId,
+        patientId,
+        s3Path: `/observations/${newId}`,
+        method: "POST",
+        url: observationsUrl,
+        data: { ...formattedPoint },
+        schema: z.undefined(),
+        additionalInfo: { ...additionalInfo, noteId, observationId: newId },
+        headers: { "content-type": "application/json" },
+        debug,
+        useFhir: true,
+        emptyResponse: true,
+      });
+    }
+    const effectiveDateTime = observation.effectiveDateTime;
+    const formattedEffectiveDateTime = this.formatDate(effectiveDateTime);
+    if (!formattedEffectiveDateTime) {
+      throw new BadRequestError("Effective date time is missing", undefined, additionalInfo);
+    }
+    const panel = this.formatPanel(observationsIds, formattedEffectiveDateTime, patientId);
+    await this.makeRequest<undefined>({
+      cxId,
+      patientId,
+      s3Path: `/observations/panel`,
+      method: "POST",
+      url: observationsUrl,
+      data: { ...panel },
       schema: z.undefined(),
       additionalInfo: { ...additionalInfo, noteId },
       headers: { "content-type": "application/json" },
@@ -1066,6 +1435,265 @@ class CanvasApi {
       },
     ];
     return formattedCondition;
+  }
+
+  private formatMedicationStatement(
+    medicationStatement: MedicationStatement,
+    additionalInfo: Record<string, string | undefined>
+  ): MedicationStatement {
+    const formattedMedicationStatement: MedicationStatement = {
+      resourceType: "MedicationStatement",
+      ...(medicationStatement.id ? { id: medicationStatement.id } : {}),
+      ...(medicationStatement.subject ? { subject: medicationStatement.subject } : {}),
+      ...(medicationStatement.meta ? { meta: medicationStatement.meta } : {}),
+      ...(medicationStatement.extension ? { extension: medicationStatement.extension } : {}),
+    };
+    const startDate = getMedicationStatementStartDate(medicationStatement);
+    const formattedStartDate = formatDate(startDate, canvasDateFormat);
+    if (!formattedStartDate) {
+      throw new BadRequestError(
+        "No start date found for medication statement",
+        undefined,
+        additionalInfo
+      );
+    }
+    formattedMedicationStatement.effectivePeriod = { start: formattedStartDate };
+    const status = medicationStatement.status;
+    if (!status || !medicationStatementStatuses.includes(status)) {
+      throw new BadRequestError(
+        "No status found for medication statement",
+        undefined,
+        additionalInfo
+      );
+    }
+    formattedMedicationStatement.status = status;
+    const dosage = medicationStatement.dosage?.[0];
+    if (!dosage || !dosage.text) {
+      throw new BadRequestError(
+        "No dosage found for medication statement",
+        undefined,
+        additionalInfo
+      );
+    }
+    formattedMedicationStatement.dosage = [{ text: dosage.text }];
+    return formattedMedicationStatement;
+  }
+
+  private formatAllergyIntolerance(
+    allergyIntolerance: AllergyIntolerance,
+    additionalInfo: Record<string, string | undefined>
+  ): AllergyIntolerance {
+    const formattedAllergyIntolerance: AllergyIntolerance = {
+      resourceType: "AllergyIntolerance",
+      ...(allergyIntolerance.id ? { id: allergyIntolerance.id } : {}),
+      ...(allergyIntolerance.patient ? { patient: allergyIntolerance.patient } : {}),
+      ...(allergyIntolerance.recorder ? { recorder: allergyIntolerance.recorder } : {}),
+      ...(allergyIntolerance.meta ? { meta: allergyIntolerance.meta } : {}),
+      ...(allergyIntolerance.extension ? { extension: allergyIntolerance.extension } : {}),
+    };
+    const snomedCoding = getAllergyIntoleranceSubstanceSnomedCoding(allergyIntolerance);
+    if (!snomedCoding) {
+      throw new BadRequestError(
+        "No SNOMED code found for allergy intolerance",
+        undefined,
+        additionalInfo
+      );
+    }
+    if (!snomedCoding.code) {
+      throw new BadRequestError("No code found for SNOMED coding", undefined, additionalInfo);
+    }
+    if (!snomedCoding.display) {
+      throw new BadRequestError("No display found for SNOMED coding", undefined, additionalInfo);
+    }
+    formattedAllergyIntolerance.code = {
+      coding: [
+        {
+          code: snomedCoding.code,
+          system: "http://snomed.info/sct",
+          display: snomedCoding.display,
+        },
+      ],
+    };
+    const startDate = getAllergyIntoleranceOnsetDate(allergyIntolerance);
+    const formattedStartDate = formatDate(startDate, canvasDateFormat);
+    if (!formattedStartDate) {
+      throw new BadRequestError(
+        "No start date found for allergy intolerance",
+        undefined,
+        additionalInfo
+      );
+    }
+    formattedAllergyIntolerance.onsetDateTime = formattedStartDate;
+    const clinicalStatus = allergyIntolerance.clinicalStatus;
+    if (!clinicalStatus) {
+      throw new BadRequestError(
+        "No clinical status found for allergy intolerance",
+        undefined,
+        additionalInfo
+      );
+    }
+    formattedAllergyIntolerance.clinicalStatus = clinicalStatus;
+    const verificationStatus = allergyIntolerance.verificationStatus;
+    if (!verificationStatus) {
+      throw new BadRequestError(
+        "No verification status found for allergy intolerance",
+        undefined,
+        additionalInfo
+      );
+    }
+    formattedAllergyIntolerance.verificationStatus = verificationStatus;
+    const severity = allergyIntolerance.reaction?.[0]?.severity;
+    if (!severity || !allergyIntoleranceSeverityCodes.includes(severity)) {
+      throw new BadRequestError(
+        "No severity found for allergy intolerance",
+        undefined,
+        additionalInfo
+      );
+    }
+    formattedAllergyIntolerance.reaction = [
+      {
+        manifestation: [
+          {
+            coding: [
+              {
+                system: "http://terminology.hl7.org/CodeSystem/data-absent-reason",
+                code: "unknown",
+              },
+            ],
+          },
+        ],
+        severity,
+      },
+    ];
+    formattedAllergyIntolerance.type = "allergy";
+    return formattedAllergyIntolerance;
+  }
+
+  private formatImmunization(
+    immunization: Immunization,
+    additionalInfo: Record<string, string | undefined>
+  ): Immunization {
+    const formattedImmunization: Immunization = {
+      resourceType: "Immunization",
+      ...(immunization.id ? { id: immunization.id } : {}),
+      ...(immunization.patient ? { patient: immunization.patient } : {}),
+      ...(immunization.meta ? { meta: immunization.meta } : {}),
+      ...(immunization.extension ? { extension: immunization.extension } : {}),
+    };
+    const cvxCoding = getImmunizationCvxCoding(immunization);
+    if (!cvxCoding) {
+      throw new BadRequestError("No CVX code found for immunization", undefined, additionalInfo);
+    }
+    if (!cvxCoding.code) {
+      throw new BadRequestError("No code found for CVX coding", undefined, additionalInfo);
+    }
+    if (!cvxCoding.display) {
+      throw new BadRequestError("No display found for CVX coding", undefined, additionalInfo);
+    }
+    formattedImmunization.vaccineCode = {
+      coding: [
+        { code: cvxCoding.code, system: "http://hl7.org/fhir/sid/cvx", display: cvxCoding.display },
+      ],
+    };
+    const administeredDate = getImmunizationAdministerDate(immunization);
+    if (!administeredDate) {
+      throw new BadRequestError(
+        "No administered date found for immunization",
+        undefined,
+        additionalInfo
+      );
+    }
+    formattedImmunization.occurrenceDateTime = administeredDate;
+    const status = immunization.status;
+    if (!status || !immunizationStatuses.includes(status)) {
+      throw new BadRequestError("No status found for immunization", undefined, additionalInfo);
+    }
+    formattedImmunization.status = status;
+    formattedImmunization.primarySource = false;
+    return formattedImmunization;
+  }
+
+  private formatVitalDataPoint(
+    observation: Observation,
+    point: DataPoint,
+    additionalInfo: Record<string, string | undefined>
+  ): Observation {
+    const formattedObservation: Observation = {
+      resourceType: "Observation",
+      ...(observation.id ? { id: observation.id } : {}),
+      ...(observation.subject ? { patient: observation.subject } : {}),
+      ...(observation.meta ? { meta: observation.meta } : {}),
+      ...(observation.extension ? { extension: observation.extension } : {}),
+    };
+    const loincCoding = getObservationLoincCoding(observation);
+    if (!loincCoding) {
+      throw new BadRequestError("No LOINC code found for observation", undefined, additionalInfo);
+    }
+    if (!loincCoding.code) {
+      throw new BadRequestError("No code found for LOINC coding", undefined, additionalInfo);
+    }
+    if (!loincCoding.display) {
+      throw new BadRequestError("No display found for LOINC coding", undefined, additionalInfo);
+    }
+    formattedObservation.code = {
+      coding: [
+        { code: loincCoding.code, system: "http://loinc.org", display: loincCoding.display },
+      ],
+    };
+    const effectiveDateTime = getObservationObservedDate(observation);
+    const formattedEffectiveDateTime = formatDate(effectiveDateTime, canvasDateFormat);
+    if (!formattedEffectiveDateTime) {
+      throw new BadRequestError(
+        "No effective date time found for observation",
+        undefined,
+        additionalInfo
+      );
+    }
+    formattedObservation.effectiveDateTime = formattedEffectiveDateTime;
+    const status = getObservationResultStatus(observation);
+    if (!status || !observationResultStatuses.includes(status)) {
+      throw new BadRequestError("No status found for observation", undefined, additionalInfo);
+    }
+    formattedObservation.status = status as ObservationStatus;
+    if (!point.value || !point.unit) {
+      throw new BadRequestError("No unit found for observation", undefined, additionalInfo);
+    }
+    formattedObservation.valueQuantity = {
+      value: point.value,
+      unit: point.unit,
+    };
+    return formattedObservation;
+  }
+
+  private formatPanel(observationIds: string[], effectiveDateTime: string, patientId: string) {
+    return {
+      category: [
+        {
+          coding: [
+            {
+              system: "http://terminology.hl7.org/CodeSystem/observation-category",
+              code: "vital-signs",
+              display: "Vital Signs",
+            },
+          ],
+        },
+      ],
+      code: {
+        coding: [
+          {
+            system: "http://loinc.org",
+            code: "85353-1",
+            display: "Vital Panel",
+          },
+        ],
+      },
+      status: "unknown",
+      subject: {
+        reference: `Patient/${patientId}`,
+      },
+      effectiveDateTime: effectiveDateTime,
+      hasMember: observationIds.map(id => ({ reference: `Observation/${id}` })),
+    };
   }
 }
 

@@ -3,10 +3,6 @@ import {
   Coding,
   Condition,
   Immunization,
-  Medication,
-  MedicationAdministration,
-  MedicationDispense,
-  MedicationStatement,
   Observation,
   Procedure,
 } from "@medplum/fhirtypes";
@@ -105,6 +101,7 @@ import { capture } from "../../../util/notifications";
 import {
   ApiConfig,
   createDataParams,
+  DataPoint,
   formatDate,
   getAllergyIntoleranceManifestationSnomedCoding,
   getAllergyIntoleranceOnsetDate,
@@ -115,6 +112,7 @@ import {
   getImmunizationAdministerDate,
   getImmunizationCvxCode,
   getMedicationRxnormCoding,
+  getMedicationStatementStartDate,
   getObservationInterpretation,
   getObservationLoincCoding,
   getObservationObservedDate,
@@ -123,8 +121,10 @@ import {
   getObservationUnitAndValue,
   getProcedureCptCode,
   getProcedurePerformedDate,
+  GroupedVitals,
   makeRequest,
   MakeRequestParamsInEhr,
+  MedicationWithRefs,
 } from "../shared";
 
 const parallelRequests = 5;
@@ -170,31 +170,6 @@ const clinicalElementsThatRequireUnits = ["VITALS.WEIGHT", "VITALS.HEIGHT", "VIT
 const lbsToG = 453.592;
 const kgToG = 1000;
 const inchesToCm = 2.54;
-
-// TYPES FROM DASHBOARD
-export type MedicationWithRefs = {
-  medication: Medication;
-  administration?: MedicationAdministration;
-  dispense?: MedicationDispense;
-  statement?: MedicationStatement;
-};
-
-export type GroupedVitals = {
-  mostRecentObservation: Observation;
-  sortedPoints?: DataPoint[];
-};
-
-type BloodPressure = {
-  systolic: number;
-  diastolic: number;
-};
-
-type DataPoint = {
-  value: number;
-  date: string;
-  unit?: string;
-  bp?: BloodPressure | undefined;
-};
 
 class AthenaHealthApi {
   private axiosInstanceFhir: AxiosInstance;
@@ -477,7 +452,9 @@ class AthenaHealthApi {
       unstructuredsig: "Metriport",
       medicationid: medicationReference.medicationid,
       hidden: false,
-      startdate: this.formatDate(medication.statement?.effectivePeriod?.start),
+      startdate: medication.statement
+        ? this.formatDate(getMedicationStatementStartDate(medication.statement))
+        : undefined,
       stopdate: this.formatDate(medication.statement?.effectivePeriod?.end),
       stopreason: undefined,
       patientnote: undefined,

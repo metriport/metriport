@@ -5,6 +5,9 @@ import {
   Condition,
   Immunization,
   Medication,
+  MedicationAdministration,
+  MedicationDispense,
+  MedicationStatement,
   Observation,
   Procedure,
 } from "@medplum/fhirtypes";
@@ -246,6 +249,31 @@ export function isNotRetriableAxiosError(error: unknown): boolean {
   return isAxiosError(error) && (error.response?.status === 400 || error.response?.status === 404);
 }
 
+// TYPES FROM DASHBOARD
+export type MedicationWithRefs = {
+  medication: Medication;
+  administration?: MedicationAdministration;
+  dispense?: MedicationDispense;
+  statement?: MedicationStatement;
+};
+
+export type GroupedVitals = {
+  mostRecentObservation: Observation;
+  sortedPoints?: DataPoint[];
+};
+
+export type BloodPressure = {
+  systolic: number;
+  diastolic: number;
+};
+
+export type DataPoint = {
+  value: number;
+  date: string;
+  unit?: string;
+  bp?: BloodPressure | undefined;
+};
+
 export function getMedicationRxnormCoding(medication: Medication): Coding | undefined {
   const code = medication.code;
   const rxnormCoding = code?.coding?.find(coding => {
@@ -254,6 +282,12 @@ export function getMedicationRxnormCoding(medication: Medication): Coding | unde
   });
   if (!rxnormCoding) return undefined;
   return rxnormCoding;
+}
+
+export function getMedicationStatementStartDate(
+  medication: MedicationStatement
+): string | undefined {
+  return medication.effectivePeriod?.start ?? medication.effectiveDateTime;
 }
 
 export function getConditionIcd10Coding(condition: Condition): Coding | undefined {
@@ -480,20 +514,6 @@ export function getObservationInterpretation(
   return undefined;
 }
 
-export function getAllergyIntoleranceManifestationSnomedCoding(
-  allergyIntoleranceReaction: AllergyIntoleranceReaction
-): Coding | undefined {
-  const manifestations = allergyIntoleranceReaction.manifestation;
-  if (!manifestations) return undefined;
-  const manifestationCodings = manifestations.flatMap(manifestation => manifestation.coding ?? []);
-  const snomedCoding = manifestationCodings.find(coding => {
-    const system = fetchCodingCodeOrDisplayOrSystem(coding, "system");
-    return system?.includes(SNOMED_CODE);
-  });
-  if (!snomedCoding) return undefined;
-  return snomedCoding;
-}
-
 export function getAllergyIntoleranceSubstanceSnomedCoding(
   allergyIntoleranceReaction: AllergyIntoleranceReaction
 ): Coding | undefined {
@@ -501,6 +521,20 @@ export function getAllergyIntoleranceSubstanceSnomedCoding(
   if (!substance) return undefined;
   const substanceCodings = substance.coding ?? [];
   const snomedCoding = substanceCodings.find(coding => {
+    const system = fetchCodingCodeOrDisplayOrSystem(coding, "system");
+    return system?.includes(SNOMED_CODE);
+  });
+  if (!snomedCoding) return undefined;
+  return snomedCoding;
+}
+
+export function getAllergyIntoleranceManifestationSnomedCoding(
+  allergyIntoleranceReaction: AllergyIntoleranceReaction
+): Coding | undefined {
+  const manifestations = allergyIntoleranceReaction.manifestation;
+  if (!manifestations) return undefined;
+  const manifestationCodings = manifestations.flatMap(manifestation => manifestation.coding ?? []);
+  const snomedCoding = manifestationCodings.find(coding => {
     const system = fetchCodingCodeOrDisplayOrSystem(coding, "system");
     return system?.includes(SNOMED_CODE);
   });
