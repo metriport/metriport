@@ -55,6 +55,7 @@ describe("makeNameDemographics", () => {
     });
     const johnJacobDoe = shiftMiddleNameToFirstName(johnDoe);
     expect(johnDoe).not.toBe(johnJacobDoe);
+    expect(johnDoe).toEqual(johnJacobDoe);
   });
 
   it("should parse prefixes and suffixes", () => {

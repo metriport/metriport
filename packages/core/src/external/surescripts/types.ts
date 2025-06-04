@@ -4,6 +4,7 @@ export interface SurescriptsSynchronizeEvent {
   dryRun?: boolean;
   fromSurescripts?: boolean;
   toSurescripts?: boolean;
+  listSurescripts?: boolean;
   debug?: typeof console.debug;
 }
 
