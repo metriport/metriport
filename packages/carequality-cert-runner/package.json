@@ -1,6 +1,6 @@
 {
   "name": "@metriport/carequality-cert-runner",
-  "version": "1.18.6",
+  "version": "1.18.7",
   "description": "Tool to run through Carequality certification test cases - by Metriport Inc.",
   "author": "Metriport Inc. <contact@metriport.com>",
   "homepage": "https://metriport.com/",
@@ -41,7 +41,7 @@
     "url": "https://github.com/metriport/metriport/issues"
   },
   "dependencies": {
-    "@metriport/ihe-gateway-sdk": "^0.19.6",
-    "@metriport/shared": "^0.23.6"
+    "@metriport/ihe-gateway-sdk": "^0.19.7",
+    "@metriport/shared": "^0.23.7"
   }
 }
