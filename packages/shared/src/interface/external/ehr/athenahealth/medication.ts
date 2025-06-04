@@ -19,3 +19,17 @@ const medicationReferenceSchema = z.object({
 export type MedicationReference = z.infer<typeof medicationReferenceSchema>;
 export const medicationReferencesSchema = medicationReferenceSchema.array();
 export type MedicationReferences = z.infer<typeof medicationReferencesSchema>;
+
+export type MedicationCreateParams = {
+  departmentid: string;
+  providernote: string;
+  unstructuredsig: string;
+  medicationid: string;
+  hidden: boolean;
+  startdate: string;
+  stopdate: string | undefined;
+  stopreason: string | undefined;
+  patientnote: string | undefined;
+  THIRDPARTYUSERNAME: string | undefined;
+  PATIENTFACINGCALL: string | undefined;
+};

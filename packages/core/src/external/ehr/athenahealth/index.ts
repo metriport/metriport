@@ -79,6 +79,7 @@ import {
   departmentsSchema,
   EventType,
   FeedType,
+  MedicationCreateParams,
   MedicationReference,
   MedicationReferences,
   medicationReferencesSchema,
@@ -445,7 +446,7 @@ class AthenaHealthApi {
     departmentId: string;
     medication: MedicationWithRefs;
   }): Promise<CreatedMedicationSuccess[]> {
-    const { debug } = out(
+    const { log, debug } = out(
       `AthenaHealth createMedication - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} departmentId ${departmentId}`
     );
     const chartMedicationUrl = `/chart/${this.stripPatientId(patientId)}/medications`;
@@ -463,11 +464,7 @@ class AthenaHealthApi {
       const startdate = this.formatDate(getMedicationStatementStartDate(statement));
       if (!startdate) return [];
       const stopdate = this.formatDate(statement.effectivePeriod?.end);
-      if (!stopdate) return [];
-      return {
-        startdate,
-        stopdate,
-      };
+      return { startdate, stopdate };
     });
     if (dates.length < 1) {
       throw new BadRequestError(
@@ -503,29 +500,64 @@ class AthenaHealthApi {
       THIRDPARTYUSERNAME: undefined,
       PATIENTFACINGCALL: undefined,
     };
-    const createdMedications: CreatedMedicationSuccess[] = [];
-    for (const date of dates) {
-      const data = { ...sharedData, ...date };
-      const createdMedication = await this.makeRequest<CreatedMedication>({
-        cxId,
-        patientId,
-        s3Path: `chart/medication/${additionalInfo.medicationId ?? "unknown"}`,
-        method: "POST",
-        data,
-        url: chartMedicationUrl,
-        schema: createdMedicationSchema,
-        additionalInfo,
-        debug,
-      });
-      if (!createdMedication.success || !createdMedication.medicationentryid) {
-        throw new MetriportError("Medication creation failed", undefined, {
-          ...additionalInfo,
-          error: createdMedication.errormessage,
-        });
+    const allCreatedMedications: CreatedMedicationSuccess[] = [];
+    const createMedicationErrors: {
+      error: unknown;
+      departmentid: string;
+      medication: string;
+    }[] = [];
+    const createMedicationArgs: MedicationCreateParams[] = dates.map(d => ({
+      ...sharedData,
+      ...d,
+    }));
+    await executeAsynchronously(
+      createMedicationArgs,
+      async (params: MedicationCreateParams) => {
+        try {
+          const createdMedication = await this.makeRequest<CreatedMedication>({
+            cxId,
+            patientId,
+            s3Path: `chart/medication/${additionalInfo.medicationId ?? "unknown"}`,
+            method: "POST",
+            data: params,
+            url: chartMedicationUrl,
+            schema: createdMedicationSchema,
+            additionalInfo,
+            debug,
+          });
+          if (!createdMedication.success || !createdMedication.medicationentryid) {
+            throw new MetriportError("Medication creation failed", undefined, {
+              ...additionalInfo,
+              error: createdMedication.errormessage,
+            });
+          }
+          allCreatedMedications.push(createdMedicationSuccessSchema.parse(createdMedication));
+        } catch (error) {
+          if (error instanceof BadRequestError || error instanceof NotFoundError) return;
+          const medicationToString = JSON.stringify(params);
+          log(`Failed to create medication ${medicationToString}. Cause: ${errorToString(error)}`);
+          createMedicationErrors.push({ error, ...params, medication: medicationToString });
+        }
+      },
+      {
+        numberOfParallelExecutions: parallelRequests,
+        delay: delayBetweenRequestBatches.asMilliseconds(),
       }
-      createdMedications.push(createdMedicationSuccessSchema.parse(createdMedication));
+    );
+    if (createMedicationErrors.length > 0) {
+      const msg = `Failure while creating some medications @ AthenaHealth`;
+      capture.message(msg, {
+        extra: {
+          ...additionalInfo,
+          createMedicationArgsCount: createMedicationArgs.length,
+          createMedicationErrorsCount: createMedicationErrors.length,
+          errors: createMedicationErrors,
+          context: "athenahealth.create-medication",
+        },
+        level: "warning",
+      });
     }
-    return createdMedications;
+    return allCreatedMedications;
   }
 
   async createProblem({
