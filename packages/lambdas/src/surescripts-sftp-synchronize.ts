@@ -23,7 +23,16 @@ export const handler = capture.wrapHandler(async (event: SurescriptsSynchronizeE
   log(`Connecting to Surescripts...`);
   await client.connect();
   log(`Connected to Surescripts`);
-  await client.synchronize(event);
+  const operations = await client.synchronize(event);
+  for (const operation of operations) {
+    if (operation.toSurescripts) {
+      log(`To Surescripts: ${operation.s3Key} -> ${operation.sftpFileName}`);
+    } else if (operation.fromSurescripts) {
+      log(`From Surescripts: ${operation.sftpFileName} -> ${operation.s3Key}`);
+    } else {
+      log(`No transfer: ${operation.sftpFileName}`);
+    }
+  }
   log(`Synchronized surescripts`);
   await client.disconnect();
   log(`Disconnected from Surescripts`);

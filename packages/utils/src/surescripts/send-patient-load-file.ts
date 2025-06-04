@@ -25,7 +25,12 @@ program
     log("Connected to Surescripts");
 
     log("Copying file to Surescripts...");
-    await client.copyFileToSurescripts(requestFileName);
+    const operation = await client.copyFileToSurescripts(requestFileName);
+    if (operation) {
+      log(`Copied file to Surescripts: ${operation.s3Key} -> ${operation.sftpFileName}`);
+    } else {
+      log(`No transfer: ${requestFileName}`);
+    }
     log("Copied file to Surescripts");
 
     log("Disconnecting from Surescripts...");

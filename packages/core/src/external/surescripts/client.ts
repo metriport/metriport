@@ -294,16 +294,19 @@ export class SurescriptsSftpClient extends SftpClient {
     return results[0];
   }
 
-  async synchronize(event: SurescriptsSynchronizeEvent) {
+  async synchronize(event: SurescriptsSynchronizeEvent): Promise<SurescriptsOperation[]> {
     if (event.fromSurescripts) {
       event.debug?.("Copying from Surescripts...");
-      await this.copyFromSurescripts(event);
+      const operations = await this.copyFromSurescripts(event);
       event.debug?.("Finished copying from Surescripts");
+      return operations;
     } else if (event.toSurescripts) {
       event.debug?.("Copying to Surescripts...");
-      await this.copyToSurescripts(event);
+      const operations = await this.copyToSurescripts(event);
       event.debug?.("Finished copying to Surescripts");
+      return operations;
     }
+    return [];
   }
 
   async copyFromSurescripts(event: SurescriptsSynchronizeEvent): Promise<SurescriptsOperation[]> {
