@@ -1,6 +1,5 @@
 import { Resource } from "@medplum/fhirtypes";
 import { errorToString } from "@metriport/shared";
-import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { SearchSetBundle } from "@metriport/shared/medical";
 import { uniq } from "lodash";
 import { Features } from "../../../../domain/features";
@@ -83,16 +82,10 @@ export async function searchPatientConsolidated({
     `Got ${fhirResourcesResults.length} resources and ${docRefResults.length} DocRefs in ${elapsedTime} ms, hydrating search results...`
   );
 
-  let subStartedAt = new Date();
   const resourcesMutable = fhirResourcesResults.flatMap(
     r => fhirSearchResultToResource(r, log) ?? []
   );
   resourcesMutable.push(...docRefResults);
-  log(
-    `Loaded/converted ${resourcesMutable.length} resources in ${elapsedTimeFromNow(
-      subStartedAt
-    )} ms, hydrating search results...`
-  );
 
   localStartedAt = Date.now();
   const hydratedMutable = await hydrateMissingReferences({
