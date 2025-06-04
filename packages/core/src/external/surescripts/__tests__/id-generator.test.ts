@@ -1,4 +1,4 @@
-import { createIdGenerator } from "../id-generator";
+import { createIdGenerator, getTimestampFromId } from "../id-generator";
 
 describe("ID Generator", () => {
   // Precomputed values for an ID
@@ -25,11 +25,24 @@ describe("ID Generator", () => {
     expect(idGenerator(exampleTimestamp).toString("ascii")).toBe(exampleTimestampIdPrefix);
   });
 
+  it("can extract the timestamp from a deterministic ID", () => {
+    const idGenerator = createIdGenerator(8);
+    const id = idGenerator(exampleTimestamp).toString("ascii");
+    console.log(getTimestampFromId("-ORx36JfiG"));
+    expect(getTimestampFromId(id)).toBe(exampleTimestamp);
+  });
+
   it("can generate a deterministic ID with entropy", () => {
     const idGenerator = createIdGenerator(10);
     const generatedId = idGenerator(exampleTimestamp).toString("ascii");
     expect(generatedId.substring(0, 8)).toBe(exampleTimestampIdPrefix);
     expect(generatedId.substring(8)).toMatch(/^[a-zA-Z0-9_-]{2}$/);
+  });
+
+  it("can extract the timestamp from a deterministic ID with entropy", () => {
+    const idGenerator = createIdGenerator(10);
+    const id = idGenerator(exampleTimestamp).toString("ascii");
+    expect(getTimestampFromId(id)).toBe(exampleTimestamp);
   });
 
   it("generate random IDs across milliseconds", () => {

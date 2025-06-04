@@ -66,3 +66,16 @@ export function createIdGenerator(
     return id;
   };
 }
+
+export function getTimestampFromId(id: string): number {
+  if (id.length < 8) throw new Error("ID must be at least 8 characters long");
+
+  let timestamp = 0;
+  let exponent = 1;
+  for (let i = 7; i >= 0; i--) {
+    const char = id[i] ?? "-";
+    timestamp += LEXICON.indexOf(char) * exponent;
+    exponent *= 64;
+  }
+  return timestamp;
+}
