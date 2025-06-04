@@ -47,6 +47,7 @@ export function toSurescriptsPatientLoadFile(
   patients: Patient[]
 ): { content: Buffer; requestedPatientIds: string[] } {
   const requestedPatientIds: string[] = [];
+  const transmissionDate = new Date(transmission.timestamp);
   const header = toSurescriptsPatientLoadRow(
     {
       recordType: "HDR",
@@ -58,10 +59,11 @@ export function toSurescriptsPatientLoadFile(
       patientPopulationId: transmission.cxId,
       lookBackInMonths: 12,
       transmissionId: transmission.id,
-      transmissionDate: new Date(transmission.timestamp),
+      transmissionDate,
       transmissionFileType: "PMA",
       transmissionAction: "U",
       fileSchedule: "ADHOC",
+      extractDate: transmissionDate,
     },
     patientLoadHeaderSchema,
     patientLoadHeaderOrder

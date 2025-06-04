@@ -25,7 +25,7 @@ export const patientLoadHeaderSchema = z.object({
   transmissionFileType: z.enum(["PAT", "PNM", "PMA"]), // PNM = Panel enrollment
   transmissionAction: z.enum(["U"]).optional(),
   fileSchedule: z.enum(["ADHOC"]).optional(),
-  extractDate: z.date().optional(),
+  extractDate: z.date(),
   dataSourceType: z.enum(["FIL", "CLM"]).optional(), // FIL = fill data only, CLM = claim data only
   startDate: z.date().optional(),
   endDate: z.date().optional(),
@@ -85,7 +85,7 @@ export const patientLoadHeaderOrder: OutgoingFileRowSchema<PatientLoadHeader> = 
   {
     field: 10,
     key: "extractDate",
-    toSurescripts: toSurescriptsDate("extractDate", { optional: true }),
+    toSurescripts: toSurescriptsDate("extractDate"),
   },
   {
     field: 11,

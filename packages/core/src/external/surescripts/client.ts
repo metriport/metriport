@@ -233,11 +233,7 @@ export class SurescriptsSftpClient extends SftpClient {
     const requestFileNameWithoutExtension = requestFileName.replace(/\.gz$/, "");
     const requestFileS3Prefix = getS3Key(INCOMING_NAME, requestFileNameWithoutExtension);
     const s3Files = await this.listFilesInS3(requestFileS3Prefix);
-    const firstS3File = s3Files[0];
-    if (firstS3File) {
-      return firstS3File;
-    }
-    return undefined;
+    return s3Files[s3Files.length - 1];
   }
 
   private async listFilesInS3(prefix: string): Promise<string[]> {
@@ -490,33 +486,28 @@ export class SurescriptsSftpClient extends SftpClient {
     return ["_", dayjs(timestamp).format("YYYYMMDDHHmmss"), ".gz"].join("");
   }
 
-  protected parseVerificationFileName(remoteFileName: string): {
-    requestFileNameWithoutExtension: string;
-    acceptedBySurescripts: Date;
-    processedBySurescripts: Date;
-    compression: boolean;
-  } | null {
-    const [requestFileNameWithoutExtension, sstimestamp1, sstimestamp2, maybeGzExtract] =
+  protected parseVerificationFileName(remoteFileName: string):
+    | {
+        requestFileNameWithoutExtension: string;
+        acceptedBySurescripts: Date;
+        compression: boolean;
+      }
+    | undefined {
+    const [requestFileNameWithoutExtension, surescriptsUnixTimestamp, maybeGzExtract] =
       remoteFileName.split(".");
-    if (
-      !requestFileNameWithoutExtension ||
-      !sstimestamp1?.match(/^\d+$/) ||
-      !sstimestamp2?.match(/^\d+$/)
-    ) {
-      return null;
+    if (!requestFileNameWithoutExtension || !surescriptsUnixTimestamp?.match(/^\d+$/)) {
+      return undefined;
     }
     const compression = maybeGzExtract === "gz-extract";
     if (!compression && maybeGzExtract !== "rsp") {
-      return null;
+      return undefined;
     }
 
-    const acceptedBySurescripts = dayjs(parseInt(sstimestamp1)).toDate();
-    const processedBySurescripts = dayjs(parseInt(sstimestamp2)).toDate();
+    const acceptedBySurescripts = dayjs(parseInt(surescriptsUnixTimestamp)).toDate();
     return {
       requestFileNameWithoutExtension,
       compression,
       acceptedBySurescripts,
-      processedBySurescripts,
     };
   }
 }
