@@ -176,6 +176,8 @@ export const config: EnvConfigNonSandbox = {
       fargateMemoryLimitMiB: 2048,
       fargateTaskCountMin: 2,
       fargateTaskCountMax: 4,
+      nlbInternalIpAddressA: "10.1.1.0",
+      nlbInternalIpAddressB: "10.1.1.1",
     },
     hl7v2RosterUploadLambda: {
       bucketName: "your-roster-bucket",
@@ -211,7 +213,7 @@ export const config: EnvConfigNonSandbox = {
   },
   medicalDocumentsBucketName: "test-bucket",
   medicalDocumentsUploadBucketName: "test-upload-bucket",
-  medicationBundleBucketName: "test-medication-bundle-bucket",
+  pharmacyConversionBucketName: "test-pharmacy-conversion-bucket",
   surescriptsReplicaBucketName: "test-surescripts-replica-bucket",
   ehrBundleBucketName: "test-ehr-bundle-bucket",
   ehrResponsesBucketName: "test-ehr-responses-bucket",

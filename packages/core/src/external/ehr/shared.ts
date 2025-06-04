@@ -42,19 +42,6 @@ function getS3UtilsInstance(): S3Utils {
   return new S3Utils(region);
 }
 
-export const getSecretsOauthSchema = z.object({
-  environment: z.string(),
-  clientKey: z.string(),
-  clientSecret: z.string(),
-});
-export type GetSecretsOauthResult = z.infer<typeof getSecretsOauthSchema>;
-
-export const getSecretsApiKeySchema = z.object({
-  environment: z.string(),
-  apiKey: z.string(),
-});
-export type GetSecretsApiKeyResult = z.infer<typeof getSecretsApiKeySchema>;
-
 export interface ApiConfig {
   twoLeggedAuthTokenInfo?: JwtTokenInfo | undefined;
   practiceId: string;
@@ -316,7 +303,7 @@ async function fetchEhrBundleIfYoungerThanMaxAge(
 }
 
 /**
- * Fetches a bundle from the EHR for the given bundle type and resource type.
+ * Fetches a bundle from the EHR for the given resource type.
  * Uses cached EHR bundle if available and requested. Refreshes the cache if the bundle
  * is fetched from the EHR.
  *
@@ -342,13 +329,6 @@ export async function fetchEhrBundleUsingCache({
     if (cachedBundle) return cachedBundle;
   }
   const fhirResources = await fetchResourcesFromEhr();
-  const invalidEntry = fhirResources.find(r => r.resourceType !== params.resourceType);
-  if (invalidEntry) {
-    throw new BadRequestError("Invalid bundle", undefined, {
-      resourceType: params.resourceType,
-      resourceTypeInBundle: invalidEntry.resourceType,
-    });
-  }
   const bundle = createBundleFromResourceList(fhirResources as Resource[]);
   await createOrReplaceBundle({
     ...params,
@@ -364,7 +344,7 @@ export async function fetchEhrBundleUsingCache({
  *
  * @param makeRequest - The function that makes the request to the EHR FHIR endpoint.
  * @param url - The URL of the bundle.
- * @param acc - The accumulator of the resources.
+ * @param acc - The accumulator of the resources. Optional, defaults to an empty array.
  * @returns The FHIR resources.
  */
 export async function fetchEhrFhirResourcesWithPagination({

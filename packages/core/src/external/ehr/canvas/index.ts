@@ -67,6 +67,7 @@ const canvasNoteTitle = "Metriport Chart Import";
 const canvasNoteTypeName = "Chart review";
 const canvasNoteStatusForWriting = "NEW";
 const utcToEstOffset = dayjs.duration(-5, "hours");
+const defaultCountOrLimit = "1000";
 export type CanvasEnv = string;
 
 export const supportedCanvasResources = [
@@ -467,7 +468,7 @@ class CanvasApi {
     noteType: string;
   }): Promise<Note> {
     const { debug } = out(
-      `Canvas createNote - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} practitionerId ${practitionerId} practiceLocationId ${practiceLocationId}`
+      `Canvas createNote - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} practitionerId ${practitionerId}`
     );
     const noteUrl = "notes/v1/Note";
     const additionalInfo = {
@@ -529,7 +530,7 @@ class CanvasApi {
       provider_key: practitionerId,
       datetime_of_service__gte: fromDate.toISOString(),
       datetime_of_service__lte: toDate.toISOString(),
-      limit: "1000",
+      limit: defaultCountOrLimit,
       ordering: orderDec ? "-datetime_of_service" : "datetime_of_service",
     };
     const urlParams = new URLSearchParams(params);
@@ -752,14 +753,14 @@ class CanvasApi {
     useCachedBundle?: boolean;
   }): Promise<Bundle> {
     const { debug } = out(
-      `Canvas getBundleByResourceType - cxId ${cxId} practiceId ${this.practiceId} metriportPatientId ${metriportPatientId} canvasPatientId ${canvasPatientId} resourceType ${resourceType}`
+      `Canvas getBundleByResourceType - cxId ${cxId} practiceId ${this.practiceId} canvasPatientId ${canvasPatientId}`
     );
     if (!isSupportedCanvasResource(resourceType)) {
       throw new BadRequestError("Invalid resource type", undefined, {
         resourceType,
       });
     }
-    const params = { patient: `Patient/${canvasPatientId}`, _count: "1000" };
+    const params = { patient: `Patient/${canvasPatientId}`, _count: defaultCountOrLimit };
     const urlParams = new URLSearchParams(params);
     const resourceTypeUrl = `/${resourceType}?${urlParams.toString()}`;
     const additionalInfo = {
@@ -770,8 +771,8 @@ class CanvasApi {
     };
     const fetchResourcesFromEhr = () =>
       fetchEhrFhirResourcesWithPagination({
-        makeRequest: (url: string) =>
-          this.makeRequest<EhrFhirResourceBundle>({
+        makeRequest: async (url: string) => {
+          const bundle = await this.makeRequest<EhrFhirResourceBundle>({
             cxId,
             patientId: canvasPatientId,
             s3Path: `fhir-resources-${resourceType}`,
@@ -781,7 +782,16 @@ class CanvasApi {
             additionalInfo,
             debug,
             useFhir: true,
-          }),
+          });
+          const invalidResource = bundle.entry?.find(e => e.resource.resourceType !== resourceType);
+          if (invalidResource) {
+            throw new BadRequestError("Invalid bundle", undefined, {
+              resourceType,
+              resourceTypeInBundle: invalidResource.resource.resourceType,
+            });
+          }
+          return bundle;
+        },
         url: resourceTypeUrl,
       });
     const bundle = await fetchEhrBundleUsingCache({
@@ -874,7 +884,7 @@ class CanvasApi {
       status: "booked",
       ...(fromDate && { date: `ge${this.formatDate(fromDate.toISOString()) ?? ""}` }),
       ...(toDate && { date: `lt${this.formatDate(toDate.toISOString()) ?? ""}` }),
-      _count: "1000",
+      _count: defaultCountOrLimit,
     };
     const urlParams = new URLSearchParams(params);
     const appointmentUrl = `/Appointment?${urlParams.toString()}`;

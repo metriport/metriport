@@ -1,11 +1,7 @@
 import { executeWithNetworkRetries } from "@metriport/shared";
 import { Config } from "../../../../util/config";
 import { out } from "../../../../util/log";
-import {
-  defaultLambdaInvocationResponseHandler,
-  LambdaClient,
-  makeLambdaClient,
-} from "../../../aws/lambda";
+import { getLambdaResultPayload, LambdaClient, makeLambdaClient } from "../../../aws/lambda";
 import {
   Appointment,
   EhrGetAppointmentsHandler,
@@ -36,14 +32,12 @@ export class EhrGetAppointmentsCloud implements EhrGetAppointmentsHandler {
           InvocationType: "RequestResponse",
           Payload: payload,
         })
-        .promise()
-        .then(
-          defaultLambdaInvocationResponseHandler({
-            lambdaName: this.ehrGetAppointmentsLambdaName,
-          })
-        );
-      if (!result) return [];
-      return JSON.parse(result);
+        .promise();
+      const resultPayload = getLambdaResultPayload({
+        result,
+        lambdaName: this.ehrGetAppointmentsLambdaName,
+      });
+      return JSON.parse(resultPayload);
     });
   }
 }

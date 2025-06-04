@@ -6,6 +6,7 @@ import {
   MedicationDispense,
   MedicationStatement,
   Observation,
+  ResourceType,
 } from "@medplum/fhirtypes";
 import {
   BadRequestError,
@@ -95,6 +96,7 @@ const athenaPatientPrefix = "E";
 const athenaDepartmentPrefix = "Department";
 const athenaDateFormat = "MM/DD/YYYY";
 const athenaDateTimeFormat = "MM/DD/YYYY HH:mm:ss";
+const defaultCountOrLimit = "1000";
 
 const athenaEnv = ["api", "api.preview"] as const;
 export type AthenaEnv = (typeof athenaEnv)[number];
@@ -151,7 +153,7 @@ type DataPoint = {
   bp?: BloodPressure | undefined;
 };
 
-export const supportedAthenaHealthResources = [
+export const supportedAthenaHealthResources: ResourceType[] = [
   "AllergyIntolerance",
   "CarePlan",
   "Condition",
@@ -169,7 +171,8 @@ export const supportedAthenaHealthResources = [
   "Coverage",
   "CareTeam",
 ];
-export const supportedAthenaHealthResourcesById = [
+
+export const supportedAthenaHealthReferenceResources: ResourceType[] = [
   "Media",
   "Medication",
   "Binary",
@@ -180,21 +183,26 @@ export const supportedAthenaHealthResourcesById = [
   "Practitioner",
   "Provenance",
 ];
-
-export const scopes = [...supportedAthenaHealthResources, ...supportedAthenaHealthResourcesById];
+export const scopes = [
+  ...supportedAthenaHealthResources,
+  ...supportedAthenaHealthReferenceResources,
+];
 
 export type SupportedAthenaHealthResource = (typeof supportedAthenaHealthResources)[number];
 export function isSupportedAthenaHealthResource(
   resourceType: string
 ): resourceType is SupportedAthenaHealthResource {
-  return supportedAthenaHealthResources.includes(resourceType);
+  return supportedAthenaHealthResources.includes(resourceType as SupportedAthenaHealthResource);
 }
 
-export type SupportedAthenaHealthResourceById = (typeof supportedAthenaHealthResourcesById)[number];
-export function isSupportedAthenaHealthResourceById(
+export type SupportedAthenaHealthReferenceResource =
+  (typeof supportedAthenaHealthReferenceResources)[number];
+export function isSupportedAthenaHealthReferenceResource(
   resourceType: string
-): resourceType is SupportedAthenaHealthResourceById {
-  return supportedAthenaHealthResourcesById.includes(resourceType);
+): resourceType is SupportedAthenaHealthReferenceResource {
+  return supportedAthenaHealthReferenceResources.includes(
+    resourceType as SupportedAthenaHealthReferenceResource
+  );
 }
 
 class AthenaHealthApi {
@@ -745,16 +753,21 @@ class AthenaHealthApi {
     cxId: string;
     metriportPatientId: string;
     athenaPatientId: string;
-    resourceType: SupportedAthenaHealthResource;
+    resourceType: string;
     useCachedBundle?: boolean;
   }): Promise<Bundle> {
     const { debug } = out(
-      `AthenaHealth getBundleByResourceType - cxId ${cxId} practiceId ${this.practiceId} metriportPatientId ${metriportPatientId} athenaPatientId ${athenaPatientId} resourceType ${resourceType}`
+      `AthenaHealth getBundleByResourceType - cxId ${cxId} practiceId ${this.practiceId} athenaPatientId ${athenaPatientId}`
     );
+    if (!isSupportedAthenaHealthResource(resourceType)) {
+      throw new BadRequestError("Invalid resource type", undefined, {
+        resourceType,
+      });
+    }
     const params = {
       patient: `${this.createPatientId(athenaPatientId)}`,
       "ah-practice": this.createPracticetId(this.practiceId),
-      _count: resourceType === "Coverage" ? coverageCount : "1000",
+      _count: resourceType === "Coverage" ? coverageCount : defaultCountOrLimit,
       ...(resourceType === "MedicationRequest"
         ? { intent: medicationRequestIntents.join(",") }
         : undefined),
@@ -769,8 +782,8 @@ class AthenaHealthApi {
     };
     const fetchResourcesFromEhr = () =>
       fetchEhrFhirResourcesWithPagination({
-        makeRequest: (url: string) =>
-          this.makeRequest<EhrFhirResourceBundle>({
+        makeRequest: async (url: string) => {
+          const bundle = await this.makeRequest<EhrFhirResourceBundle>({
             cxId,
             patientId: athenaPatientId,
             s3Path: `fhir-resources-${resourceType}`,
@@ -780,7 +793,16 @@ class AthenaHealthApi {
             additionalInfo,
             debug,
             useFhir: true,
-          }),
+          });
+          const invalidResource = bundle.entry?.find(e => e.resource.resourceType !== resourceType);
+          if (invalidResource) {
+            throw new BadRequestError("Invalid bundle", undefined, {
+              resourceType,
+              resourceTypeInBundle: invalidResource.resource.resourceType,
+            });
+          }
+          return bundle;
+        },
         url: resourceTypeUrl,
       });
     const bundle = await fetchEhrBundleUsingCache({
@@ -815,7 +837,7 @@ class AthenaHealthApi {
     );
     if (
       !isSupportedAthenaHealthResource(resourceType) &&
-      !isSupportedAthenaHealthResourceById(resourceType)
+      !isSupportedAthenaHealthReferenceResource(resourceType)
     ) {
       throw new BadRequestError("Invalid resource type", undefined, {
         athenaPatientId,
@@ -917,7 +939,7 @@ class AthenaHealthApi {
     const params = {
       startdate: this.formatDate(startAppointmentDate.toISOString()) ?? "",
       enddate: this.formatDate(endAppointmentDate.toISOString()) ?? "",
-      limit: "1000",
+      limit: defaultCountOrLimit,
     };
     const urlParams = new URLSearchParams(params);
     if (departmentIds && departmentIds.length > 0) {
@@ -979,7 +1001,7 @@ class AthenaHealthApi {
       ...(endProcessedDate && {
         showprocessedenddatetime: this.formatDateTime(endProcessedDate.toISOString()) ?? "",
       }),
-      limit: "1000",
+      limit: defaultCountOrLimit,
     };
     const urlParams = new URLSearchParams(params);
     if (departmentIds && departmentIds.length > 0) {

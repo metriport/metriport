@@ -1,9 +1,10 @@
 import { Address } from "@metriport/core/domain/address";
 import { Contact } from "@metriport/core/domain/contact";
-import ElationApi, { ElationEnv, isElationEnv } from "@metriport/core/external/ehr/elation/index";
+import { getClientMap, getElationEnv } from "@metriport/core/external/ehr/elation/environment";
+import ElationApi, { ElationEnv } from "@metriport/core/external/ehr/elation/index";
+import { EhrPerPracticeParams } from "@metriport/core/external/ehr/environment";
 import {
   BadRequestError,
-  cxClientKeyAndSecretMapSecretSchema,
   EhrSources,
   MetriportError,
   normalizeEmailNewSafe,
@@ -18,12 +19,7 @@ import { Patient as ElationPatient } from "@metriport/shared/interface/external/
 import { SubscriptionResource } from "@metriport/shared/interface/external/ehr/elation/subscription";
 import dayjs from "dayjs";
 import { getCxMappingOrFail } from "../../../command/mapping/cx";
-import { Config } from "../../../shared/config";
-import {
-  createEhrClient,
-  EhrEnvAndClientCredentials,
-  EhrPerPracticeParams,
-} from "../shared/utils/client";
+import { createEhrClientWithClientCredentials } from "../shared/utils/client";
 
 export const elationClientJwtTokenSource = "elation-client";
 export const elationWebhookJwtTokenSource = "elation-webhook";
@@ -83,28 +79,6 @@ export function createNames(patient: ElationPatient): { firstName: string; lastN
   };
 }
 
-export function getElationEnv({
-  cxId,
-  practiceId,
-}: EhrPerPracticeParams): EhrEnvAndClientCredentials<ElationEnv> {
-  const environment = Config.getElationEnv();
-  if (!environment) throw new MetriportError("Elation environment not set");
-  if (!isElationEnv(environment)) {
-    throw new MetriportError("Invalid Elation environment", undefined, { environment });
-  }
-  const clientMap = getClientMap();
-  const key = `${cxId}_${practiceId}_key`;
-  const keyEntry = clientMap[key];
-  const secret = `${cxId}_${practiceId}_secret`;
-  const secretEntry = clientMap[secret];
-  if (!keyEntry || !secretEntry) throw new MetriportError("Elation credentials not found");
-  return {
-    environment,
-    clientKey: keyEntry,
-    clientSecret: secretEntry,
-  };
-}
-
 function getCxIdAndPracticeIdFromElationApplicationId(applicationId: string): {
   cxId: string;
   practiceId: string;
@@ -124,7 +98,7 @@ function getCxIdAndPracticeIdFromElationApplicationId(applicationId: string): {
 export async function createElationClientWithTokenIdAndEnvironment(
   perPracticeParams: EhrPerPracticeParams
 ): Promise<{ client: ElationApi; tokenId: string; environment: ElationEnv }> {
-  return await createEhrClient<ElationEnv, ElationApi, EhrPerPracticeParams>({
+  return await createEhrClientWithClientCredentials<ElationEnv, ElationApi, EhrPerPracticeParams>({
     ...perPracticeParams,
     source: elationClientJwtTokenSource,
     getEnv: { params: perPracticeParams, getEnv: getElationEnv },
@@ -167,12 +141,4 @@ export async function getElationSigningKeyInfo(
     });
   }
   return { cxId, practiceId, signingKey };
-}
-
-function getClientMap() {
-  const rawClientsMap = Config.getElationClientKeyAndSecretMap();
-  if (!rawClientsMap) throw new MetriportError("Elation secrets map not set");
-  const clientMap = cxClientKeyAndSecretMapSecretSchema.safeParse(JSON.parse(rawClientsMap));
-  if (!clientMap.success) throw new MetriportError("Elation clients map has invalid format");
-  return clientMap.data;
 }

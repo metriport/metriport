@@ -2,7 +2,7 @@ import { BadRequestError } from "@metriport/shared";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import HealthieApi, { isHealthieEnv } from ".";
 import { getSecrets } from "../api/get-client-key-and-secret";
-import { getSecretsApiKeySchema } from "../shared";
+import { getSecretsApiKeySchema } from "../secrets";
 
 export async function createHealthieClient({
   cxId,

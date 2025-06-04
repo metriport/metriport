@@ -198,6 +198,8 @@ export function createRosterRowInput(
   const email = data.contact?.find(c => c.email)?.email;
   const scrambledId = createScrambledId(p.cxId, p.id);
   const rosterGenerationDate = buildDayjs(new Date()).format("YYYY-MM-DD");
+  const dob = data.dob;
+  const dobNoDelimiter = dob.replace(/[-]/g, "");
   const authorizingParticipantFacilityCode = org.shortcode;
   const authorizingParticipantMrn = p.externalId || createUuidFromText(scrambledId);
   const assigningAuthorityIdentifier = METRIPORT_ASSIGNING_AUTHORITY_IDENTIFIER;
@@ -210,7 +212,8 @@ export function createRosterRowInput(
     lastName: data.lastName,
     firstName: data.firstName,
     middleName: "",
-    dob: data.dob,
+    dob,
+    dobNoDelimiter,
     genderAtBirth: data.genderAtBirth,
     address1AddressLine1: addresses[0]?.addressLine1,
     address1AddressLine2: addresses[0]?.addressLine2,
