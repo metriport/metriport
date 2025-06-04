@@ -3,9 +3,9 @@ import { MetriportError } from "@metriport/shared";
 import { timed } from "@metriport/shared/util/duration";
 import { Patient } from "../../../../domain/patient";
 import { normalize } from "../../../../external/fhir/consolidated/normalize";
+import { isDerivedFromExtension } from "../../../../external/fhir/shared/extensions/derived-from";
 import { OpenSearchFhirIngestor } from "../../../../external/opensearch/fhir-ingestor";
 import { OnBulkItemError } from "../../../../external/opensearch/shared/bulk";
-import { isDerivedFromExtension } from "../../../../fhir-deduplication/shared";
 import { out } from "../../../../util";
 import { getConsolidatedFile } from "../../consolidated-get";
 import { getConfigs } from "./fhir-config";
@@ -54,15 +54,18 @@ export async function ingestPatientConsolidated({
   log(`Ingested ${resources.length} resources in ${elapsedTime} ms`);
 }
 
+/**
+ * WARNING: it mutates the resource in place, removing "derived-from" extensions.
+ */
 export function filterOutPatientAndRemoveDerivedFromExtensions(
-  resource?: Resource
+  mutatingResource?: Resource
 ): Resource | undefined {
-  if (!resource) return undefined;
-  if (resource.resourceType === "Patient") return undefined;
-  if ("extension" in resource && resource.extension) {
-    resource.extension = resource.extension.filter(e => !isDerivedFromExtension(e));
+  if (!mutatingResource) return undefined;
+  if (mutatingResource.resourceType === "Patient") return undefined;
+  if ("extension" in mutatingResource && mutatingResource.extension) {
+    mutatingResource.extension = mutatingResource.extension.filter(e => !isDerivedFromExtension(e));
   }
-  return resource;
+  return mutatingResource;
 }
 
 /**
