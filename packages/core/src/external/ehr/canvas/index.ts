@@ -67,6 +67,7 @@ const canvasNoteTitle = "Metriport Chart Import";
 const canvasNoteTypeName = "Chart review";
 const canvasNoteStatusForWriting = "NEW";
 const utcToEstOffset = dayjs.duration(-5, "hours");
+const defaultCountOrLimit = "1000";
 export type CanvasEnv = string;
 
 export const supportedCanvasResources = [
@@ -513,7 +514,7 @@ class CanvasApi {
       provider_key: practitionerId,
       datetime_of_service__gte: fromDate.toISOString(),
       datetime_of_service__lte: toDate.toISOString(),
-      limit: "1000",
+      limit: defaultCountOrLimit,
       ordering: orderDec ? "-datetime_of_service" : "datetime_of_service",
     };
     const urlParams = new URLSearchParams(params);
@@ -743,7 +744,7 @@ class CanvasApi {
         resourceType,
       });
     }
-    const params = { patient: `Patient/${canvasPatientId}`, _count: "1000" };
+    const params = { patient: `Patient/${canvasPatientId}`, _count: defaultCountOrLimit };
     const urlParams = new URLSearchParams(params);
     const resourceTypeUrl = `/${resourceType}?${urlParams.toString()}`;
     const additionalInfo = {
@@ -794,7 +795,7 @@ class CanvasApi {
       status: "booked",
       ...(fromDate && { date: `ge${this.formatDate(fromDate.toISOString()) ?? ""}` }),
       ...(toDate && { date: `lt${this.formatDate(toDate.toISOString()) ?? ""}` }),
-      _count: "1000",
+      _count: defaultCountOrLimit,
     };
     const urlParams = new URLSearchParams(params);
     const appointmentUrl = `/Appointment?${urlParams.toString()}`;

@@ -96,6 +96,7 @@ const athenaPatientPrefix = "E";
 const athenaDepartmentPrefix = "Department";
 const athenaDateFormat = "MM/DD/YYYY";
 const athenaDateTimeFormat = "MM/DD/YYYY HH:mm:ss";
+const defaultCountOrLimit = "1000";
 
 const athenaEnv = ["api", "api.preview"] as const;
 export type AthenaEnv = (typeof athenaEnv)[number];
@@ -755,7 +756,7 @@ class AthenaHealthApi {
     const params = {
       patient: `${this.createPatientId(athenaPatientId)}`,
       "ah-practice": this.createPracticetId(this.practiceId),
-      _count: resourceType === "Coverage" ? coverageCount : "1000",
+      _count: resourceType === "Coverage" ? coverageCount : defaultCountOrLimit,
       ...(resourceType === "MedicationRequest"
         ? { intent: medicationRequestIntents.join(",") }
         : undefined),
@@ -848,7 +849,7 @@ class AthenaHealthApi {
     const params = {
       startdate: this.formatDate(startAppointmentDate.toISOString()) ?? "",
       enddate: this.formatDate(endAppointmentDate.toISOString()) ?? "",
-      limit: "1000",
+      limit: defaultCountOrLimit,
     };
     const urlParams = new URLSearchParams(params);
     if (departmentIds && departmentIds.length > 0) {
@@ -910,7 +911,7 @@ class AthenaHealthApi {
       ...(endProcessedDate && {
         showprocessedenddatetime: this.formatDateTime(endProcessedDate.toISOString()) ?? "",
       }),
-      limit: "1000",
+      limit: defaultCountOrLimit,
     };
     const urlParams = new URLSearchParams(params);
     if (departmentIds && departmentIds.length > 0) {
