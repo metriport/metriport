@@ -17,57 +17,63 @@ export type LexicalSearchParams = {
 /**
  * Generates a lexical search query to be executed against an OpenSearch index.
  */
-export function createLexicalSearchQuery({
-  query,
-  cxId,
-  patientId,
-}: LexicalSearchParams): OpenSearchRequestBody {
+export function createLexicalSearchQuery({ query, cxId, patientId }: LexicalSearchParams): {
+  isReturnAllResources: boolean;
+  searchQuery: OpenSearchRequestBody;
+} {
   const isMatchQuery = !query?.startsWith(simpleQueryStringPrefix);
   const actualQuery = cleanupQuery(query);
   const generalParams = getGeneralParams();
+  const isReturnAllResources = actualQuery && actualQuery.length > 0 ? false : true;
   if (isMatchQuery) {
     return {
-      ...generalParams,
-      query: {
-        bool: {
-          must: [
-            ...(actualQuery && actualQuery.length > 0
-              ? [
-                  {
-                    // https://docs.opensearch.org/docs/latest/query-dsl/full-text/match/
-                    match: {
-                      [contentFieldName]: {
-                        query: actualQuery,
-                        fuzziness: "AUTO",
+      isReturnAllResources,
+      searchQuery: {
+        ...generalParams,
+        query: {
+          bool: {
+            must: [
+              ...(isReturnAllResources
+                ? []
+                : [
+                    {
+                      // https://docs.opensearch.org/docs/latest/query-dsl/full-text/match/
+                      match: {
+                        [contentFieldName]: {
+                          query: actualQuery,
+                          fuzziness: "AUTO",
+                        },
                       },
                     },
-                  },
-                ]
-              : []),
-            ...getPatientFilters(cxId, patientId),
-          ],
+                  ]),
+              ...getPatientFilters(cxId, patientId),
+            ],
+          },
         },
       },
     };
   }
   return {
+    isReturnAllResources,
     ...generalParams,
-    query: {
-      bool: {
-        must: [
-          ...(actualQuery && actualQuery.length > 0
-            ? [
-                {
-                  // https://docs.opensearch.org/docs/latest/query-dsl/full-text/simple-query-string/
-                  simple_query_string: {
-                    query: actualQuery,
-                    fields: [contentFieldName],
+    searchQuery: {
+      query: {
+        bool: {
+          must: [
+            ...(isReturnAllResources
+              ? []
+              : [
+                  {
+                    // https://docs.opensearch.org/docs/latest/query-dsl/full-text/simple-query-string/
+                    simple_query_string: {
+                      query: actualQuery,
+                      fields: [contentFieldName],
+                    },
                   },
-                },
-              ]
-            : []),
-          ...getPatientFilters(cxId, patientId),
-        ],
+                ]),
+            ...getPatientFilters(cxId, patientId),
+          ],
+        },
       },
     },
   };

@@ -30,7 +30,10 @@ export type GetByIdRequest = {
 export class OpenSearchFhirSearcher {
   constructor(readonly config: OpenSearchFhirSearcherConfig) {}
 
-  async search({ cxId, patientId, query }: SearchRequest): Promise<FhirSearchResult[]> {
+  async search({ cxId, patientId, query }: SearchRequest): Promise<{
+    isReturnAllResources: boolean;
+    results: FhirSearchResult[];
+  }> {
     const { log } = out(`${this.constructor.name}.search - cx ${cxId}, pt ${patientId}`);
 
     const { indexName, endpoint, username, password } = this.config;
@@ -38,7 +41,7 @@ export class OpenSearchFhirSearcher {
     const client = new Client({ node: endpoint, auth });
 
     log(`Searching on index ${indexName}...`);
-    const searchRequest = createLexicalSearchQuery({
+    const { isReturnAllResources, searchQuery } = createLexicalSearchQuery({
       cxId,
       patientId,
       query,
@@ -47,12 +50,12 @@ export class OpenSearchFhirSearcher {
     const response = await paginatedSearch<FhirSearchResult>({
       client,
       indexName,
-      searchRequest,
+      searchRequest: searchQuery,
       mapResults,
     });
 
     log(`Successfully searched, got ${response.count} results`);
-    return response.items;
+    return { isReturnAllResources, results: response.items };
   }
 
   async hasData({ cxId, patientId }: { cxId: string; patientId: string }): Promise<boolean> {
