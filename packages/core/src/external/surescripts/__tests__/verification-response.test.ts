@@ -3,7 +3,7 @@ import { fromSurescriptsVerificationFile } from "../message";
 
 describe("Verification response", () => {
   it("should parse a successful verification response", () => {
-    const verificationSuccessFile = getArtifact("vrf/success.txt");
+    const verificationSuccessFile = getArtifact("success/vrf.txt");
     const response = fromSurescriptsVerificationFile(verificationSuccessFile);
     expect(response.header.loadStatus).toBe("01");
     expect(response.header.loadStatusDescription).toBe("File Loaded Correctly.");
@@ -18,7 +18,7 @@ describe("Verification response", () => {
   });
 
   it("should parse a verification response for multiple errors", () => {
-    const verificationErrorFile = getArtifact("vrf/missing-multiple.txt");
+    const verificationErrorFile = getArtifact("missing-multiple/vrf.txt");
     const response = fromSurescriptsVerificationFile(verificationErrorFile);
     expect(response.header.loadStatus).toBe("02");
     expect(response.header.loadStatusDescription).toBe("File loaded with errors.");

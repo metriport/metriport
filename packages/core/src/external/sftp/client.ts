@@ -48,9 +48,7 @@ export class SftpClient implements SftpClientImpl {
     this.privateKey = privateKey;
   }
 
-  private async executeWithSshListeners<T, F extends SftpMethod<T>>(
-    executionHandler: F
-  ): Promise<T> {
+  private async executeWithSshListeners<T, M extends SftpMethod<T>>(method: M): Promise<T> {
     if (this.connectionEnded) {
       throw new MetriportError(
         "The SftpClient has been disconnected and should not be reused.",
@@ -62,7 +60,7 @@ export class SftpClient implements SftpClientImpl {
     }
 
     this.sshError = [];
-    const result = await executionHandler.call(this, this.client);
+    const result = await method.call(this, this.client);
     const unexpectedSshError = this.sshError[0];
     if (unexpectedSshError) throw unexpectedSshError;
     return result;
