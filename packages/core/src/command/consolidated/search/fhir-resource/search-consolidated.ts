@@ -256,7 +256,9 @@ export async function hydrateMissingReferences({
   const resourcesToHydrate: ReferenceWithIdAndType<Resource>[] = [];
 
   const resourcesByType = groupBy(resources, "resourceType");
-  Object.entries(resourcesByType).forEach(([currentResourceType, resourcesOfCurrentType]) => {
+  Object.entries(resourcesByType).forEach(([currentResourceTypeParam, resourcesOfCurrentType]) => {
+    const currentResourceType = currentResourceTypeParam as ResourceType;
+
     const { missingReferences } = getReferencesFromResources({
       resourcesToCheckRefs: resourcesOfCurrentType,
       sourceResources: resources,
@@ -277,14 +279,23 @@ export async function hydrateMissingReferences({
     }
 
     if (currentResourceType === "DiagnosticReport") {
-      const missingEncounters = get(missingRefsByType, "Encounter");
-      if (missingEncounters && missingEncounters.length > 0) {
-        resourcesToHydrate.push(...missingEncounters);
-      }
-      const missingObservations = get(missingRefsByType, "Observation");
-      if (missingObservations && missingObservations.length > 0) {
-        resourcesToHydrate.push(...missingObservations);
-      }
+      const refResourcesToHydrate = ["Encounter", "Observation", "Location"] as ResourceType[];
+      refResourcesToHydrate.forEach(refResourceType => {
+        const missingRefResources = get(missingRefsByType, refResourceType);
+        if (missingRefResources && missingRefResources.length > 0) {
+          resourcesToHydrate.push(...missingRefResources);
+        }
+      });
+    }
+
+    if (currentResourceType === "Encounter") {
+      const refResourcesToHydrate = ["Location"] as ResourceType[];
+      refResourcesToHydrate.forEach(refResourceType => {
+        const missingRefResources = get(missingRefsByType, refResourceType);
+        if (missingRefResources && missingRefResources.length > 0) {
+          resourcesToHydrate.push(...missingRefResources);
+        }
+      });
     }
 
     if (medRelatedResourceTypes.includes(currentResourceType as ResourceType)) {
