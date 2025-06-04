@@ -5,6 +5,9 @@ import { SearchResult } from "../index-based-on-file";
 import { cleanupQuery } from "../shared/query";
 import { OpenSearchFileSearcher, SearchRequest } from "./file-searcher";
 
+// TODO This is a lot of CCDAs, but we should still paginate it.
+const MAX_DOCS_TO_RETURN = 1_000;
+
 export type OpenSearchFileSearcherDirectConfig = OpenSearchConfigDirectAccess;
 
 export class OpenSearchFileSearcherDirect implements OpenSearchFileSearcher {
@@ -21,11 +24,11 @@ export class OpenSearchFileSearcherDirect implements OpenSearchFileSearcher {
     debug(`Searching on index ${indexName}...`);
     const actualQuery = cleanupQuery(query);
     const queryPayload = {
-      size: 1_000,
+      size: MAX_DOCS_TO_RETURN,
       query: {
         bool: {
           must: [
-            ...(actualQuery.length > 0
+            ...(actualQuery && actualQuery.length > 0
               ? [
                   {
                     // https://docs.opensearch.org/docs/latest/query-dsl/full-text/simple-query-string/
