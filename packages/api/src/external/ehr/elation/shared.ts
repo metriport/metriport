@@ -19,7 +19,7 @@ import { Patient as ElationPatient } from "@metriport/shared/interface/external/
 import { SubscriptionResource } from "@metriport/shared/interface/external/ehr/elation/subscription";
 import dayjs from "dayjs";
 import { getCxMappingOrFail } from "../../../command/mapping/cx";
-import { createEhrClient } from "../shared/utils/client";
+import { createEhrClientWithClientCredentials } from "../shared/utils/client";
 
 export const elationClientJwtTokenSource = "elation-client";
 export const elationWebhookJwtTokenSource = "elation-webhook";
@@ -98,7 +98,7 @@ function getCxIdAndPracticeIdFromElationApplicationId(applicationId: string): {
 export async function createElationClientWithTokenIdAndEnvironment(
   perPracticeParams: EhrPerPracticeParams
 ): Promise<{ client: ElationApi; tokenId: string; environment: ElationEnv }> {
-  return await createEhrClient<ElationEnv, ElationApi, EhrPerPracticeParams>({
+  return await createEhrClientWithClientCredentials<ElationEnv, ElationApi, EhrPerPracticeParams>({
     ...perPracticeParams,
     source: elationClientJwtTokenSource,
     getEnv: { params: perPracticeParams, getEnv: getElationEnv },

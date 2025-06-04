@@ -1,7 +1,5 @@
-import {
-  getSecrets,
-  isEhrSourceWithDynamicSecrets,
-} from "@metriport/core/external/ehr/command/get-secrets";
+import { getSecrets } from "@metriport/core/external/ehr/command/get-secrets";
+import { isEhrSourceWithDynamicSecrets } from "@metriport/core/external/ehr/secrets";
 import { BadRequestError } from "@metriport/shared";
 import { isEhrSource } from "@metriport/shared/interface/external/ehr/source";
 import { Request, Response } from "express";

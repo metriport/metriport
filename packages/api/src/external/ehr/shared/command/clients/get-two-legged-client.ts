@@ -1,7 +1,8 @@
 import {
-  EhrClientTwoLeggedAuth,
+  EhrClientWithClientCredentials,
   EhrEnv,
   EhrPerPracticeParams,
+  EhrSourceWithClientCredentials,
 } from "@metriport/core/external/ehr/environment";
 import { BadRequestError } from "@metriport/shared";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
@@ -20,8 +21,8 @@ export async function getTwoLeggedClientWithTokenIdAndEnvironment({
   ehr,
   cxId,
   practiceId,
-}: EhrPerPracticeParams & { ehr: TwoLeggedEhrSource }): Promise<{
-  client: EhrClientTwoLeggedAuth;
+}: EhrPerPracticeParams & { ehr: EhrSourceWithClientCredentials }): Promise<{
+  client: EhrClientWithClientCredentials;
   tokenId: string;
   environment: EhrEnv;
 }> {
@@ -29,33 +30,30 @@ export async function getTwoLeggedClientWithTokenIdAndEnvironment({
   return await handler({ cxId, practiceId });
 }
 
-const twoLeggedEhrSources = [EhrSources.canvas, EhrSources.athena, EhrSources.elation] as const;
-type TwoLeggedEhrSource = (typeof twoLeggedEhrSources)[number];
-export function isTwoLeggedEhrSource(ehr: string): ehr is TwoLeggedEhrSource {
-  return twoLeggedEhrSources.includes(ehr as TwoLeggedEhrSource);
-}
-
-type GetClientWithTokenIdAndEnvironment<T extends EhrClientTwoLeggedAuth, Env extends EhrEnv> = (
+type GetClientWithTokenIdAndEnvironmentFn<
+  Client extends EhrClientWithClientCredentials,
+  Env extends EhrEnv
+> = (
   params: EhrPerPracticeParams
-) => Promise<{ client: T; tokenId: string; environment: Env }>;
+) => Promise<{ client: Client; tokenId: string; environment: Env }>;
 
-type ClientWithTokenIdAndEnvironmentMethodMap = Record<
-  TwoLeggedEhrSource,
-  GetClientWithTokenIdAndEnvironment<EhrClientTwoLeggedAuth, EhrEnv> | undefined
+type GetClientWithTokenIdAndEnvironmentFnMap = Record<
+  EhrSourceWithClientCredentials,
+  GetClientWithTokenIdAndEnvironmentFn<EhrClientWithClientCredentials, EhrEnv> | undefined
 >;
 
-const clientWithTokenIdAndEnvironmentMethodsBy: ClientWithTokenIdAndEnvironmentMethodMap = {
+const clientWithTokenIdAndEnvironmentMethodsBy: GetClientWithTokenIdAndEnvironmentFnMap = {
   [EhrSources.canvas]: createCanvasClientWithTokenIdAndEnvironment,
   [EhrSources.athena]: createAthenaClientWithTokenIdAndEnvironment,
   [EhrSources.elation]: createElationClientWithTokenIdAndEnvironment,
 };
 
 function getClientWithTokenIdAndEnvironmentHandler(
-  ehr: TwoLeggedEhrSource
-): GetClientWithTokenIdAndEnvironment<EhrClientTwoLeggedAuth, EhrEnv> {
+  ehr: EhrSourceWithClientCredentials
+): GetClientWithTokenIdAndEnvironmentFn<EhrClientWithClientCredentials, EhrEnv> {
   const handler = clientWithTokenIdAndEnvironmentMethodsBy[ehr];
   if (!handler) {
-    throw new BadRequestError("No client with token id and environment handler found", undefined, {
+    throw new BadRequestError("Could not find handler to get EHR client", undefined, {
       ehr,
     });
   }

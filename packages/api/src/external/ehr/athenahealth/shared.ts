@@ -2,12 +2,12 @@ import { getAthenaEnv } from "@metriport/core/external/ehr/athenahealth/environm
 import AthenaHealthApi, { AthenaEnv } from "@metriport/core/external/ehr/athenahealth/index";
 import { EhrPerPracticeParams } from "@metriport/core/external/ehr/environment";
 import { athenaClientSource } from "@metriport/shared/interface/external/ehr/athenahealth/jwt-token";
-import { createEhrClient } from "../shared/utils/client";
+import { createEhrClientWithClientCredentials } from "../shared/utils/client";
 
 export async function createAthenaClientWithTokenIdAndEnvironment(
   perPracticeParams: EhrPerPracticeParams
 ): Promise<{ client: AthenaHealthApi; tokenId: string; environment: AthenaEnv }> {
-  return await createEhrClient<AthenaEnv, AthenaHealthApi>({
+  return await createEhrClientWithClientCredentials<AthenaEnv, AthenaHealthApi>({
     ...perPracticeParams,
     source: athenaClientSource,
     getEnv: { params: undefined, getEnv: getAthenaEnv },

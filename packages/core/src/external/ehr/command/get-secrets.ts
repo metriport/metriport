@@ -1,5 +1,5 @@
 import { BadRequestError } from "@metriport/shared";
-import { EhrSource, EhrSources } from "@metriport/shared/interface/external/ehr/source";
+import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { getAthenaEnv } from "../athenahealth/environment";
 import { getCanvasEnv } from "../canvas/environment";
 import { getElationEnv } from "../elation/environment";
@@ -10,6 +10,7 @@ import {
   EhrPerPracticeParams,
 } from "../environment";
 import { getHealthieEnv } from "../healthie/environment";
+import { EhrSourceWithDynamicSecrets } from "../secrets";
 
 /**
  * Get the secrets for the EHR
@@ -22,44 +23,33 @@ export function getSecrets({
   ehr,
   cxId,
   practiceId,
-}: EhrPerPracticeParams & { ehr: EhrSourcesWithDynamicSecrets }):
+}: EhrPerPracticeParams & { ehr: EhrSourceWithDynamicSecrets }):
   | EhrEnvAndClientCredentials<EhrEnv>
   | EhrEnvAndApiKey<EhrEnv> {
   const handler = getSecretsHandler(ehr);
   return handler({ cxId, practiceId });
 }
 
-type OauthSecretsMethod<T extends EhrEnv> = (
+type OauthSecretsFn<T extends EhrEnv> = (
   params: EhrPerPracticeParams
 ) => EhrEnvAndClientCredentials<T>;
-type ApiKeySecretsMethod<T extends EhrEnv> = (params: EhrPerPracticeParams) => EhrEnvAndApiKey<T>;
+type ApiKeySecretsFn<T extends EhrEnv> = (params: EhrPerPracticeParams) => EhrEnvAndApiKey<T>;
 
-type GetSecrets<T extends EhrEnv> = OauthSecretsMethod<T> | ApiKeySecretsMethod<T>;
+type GetSecretsFn<T extends EhrEnv> = OauthSecretsFn<T> | ApiKeySecretsFn<T>;
 
-type EhrSourcesWithDynamicSecrets = Exclude<EhrSource, EhrSources.eclinicalworks>;
+type GetSecretsFnMap = Record<EhrSourceWithDynamicSecrets, GetSecretsFn<EhrEnv> | undefined>;
 
-export function isEhrSourceWithDynamicSecrets(ehr: EhrSource): ehr is EhrSourcesWithDynamicSecrets {
-  return (
-    ehr === EhrSources.canvas ||
-    ehr === EhrSources.athena ||
-    ehr === EhrSources.elation ||
-    ehr === EhrSources.healthie
-  );
-}
-
-type SecretsMethodMap = Record<EhrSourcesWithDynamicSecrets, GetSecrets<EhrEnv> | undefined>;
-
-const secretsMethodsBy: SecretsMethodMap = {
+const secretsMethodsBy: GetSecretsFnMap = {
   [EhrSources.canvas]: getCanvasEnv,
   [EhrSources.athena]: getAthenaEnv,
   [EhrSources.elation]: getElationEnv,
   [EhrSources.healthie]: getHealthieEnv,
 };
 
-function getSecretsHandler(ehr: EhrSourcesWithDynamicSecrets): GetSecrets<EhrEnv> {
+function getSecretsHandler(ehr: EhrSourceWithDynamicSecrets): GetSecretsFn<EhrEnv> {
   const handler = secretsMethodsBy[ehr];
   if (!handler) {
-    throw new BadRequestError("No secrets handler found", undefined, { ehr });
+    throw new BadRequestError("Could not find handler to get secrets", undefined, { ehr });
   }
   return handler;
 }

@@ -24,11 +24,11 @@ export async function getBundleByResourceType({
   return await handler({ ...params });
 }
 
-type GetBundleByResourceType = (params: GetBundleByResourceTypeClientRequest) => Promise<Bundle>;
+type GetBundleByResourceTypeFn = (params: GetBundleByResourceTypeClientRequest) => Promise<Bundle>;
 
-type GetBundleByResourceTypeMethodsMap = Record<EhrSource, GetBundleByResourceType | undefined>;
+type GetBundleByResourceTypeFnMap = Record<EhrSource, GetBundleByResourceTypeFn | undefined>;
 
-const ehrGetBundleByResourceTypeMap: GetBundleByResourceTypeMethodsMap = {
+const ehrGetBundleByResourceTypeMap: GetBundleByResourceTypeFnMap = {
   [EhrSources.canvas]: getBundleByResourceTypeCanvas,
   [EhrSources.athena]: undefined,
   [EhrSources.elation]: undefined,
@@ -36,10 +36,10 @@ const ehrGetBundleByResourceTypeMap: GetBundleByResourceTypeMethodsMap = {
   [EhrSources.eclinicalworks]: undefined,
 };
 
-function getEhrGetBundleByResourceTypeHandler(ehr: EhrSource): GetBundleByResourceType {
+function getEhrGetBundleByResourceTypeHandler(ehr: EhrSource): GetBundleByResourceTypeFn {
   const handler = ehrGetBundleByResourceTypeMap[ehr];
   if (!handler) {
-    throw new BadRequestError("No get bundle by resource type handler found", undefined, {
+    throw new BadRequestError("Could not find handler to get bundle by resource type", undefined, {
       ehr,
     });
   }
