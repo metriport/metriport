@@ -302,7 +302,7 @@ async function fetchEhrBundleIfYoungerThanMaxAge(
 }
 
 /**
- * Fetches a bundle from the EHR for the given bundle type and resource type.
+ * Fetches a bundle from the EHR for the given resource type.
  * Uses cached EHR bundle if available and requested. Refreshes the cache if the bundle
  * is fetched from the EHR.
  *
