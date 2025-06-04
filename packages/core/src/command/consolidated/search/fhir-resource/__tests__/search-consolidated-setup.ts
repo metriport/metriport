@@ -34,7 +34,7 @@ export type Entry<Input extends Resource, MisRef extends Resource> = {
   makeInputResource: MakeResource<Input, MisRef>;
   resourceType: string;
   missingResource: MisRef;
-  missingResType: string;
+  missingResourceType: string;
 };
 
 export const genericHydration = {
@@ -43,14 +43,14 @@ export const genericHydration = {
       makeCondition({ recorder: makeReference(missingResource) }, patientId),
     resourceType: "Condition",
     missingResource: makePractitioner(),
-    missingResType: "Practitioner",
+    missingResourceType: "Practitioner",
   },
 
   practitionerAndOrganization: {
     makeInputResource: (missingResource: Organization) => makePractitionerWithOrg(missingResource),
     resourceType: "Practitioner",
     missingResource: makeOrganization(),
-    missingResType: "Organization",
+    missingResourceType: "Organization",
   },
 
   medicationAdministrationAndPractitioner: {
@@ -58,7 +58,7 @@ export const genericHydration = {
       makeMedicationAdministration({ performer: [makeReference(missingPractitioner)] }),
     resourceType: "MedicationAdministration",
     missingResource: makePractitioner(),
-    missingResType: "Practitioner",
+    missingResourceType: "Practitioner",
   },
 };
 
@@ -68,7 +68,7 @@ export const nonSpecializedHydration = {
       makeCondition({ encounter: makeReference(missingResource) }, patientId),
     resourceType: "Condition",
     missingResource: makeEncounter(undefined, patientId),
-    missingResType: "Encounter",
+    missingResourceType: "Encounter",
   },
 
   conditionAndObservation: {
@@ -76,7 +76,7 @@ export const nonSpecializedHydration = {
       makeCondition({ stage: [{ assessment: [makeReference(missingResource)] }] }, patientId),
     resourceType: "Condition",
     missingResource: makeObservation(undefined, patientId),
-    missingResType: "Observation",
+    missingResourceType: "Observation",
   },
 
   encounterAndObservation: {
@@ -84,7 +84,7 @@ export const nonSpecializedHydration = {
       makeEncounter({ reasonReference: [makeReference(missingResource)] }, patientId),
     resourceType: "Encounter",
     missingResource: makeObservation(undefined, patientId),
-    missingResType: "Observation",
+    missingResourceType: "Observation",
   },
 };
 
@@ -94,7 +94,7 @@ export const specializedHydration = {
       makeDiagnosticReport({ encounter: makeReference(missingEncounter) }),
     resourceType: "DiagnosticReport",
     missingResource: makeEncounter(undefined, patientId),
-    missingResType: "Encounter",
+    missingResourceType: "Encounter",
   },
 
   diagnosticReportAndObservation: {
@@ -102,7 +102,7 @@ export const specializedHydration = {
       makeDiagnosticReport({ result: [makeReference(missingObservation)] }),
     resourceType: "DiagnosticReport",
     missingResource: makeObservation(undefined, patientId),
-    missingResType: "Observation",
+    missingResourceType: "Observation",
   },
 
   diagnosticReportAndPractitioner: {
@@ -110,7 +110,7 @@ export const specializedHydration = {
       makeDiagnosticReport({ performer: [makeReference(missingPractitioner)] }),
     resourceType: "DiagnosticReport",
     missingResource: makePractitioner(),
-    missingResType: "Practitioner",
+    missingResourceType: "Practitioner",
   },
 
   diagnosticReportAndOrganization: {
@@ -118,7 +118,7 @@ export const specializedHydration = {
       makeDiagnosticReport({ performer: [makeReference(missingOrganization)] }),
     resourceType: "DiagnosticReport",
     missingResource: makeOrganization(),
-    missingResType: "Organization",
+    missingResourceType: "Organization",
   },
 
   medicationAdministrationAndMedication: {
@@ -126,7 +126,7 @@ export const specializedHydration = {
       makeMedicationAdministration({ medicationReference: makeReference(missingMedication) }),
     resourceType: "MedicationAdministration",
     missingResource: makeMedication(),
-    missingResType: "Medication",
+    missingResourceType: "Medication",
   },
 
   medicationRequestAndMedication: {
@@ -134,7 +134,7 @@ export const specializedHydration = {
       makeMedicationRequest({ medicationReference: makeReference(missingMedication) }),
     resourceType: "MedicationRequest",
     missingResource: makeMedication(),
-    missingResType: "Medication",
+    missingResourceType: "Medication",
   },
 
   medicationDispenseAndMedication: {
@@ -142,7 +142,7 @@ export const specializedHydration = {
       makeMedicationDispense({ medicationReference: makeReference(missingMedication) }),
     resourceType: "MedicationDispense",
     missingResource: makeMedication(),
-    missingResType: "Medication",
+    missingResourceType: "Medication",
   },
 };
 

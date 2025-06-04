@@ -57,9 +57,9 @@ describe("search-consolidated", () => {
         makeInputResource,
         resourceType,
         missingResource,
-        missingResType,
+        missingResourceType,
       }: Entry<T, M>) {
-        it(`hydrates missing ${missingResType} references when resource is ${resourceType}`, async () => {
+        it(`hydrates missing ${missingResourceType} references when resource is ${resourceType}`, async () => {
           const inputResources = [patient, makeInputResource(missingResource)];
           const firstLevelReferenceIds = [missingResource].map(toEntryId);
           const getByIdsResponse = [missingResource].map(toGetByIdsResultEntry);
@@ -125,9 +125,9 @@ describe("search-consolidated", () => {
         makeInputResource,
         resourceType,
         missingResource,
-        missingResType,
+        missingResourceType,
       }: Entry<T, M>) {
-        it(`does NOT hydrate missing ${missingResType} when resource is ${resourceType}`, async () => {
+        it(`does NOT hydrate missing ${missingResourceType} when resource is ${resourceType}`, async () => {
           const inputResources = [patient, makeInputResource(missingResource)];
           const firstLevelReferenceIds = [missingResource].map(toEntryId);
           const getByIdsResponse = [missingResource].map(toGetByIdsResultEntry);
@@ -162,9 +162,9 @@ describe("search-consolidated", () => {
         makeInputResource,
         resourceType,
         missingResource,
-        missingResType,
+        missingResourceType,
       }: Entry<T, M>) {
-        it(`hydrates missing ${missingResType} when resource is ${resourceType}`, async () => {
+        it(`hydrates missing ${missingResourceType} when resource is ${resourceType}`, async () => {
           const inputResources = [patient, makeInputResource(missingResource)];
           const firstLevelReferenceIds = [missingResource].map(toEntryId);
           const getByIdsResponse = [missingResource].map(toGetByIdsResultEntry);

@@ -40,9 +40,9 @@ async function main() {
   const bundleContents = getFileContents(bundleFilePath);
   const bundle = JSON.parse(bundleContents) as Bundle<Resource>;
 
-  const { references, missingReferences } = getReferencesFromResources({
-    resourcesToCheckRefs: (bundle.entry ?? [])?.flatMap(e => e.resource ?? []),
-  });
+  const entries = bundle.entry ?? [];
+  const resourcesToCheckRefs = entries.flatMap(e => e.resource ?? []);
+  const { references, missingReferences } = getReferencesFromResources({ resourcesToCheckRefs });
 
   const refsAsString = JSON.stringify(references, null, 2);
   const missingRefsAsString = JSON.stringify(missingReferences, null, 2);
