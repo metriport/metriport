@@ -9,6 +9,7 @@ import {
   MedicationStatement,
   Patient as PatientFhir,
   Practitioner as PractitionerFhir,
+  ResourceType,
 } from "@medplum/fhirtypes";
 import {
   BadRequestError,
@@ -70,7 +71,7 @@ const utcToEstOffset = dayjs.duration(-5, "hours");
 const defaultCountOrLimit = "1000";
 export type CanvasEnv = string;
 
-export const supportedCanvasResources = [
+export const supportedCanvasResources: ResourceType[] = [
   "AllergyIntolerance",
   "CarePlan",
   "CareTeam",
@@ -100,7 +101,7 @@ export type SupportedCanvasResource = (typeof supportedCanvasResources)[number];
 export function isSupportedCanvasResource(
   resourceType: string
 ): resourceType is SupportedCanvasResource {
-  return supportedCanvasResources.includes(resourceType);
+  return supportedCanvasResources.includes(resourceType as SupportedCanvasResource);
 }
 
 export type SupportedCanvasResourceById = (typeof supportedCanvasResourcesById)[number];

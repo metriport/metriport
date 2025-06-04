@@ -192,7 +192,7 @@ export type SupportedAthenaHealthResource = (typeof supportedAthenaHealthResourc
 export function isSupportedAthenaHealthResource(
   resourceType: string
 ): resourceType is SupportedAthenaHealthResource {
-  return supportedAthenaHealthResources.includes(resourceType as SupportedAthenaHealthResource);
+  return supportedAthenaHealthResources.includes(resourceType as ResourceType);
 }
 
 export type SupportedAthenaHealthReferenceResource =
