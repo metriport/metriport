@@ -745,7 +745,7 @@ class AthenaHealthApi {
     useCachedBundle?: boolean;
   }): Promise<Bundle> {
     const { debug } = out(
-      `AthenaHealth getBundleByResourceType - cxId ${cxId} practiceId ${this.practiceId} metriportPatientId ${metriportPatientId} athenaPatientId ${athenaPatientId} resourceType ${resourceType}`
+      `AthenaHealth getBundleByResourceType - cxId ${cxId} practiceId ${this.practiceId} athenaPatientId ${athenaPatientId}`
     );
     if (!isSupportedAthenaHealthResource(resourceType)) {
       throw new BadRequestError("Invalid resource type", undefined, {

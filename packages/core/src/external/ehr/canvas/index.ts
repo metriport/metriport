@@ -451,7 +451,7 @@ class CanvasApi {
     noteType: string;
   }): Promise<Note> {
     const { debug } = out(
-      `Canvas createNote - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} practitionerId ${practitionerId} practiceLocationId ${practiceLocationId}`
+      `Canvas createNote - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} practitionerId ${practitionerId}`
     );
     const noteUrl = "notes/v1/Note";
     const additionalInfo = {
@@ -736,7 +736,7 @@ class CanvasApi {
     useCachedBundle?: boolean;
   }): Promise<Bundle> {
     const { debug } = out(
-      `Canvas getBundleByResourceType - cxId ${cxId} practiceId ${this.practiceId} metriportPatientId ${metriportPatientId} canvasPatientId ${canvasPatientId} resourceType ${resourceType}`
+      `Canvas getBundleByResourceType - cxId ${cxId} practiceId ${this.practiceId} canvasPatientId ${canvasPatientId}`
     );
     if (!isSupportedCanvasResource(resourceType)) {
       throw new BadRequestError("Invalid resource type", undefined, {
