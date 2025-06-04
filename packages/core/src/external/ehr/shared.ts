@@ -350,7 +350,7 @@ export async function fetchEhrBundleUsingCache({
  *
  * @param makeRequest - The function that makes the request to the EHR FHIR endpoint.
  * @param url - The URL of the bundle.
- * @param acc - The accumulator of the resources.
+ * @param acc - The accumulator of the resources. Optional, defaults to an empty array.
  * @returns The FHIR resources.
  */
 export async function fetchEhrFhirResourcesWithPagination({
