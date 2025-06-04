@@ -67,45 +67,43 @@ export function toSurescriptsPatientLoadFile(
     patientLoadHeaderOrder
   );
 
-  const details = patients
-    .map(function (patient, index) {
-      const { firstName, middleName, lastName, prefix, suffix } = makeNameDemographics(patient);
-      const genderAtBirth = makeGenderDemographics(patient.genderAtBirth);
+  const details = patients.flatMap(function (patient, index) {
+    const { firstName, middleName, lastName, prefix, suffix } = makeNameDemographics(patient);
+    const genderAtBirth = makeGenderDemographics(patient.genderAtBirth);
 
-      const address = Array.isArray(patient.address) ? patient.address[0] : patient.address;
-      if (!address) return null;
+    const address = Array.isArray(patient.address) ? patient.address[0] : patient.address;
+    if (!address) return [];
 
-      try {
-        const requestRow = toSurescriptsPatientLoadRow(
-          {
-            recordType: "PNM",
-            recordSequenceNumber: index + 1,
-            assigningAuthority: Config.getSystemRootOID(),
-            patientId: patient.id,
-            lastName,
-            firstName,
-            middleName,
-            prefix,
-            suffix,
-            addressLine1: address.addressLine1,
-            addressLine2: address.addressLine2,
-            city: address.city,
-            state: address.state,
-            zip: address.zip,
-            dateOfBirth: patient.dob.replace(/-/g, ""),
-            genderAtBirth,
-            npiNumber: transmission.npiNumber,
-          },
-          patientLoadDetailSchema,
-          patientLoadDetailOrder
-        );
-        requestedPatientIds.push(patient.id);
-        return requestRow;
-      } catch (error) {
-        return null;
-      }
-    })
-    .filter(Boolean) as Buffer[];
+    try {
+      const requestRow = toSurescriptsPatientLoadRow(
+        {
+          recordType: "PNM",
+          recordSequenceNumber: index + 1,
+          assigningAuthority: Config.getSystemRootOID(),
+          patientId: patient.id,
+          lastName,
+          firstName,
+          middleName,
+          prefix,
+          suffix,
+          addressLine1: address.addressLine1,
+          addressLine2: address.addressLine2,
+          city: address.city,
+          state: address.state,
+          zip: address.zip,
+          dateOfBirth: patient.dob.replace(/-/g, ""),
+          genderAtBirth,
+          npiNumber: transmission.npiNumber,
+        },
+        patientLoadDetailSchema,
+        patientLoadDetailOrder
+      );
+      requestedPatientIds.push(patient.id);
+      return [requestRow];
+    } catch (error) {
+      return [];
+    }
+  });
 
   const footer = toSurescriptsPatientLoadRow(
     {
