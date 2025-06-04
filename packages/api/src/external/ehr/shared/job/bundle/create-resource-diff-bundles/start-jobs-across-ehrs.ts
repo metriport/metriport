@@ -4,6 +4,7 @@ import { MetriportError } from "@metriport/shared";
 import { EhrSource, EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { getCxMappingOrFail, getCxMappingsByCustomer } from "../../../../../../command/mapping/cx";
 import { getPatientMappings } from "../../../../../../command/mapping/patient";
+import { getAthenaPracticeIdFromPatientId } from "../../../../athenahealth/shared";
 import { startCreateResourceDiffBundlesJob } from "./start-job";
 
 export type CreateResourceDiffBundlesParams = {
@@ -36,7 +37,7 @@ export async function startCreateResourceDiffBundlesJobsAcrossEhrs({
         requestId,
       }).catch(processAsyncError(`${EhrSources.canvas} startCreateResourceDiffBundlesJobAtEhr`));
     } else if (patientMapping.source === EhrSources.athena) {
-      const athenaPracticeId = getAthenaPracticeId(patientMapping.externalId);
+      const athenaPracticeId = getAthenaPracticeIdFromPatientId(patientMapping.externalId);
       startCreateResourceDiffBundlesJobAtEhr({
         ehr: EhrSources.athena,
         cxId,
@@ -73,7 +74,7 @@ async function startCreateResourceDiffBundlesJobAtEhr({
   });
 }
 
-async function getCxMappingWithoutPracticeId({ cxId, ehr }: { cxId: string; ehr: EhrSources }) {
+async function getCxMappingWithoutPracticeId({ cxId, ehr }: { cxId: string; ehr: EhrSource }) {
   const cxMappings = await getCxMappingsByCustomer({ cxId, source: ehr });
   const cxMapping = cxMappings[0];
   if (!cxMapping) throw new MetriportError("CX mapping not found", undefined, { ehr, cxId });
@@ -81,15 +82,4 @@ async function getCxMappingWithoutPracticeId({ cxId, ehr }: { cxId: string; ehr:
     throw new MetriportError("Multiple CX mappings found", undefined, { ehr, cxId });
   }
   return cxMapping;
-}
-
-export function getAthenaPracticeId(ehrPatientId: string) {
-  const [patientPrefix, patientId] = ehrPatientId.split(".");
-  if (!patientPrefix || !patientId) {
-    throw new MetriportError("Invalid patient ID", undefined, { ehrPatientId });
-  }
-  if (!patientPrefix.startsWith("a-")) {
-    throw new MetriportError("Invalid patient ID", undefined, { ehrPatientId });
-  }
-  return `a-1.${patientPrefix.replace("a-", "Practice-")}`;
 }
