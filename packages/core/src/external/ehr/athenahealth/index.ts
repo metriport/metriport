@@ -418,7 +418,7 @@ class AthenaHealthApi {
     patientId: string;
     departmentId: string;
     medication: MedicationWithRefs;
-  }): Promise<CreatedMedicationSuccess> {
+  }): Promise<CreatedMedicationSuccess[]> {
     const { debug } = out(
       `AthenaHealth createMedication - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} departmentId ${departmentId}`
     );
@@ -430,6 +430,26 @@ class AthenaHealthApi {
       departmentId,
       medicationId: medication.medication.id,
     };
+    if (medication.statement.length < 1) {
+      throw new BadRequestError("No medication statements found", undefined, additionalInfo);
+    }
+    const dates = medication.statement.flatMap(statement => {
+      const startdate = this.formatDate(getMedicationStatementStartDate(statement));
+      if (!startdate) return [];
+      const stopdate = this.formatDate(statement.effectivePeriod?.end);
+      if (!stopdate) return [];
+      return {
+        startdate,
+        stopdate,
+      };
+    });
+    if (dates.length < 1) {
+      throw new BadRequestError(
+        "No start dates found for medication statements",
+        undefined,
+        additionalInfo
+      );
+    }
     const rxnormCoding = getMedicationRxnormCoding(medication.medication);
     if (!rxnormCoding) {
       throw new BadRequestError("No RXNORM code found for medication", undefined, additionalInfo);
@@ -446,39 +466,40 @@ class AthenaHealthApi {
         additionalInfo
       );
     }
-    const data = {
+    const sharedData = {
       departmentid: this.stripDepartmentId(departmentId),
       providernote: "Added via Metriport App",
       unstructuredsig: "Metriport",
       medicationid: medicationReference.medicationid,
       hidden: false,
-      startdate: medication.statement
-        ? this.formatDate(getMedicationStatementStartDate(medication.statement))
-        : undefined,
-      stopdate: this.formatDate(medication.statement?.effectivePeriod?.end),
       stopreason: undefined,
       patientnote: undefined,
       THIRDPARTYUSERNAME: undefined,
       PATIENTFACINGCALL: undefined,
     };
-    const createdMedication = await this.makeRequest<CreatedMedication>({
-      cxId,
-      patientId,
-      s3Path: `chart/medication/${additionalInfo.medicationId ?? "unknown"}`,
-      method: "POST",
-      data,
-      url: chartMedicationUrl,
-      schema: createdMedicationSchema,
-      additionalInfo,
-      debug,
-    });
-    if (!createdMedication.success || !createdMedication.medicationentryid) {
-      throw new MetriportError("Medication creation failed", undefined, {
-        ...additionalInfo,
-        error: createdMedication.errormessage,
+    const createdMedications: CreatedMedicationSuccess[] = [];
+    for (const date of dates) {
+      const data = { ...sharedData, ...date };
+      const createdMedication = await this.makeRequest<CreatedMedication>({
+        cxId,
+        patientId,
+        s3Path: `chart/medication/${additionalInfo.medicationId ?? "unknown"}`,
+        method: "POST",
+        data,
+        url: chartMedicationUrl,
+        schema: createdMedicationSchema,
+        additionalInfo,
+        debug,
       });
+      if (!createdMedication.success || !createdMedication.medicationentryid) {
+        throw new MetriportError("Medication creation failed", undefined, {
+          ...additionalInfo,
+          error: createdMedication.errormessage,
+        });
+      }
+      createdMedications.push(createdMedicationSuccessSchema.parse(createdMedication));
     }
-    return createdMedicationSuccessSchema.parse(createdMedication);
+    return createdMedications;
   }
 
   async createProblem({

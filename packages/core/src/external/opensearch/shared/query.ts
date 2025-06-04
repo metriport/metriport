@@ -50,6 +50,7 @@ export function getPatientFilters(cxId: string, patientId: string) {
  * @param query The query string to clean up.
  * @returns The cleaned up query string.
  */
-export function cleanupQuery(query: string): string {
+export function cleanupQuery(query: string | undefined): string | undefined {
+  if (!query) return query;
   return query.replace(new RegExp(`^\\${simpleQueryStringPrefix}\\s*`, "g"), "").trim();
 }

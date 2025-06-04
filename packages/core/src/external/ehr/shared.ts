@@ -252,9 +252,9 @@ export function isNotRetriableAxiosError(error: unknown): boolean {
 // TYPES FROM DASHBOARD
 export type MedicationWithRefs = {
   medication: Medication;
-  administration?: MedicationAdministration;
-  dispense?: MedicationDispense;
-  statement?: MedicationStatement;
+  administration: MedicationAdministration[];
+  dispense: MedicationDispense[];
+  statement: MedicationStatement[];
 };
 
 export type GroupedVitals = {
@@ -285,9 +285,9 @@ export function getMedicationRxnormCoding(medication: Medication): Coding | unde
 }
 
 export function getMedicationStatementStartDate(
-  medication: MedicationStatement
+  statement: MedicationStatement
 ): string | undefined {
-  return medication.effectivePeriod?.start ?? medication.effectiveDateTime;
+  return statement.effectiveDateTime ?? statement.effectivePeriod?.start;
 }
 
 export function getConditionIcd10Coding(condition: Condition): Coding | undefined {
