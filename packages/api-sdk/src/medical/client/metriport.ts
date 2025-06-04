@@ -37,10 +37,12 @@ import { Organization, OrganizationCreate, organizationSchema } from "../models/
 import {
   GetConsolidatedQueryProgressResponse,
   GetSingleConsolidatedQueryProgressResponse,
+  MedicalRecordUrlResponse,
   PatientCreate,
   PatientHieOptOutResponse,
   PatientUpdate,
   StartConsolidatedQueryProgressResponse,
+  medicalRecordUrlResponseSchema,
 } from "../models/patient";
 import { PatientDTO } from "../models/patientDTO";
 import { SettingsResponse } from "../models/settings-response";
@@ -580,6 +582,23 @@ export class MetriportMedicalApi {
       params: { resources: resources && resources.join(","), dateFrom, dateTo },
     });
     return resp.data;
+  }
+
+  /**
+   * Returns the medical record summary for a given patient.
+   *
+   * @param patientId The ID of the patient whose medical record summary is to be returned.
+   * @param conversionType The format of the medical record summary to be returned. Accepts "html" or "pdf".
+   * @return The medical record summary for the given patient.
+   */
+  async getPatientMedicalRecord(
+    patientId: string,
+    conversionType: "html" | "pdf"
+  ): Promise<MedicalRecordUrlResponse> {
+    const resp = await this.api.get(`${PATIENT_URL}/${patientId}/medical-record`, {
+      params: { conversionType },
+    });
+    return medicalRecordUrlResponseSchema.parse(resp.data);
   }
 
   /**

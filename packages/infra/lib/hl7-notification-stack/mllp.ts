@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import * as cdk from "aws-cdk-lib";
 import { Duration } from "aws-cdk-lib";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
@@ -11,11 +12,7 @@ import * as s3 from "aws-cdk-lib/aws-s3";
 import { Construct } from "constructs";
 import { EnvConfigNonSandbox } from "../../config/env-config";
 import { buildSecrets, secretsToECS } from "../shared/secrets";
-import {
-  MLLP_DEFAULT_PORT,
-  MLLP_SERVER_NLB_INTERNAL_IP_A,
-  MLLP_SERVER_NLB_INTERNAL_IP_B,
-} from "./constants";
+import { MLLP_DEFAULT_PORT } from "./constants";
 
 interface MllpStackProps extends cdk.StackProps {
   config: EnvConfigNonSandbox;
@@ -67,8 +64,14 @@ export class MllpStack extends cdk.NestedStack {
 
     const { vpc, ecrRepo, incomingHl7NotificationBucket, config } = props;
     const { notificationWebhookSenderQueue } = config.hl7Notification;
-    const { fargateCpu, fargateMemoryLimitMiB, fargateTaskCountMin, fargateTaskCountMax } =
-      props.config.hl7Notification.mllpServer;
+    const {
+      fargateCpu,
+      fargateMemoryLimitMiB,
+      fargateTaskCountMin,
+      fargateTaskCountMax,
+      nlbInternalIpAddressA,
+      nlbInternalIpAddressB,
+    } = props.config.hl7Notification.mllpServer;
 
     const cluster = new ecs.Cluster(this, "MllpServerCluster", {
       vpc,
@@ -102,13 +105,6 @@ export class MllpStack extends cdk.NestedStack {
       vpc,
       internetFacing: false,
     });
-
-    /**
-     * We're using an empty string for the first setupNlb call to maintain identifiers and
-     * avoid having to recreate a new listener and target group for the existing NLB.
-     */
-    const targetGroupA = setupNlb("", vpc, nlbA, MLLP_SERVER_NLB_INTERNAL_IP_A);
-    const targetGroupB = setupNlb("B", vpc, nlbB, MLLP_SERVER_NLB_INTERNAL_IP_B);
 
     const taskRole = new iam.Role(this, "MllpServerTaskRole", {
       assumedBy: new iam.ServicePrincipal("ecs-tasks.amazonaws.com"),
@@ -162,8 +158,13 @@ export class MllpStack extends cdk.NestedStack {
       }),
     });
 
-    targetGroupA.addTarget(fargateService);
-    targetGroupB.addTarget(fargateService);
+    /**
+     * We're using an empty string for the first setupNlb call to maintain identifiers and
+     * avoid having to recreate a new listener and target group for the existing NLB.
+     */
+    setupNlb("", vpc, nlbA, nlbInternalIpAddressA).addTarget(fargateService);
+    setupNlb("B", vpc, nlbB, nlbInternalIpAddressB).addTarget(fargateService);
+
     incomingHl7NotificationBucket.grantWrite(fargateService.taskDefinition.taskRole);
 
     const scaling = fargateService.autoScaleTaskCount({
@@ -194,24 +195,14 @@ export class MllpStack extends cdk.NestedStack {
       description: "ARN of the MLLP Fargate Service",
     });
 
-    new cdk.CfnOutput(this, "MllpNlbDnsName", {
-      value: nlbA.loadBalancerDnsName,
-      description: "DNS name of the Network Load Balancer for MLLP",
+    new cdk.CfnOutput(this, "MllpNlbInternalIp1", {
+      value: nlbInternalIpAddressA,
+      description: "Internal IP address of the MLLP Network Load Balancer 1",
     });
 
-    new cdk.CfnOutput(this, "MllpNlbDnsNameB", {
-      value: nlbB.loadBalancerDnsName,
-      description: "DNS name of the Network Load Balancer for MLLP B",
-    });
-
-    new cdk.CfnOutput(this, "MllpNlbInternalIpA", {
-      value: MLLP_SERVER_NLB_INTERNAL_IP_A,
-      description: "Internal IP address of the MLLP Network Load Balancer A",
-    });
-
-    new cdk.CfnOutput(this, "MllpNlbInternalIpB", {
-      value: MLLP_SERVER_NLB_INTERNAL_IP_B,
-      description: "Internal IP address of the MLLP Network Load Balancer B",
+    new cdk.CfnOutput(this, "MllpNlbInternalIp2", {
+      value: nlbInternalIpAddressB,
+      description: "Internal IP address of the MLLP Network Load Balancer 2",
     });
   }
 }
