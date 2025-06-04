@@ -238,7 +238,7 @@ export class SurescriptsSftpClient extends SftpClient {
         parsedFileName.requestFileNameWithoutExtension === requestFileNameWithoutExtension
       );
     });
-    return results[0];
+    return results[results.length - 1];
   }
 
   // RECEIVE FLAT FILE RESPONSE FROM SFTP
@@ -291,7 +291,7 @@ export class SurescriptsSftpClient extends SftpClient {
     const results = await this.list(getSftpDirectory(INCOMING_NAME), info => {
       return info.name.startsWith(cxId) && info.name.endsWith(responseFileNameSuffix);
     });
-    return results[0];
+    return results[results.length - 1];
   }
 
   async synchronize(event: SurescriptsSynchronizeEvent): Promise<SurescriptsOperation[]> {
