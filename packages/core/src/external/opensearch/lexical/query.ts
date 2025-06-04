@@ -55,8 +55,8 @@ export function createLexicalSearchQuery({ query, cxId, patientId }: LexicalSear
   }
   return {
     isReturnAllResources,
-    ...generalParams,
     searchQuery: {
+      ...generalParams,
       query: {
         bool: {
           must: [
