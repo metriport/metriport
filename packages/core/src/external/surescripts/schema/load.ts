@@ -26,6 +26,9 @@ export const patientLoadHeaderSchema = z.object({
   transmissionAction: z.enum(["U"]).optional(),
   fileSchedule: z.enum(["ADHOC"]).optional(),
   extractDate: z.date().optional(),
+  dataSourceType: z.enum(["FIL", "CLM"]).optional(), // FIL = fill data only, CLM = claim data only
+  startDate: z.date().optional(),
+  endDate: z.date().optional(),
 });
 export type PatientLoadHeader = z.infer<typeof patientLoadHeaderSchema>;
 
@@ -103,6 +106,21 @@ export const patientLoadHeaderOrder: OutgoingFileRowSchema<PatientLoadHeader> = 
     field: 14,
     key: "lookBackInMonths",
     toSurescripts: toSurescriptsInteger("lookBackInMonths", { optional: true }),
+  },
+  {
+    field: 15,
+    key: "dataSourceType",
+    toSurescripts: toSurescriptsEnum("dataSourceType", ["FIL", "CLM"], { optional: true }),
+  },
+  {
+    field: 16,
+    key: "startDate",
+    toSurescripts: toSurescriptsDate("startDate", { optional: true, useUtc: false }),
+  },
+  {
+    field: 17,
+    key: "endDate",
+    toSurescripts: toSurescriptsDate("endDate", { optional: true, useUtc: false }),
   },
 ];
 
