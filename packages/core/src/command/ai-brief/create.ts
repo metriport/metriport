@@ -5,17 +5,19 @@ import { PromptTemplate } from "@langchain/core/prompts";
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import { errorToString } from "@metriport/shared";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
+import { timed } from "@metriport/shared/util/duration";
 import { LLMChain, MapReduceDocumentsChain, StuffDocumentsChain } from "langchain/chains";
-import { EventTypes, analytics } from "../../external/analytics/posthog";
-import { isPcpVisitAiSummaryFeatureFlagEnabledForCx } from "../feature-flags/domain-ffs";
+import { analytics, EventTypes } from "../../external/analytics/posthog";
 import { BedrockChat } from "../../external/langchain/bedrock";
 import { out } from "../../util";
-import { documentVariableName, mainSummaryPrompt, refinedSummaryPrompt } from "./prompts";
+import { isPcpVisitAiSummaryFeatureFlagEnabledForCx } from "../feature-flags/domain-ffs";
 import {
   documentVariableName as pcpVisitDocumentVariableName,
   mainSummaryPrompt as pcpVisitMainSummaryPrompt,
   refinedSummaryPrompt as pcpVisitRefinedSummaryPrompt,
 } from "./pcp-visit-prompt";
+import { documentVariableName, mainSummaryPrompt, refinedSummaryPrompt } from "./prompts";
+import { AiBriefControls } from "./shared";
 
 const CHUNK_SIZE = 100_000;
 const CHUNK_OVERLAP = 1000;
@@ -29,22 +31,32 @@ const SONNET_COST_PER_OUTPUT_TOKEN = 0.0075 / 1000;
 export async function summarizeFilteredBundleWithAI(
   cxId: string,
   patientId: string,
-  bundleText: string
+  bundleText: string,
+  aiBriefControls?: AiBriefControls
 ): Promise<string | undefined> {
   const startedAt = new Date();
   const { log } = out(`summarizeFilteredBundleWithAI - cxId ${cxId}, patientId ${patientId}`);
-  // filter out historical data
   try {
-    const { documentVariable, mainPrompt, refinedPrompt } = await getInputsForAiBriefGeneration(
-      cxId
+    const getInputsPromise = timed(
+      () => getInputsForAiBriefGeneration(cxId),
+      `getInputsForAiBriefGeneration`,
+      log
     );
+    const createDocsPromise = timed(
+      () => {
+        // TODO: #2510 - experiment with different splitters
+        const textSplitter = new RecursiveCharacterTextSplitter({
+          chunkSize: CHUNK_SIZE,
+          chunkOverlap: CHUNK_OVERLAP,
+        });
+        return textSplitter.createDocuments([bundleText ?? ""]);
+      },
+      `textSplitter.createDocuments`,
+      log
+    );
+    const [getInputsResult, docs] = await Promise.all([getInputsPromise, createDocsPromise]);
+    const { documentVariable, mainPrompt, refinedPrompt } = getInputsResult;
 
-    // TODO: #2510 - experiment with different splitters
-    const textSplitter = new RecursiveCharacterTextSplitter({
-      chunkSize: CHUNK_SIZE,
-      chunkOverlap: CHUNK_OVERLAP,
-    });
-    const docs = await textSplitter.createDocuments([bundleText ?? ""]);
     const totalTokensUsed = {
       input: 0,
       output: 0,
@@ -89,9 +101,16 @@ export async function summarizeFilteredBundleWithAI(
       verbose: false,
     });
 
-    const summary = (await mapReduce.invoke({
-      input_documents: docs,
-    })) as { text: string };
+    if (aiBriefControls && aiBriefControls.cancelled) {
+      log(`AI Brief generation cancelled`);
+      return undefined;
+    }
+
+    const summary = (await timed(
+      () => mapReduce.invoke({ input_documents: docs }) as Promise<{ text: string }>,
+      `mapReduce.invoke`,
+      log
+    )) as { text: string };
 
     const costs = calculateCostsBasedOnTokens(totalTokensUsed);
 
