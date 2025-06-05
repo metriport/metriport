@@ -6,6 +6,7 @@ import sendPatientLoadFile from "./send-patient-load-file";
 import receiveFlatFileResponse from "./receive-flat-file-response";
 import receiveVerificationResponse from "./receive-verification-response";
 import listFiles from "./list-files";
+import readFile from "./read-file";
 
 const program = new Command();
 program.addCommand(connect);
@@ -15,5 +16,5 @@ program.addCommand(generatePatientLoadFile);
 program.addCommand(receiveFlatFileResponse);
 program.addCommand(receiveVerificationResponse);
 program.addCommand(listFiles);
-
+program.addCommand(readFile);
 program.parse();
