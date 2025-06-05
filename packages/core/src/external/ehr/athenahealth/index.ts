@@ -14,6 +14,7 @@ import {
   JwtTokenInfo,
   MetriportError,
   NotFoundError,
+  sleep,
 } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import {
@@ -82,6 +83,7 @@ import {
   getConditionStatus,
   makeRequest,
   MakeRequestParamsInEhr,
+  paginateWaitTime,
 } from "../shared";
 
 const parallelRequests = 5;
@@ -1095,6 +1097,7 @@ class AthenaHealthApi {
     acc: T[] | undefined = []
   ): Promise<T[]> {
     if (!url) return acc;
+    await sleep(paginateWaitTime);
     const { listOfItems, nextUrl } = await requester(url.replace(`/v1/${this.practiceId}`, ""));
     acc.push(...listOfItems);
     if (!nextUrl) return acc;

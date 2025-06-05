@@ -4,7 +4,7 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { summarizeFilteredBundleWithAI } from "../../command/ai-brief/create";
 import { prepareBundleForAiSummarization } from "../../command/ai-brief/filter";
-import { generateAiBriefFhirResource } from "../../command/ai-brief/shared";
+import { AiBriefControls, generateAiBriefFhirResource } from "../../command/ai-brief/shared";
 import { buildBundleEntry } from "../../external/fhir/shared/bundle";
 import { capture } from "../../util";
 
@@ -17,7 +17,8 @@ export async function generateAiBriefBundleEntry(
   bundle: Bundle<Resource>,
   cxId: string,
   patientId: string,
-  log: typeof console.log
+  log: typeof console.log,
+  aiBriefControls?: AiBriefControls
 ): Promise<BundleEntry<Binary> | undefined> {
   let aiBriefContent;
   let attemptNumber = 1;
@@ -26,8 +27,13 @@ export async function generateAiBriefBundleEntry(
     const filteredBundle = prepareBundleForAiSummarization(bundle, log);
     await executeWithNetworkRetries(
       async () => {
-        log(`Attempt #: ${attemptNumber}`);
-        aiBriefContent = await summarizeFilteredBundleWithAI(cxId, patientId, filteredBundle);
+        log(`generateAiBriefBundleEntry - Attempt #: ${attemptNumber}`);
+        aiBriefContent = await summarizeFilteredBundleWithAI(
+          cxId,
+          patientId,
+          filteredBundle,
+          aiBriefControls
+        );
         attemptNumber++;
       },
       {

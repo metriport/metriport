@@ -3,7 +3,7 @@ import { getDefaultBundle } from "@metriport/shared/interface/external/ehr/fhir-
 import { setJobEntryStatus } from "../../../../api/job/set-entry-status";
 import { BundleType } from "../../../../bundle/bundle-shared";
 import { createOrReplaceBundle as createOrReplaceBundleOnS3 } from "../../../../bundle/command/create-or-replace-bundle";
-import { getBundleByResourceType } from "../../../../command/ehr-get-bundle-by-resource-type";
+import { getBundleByResourceType } from "../../../../command/get-bundle-by-resource-type";
 import { buildEhrComputeResourceDiffBundlesHandler } from "../compute/ehr-compute-resource-diff-bundles-factory";
 import { EhrRefreshEhrBundlesHandler, RefreshEhrBundlesRequest } from "./ehr-refresh-ehr-bundles";
 
