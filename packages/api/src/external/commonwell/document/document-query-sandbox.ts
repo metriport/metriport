@@ -195,7 +195,7 @@ export async function sandboxGetDocRefsAndUpsert({
     patientId,
     "medical.document-conversion",
     MAPIWebhookStatus.completed,
-    ""
+    "" // why aren't we passing the requestId here?
   );
   dataPipelineEvents().succeeded({
     cxId,
