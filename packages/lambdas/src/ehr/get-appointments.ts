@@ -16,7 +16,7 @@ type GetAppointmentsRequestInLambda = Omit<GetAppointmentsRequest, "fromDate" | 
 };
 
 export const handler = capture.wrapHandler(async (params: GetAppointmentsRequestInLambda) => {
-  capture.setExtra({ event, context: lambdaName });
+  capture.setExtra({ params, context: lambdaName });
   const { cxId, practiceId, method } = params;
 
   const startedAt = new Date().getTime();
