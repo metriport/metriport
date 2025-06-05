@@ -5,7 +5,7 @@ export type ConversionResult = {
   details?: string | undefined;
   jobId?: string | undefined;
   /** The MedicalDataSource, or HIE name */
-  source?: string;
+  source: string;
 };
 
 export type ConversionResultWithCount = ConversionResult & {
