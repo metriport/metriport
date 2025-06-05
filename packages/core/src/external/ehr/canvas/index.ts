@@ -11,7 +11,13 @@ import {
   Practitioner as PractitionerFhir,
   Resource,
 } from "@medplum/fhirtypes";
-import { BadRequestError, errorToString, JwtTokenInfo, MetriportError } from "@metriport/shared";
+import {
+  BadRequestError,
+  errorToString,
+  JwtTokenInfo,
+  MetriportError,
+  sleep,
+} from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import {
   Appointment,
@@ -58,6 +64,7 @@ import {
   getConditionStatus,
   makeRequest,
   MakeRequestParamsInEhr,
+  paginateWaitTime,
 } from "../shared";
 
 dayjs.extend(duration);
@@ -767,6 +774,7 @@ class CanvasApi {
       acc: EhrFhirResource[] | undefined = []
     ): Promise<EhrFhirResource[]> {
       if (!url) return acc;
+      await sleep(paginateWaitTime);
       const ehrFhirResourceBundle = await api.makeRequest<EhrFhirResourceBundle>({
         cxId,
         patientId: canvasPatientId,
@@ -875,6 +883,7 @@ class CanvasApi {
       acc: Appointment[] | undefined = []
     ): Promise<Appointment[]> {
       if (!url) return acc;
+      await sleep(paginateWaitTime);
       const appointmentListResponse = await api.makeRequest<AppointmentListResponse>({
         cxId,
         s3Path: "appointments",

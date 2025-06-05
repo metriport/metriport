@@ -33,7 +33,7 @@ export async function searchDocuments({
   cxId: string;
   patientId: string;
   dateRange?: { from?: string; to?: string };
-  contentFilter?: string;
+  contentFilter?: string | undefined;
 }): Promise<DocumentReferenceWithId[]> {
   const log = _log("searchDocuments");
   const fhirDocs = await getDocuments({ cxId, patientId, from, to });
@@ -63,7 +63,7 @@ export async function searchDocuments({
 
 async function searchOnDocumentReferences(
   docs: DocumentReferenceWithId[],
-  contentFilter?: string
+  contentFilter?: string | undefined
 ): Promise<DocumentReferenceWithId[]> {
   const checkContent = (d: DocumentReference) =>
     contentFilter ? JSON.stringify(d).toLocaleLowerCase().includes(contentFilter) : true;
@@ -88,9 +88,8 @@ async function searchOnCCDAFiles(
   docs: DocumentReferenceWithId[],
   cxId: string,
   patientId: string,
-  contentFilter?: string
+  contentFilter?: string | undefined
 ): Promise<DocumentReferenceWithId[]> {
-  if (!contentFilter) return [];
   const searchService = makeSearchServiceQuery();
   const searchResult = await searchService.search({ query: contentFilter, cxId, patientId });
   const searchResultIds = searchResult.map(r => r.entryId);
