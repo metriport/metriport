@@ -1,27 +1,64 @@
-import { Config } from "@metriport/core/util/config";
-import { S3Utils } from "@metriport/core/external/aws/s3";
 import { capture } from "./shared/capture";
 import { prefixedLog } from "./shared/log";
+import { SurescriptsApi } from "@metriport/core/external/surescripts/api";
+import { SurescriptsSftpClient } from "@metriport/core/external/surescripts/client";
+import { getSurescriptSecrets } from "./shared/surescripts";
+import { MetriportError } from "@metriport/shared";
 
 capture.init();
+
+interface SurescriptsSendPatientRequestEvent {
+  cxId: string;
+  facilityId: string;
+  allPatients?: boolean;
+  patientId?: string;
+}
 
 const log = prefixedLog("surescripts");
 
 // Stub which will be integrated with Surescripts commands
-export const handler = capture.wrapHandler(async () => {
-  const s3Utils = new S3Utils(Config.getAWSRegion());
-  const bucketName = process.env.SURESCRIPTS_REPLICA_BUCKET_NAME;
-  if (!bucketName) throw new Error("Missing bucket name");
+export const handler = capture.wrapHandler(
+  async ({ cxId, facilityId, allPatients, patientId }: SurescriptsSendPatientRequestEvent) => {
+    const { surescriptsPublicKey, surescriptsPrivateKey, surescriptsSenderPassword } =
+      await getSurescriptSecrets();
+    const client = new SurescriptsSftpClient({
+      senderPassword: surescriptsSenderPassword,
+      publicKey: surescriptsPublicKey,
+      privateKey: surescriptsPrivateKey,
+    });
 
-  await s3Utils.uploadFile({
-    bucket: bucketName,
-    key: "mock_surescripts/plf.txt",
-    file: Buffer.from("test PLF"),
-    contentType: "text/plain",
-    metadata: {
-      "x-surescript-sent": "2025-05-01T00:00:00.000Z",
-    },
-  });
+    const api = new SurescriptsApi();
+    const facility = await api.getFacilityData(cxId, facilityId);
+    const patientIdsForFacility: string[] = [];
+    if (allPatients) {
+      const patientIds = await api.getPatientIds(cxId, facilityId);
+      patientIdsForFacility.push(...patientIds);
+    } else if (patientId) {
+      patientIdsForFacility.push(patientId);
+    } else {
+      throw new MetriportError("Invalid request");
+    }
 
-  log(`Uploaded test file to ${bucketName}`);
-});
+    const patients = await api.getEachPatientById(cxId, patientIdsForFacility);
+    if (patients.length === 0) {
+      log(`No patients retrieved for facility ${facilityId}`);
+      return;
+    }
+
+    log(`Connecting to Surescripts...`);
+    await client.connect();
+    log(`Connected to Surescripts`);
+
+    log(`Generating patient load file...`);
+    const { requestedPatientIds, requestFileName, requestFileContent, transmissionId } =
+      await client.generateAndWritePatientLoadFile({ npiNumber: facility.npi, cxId }, patients);
+
+    log(`Wrote ${requestedPatientIds.length} / ${patients.length} patients to S3 replica bucket`);
+    log(`Transmission ID: ${transmissionId}`);
+    log(`Request file name: ${requestFileName}`);
+    log(`Request file size: ${requestFileContent.length} bytes`);
+
+    await client.disconnect();
+    log(`Disconnected from Surescripts`);
+  }
+);

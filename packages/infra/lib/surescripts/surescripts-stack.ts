@@ -221,6 +221,7 @@ export class SurescriptsNestedStack extends NestedStack {
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: props.alarmAction,
       surescripts: props.config.surescripts,
+      systemRootOID: props.config.systemRootOID,
       envVars,
     };
 
@@ -295,6 +296,7 @@ export class SurescriptsNestedStack extends NestedStack {
       envVars: Record<string, string>;
       sentryDsn: string | undefined;
       alarmAction: SnsAction | undefined;
+      systemRootOID: string;
       surescriptsReplicaBucket: s3.Bucket;
       pharmacyConversionBucket?: s3.Bucket;
     }
@@ -306,6 +308,7 @@ export class SurescriptsNestedStack extends NestedStack {
       envVars,
       sentryDsn,
       alarmAction,
+      systemRootOID,
       surescriptsReplicaBucket,
       pharmacyConversionBucket,
     } = props;
@@ -340,6 +343,7 @@ export class SurescriptsNestedStack extends NestedStack {
       envVars: {
         ...envVars,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+        SYSTEM_ROOT_OID: systemRootOID,
       },
       layers: [lambdaLayers.shared],
       vpc,
