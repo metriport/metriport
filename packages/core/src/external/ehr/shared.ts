@@ -10,8 +10,9 @@ import {
   executeWithRetries,
 } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
+import { fhirOperationOutcomeSchema } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { EhrSource } from "@metriport/shared/interface/external/ehr/source";
-import { AxiosInstance, AxiosResponse, isAxiosError } from "axios";
+import { AxiosError, AxiosInstance, AxiosResponse, isAxiosError } from "axios";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { z } from "zod";
@@ -19,7 +20,6 @@ import { createHivePartitionFilePath } from "../../domain/filename";
 import { fetchCodingCodeOrDisplayOrSystem } from "../../fhir-deduplication/shared";
 import { Config } from "../../util/config";
 import { ICD_10_CODE, SNOMED_CODE } from "../../util/constants";
-import { processAsyncError } from "../../util/error/shared";
 import { out } from "../../util/log";
 import { uuidv7 } from "../../util/uuid-v7";
 import { S3Utils } from "../aws/s3";
@@ -32,9 +32,26 @@ const MAX_AGE = dayjs.duration(24, "hours");
 const region = Config.getAWSRegion();
 const responsesBucket = Config.getEhrResponsesBucketName();
 
+export const paginateWaitTime = dayjs.duration(1, "seconds").asMilliseconds();
+
+const fhirValidationPrefix = "1 validation error for";
+
 function getS3UtilsInstance(): S3Utils {
   return new S3Utils(region);
 }
+
+export const getSecretsOauthSchema = z.object({
+  environment: z.string(),
+  clientKey: z.string(),
+  clientSecret: z.string(),
+});
+export type GetSecretsOauthResult = z.infer<typeof getSecretsOauthSchema>;
+
+export const getSecretsApiKeySchema = z.object({
+  environment: z.string(),
+  apiKey: z.string(),
+});
+export type GetSecretsApiKeyResult = z.infer<typeof getSecretsApiKeySchema>;
 
 export interface ApiConfig {
   twoLeggedAuthTokenInfo?: JwtTokenInfo | undefined;
@@ -149,23 +166,30 @@ export async function makeRequest<T>({
         });
         const key = buildS3Path(ehr, s3Path, `${filePath}/error`);
         const s3Utils = getS3UtilsInstance();
-        s3Utils
-          .uploadFile({
+        try {
+          await s3Utils.uploadFile({
             bucket: responsesBucket,
             key,
             file: Buffer.from(JSON.stringify({ error, message }), "utf8"),
             contentType: "application/json",
-          })
-          .catch(processAsyncError(`Error saving error to s3 @ ${ehr} - ${method} ${url}`));
+          });
+        } catch (error) {
+          log(
+            `Error saving error to s3 @ ${ehr} - ${method} ${url}. Cause: ${errorToString(error)}`
+          );
+        }
       }
       const fullAdditionalInfoWithError = { ...fullAdditionalInfo, error: errorToString(error) };
       switch (error.response?.status) {
         case 400:
-          throw new BadRequestError(message, undefined, fullAdditionalInfoWithError);
+          throw new BadRequestError(message, error, fullAdditionalInfoWithError);
         case 404:
-          throw new NotFoundError(message, undefined, fullAdditionalInfoWithError);
+          throw new NotFoundError(message, error, fullAdditionalInfoWithError);
         default:
-          throw new MetriportError(message, undefined, fullAdditionalInfoWithError);
+          if (isFhirValidationError(error)) {
+            throw new NotFoundError(message, error, fullAdditionalInfoWithError);
+          }
+          throw new MetriportError(message, error, fullAdditionalInfoWithError);
       }
     }
     throw error;
@@ -194,14 +218,18 @@ export async function makeRequest<T>({
     });
     const key = buildS3Path(ehr, s3Path, `${filePath}/response`);
     const s3Utils = getS3UtilsInstance();
-    s3Utils
-      .uploadFile({
+    try {
+      await s3Utils.uploadFile({
         bucket: responsesBucket,
         key,
         file: Buffer.from(JSON.stringify(response.data), "utf8"),
         contentType: "application/json",
-      })
-      .catch(processAsyncError(`Error saving to s3 @ ${ehr} - ${method} ${url}`));
+      });
+    } catch (error) {
+      log(
+        `Error saving response to s3 @ ${ehr} - ${method} ${url}. Cause: ${errorToString(error)}`
+      );
+    }
   }
   const outcome = schema.safeParse(body);
   if (!outcome.success) {
@@ -216,6 +244,18 @@ export async function makeRequest<T>({
   return outcome.data;
 }
 
+function isFhirValidationError(error: AxiosError): boolean {
+  const data = error.response?.data;
+  if (!data) return false;
+  const outcomeParsed = fhirOperationOutcomeSchema.safeParse(data);
+  if (!outcomeParsed.success) return false;
+  const outcome = outcomeParsed.data;
+  const errorInOutcome = outcome.issue.find(issue => issue.severity === "error");
+  if (!errorInOutcome) return false;
+  const isValidationError = errorInOutcome.details.text.startsWith(fhirValidationPrefix);
+  return isValidationError;
+}
+
 export function createDataParams(data: RequestData): string {
   const dataParams = new URLSearchParams();
   Object.entries(data).forEach(([k, v]) => {
@@ -226,7 +266,12 @@ export function createDataParams(data: RequestData): string {
 }
 
 export function isNotRetriableAxiosError(error: unknown): boolean {
-  return isAxiosError(error) && (error.response?.status === 400 || error.response?.status === 404);
+  return (
+    isAxiosError(error) &&
+    (error.response?.status === 400 ||
+      error.response?.status === 404 ||
+      isFhirValidationError(error))
+  );
 }
 
 export function getConditionIcd10Coding(condition: Condition): Coding | undefined {

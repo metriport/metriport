@@ -11,7 +11,13 @@ import {
   Practitioner as PractitionerFhir,
   Resource,
 } from "@medplum/fhirtypes";
-import { BadRequestError, errorToString, JwtTokenInfo, MetriportError } from "@metriport/shared";
+import {
+  BadRequestError,
+  errorToString,
+  JwtTokenInfo,
+  MetriportError,
+  sleep,
+} from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import {
   Appointment,
@@ -58,6 +64,7 @@ import {
   getConditionStatus,
   makeRequest,
   MakeRequestParamsInEhr,
+  paginateWaitTime,
 } from "../shared";
 
 dayjs.extend(duration);
@@ -767,6 +774,7 @@ class CanvasApi {
       acc: EhrFhirResource[] | undefined = []
     ): Promise<EhrFhirResource[]> {
       if (!url) return acc;
+      await sleep(paginateWaitTime);
       const ehrFhirResourceBundle = await api.makeRequest<EhrFhirResourceBundle>({
         cxId,
         patientId: canvasPatientId,
@@ -855,13 +863,10 @@ class CanvasApi {
     toDate: Date;
   }): Promise<SlimBookedAppointment[]> {
     const { debug } = out(`Canvas getAppointments - cxId ${cxId} practiceId ${this.practiceId}`);
-    const params = {
-      status: "booked",
-      ...(fromDate && { date: `ge${this.formatDate(fromDate.toISOString()) ?? ""}` }),
-      ...(toDate && { date: `lt${this.formatDate(toDate.toISOString()) ?? ""}` }),
-      _count: "1000",
-    };
+    const params = { status: "booked", _count: "1000" };
     const urlParams = new URLSearchParams(params);
+    urlParams.append("date", `ge${this.formatDate(fromDate.toISOString())}`);
+    urlParams.append("date", `lt${this.formatDate(toDate.toISOString())}`);
     const appointmentUrl = `/Appointment?${urlParams.toString()}`;
     const additionalInfo = {
       cxId,
@@ -875,6 +880,7 @@ class CanvasApi {
       acc: Appointment[] | undefined = []
     ): Promise<Appointment[]> {
       if (!url) return acc;
+      await sleep(paginateWaitTime);
       const appointmentListResponse = await api.makeRequest<AppointmentListResponse>({
         cxId,
         s3Path: "appointments",

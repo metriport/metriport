@@ -10,7 +10,7 @@ import { EnvConfig } from "../config/env-config";
 import { EnvType } from "./env-type";
 import { createLambda } from "./shared/lambda";
 import { LambdaLayers } from "./shared/lambda-layers";
-import { QueueAndLambdaSettings } from "./shared/settings";
+import { QueueAndLambdaSettings, LambdaSettings } from "./shared/settings";
 import { createQueue } from "./shared/sqs";
 
 const waitTimePatientSync = Duration.seconds(10); // 6 patients/min
@@ -20,16 +20,26 @@ const waitTimeComputeResourceDiff = Duration.millis(0); // No limit
 const waitTimeRefreshBundle = Duration.seconds(0); // No limit
 
 function settings(): {
+  getAppointments: LambdaSettings;
   syncPatient: QueueAndLambdaSettings;
   elationLinkPatient: QueueAndLambdaSettings;
   healthieLinkPatient: QueueAndLambdaSettings;
   computeResourceDiffBundles: QueueAndLambdaSettings;
   refreshEhrBundles: QueueAndLambdaSettings;
 } {
+  const getAppointmentsLambdaTimeout = Duration.minutes(15);
+  const getAppointments: LambdaSettings = {
+    name: "EhrGetAppointments",
+    entry: "ehr/get-appointments",
+    lambda: {
+      memory: 1024,
+      timeout: getAppointmentsLambdaTimeout,
+    },
+  };
   const syncPatientLambdaTimeout = waitTimePatientSync.plus(Duration.seconds(25));
   const syncPatient: QueueAndLambdaSettings = {
     name: "EhrSyncPatient",
-    entry: "ehr-sync-patient",
+    entry: "ehr/sync-patient",
     lambda: {
       memory: 512,
       timeout: syncPatientLambdaTimeout,
@@ -50,7 +60,7 @@ function settings(): {
   const elationLinkPatientLambdaTimeout = waitTimeElationLinkPatient.plus(Duration.seconds(25));
   const elationLinkPatient: QueueAndLambdaSettings = {
     name: "EhrElationLinkPatient",
-    entry: "elation-link-patient",
+    entry: "ehr/elation/link-patient",
     lambda: {
       memory: 512,
       timeout: elationLinkPatientLambdaTimeout,
@@ -71,7 +81,7 @@ function settings(): {
   const healthieLinkPatientLambdaTimeout = waitTimeHealthieLinkPatient.plus(Duration.seconds(25));
   const healthieLinkPatient: QueueAndLambdaSettings = {
     name: "EhrHealthieLinkPatient",
-    entry: "healthie-link-patient",
+    entry: "ehr/healthie/link-patient",
     lambda: {
       memory: 512,
       timeout: healthieLinkPatientLambdaTimeout,
@@ -90,16 +100,16 @@ function settings(): {
     waitTime: waitTimeHealthieLinkPatient,
   };
   // Skip adding the wait time to the lambda timeout because it's already sub 1 second
-  const computeResourceDiffBundlesLambdaTimeout = Duration.minutes(12);
+  const computeResourceDiffBundlesLambdaTimeout = Duration.minutes(15);
   const computeResourceDiffBundles: QueueAndLambdaSettings = {
     name: "EhrComputeResourceDiffBundles",
-    entry: "ehr-compute-resource-diff-bundles",
+    entry: "ehr/compute-resource-diff-bundles",
     lambda: {
       memory: 4096,
       timeout: computeResourceDiffBundlesLambdaTimeout,
     },
     queue: {
-      alarmMaxAgeOfOldestMessage: Duration.hours(1),
+      alarmMaxAgeOfOldestMessage: Duration.hours(2),
       maxMessageCountAlarmThreshold: 15_000,
       maxReceiveCount: 3,
       visibilityTimeout: Duration.seconds(
@@ -115,16 +125,16 @@ function settings(): {
     waitTime: waitTimeComputeResourceDiff,
   };
   // Skip adding the wait time to the lambda timeout because it's already sub 1 second
-  const refreshEhrBundlesLambdaTimeout = Duration.minutes(12);
+  const refreshEhrBundlesLambdaTimeout = Duration.minutes(15);
   const refreshEhrBundles: QueueAndLambdaSettings = {
     name: "EhrRefreshEhrBundles",
-    entry: "ehr-refresh-ehr-bundles",
+    entry: "ehr/refresh-ehr-bundles",
     lambda: {
       memory: 512,
       timeout: refreshEhrBundlesLambdaTimeout,
     },
     queue: {
-      alarmMaxAgeOfOldestMessage: Duration.hours(1),
+      alarmMaxAgeOfOldestMessage: Duration.hours(2),
       maxMessageCountAlarmThreshold: 15_000,
       maxReceiveCount: 3,
       visibilityTimeout: Duration.seconds(refreshEhrBundlesLambdaTimeout.toSeconds() * 2 + 1),
@@ -138,6 +148,7 @@ function settings(): {
     waitTime: waitTimeRefreshBundle,
   };
   return {
+    getAppointments,
     syncPatient,
     elationLinkPatient,
     healthieLinkPatient,
@@ -151,10 +162,12 @@ interface EhrNestedStackProps extends NestedStackProps {
   vpc: ec2.IVpc;
   alarmAction?: SnsAction;
   lambdaLayers: LambdaLayers;
+  ehrResponsesBucket: s3.Bucket | undefined;
   medicalDocumentsBucket: s3.Bucket;
 }
 
 export class EhrNestedStack extends NestedStack {
+  readonly getAppointmentsLambda: Lambda;
   readonly syncPatientLambda: Lambda;
   readonly syncPatientQueue: Queue;
   readonly elationLinkPatientLambda: Lambda;
@@ -171,6 +184,15 @@ export class EhrNestedStack extends NestedStack {
     super(scope, id, props);
 
     this.terminationProtection = true;
+
+    this.getAppointmentsLambda = this.setupGetAppointmentslambda({
+      lambdaLayers: props.lambdaLayers,
+      vpc: props.vpc,
+      envType: props.config.environmentType,
+      sentryDsn: props.config.lambdasSentryDSN,
+      alarmAction: props.alarmAction,
+      ehrResponsesBucket: props.ehrResponsesBucket,
+    });
 
     const ehrBundleBucket = new s3.Bucket(this, "EhrBundleBucket", {
       bucketName: props.config.ehrBundleBucketName,
@@ -239,6 +261,38 @@ export class EhrNestedStack extends NestedStack {
     });
     this.refreshEhrBundlesLambda = refreshEhrBundles.lambda;
     this.refreshEhrBundlesQueue = refreshEhrBundles.queue;
+  }
+
+  private setupGetAppointmentslambda(ownProps: {
+    lambdaLayers: LambdaLayers;
+    vpc: ec2.IVpc;
+    envType: EnvType;
+    sentryDsn: string | undefined;
+    alarmAction: SnsAction | undefined;
+    ehrResponsesBucket: s3.Bucket | undefined;
+  }): Lambda {
+    const { lambdaLayers, vpc, envType, sentryDsn, alarmAction, ehrResponsesBucket } = ownProps;
+    const { name, entry, lambda: lambdaSettings } = settings().getAppointments;
+
+    const lambda = createLambda({
+      ...lambdaSettings,
+      stack: this,
+      name,
+      entry,
+      envType,
+      envVars: {
+        // API_URL set on the api-stack after the OSS API is created
+        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+        ...(ehrResponsesBucket ? { EHR_RESPONSES_BUCKET_NAME: ehrResponsesBucket.bucketName } : {}),
+      },
+      layers: [lambdaLayers.shared],
+      vpc,
+      alarmSnsAction: alarmAction,
+    });
+
+    if (ehrResponsesBucket) ehrResponsesBucket.grantWrite(lambda);
+
+    return lambda;
   }
 
   private setupSyncPatient(ownProps: {
