@@ -232,7 +232,11 @@ function replaceReferencesWithData(
           if (name.length > 0) orgs.push(name);
         } else if (performer?.resourceType === "Practitioner") {
           const name = performer.name;
-          if (name) practitioners.push(name);
+          const qualification = performer.qualification;
+          if (name || qualification) {
+            const practitionerInfo = [name, qualification].filter(Boolean).join(" - ");
+            practitioners.push(practitionerInfo);
+          }
         }
       });
 
@@ -263,9 +267,12 @@ function replaceReferencesWithData(
           if (refString) {
             const actor = map.get(refString);
             referencedIds.add(refString);
-            if (actor && "name" in actor) {
+            if (actor && "name" in actor && actor.resourceType === "Practitioner") {
               const name = actor.name;
-              return name ?? [];
+              const qualification = actor.qualification;
+              if (name || qualification) {
+                return [name, qualification].filter(Boolean).join(" - ");
+              }
             }
           }
           return [];
