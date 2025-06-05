@@ -1,13 +1,13 @@
-import { ComputeResourceDiffBundlesRequest } from "@metriport/core/external/ehr/job/create-resource-diff-bundles/steps/compute/ehr-compute-resource-diff-bundles";
-import { EhrComputeResourceDiffBundlesDirect } from "@metriport/core/external/ehr/job/create-resource-diff-bundles/steps/compute/ehr-compute-resource-diff-bundles-direct";
+import { ContributeResourceDiffBundlesRequest } from "@metriport/core/external/ehr/job/create-resource-diff-bundles/steps/contribute/ehr-contribute-resource-diff-bundles";
+import { EhrContributeResourceDiffBundlesDirect } from "@metriport/core/external/ehr/job/create-resource-diff-bundles/steps/contribute/ehr-contribute-resource-diff-bundles-direct";
 import { MetriportError } from "@metriport/shared";
 import * as Sentry from "@sentry/serverless";
 import { SQSEvent } from "aws-lambda";
-import { capture } from "../shared/capture";
-import { ehrCreateResourceDiffBundlesSchema } from "../shared/ehr";
-import { getEnvOrFail } from "../shared/env";
-import { prefixedLog } from "../shared/log";
-import { getSingleMessageOrFail } from "../shared/sqs";
+import { capture } from "./shared/capture";
+import { ehrCreateResourceDiffBundlesSchema } from "./shared/ehr";
+import { getEnvOrFail } from "./shared/env";
+import { prefixedLog } from "./shared/log";
+import { getSingleMessageOrFail } from "./shared/sqs";
 
 // Keep this as early on the file as possible
 capture.init();
@@ -41,14 +41,19 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
   const reportError = receiveCount >= maxAttempts;
   log(`Receive count: ${receiveCount}, max attempts: ${maxAttempts}, reportError: ${reportError}`);
 
-  const ehrComputeResourceDiffHandler = new EhrComputeResourceDiffBundlesDirect(waitTimeInMillis);
-  await ehrComputeResourceDiffHandler.computeResourceDiffBundles({ ...parsedBody, reportError });
+  const ehrContributeResourceDiffHandler = new EhrContributeResourceDiffBundlesDirect(
+    waitTimeInMillis
+  );
+  await ehrContributeResourceDiffHandler.contributeResourceDiffBundles({
+    ...parsedBody,
+    reportError,
+  });
 
   const finishedAt = new Date().getTime();
   log(`Done local duration: ${finishedAt - startedAt}ms`);
 });
 
-function parseBody(body?: unknown): ComputeResourceDiffBundlesRequest {
+function parseBody(body?: unknown): ContributeResourceDiffBundlesRequest {
   if (!body) throw new MetriportError(`Missing message body`);
 
   const bodyString = typeof body === "string" ? (body as string) : undefined;
