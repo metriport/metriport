@@ -43,3 +43,17 @@ export function getDefaultBundle(): Bundle {
     entry: [],
   };
 }
+
+export const fhirOperationOutcomeIssueSchema = z.object({
+  severity: z.string(),
+  code: z.string(),
+  details: z.object({
+    text: z.string(),
+  }),
+});
+export type FhirOperationOutcomeIssue = z.infer<typeof fhirOperationOutcomeIssueSchema>;
+export const fhirOperationOutcomeSchema = z.object({
+  resourceType: z.literal("OperationOutcome"),
+  issue: fhirOperationOutcomeIssueSchema.array(),
+});
+export type FhirOperationOutcome = z.infer<typeof fhirOperationOutcomeSchema>;

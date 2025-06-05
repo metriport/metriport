@@ -42,7 +42,7 @@ export interface SearchConsolidated {
  * and returns the resources stored in the OS results.
  *
  * @param patient The patient to search.
- * @param query The query to search for.
+ * @param query The query to search for. If undefined or empty string, all resources will be returned.
  * @returns The search results.
  */
 export async function searchPatientConsolidated({
@@ -50,7 +50,7 @@ export async function searchPatientConsolidated({
   query,
 }: {
   patient: Patient;
-  query: string;
+  query: string | undefined;
 }): Promise<SearchSetBundle> {
   const { log } = out(`searchPatientConsolidated - cx ${patient.cxId}, pt ${patient.id}`);
 
@@ -119,7 +119,7 @@ async function searchFhirResources({
 }: {
   cxId: string;
   patientId: string;
-  query: string;
+  query: string | undefined;
 }): Promise<FhirSearchResult[]> {
   const searchService = new OpenSearchFhirSearcher(getConfigs());
   return await searchService.search({
@@ -159,7 +159,7 @@ export async function hydrateMissingReferences({
     ids: uniqueIds,
   });
   if (!openSearchResults || openSearchResults.length < 1) {
-    log(`No results found for ${missingRefIds.join(", ")}`);
+    log(`No results found for (count=${missingRefIds.length}) ${missingRefIds.join(", ")}`);
     return resources;
   }
   const resourcesToAdd = openSearchResults.flatMap(r => fhirSearchResultToResource(r, log) ?? []);

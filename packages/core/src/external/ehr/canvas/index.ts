@@ -18,6 +18,7 @@ import {
   errorToString,
   JwtTokenInfo,
   MetriportError,
+  sleep,
 } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import {
@@ -54,6 +55,7 @@ import {
   getConditionStatus,
   makeRequest,
   MakeRequestParamsInEhr,
+  paginateWaitTime,
 } from "../shared";
 
 dayjs.extend(duration);
@@ -821,6 +823,7 @@ class CanvasApi {
       acc: Appointment[] | undefined = []
     ): Promise<Appointment[]> {
       if (!url) return acc;
+      await sleep(paginateWaitTime);
       const appointmentListResponse = await api.makeRequest<AppointmentListResponse>({
         cxId,
         s3Path: "appointments",

@@ -9,7 +9,7 @@ import {
 } from "../shared/query";
 
 export type LexicalSearchParams = {
-  query: string;
+  query: string | undefined;
   cxId: string;
   patientId: string;
 };
@@ -22,7 +22,7 @@ export function createLexicalSearchQuery({
   cxId,
   patientId,
 }: LexicalSearchParams): OpenSearchRequestBody {
-  const isMatchQuery = !query.startsWith(simpleQueryStringPrefix);
+  const isMatchQuery = !query?.startsWith(simpleQueryStringPrefix);
   const actualQuery = cleanupQuery(query);
   const generalParams = getGeneralParams();
   if (isMatchQuery) {
@@ -31,7 +31,7 @@ export function createLexicalSearchQuery({
       query: {
         bool: {
           must: [
-            ...(actualQuery.length > 0
+            ...(actualQuery && actualQuery.length > 0
               ? [
                   {
                     // https://docs.opensearch.org/docs/latest/query-dsl/full-text/match/
@@ -55,7 +55,7 @@ export function createLexicalSearchQuery({
     query: {
       bool: {
         must: [
-          ...(actualQuery.length > 0
+          ...(actualQuery && actualQuery.length > 0
             ? [
                 {
                   // https://docs.opensearch.org/docs/latest/query-dsl/full-text/simple-query-string/

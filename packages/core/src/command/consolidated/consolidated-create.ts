@@ -17,6 +17,7 @@ import { capture, executeAsynchronously, out } from "../../util";
 import { Config } from "../../util/config";
 import { processAsyncError } from "../../util/error/shared";
 import { controlDuration } from "../../util/race-control";
+import { AiBriefControls } from "../ai-brief/shared";
 import { isAiBriefFeatureFlagEnabledForCx } from "../feature-flags/domain-ffs";
 import { getConsolidatedLocation, getConsolidatedSourceLocation } from "./consolidated-shared";
 import { makeIngestConsolidated } from "./search/fhir-resource/ingest-consolidated-factory";
@@ -98,14 +99,19 @@ export async function createConsolidatedFromConversions({
   await dangerouslyDeduplicate({ cxId, patientId, bundle });
   log(`...done, from ${lengthWithDups} to ${bundle.entry?.length} resources`);
 
+  // TODO This whole section with AI-related logic should be moved to the `generateAiBriefBundleEntry`.
   log(`isAiBriefFeatureFlagEnabled: ${isAiBriefFeatureFlagEnabled}`);
   if (isAiBriefFeatureFlagEnabled && bundle.entry && bundle.entry.length > 0) {
+    const aiBriefControls: AiBriefControls = {
+      cancelled: false,
+    };
     const binaryBundleEntry = await Promise.race([
-      generateAiBriefBundleEntry(bundle, cxId, patientId, log),
+      generateAiBriefBundleEntry(bundle, cxId, patientId, log, aiBriefControls),
       controlDuration(AI_BRIEF_TIMEOUT.asMilliseconds(), TIMED_OUT),
     ]);
 
     if (binaryBundleEntry === TIMED_OUT) {
+      aiBriefControls.cancelled = true;
       log(`AI Brief generation timed out after ${AI_BRIEF_TIMEOUT.asMinutes()} minutes`);
       capture.message("AI Brief generation timed out", {
         extra: { cxId, patientId, timeoutMinutes: AI_BRIEF_TIMEOUT.asMinutes() },

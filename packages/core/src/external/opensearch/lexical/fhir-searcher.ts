@@ -18,7 +18,7 @@ export type OpenSearchFhirSearcherConfig = OpenSearchConfigDirectAccess;
 export type SearchRequest = {
   cxId: string;
   patientId: string;
-  query: string;
+  query: string | undefined;
 };
 
 export type GetByIdRequest = {

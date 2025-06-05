@@ -72,7 +72,7 @@ export async function startCreateResourceDiffBundlesJob({
     ehrResourceDiffHandler
       .refreshEhrBundles({
         ehr,
-        tokenId,
+        ...(tokenId ? { tokenId } : {}),
         cxId,
         practiceId,
         metriportPatientId,

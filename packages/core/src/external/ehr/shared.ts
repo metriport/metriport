@@ -7,15 +7,17 @@ import {
   NotFoundError,
   errorToString,
   executeWithRetries,
+  sleep,
 } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import {
   EhrFhirResource,
   EhrFhirResourceBundle,
   createBundleFromResourceList,
+  fhirOperationOutcomeSchema,
 } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { EhrSource } from "@metriport/shared/interface/external/ehr/source";
-import { AxiosInstance, AxiosResponse, isAxiosError } from "axios";
+import { AxiosError, AxiosInstance, AxiosResponse, isAxiosError } from "axios";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { z } from "zod";
@@ -37,9 +39,26 @@ const MAX_AGE = dayjs.duration(24, "hours");
 const region = Config.getAWSRegion();
 const responsesBucket = Config.getEhrResponsesBucketName();
 
+export const paginateWaitTime = dayjs.duration(1, "seconds").asMilliseconds();
+
+const fhirValidationPrefix = "1 validation error for";
+
 function getS3UtilsInstance(): S3Utils {
   return new S3Utils(region);
 }
+
+export const getSecretsOauthSchema = z.object({
+  environment: z.string(),
+  clientKey: z.string(),
+  clientSecret: z.string(),
+});
+export type GetSecretsOauthResult = z.infer<typeof getSecretsOauthSchema>;
+
+export const getSecretsApiKeySchema = z.object({
+  environment: z.string(),
+  apiKey: z.string(),
+});
+export type GetSecretsApiKeyResult = z.infer<typeof getSecretsApiKeySchema>;
 
 export interface ApiConfig {
   twoLeggedAuthTokenInfo?: JwtTokenInfo | undefined;
@@ -170,11 +189,14 @@ export async function makeRequest<T>({
       const fullAdditionalInfoWithError = { ...fullAdditionalInfo, error: errorToString(error) };
       switch (error.response?.status) {
         case 400:
-          throw new BadRequestError(message, undefined, fullAdditionalInfoWithError);
+          throw new BadRequestError(message, error, fullAdditionalInfoWithError);
         case 404:
-          throw new NotFoundError(message, undefined, fullAdditionalInfoWithError);
+          throw new NotFoundError(message, error, fullAdditionalInfoWithError);
         default:
-          throw new MetriportError(message, undefined, fullAdditionalInfoWithError);
+          if (isFhirValidationError(error)) {
+            throw new NotFoundError(message, error, fullAdditionalInfoWithError);
+          }
+          throw new MetriportError(message, error, fullAdditionalInfoWithError);
       }
     }
     throw error;
@@ -229,6 +251,18 @@ export async function makeRequest<T>({
   return outcome.data;
 }
 
+function isFhirValidationError(error: AxiosError): boolean {
+  const data = error.response?.data;
+  if (!data) return false;
+  const outcomeParsed = fhirOperationOutcomeSchema.safeParse(data);
+  if (!outcomeParsed.success) return false;
+  const outcome = outcomeParsed.data;
+  const errorInOutcome = outcome.issue.find(issue => issue.severity === "error");
+  if (!errorInOutcome) return false;
+  const isValidationError = errorInOutcome.details.text.startsWith(fhirValidationPrefix);
+  return isValidationError;
+}
+
 export function createDataParams(data: RequestData): string {
   const dataParams = new URLSearchParams();
   Object.entries(data).forEach(([k, v]) => {
@@ -239,7 +273,12 @@ export function createDataParams(data: RequestData): string {
 }
 
 export function isNotRetriableAxiosError(error: unknown): boolean {
-  return isAxiosError(error) && (error.response?.status === 400 || error.response?.status === 404);
+  return (
+    isAxiosError(error) &&
+    (error.response?.status === 400 ||
+      error.response?.status === 404 ||
+      isFhirValidationError(error))
+  );
 }
 
 export function getConditionIcd10Coding(condition: Condition): Coding | undefined {
@@ -356,6 +395,7 @@ export async function fetchEhrFhirResourcesWithPagination({
   acc?: EhrFhirResource[] | undefined;
 }): Promise<EhrFhirResource[]> {
   if (!url) return acc;
+  await sleep(paginateWaitTime);
   const fhirResourceBundle = await makeRequest(url);
   acc.push(...(fhirResourceBundle.entry ?? []).map(e => e.resource));
   const nextUrl = fhirResourceBundle.link?.find(l => l.relation === "next")?.url;
