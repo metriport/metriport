@@ -16,13 +16,14 @@ program
   .name("generate-plf")
   .option("-c, --cx-id <cx>", "The CX ID of the requester")
   .option("-f, --facility-id <facility>", "The facility ID of the requester")
+  .option("-p, --patient-id <patient>", "Specific patient IDs (comma separated) for the request")
   .option("-n, --npi-number <npi>", "The NPI number of the requester, used for CSV data")
   .option("--csv-data <csv>", "The CSV data file to use for patient load")
   .description("Generate a patient load file and place into the outgoing replica directory")
   .showHelpAfterError()
   .version("1.0.0")
   .action(async () => {
-    const { cxId, facilityId, csvData } = program.opts();
+    const { cxId, facilityId, csvData, patientId } = program.opts();
     let { npiNumber } = program.opts();
     if (!cxId) throw new Error("CX ID is required");
     if (!facilityId) throw new Error("Facility ID is required");
@@ -35,7 +36,11 @@ program
       if (!npiNumber) throw new Error("NPI number is required when using CSV data");
       patients = await getPatientsFromCsv(csvData);
     } else {
-      const { npi, patients: apiPatients } = await getPatientsFromApi(cxId, facilityId);
+      const { npi, patients: apiPatients } = await getPatientsFromApi(
+        cxId,
+        facilityId,
+        patientId ? patientId.split(",") : undefined
+      );
       patients = apiPatients;
       npiNumber = npi;
     }
@@ -52,13 +57,15 @@ program
 
 async function getPatientsFromApi(
   cxId: string,
-  facilityId: string
+  facilityId: string,
+  patientIds?: string[]
 ): Promise<{ npi: string; patients: Patient[] }> {
   const api = new SurescriptsApi();
   const customer = await api.getCustomerData(cxId);
   const facility = customer.facilities.find(f => f.id === facilityId);
   if (!facility) throw new Error(`Facility ${facilityId} not found`);
-  const patientIds = await api.getPatientIds(cxId, facilityId);
+
+  patientIds = patientIds ?? (await api.getPatientIds(cxId, facilityId));
   const patients = await Promise.all(patientIds.map(id => api.getPatient(cxId, id)));
   return { npi: facility.npi, patients };
 }
