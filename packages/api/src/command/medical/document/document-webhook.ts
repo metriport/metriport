@@ -1,12 +1,11 @@
 import { PatientData } from "@metriport/core/domain/patient";
+import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { out } from "@metriport/core/util";
 import { capture } from "@metriport/core/util/notifications";
 import { WebhookMetadata } from "@metriport/shared/medical";
-import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { PatientSourceIdentifierMap } from "../../../domain/patient-mapping";
 import { Product } from "../../../domain/product";
 import { MAPIWebhookType } from "../../../domain/webhook";
-import { patientEvents } from "../../../event/medical/patient-event";
 import { DocumentBulkUrlDTO } from "../../../routes/medical/dtos/document-bulk-downloadDTO";
 import { DocumentReferenceDTO } from "../../../routes/medical/dtos/documentDTO";
 import { getSettingsOrFail } from "../../settings/getSettings";
@@ -112,8 +111,6 @@ export const processPatientDocumentRequest = async (
         progressType
       );
     }
-
-    patientEvents().emitCanvasIntegration({ id: patientId, cxId, metadata: cxMetadata, whType });
 
     const shouldReportUsage =
       status === MAPIWebhookStatus.completed &&
