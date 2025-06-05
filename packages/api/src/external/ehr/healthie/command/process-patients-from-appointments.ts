@@ -1,6 +1,6 @@
+import { buildEhrSyncPatientHandler } from "@metriport/core/external/ehr/command/sync-patient/ehr-sync-patient-factory";
 import HealthieApi from "@metriport/core/external/ehr/healthie";
-import { buildHealthieLinkPatientHandler } from "@metriport/core/external/ehr/healthie/link-patient/healthie-link-patient-factory";
-import { buildEhrSyncPatientHandler } from "@metriport/core/external/ehr/sync-patient/ehr-sync-patient-factory";
+import { buildHealthieLinkPatientHandler } from "@metriport/core/external/ehr/healthie/command/link-patient/healthie-link-patient-factory";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
@@ -33,8 +33,7 @@ import {
 dayjs.extend(duration);
 
 const appointmentsLookForward = dayjs.duration(1, "day");
-const appointmentsLookForward48hr = dayjs.duration(2, "day");
-const appointmentsLookForward48hrOffset = dayjs.duration(1, "day");
+const oneDayOffset = dayjs.duration(1, "day");
 
 type GetAppointmentsParams = {
   cxId: string;
@@ -220,8 +219,8 @@ async function getAppointmentsFromApi({
   }
   if (lookupMode === LookupModes.Appointments48hr) {
     const { startRange, endRange } = getLookForwardTimeRangeWithOffset({
-      lookForward: appointmentsLookForward48hr,
-      offset: appointmentsLookForward48hrOffset,
+      lookForward: appointmentsLookForward,
+      offset: oneDayOffset,
     });
     log(`Getting appointments from ${startRange} to ${endRange}`);
     return await api.getAppointments({
