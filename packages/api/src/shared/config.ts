@@ -336,6 +336,10 @@ export class Config {
     return getEnvVar("EHR_ECLINICALWORKS_ENVIRONMENT");
   }
 
+  static getTouchWorksEnv(): string | undefined {
+    return getEnvVar("EHR_TOUCHWORKS_ENVIRONMENT");
+  }
+
   static getRateLimitTableName(): string | undefined {
     return getEnvVar("RATE_LIMIT_TABLE_NAME");
   }

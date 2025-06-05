@@ -1,17 +1,9 @@
 import Router from "express-promise-router";
-import athena from "./athenahealth";
-import canvas from "./canvas";
-import eclinicalworks from "./eclinicalworks";
-import elation from "./elation";
-import healthie from "./healthie";
+import { processEhrId } from "../../middlewares/ehr/middleware";
+import ehr from "./ehr";
 
 const routes = Router();
 
-// EHRs
-routes.use("/athenahealth", athena);
-routes.use("/canvas", canvas);
-routes.use("/elation", elation);
-routes.use("/healthie", healthie);
-routes.use("/eclinicalworks", eclinicalworks);
+routes.use("/:ehrId", processEhrId, ehr);
 
 export default routes;

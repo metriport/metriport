@@ -22,6 +22,8 @@ import {
 } from "./healthie/auth/middleware";
 import healthieDash from "./healthie/routes/dash";
 import healthieWebhooks from "./healthie/routes/webhook";
+import { processCxIdDash as processCxIdTouchWorksDash } from "./touchworks/auth/middleware";
+import touchworksDash from "./touchworks/routes/dash";
 
 const routes = Router();
 
@@ -30,6 +32,7 @@ routes.use("/canvas", processCxIdCanvasDash, checkMAPIAccess, canvasDash);
 routes.use("/elation", processCxIdElationDash, checkMAPIAccess, elationDash);
 routes.use("/healthie", processCxIdHealthieDash, checkMAPIAccess, healthieDash);
 routes.use("/eclinicalworks", processCxIdEclinicalworksDash, checkMAPIAccess, eclinicalworksDash);
+routes.use("/touchworks", processCxIdTouchWorksDash, checkMAPIAccess, touchworksDash);
 
 routes.use("/webhook/canvas", processCxIdCanvasWebhooks, checkMAPIAccess, canvasWebhooks);
 routes.use("/webhook/elation", processCxIdElationWebhooks, checkMAPIAccess, elationWebhooks);

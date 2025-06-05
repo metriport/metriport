@@ -1,9 +1,9 @@
 import Router from "express-promise-router";
+import { processEhrId } from "../../middlewares/ehr/middleware";
 import athena from "./athenahealth";
 import canvas from "./canvas";
 import elation from "./elation";
 import healthie from "./healthie";
-import { processEhrId } from "./middleware";
 import patient from "./patient";
 
 const routes = Router();
