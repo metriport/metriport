@@ -8,7 +8,7 @@ export function getConsolidatedIngestionConnectorSettings() {
     queue: {
       fifo: true,
       createRetryLambda: false,
-      maxReceiveCount: 2,
+      maxReceiveCount: 1,
       alarmMaxAgeOfOldestMessage: Duration.seconds(lambdaTimeout.toSeconds() * 3),
       maxMessageCountAlarmThreshold: 5_000,
       visibilityTimeout: Duration.seconds(lambdaTimeout.toSeconds() * 2 + 1),
