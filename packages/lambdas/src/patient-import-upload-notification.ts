@@ -1,8 +1,6 @@
 import { PatientImportParseRequest } from "@metriport/core/command/patient-import/steps/parse/patient-import-parse";
 import { PatientImportParseCloud } from "@metriport/core/command/patient-import/steps/parse/patient-import-parse-cloud";
 import { S3Utils } from "@metriport/core/external/aws/s3";
-import { sendToSlack } from "@metriport/core/external/slack/index";
-import { Config } from "@metriport/core/util/config";
 import { errorToString, MetriportError } from "@metriport/shared";
 import { fromS3Metadata } from "@metriport/shared/domain/patient/patient-import/metadata";
 import { S3Event } from "aws-lambda";
@@ -13,9 +11,7 @@ import { getEnvOrFail } from "./shared/env";
 capture.init();
 
 const region = getEnvOrFail("AWS_REGION");
-const slackNotificationUrl = getEnvOrFail("SLACK_NOTIFICATION_URL");
 const patientImportParseLambdaName = getEnvOrFail("PATIENT_IMPORT_PARSE_LAMBDA_NAME");
-const isSandbox = Config.isSandbox();
 
 // TODO move to capture.wrapHandler()
 export async function handler(event: S3Event) {
@@ -50,23 +46,6 @@ export async function handler(event: S3Event) {
           `Missing cxId or jobId in sourceKey ${sourceKey} - cxId: ${cxId}, jobId: ${jobId}`
         );
       }
-
-      const subjectSuffix = isSandbox
-        ? " - :package: `SANDBOX` :package:"
-        : isDev
-        ? " - :nerd_face: `Dev` :nerd_face:"
-        : "";
-      const msgPrefix = isDev ? "[:warning: To continue, call the internal endpoint]\n" : "";
-      await sendToSlack(
-        {
-          subject: `New bulk patient import initiated` + subjectSuffix,
-          message:
-            msgPrefix +
-            `Customer: ${cxId}\nJob ID: ${jobId}\nS3 bucket: ${sourceBucket}\nS3 key (file): ${sourceKey}`,
-          emoji: ":info:",
-        },
-        slackNotificationUrl
-      );
 
       if (isDev) {
         console.log(
