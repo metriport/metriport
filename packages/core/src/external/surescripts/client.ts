@@ -369,12 +369,15 @@ export class SurescriptsSftpClient extends SftpClient {
     };
   }
 
-  async readFileContentsFromSurescripts(fileName: string): Promise<string | undefined> {
+  async readFileContentsFromSurescripts(
+    fileName: string,
+    decompress = false
+  ): Promise<string | undefined> {
     if (!(await this.exists(fileName))) {
       return undefined;
     }
     const content = await this.read(fileName, {
-      decompress: fileName.endsWith(".gz") || fileName.endsWith(".gz.rsp"),
+      decompress: decompress || fileName.endsWith(".gz") || fileName.endsWith(".gz.rsp"),
     });
     return content.toString("ascii");
   }

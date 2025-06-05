@@ -9,13 +9,15 @@ const program = new Command();
 program
   .name("read")
   .argument("<fileName>", "The file to read")
+  .option("-d, --decompress", "Decompress the file")
   .description("Reads a file from the Surescripts SFTP server and displays its contents")
   .showHelpAfterError()
   .version("1.0.0")
   .action(async (fileName: string) => {
+    const { decompress } = program.opts();
     const client = new SurescriptsSftpClient({});
     await client.connect();
-    const content = await client.readFileContentsFromSurescripts(fileName);
+    const content = await client.readFileContentsFromSurescripts(fileName, !!decompress);
     await client.disconnect();
 
     if (content != undefined) {
