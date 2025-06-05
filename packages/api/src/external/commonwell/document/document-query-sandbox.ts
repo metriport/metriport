@@ -1,5 +1,6 @@
 import { Bundle } from "@medplum/fhirtypes";
 import { conversionBundleSuffix } from "@metriport/core/command/consolidated/consolidated-create";
+import { dataPipelineEvents } from "@metriport/core/command/data-pipeline/event";
 import { createFilePath } from "@metriport/core/domain/filename";
 import { Patient } from "@metriport/core/domain/patient";
 import { executeWithRetriesS3, S3Utils } from "@metriport/core/external/aws/s3";
@@ -53,6 +54,8 @@ export async function sandboxGetDocRefsAndUpsert({
 
   const patientData = getSandboxSeedData(patient.data.firstName);
   if (!patientData) {
+    log(`No patient data, marking doc download as completed`);
+
     await appendDocQueryProgress({
       patient,
       downloadProgress: {
@@ -69,6 +72,11 @@ export async function sandboxGetDocRefsAndUpsert({
       requestId,
       []
     );
+    dataPipelineEvents().succeeded({
+      cxId,
+      patientId,
+      requestId,
+    });
     return;
   }
 
@@ -189,6 +197,11 @@ export async function sandboxGetDocRefsAndUpsert({
     MAPIWebhookStatus.completed,
     ""
   );
+  dataPipelineEvents().succeeded({
+    cxId,
+    patientId,
+    requestId,
+  });
 
   return;
 }

@@ -1,3 +1,4 @@
+import { dataPipelineEvents } from "@metriport/core/command/data-pipeline/event";
 import {
   ConvertResult,
   DocumentQueryProgress,
@@ -14,6 +15,14 @@ import { getCWData } from "../../../external/commonwell/patient";
 import { tallyDocQueryProgress } from "../../../external/hie/tally-doc-query-progress";
 import { recreateConsolidated } from "../patient/consolidated-recreate";
 
+/*
+ * TODO this is too convoluted, we should split this into multiple functions.
+ * 1. a function that just calculates the status of the document conversion.
+ * 2. a function that just re-creates the consolidated bundle.
+ * 3. a function that just converts the consolidated bundle to PDF (MR - Medical Record)
+ *
+ * Then, add a funciton that ties then together based on the response of each one of them.
+ */
 export async function calculateDocumentConversionStatus({
   patientId,
   cxId,
@@ -118,6 +127,14 @@ export async function calculateDocumentConversionStatus({
       context: "Post-DQ getConsolidated GLOBAL",
       requestId,
       isDq: true,
+    });
+  }
+
+  if (isGlobalConversionCompleted) {
+    dataPipelineEvents().succeeded({
+      cxId,
+      patientId,
+      requestId,
     });
   }
 }
