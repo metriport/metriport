@@ -31,6 +31,8 @@ const MAX_AGE = dayjs.duration(24, "hours");
 const region = Config.getAWSRegion();
 const responsesBucket = Config.getEhrResponsesBucketName();
 
+export const paginateWaitTime = dayjs.duration(5, "seconds").asMilliseconds();
+
 function getS3UtilsInstance(): S3Utils {
   return new S3Utils(region);
 }
