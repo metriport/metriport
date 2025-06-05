@@ -17,7 +17,7 @@ export type IncomingFlatFile = IncomingFile<FlatFileHeader, FlatFileDetail, Flat
 
 export const flatFileHeaderSchema = z.object({
   recordType: z.enum(["HDR"]),
-  version: z.enum(["3.0"]),
+  version: z.string(),
   receiverId: z.string(),
   senderId: z.string(),
   populationId: z.string(),
@@ -40,7 +40,7 @@ export const flatFileHeaderOrder: IncomingFileRowSchema<FlatFileHeader> = [
   {
     field: 1,
     key: "version",
-    fromSurescripts: fromSurescriptsEnum(["3.0"]),
+    fromSurescripts: fromSurescriptsString(),
   },
   {
     field: 2,

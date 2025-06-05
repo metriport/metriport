@@ -503,7 +503,7 @@ export class SurescriptsSftpClient extends SftpClient {
     if (!requestFileNameWithoutExtension || !surescriptsUnixTimestamp?.match(/^\d+$/)) {
       return undefined;
     }
-    const compression = maybeGzExtract === "gz-extract";
+    const compression = maybeGzExtract === "gz" || maybeGzExtract === "gz-extract";
     if (!compression && maybeGzExtract !== "rsp") {
       return undefined;
     }
