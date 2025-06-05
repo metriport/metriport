@@ -2,7 +2,7 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
 import { Bundle, Resource, ResourceType } from "@medplum/fhirtypes";
-import { getReferencesFromResources } from "@metriport/core/external/fhir/shared/bundle";
+import { getReferencesFromResources } from "@metriport/core/external/fhir/bundle/bundle";
 import { sleep } from "@metriport/shared";
 import { formatNumber } from "@metriport/shared/common/numbers";
 import { Command } from "commander";

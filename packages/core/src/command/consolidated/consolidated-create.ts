@@ -11,7 +11,7 @@ import { executeWithRetriesS3, S3Utils } from "../../external/aws/s3";
 import { dangerouslyDeduplicate } from "../../external/fhir/consolidated/deduplicate";
 import { getDocuments as getDocumentReferences } from "../../external/fhir/document/get-documents";
 import { toFHIR as patientToFhir } from "../../external/fhir/patient/conversion";
-import { buildBundleEntry, buildCollectionBundle } from "../../external/fhir/shared/bundle";
+import { buildBundleEntry, buildCollectionBundle } from "../../external/fhir/bundle/bundle";
 import { insertSourceDocumentToAllDocRefMeta } from "../../external/fhir/shared/meta";
 import { capture, executeAsynchronously, out } from "../../util";
 import { Config } from "../../util/config";

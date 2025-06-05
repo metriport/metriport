@@ -2,7 +2,9 @@ import { Bundle, Resource } from "@medplum/fhirtypes";
 import { MetriportError } from "@metriport/shared";
 import { timed } from "@metriport/shared/util/duration";
 import { Patient } from "../../../../domain/patient";
+import { mapEntryToResource } from "../../../../external/fhir/bundle/entry";
 import { normalize } from "../../../../external/fhir/consolidated/normalize";
+import { isNotPatient } from "../../../../external/fhir/shared";
 import { isDerivedFromExtension } from "../../../../external/fhir/shared/extensions/derived-from";
 import { OpenSearchFhirIngestor } from "../../../../external/opensearch/fhir-ingestor";
 import { OnBulkItemError } from "../../../../external/opensearch/shared/bulk";
@@ -33,11 +35,11 @@ export async function ingestPatientConsolidated({
     ingestor.delete({ cxId, patientId }),
   ]);
 
-  const resources =
-    bundle.entry?.flatMap(entry => {
-      const resource = filterOutPatientAndRemoveDerivedFromExtensions(entry.resource);
-      return resource ?? [];
-    }) ?? [];
+  const entries = bundle.entry ?? [];
+  const resources = entries
+    .map(mapEntryToResource)
+    .filter(isNotPatient)
+    .flatMap(r => (r ? removeDerivedFromExtensions(r) : []));
 
   log("Done, calling ingestBulk...");
   const startedAt = Date.now();
@@ -57,11 +59,7 @@ export async function ingestPatientConsolidated({
 /**
  * WARNING: it mutates the resource in place, removing "derived-from" extensions.
  */
-export function filterOutPatientAndRemoveDerivedFromExtensions(
-  mutatingResource?: Resource
-): Resource | undefined {
-  if (!mutatingResource) return undefined;
-  if (mutatingResource.resourceType === "Patient") return undefined;
+export function removeDerivedFromExtensions(mutatingResource: Resource): Resource {
   if ("extension" in mutatingResource && mutatingResource.extension) {
     mutatingResource.extension = mutatingResource.extension.filter(e => !isDerivedFromExtension(e));
   }

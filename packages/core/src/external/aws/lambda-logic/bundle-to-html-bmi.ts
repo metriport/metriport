@@ -408,7 +408,7 @@ export function bundleToHtmlBmi(fhirBundle: Bundle, brief?: Brief): string {
   return htmlPage;
 }
 
-// TODO: Use the version from "@metriport/core/external/fhir/shared/bundle.ts"
+// TODO: Use the version from "@metriport/core/external/fhir/bundle/bundle.ts"
 function extractFhirTypesFromBundle(bundle: Bundle): {
   diagnosticReports: DiagnosticReport[];
   patient?: Patient | undefined;

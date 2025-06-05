@@ -6,7 +6,7 @@ import {
 import { isDocumentReference } from "@metriport/core/external/fhir/document/document-reference";
 import { toFHIR as orgToFHIR } from "@metriport/core/external/fhir/organization/conversion";
 import { toFHIR as patientToFHIR } from "@metriport/core/external/fhir/patient/conversion";
-import { buildSearchSetBundle } from "@metriport/core/external/fhir/shared/bundle";
+import { buildSearchSetBundle } from "@metriport/core/external/fhir/bundle/bundle";
 import { ensureCcdExists } from "@metriport/core/shareback/ensure-ccd-exists";
 import { getMetadataDocumentContents } from "@metriport/core/shareback/metadata/get-metadata-xml";
 import { parseExtrinsicObjectXmlToDocumentReference } from "@metriport/core/shareback/metadata/parse-metadata-xml";

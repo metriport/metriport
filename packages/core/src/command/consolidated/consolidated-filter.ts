@@ -10,7 +10,7 @@ import {
   buildBundleEntry,
   getReferencesFromResources,
   ReferenceWithIdAndType,
-} from "../../external/fhir/shared/bundle";
+} from "../../external/fhir/bundle/bundle";
 import { out } from "../../util";
 import { createConsolidatedFromConversions } from "./consolidated-create";
 import { filterBundleByDate } from "./consolidated-filter-by-date";

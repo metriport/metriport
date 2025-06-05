@@ -2,7 +2,7 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
 import { Bundle, Resource } from "@medplum/fhirtypes";
-import { getReferencesFromResources } from "@metriport/core/external/fhir/shared/bundle";
+import { getReferencesFromResources } from "@metriport/core/external/fhir/bundle/bundle";
 import { getFileContents, makeDirIfNeeded } from "@metriport/core/util/fs";
 import { sleep } from "@metriport/core/util/sleep";
 import dayjs from "dayjs";

@@ -4,7 +4,7 @@ import { out } from "../../util";
 import { Config } from "../../util/config";
 import { HL7_FILE_EXTENSION, JSON_FILE_EXTENSION } from "../../util/mime";
 import { S3Utils } from "../aws/s3";
-import { mergeBundles } from "./shared/utils";
+import { mergeBundles } from "./bundle/utils";
 
 const s3Utils = new S3Utils(Config.getAWSRegion());
 
