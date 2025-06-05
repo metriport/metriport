@@ -13,7 +13,9 @@ program
   .version("1.0.0")
   .action(async () => {
     const client = new SurescriptsSftpClient({});
+    await client.connect();
     const files = await client.listSurescripts();
+    await client.disconnect();
 
     const directories = Object.keys(files) as Array<keyof typeof files>;
     for (const directory of directories) {

@@ -4,7 +4,7 @@ import { Config } from "../../util/config";
 import { IdGenerator, createIdGenerator } from "./id-generator";
 import { SftpClient, SftpConfig } from "../sftp/client";
 import { SurescriptsDirectory, SurescriptsSynchronizeEvent } from "./types";
-import { getS3Key, getSftpDirectory, getSftpFileName } from "./shared";
+import { getS3Directory, getS3Key, getSftpDirectory, getSftpFileName } from "./shared";
 import { INCOMING_NAME, OUTGOING_NAME, HISTORY_NAME } from "./constants";
 import { S3Utils } from "../aws/s3";
 import { toSurescriptsPatientLoadFile, canGeneratePatientLoadFile } from "./message";
@@ -372,7 +372,7 @@ export class SurescriptsSftpClient extends SftpClient {
   async copyFromSurescripts(event: SurescriptsSynchronizeEvent): Promise<SurescriptsOperation[]> {
     const operations: SurescriptsOperation[] = [];
     const sftpFiles = await this.list(getSftpDirectory(INCOMING_NAME));
-    const s3Files = await this.listFilesInS3(getS3Key(INCOMING_NAME, ""));
+    const s3Files = await this.listFilesInS3(getS3Directory(INCOMING_NAME));
     const s3FileSet = new Set(s3Files);
     event.debug?.("Found " + s3Files.length + " files in S3");
 
