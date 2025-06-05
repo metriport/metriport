@@ -863,13 +863,10 @@ class CanvasApi {
     toDate: Date;
   }): Promise<SlimBookedAppointment[]> {
     const { debug } = out(`Canvas getAppointments - cxId ${cxId} practiceId ${this.practiceId}`);
-    const params = {
-      status: "booked",
-      ...(fromDate && { date: `ge${this.formatDate(fromDate.toISOString()) ?? ""}` }),
-      ...(toDate && { date: `lt${this.formatDate(toDate.toISOString()) ?? ""}` }),
-      _count: "1000",
-    };
+    const params = { status: "booked", _count: "1000" };
     const urlParams = new URLSearchParams(params);
+    urlParams.append("date", `ge${this.formatDate(fromDate.toISOString())}`);
+    urlParams.append("date", `lt${this.formatDate(toDate.toISOString())}`);
     const appointmentUrl = `/Appointment?${urlParams.toString()}`;
     const additionalInfo = {
       cxId,
