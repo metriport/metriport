@@ -827,7 +827,10 @@ class CanvasApi {
     const { debug } = out(
       `Canvas getResourceBundleByResourceId - cxId ${cxId} practiceId ${this.practiceId} metriportPatientId ${metriportPatientId} canvasPatientId ${canvasPatientId} resourceType ${resourceType}`
     );
-    if (!isSupportedCanvasResource(resourceType) && !isSupportedCanvasResourceById(resourceType)) {
+    if (
+      !isSupportedCanvasResource(resourceType) &&
+      !isSupportedCanvasReferenceResource(resourceType)
+    ) {
       throw new BadRequestError("Invalid resource type", undefined, {
         canvasPatientId,
         resourceId,
