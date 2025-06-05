@@ -357,16 +357,24 @@ export class SurescriptsSftpClient extends SftpClient {
     return [];
   }
 
-  async listSurescripts(): Promise<Record<SurescriptsDirectory, string[]>> {
+  async listAllFilesInSurescripts(): Promise<Record<SurescriptsDirectory, string[]>> {
     const outgoingFiles = await this.list(getSftpDirectory(OUTGOING_NAME));
     const incomingFiles = await this.list(getSftpDirectory(INCOMING_NAME));
     const historyFiles = await this.list(getSftpDirectory(HISTORY_NAME));
 
     return {
-      from_surescripts: outgoingFiles,
-      to_surescripts: incomingFiles,
+      to_surescripts: outgoingFiles,
+      from_surescripts: incomingFiles,
       history: historyFiles,
     };
+  }
+
+  async readFileContentsFromSurescripts(fileName: string): Promise<string | undefined> {
+    if (!(await this.exists(fileName))) {
+      return undefined;
+    }
+    const content = await this.read(fileName);
+    return content.toString("ascii");
   }
 
   async copyFromSurescripts(event: SurescriptsSynchronizeEvent): Promise<SurescriptsOperation[]> {

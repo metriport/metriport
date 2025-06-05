@@ -14,7 +14,7 @@ program
   .action(async () => {
     const client = new SurescriptsSftpClient({});
     await client.connect();
-    const files = await client.listSurescripts();
+    const files = await client.listAllFilesInSurescripts();
     await client.disconnect();
 
     const directories = Object.keys(files) as Array<keyof typeof files>;
