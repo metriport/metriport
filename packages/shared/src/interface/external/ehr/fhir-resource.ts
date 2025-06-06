@@ -42,7 +42,7 @@ export const ehrStrictFhirResourceWrapperSchema = z.object({
 export type EhrStrictFhirResourceWrapper = z.infer<typeof ehrStrictFhirResourceWrapperSchema>;
 
 export const ehrStrictFhirResourceBundleSchema = ehrFhirBundleSharedFieldsSchema.extend({
-  entry: ehrStrictFhirResourceWrapperSchema.array(),
+  entry: ehrStrictFhirResourceWrapperSchema.array().optional(),
 });
 export type EhrStrictFhirResourceBundle = z.infer<typeof ehrStrictFhirResourceBundleSchema>;
 

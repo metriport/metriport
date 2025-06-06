@@ -47,7 +47,7 @@ import { RXNORM_URL as RXNORM_SYSTEM } from "../../../util/constants";
 import { out } from "../../../util/log";
 import {
   ApiConfig,
-  convertToValidStrictBundle,
+  convertBundleToValidStrictBundle,
   fetchEhrBundleUsingCache,
   fetchEhrFhirResourcesWithPagination,
   formatDate,
@@ -774,7 +774,7 @@ class CanvasApi {
             debug,
             useFhir: true,
           });
-          return convertToValidStrictBundle(bundle, resourceType, canvasPatientId);
+          return convertBundleToValidStrictBundle(bundle, resourceType, canvasPatientId);
         },
         url: resourceTypeUrl,
       });

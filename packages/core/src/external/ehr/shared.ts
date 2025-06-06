@@ -660,7 +660,7 @@ export async function fetchEhrFhirResourcesWithPagination({
   return fetchEhrFhirResourcesWithPagination({ makeRequest, url: nextUrl, acc });
 }
 
-export function convertToValidStrictBundle(
+export function convertBundleToValidStrictBundle(
   bundle: EhrFhirResourceBundle,
   resourceType: string,
   patientId?: string
@@ -671,6 +671,7 @@ export function convertToValidStrictBundle(
       zodError: errorToString(strictBundle.error),
     });
   }
+  if (!strictBundle.data.entry || strictBundle.data.entry.length < 1) return strictBundle.data;
   if (!patientId) return strictBundle.data;
   for (const entry of strictBundle.data.entry) {
     if (entry.resource.resourceType !== resourceType) {

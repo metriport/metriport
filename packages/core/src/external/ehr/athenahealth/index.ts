@@ -113,7 +113,7 @@ import { out } from "../../../util/log";
 import { capture } from "../../../util/notifications";
 import {
   ApiConfig,
-  convertToValidStrictBundle,
+  convertBundleToValidStrictBundle,
   createDataParams,
   fetchEhrBundleUsingCache,
   fetchEhrFhirResourcesWithPagination,
@@ -1488,7 +1488,7 @@ class AthenaHealthApi {
             debug,
             useFhir: true,
           });
-          return convertToValidStrictBundle(bundle, resourceType, athenaPatientId);
+          return convertBundleToValidStrictBundle(bundle, resourceType, athenaPatientId);
         },
         url: resourceTypeUrl,
       });
