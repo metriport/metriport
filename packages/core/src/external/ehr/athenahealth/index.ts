@@ -1008,9 +1008,13 @@ class AthenaHealthApi {
       {
         allergenid: allergenReference.allergenid,
         allergenname: allergenReference.allergenname,
-        criticality,
+        ...(existingAllergy
+          ? {
+              criticality: existingAllergy.criticality,
+              onsetdate: existingAllergy.onsetdate,
+            }
+          : { criticality, onsetdate: this.formatDate(onsetDate) }),
         note: "Added via Metriport App",
-        onsetdate: this.formatDate(onsetDate),
         reactions: allReactions,
       },
     ];
