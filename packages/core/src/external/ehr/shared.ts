@@ -663,7 +663,7 @@ export async function fetchEhrFhirResourcesWithPagination({
 export function convertToValidStrictBundle(
   bundle: EhrFhirResourceBundle,
   resourceType: string,
-  patientId: string
+  patientId?: string
 ): EhrStrictFhirResourceBundle {
   const strictBundle = ehrStrictFhirResourceBundleSchema.safeParse(bundle);
   if (!strictBundle.success) {
@@ -671,6 +671,7 @@ export function convertToValidStrictBundle(
       zodError: errorToString(strictBundle.error),
     });
   }
+  if (!patientId) return strictBundle.data;
   for (const entry of strictBundle.data.entry) {
     if (entry.resource.resourceType !== resourceType) {
       throw new BadRequestError("Invalid resource type in bundle", undefined, {
