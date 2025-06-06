@@ -6,7 +6,7 @@ import { makeLocation } from "../../../../../external/fhir/__tests__/location";
 import { makePatient, PatientWithId } from "../../../../../external/fhir/__tests__/patient";
 import { makeReference } from "../../../../../external/fhir/__tests__/reference";
 import { FhirSearchResult } from "../../../../../external/opensearch/index-based-on-fhir";
-import { OpenSearchFhirSearcher } from "../../../../../external/opensearch/lexical/fhir-searcher";
+import { OpenSearchConsolidatedSearcher } from "../../../../../external/opensearch/lexical/fhir-searcher";
 import { getEntryId as getEntryIdFromOpensearch } from "../../../../../external/opensearch/shared/id";
 import { makeCondition } from "../../../../../fhir-to-cda/cda-templates/components/__tests__/make-condition";
 import {
@@ -29,7 +29,7 @@ describe("search-consolidated", () => {
       patient = makePatient();
       patientId = patient.id;
       getByIds_mock = jest
-        .spyOn(OpenSearchFhirSearcher.prototype, "getByIds")
+        .spyOn(OpenSearchConsolidatedSearcher.prototype, "getByIds")
         .mockResolvedValue([]);
       toEntryId = makeToEntryId(cxId, patientId);
       toGetByIdsResultEntry = makeToGetByIdsResultEntry(cxId, patientId, toEntryId);

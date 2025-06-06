@@ -1,6 +1,9 @@
 import { errorToString } from "@metriport/shared";
 import { Client } from "@opensearch-project/opensearch";
+import { Features } from "../../../domain/features";
 import { capture, out } from "../../../util";
+import { Config } from "../../../util/config";
+import { CloudWatchUtils, Metrics, withMetrics } from "../../aws/cloudwatch";
 import {
   OpenSearchConfigDirectAccess,
   OpenSearchResponse,
@@ -13,7 +16,7 @@ import { getEntryId } from "../shared/id";
 import { createSearchByIdsQuery } from "../shared/query";
 import { createLexicalSearchQuery, createQueryHasData } from "./query";
 
-export type OpenSearchFhirSearcherConfig = OpenSearchConfigDirectAccess;
+export type OpenSearchConsolidatedSearcherConfig = OpenSearchConfigDirectAccess;
 
 export type SearchRequest = {
   cxId: string;
@@ -27,8 +30,15 @@ export type GetByIdRequest = {
   resourceId: string;
 };
 
-export class OpenSearchFhirSearcher {
-  constructor(readonly config: OpenSearchFhirSearcherConfig) {}
+export class OpenSearchConsolidatedSearcher {
+  private readonly cloudWatchUtils: CloudWatchUtils;
+
+  constructor(readonly config: OpenSearchConsolidatedSearcherConfig) {
+    this.cloudWatchUtils = new CloudWatchUtils(
+      Config.getAWSRegion(),
+      Features.OpenSearchConsolidatedSearcher
+    );
+  }
 
   async search({ cxId, patientId, query }: SearchRequest): Promise<FhirSearchResult[]> {
     const { log } = out(`${this.constructor.name}.search - cx ${cxId}, pt ${patientId}`);
@@ -44,12 +54,19 @@ export class OpenSearchFhirSearcher {
       query,
     });
 
-    const response = await paginatedSearch<FhirSearchResult>({
-      client,
-      indexName,
-      searchRequest,
-      mapResults,
-    });
+    const metrics: Metrics = {};
+    const response = await withMetrics(
+      () =>
+        paginatedSearch<FhirSearchResult>({
+          client,
+          indexName,
+          searchRequest,
+          mapResults,
+        }),
+      "search",
+      metrics
+    );
+    await this.cloudWatchUtils.reportMetrics(metrics);
 
     log(`Successfully searched, got ${response.count} results`);
     return response.items;
@@ -65,7 +82,13 @@ export class OpenSearchFhirSearcher {
     log(`Checking if data exists on index ${indexName}...`);
     const searchRequest = createQueryHasData({ cxId, patientId });
 
-    const response = await client.search({ index: indexName, body: searchRequest });
+    const metrics: Metrics = {};
+    const response = await withMetrics(
+      () => client.search({ index: indexName, body: searchRequest }),
+      "hasData",
+      metrics
+    );
+    await this.cloudWatchUtils.reportMetrics(metrics);
 
     const body = response.body as OpenSearchResponse<FhirSearchResult>;
     const hasData = body.hits.hits ? body.hits.hits.length > 0 : false;
@@ -134,12 +157,19 @@ export class OpenSearchFhirSearcher {
       ids,
     });
 
-    const response = await paginatedSearch<FhirSearchResult>({
-      client,
-      indexName,
-      searchRequest,
-      mapResults,
-    });
+    const metrics: Metrics = {};
+    const response = await withMetrics(
+      () =>
+        paginatedSearch<FhirSearchResult>({
+          client,
+          indexName,
+          searchRequest,
+          mapResults,
+        }),
+      "getByIds",
+      metrics
+    );
+    await this.cloudWatchUtils.reportMetrics(metrics);
 
     return response.items;
   }
