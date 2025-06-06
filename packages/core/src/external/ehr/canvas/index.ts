@@ -774,7 +774,7 @@ class CanvasApi {
       acc: EhrFhirResource[] | undefined = []
     ): Promise<EhrFhirResource[]> {
       if (!url) return acc;
-      await sleep(paginateWaitTime);
+      await sleep(paginateWaitTime.asMilliseconds());
       const ehrFhirResourceBundle = await api.makeRequest<EhrFhirResourceBundle>({
         cxId,
         patientId: canvasPatientId,
@@ -880,7 +880,7 @@ class CanvasApi {
       acc: Appointment[] | undefined = []
     ): Promise<Appointment[]> {
       if (!url) return acc;
-      await sleep(paginateWaitTime);
+      await sleep(paginateWaitTime.asMilliseconds());
       const appointmentListResponse = await api.makeRequest<AppointmentListResponse>({
         cxId,
         s3Path: "appointments",

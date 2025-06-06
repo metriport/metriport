@@ -212,6 +212,7 @@ export class Config {
   static getEhrGetAppointmentsLambdaName(): string {
     return getEnvVarOrFail("EHR_GET_APPOINTMENTS_LAMBDA_NAME");
   }
+
   static getTermServerUrl(): string | undefined {
     return getEnvVar("TERM_SERVER_URL");
   }

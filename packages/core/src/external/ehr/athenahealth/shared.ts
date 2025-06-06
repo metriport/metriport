@@ -1,10 +1,11 @@
+import { BadRequestError } from "@metriport/shared";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
-import CanvasApi from ".";
+import AthenaHealthApi, { isAthenaEnv } from ".";
 import { getSecrets } from "../api/get-client-key-and-secret";
 import { getTokenInfo } from "../api/get-token-info";
 import { getSecretsOauthSchema } from "../secrets";
 
-export async function createCanvasClient({
+export async function createAthenaHealthClient({
   cxId,
   practiceId,
   tokenId,
@@ -16,14 +17,21 @@ export async function createCanvasClient({
   const secrets = await getSecrets({
     cxId,
     practiceId,
-    ehr: EhrSources.canvas,
+    ehr: EhrSources.athena,
     schema: getSecretsOauthSchema,
   });
+  const environment = secrets.environment;
+  if (!isAthenaEnv(environment)) {
+    throw new BadRequestError("Invalid environment", undefined, {
+      ehr: EhrSources.athena,
+      environment,
+    });
+  }
   const twoLeggedAuthTokenInfo = tokenId ? await getTokenInfo(tokenId) : undefined;
-  return await CanvasApi.create({
+  return await AthenaHealthApi.create({
     twoLeggedAuthTokenInfo,
     practiceId,
-    environment: secrets.environment,
+    environment,
     clientKey: secrets.clientKey,
     clientSecret: secrets.clientSecret,
   });
