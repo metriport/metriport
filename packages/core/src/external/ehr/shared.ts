@@ -25,7 +25,9 @@ import { buildDayjs } from "@metriport/shared/common/date";
 import {
   EhrFhirResource,
   EhrFhirResourceBundle,
+  EhrStrictFhirResourceBundle,
   createBundleFromResourceList,
+  ehrStrictFhirResourceBundleSchema,
   fhirOperationOutcomeSchema,
 } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { EhrSource } from "@metriport/shared/interface/external/ehr/source";
@@ -646,7 +648,7 @@ export async function fetchEhrFhirResourcesWithPagination({
   url,
   acc = [],
 }: {
-  makeRequest: (url: string) => Promise<EhrFhirResourceBundle>;
+  makeRequest: (url: string) => Promise<EhrStrictFhirResourceBundle>;
   url: string | undefined;
   acc?: EhrFhirResource[] | undefined;
 }): Promise<EhrFhirResource[]> {
@@ -656,4 +658,38 @@ export async function fetchEhrFhirResourcesWithPagination({
   acc.push(...(fhirResourceBundle.entry ?? []).map(e => e.resource));
   const nextUrl = fhirResourceBundle.link?.find(l => l.relation === "next")?.url;
   return fetchEhrFhirResourcesWithPagination({ makeRequest, url: nextUrl, acc });
+}
+
+export function convertToValidStrictBundle(
+  bundle: EhrFhirResourceBundle,
+  resourceType: string,
+  patientId: string
+): EhrStrictFhirResourceBundle {
+  const strictBundle = ehrStrictFhirResourceBundleSchema.safeParse(bundle);
+  if (!strictBundle.success) {
+    throw new BadRequestError("Invalid bundle", undefined, {
+      zodError: errorToString(strictBundle.error),
+    });
+  }
+  for (const entry of strictBundle.data.entry) {
+    if (entry.resource.resourceType !== resourceType) {
+      throw new BadRequestError("Invalid resource type in bundle", undefined, {
+        resourceType,
+        resourceTypeInBundle: entry.resource.resourceType,
+      });
+    }
+    if (entry.resource.patient && entry.resource.patient.reference !== `Patient/${patientId}`) {
+      throw new BadRequestError("Invalid patient in bundle", undefined, {
+        resourceType,
+        resourceTypeInBundle: entry.resource.resourceType,
+      });
+    }
+    if (entry.resource.subject && entry.resource.subject.reference !== `Patient/${patientId}`) {
+      throw new BadRequestError("Invalid subject in bundle", undefined, {
+        resourceType,
+        resourceTypeInBundle: entry.resource.resourceType,
+      });
+    }
+  }
+  return strictBundle.data;
 }

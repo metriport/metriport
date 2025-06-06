@@ -1,6 +1,6 @@
 import {
-  Bundle,
   AllergyIntolerance,
+  Bundle,
   Coding,
   Condition,
   Immunization,
@@ -9,8 +9,8 @@ import {
   MedicationDispense,
   MedicationStatement,
   Observation,
-  ResourceType,
   Procedure,
+  ResourceType,
 } from "@medplum/fhirtypes";
 import {
   BadRequestError,
@@ -113,6 +113,7 @@ import { out } from "../../../util/log";
 import { capture } from "../../../util/notifications";
 import {
   ApiConfig,
+  convertToValidStrictBundle,
   createDataParams,
   fetchEhrBundleUsingCache,
   fetchEhrFhirResourcesWithPagination,
@@ -152,7 +153,7 @@ const athenaPatientPrefix = "E";
 const athenaDepartmentPrefix = "Department";
 const athenaDateFormat = "MM/DD/YYYY";
 const athenaDateTimeFormat = "MM/DD/YYYY HH:mm:ss";
-const defaultCountOrLimit = "1000";
+const defaultCountOrLimit = 1000;
 const labResultDocumentId = "386265";
 const clinicalNoteDocumentSubclass = "CLINICALDOCUMENT";
 const clinicalNoteDocumentId = "423482";
@@ -182,7 +183,7 @@ vitalSignCodesMapAthena.set("39156-5", "VITALS.BMI");
 const clinicalElementsThatRequireUnits = ["VITALS.WEIGHT", "VITALS.HEIGHT", "VITALS.TEMPERATURE"];
 
 const medicationRequestIntents = ["proposal", "plan", "order", "option"];
-const coverageCount = "50";
+const coverageCount = 50;
 const validObservationResultStatuses = [
   "final",
   "corrected",
@@ -1459,7 +1460,8 @@ class AthenaHealthApi {
     const params = {
       patient: `${this.createPatientId(athenaPatientId)}`,
       "ah-practice": this.createPracticetId(this.practiceId),
-      _count: resourceType === "Coverage" ? coverageCount : defaultCountOrLimit,
+      _count:
+        resourceType === "Coverage" ? coverageCount.toString() : defaultCountOrLimit.toString(),
       ...(resourceType === "MedicationRequest"
         ? { intent: medicationRequestIntents.join(",") }
         : undefined),
@@ -1486,14 +1488,7 @@ class AthenaHealthApi {
             debug,
             useFhir: true,
           });
-          const invalidResource = bundle.entry?.find(e => e.resource.resourceType !== resourceType);
-          if (invalidResource) {
-            throw new BadRequestError("Invalid bundle", undefined, {
-              resourceType,
-              resourceTypeInBundle: invalidResource.resource.resourceType,
-            });
-          }
-          return bundle;
+          return convertToValidStrictBundle(bundle, resourceType, athenaPatientId);
         },
         url: resourceTypeUrl,
       });
@@ -1561,7 +1556,7 @@ class AthenaHealthApi {
     const params = {
       startdate: this.formatDate(startAppointmentDate.toISOString()) ?? "",
       enddate: this.formatDate(endAppointmentDate.toISOString()) ?? "",
-      limit: defaultCountOrLimit,
+      limit: defaultCountOrLimit.toString(),
     };
     const urlParams = new URLSearchParams(params);
     if (departmentIds && departmentIds.length > 0) {
@@ -1623,7 +1618,7 @@ class AthenaHealthApi {
       ...(endProcessedDate && {
         showprocessedenddatetime: this.formatDateTime(endProcessedDate.toISOString()) ?? "",
       }),
-      limit: defaultCountOrLimit,
+      limit: defaultCountOrLimit.toString(),
     };
     const urlParams = new URLSearchParams(params);
     if (departmentIds && departmentIds.length > 0) {
