@@ -833,7 +833,6 @@ class AthenaHealthApi {
         value: value.toString(),
         resultstatus: toTitleCase(resultStatus.toLowerCase()),
         note: "Added via Metriport App",
-        autoclose: "true",
       },
     ];
     const data = {
@@ -842,6 +841,7 @@ class AthenaHealthApi {
       observationdate: this.formatDate(observedDate),
       internalnote: loincCoding.display,
       documenttypeid: labResultDocumentId,
+      autoclose: "true",
     };
     const createdLabResult = await this.makeRequest<CreatedLabResult>({
       cxId,
