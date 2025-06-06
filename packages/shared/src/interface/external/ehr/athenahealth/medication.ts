@@ -14,8 +14,22 @@ export type CreatedMedicationSuccess = z.infer<typeof createdMedicationSuccessSc
 
 const medicationReferenceSchema = z.object({
   medication: z.string(),
-  medicationid: z.number(),
+  medicationid: z.coerce.string(),
 });
 export type MedicationReference = z.infer<typeof medicationReferenceSchema>;
 export const medicationReferencesSchema = medicationReferenceSchema.array();
 export type MedicationReferences = z.infer<typeof medicationReferencesSchema>;
+
+export type MedicationCreateParams = {
+  departmentid: string;
+  providernote: string;
+  unstructuredsig: string;
+  medicationid: string;
+  hidden: boolean;
+  startdate: string | undefined;
+  stopdate: string | undefined;
+  stopreason: string | undefined;
+  patientnote: string | undefined;
+  THIRDPARTYUSERNAME: string | undefined;
+  PATIENTFACINGCALL: string | undefined;
+};
