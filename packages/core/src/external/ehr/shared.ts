@@ -66,19 +66,6 @@ function getS3UtilsInstance(): S3Utils {
   return new S3Utils(region);
 }
 
-export const getSecretsOauthSchema = z.object({
-  environment: z.string(),
-  clientKey: z.string(),
-  clientSecret: z.string(),
-});
-export type GetSecretsOauthResult = z.infer<typeof getSecretsOauthSchema>;
-
-export const getSecretsApiKeySchema = z.object({
-  environment: z.string(),
-  apiKey: z.string(),
-});
-export type GetSecretsApiKeyResult = z.infer<typeof getSecretsApiKeySchema>;
-
 export interface ApiConfig {
   twoLeggedAuthTokenInfo?: JwtTokenInfo | undefined;
   practiceId: string;
