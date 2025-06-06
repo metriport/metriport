@@ -11,7 +11,7 @@ import {
   buildSearchSetBundle,
   getReferencesFromResources,
   ReferenceWithIdAndType,
-} from "../../../../external/fhir/shared/bundle";
+} from "../../../../external/fhir/bundle/bundle";
 import {
   FhirSearchResult,
   rawContentFieldName,

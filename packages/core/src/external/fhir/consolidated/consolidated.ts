@@ -7,7 +7,7 @@ import { out } from "../../../util/log";
 import { capture } from "../../../util/notifications";
 import { makeFhirApi } from "../api/api-factory";
 import { fullDateQueryForResource, getPatientFilter } from "../patient/resource-filter";
-import { buildSearchSetBundle, getReferencesFromResources } from "../shared/bundle";
+import { buildSearchSetBundle, getReferencesFromResources } from "../bundle/bundle";
 import { findDocIdExtension } from "../shared/extensions/doc-id-extension";
 import { getReferencesFromFHIR } from "../shared/references";
 

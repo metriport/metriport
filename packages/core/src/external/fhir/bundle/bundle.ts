@@ -42,7 +42,7 @@ import {
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { cloneDeep, uniq } from "lodash";
-import { isBinary } from ".";
+import { isBinary } from "../shared";
 import { wrapIdInUrnId, wrapIdInUrnUuid } from "../../../util/urn";
 import { isValidUuid } from "../../../util/uuid-v7";
 
