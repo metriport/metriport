@@ -829,8 +829,8 @@ export class CommonWell implements CommonWellAPI {
     meta: RequestMetadata,
     patientId: string
   ): Promise<DocumentQueryFullResponse> {
-    const headers = await this.executeWithRetriesOn500(() => this.buildQueryHeaders(meta));
-    return document.queryFull(this.api, headers, patientId);
+    const headers = await this.buildQueryHeaders(meta);
+    return this.executeWithRetriesOn500(() => document.queryFull(this.api, headers, patientId));
   }
 
   /**
@@ -847,8 +847,10 @@ export class CommonWell implements CommonWellAPI {
     inputUrl: string,
     outputStream: stream.Writable
   ): Promise<void> {
-    const headers = await this.executeWithRetriesOn500(() => this.buildQueryHeaders(meta));
-    return document.retrieve(this.api, headers, inputUrl, outputStream);
+    const headers = await this.buildQueryHeaders(meta);
+    return this.executeWithRetriesOn500(() =>
+      document.retrieve(this.api, headers, inputUrl, outputStream)
+    );
   }
 
   //--------------------------------------------------------------------------------------------
