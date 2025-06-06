@@ -4,11 +4,13 @@ import { PromiseResult } from "aws-sdk/lib/request";
 import { base64ToString } from "../../util/base64";
 import { out } from "../../util/log";
 
+export type LambdaClient = AWS.Lambda;
+
 /**
  * Returns a new AWS Lambda client.
  * Note: callers are responsible for handling the error, usually by calling `getLambdaResultPayload()`.
  */
-export function makeLambdaClient(region: string, timeoutInMillis?: number) {
+export function makeLambdaClient(region: string, timeoutInMillis?: number): LambdaClient {
   return new AWS.Lambda({
     signatureVersion: "v4",
     region,
