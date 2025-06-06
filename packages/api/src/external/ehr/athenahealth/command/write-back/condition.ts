@@ -1,6 +1,6 @@
 import { Condition } from "@medplum/fhirtypes";
 import { CreatedProblemSuccess } from "@metriport/shared/interface/external/ehr/athenahealth/problem";
-import { createAthenaClient } from "../shared";
+import { createAthenaClient } from "../../shared";
 
 export async function writeConditionToChart({
   cxId,
