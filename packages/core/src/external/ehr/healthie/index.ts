@@ -270,7 +270,7 @@ class HealthieApi {
         endDate: api.formatDate(endAppointmentDate.toISOString()) ?? "",
         ...(cursor ? { after: cursor } : {}),
       };
-      await sleep(paginateWaitTime);
+      await sleep(paginateWaitTime.asMilliseconds());
       const appointmentListResponseGraphql = await api.makeRequest<AppointmentListResponseGraphql>({
         cxId,
         s3Path: "appointments",

@@ -1592,7 +1592,7 @@ class AthenaHealthApi {
     acc: T[] | undefined = []
   ): Promise<T[]> {
     if (!url) return acc;
-    await sleep(paginateWaitTime);
+    await sleep(paginateWaitTime.asMilliseconds());
     const { listOfItems, nextUrl } = await requester(url.replace(`/v1/${this.practiceId}`, ""));
     acc.push(...listOfItems);
     if (!nextUrl) return acc;
