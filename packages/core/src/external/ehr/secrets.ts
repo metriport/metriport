@@ -1,15 +1,15 @@
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { z } from "zod";
 
-const EhrSourcesWithDynamicSecrets = [
+const ehrSourcesWithDynamicSecrets = [
   EhrSources.canvas,
   EhrSources.athena,
   EhrSources.elation,
   EhrSources.healthie,
 ] as const;
-export type EhrSourceWithDynamicSecrets = (typeof EhrSourcesWithDynamicSecrets)[number];
+export type EhrSourceWithDynamicSecrets = (typeof ehrSourcesWithDynamicSecrets)[number];
 export function isEhrSourceWithDynamicSecrets(ehr: string): ehr is EhrSourceWithDynamicSecrets {
-  return EhrSourcesWithDynamicSecrets.includes(ehr as EhrSourceWithDynamicSecrets);
+  return ehrSourcesWithDynamicSecrets.includes(ehr as EhrSourceWithDynamicSecrets);
 }
 
 export const getSecretsOauthSchema = z.object({

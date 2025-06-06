@@ -8,16 +8,16 @@ import { HealthieEnv } from "./healthie";
 
 export type EhrEnv = AthenaEnv | ElationEnv | CanvasEnv | HealthieEnv | EClinicalWorksEnv;
 
-const EhrSourcesWithClientCredentials = [
+const ehrSourcesWithClientCredentials = [
   EhrSources.canvas,
   EhrSources.athena,
   EhrSources.elation,
 ] as const;
-export type EhrSourceWithClientCredentials = (typeof EhrSourcesWithClientCredentials)[number];
+export type EhrSourceWithClientCredentials = (typeof ehrSourcesWithClientCredentials)[number];
 export function isEhrSourceWithClientCredentials(
   ehr: string
 ): ehr is EhrSourceWithClientCredentials {
-  return EhrSourcesWithClientCredentials.includes(ehr as EhrSourceWithClientCredentials);
+  return ehrSourcesWithClientCredentials.includes(ehr as EhrSourceWithClientCredentials);
 }
 export type EhrEnvAndClientCredentials<Env extends EhrEnv> = {
   environment: Env;

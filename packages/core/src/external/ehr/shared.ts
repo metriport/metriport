@@ -49,7 +49,7 @@ const MAX_AGE = dayjs.duration(24, "hours");
 const region = Config.getAWSRegion();
 const responsesBucket = Config.getEhrResponsesBucketName();
 
-export const paginateWaitTime = dayjs.duration(1, "seconds").asMilliseconds();
+export const paginateWaitTime = dayjs.duration(1, "seconds");
 
 const fhirValidationPrefix = "1 validation error for";
 
