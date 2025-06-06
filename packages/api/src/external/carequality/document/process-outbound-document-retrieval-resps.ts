@@ -1,5 +1,6 @@
 import { Bundle, BundleEntry, DocumentReference, Resource } from "@medplum/fhirtypes";
-import { EventTypes, analytics } from "@metriport/core/external/analytics/posthog";
+import { ingestIntoSearchEngine } from "@metriport/core/command/consolidated/search/document-reference/ingest";
+import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { OutboundDocRetrievalRespParam } from "@metriport/core/external/carequality/ihe-gateway/outbound-result-poller-direct";
 import { metriportDataSourceExtension } from "@metriport/core/external/fhir/shared/extensions/metriport";
 import { MedicalDataSource } from "@metriport/core/external/index";
@@ -7,8 +8,8 @@ import { MetriportError } from "@metriport/core/util/error/metriport-error";
 import { errorToString } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
+import { emptyFunction } from "@metriport/shared";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
-import { ingestIntoSearchEngine } from "@metriport/core/command/consolidated/search/document-reference/ingest";
 import { convertCDAToFHIR, isConvertible } from "../../fhir-converter/converter";
 import { DocumentReferenceWithId } from "../../fhir/document";
 import { upsertDocumentsToFHIRServer } from "../../fhir/document/save-document-reference";
@@ -17,11 +18,11 @@ import { tallyDocQueryProgress } from "../../hie/tally-doc-query-progress";
 import { getCQDirectoryEntryOrFail } from "../command/cq-directory/get-cq-directory-entry";
 import { formatDate } from "../shared";
 import {
-  DocumentReferenceWithMetriportId,
   containsDuplicateMetriportId,
   containsMetriportId,
   cqToFHIR,
   dedupeContainedResources,
+  DocumentReferenceWithMetriportId,
 } from "./shared";
 
 import { getDocuments } from "@metriport/core/external/fhir/document/get-documents";
@@ -117,6 +118,8 @@ export async function processOutboundDocumentRetrievalResps({
 
     const seenMetriportIds = new Set<string>();
 
+    // TODO Shouldn't we be using only successful results here?
+    // TODO We should use `executeAsynchronously` here so we limit the amount of concurrent promises.
     const resultPromises = await Promise.allSettled(
       results.map(async docRetrievalResp => {
         const docRefs = docRetrievalResp.documentReference;
@@ -168,6 +171,8 @@ export async function processOutboundDocumentRetrievalResps({
       });
     }
 
+    // TODO We should probably execute some global logic from here. Example: if we have 1 doc to download and it fails,
+    // how will the global logic know that DQ/DR is completed? It seems we're relying on the sweeper lambda to do this?
     await tallyDocQueryProgress({
       patient: { id: patientId, cxId: cxId },
       progress: {
@@ -300,7 +305,13 @@ async function handleDocReferences(
       };
       transactionBundle.entry?.push(transactionEntry);
 
-      ingestIntoSearchEngine({ id: patientId, cxId }, mergedFHIRDocRef.id, file, requestId, log);
+      ingestIntoSearchEngine(
+        { id: patientId, cxId },
+        mergedFHIRDocRef.id,
+        file,
+        requestId,
+        log
+      ).catch(emptyFunction);
     } catch (error) {
       const msg = `Error handling doc reference`;
       const extra = {

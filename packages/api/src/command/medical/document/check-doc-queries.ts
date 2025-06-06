@@ -1,3 +1,4 @@
+import { dataPipelineEvents } from "@metriport/core/command/data-pipeline/event";
 import { DocumentQueryStatus, Progress, ProgressType } from "@metriport/core/domain/document-query";
 import { Patient, PatientCreate, PatientData } from "@metriport/core/domain/patient";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
@@ -110,7 +111,7 @@ function calculateTotal(prop: Progress) {
   return (prop.errors ?? 0) + (prop.successful ?? 0);
 }
 
-export async function updateDocQueryStatus(patients: PatientsWithValidationResult): Promise<void> {
+async function updateDocQueryStatus(patients: PatientsWithValidationResult): Promise<void> {
   const uniquePatients = Object.entries(patients);
   await executeAsynchronously(
     uniquePatients,
@@ -124,6 +125,7 @@ async function updatePatientsInSequence([patientId, { cxId, ...whatToUpdate }]: 
   GroupedValidationResult
 ]): Promise<void> {
   const { log } = out(`updatePatientsInSequence cx ${cxId} patient ${patientId}`);
+  let requestId: string | undefined = undefined;
   async function updatePatient(): Promise<Patient | undefined> {
     const patientFilter = { id: patientId, cxId };
     return executeOnDBTx(PatientModel.prototype, async transaction => {
@@ -138,6 +140,7 @@ async function updatePatientsInSequence([patientId, { cxId, ...whatToUpdate }]: 
         log(`Patient without doc query progress @ update, skipping it`);
         return undefined;
       }
+      requestId = docProgress.requestId;
       if (whatToUpdate.convert) {
         const convert = docProgress.convert;
         docProgress.convert = convert
@@ -176,6 +179,13 @@ async function updatePatientsInSequence([patientId, { cxId, ...whatToUpdate }]: 
   if (!patient) return;
   // we want to await here to ensure the consolidated bundle is created before we send the webhook
   await recreateConsolidated({ patient, context: "check-queries" });
+
+  requestId &&
+    dataPipelineEvents().succeeded({
+      cxId: patient.cxId,
+      patientId: patient.id,
+      requestId,
+    });
 }
 
 export async function getPatientsToUpdate(patientIds?: string[]): Promise<Patient[]> {

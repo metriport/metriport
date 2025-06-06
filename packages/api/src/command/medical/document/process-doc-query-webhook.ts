@@ -7,7 +7,6 @@ import { emptyFunction, errorToString } from "@metriport/shared";
 import { DocumentReferenceDTO, toDTO } from "../../../routes/medical/dtos/documentDTO";
 import { Config } from "../../../shared/config";
 import { getAllDocRefMapping } from "../docref-mapping/get-docref-mapping";
-import { finishSinglePatientImport } from "../patient/patient-import/finish-single-patient";
 import { MAPIWebhookStatus, processPatientDocumentRequest } from "./document-webhook";
 
 const { log } = out(`Doc Query Webhook`);
@@ -108,16 +107,6 @@ async function handleConversionWebhook(
       whStatus,
       requestId
     ).catch(emptyFunction);
-
-    // TODO 2330 The way we call this might need to be reviewed when we finish updating the data
-    // pipeline to finish at the end of CONSOLIDATED (not conversion)
-    // Intentionally async
-    finishSinglePatientImport({
-      cxId: patient.cxId,
-      patientId: patient.id,
-      requestId,
-      status: convertIsCompleted ? "successful" : "failed",
-    }).catch(emptyFunction);
   }
 }
 

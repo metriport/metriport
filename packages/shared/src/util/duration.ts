@@ -1,6 +1,8 @@
 /**
  * Wraps a function and logs the time it took to execute it.
  *
+ * @deprecated Unify with logDuration(), choose one to keep around.
+ *
  * @param fn - The function to execute.
  * @param name - The name of the function to log.
  * @param log - The logger to use.

@@ -56,6 +56,8 @@ export async function recreateConsolidated({
 
     log(`Consolidated recreated`);
 
+    // Leave this as post consolidated creation, since this logic can be executed outside of the
+    // data pipeline and we need to update OS when consolidated is recreated.
     const ingestor = makeIngestConsolidated();
     ingestor
       .ingestConsolidatedIntoSearchEngine({
@@ -65,6 +67,7 @@ export async function recreateConsolidated({
       .catch(processAsyncError("Post-DQ ingestConsolidatedIntoSearchEngine"));
 
     if (isDq) {
+      // TODO move this to a data pipeline event listener?
       startCreateResourceDiffBundlesJobsAcrossEhrs({
         cxId: patient.cxId,
         patientId: patient.id,

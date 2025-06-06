@@ -1,3 +1,4 @@
+import { deleteConsolidated } from "@metriport/core/command/consolidated/consolidated-delete";
 import { capture } from "@metriport/core/util/notifications";
 import { getFacilityIdOrFail } from "../../../domain/medical/patient-facility";
 import { processAsyncError } from "../../../errors";
@@ -10,7 +11,7 @@ import { BaseUpdateCmdWithCustomer } from "../base-update-command";
 import { getPatientModelOrFail } from "./get-patient";
 import { deletePatientSettings } from "./settings/delete-patient-settings";
 
-const deleteContext = "cw.patient.delete";
+const deleteContext = "patient.delete";
 
 export type PatientDeleteCmd = BaseUpdateCmdWithCustomer & {
   facilityId?: string;
@@ -37,12 +38,21 @@ export const deletePatient = async (patientDelete: PatientDeleteCmd): Promise<vo
           console.log(`Patient not found @ CW when deleting ${patient.id} , continuing...`);
           return;
         }
-        processAsyncError(deleteContext)(err);
+        processAsyncError(deleteContext + ".cw")(err);
       }),
-      fhirApi.deleteResource("Patient", patient.id).catch(processAsyncError(deleteContext)),
-      cqCommands.patient.remove(patient).catch(processAsyncError(deleteContext)),
-      deleteAllPatientMappings({ cxId, patientId: id }),
-      deletePatientSettings({ cxId, patientId: id }),
+      fhirApi
+        .deleteResource("Patient", patient.id)
+        .catch(processAsyncError(deleteContext + ".fhir")),
+      cqCommands.patient.remove(patient).catch(processAsyncError(deleteContext + ".cq")),
+      deleteAllPatientMappings({ cxId, patientId: id }).catch(
+        processAsyncError(deleteContext + ".mappings")
+      ),
+      deletePatientSettings({ cxId, patientId: id }).catch(
+        processAsyncError(deleteContext + ".settings")
+      ),
+      deleteConsolidated({ cxId, patientId: id }).catch(
+        processAsyncError(deleteContext + ".consolidated")
+      ),
     ]);
     await patient.destroy();
   } catch (error) {
