@@ -18,7 +18,6 @@ import {
   NotFoundError,
   errorToString,
   executeWithRetries,
-  toTitleCase,
 } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import { fhirOperationOutcomeSchema } from "@metriport/shared/interface/external/ehr/fhir-resource";
@@ -488,7 +487,7 @@ export function getObservationReferenceRange(observation: Observation): string |
 export function getObservationResultStatus(observation: Observation): string | undefined {
   const resultStatus = observation.status;
   if (!resultStatus) return undefined;
-  return toTitleCase(resultStatus.toLowerCase());
+  return resultStatus;
 }
 
 export function getObservationObservedDate(observation: Observation): string | undefined {
@@ -532,6 +531,19 @@ export function getObservationInterpretation(
   return undefined;
 }
 
+export function getAllergyIntoleranceSubstanceRxnormCoding(
+  allergyIntoleranceReaction: AllergyIntoleranceReaction
+): Coding | undefined {
+  const substance = allergyIntoleranceReaction.substance;
+  if (!substance) return undefined;
+  const rxnormCoding = substance.coding?.find(coding => {
+    const system = fetchCodingCodeOrDisplayOrSystem(coding, "system");
+    return system?.includes(RXNORM_CODE);
+  });
+  if (!rxnormCoding) return undefined;
+  return rxnormCoding;
+}
+
 export function getAllergyIntoleranceManifestationSnomedCoding(
   allergyIntoleranceReaction: AllergyIntoleranceReaction
 ): Coding | undefined {
@@ -544,28 +556,6 @@ export function getAllergyIntoleranceManifestationSnomedCoding(
   });
   if (!snomedCoding) return undefined;
   return snomedCoding;
-}
-
-export function getAllergyIntoleranceSubstanceSnomedCoding(
-  allergyIntoleranceReaction: AllergyIntoleranceReaction
-): Coding | undefined {
-  const substance = allergyIntoleranceReaction.substance;
-  if (!substance) return undefined;
-  const substanceCodings = substance.coding ?? [];
-  const snomedCoding = substanceCodings.find(coding => {
-    const system = fetchCodingCodeOrDisplayOrSystem(coding, "system");
-    return system?.includes(SNOMED_CODE);
-  });
-  if (!snomedCoding) return undefined;
-  return snomedCoding;
-}
-
-export function getAllergyIntoleranceManifestationSnomedCode(
-  allergyIntoleranceReaction: AllergyIntoleranceReaction
-): string | undefined {
-  const snomedCoding = getAllergyIntoleranceManifestationSnomedCoding(allergyIntoleranceReaction);
-  if (!snomedCoding) return undefined;
-  return snomedCoding.code;
 }
 
 export function getAllergyIntoleranceOnsetDate(

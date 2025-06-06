@@ -17,15 +17,16 @@ import {
   MetriportError,
   NotFoundError,
   sleep,
+  toTitleCase,
 } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import {
   AllergenReference,
   AllergenReferences,
   allergenReferencesSchema,
-  Allergies,
-  allergiesSchema,
   Allergy,
+  AllergyListResponse,
+  allergyListResponseSchema,
   AllergyReactionReference,
   AllergyReactionReferences,
   allergyReactionReferencesSchema,
@@ -110,7 +111,7 @@ import {
   formatDate,
   getAllergyIntoleranceManifestationSnomedCoding,
   getAllergyIntoleranceOnsetDate,
-  getAllergyIntoleranceSubstanceSnomedCoding,
+  getAllergyIntoleranceSubstanceRxnormCoding,
   getConditionSnomedCode,
   getConditionStartDate,
   getConditionStatus,
@@ -146,7 +147,7 @@ const athenaDateTimeFormat = "MM/DD/YYYY HH:mm:ss";
 const labResultDocumentId = "386265";
 const clinicalNoteDocumentSubclass = "CLINICALDOCUMENT";
 const clinicalNoteDocumentId = "423482";
-const minSimilarity = 0.8;
+const minAllowedSimilarity = 0.8;
 
 const athenaEnv = ["api", "api.preview"] as const;
 export type AthenaEnv = (typeof athenaEnv)[number];
@@ -170,6 +171,16 @@ vitalSignCodesMapAthena.set("8302-2", "VITALS.HEIGHT");
 vitalSignCodesMapAthena.set("39156-5", "VITALS.BMI");
 
 const clinicalElementsThatRequireUnits = ["VITALS.WEIGHT", "VITALS.HEIGHT", "VITALS.TEMPERATURE"];
+
+const validObservationResultStatuses = [
+  "final",
+  "corrected",
+  "pending",
+  "preliminary",
+  "unverified",
+  "deleted",
+  "unsolicited",
+];
 
 const lbsToG = 453.592;
 const kgToG = 1000;
@@ -373,25 +384,23 @@ class AthenaHealthApi {
     const { debug } = out(
       `AthenaHealth getAllergyForPatient - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
     );
-    const params = {
-      departmentid: this.stripDepartmentId(departmentId),
-    };
+    const params = { departmentid: this.stripDepartmentId(departmentId) };
     const queryParams = new URLSearchParams(params);
     const allergiesUrl = `/chart/${this.stripPatientId(
       patientId
     )}/allergies?${queryParams.toString()}`;
     const additionalInfo = { cxId, practiceId: this.practiceId, patientId };
-    const allergies = await this.makeRequest<Allergies>({
+    const allergyListResponse = await this.makeRequest<AllergyListResponse>({
       cxId,
       patientId,
       s3Path: "allergies",
       method: "GET",
       url: allergiesUrl,
-      schema: allergiesSchema,
+      schema: allergyListResponseSchema,
       additionalInfo,
       debug,
     });
-    const allergy = allergies.allergies.find(a => a.allergenid === allergenId);
+    const allergy = allergyListResponse.allergies.find(a => a.allergenid === allergenId);
     return allergy;
   }
 
@@ -441,12 +450,12 @@ class AthenaHealthApi {
     cxId,
     patientId,
     departmentId,
-    medication,
+    medicationWithRefs,
   }: {
     cxId: string;
     patientId: string;
     departmentId: string;
-    medication: MedicationWithRefs;
+    medicationWithRefs: MedicationWithRefs;
   }): Promise<CreatedMedicationSuccess[]> {
     const { log, debug } = out(
       `AthenaHealth createMedication - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} departmentId ${departmentId}`
@@ -457,15 +466,15 @@ class AthenaHealthApi {
       practiceId: this.practiceId,
       patientId,
       departmentId,
-      medicationId: medication.medication.id,
+      medicationId: medicationWithRefs.medication.id,
     };
-    if (medication.statement.length < 1) {
+    if (medicationWithRefs.statement.length < 1) {
       throw new BadRequestError("No medication statements found", undefined, additionalInfo);
     }
-    const dates = medication.statement.flatMap(statement => {
-      const startdate = this.formatDate(getMedicationStatementStartDate(statement));
+    const dates = medicationWithRefs.statement.flatMap(statement => {
+      const startdate = getMedicationStatementStartDate(statement);
       if (!startdate) return [];
-      const stopdate = this.formatDate(statement.effectivePeriod?.end);
+      const stopdate = statement.effectivePeriod?.end;
       return { startdate, stopdate };
     });
     if (dates.length < 1) {
@@ -475,7 +484,7 @@ class AthenaHealthApi {
         additionalInfo
       );
     }
-    const rxnormCoding = getMedicationRxnormCoding(medication.medication);
+    const rxnormCoding = getMedicationRxnormCoding(medicationWithRefs.medication);
     if (!rxnormCoding) {
       throw new BadRequestError("No RXNORM code found for medication", undefined, additionalInfo);
     }
@@ -510,7 +519,8 @@ class AthenaHealthApi {
     }[] = [];
     const createMedicationArgs: MedicationCreateParams[] = dates.map(d => ({
       ...sharedData,
-      ...d,
+      startdate: this.formatDate(d.startdate),
+      stopdate: this.formatDate(d.stopdate),
     }));
     await executeAsynchronously(
       createMedicationArgs,
@@ -797,7 +807,7 @@ class AthenaHealthApi {
       );
     }
     const resultStatus = getObservationResultStatus(observation);
-    if (!resultStatus) {
+    if (!resultStatus || !validObservationResultStatuses.includes(resultStatus.toLowerCase())) {
       throw new BadRequestError(
         "No result status found for observation",
         undefined,
@@ -821,7 +831,7 @@ class AthenaHealthApi {
         referencerange: referenceRange,
         units: unit,
         value: value.toString(),
-        resultstatus: resultStatus,
+        resultstatus: toTitleCase(resultStatus.toLowerCase()),
         note: "Added via Metriport App",
       },
     ];
@@ -932,26 +942,26 @@ class AthenaHealthApi {
     if (!reaction || reaction.length < 1) {
       throw new BadRequestError("No reactions found for allergy", undefined, additionalInfo);
     }
-    const snomedCodingsPairs: [Coding, Coding, string | undefined][] = reaction.flatMap(r => {
-      const substanceSnomedCoding = getAllergyIntoleranceSubstanceSnomedCoding(r);
-      if (!substanceSnomedCoding) return [];
+    const codingsPairsWithSeverity: [Coding, Coding, string | undefined][] = reaction.flatMap(r => {
+      const substanceRxnormCoding = getAllergyIntoleranceSubstanceRxnormCoding(r);
+      if (!substanceRxnormCoding) return [];
       const manifestationSnomedCoding = getAllergyIntoleranceManifestationSnomedCoding(r);
       if (!manifestationSnomedCoding) return [];
-      return [[substanceSnomedCoding, manifestationSnomedCoding, r.severity]];
+      return [[substanceRxnormCoding, manifestationSnomedCoding, r.severity]];
     });
-    const snomedCodings = snomedCodingsPairs[0];
-    if (!snomedCodings) {
+    const codingsPairWithSeverity = codingsPairsWithSeverity[0];
+    if (!codingsPairWithSeverity) {
       throw new BadRequestError(
-        "No SNOMED codes found for allergy reaction",
+        "No RXNORM and SNOMED codes found for allergy reaction",
         undefined,
         additionalInfo
       );
     }
-    const [substanceSnomedCoding, manifestationSnomedCoding, severity] = snomedCodings;
+    const [substanceRxnormCoding, manifestationSnomedCoding, severity] = codingsPairWithSeverity;
     const allergenReference = await this.searchForAllergen({
       cxId,
       patientId,
-      coding: substanceSnomedCoding,
+      coding: substanceRxnormCoding,
     });
     if (!allergenReference) {
       throw new BadRequestError("No allergen options found via search", undefined, additionalInfo);
@@ -1722,7 +1732,7 @@ class AthenaHealthApi {
         mostSimilarOption = option;
       }
     }
-    if (maxSimilarity < minSimilarity) {
+    if (maxSimilarity < minAllowedSimilarity) {
       throw new BadRequestError("No similar enough option found", undefined, {
         target,
         maxSimilarity,
