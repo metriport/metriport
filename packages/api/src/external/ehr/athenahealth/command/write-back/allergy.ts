@@ -7,19 +7,19 @@ export async function writeAllergyToChart({
   athenaPatientId,
   athenaPracticeId,
   athenaDepartmentId,
-  allergy,
+  allergyIntolerance,
 }: {
   cxId: string;
   athenaPatientId: string;
   athenaPracticeId: string;
   athenaDepartmentId: string;
-  allergy: AllergyIntolerance;
+  allergyIntolerance: AllergyIntolerance;
 }): Promise<CreatedAllergySuccess> {
   const api = await createAthenaClient({ cxId, practiceId: athenaPracticeId });
   return await api.createAllergy({
     cxId,
     patientId: athenaPatientId,
     departmentId: athenaDepartmentId,
-    allergyIntolerance: allergy,
+    allergyIntolerance,
   });
 }

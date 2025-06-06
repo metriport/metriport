@@ -26,7 +26,7 @@ export type MedicationCreateParams = {
   unstructuredsig: string;
   medicationid: string;
   hidden: boolean;
-  startdate: string;
+  startdate: string | undefined;
   stopdate: string | undefined;
   stopreason: string | undefined;
   patientnote: string | undefined;

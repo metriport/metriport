@@ -23,10 +23,10 @@ const allergySchema = z.object({
     .array(),
 });
 export type Allergy = z.infer<typeof allergySchema>;
-export const allergiesSchema = z.object({
+export const allergyListResponseSchema = z.object({
   allergies: allergySchema.array(),
 });
-export type Allergies = z.infer<typeof allergiesSchema>;
+export type AllergyListResponse = z.infer<typeof allergyListResponseSchema>;
 
 const allergenReferenceSchema = z.object({
   allergenid: z.coerce.string(),

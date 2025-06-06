@@ -23,7 +23,7 @@ const router = Router();
  * @param req.params.id The ID of AthenaHealth Patient.
  * @param req.query.practiceId The ID of AthenaHealth Practice.
  * @param req.query.departmentId The ID of AthenaHealth Department.
- * @param req.body The FHIR Resource payload
+ * @param req.body The MedicationWithRefs Resource payload
  * @returns Athena API response
  */
 router.post(
@@ -41,7 +41,7 @@ router.post(
       athenaPatientId,
       athenaPracticeId,
       athenaDepartmentId,
-      medication: payload,
+      medicationWithRefs: payload,
     });
     return res.status(httpStatus.OK).json(medicationDetails);
   })
@@ -196,7 +196,7 @@ router.post(
       athenaPatientId,
       athenaPracticeId,
       athenaDepartmentId,
-      allergy: payload,
+      allergyIntolerance: payload,
     });
     return res.status(httpStatus.OK).json(allergyDetails);
   })
