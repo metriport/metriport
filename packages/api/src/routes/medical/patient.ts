@@ -12,6 +12,10 @@ import Router from "express-promise-router";
 import status from "http-status";
 import { orderBy } from "lodash";
 import { z } from "zod";
+import {
+  assignCohort,
+  unassignCohort,
+} from "../../command/medical/cohort/cohort-assignment/assign-cohort";
 import { areDocumentsProcessing } from "../../command/medical/document/document-status";
 import { startConsolidatedQuery } from "../../command/medical/patient/consolidated-get";
 import {
@@ -528,6 +532,56 @@ router.get(
     };
 
     return res.status(status.OK).json(respPayload);
+  })
+);
+
+const cohortIdSchema = z.object({
+  cohortId: z.string().uuid(),
+});
+
+/** ---------------------------------------------------------------------------
+ * POST /patient/:id/cohort
+ *
+ * Assigns a patient to a cohort.
+ *
+ * @param req.cxId The customer ID.
+ * @param req.param.id The ID of the patient to assign.
+ * @param req.param.cohortId The ID of the cohort to assign the patient to.
+ * @returns 200 OK
+ */
+router.post(
+  "/cohort",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const { cxId, id: patientId } = getPatientInfoOrFail(req);
+    const cohortId = cohortIdSchema.parse(req.body).cohortId;
+
+    await assignCohort({ patientId, cohortId, cxId });
+
+    return res.sendStatus(status.OK);
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * DELETE /patient/:id/cohort
+ *
+ * Unassigns the patient from the cohort.
+ *
+ * @param req.cxId The customer ID.
+ * @param req.param.id The ID of the patient to assign.
+ * @param req.param.cohortId The ID of the cohort to assign the patient to.
+ * @returns 200 OK
+ */
+router.delete(
+  "/cohort",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const { cxId, id: patientId } = getPatientInfoOrFail(req);
+    const cohortId = cohortIdSchema.parse(req.body).cohortId;
+
+    await unassignCohort({ patientId, cohortId, cxId });
+
+    return res.sendStatus(status.OK);
   })
 );
 
