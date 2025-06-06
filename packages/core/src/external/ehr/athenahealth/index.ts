@@ -833,6 +833,7 @@ class AthenaHealthApi {
         value: value.toString(),
         resultstatus: toTitleCase(resultStatus.toLowerCase()),
         note: "Added via Metriport App",
+        autoclose: "true",
       },
     ];
     const data = {
