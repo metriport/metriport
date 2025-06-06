@@ -92,7 +92,7 @@ async function executeForFile(fileName: string, verbose: boolean) {
   }
 
   const { references, missingReferences } = getReferencesFromResources({
-    resources,
+    resourcesToCheckRefs: resources,
     referencesToInclude: resourceTypesToInclude,
   });
 

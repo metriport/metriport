@@ -61,7 +61,9 @@ export type BundleWithEntry<T extends Resource = Resource> = Bundle<Resource> & 
 /**
  * Returns the references found in the given resources, including the missing ones.
  *
- * @param resources
+ * @param resourcesToCheckRefs The resources to check for missing references.
+ * @param sourceResources The source resources, where we should look for the references at. Optional,
+ *                        if not set we'll use resourcesToCheckRefs.
  * @param referencesToInclude The resource types to include in the result. If not set,
  *        references with all resource types will be included.
  * @param referencesToExclude The resource types to exclude from the result. If not set,
@@ -69,25 +71,28 @@ export type BundleWithEntry<T extends Resource = Resource> = Bundle<Resource> & 
  * @returns References found in the given resources, including the missing ones.
  */
 export function getReferencesFromResources({
-  resources,
+  resourcesToCheckRefs,
+  sourceResources: sourceResourcesParam,
   referencesToInclude,
   referencesToExclude,
 }: {
-  resources: Resource[];
+  resourcesToCheckRefs: Resource[];
+  sourceResources?: Resource[] | undefined;
   referencesToInclude?: ResourceType[];
   referencesToExclude?: ResourceType[];
 }): { references: Reference[]; missingReferences: ReferenceWithIdAndType[] } {
-  if (resources.length <= 0) return { references: [], missingReferences: [] };
-  const resourceIds = new Set(resources.flatMap(r => r.id ?? []));
+  if (resourcesToCheckRefs.length <= 0) return { references: [], missingReferences: [] };
+  const sourceResources = sourceResourcesParam ?? resourcesToCheckRefs;
+  const sourceResourceIds = new Set(sourceResources.flatMap(r => r.id ?? []));
   const references = getReferences({
-    resources,
+    resources: resourcesToCheckRefs,
     referencesToInclude,
     referencesToExclude,
   });
   const missingReferences: ReferenceWithIdAndType[] = [];
   for (const ref of references) {
     if (!ref.id) continue;
-    if (!resourceIds.has(ref.id)) missingReferences.push(ref);
+    if (!sourceResourceIds.has(ref.id)) missingReferences.push(ref);
   }
   return { references, missingReferences };
 }

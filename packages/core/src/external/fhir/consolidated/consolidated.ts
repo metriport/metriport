@@ -96,7 +96,7 @@ export async function getConsolidatedFhirBundle({
 
   for (let i = 0; i < MAX_HYDRATION_ROUNDS; i++) {
     const { missingReferences } = getReferencesFromResources({
-      resources: filtered,
+      resourcesToCheckRefs: filtered,
     });
     if (missingReferences.length === 0) {
       break;
