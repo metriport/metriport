@@ -1,3 +1,4 @@
+import * as AWS from "aws-sdk";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { getLambdaResultPayload, makeLambdaClient } from "../../external/aws/lambda";
@@ -22,6 +23,7 @@ export const TIMEOUT_CALLING_CONVERTER_LAMBDA = dayjs.duration(15, "minutes").ad
 export class ConsolidatedSnapshotConnectorLambda implements ConsolidatedSnapshotConnector {
   readonly lambdaName: string;
   readonly lambdaClient: AWS.Lambda;
+
   constructor() {
     const region = Config.getAWSRegion();
     this.lambdaName = Config.getFHIRtoBundleLambdaName();

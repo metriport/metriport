@@ -16,6 +16,7 @@ function curSecSinceEpoch() {
 }
 
 // validates the token in the request
+// TODO move to capture.wrapHandler()
 export const handler = Sentry.AWSLambda.wrapHandler(
   async (event: lambda.APIGatewayRequestAuthorizerEvent) => {
     // ensure token exists, and isn't expired

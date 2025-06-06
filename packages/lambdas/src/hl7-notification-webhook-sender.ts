@@ -1,6 +1,5 @@
 import { Hl7Notification } from "@metriport/core/command/hl7-notification/hl7-notification-webhook-sender";
 import { Hl7NotificationWebhookSenderDirect } from "@metriport/core/command/hl7-notification/hl7-notification-webhook-sender-direct";
-import * as Sentry from "@sentry/serverless";
 import { SQSEvent } from "aws-lambda";
 import { z } from "zod";
 import { capture } from "./shared/capture";
@@ -13,10 +12,10 @@ capture.init();
 
 // Automatically set by AWS
 const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
-const bucketName = getEnvOrFail("HL7_OUTGOING_MESSAGE_BUCKET_NAME");
 const apiUrl = getEnvOrFail("API_URL");
 
-export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent): Promise<void> => {
+// TODO move to capture.wrapHandler()
+export const handler = capture.wrapHandler(async (event: SQSEvent): Promise<void> => {
   const params = getSingleMessageOrFail(event.Records, lambdaName);
   if (!params) {
     throw new Error("No message found in SQS event");
@@ -33,7 +32,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent): Pro
     context: "hl7-notification-webhook-sender-cloud.execute",
   });
 
-  await new Hl7NotificationWebhookSenderDirect(apiUrl, bucketName).execute(parsedBody);
+  await new Hl7NotificationWebhookSenderDirect(apiUrl).execute(parsedBody);
 });
 
 const parseBody = (body: string): Hl7Notification => {

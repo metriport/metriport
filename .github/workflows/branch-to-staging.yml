@@ -2,19 +2,29 @@ name: Branch to Staging
 
 # Used to manually deploy a branch to staging
 
+permissions:
+  contents: read
+
 on:
   workflow_dispatch:
     inputs:
       jobs_to_run:
-        description: 'Select jobs to run (comma-separated): api,mllp-server,infra-api-lambdas,redeploy-api-gw,e2e-tests'
+        description: "Select jobs to run (comma-separated, default 'all') - e.g.: api,infra-api-lambdas,mllp-server,infra-hl7-notification,secrets_cdk_stack,location_services_cdk_stack,ihe_stack,redeploy-api-gw,e2e-tests"
         required: true
-        default: 'api,mllp-server,infra-api-lambdas,redeploy-api-gw,e2e-tests'
+        default: "all"
         type: string
 
 jobs:
+  setup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Display parameters
+        shell: bash
+        run: echo "${{ format('<h1>Parameters</h1><p>{0}</p>', tojson(inputs)) }}" > "$GITHUB_STEP_SUMMARY"
+
   api:
     # can't use contains(github.event.inputs.jobs_to_run, 'api') because this would trigger on 'redeploy-api-gw' or 'infra-api-lambdas'
-    if: contains(format(',{0},', github.event.inputs.jobs_to_run), ',api,')
+    if: contains(format(',{0},', github.event.inputs.jobs_to_run), ',api,') || contains(github.event.inputs.jobs_to_run, 'all')
     uses: ./.github/workflows/_deploy-api.yml
     with:
       deploy_env: "staging"
@@ -31,7 +41,7 @@ jobs:
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
   mllp-server:
-    if: contains(github.event.inputs.jobs_to_run, 'mllp-server')
+    if: contains(github.event.inputs.jobs_to_run, 'mllp-server') || contains(github.event.inputs.jobs_to_run, 'all')
     uses: ./.github/workflows/_deploy-mllp-server.yml
     with:
       deploy_env: "staging"
@@ -48,10 +58,11 @@ jobs:
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
   infra-hl7-notification:
-    if: contains(github.event.inputs.jobs_to_run, 'infra-hl7-notification')
+    if: contains(github.event.inputs.jobs_to_run, 'infra-hl7-notification') || contains(github.event.inputs.jobs_to_run, 'all')
     uses: ./.github/workflows/_deploy-hl7-notification-cdk.yml
     with:
       deploy_env: "staging"
+      is_branch_to_staging: true
       secrets_cdk_stack: ${{ vars.SECRET_STACK_NAME_STAGING }}
       hl7_notification_stack: ${{ vars.HL7_NOTIFICATION_STACK_NAME_STAGING }}
       AWS_REGION: ${{ vars.API_REGION_STAGING }}
@@ -65,15 +76,63 @@ jobs:
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
   infra-api-lambdas:
-    if: contains(github.event.inputs.jobs_to_run, 'infra-api-lambdas')
+    if: contains(github.event.inputs.jobs_to_run, 'infra-api-lambdas') || contains(github.event.inputs.jobs_to_run, 'all')
     uses: ./.github/workflows/_deploy-cdk.yml
     with:
       deploy_env: "staging"
       is-branch-to-staging: true
-      secrets_cdk_stack: ${{ vars.SECRET_STACK_NAME_STAGING }}
-      location_services_cdk_stack: ${{ vars.LOCATION_SERVICES_STACK_NAME_STAGING }}
       cdk_stack: ${{ vars.API_STACK_NAME_STAGING }}
-      ihe_stack: ${{ vars.IHE_STACK_NAME }}
+      AWS_REGION: ${{ vars.API_REGION_STAGING }}
+    secrets:
+      SERVICE_PAT: ${{ secrets.SERVICE_PAT }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+
+  secrets_cdk_stack:
+    if: contains(github.event.inputs.jobs_to_run, 'secrets_cdk_stack') || contains(github.event.inputs.jobs_to_run, 'all')
+    uses: ./.github/workflows/_deploy-cdk.yml
+    with:
+      deploy_env: "staging"
+      is-branch-to-staging: true
+      cdk_stack: ${{ vars.SECRET_STACK_NAME_STAGING }}
+      AWS_REGION: ${{ vars.API_REGION_STAGING }}
+    secrets:
+      SERVICE_PAT: ${{ secrets.SERVICE_PAT }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+
+  location_services_cdk_stack:
+    if: contains(github.event.inputs.jobs_to_run, 'location_services_cdk_stack') || contains(github.event.inputs.jobs_to_run, 'all')
+    uses: ./.github/workflows/_deploy-cdk.yml
+    with:
+      deploy_env: "staging"
+      is-branch-to-staging: true
+      cdk_stack: ${{ vars.LOCATION_SERVICES_STACK_NAME_STAGING }}
+      AWS_REGION: ${{ vars.API_REGION_STAGING }}
+    secrets:
+      SERVICE_PAT: ${{ secrets.SERVICE_PAT }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+
+  ihe_stack:
+    if: contains(github.event.inputs.jobs_to_run, 'ihe_stack') || contains(github.event.inputs.jobs_to_run, 'all')
+    uses: ./.github/workflows/_deploy-cdk.yml
+    with:
+      deploy_env: "staging"
+      is-branch-to-staging: true
+      cdk_stack: ${{ vars.IHE_STACK_NAME }}
       AWS_REGION: ${{ vars.API_REGION_STAGING }}
     secrets:
       SERVICE_PAT: ${{ secrets.SERVICE_PAT }}
@@ -85,7 +144,7 @@ jobs:
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
   redeploy-api-gw:
-    if: contains(github.event.inputs.jobs_to_run, 'redeploy-api-gw')
+    if: contains(github.event.inputs.jobs_to_run, 'redeploy-api-gw') || contains(github.event.inputs.jobs_to_run, 'all')
     uses: ./.github/workflows/_redeploy_api-gw.yml
     needs: [infra-api-lambdas]
     with:
@@ -100,7 +159,7 @@ jobs:
 
   e2e-tests:
     if: |
-      contains(github.event.inputs.jobs_to_run, 'e2e-tests') && 
+      (contains(github.event.inputs.jobs_to_run, 'e2e-tests') || contains(github.event.inputs.jobs_to_run, 'all')) && 
       !failure() && 
       (needs.api.result == 'success' || needs.infra-api-lambdas.result == 'success' || needs.redeploy-api-gw.result == 'success')
     uses: ./.github/workflows/_e2e-tests.yml

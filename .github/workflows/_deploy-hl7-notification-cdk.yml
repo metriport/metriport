@@ -19,6 +19,11 @@ on:
         required: false
         type: string
         description: "the name of the HL7 Notification Routing CDK stack we're deploying"
+      is_branch_to_staging:
+        required: false
+        default: false
+        type: boolean
+        description: "whether this workflow should checkout internal's develop/master or a feature branch"
       AWS_REGION:
         required: true
         type: string
@@ -95,6 +100,17 @@ jobs:
           echo "Internal branch for checkout: $INTERNAL_BRANCH"
           echo "INTERNAL_BRANCH=$INTERNAL_BRANCH" >> $GITHUB_ENV
 
+      - name: Checkout internal feature branch
+        uses: actions/checkout@v3
+        if: ${{ inputs.is_branch_to_staging == true }}
+        with:
+          repository: metriport/metriport-internal
+          ref: ${{ env.INTERNAL_BRANCH }}
+          token: ${{ secrets.SERVICE_PAT }} # secret token from user 'metriport-service'
+          path: metriport-internal
+          sparse-checkout: |
+            config-oss/api-infra
+
       - name: Log Git Ref
         run: |
           echo "Git ref: $(git rev-parse HEAD)"
@@ -144,6 +160,33 @@ jobs:
           cdk_action: "deploy --verbose --require-approval never"
           cdk_version: "2.122.0"
           cdk_stack: "${{ inputs.secrets_cdk_stack }}"
+          cdk_env: "${{ inputs.deploy_env }}"
+        env:
+          INPUT_PATH: "metriport/packages/infra"
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ inputs.AWS_REGION }}
+          METRIPORT_VERSION: ${{ github.sha }}
+
+      # Buckets Stack
+      - name: Diff Buckets CDK Stack
+        uses: metriport/deploy-with-cdk@master
+        with:
+          cdk_action: "diff"
+          cdk_version: "2.122.0"
+          cdk_stack: "BucketsStack"
+          cdk_env: "${{ inputs.deploy_env }}"
+        env:
+          INPUT_PATH: "metriport/packages/infra"
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ inputs.AWS_REGION }}
+      - name: Deploy Buckets CDK Stack
+        uses: metriport/deploy-with-cdk@master
+        with:
+          cdk_action: "deploy --verbose --require-approval never"
+          cdk_version: "2.122.0"
+          cdk_stack: "BucketsStack"
           cdk_env: "${{ inputs.deploy_env }}"
         env:
           INPUT_PATH: "metriport/packages/infra"

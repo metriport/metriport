@@ -105,17 +105,18 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
         );
     }
   }
-  if (err.statusCode) {
+  const status = err.statusCode || err.status;
+  if (status) {
     return res
       .contentType("json")
-      .status(err.statusCode)
+      .status(status)
       .send({
         ...defaultResponseBody({
-          status: err.statusCode,
+          status,
           title: "MetriportError",
           detail: err.message,
         }),
-        name: httpStatus[err.statusCode],
+        name: httpStatus[status],
       });
   }
   log(`Error: ${err}`);

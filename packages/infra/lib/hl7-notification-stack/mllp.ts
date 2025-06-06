@@ -1,35 +1,77 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import * as cdk from "aws-cdk-lib";
 import { Duration } from "aws-cdk-lib";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
-import * as s3 from "aws-cdk-lib/aws-s3";
 import { Repository } from "aws-cdk-lib/aws-ecr";
 import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as elbv2 from "aws-cdk-lib/aws-elasticloadbalancingv2";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as logs from "aws-cdk-lib/aws-logs";
+import { LogGroup } from "aws-cdk-lib/aws-logs";
+import * as s3 from "aws-cdk-lib/aws-s3";
 import { Construct } from "constructs";
 import { EnvConfigNonSandbox } from "../../config/env-config";
 import { buildSecrets, secretsToECS } from "../shared/secrets";
-import { MLLP_DEFAULT_PORT, MLLP_SERVER_NLB_INTERNAL_IP } from "./constants";
-import { LogGroup } from "aws-cdk-lib/aws-logs";
+import { MLLP_DEFAULT_PORT } from "./constants";
 
 interface MllpStackProps extends cdk.StackProps {
   config: EnvConfigNonSandbox;
   version: string | undefined;
   vpc: ec2.Vpc;
   ecrRepo: Repository;
-  hl7NotificationBucket: s3.IBucket;
   incomingHl7NotificationBucket: s3.IBucket;
 }
+
+const setupNlb = (identifier: string, vpc: ec2.Vpc, nlb: elbv2.NetworkLoadBalancer, ip: string) => {
+  const privateSubnet = vpc.privateSubnets[0];
+  if (!privateSubnet || vpc.privateSubnets.length !== 1) {
+    throw new Error("Should have exactly one private subnet");
+  }
+
+  const cfnNlb = nlb.node.defaultChild as elbv2.CfnLoadBalancer;
+  cfnNlb.addDeletionOverride("Properties.Subnets");
+
+  cfnNlb.subnetMappings = [
+    {
+      subnetId: privateSubnet.subnetId,
+      privateIPv4Address: ip,
+    },
+  ];
+
+  const listener = nlb.addListener(`MllpListener${identifier}`, {
+    port: MLLP_DEFAULT_PORT,
+  });
+
+  const targetGroup = listener.addTargets(`MllpTargets${identifier}`, {
+    port: MLLP_DEFAULT_PORT,
+    protocol: elbv2.Protocol.TCP,
+    healthCheck: {
+      port: MLLP_DEFAULT_PORT.toString(),
+      protocol: elbv2.Protocol.TCP,
+      healthyThresholdCount: 3,
+      unhealthyThresholdCount: 2,
+      timeout: Duration.seconds(10),
+      interval: Duration.seconds(20),
+    },
+  });
+
+  return targetGroup;
+};
 
 export class MllpStack extends cdk.NestedStack {
   constructor(scope: Construct, id: string, props: MllpStackProps) {
     super(scope, id, props);
 
-    const { vpc, ecrRepo, incomingHl7NotificationBucket, hl7NotificationBucket, config } = props;
+    const { vpc, ecrRepo, incomingHl7NotificationBucket, config } = props;
     const { notificationWebhookSenderQueue } = config.hl7Notification;
-    const { fargateCpu, fargateMemoryLimitMiB, fargateTaskCountMin, fargateTaskCountMax } =
-      props.config.hl7Notification.mllpServer;
+    const {
+      fargateCpu,
+      fargateMemoryLimitMiB,
+      fargateTaskCountMin,
+      fargateTaskCountMax,
+      nlbInternalIpAddressA,
+      nlbInternalIpAddressB,
+    } = props.config.hl7Notification.mllpServer;
 
     const cluster = new ecs.Cluster(this, "MllpServerCluster", {
       vpc,
@@ -54,40 +96,14 @@ export class MllpStack extends cdk.NestedStack {
       "Allow outbound traffic from MLLP server"
     );
 
-    const nlb = new elbv2.NetworkLoadBalancer(this, "MllpServerNLB2", {
+    const nlbA = new elbv2.NetworkLoadBalancer(this, "MllpServerNLB2", {
       vpc,
       internetFacing: false,
     });
 
-    // Set static IP address for NLB in private subnet
-    const privateSubnet = vpc.privateSubnets[0];
-    if (!privateSubnet || vpc.privateSubnets.length !== 1) {
-      throw new Error("Should have exactly one private subnet");
-    }
-    const cfnNlb = nlb.node.defaultChild as elbv2.CfnLoadBalancer;
-    cfnNlb.addDeletionOverride("Properties.Subnets");
-    cfnNlb.subnetMappings = [
-      {
-        subnetId: privateSubnet.subnetId,
-        privateIPv4Address: MLLP_SERVER_NLB_INTERNAL_IP,
-      },
-    ];
-
-    const listener = nlb.addListener("MllpListener", {
-      port: MLLP_DEFAULT_PORT,
-    });
-
-    const targetGroup = listener.addTargets("MllpTargets", {
-      port: MLLP_DEFAULT_PORT,
-      protocol: elbv2.Protocol.TCP,
-      healthCheck: {
-        port: MLLP_DEFAULT_PORT.toString(),
-        protocol: elbv2.Protocol.TCP,
-        healthyThresholdCount: 3,
-        unhealthyThresholdCount: 2,
-        timeout: Duration.seconds(10),
-        interval: Duration.seconds(20),
-      },
+    const nlbB = new elbv2.NetworkLoadBalancer(this, "MllpServerNLB2b", {
+      vpc,
+      internetFacing: false,
     });
 
     const taskRole = new iam.Role(this, "MllpServerTaskRole", {
@@ -142,8 +158,13 @@ export class MllpStack extends cdk.NestedStack {
       }),
     });
 
-    targetGroup.addTarget(fargateService);
-    hl7NotificationBucket.grantWrite(fargateService.taskDefinition.taskRole);
+    /**
+     * We're using an empty string for the first setupNlb call to maintain identifiers and
+     * avoid having to recreate a new listener and target group for the existing NLB.
+     */
+    setupNlb("", vpc, nlbA, nlbInternalIpAddressA).addTarget(fargateService);
+    setupNlb("B", vpc, nlbB, nlbInternalIpAddressB).addTarget(fargateService);
+
     incomingHl7NotificationBucket.grantWrite(fargateService.taskDefinition.taskRole);
 
     const scaling = fargateService.autoScaleTaskCount({
@@ -174,14 +195,14 @@ export class MllpStack extends cdk.NestedStack {
       description: "ARN of the MLLP Fargate Service",
     });
 
-    new cdk.CfnOutput(this, "MllpNlbDnsName", {
-      value: nlb.loadBalancerDnsName,
-      description: "DNS name of the Network Load Balancer for MLLP",
+    new cdk.CfnOutput(this, "MllpNlbInternalIp1", {
+      value: nlbInternalIpAddressA,
+      description: "Internal IP address of the MLLP Network Load Balancer 1",
     });
 
-    new cdk.CfnOutput(this, "MllpNlbInternalIp", {
-      value: MLLP_SERVER_NLB_INTERNAL_IP,
-      description: "Internal IP address of the MLLP Network Load Balancer",
+    new cdk.CfnOutput(this, "MllpNlbInternalIp2", {
+      value: nlbInternalIpAddressB,
+      description: "Internal IP address of the MLLP Network Load Balancer 2",
     });
   }
 }

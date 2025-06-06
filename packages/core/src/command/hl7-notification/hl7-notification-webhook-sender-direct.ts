@@ -3,19 +3,24 @@ import { Bundle, Resource } from "@medplum/fhirtypes";
 import { executeWithNetworkRetries } from "@metriport/shared";
 import axios from "axios";
 import dayjs from "dayjs";
-import { S3Utils, StoreInS3Params, storeInS3WithRetries } from "../../external/aws/s3";
+import { S3Utils } from "../../external/aws/s3";
+import {
+  mergeBundleIntoAdtSourcedEncounter,
+  saveAdtConversionBundle,
+} from "../../external/fhir/adt-encounters";
 import { toFHIR as toFhirPatient } from "../../external/fhir/patient/conversion";
-import { buildBundle, buildBundleEntry } from "../../external/fhir/shared/bundle";
-import { out } from "../../util";
+import { buildBundleEntry, buildCollectionBundle } from "../../external/fhir/shared/bundle";
+import { capture, out } from "../../util";
 import { Config } from "../../util/config";
-import { JSON_APP_MIME_TYPE } from "../../util/mime";
 import { convertHl7v2MessageToFhir } from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion";
-import { getEncounterPeriod } from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion/adt/utils";
+import {
+  createEncounterId,
+  getEncounterPeriod,
+} from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion/adt/utils";
 import {
   getHl7MessageTypeOrFail,
   getMessageUniqueIdentifier,
 } from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion/msh";
-import { buildHl7MessageFhirBundleFileKey } from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
 import { Hl7Notification, Hl7NotificationWebhookSender } from "./hl7-notification-webhook-sender";
 
 const supportedTypes = ["A01", "A03"];
@@ -28,20 +33,30 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
 
   constructor(
     private readonly apiUrl: string,
-    private readonly bucketName: string,
     private readonly s3Utils = new S3Utils(Config.getAWSRegion())
   ) {}
 
   async execute(params: Hl7Notification): Promise<void> {
     const message = Hl7Message.parse(params.message);
     const { cxId, patientId, sourceTimestamp, messageReceivedTimestamp } = params;
-    const { log } = out(`${this.context}, cx: ${cxId}, pt: ${patientId}`);
+    const encounterId = createEncounterId(message, patientId);
+    const { log } = out(`${this.context}, cx: ${cxId}, pt: ${patientId}, enc: ${encounterId}`);
 
     const { messageCode, triggerEvent } = getHl7MessageTypeOrFail(message);
     if (!supportedTypes.includes(triggerEvent)) {
       log(`Trigger event ${triggerEvent} is not supported. Skipping...`);
       return;
     }
+
+    capture.setExtra({
+      cxId,
+      patientId,
+      encounterId,
+      sourceTimestamp,
+      messageReceivedTimestamp,
+      messageCode,
+      triggerEvent,
+    });
 
     const internalHl7RouteUrl = `${this.apiUrl}/${INTERNAL_PATIENT_ENDPOINT}/${patientId}/${INTERNAL_HL7_ENDPOINT}`;
     const internalGetPatientUrl = `${this.apiUrl}/${INTERNAL_PATIENT_ENDPOINT}/${patientId}?cxId=${cxId}`;
@@ -58,48 +73,37 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
       timestampString: sourceTimestamp,
     });
 
-    const bundle = prependPatientToBundle({
+    const newEncounterData = prependPatientToBundle({
       bundle: conversionResult,
       fhirPatient,
     });
     log(`Conversion complete and patient entry added`);
 
-    const nonSpecificUploadParams: Omit<StoreInS3Params, "fileName" | "payload"> = {
-      s3Utils: this.s3Utils,
-      bucketName: this.bucketName,
-      contentType: JSON_APP_MIME_TYPE,
-      log,
-      errorConfig: {
-        errorMessage: "Error uploading HL7 FHIR bundle to S3",
+    const [, result] = await Promise.all([
+      saveAdtConversionBundle({
+        cxId,
+        patientId,
+        encounterId,
+        timestamp: sourceTimestamp,
+        messageId: getMessageUniqueIdentifier(message),
+        messageCode,
+        triggerEvent,
+        bundle: newEncounterData,
         context: this.context,
-        captureParams: {
-          patientId,
-          cxId,
-          sourceTimestamp,
-        },
-        shouldCapture: true,
-      },
-    };
-
-    const newBundleFileName = buildHl7MessageFhirBundleFileKey({
-      cxId,
-      patientId,
-      timestamp: sourceTimestamp,
-      messageId: getMessageUniqueIdentifier(message),
-      messageCode,
-      triggerEvent,
-    });
-
-    await storeInS3WithRetries({
-      ...nonSpecificUploadParams,
-      payload: JSON.stringify(bundle),
-      fileName: newBundleFileName,
-    });
-    log(`Uploaded to S3. Filepath: ${newBundleFileName}`);
+        s3Utils: this.s3Utils,
+      }),
+      mergeBundleIntoAdtSourcedEncounter({
+        cxId,
+        patientId,
+        encounterId,
+        newEncounterData,
+      }),
+    ]);
 
     const bundlePresignedUrl = await this.s3Utils.getSignedUrl({
-      bucketName: this.bucketName,
-      fileName: newBundleFileName,
+      bucketName: result.bucket,
+      fileName: result.key,
+      versionId: result.versionId,
       durationSeconds: SIGNED_URL_DURATION_SECONDS,
     });
 
@@ -130,5 +134,5 @@ function prependPatientToBundle({
 }): Bundle<Resource> {
   const fhirPatientEntry = buildBundleEntry(fhirPatient);
   const combinedEntries = bundle.entry ? [fhirPatientEntry, ...bundle.entry] : [];
-  return buildBundle({ type: "collection", entries: combinedEntries });
+  return buildCollectionBundle(combinedEntries);
 }

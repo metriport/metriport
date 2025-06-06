@@ -1,10 +1,12 @@
 import { ConsolidationConversionType } from "@metriport/api-sdk";
 import { deleteConsolidated } from "@metriport/core/command/consolidated/consolidated-delete";
+import { ConsolidatedSnapshotRequestSync } from "@metriport/core/command/consolidated/get-snapshot";
+import { buildConsolidatedSnapshotConnector } from "@metriport/core/command/consolidated/get-snapshot-factory";
+import { makeIngestConsolidated } from "@metriport/core/command/consolidated/search/fhir-resource/ingest-consolidated-factory";
 import { Patient } from "@metriport/core/domain/patient";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
-import { ResourceDiffDirection } from "@metriport/shared/interface/external/ehr/resource-diff";
-import { createResourceDiffBundles } from "../../../external/ehr/create-resource-diff-bundles";
+import { startCreateResourceDiffBundlesJobsAcrossEhrs } from "../../../external/ehr/shared/job/bundle/create-resource-diff-bundles/start-jobs-across-ehrs";
 import { getConsolidated } from "../patient/consolidated-get";
 
 /**
@@ -40,14 +42,34 @@ export async function recreateConsolidated({
     processAsyncError(`Failed to delete consolidated bundle`, log)(err);
   }
   try {
-    await getConsolidated({ patient, conversionType });
-    if (isDq) {
-      createResourceDiffBundles({
+    if (conversionType) {
+      await getConsolidated({ patient, conversionType });
+    } else {
+      const payload: ConsolidatedSnapshotRequestSync = {
+        patient,
+        isAsync: false,
+        sendAnalytics: true,
+      };
+      const connector = buildConsolidatedSnapshotConnector();
+      await connector.execute(payload);
+    }
+
+    log(`Consolidated recreated`);
+
+    const ingestor = makeIngestConsolidated();
+    ingestor
+      .ingestConsolidatedIntoSearchEngine({
         cxId: patient.cxId,
         patientId: patient.id,
-        direction: ResourceDiffDirection.METRIPORT_ONLY,
+      })
+      .catch(processAsyncError("Post-DQ ingestConsolidatedIntoSearchEngine"));
+
+    if (isDq) {
+      startCreateResourceDiffBundlesJobsAcrossEhrs({
+        cxId: patient.cxId,
+        patientId: patient.id,
         requestId,
-      }).catch(processAsyncError("Post-DQ createResourceDiffBundles"));
+      }).catch(processAsyncError("Post-DQ startCreateResourceDiffBundlesJobsAcrossEhrs"));
     }
   } catch (err) {
     processAsyncError(`Post-DQ getConsolidated`, log)(err);

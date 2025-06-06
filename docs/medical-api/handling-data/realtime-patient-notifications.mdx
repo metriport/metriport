@@ -1,0 +1,480 @@
+---
+title: "Realtime Patient Notifications"
+icon: "person"
+description: "Monitor your patient's journey through health systems in real-time"
+---
+
+# Overview
+
+Metriport's **Realtime Patient Notifications** are your way to receive realtime updates on a patient's journey through a health system. You can trigger a workflow once a patient is admitted to a health system, check their diagnosis within moments of them being discharged, and so much more.
+
+## Working with Realtime Patient Notifications
+
+### Webhook schema [(Event Reference)](#event-reference)
+
+Each realtime notification we send via webhook has a payload that includes key information about the event, and a url field to JSON containing robust clinical data for the encounter.
+
+```json
+{
+  "meta": {
+    "messageId": "1e82424a-1220-473d-a0d1-6e5fde15159e",
+    "when": "2025-01-30T23:00:01.000Z",
+    "type": "patient.admit"
+  },
+  "payload": {
+    "url": "<presigned-download-url>",
+    "patientId": "metriport-patient-uuid",
+    "externalId": "your-first-party-id",
+    "additionalIds": {
+      "athenahealth": ["99992"]
+    },
+    "admitTimestamp": "2025-01-28T23:00:00.000Z"
+  }
+}
+```
+
+If you want to access the clinical data, you need only download the json from the url. To work with the data, we recommend you understand [The Encounter Model](#the-encounter-model) below.
+
+<Info>
+  The URL remains valid and available for download for 600
+  seconds (10 minutes).
+</Info>
+
+### The Encounter Model
+
+For each patient you intend to receive realtime notifications for, Metriport maintains the real-time state of their journey through the health system.
+Each of these patient journeys is represented via FHIR data - a FHIR [Encounter](https://hl7.org/fhir/R4/encounter.html).
+
+```json
+{
+  "resourceType": "Encounter",
+  "status": "finished",
+  "period": {
+    "start": "2024-03-15T14:20:00.000Z",
+    "end": "2024-03-15T16:45:00.000Z"
+  },
+  "reasonCode": [
+    {
+      "text": "Chest pain"
+    }
+  ],
+  "location": [
+    {
+      "location": {
+        "reference": "Location/3ca5e8d2-7c84-45ab-91e7-834f8becde12",
+        "type": "Location",
+        "display": "Memorial Hospital"
+      }
+    }
+  ]
+  // And much more
+}
+```
+
+But FHIR data relies on references to function. An Encounter might reference a subject, a practitioner, or a location - as the example above does (see the `reference` field in location.). Each root unit of data in FHIR is called a 'Resource' and each of type of resource has its own corresponding schema. It's common for resources to include references to one another.
+
+To provide comprehensive data about the Encounter, we serve a FHIR [Bundle](https://hl7.org/fhir/R4/bundle.html) via the `url` in the patient notification.
+
+```json
+{
+    "resourceType": "Bundle",
+    "type": "message",
+    "timestamp": "2020-05-08T13:10:15Z",
+    "id": "message-uuid",
+    "entry": [
+      { /* a FHIR Encounter */ },
+      // Other resources that are directly or transitively referenced via the FHIR encounter
+      { /* Another resource */ },
+      { /* Another resource */ },
+      { /* Another resource */ },
+      ...
+    ]
+}
+```
+
+The first item in every bundle for a Metriport's Patient Notification is the root Encounter. Every item thereafter is a resource referenced by the Encounter. The bundle acts as a container for all resources, ensuring you have a standalone package of clinical data.
+
+If you're unfamiliar with FHIR, please read our [FHIR Overview](medical-api/fhir/overview).
+
+### Handling Patient Notifications
+
+We may extend the patient notification types, so we recommend that you do a **strict** match when checking the handler type. If using a typed language like typescript, this also allows you to typecast the payload based on the appropriate event type.
+
+See below.
+
+```typescript
+import {
+  PatientAdmitPayload,
+  PatientDischargePayload,
+} from "@metriport/api-sdk";
+
+if (event.meta.type === "patient.admit") {
+  const payload = event.payload as PatientAdmitPayload;
+  // process admit message
+}
+if (event.meta.type === "patient.transfer") {
+  const payload = event.payload as PatientTransferPayload;
+  // process transfer message
+}
+if (event.meta.type === "patient.discharge") {
+  const payload = event.payload as PatientDischargePayload;
+  // process discharge message
+}
+```
+
+## Event Reference
+
+### `patient.admit`
+
+A Patient Admit event is emitted when a patient undergoes the admission process, assigning them a bed. It signals the official start of a patient's stay in a healthcare facility. It includes short stay and "John Doe" (patient name unknown) admissions.
+
+#### Schema
+
+<ResponseField name="meta" required>
+  Metadata about the message.
+
+  <Expandable title="meta properties">
+    <ResponseField name="messageId" type="string" required>
+      A unique identifier for this webhook message. Use this only for debugging purposes.
+    </ResponseField>
+    <ResponseField name="when" type="string" required>
+      An ISO-8601 datetime of when this webhook was sent.
+    </ResponseField>
+    <ResponseField name="type" type="string" required>
+      The type of the patient webhook data message. For an admit, it will be `patient.admit`.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="payload" type="PatientAdmitPayload" required>
+  <Expandable title="payload properties">
+    <ResponseField name="url" type="string" required>
+      The URL to download the FHIR bundle containing the FHIR data representing the comprehensive. It's valid for 10 minutes.
+    </ResponseField>
+
+    <ResponseField name="patientId" type="string" required>
+      The metriport patient id for this patient.
+    </ResponseField>
+
+    <ResponseField name="externalId" type="string" optional>
+      Your first party identifier assigned to this patient, if any. You can call [GET Patient](medical-api/api-reference/patient/get-patient) to check whether a patient has an external id.
+    </ResponseField>
+
+    <ResponseField name="whenSourceSent" type="string" required>
+      Specifies when this data was initially shared with Metriport.
+    </ResponseField>
+
+    <ResponseField name="additionalIds" type="object" required>
+      An array of objects describing the Documents that can be retrieved for the Patient - will only be present for `document-download` messages.
+
+      <Expandable title="object properties">
+        <ResponseField name="athenahealth" type="string[]">
+          Athena patient ID. If more than one patient in Athena maps to a Metriport patient, they
+          will all be included.
+        </ResponseField>
+
+        <ResponseField name="canvas" type="string[]">
+          Canvas patient ID. If more than one patient in Canvas maps to a Metriport patient, they
+          will all be included.
+        </ResponseField>
+
+        <ResponseField name="elation" type="string[]">
+          Elation Patient ID. If more than one patient in Elation maps to a Metriport patient, they
+          will all be included.
+        </ResponseField>
+
+        <ResponseField name="healthie" type="string[]">
+          Healthie Patient ID. If more than one patient in Healthie maps to a Metriport patient, they
+          will all be included.
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+
+    <ResponseField name="admitTimestamp" type="string">
+      When the patient for this encounter was officially admitted for care.
+    </ResponseField>
+
+  </Expandable>
+</ResponseField>
+
+#### Example payload
+
+```json
+{
+  "meta": {
+    "messageId": "1e82424a-1220-473d-a0d1-6e5fde15159e",
+    "when": "2025-01-30T23:00:01.000Z",
+    "type": "patient.admit"
+  },
+  "payload": {
+    "url": "<presigned-download-url>",
+    "patientId": "metriport-patient-uuid",
+    "externalId": "your-first-party-id",
+    "additionalIds": {
+      "athenahealth": ["99992"]
+    },
+    "admitTimestamp": "2025-01-28T23:00:00.000Z"
+  }
+}
+```
+
+### `patient.transfer`
+
+A Patient Transfer event indicates that a patient has been moved from one location to another within a healthcare system. This could represent a transfer between departments, units, or facilities.
+
+#### Schema
+
+<ResponseField name="meta" required>
+  Metadata about the message.
+
+  <Expandable title="meta properties">
+    <ResponseField name="messageId" type="string" required>
+      A unique identifier for this webhook message. Use this only for debugging purposes.
+    </ResponseField>
+    <ResponseField name="when" type="string" required>
+      An ISO-8601 datetime of when this webhook was sent.
+    </ResponseField>
+    <ResponseField name="type" type="string" required>
+      The type of the patient webhook data message. For a transfer, it will be `patient.transfer`.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="payload" type="PatientTransferPayload" required>
+  <Expandable title="payload properties">
+    <ResponseField name="url" type="string" required>
+      The URL to download the FHIR bundle containing the FHIR data representing the comprehensive encounter. It's valid for 10 minutes.
+    </ResponseField>
+
+    <ResponseField name="patientId" type="string" required>
+      The metriport patient id for this patient.
+    </ResponseField>
+
+    <ResponseField name="externalId" type="string" optional>
+      Your first party identifier assigned to this patient, if any. You can call [GET Patient](medical-api/api-reference/patient/get-patient) to check whether a patient has an external id.
+    </ResponseField>
+
+    <ResponseField name="whenSourceSent" type="string" required>
+      Specifies when this data was initially shared with Metriport.
+    </ResponseField>
+
+    <ResponseField name="additionalIds" type="object" required>
+      An array of objects describing the Documents that can be retrieved for the Patient - will only be present for `document-download` messages.
+
+      <Expandable title="object properties">
+        <ResponseField name="athenahealth" type="string[]">
+          Athena patient ID. If more than one patient in Athena maps to a Metriport patient, they
+          will all be included.
+        </ResponseField>
+
+        <ResponseField name="canvas" type="string[]">
+          Canvas patient ID. If more than one patient in Canvas maps to a Metriport patient, they
+          will all be included.
+        </ResponseField>
+
+        <ResponseField name="elation" type="string[]">
+          Elation Patient ID. If more than one patient in Elation maps to a Metriport patient, they
+          will all be included.
+        </ResponseField>
+
+        <ResponseField name="healthie" type="string[]">
+          Healthie Patient ID. If more than one patient in Healthie maps to a Metriport patient, they
+          will all be included.
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+
+    <ResponseField name="admitTimestamp" type="string">
+      When the patient for this encounter was officially admitted for care.
+    </ResponseField>
+
+    <ResponseField name="transfers" type="array" required>
+      An array of transfer records, each representing a single transfer of the patient from one location to another.
+
+      <Expandable title="array item properties">
+        <ResponseField name="timestamp" type="string">
+          When this specific transfer occurred.
+        </ResponseField>
+
+        <ResponseField name="sourceLocation" type="object">
+          Information about the location the patient was transferred from.
+
+          <Expandable title="object properties">
+            <ResponseField name="name" type="string">
+              The name of the source location.
+            </ResponseField>
+            <ResponseField name="type" type="string">
+              The type of the source location (e.g., department, unit, facility).
+            </ResponseField>
+          </Expandable>
+        </ResponseField>
+
+        <ResponseField name="destinationLocation" type="object">
+          Information about the location the patient was transferred to.
+
+          <Expandable title="object properties">
+            <ResponseField name="name" type="string">
+              The name of the destination location.
+            </ResponseField>
+            <ResponseField name="type" type="string">
+              The type of the destination location (e.g., department, unit, facility).
+            </ResponseField>
+          </Expandable>
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+
+  </Expandable>
+</ResponseField>
+
+#### Example payload
+
+```json
+{
+  "meta": {
+    "messageId": "1e82424a-1220-473d-a0d1-6e5fde15159e",
+    "when": "2025-01-30T20:30:01.000Z",
+    "type": "patient.transfer"
+  },
+  "payload": {
+    "url": "<presigned-download-url>",
+    "patientId": "metriport-patient-uuid",
+    "externalId": "your-first-party-id",
+    "additionalIds": {
+      "athenahealth": ["99992"]
+    },
+    "admitTimestamp": "2025-01-28T23:00:00.000Z",
+    "transfers": [
+      {
+        "timestamp": "2025-01-29T15:45:00.000Z",
+        "sourceLocation": {
+          "name": "Emergency Department",
+          "type": "department"
+        },
+        "destinationLocation": {
+          "name": "General Medical Ward",
+          "type": "unit"
+        }
+      },
+      {
+        "timestamp": "2025-01-30T20:30:00.000Z",
+        "sourceLocation": {
+          "name": "General Medical Ward",
+          "type": "unit"
+        },
+        "destinationLocation": {
+          "name": "Intensive Care Unit",
+          "type": "unit"
+        }
+      }
+    ]
+  }
+}
+```
+
+### `patient.discharge`
+
+A Patient Discharge event indicates the end of a patient's stay in a healthcare facility. The patient now has the status "discharged" and an officially recorded discharge date.
+
+#### Schema
+
+<ResponseField name="meta" required>
+  Metadata about the message.
+
+  <Expandable title="meta properties">
+    <ResponseField name="messageId" type="string" required>
+      A unique identifier for this webhook message. Use this only for debugging purposes.
+    </ResponseField>
+    <ResponseField name="when" type="string" required>
+      An ISO-8601 datetime of when this webhook was sent.
+    </ResponseField>
+    <ResponseField name="type" type="string" required>
+      The type of the patient webhook data message. For an discharge, it will be `patient.discharge`.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="payload" type="PatientDischargePayload" required>
+  <Expandable title="payload properties">
+    <ResponseField name="url" type="string" required>
+      The URL to download the FHIR bundle containing the FHIR data representing the comprehensive. It's valid for 10 minutes.
+    </ResponseField>
+    
+    <ResponseField name="patientId" type="string" required>
+      The metriport patient id for this patient.
+    </ResponseField>
+
+    <ResponseField name="externalId" type="string" optional>
+      Your first party identifier assigned to this patient, if any. You can call [GET Patient](medical-api/api-reference/patient/get-patient) to check whether a patient has an external id.
+    </ResponseField>
+
+    <ResponseField name="whenSourceSent" type="string" required>
+      Specifies when this data was initially shared with Metriport.
+    </ResponseField>
+
+    <ResponseField name="additionalIds" type="object" required>
+      An array of objects describing the Documents that can be retrieved for the Patient - will only be present for `document-download` messages.
+
+      <Expandable title="object properties">
+        <ResponseField name="athenahealth" type="string[]">
+          Athena patient ID. If more than one patient in Athena maps to a Metriport patient, they
+          will all be included.
+        </ResponseField>
+
+        <ResponseField name="canvas" type="string[]">
+          Canvas patient ID. If more than one patient in Canvas maps to a Metriport patient, they
+          will all be included.
+        </ResponseField>
+
+        <ResponseField name="elation" type="string[]">
+          Elation Patient ID. If more than one patient in Elation maps to a Metriport patient, they
+          will all be included.
+        </ResponseField>
+
+        <ResponseField name="healthie" type="string[]">
+          Healthie Patient ID. If more than one patient in Healthie maps to a Metriport patient, they
+          will all be included.
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+
+    <ResponseField name="admitTimestamp" type="string">
+      When the patient for this encounter was officially admitted for care.
+    </ResponseField>
+
+    <ResponseField name="dischargeTimestamp" type="string">
+      When the patient for this encounter was officially discharged by the provider.
+    </ResponseField>
+
+  </Expandable>
+</ResponseField>
+
+#### Example payload
+
+```json
+{
+  "meta": {
+    "messageId": "1e82424a-1220-473d-a0d1-6e5fde15159e",
+    "when": "2025-01-30T23:00:01.000Z",
+    "type": "patient.discharge"
+  },
+  "payload": {
+    "url": "<presigned-download-url>",
+    "patientId": "metriport-patient-uuid",
+    "externalId": "your-first-party-id",
+    "additionalIds": {
+      "athenahealth": ["99992"]
+    },
+    "admitTimestamp": "2025-01-28T23:00:00.000Z",
+    "dischargeTimestamp": "2025-01-30T23:00:00.000Z"
+  }
+}
+```
+
+## Additional Resources
+
+### Full FHIR Encounter
+
+The below is an example of a full FHIR encounter
+
+<Snippet file="example-adt-encounter-json.mdx" />

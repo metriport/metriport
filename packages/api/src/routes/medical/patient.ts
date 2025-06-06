@@ -1,29 +1,28 @@
 import { ConsolidatedQuery, consolidationConversionType } from "@metriport/api-sdk";
 import { GetConsolidatedQueryProgressResponse } from "@metriport/api-sdk/medical/models/patient";
+import { getConsolidatedPatientData } from "@metriport/core/command/consolidated/consolidated-get";
+import { makeSearchConsolidated } from "@metriport/core/command/consolidated/search/fhir-resource/search-consolidated-factory";
 import { mrFormat } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { MAXIMUM_UPLOAD_FILE_SIZE } from "@metriport/core/external/aws/lambda-logic/document-uploader";
 import { toFHIR } from "@metriport/core/external/fhir/patient/conversion";
 import { getRequestId } from "@metriport/core/util/request";
-import { isTrue, stringToBoolean, NotFoundError, BadRequestError } from "@metriport/shared";
+import { BadRequestError, isTrue, NotFoundError, stringToBoolean } from "@metriport/shared";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
 import { orderBy } from "lodash";
 import { z } from "zod";
 import { areDocumentsProcessing } from "../../command/medical/document/document-status";
-import {
-  getConsolidatedPatientData,
-  startConsolidatedQuery,
-} from "../../command/medical/patient/consolidated-get";
+import { startConsolidatedQuery } from "../../command/medical/patient/consolidated-get";
 import {
   getMedicalRecordSummary,
   getMedicalRecordSummaryStatus,
 } from "../../command/medical/patient/create-medical-record";
-import { setHieOptOut, getHieOptOut } from "../../command/medical/patient/update-hie-opt-out";
 import { handleDataContribution } from "../../command/medical/patient/data-contribution/handle-data-contributions";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
 import { getConsolidatedWebhook } from "../../command/medical/patient/get-consolidated-webhook";
 import { getPatientFacilityMatches } from "../../command/medical/patient/get-patient-facility-matches";
+import { getHieOptOut, setHieOptOut } from "../../command/medical/patient/update-hie-opt-out";
 import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
 import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
 import { countResources } from "../../external/fhir/patient/count-resources";
@@ -38,9 +37,9 @@ import { asyncHandler, getFrom, getFromQueryAsBoolean } from "../util";
 import { dtoFromModel } from "./dtos/patientDTO";
 import { bundleSchema, getResourcesQueryParam } from "./schemas/fhir";
 import {
+  PatientHieOptOutResponse,
   patientUpdateSchema,
   schemaUpdateToPatientData,
-  PatientHieOptOutResponse,
 } from "./schemas/patient";
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
 
@@ -180,6 +179,31 @@ router.get(
   })
 );
 
+/**
+ * GET /patient/:id/consolidated/search
+ *
+ * Searches on a patient's consolidated data and returns the resources that match the query.
+ *
+ * Also includes DocumentResources that match the query, using the document search (GET /document)
+ *
+ * @param req.cxId The customer ID.
+ * @param req.param.id The ID of the patient whose data is to be returned.
+ * @param req.query.query The query to search for.
+ */
+router.get(
+  "/consolidated/search",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const { patient } = getPatientInfoOrFail(req);
+    const queryParam = getFrom("query").optional("query", req);
+    const query = queryParam ? queryParam.trim() : undefined;
+
+    const result = await makeSearchConsolidated().search({ patient, query });
+
+    return res.status(status.OK).json(result);
+  })
+);
+
 /** ---------------------------------------------------------------------------
  * GET /patient/:id/consolidated/query
  *
@@ -249,12 +273,12 @@ const medicalRecordFormatSchema = z.enum(mrFormat);
  *
  * @param req.cxId The customer ID.
  * @param req.param.id The ID of the patient whose data is to be returned.
+ * @param req.query.conversionType Required to indicate the file format you get the document back in.
+ *        Accepts "pdf", "html", and "json". The Webhook payload will contain a signed URL to download
+ *        the file, which is active for 3 minutes.
  * @param req.query.resources Optional comma-separated list of resources to be returned.
  * @param req.query.dateFrom Optional start date that resources will be filtered by (inclusive).
  * @param req.query.dateTo Optional end date that resources will be filtered by (inclusive).
- * @param req.query.conversionType Optional to indicate the file format you get the document back in.
- *        Accepts "pdf", "html", and "json". If provided, the Webhook payload will contain a signed URL to download
- *        the file, which is active for 3 minutes. If not provided, will send json payload in the webhook.
  * @param req.body Optional metadata to be sent through Webhook.
  * @param req.query.fromDashboard Optional parameter to indicate that the request is coming from the dashboard.
  * @return status for querying the Patient's consolidated data.
@@ -268,10 +292,10 @@ router.post(
     const resources = getResourcesQueryParam(req);
     const dateFrom = parseISODate(getFrom("query").optional("dateFrom", req));
     const dateTo = parseISODate(getFrom("query").optional("dateTo", req));
-    const type = getFrom("query").optional("conversionType", req);
+    const type = getFrom("query").orFail("conversionType", req);
     const fromDashboard = getFromQueryAsBoolean("fromDashboard", req);
 
-    const conversionType = type ? consolidationConversionTypeSchema.parse(type) : undefined;
+    const conversionType = consolidationConversionTypeSchema.parse(type);
     const cxConsolidatedRequestMetadata = cxRequestMetadataSchema.parse(req.body);
 
     const respPayload = await startConsolidatedQuery({
@@ -362,9 +386,9 @@ async function putConsolidated(req: Request, res: Response) {
     );
   }
   const requestId = getRequestId();
-  const { cxId, id: patientId } = getPatientInfoOrFail(req);
+  const { cxId, patient } = getPatientInfoOrFail(req);
   const bundle = bundleSchema.parse(req.body);
-  const results = await handleDataContribution({ requestId, patientId, cxId, bundle });
+  const results = await handleDataContribution({ requestId, patient, cxId, bundle });
   return res.setHeader(REQUEST_ID_HEADER_NAME, requestId).status(status.OK).json(results);
 }
 

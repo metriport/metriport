@@ -34,14 +34,17 @@ import {
   ServiceRequest,
 } from "@medplum/fhirtypes";
 import { filterTruthy } from "@metriport/shared/common/filter-map";
-import { isBinary } from ".";
-import { SearchSetBundle } from "@metriport/shared/medical";
+import {
+  CollectionBundle,
+  SearchSetBundle,
+  sortObservationsForDisplay,
+} from "@metriport/shared/medical";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { cloneDeep, uniq } from "lodash";
+import { isBinary } from ".";
 import { wrapIdInUrnId, wrapIdInUrnUuid } from "../../../util/urn";
 import { isValidUuid } from "../../../util/uuid-v7";
-import { sortObservationsForDisplay } from "@metriport/shared/medical";
 
 dayjs.extend(duration);
 
@@ -75,7 +78,7 @@ export function getReferencesFromResources({
   referencesToExclude?: ResourceType[];
 }): { references: Reference[]; missingReferences: ReferenceWithIdAndType[] } {
   if (resources.length <= 0) return { references: [], missingReferences: [] };
-  const resourceIds = resources.flatMap(r => r.id ?? []);
+  const resourceIds = new Set(resources.flatMap(r => r.id ?? []));
   const references = getReferences({
     resources,
     referencesToInclude,
@@ -84,7 +87,7 @@ export function getReferencesFromResources({
   const missingReferences: ReferenceWithIdAndType[] = [];
   for (const ref of references) {
     if (!ref.id) continue;
-    if (!resourceIds.includes(ref.id)) missingReferences.push(ref);
+    if (!resourceIds.has(ref.id)) missingReferences.push(ref);
   }
   return { references, missingReferences };
 }
@@ -123,6 +126,7 @@ export function getReferences({
     const ref = match[1];
     if (ref) references.push(ref);
   }
+
   const uniqueRefs = uniq(references);
 
   const preResult: ReferenceWithIdAndType[] = uniqueRefs
@@ -140,22 +144,14 @@ export function getReferences({
   return remainingRefs;
 }
 
-function buildReferenceFromStringRelative(reference: string): ReferenceWithIdAndType | undefined {
+export function buildReferenceFromStringRelative(
+  reference: string
+): ReferenceWithIdAndType | undefined {
   const parts = reference.split("/");
   const type = parts[0] as ResourceType | undefined;
   const id = parts[1];
   if (!id || !type) return undefined;
   return { id, type, reference };
-}
-
-export function buildBundle({
-  type = "searchset",
-  entries = [],
-}: {
-  type?: Bundle["type"];
-  entries?: BundleEntry[];
-} = {}): Bundle {
-  return { resourceType: "Bundle", total: entries.length, type, entry: entries };
 }
 
 export function buildBundleFromResources({
@@ -173,12 +169,42 @@ export function buildBundleFromResources({
   };
 }
 
-export function buildSearchSetBundle<T extends Resource = Resource>({
+export type RequiredBundleType = NonNullable<Bundle["type"]>;
+
+export type BundleType<B extends RequiredBundleType, R extends Resource> = Bundle<R> & {
+  type?: B;
+};
+
+export type ReturnBundleType<B extends RequiredBundleType, R extends Resource> = Required<
+  Pick<BundleType<B, R>, "type">
+> &
+  Omit<BundleType<B, R>, "type">;
+
+export function buildBundle<B extends RequiredBundleType, R extends Resource>({
+  type,
   entries = [],
 }: {
-  entries?: BundleEntry<T>[];
-} = {}): SearchSetBundle<T> {
-  return buildBundle({ type: "searchset", entries }) as SearchSetBundle<T>;
+  type: B;
+  entries?: BundleEntry<R>[];
+}): ReturnBundleType<B, R> {
+  return {
+    resourceType: "Bundle" as const,
+    total: entries.length,
+    type,
+    entry: entries,
+  };
+}
+
+export function buildCollectionBundle<T extends Resource = Resource>(
+  entries: BundleEntry<T>[] = []
+): CollectionBundle<T> {
+  return buildBundle({ type: "collection", entries });
+}
+
+export function buildSearchSetBundle<T extends Resource = Resource>(
+  entries: BundleEntry<T>[] = []
+): SearchSetBundle<T> {
+  return buildBundle({ type: "searchset", entries });
 }
 
 export const buildBundleEntry = <T extends Resource>(resource: T): BundleEntry<T> => {

@@ -46,6 +46,7 @@ import { EnvType } from "./env-type";
 import { FeatureFlagsNestedStack } from "./feature-flags-nested-stack";
 import { Hl7NotificationWebhookSenderNestedStack } from "./hl7-notification-webhook-sender-nested-stack";
 import { IHEGatewayV2LambdasNestedStack } from "./ihe-gateway-v2-stack";
+import { LambdasLayersNestedStack } from "./lambda-layers-nested-stack";
 import { CDA_TO_VIS_TIMEOUT, LambdasNestedStack } from "./lambdas-nested-stack";
 import { PatientImportNestedStack } from "./patient-import-nested-stack";
 import { RateLimitingNestedStack } from "./rate-limiting-nested-stack";
@@ -57,6 +58,8 @@ import { getSecrets, Secrets } from "./shared/secrets";
 import { provideAccessToQueue } from "./shared/sqs";
 import { isProd, isSandbox } from "./shared/util";
 import { wafRules } from "./shared/waf-rules";
+import { SurescriptsNestedStack } from "./surescripts/surescripts-stack";
+
 const FITBIT_LAMBDA_TIMEOUT = Duration.seconds(60);
 
 interface APIStackProps extends StackProps {
@@ -116,7 +119,7 @@ export class APIStack extends Stack {
     // Buckets
     //-------------------------------------------
     let outgoingHl7NotificationBucket: s3.IBucket | undefined;
-    if (!isSandbox(props.config) && props.config.hl7Notification.outgoingMessageBucketName) {
+    if (props.config.hl7Notification) {
       outgoingHl7NotificationBucket = s3.Bucket.fromBucketName(
         this,
         "OutgoingHl7MessageBucket",
@@ -298,6 +301,17 @@ export class APIStack extends Stack {
       ],
     });
 
+    let hl7ConversionBucket: s3.Bucket | undefined;
+    if (!isSandbox(props.config) && props.config.hl7Notification.hl7ConversionBucketName) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      hl7ConversionBucket = new s3.Bucket(this, "HL7ConversionBucket", {
+        bucketName: props.config.hl7Notification.hl7ConversionBucketName,
+        publicReadAccess: false,
+        encryption: s3.BucketEncryption.S3_MANAGED,
+        versioned: true,
+      });
+    }
+
     let ehrResponsesBucket: s3.Bucket | undefined;
     if (!isSandbox(props.config)) {
       ehrResponsesBucket = new s3.Bucket(this, "EhrResponsedBucket", {
@@ -336,10 +350,33 @@ export class APIStack extends Stack {
       : undefined;
 
     //-------------------------------------------
+    // Lambda Layers
+    //-------------------------------------------
+    const { lambdaLayers } = new LambdasLayersNestedStack(this, "LambdasLayersNestedStack");
+
+    //-------------------------------------------
+    // OPEN SEARCH Domains
+    //-------------------------------------------
+    const {
+      ccdaIngestionQueue: ccdaSearchIngestionQueue,
+      searchDomainEndpoint,
+      searchDomainUserName,
+      searchDomainSecret,
+      ccdaIndexName: ccdaSearchIndexName,
+    } = ccdaSearch.setup({
+      stack: this,
+      vpc: this.vpc,
+      awsAccount,
+      ccdaS3Bucket: medicalDocumentsBucket,
+      lambdaLayers,
+      envType: props.config.environmentType,
+      alarmSnsAction: slackNotification?.alarmAction,
+    });
+
+    //-------------------------------------------
     // General lambdas
     //-------------------------------------------
     const {
-      lambdaLayers,
       cdaToVisualizationLambda,
       documentDownloaderLambda,
       fhirToCdaConverterLambda,
@@ -353,11 +390,15 @@ export class APIStack extends Stack {
         lambda: fhirConverterLambda,
         bucket: fhirConverterBucket,
       },
-      hl7v2RosterUploadLambda,
+      hl7v2RosterUploadLambdas,
       conversionResultNotifierLambda,
+      consolidatedSearchLambda,
+      consolidatedIngestionLambda,
+      consolidatedIngestionQueue,
     } = new LambdasNestedStack(this, "LambdasNestedStack", {
       config: props.config,
       vpc: this.vpc,
+      lambdaLayers,
       dbCluster,
       dbCredsSecret,
       secrets,
@@ -366,13 +407,22 @@ export class APIStack extends Stack {
       alarmAction: slackNotification?.alarmAction,
       bedrock: props.config.bedrock,
       featureFlagsTable,
+      openSearch: {
+        endpoint: searchDomainEndpoint,
+        auth: {
+          userName: searchDomainUserName,
+          secret: searchDomainSecret,
+        },
+        consolidatedIndexName: props.config.openSearch.openSearch.consolidatedIndexName,
+        documentIndexName: props.config.openSearch.openSearch.indexName,
+      },
     });
 
     //-------------------------------------------
     // HL7 Notification Webhook Sender
     //-------------------------------------------
     let hl7NotificationWebhookSenderLambda: lambda.Function | undefined;
-    if (!isSandbox(props.config) && outgoingHl7NotificationBucket) {
+    if (props.config.hl7Notification && outgoingHl7NotificationBucket && hl7ConversionBucket) {
       const { lambda } = new Hl7NotificationWebhookSenderNestedStack(
         this,
         "Hl7NotificationWebhookSenderNestedStack",
@@ -382,6 +432,7 @@ export class APIStack extends Stack {
           vpc: this.vpc,
           alarmAction: slackNotification?.alarmAction,
           outgoingHl7NotificationBucket,
+          hl7ConversionBucket,
           secrets,
         }
       );
@@ -409,14 +460,13 @@ export class APIStack extends Stack {
     // EHR
     //-------------------------------------------
     const {
+      getAppointmentsLambda: ehrGetAppointmentsLambda,
       syncPatientQueue: ehrSyncPatientQueue,
       syncPatientLambda: ehrSyncPatientLambda,
       elationLinkPatientQueue,
       elationLinkPatientLambda,
       healthieLinkPatientQueue,
       healthieLinkPatientLambda,
-      startResourceDiffBundlesQueue: ehrStartResourceDiffBundlesQueue,
-      startResourceDiffBundlesLambda: ehrStartResourceDiffBundlesLambda,
       computeResourceDiffBundlesLambda: ehrComputeResourceDiffBundlesLambda,
       refreshEhrBundlesQueue: ehrRefreshEhrBundlesQueue,
       refreshEhrBundlesLambda: ehrRefreshEhrBundlesLambda,
@@ -426,8 +476,22 @@ export class APIStack extends Stack {
       lambdaLayers,
       vpc: this.vpc,
       alarmAction: slackNotification?.alarmAction,
+      ehrResponsesBucket,
       medicalDocumentsBucket,
     });
+
+    //-------------------------------------------
+    // Surescripts
+    //-------------------------------------------
+    let surescriptsStack: SurescriptsNestedStack | undefined = undefined;
+    if (props.config.surescripts) {
+      surescriptsStack = new SurescriptsNestedStack(this, "SurescriptsNestedStack", {
+        config: props.config,
+        vpc: this.vpc,
+        alarmAction: slackNotification?.alarmAction,
+        lambdaLayers,
+      });
+    }
 
     //-------------------------------------------
     // Rate Limiting
@@ -435,25 +499,6 @@ export class APIStack extends Stack {
     const { rateLimitTable } = new RateLimitingNestedStack(this, "RateLimitingNestedStack", {
       config: props.config,
       alarmAction: slackNotification?.alarmAction,
-    });
-
-    //-------------------------------------------
-    // OPEN SEARCH Domains
-    //-------------------------------------------
-    const {
-      queue: ccdaSearchQueue,
-      searchDomain: ccdaSearchDomain,
-      searchDomainUserName: ccdaSearchUserName,
-      searchDomainSecret: ccdaSearchSecret,
-      indexName: ccdaSearchIndexName,
-    } = ccdaSearch.setup({
-      stack: this,
-      vpc: this.vpc,
-      awsAccount,
-      ccdaS3Bucket: medicalDocumentsBucket,
-      lambdaLayers,
-      envType: props.config.environmentType,
-      alarmSnsAction: slackNotification?.alarmAction,
     });
 
     //-------------------------------------------
@@ -543,8 +588,8 @@ export class APIStack extends Stack {
       ehrSyncPatientQueue,
       elationLinkPatientQueue,
       healthieLinkPatientQueue,
-      ehrStartResourceDiffBundlesQueue,
       ehrRefreshEhrBundlesQueue,
+      ehrGetAppointmentsLambda,
       ehrBundleBucket,
       generalBucket,
       conversionBucket: fhirConverterBucket,
@@ -554,13 +599,16 @@ export class APIStack extends Stack {
       fhirToCdaConverterLambda,
       fhirToBundleLambda,
       fhirToBundleCountLambda,
+      consolidatedSearchLambda,
+      consolidatedIngestionQueue,
       rateLimitTable,
-      searchIngestionQueue: ccdaSearchQueue,
-      searchEndpoint: ccdaSearchDomain.domainEndpoint,
-      searchAuth: { userName: ccdaSearchUserName, secret: ccdaSearchSecret },
+      searchIngestionQueue: ccdaSearchIngestionQueue,
+      searchEndpoint: searchDomainEndpoint,
+      searchAuth: { userName: searchDomainUserName, secret: searchDomainSecret },
       searchIndexName: ccdaSearchIndexName,
       featureFlagsTable,
       cookieStore,
+      surescriptsAssets: surescriptsStack?.getAssets(),
     });
     const apiLoadBalancerAddress = apiLoadBalancer.loadBalancerDnsName;
 
@@ -629,7 +677,7 @@ export class APIStack extends Stack {
       outboundDocumentRetrievalLambda,
       fhirToBundleLambda,
       fhirToBundleCountLambda,
-      hl7v2RosterUploadLambda,
+      ...(hl7v2RosterUploadLambdas ?? []),
       hl7NotificationWebhookSenderLambda,
       patientImportCreateLambda,
       patientImportParseLambda,
@@ -638,15 +686,17 @@ export class APIStack extends Stack {
       ehrSyncPatientLambda,
       elationLinkPatientLambda,
       healthieLinkPatientLambda,
-      ehrStartResourceDiffBundlesLambda,
       ehrComputeResourceDiffBundlesLambda,
       ehrRefreshEhrBundlesLambda,
+      ehrGetAppointmentsLambda,
       fhirConverterLambda,
       conversionResultNotifierLambda,
+      consolidatedSearchLambda,
+      consolidatedIngestionLambda,
     ];
-    lambdasToGetApiUrl.forEach(lambda =>
-      lambda?.addEnvironment("API_URL", `http://${apiDirectUrl}`)
-    );
+    const apiUrl = `http://${apiDirectUrl}`;
+    lambdasToGetApiUrl.forEach(lambda => lambda?.addEnvironment("API_URL", apiUrl));
+    if (surescriptsStack) surescriptsStack.setApiUrl(apiDirectUrl);
 
     // TODO move this to each place where it's used
     // Access grant for medical documents bucket
@@ -655,7 +705,7 @@ export class APIStack extends Stack {
     medicalDocumentsBucket.grantReadWrite(apiService.taskDefinition.taskRole);
     medicalDocumentsBucket.grantReadWrite(documentDownloaderLambda);
     medicalDocumentsBucket.grantRead(fhirConverterLambda);
-    medicalDocumentsBucket.grantRead(ehrStartResourceDiffBundlesLambda);
+    medicalDocumentsBucket.grantRead(ehrComputeResourceDiffBundlesLambda);
 
     createDocQueryChecker({
       lambdaLayers,
@@ -856,10 +906,10 @@ export class APIStack extends Stack {
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: slackNotification?.alarmAction,
-      searchEndpoint: ccdaSearchDomain.domainEndpoint,
+      searchEndpoint: searchDomainEndpoint,
       searchIndex: ccdaSearchIndexName,
-      searchUserName: ccdaSearchUserName,
-      searchPassword: ccdaSearchSecret.secretValue.unsafeUnwrap(),
+      searchUserName: searchDomainUserName,
+      searchPassword: searchDomainSecret.secretValue.unsafeUnwrap(),
       apiTaskRole: apiService.service.taskDefinition.taskRole,
       apiAddress: apiDirectUrl,
     });

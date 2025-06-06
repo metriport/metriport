@@ -1,111 +1,213 @@
+import { faker } from "@faker-js/faker";
 import { USState } from "@metriport/shared";
+import _ from "lodash";
+import { makePatient } from "../../../domain/__tests__/patient";
 import { Address } from "../../../domain/address";
-import { Hl7v2Subscriber } from "../../../domain/patient-settings";
-import { convertSubscribersToHieFormat } from "../hl7v2-roster-generator";
+import * as rosterGeneratorModule from "../hl7v2-roster-generator";
+import * as packIdsModule from "../utils";
+
+const states = [USState.MA];
 
 describe("AdtRosterGenerator", () => {
-  describe("convertToHieFormat", () => {
-    const mockSchema = {
-      firstName: "FIRST NAME",
-      lastName: "LAST NAME",
-      dob: "DOB",
-      genderAtBirth: "GENDER",
-      "address[0].addressLine2": "STREET NUMBER",
-      "address[0].addressLine1": "STREET ADDRESS",
-      "address[0].city": "CITY",
-      "address[0].state": "STATE",
-      "address[0].zip": "ZIP",
-      phone: "PHONE",
-      email: "EMAIL",
-      ssn: "SSN",
-      driversLicense: "DRIVERS LICENSE",
-    };
+  let scrambleIdMock: jest.SpyInstance;
+  let patientId: string;
+  let cxId: string;
+  let scrambledId: string;
 
-    const baseAddress: Address = {
-      addressLine1: "123 Main St",
-      city: "Boston",
-      state: USState.MA,
-      zip: "02108",
-      country: "USA",
-    };
+  const mockMinimalSchema = {
+    scrambledId: "ID",
+    firstName: "FIRST NAME",
+    lastName: "LAST NAME",
+    dob: "DOB",
+  };
 
-    const secondaryAddress: Address = {
-      addressLine1: "456 Oak St",
-      addressLine2: "#101",
-      city: "Cambridge",
-      state: USState.MA,
-      zip: "02139",
-      country: "USA",
-    };
+  const mockSchema = {
+    ...mockMinimalSchema,
+    genderAtBirth: "GENDER",
+    address1AddressLine1: "STREET ADDRESS", // TODO: remove this
+    address1AddressLine2: "STREET NUMBER",
+    address1City: "CITY",
+    address1State: "STATE",
+    address1Zip: "ZIP",
+    phone: "PHONE",
+    email: "EMAIL",
+    ssn: "SSN",
+    driversLicense: "DRIVERS LICENSE",
+    authorizingParticipantFacilityCode: "AUTHORIZING PARTICIPANT FACILITY CODE",
+    assigningAuthorityIdentifier: "ASSIGNING AUTHORITY IDENTIFIER",
+  };
 
-    const ssn = "123-45-6789";
-    const driversLicense = "DL123456";
-    const phoneNumber = "600-700-8000";
-    const email = "john@doe.com";
+  const baseAddress: Address = {
+    addressLine1: "123 Main St",
+    addressLine2: "Unit 1",
+    city: "Boston",
+    state: USState.MA,
+    zip: "02108",
+    country: "USA",
+  };
 
+  const secondaryAddress: Address = {
+    addressLine1: "456 Oak St",
+    addressLine2: "#101",
+    city: "Cambridge",
+    state: USState.MA,
+    zip: "02139",
+    country: "USA",
+  };
+
+  const ssn = "123-45-6789";
+  const driversLicense = "DL123456";
+  const phoneNumber = "600-700-8000";
+  const email = "john@doe.com";
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    scrambleIdMock = jest.spyOn(packIdsModule, "createScrambledId");
+    patientId = faker.string.uuid();
+    cxId = faker.string.uuid();
+    scrambledId = `${cxId}_${patientId}`;
+    scrambleIdMock.mockReturnValueOnce(scrambledId);
+  });
+
+  afterAll(() => {
+    jest.restoreAllMocks();
+  });
+
+  describe("createRosterRowInput", () => {
+    it("should only keep addresses from relevant states", () => {
+      const secondaryAddress: Address = {
+        addressLine1: "123 TX st",
+        city: "Austin",
+        state: USState.TX,
+        zip: "98765",
+        country: "USA",
+      };
+
+      const tertiaryAddress: Address = {
+        addressLine1: "123 CA st",
+        city: "Los Angeles",
+        state: USState.CA,
+        zip: "12345",
+        country: "USA",
+      };
+
+      const patient = makePatient({
+        id: patientId,
+        cxId,
+        data: {
+          firstName: "Jane",
+          lastName: "Smith",
+          dob: "1985-12-31",
+          genderAtBirth: "F",
+          address: [secondaryAddress, baseAddress, tertiaryAddress],
+        },
+      });
+      delete patient.data.contact;
+      delete patient.data.personalIdentifiers;
+
+      const input = rosterGeneratorModule.createRosterRowInput(
+        patient,
+        { shortcode: "TEST" },
+        states
+      );
+
+      expect(
+        _.isMatch(input, {
+          address1AddressLine1: baseAddress.addressLine1,
+          address1AddressLine2: baseAddress.addressLine2,
+          address1City: baseAddress.city,
+          address1State: baseAddress.state,
+          address1Zip: baseAddress.zip,
+        })
+      ).toBe(true);
+    });
+  });
+
+  describe("createRosterRow", () => {
     it("should convert all fields correctly including multiple addresses and identifiers", () => {
-      const subscribers: Hl7v2Subscriber[] = [
-        {
-          id: "123",
-          cxId: "cx123",
+      const patient = makePatient({
+        id: patientId,
+        cxId,
+        data: {
           firstName: "John",
           lastName: "Doe",
           dob: "1990-01-01",
           genderAtBirth: "M",
           address: [baseAddress, secondaryAddress],
-          ssn,
-          driversLicense,
-          phone: phoneNumber,
-          email,
+          personalIdentifiers: [
+            { type: "ssn", value: ssn },
+            { type: "driversLicense", state: USState.MA, value: driversLicense },
+          ],
+          contact: [
+            {
+              phone: phoneNumber,
+              email,
+            },
+          ],
         },
-      ];
+      });
 
-      const result = convertSubscribersToHieFormat(subscribers, mockSchema);
+      const input = rosterGeneratorModule.createRosterRowInput(
+        patient,
+        { shortcode: "TESTCODE" },
+        states
+      );
 
-      expect(result).toHaveLength(1);
-      expect(result[0]).toEqual({
+      const result = rosterGeneratorModule.createRosterRow(input, mockSchema);
+
+      expect(result).toEqual({
+        ID: scrambledId,
         "FIRST NAME": "John",
         "LAST NAME": "Doe",
-        "STREET ADDRESS": "123 Main St",
-        CITY: "Boston",
-        STATE: "MA",
-        ZIP: "02108",
+        "STREET ADDRESS": baseAddress.addressLine1,
+        "STREET NUMBER": baseAddress.addressLine2,
+        CITY: baseAddress.city,
+        STATE: baseAddress.state,
+        ZIP: baseAddress.zip,
         SSN: "123-45-6789",
         "DRIVERS LICENSE": "DL123456",
         DOB: "1990-01-01",
         GENDER: "M",
         PHONE: "600-700-8000",
         EMAIL: "john@doe.com",
+        "AUTHORIZING PARTICIPANT FACILITY CODE": "TESTCODE",
+        "ASSIGNING AUTHORITY IDENTIFIER": "METRIPORT",
       });
     });
 
-    it("should handle missing optional fields", () => {
-      const subscribers: Hl7v2Subscriber[] = [
-        {
-          id: "456",
-          cxId: "cx456",
+    it("should include empty strings for fields present in the schema but not in the patient", () => {
+      const patient = makePatient({
+        id: patientId,
+        cxId,
+        data: {
           firstName: "Jane",
           lastName: "Smith",
           dob: "1985-12-31",
           genderAtBirth: "F",
           address: [baseAddress],
         },
-      ];
-
-      const result = convertSubscribersToHieFormat(subscribers, mockSchema);
-
-      expect(result).toHaveLength(1);
-      expect(result[0]).toEqual({
-        "FIRST NAME": "Jane",
-        "LAST NAME": "Smith",
-        "STREET NUMBER": undefined,
-        "STREET ADDRESS": "123 Main St",
-        CITY: "Boston",
-        STATE: "MA",
-        ZIP: "02108",
-        DOB: "1985-12-31",
-        GENDER: "F",
       });
+      delete patient.data.contact;
+      delete patient.data.personalIdentifiers;
+
+      const input = rosterGeneratorModule.createRosterRowInput(
+        patient,
+        { shortcode: "TEST" },
+        states
+      );
+
+      const result = rosterGeneratorModule.createRosterRow(input, mockSchema);
+
+      expect(scrambleIdMock).toHaveBeenCalledTimes(1);
+      expect(
+        _.isMatch(result, {
+          "DRIVERS LICENSE": "",
+          EMAIL: "",
+          PHONE: "",
+          SSN: "",
+          GENDER: "F",
+        })
+      ).toBe(true);
     });
   });
 });

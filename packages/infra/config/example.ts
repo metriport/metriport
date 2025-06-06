@@ -1,8 +1,9 @@
+import { USState } from "@metriport/shared";
 import { Duration } from "aws-cdk-lib";
 import { EbsDeviceVolumeType } from "aws-cdk-lib/aws-ec2";
 import { EnvType } from "../lib/env-type";
-import { EnvConfigNonSandbox } from "./env-config";
 import { vCPU } from "../lib/shared/fargate";
+import { EnvConfigNonSandbox } from "./env-config";
 
 export const config: EnvConfigNonSandbox = {
   stackName: "MetriportInfraStack",
@@ -140,6 +141,7 @@ export const config: EnvConfigNonSandbox = {
       },
       encryptionAtRest: true,
       indexName: "test-index-name",
+      consolidatedIndexName: "test-lexical-index-name",
     },
     lambda: {
       memory: 512,
@@ -147,12 +149,14 @@ export const config: EnvConfigNonSandbox = {
       maxConcurrency: 5,
       timeout: Duration.minutes(2),
     },
+    consolidatedDataIngestionInitialDate: "2025-01-01",
   },
   generalBucketName: "test-bucket",
   hl7Notification: {
     deprecatedIncomingMessageBucketName: "test-hl7-notification-bucket-name",
     incomingMessageBucketName: "test-incoming-message-bucket-name",
     outgoingMessageBucketName: "test-outgoing-message-bucket-name",
+    hl7ConversionBucketName: "test-hl7-conversion-bucket-name",
     notificationWebhookSenderQueue: {
       arn: "arn:aws:sqs:us-west-1:000000000000:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
       url: "https://sqs.us-west-1.amazonaws.com/000000000000/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
@@ -172,9 +176,35 @@ export const config: EnvConfigNonSandbox = {
       fargateMemoryLimitMiB: 2048,
       fargateTaskCountMin: 2,
       fargateTaskCountMax: 4,
+      nlbInternalIpAddressA: "10.1.1.0",
+      nlbInternalIpAddressB: "10.1.1.1",
     },
     hl7v2RosterUploadLambda: {
       bucketName: "your-roster-bucket",
+    },
+    hieConfigs: {
+      YOUR_HIE_NAME: {
+        name: "YOUR_HIE_NAME",
+        cron: "cron(0 0 ? * SAT *)",
+        states: [USState.TX],
+        subscriptions: ["adt"],
+        mapping: {
+          scrambledId: "ID",
+          firstName: "FIRST NAME",
+          lastName: "LAST NAME",
+          dob: "DOB",
+          genderAtBirth: "GENDER",
+          ssn: "SSN",
+          phone: "PHONE",
+          address1AddressLine1: "STREET ADDRESS",
+          address1AddressLine2: "STREET NUMBER",
+          address1City: "CITY",
+          address1State: "STATE",
+          address1Zip: "ZIP",
+          authorizingParticipantFacilityCode: "FACCODE",
+          assigningAuthorityIdentifier: "ASSIGNERID",
+        },
+      },
     },
   },
   acmCertMonitor: {
@@ -183,6 +213,8 @@ export const config: EnvConfigNonSandbox = {
   },
   medicalDocumentsBucketName: "test-bucket",
   medicalDocumentsUploadBucketName: "test-upload-bucket",
+  pharmacyConversionBucketName: "test-pharmacy-conversion-bucket",
+  surescriptsReplicaBucketName: "test-surescripts-replica-bucket",
   ehrBundleBucketName: "test-ehr-bundle-bucket",
   ehrResponsesBucketName: "test-ehr-responses-bucket",
   iheResponsesBucketName: "test-ihe-responses-bucket",

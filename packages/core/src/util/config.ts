@@ -61,6 +61,20 @@ export class Config {
   static getSearchIngestionQueueUrl(): string {
     return getEnvVarOrFail("SEARCH_INGESTION_QUEUE_URL");
   }
+
+  static getConsolidatedSearchIndexName(): string {
+    return getEnvVarOrFail("CONSOLIDATED_SEARCH_INDEX");
+  }
+  static getConsolidatedSearchLambdaName(): string {
+    return getEnvVarOrFail("CONSOLIDATED_SEARCH_LAMBDA_NAME");
+  }
+  static getConsolidatedIngestionQueueUrl(): string {
+    return getEnvVarOrFail("CONSOLIDATED_INGESTION_QUEUE_URL");
+  }
+  static getConsolidatedDataIngestionInitialDate(): string | undefined {
+    return getEnvVar("CONSOLIDATED_INGESTION_INITIAL_DATE");
+  }
+
   static getSystemRootOID(): string {
     return getEnvVarOrFail("SYSTEM_ROOT_OID");
   }
@@ -80,6 +94,9 @@ export class Config {
   }
   static getHl7OutgoingMessageBucketName(): string {
     return getEnvVarOrFail("HL7_OUTGOING_MESSAGE_BUCKET_NAME");
+  }
+  static getHl7ConversionBucketName(): string {
+    return getEnvVarOrFail("HL7_CONVERSION_BUCKET_NAME");
   }
   static getHl7NotificationQueueUrl(): string {
     return getEnvVarOrFail("HL7_NOTIFICATION_QUEUE_URL");
@@ -192,11 +209,47 @@ export class Config {
   static getEhrBundleBucketName(): string {
     return getEnvVarOrFail("EHR_BUNDLE_BUCKET_NAME");
   }
+  static getEhrGetAppointmentsLambdaName(): string {
+    return getEnvVarOrFail("EHR_GET_APPOINTMENTS_LAMBDA_NAME");
+  }
+
   static getTermServerUrl(): string | undefined {
     return getEnvVar("TERM_SERVER_URL");
   }
 
   static getWriteToS3QueueUrl(): string {
     return getEnvVarOrFail("WRITE_TO_S3_QUEUE_URL");
+  }
+
+  static getAthenaHealthEnv(): string | undefined {
+    return getEnvVar("EHR_ATHENA_ENVIRONMENT");
+  }
+  static getAthenaHealthClientKey(): string | undefined {
+    return getEnvVar("EHR_ATHENA_CLIENT_KEY");
+  }
+  static getAthenaHealthClientSecret(): string | undefined {
+    return getEnvVar("EHR_ATHENA_CLIENT_SECRET");
+  }
+
+  static getElationEnv(): string | undefined {
+    return getEnvVar("EHR_ELATION_ENVIRONMENT");
+  }
+  static getElationClientKeyAndSecretMap(): string | undefined {
+    return getEnvVar("EHR_ELATION_CLIENT_KEY_AND_SECRET_MAP");
+  }
+
+  static getCanvasClientKeyAndSecretMap(): string | undefined {
+    return getEnvVar("EHR_CANVAS_CLIENT_KEY_AND_SECRET_MAP");
+  }
+
+  static getHealthieEnv(): string | undefined {
+    return getEnvVar("EHR_HEALTHIE_ENVIRONMENT");
+  }
+  static getHealthieApiKeyMap(): string | undefined {
+    return getEnvVar("EHR_HEALTHIE_API_KEY_MAP");
+  }
+
+  static getEClinicalWorksEnv(): string | undefined {
+    return getEnvVar("EHR_ECLINICALWORKS_ENVIRONMENT");
   }
 }

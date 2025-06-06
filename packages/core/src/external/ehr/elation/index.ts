@@ -5,6 +5,7 @@ import {
   JwtTokenInfo,
   MetriportError,
   NotFoundError,
+  sleep,
 } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import {
@@ -39,6 +40,7 @@ import {
   getConditionStatus,
   makeRequest,
   MakeRequestParamsInEhr,
+  paginateWaitTime,
 } from "../shared";
 
 const apiUrl = Config.getApiUrl();
@@ -261,6 +263,7 @@ class ElationApi {
       acc: Appointment[] | undefined = []
     ): Promise<Appointment[]> {
       if (!url) return acc;
+      await sleep(paginateWaitTime.asMilliseconds());
       const appointmentListResponse = await api.makeRequest<AppointmentListResponse>({
         cxId,
         s3Path: "appointments",
@@ -320,6 +323,7 @@ class ElationApi {
       schema: z.undefined(),
       additionalInfo,
       debug,
+      emptyResponse: true,
     });
   }
 
@@ -383,6 +387,7 @@ class ElationApi {
     schema,
     additionalInfo,
     debug,
+    emptyResponse = false,
   }: MakeRequestParamsInEhr<T>): Promise<T> {
     return await makeRequest<T>({
       ehr: EhrSources.elation,
@@ -398,6 +403,7 @@ class ElationApi {
       schema,
       additionalInfo,
       debug,
+      emptyResponse,
     });
   }
 

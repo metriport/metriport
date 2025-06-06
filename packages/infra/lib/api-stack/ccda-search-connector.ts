@@ -3,7 +3,6 @@ import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import { IVpc } from "aws-cdk-lib/aws-ec2";
 import { IFunction } from "aws-cdk-lib/aws-lambda";
 import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
-import { IDomain } from "aws-cdk-lib/aws-opensearchservice";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import { ISecret } from "aws-cdk-lib/aws-secretsmanager";
 import { IQueue } from "aws-cdk-lib/aws-sqs";
@@ -57,12 +56,12 @@ export function setup({
   envType: EnvType;
   alarmSnsAction?: SnsAction;
 }): {
-  queue: IQueue;
-  lambda: IFunction;
-  searchDomain: IDomain;
+  ccdaIngestionQueue: IQueue;
+  ccdaIngestionLambda: IFunction;
+  searchDomainEndpoint: string;
   searchDomainUserName: string;
   searchDomainSecret: ISecret;
-  indexName: string;
+  ccdaIndexName: string;
 } {
   const config = getConfig();
   const {
@@ -81,7 +80,7 @@ export function setup({
   });
 
   // setup queue and lambda to process the ccda files
-  const queue = defaultCreateQueue({
+  const ccdaIngestionQueue = defaultCreateQueue({
     stack,
     name: connectorName,
     // To use FIFO we'd need to change the lambda code to set visibilityTimeout=0 on messages to be
@@ -95,10 +94,10 @@ export function setup({
     alarmMaxAgeOfOldestMessage: Duration.minutes(2),
   });
 
-  const dlq = queue.deadLetterQueue;
-  if (!dlq) throw Error(`Missing DLQ of Queue ${queue.queueName}`);
+  const dlq = ccdaIngestionQueue.deadLetterQueue;
+  if (!dlq) throw Error(`Missing DLQ of Queue ${ccdaIngestionQueue.queueName}`);
 
-  const lambda = defaultCreateLambda({
+  const ccdaIngestionLambda = defaultCreateLambda({
     stack,
     name: connectorName,
     vpc,
@@ -109,7 +108,7 @@ export function setup({
     envType: config.environmentType,
     envVars: {
       ...(config.lambdasSentryDSN ? { SENTRY_DSN: config.lambdasSentryDSN } : {}),
-      SEARCH_HOST: openSearch.domain.domainEndpoint,
+      SEARCH_HOST: "https://" + openSearch.domain.domainEndpoint,
       SEARCH_USER: openSearch.creds.username,
       SEARCH_SECRET_NAME: openSearch.creds.secret.secretName,
       SEARCH_INDEX_NAME: openSearchConfig.indexName,
@@ -119,25 +118,29 @@ export function setup({
     alarmSnsAction,
   });
 
-  ccdaS3Bucket.grantRead(lambda);
-  lambda.addEventSource(
-    new SqsEventSource(queue, {
+  ccdaS3Bucket.grantRead(ccdaIngestionLambda);
+  ccdaIngestionLambda.addEventSource(
+    new SqsEventSource(ccdaIngestionQueue, {
       batchSize: batchSize,
       // Partial batch response: https://docs.aws.amazon.com/prescriptive-guidance/latest/lambda-event-filtering-partial-batch-responses-for-sqs/welcome.html
       reportBatchItemFailures: true,
       maxConcurrency,
     })
   );
-  provideAccessToQueue({ accessType: "both", queue, resource: lambda });
-  provideAccessToQueue({ accessType: "send", queue: dlq.queue, resource: lambda });
-  openSearch.creds.secret.grantRead(lambda);
+  provideAccessToQueue({
+    accessType: "both",
+    queue: ccdaIngestionQueue,
+    resource: ccdaIngestionLambda,
+  });
+  provideAccessToQueue({ accessType: "send", queue: dlq.queue, resource: ccdaIngestionLambda });
+  openSearch.creds.secret.grantRead(ccdaIngestionLambda);
 
   return {
-    queue,
-    lambda,
-    searchDomain: openSearch.domain,
+    ccdaIngestionQueue,
+    ccdaIngestionLambda,
+    ccdaIndexName: openSearchConfig.indexName,
+    searchDomainEndpoint: "https://" + openSearch.domain.domainEndpoint,
     searchDomainUserName: openSearch.creds.username,
     searchDomainSecret: openSearch.creds.secret,
-    indexName: openSearchConfig.indexName,
   };
 }

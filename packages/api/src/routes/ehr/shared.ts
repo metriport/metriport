@@ -7,7 +7,10 @@ import { getPatientMappingOrFail } from "../../command/mapping/patient";
 import { JwtTokenData } from "../../domain/jwt-token";
 import { PatientMappingSource } from "../../domain/patient-mapping";
 import ForbiddenError from "../../errors/forbidden";
-import { EhrDashJwtTokenSource, EhrWebhookJwtTokenSource } from "../../external/ehr/shared";
+import {
+  EhrDashJwtTokenSource,
+  EhrWebhookJwtTokenSource,
+} from "../../external/ehr/shared/utils/jwt-token";
 import { getAuthorizationToken, getFrom, getFromQueryOrFail } from "../util";
 import { parseIdFromPathParams, parseIdFromQueryParams, PathDetails, validatePath } from "./util";
 
@@ -19,13 +22,14 @@ export type ParseResponse = {
 export async function processCxId(
   req: Request,
   tokenSource: EhrDashJwtTokenSource | EhrWebhookJwtTokenSource,
-  parseExternalId: (tokenData: JwtTokenData) => ParseResponse
+  parseExternalId: (tokenData: JwtTokenData, tokenId: string) => ParseResponse
 ): Promise<void> {
   const accessToken = getAuthorizationToken(req);
   const authInfo = await getJwtToken({ token: accessToken, source: tokenSource });
   if (!authInfo) throw new ForbiddenError();
   if (authInfo.exp < buildDayjs().toDate()) throw new ForbiddenError();
-  const { externalId, queryParams } = parseExternalId(authInfo.data);
+  const tokenId = authInfo.id;
+  const { externalId, queryParams } = parseExternalId(authInfo.data, tokenId);
   try {
     const cxMappingSource = getCxMappingSourceFromJwtTokenSource(tokenSource);
     const customer = await getCxMappingOrFail({ externalId, source: cxMappingSource });
@@ -54,6 +58,10 @@ export const validPatientPaths: PathDetails[] = [
   },
   {
     pathRegex: new RegExp(`^/consolidated/query$`),
+    pathParamKey: "id",
+  },
+  {
+    pathRegex: new RegExp(`^/consolidated/search$`),
     pathParamKey: "id",
   },
   {

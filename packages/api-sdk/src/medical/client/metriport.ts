@@ -37,10 +37,12 @@ import { Organization, OrganizationCreate, organizationSchema } from "../models/
 import {
   GetConsolidatedQueryProgressResponse,
   GetSingleConsolidatedQueryProgressResponse,
+  MedicalRecordUrlResponse,
   PatientCreate,
   PatientHieOptOutResponse,
   PatientUpdate,
   StartConsolidatedQueryProgressResponse,
+  medicalRecordUrlResponseSchema,
 } from "../models/patient";
 import { PatientDTO } from "../models/patientDTO";
 import { SettingsResponse } from "../models/settings-response";
@@ -484,9 +486,8 @@ export class MetriportMedicalApi {
    * @param dateFrom Optional start date that resources will be filtered by (inclusive). Format is YYYY-MM-DD.
    * @param dateTo Optional end date that resources will be filtered by (inclusive). Format is YYYY-MM-DD.
    * @param conversionType Optional to indicate how the medical record should be rendered - one of:
-   *      "pdf", "html", or "json" (defaults to "json"). If "html" or "pdf", the Webhook payload
+   *      "pdf", "html", or "json" (defaults to "json"). The Webhook payload
    *      will contain a signed URL to download the file, which is active for 3 minutes.
-   *      If not provided, will send json payload in the webhook.
    * @param fromDashboard Optional parameter to indicate that the request is coming from the dashboard.
    * @param metadata Optional metadata to be sent along the webhook request as response of this query.
    * @return The consolidated data query status.
@@ -496,7 +497,7 @@ export class MetriportMedicalApi {
     resources?: readonly ResourceTypeForConsolidation[],
     dateFrom?: string,
     dateTo?: string,
-    conversionType?: string,
+    conversionType = "json",
     fromDashboard?: boolean,
     metadata?: Record<string, string>
   ): Promise<StartConsolidatedQueryProgressResponse> {
@@ -581,6 +582,23 @@ export class MetriportMedicalApi {
       params: { resources: resources && resources.join(","), dateFrom, dateTo },
     });
     return resp.data;
+  }
+
+  /**
+   * Returns the medical record summary for a given patient.
+   *
+   * @param patientId The ID of the patient whose medical record summary is to be returned.
+   * @param conversionType The format of the medical record summary to be returned. Accepts "html" or "pdf".
+   * @return The medical record summary for the given patient.
+   */
+  async getPatientMedicalRecord(
+    patientId: string,
+    conversionType: "html" | "pdf"
+  ): Promise<MedicalRecordUrlResponse> {
+    const resp = await this.api.get(`${PATIENT_URL}/${patientId}/medical-record`, {
+      params: { conversionType },
+    });
+    return medicalRecordUrlResponseSchema.parse(resp.data);
   }
 
   /**

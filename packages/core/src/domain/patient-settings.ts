@@ -1,6 +1,5 @@
 import { z } from "zod";
 import { BaseDomain, BaseDomainCreate } from "./base-domain";
-import { PatientData } from "./patient";
 
 export type Subscriptions = {
   adt?: boolean;
@@ -17,15 +16,6 @@ export interface PatientSettingsCreate extends BaseDomainCreate {
 }
 
 export interface PatientSettings extends BaseDomain, PatientSettingsCreate {}
-
-export type Hl7v2Subscriber = {
-  id: string;
-  cxId: string;
-  ssn?: string;
-  driversLicense?: string;
-  phone?: string;
-  email?: string;
-} & Pick<PatientData, "firstName" | "lastName" | "dob" | "address" | "genderAtBirth">;
 
 export const validHl7v2Subscriptions = ["adt"] as const;
 export const hl7v2SubscriptionSchema = z.enum(validHl7v2Subscriptions);

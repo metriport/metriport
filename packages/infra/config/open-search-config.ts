@@ -14,6 +14,8 @@ export type LambdaConfig = {
 export type OpenSearchConnectorConfig = {
   openSearch: Omit<OpenSearchConstructProps, "region" | "vpc" | "awsAccount"> & {
     indexName: string;
+    consolidatedIndexName: string;
   };
   lambda: LambdaConfig;
+  consolidatedDataIngestionInitialDate: string;
 };

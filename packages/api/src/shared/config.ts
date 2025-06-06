@@ -1,17 +1,5 @@
 import { Config as CoreConfig } from "@metriport/core/util/config";
-import {
-  getEnvVar as coreGetEnvVar,
-  getEnvVarOrFail as coreGetEnvVarOrFail,
-} from "@metriport/core/util/env-var";
-
-/**
- * @deprecated Use core's version instead
- */
-export const getEnvVar = (varName: string): string | undefined => coreGetEnvVar(varName);
-/**
- * @deprecated Use core's version instead
- */
-export const getEnvVarOrFail = (varName: string): string => coreGetEnvVarOrFail(varName);
+import { getEnvVar, getEnvVarOrFail } from "@metriport/shared";
 
 export class Config {
   // env config
@@ -299,22 +287,6 @@ export class Config {
     return getEnvVar("OUTBOUND_DOC_RETRIEVAL_LAMBDA_NAME");
   }
 
-  static getSearchIngestionQueueUrl(): string {
-    return getEnvVarOrFail("SEARCH_INGESTION_QUEUE_URL");
-  }
-  static getSearchEndpoint(): string {
-    return getEnvVarOrFail("SEARCH_ENDPOINT");
-  }
-  static getSearchUsername(): string {
-    return getEnvVarOrFail("SEARCH_USERNAME");
-  }
-  static getSearchPassword(): string {
-    return getEnvVarOrFail("SEARCH_PASSWORD");
-  }
-  static getSearchIndexName(): string {
-    return getEnvVarOrFail("SEARCH_INDEX");
-  }
-
   static getCWManagementUrl(): string | undefined {
     return getEnvVar("CW_MANAGEMENT_URL");
   }
@@ -332,35 +304,11 @@ export class Config {
     return getEnvVarOrFail("OIDS_WITH_IHE_GATEWAY_V2_ENABLED");
   }
 
-  static getAthenaHealthEnv(): string | undefined {
-    return getEnvVar("EHR_ATHENA_ENVIRONMENT");
-  }
-  static getAthenaHealthClientKey(): string | undefined {
-    return getEnvVar("EHR_ATHENA_CLIENT_KEY");
-  }
-  static getAthenaHealthClientSecret(): string | undefined {
-    return getEnvVar("EHR_ATHENA_CLIENT_SECRET");
-  }
-
-  static getElationEnv(): string | undefined {
-    return getEnvVar("EHR_ELATION_ENVIRONMENT");
-  }
-  static getElationClientKeyAndSecretMap(): string | undefined {
-    return getEnvVar("EHR_ELATION_CLIENT_KEY_AND_SECRET_MAP");
-  }
-
-  static getCanvasClientKeyAndSecretMap(): string | undefined {
-    return getEnvVar("EHR_CANVAS_CLIENT_KEY_AND_SECRET_MAP");
-  }
-
-  static getHealthieEnv(): string | undefined {
-    return getEnvVar("EHR_HEALTHIE_ENVIRONMENT");
-  }
-  static getHealthieApiKeyMap(): string | undefined {
-    return getEnvVar("EHR_HEALTHIE_API_KEY_MAP");
-  }
-
   static getRateLimitTableName(): string | undefined {
     return getEnvVar("RATE_LIMIT_TABLE_NAME");
+  }
+
+  static getCqDirRebuildHeartbeatUrl() {
+    return getEnvVar("CQ_DIR_REBUILD_HEARTBEAT_URL");
   }
 }

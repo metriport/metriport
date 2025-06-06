@@ -28,11 +28,13 @@ import { Construct } from "constructs";
 import { EnvConfig } from "../../config/env-config";
 import { defaultBedrockPolicyStatement } from "../shared/bedrock";
 import { DnsZones } from "../shared/dns";
+import { getMaxPostgresConnections } from "../shared/rds";
 import { buildLbAccessLogPrefix } from "../shared/s3";
 import { buildSecrets, Secrets, secretsToECS } from "../shared/secrets";
 import { provideAccessToQueue } from "../shared/sqs";
 import { addDefaultMetricsToTargetGroup } from "../shared/target-group";
 import { isProd, isSandbox } from "../shared/util";
+import { SurescriptsAssets } from "../surescripts/types";
 
 interface ApiProps extends StackProps {
   config: EnvConfig;
@@ -55,7 +57,7 @@ function getEnvSpecificSettings(config: EnvConfig): EnvSpecificSettings {
   if (isProd(config)) {
     return {
       desiredTaskCount: 12,
-      maxTaskCount: 20,
+      maxTaskCount: 24,
       memoryLimitMiB: 4096,
       maxHealthyPercent: 160,
       minHealthyPercent: 70,
@@ -64,7 +66,7 @@ function getEnvSpecificSettings(config: EnvConfig): EnvSpecificSettings {
   if (isSandbox(config)) {
     return {
       desiredTaskCount: 2,
-      maxTaskCount: 10,
+      maxTaskCount: 8,
       memoryLimitMiB: 2048,
       maxHealthyPercent: 200,
       minHealthyPercent: 50,
@@ -110,8 +112,8 @@ export function createAPIService({
   ehrSyncPatientQueue,
   elationLinkPatientQueue,
   healthieLinkPatientQueue,
-  ehrStartResourceDiffBundlesQueue,
   ehrRefreshEhrBundlesQueue,
+  ehrGetAppointmentsLambda,
   ehrBundleBucket,
   generalBucket,
   conversionBucket,
@@ -126,8 +128,11 @@ export function createAPIService({
   searchEndpoint,
   searchAuth,
   searchIndexName,
+  consolidatedSearchLambda,
+  consolidatedIngestionQueue,
   featureFlagsTable,
   cookieStore,
+  surescriptsAssets,
 }: {
   stack: Construct;
   props: ApiProps;
@@ -152,8 +157,8 @@ export function createAPIService({
   ehrSyncPatientQueue: IQueue;
   elationLinkPatientQueue: IQueue;
   healthieLinkPatientQueue: IQueue;
-  ehrStartResourceDiffBundlesQueue: IQueue;
   ehrRefreshEhrBundlesQueue: IQueue;
+  ehrGetAppointmentsLambda: ILambda;
   ehrBundleBucket: s3.IBucket;
   generalBucket: s3.IBucket;
   conversionBucket: s3.IBucket;
@@ -168,8 +173,11 @@ export function createAPIService({
   searchEndpoint: string;
   searchAuth: { userName: string; secret: ISecret };
   searchIndexName: string;
+  consolidatedSearchLambda: ILambda;
+  consolidatedIngestionQueue: IQueue;
   featureFlagsTable: dynamodb.Table;
   cookieStore: secret.ISecret | undefined;
+  surescriptsAssets: SurescriptsAssets | undefined;
 }): {
   cluster: ecs.Cluster;
   service: ecs_patterns.ApplicationLoadBalancedFargateService;
@@ -199,7 +207,7 @@ export function createAPIService({
     host: dbReadReplicaEndpoint.hostname,
     port: dbReadReplicaEndpoint.port,
   });
-  const dbPoolSettings = JSON.stringify(props.config.apiDatabase.poolSettings);
+  const dbPoolSettings = getDbPoolSettings(props.config);
   // Run some servers on fargate containers
   const listenerPort = 80;
   const containerPort = 8080;
@@ -244,7 +252,7 @@ export function createAPIService({
           AWS_REGION: props.config.region,
           LB_TIMEOUT_IN_MILLIS: loadBalancerIdleTimeout.toMilliseconds().toString(),
           DB_READ_REPLICA_ENDPOINT: dbReadReplicaEndpointAsString,
-          DB_POOL_SETTINGS: dbPoolSettings,
+          DB_POOL_SETTINGS: JSON.stringify(dbPoolSettings),
           TOKEN_TABLE_NAME: dynamoDBTokenTable.tableName,
           API_URL: `https://${props.config.subdomain}.${props.config.domain}`,
           API_LB_ADDRESS: props.config.loadBalancerDnsName,
@@ -287,8 +295,8 @@ export function createAPIService({
           EHR_SYNC_PATIENT_QUEUE_URL: ehrSyncPatientQueue.queueUrl,
           ELATION_LINK_PATIENT_QUEUE_URL: elationLinkPatientQueue.queueUrl,
           HEALTHIE_LINK_PATIENT_QUEUE_URL: healthieLinkPatientQueue.queueUrl,
-          EHR_START_RESOURCE_DIFF_BUNDLES_QUEUE_URL: ehrStartResourceDiffBundlesQueue.queueUrl,
           EHR_REFRESH_EHR_BUNDLES_QUEUE_URL: ehrRefreshEhrBundlesQueue.queueUrl,
+          EHR_GET_APPOINTMENTS_LAMBDA_NAME: ehrGetAppointmentsLambda.functionName,
           EHR_BUNDLE_BUCKET_NAME: ehrBundleBucket.bucketName,
           FHIR_TO_BUNDLE_LAMBDA_NAME: fhirToBundleLambda.functionName,
           FHIR_TO_BUNDLE_COUNT_LAMBDA_NAME: fhirToBundleCountLambda.functionName,
@@ -310,6 +318,10 @@ export function createAPIService({
           SEARCH_ENDPOINT: searchEndpoint,
           SEARCH_USERNAME: searchAuth.userName,
           SEARCH_INDEX: searchIndexName,
+          CONSOLIDATED_SEARCH_LAMBDA_NAME: consolidatedSearchLambda.functionName,
+          CONSOLIDATED_INGESTION_QUEUE_URL: consolidatedIngestionQueue.queueUrl,
+          CONSOLIDATED_INGESTION_INITIAL_DATE:
+            props.config.openSearch.consolidatedDataIngestionInitialDate,
           ...(props.config.carequality?.envVars?.CQ_ORG_URLS && {
             CQ_ORG_URLS: props.config.carequality.envVars.CQ_ORG_URLS,
           }),
@@ -337,10 +349,25 @@ export function createAPIService({
             EHR_ATHENA_ENVIRONMENT: props.config.ehrIntegration.athenaHealth.env,
             EHR_ELATION_ENVIRONMENT: props.config.ehrIntegration.elation.env,
             EHR_HEALTHIE_ENVIRONMENT: props.config.ehrIntegration.healthie.env,
+            EHR_ECLINICALWORKS_ENVIRONMENT: props.config.ehrIntegration.eclinicalworks.env,
           }),
           ...(!isSandbox(props.config) && {
             DASH_URL: props.config.dashUrl,
             EHR_DASH_URL: props.config.ehrDashUrl,
+          }),
+          ...(props.config.cqDirectoryRebuilder?.heartbeatUrl && {
+            CQ_DIR_REBUILD_HEARTBEAT_URL: props.config.cqDirectoryRebuilder.heartbeatUrl,
+          }),
+          ...(surescriptsAssets && {
+            PHARMACY_CONVERSION_BUCKET_NAME: surescriptsAssets.pharmacyConversionBucket.bucketName,
+            SURESCRIPTS_REPLICA_BUCKET_NAME: surescriptsAssets.surescriptsReplicaBucket.bucketName,
+            SURESCRIPTS_SYNCHRONIZE_SFTP_QUEUE_URL: surescriptsAssets.synchronizeSftpQueue.queueUrl,
+            SURESCRIPTS_SEND_PATIENT_REQUEST_QUEUE_URL:
+              surescriptsAssets.sendPatientRequestQueue.queueUrl,
+            SURESCRIPTS_RECEIVE_VERIFICATION_RESPONSE_QUEUE_URL:
+              surescriptsAssets.receiveVerificationResponseQueue.queueUrl,
+            SURESCRIPTS_RECEIVE_FLAT_FILE_RESPONSE_QUEUE_URL:
+              surescriptsAssets.receiveFlatFileResponseQueue.queueUrl,
           }),
         },
       },
@@ -421,11 +448,23 @@ export function createAPIService({
   fhirToCdaConverterLambda?.grantInvoke(fargateService.taskDefinition.taskRole);
   fhirToBundleLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   fhirToBundleCountLambda.grantInvoke(fargateService.taskDefinition.taskRole);
+  ehrGetAppointmentsLambda.grantInvoke(fargateService.taskDefinition.taskRole);
+  consolidatedSearchLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   // Access grant for buckets
   patientImportBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   conversionBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   medicalDocumentsUploadBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   ehrBundleBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
+
+  if (surescriptsAssets) {
+    surescriptsAssets.pharmacyConversionBucket.grantReadWrite(
+      fargateService.taskDefinition.taskRole
+    );
+    surescriptsAssets.surescriptsReplicaBucket.grantReadWrite(
+      fargateService.taskDefinition.taskRole
+    );
+  }
+
   if (ehrResponsesBucket) {
     ehrResponsesBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   }
@@ -456,19 +495,35 @@ export function createAPIService({
   });
   provideAccessToQueue({
     accessType: "send",
-    queue: ehrStartResourceDiffBundlesQueue,
-    resource: fargateService.taskDefinition.taskRole,
-  });
-  provideAccessToQueue({
-    accessType: "send",
     queue: ehrRefreshEhrBundlesQueue,
     resource: fargateService.taskDefinition.taskRole,
   });
+
+  if (surescriptsAssets) {
+    const queuesToProvideAccessTo = [
+      surescriptsAssets.synchronizeSftpQueue,
+      surescriptsAssets.sendPatientRequestQueue,
+      surescriptsAssets.receiveVerificationResponseQueue,
+      surescriptsAssets.receiveFlatFileResponseQueue,
+    ];
+    queuesToProvideAccessTo.forEach(queue => {
+      provideAccessToQueue({
+        accessType: "send",
+        queue,
+        resource: fargateService.taskDefinition.taskRole,
+      });
+    });
+  }
 
   // Allow access to search services/infra
   provideAccessToQueue({
     accessType: "send",
     queue: searchIngestionQueue,
+    resource: fargateService.taskDefinition.taskRole,
+  });
+  provideAccessToQueue({
+    accessType: "send",
+    queue: consolidatedIngestionQueue,
     resource: fargateService.taskDefinition.taskRole,
   });
   searchAuth.secret.grantRead(fargateService.taskDefinition.taskRole);
@@ -534,14 +589,14 @@ export function createAPIService({
     maxCapacity: maxTaskCount,
   });
   scaling.scaleOnCpuUtilization("autoscale_cpu", {
-    targetUtilizationPercent: 10,
+    targetUtilizationPercent: 15,
     scaleInCooldown: Duration.minutes(2),
-    scaleOutCooldown: Duration.seconds(30),
+    scaleOutCooldown: Duration.minutes(1),
   });
   scaling.scaleOnMemoryUtilization("autoscale_mem", {
     targetUtilizationPercent: 20,
     scaleInCooldown: Duration.minutes(2),
-    scaleOutCooldown: Duration.seconds(30),
+    scaleOutCooldown: Duration.minutes(1),
   });
 
   return {
@@ -551,4 +606,19 @@ export function createAPIService({
     loadBalancer: nlb,
     loadBalancerAddress: serverAddress,
   };
+}
+
+function getDbPoolSettings(config: EnvConfig): EnvConfig["apiDatabase"]["poolSettings"] {
+  const dbPoolSettings = config.apiDatabase.poolSettings;
+  const settings = getSettings(config);
+  const ecsMaxTaskCount = settings.maxTaskCount;
+  const dbPoolMaxConnectionsPerTask = dbPoolSettings.max;
+  const dbPoolMaxConnectionsGlobal = dbPoolMaxConnectionsPerTask * ecsMaxTaskCount;
+  const dbMaxConnectionsHardLimit = getMaxPostgresConnections(config.apiDatabase.maxCapacity);
+  if (dbPoolMaxConnectionsGlobal > dbMaxConnectionsHardLimit) {
+    throw new Error(
+      `Max total connections for API is too high (current: ${dbPoolMaxConnectionsGlobal}, max: ${dbMaxConnectionsHardLimit})`
+    );
+  }
+  return dbPoolSettings;
 }

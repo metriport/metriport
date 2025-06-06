@@ -34,7 +34,7 @@ import fs from "fs";
  *
  * Required Environment Variables:
  * - API_URL: The API endpoint for the conversion service
- * - HL7_CONVERSIONS_BUCKET_NAME: S3 bucket name for storing converted messages
+ * - HL7_CONVERSION_BUCKET_NAME: S3 bucket name for storing converted messages
  *
  * Usage:
  * 1. Set the filePath and fileName constants to point to your HL7v2 ADT messages file
@@ -42,7 +42,6 @@ import fs from "fs";
  * 3. Run the script using ts-node
  */
 const apiUrl = getEnvVarOrFail("API_URL");
-const bucketName = getEnvVarOrFail("HL7_OUTGOING_MESSAGE_BUCKET_NAME");
 
 const filePath = "";
 const fileName = "";
@@ -58,7 +57,7 @@ function invokeLambdaLogic() {
 
     try {
       const { cxId, patientId } = getCxIdAndPatientIdOrFail(hl7Message);
-      new Hl7NotificationWebhookSenderDirect(apiUrl, bucketName).execute({
+      new Hl7NotificationWebhookSenderDirect(apiUrl).execute({
         cxId,
         patientId,
         message,

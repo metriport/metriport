@@ -10,6 +10,7 @@ import {
 } from "@medplum/fhirtypes";
 import { errorToString, executeWithNetworkRetries, toArray } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
+import { createUuidFromText } from "@metriport/shared/common/uuid";
 import { MedicalDataSource, isMedicalDataSource } from "..";
 import { createAttachmentUploadFilePath } from "../../domain/document/upload";
 import {
@@ -23,13 +24,13 @@ import {
   ObservationOrganizer,
 } from "../../fhir-to-cda/cda-types/shared-types";
 import { capture } from "../../util";
+import { isValidBase64 } from "../../util/base64";
 import { executeAsynchronously } from "../../util/concurrency";
 import { Config } from "../../util/config";
 import { detectFileType } from "../../util/file-type";
 import { out } from "../../util/log";
 import { OCTET_MIME_TYPE } from "../../util/mime";
 import { sizeInBytes } from "../../util/string";
-import { uuidv4 } from "../../util/uuid-v7";
 import { S3Utils, UploadParams } from "../aws/s3";
 import { cqExtension } from "../carequality/extension";
 import { cwExtension } from "../commonwell/extension";
@@ -40,7 +41,6 @@ import { B64Attachments } from "./remove-b64";
 import { groupObservations } from "./shared";
 
 const region = Config.getAWSRegion();
-const BASE64_REGEX = /^[A-Za-z0-9+/]+={0,2}$/;
 
 function getS3UtilsInstance(): S3Utils {
   return new S3Utils(region);
@@ -78,7 +78,7 @@ export async function processAttachments({
   fhirUrl: string;
   medicalDataSource?: string | undefined;
 }) {
-  const { log } = out(`processAttachments - cxId ${cxId}, patientId ${patientId}`);
+  const { log } = out(`processAttachments - filepath ${filePath}`);
   try {
     const s3Utils = getS3UtilsInstance();
 
@@ -256,8 +256,9 @@ function getFileDetails(
 
   // Clean up the base64 string - remove any whitespace, newlines etc
   const cleanB64 = fileB64Contents.replace(/\s/g, "");
+  const unquotedB64 = cleanB64.replace(/^["']|["']$/g, "");
 
-  if (!isValidBase64(cleanB64)) {
+  if (!isValidBase64(unquotedB64)) {
     const msg = `Invalid base64 string in attachment`;
     log(msg);
     capture.message(msg, {
@@ -268,23 +269,19 @@ function getFileDetails(
     return undefined;
   }
 
-  const fileBuffer = Buffer.from(cleanB64, "base64");
+  const fileBuffer = Buffer.from(unquotedB64, "base64");
   let mimeType = detectFileType(fileBuffer).mimeType;
-  log(`Detected mimetype: ${mimeType}`);
+  log(`[getFileDetails] Detected mimetype: ${mimeType}`);
 
   if (mimeType === OCTET_MIME_TYPE && mediaTypeProvider._mediaType) {
-    log(`Will use specified mimetype: ${mediaTypeProvider._mediaType}`);
+    log(`[getFileDetails] Will use specified mimetype: ${mediaTypeProvider._mediaType}`);
     mimeType = mediaTypeProvider._mediaType;
   }
 
   return {
-    fileB64Contents: cleanB64,
+    fileB64Contents: unquotedB64,
     mimeType,
   };
-}
-
-function isValidBase64(cleanBase64String: string): boolean {
-  return BASE64_REGEX.test(cleanBase64String);
 }
 
 function buildDocumentReferenceFromAct(
@@ -293,11 +290,13 @@ function buildDocumentReferenceFromAct(
   act: ConcernActEntryAct
 ) {
   const docRef = buildDocumentReferenceDraft(patientId, extensions);
+  const docRefId = createUuidFromText(JSON.stringify(act));
   const identifiers = getIdentifiers(act.id);
   const date = getDate(act.effectiveTime);
   const type = getType(act.code);
 
   return fillDocumentReference(docRef, {
+    docRefId,
     identifiers,
     type,
     date,
@@ -391,10 +390,12 @@ function buildDocumentReferenceFromObsMedia(
   obsMedia: ObservationMedia
 ): DocumentReference {
   const docRef = buildDocumentReferenceDraft(patientId, extensions);
+  const docRefId = createUuidFromText(JSON.stringify(obsMedia));
   const identifiers = getIdentifiers(obsMedia.id);
   const date = getDate(organizer.effectiveTime);
   const type = getType(organizer.code);
   return fillDocumentReference(docRef, {
+    docRefId,
     identifiers,
     type,
     date,
@@ -405,12 +406,13 @@ function fillDocumentReference(
   docRef: DocumentReference,
   params: {
     identifiers: Identifier[];
+    docRefId: string;
     type?: CodeableConcept | undefined;
     date?: string | undefined;
   }
 ): DocumentReference {
-  const { identifiers, type, date } = params;
-  docRef.id = uuidv4();
+  const { identifiers, type, date, docRefId } = params;
+  docRef.id = docRefId;
 
   if (identifiers.length > 0) docRef.identifier = identifiers;
   if (type) {

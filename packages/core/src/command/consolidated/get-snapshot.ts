@@ -4,7 +4,7 @@ import { Patient } from "../../domain/patient";
 
 export type ConsolidatedSnapshotRequest = {
   patient: Patient;
-  requestId?: string;
+  requestId?: string | undefined;
   resources?: ResourceTypeForConsolidation[] | undefined;
   dateFrom?: string | undefined;
   dateTo?: string | undefined;
@@ -14,8 +14,9 @@ export type ConsolidatedSnapshotRequest = {
 export type ConsolidatedSnapshotRequestAsync = ConsolidatedSnapshotRequest & {
   isAsync: true;
   requestId: string;
-  conversionType?: ConsolidationConversionType | undefined;
+  conversionType: ConsolidationConversionType;
   fromDashboard?: boolean | undefined;
+  sendAnalytics?: never;
 };
 
 export type ConsolidatedSnapshotRequestSync = ConsolidatedSnapshotRequest & {
@@ -24,6 +25,7 @@ export type ConsolidatedSnapshotRequestSync = ConsolidatedSnapshotRequest & {
   fromDashboard?: boolean | undefined;
   // TODO 2215 Remove this when we have contributed data as part of get consolidated (from S3)
   forceDataFromFhir?: boolean | undefined;
+  sendAnalytics?: boolean | undefined;
 };
 
 export type ConsolidatedSnapshotResponse = {

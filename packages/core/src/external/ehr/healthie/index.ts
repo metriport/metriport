@@ -1,4 +1,4 @@
-import { MetriportError, NotFoundError } from "@metriport/shared";
+import { MetriportError, NotFoundError, sleep } from "@metriport/shared";
 import {
   AppointmentGetResponseGraphql,
   appointmentGetResponseGraphqlSchema,
@@ -24,7 +24,13 @@ import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import axios, { AxiosInstance } from "axios";
 import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
-import { ApiConfig, formatDate, makeRequest, MakeRequestParamsInEhr } from "../shared";
+import {
+  ApiConfig,
+  formatDate,
+  makeRequest,
+  MakeRequestParamsInEhr,
+  paginateWaitTime,
+} from "../shared";
 
 const apiUrl = Config.getApiUrl();
 
@@ -264,6 +270,7 @@ class HealthieApi {
         endDate: api.formatDate(endAppointmentDate.toISOString()) ?? "",
         ...(cursor ? { after: cursor } : {}),
       };
+      await sleep(paginateWaitTime.asMilliseconds());
       const appointmentListResponseGraphql = await api.makeRequest<AppointmentListResponseGraphql>({
         cxId,
         s3Path: "appointments",

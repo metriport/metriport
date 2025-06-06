@@ -23,7 +23,7 @@
 
 <p align="center">
    <a href="https://status.metriport.com/"><img src="https://api.checklyhq.com/v1/badges/checks/6aee48de-8699-4746-8843-80e28366ccb0?style=flat&theme=default" alt="API Status Check"></a>
-   <a href="https://github.com/metriport/metriport/stargazers"><img src="https://img.shields.io/github/stars/metriport/metriport" alt="Github Stars"></a>
+   <a href="https://github.com/metriport/metriport/stargazers"><img src="https://img.shields.io/github/stars/metriport/metriport" alt="GitHub Stars"></a>
    <a href="https://github.com/metriport/metriport/blob/master/LICENSE"><img src="https://img.shields.io/badge/license-AGPLv3-purple" alt="License"></a>
    <a href="https://github.com/metriport/metriport/pulse"><img src="https://img.shields.io/github/commit-activity/m/metriport/metriport" alt="Commits-per-month"></a>
    <a href="https://twitter.com/metriport"><img src="https://img.shields.io/twitter/follow/metriport?style=social"></a>

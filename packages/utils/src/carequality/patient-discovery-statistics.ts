@@ -2,7 +2,7 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
 import { getXcpdStatisticsForPatient } from "@metriport/core/external/carequality/pd/get-xcpd-statistics";
-import { getEnvVarOrFail } from "../../../api/src/shared/config";
+import { getEnvVarOrFail } from "@metriport/shared";
 
 const apiUrl = getEnvVarOrFail("API_URL");
 const cxId = getEnvVarOrFail("CX_ID");
