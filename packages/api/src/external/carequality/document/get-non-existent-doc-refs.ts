@@ -1,6 +1,6 @@
 import { createDocumentFilePath } from "@metriport/core/domain/document/filename";
 import { S3Utils } from "@metriport/core/external/aws/s3";
-import { getDocuments } from "@metriport/core/external/fhir/document/get-documents";
+import { DocumentReferenceWithId } from "@metriport/core/external/fhir/document/document-reference";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { errorToString } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
@@ -16,12 +16,14 @@ const parallelS3Queries = 10;
 export async function getNonExistentDocRefs(
   documents: DocumentReferenceWithMetriportId[],
   patientId: string,
-  cxId: string
+  cxId: string,
+  fhirDocRefs: DocumentReferenceWithId[]
 ): Promise<DocumentReferenceWithMetriportId[]> {
-  const [{ existingDocRefs, nonExistingDocRefs }, fhirDocRefs] = await Promise.all([
-    checkDocRefsExistInS3(documents, patientId, cxId),
-    getDocuments({ cxId, patientId }),
-  ]);
+  const { existingDocRefs, nonExistingDocRefs } = await checkDocRefsExistInS3(
+    documents,
+    patientId,
+    cxId
+  );
 
   const foundOnStorageButNotOnFHIR = existingDocRefs.filter(
     f => !fhirDocRefs.find(d => d.id === f.metriportId)

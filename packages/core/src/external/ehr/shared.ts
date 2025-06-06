@@ -1,4 +1,16 @@
-import { Bundle, Coding, Condition, Resource } from "@medplum/fhirtypes";
+import {
+  AllergyIntolerance,
+  AllergyIntoleranceReaction,
+  Bundle,
+  Coding,
+  Condition,
+  Immunization,
+  Medication,
+  MedicationStatement,
+  Observation,
+  Procedure,
+  Resource,
+} from "@medplum/fhirtypes";
 import {
   AdditionalInfo,
   BadRequestError,
@@ -24,7 +36,14 @@ import { z } from "zod";
 import { createHivePartitionFilePath } from "../../domain/filename";
 import { fetchCodingCodeOrDisplayOrSystem } from "../../fhir-deduplication/shared";
 import { Config } from "../../util/config";
-import { ICD_10_CODE, SNOMED_CODE } from "../../util/constants";
+import {
+  CPT_CODE,
+  CVX_CODE,
+  ICD_10_CODE,
+  LOINC_CODE,
+  RXNORM_CODE,
+  SNOMED_CODE,
+} from "../../util/constants";
 import { out } from "../../util/log";
 import { uuidv7 } from "../../util/uuid-v7";
 import { S3Utils } from "../aws/s3";
@@ -39,7 +58,7 @@ const MAX_AGE = dayjs.duration(24, "hours");
 const region = Config.getAWSRegion();
 const responsesBucket = Config.getEhrResponsesBucketName();
 
-export const paginateWaitTime = dayjs.duration(1, "seconds").asMilliseconds();
+export const paginateWaitTime = dayjs.duration(1, "seconds");
 
 const fhirValidationPrefix = "1 validation error for";
 
@@ -67,7 +86,7 @@ export interface ApiConfig {
   clientSecret: string;
 }
 
-export type RequestData = { [key: string]: string | boolean | object | undefined };
+export type RequestData = { [key: string]: string | boolean | number | object | undefined };
 
 function buildS3Prefix(ehr: string, path: string, key: string): string {
   return `${ehr}/${path}/${key}`;
@@ -93,7 +112,7 @@ export type MakeRequestParams<T> = {
   s3Path: string;
   axiosInstance: AxiosInstance;
   url: string;
-  method: "GET" | "POST" | "PATCH" | "DELETE";
+  method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   data?: RequestData | undefined;
   headers?: Record<string, string> | undefined;
   schema: z.Schema<T>;
@@ -281,6 +300,22 @@ export function isNotRetriableAxiosError(error: unknown): boolean {
   );
 }
 
+export function getMedicationRxnormCoding(medication: Medication): Coding | undefined {
+  const code = medication.code;
+  const rxnormCoding = code?.coding?.find(coding => {
+    const system = fetchCodingCodeOrDisplayOrSystem(coding, "system");
+    return system?.includes(RXNORM_CODE);
+  });
+  if (!rxnormCoding) return undefined;
+  return rxnormCoding;
+}
+
+export function getMedicationStatementStartDate(
+  statement: MedicationStatement
+): string | undefined {
+  return statement.effectiveDateTime ?? statement.effectivePeriod?.start;
+}
+
 export function getConditionIcd10Coding(condition: Condition): Coding | undefined {
   const code = condition.code;
   const icdCoding = code?.coding?.find(coding => {
@@ -322,6 +357,240 @@ export function getConditionStatus(condition: Condition): string | undefined {
   const status = condition.clinicalStatus?.text ?? statusFromCoding[0];
   if (status) return status.replace(qualifierSuffix, "").trim();
   return undefined;
+}
+
+export function getImmunizationCvxCoding(immunization: Immunization): Coding | undefined {
+  const code = immunization.vaccineCode;
+  const cvxCoding = code?.coding?.find(coding => {
+    const system = fetchCodingCodeOrDisplayOrSystem(coding, "system");
+    return system?.includes(CVX_CODE);
+  });
+  if (!cvxCoding) return undefined;
+  return cvxCoding;
+}
+
+export function getImmunizationCvxCode(immunization: Immunization): string | undefined {
+  const cvxCoding = getImmunizationCvxCoding(immunization);
+  if (!cvxCoding) return undefined;
+  return cvxCoding.code;
+}
+
+export function getImmunizationAdministerDate(immunization: Immunization): string | undefined {
+  const administeredDate = immunization.occurrenceDateTime;
+  if (administeredDate) return administeredDate;
+  const administeredString = immunization.occurrenceString;
+  if (!administeredString) return undefined;
+  const parsedDate = buildDayjs(administeredString);
+  if (!parsedDate.isValid()) return undefined;
+  return parsedDate.toISOString();
+}
+
+function getObservationUnit(observation: Observation): string | undefined {
+  const firstReference = observation.referenceRange?.[0];
+  return (
+    observation.valueQuantity?.unit?.toString() ??
+    firstReference?.low?.unit?.toString() ??
+    firstReference?.high?.unit?.toString()
+  );
+}
+
+const blacklistedValues = ["see below", "see text", "see comments", "see note"];
+function getObservationValue(observation: Observation): number | string | undefined {
+  let value: number | string | undefined;
+  if (observation.valueQuantity) {
+    value = observation.valueQuantity.value;
+  } else if (observation.valueCodeableConcept) {
+    value = observation.valueCodeableConcept.text;
+  } else if (observation.valueString) {
+    const parsedNumber = parseFloat(observation.valueString);
+    value = isNaN(parsedNumber) ? observation.valueString : parsedNumber;
+    if (blacklistedValues.includes(value?.toString().toLowerCase().trim())) value = undefined;
+  }
+  if (!value) return undefined;
+  return value;
+}
+
+type ReferenceRange = {
+  low: number | undefined;
+  high: number | undefined;
+  unit: string | undefined;
+  text?: string | undefined;
+};
+function buildObservationReferenceRange(observation: Observation): ReferenceRange | undefined {
+  const firstReference = observation.referenceRange?.[0];
+  if (!firstReference) return undefined;
+  const range: ReferenceRange = {
+    low: firstReference?.low?.value,
+    high: firstReference?.high?.value,
+    unit: firstReference?.low?.unit?.toString() ?? firstReference?.high?.unit?.toString(),
+    text: firstReference?.text?.toLowerCase().trim(),
+  };
+  return range;
+}
+
+const highInterpretations = ["high", "critical"];
+const lowInterpretations = ["low"];
+const normalInterpretations = ["normal", "negative", "none seen", "not detected", "neg"];
+const abnormalInterpretations = ["abnormal", "positive"];
+
+function getExplicitInterpretation(obs: Observation): string | undefined {
+  const interpretationText =
+    obs.interpretation?.[0]?.text === "unknown" ? undefined : obs.interpretation?.[0]?.text;
+
+  return (
+    interpretationText ??
+    obs.interpretation?.[0]?.coding?.[0]?.display ??
+    obs.interpretation?.[0]?.coding?.[0]?.code
+  );
+}
+
+function normalizeStringInterpretation(interpretation: string): string {
+  const lowerInterp = interpretation.toLowerCase().trim();
+  if (lowerInterp.includes("low")) {
+    return "low";
+  } else if (lowerInterp.includes("high") || lowerInterp.includes("positive")) {
+    return "high";
+  } else if (lowerInterp.includes("normal") || lowerInterp.includes("negative")) {
+    return "normal";
+  } else if (lowerInterp.includes("abnormal")) return "abnormal";
+  return interpretation;
+}
+
+export function getObservationLoincCoding(observation: Observation): Coding | undefined {
+  const code = observation.code;
+  const loincCoding = code?.coding?.find(coding => {
+    const system = fetchCodingCodeOrDisplayOrSystem(coding, "system");
+    return system?.includes(LOINC_CODE);
+  });
+  if (!loincCoding) return undefined;
+  return loincCoding;
+}
+
+export function getObservationUnitAndValue(
+  observation: Observation
+): [string, number | string] | undefined {
+  const unit = getObservationUnit(observation);
+  if (!unit) return undefined;
+  const value = getObservationValue(observation);
+  if (!value) return undefined;
+  return [unit, value];
+}
+
+export function getObservationReferenceRange(observation: Observation): string | undefined {
+  const range = buildObservationReferenceRange(observation);
+  const unit = getObservationUnit(observation);
+
+  if (range?.low != undefined && range?.high != undefined) {
+    return `${range?.low} - ${range?.high} ${unit}`;
+  } else if (range?.low != undefined) {
+    return `>= ${range?.low} ${unit}`;
+  } else if (range?.high != undefined) {
+    return `<= ${range?.high} ${unit}`;
+  } else if (range?.text && range?.text !== "unknown") {
+    return range?.text;
+  } else {
+    return "-";
+  }
+}
+
+export function getObservationResultStatus(observation: Observation): string | undefined {
+  const resultStatus = observation.status;
+  if (!resultStatus) return undefined;
+  return resultStatus;
+}
+
+export function getObservationObservedDate(observation: Observation): string | undefined {
+  return observation.effectiveDateTime ?? observation.effectivePeriod?.start;
+}
+
+export function getObservationInterpretation(
+  obs: Observation,
+  value: number | string | undefined
+): string | undefined {
+  const explicitInterpretation = getExplicitInterpretation(obs);
+  if (explicitInterpretation) {
+    return normalizeStringInterpretation(explicitInterpretation);
+  }
+
+  const referenceRange = buildObservationReferenceRange(obs);
+  if (typeof value === "number" && referenceRange) {
+    const low = referenceRange.low;
+    const high = referenceRange.high;
+
+    if (low != undefined && value >= low && high != undefined && value <= high) {
+      return "normal";
+    } else if (low != undefined && value < low) {
+      return "low";
+    } else if (low != undefined && value > low) {
+      return "normal";
+    } else if (high != undefined && value < high) {
+      return "normal";
+    } else if (high != undefined && value > high) {
+      return "high";
+    }
+  } else if (typeof value === "string") {
+    const normalizedValue = value.toLowerCase().trim();
+    if (highInterpretations.includes(normalizedValue)) return "high";
+    if (lowInterpretations.includes(normalizedValue)) return "low";
+    if (normalInterpretations.includes(normalizedValue)) return "normal";
+    if (abnormalInterpretations.includes(normalizedValue)) return "abnormal";
+  }
+
+  if (highInterpretations.includes(explicitInterpretation?.toLowerCase() ?? "")) return "high";
+  return undefined;
+}
+
+export function getAllergyIntoleranceSubstanceRxnormCoding(
+  allergyIntoleranceReaction: AllergyIntoleranceReaction
+): Coding | undefined {
+  const substance = allergyIntoleranceReaction.substance;
+  if (!substance) return undefined;
+  const rxnormCoding = substance.coding?.find(coding => {
+    const system = fetchCodingCodeOrDisplayOrSystem(coding, "system");
+    return system?.includes(RXNORM_CODE);
+  });
+  if (!rxnormCoding) return undefined;
+  return rxnormCoding;
+}
+
+export function getAllergyIntoleranceManifestationSnomedCoding(
+  allergyIntoleranceReaction: AllergyIntoleranceReaction
+): Coding | undefined {
+  const manifestations = allergyIntoleranceReaction.manifestation;
+  if (!manifestations) return undefined;
+  const manifestationCodings = manifestations.flatMap(manifestation => manifestation.coding ?? []);
+  const snomedCoding = manifestationCodings.find(coding => {
+    const system = fetchCodingCodeOrDisplayOrSystem(coding, "system");
+    return system?.includes(SNOMED_CODE);
+  });
+  if (!snomedCoding) return undefined;
+  return snomedCoding;
+}
+
+export function getAllergyIntoleranceOnsetDate(
+  allergyIntolerance: AllergyIntolerance
+): string | undefined {
+  return allergyIntolerance.onsetDateTime ?? allergyIntolerance.onsetPeriod?.start;
+}
+
+export function getProcedureCptCoding(procedure: Procedure): Coding | undefined {
+  const code = procedure.code;
+  const loincCoding = code?.coding?.find(coding => {
+    const system = fetchCodingCodeOrDisplayOrSystem(coding, "system");
+    return system?.includes(CPT_CODE);
+  });
+  if (!loincCoding) return undefined;
+  return loincCoding;
+}
+
+export function getProcedureCptCode(procedure: Procedure): string | undefined {
+  const cptCoding = getProcedureCptCoding(procedure);
+  if (!cptCoding) return undefined;
+  return cptCoding.code;
+}
+
+export function getProcedurePerformedDate(procedure: Procedure): string | undefined {
+  return procedure.performedDateTime ?? procedure.performedPeriod?.start;
 }
 
 type FetchEhrBundleParams = Omit<FetchBundleParams, "bundleType">;
@@ -395,7 +664,7 @@ export async function fetchEhrFhirResourcesWithPagination({
   acc?: EhrFhirResource[] | undefined;
 }): Promise<EhrFhirResource[]> {
   if (!url) return acc;
-  await sleep(paginateWaitTime);
+  await sleep(paginateWaitTime.asMilliseconds());
   const fhirResourceBundle = await makeRequest(url);
   acc.push(...(fhirResourceBundle.entry ?? []).map(e => e.resource));
   const nextUrl = fhirResourceBundle.link?.find(l => l.relation === "next")?.url;
