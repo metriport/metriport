@@ -2,6 +2,7 @@ export type SurescriptsDirectory = "from_surescripts" | "to_surescripts" | "hist
 
 export interface SurescriptsSynchronizeEvent {
   dryRun?: boolean;
+  requestFileName?: string;
   fromSurescripts?: boolean;
   toSurescripts?: boolean;
   listSurescripts?: boolean;

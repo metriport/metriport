@@ -264,6 +264,11 @@ export class SurescriptsSftpClient extends SftpClient {
     return fileInfo.metadata as M;
   }
 
+  private async fileExistsInS3(s3Key: string): Promise<boolean> {
+    const fileInfo = await this.s3.getFileInfoFromS3(s3Key, this.replicaBucket);
+    return fileInfo.exists;
+  }
+
   private async downloadFileFromS3(s3Key: string): Promise<Buffer> {
     const fileContent = await this.s3.downloadFile({
       bucket: this.replicaBucket,
@@ -343,7 +348,11 @@ export class SurescriptsSftpClient extends SftpClient {
   }
 
   async synchronize(event: SurescriptsSynchronizeEvent): Promise<SurescriptsOperation[]> {
-    if (event.fromSurescripts) {
+    if (event.requestFileName) {
+      event.debug?.("Synchronizing " + event.requestFileName);
+      const operations = await this.synchronizeRequestFile(event.requestFileName, event.dryRun);
+      return operations;
+    } else if (event.fromSurescripts) {
       event.debug?.("Copying from Surescripts...");
       const operations = await this.copyFromSurescripts(event);
       event.debug?.("Finished copying from Surescripts");
@@ -355,6 +364,59 @@ export class SurescriptsSftpClient extends SftpClient {
       return operations;
     }
     return [];
+  }
+
+  async synchronizeRequestFile(
+    requestFileName: string,
+    dryRun = false
+  ): Promise<SurescriptsOperation[]> {
+    const metadata = await this.downloadMetadataFromS3<PatientLoadFileMetadata>(
+      getSftpFileName(OUTGOING_NAME, requestFileName)
+    );
+    if (!metadata || !metadata.timestamp) return [];
+
+    const timestamp = parseInt(metadata.timestamp);
+    const isRequestInHistory = await this.isPatientLoadFileInSurescriptsHistory(
+      requestFileName,
+      timestamp
+    );
+    const operations: SurescriptsOperation[] = [];
+
+    if (isRequestInHistory) {
+      // Check for a verification file
+      const verificationFileName = await this.findVerificationFileNameInSftpServer(requestFileName);
+      if (verificationFileName) {
+        const verificationFileDownloaded = await this.fileExistsInS3(
+          getS3Key(INCOMING_NAME, verificationFileName)
+        );
+        if (!verificationFileDownloaded) {
+          const verificationDownload = await this.copyFileFromSurescripts(
+            getSftpFileName(OUTGOING_NAME, verificationFileName),
+            { dryRun }
+          );
+          if (verificationDownload) operations.push(verificationDownload);
+        }
+
+        // If there is a verification file, check for a response file
+        const responseFileName = await this.findFlatFileResponseNameInSftpServer(
+          requestFileName,
+          timestamp
+        );
+        if (responseFileName) {
+          const responseFileDownloaded = await this.fileExistsInS3(
+            getS3Key(INCOMING_NAME, responseFileName)
+          );
+          if (!responseFileDownloaded) {
+            const responseOperation = await this.copyFileFromSurescripts(
+              getSftpFileName(INCOMING_NAME, responseFileName)
+            );
+            if (responseOperation) operations.push(responseOperation);
+          }
+        }
+      }
+    }
+
+    return operations;
   }
 
   async listAllFilesInSurescripts(): Promise<Record<SurescriptsDirectory, string[]>> {
