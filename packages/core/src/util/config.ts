@@ -256,4 +256,16 @@ export class Config {
   static getSurescriptsReceiveFlatFileResponseQueueUrl(): string {
     return getEnvVarOrFail("SURESCRIPTS_RECEIVE_FLAT_FILE_RESPONSE_QUEUE_URL");
   }
+  static getQuestHost(): string {
+    return getEnvVarOrFail("QUEST_SFTP_HOST");
+  }
+  static getQuestSftpUsername(): string {
+    return getEnvVarOrFail("QUEST_SFTP_USERNAME");
+  }
+  static getQuestSftpPassword(): string {
+    return getEnvVarOrFail("QUEST_SFTP_PASSWORD");
+  }
+  static getQuestReplicaBucketName(): string {
+    return getEnvVarOrFail("QUEST_REPLICA_BUCKET");
+  }
 }
