@@ -9,10 +9,12 @@ import {
   MedicationStatement,
   Patient as PatientFhir,
   Practitioner as PractitionerFhir,
-  Resource,
+  ResourceType,
 } from "@medplum/fhirtypes";
 import {
   BadRequestError,
+  EhrFhirResourceBundle,
+  ehrFhirResourceBundleSchema,
   errorToString,
   JwtTokenInfo,
   MetriportError,
@@ -31,12 +33,6 @@ import {
   SlimBookedAppointment,
   slimBookedAppointmentSchema,
 } from "@metriport/shared/interface/external/ehr/canvas/index";
-import {
-  createBundleFromResourceList,
-  EhrFhirResource,
-  EhrFhirResourceBundle,
-  ehrFhirResourceBundleSchema,
-} from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { Patient, patientSchema } from "@metriport/shared/interface/external/ehr/patient";
 import {
   Practitioner,
@@ -49,15 +45,11 @@ import duration from "dayjs/plugin/duration";
 import { z } from "zod";
 import { RXNORM_URL as RXNORM_SYSTEM } from "../../../util/constants";
 import { out } from "../../../util/log";
-import { BundleType, isResourceDiffBundleType } from "../bundle/bundle-shared";
-import {
-  createOrReplaceBundle,
-  CreateOrReplaceBundleParams,
-} from "../bundle/command/create-or-replace-bundle";
-import { FetchBundleParams, fetchBundlePreSignedUrl } from "../bundle/command/fetch-bundle";
 import {
   ApiConfig,
-  fetchBundleUsingTtl,
+  convertBundleToValidStrictBundle,
+  fetchEhrBundleUsingCache,
+  fetchEhrFhirResourcesWithPagination,
   formatDate,
   getConditionIcd10Coding,
   getConditionStartDate,
@@ -79,24 +71,31 @@ const canvasNoteTitle = "Metriport Chart Import";
 const canvasNoteTypeName = "Chart review";
 const canvasNoteStatusForWriting = "NEW";
 const utcToEstOffset = dayjs.duration(-5, "hours");
+const defaultCountOrLimit = 1000;
 export type CanvasEnv = string;
 
-export const supportedCanvasResources = [
+export const supportedCanvasResources: ResourceType[] = [
   "AllergyIntolerance",
+  "CarePlan",
+  "CareTeam",
   "Condition",
+  "Coverage",
+  "Device",
   "DiagnosticReport",
   "Encounter",
-  "MedicationStatement",
+  "Goal",
+  "Immunization",
+  "Media",
   "MedicationRequest",
+  "MedicationStatement",
   "Observation",
   "Procedure",
-  "Immunization",
 ];
 export type SupportedCanvasResource = (typeof supportedCanvasResources)[number];
 export function isSupportedCanvasResource(
   resourceType: string
 ): resourceType is SupportedCanvasResource {
-  return supportedCanvasResources.includes(resourceType);
+  return supportedCanvasResources.includes(resourceType as SupportedCanvasResource);
 }
 
 const problemStatusesMap = new Map<string, string>();
@@ -457,7 +456,7 @@ class CanvasApi {
     noteType: string;
   }): Promise<Note> {
     const { debug } = out(
-      `Canvas createNote - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} practitionerId ${practitionerId} practiceLocationId ${practiceLocationId}`
+      `Canvas createNote - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} practitionerId ${practitionerId}`
     );
     const noteUrl = "notes/v1/Note";
     const additionalInfo = {
@@ -519,7 +518,7 @@ class CanvasApi {
       provider_key: practitionerId,
       datetime_of_service__gte: fromDate.toISOString(),
       datetime_of_service__lte: toDate.toISOString(),
-      limit: "1000",
+      limit: defaultCountOrLimit.toString(),
       ordering: orderDec ? "-datetime_of_service" : "datetime_of_service",
     };
     const urlParams = new URLSearchParams(params);
@@ -742,14 +741,17 @@ class CanvasApi {
     useCachedBundle?: boolean;
   }): Promise<Bundle> {
     const { debug } = out(
-      `Canvas getBundleByResourceType - cxId ${cxId} practiceId ${this.practiceId} metriportPatientId ${metriportPatientId} canvasPatientId ${canvasPatientId} resourceType ${resourceType}`
+      `Canvas getBundleByResourceType - cxId ${cxId} practiceId ${this.practiceId} canvasPatientId ${canvasPatientId}`
     );
     if (!isSupportedCanvasResource(resourceType)) {
       throw new BadRequestError("Invalid resource type", undefined, {
         resourceType,
       });
     }
-    const params = { patient: `Patient/${canvasPatientId}` };
+    const params = {
+      patient: `Patient/${canvasPatientId}`,
+      _count: defaultCountOrLimit.toString(),
+    };
     const urlParams = new URLSearchParams(params);
     const resourceTypeUrl = `/${resourceType}?${urlParams.toString()}`;
     const additionalInfo = {
@@ -758,99 +760,34 @@ class CanvasApi {
       patientId: canvasPatientId,
       resourceType,
     };
-    if (useCachedBundle) {
-      const cachedBundle = await this.getCachedBundle({
-        cxId,
-        metriportPatientId,
-        canvasPatientId,
-        bundleType: BundleType.EHR,
-        resourceType,
+    const fetchResourcesFromEhr = () =>
+      fetchEhrFhirResourcesWithPagination({
+        makeRequest: async (url: string) => {
+          const bundle = await this.makeRequest<EhrFhirResourceBundle>({
+            cxId,
+            patientId: canvasPatientId,
+            s3Path: `fhir-resources-${resourceType}`,
+            method: "GET",
+            url,
+            schema: ehrFhirResourceBundleSchema,
+            additionalInfo,
+            debug,
+            useFhir: true,
+          });
+          return convertBundleToValidStrictBundle(bundle, resourceType, canvasPatientId);
+        },
+        url: resourceTypeUrl,
       });
-      if (cachedBundle) return cachedBundle;
-    }
-    async function paginateFhirResources(
-      api: CanvasApi,
-      url: string | undefined,
-      acc: EhrFhirResource[] | undefined = []
-    ): Promise<EhrFhirResource[]> {
-      if (!url) return acc;
-      await sleep(paginateWaitTime.asMilliseconds());
-      const ehrFhirResourceBundle = await api.makeRequest<EhrFhirResourceBundle>({
-        cxId,
-        patientId: canvasPatientId,
-        s3Path: `fhir-resources-${resourceType}`,
-        method: "GET",
-        url,
-        schema: ehrFhirResourceBundleSchema,
-        additionalInfo,
-        debug,
-        useFhir: true,
-      });
-      acc.push(...(ehrFhirResourceBundle.entry ?? []).map(e => e.resource));
-      const nextUrl = ehrFhirResourceBundle.link?.find(l => l.relation === "next")?.url;
-      return paginateFhirResources(api, nextUrl, acc);
-    }
-    const ehrFhirResources = await paginateFhirResources(this, resourceTypeUrl);
-    const invalidEntry = ehrFhirResources.find(r => r.resourceType !== resourceType);
-    if (invalidEntry) {
-      throw new BadRequestError("Invalid resource in bundle", undefined, {
-        resourceType,
-        resourceTypeInBundle: invalidEntry.resourceType,
-      });
-    }
-    const bundle = createBundleFromResourceList(ehrFhirResources as Resource[]);
-    await this.updateCachedBundle({
+    const bundle = await fetchEhrBundleUsingCache({
+      ehr: EhrSources.canvas,
       cxId,
       metriportPatientId,
-      canvasPatientId,
-      bundleType: BundleType.EHR,
-      bundle,
+      ehrPatientId: canvasPatientId,
       resourceType,
+      fetchResourcesFromEhr,
+      useCachedBundle,
     });
     return bundle;
-  }
-
-  async getBundleByResourceTypePreSignedUrl({
-    cxId,
-    metriportPatientId,
-    canvasPatientId,
-    resourceType,
-    bundleType,
-    jobId,
-  }: {
-    cxId: string;
-    metriportPatientId: string;
-    canvasPatientId: string;
-    resourceType: string;
-    bundleType?: BundleType;
-    jobId?: string;
-  }): Promise<string | undefined> {
-    if (!isSupportedCanvasResource(resourceType)) {
-      throw new BadRequestError("Invalid resource type", undefined, {
-        resourceType,
-      });
-    }
-    if (isResourceDiffBundleType(bundleType as string) && !jobId) {
-      throw new BadRequestError(
-        "Job ID must be provided when fetching resource diff bundles",
-        undefined,
-        {
-          cxId,
-          metriportPatientId,
-          canvasPatientId,
-          resourceType,
-          bundleType,
-        }
-      );
-    }
-    return this.getBundlePreSignedUrl({
-      cxId,
-      metriportPatientId,
-      canvasPatientId,
-      bundleType: bundleType ?? BundleType.EHR,
-      resourceType,
-      jobId,
-    });
   }
 
   async getAppointments({
@@ -863,7 +800,7 @@ class CanvasApi {
     toDate: Date;
   }): Promise<SlimBookedAppointment[]> {
     const { debug } = out(`Canvas getAppointments - cxId ${cxId} practiceId ${this.practiceId}`);
-    const params = { status: "booked", _count: "1000" };
+    const params = { status: "booked", _count: defaultCountOrLimit.toString() };
     const urlParams = new URLSearchParams(params);
     urlParams.append("date", `ge${this.formatDate(fromDate.toISOString())}`);
     urlParams.append("date", `lt${this.formatDate(toDate.toISOString())}`);
@@ -938,70 +875,6 @@ class CanvasApi {
       additionalInfo,
       debug,
       emptyResponse,
-    });
-  }
-
-  private async getBundlePreSignedUrl({
-    cxId,
-    metriportPatientId,
-    canvasPatientId,
-    bundleType,
-    resourceType,
-    jobId,
-  }: Omit<FetchBundleParams, "ehr" | "ehrPatientId"> & {
-    canvasPatientId: string;
-  }): Promise<string | undefined> {
-    const bundlePreSignedUrl = await fetchBundlePreSignedUrl({
-      ehr: EhrSources.canvas,
-      cxId,
-      metriportPatientId,
-      ehrPatientId: canvasPatientId,
-      bundleType,
-      resourceType,
-      jobId,
-    });
-    return bundlePreSignedUrl;
-  }
-
-  private async getCachedBundle({
-    cxId,
-    metriportPatientId,
-    canvasPatientId,
-    bundleType,
-    resourceType,
-  }: Omit<FetchBundleParams, "ehr" | "ehrPatientId"> & {
-    canvasPatientId: string;
-  }): Promise<Bundle | undefined> {
-    const bundleWithLastModified = await fetchBundleUsingTtl({
-      ehr: EhrSources.canvas,
-      cxId,
-      metriportPatientId,
-      ehrPatientId: canvasPatientId,
-      bundleType,
-      resourceType,
-    });
-    if (!bundleWithLastModified) return undefined;
-    return bundleWithLastModified.bundle;
-  }
-
-  private async updateCachedBundle({
-    cxId,
-    metriportPatientId,
-    canvasPatientId,
-    bundleType,
-    bundle,
-    resourceType,
-  }: Omit<CreateOrReplaceBundleParams, "ehr" | "ehrPatientId"> & {
-    canvasPatientId: string;
-  }): Promise<void> {
-    return await createOrReplaceBundle({
-      ehr: EhrSources.canvas,
-      cxId,
-      metriportPatientId,
-      ehrPatientId: canvasPatientId,
-      bundleType,
-      bundle,
-      resourceType,
     });
   }
 

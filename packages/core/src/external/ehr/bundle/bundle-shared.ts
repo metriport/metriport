@@ -1,6 +1,7 @@
 import { EhrSource, EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { Config } from "../../../util/config";
 import { S3Utils } from "../../aws/s3";
+import { supportedAthenaHealthResources } from "../athenahealth";
 import { supportedCanvasResources } from "../canvas";
 
 const globalPrefix = "bundle";
@@ -50,6 +51,7 @@ export function createFileKeyMetriportOnly(params: CreateBundlePrefixParams): st
 
 export function getSupportedResourcesByEhr(ehr: EhrSource): string[] {
   if (ehr === EhrSources.canvas) return supportedCanvasResources;
+  if (ehr === EhrSources.athena) return supportedAthenaHealthResources;
   return [];
 }
 

@@ -3,12 +3,10 @@ import {
   isSupportedResourceTypeByEhr,
 } from "@metriport/core/external/ehr/bundle/bundle-shared";
 import { BadRequestError } from "@metriport/shared";
-import { EhrSource, EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { getPatientMappingOrFail } from "../../../../../command/mapping/patient";
-import { fetchBundlePreSignedUrl as fetchBundlePreSignedUrlCanvas } from "../../../canvas/command/bundle/fetch-bundle-presigned-url";
-import { FetchBundleParams, FetchBundleParamsForClient, FetchedBundlePreSignedUrls } from "./types";
+import { FetchBundleParams, FetchedBundlePreSignedUrls } from "./types";
 
-export async function validateAndPrepareBundleFetchOrRefresh({
+export async function validateAndPrepareBundleFetch({
   ehr,
   cxId,
   ehrPatientId,
@@ -29,26 +27,4 @@ export async function validateAndPrepareBundleFetchOrRefresh({
   }
   const resourceTypes = resourceType ? [resourceType] : getSupportedResourcesByEhr(ehr);
   return { resourceTypes, metriportPatientId };
-}
-
-export type BundleFunctions = {
-  fetchBundlePreSignedUrl: (params: FetchBundleParamsForClient) => Promise<string | undefined>;
-};
-
-const bundleFunctionsByEhr: Record<EhrSource, BundleFunctions | undefined> = {
-  [EhrSources.canvas]: {
-    fetchBundlePreSignedUrl: fetchBundlePreSignedUrlCanvas,
-  },
-  [EhrSources.athena]: undefined,
-  [EhrSources.elation]: undefined,
-  [EhrSources.healthie]: undefined,
-  [EhrSources.eclinicalworks]: undefined,
-};
-
-export function getBundleFunctions(ehr: EhrSource): BundleFunctions {
-  const bundleFunctions = bundleFunctionsByEhr[ehr];
-  if (!bundleFunctions) {
-    throw new BadRequestError("No bundle functions found @ Ehr", undefined, { ehr });
-  }
-  return bundleFunctions;
 }
