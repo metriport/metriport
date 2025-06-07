@@ -377,7 +377,7 @@ export class SurescriptsSftpClient extends SftpClient {
       return undefined;
     }
     const content = await this.read(fileName, {
-      decompress: decompress || fileName.endsWith(".gz") || fileName.endsWith(".gz.rsp"),
+      decompress: decompress || fileName.endsWith(".gz") || fileName.includes(".gz."),
     });
     return content.toString("ascii");
   }
