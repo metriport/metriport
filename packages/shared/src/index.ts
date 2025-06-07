@@ -31,6 +31,7 @@ export * from "./domain/jwt-token";
 export { metriportCompanyDetails } from "./domain/metriport";
 export * from "./domain/patient/patient";
 export * from "./domain/patient/patient-import/schemas";
+export * from "./domain/patient/settings";
 export * from "./domain/rate-limiting";
 export * from "./domain/secrets";
 export * from "./domain/job/job-status";
