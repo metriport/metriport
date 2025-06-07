@@ -3,15 +3,16 @@ import { errorToString } from "@metriport/shared";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { SearchSetBundle } from "@metriport/shared/medical";
 import { timed } from "@metriport/shared/util/duration";
-import { Dictionary, groupBy, uniq } from "lodash";
+import { chunk, Dictionary, groupBy, uniq } from "lodash";
 import { Patient } from "../../../../domain/patient";
-import { toFHIR as patientToFhir } from "../../../../external/fhir/patient/conversion";
 import {
   buildBundleEntry,
   buildSearchSetBundle,
   getReferencesFromResources,
   ReferenceWithIdAndType,
 } from "../../../../external/fhir/bundle/bundle";
+import { toFHIR as patientToFhir } from "../../../../external/fhir/patient/conversion";
+import { isMedication } from "../../../../external/fhir/shared";
 import {
   FhirSearchResult,
   rawContentFieldName,
@@ -19,11 +20,12 @@ import {
 import { OpenSearchFhirSearcher } from "../../../../external/opensearch/lexical/fhir-searcher";
 import { getEntryId } from "../../../../external/opensearch/shared/id";
 import { simpleQueryStringPrefix } from "../../../../external/opensearch/shared/query";
-import { out } from "../../../../util";
+import { executeAsynchronously, out } from "../../../../util";
 import { searchDocuments } from "../document-reference/search";
 import { getConfigs } from "./fhir-config";
 
 const maxHydrationAttempts = 5;
+const maxIdsPerQuery = 500; // Keep search query under 32KB
 
 const medRelatedResourceTypes: ResourceType[] = [
   "MedicationRequest",
@@ -131,24 +133,23 @@ async function hydrateResources({
   const { log } = out(`hydrateResources - cx ${cxId}, pt ${patientId}`);
 
   const startHydrationAt = new Date();
-  const mutableHydrated = await hydrateMissingReferences({
+  const hydrated = await hydrateMissingReferences({
     cxId,
     patientId,
     resources,
   });
-  log(
-    `Hydrated to ${mutableHydrated.length} resources in ${elapsedTimeFromNow(startHydrationAt)} ms.`
-  );
+  log(`Hydrated to ${hydrated.length} resources in ${elapsedTimeFromNow(startHydrationAt)} ms.`);
 
   // Reverse-hydration - resources that point to something we found and are needed to correctly
   // make use of the searched one (e.g., when we find a Medication, we need to load the MedicationRequests,
   // MedicationAdministrations, etc. that point to it)
-  const resourcesToReverseHydrate = resources.filter(r => r.resourceType === "Medication");
-  // const resourcesToReverseHydrate = mutableHydrated.filter(r => r.resourceType === "Medication");
-  const idsToReverseHydrate = resourcesToReverseHydrate.flatMap(m => m.id ?? []);
-  const idsToExclude = mutableHydrated.flatMap(r =>
-    r.id && !idsToReverseHydrate.some(toInclude => toInclude === r.id) ? r.id : []
-  );
+  const isMedicationDictionary = groupBy(hydrated, isMedication);
+  const medicationResources = isMedicationDictionary["true"] ?? [];
+  const nonMedicationResources = isMedicationDictionary["false"] ?? [];
+
+  const idsToReverseHydrate = medicationResources.flatMap(m => m.id ?? []);
+  const idsToExclude = nonMedicationResources.flatMap(m => m.id ?? []);
+
   const startSearchByIdsAt = new Date();
   const reverseHydrated = await searchByIds({
     cxId,
@@ -161,9 +162,9 @@ async function hydrateResources({
       idsToReverseHydrate.length
     } resources in ${elapsedTimeFromNow(startSearchByIdsAt)} ms.`
   );
-  mutableHydrated.push(...reverseHydrated);
 
-  return mutableHydrated;
+  const result = [...hydrated, ...reverseHydrated];
+  return result;
 }
 
 /**
@@ -190,21 +191,25 @@ async function searchByIds({
 
   if (idsToInclude.length < 1) return [];
   const uniqueIds = uniq(idsToInclude);
+  const batches = chunk(uniqueIds, maxIdsPerQuery);
+  const searchConsolidatedDataResult: FhirSearchResult[] = [];
 
-  const query = `${simpleQueryStringPrefix} "${uniqueIds.join(`" "`)}"`;
-
-  const searchConsolidatedDataResult = await timed(
-    async () => {
-      const { results } = await searchConsolidatedData({
-        cxId,
-        patientId,
-        query,
-      });
-      return results;
-    },
-    "hydration.searchConsolidatedData",
-    log
-  );
+  await executeAsynchronously(batches, async batch => {
+    const query = `${simpleQueryStringPrefix} "${batch.join(`" "`)}"`;
+    const batchResult = await timed(
+      async () => {
+        const { results } = await searchConsolidatedData({
+          cxId,
+          patientId,
+          query,
+        });
+        return results;
+      },
+      "hydration.searchConsolidatedData",
+      log
+    );
+    searchConsolidatedDataResult.push(...batchResult);
+  });
 
   const resources = searchConsolidatedDataResult.flatMap(r => {
     const internalResource = fhirSearchResultToResource(r, log);
