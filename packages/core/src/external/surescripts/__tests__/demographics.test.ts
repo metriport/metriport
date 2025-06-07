@@ -48,14 +48,28 @@ describe("makeNameDemographics", () => {
     });
   });
 
-  it("should produce a new object from shifting middle name parts to first name", () => {
+  it("should always produce a new object from shifting middle name part back and forth", () => {
     const johnDoe = makeNameDemographics({
       firstName: "John Jacob",
       lastName: "Doe",
     });
+    expect(johnDoe).toEqual({
+      firstName: "John",
+      middleName: "Jacob",
+      lastName: "Doe",
+      prefix: "",
+      suffix: "",
+    });
+
     const johnJacobDoe = shiftMiddleNameToFirstName(johnDoe);
     expect(johnDoe).not.toBe(johnJacobDoe);
-    expect(johnDoe).toEqual(johnJacobDoe);
+    expect(johnJacobDoe).toEqual({
+      firstName: "John Jacob",
+      lastName: "Doe",
+      middleName: "",
+      prefix: "",
+      suffix: "",
+    });
   });
 
   it("should parse prefixes and suffixes", () => {
