@@ -4,6 +4,10 @@ import { Patient } from "@metriport/shared/domain/patient";
 import { validateNPI } from "@metriport/shared/common/validate-npi";
 import { MetriportError } from "@metriport/shared";
 import {
+  makeNameDemographics,
+  genderMapperFromDomain,
+} from "@metriport/shared/common/demographics";
+import {
   patientLoadHeaderSchema,
   patientLoadHeaderOrder,
   patientLoadDetailSchema,
@@ -29,8 +33,18 @@ import {
 } from "./schema/response";
 import { OutgoingFileRowSchema, IncomingFileRowSchema } from "./schema/shared";
 import { SurescriptsSftpClient, Transmission } from "./client";
-import { makeNameDemographics, makeGenderDemographics } from "./shared";
 import { SURESCRIPTS_VERSION } from "./constants";
+import { SurescriptsGender } from "./types";
+
+const makeGenderDemographics = genderMapperFromDomain<SurescriptsGender>(
+  {
+    M: "M",
+    F: "F",
+    O: "N",
+    U: "U",
+  },
+  "U"
+);
 
 export function canGeneratePatientLoadFile(
   transmission: Transmission,

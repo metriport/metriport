@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { DEA_SCHEDULE_CODES, PAYMENT_CODES, PLAN_CODES } from "../codes";
+import { DeaScheduleCodes } from "@metriport/shared/common/dea-schedule";
+import { PAYMENT_CODES, PLAN_CODES } from "../codes";
 
 import {
   IncomingFile,
@@ -95,7 +96,7 @@ export const flatFileRowSchema = z.object({
   drugDatabaseCodeQualifier: z.string().optional(),
   strengthFormCode: z.string().optional(),
   strengthUnitOfMeasure: z.string().optional(),
-  deaSchedule: z.enum(DEA_SCHEDULE_CODES).optional(),
+  deaSchedule: z.enum(DeaScheduleCodes).optional(),
   quantityDispensed: z.string().optional(),
   codeListQualifier: z.string().optional(),
   unitSourceCode: z.string().optional(),
@@ -289,7 +290,7 @@ export const flatFileDetailOrder: IncomingFileRowSchema<FlatFileDetail> = [
   {
     field: 27,
     key: "deaSchedule",
-    fromSurescripts: fromSurescriptsEnum(DEA_SCHEDULE_CODES, { optional: true }),
+    fromSurescripts: fromSurescriptsEnum(DeaScheduleCodes, { optional: true }),
   },
   {
     field: 28,
