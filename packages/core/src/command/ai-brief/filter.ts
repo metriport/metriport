@@ -1,4 +1,11 @@
-import { Bundle, Medication, Observation, Patient, Resource } from "@medplum/fhirtypes";
+import {
+  Bundle,
+  Medication,
+  ResourceType,
+  Observation,
+  Patient,
+  Resource,
+} from "@medplum/fhirtypes";
 import { toArray } from "@metriport/shared";
 import { buildDayjs, ISO_DATE } from "@metriport/shared/common/date";
 import { cloneDeep } from "lodash";
@@ -26,9 +33,9 @@ const MAX_REPORTS_PER_GROUP = 3;
  * sending it to the AI model to reduce payload size while preserving the essential
  * clinical information.
  */
-const referenceResources = ["Practitioner", "Organization", "Location"];
+const referenceResources: ResourceType[] = ["Practitioner", "Organization", "Location"];
 
-const relevantResources = [
+const relevantResources: ResourceType[] = [
   "AllergyIntolerance",
   "DiagnosticReport",
   "Immunization",

@@ -1,7 +1,7 @@
 import { Encounter, Location } from "@medplum/fhirtypes";
 import { toTitleCase } from "@metriport/shared";
 import { getValidCodings } from "../../codeable-concept";
-import { buildReferenceFromStringRelative } from "../../shared/bundle";
+import { buildReferenceFromStringRelative } from "../../bundle/bundle";
 
 export function filterInvalidEncounters(
   encounters: Encounter[],

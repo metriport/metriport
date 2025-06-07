@@ -1,7 +1,7 @@
 import { Immunization } from "@medplum/fhirtypes";
 import { defaultHasMinimumData, FHIRResourceToString } from "../fhir-resource-to-string";
 import { formatAnnotations } from "../shared/annotation";
-import { formatCodeableConcept } from "../shared/codeable-concept";
+import { formatCodeableConcept, formatCodeableConcepts } from "../shared/codeable-concept";
 import { emptyIfDenied } from "../shared/deny";
 import { formatIdentifiers } from "../shared/identifier";
 import { formatQuantity } from "../shared/quantity";
@@ -100,6 +100,69 @@ export class ImmunizationToString implements FHIRResourceToString<Immunization> 
     });
     if (performerStr) {
       parts.push(performerStr);
+    }
+
+    if (immunization.isSubpotent !== undefined) {
+      parts.push(`is subpotent: ${immunization.isSubpotent}`);
+    }
+
+    const programEligibilityStr = formatCodeableConcepts({
+      concepts: immunization.programEligibility,
+      label: "Program Eligibility",
+      isDebug,
+    });
+    if (programEligibilityStr) {
+      parts.push(programEligibilityStr);
+    }
+
+    const fundingSourceStr = formatCodeableConcept({
+      concept: immunization.fundingSource,
+      label: "Funding Source",
+      isDebug,
+    });
+    if (fundingSourceStr) {
+      parts.push(fundingSourceStr);
+    }
+
+    if (immunization.reaction) {
+      const reactions = immunization.reaction
+        .map(reaction => {
+          const components = [
+            reaction.date && (isDebug ? `Date: ${reaction.date}` : reaction.date),
+            formatCodeableConcept({ concept: reaction.detail, label: "Detail", isDebug }),
+            // reaction.reported !== undefined &&
+            //   (isDebug ? `Reported: ${reaction.reported}` : String(reaction.reported)),
+          ].filter(Boolean);
+          return components.join(FIELD_SEPARATOR);
+        })
+        .filter(Boolean);
+      if (reactions.length > 0) {
+        const reactionsStr = reactions.join(FIELD_SEPARATOR);
+        parts.push(isDebug ? `Reactions: ${reactionsStr}` : reactionsStr);
+      }
+    }
+
+    if (immunization.protocolApplied) {
+      const protocols = immunization.protocolApplied
+        .map(protocol => {
+          const components = [
+            protocol.series && (isDebug ? `Series: ${protocol.series}` : protocol.series),
+            // protocol.doseNumberPositiveInt !== undefined &&
+            //   (isDebug
+            //     ? `Dose Number: ${protocol.doseNumberPositiveInt}`
+            //     : String(protocol.doseNumberPositiveInt)),
+            // protocol.seriesDosesPositiveInt !== undefined &&
+            //   (isDebug
+            //     ? `Series Doses: ${protocol.seriesDosesPositiveInt}`
+            //     : String(protocol.seriesDosesPositiveInt)),
+          ].filter(Boolean);
+          return components.join(FIELD_SEPARATOR);
+        })
+        .filter(Boolean);
+      if (protocols.length > 0) {
+        const protocolsStr = protocols.join(FIELD_SEPARATOR);
+        parts.push(isDebug ? `Protocols: ${protocolsStr}` : protocolsStr);
+      }
     }
 
     const notes = formatAnnotations({ annotations: immunization.note, label: "Note", isDebug });

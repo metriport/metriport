@@ -34,8 +34,9 @@ export function formatReference({
   label?: string;
   isDebug?: boolean | undefined;
 }): string | undefined {
-  if (!reference?.display) return undefined;
-  const formattedRef = reference.display.trim();
+  const formattedRef = [reference?.reference?.trim(), reference?.display?.trim()]
+    .filter(Boolean)
+    .join(" ");
   if (formattedRef.length < 1) return undefined;
   return isDebug && label ? `${label}: ${formattedRef}` : formattedRef;
 }

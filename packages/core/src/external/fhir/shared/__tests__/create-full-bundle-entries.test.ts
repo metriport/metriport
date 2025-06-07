@@ -1,6 +1,6 @@
 import { faker } from "@faker-js/faker";
 import { makeBundle } from "../../../../external/fhir/__tests__/bundle";
-import * as bundleShared from "../../../../external/fhir/shared/bundle";
+import * as bundleShared from "../../bundle/bundle";
 import { snomedCodeMd } from "../../../../fhir-deduplication/__tests__/examples/condition-examples";
 import { makeCondition } from "../../../../fhir-to-cda/cda-templates/components/__tests__/make-condition";
 

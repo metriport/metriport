@@ -1,7 +1,7 @@
 import { Resource } from "@medplum/fhirtypes";
 import { BadRequestError } from "@metriport/shared";
+import { artifactRelatedArtifactUrl } from "../external/fhir/shared/extensions/derived-from";
 import { deduplicateResources } from "./dedup-resources";
-import { artifactRelatedArtifactUrl } from "./shared";
 
 /**
  * Computes the XOR of two lists of resources of the same resource type.

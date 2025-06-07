@@ -1,7 +1,8 @@
 import { MedicationStatement } from "@medplum/fhirtypes";
 import { defaultHasMinimumData, FHIRResourceToString } from "../fhir-resource-to-string";
 import { formatAnnotations } from "../shared/annotation";
-import { formatCodeableConcepts } from "../shared/codeable-concept";
+import { formatCodeableConcept, formatCodeableConcepts } from "../shared/codeable-concept";
+import { formatDosages } from "../shared/dosage";
 import { formatIdentifiers } from "../shared/identifier";
 import { formatPeriod } from "../shared/period";
 import { formatReferences } from "../shared/reference";
@@ -23,6 +24,20 @@ export class MedicationStatementToString implements FHIRResourceToString<Medicat
     if (statement.status) {
       parts.push(isDebug ? `Status: ${statement.status}` : statement.status);
     }
+
+    const statusReasonStr = formatCodeableConcepts({
+      concepts: statement.statusReason,
+      label: "Status Reason",
+      isDebug,
+    });
+    if (statusReasonStr) parts.push(statusReasonStr);
+
+    const categoryStr = formatCodeableConcept({
+      concept: statement.category,
+      label: "Category",
+      isDebug,
+    });
+    if (categoryStr) parts.push(categoryStr);
 
     if (statement.medicationCodeableConcept) {
       const medicationStr = formatCodeableConcepts({
@@ -95,6 +110,9 @@ export class MedicationStatementToString implements FHIRResourceToString<Medicat
       isDebug,
     });
     if (reasonStr) parts.push(reasonStr);
+
+    const dosageStr = formatDosages({ dosages: statement.dosage, label: "Dosage", isDebug });
+    if (dosageStr) parts.push(dosageStr);
 
     const notes = formatAnnotations({ annotations: statement.note, label: "Note", isDebug });
     if (notes) {
