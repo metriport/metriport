@@ -98,12 +98,46 @@ export class MedicationDispenseToString implements FHIRResourceToString<Medicati
     });
     if (quantityStr) parts.push(quantityStr);
 
-    // if (dispense.daysSupply) {
-    //   const daysSupplyStr = formatQuantity({ quantity: dispense.daysSupply, label: "Days Supply", isDebug });
-    //   if (daysSupplyStr) {
-    //     parts.push(daysSupplyStr);
-    //   }
-    // }
+    if (dispense.daysSupply) {
+      const daysSupplyStr = formatQuantity({
+        quantity: dispense.daysSupply,
+        label: "Days Supply",
+        isDebug,
+      });
+      if (daysSupplyStr) {
+        parts.push(daysSupplyStr);
+      }
+    }
+
+    if (dispense.substitution) {
+      const substitution = dispense.substitution;
+      const substitutionParts = [];
+      // if (substitution.wasSubstituted !== undefined) {
+      //   substitutionParts.push(
+      //     isDebug ? `Substituted: ${substitution.wasSubstituted}` : String(substitution.wasSubstituted)
+      //   );
+      // }
+      if (substitution.type) {
+        const typeStr = formatCodeableConcept({
+          concept: substitution.type,
+          label: "Type",
+          isDebug,
+        });
+        if (typeStr) substitutionParts.push(typeStr);
+      }
+      if (substitution.reason) {
+        const reasonStr = formatCodeableConcepts({
+          concepts: substitution.reason,
+          label: "Reason",
+          isDebug,
+        });
+        if (reasonStr) substitutionParts.push(reasonStr);
+      }
+      if (substitutionParts.length > 0) {
+        const substitutionStr = substitutionParts.join(FIELD_SEPARATOR);
+        parts.push(isDebug ? `Substitution: ${substitutionStr}` : substitutionStr);
+      }
+    }
 
     if (dispense.whenPrepared) {
       parts.push(isDebug ? `Prepared: ${dispense.whenPrepared}` : dispense.whenPrepared);

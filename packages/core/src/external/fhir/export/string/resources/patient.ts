@@ -4,6 +4,7 @@ import { formatAddresses } from "../shared/address";
 import { formatHumanNames } from "../shared/human-name";
 import { formatIdentifiers } from "../shared/identifier";
 import { FIELD_SEPARATOR } from "../shared/separator";
+import { formatTelecoms } from "../shared/telecom";
 
 /**
  * Converts a FHIR Patient resource to a string representation
@@ -17,6 +18,9 @@ export class PatientToString implements FHIRResourceToString<Patient> {
 
     const nameStr = formatHumanNames({ names: patient.name, isDebug });
     if (nameStr) parts.push(nameStr);
+
+    const telecoms = formatTelecoms({ telecoms: patient.telecom, isDebug });
+    if (telecoms) parts.push(telecoms);
 
     const addressStr = formatAddresses({ addresses: patient.address, label: "Address", isDebug });
     if (addressStr) parts.push(addressStr);
