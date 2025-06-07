@@ -29,6 +29,7 @@ const medRelatedResourceTypes: ResourceType[] = [
   "MedicationRequest",
   "MedicationDispense",
   "MedicationAdministration",
+  "MedicationStatement",
 ];
 
 export type SearchConsolidatedParams = {
