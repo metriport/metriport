@@ -350,7 +350,7 @@ export class SurescriptsSftpClient extends SftpClient {
   async synchronize(event: SurescriptsSynchronizeEvent): Promise<SurescriptsOperation[]> {
     if (event.requestFileName) {
       event.debug?.("Synchronizing " + event.requestFileName);
-      const operations = await this.synchronizeRequestFile(event.requestFileName, event.dryRun);
+      const operations = await this.synchronizeRequestFile(event.requestFileName, event);
       return operations;
     } else if (event.fromSurescripts) {
       event.debug?.("Copying from Surescripts...");
@@ -368,10 +368,11 @@ export class SurescriptsSftpClient extends SftpClient {
 
   async synchronizeRequestFile(
     requestFileName: string,
-    dryRun = false
+    event: SurescriptsSynchronizeEvent
   ): Promise<SurescriptsOperation[]> {
+    const sftpFileNameForRequest = getSftpFileName(OUTGOING_NAME, requestFileName);
     const metadata = await this.downloadMetadataFromS3<PatientLoadFileMetadata>(
-      getSftpFileName(OUTGOING_NAME, requestFileName)
+      sftpFileNameForRequest
     );
     if (!metadata || !metadata.timestamp) return [];
 
@@ -392,7 +393,7 @@ export class SurescriptsSftpClient extends SftpClient {
         if (!verificationFileDownloaded) {
           const verificationDownload = await this.copyFileFromSurescripts(
             getSftpFileName(OUTGOING_NAME, verificationFileName),
-            { dryRun }
+            event
           );
           if (verificationDownload) operations.push(verificationDownload);
         }
@@ -408,12 +409,18 @@ export class SurescriptsSftpClient extends SftpClient {
           );
           if (!responseFileDownloaded) {
             const responseOperation = await this.copyFileFromSurescripts(
-              getSftpFileName(INCOMING_NAME, responseFileName)
+              getSftpFileName(INCOMING_NAME, responseFileName),
+              event
             );
             if (responseOperation) operations.push(responseOperation);
           }
         }
       }
+    }
+    // If the request file is not in history, copy the initial request file
+    else {
+      const requestOperation = await this.copyFileToSurescripts(sftpFileNameForRequest, event);
+      if (requestOperation) operations.push(requestOperation);
     }
 
     return operations;
