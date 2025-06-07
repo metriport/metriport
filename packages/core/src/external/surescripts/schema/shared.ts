@@ -71,8 +71,9 @@ export function fromSurescriptsEnum<T extends string, O extends FieldOption>(
   enumerated: readonly T[],
   option: O = {} as O
 ) {
+  const enumeratedSet = new Set(enumerated);
   return function (value: string): FieldTypeFromSurescripts<T, O> {
-    if (enumerated.includes(value as T)) {
+    if (enumeratedSet.has(value as T)) {
       return value as T;
     } else if (value === "" && option.optional) {
       return undefined as FieldTypeFromSurescripts<T, O>;

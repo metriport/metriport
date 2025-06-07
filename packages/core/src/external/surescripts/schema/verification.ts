@@ -11,7 +11,7 @@ import {
 
 export const patientVerificationHeaderSchema = z.object({
   recordType: z.enum(["SHD"]),
-  version: z.enum(["3.0"]),
+  version: z.string(),
   receiverId: z.string().min(3).max(30),
   senderId: z.string().min(3).max(30),
   transactionId: z.string().min(1).max(36),
@@ -42,7 +42,7 @@ export const patientVerificationHeaderOrder: IncomingFileRowSchema<PatientVerifi
   {
     field: 1,
     key: "version",
-    fromSurescripts: fromSurescriptsEnum(["3.0"]),
+    fromSurescripts: fromSurescriptsString(),
   },
   {
     field: 2,

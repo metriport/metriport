@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { DeaScheduleCodes } from "@metriport/shared/common/dea-schedule";
+import { NCItCodes } from "@metriport/shared/common/ncpdp";
 import { PAYMENT_CODES, PLAN_CODES } from "../codes";
 
 import {
@@ -109,7 +110,7 @@ export const flatFileRowSchema = z.object({
   lastFilledDate: z.date().optional(),
   soldDate: z.date().optional(),
   priorAuthorizationNumber: z.string().optional(),
-  ncpdpId: z.string().optional(),
+  ncpdpId: z.enum(NCItCodes).optional(),
   pharmacyNpiNumber: z.string().optional(),
   pharmacyName: z.string().optional(),
   pharmacyAddressLine1: z.string().optional(),
@@ -356,7 +357,7 @@ export const flatFileDetailOrder: IncomingFileRowSchema<FlatFileDetail> = [
   {
     field: 42,
     key: "ncpdpId",
-    fromSurescripts: fromSurescriptsString({ optional: true }),
+    fromSurescripts: fromSurescriptsEnum(NCItCodes, { optional: true }),
   },
   {
     field: 43,
