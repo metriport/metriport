@@ -290,7 +290,12 @@ class HealthieApi {
         appointment => {
           const attendee = appointment.attendees[0];
           if (!attendee) return [];
-          return [{ ...appointment, attendees: [attendee], cursor: appointment.cursor }];
+          return [
+            {
+              ...appointment,
+              attendees: [attendee, ...appointment.attendees.slice(1)],
+            },
+          ];
         }
       );
       acc.push(...appointmentsWithAttendees);
@@ -346,7 +351,7 @@ class HealthieApi {
     if (!appointment) throw new NotFoundError("Appointment not found", undefined, additionalInfo);
     const attendee = appointment.attendees[0];
     if (!attendee) return undefined;
-    return { ...appointment, attendees: [attendee] };
+    return { ...appointment, attendees: [attendee, ...appointment.attendees.slice(1)] };
   }
 
   async getSubscriptions({ cxId }: { cxId: string }): Promise<Subscription[]> {

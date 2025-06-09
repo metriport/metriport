@@ -8,18 +8,17 @@ export type GetHealthiePatientFromAppointmentParams = {
   api?: HealthieApi;
 };
 
-export async function getHealthiePatientFromAppointment({
+export async function getHealthiePatientsFromAppointment({
   cxId,
   healthiePracticeId,
   healthieAppointmentId,
   api,
-}: GetHealthiePatientFromAppointmentParams): Promise<string | undefined> {
+}: GetHealthiePatientFromAppointmentParams): Promise<string[]> {
   const healthieApi = api ?? (await createHealthieClient({ cxId, practiceId: healthiePracticeId }));
   const healthieAppointment = await healthieApi.getAppointment({
     cxId,
     appointmentId: healthieAppointmentId,
   });
-  if (!healthieAppointment) return undefined;
-  const healthiePatientId = healthieAppointment.attendees[0].id;
-  return healthiePatientId;
+  if (!healthieAppointment) return [];
+  return healthieAppointment.attendees.map(attendee => attendee.id);
 }

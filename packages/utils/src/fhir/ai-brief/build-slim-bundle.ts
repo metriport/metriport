@@ -4,7 +4,7 @@ dotenv.config();
 import { BundleEntry, Resource } from "@medplum/fhirtypes";
 import { buildSlimmerPayload } from "@metriport/core/command/ai-brief/filter";
 import { SlimResource } from "@metriport/core/domain/ai-brief/modify-resources";
-import { buildCollectionBundle } from "@metriport/core/external/fhir/shared/bundle";
+import { buildCollectionBundle } from "@metriport/core/external/fhir/bundle/bundle";
 import { getFileContents, makeDirIfNeeded } from "@metriport/core/util/fs";
 import { sleep } from "@metriport/core/util/sleep";
 import dayjs from "dayjs";

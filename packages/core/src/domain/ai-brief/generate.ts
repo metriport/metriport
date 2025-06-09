@@ -5,7 +5,7 @@ import duration from "dayjs/plugin/duration";
 import { summarizeFilteredBundleWithAI } from "../../command/ai-brief/create";
 import { prepareBundleForAiSummarization } from "../../command/ai-brief/filter";
 import { AiBriefControls, generateAiBriefFhirResource } from "../../command/ai-brief/shared";
-import { buildBundleEntry } from "../../external/fhir/shared/bundle";
+import { buildBundleEntry } from "../../external/fhir/bundle/bundle";
 import { capture } from "../../util";
 
 dayjs.extend(duration);

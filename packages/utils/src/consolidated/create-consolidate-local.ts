@@ -2,7 +2,7 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
 import { Bundle, BundleEntry, Patient } from "@medplum/fhirtypes";
-import { buildCollectionBundle } from "@metriport/core/external/fhir/shared/bundle";
+import { buildCollectionBundle } from "@metriport/core/external/fhir/bundle/bundle";
 import { merge } from "@metriport/core/command/consolidated/consolidated-create";
 import { dangerouslyDeduplicate } from "@metriport/core/external/fhir/consolidated/deduplicate";
 import { normalize } from "@metriport/core/external/fhir/consolidated/normalize";
