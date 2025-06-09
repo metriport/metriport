@@ -11,7 +11,7 @@ import { createOrUpdateOrganization as cqCreateOrUpdateOrganization } from "../.
 import { createOrUpdateCWOrganization } from "../../../external/commonwell/command/create-or-update-cw-organization";
 import { requestLogger } from "../../helpers/request-logger";
 import { internalDtoFromModel } from "../../medical/dtos/organizationDTO";
-import { organiationInternalDetailsSchema } from "../../medical/schemas/organization";
+import { organizationInternalDetailsSchema } from "../../medical/schemas/organization";
 import { getUUIDFrom, validateUUID } from "../../schemas/uuid";
 import { asyncHandler, getFromQueryAsArrayOrFail, getFromQueryAsBoolean } from "../../util";
 const router = Router();
@@ -35,22 +35,15 @@ router.put(
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const skipProviderCheck = getFromQueryAsBoolean("skipProviderCheck", req);
 
-    const orgDetails = organiationInternalDetailsSchema.parse(req.body);
+    const orgDetails = organizationInternalDetailsSchema.parse(req.body);
     const organizationCreate: OrganizationCreate = {
       cxId,
       type: orgDetails.businessType,
       data: {
         shortcode: orgDetails.shortcode,
-        name: orgDetails.nameInMetriport,
+        name: "name" in orgDetails ? orgDetails.name : orgDetails.nameInMetriport,
         type: orgDetails.type,
-        location: {
-          addressLine1: orgDetails.addressLine1,
-          addressLine2: orgDetails.addressLine2,
-          city: orgDetails.city,
-          state: orgDetails.state,
-          zip: orgDetails.zip,
-          country: orgDetails.country,
-        },
+        location: orgDetails.location,
       },
       cqActive: orgDetails.cqActive,
       cwActive: orgDetails.cwActive,
@@ -93,6 +86,7 @@ router.get(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxIds = getFromQueryAsArrayOrFail("cxIds", req).map<string>(id => validateUUID(id));
+
     const orgs = await getOrganizationsOrFail({ cxIds });
 
     return res.status(httpStatus.OK).json(orgs.map(internalDtoFromModel));
