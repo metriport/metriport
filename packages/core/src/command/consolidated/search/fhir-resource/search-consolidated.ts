@@ -317,10 +317,7 @@ export async function hydrateMissingReferences({
   if (missingRefIds.length < 1) return resources;
 
   const uniqueIds = uniq(missingRefIds);
-  const filteredUniqueIds =
-    idsToExclude.length > 0
-      ? uniqueIds.filter(uniqueId => !idsToExclude.some(idToExclude => idToExclude === uniqueId))
-      : uniqueIds;
+  const filteredUniqueIds = uniqueIds.filter(uniqueId => !idsToExclude.includes(uniqueId));
 
   const searchService = new OpenSearchFhirSearcher(getConfigs());
   const openSearchResults = await searchService.getByIds({
