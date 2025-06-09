@@ -61,10 +61,15 @@ export type IncomingFileRowSchema<T extends object> = {
 }[keyof T][];
 
 // Assumes the value has already been trimmed of extra whitespace
-type ConvertFieldFromQuest<T, K extends keyof T> = (value: string) => T[K];
-export interface IncomingFileField<T extends object, K extends keyof T = keyof T>
-  extends FileField<T, K> {
-  fromQuest: ConvertFieldFromQuest<T, K>;
+type ConvertFieldFromQuest<T, K extends keyof T, O extends FieldOption> = (
+  value: string
+) => FieldTypeFromQuest<T[K], O>;
+export interface IncomingFileField<
+  T extends object,
+  K extends keyof T,
+  O extends FieldOption = FieldOption
+> extends FileField<T, K> {
+  fromQuest: ConvertFieldFromQuest<T, K, O>;
 }
 
 type FieldTypeFromQuest<T, O extends FieldOption> = O extends { optional: true }

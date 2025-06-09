@@ -1,16 +1,19 @@
 import { z } from "zod";
 import { Patient } from "@metriport/shared/domain/patient";
 import { MetriportError } from "@metriport/shared";
-import { genderMapperFromDomain } from "@metriport/shared/common/demographics";
+import {
+  genderMapperFromDomain,
+  makeNameDemographics,
+} from "@metriport/shared/common/demographics";
 
 import { RelationshipToSubscriber, QuestGenderCode } from "./codes";
 import {
-  requestHeaderOrder,
+  requestHeaderRow,
   requestHeaderSchema,
   requestDetailSchema,
-  requestDetailOrder,
+  requestDetailRow,
   requestFooterSchema,
-  requestFooterOrder,
+  requestFooterRow,
 } from "./schema/request";
 import { OutgoingFileRowSchema } from "./schema/shared";
 
@@ -24,13 +27,13 @@ const makeGenderDemographics = genderMapperFromDomain<QuestGenderCode>(
   "U"
 );
 
-export function toQuestRequestFile(patients: Patient[]) {
+export function toQuestRequestFile(patients: Patient[]): Buffer {
   const requestedPatientIds: string[] = [];
 
   const header = toQuestRequestRow(
     { recordType: "H", generalMnemonic: "METRIP", fileCreationDate: new Date() },
     requestHeaderSchema,
-    requestHeaderOrder
+    requestHeaderRow
   );
   const details = patients.flatMap(patient => {
     const row = toQuestRequestPatientRow(patient);
@@ -40,18 +43,20 @@ export function toQuestRequestFile(patients: Patient[]) {
     }
     return [];
   });
+
   const footer = toQuestRequestRow(
-    { recordType: "T", totalRecords: patients.length },
+    { recordType: "T", totalRecords: requestedPatientIds.length },
     requestFooterSchema,
-    requestFooterOrder
+    requestFooterRow
   );
 
   return Buffer.concat([header, ...details, footer]);
 }
 
 function toQuestRequestPatientRow(patient: Patient): Buffer | undefined {
+  const { firstName, lastName, middleName } = makeNameDemographics(patient);
   const gender = makeGenderDemographics(patient.genderAtBirth);
-
+  const dateOfBirth = patient.dob.replace(/-/g, "");
   const address = patient.address[0];
   if (!address || !address.addressLine1 || !address.city || !address.state || !address.zip)
     return undefined;
@@ -59,13 +64,14 @@ function toQuestRequestPatientRow(patient: Patient): Buffer | undefined {
   return toQuestRequestRow(
     {
       recordType: "E",
-      patientId: patient.id,
       relationshipCode: RelationshipToSubscriber.Self,
-      dateOfBirth: patient.dob.replace(/-/g, ""),
-      firstName: patient.firstName,
-      lastName: patient.lastName,
-      gender,
       relationshipToSubscriber: RelationshipToSubscriber.Self,
+      patientId: patient.id,
+      firstName,
+      middleInitial: middleName.substring(0, 1),
+      lastName,
+      dateOfBirth,
+      gender,
       addressLine1: address.addressLine1,
       addressLine2: address.addressLine2,
       city: address.city,
@@ -77,14 +83,14 @@ function toQuestRequestPatientRow(patient: Patient): Buffer | undefined {
       effectiveDate: new Date(),
     },
     requestDetailSchema,
-    requestDetailOrder
+    requestDetailRow
   );
 }
 
 export function toQuestRequestRow<T extends object>(
   row: T,
   objectSchema: z.ZodObject<z.ZodRawShape>,
-  fieldSchema: OutgoingFileRowSchema<T>
+  rowSchema: OutgoingFileRowSchema<T>
 ): Buffer {
   const parsed = objectSchema.safeParse(row);
   if (!parsed.success) {
@@ -93,7 +99,7 @@ export function toQuestRequestRow<T extends object>(
       errors: JSON.stringify(parsed.error.issues),
     });
   }
-  const fields = fieldSchema.map(field => field.toQuest(row, field.length));
+  const fields = rowSchema.map(field => field.toQuest(row, field.length));
   const outputRow = fields.join("") + "\n";
   return Buffer.from(outputRow, "ascii");
 }

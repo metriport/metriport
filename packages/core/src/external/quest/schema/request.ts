@@ -17,7 +17,7 @@ export const requestHeaderSchema = z.object({
 
 export type RequestHeader = z.infer<typeof requestHeaderSchema>;
 
-export const requestHeaderOrder: OutgoingFileRowSchema<RequestHeader> = [
+export const requestHeaderRow: OutgoingFileRowSchema<RequestHeader> = [
   {
     field: 1,
     length: 1,
@@ -121,7 +121,7 @@ export const requestDetailSchema = z.object({
 
 export type RequestDetail = z.infer<typeof requestDetailSchema>;
 
-export const requestDetailOrder: OutgoingFileRowSchema<RequestDetail> = [
+export const requestDetailRow: OutgoingFileRowSchema<RequestDetail> = [
   {
     field: 1,
     length: 1,
@@ -341,7 +341,7 @@ export const requestFooterSchema = z.object({
 
 export type RequestFooter = z.infer<typeof requestFooterSchema>;
 
-export const requestFooterOrder: OutgoingFileRowSchema<RequestFooter> = [
+export const requestFooterRow: OutgoingFileRowSchema<RequestFooter> = [
   {
     field: 1,
     length: 1,
