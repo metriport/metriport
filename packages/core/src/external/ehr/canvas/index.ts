@@ -95,6 +95,7 @@ interface CanvasApiConfig extends ApiConfig {
 
 const canvasDomainExtension = ".canvasmedical.com";
 const canvasDateFormat = "YYYY-MM-DD";
+const canvasDateTimeFormat = "YYYY-MM-DDTHH:mm:ss.SSSZ";
 const canvasNoteTitle = "Metriport Chart Import";
 const canvasNoteTypeName = "Chart review";
 const canvasNoteStatusForWriting = "NEW";
@@ -559,10 +560,10 @@ class CanvasApi {
     await this.makeRequest<undefined>({
       cxId,
       patientId,
-      s3Path: `fhir/condition/${additionalInfo.conditionId}`,
+      s3Path: `fhir/condition/${additionalInfo.conditionId ?? "unknown"}`,
       method: "POST",
-      url: conditionUrl,
       data: { ...formattedCondition },
+      url: conditionUrl,
       schema: z.undefined(),
       additionalInfo: { ...additionalInfo, noteId },
       headers: { "content-type": "application/json" },
@@ -584,7 +585,7 @@ class CanvasApi {
     medicationWithRefs: MedicationWithRefs;
   }): Promise<void> {
     const { debug } = out(
-      `Canvas createMedication - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} practitionerId ${practitionerId}`
+      `Canvas createMedicationStatements - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} practitionerId ${practitionerId}`
     );
     const medicationStatementUrl = `/MedicationStatement`;
     const additionalInfo = {
@@ -622,10 +623,7 @@ class CanvasApi {
       patientId,
       practitionerId,
     });
-    const createMedicationErrors: {
-      error: unknown;
-      medicationStatement: string;
-    }[] = [];
+    const createMedicationErrors: { error: unknown; medicationStatement: string }[] = [];
     const createMedicationStatementsArgs: MedicationStatement[] =
       medicationWithRefs.statement.flatMap(statement => {
         const formattedMedicationStatement = this.formatMedicationStatement(statement);
@@ -734,8 +732,8 @@ class CanvasApi {
       patientId,
       s3Path: `/immunization/${additionalInfo.immunizationId}`,
       method: "POST",
-      url: immunizationUrl,
       data: { ...formattedImmunization },
+      url: immunizationUrl,
       schema: z.undefined(),
       additionalInfo: { ...additionalInfo, noteId },
       headers: { "content-type": "application/json" },
@@ -757,7 +755,7 @@ class CanvasApi {
     allergyIntolerance: AllergyIntolerance;
   }): Promise<void> {
     const { debug } = out(
-      `Canvas createMedication - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} practitionerId ${practitionerId}`
+      `Canvas createAllergyIntolerance - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} practitionerId ${practitionerId}`
     );
     const allergyIntoleranceUrl = `/AllergyIntolerance`;
     const additionalInfo = {
@@ -1283,6 +1281,10 @@ class CanvasApi {
     return formatDate(date, canvasDateFormat);
   }
 
+  private formatDateTime(date: string | undefined): string | undefined {
+    return formatDate(date, canvasDateTimeFormat);
+  }
+
   private formatCondition(
     condition: Condition,
     additionalInfo: Record<string, string | undefined>
@@ -1315,11 +1317,11 @@ class CanvasApi {
       ],
     };
     const startDate = getConditionStartDate(condition);
-    const formattedStartDate = formatDate(startDate, canvasDateFormat);
-    if (!formattedStartDate) {
+    const formattedOnsetDateTime = this.formatDateTime(startDate);
+    if (!formattedOnsetDateTime) {
       throw new BadRequestError("No start date found for condition", undefined, additionalInfo);
     }
-    formattedCondition.onsetDateTime = formattedStartDate;
+    formattedCondition.onsetDateTime = formattedOnsetDateTime;
     const conditionStatus = getConditionStatus(condition);
     const problemStatus = conditionStatus
       ? problemStatusesMap.get(conditionStatus.toLowerCase())
@@ -1359,87 +1361,21 @@ class CanvasApi {
       ...(medicationStatement.extension ? { extension: medicationStatement.extension } : {}),
     };
     const startDate = getMedicationStatementStartDate(medicationStatement);
-    const formattedStartDate = this.formatDate(startDate);
-    if (!formattedStartDate) return undefined;
+    const formattedStartDateTime = this.formatDateTime(startDate);
+    if (!formattedStartDateTime) return undefined;
     const endDate = medicationStatement.effectivePeriod?.end;
-    const formattedEndDate = this.formatDate(endDate);
+    const formattedEndDate = this.formatDateTime(endDate);
     formattedMedicationStatement.effectivePeriod = {
-      start: formattedStartDate,
+      start: formattedStartDateTime,
       ...(formattedEndDate ? { end: formattedEndDate } : {}),
     };
     const status = medicationStatement.status;
     if (!status || !medicationStatementStatuses.includes(status)) return undefined;
     formattedMedicationStatement.status = status;
-    const dosage = medicationStatement.dosage?.[0];
-    if (!dosage || !dosage.text) return undefined;
-    formattedMedicationStatement.dosage = [{ text: dosage.text }];
+    const dosageText = medicationStatement.dosage?.[0]?.text;
+    if (!dosageText) return undefined;
+    formattedMedicationStatement.dosage = [{ text: dosageText }];
     return formattedMedicationStatement;
-  }
-
-  private formatAllergyIntolerance(
-    allergyIntolerance: AllergyIntolerance,
-    allergenReference: AllergenResource,
-    severity: string | undefined,
-    additionalInfo: Record<string, string | undefined>
-  ): AllergyIntolerance {
-    const formattedAllergyIntolerance: AllergyIntolerance = {
-      resourceType: "AllergyIntolerance",
-      ...(allergyIntolerance.id ? { id: allergyIntolerance.id } : {}),
-      ...(allergyIntolerance.patient ? { patient: allergyIntolerance.patient } : {}),
-      ...(allergyIntolerance.recorder ? { recorder: allergyIntolerance.recorder } : {}),
-      ...(allergyIntolerance.meta ? { meta: allergyIntolerance.meta } : {}),
-      ...(allergyIntolerance.extension ? { extension: allergyIntolerance.extension } : {}),
-    };
-    formattedAllergyIntolerance.code = { coding: allergenReference.coding };
-    const startDate = getAllergyIntoleranceOnsetDate(allergyIntolerance);
-    const formattedStartDate = this.formatDate(startDate);
-    if (!formattedStartDate) {
-      throw new BadRequestError(
-        "No start date found for allergy intolerance",
-        undefined,
-        additionalInfo
-      );
-    }
-    formattedAllergyIntolerance.onsetDateTime = formattedStartDate;
-    const clinicalStatus = allergyIntolerance.clinicalStatus?.coding?.filter(coding =>
-      allergyIntoleranceStatuses.includes(coding.code ?? "")
-    );
-    if (!clinicalStatus || clinicalStatus.length < 1) {
-      throw new BadRequestError(
-        "No clinical status found for allergy intolerance",
-        undefined,
-        additionalInfo
-      );
-    }
-    formattedAllergyIntolerance.clinicalStatus = { coding: clinicalStatus };
-    const verificationStatus = allergyIntolerance.verificationStatus;
-    if (!verificationStatus) {
-      throw new BadRequestError(
-        "No verification status found for allergy intolerance",
-        undefined,
-        additionalInfo
-      );
-    }
-    formattedAllergyIntolerance.verificationStatus = verificationStatus;
-    if (severity && allergyIntoleranceSeverityCodes.includes(severity)) {
-      formattedAllergyIntolerance.reaction = [
-        {
-          manifestation: [
-            {
-              coding: [
-                {
-                  system: "http://terminology.hl7.org/CodeSystem/data-absent-reason",
-                  code: "unknown",
-                },
-              ],
-            },
-          ],
-          severity: severity as "mild" | "moderate" | "severe",
-        },
-      ];
-    }
-    formattedAllergyIntolerance.type = "allergy";
-    return formattedAllergyIntolerance;
   }
 
   private formatImmunization(
@@ -1468,15 +1404,16 @@ class CanvasApi {
         { code: cvxCoding.code, system: "http://hl7.org/fhir/sid/cvx", display: cvxCoding.display },
       ],
     };
-    const administeredDate = getImmunizationAdministerDate(immunization);
-    if (!administeredDate) {
+    const occurrenceDateTime = getImmunizationAdministerDate(immunization);
+    const formattedOccurrenceDateTime = this.formatDateTime(occurrenceDateTime);
+    if (!formattedOccurrenceDateTime) {
       throw new BadRequestError(
         "No administered date found for immunization",
         undefined,
         additionalInfo
       );
     }
-    formattedImmunization.occurrenceDateTime = administeredDate;
+    formattedImmunization.occurrenceDateTime = formattedOccurrenceDateTime;
     const status = immunization.status;
     if (!status || !immunizationStatuses.includes(status)) {
       throw new BadRequestError("No status found for immunization", undefined, additionalInfo);
@@ -1484,6 +1421,80 @@ class CanvasApi {
     formattedImmunization.status = status;
     formattedImmunization.primarySource = false;
     return formattedImmunization;
+  }
+
+  private formatAllergyIntolerance(
+    allergyIntolerance: AllergyIntolerance,
+    allergenReference: AllergenResource,
+    severity: string | undefined,
+    additionalInfo: Record<string, string | undefined>
+  ): AllergyIntolerance {
+    const formattedAllergyIntolerance: AllergyIntolerance = {
+      resourceType: "AllergyIntolerance",
+      ...(allergyIntolerance.id ? { id: allergyIntolerance.id } : {}),
+      ...(allergyIntolerance.patient ? { patient: allergyIntolerance.patient } : {}),
+      ...(allergyIntolerance.recorder ? { recorder: allergyIntolerance.recorder } : {}),
+      ...(allergyIntolerance.meta ? { meta: allergyIntolerance.meta } : {}),
+      ...(allergyIntolerance.extension ? { extension: allergyIntolerance.extension } : {}),
+    };
+    formattedAllergyIntolerance.code = { coding: allergenReference.coding };
+    const startDate = getAllergyIntoleranceOnsetDate(allergyIntolerance);
+    const formattedOnsetDateTime = this.formatDateTime(startDate);
+    if (!formattedOnsetDateTime) {
+      throw new BadRequestError(
+        "No start date found for allergy intolerance",
+        undefined,
+        additionalInfo
+      );
+    }
+    formattedAllergyIntolerance.onsetDateTime = formattedOnsetDateTime;
+    const clinicalStatus = allergyIntolerance.clinicalStatus;
+    if (!clinicalStatus) {
+      throw new BadRequestError(
+        "No clinical status found for allergy intolerance",
+        undefined,
+        additionalInfo
+      );
+    }
+    const clinicalStatusCoding = clinicalStatus.coding?.filter(coding =>
+      allergyIntoleranceStatuses.includes(coding.code ?? "")
+    );
+    if (!clinicalStatusCoding || clinicalStatusCoding.length < 1) {
+      throw new BadRequestError(
+        "No valid clinical status codings found for allergy intolerance",
+        undefined,
+        additionalInfo
+      );
+    }
+    formattedAllergyIntolerance.clinicalStatus = { coding: clinicalStatusCoding };
+    const verificationStatus = allergyIntolerance.verificationStatus;
+    if (!verificationStatus) {
+      throw new BadRequestError(
+        "No verification status found for allergy intolerance",
+        undefined,
+        additionalInfo
+      );
+    }
+    formattedAllergyIntolerance.verificationStatus = verificationStatus;
+    if (severity && allergyIntoleranceSeverityCodes.includes(severity)) {
+      formattedAllergyIntolerance.reaction = [
+        {
+          manifestation: [
+            {
+              coding: [
+                {
+                  system: "http://terminology.hl7.org/CodeSystem/data-absent-reason",
+                  code: "unknown",
+                },
+              ],
+            },
+          ],
+          severity: severity as "mild" | "moderate" | "severe",
+        },
+      ];
+    }
+    formattedAllergyIntolerance.type = "allergy";
+    return formattedAllergyIntolerance;
   }
 
   private formatVitalDataPoint(
@@ -1517,12 +1528,12 @@ class CanvasApi {
     if (!units) {
       throw new BadRequestError("No units found for observation", undefined, additionalInfo);
     }
-    const status = getObservationResultStatus(observation);
-    if (!status || !observationResultStatuses.includes(status)) {
+    const resultStatus = getObservationResultStatus(observation);
+    if (!resultStatus || !observationResultStatuses.includes(resultStatus)) {
       throw new BadRequestError("No status found for observation", undefined, additionalInfo);
     }
-    formattedObservation.status = status as ObservationStatus;
-    const effectiveDateTime = this.formatDate(dataPoint.date);
+    formattedObservation.status = resultStatus as ObservationStatus;
+    const effectiveDateTime = this.formatDateTime(dataPoint.date);
     if (!effectiveDateTime) {
       throw new BadRequestError(
         "No effective date time found for observation",

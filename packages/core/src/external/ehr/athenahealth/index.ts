@@ -499,7 +499,7 @@ class AthenaHealthApi {
     medicationWithRefs: MedicationWithRefs;
   }): Promise<CreatedMedicationSuccess[]> {
     const { log, debug } = out(
-      `AthenaHealth createMedication - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} departmentId ${departmentId}`
+      `AthenaHealth createMedicationWithStatements - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} departmentId ${departmentId}`
     );
     const chartMedicationUrl = `/chart/${this.stripPatientId(patientId)}/medications`;
     const additionalInfo = {
@@ -549,11 +549,7 @@ class AthenaHealthApi {
       PATIENTFACINGCALL: undefined,
     };
     const allCreatedMedications: CreatedMedicationSuccess[] = [];
-    const createMedicationErrors: {
-      error: unknown;
-      departmentid: string;
-      medication: string;
-    }[] = [];
+    const createMedicationErrors: { error: unknown; medication: string }[] = [];
     const createMedicationArgs: MedicationCreateParams[] = dates.map(d => ({
       ...sharedData,
       startdate: this.formatDate(d.startdate),
@@ -1071,11 +1067,7 @@ class AthenaHealthApi {
       });
     }
     const allCreatedVitals: CreatedVitalsSuccess[] = [];
-    const createVitalsErrors: {
-      error: unknown;
-      departmentid: string;
-      vitals: string;
-    }[] = [];
+    const createVitalsErrors: { error: unknown; vitals: string }[] = [];
     const createVitalsArgs: VitalsCreateParams[] = vitals.sortedPoints.map(v => {
       const vitalsData = this.createVitalsData(v, clinicalElementId, units);
       return {
