@@ -6,12 +6,11 @@ import {
   getPersonIdFromSearchByPatientDemo,
   RequestMetadata,
 } from "@metriport/commonwell-sdk";
+import { memberOID } from "./env";
 import { makeDocPerson, makePatient } from "./payloads";
-import { firstElementOrFail, getEnvOrFail } from "./util";
+import { firstElementOrFail } from "./util";
 
-const commonwellOID = getEnvOrFail("COMMONWELL_OID");
-
-const prefixedCommonwellOID = `urn:oid:${commonwellOID}`;
+const prefixedCommonwellOID = `urn:oid:${memberOID}`;
 
 export async function findOrCreatePerson(
   commonWell: CommonWell,

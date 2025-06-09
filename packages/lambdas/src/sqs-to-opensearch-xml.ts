@@ -89,10 +89,9 @@ export async function handler(event: SQSEvent) {
         maxAttempts: maxAttemptsToIngest,
         log,
       });
-      metrics.ingestion = {
-        duration: Date.now() - ingestionStart,
-        timestamp: new Date(),
-      };
+      const duration = Date.now() - ingestionStart;
+      metrics.ingestion = { duration, timestamp: new Date() };
+      log(`Done in ${duration} ms`);
       await cloudWatchUtils.reportMemoryUsage();
 
       log(`Metrics: ${JSON.stringify(metrics)}`);

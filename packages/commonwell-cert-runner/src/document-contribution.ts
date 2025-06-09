@@ -1,46 +1,52 @@
 #!/usr/bin/env node
-import { APIMode, CommonWell, isLOLA1, RequestMetadata } from "@metriport/commonwell-sdk";
+import {
+  APIMode,
+  CommonWell,
+  isLOLA1,
+  Organization,
+  RequestMetadata,
+} from "@metriport/commonwell-sdk";
 import axios, { AxiosInstance } from "axios";
 import * as fs from "fs";
 import { cloneDeep } from "lodash";
 import {
-  certificate,
+  dob,
+  docUrl,
+  fhirUrl,
+  firstName,
+  gender,
+  lastName,
+  memberOID,
+  orgCertificateString,
+  orgIdSuffix,
+  orgPrivateKeyString,
+  zip,
+} from "./env";
+import {
   makeDocContribOrganization,
   makeDocPerson,
   makeId,
   makePatient,
+  orgCertificate,
 } from "./payloads";
 import { findOrCreatePatient, findOrCreatePerson } from "./shared-person";
-import { filterTruthy, getEnv, getEnvOrFail } from "./util";
+import { filterTruthy } from "./util";
 
 const AXIOS_TIMEOUT_MILLIS = 20_000;
 
 // Document Contribution
 // https://commonwellalliance.sharepoint.com/sites/ServiceAdopter/SitePages/Document-Contribution-(SOAP,-REST).aspx
 
-const commonwellPrivateKey = getEnvOrFail("COMMONWELL_ORG_PRIVATE_KEY");
-const commonwellCert = getEnvOrFail("COMMONWELL_ORG_CERTIFICATE");
-
-const orgIdSuffix = getEnvOrFail("DOCUMENT_CONTRIBUTION_ORGANIZATION_ID");
-
-const firstName = getEnv("DOCUMENT_CONTRIBUTION_PATIENT_FIRST_NAME");
-const lastName = getEnv("DOCUMENT_CONTRIBUTION_PATIENT_LAST_NAME");
-const dob = getEnv("DOCUMENT_CONTRIBUTION_PATIENT_DATE_OF_BIRTH");
-const gender = getEnv("DOCUMENT_CONTRIBUTION_PATIENT_GENDER");
-const zip = getEnv("DOCUMENT_CONTRIBUTION_PATIENT_ZIP");
-
-const fhirUrl = getEnvOrFail("DOCUMENT_CONTRIBUTION_FHIR_URL");
-const docUrl = getEnvOrFail("DOCUMENT_CONTRIBUTION_URL");
-const rootOid = getEnvOrFail("COMMONWELL_OID");
-
 export async function documentContribution({
   memberManagementApi,
   api: apiDefaultOrg,
   queryMeta,
+  org,
 }: {
   memberManagementApi: CommonWell;
   api: CommonWell;
   queryMeta: RequestMetadata;
+  org: Organization;
 }) {
   console.log(`>>> E3: Query for documents served by Metriport's FHIR server`);
   if (!firstName) {
@@ -170,15 +176,15 @@ async function getOrCreateOrg(
     console.log(`Add certificate to doc org`);
     const respAddCertificateToOrg = await memberManagementApi.addCertificateToOrg(
       queryMeta,
-      certificate,
+      orgCertificate,
       orgIdWithoutNamespace
     );
     console.log(respAddCertificateToOrg);
   }
 
   const orgAPI = new CommonWell(
-    commonwellCert,
-    commonwellPrivateKey,
+    orgCertificateString,
+    orgPrivateKeyString,
     orgName, //commonwellSandboxOrgName,
     orgIdWithoutNamespace, //commonwellSandboxOID,
     APIMode.integration
@@ -195,7 +201,7 @@ async function addOrgToFHIRServer(orgId: string, orgName: string, fhirApi: Axios
     "meta": {
         "versionId": "1",
         "lastUpdated": "2023-02-04T13:23:38.744+00:00",
-        "source": "${rootOid}"
+        "source": "${memberOID}"
     },
     "identifier": [
         {
@@ -245,7 +251,7 @@ async function addPatientToFHIRServer(patientId: string, fhirApi: AxiosInstance)
     "meta": {
         "versionId": "6",
         "lastUpdated": "2023-02-15T22:27:07.642+00:00",
-        "source": "${rootOid}"
+        "source": "${memberOID}"
     },
     "extension": [
         {
@@ -468,7 +474,7 @@ async function addDocumentRefAndBinaryToFHIRServer(
     "meta": {
         "versionId": "19",
         "lastUpdated": "2023-02-24T16:07:16.796+00:00",
-        "source": "${rootOid}"
+        "source": "${memberOID}"
     },
     "contained": [
         {
