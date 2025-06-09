@@ -6,19 +6,19 @@ export async function writeMedicationToFhir({
   canvasPatientId,
   canvasPracticeId,
   canvasPractitionerId,
-  medication,
+  medicationWithRefs,
 }: {
   cxId: string;
   canvasPatientId: string;
   canvasPracticeId: string;
   canvasPractitionerId: string;
-  medication: MedicationWithRefs;
+  medicationWithRefs: MedicationWithRefs;
 }): Promise<void> {
   const api = await createCanvasClient({ cxId, practiceId: canvasPracticeId });
-  await api.createMedicationStatement({
+  await api.createMedicationStatements({
     cxId,
     patientId: canvasPatientId,
     practitionerId: canvasPractitionerId,
-    medicationRef: medication,
+    medicationWithRefs,
   });
 }

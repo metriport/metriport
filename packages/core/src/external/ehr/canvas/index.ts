@@ -52,6 +52,7 @@ import duration from "dayjs/plugin/duration";
 import { uniqBy } from "lodash";
 import { z } from "zod";
 import { ObservationStatus } from "../../../fhir-deduplication/resources/observation-shared";
+import { fetchCodingCodeOrDisplayOrSystem } from "../../../fhir-deduplication/shared";
 import { executeAsynchronously } from "../../../util/concurrency";
 import { log, out } from "../../../util/log";
 import { capture } from "../../../util/notifications";
@@ -99,6 +100,7 @@ const canvasDateTimeFormat = "YYYY-MM-DDTHH:mm:ss.SSSZ";
 const canvasNoteTitle = "Metriport Chart Import";
 const canvasNoteTypeName = "Chart review";
 const canvasNoteStatusForWriting = "NEW";
+const FDB_CODE = "fdb";
 const utcToEstOffset = dayjs.duration(-5, "hours");
 export type CanvasEnv = string;
 
@@ -128,25 +130,27 @@ problemStatusesMap.set("remission", "resolved");
 problemStatusesMap.set("resolved", "resolved");
 problemStatusesMap.set("inactive", "resolved");
 
+const vitalSignCodesMapCanvas = new Map<string, string>();
+vitalSignCodesMapCanvas.set("85354-9", "mmHg");
+vitalSignCodesMapCanvas.set("29463-7", "kg");
+vitalSignCodesMapCanvas.set("8302-2", "cm");
+vitalSignCodesMapCanvas.set("8867-4", "bpm");
+vitalSignCodesMapCanvas.set("8310-5", "degf");
+vitalSignCodesMapCanvas.set("2708-6", "%");
+vitalSignCodesMapCanvas.set("59408-5", "%");
+vitalSignCodesMapCanvas.set("9279-1", "bpm");
+vitalSignCodesMapCanvas.set("56086-2", "cm");
+
 const medicationStatementStatuses = ["active", "entered-in-error", "stopped"];
 const allergyIntoleranceStatuses = ["active", "inactive"];
 const allergyIntoleranceSeverityCodes = ["mild", "moderate", "severe"];
 const immunizationStatuses = ["completed", "entered-in-error", "not-done"];
-const observationLoincCodes = [
-  "85353-1",
-  "85354-9",
-  "29463-7",
-  "8302-2",
-  "8867-4",
-  "8310-5",
-  "2708-6",
-  "59408-5",
-  "9279-1",
-  "56086-2",
-  "80339-5",
-  "8884-9",
-];
 const observationResultStatuses = ["final", "unknown", "entered-in-error"];
+
+const lbsToG = 453.592;
+const gToKg = 1 / 1000;
+const inchesToCm = 2.54;
+const lbsToKg = lbsToG * gToKg;
 
 class CanvasApi {
   private axiosInstanceFhirApi: AxiosInstance;
@@ -629,7 +633,7 @@ class CanvasApi {
         const formattedMedicationStatement = this.formatMedicationStatement(statement);
         if (!formattedMedicationStatement) return [];
         formattedMedicationStatement.medicationReference = {
-          reference: medicationReferenceId,
+          reference: `Medication/${medicationReferenceId}`,
           display: rxnormCodingDisplay,
         };
         formattedMedicationStatement.subject = { reference: `Patient/${patientId}` };
@@ -803,6 +807,7 @@ class CanvasApi {
       practitionerId,
     });
     formattedAllergyIntolerance.patient = { reference: `Patient/${patientId}` };
+    formattedAllergyIntolerance.recorder = { reference: `Practitioner/${practitionerId}` };
     formattedAllergyIntolerance.extension = [
       ...(formattedAllergyIntolerance.extension ?? []),
       this.formatNoteIdExtension(noteId),
@@ -813,6 +818,7 @@ class CanvasApi {
       s3Path: `/allergy-intolerance/${additionalInfo.allergyIntoleranceId}`,
       method: "POST",
       url: allergyIntoleranceUrl,
+      data: { ...formattedAllergyIntolerance },
       schema: z.undefined(),
       additionalInfo: { ...additionalInfo, noteId },
       headers: { "content-type": "application/json" },
@@ -1317,11 +1323,11 @@ class CanvasApi {
       ],
     };
     const startDate = getConditionStartDate(condition);
-    const formattedOnsetDateTime = this.formatDateTime(startDate);
-    if (!formattedOnsetDateTime) {
+    const formattedOnsetDate = this.formatDate(startDate);
+    if (!formattedOnsetDate) {
       throw new BadRequestError("No start date found for condition", undefined, additionalInfo);
     }
-    formattedCondition.onsetDateTime = formattedOnsetDateTime;
+    formattedCondition.onsetDateTime = formattedOnsetDate;
     const conditionStatus = getConditionStatus(condition);
     const problemStatus = conditionStatus
       ? problemStatusesMap.get(conditionStatus.toLowerCase())
@@ -1364,10 +1370,10 @@ class CanvasApi {
     const formattedStartDateTime = this.formatDateTime(startDate);
     if (!formattedStartDateTime) return undefined;
     const endDate = medicationStatement.effectivePeriod?.end;
-    const formattedEndDate = this.formatDateTime(endDate);
+    const formattedEndDateDateTime = this.formatDateTime(endDate);
     formattedMedicationStatement.effectivePeriod = {
       start: formattedStartDateTime,
-      ...(formattedEndDate ? { end: formattedEndDate } : {}),
+      ...(formattedEndDateDateTime ? { end: formattedEndDateDateTime } : {}),
     };
     const status = medicationStatement.status;
     if (!status || !medicationStatementStatuses.includes(status)) return undefined;
@@ -1405,15 +1411,15 @@ class CanvasApi {
       ],
     };
     const occurrenceDateTime = getImmunizationAdministerDate(immunization);
-    const formattedOccurrenceDateTime = this.formatDateTime(occurrenceDateTime);
-    if (!formattedOccurrenceDateTime) {
+    const formattedOccurrenceDate = this.formatDate(occurrenceDateTime);
+    if (!formattedOccurrenceDate) {
       throw new BadRequestError(
         "No administered date found for immunization",
         undefined,
         additionalInfo
       );
     }
-    formattedImmunization.occurrenceDateTime = formattedOccurrenceDateTime;
+    formattedImmunization.occurrenceDateTime = formattedOccurrenceDate;
     const status = immunization.status;
     if (!status || !immunizationStatuses.includes(status)) {
       throw new BadRequestError("No status found for immunization", undefined, additionalInfo);
@@ -1437,17 +1443,30 @@ class CanvasApi {
       ...(allergyIntolerance.meta ? { meta: allergyIntolerance.meta } : {}),
       ...(allergyIntolerance.extension ? { extension: allergyIntolerance.extension } : {}),
     };
-    formattedAllergyIntolerance.code = { coding: allergenReference.coding };
+    const fdbCoding = this.getAllergenReferenceFdbCoding(allergenReference);
+    if (!fdbCoding) {
+      throw new BadRequestError("No FDB code found for allergen", undefined, additionalInfo);
+    }
+    if (!fdbCoding.code) {
+      throw new BadRequestError("No code found for FDB code", undefined, additionalInfo);
+    }
+    if (!fdbCoding.display) {
+      throw new BadRequestError("No display found for FDB code", undefined, additionalInfo);
+    }
+    formattedAllergyIntolerance.code = {
+      coding: [fdbCoding],
+      text: fdbCoding.display,
+    };
     const startDate = getAllergyIntoleranceOnsetDate(allergyIntolerance);
-    const formattedOnsetDateTime = this.formatDateTime(startDate);
-    if (!formattedOnsetDateTime) {
+    const formattedOnsetDate = this.formatDate(startDate);
+    if (!formattedOnsetDate) {
       throw new BadRequestError(
         "No start date found for allergy intolerance",
         undefined,
         additionalInfo
       );
     }
-    formattedAllergyIntolerance.onsetDateTime = formattedOnsetDateTime;
+    formattedAllergyIntolerance.onsetDateTime = formattedOnsetDate;
     const clinicalStatus = allergyIntolerance.clinicalStatus;
     if (!clinicalStatus) {
       throw new BadRequestError(
@@ -1505,7 +1524,7 @@ class CanvasApi {
     const formattedObservation: Observation = {
       resourceType: "Observation",
       ...(observation.id ? { id: observation.id } : {}),
-      ...(observation.subject ? { patient: observation.subject } : {}),
+      ...(observation.subject ? { subject: observation.subject } : {}),
       ...(observation.meta ? { meta: observation.meta } : {}),
       ...(observation.extension ? { extension: observation.extension } : {}),
     };
@@ -1513,7 +1532,7 @@ class CanvasApi {
     if (!loincCoding) {
       throw new BadRequestError("No LOINC code found for observation", undefined, additionalInfo);
     }
-    if (!loincCoding.code || !observationLoincCodes.includes(loincCoding.code)) {
+    if (!loincCoding.code || !vitalSignCodesMapCanvas.get(loincCoding.code)) {
       throw new BadRequestError("No valid code found for LOINC coding", undefined, additionalInfo);
     }
     if (!loincCoding.display) {
@@ -1542,11 +1561,27 @@ class CanvasApi {
       );
     }
     formattedObservation.effectiveDateTime = effectiveDateTime;
+    const unitAndValue = this.convertUnitAndValue(loincCoding.code, dataPoint.value, units);
+    if (!unitAndValue) {
+      throw new BadRequestError(
+        "No unit and value found for observation",
+        undefined,
+        additionalInfo
+      );
+    }
     formattedObservation.valueQuantity = {
-      value: dataPoint.value,
-      unit: units,
+      value: unitAndValue.value,
+      unit: unitAndValue.unit,
     };
     return formattedObservation;
+  }
+
+  private getAllergenReferenceFdbCoding(allergenReference: AllergenResource): Coding | undefined {
+    const fdbCoding = allergenReference.code.coding?.find((coding: Coding) => {
+      const system = fetchCodingCodeOrDisplayOrSystem(coding, "system");
+      return system?.includes(FDB_CODE);
+    });
+    return fdbCoding;
   }
 
   private formatNoteIdExtension(noteId: string): Extension {
@@ -1554,6 +1589,57 @@ class CanvasApi {
       url: "http://schemas.canvasmedical.com/fhir/extensions/note-id",
       valueId: noteId,
     };
+  }
+
+  private convertUnitAndValue(
+    loincCode: string,
+    value: number,
+    units: string
+  ): { value: number; unit: string } | undefined {
+    const targetUnit = vitalSignCodesMapCanvas.get(loincCode);
+    if (!targetUnit) return undefined;
+    const unitParam = { unit: targetUnit };
+    if (units === targetUnit) return { ...unitParam, value };
+    if (targetUnit === "kg") {
+      if (units === "kg" || units === "kilogram" || units === "kilograms")
+        return { ...unitParam, value }; // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
+      if (units === "g" || units === "gram" || units === "grams")
+        return { ...unitParam, value: this.convertGramsToKg(value) }; // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
+      if (units === "lb_av" || units.includes("pound"))
+        return { ...unitParam, value: this.convertLbsToKg(value) }; // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
+    }
+    if (targetUnit === "cm") {
+      if (units === "cm" || units === "centimeter") return { ...unitParam, value }; // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
+      if (units === "in_i" || units.includes("inch"))
+        return { ...unitParam, value: this.convertInchesToCm(value) }; // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
+    }
+    if (targetUnit === "degf") {
+      if (units === "degf" || units === "f" || units.includes("fahrenheit"))
+        return { ...unitParam, value }; // https://hl7.org/fhir/R4/valueset-ucum-bodytemp.html
+      if (units === "cel" || units === "c" || units.includes("celsius"))
+        return { ...unitParam, value: this.convertCelciusToFahrenheit(value) }; // https://hl7.org/fhir/R4/valueset-ucum-bodytemp.html}
+    }
+    throw new BadRequestError("Unknown units", undefined, {
+      units,
+      loincCode,
+      value,
+    });
+  }
+
+  private convertInchesToCm(value: number): number {
+    return value * inchesToCm;
+  }
+
+  private convertCelciusToFahrenheit(value: number): number {
+    return value * (9 / 5) + 32;
+  }
+
+  private convertGramsToKg(value: number): number {
+    return value * gToKg;
+  }
+
+  private convertLbsToKg(value: number): number {
+    return value * lbsToKg;
   }
 }
 
