@@ -26,6 +26,7 @@ import { ISecret } from "aws-cdk-lib/aws-secretsmanager";
 import { IQueue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { EnvConfig } from "../../config/env-config";
+import { QuestAssets } from "../quest/types";
 import { defaultBedrockPolicyStatement } from "../shared/bedrock";
 import { DnsZones } from "../shared/dns";
 import { getMaxPostgresConnections } from "../shared/rds";
@@ -132,6 +133,7 @@ export function createAPIService({
   featureFlagsTable,
   cookieStore,
   surescriptsAssets,
+  questAssets,
 }: {
   stack: Construct;
   props: ApiProps;
@@ -176,6 +178,7 @@ export function createAPIService({
   featureFlagsTable: dynamodb.Table;
   cookieStore: secret.ISecret | undefined;
   surescriptsAssets: SurescriptsAssets | undefined;
+  questAssets: QuestAssets | undefined;
 }): {
   cluster: ecs.Cluster;
   service: ecs_patterns.ApplicationLoadBalancedFargateService;
@@ -366,6 +369,13 @@ export function createAPIService({
             SURESCRIPTS_RECEIVE_FLAT_FILE_RESPONSE_QUEUE_URL:
               surescriptsAssets.receiveFlatFileResponseQueue.queueUrl,
           }),
+          ...(questAssets && {
+            LAB_CONVERSION_BUCKET_NAME: questAssets.labConversionBucket.bucketName,
+            QUEST_REPLICA_BUCKET_NAME: questAssets.questReplicaBucket.bucketName,
+            QUEST_SFTP_ACTION_QUEUE_URL: questAssets.sftpActionQueue.queueUrl,
+            QUEST_SEND_REQUEST_QUEUE_URL: questAssets.sendRequestQueue.queueUrl,
+            QUEST_RECEIVE_RESPONSE_QUEUE_URL: questAssets.receiveResponseQueue.queueUrl,
+          }),
         },
       },
       healthCheckGracePeriod: Duration.seconds(60),
@@ -461,6 +471,11 @@ export function createAPIService({
     );
   }
 
+  if (questAssets) {
+    questAssets.labConversionBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
+    questAssets.questReplicaBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
+  }
+
   if (ehrResponsesBucket) {
     ehrResponsesBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   }
@@ -502,6 +517,22 @@ export function createAPIService({
       surescriptsAssets.receiveVerificationResponseQueue,
       surescriptsAssets.receiveFlatFileResponseQueue,
     ];
+    queuesToProvideAccessTo.forEach(queue => {
+      provideAccessToQueue({
+        accessType: "send",
+        queue,
+        resource: fargateService.taskDefinition.taskRole,
+      });
+    });
+  }
+
+  if (questAssets) {
+    const queuesToProvideAccessTo = [
+      questAssets.sftpActionQueue,
+      questAssets.sendRequestQueue,
+      questAssets.receiveResponseQueue,
+    ];
+
     queuesToProvideAccessTo.forEach(queue => {
       provideAccessToQueue({
         accessType: "send",

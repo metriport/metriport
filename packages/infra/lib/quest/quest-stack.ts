@@ -103,7 +103,7 @@ function questEnvironmentVariablesAndSecrets({
   questReplicaBucket,
   labConversionBucket,
 }: {
-  nestedStack: SurescriptsNestedStack;
+  nestedStack: QuestNestedStack;
   quest: EnvConfig["quest"];
   questReplicaBucket: s3.Bucket;
   labConversionBucket: s3.Bucket;
@@ -128,18 +128,18 @@ function questEnvironmentVariablesAndSecrets({
   return { envVars, secrets };
 }
 
-function buildSecret(nestedStack: SurescriptsNestedStack, name: string): secret.ISecret {
+function buildSecret(nestedStack: QuestNestedStack, name: string): secret.ISecret {
   return secret.Secret.fromSecretNameV2(nestedStack, name, name);
 }
 
-interface SurescriptsNestedStackProps extends NestedStackProps {
+interface QuestNestedStackProps extends NestedStackProps {
   config: EnvConfig;
   vpc: ec2.IVpc;
   alarmAction?: SnsAction;
   lambdaLayers: LambdaLayers;
 }
 
-export class SurescriptsNestedStack extends NestedStack {
+export class QuestNestedStack extends NestedStack {
   private readonly sftpActionLambda: Lambda;
   private readonly sftpActionQueue: Queue;
   private readonly sendRequestLambda: Lambda;
@@ -149,7 +149,7 @@ export class SurescriptsNestedStack extends NestedStack {
   private readonly questReplicaBucket: s3.Bucket;
   private readonly labConversionBucket: s3.Bucket;
 
-  constructor(scope: Construct, id: string, props: SurescriptsNestedStackProps) {
+  constructor(scope: Construct, id: string, props: QuestNestedStackProps) {
     super(scope, id, props);
 
     this.terminationProtection = true;
@@ -181,7 +181,7 @@ export class SurescriptsNestedStack extends NestedStack {
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: props.alarmAction,
-      surescripts: props.config.surescripts,
+      quest: props.config.quest,
       systemRootOID: props.config.systemRootOID,
       envVars,
     };

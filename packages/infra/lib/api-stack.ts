@@ -59,6 +59,7 @@ import { provideAccessToQueue } from "./shared/sqs";
 import { isProd, isSandbox } from "./shared/util";
 import { wafRules } from "./shared/waf-rules";
 import { SurescriptsNestedStack } from "./surescripts/surescripts-stack";
+import { QuestNestedStack } from "./quest/quest-stack";
 
 const FITBIT_LAMBDA_TIMEOUT = Duration.seconds(60);
 
@@ -491,6 +492,16 @@ export class APIStack extends Stack {
       });
     }
 
+    let questStack: QuestNestedStack | undefined = undefined;
+    if (props.config.quest) {
+      questStack = new QuestNestedStack(this, "QuestNestedStack", {
+        config: props.config,
+        vpc: this.vpc,
+        alarmAction: slackNotification?.alarmAction,
+        lambdaLayers,
+      });
+    }
+
     //-------------------------------------------
     // Rate Limiting
     //-------------------------------------------
@@ -606,6 +617,7 @@ export class APIStack extends Stack {
       featureFlagsTable,
       cookieStore,
       surescriptsAssets: surescriptsStack?.getAssets(),
+      questAssets: questStack?.getAssets(),
     });
     const apiLoadBalancerAddress = apiLoadBalancer.loadBalancerDnsName;
 
@@ -693,6 +705,7 @@ export class APIStack extends Stack {
     const apiUrl = `http://${apiDirectUrl}`;
     lambdasToGetApiUrl.forEach(lambda => lambda?.addEnvironment("API_URL", apiUrl));
     if (surescriptsStack) surescriptsStack.setApiUrl(apiUrl);
+    if (questStack) questStack.setApiUrl(apiUrl);
 
     // TODO move this to each place where it's used
     // Access grant for medical documents bucket
