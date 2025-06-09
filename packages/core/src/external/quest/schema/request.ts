@@ -7,6 +7,7 @@ import {
   toQuestString,
   toQuestUnused,
 } from "./shared";
+import { QuestGenderCodes, RelationshipToSubscriberCodes } from "../codes";
 
 export const requestHeaderSchema = z.object({
   recordType: z.enum(["H"]),
@@ -82,14 +83,14 @@ export const requestHeaderOrder: OutgoingFileRowSchema<RequestHeader> = [
 export const requestDetailSchema = z.object({
   recordType: z.enum(["E"]), // eligibility record
   patientId: z.string(), // member ID in the specification
-  relationshipCode: z.string(),
+  relationshipCode: z.enum(RelationshipToSubscriberCodes),
   ssn: z.string().optional(),
   dateOfBirth: z.string(),
   firstName: z.string(),
   middleInitial: z.string().optional(),
   lastName: z.string(),
-  gender: z.enum(["F", "M", "U"]),
-  relationshipToSubscriber: z.enum(["01", "02", "08"]), // 01: self, 02: spouse, 08: dependent/other
+  gender: z.enum(QuestGenderCodes),
+  relationshipToSubscriber: z.enum(RelationshipToSubscriberCodes),
   programType: z.string(), // MC = HMO, PP = PPO, IN = indemnity
   effectiveDate: z.date(),
   expirationDate: z.date().optional(), // Defaults to 99991231 (open-ended)
@@ -173,13 +174,13 @@ export const requestDetailOrder: OutgoingFileRowSchema<RequestDetail> = [
     field: 9,
     length: 1,
     key: "gender",
-    toQuest: toQuestEnum("gender", ["F", "M", "U"]),
+    toQuest: toQuestEnum("gender", QuestGenderCodes),
   },
   {
     field: 10,
     length: 2,
     key: "relationshipToSubscriber",
-    toQuest: toQuestEnum("relationshipToSubscriber", ["01", "02", "08"]),
+    toQuest: toQuestEnum("relationshipToSubscriber", RelationshipToSubscriberCodes),
   },
   {
     field: 11,

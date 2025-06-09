@@ -85,7 +85,7 @@ function fillByteLength(value: string, byteLength: number) {
 
 export function toQuestEnum<T extends object>(
   key: keyof T,
-  enumerated: string[],
+  enumerated: readonly string[],
   option: FieldOption = {}
 ): ConvertFieldToQuest<T> {
   return function (sourceObject: T, byteLength: number): string {
