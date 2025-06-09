@@ -27,7 +27,7 @@ import {
   makeDocPerson,
   makeId,
   makePatient,
-  orgCertificate,
+//   orgCertificate,
 } from "./payloads";
 import { findOrCreatePatient, findOrCreatePerson } from "./shared-person";
 import { filterTruthy } from "./util";
@@ -37,161 +37,161 @@ const AXIOS_TIMEOUT_MILLIS = 20_000;
 // Document Contribution
 // https://commonwellalliance.sharepoint.com/sites/ServiceAdopter/SitePages/Document-Contribution-(SOAP,-REST).aspx
 
-export async function documentContribution({
-  memberManagementApi,
-  api: apiDefaultOrg,
-  queryMeta,
-  org,
-}: {
-  memberManagementApi: CommonWell;
-  api: CommonWell;
-  queryMeta: RequestMetadata;
-  org: Organization;
-}) {
-  console.log(`>>> E3: Query for documents served by Metriport's FHIR server`);
-  if (!firstName) {
-    console.log(`Skipping E3 because no first name provided`);
-    return;
-  }
-  if (!lastName) {
-    console.log(`Skipping E3 because no last name provided`);
-    return;
-  }
-  if (!zip) {
-    console.log(`Skipping E3 because no zip provided`);
-    return;
-  }
-  if (!dob) {
-    console.log(`Skipping E3 because no date of birth provided`);
-    return;
-  }
-  if (!gender) {
-    console.log(`Skipping E3 because no gender provided`);
-    return;
-  }
+// export async function documentContribution({
+//   memberManagementApi,
+//   api: apiDefaultOrg,
+//   queryMeta,
+//   org,
+// }: {
+//   memberManagementApi: CommonWell;
+//   api: CommonWell;
+//   queryMeta: RequestMetadata;
+//   org: Organization;
+// }) {
+//   console.log(`>>> E3: Query for documents served by Metriport's FHIR server`);
+//   if (!firstName) {
+//     console.log(`Skipping E3 because no first name provided`);
+//     return;
+//   }
+//   if (!lastName) {
+//     console.log(`Skipping E3 because no last name provided`);
+//     return;
+//   }
+//   if (!zip) {
+//     console.log(`Skipping E3 because no zip provided`);
+//     return;
+//   }
+//   if (!dob) {
+//     console.log(`Skipping E3 because no date of birth provided`);
+//     return;
+//   }
+//   if (!gender) {
+//     console.log(`Skipping E3 because no gender provided`);
+//     return;
+//   }
 
-  const {
-    orgAPI: apiNewOrg,
-    orgName,
-    orgId,
-  } = await getOrCreateOrg(memberManagementApi, queryMeta);
+//   const {
+//     orgAPI: apiNewOrg,
+//     orgName,
+//     orgId,
+//   } = await getOrCreateOrg(memberManagementApi, queryMeta);
 
-  const person = makeDocPerson({
-    firstName,
-    lastName,
-    zip,
-    gender,
-    dob,
-    facilityId: apiDefaultOrg.oid,
-  });
+//   const person = makeDocPerson({
+//     firstName,
+//     lastName,
+//     zip,
+//     gender,
+//     dob,
+//     facilityId: apiDefaultOrg.oid,
+//   });
 
-  console.log(`Find or create patient and person on main org`);
-  const { personId, patientId: patientIdMainOrg } = await findOrCreatePerson(
-    apiDefaultOrg,
-    queryMeta,
-    person
-  );
-  console.log(`personId: ${personId}`);
-  console.log(`patientId on main org: ${patientIdMainOrg}`);
+//   console.log(`Find or create patient and person on main org`);
+//   const { personId, patientId: patientIdMainOrg } = await findOrCreatePerson(
+//     apiDefaultOrg,
+//     queryMeta,
+//     person
+//   );
+//   console.log(`personId: ${personId}`);
+//   console.log(`patientId on main org: ${patientIdMainOrg}`);
 
-  const newPerson = cloneDeep(person);
-  newPerson.identifier = makePatient({ facilityId: apiNewOrg.oid }).identifier;
-  if (newPerson.identifier) {
-    newPerson.identifier[0].assigner = orgName;
-    newPerson.identifier[0].label = orgName;
-  }
-  const { patientId: patientIdNewOrg } = await findOrCreatePatient(
-    apiNewOrg,
-    queryMeta,
-    newPerson,
-    personId
-  );
-  console.log(`patientId: ${patientIdNewOrg}`);
+//   const newPerson = cloneDeep(person);
+//   newPerson.identifier = makePatient({ facilityId: apiNewOrg.oid }).identifier;
+//   if (newPerson.identifier) {
+//     newPerson.identifier[0].assigner = orgName;
+//     newPerson.identifier[0].label = orgName;
+//   }
+//   const { patientId: patientIdNewOrg } = await findOrCreatePatient(
+//     apiNewOrg,
+//     queryMeta,
+//     newPerson,
+//     personId
+//   );
+//   console.log(`patientId: ${patientIdNewOrg}`);
 
-  console.log(`Get patients links`);
-  const respGetLinks = await apiNewOrg.getNetworkLinks(queryMeta, patientIdNewOrg);
-  console.log(respGetLinks);
+//   console.log(`Get patients links`);
+//   const respGetLinks = await apiNewOrg.getNetworkLinks(queryMeta, patientIdNewOrg);
+//   console.log(respGetLinks);
 
-  const allLinks = respGetLinks._embedded.networkLink
-    ? respGetLinks._embedded.networkLink.flatMap(filterTruthy)
-    : [];
-  const lola1Links = allLinks.filter(isLOLA1);
-  console.log(`Found ${allLinks.length} network links, ${lola1Links.length} are LOLA 1`);
-  for (const link of lola1Links) {
-    const upgradeURL = link._links?.upgrade?.href;
-    if (!upgradeURL) {
-      console.log(`[queryDocuments] missing upgrade URL for link `, link);
-      continue;
-    }
-    const respUpgradeLink = await apiNewOrg.upgradeOrDowngradeNetworkLink(queryMeta, upgradeURL);
-    console.log(respUpgradeLink);
-  }
+//   const allLinks = respGetLinks._embedded.networkLink
+//     ? respGetLinks._embedded.networkLink.flatMap(filterTruthy)
+//     : [];
+//   const lola1Links = allLinks.filter(isLOLA1);
+//   console.log(`Found ${allLinks.length} network links, ${lola1Links.length} are LOLA 1`);
+//   for (const link of lola1Links) {
+//     const upgradeURL = link._links?.upgrade?.href;
+//     if (!upgradeURL) {
+//       console.log(`[queryDocuments] missing upgrade URL for link `, link);
+//       continue;
+//     }
+//     const respUpgradeLink = await apiNewOrg.upgradeOrDowngradeNetworkLink(queryMeta, upgradeURL);
+//     console.log(respUpgradeLink);
+//   }
 
-  console.log(`>>> [E3] Populating test data on FHIR server...`);
-  const fhirApi = axios.create({
-    timeout: AXIOS_TIMEOUT_MILLIS,
-    baseURL: fhirUrl,
-  });
-  // TODO: #230 we could split convertPatientIdToSubjectId() in two and reuse the part that splits the CW patientId.
-  const newPatientId = patientIdNewOrg.split("%5E%5E%5E")[0];
-  await addOrgToFHIRServer(orgId, orgName, fhirApi);
-  await addPatientToFHIRServer(newPatientId, fhirApi);
-  await addDocumentRefAndBinaryToFHIRServer(newPatientId, orgId, orgName, fhirApi);
+//   console.log(`>>> [E3] Populating test data on FHIR server...`);
+//   const fhirApi = axios.create({
+//     timeout: AXIOS_TIMEOUT_MILLIS,
+//     baseURL: fhirUrl,
+//   });
+//   // TODO: #230 we could split convertPatientIdToSubjectId() in two and reuse the part that splits the CW patientId.
+//   const newPatientId = patientIdNewOrg.split("%5E%5E%5E")[0];
+//   await addOrgToFHIRServer(orgId, orgName, fhirApi);
+//   await addPatientToFHIRServer(newPatientId, fhirApi);
+//   await addDocumentRefAndBinaryToFHIRServer(newPatientId, orgId, orgName, fhirApi);
 
-  console.log(`>>> [E3] Querying for docs from the main org...`);
-  const respDocQuery = await apiDefaultOrg.queryDocuments(queryMeta, patientIdMainOrg);
-  console.log(respDocQuery);
-  const documents = respDocQuery.entry ?? [];
-  for (const doc of documents) {
-    console.log(`DOCUMENT: ${JSON.stringify(doc, undefined, 2)}`);
+//   console.log(`>>> [E3] Querying for docs from the main org...`);
+//   const respDocQuery = await apiDefaultOrg.queryDocuments(queryMeta, patientIdMainOrg);
+//   console.log(respDocQuery);
+//   const documents = respDocQuery.entry ?? [];
+//   for (const doc of documents) {
+//     console.log(`DOCUMENT: ${JSON.stringify(doc, undefined, 2)}`);
 
-    // store the query result as well
-    const queryFileName = `./cw_contribution_${doc.id ?? "ID"}_${makeId()}.response.file`;
-    fs.writeFileSync(queryFileName, JSON.stringify(doc));
+//     // store the query result as well
+//     const queryFileName = `./cw_contribution_${doc.id ?? "ID"}_${makeId()}.response.file`;
+//     fs.writeFileSync(queryFileName, JSON.stringify(doc));
 
-    const fileName = `./cw_contribution_${doc.id ?? "ID"}_${makeId()}.contents.file`;
-    // the default is UTF-8, avoid changing the encoding if we don't know the file we're downloading
-    const outputStream = fs.createWriteStream(fileName, { encoding: undefined });
-    console.log(`File being created at ${process.cwd()}/${fileName}`);
-    const url = doc.content?.location;
-    if (url != null) await apiDefaultOrg.retrieveDocument(queryMeta, url, outputStream);
-  }
-}
+//     const fileName = `./cw_contribution_${doc.id ?? "ID"}_${makeId()}.contents.file`;
+//     // the default is UTF-8, avoid changing the encoding if we don't know the file we're downloading
+//     const outputStream = fs.createWriteStream(fileName, { encoding: undefined });
+//     console.log(`File being created at ${process.cwd()}/${fileName}`);
+//     const url = doc.content?.location;
+//     if (url != null) await apiDefaultOrg.retrieveDocument(queryMeta, url, outputStream);
+//   }
+// }
 
-async function getOrCreateOrg(
-  memberManagementApi: CommonWell,
-  queryMeta: RequestMetadata
-): Promise<{ orgAPI: CommonWell; orgName: string; orgId: string }> {
-  const orgPayload = makeDocContribOrganization(orgIdSuffix);
-  const orgId = orgPayload.organizationId;
-  const orgIdWithoutNamespace = orgId.slice("urn:oid:".length);
-  const orgName = orgPayload.name;
-  console.log(`Get the doc org - ID ${orgId}, name ${orgName}`);
-  const respGetOneOrg = await memberManagementApi.getOneOrg(queryMeta, orgId);
-  console.log(respGetOneOrg);
-  if (!respGetOneOrg) {
-    console.log(`Doc org not found, create one`);
-    const respCreateOrg = await memberManagementApi.createOrg(queryMeta, orgPayload);
-    console.log(respCreateOrg);
-    console.log(`Add certificate to doc org`);
-    const respAddCertificateToOrg = await memberManagementApi.addCertificateToOrg(
-      queryMeta,
-      orgCertificate,
-      orgIdWithoutNamespace
-    );
-    console.log(respAddCertificateToOrg);
-  }
+// async function getOrCreateOrg(
+//   memberManagementApi: CommonWell,
+//   queryMeta: RequestMetadata
+// ): Promise<{ orgAPI: CommonWell; orgName: string; orgId: string }> {
+//   const orgPayload = makeDocContribOrganization(orgIdSuffix);
+//   const orgId = orgPayload.organizationId;
+//   const orgIdWithoutNamespace = orgId.slice("urn:oid:".length);
+//   const orgName = orgPayload.name;
+//   console.log(`Get the doc org - ID ${orgId}, name ${orgName}`);
+//   const respGetOneOrg = await memberManagementApi.getOneOrg(queryMeta, orgId);
+//   console.log(respGetOneOrg);
+//   if (!respGetOneOrg) {
+//     console.log(`Doc org not found, create one`);
+//     const respCreateOrg = await memberManagementApi.createOrg(queryMeta, orgPayload);
+//     console.log(respCreateOrg);
+//     console.log(`Add certificate to doc org`);
+//     const respAddCertificateToOrg = await memberManagementApi.addCertificateToOrg(
+//       queryMeta,
+//       orgCertificate,
+//       orgIdWithoutNamespace
+//     );
+//     console.log(respAddCertificateToOrg);
+//   }
 
-  const orgAPI = new CommonWell(
-    orgCertificateString,
-    orgPrivateKeyString,
-    orgName, //commonwellSandboxOrgName,
-    orgIdWithoutNamespace, //commonwellSandboxOID,
-    APIMode.integration
-  );
+//   const orgAPI = new CommonWell(
+//     orgCertificateString,
+//     orgPrivateKeyString,
+//     orgName, //commonwellSandboxOrgName,
+//     orgIdWithoutNamespace, //commonwellSandboxOID,
+//     APIMode.integration
+//   );
 
-  return { orgAPI, orgName, orgId: orgIdWithoutNamespace };
-}
+//   return { orgAPI, orgName, orgId: orgIdWithoutNamespace };
+// }
 
 async function addOrgToFHIRServer(orgId: string, orgName: string, fhirApi: AxiosInstance) {
   // TODO: #230 we could create data as a JS structure instead of string - easier for future code enhancements and maintenance.
