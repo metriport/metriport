@@ -1,73 +1,109 @@
 #!/usr/bin/env node
-import { CommonWell, getIdTrailingSlash, RequestMetadata } from "@metriport/commonwell-sdk";
-
-import { certificate, makeOrganization, thumbprint } from "./payloads";
+import { Certificate, CommonWell, Organization, RequestMetadata } from "@metriport/commonwell-sdk";
+import { makeOrganization, orgCertificate, orgCertificateFingerprint } from "./payloads";
 
 // 4. Org Management
-// https://commonwellalliance.sharepoint.com/sites/ServiceAdopter/SitePages/Organization-Management-API---Overview-and-Summary.aspx#overview-and-summary
+// https://commonwellalliance.sharepoint.com/sites/CommonWellServicesPlatform/SitePages/Organization-APIs.aspx
 
-export async function orgManagement(commonWell: CommonWell, queryMeta: RequestMetadata) {
+export async function orgManagement(
+  commonWell: CommonWell,
+  queryMeta: RequestMetadata
+): Promise<Organization> {
   console.log(`>>> Create an org`);
   const org = makeOrganization();
+  console.log(`Request payload: ${JSON.stringify(org, null, 2)}`);
   const respCreateOrg = await commonWell.createOrg(queryMeta, org);
-  console.log(respCreateOrg);
+  console.log(">>> Response: " + JSON.stringify(respCreateOrg, null, 2));
 
   console.log(`>>> Update an org`);
   org.locations[0].city = "Miami";
-  const orgId = getIdTrailingSlash(respCreateOrg);
+  const orgId = respCreateOrg.organizationId;
   if (!orgId) throw new Error("No orgId on response from createOrg");
   const respUpdateOrg = await commonWell.updateOrg(queryMeta, org, orgId);
-  console.log(respUpdateOrg);
+  console.log(">>> Response: " + JSON.stringify(respUpdateOrg, null, 2));
 
   console.log(`>>> Get all orgs`);
   const respGetAllOrgs = await commonWell.getAllOrgs(queryMeta);
-  console.log(respGetAllOrgs);
+  console.log(">>> Response: " + JSON.stringify(respGetAllOrgs, null, 2));
 
   console.log(`>>> Get one org`);
   const respGetOneOrg = await commonWell.getOneOrg(queryMeta, orgId);
-  console.log(respGetOneOrg);
+  console.log(">>> Response: " + JSON.stringify(respGetOneOrg, null, 2));
+  if (!respGetOneOrg) throw new Error("No org on response from getOneOrg");
 
-  console.log(`>>> Add certificate to org`);
-  const respAddCertificateToOrg = await commonWell.addCertificateToOrg(
-    queryMeta,
-    certificate,
-    orgId
-  );
-  console.log(respAddCertificateToOrg);
-
+  console.log(`>>> Get certificates from org (to see if we need to create new ones)`);
+  let certificates: Certificate[] = [];
+  try {
+    const { certificates: resp } = await commonWell.getCertificatesFromOrg(queryMeta, orgId);
+    certificates = resp;
+  } catch (error) {
+    certificates = [];
+  }
+  if (certificates.length < 1) {
+    console.log(`>>> Add certificate to org`);
+    const respAddCertificateToOrg = await commonWell.addCertificateToOrg(
+      queryMeta,
+      orgCertificate,
+      orgId
+    );
+    console.log("Response: " + JSON.stringify(respAddCertificateToOrg, null, 2));
+  }
   console.log(`>>> Replace certificate for org`);
   const respReplaceCertificateForOrg = await commonWell.replaceCertificateForOrg(
     queryMeta,
-    certificate,
+    orgCertificate,
     orgId
   );
-  console.log(respReplaceCertificateForOrg);
+  console.log("Response: " + JSON.stringify(respReplaceCertificateForOrg, null, 2));
 
-  console.log(`>>> Get certificate from org`);
+  console.log(`>>> Get certificates from org`);
   const respGetCertificatesFromOrg = await commonWell.getCertificatesFromOrg(queryMeta, orgId);
-  console.log(respGetCertificatesFromOrg);
+  console.log("Response: " + JSON.stringify(respGetCertificatesFromOrg, null, 2));
 
-  console.log(`>>> Get certificate from org (by thumprint)`);
+  console.log(`>>> Get certificate from org (by thumbprint)`);
   const respGetCertificatesFromOrgByThumbprint =
-    await commonWell.getCertificatesFromOrgByThumbprint(queryMeta, orgId, thumbprint);
-  console.log(respGetCertificatesFromOrgByThumbprint);
+    await commonWell.getCertificatesFromOrgByThumbprint(
+      queryMeta,
+      orgId,
+      orgCertificateFingerprint
+    );
+  console.log("Response: " + JSON.stringify(respGetCertificatesFromOrgByThumbprint, null, 2));
 
-  console.log(`>>> Get certificate from org (by thumprint & purpose)`);
-  const respGetCertificatesFromOrgByThumbprintAndPurpose =
+  console.log(`>>> Get certificate from org (by thumbprint & purpose)`);
+  const respGetCertFromOrgByThumbprintAndPurpose =
     await commonWell.getCertificatesFromOrgByThumbprintAndPurpose(
       queryMeta,
       orgId,
-      thumbprint,
-      certificate.Certificates[0].purpose
+      orgCertificateFingerprint,
+      orgCertificate.Certificates[0].purpose
     );
-  console.log(respGetCertificatesFromOrgByThumbprintAndPurpose);
+  console.log("Response: " + JSON.stringify(respGetCertFromOrgByThumbprintAndPurpose, null, 2));
 
-  console.log(`>>> Delete certificate from org`);
-  await commonWell.deleteCertificateFromOrg(
+  console.log(`>>> Delete certificate from org (${orgCertificate.Certificates[0].purpose})`);
+  const respDeleteCertificateFromOrg = await commonWell.deleteCertificateFromOrg(
     queryMeta,
     orgId,
-    thumbprint,
-    certificate.Certificates[0].purpose
+    orgCertificateFingerprint,
+    orgCertificate.Certificates[0].purpose
   );
-  console.log("Certificate deleted");
+  console.log("Response: " + respDeleteCertificateFromOrg);
+
+  console.log(`>>> Delete certificate from org (${orgCertificate.Certificates[1].purpose})`);
+  const respDeleteCertificateFromOrg2 = await commonWell.deleteCertificateFromOrg(
+    queryMeta,
+    orgId,
+    orgCertificateFingerprint,
+    orgCertificate.Certificates[1].purpose
+  );
+  console.log("Response: " + respDeleteCertificateFromOrg2);
+
+  console.log(`>>> Add certificate to org again, for patient management`);
+  const respReAddCertificateToOrg = await commonWell.addCertificateToOrg(
+    queryMeta,
+    orgCertificate,
+    orgId
+  );
+  console.log("Response: " + JSON.stringify(respReAddCertificateToOrg, null, 2));
+
+  return respGetOneOrg;
 }

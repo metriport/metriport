@@ -6,7 +6,6 @@ export { makeJwt } from "./common/make-jwt";
 export {
   baseQueryMeta,
   getDemographics,
-  getId,
   getIdTrailingSlash,
   getPatientStrongIds,
   getPersonId,
@@ -16,7 +15,12 @@ export {
 } from "./common/util";
 export { validateNPI } from "./common/validate-npi";
 export { Address, AddressUseCodes } from "./models/address";
-export { CertificateParam, CertificatePurpose, CertificateResp } from "./models/certificates";
+export {
+  CertificateParam,
+  Certificate,
+  CertificatePurpose,
+  CertificateResp,
+} from "./models/certificates";
 export { Contact, ContactSystemCodes, ContactUseCodes } from "./models/contact";
 export { Demographics, GenderCodes } from "./models/demographics";
 export * from "./models/document";
