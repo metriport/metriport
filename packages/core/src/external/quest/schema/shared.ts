@@ -232,3 +232,26 @@ export function toQuestDate<T extends object>(
     }
   };
 }
+
+export function fromQuestInteger<O extends FieldOption>(option: O = {} as O) {
+  return function (value: string): FieldTypeFromQuest<number, O> {
+    if (value.trim() === "") {
+      if (option.optional) {
+        return undefined as FieldTypeFromQuest<number, O>;
+      } else {
+        throw new MetriportError(`Missing required field`, undefined, {
+          value,
+        });
+      }
+    }
+
+    const parsed = parseInt(value, 10);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    } else {
+      throw new MetriportError(`Invalid integer: ${value}`, undefined, {
+        value,
+      });
+    }
+  };
+}

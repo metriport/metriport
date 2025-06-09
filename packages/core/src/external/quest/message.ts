@@ -15,7 +15,16 @@ import {
   requestFooterSchema,
   requestFooterRow,
 } from "./schema/request";
-import { OutgoingFileRowSchema } from "./schema/shared";
+import {
+  ResponseFile,
+  responseHeaderSchema,
+  responseHeaderRow,
+  responseDetailSchema,
+  responseDetailRow,
+  responseFooterSchema,
+  responseFooterRow,
+} from "./schema/response";
+import { IncomingFileRowSchema, OutgoingFileRowSchema } from "./schema/shared";
 
 const makeGenderDemographics = genderMapperFromDomain<QuestGenderCode>(
   {
@@ -102,4 +111,49 @@ export function toQuestRequestRow<T extends object>(
   const fields = rowSchema.map(field => field.toQuest(row, field.length));
   const outputRow = fields.join("") + "\n";
   return Buffer.from(outputRow, "ascii");
+}
+
+export function fromQuestResponseFile(file: Buffer): ResponseFile | undefined {
+  const lines = file.toString("ascii").split("\n");
+  const headerLine = lines.shift();
+  const footerLine = lines.pop();
+
+  if (!headerLine || !footerLine) return undefined;
+
+  const header = fromQuestResponseRow(headerLine, responseHeaderSchema, responseHeaderRow);
+  const footer = fromQuestResponseRow(footerLine, responseFooterSchema, responseFooterRow);
+  const detail = lines.map(line =>
+    fromQuestResponseRow(line, responseDetailSchema, responseDetailRow)
+  );
+
+  return { header, detail, footer };
+}
+
+export function fromQuestResponseRow<T extends object>(
+  line: string,
+  objectSchema: z.ZodObject<z.ZodRawShape>,
+  rowSchema: IncomingFileRowSchema<T>
+): T {
+  const parsedResult: Partial<T> = {};
+  let currentPosition = 0;
+  for (let fieldIndex = 0; fieldIndex < rowSchema.length; fieldIndex++) {
+    const field = rowSchema[fieldIndex];
+    if (!field) continue;
+
+    const fieldValue = line.substring(currentPosition, currentPosition + field.length).trim();
+    currentPosition += field.length;
+
+    const value = field.fromQuest(fieldValue);
+    if (field.key) {
+      parsedResult[field.key] = value;
+    }
+  }
+  const validation = objectSchema.safeParse(parsedResult);
+  if (validation.success) {
+    return parsedResult as T;
+  }
+  throw new MetriportError("Invalid data", undefined, {
+    data: JSON.stringify(parsedResult),
+    errors: JSON.stringify(validation.error.issues),
+  });
 }

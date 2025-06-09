@@ -1,6 +1,24 @@
 import { z } from "zod";
-import { fromQuestString, IncomingFileRowSchema } from "./shared";
-import { fromQuestDate } from "./shared";
+import { fromQuestEnum, fromQuestInteger, fromQuestString, IncomingFileRowSchema } from "./shared";
+
+import { IncomingFile, fromQuestDate } from "./shared";
+
+export type ResponseFile = IncomingFile<ResponseHeader, ResponseDetail, ResponseFooter>;
+
+export const responseHeaderSchema = z.object({
+  recordType: z.enum(["H"]),
+});
+
+export type ResponseHeader = z.infer<typeof responseHeaderSchema>;
+
+export const responseHeaderRow: IncomingFileRowSchema<ResponseHeader> = [
+  {
+    field: 1,
+    length: 1,
+    key: "recordType",
+    fromQuest: fromQuestEnum(["H"]),
+  },
+];
 
 export const responseDetailSchema = z.object({
   dateOfService: z.date(),
@@ -434,5 +452,27 @@ export const responseDetailRow: IncomingFileRowSchema<ResponseDetail> = [
     length: 500,
     key: "resultComments",
     fromQuest: fromQuestString({ optional: true }),
+  },
+];
+
+export const responseFooterSchema = z.object({
+  recordType: z.enum(["T"]),
+  totalRecords: z.number(),
+});
+
+export type ResponseFooter = z.infer<typeof responseFooterSchema>;
+
+export const responseFooterRow: IncomingFileRowSchema<ResponseFooter> = [
+  {
+    field: 1,
+    length: 1,
+    key: "recordType",
+    fromQuest: fromQuestEnum(["T"]),
+  },
+  {
+    field: 2,
+    length: 10,
+    key: "totalRecords",
+    fromQuest: fromQuestInteger(),
   },
 ];
