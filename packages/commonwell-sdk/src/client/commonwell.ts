@@ -74,8 +74,8 @@ export interface CommonWellOptions {
 }
 
 export class CommonWell implements CommonWellAPI {
-  static integrationUrl = "https://integration.rest.api.commonwellalliance.org";
-  static productionUrl = "https://rest.api.commonwellalliance.org";
+  static integrationUrl = "https://api.integration.commonwellalliance.lkopera.com";
+  static productionUrl = "https://api.commonwellalliance.lkopera.com";
 
   // V1
   static PERSON_ENDPOINT = "/v1/person";
@@ -84,6 +84,7 @@ export class CommonWell implements CommonWellAPI {
   static MEMBER_ENDPOINT = "/v1/member";
   // V2
   static DOCUMENT_QUERY_ENDPOINT = "/v2/documentReference";
+  static getPatientEndpoint = (orgId: string) => `/v2/org/${orgId}/Patient`;
 
   readonly api: AxiosInstance;
   private rsaPrivateKey: string;
@@ -316,22 +317,22 @@ export class CommonWell implements CommonWellAPI {
    * @param id           The org to delete a certificate from
    * @param thumbprint   The thumbprint from the certificate
    * @param purpose      The purpose from the certificate
-   * @returns
+   * @returns a string with the message resulting from the deletion
    */
   async deleteCertificateFromOrg(
     meta: RequestMetadata,
     id: string,
     thumbprint: string,
     purpose: string
-  ): Promise<void> {
+  ): Promise<string> {
     const headers = await this.buildQueryHeaders(meta);
-    await this.api.delete(
+    const resp = await this.api.delete(
       `${CommonWell.MEMBER_ENDPOINT}/${this.oid}/org/${id}/certificate/${thumbprint}/purpose/${purpose}`,
       {
         headers,
       }
     );
-    return;
+    return resp.data;
   }
 
   /**
@@ -650,11 +651,8 @@ export class CommonWell implements CommonWellAPI {
    */
   async registerPatient(meta: RequestMetadata, patient: Patient): Promise<Patient> {
     const headers = await this.buildQueryHeaders(meta);
-    const resp = await this.executeWithRetriesOn500(() =>
-      this.api.post(`${CommonWell.ORG_ENDPOINT}/${this.oid}/patient`, patient, {
-        headers,
-      })
-    );
+    const url = CommonWell.getPatientEndpoint(this.oid);
+    const resp = await this.api.post(url, patient, { headers });
     return patientSchema.parse(resp.data);
   }
 
@@ -667,9 +665,9 @@ export class CommonWell implements CommonWellAPI {
    */
   async getPatient(meta: RequestMetadata, id: string): Promise<Patient> {
     const headers = await this.buildQueryHeaders(meta);
-    const suffix = id.endsWith("/") ? "" : "/";
+    const url = CommonWell.getPatientEndpoint(this.oid);
     const resp = await this.executeWithRetriesOn500(() =>
-      this.api.get(`${CommonWell.ORG_ENDPOINT}/${this.oid}/patient/${id}${suffix}`, { headers })
+      this.api.get(`${url}/${id}`, { headers })
     );
     return patientSchema.parse(resp.data);
   }
@@ -1014,6 +1012,7 @@ export class CommonWell implements CommonWellAPI {
     return;
   }
 
+  // TODO ENG-200 need to add DOA here?
   //--------------------------------------------------------------------------------------------
   // Private Methods
   //--------------------------------------------------------------------------------------------

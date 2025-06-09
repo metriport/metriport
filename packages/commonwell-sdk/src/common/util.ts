@@ -1,22 +1,11 @@
+import { PurposeOfUse } from "@metriport/shared";
+import { RequestMetadata } from "../client/commonwell";
 import { Demographics } from "../models/demographics";
 import { StrongId } from "../models/identifier";
 import { Organization } from "../models/organization";
 import { Patient } from "../models/patient";
 import { Person, PersonSearchResp } from "../models/person";
-import { PurposeOfUse } from "@metriport/shared";
-import { RequestMetadata } from "../client/commonwell";
 
-/**
- * Returns the ID of a person.
- * @deprecated Use {@link getPersonId} instead.
- */
-export function getId(object: Person | undefined): string | undefined {
-  return getPersonId(object);
-}
-
-/**
- * Returns the ID of a person.
- */
 export function getPersonId(object: Person | undefined): string | undefined {
   if (!object) return undefined;
   const url = object._links?.self?.href;
@@ -41,7 +30,7 @@ export function getPersonIdFromSearchByPatientDemo(object: PersonSearchResp): st
     console.log(`Found more than one person, using the first one: `, object);
   }
   const person = embeddedPersons[0];
-  return person && getId(person);
+  return person && getPersonId(person);
 }
 
 export function getIdTrailingSlash(object: Patient | Organization): string | undefined {

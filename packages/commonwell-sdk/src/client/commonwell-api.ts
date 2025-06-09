@@ -40,7 +40,7 @@ export interface CommonWellAPI {
     id: string,
     thumbprint: string,
     purpose: string
-  ): Promise<void>;
+  ): Promise<string>;
   getCertificatesFromOrg(
     meta: RequestMetadata,
     id: string,
