@@ -13,6 +13,8 @@ export type CreatedAllergySuccess = z.infer<typeof createdAllergySuccessSchema>;
 const allergySchema = z.object({
   allergenid: z.coerce.string(),
   allergenname: z.string(),
+  criticality: z.string().optional(),
+  onsetdate: z.string().optional(),
   reactions: z
     .object({
       reactionname: z.string(),
@@ -23,10 +25,10 @@ const allergySchema = z.object({
     .array(),
 });
 export type Allergy = z.infer<typeof allergySchema>;
-export const allergiesSchema = z.object({
+export const allergyListResponseSchema = z.object({
   allergies: allergySchema.array(),
 });
-export type Allergies = z.infer<typeof allergiesSchema>;
+export type AllergyListResponse = z.infer<typeof allergyListResponseSchema>;
 
 const allergenReferenceSchema = z.object({
   allergenid: z.coerce.string(),

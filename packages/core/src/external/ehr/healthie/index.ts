@@ -1,4 +1,4 @@
-import { MetriportError, NotFoundError } from "@metriport/shared";
+import { MetriportError, NotFoundError, sleep } from "@metriport/shared";
 import {
   AppointmentGetResponseGraphql,
   appointmentGetResponseGraphqlSchema,
@@ -24,7 +24,13 @@ import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import axios, { AxiosInstance } from "axios";
 import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
-import { ApiConfig, formatDate, makeRequest, MakeRequestParamsInEhr } from "../shared";
+import {
+  ApiConfig,
+  formatDate,
+  makeRequest,
+  MakeRequestParamsInEhr,
+  paginateWaitTime,
+} from "../shared";
 
 const apiUrl = Config.getApiUrl();
 
@@ -264,6 +270,7 @@ class HealthieApi {
         endDate: api.formatDate(endAppointmentDate.toISOString()) ?? "",
         ...(cursor ? { after: cursor } : {}),
       };
+      await sleep(paginateWaitTime.asMilliseconds());
       const appointmentListResponseGraphql = await api.makeRequest<AppointmentListResponseGraphql>({
         cxId,
         s3Path: "appointments",
@@ -282,7 +289,12 @@ class HealthieApi {
         appointment => {
           const attendee = appointment.attendees[0];
           if (!attendee) return [];
-          return [{ ...appointment, attendees: [attendee], cursor: appointment.cursor }];
+          return [
+            {
+              ...appointment,
+              attendees: [attendee, ...appointment.attendees.slice(1)],
+            },
+          ];
         }
       );
       acc.push(...appointmentsWithAttendees);
@@ -338,7 +350,7 @@ class HealthieApi {
     if (!appointment) throw new NotFoundError("Appointment not found", undefined, additionalInfo);
     const attendee = appointment.attendees[0];
     if (!attendee) return undefined;
-    return { ...appointment, attendees: [attendee] };
+    return { ...appointment, attendees: [attendee, ...appointment.attendees.slice(1)] };
   }
 
   async getSubscriptions({ cxId }: { cxId: string }): Promise<Subscription[]> {

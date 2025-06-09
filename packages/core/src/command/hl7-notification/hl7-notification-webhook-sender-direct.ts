@@ -9,7 +9,7 @@ import {
   saveAdtConversionBundle,
 } from "../../external/fhir/adt-encounters";
 import { toFHIR as toFhirPatient } from "../../external/fhir/patient/conversion";
-import { buildBundleEntry, buildCollectionBundle } from "../../external/fhir/shared/bundle";
+import { buildBundleEntry, buildCollectionBundle } from "../../external/fhir/bundle/bundle";
 import { capture, out } from "../../util";
 import { Config } from "../../util/config";
 import { convertHl7v2MessageToFhir } from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion";

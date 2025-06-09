@@ -16,7 +16,7 @@ import { dangerouslyDeduplicate } from "../../external/fhir/consolidated/dedupli
 import { normalize } from "../../external/fhir/consolidated/normalize";
 import { toFHIR as patientToFhir } from "../../external/fhir/patient/conversion";
 import { isPatient } from "../../external/fhir/shared";
-import { buildBundleEntry } from "../../external/fhir/shared/bundle";
+import { buildBundleEntry } from "../../external/fhir/bundle/bundle";
 import { capture, out } from "../../util";
 import { getConsolidatedFromS3 } from "./consolidated-filter";
 import {

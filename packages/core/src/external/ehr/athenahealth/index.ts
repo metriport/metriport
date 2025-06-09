@@ -12,15 +12,17 @@ import {
   JwtTokenInfo,
   MetriportError,
   NotFoundError,
+  sleep,
+  toTitleCase,
 } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import {
   AllergenReference,
   AllergenReferences,
   allergenReferencesSchema,
-  Allergies,
-  allergiesSchema,
   Allergy,
+  AllergyListResponse,
+  allergyListResponseSchema,
   AllergyReactionReference,
   AllergyReactionReferences,
   allergyReactionReferencesSchema,
@@ -91,9 +93,10 @@ import {
   patientSearchSchema,
 } from "@metriport/shared/interface/external/ehr/patient";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
-import { getObservationCode, getObservationUnits } from "@metriport/shared/medical";
+import { getObservationUnits } from "@metriport/shared/medical";
 import axios, { AxiosInstance } from "axios";
 import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
 import jaroWinkler from "jaro-winkler";
 import { uniqBy } from "lodash";
 import { executeAsynchronously } from "../../../util/concurrency";
@@ -106,7 +109,7 @@ import {
   formatDate,
   getAllergyIntoleranceManifestationSnomedCoding,
   getAllergyIntoleranceOnsetDate,
-  getAllergyIntoleranceSubstanceSnomedCoding,
+  getAllergyIntoleranceSubstanceRxnormCoding,
   getConditionSnomedCode,
   getConditionStartDate,
   getConditionStatus,
@@ -115,6 +118,7 @@ import {
   getMedicationRxnormCoding,
   getMedicationStatementStartDate,
   getObservationInterpretation,
+  getObservationLoincCode,
   getObservationLoincCoding,
   getObservationObservedDate,
   getObservationReferenceRange,
@@ -126,7 +130,10 @@ import {
   makeRequest,
   MakeRequestParamsInEhr,
   MedicationWithRefs,
+  paginateWaitTime,
 } from "../shared";
+
+dayjs.extend(duration);
 
 const parallelRequests = 5;
 const delayBetweenRequestBatches = dayjs.duration(2, "seconds");
@@ -143,7 +150,7 @@ const athenaDateTimeFormat = "MM/DD/YYYY HH:mm:ss";
 const labResultDocumentId = "386265";
 const clinicalNoteDocumentSubclass = "CLINICALDOCUMENT";
 const clinicalNoteDocumentId = "423482";
-const minSimilarity = 0.8;
+const minAllowedSimilarity = 0.8;
 
 const athenaEnv = ["api", "api.preview"] as const;
 export type AthenaEnv = (typeof athenaEnv)[number];
@@ -167,6 +174,16 @@ vitalSignCodesMapAthena.set("8302-2", "VITALS.HEIGHT");
 vitalSignCodesMapAthena.set("39156-5", "VITALS.BMI");
 
 const clinicalElementsThatRequireUnits = ["VITALS.WEIGHT", "VITALS.HEIGHT", "VITALS.TEMPERATURE"];
+
+const validObservationResultStatuses = [
+  "final",
+  "corrected",
+  "pending",
+  "preliminary",
+  "unverified",
+  "deleted",
+  "unsolicited",
+];
 
 const lbsToG = 453.592;
 const kgToG = 1000;
@@ -345,25 +362,23 @@ class AthenaHealthApi {
     const { debug } = out(
       `AthenaHealth getAllergyForPatient - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
     );
-    const params = {
-      departmentid: this.stripDepartmentId(departmentId),
-    };
+    const params = { departmentid: this.stripDepartmentId(departmentId) };
     const queryParams = new URLSearchParams(params);
     const allergiesUrl = `/chart/${this.stripPatientId(
       patientId
     )}/allergies?${queryParams.toString()}`;
     const additionalInfo = { cxId, practiceId: this.practiceId, patientId };
-    const allergies = await this.makeRequest<Allergies>({
+    const allergyListResponse = await this.makeRequest<AllergyListResponse>({
       cxId,
       patientId,
       s3Path: "allergies",
       method: "GET",
       url: allergiesUrl,
-      schema: allergiesSchema,
+      schema: allergyListResponseSchema,
       additionalInfo,
       debug,
     });
-    const allergy = allergies.allergies.find(a => a.allergenid === allergenId);
+    const allergy = allergyListResponse.allergies.find(a => a.allergenid === allergenId);
     return allergy;
   }
 
@@ -407,131 +422,6 @@ class AthenaHealthApi {
     if (!patientCustomFields)
       throw new NotFoundError("Patient not found", undefined, additionalInfo);
     return patientCustomFields;
-  }
-
-  async createMedication({
-    cxId,
-    patientId,
-    departmentId,
-    medication,
-  }: {
-    cxId: string;
-    patientId: string;
-    departmentId: string;
-    medication: MedicationWithRefs;
-  }): Promise<CreatedMedicationSuccess[]> {
-    const { log, debug } = out(
-      `AthenaHealth createMedication - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} departmentId ${departmentId}`
-    );
-    const chartMedicationUrl = `/chart/${this.stripPatientId(patientId)}/medications`;
-    const additionalInfo = {
-      cxId,
-      practiceId: this.practiceId,
-      patientId,
-      departmentId,
-      medicationId: medication.medication.id,
-    };
-    if (medication.statement.length < 1) {
-      throw new BadRequestError("No medication statements found", undefined, additionalInfo);
-    }
-    const dates = medication.statement.flatMap(statement => {
-      const startdate = this.formatDate(getMedicationStatementStartDate(statement));
-      if (!startdate) return [];
-      const stopdate = this.formatDate(statement.effectivePeriod?.end);
-      return { startdate, stopdate };
-    });
-    if (dates.length < 1) {
-      throw new BadRequestError(
-        "No start dates found for medication statements",
-        undefined,
-        additionalInfo
-      );
-    }
-    const rxnormCoding = getMedicationRxnormCoding(medication.medication);
-    if (!rxnormCoding) {
-      throw new BadRequestError("No RXNORM code found for medication", undefined, additionalInfo);
-    }
-    const medicationReference = await this.searchForMedication({
-      cxId,
-      patientId,
-      coding: rxnormCoding,
-    });
-    if (!medicationReference) {
-      throw new BadRequestError(
-        "No medication options found via search",
-        undefined,
-        additionalInfo
-      );
-    }
-    const sharedData = {
-      departmentid: this.stripDepartmentId(departmentId),
-      providernote: "Added via Metriport App",
-      unstructuredsig: "Metriport",
-      medicationid: medicationReference.medicationid,
-      hidden: false,
-      stopreason: undefined,
-      patientnote: undefined,
-      THIRDPARTYUSERNAME: undefined,
-      PATIENTFACINGCALL: undefined,
-    };
-    const allCreatedMedications: CreatedMedicationSuccess[] = [];
-    const createMedicationErrors: {
-      error: unknown;
-      departmentid: string;
-      medication: string;
-    }[] = [];
-    const createMedicationArgs: MedicationCreateParams[] = dates.map(d => ({
-      ...sharedData,
-      ...d,
-    }));
-    await executeAsynchronously(
-      createMedicationArgs,
-      async (params: MedicationCreateParams) => {
-        try {
-          const createdMedication = await this.makeRequest<CreatedMedication>({
-            cxId,
-            patientId,
-            s3Path: `chart/medication/${additionalInfo.medicationId ?? "unknown"}`,
-            method: "POST",
-            data: params,
-            url: chartMedicationUrl,
-            schema: createdMedicationSchema,
-            additionalInfo,
-            debug,
-          });
-          if (!createdMedication.success || !createdMedication.medicationentryid) {
-            throw new MetriportError("Medication creation failed", undefined, {
-              ...additionalInfo,
-              error: createdMedication.errormessage,
-            });
-          }
-          allCreatedMedications.push(createdMedicationSuccessSchema.parse(createdMedication));
-        } catch (error) {
-          if (error instanceof BadRequestError || error instanceof NotFoundError) return;
-          const medicationToString = JSON.stringify(params);
-          log(`Failed to create medication ${medicationToString}. Cause: ${errorToString(error)}`);
-          createMedicationErrors.push({ error, ...params, medication: medicationToString });
-        }
-      },
-      {
-        numberOfParallelExecutions: parallelRequests,
-        delay: delayBetweenRequestBatches.asMilliseconds(),
-      }
-    );
-    if (createMedicationErrors.length > 0) {
-      const msg = `Failure while creating some medications @ AthenaHealth`;
-      capture.message(msg, {
-        extra: {
-          ...additionalInfo,
-          createMedicationArgsCount: createMedicationArgs.length,
-          createMedicationErrorsCount: createMedicationErrors.length,
-          errors: createMedicationErrors,
-          context: "athenahealth.create-medication",
-        },
-        level: "warning",
-      });
-    }
-    return allCreatedMedications;
   }
 
   async createProblem({
@@ -595,6 +485,128 @@ class AthenaHealthApi {
       });
     }
     return createdProblemSuccessSchema.parse(createdProblem);
+  }
+
+  async createMedicationWithStatements({
+    cxId,
+    patientId,
+    departmentId,
+    medicationWithRefs,
+  }: {
+    cxId: string;
+    patientId: string;
+    departmentId: string;
+    medicationWithRefs: MedicationWithRefs;
+  }): Promise<CreatedMedicationSuccess[]> {
+    const { log, debug } = out(
+      `AthenaHealth createMedication - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} departmentId ${departmentId}`
+    );
+    const chartMedicationUrl = `/chart/${this.stripPatientId(patientId)}/medications`;
+    const additionalInfo = {
+      cxId,
+      practiceId: this.practiceId,
+      patientId,
+      departmentId,
+      medicationId: medicationWithRefs.medication.id,
+    };
+    if (medicationWithRefs.statement.length < 1) {
+      throw new BadRequestError("No medication statements found", undefined, additionalInfo);
+    }
+    const dates = medicationWithRefs.statement.flatMap(statement => {
+      const startdate = getMedicationStatementStartDate(statement);
+      if (!startdate) return [];
+      const stopdate = statement.effectivePeriod?.end;
+      return { startdate, stopdate };
+    });
+    if (dates.length < 1) {
+      throw new BadRequestError(
+        "No start dates found for medication statements",
+        undefined,
+        additionalInfo
+      );
+    }
+    const rxnormCoding = getMedicationRxnormCoding(medicationWithRefs.medication);
+    if (!rxnormCoding) {
+      throw new BadRequestError("No RXNORM code found for medication", undefined, additionalInfo);
+    }
+    const medicationReference = await this.searchForMedication({
+      cxId,
+      patientId,
+      coding: rxnormCoding,
+    });
+    if (!medicationReference) {
+      throw new BadRequestError("No medication option found via search", undefined, additionalInfo);
+    }
+    const sharedData = {
+      departmentid: this.stripDepartmentId(departmentId),
+      providernote: "Added via Metriport App",
+      unstructuredsig: "Metriport",
+      medicationid: medicationReference.medicationid,
+      hidden: false,
+      stopreason: undefined,
+      patientnote: undefined,
+      THIRDPARTYUSERNAME: undefined,
+      PATIENTFACINGCALL: undefined,
+    };
+    const allCreatedMedications: CreatedMedicationSuccess[] = [];
+    const createMedicationErrors: {
+      error: unknown;
+      departmentid: string;
+      medication: string;
+    }[] = [];
+    const createMedicationArgs: MedicationCreateParams[] = dates.map(d => ({
+      ...sharedData,
+      startdate: this.formatDate(d.startdate),
+      stopdate: this.formatDate(d.stopdate),
+    }));
+    await executeAsynchronously(
+      createMedicationArgs,
+      async (params: MedicationCreateParams) => {
+        try {
+          const createdMedication = await this.makeRequest<CreatedMedication>({
+            cxId,
+            patientId,
+            s3Path: `chart/medication/${additionalInfo.medicationId ?? "unknown"}`,
+            method: "POST",
+            data: params,
+            url: chartMedicationUrl,
+            schema: createdMedicationSchema,
+            additionalInfo,
+            debug,
+          });
+          if (!createdMedication.success || !createdMedication.medicationentryid) {
+            throw new MetriportError("Medication creation failed", undefined, {
+              ...additionalInfo,
+              error: createdMedication.errormessage,
+            });
+          }
+          allCreatedMedications.push(createdMedicationSuccessSchema.parse(createdMedication));
+        } catch (error) {
+          if (error instanceof BadRequestError || error instanceof NotFoundError) return;
+          const medicationToString = JSON.stringify(params);
+          log(`Failed to create medication ${medicationToString}. Cause: ${errorToString(error)}`);
+          createMedicationErrors.push({ error, ...params, medication: medicationToString });
+        }
+      },
+      {
+        numberOfParallelExecutions: parallelRequests,
+        delay: delayBetweenRequestBatches.asMilliseconds(),
+      }
+    );
+    if (createMedicationErrors.length > 0) {
+      const msg = `Failure while creating some medications @ AthenaHealth`;
+      capture.message(msg, {
+        extra: {
+          ...additionalInfo,
+          createMedicationArgsCount: createMedicationArgs.length,
+          createMedicationErrorsCount: createMedicationErrors.length,
+          errors: createMedicationErrors,
+          context: "athenahealth.create-medication",
+        },
+        level: "warning",
+      });
+    }
+    return allCreatedMedications;
   }
 
   async createVaccine({
@@ -769,7 +781,7 @@ class AthenaHealthApi {
       );
     }
     const resultStatus = getObservationResultStatus(observation);
-    if (!resultStatus) {
+    if (!resultStatus || !validObservationResultStatuses.includes(resultStatus.toLowerCase())) {
       throw new BadRequestError(
         "No result status found for observation",
         undefined,
@@ -793,7 +805,7 @@ class AthenaHealthApi {
         referencerange: referenceRange,
         units: unit,
         value: value.toString(),
-        resultstatus: resultStatus,
+        resultstatus: toTitleCase(resultStatus.toLowerCase()),
         note: "Added via Metriport App",
       },
     ];
@@ -803,6 +815,7 @@ class AthenaHealthApi {
       observationdate: this.formatDate(observedDate),
       internalnote: loincCoding.display,
       documenttypeid: labResultDocumentId,
+      autoclose: "true",
     };
     const createdLabResult = await this.makeRequest<CreatedLabResult>({
       cxId,
@@ -904,29 +917,29 @@ class AthenaHealthApi {
     if (!reaction || reaction.length < 1) {
       throw new BadRequestError("No reactions found for allergy", undefined, additionalInfo);
     }
-    const snomedCodingsPairs: [Coding, Coding, string | undefined][] = reaction.flatMap(r => {
-      const substanceSnomedCoding = getAllergyIntoleranceSubstanceSnomedCoding(r);
-      if (!substanceSnomedCoding) return [];
+    const codingsWithSeverityPairs: [Coding, Coding, string | undefined][] = reaction.flatMap(r => {
+      const substanceRxnormCoding = getAllergyIntoleranceSubstanceRxnormCoding(r);
+      if (!substanceRxnormCoding) return [];
       const manifestationSnomedCoding = getAllergyIntoleranceManifestationSnomedCoding(r);
       if (!manifestationSnomedCoding) return [];
-      return [[substanceSnomedCoding, manifestationSnomedCoding, r.severity]];
+      return [[substanceRxnormCoding, manifestationSnomedCoding, r.severity]];
     });
-    const snomedCodings = snomedCodingsPairs[0];
-    if (!snomedCodings) {
+    const codingsWithSeverityPair = codingsWithSeverityPairs[0];
+    if (!codingsWithSeverityPair) {
       throw new BadRequestError(
-        "No SNOMED codes found for allergy reaction",
+        "No RXNORM and SNOMED codes found for allergy reaction",
         undefined,
         additionalInfo
       );
     }
-    const [substanceSnomedCoding, manifestationSnomedCoding, severity] = snomedCodings;
+    const [substanceRxnormCoding, manifestationSnomedCoding, severity] = codingsWithSeverityPair;
     const allergenReference = await this.searchForAllergen({
       cxId,
       patientId,
-      coding: substanceSnomedCoding,
+      coding: substanceRxnormCoding,
     });
     if (!allergenReference) {
-      throw new BadRequestError("No allergen options found via search", undefined, additionalInfo);
+      throw new BadRequestError("No allergen option found via search", undefined, additionalInfo);
     }
     const existingAllergy = await this.getAllergyForPatient({
       cxId,
@@ -970,9 +983,13 @@ class AthenaHealthApi {
       {
         allergenid: allergenReference.allergenid,
         allergenname: allergenReference.allergenname,
-        criticality,
+        ...(existingAllergy
+          ? {
+              criticality: existingAllergy.criticality,
+              onsetdate: existingAllergy.onsetdate,
+            }
+          : { criticality, onsetdate: this.formatDate(onsetDate) }),
         note: "Added via Metriport App",
-        onsetdate: this.formatDate(onsetDate),
         reactions: allReactions,
       },
     ];
@@ -1025,26 +1042,7 @@ class AthenaHealthApi {
       departmentId,
       observationId: observation.id,
     };
-    const code = getObservationCode(observation);
-    if (!code) {
-      throw new BadRequestError("No code found for observation", undefined, additionalInfo);
-    }
-    const clinicalElementId = vitalSignCodesMapAthena.get(code);
-    if (!clinicalElementId) {
-      throw new BadRequestError("No clinical element id found for observation", undefined, {
-        ...additionalInfo,
-        code,
-      });
-    }
-    const units = getObservationUnits(observation);
-    if (!units) {
-      throw new BadRequestError("No units found for observation", undefined, {
-        ...additionalInfo,
-        code,
-        clinicalElementId,
-      });
-    }
-    if (!vitals.sortedPoints || vitals.sortedPoints.length === 0) {
+    if (!vitals.sortedPoints || vitals.sortedPoints.length < 1) {
       throw new BadRequestError("No points found for vitals", undefined, additionalInfo);
     }
     if (uniqBy(vitals.sortedPoints, "date").length !== vitals.sortedPoints.length) {
@@ -1053,11 +1051,29 @@ class AthenaHealthApi {
         dates: vitals.sortedPoints.map(v => v.date).join(", "),
       });
     }
+    const loincCode = getObservationLoincCode(observation);
+    if (!loincCode) {
+      throw new BadRequestError("No code found for observation", undefined, additionalInfo);
+    }
+    const clinicalElementId = vitalSignCodesMapAthena.get(loincCode);
+    if (!clinicalElementId) {
+      throw new BadRequestError("No clinical element id found for observation", undefined, {
+        ...additionalInfo,
+        loincCode,
+      });
+    }
+    const units = getObservationUnits(observation);
+    if (!units) {
+      throw new BadRequestError("No units found for observation", undefined, {
+        ...additionalInfo,
+        loincCode,
+        clinicalElementId,
+      });
+    }
     const allCreatedVitals: CreatedVitalsSuccess[] = [];
     const createVitalsErrors: {
       error: unknown;
       departmentid: string;
-      source: string;
       vitals: string;
     }[] = [];
     const createVitalsArgs: VitalsCreateParams[] = vitals.sortedPoints.map(v => {
@@ -1549,6 +1565,7 @@ class AthenaHealthApi {
     acc: T[] | undefined = []
   ): Promise<T[]> {
     if (!url) return acc;
+    await sleep(paginateWaitTime.asMilliseconds());
     const { listOfItems, nextUrl } = await requester(url.replace(`/v1/${this.practiceId}`, ""));
     acc.push(...listOfItems);
     if (!nextUrl) return acc;
@@ -1693,7 +1710,7 @@ class AthenaHealthApi {
         mostSimilarOption = option;
       }
     }
-    if (maxSimilarity < minSimilarity) {
+    if (maxSimilarity < minAllowedSimilarity) {
       throw new BadRequestError("No similar enough option found", undefined, {
         target,
         maxSimilarity,

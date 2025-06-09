@@ -504,7 +504,7 @@ type FhirTypes = {
   organizations: Organization[];
 };
 
-// TODO: Use the version from "@metriport/core/external/fhir/shared/bundle.ts"
+// TODO: Use the version from "@metriport/core/external/fhir/bundle/bundle.ts"
 function extractFhirTypesFromBundle(bundle: Bundle): FhirTypes {
   let patient: Patient | undefined;
   const practitioners: Practitioner[] = [];

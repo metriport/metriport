@@ -7,19 +7,19 @@ export async function writeMedicationToChart({
   athenaPatientId,
   athenaPracticeId,
   athenaDepartmentId,
-  medication,
+  medicationWithRefs,
 }: {
   cxId: string;
   athenaPatientId: string;
   athenaPracticeId: string;
   athenaDepartmentId: string;
-  medication: MedicationWithRefs;
+  medicationWithRefs: MedicationWithRefs;
 }): Promise<CreatedMedicationSuccess[]> {
   const api = await createAthenaClient({ cxId, practiceId: athenaPracticeId });
-  return await api.createMedication({
+  return await api.createMedicationWithStatements({
     cxId,
     patientId: athenaPatientId,
     departmentId: athenaDepartmentId,
-    medication,
+    medicationWithRefs,
   });
 }

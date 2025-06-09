@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from "uuid";
 import { makePatient } from "../../../../domain/__tests__/patient";
 import { Config } from "../../../../util/config";
 import { HapiFhirClient } from "../../api/api-hapi";
-import * as fhirBundle from "../../shared/bundle";
+import * as fhirBundle from "../../bundle/bundle";
 import * as fhirReferences from "../../shared/references";
 import { getConsolidatedFhirBundle } from "../consolidated";
 
