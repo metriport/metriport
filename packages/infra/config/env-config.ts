@@ -124,6 +124,8 @@ type EnvConfigBase = {
   medicalDocumentsUploadBucketName: string;
   pharmacyConversionBucketName: string;
   surescriptsReplicaBucketName: string;
+  labConversionBucketName: string;
+  questReplicaBucketName: string;
   ehrResponsesBucketName?: string;
   ehrBundleBucketName: string;
   iheResponsesBucketName: string;
@@ -278,6 +280,14 @@ type EnvConfigBase = {
       SURESCRIPTS_SFTP_SENDER_PASSWORD: string;
       SURESCRIPTS_SFTP_PUBLIC_KEY: string;
       SURESCRIPTS_SFTP_PRIVATE_KEY: string;
+    };
+  };
+  quest?: {
+    questHost: string;
+    questPort: number;
+    questUsername: string;
+    secrets: {
+      QUEST_SFTP_PASSWORD: string;
     };
   };
 };
