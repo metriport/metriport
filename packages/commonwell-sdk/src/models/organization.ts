@@ -9,7 +9,7 @@ export const organizationSchema = z.object({
   memberName: z.string(),
   type: z.string(),
   patientIdAssignAuthority: z.string(),
-  securityTokenKeyType: z.string(),
+  securityTokenKeyType: z.string().nullable(),
   sendingFacility: z
     .object({
       namespaceId: z.string().optional().nullable(),
@@ -40,6 +40,8 @@ export const organizationSchema = z.object({
       email: z.string().optional().nullable(),
     })
   ),
+  /** Gateway search radius in miles. One of: 50, 100, 150 */
+  searchRadius: z.number(),
   technicalContacts: z.array(
     z.object({
       name: z.string(),
@@ -62,11 +64,11 @@ export const organizationSchema = z.object({
     .nullable(),
   authorizationInformation: z
     .object({
-      authorizationServerEndpoint: z.string(),
-      clientId: z.string(),
-      clientSecret: z.string(),
-      documentReferenceScope: z.string(),
-      binaryScope: z.string(),
+      authorizationServerEndpoint: z.string().nullable(),
+      clientId: z.string().nullable(),
+      clientSecret: z.string().nullable(),
+      documentReferenceScope: z.string().nullable(),
+      binaryScope: z.string().nullable(),
     })
     .optional()
     .nullable(),
