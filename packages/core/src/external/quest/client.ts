@@ -1,6 +1,7 @@
 import { Config } from "../../util/config";
 import { SftpClient, SftpConfig } from "../sftp/client";
 import { S3Utils } from "../aws/s3";
+import { INCOMING_NAME, OUTGOING_NAME } from "./constants";
 
 export interface QuestSftpConfig extends Partial<SftpConfig> {
   replicaBucket?: string;
@@ -22,6 +23,12 @@ export class QuestSftpClient extends SftpClient {
 
     this.s3 = new S3Utils(config.replicaBucketRegion ?? Config.getAWSRegion());
     this.replicaBucket = config.replicaBucket ?? Config.getQuestReplicaBucketName();
+  }
+
+  async listSftpFiles(): Promise<{ incoming: string[]; outgoing: string[] }> {
+    const incoming = await this.list(INCOMING_NAME);
+    const outgoing = await this.list(OUTGOING_NAME);
+    return { incoming, outgoing };
   }
 
   async generateAndWriteRequestFile() {
