@@ -210,7 +210,7 @@ router.post(
       canvasPatientId,
       canvasPracticeId,
       canvasPractitionerId,
-      allergy: payload,
+      allergyIntolerance: payload,
     });
     return res.status(httpStatus.OK).json(allergyDetails);
   })

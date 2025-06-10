@@ -6,19 +6,19 @@ export async function writeAllergyToFhir({
   canvasPatientId,
   canvasPracticeId,
   canvasPractitionerId,
-  allergy,
+  allergyIntolerance,
 }: {
   cxId: string;
   canvasPatientId: string;
   canvasPracticeId: string;
   canvasPractitionerId: string;
-  allergy: AllergyIntolerance;
+  allergyIntolerance: AllergyIntolerance;
 }): Promise<void> {
   const api = await createCanvasClient({ cxId, practiceId: canvasPracticeId });
   await api.createAllergyIntolerance({
     cxId,
     patientId: canvasPatientId,
     practitionerId: canvasPractitionerId,
-    allergyIntolerance: allergy,
+    allergyIntolerance,
   });
 }
