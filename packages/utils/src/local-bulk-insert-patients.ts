@@ -16,11 +16,14 @@ import { uuidv7 } from "./shared/uuid-v7";
 import { elapsedTimeAsStr } from "./shared/duration";
 
 /**
- * This script will insert 1 million test patients into the local database's patient table.
+ * This script will bulk inserts dummy patients into the local database's patient table.
+ *
+ * NOTE: These will not be attached to real facilities. These patients should be removed after testing.
  *
  * Execute this with:
- * $ npm run bulk-insert-test-patients -- --count 1000000
- * $ npm run bulk-insert-test-patients -- --count 1000000 --batch-size 1000
+ * $ npx ts-node src/local-bulk-insert-patients.ts --count 1000000
+ * $ npx ts-node src/local-bulk-insert-patients.ts --count 1000000 --batch-size 1000
+ * $ npx ts-node src/local-bulk-insert-patients.ts --count 1000000 --cx-ids 48484848-4848-4848-4848-484848484848,48484848-4848-4848-4848-484848484848,00000000-0000-0000-0000-000000000000
  */
 
 const DEFAULT_COUNT = 10;
