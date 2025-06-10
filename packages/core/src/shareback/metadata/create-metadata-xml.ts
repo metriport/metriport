@@ -1,4 +1,5 @@
 import { CodeableConcept, Organization } from "@medplum/fhirtypes";
+import { encodeToHtml } from "@metriport/shared/common/html";
 import {
   DEFAULT_TITLE,
   METRIPORT_HOME_COMMUNITY_ID,
@@ -6,7 +7,6 @@ import {
   ORGANIZATION_NAME_DEFAULT,
   createDocumentUniqueId,
 } from "../../external/carequality/shared";
-import { htmlEncode } from "../../util/html-encode";
 import { uuidv7 } from "../../util/uuid-v7";
 import {
   CONFIDENTIALITY_CODE_SYSTEM,
@@ -113,18 +113,18 @@ export function createExtrinsicObjectXml({
     </Slot>
     
     <Name>
-      <LocalizedString charset="UTF-8" value="${title ? htmlEncode(title) : DEFAULT_TITLE}"/>
+      <LocalizedString charset="UTF-8" value="${title ? encodeToHtml(title) : DEFAULT_TITLE}"/>
     </Name>
 
     <Classification classificationScheme="${XDSDocumentEntryAuthor}" classifiedObject="urn:uuid:00000000-0000-d6ba-5161-4e497785491d" id="urn:uuid:953e825d-3907-497c-8a95-bc3761e2a642" nodeRepresentation="" objectType="urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:Classification">
       <Slot name="authorPerson">
         <ValueList>
-          <Value>${htmlEncode(organizationName)}^^^^^^^&amp;${organizationId}&amp;ISO</Value>
+          <Value>${encodeToHtml(organizationName)}^^^^^^^&amp;${organizationId}&amp;ISO</Value>
         </ValueList>
       </Slot>
       <Slot name="authorInstitution">
         <ValueList>
-          <Value>${htmlEncode(organizationName)}^^^^^^^^^${organizationId}</Value>
+          <Value>${encodeToHtml(organizationName)}^^^^^^^^^${organizationId}</Value>
         </ValueList>
       </Slot>
     </Classification>
