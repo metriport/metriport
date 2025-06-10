@@ -609,7 +609,7 @@ class CanvasApi {
     if (!rxnormCodingDisplay) {
       throw new BadRequestError("Medication does not have a display", undefined, additionalInfo);
     }
-    const medicationReference = await this.searchForhMedicationByRxNorm({
+    const medicationReference = await this.searchForMedicationByRxNorm({
       cxId,
       patientId,
       practitionerId,
@@ -666,16 +666,16 @@ class CanvasApi {
           });
         } catch (error) {
           if (error instanceof BadRequestError || error instanceof NotFoundError) return;
-          const medicatioStatementToString = JSON.stringify(params);
+          const medicationStatementToString = JSON.stringify(params);
           log(
-            `Failed to create medication statement ${medicatioStatementToString}. Cause: ${errorToString(
+            `Failed to create medication statement ${medicationStatementToString}. Cause: ${errorToString(
               error
             )}`
           );
           createMedicationErrors.push({
             error,
             ...params,
-            medicationStatement: medicatioStatementToString,
+            medicationStatement: medicationStatementToString,
           });
         }
       },
@@ -692,7 +692,7 @@ class CanvasApi {
           createMedicationArgsCount: createMedicationStatementsArgs.length,
           createMedicationErrorsCount: createMedicationErrors.length,
           errors: createMedicationErrors,
-          context: "athenahealth.create-medication",
+          context: "canvas.create-medication",
         },
         level: "warning",
       });
@@ -914,7 +914,7 @@ class CanvasApi {
       }
     );
     if (createObservationsErrors.length > 0) {
-      const msg = `Failure while creating some vtials observations @ Canvas`;
+      const msg = `Failure while creating some vitals observations @ Canvas`;
       capture.message(msg, {
         extra: {
           ...additionalInfo,
@@ -928,7 +928,7 @@ class CanvasApi {
     }
   }
 
-  async searchForhMedicationByRxNorm({
+  async searchForMedicationByRxNorm({
     cxId,
     patientId,
     practitionerId,
@@ -979,7 +979,7 @@ class CanvasApi {
     rxnormCoding: Coding;
   }): Promise<AllergenResource | undefined> {
     const { debug } = out(
-      `Canvas searchMedicationByRxNorm - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} practitionerId ${practitionerId} rxnormCoding ${rxnormCoding}`
+      `Canvas searchForAllergenByRxNorm - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} practitionerId ${practitionerId} rxnormCoding ${rxnormCoding}`
     );
     const code = `${rxnormCoding.system}|${rxnormCoding.code}`;
     const additionalInfo = { cxId, practiceId: this.practiceId, patientId, practitionerId, code };
