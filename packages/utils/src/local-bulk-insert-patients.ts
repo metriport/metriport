@@ -26,6 +26,7 @@ import { elapsedTimeAsStr } from "./shared/duration";
 const DEFAULT_COUNT = 10;
 const DEFAULT_BATCH_SIZE = 1000;
 const ISO_DATE = "YYYY-MM-DD";
+const DB_CREDS = getEnvVarOrFail("DB_CREDS");
 
 type Params = {
   count?: number;
@@ -165,9 +166,8 @@ async function main() {
     console.log(`Generating new cx_ids for each patient`);
   }
 
-  const dbCreds = getEnvVarOrFail("DB_CREDS");
   const sequelize = initDbPool(
-    dbCreds,
+    DB_CREDS,
     {
       max: 10,
       min: 2,
