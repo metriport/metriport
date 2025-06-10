@@ -225,6 +225,37 @@ describe("search-consolidated", () => {
           expect(getByIds_mock).not.toHaveBeenCalled();
         });
       }
+
+      it(`updates exclude list when hydrating second level references`, async () => {
+        const missingFirstLevel = makePractitioner();
+        const resources = [
+          patient,
+          makeCondition({ recorder: makeReference(missingFirstLevel) }, patientId),
+        ];
+        const firstLevelMissingRefs = [missingFirstLevel];
+        const getByIdsFirstResponse = firstLevelMissingRefs.map(toGetByIdsResultEntry);
+        getByIds_mock.mockResolvedValueOnce(getByIdsFirstResponse);
+        const hydratedResources = [...resources, missingFirstLevel];
+
+        const hydrateMissingReferencesFn = jest.fn().mockResolvedValue([]);
+
+        await hydrateMissingReferences({
+          cxId,
+          patientId,
+          resources,
+          idsToExclude: [],
+          hydrateMissingReferencesFn,
+        });
+
+        if (!missingFirstLevel.id) throw new Error(`Missing resource ID`);
+        expect(hydrateMissingReferencesFn).toHaveBeenCalledWith({
+          cxId,
+          patientId,
+          resources: hydratedResources,
+          idsToExclude: [missingFirstLevel.id],
+          iteration: 2,
+        });
+      });
     });
 
     it(`respects maximum hydration attempts`, async () => {
