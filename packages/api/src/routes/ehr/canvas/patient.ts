@@ -8,6 +8,7 @@ import { writeAllergyToFhir } from "../../../external/ehr/canvas/command/write-b
 import { writeConditionToFhir } from "../../../external/ehr/canvas/command/write-back/condition";
 import { writeImmunizationToFhir } from "../../../external/ehr/canvas/command/write-back/immunization";
 import { writeMedicationToFhir } from "../../../external/ehr/canvas/command/write-back/medication";
+import { writeVitalsToFhir } from "../../../external/ehr/canvas/command/write-back/vitals";
 import {
   getLatestResourceDiffBundlesJobPayload,
   getResourceDiffBundlesJobPayload,
@@ -16,7 +17,6 @@ import { startCreateResourceDiffBundlesJob } from "../../../external/ehr/shared/
 import { handleParams } from "../../helpers/handle-params";
 import { requestLogger } from "../../helpers/request-logger";
 import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../../util";
-import { writeVitalsToFhir } from "../../../external/ehr/canvas/command/write-back/vitals";
 
 const router = Router();
 
