@@ -7,8 +7,11 @@ import { USState } from "@metriport/shared";
 import { faker } from "@faker-js/faker";
 import { Command } from "commander";
 import dayjs from "dayjs";
+import { Sequelize } from "sequelize";
 import { PatientModel } from "../../api/src/models/medical/patient";
-import { PatientCreate } from "@metriport/core/domain/patient";
+import { PatientCreate, GenderAtBirth } from "@metriport/core/domain/patient";
+import { Address } from "@metriport/core/domain/address";
+import { Contact } from "@metriport/core/domain/contact";
 import { uuidv7 } from "./shared/uuid-v7";
 import { elapsedTimeAsStr } from "./shared/duration";
 
@@ -30,6 +33,16 @@ type Params = {
   cxIds?: string;
 };
 
+type GeneratedPatientData = {
+  firstName: string;
+  lastName: string;
+  dob: string;
+  genderAtBirth: GenderAtBirth;
+  address: Address[];
+  contact?: Contact[];
+  cxId: string;
+};
+
 const program = new Command();
 program
   .name("bulk-insert-test-patients")
@@ -46,11 +59,11 @@ program
   )
   .showHelpAfterError();
 
-function generateRandomPatientData(availableCxIds?: string[]) {
+function generateRandomPatientData(availableCxIds?: string[]): GeneratedPatientData {
   const firstName = faker.person.firstName();
   const lastName = faker.person.lastName();
   const dob = dayjs(faker.date.past({ years: 80 })).format(ISO_DATE);
-  const genderAtBirth = faker.helpers.arrayElement(["M", "F", "O", "U"]);
+  const genderAtBirth = faker.helpers.arrayElement<GenderAtBirth>(["M", "F", "O", "U"]);
 
   const address = [
     {
@@ -89,7 +102,7 @@ function generateRandomPatientData(availableCxIds?: string[]) {
 
 async function insertPatientBatch(
   sequelize: Sequelize,
-  patients: ReturnType<typeof generateRandomPatientData>[],
+  patients: GeneratedPatientData[],
   batchNumber: number
 ) {
   const patientCreates: PatientCreate[] = patients.map(patient => {
