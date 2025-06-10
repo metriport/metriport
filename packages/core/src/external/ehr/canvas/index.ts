@@ -941,7 +941,7 @@ class CanvasApi {
     rxnormCoding: Coding;
   }): Promise<Medication> {
     const { debug } = out(
-      `Canvas searchMedicationByRxNorm - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} practitionerId ${practitionerId} rxnormCoding ${rxnormCoding}`
+      `Canvas searchForMedicationByRxNorm - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} practitionerId ${practitionerId} rxnormCoding ${rxnormCoding}`
     );
     const code = `${rxnormCoding.system}|${rxnormCoding.code}`;
     const additionalInfo = { cxId, practiceId: this.practiceId, patientId, practitionerId, code };
@@ -959,7 +959,6 @@ class CanvasApi {
       headers: { "content-type": "application/json" },
       debug,
       useFhir: true,
-      emptyResponse: true,
     });
     const medicationReference = medicationBundle.entry?.[0]?.resource;
     if (!medicationReference) {
@@ -998,7 +997,6 @@ class CanvasApi {
       headers: { "content-type": "application/json" },
       debug,
       useFhir: true,
-      emptyResponse: true,
     });
     const allergenReference = allergenBundle.entry?.[0]?.resource;
     if (!allergenReference) return undefined;
