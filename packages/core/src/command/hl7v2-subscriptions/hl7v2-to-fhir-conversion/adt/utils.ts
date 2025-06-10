@@ -128,17 +128,14 @@ export function buildCoding({
 }): Coding | undefined {
   if (!code && !display) return undefined;
 
-  const systemUrl = system ?? inferConditionSystem(code);
+  if (!system) {
+    if (!display) return undefined;
+    return { display };
+  }
+
   return {
     ...(code ? { code } : undefined),
     ...(display ? { display } : undefined),
-    ...(systemUrl ? { system: systemUrl } : undefined),
+    ...(system ? { system: system } : undefined),
   };
-}
-
-function inferConditionSystem(code: string | undefined): string | undefined {
-  if (!code) return undefined;
-
-  // TODO 2883: See if we can infer the system being ICD-10 / LOINC / SNOMED
-  return code;
 }
