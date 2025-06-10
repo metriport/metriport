@@ -188,6 +188,45 @@ describe("search-consolidated", () => {
       }
     });
 
+    describe("exclude list", () => {
+      runTest(nonSpecializedHydration.conditionAndEncounter);
+      runTest(nonSpecializedHydration.conditionAndObservation);
+      runTest(nonSpecializedHydration.encounterAndObservation);
+      runTest(specializedHydration.diagnosticReportAndEncounter);
+      runTest(specializedHydration.diagnosticReportAndObservation);
+      runTest(specializedHydration.medicationAdministrationAndMedication);
+      runTest(specializedHydration.medicationRequestAndMedication);
+      runTest(specializedHydration.medicationDispenseAndMedication);
+
+      function runTest<T extends Resource, M extends Resource>({
+        makeInputResource,
+        resourceType,
+        missingResource,
+        missingResourceType,
+      }: Entry<T, M>) {
+        it(`does not hydrate IDs on exclude list when resource is ${resourceType} and missing ${missingResourceType}`, async () => {
+          const inputResources = [patient, makeInputResource(missingResource)];
+          const getByIdsResponse = [missingResource].map(toGetByIdsResultEntry);
+          getByIds_mock.mockResolvedValueOnce(getByIdsResponse);
+          const hydratedResources = [...inputResources];
+
+          if (!missingResource.id) throw new Error(`Missing resource ID`);
+          const idsToExclude = [missingResource.id];
+
+          const res = await hydrateMissingReferences({
+            cxId,
+            patientId,
+            resources: inputResources,
+            idsToExclude,
+          });
+
+          expect(res).toBeTruthy();
+          expect(res).toEqual(expect.arrayContaining(hydratedResources));
+          expect(getByIds_mock).not.toHaveBeenCalled();
+        });
+      }
+    });
+
     it(`respects maximum hydration attempts`, async () => {
       const missingFirstLevel = makePractitioner();
       const inputResources = [

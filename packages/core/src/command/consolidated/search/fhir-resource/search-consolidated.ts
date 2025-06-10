@@ -309,21 +309,17 @@ export async function hydrateMissingReferences({
     }
   });
 
-  const missingRefIds = resourcesToHydrate.flatMap(r => {
-    const referenceId = r.id;
-    if (!referenceId || referenceId === patientId) return [];
-    return getEntryId(cxId, patientId, referenceId);
-  });
-  if (missingRefIds.length < 1) return resources;
-
+  const missingRefIds = resourcesToHydrate.flatMap(r => r.id);
   const uniqueIds = uniq(missingRefIds);
   const filteredUniqueIds = uniqueIds.filter(uniqueId => !idsToExclude.includes(uniqueId));
+  const filteredUniqueEntryIds = filteredUniqueIds.map(id => getEntryId(cxId, patientId, id));
+  if (filteredUniqueEntryIds.length < 1) return resources;
 
   const searchService = new OpenSearchFhirSearcher(getConfigs());
   const openSearchResults = await searchService.getByIds({
     cxId,
     patientId,
-    ids: filteredUniqueIds,
+    ids: filteredUniqueEntryIds,
   });
   if (!openSearchResults || openSearchResults.length < 1) {
     log(`No results found for (count=${missingRefIds.length}) ${missingRefIds.join(", ")}`);
