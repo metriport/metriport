@@ -15,7 +15,7 @@ export async function writeImmunizationToFhir({
   immunization: Immunization;
 }): Promise<void> {
   const api = await createCanvasClient({ cxId, practiceId: canvasPracticeId });
-  return await api.createImmunization({
+  await api.createImmunization({
     cxId,
     patientId: canvasPatientId,
     practitionerId: canvasPractitionerId,

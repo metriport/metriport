@@ -174,14 +174,14 @@ router.post(
     const canvasPracticeId = getFromQueryOrFail("practiceId", req);
     const canvasPractitionerId = getFromQueryOrFail("practitionerId", req);
     const payload = req.body; // TODO Parse body https://github.com/metriport/metriport-internal/issues/2170
-    const conditionDetails = await writeConditionToFhir({
+    await writeConditionToFhir({
       cxId,
       canvasPatientId,
       canvasPracticeId,
       canvasPractitionerId,
       condition: payload,
     });
-    return res.status(httpStatus.OK).json(conditionDetails);
+    return res.sendStatus(httpStatus.OK);
   })
 );
 
@@ -205,14 +205,14 @@ router.post(
     const canvasPracticeId = getFromQueryOrFail("practiceId", req);
     const canvasPractitionerId = getFromQueryOrFail("practitionerId", req);
     const payload = req.body; // TODO Parse body https://github.com/metriport/metriport-internal/issues/2170
-    const allergyDetails = await writeAllergyToFhir({
+    await writeAllergyToFhir({
       cxId,
       canvasPatientId,
       canvasPracticeId,
       canvasPractitionerId,
       allergyIntolerance: payload,
     });
-    return res.status(httpStatus.OK).json(allergyDetails);
+    return res.sendStatus(httpStatus.OK);
   })
 );
 
@@ -236,14 +236,14 @@ router.post(
     const canvasPracticeId = getFromQueryOrFail("practiceId", req);
     const canvasPractitionerId = getFromQueryOrFail("practitionerId", req);
     const payload = req.body; // TODO Parse body https://github.com/metriport/metriport-internal/issues/2170
-    const immunizationDetails = await writeImmunizationToFhir({
+    await writeImmunizationToFhir({
       cxId,
       canvasPatientId,
       canvasPracticeId,
       canvasPractitionerId,
       immunization: payload,
     });
-    return res.status(httpStatus.OK).json(immunizationDetails);
+    return res.sendStatus(httpStatus.OK);
   })
 );
 
@@ -267,14 +267,14 @@ router.post(
     const canvasPracticeId = getFromQueryOrFail("practiceId", req);
     const canvasPractitionerId = getFromQueryOrFail("practitionerId", req);
     const payload = req.body; // TODO Parse body https://github.com/metriport/metriport-internal/issues/2170
-    const medicationDetails = await writeMedicationToFhir({
+    await writeMedicationToFhir({
       cxId,
       canvasPatientId,
       canvasPracticeId,
       canvasPractitionerId,
       medicationWithRefs: payload,
     });
-    return res.status(httpStatus.OK).json(medicationDetails);
+    return res.sendStatus(httpStatus.OK);
   })
 );
 
@@ -298,14 +298,14 @@ router.post(
     const canvasPracticeId = getFromQueryOrFail("practiceId", req);
     const canvasPractitionerId = getFromQueryOrFail("practitionerId", req);
     const payload = req.body; // TODO Parse body https://github.com/metriport/metriport-internal/issues/2170
-    const vitalsDetails = await writeVitalsToFhir({
+    await writeVitalsToFhir({
       cxId,
       canvasPatientId,
       canvasPracticeId,
       canvasPractitionerId,
       vitals: payload,
     });
-    return res.status(httpStatus.OK).json(vitalsDetails);
+    return res.sendStatus(httpStatus.OK);
   })
 );
 

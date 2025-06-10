@@ -15,7 +15,7 @@ export async function writeConditionToFhir({
   condition: Condition;
 }): Promise<void> {
   const api = await createCanvasClient({ cxId, practiceId: canvasPracticeId });
-  return await api.createCondition({
+  await api.createCondition({
     cxId,
     patientId: canvasPatientId,
     practitionerId: canvasPractitionerId,
