@@ -129,6 +129,13 @@ export function buildCoding({
   if (!code && !display) return undefined;
 
   const systemUrl = system ?? inferConditionSystem(code);
+  if (!display && !code) return undefined;
+
+  if (!systemUrl) {
+    if (!display) return undefined;
+    return { display };
+  }
+
   return {
     ...(code ? { code } : undefined),
     ...(display ? { display } : undefined),
@@ -139,6 +146,6 @@ export function buildCoding({
 function inferConditionSystem(code: string | undefined): string | undefined {
   if (!code) return undefined;
 
-  // TODO 2883: See if we can infer the system being ICD-10 / LOINC / SNOMED
-  return code;
+  // TODO 2883: See if we can infer the system being ICD-10 / LOINC
+  return undefined;
 }
