@@ -6,6 +6,7 @@ import {
   ORGANIZATION_NAME_DEFAULT,
   createDocumentUniqueId,
 } from "../../external/carequality/shared";
+import { htmlEncode } from "../../util/html-encode";
 import { uuidv7 } from "../../util/uuid-v7";
 import {
   CONFIDENTIALITY_CODE_SYSTEM,
@@ -112,7 +113,7 @@ export function createExtrinsicObjectXml({
     </Slot>
     
     <Name>
-      <LocalizedString charset="UTF-8" value="${title ? title : DEFAULT_TITLE}"/>
+      <LocalizedString charset="UTF-8" value="${title ? htmlEncode(title) : DEFAULT_TITLE}"/>
     </Name>
 
     <Classification classificationScheme="${XDSDocumentEntryAuthor}" classifiedObject="urn:uuid:00000000-0000-d6ba-5161-4e497785491d" id="urn:uuid:953e825d-3907-497c-8a95-bc3761e2a642" nodeRepresentation="" objectType="urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:Classification">
