@@ -16,10 +16,26 @@ function isValidISODateOptional(date: string | undefined | null): boolean {
   return date ? isValidISODate(date) : true;
 }
 
-export function validateDateOfBirth(date: string): boolean {
+export type ValidateDobFn = (date: string) => boolean;
+
+export function validateDateOfBirth(
+  date: string,
+  options?: {
+    validateDateIsAfter1900?: ValidateDobFn;
+    validateIsPastOrPresent?: ValidateDobFn;
+  }
+): boolean {
+  if (!date || !date.trim()) return false;
   const parsedDate = buildDayjs(date);
   if (!parsedDate.isValid()) return false;
-  return validateDateIsAfter1900(parsedDate.format(ISO_DATE));
+  const {
+    validateDateIsAfter1900: _validateDateIsAfter1900 = validateDateIsAfter1900,
+    validateIsPastOrPresent: _validateIsPastOrPresent = validateIsPastOrPresent,
+  } = options || {};
+  return (
+    _validateDateIsAfter1900(parsedDate.format(ISO_DATE)) &&
+    _validateIsPastOrPresent(parsedDate.format(ISO_DATE))
+  );
 }
 
 export function validateIsPastOrPresent(date: string): boolean {
