@@ -12,9 +12,6 @@ sftpAction.name("sftp");
 const sftpConnect = new Command();
 const sftpListFiles = new Command();
 const sftpReadFile = new Command();
-sftpAction.addCommand(sftpConnect);
-sftpAction.addCommand(sftpListFiles);
-sftpAction.addCommand(sftpReadFile);
 
 sftpConnect
   .name("connect")
@@ -63,5 +60,9 @@ sftpReadFile
     console.log(file);
     await client.disconnect();
   });
+
+sftpAction.addCommand(sftpConnect);
+sftpAction.addCommand(sftpListFiles);
+sftpAction.addCommand(sftpReadFile);
 
 export default sftpAction;
