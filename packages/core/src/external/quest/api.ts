@@ -1,0 +1,56 @@
+import axios, { AxiosInstance } from "axios";
+import { MetriportError } from "@metriport/shared";
+import { Patient } from "@metriport/shared/domain/patient";
+import { CustomerData, FacilityData } from "@metriport/shared/domain/customer";
+import { Config } from "../../util/config";
+import { getPatient } from "./api/get-patient";
+import { getPatientIds } from "./api/get-patient-ids";
+import { getCustomerData } from "./api/get-customer";
+import { executeAsynchronously } from "../../util/concurrency";
+
+export class QuestApi {
+  axiosInstance: AxiosInstance;
+
+  constructor() {
+    this.axiosInstance = axios.create({
+      baseURL: Config.getApiUrl(),
+    });
+  }
+
+  async getCustomerData(cxId: string): Promise<CustomerData> {
+    return getCustomerData({ cxId }, this.axiosInstance);
+  }
+
+  async getFacilityData(cxId: string, facilityId: string): Promise<FacilityData> {
+    const customer = await this.getCustomerData(cxId);
+    const facility = customer.facilities.find(f => f.id === facilityId);
+    if (!facility) {
+      throw new MetriportError("Facility not found", undefined, { cxId, facilityId });
+    }
+    return facility;
+  }
+
+  async getPatientIds(cxId: string, facilityId?: string | undefined): Promise<string[]> {
+    const { patientIds } = await getPatientIds({ cxId, facilityId }, this.axiosInstance);
+    return patientIds;
+  }
+
+  async getEachPatientById(cxId: string, patientIds: string[]): Promise<Patient[]> {
+    const patients: Patient[] = [];
+    await executeAsynchronously(patientIds, async patientId => {
+      const patient = await this.getPatient(cxId, patientId);
+      patients.push(patient);
+    });
+    return patients;
+  }
+
+  async getPatient(cxId: string, patientId: string): Promise<Patient> {
+    return getPatient(
+      {
+        cxId,
+        patientId,
+      },
+      this.axiosInstance
+    );
+  }
+}
