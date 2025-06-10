@@ -21,7 +21,7 @@ import {
   HieConfig,
   Hl7v2SubscriberApiResponse,
   Hl7v2SubscriberParams,
-  MetriportToHieFieldMapping,
+  HiePatientRosterMapping,
   RosterRowData,
 } from "./types";
 import { createScrambledId } from "./utils";
@@ -163,11 +163,11 @@ export class Hl7v2RosterGenerator {
 
 export function createRosterRow(
   source: RosterRowData,
-  mapping: MetriportToHieFieldMapping
+  mapping: HiePatientRosterMapping
 ): RosterRow {
   const result: RosterRow = {};
 
-  Object.entries(mapping).forEach(([key, columnName]) => {
+  Object.entries(mapping).forEach(([columnName, key]) => {
     if (columnName && isRosterRowKey(key, source)) {
       result[columnName] = source[key] ?? "";
     } else {
@@ -203,6 +203,8 @@ export function createRosterRowInput(
   const authorizingParticipantFacilityCode = org.shortcode;
   const authorizingParticipantMrn = p.externalId || createUuidFromText(scrambledId);
   const assigningAuthorityIdentifier = METRIPORT_ASSIGNING_AUTHORITY_IDENTIFIER;
+  const lineOfBusiness = "COMMERCIAL";
+  const emptyString = "";
 
   return {
     id: p.id,
@@ -230,5 +232,7 @@ export function createRosterRowInput(
     driversLicense,
     phone,
     email,
+    lineOfBusiness,
+    emptyString,
   };
 }
