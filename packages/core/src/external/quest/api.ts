@@ -7,6 +7,7 @@ import { getPatient } from "./api/get-patient";
 import { getPatientIds } from "./api/get-patient-ids";
 import { getCustomerData } from "./api/get-customer";
 import { executeAsynchronously } from "../../util/concurrency";
+import { QuestRequestData } from "./types";
 
 export class QuestApi {
   axiosInstance: AxiosInstance;
@@ -15,6 +16,29 @@ export class QuestApi {
     this.axiosInstance = axios.create({
       baseURL: Config.getApiUrl(),
     });
+  }
+
+  async getRequestData(
+    cxId: string,
+    facilityId: string,
+    specificPatientIds?: string[]
+  ): Promise<QuestRequestData> {
+    const customer = await this.getCustomerData(cxId);
+    const facility = customer.facilities.find(f => f.id === facilityId);
+    if (!facility) {
+      throw new MetriportError("Facility not found", undefined, { cxId, facilityId });
+    }
+    let patientIds = await this.getPatientIds(cxId, facilityId);
+    if (specificPatientIds) {
+      patientIds = specificPatientIds.filter(id => patientIds.includes(id));
+    }
+
+    const patients: Patient[] = [];
+    await executeAsynchronously(patientIds, async patientId => {
+      const patient = await this.getPatient(cxId, patientId);
+      if (patient) patients.push(patient);
+    });
+    return { cxId, customer, facility, patient: patients };
   }
 
   async getCustomerData(cxId: string): Promise<CustomerData> {

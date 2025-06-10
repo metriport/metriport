@@ -1,16 +1,7 @@
 export interface Replica {
-  listDirectoryNames(): string[];
   listFileNames(directoryName: string): Promise<string[]>;
-  readFile(directoryName: string, fileName: string): Promise<string>;
-  readFileMetadata<M extends object>(
-    directoryName: string,
-    fileName: string
-  ): Promise<M | undefined>;
-  writeFile<M extends object>(
-    directoryName: string,
-    fileName: string,
-    content: string,
-    metadata?: M
-  ): Promise<void>;
-  hasFile(directoryName: string, fileName: string): Promise<boolean>;
+  readFile(filePath: string): Promise<Buffer>;
+  readFileMetadata<M extends object>(filePath: string): Promise<M | undefined>;
+  writeFile<M extends object>(filePath: string, content: Buffer, metadata?: M): Promise<void>;
+  hasFile(filePath: string): Promise<boolean>;
 }

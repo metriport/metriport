@@ -1,16 +1,22 @@
 import { Config } from "../../util/config";
 import { SftpClient, SftpConfig } from "../sftp/client";
-import { S3Utils } from "../aws/s3";
 import { INCOMING_NAME, OUTGOING_NAME } from "./constants";
+import { getSftpDirectory } from "./shared";
+import { Replica } from "../sftp/replica/types";
+import { LocalReplica } from "../sftp/replica/local";
+import { S3Replica } from "../sftp/replica/s3";
+import { toQuestRequestFile, fromQuestResponseFile } from "./message";
+import { QuestRequestData } from "./types";
 
 export interface QuestSftpConfig extends Partial<SftpConfig> {
+  local?: boolean;
+  localPath?: string;
   replicaBucket?: string;
   replicaBucketRegion?: string;
 }
 
 export class QuestSftpClient extends SftpClient {
-  private readonly s3: S3Utils;
-  private readonly replicaBucket: string;
+  private readonly replica: Replica;
 
   constructor(config: QuestSftpConfig) {
     super({
@@ -21,30 +27,35 @@ export class QuestSftpClient extends SftpClient {
       password: config.password ?? Config.getQuestSftpPassword(),
     });
 
-    this.s3 = new S3Utils(config.replicaBucketRegion ?? Config.getAWSRegion());
-    this.replicaBucket = config.replicaBucket ?? Config.getQuestReplicaBucketName();
+    this.replica =
+      config.local && config.localPath
+        ? new LocalReplica(config.localPath)
+        : new S3Replica({
+            bucketName: config.replicaBucket ?? Config.getQuestReplicaBucketName(),
+            region: config.replicaBucketRegion ?? Config.getAWSRegion(),
+          });
   }
 
   async listSftpFiles(): Promise<{ incoming: string[]; outgoing: string[] }> {
-    const incoming = await this.list(INCOMING_NAME);
-    const outgoing = await this.list(OUTGOING_NAME);
+    const incoming = await this.list(getSftpDirectory(INCOMING_NAME));
+    const outgoing = await this.list(getSftpDirectory(OUTGOING_NAME));
     return { incoming, outgoing };
   }
 
-  async generateAndWriteRequestFile() {
-    throw new Error("unimplemented");
+  async generateAndWriteRequestFile(request: QuestRequestData) {
+    const requestFile = this.generateRequestFile(request);
+    await this.replica.writeFile(request.cxId, requestFile, {
+      cxId: request.cxId,
+    });
   }
 
-  async generateRequestFile() {
-    throw new Error("unimplemented");
+  generateRequestFile(request: QuestRequestData) {
+    return toQuestRequestFile(request.patient);
   }
 
-  async writeRequestFileToS3() {
-    throw new Error("unimplemented");
-  }
-
-  async receiveResponseFile() {
-    throw new Error("unimplemented");
+  async receiveResponseFile(fileName: string) {
+    const responseFile = await this.replica.readFile(fileName);
+    return fromQuestResponseFile(responseFile);
   }
 
   async uploadFileToS3<M extends Record<string, string>>(
@@ -52,34 +63,24 @@ export class QuestSftpClient extends SftpClient {
     fileContent: Buffer,
     metadata: M
   ): Promise<void> {
-    await this.s3.uploadFile({
-      bucket: this.replicaBucket,
-      key: s3Key,
-      file: fileContent,
-      metadata,
-    });
+    await this.replica.writeFile(s3Key, fileContent, metadata);
   }
 
   async downloadMetadataFromS3<M extends Record<string, string>>(
     s3Key: string
   ): Promise<M | undefined> {
-    const fileInfo = await this.s3.getFileInfoFromS3(s3Key, this.replicaBucket);
-    if (!fileInfo.exists || !fileInfo.metadata) {
+    const metadata = await this.replica.readFileMetadata<M>(s3Key);
+    if (!metadata) {
       return undefined;
     }
-    return fileInfo.metadata as M;
+    return metadata;
   }
 
   async fileExistsInS3(s3Key: string): Promise<boolean> {
-    const fileInfo = await this.s3.getFileInfoFromS3(s3Key, this.replicaBucket);
-    return fileInfo.exists;
+    return this.replica.hasFile(s3Key);
   }
 
   async downloadFileFromS3(s3Key: string): Promise<Buffer> {
-    const fileContent = await this.s3.downloadFile({
-      bucket: this.replicaBucket,
-      key: s3Key,
-    });
-    return fileContent;
+    return this.replica.readFile(s3Key);
   }
 }

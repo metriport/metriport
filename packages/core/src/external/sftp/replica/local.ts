@@ -2,46 +2,35 @@ import fs from "fs";
 import path from "path";
 import { Replica } from "./types";
 
-export abstract class LocalReplica implements Replica {
-  private readonly encoding = "ascii";
-
+export class LocalReplica implements Replica {
   constructor(private readonly localPath: string) {}
-
-  abstract listDirectoryNames(): string[];
 
   async listFileNames(directoryName: string): Promise<string[]> {
     return fs.readdirSync(path.join(this.localPath, directoryName));
   }
 
-  async readFile(directoryName: string, fileName: string): Promise<string> {
-    return fs.readFileSync(path.join(this.localPath, directoryName, fileName), this.encoding);
+  async readFile(filePath: string): Promise<Buffer> {
+    return fs.readFileSync(path.join(this.localPath, filePath));
   }
 
-  async readFileMetadata<M extends object>(directoryName: string, fileName: string): Promise<M> {
-    const jsonName = `${fileName}.metadata.json`;
-    return JSON.parse(
-      fs.readFileSync(path.join(this.localPath, directoryName, jsonName), "utf-8")
-    ) as M;
+  async readFileMetadata<M extends object>(filePath: string): Promise<M | undefined> {
+    const jsonName = `${filePath}.metadata.json`;
+    return JSON.parse(fs.readFileSync(path.join(this.localPath, jsonName), "utf-8")) as M;
   }
 
   async writeFile<M extends object>(
-    directoryName: string,
-    fileName: string,
-    content: string,
+    filePath: string,
+    content: Buffer,
     metadata?: M
   ): Promise<void> {
-    fs.writeFileSync(path.join(this.localPath, directoryName, fileName), content, this.encoding);
+    fs.writeFileSync(path.join(this.localPath, filePath), content);
     if (metadata) {
-      const jsonName = `${fileName}.metadata.json`;
-      fs.writeFileSync(
-        path.join(this.localPath, directoryName, jsonName),
-        JSON.stringify(metadata),
-        "utf-8"
-      );
+      const jsonName = `${filePath}.metadata.json`;
+      fs.writeFileSync(path.join(this.localPath, jsonName), JSON.stringify(metadata), "utf-8");
     }
   }
 
-  async hasFile(directoryName: string, fileName: string): Promise<boolean> {
-    return fs.existsSync(path.join(this.localPath, directoryName, fileName));
+  async hasFile(filePath: string): Promise<boolean> {
+    return fs.existsSync(path.join(this.localPath, filePath));
   }
 }

@@ -9,7 +9,8 @@ receiveResponse.action(async (fileName: string) => {
   const client = new QuestSftpClient({});
   await client.connect();
 
-  console.log("TODO: Receive response from Quest: " + fileName);
+  const response = await client.receiveResponseFile(fileName);
+  console.log(response);
 
   await client.disconnect();
 });

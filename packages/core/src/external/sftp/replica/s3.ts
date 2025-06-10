@@ -7,7 +7,7 @@ import {
 } from "@aws-sdk/client-s3";
 import { Replica } from "./types";
 
-export abstract class S3Replica implements Replica {
+export class S3Replica implements Replica {
   private readonly client: S3Client;
   private readonly bucketName: string;
 
@@ -17,8 +17,6 @@ export abstract class S3Replica implements Replica {
     });
     this.bucketName = bucketName;
   }
-
-  abstract listDirectoryNames(): string[];
 
   async listFileNames(directoryName: string): Promise<string[]> {
     const fileNames: string[] = [];
@@ -38,46 +36,42 @@ export abstract class S3Replica implements Replica {
     return fileNames;
   }
 
-  async readFile(directoryName: string, fileName: string): Promise<string> {
+  async readFile(filePath: string): Promise<Buffer> {
     const command = new GetObjectCommand({
       Bucket: this.bucketName,
-      Key: `${directoryName}/${fileName}`,
+      Key: filePath,
     });
     const response = await this.client.send(command);
-    return response.Body?.transformToString("ascii") ?? "";
+    return Buffer.from((await response.Body?.transformToByteArray()) ?? []);
   }
 
-  async readFileMetadata<M extends object>(
-    directoryName: string,
-    fileName: string
-  ): Promise<M | undefined> {
+  async readFileMetadata<M extends object>(filePath: string): Promise<M | undefined> {
     const command = new HeadObjectCommand({
       Bucket: this.bucketName,
-      Key: `${directoryName}/${fileName}`,
+      Key: filePath,
     });
     const response = await this.client.send(command);
     return response.Metadata as M | undefined;
   }
 
   async writeFile<M extends object>(
-    directoryName: string,
-    fileName: string,
-    content: string,
+    filePath: string,
+    content: Buffer,
     metadata?: M
   ): Promise<void> {
     const command = new PutObjectCommand({
       Bucket: this.bucketName,
-      Key: `${directoryName}/${fileName}`,
+      Key: filePath,
       Body: content,
       Metadata: metadata as Record<string, string> | undefined,
     });
     await this.client.send(command);
   }
 
-  async hasFile(directoryName: string, fileName: string): Promise<boolean> {
+  async hasFile(filePath: string): Promise<boolean> {
     const command = new HeadObjectCommand({
       Bucket: this.bucketName,
-      Key: `${directoryName}/${fileName}`,
+      Key: filePath,
     });
     const response = await this.client.send(command);
     return response.Metadata !== undefined;
