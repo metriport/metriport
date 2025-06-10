@@ -609,7 +609,7 @@ class CanvasApi {
     if (!rxnormCodingDisplay) {
       throw new BadRequestError("Medication does not have a display", undefined, additionalInfo);
     }
-    const medicationReference = await this.searcForhMedicationByRxNorm({
+    const medicationReference = await this.searchForhMedicationByRxNorm({
       cxId,
       patientId,
       practitionerId,
@@ -928,7 +928,7 @@ class CanvasApi {
     }
   }
 
-  async searcForhMedicationByRxNorm({
+  async searchForhMedicationByRxNorm({
     cxId,
     patientId,
     practitionerId,
