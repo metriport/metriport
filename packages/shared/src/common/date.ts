@@ -25,7 +25,7 @@ export function validateDateOfBirth(
     validateIsPastOrPresent?: ValidateDobFn;
   }
 ): boolean {
-  if (!date || !date.trim()) return false;
+  if (!date || typeof date !== "string" || !date.trim()) return false;
   const parsedDate = buildDayjs(date);
   if (!parsedDate.isValid()) return false;
   const {

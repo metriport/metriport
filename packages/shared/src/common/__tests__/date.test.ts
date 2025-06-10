@@ -143,6 +143,12 @@ describe("shared date functions", () => {
       validateIsPastOrPresent_mock.mockReturnValue(false);
       expect(validateDob("1850-01-01")).toBe(false);
     });
+
+    it("returns false when date is incorrectly passed as number", () => {
+      expect(validateDob(2000 as unknown as string)).toBe(false);
+      expect(validateDateIsAfter1900_mock).not.toHaveBeenCalled();
+      expect(validateIsPastOrPresent_mock).not.toHaveBeenCalled();
+    });
   });
 
   describe("buildDayjsFromCompactDate", () => {
