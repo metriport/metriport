@@ -142,9 +142,10 @@ vitalSignCodesMapCanvas.set("9279-1", "bpm");
 vitalSignCodesMapCanvas.set("56086-2", "cm");
 
 const medicationStatementStatuses = ["active", "entered-in-error", "stopped"];
-const allergyIntoleranceStatuses = ["active", "inactive"];
-const allergyIntoleranceSeverityCodes = ["mild", "moderate", "severe"];
 const immunizationStatuses = ["completed", "entered-in-error", "not-done"];
+const allergyIntoleranceClinicalStatuses = ["active", "inactive"];
+const allergyIntoleranceVerificationStatuses = ["confirmed", "entered-in-error"];
+const allergyIntoleranceSeverityCodes = ["mild", "moderate", "severe"];
 const observationResultStatuses = ["final", "unknown", "entered-in-error"];
 
 const lbsToG = 453.592;
@@ -1323,11 +1324,11 @@ class CanvasApi {
       ],
     };
     const startDate = getConditionStartDate(condition);
-    const formattedOnsetDate = this.formatDate(startDate);
-    if (!formattedOnsetDate) {
+    const formattedStartDate = this.formatDate(startDate);
+    if (!formattedStartDate) {
       throw new BadRequestError("No start date found for condition", undefined, additionalInfo);
     }
-    formattedCondition.onsetDateTime = formattedOnsetDate;
+    formattedCondition.onsetDateTime = formattedStartDate;
     const conditionStatus = getConditionStatus(condition);
     const problemStatus = conditionStatus
       ? problemStatusesMap.get(conditionStatus.toLowerCase())
@@ -1369,11 +1370,10 @@ class CanvasApi {
     const startDate = getMedicationStatementStartDate(medicationStatement);
     const formattedStartDateTime = this.formatDateTime(startDate);
     if (!formattedStartDateTime) return undefined;
-    const endDate = medicationStatement.effectivePeriod?.end;
-    const formattedEndDateDateTime = this.formatDateTime(endDate);
+    const formattedEndDate = this.formatDateTime(medicationStatement.effectivePeriod?.end);
     formattedMedicationStatement.effectivePeriod = {
       start: formattedStartDateTime,
-      ...(formattedEndDateDateTime ? { end: formattedEndDateDateTime } : {}),
+      ...(formattedEndDate ? { end: formattedEndDate } : {}),
     };
     const status = medicationStatement.status;
     if (!status || !medicationStatementStatuses.includes(status)) return undefined;
@@ -1410,16 +1410,16 @@ class CanvasApi {
         { code: cvxCoding.code, system: "http://hl7.org/fhir/sid/cvx", display: cvxCoding.display },
       ],
     };
-    const occurrenceDateTime = getImmunizationAdministerDate(immunization);
-    const formattedOccurrenceDate = this.formatDate(occurrenceDateTime);
-    if (!formattedOccurrenceDate) {
+    const administerDate = getImmunizationAdministerDate(immunization);
+    const formattedAdministerDate = this.formatDate(administerDate);
+    if (!formattedAdministerDate) {
       throw new BadRequestError(
         "No administered date found for immunization",
         undefined,
         additionalInfo
       );
     }
-    formattedImmunization.occurrenceDateTime = formattedOccurrenceDate;
+    formattedImmunization.occurrenceDateTime = formattedAdministerDate;
     const status = immunization.status;
     if (!status || !immunizationStatuses.includes(status)) {
       throw new BadRequestError("No status found for immunization", undefined, additionalInfo);
@@ -1457,8 +1457,8 @@ class CanvasApi {
       coding: [fdbCoding],
       text: fdbCoding.display,
     };
-    const startDate = getAllergyIntoleranceOnsetDate(allergyIntolerance);
-    const formattedOnsetDate = this.formatDate(startDate);
+    const onsetDate = getAllergyIntoleranceOnsetDate(allergyIntolerance);
+    const formattedOnsetDate = this.formatDate(onsetDate);
     if (!formattedOnsetDate) {
       throw new BadRequestError(
         "No start date found for allergy intolerance",
@@ -1468,17 +1468,17 @@ class CanvasApi {
     }
     formattedAllergyIntolerance.onsetDateTime = formattedOnsetDate;
     const clinicalStatus = allergyIntolerance.clinicalStatus;
-    if (!clinicalStatus) {
+    if (!clinicalStatus || !clinicalStatus.coding) {
       throw new BadRequestError(
-        "No clinical status found for allergy intolerance",
+        "No clinical status or codings found for allergy intolerance",
         undefined,
         additionalInfo
       );
     }
-    const clinicalStatusCoding = clinicalStatus.coding?.filter(coding =>
-      allergyIntoleranceStatuses.includes(coding.code ?? "")
+    const clinicalStatusCoding = clinicalStatus.coding.filter(coding =>
+      allergyIntoleranceClinicalStatuses.includes(coding.code ?? "")
     );
-    if (!clinicalStatusCoding || clinicalStatusCoding.length < 1) {
+    if (clinicalStatusCoding.length < 1) {
       throw new BadRequestError(
         "No valid clinical status codings found for allergy intolerance",
         undefined,
@@ -1487,14 +1487,24 @@ class CanvasApi {
     }
     formattedAllergyIntolerance.clinicalStatus = { coding: clinicalStatusCoding };
     const verificationStatus = allergyIntolerance.verificationStatus;
-    if (!verificationStatus) {
+    if (!verificationStatus || !verificationStatus.coding) {
       throw new BadRequestError(
         "No verification status found for allergy intolerance",
         undefined,
         additionalInfo
       );
     }
-    formattedAllergyIntolerance.verificationStatus = verificationStatus;
+    const verificationStatusCoding = verificationStatus.coding.filter(coding =>
+      allergyIntoleranceVerificationStatuses.includes(coding.code ?? "")
+    );
+    if (verificationStatusCoding.length < 1) {
+      throw new BadRequestError(
+        "No valid verification status codings found for allergy intolerance",
+        undefined,
+        additionalInfo
+      );
+    }
+    formattedAllergyIntolerance.verificationStatus = { coding: verificationStatusCoding };
     if (severity && allergyIntoleranceSeverityCodes.includes(severity)) {
       formattedAllergyIntolerance.reaction = [
         {
@@ -1626,20 +1636,20 @@ class CanvasApi {
     });
   }
 
-  private convertInchesToCm(value: number): number {
-    return value * inchesToCm;
-  }
-
-  private convertCelciusToFahrenheit(value: number): number {
-    return value * (9 / 5) + 32;
-  }
-
   private convertGramsToKg(value: number): number {
     return value * gToKg;
   }
 
   private convertLbsToKg(value: number): number {
     return value * lbsToKg;
+  }
+
+  private convertInchesToCm(value: number): number {
+    return value * inchesToCm;
+  }
+
+  private convertCelciusToFahrenheit(value: number): number {
+    return value * (9 / 5) + 32;
   }
 }
 

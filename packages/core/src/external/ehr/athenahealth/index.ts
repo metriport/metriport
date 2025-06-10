@@ -451,7 +451,8 @@ class AthenaHealthApi {
       throw new BadRequestError("No SNOMED code found for condition", undefined, additionalInfo);
     }
     const startDate = getConditionStartDate(condition);
-    if (!startDate) {
+    const formattedStartDate = this.formatDate(startDate);
+    if (!formattedStartDate) {
       throw new BadRequestError("No start date found for condition", undefined, additionalInfo);
     }
     const conditionStatus = getConditionStatus(condition);
@@ -462,7 +463,7 @@ class AthenaHealthApi {
       departmentid: this.stripDepartmentId(departmentId),
       note: "Added via Metriport App",
       snomedcode: snomedCode,
-      startdate: this.formatDate(startDate),
+      startdate: formattedStartDate,
       status: problemStatus,
       THIRDPARTYUSERNAME: undefined,
       PATIENTFACINGCALL: undefined,
@@ -512,19 +513,6 @@ class AthenaHealthApi {
     if (medicationWithRefs.statement.length < 1) {
       throw new BadRequestError("No medication statements found", undefined, additionalInfo);
     }
-    const dates = medicationWithRefs.statement.flatMap(statement => {
-      const startdate = getMedicationStatementStartDate(statement);
-      if (!startdate) return [];
-      const stopdate = statement.effectivePeriod?.end;
-      return { startdate, stopdate };
-    });
-    if (dates.length < 1) {
-      throw new BadRequestError(
-        "No start dates found for medication statements",
-        undefined,
-        additionalInfo
-      );
-    }
     const rxnormCoding = getMedicationRxnormCoding(medicationWithRefs.medication);
     if (!rxnormCoding) {
       throw new BadRequestError("No RXNORM code found for medication", undefined, additionalInfo);
@@ -536,6 +524,20 @@ class AthenaHealthApi {
     });
     if (!medicationReference) {
       throw new BadRequestError("No medication option found via search", undefined, additionalInfo);
+    }
+    const dates = medicationWithRefs.statement.flatMap(statement => {
+      const startdate = getMedicationStatementStartDate(statement);
+      const formattedStartDate = this.formatDate(startdate);
+      if (!formattedStartDate) return [];
+      const formattedEndDate = this.formatDate(statement.effectivePeriod?.end);
+      return { startdate: formattedStartDate, stopdate: formattedEndDate };
+    });
+    if (dates.length < 1) {
+      throw new BadRequestError(
+        "No start dates found for medication statements",
+        undefined,
+        additionalInfo
+      );
     }
     const sharedData = {
       departmentid: this.stripDepartmentId(departmentId),
@@ -552,8 +554,7 @@ class AthenaHealthApi {
     const createMedicationErrors: { error: unknown; medication: string }[] = [];
     const createMedicationArgs: MedicationCreateParams[] = dates.map(d => ({
       ...sharedData,
-      startdate: this.formatDate(d.startdate),
-      stopdate: this.formatDate(d.stopdate),
+      ...d,
     }));
     await executeAsynchronously(
       createMedicationArgs,
@@ -631,8 +632,9 @@ class AthenaHealthApi {
     if (!cvxCode) {
       throw new BadRequestError("No CVX code found for immunization", undefined, additionalInfo);
     }
-    const administeredDate = getImmunizationAdministerDate(immunization);
-    if (!administeredDate) {
+    const administerDate = getImmunizationAdministerDate(immunization);
+    const formattedAdministerDate = this.formatDate(administerDate);
+    if (!formattedAdministerDate) {
       throw new BadRequestError(
         "No administer date found for immunization",
         undefined,
@@ -642,7 +644,7 @@ class AthenaHealthApi {
     const data = {
       departmentid: this.stripDepartmentId(departmentId),
       cvx: cvxCode,
-      administerdate: this.formatDate(administeredDate),
+      administerdate: formattedAdministerDate,
       THIRDPARTYUSERNAME: undefined,
       PATIENTFACINGCALL: undefined,
     };
@@ -971,7 +973,8 @@ class AthenaHealthApi {
     };
     const allReactions = uniqBy([...existingReactions, newReaction], "snomedcode");
     const onsetDate = getAllergyIntoleranceOnsetDate(allergyIntolerance);
-    if (!onsetDate) {
+    const formattedOnsetDate = this.formatDate(onsetDate);
+    if (!formattedOnsetDate) {
       throw new BadRequestError("No onset date found for allergy", undefined, additionalInfo);
     }
     const criticality = allergyIntolerance.criticality;
@@ -984,7 +987,7 @@ class AthenaHealthApi {
               criticality: existingAllergy.criticality,
               onsetdate: existingAllergy.onsetdate,
             }
-          : { criticality, onsetdate: this.formatDate(onsetDate) }),
+          : { criticality, onsetdate: formattedOnsetDate }),
         note: "Added via Metriport App",
         reactions: allReactions,
       },
