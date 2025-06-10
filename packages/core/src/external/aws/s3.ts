@@ -619,7 +619,13 @@ export function isNotFoundError(error: any): boolean {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function isRetriableError(error: any): boolean {
-  if (error.message && ["EPIPE", "ECONNRESET"].includes(error.message)) return true;
+  const errorsToRetry = ["EPIPE", "ECONNRESET"];
+  if (
+    (typeof error.code === "string" && errorsToRetry.includes(error.code)) ||
+    (typeof error.message === "string" && errorsToRetry.some(code => error.message.includes(code)))
+  ) {
+    return true;
+  }
   return error.retryable === true || error.Retryable === true;
 }
 
