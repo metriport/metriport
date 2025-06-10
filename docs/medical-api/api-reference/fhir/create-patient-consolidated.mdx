@@ -20,18 +20,28 @@ api: "PUT /medical/v1/patient/{id}/consolidated"
   The type needs to be "collection"
 </ParamField>
 
-<ParamField body="entry" type="array" required>
-  The entry needs to be an array of [FHIR resources](/medical-api/fhir/resources).
+<ParamField body="entry" type="BackboneElement[]" required>
+  The entry needs to be an array of BackboneElement, containing:
+  
+  <Expandable title="entry properties" defaultOpen="true">
+    <ParamField body="resource" type="Resource" required>
+      The [FHIR resource](/medical-api/fhir/resources) being contributed.
+    </ParamField>
+  </Expandable>
+
 </ParamField>
 
+See an example on [Contributing Data](/medical-api/handling-data/contribution#example-resource-to-contribute).
+
 <Info>
-  At the moment there is a limit to how much data you can send in a single request. The
-  content-length must not exceed 1MB (and 50 resources when in `sandbox`).
+  At the moment there is a limit to how much data you can
+  send in a single request. The content-length must not
+  exceed 1MB (and 50 resources when in `sandbox`).
 </Info>
 
 ## Response
 
-Returns a [Bundle](/medical-api/fhir/resources/bundle) of type "transaction-response" with the 
+Returns a [Bundle](/medical-api/fhir/resources/bundle) of type "transaction-response" with the
 entry being the outcome of the query.
 
 <ResponseExample>
