@@ -119,12 +119,12 @@ export function createExtrinsicObjectXml({
     <Classification classificationScheme="${XDSDocumentEntryAuthor}" classifiedObject="urn:uuid:00000000-0000-d6ba-5161-4e497785491d" id="urn:uuid:953e825d-3907-497c-8a95-bc3761e2a642" nodeRepresentation="" objectType="urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:Classification">
       <Slot name="authorPerson">
         <ValueList>
-          <Value>${organizationName}^^^^^^^&amp;${organizationId}&amp;ISO</Value>
+          <Value>${htmlEncode(organizationName)}^^^^^^^&amp;${organizationId}&amp;ISO</Value>
         </ValueList>
       </Slot>
       <Slot name="authorInstitution">
         <ValueList>
-          <Value>${organizationName}^^^^^^^^^${organizationId}</Value>
+          <Value>${htmlEncode(organizationName)}^^^^^^^^^${organizationId}</Value>
         </ValueList>
       </Slot>
     </Classification>
