@@ -946,6 +946,7 @@ class CanvasApi {
     const { debug } = out(
       `Canvas searchForMedicationByRxNorm - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} practitionerId ${practitionerId} rxnormCoding ${rxnormCoding}`
     );
+    if (!rxnormCoding.system || !rxnormCoding.code) return undefined;
     const code = `${rxnormCoding.system}|${rxnormCoding.code}`;
     const additionalInfo = { cxId, practiceId: this.practiceId, patientId, practitionerId, code };
     const params = { code: `${rxnormCoding.system}|${rxnormCoding.code}` };
@@ -984,6 +985,7 @@ class CanvasApi {
     const { debug } = out(
       `Canvas searchForAllergenByRxNorm - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} practitionerId ${practitionerId} rxnormCoding ${rxnormCoding}`
     );
+    if (!rxnormCoding.system || !rxnormCoding.code) return undefined;
     const code = `${rxnormCoding.system}|${rxnormCoding.code}`;
     const additionalInfo = { cxId, practiceId: this.practiceId, patientId, practitionerId, code };
     const params = { code: `${rxnormCoding.system}|${rxnormCoding.code}` };
