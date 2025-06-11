@@ -2,7 +2,7 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
 import { Bundle, Resource } from "@medplum/fhirtypes";
-import { getReferencesFromResources } from "@metriport/core/external/fhir/shared/bundle";
+import { getReferencesFromResources } from "@metriport/core/external/fhir/bundle/bundle";
 import { getFileContents, makeDirIfNeeded } from "@metriport/core/util/fs";
 import { sleep } from "@metriport/core/util/sleep";
 import dayjs from "dayjs";
@@ -40,9 +40,9 @@ async function main() {
   const bundleContents = getFileContents(bundleFilePath);
   const bundle = JSON.parse(bundleContents) as Bundle<Resource>;
 
-  const { references, missingReferences } = getReferencesFromResources({
-    resources: (bundle.entry ?? [])?.flatMap(e => e.resource ?? []),
-  });
+  const entries = bundle.entry ?? [];
+  const resourcesToCheckRefs = entries.flatMap(e => e.resource ?? []);
+  const { references, missingReferences } = getReferencesFromResources({ resourcesToCheckRefs });
 
   const refsAsString = JSON.stringify(references, null, 2);
   const missingRefsAsString = JSON.stringify(missingReferences, null, 2);

@@ -3,6 +3,7 @@ import { errorToString } from "@metriport/shared";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import _, { cloneDeep } from "lodash";
+import { createExtensionRelatedArtifact } from "../external/fhir/shared/extensions/derived-from";
 import { capture, out } from "../util";
 import { uuidv7 } from "../util/uuid-v7";
 
@@ -38,16 +39,6 @@ export function getDateFromString(dateString: string, dateFormat?: "date" | "dat
   } else {
     return date.format("YYYY-MM-DD");
   }
-}
-
-export const artifactRelatedArtifactUrl =
-  "http://hl7.org/fhir/StructureDefinition/artifact-relatedArtifact";
-
-function createExtensionRelatedArtifact(resourceType: string, id: string | undefined) {
-  return {
-    url: artifactRelatedArtifactUrl,
-    valueRelatedArtifact: { type: "derived-from", display: `${resourceType}/${id}` },
-  };
 }
 
 //eslint-disable-next-line @typescript-eslint/no-explicit-any

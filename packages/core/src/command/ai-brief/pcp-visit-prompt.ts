@@ -9,9 +9,11 @@ Instructions:
 1. Review the patient medical records and format the output EXACTLY as follows:
     Most recent Primary Care Provider (PCP) visit (Date: [date]):
     PCP Name: [name], [credentials] [specialty]
-      Note: Include all office visits, outpatient visits, and established patient visits where the provider is an MD, DO, NP, or PA in the specialty of Family Medicine, Internal Medicine, or OB/GYN.
+      Note:
+      To determine if a visit is a PCP visit, check the organization and the location of the visit. If the organization is a primary care organization or the location is a primary care location and not a specialist location then it is a PCP visit. Also check the Practitioner qualification or code to see if it is a primary care specialty.
+      Include all office visits, outpatient visits, and established patient visits where the provider is an MD, DO, NP, or PA in the specialty of Family Medicine, Internal Medicine, or OB/GYN. Do not include any other visits such as a specialist visit or other providers.
       If you find a PCP visit, also check for any other visits from the same provider - use the most recent one.
-      If PCP visit isn't available, use History of Present Illness (HPI) visit instead
+      If PCP visit isn't available, use History of Present Illness (HPI) visit only if it is present. Do not include any other visits such as a specialist visit or other providers.
 
     Medical / Problem List (Has Conditions: Y/N)
 
@@ -21,8 +23,6 @@ Instructions:
 
     Qualifying Conditions: [Comma separated list of conditions with their most recent diagnosis date]
     Disqualifying Conditions: [Comma separated list of conditions with their most recent diagnosis date]
-    Qualifying Medications: [Comma separated list of medications with their fill date in the last 60 days]
-    Disqualifying Medications: [Comma separated list of medications with their fill date in the last 60 days]
 
     Physician Team Only Indicators: [Comma separated list of the following conditions/medications if present]
     - Type 1 Diabetes
@@ -41,7 +41,7 @@ For PCP name, only include the physician if they are a MD, DO, NP, PA and are as
 
 List of qualifying conditions:
 - High blood pressure or hypertension
-- High cholesterol or Hyperlipidemia/Dyslipidemia
+- High cholesterol or Hyperlipidemia or Dyslipidemia
 - Type 2 Diabetes Sleep Apnea or OSA
 - Polycystic ovarian syndrome (PCOS)
 - Fatty Liver, Hepatic Steatosis, or Non-alcoholic fatty liver disease (NAFLD)*
@@ -52,7 +52,7 @@ List of qualifying conditions:
 List of disqualifying conditions:
 - Current pregnancy or currently breastfeeding
 - Active cancer or cancer treatment in the last 6 months
-- Active drug or alcohol abuse
+- Active drug or alcohol abuse (not including marijuana use)
 - CKD Stage 4 or higher (eGFR <29) or kidney transplant
 - Active hepatitis or liver disease (fatty liver does not apply)
 - Heart attack / stroke / any heart condition that limits daily activity in last 6 months

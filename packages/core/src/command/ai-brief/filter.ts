@@ -1,4 +1,11 @@
-import { Bundle, Medication, Observation, Patient, Resource } from "@medplum/fhirtypes";
+import {
+  Bundle,
+  Medication,
+  ResourceType,
+  Observation,
+  Patient,
+  Resource,
+} from "@medplum/fhirtypes";
 import { toArray } from "@metriport/shared";
 import { buildDayjs, ISO_DATE } from "@metriport/shared/common/date";
 import { cloneDeep } from "lodash";
@@ -26,9 +33,9 @@ const MAX_REPORTS_PER_GROUP = 3;
  * sending it to the AI model to reduce payload size while preserving the essential
  * clinical information.
  */
-const referenceResources = ["Practitioner", "Organization", "Location"];
+const referenceResources: ResourceType[] = ["Practitioner", "Organization", "Location"];
 
-const relevantResources = [
+const relevantResources: ResourceType[] = [
   "AllergyIntolerance",
   "DiagnosticReport",
   "Immunization",
@@ -232,7 +239,11 @@ function replaceReferencesWithData(
           if (name.length > 0) orgs.push(name);
         } else if (performer?.resourceType === "Practitioner") {
           const name = performer.name;
-          if (name) practitioners.push(name);
+          const qualification = performer.qualification;
+          if (name || qualification) {
+            const practitionerInfo = [name, qualification].filter(Boolean).join(" - ");
+            practitioners.push(practitionerInfo);
+          }
         }
       });
 
@@ -263,9 +274,12 @@ function replaceReferencesWithData(
           if (refString) {
             const actor = map.get(refString);
             referencedIds.add(refString);
-            if (actor && "name" in actor) {
+            if (actor && "name" in actor && actor.resourceType === "Practitioner") {
               const name = actor.name;
-              return name ?? [];
+              const qualification = actor.qualification;
+              if (name || qualification) {
+                return [name, qualification].filter(Boolean).join(" - ");
+              }
             }
           }
           return [];

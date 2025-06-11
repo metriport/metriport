@@ -1,6 +1,6 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
 import { cloneDeep } from "lodash";
-import { buildCompleteBundleEntry, extractFhirTypesFromBundle } from "../shared/bundle";
+import { buildCompleteBundleEntry, extractFhirTypesFromBundle } from "../bundle/bundle";
 import { sortCodings } from "./coding";
 import { normalizeConditions } from "./resources/condition";
 import { normalizeCoverages } from "./resources/coverage";
