@@ -71,9 +71,8 @@ export async function getLatestPatientJob({
   jobType,
   jobGroupId,
   status,
-}: Required<
-  Pick<ListPatientJobsParams, "cxId" | "patientId" | "jobType" | "jobGroupId" | "status">
->): Promise<PatientJob | undefined> {
+}: Required<Pick<ListPatientJobsParams, "cxId" | "patientId" | "jobType" | "jobGroupId">> &
+  Pick<ListPatientJobsParams, "status">): Promise<PatientJob | undefined> {
   const statuses = getStatusFromParams(status);
   const jobs = await PatientJobModel.findAll({
     where: {
