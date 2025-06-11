@@ -76,16 +76,10 @@ export type CanvasEnv = string;
 
 export const supportedCanvasResources: ResourceType[] = [
   "AllergyIntolerance",
-  "CarePlan",
-  "CareTeam",
   "Condition",
-  "Coverage",
-  "Device",
   "DiagnosticReport",
   "Encounter",
-  "Goal",
   "Immunization",
-  "Media",
   "MedicationRequest",
   "MedicationStatement",
   "Observation",
