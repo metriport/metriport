@@ -11,6 +11,7 @@ const { log } = out("ihe-gateway-v2-outbound-patient-discovery");
 const apiUrl = getEnvVarOrFail("API_URL");
 const pdResponseUrl = `http://${apiUrl}/internal/carequality/patient-discovery/response`;
 
+// TODO move to capture.wrapHandler()
 export const handler = Sentry.AWSLambda.wrapHandler(
   async ({ cxId, patientId, pdRequestGatewayV2 }: PDRequestGatewayV2Params) => {
     log(

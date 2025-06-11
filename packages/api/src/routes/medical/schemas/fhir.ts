@@ -1,11 +1,11 @@
+import { ResourceTypeForConsolidation, resourceSchema } from "@metriport/api-sdk";
+import { BadRequestError } from "@metriport/shared";
 import { Request } from "express";
 import { z } from "zod";
-import { ResourceTypeForConsolidation, resourceSchema } from "@metriport/api-sdk";
-import BadRequestError from "../../../errors/bad-request";
 import { filterTruthy } from "../../../shared/filter-map-utils";
 import { getFrom } from "../../util";
 
-const typeSchema = z.enum(["collection"]);
+const typeSchema = z.enum(["collection", "searchset"]);
 
 const bundleEntrySchema = z.array(
   z.object({

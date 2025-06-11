@@ -1,16 +1,16 @@
-import AthenaHealthApi from "@metriport/core/external/athenahealth/index";
-import { isAthenaCustomFieldsEnabledForCx } from "@metriport/core/external/aws/app-config";
+import { isAthenaCustomFieldsEnabledForCx } from "@metriport/core/command/feature-flags/domain-ffs";
+import AthenaHealthApi from "@metriport/core/external/ehr/athenahealth/index";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { BadRequestError } from "@metriport/shared";
+import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { findOrCreatePatientMapping, getPatientMapping } from "../../../../command/mapping/patient";
 import { queryDocumentsAcrossHIEs } from "../../../../command/medical/document/document-query";
 import { getPatientOrFail } from "../../../../command/medical/patient/get-patient";
 import { Config } from "../../../../shared/config";
-import { EhrSources } from "../../shared";
 import {
   createMetriportPatientDemosFhir,
   getOrCreateMetriportPatientFhir,
-} from "../../shared-fhir";
+} from "../../shared/utils/fhir";
 import { createAthenaClient } from "../shared";
 
 const CUSTOM_FIELD_ID_OPT_IN = Config.isProdEnv() ? "121" : "1269";
@@ -20,6 +20,7 @@ export type SyncAthenaPatientIntoMetriportParams = {
   cxId: string;
   athenaPracticeId: string;
   athenaPatientId: string;
+  athenaDepartmentId: string;
   api?: AthenaHealthApi;
   triggerDq?: boolean;
 };
@@ -28,9 +29,29 @@ export async function syncAthenaPatientIntoMetriport({
   cxId,
   athenaPracticeId,
   athenaPatientId,
+  athenaDepartmentId,
   api,
   triggerDq = false,
 }: SyncAthenaPatientIntoMetriportParams): Promise<string> {
+  let athenaApi: AthenaHealthApi | undefined;
+  if (await isAthenaCustomFieldsEnabledForCx(cxId)) {
+    athenaApi = api ?? (await createAthenaClient({ cxId, practiceId: athenaPracticeId }));
+    const customFields = await athenaApi.getCustomFieldsForPatient({
+      cxId,
+      patientId: athenaPatientId,
+      departmentId: athenaDepartmentId,
+    });
+    const targetFieldOptIn = customFields.find(
+      field => field.customfieldid === CUSTOM_FIELD_ID_OPT_IN
+    );
+    const targetFieldOptOut = customFields.find(
+      field => field.customfieldid === CUSTOM_FIELD_ID_OPT_OUT
+    );
+    const optedIn =
+      !targetFieldOptOut && targetFieldOptIn && targetFieldOptIn.customfieldvalue === "Y";
+    if (!optedIn) throw new BadRequestError("AthenaHealth patient opted out of data sharing");
+  }
+
   const existingPatient = await getPatientMapping({
     cxId,
     externalId: athenaPatientId,
@@ -44,22 +65,8 @@ export async function syncAthenaPatientIntoMetriport({
     const metriportPatientId = metriportPatient.id;
     return metriportPatientId;
   }
-
-  const athenaApi = api ?? (await createAthenaClient({ cxId, practiceId: athenaPracticeId }));
-  if (await isAthenaCustomFieldsEnabledForCx(cxId)) {
-    const customFields = await athenaApi.getCustomFieldsForPatient({
-      cxId,
-      patientId: athenaPatientId,
-    });
-    const targetFieldOptIn = customFields.find(
-      field => field.customfieldid === CUSTOM_FIELD_ID_OPT_IN
-    );
-    const targetFieldOptOut = customFields.find(
-      field => field.customfieldid === CUSTOM_FIELD_ID_OPT_OUT
-    );
-    const optedIn =
-      !targetFieldOptOut && targetFieldOptIn && targetFieldOptIn.customfieldvalue === "Y";
-    if (!optedIn) throw new BadRequestError("AthenaHealth patient opted out of data sharing");
+  if (!athenaApi) {
+    athenaApi = api ?? (await createAthenaClient({ cxId, practiceId: athenaPracticeId }));
   }
   const athenaPatient = await athenaApi.searchPatient({ cxId, patientId: athenaPatientId });
   const possibleDemographics = createMetriportPatientDemosFhir(athenaPatient);

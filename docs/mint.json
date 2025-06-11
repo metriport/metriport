@@ -31,8 +31,8 @@
       "url": "mailto:contact@metriport.com"
     },
     {
-      "name": "Github",
-      "url": "https://github.com/mintlify/docs"
+      "name": "GitHub",
+      "url": "https://github.com/metriport/metriport"
     }
   ],
   "primaryTab": {
@@ -82,6 +82,7 @@
           "pages": [
             "medical-api/api-reference/patient/create-patient",
             "medical-api/api-reference/patient/get-patient",
+            "medical-api/api-reference/patient/get-patient-external-id",
             "medical-api/api-reference/patient/update-patient",
             "medical-api/api-reference/patient/match-patient",
             "medical-api/api-reference/patient/list-patients",
@@ -110,6 +111,7 @@
             "medical-api/api-reference/fhir/consolidated-data-query-get-single",
             "medical-api/api-reference/fhir/consolidated-data-query-get",
             "medical-api/api-reference/fhir/consolidated-data-count",
+            "medical-api/api-reference/fhir/consolidated-data-search",
             "medical-api/api-reference/fhir/create-patient-consolidated",
             "medical-api/api-reference/fhir/get-medical-record-summary-status",
             "medical-api/api-reference/fhir/get-medical-record-summary"
@@ -138,6 +140,7 @@
         "medical-api/handling-data/ai-summaries",
         "medical-api/handling-data/medical-record-summary",
         "medical-api/handling-data/webhooks",
+        "medical-api/handling-data/realtime-patient-notifications",
         "medical-api/handling-data/data-analytics",
         "medical-api/handling-data/filters",
         "medical-api/handling-data/pagination",
@@ -235,7 +238,9 @@
         {
           "group": "Extensions",
           "icon": "asterisk",
-          "pages": ["medical-api/fhir/extensions/doc-id"]
+          "pages": [
+            "medical-api/fhir/extensions/chronicity"
+          ]
         }
       ]
     },

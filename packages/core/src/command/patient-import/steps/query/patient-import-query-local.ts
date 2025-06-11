@@ -1,18 +1,20 @@
 import { errorToString, sleep } from "@metriport/shared";
+import { randomIntBetween } from "@metriport/shared/common/numbers";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { out } from "../../../../util/log";
 import { capture } from "../../../../util/notifications";
 import { startDocumentQuery } from "../../api/start-document-query";
 import { startPatientQuery } from "../../api/start-patient-query";
-import { creatOrUpdatePatientRecord } from "../../record/create-or-update-patient-record";
-import { PatientImportQueryHandler, ProcessPatientQueryRequest } from "./patient-import-query";
+import { reasonForCxInternalError } from "../../patient-import-shared";
+import { updatePatientRecord } from "../../record/create-or-update-patient-record";
+import { PatientImportQuery, ProcessPatientQueryRequest } from "./patient-import-query";
 
 dayjs.extend(duration);
 
-const waitTimeBetweenPdAndDq = dayjs.duration(100, "milliseconds");
+const waitTimeBetweenPdAndDq = () => dayjs.duration(randomIntBetween(80, 120), "milliseconds");
 
-export class PatientImportQueryHandlerLocal implements PatientImportQueryHandler {
+export class PatientImportQueryLocal implements PatientImportQuery {
   constructor(
     private readonly patientImportBucket: string,
     private readonly waitTimeAtTheEndInMillis: number
@@ -21,46 +23,53 @@ export class PatientImportQueryHandlerLocal implements PatientImportQueryHandler
   async processPatientQuery({
     cxId,
     jobId,
+    rowNumber,
     patientId,
+    dataPipelineRequestId,
     triggerConsolidated,
     disableWebhooks,
     rerunPdOnNewDemographics,
   }: ProcessPatientQueryRequest) {
-    const { log } = out(
-      `processPatientQuery.local - cxId ${cxId} jobId ${jobId} patientId ${patientId}`
-    );
     try {
       await startPatientQuery({
         cxId,
         patientId,
+        dataPipelineRequestId,
         rerunPdOnNewDemographics,
       });
-      await sleep(waitTimeBetweenPdAndDq.asMilliseconds());
+      await sleep(waitTimeBetweenPdAndDq().asMilliseconds());
       await startDocumentQuery({
         cxId,
+        requestId: dataPipelineRequestId,
         patientId,
         triggerConsolidated,
         disableWebhooks,
       });
-      await creatOrUpdatePatientRecord({
-        cxId,
-        jobId,
-        patientId,
-        data: { status: "successful" },
-        s3BucketName: this.patientImportBucket,
-      });
       if (this.waitTimeAtTheEndInMillis > 0) await sleep(this.waitTimeAtTheEndInMillis);
     } catch (error) {
-      const msg = `Failure while processing patient query @ PatientImport`;
-      log(`${msg}. Cause: ${errorToString(error)}`);
-      capture.error(msg, {
-        extra: {
-          cxId,
-          jobId,
-          patientId,
-          context: "patient-import-query-local.processPatientQuery",
-          error,
-        },
+      const { log } = out(`PatientImport processPatientQuery.local - cx ${cxId}, job ${jobId}`);
+      const msg =
+        `Failure while processing patient query @ PatientImport - row ${rowNumber}, ` +
+        `patient ${patientId}, dataPipelineReq ${dataPipelineRequestId}`;
+      const errorMsg = errorToString(error);
+      log(`${msg}. Cause: ${errorMsg}`);
+      capture.setExtra({
+        cxId,
+        jobId,
+        rowNumber,
+        patientId,
+        dataPipelineRequestId,
+        context: "patient-import-query-local.processPatientQuery",
+        error,
+      });
+      await updatePatientRecord({
+        cxId,
+        jobId,
+        rowNumber,
+        status: "failed",
+        reasonForCx: reasonForCxInternalError,
+        reasonForDev: errorMsg,
+        bucketName: this.patientImportBucket,
       });
       throw error;
     }

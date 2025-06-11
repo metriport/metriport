@@ -1,14 +1,14 @@
 import { CommonWellAPI, organizationQueryMeta } from "@metriport/commonwell-sdk";
+import { isCWEnabledForCx } from "@metriport/core/command/feature-flags/domain-ffs";
 import { addOidPrefix } from "@metriport/core/domain/oid";
 import { Patient } from "@metriport/core/domain/patient";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { groupBy } from "lodash";
 import { PatientModel } from "../../../models/medical/patient";
-import { isCWEnabledForCx } from "../../aws/app-config";
 import { getCqOrgIdsToDenyOnCw } from "../../hie/cross-hie-ids";
 import { makeCommonWellAPI } from "../api";
-import { getCWData, create } from "../patient";
+import { create, getCWData } from "../patient";
 import { getCwInitiator } from "../shared";
 
 export type RecreateResultOfPatient = {

@@ -17,7 +17,6 @@ import {
   MedicationAdministration,
   MedicationRequest,
   MedicationStatement,
-  ResourceType as MedplumResourceType,
   Observation,
   OperationOutcomeIssue,
   Organization,
@@ -26,6 +25,7 @@ import {
   Procedure,
   Reference,
   Resource,
+  ResourceType as MedplumResourceType,
 } from "@medplum/fhirtypes";
 import { isCarequalityExtension } from "../../carequality/extension";
 import { isCommonwellExtension } from "../../commonwell/extension";
@@ -154,6 +154,9 @@ export function isLocation(resource: Resource | undefined): resource is Location
 
 export function isPatient(resource: Resource | undefined): resource is Patient {
   return resource?.resourceType === "Patient";
+}
+export function isNotPatient(resource: Resource | undefined): boolean {
+  return !isPatient(resource);
 }
 
 export function isPractitioner(resource: Resource | undefined): resource is Practitioner {

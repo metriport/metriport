@@ -7,15 +7,13 @@ import {
   Location,
   Practitioner,
 } from "@medplum/fhirtypes";
-import {
-  buildConsolidatedBundle,
-  conversionBundleSuffix,
-} from "@metriport/core/command/consolidated/consolidated-create";
+import { conversionBundleSuffix } from "@metriport/core/command/consolidated/consolidated-create";
+import { buildCollectionBundle } from "@metriport/core/external/fhir/bundle/bundle";
 import { deleteConsolidated } from "@metriport/core/command/consolidated/consolidated-delete";
 import { createFilePath } from "@metriport/core/domain/filename";
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { isDocumentReference } from "@metriport/core/external/fhir/document/document-reference";
-import { buildBundleEntry } from "@metriport/core/external/fhir/shared/bundle";
+import { buildBundleEntry } from "@metriport/core/external/fhir/bundle/bundle";
 import { PatientWithId } from "@metriport/core/external/fhir/__tests__/patient";
 import { makeReference } from "@metriport/core/external/fhir/__tests__/reference";
 import { snomedCodeMd } from "@metriport/core/fhir-deduplication/__tests__/examples/condition-examples";
@@ -226,7 +224,7 @@ async function storeConversionOnS3(
     e => !isDocumentReference(e.resource)
   );
   if (!consolidatedToStoreOnS3) return;
-  const bundle = buildConsolidatedBundle(consolidatedToStoreOnS3);
+  const bundle = buildCollectionBundle(consolidatedToStoreOnS3);
   await s3Utils.uploadFile({
     bucket: s3BucketName,
     key,

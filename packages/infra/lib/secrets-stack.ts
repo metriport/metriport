@@ -2,6 +2,8 @@ import { CfnOutput, Stack, StackProps } from "aws-cdk-lib";
 import * as secret from "aws-cdk-lib/aws-secretsmanager";
 import { Construct } from "constructs";
 import { EnvConfig } from "../config/env-config";
+import { isSandbox } from "../lib/shared/util";
+import { PROBLEMATIC_IPSEC_CHARACTERS } from "./hl7-notification-stack/constants";
 
 interface SecretStackProps extends StackProps {
   config: EnvConfig;
@@ -25,12 +27,13 @@ export class SecretsStack extends Stack {
     //-------------------------------------------
     // Init secrets for the infra stack
     //-------------------------------------------
-    const makeSecret = (name: string): secret.Secret =>
+    const makeSecret = (name: string, options?: secret.SecretProps): secret.Secret =>
       new secret.Secret(this, name, {
         secretName: name,
         replicaRegions: props.config.secretReplicaRegion
           ? [{ region: props.config.secretReplicaRegion }]
           : [],
+        ...options,
       });
 
     for (const secretName of Object.values(props.config.providerSecretNames)) {
@@ -59,6 +62,7 @@ export class SecretsStack extends Stack {
       ...props.config.ehrIntegration?.athenaHealth.secrets,
       ...props.config.ehrIntegration?.elation.secrets,
       ...props.config.ehrIntegration?.canvas.secrets,
+      ...props.config.ehrIntegration?.healthie.secrets,
     };
 
     if (Object.keys(ehrSecrets).length) {
@@ -69,9 +73,35 @@ export class SecretsStack extends Stack {
       }
     }
 
-    if (props.config.analyticsSecretNames) {
-      for (const secretName of Object.values(props.config.analyticsSecretNames)) {
+    for (const secretName of Object.values(props.config.analyticsSecretNames)) {
+      const secret = makeSecret(secretName);
+      logSecretInfo(this, secret, secretName);
+    }
+
+    if (props.config.surescripts) {
+      for (const secretName of Object.values(props.config.surescripts.secrets)) {
         const secret = makeSecret(secretName);
+        logSecretInfo(this, secret, secretName);
+      }
+    }
+
+    if (!isSandbox(props.config)) {
+      for (const secretName of Object.values(props.config.hl7Notification.secrets)) {
+        const secret = makeSecret(secretName);
+        logSecretInfo(this, secret, secretName);
+      }
+
+      const vpnTunnelSecretNames = props.config.hl7Notification.vpnConfigs.flatMap(config => [
+        `PresharedKey1-${config.partnerName}`,
+        `PresharedKey2-${config.partnerName}`,
+      ]);
+      for (const secretName of vpnTunnelSecretNames) {
+        const secret = makeSecret(secretName, {
+          generateSecretString: {
+            excludePunctuation: true,
+            excludeCharacters: PROBLEMATIC_IPSEC_CHARACTERS,
+          },
+        });
         logSecretInfo(this, secret, secretName);
       }
     }

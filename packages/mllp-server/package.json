@@ -1,6 +1,6 @@
 {
   "name": "mllp-server",
-  "version": "0.1.0",
+  "version": "0.3.8",
   "description": "MLLP server that reads HL7 messages off of a raw tcp connection",
   "main": "app.js",
   "private": true,
@@ -28,6 +28,7 @@
   },
   "homepage": "https://github.com/metriport/metriport#readme",
   "dependencies": {
+    "@medplum/core": "^3.2.33",
     "@medplum/hl7": "^3.2.33",
     "@metriport/core": "file:packages/core",
     "@metriport/shared": "file:packages/shared",

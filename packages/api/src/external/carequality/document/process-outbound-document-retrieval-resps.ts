@@ -8,7 +8,7 @@ import { errorToString } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
-import { ingestIntoSearchEngine } from "../../aws/opensearch";
+import { ingestIntoSearchEngine } from "@metriport/core/command/consolidated/search/document-reference/ingest";
 import { convertCDAToFHIR, isConvertible } from "../../fhir-converter/converter";
 import { DocumentReferenceWithId } from "../../fhir/document";
 import { upsertDocumentsToFHIRServer } from "../../fhir/document/save-document-reference";
@@ -249,10 +249,7 @@ async function handleDocReferences(
             id: patientId,
             cxId,
           },
-          document: {
-            id: docRef.metriportId ?? "",
-            content: { mimeType: docRef.contentType ?? "" },
-          },
+          document: { id: docRef.metriportId ?? "" },
           s3FileName: docPath,
           s3BucketName: docLocation,
           requestId,
@@ -303,7 +300,7 @@ async function handleDocReferences(
       };
       transactionBundle.entry?.push(transactionEntry);
 
-      ingestIntoSearchEngine({ id: patientId, cxId }, mergedFHIRDocRef, file, requestId, log);
+      ingestIntoSearchEngine({ id: patientId, cxId }, mergedFHIRDocRef.id, file, requestId, log);
     } catch (error) {
       const msg = `Error handling doc reference`;
       const extra = {

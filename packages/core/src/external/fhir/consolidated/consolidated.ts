@@ -7,7 +7,7 @@ import { out } from "../../../util/log";
 import { capture } from "../../../util/notifications";
 import { makeFhirApi } from "../api/api-factory";
 import { fullDateQueryForResource, getPatientFilter } from "../patient/resource-filter";
-import { buildSearchSetBundle, getReferencesFromResources } from "../shared/bundle";
+import { buildSearchSetBundle, getReferencesFromResources } from "../bundle/bundle";
 import { findDocIdExtension } from "../shared/extensions/doc-id-extension";
 import { getReferencesFromFHIR } from "../shared/references";
 
@@ -15,7 +15,7 @@ const MAX_HYDRATION_ROUNDS = 3;
 
 export type ConsolidatedFhirToBundlePayload = {
   patient: Pick<Patient, "id" | "cxId">;
-  requestId?: string;
+  requestId?: string | undefined;
   resources?: ResourceTypeForConsolidation[] | undefined;
   dateFrom?: string | undefined;
   dateTo?: string | undefined;
@@ -96,7 +96,7 @@ export async function getConsolidatedFhirBundle({
 
   for (let i = 0; i < MAX_HYDRATION_ROUNDS; i++) {
     const { missingReferences } = getReferencesFromResources({
-      resources: filtered,
+      resourcesToCheckRefs: filtered,
     });
     if (missingReferences.length === 0) {
       break;
@@ -126,7 +126,7 @@ export async function getConsolidatedFhirBundle({
     }
     return { resource: entry };
   });
-  return buildSearchSetBundle({ entries });
+  return buildSearchSetBundle(entries);
 }
 
 const searchResources = async <K extends ResourceType>(

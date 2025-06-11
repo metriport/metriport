@@ -32,6 +32,7 @@ import {
   ISO_DATE,
   MISSING_DATE_KEY,
   MISSING_DATE_TEXT,
+  getDeceasedStatus,
 } from "./bundle-to-html-shared";
 
 const RX_NORM_CODE = "rxnorm";
@@ -412,7 +413,7 @@ type FhirTypes = {
   organizations: Organization[];
 };
 
-// TODO: Use the version from "@metriport/core/external/fhir/shared/bundle.ts"
+// TODO: Use the version from "@metriport/core/external/fhir/bundle/bundle.ts"
 function extractFhirTypesFromBundle(bundle: Bundle): FhirTypes {
   let patient: Patient | undefined;
   const practitioners: Practitioner[] = [];
@@ -1239,7 +1240,7 @@ function createSectionInMedications(
           });
 
           return `
-            <tr data-id"${medicationStatement.id}">
+            <tr data-id="${medicationStatement.id}">
               <td>${medication?.code?.text ?? ""}</td>
               <td>${blacklistedInstruction ? "" : medicationStatement.dosage?.[0]?.text ?? ""}</td>
               <td>${medicationStatement.dosage?.[0]?.doseAndRate?.[0]?.doseQuantity?.value ?? ""} ${
@@ -2172,16 +2173,12 @@ function createFamilyHistorySection(familyMemberHistories: FamilyMemberHistory[]
             SNOMED_CODE,
           ]);
 
-          const deceasedFamilyMember = familyMemberHistory.condition?.find(condition => {
-            return condition.contributedToDeath === true;
-          });
-
           return `
             <tr>
               <td>${getValidCode(familyMemberHistory.relationship?.coding)[0]?.display ?? ""}</td>
               <td>${renderAdministrativeGender(familyMemberHistory) ?? ""}</td>
               <td>${renderFamilyHistoryConditions(familyMemberHistory)?.join(", ") ?? ""}</td>
-              <td>${deceasedFamilyMember ? "yes" : "no"}</td>
+              <td>${getDeceasedStatus(familyMemberHistory)}</td>
               <td>${code ?? ""}</td>
             </tr>
           `;

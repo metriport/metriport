@@ -33,6 +33,7 @@ import {
   ISO_DATE,
   MISSING_DATE_KEY,
   MISSING_DATE_TEXT,
+  getDeceasedStatus,
 } from "./bundle-to-html-shared";
 
 const RX_NORM_CODE = "rxnorm";
@@ -354,7 +355,7 @@ export function bundleToHtml(fhirBundle: Bundle, brief?: Brief, isLogoEnabled = 
   return htmlPage;
 }
 
-// TODO: Use the version from "@metriport/core/external/fhir/shared/bundle.ts"
+// TODO: Use the version from "@metriport/core/external/fhir/bundle/bundle.ts"
 function extractFhirTypesFromBundle(bundle: Bundle): {
   diagnosticReports: DiagnosticReport[];
   patient?: Patient | undefined;
@@ -851,7 +852,7 @@ function createWhatWasDocumentedFromDiagnosticReports(
         ${
           notes.length > 0
             ? `<p style="margin-bottom: 10px; line-height: 25px; white-space: pre-line;">${notes.join(
-                "<br />"
+                "<br /><hr/>"
               )}</p>`
             : ""
         }
@@ -1010,7 +1011,7 @@ function createSectionInMedications(
           });
 
           return `
-            <tr data-id"${medicationStatement.id}">
+            <tr data-id="${medicationStatement.id}">
               <td>${medication?.code?.text ?? ""}</td>
               <td>${blacklistedInstruction ? "" : medicationStatement.dosage?.[0]?.text ?? ""}</td>
               <td>${medicationStatement.dosage?.[0]?.doseAndRate?.[0]?.doseQuantity?.value ?? ""} ${
@@ -1930,16 +1931,14 @@ function createFamilyHistorySection(familyMemberHistories: FamilyMemberHistory[]
             SNOMED_CODE,
           ]);
 
-          const deceasedFamilyMember = familyMemberHistory.condition?.find(condition => {
-            return condition.contributedToDeath === true;
-          });
+          const deceasedStatus = getDeceasedStatus(familyMemberHistory);
 
           return `
             <tr>
               <td>${getValidCode(familyMemberHistory.relationship?.coding)[0]?.display ?? ""}</td>
               <td>${renderAdministrativeGender(familyMemberHistory) ?? ""}</td>
               <td>${renderFamilyHistoryConditions(familyMemberHistory)?.join(", ") ?? ""}</td>
-              <td>${deceasedFamilyMember ? "yes" : "no"}</td>
+              <td>${deceasedStatus}</td>
               <td>${code ?? ""}</td>
             </tr>
           `;

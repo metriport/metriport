@@ -9,8 +9,8 @@ describe("Cx Mapping command", () => {
       "canvas-webhook",
       "athenahealth",
       "athenahealth-client",
+      "elation",
       "elation-client",
-      "elation-webhook",
     ];
 
     for (const source of validSources) {
@@ -24,8 +24,8 @@ describe("Cx Mapping command", () => {
       "bogus",
       "bogus-client",
       "bogus-webhook",
-      "elation",
       "athenahealth-webhook",
+      "elation-webhook",
     ];
 
     for (const source of invalidSources) {

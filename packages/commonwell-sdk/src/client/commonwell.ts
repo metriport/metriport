@@ -1,11 +1,16 @@
-import { PurposeOfUse } from "@metriport/shared";
+import {
+  defaultOptionsRequestNotAccepted,
+  executeWithNetworkRetries,
+  ExecuteWithRetriesOptions,
+  MetriportError,
+  PurposeOfUse,
+} from "@metriport/shared";
 import axios, { AxiosInstance, AxiosResponse } from "axios";
 import httpStatus from "http-status";
 import { Agent } from "https";
 import * as stream from "stream";
 import { CommonWellAPI } from "..";
 import { makeJwt } from "../common/make-jwt";
-import MetriportError from "../common/metriport-error";
 import { CertificateParam, CertificateResp, certificateRespSchema } from "../models/certificates";
 import { DocumentQueryFullResponse, DocumentQueryResponse } from "../models/document";
 import { Identifier, StrongId } from "../models/identifier";
@@ -40,6 +45,12 @@ import * as document from "./document";
 
 const DEFAULT_AXIOS_TIMEOUT_SECONDS = 120;
 
+const defaultOnError500: OnError500Options = {
+  retry: false,
+  maxAttempts: 1,
+  initialDelay: 0,
+};
+
 export enum APIMode {
   integration = "integration",
   production = "production",
@@ -51,6 +62,15 @@ export interface RequestMetadata {
   purposeOfUse: PurposeOfUse;
   npi?: string;
   payloadHash?: string;
+}
+
+export type OnError500Options = Omit<ExecuteWithRetriesOptions<unknown>, "shouldRetry"> & {
+  retry: boolean;
+};
+
+export interface CommonWellOptions {
+  timeout?: number;
+  onError500?: OnError500Options;
 }
 
 export class CommonWell implements CommonWellAPI {
@@ -71,6 +91,7 @@ export class CommonWell implements CommonWellAPI {
   private _oid: string;
   private httpsAgent: Agent;
   private _lastReferenceHeader: string | undefined;
+  private onError500: OnError500Options;
 
   /**
    * Creates a new instance of the CommonWell API client pertaining to an
@@ -89,7 +110,7 @@ export class CommonWell implements CommonWellAPI {
     orgName: string,
     oid: string,
     apiMode: APIMode,
-    options: { timeout?: number } = {}
+    options: CommonWellOptions = {}
   ) {
     this.rsaPrivateKey = rsaPrivateKey;
     this.httpsAgent = new Agent({ cert: orgCert, key: rsaPrivateKey });
@@ -105,6 +126,7 @@ export class CommonWell implements CommonWellAPI {
     );
     this.orgName = orgName;
     this._oid = oid;
+    this.onError500 = { ...defaultOnError500, ...options.onError500 };
   }
 
   get oid() {
@@ -409,9 +431,11 @@ export class CommonWell implements CommonWellAPI {
    */
   async enrollPerson(meta: RequestMetadata, person: Person): Promise<Person> {
     const headers = await this.buildQueryHeaders(meta);
-    const resp = await this.api.post(CommonWell.PERSON_ENDPOINT, person, {
-      headers,
-    });
+    const resp = await this.executeWithRetriesOn500(() =>
+      this.api.post(CommonWell.PERSON_ENDPOINT, person, {
+        headers,
+      })
+    );
     return personSchema.parse(resp.data);
   }
 
@@ -430,10 +454,12 @@ export class CommonWell implements CommonWellAPI {
     system: string
   ): Promise<PersonSearchResp> {
     const headers = await this.buildQueryHeaders(meta);
-    const resp = await this.api.get(CommonWell.PERSON_ENDPOINT, {
-      headers,
-      params: { key, system },
-    });
+    const resp = await this.executeWithRetriesOn500(() =>
+      this.api.get(CommonWell.PERSON_ENDPOINT, {
+        headers,
+        params: { key, system },
+      })
+    );
     return personSearchRespSchema.parse(resp.data);
   }
 
@@ -450,11 +476,10 @@ export class CommonWell implements CommonWellAPI {
     patientId: string
   ): Promise<PersonSearchResp> {
     const headers = await this.buildQueryHeaders(meta);
-    const resp = await this.api.get(
-      `${CommonWell.ORG_ENDPOINT}/${this.oid}/patient/${patientId}/person`,
-      {
+    const resp = await this.executeWithRetriesOn500(() =>
+      this.api.get(`${CommonWell.ORG_ENDPOINT}/${this.oid}/patient/${patientId}/person`, {
         headers,
-      }
+      })
     );
     return personSearchRespSchema.parse(resp.data);
   }
@@ -469,9 +494,11 @@ export class CommonWell implements CommonWellAPI {
    */
   async getPersonById(meta: RequestMetadata, personId: string): Promise<Person> {
     const headers = await this.buildQueryHeaders(meta);
-    const resp = await this.api.get(`${CommonWell.PERSON_ENDPOINT}/${personId}`, {
-      headers,
-    });
+    const resp = await this.executeWithRetriesOn500(() =>
+      this.api.get(`${CommonWell.PERSON_ENDPOINT}/${personId}`, {
+        headers,
+      })
+    );
     return personSchema.parse(resp.data);
   }
 
@@ -486,9 +513,11 @@ export class CommonWell implements CommonWellAPI {
    */
   async updatePerson(meta: RequestMetadata, person: Person, id: string): Promise<Person> {
     const headers = await this.buildQueryHeaders(meta);
-    const resp = await this.api.post(`${CommonWell.PERSON_ENDPOINT}/${id}`, person, {
-      headers,
-    });
+    const resp = await this.executeWithRetriesOn500(() =>
+      this.api.post(`${CommonWell.PERSON_ENDPOINT}/${id}`, person, {
+        headers,
+      })
+    );
     return personSchema.parse(resp.data);
   }
 
@@ -502,10 +531,12 @@ export class CommonWell implements CommonWellAPI {
    */
   async patientMatch(meta: RequestMetadata, id: string): Promise<PatientSearchResp> {
     const headers = await this.buildQueryHeaders(meta);
-    const resp = await this.api.get(`${CommonWell.PERSON_ENDPOINT}/${id}/patientMatch`, {
-      headers,
-      params: { orgId: this.oid },
-    });
+    const resp = await this.executeWithRetriesOn500(() =>
+      this.api.get(`${CommonWell.PERSON_ENDPOINT}/${id}/patientMatch`, {
+        headers,
+        params: { orgId: this.oid },
+      })
+    );
     return patientSearchRespSchema.parse(resp.data);
   }
 
@@ -538,13 +569,15 @@ export class CommonWell implements CommonWellAPI {
     patientStrongId?: StrongId
   ): Promise<PatientLink> {
     const headers = await this.buildQueryHeaders(meta);
-    const resp = await this.api.post(
-      `${CommonWell.PERSON_ENDPOINT}/${personId}/patientLink`,
-      {
-        patient: patientUri,
-        ...(patientStrongId ? { identifier: patientStrongId } : undefined),
-      },
-      { headers }
+    const resp = await this.executeWithRetriesOn500(() =>
+      this.api.post(
+        `${CommonWell.PERSON_ENDPOINT}/${personId}/patientLink`,
+        {
+          patient: patientUri,
+          ...(patientStrongId ? { identifier: patientStrongId } : undefined),
+        },
+        { headers }
+      )
     );
     return patientLinkSchema.parse(resp.data);
   }
@@ -559,7 +592,9 @@ export class CommonWell implements CommonWellAPI {
    */
   async reenrollPerson(meta: RequestMetadata, id: string): Promise<Person> {
     const headers = await this.buildQueryHeaders(meta);
-    const resp = await this.api.put(`${CommonWell.PERSON_ENDPOINT}/${id}/enroll`, {}, { headers });
+    const resp = await this.executeWithRetriesOn500(() =>
+      this.api.put(`${CommonWell.PERSON_ENDPOINT}/${id}/enroll`, {}, { headers })
+    );
     return personSchema.parse(resp.data);
   }
 
@@ -573,12 +608,14 @@ export class CommonWell implements CommonWellAPI {
    */
   async unenrollPerson(meta: RequestMetadata, id: string): Promise<Person> {
     const headers = await this.buildQueryHeaders(meta);
-    const resp = await this.api.put(
-      `${CommonWell.PERSON_ENDPOINT}/${id}/unenroll`,
-      {},
-      {
-        headers,
-      }
+    const resp = await this.executeWithRetriesOn500(() =>
+      this.api.put(
+        `${CommonWell.PERSON_ENDPOINT}/${id}/unenroll`,
+        {},
+        {
+          headers,
+        }
+      )
     );
     return personSchema.parse(resp.data);
   }
@@ -593,7 +630,9 @@ export class CommonWell implements CommonWellAPI {
    */
   async deletePerson(meta: RequestMetadata, id: string): Promise<void> {
     const headers = await this.buildQueryHeaders(meta);
-    await this.api.delete(`${CommonWell.PERSON_ENDPOINT}/${id}`, { headers });
+    await this.executeWithRetriesOn500(() =>
+      this.api.delete(`${CommonWell.PERSON_ENDPOINT}/${id}`, { headers })
+    );
     return;
   }
 
@@ -611,9 +650,11 @@ export class CommonWell implements CommonWellAPI {
    */
   async registerPatient(meta: RequestMetadata, patient: Patient): Promise<Patient> {
     const headers = await this.buildQueryHeaders(meta);
-    const resp = await this.api.post(`${CommonWell.ORG_ENDPOINT}/${this.oid}/patient`, patient, {
-      headers,
-    });
+    const resp = await this.executeWithRetriesOn500(() =>
+      this.api.post(`${CommonWell.ORG_ENDPOINT}/${this.oid}/patient`, patient, {
+        headers,
+      })
+    );
     return patientSchema.parse(resp.data);
   }
 
@@ -627,9 +668,8 @@ export class CommonWell implements CommonWellAPI {
   async getPatient(meta: RequestMetadata, id: string): Promise<Patient> {
     const headers = await this.buildQueryHeaders(meta);
     const suffix = id.endsWith("/") ? "" : "/";
-    const resp = await this.api.get(
-      `${CommonWell.ORG_ENDPOINT}/${this.oid}/patient/${id}${suffix}`,
-      { headers }
+    const resp = await this.executeWithRetriesOn500(() =>
+      this.api.get(`${CommonWell.ORG_ENDPOINT}/${this.oid}/patient/${id}${suffix}`, { headers })
     );
     return patientSchema.parse(resp.data);
   }
@@ -655,10 +695,12 @@ export class CommonWell implements CommonWellAPI {
     zip?: string
   ): Promise<PatientSearchResp> {
     const headers = await this.buildQueryHeaders(meta);
-    const resp = await this.api.get(`${CommonWell.ORG_ENDPOINT}/${this.oid}/patient`, {
-      headers,
-      params: { fname, lname, dob, gender, zip },
-    });
+    const resp = await this.executeWithRetriesOn500(() =>
+      this.api.get(`${CommonWell.ORG_ENDPOINT}/${this.oid}/patient`, {
+        headers,
+        params: { fname, lname, dob, gender, zip },
+      })
+    );
     return patientSearchRespSchema.parse(resp.data);
   }
 
@@ -673,12 +715,10 @@ export class CommonWell implements CommonWellAPI {
    */
   async updatePatient(meta: RequestMetadata, patient: Patient, id: string): Promise<Patient> {
     const headers = await this.buildQueryHeaders(meta);
-    const resp = await this.api.post(
-      `${CommonWell.ORG_ENDPOINT}/${this.oid}/patient/${id}/`,
-      patient,
-      {
+    const resp = await this.executeWithRetriesOn500(() =>
+      this.api.post(`${CommonWell.ORG_ENDPOINT}/${this.oid}/patient/${id}/`, patient, {
         headers,
-      }
+      })
     );
     return patientSchema.parse(resp.data);
   }
@@ -727,11 +767,10 @@ export class CommonWell implements CommonWellAPI {
     const headers = await this.buildQueryHeaders(meta);
     // Error handling: https://github.com/metriport/metriport-internal/issues/322
     try {
-      const resp = await this.api.get(
-        `${CommonWell.ORG_ENDPOINT}/${this.oid}/patient/${patientId}/networkLink`,
-        {
+      const resp = await this.executeWithRetriesOn500(() =>
+        this.api.get(`${CommonWell.ORG_ENDPOINT}/${this.oid}/patient/${patientId}/networkLink`, {
           headers,
-        }
+        })
       );
       return patientNetworkLinkRespSchema.parse(resp.data);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -752,9 +791,11 @@ export class CommonWell implements CommonWellAPI {
    */
   async deletePatient(meta: RequestMetadata, id: string): Promise<void> {
     const headers = await this.buildQueryHeaders(meta);
-    await this.api.delete(`${CommonWell.ORG_ENDPOINT}/${this.oid}/patient/${id}/`, {
-      headers,
-    });
+    await this.executeWithRetriesOn500(() =>
+      this.api.delete(`${CommonWell.ORG_ENDPOINT}/${this.oid}/patient/${id}/`, {
+        headers,
+      })
+    );
   }
 
   //--------------------------------------------------------------------------------------------
@@ -789,7 +830,7 @@ export class CommonWell implements CommonWellAPI {
     patientId: string
   ): Promise<DocumentQueryFullResponse> {
     const headers = await this.buildQueryHeaders(meta);
-    return document.queryFull(this.api, headers, patientId);
+    return this.executeWithRetriesOn500(() => document.queryFull(this.api, headers, patientId));
   }
 
   /**
@@ -807,7 +848,9 @@ export class CommonWell implements CommonWellAPI {
     outputStream: stream.Writable
   ): Promise<void> {
     const headers = await this.buildQueryHeaders(meta);
-    return document.retrieve(this.api, headers, inputUrl, outputStream);
+    return this.executeWithRetriesOn500(() =>
+      document.retrieve(this.api, headers, inputUrl, outputStream)
+    );
   }
 
   //--------------------------------------------------------------------------------------------
@@ -829,14 +872,16 @@ export class CommonWell implements CommonWellAPI {
     proxy?: PatientLinkProxy
   ): Promise<NetworkLink> {
     const headers = await this.buildQueryHeaders(meta);
-    const resp = await this.api.post(
-      href,
-      {
-        proxy,
-      },
-      {
-        headers,
-      }
+    const resp = await this.executeWithRetriesOn500(() =>
+      this.api.post(
+        href,
+        {
+          proxy,
+        },
+        {
+          headers,
+        }
+      )
     );
     return networkLinkSchema.parse(resp.data);
   }
@@ -858,15 +903,17 @@ export class CommonWell implements CommonWellAPI {
     identifier?: Identifier
   ): Promise<PatientLink> {
     const headers = await this.buildQueryHeaders(meta);
-    const resp = await this.api.post(
-      patientLinkUri,
-      {
-        patient: patientUri,
-        identifier: identifier,
-      },
-      {
-        headers,
-      }
+    const resp = await this.executeWithRetriesOn500(() =>
+      this.api.post(
+        patientLinkUri,
+        {
+          patient: patientUri,
+          identifier: identifier,
+        },
+        {
+          headers,
+        }
+      )
     );
 
     return patientLinkSchema.parse(resp.data);
@@ -887,12 +934,14 @@ export class CommonWell implements CommonWellAPI {
     limitToOrg = true
   ): Promise<PatientLinkSearchResp> {
     const headers = await this.buildQueryHeaders(meta);
-    const resp = await this.api.get(`${CommonWell.PERSON_ENDPOINT}/${personId}/patientLink`, {
-      headers,
-      params: {
-        ...(limitToOrg ? { orgId: this.oid } : undefined),
-      },
-    });
+    const resp = await this.executeWithRetriesOn500(() =>
+      this.api.get(`${CommonWell.PERSON_ENDPOINT}/${personId}/patientLink`, {
+        headers,
+        params: {
+          ...(limitToOrg ? { orgId: this.oid } : undefined),
+        },
+      })
+    );
     return patientLinkSearchRespSchema.parse(resp.data);
   }
 
@@ -911,9 +960,11 @@ export class CommonWell implements CommonWellAPI {
     patientId: string
   ): Promise<PatientLinkResp> {
     const headers = await this.buildQueryHeaders(meta);
-    const resp = await this.api.get(`/v1/person/${personId}/patientLink/${patientId}/`, {
-      headers,
-    });
+    const resp = await this.executeWithRetriesOn500(() =>
+      this.api.get(`/v1/person/${personId}/patientLink/${patientId}/`, {
+        headers,
+      })
+    );
 
     return patientLinkRespSchema.parse(resp.data);
   }
@@ -930,7 +981,7 @@ export class CommonWell implements CommonWellAPI {
    */
   async deletePatientLink(meta: RequestMetadata, patientLinkUri: string): Promise<void> {
     const headers = await this.buildQueryHeaders(meta);
-    await this.api.post(patientLinkUri, {}, { headers });
+    await this.executeWithRetriesOn500(() => this.api.post(patientLinkUri, {}, { headers }));
     return;
   }
 
@@ -950,12 +1001,14 @@ export class CommonWell implements CommonWellAPI {
   ): Promise<void> {
     const headers = await this.buildQueryHeaders(meta);
 
-    await this.api.put(
-      `/v1/person/${personId}/patientLink/${patientId}/reset`,
-      {},
-      {
-        headers,
-      }
+    await this.executeWithRetriesOn500(() =>
+      this.api.put(
+        `/v1/person/${personId}/patientLink/${patientId}/reset`,
+        {},
+        {
+          headers,
+        }
+      )
     );
 
     return;
@@ -976,5 +1029,18 @@ export class CommonWell implements CommonWellAPI {
       meta.payloadHash
     );
     return { Authorization: `Bearer ${jwt}` };
+  }
+
+  private async executeWithRetriesOn500<T>(fn: () => Promise<T>): Promise<T> {
+    return this.onError500.retry
+      ? executeWithNetworkRetries(fn, {
+          ...this.onError500,
+          httpCodesToRetry: [...defaultOptionsRequestNotAccepted.httpCodesToRetry],
+          httpStatusCodesToRetry: [
+            ...defaultOptionsRequestNotAccepted.httpStatusCodesToRetry,
+            httpStatus.INTERNAL_SERVER_ERROR,
+          ],
+        })
+      : fn();
   }
 }

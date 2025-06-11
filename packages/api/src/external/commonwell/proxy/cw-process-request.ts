@@ -6,12 +6,12 @@ import {
 import { isDocumentReference } from "@metriport/core/external/fhir/document/document-reference";
 import { toFHIR as orgToFHIR } from "@metriport/core/external/fhir/organization/conversion";
 import { toFHIR as patientToFHIR } from "@metriport/core/external/fhir/patient/conversion";
-import { buildBundle } from "@metriport/core/external/fhir/shared/bundle";
+import { buildSearchSetBundle } from "@metriport/core/external/fhir/bundle/bundle";
 import { ensureCcdExists } from "@metriport/core/shareback/ensure-ccd-exists";
 import { getMetadataDocumentContents } from "@metriport/core/shareback/metadata/get-metadata-xml";
 import { parseExtrinsicObjectXmlToDocumentReference } from "@metriport/core/shareback/metadata/parse-metadata-xml";
-import BadRequestError from "@metriport/core/util/error/bad-request";
 import { out } from "@metriport/core/util/log";
+import { BadRequestError } from "@metriport/shared";
 import dayjs from "dayjs";
 import { Request } from "express";
 import { partition, uniqBy } from "lodash";
@@ -19,7 +19,7 @@ import { getOrganizationOrFail } from "../../../command/medical/organization/get
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { queryToSearchParams } from "../../../routes/helpers/query";
 import { Config } from "../../../shared/config";
-import { getOrgOrFail } from "./get-org-or-fail";
+import { getCxIdFromOidOrFail } from "./get-cxid-from-oid";
 import { proxyPrefix } from "./shared";
 
 const apiURL = Config.getApiUrl();
@@ -47,11 +47,11 @@ const allowedQueryParams = ["status", "date", "_summary"];
  */
 export async function processRequest(req: Request): Promise<Bundle<Resource>> {
   const { cxId, patientId } = await getPatientAndCxFromRequest(req);
-  const { log } = out(`${proxyPrefix} request - cxId ${cxId}, patient ${patientId}`);
+  const { log, debug } = out(`${proxyPrefix} request - cxId ${cxId}, patient ${patientId}`);
   log(`ORIGINAL URL: ${req.url}`);
   const { resource, count, params } = fromHttpRequestToFHIR(req);
 
-  log(`UPDATED resource: ${resource} / count : ${count} / params: ${params.toString()}`);
+  debug(`UPDATED resource: ${resource} / count : ${count} / params: ${params.toString()}`);
 
   const patient = await getPatientOrFail({ id: patientId, cxId });
   const organization = await getOrganizationOrFail({ cxId });
@@ -73,11 +73,7 @@ export async function processRequest(req: Request): Promise<Bundle<Resource>> {
   }
 
   const bundle = prepareBundle([patientResource, ...docRefs], params);
-  log(
-    `Responding to CW (cx ${cxId} / patient ${patientId}): ${
-      bundle.entry?.length
-    } resources - ${JSON.stringify(bundle)}`
-  );
+  log(`Responding to CW (cx ${cxId} / patient ${patientId}): ${bundle.entry?.length} resources`);
   return bundle;
 }
 
@@ -86,8 +82,7 @@ async function getPatientAndCxFromRequest(
 ): Promise<{ cxId: string; patientId: string }> {
   const { orgOID, patientId } = getOrgOIDAndPatientId(req);
 
-  const org = await getOrgOrFail(orgOID);
-  const cxId = org.cxId;
+  const { cxId } = await getCxIdFromOidOrFail(orgOID);
 
   return { cxId, patientId };
 }
@@ -137,13 +132,13 @@ function getAllowedSearchParams(searchParams: URLSearchParams): URLSearchParams 
 export function prepareBundle(resources: Resource[], params: URLSearchParams): Bundle<Resource> {
   const { documentReferences, otherResources } = splitResources(resources);
   const filteredDocRefs = applyFilterParams(documentReferences, params);
-  if (filteredDocRefs.length < 1) return buildBundle();
+  if (filteredDocRefs.length < 1) return buildSearchSetBundle();
 
   const updatedDocRefs = adjustAttachmentURLs(filteredDocRefs);
   const consolidatedResources = [...updatedDocRefs, ...otherResources];
   const uniqueResources = uniqBy(consolidatedResources, r => r.id);
   const bundleEntries: BundleEntry[] = uniqueResources.map(r => ({ resource: r }));
-  const bundle = buildBundle({ entries: bundleEntries });
+  const bundle = buildSearchSetBundle(bundleEntries);
   return bundle;
 }
 

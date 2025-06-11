@@ -1,6 +1,6 @@
 import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
-import { OpenSearchFileIngestorDirect } from "@metriport/core/external/opensearch/file-ingestor-direct";
-import { FileIngestorSQSPayload } from "@metriport/core/external/opensearch/file-ingestor-sqs";
+import { OpenSearchFileIngestorDirect } from "@metriport/core/external/opensearch/file/file-ingestor-direct";
+import { FileIngestorSQSPayload } from "@metriport/core/external/opensearch/file/file-ingestor-sqs";
 import { errorToString, executeWithRetries, MetriportError } from "@metriport/shared";
 import { SQSEvent } from "aws-lambda";
 import dayjs from "dayjs";
@@ -41,7 +41,7 @@ const cloudWatchUtils = new CloudWatchUtils(region, lambdaName, metricsNamespace
 
 type EventBody = FileIngestorSQSPayload;
 
-// Don't use Sentry's default error handler b/c we want to use our own and send more context-aware data
+// TODO move to capture.wrapHandler()
 export async function handler(event: SQSEvent) {
   try {
     // Process messages from SQS
@@ -60,7 +60,7 @@ export async function handler(event: SQSEvent) {
     }
     const openSearch = new OpenSearchFileIngestorDirect({
       region,
-      endpoint: "https://" + host,
+      endpoint: host,
       indexName,
       username,
       password,

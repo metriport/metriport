@@ -11,6 +11,7 @@ const { log } = out("ihe-gateway-v2-outbound-document-retrieval");
 const apiUrl = getEnvVarOrFail("API_URL");
 const drResponseUrl = `http://${apiUrl}/internal/carequality/document-retrieval/response`;
 
+// TODO move to capture.wrapHandler()
 export const handler = Sentry.AWSLambda.wrapHandler(
   async ({ patientId, cxId, requestId, drRequestsGatewayV2 }: DRRequestGatewayV2Params) => {
     log(

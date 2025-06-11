@@ -14,6 +14,7 @@ export interface EventMessageV1 extends IdentifyMessageV1 {
   groups?: Record<string, string | number>; // Mapping of group type to group id
   sendFeatureFlags?: boolean;
   timestamp?: Date;
+  platform?: string;
 }
 
 const defaultPostHogApiKey = Config.getPostHogApiKey();
@@ -29,7 +30,7 @@ export function analytics(params: EventMessageV1, postApiKey?: string): PostHog 
   params.properties = {
     ...(params.properties ? { ...params.properties } : undefined),
     environment: Config.getEnvType(),
-    platform: "oss-api",
+    platform: params.platform ?? "oss-api",
   };
   params.groups = { [groupType]: params.distinctId };
   posthog.capture(params);
@@ -48,20 +49,22 @@ export async function analyticsAsync(params: EventMessageV1, postApiKey?: string
 }
 
 export enum EventTypes {
+  patientCreate = "patientCreate",
   query = "query",
   webhook = "webhook",
   error = "error",
-  addressRelevance = "addressRelevance",
   aiBriefGeneration = "aiBriefGeneration",
   patientDiscovery = "patientDiscovery",
   rerunOnNewDemographics = "rerunOnNewDemographics",
   runScheduledPatientDiscovery = "runScheduledPatientDiscovery",
+  billableQuery = "billableQuery",
   documentQuery = "documentQuery",
   documentRetrieval = "documentRetrieval",
   documentConversion = "documentConversion",
   fhirDeduplication = "fhirDeduplication",
   fhirNormalization = "fhirNormalization",
   fhirHydration = "fhirHydration",
+  hl7NotificationReceived = "hl7NotificationReceived",
   consolidatedQuery = "consolidatedQuery",
   inboundPatientDiscovery = "inbound.patientDiscovery",
   inboundDocumentQuery = "inbound.documentQuery",

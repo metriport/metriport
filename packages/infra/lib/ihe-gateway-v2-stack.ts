@@ -9,6 +9,12 @@ import { EnvType } from "./env-type";
 import { createLambda } from "./shared/lambda";
 import { LambdaLayers } from "./shared/lambda-layers";
 import { Secrets } from "./shared/secrets";
+import { provideAccessToQueue } from "./shared/sqs";
+import { Queue } from "aws-cdk-lib/aws-sqs";
+import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
+import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
+import { createQueue } from "./shared/sqs";
+import { QueueAndLambdaSettings } from "./shared/settings";
 
 interface IHEGatewayV2LambdasNestedStackProps extends NestedStackProps {
   lambdaLayers: LambdaLayers;
@@ -26,6 +32,36 @@ interface IHEGatewayV2LambdasNestedStackProps extends NestedStackProps {
   sentryDsn: string | undefined;
   iheResponsesBucketName: string;
   iheParsedResponsesBucketName: string;
+  alarmAction?: SnsAction;
+}
+
+function settings() {
+  const writeToS3LambdaTimeout = Duration.seconds(55);
+  const writeToS3LambdaMaxBatchingWindow = Duration.seconds(30);
+  const writeToS3: Omit<QueueAndLambdaSettings, "waitTime"> = {
+    name: "IHEGatewayV2OutboundPatientDiscoveryWriteToS3",
+    entry: "ihe-gateway-v2-outbound-patient-discovery-write-to-s3",
+    lambda: {
+      memory: 2048,
+      timeout: writeToS3LambdaTimeout,
+    },
+    queue: {
+      alarmMaxAgeOfOldestMessage: Duration.hours(2),
+      maxMessageCountAlarmThreshold: 500_000,
+      maxReceiveCount: 3,
+      visibilityTimeout: Duration.seconds(writeToS3LambdaTimeout.toSeconds() * 2 + 1),
+      createRetryLambda: false,
+    },
+    eventSource: {
+      batchSize: 500,
+      reportBatchItemFailures: true,
+      maxConcurrency: 2,
+      maxBatchingWindow: writeToS3LambdaMaxBatchingWindow,
+    },
+  };
+  return {
+    writeToS3,
+  };
 }
 
 export class IHEGatewayV2LambdasNestedStack extends NestedStack {
@@ -33,6 +69,15 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
     super(scope, id, props);
 
     this.terminationProtection = true;
+
+    const { lambda: writeToS3LambdaOutboundPD, queue: writeToS3QueueOutboundPD } =
+      this.setupWriteToS3OutboundPD({
+        lambdaLayers: props.lambdaLayers,
+        vpc: props.vpc,
+        envType: props.envType,
+        sentryDsn: props.sentryDsn,
+        alarmAction: props.alarmAction,
+      });
 
     const iheResponsesBucket = new s3.Bucket(this, "IHEResponsesBucket", {
       bucketName: props.iheResponsesBucketName,
@@ -48,12 +93,15 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
       versioned: true,
     });
 
+    iheParsedResponsesBucket.grantWrite(writeToS3LambdaOutboundPD);
+
     this.createParsedReponseTables(iheParsedResponsesBucket);
 
     const patientDiscoveryLambda = this.setupIHEGatewayV2PatientDiscoveryLambda(
       props,
       iheResponsesBucket,
-      iheParsedResponsesBucket
+      iheParsedResponsesBucket,
+      writeToS3QueueOutboundPD
     );
     const documentQueryLambda = this.setupIHEGatewayV2DocumentQueryLambda(
       props,
@@ -113,6 +161,52 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
     });
   }
 
+  private setupWriteToS3OutboundPD(ownProps: {
+    lambdaLayers: LambdaLayers;
+    vpc: ec2.IVpc;
+    envType: EnvType;
+    sentryDsn: string | undefined;
+    alarmAction: SnsAction | undefined;
+  }): { lambda: Lambda; queue: Queue } {
+    const { lambdaLayers, vpc, envType, sentryDsn, alarmAction } = ownProps;
+    const {
+      name,
+      entry,
+      lambda: lambdaSettings,
+      queue: queueSettings,
+      eventSource: eventSourceSettings,
+    } = settings().writeToS3;
+
+    const queue = createQueue({
+      ...queueSettings,
+      stack: this,
+      name,
+      createDLQ: true,
+      lambdaLayers: [lambdaLayers.shared],
+      envType,
+      alarmSnsAction: alarmAction,
+    });
+
+    const lambda = createLambda({
+      ...lambdaSettings,
+      stack: this,
+      name,
+      entry,
+      envType,
+      envVars: {
+        // API_URL set on the api-stack after the OSS API is created
+        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+      },
+      layers: [lambdaLayers.shared],
+      vpc,
+      alarmSnsAction: alarmAction,
+    });
+
+    lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
+
+    return { lambda, queue };
+  }
+
   private grantSecretsReadAccess(
     lambdaFunction: Lambda,
     secrets: Secrets,
@@ -142,7 +236,8 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
       sentryDsn: string | undefined;
     },
     iheResponsesBucket: s3.Bucket,
-    iheParsedResponsesBucket: s3.Bucket
+    iheParsedResponsesBucket: s3.Bucket,
+    writeToS3Queue: Queue
   ): Lambda {
     const {
       lambdaLayers,
@@ -181,11 +276,18 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
         IHE_RESPONSES_BUCKET_NAME: iheResponsesBucket.bucketName,
         IHE_PARSED_RESPONSES_BUCKET_NAME: iheParsedResponsesBucket.bucketName,
+        WRITE_TO_S3_QUEUE_URL: writeToS3Queue.queueUrl,
       },
       layers: [lambdaLayers.shared],
       memory: 4096,
       timeout: Duration.minutes(10),
       vpc,
+    });
+
+    provideAccessToQueue({
+      accessType: "send",
+      queue: writeToS3Queue,
+      resource: patientDiscoveryLambda,
     });
 
     this.grantSecretsReadAccess(patientDiscoveryLambda, secrets, [
@@ -196,7 +298,6 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
     ]);
 
     iheResponsesBucket.grantReadWrite(patientDiscoveryLambda);
-    iheParsedResponsesBucket.grantReadWrite(patientDiscoveryLambda);
     medicalDocumentsBucket.grantRead(patientDiscoveryLambda);
     cqTrustBundleBucket.grantRead(patientDiscoveryLambda);
     return patientDiscoveryLambda;

@@ -1,4 +1,9 @@
-Ticket: #_[ticket-number]_
+_[Release PRs:]_
+
+Issues:
+
+- https://linear.app/metriport/issue/ENG-xxx
+- https://linear.app/metriport/issue/ENG-xxx
 
 ### Dependencies
 
@@ -68,6 +73,7 @@ _[Add and remove items below accordingly]_
 - [ ] Fern Definition Updated
 - [ ] Release Fern SDKs
 - [ ] FFs have been set in Staging, Production, and Sandbox
+- [ ] Happy-path E2E test created checking new FF flow
 - [ ] No dependencies between API and Infra that will cause errors during deployment
 - [ ] _[action n-1]_
 - [ ] _[action n]_

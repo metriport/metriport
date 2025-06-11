@@ -26,8 +26,8 @@ export function settings() {
     cpuAmount,
     cpu: cpuAmount * vCPU,
     memoryLimitMiB: prod ? 8192 : 4096,
-    taskCountMin: prod ? 16 : 1,
-    taskCountMax: prod ? 32 : 4,
+    taskCountMin: prod ? 32 : 1,
+    taskCountMax: prod ? 64 : 4,
     // How long this service can run for
     maxExecutionTimeout: MAXIMUM_LAMBDA_TIMEOUT,
   };

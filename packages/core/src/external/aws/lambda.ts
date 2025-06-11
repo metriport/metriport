@@ -1,11 +1,16 @@
+import { BadRequestError, MetriportError, NotFoundError } from "@metriport/shared";
 import * as AWS from "aws-sdk";
 import { PromiseResult } from "aws-sdk/lib/request";
 import { base64ToString } from "../../util/base64";
-import BadRequestError from "../../util/error/bad-request";
-import { MetriportError } from "../../util/error/metriport-error";
-import NotFoundError from "../../util/error/not-found";
+import { out } from "../../util/log";
 
-export function makeLambdaClient(region: string, timeoutInMillis?: number) {
+export type LambdaClient = AWS.Lambda;
+
+/**
+ * Returns a new AWS Lambda client.
+ * Note: callers are responsible for handling the error, usually by calling `getLambdaResultPayload()`.
+ */
+export function makeLambdaClient(region: string, timeoutInMillis?: number): LambdaClient {
   return new AWS.Lambda({
     signatureVersion: "v4",
     region,
@@ -13,12 +18,19 @@ export function makeLambdaClient(region: string, timeoutInMillis?: number) {
   });
 }
 
+/**
+ * Returns a function that can be used to handle the result of a lambda invocation.
+ * This function will return the payload of the lambda invocation as string, or undefined if the
+ * lambda invocation failed or if the lambda invocation returns an empty response.
+ */
 export function defaultLambdaInvocationResponseHandler(params: {
   lambdaName?: string;
   failGracefully?: boolean | false;
-}) {
-  return function (result: PromiseResult<AWS.Lambda.InvocationResponse, AWS.AWSError>) {
-    getLambdaResultPayload({ result, failOnEmptyResponse: false, ...params });
+}): (result: PromiseResult<AWS.Lambda.InvocationResponse, AWS.AWSError>) => string | undefined {
+  return function (
+    result: PromiseResult<AWS.Lambda.InvocationResponse, AWS.AWSError>
+  ): string | undefined {
+    return getLambdaResultPayload({ result, failOnEmptyResponse: false, ...params });
   };
 }
 
@@ -92,7 +104,7 @@ export function getLambdaResultPayload({
   lambdaName = "<unknown-name>",
   failGracefully = false,
   failOnEmptyResponse = true,
-  log = console.log,
+  log = out("getLambdaResultPayload").log,
 }: {
   result: PromiseResult<AWS.Lambda.InvocationResponse, AWS.AWSError>;
   lambdaName?: string;

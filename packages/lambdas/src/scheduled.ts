@@ -21,6 +21,7 @@ const timeoutMillis = timeoutRaw != undefined ? Number(timeoutRaw) : undefined;
  * Usually applied to scheduled jobs, it gets triggered by CloudWatch events
  * and calls an endpoint with no authentication.
  */
+// TODO move to capture.wrapHandler()
 export const handler = Sentry.AWSLambda.wrapHandler(async event => {
   try {
     console.log(`Calling POST ${url}`);

@@ -1,10 +1,11 @@
 import { CommonWellAPI, organizationQueryMeta } from "@metriport/commonwell-sdk";
+import { isCWEnabledForCx } from "@metriport/core/command/feature-flags/domain-ffs";
 import { addOidPrefix } from "@metriport/core/domain/oid";
 import { out } from "@metriport/core/util/log";
 import { reset } from ".";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { capture } from "../../../shared/notifications";
-import { isCWEnabledForCx } from "../../aws/app-config";
+import { validateCwLinksBelongToPatient } from "../../hie/validate-patient-links";
 import { makeCommonWellAPI } from "../api";
 import {
   updateCommonwellIdsAndStatus,
@@ -12,7 +13,6 @@ import {
 } from "../patient-external-data";
 import { getCwInitiator } from "../shared";
 import { autoUpgradeNetworkLinks, getPatientsNetworkLinks, patientWithCWData } from "./shared";
-import { validateCwLinksBelongToPatient } from "../../hie/validate-patient-links";
 
 const context = "cw.link.create";
 

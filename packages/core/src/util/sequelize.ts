@@ -18,30 +18,6 @@ export const dbReadReplicaEndpointSchema = z.object({
 export type DbReadReplicaEndpoint = z.infer<typeof dbReadReplicaEndpointSchema>;
 
 /**
- * This function is used to initialize the readonly DB pool for queries that require the read replica.
- *
- * Note that this is a workaround while we don't have https://github.com/metriport/metriport-internal/issues/1174
- * in place.
- */
-export function initReadonlyDbPool(
-  dbCreds: string,
-  dbReadReplicaEndpoint: string,
-  poolOptions?: PoolOptions,
-  logging?: boolean
-) {
-  const dbCredsRaw = JSON.parse(dbCreds);
-  const parsedDbCreds = dbCredsSchema.parse(dbCredsRaw);
-
-  const dbReadReplicaEndpointRaw = JSON.parse(dbReadReplicaEndpoint);
-  const parsedDbReadReplicaEndpoint = dbReadReplicaEndpointSchema.parse(dbReadReplicaEndpointRaw);
-
-  parsedDbCreds.host = parsedDbReadReplicaEndpoint.host;
-  parsedDbCreds.port = parsedDbReadReplicaEndpoint.port;
-
-  return initDbPoolFromCreds(parsedDbCreds, poolOptions, logging);
-}
-
-/**
  * This function is used to initialize the DB pool for raw queries that can't rely on Models.
  */
 export function initDbPool(dbCreds: string, poolOptions?: PoolOptions, logging?: boolean) {

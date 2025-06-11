@@ -1,5 +1,9 @@
 import { deleteConsolidated } from "@metriport/core/command/consolidated/consolidated-delete";
 import {
+  isCarequalityEnabled,
+  isCommonwellEnabled,
+} from "@metriport/core/command/feature-flags/domain-ffs";
+import {
   ConvertResult,
   DocumentQueryProgress,
   DocumentQueryStatus,
@@ -14,7 +18,6 @@ import { BadRequestError, emptyFunction } from "@metriport/shared";
 import { calculateConversionProgress } from "../../../domain/medical/conversion-progress";
 import { validateOptionalFacilityId } from "../../../domain/medical/patient-facility";
 import { processAsyncError } from "../../../errors";
-import { isCarequalityEnabled, isCommonwellEnabled } from "../../../external/aws/app-config";
 import { getDocumentsFromCQ } from "../../../external/carequality/document/query-documents";
 import { queryAndProcessDocuments as getDocumentsFromCW } from "../../../external/commonwell/document/document-query";
 import { getCqOrgIdsToDenyOnCw } from "../../../external/hie/cross-hie-ids";
@@ -45,6 +48,7 @@ export async function queryDocumentsAcrossHIEs({
   cxId,
   patientId,
   facilityId,
+  requestId: requestIdParam,
   override,
   cxDocumentRequestMetadata,
   forceQuery = false,
@@ -57,6 +61,7 @@ export async function queryDocumentsAcrossHIEs({
   cxId: string;
   patientId: string;
   facilityId?: string;
+  requestId?: string | undefined;
   override?: boolean;
   cxDocumentRequestMetadata?: unknown;
   forceQuery?: boolean;
@@ -77,7 +82,7 @@ export async function queryDocumentsAcrossHIEs({
   validateOptionalFacilityId(patient, facilityId);
 
   const docQueryProgress = patient.data.documentQueryProgress;
-  const requestId = getOrGenerateRequestId(docQueryProgress, forceQuery);
+  const requestId = requestIdParam ?? getOrGenerateRequestId(docQueryProgress, forceQuery);
 
   const isCheckStatus = !forceQuery;
   if (isCheckStatus && areDocumentsProcessing(docQueryProgress)) {
@@ -117,9 +122,15 @@ export async function queryDocumentsAcrossHIEs({
 
   let triggeredDocumentQuery = false;
 
-  const commonwellEnabled = await isCommonwellEnabled();
-  // Why? Please add a comment explaining why we're not running CW if there's no CQ managing org name.
+  /**
+   * This is likely safe to remove based on the usage of this function with the `cqManagingOrgName` param.
+   * But because it touches a core flow and we don't have time to review/test it now, leaving as is.
+   * The expected behavior is that we never pass `cqManagingOrgName`, so it should be null/undefined every
+   * time this function is called - otherwise we can miss the opportunity to query CW for docs.
+   * @see https://metriport.slack.com/archives/C04DMKE9DME/p1745685924702559
+   */
   if (!cqManagingOrgName) {
+    const commonwellEnabled = await isCommonwellEnabled();
     if (commonwellEnabled || forceCommonwell) {
       getDocumentsFromCW({
         patient: updatedPatient,
@@ -172,11 +183,15 @@ export const createQueryResponse = (
 type UpdateResult = {
   patient: Pick<Patient, "id" | "cxId">;
   convertResult: ConvertResult;
+  count?: number;
+  log?: typeof console.log;
 };
 
 export async function updateConversionProgress({
   patient: { id, cxId },
   convertResult,
+  count,
+  log = out(`updateConversionProgress - patient ${id}, cxId ${cxId}`).log,
 }: UpdateResult): Promise<Patient> {
   const patientFilter = { id, cxId };
   return executeOnDBTx(PatientModel.prototype, async transaction => {
@@ -186,9 +201,13 @@ export async function updateConversionProgress({
       transaction,
     });
 
+    const docQueryProgress = patient.data.documentQueryProgress;
+    log(`Status pre-update: ${JSON.stringify(docQueryProgress)}`);
+
     const documentQueryProgress = calculateConversionProgress({
       patient,
       convertResult,
+      count,
     });
 
     const updatedPatient = {

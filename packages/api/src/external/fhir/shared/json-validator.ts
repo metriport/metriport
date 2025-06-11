@@ -1,7 +1,7 @@
 import { Bundle } from "@medplum/fhirtypes";
+import { BadRequestError } from "@metriport/shared";
 import Ajv from "ajv";
 import metaSchema from "ajv/lib/refs/json-schema-draft-06.json";
-import BadRequestError from "../../../errors/bad-request";
 import { Bundle as ValidBundle } from "../../../routes/medical/schemas/fhir";
 import schema from "./fhir.schema.json";
 

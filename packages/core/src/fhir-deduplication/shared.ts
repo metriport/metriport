@@ -3,8 +3,9 @@ import { errorToString } from "@metriport/shared";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import _, { cloneDeep } from "lodash";
-import { uuidv7 } from "../util/uuid-v7";
+import { createExtensionRelatedArtifact } from "../external/fhir/shared/extensions/derived-from";
 import { capture, out } from "../util";
+import { uuidv7 } from "../util/uuid-v7";
 
 dayjs.extend(utc);
 
@@ -18,7 +19,8 @@ export const UNK_CODE = "UNK";
 export const UNKNOWN_DISPLAY = "unknown";
 export type DateFormats = (typeof dateFormats)[number];
 
-export type ApplySpecialModificationsCallback<T> = (merged: T, existing: T, target: T) => T;
+export type OnPremergeCallback<T> = (base: T, additional: T) => void;
+export type OnPostmergeCallback<T> = (base: T) => T;
 
 export type CompositeKey = {
   code: string;
@@ -39,79 +41,90 @@ export function getDateFromString(dateString: string, dateFormat?: "date" | "dat
   }
 }
 
-function createExtensionRelatedArtifact(resourceType: string, id: string | undefined) {
-  return {
-    url: "http://hl7.org/fhir/StructureDefinition/artifact-relatedArtifact",
-    valueRelatedArtifact: { type: "derived-from", display: `${resourceType}/${id}` },
-  };
-}
-
-export function combineTwoResources<T extends Resource>(
-  r1: T,
-  r2: T,
-  isExtensionIncluded = true
-): T {
-  const combined = deepMerge({ ...r1 }, r2, isExtensionIncluded);
-  const extensionRef = createExtensionRelatedArtifact(r2.resourceType, r2.id);
+//eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function mergeIntoTargetResource<T extends Resource & { extension?: any[] }>(
+  target: T,
+  source: T,
+  keepExtensions = true
+) {
+  const extensionRef = createExtensionRelatedArtifact(source.resourceType, source.id);
+  const originalExtension = "extension" in target ? [...target.extension] : [];
+  mutativeDeepMerge(target, source, keepExtensions);
 
   // This part combines resources together and adds the ID references of the duplicates into the master resource
   // regardless of whether new information was found
 
-  if (!isExtensionIncluded) {
-    delete combined.extension;
-  } else if ("extension" in r1) {
-    combined.extension = [...r1.extension, extensionRef];
+  if (!keepExtensions) {
+    delete target.extension;
+  } else if ("extension" in target) {
+    target.extension = [...originalExtension, extensionRef];
   } else {
-    combined.extension = [extensionRef];
+    target.extension = [extensionRef];
   }
-  return combined;
 }
 
 // TODO: Might be a good idea to include a check to see if all resources refer to the same patient
 const conditionKeysToIgnore = ["id", "resourceType", "subject"];
 
+/**
+ * Mutatively merge the contents of source into target
+ * @param target the object that will be modified
+ * @param source the object that is the source of data entering target
+ * @param keepExtensions whether to include the extension field when merging resources
+ */
 //eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function deepMerge(target: any, source: any, isExtensionIncluded: boolean): any {
-  const combined = cloneDeep(target);
+export function mutativeDeepMerge(target: any, source: any, keepExtensions: boolean) {
   for (const key of Object.keys(source)) {
-    if (key === "extension" && !isExtensionIncluded) continue;
+    if (key === "extension" && !keepExtensions) continue;
     if (conditionKeysToIgnore.includes(key)) continue;
 
-    if (Array.isArray(source[key]) && Array.isArray(combined[key])) {
+    if (Array.isArray(source[key]) && Array.isArray(target[key])) {
       // Combine arrays and remove duplicates based on unique properties
-      combined[key] = mergeArrays(combined[key], source[key]);
-    } else if (source[key] instanceof Object && key in combined) {
+      mutativeMergeArrays(target[key], source[key]);
+    } else if (source[key] instanceof Object && key in target) {
       // Recursively merge objects
-      combined[key] = deepMerge(combined[key], source[key], isExtensionIncluded);
+      mutativeDeepMerge(target[key], source[key], keepExtensions);
     } else {
-      // Directly assign values
       if (key === "__proto__" || key === "constructor") continue;
       if (
         typeof source[key] === "string" &&
         unknownValues.some(unk => source[key].toLowerCase().includes(unk))
       )
         continue;
-      combined[key] = source[key];
+      target[key] = source[key];
     }
   }
+}
+
+/**
+ * Merge the two objects, returning a new object
+ */
+//eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function deepMerge(target: any, source: any, keepExtensions: boolean): any {
+  const combined = cloneDeep(target);
+  mutativeDeepMerge(combined, source, keepExtensions);
   return combined;
 }
 
+/**
+ * Mutatively merge the contents of sourceArray into targetArray
+ * @param targetArray the array to that will be modified
+ * @param sourceArray the array that is the source of data entering targetArray
+ */
 //eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function mergeArrays(targetArray: any[], sourceArray: any[]): any[] {
-  const combinedArray = cloneDeep(targetArray);
-
+export function mutativeMergeArrays(targetArray: any[], sourceArray: any[]) {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const preprocessedTargetArray = targetArray.map(v => JSON.stringify(v));
   for (const sourceItem of sourceArray) {
-    const duplicate = combinedArray.find(
-      targetItem => JSON.stringify(targetItem) === JSON.stringify(sourceItem)
+    const preprocessedSourceItem = JSON.stringify(sourceItem);
+    const duplicate = preprocessedTargetArray.find(
+      targetItem => targetItem === preprocessedSourceItem
     );
 
     if (!duplicate) {
-      combinedArray.push(sourceItem);
+      targetArray.push(sourceItem);
     }
   }
-
-  return combinedArray;
 }
 
 export function combineResources<T>({ combinedMaps }: { combinedMaps: Map<string, T>[] }): T[] {
@@ -127,30 +140,43 @@ export function combineResources<T>({ combinedMaps }: { combinedMaps: Map<string
 /**
  * Deduplicates a resource within the resource map. If the key doesn't match an existing resource, the target resource will be added to the map.
  */
-export function deduplicateWithinMap<T extends Resource>(
-  dedupedResourcesMap: Map<string, T>,
-  dedupKey: string,
-  targetResource: T,
-  refReplacementMap: Map<string, string>,
-  isExtensionIncluded = true,
-  customMergeLogic?: ApplySpecialModificationsCallback<T> | undefined
-): void {
+export function deduplicateWithinMap<T extends Resource>({
+  dedupedResourcesMap,
+  dedupKey,
+  candidateResource,
+  refReplacementMap,
+  keepExtensions = true,
+  onPremerge,
+  onPostmerge,
+}: {
+  dedupedResourcesMap: Map<string, T>;
+  dedupKey: string;
+  candidateResource: T;
+  refReplacementMap: Map<string, string>;
+  keepExtensions?: boolean;
+  onPremerge?: OnPremergeCallback<T> | undefined;
+  onPostmerge?: OnPostmergeCallback<T> | undefined;
+}): void {
   const existingResource = dedupedResourcesMap.get(dedupKey);
   // if its a duplicate, combine the resources
   if (existingResource?.id) {
     const masterRef = `${existingResource.resourceType}/${existingResource.id}`;
-    let merged = combineTwoResources(existingResource, targetResource, isExtensionIncluded);
-    if (customMergeLogic) {
-      merged = customMergeLogic(merged, existingResource, targetResource);
+    let target = existingResource;
+    if (onPremerge) {
+      onPremerge(target, candidateResource);
     }
-    dedupedResourcesMap.set(dedupKey, merged);
+    mergeIntoTargetResource(target, candidateResource, keepExtensions);
+    if (onPostmerge) {
+      target = onPostmerge(target);
+    }
+    dedupedResourcesMap.set(dedupKey, target);
 
-    if (targetResource.id) {
-      const consumedRef = `${targetResource.resourceType}/${targetResource.id}`;
+    if (candidateResource.id) {
+      const consumedRef = `${candidateResource.resourceType}/${candidateResource.id}`;
       refReplacementMap.set(consumedRef, masterRef);
     }
   } else {
-    dedupedResourcesMap.set(dedupKey, targetResource);
+    dedupedResourcesMap.set(dedupKey, candidateResource);
   }
 }
 
@@ -186,8 +212,9 @@ export function fillL1L2Maps<T extends Resource>({
   setterKeys,
   targetResource,
   refReplacementMap,
-  isExtensionIncluded = true,
-  applySpecialModifications,
+  keepExtensions = true,
+  onPremerge,
+  onPostmerge,
 }: {
   map1: Map<string, string>;
   map2: Map<string, T>;
@@ -195,21 +222,23 @@ export function fillL1L2Maps<T extends Resource>({
   setterKeys: string[];
   targetResource: T;
   refReplacementMap: Map<string, string>;
-  isExtensionIncluded?: boolean;
-  applySpecialModifications?: ApplySpecialModificationsCallback<T>;
+  keepExtensions?: boolean;
+  onPremerge?: OnPremergeCallback<T>;
+  onPostmerge?: OnPostmergeCallback<T>;
 }): void {
   let map2Key = undefined;
   for (const key of getterKeys) {
     map2Key = map1.get(key); // Potential improvement. We just select the first uuid that matches. What if multple matches exist?
     if (map2Key) {
-      deduplicateWithinMap(
-        map2,
-        map2Key,
-        targetResource,
+      deduplicateWithinMap({
+        dedupedResourcesMap: map2,
+        dedupKey: map2Key,
+        candidateResource: targetResource,
         refReplacementMap,
-        isExtensionIncluded,
-        applySpecialModifications
-      );
+        keepExtensions,
+        onPremerge,
+        onPostmerge,
+      });
       break;
     }
   }
@@ -219,14 +248,15 @@ export function fillL1L2Maps<T extends Resource>({
       map1.set(key, map2Key);
     }
     // fill L2 map only once to avoid duplicate entries
-    deduplicateWithinMap(
-      map2,
-      map2Key,
-      targetResource,
+    deduplicateWithinMap({
+      dedupedResourcesMap: map2,
+      dedupKey: map2Key,
+      candidateResource: targetResource,
       refReplacementMap,
-      isExtensionIncluded,
-      applySpecialModifications
-    );
+      keepExtensions,
+      onPremerge,
+      onPostmerge,
+    });
   }
 }
 
@@ -466,6 +496,16 @@ export function fetchCodeableConceptText(concept: CodeableConcept): string | und
   }
 }
 
+export function assignMostDescriptiveStatus<T extends Resource & { status?: string }>(
+  statusRanking: Record<string, number>,
+  existing: T,
+  target: T
+) {
+  const status = pickMostDescriptiveStatus(statusRanking, existing.status, target.status);
+  existing.status = status;
+  target.status = status;
+}
+
 /**
  * Manages the deduplication of FHIR resources by maintaining a two-level mapping system:
  * - Level 1 (referenceMap): Maps identifying characteristics to a resource reference ID
@@ -501,7 +541,8 @@ export function deduplicateAndTrackResource<T extends Resource>({
   incomingResource,
   refReplacementMap,
   keepExtensions = true,
-  customMergeLogic,
+  onPremerge,
+  onPostmerge,
 }: {
   resourceKeyMap: Map<string, string>;
   dedupedResourcesMap: Map<string, T>;
@@ -510,7 +551,8 @@ export function deduplicateAndTrackResource<T extends Resource>({
   incomingResource: T;
   refReplacementMap: Map<string, string>;
   keepExtensions?: boolean;
-  customMergeLogic?: ApplySpecialModificationsCallback<T>;
+  onPremerge?: OnPremergeCallback<T>;
+  onPostmerge?: OnPostmergeCallback<T>;
 }): void {
   let masterResourceId = undefined;
 
@@ -518,14 +560,15 @@ export function deduplicateAndTrackResource<T extends Resource>({
   for (const candidateKey of matchCandidateKeys) {
     masterResourceId = resourceKeyMap.get(candidateKey);
     if (masterResourceId) {
-      deduplicateWithinMap(
+      deduplicateWithinMap({
         dedupedResourcesMap,
-        masterResourceId,
-        incomingResource,
+        dedupKey: masterResourceId,
+        candidateResource: incomingResource,
         refReplacementMap,
         keepExtensions,
-        customMergeLogic
-      );
+        onPremerge,
+        onPostmerge,
+      });
       break;
     }
   }
@@ -536,14 +579,15 @@ export function deduplicateAndTrackResource<T extends Resource>({
     for (const identifier of identifierKeys) {
       resourceKeyMap.set(identifier, masterResourceId);
     }
-    deduplicateWithinMap(
+    deduplicateWithinMap({
       dedupedResourcesMap,
-      masterResourceId,
-      incomingResource,
+      dedupKey: masterResourceId,
+      candidateResource: incomingResource,
       refReplacementMap,
       keepExtensions,
-      customMergeLogic
-    );
+      onPremerge,
+      onPostmerge,
+    });
   }
 }
 

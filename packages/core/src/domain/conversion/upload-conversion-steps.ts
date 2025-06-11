@@ -1,6 +1,5 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
-import { errorToString } from "@metriport/shared";
-import { S3Utils, executeWithRetriesS3 } from "../../external/aws/s3";
+import { S3Utils, storeInS3WithRetries } from "../../external/aws/s3";
 import { capture } from "../../util";
 import { executeAsynchronously } from "../../util/concurrency";
 import { FHIR_APP_MIME_TYPE, XML_APP_MIME_TYPE } from "../../util/mime";
@@ -221,61 +220,4 @@ export async function storeNormalizedConversionResult({
       shouldCapture: true,
     },
   });
-}
-
-export async function storeInS3WithRetries({
-  s3Utils,
-  payload,
-  bucketName,
-  fileName,
-  contentType,
-  log,
-  errorConfig,
-}: {
-  s3Utils: S3Utils;
-  payload: string;
-  bucketName: string;
-  fileName: string;
-  contentType: string;
-  log: typeof console.log;
-  errorConfig?: {
-    errorMessage: string;
-    context: string;
-    captureParams?: Record<string, unknown>;
-    shouldCapture: boolean;
-  };
-}): Promise<void> {
-  try {
-    await executeWithRetriesS3(
-      () =>
-        s3Utils.s3
-          .upload({
-            Bucket: bucketName,
-            Key: fileName,
-            Body: payload,
-            ContentType: contentType,
-          })
-          .promise(),
-      {
-        ...defaultS3RetriesConfig,
-        log,
-      }
-    );
-  } catch (error) {
-    const msg = errorConfig?.errorMessage ?? "Error uploading to S3";
-    log(`${msg}: ${errorToString(error)}`);
-
-    if (errorConfig?.shouldCapture) {
-      capture.error(msg, {
-        extra: {
-          fileName,
-          context: errorConfig.context,
-          error,
-          errorMessage: errorConfig.errorMessage,
-          ...errorConfig.captureParams,
-        },
-      });
-    }
-    throw error;
-  }
 }

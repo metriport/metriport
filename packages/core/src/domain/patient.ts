@@ -99,6 +99,18 @@ export function joinName(name: string[]): string {
   return name.join(" ");
 }
 
+/**
+ * Attempts to find a middle name in a first name.
+ * Currently this only checks for middle name initials.
+ * @param firstName - The first name to get the middle name from.
+ * @returns The middle name or undefined if there is no middle name.
+ */
+export function getMiddleName(firstName: string): string | undefined {
+  const cleanFirstName = firstName.replace(/[^a-zA-Z ]/g, "");
+  const lastTwoChars = cleanFirstName.substring(cleanFirstName.length - 2);
+  return lastTwoChars[0] === " " ? lastTwoChars[1] : undefined;
+}
+
 export interface Patient extends BaseDomain, PatientCreate {}
 
 export function getStatesFromAddresses(patient: Patient): USStateForAddress[] {
@@ -123,4 +135,11 @@ export function createDriversLicensePersonalIdentifier(
     state: state,
   };
   return personalIdentifier;
+}
+
+export function getConsolidatedQueryByRequestId(
+  patient: Pick<Patient, "data">,
+  requestId: string | undefined
+): ConsolidatedQuery | undefined {
+  return patient.data.consolidatedQueries?.find(q => q.requestId === requestId);
 }

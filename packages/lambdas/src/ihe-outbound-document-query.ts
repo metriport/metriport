@@ -15,8 +15,9 @@ const apiUrl = getEnvVarOrFail("API_URL");
 const region = getEnvVarOrFail("AWS_REGION");
 const maxPollingDuration = getEnvVarOrFail("MAX_POLLING_DURATION");
 
-capture.setExtra({ lambdaName: lambdaName });
+capture.setExtra({ lambdaName });
 
+// TODO move to capture.wrapHandler()
 export const handler = Sentry.AWSLambda.wrapHandler(
   async ({ requestId, numOfGateways, patientId, cxId }: PollOutboundResults) => {
     console.log(

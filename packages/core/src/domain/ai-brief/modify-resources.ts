@@ -53,6 +53,7 @@ const REMOVE_FROM_NOTE = [
   "Minor syntax, contextual, and spelling errors may be related to the use of this software and were not intentional. If corrections are necessary, please contact provider.",
   "<content>",
   "</content>",
+  "<content/>",
   "<root>",
   "</root>",
   "&lt;",
@@ -314,6 +315,7 @@ export type SlimDiagnosticReport = Omit<
   presentedForm?: string[] | undefined;
   status?: string | undefined;
   reference?: Record<string, unknown>;
+  encounter?: string | undefined;
 };
 
 function getSlimDiagnosticReport(res: DiagnosticReport): SlimDiagnosticReport | undefined {
@@ -381,6 +383,7 @@ function getSlimDiagnosticReport(res: DiagnosticReport): SlimDiagnosticReport | 
     status,
     category,
     presentedForm: Array.from(uniqueData),
+    encounter: updRes.encounter?.reference ?? "",
   };
 }
 
@@ -585,7 +588,7 @@ function getSlimLocation(res: Location): SlimLocation {
   };
 }
 
-function cleanUpNote(note: string): string {
+export function cleanUpNote(note: string): string {
   return note
     .trim()
     .replace(new RegExp(REMOVE_FROM_NOTE.join("|"), "g"), "")

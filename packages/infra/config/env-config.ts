@@ -1,10 +1,11 @@
 import { CqDirectorySimplifiedOrg } from "@metriport/shared/interface/external/carequality/directory/simplified-org";
 import { EnvType } from "../lib/env-type";
 import { RDSAlarmThresholds } from "./aws/rds";
+import { Hl7NotificationConfig } from "./hl7-notification-config";
 import { IHEGatewayProps } from "./ihe-gateway-config";
 import { OpenSearchConnectorConfig } from "./open-search-config";
 import { PatientImportProps } from "./patient-import";
-import { Hl7NotificationConfig } from "./hl7-notification-config";
+
 export type ConnectWidgetConfig = {
   stackName: string;
   region: string;
@@ -121,12 +122,15 @@ type EnvConfigBase = {
   generalBucketName: string;
   medicalDocumentsBucketName: string;
   medicalDocumentsUploadBucketName: string;
+  pharmacyConversionBucketName: string;
+  surescriptsReplicaBucketName: string;
   ehrResponsesBucketName?: string;
+  ehrBundleBucketName: string;
   iheResponsesBucketName: string;
   iheParsedResponsesBucketName: string;
   iheRequestsBucketName: string;
   fhirConverterBucketName?: string;
-  analyticsSecretNames?: {
+  analyticsSecretNames: {
     POST_HOG_API_KEY_SECRET: string;
   };
   locationService?: {
@@ -209,12 +213,21 @@ type EnvConfigBase = {
   };
   sentryDSN?: string; // API's Sentry DSN
   lambdasSentryDSN?: string;
-  slack?: {
-    SLACK_ALERT_URL?: string;
-    SLACK_NOTIFICATION_URL?: string;
+  slack: {
+    SLACK_ALERT_URL: string;
+    SLACK_NOTIFICATION_URL: string;
     SLACK_SENSITIVE_DATA_URL?: string;
     workspaceId: string;
     alertsChannelId: string;
+  };
+  acmCertMonitor: {
+    /**
+     * UTC-based: "Minutes Hours Day-of-month Month Day-of-week Year"
+     * @see: https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-cron-expressions.html
+     * @see: https://docs.aws.amazon.com/lambda/latest/dg/services-cloudwatchevents-expressions.html
+     */
+    scheduleExpressions: string | string[];
+    heartbeatUrl: string;
   };
   docQueryChecker?: {
     /**
@@ -226,6 +239,7 @@ type EnvConfigBase = {
   };
   cqDirectoryRebuilder?: {
     scheduleExpressions: string | string[];
+    heartbeatUrl?: string;
   };
   ehrIntegration?: {
     athenaHealth: {
@@ -246,12 +260,32 @@ type EnvConfigBase = {
         EHR_CANVAS_CLIENT_KEY_AND_SECRET_MAP: string;
       };
     };
+    healthie: {
+      env: string;
+      secrets: {
+        EHR_HEALTHIE_API_KEY_MAP: string;
+      };
+    };
+    eclinicalworks: {
+      env: string;
+    };
+  };
+  surescripts?: {
+    surescriptsSenderId: string;
+    surescriptsReceiverId: string;
+    surescriptsHost: string;
+    secrets: {
+      SURESCRIPTS_SFTP_SENDER_PASSWORD: string;
+      SURESCRIPTS_SFTP_PUBLIC_KEY: string;
+      SURESCRIPTS_SFTP_PRIVATE_KEY: string;
+    };
   };
 };
 
 export type EnvConfigNonSandbox = EnvConfigBase & {
   environmentType: EnvType.staging | EnvType.production;
   dashUrl: string;
+  ehrDashUrl: string;
   // TODO 1672 remove this when we remove the old lambda that relies on Puppeteer
   fhirToMedicalLambda: {
     nodeRuntimeArn: string;
@@ -266,6 +300,7 @@ export type EnvConfigSandbox = EnvConfigBase & {
   connectWidgetUrl: string;
   sandboxSeedDataBucketName: string;
   engineeringCxId?: never;
+  hl7Notification?: never;
 };
 
 export type EnvConfig = EnvConfigSandbox | EnvConfigNonSandbox;

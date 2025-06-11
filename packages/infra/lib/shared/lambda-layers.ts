@@ -22,12 +22,14 @@ export function setupLambdasLayers(stack: Stack, prefixStackName = false): Lambd
       layerVersionName: `${prefix}LambdaNodeModules`,
       code: Code.fromAsset("../lambdas/layers/shared/shared-layer.zip"),
     }),
+    /** @deprecated use wkHtmlToPdf instead */
     chromium: new LayerVersion(stack, `${prefix}Chromium-layer`, {
       layerVersionName: `${prefix}Chromium-layer`,
       compatibleRuntimes: [Runtime.NODEJS_16_X],
       code: Code.fromAsset("../lambdas/layers/chromium"),
       description: "Adds chromium to the lambda",
     }),
+    /** @deprecated use wkHtmlToPdf instead */
     dig: new LayerVersion(stack, `${prefix}Dig-layer`, {
       layerVersionName: `${prefix}Dig-layer`,
       compatibleRuntimes: [Runtime.NODEJS_16_X],

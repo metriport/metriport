@@ -51,6 +51,7 @@ const linkPatients = new LinkPatients(cwManagementApi, patientUpdater, ecUpdater
  * Lambda that processes each "chunk" of CQ orgs received as param, updating CW's include list
  * with those and triggering an update for all patients in the patientIds param.
  */
+// TODO move to capture.wrapHandler()
 export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
   console.log(
     `Running with inputQueueURL: ${inputQueueURL}, ` +

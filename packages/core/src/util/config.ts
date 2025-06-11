@@ -61,8 +61,25 @@ export class Config {
   static getSearchIngestionQueueUrl(): string {
     return getEnvVarOrFail("SEARCH_INGESTION_QUEUE_URL");
   }
+
+  static getConsolidatedSearchIndexName(): string {
+    return getEnvVarOrFail("CONSOLIDATED_SEARCH_INDEX");
+  }
+  static getConsolidatedSearchLambdaName(): string {
+    return getEnvVarOrFail("CONSOLIDATED_SEARCH_LAMBDA_NAME");
+  }
+  static getConsolidatedIngestionQueueUrl(): string {
+    return getEnvVarOrFail("CONSOLIDATED_INGESTION_QUEUE_URL");
+  }
+  static getConsolidatedDataIngestionInitialDate(): string | undefined {
+    return getEnvVar("CONSOLIDATED_INGESTION_INITIAL_DATE");
+  }
+
   static getSystemRootOID(): string {
     return getEnvVarOrFail("SYSTEM_ROOT_OID");
+  }
+  static getHl7Base64ScramblerSeed(): string {
+    return getEnvVarOrFail("HL7_BASE64_SCRAMBLER_SEED");
   }
 
   static getFHIRServerUrl(): string {
@@ -72,6 +89,19 @@ export class Config {
   static getMedicalDocumentsBucketName(): string {
     return getEnvVarOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
   }
+  static getHl7IncomingMessageBucketName(): string {
+    return getEnvVarOrFail("HL7_INCOMING_MESSAGE_BUCKET_NAME");
+  }
+  static getHl7OutgoingMessageBucketName(): string {
+    return getEnvVarOrFail("HL7_OUTGOING_MESSAGE_BUCKET_NAME");
+  }
+  static getHl7ConversionBucketName(): string {
+    return getEnvVarOrFail("HL7_CONVERSION_BUCKET_NAME");
+  }
+  static getHl7NotificationQueueUrl(): string {
+    return getEnvVarOrFail("HL7_NOTIFICATION_QUEUE_URL");
+  }
+
   static getCdaToFhirConversionBucketName(): string | undefined {
     return getEnvVar("CONVERSION_RESULT_BUCKET_NAME");
   }
@@ -118,6 +148,9 @@ export class Config {
   static getFHIRtoBundleLambdaName(): string {
     return getEnvVarOrFail("FHIR_TO_BUNDLE_LAMBDA_NAME");
   }
+  static getFHIRtoBundleCountLambdaName(): string {
+    return getEnvVarOrFail("FHIR_TO_BUNDLE_COUNT_LAMBDA_NAME");
+  }
 
   static getBedrockRegion(): string | undefined {
     return getEnvVar("BEDROCK_REGION");
@@ -130,11 +163,9 @@ export class Config {
   static getAiBriefModelId(): string | undefined {
     return getEnvVar("AI_BRIEF_MODEL_ID");
   }
-  static getAppConfigAppId(): string {
-    return getEnvVarOrFail("APPCONFIG_APPLICATION_ID");
-  }
-  static getAppConfigConfigId(): string {
-    return getEnvVarOrFail("APPCONFIG_CONFIGURATION_ID");
+
+  static getFeatureFlagsTableName(): string {
+    return getEnvVarOrFail("FEATURE_FLAGS_TABLE_NAME");
   }
 
   static getEhrResponsesBucketName(): string | undefined {
@@ -144,10 +175,8 @@ export class Config {
   static getPatientImportBucket(): string {
     return getEnvVarOrFail("PATIENT_IMPORT_BUCKET_NAME");
   }
-  // TODO 2330 We should prob remove this as the cloud implementation of the parse step
-  // should only be triggered by S3, not the API.
-  static getPatientImportLambdaName(): string {
-    return getEnvVarOrFail("PATIENT_IMPORT_LAMBDA_NAME");
+  static getPatientImportParseLambdaName(): string {
+    return getEnvVarOrFail("PATIENT_IMPORT_PARSE_LAMBDA_NAME");
   }
   static getPatientImportCreateQueueUrl(): string {
     return getEnvVarOrFail("PATIENT_IMPORT_CREATE_QUEUE_URL");
@@ -155,8 +184,72 @@ export class Config {
   static getPatientImportQueryQueueUrl(): string {
     return getEnvVarOrFail("PATIENT_IMPORT_QUERY_QUEUE_URL");
   }
+  static getPatientImportResultLambdaName(): string {
+    return getEnvVarOrFail("PATIENT_IMPORT_RESULT_LAMBDA_NAME");
+  }
+
+  static getEhrSyncPatientQueueUrl(): string {
+    return getEnvVarOrFail("EHR_SYNC_PATIENT_QUEUE_URL");
+  }
+  static getElationLinkPatientQueueUrl(): string {
+    return getEnvVarOrFail("ELATION_LINK_PATIENT_QUEUE_URL");
+  }
+  static getHealthieLinkPatientQueueUrl(): string {
+    return getEnvVarOrFail("HEALTHIE_LINK_PATIENT_QUEUE_URL");
+  }
+  static getEhrStartResourceDiffBundlesQueueUrl(): string {
+    return getEnvVarOrFail("EHR_START_RESOURCE_DIFF_BUNDLES_QUEUE_URL");
+  }
+  static getEhrComputeResourceDiffBundlesQueueUrl(): string {
+    return getEnvVarOrFail("EHR_COMPUTE_RESOURCE_DIFF_BUNDLES_QUEUE_URL");
+  }
+  static getEhrRefreshEhrBundlesQueueUrl(): string {
+    return getEnvVarOrFail("EHR_REFRESH_EHR_BUNDLES_QUEUE_URL");
+  }
+  static getEhrBundleBucketName(): string {
+    return getEnvVarOrFail("EHR_BUNDLE_BUCKET_NAME");
+  }
+  static getEhrGetAppointmentsLambdaName(): string {
+    return getEnvVarOrFail("EHR_GET_APPOINTMENTS_LAMBDA_NAME");
+  }
 
   static getTermServerUrl(): string | undefined {
     return getEnvVar("TERM_SERVER_URL");
+  }
+
+  static getWriteToS3QueueUrl(): string {
+    return getEnvVarOrFail("WRITE_TO_S3_QUEUE_URL");
+  }
+
+  static getAthenaHealthEnv(): string | undefined {
+    return getEnvVar("EHR_ATHENA_ENVIRONMENT");
+  }
+  static getAthenaHealthClientKey(): string | undefined {
+    return getEnvVar("EHR_ATHENA_CLIENT_KEY");
+  }
+  static getAthenaHealthClientSecret(): string | undefined {
+    return getEnvVar("EHR_ATHENA_CLIENT_SECRET");
+  }
+
+  static getElationEnv(): string | undefined {
+    return getEnvVar("EHR_ELATION_ENVIRONMENT");
+  }
+  static getElationClientKeyAndSecretMap(): string | undefined {
+    return getEnvVar("EHR_ELATION_CLIENT_KEY_AND_SECRET_MAP");
+  }
+
+  static getCanvasClientKeyAndSecretMap(): string | undefined {
+    return getEnvVar("EHR_CANVAS_CLIENT_KEY_AND_SECRET_MAP");
+  }
+
+  static getHealthieEnv(): string | undefined {
+    return getEnvVar("EHR_HEALTHIE_ENVIRONMENT");
+  }
+  static getHealthieApiKeyMap(): string | undefined {
+    return getEnvVar("EHR_HEALTHIE_API_KEY_MAP");
+  }
+
+  static getEClinicalWorksEnv(): string | undefined {
+    return getEnvVar("EHR_ECLINICALWORKS_ENVIRONMENT");
   }
 }

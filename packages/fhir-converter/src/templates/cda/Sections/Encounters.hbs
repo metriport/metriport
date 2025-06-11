@@ -65,7 +65,7 @@
                         {{#each (toArray encounterEntry.encounter.entryRelationship)}}
                             {{#each (toArray this.act.entryRelationship) as |condEntry|}}
                                 {{#if condEntry.observation}}
-                                    {{>Resources/Condition.hbs conditionEntry=condEntry.observation ID=(generateUUID (toJsonString condEntry.observation))}},
+                                    {{>Resources/Condition.hbs conditionEntry=condEntry.observation encounterDate=encounterEntry.encounter.effectiveTime ID=(generateUUID (toJsonString condEntry.observation))}},
                                     {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
                                         {{>References/Condition/subject.hbs ID=(generateUUID (toJsonString condEntry.observation)) REF=(concat 'Patient/' patientId.Id)}},
                                     {{/with}}

@@ -1,7 +1,7 @@
 import { UploadDocumentResult } from "@metriport/api-sdk";
 import { createDocumentFilePath } from "@metriport/core/domain/document/filename";
 import { S3Utils } from "@metriport/core/external/aws/s3";
-import { searchDocuments } from "@metriport/core/external/opensearch/search-documents";
+import { searchDocuments } from "@metriport/core/command/consolidated/search/document-reference/search";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { stringToBoolean } from "@metriport/shared";
 import { Request, Response } from "express";
@@ -221,13 +221,13 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const { cxId, id: patientId } = getPatientInfoOrFail(req);
     const cxDownloadRequestMetadata = cxRequestMetadataSchema.parse(req.body);
-    const BulkGetDocumentsUrlProgress = await startBulkGetDocumentUrls(
+    const bulkGetDocumentsUrlProgress = await startBulkGetDocumentUrls({
       cxId,
       patientId,
-      cxDownloadRequestMetadata?.metadata
-    );
+      cxDownloadRequestMetadata: cxDownloadRequestMetadata?.metadata,
+    });
 
-    return res.status(OK).json(BulkGetDocumentsUrlProgress);
+    return res.status(OK).json(bulkGetDocumentsUrlProgress);
   })
 );
 

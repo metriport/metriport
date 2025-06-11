@@ -1,7 +1,7 @@
 import { getLocalStorage } from "@metriport/core/util/local-storage";
 import { NextFunction, Request, Response } from "express";
 import { customAlphabet } from "nanoid";
-import { getCxId } from "../util";
+import { getCxId, getCxIdFromQuery } from "../util";
 import { analyzeRoute } from "./request-analytics";
 
 const asyncLocalStorage = getLocalStorage("reqId");
@@ -16,7 +16,7 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction): 
     const urlWithParams = replaceParamWithKey(url, req.aggregatedParams);
     const { client, path } = splitUrlToClientAndPath(urlWithParams);
 
-    const cxId = getCxId(req);
+    const cxId = getCxId(req) ?? getCxIdFromQuery(req);
     const query = req.query && Object.keys(req.query).length ? req.query : undefined;
     const params =
       req.aggregatedParams && Object.keys(req.aggregatedParams).length
@@ -24,7 +24,7 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction): 
         : undefined;
 
     console.log(
-      "%s ..........Begins %s %s %s %s",
+      "%s ....Begins %s %s %s %s",
       reqId,
       method,
       url,
@@ -39,7 +39,7 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction): 
       const elapsedHrTime = process.hrtime(startHrTime);
       const elapsedTimeInMs = elapsedHrTime[0] * 1000 + elapsedHrTime[1] / 1e6;
       console.log(
-        "%s ..........Done %s %s | %d | %fms",
+        "%s ....Done %s %s | %d | %fms",
         reqId,
         method,
         url,

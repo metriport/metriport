@@ -1,5 +1,8 @@
 name: Deploy - Staging
 
+permissions:
+  contents: read
+
 on:
   push: # a commit to the specified branches, if any
     branches:
@@ -11,11 +14,11 @@ on:
       - "packages/commonwell-sdk/**"
       - "packages/core/**"
       - "packages/fhir-converter/**"
-      - "packages/terminology/**"
       - "packages/ihe-gateway-sdk/**"
       - "packages/carequality-sdk/**"
       - "packages/infra/**"
       - "packages/lambdas/**"
+      - "packages/terminology/**"
       - "packages/mllp-server/**"
   workflow_dispatch: # manually executed by a user
 
@@ -31,6 +34,8 @@ jobs:
       fhir-converter: ${{ steps.changes.outputs.fhir-converter }}
       terminology: ${{ steps.changes.outputs.terminology }}
       infra-lambdas: ${{ steps.changes.outputs.infra-lambdas }}
+      secrets: ${{ steps.changes.outputs.secrets }}
+      location_services: ${{ steps.changes.outputs.location_services }}
       infra-hl7-notification: ${{ steps.changes.outputs.infra-hl7-notification }}
     steps:
       - name: Login to Docker Hub
@@ -57,11 +62,11 @@ jobs:
               - "packages/shared/**"
               - "packages/core/**"
               - "packages/mllp-server/**"
-              - "package*.json"
               - "packages/infra/lib/hl7-notification-stack/**"
               - "packages/infra/bin/infrastructure.ts"
-            # Doing them individually because there are other stuff there that we don't want to trigger a deploy b/c of that
+              - "package*.json"
             fhir-converter:
+              # Doing them individually because there are other stuff there that we don't want to trigger a deploy b/c of that
               - "packages/fhir-converter/Dockerfile"
               - "packages/fhir-converter/docker-entrypoint.sh"
               - "packages/fhir-converter/package*.json"
@@ -79,6 +84,14 @@ jobs:
               - "packages/core/**"
               - "packages/infra/**"
               - "packages/lambdas/**"
+              - "package*.json"
+            secrets:
+              - "packages/infra/**"
+              - "package*.json"
+            location_services:
+              - "packages/infra/lib/location-services*"
+              - "packages/infra/shared/**"
+              - "packages/infra/package*.json"
               - "package*.json"
             infra-hl7-notification:
               - "packages/infra/lib/hl7-notification-stack/**"
@@ -145,10 +158,58 @@ jobs:
     needs: files-changed
     with:
       deploy_env: "staging"
-      secrets_cdk_stack: ${{ vars.SECRET_STACK_NAME_STAGING }}
-      location_services_cdk_stack: ${{ vars.LOCATION_SERVICES_STACK_NAME_STAGING }}
       cdk_stack: ${{ vars.API_STACK_NAME_STAGING }}
-      ihe_stack: ${{ vars.IHE_STACK_NAME }}
+      AWS_REGION: ${{ vars.API_REGION_STAGING }}
+    secrets:
+      SERVICE_PAT: ${{ secrets.SERVICE_PAT }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+
+  secrets_cdk_stack:
+    uses: ./.github/workflows/_deploy-cdk.yml
+    needs: files-changed
+    if: needs.files-changed.outputs.secrets == 'true'
+    with:
+      deploy_env: "staging"
+      cdk_stack: ${{ vars.SECRET_STACK_NAME_STAGING }}
+      AWS_REGION: ${{ vars.API_REGION_STAGING }}
+    secrets:
+      SERVICE_PAT: ${{ secrets.SERVICE_PAT }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+
+  location_services_cdk_stack:
+    uses: ./.github/workflows/_deploy-cdk.yml
+    needs: files-changed
+    if: needs.files-changed.outputs.location_services == 'true'
+    with:
+      deploy_env: "staging"
+      cdk_stack: ${{ vars.LOCATION_SERVICES_STACK_NAME_STAGING }}
+      AWS_REGION: ${{ vars.API_REGION_STAGING }}
+    secrets:
+      SERVICE_PAT: ${{ secrets.SERVICE_PAT }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+
+  ihe_stack:
+    uses: ./.github/workflows/_deploy-cdk.yml
+    needs: files-changed
+    if: ${{ needs.files-changed.outputs.infra-lambdas == 'true' }}
+    with:
+      deploy_env: "staging"
+      cdk_stack: ${{ vars.IHE_STACK_NAME }}
       AWS_REGION: ${{ vars.API_REGION_STAGING }}
     secrets:
       SERVICE_PAT: ${{ secrets.SERVICE_PAT }}

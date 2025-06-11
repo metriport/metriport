@@ -9,4 +9,5 @@ export interface HieDirectoryEntry {
   city?: string;
   state?: string;
   zipCode?: string;
+  network: "COMMONWELL" | "CAREQUALITY";
 }

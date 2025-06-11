@@ -1,5 +1,11 @@
 import { demographicsSchema, patientCreateSchema } from "@metriport/api-sdk";
-import { PaginatedResponse, stringToBoolean } from "@metriport/shared";
+import { out } from "@metriport/core/util/log";
+import {
+  BadRequestError,
+  NotFoundError,
+  PaginatedResponse,
+  stringToBoolean,
+} from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { Request, Response } from "express";
@@ -7,15 +13,16 @@ import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { createPatient, PatientCreateCmd } from "../../command/medical/patient/create-patient";
 import {
+  getPatientByExternalId,
   getPatientOrFail,
   getPatients,
   getPatientsCount,
   matchPatient,
 } from "../../command/medical/patient/get-patient";
-import { createPatientImportJob } from "../../command/medical/patient/patient-import-create-job";
+import { createPatientImportJob } from "../../command/medical/patient/patient-import/create";
 import { Pagination } from "../../command/pagination";
 import { getSandboxPatientLimitForCx } from "../../domain/medical/get-patient-limit";
-import NotFoundError from "../../errors/not-found";
+import { isPatientMappingSource, PatientMappingSource } from "../../domain/patient-mapping";
 import { Config } from "../../shared/config";
 import { requestLogger } from "../helpers/request-logger";
 import { checkRateLimit } from "../middlewares/rate-limiting";
@@ -28,7 +35,7 @@ import {
   getFromQueryAsBoolean,
   getFromQueryOrFail,
 } from "../util";
-import { PatientImportDto } from "./dtos/patient-import";
+import { fromCreateResponseToDto, PatientImportDto } from "./dtos/patient-import";
 import { dtoFromModel, PatientDTO } from "./dtos/patientDTO";
 import { schemaCreateToPatientData, schemaDemographicsToPatientData } from "./schemas/patient";
 
@@ -58,6 +65,7 @@ router.post(
     const forceCommonwell = stringToBoolean(getFrom("query").optional("commonwell", req));
     const forceCarequality = stringToBoolean(getFrom("query").optional("carequality", req));
     const payload = patientCreateSchema.parse(req.body);
+    const { settings, ...patientCreateProps } = payload;
 
     if (Config.isSandbox()) {
       // limit the amount of patients that can be created in sandbox mode
@@ -71,7 +79,7 @@ router.post(
     }
 
     const patientCreate: PatientCreateCmd = {
-      ...schemaCreateToPatientData(payload),
+      ...schemaCreateToPatientData(patientCreateProps),
       cxId,
       facilityId,
     };
@@ -81,6 +89,7 @@ router.post(
       rerunPdOnNewDemographics,
       forceCommonwell,
       forceCarequality,
+      settings,
     });
 
     return res.status(httpStatus.CREATED).json(dtoFromModel(patient));
@@ -112,6 +121,7 @@ router.get(
 
     // TODO 483 remove this (and respected conditional) once pagination is fully rolled out
     if (!isPaginated(req)) {
+      out(`List patients - cx ${cxId}`).log(`Running without pagination`);
       const patients = await getPatients({ cxId, facilityId: facilityId, fullTextSearchFilters });
       const patientsData = patients.map(dtoFromModel);
       return res.status(httpStatus.OK).json({ patients: patientsData });
@@ -166,6 +176,36 @@ router.post(
 );
 
 /** ---------------------------------------------------------------------------
+ * GET /patient/external-id
+ *
+ * Searches for a patient previously created at Metriport, based on an external ID. Returns the matched patient, if it exists.
+ *
+ * @return The matched patient.
+ * @throws NotFoundError if the patient does not exist.
+ */
+router.get(
+  "/external-id",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getCxIdOrFail(req);
+    const externalId = getFromQueryOrFail("externalId", req);
+    const source = getFromQuery("source", req);
+    if (source && !isPatientMappingSource(source)) {
+      throw new BadRequestError("Invalid source", undefined, { source });
+    }
+
+    const patient = await getPatientByExternalId({
+      cxId,
+      externalId,
+      ...(source ? { source: source as PatientMappingSource } : {}),
+    });
+
+    if (patient) return res.status(httpStatus.OK).json(dtoFromModel(patient));
+    throw new NotFoundError("Cannot find patient");
+  })
+);
+
+/** ---------------------------------------------------------------------------
  * POST /patient/bulk
  *
  * Initiates a bulk patient create.
@@ -173,39 +213,32 @@ router.post(
  * @param req.query.facilityId The ID of the Facility the Patients should be associated with
  *        (optional if there's only one facility for the customer, fails if not provided and
  *        there's more than one facility for the customer).
- * @param req.query.dryRun Whether to simply validate the bundle or actually import it (optional,
+ * @param req.query.dryRun Whether to simply validate the file or actually import it (optional,
  *        defaults to false).
- * @returns an object containing the information about the bulk import job:s
+ * @returns an object containing the information about the bulk import job:
  * - `requestId` - the bulk import request ID
  * - `facilityId` - the facility ID used to create the patients
  * - `status` - the status of the bulk import job
  * - `uploadUrl` - the URL to upload the CSV file
  * - `params` - the parameters used to initiate the bulk patient create
+ * - `createdAt` - the date and time the bulk import job was created, ISO format
  */
 router.post(
   "/bulk",
-  // TODO add this if/when we need to rate limit this endpoint
-  // checkRateLimit("..."),
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const facilityIdParam = getFromQuery("facilityId", req);
-    const dryRun = getFromQueryAsBoolean("dryRun", req);
+    const dryRunParam = getFromQueryAsBoolean("dryRun", req);
+    // TODO 2330 add cx-metadata to the job and pass it to all webhooks related to this job
 
     const patientImportResponse = await createPatientImportJob({
       cxId,
       facilityId: facilityIdParam,
-      dryRun,
+      paramsCx: { dryRun: dryRunParam },
     });
 
-    const { jobId, facilityId, status, uploadUrl, params } = patientImportResponse;
-    const respPayload: PatientImportDto = {
-      requestId: jobId,
-      facilityId,
-      status,
-      uploadUrl,
-      params,
-    };
+    const respPayload: PatientImportDto = fromCreateResponseToDto(patientImportResponse);
     return res.status(httpStatus.OK).json(respPayload);
   })
 );

@@ -35,11 +35,37 @@ const protocolRegex = /^https?:\/\//;
 export type GetSignedUrlWithBucketAndKey = {
   bucketName: string;
   fileName: string;
+  /**
+   * Duration in seconds for which the signed URL will be valid
+   */
   durationSeconds?: number;
+  /**
+   * The version ID of the object the presigned URL is for, if applicable
+   */
+  versionId?: string;
 };
+
 export type GetSignedUrlWithLocation = {
+  /**
+   * The S3 location string (typically in format s3://bucket-name/file-name)
+   */
   location: string;
+  /**
+   * Duration in seconds for which the signed URL will be valid
+   */
   durationSeconds?: number;
+  /**
+   * The version ID of the object the presigned URL is for, if applicable
+   */
+  versionId?: string;
+};
+
+export type UploadFileResult = {
+  location: string;
+  eTag: string;
+  bucket: string;
+  key: string;
+  versionId: string | undefined;
 };
 
 export type UploadParams = {
@@ -48,6 +74,21 @@ export type UploadParams = {
   file: Buffer;
   contentType?: string;
   metadata?: Record<string, string>;
+};
+
+export type StoreInS3Params = {
+  s3Utils: S3Utils;
+  payload: string;
+  bucketName: string;
+  fileName: string;
+  contentType: string;
+  log: typeof console.log;
+  errorConfig?: {
+    errorMessage: string;
+    context: string;
+    captureParams?: Record<string, unknown>;
+    shouldCapture: boolean;
+  };
 };
 
 export async function executeWithRetriesS3<T>(
@@ -161,12 +202,22 @@ export class S3Utils {
   ): Promise<
     | {
         exists: true;
-        size: number;
+        size: number /** @deprecated Use `sizeInBytes` instead */;
+        //sizeInBytes: number; // TODO Enable this when testing something that uses this code
         contentType: string;
         eTag?: string;
         createdAt: Date | undefined;
+        metadata: Record<string, string> | undefined;
       }
-    | { exists: false; size?: never; contentType?: never; eTag?: never; createdAt?: never }
+    | {
+        exists: false;
+        size?: never;
+        //sizeInBytes?: never;
+        contentType?: never;
+        eTag?: never;
+        createdAt?: never;
+        metadata?: never;
+      }
   > {
     try {
       const head = await executeWithRetriesS3(
@@ -184,9 +235,12 @@ export class S3Utils {
       return {
         exists: true,
         size: head.ContentLength ?? 0,
+        // TODO Enable this when testing something that uses this code
+        // sizeInBytes: head.ContentLength ?? 0,
         contentType: head.ContentType ?? "",
         eTag: head.ETag ?? "",
         createdAt: head.LastModified,
+        metadata: head.Metadata,
       };
     } catch (err) {
       return { exists: false };
@@ -234,6 +288,17 @@ export class S3Utils {
     return false;
   }
 
+  /**
+   * Returns a presigned URL for a file in an S3 bucket.
+   *
+   * @param params - Parameters for generating a signed URL
+   * @param params.bucketName - The name of the S3 bucket (when using bucket+key format)
+   * @param params.fileName - The key/filename of the object (when using bucket+key format)
+   * @param params.location - Full S3 location in the format 's3://bucket-name/key' (alternative to providing bucketName+fileName)
+   * @param params.versionId - Optional version ID of the object
+   * @param params.durationSeconds - Optional duration in seconds for URL validity
+   * @returns Promise<string> - The presigned URL for the file
+   */
   async getSignedUrl(params: GetSignedUrlWithBucketAndKey): Promise<string>;
   async getSignedUrl(params: GetSignedUrlWithLocation): Promise<string>;
   async getSignedUrl(
@@ -246,6 +311,7 @@ export class S3Utils {
       return this.getSignedUrlInternal({
         bucketName,
         fileName: key,
+        ...(params.versionId ? { versionId: params.versionId } : {}),
         ...(params.durationSeconds ? { durationSeconds: params.durationSeconds } : undefined),
       });
     } else {
@@ -257,32 +323,49 @@ export class S3Utils {
     bucketName,
     fileName,
     durationSeconds,
+    versionId,
   }: {
     bucketName: string;
     fileName: string;
     durationSeconds?: number;
+    versionId?: string;
   }): Promise<string> {
     return executeWithRetriesS3(() =>
       this.s3.getSignedUrlPromise("getObject", {
         Bucket: bucketName,
         Key: fileName,
         Expires: durationSeconds ?? DEFAULT_SIGNED_URL_DURATION,
+        ...(versionId ? { VersionId: versionId } : {}),
       })
     );
   }
 
+  /**
+   * Returns a presigned URL for uploading a file to an S3 bucket.
+   *
+   * @param bucket - The name of the S3 bucket where the file will located.
+   * @param key - The key or path of the file to be created in the S3 bucket.
+   * @param durationSeconds - The duration in seconds for which the presigned URL will be valid.
+   * @param metadata - The metadata to be added to the file in the S3 bucket (it will be sent as
+   *                   part of the upload request URL's parameters). It can be retrieved after
+   *                   the file is uplaoded by issuing a HEAD request to S3 (getFileInfoFromS3()).
+   * @returns The presigned URL for the file.
+   */
   async getPresignedUploadUrl({
     bucket,
     key,
     durationSeconds,
+    metadata = {},
   }: {
     bucket: string;
     key: string;
     durationSeconds?: number;
+    metadata?: Record<string, string>;
   }): Promise<string> {
     const command = new PutObjectCommand({
       Bucket: bucket,
       Key: key,
+      Metadata: metadata,
     });
     const presignedUrl = await executeWithRetriesS3(() =>
       getPresignedUrl(this.s3Client, command, {
@@ -377,13 +460,20 @@ export class S3Utils {
     await executeWithRetriesS3(() => this.s3Client.send(copyObjectCommand));
   }
 
+  /**
+   * TODO: Switch to using the aws-sdk v3 client.
+   *
+   * The types on the aws-sdk v2 `upload()` method have not been
+   * maintained / kept up to date, hence the type assertion after the
+   * `this._s3.upload()` call.
+   */
   async uploadFile({
     bucket,
     key,
     file,
     contentType,
     metadata,
-  }: UploadParams): Promise<AWS.S3.ManagedUpload.SendData> {
+  }: UploadParams): Promise<UploadFileResult> {
     const uploadParams: AWS.S3.PutObjectRequest = {
       Bucket: bucket,
       Key: key,
@@ -394,8 +484,17 @@ export class S3Utils {
       uploadParams.ContentType = contentType;
     }
     try {
-      const resp = await executeWithRetriesS3(() => this._s3.upload(uploadParams).promise());
-      return resp;
+      const resp = (await executeWithRetriesS3(() =>
+        this._s3.upload(uploadParams).promise()
+      )) as AWS.S3.ManagedUpload.SendData & { VersionId?: string };
+
+      return {
+        location: resp.Location,
+        eTag: resp.ETag,
+        bucket: resp.Bucket,
+        key: resp.Key,
+        versionId: resp.VersionId,
+      };
     } catch (error) {
       const { log } = out("uploadFile");
       log(`Error during upload: ${errorToString(error)}`);
@@ -448,11 +547,25 @@ export class S3Utils {
     }
   }
 
-  async listObjects(bucket: string, prefix: string): Promise<AWS.S3.ObjectList | undefined> {
-    const res = await executeWithRetriesS3(() =>
-      this._s3.listObjectsV2({ Bucket: bucket, Prefix: prefix }).promise()
-    );
-    return res.Contents;
+  async listObjects(bucket: string, prefix: string): Promise<AWS.S3.ObjectList> {
+    const allObjects: AWS.S3.Object[] = [];
+    let continuationToken: string | undefined;
+    do {
+      const res = await executeWithRetriesS3(() =>
+        this._s3
+          .listObjectsV2({
+            Bucket: bucket,
+            Prefix: prefix,
+            ...(continuationToken ? { ContinuationToken: continuationToken } : {}),
+          })
+          .promise()
+      );
+      if (res.Contents) {
+        allObjects.push(...res.Contents);
+      }
+      continuationToken = res.NextContinuationToken;
+    } while (continuationToken);
+    return allObjects;
   }
 }
 
@@ -506,5 +619,56 @@ export function isNotFoundError(error: any): boolean {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function isRetriableError(error: any): boolean {
-  return error.retryable === false || error.Retryable === false;
+  const errorsToRetry = ["EPIPE", "ECONNRESET"];
+  if (
+    (typeof error.code === "string" && errorsToRetry.includes(error.code)) ||
+    (typeof error.message === "string" && errorsToRetry.some(code => error.message.includes(code)))
+  ) {
+    return true;
+  }
+  return error.retryable === true || error.Retryable === true;
+}
+
+export async function storeInS3WithRetries({
+  s3Utils,
+  payload,
+  bucketName,
+  fileName,
+  contentType,
+  log,
+  errorConfig,
+}: StoreInS3Params): Promise<void> {
+  try {
+    await executeWithRetriesS3(
+      () =>
+        s3Utils.s3
+          .upload({
+            Bucket: bucketName,
+            Key: fileName,
+            Body: payload,
+            ContentType: contentType,
+          })
+          .promise(),
+      {
+        ...defaultS3RetriesConfig,
+        log,
+      }
+    );
+  } catch (error) {
+    const msg = errorConfig?.errorMessage ?? "Error uploading to S3";
+    log(`${msg}: ${errorToString(error)}`);
+
+    if (errorConfig?.shouldCapture) {
+      capture.error(msg, {
+        extra: {
+          fileName,
+          context: errorConfig.context,
+          error,
+          errorMessage: errorConfig.errorMessage,
+          ...errorConfig.captureParams,
+        },
+      });
+    }
+    throw error;
+  }
 }

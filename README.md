@@ -23,7 +23,7 @@
 
 <p align="center">
    <a href="https://status.metriport.com/"><img src="https://api.checklyhq.com/v1/badges/checks/6aee48de-8699-4746-8843-80e28366ccb0?style=flat&theme=default" alt="API Status Check"></a>
-   <a href="https://github.com/metriport/metriport/stargazers"><img src="https://img.shields.io/github/stars/metriport/metriport" alt="Github Stars"></a>
+   <a href="https://github.com/metriport/metriport/stargazers"><img src="https://img.shields.io/github/stars/metriport/metriport" alt="GitHub Stars"></a>
    <a href="https://github.com/metriport/metriport/blob/master/LICENSE"><img src="https://img.shields.io/badge/license-AGPLv3-purple" alt="License"></a>
    <a href="https://github.com/metriport/metriport/pulse"><img src="https://img.shields.io/github/commit-activity/m/metriport/metriport" alt="Commits-per-month"></a>
    <a href="https://twitter.com/metriport"><img src="https://img.shields.io/twitter/follow/metriport?style=social"></a>
@@ -203,14 +203,20 @@ Accepted types:
 Scope is optional, and we can use one of these, or empty (no scope):
 
 - api
-<!-- - widget -->
+- sdk
 - infra
+- core
+- shared
+- utils
+- scripts
+- docs
+- ... (usually subdirectories of `./packages`)
 
-The footer should have the ticket number supporting the commit:
+The footer should have the issue number supporting the commit:
 
 ```
 ...
-Ref: #<ticket-number>
+Ref: #<issue-number>
 ```
 
 #### Commitizen
@@ -481,7 +487,7 @@ Now you can make requests to endpoints that require the an API Key by setting th
    for a sample of what the end result should look like. Optionally, you can setup config files for `staging` and `sandbox` deployments, based on
    your environment needs. Then, proceed with the deployment steps below.
 
-3. Configure the Connect Widget environment variables to the subdomain and domain you'll be hosting the API at in the config file: `packages/connect-widget/.env.production`.
+3. Install [GNU Parallel](https://www.gnu.org/software/parallel/) to run tests (w/ `npm run test`).
 
 ### **Deployment Steps**
 

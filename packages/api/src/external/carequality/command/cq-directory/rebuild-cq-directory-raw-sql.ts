@@ -1,17 +1,17 @@
 import { QueryTypes, Sequelize } from "sequelize";
 import { executeOnDBTx } from "../../../../models/transaction-wrapper";
-import { CQDirectoryEntry, CQDirectoryEntryData2 } from "../../cq-directory";
+import { CQDirectoryEntry, CQDirectoryEntryData } from "../../cq-directory";
 import {
   addressLineColumnName,
   lastUpdatedAtCqColumnName,
   managingOrgIdColumnName,
+  rootOrgColumnName,
   urlDqColumnName,
   urlDrColumnName,
   urlXcpdColumnName,
-} from "../../models/cq-directory";
-import { CQDirectoryEntryViewModel, rootOrgColumnName } from "../../models/cq-directory-view";
+} from "../../models/cq-directory-columns";
+import { CQDirectoryEntryViewModel } from "../../models/cq-directory-view";
 
-// TODO 2553 To be updated to `cq_directory_entry` on a follow-up PR
 export const cqDirectoryEntry = `cq_directory_entry_new`;
 export const cqDirectoryEntryView = `cq_directory_entry_view`;
 export const cqDirectoryEntryTemp = `cq_directory_entry_temp`;
@@ -26,7 +26,7 @@ const number_of_keys = keys.split(",").length;
 
 export async function insertCqDirectoryEntries(
   sequelize: Sequelize,
-  orgDataArray: CQDirectoryEntryData2[]
+  orgDataArray: CQDirectoryEntryData[]
 ): Promise<void> {
   if (orgDataArray.length === 0) return;
   const placeholders = orgDataArray
@@ -78,7 +78,6 @@ function createKeys(): string {
       state: "state",
       zip: "zip",
       data: "data",
-      // TODO 2553 Import this from the `cq-directory` file
       rootOrganization: rootOrgColumnName,
       managingOrganizationId: managingOrgIdColumnName,
       active: "active",

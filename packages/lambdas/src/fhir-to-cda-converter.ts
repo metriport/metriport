@@ -13,6 +13,7 @@ capture.init();
 const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
 const bucketName = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
 
+// TODO move to capture.wrapHandler()
 export const handler = Sentry.AWSLambda.wrapHandler(
   async ({ cxId, bundle, orgOid, splitCompositions, isCustodian }: Input): Promise<string[]> => {
     const { log } = out(`cx ${cxId}`);

@@ -13,6 +13,7 @@ export class HIEDirectoryEntryViewModel extends BaseModel<HIEDirectoryEntryViewM
   declare city?: string;
   declare state?: string;
   declare zipCode?: string;
+  declare network: "COMMONWELL" | "CAREQUALITY";
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
     HIEDirectoryEntryViewModel.init(
@@ -41,6 +42,13 @@ export class HIEDirectoryEntryViewModel extends BaseModel<HIEDirectoryEntryViewM
         managingOrganizationId: {
           type: DataTypes.STRING,
           field: "managing_organization_id",
+        },
+        network: {
+          type: DataTypes.STRING,
+          field: "network",
+          validate: {
+            isIn: [["COMMONWELL", "CAREQUALITY"]],
+          },
         },
         state: {
           type: DataTypes.STRING,
