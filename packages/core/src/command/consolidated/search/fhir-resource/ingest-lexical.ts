@@ -1,7 +1,8 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
-import { MetriportError } from "@metriport/shared";
+import { executeWithRetries, MetriportError } from "@metriport/shared";
 import { timed } from "@metriport/shared/util/duration";
 import { Patient } from "../../../../domain/patient";
+import { isRetriableError } from "../../../../external/aws/s3";
 import { mapEntryToResource } from "../../../../external/fhir/bundle/entry";
 import { normalize } from "../../../../external/fhir/consolidated/normalize";
 import { isNotPatient } from "../../../../external/fhir/shared";
@@ -100,7 +101,17 @@ async function getConsolidatedBundle({
 }): Promise<Bundle<Resource>> {
   const { log } = out(`getConsolidatedBundle - cx ${cxId}, pt ${patientId}`);
 
-  const consolidated = await getConsolidatedFile({ cxId, patientId });
+  const consolidated = await executeWithRetries(() => getConsolidatedFile({ cxId, patientId }), {
+    shouldRetry: (res, error: unknown) => {
+      if (!res) return true;
+      if (!error) return false;
+      if (!isRetriableError(error)) return false;
+      return true;
+    },
+    initialDelay: 1_000,
+    maxAttempts: 3,
+    log,
+  });
 
   const bundle = consolidated.bundle;
   if (!bundle) {
