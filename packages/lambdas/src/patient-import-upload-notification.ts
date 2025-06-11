@@ -13,8 +13,7 @@ capture.init();
 const region = getEnvOrFail("AWS_REGION");
 const patientImportParseLambdaName = getEnvOrFail("PATIENT_IMPORT_PARSE_LAMBDA_NAME");
 
-// TODO move to capture.wrapHandler()
-export async function handler(event: S3Event) {
+export const handler = capture.wrapHandler(async (event: S3Event) => {
   capture.setExtra({ context: `patient-import-upload-notification`, event });
   const errors: unknown[] = [];
   for (const record of event.Records) {
@@ -67,4 +66,4 @@ export async function handler(event: S3Event) {
       count: errors.length,
     });
   }
-}
+});
