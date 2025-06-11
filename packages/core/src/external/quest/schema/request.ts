@@ -93,7 +93,7 @@ export const requestDetailSchema = z.object({
   relationshipToSubscriber: z.enum(RelationshipToSubscriberCodes),
   programType: z.string(), // MC = HMO, PP = PPO, IN = indemnity
   effectiveDate: z.date(),
-  expirationDate: z.date().optional(), // Defaults to 99991231 (open-ended)
+  expirationDate: z.string().optional(), // Defaults to 99991231 (open-ended)
   providerId: z.string().optional(),
   employerCode: z.string().optional(),
   divisionNumber: z.string().optional(),
@@ -192,13 +192,13 @@ export const requestDetailRow: OutgoingFileRowSchema<RequestDetail> = [
     field: 12,
     length: 8,
     key: "effectiveDate",
-    toQuest: toQuestString("effectiveDate"),
+    toQuest: toQuestDate("effectiveDate"),
   },
   {
     field: 13,
     length: 8,
     key: "expirationDate",
-    toQuest: toQuestString("expirationDate", { optional: true, defaultValue: "99991231" }),
+    toQuest: toQuestString("expirationDate", { optional: true }),
   },
   {
     field: 14,

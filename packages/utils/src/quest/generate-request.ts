@@ -21,6 +21,7 @@ sendRequest.action(async () => {
   if (!cxId) throw new Error("cxId is required");
   if (!facilityId) throw new Error("facilityId is required");
 
+  console.log("Gathering data...");
   const api = new QuestApi();
   const requestData = await api.getRequestData(
     cxId,
@@ -28,6 +29,7 @@ sendRequest.action(async () => {
     patientId ? patientId.split(",") : undefined
   );
 
+  console.log("Generating request file...");
   const client = new QuestSftpClient({
     local,
     localPath,

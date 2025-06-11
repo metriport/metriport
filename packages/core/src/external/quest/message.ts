@@ -90,6 +90,7 @@ function toQuestRequestPatientRow(patient: Patient): Buffer | undefined {
       subscriberLastName: patient.lastName,
       programType: "01",
       effectiveDate: new Date(),
+      expirationDate: "99991231",
     },
     requestDetailSchema,
     requestDetailRow
