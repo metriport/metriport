@@ -46,7 +46,6 @@ interface LambdasNestedStackProps extends NestedStackProps {
   secrets: Secrets;
   dbCluster: rds.IDatabaseCluster;
   dbCredsSecret: secret.ISecret;
-  dbReadReplicaEndpoint: rds.Endpoint;
   medicalDocumentsBucket: s3.Bucket;
   sandboxSeedDataBucket: s3.IBucket | undefined;
   alarmAction?: SnsAction;
@@ -95,11 +94,6 @@ export class LambdasNestedStack extends NestedStack {
 
     this.terminationProtection = true;
 
-    const dbReadReplicaEndpointAsString = JSON.stringify({
-      host: props.dbReadReplicaEndpoint.hostname,
-      port: props.dbReadReplicaEndpoint.port,
-    });
-
     this.cdaToVisualizationLambda = this.setupCdaToVisualization({
       lambdaLayers: props.lambdaLayers,
       vpc: props.vpc,
@@ -138,7 +132,6 @@ export class LambdasNestedStack extends NestedStack {
       alarmAction: props.alarmAction,
       dbCluster: props.dbCluster,
       dbCredsSecret: props.dbCredsSecret,
-      dbReadReplicaEndpointAsString,
       // TODO move this to a config
       maxPollingDuration: Duration.minutes(2),
     });
@@ -151,7 +144,6 @@ export class LambdasNestedStack extends NestedStack {
       alarmAction: props.alarmAction,
       dbCluster: props.dbCluster,
       dbCredsSecret: props.dbCredsSecret,
-      dbReadReplicaEndpointAsString,
       // TODO move this to a config
       maxPollingDuration: Duration.minutes(15),
     });
@@ -164,7 +156,6 @@ export class LambdasNestedStack extends NestedStack {
       alarmAction: props.alarmAction,
       dbCluster: props.dbCluster,
       dbCredsSecret: props.dbCredsSecret,
-      dbReadReplicaEndpointAsString,
       // TODO move this to a config
       maxPollingDuration: Duration.minutes(15),
     });
@@ -441,7 +432,6 @@ export class LambdasNestedStack extends NestedStack {
     vpc: ec2.IVpc;
     envType: EnvType;
     dbCredsSecret: secret.ISecret;
-    dbReadReplicaEndpointAsString: string;
     dbCluster: rds.IDatabaseCluster;
     maxPollingDuration: Duration;
     sentryDsn: string | undefined;
@@ -450,7 +440,6 @@ export class LambdasNestedStack extends NestedStack {
     const {
       lambdaLayers,
       dbCredsSecret,
-      dbReadReplicaEndpointAsString,
       vpc,
       sentryDsn,
       envType,
@@ -468,7 +457,6 @@ export class LambdasNestedStack extends NestedStack {
         // API_URL set on the api-stack after the OSS API is created
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
         DB_CREDS: dbCredsSecret.secretArn,
-        DB_READ_REPLICA_ENDPOINT: dbReadReplicaEndpointAsString,
         MAX_POLLING_DURATION: this.normalizePollingDuration(maxPollingDuration),
       },
       layers: [lambdaLayers.shared],
@@ -489,7 +477,6 @@ export class LambdasNestedStack extends NestedStack {
     vpc: ec2.IVpc;
     envType: EnvType;
     dbCredsSecret: secret.ISecret;
-    dbReadReplicaEndpointAsString: string;
     dbCluster: rds.IDatabaseCluster;
     maxPollingDuration: Duration;
     sentryDsn: string | undefined;
@@ -498,7 +485,6 @@ export class LambdasNestedStack extends NestedStack {
     const {
       lambdaLayers,
       dbCredsSecret,
-      dbReadReplicaEndpointAsString,
       vpc,
       sentryDsn,
       envType,
@@ -516,7 +502,6 @@ export class LambdasNestedStack extends NestedStack {
         // API_URL set on the api-stack after the OSS API is created
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
         DB_CREDS: dbCredsSecret.secretArn,
-        DB_READ_REPLICA_ENDPOINT: dbReadReplicaEndpointAsString,
         MAX_POLLING_DURATION: this.normalizePollingDuration(maxPollingDuration),
       },
       layers: [lambdaLayers.shared],
@@ -537,7 +522,6 @@ export class LambdasNestedStack extends NestedStack {
     vpc: ec2.IVpc;
     envType: EnvType;
     dbCredsSecret: secret.ISecret;
-    dbReadReplicaEndpointAsString: string;
     dbCluster: rds.IDatabaseCluster;
     maxPollingDuration: Duration;
     sentryDsn: string | undefined;
@@ -546,7 +530,6 @@ export class LambdasNestedStack extends NestedStack {
     const {
       lambdaLayers,
       dbCredsSecret,
-      dbReadReplicaEndpointAsString,
       vpc,
       sentryDsn,
       envType,
@@ -564,7 +547,6 @@ export class LambdasNestedStack extends NestedStack {
         // API_URL set on the api-stack after the OSS API is created
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
         DB_CREDS: dbCredsSecret.secretArn,
-        DB_READ_REPLICA_ENDPOINT: dbReadReplicaEndpointAsString,
         MAX_POLLING_DURATION: this.normalizePollingDuration(maxPollingDuration),
       },
       layers: [lambdaLayers.shared],

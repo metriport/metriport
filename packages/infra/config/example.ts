@@ -100,6 +100,7 @@ export const config: EnvConfigNonSandbox = {
     placeIndexRegion: "aws_region",
   },
   carequality: {
+    roUsername: "your-ro-username",
     secretNames: {
       CQ_MANAGEMENT_API_KEY: "CQ_MANAGEMENT_API_KEY",
       CQ_ORG_PRIVATE_KEY: "CQ_ORG_PRIVATE_KEY",
