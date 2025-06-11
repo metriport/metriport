@@ -942,7 +942,7 @@ class CanvasApi {
     patientId: string;
     practitionerId: string;
     rxnormCoding: Coding;
-  }): Promise<Medication> {
+  }): Promise<Medication | undefined> {
     const { debug } = out(
       `Canvas searchForMedicationByRxNorm - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} practitionerId ${practitionerId} rxnormCoding ${rxnormCoding}`
     );
