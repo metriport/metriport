@@ -1,24 +1,24 @@
-import { Condition } from "@medplum/fhirtypes";
+import { Immunization } from "@medplum/fhirtypes";
 import { createCanvasClient } from "../../shared";
 
-export async function writeConditionToFhir({
+export async function writeImmunizationToFhir({
   cxId,
   canvasPatientId,
   canvasPracticeId,
   canvasPractitionerId,
-  condition,
+  immunization,
 }: {
   cxId: string;
   canvasPatientId: string;
   canvasPracticeId: string;
   canvasPractitionerId: string;
-  condition: Condition;
+  immunization: Immunization;
 }): Promise<void> {
   const api = await createCanvasClient({ cxId, practiceId: canvasPracticeId });
-  await api.createCondition({
+  await api.createImmunization({
     cxId,
     patientId: canvasPatientId,
     practitionerId: canvasPractitionerId,
-    condition,
+    immunization,
   });
 }
