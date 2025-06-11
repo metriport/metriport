@@ -4,7 +4,7 @@ import { createUuidFromText } from "@metriport/shared/common/uuid";
 import { createBundleFromResourceList } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { EhrSource } from "@metriport/shared/interface/external/ehr/source";
 import { isValidUuid } from "../../../../../../util/uuid-v7";
-import { getReferencesFromResources } from "../../../../../fhir/shared/bundle";
+import { getReferencesFromResources } from "../../../../../fhir/bundle/bundle";
 import { contributeResourceDiffBundle } from "../../../../api/bundle/contribute-resource-diff-bundle";
 import { setJobEntryStatus } from "../../../../api/job/set-entry-status";
 import { BundleType } from "../../../../bundle/bundle-shared";
@@ -160,7 +160,7 @@ async function dangerouslyFetchMissingResources({
     ...ehrOnlyResources.flatMap(resource => resource.id ?? []),
   ]);
   for (let i = 0; i < hydrateEhrOnlyResourceRounds; i++) {
-    const references = getReferencesFromResources({ resources: ehrOnlyResources });
+    const references = getReferencesFromResources({ resourcesToCheckRefs: ehrOnlyResources });
     if (references.missingReferences.length < 1) break;
     for (const { id, type } of references.missingReferences) {
       if (fetchedResourceIds.has(id)) continue;
