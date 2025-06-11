@@ -54,8 +54,12 @@ export async function getPatientJobs({
       ...(jobType ? { jobType } : {}),
       ...(jobGroupId ? { jobGroupId } : {}),
       ...(statuses.length > 0 ? { status: { [Op.in]: statuses } } : {}),
-      ...(scheduledAfter ? { schedulatedAt: { [Op.gte]: scheduledAfter } } : {}),
-      ...(scheduledBefore ? { schedulatedAt: { [Op.lte]: scheduledBefore } } : {}),
+      ...(scheduledAfter
+        ? { schedulatedAt: { [Op.gte]: scheduledAfter, [Op.not]: undefined } }
+        : {}),
+      ...(scheduledBefore
+        ? { schedulatedAt: { [Op.lte]: scheduledBefore, [Op.not]: undefined } }
+        : {}),
     },
   });
   return jobs.map(job => job.dataValues);
