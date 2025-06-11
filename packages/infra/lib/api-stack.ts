@@ -187,6 +187,21 @@ export class APIStack extends Stack {
         generateStringKey: "password",
       },
     });
+    const roDbSecrets: secret.ISecret[] = [];
+    if (props.config.carequality?.roUsername) {
+      const roDbCredsSecret = new secret.Secret(this, "DBCreds", {
+        secretName: `DBCreds-${props.config.carequality.roUsername}`,
+        generateSecretString: {
+          secretStringTemplate: JSON.stringify({
+            username: props.config.carequality.roUsername,
+          }),
+          excludePunctuation: true,
+          includeSpace: false,
+          generateStringKey: "password",
+        },
+      });
+      roDbSecrets.push(roDbCredsSecret);
+    }
     const dbCreds = rds.Credentials.fromSecret(dbCredsSecret);
     const dbEngine = rds.DatabaseClusterEngine.auroraPostgres({
       version: rds.AuroraPostgresEngineVersion.VER_14_7,
