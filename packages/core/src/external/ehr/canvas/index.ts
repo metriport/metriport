@@ -1463,11 +1463,7 @@ class CanvasApi {
     const onsetDate = getAllergyIntoleranceOnsetDate(allergyIntolerance);
     const formattedOnsetDate = this.formatDate(onsetDate);
     if (!formattedOnsetDate) {
-      throw new BadRequestError(
-        "No start date found for allergy intolerance",
-        undefined,
-        additionalInfo
-      );
+      throw new BadRequestError("No onset date found for allergy", undefined, additionalInfo);
     }
     formattedAllergyIntolerance.onsetDateTime = formattedOnsetDate;
     const clinicalStatus = allergyIntolerance.clinicalStatus;
