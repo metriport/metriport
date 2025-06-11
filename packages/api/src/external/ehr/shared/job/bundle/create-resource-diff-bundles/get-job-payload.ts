@@ -17,7 +17,6 @@ import {
  *
  * @param ehr - The EHR source.
  * @param cxId - The CX ID of the patient.
- * @param practiceId - The practice id of the EHR patient.
  * @param ehrPatientId - The patient id of the EHR patient.
  * @param jobId - The job id of the job.
  * @param bundleType - The type of resource diff bundle to fetch.
@@ -37,7 +36,6 @@ export async function getResourceDiffBundlesJobPayload(
  *
  * @param ehr - The EHR source.
  * @param cxId - The CX ID of the patient.
- * @param practiceId - The practice id of the EHR patient.
  * @param ehrPatientId - The patient id of the EHR patient.
  * @param bundleType - The type of resource diff bundle to fetch.
  * @returns resource diff bundles job data payload with data if completed or undefined if no job is found
@@ -45,7 +43,6 @@ export async function getResourceDiffBundlesJobPayload(
 export async function getLatestResourceDiffBundlesJobPayload({
   ehr,
   cxId,
-  practiceId,
   ehrPatientId,
   bundleType,
 }: Omit<GetResourceDiffBundlesJobPayloadParams, "jobId">): Promise<
@@ -67,7 +64,6 @@ export async function getLatestResourceDiffBundlesJobPayload({
   return getResourceDiffBundlesJobPayloadInternal({
     ehr,
     cxId,
-    practiceId,
     ehrPatientId,
     bundleType,
     job,
@@ -78,7 +74,6 @@ async function getResourceDiffBundlesJobPayloadInternal({
   ehr,
   cxId,
   ehrPatientId,
-  practiceId,
   bundleType,
   job,
 }: Omit<GetResourceDiffBundlesJobPayloadParams, "jobId"> & {
@@ -89,7 +84,6 @@ async function getResourceDiffBundlesJobPayloadInternal({
       ehr,
       cxId,
       ehrPatientId,
-      practiceId,
       bundleType,
       jobId: job.id,
     });

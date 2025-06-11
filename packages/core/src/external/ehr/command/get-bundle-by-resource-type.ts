@@ -1,6 +1,7 @@
 import { Bundle } from "@medplum/fhirtypes";
 import { BadRequestError } from "@metriport/shared";
 import { EhrSource, EhrSources } from "@metriport/shared/interface/external/ehr/source";
+import { getBundleByResourceType as getBundleByResourceTypeAthena } from "../athenahealth/command/get-bundle-by-resource-type";
 import { getBundleByResourceType as getBundleByResourceTypeCanvas } from "../canvas/command/get-bundle-by-resource-type";
 
 export type GetBundleByResourceTypeRequest = {
@@ -30,7 +31,7 @@ type GetBundleByResourceTypeFnMap = Record<EhrSource, GetBundleByResourceTypeFn 
 
 const ehrGetBundleByResourceTypeMap: GetBundleByResourceTypeFnMap = {
   [EhrSources.canvas]: getBundleByResourceTypeCanvas,
-  [EhrSources.athena]: undefined,
+  [EhrSources.athena]: getBundleByResourceTypeAthena,
   [EhrSources.elation]: undefined,
   [EhrSources.healthie]: undefined,
   [EhrSources.eclinicalworks]: undefined,

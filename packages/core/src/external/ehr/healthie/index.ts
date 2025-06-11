@@ -41,6 +41,7 @@ interface HealthieApiConfig
 }
 
 const healthieDateFormat = "YYYY-MM-DD";
+const defaultCountOrLimit = 1000;
 
 const healthieEnv = ["api", "staging-api"] as const;
 export type HealthieEnv = (typeof healthieEnv)[number];
@@ -250,7 +251,7 @@ class HealthieApi {
           endDate: $endDate
           order_by: CREATED_AT_ASC
           should_paginate: true
-          page_size: 1000
+          page_size: ${defaultCountOrLimit}
           is_active: true
           is_org: true
           ${cursor ? `after: $after` : ""}
