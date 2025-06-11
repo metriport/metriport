@@ -628,7 +628,7 @@ class CanvasApi {
       patientId,
       practitionerId,
     });
-    const createMedicationErrors: { error: unknown; medicationStatement: string }[] = [];
+    const createMedicationStatementsErrors: { error: unknown; medicationStatement: string }[] = [];
     const createMedicationStatementsArgs: MedicationStatement[] =
       medicationWithRefs.statement.flatMap(statement => {
         const formattedMedicationStatement = this.formatMedicationStatement(statement);
@@ -676,7 +676,7 @@ class CanvasApi {
               error
             )}`
           );
-          createMedicationErrors.push({
+          createMedicationStatementsErrors.push({
             error,
             ...params,
             medicationStatement: medicationStatementToString,
@@ -688,14 +688,14 @@ class CanvasApi {
         delay: delayBetweenRequestBatches.asMilliseconds(),
       }
     );
-    if (createMedicationErrors.length > 0) {
+    if (createMedicationStatementsErrors.length > 0) {
       const msg = `Failure while creating some medication statements @ Canvas`;
       capture.message(msg, {
         extra: {
           ...additionalInfo,
-          createMedicationArgsCount: createMedicationStatementsArgs.length,
-          createMedicationErrorsCount: createMedicationErrors.length,
-          errors: createMedicationErrors,
+          createMedicationStatementsArgsCount: createMedicationStatementsArgs.length,
+          createMedicationStatementsErrorsCount: createMedicationStatementsErrors.length,
+          errors: createMedicationStatementsErrors,
           context: "canvas.create-medication",
         },
         level: "warning",
