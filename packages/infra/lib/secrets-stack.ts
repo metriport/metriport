@@ -36,6 +36,12 @@ export class SecretsStack extends Stack {
         ...options,
       });
 
+    if (props.config.carequality?.roUsername) {
+      const secretName = props.config.carequality.roUsername;
+      const secret = makeSecret(secretName);
+      logSecretInfo(this, secret, secretName);
+    }
+
     for (const secretName of Object.values(props.config.providerSecretNames)) {
       const secret = makeSecret(secretName);
       logSecretInfo(this, secret, secretName);
