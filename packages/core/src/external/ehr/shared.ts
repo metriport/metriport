@@ -1,6 +1,7 @@
 import {
   AllergyIntolerance,
   AllergyIntoleranceReaction,
+  Bundle,
   Coding,
   Condition,
   Immunization,
@@ -10,19 +11,27 @@ import {
   MedicationStatement,
   Observation,
   Procedure,
+  Resource,
 } from "@medplum/fhirtypes";
 import {
   AdditionalInfo,
   BadRequestError,
-  BundleWithLastModified,
   JwtTokenInfo,
   MetriportError,
   NotFoundError,
   errorToString,
   executeWithRetries,
+  sleep,
 } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
-import { fhirOperationOutcomeSchema } from "@metriport/shared/interface/external/ehr/fhir-resource";
+import {
+  EhrFhirResource,
+  EhrFhirResourceBundle,
+  EhrStrictFhirResourceBundle,
+  createBundleFromResourceList,
+  ehrStrictFhirResourceBundleSchema,
+  fhirOperationOutcomeSchema,
+} from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { EhrSource } from "@metriport/shared/interface/external/ehr/source";
 import { AxiosError, AxiosInstance, AxiosResponse, isAxiosError } from "axios";
 import dayjs from "dayjs";
@@ -42,6 +51,8 @@ import {
 import { out } from "../../util/log";
 import { uuidv7 } from "../../util/uuid-v7";
 import { S3Utils } from "../aws/s3";
+import { BundleType } from "./bundle/bundle-shared";
+import { createOrReplaceBundle } from "./bundle/command/create-or-replace-bundle";
 import { FetchBundleParams, fetchBundle } from "./bundle/command/fetch-bundle";
 
 dayjs.extend(duration);
@@ -58,19 +69,6 @@ const fhirValidationPrefix = "1 validation error for";
 function getS3UtilsInstance(): S3Utils {
   return new S3Utils(region);
 }
-
-export const getSecretsOauthSchema = z.object({
-  environment: z.string(),
-  clientKey: z.string(),
-  clientSecret: z.string(),
-});
-export type GetSecretsOauthResult = z.infer<typeof getSecretsOauthSchema>;
-
-export const getSecretsApiKeySchema = z.object({
-  environment: z.string(),
-  apiKey: z.string(),
-});
-export type GetSecretsApiKeyResult = z.infer<typeof getSecretsApiKeySchema>;
 
 export interface ApiConfig {
   twoLeggedAuthTokenInfo?: JwtTokenInfo | undefined;
@@ -617,40 +615,116 @@ export function getProcedurePerformedDate(procedure: Procedure): string | undefi
   return procedure.performedDateTime ?? procedure.performedPeriod?.start;
 }
 
-/**
- * Fetches a bundle from S3 for the given bundle type and resource type
- * Checks if the bundle is younger than the max age, if so, it returns the bundle, otherwise it returns undefined.
- *
- * @param ehr - The EHR source.
- * @param cxId - The CX ID.
- * @param metriportPatientId - The Metriport ID.
- * @param ehrPatientId - The EHR patient ID.
- * @param bundleType - The bundle type.
- * @param resourceType - The resource type of the bundle.
- * @param s3BucketName - The S3 bucket name (optional, defaults to the EHR bundle bucket)
- * @returns The bundle with the last modified date if it is younger than the max age, otherwise undefined.
- */
-export async function fetchBundleUsingTtl({
-  ehr,
-  cxId,
-  metriportPatientId,
-  ehrPatientId,
-  bundleType,
-  resourceType,
-  s3BucketName = Config.getEhrBundleBucketName(),
-}: FetchBundleParams): Promise<BundleWithLastModified | undefined> {
+type FetchEhrBundleParams = Omit<FetchBundleParams, "bundleType">;
+
+async function fetchEhrBundleIfYoungerThanMaxAge(
+  params: Omit<FetchEhrBundleParams, "getLastModified">
+): Promise<Bundle | undefined> {
   const bundle = await fetchBundle({
-    ehr,
-    cxId,
-    metriportPatientId,
-    ehrPatientId,
-    bundleType,
-    resourceType,
-    s3BucketName,
+    ...params,
+    bundleType: BundleType.EHR,
     getLastModified: true,
   });
   if (!bundle || !bundle.lastModified) return undefined;
   const age = dayjs.duration(buildDayjs().diff(bundle.lastModified));
   if (age.asMilliseconds() > MAX_AGE.asMilliseconds()) return undefined;
+  return bundle.bundle;
+}
+
+/**
+ * Fetches a bundle from the EHR for the given resource type.
+ * Uses cached EHR bundle if available and requested. Refreshes the cache if the bundle
+ * is fetched from the EHR.
+ *
+ * @param ehr - The EHR source.
+ * @param cxId - The CX ID.
+ * @param metriportPatientId - The Metriport ID.
+ * @param ehrPatientId - The EHR patient ID.
+ * @param resourceType - The resource type of the bundle.
+ * @param fetchResourcesFromEhr - A function that fetches the resources from the EHR.
+ * @param useCachedBundle - Whether to use the cached bundle. Optional, defaults to true.
+ * @returns The bundle.
+ */
+export async function fetchEhrBundleUsingCache({
+  fetchResourcesFromEhr,
+  useCachedBundle = true,
+  ...params
+}: FetchEhrBundleParams & {
+  fetchResourcesFromEhr: () => Promise<EhrFhirResource[]>;
+  useCachedBundle?: boolean;
+}): Promise<Bundle> {
+  if (useCachedBundle) {
+    const cachedBundle = await fetchEhrBundleIfYoungerThanMaxAge({ ...params });
+    if (cachedBundle) return cachedBundle;
+  }
+  const fhirResources = await fetchResourcesFromEhr();
+  const bundle = createBundleFromResourceList(fhirResources as Resource[]);
+  await createOrReplaceBundle({
+    ...params,
+    bundleType: BundleType.EHR,
+    bundle,
+  });
   return bundle;
+}
+
+/**
+ * Fetches FHIR resources from the EHR for the given resource type.
+ * Pagination is handled automatically.
+ *
+ * @param makeRequest - The function that makes the request to the EHR FHIR endpoint.
+ * @param url - The URL of the bundle.
+ * @param acc - The accumulator of the resources. Optional, defaults to an empty array.
+ * @returns The FHIR resources.
+ */
+export async function fetchEhrFhirResourcesWithPagination({
+  makeRequest,
+  url,
+  acc = [],
+}: {
+  makeRequest: (url: string) => Promise<EhrStrictFhirResourceBundle>;
+  url: string | undefined;
+  acc?: EhrFhirResource[] | undefined;
+}): Promise<EhrFhirResource[]> {
+  if (!url) return acc;
+  await sleep(paginateWaitTime.asMilliseconds());
+  const fhirResourceBundle = await makeRequest(url);
+  acc.push(...(fhirResourceBundle.entry ?? []).map(e => e.resource));
+  const nextUrl = fhirResourceBundle.link?.find(l => l.relation === "next")?.url;
+  return fetchEhrFhirResourcesWithPagination({ makeRequest, url: nextUrl, acc });
+}
+
+export function convertBundleToValidStrictBundle(
+  bundle: EhrFhirResourceBundle,
+  resourceType: string,
+  patientId?: string
+): EhrStrictFhirResourceBundle {
+  const strictBundle = ehrStrictFhirResourceBundleSchema.safeParse(bundle);
+  if (!strictBundle.success) {
+    throw new BadRequestError("Invalid bundle", undefined, {
+      zodError: errorToString(strictBundle.error),
+    });
+  }
+  if (!strictBundle.data.entry || strictBundle.data.entry.length < 1) return strictBundle.data;
+  if (!patientId) return strictBundle.data;
+  for (const entry of strictBundle.data.entry) {
+    if (entry.resource.resourceType !== resourceType) {
+      throw new BadRequestError("Invalid resource type in bundle", undefined, {
+        resourceType,
+        resourceTypeInBundle: entry.resource.resourceType,
+      });
+    }
+    if (entry.resource.patient && entry.resource.patient.reference !== `Patient/${patientId}`) {
+      throw new BadRequestError("Invalid patient in bundle", undefined, {
+        resourceType,
+        resourceTypeInBundle: entry.resource.resourceType,
+      });
+    }
+    if (entry.resource.subject && entry.resource.subject.reference !== `Patient/${patientId}`) {
+      throw new BadRequestError("Invalid subject in bundle", undefined, {
+        resourceType,
+        resourceTypeInBundle: entry.resource.resourceType,
+      });
+    }
+  }
+  return strictBundle.data;
 }

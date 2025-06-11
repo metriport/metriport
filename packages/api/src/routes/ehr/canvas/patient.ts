@@ -102,7 +102,6 @@ router.post(
  *
  * Retrieves the latest resource diff job and pre-signed URLs for the bundles if completed
  * @param req.params.id The ID of Canvas Patient.
- * @param req.query.practiceId The ID of Canvas Practice.
  * @returns Resource diff job and pre-signed URLs for the bundles if completed
  */
 router.get(
@@ -112,11 +111,9 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const canvasPatientId = getFrom("params").orFail("id", req);
-    const canvasPracticeId = getFromQueryOrFail("practiceId", req);
     const bundle = await getLatestResourceDiffBundlesJobPayload({
       ehr: EhrSources.canvas,
       cxId,
-      practiceId: canvasPracticeId,
       ehrPatientId: canvasPatientId,
       bundleType: BundleType.RESOURCE_DIFF_METRIPORT_ONLY,
     });
@@ -130,7 +127,6 @@ router.get(
  * Retrieves the resource diff job and pre-signed URLs for the bundles if completed
  * @param req.params.id The ID of Canvas Patient.
  * @param req.params.jobId The job ID of the job
- * @param req.query.practiceId The ID of Canvas Practice.
  * @returns Resource diff job and pre-signed URLs for the bundles if completed
  */
 router.get(
@@ -140,12 +136,10 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const canvasPatientId = getFrom("params").orFail("id", req);
-    const canvasPracticeId = getFromQueryOrFail("practiceId", req);
     const jobId = getFrom("params").orFail("jobId", req);
     const bundle = await getResourceDiffBundlesJobPayload({
       ehr: EhrSources.canvas,
       cxId,
-      practiceId: canvasPracticeId,
       ehrPatientId: canvasPatientId,
       jobId,
       bundleType: BundleType.RESOURCE_DIFF_METRIPORT_ONLY,

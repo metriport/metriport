@@ -1,10 +1,12 @@
 import {
   AllergyIntolerance,
+  Bundle,
   Coding,
   Condition,
   Immunization,
   Observation,
   Procedure,
+  ResourceType,
 } from "@medplum/fhirtypes";
 import {
   BadRequestError,
@@ -87,6 +89,10 @@ import {
   VitalsCreateParams,
 } from "@metriport/shared/interface/external/ehr/athenahealth/index";
 import {
+  EhrFhirResourceBundle,
+  ehrFhirResourceBundleSchema,
+} from "@metriport/shared/interface/external/ehr/fhir-resource";
+import {
   Patient,
   patientSchema,
   PatientSearch,
@@ -104,8 +110,11 @@ import { out } from "../../../util/log";
 import { capture } from "../../../util/notifications";
 import {
   ApiConfig,
+  convertBundleToValidStrictBundle,
   createDataParams,
   DataPoint,
+  fetchEhrBundleUsingCache,
+  fetchEhrFhirResourcesWithPagination,
   formatDate,
   getAllergyIntoleranceManifestationSnomedCoding,
   getAllergyIntoleranceOnsetDate,
@@ -147,6 +156,7 @@ const athenaPatientPrefix = "E";
 const athenaDepartmentPrefix = "Department";
 const athenaDateFormat = "MM/DD/YYYY";
 const athenaDateTimeFormat = "MM/DD/YYYY HH:mm:ss";
+const defaultCountOrLimit = 1000;
 const labResultDocumentId = "386265";
 const clinicalNoteDocumentSubclass = "CLINICALDOCUMENT";
 const clinicalNoteDocumentId = "423482";
@@ -175,6 +185,8 @@ vitalSignCodesMapAthena.set("39156-5", "VITALS.BMI");
 
 const clinicalElementsThatRequireUnits = ["VITALS.WEIGHT", "VITALS.HEIGHT", "VITALS.TEMPERATURE"];
 
+const medicationRequestIntents = ["proposal", "plan", "order", "option"];
+const coverageCount = 50;
 const validObservationResultStatuses = [
   "final",
   "corrected",
@@ -188,6 +200,47 @@ const validObservationResultStatuses = [
 const lbsToG = 453.592;
 const kgToG = 1000;
 const inchesToCm = 2.54;
+
+export const supportedAthenaHealthResources: ResourceType[] = [
+  "AllergyIntolerance",
+  "CarePlan",
+  "Condition",
+  "DiagnosticReport",
+  "Goal",
+  "Immunization",
+  "MedicationDispense",
+  "MedicationRequest",
+  "Observation",
+  "Procedure",
+  "Specimen",
+  "Device",
+  "ServiceRequest",
+  "Encounter",
+  "Coverage",
+  "CareTeam",
+];
+
+export const supportedAthenaHealthReferenceResources: ResourceType[] = [
+  "Media",
+  "Medication",
+  "Binary",
+  "RelatedPerson",
+  "Location",
+  "Organization",
+  "Practitioner",
+  "Provenance",
+];
+export const scopes = [
+  ...supportedAthenaHealthResources,
+  ...supportedAthenaHealthReferenceResources,
+];
+
+export type SupportedAthenaHealthResource = (typeof supportedAthenaHealthResources)[number];
+export function isSupportedAthenaHealthResource(
+  resourceType: string
+): resourceType is SupportedAthenaHealthResource {
+  return supportedAthenaHealthResources.includes(resourceType as ResourceType);
+}
 
 class AthenaHealthApi {
   private axiosInstanceFhir: AxiosInstance;
@@ -216,9 +269,10 @@ class AthenaHealthApi {
 
   private async fetchTwoLeggedAuthToken(): Promise<JwtTokenInfo> {
     const url = `${this.baseUrl}/oauth2/v1/token`;
+    const fhirScopes = scopes.map(resource => `system/${resource}.read`).join(" ");
     const data = {
       grant_type: "client_credentials",
-      scope: "athena/service/Athenanet.MDP.* system/Patient.read",
+      scope: `athena/service/Athenanet.MDP.* system/Patient.read ${fhirScopes}`,
     };
 
     try {
@@ -1350,6 +1404,74 @@ class AthenaHealthApi {
     return allergySeverityReferences;
   }
 
+  async getBundleByResourceType({
+    cxId,
+    metriportPatientId,
+    athenaPatientId,
+    resourceType,
+    useCachedBundle = true,
+  }: {
+    cxId: string;
+    metriportPatientId: string;
+    athenaPatientId: string;
+    resourceType: string;
+    useCachedBundle?: boolean;
+  }): Promise<Bundle> {
+    const { debug } = out(
+      `AthenaHealth getBundleByResourceType - cxId ${cxId} practiceId ${this.practiceId} athenaPatientId ${athenaPatientId}`
+    );
+    if (!isSupportedAthenaHealthResource(resourceType)) {
+      throw new BadRequestError("Invalid resource type", undefined, {
+        resourceType,
+      });
+    }
+    const params = {
+      patient: `${this.createPatientId(athenaPatientId)}`,
+      "ah-practice": this.createPracticetId(this.practiceId),
+      _count:
+        resourceType === "Coverage" ? coverageCount.toString() : defaultCountOrLimit.toString(),
+      ...(resourceType === "MedicationRequest"
+        ? { intent: medicationRequestIntents.join(",") }
+        : undefined),
+    };
+    const urlParams = new URLSearchParams(params);
+    const resourceTypeUrl = `/${resourceType}?${urlParams.toString()}`;
+    const additionalInfo = {
+      cxId,
+      practiceId: this.practiceId,
+      patientId: athenaPatientId,
+      resourceType,
+    };
+    const fetchResourcesFromEhr = () =>
+      fetchEhrFhirResourcesWithPagination({
+        makeRequest: async (url: string) => {
+          const bundle = await this.makeRequest<EhrFhirResourceBundle>({
+            cxId,
+            patientId: athenaPatientId,
+            s3Path: `fhir-resources-${resourceType}`,
+            method: "GET",
+            url,
+            schema: ehrFhirResourceBundleSchema,
+            additionalInfo,
+            debug,
+            useFhir: true,
+          });
+          return convertBundleToValidStrictBundle(bundle, resourceType, athenaPatientId);
+        },
+        url: resourceTypeUrl,
+      });
+    const bundle = await fetchEhrBundleUsingCache({
+      ehr: EhrSources.athena,
+      cxId,
+      metriportPatientId,
+      ehrPatientId: athenaPatientId,
+      resourceType,
+      fetchResourcesFromEhr,
+      useCachedBundle,
+    });
+    return bundle;
+  }
+
   async subscribeToEvent({
     cxId,
     feedtype,
@@ -1402,7 +1524,7 @@ class AthenaHealthApi {
     const params = {
       startdate: this.formatDate(startAppointmentDate.toISOString()) ?? "",
       enddate: this.formatDate(endAppointmentDate.toISOString()) ?? "",
-      limit: "1000",
+      limit: defaultCountOrLimit.toString(),
     };
     const urlParams = new URLSearchParams(params);
     if (departmentIds && departmentIds.length > 0) {
@@ -1464,7 +1586,7 @@ class AthenaHealthApi {
       ...(endProcessedDate && {
         showprocessedenddatetime: this.formatDateTime(endProcessedDate.toISOString()) ?? "",
       }),
-      limit: "1000",
+      limit: defaultCountOrLimit.toString(),
     };
     const urlParams = new URLSearchParams(params);
     if (departmentIds && departmentIds.length > 0) {
