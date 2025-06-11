@@ -16,7 +16,10 @@ import { EnvConfig } from "../config/env-config";
 import * as fhirConverterConnector from "./api-stack/fhir-converter-connector";
 import { FHIRConverterConnector } from "./api-stack/fhir-converter-connector";
 import { EnvType } from "./env-type";
-import { getConsolidatedIngestionConnectorSettings } from "./lambdas-nested-stack-settings";
+import {
+  getConsolidatedIngestionConnectorSettings,
+  getConsolidatedSearchConnectorSettings,
+} from "./lambdas-nested-stack-settings";
 import { addBedrockPolicyToLambda } from "./shared/bedrock";
 import { createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
 import { LambdaLayers } from "./shared/lambda-layers";
@@ -716,9 +719,8 @@ export class LambdasNestedStack extends NestedStack {
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
   }): Lambda {
-    const name = "ConsolidatedSearch";
-    const entry = "consolidated-search";
-    const lambdaTimeout = Duration.minutes(3);
+    const { name, lambda: lambdaSettings } = getConsolidatedSearchConnectorSettings();
+    const lambdaEntry = "consolidated-search";
     const {
       lambdaLayers,
       vpc,
@@ -738,8 +740,8 @@ export class LambdasNestedStack extends NestedStack {
     const theLambda = createLambda({
       stack: this,
       name,
-      runtime: lambda.Runtime.NODEJS_20_X,
-      entry,
+      runtime: lambdaSettings.runtime,
+      entry: lambdaEntry,
       envType,
       envVars: {
         // API_URL set on the api-stack after the OSS API is created
@@ -755,8 +757,8 @@ export class LambdasNestedStack extends NestedStack {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared, lambdaLayers.langchain],
-      memory: 4096,
-      timeout: lambdaTimeout,
+      memory: lambdaSettings.memory,
+      timeout: lambdaSettings.timeout,
       isEnableInsights: true,
       vpc,
       alarmSnsAction: alarmAction,

@@ -132,6 +132,7 @@ async function hydrateResources({
 }): Promise<Resource[]> {
   const { log } = out(`hydrateResources - cx ${cxId}, pt ${patientId}`);
 
+  log(`Hydrating ${resources.length} resources...`);
   const startHydrationAt = new Date();
   const hydrated = await hydrateMissingReferences({
     cxId,
@@ -151,7 +152,7 @@ async function hydrateResources({
   const idsToExclude = nonMedicationResources.flatMap(m => m.id ?? []);
 
   const startSearchByIdsAt = new Date();
-  const reverseHydrated = await searchByIds({
+  const reverseHydrated = await reverseHydrate({
     cxId,
     patientId,
     idsToInclude: idsToReverseHydrate,
@@ -164,10 +165,16 @@ async function hydrateResources({
   );
 
   const result = [...hydrated, ...reverseHydrated];
+  log(`Resources: ${resources.length}`);
+  log(`Hydrated: ${hydrated.length}`);
+  log(`Reverse Hydrated: ${reverseHydrated.length}`);
+  log(`Result: ${result.length}`);
   return result;
 }
 
 /**
+ * Hydrate resources that reference the ones on idsToInclude (parents, upstream).
+ *
  * To be used exclusively in the case of querying OS as part of the hydration process.
  *
  * @param cxId - The customer ID.
@@ -176,7 +183,7 @@ async function hydrateResources({
  * @param idsToExclude - IMPORTANT: The IDs to exclude from the search, to avoid circular references.
  * @returns The search results.
  */
-async function searchByIds({
+async function reverseHydrate({
   cxId,
   patientId,
   idsToInclude,
@@ -217,20 +224,16 @@ async function searchByIds({
     return internalResource;
   });
 
-  const hydrated = await timed(
-    () =>
-      hydrateMissingReferences({
-        cxId,
-        patientId,
-        resources,
-      }),
-    "hydration.hydrateMissingReferences",
-    log
-  );
-  log(`Hydrated to ${hydrated.length} resources`);
-
-  return hydrated;
+  return resources;
 }
+
+type HydrateMissingRefFnParams = {
+  cxId: string;
+  patientId: string;
+  resources: Resource[];
+  idsToExclude?: string[];
+  iteration?: number;
+};
 
 /**
  * Hydrates the missing references in the resources.
@@ -242,18 +245,18 @@ async function searchByIds({
  * @param resources - The resources to hydrate.
  * @param iteration - The iteration of the hydration.
  * @param hydratePatient - Whether to hydrate the Patient resource. Optional, defaults to false.
+ * @param hydrateMissingReferencesFn - The function to use to hydrate the missing references. Only used for testing purposes.
  * @returns The hydrated resources.
  */
 export async function hydrateMissingReferences({
   cxId,
   patientId,
   resources,
+  idsToExclude = [],
   iteration = 1,
-}: {
-  cxId: string;
-  patientId: string;
-  resources: Resource[];
-  iteration?: number;
+  hydrateMissingReferencesFn = hydrateMissingReferences,
+}: HydrateMissingRefFnParams & {
+  hydrateMissingReferencesFn?: (params: HydrateMissingRefFnParams) => Promise<Resource[]>;
 }): Promise<Resource[]> {
   const { log } = out("OS.hydrateMissingReferences");
 
@@ -312,20 +315,17 @@ export async function hydrateMissingReferences({
     }
   });
 
-  const missingRefIds = resourcesToHydrate.flatMap(r => {
-    const referenceId = r.id;
-    if (!referenceId || referenceId === patientId) return [];
-    return getEntryId(cxId, patientId, referenceId);
-  });
-  if (missingRefIds.length < 1) return resources;
-
+  const missingRefIds = resourcesToHydrate.flatMap(r => r.id);
   const uniqueIds = uniq(missingRefIds);
+  const filteredUniqueIds = uniqueIds.filter(uniqueId => !idsToExclude.includes(uniqueId));
+  const filteredUniqueEntryIds = filteredUniqueIds.map(id => getEntryId(cxId, patientId, id));
+  if (filteredUniqueEntryIds.length < 1) return resources;
 
   const searchService = new OpenSearchFhirSearcher(getConfigs());
   const openSearchResults = await searchService.getByIds({
     cxId,
     patientId,
-    ids: uniqueIds,
+    ids: filteredUniqueEntryIds,
   });
   if (!openSearchResults || openSearchResults.length < 1) {
     log(`No results found for (count=${missingRefIds.length}) ${missingRefIds.join(", ")}`);
@@ -334,11 +334,13 @@ export async function hydrateMissingReferences({
   const resourcesToAdd = fhirSearchResultToResources(openSearchResults, log);
 
   const mergedResources = [...resources, ...resourcesToAdd];
+  const nextIdsToExclude = [...idsToExclude, ...filteredUniqueIds];
 
-  const hydratedResources = await hydrateMissingReferences({
+  const hydratedResources = await hydrateMissingReferencesFn({
     cxId,
     patientId,
     resources: mergedResources,
+    idsToExclude: nextIdsToExclude,
     iteration: ++iteration,
   });
 
