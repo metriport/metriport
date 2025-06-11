@@ -14,6 +14,7 @@ import { LambdaLayers } from "../shared/lambda-layers";
 import { QueueAndLambdaSettings } from "../shared/settings";
 import { createQueue } from "../shared/sqs";
 import { SurescriptsAssets } from "./types";
+import { buildSecret } from "../shared/secrets";
 
 const synchronizeSftpTimeout = Duration.minutes(5);
 const synchronizeSftpWaitTime = Duration.seconds(1);
@@ -163,10 +164,6 @@ function surescriptsEnvironmentVariablesAndSecrets({
   secrets.push(privateKeySecret);
 
   return { envVars, secrets };
-}
-
-function buildSecret(nestedStack: SurescriptsNestedStack, name: string): secret.ISecret {
-  return secret.Secret.fromSecretNameV2(nestedStack, name, name);
 }
 
 interface SurescriptsNestedStackProps extends NestedStackProps {

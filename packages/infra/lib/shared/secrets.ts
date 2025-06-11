@@ -13,6 +13,10 @@ export function buildSecrets(scope: Construct, secretNames: Record<string, strin
   return secrets;
 }
 
+export function buildSecret(scope: Construct, name: string): secret.ISecret {
+  return secret.Secret.fromSecretNameV2(scope, name, name);
+}
+
 export function getSecrets(scope: Construct, config: EnvConfig): Secrets {
   const secrets: Secrets = {
     ...buildSecrets(scope, config.providerSecretNames),

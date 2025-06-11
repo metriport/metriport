@@ -24,7 +24,7 @@ import { addBedrockPolicyToLambda } from "./shared/bedrock";
 import { createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
 import { LambdaLayers } from "./shared/lambda-layers";
 import { createScheduledLambda } from "./shared/lambda-scheduled";
-import { Secrets } from "./shared/secrets";
+import { Secrets, buildSecret } from "./shared/secrets";
 import { createQueue } from "./shared/sqs";
 import { isSandbox } from "./shared/util";
 
@@ -45,7 +45,6 @@ interface LambdasNestedStackProps extends NestedStackProps {
   lambdaLayers: LambdaLayers;
   secrets: Secrets;
   dbCluster: rds.IDatabaseCluster;
-  roDbSecrets: secret.ISecret[];
   medicalDocumentsBucket: s3.Bucket;
   sandboxSeedDataBucket: s3.IBucket | undefined;
   alarmAction?: SnsAction;
@@ -126,9 +125,7 @@ export class LambdasNestedStack extends NestedStack {
 
     const cqConfig = props.config.carequality;
     if (cqConfig) {
-      const cqRoDbCredsSecret = props.roDbSecrets.find(
-        secret => secret.secretName === `DBCreds-${cqConfig.roUsername}`
-      );
+      const cqRoDbCredsSecret = buildSecret(this, cqConfig.roUsername);
       if (!cqRoDbCredsSecret) {
         throw new Error(`RO CQ DB Creds secret not found`);
       }
