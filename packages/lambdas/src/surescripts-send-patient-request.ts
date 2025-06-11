@@ -50,13 +50,12 @@ export const handler = capture.wrapHandler(
     log(`Connected to Surescripts`);
 
     log(`Generating patient load file...`);
-    const { requestedPatientIds, requestFileName, requestFileContent, transmissionId } =
-      await client.generateAndWritePatientLoadFile({ npiNumber: facility.npi, cxId }, patients);
+    const { requestedPatientIds, requestFileName, transmissionId } =
+      await client.generateAndWriteRequestFileToS3({ npiNumber: facility.npi, cxId }, patients);
 
     log(`Wrote ${requestedPatientIds.length} / ${patients.length} patients to S3 replica bucket`);
     log(`Transmission ID: ${transmissionId}`);
     log(`Request file name: ${requestFileName}`);
-    log(`Request file size: ${requestFileContent.length} bytes`);
 
     await client.disconnect();
     log(`Disconnected from Surescripts`);

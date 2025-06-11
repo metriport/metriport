@@ -36,7 +36,6 @@ interface PatientLoadFileMetadata extends Record<string, string> {
   npiNumber: string;
   cxId: string;
   timestamp: string;
-  compression: string;
 }
 
 export enum SurescriptsEnvironment {
@@ -49,7 +48,7 @@ export enum TransmissionType {
   Unenroll = "UNR",
 }
 
-export type TransmissionData = Pick<Transmission, "cxId" | "npiNumber" | "compression">;
+export type TransmissionData = Pick<Transmission, "cxId" | "npiNumber">;
 
 export interface Transmission {
   type: TransmissionType;
@@ -58,7 +57,6 @@ export interface Transmission {
   id: string;
   timestamp: number; // UTC
   requestFileName: string;
-  compression?: boolean;
 }
 
 export class SurescriptsSftpClient extends SftpClient {
@@ -94,11 +92,11 @@ export class SurescriptsSftpClient extends SftpClient {
     this.receiverId = config.receiverId ?? Config.getSurescriptsSftpReceiverId();
   }
 
-  createTransmission({ npiNumber, cxId, compression }: TransmissionData): Transmission {
+  createTransmission({ npiNumber, cxId }: TransmissionData): Transmission {
     const transmissionId = this.generateTransmissionId().toString("ascii");
 
     const now = Date.now();
-    const requestFileName = this.getPatientLoadFileName(transmissionId, now, compression);
+    const requestFileName = this.getPatientLoadFileName(transmissionId, now);
 
     return {
       type: TransmissionType.Enroll,
@@ -107,52 +105,32 @@ export class SurescriptsSftpClient extends SftpClient {
       id: transmissionId,
       timestamp: now,
       requestFileName,
-      compression: compression ?? false,
     };
   }
 
-  // GENERATE AND WRITE PATIENT LOAD FILES TO S3
-  // First step of the Surescripts integration flow
-
-  async generateAndWritePatientLoadFile(
+  async generateAndWriteRequestFileToS3(
     transmissionData: TransmissionData,
     patients: Patient[]
   ): Promise<{
     requestedPatientIds: string[];
     transmissionId: string;
     requestFileName: string;
-    requestFileContent: Buffer;
   }> {
-    const { content, transmission, requestedPatientIds } = this.generatePatientLoadFile(
-      transmissionData,
-      patients
-    );
-    const patientLoadFileName = this.getPatientLoadFileName(
-      transmission.id,
-      transmission.timestamp,
-      transmission.compression
-    );
-    await this.uploadFileToS3(getS3Key(OUTGOING_NAME, patientLoadFileName), content, {
-      transmissionId: transmission.id,
-      cxId: transmission.cxId,
-      npiNumber: transmission.npiNumber,
-      timestamp: transmission.timestamp.toString(),
-      compression: transmission.compression ? "true" : "false",
-    });
+    const transmission = this.createTransmission(transmissionData);
+    const { content, requestedPatientIds } = this.generatePatientLoadFile(transmission, patients);
+    await this.writePatientLoadFileToS3(transmission, content);
+
     return {
       requestedPatientIds,
       transmissionId: transmission.id,
       requestFileName: transmission.requestFileName,
-      requestFileContent: content,
     };
   }
 
   generatePatientLoadFile(
-    transmissionData: TransmissionData,
+    transmission: Transmission,
     patients: Patient[]
-  ): { content: Buffer; transmission: Transmission; requestedPatientIds: string[] } {
-    const transmission = this.createTransmission(transmissionData);
-
+  ): { content: Buffer; requestedPatientIds: string[] } {
     if (!canGeneratePatientLoadFile(transmission, patients)) {
       throw new MetriportError("Cannot generate patient load file", "generate_patient_load_file", {
         npiNumber: transmission.npiNumber,
@@ -161,18 +139,11 @@ export class SurescriptsSftpClient extends SftpClient {
       });
     }
 
-    return {
-      ...toSurescriptsPatientLoadFile(this, transmission, patients),
-      transmission,
-    };
+    return toSurescriptsPatientLoadFile(this, transmission, patients);
   }
 
   async writePatientLoadFileToS3(transmission: Transmission, fileContent: Buffer): Promise<void> {
-    const fileName = this.getPatientLoadFileName(
-      transmission.id,
-      transmission.timestamp,
-      transmission.compression
-    );
+    const fileName = this.getPatientLoadFileName(transmission.id, transmission.timestamp);
 
     await this.uploadFileToS3<PatientLoadFileMetadata>(
       getS3Key(OUTGOING_NAME, fileName),
@@ -182,7 +153,6 @@ export class SurescriptsSftpClient extends SftpClient {
         cxId: transmission.cxId,
         npiNumber: transmission.npiNumber,
         timestamp: transmission.timestamp.toString(),
-        compression: transmission.compression ? "true" : "false",
       }
     );
   }
@@ -222,7 +192,6 @@ export class SurescriptsSftpClient extends SftpClient {
     return undefined;
   }
 
-  // S3 storage utilities, abstracted for purposes of testing
   private async findVerificationResponseKeyInS3(
     requestFileName: string
   ): Promise<string | undefined> {
@@ -319,7 +288,6 @@ export class SurescriptsSftpClient extends SftpClient {
         cxId: metadata.cxId,
         npiNumber: metadata.npiNumber,
         timestamp: metadata.timestamp,
-        compression: metadata.compression,
       });
       return {
         flatFileResponseName,
@@ -377,7 +345,6 @@ export class SurescriptsSftpClient extends SftpClient {
     const operations: SurescriptsOperation[] = [];
 
     if (isRequestInHistory) {
-      // Check for a verification file
       const verificationFileName = await this.findVerificationFileNameInSftpServer(requestFileName);
       if (verificationFileName) {
         const verificationFileDownloaded = await this.fileExistsInS3(
@@ -391,7 +358,6 @@ export class SurescriptsSftpClient extends SftpClient {
           if (verificationDownload) operations.push(verificationDownload);
         }
 
-        // If there is a verification file, check for a response file
         const responseFileName = await this.findFlatFileResponseNameInSftpServer(
           requestFileName,
           timestamp
@@ -409,9 +375,7 @@ export class SurescriptsSftpClient extends SftpClient {
           }
         }
       }
-    }
-    // If the request file is not in history, copy the initial request file
-    else {
+    } else {
       const requestOperation = await this.copyFileToSurescripts(sftpFileNameForRequest, event);
       if (requestOperation) operations.push(requestOperation);
     }

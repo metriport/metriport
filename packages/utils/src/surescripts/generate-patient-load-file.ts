@@ -45,12 +45,11 @@ program
       npiNumber = npi;
     }
 
-    const { requestedPatientIds, requestFileName, requestFileContent, transmissionId } =
-      await client.generateAndWritePatientLoadFile({ npiNumber, cxId }, patients);
+    const { requestedPatientIds, requestFileName, transmissionId } =
+      await client.generateAndWriteRequestFileToS3({ npiNumber, cxId }, patients);
     logTransmissionCreated({
       transmissionId,
       requestFileName,
-      requestFileContent,
       requestedPatientIds,
     });
   });
@@ -73,19 +72,16 @@ async function getPatientsFromApi(
 function logTransmissionCreated({
   transmissionId,
   requestFileName,
-  requestFileContent,
   requestedPatientIds,
 }: {
   transmissionId: string;
   requestFileName: string;
-  requestFileContent: Buffer;
   requestedPatientIds: string[];
 }) {
   console.log("Patient load file written to storage");
   console.log("      Transmission ID:  " + transmissionId);
   console.log("    Request file name:  " + requestFileName);
   console.log("   Requested patients:  " + requestedPatientIds.length);
-  console.log("            File size:  " + requestFileContent.length + " bytes");
 }
 
 async function getPatientsFromCsv(csvData: string): Promise<Patient[]> {
