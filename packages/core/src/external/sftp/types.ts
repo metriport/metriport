@@ -1,3 +1,5 @@
+import type SshSftpClient from "ssh2-sftp-client";
+
 export interface SftpClientImpl {
   connect(): Promise<void>;
   disconnect(): Promise<void>;
@@ -19,6 +21,8 @@ export interface SftpFile {
   fileName: string;
   content: Buffer;
 }
+
+export type SftpListFilterFunction = SshSftpClient.ListFilterFunction;
 
 export type SftpAction =
   | SftpReadAction

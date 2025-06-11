@@ -3,6 +3,12 @@ import { FacilityData } from "@metriport/shared/domain/customer";
 
 export type SurescriptsDirectory = "from_surescripts" | "to_surescripts" | "history";
 
+export interface SurescriptsRequestEvent {
+  cxId: string;
+  facilityId: string;
+  patientId?: string[];
+}
+
 export interface SurescriptsRequestData {
   cxId: string;
   facility: FacilityData;

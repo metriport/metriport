@@ -5,7 +5,7 @@ import {
   patientLoadDetailOrder,
   patientLoadFooterSchema,
   patientLoadFooterOrder,
-} from "../schema/load";
+} from "../schema/request";
 
 const METRIPORT_OID = Config.getSystemRootOID();
 

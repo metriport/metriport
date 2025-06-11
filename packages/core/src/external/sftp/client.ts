@@ -10,6 +10,7 @@ import {
   SftpConfig,
   SftpResult,
   SftpFile,
+  SftpListFilterFunction,
 } from "./types";
 
 type SftpMethod<T> = (this: SftpClient, client: SshSftpClient) => Promise<T>;
@@ -74,6 +75,8 @@ export class SftpClient implements SftpClientImpl {
   }
 
   async connect(): Promise<void> {
+    if (this.connected) return;
+
     await this.executeWithSshListeners(async function (client) {
       await client.connect({
         host: this.host,
@@ -121,7 +124,7 @@ export class SftpClient implements SftpClientImpl {
     return content;
   }
 
-  async list(remotePath: string, filter?: SshSftpClient.ListFilterFunction): Promise<string[]> {
+  async list(remotePath: string, filter?: SftpListFilterFunction): Promise<string[]> {
     const fileNames: string[] = await this.executeWithSshListeners(async function (client) {
       const files = await client.list(remotePath, filter);
       return files.map(file => file.name);
@@ -177,7 +180,7 @@ export function createWritableBuffer(): { writable: Writable; getBuffer: () => B
 function makeSftpListFilter({
   prefix,
   contains,
-}: Omit<SftpListAction, "type" | "remotePath">): SshSftpClient.ListFilterFunction | undefined {
+}: Omit<SftpListAction, "type" | "remotePath">): SftpListFilterFunction | undefined {
   if (prefix) {
     return file => file.name.startsWith(prefix);
   }

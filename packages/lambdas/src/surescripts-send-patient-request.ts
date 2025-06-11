@@ -3,61 +3,37 @@ import { prefixedLog } from "./shared/log";
 import { SurescriptsApi } from "@metriport/core/external/surescripts/api";
 import { SurescriptsSftpClient } from "@metriport/core/external/surescripts/client";
 import { getSurescriptSecrets } from "./shared/surescripts";
-import { MetriportError } from "@metriport/shared";
+import { SurescriptsRequestEvent } from "@metriport/core/external/surescripts/types";
 
 capture.init();
-
-interface SurescriptsSendPatientRequestEvent {
-  cxId: string;
-  facilityId: string;
-  allPatients?: boolean;
-  patientId?: string;
-}
-
 const log = prefixedLog("surescripts");
 
 // Stub which will be integrated with Surescripts commands
-export const handler = capture.wrapHandler(
-  async ({ cxId, facilityId, allPatients, patientId }: SurescriptsSendPatientRequestEvent) => {
-    const { surescriptsPublicKey, surescriptsPrivateKey, surescriptsSenderPassword } =
-      await getSurescriptSecrets();
-    const client = new SurescriptsSftpClient({
-      senderPassword: surescriptsSenderPassword,
-      publicKey: surescriptsPublicKey,
-      privateKey: surescriptsPrivateKey,
-    });
+export const handler = capture.wrapHandler(async (event: SurescriptsRequestEvent) => {
+  const { surescriptsPublicKey, surescriptsPrivateKey, surescriptsSenderPassword } =
+    await getSurescriptSecrets();
+  const client = new SurescriptsSftpClient({
+    senderPassword: surescriptsSenderPassword,
+    publicKey: surescriptsPublicKey,
+    privateKey: surescriptsPrivateKey,
+  });
 
-    const api = new SurescriptsApi();
-    const facility = await api.getFacilityData(cxId, facilityId);
-    const patientIdsForFacility: string[] = [];
-    if (allPatients) {
-      const patientIds = await api.getPatientIds(cxId, facilityId);
-      patientIdsForFacility.push(...patientIds);
-    } else if (patientId) {
-      patientIdsForFacility.push(patientId);
-    } else {
-      throw new MetriportError("Invalid request");
-    }
+  const api = new SurescriptsApi();
 
-    const patients = await api.getEachPatientById(cxId, patientIdsForFacility);
-    if (patients.length === 0) {
-      log(`No patients retrieved for facility ${facilityId}`);
-      return;
-    }
+  const requestData = await api.getRequestData(event);
 
-    log(`Connecting to Surescripts...`);
-    await client.connect();
-    log(`Connected to Surescripts`);
-
-    log(`Generating patient load file...`);
-    const { requestedPatientIds, requestFileName, transmissionId } =
-      await client.generateAndWriteRequestFileToS3({ npiNumber: facility.npi, cxId }, patients);
-
-    log(`Wrote ${requestedPatientIds.length} / ${patients.length} patients to S3 replica bucket`);
-    log(`Transmission ID: ${transmissionId}`);
-    log(`Request file name: ${requestFileName}`);
-
-    await client.disconnect();
-    log(`Disconnected from Surescripts`);
+  if (requestData.patients.length === 0) {
+    log(`No patients retrieved for facility ${requestData.facility.id}`);
+    return;
   }
-);
+
+  log(`Sending patient request to Surescripts...`);
+  const { requestedPatientIds, requestFileName, transmissionId } =
+    await client.generateAndWriteRequestFileToS3(requestData);
+
+  log(
+    `Wrote ${requestedPatientIds.length} / ${requestData.patients.length} patients to S3 replica bucket`
+  );
+  log(`Transmission ID: ${transmissionId}`);
+  log(`Request file name: ${requestFileName}`);
+});

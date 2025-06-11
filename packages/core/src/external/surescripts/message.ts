@@ -14,7 +14,7 @@ import {
   patientLoadDetailOrder,
   patientLoadFooterSchema,
   patientLoadFooterOrder,
-} from "./schema/load";
+} from "./schema/request";
 import {
   patientVerificationHeaderOrder,
   patientVerificationDetailOrder,

@@ -4,7 +4,7 @@ import { Config } from "../../util/config";
 import { IdGenerator, createIdGenerator } from "./id-generator";
 import { SftpClient } from "../sftp/client";
 import { SftpConfig } from "../sftp/types";
-import { SurescriptsDirectory, SurescriptsSynchronizeEvent } from "./types";
+import { SurescriptsDirectory, SurescriptsRequestData, SurescriptsSynchronizeEvent } from "./types";
 import { getS3Directory, getS3Key, getSftpDirectory, getSftpFileName } from "./shared";
 import { INCOMING_NAME, OUTGOING_NAME, HISTORY_NAME } from "./constants";
 import { S3Utils } from "../aws/s3";
@@ -12,6 +12,7 @@ import { toSurescriptsPatientLoadFile, canGeneratePatientLoadFile } from "./mess
 import { Patient } from "@metriport/shared/domain/patient";
 
 import { MetriportError } from "@metriport/shared";
+import { makePatientLoadFileName } from "./file-names";
 
 export interface SurescriptsSftpConfig extends Partial<Omit<SftpConfig, "password">> {
   senderId?: string;
@@ -94,30 +95,32 @@ export class SurescriptsSftpClient extends SftpClient {
 
   createTransmission({ npiNumber, cxId }: TransmissionData): Transmission {
     const transmissionId = this.generateTransmissionId().toString("ascii");
-
-    const now = Date.now();
-    const requestFileName = this.getPatientLoadFileName(transmissionId, now);
+    const currentTimestamp = Date.now();
+    const requestFileName = makePatientLoadFileName(transmissionId, currentTimestamp);
 
     return {
       type: TransmissionType.Enroll,
       npiNumber,
       cxId,
       id: transmissionId,
-      timestamp: now,
+      timestamp: currentTimestamp,
       requestFileName,
     };
   }
 
-  async generateAndWriteRequestFileToS3(
-    transmissionData: TransmissionData,
-    patients: Patient[]
-  ): Promise<{
+  async generateAndWriteRequestFileToS3(requestData: SurescriptsRequestData): Promise<{
     requestedPatientIds: string[];
     transmissionId: string;
     requestFileName: string;
   }> {
-    const transmission = this.createTransmission(transmissionData);
-    const { content, requestedPatientIds } = this.generatePatientLoadFile(transmission, patients);
+    const transmission = this.createTransmission({
+      npiNumber: requestData.facility.npi,
+      cxId: requestData.cxId,
+    });
+    const { content, requestedPatientIds } = this.generatePatientLoadFile(
+      transmission,
+      requestData.patients
+    );
     await this.writePatientLoadFileToS3(transmission, content);
 
     return {
@@ -132,7 +135,7 @@ export class SurescriptsSftpClient extends SftpClient {
     patients: Patient[]
   ): { content: Buffer; requestedPatientIds: string[] } {
     if (!canGeneratePatientLoadFile(transmission, patients)) {
-      throw new MetriportError("Cannot generate patient load file", "generate_patient_load_file", {
+      throw new MetriportError("Cannot generate patient load file", undefined, {
         npiNumber: transmission.npiNumber,
         cxId: transmission.cxId,
         patientCount: patients.length,
@@ -143,10 +146,8 @@ export class SurescriptsSftpClient extends SftpClient {
   }
 
   async writePatientLoadFileToS3(transmission: Transmission, fileContent: Buffer): Promise<void> {
-    const fileName = this.getPatientLoadFileName(transmission.id, transmission.timestamp);
-
     await this.uploadFileToS3<PatientLoadFileMetadata>(
-      getS3Key(OUTGOING_NAME, fileName),
+      getS3Key(OUTGOING_NAME, transmission.requestFileName),
       fileContent,
       {
         transmissionId: transmission.id,
@@ -510,20 +511,6 @@ export class SurescriptsSftpClient extends SftpClient {
     const timeString = dayjs(timestamp).format("HHmmss");
     const historyFileName = `${dateString}_${timeString}_${requestFileName}.${this.senderId}`;
     return await this.exists(getSftpFileName(HISTORY_NAME, historyFileName));
-  }
-
-  protected getPatientLoadFileName(
-    id: string, // the unique 10-byte transmission ID
-    timestamp: number,
-    compression = false
-  ): string {
-    return [
-      "Metriport_PMA_",
-      dayjs(timestamp).format("YYYYMMDD"),
-      "-",
-      id,
-      compression ? ".gz" : "",
-    ].join("");
   }
 
   protected getFlatFileResponseSuffix(timestamp: number): string {
