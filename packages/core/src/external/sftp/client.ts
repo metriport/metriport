@@ -1,14 +1,14 @@
 import SshSftpClient from "ssh2-sftp-client";
 import { Writable } from "stream";
 import { MetriportError } from "@metriport/shared";
+import { out } from "../../util/log";
 import { compressGzip, decompressGzip } from "./compression";
-
 import {
   SftpAction,
   SftpListAction,
   SftpClientImpl,
   SftpConfig,
-  SftpResult,
+  SftpActionResult,
   SftpFile,
   SftpListFilterFunction,
 } from "./types";
@@ -25,10 +25,11 @@ export class SftpClient implements SftpClientImpl {
   protected readonly username: string;
   protected readonly password: string;
   protected readonly privateKey?: string | undefined;
+  private readonly logger: ReturnType<typeof out>;
   private connected = false;
   private connectionEnded = false;
 
-  constructor({ host, port, username, password, privateKey }: SftpConfig) {
+  constructor({ host, port, username, password, privateKey, logLevel = "none" }: SftpConfig) {
     this.client = new SshSftpClient();
     this.sshErrorHandler = (error?: unknown) => {
       if (error) this.sshError.push(error);
@@ -39,34 +40,33 @@ export class SftpClient implements SftpClientImpl {
     this.username = username;
     this.password = password;
     this.privateKey = privateKey;
+    this.logger = makeLogger(logLevel);
   }
 
-  async execute<A extends SftpAction>(action: A): Promise<SftpResult<A>> {
+  async execute<A extends SftpAction>(action: A): Promise<SftpActionResult<A>> {
     switch (action.type) {
       case "read":
-        return (await this.read(action.remotePath, action)) as SftpResult<A>;
+        return (await this.read(action.remotePath, action)) as SftpActionResult<A>;
       case "write":
-        return (await this.write(action.remotePath, action.content, action)) as SftpResult<A>;
+        return (await this.write(action.remotePath, action.content, action)) as SftpActionResult<A>;
       case "list":
-        return (await this.list(action.remotePath, makeSftpListFilter(action))) as SftpResult<A>;
+        return (await this.list(
+          action.remotePath,
+          makeSftpListFilter(action)
+        )) as SftpActionResult<A>;
       case "exists":
-        return (await this.exists(action.remotePath)) as SftpResult<A>;
+        return (await this.exists(action.remotePath)) as SftpActionResult<A>;
       case "clone":
-        return (await this.clone(action.remotePath)) as SftpResult<A>;
+        return (await this.clone(action.remotePath)) as SftpActionResult<A>;
     }
   }
 
   private async executeWithSshListeners<T, M extends SftpMethod<T>>(method: M): Promise<T> {
     if (this.connectionEnded) {
-      throw new MetriportError(
-        "The SftpClient has been disconnected and should not be reused.",
-        "disconnected",
-        {
-          context: "sftp.client.executeWithSshListeners",
-        }
-      );
+      throw new MetriportError("The SftpClient has been disconnected.", undefined, {
+        context: "sftp.client.executeWithSshListeners",
+      });
     }
-
     this.sshError = [];
     const result = await method.call(this, this.client);
     const unexpectedSshError = this.sshError[0];
@@ -75,8 +75,12 @@ export class SftpClient implements SftpClientImpl {
   }
 
   async connect(): Promise<void> {
-    if (this.connected) return;
+    if (this.connected) {
+      this.debug("Already connected, skipping connect...");
+      return;
+    }
 
+    this.log("Connecting to SFTP server...");
     await this.executeWithSshListeners(async function (client) {
       await client.connect({
         host: this.host,
@@ -92,12 +96,18 @@ export class SftpClient implements SftpClientImpl {
       client.on("end", this.sshErrorHandler);
       client.on("close", this.sshErrorHandler);
     });
+
+    this.log("Connected to SFTP server.");
     this.connected = true;
   }
 
   async disconnect(): Promise<void> {
-    if (!this.connected) return;
+    if (!this.connected) {
+      this.debug("Already disconnected, skipping disconnect...");
+      return;
+    }
 
+    this.log("Disconnecting from SFTP server...");
     await this.executeWithSshListeners(async function (client) {
       client.removeListener("error", this.sshErrorHandler);
       client.removeListener("end", this.sshErrorHandler);
@@ -105,6 +115,7 @@ export class SftpClient implements SftpClientImpl {
       await client.end();
     });
 
+    this.log("Disconnected from SFTP server.");
     this.connectionEnded = true;
     this.connected = false;
   }
@@ -114,35 +125,47 @@ export class SftpClient implements SftpClientImpl {
     { decompress = false }: { decompress?: boolean } = {}
   ): Promise<Buffer> {
     const { writable, getBuffer } = createWritableBuffer();
+
+    this.log(`Reading file from ${remotePath}`);
     await this.executeWithSshListeners(async function (client) {
       return client.get(remotePath, writable);
     });
+
+    this.log(`Finished reading from ${remotePath}.`);
     const content = getBuffer();
     if (decompress) {
+      this.debug(`Decompressing gzip file...`);
       return decompressGzip(content);
     }
     return content;
   }
 
   async list(remotePath: string, filter?: SftpListFilterFunction): Promise<string[]> {
+    this.log(`Listing files in ${remotePath}`);
     const fileNames: string[] = await this.executeWithSshListeners(async function (client) {
       const files = await client.list(remotePath, filter);
       return files.map(file => file.name);
     });
+
+    this.log(`Found ${fileNames.length} files in ${remotePath}.`);
     return fileNames;
   }
 
-  async clone(remotePath: string): Promise<SftpFile[]> {
-    const sftpFileNames = await this.list(remotePath);
+  async clone(remoteDirectory: string): Promise<SftpFile[]> {
+    const sftpFileNames = await this.list(remoteDirectory);
     const sftpFiles: SftpFile[] = [];
     for (const sftpFileName of sftpFileNames) {
-      const content = await this.read(remotePath + "/" + sftpFileName);
+      this.log(`Copying file ${sftpFileName} from ${remoteDirectory}`);
+      const content = await this.read(remoteDirectory + "/" + sftpFileName);
       sftpFiles.push({ fileName: sftpFileName, content });
     }
+
+    this.log(`Finished copying ${sftpFileNames.length} files from ${remoteDirectory}.`);
     return sftpFiles;
   }
 
   async exists(remotePath: string): Promise<boolean> {
+    this.log(`Checking if file exists at ${remotePath}`);
     const exists = await this.executeWithSshListeners(async function (client) {
       return client.exists(remotePath);
     });
@@ -155,11 +178,23 @@ export class SftpClient implements SftpClientImpl {
     { compress = false }: { compress?: boolean } = {}
   ): Promise<void> {
     if (compress) {
+      this.debug(`Compressing file with gzip...`);
       content = await compressGzip(content);
     }
+
+    this.log(`Writing file to ${remotePath}`);
     await this.executeWithSshListeners(async function (client) {
       return client.put(content, remotePath);
     });
+    this.log(`Finished writing file to ${remotePath}`);
+  }
+
+  private log(message: string, ...optionalParams: unknown[]): void {
+    this.logger.log(message, ...optionalParams);
+  }
+
+  private debug(message: string, ...optionalParams: unknown[]): void {
+    this.logger.debug(message, ...optionalParams);
   }
 }
 
@@ -188,4 +223,20 @@ function makeSftpListFilter({
     return file => file.name.includes(contains);
   }
   return undefined;
+}
+
+function makeLogger(logLevel: "info" | "debug" | "none"): ReturnType<typeof out> {
+  if (logLevel === "none") {
+    return {
+      log: () => {}, //eslint-disable-line @typescript-eslint/no-empty-function
+      debug: () => {}, //eslint-disable-line @typescript-eslint/no-empty-function
+    };
+  }
+  if (logLevel === "info") {
+    return {
+      debug: () => {}, //eslint-disable-line @typescript-eslint/no-empty-function
+      log: out("sftp").log,
+    };
+  }
+  return out("sftp");
 }

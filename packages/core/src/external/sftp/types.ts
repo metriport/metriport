@@ -15,6 +15,7 @@ export interface SftpConfig {
   username: string;
   password: string;
   privateKey?: string;
+  logLevel?: "info" | "debug" | "none"; // default "none"
 }
 
 export interface SftpFile {
@@ -35,7 +36,7 @@ export interface SftpBaseAction {
   type: "read" | "write" | "list" | "exists" | "clone";
 }
 
-export type SftpResult<A extends SftpBaseAction> = SftpBaseAction extends A
+export type SftpActionResult<A extends SftpBaseAction> = SftpBaseAction extends A
   ? unknown
   : A extends { type: "read" }
   ? Buffer
