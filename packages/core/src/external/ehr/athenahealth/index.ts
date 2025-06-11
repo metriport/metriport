@@ -582,7 +582,7 @@ class AthenaHealthApi {
           if (error instanceof BadRequestError || error instanceof NotFoundError) return;
           const medicationToString = JSON.stringify(params);
           log(`Failed to create medication ${medicationToString}. Cause: ${errorToString(error)}`);
-          createMedicationErrors.push({ error, ...params, medication: medicationToString });
+          createMedicationErrors.push({ error, medication: medicationToString });
         }
       },
       {
@@ -1112,7 +1112,7 @@ class AthenaHealthApi {
           if (error instanceof BadRequestError || error instanceof NotFoundError) return;
           const vitalsToString = JSON.stringify(params.vitals);
           log(`Failed to create vitals ${vitalsToString}. Cause: ${errorToString(error)}`);
-          createVitalsErrors.push({ error, ...params, vitals: vitalsToString });
+          createVitalsErrors.push({ error, vitals: vitalsToString });
         }
       },
       {

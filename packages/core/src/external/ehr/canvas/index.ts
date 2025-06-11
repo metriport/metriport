@@ -678,7 +678,6 @@ class CanvasApi {
           );
           createMedicationStatementsErrors.push({
             error,
-            ...params,
             medicationStatement: medicationStatementToString,
           });
         }
@@ -905,11 +904,7 @@ class CanvasApi {
           log(
             `Failed to create observation ${observationToString}. Cause: ${errorToString(error)}`
           );
-          createObservationsErrors.push({
-            error,
-            ...params,
-            observation: observationToString,
-          });
+          createObservationsErrors.push({ error, observation: observationToString });
         }
       },
       {
