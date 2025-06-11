@@ -17,6 +17,7 @@ export const config: EnvConfigNonSandbox = {
   apiDatabase: {
     name: "my_db",
     username: "my_db_user",
+    roUsernames: ["jobs-ro-username"],
     maintenanceWindow: "Sun:02:00-Sun:02:30",
     minCapacity: 0.5,
     maxCapacity: 1,
@@ -226,6 +227,12 @@ export const config: EnvConfigNonSandbox = {
     SLACK_NOTIFICATION_URL: "url-to-slack-notification",
     workspaceId: "workspace-id",
     alertsChannelId: "alerts-channel-id",
+  },
+  jobs: {
+    roUsername: "jobs-ro-username",
+    patientJobsTable: "patient_job",
+    startPatientJobsPollingScheduleExpression: "0/5 * * * ? *",
+    startPatientJobsPollingUrl: "/internal/patient/job/start",
   },
 };
 export default config;
