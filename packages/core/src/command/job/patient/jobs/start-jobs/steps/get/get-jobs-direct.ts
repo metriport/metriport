@@ -93,6 +93,7 @@ async function getJobsFromDb({
 }): Promise<PatientJob[]> {
   const whereClause = {
     ...{ scheduledAt: { [Op.lte]: jobCutoffDate } },
+    ...{ scheduledAt: { [Op.not]: null } },
     ...{ status: status ?? jobInitialStatus },
     ...(id && { id }),
     ...(cxId && { cx_id: cxId }),
