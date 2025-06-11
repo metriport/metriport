@@ -44,7 +44,7 @@ export type PatientImportEntryStatusParsed = "waiting" | "processing" | typeof s
 export type PatientImportEntryStatus =
   | PatientImportEntryStatusFailed
   | PatientImportEntryStatusParsed;
-export const finalStatuses = [failed, successful] as const;
+export const finalStatuses = [failed, successful];
 export type PatientImportEntryStatusFinal = (typeof finalStatuses)[number];
 
 export function isDryRun(job: Pick<PatientImportJob, "paramsCx" | "paramsOps">): boolean {
@@ -54,5 +54,5 @@ export function isDryRun(job: Pick<PatientImportJob, "paramsCx" | "paramsOps">):
 export function isPatientImportEntryStatusFinal(
   status: PatientImportEntryStatus
 ): status is PatientImportEntryStatusFinal {
-  return (finalStatuses as unknown as PatientImportEntryStatus[]).includes(status);
+  return finalStatuses.includes(status as PatientImportEntryStatusFinal);
 }
