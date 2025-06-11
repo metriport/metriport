@@ -647,8 +647,11 @@ class CanvasApi {
     if (createMedicationStatementsArgs.length < 1) {
       throw new BadRequestError("No valid medication statements found", undefined, additionalInfo);
     }
+    const sortedCreateMedicationStatementsArgs = this.sortMedicationStatementsNewestFirst(
+      createMedicationStatementsArgs
+    );
     await executeAsynchronously(
-      createMedicationStatementsArgs,
+      sortedCreateMedicationStatementsArgs.slice(0, 1),
       async (params: MedicationStatement) => {
         try {
           await this.makeRequest<undefined>({
@@ -1648,6 +1651,31 @@ class CanvasApi {
 
   private convertCelciusToFahrenheit(value: number): number {
     return value * (9 / 5) + 32;
+  }
+
+  private sortMedicationStatementsNewestFirst(
+    medicationStatements: MedicationStatement[]
+  ): MedicationStatement[] {
+    return medicationStatements
+      .sort((a, b) => {
+        const aDate = a.effectivePeriod?.start;
+        const bDate = b.effectivePeriod?.start;
+        if (!aDate) return -1;
+        if (!bDate) return 1;
+        const aDateUnix = buildDayjs(aDate).unix();
+        const bDateUnix = buildDayjs(bDate).unix();
+        if (aDateUnix === bDateUnix) {
+          const aEndDate = a.effectivePeriod?.end;
+          const bEndDate = b.effectivePeriod?.end;
+          if (!aEndDate) return -1;
+          if (!bEndDate) return 1;
+          const aEndDateUnix = buildDayjs(aEndDate).unix();
+          const bEndDateUnix = buildDayjs(bEndDate).unix();
+          return aEndDateUnix - bEndDateUnix;
+        }
+        return aDateUnix - bDateUnix;
+      })
+      .reverse();
   }
 }
 
