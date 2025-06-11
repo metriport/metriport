@@ -2,9 +2,12 @@ import { faker } from "@faker-js/faker";
 import { CodeableConcept, Coding, DiagnosticReport } from "@medplum/fhirtypes";
 import { makeSubjectReference } from "./shared";
 
-export function makeDiagnosticReport(params: Partial<DiagnosticReport> = {}): DiagnosticReport {
+export function makeDiagnosticReport(
+  params: Partial<DiagnosticReport> = {},
+  patientId?: string
+): DiagnosticReport {
   return {
-    ...makeSubjectReference(),
+    ...makeSubjectReference(patientId),
     resourceType: "DiagnosticReport",
     ...(params.id ? { id: params.id } : { id: faker.string.uuid() }),
     code: params.code ?? {

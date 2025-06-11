@@ -47,6 +47,7 @@ import { RXNORM_URL as RXNORM_SYSTEM } from "../../../util/constants";
 import { out } from "../../../util/log";
 import {
   ApiConfig,
+  convertBundleToValidStrictBundle,
   fetchEhrBundleUsingCache,
   fetchEhrFhirResourcesWithPagination,
   formatDate,
@@ -70,7 +71,7 @@ const canvasNoteTitle = "Metriport Chart Import";
 const canvasNoteTypeName = "Chart review";
 const canvasNoteStatusForWriting = "NEW";
 const utcToEstOffset = dayjs.duration(-5, "hours");
-const defaultCountOrLimit = "1000";
+const defaultCountOrLimit = 1000;
 export type CanvasEnv = string;
 
 export const supportedCanvasResources: ResourceType[] = [
@@ -533,7 +534,7 @@ class CanvasApi {
       provider_key: practitionerId,
       datetime_of_service__gte: fromDate.toISOString(),
       datetime_of_service__lte: toDate.toISOString(),
-      limit: defaultCountOrLimit,
+      limit: defaultCountOrLimit.toString(),
       ordering: orderDec ? "-datetime_of_service" : "datetime_of_service",
     };
     const urlParams = new URLSearchParams(params);
@@ -763,7 +764,10 @@ class CanvasApi {
         resourceType,
       });
     }
-    const params = { patient: `Patient/${canvasPatientId}`, _count: defaultCountOrLimit };
+    const params = {
+      patient: `Patient/${canvasPatientId}`,
+      _count: defaultCountOrLimit.toString(),
+    };
     const urlParams = new URLSearchParams(params);
     const resourceTypeUrl = `/${resourceType}?${urlParams.toString()}`;
     const additionalInfo = {
@@ -786,14 +790,7 @@ class CanvasApi {
             debug,
             useFhir: true,
           });
-          const invalidResource = bundle.entry?.find(e => e.resource.resourceType !== resourceType);
-          if (invalidResource) {
-            throw new BadRequestError("Invalid bundle", undefined, {
-              resourceType,
-              resourceTypeInBundle: invalidResource.resource.resourceType,
-            });
-          }
-          return bundle;
+          return convertBundleToValidStrictBundle(bundle, resourceType, canvasPatientId);
         },
         url: resourceTypeUrl,
       });
@@ -886,7 +883,7 @@ class CanvasApi {
     toDate: Date;
   }): Promise<SlimBookedAppointment[]> {
     const { debug } = out(`Canvas getAppointments - cxId ${cxId} practiceId ${this.practiceId}`);
-    const params = { status: "booked", _count: "1000" };
+    const params = { status: "booked", _count: defaultCountOrLimit.toString() };
     const urlParams = new URLSearchParams(params);
     urlParams.append("date", `ge${this.formatDate(fromDate.toISOString())}`);
     urlParams.append("date", `lt${this.formatDate(toDate.toISOString())}`);
@@ -903,7 +900,7 @@ class CanvasApi {
       acc: Appointment[] | undefined = []
     ): Promise<Appointment[]> {
       if (!url) return acc;
-      await sleep(paginateWaitTime);
+      await sleep(paginateWaitTime.asMilliseconds());
       const appointmentListResponse = await api.makeRequest<AppointmentListResponse>({
         cxId,
         s3Path: "appointments",

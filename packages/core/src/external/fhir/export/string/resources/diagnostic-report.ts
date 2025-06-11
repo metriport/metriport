@@ -20,10 +20,14 @@ export class DiagnosticReportToString implements FHIRResourceToString<Diagnostic
     const identifierStr = formatIdentifiers({ identifiers: report.identifier });
     if (identifierStr) parts.push(identifierStr);
 
-    // if (report.basedOn) {
-    //   const basedOnStr = formatReferences(report.basedOn, "Based On");
-    //   if (basedOnStr) parts.push(basedOnStr);
-    // }
+    if (report.basedOn) {
+      const basedOnStr = formatReferences({
+        references: report.basedOn,
+        label: "Based On",
+        isDebug,
+      });
+      if (basedOnStr) parts.push(basedOnStr);
+    }
 
     if (report.status) {
       const status = emptyIfDenied(report.status);
@@ -45,18 +49,26 @@ export class DiagnosticReportToString implements FHIRResourceToString<Diagnostic
       }
     }
 
-    // if (report.subject) {
-    //   const subjectStr = formatReferences([report.subject], "Subject");
-    //   if (subjectStr) {
-    //     parts.push(subjectStr);
-    //     hasMinimumData = true;
-    //   }
-    // }
+    if (report.subject) {
+      const subjectStr = formatReferences({
+        references: [report.subject],
+        label: "Subject",
+        isDebug,
+      });
+      if (subjectStr) {
+        parts.push(subjectStr);
+        hasMinimumData = true;
+      }
+    }
 
-    // if (report.encounter) {
-    //   const encounterStr = formatReferences([report.encounter], "Encounter");
-    //   if (encounterStr) parts.push(encounterStr);
-    // }
+    if (report.encounter) {
+      const encounterStr = formatReferences({
+        references: [report.encounter],
+        label: "Encounter",
+        isDebug,
+      });
+      if (encounterStr) parts.push(encounterStr);
+    }
 
     if (report.effectiveDateTime) {
       parts.push(

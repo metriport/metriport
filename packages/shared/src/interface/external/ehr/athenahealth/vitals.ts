@@ -9,9 +9,9 @@ export const createdVitalsSchema = z.object({
 });
 
 export type CreatedVitals = z.infer<typeof createdVitalsSchema>;
-export const createdVitalsSuccessSchema = createdVitalsSchema.extend({
+export const createdVitalsSuccessSchema = z.object({
   success: z.literal(true),
-  vitalids: vitalIdSchema.array(),
+  vitalids: vitalIdSchema.array().min(1),
 });
 export type CreatedVitalsSuccess = z.infer<typeof createdVitalsSuccessSchema>;
 

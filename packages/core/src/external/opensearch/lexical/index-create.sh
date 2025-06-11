@@ -2,7 +2,7 @@
 
 # Create index
 # Update properties with _
-curl -XPUT "/consolidated-data-1" -H 'Content-Type: application/json' -d'
+curl -XPUT "/consolidated-data-2" -H 'Content-Type: application/json' -d'
 {
   "mappings": {
     "properties": {
@@ -23,6 +23,9 @@ curl -XPUT "/consolidated-data-1" -H 'Content-Type: application/json' -d'
       },
       "rawContent": {
         "type": "text"
+      },
+      "ingestedAt": {
+        "type": "date"
       }
     }
   },
@@ -40,8 +43,9 @@ curl -XPOST "/_aliases" -H 'Content-Type: application/json' -d'
   "actions": [
     {
       "add": {
-        "index": "consolidated-data-1",
-        "alias": "consolidated-data"
+        "index": "consolidated-data-2",
+        "alias": "consolidated-data",
+        "is_write_index": true
       }
     }
   ]

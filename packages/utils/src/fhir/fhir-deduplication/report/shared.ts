@@ -1,7 +1,8 @@
 import { Extension, Meta } from "@medplum/fhirtypes";
+import { artifactRelatedArtifactUrl } from "@metriport/core/external/fhir/shared/extensions/derived-from";
 
 export function isSourceRef(e: Extension): boolean {
-  return e.url === "http://hl7.org/fhir/StructureDefinition/artifact-relatedArtifact";
+  return e.url === artifactRelatedArtifactUrl;
 }
 
 export function getLinks<T extends { extension?: Extension[] }>(r: T): Extension[] {
