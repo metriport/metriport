@@ -3,22 +3,14 @@ import { Writable } from "stream";
 import { MetriportError } from "@metriport/shared";
 import { compressGzip, decompressGzip } from "./compression";
 
-export interface SftpConfig {
-  host: string;
-  port: number;
-  username: string;
-  password: string;
-  privateKey?: string;
-}
-
-export interface SftpClientImpl {
-  connect(): Promise<void>;
-  disconnect(): Promise<void>;
-  read(remotePath: string): Promise<Buffer>;
-  write(remotePath: string, content: Buffer): Promise<void>;
-  list(remotePath: string): Promise<string[]>;
-  exists(remotePath: string): Promise<boolean>;
-}
+import {
+  SftpAction,
+  SftpListAction,
+  SftpClientImpl,
+  SftpConfig,
+  SftpResult,
+  SftpFile,
+} from "./types";
 
 type SftpMethod<T> = (this: SftpClient, client: SshSftpClient) => Promise<T>;
 
@@ -46,6 +38,21 @@ export class SftpClient implements SftpClientImpl {
     this.username = username;
     this.password = password;
     this.privateKey = privateKey;
+  }
+
+  async execute<A extends SftpAction>(action: A): Promise<SftpResult<A>> {
+    switch (action.type) {
+      case "read":
+        return (await this.read(action.remotePath, action)) as SftpResult<A>;
+      case "write":
+        return (await this.write(action.remotePath, action.content, action)) as SftpResult<A>;
+      case "list":
+        return (await this.list(action.remotePath, makeSftpListFilter(action))) as SftpResult<A>;
+      case "exists":
+        return (await this.exists(action.remotePath)) as SftpResult<A>;
+      case "clone":
+        return (await this.clone(action.remotePath)) as SftpResult<A>;
+    }
   }
 
   private async executeWithSshListeners<T, M extends SftpMethod<T>>(method: M): Promise<T> {
@@ -122,6 +129,16 @@ export class SftpClient implements SftpClientImpl {
     return fileNames;
   }
 
+  async clone(remotePath: string): Promise<SftpFile[]> {
+    const sftpFileNames = await this.list(remotePath);
+    const sftpFiles: SftpFile[] = [];
+    for (const sftpFileName of sftpFileNames) {
+      const content = await this.read(remotePath + "/" + sftpFileName);
+      sftpFiles.push({ fileName: sftpFileName, content });
+    }
+    return sftpFiles;
+  }
+
   async exists(remotePath: string): Promise<boolean> {
     const exists = await this.executeWithSshListeners(async function (client) {
       return client.exists(remotePath);
@@ -155,4 +172,17 @@ export function createWritableBuffer(): { writable: Writable; getBuffer: () => B
 
   const getBuffer = () => Buffer.concat(chunks);
   return { writable, getBuffer };
+}
+
+function makeSftpListFilter({
+  prefix,
+  contains,
+}: Omit<SftpListAction, "type" | "remotePath">): SshSftpClient.ListFilterFunction | undefined {
+  if (prefix) {
+    return file => file.name.startsWith(prefix);
+  }
+  if (contains) {
+    return file => file.name.includes(contains);
+  }
+  return undefined;
 }
