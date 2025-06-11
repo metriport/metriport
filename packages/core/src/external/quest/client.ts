@@ -7,6 +7,7 @@ import { LocalReplica } from "../sftp/replica/local";
 import { S3Replica } from "../sftp/replica/s3";
 import { toQuestRequestFile, fromQuestResponseFile } from "./message";
 import { QuestRequestData } from "./types";
+import { lexicalId, LexicalIdGenerator } from "@metriport/shared/common/lexical-id";
 
 export interface QuestSftpConfig extends Partial<SftpConfig> {
   local?: boolean;
@@ -17,6 +18,7 @@ export interface QuestSftpConfig extends Partial<SftpConfig> {
 
 export class QuestSftpClient extends SftpClient {
   private readonly replica: Replica;
+  private readonly generateRequestId: LexicalIdGenerator;
 
   constructor(config: QuestSftpConfig) {
     super({
@@ -26,6 +28,8 @@ export class QuestSftpClient extends SftpClient {
       username: config.username ?? Config.getQuestSftpUsername(),
       password: config.password ?? Config.getQuestSftpPassword(),
     });
+
+    this.generateRequestId = lexicalId(20);
 
     this.replica =
       config.local && config.localPath
@@ -43,8 +47,9 @@ export class QuestSftpClient extends SftpClient {
   }
 
   async generateAndWriteRequestFile(request: QuestRequestData) {
+    const requestId = this.generateRequestId();
     const requestFile = this.generateRequestFile(request);
-    await this.replica.writeFile(request.cxId, requestFile, {
+    await this.replica.writeFile(`${OUTGOING_NAME}/${requestId}`, requestFile, {
       cxId: request.cxId,
     });
   }
