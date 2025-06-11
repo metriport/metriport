@@ -1,4 +1,4 @@
-import { buildGetJobsHandler } from "@metriport/core/command/job/patient/jobs/start-jobs/steps/get/get-jobs-factory";
+import { buildGetJobsHandler } from "@metriport/core/command/job/patient/job/start-jobs/steps/get/get-jobs-factory";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { StartJobsParams } from "../shared";
 
