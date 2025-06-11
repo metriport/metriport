@@ -38,6 +38,9 @@ export class SecretsStack extends Stack {
 
     if (props.config.carequality?.roUsername) {
       const secretName = props.config.carequality.roUsername;
+      if (!secretName || secretName.trim().length < 1) {
+        throw new Error("RO CQ DB Creds secret name not set");
+      }
       const secret = makeSecret(secretName);
       logSecretInfo(this, secret, secretName);
     }
