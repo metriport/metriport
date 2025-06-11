@@ -15,7 +15,7 @@ export const patientJobRawColumnNames = {
   requestId: "request_id",
   status: "status",
   statusReason: "status_reason",
-  schedulatedAt: "schedulated_at",
+  scheduledAt: "scheduled_at",
   startedAt: "started_at",
   finishedAt: "finished_at",
   cancelledAt: "cancelled_at",
@@ -38,7 +38,7 @@ export class PatientJobModel extends BaseModel<PatientJobModel> implements Patie
   declare requestId: string | undefined;
   declare status: JobStatus;
   declare statusReason: string | undefined;
-  declare schedulatedAt: Date | undefined;
+  declare scheduledAt: Date | undefined;
   declare startedAt: Date | undefined;
   declare finishedAt: Date | undefined;
   declare cancelledAt: Date | undefined;
@@ -76,7 +76,7 @@ export class PatientJobModel extends BaseModel<PatientJobModel> implements Patie
         statusReason: {
           type: DataTypes.STRING,
         },
-        schedulatedAt: {
+        scheduledAt: {
           type: DataTypes.DATE,
         },
         startedAt: {

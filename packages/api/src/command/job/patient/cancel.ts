@@ -10,8 +10,7 @@ import { getPatientJobModelOrFail } from "./get";
  * @param jobId - The job ID.
  * @param cxId - The customer ID.
  * @param reason - The reason for cancelling the job.
- * @param forceStatusUpdate - Whether to force the status update (only to be used by internal
- *                            flows/endpoints).
+ * @param forceStatusUpdate - Whether to force the status update (only to be used by internal flows/endpoints).
  * @param onCancelled - The callback to call once the job is cancelled.
  * @returns the updated job.
  * @throws BadRequestError if the cancelled status is not valid based on the current state.

@@ -54,11 +54,9 @@ export async function getPatientJobs({
       ...(jobType ? { jobType } : {}),
       ...(jobGroupId ? { jobGroupId } : {}),
       ...(statuses.length > 0 ? { status: { [Op.in]: statuses } } : {}),
-      ...(scheduledAfter
-        ? { schedulatedAt: { [Op.gte]: scheduledAfter, [Op.not]: undefined } }
-        : {}),
+      ...(scheduledAfter ? { scheduledAt: { [Op.gte]: scheduledAfter, [Op.not]: undefined } } : {}),
       ...(scheduledBefore
-        ? { schedulatedAt: { [Op.lte]: scheduledBefore, [Op.not]: undefined } }
+        ? { scheduledAt: { [Op.lte]: scheduledBefore, [Op.not]: undefined } }
         : {}),
     },
   });

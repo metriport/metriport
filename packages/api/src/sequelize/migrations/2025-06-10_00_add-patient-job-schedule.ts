@@ -2,7 +2,7 @@ import { DataTypes } from "sequelize";
 import type { Migration } from "..";
 
 const patientJobTableName = "patient_job";
-const patientJobScheduleColumn = "scheduled_at";
+const patientJobScheduledAtColumn = "scheduled_at";
 const patientJobCancelledAtColumn = "cancelled_at";
 const patientJobFailedAtColumn = "failed_at";
 const patientJobRuntimeDataColumn = "runtime_data";
@@ -11,7 +11,7 @@ export const up: Migration = async ({ context: queryInterface }) => {
   await queryInterface.sequelize.transaction(async transaction => {
     await queryInterface.addColumn(
       patientJobTableName,
-      patientJobScheduleColumn,
+      patientJobScheduledAtColumn,
       { type: DataTypes.DATE, allowNull: true },
       { transaction }
     );
@@ -47,7 +47,7 @@ export const down: Migration = ({ context: queryInterface }) => {
     await queryInterface.removeColumn(patientJobTableName, patientJobCancelledAtColumn, {
       transaction,
     });
-    await queryInterface.removeColumn(patientJobTableName, patientJobScheduleColumn, {
+    await queryInterface.removeColumn(patientJobTableName, patientJobScheduledAtColumn, {
       transaction,
     });
   });

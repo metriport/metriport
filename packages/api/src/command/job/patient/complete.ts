@@ -9,8 +9,7 @@ import { getPatientJobModelOrFail } from "./get";
  *
  * @param jobId - The job ID.
  * @param cxId - The customer ID.
- * @param forceStatusUpdate - Whether to force the status update (only to be used by internal
- *                            flows/endpoints).
+ * @param forceStatusUpdate - Whether to force the status update (only to be used by internal flows/endpoints).
  * @param onCompleted - The callback to call once the job is updated.
  * @returns the updated job.
  * @throws BadRequestError if the completed status is not valid based on the current state.
