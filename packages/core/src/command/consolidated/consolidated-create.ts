@@ -26,6 +26,7 @@ import { AiBriefControls } from "../ai-brief/shared";
 import { isAiBriefFeatureFlagEnabledForCx } from "../feature-flags/domain-ffs";
 import { getConsolidatedLocation, getConsolidatedSourceLocation } from "./consolidated-shared";
 import { makeIngestConsolidated } from "./search/fhir-resource/ingest-consolidated-factory";
+import { getAllAdtSourcedEncounters } from "../../external/fhir/adt-encounters";
 
 dayjs.extend(duration);
 
@@ -64,13 +65,14 @@ export async function createConsolidatedFromConversions({
   const fhirPatient = patientToFhir(patient);
   const patientEntry = buildBundleEntry(fhirPatient);
 
-  const [conversions, docRefs, pharmacyResources, isAiBriefFeatureFlagEnabled] = await Promise.all([
+  const [conversions, docRefs, pharmacyResources, adtSourcedEncounters, isAiBriefFeatureFlagEnabled] = await Promise.all([
     getConversions({ cxId, patient, sourceBucketName }),
     getDocumentReferences({ cxId, patientId }),
     getPharmacyResources({ cxId, patientId }),
+    getAllAdtSourcedEncounters({ cxId, patientId }),
     isAiBriefFeatureFlagEnabledForCx(cxId),
   ]);
-  log(`Got ${conversions.length} resources from conversions`);
+  log(`Got ${conversions.length} resources from cdaConversions`);
 
   const bundle = buildCollectionBundle();
   const docRefsWithUpdatedMeta = insertSourceDocumentToAllDocRefMeta(docRefs);
@@ -78,8 +80,10 @@ export async function createConsolidatedFromConversions({
     ...conversions,
     ...docRefsWithUpdatedMeta.map(buildBundleEntry),
     ...pharmacyResources,
+    ...adtSourcedEncounters,
     patientEntry,
   ];
+  bundle.total = bundle.entry.length;
   log(
     `Added ${docRefsWithUpdatedMeta.length} docRefs, ` +
       `${pharmacyResources.length} pharmacy resources, ` +
