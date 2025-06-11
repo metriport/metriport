@@ -6,6 +6,8 @@ import {
   Condition,
   Immunization,
   Medication,
+  MedicationAdministration,
+  MedicationDispense,
   MedicationStatement,
   Observation,
   Procedure,
@@ -289,6 +291,31 @@ export function isNotRetriableAxiosError(error: unknown): boolean {
   );
 }
 
+// TYPES FROM DASHBOARD
+export type MedicationWithRefs = {
+  medication: Medication;
+  administration: MedicationAdministration[];
+  dispense: MedicationDispense[];
+  statement: MedicationStatement[];
+};
+
+export type GroupedVitals = {
+  mostRecentObservation: Observation;
+  sortedPoints?: DataPoint[];
+};
+
+export type BloodPressure = {
+  systolic: number;
+  diastolic: number;
+};
+
+export type DataPoint = {
+  value: number;
+  date: string;
+  unit?: string;
+  bp?: BloodPressure | undefined;
+};
+
 export function getMedicationRxnormCoding(medication: Medication): Coding | undefined {
   const code = medication.code;
   const rxnormCoding = code?.coding?.find(coding => {
@@ -453,6 +480,12 @@ export function getObservationLoincCoding(observation: Observation): Coding | un
   });
   if (!loincCoding) return undefined;
   return loincCoding;
+}
+
+export function getObservationLoincCode(observation: Observation): string | undefined {
+  const loincCoding = getObservationLoincCoding(observation);
+  if (!loincCoding) return undefined;
+  return loincCoding.code;
 }
 
 export function getObservationUnitAndValue(

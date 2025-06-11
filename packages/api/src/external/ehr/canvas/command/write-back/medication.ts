@@ -1,24 +1,24 @@
-import { Condition } from "@medplum/fhirtypes";
+import { MedicationWithRefs } from "@metriport/core/external/ehr/shared";
 import { createCanvasClient } from "../../shared";
 
-export async function writeConditionToFhir({
+export async function writeMedicationToFhir({
   cxId,
   canvasPatientId,
   canvasPracticeId,
   canvasPractitionerId,
-  condition,
+  medicationWithRefs,
 }: {
   cxId: string;
   canvasPatientId: string;
   canvasPracticeId: string;
   canvasPractitionerId: string;
-  condition: Condition;
+  medicationWithRefs: MedicationWithRefs;
 }): Promise<void> {
   const api = await createCanvasClient({ cxId, practiceId: canvasPracticeId });
-  await api.createCondition({
+  await api.createMedicationStatements({
     cxId,
     patientId: canvasPatientId,
     practitionerId: canvasPractitionerId,
-    condition,
+    medicationWithRefs,
   });
 }
