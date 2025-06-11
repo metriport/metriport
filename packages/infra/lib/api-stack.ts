@@ -189,8 +189,9 @@ export class APIStack extends Stack {
     });
     const roDbSecrets: secret.ISecret[] = [];
     if (props.config.carequality?.roUsername) {
-      const roDbCredsSecret = new secret.Secret(this, "DBCreds", {
-        secretName: `DBCreds-${props.config.carequality.roUsername}`,
+      const secretName = `DBCreds-${props.config.carequality.roUsername}`;
+      const roDbCredsSecret = new secret.Secret(this, secretName, {
+        secretName,
         generateSecretString: {
           secretStringTemplate: JSON.stringify({
             username: props.config.carequality.roUsername,
