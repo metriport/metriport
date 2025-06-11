@@ -203,21 +203,13 @@ const inchesToCm = 2.54;
 
 export const supportedAthenaHealthResources: ResourceType[] = [
   "AllergyIntolerance",
-  "CarePlan",
   "Condition",
   "DiagnosticReport",
-  "Goal",
   "Immunization",
-  "MedicationDispense",
   "MedicationRequest",
   "Observation",
   "Procedure",
-  "Specimen",
-  "Device",
-  "ServiceRequest",
   "Encounter",
-  "Coverage",
-  "CareTeam",
 ];
 
 export const supportedAthenaHealthReferenceResources: ResourceType[] = [
