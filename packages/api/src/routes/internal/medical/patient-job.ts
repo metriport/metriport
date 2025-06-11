@@ -1,16 +1,64 @@
-import { BadRequestError, isValidJobEntryStatus } from "@metriport/shared";
+import {
+  BadRequestError,
+  isValidJobEntryStatus,
+  isValidJobStatus,
+  JobStatus,
+} from "@metriport/shared";
+import { buildDayjs } from "@metriport/shared/common/date";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
+import { z } from "zod";
+import { cancelPatientJob } from "../../../command/job/patient/cancel";
 import { completePatientJob } from "../../../command/job/patient/complete";
+import { failPatientJob } from "../../../command/job/patient/fail";
 import { initializePatientJob } from "../../../command/job/patient/initialize";
 import { setPatientJobEntryStatus } from "../../../command/job/patient/set-entry-status";
+import { startJobs } from "../../../command/job/patient/start-jobs";
+import { updatePatientJobRuntimeData } from "../../../command/job/patient/update-runtime-data";
 import { updatePatientJobTotal } from "../../../command/job/patient/update-total";
 import { requestLogger } from "../../helpers/request-logger";
 import { getUUIDFrom } from "../../schemas/uuid";
-import { asyncHandler, getFrom, getFromQueryOrFail } from "../../util";
+import { asyncHandler, getFrom, getFromQuery, getFromQueryOrFail } from "../../util";
 
 const router = Router();
+
+/**
+ * POST /internal/patient/job/start
+ *
+ * Starts the jobs that are scheduled before the given date.
+ * @param req.query.runDate - The run date. Optional.
+ * @param req.query.cxId - The CX ID. Optional.
+ * @param req.query.patientId - The patient ID. Optional.
+ * @param req.query.jobType - The job type. Optional.
+ * @param req.query.status - The status of the job. Optional.
+ * @param req.query.scheduledAfter - The scheduled after date.
+ * @param req.query.scheduledBefore - The scheduled before date.
+ * @returns 200 OK
+ */
+router.post(
+  "/start",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const runDate = getFromQuery("runDate", req);
+    const runDateDate = runDate ? buildDayjs(runDate).toDate() : undefined;
+    const cxId = getFromQuery("cxId", req);
+    const patientId = getFromQuery("patientId", req);
+    const jobType = getFromQuery("jobType", req);
+    const status = getFromQuery("status", req);
+    if (status && !isValidJobStatus(status)) {
+      throw new BadRequestError("Status must be a valid job status");
+    }
+    await startJobs({
+      runDate: runDateDate,
+      cxId,
+      patientId,
+      jobType,
+      status: status as JobStatus,
+    });
+    return res.sendStatus(httpStatus.OK);
+  })
+);
 
 /**
  * POST /internal/patient/job/:jobId/initialize
@@ -51,6 +99,52 @@ router.post(
   })
 );
 
+const failOrCancelSchema = z.object({
+  reason: z.string(),
+});
+
+/**
+ * POST /internal/patient/job/:jobId/fail
+ *
+ * Fails the job.
+ * @param req.query.cxId - The CX ID.
+ * @param req.params.jobId - The job ID.
+ * @param req.body.reason - The reason for failing the job.
+ * @returns 200 OK
+ */
+router.post(
+  "/:jobId/fail",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const jobId = getFrom("params").orFail("jobId", req);
+    const { reason } = failOrCancelSchema.parse(req.body);
+    await failPatientJob({ jobId, cxId, reason });
+    return res.sendStatus(httpStatus.OK);
+  })
+);
+
+/**
+ * POST /internal/patient/job/:jobId/cancel
+ *
+ * Cancels the job.
+ * @param req.query.cxId - The CX ID.
+ * @param req.params.jobId - The job ID.
+ * @param req.body.reason - The reason for cancelling the job.
+ * @returns 200 OK
+ */
+router.post(
+  "/:jobId/cancel",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const jobId = getFrom("params").orFail("jobId", req);
+    const { reason } = failOrCancelSchema.parse(req.body);
+    await cancelPatientJob({ jobId, cxId, reason });
+    return res.sendStatus(httpStatus.OK);
+  })
+);
+
 /**
  * POST /internal/patient/job/:jobId/update-total
  *
@@ -74,6 +168,31 @@ router.post(
       jobId,
       cxId,
       total: +total,
+    });
+    return res.sendStatus(httpStatus.OK);
+  })
+);
+
+/**
+ * POST /internal/patient/job/:jobId/update-runtime-data
+ *
+ * Updates the runtime data of the job.
+ * @param req.query.cxId - The CX ID.
+ * @param req.params.jobId - The job ID.
+ * @param req.body.data - The runtime data to update.
+ * @returns 200 OK
+ */
+router.post(
+  "/:jobId/update-runtime-data",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const jobId = getFrom("params").orFail("jobId", req);
+    const data = req.body;
+    await updatePatientJobRuntimeData({
+      jobId,
+      cxId,
+      data,
     });
     return res.sendStatus(httpStatus.OK);
   })

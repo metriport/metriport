@@ -30,12 +30,36 @@ export async function getPatientJobModelOrFail(params: GetJobByIdParams): Promis
   return job;
 }
 
-export type ListPatientJobsParams = Pick<
-  PatientJob,
-  "cxId" | "patientId" | "jobType" | "jobGroupId"
-> & {
-  status?: JobStatus | JobStatus[];
-};
+export type ListPatientJobsParams = Pick<PatientJob, "cxId"> &
+  Partial<Pick<PatientJob, "patientId" | "jobType" | "jobGroupId">> & {
+    status?: JobStatus | JobStatus[];
+    scheduledAfter?: Date;
+    scheduledBefore?: Date;
+  };
+
+export async function getPatientJobs({
+  cxId,
+  patientId,
+  jobType,
+  jobGroupId,
+  status,
+  scheduledAfter,
+  scheduledBefore,
+}: ListPatientJobsParams): Promise<PatientJob[]> {
+  const statuses = getStatusFromParams(status);
+  const jobs = await PatientJobModel.findAll({
+    where: {
+      cxId,
+      ...(patientId ? { patientId } : {}),
+      ...(jobType ? { jobType } : {}),
+      ...(jobGroupId ? { jobGroupId } : {}),
+      ...(statuses.length > 0 ? { status: { [Op.in]: statuses } } : {}),
+      ...(scheduledAfter ? { schedulatedAt: { [Op.gte]: scheduledAfter } } : {}),
+      ...(scheduledBefore ? { schedulatedAt: { [Op.lte]: scheduledBefore } } : {}),
+    },
+  });
+  return jobs.map(job => job.dataValues);
+}
 
 export async function getLatestPatientJob({
   cxId,
@@ -43,7 +67,9 @@ export async function getLatestPatientJob({
   jobType,
   jobGroupId,
   status,
-}: ListPatientJobsParams): Promise<PatientJob | undefined> {
+}: Required<
+  Pick<ListPatientJobsParams, "cxId" | "patientId" | "jobType" | "jobGroupId" | "status">
+>): Promise<PatientJob | undefined> {
   const statuses = getStatusFromParams(status);
   const jobs = await PatientJobModel.findAll({
     where: {

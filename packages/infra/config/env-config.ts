@@ -39,6 +39,10 @@ type EnvConfigBase = {
      */
     username: string;
     /**
+     * A list of usernames that can read from the database.
+     */
+    roUsernames: string[];
+    /**
      * From CDK: A preferred maintenance window day/time range. Should be specified as a range ddd:hh24:mi-ddd:hh24:mi (24H Clock UTC).
      *
      * Example: 'Sun:23:45-Mon:00:15'.
@@ -279,6 +283,10 @@ type EnvConfigBase = {
       SURESCRIPTS_SFTP_PUBLIC_KEY: string;
       SURESCRIPTS_SFTP_PRIVATE_KEY: string;
     };
+  };
+  jobs: {
+    roUsername: string;
+    patientJobsTable: string;
   };
 };
 

@@ -10,13 +10,17 @@ export type PatientJob = {
   requestId?: string;
   status: JobStatus;
   statusReason: string | undefined;
+  schedulatedAt: Date | undefined;
   startedAt: Date | undefined;
   finishedAt: Date | undefined;
+  cancelledAt: Date | undefined;
+  failedAt: Date | undefined;
   total: number;
   successful: number;
   failed: number;
   paramsCx: JobParamsCx | undefined;
   paramsOps: JobParamsOps | undefined;
   data: unknown;
+  runtimeData: unknown;
   createdAt: Date;
 };

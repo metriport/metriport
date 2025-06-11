@@ -252,4 +252,17 @@ export class Config {
   static getEClinicalWorksEnv(): string | undefined {
     return getEnvVar("EHR_ECLINICALWORKS_ENVIRONMENT");
   }
+
+  static getPatientJobsLambdaName(): string {
+    return getEnvVarOrFail("GET_PATIENT_JOBS_LAMBDA_NAME");
+  }
+  static getRunPatientJobQueueUrl(): string {
+    return getEnvVarOrFail("RUN_PATIENT_JOB_QUEUE_URL");
+  }
+  static getPatientJobsTableName(): string {
+    return getEnvVarOrFail("PATIENT_JOBS_TABLE_NAME");
+  }
+  static getJobsDbCreds(): string {
+    return getEnvVarOrFail("JOBS_DB_CREDS");
+  }
 }

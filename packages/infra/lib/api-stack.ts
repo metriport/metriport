@@ -1,11 +1,11 @@
 import {
   Aspects,
-  aws_wafv2 as wafv2,
   CfnOutput,
   Duration,
   RemovalPolicy,
   Stack,
   StackProps,
+  aws_wafv2 as wafv2,
 } from "aws-cdk-lib";
 import * as apig from "aws-cdk-lib/aws-apigateway";
 import { BackupResource } from "aws-cdk-lib/aws-backup";
@@ -46,6 +46,7 @@ import { EnvType } from "./env-type";
 import { FeatureFlagsNestedStack } from "./feature-flags-nested-stack";
 import { Hl7NotificationWebhookSenderNestedStack } from "./hl7-notification-webhook-sender-nested-stack";
 import { IHEGatewayV2LambdasNestedStack } from "./ihe-gateway-v2-stack";
+import { JobsNestedStack } from "./jobs/jobs-stack";
 import { LambdasLayersNestedStack } from "./lambda-layers-nested-stack";
 import { CDA_TO_VIS_TIMEOUT, LambdasNestedStack } from "./lambdas-nested-stack";
 import { PatientImportNestedStack } from "./patient-import-nested-stack";
@@ -188,6 +189,21 @@ export class APIStack extends Stack {
       },
     });
     const dbCreds = rds.Credentials.fromSecret(dbCredsSecret);
+    const readOnlyUserSecrets: secret.ISecret[] = [];
+    for (const readOnlyUsername of dbConfig.roUsernames) {
+      const readOnlyUserSecret = new secret.Secret(this, `DBCreds-${readOnlyUsername}`, {
+        secretName: `DBCreds-${readOnlyUsername}`,
+        generateSecretString: {
+          secretStringTemplate: JSON.stringify({
+            username: readOnlyUsername,
+          }),
+          excludePunctuation: true,
+          includeSpace: false,
+          generateStringKey: "password",
+        },
+      });
+      readOnlyUserSecrets.push(readOnlyUserSecret);
+    }
     const dbEngine = rds.DatabaseClusterEngine.auroraPostgres({
       version: rds.AuroraPostgresEngineVersion.VER_14_7,
     });
@@ -494,6 +510,17 @@ export class APIStack extends Stack {
     }
 
     //-------------------------------------------
+    // Jobs
+    //-------------------------------------------
+    const jobsStack = new JobsNestedStack(this, "JobsNestedStack", {
+      config: props.config,
+      vpc: this.vpc,
+      alarmAction: slackNotification?.alarmAction,
+      lambdaLayers,
+      readOnlyUserSecrets,
+    });
+
+    //-------------------------------------------
     // Rate Limiting
     //-------------------------------------------
     const { rateLimitTable } = new RateLimitingNestedStack(this, "RateLimitingNestedStack", {
@@ -609,6 +636,7 @@ export class APIStack extends Stack {
       featureFlagsTable,
       cookieStore,
       surescriptsAssets: surescriptsStack?.getAssets(),
+      jobAssets: jobsStack?.getAssets(),
     });
     const apiLoadBalancerAddress = apiLoadBalancer.loadBalancerDnsName;
 

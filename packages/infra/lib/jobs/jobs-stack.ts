@@ -1,0 +1,208 @@
+import { Duration, NestedStack, NestedStackProps } from "aws-cdk-lib";
+import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
+import * as ec2 from "aws-cdk-lib/aws-ec2";
+import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
+import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
+import * as secret from "aws-cdk-lib/aws-secretsmanager";
+import { Queue } from "aws-cdk-lib/aws-sqs";
+import { Construct } from "constructs";
+import { EnvConfig } from "../../config/env-config";
+import { EnvType } from "../env-type";
+import { createLambda } from "../shared/lambda";
+import { LambdaLayers } from "../shared/lambda-layers";
+import { LambdaSettings, QueueAndLambdaSettings } from "../shared/settings";
+import { createQueue } from "../shared/sqs";
+import { JobsAssets } from "./types";
+
+const getPatientJobsLambdaTimeout = Duration.minutes(5);
+const runPatientJobQueueTimeout = Duration.seconds(30);
+const apiUrlEnvVarName = "API_URL";
+
+interface JobsSettings {
+  getPatientJobs: LambdaSettings;
+  runPatientJob: QueueAndLambdaSettings;
+}
+
+function settings(): JobsSettings {
+  return {
+    getPatientJobs: {
+      name: "JobsGetJobs",
+      entry: "jobs/patient/get-jobs",
+      lambda: {
+        memory: 1024,
+        timeout: getPatientJobsLambdaTimeout,
+      },
+    },
+    runPatientJob: {
+      name: "JobsRunPatientJob",
+      entry: "jobs/patient/run-job",
+      lambda: {
+        memory: 1024,
+        timeout: runPatientJobQueueTimeout,
+      },
+      queue: {
+        alarmMaxAgeOfOldestMessage: Duration.hours(1),
+        maxMessageCountAlarmThreshold: 15_000,
+        maxReceiveCount: 3,
+        visibilityTimeout: Duration.seconds(runPatientJobQueueTimeout.toSeconds() * 2 + 1),
+        createRetryLambda: false,
+      },
+      eventSource: {
+        batchSize: 1,
+        reportBatchItemFailures: true,
+        maxConcurrency: 4,
+      },
+      waitTime: Duration.seconds(0),
+    },
+  };
+}
+
+interface JobsNestedStackProps extends NestedStackProps {
+  config: EnvConfig;
+  vpc: ec2.IVpc;
+  alarmAction?: SnsAction;
+  lambdaLayers: LambdaLayers;
+  readOnlyUserSecrets: secret.ISecret[];
+}
+
+export class JobsNestedStack extends NestedStack {
+  private readonly getPatientJobsLambda: Lambda;
+  private readonly runPatientJobQueue: Queue;
+  private readonly runPatientJobLambda: Lambda;
+
+  constructor(scope: Construct, id: string, props: JobsNestedStackProps) {
+    super(scope, id, props);
+
+    this.terminationProtection = true;
+
+    const readOnlyUserSecret = props.readOnlyUserSecrets.find(
+      secret => secret.secretName === `DBCreds-${props.config.jobs.roUsername}`
+    );
+    if (!readOnlyUserSecret) {
+      throw new Error(
+        `Read only user secret not found for username: ${props.config.jobs.roUsername}`
+      );
+    }
+
+    const commonConfig = {
+      lambdaLayers: props.lambdaLayers,
+      vpc: props.vpc,
+      envType: props.config.environmentType,
+      sentryDsn: props.config.lambdasSentryDSN,
+      alarmAction: props.alarmAction,
+    };
+
+    const runPatientJob = this.setupRunPatientJob({
+      ...commonConfig,
+    });
+    this.runPatientJobQueue = runPatientJob.queue;
+    this.runPatientJobLambda = runPatientJob.lambda;
+
+    const getPatientJobs = this.setupGetPatientJobsLambda({
+      ...commonConfig,
+      readOnlyUserSecret,
+      jobsTable: props.config.jobs.patientJobsTable,
+      runPatientJobQueue: this.runPatientJobQueue,
+    });
+    this.getPatientJobsLambda = getPatientJobs;
+  }
+
+  getAssets(): JobsAssets {
+    return {
+      getPatientJobsLambda: this.getPatientJobsLambda,
+      runPatientJobQueue: this.runPatientJobQueue,
+      runPatientJobLambda: this.runPatientJobLambda,
+    };
+  }
+
+  setApiUrl(apiUrl: string): void {
+    const lambdasToSetApiUrl = [this.getPatientJobsLambda, this.runPatientJobLambda];
+    lambdasToSetApiUrl.forEach(lambda => lambda.addEnvironment(apiUrlEnvVarName, apiUrl));
+  }
+
+  private setupGetPatientJobsLambda(ownProps: {
+    lambdaLayers: LambdaLayers;
+    vpc: ec2.IVpc;
+    envType: EnvType;
+    sentryDsn: string | undefined;
+    alarmAction: SnsAction | undefined;
+    runPatientJobQueue: Queue;
+    jobsTable: string;
+    readOnlyUserSecret: secret.ISecret;
+  }): Lambda {
+    const { lambdaLayers, vpc, envType, sentryDsn, alarmAction } = ownProps;
+    const { name, entry, lambda: lambdaSettings } = settings().getPatientJobs;
+
+    const lambda = createLambda({
+      ...lambdaSettings,
+      stack: this,
+      name,
+      entry,
+      envType,
+      envVars: {
+        // API_URL set on the api-stack after the OSS API is created
+        RUN_JOB_QUEUE_URL: ownProps.runPatientJobQueue.queueUrl,
+        JOBS_TABLE_NAME: ownProps.jobsTable,
+        JOBS_DB_CREDS_ARN: ownProps.readOnlyUserSecret.secretArn,
+        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+      },
+      layers: [lambdaLayers.shared],
+      vpc,
+      alarmSnsAction: alarmAction,
+    });
+
+    ownProps.runPatientJobQueue.grantSendMessages(lambda);
+    ownProps.readOnlyUserSecret.grantRead(lambda);
+
+    return lambda;
+  }
+
+  private setupRunPatientJob(ownProps: {
+    lambdaLayers: LambdaLayers;
+    vpc: ec2.IVpc;
+    envType: EnvType;
+    sentryDsn: string | undefined;
+    alarmAction: SnsAction | undefined;
+  }): { lambda: Lambda; queue: Queue } {
+    const { lambdaLayers, vpc, envType, sentryDsn, alarmAction } = ownProps;
+    const {
+      name,
+      entry,
+      lambda: lambdaSettings,
+      queue: queueSettings,
+      eventSource: eventSourceSettings,
+      waitTime,
+    } = settings().runPatientJob;
+
+    const queue = createQueue({
+      ...queueSettings,
+      stack: this,
+      name,
+      fifo: false,
+      createDLQ: true,
+      lambdaLayers: [lambdaLayers.shared],
+      envType,
+      alarmSnsAction: alarmAction,
+    });
+
+    const lambda = createLambda({
+      ...lambdaSettings,
+      stack: this,
+      name,
+      entry,
+      envType,
+      envVars: {
+        // API_URL set on the api-stack after the OSS API is created
+        WAIT_TIME_IN_MILLIS: waitTime.toMilliseconds().toString(),
+        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+      },
+      layers: [lambdaLayers.shared],
+      vpc,
+      alarmSnsAction: alarmAction,
+    });
+
+    lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
+
+    return { lambda, queue };
+  }
+}

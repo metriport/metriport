@@ -15,14 +15,18 @@ export const patientJobRawColumnNames = {
   requestId: "request_id",
   status: "status",
   statusReason: "status_reason",
+  schedulatedAt: "schedulated_at",
   startedAt: "started_at",
   finishedAt: "finished_at",
+  cancelledAt: "cancelled_at",
+  failedAt: "failed_at",
   total: "total",
   successful: "successful",
   failed: "failed",
   paramsCx: "params_cx",
   paramsOps: "params_ops",
   data: "data",
+  runtimeData: "runtime_data",
 };
 
 export class PatientJobModel extends BaseModel<PatientJobModel> implements PatientJob {
@@ -34,14 +38,18 @@ export class PatientJobModel extends BaseModel<PatientJobModel> implements Patie
   declare requestId: string | undefined;
   declare status: JobStatus;
   declare statusReason: string | undefined;
+  declare schedulatedAt: Date | undefined;
   declare startedAt: Date | undefined;
   declare finishedAt: Date | undefined;
+  declare cancelledAt: Date | undefined;
+  declare failedAt: Date | undefined;
   declare total: number;
   declare successful: number;
   declare failed: number;
   declare paramsCx: JobParamsCx | undefined;
   declare paramsOps: JobParamsOps | undefined;
   declare data: unknown;
+  declare runtimeData: unknown;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
     PatientJobModel.init(
@@ -68,10 +76,19 @@ export class PatientJobModel extends BaseModel<PatientJobModel> implements Patie
         statusReason: {
           type: DataTypes.STRING,
         },
+        schedulatedAt: {
+          type: DataTypes.DATE,
+        },
         startedAt: {
           type: DataTypes.DATE,
         },
         finishedAt: {
+          type: DataTypes.DATE,
+        },
+        cancelledAt: {
+          type: DataTypes.DATE,
+        },
+        failedAt: {
           type: DataTypes.DATE,
         },
         total: {
@@ -90,6 +107,9 @@ export class PatientJobModel extends BaseModel<PatientJobModel> implements Patie
           type: DataTypes.JSONB,
         },
         data: {
+          type: DataTypes.JSONB,
+        },
+        runtimeData: {
           type: DataTypes.JSONB,
         },
       },

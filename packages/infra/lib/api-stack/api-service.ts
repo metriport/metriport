@@ -26,6 +26,7 @@ import { ISecret } from "aws-cdk-lib/aws-secretsmanager";
 import { IQueue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { EnvConfig } from "../../config/env-config";
+import { JobsAssets } from "../jobs/types";
 import { defaultBedrockPolicyStatement } from "../shared/bedrock";
 import { DnsZones } from "../shared/dns";
 import { getMaxPostgresConnections } from "../shared/rds";
@@ -133,6 +134,7 @@ export function createAPIService({
   featureFlagsTable,
   cookieStore,
   surescriptsAssets,
+  jobAssets,
 }: {
   stack: Construct;
   props: ApiProps;
@@ -178,6 +180,7 @@ export function createAPIService({
   featureFlagsTable: dynamodb.Table;
   cookieStore: secret.ISecret | undefined;
   surescriptsAssets: SurescriptsAssets | undefined;
+  jobAssets: JobsAssets;
 }): {
   cluster: ecs.Cluster;
   service: ecs_patterns.ApplicationLoadBalancedFargateService;
@@ -369,6 +372,8 @@ export function createAPIService({
             SURESCRIPTS_RECEIVE_FLAT_FILE_RESPONSE_QUEUE_URL:
               surescriptsAssets.receiveFlatFileResponseQueue.queueUrl,
           }),
+          GET_PATIENT_JOBS_LAMBDA_NAME: jobAssets.getPatientJobsLambda.functionName,
+          RUN_PATIENT_JOB_QUEUE_URL: jobAssets.runPatientJobQueue.queueUrl,
         },
       },
       healthCheckGracePeriod: Duration.seconds(60),
@@ -450,6 +455,7 @@ export function createAPIService({
   fhirToBundleCountLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   ehrGetAppointmentsLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   consolidatedSearchLambda.grantInvoke(fargateService.taskDefinition.taskRole);
+  jobAssets.getPatientJobsLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   // Access grant for buckets
   patientImportBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   conversionBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
@@ -514,6 +520,12 @@ export function createAPIService({
       });
     });
   }
+
+  provideAccessToQueue({
+    accessType: "send",
+    queue: jobAssets.runPatientJobQueue,
+    resource: fargateService.taskDefinition.taskRole,
+  });
 
   // Allow access to search services/infra
   provideAccessToQueue({
