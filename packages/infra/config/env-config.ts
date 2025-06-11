@@ -287,6 +287,8 @@ type EnvConfigBase = {
   jobs: {
     roUsername: string;
     patientJobsTable: string;
+    startPatientJobsPollingScheduleExpression: string;
+    startPatientJobsPollingUrl: string;
   };
 };
 

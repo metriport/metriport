@@ -10,6 +10,7 @@ import { EnvConfig } from "../../config/env-config";
 import { EnvType } from "../env-type";
 import { createLambda } from "../shared/lambda";
 import { LambdaLayers } from "../shared/lambda-layers";
+import { createScheduledLambda } from "../shared/lambda-scheduled";
 import { LambdaSettings, QueueAndLambdaSettings } from "../shared/settings";
 import { createQueue } from "../shared/sqs";
 import { JobsAssets } from "./types";
@@ -91,6 +92,16 @@ export class JobsNestedStack extends NestedStack {
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: props.alarmAction,
     };
+
+    createScheduledLambda({
+      stack: this,
+      envType: props.config.environmentType,
+      layers: [props.lambdaLayers.shared],
+      alarmSnsAction: props.alarmAction,
+      name: "StartPatientJobsPollingLambda",
+      scheduleExpression: props.config.jobs.startPatientJobsPollingScheduleExpression,
+      url: props.config.jobs.startPatientJobsPollingUrl,
+    });
 
     const runPatientJob = this.setupRunPatientJob({
       ...commonConfig,
