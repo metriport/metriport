@@ -45,7 +45,7 @@ interface LambdasNestedStackProps extends NestedStackProps {
   lambdaLayers: LambdaLayers;
   secrets: Secrets;
   dbCluster: rds.IDatabaseCluster;
-  dbCredsSecret: secret.ISecret;
+  roDbSecrets: secret.ISecret[];
   medicalDocumentsBucket: s3.Bucket;
   sandboxSeedDataBucket: s3.IBucket | undefined;
   alarmAction?: SnsAction;
@@ -76,9 +76,9 @@ export class LambdasNestedStack extends NestedStack {
   readonly cdaToVisualizationLambda: Lambda;
   readonly documentDownloaderLambda: Lambda;
   readonly fhirToCdaConverterLambda: Lambda;
-  readonly outboundPatientDiscoveryLambda: Lambda;
-  readonly outboundDocumentQueryLambda: Lambda;
-  readonly outboundDocumentRetrievalLambda: Lambda;
+  readonly outboundPatientDiscoveryLambda: Lambda | undefined;
+  readonly outboundDocumentQueryLambda: Lambda | undefined;
+  readonly outboundDocumentRetrievalLambda: Lambda | undefined;
   readonly fhirToBundleLambda: Lambda;
   readonly fhirToBundleCountLambda: Lambda;
   readonly consolidatedSearchLambda: Lambda;
@@ -124,41 +124,51 @@ export class LambdasNestedStack extends NestedStack {
       sentryDsn: props.config.lambdasSentryDSN,
     });
 
-    this.outboundPatientDiscoveryLambda = this.setupOutboundPatientDiscovery({
-      lambdaLayers: props.lambdaLayers,
-      vpc: props.vpc,
-      envType: props.config.environmentType,
-      sentryDsn: props.config.lambdasSentryDSN,
-      alarmAction: props.alarmAction,
-      dbCluster: props.dbCluster,
-      dbCredsSecret: props.dbCredsSecret,
-      // TODO move this to a config
-      maxPollingDuration: Duration.minutes(2),
-    });
+    const cqConfig = props.config.carequality;
+    if (cqConfig) {
+      const cqRoDbCredsSecret = props.roDbSecrets.find(
+        secret => secret.secretName === `DBCreds-${cqConfig.roUsername}`
+      );
+      if (!cqRoDbCredsSecret) {
+        throw new Error(`RO CQ DB Creds secret not found`);
+      }
 
-    this.outboundDocumentQueryLambda = this.setupOutboundDocumentQuery({
-      lambdaLayers: props.lambdaLayers,
-      vpc: props.vpc,
-      envType: props.config.environmentType,
-      sentryDsn: props.config.lambdasSentryDSN,
-      alarmAction: props.alarmAction,
-      dbCluster: props.dbCluster,
-      dbCredsSecret: props.dbCredsSecret,
-      // TODO move this to a config
-      maxPollingDuration: Duration.minutes(15),
-    });
+      this.outboundPatientDiscoveryLambda = this.setupOutboundPatientDiscovery({
+        lambdaLayers: props.lambdaLayers,
+        vpc: props.vpc,
+        envType: props.config.environmentType,
+        sentryDsn: props.config.lambdasSentryDSN,
+        alarmAction: props.alarmAction,
+        dbCluster: props.dbCluster,
+        dbCredsSecret: cqRoDbCredsSecret,
+        // TODO move this to a config
+        maxPollingDuration: Duration.minutes(2),
+      });
 
-    this.outboundDocumentRetrievalLambda = this.setupOutboundDocumentRetrieval({
-      lambdaLayers: props.lambdaLayers,
-      vpc: props.vpc,
-      envType: props.config.environmentType,
-      sentryDsn: props.config.lambdasSentryDSN,
-      alarmAction: props.alarmAction,
-      dbCluster: props.dbCluster,
-      dbCredsSecret: props.dbCredsSecret,
-      // TODO move this to a config
-      maxPollingDuration: Duration.minutes(15),
-    });
+      this.outboundDocumentQueryLambda = this.setupOutboundDocumentQuery({
+        lambdaLayers: props.lambdaLayers,
+        vpc: props.vpc,
+        envType: props.config.environmentType,
+        sentryDsn: props.config.lambdasSentryDSN,
+        alarmAction: props.alarmAction,
+        dbCluster: props.dbCluster,
+        dbCredsSecret: cqRoDbCredsSecret,
+        // TODO move this to a config
+        maxPollingDuration: Duration.minutes(15),
+      });
+
+      this.outboundDocumentRetrievalLambda = this.setupOutboundDocumentRetrieval({
+        lambdaLayers: props.lambdaLayers,
+        vpc: props.vpc,
+        envType: props.config.environmentType,
+        sentryDsn: props.config.lambdasSentryDSN,
+        alarmAction: props.alarmAction,
+        dbCluster: props.dbCluster,
+        dbCredsSecret: cqRoDbCredsSecret,
+        // TODO move this to a config
+        maxPollingDuration: Duration.minutes(15),
+      });
+    }
 
     const resultNotifierConnector = this.setupConversionResultNotifier({
       vpc: props.vpc,

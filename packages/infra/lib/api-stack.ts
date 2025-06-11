@@ -415,7 +415,7 @@ export class APIStack extends Stack {
       vpc: this.vpc,
       lambdaLayers,
       dbCluster,
-      dbCredsSecret,
+      roDbSecrets,
       secrets,
       medicalDocumentsBucket,
       sandboxSeedDataBucket,
