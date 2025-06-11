@@ -31,7 +31,9 @@ export interface SftpBaseAction {
   type: "read" | "write" | "list" | "exists" | "clone";
 }
 
-export type SftpResult<A extends SftpBaseAction> = A extends { type: "read" }
+export type SftpResult<A extends SftpBaseAction> = SftpBaseAction extends A
+  ? unknown
+  : A extends { type: "read" }
   ? Buffer
   : A extends { type: "write" }
   ? void

@@ -187,9 +187,6 @@ export class SurescriptsSftpClient extends SftpClient {
     );
   }
 
-  // RECEIVE VERIFICATION RESPONSE FROM SFTP
-  // Second step of the Surescripts integration flow
-
   async receiveVerificationResponse(requestFileName: string): Promise<
     | {
         verificationFileName: string;
@@ -197,7 +194,6 @@ export class SurescriptsSftpClient extends SftpClient {
       }
     | undefined
   > {
-    // Check if the verification was already downloaded to S3
     const existingResponseKey = await this.findVerificationResponseKeyInS3(requestFileName);
     if (existingResponseKey) {
       const verificationFileContent = await this.downloadFileFromS3(existingResponseKey);
@@ -208,7 +204,6 @@ export class SurescriptsSftpClient extends SftpClient {
       };
     }
 
-    // Check if the verification is available in the SFTP server
     const fileName = await this.findVerificationFileNameInSftpServer(requestFileName);
     if (fileName) {
       const shouldDecompress = requestFileName.endsWith(".gz");
@@ -292,9 +287,6 @@ export class SurescriptsSftpClient extends SftpClient {
     });
     return results[results.length - 1];
   }
-
-  // RECEIVE FLAT FILE RESPONSE FROM SFTP
-  // Third step of the Surescripts integration flow
 
   async receiveFlatFileResponse(requestFileName: string): Promise<
     | {

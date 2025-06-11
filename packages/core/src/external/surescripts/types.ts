@@ -1,4 +1,13 @@
+import { Patient } from "@metriport/shared/domain/patient";
+import { FacilityData } from "@metriport/shared/domain/customer";
+
 export type SurescriptsDirectory = "from_surescripts" | "to_surescripts" | "history";
+
+export interface SurescriptsRequestData {
+  cxId: string;
+  facility: FacilityData;
+  patients: Patient[];
+}
 
 export interface SurescriptsSynchronizeEvent {
   dryRun?: boolean;
