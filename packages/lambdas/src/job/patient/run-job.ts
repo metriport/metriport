@@ -1,5 +1,5 @@
-import { RunJobRequest } from "@metriport/core/command/job/patient/jobs/start-jobs/steps/run/run-job";
-import { RunJobDirect } from "@metriport/core/command/job/patient/jobs/start-jobs/steps/run/run-job-direct";
+import { RunJobRequest } from "@metriport/core/command/job/patient/job/start-jobs/steps/run/run-job";
+import { RunJobDirect } from "@metriport/core/command/job/patient/job/start-jobs/steps/run/run-job-direct";
 import { MetriportError } from "@metriport/shared";
 import * as Sentry from "@sentry/serverless";
 import { SQSEvent } from "aws-lambda";

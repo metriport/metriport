@@ -1,5 +1,5 @@
-import { GetJobsRequest } from "@metriport/core/command/job/patient/jobs/start-jobs/steps/get/get-jobs";
-import { GetJobsDirect } from "@metriport/core/command/job/patient/jobs/start-jobs/steps/get/get-jobs-direct";
+import { GetJobsRequest } from "@metriport/core/command/job/patient/job/start-jobs/steps/get/get-jobs";
+import { GetJobsDirect } from "@metriport/core/command/job/patient/job/start-jobs/steps/get/get-jobs-direct";
 import { getSecretValueOrFail } from "@metriport/core/external/aws/secret-manager";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 import * as Sentry from "@sentry/serverless";
