@@ -2,33 +2,6 @@ import { JobParamsCx, JobParamsOps, JobStatus, PatientJob } from "@metriport/sha
 import { DataTypes, Sequelize } from "sequelize";
 import { BaseModel, ModelSetup } from "./_default";
 
-/**
- * Used by code that needs to access the raw data from the database.
- * @see updatePatientJobTotals()
- */
-export const patientJobRawColumnNames = {
-  id: "id",
-  cxId: "cx_id",
-  patientId: "patient_id",
-  jobType: "job_type",
-  jobGroupId: "job_group_id",
-  requestId: "request_id",
-  status: "status",
-  statusReason: "status_reason",
-  scheduledAt: "scheduled_at",
-  startedAt: "started_at",
-  finishedAt: "finished_at",
-  cancelledAt: "cancelled_at",
-  failedAt: "failed_at",
-  total: "total",
-  successful: "successful",
-  failed: "failed",
-  paramsCx: "params_cx",
-  paramsOps: "params_ops",
-  data: "data",
-  runtimeData: "runtime_data",
-};
-
 export class PatientJobModel extends BaseModel<PatientJobModel> implements PatientJob {
   static NAME = "patient_job";
   declare cxId: string;
