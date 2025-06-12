@@ -1,18 +1,18 @@
-import dayjs from "dayjs";
-import path from "path";
 import { Config } from "../../util/config";
 import { IdGenerator, createIdGenerator } from "./id-generator";
 import { SftpClient } from "../sftp/client";
 import { SftpConfig } from "../sftp/types";
-import { SurescriptsDirectory, SurescriptsRequestData, SurescriptsSynchronizeEvent } from "./types";
-import { getS3Directory, getS3Key, getSftpDirectory, getSftpFileName } from "./shared";
-import { INCOMING_NAME, OUTGOING_NAME, HISTORY_NAME } from "./constants";
-import { S3Utils } from "../aws/s3";
-import { toSurescriptsPatientLoadFile, canGeneratePatientLoadFile } from "./message";
-import { Patient } from "@metriport/shared/domain/patient";
+import { SurescriptsPatientRequestData, SurescriptsRequesterData } from "./types";
+import { generateSurescriptsRequestFile } from "./file-generator";
+import { validateNPI } from "@metriport/shared/common/validate-npi";
 
 import { MetriportError } from "@metriport/shared";
-import { makePatientLoadFileName } from "./file-names";
+import {
+  makeRequestFileName,
+  makeResponseFileSuffix,
+  parseVerificationFileName,
+} from "./file-names";
+import { SftpFile } from "../sftp/types";
 
 export interface SurescriptsSftpConfig extends Partial<Omit<SftpConfig, "password">> {
   senderId?: string;
@@ -32,13 +32,6 @@ export interface SurescriptsOperation {
   content?: Buffer;
 }
 
-interface PatientLoadFileMetadata extends Record<string, string> {
-  transmissionId: string;
-  npiNumber: string;
-  cxId: string;
-  timestamp: string;
-}
-
 export enum SurescriptsEnvironment {
   Production = "P",
   Test = "T",
@@ -56,14 +49,11 @@ export interface Transmission {
   npiNumber: string;
   cxId: string;
   id: string;
-  timestamp: number; // UTC
   requestFileName: string;
 }
 
 export class SurescriptsSftpClient extends SftpClient {
   private generateTransmissionId: IdGenerator;
-  private readonly s3: S3Utils;
-  private readonly replicaBucket: string;
 
   senderId: string;
   senderPassword: string;
@@ -80,465 +70,134 @@ export class SurescriptsSftpClient extends SftpClient {
       privateKey: config.privateKey ?? Config.getSurescriptsSftpPrivateKey(),
     });
 
+    this.useS3Replica({
+      bucketName: config.replicaBucket ?? Config.getSurescriptsReplicaBucketName(),
+      region: config.replicaBucketRegion ?? Config.getAWSRegion(),
+    });
+
     // 10 byte ID generator
     this.generateTransmissionId = createIdGenerator(10);
-    this.s3 = new S3Utils(config.replicaBucketRegion ?? Config.getAWSRegion());
-    this.replicaBucket = config.replicaBucket ?? Config.getSurescriptsReplicaBucketName();
-
     this.senderId = config.senderId ?? Config.getSurescriptsSftpSenderId();
+    this.receiverId = config.receiverId ?? Config.getSurescriptsSftpReceiverId();
     this.senderPassword = config.senderPassword ?? Config.getSurescriptsSftpSenderPassword();
     this.usage = Config.isProduction()
       ? SurescriptsEnvironment.Production
       : SurescriptsEnvironment.Test;
-    this.receiverId = config.receiverId ?? Config.getSurescriptsSftpReceiverId();
   }
 
-  createTransmission({ npiNumber, cxId }: TransmissionData): Transmission {
+  async readIncomingFileFromSftp(responseFileName: string): Promise<Buffer | undefined> {
+    try {
+      await this.connect();
+      const remotePath = `/from_surescripts/${responseFileName}`;
+      const exists = await this.exists(remotePath);
+      if (!exists) return undefined;
+      return await this.read(remotePath, { decompress: responseFileName.endsWith(".gz") });
+    } finally {
+      await this.disconnect();
+    }
+  }
+
+  validateRequester(requester: SurescriptsRequesterData): void {
+    if (!validateNPI(requester.facility.npi)) {
+      throw new MetriportError("Invalid NPI", undefined, {
+        npiNumber: requester.facility.npi,
+        cxId: requester.cxId,
+      });
+    }
+  }
+
+  /**
+   * @param requestData the single patient request data for Surescripts data
+   * @returns a unique transmission ID if the request was sent, undefined otherwise
+   */
+  async sendRequest(requestData: SurescriptsPatientRequestData): Promise<string | undefined> {
+    this.validateRequester(requestData);
     const transmissionId = this.generateTransmissionId().toString("ascii");
-    const currentTimestamp = Date.now();
-    const requestFileName = makePatientLoadFileName(transmissionId, currentTimestamp);
+    const content = generateSurescriptsRequestFile(this, transmissionId, requestData);
+    // If missing some demographic information that is required by Surescripts
+    if (!content) {
+      return undefined;
+    }
 
-    return {
-      type: TransmissionType.Enroll,
-      npiNumber,
-      cxId,
-      id: transmissionId,
-      timestamp: currentTimestamp,
-      requestFileName,
-    };
+    const requestFileName = makeRequestFileName(transmissionId);
+    try {
+      await this.connect();
+      await this.writeThroughReplica(`/to_surescripts/${requestFileName}`, content);
+      return transmissionId;
+    } finally {
+      await this.disconnect();
+    }
   }
 
-  async generateAndWriteRequestFileToS3(requestData: SurescriptsRequestData): Promise<{
-    requestedPatientIds: string[];
-    transmissionId: string;
-    requestFileName: string;
-  }> {
-    const transmission = this.createTransmission({
-      npiNumber: requestData.facility.npi,
-      cxId: requestData.cxId,
+  /**
+   * Requests can take up to an hour to show up in Surescripts history.
+   * @param transmissionId the transmission ID to verify
+   * @returns true if the request is present in the Surescripts history, false otherwise
+   */
+  async verifyRequestInHistory(transmissionId: string): Promise<boolean> {
+    const requestFileName = makeRequestFileName(transmissionId);
+    try {
+      await this.connect();
+      const historyFiles = await this.listWithContainsQuery("/history", requestFileName);
+      return historyFiles.length > 0;
+    } finally {
+      await this.disconnect();
+    }
+  }
+
+  /**
+   * @param transmissionId the original request transmission ID
+   * @returns the most recent verification response file for the specified transmission
+   */
+  async receiveVerificationResponse(transmissionId: string): Promise<SftpFile | undefined> {
+    const requestFileName = makeRequestFileName(transmissionId);
+
+    const verificationCandidates = await this.listWithPrefixThroughReplica(
+      "from_surescripts",
+      requestFileName
+    );
+    const verificationFileName = verificationCandidates.find(candidate => {
+      const parsedFileName = parseVerificationFileName(candidate);
+      return parsedFileName?.requestFileName === requestFileName;
     });
-    const { content, requestedPatientIds } = this.generatePatientLoadFile(
-      transmission,
-      requestData.patients
-    );
-    await this.writePatientLoadFileToS3(transmission, content);
 
-    return {
-      requestedPatientIds,
-      transmissionId: transmission.id,
-      requestFileName: transmission.requestFileName,
-    };
-  }
-
-  generatePatientLoadFile(
-    transmission: Transmission,
-    patients: Patient[]
-  ): { content: Buffer; requestedPatientIds: string[] } {
-    if (!canGeneratePatientLoadFile(transmission, patients)) {
-      throw new MetriportError("Cannot generate patient load file", undefined, {
-        npiNumber: transmission.npiNumber,
-        cxId: transmission.cxId,
-        patientCount: patients.length,
-      });
-    }
-
-    return toSurescriptsPatientLoadFile(this, transmission, patients);
-  }
-
-  async writePatientLoadFileToS3(transmission: Transmission, fileContent: Buffer): Promise<void> {
-    await this.uploadFileToS3<PatientLoadFileMetadata>(
-      getS3Key(OUTGOING_NAME, transmission.requestFileName),
-      fileContent,
-      {
-        transmissionId: transmission.id,
-        cxId: transmission.cxId,
-        npiNumber: transmission.npiNumber,
-        timestamp: transmission.timestamp.toString(),
-      }
-    );
-  }
-
-  async receiveVerificationResponse(requestFileName: string): Promise<
-    | {
-        verificationFileName: string;
-        verificationFileContent: Buffer;
-      }
-    | undefined
-  > {
-    const existingResponseKey = await this.findVerificationResponseKeyInS3(requestFileName);
-    if (existingResponseKey) {
-      const verificationFileContent = await this.downloadFileFromS3(existingResponseKey);
-      const verificationFileName = path.basename(existingResponseKey);
-      return {
-        verificationFileName,
-        verificationFileContent,
-      };
-    }
-
-    const fileName = await this.findVerificationFileNameInSftpServer(requestFileName);
-    if (fileName) {
-      const shouldDecompress = requestFileName.endsWith(".gz");
-      const content = await this.read(getSftpFileName(INCOMING_NAME, fileName), {
-        decompress: shouldDecompress,
-      });
-      await this.uploadFileToS3(getS3Key(INCOMING_NAME, fileName), content, {
-        requestFileName,
+    if (verificationFileName) {
+      const content = await this.readThroughReplica(verificationFileName, {
+        decompress: verificationFileName.endsWith(".gz.rsp"),
       });
       return {
-        verificationFileName: fileName,
-        verificationFileContent: content,
+        fileName: verificationFileName,
+        content,
       };
     }
 
     return undefined;
   }
 
-  private async findVerificationResponseKeyInS3(
-    requestFileName: string
-  ): Promise<string | undefined> {
-    const requestFileNameWithoutExtension = requestFileName.replace(/\.gz$/, "");
-    const requestFileS3Prefix = getS3Key(INCOMING_NAME, requestFileNameWithoutExtension);
-    const s3Files = await this.listFilesInS3(requestFileS3Prefix);
-    return s3Files[s3Files.length - 1];
-  }
-
-  private async listFilesInS3(prefix: string): Promise<string[]> {
-    const s3Files = await this.s3.listObjects(this.replicaBucket, prefix);
-    return s3Files.map(file => file.Key).filter(Boolean) as string[];
-  }
-
-  private async uploadFileToS3<M extends Record<string, string>>(
-    s3Key: string,
-    fileContent: Buffer,
-    metadata: M
-  ): Promise<void> {
-    await this.s3.uploadFile({
-      bucket: this.replicaBucket,
-      key: s3Key,
-      file: fileContent,
-      metadata,
-    });
-  }
-
-  private async downloadMetadataFromS3<M extends Record<string, string>>(
-    s3Key: string
-  ): Promise<M | undefined> {
-    const fileInfo = await this.s3.getFileInfoFromS3(s3Key, this.replicaBucket);
-    if (!fileInfo.exists || !fileInfo.metadata) {
-      return undefined;
-    }
-    return fileInfo.metadata as M;
-  }
-
-  private async fileExistsInS3(s3Key: string): Promise<boolean> {
-    const fileInfo = await this.s3.getFileInfoFromS3(s3Key, this.replicaBucket);
-    return fileInfo.exists;
-  }
-
-  private async downloadFileFromS3(s3Key: string): Promise<Buffer> {
-    const fileContent = await this.s3.downloadFile({
-      bucket: this.replicaBucket,
-      key: s3Key,
-    });
-    return fileContent;
-  }
-
-  private async findVerificationFileNameInSftpServer(
-    requestFileName: string
-  ): Promise<string | undefined> {
-    const requestFileNameWithoutExtension = requestFileName.replace(/\.gz$/, "");
-
-    const results = await this.list(getSftpDirectory(INCOMING_NAME), info => {
-      const parsedFileName = this.parseVerificationFileName(info.name);
-      return (
-        parsedFileName != null &&
-        parsedFileName.requestFileNameWithoutExtension === requestFileNameWithoutExtension
-      );
-    });
-    return results[results.length - 1];
-  }
-
-  async receiveFlatFileResponse(requestFileName: string): Promise<
-    | {
-        flatFileResponseName: string;
-        flatFileResponseContent: Buffer;
-      }
-    | undefined
-  > {
-    const requestFileS3Key = getS3Key(INCOMING_NAME, requestFileName);
-    const metadata = await this.downloadMetadataFromS3<PatientLoadFileMetadata>(requestFileS3Key);
-    if (!metadata) {
-      throw new MetriportError("Original request file does not exist in S3: " + requestFileS3Key);
-    }
-
-    const { cxId, timestamp } = metadata;
-    if (!cxId || !timestamp) {
-      throw new MetriportError("Original request file does not have metadata: " + requestFileS3Key);
-    }
-
-    const flatFileResponseName = await this.findFlatFileResponseNameInSftpServer(
-      cxId,
-      parseInt(timestamp)
+  /**
+   * @param transmissionId the original request transmission ID
+   * @returns the most recent flat file response for the specified transmission
+   */
+  async receiveResponse(transmissionId: string): Promise<SftpFile | undefined> {
+    const responseFileCandidates = await this.listWithPrefixThroughReplica(
+      "from_surescripts",
+      transmissionId
     );
-    if (flatFileResponseName) {
-      const content = await this.read(getSftpFileName(INCOMING_NAME, flatFileResponseName), {
-        decompress: true,
-      });
-      await this.uploadFileToS3(getS3Key(INCOMING_NAME, flatFileResponseName), content, {
-        transmissionId: metadata.transmissionId,
-        cxId: metadata.cxId,
-        npiNumber: metadata.npiNumber,
-        timestamp: metadata.timestamp,
+    const responseFileSuffix = makeResponseFileSuffix(transmissionId);
+    const responseFile = responseFileCandidates.find(candidate => {
+      return candidate.endsWith(responseFileSuffix);
+    });
+
+    if (responseFile) {
+      const content = await this.readThroughReplica(responseFile, {
+        decompress: responseFile.endsWith(".gz"),
       });
       return {
-        flatFileResponseName,
-        flatFileResponseContent: content,
+        fileName: responseFile,
+        content,
       };
     }
+
     return undefined;
-  }
-
-  private async findFlatFileResponseNameInSftpServer(
-    cxId: string,
-    timestamp: number
-  ): Promise<string | undefined> {
-    const responseFileNameSuffix = this.getFlatFileResponseSuffix(timestamp);
-    const results = await this.list(getSftpDirectory(INCOMING_NAME), info => {
-      return info.name.startsWith(cxId) && info.name.endsWith(responseFileNameSuffix);
-    });
-    return results[results.length - 1];
-  }
-
-  async synchronize(event: SurescriptsSynchronizeEvent): Promise<SurescriptsOperation[]> {
-    if (event.requestFileName) {
-      event.debug?.("Synchronizing " + event.requestFileName);
-      const operations = await this.synchronizeRequestFile(event.requestFileName, event);
-      return operations;
-    } else if (event.fromSurescripts) {
-      event.debug?.("Copying from Surescripts...");
-      const operations = await this.copyFromSurescripts(event);
-      event.debug?.("Finished copying from Surescripts");
-      return operations;
-    } else if (event.toSurescripts) {
-      event.debug?.("Copying to Surescripts...");
-      const operations = await this.copyToSurescripts(event);
-      event.debug?.("Finished copying to Surescripts");
-      return operations;
-    }
-    return [];
-  }
-
-  async synchronizeRequestFile(
-    requestFileName: string,
-    event: SurescriptsSynchronizeEvent
-  ): Promise<SurescriptsOperation[]> {
-    const sftpFileNameForRequest = getSftpFileName(OUTGOING_NAME, requestFileName);
-    const metadata = await this.downloadMetadataFromS3<PatientLoadFileMetadata>(
-      sftpFileNameForRequest
-    );
-    if (!metadata || !metadata.timestamp) return [];
-
-    const timestamp = parseInt(metadata.timestamp);
-    const isRequestInHistory = await this.isPatientLoadFileInSurescriptsHistory(
-      requestFileName,
-      timestamp
-    );
-    const operations: SurescriptsOperation[] = [];
-
-    if (isRequestInHistory) {
-      const verificationFileName = await this.findVerificationFileNameInSftpServer(requestFileName);
-      if (verificationFileName) {
-        const verificationFileDownloaded = await this.fileExistsInS3(
-          getS3Key(INCOMING_NAME, verificationFileName)
-        );
-        if (!verificationFileDownloaded) {
-          const verificationDownload = await this.copyFileFromSurescripts(
-            getSftpFileName(OUTGOING_NAME, verificationFileName),
-            event
-          );
-          if (verificationDownload) operations.push(verificationDownload);
-        }
-
-        const responseFileName = await this.findFlatFileResponseNameInSftpServer(
-          requestFileName,
-          timestamp
-        );
-        if (responseFileName) {
-          const responseFileDownloaded = await this.fileExistsInS3(
-            getS3Key(INCOMING_NAME, responseFileName)
-          );
-          if (!responseFileDownloaded) {
-            const responseOperation = await this.copyFileFromSurescripts(
-              getSftpFileName(INCOMING_NAME, responseFileName),
-              event
-            );
-            if (responseOperation) operations.push(responseOperation);
-          }
-        }
-      }
-    } else {
-      const requestOperation = await this.copyFileToSurescripts(sftpFileNameForRequest, event);
-      if (requestOperation) operations.push(requestOperation);
-    }
-
-    return operations;
-  }
-
-  async listAllFilesInSurescripts(): Promise<Record<SurescriptsDirectory, string[]>> {
-    const outgoingFiles = await this.list(getSftpDirectory(OUTGOING_NAME));
-    const incomingFiles = await this.list(getSftpDirectory(INCOMING_NAME));
-    const historyFiles = await this.list(getSftpDirectory(HISTORY_NAME));
-
-    return {
-      to_surescripts: outgoingFiles,
-      from_surescripts: incomingFiles,
-      history: historyFiles,
-    };
-  }
-
-  async readFileContentsFromSurescripts(
-    fileName: string,
-    decompress = false
-  ): Promise<string | undefined> {
-    if (!(await this.exists(fileName))) {
-      return undefined;
-    }
-    const content = await this.read(fileName, {
-      decompress: decompress || fileName.endsWith(".gz") || fileName.includes(".gz."),
-    });
-    return content.toString("ascii");
-  }
-
-  async copyFromSurescripts(event: SurescriptsSynchronizeEvent): Promise<SurescriptsOperation[]> {
-    const operations: SurescriptsOperation[] = [];
-    const sftpFiles = await this.list(getSftpDirectory(INCOMING_NAME));
-    const s3Files = await this.listFilesInS3(getS3Directory(INCOMING_NAME));
-    const s3FileSet = new Set(s3Files);
-    event.debug?.("Found " + s3Files.length + " files in S3");
-
-    for (const fileName of sftpFiles) {
-      const key = getS3Key(INCOMING_NAME, fileName);
-
-      if (!s3FileSet.has(key)) {
-        const operation = await this.copyFileFromSurescripts(fileName, event);
-        if (operation) operations.push(operation);
-      }
-    }
-    return operations;
-  }
-
-  async copyFileFromSurescripts(
-    fileName: string, // the base file name, without any directory prefixes
-    { dryRun, debug }: SurescriptsSynchronizeEvent = {}
-  ): Promise<SurescriptsOperation | undefined> {
-    const sftpFileName = getSftpFileName(INCOMING_NAME, fileName);
-    const exists = await this.exists(sftpFileName);
-    if (!exists) {
-      debug?.("File does not exist in SFTP: " + sftpFileName);
-      return undefined;
-    } else debug?.("File exists in SFTP: " + sftpFileName);
-
-    const content = await this.read(sftpFileName);
-    const s3Key = getS3Key(INCOMING_NAME, fileName);
-    if (!dryRun) {
-      debug?.("Copying to S3: " + s3Key);
-      await this.uploadFileToS3(s3Key, content, {
-        fileName,
-      });
-    }
-    return {
-      fromSurescripts: true,
-      sftpFileName,
-      s3Key,
-      content,
-    };
-  }
-
-  async copyToSurescripts(event: SurescriptsSynchronizeEvent): Promise<SurescriptsOperation[]> {
-    const operations: SurescriptsOperation[] = [];
-    const sftpHistory = await this.list("/" + HISTORY_NAME);
-    const sftpHistorySet = new Set(sftpHistory);
-    const s3Files = await this.s3.listObjects(this.replicaBucket, OUTGOING_NAME + "/");
-    event.debug?.("Found SFTP history with length " + sftpHistory.length);
-
-    for (const s3File of s3Files) {
-      if (!s3File.Key) continue;
-
-      const outgoingFileName = s3File.Key.substring(OUTGOING_NAME.length + 1);
-      const sftpHistoryName = `${outgoingFileName}.${this.senderId}`;
-      if (!sftpHistorySet.has(sftpHistoryName)) {
-        const operation = await this.copyFileToSurescripts(outgoingFileName, event);
-        if (operation) operations.push(operation);
-      }
-    }
-    return operations;
-  }
-
-  async copyFileToSurescripts(
-    fileName: string, // the base file name, without any directory prefixes
-    { dryRun, debug }: SurescriptsSynchronizeEvent = {}
-  ): Promise<SurescriptsOperation | undefined> {
-    debug?.(`${dryRun ? "DRY RUN: " : ""}Copying to Surescripts: ${fileName}`);
-
-    const s3Key = getS3Key(OUTGOING_NAME, fileName);
-    const s3FileExists = await this.s3.fileExists(this.replicaBucket, s3Key);
-
-    if (!s3FileExists) {
-      debug?.("File does not exist in S3: " + s3Key);
-      return undefined;
-    }
-
-    const content = await this.downloadFileFromS3(s3Key);
-
-    const sftpFileName = getSftpFileName(OUTGOING_NAME, fileName);
-    if (!dryRun) {
-      await this.write(sftpFileName, content);
-      debug?.("Copied to Surescripts: " + sftpFileName);
-    }
-    return {
-      toSurescripts: true,
-      sftpFileName,
-      s3Key,
-      content,
-    };
-  }
-
-  async isPatientLoadFileInSurescriptsHistory(
-    requestFileName: string,
-    timestamp: number
-  ): Promise<boolean> {
-    const dateString = dayjs(timestamp).format("YYMMDD");
-    const timeString = dayjs(timestamp).format("HHmmss");
-    const historyFileName = `${dateString}_${timeString}_${requestFileName}.${this.senderId}`;
-    return await this.exists(getSftpFileName(HISTORY_NAME, historyFileName));
-  }
-
-  protected getFlatFileResponseSuffix(timestamp: number): string {
-    return ["_", dayjs(timestamp).format("YYYYMMDDHHmmss"), ".gz"].join("");
-  }
-
-  protected parseVerificationFileName(remoteFileName: string):
-    | {
-        requestFileNameWithoutExtension: string;
-        acceptedBySurescripts: Date;
-        compression: boolean;
-      }
-    | undefined {
-    const [requestFileNameWithoutExtension, surescriptsUnixTimestamp, maybeGzExtract] =
-      remoteFileName.split(".");
-    if (!requestFileNameWithoutExtension || !surescriptsUnixTimestamp?.match(/^\d+$/)) {
-      return undefined;
-    }
-    const compression = maybeGzExtract === "gz" || maybeGzExtract === "gz-extract";
-    if (!compression && maybeGzExtract !== "rsp") {
-      return undefined;
-    }
-
-    const acceptedBySurescripts = dayjs(parseInt(surescriptsUnixTimestamp)).toDate();
-    return {
-      requestFileNameWithoutExtension,
-      compression,
-      acceptedBySurescripts,
-    };
   }
 }

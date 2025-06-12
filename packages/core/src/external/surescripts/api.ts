@@ -1,7 +1,12 @@
 import axios, { AxiosInstance } from "axios";
 import { MetriportError } from "@metriport/shared";
 import { Patient } from "@metriport/shared/domain/patient";
-import { SurescriptsRequestData, SurescriptsRequestEvent } from "./types";
+import {
+  SurescriptsPatientRequest,
+  SurescriptsPatientRequestData,
+  SurescriptsBatchRequest,
+  SurescriptsBatchRequestData,
+} from "./types";
 import { CustomerData, FacilityData } from "@metriport/shared/domain/customer";
 import { Config } from "../../util/config";
 import { getPatient } from "./api/get-patient";
@@ -18,27 +23,38 @@ export class SurescriptsApi {
     });
   }
 
-  async getRequestData({
+  async getPatientRequestData({
     cxId,
     facilityId,
     patientId,
-  }: SurescriptsRequestEvent): Promise<SurescriptsRequestData> {
+  }: SurescriptsPatientRequest): Promise<SurescriptsPatientRequestData> {
     const customer = await this.getCustomerData(cxId);
     const facility = customer.facilities.find(f => f.id === facilityId);
     if (!facility) {
       throw new MetriportError("Facility not found", undefined, { cxId, facilityId });
     }
 
-    const facilityPatientIds = await this.getPatientIds(cxId, facilityId);
-    if (patientId) {
-      const patientIdSet = new Set(patientId);
-      const filteredPatientIds = facilityPatientIds.filter(id => patientIdSet.has(id));
-      const patients = await this.getEachPatientById(cxId, filteredPatientIds);
-      return { cxId, facility, patients };
-    } else {
-      const patients = await this.getEachPatientById(cxId, facilityPatientIds);
-      return { cxId, facility, patients };
+    const patient = await this.getPatient(cxId, patientId);
+    return { cxId, facility, patient };
+  }
+
+  async getBatchRequestData({
+    cxId,
+    facilityId,
+    patientIds,
+  }: SurescriptsBatchRequest): Promise<SurescriptsBatchRequestData> {
+    const customer = await this.getCustomerData(cxId);
+    const facility = customer.facilities.find(f => f.id === facilityId);
+    if (!facility) {
+      throw new MetriportError("Facility not found", undefined, { cxId, facilityId });
     }
+
+    const patientIdsInFacility = await this.getPatientIds(cxId, facilityId);
+    const requestedPatientIds = new Set(patientIds);
+    const validPatientIds = patientIdsInFacility.filter(id => requestedPatientIds.has(id));
+
+    const patients = await this.getEachPatientById(cxId, validPatientIds);
+    return { cxId, facility, patients };
   }
 
   async getCustomerData(cxId: string): Promise<CustomerData> {
@@ -54,7 +70,7 @@ export class SurescriptsApi {
     return facility;
   }
 
-  async getPatientIds(cxId: string, facilityId?: string | undefined): Promise<string[]> {
+  async getPatientIds(cxId: string, facilityId: string): Promise<string[]> {
     const { patientIds } = await getPatientIds({ cxId, facilityId }, this.axiosInstance);
     return patientIds;
   }

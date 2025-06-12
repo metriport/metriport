@@ -3,10 +3,27 @@ import type SshSftpClient from "ssh2-sftp-client";
 export interface SftpClientImpl {
   connect(): Promise<void>;
   disconnect(): Promise<void>;
-  read(remotePath: string): Promise<Buffer>;
-  write(remotePath: string, content: Buffer): Promise<void>;
-  list(remotePath: string): Promise<string[]>;
+  read(remotePath: string, options?: SftpReadOptions): Promise<Buffer>;
+  write(remotePath: string, content: Buffer, options?: SftpWriteOptions): Promise<void>;
+  list(remotePath: string, filter?: SftpListFilterFunction): Promise<string[]>;
   exists(remotePath: string): Promise<boolean>;
+}
+
+export interface SftpReplica {
+  getReplicaPath(remotePath: string): string;
+  listFileNames(replicaPath: string): Promise<string[]>;
+  listFileNamesWithPrefix(replicaPath: string, prefix: string): Promise<string[]>;
+  readFile(replicaPath: string): Promise<Buffer>;
+  writeFile(replicaPath: string, content: Buffer): Promise<void>;
+  hasFile(replicaPath: string): Promise<boolean>;
+}
+
+export interface SftpReadOptions {
+  decompress?: boolean;
+}
+
+export interface SftpWriteOptions {
+  compress?: boolean;
 }
 
 export interface SftpConfig {
@@ -80,15 +97,4 @@ export interface SftpCloneAction extends SftpBaseAction {
   type: "clone";
   remotePath: string;
   replicaPath: string;
-}
-
-export interface SftpReplica {
-  listFileNames(replicaPath: string): Promise<string[]>;
-  readFile(replicaPath: string): Promise<Buffer>;
-  readFileMetadata<M extends object>(replicaPath: string): Promise<M | undefined>;
-  writeFile<M extends object>(replicaPath: string, content: Buffer, metadata?: M): Promise<void>;
-
-  // writeOutgoingFile<M extends object>(fileName: string, content: Buffer, metadata?: M): Promise<void>;
-  // readIncomingFile(fileName: string): Promise<Buffer | undefined>;
-  hasFile(filePath: string): Promise<boolean>;
 }

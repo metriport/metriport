@@ -1,7 +1,5 @@
 import { Config } from "../../util/config";
 import { z } from "zod";
-import { Patient } from "@metriport/shared/domain/patient";
-import { validateNPI } from "@metriport/shared/common/validate-npi";
 import { MetriportError } from "@metriport/shared";
 import {
   makeNameDemographics,
@@ -32,10 +30,14 @@ import {
   isFlatFileFooter,
 } from "./schema/response";
 import { OutgoingFileRowSchema, IncomingFileRowSchema } from "./schema/shared";
-import { SurescriptsSftpClient, Transmission } from "./client";
-import { SURESCRIPTS_VERSION } from "./constants";
-import { SurescriptsGender } from "./types";
+import { SurescriptsSftpClient } from "./client";
+import { SurescriptsPatientRequestData, SurescriptsBatchRequestData } from "./types";
+import { buildDayjsFromId } from "./id-generator";
 
+// Latest Surescripts specification, but responses may be in 2.2 format
+const surescriptsVersion = "3.0";
+
+type SurescriptsGender = "M" | "F" | "N" | "U";
 const makeGenderDemographics = genderMapperFromDomain<SurescriptsGender>(
   {
     M: "M",
@@ -46,33 +48,40 @@ const makeGenderDemographics = genderMapperFromDomain<SurescriptsGender>(
   "U"
 );
 
-export function canGeneratePatientLoadFile(
-  transmission: Transmission,
-  patients: Patient[]
-): boolean {
-  if (patients.length === 0) return false;
-  if (!validateNPI(transmission.npiNumber)) return false;
-  return true;
+export function generateSurescriptsRequestFile(
+  client: SurescriptsSftpClient,
+  transmissionId: string,
+  { patient, ...requestData }: SurescriptsPatientRequestData
+): Buffer | undefined {
+  const { content, requestedPatientIds } = generateSurescriptsBatchRequestFile(
+    client,
+    transmissionId,
+    { ...requestData, patients: [patient] }
+  );
+  if (requestedPatientIds.length === 0) {
+    return undefined;
+  }
+  return content;
 }
 
-export function toSurescriptsPatientLoadFile(
+export function generateSurescriptsBatchRequestFile(
   client: SurescriptsSftpClient,
-  transmission: Transmission,
-  patients: Patient[]
+  transmissionId: string,
+  { facility, patients }: SurescriptsBatchRequestData
 ): { content: Buffer; requestedPatientIds: string[] } {
   const requestedPatientIds: string[] = [];
-  const transmissionDate = new Date(transmission.timestamp);
+  const transmissionDate = buildDayjsFromId(transmissionId).toDate();
   const header = toSurescriptsPatientLoadRow(
     {
       recordType: "HDR",
-      version: SURESCRIPTS_VERSION,
+      version: surescriptsVersion,
       usage: client.usage,
       senderId: client.senderId,
       senderPassword: client.senderPassword,
       receiverId: client.receiverId,
-      patientPopulationId: transmission.cxId,
+      patientPopulationId: transmissionId,
       lookBackInMonths: 12,
-      transmissionId: transmission.id,
+      transmissionId,
       transmissionDate,
       transmissionFileType: "PMA",
       transmissionAction: "U",
@@ -109,7 +118,7 @@ export function toSurescriptsPatientLoadFile(
           zip: address.zip,
           dateOfBirth: patient.dob.replace(/-/g, ""),
           genderAtBirth,
-          npiNumber: transmission.npiNumber,
+          npiNumber: facility.npi,
         },
         patientLoadDetailSchema,
         patientLoadDetailOrder

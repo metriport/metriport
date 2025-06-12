@@ -1,5 +1,5 @@
 import { getArtifact } from "./shared";
-import { fromSurescriptsVerificationFile } from "../message";
+import { fromSurescriptsVerificationFile } from "../file-generator";
 
 describe("Verification response", () => {
   it("should parse a successful verification response", () => {

@@ -1,5 +1,5 @@
 import { Config } from "../../../util/config";
-import { toSurescriptsPatientLoadRow } from "../message";
+import { toSurescriptsPatientLoadRow } from "../file-generator";
 import {
   patientLoadDetailSchema,
   patientLoadDetailOrder,

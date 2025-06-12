@@ -5,32 +5,28 @@ import { SftpReplica } from "../types";
 export class LocalReplica implements SftpReplica {
   constructor(private readonly localPath: string) {}
 
-  async listFileNames(directoryName: string): Promise<string[]> {
-    return fs.readdirSync(path.join(this.localPath, directoryName));
+  getReplicaPath(remotePath: string): string {
+    return remotePath.replace(/^\//, "");
   }
 
-  async readFile(filePath: string): Promise<Buffer> {
-    return fs.readFileSync(path.join(this.localPath, filePath));
+  async listFileNames(replicaDirectoryName: string): Promise<string[]> {
+    return fs.readdirSync(path.join(this.localPath, replicaDirectoryName));
   }
 
-  async readFileMetadata<M extends object>(filePath: string): Promise<M | undefined> {
-    const jsonName = `${filePath}.metadata.json`;
-    return JSON.parse(fs.readFileSync(path.join(this.localPath, jsonName), "utf-8")) as M;
+  async listFileNamesWithPrefix(replicaDirectoryName: string, prefix: string): Promise<string[]> {
+    const fileNames = await this.listFileNames(replicaDirectoryName);
+    return fileNames.filter(fileName => fileName.startsWith(prefix));
   }
 
-  async writeFile<M extends object>(
-    filePath: string,
-    content: Buffer,
-    metadata?: M
-  ): Promise<void> {
-    fs.writeFileSync(path.join(this.localPath, filePath), content);
-    if (metadata) {
-      const jsonName = `${filePath}.metadata.json`;
-      fs.writeFileSync(path.join(this.localPath, jsonName), JSON.stringify(metadata), "utf-8");
-    }
+  async readFile(replicaPath: string): Promise<Buffer> {
+    return fs.readFileSync(path.join(this.localPath, replicaPath));
   }
 
-  async hasFile(filePath: string): Promise<boolean> {
-    return fs.existsSync(path.join(this.localPath, filePath));
+  async writeFile(replicaPath: string, content: Buffer): Promise<void> {
+    fs.writeFileSync(path.join(this.localPath, replicaPath), content);
+  }
+
+  async hasFile(replicaPath: string): Promise<boolean> {
+    return fs.existsSync(path.join(this.localPath, replicaPath));
   }
 }

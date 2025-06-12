@@ -1,5 +1,5 @@
 import { getArtifact } from "./shared";
-import { fromSurescriptsFlatFileResponse } from "../message";
+import { fromSurescriptsFlatFileResponse } from "../file-generator";
 
 describe("Flat file response", () => {
   it("should parse a successful flat file response", () => {

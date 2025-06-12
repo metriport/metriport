@@ -1,15 +1,35 @@
 import dayjs from "dayjs";
+import { buildDayjsFromId } from "./id-generator";
 
-export function makePatientLoadFileName(
-  transmissionId: string,
-  timestamp: number,
-  usingCompression = false
-): string {
-  return [
-    "Metriport_PMA_",
-    dayjs(timestamp).format("YYYYMMDD"), // must be in local time, not UTC
-    "-",
-    transmissionId,
-    usingCompression ? ".gz" : "",
-  ].join("");
+export function makeRequestFileName(transmissionId: string): string {
+  const transmissionDate = buildDayjsFromId(transmissionId);
+  const localDate = transmissionDate.format("YYYYMMDD");
+
+  return ["Metriport_PMA_", localDate, "-", transmissionId].join("");
+}
+
+export function makeResponseFileSuffix(transmissionId: string): string {
+  const transmissionTimestamp = buildDayjsFromId(transmissionId).format("YYYYMMDDHHmmss");
+  return ["_", transmissionTimestamp, ".gz"].join("");
+}
+
+export function parseVerificationFileName(remoteFileName: string):
+  | {
+      requestFileName: string;
+      acceptedBySurescripts: Date;
+    }
+  | undefined {
+  const [requestFileName, surescriptsUnixTimestamp, rspString] = remoteFileName.split(".");
+  if (!requestFileName || !surescriptsUnixTimestamp?.match(/^\d+$/)) {
+    return undefined;
+  }
+  if (rspString !== "rsp") {
+    return undefined;
+  }
+
+  const acceptedBySurescripts = dayjs(parseInt(surescriptsUnixTimestamp)).toDate();
+  return {
+    requestFileName,
+    acceptedBySurescripts,
+  };
 }

@@ -1,3 +1,5 @@
+import dayjs from "dayjs";
+
 export type IdGenerator = (time?: number, entropy?: 0 | 1) => Buffer;
 const LEXICON = "-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz";
 const LEXICON_START = LEXICON.charCodeAt(0);
@@ -78,4 +80,17 @@ export function getTimestampFromId(id: string): number {
     exponent *= 64;
   }
   return timestamp;
+}
+
+export function getDateFromId(id: string): Date {
+  const timestamp = getTimestampFromId(id);
+  return new Date(timestamp);
+}
+
+export function buildDayjsFromId(
+  id: string,
+  { useUtc = false }: { useUtc?: boolean } = {}
+): dayjs.Dayjs {
+  const timestamp = getTimestampFromId(id);
+  return useUtc ? dayjs.utc(timestamp) : dayjs(timestamp);
 }
