@@ -244,11 +244,14 @@ export class Config {
   static getSurescriptsBundleBucketName(): string {
     return getEnvVarOrFail("SURESCRIPTS_BUNDLE_BUCKET_NAME");
   }
-  static getSurescriptsSynchronizeQueueUrl(): string {
-    return getEnvVarOrFail("SURESCRIPTS_SYNCHRONIZE_QUEUE_URL");
+  static getSurescriptsSftpActionLambdaName(): string {
+    return getEnvVarOrFail("SURESCRIPTS_SFTP_ACTION_LAMBDA_NAME");
   }
   static getSurescriptsSendPatientRequestQueueUrl(): string {
     return getEnvVarOrFail("SURESCRIPTS_SEND_PATIENT_REQUEST_QUEUE_URL");
+  }
+  static getSurescriptsSendBatchRequestQueueUrl(): string {
+    return getEnvVarOrFail("SURESCRIPTS_SEND_BATCH_REQUEST_QUEUE_URL");
   }
   static getSurescriptsReceiveVerificationResponseQueueUrl(): string {
     return getEnvVarOrFail("SURESCRIPTS_RECEIVE_VERIFICATION_RESPONSE_QUEUE_URL");

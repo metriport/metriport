@@ -43,6 +43,7 @@ export interface SftpFile {
 export type SftpListFilterFunction = SshSftpClient.ListFilterFunction;
 
 export type SftpAction =
+  | SftpConnectAction
   | SftpReadAction
   | SftpWriteAction
   | SftpListAction
@@ -50,11 +51,13 @@ export type SftpAction =
   | SftpCloneAction;
 
 export interface SftpBaseAction {
-  type: "read" | "write" | "list" | "exists" | "clone";
+  type: "connect" | "read" | "write" | "list" | "exists" | "clone";
 }
 
 export type SftpActionResult<A extends SftpBaseAction> = SftpBaseAction extends A
   ? unknown
+  : A extends { type: "connect" }
+  ? boolean
   : A extends { type: "read" }
   ? Buffer
   : A extends { type: "write" }
@@ -66,6 +69,10 @@ export type SftpActionResult<A extends SftpBaseAction> = SftpBaseAction extends 
   : A extends { type: "clone" }
   ? SftpFile[]
   : never;
+
+export interface SftpConnectAction extends SftpBaseAction {
+  type: "connect";
+}
 
 export interface SftpReadAction extends SftpBaseAction {
   type: "read";

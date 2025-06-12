@@ -65,6 +65,9 @@ export class SftpClient implements SftpClientImpl {
     try {
       await this.connect();
       switch (action.type) {
+        // Simply test if the connection is working
+        case "connect":
+          return true as SftpActionResult<A>;
         case "read":
           return (await this.read(action.remotePath, action)) as SftpActionResult<A>;
         case "write":

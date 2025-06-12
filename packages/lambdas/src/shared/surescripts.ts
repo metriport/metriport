@@ -1,6 +1,18 @@
 import { Config } from "@metriport/core/util/config";
 import { getSecretValue } from "@metriport/core/external/aws/secret-manager";
 import { BadRequestError } from "@metriport/shared";
+import { SurescriptsSftpClient } from "@metriport/core/external/surescripts/client";
+
+export async function makeSurescriptsClient() {
+  const { surescriptsPublicKey, surescriptsPrivateKey, surescriptsSenderPassword } =
+    await getSurescriptSecrets();
+  return new SurescriptsSftpClient({
+    publicKey: surescriptsPublicKey,
+    privateKey: surescriptsPrivateKey,
+    senderPassword: surescriptsSenderPassword,
+    logLevel: "info",
+  });
+}
 
 export async function getSurescriptSecrets() {
   const [surescriptsPublicKey, surescriptsPrivateKey, surescriptsSenderPassword] =

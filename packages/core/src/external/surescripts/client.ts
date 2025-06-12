@@ -1,18 +1,20 @@
 import { Config } from "../../util/config";
 import { IdGenerator, createIdGenerator } from "./id-generator";
-import { SftpClient } from "../sftp/client";
-import { SftpConfig } from "../sftp/types";
-import { SurescriptsPatientRequestData, SurescriptsRequesterData } from "./types";
-import { generateSurescriptsRequestFile } from "./file-generator";
 import { validateNPI } from "@metriport/shared/common/validate-npi";
-
+import { SftpClient } from "../sftp/client";
+import { SftpConfig, SftpFile } from "../sftp/types";
+import {
+  SurescriptsPatientRequestData,
+  SurescriptsBatchRequestData,
+  SurescriptsRequesterData,
+} from "./types";
+import { generatePatientRequestFile, generateBatchRequestFile } from "./file-generator";
 import { MetriportError } from "@metriport/shared";
 import {
   makeRequestFileName,
   makeResponseFileSuffix,
   parseVerificationFileName,
 } from "./file-names";
-import { SftpFile } from "../sftp/types";
 
 export interface SurescriptsSftpConfig extends Partial<Omit<SftpConfig, "password">> {
   senderId?: string;
@@ -24,32 +26,9 @@ export interface SurescriptsSftpConfig extends Partial<Omit<SftpConfig, "passwor
   replicaBucketRegion?: string;
 }
 
-export interface SurescriptsOperation {
-  fromSurescripts?: boolean;
-  toSurescripts?: boolean;
-  sftpFileName: string;
-  s3Key: string;
-  content?: Buffer;
-}
-
 export enum SurescriptsEnvironment {
   Production = "P",
   Test = "T",
-}
-
-export enum TransmissionType {
-  Enroll = "ENR",
-  Unenroll = "UNR",
-}
-
-export type TransmissionData = Pick<Transmission, "cxId" | "npiNumber">;
-
-export interface Transmission {
-  type: TransmissionType;
-  npiNumber: string;
-  cxId: string;
-  id: string;
-  requestFileName: string;
 }
 
 export class SurescriptsSftpClient extends SftpClient {
@@ -85,19 +64,7 @@ export class SurescriptsSftpClient extends SftpClient {
       : SurescriptsEnvironment.Test;
   }
 
-  async readIncomingFileFromSftp(responseFileName: string): Promise<Buffer | undefined> {
-    try {
-      await this.connect();
-      const remotePath = `/from_surescripts/${responseFileName}`;
-      const exists = await this.exists(remotePath);
-      if (!exists) return undefined;
-      return await this.read(remotePath, { decompress: responseFileName.endsWith(".gz") });
-    } finally {
-      await this.disconnect();
-    }
-  }
-
-  validateRequester(requester: SurescriptsRequesterData): void {
+  private validateRequester(requester: SurescriptsRequesterData): void {
     if (!validateNPI(requester.facility.npi)) {
       throw new MetriportError("Invalid NPI", undefined, {
         npiNumber: requester.facility.npi,
@@ -110,10 +77,12 @@ export class SurescriptsSftpClient extends SftpClient {
    * @param requestData the single patient request data for Surescripts data
    * @returns a unique transmission ID if the request was sent, undefined otherwise
    */
-  async sendRequest(requestData: SurescriptsPatientRequestData): Promise<string | undefined> {
+  async sendPatientRequest(
+    requestData: SurescriptsPatientRequestData
+  ): Promise<string | undefined> {
     this.validateRequester(requestData);
     const transmissionId = this.generateTransmissionId().toString("ascii");
-    const content = generateSurescriptsRequestFile(this, transmissionId, requestData);
+    const content = generatePatientRequestFile(this, transmissionId, requestData);
     // If missing some demographic information that is required by Surescripts
     if (!content) {
       return undefined;
@@ -124,6 +93,30 @@ export class SurescriptsSftpClient extends SftpClient {
       await this.connect();
       await this.writeThroughReplica(`/to_surescripts/${requestFileName}`, content);
       return transmissionId;
+    } finally {
+      await this.disconnect();
+    }
+  }
+
+  async sendBatchRequest(
+    requestData: SurescriptsBatchRequestData
+  ): Promise<{ transmissionId: string; requestedPatientIds: string[] } | undefined> {
+    this.validateRequester(requestData);
+    const transmissionId = this.generateTransmissionId().toString("ascii");
+    const { content, requestedPatientIds } = generateBatchRequestFile(
+      this,
+      transmissionId,
+      requestData
+    );
+    if (requestedPatientIds.length === 0) {
+      return undefined;
+    }
+
+    const requestFileName = makeRequestFileName(transmissionId);
+    try {
+      await this.connect();
+      await this.writeThroughReplica(`/to_surescripts/${requestFileName}`, content);
+      return { transmissionId, requestedPatientIds };
     } finally {
       await this.disconnect();
     }

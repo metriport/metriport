@@ -15,27 +15,9 @@ describe("Surescripts SFTP Client", () => {
       publicKey: "test",
       privateKey: "test",
       replicaBucket: "test",
+      replicaBucketRegion: "us-east-2",
     });
 
     expect(client).toBeDefined();
-  });
-
-  it("should create a transmission", () => {
-    const client = new SurescriptsSftpClient({
-      host: "TestHost",
-      senderId: "TestSenderId",
-      senderPassword: "TestSenderPassword",
-      receiverId: "TestReceiverId",
-      username: "test",
-      publicKey: "test",
-      privateKey: "test",
-      replicaBucket: "test",
-    });
-
-    const transmission = client.createTransmission({
-      npiNumber: "1234567890",
-      cxId: "CustomerId",
-    });
-    expect(transmission).toBeDefined();
   });
 });

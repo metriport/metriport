@@ -48,23 +48,23 @@ const makeGenderDemographics = genderMapperFromDomain<SurescriptsGender>(
   "U"
 );
 
-export function generateSurescriptsRequestFile(
+export function generatePatientRequestFile(
   client: SurescriptsSftpClient,
   transmissionId: string,
   { patient, ...requestData }: SurescriptsPatientRequestData
 ): Buffer | undefined {
-  const { content, requestedPatientIds } = generateSurescriptsBatchRequestFile(
-    client,
-    transmissionId,
-    { ...requestData, patients: [patient] }
-  );
+  const { content, requestedPatientIds } = generateBatchRequestFile(client, transmissionId, {
+    ...requestData,
+    patients: [patient],
+  });
+  // If the patient demographics were incomplete (e.g. no address)
   if (requestedPatientIds.length === 0) {
     return undefined;
   }
   return content;
 }
 
-export function generateSurescriptsBatchRequestFile(
+export function generateBatchRequestFile(
   client: SurescriptsSftpClient,
   transmissionId: string,
   { facility, patients }: SurescriptsBatchRequestData
@@ -95,6 +95,7 @@ export function generateSurescriptsBatchRequestFile(
   const details = patients.flatMap(function (patient, index) {
     const { firstName, middleName, lastName, prefix, suffix } = makeNameDemographics(patient);
     const genderAtBirth = makeGenderDemographics(patient.genderAtBirth);
+    const dateOfBirth = patient.dob.replace(/-/g, "");
 
     const address = Array.isArray(patient.address) ? patient.address[0] : patient.address;
     if (!address) return [];
@@ -105,20 +106,20 @@ export function generateSurescriptsBatchRequestFile(
           recordType: "PNM",
           recordSequenceNumber: index + 1,
           assigningAuthority: Config.getSystemRootOID(),
+          npiNumber: facility.npi,
           patientId: patient.id,
           lastName,
           firstName,
           middleName,
           prefix,
           suffix,
+          dateOfBirth,
+          genderAtBirth,
           addressLine1: address.addressLine1,
           addressLine2: address.addressLine2,
           city: address.city,
           state: address.state,
           zip: address.zip,
-          dateOfBirth: patient.dob.replace(/-/g, ""),
-          genderAtBirth,
-          npiNumber: facility.npi,
         },
         patientLoadDetailSchema,
         patientLoadDetailOrder
