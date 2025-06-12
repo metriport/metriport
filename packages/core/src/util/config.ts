@@ -223,7 +223,7 @@ export class Config {
   static getWriteToS3QueueUrl(): string {
     return getEnvVarOrFail("WRITE_TO_S3_QUEUE_URL");
   }
-  
+
   static getSurescriptsHost(): string {
     return getEnvVarOrFail("SURESCRIPTS_SFTP_HOST");
   }
@@ -256,6 +256,9 @@ export class Config {
   }
   static getSurescriptsSendBatchRequestQueueUrl(): string {
     return getEnvVarOrFail("SURESCRIPTS_SEND_BATCH_REQUEST_QUEUE_URL");
+  }
+  static getSurescriptsVerifyRequestInHistoryQueueUrl(): string {
+    return getEnvVarOrFail("SURESCRIPTS_VERIFY_REQUEST_IN_HISTORY_QUEUE_URL");
   }
   static getSurescriptsReceiveVerificationQueueUrl(): string {
     return getEnvVarOrFail("SURESCRIPTS_RECEIVE_VERIFICATION_QUEUE_URL");

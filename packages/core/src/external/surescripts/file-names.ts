@@ -30,3 +30,24 @@ export function parseVerificationFileName(remoteFileName: string):
     acceptedBySurescripts,
   };
 }
+
+export function parseResponseFileName(remoteFileName: string):
+  | {
+      transmissionId: string;
+      populationId: string;
+    }
+  | undefined {
+  if (remoteFileName.length <= 46) {
+    return undefined;
+  }
+  const transmissionId = remoteFileName.substring(0, 10);
+  const populationId = remoteFileName.substring(10, 46);
+  return {
+    transmissionId,
+    populationId,
+  };
+}
+
+export function makeResponseFileNamePrefix(transmissionId: string, populationId: string): string {
+  return transmissionId + populationId;
+}

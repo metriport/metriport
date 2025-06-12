@@ -48,12 +48,29 @@ const makeGenderDemographics = genderMapperFromDomain<SurescriptsGender>(
   "U"
 );
 
-export function generatePatientRequestFile(
-  client: SurescriptsSftpClient,
-  transmissionId: string,
-  { patient, ...requestData }: SurescriptsPatientRequestData
-): Buffer | undefined {
-  const { content, requestedPatientIds } = generateBatchRequestFile(client, transmissionId, {
+interface SurescriptsGenerateRequestParams {
+  client: SurescriptsSftpClient;
+  transmissionId: string;
+}
+interface SurescriptsGeneratePatientRequestParams
+  extends SurescriptsGenerateRequestParams,
+    SurescriptsPatientRequestData {}
+interface SurescriptsGenerateBatchRequestParams
+  extends SurescriptsGenerateRequestParams,
+    SurescriptsBatchRequestData {
+  populationId?: string; // defaults to facility ID
+}
+
+export function generatePatientRequestFile({
+  client,
+  transmissionId,
+  patient,
+  ...requestData
+}: SurescriptsGeneratePatientRequestParams): Buffer | undefined {
+  const { content, requestedPatientIds } = generateBatchRequestFile({
+    client,
+    transmissionId,
+    populationId: patient.id,
     ...requestData,
     patients: [patient],
   });
@@ -64,13 +81,20 @@ export function generatePatientRequestFile(
   return content;
 }
 
-export function generateBatchRequestFile(
-  client: SurescriptsSftpClient,
-  transmissionId: string,
-  { facility, patients }: SurescriptsBatchRequestData
-): { content: Buffer; requestedPatientIds: string[] } {
+export function generateBatchRequestFile({
+  client,
+  transmissionId,
+  facility,
+  patients,
+  populationId,
+}: SurescriptsGenerateBatchRequestParams): {
+  content: Buffer | undefined;
+  requestedPatientIds: string[];
+} {
   const requestedPatientIds: string[] = [];
   const transmissionDate = buildDayjsFromId(transmissionId).toDate();
+  const patientPopulationId = transmissionId + (populationId ?? facility.id);
+
   const header = toSurescriptsPatientLoadRow(
     {
       recordType: "HDR",
@@ -79,7 +103,7 @@ export function generateBatchRequestFile(
       senderId: client.senderId,
       senderPassword: client.senderPassword,
       receiverId: client.receiverId,
-      patientPopulationId: transmissionId,
+      patientPopulationId,
       lookBackInMonths: 12,
       transmissionId,
       transmissionDate,
@@ -141,7 +165,8 @@ export function generateBatchRequestFile(
   );
 
   return {
-    content: Buffer.concat([header, ...details, footer]),
+    content:
+      requestedPatientIds.length > 0 ? Buffer.concat([header, ...details, footer]) : undefined,
     requestedPatientIds,
   };
 }

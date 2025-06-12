@@ -5,15 +5,12 @@ import { out } from "../../util/log";
 import { compressGzip, decompressGzip } from "./compression";
 import {
   SftpAction,
-  SftpListAction,
   SftpClientImpl,
   SftpConfig,
   SftpActionResult,
   SftpFile,
   SftpListFilterFunction,
   SftpReplica,
-  SftpReadOptions,
-  SftpReplicaActionOptions,
   SftpWriteOptions,
 } from "./types";
 import { S3Replica } from "./replica/s3";
@@ -51,15 +48,20 @@ export class SftpClient implements SftpClientImpl {
     this.replica = undefined;
   }
 
-  protected useReplica(replica: SftpReplica): void {
+  protected setReplica(replica: SftpReplica): void {
+    if (this.replica) {
+      throw new MetriportError("Replica already set", undefined, {
+        context: "sftp.client.setReplica",
+      });
+    }
     this.replica = replica;
   }
 
-  protected useS3Replica({ bucketName, region }: { bucketName: string; region: string }): void {
+  protected setS3Replica({ bucketName, region }: { bucketName: string; region: string }): void {
     this.replica = new S3Replica({ bucketName, region });
   }
 
-  protected useLocalReplica(localPath: string): void {
+  protected setLocalReplica(localPath: string): void {
     this.replica = new LocalReplica(localPath);
   }
 
@@ -81,12 +83,13 @@ export class SftpClient implements SftpClientImpl {
         case "list":
           return (await this.list(
             action.remotePath,
-            makeSftpListFilter(action)
+            makeSftpListFilter({
+              prefix: action.prefix,
+              contains: action.contains,
+            })
           )) as SftpActionResult<A>;
         case "exists":
           return (await this.exists(action.remotePath)) as SftpActionResult<A>;
-        case "clone":
-          return (await this.clone(action.remotePath)) as SftpActionResult<A>;
       }
     } finally {
       await this.disconnect();
@@ -172,36 +175,21 @@ export class SftpClient implements SftpClientImpl {
     return content;
   }
 
-  async readThroughReplica(
-    remotePath: string,
-    {
-      decompress = false,
-      connect = true,
-      disconnect = true,
-    }: SftpReadOptions & SftpReplicaActionOptions = {}
-  ): Promise<Buffer> {
-    if (this.replica) {
-      const replicaPath = this.replica.getReplicaPath(remotePath);
-      const hasReplicated = await this.replica.hasFile(replicaPath);
-      if (hasReplicated) {
-        this.log(`Reading file from replica ${replicaPath}`);
-        return await this.replica.readFile(replicaPath);
-      } else {
-        this.debug(`File ${replicaPath} not found in replica, reading from SFTP server...`);
-      }
-    }
+  async readFromReplica(remotePath: string): Promise<SftpFile | undefined> {
+    if (!this.replica) return undefined;
 
-    try {
-      if (connect) await this.connect();
-      const content = await this.read(remotePath, { decompress });
-      if (this.replica) {
-        const replicaPath = this.replica.getReplicaPath(remotePath);
-        await this.replica.writeFile(replicaPath, content);
-      }
-      return content;
-    } finally {
-      if (disconnect) await this.disconnect();
+    const replicaPath = this.replica.getReplicaPath(remotePath);
+    const hasReplicated = await this.replica.hasFile(replicaPath);
+    if (hasReplicated) {
+      this.log(`Reading file from replica ${replicaPath}`);
+      const content = await this.replica.readFile(replicaPath);
+      return {
+        fileName: remotePath,
+        content,
+      };
     }
+    this.debug(`"${replicaPath}" not found in replica`);
+    return undefined;
   }
 
   async write(
@@ -221,37 +209,19 @@ export class SftpClient implements SftpClientImpl {
     this.log(`Finished writing file to ${remotePath}`);
   }
 
-  async writeThroughReplica(
+  async writeToReplica(
     remotePath: string,
     content: Buffer,
-    {
-      overwrite = false,
-      compress = false,
-      disconnect = true,
-    }: SftpWriteOptions & SftpReplicaActionOptions = {}
+    { compress = false }: SftpWriteOptions = {}
   ): Promise<void> {
     if (this.replica) {
+      this.debug(`Writing file to replica`);
       const replicaPath = this.replica.getReplicaPath(remotePath);
-      const hasReplicated = await this.replica.hasFile(replicaPath);
-      if (hasReplicated && !overwrite) {
-        this.log(`File ${replicaPath} already exists in replica, skipping write`);
-        return;
-      } else {
-        this.debug(`Writing file to remote SFTP destination`);
+      if (compress) {
+        this.debug(`Compressing file with gzip...`);
+        content = await compressGzip(content);
       }
-    }
-
-    try {
-      await this.connect();
-      await this.write(remotePath, content, { compress });
-
-      if (this.replica) {
-        this.debug(`SFTP write succeeded, now writing file to replica`);
-        const replicaPath = this.replica.getReplicaPath(remotePath);
-        await this.replica.writeFile(replicaPath, content);
-      }
-    } finally {
-      if (disconnect) await this.disconnect();
+      await this.replica.writeFile(replicaPath, content);
     }
   }
 
@@ -263,48 +233,8 @@ export class SftpClient implements SftpClientImpl {
     });
 
     this.log(`Found ${fileNames.length} files in ${remotePath}.`);
+    this.debug("File names", fileNames);
     return fileNames;
-  }
-
-  async listWithContainsQuery(remotePath: string, containsQuery: string): Promise<string[]> {
-    return this.list(remotePath, makeSftpListFilter({ contains: containsQuery }));
-  }
-
-  async listWithPrefix(remotePath: string, prefix: string): Promise<string[]> {
-    return this.list(remotePath, makeSftpListFilter({ prefix }));
-  }
-
-  async listWithPrefixThroughReplica(
-    remotePath: string,
-    prefix: string,
-    { disconnect = true }: SftpReplicaActionOptions = {}
-  ): Promise<string[]> {
-    if (this.replica) {
-      const existingFiles = await this.replica.listFileNamesWithPrefix(remotePath, prefix);
-      if (existingFiles.length > 0) {
-        return existingFiles;
-      }
-    }
-
-    try {
-      await this.connect();
-      return await this.listWithPrefix(remotePath, prefix);
-    } finally {
-      if (disconnect) await this.disconnect();
-    }
-  }
-
-  async clone(remoteDirectory: string): Promise<SftpFile[]> {
-    const sftpFileNames = await this.list(remoteDirectory);
-    const sftpFiles: SftpFile[] = [];
-    for (const sftpFileName of sftpFileNames) {
-      this.log(`Copying file ${sftpFileName} from ${remoteDirectory}`);
-      const content = await this.read(remoteDirectory + "/" + sftpFileName);
-      sftpFiles.push({ fileName: sftpFileName, content });
-    }
-
-    this.log(`Finished copying ${sftpFileNames.length} files from ${remoteDirectory}.`);
-    return sftpFiles;
   }
 
   async exists(remotePath: string): Promise<boolean> {
@@ -341,7 +271,10 @@ export function createWritableBuffer(): { writable: Writable; getBuffer: () => B
 function makeSftpListFilter({
   prefix,
   contains,
-}: Omit<SftpListAction, "type" | "remotePath">): SftpListFilterFunction | undefined {
+}: {
+  prefix?: string | undefined;
+  contains?: string | undefined;
+}): SftpListFilterFunction | undefined {
   if (prefix) {
     return file => file.name.startsWith(prefix);
   }

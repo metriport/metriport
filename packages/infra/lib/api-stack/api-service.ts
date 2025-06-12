@@ -362,13 +362,12 @@ export function createAPIService({
             PHARMACY_CONVERSION_BUCKET_NAME: surescriptsAssets.pharmacyConversionBucket.bucketName,
             SURESCRIPTS_REPLICA_BUCKET_NAME: surescriptsAssets.surescriptsReplicaBucket.bucketName,
             SURESCRIPTS_SFTP_ACTION_LAMBDA_NAME: surescriptsAssets.sftpActionLambda.functionName,
-            SURESCRIPTS_SEND_PATIENT_REQUEST_QUEUE_URL:
-              surescriptsAssets.sendPatientRequestQueue.queueUrl,
-            SURESCRIPTS_SEND_BATCH_REQUEST_QUEUE_URL:
-              surescriptsAssets.sendBatchRequestQueue.queueUrl,
-            SURESCRIPTS_RECEIVE_VERIFICATION_QUEUE_URL:
-              surescriptsAssets.receiveVerificationQueue.queueUrl,
-            SURESCRIPTS_RECEIVE_RESPONSE_QUEUE_URL: surescriptsAssets.receiveResponseQueue.queueUrl,
+            ...Object.fromEntries(
+              surescriptsAssets.surescriptsQueues.map(({ envVarName, queue }) => [
+                envVarName,
+                queue.queueUrl,
+              ])
+            ),
           }),
         },
       },
@@ -501,13 +500,7 @@ export function createAPIService({
   });
 
   if (surescriptsAssets) {
-    const queuesToProvideAccessTo = [
-      surescriptsAssets.sendPatientRequestQueue,
-      surescriptsAssets.sendBatchRequestQueue,
-      surescriptsAssets.receiveVerificationQueue,
-      surescriptsAssets.receiveResponseQueue,
-    ];
-    queuesToProvideAccessTo.forEach(queue => {
+    surescriptsAssets.surescriptsQueues.forEach(({ queue }) => {
       provideAccessToQueue({
         accessType: "send",
         queue,

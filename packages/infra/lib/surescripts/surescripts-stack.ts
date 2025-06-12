@@ -18,6 +18,7 @@ import { SurescriptsAssets } from "./types";
 const sftpActionTimeout = Duration.seconds(30);
 const sendPatientRequestLambdaTimeout = Duration.seconds(30);
 const sendBatchRequestLambdaTimeout = Duration.minutes(5);
+const verifyRequestInHistoryLambdaTimeout = sftpActionTimeout;
 const receiveVerificationLambdaTimeout = Duration.seconds(30);
 const receiveResponseLambdaTimeout = Duration.seconds(30);
 const alarmMaxAgeOfOldestMessage = Duration.hours(1);
@@ -27,13 +28,14 @@ const apiUrlEnvVarName = "API_URL";
 interface SurescriptsSettings {
   sendPatientRequest: QueueAndLambdaSettings;
   sendBatchRequest: QueueAndLambdaSettings;
+  verifyRequestInHistory: QueueAndLambdaSettings;
   receiveVerification: QueueAndLambdaSettings;
   receiveResponse: QueueAndLambdaSettings;
 }
 
 const sftpActionSettings: LambdaSettings = {
   name: "SurescriptsSftpAction",
-  entry: "surescripts-sftp-action",
+  entry: "surescripts/sftp-action",
   lambda: {
     memory: 1024,
     timeout: sftpActionTimeout,
@@ -43,7 +45,7 @@ const sftpActionSettings: LambdaSettings = {
 const settings: SurescriptsSettings = {
   sendPatientRequest: {
     name: "SurescriptsSendPatientRequest",
-    entry: "surescripts-send-patient-request",
+    entry: "surescripts/send-patient-request",
     lambda: {
       memory: 1024,
       timeout: sendPatientRequestLambdaTimeout,
@@ -64,7 +66,7 @@ const settings: SurescriptsSettings = {
   },
   sendBatchRequest: {
     name: "SurescriptsSendBatchRequest",
-    entry: "surescripts-send-batch-request",
+    entry: "surescripts/send-batch-request",
     lambda: {
       memory: 1024,
       timeout: sendBatchRequestLambdaTimeout,
@@ -83,9 +85,30 @@ const settings: SurescriptsSettings = {
     },
     waitTime: Duration.seconds(0),
   },
+  verifyRequestInHistory: {
+    name: "SurescriptsVerifyRequestInHistory",
+    entry: "surescripts/verify-request-in-history",
+    lambda: {
+      memory: 512,
+      timeout: verifyRequestInHistoryLambdaTimeout,
+    },
+    queue: {
+      alarmMaxAgeOfOldestMessage,
+      maxMessageCountAlarmThreshold: 15_000,
+      maxReceiveCount: 3,
+      visibilityTimeout: Duration.seconds(verifyRequestInHistoryLambdaTimeout.toSeconds() * 2 + 1),
+      createRetryLambda: false,
+    },
+    eventSource: {
+      batchSize: 1,
+      reportBatchItemFailures: true,
+      maxConcurrency: maxConcurrencyForSftpOperations,
+    },
+    waitTime: Duration.seconds(0),
+  },
   receiveVerification: {
     name: "SurescriptsReceiveVerification",
-    entry: "surescripts-receive-verification",
+    entry: "surescripts/receive-verification",
     lambda: {
       memory: 1024,
       timeout: receiveVerificationLambdaTimeout,
@@ -106,7 +129,7 @@ const settings: SurescriptsSettings = {
   },
   receiveResponse: {
     name: "SurescriptsReceiveResponse",
-    entry: "surescripts-receive-response",
+    entry: "surescripts/receive-response",
     lambda: {
       memory: 1024,
       timeout: receiveResponseLambdaTimeout,
@@ -189,6 +212,8 @@ export class SurescriptsNestedStack extends NestedStack {
   private readonly sendPatientRequestQueue: Queue;
   private readonly sendBatchRequestLambda: Lambda;
   private readonly sendBatchRequestQueue: Queue;
+  private readonly verifyRequestInHistoryLambda: Lambda;
+  private readonly verifyRequestInHistoryQueue: Queue;
   private readonly receiveVerificationLambda: Lambda;
   private readonly receiveVerificationQueue: Queue;
   private readonly receiveResponseLambda: Lambda;
@@ -253,6 +278,13 @@ export class SurescriptsNestedStack extends NestedStack {
     this.sendBatchRequestLambda = sendBatchRequest.lambda;
     this.sendBatchRequestQueue = sendBatchRequest.queue;
 
+    const verifyRequestInHistory = this.setupLambdaAndQueue("verifyRequestInHistory", {
+      ...commonConfig,
+      surescriptsReplicaBucket: this.surescriptsReplicaBucket,
+    });
+    this.verifyRequestInHistoryLambda = verifyRequestInHistory.lambda;
+    this.verifyRequestInHistoryQueue = verifyRequestInHistory.queue;
+
     const receiveVerification = this.setupLambdaAndQueue("receiveVerification", {
       ...commonConfig,
       surescriptsReplicaBucket: this.surescriptsReplicaBucket,
@@ -268,22 +300,54 @@ export class SurescriptsNestedStack extends NestedStack {
     this.receiveResponseLambda = receiveResponse.lambda;
     this.receiveResponseQueue = receiveResponse.queue;
 
+    const lambdas = this.getLambdas();
     for (const secret of secrets) {
-      secret.grantRead(this.sftpActionLambda);
-      secret.grantRead(this.sendPatientRequestLambda);
-      secret.grantRead(this.sendBatchRequestLambda);
-      secret.grantRead(this.receiveVerificationLambda);
-      secret.grantRead(this.receiveResponseLambda);
+      for (const lambda of lambdas) {
+        secret.grantRead(lambda);
+      }
     }
+  }
+
+  getLambdas(): Lambda[] {
+    return [
+      this.sftpActionLambda,
+      this.sendPatientRequestLambda,
+      this.sendBatchRequestLambda,
+      this.verifyRequestInHistoryLambda,
+      this.receiveVerificationLambda,
+      this.receiveResponseLambda,
+    ];
   }
 
   getAssets(): SurescriptsAssets {
     return {
+      surescriptsLambdas: this.getLambdas(),
+      surescriptsQueues: [
+        {
+          envVarName: "SURESCRIPTS_SEND_PATIENT_REQUEST_QUEUE_URL",
+          queue: this.sendPatientRequestQueue,
+        },
+        {
+          envVarName: "SURESCRIPTS_SEND_BATCH_REQUEST_QUEUE_URL",
+          queue: this.sendBatchRequestQueue,
+        },
+        {
+          envVarName: "SURESCRIPTS_VERIFY_REQUEST_IN_HISTORY_QUEUE_URL",
+          queue: this.verifyRequestInHistoryQueue,
+        },
+        {
+          envVarName: "SURESCRIPTS_RECEIVE_VERIFICATION_QUEUE_URL",
+          queue: this.receiveVerificationQueue,
+        },
+        { envVarName: "SURESCRIPTS_RECEIVE_RESPONSE_QUEUE_URL", queue: this.receiveResponseQueue },
+      ],
       sftpActionLambda: this.sftpActionLambda,
       sendPatientRequestLambda: this.sendPatientRequestLambda,
       sendPatientRequestQueue: this.sendPatientRequestQueue,
       sendBatchRequestLambda: this.sendBatchRequestLambda,
       sendBatchRequestQueue: this.sendBatchRequestQueue,
+      verifyRequestInHistoryLambda: this.verifyRequestInHistoryLambda,
+      verifyRequestInHistoryQueue: this.verifyRequestInHistoryQueue,
       receiveVerificationLambda: this.receiveVerificationLambda,
       receiveVerificationQueue: this.receiveVerificationQueue,
       receiveResponseLambda: this.receiveResponseLambda,
@@ -294,14 +358,7 @@ export class SurescriptsNestedStack extends NestedStack {
   }
 
   setApiUrl(apiUrl: string): void {
-    const lambdasToSetApiUrl = [
-      this.sftpActionLambda,
-      this.sendPatientRequestLambda,
-      this.sendBatchRequestLambda,
-      this.receiveVerificationLambda,
-      this.receiveResponseLambda,
-    ];
-    lambdasToSetApiUrl.forEach(lambda => lambda.addEnvironment(apiUrlEnvVarName, apiUrl));
+    this.getLambdas().forEach(lambda => lambda.addEnvironment(apiUrlEnvVarName, apiUrl));
   }
 
   private setupLambda(

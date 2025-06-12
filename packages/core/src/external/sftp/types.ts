@@ -18,12 +18,6 @@ export interface SftpReplica {
   hasFile(replicaPath: string): Promise<boolean>;
 }
 
-export interface SftpReplicaActionOptions {
-  connect?: boolean; // default true
-  disconnect?: boolean; // default true
-  overwrite?: boolean; // default false
-}
-
 export interface SftpReadOptions {
   decompress?: boolean;
 }
@@ -53,11 +47,10 @@ export type SftpAction =
   | SftpReadAction
   | SftpWriteAction
   | SftpListAction
-  | SftpExistsAction
-  | SftpCloneAction;
+  | SftpExistsAction;
 
 export interface SftpBaseAction {
-  type: "connect" | "read" | "write" | "list" | "exists" | "clone";
+  type: "connect" | "read" | "write" | "list" | "exists";
 }
 
 export type SftpActionResult<A extends SftpBaseAction> = SftpBaseAction extends A
@@ -72,8 +65,6 @@ export type SftpActionResult<A extends SftpBaseAction> = SftpBaseAction extends 
   ? string[]
   : A extends { type: "exists" }
   ? boolean
-  : A extends { type: "clone" }
-  ? SftpFile[]
   : never;
 
 export interface SftpConnectAction extends SftpBaseAction {
@@ -104,10 +95,4 @@ export interface SftpListAction extends SftpBaseAction {
 export interface SftpExistsAction extends SftpBaseAction {
   type: "exists";
   remotePath: string;
-}
-
-export interface SftpCloneAction extends SftpBaseAction {
-  type: "clone";
-  remotePath: string;
-  replicaPath: string;
 }
