@@ -5,7 +5,7 @@ import { GetJobsDirect } from "./get-jobs-direct";
 
 export function buildGetJobsHandler(): GetJobsHandler {
   if (Config.isDev()) {
-    const dbCreds = Config.getJobsDbCreds();
+    const dbCreds = Config.getDBCreds();
     return new GetJobsDirect(dbCreds);
   }
   const getPatientJobsLambdaName = Config.getPatientJobsLambdaName();

@@ -1,17 +1,18 @@
 import { MetriportError } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import { jobInitialStatus } from "@metriport/shared/domain/job/job-status";
-import { PatientJob } from "@metriport/shared/domain/job/patient-job";
+import { PatientJob, patientJobRawColumnNames } from "@metriport/shared/domain/job/patient-job";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import { Op, QueryTypes, Sequelize } from "sequelize";
-import { Config } from "../../../../../../../util/config";
+import { QueryTypes, Sequelize } from "sequelize";
 import { controlDuration } from "../../../../../../../util/race-control";
 import { initDbPool } from "../../../../../../../util/sequelize";
 import { buildRunJobHandler } from "../run/run-job-factory";
 import { GetJobsHandler, GetJobsRequest } from "./get-jobs";
 
 dayjs.extend(duration);
+
+const PATIENT_JOB_TABLE_NAME = "patient_job";
 
 const CONTROL_TIMEOUT = dayjs.duration({ minutes: 15 });
 
@@ -21,19 +22,21 @@ export class GetJobsDirect implements GetJobsHandler {
   constructor(private readonly dbCreds: string) {}
 
   async getJobs(request: GetJobsRequest): Promise<void> {
-    const jobs = await getJobsWithControlTimeout({
+    const jobsRaw = await getJobsWithControlTimeout({
       context: "patient.getJobs.direct",
       dbCreds: this.dbCreds,
       ...request,
     });
-    for (const job of jobs) {
+    for (const jobRaw of jobsRaw) {
+      const job = {
+        id: jobRaw[patientJobRawColumnNames.id],
+        cxId: jobRaw[patientJobRawColumnNames.cxId],
+        jobType: jobRaw[patientJobRawColumnNames.jobType],
+      };
       await this.next.runJob({
         id: job.id,
         cxId: job.cxId,
         jobType: job.jobType,
-        paramsCx: job.paramsCx,
-        paramsOps: job.paramsOps,
-        data: job.data,
       });
     }
   }
@@ -47,9 +50,10 @@ async function getJobsWithControlTimeout({
 }: GetJobsRequest & {
   context: string;
   dbCreds: string;
-}): Promise<PatientJob[]> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+}): Promise<any[]> {
   const sequelize = initDbPool(dbCreds);
-  const jobsTable = Config.getPatientJobsTableName();
+  const jobsTable = PATIENT_JOB_TABLE_NAME;
   const jobCutoffDate = runDate ?? buildDayjs().toDate();
 
   try {
@@ -90,20 +94,18 @@ async function getJobsFromDb({
   sequelize: Sequelize;
   jobsTable: string;
   jobCutoffDate: Date;
-}): Promise<PatientJob[]> {
-  const whereClause = {
-    ...{ scheduledAt: { [Op.lte]: jobCutoffDate, [Op.not]: undefined } },
-    ...{ status: status ?? jobInitialStatus },
-    ...(id && { id }),
-    ...(cxId && { cx_id: cxId }),
-    ...(patientId && { patient_id: patientId }),
-    ...(jobType && { job_type: jobType }),
-  };
-  const whereClauseString = Object.entries(whereClause)
-    .map(([key, value]) => `${key} = '${value}'`)
-    .join(" AND ");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+}): Promise<any[]> {
+  let whereClause = `
+    scheduled_at <= '${jobCutoffDate.toISOString()}' AND
+    status = '${status ?? jobInitialStatus}'
+  `;
+  if (id) whereClause += ` AND id = '${id}'`;
+  if (cxId) whereClause += ` AND cx_id = '${cxId}'`;
+  if (patientId) whereClause += ` AND patient_id = '${patientId}'`;
+  if (jobType) whereClause += ` AND job_type = '${jobType}'`;
   try {
-    const query = `SELECT * FROM ${jobsTable} WHERE ${whereClauseString};`;
+    const query = `SELECT * FROM ${jobsTable} WHERE ${whereClause};`;
     const res = await sequelize.query<PatientJob>(query, {
       type: QueryTypes.SELECT,
     });
@@ -113,7 +115,7 @@ async function getJobsFromDb({
     const msg = `Failed to get jobs from table ${jobsTable}`;
     throw new MetriportError(msg, error, {
       jobsTable,
-      whereClauseString,
+      whereClause,
       context: "patient.getJobs.direct.getJobsFromDb",
     });
   }

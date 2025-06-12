@@ -1,6 +1,7 @@
 import { GetJobsRequest } from "@metriport/core/command/job/patient/jobs/start-jobs/steps/get/get-jobs";
 import { GetJobsDirect } from "@metriport/core/command/job/patient/jobs/start-jobs/steps/get/get-jobs-direct";
 import { getSecretValueOrFail } from "@metriport/core/external/aws/secret-manager";
+import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 import * as Sentry from "@sentry/serverless";
 import { capture } from "../../shared/capture";
 import { getEnvOrFail } from "../../shared/env";
@@ -13,7 +14,7 @@ capture.init();
 const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
 const region = getEnvOrFail("AWS_REGION");
 // Set by us
-const dbCredsArn = getEnvOrFail("JOBS_DB_CREDS_ARN");
+const dbCredsArn = getEnvVarOrFail("DB_CREDS");
 
 type GetJobsRequestInLambda = Omit<GetJobsRequest, "runDate"> & {
   runDate?: string;

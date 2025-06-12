@@ -47,6 +47,5 @@ export async function startCreateResourceDiffBundlesJob({
       ehrPatientId,
     },
   });
-  const jobId = job.id;
-  return jobId;
+  return job.id;
 }

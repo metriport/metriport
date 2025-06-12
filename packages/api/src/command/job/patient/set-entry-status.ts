@@ -1,6 +1,7 @@
 import { MetriportError } from "@metriport/shared";
+import { patientJobRawColumnNames } from "@metriport/shared/domain/job/patient-job";
 import { IncrementDecrementOptionsWithBy } from "sequelize";
-import { PatientJobModel, patientJobRawColumnNames } from "../../../models/patient-job";
+import { PatientJobModel } from "../../../models/patient-job";
 import { UpdateJobCountParams, UpdateJobCountResponse } from "../shared";
 import { completePatientJob } from "./complete";
 

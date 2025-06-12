@@ -32,6 +32,10 @@ export class Config {
     return getEnvVarOrFail("ENV_TYPE");
   }
 
+  static getDBCreds(): string {
+    return getEnvVarOrFail("DB_CREDS");
+  }
+
   static getSlackAlertUrl(): string | undefined {
     return getEnvVar("SLACK_ALERT_URL");
   }
@@ -258,11 +262,5 @@ export class Config {
   }
   static getRunPatientJobQueueUrl(): string {
     return getEnvVarOrFail("RUN_PATIENT_JOB_QUEUE_URL");
-  }
-  static getPatientJobsTableName(): string {
-    return getEnvVarOrFail("PATIENT_JOBS_TABLE_NAME");
-  }
-  static getJobsDbCreds(): string {
-    return getEnvVarOrFail("JOBS_DB_CREDS");
   }
 }
