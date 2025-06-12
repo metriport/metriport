@@ -9,7 +9,6 @@ describe("Surescripts file names", () => {
     expect(result).toEqual({
       requestFileName: "Metriport_PMA_20250601--TESTID_12",
       acceptedBySurescripts,
-      compression: false,
     });
   });
 
@@ -21,7 +20,6 @@ describe("Surescripts file names", () => {
     expect(result).toEqual({
       requestFileName: "Metriport_PMA_20250601--TESTID_12",
       acceptedBySurescripts,
-      compression: true,
     });
   });
 

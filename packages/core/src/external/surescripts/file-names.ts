@@ -19,11 +19,13 @@ export function parseVerificationFileName(remoteFileName: string):
       acceptedBySurescripts: Date;
     }
   | undefined {
-  const [requestFileName, surescriptsUnixTimestamp, rspString] = remoteFileName.split(".");
+  const [requestFileName, surescriptsUnixTimestamp, ...extensions] = remoteFileName.split(".");
   if (!requestFileName || !surescriptsUnixTimestamp?.match(/^\d+$/)) {
     return undefined;
   }
-  if (rspString !== "rsp") {
+
+  const extension = extensions.join(".");
+  if (extension !== "rsp" && extension !== "gz.rsp") {
     return undefined;
   }
 
