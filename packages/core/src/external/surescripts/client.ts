@@ -156,7 +156,7 @@ export class SurescriptsSftpClient extends SftpClient {
     });
 
     if (verificationFileName) {
-      const content = await this.readThroughReplica(verificationFileName, {
+      const content = await this.readThroughReplica(`/from_surescripts/${verificationFileName}`, {
         decompress: verificationFileName.endsWith(".gz.rsp"),
         connect: false,
       });
@@ -185,7 +185,7 @@ export class SurescriptsSftpClient extends SftpClient {
     });
 
     if (responseFile) {
-      const content = await this.readThroughReplica(responseFile, {
+      const content = await this.readThroughReplica(`/from_surescripts/${responseFile}`, {
         decompress: responseFile.endsWith(".gz"),
         connect: false,
       });
