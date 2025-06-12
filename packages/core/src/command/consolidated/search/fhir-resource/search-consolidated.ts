@@ -166,7 +166,7 @@ async function hydrateResources({
 
   const result = [...hydrated, ...reverseHydrated];
   log(`Resources: ${resources.length}`);
-  log(`Hydrated: ${hydrated.length}`);
+  log(`Hydrated: ${hydrated.length - resources.length}`);
   log(`Reverse Hydrated: ${reverseHydrated.length}`);
   log(`Result: ${result.length}`);
   return result;
