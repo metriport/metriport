@@ -34,8 +34,8 @@ export function formatIdentifier({
   identifier: Identifier | undefined;
   systemsToInclude?: string[] | undefined;
 }): string | undefined {
-  if (!identifier) return undefined;
-  const value = identifier.value?.trim();
+  if (!identifier?.value) return undefined;
+  const value = String(identifier.value).trim();
   if (!value) return undefined;
   if (systemsToInclude && !systemsToInclude.some(system => identifier.system?.includes(system))) {
     return undefined;

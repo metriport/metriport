@@ -1,4 +1,5 @@
 import { Bundle, CodeableConcept, Condition } from "@medplum/fhirtypes";
+import { encodeToHtml } from "@metriport/shared/common/html";
 import { isCondition } from "../../../external/fhir/shared";
 import { ProblemsSection } from "../../cda-types/sections";
 import {
@@ -21,17 +22,17 @@ import {
   withNullFlavor,
 } from "../commons";
 import {
-  NOT_SPECIFIED,
-  _xmlnsXsiAttribute,
-  _xmlnsXsiValue,
   extensionValue2015,
   extensionValue2019,
   loincCodeSystem,
   loincSystemName,
+  NOT_SPECIFIED,
   oids,
   placeholderOrgOid,
   snomedCodeSystem,
   snomedSystemName,
+  _xmlnsXsiAttribute,
+  _xmlnsXsiValue,
 } from "../constants";
 import { createTableRowsAndEntries } from "../create-table-rows-and-entries";
 import { initiateSectionTable } from "../table";
@@ -113,19 +114,21 @@ function createTableRowFromCondition(
             "#text": getIcdCode(condition.resource.code),
           },
           {
-            "#text": name,
+            "#text": encodeToHtml(name),
           },
           {
-            "#text": providerResponse ?? NOT_SPECIFIED,
+            "#text": encodeToHtml(providerResponse ?? NOT_SPECIFIED),
           },
           {
             "#text": clinicalStatus?._displayName ?? NOT_SPECIFIED,
           },
           {
-            "#text": treatmentPlan ?? condition.resource.note?.[0]?.text ?? NOT_SPECIFIED,
+            "#text": encodeToHtml(
+              treatmentPlan ?? condition.resource.note?.[0]?.text ?? NOT_SPECIFIED
+            ),
           },
           {
-            "#text": comments ?? NOT_SPECIFIED,
+            "#text": encodeToHtml(comments ?? NOT_SPECIFIED),
           },
         ],
       },
