@@ -11,6 +11,7 @@ import { EnvType } from "../env-type";
 import { createLambda } from "../shared/lambda";
 import { LambdaLayers } from "../shared/lambda-layers";
 import { createScheduledLambda } from "../shared/lambda-scheduled";
+import { buildSecret } from "../shared/secrets";
 import { LambdaSettings, QueueAndLambdaSettings } from "../shared/settings";
 import { createQueue } from "../shared/sqs";
 import { JobsAssets } from "./types";
@@ -63,7 +64,6 @@ interface JobsNestedStackProps extends NestedStackProps {
   vpc: ec2.IVpc;
   alarmAction?: SnsAction;
   lambdaLayers: LambdaLayers;
-  readOnlyUserSecrets: secret.ISecret[];
 }
 
 export class JobsNestedStack extends NestedStack {
@@ -76,14 +76,7 @@ export class JobsNestedStack extends NestedStack {
 
     this.terminationProtection = true;
 
-    const readOnlyUserSecret = props.readOnlyUserSecrets.find(
-      secret => secret.secretName === `DBCreds-${props.config.jobs.roUsername}`
-    );
-    if (!readOnlyUserSecret) {
-      throw new Error(
-        `Read only user secret not found for username: ${props.config.jobs.roUsername}`
-      );
-    }
+    const readOnlyUserSecret = buildSecret(this, props.config.jobs.roUsername);
 
     const commonConfig = {
       lambdaLayers: props.lambdaLayers,
@@ -112,7 +105,6 @@ export class JobsNestedStack extends NestedStack {
     const getPatientJobs = this.setupGetPatientJobsLambda({
       ...commonConfig,
       readOnlyUserSecret,
-      jobsTable: props.config.jobs.patientJobsTable,
       runPatientJobQueue: this.runPatientJobQueue,
     });
     this.getPatientJobsLambda = getPatientJobs;
@@ -138,7 +130,6 @@ export class JobsNestedStack extends NestedStack {
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
     runPatientJobQueue: Queue;
-    jobsTable: string;
     readOnlyUserSecret: secret.ISecret;
   }): Lambda {
     const { lambdaLayers, vpc, envType, sentryDsn, alarmAction } = ownProps;
@@ -153,8 +144,7 @@ export class JobsNestedStack extends NestedStack {
       envVars: {
         // API_URL set on the api-stack after the OSS API is created
         RUN_JOB_QUEUE_URL: ownProps.runPatientJobQueue.queueUrl,
-        JOBS_TABLE_NAME: ownProps.jobsTable,
-        JOBS_DB_CREDS_ARN: ownProps.readOnlyUserSecret.secretArn,
+        DB_CREDS: ownProps.readOnlyUserSecret.secretArn,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared],

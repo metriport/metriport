@@ -189,21 +189,6 @@ export class APIStack extends Stack {
       },
     });
     const dbCreds = rds.Credentials.fromSecret(dbCredsSecret);
-    const readOnlyUserSecrets: secret.ISecret[] = [];
-    for (const readOnlyUsername of dbConfig.roUsernames) {
-      const readOnlyUserSecret = new secret.Secret(this, `DBCreds-${readOnlyUsername}`, {
-        secretName: `DBCreds-${readOnlyUsername}`,
-        generateSecretString: {
-          secretStringTemplate: JSON.stringify({
-            username: readOnlyUsername,
-          }),
-          excludePunctuation: true,
-          includeSpace: false,
-          generateStringKey: "password",
-        },
-      });
-      readOnlyUserSecrets.push(readOnlyUserSecret);
-    }
     const dbEngine = rds.DatabaseClusterEngine.auroraPostgres({
       version: rds.AuroraPostgresEngineVersion.VER_14_7,
     });
@@ -517,7 +502,6 @@ export class APIStack extends Stack {
       vpc: this.vpc,
       alarmAction: slackNotification?.alarmAction,
       lambdaLayers,
-      readOnlyUserSecrets,
     });
 
     //-------------------------------------------
