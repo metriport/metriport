@@ -17,7 +17,7 @@ export type RunJobParams = JobBaseParams & {
  * @param jobType - The job type.
  */
 export async function runJob({ jobId, cxId, jobType }: RunJobParams): Promise<void> {
-  const { log, debug } = out(`completeJob - jobId ${jobId} cxId ${cxId} jobType ${jobType}`);
+  const { log, debug } = out(`runJob - jobId ${jobId} cxId ${cxId} jobType ${jobType}`);
   const api = axios.create({ baseURL: Config.getApiUrl() });
   const queryParams = new URLSearchParams({ cxId });
   const runJobUrl = `/internal/patient/job/${jobType}/${jobId}/run?${queryParams.toString()}`;

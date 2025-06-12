@@ -1,7 +1,7 @@
 import { MetriportError } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import { jobInitialStatus } from "@metriport/shared/domain/job/job-status";
-import { PatientJob, patientJobRawColumnNames } from "@metriport/shared/domain/job/patient-job";
+import { patientJobRawColumnNames } from "@metriport/shared/domain/job/patient-job";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { QueryTypes, Sequelize } from "sequelize";
@@ -28,16 +28,13 @@ export class GetJobsDirect implements GetJobsHandler {
       ...request,
     });
     for (const jobRaw of jobsRaw) {
-      const job = {
-        id: jobRaw[patientJobRawColumnNames.id],
-        cxId: jobRaw[patientJobRawColumnNames.cxId],
-        jobType: jobRaw[patientJobRawColumnNames.jobType],
-      };
-      await this.next.runJob({
-        id: job.id,
-        cxId: job.cxId,
-        jobType: job.jobType,
-      });
+      const id = jobRaw[patientJobRawColumnNames.id] as string;
+      const cxId = jobRaw[patientJobRawColumnNames.cxId] as string;
+      const jobType = jobRaw[patientJobRawColumnNames.jobType] as string;
+      if (!id || !cxId || !jobType) {
+        throw new MetriportError(`Invalid job: ${JSON.stringify(jobRaw)}`);
+      }
+      await this.next.runJob({ id, cxId, jobType });
     }
   }
 }
@@ -50,8 +47,7 @@ async function getJobsWithControlTimeout({
 }: GetJobsRequest & {
   context: string;
   dbCreds: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-}): Promise<any[]> {
+}): Promise<Record<string, unknown>[]> {
   const sequelize = initDbPool(dbCreds);
   const jobsTable = PATIENT_JOB_TABLE_NAME;
   const jobCutoffDate = runDate ?? buildDayjs().toDate();
@@ -93,20 +89,33 @@ async function getJobsFromDb({
   sequelize: Sequelize;
   jobsTable: string;
   jobCutoffDate: Date;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-}): Promise<any[]> {
-  let whereClause = `
-    scheduled_at <= '${jobCutoffDate.toISOString()}' AND
-    status = '${status ?? jobInitialStatus}'
-  `;
-  if (id) whereClause += ` AND id = '${id}'`;
-  if (cxId) whereClause += ` AND cx_id = '${cxId}'`;
-  if (patientId) whereClause += ` AND patient_id = '${patientId}'`;
-  if (jobType) whereClause += ` AND job_type = '${jobType}'`;
+}): Promise<Record<string, unknown>[]> {
+  const replacements: Record<string, unknown> = {
+    jobCutoffDate: jobCutoffDate.toISOString(),
+    status: status ?? jobInitialStatus,
+  };
+  const whereConditions = ["scheduled_at <= :jobCutoffDate", "status = :status"];
+  if (id) {
+    whereConditions.push("id = :id");
+    replacements.id = id;
+  }
+  if (cxId) {
+    whereConditions.push("cx_id = :cxId");
+    replacements.cxId = cxId;
+  }
+  if (patientId) {
+    whereConditions.push("patient_id = :patientId");
+    replacements.patientId = patientId;
+  }
+  if (jobType) {
+    whereConditions.push("job_type = :jobType");
+    replacements.jobType = jobType;
+  }
   try {
-    const query = `SELECT * FROM ${jobsTable} WHERE ${whereClause};`;
-    const res = await sequelize.query<PatientJob>(query, {
+    const query = `SELECT * FROM ${jobsTable} WHERE ${whereConditions.join(" AND ")};`;
+    const res = await sequelize.query<Record<string, unknown>>(query, {
       type: QueryTypes.SELECT,
+      replacements,
     });
 
     return res;
@@ -114,7 +123,6 @@ async function getJobsFromDb({
     const msg = `Failed to get jobs from table ${jobsTable}`;
     throw new MetriportError(msg, error, {
       jobsTable,
-      whereClause,
       context: "patient.getJobs.direct.getJobsFromDb",
     });
   }

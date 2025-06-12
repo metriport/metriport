@@ -14,11 +14,11 @@ export async function runJob({
   practiceId,
   metriportPatientId,
   ehrPatientId,
-}: RunCreateResourceDiffBundlesJobParams) {
+}: RunCreateResourceDiffBundlesJobParams): Promise<void> {
   const resourceTypes = getSupportedResourcesByEhr(ehr);
   if (resourceTypes.length < 1) {
     await completePatientJob({ cxId, jobId });
-    return jobId;
+    return;
   }
   await updatePatientJobTotal({ cxId, jobId, total: resourceTypes.length });
   let tokenId: string | undefined;

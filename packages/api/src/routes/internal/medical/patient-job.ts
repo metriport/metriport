@@ -217,6 +217,10 @@ router.post(
   })
 );
 
+const updateRuntimeDataSchema = z.object({
+  data: z.record(z.unknown()).optional(),
+});
+
 /**
  * POST /internal/patient/job/:jobId/update-runtime-data
  *
@@ -232,7 +236,7 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const jobId = getFrom("params").orFail("jobId", req);
-    const data = req.body;
+    const { data } = updateRuntimeDataSchema.parse(req.body);
     await updatePatientJobRuntimeData({
       jobId,
       cxId,

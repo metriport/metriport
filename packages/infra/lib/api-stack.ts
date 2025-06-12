@@ -709,6 +709,7 @@ export class APIStack extends Stack {
     const apiUrl = `http://${apiDirectUrl}`;
     lambdasToGetApiUrl.forEach(lambda => lambda?.addEnvironment("API_URL", apiUrl));
     if (surescriptsStack) surescriptsStack.setApiUrl(apiDirectUrl);
+    jobsStack.setApiUrl(apiDirectUrl);
 
     // TODO move this to each place where it's used
     // Access grant for medical documents bucket
