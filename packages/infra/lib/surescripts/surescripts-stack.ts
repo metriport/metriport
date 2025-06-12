@@ -11,50 +11,36 @@ import { EnvConfig } from "../../config/env-config";
 import { EnvType } from "../env-type";
 import { createLambda } from "../shared/lambda";
 import { LambdaLayers } from "../shared/lambda-layers";
-import { QueueAndLambdaSettings } from "../shared/settings";
+import { LambdaSettings, QueueAndLambdaSettings } from "../shared/settings";
 import { createQueue } from "../shared/sqs";
 import { SurescriptsAssets } from "./types";
 
-const synchronizeSftpTimeout = Duration.minutes(5);
-const synchronizeSftpWaitTime = Duration.seconds(1);
+const sftpActionTimeout = Duration.seconds(30);
 const sendPatientRequestLambdaTimeout = Duration.seconds(30);
+const sendBatchRequestLambdaTimeout = Duration.minutes(5);
 const receiveVerificationLambdaTimeout = Duration.seconds(30);
-const receiveFlatFileResponseLambdaTimeout = Duration.seconds(30);
+const receiveResponseLambdaTimeout = Duration.seconds(30);
 const alarmMaxAgeOfOldestMessage = Duration.hours(1);
-const maxConcurrencyForSftpOperations = 2;
-const maxConcurrencyForFileOperations = 4;
+const maxConcurrencyForSftpOperations = 4;
 const apiUrlEnvVarName = "API_URL";
 
 interface SurescriptsSettings {
-  synchronizeSftp: QueueAndLambdaSettings;
   sendPatientRequest: QueueAndLambdaSettings;
-  receiveVerificationResponse: QueueAndLambdaSettings;
-  receiveFlatFileResponse: QueueAndLambdaSettings;
+  sendBatchRequest: QueueAndLambdaSettings;
+  receiveVerification: QueueAndLambdaSettings;
+  receiveResponse: QueueAndLambdaSettings;
 }
 
-const settings: SurescriptsSettings = {
-  synchronizeSftp: {
-    name: "SurescriptsSynchronizeSftp",
-    entry: "surescripts-sftp-synchronize",
-    lambda: {
-      memory: 1024,
-      timeout: synchronizeSftpTimeout,
-    },
-    queue: {
-      alarmMaxAgeOfOldestMessage,
-      maxMessageCountAlarmThreshold: 1000,
-      maxReceiveCount: 3,
-      visibilityTimeout: Duration.seconds(synchronizeSftpTimeout.toSeconds() * 2 + 1),
-      createRetryLambda: false,
-    },
-    eventSource: {
-      batchSize: 1,
-      reportBatchItemFailures: true,
-      maxConcurrency: maxConcurrencyForSftpOperations,
-    },
-    waitTime: synchronizeSftpWaitTime,
+const sftpActionSettings: LambdaSettings = {
+  name: "SurescriptsSftpAction",
+  entry: "surescripts-sftp-action",
+  lambda: {
+    memory: 1024,
+    timeout: sftpActionTimeout,
   },
+};
 
+const settings: SurescriptsSettings = {
   sendPatientRequest: {
     name: "SurescriptsSendPatientRequest",
     entry: "surescripts-send-patient-request",
@@ -72,13 +58,34 @@ const settings: SurescriptsSettings = {
     eventSource: {
       batchSize: 1,
       reportBatchItemFailures: true,
-      maxConcurrency: maxConcurrencyForFileOperations,
+      maxConcurrency: maxConcurrencyForSftpOperations,
     },
     waitTime: Duration.seconds(0),
   },
-  receiveVerificationResponse: {
-    name: "SurescriptsReceiveVerificationResponse",
-    entry: "surescripts-receive-verification-response",
+  sendBatchRequest: {
+    name: "SurescriptsSendBatchRequest",
+    entry: "surescripts-send-batch-request",
+    lambda: {
+      memory: 1024,
+      timeout: sendBatchRequestLambdaTimeout,
+    },
+    queue: {
+      alarmMaxAgeOfOldestMessage,
+      maxMessageCountAlarmThreshold: 15_000,
+      maxReceiveCount: 3,
+      visibilityTimeout: Duration.seconds(sendBatchRequestLambdaTimeout.toSeconds() * 2 + 1),
+      createRetryLambda: false,
+    },
+    eventSource: {
+      batchSize: 1,
+      reportBatchItemFailures: true,
+      maxConcurrency: maxConcurrencyForSftpOperations,
+    },
+    waitTime: Duration.seconds(0),
+  },
+  receiveVerification: {
+    name: "SurescriptsReceiveVerification",
+    entry: "surescripts-receive-verification",
     lambda: {
       memory: 1024,
       timeout: receiveVerificationLambdaTimeout,
@@ -93,28 +100,28 @@ const settings: SurescriptsSettings = {
     eventSource: {
       batchSize: 1,
       reportBatchItemFailures: true,
-      maxConcurrency: maxConcurrencyForFileOperations,
+      maxConcurrency: maxConcurrencyForSftpOperations,
     },
     waitTime: Duration.seconds(0),
   },
-  receiveFlatFileResponse: {
-    name: "SurescriptsReceiveFlatFileResponse",
-    entry: "surescripts-receive-flat-file-response",
+  receiveResponse: {
+    name: "SurescriptsReceiveResponse",
+    entry: "surescripts-receive-response",
     lambda: {
       memory: 1024,
-      timeout: receiveFlatFileResponseLambdaTimeout,
+      timeout: receiveResponseLambdaTimeout,
     },
     queue: {
       alarmMaxAgeOfOldestMessage,
       maxMessageCountAlarmThreshold: 15_000,
       maxReceiveCount: 3,
-      visibilityTimeout: Duration.seconds(receiveFlatFileResponseLambdaTimeout.toSeconds() * 2 + 1),
+      visibilityTimeout: Duration.seconds(receiveResponseLambdaTimeout.toSeconds() * 2 + 1),
       createRetryLambda: false,
     },
     eventSource: {
       batchSize: 1,
       reportBatchItemFailures: true,
-      maxConcurrency: maxConcurrencyForFileOperations,
+      maxConcurrency: maxConcurrencyForSftpOperations,
     },
     waitTime: Duration.seconds(0),
   },
@@ -177,14 +184,15 @@ interface SurescriptsNestedStackProps extends NestedStackProps {
 }
 
 export class SurescriptsNestedStack extends NestedStack {
-  private readonly synchronizeSftpLambda: Lambda;
-  private readonly synchronizeSftpQueue: Queue;
+  private readonly sftpActionLambda: Lambda;
   private readonly sendPatientRequestLambda: Lambda;
   private readonly sendPatientRequestQueue: Queue;
-  private readonly receiveVerificationResponseLambda: Lambda;
-  private readonly receiveVerificationResponseQueue: Queue;
-  private readonly receiveFlatFileResponseLambda: Lambda;
-  private readonly receiveFlatFileResponseQueue: Queue;
+  private readonly sendBatchRequestLambda: Lambda;
+  private readonly sendBatchRequestQueue: Queue;
+  private readonly receiveVerificationLambda: Lambda;
+  private readonly receiveVerificationQueue: Queue;
+  private readonly receiveResponseLambda: Lambda;
+  private readonly receiveResponseQueue: Queue;
   private readonly surescriptsReplicaBucket: s3.Bucket;
   private readonly pharmacyConversionBucket: s3.Bucket;
 
@@ -225,12 +233,11 @@ export class SurescriptsNestedStack extends NestedStack {
       envVars,
     };
 
-    const synchronizeSftp = this.setupLambdaAndQueue("synchronizeSftp", {
+    const sftpAction = this.setupLambda(sftpActionSettings, {
       ...commonConfig,
       surescriptsReplicaBucket: this.surescriptsReplicaBucket,
     });
-    this.synchronizeSftpLambda = synchronizeSftp.lambda;
-    this.synchronizeSftpQueue = synchronizeSftp.queue;
+    this.sftpActionLambda = sftpAction.lambda;
 
     const sendPatientRequest = this.setupLambdaAndQueue("sendPatientRequest", {
       ...commonConfig,
@@ -239,39 +246,48 @@ export class SurescriptsNestedStack extends NestedStack {
     this.sendPatientRequestLambda = sendPatientRequest.lambda;
     this.sendPatientRequestQueue = sendPatientRequest.queue;
 
-    const receiveVerificationResponse = this.setupLambdaAndQueue("receiveVerificationResponse", {
+    const sendBatchRequest = this.setupLambdaAndQueue("sendBatchRequest", {
       ...commonConfig,
       surescriptsReplicaBucket: this.surescriptsReplicaBucket,
     });
-    this.receiveVerificationResponseLambda = receiveVerificationResponse.lambda;
-    this.receiveVerificationResponseQueue = receiveVerificationResponse.queue;
+    this.sendBatchRequestLambda = sendBatchRequest.lambda;
+    this.sendBatchRequestQueue = sendBatchRequest.queue;
 
-    const receiveFlatFileResponse = this.setupLambdaAndQueue("receiveFlatFileResponse", {
+    const receiveVerification = this.setupLambdaAndQueue("receiveVerification", {
+      ...commonConfig,
+      surescriptsReplicaBucket: this.surescriptsReplicaBucket,
+    });
+    this.receiveVerificationLambda = receiveVerification.lambda;
+    this.receiveVerificationQueue = receiveVerification.queue;
+
+    const receiveResponse = this.setupLambdaAndQueue("receiveResponse", {
       ...commonConfig,
       surescriptsReplicaBucket: this.surescriptsReplicaBucket,
       pharmacyConversionBucket: this.pharmacyConversionBucket,
     });
-    this.receiveFlatFileResponseLambda = receiveFlatFileResponse.lambda;
-    this.receiveFlatFileResponseQueue = receiveFlatFileResponse.queue;
+    this.receiveResponseLambda = receiveResponse.lambda;
+    this.receiveResponseQueue = receiveResponse.queue;
 
     for (const secret of secrets) {
-      secret.grantRead(this.synchronizeSftpLambda);
+      secret.grantRead(this.sftpActionLambda);
       secret.grantRead(this.sendPatientRequestLambda);
-      secret.grantRead(this.receiveVerificationResponseLambda);
-      secret.grantRead(this.receiveFlatFileResponseLambda);
+      secret.grantRead(this.sendBatchRequestLambda);
+      secret.grantRead(this.receiveVerificationLambda);
+      secret.grantRead(this.receiveResponseLambda);
     }
   }
 
   getAssets(): SurescriptsAssets {
     return {
-      synchronizeSftpLambda: this.synchronizeSftpLambda,
-      synchronizeSftpQueue: this.synchronizeSftpQueue,
+      sftpActionLambda: this.sftpActionLambda,
       sendPatientRequestLambda: this.sendPatientRequestLambda,
       sendPatientRequestQueue: this.sendPatientRequestQueue,
-      receiveVerificationResponseLambda: this.receiveVerificationResponseLambda,
-      receiveVerificationResponseQueue: this.receiveVerificationResponseQueue,
-      receiveFlatFileResponseLambda: this.receiveFlatFileResponseLambda,
-      receiveFlatFileResponseQueue: this.receiveFlatFileResponseQueue,
+      sendBatchRequestLambda: this.sendBatchRequestLambda,
+      sendBatchRequestQueue: this.sendBatchRequestQueue,
+      receiveVerificationLambda: this.receiveVerificationLambda,
+      receiveVerificationQueue: this.receiveVerificationQueue,
+      receiveResponseLambda: this.receiveResponseLambda,
+      receiveResponseQueue: this.receiveResponseQueue,
       surescriptsReplicaBucket: this.surescriptsReplicaBucket,
       pharmacyConversionBucket: this.pharmacyConversionBucket,
     };
@@ -279,12 +295,51 @@ export class SurescriptsNestedStack extends NestedStack {
 
   setApiUrl(apiUrl: string): void {
     const lambdasToSetApiUrl = [
-      this.synchronizeSftpLambda,
+      this.sftpActionLambda,
       this.sendPatientRequestLambda,
-      this.receiveVerificationResponseLambda,
-      this.receiveFlatFileResponseLambda,
+      this.sendBatchRequestLambda,
+      this.receiveVerificationLambda,
+      this.receiveResponseLambda,
     ];
     lambdasToSetApiUrl.forEach(lambda => lambda.addEnvironment(apiUrlEnvVarName, apiUrl));
+  }
+
+  private setupLambda(
+    settings: LambdaSettings,
+    props: {
+      lambdaLayers: LambdaLayers;
+      vpc: ec2.IVpc;
+      envType: EnvType;
+      envVars: Record<string, string>;
+      sentryDsn: string | undefined;
+      alarmAction: SnsAction | undefined;
+      systemRootOID: string;
+      surescriptsReplicaBucket: s3.Bucket;
+      pharmacyConversionBucket?: s3.Bucket;
+    }
+  ) {
+    const { name, entry, lambda: lambdaSettings } = settings;
+
+    const { lambdaLayers, vpc, envType, envVars, sentryDsn, alarmAction, systemRootOID } = props;
+
+    const lambda = createLambda({
+      ...lambdaSettings,
+      stack: this,
+      name,
+      entry,
+      envType,
+      runtime: Runtime.NODEJS_20_X,
+      envVars: {
+        ...envVars,
+        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+        SYSTEM_ROOT_OID: systemRootOID,
+      },
+      layers: [lambdaLayers.shared],
+      vpc,
+      alarmSnsAction: alarmAction,
+    });
+
+    return { lambda };
   }
 
   private setupLambdaAndQueue<T extends keyof SurescriptsSettings>(

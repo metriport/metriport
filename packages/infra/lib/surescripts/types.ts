@@ -3,14 +3,15 @@ import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
 import { Queue } from "aws-cdk-lib/aws-sqs";
 
 export type SurescriptsAssets = {
-  synchronizeSftpLambda: Lambda;
-  synchronizeSftpQueue: Queue;
+  sftpActionLambda: Lambda;
   sendPatientRequestLambda: Lambda;
   sendPatientRequestQueue: Queue;
-  receiveVerificationResponseLambda: Lambda;
-  receiveVerificationResponseQueue: Queue;
-  receiveFlatFileResponseLambda: Lambda;
-  receiveFlatFileResponseQueue: Queue;
+  sendBatchRequestLambda: Lambda;
+  sendBatchRequestQueue: Queue;
+  receiveVerificationLambda: Lambda;
+  receiveVerificationQueue: Queue;
+  receiveResponseLambda: Lambda;
+  receiveResponseQueue: Queue;
   surescriptsReplicaBucket: Bucket;
   pharmacyConversionBucket: Bucket;
 };

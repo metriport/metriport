@@ -9,7 +9,6 @@ import { SurescriptsSftpClient } from "@metriport/core/external/surescripts/clie
 import { SurescriptsApi } from "@metriport/core/external/surescripts/api";
 import { SurescriptsSendBatchRequestHandlerDirect } from "@metriport/core/external/surescripts/command/send-batch-request/send-batch-request-direct";
 import { Patient } from "@metriport/shared/domain/patient";
-import { filePathIsInGitRepository } from "./shared";
 
 const program = new Command();
 
@@ -49,10 +48,6 @@ program
   });
 
 async function getPatientsFromCsv(csvData: string): Promise<Patient[]> {
-  if (filePathIsInGitRepository(csvData)) {
-    throw new Error("CSV data file must not be in a git repository");
-  }
-
   return new Promise((resolve, reject) => {
     const patients: Patient[] = [];
     fs.createReadStream(csvData)
