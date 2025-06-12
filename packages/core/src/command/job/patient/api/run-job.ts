@@ -7,7 +7,6 @@ import { JobBaseParams } from "./shared";
 
 export type RunJobParams = JobBaseParams & {
   jobType: string;
-  payload: Record<string, unknown>;
 };
 
 /**
@@ -16,16 +15,15 @@ export type RunJobParams = JobBaseParams & {
  * @param jobId - The job ID.
  * @param cxId - The CX ID.
  * @param jobType - The job type.
- * @param payload - The payload to send with the request.
  */
-export async function runJob({ jobId, cxId, jobType, payload }: RunJobParams): Promise<void> {
+export async function runJob({ jobId, cxId, jobType }: RunJobParams): Promise<void> {
   const { log, debug } = out(`completeJob - jobId ${jobId} cxId ${cxId} jobType ${jobType}`);
   const api = axios.create({ baseURL: Config.getApiUrl() });
   const queryParams = new URLSearchParams({ cxId });
   const runJobUrl = `/internal/patient/job/${jobType}/${jobId}/run?${queryParams.toString()}`;
   try {
     const response = await executeWithNetworkRetries(async () => {
-      return api.post(runJobUrl, payload);
+      return api.post(runJobUrl);
     });
     logAxiosResponse(runJobUrl, response, debug);
   } catch (error) {

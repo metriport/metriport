@@ -20,8 +20,11 @@ import { updatePatientJobTotal } from "../../../command/job/patient/update-total
 import { requestLogger } from "../../helpers/request-logger";
 import { getUUIDFrom } from "../../schemas/uuid";
 import { asyncHandler, getFrom, getFromQuery, getFromQueryOrFail } from "../../util";
+import ehrRouter from "./patient-job/ehr";
 
 const router = Router();
+
+router.use("/", ehrRouter);
 
 /**
  * POST /internal/patient/job/start
