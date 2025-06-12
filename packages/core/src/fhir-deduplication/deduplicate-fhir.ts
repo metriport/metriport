@@ -4,7 +4,7 @@ import {
   buildCompleteBundleEntry,
   extractFhirTypesFromBundle,
   initExtractedFhirTypes,
-} from "../external/fhir/shared/bundle";
+} from "../external/fhir/bundle/bundle";
 import { capture } from "../util";
 import { deduplicateAllergyIntolerances } from "./resources/allergy-intolerance";
 import { deduplicateCompositions } from "./resources/composition";

@@ -128,7 +128,7 @@ describe("countResourcesOnS3", () => {
     expect(keys.length).toEqual(2);
     const resAllergies = res.resources.AllergyIntolerance;
     expect(resAllergies).toBeTruthy();
-    if (!resAllergies) throw new Error("AllergyIntollerances not found");
+    if (!resAllergies) throw new Error("AllergyIntolerances not found");
     expect(resAllergies).toEqual(allergies.length);
     const resMedicationReqs = res.resources.MedicationRequest;
     expect(resMedicationReqs).toBeTruthy();

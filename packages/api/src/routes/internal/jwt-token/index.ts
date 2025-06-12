@@ -4,6 +4,7 @@ import canvas from "./canvas";
 import eclinicalworks from "./eclinicalworks";
 import elation from "./elation";
 import healthie from "./healthie";
+import token from "./token";
 
 const routes = Router();
 
@@ -13,5 +14,8 @@ routes.use("/canvas", canvas);
 routes.use("/elation", elation);
 routes.use("/healthie", healthie);
 routes.use("/eclinicalworks", eclinicalworks);
+
+// Shared -- MUST GO LAST
+routes.use("/", token);
 
 export default routes;

@@ -25,6 +25,17 @@ export class MedicationAdministrationToString
       hasMinimumData = true;
     }
 
+    if (administration.statusReason) {
+      const statusReasonStr = formatCodeableConcepts({
+        concepts: administration.statusReason,
+        label: "Status Reason",
+        isDebug,
+      });
+      if (statusReasonStr) {
+        parts.push(statusReasonStr);
+      }
+    }
+
     const effectivePeriodStr = formatPeriod({
       period: administration.effectivePeriod,
       label: "Effective Period",

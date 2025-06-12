@@ -3,8 +3,12 @@ import { EhrSources } from "@metriport/shared";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
-import { createCondition } from "../../../external/ehr/canvas/command/create-condition";
 import { syncCanvasPatientIntoMetriport } from "../../../external/ehr/canvas/command/sync-patient";
+import { writeAllergyToFhir } from "../../../external/ehr/canvas/command/write-back/allergy";
+import { writeConditionToFhir } from "../../../external/ehr/canvas/command/write-back/condition";
+import { writeImmunizationToFhir } from "../../../external/ehr/canvas/command/write-back/immunization";
+import { writeMedicationToFhir } from "../../../external/ehr/canvas/command/write-back/medication";
+import { writeVitalsToFhir } from "../../../external/ehr/canvas/command/write-back/vitals";
 import {
   getLatestResourceDiffBundlesJobPayload,
   getResourceDiffBundlesJobPayload,
@@ -94,6 +98,57 @@ router.post(
 );
 
 /**
+ * GET /ehr/canvas/patient/:id/resource/diff/latest
+ *
+ * Retrieves the latest resource diff job and pre-signed URLs for the bundles if completed
+ * @param req.params.id The ID of Canvas Patient.
+ * @returns Resource diff job and pre-signed URLs for the bundles if completed
+ */
+router.get(
+  "/:id/resource/diff/latest",
+  handleParams,
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getCxIdOrFail(req);
+    const canvasPatientId = getFrom("params").orFail("id", req);
+    const bundle = await getLatestResourceDiffBundlesJobPayload({
+      ehr: EhrSources.canvas,
+      cxId,
+      ehrPatientId: canvasPatientId,
+      bundleType: BundleType.RESOURCE_DIFF_METRIPORT_ONLY,
+    });
+    return res.status(httpStatus.OK).json(bundle);
+  })
+);
+
+/**
+ * GET /ehr/canvas/patient/:id/resource/diff/:jobId
+ *
+ * Retrieves the resource diff job and pre-signed URLs for the bundles if completed
+ * @param req.params.id The ID of Canvas Patient.
+ * @param req.params.jobId The job ID of the job
+ * @returns Resource diff job and pre-signed URLs for the bundles if completed
+ */
+router.get(
+  "/:id/resource/diff/:jobId",
+  handleParams,
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getCxIdOrFail(req);
+    const canvasPatientId = getFrom("params").orFail("id", req);
+    const jobId = getFrom("params").orFail("jobId", req);
+    const bundle = await getResourceDiffBundlesJobPayload({
+      ehr: EhrSources.canvas,
+      cxId,
+      ehrPatientId: canvasPatientId,
+      jobId,
+      bundleType: BundleType.RESOURCE_DIFF_METRIPORT_ONLY,
+    });
+    return res.status(httpStatus.OK).json(bundle);
+  })
+);
+
+/**
  * POST /ehr/canvas/patient/:id/condition
  *
  * Creates a condition
@@ -113,71 +168,138 @@ router.post(
     const canvasPracticeId = getFromQueryOrFail("practiceId", req);
     const canvasPractitionerId = getFromQueryOrFail("practitionerId", req);
     const payload = req.body; // TODO Parse body https://github.com/metriport/metriport-internal/issues/2170
-    const conditionDetails = await createCondition({
+    await writeConditionToFhir({
       cxId,
       canvasPatientId,
       canvasPracticeId,
       canvasPractitionerId,
       condition: payload,
     });
-    return res.status(httpStatus.OK).json(conditionDetails);
+    return res.sendStatus(httpStatus.OK);
   })
 );
 
 /**
- * GET /ehr/canvas/patient/:id/resource/diff/latest
+ * POST /ehr/canvas/patient/:id/allergy
  *
- * Retrieves the latest resource diff job and pre-signed URLs for the bundles if completed
+ * Creates an allergy
  * @param req.params.id The ID of Canvas Patient.
  * @param req.query.practiceId The ID of Canvas Practice.
- * @returns Resource diff job and pre-signed URLs for the bundles if completed
+ * @param req.query.practitionerId The ID of Canvas Practitioner.
+ * @param req.body The FHIR AllergyIntolerance  Resource payload
+ * @returns Canvas API response
  */
-router.get(
-  "/:id/resource/diff/latest",
+router.post(
+  "/:id/allergy",
   handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const canvasPatientId = getFrom("params").orFail("id", req);
     const canvasPracticeId = getFromQueryOrFail("practiceId", req);
-    const bundle = await getLatestResourceDiffBundlesJobPayload({
-      ehr: EhrSources.canvas,
+    const canvasPractitionerId = getFromQueryOrFail("practitionerId", req);
+    const payload = req.body; // TODO Parse body https://github.com/metriport/metriport-internal/issues/2170
+    await writeAllergyToFhir({
       cxId,
-      practiceId: canvasPracticeId,
-      ehrPatientId: canvasPatientId,
-      bundleType: BundleType.RESOURCE_DIFF_METRIPORT_ONLY,
+      canvasPatientId,
+      canvasPracticeId,
+      canvasPractitionerId,
+      allergyIntolerance: payload,
     });
-    return res.status(httpStatus.OK).json(bundle);
+    return res.sendStatus(httpStatus.OK);
   })
 );
 
 /**
- * GET /ehr/canvas/patient/:id/resource/diff/:jobId
+ * POST /ehr/canvas/patient/:id/immunization
  *
- * Retrieves the resource diff job and pre-signed URLs for the bundles if completed
+ * Creates an immunization
  * @param req.params.id The ID of Canvas Patient.
- * @param req.params.jobId The job ID of the job
  * @param req.query.practiceId The ID of Canvas Practice.
- * @returns Resource diff job and pre-signed URLs for the bundles if completed
+ * @param req.query.practitionerId The ID of Canvas Practitioner.
+ * @param req.body The FHIR Immunization Resource payload
+ * @returns Canvas API response
  */
-router.get(
-  "/:id/resource/diff/:jobId",
+router.post(
+  "/:id/immunization",
   handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const canvasPatientId = getFrom("params").orFail("id", req);
     const canvasPracticeId = getFromQueryOrFail("practiceId", req);
-    const jobId = getFrom("params").orFail("jobId", req);
-    const bundle = await getResourceDiffBundlesJobPayload({
-      ehr: EhrSources.canvas,
+    const canvasPractitionerId = getFromQueryOrFail("practitionerId", req);
+    const payload = req.body; // TODO Parse body https://github.com/metriport/metriport-internal/issues/2170
+    await writeImmunizationToFhir({
       cxId,
-      practiceId: canvasPracticeId,
-      ehrPatientId: canvasPatientId,
-      jobId,
-      bundleType: BundleType.RESOURCE_DIFF_METRIPORT_ONLY,
+      canvasPatientId,
+      canvasPracticeId,
+      canvasPractitionerId,
+      immunization: payload,
     });
-    return res.status(httpStatus.OK).json(bundle);
+    return res.sendStatus(httpStatus.OK);
+  })
+);
+
+/**
+ * POST /ehr/canvas/patient/:id/medication
+ *
+ * Creates a medication
+ * @param req.params.id The ID of Canvas Patient.
+ * @param req.query.practiceId The ID of Canvas Practice.
+ * @param req.query.practitionerId The ID of Canvas Practitioner.
+ * @param req.body The FHIR Medication Resource payload
+ * @returns Canvas API response
+ */
+router.post(
+  "/:id/medication",
+  handleParams,
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getCxIdOrFail(req);
+    const canvasPatientId = getFrom("params").orFail("id", req);
+    const canvasPracticeId = getFromQueryOrFail("practiceId", req);
+    const canvasPractitionerId = getFromQueryOrFail("practitionerId", req);
+    const payload = req.body; // TODO Parse body https://github.com/metriport/metriport-internal/issues/2170
+    await writeMedicationToFhir({
+      cxId,
+      canvasPatientId,
+      canvasPracticeId,
+      canvasPractitionerId,
+      medicationWithRefs: payload,
+    });
+    return res.sendStatus(httpStatus.OK);
+  })
+);
+
+/**
+ * POST /ehr/canvas/patient/:id/vitals
+ *
+ * Creates vitals
+ * @param req.params.id The ID of Canvas Patient.
+ * @param req.query.practiceId The ID of Canvas Practice.
+ * @param req.query.practitionerId The ID of Canvas Practitioner.
+ * @param req.body The FHIR Observation Resource payload
+ * @returns Canvas API response
+ */
+router.post(
+  "/:id/vitals",
+  handleParams,
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getCxIdOrFail(req);
+    const canvasPatientId = getFrom("params").orFail("id", req);
+    const canvasPracticeId = getFromQueryOrFail("practiceId", req);
+    const canvasPractitionerId = getFromQueryOrFail("practitionerId", req);
+    const payload = req.body; // TODO Parse body https://github.com/metriport/metriport-internal/issues/2170
+    await writeVitalsToFhir({
+      cxId,
+      canvasPatientId,
+      canvasPracticeId,
+      canvasPractitionerId,
+      vitals: payload,
+    });
+    return res.sendStatus(httpStatus.OK);
   })
 );
 

@@ -1,10 +1,13 @@
 import { Observation, ObservationReferenceRange } from "@medplum/fhirtypes";
 import { FHIRResourceToString } from "../fhir-resource-to-string";
+import { formatAnnotations } from "../shared/annotation";
 import { formatCodeableConcept, formatCodeableConcepts } from "../shared/codeable-concept";
 import { formatIdentifiers } from "../shared/identifier";
+import { formatPeriod } from "../shared/period";
 import { formatQuantity } from "../shared/quantity";
 import { formatReferences } from "../shared/reference";
 import { FIELD_SEPARATOR } from "../shared/separator";
+import { formatTiming } from "../shared/timing";
 
 /**
  * Converts a FHIR Observation resource to a string representation
@@ -69,6 +72,18 @@ export class ObservationToString implements FHIRResourceToString<Observation> {
       );
     }
 
+    const periodStr = formatPeriod({ period: observation.effectivePeriod, isDebug });
+    if (periodStr) parts.push(periodStr);
+
+    const timingStr = formatTiming({ timing: observation.effectiveTiming });
+    if (timingStr) parts.push(timingStr);
+
+    if (observation.effectiveInstant) {
+      parts.push(
+        isDebug ? `Effective: ${observation.effectiveInstant}` : observation.effectiveInstant
+      );
+    }
+
     if (observation.issued) {
       parts.push(isDebug ? `Issued: ${observation.issued}` : observation.issued);
     }
@@ -79,6 +94,30 @@ export class ObservationToString implements FHIRResourceToString<Observation> {
       isDebug,
     });
     if (performerStr) parts.push(performerStr);
+
+    const dataAbsentReasonStr = formatCodeableConcept({
+      concept: observation.dataAbsentReason,
+      label: "Data Absent Reason",
+      isDebug,
+    });
+    if (dataAbsentReasonStr) parts.push(dataAbsentReasonStr);
+
+    const notes = formatAnnotations({ annotations: observation.note, label: "Note", isDebug });
+    if (notes) parts.push(notes);
+
+    const bodySiteStr = formatCodeableConcept({
+      concept: observation.bodySite,
+      label: "Body Site",
+      isDebug,
+    });
+    if (bodySiteStr) parts.push(bodySiteStr);
+
+    const methodStr = formatCodeableConcept({
+      concept: observation.method,
+      label: "Method",
+      isDebug,
+    });
+    if (methodStr) parts.push(methodStr);
 
     return parts.join(FIELD_SEPARATOR);
   }

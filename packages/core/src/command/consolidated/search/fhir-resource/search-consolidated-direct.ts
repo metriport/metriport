@@ -10,7 +10,6 @@ import {
   TXT_FILE_EXTENSION,
   TXT_MIME_TYPE,
 } from "../../../../util/mime";
-import { getConsolidatedPatientData } from "../../consolidated-get";
 import { ingestIfNeeded } from "./ingest-if-needed";
 import {
   SearchConsolidated,
@@ -33,12 +32,7 @@ export class SearchConsolidatedDirect implements SearchConsolidated {
   async search({ patient, query }: SearchConsolidatedParams): Promise<SearchConsolidatedResult> {
     await ingestIfNeeded(patient);
 
-    const searchResult =
-      query != undefined
-        ? await searchPatientConsolidated({ patient, query })
-        : // TODO eng-363 Consider always getting data from OpenSearch, if no query then only filter by cxId and patientId
-          await getConsolidatedPatientData({ patient });
-
+    const searchResult = await searchPatientConsolidated({ patient, query });
     if (!searchResult || !searchResult.entry || searchResult.entry.length < 1) {
       return { resourceCount: 0 };
     }

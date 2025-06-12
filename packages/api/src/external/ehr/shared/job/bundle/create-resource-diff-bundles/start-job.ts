@@ -1,5 +1,6 @@
 import { getSupportedResourcesByEhr } from "@metriport/core/external/ehr/bundle/bundle-shared";
-import { buildEhrRefreshEhrBundlesHandler } from "@metriport/core/external/ehr/bundle/job/create-resource-diff-bundles/steps/refresh/ehr-refresh-ehr-bundles-factory";
+import { isEhrSourceWithClientCredentials } from "@metriport/core/external/ehr/environment";
+import { buildEhrRefreshEhrBundlesHandler } from "@metriport/core/external/ehr/job/create-resource-diff-bundles/steps/refresh/ehr-refresh-ehr-bundles-factory";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { completePatientJob } from "../../../../../../command/job/patient/complete";
 import { createPatientJob } from "../../../../../../command/job/patient/create";
@@ -7,6 +8,7 @@ import { initializePatientJob } from "../../../../../../command/job/patient/init
 import { updatePatientJobTotal } from "../../../../../../command/job/patient/update-total";
 import { getPatientMappingOrFail } from "../../../../../../command/mapping/patient";
 import { getPatientOrFail } from "../../../../../../command/medical/patient/get-patient";
+import { getTwoLeggedClientWithTokenIdAndEnvironment } from "../../../command/clients/get-two-legged-client";
 import {
   StartCreateResourceDiffBundlesJobParams,
   getCreateResourceDiffBundlesJobType,
@@ -57,10 +59,20 @@ export async function startCreateResourceDiffBundlesJob({
   }
   await updatePatientJobTotal({ cxId, jobId, total: resourceTypes.length });
   const ehrResourceDiffHandler = buildEhrRefreshEhrBundlesHandler();
+  let tokenId: string | undefined;
+  if (isEhrSourceWithClientCredentials(ehr)) {
+    const clientWithTokenIdAndEnvironment = await getTwoLeggedClientWithTokenIdAndEnvironment({
+      ehr,
+      cxId,
+      practiceId,
+    });
+    tokenId = clientWithTokenIdAndEnvironment.tokenId;
+  }
   for (const resourceType of resourceTypes) {
     ehrResourceDiffHandler
       .refreshEhrBundles({
         ehr,
+        ...(tokenId ? { tokenId } : {}),
         cxId,
         practiceId,
         metriportPatientId,
