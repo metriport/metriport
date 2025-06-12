@@ -36,13 +36,6 @@ export class SecretsStack extends Stack {
         ...options,
       });
 
-    if (props.config.carequality?.roUsername) {
-      const secretName = props.config.carequality.roUsername;
-      if (secretName === "") throw new Error("RO CQ DB Creds secret name not set");
-      const secret = makeSecret(secretName);
-      logSecretInfo(this, secret, secretName);
-    }
-
     for (const secretName of Object.values(props.config.providerSecretNames)) {
       const secret = makeSecret(secretName);
       logSecretInfo(this, secret, secretName);
@@ -50,6 +43,13 @@ export class SecretsStack extends Stack {
 
     for (const secretName of Object.values<string | undefined>(props.config.cwSecretNames)) {
       if (!secretName || !secretName.trim().length) continue;
+      const secret = makeSecret(secretName);
+      logSecretInfo(this, secret, secretName);
+    }
+
+    if (props.config.carequality?.roUsername) {
+      const secretName = props.config.carequality.roUsername.trim();
+      if (secretName.length < 1) throw new Error("RO CQ DB Creds secret name not set");
       const secret = makeSecret(secretName);
       logSecretInfo(this, secret, secretName);
     }
