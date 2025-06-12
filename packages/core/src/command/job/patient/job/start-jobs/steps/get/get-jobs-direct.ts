@@ -57,7 +57,6 @@ async function getJobsWithControlTimeout({
   const jobCutoffDate = runDate ?? buildDayjs().toDate();
 
   try {
-    // Run the table count until it either times out, or all the results are in the database
     const raceResult = await Promise.race([
       controlDuration(
         CONTROL_TIMEOUT.asMilliseconds(),
