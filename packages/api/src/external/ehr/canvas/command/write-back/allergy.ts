@@ -1,24 +1,24 @@
-import { Condition } from "@medplum/fhirtypes";
-import { createCanvasClient } from "../shared";
+import { AllergyIntolerance } from "@medplum/fhirtypes";
+import { createCanvasClient } from "../../shared";
 
-export async function createCondition({
+export async function writeAllergyToFhir({
   cxId,
   canvasPatientId,
   canvasPracticeId,
   canvasPractitionerId,
-  condition,
+  allergyIntolerance,
 }: {
   cxId: string;
   canvasPatientId: string;
   canvasPracticeId: string;
   canvasPractitionerId: string;
-  condition: Condition;
+  allergyIntolerance: AllergyIntolerance;
 }): Promise<void> {
   const api = await createCanvasClient({ cxId, practiceId: canvasPracticeId });
-  return await api.createCondition({
+  await api.createAllergyIntolerance({
     cxId,
     patientId: canvasPatientId,
     practitionerId: canvasPractitionerId,
-    condition,
+    allergyIntolerance,
   });
 }

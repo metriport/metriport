@@ -1,10 +1,10 @@
+import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
-import { Request, Response } from "express";
 import { syncElationPatientIntoMetriport } from "../../../external/ehr/elation/command/sync-patient";
+import { handleParams } from "../../helpers/handle-params";
 import { requestLogger } from "../../helpers/request-logger";
 import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../../util";
-import { handleParams } from "../../helpers/handle-params";
 import { processEhrPatientId } from "../shared";
 import { tokenEhrPatientIdQueryParam } from "./auth/middleware";
 

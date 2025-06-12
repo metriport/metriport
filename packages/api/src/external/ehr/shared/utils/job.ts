@@ -14,7 +14,6 @@ export type StartCreateResourceDiffBundlesJobParams = {
 export type GetResourceDiffBundlesJobPayloadParams = {
   ehr: EhrSource;
   cxId: string;
-  practiceId: string;
   ehrPatientId: string;
   jobId: string;
   bundleType: ResourceDiffBundleType;
