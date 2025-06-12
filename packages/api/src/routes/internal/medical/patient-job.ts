@@ -28,7 +28,7 @@ const router = Router();
 router.use("/", patientJobsRouter);
 
 /**
- * POST /internal/patient/job
+ * GET /internal/patient/job
  *
  * Gets the jobs that with filters
  * @param req.query.cxId - The CX ID.
