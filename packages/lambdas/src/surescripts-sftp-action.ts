@@ -9,5 +9,6 @@ capture.init();
 export const handler = capture.wrapHandler(async (event: SftpAction) => {
   const client = await makeSurescriptsClient();
   const handler = new SftpActionDirect(client);
-  await handler.executeAction(event);
+  const result = await handler.executeAction(event);
+  return result;
 });

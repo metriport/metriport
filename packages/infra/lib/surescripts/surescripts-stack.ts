@@ -320,7 +320,16 @@ export class SurescriptsNestedStack extends NestedStack {
   ) {
     const { name, entry, lambda: lambdaSettings } = settings;
 
-    const { lambdaLayers, vpc, envType, envVars, sentryDsn, alarmAction, systemRootOID } = props;
+    const {
+      lambdaLayers,
+      vpc,
+      envType,
+      envVars,
+      sentryDsn,
+      alarmAction,
+      systemRootOID,
+      surescriptsReplicaBucket,
+    } = props;
 
     const lambda = createLambda({
       ...lambdaSettings,
@@ -338,6 +347,8 @@ export class SurescriptsNestedStack extends NestedStack {
       vpc,
       alarmSnsAction: alarmAction,
     });
+
+    surescriptsReplicaBucket.grantReadWrite(lambda);
 
     return { lambda };
   }
