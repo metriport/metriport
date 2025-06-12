@@ -18,7 +18,7 @@ export const patientLoadHeaderSchema = z.object({
   senderId: z.string().length(15),
   senderPassword: z.string().min(1).max(10),
   receiverId: z.string().length(15),
-  patientPopulationId: z.string().length(46), // 10 character transmission ID + 36 character UUID
+  patientPopulationId: z.string().min(1).max(64),
   lookBackInMonths: z.number().min(1).max(12).optional().default(12),
   transmissionId: z.string().length(10),
   transmissionDate: z.date(),
