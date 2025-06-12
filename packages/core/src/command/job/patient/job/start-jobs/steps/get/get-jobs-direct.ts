@@ -125,5 +125,7 @@ async function getJobsFromDb({
       jobsTable,
       context: "patient.getJobs.direct.getJobsFromDb",
     });
+  } finally {
+    await sequelize.close();
   }
 }
