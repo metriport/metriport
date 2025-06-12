@@ -65,8 +65,9 @@ export class SecretsStack extends Stack {
     }
 
     const jobsRoUsernameSecretName = props.config.jobs.roUsername.trim();
-    if (jobsRoUsernameSecretName.length < 1)
+    if (jobsRoUsernameSecretName.length < 1) {
       throw new Error("Jobs RO DB Creds secret name not set");
+    }
     const jobsRoUsernameSecret = makeSecret(jobsRoUsernameSecretName);
     logSecretInfo(this, jobsRoUsernameSecret, jobsRoUsernameSecretName);
 
