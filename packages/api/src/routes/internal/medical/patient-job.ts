@@ -9,6 +9,7 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { z } from "zod";
+import { getPatientJobs } from "../../../command/job/patient/get";
 import { startJobs } from "../../../command/job/patient/scheduler/start-jobs";
 import { cancelPatientJob } from "../../../command/job/patient/status/cancel";
 import { completePatientJob } from "../../../command/job/patient/status/complete";
@@ -20,11 +21,51 @@ import { updatePatientJobTotal } from "../../../command/job/patient/update/updat
 import { requestLogger } from "../../helpers/request-logger";
 import { getUUIDFrom } from "../../schemas/uuid";
 import { asyncHandler, getFrom, getFromQuery, getFromQueryOrFail } from "../../util";
-import ehrRouter from "./patient-job/ehr";
+import patientJobsRouter from "./patient-jobs";
 
 const router = Router();
 
-router.use("/", ehrRouter);
+router.use("/", patientJobsRouter);
+
+/**
+ * POST /internal/patient/job
+ *
+ * Gets the jobs that with filters
+ * @param req.query.cxId - The CX ID.
+ * @param req.query.patientId - The patient ID. Optional.
+ * @param req.query.jobType - The job type. Optional.
+ * @param req.query.jobGroupId - The job group ID. Optional.
+ * @param req.query.status - The status of the job. Optional.
+ * @param req.query.scheduledAfter - The scheduled after date.
+ * @param req.query.scheduledBefore - The scheduled before date.
+ * @returns 200 OK
+ */
+router.get(
+  "/",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getFromQueryOrFail("cxId", req);
+    const patientId = getFromQuery("patientId", req);
+    const jobType = getFromQuery("jobType", req);
+    const jobGroupId = getFromQuery("jobGroupId", req);
+    const status = getFromQuery("status", req);
+    const scheduledAfter = getFromQuery("scheduledAfter", req);
+    const scheduledBefore = getFromQuery("scheduledBefore", req);
+    if (status && !isValidJobStatus(status)) {
+      throw new BadRequestError("Status must be a valid job status");
+    }
+    const jobs = await getPatientJobs({
+      cxId,
+      patientId,
+      jobType,
+      jobGroupId,
+      status: status as JobStatus,
+      scheduledAfter: scheduledAfter ? buildDayjs(scheduledAfter).toDate() : undefined,
+      scheduledBefore: scheduledBefore ? buildDayjs(scheduledBefore).toDate() : undefined,
+    });
+    return res.status(httpStatus.OK).json({ jobs });
+  })
+);
 
 /**
  * POST /internal/patient/job/scheduler/start

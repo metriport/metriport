@@ -54,14 +54,19 @@ export async function getPatientJobs({
       ...(jobType ? { jobType } : {}),
       ...(jobGroupId ? { jobGroupId } : {}),
       ...(statuses.length > 0 ? { status: { [Op.in]: statuses } } : {}),
-      ...(scheduledAfter ? { scheduledAt: { [Op.gte]: scheduledAfter, [Op.not]: undefined } } : {}),
-      ...(scheduledBefore
-        ? { scheduledAt: { [Op.lte]: scheduledBefore, [Op.not]: undefined } }
-        : {}),
+      ...(scheduledAfter ? { scheduledAt: { [Op.gte]: scheduledAfter } } : {}),
+      ...(scheduledBefore ? { scheduledAt: { [Op.lte]: scheduledBefore } } : {}),
     },
   });
   return jobs.map(job => job.dataValues);
 }
+
+export type ListLatestPatientJobsParams = Pick<
+  PatientJob,
+  "cxId" | "patientId" | "jobType" | "jobGroupId"
+> & {
+  status?: JobStatus | JobStatus[];
+};
 
 export async function getLatestPatientJob({
   cxId,
@@ -69,8 +74,7 @@ export async function getLatestPatientJob({
   jobType,
   jobGroupId,
   status,
-}: Required<Pick<ListPatientJobsParams, "cxId" | "patientId" | "jobType" | "jobGroupId">> &
-  Pick<ListPatientJobsParams, "status">): Promise<PatientJob | undefined> {
+}: ListLatestPatientJobsParams): Promise<PatientJob | undefined> {
   const statuses = getStatusFromParams(status);
   const jobs = await PatientJobModel.findAll({
     where: {
