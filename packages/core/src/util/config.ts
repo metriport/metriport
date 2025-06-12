@@ -253,10 +253,10 @@ export class Config {
   static getSurescriptsSendBatchRequestQueueUrl(): string {
     return getEnvVarOrFail("SURESCRIPTS_SEND_BATCH_REQUEST_QUEUE_URL");
   }
-  static getSurescriptsReceiveVerificationResponseQueueUrl(): string {
-    return getEnvVarOrFail("SURESCRIPTS_RECEIVE_VERIFICATION_RESPONSE_QUEUE_URL");
+  static getSurescriptsReceiveVerificationQueueUrl(): string {
+    return getEnvVarOrFail("SURESCRIPTS_RECEIVE_VERIFICATION_QUEUE_URL");
   }
-  static getSurescriptsReceiveFlatFileResponseQueueUrl(): string {
-    return getEnvVarOrFail("SURESCRIPTS_RECEIVE_FLAT_FILE_RESPONSE_QUEUE_URL");
+  static getSurescriptsReceiveResponseQueueUrl(): string {
+    return getEnvVarOrFail("SURESCRIPTS_RECEIVE_RESPONSE_QUEUE_URL");
   }
 }

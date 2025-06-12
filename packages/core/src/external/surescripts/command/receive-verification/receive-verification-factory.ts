@@ -11,6 +11,6 @@ export function buildReceiveVerificationHandler(
     return new SurescriptsReceiveVerificationHandlerDirect(client ?? new SurescriptsSftpClient());
   }
   return new SurescriptsReceiveVerificationHandlerCloud(
-    Config.getSurescriptsReceiveVerificationResponseQueueUrl()
+    Config.getSurescriptsReceiveVerificationQueueUrl()
   );
 }

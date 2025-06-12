@@ -10,7 +10,5 @@ export function buildReceiveResponseHandler(
   if (Config.isDev()) {
     return new SurescriptsReceiveResponseHandlerDirect(client ?? new SurescriptsSftpClient());
   }
-  return new SurescriptsReceiveResponseHandlerCloud(
-    Config.getSurescriptsReceiveFlatFileResponseQueueUrl()
-  );
+  return new SurescriptsReceiveResponseHandlerCloud(Config.getSurescriptsReceiveResponseQueueUrl());
 }
