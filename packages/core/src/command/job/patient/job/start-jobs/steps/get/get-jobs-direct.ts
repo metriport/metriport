@@ -5,6 +5,7 @@ import { patientJobRawColumnNames } from "@metriport/shared/domain/job/patient-j
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { QueryTypes, Sequelize } from "sequelize";
+import { executeAsynchronously } from "../../../../../../../util";
 import { controlDuration } from "../../../../../../../util/race-control";
 import { initDbPool } from "../../../../../../../util/sequelize";
 import { buildRunJobHandler } from "../run/run-job-factory";
@@ -13,6 +14,7 @@ import { GetJobsHandler, GetJobsRequest } from "./get-jobs";
 dayjs.extend(duration);
 
 const PATIENT_JOB_TABLE_NAME = "patient_job";
+const MAX_PARALLEL_EXECUTIONS = 10;
 
 const CONTROL_TIMEOUT = dayjs.duration({ minutes: 15 });
 
@@ -27,15 +29,14 @@ export class GetJobsDirect implements GetJobsHandler {
       dbCreds: this.dbCreds,
       ...request,
     });
-    for (const jobRaw of jobsRaw) {
-      const id = jobRaw[patientJobRawColumnNames.id] as string;
-      const cxId = jobRaw[patientJobRawColumnNames.cxId] as string;
-      const jobType = jobRaw[patientJobRawColumnNames.jobType] as string;
-      if (!id || !cxId || !jobType) {
-        throw new MetriportError(`Invalid job: ${JSON.stringify(jobRaw)}`);
-      }
-      await this.next.runJob({ id, cxId, jobType });
-    }
+    const jobs = jobsRaw.map(jobRaw => ({
+      id: jobRaw[patientJobRawColumnNames.id] as string,
+      cxId: jobRaw[patientJobRawColumnNames.cxId] as string,
+      jobType: jobRaw[patientJobRawColumnNames.jobType] as string,
+    }));
+    await executeAsynchronously(jobs, job => this.next.runJob(job), {
+      numberOfParallelExecutions: MAX_PARALLEL_EXECUTIONS,
+    });
   }
 }
 
