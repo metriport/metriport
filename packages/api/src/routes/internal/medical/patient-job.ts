@@ -9,14 +9,14 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { z } from "zod";
-import { cancelPatientJob } from "../../../command/job/patient/cancel";
-import { completePatientJob } from "../../../command/job/patient/complete";
-import { failPatientJob } from "../../../command/job/patient/fail";
-import { initializePatientJob } from "../../../command/job/patient/initialize";
-import { setPatientJobEntryStatus } from "../../../command/job/patient/set-entry-status";
-import { startJobs } from "../../../command/job/patient/start-jobs";
-import { updatePatientJobRuntimeData } from "../../../command/job/patient/update-runtime-data";
-import { updatePatientJobTotal } from "../../../command/job/patient/update-total";
+import { startJobs } from "../../../command/job/patient/scheduler/start-jobs";
+import { cancelPatientJob } from "../../../command/job/patient/status/cancel";
+import { completePatientJob } from "../../../command/job/patient/status/complete";
+import { failPatientJob } from "../../../command/job/patient/status/fail";
+import { initializePatientJob } from "../../../command/job/patient/status/initialize";
+import { setPatientJobEntryStatus } from "../../../command/job/patient/update/set-entry-status";
+import { updatePatientJobRuntimeData } from "../../../command/job/patient/update/update-runtime-data";
+import { updatePatientJobTotal } from "../../../command/job/patient/update/update-total";
 import { requestLogger } from "../../helpers/request-logger";
 import { getUUIDFrom } from "../../schemas/uuid";
 import { asyncHandler, getFrom, getFromQuery, getFromQueryOrFail } from "../../util";
@@ -27,7 +27,7 @@ const router = Router();
 router.use("/", ehrRouter);
 
 /**
- * POST /internal/patient/job/start
+ * POST /internal/patient/job/scheduler/start
  *
  * Starts the jobs that are scheduled before the given date.
  * @param req.query.runDate - The run date. Optional.
@@ -40,7 +40,7 @@ router.use("/", ehrRouter);
  * @returns 200 OK
  */
 router.post(
-  "/start",
+  "/scheduler/start",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const runDate = getFromQuery("runDate", req);

@@ -3,7 +3,7 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { z } from "zod";
-import { initializePatientJob } from "../../../../command/job/patient/initialize";
+import { initializePatientJob } from "../../../../command/job/patient/status/initialize";
 import { runJob } from "../../../../external/ehr/shared/job/bundle/create-resource-diff-bundles/run-job";
 import { requestLogger } from "../../../helpers/request-logger";
 import { asyncHandler, getFrom, getFromQueryOrFail } from "../../../util";

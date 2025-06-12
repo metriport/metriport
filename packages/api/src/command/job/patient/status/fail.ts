@@ -1,8 +1,8 @@
 import { out } from "@metriport/core/util/log";
 import { PatientJob, validateNewJobStatus } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
-import { FailJobParams } from "../shared";
-import { getPatientJobModelOrFail } from "./get";
+import { FailJobParams } from "../../shared";
+import { getPatientJobModelOrFail } from "../get";
 
 /**
  * Cancels a patient job.

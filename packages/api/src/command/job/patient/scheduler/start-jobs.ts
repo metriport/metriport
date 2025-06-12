@@ -1,6 +1,6 @@
 import { buildGetJobsHandler } from "@metriport/core/command/job/patient/job/start-jobs/steps/get/get-jobs-factory";
 import { processAsyncError } from "@metriport/core/util/error/shared";
-import { StartJobsParams } from "../shared";
+import { StartJobsParams } from "../../shared";
 
 /**
  * Runs the patient jobs scheduled before the given date.

@@ -2,8 +2,8 @@ import { getSupportedResourcesByEhr } from "@metriport/core/external/ehr/bundle/
 import { isEhrSourceWithClientCredentials } from "@metriport/core/external/ehr/environment";
 import { buildEhrRefreshEhrBundlesHandler } from "@metriport/core/external/ehr/job/create-resource-diff-bundles/steps/refresh/ehr-refresh-ehr-bundles-factory";
 import { processAsyncError } from "@metriport/core/util/error/shared";
-import { completePatientJob } from "../../../../../../command/job/patient/complete";
-import { updatePatientJobTotal } from "../../../../../../command/job/patient/update-total";
+import { completePatientJob } from "../../../../../../command/job/patient/status/complete";
+import { updatePatientJobTotal } from "../../../../../../command/job/patient/update/update-total";
 import { getTwoLeggedClientWithTokenIdAndEnvironment } from "../../../command/clients/get-two-legged-client";
 import { RunCreateResourceDiffBundlesJobParams } from "../../../utils/job";
 

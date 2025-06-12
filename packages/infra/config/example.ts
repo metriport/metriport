@@ -232,8 +232,8 @@ export const config: EnvConfigNonSandbox = {
   jobs: {
     roUsername: "jobs-ro-username",
     patientJobsTable: "patient_job",
-    startPatientJobsPollingScheduleExpression: "0/5 * * * ? *",
-    startPatientJobsPollingUrl: "/internal/patient/job/start",
+    startPatientJobsSchedulerScheduleExpression: "0/5 * * * ? *",
+    startPatientJobsSchedulerUrl: "/internal/patient/job/scheduler/start",
   },
 };
 export default config;

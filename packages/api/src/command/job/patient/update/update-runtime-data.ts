@@ -1,6 +1,6 @@
 import { PatientJob } from "@metriport/shared";
-import { UpdateJobRuntimeDataParams } from "../shared";
-import { getPatientJobModelOrFail } from "./get";
+import { UpdateJobRuntimeDataParams } from "../../shared";
+import { getPatientJobModelOrFail } from "../get";
 
 /**
  * Updates a patient job's total.

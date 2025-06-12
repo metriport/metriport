@@ -1,9 +1,9 @@
 import { MetriportError } from "@metriport/shared";
 import { patientJobRawColumnNames } from "@metriport/shared/domain/job/patient-job";
 import { IncrementDecrementOptionsWithBy } from "sequelize";
-import { PatientJobModel } from "../../../models/patient-job";
-import { UpdateJobCountParams, UpdateJobCountResponse } from "../shared";
-import { completePatientJob } from "./complete";
+import { PatientJobModel } from "../../../../models/patient-job";
+import { UpdateJobCountParams, UpdateJobCountResponse } from "../../shared";
+import { completePatientJob } from "../status/complete";
 
 /**
  * Sets the status of a patient job entry.
