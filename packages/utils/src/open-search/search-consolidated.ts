@@ -14,12 +14,14 @@ dayjs.extend(duration);
 
 /**
  * Script to search a patient's consolidated resources using OpenSearch search.
+ *
+ * If you want to test the `paginatedSearch` function, use the `paginated-search.ts` script.
  */
 
+const cxId = getEnvVarOrFail("CX_ID");
 const patientId = getEnvVarOrFail("PATIENT_ID");
 const apiKey = getEnvVarOrFail("API_KEY");
 const apiUrl = getEnvVarOrFail("API_URL");
-const cxId = getEnvVarOrFail("CX_ID");
 
 const metriportAPI = new MetriportMedicalApi(apiKey, {
   baseAddress: apiUrl,
@@ -46,7 +48,7 @@ async function main() {
     query: searchQuery,
   });
   const searchResultIds = searchResult.entry?.map(r => r.resource?.id) ?? [];
-  console.log("Search result: ", searchResultIds.join(", "));
+  console.log("Search result count: ", searchResultIds.length);
 
   console.log(`>>> Done in ${elapsedTimeAsStr(startedAt)}`);
 }
