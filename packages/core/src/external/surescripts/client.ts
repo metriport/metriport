@@ -147,7 +147,8 @@ export class SurescriptsSftpClient extends SftpClient {
 
     const verificationCandidates = await this.listWithPrefixThroughReplica(
       "from_surescripts",
-      requestFileName
+      requestFileName,
+      { disconnect: false }
     );
     const verificationFileName = verificationCandidates.find(candidate => {
       const parsedFileName = parseVerificationFileName(candidate);
@@ -157,6 +158,7 @@ export class SurescriptsSftpClient extends SftpClient {
     if (verificationFileName) {
       const content = await this.readThroughReplica(verificationFileName, {
         decompress: verificationFileName.endsWith(".gz.rsp"),
+        connect: false,
       });
       return {
         fileName: verificationFileName,
@@ -174,7 +176,8 @@ export class SurescriptsSftpClient extends SftpClient {
   async receiveResponse(transmissionId: string): Promise<SftpFile | undefined> {
     const responseFileCandidates = await this.listWithPrefixThroughReplica(
       "from_surescripts",
-      transmissionId
+      transmissionId,
+      { disconnect: false }
     );
     const responseFileSuffix = makeResponseFileSuffix(transmissionId);
     const responseFile = responseFileCandidates.find(candidate => {
@@ -184,6 +187,7 @@ export class SurescriptsSftpClient extends SftpClient {
     if (responseFile) {
       const content = await this.readThroughReplica(responseFile, {
         decompress: responseFile.endsWith(".gz"),
+        connect: false,
       });
       return {
         fileName: responseFile,

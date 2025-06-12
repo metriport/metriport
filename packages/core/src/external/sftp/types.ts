@@ -18,6 +18,12 @@ export interface SftpReplica {
   hasFile(replicaPath: string): Promise<boolean>;
 }
 
+export interface SftpReplicaActionOptions {
+  connect?: boolean; // default true
+  disconnect?: boolean; // default true
+  overwrite?: boolean; // default false
+}
+
 export interface SftpReadOptions {
   decompress?: boolean;
 }
