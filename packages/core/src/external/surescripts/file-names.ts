@@ -8,11 +8,6 @@ export function makeRequestFileName(transmissionId: string): string {
   return ["Metriport_PMA_", localDate, "-", transmissionId].join("");
 }
 
-export function makeResponseFileSuffix(transmissionId: string): string {
-  const transmissionTimestamp = buildDayjsFromId(transmissionId).format("YYYYMMDDHHmmss");
-  return ["_", transmissionTimestamp, ".gz"].join("");
-}
-
 export function parseVerificationFileName(remoteFileName: string):
   | {
       requestFileName: string;

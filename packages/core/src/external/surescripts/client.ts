@@ -10,11 +10,7 @@ import {
 } from "./types";
 import { generatePatientRequestFile, generateBatchRequestFile } from "./file-generator";
 import { MetriportError } from "@metriport/shared";
-import {
-  makeRequestFileName,
-  makeResponseFileSuffix,
-  parseVerificationFileName,
-} from "./file-names";
+import { makeRequestFileName, parseVerificationFileName } from "./file-names";
 
 export interface SurescriptsSftpConfig extends Partial<Omit<SftpConfig, "password">> {
   senderId?: string;
@@ -179,11 +175,8 @@ export class SurescriptsSftpClient extends SftpClient {
       transmissionId,
       { disconnect: false }
     );
-    const responseFileSuffix = makeResponseFileSuffix(transmissionId);
-    const responseFile = responseFileCandidates.find(candidate => {
-      return candidate.endsWith(responseFileSuffix);
-    });
 
+    const responseFile = responseFileCandidates[0];
     if (responseFile) {
       const content = await this.readThroughReplica(`/from_surescripts/${responseFile}`, {
         decompress: responseFile.endsWith(".gz"),
