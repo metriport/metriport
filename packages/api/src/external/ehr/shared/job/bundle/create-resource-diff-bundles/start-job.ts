@@ -1,4 +1,6 @@
+import { BadRequestError } from "../../../../../../../../shared/dist";
 import { createPatientJob } from "../../../../../../command/job/patient/create";
+import { getLatestPatientJob } from "../../../../../../command/job/patient/get";
 import { getPatientMappingOrFail } from "../../../../../../command/mapping/patient";
 import { getPatientOrFail } from "../../../../../../command/medical/patient/get-patient";
 import {
@@ -34,13 +36,29 @@ export async function startCreateResourceDiffBundlesJob({
     id: patientMapping.patientId,
   });
   const metriportPatientId = metriportPatient.id;
+  const jobType = getCreateResourceDiffBundlesJobType(ehr);
+  const jobGroupId = ehrPatientId;
+  const runningJob = await getLatestPatientJob({
+    cxId,
+    patientId: metriportPatientId,
+    jobType,
+    jobGroupId,
+    status: ["waiting", "processing"],
+  });
+  if (runningJob) {
+    throw new BadRequestError("Only one job can be running at a time", undefined, {
+      cxId,
+      metriportPatientId,
+      ehrPatientId,
+      runningJobId: runningJob.id,
+    });
+  }
   const job = await createPatientJob({
     cxId,
     patientId: metriportPatientId,
-    jobType: getCreateResourceDiffBundlesJobType(ehr),
-    jobGroupId: ehrPatientId,
+    jobType,
+    jobGroupId,
     requestId,
-    limitedToOneRunningJob: true,
     scheduledAt: undefined,
     paramsOps: {
       practiceId,
