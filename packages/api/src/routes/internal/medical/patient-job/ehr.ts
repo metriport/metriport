@@ -6,7 +6,7 @@ import { z } from "zod";
 import { initializePatientJob } from "../../../../command/job/patient/initialize";
 import { runJob } from "../../../../external/ehr/shared/job/bundle/create-resource-diff-bundles/run-job";
 import { requestLogger } from "../../../helpers/request-logger";
-import { asyncHandler, getFromQueryOrFail } from "../../../util";
+import { asyncHandler, getFrom, getFromQueryOrFail } from "../../../util";
 
 const router = Router();
 
@@ -24,12 +24,12 @@ const paramsOpsSchema = z.object({
  * @returns 200 OK
  */
 router.post(
-  "/athenahealth-create-resource-diff-bundles/run",
+  "/athenahealth-create-resource-diff-bundles/:jobId/run",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const ehr = EhrSources.athena;
     const cxId = getFromQueryOrFail("cxId", req);
-    const jobId = getFromQueryOrFail("jobId", req);
+    const jobId = getFrom("params").orFail("jobId", req);
     const job = await initializePatientJob({ cxId, jobId });
     const paramsOps = paramsOpsSchema.parse(job.paramsOps);
     await runJob({
@@ -53,12 +53,12 @@ router.post(
  * @returns 200 OK
  */
 router.post(
-  "/canvas-create-resource-diff-bundles/run",
+  "/canvas-create-resource-diff-bundles/:jobId/run",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const ehr = EhrSources.canvas;
     const cxId = getFromQueryOrFail("cxId", req);
-    const jobId = getFromQueryOrFail("jobId", req);
+    const jobId = getFrom("params").orFail("jobId", req);
     const job = await initializePatientJob({ cxId, jobId });
     const paramsOps = paramsOpsSchema.parse(job.paramsOps);
     await runJob({
