@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { normalizeGenderSafe } from "../../../../domain/gender";
 
 const locationSchema = z.object({
   line1: z.string(),
@@ -14,7 +15,15 @@ export const patientSchema = z.object({
   first_name: z.string().nullable(),
   last_name: z.string().nullable(),
   dob: z.string().nullable(),
-  gender: z.string().nullable(),
+  gender: z
+    .string()
+    .nullable()
+    .transform(gender => {
+      if (!gender) return "U";
+      const normalizedGender = normalizeGenderSafe(gender);
+      if (!normalizedGender) return "U";
+      return normalizedGender;
+    }),
   email: z.string().nullable(),
   phone_number: z.string().nullable(),
   locations: locationSchema.array(),
