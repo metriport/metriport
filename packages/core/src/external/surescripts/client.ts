@@ -7,6 +7,7 @@ import {
   SurescriptsPatientRequestData,
   SurescriptsBatchRequestData,
   SurescriptsRequesterData,
+  SurescriptsFileIdentifier,
 } from "./types";
 import { generatePatientRequestFile, generateBatchRequestFile } from "./file-generator";
 import { MetriportError } from "@metriport/shared";
@@ -154,7 +155,7 @@ export class SurescriptsSftpClient extends SftpClient {
         requestFileName
       );
       if (verificationFileName) {
-        return this.readFromSurescriptsSftpDirectory(verificationFileName);
+        return await this.readFromSurescriptsSftpDirectory(verificationFileName);
       }
       return undefined;
     } finally {
@@ -198,17 +199,14 @@ export class SurescriptsSftpClient extends SftpClient {
    * @param transmissionId the original request transmission ID
    * @returns the most recent flat file response for the specified transmission
    */
-  async receivePatientResponse({
+  async receiveResponse({
     transmissionId,
-    patientId,
-  }: {
-    transmissionId: string;
-    patientId: string;
-  }): Promise<SftpFile | undefined> {
-    const replicatedResponseFile = await this.findResponseFileNameInReplica(
+    populationOrPatientId,
+  }: SurescriptsFileIdentifier): Promise<SftpFile | undefined> {
+    const replicatedResponseFile = await this.findResponseFileNameInReplica({
       transmissionId,
-      patientId
-    );
+      populationOrPatientId,
+    });
 
     if (replicatedResponseFile) {
       return this.readFromSurescriptsReplica(replicatedResponseFile);
@@ -218,10 +216,10 @@ export class SurescriptsSftpClient extends SftpClient {
       await this.connect();
       const sftpResponseFileName = await this.findResponseFileNameInSftpDirectory({
         transmissionId,
-        populationId: patientId,
+        populationOrPatientId,
       });
       if (sftpResponseFileName) {
-        return this.readFromSurescriptsSftpDirectory(sftpResponseFileName);
+        return await this.readFromSurescriptsSftpDirectory(sftpResponseFileName);
       }
       return undefined;
     } finally {
@@ -234,12 +232,15 @@ export class SurescriptsSftpClient extends SftpClient {
    * @param populationId the original request population ID
    * @returns the response file name if it exists in the replica, undefined otherwise
    */
-  private async findResponseFileNameInReplica(
-    transmissionId: string,
-    populationId: string
-  ): Promise<string | undefined> {
+  private async findResponseFileNameInReplica({
+    transmissionId,
+    populationOrPatientId,
+  }: SurescriptsFileIdentifier): Promise<string | undefined> {
     if (!this.replica) return undefined;
-    const responseFileNamePrefix = makeResponseFileNamePrefix(transmissionId, populationId);
+    const responseFileNamePrefix = makeResponseFileNamePrefix(
+      transmissionId,
+      populationOrPatientId
+    );
     const replicatedFilesWithPrefix = await this.replica.listFileNamesWithPrefix(
       "from_surescripts",
       responseFileNamePrefix
@@ -249,7 +250,7 @@ export class SurescriptsSftpClient extends SftpClient {
       return (
         parsedFileName &&
         parsedFileName.transmissionId === transmissionId &&
-        parsedFileName.populationId === populationId
+        parsedFileName.populationId === populationOrPatientId
       );
     });
   }
@@ -261,16 +262,13 @@ export class SurescriptsSftpClient extends SftpClient {
    */
   private async findResponseFileNameInSftpDirectory({
     transmissionId,
-    populationId,
-  }: {
-    transmissionId: string;
-    populationId: string;
-  }): Promise<string | undefined> {
+    populationOrPatientId,
+  }: SurescriptsFileIdentifier): Promise<string | undefined> {
     const responseFileNameMatches = await this.list("/from_surescripts", file => {
       const parsedFileName = parseResponseFileName(file.name);
       return (
         parsedFileName?.transmissionId === transmissionId &&
-        parsedFileName?.populationId === populationId
+        parsedFileName?.populationId === populationOrPatientId
       );
     });
     return responseFileNameMatches[0];

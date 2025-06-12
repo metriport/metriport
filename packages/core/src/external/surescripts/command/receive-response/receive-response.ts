@@ -1,3 +1,8 @@
+import { SurescriptsFileIdentifier } from "../../types";
+
 export interface SurescriptsReceiveResponseHandler {
-  receiveResponse({ transmissionId }: { transmissionId: string }): Promise<void>;
+  receiveResponse({
+    transmissionId,
+    populationOrPatientId,
+  }: SurescriptsFileIdentifier): Promise<void>;
 }

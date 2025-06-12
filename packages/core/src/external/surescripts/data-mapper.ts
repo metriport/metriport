@@ -6,15 +6,16 @@ import {
   SurescriptsPatientRequestData,
   SurescriptsBatchRequest,
   SurescriptsBatchRequestData,
+  SurescriptsRequester,
 } from "./types";
 import { CustomerData, FacilityData } from "@metriport/shared/domain/customer";
 import { Config } from "../../util/config";
 import { getPatient } from "./api/get-patient";
-import { getPatientIds } from "./api/get-patient-ids";
+import { getPatientIdsForFacility } from "./api/get-patient-ids";
 import { getCustomerData } from "./api/get-customer";
 import { executeAsynchronously } from "../../util/concurrency";
 
-export class SurescriptsApi {
+export class SurescriptsDataMapper {
   axiosInstance: AxiosInstance;
 
   constructor() {
@@ -49,7 +50,7 @@ export class SurescriptsApi {
       throw new MetriportError("Facility not found", undefined, { cxId, facilityId });
     }
 
-    const patientIdsInFacility = await this.getPatientIds(cxId, facilityId);
+    const patientIdsInFacility = await this.getPatientIdsForFacility({ cxId, facilityId });
     const requestedPatientIds = new Set(patientIds);
     const validPatientIds = patientIdsInFacility.filter(id => requestedPatientIds.has(id));
 
@@ -70,8 +71,8 @@ export class SurescriptsApi {
     return facility;
   }
 
-  async getPatientIds(cxId: string, facilityId: string): Promise<string[]> {
-    const { patientIds } = await getPatientIds({ cxId, facilityId }, this.axiosInstance);
+  async getPatientIdsForFacility({ cxId, facilityId }: SurescriptsRequester): Promise<string[]> {
+    const { patientIds } = await getPatientIdsForFacility({ cxId, facilityId }, this.axiosInstance);
     return patientIds;
   }
 

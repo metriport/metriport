@@ -1,7 +1,7 @@
-import { capture } from "./shared/capture";
-import { makeSurescriptsClient } from "./shared/surescripts";
 import { SurescriptsBatchRequest } from "@metriport/core/external/surescripts/types";
 import { SurescriptsSendBatchRequestHandlerDirect } from "@metriport/core/external/surescripts/command/send-batch-request/send-batch-request-direct";
+import { capture } from "../shared/capture";
+import { makeSurescriptsClient } from "./shared";
 
 capture.init();
 

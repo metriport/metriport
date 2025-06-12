@@ -9,13 +9,14 @@ const program = new Command();
 
 program
   .name("receive-response")
-  .argument("<transmissionId>", "The transfer ID")
+  .argument("<transmissionId>", "The transmission ID")
+  .argument("<populationOrPatientId>", "The population or patient ID")
   .description("Checks for a response from Surescripts")
   .showHelpAfterError()
   .version("1.0.0")
-  .action(async (transmissionId: string) => {
+  .action(async (transmissionId: string, populationOrPatientId: string) => {
     const handler = new SurescriptsReceiveResponseHandlerDirect();
-    await handler.receiveResponse({ transmissionId });
+    await handler.receiveResponse({ transmissionId, populationOrPatientId });
   });
 
 export default program;

@@ -2,6 +2,7 @@ import { executeWithNetworkRetries } from "@metriport/shared";
 import { createUuidFromText } from "@metriport/shared/common/uuid";
 import { Config } from "../../../../util/config";
 import { SQSClient } from "../../../aws/sqs";
+import { SurescriptsFileIdentifier } from "../../types";
 import { SurescriptsReceiveResponseHandler } from "./receive-response";
 
 export class SurescriptsReceiveResponseHandlerCloud implements SurescriptsReceiveResponseHandler {
@@ -15,8 +16,11 @@ export class SurescriptsReceiveResponseHandlerCloud implements SurescriptsReceiv
     this.sqsClient = sqsClient ?? new SQSClient({ region: region ?? Config.getAWSRegion() });
   }
 
-  async receiveResponse({ transmissionId }: { transmissionId: string }): Promise<void> {
-    const payload = JSON.stringify({ transmissionId });
+  async receiveResponse({
+    transmissionId,
+    populationOrPatientId,
+  }: SurescriptsFileIdentifier): Promise<void> {
+    const payload = JSON.stringify({ transmissionId, populationOrPatientId });
     await executeWithNetworkRetries(async () => {
       await this.sqsClient.sendMessageToQueue(
         this.surescriptsReceiveFlatFileResponseQueueUrl,

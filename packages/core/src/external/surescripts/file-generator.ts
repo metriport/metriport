@@ -33,6 +33,7 @@ import { OutgoingFileRowSchema, IncomingFileRowSchema } from "./schema/shared";
 import { SurescriptsSftpClient } from "./client";
 import { SurescriptsPatientRequestData, SurescriptsBatchRequestData } from "./types";
 import { buildDayjsFromId } from "./id-generator";
+import { makeResponseFileNamePrefix } from "./file-names";
 
 // Latest Surescripts specification, but responses may be in 2.2 format
 const surescriptsVersion = "3.0";
@@ -84,16 +85,19 @@ export function generatePatientRequestFile({
 export function generateBatchRequestFile({
   client,
   transmissionId,
+  populationId,
   facility,
   patients,
-  populationId,
 }: SurescriptsGenerateBatchRequestParams): {
   content: Buffer | undefined;
   requestedPatientIds: string[];
 } {
   const requestedPatientIds: string[] = [];
   const transmissionDate = buildDayjsFromId(transmissionId).toDate();
-  const patientPopulationId = transmissionId + (populationId ?? facility.id);
+  const responseFileNamePrefix = makeResponseFileNamePrefix(
+    transmissionId,
+    populationId ?? facility.id
+  );
 
   const header = toSurescriptsPatientLoadRow(
     {
@@ -103,7 +107,7 @@ export function generateBatchRequestFile({
       senderId: client.senderId,
       senderPassword: client.senderPassword,
       receiverId: client.receiverId,
-      patientPopulationId,
+      patientPopulationId: responseFileNamePrefix,
       lookBackInMonths: 12,
       transmissionId,
       transmissionDate,

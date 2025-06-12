@@ -1,12 +1,16 @@
 import { Patient } from "@metriport/shared/domain/patient";
 import { FacilityData } from "@metriport/shared/domain/customer";
 
-export type SurescriptsDirectory = "from_surescripts" | "to_surescripts" | "history";
 export type SurescriptsGender = "M" | "F" | "N" | "U";
 
 export interface SurescriptsRequester {
   cxId: string;
   facilityId: string;
+}
+
+export interface SurescriptsFileIdentifier {
+  transmissionId: string;
+  populationOrPatientId: string;
 }
 
 export interface SurescriptsRequesterData {

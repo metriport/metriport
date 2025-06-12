@@ -1,7 +1,7 @@
-import { capture } from "./shared/capture";
-import { makeSurescriptsClient } from "./shared/surescripts";
 import { SftpActionDirect } from "@metriport/core/external/sftp/command/sftp-action-direct";
 import { SftpAction } from "@metriport/core/external/sftp/types";
+import { capture } from "../shared/capture";
+import { makeSurescriptsClient } from "./shared";
 
 capture.init();
 

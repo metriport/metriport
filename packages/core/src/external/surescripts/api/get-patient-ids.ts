@@ -4,26 +4,21 @@ import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
 import { validateAndLogResponse } from "./shared";
 import { PatientIdsResponse, patientIdsSchema } from "@metriport/shared/domain/patient";
-
-interface GetPatientIdsParams {
-  cxId: string;
-  facilityId?: string | undefined;
-}
+import { SurescriptsRequester } from "../types";
 
 /**
  * Retrieves an array of patient IDs for a given customer and facility.
  *
- * @param cxId - The customer ID.
- * @param facilityId - The facility ID
+ * @param params - The customer ID and facility ID
  * @returns {GetPatientIdsResponse} contains an array of patient IDs
  */
-export async function getPatientIds(
-  { cxId, facilityId }: GetPatientIdsParams,
+export async function getPatientIdsForFacility(
+  { cxId, facilityId }: SurescriptsRequester,
   axiosInstance?: AxiosInstance
 ): Promise<PatientIdsResponse> {
   const { log, debug } = out(`Surescripts getPatientIds - cxId ${cxId}`);
   const api = axiosInstance ?? axios.create({ baseURL: Config.getApiUrl() });
-  const queryParams = new URLSearchParams({ cxId, ...(facilityId ? { facilityId } : {}) });
+  const queryParams = new URLSearchParams({ cxId, facilityId });
   const getPatientsUrl = `/internal/patient/ids?${queryParams.toString()}`;
   try {
     const response = await executeWithNetworkRetries(async () => {

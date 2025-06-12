@@ -4,10 +4,8 @@ import { MetriportError } from "@metriport/shared";
 import { out } from "../../util/log";
 import { compressGzip, decompressGzip } from "./compression";
 import {
-  SftpAction,
   SftpClientImpl,
   SftpConfig,
-  SftpActionResult,
   SftpFile,
   SftpListFilterFunction,
   SftpReplica,
@@ -63,37 +61,6 @@ export class SftpClient implements SftpClientImpl {
 
   protected setLocalReplica(localPath: string): void {
     this.replica = new LocalReplica(localPath);
-  }
-
-  async execute<A extends SftpAction>(action: A): Promise<SftpActionResult<A>> {
-    try {
-      await this.connect();
-      switch (action.type) {
-        // Simply test if the connection is working
-        case "connect":
-          return true as SftpActionResult<A>;
-        case "read":
-          return (await this.read(action.remotePath, action)) as SftpActionResult<A>;
-        case "write":
-          return (await this.write(
-            action.remotePath,
-            action.content,
-            action
-          )) as SftpActionResult<A>;
-        case "list":
-          return (await this.list(
-            action.remotePath,
-            makeSftpListFilter({
-              prefix: action.prefix,
-              contains: action.contains,
-            })
-          )) as SftpActionResult<A>;
-        case "exists":
-          return (await this.exists(action.remotePath)) as SftpActionResult<A>;
-      }
-    } finally {
-      await this.disconnect();
-    }
   }
 
   private async executeWithSshListeners<T, M extends SftpMethod<T>>(method: M): Promise<T> {
@@ -214,15 +181,15 @@ export class SftpClient implements SftpClientImpl {
     content: Buffer,
     { compress = false }: SftpWriteOptions = {}
   ): Promise<void> {
-    if (this.replica) {
-      this.debug(`Writing file to replica`);
-      const replicaPath = this.replica.getReplicaPath(remotePath);
-      if (compress) {
-        this.debug(`Compressing file with gzip...`);
-        content = await compressGzip(content);
-      }
-      await this.replica.writeFile(replicaPath, content);
+    if (!this.replica) return;
+
+    this.debug(`Writing file to replica`);
+    const replicaPath = this.replica.getReplicaPath(remotePath);
+    if (compress) {
+      this.debug(`Compressing file with gzip...`);
+      content = await compressGzip(content);
     }
+    await this.replica.writeFile(replicaPath, content);
   }
 
   async list(remotePath: string, filter?: SftpListFilterFunction): Promise<string[]> {
@@ -268,7 +235,7 @@ export function createWritableBuffer(): { writable: Writable; getBuffer: () => B
   return { writable, getBuffer };
 }
 
-function makeSftpListFilter({
+export function makeSftpListFilter({
   prefix,
   contains,
 }: {

@@ -1,6 +1,6 @@
-import { capture } from "./shared/capture";
-import { makeSurescriptsClient } from "./shared/surescripts";
 import { SurescriptsReceiveVerificationHandlerDirect } from "@metriport/core/external/surescripts/command/receive-verification/receive-verification-direct";
+import { capture } from "../shared/capture";
+import { makeSurescriptsClient } from "./shared";
 
 capture.init();
 

@@ -1,7 +1,7 @@
-import { capture } from "./shared/capture";
-import { makeSurescriptsClient } from "./shared/surescripts";
-import { SurescriptsPatientRequest } from "@metriport/core/external/surescripts/types";
 import { SurescriptsSendPatientRequestHandlerDirect } from "@metriport/core/external/surescripts/command/send-patient-request/send-patient-request-direct";
+import { SurescriptsPatientRequest } from "@metriport/core/external/surescripts/types";
+import { capture } from "../shared/capture";
+import { makeSurescriptsClient } from "./shared";
 
 capture.init();
 

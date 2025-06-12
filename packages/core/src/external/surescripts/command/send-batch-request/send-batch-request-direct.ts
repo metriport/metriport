@@ -1,7 +1,7 @@
 import { SurescriptsSendBatchRequestHandler } from "./send-batch-request";
 
 import { SurescriptsSftpClient } from "../../client";
-import { SurescriptsApi } from "../../api";
+import { SurescriptsDataMapper } from "../../data-mapper";
 import { SurescriptsBatchRequest } from "../../types";
 
 export class SurescriptsSendBatchRequestHandlerDirect
@@ -14,8 +14,8 @@ export class SurescriptsSendBatchRequestHandlerDirect
   ) {}
 
   async sendBatchRequest(request: SurescriptsBatchRequest): Promise<void> {
-    const api = new SurescriptsApi();
-    const requestData = await api.getBatchRequestData(request);
+    const dataMapper = new SurescriptsDataMapper();
+    const requestData = await dataMapper.getBatchRequestData(request);
     await this.client.sendBatchRequest(requestData);
   }
 }
