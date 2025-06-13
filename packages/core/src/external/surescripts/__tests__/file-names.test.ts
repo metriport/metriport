@@ -8,8 +8,14 @@ import {
 
 describe("File names for patient requests", () => {
   const testTransmissionId = "-OSaV613EU";
-  const expectedRequestFileName = "Metriport_PMA_20250612--OSaV613EU";
+  const testSenderId = "T00000000000001";
   const testPatientId = "0196ffa8-a1bf-75cc-ab88-dc2472161e31";
+
+  const expectedRequestFileName = "Metriport_PMA_20250612--OSaV613EU";
+  const expectedResponseFilePrefix = `${testTransmissionId}_${testPatientId}_`;
+  const expectedVerificationFileName = "Metriport_PMA_20250612--OSaV613EU.1749771418926.rsp";
+  const expectedResponseFile =
+    "-OSaV613EU_0196ffa8-a1bf-75cc-ab88-dc2472161e31_3241590_20250612233806.gz";
 
   it("should make request file name", () => {
     const requestFileName = makeRequestFileName(testTransmissionId);
@@ -20,34 +26,31 @@ describe("File names for patient requests", () => {
     const fileName = "250612_113628_Metriport_PMA_20250612--OSaV613EU.T00000000000001";
     const parsedFileName = parseHistoryFileName(fileName);
     expect(parsedFileName).toEqual({
-      requestFileName: "Metriport_PMA_20250612--OSaV613EU",
-      senderId: "T00000000000001",
-      createdAt: new Date("2025-06-12T11:36:28.000Z"),
+      requestFileName: expectedRequestFileName,
+      senderId: testSenderId,
     });
   });
 
   it("should make response file name prefix", () => {
     const responseFileNamePrefix = makeResponseFileNamePrefix(testTransmissionId, testPatientId);
-    expect(responseFileNamePrefix).toEqual("-OSaV613EU_0196ffa8-a1bf-75cc-ab88-dc2472161e31_");
+    expect(responseFileNamePrefix).toEqual(expectedResponseFilePrefix);
   });
 
   it("should parse response file name", () => {
-    const fileName = "-OSaV613EU_0196ffa8-a1bf-75cc-ab88-dc2472161e31_3241590_20250612233806.gz";
-    const result = parseResponseFileName(fileName);
+    const result = parseResponseFileName(expectedResponseFile);
     expect(result).toEqual({
-      transmissionId: "-OSaV613EU",
-      populationId: "0196ffa8-a1bf-75cc-ab88-dc2472161e31",
+      transmissionId: testTransmissionId,
+      populationId: testPatientId,
       externalFileId: "3241590",
-      responseDate: new Date("2025-06-12T23:38:06.000Z"),
+      responseDate: new Date("2025-06-12T23:38:06.000Z"), // in local time
     });
   });
 
   it("should parse verification file name", () => {
-    const fileName = "1234567890_1234567890_1234567890_1234567890.gz";
-    const result = parseVerificationFileName(fileName);
+    const result = parseVerificationFileName(expectedVerificationFileName);
     expect(result).toEqual({
-      requestFileName: "1234567890",
-      acceptedBySurescripts: new Date("2025-06-12T23:38:06.000Z"),
+      requestFileName: expectedRequestFileName,
+      createdAt: new Date(1749771418926),
     });
   });
 });

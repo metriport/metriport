@@ -15,7 +15,6 @@ export function parseHistoryFileName(remoteFileName: string):
   | {
       requestFileName: string;
       senderId: string;
-      createdAt: Date;
     }
   | undefined {
   const remoteFileMatch = remoteFileName.match(/^(\d+)_(\d+)_(.+)$/);
@@ -23,8 +22,6 @@ export function parseHistoryFileName(remoteFileName: string):
 
   const [, dateString, timeString, requestFileNameWithSenderId] = remoteFileMatch;
   if (!dateString || !timeString || !requestFileNameWithSenderId) return undefined;
-  const createdAt = buildDayjs(dateString + timeString, "YYMMDDHHmmss");
-  if (!createdAt.isValid()) return undefined;
 
   const [requestFileName, senderId] = requestFileNameWithSenderId.split(".");
   if (!requestFileName || !senderId) return undefined;
@@ -32,14 +29,13 @@ export function parseHistoryFileName(remoteFileName: string):
   return {
     requestFileName,
     senderId,
-    createdAt: createdAt.toDate(),
   };
 }
 
 export function parseVerificationFileName(remoteFileName: string):
   | {
       requestFileName: string;
-      acceptedBySurescripts: Date;
+      createdAt: Date;
     }
   | undefined {
   const [requestFileName, surescriptsUnixTimestamp, ...extensions] = remoteFileName.split(".");
@@ -52,10 +48,10 @@ export function parseVerificationFileName(remoteFileName: string):
     return undefined;
   }
 
-  const acceptedBySurescripts = dayjs(parseInt(surescriptsUnixTimestamp)).toDate();
+  const createdAt = dayjs(parseInt(surescriptsUnixTimestamp)).toDate();
   return {
     requestFileName,
-    acceptedBySurescripts,
+    createdAt,
   };
 }
 
