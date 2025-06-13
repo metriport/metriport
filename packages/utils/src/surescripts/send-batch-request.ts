@@ -6,7 +6,7 @@ dotenv.config();
 
 import { Command } from "commander";
 import { SurescriptsSftpClient } from "@metriport/core/external/surescripts/client";
-import { SurescriptsApi } from "@metriport/core/external/surescripts/api";
+import { SurescriptsDataMapper } from "@metriport/core/external/surescripts/data-mapper";
 import { SurescriptsSendBatchRequestHandlerDirect } from "@metriport/core/external/surescripts/command/send-batch-request/send-batch-request-direct";
 import { Patient } from "@metriport/shared/domain/patient";
 
@@ -35,8 +35,8 @@ program
       );
       await handler.sendBatchRequest({ cxId, facilityId, patientIds });
     } else if (csvData) {
-      const api = new SurescriptsApi();
-      const facility = await api.getFacilityData(cxId, facilityId);
+      const dataMapper = new SurescriptsDataMapper();
+      const facility = await dataMapper.getFacilityData(cxId, facilityId);
       const patients = await getPatientsFromCsv(csvData);
       const client = new SurescriptsSftpClient({
         logLevel: "debug",
