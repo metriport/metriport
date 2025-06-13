@@ -77,7 +77,7 @@ sftpWrite
     if (!fs.existsSync(localPath)) {
       throw new Error(`File ${localPath} does not exist`);
     }
-    const content = fs.readFileSync(localPath);
+    const content = fs.readFileSync(localPath).toString("base64");
     await executeSftpAction({
       type: "write",
       remotePath,
