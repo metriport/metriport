@@ -15,10 +15,13 @@ import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { createPatientJob } from "../../../../command/job/patient/create";
 import { getPatientJobs } from "../../../../command/job/patient/get";
 import { cancelPatientJob } from "../../../../command/job/patient/status/cancel";
+import { PatientJob } from "@metriport/shared/domain/job/patient-job";
 
 export const dischargeRequeryJobType = "discharge-requery";
 
-export async function createDischargeRequeryJob(props: NewDischargeRequeryParams) {
+export async function createDischargeRequeryJob(
+  props: NewDischargeRequeryParams
+): Promise<PatientJob> {
   const { cxId, patientId } = props;
   const { log } = out(`initializeDischargeRequeryJob - cx: ${cxId} pt: ${patientId}`);
 

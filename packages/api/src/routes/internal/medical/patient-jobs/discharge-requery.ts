@@ -23,9 +23,9 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const patientId = getUUIDFrom("query", req, "patientId").orFail();
-    await createDischargeRequeryJob({ cxId, patientId });
+    const job = await createDischargeRequeryJob({ cxId, patientId });
 
-    return res.sendStatus(httpStatus.OK);
+    return res.status(httpStatus.OK).json(job);
   })
 );
 
