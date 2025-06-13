@@ -26,11 +26,14 @@ interface ExtrinsicObjectXMLData {
   };
 }
 
-export async function parseExtrinsicObjectXmlToDocumentReference(
-  xml: string,
-  patientId: string
-): Promise<DocumentReference> {
-  const parsedXml: ExtrinsicObjectXMLData = await parseStringPromise(xml);
+export async function parseExtrinsicObjectXmlToDocumentReference({
+  patientId,
+  xmlContents,
+}: {
+  patientId: string;
+  xmlContents: string;
+}): Promise<DocumentReference> {
+  const parsedXml: ExtrinsicObjectXMLData = await parseStringPromise(xmlContents);
   const extrinsicObject = parsedXml.ExtrinsicObject;
 
   const docRefContent: DocumentReferenceContent = {
