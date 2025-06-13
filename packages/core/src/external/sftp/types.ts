@@ -20,12 +20,11 @@ export interface SftpReplica {
 
 export interface SftpReadOptions {
   decompress?: boolean;
-  useReplica?: boolean; // default true
+  overrideReplica?: boolean; // default true
 }
 
 export interface SftpWriteOptions {
   compress?: boolean;
-  useReplica?: boolean; // default true
 }
 
 export interface SftpConfig {

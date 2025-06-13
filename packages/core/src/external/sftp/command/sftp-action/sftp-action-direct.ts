@@ -1,10 +1,12 @@
-import { SftpAction, SftpActionHandler, SftpActionResult } from "./sftp-action";
 import { makeSftpListFilter, SftpClient } from "../../client";
+import { SftpAction, SftpActionHandler, SftpActionResult } from "./sftp-action";
 
-export class SftpActionDirect<A extends SftpAction> implements SftpActionHandler<A> {
+export class SftpActionDirect implements SftpActionHandler {
   constructor(private readonly client: SftpClient) {}
 
-  async executeAction(action: A): Promise<{ result?: SftpActionResult<A>; error?: Error }> {
+  async executeAction<A extends SftpAction>(
+    action: A
+  ): Promise<{ result?: SftpActionResult<A>; error?: Error }> {
     try {
       return { result: await executeAction(this.client, action) };
     } catch (error) {

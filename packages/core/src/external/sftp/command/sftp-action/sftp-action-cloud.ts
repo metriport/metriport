@@ -1,14 +1,16 @@
 import { Config } from "../../../../util/config";
-import { makeLambdaClient, getLambdaResultPayload } from "../../../aws/lambda";
+import { getLambdaResultPayload, makeLambdaClient } from "../../../aws/lambda";
 import { SftpAction, SftpActionHandler, SftpActionResult } from "./sftp-action";
 
 const region = Config.getAWSRegion();
 const lambdaClient = makeLambdaClient(region);
 
-export class SftpActionCloud<A extends SftpAction> implements SftpActionHandler<A> {
+export class SftpActionCloud implements SftpActionHandler {
   constructor(private readonly sftpActionLambdaName: string) {}
 
-  async executeAction(action: A): Promise<{ result?: SftpActionResult<A>; error?: Error }> {
+  async executeAction<A extends SftpAction>(
+    action: A
+  ): Promise<{ result?: SftpActionResult<A>; error?: Error }> {
     const payload = JSON.stringify(action);
     try {
       const result = await lambdaClient

@@ -1,17 +1,17 @@
-import { Config } from "../../../../util/config";
 import { MetriportError } from "@metriport/shared";
+import { Config } from "../../../../util/config";
 import { SftpClient } from "../../client";
-import { SftpAction, SftpActionHandler } from "./sftp-action";
-import { SftpActionDirect } from "./sftp-action-direct";
+import { SftpActionHandler } from "./sftp-action";
 import { SftpActionCloud } from "./sftp-action-cloud";
+import { SftpActionDirect } from "./sftp-action-direct";
 
-export function buildSftpActionHandler<A extends SftpAction>({
+export function buildSftpActionHandler({
   client,
   lambdaName,
 }: {
   client?: SftpClient;
   lambdaName?: string;
-}): SftpActionHandler<A> {
+}): SftpActionHandler {
   if (Config.isDev() && client) {
     return new SftpActionDirect(client);
   } else if (lambdaName) {

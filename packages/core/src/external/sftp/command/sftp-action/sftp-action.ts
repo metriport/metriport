@@ -1,5 +1,7 @@
-export interface SftpActionHandler<A extends SftpAction> {
-  executeAction(action: A): Promise<{ result?: SftpActionResult<A>; error?: Error }>;
+export interface SftpActionHandler {
+  executeAction<A extends SftpAction>(
+    action: A
+  ): Promise<{ result?: SftpActionResult<A>; error?: Error }>;
 }
 
 export type SftpAction =

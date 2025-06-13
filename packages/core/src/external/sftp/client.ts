@@ -1,8 +1,10 @@
+import { MetriportError, errorToString } from "@metriport/shared";
 import SshSftpClient from "ssh2-sftp-client";
 import { Writable } from "stream";
-import { MetriportError } from "@metriport/shared";
 import { out } from "../../util/log";
 import { compressGzip, decompressGzip } from "./compression";
+import { LocalReplica } from "./replica/local";
+import { S3Replica } from "./replica/s3";
 import {
   SftpClientImpl,
   SftpConfig,
@@ -11,8 +13,6 @@ import {
   SftpReplica,
   SftpWriteOptions,
 } from "./types";
-import { S3Replica } from "./replica/s3";
-import { LocalReplica } from "./replica/local";
 
 type SftpMethod<T> = (this: SftpClient, client: SshSftpClient) => Promise<T>;
 
@@ -61,12 +61,16 @@ export class SftpClient implements SftpClientImpl {
   }: {
     bucketName: string;
     region: string;
-  }): void {
-    this.setReplica(new S3Replica({ bucketName, region }));
+  }): S3Replica {
+    const replica = new S3Replica({ bucketName, region });
+    this.setReplica(replica);
+    return replica;
   }
 
-  protected initializeLocalReplica(localPath: string): void {
-    this.setReplica(new LocalReplica(localPath));
+  protected initializeLocalReplica(localPath: string): LocalReplica {
+    const replica = new LocalReplica(localPath);
+    this.setReplica(replica);
+    return replica;
   }
 
   private async executeWithSshListeners<T, M extends SftpMethod<T>>(method: M): Promise<T> {
@@ -130,19 +134,9 @@ export class SftpClient implements SftpClientImpl {
 
   async read(
     remotePath: string,
-    { decompress = false, useReplica = true }: SftpReadOptions = {}
+    { decompress = false, overrideReplica = true }: SftpReadOptions = {}
   ): Promise<Buffer> {
     const { writable, getBuffer } = createWritableBuffer();
-
-    if (this.replica && useReplica) {
-      const replicaPath = this.replica.getReplicaPath(remotePath);
-      const hasReplicated = await this.replica.hasFile(replicaPath);
-      if (hasReplicated) {
-        this.log(`Reading file from replica: ${replicaPath}`);
-        const content = await this.replica.readFile(replicaPath);
-        return content;
-      }
-    }
 
     this.log(`Reading file from SFTP: ${remotePath}`);
     await this.executeWithSshListeners(async function (client) {
@@ -156,11 +150,13 @@ export class SftpClient implements SftpClientImpl {
       return decompressGzip(content);
     }
 
-    if (this.replica && useReplica) {
-      const replicaPath = this.replica.getReplicaPath(remotePath);
-      this.log(`Writing file to replica: ${replicaPath}`);
-      await this.replica.writeFile(replicaPath, content);
-      this.debug(`Finished writing file to replica`);
+    if (this.replica && overrideReplica) {
+      try {
+        const replicaPath = this.replica.getReplicaPath(remotePath);
+        await this.replica.writeFile(replicaPath, content);
+      } catch (error) {
+        this.log(`Error writing file to replica: ${errorToString(error)}`);
+      }
     }
 
     return content;
@@ -169,7 +165,7 @@ export class SftpClient implements SftpClientImpl {
   async write(
     remotePath: string,
     content: Buffer,
-    { compress = false, useReplica = true }: SftpWriteOptions = {}
+    { compress = false }: SftpWriteOptions = {}
   ): Promise<void> {
     if (compress) {
       this.debug(`Compressing file with gzip...`);
@@ -182,9 +178,13 @@ export class SftpClient implements SftpClientImpl {
     });
     this.log(`Finished writing file to ${remotePath}`);
 
-    if (this.replica && useReplica) {
-      const replicaPath = this.replica.getReplicaPath(remotePath);
-      await this.replica.writeFile(replicaPath, content);
+    if (this.replica) {
+      try {
+        const replicaPath = this.replica.getReplicaPath(remotePath);
+        await this.replica.writeFile(replicaPath, content);
+      } catch (error) {
+        this.log(`Error writing file to replica: ${errorToString(error)}`);
+      }
     }
   }
 
@@ -196,7 +196,6 @@ export class SftpClient implements SftpClientImpl {
     });
 
     this.log(`Found ${fileNames.length} files in ${remotePath}.`);
-    this.debug("File names", fileNames);
     return fileNames;
   }
 
