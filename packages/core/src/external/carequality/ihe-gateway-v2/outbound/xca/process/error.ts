@@ -194,15 +194,15 @@ export function handleSchemaErrorResponse({
 }
 
 /**
- * Checks if the response has an error that is not in the known non-retryable errors list
+ * Retries if the response has an error that is not in the known non-retryable errors list
  * Will not retry if the response is successful and is not an error.
  */
-export function shouldRetryResponse(
+export function isRetryable(
   outboundResponse: OutboundDocumentRetrievalResp | OutboundDocumentQueryResp | undefined
 ): boolean {
   if (!outboundResponse) return false;
 
-  return (
+  const isRetryableResponse =
     outboundResponse.operationOutcome?.issue.some(
       issue =>
         issue.severity === "error" &&
@@ -211,22 +211,11 @@ export function shouldRetryResponse(
         !knownNonRetryableErrors.some(nonRetryableError =>
           issue.details.text?.includes(nonRetryableError)
         )
-    ) ?? false
-  );
-}
+    ) ?? false;
 
-/**
- * Retries if the response has an error that is not in the known non-retryable errors list
- * Will not retry if the response is successful and is not an error.
- */
-export function isRetryable(
-  outboundResponse: OutboundDocumentRetrievalResp | OutboundDocumentQueryResp | undefined
-): boolean {
-  const shouldRetry = shouldRetryResponse(outboundResponse);
-
-  if (shouldRetry && "document" in (outboundResponse ?? {})) {
+  if (isRetryableResponse && "document" in outboundResponse) {
     log(`Document retrieval response that will be retried: ${JSON.stringify(outboundResponse)}`);
   }
 
-  return shouldRetry;
+  return isRetryableResponse;
 }
