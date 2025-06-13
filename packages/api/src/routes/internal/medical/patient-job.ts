@@ -52,6 +52,9 @@ router.get(
     const status = getFromQuery("status", req);
     const scheduledAfter = parseISODate(getFrom("query").optional("scheduledAfter", req));
     const scheduledBefore = parseISODate(getFrom("query").optional("scheduledBefore", req));
+    if (scheduledAfter && scheduledBefore && scheduledAfter > scheduledBefore) {
+      throw new BadRequestError("scheduledAfter must be earlier than or equal to scheduledBefore");
+    }
     if (status && !isValidJobStatus(status)) {
       throw new BadRequestError("Status must be a valid job status");
     }
