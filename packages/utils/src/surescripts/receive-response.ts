@@ -9,14 +9,25 @@ const program = new Command();
 
 program
   .name("receive-response")
-  .argument("<transmissionId>", "The transmission ID")
-  .argument("<populationOrPatientId>", "The population or patient ID")
+  .option("--transmission-id <transmissionId>", "The transmission ID")
+  .option("--population-id <populationId>", "The population ID")
   .description("Checks for a response from Surescripts")
   .showHelpAfterError()
   .version("1.0.0")
-  .action(async (transmissionId: string, populationOrPatientId: string) => {
-    const handler = new SurescriptsReceiveResponseHandlerDirect();
-    await handler.receiveResponse({ transmissionId, populationOrPatientId });
-  });
+  .action(
+    async ({
+      transmissionId,
+      populationId,
+    }: {
+      transmissionId?: string;
+      populationId?: string;
+    }) => {
+      if (!transmissionId) throw new Error("Transmission ID is required");
+      if (!populationId) throw new Error("Population ID is required");
+
+      const handler = new SurescriptsReceiveResponseHandlerDirect();
+      await handler.receiveResponse({ transmissionId, populationId });
+    }
+  );
 
 export default program;

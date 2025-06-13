@@ -43,7 +43,7 @@ export interface SftpReadAction extends SftpBaseAction {
 export interface SftpWriteAction extends SftpBaseAction {
   type: "write";
   remotePath: string;
-  content: Buffer;
+  content: string; // base64 encoded Buffer
   compress?: boolean;
 }
 

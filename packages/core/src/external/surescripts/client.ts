@@ -116,12 +116,8 @@ export class SurescriptsSftpClient extends SftpClient {
     try {
       await this.connect();
       const historyFiles = await this.list("/history", file => file.name.includes(requestFileName));
-      const requestFileInHistory = historyFiles.length > 0;
-
-      this.log(
-        `Request file ${requestFileName} ${requestFileInHistory ? "is" : "is not"} in history`
-      );
-      return requestFileInHistory;
+      this.log(`Found ${historyFiles.length} matching history files for ${transmissionId}`);
+      return historyFiles.length > 0;
     } finally {
       await this.disconnect();
     }
@@ -147,6 +143,7 @@ export class SurescriptsSftpClient extends SftpClient {
         this.log(`Found verification file "${verificationFile}" in Surescripts directory`);
         return await this.readFromSurescripts(verificationFile);
       }
+      this.log(`No verification file found for ${transmissionId}`);
       return undefined;
     } finally {
       await this.disconnect();
@@ -215,6 +212,7 @@ export class SurescriptsSftpClient extends SftpClient {
         this.log(`Found response file "${sftpResponseFileName}" in Surescripts directory`);
         return await this.readFromSurescripts(sftpResponseFileName);
       }
+      this.log(`No response file found for ${transmissionId} and ${populationId}`);
       return undefined;
     } finally {
       await this.disconnect();

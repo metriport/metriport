@@ -1,6 +1,6 @@
 import fs from "fs";
-import { SurescriptsSftpClient } from "@metriport/core/external/surescripts/client";
 import { Command } from "commander";
+import { SurescriptsSftpClient } from "@metriport/core/external/surescripts/client";
 import { SftpActionDirect } from "@metriport/core/external/sftp/command/sftp-action/sftp-action-direct";
 import { SftpAction } from "@metriport/core/external/sftp/command/sftp-action/sftp-action";
 
@@ -10,7 +10,7 @@ async function executeSftpAction<A extends SftpAction>(action: A) {
   const client = new SurescriptsSftpClient({
     logLevel: "debug",
   });
-  const handler = new SftpActionDirect<A>(client);
+  const handler = new SftpActionDirect(client);
   return await handler.executeAction(action);
 }
 
@@ -77,7 +77,7 @@ sftpWrite
     if (!fs.existsSync(localPath)) {
       throw new Error(`File ${localPath} does not exist`);
     }
-    const content = fs.readFileSync(localPath);
+    const content = fs.readFileSync(localPath).toString("base64");
     await executeSftpAction({
       type: "write",
       remotePath,

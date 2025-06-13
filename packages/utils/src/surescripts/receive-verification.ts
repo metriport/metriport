@@ -9,11 +9,13 @@ const program = new Command();
 
 program
   .name("receive-verification")
-  .argument("<transmissionId>", "The transfer ID")
+  .option("--transmission-id <transmissionId>", "The transfer ID")
   .description("Checks for a verification response from Surescripts")
   .showHelpAfterError()
   .version("1.0.0")
-  .action(async (transmissionId: string) => {
+  .action(async ({ transmissionId }: { transmissionId?: string }) => {
+    if (!transmissionId) throw new Error("Transmission ID is required");
+
     const handler = new SurescriptsReceiveVerificationHandlerDirect();
     await handler.receiveVerification({ transmissionId });
   });
