@@ -1,4 +1,5 @@
 import { Bundle, CodeableConcept, Procedure } from "@medplum/fhirtypes";
+import { encodeToHtml } from "@metriport/shared/common/html";
 import { isProcedure } from "../../../external/fhir/shared";
 import { ProceduresSection } from "../../cda-types/sections";
 import { ObservationTableRow, ProcedureActivityEntry } from "../../cda-types/shared-types";
@@ -9,17 +10,17 @@ import {
   buildTemplateIds,
   formatDateToCdaTimestamp,
   formatDateToHumanReadableFormat,
-  getTextFromCode,
   getNotes,
+  getTextFromCode,
   mapCodingSystem,
   notOnFilePlaceholder,
   withNullFlavor,
 } from "../commons";
 import {
-  NOT_SPECIFIED,
   extensionValue2015,
   loincCodeSystem,
   loincSystemName,
+  NOT_SPECIFIED,
   oids,
   placeholderOrgOid,
 } from "../constants";
@@ -100,7 +101,7 @@ function createTableRowFromProcedure(
               NOT_SPECIFIED,
           },
           {
-            "#text": getNotes(procedure.resource.note) ?? NOT_SPECIFIED, // procedure.resource.note?.[0]?.text ?? NOT_SPECIFIED,
+            "#text": encodeToHtml(getNotes(procedure.resource.note) ?? NOT_SPECIFIED),
           },
         ],
       },

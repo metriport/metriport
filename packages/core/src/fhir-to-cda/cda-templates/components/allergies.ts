@@ -5,6 +5,7 @@ import {
   CodeableConcept,
   Coding,
 } from "@medplum/fhirtypes";
+import { encodeToHtml } from "@metriport/shared/common/html";
 import { isAllergyIntolerance } from "../../../external/fhir/shared";
 import { AllergiesSection } from "../../cda-types/sections";
 import {
@@ -29,17 +30,17 @@ import {
   withNullFlavor,
 } from "../commons";
 import {
-  NOT_SPECIFIED,
-  _xsiTypeAttribute,
   extensionValue2014,
   extensionValue2015,
   hl7ActCode,
   loincCodeSystem,
   loincSystemName,
+  NOT_SPECIFIED,
   oids,
   placeholderOrgOid,
   snomedCodeSystem,
   snomedSystemName,
+  _xsiTypeAttribute,
 } from "../constants";
 import { createTableRowsAndEntries } from "../create-table-rows-and-entries";
 import { initiateSectionTable } from "../table";
@@ -168,7 +169,7 @@ function createTableRowFromAllergyIntolerance(
         ["td"]: [
           {
             _ID: `${referenceId}-substance`,
-            "#text": allergenName ?? name ?? NOT_SPECIFIED,
+            "#text": encodeToHtml(allergenName ?? name ?? NOT_SPECIFIED),
           },
           {
             "#text": category?.join(", ") ?? NOT_SPECIFIED,
@@ -184,7 +185,7 @@ function createTableRowFromAllergyIntolerance(
             "#text": onsetDate ?? NOT_SPECIFIED,
           },
           {
-            "#text": note ?? NOT_SPECIFIED,
+            "#text": encodeToHtml(note ?? NOT_SPECIFIED),
           },
         ],
       },

@@ -5,6 +5,7 @@ import {
   FamilyMemberHistory,
   FamilyMemberHistoryCondition,
 } from "@medplum/fhirtypes";
+import { encodeToHtml } from "@metriport/shared/common/html";
 import { isFamilyMemberHistory } from "../../../external/fhir/shared";
 import { FamilyHistorySection } from "../../cda-types/sections";
 import {
@@ -31,15 +32,15 @@ import {
   withNullFlavor,
 } from "../commons";
 import {
-  NOT_SPECIFIED,
-  _xmlnsSdtcAttribute,
   extensionValue2015,
   loincCodeSystem,
   loincSystemName,
+  NOT_SPECIFIED,
   oids,
   placeholderOrgOid,
   snomedCodeSystem,
   snomedSystemName,
+  _xmlnsSdtcAttribute,
 } from "../constants";
 import { createTableRowsAndEntries } from "../create-table-rows-and-entries";
 import { initiateSectionTable } from "../table";
@@ -132,13 +133,13 @@ function createTableRowFromMemberHistory(
           "#text": getConditionOnset(condition?.onsetAge) ?? NOT_SPECIFIED,
         },
         {
-          "#text": relationship ?? NOT_SPECIFIED,
+          "#text": encodeToHtml(relationship ?? NOT_SPECIFIED),
         },
         {
-          "#text": name ?? NOT_SPECIFIED,
+          "#text": encodeToHtml(name ?? NOT_SPECIFIED),
         },
         {
-          "#text": getNotes(condition?.note) ?? NOT_SPECIFIED,
+          "#text": encodeToHtml(getNotes(condition?.note) ?? NOT_SPECIFIED),
         },
       ],
     },
