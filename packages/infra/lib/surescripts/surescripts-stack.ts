@@ -1,7 +1,7 @@
 import { Duration, NestedStack, NestedStackProps } from "aws-cdk-lib";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
-import { Function as Lambda, Runtime } from "aws-cdk-lib/aws-lambda";
+import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
 import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as secret from "aws-cdk-lib/aws-secretsmanager";
@@ -22,7 +22,6 @@ const verifyRequestInHistoryLambdaTimeout = sftpActionTimeout;
 const receiveVerificationLambdaTimeout = Duration.seconds(30);
 const receiveResponseLambdaTimeout = Duration.seconds(30);
 const alarmMaxAgeOfOldestMessage = Duration.hours(1);
-const maxConcurrencyForSftpOperations = 4;
 const apiUrlEnvVarName = "API_URL";
 
 interface SurescriptsSettings {
@@ -60,7 +59,6 @@ const settings: SurescriptsSettings = {
     eventSource: {
       batchSize: 1,
       reportBatchItemFailures: true,
-      maxConcurrency: maxConcurrencyForSftpOperations,
     },
     waitTime: Duration.seconds(0),
   },
@@ -81,7 +79,6 @@ const settings: SurescriptsSettings = {
     eventSource: {
       batchSize: 1,
       reportBatchItemFailures: true,
-      maxConcurrency: maxConcurrencyForSftpOperations,
     },
     waitTime: Duration.seconds(0),
   },
@@ -102,7 +99,6 @@ const settings: SurescriptsSettings = {
     eventSource: {
       batchSize: 1,
       reportBatchItemFailures: true,
-      maxConcurrency: maxConcurrencyForSftpOperations,
     },
     waitTime: Duration.seconds(0),
   },
@@ -123,7 +119,6 @@ const settings: SurescriptsSettings = {
     eventSource: {
       batchSize: 1,
       reportBatchItemFailures: true,
-      maxConcurrency: maxConcurrencyForSftpOperations,
     },
     waitTime: Duration.seconds(0),
   },
@@ -144,7 +139,6 @@ const settings: SurescriptsSettings = {
     eventSource: {
       batchSize: 1,
       reportBatchItemFailures: true,
-      maxConcurrency: maxConcurrencyForSftpOperations,
     },
     waitTime: Duration.seconds(0),
   },
@@ -397,7 +391,6 @@ export class SurescriptsNestedStack extends NestedStack {
       name,
       entry,
       envType,
-      runtime: Runtime.NODEJS_20_X,
       envVars: {
         ...envVars,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
@@ -452,6 +445,7 @@ export class SurescriptsNestedStack extends NestedStack {
       ...queueSettings,
       stack: this,
       name,
+      fifo: true,
       createDLQ: true,
       lambdaLayers: [lambdaLayers.shared],
       envType,
@@ -465,7 +459,6 @@ export class SurescriptsNestedStack extends NestedStack {
       name,
       entry,
       envType,
-      runtime: Runtime.NODEJS_20_X,
       envVars: {
         ...envVars,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
