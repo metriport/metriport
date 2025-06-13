@@ -126,9 +126,6 @@ export class LambdasNestedStack extends NestedStack {
     const cqConfig = props.config.carequality;
     if (cqConfig) {
       const cqRoDbCredsSecret = buildSecret(this, cqConfig.roUsername);
-      if (!cqRoDbCredsSecret) {
-        throw new Error(`RO CQ DB Creds secret not found`);
-      }
 
       this.outboundPatientDiscoveryLambda = this.setupOutboundPatientDiscovery({
         lambdaLayers: props.lambdaLayers,
