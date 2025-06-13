@@ -8,6 +8,7 @@ import { DocumentReferenceDTO, toDTO } from "../../../routes/medical/dtos/docume
 import { Config } from "../../../shared/config";
 import { getAllDocRefMapping } from "../docref-mapping/get-docref-mapping";
 import { finishSinglePatientImport } from "../patient/patient-import/finish-single-patient";
+import { finishDischargeRequery } from "../patient/patient-monitoring/discharge-requery/finish";
 import { MAPIWebhookStatus, processPatientDocumentRequest } from "./document-webhook";
 
 const { log } = out(`Doc Query Webhook`);
@@ -113,6 +114,13 @@ async function handleConversionWebhook(
     // pipeline to finish at the end of CONSOLIDATED (not conversion)
     // Intentionally async
     finishSinglePatientImport({
+      cxId: patient.cxId,
+      patientId: patient.id,
+      requestId,
+      status: convertIsCompleted ? "successful" : "failed",
+    }).catch(emptyFunction);
+
+    finishDischargeRequery({
       cxId: patient.cxId,
       patientId: patient.id,
       requestId,

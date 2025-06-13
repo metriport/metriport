@@ -50,6 +50,7 @@ import { JobsNestedStack } from "./jobs/jobs-stack";
 import { LambdasLayersNestedStack } from "./lambda-layers-nested-stack";
 import { CDA_TO_VIS_TIMEOUT, LambdasNestedStack } from "./lambdas-nested-stack";
 import { PatientImportNestedStack } from "./patient-import-nested-stack";
+import { PatientMonitoringNestedStack } from "./patient-monitoring-nested-stack";
 import { RateLimitingNestedStack } from "./rate-limiting-nested-stack";
 import { DailyBackup } from "./shared/backup";
 import { addErrorAlarmToLambdaFunc, createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
@@ -442,6 +443,26 @@ export class APIStack extends Stack {
     }
 
     //-------------------------------------------
+    // Patient Monitoring
+    //-------------------------------------------
+    let dischargeRequeryLambda: lambda.Function | undefined;
+    if (props.config.hl7Notification) {
+      const { dischargeRequeryLambda: lambda } = new PatientMonitoringNestedStack(
+        this,
+        "PatientMonitoringNestedStack",
+        {
+          config: props.config,
+          lambdaLayers,
+          vpc: this.vpc,
+          alarmAction: slackNotification?.alarmAction,
+          secrets,
+        }
+      );
+
+      dischargeRequeryLambda = lambda;
+    }
+
+    //-------------------------------------------
     // Patient Import
     //-------------------------------------------
     const {
@@ -596,6 +617,7 @@ export class APIStack extends Stack {
       patientImportParseLambda,
       patientImportResultLambda,
       patientImportBucket,
+      dischargeRequeryLambda,
       ehrSyncPatientQueue,
       elationLinkPatientQueue,
       healthieLinkPatientQueue,
@@ -691,6 +713,7 @@ export class APIStack extends Stack {
       fhirToBundleCountLambda,
       ...(hl7v2RosterUploadLambdas ?? []),
       hl7NotificationWebhookSenderLambda,
+      dischargeRequeryLambda,
       patientImportCreateLambda,
       patientImportParseLambda,
       patientImportQueryLambda,
