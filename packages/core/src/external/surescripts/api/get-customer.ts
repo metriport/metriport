@@ -5,18 +5,18 @@ import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
 import { validateAndLogResponse } from "./shared";
 
-export interface GetCustomerParams {
+export interface GetCustomerDataParams {
   cxId: string;
 }
 
 /**
  * Sends an API request to cx-data, which returns the customer's data (facilities)
  *
- * @param cxId - The CX ID
+ * @param params - The customer ID
  * @returns The customer's data
  */
 export async function getCustomerData(
-  { cxId }: GetCustomerParams,
+  { cxId }: GetCustomerDataParams,
   axiosInstance?: AxiosInstance
 ): Promise<CustomerData> {
   const { log, debug } = out(`Surescripts getCustomer - cxId ${cxId}`);

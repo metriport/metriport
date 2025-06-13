@@ -13,9 +13,8 @@ interface GetPatientParams {
 /**
  * Sends an API request to retrieve the patient with the given ID.
  *
- * @param cxId - The CX ID.
- * @param patientId - The patient ID.
- * @returns {GetPatientResponse} patient demographic data
+ * @param params - The customer ID and patient ID
+ * @returns patient demographic data
  */
 export async function getPatient(
   { cxId, patientId }: GetPatientParams,

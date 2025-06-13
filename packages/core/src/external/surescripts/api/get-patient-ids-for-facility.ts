@@ -1,22 +1,26 @@
 import { errorToString, executeWithNetworkRetries, MetriportError } from "@metriport/shared";
+import { PatientIdsResponse, patientIdsSchema } from "@metriport/shared/domain/patient";
 import axios, { AxiosInstance } from "axios";
 import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
 import { validateAndLogResponse } from "./shared";
-import { PatientIdsResponse, patientIdsSchema } from "@metriport/shared/domain/patient";
-import { SurescriptsRequester } from "../types";
+
+interface GetPatientIdsForFacilityParams {
+  cxId: string;
+  facilityId: string;
+}
 
 /**
- * Retrieves an array of patient IDs for a given customer and facility.
+ * Sends an API request to retrieve an array of patient IDs for a given customer and facility.
  *
  * @param params - The customer ID and facility ID
- * @returns {GetPatientIdsResponse} contains an array of patient IDs
+ * @returns array of patient IDs
  */
 export async function getPatientIdsForFacility(
-  { cxId, facilityId }: SurescriptsRequester,
+  { cxId, facilityId }: GetPatientIdsForFacilityParams,
   axiosInstance?: AxiosInstance
-): Promise<PatientIdsResponse> {
-  const { log, debug } = out(`Surescripts getPatientIds - cxId ${cxId}`);
+): Promise<string[]> {
+  const { log, debug } = out(`Surescripts getPatientIdsForFacility - cxId ${cxId}`);
   const api = axiosInstance ?? axios.create({ baseURL: Config.getApiUrl() });
   const queryParams = new URLSearchParams({ cxId, facilityId });
   const getPatientsUrl = `/internal/patient/ids?${queryParams.toString()}`;
@@ -24,20 +28,21 @@ export async function getPatientIdsForFacility(
     const response = await executeWithNetworkRetries(async () => {
       return api.get(getPatientsUrl);
     });
-    return validateAndLogResponse<PatientIdsResponse>({
+    const result = validateAndLogResponse<PatientIdsResponse>({
       url: getPatientsUrl,
       response,
       schema: patientIdsSchema,
       debug,
     });
+    return result.patientIds;
   } catch (error) {
-    const msg = "Failure while getting patient IDs @ Api";
+    const msg = "Failure while getting patient IDs for facility @ Api";
     log(`${msg}. Cause: ${errorToString(error)}`);
     throw new MetriportError(msg, error, {
       cxId,
       facilityId,
       url: getPatientsUrl,
-      context: "surescripts.getPatientIds",
+      context: "surescripts.getPatientIdsForFacility",
     });
   }
 }
