@@ -31,7 +31,7 @@ router.use("/", patientJobsRouter);
 /**
  * GET /internal/patient/job
  *
- * Gets the jobs that with filters
+ * Gets the jobs matching the filters.
  * @param req.query.cxId - The CX ID.
  * @param req.query.patientId - The patient ID. Optional.
  * @param req.query.jobType - The job type. Optional.
