@@ -1,16 +1,12 @@
 import { Config } from "../../../../util/config";
-import { SurescriptsSftpClient } from "../../client";
 import { SurescriptsReceiveVerificationHandler } from "./receive-verification";
-import { SurescriptsReceiveVerificationHandlerDirect } from "./receive-verification-direct";
 import { SurescriptsReceiveVerificationHandlerCloud } from "./receive-verification-cloud";
+import { SurescriptsReceiveVerificationHandlerDirect } from "./receive-verification-direct";
 
-export function buildReceiveVerificationHandler(
-  client?: SurescriptsSftpClient
-): SurescriptsReceiveVerificationHandler {
+export function buildReceiveVerificationHandler(): SurescriptsReceiveVerificationHandler {
   if (Config.isDev()) {
-    return new SurescriptsReceiveVerificationHandlerDirect(client ?? new SurescriptsSftpClient());
+    return new SurescriptsReceiveVerificationHandlerDirect();
   }
-  return new SurescriptsReceiveVerificationHandlerCloud(
-    Config.getSurescriptsReceiveVerificationQueueUrl()
-  );
+  const queueUrl = Config.getSurescriptsReceiveVerificationQueueUrl();
+  return new SurescriptsReceiveVerificationHandlerCloud(queueUrl);
 }

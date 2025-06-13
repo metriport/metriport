@@ -1,14 +1,12 @@
 import { Config } from "../../../../util/config";
-import { SurescriptsSftpClient } from "../../client";
 import { SurescriptsReceiveResponseHandler } from "./receive-response";
-import { SurescriptsReceiveResponseHandlerDirect } from "./receive-response-direct";
 import { SurescriptsReceiveResponseHandlerCloud } from "./receive-response-cloud";
+import { SurescriptsReceiveResponseHandlerDirect } from "./receive-response-direct";
 
-export function buildReceiveResponseHandler(
-  client?: SurescriptsSftpClient
-): SurescriptsReceiveResponseHandler {
+export function buildReceiveResponseHandler(): SurescriptsReceiveResponseHandler {
   if (Config.isDev()) {
-    return new SurescriptsReceiveResponseHandlerDirect(client ?? new SurescriptsSftpClient());
+    return new SurescriptsReceiveResponseHandlerDirect();
   }
-  return new SurescriptsReceiveResponseHandlerCloud(Config.getSurescriptsReceiveResponseQueueUrl());
+  const queueUrl = Config.getSurescriptsReceiveResponseQueueUrl();
+  return new SurescriptsReceiveResponseHandlerCloud(queueUrl);
 }

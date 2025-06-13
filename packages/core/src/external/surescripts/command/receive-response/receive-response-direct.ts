@@ -7,12 +7,9 @@ export class SurescriptsReceiveResponseHandlerDirect implements SurescriptsRecei
 
   async receiveResponse({
     transmissionId,
-    populationOrPatientId,
+    populationId,
   }: SurescriptsFileIdentifier): Promise<void> {
-    const responseFile = await this.client.receiveResponse({
-      transmissionId,
-      populationOrPatientId,
-    });
+    const responseFile = await this.client.receiveResponse({ transmissionId, populationId });
     if (responseFile) {
       console.log(
         "TODO: ENG-377 - parse response file into FHIR bundle and place in conversion bucket"

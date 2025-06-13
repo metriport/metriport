@@ -25,7 +25,7 @@ export interface SurescriptsRequester {
 
 export interface SurescriptsFileIdentifier {
   transmissionId: string;
-  populationOrPatientId: string;
+  populationId: string;
 }
 
 export interface SurescriptsRequesterData {

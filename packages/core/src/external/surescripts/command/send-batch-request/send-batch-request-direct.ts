@@ -7,11 +7,7 @@ import { SurescriptsBatchRequest } from "../../types";
 export class SurescriptsSendBatchRequestHandlerDirect
   implements SurescriptsSendBatchRequestHandler
 {
-  constructor(
-    private readonly client: SurescriptsSftpClient = new SurescriptsSftpClient({
-      logLevel: "debug",
-    })
-  ) {}
+  constructor(private readonly client: SurescriptsSftpClient = new SurescriptsSftpClient()) {}
 
   async sendBatchRequest(request: SurescriptsBatchRequest): Promise<void> {
     const dataMapper = new SurescriptsDataMapper();

@@ -1,18 +1,18 @@
-import { Config } from "../../util/config";
+import { BadRequestError, MetriportError } from "@metriport/shared";
 import { validateNPI } from "@metriport/shared/common/validate-npi";
-import { MetriportError } from "@metriport/shared";
-import { IdGenerator, createIdGenerator } from "./id-generator";
+import { Config } from "../../util/config";
 import { SftpClient } from "../sftp/client";
 import { SftpFile } from "../sftp/types";
+import { generateBatchRequestFile, generatePatientRequestFile } from "./file-generator";
+import { IdGenerator, createIdGenerator } from "./id-generator";
 import {
-  SurescriptsPatientRequestData,
   SurescriptsBatchRequestData,
-  SurescriptsRequesterData,
-  SurescriptsFileIdentifier,
   SurescriptsEnvironment,
+  SurescriptsFileIdentifier,
+  SurescriptsPatientRequestData,
+  SurescriptsRequesterData,
   SurescriptsSftpConfig,
 } from "./types";
-import { generatePatientRequestFile, generateBatchRequestFile } from "./file-generator";
 
 import {
   makeRequestFileName,
@@ -68,7 +68,6 @@ export class SurescriptsSftpClient extends SftpClient {
       transmissionId,
       ...requestData,
     });
-    // If missing some demographic information that is required by Surescripts
     if (!content) return undefined;
 
     const requestFileName = makeRequestFileName(transmissionId);
@@ -83,7 +82,7 @@ export class SurescriptsSftpClient extends SftpClient {
 
   /**
    * @param requestData the batch request for multiple patients
-   * @returns a transmission ID and the requested patient IDs if the request was sent, undefined otherwise
+   * @returns a unique transmission ID and the requested patient IDs if the request was sent, undefined otherwise
    */
   async sendBatchRequest(
     requestData: SurescriptsBatchRequestData
@@ -97,7 +96,6 @@ export class SurescriptsSftpClient extends SftpClient {
     });
     if (!content) return undefined;
 
-    this.log(`Sending batch request with transmission ID ${transmissionId}`);
     const requestFileName = makeRequestFileName(transmissionId);
     try {
       await this.connect();
@@ -136,22 +134,18 @@ export class SurescriptsSftpClient extends SftpClient {
   async receiveVerificationResponse(transmissionId: string): Promise<SftpFile | undefined> {
     const requestFileName = makeRequestFileName(transmissionId);
 
-    const replicatedVerificationFileName = await this.findVerificationFileNameInReplica(
-      requestFileName
-    );
-    if (replicatedVerificationFileName) {
-      this.log(`Already copied verification file "${replicatedVerificationFileName}" to replica`);
-      return this.readFromSurescriptsReplica(replicatedVerificationFileName);
+    const replicatedVerificationFile = await this.findVerificationFileInReplica(requestFileName);
+    if (replicatedVerificationFile) {
+      this.log(`Already copied verification file "${replicatedVerificationFile}" to replica`);
+      return this.readFromReplica(replicatedVerificationFile);
     }
 
     try {
       await this.connect();
-      const verificationFileName = await this.findVerificationFileNameInSftpDirectory(
-        requestFileName
-      );
-      if (verificationFileName) {
-        this.log(`Found verification file "${verificationFileName}" in Surescripts directory`);
-        return await this.readFromSurescriptsSftpDirectory(verificationFileName);
+      const verificationFile = await this.findVerificationFile(requestFileName);
+      if (verificationFile) {
+        this.log(`Found verification file "${verificationFile}" in Surescripts directory`);
+        return await this.readFromSurescripts(verificationFile);
       }
       return undefined;
     } finally {
@@ -161,12 +155,28 @@ export class SurescriptsSftpClient extends SftpClient {
 
   /**
    * @param requestFileName the original request file name
+   * @returns the verification file name if it exists in the Surescripts directory, undefined otherwise
+   */
+  private async findVerificationFile(requestFileName: string): Promise<string | undefined> {
+    const verificationFileNameMatches = await this.list("/from_surescripts", file => {
+      const parsedFileName = parseVerificationFileName(file.name);
+      return parsedFileName?.requestFileName === requestFileName;
+    });
+    return verificationFileNameMatches[0];
+  }
+
+  /**
+   * @param requestFileName the original request file name
    * @returns the verification file name if it exists in the replica, undefined otherwise
    */
-  private async findVerificationFileNameInReplica(
+  private async findVerificationFileInReplica(
     requestFileName: string
   ): Promise<string | undefined> {
-    if (!this.replica) return undefined;
+    if (!this.replica) {
+      throw new BadRequestError("No replica set", undefined, {
+        context: "surescripts.client.findVerificationFileInReplica",
+      });
+    }
     const replicatedFilesWithPrefix = await this.replica.listFileNamesWithPrefix(
       "/from_surescripts",
       requestFileName
@@ -178,46 +188,32 @@ export class SurescriptsSftpClient extends SftpClient {
   }
 
   /**
-   * @param requestFileName the original request file name
-   * @returns the verification file name if it exists in the Surescripts directory, undefined otherwise
-   */
-  private async findVerificationFileNameInSftpDirectory(
-    requestFileName: string
-  ): Promise<string | undefined> {
-    const verificationFileNameMatches = await this.list("/from_surescripts", file => {
-      const parsedFileName = parseVerificationFileName(file.name);
-      return parsedFileName?.requestFileName === requestFileName;
-    });
-    return verificationFileNameMatches[0];
-  }
-
-  /**
    * @param transmissionId the original request transmission ID
-   * @returns the most recent flat file response for the specified transmission
+   * @param populationId the original request population ID
+   * @returns the flat file response for the specified transmission
    */
   async receiveResponse({
     transmissionId,
-    populationOrPatientId,
+    populationId,
   }: SurescriptsFileIdentifier): Promise<SftpFile | undefined> {
-    const replicatedResponseFile = await this.findResponseFileNameInReplica({
+    const replicatedResponseFile = await this.findResponseFileInReplica({
       transmissionId,
-      populationOrPatientId,
+      populationId,
     });
-
     if (replicatedResponseFile) {
       this.log(`Already copied response file "${replicatedResponseFile}" to replica`);
-      return this.readFromSurescriptsReplica(replicatedResponseFile);
+      return this.readFromReplica(replicatedResponseFile);
     }
 
     try {
       await this.connect();
-      const sftpResponseFileName = await this.findResponseFileNameInSftpDirectory({
+      const sftpResponseFileName = await this.findResponseFile({
         transmissionId,
-        populationOrPatientId,
+        populationId,
       });
       if (sftpResponseFileName) {
         this.log(`Found response file "${sftpResponseFileName}" in Surescripts directory`);
-        return await this.readFromSurescriptsSftpDirectory(sftpResponseFileName);
+        return await this.readFromSurescripts(sftpResponseFileName);
       }
       return undefined;
     } finally {
@@ -227,18 +223,38 @@ export class SurescriptsSftpClient extends SftpClient {
 
   /**
    * @param transmissionId the original request transmission ID
+   * @param populationId the original request population UUID (patient ID or facility ID)
+   * @returns the response file name if it exists in the Surescripts directory, undefined otherwise
+   */
+  private async findResponseFile({
+    transmissionId,
+    populationId,
+  }: SurescriptsFileIdentifier): Promise<string | undefined> {
+    const responseFileNameMatches = await this.list("/from_surescripts", file => {
+      const parsedFileName = parseResponseFileName(file.name);
+      return (
+        parsedFileName?.transmissionId === transmissionId &&
+        parsedFileName?.populationId === populationId
+      );
+    });
+    return responseFileNameMatches[0];
+  }
+
+  /**
+   * @param transmissionId the original request transmission ID
    * @param populationId the original request population ID
    * @returns the response file name if it exists in the replica, undefined otherwise
    */
-  private async findResponseFileNameInReplica({
+  private async findResponseFileInReplica({
     transmissionId,
-    populationOrPatientId,
+    populationId,
   }: SurescriptsFileIdentifier): Promise<string | undefined> {
-    if (!this.replica) return undefined;
-    const responseFileNamePrefix = makeResponseFileNamePrefix(
-      transmissionId,
-      populationOrPatientId
-    );
+    if (!this.replica) {
+      throw new BadRequestError("No replica set", undefined, {
+        context: "surescripts.client.findResponseFileInReplica",
+      });
+    }
+    const responseFileNamePrefix = makeResponseFileNamePrefix(transmissionId, populationId);
     const replicatedFilesWithPrefix = await this.replica.listFileNamesWithPrefix(
       "from_surescripts",
       responseFileNamePrefix
@@ -248,28 +264,9 @@ export class SurescriptsSftpClient extends SftpClient {
       return (
         parsedFileName &&
         parsedFileName.transmissionId === transmissionId &&
-        parsedFileName.populationId === populationOrPatientId
+        parsedFileName.populationId === populationId
       );
     });
-  }
-
-  /**
-   * @param transmissionId the original request transmission ID
-   * @param populationId the original request population UUID (patient ID or facility ID)
-   * @returns the response file name if it exists in the Surescripts directory, undefined otherwise
-   */
-  private async findResponseFileNameInSftpDirectory({
-    transmissionId,
-    populationOrPatientId,
-  }: SurescriptsFileIdentifier): Promise<string | undefined> {
-    const responseFileNameMatches = await this.list("/from_surescripts", file => {
-      const parsedFileName = parseResponseFileName(file.name);
-      return (
-        parsedFileName?.transmissionId === transmissionId &&
-        parsedFileName?.populationId === populationOrPatientId
-      );
-    });
-    return responseFileNameMatches[0];
   }
 
   /**
@@ -292,42 +289,33 @@ export class SurescriptsSftpClient extends SftpClient {
    */
   private async writeToSurescripts(fileName: string, content: Buffer): Promise<void> {
     const remotePath = `/to_surescripts/${fileName}`;
-    await this.write(remotePath, content, { useReplica: true });
+    await this.write(remotePath, content);
   }
 
   /**
    * @param fileName the file name within the /from_surescripts directory to read
    * @returns the SftpFile if it exists in the replica, undefined otherwise
    */
-  private async readFromSurescriptsReplica(fileName: string): Promise<SftpFile | undefined> {
-    if (!this.replica) {
-      throw new MetriportError("No replica set", undefined, {
-        context: "surescripts.client.readFromSurescriptsReplica",
-      });
-    }
-
-    const replicaPath = `from_surescripts/${fileName}`;
-    const content = await this.replica.readFile(replicaPath);
-    return {
-      fileName,
-      content,
-    };
-  }
-
-  /**
-   * @param fileName the file name within the /from_surescripts directory to read
-   * @returns the SftpFile if it exists in the replica, undefined otherwise
-   */
-  private async readFromSurescriptsSftpDirectory(fileName: string): Promise<SftpFile | undefined> {
+  private async readFromSurescripts(fileName: string): Promise<SftpFile | undefined> {
     const remotePath = `/from_surescripts/${fileName}`;
     const content = await this.read(remotePath, {
       decompress: fileName.endsWith(".gz") || fileName.endsWith(".gz.rsp"),
-      useReplica: false,
     });
+    return { fileName, content };
+  }
 
-    return {
-      fileName,
-      content,
-    };
+  /**
+   * @param fileName the file name within the /from_surescripts directory to read
+   * @returns the replica file if it exists in the replica, undefined otherwise
+   */
+  private async readFromReplica(fileName: string): Promise<SftpFile | undefined> {
+    if (!this.replica) {
+      throw new BadRequestError("No replica set", undefined, {
+        context: "surescripts.client.readFromReplica",
+      });
+    }
+    const replicaPath = `from_surescripts/${fileName}`;
+    const content = await this.replica.readFile(replicaPath);
+    return { fileName, content };
   }
 }

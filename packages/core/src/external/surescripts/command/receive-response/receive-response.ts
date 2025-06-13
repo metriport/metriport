@@ -1,8 +1,5 @@
 import { SurescriptsFileIdentifier } from "../../types";
 
 export interface SurescriptsReceiveResponseHandler {
-  receiveResponse({
-    transmissionId,
-    populationOrPatientId,
-  }: SurescriptsFileIdentifier): Promise<void>;
+  receiveResponse({ transmissionId, populationId }: SurescriptsFileIdentifier): Promise<void>;
 }

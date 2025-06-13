@@ -1,14 +1,12 @@
 import { Config } from "../../../../util/config";
-import { SurescriptsSftpClient } from "../../client";
 import { SurescriptsSendPatientRequestHandler } from "./send-patient-request";
-import { SurescriptsSendPatientRequestHandlerDirect } from "./send-patient-request-direct";
 import { SurescriptsSendPatientRequestCloud } from "./send-patient-request-cloud";
+import { SurescriptsSendPatientRequestHandlerDirect } from "./send-patient-request-direct";
 
-export function buildSendPatientRequestHandler(
-  client?: SurescriptsSftpClient
-): SurescriptsSendPatientRequestHandler {
+export function buildSendPatientRequestHandler(): SurescriptsSendPatientRequestHandler {
   if (Config.isDev()) {
-    return new SurescriptsSendPatientRequestHandlerDirect(client ?? new SurescriptsSftpClient());
+    return new SurescriptsSendPatientRequestHandlerDirect();
   }
-  return new SurescriptsSendPatientRequestCloud(Config.getSurescriptsSendPatientRequestQueueUrl());
+  const queueUrl = Config.getSurescriptsSendPatientRequestQueueUrl();
+  return new SurescriptsSendPatientRequestCloud(queueUrl);
 }

@@ -1,16 +1,12 @@
 import { Config } from "../../../../util/config";
-import { SurescriptsSftpClient } from "../../client";
 import { SurescriptsSendBatchRequestHandler } from "./send-batch-request";
-import { SurescriptsSendBatchRequestHandlerDirect } from "./send-batch-request-direct";
 import { SurescriptsSendBatchRequestHandlerCloud } from "./send-batch-request-cloud";
+import { SurescriptsSendBatchRequestHandlerDirect } from "./send-batch-request-direct";
 
-export function buildSendBatchRequestHandler(
-  client?: SurescriptsSftpClient
-): SurescriptsSendBatchRequestHandler {
+export function buildSendBatchRequestHandler(): SurescriptsSendBatchRequestHandler {
   if (Config.isDev()) {
-    return new SurescriptsSendBatchRequestHandlerDirect(client ?? new SurescriptsSftpClient());
+    return new SurescriptsSendBatchRequestHandlerDirect();
   }
-  return new SurescriptsSendBatchRequestHandlerCloud(
-    Config.getSurescriptsSendBatchRequestQueueUrl()
-  );
+  const queueUrl = Config.getSurescriptsSendBatchRequestQueueUrl();
+  return new SurescriptsSendBatchRequestHandlerCloud(queueUrl);
 }

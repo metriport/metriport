@@ -1,18 +1,12 @@
 import { Config } from "../../../../util/config";
-import { SurescriptsSftpClient } from "../../client";
 import { SurescriptsVerifyRequestInHistoryHandler } from "./verify-request-in-history";
-import { SurescriptsVerifyRequestInHistoryHandlerDirect } from "./verify-request-in-history-direct";
 import { SurescriptsVerifyRequestInHistoryHandlerCloud } from "./verify-request-in-history-cloud";
+import { SurescriptsVerifyRequestInHistoryHandlerDirect } from "./verify-request-in-history-direct";
 
-export function buildVerifyRequestInHistoryHandler(
-  client?: SurescriptsSftpClient
-): SurescriptsVerifyRequestInHistoryHandler {
+export function buildVerifyRequestInHistoryHandler(): SurescriptsVerifyRequestInHistoryHandler {
   if (Config.isDev()) {
-    return new SurescriptsVerifyRequestInHistoryHandlerDirect(
-      client ?? new SurescriptsSftpClient()
-    );
+    return new SurescriptsVerifyRequestInHistoryHandlerDirect();
   }
-  return new SurescriptsVerifyRequestInHistoryHandlerCloud(
-    Config.getSurescriptsVerifyRequestInHistoryQueueUrl()
-  );
+  const queueUrl = Config.getSurescriptsVerifyRequestInHistoryQueueUrl();
+  return new SurescriptsVerifyRequestInHistoryHandlerCloud(queueUrl);
 }

@@ -1,4 +1,4 @@
-import { MetriportError, errorToString } from "@metriport/shared";
+import { MetriportError, BadRequestError, errorToString } from "@metriport/shared";
 import SshSftpClient from "ssh2-sftp-client";
 import { Writable } from "stream";
 import { out } from "../../util/log";
@@ -48,7 +48,7 @@ export class SftpClient implements SftpClientImpl {
 
   protected setReplica(replica: SftpReplica): void {
     if (this.replica) {
-      throw new MetriportError("Replica already set", undefined, {
+      throw new BadRequestError("Replica already set", undefined, {
         context: "sftp.client.setReplica",
       });
     }

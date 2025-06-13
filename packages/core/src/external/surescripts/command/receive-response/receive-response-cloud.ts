@@ -18,9 +18,9 @@ export class SurescriptsReceiveResponseHandlerCloud implements SurescriptsReceiv
 
   async receiveResponse({
     transmissionId,
-    populationOrPatientId,
+    populationId,
   }: SurescriptsFileIdentifier): Promise<void> {
-    const payload = JSON.stringify({ transmissionId, populationOrPatientId });
+    const payload = JSON.stringify({ transmissionId, populationId });
     await executeWithNetworkRetries(async () => {
       await this.sqsClient.sendMessageToQueue(
         this.surescriptsReceiveFlatFileResponseQueueUrl,
