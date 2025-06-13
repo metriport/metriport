@@ -28,7 +28,7 @@ export class S3Replica implements SftpReplica {
   }
 
   async readFile(replicaPath: string): Promise<Buffer> {
-    return this.s3.downloadFile({ bucket: this.bucketName, key: replicaPath });
+    return await this.s3.downloadFile({ bucket: this.bucketName, key: replicaPath });
   }
 
   async writeFile(replicaPath: string, content: Buffer): Promise<void> {
@@ -36,6 +36,6 @@ export class S3Replica implements SftpReplica {
   }
 
   async hasFile(replicaPath: string): Promise<boolean> {
-    return this.s3.fileExists(this.bucketName, replicaPath);
+    return await this.s3.fileExists(this.bucketName, replicaPath);
   }
 }

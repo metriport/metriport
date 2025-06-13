@@ -182,7 +182,7 @@ export function toSurescriptsPatientLoadRow<T extends object>(
 ): Buffer {
   const parsed = objectSchema.safeParse(row);
   if (!parsed.success) {
-    throw new MetriportError("Invalid data", "to_surescripts_patient_load_row", {
+    throw new MetriportError("Invalid data", undefined, {
       data: JSON.stringify(row),
       errors: JSON.stringify(parsed.error.issues),
     });
@@ -240,7 +240,7 @@ function fromSurescriptsRow<T extends object>(
   if (objectValidator(data)) {
     return data;
   } else {
-    throw new MetriportError("Invalid row", "from_surescripts_row", {
+    throw new MetriportError("Invalid row", undefined, {
       row: row.join("|"),
       data: JSON.stringify(row),
     });
@@ -258,11 +258,11 @@ function parseTableFromFile(message: Buffer): {
   const details = table.slice(0, -1);
   const footer = table.pop();
   if (!header)
-    throw new MetriportError("Header is missing", "parse_table_from_file", {
+    throw new MetriportError("Header is missing", undefined, {
       message: message.toString("ascii"),
     });
   if (!footer)
-    throw new MetriportError("Footer is missing", "parse_table_from_file", {
+    throw new MetriportError("Footer is missing", undefined, {
       message: message.toString("ascii"),
     });
   return { header, details, footer };

@@ -39,12 +39,17 @@ sftpList
   .description("List files in the SFTP server")
   .action(
     async (remotePath: string, { prefix, contains }: { prefix?: string; contains?: string }) => {
-      await executeSftpAction({
+      const { result, error } = await executeSftpAction({
         type: "list",
         remotePath,
         prefix,
         contains,
       });
+      if (result) {
+        console.log(result);
+      } else if (error) {
+        console.error(error.toString());
+      }
     }
   );
 
@@ -91,10 +96,15 @@ sftpExists
   .argument("<remotePath>", "The remote path to check if it exists")
   .description("Check if a file exists in the SFTP server")
   .action(async (remotePath: string) => {
-    await executeSftpAction({
+    const { result, error } = await executeSftpAction({
       type: "exists",
       remotePath,
     });
+    if (result) {
+      console.log(result);
+    } else if (error) {
+      console.error(error.toString());
+    }
   });
 
 sftpAction.addCommand(sftpConnect);
