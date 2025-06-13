@@ -1,0 +1,7 @@
+SHD|3.0|T00000000012345|S00000000000003|e61d1e43-a6c2-42e4-a7d8-36c99f7ff9bc|20181219|01022815|PMA|TRS8804|20181217|00110102|T|02|File loaded with errors.
+SDT|2|1|72.7.2.7272510|57919598|E|109|Invalid NPI value: 9999999999.
+SDT|3|2|72.7.2.7272510|6756367|E|107|Required column npi missing.
+SDT|4|3|72.7.2.7272510|56800669|E|110|Invalid format for date field End Monitoring Date Expected: 8 digits in the CCYYMMDD format. Actual: 20210825.
+SDT|5|4|72.7.2.7272510|43726207|E|127|Two of a person's names (LastName, FirstName, MiddleName) must have 2 or more characters.
+SDT|6|5|72.7.2.7272510||E|107|Required column patientId missing.
+STR|10|5|5|5

@@ -126,6 +126,38 @@ export function sortDate(
 }
 
 /**
+ * Convert to YYYYMMDD or YYYY-MM-DD format
+ * @param date - The date to convert
+ * @param separator - The separator to use between the date components
+ * @returns The date in YYYYMMDD or YYYY-MM-DD format (if separator is "-")
+ */
+export function convertDateToString(
+  date: Date,
+  { separator = "", useUtc = true }: { separator?: string; useUtc?: boolean } = {}
+) {
+  return (useUtc ? dayjs(date).utc() : dayjs(date)).format(["YYYY", "MM", "DD"].join(separator));
+}
+
+/**
+ * Convert to HHMMSS or HHMMSSCC format. Dayjs does not support CC
+ * @param date - The date to convert
+ * @param includeCentisecond - Whether to include the centisecond in the time string
+ * @returns The date in HHMMSS or HHMMSSCC format (if includeCentisecond is true)
+ */
+export function convertDateToTimeString(
+  date: Date,
+  {
+    useUtc = true,
+    includeCentisecond = false,
+  }: { useUtc?: boolean; includeCentisecond?: boolean } = {}
+) {
+  const dayjsDate = useUtc ? dayjs(date).utc() : dayjs(date);
+  if (includeCentisecond) {
+    return dayjsDate.format("HHmmssSSS").substring(0, 8);
+  }
+  return dayjsDate.format("HHmmss");
+}
+/**
  * Validates if timestamp adheres to YYYYMMDDHHMMSS format
  * and is a valid date.
  *

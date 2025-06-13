@@ -5,6 +5,8 @@ import {
   validateDateOfBirth,
   ValidateDobFn,
   validateIsPastOrPresentSafe,
+  convertDateToString,
+  convertDateToTimeString,
 } from "../date";
 
 describe("shared date functions", () => {
@@ -181,5 +183,36 @@ describe("shared date functions", () => {
       const result = buildDayjsFromCompactDate(invalidDate);
       expect(result.format()).toBe("2024-02-26T12:30:00Z");
     });
+  });
+});
+
+describe("convertDateToString", () => {
+  it("converts date to YYYYMMDD format", () => {
+    const date = new Date("2024-02-26");
+    expect(convertDateToString(date)).toBe("20240226");
+  });
+
+  it("converts date to YYYY-MM-DD format", () => {
+    const date = new Date("2024-02-26");
+    expect(convertDateToString(date, { separator: "-" })).toBe("2024-02-26");
+  });
+
+  it("converts date to YYYYMMDD format with separator", () => {
+    const date = new Date("2024-02-26");
+    expect(convertDateToString(date, { separator: "-" })).toBe("2024-02-26");
+  });
+});
+
+describe("convertDateToTimeString", () => {
+  it("converts date to HHMMSS format", () => {
+    const date = new Date(Date.UTC(2024, 1, 26, 12, 30, 0));
+    expect(convertDateToTimeString(date, { useUtc: true })).toBe("123000");
+  });
+
+  it("converts date to HHMMSSCC format", () => {
+    const date = new Date(Date.UTC(2024, 1, 26, 12, 30, 0, 123));
+    expect(convertDateToTimeString(date, { useUtc: true, includeCentisecond: true })).toBe(
+      "12300012"
+    );
   });
 });
