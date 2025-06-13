@@ -91,7 +91,7 @@ export class JobsNestedStack extends NestedStack {
       envType: props.config.environmentType,
       layers: [props.lambdaLayers.shared],
       alarmSnsAction: props.alarmAction,
-      name: "StartPatientJobsSchedulerLambda",
+      name: "StartPatientJobsScheduler",
       scheduleExpression: props.config.jobs.startPatientJobsSchedulerScheduleExpression,
       url: props.config.jobs.startPatientJobsSchedulerUrl,
     });
