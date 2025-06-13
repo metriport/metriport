@@ -48,6 +48,7 @@ export async function sendSignedDrRequest({
       gateway: request.gateway,
       requestChunkId: request.outboundRequest.requestChunkId,
     });
+    console.log({ mtomParts: JSON.stringify(mtomParts) });
     return {
       gateway: request.gateway,
       mtomResponse: mtomParts,

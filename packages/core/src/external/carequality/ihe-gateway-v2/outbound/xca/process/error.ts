@@ -49,7 +49,7 @@ export function processRegistryErrorList(
     });
   } catch (error) {
     const msg = "Error processing RegistryErrorList";
-    log(`${msg}: ${error}`);
+    outLog(`${msg}: ${error}`);
     capture.error(msg, {
       extra: {
         error,
@@ -194,13 +194,14 @@ export function handleSchemaErrorResponse({
 }
 
 /**
- * Retries if the response has an error that is not in the known non-retryable errors list
+ * Checks if the response has an error that is not in the known non-retryable errors list
  * Will not retry if the response is successful and is not an error.
  */
-export function isRetryable(
+export function shouldRetryResponse(
   outboundResponse: OutboundDocumentRetrievalResp | OutboundDocumentQueryResp | undefined
 ): boolean {
   if (!outboundResponse) return false;
+
   return (
     outboundResponse.operationOutcome?.issue.some(
       issue =>
@@ -212,4 +213,20 @@ export function isRetryable(
         )
     ) ?? false
   );
+}
+
+/**
+ * Retries if the response has an error that is not in the known non-retryable errors list
+ * Will not retry if the response is successful and is not an error.
+ */
+export function isRetryable(
+  outboundResponse: OutboundDocumentRetrievalResp | OutboundDocumentQueryResp | undefined
+): boolean {
+  const shouldRetry = shouldRetryResponse(outboundResponse);
+
+  if (shouldRetry && "document" in (outboundResponse ?? {})) {
+    log(`Document retrieval response that will be retried: ${JSON.stringify(outboundResponse)}`);
+  }
+
+  return shouldRetry;
 }
