@@ -143,6 +143,7 @@ export class SurescriptsSftpClient extends SftpClient {
         this.log(`Found verification file "${verificationFile}" in Surescripts directory`);
         return await this.readFromSurescripts(verificationFile);
       }
+      this.log(`No verification file found for ${transmissionId}`);
       return undefined;
     } finally {
       await this.disconnect();
@@ -211,6 +212,7 @@ export class SurescriptsSftpClient extends SftpClient {
         this.log(`Found response file "${sftpResponseFileName}" in Surescripts directory`);
         return await this.readFromSurescripts(sftpResponseFileName);
       }
+      this.log(`No response file found for ${transmissionId} and ${populationId}`);
       return undefined;
     } finally {
       await this.disconnect();
