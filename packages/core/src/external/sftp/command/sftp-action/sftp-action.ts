@@ -22,7 +22,7 @@ export type SftpActionResult<A extends SftpBaseAction> = SftpBaseAction extends 
   : A extends { type: "read" }
   ? Buffer
   : A extends { type: "write" }
-  ? void
+  ? undefined
   : A extends { type: "list" }
   ? string[]
   : A extends { type: "exists" }
