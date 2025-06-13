@@ -56,11 +56,11 @@ export class SftpClient implements SftpClientImpl {
   }
 
   protected setS3Replica({ bucketName, region }: { bucketName: string; region: string }): void {
-    this.replica = new S3Replica({ bucketName, region });
+    this.setReplica(new S3Replica({ bucketName, region }));
   }
 
   protected setLocalReplica(localPath: string): void {
-    this.replica = new LocalReplica(localPath);
+    this.setReplica(new LocalReplica(localPath));
   }
 
   private async executeWithSshListeners<T, M extends SftpMethod<T>>(method: M): Promise<T> {
