@@ -5,11 +5,10 @@ import { makeSurescriptsClient } from "./shared";
 
 capture.init();
 
-// Stub which will be integrated with Surescripts commands
 export const handler = capture.wrapHandler(
-  async ({ transmissionId, populationOrPatientId }: SurescriptsFileIdentifier) => {
+  async ({ transmissionId, populationId }: SurescriptsFileIdentifier) => {
     const client = await makeSurescriptsClient();
     const handler = new SurescriptsReceiveResponseHandlerDirect(client);
-    await handler.receiveResponse({ transmissionId, populationOrPatientId });
+    await handler.receiveResponse({ transmissionId, populationId });
   }
 );

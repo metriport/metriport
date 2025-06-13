@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { DeaScheduleCodes } from "@metriport/shared/common/dea-schedule";
+import { DeaScheduleCodes } from "@metriport/shared/interface/external/surescripts/dea-schedule";
 import { PAYMENT_CODES, PLAN_CODES } from "../codes";
 
 import {

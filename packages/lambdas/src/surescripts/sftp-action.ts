@@ -5,7 +5,6 @@ import { makeSurescriptsClient } from "./shared";
 
 capture.init();
 
-// Stub which will be integrated with Surescripts commands
 export const handler = capture.wrapHandler(async (event: SftpAction) => {
   const client = await makeSurescriptsClient();
   const handler = new SftpActionDirect(client);
