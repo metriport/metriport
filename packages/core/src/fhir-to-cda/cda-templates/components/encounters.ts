@@ -1,5 +1,6 @@
 import { Bundle, Encounter, HumanName, Location, Practitioner } from "@medplum/fhirtypes";
 import { toArray } from "@metriport/shared";
+import { encodeToHtml } from "@metriport/shared/common/html";
 import {
   findResourceInBundle,
   isEncounter,
@@ -29,10 +30,10 @@ import {
   withoutNullFlavorObject,
 } from "../commons";
 import {
-  NOT_SPECIFIED,
   extensionValue2015,
   loincCodeSystem,
   loincSystemName,
+  NOT_SPECIFIED,
   oids,
   placeholderOrgOid,
 } from "../constants";
@@ -149,10 +150,12 @@ function createTableRowFromEncounter(
             "#text": getDisplaysFromCodeableConcepts(encounter.resource.type) ?? NOT_SPECIFIED,
           },
           {
-            "#text": getPractitionerInformation(encounter.practitioners) ?? NOT_SPECIFIED,
+            "#text": encodeToHtml(
+              getPractitionerInformation(encounter.practitioners) ?? NOT_SPECIFIED
+            ),
           },
           {
-            "#text": locationDesc ?? NOT_SPECIFIED,
+            "#text": encodeToHtml(locationDesc ?? NOT_SPECIFIED),
           },
           {
             "#text":
