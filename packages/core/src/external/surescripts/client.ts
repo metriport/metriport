@@ -1,37 +1,25 @@
 import { Config } from "../../util/config";
-import { IdGenerator, createIdGenerator } from "./id-generator";
 import { validateNPI } from "@metriport/shared/common/validate-npi";
+import { MetriportError } from "@metriport/shared";
+import { IdGenerator, createIdGenerator } from "./id-generator";
 import { SftpClient } from "../sftp/client";
-import { SftpConfig, SftpFile } from "../sftp/types";
+import { SftpFile } from "../sftp/types";
 import {
   SurescriptsPatientRequestData,
   SurescriptsBatchRequestData,
   SurescriptsRequesterData,
   SurescriptsFileIdentifier,
+  SurescriptsEnvironment,
+  SurescriptsSftpConfig,
 } from "./types";
 import { generatePatientRequestFile, generateBatchRequestFile } from "./file-generator";
-import { MetriportError } from "@metriport/shared";
+
 import {
   makeRequestFileName,
   makeResponseFileNamePrefix,
   parseResponseFileName,
   parseVerificationFileName,
 } from "./file-names";
-
-export interface SurescriptsSftpConfig extends Partial<Omit<SftpConfig, "password">> {
-  senderId?: string;
-  senderPassword?: string;
-  receiverId?: string;
-  publicKey?: string;
-  privateKey?: string;
-  replicaBucket?: string;
-  replicaBucketRegion?: string;
-}
-
-export enum SurescriptsEnvironment {
-  Production = "P",
-  Test = "T",
-}
 
 export class SurescriptsSftpClient extends SftpClient {
   private generateTransmissionId: IdGenerator;
@@ -109,6 +97,7 @@ export class SurescriptsSftpClient extends SftpClient {
     });
     if (!content) return undefined;
 
+    this.log(`Sending batch request with transmission ID ${transmissionId}`);
     const requestFileName = makeRequestFileName(transmissionId);
     try {
       await this.connect();
@@ -129,7 +118,12 @@ export class SurescriptsSftpClient extends SftpClient {
     try {
       await this.connect();
       const historyFiles = await this.list("/history", file => file.name.includes(requestFileName));
-      return historyFiles.length > 0;
+      const requestFileInHistory = historyFiles.length > 0;
+
+      this.log(
+        `Request file ${requestFileName} ${requestFileInHistory ? "is" : "is not"} in history`
+      );
+      return requestFileInHistory;
     } finally {
       await this.disconnect();
     }
@@ -146,6 +140,7 @@ export class SurescriptsSftpClient extends SftpClient {
       requestFileName
     );
     if (replicatedVerificationFileName) {
+      this.log(`Already copied verification file "${replicatedVerificationFileName}" to replica`);
       return this.readFromSurescriptsReplica(replicatedVerificationFileName);
     }
 
@@ -155,6 +150,7 @@ export class SurescriptsSftpClient extends SftpClient {
         requestFileName
       );
       if (verificationFileName) {
+        this.log(`Found verification file "${verificationFileName}" in Surescripts directory`);
         return await this.readFromSurescriptsSftpDirectory(verificationFileName);
       }
       return undefined;
@@ -209,6 +205,7 @@ export class SurescriptsSftpClient extends SftpClient {
     });
 
     if (replicatedResponseFile) {
+      this.log(`Already copied response file "${replicatedResponseFile}" to replica`);
       return this.readFromSurescriptsReplica(replicatedResponseFile);
     }
 
@@ -219,6 +216,7 @@ export class SurescriptsSftpClient extends SftpClient {
         populationOrPatientId,
       });
       if (sftpResponseFileName) {
+        this.log(`Found response file "${sftpResponseFileName}" in Surescripts directory`);
         return await this.readFromSurescriptsSftpDirectory(sftpResponseFileName);
       }
       return undefined;
@@ -280,6 +278,7 @@ export class SurescriptsSftpClient extends SftpClient {
    */
   private validateRequester(requester: SurescriptsRequesterData): void {
     if (!validateNPI(requester.facility.npi)) {
+      this.log(`Invalid NPI "${requester.facility.npi}" for CX ID "${requester.cxId}"`);
       throw new MetriportError("Invalid NPI", undefined, {
         npiNumber: requester.facility.npi,
         cxId: requester.cxId,

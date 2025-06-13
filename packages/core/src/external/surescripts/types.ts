@@ -1,7 +1,22 @@
 import { Patient } from "@metriport/shared/domain/patient";
 import { FacilityData } from "@metriport/shared/domain/customer";
+import { SftpConfig } from "../sftp/types";
 
 export type SurescriptsGender = "M" | "F" | "N" | "U";
+
+export enum SurescriptsEnvironment {
+  Production = "P",
+  Test = "T",
+}
+export interface SurescriptsSftpConfig extends Partial<Omit<SftpConfig, "password">> {
+  senderId?: string;
+  senderPassword?: string;
+  receiverId?: string;
+  publicKey?: string;
+  privateKey?: string;
+  replicaBucket?: string;
+  replicaBucketRegion?: string;
+}
 
 export interface SurescriptsRequester {
   cxId: string;

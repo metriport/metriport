@@ -212,11 +212,11 @@ export class SftpClient implements SftpClientImpl {
     return exists !== false;
   }
 
-  private log(message: string, ...optionalParams: unknown[]): void {
+  protected log(message: string, ...optionalParams: unknown[]): void {
     this.logger.log(message, ...optionalParams);
   }
 
-  private debug(message: string, ...optionalParams: unknown[]): void {
+  protected debug(message: string, ...optionalParams: unknown[]): void {
     this.logger.debug(message, ...optionalParams);
   }
 }

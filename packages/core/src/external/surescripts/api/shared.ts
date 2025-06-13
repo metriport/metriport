@@ -7,13 +7,18 @@ export function validateAndLogResponse<T>({
   response,
   schema,
   debug,
+  display,
 }: {
   url: string;
   response: AxiosResponse;
   schema: z.ZodSchema<T>;
   debug: typeof console.log;
+  display?: (data: T) => string;
 }): T {
   if (!response.data) throw new MetriportError(`No body returned from ${url}`);
-  debug(`${url} resp: `, () => JSON.stringify(response.data));
-  return schema.parse(response.data);
+  const validatedData = schema.parse(response.data);
+  debug(`GET ${url}\n`, () =>
+    display ? display(validatedData) : JSON.stringify(validatedData, null, 2)
+  );
+  return validatedData;
 }

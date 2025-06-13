@@ -339,7 +339,10 @@ export class SurescriptsNestedStack extends NestedStack {
           envVarName: "SURESCRIPTS_RECEIVE_VERIFICATION_QUEUE_URL",
           queue: this.receiveVerificationQueue,
         },
-        { envVarName: "SURESCRIPTS_RECEIVE_RESPONSE_QUEUE_URL", queue: this.receiveResponseQueue },
+        {
+          envVarName: "SURESCRIPTS_RECEIVE_RESPONSE_QUEUE_URL",
+          queue: this.receiveResponseQueue,
+        },
       ],
       sftpActionLambda: this.sftpActionLambda,
       sendPatientRequestLambda: this.sendPatientRequestLambda,
