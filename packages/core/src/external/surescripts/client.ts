@@ -116,6 +116,7 @@ export class SurescriptsSftpClient extends SftpClient {
     try {
       await this.connect();
       const historyFiles = await this.list("/history", file => file.name.includes(requestFileName));
+      this.log(`Found ${historyFiles.length} matching history files`);
       return historyFiles.length > 0;
     } finally {
       await this.disconnect();
