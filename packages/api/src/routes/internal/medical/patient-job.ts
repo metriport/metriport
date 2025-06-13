@@ -18,6 +18,7 @@ import { initializePatientJob } from "../../../command/job/patient/status/initia
 import { setPatientJobEntryStatus } from "../../../command/job/patient/update/set-entry-status";
 import { updatePatientJobRuntimeData } from "../../../command/job/patient/update/update-runtime-data";
 import { updatePatientJobTotal } from "../../../command/job/patient/update/update-total";
+import { parseISODate } from "../../../shared/date";
 import { requestLogger } from "../../helpers/request-logger";
 import { getUUIDFrom } from "../../schemas/uuid";
 import { asyncHandler, getFrom, getFromQuery, getFromQueryOrFail } from "../../util";
@@ -49,8 +50,8 @@ router.get(
     const jobType = getFromQuery("jobType", req);
     const jobGroupId = getFromQuery("jobGroupId", req);
     const status = getFromQuery("status", req);
-    const scheduledAfter = getFromQuery("scheduledAfter", req);
-    const scheduledBefore = getFromQuery("scheduledBefore", req);
+    const scheduledAfter = parseISODate(getFrom("query").optional("dateFrom", req));
+    const scheduledBefore = parseISODate(getFrom("query").optional("dateTo", req));
     if (status && !isValidJobStatus(status)) {
       throw new BadRequestError("Status must be a valid job status");
     }
@@ -71,7 +72,7 @@ router.get(
  * POST /internal/patient/job/scheduler/start
  *
  * Starts the jobs that are scheduled before the given date.
- * @param req.query.runDate - The run date. Optional.
+ * @param req.query.scheduledAtCutoff - The scheduled at cutoff date. Optional.
  * @param req.query.cxId - The CX ID. Optional.
  * @param req.query.patientId - The patient ID. Optional.
  * @param req.query.jobType - The job type. Optional.
@@ -84,8 +85,7 @@ router.post(
   "/scheduler/start",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    const runDate = getFromQuery("runDate", req);
-    const runDateDate = runDate ? buildDayjs(runDate).toDate() : undefined;
+    const scheduledAtCutoff = parseISODate(getFrom("query").optional("scheduledAtCutoff", req));
     const cxId = getFromQuery("cxId", req);
     const patientId = getFromQuery("patientId", req);
     const jobType = getFromQuery("jobType", req);
@@ -94,7 +94,7 @@ router.post(
       throw new BadRequestError("Status must be a valid job status");
     }
     await startJobs({
-      runDate: runDateDate,
+      scheduledAtCutoff: scheduledAtCutoff ? buildDayjs(scheduledAtCutoff).toDate() : undefined,
       cxId,
       patientId,
       jobType,

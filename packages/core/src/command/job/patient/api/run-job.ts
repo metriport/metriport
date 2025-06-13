@@ -10,7 +10,7 @@ export type RunJobParams = JobBaseParams & {
 };
 
 /**
- * Sends a request to the API to complete the job.
+ * Sends a request to the API to run the job.
  *
  * @param jobId - The job ID.
  * @param cxId - The CX ID.

@@ -3,7 +3,7 @@ import { UpdateJobRuntimeDataParams } from "../../shared";
 import { getPatientJobModelOrFail } from "../get";
 
 /**
- * Updates a patient job's total.
+ * Updates a patient job's runtime data.
  *
  * @param jobId - The job ID.
  * @param cxId - The customer ID.

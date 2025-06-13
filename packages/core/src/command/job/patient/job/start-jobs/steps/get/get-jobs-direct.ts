@@ -43,7 +43,7 @@ export class GetJobsDirect implements GetJobsHandler {
 async function getJobsWithControlTimeout({
   context,
   dbCreds,
-  runDate,
+  scheduledAtCutoff,
   ...request
 }: GetJobsRequest & {
   context: string;
@@ -51,7 +51,7 @@ async function getJobsWithControlTimeout({
 }): Promise<Record<string, unknown>[]> {
   const sequelize = initDbPool(dbCreds);
   const jobsTable = PATIENT_JOB_TABLE_NAME;
-  const jobCutoffDate = runDate ?? buildDayjs().toDate();
+  const jobScheduledAtCutoff = scheduledAtCutoff ?? buildDayjs().toDate();
 
   try {
     const raceResult = await Promise.race([
@@ -59,7 +59,7 @@ async function getJobsWithControlTimeout({
         CONTROL_TIMEOUT.asMilliseconds(),
         `Timed out waiting for jobs, after ${CONTROL_TIMEOUT.asMilliseconds()} ms`
       ),
-      getJobsFromDb({ sequelize, jobsTable, jobCutoffDate, ...request }),
+      getJobsFromDb({ sequelize, jobsTable, jobScheduledAtCutoff, ...request }),
     ]);
     if (typeof raceResult === "string") {
       throw new MetriportError(raceResult, undefined, {
@@ -85,17 +85,17 @@ async function getJobsFromDb({
   status,
   sequelize,
   jobsTable,
-  jobCutoffDate,
+  jobScheduledAtCutoff,
 }: GetJobsRequest & {
   sequelize: Sequelize;
   jobsTable: string;
-  jobCutoffDate: Date;
+  jobScheduledAtCutoff: Date;
 }): Promise<Record<string, unknown>[]> {
   const replacements: Record<string, unknown> = {
-    jobCutoffDate: jobCutoffDate.toISOString(),
+    jobScheduledAtCutoff: jobScheduledAtCutoff.toISOString(),
     status: status ?? jobInitialStatus,
   };
-  const whereConditions = ["scheduled_at <= :jobCutoffDate", "status = :status"];
+  const whereConditions = ["scheduled_at <= :jobScheduledAtCutoff", "status = :status"];
   if (id) {
     whereConditions.push("id = :id");
     replacements.id = id;

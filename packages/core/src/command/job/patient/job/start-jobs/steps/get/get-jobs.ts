@@ -3,7 +3,7 @@ import { PatientJob } from "@metriport/shared/domain/job/patient-job";
 export type GetJobsRequest = Partial<
   Pick<PatientJob, "id" | "cxId" | "patientId" | "jobType" | "status">
 > & {
-  runDate?: Date;
+  scheduledAtCutoff?: Date;
 };
 
 export interface GetJobsHandler {
