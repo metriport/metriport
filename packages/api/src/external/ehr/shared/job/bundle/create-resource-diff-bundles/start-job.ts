@@ -1,4 +1,4 @@
-import { BadRequestError } from "../../../../../../../../shared/dist";
+import { BadRequestError } from "@metriport/shared";
 import { createPatientJob } from "../../../../../../command/job/patient/create";
 import { getLatestPatientJob } from "../../../../../../command/job/patient/get";
 import { getPatientMappingOrFail } from "../../../../../../command/mapping/patient";
