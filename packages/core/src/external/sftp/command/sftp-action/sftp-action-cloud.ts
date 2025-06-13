@@ -1,7 +1,6 @@
-import { Config } from "../../../util/config";
-import { makeLambdaClient, getLambdaResultPayload } from "../../aws/lambda";
-import { SftpActionHandler } from "./sftp-action";
-import { SftpAction, SftpActionResult } from "../types";
+import { Config } from "../../../../util/config";
+import { makeLambdaClient, getLambdaResultPayload } from "../../../aws/lambda";
+import { SftpAction, SftpActionHandler, SftpActionResult } from "./sftp-action";
 
 const region = Config.getAWSRegion();
 const lambdaClient = makeLambdaClient(region);

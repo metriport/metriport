@@ -1,6 +1,5 @@
-import { SftpActionHandler } from "./sftp-action";
-import { SftpAction, SftpActionResult } from "../types";
-import { makeSftpListFilter, SftpClient } from "../client";
+import { SftpAction, SftpActionHandler, SftpActionResult } from "./sftp-action";
+import { makeSftpListFilter, SftpClient } from "../../client";
 
 export class SftpActionDirect<A extends SftpAction> implements SftpActionHandler<A> {
   constructor(private readonly client: SftpClient) {}

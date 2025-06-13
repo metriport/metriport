@@ -39,7 +39,7 @@ export class SurescriptsSftpClient extends SftpClient {
       privateKey: config.privateKey ?? Config.getSurescriptsSftpPrivateKey(),
     });
 
-    this.setS3Replica({
+    this.initializeS3Replica({
       bucketName: config.replicaBucket ?? Config.getSurescriptsReplicaBucketName(),
       region: config.replicaBucketRegion ?? Config.getAWSRegion(),
     });
@@ -292,8 +292,7 @@ export class SurescriptsSftpClient extends SftpClient {
    */
   private async writeToSurescripts(fileName: string, content: Buffer): Promise<void> {
     const remotePath = `/to_surescripts/${fileName}`;
-    await this.write(remotePath, content);
-    await this.writeToReplica(remotePath, content);
+    await this.write(remotePath, content, { useReplica: true });
   }
 
   /**
@@ -301,8 +300,18 @@ export class SurescriptsSftpClient extends SftpClient {
    * @returns the SftpFile if it exists in the replica, undefined otherwise
    */
   private async readFromSurescriptsReplica(fileName: string): Promise<SftpFile | undefined> {
-    const remotePath = `/from_surescripts/${fileName}`;
-    return this.readFromReplica(remotePath);
+    if (!this.replica) {
+      throw new MetriportError("No replica set", undefined, {
+        context: "surescripts.client.readFromSurescriptsReplica",
+      });
+    }
+
+    const replicaPath = `from_surescripts/${fileName}`;
+    const content = await this.replica.readFile(replicaPath);
+    return {
+      fileName,
+      content,
+    };
   }
 
   /**
@@ -313,8 +322,8 @@ export class SurescriptsSftpClient extends SftpClient {
     const remotePath = `/from_surescripts/${fileName}`;
     const content = await this.read(remotePath, {
       decompress: fileName.endsWith(".gz") || fileName.endsWith(".gz.rsp"),
+      useReplica: false,
     });
-    await this.writeToReplica(remotePath, content);
 
     return {
       fileName,

@@ -1,8 +1,7 @@
-import { Config } from "../../../util/config";
+import { Config } from "../../../../util/config";
 import { MetriportError } from "@metriport/shared";
-import { SftpClient } from "../client";
-import { SftpAction } from "../types";
-import { SftpActionHandler } from "./sftp-action";
+import { SftpClient } from "../../client";
+import { SftpAction, SftpActionHandler } from "./sftp-action";
 import { SftpActionDirect } from "./sftp-action-direct";
 import { SftpActionCloud } from "./sftp-action-cloud";
 

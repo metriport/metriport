@@ -6,8 +6,8 @@ import { compressGzip, decompressGzip } from "./compression";
 import {
   SftpClientImpl,
   SftpConfig,
-  SftpFile,
   SftpListFilterFunction,
+  SftpReadOptions,
   SftpReplica,
   SftpWriteOptions,
 } from "./types";
@@ -55,11 +55,17 @@ export class SftpClient implements SftpClientImpl {
     this.replica = replica;
   }
 
-  protected setS3Replica({ bucketName, region }: { bucketName: string; region: string }): void {
+  protected initializeS3Replica({
+    bucketName,
+    region,
+  }: {
+    bucketName: string;
+    region: string;
+  }): void {
     this.setReplica(new S3Replica({ bucketName, region }));
   }
 
-  protected setLocalReplica(localPath: string): void {
+  protected initializeLocalReplica(localPath: string): void {
     this.setReplica(new LocalReplica(localPath));
   }
 
@@ -124,45 +130,46 @@ export class SftpClient implements SftpClientImpl {
 
   async read(
     remotePath: string,
-    { decompress = false }: { decompress?: boolean } = {}
+    { decompress = false, useReplica = true }: SftpReadOptions = {}
   ): Promise<Buffer> {
     const { writable, getBuffer } = createWritableBuffer();
 
-    this.log(`Reading file from ${remotePath}`);
+    if (this.replica && useReplica) {
+      const replicaPath = this.replica.getReplicaPath(remotePath);
+      const hasReplicated = await this.replica.hasFile(replicaPath);
+      if (hasReplicated) {
+        this.log(`Reading file from replica: ${replicaPath}`);
+        const content = await this.replica.readFile(replicaPath);
+        return content;
+      }
+    }
+
+    this.log(`Reading file from SFTP: ${remotePath}`);
     await this.executeWithSshListeners(async function (client) {
       return client.get(remotePath, writable);
     });
 
-    this.log(`Finished reading from ${remotePath}.`);
+    this.log(`Finished reading from SFTP`);
     const content = getBuffer();
     if (decompress) {
       this.debug(`Decompressing gzip file...`);
       return decompressGzip(content);
     }
-    return content;
-  }
 
-  async readFromReplica(remotePath: string): Promise<SftpFile | undefined> {
-    if (!this.replica) return undefined;
-
-    const replicaPath = this.replica.getReplicaPath(remotePath);
-    const hasReplicated = await this.replica.hasFile(replicaPath);
-    if (hasReplicated) {
-      this.log(`Reading file from replica ${replicaPath}`);
-      const content = await this.replica.readFile(replicaPath);
-      return {
-        fileName: remotePath,
-        content,
-      };
+    if (this.replica && useReplica) {
+      const replicaPath = this.replica.getReplicaPath(remotePath);
+      this.log(`Writing file to replica: ${replicaPath}`);
+      await this.replica.writeFile(replicaPath, content);
+      this.debug(`Finished writing file to replica`);
     }
-    this.debug(`"${replicaPath}" not found in replica`);
-    return undefined;
+
+    return content;
   }
 
   async write(
     remotePath: string,
     content: Buffer,
-    { compress = false }: SftpWriteOptions = {}
+    { compress = false, useReplica = true }: SftpWriteOptions = {}
   ): Promise<void> {
     if (compress) {
       this.debug(`Compressing file with gzip...`);
@@ -174,22 +181,11 @@ export class SftpClient implements SftpClientImpl {
       return client.put(content, remotePath);
     });
     this.log(`Finished writing file to ${remotePath}`);
-  }
 
-  async writeToReplica(
-    remotePath: string,
-    content: Buffer,
-    { compress = false }: SftpWriteOptions = {}
-  ): Promise<void> {
-    if (!this.replica) return;
-
-    this.debug(`Writing file to replica`);
-    const replicaPath = this.replica.getReplicaPath(remotePath);
-    if (compress) {
-      this.debug(`Compressing file with gzip...`);
-      content = await compressGzip(content);
+    if (this.replica && useReplica) {
+      const replicaPath = this.replica.getReplicaPath(remotePath);
+      await this.replica.writeFile(replicaPath, content);
     }
-    await this.replica.writeFile(replicaPath, content);
   }
 
   async list(remotePath: string, filter?: SftpListFilterFunction): Promise<string[]> {

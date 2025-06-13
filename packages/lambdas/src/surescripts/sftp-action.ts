@@ -1,5 +1,5 @@
-import { SftpActionDirect } from "@metriport/core/external/sftp/command/sftp-action-direct";
-import { SftpAction } from "@metriport/core/external/sftp/types";
+import { SftpAction } from "@metriport/core/external/sftp/command/sftp-action/sftp-action";
+import { SftpActionDirect } from "@metriport/core/external/sftp/command/sftp-action/sftp-action-direct";
 import { capture } from "../shared/capture";
 import { makeSurescriptsClient } from "./shared";
 

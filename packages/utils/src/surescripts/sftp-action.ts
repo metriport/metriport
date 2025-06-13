@@ -1,8 +1,8 @@
 import fs from "fs";
 import { SurescriptsSftpClient } from "@metriport/core/external/surescripts/client";
 import { Command } from "commander";
-import { SftpActionDirect } from "@metriport/core/external/sftp/command/sftp-action-direct";
-import { SftpAction } from "@metriport/core/external/sftp/types";
+import { SftpActionDirect } from "@metriport/core/external/sftp/command/sftp-action/sftp-action-direct";
+import { SftpAction } from "@metriport/core/external/sftp/command/sftp-action/sftp-action";
 
 const sftpAction = new Command();
 
