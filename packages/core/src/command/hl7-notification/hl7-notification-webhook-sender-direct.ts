@@ -24,6 +24,8 @@ import {
 } from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion/msh";
 import { Hl7Notification, Hl7NotificationWebhookSender } from "./hl7-notification-webhook-sender";
 
+export const dischargeEventCode = "A03";
+
 const supportedTypes = ["A01", "A03"];
 const INTERNAL_HL7_ENDPOINT = `notification`;
 const INTERNAL_PATIENT_ENDPOINT = "internal/patient";
@@ -111,7 +113,7 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
     });
 
     const encounterPeriod = getEncounterPeriod(message);
-    await executeWithNetworkRetries(
+    const apiWebhookPromise = executeWithNetworkRetries(
       async () =>
         await axios.post(internalHl7RouteUrl, undefined, {
           params: {
@@ -125,17 +127,21 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
         })
     );
 
-    const dischargeRequeryParams: NewDischargeRequeryParams = {
-      cxId,
-      patientId,
-    };
+    let apiDischargeRequeryPromise = Promise.resolve();
+    if (triggerEvent === dischargeEventCode) {
+      const params: NewDischargeRequeryParams = {
+        cxId,
+        patientId,
+      };
+      apiDischargeRequeryPromise = executeWithNetworkRetries(
+        async () =>
+          await axios.post(internalDischargeRequeryRouteUrl, undefined, {
+            params,
+          })
+      );
+    }
 
-    await executeWithNetworkRetries(
-      async () =>
-        await axios.post(internalDischargeRequeryRouteUrl, undefined, {
-          params: dischargeRequeryParams,
-        })
-    );
+    await Promise.all([apiWebhookPromise, apiDischargeRequeryPromise]);
     log(`Done. API notified...`);
   }
 }
