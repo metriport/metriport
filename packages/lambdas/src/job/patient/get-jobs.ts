@@ -15,8 +15,8 @@ const region = getEnvOrFail("AWS_REGION");
 // Set by us
 const dbCredsArn = getEnvVarOrFail("DB_CREDS");
 
-type GetJobsRequestInLambda = Omit<GetJobsRequest, "runDate"> & {
-  runDate?: string;
+type GetJobsRequestInLambda = Omit<GetJobsRequest, "scheduledAtCutoff"> & {
+  scheduledAtCutoff?: string;
 };
 
 export const handler = capture.wrapHandler(async (params: GetJobsRequestInLambda) => {
@@ -29,6 +29,8 @@ export const handler = capture.wrapHandler(async (params: GetJobsRequestInLambda
 function convertToGetJobsRequest(params: GetJobsRequestInLambda): GetJobsRequest {
   return {
     ...params,
-    runDate: params.runDate ? buildDayjs(params.runDate).toDate() : undefined,
+    scheduledAtCutoff: params.scheduledAtCutoff
+      ? buildDayjs(params.scheduledAtCutoff).toDate()
+      : undefined,
   };
 }
