@@ -18,7 +18,7 @@ import { SurescriptsAssets } from "./types";
 const sftpActionTimeout = Duration.seconds(30);
 const sendPatientRequestLambdaTimeout = Duration.seconds(30);
 const sendBatchRequestLambdaTimeout = Duration.minutes(5);
-const verifyRequestInHistoryLambdaTimeout = sftpActionTimeout;
+const verifyRequestInHistoryLambdaTimeout = Duration.seconds(30);
 const receiveVerificationLambdaTimeout = Duration.seconds(30);
 const receiveResponseLambdaTimeout = Duration.seconds(30);
 const alarmMaxAgeOfOldestMessage = Duration.hours(1);
@@ -450,7 +450,6 @@ export class SurescriptsNestedStack extends NestedStack {
       lambdaLayers: [lambdaLayers.shared],
       envType,
       alarmSnsAction: alarmAction,
-      receiveMessageWaitTime: waitTime,
     });
 
     const lambda = createLambda({
