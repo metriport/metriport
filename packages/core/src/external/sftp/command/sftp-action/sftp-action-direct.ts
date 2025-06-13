@@ -32,7 +32,7 @@ async function executeAction<A extends SftpAction>(
       case "write":
         return (await client.write(
           action.remotePath,
-          action.content,
+          Buffer.from(action.content, "base64"),
           action
         )) as SftpActionResult<A>;
       case "list":
