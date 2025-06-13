@@ -9,7 +9,7 @@ const program = new Command();
 
 program
   .name("verify-request")
-  .argument("--transmission-id <transmissionId>", "The transfer ID")
+  .option("--transmission-id <transmissionId>", "The transfer ID")
   .description("Checks that the transmission is in the Surescripts history")
   .showHelpAfterError()
   .version("1.0.0")
