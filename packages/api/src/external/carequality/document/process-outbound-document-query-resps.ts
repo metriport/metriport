@@ -36,7 +36,6 @@ import {
 } from "./shared";
 
 const parallelUpsertsToFhir = 10;
-const resultPoller = makeOutboundResultPoller();
 
 export async function processOutboundDocumentQueryResps({
   requestId,
@@ -45,6 +44,8 @@ export async function processOutboundDocumentQueryResps({
   response,
 }: OutboundDocQueryRespParam): Promise<void> {
   const { log } = out(`CQ DR - requestId ${requestId}, patient ${patientId}`);
+
+  const resultPoller = makeOutboundResultPoller();
 
   const interrupt = buildInterrupt({ requestId, patientId, cxId, log });
   if (!resultPoller.isDREnabled()) return interrupt(`IHE DR result poller not available`);
