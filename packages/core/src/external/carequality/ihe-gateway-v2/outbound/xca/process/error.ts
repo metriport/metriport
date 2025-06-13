@@ -49,7 +49,7 @@ export function processRegistryErrorList(
     });
   } catch (error) {
     const msg = "Error processing RegistryErrorList";
-    outLog(`${msg}: ${error}`);
+    log(`${msg}: ${error}`);
     capture.error(msg, {
       extra: {
         error,
