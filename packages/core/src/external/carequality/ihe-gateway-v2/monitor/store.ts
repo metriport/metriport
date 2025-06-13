@@ -121,12 +121,14 @@ export async function storeDrResponse({
       timestamp,
       requestChunkId,
     });
-    await s3Utils.uploadFile({
+    log(`Storing DR response to ${key}`);
+    const resp = await s3Utils.uploadFile({
       bucket: bucketOutbound,
       key,
       file: response,
       contentType: "application/xml",
     });
+    log(`DR response metadata: ${JSON.stringify(resp)}`);
   } catch (error) {
     log(`Error storing DR response: ${error}`);
   }

@@ -1,4 +1,5 @@
 import { MetriportError, NotFoundError, sleep } from "@metriport/shared";
+import { normalizeGenderSafe, unknownGender } from "@metriport/shared/domain/gender";
 import {
   AppointmentGetResponseGraphql,
   appointmentGetResponseGraphqlSchema,
@@ -126,7 +127,7 @@ class HealthieApi {
     if (!patientGraphql.data.user) {
       throw new NotFoundError("Patient not found", undefined, additionalInfo);
     }
-    return patientGraphql.data.user;
+    return this.formatPatient(patientGraphql.data.user);
   }
 
   async getPatientQuickNotes({
@@ -501,6 +502,13 @@ class HealthieApi {
 
   private formatDate(date: string | undefined): string | undefined {
     return formatDate(date, healthieDateFormat);
+  }
+
+  private formatPatient(patient: Patient): Patient {
+    return {
+      ...patient,
+      gender: patient.gender ? normalizeGenderSafe(patient.gender) ?? unknownGender : unknownGender,
+    };
   }
 }
 
