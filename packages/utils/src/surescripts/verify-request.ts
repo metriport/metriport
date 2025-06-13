@@ -9,11 +9,13 @@ const program = new Command();
 
 program
   .name("verify-request")
-  .argument("<transmissionId>", "The transfer ID")
+  .argument("--transmission-id <transmissionId>", "The transfer ID")
   .description("Checks that the transmission is in the Surescripts history")
   .showHelpAfterError()
   .version("1.0.0")
-  .action(async (transmissionId: string) => {
+  .action(async ({ transmissionId }: { transmissionId?: string }) => {
+    if (!transmissionId) throw new Error("Transmission ID is required");
+
     const handler = new SurescriptsVerifyRequestInHistoryHandlerDirect();
     const result = await handler.verifyRequestInHistory({ transmissionId });
     console.log(result);
