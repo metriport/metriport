@@ -1,6 +1,11 @@
+import {
+  createFileKeyInvalid,
+  createFileKeyResults,
+} from "@metriport/core/command/patient-import/patient-import-shared";
 import { buildPatientImportParseHandler } from "@metriport/core/command/patient-import/steps/parse/patient-import-parse-factory";
 import { buildPatientImportResult } from "@metriport/core/command/patient-import/steps/result/patient-import-result-factory";
 import { getResultEntries } from "@metriport/core/command/patient-import/steps/result/patient-import-result-local";
+import { S3Utils } from "@metriport/core/external/aws/s3";
 import { capture } from "@metriport/core/util";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { Config } from "@metriport/core/util/config";
@@ -9,6 +14,7 @@ import {
   updateJobSchema,
 } from "@metriport/shared/domain/patient/patient-import/schemas";
 import { validateNewStatus } from "@metriport/shared/domain/patient/patient-import/status";
+import { PatientImportJob } from "@metriport/shared/domain/patient/patient-import/types";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { Request, Response } from "express";
@@ -33,6 +39,7 @@ import { requestLogger } from "../../helpers/request-logger";
 import { getUUIDFrom } from "../../schemas/uuid";
 import {
   asyncHandler,
+  getFrom,
   getFromParamsOrFail,
   getFromQuery,
   getFromQueryAsBoolean,
@@ -230,10 +237,31 @@ router.get(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const facilityId = getFrom("query").optional("facilityId", req);
 
-    const patientImports = await getPatientImportJobList({ cxId });
+    const patientImports = await getPatientImportJobList({ cxId, facilityId });
 
-    return res.status(status.OK).json(patientImports);
+    const s3Utils = new S3Utils(Config.getAWSRegion());
+    const urlDuration = dayjs.duration(10, "minutes");
+
+    const respWithUrls: (PatientImportJob & { validUrl: string; invalidUrl: string })[] =
+      await Promise.all(
+        patientImports.map(async job => {
+          const validUrl = await s3Utils.getSignedUrl({
+            bucketName: Config.getPatientImportBucket(),
+            fileName: createFileKeyResults(cxId, job.id),
+            durationSeconds: urlDuration.asSeconds(),
+          });
+          const invalidUrl = await s3Utils.getSignedUrl({
+            bucketName: Config.getPatientImportBucket(),
+            fileName: createFileKeyInvalid(cxId, job.id),
+            durationSeconds: urlDuration.asSeconds(),
+          });
+          return { ...job, validUrl, invalidUrl };
+        })
+      );
+
+    return res.status(status.OK).json(respWithUrls);
   })
 );
 
