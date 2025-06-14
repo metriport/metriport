@@ -1,8 +1,9 @@
 import os
 
 from generated.client import Metriport
-from generated.resources import UsState, Address
-from generated.resources.medical import BasePatient, PersonalIdentifier_DriversLicense, PersonalIdentifier_Ssn
+from generated import UsState, Address
+from generated import commons
+from generated.medical import BasePatient, PersonalIdentifier_DriversLicense, PersonalIdentifier_Ssn
 
 import os
 from dotenv import load_dotenv
@@ -16,15 +17,16 @@ base_url = os.environ.get("BASE_URL")
 
 def test_create_patient() -> None:
     metriport = Metriport(api_key=api_key, base_url=base_url)
-    patient_data = BasePatient(
-        first_name="John",
+    response = metriport.medical.patient.create(
+      facility_id=facility_id,
+      first_name="John",
         last_name="Doe",
         dob="1980-01-01",
         gender_at_birth="M",
         personal_identifiers=[
             PersonalIdentifier_DriversLicense(
                 type="driversLicense",
-                state=UsState.CA,
+                state='CA',
                 value="12345678",
             ),
             PersonalIdentifier_Ssn(
@@ -35,10 +37,9 @@ def test_create_patient() -> None:
         address=[Address(
             address_line_1="123 Main St",
             city="Los Angeles",
-            state=UsState.CA,
+            state='CA',
             zip="90001",
             country="USA"
         )]
     )
-    response = metriport.medical.patient.create(facility_id=facility_id, request=patient_data)
     print(f"Received patient with ID: {response.id}")
