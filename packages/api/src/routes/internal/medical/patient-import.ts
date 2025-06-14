@@ -224,13 +224,24 @@ router.post(
 
 const detailSchema = z.enum(["info", "debug"]).optional().default("info");
 
+type PatientImportJobWithUrls = PatientImportJob & {
+  validEntriesUrl: string;
+  invalidEntriesUrl: string;
+};
+
 /** ---------------------------------------------------------------------------
  * GET /internal/patient/bulk
  *
- * Returns all bulk patient import jobs for a given customer.
+ * Returns all bulk patient import jobs for a given customer. If a facilityId is provided,
+ * only returns jobs for that facility. If no facilityId is provided, returns jobs for all
+ * facilities for the customer.
+ *
+ * It'll also return the URLs for the valid and invalid entries files for each job. The URLs
+ * are valid for 10 minutes.
  *
  * @param req.query.cxId The customer ID.
- * @return The patient import job.
+ * @param req.query.facilityId The facility ID. Optional.
+ * @return The patient import job with valid/invalid entries URLs.
  */
 router.get(
   "/",
@@ -244,22 +255,21 @@ router.get(
     const s3Utils = new S3Utils(Config.getAWSRegion());
     const urlDuration = dayjs.duration(10, "minutes");
 
-    const respWithUrls: (PatientImportJob & { validUrl: string; invalidUrl: string })[] =
-      await Promise.all(
-        patientImports.map(async job => {
-          const validUrl = await s3Utils.getSignedUrl({
-            bucketName: Config.getPatientImportBucket(),
-            fileName: createFileKeyResults(cxId, job.id),
-            durationSeconds: urlDuration.asSeconds(),
-          });
-          const invalidUrl = await s3Utils.getSignedUrl({
-            bucketName: Config.getPatientImportBucket(),
-            fileName: createFileKeyInvalid(cxId, job.id),
-            durationSeconds: urlDuration.asSeconds(),
-          });
-          return { ...job, validUrl, invalidUrl };
-        })
-      );
+    const respWithUrls: PatientImportJobWithUrls[] = await Promise.all(
+      patientImports.map(async job => {
+        const validEntriesUrl = await s3Utils.getSignedUrl({
+          bucketName: Config.getPatientImportBucket(),
+          fileName: createFileKeyResults(cxId, job.id),
+          durationSeconds: urlDuration.asSeconds(),
+        });
+        const invalidEntriesUrl = await s3Utils.getSignedUrl({
+          bucketName: Config.getPatientImportBucket(),
+          fileName: createFileKeyInvalid(cxId, job.id),
+          durationSeconds: urlDuration.asSeconds(),
+        });
+        return { ...job, validEntriesUrl, invalidEntriesUrl };
+      })
+    );
 
     return res.status(status.OK).json(respWithUrls);
   })
