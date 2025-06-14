@@ -2,6 +2,7 @@ import {
   DischargeRequeryJob,
   runtimeDataSchema,
 } from "@metriport/core/domain/patient-monitoring/discharge-requery";
+import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { capture } from "@metriport/core/util";
 import { out } from "@metriport/core/util/log";
 import { PatientImportEntryStatusFinal } from "@metriport/shared/domain/patient/patient-import/types";
@@ -11,6 +12,8 @@ import {
 } from "../../../../../domain/medical/monitoring/discharge-requery/create";
 import { getPatientJobs } from "../../../../job/patient/get";
 import { completePatientJob } from "../../../../job/patient/status/complete";
+import { updatePatientJobRuntimeData } from "../../../../job/patient/update/update-runtime-data";
+import { getPatientOrFail } from "../../get-patient";
 
 /**
  * Finishes the discharge requery job.
@@ -79,6 +82,40 @@ export async function finishDischargeRequery({
 
   const remainingAttempts =
     status === "successful" ? job.paramsOps.remainingAttempts - 1 : job.paramsOps.remainingAttempts;
+
+  // Analytics and runtimeData for visibility
+  if (status === "successful") {
+    try {
+      const patient = await getPatientOrFail({ cxId, id: patientId });
+      const dqProgress = patient.data.documentQueryProgress;
+      if (dqProgress) {
+        const downloadCount = dqProgress.download?.total;
+        const convertCount = dqProgress.convert?.total;
+
+        await updatePatientJobRuntimeData({
+          jobId: targetJob.id,
+          cxId,
+          data: {
+            downloadCount,
+            convertCount,
+          },
+        });
+        analytics({
+          event: EventTypes.dischargeRequery,
+          distinctId: cxId,
+          properties: {
+            patientId,
+            requestId: dqProgress.requestId,
+            downloadCount,
+            convertCount,
+            remainingAttempts,
+          },
+        });
+      }
+    } catch (error) {
+      log(`Error getting patient ${patientId} for discharge requery analytics: ${error}`);
+    }
+  }
 
   if (remainingAttempts > 0) {
     await createDischargeRequeryJob({
