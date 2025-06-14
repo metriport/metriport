@@ -1,6 +1,11 @@
+import {
+  createFileKeyInvalid,
+  createFileKeyResults,
+} from "@metriport/core/command/patient-import/patient-import-shared";
 import { buildPatientImportParseHandler } from "@metriport/core/command/patient-import/steps/parse/patient-import-parse-factory";
 import { buildPatientImportResult } from "@metriport/core/command/patient-import/steps/result/patient-import-result-factory";
 import { getResultEntries } from "@metriport/core/command/patient-import/steps/result/patient-import-result-local";
+import { S3Utils } from "@metriport/core/external/aws/s3";
 import { capture } from "@metriport/core/util";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { Config } from "@metriport/core/util/config";
@@ -9,6 +14,7 @@ import {
   updateJobSchema,
 } from "@metriport/shared/domain/patient/patient-import/schemas";
 import { validateNewStatus } from "@metriport/shared/domain/patient/patient-import/status";
+import { PatientImportJob } from "@metriport/shared/domain/patient/patient-import/types";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { Request, Response } from "express";
@@ -17,7 +23,10 @@ import status from "http-status";
 import { z } from "zod";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { createPatientImportJob } from "../../../command/medical/patient/patient-import/create";
-import { getPatientImportJobOrFail } from "../../../command/medical/patient/patient-import/get";
+import {
+  getPatientImportJobList,
+  getPatientImportJobOrFail,
+} from "../../../command/medical/patient/patient-import/get";
 import {
   createPatientImportMapping,
   CreatePatientImportMappingCmd,
@@ -30,6 +39,7 @@ import { requestLogger } from "../../helpers/request-logger";
 import { getUUIDFrom } from "../../schemas/uuid";
 import {
   asyncHandler,
+  getFrom,
   getFromParamsOrFail,
   getFromQuery,
   getFromQueryAsBoolean,
@@ -213,6 +223,57 @@ router.post(
 );
 
 const detailSchema = z.enum(["info", "debug"]).optional().default("info");
+
+type PatientImportJobWithUrls = PatientImportJob & {
+  validEntriesUrl: string;
+  invalidEntriesUrl: string;
+};
+
+/** ---------------------------------------------------------------------------
+ * GET /internal/patient/bulk
+ *
+ * Returns all bulk patient import jobs for a given customer. If a facilityId is provided,
+ * only returns jobs for that facility. If no facilityId is provided, returns jobs for all
+ * facilities for the customer.
+ *
+ * It'll also return the URLs for the valid and invalid entries files for each job. The URLs
+ * are valid for 10 minutes.
+ *
+ * @param req.query.cxId The customer ID.
+ * @param req.query.facilityId The facility ID. Optional.
+ * @return The patient import job with valid/invalid entries URLs.
+ */
+router.get(
+  "/",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const facilityId = getFrom("query").optional("facilityId", req);
+
+    const patientImports = await getPatientImportJobList({ cxId, facilityId });
+
+    const s3Utils = new S3Utils(Config.getAWSRegion());
+    const urlDuration = dayjs.duration(10, "minutes");
+
+    const respWithUrls: PatientImportJobWithUrls[] = await Promise.all(
+      patientImports.map(async job => {
+        const validEntriesUrl = await s3Utils.getSignedUrl({
+          bucketName: Config.getPatientImportBucket(),
+          fileName: createFileKeyResults(cxId, job.id),
+          durationSeconds: urlDuration.asSeconds(),
+        });
+        const invalidEntriesUrl = await s3Utils.getSignedUrl({
+          bucketName: Config.getPatientImportBucket(),
+          fileName: createFileKeyInvalid(cxId, job.id),
+          durationSeconds: urlDuration.asSeconds(),
+        });
+        return { ...job, validEntriesUrl, invalidEntriesUrl };
+      })
+    );
+
+    return res.status(status.OK).json(respWithUrls);
+  })
+);
 
 /** ---------------------------------------------------------------------------
  * GET /internal/patient/bulk/:id
