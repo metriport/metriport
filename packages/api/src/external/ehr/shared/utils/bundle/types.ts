@@ -13,6 +13,11 @@ export type FetchBundleParams = BaseBundleParams & {
   jobId?: string;
 };
 
+export type ContributeBundleParams = BaseBundleParams & {
+  resourceType: string;
+  jobId: string;
+};
+
 export type FetchedBundlePreSignedUrls = {
   preSignedUrls: string[];
   resourceTypes: string[];

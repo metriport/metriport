@@ -4,6 +4,7 @@ import {
   Bundle,
   Coding,
   Condition,
+  Extension,
   Immunization,
   Medication,
   MedicationAdministration,
@@ -51,6 +52,7 @@ import {
 import { out } from "../../util/log";
 import { uuidv7 } from "../../util/uuid-v7";
 import { S3Utils } from "../aws/s3";
+import { dataSourceExtensionDefaults } from "../fhir/shared/extensions/extension";
 import { BundleType } from "./bundle/bundle-shared";
 import { createOrReplaceBundle } from "./bundle/command/create-or-replace-bundle";
 import { FetchBundleParams, fetchBundle } from "./bundle/command/fetch-bundle";
@@ -727,4 +729,14 @@ export function convertBundleToValidStrictBundle(
     }
   }
   return strictBundle.data;
+}
+
+export function getEhrDataSourceExtension(ehr: EhrSource): Extension {
+  return {
+    ...dataSourceExtensionDefaults,
+    valueCoding: {
+      ...dataSourceExtensionDefaults.valueCoding,
+      code: ehr.toUpperCase(),
+    },
+  };
 }

@@ -219,6 +219,7 @@ export const supportedAthenaHealthReferenceResources: ResourceType[] = [
   "RelatedPerson",
   "Location",
   "Organization",
+  "Patient",
   "Practitioner",
   "Provenance",
 ];
@@ -232,6 +233,14 @@ export function isSupportedAthenaHealthResource(
   resourceType: string
 ): resourceType is SupportedAthenaHealthResource {
   return supportedAthenaHealthResources.includes(resourceType as ResourceType);
+}
+
+export type SupportedAthenaHealthReferenceResource =
+  (typeof supportedAthenaHealthReferenceResources)[number];
+export function isSupportedAthenaHealthReferenceResource(
+  resourceType: string
+): resourceType is SupportedAthenaHealthReferenceResource {
+  return supportedAthenaHealthReferenceResources.includes(resourceType as ResourceType);
 }
 
 class AthenaHealthApi {
@@ -1458,6 +1467,76 @@ class AthenaHealthApi {
       metriportPatientId,
       ehrPatientId: athenaPatientId,
       resourceType,
+      fetchResourcesFromEhr,
+      useCachedBundle,
+    });
+    return bundle;
+  }
+
+  async getResourceBundleByResourceId({
+    cxId,
+    metriportPatientId,
+    athenaPatientId,
+    resourceType,
+    resourceId,
+    useCachedBundle = true,
+  }: {
+    cxId: string;
+    metriportPatientId: string;
+    athenaPatientId: string;
+    resourceType: string;
+    resourceId: string;
+    useCachedBundle?: boolean;
+  }): Promise<Bundle> {
+    const { debug } = out(
+      `AthenaHealth getResourceBundleByResourceId - cxId ${cxId} practiceId ${this.practiceId} metriportPatientId ${metriportPatientId} athenaPatientId ${athenaPatientId} resourceType ${resourceType}`
+    );
+    if (
+      !isSupportedAthenaHealthResource(resourceType) &&
+      !isSupportedAthenaHealthReferenceResource(resourceType)
+    ) {
+      throw new BadRequestError("Invalid resource type", undefined, {
+        athenaPatientId,
+        resourceId,
+        resourceType,
+      });
+    }
+    const params = {
+      _id: resourceId,
+      "ah-practice": this.createPracticetId(this.practiceId),
+    };
+    const urlParams = new URLSearchParams(params);
+    const resourceTypeUrl = `/${resourceType}?${urlParams.toString()}`;
+    const additionalInfo = {
+      cxId,
+      practiceId: this.practiceId,
+      patientId: athenaPatientId,
+      resourceType,
+      resourceId,
+    };
+    const fetchResourcesFromEhr = () =>
+      fetchEhrFhirResourcesWithPagination({
+        makeRequest: (url: string) =>
+          this.makeRequest<EhrFhirResourceBundle>({
+            cxId,
+            patientId: athenaPatientId,
+            s3Path: `fhir-resources-${resourceType}/resourceId/${resourceId}`,
+            method: "GET",
+            url,
+            schema: ehrFhirResourceBundleSchema,
+            additionalInfo,
+            debug,
+            useFhir: true,
+          }),
+        url: resourceTypeUrl,
+      });
+    const bundle = await fetchEhrBundleUsingCache({
+      ehr: EhrSources.athena,
+      cxId,
+      metriportPatientId,
+      ehrPatientId: athenaPatientId,
+      resourceType,
+      resourceId,
       fetchResourcesFromEhr,
       useCachedBundle,
     });
