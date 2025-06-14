@@ -251,6 +251,12 @@ export class Config {
   static getSurescriptsSftpActionLambdaName(): string {
     return getEnvVarOrFail("SURESCRIPTS_SFTP_ACTION_LAMBDA_NAME");
   }
+  static getSurescriptsConvertPatientResponseLambdaName(): string {
+    return getEnvVarOrFail("SURESCRIPTS_CONVERT_PATIENT_RESPONSE_LAMBDA_NAME");
+  }
+  static getSurescriptsConvertBatchResponseLambdaName(): string {
+    return getEnvVarOrFail("SURESCRIPTS_CONVERT_BATCH_RESPONSE_LAMBDA_NAME");
+  }
   static getSurescriptsSendPatientRequestQueueUrl(): string {
     return getEnvVarOrFail("SURESCRIPTS_SEND_PATIENT_REQUEST_QUEUE_URL");
   }

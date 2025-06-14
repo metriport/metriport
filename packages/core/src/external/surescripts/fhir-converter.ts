@@ -1,5 +1,6 @@
 import { BadRequestError } from "@metriport/shared";
 import { Bundle, BundleEntry, Resource } from "@medplum/fhirtypes";
+import { parseResponseFile } from "./file-parser";
 import { ParsedResponseFile, ResponseDetail } from "./schema/response";
 import { IncomingData } from "./schema/shared";
 
@@ -12,28 +13,28 @@ import { getPatient } from "./fhir/patient";
 import { getCondition } from "./fhir/condition";
 
 export async function convertPatientResponseToFhirBundle(
-  responseFile: ParsedResponseFile
+  responseFileContent: Buffer
 ): Promise<Bundle | undefined> {
+  const responseFile = parseResponseFile(responseFileContent);
   const patientIdDetails = buildPatientIdToDetailsMap(responseFile);
-  const patientIds = Array.from(patientIdDetails.keys());
-  if (patientIds.length > 1) {
+  if (patientIdDetails.size > 1) {
     throw new BadRequestError("Expected exactly one patient in the response file", undefined, {
-      patientIds: patientIds.join(", "),
+      patientIds: Array.from(patientIdDetails.keys()).join(", "),
     });
   }
 
-  const firstPatientId = patientIds[0];
-  if (!firstPatientId) {
-    return undefined;
+  // Return the first generated FHIR bundle
+  for (const [patientId, details] of patientIdDetails.entries()) {
+    const fhirBundle = await convertPatientDetailsToFhirBundle(patientId, details);
+    return fhirBundle;
   }
-  const firstPatientDetails = patientIdDetails.get(firstPatientId);
-  if (!firstPatientDetails) return undefined;
-  return await convertPatientDetailsToFhirBundle(firstPatientId, firstPatientDetails);
+  return undefined;
 }
 
 export async function convertBatchResponseToFhirBundles(
-  responseFile: ParsedResponseFile
+  responseFileContent: Buffer
 ): Promise<Bundle[]> {
+  const responseFile = parseResponseFile(responseFileContent);
   const patientIdDetails = buildPatientIdToDetailsMap(responseFile);
 
   const bundles: Bundle[] = [];
