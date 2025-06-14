@@ -27,10 +27,12 @@ if (!config.name || !config.mapping) {
  * - AWS_REGION: AWS region for Lambda
  * - HL7V2_ROSTER_UPLOAD_LAMBDA_NAME: Name of Lambda function
  *
- * Usage:
+ * Run against production workbook:
  * 1. Set `isLocal` flag for local vs Lambda execution
- * 2. Set `config` to one of the HieConfig object from `config/staging.ts`
- * 3. Run: `npx ts-node src/hl7v2-notifications/create-hl7v2-patient-roster`
+ * 2. Set `config` to one of the HieConfig object from `config/production.ts`
+ * 3. Turn on Prod env variables
+ * 4. Turn on Prod VPN
+ * 5. Run: `npx ts-node src/hl7v2-notifications/create-hl7v2-patient-roster`
  */
 async function main() {
   try {
