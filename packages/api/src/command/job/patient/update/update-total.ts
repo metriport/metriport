@@ -1,6 +1,6 @@
 import { BadRequestError, PatientJob } from "@metriport/shared";
-import { UpdateJobTotalParams } from "../shared";
-import { getPatientJobModelOrFail } from "./get";
+import { UpdateJobTotalParams } from "../../shared";
+import { getPatientJobModelOrFail } from "../get";
 
 /**
  * Updates a patient job's total.

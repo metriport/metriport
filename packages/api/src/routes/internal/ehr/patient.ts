@@ -4,7 +4,7 @@ import { isEhrSource } from "@metriport/shared/interface/external/ehr/source";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
-import { setPatientJobEntryStatus } from "../../../command/job/patient/set-entry-status";
+import { setPatientJobEntryStatus } from "../../../command/job/patient/update/set-entry-status";
 import {
   getLatestResourceDiffBundlesJobPayload,
   getResourceDiffBundlesJobPayload,

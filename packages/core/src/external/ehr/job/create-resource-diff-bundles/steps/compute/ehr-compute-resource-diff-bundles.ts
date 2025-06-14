@@ -1,4 +1,4 @@
-import { CreateResourceDiffBundlesBaseRequest } from "../../create-resource-diff-bundle-shared";
+import { CreateResourceDiffBundlesBaseRequest } from "../../shared";
 
 export type ComputeResourceDiffBundlesRequest = CreateResourceDiffBundlesBaseRequest;
 

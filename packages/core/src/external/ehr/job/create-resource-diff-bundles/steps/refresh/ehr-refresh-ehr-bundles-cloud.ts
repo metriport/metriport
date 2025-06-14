@@ -2,7 +2,7 @@ import { executeWithNetworkRetries } from "@metriport/shared";
 import { createUuidFromText } from "@metriport/shared/common/uuid";
 import { Config } from "../../../../../../util/config";
 import { SQSClient } from "../../../../../aws/sqs";
-import { createSqsGroupId } from "../../create-resource-diff-bundle-shared";
+import { createSqsGroupId } from "../../shared";
 import { EhrRefreshEhrBundlesHandler, RefreshEhrBundlesRequest } from "./ehr-refresh-ehr-bundles";
 
 /**

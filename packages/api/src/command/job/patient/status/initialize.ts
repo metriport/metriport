@@ -1,16 +1,14 @@
 import { PatientJob, validateNewJobStatus } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
-import { InitializeJobParams } from "../shared";
-import { getPatientJobModelOrFail } from "./get";
+import { InitializeJobParams } from "../../shared";
+import { getPatientJobModelOrFail } from "../get";
 
 /**
  * Initializes a patient job.
  *
  * @param jobId - The job ID.
  * @param cxId - The customer ID.
- * @param forceStatusUpdate - Whether to force the status update (only to be used by internal
- *                            flows/endpoints).
- * @param onCompleted - The callback to call when the job is completed.
+ * @param forceStatusUpdate - Whether to force the status update (only to be used by internal flows/endpoints).
  * @returns the updated job.
  * @throws BadRequestError if the processing status is not valid based on the current state.
  * @throws NotFoundError if the job doesn't exist.

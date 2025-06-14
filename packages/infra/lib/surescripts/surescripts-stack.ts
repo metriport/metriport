@@ -11,6 +11,7 @@ import { EnvConfig } from "../../config/env-config";
 import { EnvType } from "../env-type";
 import { createLambda } from "../shared/lambda";
 import { LambdaLayers } from "../shared/lambda-layers";
+import { buildSecret } from "../shared/secrets";
 import { LambdaSettings, QueueAndLambdaSettings } from "../shared/settings";
 import { createQueue } from "../shared/sqs";
 import { SurescriptsAssets } from "./types";
@@ -187,10 +188,6 @@ function surescriptsEnvironmentVariablesAndSecrets({
   secrets.push(privateKeySecret);
 
   return { envVars, secrets };
-}
-
-function buildSecret(nestedStack: SurescriptsNestedStack, name: string): secret.ISecret {
-  return secret.Secret.fromSecretNameV2(nestedStack, name, name);
 }
 
 interface SurescriptsNestedStackProps extends NestedStackProps {

@@ -228,5 +228,10 @@ export const config: EnvConfigNonSandbox = {
     workspaceId: "workspace-id",
     alertsChannelId: "alerts-channel-id",
   },
+  jobs: {
+    roUsername: "jobs-ro-username",
+    startPatientJobsSchedulerScheduleExpression: "0/5 * * * ? *",
+    startPatientJobsSchedulerUrl: "/internal/patient/job/scheduler/start",
+  },
 };
 export default config;

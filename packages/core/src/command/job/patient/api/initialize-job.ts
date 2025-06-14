@@ -1,8 +1,8 @@
 import { errorToString, executeWithNetworkRetries, MetriportError } from "@metriport/shared";
+import { logAxiosResponse } from "@metriport/shared/common/response";
 import axios from "axios";
 import { Config } from "../../../../util/config";
 import { out } from "../../../../util/log";
-import { validateAndLogResponse } from "../api-shared";
 import { JobBaseParams } from "./shared";
 
 /**
@@ -20,7 +20,7 @@ export async function initializeJob({ jobId, cxId }: JobBaseParams): Promise<voi
     const response = await executeWithNetworkRetries(async () => {
       return api.post(initializeJobUrl);
     });
-    validateAndLogResponse(initializeJobUrl, response, debug);
+    logAxiosResponse(initializeJobUrl, response, debug);
   } catch (error) {
     const msg = "Failure while initializing job @ Api";
     log(`${msg}. Cause: ${errorToString(error)}`);

@@ -119,9 +119,9 @@ export class Config {
   static getTokenTableName(): string {
     return getEnvVarOrFail("TOKEN_TABLE_NAME");
   }
-
+  /** @deprecated Use core's version of Config instead */
   static getDBCreds(): string {
-    return getEnvVarOrFail("DB_CREDS");
+    return CoreConfig.getDBCreds();
   }
 
   static getDbPoolSettings(): string | undefined {

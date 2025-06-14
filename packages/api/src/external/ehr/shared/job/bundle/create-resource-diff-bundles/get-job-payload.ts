@@ -1,4 +1,4 @@
-import { PatientJob } from "../../../../../../../../shared/dist";
+import { PatientJob } from "@metriport/shared";
 import {
   createPatientJobPayload,
   getLatestPatientJob,

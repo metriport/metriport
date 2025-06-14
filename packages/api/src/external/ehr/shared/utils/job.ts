@@ -11,6 +11,15 @@ export type StartCreateResourceDiffBundlesJobParams = {
   requestId?: string;
 };
 
+export type RunCreateResourceDiffBundlesJobParams = {
+  jobId: string;
+  ehr: EhrSource;
+  cxId: string;
+  practiceId: string;
+  metriportPatientId: string;
+  ehrPatientId: string;
+};
+
 export type GetResourceDiffBundlesJobPayloadParams = {
   ehr: EhrSource;
   cxId: string;

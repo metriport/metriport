@@ -1,8 +1,8 @@
 import { errorToString, executeWithNetworkRetries, MetriportError } from "@metriport/shared";
+import { logAxiosResponse } from "@metriport/shared/common/response";
 import axios from "axios";
 import { Config } from "../../../../util/config";
 import { out } from "../../../../util/log";
-import { validateAndLogResponse } from "../api-shared";
 import { JobBaseParams } from "./shared";
 
 export type UpdateJobTotalParams = JobBaseParams & {
@@ -25,7 +25,7 @@ export async function updateJobTotal({ jobId, cxId, total }: UpdateJobTotalParam
     const response = await executeWithNetworkRetries(async () => {
       return api.post(updateJobUrl);
     });
-    validateAndLogResponse(updateJobUrl, response, debug);
+    logAxiosResponse(updateJobUrl, response, debug);
   } catch (error) {
     const msg = "Failure while updating job total @ Api";
     log(`${msg}. Cause: ${errorToString(error)}`);
