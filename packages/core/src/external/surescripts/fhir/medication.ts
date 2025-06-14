@@ -1,9 +1,9 @@
 import { Medication, MedicationIngredient, Coding } from "@medplum/fhirtypes";
-import { FlatFileDetail } from "../schema/response";
+import { ResponseDetail } from "../schema/response";
 
 import { DEA_SCHEDULE_NAME } from "@metriport/shared/interface/external/surescripts/dea-schedule";
 
-export function getMedication(detail: FlatFileDetail): Medication {
+export function getMedication(detail: ResponseDetail): Medication {
   const code = getMedicationCode(detail);
   const ingredient = getMedicationIngredient(detail);
 
@@ -14,7 +14,7 @@ export function getMedication(detail: FlatFileDetail): Medication {
   };
 }
 
-function getMedicationCode(detail: FlatFileDetail): Medication["code"] {
+function getMedicationCode(detail: ResponseDetail): Medication["code"] {
   if (!detail.ndcNumber) return undefined;
 
   const text = detail.drugDescription;
@@ -28,7 +28,7 @@ function getMedicationCode(detail: FlatFileDetail): Medication["code"] {
   };
 }
 
-function getMedicationNdcCode(detail: FlatFileDetail): Coding | undefined {
+function getMedicationNdcCode(detail: ResponseDetail): Coding | undefined {
   if (!detail.ndcNumber) return undefined;
   return {
     system: "http://hl7.org/fhir/sid/ndc",
@@ -36,7 +36,7 @@ function getMedicationNdcCode(detail: FlatFileDetail): Coding | undefined {
   };
 }
 
-function getMedicationProductCode(detail: FlatFileDetail): Coding | undefined {
+function getMedicationProductCode(detail: ResponseDetail): Coding | undefined {
   if (!detail.productCode) return undefined;
   // + detail.productCodeQualifier
 
@@ -46,7 +46,7 @@ function getMedicationProductCode(detail: FlatFileDetail): Coding | undefined {
   };
 }
 
-function getMedicationDeaScheduleCode(detail: FlatFileDetail): Coding | undefined {
+function getMedicationDeaScheduleCode(detail: ResponseDetail): Coding | undefined {
   if (!detail.deaSchedule) return undefined;
   return {
     system: "http://terminology.hl7.org/CodeSystem/v3-substanceAdminSubstitution",
@@ -55,7 +55,7 @@ function getMedicationDeaScheduleCode(detail: FlatFileDetail): Coding | undefine
   };
 }
 
-function getMedicationIngredient(detail: FlatFileDetail): MedicationIngredient[] | undefined {
+function getMedicationIngredient(detail: ResponseDetail): MedicationIngredient[] | undefined {
   if (!detail.strengthValue || !detail.strengthFormCode || !detail.strengthUnitOfMeasure)
     return undefined;
 

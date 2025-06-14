@@ -1,4 +1,7 @@
-import { FlatFileDetail } from "./schema/response";
+import { BadRequestError } from "@metriport/shared";
+import { Bundle, BundleEntry, Resource } from "@medplum/fhirtypes";
+import { ParsedResponseFile, ResponseDetail } from "./schema/response";
+import { IncomingData } from "./schema/shared";
 
 import { getMedication } from "./fhir/medication";
 import { getMedicationDispense } from "./fhir/medication-dispense";
@@ -7,31 +10,51 @@ import { getPrescriber } from "./fhir/prescriber";
 import { getPharmacy } from "./fhir/pharmacy";
 import { getPatient } from "./fhir/patient";
 import { getCondition } from "./fhir/condition";
-import { IncomingFlatFile } from "./schema/response";
-import { Bundle, BundleEntry, Resource } from "@medplum/fhirtypes";
 
-export async function convertFlatFile(flatFile: IncomingFlatFile): Promise<Bundle[]> {
-  // Group rows by patient ID
-  const patientIdToRows = new Map<string, FlatFileDetail[]>();
-  for (const row of flatFile.detail) {
-    const patientId = row.patientId;
-    if (!patientIdToRows.has(patientId)) {
-      patientIdToRows.set(patientId, []);
-    }
-    patientIdToRows.get(patientId)?.push(row);
+export async function convertPatientResponseToFhirBundle(
+  responseFile: ParsedResponseFile
+): Promise<Bundle | undefined> {
+  const patientIdDetails = buildPatientIdToDetailsMap(responseFile);
+  const patientIds = Array.from(patientIdDetails.keys());
+  if (patientIds.length > 1) {
+    throw new BadRequestError("Expected exactly one patient in the response file", undefined, {
+      patientIds: patientIds.join(", "),
+    });
   }
 
+  const firstPatientId = patientIds[0];
+  if (!firstPatientId) {
+    return undefined;
+  }
+  const firstPatientDetails = patientIdDetails.get(firstPatientId);
+  if (!firstPatientDetails) return undefined;
+  return await convertPatientDetailsToFhirBundle(firstPatientId, firstPatientDetails);
+}
+
+export async function convertBatchResponseToFhirBundles(
+  responseFile: ParsedResponseFile
+): Promise<Bundle[]> {
+  const patientIdDetails = buildPatientIdToDetailsMap(responseFile);
+
   const bundles: Bundle[] = [];
-  for (const [patientId, rows] of patientIdToRows.entries()) {
-    const fhirBundle = await convertFlatFileDetailsForPatient(patientId, rows);
+  for (const [patientId, detailRows] of patientIdDetails.entries()) {
+    const fhirBundle = await convertPatientDetailsToFhirBundle(patientId, detailRows);
     bundles.push(fhirBundle);
   }
   return bundles;
 }
 
-async function convertFlatFileDetailsForPatient(
+// function patientIdToDetailMap(responseFile: ParsedResponseFile): Map<string, ResponseDetail[]> {
+//   const patientIdToRows = new Map<string, ResponseDetail[]>();
+//   for (const row of responseFile.detail) {
+//     const patientId = row.patientId;
+//     patientIdToRows.set(patientId, [...(patientIdToRows.get(patientId) ?? []), row]);
+//   }
+// }
+
+async function convertPatientDetailsToFhirBundle(
   id: string,
-  details: FlatFileDetail[]
+  details: IncomingData<ResponseDetail>[]
 ): Promise<Bundle> {
   const bundle: Bundle = {
     resourceType: "Bundle",
@@ -41,7 +64,7 @@ async function convertFlatFileDetailsForPatient(
   };
 
   for (const detail of details) {
-    const entries = parseFlatFileDetail(detail);
+    const entries = convertPatientDetailToEntries(detail.data);
     bundle.entry?.push(...entries);
     bundle.total = (bundle.total ?? 0) + entries.length;
   }
@@ -49,51 +72,40 @@ async function convertFlatFileDetailsForPatient(
   return bundle;
 }
 
-export function parseFlatFileDetail(detail: FlatFileDetail): BundleEntry<Resource>[] {
+export function convertPatientDetailToEntries(detail: ResponseDetail): BundleEntry<Resource>[] {
   const patient = getPatient(detail);
   const practitioner = getPrescriber(detail);
   const pharmacy = getPharmacy(detail);
+
   const condition = getCondition(detail);
   const medication = getMedication(detail);
   const medicationDispense = getMedicationDispense(detail);
   const medicationRequest = getMedicationRequest(detail);
 
-  const entries: BundleEntry<Resource>[] = [];
-  if (patient) {
-    entries.push({
-      resource: patient,
-    });
-  }
-  if (medication) {
-    entries.push({
-      resource: medication,
-    });
-  }
-  if (medicationDispense) {
-    entries.push({
-      resource: medicationDispense,
-    });
-  }
-  if (medicationRequest) {
-    entries.push({
-      resource: medicationRequest,
-    });
-  }
-  if (practitioner) {
-    entries.push({
-      resource: practitioner,
-    });
-  }
-  if (pharmacy) {
-    entries.push({
-      resource: pharmacy,
-    });
-  }
-  if (condition) {
-    entries.push({
-      resource: condition,
-    });
-  }
+  return [
+    patient,
+    practitioner,
+    pharmacy,
+    condition,
+    medication,
+    medicationDispense,
+    medicationRequest,
+  ].flatMap(function (resource): BundleEntry<Resource>[] {
+    if (!resource) return [];
+    return [{ resource }];
+  });
+}
 
-  return entries;
+function buildPatientIdToDetailsMap(
+  responseFile: ParsedResponseFile
+): Map<string, IncomingData<ResponseDetail>[]> {
+  const patientIdDetails = new Map<string, IncomingData<ResponseDetail>[]>();
+  for (const detail of responseFile.details) {
+    const patientId = detail.data.patientId;
+    if (!patientIdDetails.has(patientId)) {
+      patientIdDetails.set(patientId, []);
+    }
+    patientIdDetails.get(patientId)?.push(detail);
+  }
+  return patientIdDetails;
 }

@@ -1,7 +1,7 @@
 import { Organization, Identifier } from "@medplum/fhirtypes";
-import { FlatFileDetail } from "../schema/response";
+import { ResponseDetail } from "../schema/response";
 
-export function getPharmacy(detail: FlatFileDetail): Organization | undefined {
+export function getPharmacy(detail: ResponseDetail): Organization | undefined {
   if (!detail.pharmacyNpiNumber && !detail.ncpdpId) return undefined;
 
   const name = getPharmacyName(detail);
@@ -18,14 +18,14 @@ export function getPharmacy(detail: FlatFileDetail): Organization | undefined {
   };
 }
 
-function getPharmacyName(detail: FlatFileDetail): string {
+function getPharmacyName(detail: ResponseDetail): string {
   if (detail.pharmacyName) return detail.pharmacyName;
   if (detail.pharmacyNpiNumber) return `NPI: ${detail.pharmacyNpiNumber}`;
   if (detail.ncpdpId) return `NCPDP: ${detail.ncpdpId}`;
   return "Unknown Pharmacy";
 }
 
-function getPharmacyIdentifiers(detail: FlatFileDetail): Identifier[] {
+function getPharmacyIdentifiers(detail: ResponseDetail): Identifier[] {
   const identifiers: Identifier[] = [];
   if (detail.pharmacyNpiNumber) {
     identifiers.push({
@@ -42,7 +42,7 @@ function getPharmacyIdentifiers(detail: FlatFileDetail): Identifier[] {
   return identifiers;
 }
 
-function getPharmacyAddress(detail: FlatFileDetail): Organization["address"] {
+function getPharmacyAddress(detail: ResponseDetail): Organization["address"] {
   if (
     !detail.pharmacyAddressLine1 ||
     !detail.pharmacyCity ||
@@ -63,7 +63,7 @@ function getPharmacyAddress(detail: FlatFileDetail): Organization["address"] {
   ];
 }
 
-function getPharmacyTelecom(detail: FlatFileDetail): Organization["telecom"] {
+function getPharmacyTelecom(detail: ResponseDetail): Organization["telecom"] {
   const telecom: Organization["telecom"] = [];
   if (detail.pharmacyPhoneNumber)
     telecom.push({

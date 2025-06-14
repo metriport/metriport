@@ -1,8 +1,8 @@
 import { Patient } from "@medplum/fhirtypes";
-import { FlatFileDetail } from "../schema/response";
+import { ResponseDetail } from "../schema/response";
 import { convertDateToString } from "@metriport/shared/common/date";
 
-export function getPatient(detail: FlatFileDetail): Patient {
+export function getPatient(detail: ResponseDetail): Patient {
   const name = getPatientName(detail);
   const gender = getPatientGender(detail);
   const birthDate = getPatientBirthDate(detail);
@@ -16,7 +16,7 @@ export function getPatient(detail: FlatFileDetail): Patient {
   };
 }
 
-function getPatientName(detail: FlatFileDetail): Patient["name"] {
+function getPatientName(detail: ResponseDetail): Patient["name"] {
   return [
     {
       given: [detail.patientFirstName],
@@ -25,7 +25,7 @@ function getPatientName(detail: FlatFileDetail): Patient["name"] {
   ];
 }
 
-function getPatientGender(detail: FlatFileDetail): Patient["gender"] {
+function getPatientGender(detail: ResponseDetail): Patient["gender"] {
   switch (detail.patientGender) {
     case "M":
       return "male";
@@ -40,6 +40,6 @@ function getPatientGender(detail: FlatFileDetail): Patient["gender"] {
   }
 }
 
-function getPatientBirthDate(detail: FlatFileDetail): Patient["birthDate"] {
+function getPatientBirthDate(detail: ResponseDetail): Patient["birthDate"] {
   return convertDateToString(detail.patientDOB, { separator: "-" });
 }

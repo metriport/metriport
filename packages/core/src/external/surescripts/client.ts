@@ -68,7 +68,12 @@ export class SurescriptsSftpClient extends SftpClient {
       transmissionId,
       ...requestData,
     });
-    if (!content) return undefined;
+    if (!content) {
+      this.log(
+        `No content generated for patient ID: ${requestData.patient.id}, cxId: ${requestData.cxId}`
+      );
+      return undefined;
+    }
 
     const requestFileName = makeRequestFileName(transmissionId);
     try {
@@ -94,7 +99,12 @@ export class SurescriptsSftpClient extends SftpClient {
       transmissionId,
       ...requestData,
     });
-    if (!content) return undefined;
+    if (!content) {
+      this.log(
+        `No content generated for batch request: ${requestData.facility.id}, cxId: ${requestData.cxId}`
+      );
+      return undefined;
+    }
 
     const requestFileName = makeRequestFileName(transmissionId);
     try {

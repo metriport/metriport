@@ -1,7 +1,7 @@
 import { Identifier, Practitioner } from "@medplum/fhirtypes";
-import { FlatFileDetail } from "../schema/response";
+import { ResponseDetail } from "../schema/response";
 
-export function getPrescriber(detail: FlatFileDetail): Practitioner {
+export function getPrescriber(detail: ResponseDetail): Practitioner {
   const prescriberName = getPrescriberName(detail);
   const prescriberAddress = getPrescriberAddress(detail);
 
@@ -19,7 +19,7 @@ export function getPrescriber(detail: FlatFileDetail): Practitioner {
   };
 }
 
-function getPrescriberIdentifiers(detail: FlatFileDetail): Identifier[] {
+function getPrescriberIdentifiers(detail: ResponseDetail): Identifier[] {
   const identifiers: Identifier[] = [];
   if (detail.prescriberNPI) {
     identifiers.push({
@@ -42,7 +42,7 @@ function getPrescriberIdentifiers(detail: FlatFileDetail): Identifier[] {
   return identifiers;
 }
 
-function getPrescriberName(detail: FlatFileDetail): Practitioner["name"] {
+function getPrescriberName(detail: ResponseDetail): Practitioner["name"] {
   if (!detail.prescriberFirstName || !detail.prescriberLastName) return [];
 
   const givenNames = [detail.prescriberFirstName];
@@ -58,7 +58,7 @@ function getPrescriberName(detail: FlatFileDetail): Practitioner["name"] {
   ];
 }
 
-function getPrescriberAddress(detail: FlatFileDetail): Practitioner["address"] {
+function getPrescriberAddress(detail: ResponseDetail): Practitioner["address"] {
   if (
     !detail.prescriberAddressLine1 ||
     !detail.prescriberCity ||
@@ -79,7 +79,7 @@ function getPrescriberAddress(detail: FlatFileDetail): Practitioner["address"] {
   ];
 }
 
-function getPrescriberTelecom(detail: FlatFileDetail): Practitioner["telecom"] {
+function getPrescriberTelecom(detail: ResponseDetail): Practitioner["telecom"] {
   const telecom: Practitioner["telecom"] = [];
   if (detail.prescriberPhoneNumber) {
     telecom.push({

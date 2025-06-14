@@ -1,8 +1,8 @@
 import { Provenance, ProvenanceAgent } from "@medplum/fhirtypes";
-import { FlatFileDetail } from "../schema/response";
+import { ResponseDetail } from "../schema/response";
 import { SURESCRIPTS_AGENT_ID } from "../constants";
 
-export function getProvenance(detail: FlatFileDetail): Provenance {
+export function getProvenance(detail: ResponseDetail): Provenance {
   return {
     resourceType: "Provenance",
     recorded: detail.sentTime.toISOString(),
@@ -10,7 +10,7 @@ export function getProvenance(detail: FlatFileDetail): Provenance {
   };
 }
 
-export function getProvenanceAgent(detail: FlatFileDetail): ProvenanceAgent {
+export function getProvenanceAgent(detail: ResponseDetail): ProvenanceAgent {
   return {
     id: SURESCRIPTS_AGENT_ID,
     who: {

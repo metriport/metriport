@@ -1,7 +1,7 @@
 import { Condition } from "@medplum/fhirtypes";
-import { FlatFileDetail } from "../schema/response";
+import { ResponseDetail } from "../schema/response";
 
-export function getCondition(detail: FlatFileDetail): Condition | undefined {
+export function getCondition(detail: ResponseDetail): Condition | undefined {
   if (!detail.diagnosisICD10Code) return undefined;
   return {
     resourceType: "Condition",

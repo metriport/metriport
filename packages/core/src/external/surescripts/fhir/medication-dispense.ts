@@ -1,7 +1,7 @@
 import { Extension, MedicationDispense, MedicationDispensePerformer } from "@medplum/fhirtypes";
-import { FlatFileDetail } from "../schema/response";
+import { ResponseDetail } from "../schema/response";
 
-export function getMedicationDispense(detail: FlatFileDetail): MedicationDispense {
+export function getMedicationDispense(detail: ResponseDetail): MedicationDispense {
   const daysSupply = getDaysSupply(detail);
   const performer = getMedicationDispensePerformer(detail);
 
@@ -20,7 +20,7 @@ export function getMedicationDispense(detail: FlatFileDetail): MedicationDispens
   return medicationDispense;
 }
 
-function getMedicationDispensePerformer(detail: FlatFileDetail): MedicationDispensePerformer[] {
+function getMedicationDispensePerformer(detail: ResponseDetail): MedicationDispensePerformer[] {
   return [
     {
       id: "",
@@ -33,7 +33,7 @@ function getMedicationDispensePerformer(detail: FlatFileDetail): MedicationDispe
   ];
 }
 
-function getDaysSupply(detail: FlatFileDetail): MedicationDispense["daysSupply"] | undefined {
+function getDaysSupply(detail: ResponseDetail): MedicationDispense["daysSupply"] | undefined {
   if (!detail.daysSupply) return undefined;
 
   const value = parseInt(detail.daysSupply);
@@ -51,7 +51,7 @@ function getDaysSupply(detail: FlatFileDetail): MedicationDispense["daysSupply"]
  * Surescripts zero-indexes the fill number, so we need to add 1 to meet the FHIR specification.
  * https://build.fhir.org/medicationdispense-definitions.html#MedicationDispense.fillNumber
  */
-function getFillNumberAsExtension(detail: FlatFileDetail): Extension | undefined {
+function getFillNumberAsExtension(detail: ResponseDetail): Extension | undefined {
   if (detail.fillNumber == null) return undefined;
 
   return {

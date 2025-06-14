@@ -1,8 +1,8 @@
 import { Coverage, Identifier } from "@medplum/fhirtypes";
-import { FlatFileDetail } from "../schema/response";
+import { ResponseDetail } from "../schema/response";
 import { PLAN_CODE_NAME } from "../codes";
 
-export function getCoverage(detail: FlatFileDetail): Coverage | undefined {
+export function getCoverage(detail: ResponseDetail): Coverage | undefined {
   if (!detail.planCode) return undefined;
 
   detail.planNetworkBIN;
@@ -27,7 +27,7 @@ export function getCoverage(detail: FlatFileDetail): Coverage | undefined {
   };
 }
 
-function getCoverageIdentifiers(detail: FlatFileDetail): Identifier[] {
+function getCoverageIdentifiers(detail: ResponseDetail): Identifier[] {
   const identifiers: Identifier[] = [];
   if (detail.planNetworkBIN) {
     identifiers.push({

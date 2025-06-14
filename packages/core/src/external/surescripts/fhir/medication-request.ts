@@ -1,7 +1,7 @@
 import { MedicationRequest } from "@medplum/fhirtypes";
-import { FlatFileDetail } from "../schema/response";
+import { ResponseDetail } from "../schema/response";
 
-export function getMedicationRequest(detail: FlatFileDetail): MedicationRequest {
+export function getMedicationRequest(detail: ResponseDetail): MedicationRequest {
   const dispenseRequest = getDispenseRequest(detail);
   const substitution = getMedicationRequestSubstitution(detail);
   const dosageInstruction = getDosageInstruction(detail);
@@ -16,7 +16,7 @@ export function getMedicationRequest(detail: FlatFileDetail): MedicationRequest 
   };
 }
 
-function getDispenseRequest(detail: FlatFileDetail): MedicationRequest["dispenseRequest"] {
+function getDispenseRequest(detail: ResponseDetail): MedicationRequest["dispenseRequest"] {
   const dispenseRequest: MedicationRequest["dispenseRequest"] = {};
   if (detail.fillNumber) {
     dispenseRequest.numberOfRepeatsAllowed = detail.fillNumber;
@@ -24,13 +24,13 @@ function getDispenseRequest(detail: FlatFileDetail): MedicationRequest["dispense
   return dispenseRequest;
 }
 
-function getAuthoredOn(detail: FlatFileDetail): MedicationRequest["authoredOn"] | undefined {
+function getAuthoredOn(detail: ResponseDetail): MedicationRequest["authoredOn"] | undefined {
   if (!detail.dateWritten) return undefined;
   return detail.dateWritten.toISOString();
 }
 
 function getDosageInstruction(
-  detail: FlatFileDetail
+  detail: ResponseDetail
 ): MedicationRequest["dosageInstruction"] | undefined {
   if (!detail.directions) return undefined;
   return [
@@ -42,7 +42,7 @@ function getDosageInstruction(
 
 // Field 36 of the FFM specification
 function getMedicationRequestSubstitution(
-  detail: FlatFileDetail
+  detail: ResponseDetail
 ): MedicationRequest["substitution"] {
   if (detail.substitutions === "1") {
     return {
