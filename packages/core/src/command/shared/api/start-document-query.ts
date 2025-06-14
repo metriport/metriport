@@ -11,6 +11,7 @@ import { withDefaultApiErrorHandling } from "./shared";
  * @param requestId - The data pipeline request ID.
  * @param disableWebhooks - Whether to disable webhooks.
  * @param triggerConsolidated - Whether to trigger consolidated to generate a PDF.
+ * @param context - The context of the document query.
  */
 export async function startDocumentQuery({
   cxId,
@@ -18,28 +19,32 @@ export async function startDocumentQuery({
   requestId,
   triggerConsolidated,
   disableWebhooks,
+  context,
 }: {
   cxId: string;
   patientId: string;
   requestId: string;
   triggerConsolidated: boolean;
   disableWebhooks: boolean;
-}): Promise<void> {
+  context: string;
+}): Promise<{ requestId: string }> {
   const api = axios.create({ baseURL: Config.getApiUrl() });
   const dqUrl = buildDocumentQueryUrl({ cxId, patientId, requestId, triggerConsolidated });
   const payload = disableWebhooks ? { metadata: disableWHMetadata } : {};
 
-  await withDefaultApiErrorHandling({
+  const res = await withDefaultApiErrorHandling({
     functionToRun: () => api.post(dqUrl, payload),
-    messageWhenItFails: `Failure while starting document query @ PatientImport`,
+    messageWhenItFails: `Failure while starting document query @ ${context}`,
     additionalInfo: {
       cxId,
       patientId,
       requestId,
       dqUrl,
-      context: "patient-import.startDocumentQuery",
+      context: `${context}.startDocumentQuery`,
     },
   });
+
+  return { requestId: res.data.requestId };
 }
 
 function buildDocumentQueryUrl({
