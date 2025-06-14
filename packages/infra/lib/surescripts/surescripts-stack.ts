@@ -438,7 +438,6 @@ export class SurescriptsNestedStack extends NestedStack {
       lambda: lambdaSettings,
       queue: queueSettings,
       eventSource: eventSourceSettings,
-      waitTime,
     } = settings[job];
 
     const queue = createQueue({
@@ -471,12 +470,7 @@ export class SurescriptsNestedStack extends NestedStack {
     surescriptsReplicaBucket.grantReadWrite(lambda);
     pharmacyConversionBucket?.grantReadWrite(lambda);
 
-    lambda.addEventSource(
-      new SqsEventSource(queue, {
-        ...eventSourceSettings,
-        maxBatchingWindow: waitTime,
-      })
-    );
+    lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
 
     return { lambda, queue };
   }
