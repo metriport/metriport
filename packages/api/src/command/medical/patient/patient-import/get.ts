@@ -75,10 +75,12 @@ export async function getPatientImportJobModelOrFail({
 
 export async function getPatientImportJobList({
   cxId,
+  facilityId,
   jobIds,
   status: statusParam,
 }: {
   cxId: string;
+  facilityId?: string;
   jobIds?: string[];
   status?: PatientImportJobStatus | PatientImportJobStatus[];
 }): Promise<PatientImportJob[]> {
@@ -90,6 +92,7 @@ export async function getPatientImportJobList({
   const jobs = await PatientImportJobModel.findAll({
     where: {
       cxId,
+      ...(facilityId ? { facilityId } : {}),
       ...(jobIds ? { id: { [Op.in]: jobIds } } : {}),
       ...(status ? { status: { [Op.in]: status } } : {}),
     },
