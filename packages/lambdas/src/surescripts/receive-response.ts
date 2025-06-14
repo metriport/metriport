@@ -18,8 +18,8 @@ export const handler = capture.wrapHandler(async (event: SQSEvent) => {
 
   const parsedBody = parseBody(surescriptsReceiveResponseSchema, message.body);
   const client = await makeSurescriptsClient();
-  const handler = new SurescriptsReceiveResponseHandlerDirect(client);
-  await handler.receiveResponse(parsedBody);
+  const receiveResponseHandler = new SurescriptsReceiveResponseHandlerDirect(client);
+  await receiveResponseHandler.receiveResponse(parsedBody);
 });
 
 const surescriptsReceiveResponseSchema = z.object({

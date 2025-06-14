@@ -22,8 +22,8 @@ export const handler = capture.wrapHandler(async (event: SQSEvent) => {
     message.body
   );
   const client = await makeSurescriptsClient();
-  const handler = new SurescriptsSendPatientRequestHandlerDirect(client);
-  await handler.sendPatientRequest(parsedBody);
+  const sendPatientRequestHandler = new SurescriptsSendPatientRequestHandlerDirect(client);
+  await sendPatientRequestHandler.sendPatientRequest(parsedBody);
 });
 
 const surescriptsPatientRequestSchema = z.object({

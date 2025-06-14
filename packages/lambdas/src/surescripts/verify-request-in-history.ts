@@ -18,8 +18,8 @@ export const handler = capture.wrapHandler(async (event: SQSEvent) => {
 
   const parsedBody = parseBody(surescriptsVerifyRequestInHistorySchema, message.body);
   const client = await makeSurescriptsClient();
-  const handler = new SurescriptsVerifyRequestInHistoryHandlerDirect(client);
-  await handler.verifyRequestInHistory(parsedBody);
+  const verifyRequestInHistoryHandler = new SurescriptsVerifyRequestInHistoryHandlerDirect(client);
+  await verifyRequestInHistoryHandler.verifyRequestInHistory(parsedBody);
 });
 
 const surescriptsVerifyRequestInHistorySchema = z.object({

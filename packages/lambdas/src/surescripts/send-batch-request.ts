@@ -22,8 +22,8 @@ export const handler = capture.wrapHandler(async (event: SQSEvent) => {
     message.body
   );
   const client = await makeSurescriptsClient();
-  const handler = new SurescriptsSendBatchRequestHandlerDirect(client);
-  await handler.sendBatchRequest(parsedBody);
+  const sendBatchRequestHandler = new SurescriptsSendBatchRequestHandlerDirect(client);
+  await sendBatchRequestHandler.sendBatchRequest(parsedBody);
 });
 
 const surescriptsBatchRequestSchema = z.object({

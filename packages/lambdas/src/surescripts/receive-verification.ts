@@ -18,8 +18,8 @@ export const handler = capture.wrapHandler(async (event: SQSEvent) => {
 
   const parsedBody = parseBody(surescriptsReceiveVerificationSchema, message.body);
   const client = await makeSurescriptsClient();
-  const handler = new SurescriptsReceiveVerificationHandlerDirect(client);
-  await handler.receiveVerification(parsedBody);
+  const receiveVerificationHandler = new SurescriptsReceiveVerificationHandlerDirect(client);
+  await receiveVerificationHandler.receiveVerification(parsedBody);
 });
 
 const surescriptsReceiveVerificationSchema = z.object({
