@@ -17,7 +17,10 @@ import status from "http-status";
 import { z } from "zod";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { createPatientImportJob } from "../../../command/medical/patient/patient-import/create";
-import { getPatientImportJobOrFail } from "../../../command/medical/patient/patient-import/get";
+import {
+  getPatientImportJobList,
+  getPatientImportJobOrFail,
+} from "../../../command/medical/patient/patient-import/get";
 import {
   createPatientImportMapping,
   CreatePatientImportMappingCmd,
@@ -213,6 +216,26 @@ router.post(
 );
 
 const detailSchema = z.enum(["info", "debug"]).optional().default("info");
+
+/** ---------------------------------------------------------------------------
+ * GET /internal/patient/bulk
+ *
+ * Returns all bulk patient import jobs for a given customer.
+ *
+ * @param req.query.cxId The customer ID.
+ * @return The patient import job.
+ */
+router.get(
+  "/",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+
+    const patientImports = await getPatientImportJobList({ cxId });
+
+    return res.status(status.OK).json(patientImports);
+  })
+);
 
 /** ---------------------------------------------------------------------------
  * GET /internal/patient/bulk/:id
