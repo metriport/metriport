@@ -8,9 +8,13 @@ export type Secrets = { [key: string]: secret.ISecret };
 export function buildSecrets(scope: Construct, secretNames: Record<string, string>): Secrets {
   const secrets: Secrets = {};
   for (const [envVarName, secretName] of Object.entries(secretNames)) {
-    secrets[envVarName] = secret.Secret.fromSecretNameV2(scope, secretName, secretName);
+    secrets[envVarName] = buildSecret(scope, secretName);
   }
   return secrets;
+}
+
+export function buildSecret(scope: Construct, name: string): secret.ISecret {
+  return secret.Secret.fromSecretNameV2(scope, name, name);
 }
 
 export function getSecrets(scope: Construct, config: EnvConfig): Secrets {

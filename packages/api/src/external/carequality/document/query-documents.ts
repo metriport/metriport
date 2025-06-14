@@ -27,8 +27,6 @@ import { filterCqLinksByManagingOrg } from "./filter-oids-by-managing-org";
 
 const staleLookbackHours = 24;
 
-const resultPoller = makeOutboundResultPoller();
-
 export async function getDocumentsFromCQ({
   requestId,
   facilityId,
@@ -56,6 +54,8 @@ export async function getDocumentsFromCQ({
   });
 
   const isCqQueryEnabled = await isFacilityEnabledToQueryCQ(facilityId, { id: patientId, cxId });
+
+  const resultPoller = makeOutboundResultPoller();
 
   if (!resultPoller.isDQEnabled()) return interrupt(`IHE DQ result poller not available`);
   if (!(await isCQDirectEnabledForCx(cxId))) return interrupt(`CQ disabled for cx ${cxId}`);

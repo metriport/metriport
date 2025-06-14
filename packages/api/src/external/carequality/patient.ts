@@ -24,7 +24,6 @@ import { getCqInitiator, isCqEnabled } from "./shared";
 dayjs.extend(duration);
 
 const context = "cq.patient.discover";
-const resultPoller = makeOutboundResultPoller();
 
 export async function discover({
   patient,
@@ -96,6 +95,8 @@ async function prepareAndTriggerPD({
         cxId: patient.cxId,
       });
     }
+
+    const resultPoller = makeOutboundResultPoller();
 
     await resultPoller.pollOutboundPatientDiscoveryResults({
       requestId: pdRequestGatewayV2.id,
