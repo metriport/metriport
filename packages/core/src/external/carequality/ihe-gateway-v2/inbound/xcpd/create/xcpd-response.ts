@@ -153,9 +153,6 @@ function createSubjectAndRegistrationEvent(response: InboundPatientDiscoveryResp
       },
       custodian: {
         "@_typeCode": "CST",
-        assignedCustodian: {
-          "@_typeCode": "CST",
-        },
         assignedEntity: {
           "@_classCode": "ASSIGNED",
           id: {

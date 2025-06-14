@@ -192,6 +192,10 @@ export class Config {
     return getEnvVarOrFail("PATIENT_IMPORT_RESULT_LAMBDA_NAME");
   }
 
+  static getDischargeRequeryLambdaName(): string {
+    return getEnvVarOrFail("DISCHARGE_REQUERY_LAMBDA_NAME");
+  }
+
   static getEhrSyncPatientQueueUrl(): string {
     return getEnvVarOrFail("EHR_SYNC_PATIENT_QUEUE_URL");
   }

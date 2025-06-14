@@ -3,13 +3,14 @@ import { Bundle, Resource } from "@medplum/fhirtypes";
 import { executeWithNetworkRetries } from "@metriport/shared";
 import axios from "axios";
 import dayjs from "dayjs";
+import { NewDischargeRequeryParams } from "../../domain/patient-monitoring/discharge-requery";
 import { S3Utils } from "../../external/aws/s3";
 import {
   mergeBundleIntoAdtSourcedEncounter,
   saveAdtConversionBundle,
 } from "../../external/fhir/adt-encounters";
-import { toFHIR as toFhirPatient } from "../../external/fhir/patient/conversion";
 import { buildBundleEntry, buildCollectionBundle } from "../../external/fhir/bundle/bundle";
+import { toFHIR as toFhirPatient } from "../../external/fhir/patient/conversion";
 import { capture, out } from "../../util";
 import { Config } from "../../util/config";
 import { convertHl7v2MessageToFhir } from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion";
@@ -23,9 +24,12 @@ import {
 } from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion/msh";
 import { Hl7Notification, Hl7NotificationWebhookSender } from "./hl7-notification-webhook-sender";
 
+export const dischargeEventCode = "A03";
+
 const supportedTypes = ["A01", "A03"];
 const INTERNAL_HL7_ENDPOINT = `notification`;
 const INTERNAL_PATIENT_ENDPOINT = "internal/patient";
+const DISCHARGE_REQUERY_ENDPOINT = "job/discharge-requery/create";
 const SIGNED_URL_DURATION_SECONDS = dayjs.duration({ minutes: 10 }).asSeconds();
 
 export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhookSender {
@@ -60,6 +64,7 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
 
     const internalHl7RouteUrl = `${this.apiUrl}/${INTERNAL_PATIENT_ENDPOINT}/${patientId}/${INTERNAL_HL7_ENDPOINT}`;
     const internalGetPatientUrl = `${this.apiUrl}/${INTERNAL_PATIENT_ENDPOINT}/${patientId}?cxId=${cxId}`;
+    const internalDischargeRequeryRouteUrl = `${this.apiUrl}/${INTERNAL_PATIENT_ENDPOINT}/${DISCHARGE_REQUERY_ENDPOINT}`;
 
     const patient = await executeWithNetworkRetries(
       async () => await axios.get(internalGetPatientUrl)
@@ -108,7 +113,7 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
     });
 
     const encounterPeriod = getEncounterPeriod(message);
-    await executeWithNetworkRetries(
+    const apiWebhookPromise = executeWithNetworkRetries(
       async () =>
         await axios.post(internalHl7RouteUrl, undefined, {
           params: {
@@ -121,6 +126,22 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
           },
         })
     );
+
+    let apiDischargeRequeryPromise = Promise.resolve();
+    if (triggerEvent === dischargeEventCode) {
+      const params: NewDischargeRequeryParams = {
+        cxId,
+        patientId,
+      };
+      apiDischargeRequeryPromise = executeWithNetworkRetries(
+        async () =>
+          await axios.post(internalDischargeRequeryRouteUrl, undefined, {
+            params,
+          })
+      );
+    }
+
+    await Promise.all([apiWebhookPromise, apiDischargeRequeryPromise]);
     log(`Done. API notified...`);
   }
 }
