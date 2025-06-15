@@ -34,8 +34,8 @@ export function validateDateOfBirth(
     validateIsPastOrPresent: _validateIsPastOrPresent = validateIsPastOrPresent,
   } = options || {};
   return (
-    _validateDateIsAfter1900(parsedDate.format(ISO_DATE)) &&
-    _validateIsPastOrPresent(parsedDate.format(ISO_DATE))
+    _validateDateIsAfter1900(parsedDate.toISOString()) &&
+    _validateIsPastOrPresent(parsedDate.toISOString())
   );
 }
 
