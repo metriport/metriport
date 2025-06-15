@@ -1,4 +1,6 @@
 import { BadRequestError } from "@metriport/shared";
+import { uuidv7 } from "@metriport/shared/util/uuid-v7";
+
 import {
   Bundle,
   BundleEntry,
@@ -84,8 +86,8 @@ export function convertPatientDetailToEntries(
   shared: SurescriptsSharedReferences
 ): BundleEntry<Resource>[] {
   const patient = shared.patient ?? getPatient(detail);
-  const practitioner = getResourceFromIdentifierMap(shared.practitioner, getPrescriber(detail));
-  const pharmacy = getResourceFromIdentifierMap(shared.pharmacy, getPharmacy(detail));
+  const practitioner = deduplicateBySystemIdentifier(shared.practitioner, getPrescriber(detail));
+  const pharmacy = deduplicateBySystemIdentifier(shared.pharmacy, getPharmacy(detail));
   const condition = getCondition(detail);
   const medication = getMedication(detail);
   const medicationDispense = getMedicationDispense(detail);
@@ -101,7 +103,13 @@ export function convertPatientDetailToEntries(
     medicationRequest,
   ].flatMap(function (resource): BundleEntry<Resource>[] {
     if (!resource) return [];
-    return [{ resource }];
+    if (!resource.id) resource.id = uuidv7();
+    return [
+      {
+        fullUrl: "urn:uuid:" + resource.id,
+        resource,
+      },
+    ];
   });
 }
 
@@ -122,11 +130,12 @@ function buildPatientIdToDetailsMap(
 interface SurescriptsSharedReferences {
   patient?: Patient | undefined;
   // identifier system -> identifier value -> resource
-  practitioner: IdentifierMap<Practitioner>;
-  pharmacy: IdentifierMap<Organization>;
+  practitioner: SystemIdentifierMap<Practitioner>;
+  pharmacy: SystemIdentifierMap<Organization>;
 }
 
-type IdentifierMap<R extends Resource> = Record<string, Record<string, R>>;
+type SystemIdentifierMap<R extends Resource> = Record<string, IdentifierMap<R>>;
+type IdentifierMap<R extends Resource> = Record<string, R>;
 
 function buildSharedReferences(): SurescriptsSharedReferences {
   const sharedReferences: SurescriptsSharedReferences = {
@@ -137,8 +146,8 @@ function buildSharedReferences(): SurescriptsSharedReferences {
   return sharedReferences;
 }
 
-function getResourceFromIdentifierMap<R extends Practitioner | Organization>(
-  systemMap: IdentifierMap<R>,
+function deduplicateBySystemIdentifier<R extends Practitioner | Organization>(
+  systemMap: SystemIdentifierMap<R>,
   resource?: R
 ): R | undefined {
   if (!resource || !resource.identifier) return undefined;
