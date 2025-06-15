@@ -3,11 +3,11 @@ import { Config } from "../../../../util/config";
 import { out } from "../../../../util/log";
 import { PatientImportParse, PatientImportParseRequest } from "./patient-import-parse";
 
-const region = Config.getAWSRegion();
-const lambdaClient = makeLambdaClient(region);
-
 export class PatientImportParseCloud implements PatientImportParse {
-  constructor(private readonly jobParseLambda: string) {}
+  constructor(
+    private readonly jobParseLambda = Config.getPatientImportParseLambdaName(),
+    private readonly lambdaClient = makeLambdaClient(Config.getAWSRegion())
+  ) {}
 
   async processJobParse(params: PatientImportParseRequest): Promise<void> {
     const { cxId, jobId } = params;
@@ -15,9 +15,10 @@ export class PatientImportParseCloud implements PatientImportParse {
 
     log(`Invoking lambda ${this.jobParseLambda}`);
     const payload = JSON.stringify(params);
+
     // Intentionally only erroring if we fail to invoke the lambda, not if the lambda
     // execution fails (would use defaultLambdaInvocationResponseHandler for that)
-    await lambdaClient
+    await this.lambdaClient
       .invoke({
         FunctionName: this.jobParseLambda,
         InvocationType: "Event",
