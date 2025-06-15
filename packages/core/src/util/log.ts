@@ -7,13 +7,19 @@ import * as path from "path";
 const LOGS_DIR = path.join(process.cwd(), "logs");
 const DEV_LOG_FILE = path.join(LOGS_DIR, "dev.log");
 
-// Ensure logs directory exists and clean up old log file to avoid growing the file indefinitely
+// Ensure logs directory exists and clean up old log file to avoid growing the file infinitely
 if (Config.isDev()) {
   if (!fs.existsSync(LOGS_DIR)) {
     fs.mkdirSync(LOGS_DIR, { recursive: true });
   }
   if (fs.existsSync(DEV_LOG_FILE)) {
-    fs.unlinkSync(DEV_LOG_FILE);
+    // Keep only last 100 lines
+    const data = fs.readFileSync(DEV_LOG_FILE, "utf8");
+    const lines = data.split("\n");
+    if (lines.length > 100) {
+      const lastLines = lines.slice(-100).join("\n");
+      fs.writeFileSync(DEV_LOG_FILE, lastLines);
+    }
   }
 }
 
