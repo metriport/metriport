@@ -8,7 +8,7 @@ import {
   dbPoolSettingsSchema,
 } from "@metriport/shared";
 import * as AWS from "aws-sdk";
-import { Sequelize } from "sequelize";
+import { Sequelize, Options } from "sequelize";
 import { CQDirectoryEntryViewModel } from "../external/carequality/models/cq-directory-view";
 import { CQPatientDataModel } from "../external/carequality/models/cq-patient-data";
 import { OutboundDocumentQueryRespModel } from "../external/carequality/models/outbound-document-query-resp";
@@ -41,6 +41,7 @@ import { Settings } from "./settings";
 import { WebhookRequest } from "./webhook-request";
 import { ModelSetup } from "./_default";
 import { PatientJobModel } from "./patient-job";
+import { out } from "@metriport/core/util";
 
 // models to setup with sequelize
 const models: ModelSetup[] = [
@@ -94,12 +95,29 @@ export interface DocTableNames {
 }
 export let docTableNames: DocTableNames;
 
+/**
+ * Sequelize logging function is mistyped.
+ */
+type DBLoggingFunction = (
+  sql: string,
+  metadata: { plain: boolean; raw: boolean; logging: (sql: string) => void; type: string }
+) => void;
+
 async function initDB(): Promise<void> {
   // make sure we have the env vars we need
+  const { log } = out("db-query");
+  function logDBOperations(
+    sql: string,
+    metadata: { plain: boolean; raw: boolean; logging: (sql: string) => void; type: string }
+  ): void {
+    log({
+      message: sql,
+      type: metadata.type,
+    });
+  }
   const tokenTableName = Config.getTokenTableName();
   const rateLimitTableName = Config.getRateLimitTableName();
   const featureFlagsTableName = ConfigCore.getFeatureFlagsTableName();
-  const logDBOperations = Config.isCloudEnv() ? false : true;
   const dbPoolSettings = getDbPoolSettings();
 
   docTableNames = {
@@ -117,8 +135,7 @@ async function initDB(): Promise<void> {
     dialect: dbCreds.engine,
     pool: dbPoolSettings,
     logging: logDBOperations,
-    logQueryParameters: logDBOperations,
-  });
+  } as Options & { logging: DBLoggingFunction });
   const readerEndpoint = getDbReadReplicaEndpoint();
   console.log("[server]: connecting to db read replica...");
   const sequelizeReadOnly = Config.isCloudEnv()
@@ -128,8 +145,7 @@ async function initDB(): Promise<void> {
         dialect: dbCreds.engine,
         pool: dbPoolSettings,
         logging: logDBOperations,
-        logQueryParameters: logDBOperations,
-      })
+      } as Options & { logging: DBLoggingFunction })
     : sequelize;
   try {
     await Promise.all([sequelize.authenticate(), sequelizeReadOnly.authenticate()]);

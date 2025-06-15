@@ -1,5 +1,5 @@
 import { Sample } from "@metriport/api-sdk/devices/models/common/sample";
-import { debug as coreDebug, log as coreLog } from "@metriport/core/util/log";
+import { out } from "@metriport/core/util/log";
 import convert from "convert-units";
 import crypto from "crypto";
 import { mean } from "lodash";
@@ -75,11 +75,11 @@ export class Util {
   /**
    * @deprecated Use @metriport/core instead
    */
-  static log = coreLog;
+  static log = out().log;
   /**
    * @deprecated Use @metriport/core instead
    */
-  static debug = coreDebug;
+  static debug = out().debug;
   /**
    * @deprecated Use @metriport/core instead
    */

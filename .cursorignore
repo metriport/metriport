@@ -23,6 +23,8 @@ staging.ts
 *.xlsx
 *.xls
 
+logs/
+
 # include these
 !package.json
 !package-lock.json
