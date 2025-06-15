@@ -79,7 +79,8 @@ export async function getResultEntries({
       rowCsv: r.rowCsv,
       status: r.status,
       patientId: r.patientId,
-      reason: r.status === "failed" ? r.reasonForCx : undefined,
+      reasonForCx: r.status === "failed" ? r.reasonForCx : undefined,
+      reasonForDev: r.status === "failed" ? r.reasonForDev : undefined,
     };
   });
   return resultEntries;

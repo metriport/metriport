@@ -7,7 +7,7 @@ import { capture } from "../../../../util/notifications";
 import { startDocumentQuery } from "../../api/start-document-query";
 import { startPatientQuery } from "../../api/start-patient-query";
 import { reasonForCxInternalError } from "../../patient-import-shared";
-import { updatePatientRecord } from "../../record/create-or-update-patient-record";
+import { setPatientOrRecordFailed } from "../../patient-or-record-failed";
 import { ProcessPatientQueryRequest } from "./patient-import-query";
 
 dayjs.extend(duration);
@@ -31,7 +31,9 @@ export async function processPatientQuery({
   patientImportBucket,
   waitTimeAtTheEndInMillis,
 }: ProcessPatientQueryCommandRequest) {
-  const { log } = out(`processPatientQuery cmd - cx ${cxId}, job ${jobId}`);
+  const { log } = out(
+    `processPatientQuery cmd - cx ${cxId}, job ${jobId}, row ${rowNumber}, patient ${patientId}`
+  );
   try {
     await startPatientQuery({
       cxId,
@@ -49,11 +51,9 @@ export async function processPatientQuery({
     });
     if (waitTimeAtTheEndInMillis > 0) await sleep(waitTimeAtTheEndInMillis);
   } catch (error) {
-    const msg =
-      `Failure while processing patient query @ PatientImport - row ${rowNumber}, ` +
-      `patient ${patientId}, dataPipelineReq ${dataPipelineRequestId}`;
     const errorMsg = errorToString(error);
-    log(`${msg}. Cause: ${errorMsg}`);
+    const msg = `Failure while processing patient query @ PatientImport. Cause: ${errorMsg}`;
+    log(`dataPipelineReq ${dataPipelineRequestId} - ${msg}`);
     capture.setExtra({
       cxId,
       jobId,
@@ -63,15 +63,15 @@ export async function processPatientQuery({
       context: "patient-import-query-local.processPatientQuery",
       error,
     });
-    await updatePatientRecord({
+    await setPatientOrRecordFailed({
       cxId,
       jobId,
       rowNumber,
-      status: "failed",
       reasonForCx: reasonForCxInternalError,
-      reasonForDev: errorMsg,
+      reasonForDev: msg,
       bucketName: patientImportBucket,
     });
+
     throw error;
   }
 }

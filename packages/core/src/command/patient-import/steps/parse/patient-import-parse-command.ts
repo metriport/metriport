@@ -6,6 +6,8 @@ import { chunk, partition } from "lodash";
 import { capture, out } from "../../../../util";
 import { updateJobAtApi } from "../../api/update-job-status";
 import { validateAndParsePatientImportCsvFromS3 } from "../../csv/validate-and-parse-import";
+import { reasonForCxInternalError } from "../../patient-import-shared";
+import { setPatientOrRecordFailed } from "../../patient-or-record-failed";
 import { PatientImportCreate, ProcessPatientCreateRequest } from "../create/patient-import-create";
 import { PatientImportResult } from "../result/patient-import-result";
 import { PatientImportParseRequest } from "./patient-import-parse";
@@ -31,6 +33,7 @@ export async function processJobParse({
   result,
 }: ProcessJobParseCommandRequest): Promise<void> {
   const { log } = out(`processJobParse cmd - cxId ${cxId} jobId ${jobId}`);
+  const context = "PatientImportParse.processJobParseCommand";
   try {
     const s3BucketName = patientImportBucket;
 
@@ -79,32 +82,37 @@ export async function processJobParse({
           try {
             await next.processPatientCreate(processPatientCreateRequest);
           } catch (error) {
-            const msg = `Failure while sending payload to patient create queue @ PatientImport`;
-            log(`${msg} (rowNumber: ${rowNumber}). Cause: ${errorToString(error)}`);
+            const msg =
+              `Failure while sending payload to patient create queue @ PatientImport (rowNumber: ${rowNumber}). ` +
+              `Cause: ${errorToString(error)}`;
+            log(msg);
             errors.push(error);
+            await setPatientOrRecordFailed({
+              cxId,
+              jobId,
+              rowNumber,
+              reasonForCx: reasonForCxInternalError,
+              reasonForDev: msg,
+              bucketName: patientImportBucket,
+            });
           }
         })
       );
       await sleep(sleepBetweenPatientCreateChunks.asMilliseconds());
     }
     if (errors.length > 0) {
-      await updateJobAtApi({ cxId, jobId, status: "failed", failed: errors.length });
-
       const msg = "At least one call to processPatientCreate failed";
-
       const errorsAsString = errors.map(e => errorToString(e));
       log(`${msg}. Errors (${errors.length}): ${errorsAsString.join("; ")}`);
       capture.error(msg, {
         extra: {
           cxId,
           jobId,
-          context: "PatientImportParseLocal.processJobParse",
+          context,
           amountOfErrors: errors.length,
           errors: errorsAsString,
         },
       });
-      // intentionally swallowing the error here, since we don't have visibility over the
-      // patients that were created or not, so we don't set the job status to failed
     }
   } catch (error) {
     const msg = `Failure while parsing the job of patient import @ PatientImport`;
@@ -113,7 +121,7 @@ export async function processJobParse({
     capture.setExtra({
       cxId,
       jobId,
-      context: "PatientImportParseLocal.processJobParse",
+      context,
       error,
     });
     throw error;

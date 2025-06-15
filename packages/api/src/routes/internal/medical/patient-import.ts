@@ -303,7 +303,7 @@ router.get(
       throw new BadRequestError(`Debug mode is not supported for jobs with many patients`);
     }
     if (detail === "debug") {
-      const details: Record<string, string | number | null>[] = [];
+      const details: Record<string, string | number | null | undefined>[] = [];
       const resultEntries = await getResultEntries({
         cxId,
         jobId,
@@ -320,6 +320,8 @@ router.get(
               patientId: patient.id,
               rowNumber: entry.rowNumber,
               status: entry.status,
+              reasonForCx: entry.reasonForCx,
+              reasonForDev: entry.reasonForDev,
               globalDownloadStatus: patient.data.documentQueryProgress?.download?.status ?? null,
               globalConvertStatus: patient.data.documentQueryProgress?.convert?.status ?? null,
               cqPqStatus: cqData?.discoveryStatus ?? null,
@@ -334,6 +336,8 @@ router.get(
               patientId: null,
               rowNumber: entry.rowNumber,
               status: entry.status,
+              reasonForCx: entry.reasonForCx,
+              reasonForDev: entry.reasonForDev,
             });
           }
         },

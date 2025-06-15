@@ -3,8 +3,8 @@ import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { out } from "../../../../util/log";
 import { createPatient } from "../../api/create-patient";
 import { createPatientMapping } from "../../api/create-patient-mapping";
-import { updateJobAtApi } from "../../api/update-job-status";
 import { reasonForCxInternalError } from "../../patient-import-shared";
+import { setPatientOrRecordFailed } from "../../patient-or-record-failed";
 import { updatePatientRecord } from "../../record/create-or-update-patient-record";
 import { PatientImportQuery, ProcessPatientQueryRequest } from "../query/patient-import-query";
 import { buildPatientImportQueryHandler } from "../query/patient-import-query-factory";
@@ -28,7 +28,9 @@ export async function processPatientCreate({
   waitTimeInMillis,
   next = buildPatientImportQueryHandler(),
 }: ProcessPatientCreateCommandRequest): Promise<void> {
-  const { log } = out(`processPatientCreate cmd - cxId ${cxId} jobId ${jobId}`);
+  const { log } = out(
+    `processPatientCreate cmd - cxId ${cxId} jobId ${jobId} rowNumber ${rowNumber}`
+  );
   try {
     const patientRecord = await updatePatientRecord({
       cxId,
@@ -83,23 +85,19 @@ export async function processPatientCreate({
 
     if (waitTimeInMillis > 0) await sleep(waitTimeInMillis);
   } catch (error) {
-    const msg = `Failure while processing patient create @ PatientImport`;
     const errorMsg = errorToString(error);
-    log(`${msg}. Cause: ${errorMsg}`);
+    const msg = `Failure while processing patient create @ PatientImport. Cause: ${errorMsg}`;
+    log(msg);
     let errorToUpdateRecordToFailed: string | undefined = undefined;
     try {
-      await Promise.all([
-        updateJobAtApi({ cxId, jobId, status: "failed", failed: 1 }),
-        updatePatientRecord({
-          cxId,
-          jobId,
-          rowNumber,
-          status: "failed",
-          reasonForCx: reasonForCxInternalError,
-          reasonForDev: errorMsg,
-          bucketName: patientImportBucket,
-        }),
-      ]);
+      await setPatientOrRecordFailed({
+        cxId,
+        jobId,
+        rowNumber,
+        reasonForCx: reasonForCxInternalError,
+        reasonForDev: msg,
+        bucketName: patientImportBucket,
+      });
     } catch (error) {
       // don't capture or throw since this can be the same reason for failure on createPatientRecord
       const errorMsg = errorToString(error);

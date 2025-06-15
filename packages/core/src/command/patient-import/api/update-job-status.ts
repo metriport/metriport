@@ -28,7 +28,7 @@ export async function updateJobAtApi({
 }: {
   cxId: string;
   jobId: string;
-  status: PatientImportJobStatus;
+  status?: PatientImportJobStatus;
   total?: number | undefined;
   failed?: number | undefined;
   forceStatusUpdate?: boolean | undefined;
