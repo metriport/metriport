@@ -75,11 +75,11 @@ export class Util {
   /**
    * @deprecated Use @metriport/core instead
    */
-  static log = out().log;
+  static log = (prefix: string, suffix?: string) => out(prefix, suffix).log;
   /**
    * @deprecated Use @metriport/core instead
    */
-  static debug = out().debug;
+  static debug = (prefix: string, suffix?: string) => out(prefix, suffix).debug;
   /**
    * @deprecated Use @metriport/core instead
    */
