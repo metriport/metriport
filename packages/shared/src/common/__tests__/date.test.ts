@@ -1,12 +1,12 @@
 import {
   buildDayjsFromCompactDate,
+  convertDateToString,
+  convertDateToTimeString,
   isValidISODate,
   validateDateIsAfter1900,
   validateDateOfBirth,
   ValidateDobFn,
   validateIsPastOrPresentSafe,
-  convertDateToString,
-  convertDateToTimeString,
 } from "../date";
 
 describe("shared date functions", () => {
@@ -128,6 +128,24 @@ describe("shared date functions", () => {
       expect(validateIsPastOrPresent_mock).not.toHaveBeenCalled();
     });
 
+    it("returns false for date with less than 10 characters with full year and month", () => {
+      expect(validateDateOfBirth("2001-02-0")).toBe(false);
+      expect(validateDateIsAfter1900_mock).not.toHaveBeenCalled();
+      expect(validateIsPastOrPresent_mock).not.toHaveBeenCalled();
+    });
+
+    it("returns false for date with less than 10 characters with full year and day", () => {
+      expect(validateDateOfBirth("2001-9-01")).toBe(false);
+      expect(validateDateIsAfter1900_mock).not.toHaveBeenCalled();
+      expect(validateIsPastOrPresent_mock).not.toHaveBeenCalled();
+    });
+
+    it("returns false for date with less than 10 characters with full month and day", () => {
+      expect(validateDateOfBirth("01-02-01")).toBe(false);
+      expect(validateDateIsAfter1900_mock).not.toHaveBeenCalled();
+      expect(validateIsPastOrPresent_mock).not.toHaveBeenCalled();
+    });
+
     it("returns true when both validateDateIsAfter1900 and validateIsPastOrPresent return true", () => {
       validateDateIsAfter1900_mock.mockReturnValue(true);
       validateIsPastOrPresent_mock.mockReturnValue(true);
@@ -150,6 +168,26 @@ describe("shared date functions", () => {
       expect(validateDob(2000 as unknown as string)).toBe(false);
       expect(validateDateIsAfter1900_mock).not.toHaveBeenCalled();
       expect(validateIsPastOrPresent_mock).not.toHaveBeenCalled();
+    });
+
+    it("returns true when date is valid ISO datetime", () => {
+      expect(validateDob("2004-02-26T12:30:00Z")).toBe(true);
+    });
+
+    it("returns true when date is valid ISO datetime", () => {
+      expect(validateDob("2004-02-26")).toBe(true);
+    });
+
+    it("returns false when date is invalid ISO date", () => {
+      expect(validateDob("85-02-26")).toBe(false);
+    });
+
+    it("returns true when date is valid US datetime", () => {
+      expect(validateDob("02/26/2004")).toBe(true);
+    });
+
+    it("returns false when date is invalid US date", () => {
+      expect(validateDob("02/26/85")).toBe(false);
     });
   });
 
