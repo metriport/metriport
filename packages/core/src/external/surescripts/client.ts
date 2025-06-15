@@ -3,6 +3,7 @@ import { validateNPI } from "@metriport/shared/common/validate-npi";
 import { Config } from "../../util/config";
 import { SftpClient } from "../sftp/client";
 import { SftpFile } from "../sftp/types";
+import { SurescriptsReplica } from "./replica";
 import { generateBatchRequestFile, generatePatientRequestFile } from "./file-generator";
 import { IdGenerator, createIdGenerator } from "./id-generator";
 import {
@@ -38,11 +39,7 @@ export class SurescriptsSftpClient extends SftpClient {
       password: config.publicKey ?? Config.getSurescriptsSftpPublicKey(),
       privateKey: config.privateKey ?? Config.getSurescriptsSftpPrivateKey(),
     });
-
-    this.initializeS3Replica({
-      bucketName: config.replicaBucket ?? Config.getSurescriptsReplicaBucketName(),
-      region: config.replicaBucketRegion ?? Config.getAWSRegion(),
-    });
+    this.setReplica(new SurescriptsReplica(config));
 
     // 10 byte ID generator
     this.generateTransmissionId = createIdGenerator(10);
@@ -68,7 +65,12 @@ export class SurescriptsSftpClient extends SftpClient {
       transmissionId,
       ...requestData,
     });
-    if (!content) return undefined;
+    if (!content) {
+      this.log(
+        `No content generated for patient ID: ${requestData.patient.id}, cxId: ${requestData.cxId}`
+      );
+      return undefined;
+    }
 
     const requestFileName = makeRequestFileName(transmissionId);
     try {
@@ -94,7 +96,12 @@ export class SurescriptsSftpClient extends SftpClient {
       transmissionId,
       ...requestData,
     });
-    if (!content) return undefined;
+    if (!content) {
+      this.log(
+        `No content generated for batch request: ${requestData.facility.id}, cxId: ${requestData.cxId}`
+      );
+      return undefined;
+    }
 
     const requestFileName = makeRequestFileName(transmissionId);
     try {

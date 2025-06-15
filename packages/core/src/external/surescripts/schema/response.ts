@@ -11,12 +11,13 @@ import {
   fromSurescriptsString,
   IncomingFileRowSchema,
   fromSurescriptsUUID,
+  IncomingFileSchema,
 } from "./shared";
 
 // Type specification for the parsed response file
-export type IncomingFlatFile = IncomingFile<FlatFileHeader, FlatFileDetail, FlatFileFooter>;
+export type ParsedResponseFile = IncomingFile<ResponseHeader, ResponseDetail, ResponseFooter>;
 
-export const flatFileHeaderSchema = z.object({
+export const responseHeaderSchema = z.object({
   recordType: z.enum(["HDR"]),
   version: z.string(),
   receiverId: z.string(),
@@ -26,13 +27,13 @@ export const flatFileHeaderSchema = z.object({
   sentTime: z.date(),
 });
 
-export type FlatFileHeader = z.infer<typeof flatFileHeaderSchema>;
+export type ResponseHeader = z.infer<typeof responseHeaderSchema>;
 
-export function isFlatFileHeader(data: object): data is FlatFileHeader {
-  return flatFileHeaderSchema.safeParse(data).success;
+export function isResponseHeader(data: object): data is ResponseHeader {
+  return responseHeaderSchema.safeParse(data).success;
 }
 
-export const flatFileHeaderOrder: IncomingFileRowSchema<FlatFileHeader> = [
+export const responseHeaderRow: IncomingFileRowSchema<ResponseHeader> = [
   {
     field: 0,
     key: "recordType",
@@ -70,7 +71,7 @@ export const flatFileHeaderOrder: IncomingFileRowSchema<FlatFileHeader> = [
   },
 ];
 
-export const flatFileRowSchema = z.object({
+export const responseDetailSchema = z.object({
   recordType: z.enum(["DTL"]),
   recordSequenceNumber: z.number(),
   messageId: z.string(),
@@ -154,13 +155,13 @@ export const flatFileRowSchema = z.object({
   ndcNumber: z.string().optional(),
 });
 
-export type FlatFileDetail = z.infer<typeof flatFileRowSchema>;
+export type ResponseDetail = z.infer<typeof responseDetailSchema>;
 
-export function isFlatFileDetail(data: object): data is FlatFileDetail {
-  return flatFileRowSchema.safeParse(data).success;
+export function isResponseDetail(data: object): data is ResponseDetail {
+  return responseDetailSchema.safeParse(data).success;
 }
 
-export const flatFileDetailOrder: IncomingFileRowSchema<FlatFileDetail> = [
+export const responseDetailRow: IncomingFileRowSchema<ResponseDetail> = [
   {
     field: 0,
     key: "recordType",
@@ -572,7 +573,7 @@ export const flatFileDetailOrder: IncomingFileRowSchema<FlatFileDetail> = [
   // Surescripts indicates they will add more fields here in the future
 ];
 
-export const flatFileFooterSchema = z.object({
+export const responseFooterSchema = z.object({
   recordType: z.enum(["TRL"]),
   processedRecordCount: z.number(),
   medicationCount: z.number().optional(),
@@ -586,13 +587,13 @@ export const flatFileFooterSchema = z.object({
   processingErrors: z.number().optional(),
 });
 
-type FlatFileFooter = z.infer<typeof flatFileFooterSchema>;
+type ResponseFooter = z.infer<typeof responseFooterSchema>;
 
-export function isFlatFileFooter(data: object): data is FlatFileFooter {
-  return flatFileFooterSchema.safeParse(data).success;
+export function isResponseFooter(data: object): data is ResponseFooter {
+  return responseFooterSchema.safeParse(data).success;
 }
 
-export const flatFileFooterOrder: IncomingFileRowSchema<FlatFileFooter> = [
+export const responseFooterRow: IncomingFileRowSchema<ResponseFooter> = [
   {
     field: 0,
     key: "recordType",
@@ -649,3 +650,22 @@ export const flatFileFooterOrder: IncomingFileRowSchema<FlatFileFooter> = [
     fromSurescripts: fromSurescriptsInteger({ optional: true }),
   },
 ];
+
+export const responseFileSchema: IncomingFileSchema<
+  ResponseHeader,
+  ResponseDetail,
+  ResponseFooter
+> = {
+  header: {
+    row: responseHeaderRow,
+    validator: isResponseHeader,
+  },
+  detail: {
+    row: responseDetailRow,
+    validator: isResponseDetail,
+  },
+  footer: {
+    row: responseFooterRow,
+    validator: isResponseFooter,
+  },
+};

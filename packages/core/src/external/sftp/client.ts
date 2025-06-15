@@ -214,6 +214,10 @@ export class SftpClient implements SftpClientImpl {
   protected debug(message: string, ...optionalParams: unknown[]): void {
     this.logger.debug(message, ...optionalParams);
   }
+
+  getReplica(): SftpReplica | undefined {
+    return this.replica;
+  }
 }
 
 export function createWritableBuffer(): { writable: Writable; getBuffer: () => Buffer } {

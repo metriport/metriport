@@ -361,7 +361,12 @@ export function createAPIService({
           ...(surescriptsAssets && {
             PHARMACY_CONVERSION_BUCKET_NAME: surescriptsAssets.pharmacyConversionBucket.bucketName,
             SURESCRIPTS_REPLICA_BUCKET_NAME: surescriptsAssets.surescriptsReplicaBucket.bucketName,
-            SURESCRIPTS_SFTP_ACTION_LAMBDA_NAME: surescriptsAssets.sftpActionLambda.functionName,
+            ...Object.fromEntries(
+              surescriptsAssets.surescriptsLambdas.map(({ envVarName, lambda }) => [
+                envVarName,
+                lambda.functionName,
+              ])
+            ),
             ...Object.fromEntries(
               surescriptsAssets.surescriptsQueues.map(({ envVarName, queue }) => [
                 envVarName,
