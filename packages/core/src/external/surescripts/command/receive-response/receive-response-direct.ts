@@ -1,11 +1,13 @@
 import { SurescriptsReceiveResponseHandler } from "./receive-response";
 import { SurescriptsSftpClient } from "../../client";
 import { SurescriptsFileIdentifier } from "../../types";
-
-// import { convertFlatFile } from "../../fhir-converter";
+import { buildConvertBatchResponseHandler } from "../convert-batch-response/convert-batch-response-factory";
 
 export class SurescriptsReceiveResponseHandlerDirect implements SurescriptsReceiveResponseHandler {
-  constructor(private readonly client: SurescriptsSftpClient = new SurescriptsSftpClient()) {}
+  constructor(
+    private readonly client: SurescriptsSftpClient = new SurescriptsSftpClient(),
+    private readonly convertBatchResponseHandler = buildConvertBatchResponseHandler()
+  ) {}
 
   async receiveResponse({
     transmissionId,
@@ -13,7 +15,10 @@ export class SurescriptsReceiveResponseHandlerDirect implements SurescriptsRecei
   }: SurescriptsFileIdentifier): Promise<void> {
     const responseFile = await this.client.receiveResponse({ transmissionId, populationId });
     if (responseFile) {
-      responseFile.content;
+      await this.convertBatchResponseHandler.convertBatchResponse({
+        transmissionId,
+        populationId,
+      });
     }
   }
 }

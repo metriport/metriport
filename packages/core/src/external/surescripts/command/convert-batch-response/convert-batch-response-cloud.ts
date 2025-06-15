@@ -29,7 +29,11 @@ export class SurescriptsConvertBatchResponseHandlerCloud
         result,
         lambdaName: this.surescriptsConvertBatchResponseLambdaName,
       });
-      return JSON.parse(resultPayload.toString()) as SurescriptsConversionBundle[];
+      const { conversionBundles } = JSON.parse(resultPayload.toString());
+      if (Array.isArray(conversionBundles)) {
+        return conversionBundles as SurescriptsConversionBundle[];
+      }
+      return [];
     } catch (error) {
       throw new Error(
         `Failed to convert batch response ${this.surescriptsConvertBatchResponseLambdaName}: ${error}`

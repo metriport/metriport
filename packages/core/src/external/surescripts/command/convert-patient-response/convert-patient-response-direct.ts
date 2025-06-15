@@ -1,6 +1,6 @@
 import { SurescriptsConvertPatientResponseHandler } from "./convert-patient-response";
 import { SurescriptsReplica } from "../../replica";
-import { SurescriptsFileIdentifier } from "../../types";
+import { SurescriptsConversionBundle, SurescriptsFileIdentifier } from "../../types";
 import { convertPatientResponseToFhirBundle } from "../../fhir-converter";
 
 export class SurescriptsConvertPatientResponseHandlerDirect
@@ -11,14 +11,14 @@ export class SurescriptsConvertPatientResponseHandlerDirect
   async convertPatientResponse({
     transmissionId,
     populationId,
-  }: SurescriptsFileIdentifier): Promise<void> {
+  }: SurescriptsFileIdentifier): Promise<SurescriptsConversionBundle | undefined> {
     const responseFileContent = await this.replica.getResponseFileContent({
       transmissionId,
       populationId,
     });
     if (!responseFileContent) {
-      return;
+      return undefined;
     }
-    await convertPatientResponseToFhirBundle(responseFileContent);
+    return await convertPatientResponseToFhirBundle(responseFileContent);
   }
 }

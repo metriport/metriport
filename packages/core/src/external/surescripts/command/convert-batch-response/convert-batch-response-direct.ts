@@ -1,3 +1,4 @@
+import { MetriportError } from "@metriport/shared";
 import { SurescriptsConvertBatchResponseHandler } from "./convert-batch-response";
 import { SurescriptsReplica } from "../../replica";
 import { SurescriptsConversionBundle, SurescriptsFileIdentifier } from "../../types";
@@ -17,7 +18,14 @@ export class SurescriptsConvertBatchResponseHandlerDirect
       populationId,
     });
     if (!responseFileContent) {
-      return [];
+      throw new MetriportError(
+        `No response file stored for transmissionId: ${transmissionId} and populationId: ${populationId}`,
+        undefined,
+        {
+          transmissionId,
+          populationId,
+        }
+      );
     }
     return await convertBatchResponseToFhirBundles(responseFileContent);
   }
