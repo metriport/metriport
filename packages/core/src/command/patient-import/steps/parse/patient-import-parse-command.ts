@@ -9,7 +9,9 @@ import { validateAndParsePatientImportCsvFromS3 } from "../../csv/validate-and-p
 import { reasonForCxInternalError } from "../../patient-import-shared";
 import { setPatientOrRecordFailed } from "../../patient-or-record-failed";
 import { PatientImportCreate, ProcessPatientCreateRequest } from "../create/patient-import-create";
+import { buildPatientImportCreateHandler } from "../create/patient-import-create-factory";
 import { PatientImportResult } from "../result/patient-import-result";
+import { buildPatientImportResult } from "../result/patient-import-result-factory";
 import { PatientImportParseRequest } from "./patient-import-parse";
 
 dayjs.extend(duration);
@@ -20,8 +22,8 @@ const patientCreateChunkSize = 5;
 
 export type ProcessJobParseCommandRequest = PatientImportParseRequest & {
   patientImportBucket: string;
-  next: PatientImportCreate;
-  result: PatientImportResult;
+  next?: PatientImportCreate;
+  result?: PatientImportResult;
 };
 
 export async function processJobParse({
@@ -29,8 +31,8 @@ export async function processJobParse({
   jobId,
   forceStatusUpdate,
   patientImportBucket,
-  next,
-  result,
+  next = buildPatientImportCreateHandler(),
+  result = buildPatientImportResult(),
 }: ProcessJobParseCommandRequest): Promise<void> {
   const { log } = out(`processJobParse cmd - cxId ${cxId} jobId ${jobId}`);
   const context = "PatientImportParse.processJobParseCommand";

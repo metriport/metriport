@@ -1,19 +1,11 @@
 import { errorToString } from "@metriport/shared";
 import { out } from "../../../../util";
 import { Config } from "../../../../util/config";
-import { PatientImportCreate } from "../create/patient-import-create";
-import { buildPatientImportCreateHandler } from "../create/patient-import-create-factory";
-import { PatientImportResult } from "../result/patient-import-result";
-import { buildPatientImportResult } from "../result/patient-import-result-factory";
 import { PatientImportParse, PatientImportParseRequest } from "./patient-import-parse";
 import { processJobParse } from "./patient-import-parse-command";
 
 export class PatientImportParseLocal implements PatientImportParse {
-  constructor(
-    private readonly patientImportBucket = Config.getPatientImportBucket(),
-    private readonly next: PatientImportCreate = buildPatientImportCreateHandler(),
-    private readonly result: PatientImportResult = buildPatientImportResult()
-  ) {}
+  constructor(private readonly patientImportBucket = Config.getPatientImportBucket()) {}
 
   async processJobParse({
     cxId,
@@ -27,8 +19,6 @@ export class PatientImportParseLocal implements PatientImportParse {
         jobId,
         forceStatusUpdate,
         patientImportBucket: this.patientImportBucket,
-        next: this.next,
-        result: this.result,
       });
     } catch (error) {
       const msg = `Failure while calling the command`;
