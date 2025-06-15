@@ -1,9 +1,8 @@
-import { Bundle } from "@medplum/fhirtypes";
-import { SurescriptsFileIdentifier } from "../../types";
+import { SurescriptsConversionBundle, SurescriptsFileIdentifier } from "../../types";
 
 export interface SurescriptsConvertBatchResponseHandler {
   convertBatchResponse({
     transmissionId,
     populationId,
-  }: SurescriptsFileIdentifier): Promise<Bundle[]>;
+  }: SurescriptsFileIdentifier): Promise<SurescriptsConversionBundle[]>;
 }

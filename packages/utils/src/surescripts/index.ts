@@ -5,6 +5,7 @@ import sendBatchRequest from "./send-batch-request";
 import verifyRequestInHistory from "./verify-request-in-history";
 import receiveResponse from "./receive-response";
 import receiveVerification from "./receive-verification";
+import convertResponse from "./convert-response";
 
 const program = new Command();
 program.addCommand(sftpAction);
@@ -13,4 +14,5 @@ program.addCommand(sendBatchRequest);
 program.addCommand(verifyRequestInHistory);
 program.addCommand(receiveResponse);
 program.addCommand(receiveVerification);
+program.addCommand(convertResponse);
 program.parse();

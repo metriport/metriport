@@ -1,8 +1,16 @@
 import { BadRequestError } from "@metriport/shared";
-import { Bundle, BundleEntry, Resource } from "@medplum/fhirtypes";
+import {
+  Bundle,
+  BundleEntry,
+  Organization,
+  Patient,
+  Practitioner,
+  Resource,
+} from "@medplum/fhirtypes";
 import { parseResponseFile } from "./file-parser";
 import { ParsedResponseFile, ResponseDetail } from "./schema/response";
 import { IncomingData } from "./schema/shared";
+import { SurescriptsConversionBundle } from "./types";
 
 import { getMedication } from "./fhir/medication";
 import { getMedicationDispense } from "./fhir/medication-dispense";
@@ -14,7 +22,7 @@ import { getCondition } from "./fhir/condition";
 
 export async function convertPatientResponseToFhirBundle(
   responseFileContent: Buffer
-): Promise<Bundle | undefined> {
+): Promise<SurescriptsConversionBundle | undefined> {
   const responseFile = parseResponseFile(responseFileContent);
   const patientIdDetails = buildPatientIdToDetailsMap(responseFile);
   if (patientIdDetails.size > 1) {
@@ -23,38 +31,35 @@ export async function convertPatientResponseToFhirBundle(
     });
   }
 
-  // Return the first generated FHIR bundle
   for (const [patientId, details] of patientIdDetails.entries()) {
-    const fhirBundle = await convertPatientDetailsToFhirBundle(patientId, details);
-    return fhirBundle;
+    const bundle = await convertPatientDetailsToFhirBundle(patientId, details);
+    return {
+      patientId,
+      bundle,
+    };
   }
   return undefined;
 }
 
 export async function convertBatchResponseToFhirBundles(
   responseFileContent: Buffer
-): Promise<Bundle[]> {
+): Promise<SurescriptsConversionBundle[]> {
   const responseFile = parseResponseFile(responseFileContent);
   const patientIdDetails = buildPatientIdToDetailsMap(responseFile);
 
-  const bundles: Bundle[] = [];
+  const conversionBundles: SurescriptsConversionBundle[] = [];
   for (const [patientId, detailRows] of patientIdDetails.entries()) {
-    const fhirBundle = await convertPatientDetailsToFhirBundle(patientId, detailRows);
-    bundles.push(fhirBundle);
+    const bundle = await convertPatientDetailsToFhirBundle(patientId, detailRows);
+    conversionBundles.push({
+      patientId,
+      bundle,
+    });
   }
-  return bundles;
+  return conversionBundles;
 }
 
-// function patientIdToDetailMap(responseFile: ParsedResponseFile): Map<string, ResponseDetail[]> {
-//   const patientIdToRows = new Map<string, ResponseDetail[]>();
-//   for (const row of responseFile.detail) {
-//     const patientId = row.patientId;
-//     patientIdToRows.set(patientId, [...(patientIdToRows.get(patientId) ?? []), row]);
-//   }
-// }
-
 async function convertPatientDetailsToFhirBundle(
-  id: string,
+  patientId: string,
   details: IncomingData<ResponseDetail>[]
 ): Promise<Bundle> {
   const bundle: Bundle = {
@@ -64,8 +69,9 @@ async function convertPatientDetailsToFhirBundle(
     entry: [],
   };
 
+  const sharedReferences = buildSharedReferences();
   for (const detail of details) {
-    const entries = convertPatientDetailToEntries(detail.data);
+    const entries = convertPatientDetailToEntries(detail.data, sharedReferences);
     bundle.entry?.push(...entries);
     bundle.total = (bundle.total ?? 0) + entries.length;
   }
@@ -73,11 +79,13 @@ async function convertPatientDetailsToFhirBundle(
   return bundle;
 }
 
-export function convertPatientDetailToEntries(detail: ResponseDetail): BundleEntry<Resource>[] {
-  const patient = getPatient(detail);
-  const practitioner = getPrescriber(detail);
-  const pharmacy = getPharmacy(detail);
-
+export function convertPatientDetailToEntries(
+  detail: ResponseDetail,
+  shared: SurescriptsSharedReferences
+): BundleEntry<Resource>[] {
+  const patient = shared.patient ?? getPatient(detail);
+  const practitioner = getResourceFromIdentifierMap(shared.practitioner, getPrescriber(detail));
+  const pharmacy = getResourceFromIdentifierMap(shared.pharmacy, getPharmacy(detail));
   const condition = getCondition(detail);
   const medication = getMedication(detail);
   const medicationDispense = getMedicationDispense(detail);
@@ -109,4 +117,43 @@ function buildPatientIdToDetailsMap(
     patientIdDetails.get(patientId)?.push(detail);
   }
   return patientIdDetails;
+}
+
+interface SurescriptsSharedReferences {
+  patient?: Patient | undefined;
+  // identifier system -> identifier value -> resource
+  practitioner: IdentifierMap<Practitioner>;
+  pharmacy: IdentifierMap<Organization>;
+}
+
+type IdentifierMap<R extends Resource> = Record<string, Record<string, R>>;
+
+function buildSharedReferences(): SurescriptsSharedReferences {
+  const sharedReferences: SurescriptsSharedReferences = {
+    patient: undefined,
+    practitioner: {},
+    pharmacy: {},
+  };
+  return sharedReferences;
+}
+
+function getResourceFromIdentifierMap<R extends Practitioner | Organization>(
+  systemMap: IdentifierMap<R>,
+  resource?: R
+): R | undefined {
+  if (!resource || !resource.identifier) return undefined;
+
+  for (const identifier of resource.identifier) {
+    if (!identifier.value || !identifier.system) continue;
+    let identifierMap = systemMap[identifier.system];
+    if (!identifierMap) {
+      systemMap[identifier.system] = identifierMap = {};
+    }
+    const existingResource = identifierMap[identifier.value];
+    if (existingResource) {
+      return existingResource;
+    }
+    identifierMap[identifier.value] = resource;
+  }
+  return undefined;
 }

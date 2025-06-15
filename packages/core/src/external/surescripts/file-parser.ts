@@ -16,7 +16,7 @@ interface RawPipeDelimitedFile {
   footerRow: string[];
 }
 
-export function fromSurescriptsVerificationFile(message: Buffer): ParsedVerificationFile {
+export function parseVerificationFile(message: Buffer): ParsedVerificationFile {
   const pipeDelimitedFile = extractRawPipeDelimitedFile(message);
   const parsedFile = extractIncomingFile(pipeDelimitedFile, verificationFileSchema);
   return parsedFile;

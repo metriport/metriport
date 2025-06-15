@@ -26,6 +26,6 @@ export class SurescriptsReplica extends S3Replica {
     if (!responseFile) {
       return undefined;
     }
-    return await this.readFile(`from_surescripts/${responseFile}`);
+    return await this.readFile(responseFile);
   }
 }

@@ -31,6 +31,7 @@ function getPrescriberIdentifiers(detail: ResponseDetail): Identifier[] {
     identifiers.push({
       system: "http://hl7.org/fhir/sid/us-dea",
       value: detail.prescriberDeaNumber,
+      use: "official",
     });
   }
   if (detail.prescriberStateLicenseNumber && detail.prescriberState) {

@@ -1,7 +1,6 @@
-import { Bundle } from "@medplum/fhirtypes";
 import { Config } from "../../../../util/config";
 import { getLambdaResultPayload, makeLambdaClient } from "../../../aws/lambda";
-import { SurescriptsFileIdentifier } from "../../types";
+import { SurescriptsConversionBundle, SurescriptsFileIdentifier } from "../../types";
 import { SurescriptsConvertBatchResponseHandler } from "./convert-batch-response";
 
 const region = Config.getAWSRegion();
@@ -15,7 +14,7 @@ export class SurescriptsConvertBatchResponseHandlerCloud
   async convertBatchResponse({
     transmissionId,
     populationId,
-  }: SurescriptsFileIdentifier): Promise<Bundle[]> {
+  }: SurescriptsFileIdentifier): Promise<SurescriptsConversionBundle[]> {
     const payload = JSON.stringify({ transmissionId, populationId });
     try {
       const result = await lambdaClient
@@ -30,7 +29,7 @@ export class SurescriptsConvertBatchResponseHandlerCloud
         result,
         lambdaName: this.surescriptsConvertBatchResponseLambdaName,
       });
-      return JSON.parse(resultPayload.toString()) as Bundle[];
+      return JSON.parse(resultPayload.toString()) as SurescriptsConversionBundle[];
     } catch (error) {
       throw new Error(
         `Failed to convert batch response ${this.surescriptsConvertBatchResponseLambdaName}: ${error}`

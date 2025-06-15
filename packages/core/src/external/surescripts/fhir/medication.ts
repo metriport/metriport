@@ -1,4 +1,10 @@
-import { Medication, MedicationIngredient, Coding } from "@medplum/fhirtypes";
+import {
+  Medication,
+  MedicationIngredient,
+  Coding,
+  Ratio,
+  MedicationBatch,
+} from "@medplum/fhirtypes";
 import { ResponseDetail } from "../schema/response";
 
 import { DEA_SCHEDULE_NAME } from "@metriport/shared/interface/external/surescripts/dea-schedule";
@@ -6,22 +12,30 @@ import { DEA_SCHEDULE_NAME } from "@metriport/shared/interface/external/surescri
 export function getMedication(detail: ResponseDetail): Medication {
   const code = getMedicationCode(detail);
   const ingredient = getMedicationIngredient(detail);
+  const form = getMedicationForm(detail);
+  const amount = getMedicationAmount(detail);
+  const batch = getMedicationBatch(detail);
 
   return {
     resourceType: "Medication",
-    ...(code ? { code } : null),
+    ...(code ? { code } : undefined),
     ...(ingredient && ingredient.length > 0 ? { ingredient } : undefined),
+    ...(form ? { form } : undefined),
+    ...(amount ? { amount } : undefined),
+    ...(batch ? { batch } : undefined),
+    status: "active",
   };
 }
 
 function getMedicationCode(detail: ResponseDetail): Medication["code"] {
-  if (!detail.ndcNumber) return undefined;
+  if (!detail.ndcNumber && !detail.productCode && !detail.deaSchedule) return undefined;
 
   const text = detail.drugDescription;
   const ndcCode = getMedicationNdcCode(detail);
   const productCode = getMedicationProductCode(detail);
   const deaCode = getMedicationDeaScheduleCode(detail);
   const coding = [ndcCode, productCode, deaCode].filter(Boolean) as Coding[];
+
   return {
     ...(text ? { text } : undefined),
     coding,
@@ -33,16 +47,16 @@ function getMedicationNdcCode(detail: ResponseDetail): Coding | undefined {
   return {
     system: "http://hl7.org/fhir/sid/ndc",
     code: detail.ndcNumber,
+    display: detail.drugDescription ?? "",
   };
 }
 
 function getMedicationProductCode(detail: ResponseDetail): Coding | undefined {
   if (!detail.productCode) return undefined;
-  // + detail.productCodeQualifier
-
   return {
     system: "http://hl7.org/fhir/sid/ndc",
     code: detail.productCode,
+    display: detail.drugDescription ?? "",
   };
 }
 
@@ -51,7 +65,40 @@ function getMedicationDeaScheduleCode(detail: ResponseDetail): Coding | undefine
   return {
     system: "http://terminology.hl7.org/CodeSystem/v3-substanceAdminSubstitution",
     code: detail.deaSchedule,
-    display: detail.deaSchedule ? DEA_SCHEDULE_NAME[detail.deaSchedule] : "",
+    display: DEA_SCHEDULE_NAME[detail.deaSchedule] ?? "",
+  };
+}
+
+function getMedicationForm(detail: ResponseDetail): Coding | undefined {
+  if (!detail.strengthFormCode) return undefined;
+  return {
+    system: "http://snomed.info/sct",
+    code: detail.strengthFormCode,
+    display: detail.strengthFormCode,
+  };
+}
+
+function getMedicationAmount(detail: ResponseDetail): Ratio | undefined {
+  if (!detail.quantityDispensed || !detail.quantityUnitOfMeasure) return undefined;
+
+  return {
+    numerator: {
+      value: Number(detail.quantityDispensed),
+      unit: detail.quantityUnitOfMeasure,
+    },
+    denominator: {
+      value: 1,
+      unit: "1",
+    },
+  };
+}
+
+function getMedicationBatch(detail: ResponseDetail): MedicationBatch | undefined {
+  if (!detail.lastFilledDate || !detail.prescriptionNumber) return undefined;
+
+  return {
+    lotNumber: detail.prescriptionNumber,
+    expirationDate: detail.endDate?.toISOString() ?? "",
   };
 }
 
@@ -61,14 +108,26 @@ function getMedicationIngredient(detail: ResponseDetail): MedicationIngredient[]
 
   return [
     {
+      itemCodeableConcept: {
+        coding: [
+          {
+            system: "http://snomed.info/sct",
+            code: detail.drugDatabaseCode ?? "",
+            display: detail.drugDescription ?? "",
+          },
+        ],
+      },
       strength: {
         numerator: {
           value: Number(detail.strengthValue),
-          system: "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl",
+          system: "http://unitsofmeasure.org",
           code: detail.strengthUnitOfMeasure,
         },
         denominator: {
           value: 1,
+          unit: detail.strengthFormCode,
+          system: "http://unitsofmeasure.org",
+          code: detail.strengthFormCode,
         },
       },
     },

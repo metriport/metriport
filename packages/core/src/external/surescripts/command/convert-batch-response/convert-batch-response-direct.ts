@@ -1,7 +1,6 @@
-import { Bundle } from "@medplum/fhirtypes";
 import { SurescriptsConvertBatchResponseHandler } from "./convert-batch-response";
 import { SurescriptsReplica } from "../../replica";
-import { SurescriptsFileIdentifier } from "../../types";
+import { SurescriptsConversionBundle, SurescriptsFileIdentifier } from "../../types";
 import { convertBatchResponseToFhirBundles } from "../../fhir-converter";
 
 export class SurescriptsConvertBatchResponseHandlerDirect
@@ -12,7 +11,7 @@ export class SurescriptsConvertBatchResponseHandlerDirect
   async convertBatchResponse({
     transmissionId,
     populationId,
-  }: SurescriptsFileIdentifier): Promise<Bundle[]> {
+  }: SurescriptsFileIdentifier): Promise<SurescriptsConversionBundle[]> {
     const responseFileContent = await this.replica.getResponseFileContent({
       transmissionId,
       populationId,
