@@ -9,6 +9,9 @@ import { PatientCreateCmd } from "./create-patient";
 import { PatientMatchCmd } from "./get-patient";
 import { PatientUpdateCmd } from "./update-patient";
 
+/**
+ * @deprecated TODO ENG-467 Move this to packages/core
+ */
 export function sanitize<T extends PatientCreateCmd | PatientUpdateCmd | PatientMatchCmd>(
   patient: T
 ): T {
@@ -17,12 +20,16 @@ export function sanitize<T extends PatientCreateCmd | PatientUpdateCmd | Patient
   return result;
 }
 
+/**
+ * @deprecated TODO ENG-467 Move this to packages/core
+ */
 export function validate<T extends PatientCreateCmd | PatientUpdateCmd | PatientMatchCmd>(
   patient: T
 ): boolean {
+  // TODO ENG-467 Should we require first/last names?
   if (!patient.address || patient.address.length < 1) return false;
   patient.personalIdentifiers?.forEach(pid => pid.period && validatePeriod(pid.period));
-  return validateIsPastOrPresent(patient.dob) && validateDateOfBirth(patient.dob);
+  return validateDateOfBirth(patient.dob);
 }
 
 function validatePeriod(period: Period): boolean {
