@@ -1,5 +1,8 @@
 import { ProcessPatientCreateRequest } from "@metriport/core/command/patient-import/steps/create/patient-import-create";
-import { PatientImportCreateLocal } from "@metriport/core/command/patient-import/steps/create/patient-import-create-local";
+import {
+  processPatientCreate,
+  ProcessPatientCreateCommandRequest,
+} from "@metriport/core/command/patient-import/steps/create/patient-import-create-command";
 import { errorToString } from "@metriport/shared";
 import * as Sentry from "@sentry/serverless";
 import { SQSEvent } from "aws-lambda";
@@ -52,7 +55,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async function handler(event
       )}, patientImportBucket ${patientImportBucket}, waitTimeInMillis ${waitTimeInMillis}`
     );
 
-    const processPatientCreateRequest: ProcessPatientCreateRequest = {
+    const processPatientCreateRequest: ProcessPatientCreateCommandRequest = {
       cxId,
       facilityId,
       jobId,
@@ -60,13 +63,10 @@ export const handler = Sentry.AWSLambda.wrapHandler(async function handler(event
       triggerConsolidated,
       disableWebhooks,
       rerunPdOnNewDemographics,
-    };
-    const patientImportHandler = new PatientImportCreateLocal(
       patientImportBucket,
-      waitTimeInMillis
-    );
-
-    await patientImportHandler.processPatientCreate(processPatientCreateRequest);
+      waitTimeInMillis,
+    };
+    await processPatientCreate(processPatientCreateRequest);
 
     const finishedAt = new Date().getTime();
     log(`Done local duration: ${finishedAt - startedAt}ms`);
