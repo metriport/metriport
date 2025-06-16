@@ -6,6 +6,7 @@ import { getPatientOrFail } from "../../../../../../command/medical/patient/get-
 import {
   StartCreateResourceDiffBundlesJobParams,
   getCreateResourceDiffBundlesJobType,
+  getCreateResourceDiffBundlesRunUrl,
 } from "../../../utils/job";
 
 /**
@@ -37,6 +38,7 @@ export async function startCreateResourceDiffBundlesJob({
   });
   const metriportPatientId = metriportPatient.id;
   const jobType = getCreateResourceDiffBundlesJobType(ehr);
+  const runUrl = getCreateResourceDiffBundlesRunUrl(ehr);
   const jobGroupId = ehrPatientId;
   const runningJob = await getLatestPatientJob({
     cxId,
@@ -60,6 +62,7 @@ export async function startCreateResourceDiffBundlesJob({
     jobGroupId,
     requestId,
     scheduledAt: undefined,
+    runUrl,
     paramsOps: {
       practiceId,
       ehrPatientId,

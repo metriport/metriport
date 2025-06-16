@@ -22,11 +22,8 @@ import { parseISODate } from "../../../shared/date";
 import { requestLogger } from "../../helpers/request-logger";
 import { getUUIDFrom } from "../../schemas/uuid";
 import { asyncHandler, getFrom, getFromQuery, getFromQueryOrFail } from "../../util";
-import patientJobsRouter from "./patient-jobs";
 
 const router = Router();
-
-router.use("/", patientJobsRouter);
 
 /**
  * GET /internal/patient/job
