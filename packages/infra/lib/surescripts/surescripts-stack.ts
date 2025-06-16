@@ -99,7 +99,7 @@ const settings: SurescriptsSettings = {
     eventSource: {
       batchSize: 1,
       reportBatchItemFailures: true,
-      maxConcurrency: 10,
+      maxConcurrency: 100,
     },
     waitTime: Duration.seconds(0),
   },
@@ -120,7 +120,7 @@ const settings: SurescriptsSettings = {
     eventSource: {
       batchSize: 1,
       reportBatchItemFailures: true,
-      maxConcurrency: 10,
+      maxConcurrency: 100,
     },
     waitTime: Duration.seconds(0),
   },
@@ -141,7 +141,7 @@ const settings: SurescriptsSettings = {
     eventSource: {
       batchSize: 1,
       reportBatchItemFailures: true,
-      maxConcurrency: 10,
+      maxConcurrency: 100,
     },
     waitTime: Duration.seconds(0),
   },
