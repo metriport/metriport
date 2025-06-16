@@ -208,6 +208,7 @@ export class SftpClient implements SftpClientImpl {
     const existingReplicaFileName = new Set(
       replicaFileNames.map(fileName => fileName.substring(replicaDirectory.length + 1))
     );
+    console.log(existingReplicaFileName);
 
     const filesSynced: string[] = [];
     for (const sftpFileName of sftpFileNames) {
