@@ -7,8 +7,8 @@ import {
   Resource,
 } from "@medplum/fhirtypes";
 
-export interface SurescriptsConverterContext {
-  patient?: Patient | undefined;
+export interface SurescriptsContext {
+  patient: Patient;
   practitioner: SystemIdentifierMap<Practitioner>;
   pharmacy: SystemIdentifierMap<Organization>;
   coverage: SystemIdentifierMap<Coverage>;
@@ -18,4 +18,5 @@ export interface SurescriptsConverterContext {
 export type ResourceMap<R extends Resource> = Partial<Record<keyof R, R>>;
 
 // identifier system -> identifier value -> resource
-export type SystemIdentifierMap<R extends Resource> = Record<string, Record<string, R>>;
+export type SystemIdentifierMap<R extends Resource> = Record<string, IdentifierMap<R>>;
+export type IdentifierMap<R extends Resource> = Record<string, R>;

@@ -1,9 +1,15 @@
 import { Extension, MedicationDispense, MedicationDispensePerformer } from "@medplum/fhirtypes";
+import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { ResponseDetail } from "../schema/response";
+import { getResourceByNpiNumber } from "./shared";
+import { SurescriptsContext } from "./types";
 
-export function getMedicationDispense(detail: ResponseDetail): MedicationDispense {
+export function getMedicationDispense(
+  context: SurescriptsContext,
+  detail: ResponseDetail
+): MedicationDispense {
   const daysSupply = getDaysSupply(detail);
-  const performer = getMedicationDispensePerformer(detail);
+  const performer = getMedicationDispensePerformer(context, detail);
 
   const fillNumber = getFillNumberAsExtension(detail);
   const extensions = [fillNumber].filter(Boolean) as Extension[];
@@ -20,14 +26,20 @@ export function getMedicationDispense(detail: ResponseDetail): MedicationDispens
   return medicationDispense;
 }
 
-function getMedicationDispensePerformer(detail: ResponseDetail): MedicationDispensePerformer[] {
+function getMedicationDispensePerformer(
+  context: SurescriptsContext,
+  detail: ResponseDetail
+): MedicationDispensePerformer[] {
+  if (!detail.prescriberNpiNumber) return [];
+  const prescriber = getResourceByNpiNumber(context.practitioner, detail.prescriberNpiNumber);
+  if (!prescriber) return [];
+
   return [
     {
-      id: "",
-
+      id: uuidv7(),
       actor: {
-        reference: `Practitioner/${detail.prescriberNPI}`,
-        display: detail.prescriberName,
+        reference: `Practitioner/${prescriber.id}`,
+        display: prescriber.name?.[0]?.text ?? "",
       },
     },
   ];

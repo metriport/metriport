@@ -1,9 +1,13 @@
 import { Coverage, Organization, Practitioner, Resource } from "@medplum/fhirtypes";
-import { ResourceMap, SurescriptsConverterContext, SystemIdentifierMap } from "./types";
+import { NPI_SYSTEM } from "./constants";
+import { ResourceMap, SurescriptsContext, SystemIdentifierMap } from "./types";
 
-export function buildSharedContext(): SurescriptsConverterContext {
-  const sharedReferences: SurescriptsConverterContext = {
-    patient: undefined,
+export function buildSharedContext(patientId: string): SurescriptsContext {
+  const sharedReferences: SurescriptsContext = {
+    patient: {
+      resourceType: "Patient",
+      id: patientId,
+    },
     practitioner: {},
     pharmacy: {},
     coverage: {},
@@ -12,16 +16,17 @@ export function buildSharedContext(): SurescriptsConverterContext {
   return sharedReferences;
 }
 
-export function getResourceFromSystemIdentifierMap<
-  R extends Practitioner | Organization | Coverage
->(systemIdentifierMap: SystemIdentifierMap<R>, resource?: R): R | undefined {
+export function deduplicateBySystemIdentifier<R extends Practitioner | Organization | Coverage>(
+  systemMap: SystemIdentifierMap<R>,
+  resource?: R
+): R | undefined {
   if (!resource || !resource.identifier) return undefined;
 
   for (const identifier of resource.identifier) {
     if (!identifier.value || !identifier.system) continue;
-    let identifierMap = systemIdentifierMap[identifier.system];
+    let identifierMap = systemMap[identifier.system];
     if (!identifierMap) {
-      systemIdentifierMap[identifier.system] = identifierMap = {};
+      systemMap[identifier.system] = identifierMap = {};
     }
     const existingResource = identifierMap[identifier.value];
     if (existingResource) {
@@ -29,7 +34,15 @@ export function getResourceFromSystemIdentifierMap<
     }
     identifierMap[identifier.value] = resource;
   }
-  return resource;
+  return undefined;
+}
+
+export function getResourceByNpiNumber<R extends Practitioner | Organization | Coverage>(
+  systemMap: SystemIdentifierMap<R>,
+  npiNumber: string
+): R | undefined {
+  if (!systemMap[NPI_SYSTEM]) return undefined;
+  return systemMap[NPI_SYSTEM][npiNumber];
 }
 
 export function getResourceFromResourceMap<R extends Resource>(

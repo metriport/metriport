@@ -20,40 +20,54 @@ program
   .name("analysis")
   .description("analyze surescripts data for a customer")
   .option("--cx-id <cxId>", "The customer ID")
+  .option("--facility-id <facilityId>", "The facility ID")
   .option("--csv-data <csvData>", "The CSV data with patient IDs and transmission IDs")
-  .action(async ({ cxId, csvData }: { cxId: string; csvData: string }) => {
-    if (!cxId) throw new Error("Customer ID is required");
-    if (!csvData) throw new Error("CSV data is required");
+  .action(
+    async ({
+      cxId,
+      facilityId,
+      csvData,
+    }: {
+      cxId: string;
+      facilityId: string;
+      csvData: string;
+    }) => {
+      if (!cxId) throw new Error("Customer ID is required");
+      if (!facilityId) throw new Error("Facility ID is required");
+      if (!csvData) throw new Error("CSV data is required");
 
-    const replica = new SurescriptsReplica();
-    const handler = new SurescriptsConvertPatientResponseHandlerDirect(replica);
-    let transmissions = await getTransmissionsFromCsv(cxId, csvData);
-    transmissions = transmissions.slice(0, 10);
+      const replica = new SurescriptsReplica();
+      const handler = new SurescriptsConvertPatientResponseHandlerDirect(replica);
+      let transmissions = await getTransmissionsFromCsv(cxId, csvData);
+      transmissions = transmissions.slice(0, 10);
 
-    for (const transmission of transmissions) {
-      const [consolidatedBundle, conversionBundle] = await Promise.all([
-        getConsolidatedBundle(cxId, transmission.patientId),
-        handler.convertPatientResponse({
-          populationId: transmission.patientId,
-          transmissionId: transmission.transmissionId,
-        }),
-      ]);
+      for (const transmission of transmissions) {
+        const [consolidatedBundle, conversionBundle] = await Promise.all([
+          getConsolidatedBundle(cxId, transmission.patientId),
+          handler.convertPatientResponse({
+            cxId,
+            facilityId,
+            populationId: transmission.patientId,
+            transmissionId: transmission.transmissionId,
+          }),
+        ]);
 
-      if (!consolidatedBundle) {
-        console.log(`No consolidated bundle found for patient ${transmission.patientId}`);
-        continue;
+        if (!consolidatedBundle) {
+          console.log(`No consolidated bundle found for patient ${transmission.patientId}`);
+          continue;
+        }
+        if (!conversionBundle) {
+          console.log(`No conversion bundle generated for patient ${transmission.patientId}`);
+          continue;
+        }
+        const consolidatedMedications = extractMedications(consolidatedBundle);
+        const conversionMedications = extractMedications(conversionBundle.bundle);
+
+        console.log("existing", consolidatedMedications);
+        console.log("surescripts", conversionMedications);
       }
-      if (!conversionBundle) {
-        console.log(`No conversion bundle generated for patient ${transmission.patientId}`);
-        continue;
-      }
-      const consolidatedMedications = extractMedications(consolidatedBundle);
-      const conversionMedications = extractMedications(conversionBundle.bundle);
-
-      console.log("existing", consolidatedMedications);
-      console.log("surescripts", conversionMedications);
     }
-  });
+  );
 
 function extractMedications(bundle: Bundle): Medication[] {
   return (

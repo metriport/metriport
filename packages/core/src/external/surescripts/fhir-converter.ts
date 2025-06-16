@@ -1,29 +1,13 @@
 import { BadRequestError } from "@metriport/shared";
-import { uuidv7 } from "@metriport/shared/util/uuid-v7";
-
-import {
-  Bundle,
-  BundleEntry,
-  Organization,
-  Patient,
-  Practitioner,
-  Resource,
-} from "@medplum/fhirtypes";
+import { Bundle } from "@medplum/fhirtypes";
 import { parseResponseFile } from "./file/file-parser";
 import { ParsedResponseFile, ResponseDetail } from "./schema/response";
 import { IncomingData } from "./schema/shared";
 import { SurescriptsConversionBundle } from "./types";
-
-import { getMedication } from "./fhir/medication";
-import { getMedicationDispense } from "./fhir/medication-dispense";
-import { getMedicationRequest } from "./fhir/medication-request";
-import { getPrescriber } from "./fhir/prescriber";
-import { getPharmacy } from "./fhir/pharmacy";
-import { getPatient, mergePatient } from "./fhir/patient";
-import { getCondition } from "./fhir/condition";
 import { makeConversionBundleFileName } from "./file/file-names";
 import { S3Utils } from "../aws/s3";
 import { Config } from "../../util/config";
+import { convertIncomingDataToFhirBundle } from "./fhir/bundle";
 
 export async function convertPatientResponseToFhirBundle(
   responseFileContent: Buffer
@@ -37,7 +21,7 @@ export async function convertPatientResponseToFhirBundle(
   }
 
   for (const [patientId, details] of patientIdDetails.entries()) {
-    const bundle = await convertPatientDetailsToFhirBundle(patientId, details);
+    const bundle = await convertIncomingDataToFhirBundle(patientId, details);
     return {
       patientId,
       bundle,
@@ -54,66 +38,13 @@ export async function convertBatchResponseToFhirBundles(
 
   const conversionBundles: SurescriptsConversionBundle[] = [];
   for (const [patientId, detailRows] of patientIdDetails.entries()) {
-    const bundle = await convertPatientDetailsToFhirBundle(patientId, detailRows);
+    const bundle = await convertIncomingDataToFhirBundle(patientId, detailRows);
     conversionBundles.push({
       patientId,
       bundle,
     });
   }
   return conversionBundles;
-}
-
-async function convertPatientDetailsToFhirBundle(
-  patientId: string,
-  details: IncomingData<ResponseDetail>[]
-): Promise<Bundle> {
-  const bundle: Bundle = {
-    resourceType: "Bundle",
-    total: 0,
-    type: "collection",
-    entry: [],
-  };
-
-  const context = buildInitialContext(patientId);
-  for (const detail of details) {
-    const entries = convertPatientDetailToEntries(detail.data, context);
-    bundle.entry?.push(...entries);
-    bundle.total = (bundle.total ?? 0) + entries.length;
-  }
-
-  return bundle;
-}
-
-export function convertPatientDetailToEntries(
-  detail: ResponseDetail,
-  context: SurescriptsContext
-): BundleEntry<Resource>[] {
-  const patient = mergePatient(context.patient, getPatient(detail));
-  const practitioner = deduplicateBySystemIdentifier(context.practitioner, getPrescriber(detail));
-  const pharmacy = deduplicateBySystemIdentifier(context.pharmacy, getPharmacy(detail));
-  const condition = getCondition(detail);
-  const medication = getMedication(detail);
-  const medicationDispense = getMedicationDispense(detail);
-  const medicationRequest = getMedicationRequest(detail);
-
-  return [
-    patient,
-    practitioner,
-    pharmacy,
-    condition,
-    medication,
-    medicationDispense,
-    medicationRequest,
-  ].flatMap(function (resource): BundleEntry<Resource>[] {
-    if (!resource) return [];
-    if (!resource.id) resource.id = uuidv7();
-    return [
-      {
-        fullUrl: "urn:uuid:" + resource.id,
-        resource,
-      },
-    ];
-  });
 }
 
 export async function uploadConversionBundle({
@@ -146,47 +77,4 @@ function buildPatientIdToDetailsMap(
     patientIdDetails.get(patientId)?.push(detail);
   }
   return patientIdDetails;
-}
-
-interface SurescriptsContext {
-  patient: Patient;
-  // identifier system -> identifier value -> resource
-  practitioner: SystemIdentifierMap<Practitioner>;
-  pharmacy: SystemIdentifierMap<Organization>;
-}
-
-type SystemIdentifierMap<R extends Resource> = Record<string, IdentifierMap<R>>;
-type IdentifierMap<R extends Resource> = Record<string, R>;
-
-function buildInitialContext(patientId: string): SurescriptsContext {
-  const sharedReferences: SurescriptsContext = {
-    patient: {
-      resourceType: "Patient",
-      id: patientId,
-    },
-    practitioner: {},
-    pharmacy: {},
-  };
-  return sharedReferences;
-}
-
-function deduplicateBySystemIdentifier<R extends Practitioner | Organization>(
-  systemMap: SystemIdentifierMap<R>,
-  resource?: R
-): R | undefined {
-  if (!resource || !resource.identifier) return undefined;
-
-  for (const identifier of resource.identifier) {
-    if (!identifier.value || !identifier.system) continue;
-    let identifierMap = systemMap[identifier.system];
-    if (!identifierMap) {
-      systemMap[identifier.system] = identifierMap = {};
-    }
-    const existingResource = identifierMap[identifier.value];
-    if (existingResource) {
-      return existingResource;
-    }
-    identifierMap[identifier.value] = resource;
-  }
-  return undefined;
 }
