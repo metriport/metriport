@@ -1,6 +1,7 @@
 import { Medication, MedicationRequest } from "@medplum/fhirtypes";
 import type { SurescriptsContext } from "./types";
 import { ResponseDetail } from "../schema/response";
+import { getMedicationReference } from "./medication";
 
 export function getMedicationRequest(
   context: SurescriptsContext,
@@ -14,6 +15,7 @@ export function getMedicationRequest(
 
   return {
     resourceType: "MedicationRequest",
+    medicationReference: getMedicationReference(medication),
     ...(dispenseRequest ? { dispenseRequest } : undefined),
     ...(dosageInstruction ? { dosageInstruction } : undefined),
     ...(authoredOn ? { authoredOn } : undefined),

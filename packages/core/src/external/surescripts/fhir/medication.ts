@@ -5,6 +5,7 @@ import {
   Coding,
   Ratio,
   MedicationBatch,
+  Reference,
 } from "@medplum/fhirtypes";
 import { ResponseDetail } from "../schema/response";
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
@@ -28,6 +29,13 @@ export function getMedication(detail: ResponseDetail): Medication {
     ...(form ? { form } : undefined),
     ...(amount ? { amount } : undefined),
     ...(batch ? { batch } : undefined),
+  };
+}
+
+export function getMedicationReference(medication: Medication): Reference<Medication> {
+  return {
+    reference: `Medication/${medication.id}`,
+    display: medication.code?.text ?? "",
   };
 }
 

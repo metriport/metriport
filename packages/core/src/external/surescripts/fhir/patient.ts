@@ -26,8 +26,10 @@ export function mergePatient(patient: Patient, otherPatient?: Patient): Patient 
 }
 
 function getPatientName(detail: ResponseDetail): Patient["name"] {
+  const fullName = [detail.patientFirstName, detail.patientLastName].join(" ");
   return [
     {
+      text: fullName,
       given: [detail.patientFirstName],
       family: detail.patientLastName,
     },

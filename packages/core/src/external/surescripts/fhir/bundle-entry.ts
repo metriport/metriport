@@ -9,7 +9,7 @@ import { getMedicationDispense } from "./medication-dispense";
 import { getMedicationRequest } from "./medication-request";
 import { getPrescriber } from "./prescriber";
 import { getPharmacy } from "./pharmacy";
-import { getPatient } from "./patient";
+import { getPatient, mergePatient } from "./patient";
 import { getCondition } from "./condition";
 import { deduplicateByCoding, deduplicateBySystemIdentifier } from "./shared";
 
@@ -17,7 +17,7 @@ export function getAllBundleEntries(
   context: SurescriptsContext,
   { data }: IncomingData<ResponseDetail>
 ): BundleEntry<Resource>[] {
-  const patient = context.patient ?? getPatient(data);
+  const patient = mergePatient(context.patient, getPatient(data));
   const practitioner = deduplicateBySystemIdentifier(context.practitioner, getPrescriber(data));
   const pharmacy = deduplicateBySystemIdentifier(context.pharmacy, getPharmacy(data));
   const medication = deduplicateByCoding(context.medication, getMedication(data));

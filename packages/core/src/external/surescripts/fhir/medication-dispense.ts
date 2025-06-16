@@ -6,6 +6,7 @@ import {
 } from "@medplum/fhirtypes";
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { ResponseDetail } from "../schema/response";
+import { getMedicationReference } from "./medication";
 import { getResourceByNpiNumber } from "./shared";
 import { SurescriptsContext } from "./types";
 
@@ -16,24 +17,36 @@ export function getMedicationDispense(
 ): MedicationDispense {
   const daysSupply = getDaysSupply(detail);
   const performer = getMedicationDispensePerformer(context, detail);
-
   const fillNumber = getFillNumberAsExtension(detail);
+  const dosageInstruction = getDosageInstruction(detail);
   const extensions = [fillNumber].filter(Boolean) as Extension[];
 
   const medicationDispense: MedicationDispense = {
     resourceType: "MedicationDispense",
-    subject: { reference: detail.patientId },
-    medicationReference: {
-      reference: `Medication/${medication.id}`,
-      display: medication.code?.text ?? "",
+    subject: {
+      reference: `Patient/${detail.patientId}`,
+      display: context.patient.name?.[0]?.text ?? "",
     },
+    medicationReference: getMedicationReference(medication),
     status: "completed",
-    ...(extensions.length > 0 ? { extension: extensions } : undefined),
+    ...(dosageInstruction ? { dosageInstruction } : undefined),
     ...(daysSupply ? { daysSupply } : undefined),
+    ...(extensions.length > 0 ? { extension: extensions } : undefined),
     ...(performer.length > 0 ? { performer } : undefined),
   };
 
   return medicationDispense;
+}
+
+function getDosageInstruction(
+  detail: ResponseDetail
+): MedicationDispense["dosageInstruction"] | undefined {
+  if (!detail.directions) return undefined;
+  return [
+    {
+      text: detail.directions,
+    },
+  ];
 }
 
 function getMedicationDispensePerformer(
