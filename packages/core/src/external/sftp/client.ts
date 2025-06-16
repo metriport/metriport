@@ -144,10 +144,10 @@ export class SftpClient implements SftpClientImpl {
     });
 
     this.log(`Finished reading from SFTP`);
-    const content = getBuffer();
+    let content = getBuffer();
     if (decompress) {
       this.debug(`Decompressing gzip file...`);
-      return decompressGzip(content);
+      content = await decompressGzip(content);
     }
 
     if (this.replica && overrideReplica) {
