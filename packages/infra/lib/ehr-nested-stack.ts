@@ -256,6 +256,7 @@ export class EhrNestedStack extends NestedStack {
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: props.alarmAction,
+      ehrResponsesBucket: props.ehrResponsesBucket,
       ehrBundleBucket: this.ehrBundleBucket,
       computeResourceDiffBundlesQueue: this.computeResourceDiffBundlesQueue,
     });
@@ -505,10 +506,11 @@ export class EhrNestedStack extends NestedStack {
     envType: EnvType;
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
+    ehrResponsesBucket: s3.Bucket | undefined;
     ehrBundleBucket: s3.Bucket;
     computeResourceDiffBundlesQueue: Queue;
   }): { lambda: Lambda; queue: Queue } {
-    const { lambdaLayers, vpc, envType, sentryDsn, alarmAction } = ownProps;
+    const { lambdaLayers, vpc, envType, sentryDsn, alarmAction, ehrResponsesBucket } = ownProps;
     const {
       name,
       entry,
@@ -543,6 +545,7 @@ export class EhrNestedStack extends NestedStack {
         WAIT_TIME_IN_MILLIS: waitTime.toMilliseconds().toString(),
         MAX_ATTEMPTS: queueSettings.maxReceiveCount.toString(),
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+        ...(ehrResponsesBucket ? { EHR_RESPONSES_BUCKET_NAME: ehrResponsesBucket.bucketName } : {}),
       },
       layers: [lambdaLayers.shared, lambdaLayers.langchain],
       vpc,
@@ -551,6 +554,7 @@ export class EhrNestedStack extends NestedStack {
 
     lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
 
+    if (ehrResponsesBucket) ehrResponsesBucket.grantWrite(lambda);
     ownProps.ehrBundleBucket.grantWrite(lambda);
     ownProps.computeResourceDiffBundlesQueue.grantSendMessages(lambda);
 
