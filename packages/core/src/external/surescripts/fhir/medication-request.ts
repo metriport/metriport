@@ -1,9 +1,10 @@
-import { MedicationRequest } from "@medplum/fhirtypes";
+import { Medication, MedicationRequest } from "@medplum/fhirtypes";
 import type { SurescriptsContext } from "./types";
 import { ResponseDetail } from "../schema/response";
 
 export function getMedicationRequest(
   context: SurescriptsContext,
+  medication: Medication,
   detail: ResponseDetail
 ): MedicationRequest {
   const dispenseRequest = getDispenseRequest(detail);

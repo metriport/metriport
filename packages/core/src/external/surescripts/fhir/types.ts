@@ -1,6 +1,7 @@
 import {
   Coverage,
   Medication,
+  Condition,
   Organization,
   Patient,
   Practitioner,
@@ -12,7 +13,8 @@ export interface SurescriptsContext {
   practitioner: SystemIdentifierMap<Practitioner>;
   pharmacy: SystemIdentifierMap<Organization>;
   coverage: SystemIdentifierMap<Coverage>;
-  medication: ResourceMap<Medication>;
+  medication: SystemIdentifierMap<Medication>;
+  condition: SystemIdentifierMap<Condition>;
 }
 
 export type ResourceMap<R extends Resource> = Partial<Record<keyof R, R>>;

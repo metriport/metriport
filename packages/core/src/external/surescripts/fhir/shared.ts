@@ -1,9 +1,16 @@
-import { Coverage, Organization, Practitioner, Resource } from "@medplum/fhirtypes";
+import {
+  Condition,
+  Coverage,
+  Medication,
+  Organization,
+  Practitioner,
+  Resource,
+} from "@medplum/fhirtypes";
 import { NPI_SYSTEM } from "./constants";
 import { ResourceMap, SurescriptsContext, SystemIdentifierMap } from "./types";
 
-export function buildSharedContext(patientId: string): SurescriptsContext {
-  const sharedReferences: SurescriptsContext = {
+export function initializeContext(patientId: string): SurescriptsContext {
+  const context: SurescriptsContext = {
     patient: {
       resourceType: "Patient",
       id: patientId,
@@ -12,8 +19,9 @@ export function buildSharedContext(patientId: string): SurescriptsContext {
     pharmacy: {},
     coverage: {},
     medication: {},
+    condition: {},
   };
-  return sharedReferences;
+  return context;
 }
 
 export function deduplicateBySystemIdentifier<R extends Practitioner | Organization | Coverage>(
@@ -33,6 +41,27 @@ export function deduplicateBySystemIdentifier<R extends Practitioner | Organizat
       return existingResource;
     }
     identifierMap[identifier.value] = resource;
+  }
+  return undefined;
+}
+
+export function deduplicateByCoding<R extends Medication | Condition>(
+  systemMap: SystemIdentifierMap<R>,
+  resource?: R
+): R | undefined {
+  if (!resource || !resource.code || !resource.code.coding) return undefined;
+
+  for (const coding of resource.code.coding) {
+    if (!coding.system || !coding.code) continue;
+    let codingMap = systemMap[coding.system];
+    if (!codingMap) {
+      systemMap[coding.system] = codingMap = {};
+    }
+    const existingResource = codingMap[coding.code];
+    if (existingResource) {
+      return existingResource;
+    }
+    codingMap[coding.code] = resource;
   }
   return undefined;
 }

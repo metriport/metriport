@@ -1,4 +1,6 @@
 import { BundleEntry, Resource } from "@medplum/fhirtypes";
+import { uuidv7 } from "@metriport/shared/util/uuid-v7";
+
 import { IncomingData } from "../schema/shared";
 import { ResponseDetail } from "../schema/response";
 import { SurescriptsContext } from "./types";
@@ -9,7 +11,7 @@ import { getPrescriber } from "./prescriber";
 import { getPharmacy } from "./pharmacy";
 import { getPatient } from "./patient";
 import { getCondition } from "./condition";
-import { deduplicateBySystemIdentifier } from "./shared";
+import { deduplicateByCoding, deduplicateBySystemIdentifier } from "./shared";
 
 export function getAllBundleEntries(
   context: SurescriptsContext,
@@ -18,10 +20,14 @@ export function getAllBundleEntries(
   const patient = context.patient ?? getPatient(data);
   const practitioner = deduplicateBySystemIdentifier(context.practitioner, getPrescriber(data));
   const pharmacy = deduplicateBySystemIdentifier(context.pharmacy, getPharmacy(data));
-  const condition = getCondition(data);
-  const medication = getMedication(data);
-  const medicationDispense = getMedicationDispense(context, data);
-  const medicationRequest = getMedicationRequest(context, data);
+  const medication = deduplicateByCoding(context.medication, getMedication(data));
+  const condition = deduplicateByCoding(context.condition, getCondition(data));
+  const medicationDispense = medication
+    ? getMedicationDispense(context, medication, data)
+    : undefined;
+  const medicationRequest = medication
+    ? getMedicationRequest(context, medication, data)
+    : undefined;
 
   return [
     patient,
@@ -33,6 +39,12 @@ export function getAllBundleEntries(
     medicationRequest,
   ].flatMap(function (resource): BundleEntry<Resource>[] {
     if (!resource) return [];
-    return [{ resource }];
+    if (!resource.id) resource.id = uuidv7();
+    return [
+      {
+        fullUrl: `urn:uuid:${resource.id}`,
+        resource,
+      },
+    ];
   });
 }

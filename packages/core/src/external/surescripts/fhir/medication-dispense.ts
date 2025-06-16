@@ -1,4 +1,9 @@
-import { Extension, MedicationDispense, MedicationDispensePerformer } from "@medplum/fhirtypes";
+import {
+  Extension,
+  Medication,
+  MedicationDispense,
+  MedicationDispensePerformer,
+} from "@medplum/fhirtypes";
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { ResponseDetail } from "../schema/response";
 import { getResourceByNpiNumber } from "./shared";
@@ -6,6 +11,7 @@ import { SurescriptsContext } from "./types";
 
 export function getMedicationDispense(
   context: SurescriptsContext,
+  medication: Medication,
   detail: ResponseDetail
 ): MedicationDispense {
   const daysSupply = getDaysSupply(detail);
@@ -17,6 +23,10 @@ export function getMedicationDispense(
   const medicationDispense: MedicationDispense = {
     resourceType: "MedicationDispense",
     subject: { reference: detail.patientId },
+    medicationReference: {
+      reference: `Medication/${medication.id}`,
+      display: medication.code?.text ?? "",
+    },
     status: "completed",
     ...(extensions.length > 0 ? { extension: extensions } : undefined),
     ...(daysSupply ? { daysSupply } : undefined),
