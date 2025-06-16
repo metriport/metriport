@@ -9,7 +9,8 @@ import {
 import { ResponseDetail } from "../schema/response";
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 
-import { DeaScheduleName } from "@metriport/shared/interface/external/surescripts/dea-schedule";
+import { getDeaScheduleName } from "@metriport/shared/interface/external/surescripts/dea-schedule";
+import { getNcpdpName } from "@metriport/shared/interface/external/surescripts/ncpdp";
 
 export function getMedication(detail: ResponseDetail): Medication {
   const code = getMedicationCodeableConcept(detail);
@@ -75,29 +76,34 @@ function getMedicationProductCode(detail: ResponseDetail): Coding | undefined {
 
 function getMedicationDeaScheduleCode(detail: ResponseDetail): Coding | undefined {
   if (!detail.deaSchedule) return undefined;
+  const deaScheduleDisplay = getDeaScheduleName(detail.deaSchedule);
+
   return {
     system: "http://terminology.hl7.org/CodeSystem/v3-substanceAdminSubstitution",
     code: detail.deaSchedule,
-    display: DeaScheduleName[detail.deaSchedule] ?? "",
+    ...(deaScheduleDisplay ? { display: deaScheduleDisplay } : undefined),
   };
 }
 
 function getMedicationForm(detail: ResponseDetail): Coding | undefined {
   if (!detail.strengthFormCode) return undefined;
+  const ncpdpName = getNcpdpName(detail.strengthFormCode);
   return {
     system: "http://snomed.info/sct",
     code: detail.strengthFormCode,
-    display: detail.strengthFormCode,
+    ...(ncpdpName ? { display: ncpdpName } : undefined),
   };
 }
 
 function getMedicationAmount(detail: ResponseDetail): Ratio | undefined {
   if (!detail.quantityDispensed || !detail.quantityUnitOfMeasure) return undefined;
+  const quantityUnitOfMeasureDisplay = getNcpdpName(detail.quantityUnitOfMeasure);
 
   return {
     numerator: {
       value: Number(detail.quantityDispensed),
       unit: detail.quantityUnitOfMeasure,
+      ...(quantityUnitOfMeasureDisplay ? { display: quantityUnitOfMeasureDisplay } : undefined),
     },
     denominator: {
       value: 1,
@@ -118,6 +124,8 @@ function getMedicationBatch(detail: ResponseDetail): MedicationBatch | undefined
 function getMedicationIngredient(detail: ResponseDetail): MedicationIngredient[] | undefined {
   if (!detail.strengthValue || !detail.strengthFormCode || !detail.strengthUnitOfMeasure)
     return undefined;
+  const strengthUnitOfMeasureDisplay = getNcpdpName(detail.strengthUnitOfMeasure);
+  const strengthFormCodeDisplay = getNcpdpName(detail.strengthFormCode);
 
   return [
     {
@@ -135,12 +143,14 @@ function getMedicationIngredient(detail: ResponseDetail): MedicationIngredient[]
           value: Number(detail.strengthValue),
           system: "http://unitsofmeasure.org",
           code: detail.strengthUnitOfMeasure,
+          ...(strengthUnitOfMeasureDisplay ? { display: strengthUnitOfMeasureDisplay } : undefined),
         },
         denominator: {
           value: 1,
           unit: detail.strengthFormCode,
           system: "http://unitsofmeasure.org",
           code: detail.strengthFormCode,
+          ...(strengthFormCodeDisplay ? { display: strengthFormCodeDisplay } : undefined),
         },
       },
     },

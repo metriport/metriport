@@ -1,3 +1,7 @@
+export function getDeaScheduleName(code: string): string | undefined {
+  return DeaScheduleName[code as DEAScheduleCode];
+}
+
 export const DeaScheduleCodes = [
   "C38046",
   "C48672",

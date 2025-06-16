@@ -52,9 +52,11 @@ function getPrescriberName(detail: ResponseDetail): Practitioner["name"] {
 
   const givenNames = [detail.prescriberFirstName];
   if (detail.prescriberMiddleName) givenNames.push(...detail.prescriberMiddleName.split(" "));
+  const fullName = [...givenNames, detail.prescriberLastName].join(" ");
 
   return [
     {
+      text: fullName,
       given: givenNames,
       family: detail.prescriberLastName,
       ...(detail.prescriberPrefix ? { prefix: [detail.prescriberPrefix] } : undefined),
