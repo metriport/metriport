@@ -19,6 +19,9 @@ export const cqDirectoryEntryBackup1 = `cq_directory_entry_backup1`;
 export const cqDirectoryEntryBackup2 = `cq_directory_entry_backup2`;
 export const cqDirectoryEntryBackup3 = `cq_directory_entry_backup3`;
 
+const pkNamePrefix = "cq_directory_entry_pkey";
+const indexNamePrefix = "cq_directory_entry_new_managing_organization_id_idx";
+
 const keys = createKeys();
 const number_of_keys = keys.split(",").length;
 
@@ -101,11 +104,7 @@ export async function createTempCqDirectoryTable(sequelize: Sequelize): Promise<
   await deleteTempCqDirectoryTable(sequelize);
   // The PK is added later, on `updateCqDirectoryViewDefinition`
   const query = `CREATE TABLE IF NOT EXISTS ${cqDirectoryEntryTemp} (LIKE ${cqDirectoryEntry} 
-                 INCLUDING DEFAULTS 
-                 INCLUDING STORAGE 
-                 INCLUDING GENERATED 
-                 INCLUDING INDEXES
-                 EXCLUDING CONSTRAINTS)`;
+                 INCLUDING DEFAULTS INCLUDING STORAGE INCLUDING GENERATED EXCLUDING CONSTRAINTS)`;
   await sequelize.query(query, { type: QueryTypes.RAW });
 }
 
@@ -120,6 +119,12 @@ export async function updateCqDirectoryViewDefinition(sequelize: Sequelize): Pro
       await sequelize.query(sql, { type: QueryTypes.RAW, transaction });
     }
     await runSql(
+      `ALTER TABLE ${cqDirectoryEntryTemp} ADD CONSTRAINT ${buildPkName()} PRIMARY KEY (id);`
+    );
+    await runSql(
+      `CREATE INDEX ${buildIndexName()} ON ${cqDirectoryEntryTemp} (managing_organization_id);`
+    );
+    await runSql(
       `CREATE OR REPLACE VIEW ${cqDirectoryEntryView} AS SELECT * FROM ${cqDirectoryEntryTemp};`
     );
     await runSql(`DROP TABLE IF EXISTS ${cqDirectoryEntryBackup3};`);
@@ -132,4 +137,14 @@ export async function updateCqDirectoryViewDefinition(sequelize: Sequelize): Pro
     await runSql(`ALTER TABLE ${cqDirectoryEntry} RENAME TO ${cqDirectoryEntryBackup1};`);
     await runSql(`ALTER TABLE ${cqDirectoryEntryTemp} RENAME TO ${cqDirectoryEntry};`);
   });
+}
+
+function buildPkName(): string {
+  const timestamp = new Date().getTime();
+  return `${pkNamePrefix}_${timestamp}`;
+}
+
+function buildIndexName(): string {
+  const timestamp = new Date().getTime();
+  return `${indexNamePrefix}_${timestamp}`;
 }
