@@ -32,7 +32,14 @@ export function validate<T extends PatientCreateCmd | PatientUpdateCmd | Patient
   return validateDateOfBirth(patient.dob);
 }
 
-function validatePeriod(period: Period): boolean {
+/**
+ * Validates a period.
+ *
+ * @param period - The period to validate.
+ * @returns true if the period is valid.
+ * @throws BadRequestError if the period is invalid.
+ */
+function validatePeriod(period: Period): true {
   if (period.start && period.end) {
     return validateIsPastOrPresent(period.start) && validateDateRange(period.start, period.end);
   }

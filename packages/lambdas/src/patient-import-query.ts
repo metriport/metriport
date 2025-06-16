@@ -3,7 +3,7 @@ import {
   processPatientQuery,
   ProcessPatientQueryCommandRequest,
 } from "@metriport/core/command/patient-import/steps/query/patient-import-query-command";
-import { errorToString } from "@metriport/shared";
+import { errorToString, MetriportError } from "@metriport/shared";
 import * as Sentry from "@sentry/serverless";
 import { SQSEvent } from "aws-lambda";
 import { capture } from "./shared/capture";
@@ -32,6 +32,9 @@ export const handler = Sentry.AWSLambda.wrapHandler(async function handler(event
   capture.setExtra({ event, context: lambdaName });
   const startedAt = new Date().getTime();
   try {
+    if (Number.isNaN(waitTimeInMillis)) {
+      throw new MetriportError(`Invalid waitTimeInMillis`, undefined, { waitTimeInMillis });
+    }
     const message = getSingleMessageOrFail(event.Records, lambdaName);
     if (!message) return;
 

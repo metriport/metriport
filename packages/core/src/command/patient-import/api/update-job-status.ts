@@ -38,6 +38,10 @@ export async function updateJobAtApi({
   const url = buildUrl(cxId, jobId);
   const payload: UpdateJobSchema = { status, total, failed, forceStatusUpdate };
 
+  if (status == undefined && total == undefined && failed == undefined) {
+    throw new Error("updateJobAtApi requires at least one of {status,total,failed} to be defined");
+  }
+
   log(`Updating API w/ status ${status}, payload ${JSON.stringify(payload)}`);
   const res = await withDefaultApiErrorHandling({
     functionToRun: () => api.post(url, payload),

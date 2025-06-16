@@ -46,6 +46,10 @@ describe("shared date functions", () => {
       expect(validateDateIsAfter1900("1970-01-31")).toBe(true);
     });
 
+    it("returns true for valid date time in ISO format", () => {
+      expect(validateDateIsAfter1900("1970-01-31T12:30:00Z")).toBe(true);
+    });
+
     it("returns true for 1900-01-01", () => {
       expect(validateDateIsAfter1900("1900-01-01")).toBe(true);
     });
@@ -66,31 +70,35 @@ describe("shared date functions", () => {
       expect(validateDateIsAfter1900("0123-01-01")).toBe(false);
     });
 
-    it("returns false for dates with year 970", () => {
+    it("returns false for dates with 3 digit year", () => {
       expect(validateDateIsAfter1900("970-01-31")).toBe(false);
     });
 
-    it("handles MM/DD/YYYY format incorrectly returning false for valid years", () => {
+    it("returns false for dates with 2 digit year", () => {
+      expect(validateDateIsAfter1900("70-01-31")).toBe(false);
+    });
+
+    it("returns false for dates in MM/DD/YYYY format", () => {
       expect(validateDateIsAfter1900("12/31/2020")).toBe(false);
     });
 
-    it("handles DD/MM/YYYY format incorrectly returning false for valid years", () => {
+    it("returns false for dates in DD/MM/YYYY format", () => {
       expect(validateDateIsAfter1900("31/12/2020")).toBe(false);
     });
 
-    it("handles YYYY.MM.DD format returning true for valid years", () => {
+    it("returns true for dates in YYYY.MM.DD format", () => {
       expect(validateDateIsAfter1900("2020.12.31")).toBe(true);
     });
 
-    it("handles YYYY/MM/DD format returning true for valid years", () => {
+    it("returns true for dates in YYYY/MM/DD format", () => {
       expect(validateDateIsAfter1900("2020/12/31")).toBe(true);
     });
 
-    it("handles textual month format incorrectly", () => {
+    it("returns false for dates in text format", () => {
       expect(validateDateIsAfter1900("Dec 31, 2020")).toBe(false);
     });
 
-    it("handles empty string format incorrectly", () => {
+    it("returns false for empty string", () => {
       expect(validateDateIsAfter1900("")).toBe(false);
     });
   });

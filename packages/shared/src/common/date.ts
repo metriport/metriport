@@ -39,7 +39,7 @@ export function validateDateOfBirth(
   );
 }
 
-export function validateIsPastOrPresent(date: string): boolean {
+export function validateIsPastOrPresent(date: string): true {
   if (!validateIsPastOrPresentSafe(date)) {
     throw new BadRequestError(`Date can't be in the future`, undefined, { date });
   }
@@ -57,7 +57,7 @@ export function validateDateIsAfter1900(date: string): boolean {
   return year >= 1900;
 }
 
-export function validateDateRange(start: string, end: string): boolean {
+export function validateDateRange(start: string, end: string): true {
   if (buildDayjs(start).isAfter(end)) {
     throw new BadRequestError(`Invalid date range: 'start' must be before 'end'`, undefined, {
       start,
