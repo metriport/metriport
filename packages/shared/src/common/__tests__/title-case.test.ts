@@ -19,6 +19,12 @@ describe("toTitleCase", () => {
     expect(result).toBe("Hello World");
   });
 
+  it("capitalizes first letter of each word with spaces and punctuation", () => {
+    const input = "hello world, d'angelo";
+    const result = toTitleCase(input);
+    expect(result).toBe("Hello World, D'Angelo");
+  });
+
   it("does not capitalize first letter of each word with dashes", () => {
     const input = "hello-world";
     const result = toTitleCase(input);
