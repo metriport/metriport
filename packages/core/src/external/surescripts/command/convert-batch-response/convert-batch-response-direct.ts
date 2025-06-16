@@ -27,6 +27,8 @@ export class SurescriptsConvertBatchResponseHandlerDirect
         }
       );
     }
-    return await convertBatchResponseToFhirBundles(responseFileContent);
+    const conversionBundles = await convertBatchResponseToFhirBundles(responseFileContent);
+
+    return conversionBundles;
   }
 }

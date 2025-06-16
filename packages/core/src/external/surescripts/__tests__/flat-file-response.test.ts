@@ -1,5 +1,5 @@
 import { getArtifact } from "./shared";
-import { parseResponseFile } from "../file-parser";
+import { parseResponseFile } from "../file/file-parser";
 
 describe("Flat file response", () => {
   it("should parse a successful flat file response", () => {

@@ -1,13 +1,13 @@
 import { Coverage, Identifier } from "@medplum/fhirtypes";
 import { ResponseDetail } from "../schema/response";
-import { PLAN_CODE_NAME } from "../codes";
+import { PlanCodeName } from "@metriport/shared/interface/external/surescripts/plan-code";
 
 export function getCoverage(detail: ResponseDetail): Coverage | undefined {
   if (!detail.planCode) return undefined;
 
-  detail.planNetworkBIN;
-  detail.planNetworkGroupId;
-  detail.planNetworkPCN;
+  // detail.planNetworkBIN;
+  // detail.planNetworkGroupId;
+  // detail.planNetworkPCN;
 
   const identifier = getCoverageIdentifiers(detail);
 
@@ -19,7 +19,7 @@ export function getCoverage(detail: ResponseDetail): Coverage | undefined {
         {
           system: "http://terminology.hl7.org/CodeSystem/coverage-type",
           code: detail.planCode,
-          display: PLAN_CODE_NAME[detail.planCode],
+          display: PlanCodeName[detail.planCode],
         },
       ],
     },
@@ -29,6 +29,15 @@ export function getCoverage(detail: ResponseDetail): Coverage | undefined {
 
 function getCoverageIdentifiers(detail: ResponseDetail): Identifier[] {
   const identifiers: Identifier[] = [];
+  if (detail.planNetworkPCN) {
+    identifiers.push({
+      system: "http://terminology.hl7.org/CodeSystem/v2-0203",
+      value: detail.planNetworkPCN,
+    });
+  }
+  // detail.planNetworkGroupId;
+  // detail.planNetworkPCN;
+
   if (detail.planNetworkBIN) {
     identifiers.push({
       system: "http://terminology.hl7.org/CodeSystem/NCPDPProviderIdentificationNumber",

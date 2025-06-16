@@ -4,7 +4,7 @@ import { Config } from "../../util/config";
 import { SftpClient } from "../sftp/client";
 import { SftpFile } from "../sftp/types";
 import { SurescriptsReplica } from "./replica";
-import { generateBatchRequestFile, generatePatientRequestFile } from "./file-generator";
+import { generateBatchRequestFile, generatePatientRequestFile } from "./file/file-generator";
 import { IdGenerator, createIdGenerator } from "./id-generator";
 import {
   SurescriptsBatchRequestData,
@@ -20,7 +20,7 @@ import {
   makeResponseFileNamePrefix,
   parseResponseFileName,
   parseVerificationFileName,
-} from "./file-names";
+} from "./file/file-names";
 
 export class SurescriptsSftpClient extends SftpClient {
   private generateTransmissionId: IdGenerator;

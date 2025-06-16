@@ -1,3 +1,4 @@
+import { BadRequestError } from "@metriport/shared";
 import { Patient } from "@medplum/fhirtypes";
 import { ResponseDetail } from "../schema/response";
 import { convertDateToString } from "@metriport/shared/common/date";
@@ -14,6 +15,14 @@ export function getPatient(detail: ResponseDetail): Patient {
     ...(gender ? { gender } : undefined),
     ...(birthDate ? { birthDate } : undefined),
   };
+}
+
+export function mergePatient(patient: Patient, otherPatient?: Patient): Patient {
+  if (!otherPatient) return patient;
+  if (otherPatient.id !== patient.id) {
+    throw new BadRequestError("Patient IDs do not match");
+  }
+  return Object.assign({}, patient, otherPatient);
 }
 
 function getPatientName(detail: ResponseDetail): Patient["name"] {

@@ -17,7 +17,7 @@ export const DeaSchedules = [
 
 export type DEAScheduleCode = (typeof DeaScheduleCodes)[number];
 export type DEASchedule = (typeof DeaSchedules)[number];
-export const DEA_SCHEDULE_NAME: Record<DEAScheduleCode, DEASchedule> = {
+export const DeaScheduleName: Record<DEAScheduleCode, DEASchedule> = {
   C38046: "Unspecified",
   C48672: "Schedule I",
   C48675: "Schedule II",

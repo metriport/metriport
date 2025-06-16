@@ -1,5 +1,5 @@
 import { getArtifact } from "./shared";
-import { parseVerificationFile } from "../file-parser";
+import { parseVerificationFile } from "../file/file-parser";
 
 describe("Verification response", () => {
   it("should parse a successful verification response", () => {

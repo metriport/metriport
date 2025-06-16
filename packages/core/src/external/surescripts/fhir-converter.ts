@@ -9,7 +9,7 @@ import {
   Practitioner,
   Resource,
 } from "@medplum/fhirtypes";
-import { parseResponseFile } from "./file-parser";
+import { parseResponseFile } from "./file/file-parser";
 import { ParsedResponseFile, ResponseDetail } from "./schema/response";
 import { IncomingData } from "./schema/shared";
 import { SurescriptsConversionBundle } from "./types";
@@ -19,7 +19,7 @@ import { getMedicationDispense } from "./fhir/medication-dispense";
 import { getMedicationRequest } from "./fhir/medication-request";
 import { getPrescriber } from "./fhir/prescriber";
 import { getPharmacy } from "./fhir/pharmacy";
-import { getPatient } from "./fhir/patient";
+import { getPatient, mergePatient } from "./fhir/patient";
 import { getCondition } from "./fhir/condition";
 
 export async function convertPatientResponseToFhirBundle(
@@ -71,7 +71,7 @@ async function convertPatientDetailsToFhirBundle(
     entry: [],
   };
 
-  const sharedReferences = buildSharedReferences();
+  const sharedReferences = buildSharedReferences(patientId);
   for (const detail of details) {
     const entries = convertPatientDetailToEntries(detail.data, sharedReferences);
     bundle.entry?.push(...entries);
@@ -85,7 +85,7 @@ export function convertPatientDetailToEntries(
   detail: ResponseDetail,
   shared: SurescriptsSharedReferences
 ): BundleEntry<Resource>[] {
-  const patient = shared.patient ?? getPatient(detail);
+  const patient = mergePatient(shared.patient, getPatient(detail));
   const practitioner = deduplicateBySystemIdentifier(shared.practitioner, getPrescriber(detail));
   const pharmacy = deduplicateBySystemIdentifier(shared.pharmacy, getPharmacy(detail));
   const condition = getCondition(detail);
@@ -128,7 +128,7 @@ function buildPatientIdToDetailsMap(
 }
 
 interface SurescriptsSharedReferences {
-  patient?: Patient | undefined;
+  patient: Patient;
   // identifier system -> identifier value -> resource
   practitioner: SystemIdentifierMap<Practitioner>;
   pharmacy: SystemIdentifierMap<Organization>;
@@ -137,9 +137,12 @@ interface SurescriptsSharedReferences {
 type SystemIdentifierMap<R extends Resource> = Record<string, IdentifierMap<R>>;
 type IdentifierMap<R extends Resource> = Record<string, R>;
 
-function buildSharedReferences(): SurescriptsSharedReferences {
+function buildSharedReferences(patientId: string): SurescriptsSharedReferences {
   const sharedReferences: SurescriptsSharedReferences = {
-    patient: undefined,
+    patient: {
+      resourceType: "Patient",
+      id: patientId,
+    },
     practitioner: {},
     pharmacy: {},
   };

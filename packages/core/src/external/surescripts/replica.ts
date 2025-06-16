@@ -1,7 +1,7 @@
 import { Config } from "../../util/config";
 import { S3Replica } from "../sftp/replica/s3";
 import { SurescriptsFileIdentifier, SurescriptsSftpConfig } from "./types";
-import { makeResponseFileNamePrefix } from "./file-names";
+import { makeResponseFileNamePrefix } from "./file/file-names";
 
 export class SurescriptsReplica extends S3Replica {
   constructor(config: Pick<SurescriptsSftpConfig, "replicaBucket" | "replicaBucketRegion"> = {}) {

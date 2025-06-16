@@ -4,7 +4,7 @@ import {
   parseHistoryFileName,
   makeRequestFileName,
   makeResponseFileNamePrefix,
-} from "../file-names";
+} from "../file/file-names";
 
 describe("File names for patient requests", () => {
   const testTransmissionId = "-OSaV613EU";
