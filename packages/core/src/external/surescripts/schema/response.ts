@@ -78,8 +78,8 @@ export const responseDetailSchema = z.object({
   sentTime: z.date(),
   status: z.string(),
   note: z.string(),
-  prescriberNPI: z.string(),
-  prescriberName: z.string(),
+  facilityNpiNumber: z.string(),
+  facilityName: z.string(),
   patientId: z.string(),
   patientLastName: z.string(),
   patientFirstName: z.string(),
@@ -194,12 +194,12 @@ export const responseDetailRow: IncomingFileRowSchema<ResponseDetail> = [
   },
   {
     field: 6,
-    key: "prescriberNPI",
+    key: "facilityNpiNumber",
     fromSurescripts: fromSurescriptsString(),
   },
   {
     field: 7,
-    key: "prescriberName",
+    key: "facilityName",
     fromSurescripts: fromSurescriptsString(),
   },
   {

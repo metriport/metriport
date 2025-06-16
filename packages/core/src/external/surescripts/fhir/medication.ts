@@ -1,16 +1,18 @@
 import {
   Medication,
   MedicationIngredient,
+  CodeableConcept,
   Coding,
   Ratio,
   MedicationBatch,
 } from "@medplum/fhirtypes";
 import { ResponseDetail } from "../schema/response";
+import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 
 import { DeaScheduleName } from "@metriport/shared/interface/external/surescripts/dea-schedule";
 
 export function getMedication(detail: ResponseDetail): Medication {
-  const code = getMedicationCode(detail);
+  const code = getMedicationCodeableConcept(detail);
   const ingredient = getMedicationIngredient(detail);
   const form = getMedicationForm(detail);
   const amount = getMedicationAmount(detail);
@@ -18,28 +20,39 @@ export function getMedication(detail: ResponseDetail): Medication {
 
   return {
     resourceType: "Medication",
+    id: uuidv7(),
+    status: "active",
     ...(code ? { code } : undefined),
     ...(ingredient && ingredient.length > 0 ? { ingredient } : undefined),
     ...(form ? { form } : undefined),
     ...(amount ? { amount } : undefined),
     ...(batch ? { batch } : undefined),
-    status: "active",
   };
 }
 
-function getMedicationCode(detail: ResponseDetail): Medication["code"] {
+function getMedicationCodeableConcept(detail: ResponseDetail): CodeableConcept | undefined {
+  const text = getMedicationText(detail);
+  const coding = getMedicationCoding(detail);
+  if (text && coding) return { text, coding };
+  if (text) return { text };
+  if (coding) return { coding };
+  return undefined;
+}
+
+function getMedicationText(detail: ResponseDetail): string | undefined {
+  if (!detail.drugDescription) return undefined;
+  return detail.drugDescription;
+}
+
+function getMedicationCoding(detail: ResponseDetail): Coding[] | undefined {
   if (!detail.ndcNumber && !detail.productCode && !detail.deaSchedule) return undefined;
 
-  const text = detail.drugDescription;
   const ndcCode = getMedicationNdcCode(detail);
   const productCode = getMedicationProductCode(detail);
   const deaCode = getMedicationDeaScheduleCode(detail);
   const coding = [ndcCode, productCode, deaCode].filter(Boolean) as Coding[];
 
-  return {
-    ...(text ? { text } : undefined),
-    coding,
-  };
+  return coding;
 }
 
 function getMedicationNdcCode(detail: ResponseDetail): Coding | undefined {

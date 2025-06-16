@@ -12,7 +12,7 @@ export class SurescriptsConvertPatientResponseHandlerDirect
     transmissionId,
     populationId,
   }: SurescriptsFileIdentifier): Promise<SurescriptsConversionBundle | undefined> {
-    const responseFileContent = await this.replica.getResponseFileContent({
+    const responseFileContent = await this.replica.getRawResponseFile({
       transmissionId,
       populationId,
     });

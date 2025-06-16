@@ -1,4 +1,5 @@
 import { Organization, Identifier } from "@medplum/fhirtypes";
+import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { ResponseDetail } from "../schema/response";
 
 export function getPharmacy(detail: ResponseDetail): Organization | undefined {
@@ -11,6 +12,7 @@ export function getPharmacy(detail: ResponseDetail): Organization | undefined {
 
   return {
     resourceType: "Organization",
+    id: uuidv7(),
     name,
     ...(identifiers.length > 0 ? { identifier: identifiers } : undefined),
     ...(address && address.length > 0 ? { address } : undefined),

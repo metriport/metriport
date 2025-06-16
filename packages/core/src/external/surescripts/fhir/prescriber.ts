@@ -1,15 +1,18 @@
 import { Identifier, Practitioner } from "@medplum/fhirtypes";
+import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { ResponseDetail } from "../schema/response";
 
 export function getPrescriber(detail: ResponseDetail): Practitioner {
   const prescriberName = getPrescriberName(detail);
   const prescriberAddress = getPrescriberAddress(detail);
-
   const identifiers = getPrescriberIdentifiers(detail);
   const telecom = getPrescriberTelecom(detail);
 
+  // detail.prescriberSuffix
+
   return {
     resourceType: "Practitioner",
+    id: uuidv7(),
     ...(identifiers.length > 0 ? { identifier: identifiers } : undefined),
     ...(prescriberName && prescriberName.length > 0 ? { name: prescriberName } : undefined),
     ...(prescriberAddress && prescriberAddress.length > 0
@@ -21,10 +24,10 @@ export function getPrescriber(detail: ResponseDetail): Practitioner {
 
 function getPrescriberIdentifiers(detail: ResponseDetail): Identifier[] {
   const identifiers: Identifier[] = [];
-  if (detail.prescriberNPI) {
+  if (detail.prescriberNpiNumber) {
     identifiers.push({
       system: "http://hl7.org/fhir/sid/us-npi",
-      value: detail.prescriberNPI,
+      value: detail.prescriberNpiNumber,
     });
   }
   if (detail.prescriberDeaNumber) {
@@ -76,6 +79,8 @@ function getPrescriberAddress(detail: ResponseDetail): Practitioner["address"] {
       city: detail.prescriberCity,
       state: detail.prescriberState,
       postalCode: detail.prescriberZipCode,
+      country: "USA",
+      use: "work",
     },
   ];
 }
@@ -85,12 +90,14 @@ function getPrescriberTelecom(detail: ResponseDetail): Practitioner["telecom"] {
   if (detail.prescriberPhoneNumber) {
     telecom.push({
       system: "phone",
+      use: "work",
       value: detail.prescriberPhoneNumber,
     });
   }
   if (detail.prescriberFaxNumber) {
     telecom.push({
       system: "fax",
+      use: "work",
       value: detail.prescriberFaxNumber,
     });
   }

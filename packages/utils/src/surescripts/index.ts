@@ -6,6 +6,7 @@ import verifyRequestInHistory from "./verify-request-in-history";
 import receiveResponse from "./receive-response";
 import receiveVerification from "./receive-verification";
 import convertResponse from "./convert-response";
+import analysis from "./analysis";
 
 const program = new Command();
 program.addCommand(sftpAction);
@@ -15,4 +16,5 @@ program.addCommand(verifyRequestInHistory);
 program.addCommand(receiveResponse);
 program.addCommand(receiveVerification);
 program.addCommand(convertResponse);
+program.addCommand(analysis);
 program.parse();

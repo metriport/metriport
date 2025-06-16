@@ -71,9 +71,9 @@ async function convertPatientDetailsToFhirBundle(
     entry: [],
   };
 
-  const sharedReferences = buildSharedReferences(patientId);
+  const context = buildInitialContext(patientId);
   for (const detail of details) {
-    const entries = convertPatientDetailToEntries(detail.data, sharedReferences);
+    const entries = convertPatientDetailToEntries(detail.data, context);
     bundle.entry?.push(...entries);
     bundle.total = (bundle.total ?? 0) + entries.length;
   }
@@ -83,11 +83,11 @@ async function convertPatientDetailsToFhirBundle(
 
 export function convertPatientDetailToEntries(
   detail: ResponseDetail,
-  shared: SurescriptsSharedReferences
+  context: SurescriptsContext
 ): BundleEntry<Resource>[] {
-  const patient = mergePatient(shared.patient, getPatient(detail));
-  const practitioner = deduplicateBySystemIdentifier(shared.practitioner, getPrescriber(detail));
-  const pharmacy = deduplicateBySystemIdentifier(shared.pharmacy, getPharmacy(detail));
+  const patient = mergePatient(context.patient, getPatient(detail));
+  const practitioner = deduplicateBySystemIdentifier(context.practitioner, getPrescriber(detail));
+  const pharmacy = deduplicateBySystemIdentifier(context.pharmacy, getPharmacy(detail));
   const condition = getCondition(detail);
   const medication = getMedication(detail);
   const medicationDispense = getMedicationDispense(detail);
@@ -127,7 +127,7 @@ function buildPatientIdToDetailsMap(
   return patientIdDetails;
 }
 
-interface SurescriptsSharedReferences {
+interface SurescriptsContext {
   patient: Patient;
   // identifier system -> identifier value -> resource
   practitioner: SystemIdentifierMap<Practitioner>;
@@ -137,8 +137,8 @@ interface SurescriptsSharedReferences {
 type SystemIdentifierMap<R extends Resource> = Record<string, IdentifierMap<R>>;
 type IdentifierMap<R extends Resource> = Record<string, R>;
 
-function buildSharedReferences(patientId: string): SurescriptsSharedReferences {
-  const sharedReferences: SurescriptsSharedReferences = {
+function buildInitialContext(patientId: string): SurescriptsContext {
+  const sharedReferences: SurescriptsContext = {
     patient: {
       resourceType: "Patient",
       id: patientId,

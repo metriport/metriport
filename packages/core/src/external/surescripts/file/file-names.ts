@@ -82,3 +82,7 @@ export function parseResponseFileName(remoteFileName: string):
 export function makeResponseFileNamePrefix(transmissionId: string, populationId: string): string {
   return `${transmissionId}_${populationId}_`;
 }
+
+export function makeConversionBundleFileName(cxId: string, patientId: string): string {
+  return `cxId=${cxId}/ptId=${patientId}/surescripts/latest.json`;
+}

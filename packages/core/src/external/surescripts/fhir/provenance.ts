@@ -14,14 +14,14 @@ export function getProvenanceAgent(detail: ResponseDetail): ProvenanceAgent {
   return {
     id: SURESCRIPTS_AGENT_ID,
     who: {
-      display: "Metriport Surescripts Integration",
+      display: "Metriport <-> Surescripts",
       id: SURESCRIPTS_AGENT_ID,
       type: "Organization",
     },
     onBehalfOf: {
       identifier: {
         system: "http://hl7.org/fhir/sid/npi",
-        value: detail.prescriberNPI,
+        value: detail.facilityNpiNumber,
       },
     },
   };
