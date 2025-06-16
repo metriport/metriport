@@ -21,6 +21,9 @@ import { getPrescriber } from "./fhir/prescriber";
 import { getPharmacy } from "./fhir/pharmacy";
 import { getPatient, mergePatient } from "./fhir/patient";
 import { getCondition } from "./fhir/condition";
+import { makeConversionBundleFileName } from "./file/file-names";
+import { S3Utils } from "../aws/s3";
+import { Config } from "../../util/config";
 
 export async function convertPatientResponseToFhirBundle(
   responseFileContent: Buffer
@@ -110,6 +113,24 @@ export function convertPatientDetailToEntries(
         resource,
       },
     ];
+  });
+}
+
+export async function uploadConversionBundle({
+  bundle,
+  cxId,
+  patientId,
+}: {
+  bundle: Bundle;
+  cxId: string;
+  patientId: string;
+}): Promise<void> {
+  const fileName = makeConversionBundleFileName(cxId, patientId);
+  const conversionBucket = new S3Utils(Config.getAWSRegion());
+  await conversionBucket.uploadFile({
+    bucket: Config.getPharmacyConversionBucketName(),
+    key: fileName,
+    file: Buffer.from(JSON.stringify(bundle)),
   });
 }
 

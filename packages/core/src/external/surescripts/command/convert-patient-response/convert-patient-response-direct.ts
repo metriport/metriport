@@ -1,7 +1,11 @@
 import { SurescriptsConvertPatientResponseHandler } from "./convert-patient-response";
 import { SurescriptsReplica } from "../../replica";
-import { SurescriptsConversionBundle, SurescriptsFileIdentifier } from "../../types";
-import { convertPatientResponseToFhirBundle } from "../../fhir-converter";
+import {
+  SurescriptsConversionBundle,
+  SurescriptsFileIdentifier,
+  SurescriptsRequester,
+} from "../../types";
+import { convertPatientResponseToFhirBundle, uploadConversionBundle } from "../../fhir-converter";
 
 export class SurescriptsConvertPatientResponseHandlerDirect
   implements SurescriptsConvertPatientResponseHandler
@@ -9,9 +13,12 @@ export class SurescriptsConvertPatientResponseHandlerDirect
   constructor(private readonly replica: SurescriptsReplica) {}
 
   async convertPatientResponse({
+    cxId,
     transmissionId,
     populationId,
-  }: SurescriptsFileIdentifier): Promise<SurescriptsConversionBundle | undefined> {
+  }: SurescriptsRequester & SurescriptsFileIdentifier): Promise<
+    SurescriptsConversionBundle | undefined
+  > {
     const responseFileContent = await this.replica.getRawResponseFile({
       transmissionId,
       populationId,
@@ -19,6 +26,11 @@ export class SurescriptsConvertPatientResponseHandlerDirect
     if (!responseFileContent) {
       return undefined;
     }
-    return await convertPatientResponseToFhirBundle(responseFileContent);
+    const conversionBundle = await convertPatientResponseToFhirBundle(responseFileContent);
+    if (!conversionBundle) return undefined;
+
+    const { patientId, bundle } = conversionBundle;
+    await uploadConversionBundle({ bundle, cxId, patientId });
+    return conversionBundle;
   }
 }
