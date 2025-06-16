@@ -21,14 +21,21 @@ const sftpList = new Command();
 const sftpRead = new Command();
 const sftpWrite = new Command();
 const sftpExists = new Command();
+const sftpSync = new Command();
 
 sftpConnect
   .name("connect")
   .description("Connect to the SFTP server")
   .action(async () => {
-    await executeSftpAction({
+    const { result, error } = await executeSftpAction({
       type: "connect",
     });
+
+    if (result) {
+      console.log("Successfully connected to the SFTP server");
+    } else if (error) {
+      console.error(error.toString());
+    }
   });
 
 sftpList
@@ -96,7 +103,13 @@ sftpSync
   .argument("<remotePath>", "The remote path to sync")
   .description("Sync a directory in the SFTP server to the replica")
   .action(async (remotePath: string) => {
-    await executeSftpAction({ type: "sync", remotePath });
+    const { result, error } = await executeSftpAction({ type: "sync", remotePath });
+    if (result) {
+      console.log(`Synced ${result.length} files to the replica`);
+      console.log(result.join("\n"));
+    } else if (error) {
+      console.error(error.toString());
+    }
   });
 
 sftpExists
@@ -120,5 +133,6 @@ sftpAction.addCommand(sftpList);
 sftpAction.addCommand(sftpRead);
 sftpAction.addCommand(sftpWrite);
 sftpAction.addCommand(sftpExists);
+sftpAction.addCommand(sftpSync);
 
 export default sftpAction;
