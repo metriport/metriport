@@ -43,6 +43,8 @@ async function executeAction<A extends SftpAction>(
             contains: action.contains,
           })
         )) as SftpActionResult<A>;
+      case "sync":
+        return (await client.sync(action.remotePath)) as SftpActionResult<A>;
       case "exists":
         return (await client.exists(action.remotePath)) as SftpActionResult<A>;
     }

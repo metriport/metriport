@@ -7,7 +7,7 @@ import {
 } from "@medplum/fhirtypes";
 import { ResponseDetail } from "../schema/response";
 
-import { DEA_SCHEDULE_NAME } from "@metriport/shared/interface/external/surescripts/dea-schedule";
+import { DeaScheduleName } from "@metriport/shared/interface/external/surescripts/dea-schedule";
 
 export function getMedication(detail: ResponseDetail): Medication {
   const code = getMedicationCode(detail);
@@ -65,7 +65,7 @@ function getMedicationDeaScheduleCode(detail: ResponseDetail): Coding | undefine
   return {
     system: "http://terminology.hl7.org/CodeSystem/v3-substanceAdminSubstitution",
     code: detail.deaSchedule,
-    display: DEA_SCHEDULE_NAME[detail.deaSchedule] ?? "",
+    display: DeaScheduleName[detail.deaSchedule] ?? "",
   };
 }
 

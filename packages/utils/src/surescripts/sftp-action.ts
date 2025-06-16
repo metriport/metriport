@@ -91,6 +91,14 @@ sftpWrite
     });
   });
 
+sftpSync
+  .name("sync")
+  .argument("<remotePath>", "The remote path to sync")
+  .description("Sync a directory in the SFTP server to the replica")
+  .action(async (remotePath: string) => {
+    await executeSftpAction({ type: "sync", remotePath });
+  });
+
 sftpExists
   .name("exists")
   .argument("<remotePath>", "The remote path to check if it exists")

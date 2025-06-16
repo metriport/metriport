@@ -199,6 +199,24 @@ export class SftpClient implements SftpClientImpl {
     return fileNames;
   }
 
+  async sync(remotePath: string): Promise<string[]> {
+    if (!this.replica) return [];
+    const replicaDirectory = this.replica.getReplicaPath(remotePath);
+    this.log(`Syncing files in ${remotePath} to replica at ${replicaDirectory}`);
+    const sftpFileNames = await this.list(remotePath);
+    const replicaFileNames = await this.replica.listFileNames(replicaDirectory);
+    const replicaFileSet = new Set(replicaFileNames);
+
+    for (const sftpFileName of sftpFileNames) {
+      if (!replicaFileSet.has(sftpFileName)) {
+        this.log(`File ${sftpFileName} does not exist in replica, syncing...`);
+        const sftpFile = await this.read(remotePath + "/" + sftpFileName);
+        await this.replica.writeFile(replicaDirectory + "/" + sftpFileName, sftpFile);
+      }
+    }
+    return sftpFileNames;
+  }
+
   async exists(remotePath: string): Promise<boolean> {
     this.log(`Checking if file exists at ${remotePath}`);
     const exists = await this.executeWithSshListeners(async function (client) {
