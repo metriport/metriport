@@ -12,13 +12,10 @@ export class SurescriptsConvertPatientResponseHandlerDirect
 {
   constructor(private readonly replica: SurescriptsReplica) {}
 
-  async convertPatientResponse({
-    cxId,
-    transmissionId,
-    populationId,
-  }: SurescriptsRequester & SurescriptsFileIdentifier): Promise<
-    SurescriptsConversionBundle | undefined
-  > {
+  async convertPatientResponse(
+    params: SurescriptsRequester & SurescriptsFileIdentifier
+  ): Promise<SurescriptsConversionBundle | undefined> {
+    const { cxId, transmissionId, populationId } = params;
     const responseFileContent = await this.replica.getRawResponseFile({
       transmissionId,
       populationId,
