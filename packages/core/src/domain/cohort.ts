@@ -8,18 +8,17 @@ export interface CohortCreate extends BaseDomainCreate {
   cxId: string;
   name: string;
   monitoring?: MonitoringSettings;
-  otherSettings?: Record<string, unknown>;
 }
 
 export interface Cohort extends BaseDomain, CohortCreate {}
 
-export interface CohortAssignmentData {
+export interface PatientCohortData {
   patientId: string;
   cohortId: string;
 }
 
-export interface CohortAssignmentCreate extends CohortAssignmentData {
+export interface PatientCohortCreate extends PatientCohortData {
   cxId: string;
 }
 
-export interface CohortAssignment extends BaseDomainNoId, Required<CohortAssignmentData> {}
+export interface PatientCohort extends BaseDomainNoId, Required<PatientCohortData> {}
