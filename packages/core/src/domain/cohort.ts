@@ -1,4 +1,4 @@
-import { BaseDomain, BaseDomainCreate, BaseDomainNoId } from "./base-domain";
+import { BaseDomain, BaseDomainCreate } from "./base-domain";
 
 export type MonitoringSettings = {
   adt?: boolean;
@@ -21,4 +21,4 @@ export interface PatientCohortCreate extends PatientCohortData {
   cxId: string;
 }
 
-export interface PatientCohort extends BaseDomainNoId, Required<PatientCohortData> {}
+export interface PatientCohort extends BaseDomain, Required<PatientCohortData> {}

@@ -49,7 +49,7 @@ export class CohortModel extends BaseModel<CohortModel> implements Cohort {
   };
 }
 
-export class PatientCohortModel extends BaseModelNoId<PatientCohortModel> implements PatientCohort {
+export class PatientCohortModel extends BaseModel<PatientCohortModel> implements PatientCohort {
   static NAME = "patient_cohort";
 
   declare patientId: string;
@@ -57,6 +57,7 @@ export class PatientCohortModel extends BaseModelNoId<PatientCohortModel> implem
 
   static override attributes() {
     return {
+      ...super.attributes(),
       patientId: {
         type: DataTypes.UUID,
         allowNull: false,
@@ -66,7 +67,7 @@ export class PatientCohortModel extends BaseModelNoId<PatientCohortModel> implem
           model: "patient",
           key: "id",
         },
-        onDelete: "CASCADE",
+        // onDelete: "CASCADE",
       },
       cohortId: {
         type: DataTypes.UUID,
@@ -77,7 +78,7 @@ export class PatientCohortModel extends BaseModelNoId<PatientCohortModel> implem
           model: "cohort",
           key: "id",
         },
-        onDelete: "CASCADE",
+        // onDelete: "CASCADE",
       },
       ...BaseModelNoId.attributes(),
     };
