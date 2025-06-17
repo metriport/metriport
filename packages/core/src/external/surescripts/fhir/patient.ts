@@ -1,5 +1,5 @@
 import { BadRequestError } from "@metriport/shared";
-import { Patient } from "@medplum/fhirtypes";
+import { Patient, Reference } from "@medplum/fhirtypes";
 import { ResponseDetail } from "../schema/response";
 import { convertDateToString } from "@metriport/shared/common/date";
 
@@ -14,6 +14,13 @@ export function getPatient(detail: ResponseDetail): Patient {
     ...(name ? { name } : undefined),
     ...(gender ? { gender } : undefined),
     ...(birthDate ? { birthDate } : undefined),
+  };
+}
+
+export function getPatientReference(patient: Patient): Reference<Patient> {
+  return {
+    reference: `Patient/${patient.id}`,
+    id: patient.id ?? "",
   };
 }
 

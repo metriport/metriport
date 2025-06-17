@@ -9,7 +9,6 @@ import {
 } from "@medplum/fhirtypes";
 import { ResponseDetail } from "../schema/response";
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
-
 import { getDeaScheduleName } from "@metriport/shared/interface/external/surescripts/dea-schedule";
 import { getNcpdpName } from "@metriport/shared/interface/external/surescripts/ncpdp";
 import {

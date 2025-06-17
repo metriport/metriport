@@ -25,7 +25,7 @@ export async function convertPatientResponseToFhirBundle(
   const patientId = patientIds[0];
   if (!patientId) return undefined;
   const details = patientIdDetails.get(patientId);
-  if (!details || details.length === 0) return undefined;
+  if (!details || details.length < 1) return undefined;
 
   const bundle = await convertIncomingDataToFhirBundle(patientId, details);
   await hydrateFhir(bundle, console.log);

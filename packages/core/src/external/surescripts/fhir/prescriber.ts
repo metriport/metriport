@@ -1,4 +1,4 @@
-import { Identifier, Practitioner } from "@medplum/fhirtypes";
+import { Identifier, Practitioner, Reference } from "@medplum/fhirtypes";
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { ResponseDetail } from "../schema/response";
 import { DEA_SYSTEM, NPI_SYSTEM } from "./constants";
@@ -20,6 +20,13 @@ export function getPrescriber(detail: ResponseDetail): Practitioner {
       ? { address: prescriberAddress }
       : undefined),
     ...(telecom && telecom.length > 0 ? { telecom } : undefined),
+  };
+}
+
+export function getPrescriberReference(prescriber: Practitioner): Reference<Practitioner> {
+  return {
+    reference: `Practitioner/${prescriber.id}`,
+    id: prescriber.id ?? "",
   };
 }
 

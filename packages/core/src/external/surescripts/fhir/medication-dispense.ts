@@ -8,6 +8,8 @@ import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { ResponseDetail } from "../schema/response";
 import { MEDICATION_DISPENSE_FILL_NUMBER_EXTENSION, UNIT_OF_MEASURE_SYSTEM } from "./constants";
 import { getMedicationReference } from "./medication";
+import { getPatientReference } from "./patient";
+import { getPrescriberReference } from "./prescriber";
 import { getResourceByNpiNumber } from "./shared";
 import { SurescriptsContext } from "./types";
 
@@ -18,17 +20,17 @@ export function getMedicationDispense(
 ): MedicationDispense {
   const daysSupply = getDaysSupply(detail);
   const performer = getMedicationDispensePerformer(context, detail);
-  const fillNumber = getFillNumberAsExtension(detail);
   const dosageInstruction = getDosageInstruction(detail);
+  const subject = getPatientReference(context.patient);
+  const medicationReference = getMedicationReference(medication);
+  const fillNumber = getFillNumberAsExtension(detail);
   const extensions = [fillNumber].filter(Boolean) as Extension[];
 
   const medicationDispense: MedicationDispense = {
     resourceType: "MedicationDispense",
-    subject: {
-      reference: `Patient/${detail.patientId}`,
-      display: context.patient.name?.[0]?.text ?? "",
-    },
-    medicationReference: getMedicationReference(medication),
+    id: uuidv7(),
+    subject,
+    medicationReference,
     status: "completed",
     ...(dosageInstruction ? { dosageInstruction } : undefined),
     ...(daysSupply ? { daysSupply } : undefined),
@@ -57,14 +59,12 @@ function getMedicationDispensePerformer(
   if (!detail.prescriberNpiNumber) return [];
   const prescriber = getResourceByNpiNumber(context.practitioner, detail.prescriberNpiNumber);
   if (!prescriber) return [];
+  const actor = getPrescriberReference(prescriber);
 
   return [
     {
       id: uuidv7(),
-      actor: {
-        reference: `Practitioner/${prescriber.id}`,
-        display: prescriber.name?.[0]?.text ?? "",
-      },
+      actor,
     },
   ];
 }

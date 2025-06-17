@@ -1,6 +1,5 @@
 import { BundleEntry, Resource } from "@medplum/fhirtypes";
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
-
 import { IncomingData } from "../schema/shared";
 import { ResponseDetail } from "../schema/response";
 import { SurescriptsContext } from "./types";
@@ -21,7 +20,7 @@ export function getAllBundleEntries(
   const practitioner = deduplicateBySystemIdentifier(context.practitioner, getPrescriber(data));
   const pharmacy = deduplicateBySystemIdentifier(context.pharmacy, getPharmacy(data));
   const medication = deduplicateByCoding(context.medication, getMedication(data));
-  const condition = deduplicateByCoding(context.condition, getCondition(data));
+  const condition = deduplicateByCoding(context.condition, getCondition(context, data));
   const medicationDispense = medication
     ? getMedicationDispense(context, medication, data)
     : undefined;

@@ -28,6 +28,7 @@ export function getMedicationRequest(
         ],
       },
     ],
+
     ...(dispenseRequest ? { dispenseRequest } : undefined),
     ...(dosageInstruction ? { dosageInstruction } : undefined),
     ...(substitution ? { substitution } : undefined),
@@ -35,11 +36,10 @@ export function getMedicationRequest(
 }
 
 function getDispenseRequest(detail: ResponseDetail): MedicationRequest["dispenseRequest"] {
-  const dispenseRequest: MedicationRequest["dispenseRequest"] = {};
   if (detail.fillNumber) {
-    dispenseRequest.numberOfRepeatsAllowed = detail.fillNumber;
+    return { numberOfRepeatsAllowed: detail.fillNumber };
   }
-  return dispenseRequest;
+  return undefined;
 }
 
 function getAuthoredOn(detail: ResponseDetail): MedicationRequest["authoredOn"] | undefined {

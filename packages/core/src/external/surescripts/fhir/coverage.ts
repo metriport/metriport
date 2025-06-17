@@ -24,7 +24,7 @@ export function getCoverage(detail: ResponseDetail): Coverage | undefined {
         },
       ],
     },
-    ...(identifier && identifier.length > 0 ? { identifier } : undefined),
+    ...(identifier.length > 0 ? { identifier } : undefined),
   };
 }
 
