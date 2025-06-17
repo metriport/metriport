@@ -3,6 +3,7 @@ import { queryMetaSchema } from "../../pagination";
 // import { TcmEncounterLatestEvent } from "../../../domain/medical/tcm-encounter";
 
 export const tcmEncounterCreateSchema = z.object({
+  cxId: z.string().uuid(),
   patientId: z.string().uuid(),
   facilityName: z.string(),
   latestEvent: z.enum(["Admitted", "Transferred", "Discharged"] as const),
@@ -27,7 +28,7 @@ export const tcmEncounterResponseSchema = tcmEncounterCreateSchema.extend({
   cxId: z.string().uuid(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
-  version: z.number(),
+  eTag: z.string(),
 });
 
 export const tcmEncounterListQuerySchema = z

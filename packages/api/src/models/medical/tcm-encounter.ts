@@ -1,94 +1,53 @@
-import { DataTypes, Model, Sequelize, Optional } from "sequelize";
-import { TcmEncounter, TcmEncounterLatestEvent } from "../../domain/medical/tcm-encounter";
-import { ModelSetup } from "../_default";
+import { DataTypes, Sequelize } from "sequelize";
+import { TcmEncounter } from "../../domain/medical/tcm-encounter";
+import { BaseModel, ModelSetup } from "../_default";
 
-export type TcmEncounterCreation = Optional<TcmEncounter, "id" | "createdAt" | "updatedAt">;
+export type TcmEncounterCreation = Omit<TcmEncounter, "id" | "createdAt" | "updatedAt" | "eTag">;
 
-export class TcmEncounterModel
-  extends Model<TcmEncounter, TcmEncounterCreation>
-  implements TcmEncounter
-{
-  declare id: string;
+export class TcmEncounterModel extends BaseModel<TcmEncounterModel> implements TcmEncounter {
+  static NAME = "tcm_encounter";
   declare cxId: string;
   declare patientId: string;
   declare facilityName: string;
-  declare latestEvent: TcmEncounterLatestEvent;
+  declare latestEvent: "Admitted" | "Transferred" | "Discharged";
   declare class: string;
-  declare admitTime: Date | null;
+  declare admitTime: Date;
   declare dischargeTime: Date | null;
   declare clinicalInformation: Record<string, unknown>;
-  declare createdAt: Date;
-  declare updatedAt: Date;
-  declare version: number;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
     TcmEncounterModel.init(
       {
-        id: {
-          type: DataTypes.UUID,
-          primaryKey: true,
-          allowNull: false,
-        },
+        ...BaseModel.attributes(),
         cxId: {
           type: DataTypes.UUID,
-          field: "cx_id",
-          allowNull: false,
         },
         patientId: {
           type: DataTypes.UUID,
-          field: "patient_id",
-          allowNull: false,
         },
         facilityName: {
           type: DataTypes.STRING,
-          field: "facility_name",
-          allowNull: false,
         },
         latestEvent: {
           type: DataTypes.ENUM("Admitted", "Transferred", "Discharged"),
-          field: "latest_event",
-          allowNull: false,
         },
         class: {
           type: DataTypes.STRING,
-          allowNull: false,
         },
         admitTime: {
           type: DataTypes.DATE,
-          field: "admit_time",
-          allowNull: true,
         },
         dischargeTime: {
           type: DataTypes.DATE,
-          field: "discharge_time",
           allowNull: true,
         },
         clinicalInformation: {
           type: DataTypes.JSONB,
-          field: "clinical_information",
-          allowNull: false,
-        },
-        createdAt: {
-          type: DataTypes.DATE,
-          field: "created_at",
-          allowNull: false,
-        },
-        updatedAt: {
-          type: DataTypes.DATE,
-          field: "updated_at",
-          allowNull: false,
-        },
-        version: {
-          type: DataTypes.INTEGER,
-          allowNull: false,
-          defaultValue: 0,
         },
       },
       {
-        sequelize,
-        tableName: "tcm_encounter",
-        timestamps: true,
-        version: true,
+        ...BaseModel.modelOptions(sequelize),
+        tableName: TcmEncounterModel.NAME,
       }
     );
   };

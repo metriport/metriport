@@ -14,7 +14,7 @@ describe("TcmEncounterModel", () => {
     expect(model.clinicalInformation).toEqual({});
     expect(model.createdAt).toBeDefined();
     expect(model.updatedAt).toBeDefined();
-    expect(model.version).toBe(0);
+    expect(model.eTag).toBeDefined();
   });
 
   it("creates a model with custom values", () => {

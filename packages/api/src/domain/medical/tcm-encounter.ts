@@ -1,7 +1,8 @@
+import { BaseDomain } from "@metriport/core/domain/base-domain";
+
 export type TcmEncounterLatestEvent = "Admitted" | "Transferred" | "Discharged";
 
-export interface TcmEncounter {
-  id: string;
+export interface TcmEncounter extends BaseDomain {
   cxId: string;
   patientId: string;
   facilityName: string;
@@ -10,7 +11,4 @@ export interface TcmEncounter {
   admitTime: Date | null;
   dischargeTime: Date | null;
   clinicalInformation: Record<string, unknown>;
-  createdAt: Date;
-  updatedAt: Date;
-  version: number;
 }

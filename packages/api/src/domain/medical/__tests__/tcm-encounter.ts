@@ -14,6 +14,6 @@ export const makeTcmEncounter = (params?: Partial<TcmEncounter>): TcmEncounter =
     clinicalInformation: params?.clinicalInformation ?? {},
     createdAt: params?.createdAt ?? faker.date.recent(),
     updatedAt: params?.updatedAt ?? faker.date.recent(),
-    version: params?.version ?? 0,
+    eTag: params?.eTag ?? faker.string.uuid(),
   };
 };

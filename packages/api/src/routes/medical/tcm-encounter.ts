@@ -7,41 +7,9 @@ import { TcmEncounterModel } from "../../models/medical/tcm-encounter";
 import { requestLogger } from "../helpers/request-logger";
 import { paginated } from "../pagination";
 import { asyncHandler, getFromParamsOrFail } from "../util";
-import {
-  tcmEncounterCreateSchema,
-  tcmEncounterListQuerySchema,
-  tcmEncounterUpdateSchema,
-} from "./schemas/tcm-encounter";
+import { tcmEncounterListQuerySchema, tcmEncounterUpdateSchema } from "./schemas/tcm-encounter";
 
 const router = Router();
-
-/** ---------------------------------------------------------------------------
- * POST /dash-oss/medical/v1/tcm/encounter
- *
- * Creates a new TCM encounter.
- *
- * @param req.body - The TCM encounter data to create.
- * @returns The created TCM encounter.
- */
-router.post(
-  "/",
-  requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    const data = tcmEncounterCreateSchema.parse(req.body);
-    const encounter = await TcmEncounterModel.create({
-      cxId: req.cxId ?? "",
-      patientId: data.patientId,
-      facilityName: data.facilityName,
-      latestEvent: data.latestEvent,
-      class: data.class,
-      admitTime: new Date(data.admitTime),
-      dischargeTime: data.dischargeTime ? new Date(data.dischargeTime) : null,
-      clinicalInformation: data.clinicalInformation,
-      version: 0,
-    });
-    return res.status(httpStatus.CREATED).json(encounter);
-  })
-);
 
 /** ---------------------------------------------------------------------------
  * PUT /dash-oss/medical/v1/tcm/encounter/:id
@@ -68,7 +36,6 @@ router.put(
 
     const updateData = {
       ...data,
-      version: encounter.version + 1,
       admitTime: data.admitTime ? new Date(data.admitTime) : undefined,
       dischargeTime: data.dischargeTime ? new Date(data.dischargeTime) : undefined,
       updatedAt: new Date(),
