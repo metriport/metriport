@@ -233,10 +233,10 @@ export class SftpClient implements SftpClientImpl {
     this.log(`Syncing files in ${remotePath} to replica at ${replicaDirectory}`);
 
     const sftpFileNames = await this.list(remotePath);
-    const replicaFileNames = await this.replica.listFileNames(replicaDirectory);
+    const replicaFileNamesWithPath = await this.replica.listFileNames(replicaDirectory);
     const replicaDirectoryLength = replicaDirectory.length + 1;
     const existingReplicaFileNames = new Set(
-      replicaFileNames.map(fileName => fileName.substring(replicaDirectoryLength))
+      replicaFileNamesWithPath.map(fileName => fileName.substring(replicaDirectoryLength))
     );
 
     const filesSynced: string[] = [];
