@@ -15,13 +15,14 @@ export async function convertPatientResponseToFhirBundle(
 ): Promise<SurescriptsConversionBundle | undefined> {
   const responseFile = parseResponseFile(responseFileContent);
   const patientIdDetails = buildPatientIdToDetailsMap(responseFile);
-  if (patientIdDetails.size > 1) {
+  const patientIds = Array.from(patientIdDetails.keys());
+  if (patientIds.length > 1) {
     throw new MetriportError("Expected exactly one patient in the response file", undefined, {
       patientIds: Array.from(patientIdDetails.keys()).join(", "),
     });
   }
 
-  const patientId = Array.from(patientIdDetails.keys())[0];
+  const patientId = patientIds[0];
   if (!patientId) return undefined;
   const details = patientIdDetails.get(patientId);
   if (!details || details.length === 0) return undefined;
@@ -40,9 +41,9 @@ export async function convertBatchResponseToFhirBundles(
   const responseFile = parseResponseFile(responseFileContent);
   const patientIdDetails = buildPatientIdToDetailsMap(responseFile);
   const conversionBundles: SurescriptsConversionBundle[] = [];
-  for (const [patientId, detailRows] of patientIdDetails.entries()) {
-    if (detailRows.length > 0) {
-      const bundle = await convertIncomingDataToFhirBundle(patientId, detailRows);
+  for (const [patientId, details] of patientIdDetails.entries()) {
+    if (!details || details.length > 0) {
+      const bundle = await convertIncomingDataToFhirBundle(patientId, details);
       await hydrateFhir(bundle, console.log);
       conversionBundles.push({
         patientId,

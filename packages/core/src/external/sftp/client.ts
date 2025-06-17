@@ -224,10 +224,11 @@ export class SftpClient implements SftpClientImpl {
    * @returns The list of file names that were synced.
    */
   async sync(remotePath: string): Promise<string[]> {
-    if (!this.replica)
+    if (!this.replica) {
       throw new BadRequestError("Replica not set", undefined, {
         context: "sftp.client.sync",
       });
+    }
     const replicaDirectory = this.replica.getReplicaPath(remotePath);
     this.log(`Syncing files in ${remotePath} to replica at ${replicaDirectory}`);
 

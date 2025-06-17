@@ -16,8 +16,7 @@ export class SurescriptsConvertPatientResponseHandlerCloud
     job: SurescriptsJob
   ): Promise<SurescriptsConversionBundle | undefined> {
     const payload = JSON.stringify(job);
-    let resultPayload: string | undefined;
-    await executeWithNetworkRetries(async () => {
+    return await executeWithNetworkRetries(async () => {
       const result = await lambdaClient
         .invoke({
           FunctionName: this.surescriptsConvertPatientResponseLambdaName,
@@ -26,16 +25,12 @@ export class SurescriptsConvertPatientResponseHandlerCloud
         })
         .promise();
 
-      resultPayload = getLambdaResultPayload({
+      const resultPayload = getLambdaResultPayload({
         result,
         lambdaName: this.surescriptsConvertPatientResponseLambdaName,
       });
-    });
 
-    if (resultPayload) {
-      const conversionBundle = JSON.parse(resultPayload);
-      return conversionBundle as SurescriptsConversionBundle;
-    }
-    return undefined;
+      return JSON.parse(resultPayload) as SurescriptsConversionBundle;
+    });
   }
 }

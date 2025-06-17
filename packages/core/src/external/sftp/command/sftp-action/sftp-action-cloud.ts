@@ -20,8 +20,7 @@ export class SftpActionCloud implements SftpActionHandler {
       })
       .promise();
 
-    // SFTP write does not return a result
-    if (result == null) return {};
+    if (action.type === "write") return {};
     const resultPayload = getLambdaResultPayload({
       result,
       lambdaName: this.sftpActionLambdaName,

@@ -13,8 +13,7 @@ export class SurescriptsConvertBatchResponseHandlerCloud
 
   async convertBatchResponse(job: SurescriptsJob): Promise<SurescriptsConversionBundle[]> {
     const payload = JSON.stringify(job);
-    let resultPayload: string | undefined;
-    await executeWithNetworkRetries(async () => {
+    return await executeWithNetworkRetries(async () => {
       const result = await this.lambdaClient
         .invoke({
           FunctionName: this.surescriptsConvertBatchResponseLambdaName,
@@ -23,16 +22,12 @@ export class SurescriptsConvertBatchResponseHandlerCloud
         })
         .promise();
 
-      resultPayload = getLambdaResultPayload({
+      const resultPayload = getLambdaResultPayload({
         result,
         lambdaName: this.surescriptsConvertBatchResponseLambdaName,
       });
-    });
 
-    if (resultPayload) {
-      const conversionBundles = JSON.parse(resultPayload);
-      return conversionBundles as SurescriptsConversionBundle[];
-    }
-    return [];
+      return JSON.parse(resultPayload) as SurescriptsConversionBundle[];
+    });
   }
 }

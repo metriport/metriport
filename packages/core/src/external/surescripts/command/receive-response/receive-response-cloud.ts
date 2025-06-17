@@ -25,7 +25,7 @@ export class SurescriptsReceiveResponseHandlerCloud implements SurescriptsReceiv
         {
           fifo: true,
           messageDeduplicationId: createUuidFromText(payload),
-          messageGroupId: job.cxId,
+          messageGroupId: job.transmissionId,
         }
       );
     });
