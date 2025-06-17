@@ -1,5 +1,4 @@
 import { buildTriggerJobsHandler } from "@metriport/core/command/job/patient/job/start-jobs/steps/trigger/trigger-jobs-factory";
-import { processAsyncError } from "@metriport/core/util/error/shared";
 import { StartJobsParams } from "../../shared";
 
 /**
@@ -19,7 +18,5 @@ export async function startJobs({
   status,
 }: StartJobsParams): Promise<void> {
   const handler = buildTriggerJobsHandler();
-  handler
-    .triggerJobs({ scheduledBefore, cxId, patientId, jobType, status })
-    .catch(processAsyncError("startPatientJobs"));
+  await handler.triggerJobs({ scheduledBefore, cxId, patientId, jobType, status });
 }
