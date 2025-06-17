@@ -32,9 +32,10 @@ export class GetJobsDirect implements GetJobsHandler {
     const jobs = jobsRaw.map(jobRaw => ({
       id: jobRaw[patientJobRawColumnNames.id] as string,
       cxId: jobRaw[patientJobRawColumnNames.cxId] as string,
-      jobType: jobRaw[patientJobRawColumnNames.jobType] as string,
+      runUrl: jobRaw[patientJobRawColumnNames.runUrl] as string | undefined,
     }));
-    await executeAsynchronously(jobs, job => this.next.runJob(job), {
+    const runJobs = jobs.flatMap(job => (job.runUrl ? [{ ...job, runUrl: job.runUrl }] : []));
+    await executeAsynchronously(runJobs, job => this.next.runJob(job), {
       numberOfParallelExecutions: MAX_PARALLEL_EXECUTIONS,
     });
   }
