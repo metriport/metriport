@@ -1,7 +1,7 @@
 import { Config } from "../../util/config";
 import { S3Replica } from "../sftp/replica/s3";
 import { SurescriptsFileIdentifier, SurescriptsSftpConfig } from "./types";
-import { makeRequestFileName, makeResponseFileNamePrefix } from "./file/file-names";
+import { buildRequestFileName, buildResponseFileNamePrefix } from "./file/file-names";
 import { decompressGzip } from "../sftp/compression";
 
 export class SurescriptsReplica extends S3Replica {
@@ -13,7 +13,7 @@ export class SurescriptsReplica extends S3Replica {
   }
 
   async getRawVerificationFile(transmissionId: string): Promise<Buffer | undefined> {
-    const requestFileName = makeRequestFileName(transmissionId);
+    const requestFileName = buildRequestFileName(transmissionId);
     const verificationFileNames = await this.listFileNamesWithPrefix(
       "from_surescripts",
       requestFileName
@@ -34,7 +34,7 @@ export class SurescriptsReplica extends S3Replica {
     transmissionId,
     populationId,
   }: SurescriptsFileIdentifier): Promise<Buffer | undefined> {
-    const prefix = makeResponseFileNamePrefix(transmissionId, populationId);
+    const prefix = buildResponseFileNamePrefix(transmissionId, populationId);
     const responseFileNames = await this.listFileNamesWithPrefix("from_surescripts", prefix);
     const responseFile = responseFileNames[0];
     if (!responseFile) {

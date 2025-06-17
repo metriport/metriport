@@ -10,15 +10,26 @@ export function getMedicationRequest(
 ): MedicationRequest {
   const dispenseRequest = getDispenseRequest(detail);
   const substitution = getMedicationRequestSubstitution(detail);
+  const medicationReference = getMedicationReference(medication);
   const dosageInstruction = getDosageInstruction(detail);
   const authoredOn = getAuthoredOn(detail);
 
   return {
     resourceType: "MedicationRequest",
-    medicationReference: getMedicationReference(medication),
+    medicationReference,
+    ...(authoredOn ? { authoredOn } : undefined),
+    category: [
+      {
+        coding: [
+          {
+            system: "http://terminology.hl7.org/CodeSystem/medicationrequest-category",
+            code: "inpatient",
+          },
+        ],
+      },
+    ],
     ...(dispenseRequest ? { dispenseRequest } : undefined),
     ...(dosageInstruction ? { dosageInstruction } : undefined),
-    ...(authoredOn ? { authoredOn } : undefined),
     ...(substitution ? { substitution } : undefined),
   };
 }

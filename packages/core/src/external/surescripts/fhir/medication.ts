@@ -41,7 +41,6 @@ export function getMedication(detail: ResponseDetail): Medication {
 export function getMedicationReference(medication: Medication): Reference<Medication> {
   return {
     reference: `Medication/${medication.id}`,
-    display: medication.code?.text ?? "",
   };
 }
 

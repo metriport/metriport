@@ -4,11 +4,19 @@ import { buildDayjsFromId } from "../id-generator";
 
 const REQUEST_FILE_NAME_PREFIX = "Metriport_PMA_";
 
-export function makeRequestFileName(transmissionId: string): string {
+export function buildRequestFileName(transmissionId: string): string {
   const transmissionDate = buildDayjsFromId(transmissionId);
   const localDate = transmissionDate.format("YYYYMMDD");
 
   return [REQUEST_FILE_NAME_PREFIX, localDate, "-", transmissionId].join("");
+}
+
+export function buildResponseFileNamePrefix(transmissionId: string, populationId: string): string {
+  return `${transmissionId}_${populationId}_`;
+}
+
+export function buildConversionBundleFileName(cxId: string, patientId: string): string {
+  return `cxId=${cxId}/ptId=${patientId}/surescripts/latest.json`;
 }
 
 export function parseHistoryFileName(remoteFileName: string):
@@ -77,12 +85,4 @@ export function parseResponseFileName(remoteFileName: string):
     externalFileId,
     responseDate: responseDate.toDate(),
   };
-}
-
-export function makeResponseFileNamePrefix(transmissionId: string, populationId: string): string {
-  return `${transmissionId}_${populationId}_`;
-}
-
-export function makeConversionBundleFileName(cxId: string, patientId: string): string {
-  return `cxId=${cxId}/ptId=${patientId}/surescripts/latest.json`;
 }

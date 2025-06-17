@@ -17,7 +17,7 @@ import { OutgoingFileRowSchema } from "../schema/shared";
 import { SurescriptsSftpClient } from "../client";
 import { SurescriptsPatientRequestData, SurescriptsBatchRequestData } from "../types";
 import { buildDayjsFromId } from "../id-generator";
-import { makeResponseFileNamePrefix } from "./file-names";
+import { buildResponseFileNamePrefix } from "./file-names";
 
 // Latest Surescripts specification, but responses may be in 2.2 format
 const surescriptsVersion = "3.0";
@@ -78,7 +78,7 @@ export function generateBatchRequestFile({
 } {
   const requestedPatientIds: string[] = [];
   const transmissionDate = buildDayjsFromId(transmissionId).toDate();
-  const responseFileNamePrefix = makeResponseFileNamePrefix(
+  const responseFileNamePrefix = buildResponseFileNamePrefix(
     transmissionId,
     populationId ?? facility.id
   );

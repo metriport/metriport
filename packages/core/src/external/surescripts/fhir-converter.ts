@@ -4,7 +4,7 @@ import { parseResponseFile } from "./file/file-parser";
 import { ParsedResponseFile, ResponseDetail } from "./schema/response";
 import { IncomingData } from "./schema/shared";
 import { SurescriptsConversionBundle } from "./types";
-import { makeConversionBundleFileName } from "./file/file-names";
+import { buildConversionBundleFileName } from "./file/file-names";
 import { S3Utils } from "../aws/s3";
 import { Config } from "../../util/config";
 import { convertIncomingDataToFhirBundle } from "./fhir/bundle";
@@ -62,7 +62,7 @@ export async function uploadConversionBundle({
   cxId: string;
   patientId: string;
 }): Promise<void> {
-  const fileName = makeConversionBundleFileName(cxId, patientId);
+  const fileName = buildConversionBundleFileName(cxId, patientId);
   const conversionBucket = new S3Utils(Config.getAWSRegion());
 
   await executeWithNetworkRetries(async () => {
