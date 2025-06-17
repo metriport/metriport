@@ -30,8 +30,8 @@ export function createPatientImport({
   };
 
   const {
-    rerunPdOnNewDemographics = false,
-    triggerConsolidated = false,
+    rerunPdOnNewDemographics = true,
+    triggerConsolidated = true,
     disableWebhooks = false,
   } = paramsOps;
   const initializedParamsOps: PatientImportParamsOps = {
