@@ -20,6 +20,7 @@ export const cqDirectoryEntryBackup2 = `cq_directory_entry_backup2`;
 export const cqDirectoryEntryBackup3 = `cq_directory_entry_backup3`;
 
 const pkNamePrefix = "cq_directory_entry_pkey";
+const indexNamePrefix = "cq_directory_entry_new_managing_organization_id_idx";
 
 const keys = createKeys();
 const number_of_keys = keys.split(",").length;
@@ -118,7 +119,14 @@ export async function updateCqDirectoryViewDefinition(sequelize: Sequelize): Pro
       await sequelize.query(sql, { type: QueryTypes.RAW, transaction });
     }
     await runSql(
-      `ALTER TABLE ${cqDirectoryEntryTemp} ADD CONSTRAINT ${buildPkName()} PRIMARY KEY (id);`
+      `ALTER TABLE ${cqDirectoryEntryTemp} ADD CONSTRAINT ${addTimestampSuffix(
+        pkNamePrefix
+      )} PRIMARY KEY (id);`
+    );
+    await runSql(
+      `CREATE INDEX ${addTimestampSuffix(
+        indexNamePrefix
+      )} ON ${cqDirectoryEntryTemp} (managing_organization_id);`
     );
     await runSql(
       `CREATE OR REPLACE VIEW ${cqDirectoryEntryView} AS SELECT * FROM ${cqDirectoryEntryTemp};`
@@ -135,7 +143,7 @@ export async function updateCqDirectoryViewDefinition(sequelize: Sequelize): Pro
   });
 }
 
-function buildPkName(): string {
+function addTimestampSuffix(name: string): string {
   const timestamp = new Date().getTime();
-  return `${pkNamePrefix}_${timestamp}`;
+  return `${name}_${timestamp}`;
 }

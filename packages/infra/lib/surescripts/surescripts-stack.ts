@@ -14,6 +14,7 @@ import { LambdaLayers } from "../shared/lambda-layers";
 import { LambdaSettings, QueueAndLambdaSettings } from "../shared/settings";
 import { createQueue } from "../shared/sqs";
 import { SurescriptsAssets } from "./types";
+import { buildSecret } from "../shared/secrets";
 
 const sftpActionTimeout = Duration.seconds(30);
 const sendPatientRequestLambdaTimeout = Duration.seconds(30);
@@ -97,6 +98,7 @@ const settings: SurescriptsSettings = {
     eventSource: {
       batchSize: 1,
       reportBatchItemFailures: true,
+      maxConcurrency: 100,
     },
     waitTime: Duration.seconds(0),
   },
@@ -117,6 +119,7 @@ const settings: SurescriptsSettings = {
     eventSource: {
       batchSize: 1,
       reportBatchItemFailures: true,
+      maxConcurrency: 100,
     },
     waitTime: Duration.seconds(0),
   },
@@ -137,6 +140,7 @@ const settings: SurescriptsSettings = {
     eventSource: {
       batchSize: 1,
       reportBatchItemFailures: true,
+      maxConcurrency: 100,
     },
     waitTime: Duration.seconds(0),
   },
@@ -212,10 +216,6 @@ function surescriptsEnvironmentVariablesAndSecrets({
   secrets.push(privateKeySecret);
 
   return { envVars, secrets };
-}
-
-function buildSecret(nestedStack: SurescriptsNestedStack, name: string): secret.ISecret {
-  return secret.Secret.fromSecretNameV2(nestedStack, name, name);
 }
 
 interface SurescriptsNestedStackProps extends NestedStackProps {
