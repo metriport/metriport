@@ -8,11 +8,12 @@ import { createConsolidatedDataFilePath } from "../../domain/consolidated/filena
 import { createFolderName } from "../../domain/filename";
 import { Patient } from "../../domain/patient";
 import { executeWithRetriesS3, S3Utils } from "../../external/aws/s3";
+import { buildBundleEntry, buildCollectionBundle } from "../../external/fhir/bundle/bundle";
 import { dangerouslyDeduplicate } from "../../external/fhir/consolidated/deduplicate";
 import { getDocuments as getDocumentReferences } from "../../external/fhir/document/get-documents";
 import { toFHIR as patientToFhir } from "../../external/fhir/patient/conversion";
-import { buildBundleEntry, buildCollectionBundle } from "../../external/fhir/bundle/bundle";
 import { insertSourceDocumentToAllDocRefMeta } from "../../external/fhir/shared/meta";
+import { getPharmacyResources } from "../../external/surescripts/command/bundle/get-bundle";
 import { capture, executeAsynchronously, out } from "../../util";
 import { Config } from "../../util/config";
 import { processAsyncError } from "../../util/error/shared";
@@ -59,19 +60,27 @@ export async function createConsolidatedFromConversions({
   const fhirPatient = patientToFhir(patient);
   const patientEntry = buildBundleEntry(fhirPatient);
 
-  const [conversions, docRefs, isAiBriefFeatureFlagEnabled] = await Promise.all([
+  const [conversions, docRefs, pharmacyResources, isAiBriefFeatureFlagEnabled] = await Promise.all([
     getConversions({ cxId, patient, sourceBucketName }),
     getDocumentReferences({ cxId, patientId }),
+    getPharmacyResources({ cxId, patientId }),
     isAiBriefFeatureFlagEnabledForCx(cxId),
   ]);
   log(`Got ${conversions.length} resources from conversions`);
 
   const bundle = buildCollectionBundle();
   const docRefsWithUpdatedMeta = insertSourceDocumentToAllDocRefMeta(docRefs);
-  bundle.entry = [...conversions, ...docRefsWithUpdatedMeta.map(buildBundleEntry), patientEntry];
+  bundle.entry = [
+    ...conversions,
+    ...docRefsWithUpdatedMeta.map(buildBundleEntry),
+    ...pharmacyResources,
+    patientEntry,
+  ];
   bundle.total = bundle.entry.length;
   log(
-    `Added ${docRefsWithUpdatedMeta.length} docRefs and the Patient, to a total of ${bundle.entry.length} entries`
+    `Added ${docRefsWithUpdatedMeta.length} docRefs, ` +
+      `${pharmacyResources.length} pharmacy resources, ` +
+      `and the Patient, to a total of ${bundle.entry.length} entries`
   );
   const lengthWithDups = bundle.entry.length;
 
