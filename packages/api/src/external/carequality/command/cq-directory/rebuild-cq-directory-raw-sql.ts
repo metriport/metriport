@@ -119,10 +119,14 @@ export async function updateCqDirectoryViewDefinition(sequelize: Sequelize): Pro
       await sequelize.query(sql, { type: QueryTypes.RAW, transaction });
     }
     await runSql(
-      `ALTER TABLE ${cqDirectoryEntryTemp} ADD CONSTRAINT ${buildPkName()} PRIMARY KEY (id);`
+      `ALTER TABLE ${cqDirectoryEntryTemp} ADD CONSTRAINT ${buildConstraintName(
+        pkNamePrefix
+      )} PRIMARY KEY (id);`
     );
     await runSql(
-      `CREATE INDEX ${buildIndexName()} ON ${cqDirectoryEntryTemp} (managing_organization_id);`
+      `CREATE INDEX ${buildConstraintName(
+        indexNamePrefix
+      )} ON ${cqDirectoryEntryTemp} (managing_organization_id);`
     );
     await runSql(
       `CREATE OR REPLACE VIEW ${cqDirectoryEntryView} AS SELECT * FROM ${cqDirectoryEntryTemp};`
@@ -139,12 +143,7 @@ export async function updateCqDirectoryViewDefinition(sequelize: Sequelize): Pro
   });
 }
 
-function buildPkName(): string {
+function buildConstraintName(name: string): string {
   const timestamp = new Date().getTime();
-  return `${pkNamePrefix}_${timestamp}`;
-}
-
-function buildIndexName(): string {
-  const timestamp = new Date().getTime();
-  return `${indexNamePrefix}_${timestamp}`;
+  return `${name}_${timestamp}`;
 }

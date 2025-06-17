@@ -15,7 +15,7 @@ export const up: Migration = async ({ context: queryInterface }) => {
 
 export const down: Migration = async ({ context: queryInterface }) => {
   return queryInterface.sequelize.transaction(async transaction => {
-    await queryInterface.removeIndex(tableName, ["managing_organization_id"], {
+    await queryInterface.removeIndex(tableName, [indexColumnName], {
       transaction,
     });
   });
