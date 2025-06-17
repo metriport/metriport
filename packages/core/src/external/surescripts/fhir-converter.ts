@@ -8,6 +8,7 @@ import { makeConversionBundleFileName } from "./file/file-names";
 import { S3Utils } from "../aws/s3";
 import { Config } from "../../util/config";
 import { convertIncomingDataToFhirBundle } from "./fhir/bundle";
+import { hydrateFhir } from "../fhir/hydration/hydrate-fhir";
 
 export async function convertPatientResponseToFhirBundle(
   responseFileContent: Buffer
@@ -22,6 +23,7 @@ export async function convertPatientResponseToFhirBundle(
 
   for (const [patientId, details] of patientIdDetails.entries()) {
     const bundle = await convertIncomingDataToFhirBundle(patientId, details);
+    await hydrateFhir(bundle, console.log);
     return {
       patientId,
       bundle,
@@ -39,6 +41,7 @@ export async function convertBatchResponseToFhirBundles(
   const conversionBundles: SurescriptsConversionBundle[] = [];
   for (const [patientId, detailRows] of patientIdDetails.entries()) {
     const bundle = await convertIncomingDataToFhirBundle(patientId, detailRows);
+    await hydrateFhir(bundle, console.log);
     conversionBundles.push({
       patientId,
       bundle,

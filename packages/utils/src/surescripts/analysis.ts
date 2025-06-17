@@ -75,6 +75,7 @@ program
 
         const currentEntries = consolidatedBundle.entry?.length ?? 0;
         const conversionEntries = conversionBundle.bundle.entry?.length ?? 0;
+        if (conversionEntries === 0) continue;
 
         consolidatedBundle.entry?.push(...(conversionBundle.bundle.entry ?? []));
         dangerouslyDeduplicateFhir(consolidatedBundle, cxId, patientId);
