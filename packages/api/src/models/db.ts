@@ -41,6 +41,7 @@ import { Settings } from "./settings";
 import { WebhookRequest } from "./webhook-request";
 import { ModelSetup } from "./_default";
 import { PatientJobModel } from "./patient-job";
+import { TcmEncounterModel } from "./medical/tcm-encounter";
 
 // models to setup with sequelize
 const models: ModelSetup[] = [
@@ -71,6 +72,7 @@ const models: ModelSetup[] = [
   JwtTokenModel.setup,
   InvalidLinksModel.setup,
   PatientJobModel.setup,
+  TcmEncounterModel.setup,
 ];
 
 const modelsReadOnly: ModelSetup[] = [PatientModelReadOnly.setup];
