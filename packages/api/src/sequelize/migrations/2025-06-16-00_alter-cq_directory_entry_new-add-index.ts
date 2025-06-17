@@ -15,12 +15,8 @@ export const up: Migration = async ({ context: queryInterface }) => {
 
 export const down: Migration = async ({ context: queryInterface }) => {
   return queryInterface.sequelize.transaction(async transaction => {
-    await queryInterface.removeIndex(
-      tableName,
-      "cq_directory_entry_new_managing_organization_id_idx",
-      {
-        transaction,
-      }
-    );
+    await queryInterface.removeIndex(tableName, indexName, {
+      transaction,
+    });
   });
 };
