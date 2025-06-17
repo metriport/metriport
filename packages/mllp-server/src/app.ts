@@ -57,8 +57,30 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
           `${timestamp}> New Message (id: ${messageId}) from ${connection.socket.remoteAddress}:${connection.socket.remotePort}`
         );
 
-        const { cxId, patientId } = getCxIdAndPatientIdOrFail(message);
-        const { messageCode, triggerEvent } = getHl7MessageTypeOrFail(message);
+        let cxId: string;
+        let patientId: string;
+        let messageCode: string;
+        let triggerEvent: string;
+
+        try {
+          const { cxId: msgCxId, patientId: msgPatientId } = getCxIdAndPatientIdOrFail(message);
+          const { messageCode: msgMessageCode, triggerEvent: msgTriggerEvent } =
+            getHl7MessageTypeOrFail(message);
+
+          cxId = msgCxId;
+          patientId = msgPatientId;
+          messageCode = msgMessageCode;
+          triggerEvent = msgTriggerEvent;
+        } catch (error) {
+          connection.send(message.buildAck({ ackCode: "AR" }));
+          logger.log(`Error in handler: ${error}`);
+          capture.error(error);
+          return;
+        }
+
+        log(
+          `Received ${triggerEvent} message for cxId: ${cxId}, ptId: ${patientId} (messageId: ${messageId})`
+        );
 
         capture.setExtra({
           cxId,
@@ -75,19 +97,21 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
           messageReceivedTimestamp: new Date().toISOString(),
         });
 
-        connection.send(message.buildAck());
+        connection.send(message.buildAck({ ackCode: "AA" }));
 
-        log("Init S3 upload");
+        const fileKey = createFileKeyHl7Message({
+          cxId,
+          patientId,
+          timestamp,
+          messageId,
+          messageCode,
+          triggerEvent,
+        });
+
+        log(`Init S3 upload to bucket ${bucketName} with key ${fileKey}`);
         s3Utils.uploadFile({
           bucket: bucketName,
-          key: createFileKeyHl7Message({
-            cxId,
-            patientId,
-            timestamp,
-            messageId,
-            messageCode,
-            triggerEvent,
-          }),
+          key: fileKey,
           file: Buffer.from(asString(message)),
           contentType: "text/plain",
         });
