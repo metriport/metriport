@@ -227,6 +227,7 @@ export class SftpClient implements SftpClientImpl {
     if (!this.replica) return [];
     const replicaDirectory = this.replica.getReplicaPath(remotePath);
     this.log(`Syncing files in ${remotePath} to replica at ${replicaDirectory}`);
+
     const sftpFileNames = await this.list(remotePath);
     const replicaFileNames = await this.replica.listFileNames(replicaDirectory);
     const existingReplicaFileName = new Set(
@@ -237,8 +238,8 @@ export class SftpClient implements SftpClientImpl {
     for (const sftpFileName of sftpFileNames) {
       if (!existingReplicaFileName.has(sftpFileName)) {
         this.log(`File ${sftpFileName} does not exist in replica, syncing...`);
-        const sftpFileContent = await this.read(remotePath + "/" + sftpFileName);
-        await this.replica.writeFile(replicaDirectory + "/" + sftpFileName, sftpFileContent);
+        const sftpFileContent = await this.read(`${remotePath}/${sftpFileName}`);
+        await this.replica.writeFile(`${replicaDirectory}/${sftpFileName}`, sftpFileContent);
         filesSynced.push(sftpFileName);
       }
     }

@@ -1,6 +1,7 @@
 import { Organization, Identifier } from "@medplum/fhirtypes";
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { ResponseDetail } from "../schema/response";
+import { NCPDP_PROVIDER_ID_SYSTEM, NPI_SYSTEM } from "./constants";
 
 export function getPharmacy(detail: ResponseDetail): Organization | undefined {
   if (!detail.pharmacyNpiNumber && !detail.ncpdpId) return undefined;
@@ -31,13 +32,13 @@ function getPharmacyIdentifiers(detail: ResponseDetail): Identifier[] {
   const identifiers: Identifier[] = [];
   if (detail.pharmacyNpiNumber) {
     identifiers.push({
-      system: "http://hl7.org/fhir/sid/us-npi",
+      system: NPI_SYSTEM,
       value: detail.pharmacyNpiNumber,
     });
   }
   if (detail.ncpdpId) {
     identifiers.push({
-      system: "http://terminology.hl7.org/CodeSystem/NCPDPProviderIdentificationNumber",
+      system: NCPDP_PROVIDER_ID_SYSTEM,
       value: detail.ncpdpId,
     });
   }

@@ -1,6 +1,7 @@
 import { Provenance, ProvenanceAgent } from "@medplum/fhirtypes";
 import { ResponseDetail } from "../schema/response";
 import { SURESCRIPTS_AGENT_ID } from "../constants";
+import { NPI_SYSTEM } from "./constants";
 
 export function getProvenance(detail: ResponseDetail): Provenance {
   return {
@@ -20,7 +21,7 @@ export function getProvenanceAgent(detail: ResponseDetail): ProvenanceAgent {
     },
     onBehalfOf: {
       identifier: {
-        system: "http://hl7.org/fhir/sid/npi",
+        system: NPI_SYSTEM,
         value: detail.facilityNpiNumber,
       },
     },

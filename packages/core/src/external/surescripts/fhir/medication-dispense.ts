@@ -6,6 +6,7 @@ import {
 } from "@medplum/fhirtypes";
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { ResponseDetail } from "../schema/response";
+import { MEDICATION_DISPENSE_FILL_NUMBER_EXTENSION, UNIT_OF_MEASURE_SYSTEM } from "./constants";
 import { getMedicationReference } from "./medication";
 import { getResourceByNpiNumber } from "./shared";
 import { SurescriptsContext } from "./types";
@@ -77,7 +78,7 @@ function getDaysSupply(detail: ResponseDetail): MedicationDispense["daysSupply"]
   return {
     value,
     unit: "day",
-    system: "http://unitsofmeasure.org",
+    system: UNIT_OF_MEASURE_SYSTEM,
     code: "d",
   };
 }
@@ -90,7 +91,7 @@ function getFillNumberAsExtension(detail: ResponseDetail): Extension | undefined
   if (detail.fillNumber == null) return undefined;
 
   return {
-    url: "http://hl7.org/fhir/StructureDefinition/medicationdispense-fillNumber",
+    url: MEDICATION_DISPENSE_FILL_NUMBER_EXTENSION,
     valuePositiveInt: detail.fillNumber + 1,
   };
 }

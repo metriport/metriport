@@ -1,3 +1,7 @@
+export function getPlanCodeName(planCode: string): PlanCodeName {
+  return PlanCodeName[planCode as PlanCode];
+}
+
 export const PlanCodes = ["01", "02", "03", "04", "05", "06"] as const;
 export const PlanCodeNames = [
   "PrivatePay",

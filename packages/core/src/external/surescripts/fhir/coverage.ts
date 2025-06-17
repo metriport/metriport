@@ -1,14 +1,15 @@
 import { Coverage, Identifier } from "@medplum/fhirtypes";
 import { ResponseDetail } from "../schema/response";
-import { PlanCodeName } from "@metriport/shared/interface/external/surescripts/plan-code";
+import { getPlanCodeName } from "@metriport/shared/interface/external/surescripts/plan-code";
+import {
+  NCPDP_PROVIDER_ID_SYSTEM,
+  PLAN_NETWORK_BIN_SYSTEM,
+  PLAN_NETWORK_PCN_SYSTEM,
+  COVERAGE_TYPE_SYSTEM,
+} from "./constants";
 
 export function getCoverage(detail: ResponseDetail): Coverage | undefined {
   if (!detail.planCode) return undefined;
-
-  // detail.planNetworkBIN;
-  // detail.planNetworkGroupId;
-  // detail.planNetworkPCN;
-
   const identifier = getCoverageIdentifiers(detail);
 
   return {
@@ -17,9 +18,9 @@ export function getCoverage(detail: ResponseDetail): Coverage | undefined {
     type: {
       coding: [
         {
-          system: "http://terminology.hl7.org/CodeSystem/coverage-type",
+          system: COVERAGE_TYPE_SYSTEM,
           code: detail.planCode,
-          display: PlanCodeName[detail.planCode],
+          display: getPlanCodeName(detail.planCode),
         },
       ],
     },
@@ -31,7 +32,7 @@ function getCoverageIdentifiers(detail: ResponseDetail): Identifier[] {
   const identifiers: Identifier[] = [];
   if (detail.planNetworkPCN) {
     identifiers.push({
-      system: "http://terminology.hl7.org/CodeSystem/v2-0203",
+      system: PLAN_NETWORK_PCN_SYSTEM,
       value: detail.planNetworkPCN,
     });
   }
@@ -40,13 +41,13 @@ function getCoverageIdentifiers(detail: ResponseDetail): Identifier[] {
 
   if (detail.planNetworkBIN) {
     identifiers.push({
-      system: "http://terminology.hl7.org/CodeSystem/NCPDPProviderIdentificationNumber",
+      system: PLAN_NETWORK_BIN_SYSTEM,
       value: detail.planNetworkBIN?.toString() ?? "",
     });
   }
   if (detail.ncpdpId) {
     identifiers.push({
-      system: "http://terminology.hl7.org/CodeSystem/NCPDPProviderIdentificationNumber",
+      system: NCPDP_PROVIDER_ID_SYSTEM,
       value: detail.ncpdpId,
     });
   }
