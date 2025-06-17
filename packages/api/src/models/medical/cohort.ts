@@ -67,7 +67,6 @@ export class PatientCohortModel extends BaseModel<PatientCohortModel> implements
           model: "patient",
           key: "id",
         },
-        // onDelete: "CASCADE",
       },
       cohortId: {
         type: DataTypes.UUID,
@@ -78,7 +77,6 @@ export class PatientCohortModel extends BaseModel<PatientCohortModel> implements
           model: "cohort",
           key: "id",
         },
-        // onDelete: "CASCADE",
       },
       ...BaseModelNoId.attributes(),
     };
