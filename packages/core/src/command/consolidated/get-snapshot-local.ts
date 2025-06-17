@@ -1,4 +1,4 @@
-import { Bundle } from "@medplum/fhirtypes";
+import { Bundle, Resource } from "@medplum/fhirtypes";
 import {
   errorToString,
   executeWithNetworkRetries,
@@ -8,15 +8,16 @@ import {
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { SearchSetBundle } from "@metriport/shared/medical";
 import axios from "axios";
-import { getConsolidatedQueryByRequestId } from "../../domain/patient";
+import { getConsolidatedQueryByRequestId, Patient } from "../../domain/patient";
 import { analyticsAsync, EventTypes } from "../../external/analytics/posthog";
+import { buildBundleEntry } from "../../external/fhir/bundle/bundle";
 import { checkBundle } from "../../external/fhir/bundle/qa";
+import { removeContainedResources, removeResources } from "../../external/fhir/bundle/remove";
 import { getConsolidatedFhirBundle as getConsolidatedFromFhirServer } from "../../external/fhir/consolidated/consolidated";
 import { dangerouslyDeduplicate } from "../../external/fhir/consolidated/deduplicate";
 import { normalize } from "../../external/fhir/consolidated/normalize";
 import { toFHIR as patientToFhir } from "../../external/fhir/patient/conversion";
 import { isPatient } from "../../external/fhir/shared";
-import { buildBundleEntry } from "../../external/fhir/bundle/bundle";
 import { capture, out } from "../../util";
 import { getConsolidatedFromS3 } from "./consolidated-filter";
 import {
@@ -41,12 +42,13 @@ export class ConsolidatedSnapshotConnectorLocal implements ConsolidatedSnapshotC
 
     const originalBundle = await getBundle(params);
 
-    const fhirPatient = patientToFhir(patient);
-    const patientEntry = buildBundleEntry(fhirPatient);
-    originalBundle.entry = [patientEntry, ...(originalBundle.entry ?? [])];
-    originalBundle.total = originalBundle.entry.length;
+    const bundleWithUpToDatePatient = replacePatient({
+      bundle: originalBundle,
+      patient,
+    });
 
-    const processedBundle = removeContainedPatients(originalBundle, patientId);
+    // TODO ENG-316 move it to createConsolidatedFromConversions
+    const processedBundle = removeContainedPatients(bundleWithUpToDatePatient, patientId);
 
     try {
       await uploadConsolidatedSnapshotToS3({
@@ -59,6 +61,7 @@ export class ConsolidatedSnapshotConnectorLocal implements ConsolidatedSnapshotC
       log(`Failed to store original bundle on S3 - ${errorToString(error)}`);
     }
 
+    // TODO ENG-316 remove this, already done on createConsolidatedFromConversions
     await dangerouslyDeduplicate({
       cxId,
       patientId,
@@ -76,6 +79,7 @@ export class ConsolidatedSnapshotConnectorLocal implements ConsolidatedSnapshotC
       log(`Failed to store dedup bundle on S3 - ${errorToString(error)}`);
     }
 
+    // TODO ENG-316 move it to createConsolidatedFromConversions
     const normalizedBundle = await normalize({
       cxId,
       patientId,
@@ -189,26 +193,23 @@ async function postSnapshotToApi({
   );
 }
 
-export function removeContainedPatients(bundle: Bundle, patientId: string): Bundle {
-  if (!bundle.entry) return bundle;
-
-  const updatedEntry = bundle.entry.map(entry => {
-    const resource = entry.resource;
-    if (resource && "contained" in resource) {
-      return {
-        ...entry,
-        resource: {
-          ...resource,
-          contained: resource.contained?.filter(r => !isPatient(r) || r.id === patientId),
-        },
-      };
-    }
-    return entry;
+export function removeContainedPatients(bundle: Bundle, patientIdToKeep: string): Bundle {
+  return removeContainedResources({
+    bundle,
+    shouldRemove: (r: Resource) => isPatient(r) && r.id !== patientIdToKeep,
   });
+}
 
-  return {
+function replacePatient({ bundle, patient }: { bundle: Bundle; patient: Patient }): Bundle {
+  const bundleWithoutPatient = removeResources({ bundle, shouldRemove: isPatient });
+  const fhirPatient = patientToFhir(patient);
+  const patientEntry = buildBundleEntry(fhirPatient);
+  const entries = [patientEntry, ...(bundleWithoutPatient.entry ?? [])];
+  const newBundle = {
     ...bundle,
-    total: updatedEntry.length,
-    entry: updatedEntry,
+    total: entries.length,
+    entry: entries,
   };
+
+  return newBundle;
 }
