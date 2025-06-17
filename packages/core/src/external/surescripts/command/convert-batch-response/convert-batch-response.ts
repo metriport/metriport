@@ -1,8 +1,5 @@
-import { SurescriptsConversionBundle, SurescriptsFileIdentifier } from "../../types";
+import { SurescriptsConversionBundle, SurescriptsJob } from "../../types";
 
 export interface SurescriptsConvertBatchResponseHandler {
-  convertBatchResponse({
-    transmissionId,
-    populationId,
-  }: SurescriptsFileIdentifier): Promise<SurescriptsConversionBundle[]>;
+  convertBatchResponse(job: SurescriptsJob): Promise<SurescriptsConversionBundle[]>;
 }

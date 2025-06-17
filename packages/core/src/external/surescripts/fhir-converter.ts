@@ -1,4 +1,4 @@
-import { BadRequestError } from "@metriport/shared";
+import { executeWithNetworkRetries, MetriportError } from "@metriport/shared";
 import { Bundle } from "@medplum/fhirtypes";
 import { parseResponseFile } from "./file/file-parser";
 import { ParsedResponseFile, ResponseDetail } from "./schema/response";
@@ -16,21 +16,22 @@ export async function convertPatientResponseToFhirBundle(
   const responseFile = parseResponseFile(responseFileContent);
   const patientIdDetails = buildPatientIdToDetailsMap(responseFile);
   if (patientIdDetails.size > 1) {
-    throw new BadRequestError("Expected exactly one patient in the response file", undefined, {
+    throw new MetriportError("Expected exactly one patient in the response file", undefined, {
       patientIds: Array.from(patientIdDetails.keys()).join(", "),
     });
   }
 
-  for (const [patientId, details] of patientIdDetails.entries()) {
-    if (details.length === 0) return undefined;
-    const bundle = await convertIncomingDataToFhirBundle(patientId, details);
-    await hydrateFhir(bundle, console.log);
-    return {
-      patientId,
-      bundle,
-    };
-  }
-  return undefined;
+  const patientId = Array.from(patientIdDetails.keys())[0];
+  if (!patientId) return undefined;
+  const details = patientIdDetails.get(patientId);
+  if (!details || details.length === 0) return undefined;
+
+  const bundle = await convertIncomingDataToFhirBundle(patientId, details);
+  await hydrateFhir(bundle, console.log);
+  return {
+    patientId,
+    bundle,
+  };
 }
 
 export async function convertBatchResponseToFhirBundles(
@@ -63,10 +64,13 @@ export async function uploadConversionBundle({
 }): Promise<void> {
   const fileName = makeConversionBundleFileName(cxId, patientId);
   const conversionBucket = new S3Utils(Config.getAWSRegion());
-  await conversionBucket.uploadFile({
-    bucket: Config.getPharmacyConversionBucketName(),
-    key: fileName,
-    file: Buffer.from(JSON.stringify(bundle)),
+
+  await executeWithNetworkRetries(async () => {
+    await conversionBucket.uploadFile({
+      bucket: Config.getPharmacyConversionBucketName(),
+      key: fileName,
+      file: Buffer.from(JSON.stringify(bundle)),
+    });
   });
 }
 

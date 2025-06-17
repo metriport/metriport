@@ -2,7 +2,7 @@ import { executeWithNetworkRetries } from "@metriport/shared";
 import { createUuidFromText } from "@metriport/shared/common/uuid";
 import { Config } from "../../../../util/config";
 import { SQSClient } from "../../../aws/sqs";
-import { SurescriptsFileIdentifier } from "../../types";
+import { SurescriptsJob } from "../../types";
 import { SurescriptsReceiveResponseHandler } from "./receive-response";
 
 export class SurescriptsReceiveResponseHandlerCloud implements SurescriptsReceiveResponseHandler {
@@ -16,11 +16,8 @@ export class SurescriptsReceiveResponseHandlerCloud implements SurescriptsReceiv
     this.sqsClient = sqsClient ?? new SQSClient({ region: region ?? Config.getAWSRegion() });
   }
 
-  async receiveResponse({
-    transmissionId,
-    populationId,
-  }: SurescriptsFileIdentifier): Promise<void> {
-    const payload = JSON.stringify({ transmissionId, populationId });
+  async receiveResponse(job: SurescriptsJob): Promise<void> {
+    const payload = JSON.stringify(job);
     await executeWithNetworkRetries(async () => {
       await this.sqsClient.sendMessageToQueue(
         this.surescriptsReceiveFlatFileResponseQueueUrl,
@@ -28,7 +25,7 @@ export class SurescriptsReceiveResponseHandlerCloud implements SurescriptsReceiv
         {
           fifo: true,
           messageDeduplicationId: createUuidFromText(payload),
-          messageGroupId: transmissionId,
+          messageGroupId: job.cxId,
         }
       );
     });

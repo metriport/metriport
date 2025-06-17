@@ -224,22 +224,25 @@ export class SftpClient implements SftpClientImpl {
    * @returns The list of file names that were synced.
    */
   async sync(remotePath: string): Promise<string[]> {
-    if (!this.replica) return [];
+    if (!this.replica)
+      throw new BadRequestError("Replica not set", undefined, {
+        context: "sftp.client.sync",
+      });
     const replicaDirectory = this.replica.getReplicaPath(remotePath);
     this.log(`Syncing files in ${remotePath} to replica at ${replicaDirectory}`);
 
     const sftpFileNames = await this.list(remotePath);
     const replicaFileNames = await this.replica.listFileNames(replicaDirectory);
-    const existingReplicaFileName = new Set(
-      replicaFileNames.map(fileName => fileName.substring(replicaDirectory.length + 1))
+    const replicaDirectoryLength = replicaDirectory.length + 1;
+    const existingReplicaFileNames = new Set(
+      replicaFileNames.map(fileName => fileName.substring(replicaDirectoryLength))
     );
 
     const filesSynced: string[] = [];
     for (const sftpFileName of sftpFileNames) {
-      if (!existingReplicaFileName.has(sftpFileName)) {
+      if (!existingReplicaFileNames.has(sftpFileName)) {
         this.log(`File ${sftpFileName} does not exist in replica, syncing...`);
-        const sftpFileContent = await this.read(`${remotePath}/${sftpFileName}`);
-        await this.replica.writeFile(`${replicaDirectory}/${sftpFileName}`, sftpFileContent);
+        await this.read(`${remotePath}/${sftpFileName}`);
         filesSynced.push(sftpFileName);
       }
     }

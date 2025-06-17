@@ -1,28 +1,23 @@
-import { MetriportError } from "@metriport/shared";
+import { NotFoundError } from "@metriport/shared";
 import { SurescriptsConvertBatchResponseHandler } from "./convert-batch-response";
 import { SurescriptsReplica } from "../../replica";
-import {
-  SurescriptsConversionBundle,
-  SurescriptsFileIdentifier,
-  SurescriptsRequester,
-} from "../../types";
+import { SurescriptsConversionBundle, SurescriptsJob } from "../../types";
 import { convertBatchResponseToFhirBundles, uploadConversionBundle } from "../../fhir-converter";
 
 export class SurescriptsConvertBatchResponseHandlerDirect
   implements SurescriptsConvertBatchResponseHandler
 {
-  constructor(private readonly replica: SurescriptsReplica) {}
+  constructor(private readonly replica: SurescriptsReplica = new SurescriptsReplica()) {}
 
-  async convertBatchResponse(
-    params: SurescriptsRequester & SurescriptsFileIdentifier
-  ): Promise<SurescriptsConversionBundle[]> {
-    const { cxId, transmissionId, populationId } = params;
+  async convertBatchResponse(job: SurescriptsJob): Promise<SurescriptsConversionBundle[]> {
+    const { cxId, transmissionId, populationId } = job;
     const responseFileContent = await this.replica.getRawResponseFile({
       transmissionId,
       populationId,
     });
+
     if (!responseFileContent) {
-      throw new MetriportError(
+      throw new NotFoundError(
         `No response file stored for transmissionId: ${transmissionId} and populationId: ${populationId}`,
         undefined,
         {

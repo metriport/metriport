@@ -29,6 +29,8 @@ export interface SurescriptsFileIdentifier {
   populationId: string;
 }
 
+export type SurescriptsJob = SurescriptsRequester & SurescriptsFileIdentifier;
+
 export interface SurescriptsRequesterData {
   cxId: string;
   facility: FacilityData;

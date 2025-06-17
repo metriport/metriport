@@ -1,8 +1,5 @@
-import { SurescriptsConversionBundle, SurescriptsFileIdentifier } from "../../types";
+import { SurescriptsConversionBundle, SurescriptsJob } from "../../types";
 
 export interface SurescriptsConvertPatientResponseHandler {
-  convertPatientResponse({
-    transmissionId,
-    populationId,
-  }: SurescriptsFileIdentifier): Promise<SurescriptsConversionBundle | undefined>;
+  convertPatientResponse(job: SurescriptsJob): Promise<SurescriptsConversionBundle | undefined>;
 }

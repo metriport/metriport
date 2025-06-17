@@ -1,27 +1,31 @@
+import { BadRequestError } from "@metriport/shared";
 import { SurescriptsConvertPatientResponseHandler } from "./convert-patient-response";
 import { SurescriptsReplica } from "../../replica";
-import {
-  SurescriptsConversionBundle,
-  SurescriptsFileIdentifier,
-  SurescriptsRequester,
-} from "../../types";
+import { SurescriptsConversionBundle, SurescriptsJob } from "../../types";
 import { convertPatientResponseToFhirBundle, uploadConversionBundle } from "../../fhir-converter";
 
 export class SurescriptsConvertPatientResponseHandlerDirect
   implements SurescriptsConvertPatientResponseHandler
 {
-  constructor(private readonly replica: SurescriptsReplica) {}
+  constructor(private readonly replica: SurescriptsReplica = new SurescriptsReplica()) {}
 
   async convertPatientResponse(
-    params: SurescriptsRequester & SurescriptsFileIdentifier
+    job: SurescriptsJob
   ): Promise<SurescriptsConversionBundle | undefined> {
-    const { cxId, transmissionId, populationId } = params;
+    const { cxId, transmissionId, populationId } = job;
     const responseFileContent = await this.replica.getRawResponseFile({
       transmissionId,
       populationId,
     });
     if (!responseFileContent) {
-      return undefined;
+      throw new BadRequestError(
+        `No response file stored for transmissionId: ${transmissionId} and populationId: ${populationId}`,
+        undefined,
+        {
+          transmissionId,
+          populationId,
+        }
+      );
     }
     const conversionBundle = await convertPatientResponseToFhirBundle(responseFileContent);
     if (!conversionBundle) return undefined;

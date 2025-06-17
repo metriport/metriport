@@ -1,6 +1,7 @@
 import { Config } from "../../../../util/config";
+import { executeWithNetworkRetries } from "@metriport/shared";
 import { getLambdaResultPayload, makeLambdaClient } from "../../../aws/lambda";
-import { SurescriptsConversionBundle, SurescriptsFileIdentifier } from "../../types";
+import { SurescriptsConversionBundle, SurescriptsJob } from "../../types";
 import { SurescriptsConvertPatientResponseHandler } from "./convert-patient-response";
 
 const region = Config.getAWSRegion();
@@ -11,12 +12,12 @@ export class SurescriptsConvertPatientResponseHandlerCloud
 {
   constructor(private readonly surescriptsConvertPatientResponseLambdaName: string) {}
 
-  async convertPatientResponse({
-    transmissionId,
-    populationId,
-  }: SurescriptsFileIdentifier): Promise<SurescriptsConversionBundle | undefined> {
-    const payload = JSON.stringify({ transmissionId, populationId });
-    try {
+  async convertPatientResponse(
+    job: SurescriptsJob
+  ): Promise<SurescriptsConversionBundle | undefined> {
+    const payload = JSON.stringify(job);
+    let resultPayload: string | undefined;
+    await executeWithNetworkRetries(async () => {
       const result = await lambdaClient
         .invoke({
           FunctionName: this.surescriptsConvertPatientResponseLambdaName,
@@ -25,17 +26,16 @@ export class SurescriptsConvertPatientResponseHandlerCloud
         })
         .promise();
 
-      const resultPayload = getLambdaResultPayload({
+      resultPayload = getLambdaResultPayload({
         result,
         lambdaName: this.surescriptsConvertPatientResponseLambdaName,
       });
-      const { conversionBundle } = JSON.parse(resultPayload.toString());
-      if (conversionBundle) return conversionBundle as SurescriptsConversionBundle;
-      return undefined;
-    } catch (error) {
-      throw new Error(
-        `Failed to convert patient response ${this.surescriptsConvertPatientResponseLambdaName}: ${error}`
-      );
+    });
+
+    if (resultPayload) {
+      const conversionBundle = JSON.parse(resultPayload);
+      return conversionBundle as SurescriptsConversionBundle;
     }
+    return undefined;
   }
 }
