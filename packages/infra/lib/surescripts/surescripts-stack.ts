@@ -15,11 +15,12 @@ import { buildSecret } from "../shared/secrets";
 import { LambdaSettings, QueueAndLambdaSettings } from "../shared/settings";
 import { createQueue } from "../shared/sqs";
 import { SurescriptsAssets } from "./types";
+import { buildSecret } from "../shared/secrets";
 
 const sftpActionTimeout = Duration.seconds(30);
 const sendPatientRequestLambdaTimeout = Duration.seconds(30);
 const sendBatchRequestLambdaTimeout = Duration.minutes(5);
-const verifyRequestInHistoryLambdaTimeout = sftpActionTimeout;
+const verifyRequestInHistoryLambdaTimeout = Duration.seconds(30);
 const receiveVerificationLambdaTimeout = Duration.seconds(30);
 const receiveResponseLambdaTimeout = Duration.seconds(30);
 const alarmMaxAgeOfOldestMessage = Duration.hours(1);
@@ -100,6 +101,7 @@ const settings: SurescriptsSettings = {
     eventSource: {
       batchSize: 1,
       reportBatchItemFailures: true,
+      maxConcurrency: 100,
     },
     waitTime: Duration.seconds(0),
   },
@@ -120,6 +122,7 @@ const settings: SurescriptsSettings = {
     eventSource: {
       batchSize: 1,
       reportBatchItemFailures: true,
+      maxConcurrency: 100,
     },
     waitTime: Duration.seconds(0),
   },
@@ -140,6 +143,7 @@ const settings: SurescriptsSettings = {
     eventSource: {
       batchSize: 1,
       reportBatchItemFailures: true,
+      maxConcurrency: 100,
     },
     waitTime: Duration.seconds(0),
   },
@@ -435,7 +439,6 @@ export class SurescriptsNestedStack extends NestedStack {
       lambda: lambdaSettings,
       queue: queueSettings,
       eventSource: eventSourceSettings,
-      waitTime,
     } = settings[job];
 
     const queue = createQueue({
@@ -447,7 +450,6 @@ export class SurescriptsNestedStack extends NestedStack {
       lambdaLayers: [lambdaLayers.shared],
       envType,
       alarmSnsAction: alarmAction,
-      receiveMessageWaitTime: waitTime,
     });
 
     const lambda = createLambda({
@@ -469,12 +471,7 @@ export class SurescriptsNestedStack extends NestedStack {
     surescriptsReplicaBucket.grantReadWrite(lambda);
     pharmacyConversionBucket?.grantReadWrite(lambda);
 
-    lambda.addEventSource(
-      new SqsEventSource(queue, {
-        ...eventSourceSettings,
-        maxBatchingWindow: waitTime,
-      })
-    );
+    lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
 
     return { lambda, queue };
   }
