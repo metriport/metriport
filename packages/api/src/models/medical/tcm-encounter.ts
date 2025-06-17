@@ -1,8 +1,13 @@
-import { DataTypes, Model, Sequelize } from "sequelize";
+import { DataTypes, Model, Sequelize, Optional } from "sequelize";
 import { TcmEncounter, TcmEncounterLatestEvent } from "../../domain/medical/tcm-encounter";
 import { ModelSetup } from "../_default";
 
-export class TcmEncounterModel extends Model<TcmEncounter> implements TcmEncounter {
+export type TcmEncounterCreation = Optional<TcmEncounter, "id" | "createdAt" | "updatedAt">;
+
+export class TcmEncounterModel
+  extends Model<TcmEncounter, TcmEncounterCreation>
+  implements TcmEncounter
+{
   declare id: string;
   declare cxId: string;
   declare patientId: string;
