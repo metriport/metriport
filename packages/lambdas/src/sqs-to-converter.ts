@@ -21,6 +21,7 @@ import {
   storePreProcessedConversionResult,
   storePreprocessedPayloadInS3,
 } from "@metriport/core/domain/conversion/upload-conversion-steps";
+import { MedicalDataSource } from "@metriport/core/external";
 import { executeWithRetriesS3, S3Utils } from "@metriport/core/external/aws/s3";
 import { partitionPayload } from "@metriport/core/external/cda/partition-payload";
 import { processAttachments } from "@metriport/core/external/cda/process-attachments";
@@ -125,13 +126,14 @@ export const handler = capture.wrapHandler(async (event: SQSEvent) => {
     const cxId = attrib.cxId?.stringValue;
     const patientId = attrib.patientId?.stringValue;
     const jobId = attrib.jobId?.stringValue;
-    const medicalDataSource = attrib.source?.stringValue;
+    const medicalDataSource = attrib.source?.stringValue as MedicalDataSource | undefined;
     const converterUrl = attrib.serverUrl?.stringValue;
     const unusedSegments = attrib.unusedSegments?.stringValue;
     const invalidAccess = attrib.invalidAccess?.stringValue;
     if (!cxId) throw new Error(`Missing cxId`);
     if (!patientId) throw new Error(`Missing patientId`);
     if (!converterUrl) throw new Error(`Missing converterUrl`);
+    if (!medicalDataSource) throw new Error(`Missing source`);
     capture.setExtra({ cxId, patientId, jobId, source: medicalDataSource });
     const log = prefixedLog(`${i}, patient ${patientId}, job ${jobId}`);
     const lambdaParams = { cxId, patientId, jobId, source: medicalDataSource };
@@ -148,7 +150,10 @@ export const handler = capture.wrapHandler(async (event: SQSEvent) => {
         log(
           `XML document is unstructured CDA with nonXMLBody, skipping... Filename: ${s3FileName}`
         );
-        await conversionResultHandler.notifyApi({ ...lambdaParams, status: "failed" }, log);
+        await conversionResultHandler.notifyApi(
+          { ...lambdaParams, source: medicalDataSource, status: "failed" },
+          log
+        );
         continue;
       }
       const { documentContents: payloadNoB64, b64Attachments } = removeBase64PdfEntries(payloadRaw);
@@ -435,7 +440,7 @@ async function sendConversionResult({
   sourceFileName: string;
   conversionPayload: Bundle<Resource>;
   jobId: string | undefined;
-  medicalDataSource: string | undefined;
+  medicalDataSource: MedicalDataSource;
   log: Log;
 }) {
   const fileName = buildDocumentNameForConversionResult(sourceFileName);
