@@ -5,36 +5,39 @@ import { Config } from "../../../../util/config";
 import { out } from "../../../../util/log";
 import { JobBaseParams } from "./shared";
 
-export type UpdateJobTotalParams = JobBaseParams & {
-  total: number;
+export type UpdateJobRuntimeDataParams = JobBaseParams & {
+  runtimeData: unknown;
 };
 
 /**
- * Sends a request to the API to update the job total.
+ * Sends a request to the API to update the job runtime data.
  *
  * @param jobId - The job ID.
  * @param cxId - The CX ID.
- * @param total - The total number of entries to process.
+ * @param runtimeData - The runtime data to update.
  */
-export async function updateJobTotal({ jobId, cxId, total }: UpdateJobTotalParams): Promise<void> {
-  const { log, debug } = out(`updateJobTotal - jobId ${jobId} cxId ${cxId}`);
+export async function updateJobRuntimeData({
+  jobId,
+  cxId,
+  runtimeData,
+}: UpdateJobRuntimeDataParams): Promise<void> {
+  const { log, debug } = out(`updateJobRuntimeData - jobId ${jobId} cxId ${cxId}`);
   const api = axios.create({ baseURL: Config.getApiUrl() });
-  const queryParams = new URLSearchParams({ cxId, total: total.toString() });
-  const updateJobUrl = `/internal/patient/job/${jobId}/total?${queryParams.toString()}`;
+  const queryParams = new URLSearchParams({ cxId });
+  const updateJobUrl = `/internal/patient/job/${jobId}/runtime-data?${queryParams.toString()}`;
   try {
     const response = await executeWithNetworkRetries(async () => {
-      return api.post(updateJobUrl);
+      return api.post(updateJobUrl, runtimeData);
     });
     logAxiosResponse(updateJobUrl, response, debug);
   } catch (error) {
-    const msg = "Failure while updating job total @ Api";
+    const msg = "Failure while updating job runtime data @ Api";
     log(`${msg}. Cause: ${errorToString(error)}`);
     throw new MetriportError(msg, error, {
       cxId,
       jobId,
-      total,
       url: updateJobUrl,
-      context: "patient-job.updateJobTotal",
+      context: "patient-job.updateJobRuntimeData",
     });
   }
 }

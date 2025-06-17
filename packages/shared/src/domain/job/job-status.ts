@@ -4,13 +4,7 @@ export const jobStatus = ["waiting", "processing", "completed", "failed", "cance
 export type JobStatus = (typeof jobStatus)[number];
 
 export function isValidJobStatus(status: string): status is JobStatus {
-  return (
-    status === "waiting" ||
-    status === "processing" ||
-    status === "completed" ||
-    status === "failed" ||
-    status === "cancelled"
-  );
+  return jobStatus.includes(status as JobStatus);
 }
 
 export const jobInitialStatus: JobStatus = "waiting";

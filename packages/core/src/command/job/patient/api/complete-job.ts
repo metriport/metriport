@@ -12,7 +12,7 @@ import { JobBaseParams } from "./shared";
  * @param cxId - The CX ID.
  */
 export async function completeJob({ jobId, cxId }: JobBaseParams): Promise<void> {
-  const { log, debug } = out(`Ehr completeJob - jobId ${jobId} cxId ${cxId}`);
+  const { log, debug } = out(`completeJob - jobId ${jobId} cxId ${cxId}`);
   const api = axios.create({ baseURL: Config.getApiUrl() });
   const queryParams = new URLSearchParams({ cxId });
   const completeJobUrl = `/internal/patient/job/${jobId}/complete?${queryParams.toString()}`;
@@ -28,7 +28,7 @@ export async function completeJob({ jobId, cxId }: JobBaseParams): Promise<void>
       cxId,
       jobId,
       url: completeJobUrl,
-      context: "ehr.completeJob",
+      context: "patient-job.completeJob",
     });
   }
 }

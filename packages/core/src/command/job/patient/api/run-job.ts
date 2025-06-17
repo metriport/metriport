@@ -17,7 +17,7 @@ export type RunJobParams = JobBaseParams & {
  * @param runUrl - The run URL.
  */
 export async function runJob({ jobId, cxId, runUrl }: RunJobParams): Promise<void> {
-  const { log, debug } = out(`runJob - jobId ${jobId} cxId ${cxId} runUrl ${runUrl}`);
+  const { log, debug } = out(`runJob - jobId ${jobId} cxId ${cxId}`);
   const api = axios.create({ baseURL: Config.getApiUrl() });
   try {
     const response = await executeWithNetworkRetries(async () => {
@@ -34,7 +34,7 @@ export async function runJob({ jobId, cxId, runUrl }: RunJobParams): Promise<voi
       cxId,
       jobId,
       url: runUrl,
-      context: "ehr.runJob",
+      context: "patient-job.runJob",
     });
   }
 }

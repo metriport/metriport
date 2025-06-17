@@ -62,7 +62,7 @@ export async function getJobs({
     throw new MetriportError(msg, error, {
       cxId,
       url: getJobsUrl,
-      context: "ehr.getJobs",
+      context: "patient-job.getJobs",
     });
   }
 }

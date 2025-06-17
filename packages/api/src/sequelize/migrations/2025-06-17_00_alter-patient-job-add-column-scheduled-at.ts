@@ -51,6 +51,12 @@ export const up: Migration = async ({ context: queryInterface }) => {
 
 export const down: Migration = ({ context: queryInterface }) => {
   return queryInterface.sequelize.transaction(async transaction => {
+    await queryInterface.removeIndex(patientJobTableName, patientJobStatusIndex, {
+      transaction,
+    });
+    await queryInterface.removeColumn(patientJobTableName, patientJobRunUrlColumn, {
+      transaction,
+    });
     await queryInterface.removeColumn(patientJobTableName, patientJobRuntimeDataColumn, {
       transaction,
     });
@@ -61,12 +67,6 @@ export const down: Migration = ({ context: queryInterface }) => {
       transaction,
     });
     await queryInterface.removeColumn(patientJobTableName, patientJobScheduledAtColumn, {
-      transaction,
-    });
-    await queryInterface.removeColumn(patientJobTableName, patientJobRunUrlColumn, {
-      transaction,
-    });
-    await queryInterface.removeIndex(patientJobTableName, patientJobStatusIndex, {
       transaction,
     });
   });

@@ -9,7 +9,7 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { z } from "zod";
-import { getPatientJobs } from "../../../command/job/patient/get";
+import { getPatientJobByIdOrFail, getPatientJobs } from "../../../command/job/patient/get";
 import { startJobs } from "../../../command/job/patient/scheduler/start-jobs";
 import { cancelPatientJob } from "../../../command/job/patient/status/cancel";
 import { completePatientJob } from "../../../command/job/patient/status/complete";
@@ -199,7 +199,7 @@ router.post(
  * @returns 200 OK
  */
 router.post(
-  "/:jobId/update-total",
+  "/:jobId/total",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
@@ -222,27 +222,46 @@ const updateRuntimeDataSchema = z.object({
 });
 
 /**
- * POST /internal/patient/job/:jobId/update-runtime-data
+ * GET /internal/patient/job/:jobId/runtime-data
  *
- * Updates the runtime data of the job.
+ * Gets the runtime data of the job.
+ * @param req.query.cxId - The CX ID.
+ * @param req.params.jobId - The job ID.
+ * @returns The runtime data of the job.
+ */
+router.get(
+  "/:jobId/runtime-data",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const jobId = getFrom("params").orFail("jobId", req);
+    const job = await getPatientJobByIdOrFail({ jobId, cxId });
+    return res.status(httpStatus.OK).json({ runtimeData: job.runtimeData });
+  })
+);
+
+/**
+ * POST /internal/patient/job/:jobId/runtime-data
+ *
+ * Updates or sets the runtime data of the job.
  * @param req.query.cxId - The CX ID.
  * @param req.params.jobId - The job ID.
  * @param req.body.data - The runtime data to update.
- * @returns 200 OK
+ * @returns The runtime data of the job.
  */
 router.post(
-  "/:jobId/update-runtime-data",
+  "/:jobId/runtime-data",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const jobId = getFrom("params").orFail("jobId", req);
     const { data } = updateRuntimeDataSchema.parse(req.body);
-    await updatePatientJobRuntimeData({
+    const job = await updatePatientJobRuntimeData({
       jobId,
       cxId,
       data,
     });
-    return res.sendStatus(httpStatus.OK);
+    return res.status(httpStatus.OK).json({ runtimeData: job.runtimeData });
   })
 );
 
