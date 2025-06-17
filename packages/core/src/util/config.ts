@@ -36,10 +36,6 @@ export class Config {
     return getEnvVarOrFail("ENV_TYPE");
   }
 
-  static getDBCreds(): string {
-    return getEnvVarOrFail("DB_CREDS");
-  }
-
   static getSlackAlertUrl(): string | undefined {
     return getEnvVar("SLACK_ALERT_URL");
   }
