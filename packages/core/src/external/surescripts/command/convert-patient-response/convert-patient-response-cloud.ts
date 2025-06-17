@@ -29,8 +29,9 @@ export class SurescriptsConvertPatientResponseHandlerCloud
       const resultPayload = getLambdaResultPayload({
         result,
         lambdaName: this.surescriptsConvertPatientResponseLambdaName,
+        failOnEmptyResponse: false,
       });
-
+      if (!resultPayload) return undefined;
       return JSON.parse(resultPayload) as SurescriptsConversionBundle;
     });
   }

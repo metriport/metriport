@@ -26,8 +26,9 @@ export class SurescriptsConvertBatchResponseHandlerCloud
       const resultPayload = getLambdaResultPayload({
         result,
         lambdaName: this.surescriptsConvertBatchResponseLambdaName,
+        failOnEmptyResponse: false,
       });
-
+      if (!resultPayload) return [];
       return JSON.parse(resultPayload) as SurescriptsConversionBundle[];
     });
   }
