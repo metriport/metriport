@@ -17,7 +17,7 @@ import { JobsAssets } from "./types";
 const triggerPatientJobsLambdaTimeout = Duration.minutes(5);
 const runPatientJobQueueTimeout = Duration.seconds(30);
 const apiUrlEnvVarName = "API_URL";
-const parrallelJobExecutions = 4;
+const parallelJobExecutions = 4;
 
 interface JobsSettings {
   triggerPatientJobs: LambdaSettings;
@@ -51,7 +51,7 @@ function settings(): JobsSettings {
       eventSource: {
         batchSize: 1,
         reportBatchItemFailures: true,
-        maxConcurrency: parrallelJobExecutions,
+        maxConcurrency: parallelJobExecutions,
       },
       waitTime: Duration.seconds(0),
     },
