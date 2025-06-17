@@ -25,7 +25,7 @@ export const handler = capture.wrapHandler(async (event: SQSEvent) => {
 export const runJobSchema = z.object({
   id: z.string(),
   cxId: z.string(),
-  jobType: z.string(),
+  runUrl: z.string(),
 });
 
 function parseBody(body?: unknown): RunJobRequest {
