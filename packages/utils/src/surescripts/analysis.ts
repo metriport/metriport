@@ -22,16 +22,19 @@ program
   .description("analyze surescripts data for a customer")
   .option("--cx-id <cxId>", "The customer ID")
   .option("--facility-id <facilityId>", "The facility ID")
+  .option("--resource-type <resourceType>", "Optional resource types to analyze (comma separated)")
   .option("--csv-data <csvData>", "The CSV data with patient IDs and transmission IDs")
   .action(
     async ({
       cxId,
       facilityId,
       csvData,
+      resourceType,
     }: {
       cxId: string;
       facilityId: string;
       csvData: string;
+      resourceType: string;
     }) => {
       if (!cxId) throw new Error("Customer ID is required");
       if (!facilityId) throw new Error("Facility ID is required");
@@ -40,6 +43,8 @@ program
       const replica = new SurescriptsReplica();
       const handler = new SurescriptsConvertPatientResponseHandlerDirect(replica);
       const transmissions = await getTransmissionsFromCsv(cxId, csvData);
+
+      const resourceTypes = resourceType ? new Set(resourceType.split(",")) : undefined;
 
       for (const { patientId, transmissionId } of transmissions) {
         const [consolidatedBundle, conversionBundle] = await Promise.all([
@@ -56,11 +61,17 @@ program
           console.log(`No consolidated bundle found for patient ${patientId}`);
           continue;
         }
+        dangerouslyDeduplicateFhir(consolidatedBundle, cxId, patientId);
+
         if (!conversionBundle) {
           console.log(`No conversion bundle generated for patient ${patientId}`);
           continue;
         }
-        dangerouslyDeduplicateFhir(consolidatedBundle, cxId, patientId);
+        if (resourceTypes) {
+          conversionBundle.bundle.entry = conversionBundle.bundle.entry?.filter(entry =>
+            resourceTypes.has(entry.resource?.resourceType ?? "")
+          );
+        }
 
         const currentEntries = consolidatedBundle.entry?.length ?? 0;
         const conversionEntries = conversionBundle.bundle.entry?.length ?? 0;
@@ -75,7 +86,9 @@ program
 
         console.log(
           displayCount.padEnd(90, " ") +
-            `(+${Math.round((100.0 * addedEntries) / conversionEntries)}% of SS data)`
+            `(+${
+              conversionEntries > 0 ? Math.round((100.0 * addedEntries) / conversionEntries) : 0
+            }% of SS data)`
         );
       }
     }
