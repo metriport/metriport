@@ -29,7 +29,7 @@ router.post(
       facilityName: data.facilityName,
       latestEvent: data.latestEvent,
       class: data.class,
-      admitTime: new Date(data.admitTime),
+      admitTime: data.admitTime ? new Date(data.admitTime) : null,
       dischargeTime: data.dischargeTime ? new Date(data.dischargeTime) : null,
       clinicalInformation: data.clinicalInformation,
     });

@@ -8,8 +8,8 @@ export const tcmEncounterCreateSchema = z.object({
   facilityName: z.string(),
   latestEvent: z.enum(["Admitted", "Transferred", "Discharged"] as const),
   class: z.string(),
-  admitTime: z.string().datetime(),
-  dischargeTime: z.string().datetime().nullable(),
+  admitTime: z.string().datetime().optional(),
+  dischargeTime: z.string().datetime().nullable().optional(),
   clinicalInformation: z.record(z.unknown()),
 });
 

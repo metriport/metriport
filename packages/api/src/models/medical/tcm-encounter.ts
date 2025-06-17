@@ -11,7 +11,7 @@ export class TcmEncounterModel extends BaseModel<TcmEncounterModel> implements T
   declare facilityName: string;
   declare latestEvent: "Admitted" | "Transferred" | "Discharged";
   declare class: string;
-  declare admitTime: Date;
+  declare admitTime: Date | null;
   declare dischargeTime: Date | null;
   declare clinicalInformation: Record<string, unknown>;
 
@@ -36,6 +36,7 @@ export class TcmEncounterModel extends BaseModel<TcmEncounterModel> implements T
         },
         admitTime: {
           type: DataTypes.DATE,
+          allowNull: true,
         },
         dischargeTime: {
           type: DataTypes.DATE,
