@@ -7,6 +7,7 @@ import receiveResponse from "./receive-response";
 import receiveVerification from "./receive-verification";
 import convertResponse from "./convert-response";
 import analysis from "./analysis";
+import analyzeResponses from "./analyze-responses";
 
 const program = new Command();
 program.addCommand(sftpAction);
@@ -17,4 +18,5 @@ program.addCommand(receiveResponse);
 program.addCommand(receiveVerification);
 program.addCommand(convertResponse);
 program.addCommand(analysis);
+program.addCommand(analyzeResponses);
 program.parse();

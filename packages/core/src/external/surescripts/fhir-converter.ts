@@ -22,6 +22,7 @@ export async function convertPatientResponseToFhirBundle(
   }
 
   for (const [patientId, details] of patientIdDetails.entries()) {
+    if (details.length === 0) return undefined;
     const bundle = await convertIncomingDataToFhirBundle(patientId, details);
     await hydrateFhir(bundle, console.log);
     return {
@@ -37,15 +38,16 @@ export async function convertBatchResponseToFhirBundles(
 ): Promise<SurescriptsConversionBundle[]> {
   const responseFile = parseResponseFile(responseFileContent);
   const patientIdDetails = buildPatientIdToDetailsMap(responseFile);
-
   const conversionBundles: SurescriptsConversionBundle[] = [];
   for (const [patientId, detailRows] of patientIdDetails.entries()) {
-    const bundle = await convertIncomingDataToFhirBundle(patientId, detailRows);
-    await hydrateFhir(bundle, console.log);
-    conversionBundles.push({
-      patientId,
-      bundle,
-    });
+    if (detailRows.length > 0) {
+      const bundle = await convertIncomingDataToFhirBundle(patientId, detailRows);
+      await hydrateFhir(bundle, console.log);
+      conversionBundles.push({
+        patientId,
+        bundle,
+      });
+    }
   }
   return conversionBundles;
 }

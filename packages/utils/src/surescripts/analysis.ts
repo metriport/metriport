@@ -4,6 +4,7 @@ import csv from "csv-parser";
 dotenv.config();
 
 import fs from "fs";
+import path from "path";
 
 import { Command } from "commander";
 import { Bundle } from "@medplum/fhirtypes";
@@ -17,19 +18,30 @@ import { S3Utils } from "@metriport/core/external/aws/s3";
 const program = new Command();
 const medicalDocsBucketName = getEnvVarOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
 
+interface DataPoint {
+  patientId: string;
+  transmissionId: string;
+  consolidatedEntries: number;
+  consolidatedMedications: number;
+  conversionEntries: number;
+  conversionMedications: number;
+  newConsolidatedEntries: number;
+  newConsolidatedMedications: number;
+}
+const dataPoints: DataPoint[] = [];
+const medicationResourceTypes = new Set(["Medication", "MedicationDispense", "MedicationRequest"]);
+
 program
   .name("analysis")
   .description("analyze surescripts data for a customer")
   .option("--cx-id <cxId>", "The customer ID")
   .option("--facility-id <facilityId>", "The facility ID")
-  .option("--resource-type <resourceType>", "Optional resource types to analyze (comma separated)")
   .option("--csv-data <csvData>", "The CSV data with patient IDs and transmission IDs")
   .action(
     async ({
       cxId,
       facilityId,
       csvData,
-      resourceType,
     }: {
       cxId: string;
       facilityId: string;
@@ -42,12 +54,12 @@ program
 
       const replica = new SurescriptsReplica();
       const handler = new SurescriptsConvertPatientResponseHandlerDirect(replica);
-      const transmissions = await getTransmissionsFromCsv(cxId, csvData);
-
-      const resourceTypes = resourceType ? new Set(resourceType.split(",")) : undefined;
+      let transmissions = await getTransmissionsFromCsv(cxId, csvData);
+      transmissions = transmissions.slice(0, 1000);
 
       for (const { patientId, transmissionId } of transmissions) {
-        const [consolidatedBundle, conversionBundle] = await Promise.all([
+        // Compare existing consolidated to the conversion
+        const [consolidatedBundle, conversion] = await Promise.all([
           getConsolidatedBundle(cxId, patientId),
           handler.convertPatientResponse({
             cxId,
@@ -61,39 +73,87 @@ program
           console.log(`No consolidated bundle found for patient ${patientId}`);
           continue;
         }
-        dangerouslyDeduplicateFhir(consolidatedBundle, cxId, patientId);
 
-        if (!conversionBundle) {
+        if (!conversion || !conversion.bundle) {
           console.log(`No conversion bundle generated for patient ${patientId}`);
           continue;
         }
-        if (resourceTypes) {
-          conversionBundle.bundle.entry = conversionBundle.bundle.entry?.filter(entry =>
-            resourceTypes.has(entry.resource?.resourceType ?? "")
-          );
-        }
 
-        const currentEntries = consolidatedBundle.entry?.length ?? 0;
-        const conversionEntries = conversionBundle.bundle.entry?.length ?? 0;
-        if (conversionEntries === 0) continue;
+        const dataPoint: Partial<DataPoint> = {
+          patientId,
+          transmissionId,
+        };
+        // Compute the number of entries and medications in the current consolidated
+        dangerouslyDeduplicateFhir(consolidatedBundle, cxId, patientId);
+        dataPoint.consolidatedEntries = countEntries(consolidatedBundle);
+        dataPoint.consolidatedMedications = countResourceType(
+          consolidatedBundle,
+          medicationResourceTypes
+        );
 
-        consolidatedBundle.entry?.push(...(conversionBundle.bundle.entry ?? []));
+        // Add the conversion bundle to the consolidated bundle and deduplicate
+        dataPoint.conversionEntries = countEntries(conversion.bundle);
+        dataPoint.conversionMedications = countResourceType(
+          conversion.bundle,
+          medicationResourceTypes
+        );
+        consolidatedBundle.entry?.push(...(conversion.bundle.entry ?? []));
         dangerouslyDeduplicateFhir(consolidatedBundle, cxId, patientId);
 
-        const newEntries = consolidatedBundle.entry?.length ?? 0;
-        const addedEntries = newEntries - currentEntries;
-
-        const displayCount = `Deduplicate(Consolidated[...${currentEntries}] + Surescripts[...${conversionEntries}]) = New Consolidated[...${newEntries}]`;
-
-        console.log(
-          displayCount.padEnd(90, " ") +
-            `(+${
-              conversionEntries > 0 ? Math.round((100.0 * addedEntries) / conversionEntries) : 0
-            }% of SS data)`
+        // Compute the new number of entries and medications in the consolidated bundle
+        dataPoint.newConsolidatedEntries = countEntries(consolidatedBundle);
+        dataPoint.newConsolidatedMedications = countResourceType(
+          consolidatedBundle,
+          medicationResourceTypes
         );
+        dataPoints.push(dataPoint as DataPoint);
+
+        if (dataPoints.length % 100 === 0) {
+          console.log(`Processed ${dataPoints.length} patients`);
+        }
       }
+
+      // Write the data points to a CSV file
+      const csvContent =
+        '"' +
+        [
+          "patient_id",
+          "transmission_id",
+          "consolidated_entries",
+          "consolidated_medications",
+          "conversion_entries",
+          "conversion_medications",
+          "new_consolidated_entries",
+          "new_consolidated_medications",
+        ].join('","') +
+        '"\n' +
+        dataPoints
+          .map(dataPoint =>
+            [
+              `"${dataPoint.patientId}"`,
+              `"${dataPoint.transmissionId}"`,
+              dataPoint.consolidatedEntries,
+              dataPoint.consolidatedMedications,
+              dataPoint.conversionEntries,
+              dataPoint.conversionMedications,
+              dataPoint.newConsolidatedEntries,
+              dataPoint.newConsolidatedMedications,
+            ].join(",")
+          )
+          .join("\n");
+      fs.writeFileSync(path.join(process.cwd(), "runs/surescripts/ccp_data.csv"), csvContent);
     }
   );
+
+function countEntries(bundle: Bundle): number {
+  return bundle.entry?.length ?? 0;
+}
+
+function countResourceType(bundle: Bundle, resourceTypes: Set<string>): number {
+  return (
+    bundle.entry?.filter(entry => resourceTypes.has(entry.resource?.resourceType ?? "")).length ?? 0
+  );
+}
 
 async function getConsolidatedBundle(cxId: string, patientId: string): Promise<Bundle | undefined> {
   const s3Utils = new S3Utils("us-west-1");
