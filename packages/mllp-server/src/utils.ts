@@ -1,11 +1,13 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 
-import { unpackUuid } from "@metriport/core/util/pack-uuid";
+import { Hl7Message } from "@medplum/core";
+import { Hl7Connection } from "@medplum/hl7";
 import { Base64Scrambler } from "@metriport/core/util/base64-scrambler";
 import { Config } from "@metriport/core/util/config";
-import * as Sentry from "@sentry/node";
 import { Logger } from "@metriport/core/util/log";
+import { unpackUuid } from "@metriport/core/util/pack-uuid";
+import * as Sentry from "@sentry/node";
 
 const crypto = new Base64Scrambler(Config.getHl7Base64ScramblerSeed());
 
@@ -23,15 +25,21 @@ export function unpackPidField(pid: string | undefined) {
 }
 
 export function withErrorHandling<T>(
-  handler: (data: T) => void,
-  logger: Logger
+  connection: Hl7Connection,
+  logger: Logger,
+  handler: (data: T) => void
 ): (data: T) => Promise<void> {
   return async (data: T) => {
+    const isMessageEvent = data instanceof Hl7Message;
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     await Sentry.withScope(async (_: Sentry.Scope) => {
       try {
         await handler(data);
       } catch (error) {
+        if (isMessageEvent) {
+          connection.send(data.buildAck({ ackCode: "AE" }));
+        }
+
         logger.log(`Error in handler: ${error}`);
         Sentry.captureException(error);
       }

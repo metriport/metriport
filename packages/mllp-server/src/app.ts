@@ -44,7 +44,7 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
   const server = new Hl7Server(connection => {
     connection.addEventListener(
       "message",
-      withErrorHandling(async ({ message: rawMessage }) => {
+      withErrorHandling(connection, logger, async ({ message: rawMessage }) => {
         // TODO: We don't want to fail on a failed lookup - most of our HIEs have not been timezone-ified yet.
         const sendingApplication = getSendingApplication(rawMessage) ?? "Unknown HIE";
         const hieTimezone = hieTimezoneDictionary[sendingApplication] ?? "UTC";
@@ -103,19 +103,19 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
             platform: "mllp-server",
           },
         });
-      }, logger)
+      })
     );
 
     connection.addEventListener(
       "error",
-      withErrorHandling(error => {
+      withErrorHandling(connection, logger, error => {
         if (error instanceof Error) {
           logger.log("Connection error:", error);
           capture.error(error);
         } else {
           logger.log("Connection terminated by client");
         }
-      }, logger)
+      })
     );
   });
 
