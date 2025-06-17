@@ -6,12 +6,13 @@ dotenv.config();
 import fs from "fs";
 
 import { Command } from "commander";
+import { Bundle } from "@medplum/fhirtypes";
 import { SurescriptsConvertPatientResponseHandlerDirect } from "@metriport/core/external/surescripts/command/convert-patient-response/convert-patient-response-direct";
 import { SurescriptsReplica } from "@metriport/core/external/surescripts/replica";
-import { getEnvVarOrFail } from "@metriport/shared";
 import { createConsolidatedDataFileNameWithSuffix } from "@metriport/core/domain/consolidated/filename";
+import { dangerouslyDeduplicateFhir } from "@metriport/core/fhir-deduplication/deduplicate-fhir";
+import { getEnvVarOrFail } from "@metriport/shared";
 import { S3Utils } from "@metriport/core/external/aws/s3";
-import { Bundle, Medication } from "@medplum/fhirtypes";
 
 const program = new Command();
 const medicalDocsBucketName = getEnvVarOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
@@ -38,50 +39,47 @@ program
 
       const replica = new SurescriptsReplica();
       const handler = new SurescriptsConvertPatientResponseHandlerDirect(replica);
-      let transmissions = await getTransmissionsFromCsv(cxId, csvData);
-      transmissions = transmissions.slice(0, 10);
+      const transmissions = await getTransmissionsFromCsv(cxId, csvData);
 
-      for (const transmission of transmissions) {
+      for (const { patientId, transmissionId } of transmissions) {
         const [consolidatedBundle, conversionBundle] = await Promise.all([
-          getConsolidatedBundle(cxId, transmission.patientId),
+          getConsolidatedBundle(cxId, patientId),
           handler.convertPatientResponse({
             cxId,
             facilityId,
-            populationId: transmission.patientId,
-            transmissionId: transmission.transmissionId,
+            populationId: patientId,
+            transmissionId,
           }),
         ]);
 
         if (!consolidatedBundle) {
-          console.log(`No consolidated bundle found for patient ${transmission.patientId}`);
+          console.log(`No consolidated bundle found for patient ${patientId}`);
           continue;
         }
         if (!conversionBundle) {
-          console.log(`No conversion bundle generated for patient ${transmission.patientId}`);
+          console.log(`No conversion bundle generated for patient ${patientId}`);
           continue;
         }
-        const consolidatedMedications = extractMedications(consolidatedBundle);
-        const conversionMedications = extractMedications(conversionBundle.bundle);
+        dangerouslyDeduplicateFhir(consolidatedBundle, cxId, patientId);
 
-        console.log("existing", consolidatedMedications);
-        console.log("surescripts", conversionMedications);
+        const currentEntries = consolidatedBundle.entry?.length ?? 0;
+        const conversionEntries = conversionBundle.bundle.entry?.length ?? 0;
+
+        consolidatedBundle.entry?.push(...(conversionBundle.bundle.entry ?? []));
+        dangerouslyDeduplicateFhir(consolidatedBundle, cxId, patientId);
+
+        const newEntries = consolidatedBundle.entry?.length ?? 0;
+        const addedEntries = newEntries - currentEntries;
+
+        const displayCount = `Deduplicate(Consolidated[...${currentEntries}] + Surescripts[...${conversionEntries}]) = New Consolidated[...${newEntries}]`;
+
+        console.log(
+          displayCount.padEnd(90, " ") +
+            `(+${Math.round((100.0 * addedEntries) / conversionEntries)}% of SS data)`
+        );
       }
     }
   );
-
-function extractMedications(bundle: Bundle): Medication[] {
-  return (
-    bundle.entry
-      ?.filter(entry => entry.resource?.resourceType === "Medication")
-      .map(entry => entry.resource as Medication) || []
-  );
-}
-
-interface PatientTransmission {
-  cxId: string;
-  patientId: string;
-  transmissionId: string;
-}
 
 async function getConsolidatedBundle(cxId: string, patientId: string): Promise<Bundle | undefined> {
   const s3Utils = new S3Utils("us-west-1");
@@ -91,6 +89,12 @@ async function getConsolidatedBundle(cxId: string, patientId: string): Promise<B
   }
   const fileContent = await s3Utils.downloadFile({ bucket: medicalDocsBucketName, key: fileKey });
   return JSON.parse(fileContent.toString());
+}
+
+interface PatientTransmission {
+  cxId: string;
+  patientId: string;
+  transmissionId: string;
 }
 
 async function getTransmissionsFromCsv(

@@ -2,6 +2,7 @@ import { Config } from "../../util/config";
 import { S3Replica } from "../sftp/replica/s3";
 import { SurescriptsFileIdentifier, SurescriptsSftpConfig } from "./types";
 import { makeRequestFileName, makeResponseFileNamePrefix } from "./file/file-names";
+import { decompressGzip } from "../sftp/compression";
 
 export class SurescriptsReplica extends S3Replica {
   constructor(config: Pick<SurescriptsSftpConfig, "replicaBucket" | "replicaBucketRegion"> = {}) {
@@ -39,6 +40,7 @@ export class SurescriptsReplica extends S3Replica {
     if (!responseFile) {
       return undefined;
     }
-    return await this.readFile(responseFile);
+    const compressedContent = await this.readFile(responseFile);
+    return await decompressGzip(compressedContent);
   }
 }

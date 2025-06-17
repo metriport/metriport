@@ -125,7 +125,6 @@ function getMedicationBatch(detail: ResponseDetail): MedicationBatch | undefined
 
   return {
     lotNumber: detail.prescriptionNumber,
-    expirationDate: detail.endDate?.toISOString() ?? "",
   };
 }
 
