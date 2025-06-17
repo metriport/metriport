@@ -131,7 +131,7 @@ export function isVerificationDetail(data: object): data is VerificationDetail {
   return verificationDetailSchema.safeParse(data).success;
 }
 
-export const verificationDetailOrder: IncomingFileRowSchema<VerificationDetail> = [
+export const verificationDetailRow: IncomingFileRowSchema<VerificationDetail> = [
   {
     field: 0,
     key: "recordType",
@@ -188,7 +188,7 @@ export function isVerificationFooter(data: object): data is VerificationFooter {
   return verificationFooterSchema.safeParse(data).success;
 }
 
-export const verificationFooterOrder: IncomingFileRowSchema<VerificationFooter> = [
+export const verificationFooterRow: IncomingFileRowSchema<VerificationFooter> = [
   {
     field: 0,
     key: "recordType",
@@ -226,11 +226,11 @@ export const verificationFileSchema: IncomingFileSchema<
     validator: isVerificationHeader,
   },
   detail: {
-    row: verificationDetailOrder,
+    row: verificationDetailRow,
     validator: isVerificationDetail,
   },
   footer: {
-    row: verificationFooterOrder,
+    row: verificationFooterRow,
     validator: isVerificationFooter,
   },
 };

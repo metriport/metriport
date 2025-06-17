@@ -21,7 +21,7 @@ export const handler = capture.wrapHandler(
       );
       return { conversionBundle };
     } catch (error) {
-      throw new MetriportError(`Failed to convert batch response: ${error}`, error, {
+      throw new MetriportError(`Failed to convert patient response: ${error}`, error, {
         ...identifier,
       });
     }
