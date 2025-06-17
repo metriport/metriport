@@ -4,6 +4,9 @@ import { formatNumber } from "./numbers";
 
 dayjs.extend(duration);
 
+/**
+ * @deprecated Unify with timed(), choose one to keep around.
+ */
 export async function logDuration<T>(
   fn: () => Promise<T>,
   options?: { log?: typeof console.log; withMinutes?: boolean }

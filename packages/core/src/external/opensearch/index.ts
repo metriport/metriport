@@ -24,6 +24,9 @@ export type OpenSearchResponse<T> = {
     hits?: OpenSearchResponseHit<T>[];
   };
 };
+export type OpenSearchResponseScroll<T> = {
+  _scroll_id?: string;
+} & OpenSearchResponse<T>;
 
 export type OpenSearchResponseGet<T> = {
   _index: string;

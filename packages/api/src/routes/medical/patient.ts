@@ -5,6 +5,7 @@ import { makeSearchConsolidated } from "@metriport/core/command/consolidated/sea
 import { mrFormat } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { MAXIMUM_UPLOAD_FILE_SIZE } from "@metriport/core/external/aws/lambda-logic/document-uploader";
 import { toFHIR } from "@metriport/core/external/fhir/patient/conversion";
+import { out } from "@metriport/core/util/log";
 import { getRequestId } from "@metriport/core/util/request";
 import { BadRequestError, isTrue, NotFoundError, stringToBoolean } from "@metriport/shared";
 import { Request, Response } from "express";
@@ -198,6 +199,7 @@ router.get(
     const queryParam = getFrom("query").optional("query", req);
     const query = queryParam ? queryParam.trim() : undefined;
 
+    out(`cx ${patient.cxId} pt ${patient.id}`).log(`Searching for ||${query}||`);
     const result = await makeSearchConsolidated().search({ patient, query });
 
     return res.status(status.OK).json(result);

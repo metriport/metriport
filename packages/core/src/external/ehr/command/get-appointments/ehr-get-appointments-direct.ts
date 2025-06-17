@@ -1,5 +1,9 @@
 import { BadRequestError } from "@metriport/shared";
+import { getAppointments as getAppointmentsAthena } from "../../athenahealth/command/get-appointments";
+import { getAppointmentsFromSubscriptionEvents as getAppointmentsSubscriptionEventsAthena } from "../../athenahealth/command/get-appointments-from-subscription-events";
 import { getAppointments as getAppointmentsCanvas } from "../../canvas/command/get-appointments";
+import { getAppointments as getAppointmentsElation } from "../../elation/command/get-appointments";
+import { getAppointments as getAppointmentsHealthie } from "../../healthie/command/get-appointments";
 import {
   Appointment,
   AppointmentMethods,
@@ -18,18 +22,24 @@ export class EhrGetAppointmentsDirect implements EhrGetAppointmentsHandler {
   }
 }
 
-type GetAppointments = (params: GetAppointmentsClientRequest) => Promise<Appointment[]>;
+type GetAppointmentsFn = (params: GetAppointmentsClientRequest) => Promise<Appointment[]>;
 
-type AppointmentMethodsMap = Record<AppointmentMethods, GetAppointments | undefined>;
+type AppointmentFnMap = Record<AppointmentMethods, GetAppointmentsFn | undefined>;
 
-const ehrGetAppointmentsMap: AppointmentMethodsMap = {
+const ehrGetAppointmentsMap: AppointmentFnMap = {
+  [AppointmentMethods.athenaGetAppointments]: getAppointmentsAthena,
+  [AppointmentMethods.athenaGetAppointmentFromSubscriptionEvents]:
+    getAppointmentsSubscriptionEventsAthena,
+  [AppointmentMethods.elationGetAppointments]: getAppointmentsElation,
+  [AppointmentMethods.healthieGetAppointments]: getAppointmentsHealthie,
   [AppointmentMethods.canvasGetAppointments]: getAppointmentsCanvas,
+  [AppointmentMethods.eclinicalworksGetAppointments]: undefined,
 };
 
-export function getEhrGetAppointmentsHandler(method: AppointmentMethods): GetAppointments {
+function getEhrGetAppointmentsHandler(method: AppointmentMethods): GetAppointmentsFn {
   const handler = ehrGetAppointmentsMap[method];
   if (!handler) {
-    throw new BadRequestError("No get appointments handler found", undefined, { method });
+    throw new BadRequestError("Could not find handler to get appointments", undefined, { method });
   }
   return handler;
 }

@@ -10,6 +10,7 @@ import z from "zod";
 import { Config } from "../../shared/config";
 import { CwLink } from "../commonwell/cw-patient-data";
 import { getHieInitiator, HieInitiator, isHieEnabledToQuery } from "../hie/get-hie-initiator";
+
 export async function getCwInitiator(
   patient: Pick<Patient, "id" | "cxId">,
   facilityId?: string

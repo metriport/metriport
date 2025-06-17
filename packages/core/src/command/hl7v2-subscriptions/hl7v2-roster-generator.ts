@@ -10,7 +10,7 @@ import axios, { AxiosResponse } from "axios";
 import { stringify } from "csv-stringify/sync";
 import dayjs from "dayjs";
 import _ from "lodash";
-import { Patient } from "../../domain/patient";
+import { getMiddleName, Patient } from "../../domain/patient";
 import { Hl7v2Subscription } from "../../domain/patient-settings";
 import { S3Utils, storeInS3WithRetries } from "../../external/aws/s3";
 import { out } from "../../util";
@@ -19,9 +19,9 @@ import { CSV_FILE_EXTENSION, CSV_MIME_TYPE } from "../../util/mime";
 import { METRIPORT_ASSIGNING_AUTHORITY_IDENTIFIER } from "./constants";
 import {
   HieConfig,
+  HiePatientRosterMapping,
   Hl7v2SubscriberApiResponse,
   Hl7v2SubscriberParams,
-  MetriportToHieFieldMapping,
   RosterRowData,
 } from "./types";
 import { createScrambledId } from "./utils";
@@ -163,11 +163,11 @@ export class Hl7v2RosterGenerator {
 
 export function createRosterRow(
   source: RosterRowData,
-  mapping: MetriportToHieFieldMapping
+  mapping: HiePatientRosterMapping
 ): RosterRow {
   const result: RosterRow = {};
 
-  Object.entries(mapping).forEach(([key, columnName]) => {
+  Object.entries(mapping).forEach(([columnName, key]) => {
     if (columnName && isRosterRowKey(key, source)) {
       result[columnName] = source[key] ?? "";
     } else {
@@ -203,6 +203,9 @@ export function createRosterRowInput(
   const authorizingParticipantFacilityCode = org.shortcode;
   const authorizingParticipantMrn = p.externalId || createUuidFromText(scrambledId);
   const assigningAuthorityIdentifier = METRIPORT_ASSIGNING_AUTHORITY_IDENTIFIER;
+  const lineOfBusiness = "COMMERCIAL";
+  const emptyString = "";
+  const middleName = getMiddleName(data.firstName) ?? "";
 
   return {
     id: p.id,
@@ -211,7 +214,7 @@ export function createRosterRowInput(
     scrambledId,
     lastName: data.lastName,
     firstName: data.firstName,
-    middleName: "",
+    middleName,
     dob,
     dobNoDelimiter,
     genderAtBirth: data.genderAtBirth,
@@ -230,5 +233,7 @@ export function createRosterRowInput(
     driversLicense,
     phone,
     email,
+    lineOfBusiness,
+    emptyString,
   };
 }
