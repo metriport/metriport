@@ -42,7 +42,7 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
   const server = new Hl7Server(connection => {
     connection.addEventListener(
       "message",
-      withErrorHandling(async ({ message }) => {
+      withErrorHandling(connection, logger, async ({ message }) => {
         const timestamp = basicToExtendedIso8601(getOrCreateMessageDatetime(message));
         const messageId = getMessageUniqueIdentifier(message);
         log(
@@ -95,19 +95,19 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
             platform: "mllp-server",
           },
         });
-      }, logger)
+      })
     );
 
     connection.addEventListener(
       "error",
-      withErrorHandling(error => {
+      withErrorHandling(connection, logger, error => {
         if (error instanceof Error) {
           logger.log("Connection error:", error);
           capture.error(error);
         } else {
           logger.log("Connection terminated by client");
         }
-      }, logger)
+      })
     );
   });
 

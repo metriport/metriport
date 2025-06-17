@@ -28,8 +28,8 @@
   },
   "homepage": "https://github.com/metriport/metriport#readme",
   "dependencies": {
-    "@medplum/core": "^3.2.33",
-    "@medplum/hl7": "^3.2.33",
+    "@medplum/core": "^4.0.0",
+    "@medplum/hl7": "^4.0.0",
     "@metriport/core": "file:packages/core",
     "@metriport/shared": "file:packages/shared",
     "@sentry/cli": "^2.42.1",
