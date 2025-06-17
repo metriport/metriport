@@ -54,8 +54,10 @@ describe("TCM Encounter Routes", () => {
         facilityName: faker.company.name(),
         latestEvent: "Discharged",
         class: "Inpatient",
-        admitTime: faker.date.recent().toISOString(),
-        dischargeTime: validUpdatePayload.dischargeTime,
+        admitTime: faker.date.recent(),
+        dischargeTime: validUpdatePayload.dischargeTime
+          ? new Date(validUpdatePayload.dischargeTime)
+          : null,
         clinicalInformation: { test: "data" },
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -119,7 +121,7 @@ describe("TCM Encounter Routes", () => {
           facilityName: faker.company.name(),
           latestEvent: "Admitted",
           class: "Inpatient",
-          admitTime: faker.date.recent().toISOString(),
+          admitTime: faker.date.recent(),
           dischargeTime: null,
           clinicalInformation: { test: "data" },
           createdAt: new Date(),
