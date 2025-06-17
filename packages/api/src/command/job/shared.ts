@@ -5,6 +5,7 @@ export type StartJobsParams = {
   cxId?: string;
   patientId?: string;
   jobType?: string;
+  jobGroupId?: string;
   status?: JobStatus;
 };
 

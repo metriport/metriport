@@ -18,7 +18,7 @@ import { initializePatientJob } from "../../../command/job/patient/status/initia
 import { setPatientJobEntryStatus } from "../../../command/job/patient/update/set-entry-status";
 import { updatePatientJobRuntimeData } from "../../../command/job/patient/update/update-runtime-data";
 import { updatePatientJobTotal } from "../../../command/job/patient/update/update-total";
-import { parseISODate } from "../../../shared/date";
+import { parseISODateOrDateTime } from "../../../shared/date";
 import { requestLogger } from "../../helpers/request-logger";
 import { getUUIDFrom } from "../../schemas/uuid";
 import { asyncHandler, getFrom, getFromQuery, getFromQueryOrFail } from "../../util";
@@ -47,8 +47,10 @@ router.get(
     const jobType = getFromQuery("jobType", req);
     const jobGroupId = getFromQuery("jobGroupId", req);
     const status = getFromQuery("status", req);
-    const scheduledAfter = parseISODate(getFrom("query").optional("scheduledAfter", req));
-    const scheduledBefore = parseISODate(getFrom("query").optional("scheduledBefore", req));
+    const scheduledAfter = parseISODateOrDateTime(getFrom("query").optional("scheduledAfter", req));
+    const scheduledBefore = parseISODateOrDateTime(
+      getFrom("query").optional("scheduledBefore", req)
+    );
     if (scheduledAfter && scheduledBefore && scheduledAfter > scheduledBefore) {
       throw new BadRequestError("scheduledAfter must be earlier than or equal to scheduledBefore");
     }
@@ -85,10 +87,13 @@ router.post(
   "/scheduler/start",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    const scheduledBefore = parseISODate(getFrom("query").optional("scheduledBefore", req));
+    const scheduledBefore = parseISODateOrDateTime(
+      getFrom("query").optional("scheduledBefore", req)
+    );
     const cxId = getFromQuery("cxId", req);
     const patientId = getFromQuery("patientId", req);
     const jobType = getFromQuery("jobType", req);
+    const jobGroupId = getFromQuery("jobGroupId", req);
     const status = getFromQuery("status", req);
     if (status && !isValidJobStatus(status)) {
       throw new BadRequestError("Status must be a valid job status");
@@ -98,6 +103,7 @@ router.post(
       cxId,
       patientId,
       jobType,
+      jobGroupId,
       status: status as JobStatus,
     });
     return res.sendStatus(httpStatus.OK);

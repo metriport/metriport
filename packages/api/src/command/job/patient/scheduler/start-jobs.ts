@@ -9,6 +9,7 @@ import { StartJobsParams } from "../../shared";
  * @param cxId - The customer ID. If not provided, all customers will be used.
  * @param patientId - The patient ID. If not provided, all patients will be used.
  * @param jobType - The job type. If not provided, all job types will be used.
+ * @param jobGroupId - The job group ID. If not provided, all job group IDs will be used.
  * @param status - The status to start the jobs. If not provided, all statuses will be used.
  */
 export async function startJobs({
@@ -16,10 +17,11 @@ export async function startJobs({
   cxId,
   patientId,
   jobType,
+  jobGroupId,
   status,
 }: StartJobsParams): Promise<void> {
   const handler = buildTriggerJobsHandler();
   handler
-    .triggerJobs({ scheduledBefore, cxId, patientId, jobType, status })
+    .triggerJobs({ scheduledBefore, cxId, patientId, jobType, jobGroupId, status })
     .catch(processAsyncError("startPatientJobs"));
 }
