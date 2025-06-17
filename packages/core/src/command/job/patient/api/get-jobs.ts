@@ -39,7 +39,7 @@ export async function getJobs({
   status,
   scheduledAfter,
   scheduledBefore,
-}: GetJobsParams): Promise<PatientJob[]> {
+}: GetJobsParams): Promise<{ jobs: PatientJob[] }> {
   const { log, debug } = out(`getJobs -  cxId ${cxId}`);
   const api = axios.create({ baseURL: Config.getApiUrl() });
   const queryParams = new URLSearchParams({

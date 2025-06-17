@@ -217,10 +217,6 @@ router.post(
   })
 );
 
-const updateRuntimeDataSchema = z.object({
-  data: z.record(z.unknown()).optional(),
-});
-
 /**
  * GET /internal/patient/job/:jobId/runtime-data
  *
@@ -239,6 +235,10 @@ router.get(
     return res.status(httpStatus.OK).json({ runtimeData: job.runtimeData });
   })
 );
+
+const updateRuntimeDataSchema = z.object({
+  data: z.record(z.unknown()).optional(),
+});
 
 /**
  * POST /internal/patient/job/:jobId/runtime-data

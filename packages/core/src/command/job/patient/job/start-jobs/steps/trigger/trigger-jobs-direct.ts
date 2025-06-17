@@ -18,7 +18,7 @@ export class TriggerJobsDirect implements TriggerJobsHandler {
       status: requestStatus,
       scheduledBefore: requestScheduledBefore,
     };
-    const jobs = await getJobs(getJobsRequest);
+    const { jobs } = await getJobs(getJobsRequest);
     const runJobArgs = jobs.flatMap(job => {
       if (!job.runUrl) return [];
       return {

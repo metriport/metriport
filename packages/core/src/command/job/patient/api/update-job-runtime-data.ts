@@ -27,7 +27,7 @@ export async function updateJobRuntimeData({
   const updateJobUrl = `/internal/patient/job/${jobId}/runtime-data?${queryParams.toString()}`;
   try {
     const response = await executeWithNetworkRetries(async () => {
-      return api.post(updateJobUrl, runtimeData);
+      return api.post(updateJobUrl, { data: runtimeData });
     });
     logAxiosResponse(updateJobUrl, response, debug);
   } catch (error) {
