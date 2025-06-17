@@ -3,6 +3,7 @@ import { executeWithNetworkRetries } from "@metriport/shared";
 import { getLambdaResultPayload, makeLambdaClient } from "../../../aws/lambda";
 import { SurescriptsConversionBundle, SurescriptsJob } from "../../types";
 import { SurescriptsConvertBatchResponseHandler } from "./convert-batch-response";
+
 export class SurescriptsConvertBatchResponseHandlerCloud
   implements SurescriptsConvertBatchResponseHandler
 {

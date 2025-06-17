@@ -55,7 +55,6 @@ function extractIncomingData<T extends object>(
     return { data, source: row };
   } else {
     throw new MetriportError("Invalid row", undefined, {
-      row: row.join("|"),
       data: JSON.stringify(data),
     });
   }
