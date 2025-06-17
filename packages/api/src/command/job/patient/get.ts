@@ -30,12 +30,13 @@ export async function getPatientJobModelOrFail(params: GetJobByIdParams): Promis
   return job;
 }
 
-export type ListPatientJobsParams = Pick<PatientJob, "cxId"> &
-  Partial<Pick<PatientJob, "patientId" | "jobType" | "jobGroupId">> & {
-    status?: JobStatus | JobStatus[];
-    scheduledAfter?: Date;
-    scheduledBefore?: Date;
-  };
+export type ListPatientJobsParams = Partial<
+  Pick<PatientJob, "cxId" | "patientId" | "jobType" | "jobGroupId">
+> & {
+  status?: JobStatus | JobStatus[];
+  scheduledAfter?: Date;
+  scheduledBefore?: Date;
+};
 
 export async function getPatientJobs({
   cxId,
@@ -49,7 +50,7 @@ export async function getPatientJobs({
   const statuses = getStatusFromParams(status);
   const jobs = await PatientJobModel.findAll({
     where: {
-      cxId,
+      ...(cxId ? { cxId } : {}),
       ...(patientId ? { patientId } : {}),
       ...(jobType ? { jobType } : {}),
       ...(jobGroupId ? { jobGroupId } : {}),

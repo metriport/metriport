@@ -1,7 +1,7 @@
 import { JobEntryStatus, JobStatus } from "@metriport/shared";
 
 export type StartJobsParams = {
-  scheduledAtCutoff?: Date;
+  scheduledBefore?: Date;
   cxId?: string;
   patientId?: string;
   jobType?: string;

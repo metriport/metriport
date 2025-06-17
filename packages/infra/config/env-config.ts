@@ -283,7 +283,6 @@ type EnvConfigBase = {
     };
   };
   jobs: {
-    roUsername: string;
     startPatientJobsSchedulerScheduleExpression: string;
     startPatientJobsSchedulerUrl: string;
   };

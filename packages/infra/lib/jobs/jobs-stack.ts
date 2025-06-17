@@ -3,7 +3,6 @@ import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
 import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
-import * as secret from "aws-cdk-lib/aws-secretsmanager";
 import { Queue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { EnvConfig } from "../../config/env-config";
@@ -11,28 +10,28 @@ import { EnvType } from "../env-type";
 import { createLambda } from "../shared/lambda";
 import { LambdaLayers } from "../shared/lambda-layers";
 import { createScheduledLambda } from "../shared/lambda-scheduled";
-import { buildSecret } from "../shared/secrets";
 import { LambdaSettings, QueueAndLambdaSettings } from "../shared/settings";
 import { createQueue } from "../shared/sqs";
 import { JobsAssets } from "./types";
 
-const getPatientJobsLambdaTimeout = Duration.minutes(5);
+const triggerPatientJobsLambdaTimeout = Duration.minutes(5);
 const runPatientJobQueueTimeout = Duration.seconds(30);
 const apiUrlEnvVarName = "API_URL";
+const parrallelJobExecutions = 4;
 
 interface JobsSettings {
-  getPatientJobs: LambdaSettings;
+  triggerPatientJobs: LambdaSettings;
   runPatientJob: QueueAndLambdaSettings;
 }
 
 function settings(): JobsSettings {
   return {
-    getPatientJobs: {
-      name: "JobsGetJobs",
-      entry: "jobs/patient/get-jobs",
+    triggerPatientJobs: {
+      name: "JobsTriggerPatientJobs",
+      entry: "jobs/patient/trigger-jobs",
       lambda: {
         memory: 1024,
-        timeout: getPatientJobsLambdaTimeout,
+        timeout: triggerPatientJobsLambdaTimeout,
       },
     },
     runPatientJob: {
@@ -52,7 +51,7 @@ function settings(): JobsSettings {
       eventSource: {
         batchSize: 1,
         reportBatchItemFailures: true,
-        maxConcurrency: 4,
+        maxConcurrency: parrallelJobExecutions,
       },
       waitTime: Duration.seconds(0),
     },
@@ -67,7 +66,7 @@ interface JobsNestedStackProps extends NestedStackProps {
 }
 
 export class JobsNestedStack extends NestedStack {
-  private readonly getPatientJobsLambda: Lambda;
+  private readonly triggerPatientJobsLambda: Lambda;
   private readonly runPatientJobQueue: Queue;
   private readonly runPatientJobLambda: Lambda;
 
@@ -75,8 +74,6 @@ export class JobsNestedStack extends NestedStack {
     super(scope, id, props);
 
     this.terminationProtection = true;
-
-    const readOnlyUserSecret = buildSecret(this, props.config.jobs.roUsername);
 
     const commonConfig = {
       lambdaLayers: props.lambdaLayers,
@@ -102,38 +99,36 @@ export class JobsNestedStack extends NestedStack {
     this.runPatientJobQueue = runPatientJob.queue;
     this.runPatientJobLambda = runPatientJob.lambda;
 
-    const getPatientJobs = this.setupGetPatientJobsLambda({
+    const triggerPatientJobs = this.setupTriggerPatientJobsLambda({
       ...commonConfig,
-      readOnlyUserSecret,
       runPatientJobQueue: this.runPatientJobQueue,
     });
-    this.getPatientJobsLambda = getPatientJobs;
+    this.triggerPatientJobsLambda = triggerPatientJobs;
   }
 
   getAssets(): JobsAssets {
     return {
-      getPatientJobsLambda: this.getPatientJobsLambda,
+      triggerPatientJobsLambda: this.triggerPatientJobsLambda,
       runPatientJobQueue: this.runPatientJobQueue,
       runPatientJobLambda: this.runPatientJobLambda,
     };
   }
 
   setApiUrl(apiUrl: string): void {
-    const lambdasToSetApiUrl = [this.getPatientJobsLambda, this.runPatientJobLambda];
+    const lambdasToSetApiUrl = [this.triggerPatientJobsLambda, this.runPatientJobLambda];
     lambdasToSetApiUrl.forEach(lambda => lambda.addEnvironment(apiUrlEnvVarName, apiUrl));
   }
 
-  private setupGetPatientJobsLambda(ownProps: {
+  private setupTriggerPatientJobsLambda(ownProps: {
     lambdaLayers: LambdaLayers;
     vpc: ec2.IVpc;
     envType: EnvType;
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
     runPatientJobQueue: Queue;
-    readOnlyUserSecret: secret.ISecret;
   }): Lambda {
     const { lambdaLayers, vpc, envType, sentryDsn, alarmAction } = ownProps;
-    const { name, entry, lambda: lambdaSettings } = settings().getPatientJobs;
+    const { name, entry, lambda: lambdaSettings } = settings().triggerPatientJobs;
 
     const lambda = createLambda({
       ...lambdaSettings,
@@ -143,8 +138,7 @@ export class JobsNestedStack extends NestedStack {
       envType,
       envVars: {
         // API_URL set on the api-stack after the OSS API is created
-        RUN_JOB_QUEUE_URL: ownProps.runPatientJobQueue.queueUrl,
-        DB_CREDS: ownProps.readOnlyUserSecret.secretArn,
+        RUN_PATIENT_JOB_QUEUE_URL: ownProps.runPatientJobQueue.queueUrl,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared],
@@ -153,7 +147,6 @@ export class JobsNestedStack extends NestedStack {
     });
 
     ownProps.runPatientJobQueue.grantSendMessages(lambda);
-    ownProps.readOnlyUserSecret.grantRead(lambda);
 
     return lambda;
   }
@@ -179,7 +172,7 @@ export class JobsNestedStack extends NestedStack {
       ...queueSettings,
       stack: this,
       name,
-      fifo: false,
+      fifo: true,
       createDLQ: true,
       lambdaLayers: [lambdaLayers.shared],
       envType,

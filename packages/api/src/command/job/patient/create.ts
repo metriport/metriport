@@ -1,4 +1,4 @@
-import { runJob } from "@metriport/core/command/job/patient/api/run-job";
+import { buildRunJobHandler } from "@metriport/core/command/job/patient/job/start-jobs/steps/run/run-job-factory";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { BadRequestError, jobInitialStatus, PatientJob } from "@metriport/shared";
@@ -50,10 +50,11 @@ export async function createPatientJob({
     paramsOps,
     runUrl,
   });
-  if (!scheduledAt) {
-    runJob({ jobId: created.id, cxId, runUrl }).catch(
-      processAsyncError(`runUrl ${created.runUrl}`)
-    );
+  if (!scheduledAt && created.runUrl) {
+    const handler = buildRunJobHandler();
+    handler
+      .runJob({ id: created.id, cxId: created.cxId, runUrl: created.runUrl })
+      .catch(processAsyncError(`runUrl ${created.runUrl}`));
   }
   return created.dataValues;
 }

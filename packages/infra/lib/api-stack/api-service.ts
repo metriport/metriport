@@ -378,7 +378,7 @@ export function createAPIService({
               ])
             ),
           }),
-          GET_PATIENT_JOBS_LAMBDA_NAME: jobAssets.getPatientJobsLambda.functionName,
+          TRIGGER_PATIENT_JOBS_LAMBDA_NAME: jobAssets.triggerPatientJobsLambda.functionName,
           RUN_PATIENT_JOB_QUEUE_URL: jobAssets.runPatientJobQueue.queueUrl,
         },
       },
@@ -461,7 +461,7 @@ export function createAPIService({
   fhirToBundleCountLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   ehrGetAppointmentsLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   consolidatedSearchLambda.grantInvoke(fargateService.taskDefinition.taskRole);
-  jobAssets.getPatientJobsLambda.grantInvoke(fargateService.taskDefinition.taskRole);
+  jobAssets.triggerPatientJobsLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   // Access grant for buckets
   patientImportBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   conversionBucket.grantReadWrite(fargateService.taskDefinition.taskRole);

@@ -42,7 +42,7 @@ router.get(
   "/",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getFromQueryOrFail("cxId", req);
+    const cxId = getFromQuery("cxId", req);
     const patientId = getFromQuery("patientId", req);
     const jobType = getFromQuery("jobType", req);
     const jobGroupId = getFromQuery("jobGroupId", req);
@@ -85,7 +85,7 @@ router.post(
   "/scheduler/start",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    const scheduledAtCutoff = parseISODate(getFrom("query").optional("scheduledAtCutoff", req));
+    const scheduledBefore = parseISODate(getFrom("query").optional("scheduledBefore", req));
     const cxId = getFromQuery("cxId", req);
     const patientId = getFromQuery("patientId", req);
     const jobType = getFromQuery("jobType", req);
@@ -94,7 +94,7 @@ router.post(
       throw new BadRequestError("Status must be a valid job status");
     }
     await startJobs({
-      scheduledAtCutoff: scheduledAtCutoff ? buildDayjs(scheduledAtCutoff).toDate() : undefined,
+      scheduledBefore: scheduledBefore ? buildDayjs(scheduledBefore).toDate() : undefined,
       cxId,
       patientId,
       jobType,
