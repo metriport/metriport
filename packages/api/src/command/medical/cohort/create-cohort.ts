@@ -8,7 +8,6 @@ export async function createCohort({
   cxId,
   name,
   monitoring,
-  otherSettings,
 }: Omit<CohortCreate, "id">): Promise<Cohort> {
   const { log } = out(`createCohort - cx: ${cxId}`);
 
@@ -24,7 +23,6 @@ export async function createCohort({
     cxId,
     name,
     monitoring,
-    otherSettings,
   };
 
   const newCohort = await CohortModel.create(cohortCreate);

@@ -7,7 +7,6 @@ export const monitoringSchema = z.object({
 export const cohortCreateSchema = z.object({
   name: z.string(),
   monitoring: monitoringSchema.optional(),
-  otherSettings: z.record(z.string(), z.unknown()).optional(),
 });
 
 export const cohortUpdateSchema = cohortCreateSchema;
