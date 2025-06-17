@@ -29,7 +29,7 @@ export class SurescriptsConvertBatchResponseHandlerDirect
 
     const conversionBundles = await convertBatchResponseToFhirBundles(responseFileContent);
     for (const { patientId, bundle } of conversionBundles) {
-      await uploadConversionBundle({ bundle, cxId, patientId });
+      await uploadConversionBundle({ bundle, cxId, patientId, transmissionId });
     }
     return conversionBundles;
   }

@@ -3,7 +3,6 @@ import {
   SurescriptsRequester,
   SurescriptsFileIdentifier,
 } from "@metriport/core/external/surescripts/types";
-import { MetriportError } from "@metriport/shared";
 import { capture } from "../shared/capture";
 import { makeSurescriptsReplica } from "./shared";
 
@@ -15,15 +14,7 @@ export const handler = capture.wrapHandler(
     const convertPatientResponseHandler = new SurescriptsConvertPatientResponseHandlerDirect(
       replica
     );
-    try {
-      const conversionBundle = await convertPatientResponseHandler.convertPatientResponse(
-        identifier
-      );
-      return { conversionBundle };
-    } catch (error) {
-      throw new MetriportError(`Failed to convert patient response: ${error}`, error, {
-        ...identifier,
-      });
-    }
+    const conversionBundle = await convertPatientResponseHandler.convertPatientResponse(identifier);
+    return { conversionBundle };
   }
 );

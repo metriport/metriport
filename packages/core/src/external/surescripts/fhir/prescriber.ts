@@ -72,7 +72,7 @@ function getPrescriberName(detail: ResponseDetail): Practitioner["name"] {
   ];
 }
 
-function getPrescriberAddress(detail: ResponseDetail): Practitioner["address"] {
+function getPrescriberAddress(detail: ResponseDetail): Practitioner["address"] | undefined {
   if (
     !detail.prescriberAddressLine1 ||
     !detail.prescriberCity ||

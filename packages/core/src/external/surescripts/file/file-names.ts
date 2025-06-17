@@ -15,8 +15,20 @@ export function buildResponseFileNamePrefix(transmissionId: string, populationId
   return `${transmissionId}_${populationId}_`;
 }
 
-export function buildConversionBundleFileName(cxId: string, patientId: string): string {
+export function buildLatestConversionBundleFileName(cxId: string, patientId: string): string {
   return `cxId=${cxId}/ptId=${patientId}/surescripts/latest.json`;
+}
+
+export function buildConversionBundleFileNameForJob({
+  cxId,
+  patientId,
+  transmissionId,
+}: {
+  cxId: string;
+  patientId: string;
+  transmissionId: string;
+}): string {
+  return `cxId=${cxId}/ptId=${patientId}/surescripts/transmissionId=${transmissionId}/conversion.json`;
 }
 
 export function parseHistoryFileName(remoteFileName: string):

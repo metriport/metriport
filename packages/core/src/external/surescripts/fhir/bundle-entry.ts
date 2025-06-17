@@ -1,5 +1,4 @@
 import { BundleEntry, Resource } from "@medplum/fhirtypes";
-import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { IncomingData } from "../schema/shared";
 import { ResponseDetail } from "../schema/response";
 import { SurescriptsContext } from "./types";
@@ -36,9 +35,8 @@ export function getAllBundleEntries(
     medication,
     medicationDispense,
     medicationRequest,
-  ].flatMap(function (resource): BundleEntry<Resource>[] {
+  ].flatMap(resource => {
     if (!resource) return [];
-    if (!resource.id) resource.id = uuidv7();
     return [
       {
         fullUrl: `urn:uuid:${resource.id}`,

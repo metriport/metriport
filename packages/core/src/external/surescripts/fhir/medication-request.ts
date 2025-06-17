@@ -1,3 +1,4 @@
+import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { Medication, MedicationRequest } from "@medplum/fhirtypes";
 import type { SurescriptsContext } from "./types";
 import { ResponseDetail } from "../schema/response";
@@ -16,26 +17,28 @@ export function getMedicationRequest(
 
   return {
     resourceType: "MedicationRequest",
+    id: uuidv7(),
     medicationReference,
-    ...(authoredOn ? { authoredOn } : undefined),
     category: [
       {
         coding: [
           {
             system: "http://terminology.hl7.org/CodeSystem/medicationrequest-category",
-            code: "inpatient",
+            code: "outpatient",
           },
         ],
       },
     ],
-
+    ...(authoredOn ? { authoredOn } : undefined),
     ...(dispenseRequest ? { dispenseRequest } : undefined),
     ...(dosageInstruction ? { dosageInstruction } : undefined),
     ...(substitution ? { substitution } : undefined),
   };
 }
 
-function getDispenseRequest(detail: ResponseDetail): MedicationRequest["dispenseRequest"] {
+function getDispenseRequest(
+  detail: ResponseDetail
+): MedicationRequest["dispenseRequest"] | undefined {
   if (detail.fillNumber) {
     return { numberOfRepeatsAllowed: detail.fillNumber };
   }
@@ -61,7 +64,7 @@ function getDosageInstruction(
 // Field 36 of the FFM specification
 function getMedicationRequestSubstitution(
   detail: ResponseDetail
-): MedicationRequest["substitution"] {
+): MedicationRequest["substitution"] | undefined {
   if (detail.substitutions === "1") {
     return {
       allowedBoolean: true,

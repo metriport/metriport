@@ -18,9 +18,12 @@ export function getPatient(detail: ResponseDetail): Patient {
 }
 
 export function getPatientReference(patient: Patient): Reference<Patient> {
+  if (!patient.id) {
+    throw new BadRequestError("Patient ID is not defined");
+  }
   return {
     reference: `Patient/${patient.id}`,
-    id: patient.id ?? "",
+    id: patient.id,
   };
 }
 

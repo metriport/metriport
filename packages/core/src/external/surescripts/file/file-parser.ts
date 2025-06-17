@@ -5,9 +5,7 @@ import {
   IncomingFileRowSchema,
   IncomingFile,
 } from "../schema/shared";
-
 import { ParsedResponseFile, responseFileSchema } from "../schema/response";
-
 import { ParsedVerificationFile, verificationFileSchema } from "../schema/verification";
 
 interface RawPipeDelimitedFile {
@@ -66,14 +64,16 @@ function extractRawPipeDelimitedFile(message: Buffer): RawPipeDelimitedFile {
   const headerRow = table.shift();
   const detailRows = table.slice(0, -1);
   const footerRow = table.pop();
-  if (!headerRow)
+  if (!headerRow) {
     throw new MetriportError("Header is missing", undefined, {
       message: message.toString("ascii"),
     });
-  if (!footerRow)
+  }
+  if (!footerRow) {
     throw new MetriportError("Footer is missing", undefined, {
       message: message.toString("ascii"),
     });
+  }
   return { headerRow, detailRows, footerRow };
 }
 

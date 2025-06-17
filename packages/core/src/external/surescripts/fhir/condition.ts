@@ -10,12 +10,12 @@ export function getCondition(
   detail: ResponseDetail
 ): Condition | undefined {
   if (!detail.diagnosisICD10Code) return undefined;
-
   const subject = getPatientReference(context.patient);
+
   return {
     resourceType: "Condition",
     id: uuidv7(),
-    ...(subject ? { subject } : undefined),
+    subject,
     code: {
       coding: [
         {

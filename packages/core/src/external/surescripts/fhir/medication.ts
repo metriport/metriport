@@ -108,7 +108,9 @@ function getMedicationForm(detail: ResponseDetail): Coding | undefined {
 }
 
 function getMedicationAmount(detail: ResponseDetail): Ratio | undefined {
-  if (!detail.quantityDispensed || !detail.quantityUnitOfMeasure) return undefined;
+  if (!detail.quantityDispensed || !detail.quantityUnitOfMeasure) {
+    return undefined;
+  }
   const quantityUnitOfMeasureDisplay = getNcpdpName(detail.quantityUnitOfMeasure);
 
   return {
@@ -133,8 +135,9 @@ function getMedicationBatch(detail: ResponseDetail): MedicationBatch | undefined
 }
 
 function getMedicationIngredient(detail: ResponseDetail): MedicationIngredient[] | undefined {
-  if (!detail.strengthValue || !detail.strengthFormCode || !detail.strengthUnitOfMeasure)
+  if (!detail.strengthValue || !detail.strengthFormCode || !detail.strengthUnitOfMeasure) {
     return undefined;
+  }
   const strengthUnitOfMeasureDisplay = getNcpdpName(detail.strengthUnitOfMeasure);
   const strengthFormCodeDisplay = getNcpdpName(detail.strengthFormCode);
 

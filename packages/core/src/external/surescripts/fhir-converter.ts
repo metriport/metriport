@@ -4,7 +4,10 @@ import { parseResponseFile } from "./file/file-parser";
 import { ParsedResponseFile, ResponseDetail } from "./schema/response";
 import { IncomingData } from "./schema/shared";
 import { SurescriptsConversionBundle } from "./types";
-import { buildConversionBundleFileName } from "./file/file-names";
+import {
+  buildLatestConversionBundleFileName,
+  buildConversionBundleFileNameForJob,
+} from "./file/file-names";
 import { S3Utils } from "../aws/s3";
 import { Config } from "../../util/config";
 import { convertIncomingDataToFhirBundle } from "./fhir/bundle";
@@ -42,14 +45,13 @@ export async function convertBatchResponseToFhirBundles(
   const patientIdDetails = buildPatientIdToDetailsMap(responseFile);
   const conversionBundles: SurescriptsConversionBundle[] = [];
   for (const [patientId, details] of patientIdDetails.entries()) {
-    if (!details || details.length > 0) {
-      const bundle = await convertIncomingDataToFhirBundle(patientId, details);
-      await hydrateFhir(bundle, console.log);
-      conversionBundles.push({
-        patientId,
-        bundle,
-      });
-    }
+    if (!details || details.length < 1) continue;
+    const bundle = await convertIncomingDataToFhirBundle(patientId, details);
+    await hydrateFhir(bundle, console.log);
+    conversionBundles.push({
+      patientId,
+      bundle,
+    });
   }
   return conversionBundles;
 }
@@ -58,20 +60,35 @@ export async function uploadConversionBundle({
   bundle,
   cxId,
   patientId,
+  transmissionId,
 }: {
   bundle: Bundle;
   cxId: string;
   patientId: string;
+  transmissionId: string;
 }): Promise<void> {
-  const fileName = buildConversionBundleFileName(cxId, patientId);
+  const latestBundleName = buildLatestConversionBundleFileName(cxId, patientId);
+  const conversionBundleName = buildConversionBundleFileNameForJob({
+    cxId,
+    patientId,
+    transmissionId,
+  });
   const conversionBucket = new S3Utils(Config.getAWSRegion());
 
+  const fileContent = Buffer.from(JSON.stringify(bundle));
   await executeWithNetworkRetries(async () => {
-    await conversionBucket.uploadFile({
-      bucket: Config.getPharmacyConversionBucketName(),
-      key: fileName,
-      file: Buffer.from(JSON.stringify(bundle)),
-    });
+    await Promise.all([
+      conversionBucket.uploadFile({
+        bucket: Config.getPharmacyConversionBucketName(),
+        key: latestBundleName,
+        file: fileContent,
+      }),
+      conversionBucket.uploadFile({
+        bucket: Config.getPharmacyConversionBucketName(),
+        key: conversionBundleName,
+        file: fileContent,
+      }),
+    ]);
   });
 }
 

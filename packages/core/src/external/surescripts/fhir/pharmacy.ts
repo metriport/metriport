@@ -45,7 +45,7 @@ function getPharmacyIdentifiers(detail: ResponseDetail): Identifier[] {
   return identifiers;
 }
 
-function getPharmacyAddress(detail: ResponseDetail): Organization["address"] {
+function getPharmacyAddress(detail: ResponseDetail): Organization["address"] | undefined {
   if (
     !detail.pharmacyAddressLine1 ||
     !detail.pharmacyCity ||

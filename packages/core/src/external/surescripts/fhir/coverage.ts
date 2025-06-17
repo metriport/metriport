@@ -1,3 +1,4 @@
+import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { Coverage, Identifier } from "@medplum/fhirtypes";
 import { ResponseDetail } from "../schema/response";
 import { getPlanCodeName } from "@metriport/shared/interface/external/surescripts/plan-code";
@@ -15,6 +16,7 @@ export function getCoverage(detail: ResponseDetail): Coverage | undefined {
   return {
     resourceType: "Coverage",
     status: "active",
+    id: uuidv7(),
     type: {
       coding: [
         {
@@ -36,8 +38,6 @@ function getCoverageIdentifiers(detail: ResponseDetail): Identifier[] {
       value: detail.planNetworkPCN,
     });
   }
-  // detail.planNetworkGroupId;
-  // detail.planNetworkPCN;
 
   if (detail.planNetworkBIN) {
     identifiers.push({
