@@ -29,7 +29,7 @@ import { FeedbackModel } from "./feedback";
 import { FeedbackEntryModel } from "./feedback-entry";
 import { InvalidLinksModel } from "./invalid-links";
 import { JwtTokenModel } from "./jwt-token";
-import { CohortAssignmentModel, CohortModel } from "./medical/cohort";
+import { PatientCohortModel, CohortModel } from "./medical/cohort";
 import { CoverageEnhancementModel } from "./medical/coverage-enhancement";
 import { DocRefMappingModel } from "./medical/docref-mapping";
 import { MAPIAccess } from "./medical/mapi-access";
@@ -73,7 +73,7 @@ const models: ModelSetup[] = [
   InvalidLinksModel.setup,
   PatientJobModel.setup,
   CohortModel.setup,
-  CohortAssignmentModel.setup,
+  PatientCohortModel.setup,
 ];
 
 const modelsReadOnly: ModelSetup[] = [PatientModelReadOnly.setup];

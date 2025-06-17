@@ -5,6 +5,7 @@ import { makePatient } from "../../../domain/__tests__/patient";
 import { Address } from "../../../domain/address";
 import * as rosterGeneratorModule from "../hl7v2-roster-generator";
 import * as packIdsModule from "../utils";
+import { HiePatientRosterMapping } from "../types";
 
 const states = [USState.MA];
 
@@ -14,27 +15,27 @@ describe("AdtRosterGenerator", () => {
   let cxId: string;
   let scrambledId: string;
 
-  const mockMinimalSchema = {
-    scrambledId: "ID",
-    firstName: "FIRST NAME",
-    lastName: "LAST NAME",
-    dob: "DOB",
+  const mockMinimalSchema: HiePatientRosterMapping = {
+    ID: "scrambledId",
+    "FIRST NAME": "firstName",
+    "LAST NAME": "lastName",
+    DOB: "dob",
   };
 
-  const mockSchema = {
+  const mockSchema: HiePatientRosterMapping = {
     ...mockMinimalSchema,
-    genderAtBirth: "GENDER",
-    address1AddressLine1: "STREET ADDRESS", // TODO: remove this
-    address1AddressLine2: "STREET NUMBER",
-    address1City: "CITY",
-    address1State: "STATE",
-    address1Zip: "ZIP",
-    phone: "PHONE",
-    email: "EMAIL",
-    ssn: "SSN",
-    driversLicense: "DRIVERS LICENSE",
-    authorizingParticipantFacilityCode: "AUTHORIZING PARTICIPANT FACILITY CODE",
-    assigningAuthorityIdentifier: "ASSIGNING AUTHORITY IDENTIFIER",
+    GENDER: "genderAtBirth",
+    "STREET ADDRESS": "address1AddressLine1", // TODO: remove this
+    "STREET NUMBER": "address1AddressLine2",
+    CITY: "address1City",
+    STATE: "address1State",
+    ZIP: "address1Zip",
+    PHONE: "phone",
+    EMAIL: "email",
+    SSN: "ssn",
+    "DRIVERS LICENSE": "driversLicense",
+    "AUTHORIZING PARTICIPANT FACILITY CODE": "authorizingParticipantFacilityCode",
+    "ASSIGNING AUTHORITY IDENTIFIER": "assigningAuthorityIdentifier",
   };
 
   const baseAddress: Address = {

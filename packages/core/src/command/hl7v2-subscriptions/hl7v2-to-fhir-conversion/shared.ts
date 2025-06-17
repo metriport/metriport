@@ -28,7 +28,7 @@ const hl7CodingSystemToUrlMap: Record<string, string> = {
   "ICD-9": ICD_9_URL, // ICD-9
 };
 
-const hl7UnknownCodingSystems: Set<string> = new Set(["HRV"]);
+const hl7UnknownCodingSystems: Set<string> = new Set(["HRV", "FT"]);
 
 function decompressUuid(shortId: string) {
   return unpackUuid(new Base64Scrambler(Config.getHl7Base64ScramblerSeed()).unscramble(shortId));

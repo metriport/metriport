@@ -16,12 +16,15 @@ import { EnvConfig } from "../config/env-config";
 import * as fhirConverterConnector from "./api-stack/fhir-converter-connector";
 import { FHIRConverterConnector } from "./api-stack/fhir-converter-connector";
 import { EnvType } from "./env-type";
-import { getConsolidatedIngestionConnectorSettings } from "./lambdas-nested-stack-settings";
+import {
+  getConsolidatedIngestionConnectorSettings,
+  getConsolidatedSearchConnectorSettings,
+} from "./lambdas-nested-stack-settings";
 import { addBedrockPolicyToLambda } from "./shared/bedrock";
 import { createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
 import { LambdaLayers } from "./shared/lambda-layers";
 import { createScheduledLambda } from "./shared/lambda-scheduled";
-import { Secrets } from "./shared/secrets";
+import { Secrets, buildSecret } from "./shared/secrets";
 import { createQueue } from "./shared/sqs";
 import { isSandbox } from "./shared/util";
 
@@ -42,7 +45,6 @@ interface LambdasNestedStackProps extends NestedStackProps {
   lambdaLayers: LambdaLayers;
   secrets: Secrets;
   dbCluster: rds.IDatabaseCluster;
-  dbCredsSecret: secret.ISecret;
   medicalDocumentsBucket: s3.Bucket;
   sandboxSeedDataBucket: s3.IBucket | undefined;
   alarmAction?: SnsAction;
@@ -73,9 +75,9 @@ export class LambdasNestedStack extends NestedStack {
   readonly cdaToVisualizationLambda: Lambda;
   readonly documentDownloaderLambda: Lambda;
   readonly fhirToCdaConverterLambda: Lambda;
-  readonly outboundPatientDiscoveryLambda: Lambda;
-  readonly outboundDocumentQueryLambda: Lambda;
-  readonly outboundDocumentRetrievalLambda: Lambda;
+  readonly outboundPatientDiscoveryLambda: Lambda | undefined;
+  readonly outboundDocumentQueryLambda: Lambda | undefined;
+  readonly outboundDocumentRetrievalLambda: Lambda | undefined;
   readonly fhirToBundleLambda: Lambda;
   readonly fhirToBundleCountLambda: Lambda;
   readonly consolidatedSearchLambda: Lambda;
@@ -121,41 +123,46 @@ export class LambdasNestedStack extends NestedStack {
       sentryDsn: props.config.lambdasSentryDSN,
     });
 
-    this.outboundPatientDiscoveryLambda = this.setupOutboundPatientDiscovery({
-      lambdaLayers: props.lambdaLayers,
-      vpc: props.vpc,
-      envType: props.config.environmentType,
-      sentryDsn: props.config.lambdasSentryDSN,
-      alarmAction: props.alarmAction,
-      dbCluster: props.dbCluster,
-      dbCredsSecret: props.dbCredsSecret,
-      // TODO move this to a config
-      maxPollingDuration: Duration.minutes(2),
-    });
+    const cqConfig = props.config.carequality;
+    if (cqConfig) {
+      const cqRoDbCredsSecret = buildSecret(this, cqConfig.roUsername);
 
-    this.outboundDocumentQueryLambda = this.setupOutboundDocumentQuery({
-      lambdaLayers: props.lambdaLayers,
-      vpc: props.vpc,
-      envType: props.config.environmentType,
-      sentryDsn: props.config.lambdasSentryDSN,
-      alarmAction: props.alarmAction,
-      dbCluster: props.dbCluster,
-      dbCredsSecret: props.dbCredsSecret,
-      // TODO move this to a config
-      maxPollingDuration: Duration.minutes(15),
-    });
+      this.outboundPatientDiscoveryLambda = this.setupOutboundPatientDiscovery({
+        lambdaLayers: props.lambdaLayers,
+        vpc: props.vpc,
+        envType: props.config.environmentType,
+        sentryDsn: props.config.lambdasSentryDSN,
+        alarmAction: props.alarmAction,
+        dbCluster: props.dbCluster,
+        dbCredsSecret: cqRoDbCredsSecret,
+        // TODO move this to a config
+        maxPollingDuration: Duration.minutes(2),
+      });
 
-    this.outboundDocumentRetrievalLambda = this.setupOutboundDocumentRetrieval({
-      lambdaLayers: props.lambdaLayers,
-      vpc: props.vpc,
-      envType: props.config.environmentType,
-      sentryDsn: props.config.lambdasSentryDSN,
-      alarmAction: props.alarmAction,
-      dbCluster: props.dbCluster,
-      dbCredsSecret: props.dbCredsSecret,
-      // TODO move this to a config
-      maxPollingDuration: Duration.minutes(15),
-    });
+      this.outboundDocumentQueryLambda = this.setupOutboundDocumentQuery({
+        lambdaLayers: props.lambdaLayers,
+        vpc: props.vpc,
+        envType: props.config.environmentType,
+        sentryDsn: props.config.lambdasSentryDSN,
+        alarmAction: props.alarmAction,
+        dbCluster: props.dbCluster,
+        dbCredsSecret: cqRoDbCredsSecret,
+        // TODO move this to a config
+        maxPollingDuration: Duration.minutes(15),
+      });
+
+      this.outboundDocumentRetrievalLambda = this.setupOutboundDocumentRetrieval({
+        lambdaLayers: props.lambdaLayers,
+        vpc: props.vpc,
+        envType: props.config.environmentType,
+        sentryDsn: props.config.lambdasSentryDSN,
+        alarmAction: props.alarmAction,
+        dbCluster: props.dbCluster,
+        dbCredsSecret: cqRoDbCredsSecret,
+        // TODO move this to a config
+        maxPollingDuration: Duration.minutes(15),
+      });
+    }
 
     const resultNotifierConnector = this.setupConversionResultNotifier({
       vpc: props.vpc,
@@ -716,9 +723,8 @@ export class LambdasNestedStack extends NestedStack {
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
   }): Lambda {
-    const name = "ConsolidatedSearch";
-    const entry = "consolidated-search";
-    const lambdaTimeout = Duration.minutes(3);
+    const { name, lambda: lambdaSettings } = getConsolidatedSearchConnectorSettings();
+    const lambdaEntry = "consolidated-search";
     const {
       lambdaLayers,
       vpc,
@@ -738,8 +744,8 @@ export class LambdasNestedStack extends NestedStack {
     const theLambda = createLambda({
       stack: this,
       name,
-      runtime: lambda.Runtime.NODEJS_20_X,
-      entry,
+      runtime: lambdaSettings.runtime,
+      entry: lambdaEntry,
       envType,
       envVars: {
         // API_URL set on the api-stack after the OSS API is created
@@ -755,8 +761,8 @@ export class LambdasNestedStack extends NestedStack {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared, lambdaLayers.langchain],
-      memory: 4096,
-      timeout: lambdaTimeout,
+      memory: lambdaSettings.memory,
+      timeout: lambdaSettings.timeout,
       isEnableInsights: true,
       vpc,
       alarmSnsAction: alarmAction,

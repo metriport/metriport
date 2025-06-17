@@ -8,7 +8,7 @@ import { toFHIR as patientToFhir } from "@metriport/core/external/fhir/patient/c
 import {
   buildBundleEntry,
   buildCollectionBundle,
-} from "@metriport/core/external/fhir/shared/bundle";
+} from "@metriport/core/external/fhir/bundle/bundle";
 import { dangerouslyDeduplicateFhir } from "@metriport/core/fhir-deduplication/deduplicate-fhir";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { getFileContents, getFileNames, makeDir } from "@metriport/core/util/fs";

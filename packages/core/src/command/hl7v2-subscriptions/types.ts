@@ -36,10 +36,12 @@ export type RosterRowData = {
   authorizingParticipantFacilityCode: string | undefined;
   authorizingParticipantMrn: string | undefined;
   assigningAuthorityIdentifier: string | undefined;
+  lineOfBusiness: string;
+  emptyString: string;
 };
 
-export type MetriportToHieFieldMapping = {
-  [K in keyof RosterRowData]?: string;
+export type HiePatientRosterMapping = {
+  [key: string]: keyof RosterRowData;
 };
 
 export type HieConfig = {
@@ -48,7 +50,7 @@ export type HieConfig = {
   subscriptions: Hl7v2Subscription[];
   cron: string;
   sftpConfig?: SftpConfig;
-  mapping: MetriportToHieFieldMapping;
+  mapping: HiePatientRosterMapping;
 };
 
 export type Hl7v2SubscriberParams = {

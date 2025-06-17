@@ -5,7 +5,10 @@ import { Config } from "@metriport/core/util/config";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { errorToString, MetriportError } from "@metriport/shared";
-import { PatientImportEntryStatusFinal } from "@metriport/shared/domain/patient/patient-import/types";
+import {
+  isPatientImportEntryStatusFinal,
+  PatientImportEntryStatusFinal,
+} from "@metriport/shared/domain/patient/patient-import/types";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { tryToFinishPatientImportJob } from "./finish-job";
@@ -49,11 +52,8 @@ export async function finishSinglePatientImport({
       patientId,
       dataPipelineRequestId,
     });
-    if (!patientImportAndMapping) {
-      // TODO 2330 Remove this on v2
-      log(`Patient import and mapping not found, skipping`);
-      return;
-    }
+    if (!patientImportAndMapping) return;
+
     const { job: patientImport, mapping } = patientImportAndMapping;
     const jobId = patientImport.id;
 
@@ -62,6 +62,12 @@ export async function finishSinglePatientImport({
       jobId,
       rowNumber: mapping.rowNumber,
     });
+
+    if (isPatientImportEntryStatusFinal(patientRecord.status)) {
+      log(`Patient record already finished, skipping`);
+      return;
+    }
+
     await updatePatientRecordOnS3({ patientRecord, status, reasonForDev });
 
     await tryToFinishPatientImportJob({ cxId, jobId, entryStatus: status });

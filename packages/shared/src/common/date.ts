@@ -16,10 +16,26 @@ function isValidISODateOptional(date: string | undefined | null): boolean {
   return date ? isValidISODate(date) : true;
 }
 
-export function validateDateOfBirth(date: string): boolean {
+export type ValidateDobFn = (date: string) => boolean;
+
+export function validateDateOfBirth(
+  date: string,
+  options?: {
+    validateDateIsAfter1900?: ValidateDobFn;
+    validateIsPastOrPresent?: ValidateDobFn;
+  }
+): boolean {
+  if (!date || typeof date !== "string" || !date.trim()) return false;
   const parsedDate = buildDayjs(date);
   if (!parsedDate.isValid()) return false;
-  return validateDateIsAfter1900(parsedDate.format(ISO_DATE));
+  const {
+    validateDateIsAfter1900: _validateDateIsAfter1900 = validateDateIsAfter1900,
+    validateIsPastOrPresent: _validateIsPastOrPresent = validateIsPastOrPresent,
+  } = options || {};
+  return (
+    _validateDateIsAfter1900(parsedDate.format(ISO_DATE)) &&
+    _validateIsPastOrPresent(parsedDate.format(ISO_DATE))
+  );
 }
 
 export function validateIsPastOrPresent(date: string): boolean {
@@ -109,6 +125,38 @@ export function sortDate(
     : buildDayjs(date2).diff(buildDayjs(date1));
 }
 
+/**
+ * Convert to YYYYMMDD or YYYY-MM-DD format
+ * @param date - The date to convert
+ * @param separator - The separator to use between the date components
+ * @returns The date in YYYYMMDD or YYYY-MM-DD format (if separator is "-")
+ */
+export function convertDateToString(
+  date: Date,
+  { separator = "", useUtc = true }: { separator?: string; useUtc?: boolean } = {}
+) {
+  return (useUtc ? dayjs(date).utc() : dayjs(date)).format(["YYYY", "MM", "DD"].join(separator));
+}
+
+/**
+ * Convert to HHMMSS or HHMMSSCC format. Dayjs does not support CC
+ * @param date - The date to convert
+ * @param includeCentisecond - Whether to include the centisecond in the time string
+ * @returns The date in HHMMSS or HHMMSSCC format (if includeCentisecond is true)
+ */
+export function convertDateToTimeString(
+  date: Date,
+  {
+    useUtc = true,
+    includeCentisecond = false,
+  }: { useUtc?: boolean; includeCentisecond?: boolean } = {}
+) {
+  const dayjsDate = useUtc ? dayjs(date).utc() : dayjs(date);
+  if (includeCentisecond) {
+    return dayjsDate.format("HHmmssSSS").substring(0, 8);
+  }
+  return dayjsDate.format("HHmmss");
+}
 /**
  * Validates if timestamp adheres to YYYYMMDDHHMMSS format
  * and is a valid date.

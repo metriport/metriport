@@ -1,21 +1,32 @@
-export type GenderAtBirth = "F" | "M" | "O" | "U";
+import { BadRequestError } from "../error/bad-request";
 
-export function normalizeGenderSafe(gender: string): "F" | "M" | "O" | "U" | undefined {
+export const maleGender = "M";
+export const femaleGender = "F";
+export const otherGender = "O";
+export const unknownGender = "U";
+
+export type GenderAtBirth =
+  | typeof maleGender
+  | typeof femaleGender
+  | typeof otherGender
+  | typeof unknownGender;
+
+export function normalizeGenderSafe(gender: string): GenderAtBirth | undefined {
   const lowerGender = gender.toLowerCase().trim();
   if (lowerGender === "male" || lowerGender === "m") {
-    return "M";
+    return maleGender;
   } else if (lowerGender === "female" || lowerGender === "f") {
-    return "F";
+    return femaleGender;
   } else if (lowerGender === "other" || lowerGender === "un" || lowerGender === "o") {
-    return "O";
+    return otherGender;
   } else if (lowerGender === "unknown" || lowerGender === "unk" || lowerGender === "u") {
-    return "U";
+    return unknownGender;
   }
   return undefined;
 }
 
 export function normalizeGender(gender: string): GenderAtBirth {
   const genderOrUndefined = normalizeGenderSafe(gender);
-  if (!genderOrUndefined) throw new Error("Invalid gender");
+  if (!genderOrUndefined) throw new BadRequestError("Invalid gender", undefined, { gender });
   return genderOrUndefined;
 }

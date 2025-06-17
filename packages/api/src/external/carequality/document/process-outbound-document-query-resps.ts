@@ -2,6 +2,7 @@ import { isCQDirectEnabledForCx } from "@metriport/core/command/feature-flags/do
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { cqExtension } from "@metriport/core/external/carequality/extension";
 import { OutboundDocQueryRespParam } from "@metriport/core/external/carequality/ihe-gateway/outbound-result-poller-direct";
+import { getDocuments } from "@metriport/core/external/fhir/document/get-documents";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { errorToString } from "@metriport/core/util/error/shared";
@@ -35,7 +36,6 @@ import {
 } from "./shared";
 
 const parallelUpsertsToFhir = 10;
-const resultPoller = makeOutboundResultPoller();
 
 export async function processOutboundDocumentQueryResps({
   requestId,
@@ -44,6 +44,8 @@ export async function processOutboundDocumentQueryResps({
   response,
 }: OutboundDocQueryRespParam): Promise<void> {
   const { log } = out(`CQ DR - requestId ${requestId}, patient ${patientId}`);
+
+  const resultPoller = makeOutboundResultPoller();
 
   const interrupt = buildInterrupt({ requestId, patientId, cxId, log });
   if (!resultPoller.isDREnabled()) return interrupt(`IHE DR result poller not available`);
@@ -243,6 +245,8 @@ async function getRespWithDocsToDownload({
   const respWithDocsToDownload: DqRespWithDocRefsWithMetriportId[] = [];
   const seenMetriportIds = new Set<string>();
 
+  const fhirDocRefs = await getDocuments({ cxId, patientId });
+
   await executeAsynchronously(
     response,
     async gwResp => {
@@ -264,7 +268,8 @@ async function getRespWithDocsToDownload({
       const docsToDownload = await getNonExistentDocRefs(
         deduplicatedDocRefsWithMetriportId,
         patientId,
-        cxId
+        cxId,
+        fhirDocRefs
       );
 
       if (docsToDownload.length === 0) {

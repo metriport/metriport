@@ -1,6 +1,6 @@
 import {
-  EhrClientTwoLeggedAuth,
-  EhrClientTwoLeggedAuthParams,
+  EhrClientWithClientCredentials,
+  EhrClientWithClientCredentialsParams,
   EhrEnv,
   EhrEnvAndClientCredentials,
   EhrPerPracticeParams,
@@ -35,9 +35,9 @@ export type GetEnvParams<Env extends EhrEnv, EnvArgs> = {
   getEnv: (params: EnvArgs) => EhrEnvAndClientCredentials<Env>;
 };
 
-export async function createEhrClient<
+export async function createEhrClientWithClientCredentials<
   Env extends EhrEnv,
-  Client extends EhrClientTwoLeggedAuth,
+  Client extends EhrClientWithClientCredentials,
   EnvArgs = undefined
 >({
   cxId,
@@ -48,7 +48,7 @@ export async function createEhrClient<
 }: EhrPerPracticeParams & {
   source: EhrClientJwtTokenSource;
   getEnv: GetEnvParams<Env, EnvArgs>;
-  getClient: (params: EhrClientTwoLeggedAuthParams<Env>) => Promise<Client>;
+  getClient: (params: EhrClientWithClientCredentialsParams<Env>) => Promise<Client>;
 }): Promise<{ client: Client; tokenId: string; environment: Env }> {
   const [environment, twoLeggedAuthTokenInfo] = await Promise.all([
     getEnv.getEnv(getEnv.params),

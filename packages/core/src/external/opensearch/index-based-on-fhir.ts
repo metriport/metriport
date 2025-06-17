@@ -7,6 +7,7 @@ export type FhirIndexFields = {
   patientId: string;
   resourceType: string;
   resourceId: string;
+  ingestedAt?: string; // TODO ENG-403 make this required after we ship this and migrate past pts
   [contentFieldName]: string;
   [rawContentFieldName]: string;
 };

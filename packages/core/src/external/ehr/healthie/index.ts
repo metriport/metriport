@@ -1,4 +1,5 @@
 import { MetriportError, NotFoundError, sleep } from "@metriport/shared";
+import { normalizeGenderSafe, unknownGender } from "@metriport/shared/domain/gender";
 import {
   AppointmentGetResponseGraphql,
   appointmentGetResponseGraphqlSchema,
@@ -41,6 +42,7 @@ interface HealthieApiConfig
 }
 
 const healthieDateFormat = "YYYY-MM-DD";
+const defaultCountOrLimit = 1000;
 
 const healthieEnv = ["api", "staging-api"] as const;
 export type HealthieEnv = (typeof healthieEnv)[number];
@@ -125,7 +127,7 @@ class HealthieApi {
     if (!patientGraphql.data.user) {
       throw new NotFoundError("Patient not found", undefined, additionalInfo);
     }
-    return patientGraphql.data.user;
+    return this.formatPatient(patientGraphql.data.user);
   }
 
   async getPatientQuickNotes({
@@ -250,7 +252,7 @@ class HealthieApi {
           endDate: $endDate
           order_by: CREATED_AT_ASC
           should_paginate: true
-          page_size: 1000
+          page_size: ${defaultCountOrLimit}
           is_active: true
           is_org: true
           ${cursor ? `after: $after` : ""}
@@ -270,7 +272,7 @@ class HealthieApi {
         endDate: api.formatDate(endAppointmentDate.toISOString()) ?? "",
         ...(cursor ? { after: cursor } : {}),
       };
-      await sleep(paginateWaitTime);
+      await sleep(paginateWaitTime.asMilliseconds());
       const appointmentListResponseGraphql = await api.makeRequest<AppointmentListResponseGraphql>({
         cxId,
         s3Path: "appointments",
@@ -289,7 +291,12 @@ class HealthieApi {
         appointment => {
           const attendee = appointment.attendees[0];
           if (!attendee) return [];
-          return [{ ...appointment, attendees: [attendee], cursor: appointment.cursor }];
+          return [
+            {
+              ...appointment,
+              attendees: [attendee, ...appointment.attendees.slice(1)],
+            },
+          ];
         }
       );
       acc.push(...appointmentsWithAttendees);
@@ -345,7 +352,7 @@ class HealthieApi {
     if (!appointment) throw new NotFoundError("Appointment not found", undefined, additionalInfo);
     const attendee = appointment.attendees[0];
     if (!attendee) return undefined;
-    return { ...appointment, attendees: [attendee] };
+    return { ...appointment, attendees: [attendee, ...appointment.attendees.slice(1)] };
   }
 
   async getSubscriptions({ cxId }: { cxId: string }): Promise<Subscription[]> {
@@ -495,6 +502,13 @@ class HealthieApi {
 
   private formatDate(date: string | undefined): string | undefined {
     return formatDate(date, healthieDateFormat);
+  }
+
+  private formatPatient(patient: Patient): Patient {
+    return {
+      ...patient,
+      gender: patient.gender ? normalizeGenderSafe(patient.gender) ?? unknownGender : unknownGender,
+    };
   }
 }
 

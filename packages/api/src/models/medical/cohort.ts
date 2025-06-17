@@ -1,4 +1,4 @@
-import { Cohort, CohortAssignment, MonitoringSettings } from "@metriport/core/domain/cohort";
+import { Cohort, PatientCohort, MonitoringSettings } from "@metriport/core/domain/cohort";
 import { DataTypes, Sequelize } from "sequelize";
 import { BaseModel, BaseModelNoId, ModelSetup } from "../_default";
 
@@ -8,7 +8,6 @@ export class CohortModel extends BaseModel<CohortModel> implements Cohort {
   declare cxId: string;
   declare name: string;
   declare monitoring?: MonitoringSettings;
-  declare otherSettings?: Record<string, unknown>;
 
   static override attributes() {
     return {
@@ -22,9 +21,6 @@ export class CohortModel extends BaseModel<CohortModel> implements Cohort {
         allowNull: false,
       },
       monitoring: {
-        type: DataTypes.JSONB,
-      },
-      otherSettings: {
         type: DataTypes.JSONB,
       },
     };
@@ -44,9 +40,6 @@ export class CohortModel extends BaseModel<CohortModel> implements Cohort {
         monitoring: {
           type: DataTypes.JSONB,
         },
-        otherSettings: {
-          type: DataTypes.JSONB,
-        },
       },
       {
         ...BaseModel.modelOptions(sequelize),
@@ -56,10 +49,7 @@ export class CohortModel extends BaseModel<CohortModel> implements Cohort {
   };
 }
 
-export class CohortAssignmentModel
-  extends BaseModelNoId<CohortAssignmentModel>
-  implements CohortAssignment
-{
+export class PatientCohortModel extends BaseModelNoId<PatientCohortModel> implements PatientCohort {
   static NAME = "patient_cohort";
 
   declare patientId: string;
@@ -101,9 +91,9 @@ export class CohortAssignmentModel
   }
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
-    CohortAssignmentModel.init(
-      CohortAssignmentModel.attributes(),
-      CohortAssignmentModel.modelOptions(sequelize)
+    PatientCohortModel.init(
+      PatientCohortModel.attributes(),
+      PatientCohortModel.modelOptions(sequelize)
     );
   };
 }

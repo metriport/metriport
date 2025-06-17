@@ -36,6 +36,9 @@ type GetConsolidatedPatientData = {
   forceDataFromFhir?: boolean;
 };
 
+/**
+ * Get the consolidated file from S3, no logic to create when not exists.
+ */
 export async function getConsolidatedFile({
   cxId,
   patientId,

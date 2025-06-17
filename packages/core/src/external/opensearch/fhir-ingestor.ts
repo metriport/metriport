@@ -1,5 +1,6 @@
 import { Resource } from "@medplum/fhirtypes";
 import { MetriportError } from "@metriport/shared";
+import { buildDayjs } from "@metriport/shared/common/date";
 import { Client } from "@opensearch-project/opensearch";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -265,6 +266,7 @@ function resourceToIndexField({
     resourceId,
     content: content,
     rawContent: JSON.stringify(resource),
+    ingestedAt: buildDayjs().toISOString(),
   };
   return document;
 }

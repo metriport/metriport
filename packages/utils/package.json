@@ -1,6 +1,6 @@
 {
   "name": "utils",
-  "version": "1.25.7",
+  "version": "1.25.8",
   "description": "",
   "private": true,
   "scripts": {
@@ -24,7 +24,8 @@
     "create-medical-records": "ts-node src/customer-requests/medical-records-create",
     "get-consolidated": "ts-node src/customer-requests/get-consolidated",
     "download-docs": "ts-node src/customer-requests/download-docs",
-    "mock-ihe-gateway": "ts-node src/carequality/mock-ihe-gateway",
+    "surescripts": "ts-node src/surescripts/index.ts",
+    "mock-ihe-gateway": "ts-node src/saml/mock-ihe-gateway",
     "integration-test-and-compare-total-resource-counts": "bash src/fhir-converter/scripts/run_integration_and_compare.sh",
     "compare-total-resource-counts": "bash src/fhir-converter/scripts/compare_total_resource_counts.sh",
     "compare-resource-counts-per-file": "bash src/fhir-converter/scripts/compare_resource_counts_per_file.sh",

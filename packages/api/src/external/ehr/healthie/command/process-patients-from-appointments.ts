@@ -1,5 +1,6 @@
+import { AppointmentMethods } from "@metriport/core/external/ehr/command/get-appointments/ehr-get-appointments";
+import { buildEhrGetAppointmentsHandler } from "@metriport/core/external/ehr/command/get-appointments/ehr-get-appointments-factory";
 import { buildEhrSyncPatientHandler } from "@metriport/core/external/ehr/command/sync-patient/ehr-sync-patient-factory";
-import HealthieApi from "@metriport/core/external/ehr/healthie";
 import { buildHealthieLinkPatientHandler } from "@metriport/core/external/ehr/healthie/command/link-patient/healthie-link-patient-factory";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { out } from "@metriport/core/util/log";
@@ -24,7 +25,7 @@ import {
   parallelPatients,
   parallelPractices,
 } from "../../shared/utils/appointment";
-import { createHealthieClient, LookupMode, LookupModes } from "../shared";
+import { LookupMode, LookupModes } from "../shared";
 import {
   SyncHealthiePatientIntoMetriportParams,
   UpdateHealthiePatientQuickNotesParams,
@@ -175,17 +176,18 @@ async function getAppointments({
   const { log } = out(
     `Healthie getAppointments - cxId ${cxId} practiceId ${practiceId} lookupMode ${lookupMode}`
   );
-  const api = await createHealthieClient({ cxId, practiceId });
   try {
     const appointments = await getAppointmentsFromApi({
-      api,
       cxId,
+      practiceId,
       lookupMode,
       log,
     });
     return {
-      appointments: appointments.map(appointment => {
-        return { cxId, practiceId, patientId: appointment.attendees[0].id };
+      appointments: appointments.flatMap(appointment => {
+        return appointment.attendees.map(attendee => {
+          return { cxId, practiceId, patientId: attendee.id };
+        });
       }),
     };
   } catch (error) {
@@ -195,26 +197,31 @@ async function getAppointments({
   }
 }
 
-type GetAppointmentsFromApiParams = Omit<GetAppointmentsParams, "practiceId"> & {
-  api: HealthieApi;
+type GetAppointmentsFromApiParams = GetAppointmentsParams & {
   log: typeof console.log;
 };
 
 async function getAppointmentsFromApi({
-  api,
   cxId,
+  practiceId,
   lookupMode,
   log,
 }: GetAppointmentsFromApiParams): Promise<AppointmentWithAttendee[]> {
+  const handler = buildEhrGetAppointmentsHandler();
+  const handlerParams = {
+    cxId,
+    practiceId,
+  };
   if (lookupMode === LookupModes.Appointments) {
     const { startRange, endRange } = getLookForwardTimeRange({
       lookForward: appointmentsLookForward,
     });
     log(`Getting appointments from ${startRange} to ${endRange}`);
-    return await api.getAppointments({
-      cxId,
-      startAppointmentDate: startRange,
-      endAppointmentDate: endRange,
+    return await handler.getAppointments({
+      ...handlerParams,
+      method: AppointmentMethods.healthieGetAppointments,
+      fromDate: startRange,
+      toDate: endRange,
     });
   }
   if (lookupMode === LookupModes.Appointments48hr) {
@@ -223,10 +230,11 @@ async function getAppointmentsFromApi({
       offset: oneDayOffset,
     });
     log(`Getting appointments from ${startRange} to ${endRange}`);
-    return await api.getAppointments({
-      cxId,
-      startAppointmentDate: startRange,
-      endAppointmentDate: endRange,
+    return await handler.getAppointments({
+      ...handlerParams,
+      method: AppointmentMethods.healthieGetAppointments,
+      fromDate: startRange,
+      toDate: endRange,
     });
   }
   throw new MetriportError("Invalid lookup mode @ Healthie", undefined, { cxId, lookupMode });
