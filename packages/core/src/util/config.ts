@@ -299,9 +299,6 @@ export class Config {
     return getEnvVar("EHR_ECLINICALWORKS_ENVIRONMENT");
   }
 
-  static triggerPatientJobsLambdaName(): string {
-    return getEnvVarOrFail("TRIGGER_PATIENT_JOBS_LAMBDA_NAME");
-  }
   static getRunPatientJobQueueUrl(): string {
     return getEnvVarOrFail("RUN_PATIENT_JOB_QUEUE_URL");
   }

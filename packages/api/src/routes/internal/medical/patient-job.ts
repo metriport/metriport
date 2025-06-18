@@ -64,7 +64,7 @@ router.get(
       patientId,
       jobType,
       jobGroupId,
-      status: status as JobStatus,
+      status: status ? (status as JobStatus) : undefined,
       scheduledAfter: scheduledAfter ? buildDayjs(scheduledAfter).toDate() : undefined,
       scheduledBefore: scheduledBefore ? buildDayjs(scheduledBefore).toDate() : undefined,
     });
@@ -92,21 +92,21 @@ router.post(
     const scheduledBefore = validateISODateOrDateTime(
       getFrom("query").optional("scheduledBefore", req)
     );
-    const cxId = getFromQuery("cxId", req);
-    const patientId = getFromQuery("patientId", req);
-    const jobType = getFromQuery("jobType", req);
-    const jobGroupId = getFromQuery("jobGroupId", req);
     const status = getFromQuery("status", req);
     if (status && !isValidJobStatus(status)) {
       throw new BadRequestError("Status must be a valid job status");
     }
+    const cxId = getFromQuery("cxId", req);
+    const patientId = getFromQuery("patientId", req);
+    const jobType = getFromQuery("jobType", req);
+    const jobGroupId = getFromQuery("jobGroupId", req);
     await startJobs({
       scheduledBefore: scheduledBefore ? buildDayjs(scheduledBefore).toDate() : undefined,
+      status: status ? (status as JobStatus) : undefined,
       cxId,
       patientId,
       jobType,
       jobGroupId,
-      status: status as JobStatus,
     });
     return res.sendStatus(httpStatus.OK);
   })
