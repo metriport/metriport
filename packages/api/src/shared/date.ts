@@ -45,7 +45,7 @@ export function parseISODate(date?: string): string | undefined {
   return date;
 }
 
-export function parseISODateOrDateTime(date?: string): string | undefined {
+export function validateISODateOrDateTime(date?: string): string | undefined {
   if (!date) return undefined;
   if (date.length === 10 && isValidISODateShared(date)) return date;
   if (date.length === 24 && isValidISODateTime(date)) return date;

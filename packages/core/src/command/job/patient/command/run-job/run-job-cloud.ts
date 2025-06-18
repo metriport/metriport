@@ -1,7 +1,7 @@
 import { executeWithNetworkRetries } from "@metriport/shared";
 import { createUuidFromText } from "@metriport/shared/common/uuid";
-import { SQSClient } from "../../../../../../../external/aws/sqs";
-import { Config } from "../../../../../../../util/config";
+import { SQSClient } from "../../../../../external/aws/sqs";
+import { Config } from "../../../../../util/config";
 import { RunJobHandler, RunJobRequest } from "./run-job";
 
 export class RunJobCloud implements RunJobHandler {

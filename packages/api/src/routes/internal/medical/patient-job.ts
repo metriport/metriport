@@ -18,7 +18,7 @@ import { initializePatientJob } from "../../../command/job/patient/status/initia
 import { setPatientJobEntryStatus } from "../../../command/job/patient/update/set-entry-status";
 import { updatePatientJobRuntimeData } from "../../../command/job/patient/update/update-runtime-data";
 import { updatePatientJobTotal } from "../../../command/job/patient/update/update-total";
-import { parseISODateOrDateTime } from "../../../shared/date";
+import { validateISODateOrDateTime } from "../../../shared/date";
 import { requestLogger } from "../../helpers/request-logger";
 import { getUUIDFrom } from "../../schemas/uuid";
 import { asyncHandler, getFrom, getFromQuery, getFromQueryOrFail } from "../../util";
@@ -47,8 +47,10 @@ router.get(
     const jobType = getFromQuery("jobType", req);
     const jobGroupId = getFromQuery("jobGroupId", req);
     const status = getFromQuery("status", req);
-    const scheduledAfter = parseISODateOrDateTime(getFrom("query").optional("scheduledAfter", req));
-    const scheduledBefore = parseISODateOrDateTime(
+    const scheduledAfter = validateISODateOrDateTime(
+      getFrom("query").optional("scheduledAfter", req)
+    );
+    const scheduledBefore = validateISODateOrDateTime(
       getFrom("query").optional("scheduledBefore", req)
     );
     if (scheduledAfter && scheduledBefore && scheduledAfter > scheduledBefore) {
@@ -87,7 +89,7 @@ router.post(
   "/scheduler/start",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    const scheduledBefore = parseISODateOrDateTime(
+    const scheduledBefore = validateISODateOrDateTime(
       getFrom("query").optional("scheduledBefore", req)
     );
     const cxId = getFromQuery("cxId", req);

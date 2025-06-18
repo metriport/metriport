@@ -1,4 +1,4 @@
-import { Config } from "../../../../../../../util/config";
+import { Config } from "../../../../../util/config";
 import { RunJobHandler } from "./run-job";
 import { RunJobCloud } from "./run-job-cloud";
 import { RunJobDirect } from "./run-job-direct";

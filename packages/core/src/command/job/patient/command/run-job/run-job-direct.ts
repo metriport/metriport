@@ -1,4 +1,4 @@
-import { runJob } from "../../../../api/run-job";
+import { runJob } from "../../api/run-job";
 import { RunJobHandler, RunJobRequest } from "./run-job";
 
 export class RunJobDirect implements RunJobHandler {
