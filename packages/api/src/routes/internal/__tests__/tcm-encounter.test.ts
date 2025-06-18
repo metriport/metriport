@@ -1,13 +1,22 @@
+// At the very top, before any imports that use the model:
+jest.mock("../../../models/medical/tcm-encounter", () => ({
+  TcmEncounterModel: {
+    create: jest.fn(),
+  },
+}));
+
 import { faker } from "@faker-js/faker";
-import { NextFunction, Request, Response } from "express";
+import { Request, Response } from "express";
 import httpStatus from "http-status";
+import { ZodError } from "zod";
 import { mockStartTransaction } from "../../../models/__tests__/transaction";
 import { makeTcmEncounterModel } from "../../../models/medical/__tests__/tcm-encounter";
 import { TcmEncounterModel } from "../../../models/medical/tcm-encounter";
-import { TcmEncounterCreate } from "../../medical/schemas/tcm-encounter";
-import router from "../medical/tcm-encounter";
-
-jest.mock("../../../models/medical/tcm-encounter");
+import {
+  TcmEncounterCreateInput,
+  tcmEncounterCreateSchema,
+} from "../../medical/schemas/tcm-encounter";
+import { createTcmEncounter } from "../medical/tcm-encounter";
 
 describe("Internal TCM Encounter Routes", () => {
   const mockRequest = (
@@ -30,8 +39,6 @@ describe("Internal TCM Encounter Routes", () => {
     return res;
   };
 
-  const mockNext: NextFunction = jest.fn();
-
   beforeEach(() => {
     jest.clearAllMocks();
     jest.restoreAllMocks();
@@ -39,7 +46,7 @@ describe("Internal TCM Encounter Routes", () => {
   });
 
   describe("POST /internal/tcm/encounter", () => {
-    const validCreatePayload: TcmEncounterCreate = {
+    const validCreatePayload: TcmEncounterCreateInput = {
       cxId: faker.string.uuid(),
       patientId: faker.string.uuid(),
       facilityName: faker.company.name(),
@@ -56,56 +63,36 @@ describe("Internal TCM Encounter Routes", () => {
 
       const mockEncounter = makeTcmEncounterModel({
         id: faker.string.uuid(),
-        cxId: validCreatePayload.cxId,
-        patientId: validCreatePayload.patientId,
-        facilityName: validCreatePayload.facilityName,
-        latestEvent: validCreatePayload.latestEvent,
-        class: validCreatePayload.class,
-        admitTime: new Date(validCreatePayload.admitTime),
+        ...validCreatePayload,
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        admitTime: new Date(validCreatePayload.admitTime!),
         dischargeTime: null,
-        clinicalInformation: validCreatePayload.clinicalInformation,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
 
       (TcmEncounterModel.create as jest.Mock).mockResolvedValueOnce(mockEncounter);
 
-      const route = router.stack.find(layer => layer.route?.path === "/");
-      const handler = route?.route?.stack[0].handle;
-
-      await handler(req, res, mockNext);
+      await createTcmEncounter(req, res);
 
       expect(TcmEncounterModel.create).toHaveBeenCalledWith({
         id: expect.any(String),
-        cxId: validCreatePayload.cxId,
-        patientId: validCreatePayload.patientId,
-        facilityName: validCreatePayload.facilityName,
-        latestEvent: validCreatePayload.latestEvent,
-        class: validCreatePayload.class,
-        admitTime: expect.any(Date),
-        dischargeTime: null,
-        clinicalInformation: validCreatePayload.clinicalInformation,
+        ...tcmEncounterCreateSchema.parse(validCreatePayload),
       });
       expect(res.status).toHaveBeenCalledWith(httpStatus.CREATED);
       expect(res.json).toHaveBeenCalledWith(mockEncounter);
     });
 
     it("validates required fields", async () => {
-      const req = mockRequest({});
+      const invalidCreatePayload = {
+        ...validCreatePayload,
+        cxId: undefined,
+      };
+
+      const req = mockRequest(invalidCreatePayload);
       const res = mockResponse();
 
-      // Get the route handler from the router stack
-      const route = router.stack.find(layer => layer.route?.path === "/");
-      const handler = route?.route?.stack[0].handle;
-
-      await handler(req, res, mockNext);
-
-      expect(res.status).toHaveBeenCalledWith(httpStatus.BAD_REQUEST);
-      expect(res.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          message: expect.stringContaining("Required"),
-        })
-      );
+      await expect(createTcmEncounter(req, res)).rejects.toThrow(ZodError);
     });
   });
 });

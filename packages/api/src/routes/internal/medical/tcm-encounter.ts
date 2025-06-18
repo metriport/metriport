@@ -8,6 +8,7 @@ import { tcmEncounterCreateSchema } from "../../medical/schemas/tcm-encounter";
 import { asyncHandler } from "../../util";
 
 const router = Router();
+router.post("/", requestLogger, asyncHandler(createTcmEncounter));
 
 /** ---------------------------------------------------------------------------
  * POST /internal/tcm/encounter
@@ -17,17 +18,13 @@ const router = Router();
  * @param req.body - The TCM encounter data to create.
  * @returns The created TCM encounter.
  */
-router.post(
-  "/",
-  requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    const data = tcmEncounterCreateSchema.parse(req.body);
-    const encounter = await TcmEncounterModel.create({
-      ...data,
-      id: uuidv4(),
-    });
-    return res.status(httpStatus.CREATED).json(encounter);
-  })
-);
+export async function createTcmEncounter(req: Request, res: Response) {
+  const data = tcmEncounterCreateSchema.parse(req.body);
+  const encounter = await TcmEncounterModel.create({
+    ...data,
+    id: uuidv4(),
+  });
+  return res.status(httpStatus.CREATED).json(encounter);
+}
 
 export default router;
