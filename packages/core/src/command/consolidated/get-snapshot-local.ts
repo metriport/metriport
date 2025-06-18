@@ -10,7 +10,7 @@ import { SearchSetBundle } from "@metriport/shared/medical";
 import axios from "axios";
 import { getConsolidatedQueryByRequestId, Patient } from "../../domain/patient";
 import { analyticsAsync, EventTypes } from "../../external/analytics/posthog";
-import { buildBundleEntry } from "../../external/fhir/bundle/bundle";
+import { addEntriesToBundle, buildBundleEntry } from "../../external/fhir/bundle/bundle";
 import { checkBundle } from "../../external/fhir/bundle/qa";
 import { removeContainedResources, removeResources } from "../../external/fhir/bundle/remove";
 import { getConsolidatedFhirBundle as getConsolidatedFromFhirServer } from "../../external/fhir/consolidated/consolidated";
@@ -204,12 +204,6 @@ function replacePatient({ bundle, patient }: { bundle: Bundle; patient: Patient 
   const bundleWithoutPatient = removeResources({ bundle, shouldRemove: isPatient });
   const fhirPatient = patientToFhir(patient);
   const patientEntry = buildBundleEntry(fhirPatient);
-  const entries = [patientEntry, ...(bundleWithoutPatient.entry ?? [])];
-  const newBundle = {
-    ...bundle,
-    total: entries.length,
-    entry: entries,
-  };
-
+  const newBundle = addEntriesToBundle(bundleWithoutPatient, [patientEntry]);
   return newBundle;
 }
