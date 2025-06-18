@@ -192,7 +192,7 @@ async function getConversions({
         log(`No valid bundle found in ${bucket}/${key}, skipping`);
         return;
       }
-      dangerouslyAddEntriesToBundle(mergedBundle, singleConversion.entry ?? []);
+      dangerouslyAddEntriesToBundle(mergedBundle, singleConversion.entry);
     },
     { numberOfParallelExecutions }
   );

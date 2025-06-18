@@ -120,7 +120,7 @@ async function createOrGetBundles(createBundle: boolean, patientId?: string) {
       console.log(`No valid bundle found in ${filePath}, skipping`);
       return;
     }
-    dangerouslyAddEntriesToBundle(mergedBundle, singleConversion.entry ?? []);
+    dangerouslyAddEntriesToBundle(mergedBundle, singleConversion.entry);
   });
 
   const conversions = mergedBundle.entry ?? [];

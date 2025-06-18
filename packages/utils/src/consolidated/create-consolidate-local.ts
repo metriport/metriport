@@ -3,8 +3,8 @@ dotenv.config();
 // keep that ^ on top
 import { Bundle, BundleEntry, Patient } from "@medplum/fhirtypes";
 import {
-  addEntriesToBundle,
   buildCollectionBundle,
+  dangerouslyAddEntriesToBundle,
 } from "@metriport/core/external/fhir/bundle/bundle";
 import { dangerouslyDeduplicate } from "@metriport/core/external/fhir/consolidated/deduplicate";
 import { normalize } from "@metriport/core/external/fhir/consolidated/normalize";
@@ -75,7 +75,7 @@ export async function createConsolidatedFromLocal(
         console.log(`No valid bundle found in ${filePath}, skipping`);
         return;
       }
-      addEntriesToBundle(bundle, singleConversion.entry ?? []);
+      dangerouslyAddEntriesToBundle(bundle, singleConversion.entry);
     },
     { numberOfParallelExecutions: 10 }
   );
