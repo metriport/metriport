@@ -16,12 +16,14 @@ export function getMedicationRequest(
   const medicationReference = getMedicationReference(medication);
   const dosageInstruction = getDosageInstruction(detail);
   const authoredOn = getAuthoredOn(detail);
+  const category = getDispenseCategory(detail);
   const extension = [getSurescriptsDataSourceExtension()];
 
   return {
     resourceType: "MedicationRequest",
     id: uuidv7(),
     medicationReference,
+    ...(category ? { category } : undefined),
     ...(authoredOn ? { authoredOn } : undefined),
     ...(dispenseRequest ? { dispenseRequest } : undefined),
     ...(dosageInstruction ? { dosageInstruction } : undefined),
@@ -37,6 +39,21 @@ function getDispenseRequest(
     return { numberOfRepeatsAllowed: detail.fillNumber };
   }
   return undefined;
+}
+
+function getDispenseCategory(detail: ResponseDetail): MedicationRequest["category"] | undefined {
+  if (!detail.pharmacyNpiNumber) return undefined;
+
+  return [
+    {
+      coding: [
+        {
+          system: "http://terminology.hl7.org/CodeSystem/medicationrequest-category",
+          code: "outpatient",
+        },
+      ],
+    },
+  ];
 }
 
 function getAuthoredOn(detail: ResponseDetail): MedicationRequest["authoredOn"] | undefined {
