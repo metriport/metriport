@@ -5,6 +5,7 @@ import { TcmEncounterModel } from "../../../models/medical/tcm-encounter";
 import { requestLogger } from "../../helpers/request-logger";
 import { asyncHandler } from "../../util";
 import { tcmEncounterCreateSchema } from "../../medical/schemas/tcm-encounter";
+import { v4 as uuidv4 } from "uuid";
 
 const router = Router();
 
@@ -22,12 +23,13 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const data = tcmEncounterCreateSchema.parse(req.body);
     const encounter = await TcmEncounterModel.create({
+      id: uuidv4(),
       cxId: req.cxId ?? "",
       patientId: data.patientId,
       facilityName: data.facilityName,
       latestEvent: data.latestEvent,
       class: data.class,
-      admitTime: new Date(data.admitTime),
+      admitTime: data.admitTime ? new Date(data.admitTime) : undefined,
       dischargeTime: data.dischargeTime ? new Date(data.dischargeTime) : null,
       clinicalInformation: data.clinicalInformation,
     });
