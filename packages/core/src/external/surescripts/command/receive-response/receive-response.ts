@@ -1,5 +1,5 @@
-import { SurescriptsFileIdentifier } from "../../types";
+import { SurescriptsJob } from "../../types";
 
 export interface SurescriptsReceiveResponseHandler {
-  receiveResponse({ transmissionId, populationId }: SurescriptsFileIdentifier): Promise<void>;
+  receiveResponse(job: SurescriptsJob): Promise<void>;
 }

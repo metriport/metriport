@@ -9,10 +9,11 @@ export type SftpAction =
   | SftpReadAction
   | SftpWriteAction
   | SftpListAction
+  | SftpSyncAction
   | SftpExistsAction;
 
 export interface SftpBaseAction {
-  type: "connect" | "read" | "write" | "list" | "exists";
+  type: "connect" | "read" | "write" | "list" | "exists" | "sync";
 }
 
 export type SftpActionResult<A extends SftpBaseAction> = SftpBaseAction extends A
@@ -24,6 +25,8 @@ export type SftpActionResult<A extends SftpBaseAction> = SftpBaseAction extends 
   : A extends { type: "write" }
   ? undefined
   : A extends { type: "list" }
+  ? string[]
+  : A extends { type: "sync" }
   ? string[]
   : A extends { type: "exists" }
   ? boolean
@@ -52,6 +55,11 @@ export interface SftpListAction extends SftpBaseAction {
   remotePath: string;
   prefix?: string;
   contains?: string;
+}
+
+export interface SftpSyncAction extends SftpBaseAction {
+  type: "sync";
+  remotePath: string;
 }
 
 export interface SftpExistsAction extends SftpBaseAction {

@@ -132,6 +132,12 @@ export class SftpClient implements SftpClientImpl {
     this.connected = false;
   }
 
+  /**
+   * Reads a file from the SFTP server
+   * @param remotePath - The remote path to read the file from
+   * @param decompress - Whether to decompress the file with gzip
+   * @returns The binary content of the file
+   */
   async read(
     remotePath: string,
     { decompress = false, overrideReplica = true }: SftpReadOptions = {}
@@ -162,6 +168,12 @@ export class SftpClient implements SftpClientImpl {
     return content;
   }
 
+  /**
+   * Writes a file to the SFTP server
+   * @param remotePath - The remote path to write the file to
+   * @param content - The binary content to write
+   * @param compress - Whether to compress the file with gzip
+   */
   async write(
     remotePath: string,
     content: Buffer,
@@ -188,6 +200,12 @@ export class SftpClient implements SftpClientImpl {
     }
   }
 
+  /**
+   * Lists the files in a directory in the SFTP server
+   * @param remotePath - The remote path to list
+   * @param filter - Optional filter to apply to the files
+   * @returns The list of file names
+   */
   async list(remotePath: string, filter?: SftpListFilterFunction): Promise<string[]> {
     this.log(`Listing files in ${remotePath}`);
     const fileNames: string[] = await this.executeWithSshListeners(async function (client) {
@@ -197,6 +215,39 @@ export class SftpClient implements SftpClientImpl {
 
     this.log(`Found ${fileNames.length} files in ${remotePath}.`);
     return fileNames;
+  }
+
+  /**
+   * Syncs a directory in the SFTP server to the corresponding replica directory.
+   *
+   * @param remotePath - The remote path to sync.
+   * @returns The list of file names that were synced.
+   */
+  async sync(remotePath: string): Promise<string[]> {
+    if (!this.replica) {
+      throw new BadRequestError("Replica not set", undefined, {
+        context: "sftp.client.sync",
+      });
+    }
+    const replicaDirectory = this.replica.getReplicaPath(remotePath);
+    this.log(`Syncing files in ${remotePath} to replica at ${replicaDirectory}`);
+
+    const sftpFileNames = await this.list(remotePath);
+    const replicaFileNamesWithPath = await this.replica.listFileNames(replicaDirectory);
+    const replicaDirectoryLength = replicaDirectory.length + 1;
+    const existingReplicaFileNames = new Set(
+      replicaFileNamesWithPath.map(fileName => fileName.substring(replicaDirectoryLength))
+    );
+
+    const filesSynced: string[] = [];
+    for (const sftpFileName of sftpFileNames) {
+      if (!existingReplicaFileNames.has(sftpFileName)) {
+        this.log(`File ${sftpFileName} does not exist in replica, syncing...`);
+        await this.read(`${remotePath}/${sftpFileName}`);
+        filesSynced.push(sftpFileName);
+      }
+    }
+    return filesSynced;
   }
 
   async exists(remotePath: string): Promise<boolean> {
@@ -213,6 +264,10 @@ export class SftpClient implements SftpClientImpl {
 
   protected debug(message: string, ...optionalParams: unknown[]): void {
     this.logger.debug(message, ...optionalParams);
+  }
+
+  getReplica(): SftpReplica | undefined {
+    return this.replica;
   }
 }
 
