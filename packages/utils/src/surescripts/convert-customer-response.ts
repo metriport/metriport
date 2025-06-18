@@ -5,6 +5,7 @@ dotenv.config();
 import { Command } from "commander";
 import { SurescriptsConvertPatientResponseHandlerDirect } from "@metriport/core/external/surescripts/command/convert-patient-response/convert-patient-response-direct";
 import { getTransmissionsFromCsv } from "./shared";
+import { buildLatestConversionBundleFileName } from "@metriport/core/external/surescripts/file/file-names";
 
 const program = new Command();
 
@@ -22,7 +23,7 @@ program
   .option("--facility-id <facilityId>", "The facility ID")
   .option("--csv-data <csvData>", "The CSV data")
   .option("--start <start>", "Start at index")
-  .option("--end <end> end before index")
+  .option("--end <end>", "end before index")
   .description("Converts a customer response to FHIR bundles")
   .showHelpAfterError()
   .version("1.0.0")
@@ -54,6 +55,7 @@ program
         transmissionId,
         populationId: patientId,
       });
+      console.log(`Key: ${buildLatestConversionBundleFileName(cxId, patientId)}`);
       convertedCount++;
       if (convertedCount % 100 === 0) {
         console.log(`Converted ${convertedCount} patients`);

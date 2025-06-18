@@ -28,7 +28,7 @@ export function buildConversionBundleFileNameForJob({
   patientId: string;
   jobId: string;
 }): string {
-  return `cxId=${cxId}/ptId=${patientId}/surescripts/jobId=${jobId}/conversion.json`;
+  return `surescripts/cxId=${cxId}/ptId=${patientId}/jobId=${jobId}/conversion.json`;
 }
 
 export function parseHistoryFileName(remoteFileName: string):
