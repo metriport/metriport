@@ -40,7 +40,7 @@ function createQueryByParameter(request: InboundPatientDiscoveryReq): object {
       livingSubjectBirthTime: patientResource.birthDate
         ? {
             value: {
-              "@_value": patientResource.birthDate,
+              "@_value": patientResource.birthDate.replace(/-/g, ""),
             },
             semanticsText: "LivingSubject.birthTime",
           }
@@ -139,7 +139,7 @@ function createSubjectAndRegistrationEvent(response: InboundPatientDiscoveryResp
               "@_code": mapFhirToMetriportGender(patientResource.gender),
             },
             birthTime: {
-              "@_value": patientResource.birthDate,
+              "@_value": patientResource.birthDate.replace(/-/g, ""),
             },
             addr: patientResource.address?.map(a => ({
               streetAddressLine: a.line?.join(", "),
