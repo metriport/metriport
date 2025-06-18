@@ -5,7 +5,7 @@ import { mockStartTransaction } from "../../../models/__tests__/transaction";
 import { makeTcmEncounterModel } from "../../../models/medical/__tests__/tcm-encounter";
 import { TcmEncounterModel } from "../../../models/medical/tcm-encounter";
 import { TcmEncounterCreate } from "../../medical/schemas/tcm-encounter";
-import router from "../tcm-encounter";
+import router from "../medical/tcm-encounter";
 
 jest.mock("../../../models/medical/tcm-encounter");
 
@@ -70,7 +70,6 @@ describe("Internal TCM Encounter Routes", () => {
 
       (TcmEncounterModel.create as jest.Mock).mockResolvedValueOnce(mockEncounter);
 
-      // Get the route handler from the router stack
       const route = router.stack.find(layer => layer.route?.path === "/");
       const handler = route?.route?.stack[0].handle;
 

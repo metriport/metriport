@@ -53,7 +53,7 @@ import feedbackRoutes from "./medical/feedback";
 import mpiRoutes from "./medical/mpi";
 import organizationRoutes from "./medical/organization";
 import patientRoutes from "./medical/patient";
-import tcmEncounter from "./tcm-encounter";
+import tcmEncounter from "./medical/tcm-encounter";
 
 const router = Router();
 
