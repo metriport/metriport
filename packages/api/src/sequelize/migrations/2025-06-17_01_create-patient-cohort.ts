@@ -9,6 +9,7 @@ const patientCohortTableName = "patient_cohort";
 const cohortIdColumn = "cohort_id";
 const patientIdColumn = "patient_id";
 const cohortIdIndex = `${patientCohortTableName}_${cohortIdColumn}_idx`;
+const patientIdCohortIdConstraintName = `${patientCohortTableName}_${patientIdColumn}_${cohortIdColumn}_unique`;
 
 export const up: Migration = async ({ context: queryInterface }) => {
   await queryInterface.sequelize.transaction(async transaction => {
@@ -50,7 +51,7 @@ export const up: Migration = async ({ context: queryInterface }) => {
     await queryInterface.addConstraint(patientCohortTableName, {
       fields: [patientIdColumn, cohortIdColumn],
       type: "unique",
-      name: `${patientCohortTableName}_${patientIdColumn}_${cohortIdColumn}_unique`,
+      name: patientIdCohortIdConstraintName,
       transaction,
     });
 
