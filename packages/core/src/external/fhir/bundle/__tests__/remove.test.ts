@@ -19,7 +19,7 @@ describe("Bundle Remove", () => {
 
       expect(result).toEqual(bundle);
       expect(result.entry).toHaveLength(2);
-      expect(result.total).toBe(2);
+      expect(result.total).toBeUndefined();
     });
 
     it("returns empty bundle when all resources should be removed", () => {
@@ -33,9 +33,24 @@ describe("Bundle Remove", () => {
       });
 
       expect(result.entry).toHaveLength(0);
-      expect(result.total).toBe(0);
+      expect(result.total).toBeUndefined();
       expect(result.resourceType).toBe("Bundle");
       expect(result.type).toBe("transaction");
+    });
+
+    it("keeps total and type when original bundle has total", () => {
+      const patient = makePatient();
+      const allergy = makeAllergyIntollerance({ patient });
+      const bundle = makeBundle({ entries: [patient, allergy], type: "searchset" });
+
+      const result = removeResources({
+        bundle,
+        shouldRemove: () => false,
+      });
+
+      expect(result.total).toBe(2);
+      expect(result.resourceType).toBe("Bundle");
+      expect(result.type).toBe("searchset");
     });
 
     it("removes only resources that match the shouldRemove condition", () => {
@@ -51,7 +66,6 @@ describe("Bundle Remove", () => {
       });
 
       expect(result.entry).toHaveLength(2);
-      expect(result.total).toBe(2);
       expect(result.entry?.[0]?.resource?.resourceType).toBe("Patient");
       expect(result.entry?.[0]?.resource?.id).toBe("patient-2");
       expect(result.entry?.[1]?.resource?.resourceType).toBe("AllergyIntolerance");
@@ -67,7 +81,7 @@ describe("Bundle Remove", () => {
 
       expect(result).toEqual(bundle);
       expect(result.entry).toHaveLength(0);
-      expect(result.total).toBe(0);
+      expect(result.total).toBeUndefined();
     });
 
     it("returns the same bundle when bundle entry is undefined", () => {
@@ -114,7 +128,7 @@ describe("Bundle Remove", () => {
       expect(result.resourceType).toBe("Bundle");
       expect(result.type).toBe("collection");
       expect(result.entry).toHaveLength(0);
-      expect(result.total).toBe(0);
+      expect(result.total).toBeUndefined();
     });
   });
 
@@ -131,7 +145,7 @@ describe("Bundle Remove", () => {
 
       expect(result).toEqual(bundle);
       expect(result.entry).toHaveLength(1);
-      expect(result.total).toBe(1);
+      expect(result.total).toBeUndefined();
     });
 
     it("removes contained resources that match the shouldRemove condition", () => {
@@ -149,7 +163,7 @@ describe("Bundle Remove", () => {
       });
 
       expect(result.entry).toHaveLength(1);
-      expect(result.total).toBe(1);
+      expect(result.total).toBeUndefined();
       const resultAllergy = result.entry?.[0]?.resource as any;
       expect(resultAllergy.contained).toHaveLength(1);
       expect(resultAllergy.contained[0].id).toBe("patient-2");
@@ -169,7 +183,7 @@ describe("Bundle Remove", () => {
       });
 
       expect(result.entry).toHaveLength(1);
-      expect(result.total).toBe(1);
+      expect(result.total).toBeUndefined();
       const resultAllergy = result.entry?.[0]?.resource as any;
       expect(resultAllergy.contained).toHaveLength(0);
     });
@@ -185,7 +199,7 @@ describe("Bundle Remove", () => {
 
       expect(result).toEqual(bundle);
       expect(result.entry).toHaveLength(1);
-      expect(result.total).toBe(1);
+      expect(result.total).toBeUndefined();
     });
 
     it("handles resources with empty contained array", () => {
@@ -199,7 +213,7 @@ describe("Bundle Remove", () => {
       });
 
       expect(result.entry).toHaveLength(1);
-      expect(result.total).toBe(1);
+      expect(result.total).toBeUndefined();
       const resultAllergy = result.entry?.[0]?.resource as any;
       expect(resultAllergy.contained).toHaveLength(0);
     });
@@ -214,7 +228,7 @@ describe("Bundle Remove", () => {
 
       expect(result).toEqual(bundle);
       expect(result.entry).toHaveLength(0);
-      expect(result.total).toBe(0);
+      expect(result.total).toBeUndefined();
     });
 
     it("returns the same bundle when bundle entry is undefined", () => {
@@ -247,7 +261,7 @@ describe("Bundle Remove", () => {
       expect(result.resourceType).toBe("Bundle");
       expect(result.type).toBe("collection");
       expect(result.entry).toHaveLength(1);
-      expect(result.total).toBe(1);
+      expect(result.total).toBeUndefined();
     });
 
     it("handles mixed resources with and without contained arrays", () => {
@@ -264,7 +278,7 @@ describe("Bundle Remove", () => {
       });
 
       expect(result.entry).toHaveLength(2);
-      expect(result.total).toBe(2);
+      expect(result.total).toBeUndefined();
       expect(result.entry?.[0]?.resource?.resourceType).toBe("Patient");
       const resultAllergy = result.entry?.[1]?.resource as any;
       expect(resultAllergy.contained).toHaveLength(0);
@@ -282,7 +296,7 @@ describe("Bundle Remove", () => {
       });
 
       expect(result.entry).toHaveLength(1);
-      expect(result.total).toBe(1);
+      expect(result.total).toBeUndefined();
       expect(result.entry?.[0]?.resource).toBeUndefined();
     });
   });

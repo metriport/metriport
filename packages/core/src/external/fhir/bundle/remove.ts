@@ -1,4 +1,5 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
+import { replaceBundleEntries } from "./bundle";
 
 /**
  * Removes resources from the contained array of a bundle.
@@ -24,11 +25,7 @@ export function removeResources({
     return false;
   });
 
-  return {
-    ...bundle,
-    total: updatedEntry.length,
-    entry: updatedEntry,
-  };
+  return replaceBundleEntries(bundle, updatedEntry);
 }
 
 /**
@@ -61,9 +58,5 @@ export function removeContainedResources({
     return entry;
   });
 
-  return {
-    ...bundle,
-    total: updatedEntry.length,
-    entry: updatedEntry,
-  };
+  return replaceBundleEntries(bundle, updatedEntry);
 }

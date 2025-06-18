@@ -42,9 +42,9 @@ import {
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { cloneDeep, uniq } from "lodash";
-import { isBinary } from "../shared";
 import { wrapIdInUrnId, wrapIdInUrnUuid } from "../../../util/urn";
 import { isValidUuid } from "../../../util/uuid-v7";
+import { isBinary } from "../shared";
 
 dayjs.extend(duration);
 
@@ -194,31 +194,68 @@ export function buildBundle<B extends RequiredBundleType, R extends Resource>({
 }): ReturnBundleType<B, R> {
   return {
     resourceType: "Bundle" as const,
-    total: entries.length,
     type,
     entry: entries,
   };
 }
 
-export function buildCollectionBundle<T extends Resource = Resource>(
-  entries: BundleEntry<T>[] = []
-): CollectionBundle<T> {
+export function buildCollectionBundle(entries: BundleEntry[] = []): CollectionBundle {
   return buildBundle({ type: "collection", entries });
 }
 
-export function buildSearchSetBundle<T extends Resource = Resource>(
-  entries: BundleEntry<T>[] = []
-): SearchSetBundle<T> {
-  return buildBundle({ type: "searchset", entries });
+/**
+ * Builds a search set bundle.
+ *
+ * @param entries - The entries to be set in the bundle.
+ * @param total - The total number of entries in the server. If not set, it will be set to the length of the entries.
+ * @returns The search set bundle.
+ */
+export function buildSearchSetBundle(entries: BundleEntry[] = [], total?: number): SearchSetBundle {
+  const bundle = buildBundle({ type: "searchset", entries });
+  return {
+    ...bundle,
+    total: total ?? bundle.entry?.length ?? 0,
+    ...(bundle.entry ? { entry: bundle.entry } : {}),
+  };
 }
 
-export const buildBundleEntry = <T extends Resource>(resource: T): BundleEntry<T> => {
+/**
+ * Replaces the entries of a bundle. If the bundle has a total, it will be updated to the length of the entries.
+ *
+ * @param bundle - The bundle to be updated.
+ * @param entries - The entries to be set in the bundle.
+ * @returns The bundle with the entries replaced.
+ */
+export function replaceBundleEntries(bundle: Bundle, entries: BundleEntry[] = []): Bundle {
+  let total: number | undefined;
+  if (bundle.total) total = entries.length;
+  return {
+    ...bundle,
+    ...(total ? { total } : {}),
+    entry: entries,
+  };
+}
+
+/**
+ * Adds the entries to the bundle, in addition to the original entries.
+ *
+ * @param bundle - The bundle to be updated.
+ * @param entries - The entries to be added to the bundle.
+ * @returns The bundle with the entries added.
+ */
+export function addEntriesToBundle(bundle: Bundle, entries: BundleEntry[] = []): Bundle {
+  const originalEntries = bundle.entry ?? [];
+  const newEntries = [...originalEntries, ...entries];
+  return replaceBundleEntries(bundle, newEntries);
+}
+
+export function buildBundleEntry<T extends Resource>(resource: T): BundleEntry<T> {
   const fullUrl = buildFullUrl(resource);
   return {
     ...(fullUrl ? { fullUrl } : {}),
     resource,
   };
-};
+}
 
 export function buildCompleteBundleEntry<T extends Resource>(
   resource: T,

@@ -2,8 +2,10 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
 import { Bundle, BundleEntry, Patient } from "@medplum/fhirtypes";
-import { buildCollectionBundle } from "@metriport/core/external/fhir/bundle/bundle";
-import { merge } from "@metriport/core/command/consolidated/consolidated-create";
+import {
+  addEntriesToBundle,
+  buildCollectionBundle,
+} from "@metriport/core/external/fhir/bundle/bundle";
 import { dangerouslyDeduplicate } from "@metriport/core/external/fhir/consolidated/deduplicate";
 import { normalize } from "@metriport/core/external/fhir/consolidated/normalize";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
@@ -73,7 +75,7 @@ export async function createConsolidatedFromLocal(
         console.log(`No valid bundle found in ${filePath}, skipping`);
         return;
       }
-      merge(singleConversion).into(bundle);
+      addEntriesToBundle(bundle, singleConversion.entry ?? []);
     },
     { numberOfParallelExecutions: 10 }
   );

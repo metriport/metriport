@@ -8,7 +8,11 @@ import { createConsolidatedDataFilePath } from "../../domain/consolidated/filena
 import { createFolderName } from "../../domain/filename";
 import { Patient } from "../../domain/patient";
 import { executeWithRetriesS3, S3Utils } from "../../external/aws/s3";
-import { buildBundleEntry, buildCollectionBundle } from "../../external/fhir/bundle/bundle";
+import {
+  addEntriesToBundle,
+  buildBundleEntry,
+  buildCollectionBundle,
+} from "../../external/fhir/bundle/bundle";
 import { dangerouslyDeduplicate } from "../../external/fhir/consolidated/deduplicate";
 import { getDocuments as getDocumentReferences } from "../../external/fhir/document/get-documents";
 import { toFHIR as patientToFhir } from "../../external/fhir/patient/conversion";
@@ -76,7 +80,6 @@ export async function createConsolidatedFromConversions({
     ...pharmacyResources,
     patientEntry,
   ];
-  bundle.total = bundle.entry.length;
   log(
     `Added ${docRefsWithUpdatedMeta.length} docRefs, ` +
       `${pharmacyResources.length} pharmacy resources, ` +
@@ -183,13 +186,13 @@ async function getConversions({
         () => s3Utils.getFileContentsAsString(bucket, key),
         { ...defaultS3RetriesConfig, log }
       );
-      log(`Merging bundle ${key} into the consolidated one`);
+      log(`Merging entries from bundle ${key} into the consolidated one`);
       const singleConversion = parseFhirBundle(contents);
       if (!singleConversion) {
         log(`No valid bundle found in ${bucket}/${key}, skipping`);
         return;
       }
-      merge(singleConversion).into(mergedBundle);
+      addEntriesToBundle(mergedBundle, singleConversion.entry ?? []);
     },
     { numberOfParallelExecutions }
   );
@@ -220,17 +223,4 @@ async function listConversionBundlesFromS3({
     o.Key ? { bucket: sourceBucketName, key: o.Key } : []
   );
   return conversionBundles;
-}
-
-export function merge(inputBundle: Bundle) {
-  return {
-    into: function (destination: Bundle): Bundle {
-      if (!destination.entry) destination.entry = [];
-      for (const entry of inputBundle.entry ?? []) {
-        destination.entry.push(entry);
-      }
-      destination.total = destination.entry.length;
-      return destination;
-    },
-  };
 }
