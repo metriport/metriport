@@ -1,9 +1,13 @@
-import { Op } from "sequelize";
+import { Op, WhereOptions } from "sequelize";
 import { TcmEncounter } from "../../../domain/medical/tcm-encounter";
 import { PatientModel } from "../../../models/medical/patient";
 import { TcmEncounterModel } from "../../../models/medical/tcm-encounter";
 import { Pagination } from "../../pagination";
+import { buildDayjs } from "@metriport/shared/common/date";
 
+/**
+ * Add a default filter date far in the past to guarantee hitting the compound index
+ */
 const DEFAULT_FILTER_DATE = new Date("2020-01-01T00:00:00.000Z");
 
 export type ListTcmEncountersCmd = {
@@ -24,19 +28,12 @@ export async function listTcmEncounters({
   items: TcmEncounterForDisplay[];
   totalCount: number;
 }> {
-  const where: Record<string, unknown> = {
+  const where: WhereOptions<TcmEncounterModel> = {
     cxId,
     admitTime: {
-      [Op.gt]: DEFAULT_FILTER_DATE,
+      [Op.gt]: after ? buildDayjs(after).toDate() : DEFAULT_FILTER_DATE,
     },
   };
-
-  if (after) {
-    where.admitTime = {
-      ...(where.admitTime as Record<string, unknown>),
-      [Op.gt]: new Date(after),
-    };
-  }
 
   const { rows, count } = await TcmEncounterModel.findAndCountAll({
     where,
@@ -62,8 +59,8 @@ export async function listTcmEncounters({
       ...encounterData,
       patientName: patient.firstName + " " + patient.lastName,
       patientDateOfBirth: patient.dob,
-      patientPhoneNumbers: patient.contact?.map(contact => contact.phone),
-      patientStates: patient.address.map(address => address.state),
+      patientPhoneNumbers: patient.contact?.map(contact => contact.phone) ?? [],
+      patientStates: patient.address?.map(address => address.state) ?? [],
     };
   });
 

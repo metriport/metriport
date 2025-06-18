@@ -1,7 +1,7 @@
 import { faker } from "@faker-js/faker";
 import { TcmEncounter } from "../tcm-encounter";
 
-export const makeTcmEncounter = (params?: Partial<TcmEncounter>): TcmEncounter => {
+export function makeTcmEncounter(params: Partial<TcmEncounter> = {}): TcmEncounter {
   return {
     id: params?.id ?? faker.string.uuid(),
     cxId: params?.cxId ?? faker.string.uuid(),
@@ -16,4 +16,4 @@ export const makeTcmEncounter = (params?: Partial<TcmEncounter>): TcmEncounter =
     updatedAt: params?.updatedAt ?? faker.date.recent(),
     eTag: params?.eTag ?? faker.string.uuid(),
   };
-};
+}
