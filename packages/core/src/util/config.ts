@@ -245,11 +245,17 @@ export class Config {
   static getSurescriptsReplicaBucketName(): string {
     return getEnvVarOrFail("SURESCRIPTS_REPLICA_BUCKET_NAME");
   }
-  static getSurescriptsBundleBucketName(): string {
-    return getEnvVarOrFail("SURESCRIPTS_BUNDLE_BUCKET_NAME");
+  static getPharmacyConversionBucketName(): string {
+    return getEnvVarOrFail("PHARMACY_CONVERSION_BUCKET_NAME");
   }
   static getSurescriptsSftpActionLambdaName(): string {
     return getEnvVarOrFail("SURESCRIPTS_SFTP_ACTION_LAMBDA_NAME");
+  }
+  static getSurescriptsConvertPatientResponseLambdaName(): string {
+    return getEnvVarOrFail("SURESCRIPTS_CONVERT_PATIENT_RESPONSE_LAMBDA_NAME");
+  }
+  static getSurescriptsConvertBatchResponseLambdaName(): string {
+    return getEnvVarOrFail("SURESCRIPTS_CONVERT_BATCH_RESPONSE_LAMBDA_NAME");
   }
   static getSurescriptsSendPatientRequestQueueUrl(): string {
     return getEnvVarOrFail("SURESCRIPTS_SEND_PATIENT_REQUEST_QUEUE_URL");

@@ -1,3 +1,7 @@
+export function getDeaScheduleName(code: string): string | undefined {
+  return DeaScheduleName[code as DEAScheduleCode];
+}
+
 export const DeaScheduleCodes = [
   "C38046",
   "C48672",
@@ -17,7 +21,7 @@ export const DeaSchedules = [
 
 export type DEAScheduleCode = (typeof DeaScheduleCodes)[number];
 export type DEASchedule = (typeof DeaSchedules)[number];
-export const DEA_SCHEDULE_NAME: Record<DEAScheduleCode, DEASchedule> = {
+export const DeaScheduleName: Record<DEAScheduleCode, DEASchedule> = {
   C38046: "Unspecified",
   C48672: "Schedule I",
   C48675: "Schedule II",
