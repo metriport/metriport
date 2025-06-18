@@ -12,7 +12,7 @@ export type CohortDTO = {
   dateCreated?: Date;
 };
 
-export function dtoFromModel(cohort: Cohort): CohortDTO {
+export function dtoFromCohort(cohort: Cohort): CohortDTO {
   return {
     ...toBaseDTO(cohort),
     name: cohort.name,

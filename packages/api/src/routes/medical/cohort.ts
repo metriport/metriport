@@ -13,7 +13,7 @@ import { getETag } from "../../shared/http";
 import { handleParams } from "../helpers/handle-params";
 import { requestLogger } from "../helpers/request-logger";
 import { asyncHandler, getCxIdOrFail, getFromParamsOrFail } from "../util";
-import { dtoFromModel } from "./dtos/cohortDTO";
+import { dtoFromCohort } from "./dtos/cohortDTO";
 import {
   bulkPatientAssignmentSchema,
   bulkPatientRemovalSchema,
@@ -43,7 +43,7 @@ router.post(
       ...data,
     });
 
-    return res.status(status.CREATED).json(dtoFromModel(cohort));
+    return res.status(status.CREATED).json(dtoFromCohort(cohort));
   })
 );
 
@@ -71,7 +71,7 @@ router.put(
       ...data,
     });
 
-    return res.status(status.OK).json(dtoFromModel(cohort));
+    return res.status(status.OK).json(dtoFromCohort(cohort));
   })
 );
 
@@ -118,7 +118,7 @@ router.get(
     return res.status(status.OK).json({
       cohorts: cohortsWithCounts.map(cohortWithCount => {
         return {
-          cohort: dtoFromModel(cohortWithCount.cohort),
+          cohort: dtoFromCohort(cohortWithCount.cohort),
           patientCount: cohortWithCount.count,
         };
       }),
@@ -145,7 +145,7 @@ router.get(
     const cohortWithCount = await getCohortWithCountOrFail({ id, cxId });
 
     return res.status(status.OK).json({
-      cohort: dtoFromModel(cohortWithCount.cohort),
+      cohort: dtoFromCohort(cohortWithCount.cohort),
       patientCount: cohortWithCount.count,
     });
   })
@@ -170,7 +170,7 @@ router.get(
     const cohortWithCount = await getCohortWithCountOrFail({ id, cxId });
 
     return res.status(status.OK).json({
-      cohort: dtoFromModel(cohortWithCount.cohort),
+      cohort: dtoFromCohort(cohortWithCount.cohort),
       patientCount: cohortWithCount.count,
       patientIds: cohortWithCount.patientIds,
     });

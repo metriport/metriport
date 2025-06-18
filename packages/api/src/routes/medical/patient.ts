@@ -39,7 +39,7 @@ import { requestLogger } from "../helpers/request-logger";
 import { getPatientInfoOrFail } from "../middlewares/patient-authorization";
 import { checkRateLimit } from "../middlewares/rate-limiting";
 import { asyncHandler, getFrom, getFromQueryAsBoolean } from "../util";
-import { dtoFromModel as dtoFromModelPatientCohort } from "./dtos/patientCohortDTO";
+import { dtoFromPatientCohort } from "./dtos/patient-cohort";
 import { dtoFromModel } from "./dtos/patientDTO";
 import { bundleSchema, getResourcesQueryParam } from "./schemas/fhir";
 import {
@@ -560,8 +560,8 @@ router.post(
     const cohortId = cohortIdSchema.parse(req.body).cohortId;
 
     const cohortAssignment = await assignCohort({ patientId, cohortId, cxId });
-    // TODO: ENG-420 - Should we return the cohort settings here? No, right?
-    return res.status(status.OK).json(dtoFromModelPatientCohort(cohortAssignment));
+
+    return res.status(status.CREATED).json(dtoFromPatientCohort(cohortAssignment));
   })
 );
 
