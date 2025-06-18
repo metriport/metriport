@@ -9,7 +9,7 @@ const patientCohortTableName = "patient_cohort";
 const cohortIdColumn = "cohort_id";
 const patientIdColumn = "patient_id";
 const cohortIdIndex = `${patientCohortTableName}_${cohortIdColumn}_idx`;
-// const patientCohortIndex = `${patientCohortTableName}_${cohortIdColumn}_${patientIdColumn}_idx`;
+const patientIdCohortIdConstraintName = `${patientCohortTableName}_${patientIdColumn}_${cohortIdColumn}_unique`;
 
 export const up: Migration = async ({ context: queryInterface }) => {
   await queryInterface.sequelize.transaction(async transaction => {
@@ -40,7 +40,6 @@ export const up: Migration = async ({ context: queryInterface }) => {
             model: cohortTableName,
             key: "id",
           },
-          onDelete: "CASCADE",
         },
       },
       {
@@ -52,16 +51,14 @@ export const up: Migration = async ({ context: queryInterface }) => {
     await queryInterface.addConstraint(patientCohortTableName, {
       fields: [patientIdColumn, cohortIdColumn],
       type: "unique",
-      name: `${patientCohortTableName}_${patientIdColumn}_${cohortIdColumn}_unique`,
+      name: patientIdCohortIdConstraintName,
       transaction,
     });
 
-    return queryInterface.sequelize.transaction(async transaction => {
-      await queryInterface.addIndex(patientCohortTableName, {
-        name: cohortIdIndex,
-        fields: [cohortIdColumn],
-        transaction,
-      });
+    await queryInterface.addIndex(patientCohortTableName, {
+      name: cohortIdIndex,
+      fields: [cohortIdColumn],
+      transaction,
     });
   });
 };

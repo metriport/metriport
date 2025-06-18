@@ -1,6 +1,6 @@
-import { Cohort, PatientCohort, MonitoringSettings } from "@metriport/core/domain/cohort";
+import { Cohort, MonitoringSettings } from "@metriport/core/domain/cohort";
 import { DataTypes, Sequelize } from "sequelize";
-import { BaseModel, BaseModelNoId, ModelSetup } from "../_default";
+import { BaseModel, ModelSetup } from "../_default";
 
 export class CohortModel extends BaseModel<CohortModel> implements Cohort {
   static NAME = "cohort";
@@ -8,23 +8,6 @@ export class CohortModel extends BaseModel<CohortModel> implements Cohort {
   declare cxId: string;
   declare name: string;
   declare monitoring?: MonitoringSettings;
-
-  static override attributes() {
-    return {
-      ...super.attributes(),
-      cxId: {
-        type: DataTypes.UUID,
-        allowNull: false,
-      },
-      name: {
-        type: DataTypes.STRING,
-        allowNull: false,
-      },
-      monitoring: {
-        type: DataTypes.JSONB,
-      },
-    };
-  }
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
     CohortModel.init(
@@ -35,7 +18,6 @@ export class CohortModel extends BaseModel<CohortModel> implements Cohort {
         },
         name: {
           type: DataTypes.STRING,
-          allowNull: false,
         },
         monitoring: {
           type: DataTypes.JSONB,
@@ -45,55 +27,6 @@ export class CohortModel extends BaseModel<CohortModel> implements Cohort {
         ...BaseModel.modelOptions(sequelize),
         tableName: this.NAME,
       }
-    );
-  };
-}
-
-export class PatientCohortModel extends BaseModelNoId<PatientCohortModel> implements PatientCohort {
-  static NAME = "patient_cohort";
-
-  declare patientId: string;
-  declare cohortId: string;
-
-  static override attributes() {
-    return {
-      patientId: {
-        type: DataTypes.UUID,
-        allowNull: false,
-        field: "patient_id",
-        primaryKey: true,
-        references: {
-          model: "patient",
-          key: "id",
-        },
-        onDelete: "CASCADE",
-      },
-      cohortId: {
-        type: DataTypes.UUID,
-        allowNull: false,
-        field: "cohort_id",
-        primaryKey: true,
-        references: {
-          model: "cohort",
-          key: "id",
-        },
-        onDelete: "CASCADE",
-      },
-      ...BaseModelNoId.attributes(),
-    };
-  }
-
-  static override modelOptions(sequelize: Sequelize) {
-    return {
-      ...super.modelOptions(sequelize),
-      tableName: this.NAME,
-    };
-  }
-
-  static setup: ModelSetup = (sequelize: Sequelize) => {
-    PatientCohortModel.init(
-      PatientCohortModel.attributes(),
-      PatientCohortModel.modelOptions(sequelize)
     );
   };
 }
