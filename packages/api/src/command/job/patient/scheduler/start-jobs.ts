@@ -4,11 +4,19 @@ import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { buildDayjs } from "@metriport/shared/common/date";
-import { jobInitialStatus } from "@metriport/shared/domain/job/job-status";
-import { StartJobsParams } from "../../shared";
+import { JobStatus, jobInitialStatus } from "@metriport/shared/domain/job/job-status";
 import { getPatientJobs } from "../get";
 
 const parallelJobs = 10;
+
+export type StartJobsParams = {
+  scheduledBefore?: Date;
+  cxId?: string;
+  patientId?: string;
+  jobType?: string;
+  jobGroupId?: string;
+  status?: JobStatus;
+};
 
 /**
  * Runs the patient jobs scheduled before the given date.

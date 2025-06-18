@@ -1,6 +1,11 @@
 import { PatientJob } from "@metriport/shared";
-import { UpdateJobRuntimeDataParams } from "../../shared";
 import { getPatientJobModelOrFail } from "../get";
+
+export type UpdateJobRuntimeDataParams = {
+  jobId: string;
+  cxId: string;
+  data: unknown;
+};
 
 /**
  * Updates a patient job's runtime data.
@@ -9,7 +14,6 @@ import { getPatientJobModelOrFail } from "../get";
  * @param cxId - The customer ID.
  * @param runtimeData - The runtime data to update. This will replace the existing runtime data.
  * @returns the updated job.
- * @throws BadRequestError if the job total is already set and the job is running.
  * @throws NotFoundError if the job doesn't exist.
  */
 export async function updatePatientJobRuntimeData({
@@ -18,9 +22,6 @@ export async function updatePatientJobRuntimeData({
   data,
 }: UpdateJobRuntimeDataParams): Promise<PatientJob> {
   const jobModel = await getPatientJobModelOrFail({ jobId, cxId });
-  const fieldsToUpdate: Partial<Pick<PatientJob, "runtimeData">> = {
-    runtimeData: data,
-  };
-  const updatedJob = await jobModel.update(fieldsToUpdate);
+  const updatedJob = await jobModel.update({ runtimeData: data });
   return updatedJob.dataValues;
 }
