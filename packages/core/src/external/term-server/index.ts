@@ -2,6 +2,7 @@ import { TypedValue } from "@medplum/core";
 import { Coding, ConceptMap, Parameters, ParametersParameter } from "@medplum/fhirtypes";
 import { createUuidFromText } from "@metriport/shared/common/uuid";
 import axios, { AxiosInstance } from "axios";
+import { executeWithNetworkRetries } from "@metriport/shared";
 import { Config } from "../../util/config";
 import {
   CPT_URL,
@@ -92,8 +93,9 @@ export async function crosswalkNdcToRxNorm(ndcCode: string): Promise<Coding | un
     RXNORM_URL
   );
   if (!params) return undefined;
-
-  const result = await termServer.post(crosswalkUrl, params);
+  const result = await executeWithNetworkRetries(async function () {
+    return termServer.post(crosswalkUrl, params);
+  });
 
   const data = result.data.response as ConceptMap;
   const group = data.group?.[0];
