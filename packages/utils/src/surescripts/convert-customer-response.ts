@@ -47,8 +47,8 @@ program
     }
 
     let convertedCount = 0;
+    const handler = new SurescriptsConvertPatientResponseHandlerDirect();
     for (const { patientId, transmissionId } of transmissions) {
-      const handler = new SurescriptsConvertPatientResponseHandlerDirect();
       await handler.convertPatientResponse({
         cxId,
         facilityId,

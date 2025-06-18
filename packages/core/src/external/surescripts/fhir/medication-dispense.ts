@@ -5,6 +5,7 @@ import {
   MedicationDispensePerformer,
 } from "@medplum/fhirtypes";
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
+import { buildDayjs } from "@metriport/shared/common/date";
 import { ResponseDetail } from "../schema/response";
 import { MEDICATION_DISPENSE_FILL_NUMBER_EXTENSION, UNIT_OF_MEASURE_URL } from "./constants";
 import { getMedicationReference } from "./medication";
@@ -49,7 +50,7 @@ function getWhenHandedOver(
   detail: ResponseDetail
 ): MedicationDispense["whenHandedOver"] | undefined {
   if (!detail.dateWritten) return undefined;
-  return detail.dateWritten.toISOString();
+  return buildDayjs(detail.dateWritten).toISOString();
 }
 
 function getDosageInstruction(
