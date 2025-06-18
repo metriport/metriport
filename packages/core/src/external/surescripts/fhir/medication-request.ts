@@ -1,4 +1,5 @@
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
+import { buildDayjs } from "@metriport/shared/common/date";
 import { Medication, MedicationRequest } from "@medplum/fhirtypes";
 import type { SurescriptsContext } from "./types";
 import { ResponseDetail } from "../schema/response";
@@ -40,7 +41,7 @@ function getDispenseRequest(
 
 function getAuthoredOn(detail: ResponseDetail): MedicationRequest["authoredOn"] | undefined {
   if (!detail.dateWritten) return undefined;
-  return detail.dateWritten.toISOString();
+  return buildDayjs(detail.dateWritten).toISOString();
 }
 
 function getDosageInstruction(
