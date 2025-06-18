@@ -5,11 +5,9 @@ import { Config } from "../../../../../util/config";
 import { RunJobHandler, RunJobRequest } from "./run-job";
 
 export class RunJobCloud implements RunJobHandler {
-  private readonly sqsClient: SQSClient;
+  private readonly sqsClient: SQSClient = new SQSClient({ region: Config.getAWSRegion() });
 
-  constructor(private readonly runJobQueueUrl: string, region?: string, sqsClient?: SQSClient) {
-    this.sqsClient = sqsClient ?? new SQSClient({ region: region ?? Config.getAWSRegion() });
-  }
+  constructor(private readonly runJobQueueUrl: string) {}
 
   async runJob(params: RunJobRequest): Promise<void> {
     const payload = JSON.stringify(params);
