@@ -3,6 +3,7 @@ import { Condition } from "@medplum/fhirtypes";
 import { ResponseDetail } from "../schema/response";
 import { SurescriptsContext } from "./types";
 import { getPatientReference } from "./patient";
+import { getSurescriptsDataSourceExtension } from "./shared";
 import { ICD_10_URL } from "../../../util/constants";
 
 export function getCondition(
@@ -24,5 +25,6 @@ export function getCondition(
         },
       ],
     },
+    extension: [getSurescriptsDataSourceExtension()],
   };
 }

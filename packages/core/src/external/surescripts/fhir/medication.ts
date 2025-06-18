@@ -13,6 +13,7 @@ import { getDeaScheduleName } from "@metriport/shared/interface/external/surescr
 import { getNcpdpName } from "@metriport/shared/interface/external/surescripts/ncpdp";
 import { DEA_SCHEDULE_URL, UNIT_OF_MEASURE_URL } from "./constants";
 import { NDC_URL, SNOMED_URL } from "../../../util/constants";
+import { getSurescriptsDataSourceExtension } from "./shared";
 
 export function getMedication(detail: ResponseDetail): Medication {
   const code = getMedicationCodeableConcept(detail);
@@ -20,6 +21,7 @@ export function getMedication(detail: ResponseDetail): Medication {
   const form = getMedicationForm(detail);
   const amount = getMedicationAmount(detail);
   const batch = getMedicationBatch(detail);
+  const extension = [getSurescriptsDataSourceExtension()];
 
   return {
     resourceType: "Medication",
@@ -30,6 +32,7 @@ export function getMedication(detail: ResponseDetail): Medication {
     ...(form ? { form } : undefined),
     ...(amount ? { amount } : undefined),
     ...(batch ? { batch } : undefined),
+    extension,
   };
 }
 

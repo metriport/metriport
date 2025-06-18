@@ -1,11 +1,13 @@
 import {
   Condition,
   Coverage,
+  Extension,
   Medication,
   Organization,
   Practitioner,
   Resource,
 } from "@medplum/fhirtypes";
+import { dataSourceExtensionDefaults } from "../../fhir/shared/extensions/extension";
 import { NPI_URL } from "./constants";
 import { ResourceMap, SurescriptsContext, SystemIdentifierMap } from "./types";
 
@@ -90,4 +92,14 @@ export function getResourceFromResourceMap<R extends Resource>(
     resourceMap[key] = resource;
   }
   return resource;
+}
+
+export function getSurescriptsDataSourceExtension(): Extension {
+  return {
+    ...dataSourceExtensionDefaults,
+    valueCoding: {
+      ...dataSourceExtensionDefaults.valueCoding,
+      code: "SURESCRIPTS",
+    },
+  };
 }

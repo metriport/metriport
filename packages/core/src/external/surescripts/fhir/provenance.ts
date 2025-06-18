@@ -2,12 +2,17 @@ import { Provenance, ProvenanceAgent } from "@medplum/fhirtypes";
 import { ResponseDetail } from "../schema/response";
 import { SURESCRIPTS_AGENT_ID } from "../constants";
 import { NPI_URL } from "./constants";
+import { getSurescriptsDataSourceExtension } from "./shared";
 
 export function getProvenance(detail: ResponseDetail): Provenance {
+  const agent = [getProvenanceAgent(detail)];
+  const extension = [getSurescriptsDataSourceExtension()];
+
   return {
     resourceType: "Provenance",
     recorded: detail.sentTime.toISOString(),
-    agent: [getProvenanceAgent(detail)],
+    agent,
+    extension,
   };
 }
 
