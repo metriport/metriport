@@ -206,7 +206,7 @@ export class Config {
   static getEhrRefreshEhrBundlesQueueUrl(): string {
     return getEnvVarOrFail("EHR_REFRESH_EHR_BUNDLES_QUEUE_URL");
   }
-  static getEhrResponsesBucketName(): string | undefined {
+  static getEhrResponsesBucketName(): string {
     return getEnvVarOrFail("EHR_RESPONSES_BUCKET_NAME");
   }
   static getEhrBundleBucketName(): string {
