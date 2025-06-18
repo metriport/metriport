@@ -108,7 +108,6 @@ describe("Bundle Remove", () => {
         shouldRemove: () => true,
       });
 
-      expect(result.entry).toHaveLength(1);
       expect(result.entry).toBeDefined();
       expect(result.entry).toHaveLength(1);
     });

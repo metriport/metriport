@@ -2,7 +2,7 @@ import { Bundle, Resource } from "@medplum/fhirtypes";
 import { replaceBundleEntries } from "./bundle";
 
 /**
- * Removes resources from the contained array of a bundle.
+ * Removes resources from the bundle.
  *
  * @param bundle - The bundle to remove resources from.
  * @param shouldRemove - A function that returns true if the resource should be removed.
