@@ -10,6 +10,8 @@ import { asyncHandler, getCxIdOrFail, getFromParamsOrFail } from "../util";
 import { tcmEncounterListQuerySchema, tcmEncounterUpdateSchema } from "./schemas/tcm-encounter";
 
 const router = Router();
+router.put("/:id", requestLogger, asyncHandler(updateTcmEncounter));
+router.get("/", requestLogger, asyncHandler(listTcmEncounters));
 
 /** ---------------------------------------------------------------------------
  * PUT /tcm/encounter/:id
@@ -20,7 +22,7 @@ const router = Router();
  * @param req.body The data to update the TCM encounter.
  * @returns The updated TCM encounter.
  */
-export const updateTcmEncounter = async (req: Request, res: Response) => {
+export async function updateTcmEncounter(req: Request, res: Response) {
   const cxId = getCxIdOrFail(req);
   const id = getFromParamsOrFail("id", req);
   const data = tcmEncounterUpdateSchema.parse(req.body);
@@ -45,7 +47,7 @@ export const updateTcmEncounter = async (req: Request, res: Response) => {
   }
 
   return res.status(httpStatus.OK).json(updatedEncounter);
-};
+}
 
 /** ---------------------------------------------------------------------------
  * GET /tcm/encounter
@@ -58,7 +60,7 @@ export const updateTcmEncounter = async (req: Request, res: Response) => {
  * @param req.query.count Optional number of items per page (max 50).
  * @returns A paginated list of TCM encounters.
  */
-export const listTcmEncounters = async (req: Request, res: Response) => {
+export async function listTcmEncounters(req: Request, res: Response) {
   const cxId = getCxIdOrFail(req);
   const query = tcmEncounterListQuerySchema.parse(req.query);
   const DEFAULT_FILTER_DATE = new Date("2020-01-01T00:00:00.000Z");
@@ -97,10 +99,6 @@ export const listTcmEncounters = async (req: Request, res: Response) => {
   });
 
   return res.status(httpStatus.OK).json(result);
-};
-
-router.put("/:id", requestLogger, asyncHandler(updateTcmEncounter));
-
-router.get("/", requestLogger, asyncHandler(listTcmEncounters));
+}
 
 export default router;
