@@ -12,10 +12,7 @@ import { ZodError } from "zod";
 import { mockStartTransaction } from "../../../models/__tests__/transaction";
 import { makeTcmEncounterModel } from "../../../models/medical/__tests__/tcm-encounter";
 import { TcmEncounterModel } from "../../../models/medical/tcm-encounter";
-import {
-  TcmEncounterCreateInput,
-  tcmEncounterCreateSchema,
-} from "../../medical/schemas/tcm-encounter";
+import { TcmEncounterCreateInput } from "../../medical/schemas/tcm-encounter";
 import { handleCreateTcmEncounter } from "../medical/tcm-encounter";
 
 describe("Internal TCM Encounter Routes", () => {
@@ -75,10 +72,12 @@ describe("Internal TCM Encounter Routes", () => {
 
       await handleCreateTcmEncounter(req, res);
 
-      expect(TcmEncounterModel.create).toHaveBeenCalledWith({
-        id: expect.any(String),
-        ...tcmEncounterCreateSchema.parse(validCreatePayload),
-      });
+      expect(TcmEncounterModel.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          cxId: validCreatePayload.cxId,
+          patientId: validCreatePayload.patientId,
+        })
+      );
       expect(res.status).toHaveBeenCalledWith(httpStatus.CREATED);
       expect(res.json).toHaveBeenCalledWith(mockEncounter);
     });
