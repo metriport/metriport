@@ -60,7 +60,6 @@ dayjs.extend(duration);
 const MAX_AGE = dayjs.duration(24, "hours");
 
 const region = Config.getAWSRegion();
-const responsesBucket = Config.getEhrResponsesBucketName();
 
 export const paginateWaitTime = dayjs.duration(1, "seconds");
 
@@ -136,6 +135,7 @@ export async function makeRequest<T>({
   const { log } = out(
     `${ehr} makeRequest - cxId ${cxId} patientId ${patientId} method ${method} url ${url}`
   );
+  const responsesBucket = Config.getEhrResponsesBucketName();
   const isJsonContentType =
     headers?.["content-type"] === "application/json" ||
     headers?.["Content-Type"] === "application/json";
@@ -175,26 +175,22 @@ export async function makeRequest<T>({
   } catch (error: any) {
     if (isAxiosError(error)) {
       const message = errorToString(error);
-      if (responsesBucket) {
-        const filePath = createHivePartitionFilePath({
-          cxId,
-          patientId: patientId ?? "global",
-          date: new Date(),
+      const filePath = createHivePartitionFilePath({
+        cxId,
+        patientId: patientId ?? "global",
+        date: new Date(),
+      });
+      const key = buildS3Path(ehr, s3Path, `${filePath}/error`);
+      const s3Utils = getS3UtilsInstance();
+      try {
+        await s3Utils.uploadFile({
+          bucket: responsesBucket,
+          key,
+          file: Buffer.from(JSON.stringify({ error, message }), "utf8"),
+          contentType: "application/json",
         });
-        const key = buildS3Path(ehr, s3Path, `${filePath}/error`);
-        const s3Utils = getS3UtilsInstance();
-        try {
-          await s3Utils.uploadFile({
-            bucket: responsesBucket,
-            key,
-            file: Buffer.from(JSON.stringify({ error, message }), "utf8"),
-            contentType: "application/json",
-          });
-        } catch (error) {
-          log(
-            `Error saving error to s3 @ ${ehr} - ${method} ${url}. Cause: ${errorToString(error)}`
-          );
-        }
+      } catch (error) {
+        log(`Error saving error to s3 @ ${ehr} - ${method} ${url}. Cause: ${errorToString(error)}`);
       }
       const fullAdditionalInfoWithError = { ...fullAdditionalInfo, error: errorToString(error) };
       switch (error.response?.status) {
@@ -227,26 +223,22 @@ export async function makeRequest<T>({
   }
   const body = response.data;
   debug(`${method} ${url} resp: `, () => JSON.stringify(response.data));
-  if (responsesBucket) {
-    const filePath = createHivePartitionFilePath({
-      cxId,
-      patientId: patientId ?? "global",
-      date: new Date(),
+  const filePath = createHivePartitionFilePath({
+    cxId,
+    patientId: patientId ?? "global",
+    date: new Date(),
+  });
+  const key = buildS3Path(ehr, s3Path, `${filePath}/response`);
+  const s3Utils = getS3UtilsInstance();
+  try {
+    await s3Utils.uploadFile({
+      bucket: responsesBucket,
+      key,
+      file: Buffer.from(JSON.stringify(response.data), "utf8"),
+      contentType: "application/json",
     });
-    const key = buildS3Path(ehr, s3Path, `${filePath}/response`);
-    const s3Utils = getS3UtilsInstance();
-    try {
-      await s3Utils.uploadFile({
-        bucket: responsesBucket,
-        key,
-        file: Buffer.from(JSON.stringify(response.data), "utf8"),
-        contentType: "application/json",
-      });
-    } catch (error) {
-      log(
-        `Error saving response to s3 @ ${ehr} - ${method} ${url}. Cause: ${errorToString(error)}`
-      );
-    }
+  } catch (error) {
+    log(`Error saving response to s3 @ ${ehr} - ${method} ${url}. Cause: ${errorToString(error)}`);
   }
   const outcome = schema.safeParse(body);
   if (!outcome.success) {
