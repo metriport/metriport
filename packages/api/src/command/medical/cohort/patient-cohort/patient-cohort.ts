@@ -1,9 +1,12 @@
-import { PatientCohort, PatientCohortCreate } from "@metriport/core/domain/cohort";
+import {
+  PatientCohort,
+  PatientCohortCreate,
+  PatientCohortData,
+} from "@metriport/core/domain/cohort";
 import { out } from "@metriport/core/util";
 import { BadRequestError } from "@metriport/shared";
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { Op } from "sequelize";
-
 import { PatientCohortModel } from "../../../../models/medical/patient-cohort";
 import { getPatientOrFail } from "../../patient/get-patient";
 import { getCohortModelOrFail } from "../get-cohort";
@@ -28,15 +31,21 @@ export async function assignCohort({
   cohortId,
   cxId,
 }: PatientCohortCreate): Promise<PatientCohort> {
-  await Promise.all([
+  const [, , existing] = await Promise.all([
     getCohortModelOrFail({ id: cohortId, cxId }),
     getPatientOrFail({ id: patientId, cxId }),
+    getCohortAssignment({ patientId, cohortId }),
   ]);
 
+  if (existing) return existing;
   return PatientCohortModel.create({ id: uuidv7(), patientId, cohortId });
 }
 
-export async function unassignCohort({ patientId, cohortId, cxId }: PatientCohortCreate) {
+export async function unassignCohort({
+  patientId,
+  cohortId,
+  cxId,
+}: PatientCohortCreate): Promise<void> {
   await Promise.all([
     getCohortModelOrFail({ id: cohortId, cxId }),
     getPatientOrFail({ id: patientId, cxId }),
@@ -45,7 +54,19 @@ export async function unassignCohort({ patientId, cohortId, cxId }: PatientCohor
   await PatientCohortModel.destroy({ where: { patientId, cohortId } });
 }
 
-export async function getPatientsAssignedToCohort({ cohortId }: { cohortId: string }) {
+export async function getCohortAssignment({
+  patientId,
+  cohortId,
+}: PatientCohortData): Promise<PatientCohort | undefined> {
+  const res = await PatientCohortModel.findOne({ where: { patientId, cohortId } });
+  return res?.dataValues;
+}
+
+export async function getPatientsAssignedToCohort({
+  cohortId,
+}: {
+  cohortId: string;
+}): Promise<string[]> {
   const res = await PatientCohortModel.findAll({
     where: { cohortId },
     attributes: ["patientId"],
@@ -53,7 +74,11 @@ export async function getPatientsAssignedToCohort({ cohortId }: { cohortId: stri
   return res.map(r => r.dataValues.patientId);
 }
 
-export async function getCountOfPatientsAssignedToCohort({ cohortId }: { cohortId: string }) {
+export async function getCountOfPatientsAssignedToCohort({
+  cohortId,
+}: {
+  cohortId: string;
+}): Promise<number> {
   return PatientCohortModel.count({ where: { cohortId } });
 }
 

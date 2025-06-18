@@ -1,13 +1,13 @@
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
-import {
-  bulkAssignPatientsToCohort,
-  bulkRemovePatientsFromCohort,
-} from "../../command/medical/cohort/cohort-assignment/assign-cohort";
 import { createCohort } from "../../command/medical/cohort/create-cohort";
 import { deleteCohort } from "../../command/medical/cohort/delete-cohort";
 import { getCohortWithCountOrFail, getCohorts } from "../../command/medical/cohort/get-cohort";
+import {
+  bulkAssignPatientsToCohort,
+  bulkRemovePatientsFromCohort,
+} from "../../command/medical/cohort/patient-cohort/patient-cohort";
 import { updateCohort } from "../../command/medical/cohort/update-cohort";
 import { getETag } from "../../shared/http";
 import { handleParams } from "../helpers/handle-params";

@@ -16,7 +16,7 @@ import { z } from "zod";
 import {
   assignCohort,
   unassignCohort,
-} from "../../command/medical/cohort/cohort-assignment/assign-cohort";
+} from "../../command/medical/cohort/patient-cohort/patient-cohort";
 import { areDocumentsProcessing } from "../../command/medical/document/document-status";
 import { startConsolidatedQuery } from "../../command/medical/patient/consolidated-get";
 import {
@@ -39,6 +39,7 @@ import { requestLogger } from "../helpers/request-logger";
 import { getPatientInfoOrFail } from "../middlewares/patient-authorization";
 import { checkRateLimit } from "../middlewares/rate-limiting";
 import { asyncHandler, getFrom, getFromQueryAsBoolean } from "../util";
+import { dtoFromModel as dtoFromModelPatientCohort } from "./dtos/patientCohortDTO";
 import { dtoFromModel } from "./dtos/patientDTO";
 import { bundleSchema, getResourcesQueryParam } from "./schemas/fhir";
 import {
@@ -558,9 +559,9 @@ router.post(
     const { cxId, id: patientId } = getPatientInfoOrFail(req);
     const cohortId = cohortIdSchema.parse(req.body).cohortId;
 
-    await assignCohort({ patientId, cohortId, cxId });
-
-    return res.sendStatus(status.OK);
+    const cohortAssignment = await assignCohort({ patientId, cohortId, cxId });
+    // TODO: ENG-420 - Should we return the cohort settings here? No, right?
+    return res.status(status.OK).json(dtoFromModelPatientCohort(cohortAssignment));
   })
 );
 
@@ -570,8 +571,8 @@ router.post(
  * Unassigns the patient from the cohort.
  *
  * @param req.cxId The customer ID.
- * @param req.param.id The ID of the patient to assign.
- * @param req.param.cohortId The ID of the cohort to assign the patient to.
+ * @param req.param.id The ID of the patient to unassign.
+ * @param req.param.cohortId The ID of the cohort to unassign the patient from.
  * @returns 200 OK
  */
 router.delete(

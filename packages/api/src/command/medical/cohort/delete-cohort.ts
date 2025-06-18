@@ -1,7 +1,7 @@
 import { out } from "@metriport/core/util";
 import { BadRequestError } from "@metriport/shared";
 import { CohortModel } from "../../../models/medical/cohort";
-import { getCountOfPatientsAssignedToCohort } from "./cohort-assignment/assign-cohort";
+import { getCountOfPatientsAssignedToCohort } from "./patient-cohort/patient-cohort";
 
 export async function deleteCohort({ id, cxId }: { id: string; cxId: string }): Promise<void> {
   const { log } = out(`deleteCohort - cx: ${cxId}, id: ${id}`);

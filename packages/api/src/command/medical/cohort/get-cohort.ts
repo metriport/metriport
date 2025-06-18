@@ -4,7 +4,7 @@ import { CohortModel } from "../../../models/medical/cohort";
 import {
   getCountOfPatientsAssignedToCohort,
   getPatientsAssignedToCohort,
-} from "./cohort-assignment/assign-cohort";
+} from "./patient-cohort/patient-cohort";
 
 type CohortWithCount = { cohort: Cohort; count: number };
 type CohortWithPatientIdsAndCount = CohortWithCount & { patientIds: string[] };
