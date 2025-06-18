@@ -3,6 +3,7 @@ import { buildRunJobHandler } from "@metriport/core/command/job/patient/command/
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
+import { errorToString } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import { JobStatus, jobInitialStatus } from "@metriport/shared/domain/job/job-status";
 import { getPatientJobs } from "../get";
@@ -81,7 +82,11 @@ export async function startJobs({
       extra: {
         runJobsArgsCount: runJobsArgs.length,
         errorCount: runJobsErrors.length,
-        errors: runJobsErrors,
+        errors: runJobsErrors.map(error => ({
+          id: error.id,
+          cxId: error.cxId,
+          error: errorToString(error.error),
+        })),
         context: "patient-job.start-jobs",
       },
       level: "warning",
