@@ -6,7 +6,7 @@ import { BadRequestError } from "../error/bad-request";
 dayjs.extend(utc);
 
 export const ISO_DATE = "YYYY-MM-DD";
-export const ISO_DATE_TIME = "YYYY-MM-DDTHH:mm:ssZ";
+export const ISO_DATE_TIME = "YYYY-MM-DDTHH:mm:ss.SSSZ";
 
 /** @see https://day.js.org/docs/en/parse/is-valid  */
 export function isValidISODate(date: string): boolean {

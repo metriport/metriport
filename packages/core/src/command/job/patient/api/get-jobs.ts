@@ -4,6 +4,7 @@ import {
   MetriportError,
   PatientJob,
 } from "@metriport/shared";
+import { buildDayjs } from "@metriport/shared/common/date";
 import { logAxiosResponse } from "@metriport/shared/common/response";
 import axios from "axios";
 
@@ -48,8 +49,8 @@ export async function getJobs({
     ...(jobType ? { jobType } : {}),
     ...(jobGroupId ? { jobGroupId } : {}),
     ...(status ? { status } : {}),
-    ...(scheduledAfter ? { scheduledAfter: scheduledAfter.toISOString() } : {}),
-    ...(scheduledBefore ? { scheduledBefore: scheduledBefore.toISOString() } : {}),
+    ...(scheduledAfter ? { scheduledAfter: buildDayjs(scheduledAfter).toISOString() } : {}),
+    ...(scheduledBefore ? { scheduledBefore: buildDayjs(scheduledBefore).toISOString() } : {}),
   });
   const getJobsUrl = `/internal/patient/job?${queryParams.toString()}`;
   try {
