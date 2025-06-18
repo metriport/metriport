@@ -650,7 +650,7 @@ class CanvasApi {
           await this.makeRequest<undefined>({
             cxId,
             patientId,
-            s3Path: `/medication-statement/${additionalInfo.medicationId}`,
+            s3Path: `fhir/medication-statement/${additionalInfo.medicationId}`,
             method: "POST",
             url: medicationStatementUrl,
             data: { ...params },
@@ -722,7 +722,7 @@ class CanvasApi {
       patientId,
       practitionerId,
     });
-    formattedImmunization.patient = { reference: `Patient/${patientId}` };
+    formattedImmunization.patient = { reference: `Patient/${patientId}`, type: "Patient" };
     formattedImmunization.extension = [
       ...(formattedImmunization.extension ?? []),
       this.formatNoteIdExtension(noteId),
@@ -730,7 +730,7 @@ class CanvasApi {
     await this.makeRequest<undefined>({
       cxId,
       patientId,
-      s3Path: `/immunization/${additionalInfo.immunizationId}`,
+      s3Path: `fhir/immunization/${additionalInfo.immunizationId}`,
       method: "POST",
       data: { ...formattedImmunization },
       url: immunizationUrl,
@@ -811,7 +811,7 @@ class CanvasApi {
     await this.makeRequest<undefined>({
       cxId,
       patientId,
-      s3Path: `/allergy-intolerance/${additionalInfo.allergyIntoleranceId}`,
+      s3Path: `fhir/allergy-intolerance/${additionalInfo.allergyIntoleranceId}`,
       method: "POST",
       url: allergyIntoleranceUrl,
       data: { ...formattedAllergyIntolerance },
@@ -880,7 +880,7 @@ class CanvasApi {
           await this.makeRequest<undefined>({
             cxId,
             patientId,
-            s3Path: `/observations/${additionalInfo.observationId ?? "unknown"}`,
+            s3Path: `fhir/observations/${additionalInfo.observationId ?? "unknown"}`,
             method: "POST",
             url: observationsUrl,
             data: { ...params },
@@ -943,7 +943,7 @@ class CanvasApi {
     const medicationBundle = await this.makeRequest<EhrFhirResourceBundle>({
       cxId,
       patientId,
-      s3Path: `/medication-reference/${code}`,
+      s3Path: `reference/medication-reference/${code}`,
       method: "GET",
       url: medicationUrl,
       schema: ehrFhirResourceBundleSchema,
@@ -982,7 +982,7 @@ class CanvasApi {
     const allergenBundle = await this.makeRequest<EhrFhirResourceBundle>({
       cxId,
       patientId,
-      s3Path: `/allergen-reference/${code}`,
+      s3Path: `reference/allergen-reference/${code}`,
       method: "GET",
       url: allergenUrl,
       schema: ehrFhirResourceBundleSchema,
