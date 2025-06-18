@@ -96,13 +96,17 @@ function getMedicationDeaScheduleCode(detail: ResponseDetail): Coding | undefine
   };
 }
 
-function getMedicationForm(detail: ResponseDetail): Coding | undefined {
+function getMedicationForm(detail: ResponseDetail): CodeableConcept | undefined {
   if (!detail.strengthFormCode) return undefined;
   const ncpdpName = getNcpdpName(detail.strengthFormCode);
   return {
-    system: SNOMED_URL,
-    code: detail.strengthFormCode,
-    ...(ncpdpName ? { display: ncpdpName } : undefined),
+    coding: [
+      {
+        system: SNOMED_URL,
+        code: detail.strengthFormCode,
+        ...(ncpdpName ? { display: ncpdpName } : undefined),
+      },
+    ],
   };
 }
 
