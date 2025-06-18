@@ -722,7 +722,7 @@ class CanvasApi {
       patientId,
       practitionerId,
     });
-    formattedImmunization.patient = { reference: `Patient/${patientId}`, type: "Patient" };
+    formattedImmunization.patient = { reference: `Patient/${patientId}` };
     formattedImmunization.extension = [
       ...(formattedImmunization.extension ?? []),
       this.formatNoteIdExtension(noteId),
