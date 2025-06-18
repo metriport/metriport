@@ -6,7 +6,7 @@ import {
 } from "@medplum/fhirtypes";
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { ResponseDetail } from "../schema/response";
-import { MEDICATION_DISPENSE_FILL_NUMBER_EXTENSION, UNIT_OF_MEASURE_SYSTEM } from "./constants";
+import { MEDICATION_DISPENSE_FILL_NUMBER_EXTENSION, UNIT_OF_MEASURE_URL } from "./constants";
 import { getMedicationReference } from "./medication";
 import { getPatientReference } from "./patient";
 import { getPrescriberReference } from "./prescriber";
@@ -87,7 +87,7 @@ function getDaysSupply(detail: ResponseDetail): MedicationDispense["daysSupply"]
   return {
     value,
     unit: "day",
-    system: UNIT_OF_MEASURE_SYSTEM,
+    system: UNIT_OF_MEASURE_URL,
     code: "d",
   };
 }

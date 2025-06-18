@@ -11,8 +11,6 @@ import {
 import { S3Utils } from "../aws/s3";
 import { Config } from "../../util/config";
 import { convertIncomingDataToFhirBundle } from "./fhir/bundle";
-import { hydrateFhir } from "../fhir/hydration/hydrate-fhir";
-import { dangerouslyDeduplicateFhir } from "../../fhir-deduplication/deduplicate-fhir";
 
 export async function convertPatientResponseToFhirBundle(
   cxId: string,
@@ -32,9 +30,12 @@ export async function convertPatientResponseToFhirBundle(
   const details = patientIdDetails.get(patientId);
   if (!details || details.length < 1) return undefined;
 
-  const bundle = await convertIncomingDataToFhirBundle(patientId, details);
-  const conversionBundle = await hydrateAndDeduplicateBundle(cxId, patientId, bundle);
-  return conversionBundle;
+  const bundle = await convertIncomingDataToFhirBundle(cxId, patientId, details);
+  return {
+    cxId,
+    patientId,
+    bundle,
+  };
 }
 
 export async function convertBatchResponseToFhirBundles(
@@ -46,25 +47,14 @@ export async function convertBatchResponseToFhirBundles(
   const conversionBundles: SurescriptsConversionBundle[] = [];
   for (const [patientId, details] of patientIdDetails.entries()) {
     if (!details || details.length < 1) continue;
-    const bundle = await convertIncomingDataToFhirBundle(patientId, details);
-    const conversionBundle = await hydrateAndDeduplicateBundle(cxId, patientId, bundle);
-    conversionBundles.push(conversionBundle);
+    const bundle = await convertIncomingDataToFhirBundle(cxId, patientId, details);
+    conversionBundles.push({
+      cxId,
+      patientId,
+      bundle,
+    });
   }
   return conversionBundles;
-}
-
-async function hydrateAndDeduplicateBundle(
-  cxId: string,
-  patientId: string,
-  bundle: Bundle
-): Promise<SurescriptsConversionBundle> {
-  const { data: hydratedBundle } = await hydrateFhir(bundle, console.log);
-  dangerouslyDeduplicateFhir(hydratedBundle, cxId, patientId);
-  return {
-    cxId,
-    patientId,
-    bundle: hydratedBundle,
-  };
 }
 
 export async function uploadConversionBundle({

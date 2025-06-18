@@ -1,3 +1,4 @@
+export const NPI_URL = "http://hl7.org/fhir/sid/us-npi";
 export const DEA_SCHEDULE_URL = "http://hl7.org/fhir/sid/us-dea";
 export const UNIT_OF_MEASURE_URL = "http://unitsofmeasure.org";
 

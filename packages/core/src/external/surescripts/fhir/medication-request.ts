@@ -19,16 +19,6 @@ export function getMedicationRequest(
     resourceType: "MedicationRequest",
     id: uuidv7(),
     medicationReference,
-    category: [
-      {
-        coding: [
-          {
-            system: "http://terminology.hl7.org/CodeSystem/medicationrequest-category",
-            code: "outpatient",
-          },
-        ],
-      },
-    ],
     ...(authoredOn ? { authoredOn } : undefined),
     ...(dispenseRequest ? { dispenseRequest } : undefined),
     ...(dosageInstruction ? { dosageInstruction } : undefined),

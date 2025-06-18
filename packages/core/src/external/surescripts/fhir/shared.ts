@@ -6,7 +6,7 @@ import {
   Practitioner,
   Resource,
 } from "@medplum/fhirtypes";
-import { NPI_SYSTEM } from "./constants";
+import { NPI_URL } from "./constants";
 import { ResourceMap, SurescriptsContext, SystemIdentifierMap } from "./types";
 
 export function initializeContext(patientId: string): SurescriptsContext {
@@ -71,8 +71,8 @@ export function getResourceByNpiNumber<R extends Practitioner | Organization | C
   systemMap: SystemIdentifierMap<R>,
   npiNumber: string
 ): R | undefined {
-  if (!systemMap[NPI_SYSTEM]) return undefined;
-  return systemMap[NPI_SYSTEM][npiNumber];
+  if (!systemMap[NPI_URL]) return undefined;
+  return systemMap[NPI_URL][npiNumber];
 }
 
 export function getResourceFromResourceMap<R extends Resource>(

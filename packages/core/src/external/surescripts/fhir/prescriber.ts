@@ -1,7 +1,7 @@
 import { Identifier, Practitioner, Reference } from "@medplum/fhirtypes";
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { ResponseDetail } from "../schema/response";
-import { DEA_SYSTEM, NPI_SYSTEM } from "./constants";
+import { DEA_SCHEDULE_URL, NPI_URL } from "./constants";
 
 export function getPrescriber(detail: ResponseDetail): Practitioner {
   const prescriberName = getPrescriberName(detail);
@@ -34,13 +34,13 @@ function getPrescriberIdentifiers(detail: ResponseDetail): Identifier[] {
   const identifiers: Identifier[] = [];
   if (detail.prescriberNpiNumber) {
     identifiers.push({
-      system: NPI_SYSTEM,
+      system: NPI_URL,
       value: detail.prescriberNpiNumber,
     });
   }
   if (detail.prescriberDeaNumber) {
     identifiers.push({
-      system: DEA_SYSTEM,
+      system: DEA_SCHEDULE_URL,
       value: detail.prescriberDeaNumber,
       use: "official",
     });

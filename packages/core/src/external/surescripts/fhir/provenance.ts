@@ -1,7 +1,7 @@
 import { Provenance, ProvenanceAgent } from "@medplum/fhirtypes";
 import { ResponseDetail } from "../schema/response";
 import { SURESCRIPTS_AGENT_ID } from "../constants";
-import { NPI_SYSTEM } from "./constants";
+import { NPI_URL } from "./constants";
 
 export function getProvenance(detail: ResponseDetail): Provenance {
   return {
@@ -21,7 +21,7 @@ export function getProvenanceAgent(detail: ResponseDetail): ProvenanceAgent {
     },
     onBehalfOf: {
       identifier: {
-        system: NPI_SYSTEM,
+        system: NPI_URL,
         value: detail.facilityNpiNumber,
       },
     },

@@ -33,12 +33,6 @@ export function getMedication(detail: ResponseDetail): Medication {
   };
 }
 
-export function getMedicationReference(medication: Medication): Reference<Medication> {
-  return {
-    reference: `Medication/${medication.id}`,
-  };
-}
-
 function getMedicationCodeableConcept(detail: ResponseDetail): CodeableConcept | undefined {
   const text = getMedicationText(detail);
   const coding = getMedicationCoding(detail);
@@ -46,11 +40,6 @@ function getMedicationCodeableConcept(detail: ResponseDetail): CodeableConcept |
   if (text) return { text };
   if (coding) return { coding };
   return undefined;
-}
-
-function getMedicationText(detail: ResponseDetail): string | undefined {
-  if (!detail.drugDescription) return undefined;
-  return detail.drugDescription;
 }
 
 function getMedicationCoding(detail: ResponseDetail): Coding[] | undefined {
@@ -62,6 +51,17 @@ function getMedicationCoding(detail: ResponseDetail): Coding[] | undefined {
   const coding = [ndcCode, productCode, deaCode].filter(Boolean) as Coding[];
 
   return coding;
+}
+
+export function getMedicationReference(medication: Medication): Reference<Medication> {
+  return {
+    reference: `Medication/${medication.id}`,
+  };
+}
+
+function getMedicationText(detail: ResponseDetail): string | undefined {
+  if (!detail.drugDescription) return undefined;
+  return detail.drugDescription;
 }
 
 function getMedicationNdcCode(detail: ResponseDetail): Coding | undefined {
