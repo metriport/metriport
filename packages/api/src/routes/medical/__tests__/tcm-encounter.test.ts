@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import httpStatus from "http-status";
 import { TcmEncounterModel } from "../../../models/medical/tcm-encounter";
-import { updateTcmEncounter, listTcmEncounters } from "../tcm-encounter";
+import { handleUpdateTcmEncounter, handleListTcmEncounters } from "../tcm-encounter";
 
 jest.mock("../../../models/medical/tcm-encounter");
 
@@ -22,13 +22,13 @@ describe("TCM Encounter Handlers", () => {
     };
   });
 
-  describe("updateTcmEncounter", () => {
+  describe("handleUpdateTcmEncounter", () => {
     it("updates an existing TCM encounter", async () => {
       const encounter = { id: req.params?.id, cxId: req.cxId };
       (TcmEncounterModel.findByPk as jest.Mock).mockResolvedValue(encounter);
       (TcmEncounterModel.update as jest.Mock).mockResolvedValue([1]);
 
-      await updateTcmEncounter(req as Request, res as Response);
+      await handleUpdateTcmEncounter(req as Request, res as Response);
 
       expect(TcmEncounterModel.findByPk).toHaveBeenCalledWith(req.params?.id);
       expect(TcmEncounterModel.update).toHaveBeenCalledWith(
@@ -47,7 +47,7 @@ describe("TCM Encounter Handlers", () => {
     it("returns 404 for non-existent encounter", async () => {
       (TcmEncounterModel.findByPk as jest.Mock).mockResolvedValue(null);
 
-      await updateTcmEncounter(req as Request, res as Response);
+      await handleUpdateTcmEncounter(req as Request, res as Response);
 
       expect(TcmEncounterModel.findByPk).toHaveBeenCalledWith(req.params?.id);
       expect(res.status).toHaveBeenCalledWith(httpStatus.NOT_FOUND);
@@ -59,7 +59,7 @@ describe("TCM Encounter Handlers", () => {
     });
   });
 
-  describe("listTcmEncounters", () => {
+  describe("handleListTcmEncounters", () => {
     it("returns list of encounters with default filters", async () => {
       const sampleEncounter = {
         id: "1",
@@ -86,7 +86,7 @@ describe("TCM Encounter Handlers", () => {
         json: jest.fn(),
       } as unknown as Response;
 
-      await listTcmEncounters(req, res);
+      await handleListTcmEncounters(req, res);
 
       const expectedQuery = {
         where: {
@@ -140,7 +140,7 @@ describe("TCM Encounter Handlers", () => {
         json: jest.fn(),
       } as unknown as Response;
 
-      await listTcmEncounters(req, res);
+      await handleListTcmEncounters(req, res);
 
       expect(res.json).toHaveBeenCalledWith({
         items: firstPage,
@@ -159,7 +159,7 @@ describe("TCM Encounter Handlers", () => {
         count: 1,
       });
 
-      await listTcmEncounters(req as Request, res as Response);
+      await handleListTcmEncounters(req as Request, res as Response);
 
       expect(TcmEncounterModel.findAndCountAll).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -182,7 +182,7 @@ describe("TCM Encounter Handlers", () => {
         count: 1,
       });
 
-      await listTcmEncounters(req as Request, res as Response);
+      await handleListTcmEncounters(req as Request, res as Response);
 
       expect(TcmEncounterModel.findAndCountAll).toHaveBeenCalledWith(
         expect.objectContaining({

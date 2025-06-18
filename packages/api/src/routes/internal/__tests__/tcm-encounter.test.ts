@@ -16,7 +16,7 @@ import {
   TcmEncounterCreateInput,
   tcmEncounterCreateSchema,
 } from "../../medical/schemas/tcm-encounter";
-import { createTcmEncounter } from "../medical/tcm-encounter";
+import { handleCreateTcmEncounter } from "../medical/tcm-encounter";
 
 describe("Internal TCM Encounter Routes", () => {
   const mockRequest = (
@@ -73,7 +73,7 @@ describe("Internal TCM Encounter Routes", () => {
 
       (TcmEncounterModel.create as jest.Mock).mockResolvedValueOnce(mockEncounter);
 
-      await createTcmEncounter(req, res);
+      await handleCreateTcmEncounter(req, res);
 
       expect(TcmEncounterModel.create).toHaveBeenCalledWith({
         id: expect.any(String),
@@ -92,7 +92,7 @@ describe("Internal TCM Encounter Routes", () => {
       const req = mockRequest(invalidCreatePayload);
       const res = mockResponse();
 
-      await expect(createTcmEncounter(req, res)).rejects.toThrow(ZodError);
+      await expect(handleCreateTcmEncounter(req, res)).rejects.toThrow(ZodError);
     });
   });
 });

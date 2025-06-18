@@ -1,17 +1,16 @@
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
-import { Op } from "sequelize";
-import { Pagination } from "../../command/pagination";
-import { TcmEncounterModel } from "../../models/medical/tcm-encounter";
+import { listTcmEncounters } from "../../command/medical/tcm-encounter/list-tcm-encounters";
+import { updateTcmEncounter } from "../../command/medical/tcm-encounter/update-tcm-encounter";
 import { requestLogger } from "../helpers/request-logger";
 import { paginated } from "../pagination";
 import { asyncHandler, getCxIdOrFail, getFromParamsOrFail } from "../util";
 import { tcmEncounterListQuerySchema, tcmEncounterUpdateSchema } from "./schemas/tcm-encounter";
 
 const router = Router();
-router.put("/:id", requestLogger, asyncHandler(updateTcmEncounter));
-router.get("/", requestLogger, asyncHandler(listTcmEncounters));
+router.put("/:id", requestLogger, asyncHandler(handleUpdateTcmEncounter));
+router.get("/", requestLogger, asyncHandler(handleListTcmEncounters));
 
 /** ---------------------------------------------------------------------------
  * PUT /tcm/encounter/:id
@@ -22,31 +21,22 @@ router.get("/", requestLogger, asyncHandler(listTcmEncounters));
  * @param req.body The data to update the TCM encounter.
  * @returns The updated TCM encounter.
  */
-export async function updateTcmEncounter(req: Request, res: Response) {
+export async function handleUpdateTcmEncounter(req: Request, res: Response): Promise<Response> {
   const cxId = getCxIdOrFail(req);
   const id = getFromParamsOrFail("id", req);
   const data = tcmEncounterUpdateSchema.parse(req.body);
 
-  const encounter = await TcmEncounterModel.findByPk(id);
-  if (!encounter) {
-    return res.status(httpStatus.NOT_FOUND).json({
-      message: `TCM encounter with ID ${id} not found`,
-    });
-  }
-
-  await TcmEncounterModel.update(data, {
-    where: {
-      id,
-      cxId,
-    },
+  const result = await updateTcmEncounter({
+    id,
+    cxId,
+    data,
   });
 
-  const updatedEncounter = await TcmEncounterModel.findByPk(id);
-  if (!updatedEncounter) {
-    throw new Error("Failed to fetch updated encounter");
-  }
-
-  return res.status(httpStatus.OK).json(updatedEncounter);
+  return res.status(result.status).json(
+    result.encounter ?? {
+      message: result.message,
+    }
+  );
 }
 
 /** ---------------------------------------------------------------------------
@@ -60,41 +50,28 @@ export async function updateTcmEncounter(req: Request, res: Response) {
  * @param req.query.count Optional number of items per page (max 50).
  * @returns A paginated list of TCM encounters.
  */
-export async function listTcmEncounters(req: Request, res: Response) {
+export async function handleListTcmEncounters(req: Request, res: Response): Promise<Response> {
   const cxId = getCxIdOrFail(req);
   const query = tcmEncounterListQuerySchema.parse(req.query);
-  const DEFAULT_FILTER_DATE = new Date("2020-01-01T00:00:00.000Z");
-
-  const where: Record<string, unknown> = {
-    cxId,
-    admitTime: {
-      [Op.gt]: DEFAULT_FILTER_DATE,
-    },
-  };
-
-  if (query.after) {
-    where.admitTime = {
-      ...(where.admitTime as Record<string, unknown>),
-      [Op.gt]: new Date(query.after),
-    };
-  }
 
   const result = await paginated({
     request: req,
     additionalQueryParams: undefined,
-    getItems: async (pagination: Pagination) => {
-      const { rows } = await TcmEncounterModel.findAndCountAll({
-        where,
-        limit: pagination.count + 1, // Get one extra to determine if there's a next page
-        order: [["admitTime", "DESC"]],
+    getItems: async pagination => {
+      const { items } = await listTcmEncounters({
+        cxId,
+        after: query.after,
+        pagination,
       });
-      return rows;
+      return items;
     },
     getTotalCount: async () => {
-      const { count } = await TcmEncounterModel.findAndCountAll({
-        where,
+      const { totalCount } = await listTcmEncounters({
+        cxId,
+        after: query.after,
+        pagination: { count: 1, fromItem: undefined, toItem: undefined },
       });
-      return count;
+      return totalCount;
     },
   });
 

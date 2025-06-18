@@ -1,14 +1,13 @@
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
-import { v4 as uuidv4 } from "uuid";
-import { TcmEncounterModel } from "../../../models/medical/tcm-encounter";
+import { createTcmEncounter } from "../../../command/medical/tcm-encounter/create-tcm-encounter";
 import { requestLogger } from "../../helpers/request-logger";
 import { tcmEncounterCreateSchema } from "../../medical/schemas/tcm-encounter";
 import { asyncHandler } from "../../util";
 
 const router = Router();
-router.post("/", requestLogger, asyncHandler(createTcmEncounter));
+router.post("/", requestLogger, asyncHandler(handleCreateTcmEncounter));
 
 /** ---------------------------------------------------------------------------
  * POST /internal/tcm/encounter
@@ -18,12 +17,9 @@ router.post("/", requestLogger, asyncHandler(createTcmEncounter));
  * @param req.body - The TCM encounter data to create.
  * @returns The created TCM encounter.
  */
-export async function createTcmEncounter(req: Request, res: Response) {
+export async function handleCreateTcmEncounter(req: Request, res: Response): Promise<Response> {
   const data = tcmEncounterCreateSchema.parse(req.body);
-  const encounter = await TcmEncounterModel.create({
-    ...data,
-    id: uuidv4(),
-  });
+  const encounter = await createTcmEncounter(data);
   return res.status(httpStatus.CREATED).json(encounter);
 }
 
