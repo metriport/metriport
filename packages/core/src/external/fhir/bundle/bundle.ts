@@ -224,29 +224,57 @@ export function buildSearchSetBundle(entries: BundleEntry[] = [], total?: number
  *
  * @param bundle - The bundle to be updated.
  * @param entries - The entries to be set in the bundle.
- * @returns The bundle with the entries replaced.
+ * @returns A new bundle with the entries replaced.
  */
 export function replaceBundleEntries(bundle: Bundle, entries: BundleEntry[] = []): Bundle {
-  let total: number | undefined;
-  if (bundle.total) total = entries.length;
-  return {
-    ...bundle,
-    ...(total ? { total } : {}),
-    entry: entries,
-  };
+  const shallowClone = { ...bundle };
+  return dangerouslyReplaceBundleEntries(shallowClone, entries);
+}
+
+/**
+ * Replaces the entries of a bundle. If the bundle has a total, it will be updated to the length of the entries.
+ * This function is dangerous because it mutates the original bundle.
+ *
+ * @param bundle - The bundle to be updated.
+ * @param entries - The entries to be set in the bundle.
+ * @returns The same, mutated bundle with the entries replaced. Not a deep clone!
+ */
+export function dangerouslyReplaceBundleEntries(
+  bundle: Bundle,
+  entries: BundleEntry[] = []
+): Bundle {
+  if (bundle.total != undefined) bundle.total = entries.length;
+  bundle.entry = entries;
+  return bundle;
 }
 
 /**
  * Adds the entries to the bundle, in addition to the original entries.
  *
  * @param bundle - The bundle to be updated.
- * @param entries - The entries to be added to the bundle.
- * @returns The bundle with the entries added.
+ * @param entriesToAdd - The entries to be added to the bundle.
+ * @returns A new bundle with the entries added.
  */
-export function addEntriesToBundle(bundle: Bundle, entries: BundleEntry[] = []): Bundle {
+export function addEntriesToBundle(bundle: Bundle, entriesToAdd: BundleEntry[] = []): Bundle {
+  const shallowClone = { ...bundle };
+  return dangerouslyAddEntriesToBundle(shallowClone, entriesToAdd);
+}
+
+/**
+ * Adds the entries to the bundle, in addition to the original entries.
+ * This function is dangerous because it mutates the original bundle.
+ *
+ * @param bundle - The bundle to be updated.
+ * @param entriesToAdd - The entries to be added to the bundle.
+ * @returns The same, mutated bundle with the entries added. Not a deep clone!
+ */
+export function dangerouslyAddEntriesToBundle(
+  bundle: Bundle,
+  entriesToAdd: BundleEntry[] = []
+): Bundle {
   const originalEntries = bundle.entry ?? [];
-  const newEntries = [...originalEntries, ...entries];
-  return replaceBundleEntries(bundle, newEntries);
+  const entries = [...originalEntries, ...entriesToAdd];
+  return dangerouslyReplaceBundleEntries(bundle, entries);
 }
 
 export function buildBundleEntry<T extends Resource>(resource: T): BundleEntry<T> {

@@ -9,9 +9,9 @@ import { createFolderName } from "../../domain/filename";
 import { Patient } from "../../domain/patient";
 import { executeWithRetriesS3, S3Utils } from "../../external/aws/s3";
 import {
-  addEntriesToBundle,
   buildBundleEntry,
   buildCollectionBundle,
+  dangerouslyAddEntriesToBundle,
 } from "../../external/fhir/bundle/bundle";
 import { dangerouslyDeduplicate } from "../../external/fhir/consolidated/deduplicate";
 import { getDocuments as getDocumentReferences } from "../../external/fhir/document/get-documents";
@@ -192,7 +192,7 @@ async function getConversions({
         log(`No valid bundle found in ${bucket}/${key}, skipping`);
         return;
       }
-      addEntriesToBundle(mergedBundle, singleConversion.entry ?? []);
+      dangerouslyAddEntriesToBundle(mergedBundle, singleConversion.entry ?? []);
     },
     { numberOfParallelExecutions }
   );

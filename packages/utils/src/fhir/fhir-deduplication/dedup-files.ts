@@ -4,9 +4,9 @@ dotenv.config();
 import { Bundle, Patient, Resource } from "@medplum/fhirtypes";
 import { MetriportMedicalApi } from "@metriport/api-sdk";
 import {
-  addEntriesToBundle,
   buildBundleEntry,
   buildCollectionBundle,
+  dangerouslyAddEntriesToBundle,
 } from "@metriport/core/external/fhir/bundle/bundle";
 import { toFHIR as patientToFhir } from "@metriport/core/external/fhir/patient/conversion";
 import { dangerouslyDeduplicateFhir } from "@metriport/core/fhir-deduplication/deduplicate-fhir";
@@ -120,7 +120,7 @@ async function createOrGetBundles(createBundle: boolean, patientId?: string) {
       console.log(`No valid bundle found in ${filePath}, skipping`);
       return;
     }
-    addEntriesToBundle(mergedBundle, singleConversion.entry ?? []);
+    dangerouslyAddEntriesToBundle(mergedBundle, singleConversion.entry ?? []);
   });
 
   const conversions = mergedBundle.entry ?? [];
