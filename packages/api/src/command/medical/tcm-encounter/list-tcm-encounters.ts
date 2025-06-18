@@ -1,4 +1,6 @@
 import { Op } from "sequelize";
+import { TcmEncounter } from "../../../domain/medical/tcm-encounter";
+import { PatientModel } from "../../../models/medical/patient";
 import { TcmEncounterModel } from "../../../models/medical/tcm-encounter";
 import { Pagination } from "../../pagination";
 
@@ -10,12 +12,16 @@ export type ListTcmEncountersCmd = {
   pagination: Pagination;
 };
 
+type TcmEncounterForDisplay = TcmEncounter & {
+  patientName: string;
+};
+
 export async function listTcmEncounters({
   cxId,
   after,
   pagination,
 }: ListTcmEncountersCmd): Promise<{
-  items: TcmEncounterModel[];
+  items: TcmEncounterForDisplay[];
   totalCount: number;
 }> {
   const where: Record<string, unknown> = {
@@ -34,12 +40,35 @@ export async function listTcmEncounters({
 
   const { rows, count } = await TcmEncounterModel.findAndCountAll({
     where,
+    include: [
+      {
+        model: PatientModel,
+        as: "PatientModel",
+        attributes: ["id", "cxId", "data"],
+      },
+    ],
     limit: pagination.count + 1, // Get one extra to determine if there's a next page
     order: [["admitTime", "DESC"]],
   });
 
+  const items = rows.map(row => {
+    const patient = (row.get("PatientModel") as PatientModel).dataValues.data;
+
+    /** Hack to get around Sequelize type inference not seeing associations */
+    const encounterData = { ...row.dataValues, PatientModel: undefined };
+    delete encounterData.PatientModel;
+
+    return {
+      ...encounterData,
+      patientName: patient.firstName + " " + patient.lastName,
+      patientDateOfBirth: patient.dob,
+      patientPhoneNumbers: patient.contact?.map(contact => contact.phone),
+      patientStates: patient.address.map(address => address.state),
+    };
+  });
+
   return {
-    items: rows,
+    items,
     totalCount: count,
   };
 }

@@ -48,6 +48,7 @@ export const tcmEncounterResponseSchema = tcmEncounterCreateSchema
   .extend({
     id: z.string().uuid(),
     cxId: z.string().uuid(),
+    patientName: z.string(),
     createdAt: z.string().datetime(),
     updatedAt: z.string().datetime(),
     eTag: z.string(),

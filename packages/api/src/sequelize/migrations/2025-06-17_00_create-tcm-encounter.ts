@@ -23,7 +23,7 @@ export const up: Migration = async ({ context: queryInterface }) => {
           allowNull: false,
         },
         patientId: {
-          type: DataTypes.UUID,
+          type: DataTypes.STRING,
           field: "patient_id",
           allowNull: false,
         },

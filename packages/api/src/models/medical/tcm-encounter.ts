@@ -1,6 +1,8 @@
 import { DataTypes, Sequelize } from "sequelize";
 import { TcmEncounter } from "../../domain/medical/tcm-encounter";
 import { BaseModel, ModelSetup } from "../_default";
+import { OrganizationModel } from "./organization";
+import { PatientModel } from "./patient";
 
 export type TcmEncounterCreation = Omit<TcmEncounter, "id" | "createdAt" | "updatedAt" | "eTag">;
 
@@ -21,9 +23,17 @@ export class TcmEncounterModel extends BaseModel<TcmEncounterModel> implements T
         ...BaseModel.attributes(),
         cxId: {
           type: DataTypes.UUID,
+          references: {
+            model: "organization",
+            key: "cxId",
+          },
         },
         patientId: {
           type: DataTypes.UUID,
+          references: {
+            model: "patient",
+            key: "id",
+          },
         },
         facilityName: {
           type: DataTypes.STRING,
@@ -51,5 +61,20 @@ export class TcmEncounterModel extends BaseModel<TcmEncounterModel> implements T
         tableName: TcmEncounterModel.NAME,
       }
     );
+  };
+
+  static associate = (models: {
+    PatientModel: typeof PatientModel;
+    OrganizationModel: typeof OrganizationModel;
+  }) => {
+    TcmEncounterModel.belongsTo(models.PatientModel, {
+      foreignKey: "patientId",
+      targetKey: "id",
+    });
+
+    TcmEncounterModel.belongsTo(models.OrganizationModel, {
+      foreignKey: "cxId",
+      targetKey: "cxId",
+    });
   };
 }
