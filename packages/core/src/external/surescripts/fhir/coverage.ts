@@ -3,6 +3,8 @@ import { Coverage, Identifier } from "@medplum/fhirtypes";
 import { ResponseDetail } from "../schema/response";
 import { getPlanCodeName } from "@metriport/shared/interface/external/surescripts/plan-code";
 import { getSurescriptsDataSourceExtension } from "./shared";
+import { SurescriptsContext } from "./types";
+import { getPatientReference } from "./patient";
 import {
   NCPDP_PROVIDER_ID_SYSTEM,
   PLAN_NETWORK_BIN_SYSTEM,
@@ -10,15 +12,22 @@ import {
   COVERAGE_TYPE_SYSTEM,
 } from "./constants";
 
-export function getCoverage(detail: ResponseDetail): Coverage | undefined {
+export function getCoverage(
+  context: SurescriptsContext,
+  detail: ResponseDetail
+): Coverage | undefined {
   if (!detail.planCode) return undefined;
   const identifier = getCoverageIdentifiers(detail);
+  const beneficiary = getPatientReference(context.patient);
   const extension = [getSurescriptsDataSourceExtension()];
 
   return {
     resourceType: "Coverage",
     status: "active",
     id: uuidv7(),
+    beneficiary,
+    // TODO: ENG-377 - determine how to add payor reference to bundle based on validated insurance information
+    payor: [],
     type: {
       coding: [
         {
