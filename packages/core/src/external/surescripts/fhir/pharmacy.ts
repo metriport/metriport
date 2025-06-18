@@ -3,6 +3,7 @@ import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { ResponseDetail } from "../schema/response";
 import { NCPDP_PROVIDER_ID_SYSTEM } from "./constants";
 import { NPI_URL } from "./constants";
+import { getSurescriptsDataSourceExtension } from "./shared";
 
 export function getPharmacy(detail: ResponseDetail): Organization | undefined {
   if (!detail.pharmacyNpiNumber && !detail.ncpdpId) return undefined;
@@ -11,6 +12,7 @@ export function getPharmacy(detail: ResponseDetail): Organization | undefined {
   const address = getPharmacyAddress(detail);
   const telecom = getPharmacyTelecom(detail);
   const identifiers = getPharmacyIdentifiers(detail);
+  const extension = [getSurescriptsDataSourceExtension()];
 
   return {
     resourceType: "Organization",
@@ -19,6 +21,7 @@ export function getPharmacy(detail: ResponseDetail): Organization | undefined {
     ...(identifiers.length > 0 ? { identifier: identifiers } : undefined),
     ...(address && address.length > 0 ? { address } : undefined),
     ...(telecom && telecom.length > 0 ? { telecom } : undefined),
+    extension,
   };
 }
 

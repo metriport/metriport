@@ -32,7 +32,7 @@ const medicationResourceTypes = new Set(["Medication", "MedicationDispense", "Me
 
 program
   .name("batch-analysis")
-  .description("analyze surescripts data for a customer")
+  .description("analyze surescripts batch data for a customer")
   .option("--cx-id <cxId>", "The customer ID")
   .option("--facility-id <facilityId>", "The facility ID")
   .option("--transmission-id <transmissionId>", "The batch transmission ID")
@@ -53,6 +53,8 @@ program
       const replica = new SurescriptsReplica();
       const handler = new SurescriptsConvertBatchResponseHandlerDirect(replica);
 
+      // First convert all patients in the batch into FHIR bundles that are uploaded to the
+      // pharmacy conversion bucket.
       const conversionBundles = await handler.convertBatchResponse({
         cxId,
         facilityId,
@@ -60,27 +62,28 @@ program
         populationId: facilityId,
       });
 
+      // Then, for each patient, we compare the existing consolidated bundle to the new conversion bundle
       for (const conversion of conversionBundles) {
         if (!conversion || !conversion.bundle) {
           console.log(`No conversion bundle generated for patient ${conversion.patientId}`);
           continue;
         }
+        // Ensure the conversion bundle is deduplicated
+        dangerouslyDeduplicateFhir(conversion.bundle, cxId, conversion.patientId);
 
-        // Compare existing consolidated to the conversion
+        // Get consolidated bundle and ensure it is deduplicated
         const consolidated = await getConsolidatedBundle(cxId, conversion.patientId);
-
         if (!consolidated) {
           console.log(`No consolidated bundle found for patient ${conversion.patientId}`);
           continue;
         }
+        dangerouslyDeduplicateFhir(consolidated, cxId, conversion.patientId);
 
+        // Collect a data point about the consolidated vs conversion bundle
         const dataPoint: Partial<DataPoint> = {
           patientId: conversion.patientId,
           transmissionId,
         };
-        console.log("patient: " + conversion.patientId);
-        // Compute the number of entries and medications in the current consolidated
-        dangerouslyDeduplicateFhir(consolidated, cxId, conversion.patientId);
         dataPoint.consolidatedEntries = countEntries(consolidated);
         dataPoint.consolidatedMedications = countResourceType(
           consolidated,

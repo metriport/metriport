@@ -2,14 +2,14 @@ import { Identifier, Practitioner, Reference } from "@medplum/fhirtypes";
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { ResponseDetail } from "../schema/response";
 import { DEA_SCHEDULE_URL, NPI_URL } from "./constants";
+import { getSurescriptsDataSourceExtension } from "./shared";
 
 export function getPrescriber(detail: ResponseDetail): Practitioner {
   const prescriberName = getPrescriberName(detail);
   const prescriberAddress = getPrescriberAddress(detail);
   const identifiers = getPrescriberIdentifiers(detail);
   const telecom = getPrescriberTelecom(detail);
-
-  // detail.prescriberSuffix
+  const extension = [getSurescriptsDataSourceExtension()];
 
   return {
     resourceType: "Practitioner",
@@ -20,6 +20,7 @@ export function getPrescriber(detail: ResponseDetail): Practitioner {
       ? { address: prescriberAddress }
       : undefined),
     ...(telecom && telecom.length > 0 ? { telecom } : undefined),
+    extension,
   };
 }
 

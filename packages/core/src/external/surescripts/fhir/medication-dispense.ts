@@ -10,7 +10,7 @@ import { MEDICATION_DISPENSE_FILL_NUMBER_EXTENSION, UNIT_OF_MEASURE_URL } from "
 import { getMedicationReference } from "./medication";
 import { getPatientReference } from "./patient";
 import { getPrescriberReference } from "./prescriber";
-import { getResourceByNpiNumber } from "./shared";
+import { getResourceByNpiNumber, getSurescriptsDataSourceExtension } from "./shared";
 import { SurescriptsContext } from "./types";
 
 export function getMedicationDispense(
@@ -25,7 +25,9 @@ export function getMedicationDispense(
   const medicationReference = getMedicationReference(medication);
   const whenHandedOver = getWhenHandedOver(detail);
   const fillNumber = getFillNumberAsExtension(detail);
-  const extensions = [fillNumber].filter(Boolean) as Extension[];
+  const extensions = [fillNumber, getSurescriptsDataSourceExtension()].filter(
+    Boolean
+  ) as Extension[];
 
   const medicationDispense: MedicationDispense = {
     resourceType: "MedicationDispense",
@@ -36,8 +38,8 @@ export function getMedicationDispense(
     ...(whenHandedOver ? { whenHandedOver } : undefined),
     ...(dosageInstruction ? { dosageInstruction } : undefined),
     ...(daysSupply ? { daysSupply } : undefined),
-    ...(extensions.length > 0 ? { extension: extensions } : undefined),
     ...(performer.length > 0 ? { performer } : undefined),
+    extension: extensions,
   };
 
   return medicationDispense;

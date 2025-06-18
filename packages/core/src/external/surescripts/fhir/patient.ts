@@ -2,11 +2,13 @@ import { BadRequestError } from "@metriport/shared";
 import { Patient, Reference } from "@medplum/fhirtypes";
 import { ResponseDetail } from "../schema/response";
 import { convertDateToString } from "@metriport/shared/common/date";
+import { getSurescriptsDataSourceExtension } from "./shared";
 
 export function getPatient(detail: ResponseDetail): Patient {
   const name = getPatientName(detail);
   const gender = getPatientGender(detail);
   const birthDate = getPatientBirthDate(detail);
+  const extension = [getSurescriptsDataSourceExtension()];
 
   return {
     resourceType: "Patient",
@@ -14,6 +16,7 @@ export function getPatient(detail: ResponseDetail): Patient {
     ...(name ? { name } : undefined),
     ...(gender ? { gender } : undefined),
     ...(birthDate ? { birthDate } : undefined),
+    extension,
   };
 }
 

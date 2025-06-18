@@ -3,6 +3,7 @@ import { Medication, MedicationRequest } from "@medplum/fhirtypes";
 import type { SurescriptsContext } from "./types";
 import { ResponseDetail } from "../schema/response";
 import { getMedicationReference } from "./medication";
+import { getSurescriptsDataSourceExtension } from "./shared";
 
 export function getMedicationRequest(
   context: SurescriptsContext,
@@ -14,6 +15,7 @@ export function getMedicationRequest(
   const medicationReference = getMedicationReference(medication);
   const dosageInstruction = getDosageInstruction(detail);
   const authoredOn = getAuthoredOn(detail);
+  const extension = [getSurescriptsDataSourceExtension()];
 
   return {
     resourceType: "MedicationRequest",
@@ -23,6 +25,7 @@ export function getMedicationRequest(
     ...(dispenseRequest ? { dispenseRequest } : undefined),
     ...(dosageInstruction ? { dosageInstruction } : undefined),
     ...(substitution ? { substitution } : undefined),
+    extension,
   };
 }
 

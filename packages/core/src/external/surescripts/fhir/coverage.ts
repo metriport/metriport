@@ -2,6 +2,7 @@ import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { Coverage, Identifier } from "@medplum/fhirtypes";
 import { ResponseDetail } from "../schema/response";
 import { getPlanCodeName } from "@metriport/shared/interface/external/surescripts/plan-code";
+import { getSurescriptsDataSourceExtension } from "./shared";
 import {
   NCPDP_PROVIDER_ID_SYSTEM,
   PLAN_NETWORK_BIN_SYSTEM,
@@ -12,6 +13,7 @@ import {
 export function getCoverage(detail: ResponseDetail): Coverage | undefined {
   if (!detail.planCode) return undefined;
   const identifier = getCoverageIdentifiers(detail);
+  const extension = [getSurescriptsDataSourceExtension()];
 
   return {
     resourceType: "Coverage",
@@ -27,6 +29,7 @@ export function getCoverage(detail: ResponseDetail): Coverage | undefined {
       ],
     },
     ...(identifier.length > 0 ? { identifier } : undefined),
+    extension,
   };
 }
 
