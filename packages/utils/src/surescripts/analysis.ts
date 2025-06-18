@@ -37,20 +37,26 @@ program
   .option("--cx-id <cxId>", "The customer ID")
   .option("--facility-id <facilityId>", "The facility ID")
   .option("--csv-data <csvData>", "The CSV data with patient IDs and transmission IDs")
+  .option("--out-file <outFile>", "The output file name within runs/surescripts")
   .action(
     async ({
       cxId,
       facilityId,
       csvData,
+      outFile,
     }: {
       cxId: string;
       facilityId: string;
       csvData: string;
       resourceType: string;
+      outFile?: string;
     }) => {
       if (!cxId) throw new Error("Customer ID is required");
       if (!facilityId) throw new Error("Facility ID is required");
       if (!csvData) throw new Error("CSV data is required");
+      if (!outFile) {
+        outFile = cxId + "_analysis.csv";
+      }
 
       const replica = new SurescriptsReplica();
       const handler = new SurescriptsConvertPatientResponseHandlerDirect(replica);
@@ -165,7 +171,12 @@ program
             ].join(",")
           )
           .join("\n");
-      fs.writeFileSync(path.join(process.cwd(), "runs/surescripts/ccp_data.csv"), csvContent);
+
+      const runsDirectory = path.join(process.cwd(), "runs/surescripts/");
+      if (!fs.existsSync(runsDirectory)) {
+        fs.mkdirSync(runsDirectory, { recursive: true });
+      }
+      fs.writeFileSync(path.join(runsDirectory, outFile), csvContent);
     }
   );
 
