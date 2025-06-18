@@ -23,6 +23,7 @@ export class TcmEncounterModel extends BaseModel<TcmEncounterModel> implements T
         ...BaseModel.attributes(),
         cxId: {
           type: DataTypes.UUID,
+          allowNull: false,
           references: {
             model: "organization",
             key: "cxId",
@@ -30,6 +31,7 @@ export class TcmEncounterModel extends BaseModel<TcmEncounterModel> implements T
         },
         patientId: {
           type: DataTypes.UUID,
+          allowNull: false,
           references: {
             model: "patient",
             key: "id",
@@ -40,20 +42,21 @@ export class TcmEncounterModel extends BaseModel<TcmEncounterModel> implements T
         },
         latestEvent: {
           type: DataTypes.ENUM("Admitted", "Transferred", "Discharged"),
+          allowNull: false,
         },
         class: {
           type: DataTypes.STRING,
+          allowNull: false,
         },
         admitTime: {
           type: DataTypes.DATE,
-          allowNull: true,
         },
         dischargeTime: {
           type: DataTypes.DATE,
-          allowNull: true,
         },
         clinicalInformation: {
           type: DataTypes.JSONB,
+          defaultValue: {},
         },
       },
       {

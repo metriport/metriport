@@ -25,14 +25,10 @@ router.get("/", requestLogger, asyncHandler(handleListTcmEncounters));
 export async function handleUpdateTcmEncounter(req: Request, res: Response): Promise<Response> {
   const cxId = getCxIdOrFail(req);
   const id = getFromParamsOrFail("id", req);
-  const data = tcmEncounterUpdateSchema.parse(req.body);
+  const body = tcmEncounterUpdateSchema.parse(req.body);
 
   try {
-    const result = await updateTcmEncounter({
-      id,
-      cxId,
-      data,
-    });
+    const result = await updateTcmEncounter({ ...body, id, cxId });
 
     return res.status(httpStatus.OK).json(result.encounter);
   } catch (error) {

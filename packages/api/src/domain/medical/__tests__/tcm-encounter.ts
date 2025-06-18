@@ -8,6 +8,10 @@ export function makeTcmEncounter(params: Partial<TcmEncounter> = {}): TcmEncount
     patientId: params?.patientId ?? faker.string.uuid(),
     facilityName: params?.facilityName ?? faker.company.name(),
     latestEvent: params?.latestEvent ?? "Admitted",
+    /**
+     * @class The FHIR encounter class of the encounter.
+     * @see https://www.hl7.org/fhir/encounter-definitions.html#Encounter.class
+     */
     class: params?.class ?? "Inpatient",
     admitTime: params?.admitTime ?? faker.date.recent(),
     dischargeTime: params?.dischargeTime ?? null,

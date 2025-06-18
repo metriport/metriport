@@ -53,7 +53,7 @@ describe("TCM Encounter Handlers", () => {
       expect(res.status).toHaveBeenCalledWith(httpStatus.NOT_FOUND);
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
-          message: `TCM encounter with ID ${req.params?.id} not found`,
+          message: `TCM encounter not found`,
         })
       );
     });
