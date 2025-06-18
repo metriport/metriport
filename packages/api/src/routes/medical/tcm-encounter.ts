@@ -7,6 +7,7 @@ import { requestLogger } from "../helpers/request-logger";
 import { paginated } from "../pagination";
 import { asyncHandler, getCxIdOrFail, getFromParamsOrFail } from "../util";
 import { tcmEncounterListQuerySchema, tcmEncounterUpdateSchema } from "./schemas/tcm-encounter";
+import { NotFoundError } from "@metriport/shared";
 
 const router = Router();
 router.put("/:id", requestLogger, asyncHandler(handleUpdateTcmEncounter));
@@ -26,17 +27,20 @@ export async function handleUpdateTcmEncounter(req: Request, res: Response): Pro
   const id = getFromParamsOrFail("id", req);
   const data = tcmEncounterUpdateSchema.parse(req.body);
 
-  const result = await updateTcmEncounter({
-    id,
-    cxId,
-    data,
-  });
+  try {
+    const result = await updateTcmEncounter({
+      id,
+      cxId,
+      data,
+    });
 
-  return res.status(result.status).json(
-    result.encounter ?? {
-      message: result.message,
+    return res.status(httpStatus.OK).json(result.encounter);
+  } catch (error) {
+    if (error instanceof NotFoundError) {
+      return res.status(httpStatus.NOT_FOUND).json({ message: error.message });
     }
-  );
+    throw error;
+  }
 }
 
 /** ---------------------------------------------------------------------------

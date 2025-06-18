@@ -1,3 +1,4 @@
+import { NotFoundError } from "@metriport/shared";
 import { TcmEncounter } from "../../../domain/medical/tcm-encounter";
 import { TcmEncounterModel } from "../../../models/medical/tcm-encounter";
 import { BaseUpdateCmdWithCustomer } from "../base-update-command";
@@ -9,9 +10,7 @@ export type UpdateTcmEncounterCmd = BaseUpdateCmdWithCustomer & {
 };
 
 export type UpdateTcmEncounterResult = {
-  encounter: TcmEncounterModel | null;
-  status: number;
-  message?: string;
+  encounter: TcmEncounterModel;
 };
 
 export async function updateTcmEncounter({
@@ -21,11 +20,7 @@ export async function updateTcmEncounter({
 }: UpdateTcmEncounterCmd): Promise<UpdateTcmEncounterResult> {
   const encounter = await TcmEncounterModel.findByPk(id);
   if (!encounter) {
-    return {
-      encounter: null,
-      status: 404,
-      message: `TCM encounter with ID ${id} not found`,
-    };
+    throw new NotFoundError(`TCM encounter with ID ${id} not found`);
   }
 
   await TcmEncounterModel.update(data, {
@@ -42,6 +37,5 @@ export async function updateTcmEncounter({
 
   return {
     encounter: updatedEncounter,
-    status: 200,
   };
 }
