@@ -12,7 +12,6 @@ export async function updateCohort({
   cxId,
   name,
   monitoring,
-  otherSettings,
 }: CohortUpdateCmd): Promise<Cohort> {
   const { log } = out(`updateCohort - cx: ${cxId}, id: ${id}`);
 
@@ -22,7 +21,6 @@ export async function updateCohort({
   const updatedCohort = await cohort.update({
     name,
     monitoring,
-    otherSettings,
   });
 
   log(`Done. Updated cohort: ${JSON.stringify(updatedCohort.dataValues)}`);

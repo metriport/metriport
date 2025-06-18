@@ -3,7 +3,8 @@ import { out } from "@metriport/core/util";
 import { BadRequestError } from "@metriport/shared";
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { Op } from "sequelize";
-import { PatientCohortModel } from "../../../../models/medical/cohort";
+
+import { PatientCohortModel } from "../../../../models/medical/patient-cohort";
 import { getPatientOrFail } from "../../patient/get-patient";
 import { getCohortModelOrFail } from "../get-cohort";
 

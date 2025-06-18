@@ -18,7 +18,6 @@ export function dtoFromModel(cohort: Cohort): CohortDTO {
     name: cohort.name,
     cxId: cohort.cxId,
     monitoring: cohort.monitoring,
-    otherSettings: cohort.otherSettings,
     dateCreated: cohort.createdAt,
   };
 }
