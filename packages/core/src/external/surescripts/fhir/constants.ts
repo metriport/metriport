@@ -1,9 +1,5 @@
-export const NPI_SYSTEM = "http://hl7.org/fhir/sid/us-npi";
-export const DEA_SYSTEM = "http://hl7.org/fhir/sid/us-dea";
-export const ICD_10_SYSTEM = "http://hl7.org/fhir/sid/icd-10";
-export const NDC_SYSTEM = "http://hl7.org/fhir/sid/ndc";
-export const UNIT_OF_MEASURE_SYSTEM = "http://unitsofmeasure.org";
-export const SNOMED_SYSTEM = "http://snomed.info/sct";
+export const DEA_SCHEDULE_URL = "http://hl7.org/fhir/sid/us-dea";
+export const UNIT_OF_MEASURE_URL = "http://unitsofmeasure.org";
 
 export const PLAN_NETWORK_PCN_SYSTEM = "http://terminology.hl7.org/CodeSystem/v2-0203";
 export const PLAN_NETWORK_BIN_SYSTEM =

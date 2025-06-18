@@ -11,12 +11,8 @@ import { ResponseDetail } from "../schema/response";
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { getDeaScheduleName } from "@metriport/shared/interface/external/surescripts/dea-schedule";
 import { getNcpdpName } from "@metriport/shared/interface/external/surescripts/ncpdp";
-import {
-  DEA_SCHEDULE_SYSTEM,
-  NDC_SYSTEM,
-  SNOMED_SYSTEM,
-  UNIT_OF_MEASURE_SYSTEM,
-} from "./constants";
+import { DEA_SCHEDULE_URL, UNIT_OF_MEASURE_URL } from "./constants";
+import { NDC_URL, SNOMED_URL } from "../../../util/constants";
 
 export function getMedication(detail: ResponseDetail): Medication {
   const code = getMedicationCodeableConcept(detail);
@@ -71,7 +67,7 @@ function getMedicationCoding(detail: ResponseDetail): Coding[] | undefined {
 function getMedicationNdcCode(detail: ResponseDetail): Coding | undefined {
   if (!detail.ndcNumber) return undefined;
   return {
-    system: NDC_SYSTEM,
+    system: NDC_URL,
     code: detail.ndcNumber,
     display: detail.drugDescription ?? "",
   };
@@ -80,7 +76,7 @@ function getMedicationNdcCode(detail: ResponseDetail): Coding | undefined {
 function getMedicationProductCode(detail: ResponseDetail): Coding | undefined {
   if (!detail.productCode) return undefined;
   return {
-    system: NDC_SYSTEM,
+    system: NDC_URL,
     code: detail.productCode,
     display: detail.drugDescription ?? "",
   };
@@ -91,7 +87,7 @@ function getMedicationDeaScheduleCode(detail: ResponseDetail): Coding | undefine
   const deaScheduleDisplay = getDeaScheduleName(detail.deaSchedule);
 
   return {
-    system: DEA_SCHEDULE_SYSTEM,
+    system: DEA_SCHEDULE_URL,
     code: detail.deaSchedule,
     ...(deaScheduleDisplay ? { display: deaScheduleDisplay } : undefined),
   };
@@ -101,7 +97,7 @@ function getMedicationForm(detail: ResponseDetail): Coding | undefined {
   if (!detail.strengthFormCode) return undefined;
   const ncpdpName = getNcpdpName(detail.strengthFormCode);
   return {
-    system: SNOMED_SYSTEM,
+    system: SNOMED_URL,
     code: detail.strengthFormCode,
     ...(ncpdpName ? { display: ncpdpName } : undefined),
   };
@@ -146,7 +142,7 @@ function getMedicationIngredient(detail: ResponseDetail): MedicationIngredient[]
       itemCodeableConcept: {
         coding: [
           {
-            system: SNOMED_SYSTEM,
+            system: SNOMED_URL,
             code: detail.drugDatabaseCode ?? "",
             display: detail.drugDescription ?? "",
           },
@@ -155,14 +151,14 @@ function getMedicationIngredient(detail: ResponseDetail): MedicationIngredient[]
       strength: {
         numerator: {
           value: Number(detail.strengthValue),
-          system: UNIT_OF_MEASURE_SYSTEM,
+          system: UNIT_OF_MEASURE_URL,
           code: detail.strengthUnitOfMeasure,
           ...(strengthUnitOfMeasureDisplay ? { display: strengthUnitOfMeasureDisplay } : undefined),
         },
         denominator: {
           value: 1,
           unit: detail.strengthFormCode,
-          system: UNIT_OF_MEASURE_SYSTEM,
+          system: UNIT_OF_MEASURE_URL,
           code: detail.strengthFormCode,
           ...(strengthFormCodeDisplay ? { display: strengthFormCodeDisplay } : undefined),
         },

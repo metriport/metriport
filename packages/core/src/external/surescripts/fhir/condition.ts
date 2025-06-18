@@ -3,7 +3,7 @@ import { Condition } from "@medplum/fhirtypes";
 import { ResponseDetail } from "../schema/response";
 import { SurescriptsContext } from "./types";
 import { getPatientReference } from "./patient";
-import { ICD_10_SYSTEM } from "./constants";
+import { ICD_10_URL } from "../../../util/constants";
 
 export function getCondition(
   context: SurescriptsContext,
@@ -19,7 +19,7 @@ export function getCondition(
     code: {
       coding: [
         {
-          system: ICD_10_SYSTEM,
+          system: ICD_10_URL,
           code: detail.diagnosisICD10Code,
         },
       ],

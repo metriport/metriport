@@ -110,3 +110,33 @@ export function buildFhirParametersFromCoding(coding: Coding): Parameters | unde
     id: createUuidFromText(JSON.stringify(parameter)),
   };
 }
+
+export function buildFhirParametersForCrosswalkFromCoding(
+  coding: Coding,
+  targetSystem: string
+): Parameters | undefined {
+  const code = coding.code?.trim();
+  const system = coding.system?.trim();
+  if (!code || !system) return undefined;
+
+  const isValidSystem = isSystemValid(system);
+  const isValidTargetSystem = isSystemValid(targetSystem);
+  if (!isValidSystem || !isValidTargetSystem) return undefined;
+
+  const parameter: ParametersParameter[] = [
+    {
+      name: "system",
+      valueUri: system,
+    },
+    {
+      name: "code",
+      valueCode: code,
+    },
+  ];
+
+  return {
+    resourceType: "Parameters",
+    parameter,
+    id: createUuidFromText(JSON.stringify(parameter)),
+  };
+}
