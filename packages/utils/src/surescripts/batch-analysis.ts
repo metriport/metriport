@@ -78,6 +78,7 @@ program
           patientId: conversion.patientId,
           transmissionId,
         };
+        console.log("patient: " + conversion.patientId);
         // Compute the number of entries and medications in the current consolidated
         dangerouslyDeduplicateFhir(consolidated, cxId, conversion.patientId);
         dataPoint.consolidatedEntries = countEntries(consolidated);
