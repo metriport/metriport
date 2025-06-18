@@ -72,7 +72,7 @@ function getMedicationNdcCode(detail: ResponseDetail): Coding | undefined {
   return {
     system: NDC_URL,
     code: detail.ndcNumber,
-    display: detail.drugDescription ?? "",
+    ...(detail.drugDescription ? { display: detail.drugDescription } : undefined),
   };
 }
 
@@ -81,7 +81,7 @@ function getMedicationProductCode(detail: ResponseDetail): Coding | undefined {
   return {
     system: NDC_URL,
     code: detail.productCode,
-    display: detail.drugDescription ?? "",
+    ...(detail.drugDescription ? { display: detail.drugDescription } : undefined),
   };
 }
 
@@ -139,18 +139,11 @@ function getMedicationIngredient(detail: ResponseDetail): MedicationIngredient[]
   }
   const strengthUnitOfMeasureDisplay = getNcpdpName(detail.strengthUnitOfMeasure);
   const strengthFormCodeDisplay = getNcpdpName(detail.strengthFormCode);
+  const itemCodeableConcept = getMedicationIngredientCodeableConcept(detail);
 
   return [
     {
-      itemCodeableConcept: {
-        coding: [
-          {
-            system: SNOMED_URL,
-            code: detail.drugDatabaseCode ?? "",
-            display: detail.drugDescription ?? "",
-          },
-        ],
-      },
+      ...(itemCodeableConcept ? { itemCodeableConcept } : undefined),
       strength: {
         numerator: {
           value: Number(detail.strengthValue),
@@ -168,4 +161,19 @@ function getMedicationIngredient(detail: ResponseDetail): MedicationIngredient[]
       },
     },
   ];
+}
+
+function getMedicationIngredientCodeableConcept(
+  detail: ResponseDetail
+): CodeableConcept | undefined {
+  if (!detail.drugDatabaseCode || !detail.drugDescription) return undefined;
+  return {
+    coding: [
+      {
+        system: SNOMED_URL,
+        code: detail.drugDatabaseCode,
+        ...(detail.drugDescription ? { display: detail.drugDescription } : undefined),
+      },
+    ],
+  };
 }
