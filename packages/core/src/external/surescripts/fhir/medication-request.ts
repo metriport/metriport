@@ -16,7 +16,7 @@ export function getMedicationRequest(
   const medicationReference = getMedicationReference(medication);
   const dosageInstruction = getDosageInstruction(detail);
   const authoredOn = getAuthoredOn(detail);
-  const category = getDispenseCategory(detail);
+  const category = getDispenseCategory();
   const extension = [getSurescriptsDataSourceExtension()];
 
   return {
@@ -41,9 +41,7 @@ function getDispenseRequest(
   return undefined;
 }
 
-function getDispenseCategory(detail: ResponseDetail): MedicationRequest["category"] | undefined {
-  if (!detail.pharmacyNpiNumber) return undefined;
-
+function getDispenseCategory(): MedicationRequest["category"] {
   return [
     {
       coding: [
