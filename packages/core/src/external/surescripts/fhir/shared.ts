@@ -41,6 +41,7 @@ export function deduplicateBySystemIdentifier<R extends Practitioner | Organizat
       return existingResource;
     }
     identifierMap[identifier.value] = resource;
+    return resource;
   }
   return undefined;
 }

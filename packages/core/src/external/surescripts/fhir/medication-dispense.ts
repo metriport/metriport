@@ -23,6 +23,7 @@ export function getMedicationDispense(
   const dosageInstruction = getDosageInstruction(detail);
   const subject = getPatientReference(context.patient);
   const medicationReference = getMedicationReference(medication);
+  const whenHandedOver = getWhenHandedOver(detail);
   const fillNumber = getFillNumberAsExtension(detail);
   const extensions = [fillNumber].filter(Boolean) as Extension[];
 
@@ -32,6 +33,7 @@ export function getMedicationDispense(
     subject,
     medicationReference,
     status: "completed",
+    ...(whenHandedOver ? { whenHandedOver } : undefined),
     ...(dosageInstruction ? { dosageInstruction } : undefined),
     ...(daysSupply ? { daysSupply } : undefined),
     ...(extensions.length > 0 ? { extension: extensions } : undefined),
@@ -39,6 +41,13 @@ export function getMedicationDispense(
   };
 
   return medicationDispense;
+}
+
+function getWhenHandedOver(
+  detail: ResponseDetail
+): MedicationDispense["whenHandedOver"] | undefined {
+  if (!detail.dateWritten) return undefined;
+  return detail.dateWritten.toISOString();
 }
 
 function getDosageInstruction(

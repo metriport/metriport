@@ -27,9 +27,9 @@ export class SurescriptsConvertBatchResponseHandlerDirect
       );
     }
 
-    const conversionBundles = await convertBatchResponseToFhirBundles(responseFileContent);
+    const conversionBundles = await convertBatchResponseToFhirBundles(cxId, responseFileContent);
     for (const { patientId, bundle } of conversionBundles) {
-      await uploadConversionBundle({ bundle, cxId, patientId, transmissionId });
+      await uploadConversionBundle({ bundle, cxId, patientId, jobId: transmissionId });
     }
     return conversionBundles;
   }

@@ -53,6 +53,7 @@ export interface SurescriptsBatchRequestData extends SurescriptsRequesterData {
 }
 
 export interface SurescriptsConversionBundle {
+  cxId: string;
   patientId: string;
   bundle: Bundle;
 }

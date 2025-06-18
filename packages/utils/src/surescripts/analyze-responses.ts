@@ -85,6 +85,7 @@ program
         Object.entries(responseDataFrequency)
           .flatMap(([key, valueMap]) => {
             return Object.entries(valueMap)
+              .sort(([, a], [, b]) => b - a)
               .map(([value, count]) => {
                 if (count < frequencyThreshold) return null;
                 return [`"${key}"`, `"${value}"`, `"${count}"`].join(",");

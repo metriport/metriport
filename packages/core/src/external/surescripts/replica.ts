@@ -40,7 +40,7 @@ export class SurescriptsReplica extends S3Replica {
     if (!responseFile) {
       return undefined;
     }
-    const compressedContent = await this.readFile(responseFile);
-    return await decompressGzip(compressedContent);
+    const fileContent = await this.readFile(responseFile);
+    return decompressGzip(fileContent);
   }
 }

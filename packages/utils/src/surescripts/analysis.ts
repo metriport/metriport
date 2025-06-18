@@ -1,19 +1,19 @@
 #!/usr/bin/env node
 import dotenv from "dotenv";
-import csv from "csv-parser";
 dotenv.config();
 
 import fs from "fs";
 import path from "path";
-
 import { Command } from "commander";
-import { Bundle } from "@medplum/fhirtypes";
+import { Bundle, Medication } from "@medplum/fhirtypes";
 import { SurescriptsConvertPatientResponseHandlerDirect } from "@metriport/core/external/surescripts/command/convert-patient-response/convert-patient-response-direct";
 import { SurescriptsReplica } from "@metriport/core/external/surescripts/replica";
 import { createConsolidatedDataFileNameWithSuffix } from "@metriport/core/domain/consolidated/filename";
 import { dangerouslyDeduplicateFhir } from "@metriport/core/fhir-deduplication/deduplicate-fhir";
 import { getEnvVarOrFail } from "@metriport/shared";
 import { S3Utils } from "@metriport/core/external/aws/s3";
+import { getTransmissionsFromCsv } from "./shared";
+import { buildBundle } from "@metriport/core/external/fhir/bundle/bundle";
 
 const program = new Command();
 const medicalDocsBucketName = getEnvVarOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
@@ -54,8 +54,7 @@ program
 
       const replica = new SurescriptsReplica();
       const handler = new SurescriptsConvertPatientResponseHandlerDirect(replica);
-      let transmissions = await getTransmissionsFromCsv(cxId, csvData);
-      transmissions = transmissions.slice(0, 1000);
+      const transmissions = await getTransmissionsFromCsv(cxId, csvData);
 
       for (const { patientId, transmissionId } of transmissions) {
         // Compare existing consolidated to the conversion
@@ -97,16 +96,41 @@ program
           conversion.bundle,
           medicationResourceTypes
         );
-        consolidatedBundle.entry?.push(...(conversion.bundle.entry ?? []));
-        dangerouslyDeduplicateFhir(consolidatedBundle, cxId, patientId);
+
+        const newConsolidatedBundle = buildBundle({
+          type: "collection",
+          entries: [...(consolidatedBundle.entry ?? []), ...(conversion.bundle.entry ?? [])],
+        });
+        dangerouslyDeduplicateFhir(newConsolidatedBundle, cxId, patientId);
 
         // Compute the new number of entries and medications in the consolidated bundle
-        dataPoint.newConsolidatedEntries = countEntries(consolidatedBundle);
+        dataPoint.newConsolidatedEntries = countEntries(newConsolidatedBundle);
         dataPoint.newConsolidatedMedications = countResourceType(
-          consolidatedBundle,
+          newConsolidatedBundle,
           medicationResourceTypes
         );
         dataPoints.push(dataPoint as DataPoint);
+
+        console.log(
+          `CB(${dataPoint.consolidatedEntries}) + SS(${dataPoint.conversionEntries}) = CB'(${dataPoint.newConsolidatedEntries})`
+        );
+        const consolidatedMedications: Medication[] =
+          consolidatedBundle.entry
+            ?.filter(entry => entry.resource?.resourceType === "Medication")
+            .map(entry => entry.resource as Medication) ?? [];
+        const conversionMedications: Medication[] =
+          conversion.bundle.entry
+            ?.filter(entry => entry.resource?.resourceType === "Medication")
+            .map(entry => entry.resource as Medication) ?? [];
+
+        console.log(" --- consolidated vs conversion ---");
+        console.log(
+          twoColumnDisplay(
+            JSON.stringify(consolidatedMedications, null, 2),
+            JSON.stringify(conversionMedications, null, 2)
+          )
+        );
+        console.log("--------------------------------");
 
         if (dataPoints.length % 100 === 0) {
           console.log(`Processed ${dataPoints.length} patients`);
@@ -145,6 +169,21 @@ program
     }
   );
 
+function twoColumnDisplay(left: string, right: string, columnWidth = 80) {
+  const leftLines = left.split("\n");
+  const rightLines = right.split("\n");
+  const maxLength = Math.max(leftLines.length, rightLines.length);
+  const output: string[] = [];
+  for (let i = 0; i < maxLength; i++) {
+    output.push(
+      `${(leftLines[i] ?? "").substring(0, columnWidth).padEnd(columnWidth)} ${(rightLines[i] ?? "")
+        .substring(0, columnWidth)
+        .padEnd(columnWidth)}`
+    );
+  }
+  return output.join("\n");
+}
+
 function countEntries(bundle: Bundle): number {
   return bundle.entry?.length ?? 0;
 }
@@ -163,36 +202,6 @@ async function getConsolidatedBundle(cxId: string, patientId: string): Promise<B
   }
   const fileContent = await s3Utils.downloadFile({ bucket: medicalDocsBucketName, key: fileKey });
   return JSON.parse(fileContent.toString());
-}
-
-interface PatientTransmission {
-  cxId: string;
-  patientId: string;
-  transmissionId: string;
-}
-
-async function getTransmissionsFromCsv(
-  cxId: string,
-  csvData: string
-): Promise<PatientTransmission[]> {
-  return new Promise((resolve, reject) => {
-    const transmissions: PatientTransmission[] = [];
-    fs.createReadStream(csvData)
-      .pipe(csv())
-      .on("data", function (row) {
-        transmissions.push({
-          cxId,
-          patientId: row.patient_id,
-          transmissionId: row.transmission_id,
-        });
-      })
-      .on("end", function () {
-        resolve(transmissions);
-      })
-      .on("error", function (error) {
-        reject(error);
-      });
-  });
 }
 
 export default program;

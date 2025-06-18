@@ -1,4 +1,3 @@
-import { NotFoundError } from "@metriport/shared";
 import { SurescriptsConvertPatientResponseHandler } from "./convert-patient-response";
 import { SurescriptsReplica } from "../../replica";
 import { SurescriptsConversionBundle, SurescriptsJob } from "../../types";
@@ -18,20 +17,13 @@ export class SurescriptsConvertPatientResponseHandlerDirect
       populationId,
     });
     if (!responseFileContent) {
-      throw new NotFoundError(
-        `No response file stored for transmissionId: ${transmissionId} and populationId: ${populationId}`,
-        undefined,
-        {
-          transmissionId,
-          populationId,
-        }
-      );
+      return undefined;
     }
-    const conversionBundle = await convertPatientResponseToFhirBundle(responseFileContent);
+    const conversionBundle = await convertPatientResponseToFhirBundle(cxId, responseFileContent);
     if (!conversionBundle) return undefined;
 
     const { patientId, bundle } = conversionBundle;
-    await uploadConversionBundle({ bundle, cxId, patientId, transmissionId });
+    await uploadConversionBundle({ bundle, cxId, patientId, jobId: transmissionId });
     return conversionBundle;
   }
 }

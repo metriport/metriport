@@ -12,8 +12,10 @@ import { S3Utils } from "../aws/s3";
 import { Config } from "../../util/config";
 import { convertIncomingDataToFhirBundle } from "./fhir/bundle";
 import { hydrateFhir } from "../fhir/hydration/hydrate-fhir";
+import { dangerouslyDeduplicateFhir } from "../../fhir-deduplication/deduplicate-fhir";
 
 export async function convertPatientResponseToFhirBundle(
+  cxId: string,
   responseFileContent: Buffer
 ): Promise<SurescriptsConversionBundle | undefined> {
   const responseFile = parseResponseFile(responseFileContent);
@@ -31,14 +33,12 @@ export async function convertPatientResponseToFhirBundle(
   if (!details || details.length < 1) return undefined;
 
   const bundle = await convertIncomingDataToFhirBundle(patientId, details);
-  await hydrateFhir(bundle, console.log);
-  return {
-    patientId,
-    bundle,
-  };
+  const conversionBundle = await hydrateAndDeduplicateBundle(cxId, patientId, bundle);
+  return conversionBundle;
 }
 
 export async function convertBatchResponseToFhirBundles(
+  cxId: string,
   responseFileContent: Buffer
 ): Promise<SurescriptsConversionBundle[]> {
   const responseFile = parseResponseFile(responseFileContent);
@@ -47,34 +47,44 @@ export async function convertBatchResponseToFhirBundles(
   for (const [patientId, details] of patientIdDetails.entries()) {
     if (!details || details.length < 1) continue;
     const bundle = await convertIncomingDataToFhirBundle(patientId, details);
-    await hydrateFhir(bundle, console.log);
-    conversionBundles.push({
-      patientId,
-      bundle,
-    });
+    const conversionBundle = await hydrateAndDeduplicateBundle(cxId, patientId, bundle);
+    conversionBundles.push(conversionBundle);
   }
   return conversionBundles;
+}
+
+async function hydrateAndDeduplicateBundle(
+  cxId: string,
+  patientId: string,
+  bundle: Bundle
+): Promise<SurescriptsConversionBundle> {
+  const { data: hydratedBundle } = await hydrateFhir(bundle, console.log);
+  dangerouslyDeduplicateFhir(hydratedBundle, cxId, patientId);
+  return {
+    cxId,
+    patientId,
+    bundle: hydratedBundle,
+  };
 }
 
 export async function uploadConversionBundle({
   bundle,
   cxId,
   patientId,
-  transmissionId,
+  jobId,
 }: {
   bundle: Bundle;
   cxId: string;
   patientId: string;
-  transmissionId: string;
+  jobId: string;
 }): Promise<void> {
   const latestBundleName = buildLatestConversionBundleFileName(cxId, patientId);
   const conversionBundleName = buildConversionBundleFileNameForJob({
     cxId,
     patientId,
-    transmissionId,
+    jobId,
   });
   const conversionBucket = new S3Utils(Config.getAWSRegion());
-
   const fileContent = Buffer.from(JSON.stringify(bundle));
   await executeWithNetworkRetries(async () => {
     await Promise.all([

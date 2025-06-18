@@ -1,8 +1,6 @@
 #!/usr/bin/env node
 import dotenv from "dotenv";
 dotenv.config();
-import fs from "fs";
-import path from "path";
 
 import { Command } from "commander";
 import { SurescriptsConvertBatchResponseHandlerDirect } from "@metriport/core/external/surescripts/command/convert-batch-response/convert-batch-response-direct";
@@ -42,7 +40,7 @@ program
 
     const handler = new SurescriptsConvertBatchResponseHandlerDirect(new SurescriptsReplica());
     const start = Date.now();
-    const bundles = await handler.convertBatchResponse({
+    await handler.convertBatchResponse({
       cxId,
       facilityId,
       transmissionId,
@@ -50,13 +48,6 @@ program
     });
     const end = Date.now();
     console.log(`Conversion took ${end - start} ms`);
-
-    for (const { patientId, bundle } of bundles) {
-      fs.writeFileSync(
-        path.join(process.cwd(), `runs/surescripts/1to1/${patientId}.json`),
-        JSON.stringify(bundle, null, 2)
-      );
-    }
   });
 
 export default program;
