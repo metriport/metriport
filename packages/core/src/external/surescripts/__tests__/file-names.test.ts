@@ -2,9 +2,9 @@ import {
   parseVerificationFileName,
   parseResponseFileName,
   parseHistoryFileName,
-  makeRequestFileName,
-  makeResponseFileNamePrefix,
-} from "../file-names";
+  buildRequestFileName,
+  buildResponseFileNamePrefix,
+} from "../file/file-names";
 
 describe("File names for patient requests", () => {
   const testTransmissionId = "-OSaV613EU";
@@ -18,7 +18,7 @@ describe("File names for patient requests", () => {
     "-OSaV613EU_0196ffa8-a1bf-75cc-ab88-dc2472161e31_3241590_20250612233806.gz";
 
   it("should make request file name", () => {
-    const requestFileName = makeRequestFileName(testTransmissionId);
+    const requestFileName = buildRequestFileName(testTransmissionId);
     expect(requestFileName).toEqual(expectedRequestFileName);
   });
 
@@ -32,7 +32,7 @@ describe("File names for patient requests", () => {
   });
 
   it("should make response file name prefix", () => {
-    const responseFileNamePrefix = makeResponseFileNamePrefix(testTransmissionId, testPatientId);
+    const responseFileNamePrefix = buildResponseFileNamePrefix(testTransmissionId, testPatientId);
     expect(responseFileNamePrefix).toEqual(expectedResponseFilePrefix);
   });
 

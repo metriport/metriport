@@ -12,24 +12,19 @@ export class SftpActionCloud implements SftpActionHandler {
     action: A
   ): Promise<{ result?: SftpActionResult<A>; error?: Error }> {
     const payload = JSON.stringify(action);
-    try {
-      const result = await lambdaClient
-        .invoke({
-          FunctionName: this.sftpActionLambdaName,
-          InvocationType: "RequestResponse",
-          Payload: payload,
-        })
-        .promise();
+    const result = await lambdaClient
+      .invoke({
+        FunctionName: this.sftpActionLambdaName,
+        InvocationType: "RequestResponse",
+        Payload: payload,
+      })
+      .promise();
 
-      const resultPayload = getLambdaResultPayload({
-        result,
-        lambdaName: this.sftpActionLambdaName,
-      });
-      return { result: JSON.parse(resultPayload.toString()) as SftpActionResult<A> };
-    } catch (error) {
-      return {
-        error: new Error(`Failed to execute action ${this.sftpActionLambdaName}: ${error}`),
-      };
-    }
+    if (action.type === "write") return {};
+    const resultPayload = getLambdaResultPayload({
+      result,
+      lambdaName: this.sftpActionLambdaName,
+    });
+    return { result: JSON.parse(resultPayload) as SftpActionResult<A> };
   }
 }

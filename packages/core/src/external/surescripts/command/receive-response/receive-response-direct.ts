@@ -1,19 +1,18 @@
 import { SurescriptsReceiveResponseHandler } from "./receive-response";
 import { SurescriptsSftpClient } from "../../client";
-import { SurescriptsFileIdentifier } from "../../types";
+import { SurescriptsJob } from "../../types";
+import { buildConvertBatchResponseHandler } from "../convert-batch-response/convert-batch-response-factory";
 
 export class SurescriptsReceiveResponseHandlerDirect implements SurescriptsReceiveResponseHandler {
-  constructor(private readonly client: SurescriptsSftpClient = new SurescriptsSftpClient()) {}
+  constructor(
+    private readonly client: SurescriptsSftpClient = new SurescriptsSftpClient(),
+    private readonly next = buildConvertBatchResponseHandler()
+  ) {}
 
-  async receiveResponse({
-    transmissionId,
-    populationId,
-  }: SurescriptsFileIdentifier): Promise<void> {
-    const responseFile = await this.client.receiveResponse({ transmissionId, populationId });
+  async receiveResponse(job: SurescriptsJob): Promise<void> {
+    const responseFile = await this.client.receiveResponse(job);
     if (responseFile) {
-      console.log(
-        "TODO: ENG-377 - parse response file into FHIR bundle and place in conversion bucket"
-      );
+      await this.next.convertBatchResponse(job);
     }
   }
 }
