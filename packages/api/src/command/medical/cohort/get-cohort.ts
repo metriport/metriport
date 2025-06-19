@@ -48,32 +48,17 @@ export async function getCohortModelOrFail({
   return cohort;
 }
 
-/**
- * @see executeOnDBTx() for details about the 'transaction' and 'lock' parameters.
- */
 export async function getCohortWithCountOrFail({
   id,
   cxId,
-  transaction,
-  lock,
 }: GetCohortProps): Promise<CohortWithPatientIdsAndCount> {
-  if (transaction) {
-    const [cohort, patientIds] = await Promise.all([
-      getCohortModelOrFail({ id, cxId, transaction, lock }),
-      getPatientIdsAssignedToCohort({ cohortId: id, cxId, transaction }),
-    ]);
-    if (!cohort) throw new NotFoundError(`Could not find cohort`, undefined, { id, cxId });
+  const [cohort, patientIds] = await Promise.all([
+    getCohortModelOrFail({ id, cxId }),
+    getPatientIdsAssignedToCohort({ cohortId: id, cxId }),
+  ]);
+  if (!cohort) throw new NotFoundError(`Could not find cohort`, undefined, { id, cxId });
 
-    return { cohort: cohort.dataValues, count: patientIds.length, patientIds };
-  } else {
-    const [cohort, patientIds] = await Promise.all([
-      getCohortModelOrFail({ id, cxId }),
-      getPatientIdsAssignedToCohort({ cohortId: id, cxId }),
-    ]);
-    if (!cohort) throw new NotFoundError(`Could not find cohort`, undefined, { id, cxId });
-
-    return { cohort: cohort.dataValues, count: patientIds.length, patientIds };
-  }
+  return { cohort: cohort.dataValues, count: patientIds.length, patientIds };
 }
 
 export async function getCohorts({ cxId }: { cxId: string }): Promise<CohortWithCount[]> {

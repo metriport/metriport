@@ -87,14 +87,6 @@ export async function bulkAssignPatientsToCohort({
   const { log } = out(`bulkAssignPatientsToCohort - cx ${cxId}, cohort ${cohortId}`);
 
   const uniquePatientIds = [...new Set(patientIds)];
-  if (!uniquePatientIds.length) {
-    const cohort = await getCohortModelOrFail({ id: cohortId, cxId });
-    return {
-      cohort: cohort.dataValues,
-      count: 0,
-      patientIds: [],
-    };
-  }
 
   return executeOnDBTx(PatientCohortModel.prototype, async transaction => {
     const cohort = await getCohortModelOrFail({ id: cohortId, cxId, transaction, lock: true });
