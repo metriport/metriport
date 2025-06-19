@@ -43,10 +43,22 @@ export async function getPatientIdsAssignedToCohort({
 
 export async function getCountOfPatientsAssignedToCohort({
   cohortId,
+  cxId,
 }: {
   cohortId: string;
+  cxId: string;
 }): Promise<number> {
-  return PatientCohortModel.count({ where: { cohortId } });
+  return PatientCohortModel.count({
+    where: { cohortId },
+    include: [
+      {
+        association: PatientCohortModel.associations.Cohort,
+        where: { cxId },
+        attributes: [],
+        required: true,
+      },
+    ],
+  });
 }
 
 export async function bulkAssignPatientsToCohort({

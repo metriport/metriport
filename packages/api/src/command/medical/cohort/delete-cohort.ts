@@ -6,7 +6,7 @@ import { getCountOfPatientsAssignedToCohort } from "./patient-cohort/patient-coh
 export async function deleteCohort({ id, cxId }: { id: string; cxId: string }): Promise<void> {
   const { log } = out(`deleteCohort - cx: ${cxId}, id: ${id}`);
 
-  const count = await getCountOfPatientsAssignedToCohort({ cohortId: id });
+  const count = await getCountOfPatientsAssignedToCohort({ cohortId: id, cxId });
   if (count > 0) {
     throw new BadRequestError("Unassign all patients before deleting the cohort.");
   }

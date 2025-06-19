@@ -28,9 +28,7 @@ export async function getCohortWithCountOrFail({
   cxId,
 }: GetCohortProps): Promise<CohortWithPatientIdsAndCount> {
   const [cohort, patientIds] = await Promise.all([
-    CohortModel.findOne({
-      where: { id, cxId },
-    }),
+    getCohortModelOrFail({ id, cxId }),
     getPatientIdsAssignedToCohort({ cohortId: id, cxId }),
   ]);
   if (!cohort) throw new NotFoundError(`Could not find cohort`, undefined, { id, cxId });
@@ -56,6 +54,7 @@ export async function getCohorts({ cxId }: { cxId: string }): Promise<CohortWith
 
   return cohortsWithCounts.map(cohort => ({
     cohort: cohort.dataValues,
-    count: Number(cohort.get(countAttr) ?? 0),
+    // Type assertion needed because Sequelize's get() method returns any for computed attributes
+    count: Number((cohort.get(countAttr) as number | null) ?? 0),
   }));
 }
