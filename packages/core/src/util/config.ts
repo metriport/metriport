@@ -282,6 +282,24 @@ export class Config {
   static getQuestSftpPassword(): string {
     return getEnvVarOrFail("QUEST_SFTP_PASSWORD");
   }
+  static getQuestSftpActionLambdaName(): string {
+    return getEnvVarOrFail("QUEST_SFTP_ACTION_LAMBDA_NAME");
+  }
+  static getQuestConvertPatientResponseLambdaName(): string {
+    return getEnvVarOrFail("QUEST_CONVERT_PATIENT_RESPONSE_LAMBDA_NAME");
+  }
+  static getQuestConvertBatchResponseLambdaName(): string {
+    return getEnvVarOrFail("QUEST_CONVERT_BATCH_RESPONSE_LAMBDA_NAME");
+  }
+  static getQuestSendPatientRequestQueueUrl(): string {
+    return getEnvVarOrFail("QUEST_SEND_PATIENT_REQUEST_QUEUE_URL");
+  }
+  static getQuestSendBatchRequestQueueUrl(): string {
+    return getEnvVarOrFail("QUEST_SEND_BATCH_REQUEST_QUEUE_URL");
+  }
+  static getQuestReceiveResponseQueueUrl(): string {
+    return getEnvVarOrFail("QUEST_RECEIVE_RESPONSE_QUEUE_URL");
+  }
   static getQuestReplicaBucketName(): string {
     return getEnvVarOrFail("QUEST_REPLICA_BUCKET_NAME");
   }
