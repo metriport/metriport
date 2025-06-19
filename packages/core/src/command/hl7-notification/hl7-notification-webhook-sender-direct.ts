@@ -1,5 +1,5 @@
 import { Hl7Message } from "@medplum/core";
-import { Bundle, Resource } from "@medplum/fhirtypes";
+import { Bundle, CodeableConcept, Resource } from "@medplum/fhirtypes";
 import { executeWithNetworkRetries } from "@metriport/shared";
 import axios from "axios";
 import dayjs from "dayjs";
@@ -70,20 +70,6 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
     const internalHl7RouteUrl = `${this.apiUrl}/${INTERNAL_PATIENT_ENDPOINT}/${patientId}/${INTERNAL_HL7_ENDPOINT}`;
     const internalGetPatientUrl = `${this.apiUrl}/${INTERNAL_PATIENT_ENDPOINT}/${patientId}?cxId=${cxId}`;
 
-    log(`Writing TCM encounter to DB...`);
-    await this.writeTcmEncounterToDb(
-      {
-        id: encounterId,
-        cxId,
-        patientId,
-        class: encounterClass.display,
-        facilityName,
-        admitTime: encounterPeriod?.start,
-        dischargeTime: encounterPeriod?.end,
-      },
-      triggerEvent as "A01" | "A03"
-    );
-
     log(`Creating FHIR bundle`);
     log(`internalGetPatientUrl: ${internalGetPatientUrl}`);
     const patient = await executeWithNetworkRetries(
@@ -103,6 +89,23 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
       fhirPatient,
     });
     log(`Conversion complete and patient entry added`);
+
+    const clinicalInformation = this.extractClinicalInformation(newEncounterData);
+
+    log(`Writing TCM encounter to DB...`);
+    await this.writeTcmEncounterToDb(
+      {
+        id: encounterId,
+        cxId,
+        patientId,
+        class: encounterClass.display,
+        facilityName,
+        admitTime: encounterPeriod?.start,
+        dischargeTime: encounterPeriod?.end,
+        clinicalInformation,
+      },
+      triggerEvent as "A01" | "A03"
+    );
 
     log(`Updating encounter bundle in S3...`);
     const [, result] = await Promise.all([
@@ -160,6 +163,7 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
       facilityName: string | undefined;
       admitTime: string | undefined;
       dischargeTime: string | undefined;
+      clinicalInformation: Record<string, unknown>;
     },
     triggerEvent: "A01" | "A03"
   ) {
@@ -169,6 +173,7 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
     const { log } = out(
       `writeTcmEncounterToDb, cx: ${tcmEncounterPayload.cxId}, pt: ${tcmEncounterPayload.patientId}, enc: ${encounterId}`
     );
+
     /**
      * TODO:
      * We frequently receive "duplicate" ADTs - different messages with the same data for the same event.
@@ -219,6 +224,29 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
         );
       }
     }
+  }
+
+  private extractClinicalInformation(bundle: Bundle<Resource>): {
+    condition: Array<CodeableConcept>;
+  } {
+    const conditions: Array<CodeableConcept> = [];
+
+    if (bundle.entry) {
+      for (const entry of bundle.entry) {
+        if (entry.resource?.resourceType === "Condition" && entry.resource.code?.coding) {
+          conditions.push({
+            coding:
+              entry.resource.code?.coding?.map(coding => ({
+                code: coding.code ?? "",
+                display: coding.display ?? "",
+                system: coding.system ?? "",
+              })) ?? [],
+          });
+        }
+      }
+    }
+
+    return { condition: conditions };
   }
 }
 
