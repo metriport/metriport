@@ -13,10 +13,6 @@ import Router from "express-promise-router";
 import status from "http-status";
 import { orderBy } from "lodash";
 import { z } from "zod";
-import {
-  bulkAssignPatientsToCohort,
-  bulkRemovePatientsFromCohort,
-} from "../../command/medical/cohort/patient-cohort/patient-cohort";
 import { areDocumentsProcessing } from "../../command/medical/document/document-status";
 import { startConsolidatedQuery } from "../../command/medical/patient/consolidated-get";
 import {
@@ -39,7 +35,6 @@ import { requestLogger } from "../helpers/request-logger";
 import { getPatientInfoOrFail } from "../middlewares/patient-authorization";
 import { checkRateLimit } from "../middlewares/rate-limiting";
 import { asyncHandler, getFrom, getFromQueryAsBoolean } from "../util";
-import { dtoFromCohort } from "./dtos/cohortDTO";
 import { dtoFromModel } from "./dtos/patientDTO";
 import { bundleSchema, getResourcesQueryParam } from "./schemas/fhir";
 import {
@@ -535,70 +530,6 @@ router.get(
     };
 
     return res.status(status.OK).json(respPayload);
-  })
-);
-
-const cohortIdSchema = z.object({
-  cohortId: z.string().uuid(),
-});
-
-/** ---------------------------------------------------------------------------
- * POST /patient/:id/cohort
- *
- * Assigns a patient to a cohort.
- *
- * @param req.cxId The customer ID.
- * @param req.param.id The ID of the patient to assign.
- * @param req.param.cohortId The ID of the cohort to assign the patient to.
- * @returns 200 OK
- */
-router.post(
-  "/cohort",
-  requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    const { cxId, id: patientId } = getPatientInfoOrFail(req);
-    const cohortId = cohortIdSchema.parse(req.body).cohortId;
-
-    const cohortWithCount = await bulkAssignPatientsToCohort({
-      cohortId,
-      cxId,
-      patientIds: [patientId],
-    });
-
-    return res.status(status.CREATED).json({
-      cohort: dtoFromCohort(cohortWithCount.cohort),
-      patientCount: cohortWithCount.count,
-      patientIds: cohortWithCount.patientIds,
-    });
-  })
-);
-
-/** ---------------------------------------------------------------------------
- * DELETE /patient/:id/cohort
- *
- * Unassigns the patient from the cohort.
- *
- * @param req.cxId The customer ID.
- * @param req.param.id The ID of the patient to unassign.
- * @param req.param.cohortId The ID of the cohort to unassign the patient from.
- * @returns 200 OK
- */
-router.delete(
-  "/cohort",
-  requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    const { cxId, id: patientId } = getPatientInfoOrFail(req);
-    const cohortId = cohortIdSchema.parse(req.body).cohortId;
-
-    const countUnassigned = await bulkRemovePatientsFromCohort({
-      cohortId,
-      cxId,
-      patientIds: [patientId],
-    });
-
-    return res
-      .status(status.NO_CONTENT)
-      .json({ message: "Patient unassigned from cohort", count: countUnassigned });
   })
 );
 
