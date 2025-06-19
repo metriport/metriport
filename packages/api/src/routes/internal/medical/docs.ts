@@ -142,7 +142,7 @@ router.post(
     const patientId = getFrom("query").orFail("patientId", req);
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const status = getFrom("query").orFail("status", req);
-    const source = getFrom("query").optional("source", req);
+    const source = getFrom("query").orFail("source", req);
     const details = getFrom("query").optional("details", req);
     const jobId = getFrom("query").optional("jobId", req);
     const countRaw = getFrom("query").optional("count", req);
