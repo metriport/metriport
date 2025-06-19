@@ -6,10 +6,7 @@ jest.mock("../../../models/medical/tcm-encounter", () => ({
 }));
 
 import { faker } from "@faker-js/faker";
-import {
-  createTcmEncounter,
-  CreateTcmEncounter,
-} from "../../../command/medical/tcm-encounter/create-tcm-encounter";
+import { createTcmEncounter } from "../../../command/medical/tcm-encounter/create-tcm-encounter";
 import { mockStartTransaction } from "../../../models/__tests__/transaction";
 import { makeTcmEncounterModel } from "../../../models/medical/__tests__/tcm-encounter";
 import { TcmEncounterModel } from "../../../models/medical/tcm-encounter";
@@ -22,56 +19,31 @@ describe("Create TCM Encounter Command", () => {
   });
 
   describe("createTcmEncounter", () => {
-    const validCreatePayload: CreateTcmEncounter = {
-      cxId: faker.string.uuid(),
-      patientId: faker.string.uuid(),
-      facilityName: faker.company.name(),
-      latestEvent: "Admitted",
-      class: "Inpatient",
-      admitTime: faker.date.recent(),
-      dischargeTime: null,
-      clinicalInformation: { test: "data" },
-    };
+    function makePayload(overrides = {}) {
+      return {
+        cxId: faker.string.uuid(),
+        patientId: faker.string.uuid(),
+        facilityName: "Some Facility",
+        latestEvent: "Admitted" as const,
+        class: "Inpatient",
+        clinicalInformation: {},
+        ...overrides,
+      };
+    }
 
     it("creates a new TCM encounter", async () => {
-      const mockEncounter = makeTcmEncounterModel({
-        id: faker.string.uuid(),
-        ...validCreatePayload,
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        admitTime: validCreatePayload.admitTime!,
-        dischargeTime: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
-
+      const payload = makePayload();
+      const mockEncounter = { ...payload, id: "enc-1" };
       (TcmEncounterModel.create as jest.Mock).mockResolvedValueOnce(mockEncounter);
 
-      const result = await createTcmEncounter(validCreatePayload);
+      const result = await createTcmEncounter(payload);
 
-      expect(TcmEncounterModel.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          cxId: validCreatePayload.cxId,
-          patientId: validCreatePayload.patientId,
-          facilityName: validCreatePayload.facilityName,
-          latestEvent: validCreatePayload.latestEvent,
-          class: validCreatePayload.class,
-          admitTime: validCreatePayload.admitTime,
-          dischargeTime: validCreatePayload.dischargeTime,
-          clinicalInformation: validCreatePayload.clinicalInformation,
-        })
-      );
+      expect(TcmEncounterModel.create).toHaveBeenCalledWith(expect.objectContaining(payload));
       expect(result).toEqual(mockEncounter);
     });
 
     it("handles optional fields correctly", async () => {
-      const payloadWithoutOptionals: CreateTcmEncounter = {
-        cxId: faker.string.uuid(),
-        patientId: faker.string.uuid(),
-        facilityName: faker.company.name(),
-        latestEvent: "Admitted",
-        class: "Inpatient",
-        clinicalInformation: {},
-      };
+      const payloadWithoutOptionals = makePayload();
 
       const mockEncounter = makeTcmEncounterModel({
         id: faker.string.uuid(),
