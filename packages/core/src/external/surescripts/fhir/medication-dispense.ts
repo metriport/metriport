@@ -13,6 +13,7 @@ import { getPatientReference } from "./patient";
 import { getPrescriberReference } from "./prescriber";
 import { getResourceByNpiNumber, getSurescriptsDataSourceExtension } from "./shared";
 import { SurescriptsContext } from "./types";
+import { getNcpdpName } from "@metriport/shared/interface/external/surescripts/ncpdp";
 
 export function getMedicationDispense(
   context: SurescriptsContext,
@@ -21,6 +22,7 @@ export function getMedicationDispense(
 ): MedicationDispense {
   const daysSupply = getDaysSupply(detail);
   const performer = getMedicationDispensePerformer(context, detail);
+  const quantity = getQuantity(detail);
   const dosageInstruction = getDosageInstruction(detail);
   const subject = getPatientReference(context.patient);
   const medicationReference = getMedicationReference(medication);
@@ -36,6 +38,7 @@ export function getMedicationDispense(
     subject,
     medicationReference,
     status: "completed",
+    ...(quantity ? { quantity } : undefined),
     ...(whenHandedOver ? { whenHandedOver } : undefined),
     ...(dosageInstruction ? { dosageInstruction } : undefined),
     ...(daysSupply ? { daysSupply } : undefined),
@@ -46,6 +49,19 @@ export function getMedicationDispense(
   return medicationDispense;
 }
 
+function getQuantity(detail: ResponseDetail): MedicationDispense["quantity"] | undefined {
+  if (!detail.quantityDispensed || !detail.quantityUnitOfMeasure) {
+    return undefined;
+  }
+  const unit = getNcpdpName(detail.quantityUnitOfMeasure) ?? detail.quantityUnitOfMeasure;
+
+  return {
+    value: Number(detail.quantityDispensed),
+    unit,
+    system: UNIT_OF_MEASURE_URL,
+    code: detail.quantityUnitOfMeasure,
+  };
+}
 function getWhenHandedOver(
   detail: ResponseDetail
 ): MedicationDispense["whenHandedOver"] | undefined {
