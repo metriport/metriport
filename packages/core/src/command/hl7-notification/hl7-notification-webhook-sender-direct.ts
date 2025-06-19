@@ -16,12 +16,14 @@ import { convertHl7v2MessageToFhir } from "../hl7v2-subscriptions/hl7v2-to-fhir-
 import {
   createEncounterId,
   getEncounterPeriod,
+  getFacilityName,
 } from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion/adt/utils";
 import {
   getHl7MessageTypeOrFail,
   getMessageUniqueIdentifier,
 } from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion/msh";
 import { Hl7Notification, Hl7NotificationWebhookSender } from "./hl7-notification-webhook-sender";
+import { getEncounterClass } from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion/adt/encounter";
 
 const supportedTypes = ["A01", "A03"];
 const INTERNAL_HL7_ENDPOINT = `notification`;
@@ -60,6 +62,37 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
 
     const internalHl7RouteUrl = `${this.apiUrl}/${INTERNAL_PATIENT_ENDPOINT}/${patientId}/${INTERNAL_HL7_ENDPOINT}`;
     const internalGetPatientUrl = `${this.apiUrl}/${INTERNAL_PATIENT_ENDPOINT}/${patientId}?cxId=${cxId}`;
+
+    const encounterPeriod = getEncounterPeriod(message);
+    const encounterClass = getEncounterClass(message);
+    const facilityName = getFacilityName(message);
+
+    if (triggerEvent === "A01") {
+      await executeWithNetworkRetries(async () =>
+        axios.post(`${this.apiUrl}/internal/tcm-encounter/${patientId}`, {
+          cxId,
+          patientId,
+          id: encounterId,
+          latestEvent: "Admitted",
+          facilityName,
+          class: encounterClass.display,
+          admitTime: encounterPeriod?.start,
+          clinicalInformation: {
+            messageCode,
+          },
+        })
+      );
+    } else if (triggerEvent === "A03") {
+      await executeWithNetworkRetries(async () =>
+        axios.put(`${this.apiUrl}/dash-oss/medical/v1/tcm-encounter/${patientId}`, {
+          id: encounterId,
+          class: encounterClass.display,
+          latestEvent: "Discharged",
+          admitTime: encounterPeriod?.start,
+          dischargeTime: encounterPeriod?.end,
+        })
+      );
+    }
 
     const patient = await executeWithNetworkRetries(
       async () => await axios.get(internalGetPatientUrl)
@@ -107,7 +140,6 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
       durationSeconds: SIGNED_URL_DURATION_SECONDS,
     });
 
-    const encounterPeriod = getEncounterPeriod(message);
     await executeWithNetworkRetries(
       async () =>
         await axios.post(internalHl7RouteUrl, undefined, {
