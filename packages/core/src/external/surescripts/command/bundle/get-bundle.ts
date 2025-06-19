@@ -1,7 +1,7 @@
 import { Bundle, BundleEntry } from "@medplum/fhirtypes";
 import { Config } from "../../../../util/config";
+import { out } from "../../../../util/log";
 import { S3Utils } from "../../../aws/s3";
-import { buildCollectionBundle } from "../../../fhir/bundle/bundle";
 import { buildLatestConversionBundleFileName } from "../../file/file-names";
 
 /**
@@ -17,14 +17,20 @@ export async function getBundle({
 }: {
   cxId: string;
   patientId: string;
-}): Promise<Bundle> {
+}): Promise<Bundle | undefined> {
+  const { log } = out(`ss.getBundle - cx ${cxId}, pat ${patientId}`);
   const s3Utils = new S3Utils(Config.getAWSRegion());
   const bucketName = Config.getPharmacyConversionBucketName();
   const fileName = buildLatestConversionBundleFileName(cxId, patientId);
   const fileExists = await s3Utils.fileExists(bucketName, fileName);
-  if (!fileExists) return buildCollectionBundle([]);
+  if (!fileExists) {
+    log(`No bundle found`);
+    return undefined;
+  }
   const fileContents = await s3Utils.getFileContentsAsString(bucketName, fileName);
-  return JSON.parse(fileContents);
+  const bundle: Bundle = JSON.parse(fileContents);
+  log(`Found bundle with ${bundle.entry?.length} entries`);
+  return bundle;
 }
 
 export async function getBundleResources({
@@ -35,5 +41,5 @@ export async function getBundleResources({
   patientId: string;
 }): Promise<BundleEntry[]> {
   const bundle = await getBundle({ cxId, patientId });
-  return bundle.entry ?? [];
+  return bundle?.entry ?? [];
 }
