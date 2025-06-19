@@ -1,16 +1,16 @@
-import { XMLBuilder } from "fast-xml-parser";
-import { v4 as uuidv4 } from "uuid";
 import {
-  InboundPatientDiscoveryResp,
   InboundPatientDiscoveryReq,
+  InboundPatientDiscoveryResp,
   isSuccessfulInboundPatientDiscoveryResponse,
 } from "@metriport/ihe-gateway-sdk";
-import { createSecurityHeader } from "../../shared";
-import { queryResponseCodes, ackCodes, xmlBuilderAttributes } from "../../../shared";
-import { namespaces } from "../../../constants";
-import { timestampToSoapBody } from "../../../utils";
-import { METRIPORT_HOME_COMMUNITY_ID_NO_PREFIX } from "../../../../shared";
+import { XMLBuilder } from "fast-xml-parser";
+import { v4 as uuidv4 } from "uuid";
 import { mapFhirToMetriportGender } from "../../../../../fhir/patient/conversion";
+import { METRIPORT_HOME_COMMUNITY_ID_NO_PREFIX } from "../../../../shared";
+import { namespaces } from "../../../constants";
+import { ackCodes, queryResponseCodes, xmlBuilderAttributes } from "../../../shared";
+import { dateToHl7v3Date, timestampToHl7v3DateTime } from "../../../utils";
+import { createSecurityHeader } from "../../shared";
 
 function createQueryByParameter(request: InboundPatientDiscoveryReq): object {
   const { id, samlAttributes, patientResource } = request;
@@ -40,7 +40,7 @@ function createQueryByParameter(request: InboundPatientDiscoveryReq): object {
       livingSubjectBirthTime: patientResource.birthDate
         ? {
             value: {
-              "@_value": patientResource.birthDate.replace(/-/g, ""),
+              "@_value": dateToHl7v3Date(patientResource.birthDate),
             },
             semanticsText: "LivingSubject.birthTime",
           }
@@ -139,7 +139,7 @@ function createSubjectAndRegistrationEvent(response: InboundPatientDiscoveryResp
               "@_code": mapFhirToMetriportGender(patientResource.gender),
             },
             birthTime: {
-              "@_value": patientResource.birthDate.replace(/-/g, ""),
+              "@_value": dateToHl7v3Date(patientResource.birthDate),
             },
             addr: patientResource.address?.map(a => ({
               streetAddressLine: a.line?.join(", "),
@@ -200,7 +200,7 @@ function createIti55SoapBody(
       id: {
         "@_root": uuidv4(), // TODO #1776 monitoring PR
       },
-      creationTime: timestampToSoapBody(response.timestamp),
+      creationTime: timestampToHl7v3DateTime(response.timestamp),
       interactionId: {
         "@_extension": "PRPA_IN201306UV02",
         "@_root": "2.16.840.1.113883.1.6",
