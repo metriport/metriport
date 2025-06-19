@@ -150,6 +150,7 @@ async function initDB(): Promise<void> {
     PatientSettingsModel.associate({ PatientModelReadOnly });
     CohortModel.associate({ PatientCohortModel });
     PatientCohortModel.associate({ CohortModel });
+    PatientModel.associate({ PatientCohortModel });
 
     let doc: AWS.DynamoDB.DocumentClient;
     // init dynamo db doc client

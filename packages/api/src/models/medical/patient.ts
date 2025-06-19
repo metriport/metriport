@@ -21,7 +21,7 @@ export class PatientModel extends BaseModel<PatientModel> implements Patient {
     PatientModel.hasMany(models.PatientCohortModel, {
       foreignKey: "patientId",
       sourceKey: "id",
-      as: "patientCohorts",
+      as: "PatientCohort",
     });
   };
 }
