@@ -375,6 +375,19 @@ export class APIStack extends Stack {
     });
 
     //-------------------------------------------
+    // Surescripts
+    //-------------------------------------------
+    let surescriptsStack: SurescriptsNestedStack | undefined = undefined;
+    if (props.config.surescripts) {
+      surescriptsStack = new SurescriptsNestedStack(this, "SurescriptsNestedStack", {
+        config: props.config,
+        vpc: this.vpc,
+        alarmAction: slackNotification?.alarmAction,
+        lambdaLayers,
+      });
+    }
+
+    //-------------------------------------------
     // General lambdas
     //-------------------------------------------
     const {
@@ -403,6 +416,7 @@ export class APIStack extends Stack {
       dbCluster,
       secrets,
       medicalDocumentsBucket,
+      pharmacyBundleBucket: surescriptsStack?.getAssets()?.pharmacyConversionBucket,
       sandboxSeedDataBucket,
       alarmAction: slackNotification?.alarmAction,
       bedrock: props.config.bedrock,
@@ -479,19 +493,6 @@ export class APIStack extends Stack {
       ehrResponsesBucket,
       medicalDocumentsBucket,
     });
-
-    //-------------------------------------------
-    // Surescripts
-    //-------------------------------------------
-    let surescriptsStack: SurescriptsNestedStack | undefined = undefined;
-    if (props.config.surescripts) {
-      surescriptsStack = new SurescriptsNestedStack(this, "SurescriptsNestedStack", {
-        config: props.config,
-        vpc: this.vpc,
-        alarmAction: slackNotification?.alarmAction,
-        lambdaLayers,
-      });
-    }
 
     //-------------------------------------------
     // Jobs
