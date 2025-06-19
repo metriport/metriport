@@ -5,10 +5,11 @@ dotenv.config();
 
 import { Hl7Message } from "@medplum/core";
 import { Hl7Client } from "@medplum/hl7";
-import { errorToString } from "@metriport/shared";
+import { errorToString, getEnvVarOrFail } from "@metriport/shared";
 import { MetriportError } from "@metriport/shared";
 import { createScrambledId } from "@metriport/core/command/hl7v2-subscriptions/utils";
 import { buildDayjs } from "@metriport/shared/common/date";
+
 /**
  * Sends an HL7v2 ADT message to a local MLLP server.
  *
@@ -33,8 +34,8 @@ import { buildDayjs } from "@metriport/shared/common/date";
  * Run with: ts-node src/hl7v2-notifications/send-hl7-message-to-mllp-server.ts
  */
 
-const cxId = "98b3ba4e-5c03-4d4d-8dfa-51b96bc6a39c";
-const ptId = "0196dbd3-15de-7c9c-8d00-5fb6e82a75f4";
+const cxId = getEnvVarOrFail("CX_ID");
+const ptId = getEnvVarOrFail("PT_ID");
 
 const scrambledId = createScrambledId(cxId, ptId);
 const messageId = Math.floor(Math.random() * 999999999);
