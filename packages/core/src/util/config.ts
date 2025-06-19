@@ -197,9 +197,6 @@ export class Config {
   static getHealthieLinkPatientQueueUrl(): string {
     return getEnvVarOrFail("HEALTHIE_LINK_PATIENT_QUEUE_URL");
   }
-  static getEhrStartResourceDiffBundlesQueueUrl(): string {
-    return getEnvVarOrFail("EHR_START_RESOURCE_DIFF_BUNDLES_QUEUE_URL");
-  }
   static getEhrComputeResourceDiffBundlesQueueUrl(): string {
     return getEnvVarOrFail("EHR_COMPUTE_RESOURCE_DIFF_BUNDLES_QUEUE_URL");
   }
