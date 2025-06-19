@@ -69,7 +69,7 @@ export async function createDischargeRequeryJob(
   const newDischargeRequeryJob = await createPatientJob({
     cxId,
     patientId,
-    jobType: "discharge-requery",
+    jobType: dischargeRequeryJobType,
     jobGroupId: uuidv7(),
     requestId: uuidv7(),
     scheduledAt: newScheduledAt,

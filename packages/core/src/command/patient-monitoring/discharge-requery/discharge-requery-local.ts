@@ -5,7 +5,7 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { out } from "../../../util/log";
 import { capture } from "../../../util/notifications";
-import { updateJobRuntimeData } from "../../job/patient/api/update-job";
+import { updateJobRuntimeData } from "../../job/patient/api/update-job-runtime-data";
 import { startDocumentQuery } from "../../shared/api/start-document-query";
 import { startPatientQuery } from "../../shared/api/start-patient-query";
 import {
