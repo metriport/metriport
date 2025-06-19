@@ -9,8 +9,6 @@ import { asyncHandler, getCxIdOrFail, getFromParamsOrFail } from "../util";
 import { tcmEncounterListQuerySchema, tcmEncounterUpdateSchema } from "./schemas/tcm-encounter";
 
 const router = Router();
-router.put("/:id", requestLogger, asyncHandler(handleUpdateTcmEncounter));
-router.get("/", requestLogger, asyncHandler(handleListTcmEncounters));
 
 /** ---------------------------------------------------------------------------
  * PUT /tcm/encounter/:id
@@ -21,15 +19,19 @@ router.get("/", requestLogger, asyncHandler(handleListTcmEncounters));
  * @param req.body The data to update the TCM encounter.
  * @returns The updated TCM encounter.
  */
-export async function handleUpdateTcmEncounter(req: Request, res: Response): Promise<Response> {
-  const cxId = getCxIdOrFail(req);
-  const id = getFromParamsOrFail("id", req);
-  const body = tcmEncounterUpdateSchema.parse(req.body);
+router.put(
+  "/:id",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response): Promise<Response> => {
+    const cxId = getCxIdOrFail(req);
+    const id = getFromParamsOrFail("id", req);
+    const body = tcmEncounterUpdateSchema.parse(req.body);
 
-  const result = await updateTcmEncounter({ ...body, id, cxId });
+    const result = await updateTcmEncounter({ ...body, id, cxId });
 
-  return res.status(httpStatus.OK).json(result.encounter);
-}
+    return res.status(httpStatus.OK).json(result.encounter);
+  })
+);
 
 /** ---------------------------------------------------------------------------
  * GET /tcm/encounter
@@ -42,32 +44,36 @@ export async function handleUpdateTcmEncounter(req: Request, res: Response): Pro
  * @param req.query.count Optional number of items per page (max 50).
  * @returns A paginated list of TCM encounters.
  */
-export async function handleListTcmEncounters(req: Request, res: Response): Promise<Response> {
-  const cxId = getCxIdOrFail(req);
-  const query = tcmEncounterListQuerySchema.parse(req.query);
+router.get(
+  "/",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getCxIdOrFail(req);
+    const query = tcmEncounterListQuerySchema.parse(req.query);
 
-  const result = await paginated({
-    request: req,
-    additionalQueryParams: undefined,
-    getItems: async pagination => {
-      const { items } = await listTcmEncounters({
-        cxId,
-        after: query.after,
-        pagination,
-      });
-      return items;
-    },
-    getTotalCount: async () => {
-      const { totalCount } = await listTcmEncounters({
-        cxId,
-        after: query.after,
-        pagination: { count: 1, fromItem: undefined, toItem: undefined },
-      });
-      return totalCount;
-    },
-  });
+    const result = await paginated({
+      request: req,
+      additionalQueryParams: undefined,
+      getItems: async pagination => {
+        const { items } = await listTcmEncounters({
+          cxId,
+          after: query.after,
+          pagination,
+        });
+        return items;
+      },
+      getTotalCount: async () => {
+        const { totalCount } = await listTcmEncounters({
+          cxId,
+          after: query.after,
+          pagination: { count: 1, fromItem: undefined, toItem: undefined },
+        });
+        return totalCount;
+      },
+    });
 
-  return res.status(httpStatus.OK).json(result);
-}
+    return res.status(httpStatus.OK).json(result);
+  })
+);
 
 export default router;
