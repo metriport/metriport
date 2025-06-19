@@ -19,8 +19,12 @@ export async function getBundle({
   patientId: string;
 }): Promise<Bundle | undefined> {
   const { log } = out(`ss.getBundle - cx ${cxId}, pat ${patientId}`);
-  const s3Utils = new S3Utils(Config.getAWSRegion());
   const bucketName = Config.getPharmacyConversionBucketName();
+  if (!bucketName) {
+    log(`No pharmacy conversion bucket name found, skipping`);
+    return undefined;
+  }
+  const s3Utils = new S3Utils(Config.getAWSRegion());
   const fileName = buildLatestConversionBundleFileName(cxId, patientId);
   const fileExists = await s3Utils.fileExists(bucketName, fileName);
   if (!fileExists) {

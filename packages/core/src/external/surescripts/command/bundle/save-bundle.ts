@@ -1,6 +1,8 @@
 import { Bundle } from "@medplum/fhirtypes";
 import { executeWithNetworkRetries } from "@metriport/shared";
 import { Config } from "../../../../util/config";
+import { out } from "../../../../util/log";
+import { capture } from "../../../../util/notifications";
 import { S3Utils } from "../../../aws/s3";
 import {
   buildConversionBundleFileNameForJob,
@@ -26,6 +28,14 @@ export async function saveBundle({
   patientId: string;
   jobId: string;
 }): Promise<void> {
+  const { log } = out(`ss.saveBundle - cx ${cxId}, pat ${patientId}, job ${jobId}`);
+  const bucketName = Config.getPharmacyConversionBucketName();
+  if (!bucketName) {
+    const msg = "No pharmacy conversion bucket name found";
+    log(`${msg}, skipping`);
+    capture.error(msg, { extra: { cxId, patientId, jobId } });
+    return;
+  }
   const latestBundleName = buildLatestConversionBundleFileName(cxId, patientId);
   const conversionBundleName = buildConversionBundleFileNameForJob({
     cxId,
@@ -34,18 +44,13 @@ export async function saveBundle({
   });
   const s3Utils = new S3Utils(Config.getAWSRegion());
   const fileContent = Buffer.from(JSON.stringify(bundle));
-  await executeWithNetworkRetries(async () => {
-    await Promise.all([
-      s3Utils.uploadFile({
-        bucket: Config.getPharmacyConversionBucketName(),
-        key: latestBundleName,
-        file: fileContent,
-      }),
-      s3Utils.uploadFile({
-        bucket: Config.getPharmacyConversionBucketName(),
-        key: conversionBundleName,
-        file: fileContent,
-      }),
-    ]);
-  });
+  await Promise.all([
+    executeWithNetworkRetries(() =>
+      s3Utils.uploadFile({ bucket: bucketName, key: latestBundleName, file: fileContent })
+    ),
+    executeWithNetworkRetries(() =>
+      s3Utils.uploadFile({ bucket: bucketName, key: conversionBundleName, file: fileContent })
+    ),
+  ]);
+  log(`Saved bundle ${latestBundleName} and ${conversionBundleName} to ${bucketName}`);
 }
