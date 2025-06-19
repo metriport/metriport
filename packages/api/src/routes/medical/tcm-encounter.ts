@@ -59,19 +59,17 @@ router.get(
       request: req,
       additionalQueryParams: undefined,
       getItems: async pagination => {
-        const { items } = await getTcmEncounters({
+        return await getTcmEncounters({
           cxId,
           after: query.after,
           pagination,
         });
-        return items;
       },
       getTotalCount: async () => {
-        const { totalCount } = await getTcmEncountersCount({
+        return await getTcmEncountersCount({
           cxId,
           after: query.after,
         });
-        return totalCount;
       },
     });
 

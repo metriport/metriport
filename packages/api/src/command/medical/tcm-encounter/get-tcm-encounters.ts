@@ -25,9 +25,11 @@ type TcmEncounterForDisplay = TcmEncounter & {
   patientName: string;
 };
 
-export async function getTcmEncounters({ cxId, after, pagination }: GetTcmEncountersCmd): Promise<{
-  items: TcmEncounterForDisplay[];
-}> {
+export async function getTcmEncounters({
+  cxId,
+  after,
+  pagination,
+}: GetTcmEncountersCmd): Promise<TcmEncounterForDisplay[]> {
   const where: WhereOptions<TcmEncounterModel> = {
     cxId,
     admitTime: {
@@ -64,14 +66,13 @@ export async function getTcmEncounters({ cxId, after, pagination }: GetTcmEncoun
     };
   });
 
-  return {
-    items,
-  };
+  return items;
 }
 
-export async function getTcmEncountersCount({ cxId, after }: CountTcmEncountersCmd): Promise<{
-  totalCount: number;
-}> {
+export async function getTcmEncountersCount({
+  cxId,
+  after,
+}: CountTcmEncountersCmd): Promise<number> {
   const where: WhereOptions<TcmEncounterModel> = {
     cxId,
     admitTime: {
@@ -83,7 +84,5 @@ export async function getTcmEncountersCount({ cxId, after }: CountTcmEncountersC
     where,
   });
 
-  return {
-    totalCount: count,
-  };
+  return count;
 }

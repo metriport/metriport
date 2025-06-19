@@ -165,7 +165,7 @@ describe("TCM Encounter Commands", () => {
           order: [["admitTime", "DESC"]],
         })
       );
-      expect(result.items).toEqual([
+      expect(result).toEqual([
         expect.objectContaining({
           id: "enc-1",
           patientName: "John Doe",
@@ -174,7 +174,6 @@ describe("TCM Encounter Commands", () => {
           patientStates: ["CA"],
         }),
       ]);
-      expect(result.totalCount).toBe(1);
     });
 
     it("handles pagination correctly", async () => {
@@ -202,7 +201,7 @@ describe("TCM Encounter Commands", () => {
 
       const result = await getTcmEncounters(cmd);
 
-      expect(result.items).toEqual([
+      expect(result).toEqual([
         expect.objectContaining({
           patientName: "Jane Smith",
           patientDateOfBirth: "1985-05-15",
@@ -210,7 +209,6 @@ describe("TCM Encounter Commands", () => {
           patientStates: ["NY"],
         }),
       ]);
-      expect(result.totalCount).toBe(2);
     });
 
     it("filters by after date", async () => {
@@ -251,7 +249,7 @@ describe("TCM Encounter Commands", () => {
           }),
         })
       );
-      expect(result.items).toEqual([
+      expect(result).toEqual([
         expect.objectContaining({
           patientName: "Bob Johnson",
           patientDateOfBirth: "1975-12-10",
@@ -259,7 +257,6 @@ describe("TCM Encounter Commands", () => {
           patientStates: [],
         }),
       ]);
-      expect(result.totalCount).toBe(1);
     });
 
     it("applies default filter for admit time > 2020", async () => {
@@ -300,7 +297,7 @@ describe("TCM Encounter Commands", () => {
           }),
         })
       );
-      expect(result.items).toEqual([
+      expect(result).toEqual([
         expect.objectContaining({
           facilityName: "Default Facility",
           class: "Default Class",
@@ -310,7 +307,6 @@ describe("TCM Encounter Commands", () => {
           patientStates: ["TX"],
         }),
       ]);
-      expect(result.totalCount).toBe(1);
     });
   });
 });
