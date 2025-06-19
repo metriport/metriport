@@ -9,13 +9,10 @@ import { Command } from "commander";
 import { Bundle } from "@medplum/fhirtypes";
 import { SurescriptsConvertBatchResponseHandlerDirect } from "@metriport/core/external/surescripts/command/convert-batch-response/convert-batch-response-direct";
 import { SurescriptsReplica } from "@metriport/core/external/surescripts/replica";
-import { createConsolidatedDataFileNameWithSuffix } from "@metriport/core/domain/consolidated/filename";
 import { dangerouslyDeduplicateFhir } from "@metriport/core/fhir-deduplication/deduplicate-fhir";
-import { getEnvVarOrFail } from "@metriport/shared";
-import { S3Utils } from "@metriport/core/external/aws/s3";
+import { getConsolidatedBundle } from "./shared";
 
 const program = new Command();
-const medicalDocsBucketName = getEnvVarOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
 
 interface DataPoint {
   patientId: string;
@@ -152,16 +149,6 @@ function countResourceType(bundle: Bundle, resourceTypes: Set<string>): number {
   return (
     bundle.entry?.filter(entry => resourceTypes.has(entry.resource?.resourceType ?? "")).length ?? 0
   );
-}
-
-async function getConsolidatedBundle(cxId: string, patientId: string): Promise<Bundle | undefined> {
-  const s3Utils = new S3Utils("us-west-1");
-  const fileKey = createConsolidatedDataFileNameWithSuffix(cxId, patientId) + ".json";
-  if (!(await s3Utils.fileExists(medicalDocsBucketName, fileKey))) {
-    return undefined;
-  }
-  const fileContent = await s3Utils.downloadFile({ bucket: medicalDocsBucketName, key: fileKey });
-  return JSON.parse(fileContent.toString());
 }
 
 export default program;
