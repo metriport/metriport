@@ -6,9 +6,9 @@ import {
   UpdateTcmEncounter,
 } from "../../../command/medical/tcm-encounter/update-tcm-encounter";
 import {
-  listTcmEncounters,
-  ListTcmEncountersCmd,
-} from "../../../command/medical/tcm-encounter/list-tcm-encounters";
+  getTcmEncounters,
+  GetTcmEncountersCmd,
+} from "../../../command/medical/tcm-encounter/get-tcm-encounters";
 
 jest.mock("../../../models/medical/tcm-encounter");
 jest.mock("../../../models/medical/patient");
@@ -132,7 +132,7 @@ describe("TCM Encounter Commands", () => {
     });
   });
 
-  describe("listTcmEncounters", () => {
+  describe("getTcmEncounters", () => {
     it("returns list of encounters with default filters", async () => {
       const encounter = makeEncounter();
       (TcmEncounterModel.findAndCountAll as jest.Mock).mockResolvedValue({
@@ -140,12 +140,12 @@ describe("TCM Encounter Commands", () => {
         count: 1,
       });
 
-      const cmd: ListTcmEncountersCmd = {
+      const cmd: GetTcmEncountersCmd = {
         cxId: "cx-123",
         pagination: { count: 10, fromItem: undefined, toItem: undefined },
       };
 
-      const result = await listTcmEncounters(cmd);
+      const result = await getTcmEncounters(cmd);
 
       expect(TcmEncounterModel.findAndCountAll).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -195,12 +195,12 @@ describe("TCM Encounter Commands", () => {
         count: 2,
       });
 
-      const cmd: ListTcmEncountersCmd = {
+      const cmd: GetTcmEncountersCmd = {
         cxId: "cx-123",
         pagination: { count: 1, fromItem: undefined, toItem: undefined },
       };
 
-      const result = await listTcmEncounters(cmd);
+      const result = await getTcmEncounters(cmd);
 
       expect(result.items).toEqual([
         expect.objectContaining({
@@ -233,13 +233,13 @@ describe("TCM Encounter Commands", () => {
         count: 1,
       });
 
-      const cmd: ListTcmEncountersCmd = {
+      const cmd: GetTcmEncountersCmd = {
         cxId: "cx-123",
         after: afterDate,
         pagination: { count: 10, fromItem: undefined, toItem: undefined },
       };
 
-      const result = await listTcmEncounters(cmd);
+      const result = await getTcmEncounters(cmd);
 
       expect(TcmEncounterModel.findAndCountAll).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -283,12 +283,12 @@ describe("TCM Encounter Commands", () => {
         count: 1,
       });
 
-      const cmd: ListTcmEncountersCmd = {
+      const cmd: GetTcmEncountersCmd = {
         cxId: "cx-123",
         pagination: { count: 10, fromItem: undefined, toItem: undefined },
       };
 
-      const result = await listTcmEncounters(cmd);
+      const result = await getTcmEncounters(cmd);
 
       expect(TcmEncounterModel.findAndCountAll).toHaveBeenCalledWith(
         expect.objectContaining({

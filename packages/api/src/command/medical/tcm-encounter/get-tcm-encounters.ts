@@ -10,23 +10,23 @@ import { buildDayjs } from "@metriport/shared/common/date";
  */
 const DEFAULT_FILTER_DATE = new Date("2020-01-01T00:00:00.000Z");
 
-export type ListTcmEncountersCmd = {
+export type GetTcmEncountersCmd = {
   cxId: string;
   after?: string;
   pagination: Pagination;
+};
+
+export type CountTcmEncountersCmd = {
+  cxId: string;
+  after?: string;
 };
 
 type TcmEncounterForDisplay = TcmEncounter & {
   patientName: string;
 };
 
-export async function listTcmEncounters({
-  cxId,
-  after,
-  pagination,
-}: ListTcmEncountersCmd): Promise<{
+export async function getTcmEncounters({ cxId, after, pagination }: GetTcmEncountersCmd): Promise<{
   items: TcmEncounterForDisplay[];
-  totalCount: number;
 }> {
   const where: WhereOptions<TcmEncounterModel> = {
     cxId,
@@ -35,7 +35,7 @@ export async function listTcmEncounters({
     },
   };
 
-  const { rows, count } = await TcmEncounterModel.findAndCountAll({
+  const rows = await TcmEncounterModel.findAll({
     where,
     include: [
       {
@@ -48,7 +48,7 @@ export async function listTcmEncounters({
     order: [["admitTime", "DESC"]],
   });
 
-  const items = rows.map(row => {
+  const items = rows.map((row: TcmEncounterModel) => {
     const patient = (row.get("PatientModel") as PatientModel).dataValues.data;
 
     /** Hack to get around Sequelize type inference not seeing associations */
@@ -66,6 +66,24 @@ export async function listTcmEncounters({
 
   return {
     items,
+  };
+}
+
+export async function getTcmEncountersCount({ cxId, after }: CountTcmEncountersCmd): Promise<{
+  totalCount: number;
+}> {
+  const where: WhereOptions<TcmEncounterModel> = {
+    cxId,
+    admitTime: {
+      [Op.gt]: after ? buildDayjs(after).toDate() : DEFAULT_FILTER_DATE,
+    },
+  };
+
+  const count = await TcmEncounterModel.count({
+    where,
+  });
+
+  return {
     totalCount: count,
   };
 }

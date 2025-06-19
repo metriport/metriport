@@ -1,13 +1,16 @@
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
-import { listTcmEncounters } from "../../command/medical/tcm-encounter/list-tcm-encounters";
+import {
+  getTcmEncounters,
+  getTcmEncountersCount,
+} from "../../command/medical/tcm-encounter/get-tcm-encounters";
 import { updateTcmEncounter } from "../../command/medical/tcm-encounter/update-tcm-encounter";
 import { requestLogger } from "../helpers/request-logger";
 import { paginated } from "../pagination";
+import { validateUUID } from "../schemas/uuid";
 import { asyncHandler, getCxIdOrFail, getFromParamsOrFail } from "../util";
 import { tcmEncounterListQuerySchema, tcmEncounterUpdateSchema } from "./schemas/tcm-encounter";
-import { validateUUID } from "../schemas/uuid";
 
 const router = Router();
 
@@ -56,7 +59,7 @@ router.get(
       request: req,
       additionalQueryParams: undefined,
       getItems: async pagination => {
-        const { items } = await listTcmEncounters({
+        const { items } = await getTcmEncounters({
           cxId,
           after: query.after,
           pagination,
@@ -64,10 +67,9 @@ router.get(
         return items;
       },
       getTotalCount: async () => {
-        const { totalCount } = await listTcmEncounters({
+        const { totalCount } = await getTcmEncountersCount({
           cxId,
           after: query.after,
-          pagination: { count: 1, fromItem: undefined, toItem: undefined },
         });
         return totalCount;
       },
