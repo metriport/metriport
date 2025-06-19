@@ -180,29 +180,13 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
       `persistTcmEncounter, cx: ${tcmEncounterPayload.cxId}, pt: ${tcmEncounterPayload.patientId}, enc: ${encounterId}`
     );
 
-    /**
-     * TODO:
-     * We frequently receive "duplicate" ADTs - different messages with the same data for the same event.
-     * We need to deduplicate them to avoid noisy creation errors.
-     */
-    try {
-      log(`PUT /medical/v1/tcm/encounter/${encounterId} ${triggerEvent}`);
-      await executeWithNetworkRetries(
-        async () =>
-          axios.put(`${this.apiUrl}/medical/v1/tcm/encounter/${encounterId}`, fullPayload),
-        {
-          log,
-        }
-      );
-    } catch (error) {
-      log(`POST /internal/tcm/encounter/ ${triggerEvent}`);
-      await executeWithNetworkRetries(
-        async () => axios.post(`${this.apiUrl}/internal/tcm/encounter/`, fullPayload),
-        {
-          log,
-        }
-      );
-    }
+    log(`PUT /internal/tcm/encounter ${triggerEvent}`);
+    await executeWithNetworkRetries(
+      async () => axios.put(`${this.apiUrl}/internal/tcm/encounter/`, fullPayload),
+      {
+        log,
+      }
+    );
   }
 
   private extractClinicalInformation(bundle: Bundle<Resource>): {
