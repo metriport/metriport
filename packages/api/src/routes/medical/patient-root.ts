@@ -95,7 +95,7 @@ router.post(
       settings,
     });
 
-    if (Config.isSandbox() || Config.isDev()) {
+    if (!Config.isProdEnv()) {
       const facilityNames = [
         "Riverside Regional Medical Center",
         "St. Catherine's General Hospital",
