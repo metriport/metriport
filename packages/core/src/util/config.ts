@@ -304,4 +304,8 @@ export class Config {
   static getEClinicalWorksEnv(): string | undefined {
     return getEnvVar("EHR_ECLINICALWORKS_ENVIRONMENT");
   }
+
+  static getRunPatientJobQueueUrl(): string {
+    return getEnvVarOrFail("RUN_PATIENT_JOB_QUEUE_URL");
+  }
 }
