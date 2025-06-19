@@ -2,29 +2,6 @@ import { JobParamsCx, JobParamsOps, JobStatus, PatientJob } from "@metriport/sha
 import { DataTypes, Sequelize } from "sequelize";
 import { BaseModel, ModelSetup } from "./_default";
 
-/**
- * Used by code that needs to access the raw data from the database.
- * @see updatePatientJobTotals()
- */
-export const patientJobRawColumnNames = {
-  id: "id",
-  cxId: "cx_id",
-  patientId: "patient_id",
-  jobType: "job_type",
-  jobGroupId: "job_group_id",
-  requestId: "request_id",
-  status: "status",
-  statusReason: "status_reason",
-  startedAt: "started_at",
-  finishedAt: "finished_at",
-  total: "total",
-  successful: "successful",
-  failed: "failed",
-  paramsCx: "params_cx",
-  paramsOps: "params_ops",
-  data: "data",
-};
-
 export class PatientJobModel extends BaseModel<PatientJobModel> implements PatientJob {
   static NAME = "patient_job";
   declare cxId: string;
@@ -34,14 +11,19 @@ export class PatientJobModel extends BaseModel<PatientJobModel> implements Patie
   declare requestId: string | undefined;
   declare status: JobStatus;
   declare statusReason: string | undefined;
+  declare runUrl: string | undefined;
+  declare scheduledAt: Date | undefined;
   declare startedAt: Date | undefined;
   declare finishedAt: Date | undefined;
+  declare cancelledAt: Date | undefined;
+  declare failedAt: Date | undefined;
   declare total: number;
   declare successful: number;
   declare failed: number;
   declare paramsCx: JobParamsCx | undefined;
   declare paramsOps: JobParamsOps | undefined;
   declare data: unknown;
+  declare runtimeData: unknown;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
     PatientJobModel.init(
@@ -68,10 +50,22 @@ export class PatientJobModel extends BaseModel<PatientJobModel> implements Patie
         statusReason: {
           type: DataTypes.STRING,
         },
+        runUrl: {
+          type: DataTypes.STRING,
+        },
+        scheduledAt: {
+          type: DataTypes.DATE,
+        },
         startedAt: {
           type: DataTypes.DATE,
         },
         finishedAt: {
+          type: DataTypes.DATE,
+        },
+        cancelledAt: {
+          type: DataTypes.DATE,
+        },
+        failedAt: {
           type: DataTypes.DATE,
         },
         total: {
@@ -90,6 +84,9 @@ export class PatientJobModel extends BaseModel<PatientJobModel> implements Patie
           type: DataTypes.JSONB,
         },
         data: {
+          type: DataTypes.JSONB,
+        },
+        runtimeData: {
           type: DataTypes.JSONB,
         },
       },
