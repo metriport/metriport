@@ -1,8 +1,8 @@
 import {
   CommonWell,
-  getId,
   getIdTrailingSlash,
   getPatientStrongIds,
+  getPersonId,
   getPersonIdFromSearchByPatientDemo,
   RequestMetadata,
 } from "@metriport/commonwell-sdk";
@@ -23,7 +23,7 @@ export async function findOrCreatePerson(
     const { patientId, patientLink, patientStrongId } = res;
     const respPerson = await commonWell.enrollPerson(queryMeta, patientData);
     console.log(respPerson);
-    const personId = getId(respPerson);
+    const personId = getPersonId(respPerson);
     if (!personId) throw new Error("No personId on response from enrollPerson");
 
     const respLink = await commonWell.addPatientLink(

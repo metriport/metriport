@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 import {
   AddressUseCodes,
   CertificatePurpose,
@@ -6,13 +5,14 @@ import {
   Identifier,
   NameUseCodes,
   Organization,
+  OrganizationWithNetworkInfo,
   Patient,
   Person,
 } from "@metriport/commonwell-sdk";
 import { X509Certificate } from "crypto";
 import dayjs from "dayjs";
 import * as nanoid from "nanoid";
-import { adjectives, animals, colors, uniqueNamesGenerator } from "unique-names-generator";
+import { faker } from "@faker-js/faker";
 import {
   clientId,
   clientSecret,
@@ -27,6 +27,10 @@ import {
   memberName,
   memberOID,
   orgCertificateString,
+  orgGatewayAuthorizationClientId,
+  orgGatewayAuthorizationClientSecret,
+  orgGatewayAuthorizationServerEndpoint,
+  orgGatewayEndpoint,
 } from "./env";
 import { getCertificateContent } from "./util";
 
@@ -201,14 +205,18 @@ export const makeDocPerson = (init?: PersonDataOnOrg) => {
   };
 };
 
-// ORGANIZATION
-const shortName: string = uniqueNamesGenerator({
-  dictionaries: [adjectives, colors, animals],
-  separator: "-",
-  length: 3,
-});
+function makeShortName(): string {
+  let shortName = " ";
+  while (shortName.includes(" ")) {
+    shortName = faker.helpers.fake("{{word.adjective}}-{{color.human}}-{{animal.type()}}");
+  }
+  return shortName;
+}
 
-export function makeOrganization(suffixId?: string): Organization {
+// ORGANIZATION
+const shortName = makeShortName();
+
+export function makeOrganization(suffixId?: string): OrganizationWithNetworkInfo {
   const orgId = makeOrgId(suffixId);
   return {
     organizationId: `${orgId}`,
@@ -218,9 +226,7 @@ export function makeOrganization(suffixId?: string): Organization {
     memberName: "Metriport",
     type: "Hospital",
     searchRadius: 50,
-    // patientIdAssignAuthority: `${CW_ID_PREFIX}${orgId}`,
     patientIdAssignAuthority: `${orgId}`,
-    securityTokenKeyType: "",
     isActive: true,
     locations: [
       {
@@ -233,6 +239,34 @@ export function makeOrganization(suffixId?: string): Organization {
         phone: "303-555-1212",
         fax: "303-555-1212",
         email: "here@dummymail.com",
+      },
+    ],
+    securityTokenKeyType: "JWT",
+    gateways: [
+      {
+        serviceType: "R4_Base",
+        gatewayType: "FHIR",
+        endpointLocation: orgGatewayEndpoint,
+      },
+    ],
+    authorizationInformation: {
+      authorizationServerEndpoint: orgGatewayAuthorizationServerEndpoint,
+      clientId: orgGatewayAuthorizationClientId,
+      clientSecret: orgGatewayAuthorizationClientSecret,
+      documentReferenceScope: "fhir/document",
+      binaryScope: "fhir/document",
+    },
+    networks: [
+      {
+        type: "CommonWell",
+        purposeOfUse: [
+          {
+            id: "TREATMENT",
+            queryInitiatorOnly: false,
+            queryInitiator: true,
+            queryResponder: true,
+          },
+        ],
       },
     ],
     technicalContacts: [
@@ -256,7 +290,6 @@ export function makeDocContribOrganization(suffixId?: string): Organization {
     memberName: "Metriport",
     type: "Hospital",
     patientIdAssignAuthority: `${CW_ID_PREFIX}${orgId}`,
-    securityTokenKeyType: null,
     isActive: true,
     locations: [
       {
@@ -282,11 +315,12 @@ export function makeDocContribOrganization(suffixId?: string): Organization {
     ],
     gateways: [
       {
-        serviceType: "XCA_Query",
-        gatewayType: "R4",
+        serviceType: "R4_Base",
+        gatewayType: "FHIR",
         endpointLocation: docUrl,
       },
     ],
+    securityTokenKeyType: "JWT",
     authorizationInformation: {
       authorizationServerEndpoint: docAuthUrl,
       clientId: clientId,
@@ -294,6 +328,19 @@ export function makeDocContribOrganization(suffixId?: string): Organization {
       documentReferenceScope: "fhir/document",
       binaryScope: "fhir/document",
     },
+    networks: [
+      {
+        type: "CommonWell",
+        purposeOfUse: [
+          {
+            id: "TREATMENT",
+            queryInitiatorOnly: false,
+            queryInitiator: true,
+            queryResponder: true,
+          },
+        ],
+      },
+    ],
   };
 }
 

@@ -1,6 +1,10 @@
 #!/usr/bin/env node
-import { CommonWell, getId, getIdTrailingSlash, RequestMetadata } from "@metriport/commonwell-sdk";
-
+import {
+  CommonWell,
+  getIdTrailingSlash,
+  getPersonId,
+  RequestMetadata,
+} from "@metriport/commonwell-sdk";
 import { identifier, makePatient, personStrongId } from "./payloads";
 
 // 3. Link Management
@@ -10,7 +14,7 @@ export async function linkManagement(commonWell: CommonWell, queryMeta: RequestM
   // C5: Levels of Link Assurance
   console.log(`>>> C5a : Link a Patient to a Person upgrading from LOLA 1 to LOLA 2.`);
   const person = await commonWell.enrollPerson(queryMeta, personStrongId);
-  const personId = getId(person);
+  const personId = getPersonId(person);
   if (!personId) throw new Error("No personId on response from enrollPerson");
 
   const respPatient = await commonWell.registerPatient(
