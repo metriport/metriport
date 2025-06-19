@@ -4,13 +4,7 @@ export const jobStatus = ["waiting", "processing", "completed", "failed", "cance
 export type JobStatus = (typeof jobStatus)[number];
 
 export function isValidJobStatus(status: string): status is JobStatus {
-  return (
-    status === "waiting" ||
-    status === "processing" ||
-    status === "completed" ||
-    status === "failed" ||
-    status === "cancelled"
-  );
+  return jobStatus.includes(status as JobStatus);
 }
 
 export const jobInitialStatus: JobStatus = "waiting";
@@ -58,9 +52,9 @@ export function validateNewJobStatus(currentStatus: JobStatus, newStatus: JobSta
       }
       break;
     case "failed":
-      if (currentStatus === "completed") {
+      if (currentStatus !== "processing") {
         throw new BadRequestError(
-          `Job is completed, cannot update to failed`,
+          `Job is not processing, cannot update to failed`,
           undefined,
           additionalInfo
         );

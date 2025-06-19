@@ -401,7 +401,6 @@ export class APIStack extends Stack {
       vpc: this.vpc,
       lambdaLayers,
       dbCluster,
-      dbCredsSecret,
       secrets,
       medicalDocumentsBucket,
       sandboxSeedDataBucket,
@@ -620,7 +619,7 @@ export class APIStack extends Stack {
       featureFlagsTable,
       cookieStore,
       surescriptsAssets: surescriptsStack?.getAssets(),
-      jobAssets: jobsStack?.getAssets(),
+      jobAssets: jobsStack.getAssets(),
     });
     const apiLoadBalancerAddress = apiLoadBalancer.loadBalancerDnsName;
 
@@ -705,11 +704,11 @@ export class APIStack extends Stack {
       conversionResultNotifierLambda,
       consolidatedSearchLambda,
       consolidatedIngestionLambda,
+      ...(surescriptsStack?.getLambdas() ?? []),
+      jobsStack.getAssets().runPatientJobLambda,
     ];
     const apiUrl = `http://${apiDirectUrl}`;
     lambdasToGetApiUrl.forEach(lambda => lambda?.addEnvironment("API_URL", apiUrl));
-    if (surescriptsStack) surescriptsStack.setApiUrl(apiDirectUrl);
-    jobsStack.setApiUrl(apiDirectUrl);
 
     // TODO move this to each place where it's used
     // Access grant for medical documents bucket

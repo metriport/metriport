@@ -1,12 +1,18 @@
-import { runJob } from "@metriport/core/command/job/patient/api/run-job";
-import { processAsyncError } from "@metriport/core/util/error/shared";
+import { buildRunJobHandler } from "@metriport/core/command/job/patient/command/run-job/run-job-factory";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import { jobInitialStatus, PatientJob } from "@metriport/shared";
+import { BadRequestError, jobInitialStatus, PatientJob } from "@metriport/shared";
 import { PatientJobModel } from "../../../models/patient-job";
 
 export type CreatePatientJobParams = Pick<
   PatientJob,
-  "cxId" | "patientId" | "jobType" | "jobGroupId" | "requestId" | "scheduledAt" | "paramsOps"
+  | "cxId"
+  | "patientId"
+  | "jobType"
+  | "jobGroupId"
+  | "requestId"
+  | "scheduledAt"
+  | "paramsOps"
+  | "runUrl"
 >;
 
 export async function createPatientJob({
@@ -17,7 +23,17 @@ export async function createPatientJob({
   requestId,
   scheduledAt,
   paramsOps,
+  runUrl,
 }: CreatePatientJobParams): Promise<PatientJob> {
+  if (!runUrl) {
+    throw new BadRequestError("runUrl is required", undefined, {
+      cxId,
+      patientId,
+      jobType,
+      jobGroupId,
+      requestId,
+    });
+  }
   const created = await PatientJobModel.create({
     id: uuidv7(),
     cxId,
@@ -31,11 +47,11 @@ export async function createPatientJob({
     successful: 0,
     failed: 0,
     paramsOps,
+    runUrl,
   });
-  if (!scheduledAt) {
-    runJob({ jobId: created.id, cxId, jobType }).catch(
-      processAsyncError(`runJob ${created.jobType}`)
-    );
+  if (!scheduledAt && created.runUrl) {
+    const handler = buildRunJobHandler();
+    await handler.runJob({ id: created.id, cxId: created.cxId, runUrl: created.runUrl });
   }
   return created.dataValues;
 }

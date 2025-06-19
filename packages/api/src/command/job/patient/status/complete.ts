@@ -1,8 +1,14 @@
 import { out } from "@metriport/core/util/log";
 import { PatientJob, validateNewJobStatus } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
-import { CompleteJobParams } from "../../shared";
 import { getPatientJobModelOrFail } from "../get";
+
+export type CompleteJobParams = {
+  jobId: string;
+  cxId: string;
+  forceStatusUpdate?: boolean;
+  onCompleted?: () => Promise<void>;
+};
 
 /**
  * Completes a patient job.

@@ -1,7 +1,11 @@
 import { JobStatus, NotFoundError, PatientJob } from "@metriport/shared";
 import { Op } from "sequelize";
 import { PatientJobModel } from "../../../models/patient-job";
-import { GetJobByIdParams } from "../shared";
+
+export type GetJobByIdParams = {
+  cxId: string;
+  jobId: string;
+};
 
 export async function getPatientJobById(params: GetJobByIdParams): Promise<PatientJob | undefined> {
   const job = await getPatientJobModel(params);
@@ -30,12 +34,13 @@ export async function getPatientJobModelOrFail(params: GetJobByIdParams): Promis
   return job;
 }
 
-export type ListPatientJobsParams = Pick<PatientJob, "cxId"> &
-  Partial<Pick<PatientJob, "patientId" | "jobType" | "jobGroupId">> & {
-    status?: JobStatus | JobStatus[];
-    scheduledAfter?: Date;
-    scheduledBefore?: Date;
-  };
+export type ListPatientJobsParams = Partial<
+  Pick<PatientJob, "cxId" | "patientId" | "jobType" | "jobGroupId">
+> & {
+  status?: JobStatus | JobStatus[];
+  scheduledAfter?: Date;
+  scheduledBefore?: Date;
+};
 
 export async function getPatientJobs({
   cxId,
@@ -49,7 +54,7 @@ export async function getPatientJobs({
   const statuses = getStatusFromParams(status);
   const jobs = await PatientJobModel.findAll({
     where: {
-      cxId,
+      ...(cxId ? { cxId } : {}),
       ...(patientId ? { patientId } : {}),
       ...(jobType ? { jobType } : {}),
       ...(jobGroupId ? { jobGroupId } : {}),

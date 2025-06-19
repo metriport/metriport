@@ -17,10 +17,10 @@ export type UpdateJobTotalParams = JobBaseParams & {
  * @param total - The total number of entries to process.
  */
 export async function updateJobTotal({ jobId, cxId, total }: UpdateJobTotalParams): Promise<void> {
-  const { log, debug } = out(`Ehr updateJobTotal - jobId ${jobId} cxId ${cxId}`);
+  const { log, debug } = out(`updateJobTotal - jobId ${jobId} cxId ${cxId}`);
   const api = axios.create({ baseURL: Config.getApiUrl() });
   const queryParams = new URLSearchParams({ cxId, total: total.toString() });
-  const updateJobUrl = `/internal/patient/job/${jobId}/update-total?${queryParams.toString()}`;
+  const updateJobUrl = `/internal/patient/job/${jobId}/total?${queryParams.toString()}`;
   try {
     const response = await executeWithNetworkRetries(async () => {
       return api.post(updateJobUrl);
@@ -34,7 +34,7 @@ export async function updateJobTotal({ jobId, cxId, total }: UpdateJobTotalParam
       jobId,
       total,
       url: updateJobUrl,
-      context: "ehr.updateJobTotal",
+      context: "patient-job.updateJobTotal",
     });
   }
 }
