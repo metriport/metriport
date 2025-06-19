@@ -1,34 +1,35 @@
-import { Request, Response } from "express";
-import httpStatus from "http-status";
+import { NotFoundError } from "@metriport/shared";
 import { TcmEncounterModel } from "../../../models/medical/tcm-encounter";
 import { PatientModel } from "../../../models/medical/patient";
-import { handleUpdateTcmEncounter, handleListTcmEncounters } from "../tcm-encounter";
+import {
+  updateTcmEncounter,
+  UpdateTcmEncounter,
+} from "../../../command/medical/tcm-encounter/update-tcm-encounter";
+import {
+  listTcmEncounters,
+  ListTcmEncountersCmd,
+} from "../../../command/medical/tcm-encounter/list-tcm-encounters";
 
 jest.mock("../../../models/medical/tcm-encounter");
 jest.mock("../../../models/medical/patient");
 
-describe("TCM Encounter Handlers", () => {
-  let req: Partial<Request>;
-  let res: Partial<Response>;
-
+describe("TCM Encounter Commands", () => {
   beforeEach(() => {
-    req = {
-      params: { id: "1bdb5013-bb41-4c22-8429-07968d89e653" },
-      body: { latestEvent: "Discharged", dischargeTime: "2024-03-21T16:00:00Z" },
-      cxId: "81f7abc4-3924-454f-ba4e-e10e26eda8af",
-      query: {},
-    };
-    res = {
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn(),
-    };
+    jest.clearAllMocks();
   });
 
-  describe("handleUpdateTcmEncounter", () => {
+  describe("updateTcmEncounter", () => {
+    const validUpdatePayload: UpdateTcmEncounter = {
+      id: "1bdb5013-bb41-4c22-8429-07968d89e653",
+      cxId: "81f7abc4-3924-454f-ba4e-e10e26eda8af",
+      latestEvent: "Discharged",
+      dischargeTime: new Date("2024-03-21T16:00:00Z"),
+    };
+
     it("updates an existing TCM encounter", async () => {
       const encounter = {
-        id: req.params?.id,
-        cxId: req.cxId,
+        id: validUpdatePayload.id,
+        cxId: validUpdatePayload.cxId,
         patientId: "patient-123",
         facilityName: "Test Facility",
         latestEvent: "Discharged" as const,
@@ -42,38 +43,30 @@ describe("TCM Encounter Handlers", () => {
       (TcmEncounterModel.findByPk as jest.Mock).mockResolvedValue(encounter);
       (TcmEncounterModel.update as jest.Mock).mockResolvedValue([1]);
 
-      await handleUpdateTcmEncounter(req as Request, res as Response);
+      const result = await updateTcmEncounter(validUpdatePayload);
 
-      expect(TcmEncounterModel.findByPk).toHaveBeenCalledWith(req.params?.id);
+      expect(TcmEncounterModel.findByPk).toHaveBeenCalledWith(validUpdatePayload.id);
       expect(TcmEncounterModel.update).toHaveBeenCalledWith(
         expect.objectContaining({
           latestEvent: "Discharged",
           dischargeTime: new Date("2024-03-21T16:00:00Z"),
         }),
         expect.objectContaining({
-          where: { id: req.params?.id, cxId: req.cxId },
+          where: { id: validUpdatePayload.id, cxId: validUpdatePayload.cxId },
         })
       );
-      expect(res.status).toHaveBeenCalledWith(httpStatus.OK);
-      expect(res.json).toHaveBeenCalledWith(encounter);
+      expect(result.encounter).toEqual(encounter);
     });
 
-    it("returns 404 for non-existent encounter", async () => {
+    it("throws NotFoundError for non-existent encounter", async () => {
       (TcmEncounterModel.findByPk as jest.Mock).mockResolvedValue(null);
 
-      await handleUpdateTcmEncounter(req as Request, res as Response);
-
-      expect(TcmEncounterModel.findByPk).toHaveBeenCalledWith(req.params?.id);
-      expect(res.status).toHaveBeenCalledWith(httpStatus.NOT_FOUND);
-      expect(res.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          message: `TCM encounter not found`,
-        })
-      );
+      await expect(updateTcmEncounter(validUpdatePayload)).rejects.toThrow(NotFoundError);
+      expect(TcmEncounterModel.findByPk).toHaveBeenCalledWith(validUpdatePayload.id);
     });
   });
 
-  describe("handleListTcmEncounters", () => {
+  describe("listTcmEncounters", () => {
     it("returns list of encounters with default filters", async () => {
       const mockPatientData = {
         firstName: "John",
@@ -124,16 +117,12 @@ describe("TCM Encounter Handlers", () => {
         count: 1,
       });
 
-      const req = {
-        query: {},
+      const cmd: ListTcmEncountersCmd = {
         cxId: "cx123",
-      } as unknown as Request;
-      const res = {
-        status: jest.fn().mockReturnThis(),
-        json: jest.fn(),
-      } as unknown as Response;
+        pagination: { count: 10, fromItem: undefined, toItem: undefined },
+      };
 
-      await handleListTcmEncounters(req, res);
+      const result = await listTcmEncounters(cmd);
 
       const expectedQuery = {
         where: {
@@ -155,9 +144,8 @@ describe("TCM Encounter Handlers", () => {
       expect(TcmEncounterModel.findAndCountAll).toHaveBeenCalledWith(
         expect.objectContaining(expectedQuery)
       );
-      expect(res.status).toHaveBeenCalledWith(httpStatus.OK);
-      expect(res.json).toHaveBeenCalledWith({
-        items: expect.arrayContaining([
+      expect(result.items).toEqual(
+        expect.arrayContaining([
           expect.objectContaining({
             id: "1",
             patientId: "patient-123",
@@ -172,12 +160,9 @@ describe("TCM Encounter Handlers", () => {
             patientPhoneNumbers: ["555-1234"],
             patientStates: ["CA"],
           }),
-        ]),
-        meta: {
-          itemsInTotal: 1,
-          itemsOnPage: 1,
-        },
-      });
+        ])
+      );
+      expect(result.totalCount).toBe(1);
     });
 
     it("handles pagination with page size of 1 and two items", async () => {
@@ -232,19 +217,15 @@ describe("TCM Encounter Handlers", () => {
         count: total,
       });
 
-      const req = {
-        query: { limit: pageLimit, offset: 0 },
+      const cmd: ListTcmEncountersCmd = {
         cxId: "cx123",
-      } as unknown as Request;
-      const res = {
-        status: jest.fn().mockReturnThis(),
-        json: jest.fn(),
-      } as unknown as Response;
+        pagination: { count: pageLimit, fromItem: undefined, toItem: undefined },
+      };
 
-      await handleListTcmEncounters(req, res);
+      const result = await listTcmEncounters(cmd);
 
-      expect(res.json).toHaveBeenCalledWith({
-        items: expect.arrayContaining([
+      expect(result.items).toEqual(
+        expect.arrayContaining([
           expect.objectContaining({
             id: "1",
             patientId: "patient-456",
@@ -259,16 +240,13 @@ describe("TCM Encounter Handlers", () => {
             patientPhoneNumbers: ["555-5678"],
             patientStates: ["NY"],
           }),
-        ]),
-        meta: {
-          itemsInTotal: total,
-          itemsOnPage: pageLimit,
-        },
-      });
+        ])
+      );
+      expect(result.totalCount).toBe(total);
     });
 
     it("filters by after date", async () => {
-      req.query = { after: "2025-06-17T19:52:55.461Z" };
+      const afterDate = "2025-06-17T19:52:55.461Z";
       const mockPatientData = {
         firstName: "Bob",
         lastName: "Johnson",
@@ -279,11 +257,11 @@ describe("TCM Encounter Handlers", () => {
 
       const mockPatient = {
         id: "patient-789",
-        cxId: req.cxId,
+        cxId: "cx123",
         data: mockPatientData,
         dataValues: {
           id: "patient-789",
-          cxId: req.cxId,
+          cxId: "cx123",
           data: mockPatientData,
         },
       };
@@ -291,7 +269,7 @@ describe("TCM Encounter Handlers", () => {
       const encounters = [
         {
           id: "1",
-          cxId: req.cxId,
+          cxId: "cx123",
           patientId: "patient-789",
           facilityName: "Test Facility",
           latestEvent: "Admitted" as const,
@@ -303,7 +281,7 @@ describe("TCM Encounter Handlers", () => {
           get: jest.fn().mockReturnValue(mockPatient),
           dataValues: {
             id: "1",
-            cxId: req.cxId,
+            cxId: "cx123",
             patientId: "patient-789",
             facilityName: "Test Facility",
             latestEvent: "Admitted",
@@ -320,14 +298,20 @@ describe("TCM Encounter Handlers", () => {
         count: 1,
       });
 
-      await handleListTcmEncounters(req as Request, res as Response);
+      const cmd: ListTcmEncountersCmd = {
+        cxId: "cx123",
+        after: afterDate,
+        pagination: { count: 10, fromItem: undefined, toItem: undefined },
+      };
+
+      const result = await listTcmEncounters(cmd);
 
       expect(TcmEncounterModel.findAndCountAll).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({
-            cxId: req.cxId,
+            cxId: "cx123",
             admitTime: expect.objectContaining({
-              [Symbol.for("gt")]: new Date(req.query.after as string),
+              [Symbol.for("gt")]: new Date(afterDate),
             }),
           }),
           include: [
@@ -339,28 +323,26 @@ describe("TCM Encounter Handlers", () => {
           ],
         })
       );
-      expect(res.status).toHaveBeenCalledWith(httpStatus.OK);
-      expect(res.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          items: expect.arrayContaining([
-            expect.objectContaining({
-              id: "1",
-              cxId: req.cxId,
-              patientId: "patient-789",
-              facilityName: "Test Facility",
-              latestEvent: "Admitted",
-              class: "Test Class",
-              admitTime: new Date("2025-07-01"),
-              dischargeTime: null,
-              clinicalInformation: {},
-              patientName: "Bob Johnson",
-              patientDateOfBirth: "1975-12-10",
-              patientPhoneNumbers: [],
-              patientStates: [],
-            }),
-          ]),
-        })
+      expect(result.items).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            id: "1",
+            cxId: "cx123",
+            patientId: "patient-789",
+            facilityName: "Test Facility",
+            latestEvent: "Admitted",
+            class: "Test Class",
+            admitTime: new Date("2025-07-01"),
+            dischargeTime: null,
+            clinicalInformation: {},
+            patientName: "Bob Johnson",
+            patientDateOfBirth: "1975-12-10",
+            patientPhoneNumbers: [],
+            patientStates: [],
+          }),
+        ])
       );
+      expect(result.totalCount).toBe(1);
     });
 
     it("applies default filter for admit time > 2020", async () => {
@@ -374,11 +356,11 @@ describe("TCM Encounter Handlers", () => {
 
       const mockPatient = {
         id: "patient-101",
-        cxId: req.cxId,
+        cxId: "cx123",
         data: mockPatientData,
         dataValues: {
           id: "patient-101",
-          cxId: req.cxId,
+          cxId: "cx123",
           data: mockPatientData,
         },
       };
@@ -386,7 +368,7 @@ describe("TCM Encounter Handlers", () => {
       const encounters = [
         {
           id: "1",
-          cxId: req.cxId,
+          cxId: "cx123",
           patientId: "patient-101",
           facilityName: "Default Facility",
           latestEvent: "Admitted" as const,
@@ -398,7 +380,7 @@ describe("TCM Encounter Handlers", () => {
           get: jest.fn().mockReturnValue(mockPatient),
           dataValues: {
             id: "1",
-            cxId: req.cxId,
+            cxId: "cx123",
             patientId: "patient-101",
             facilityName: "Default Facility",
             latestEvent: "Admitted",
@@ -415,12 +397,17 @@ describe("TCM Encounter Handlers", () => {
         count: 1,
       });
 
-      await handleListTcmEncounters(req as Request, res as Response);
+      const cmd: ListTcmEncountersCmd = {
+        cxId: "cx123",
+        pagination: { count: 10, fromItem: undefined, toItem: undefined },
+      };
+
+      const result = await listTcmEncounters(cmd);
 
       expect(TcmEncounterModel.findAndCountAll).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({
-            cxId: req.cxId,
+            cxId: "cx123",
             admitTime: expect.objectContaining({
               [Symbol.for("gt")]: new Date("2020-01-01T00:00:00.000Z"),
             }),
@@ -434,28 +421,26 @@ describe("TCM Encounter Handlers", () => {
           ],
         })
       );
-      expect(res.status).toHaveBeenCalledWith(httpStatus.OK);
-      expect(res.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          items: expect.arrayContaining([
-            expect.objectContaining({
-              id: "1",
-              cxId: req.cxId,
-              patientId: "patient-101",
-              facilityName: "Default Facility",
-              latestEvent: "Admitted",
-              class: "Default Class",
-              admitTime: new Date("2023-06-01"),
-              dischargeTime: null,
-              clinicalInformation: {},
-              patientName: "Alice Brown",
-              patientDateOfBirth: "1995-08-20",
-              patientPhoneNumbers: ["555-9999"],
-              patientStates: ["TX"],
-            }),
-          ]),
-        })
+      expect(result.items).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            id: "1",
+            cxId: "cx123",
+            patientId: "patient-101",
+            facilityName: "Default Facility",
+            latestEvent: "Admitted",
+            class: "Default Class",
+            admitTime: new Date("2023-06-01"),
+            dischargeTime: null,
+            clinicalInformation: {},
+            patientName: "Alice Brown",
+            patientDateOfBirth: "1995-08-20",
+            patientPhoneNumbers: ["555-9999"],
+            patientStates: ["TX"],
+          }),
+        ])
       );
+      expect(result.totalCount).toBe(1);
     });
   });
 });
