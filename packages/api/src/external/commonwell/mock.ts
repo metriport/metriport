@@ -102,8 +102,13 @@ export class CommonWellMock implements sdk.CommonWellAPI {
   }
 
   // NOT USED YET
-  async deleteCertificateFromOrg() {
-    return;
+  async deleteCertificateFromOrg(
+    meta: sdk.RequestMetadata,
+    id: string,
+    thumbprint: string,
+    purpose: string
+  ): Promise<string> {
+    return "Certificate deleted";
   }
 
   // NOT USED YET

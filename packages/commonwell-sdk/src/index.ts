@@ -38,7 +38,12 @@ export {
   PatientLinkProxy,
   PatientNetworkLink,
 } from "./models/link";
-export { Organization, OrganizationList } from "./models/organization";
+export {
+  Organization,
+  OrganizationList,
+  OrganizationWithNetworkInfo,
+  OrganizationWithoutNetworkInfo,
+} from "./models/organization";
 export {
   Patient,
   PatientLinkResp,
