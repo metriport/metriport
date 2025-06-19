@@ -1,10 +1,10 @@
 ---
 title: "Bulk Patient Create"
-description: "Creates a batch of patients in Metriport, and initiates Document Queries for all of them."
+description: "Creates a batch of patients in Metriport and initiates Document Queries for all of them."
 api: "POST /medical/v1/patient/bulk"
 ---
 
-The Bulk Patient Create endpoint allows you create, and kick off Document Queries for, a batch of
+The Bulk Patient Create endpoint allows you to create and kick off Document Queries for a batch of
 Patients in a single request.
 
 <Tip>
@@ -14,8 +14,8 @@ Patients in a single request.
 
 <Info>
   This is an asynchronous endpoint: you upload a file with
-  patient demographics and we notify you when the process is
-  completed, through a [webhook
+  patient demographics, and we notify you when the process
+  is completed through a [webhook
   message](#webhook-with-the-result).
 </Info>
 

@@ -3,7 +3,8 @@ import { validateNPI } from "@metriport/shared/common/validate-npi";
 import { Config } from "../../util/config";
 import { SftpClient } from "../sftp/client";
 import { SftpFile } from "../sftp/types";
-import { generateBatchRequestFile, generatePatientRequestFile } from "./file-generator";
+import { SurescriptsReplica } from "./replica";
+import { generateBatchRequestFile, generatePatientRequestFile } from "./file/file-generator";
 import { IdGenerator, createIdGenerator } from "./id-generator";
 import {
   SurescriptsBatchRequestData,
@@ -15,11 +16,11 @@ import {
 } from "./types";
 
 import {
-  makeRequestFileName,
-  makeResponseFileNamePrefix,
+  buildRequestFileName,
+  buildResponseFileNamePrefix,
   parseResponseFileName,
   parseVerificationFileName,
-} from "./file-names";
+} from "./file/file-names";
 
 export class SurescriptsSftpClient extends SftpClient {
   private generateTransmissionId: IdGenerator;
@@ -38,11 +39,7 @@ export class SurescriptsSftpClient extends SftpClient {
       password: config.publicKey ?? Config.getSurescriptsSftpPublicKey(),
       privateKey: config.privateKey ?? Config.getSurescriptsSftpPrivateKey(),
     });
-
-    this.initializeS3Replica({
-      bucketName: config.replicaBucket ?? Config.getSurescriptsReplicaBucketName(),
-      region: config.replicaBucketRegion ?? Config.getAWSRegion(),
-    });
+    this.setReplica(new SurescriptsReplica(config));
 
     // 10 byte ID generator
     this.generateTransmissionId = createIdGenerator(10);
@@ -68,9 +65,14 @@ export class SurescriptsSftpClient extends SftpClient {
       transmissionId,
       ...requestData,
     });
-    if (!content) return undefined;
+    if (!content) {
+      this.log(
+        `No content generated for patient ID: ${requestData.patient.id}, cxId: ${requestData.cxId}`
+      );
+      return undefined;
+    }
 
-    const requestFileName = makeRequestFileName(transmissionId);
+    const requestFileName = buildRequestFileName(transmissionId);
     try {
       await this.connect();
       await this.writeToSurescripts(requestFileName, content);
@@ -94,9 +96,14 @@ export class SurescriptsSftpClient extends SftpClient {
       transmissionId,
       ...requestData,
     });
-    if (!content) return undefined;
+    if (!content) {
+      this.log(
+        `No content generated for batch request: ${requestData.facility.id}, cxId: ${requestData.cxId}`
+      );
+      return undefined;
+    }
 
-    const requestFileName = makeRequestFileName(transmissionId);
+    const requestFileName = buildRequestFileName(transmissionId);
     try {
       await this.connect();
       await this.writeToSurescripts(requestFileName, content);
@@ -112,7 +119,7 @@ export class SurescriptsSftpClient extends SftpClient {
    * @returns true if the request is present in the Surescripts history, false otherwise
    */
   async verifyRequestInHistory(transmissionId: string): Promise<boolean> {
-    const requestFileName = makeRequestFileName(transmissionId);
+    const requestFileName = buildRequestFileName(transmissionId);
     try {
       await this.connect();
       const historyFiles = await this.list("/history", file => file.name.includes(requestFileName));
@@ -128,7 +135,7 @@ export class SurescriptsSftpClient extends SftpClient {
    * @returns the most recent verification response file for the specified transmission
    */
   async receiveVerificationResponse(transmissionId: string): Promise<SftpFile | undefined> {
-    const requestFileName = makeRequestFileName(transmissionId);
+    const requestFileName = buildRequestFileName(transmissionId);
 
     const replicatedVerificationFile = await this.findVerificationFileInReplica(requestFileName);
     if (replicatedVerificationFile) {
@@ -252,7 +259,7 @@ export class SurescriptsSftpClient extends SftpClient {
         context: "surescripts.client.findResponseFileInReplica",
       });
     }
-    const responseFileNamePrefix = makeResponseFileNamePrefix(transmissionId, populationId);
+    const responseFileNamePrefix = buildResponseFileNamePrefix(transmissionId, populationId);
     const replicatedFilesWithPrefix = await this.replica.listFileNamesWithPrefix(
       "from_surescripts",
       responseFileNamePrefix

@@ -1,9 +1,8 @@
-import { MetriportError } from "@metriport/core/util/error/metriport-error";
-import { ISO_DATE } from "@metriport/shared/common/date";
-import AWS from "aws-sdk";
-import dayjs from "dayjs";
-import { uniq } from "lodash";
 import { Organization } from "@metriport/core/domain/organization";
+import { MetriportError } from "@metriport/core/util/error/metriport-error";
+import { buildDayjs, ISO_DATE } from "@metriport/shared/common/date";
+import AWS from "aws-sdk";
+import { uniq } from "lodash";
 import { Config } from "../../../shared/config";
 import { errorToString } from "../../../shared/log";
 import { capture } from "../../../shared/notifications";
@@ -82,7 +81,7 @@ async function getOrgs(cxIds: string[]): Promise<Organization[]> {
 async function getUsage(): Promise<Usage[]> {
   const usagePlanId = Config.getApiGatewayUsagePlanId();
   if (!usagePlanId) return [];
-  const today = dayjs().format(ISO_DATE);
+  const today = buildDayjs().format(ISO_DATE);
 
   const usage = await apiGw.getUsage({ usagePlanId, startDate: today, endDate: today }).promise();
   if (!usage.items) {

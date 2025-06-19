@@ -44,7 +44,7 @@ export async function convertCDAToFHIR(params: {
   keepUnusedSegments?: boolean;
   keepInvalidAccess?: boolean;
   requestId: string;
-  source?: MedicalDataSource;
+  source: MedicalDataSource;
 }): Promise<void> {
   const {
     patient: patientParam,

@@ -374,6 +374,19 @@ export class APIStack extends Stack {
     });
 
     //-------------------------------------------
+    // Surescripts
+    //-------------------------------------------
+    let surescriptsStack: SurescriptsNestedStack | undefined = undefined;
+    if (props.config.surescripts) {
+      surescriptsStack = new SurescriptsNestedStack(this, "SurescriptsNestedStack", {
+        config: props.config,
+        vpc: this.vpc,
+        alarmAction: slackNotification?.alarmAction,
+        lambdaLayers,
+      });
+    }
+
+    //-------------------------------------------
     // General lambdas
     //-------------------------------------------
     const {
@@ -400,9 +413,9 @@ export class APIStack extends Stack {
       vpc: this.vpc,
       lambdaLayers,
       dbCluster,
-      dbCredsSecret,
       secrets,
       medicalDocumentsBucket,
+      pharmacyBundleBucket: surescriptsStack?.getAssets()?.pharmacyConversionBucket,
       sandboxSeedDataBucket,
       alarmAction: slackNotification?.alarmAction,
       bedrock: props.config.bedrock,
@@ -479,19 +492,6 @@ export class APIStack extends Stack {
       ehrResponsesBucket,
       medicalDocumentsBucket,
     });
-
-    //-------------------------------------------
-    // Surescripts
-    //-------------------------------------------
-    let surescriptsStack: SurescriptsNestedStack | undefined = undefined;
-    if (props.config.surescripts) {
-      surescriptsStack = new SurescriptsNestedStack(this, "SurescriptsNestedStack", {
-        config: props.config,
-        vpc: this.vpc,
-        alarmAction: slackNotification?.alarmAction,
-        lambdaLayers,
-      });
-    }
 
     //-------------------------------------------
     // Rate Limiting
@@ -693,10 +693,10 @@ export class APIStack extends Stack {
       conversionResultNotifierLambda,
       consolidatedSearchLambda,
       consolidatedIngestionLambda,
+      ...(surescriptsStack?.getLambdas() ?? []),
     ];
     const apiUrl = `http://${apiDirectUrl}`;
     lambdasToGetApiUrl.forEach(lambda => lambda?.addEnvironment("API_URL", apiUrl));
-    if (surescriptsStack) surescriptsStack.setApiUrl(apiUrl);
 
     // TODO move this to each place where it's used
     // Access grant for medical documents bucket

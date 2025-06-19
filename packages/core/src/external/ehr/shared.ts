@@ -198,6 +198,8 @@ export async function makeRequest<T>({
           throw new BadRequestError(message, error, fullAdditionalInfoWithError);
         case 404:
           throw new NotFoundError(message, error, fullAdditionalInfoWithError);
+        case 422:
+          throw new BadRequestError(message, error, fullAdditionalInfoWithError);
         default:
           if (isFhirValidationError(error)) {
             throw new NotFoundError(message, error, fullAdditionalInfoWithError);

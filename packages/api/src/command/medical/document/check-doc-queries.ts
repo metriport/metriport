@@ -110,7 +110,7 @@ function calculateTotal(prop: Progress) {
   return (prop.errors ?? 0) + (prop.successful ?? 0);
 }
 
-export async function updateDocQueryStatus(patients: PatientsWithValidationResult): Promise<void> {
+async function updateDocQueryStatus(patients: PatientsWithValidationResult): Promise<void> {
   const uniquePatients = Object.entries(patients);
   await executeAsynchronously(
     uniquePatients,

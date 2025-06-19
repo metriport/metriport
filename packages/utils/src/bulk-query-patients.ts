@@ -31,7 +31,7 @@ dayjs.extend(duration);
  * want to trigger document queries for, otherwise it will do it for all
  * Patients of the respective customer.
  *
- * This supports updating the delay time in-flight, by editing the delay-time-in-seconds.txt file.
+ * This supports updating the delay time in-flight, by editing the respective file.
  * @see shared/duration.ts for more details
  *
  * Execute this with:
