@@ -166,9 +166,16 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
     },
     triggerEvent: SupportedTriggerEvent
   ) {
-    const encounterId = tcmEncounterPayload.id;
-    const admitTime = tcmEncounterPayload.admitTime;
-    const dischargeTime = tcmEncounterPayload.dischargeTime;
+    const { admitTime, dischargeTime, ...basePayload } = tcmEncounterPayload;
+    const encounterId = basePayload.id;
+    const latestEvent = triggerEvent === "A01" ? "Admitted" : "Discharged";
+    const fullPayload = {
+      ...basePayload,
+      latestEvent,
+      ...(admitTime ? { admitTime } : undefined),
+      ...(dischargeTime ? { dischargeTime } : undefined),
+    };
+
     const { log } = out(
       `persistTcmEncounter, cx: ${tcmEncounterPayload.cxId}, pt: ${tcmEncounterPayload.patientId}, enc: ${encounterId}`
     );
@@ -178,50 +185,23 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
      * We frequently receive "duplicate" ADTs - different messages with the same data for the same event.
      * We need to deduplicate them to avoid noisy creation errors.
      */
-    if (triggerEvent === "A01") {
-      log(`POST /internal/tcm/encounter/ A01`);
+    try {
+      log(`PUT /medical/v1/tcm/encounter/${encounterId} ${triggerEvent}`);
       await executeWithNetworkRetries(
         async () =>
-          axios.post(`${this.apiUrl}/internal/tcm/encounter/`, {
-            ...tcmEncounterPayload,
-            id: encounterId,
-            latestEvent: "Admitted",
-          }),
+          axios.put(`${this.apiUrl}/medical/v1/tcm/encounter/${encounterId}`, fullPayload),
         {
           log,
         }
       );
-    } else if (triggerEvent === "A03") {
-      try {
-        log(`PUT /medical/v1/tcm/encounter/${encounterId} A03`);
-        await executeWithNetworkRetries(
-          async () =>
-            axios.put(`${this.apiUrl}/medical/v1/tcm/encounter/${encounterId}`, {
-              ...tcmEncounterPayload,
-              latestEvent: "Discharged",
-              admitTime,
-              dischargeTime,
-            }),
-          {
-            log,
-          }
-        );
-      } catch (error) {
-        log(`POST /internal/tcm/encounter/ A03`);
-        await executeWithNetworkRetries(
-          async () =>
-            axios.post(`${this.apiUrl}/internal/tcm/encounter/`, {
-              ...tcmEncounterPayload,
-              id: encounterId,
-              latestEvent: "Discharged",
-              admitTime,
-              dischargeTime,
-            }),
-          {
-            log,
-          }
-        );
-      }
+    } catch (error) {
+      log(`POST /internal/tcm/encounter/ ${triggerEvent}`);
+      await executeWithNetworkRetries(
+        async () => axios.post(`${this.apiUrl}/internal/tcm/encounter/`, fullPayload),
+        {
+          log,
+        }
+      );
     }
   }
 
