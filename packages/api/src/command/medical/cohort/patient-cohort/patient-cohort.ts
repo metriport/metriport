@@ -119,7 +119,7 @@ export async function bulkRemovePatientsFromCohort({
 }: BulkRemovePatientsFromCohortParams): Promise<number> {
   const { log } = out(`bulkRemovePatientsFromCohort - cx ${cxId}, cohort ${cohortId}`);
 
-  if (!patientIds && !all) {
+  if ((!patientIds || patientIds.length < 1) && !all) {
     throw new BadRequestError("Either patientIds or all must be provided");
   }
 
