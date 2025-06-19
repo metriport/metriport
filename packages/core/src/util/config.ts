@@ -273,6 +273,22 @@ export class Config {
     return getEnvVarOrFail("SURESCRIPTS_RECEIVE_RESPONSE_QUEUE_URL");
   }
 
+  static getQuestHost(): string {
+    return getEnvVarOrFail("QUEST_SFTP_HOST");
+  }
+  static getQuestSftpUsername(): string {
+    return getEnvVarOrFail("QUEST_SFTP_USERNAME");
+  }
+  static getQuestSftpPassword(): string {
+    return getEnvVarOrFail("QUEST_SFTP_PASSWORD");
+  }
+  static getQuestReplicaBucketName(): string {
+    return getEnvVarOrFail("QUEST_REPLICA_BUCKET_NAME");
+  }
+  static getLabConversionBucketName(): string {
+    return getEnvVarOrFail("LAB_CONVERSION_BUCKET_NAME");
+  }
+
   static getAthenaHealthEnv(): string | undefined {
     return getEnvVar("EHR_ATHENA_ENVIRONMENT");
   }

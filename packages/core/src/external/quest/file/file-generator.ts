@@ -1,0 +1,161 @@
+import { z } from "zod";
+import { Patient } from "@metriport/shared/domain/patient";
+import { MetriportError } from "@metriport/shared";
+import {
+  genderMapperFromDomain,
+  makeNameDemographics,
+} from "@metriport/shared/common/demographics";
+
+import { RelationshipToSubscriber } from "@metriport/shared/interface/external/quest/relationship-to-subscriber";
+import { QuestGenderCode } from "@metriport/shared/interface/external/quest/gender";
+import {
+  requestHeaderRow,
+  requestHeaderSchema,
+  requestDetailSchema,
+  requestDetailRow,
+  requestFooterSchema,
+  requestFooterRow,
+} from "../schema/request";
+import {
+  ResponseFile,
+  responseHeaderSchema,
+  responseHeaderRow,
+  responseDetailSchema,
+  responseDetailRow,
+  responseFooterSchema,
+  responseFooterRow,
+} from "../schema/response";
+import { IncomingFileRowSchema, OutgoingFileRowSchema } from "../schema/shared";
+
+const makeGenderDemographics = genderMapperFromDomain<QuestGenderCode>(
+  {
+    F: "F",
+    M: "M",
+    O: "U",
+    U: "U",
+  },
+  "U"
+);
+
+export function toQuestRequestFile(patients: Patient[]): Buffer {
+  const requestedPatientIds: string[] = [];
+
+  const header = toQuestRequestRow(
+    { recordType: "H", generalMnemonic: "METRIP", fileCreationDate: new Date() },
+    requestHeaderSchema,
+    requestHeaderRow
+  );
+  const details = patients.flatMap(patient => {
+    const row = toQuestRequestPatientRow(patient);
+    if (row) {
+      requestedPatientIds.push(patient.id);
+      return [row];
+    }
+    return [];
+  });
+
+  const footer = toQuestRequestRow(
+    { recordType: "T", totalRecords: requestedPatientIds.length },
+    requestFooterSchema,
+    requestFooterRow
+  );
+
+  return Buffer.concat([header, ...details, footer]);
+}
+
+function toQuestRequestPatientRow(patient: Patient): Buffer | undefined {
+  const { firstName, lastName, middleName } = makeNameDemographics(patient);
+  const gender = makeGenderDemographics(patient.genderAtBirth);
+  const dateOfBirth = patient.dob.replace(/-/g, "");
+  const address = patient.address[0];
+  if (!address || !address.addressLine1 || !address.city || !address.state || !address.zip)
+    return undefined;
+
+  return toQuestRequestRow(
+    {
+      recordType: "E",
+      relationshipCode: RelationshipToSubscriber.Self,
+      relationshipToSubscriber: RelationshipToSubscriber.Self,
+      patientId: patient.id,
+      firstName,
+      middleInitial: middleName.substring(0, 1),
+      lastName,
+      dateOfBirth,
+      gender,
+      addressLine1: address.addressLine1,
+      addressLine2: address.addressLine2,
+      city: address.city,
+      state: address.state,
+      zipCode: address.zip,
+      subscriberFirstName: patient.firstName,
+      subscriberLastName: patient.lastName,
+      programType: "01",
+      effectiveDate: new Date(),
+      expirationDate: "99991231",
+    },
+    requestDetailSchema,
+    requestDetailRow
+  );
+}
+
+export function toQuestRequestRow<T extends object>(
+  row: T,
+  objectSchema: z.ZodObject<z.ZodRawShape>,
+  rowSchema: OutgoingFileRowSchema<T>
+): Buffer {
+  const parsed = objectSchema.safeParse(row);
+  if (!parsed.success) {
+    throw new MetriportError("Invalid data", undefined, {
+      data: JSON.stringify(row),
+      errors: JSON.stringify(parsed.error.issues),
+    });
+  }
+  const fields = rowSchema.map(field => field.toQuest(row, field.length));
+  const outputRow = fields.join("") + "\n";
+  return Buffer.from(outputRow, "ascii");
+}
+
+export function fromQuestResponseFile(file: Buffer): ResponseFile | undefined {
+  const lines = file.toString("ascii").split("\n");
+  const headerLine = lines.shift();
+  const footerLine = lines.pop();
+
+  if (!headerLine || !footerLine) return undefined;
+
+  const header = fromQuestResponseRow(headerLine, responseHeaderSchema, responseHeaderRow);
+  const footer = fromQuestResponseRow(footerLine, responseFooterSchema, responseFooterRow);
+  const detail = lines.map(line =>
+    fromQuestResponseRow(line, responseDetailSchema, responseDetailRow)
+  );
+
+  return { header, detail, footer };
+}
+
+export function fromQuestResponseRow<T extends object>(
+  line: string,
+  objectSchema: z.ZodObject<z.ZodRawShape>,
+  rowSchema: IncomingFileRowSchema<T>
+): T {
+  const parsedResult: Partial<T> = {};
+  let currentPosition = 0;
+  for (let fieldIndex = 0; fieldIndex < rowSchema.length; fieldIndex++) {
+    const field = rowSchema[fieldIndex];
+    if (!field) continue;
+
+    const fieldValue = line.substring(currentPosition, currentPosition + field.length).trim();
+    currentPosition += field.length;
+
+    const value = field.fromQuest(fieldValue);
+    if (field.key) {
+      parsedResult[field.key] = value;
+    }
+  }
+  const validation = objectSchema.safeParse(parsedResult);
+  if (validation.success) {
+    return parsedResult as T;
+  }
+  throw new MetriportError("Invalid data", undefined, {
+    data: JSON.stringify(parsedResult),
+    errors: JSON.stringify(validation.error.issues),
+  });
+}
