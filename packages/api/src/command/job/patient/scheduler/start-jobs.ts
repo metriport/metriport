@@ -86,7 +86,7 @@ export async function startJobs({
     }));
     log(
       `${msg}. Cause: ${errors
-        .map(error => `\n${error.id} ${error.cxId} ${error.error}`)
+        .map(error => `jobId ${error.id} cxId ${error.cxId} ${error.error}`)
         .join(",")}`
     );
     capture.message(msg, {
