@@ -39,7 +39,7 @@ export const tcmEncounterResponseSchema = tcmEncounterCreateSchema.extend({
 export type TcmEncounterResponse = z.infer<typeof tcmEncounterResponseSchema>;
 
 const tcmEncounterQuerySchema = z
-  .strictObject({
+  .object({
     after: z.string().datetime().optional(),
   })
   .and(queryMetaSchema);
