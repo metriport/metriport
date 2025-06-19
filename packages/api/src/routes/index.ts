@@ -7,6 +7,7 @@ import ehr from "./ehr";
 import feedback from "./feedback";
 import { reportClientErrors } from "./helpers/report-client-errors";
 import internal from "./internal";
+import medical from "./medical";
 import medicalDash from "./medical/dash";
 import fhirRouter from "./medical/fhir-r4-proxy";
 import { checkMAPIAccess, processCxId } from "./middlewares/auth";
@@ -17,7 +18,6 @@ import settings from "./settings";
 import sleep from "./sleep";
 import user from "./user";
 import webhook from "./webhook";
-import medical from "./medical";
 
 // Supports requests from the Dashboard through the dedicated JWT-based auth on API GW
 const dash = "/dash-oss";

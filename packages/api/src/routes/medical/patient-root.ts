@@ -38,7 +38,7 @@ import {
 import { fromCreateResponseToDto, PatientImportDto } from "./dtos/patient-import";
 import { dtoFromModel, PatientDTO } from "./dtos/patientDTO";
 import { schemaCreateToPatientData, schemaDemographicsToPatientData } from "./schemas/patient";
-import { createSampleTcmEncounters } from "./create-sample-tcm-encounter";
+import { createSampleTcmEncounters } from "../../command/medical/tcm-encounter/create-sample-tcm-encounter";
 
 dayjs.extend(duration);
 
