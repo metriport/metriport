@@ -183,7 +183,7 @@ router.get(
  *
  * @param req.param.id The ID of the cohort to assign patients to.
  * @param req.body The list of patient IDs to assign.
- * @returns Success status and count of assigned patients.
+ * @returns Cohort details with the updated patient IDs and count.
  */
 router.post(
   "/:id/patient",
@@ -194,15 +194,17 @@ router.post(
     const cohortId = getFromParamsOrFail("id", req);
     const { patientIds } = bulkPatientCohortAssignmentSchema.parse(req.body);
 
-    const countAssigned = await bulkAssignPatientsToCohort({
+    const cohortWithCount = await bulkAssignPatientsToCohort({
       cohortId,
       cxId,
       patientIds,
     });
 
-    return res
-      .status(status.CREATED)
-      .json({ message: "Patient(s) assigned to cohort", count: countAssigned });
+    return res.status(status.CREATED).json({
+      cohort: dtoFromCohort(cohortWithCount.cohort),
+      patientCount: cohortWithCount.count,
+      patientIds: cohortWithCount.patientIds,
+    });
   })
 );
 
@@ -222,16 +224,17 @@ router.delete(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const cohortId = getFromParamsOrFail("id", req);
-    const data = bulkPatientCohortRemovalSchema.parse(req.body);
+    const { patientIds, all } = bulkPatientCohortRemovalSchema.parse(req.body);
 
     const countUnassigned = await bulkRemovePatientsFromCohort({
       cohortId,
       cxId,
-      data,
+      patientIds,
+      all,
     });
 
     return res
-      .sendStatus(status.NO_CONTENT)
+      .status(status.NO_CONTENT)
       .json({ message: "Patient(s) unassigned from cohort", count: countUnassigned });
   })
 );

@@ -9,15 +9,13 @@ import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { Op } from "sequelize";
 import { PatientCohortModel } from "../../../../models/medical/patient-cohort";
 import { getPatientOrFail } from "../../patient/get-patient";
-import { getCohortModelOrFail } from "../get-cohort";
+import { getCohortModelOrFail, CohortWithPatientIdsAndCount } from "../get-cohort";
 
 type BulkRemovePatientsFromCohortParams = {
   cohortId: string;
   cxId: string;
-  data: {
-    patientIds?: string[];
-    all?: boolean;
-  };
+  patientIds?: string[];
+  all?: boolean;
 };
 
 type BulkAssignPatientsToCohortParams = {
@@ -38,7 +36,7 @@ export async function assignCohort({
   ]);
 
   if (existing) return existing;
-  return PatientCohortModel.create({ id: uuidv7(), patientId, cohortId });
+  return (await PatientCohortModel.create({ id: uuidv7(), patientId, cohortId })).dataValues;
 }
 
 export async function unassignCohort({
@@ -62,7 +60,7 @@ export async function getCohortAssignment({
   return res?.dataValues;
 }
 
-export async function getPatientsAssignedToCohort({
+export async function getPatientIdsAssignedToCohort({
   cohortId,
 }: {
   cohortId: string;
@@ -86,17 +84,23 @@ export async function bulkAssignPatientsToCohort({
   cohortId,
   cxId,
   patientIds,
-}: BulkAssignPatientsToCohortParams): Promise<number> {
+}: BulkAssignPatientsToCohortParams): Promise<CohortWithPatientIdsAndCount> {
   const { log } = out(`bulkAssignPatientsToCohort - cx ${cxId}, cohort ${cohortId}`);
 
-  if (!patientIds.length) {
-    throw new BadRequestError("No patient IDs provided");
+  const uniquePatientIds = [...new Set(patientIds)];
+  if (!uniquePatientIds.length) {
+    const cohort = await getCohortModelOrFail({ id: cohortId, cxId });
+    return {
+      cohort: cohort.dataValues,
+      count: 0,
+      patientIds: [],
+    };
   }
 
-  await getCohortModelOrFail({ id: cohortId, cxId });
+  const cohort = await getCohortModelOrFail({ id: cohortId, cxId });
 
   const patientValidationResults = await Promise.allSettled(
-    patientIds.map(patientId => getPatientOrFail({ id: patientId, cxId }))
+    uniquePatientIds.map(patientId => getPatientOrFail({ id: patientId, cxId }))
   );
 
   const invalidPatientIds = patientValidationResults
@@ -105,42 +109,42 @@ export async function bulkAssignPatientsToCohort({
 
   if (invalidPatientIds.length > 0) {
     log(`Found ${invalidPatientIds.length} invalid patients`);
-    throw new BadRequestError(
-      `Some patients do not exist: [${invalidPatientIds.join(", ")}]`,
-      undefined,
-      {
-        invalidPatientIds: JSON.stringify(invalidPatientIds),
-      }
-    );
+    throw new BadRequestError(`Some patient IDs do not exist`, undefined, {
+      invalidPatientIds: JSON.stringify(invalidPatientIds),
+    });
   }
 
-  const assignments = patientIds.map(patientId => ({ id: uuidv7(), patientId, cohortId }));
+  const assignments = uniquePatientIds.map(patientId => ({ id: uuidv7(), patientId, cohortId }));
   const createdAssignments = await PatientCohortModel.bulkCreate(assignments, {
     ignoreDuplicates: true,
   });
 
   const successCount = createdAssignments.length;
-  log(`Assigned ${successCount}/${patientIds.length} patients to cohort ${cohortId}`);
+  log(`Assigned ${successCount}/${uniquePatientIds.length} patients to cohort ${cohortId}`);
 
-  return successCount;
+  const totalAssignedPatientIds = await getPatientIdsAssignedToCohort({ cohortId });
+  return {
+    cohort: cohort.dataValues,
+    count: totalAssignedPatientIds.length,
+    patientIds: totalAssignedPatientIds,
+  };
 }
 
 export async function bulkRemovePatientsFromCohort({
   cohortId,
   cxId,
-  data,
+  patientIds,
+  all,
 }: BulkRemovePatientsFromCohortParams): Promise<number> {
   const { log } = out(`bulkRemovePatientsFromCohort - cx ${cxId}, cohort ${cohortId}`);
 
-  if (!data.patientIds && !data.all) {
+  if (!patientIds && !all) {
     throw new BadRequestError("Either patientIds or all must be provided");
   }
 
   await getCohortModelOrFail({ id: cohortId, cxId });
 
-  const whereClause = data.all
-    ? { cohortId }
-    : { cohortId, patientId: { [Op.in]: data.patientIds } };
+  const whereClause = all ? { cohortId } : { cohortId, patientId: { [Op.in]: patientIds } };
 
   const deletedCount = await PatientCohortModel.destroy({ where: whereClause });
   log(`Removed ${deletedCount} patients from cohort ${cohortId}`);

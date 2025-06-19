@@ -1,13 +1,16 @@
 import { Cohort } from "@metriport/core/domain/cohort";
 import { NotFoundError } from "@metriport/shared";
+import { col, fn } from "sequelize";
 import { CohortModel } from "../../../models/medical/cohort";
 import {
   getCountOfPatientsAssignedToCohort,
-  getPatientsAssignedToCohort,
+  getPatientIdsAssignedToCohort,
 } from "./patient-cohort/patient-cohort";
 
+const countAttr = "count";
+
 type CohortWithCount = { cohort: Cohort; count: number };
-type CohortWithPatientIdsAndCount = CohortWithCount & { patientIds: string[] };
+export type CohortWithPatientIdsAndCount = CohortWithCount & { patientIds: string[] };
 
 export type GetCohortProps = {
   id: string;
@@ -27,11 +30,12 @@ export async function getCohortWithCountOrFail({
   id,
   cxId,
 }: GetCohortProps): Promise<CohortWithPatientIdsAndCount> {
-  const cohort = await CohortModel.findOne({
-    where: { id, cxId },
-  });
-
-  const patientIds = await getPatientsAssignedToCohort({ cohortId: id });
+  const [cohort, patientIds] = await Promise.all([
+    CohortModel.findOne({
+      where: { id, cxId },
+    }),
+    getPatientIdsAssignedToCohort({ cohortId: id }),
+  ]);
   if (!cohort) throw new NotFoundError(`Could not find cohort`, undefined, { id, cxId });
 
   return { cohort: cohort.dataValues, count: patientIds.length, patientIds };
@@ -52,14 +56,23 @@ export async function getCohortWithPatientIdsOrFail({
 }
 
 export async function getCohorts({ cxId }: { cxId: string }): Promise<CohortWithCount[]> {
-  const cohorts = await CohortModel.findAll({
+  const cohortsWithCounts = await CohortModel.findAll({
     where: { cxId },
+    include: [
+      {
+        association: CohortModel.associations.PatientCohort,
+        attributes: [],
+        required: false,
+      },
+    ],
+    attributes: {
+      include: [[fn("COUNT", col("PatientCohort.id")), countAttr]],
+    },
+    group: [col("CohortModel.id")],
   });
 
-  return Promise.all(
-    cohorts.map(async cohort => ({
-      cohort: cohort.dataValues,
-      count: await getCountOfPatientsAssignedToCohort({ cohortId: cohort.id }),
-    }))
-  );
+  return cohortsWithCounts.map(cohort => ({
+    cohort: cohort.dataValues,
+    count: Number(cohort.get(countAttr) ?? 0),
+  }));
 }

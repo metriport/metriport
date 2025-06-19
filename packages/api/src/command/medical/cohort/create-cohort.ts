@@ -15,7 +15,10 @@ export async function createCohort({
     where: { cxId, name },
   });
   if (existingCohort) {
-    throw new BadRequestError(`A cohort with the name ${name} already exists`);
+    throw new BadRequestError("A cohort with this name already exists", undefined, {
+      cxId,
+      name,
+    });
   }
 
   const cohortCreate: CohortCreate = {
