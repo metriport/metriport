@@ -1,5 +1,5 @@
 import * as dotenv from "dotenv";
-// keep that ^ on top
+// keep that ^ above all other imports
 import { APIMode, CommonWell, RequestMetadata } from "@metriport/commonwell-sdk";
 import { PurposeOfUse } from "@metriport/shared";
 import { Command } from "commander";
@@ -13,7 +13,7 @@ import {
 } from "./env";
 import { orgManagement } from "./org-management";
 import { patientManagement } from "./patient-management";
-import { getEnvOrFail } from "./util";
+// import { getEnvOrFail } from "./util";
 
 function metriportBanner(): string {
   return `
@@ -56,8 +56,8 @@ async function main() {
   dotenv.config({ path: options.envFile });
 
   // // Sandbox Account Org
-  const commonwellSandboxOID = getEnvOrFail("CW_SANDBOX_ORG_OID");
-  const commonwellSandboxOrgName = getEnvOrFail("CW_SANDBOX_ORG_NAME");
+  // const commonwellSandboxOID = getEnvOrFail("CW_SANDBOX_ORG_OID");
+  // const commonwellSandboxOrgName = getEnvOrFail("CW_SANDBOX_ORG_NAME");
   // const commonWellSandbox = new CommonWell(
   //   commonwellOrgCert,
   //   commonwellOrgPrivateKey,
@@ -68,52 +68,48 @@ async function main() {
 
   // Run through the CommonWell certification test cases
 
-  try {
-    const memberQueryMeta: RequestMetadata = {
-      purposeOfUse: PurposeOfUse.TREATMENT,
-      role: "ict",
-      subjectId: "admin",
-    };
-    const commonWellMember = new CommonWell(
-      memberCertificateString,
-      memberPrivateKeyString,
-      memberName,
-      memberId,
-      APIMode.integration
-    );
-    const org = await orgManagement(commonWellMember, memberQueryMeta);
+  // try {
+  const memberQueryMeta: RequestMetadata = {
+    purposeOfUse: PurposeOfUse.TREATMENT,
+    role: "ict",
+    subjectId: "admin",
+  };
+  const commonWellMember = new CommonWell(
+    memberCertificateString,
+    memberPrivateKeyString,
+    memberName,
+    memberId,
+    APIMode.integration
+  );
+  const org = await orgManagement(commonWellMember, memberQueryMeta);
 
-    // const orgQueryMeta = memberQueryMeta;
-    // const commonWell = commonWellMember;
-    const orgQueryMeta: RequestMetadata = {
-      purposeOfUse: PurposeOfUse.TREATMENT,
-      role: "ict",
-      subjectId: `${org.name} System User`,
-    };
-    const commonWell = new CommonWell(
-      orgCertificateString,
-      orgPrivateKeyString,
-      org.name,
-      org.organizationId,
-      // "invisible-black-hamster",
-      // "2.16.840.1.113883.3.9621.5.556874",
-      APIMode.integration
-    );
-    await patientManagement(commonWell, orgQueryMeta);
-    // await personManagement(commonWell, queryMeta);
-    // await patientManagement(commonWell, commonWellSandbox, queryMeta);
-    // await linkManagement(commonWell, queryMeta);
-    // await documentConsumption(commonWell, queryMeta);
-    // await documentContribution({ memberManagementApi: commonWellMember, api: commonWell, queryMeta });
+  const orgQueryMeta: RequestMetadata = {
+    purposeOfUse: PurposeOfUse.TREATMENT,
+    role: "ict",
+    subjectId: `${org.name} System User`,
+  };
+  const commonWell = new CommonWell(
+    orgCertificateString,
+    orgPrivateKeyString,
+    org.name,
+    org.organizationId,
+    APIMode.integration
+  );
+  await patientManagement(commonWell, orgQueryMeta);
+  // await personManagement(commonWell, queryMeta);
+  // await patientManagement(commonWell, commonWellSandbox, queryMeta);
+  // await linkManagement(commonWell, queryMeta);
+  // await documentConsumption(commonWell, queryMeta);
+  // await documentContribution({ memberManagementApi: commonWellMember, api: commonWell, queryMeta });
 
-    // Issue #425Ø
-    // await patientLinksWithStrongIds(commonWell, queryMeta);
-  } catch (error: any) {
-    console.error(`Error (${error.response?.status}): ${error.message}`);
-    console.error(JSON.stringify(error.response?.data ?? error, null, 2));
-    // console.error(error);
-    process.exit(1);
-  }
+  // Issue #425Ø
+  // await patientLinksWithStrongIds(commonWell, queryMeta);
+  // } catch (error: any) {
+  //   console.error(`Error (${error.response?.status}): ${error.message}`);
+  //   console.error(JSON.stringify(error.response?.data ?? error, null, 2));
+  //   // console.error(error);
+  //   process.exit(1);
+  // }
 }
 
 main();

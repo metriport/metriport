@@ -274,9 +274,17 @@ export class CommonWell implements CommonWellAPI {
     id: string
   ): Promise<CertificateResp> {
     const headers = await this.buildQueryHeaders(meta);
+    const normalizedCertificates = certificate.Certificates.map(cert => ({
+      ...cert,
+      ...(cert.thumbprint && { thumbprint: cert.thumbprint.replace(/:/g, "") }),
+    }));
+    const payload = {
+      ...certificate,
+      Certificates: normalizedCertificates,
+    };
     const resp = await this.api.post(
       `${CommonWell.MEMBER_ENDPOINT}/${this.oid}/org/${id}/certificate`,
-      certificate,
+      payload,
       {
         headers,
       }
