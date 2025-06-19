@@ -5,36 +5,9 @@ import { Hl7v2RosterGenerator } from "@metriport/core/command/hl7v2-subscription
 import { HieConfig } from "@metriport/core/command/hl7v2-subscriptions/types";
 import { makeLambdaClient } from "@metriport/core/external/aws/lambda";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
-import { USState } from "@metriport/shared/domain/address/state";
 
 const isLocal = true;
-const config: HieConfig = {
-  name: "HixnyTest",
-  cron: "0 13 ? * SAT *",
-  states: [USState.TX],
-  subscriptions: ["adt"],
-  // HIXNY expects us to send them a roster w/ a specific column order. Do not reorder these fields!
-  mapping: {
-    "File Date": "rosterGenerationDate",
-    "Assigning Authority Code": "authorizingParticipantFacilityCode",
-    "Facility MRN": "authorizingParticipantMrn",
-    "First Name": "firstName",
-    "Middle Name": "middleName",
-    "Last Name": "lastName",
-    "Patient Gender": "genderAtBirth",
-    "Patient Address Line 1": "address1AddressLine1",
-    "Patient Address Line 2": "address1AddressLine2",
-    "Patient City": "address1City",
-    "Patient State": "address1State",
-    "Zip Code": "address1Zip",
-    "Patient Home Phone Number": "phone",
-    "Patient DOB": "dob",
-    "Insurance ID": "insuranceId",
-    "Insurance Company ID": "insuranceCompanyId",
-    "Insurance Company Name": "insuranceCompanyName",
-    "Additional Identifier": "scrambledId",
-  },
-} as HieConfig;
+const config: HieConfig = {} as HieConfig;
 
 if (!config.name || !config.mapping) {
   throw new Error("Remember to set the config object! See the tsdoc for more info.");
