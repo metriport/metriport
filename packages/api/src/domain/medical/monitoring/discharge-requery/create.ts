@@ -17,7 +17,7 @@ import { createPatientJob } from "../../../../command/job/patient/create";
 import { getPatientJobs } from "../../../../command/job/patient/get";
 import { cancelPatientJob } from "../../../../command/job/patient/status/cancel";
 
-const INTERNAL_DISCHARGE_REQUERY_ENDPOINT = "/internal/patient/discharge-requery/run";
+const INTERNAL_DISCHARGE_REQUERY_ENDPOINT = "/internal/discharge-requery/run";
 export const dischargeRequeryJobType = "discharge-requery";
 
 export async function createDischargeRequeryJob(

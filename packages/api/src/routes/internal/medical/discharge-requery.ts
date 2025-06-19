@@ -11,15 +11,17 @@ import { asyncHandler } from "../../util";
 const router = Router();
 
 /**
- * POST /internal/patient/discharge-requery/create
+ * POST /internal/discharge-requery
  *
  * Creates the discharge requery job.
  *
+ * @param req.query.cxId - The CX ID.
+ * @param req.query.patientId - The patient ID.
  * @param req.body - The discharge requery job parameters.
  * @returns 200 OK
  */
 router.post(
-  "/discharge-requery/create",
+  "/",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
@@ -31,15 +33,16 @@ router.post(
 );
 
 /**
- * POST /internal/patient/job/discharge-requery/run
+ * POST /internal/discharge-requery/run
  *
  * Runs the discharge requery job.
+ *
  * @param req.body.cxId - The CX ID.
  * @param req.body.jobId - The job ID.
  * @returns 200 OK
  */
 router.post(
-  "/discharge-requery/run",
+  "/run",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const { cxId, jobId } = jobRunBodySchema.parse(req.body);
