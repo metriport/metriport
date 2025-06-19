@@ -2,10 +2,7 @@ import { Cohort } from "@metriport/core/domain/cohort";
 import { NotFoundError } from "@metriport/shared";
 import { col, fn } from "sequelize";
 import { CohortModel } from "../../../models/medical/cohort";
-import {
-  getCountOfPatientsAssignedToCohort,
-  getPatientIdsAssignedToCohort,
-} from "./patient-cohort/patient-cohort";
+import { getPatientIdsAssignedToCohort } from "./patient-cohort/patient-cohort";
 
 const countAttr = "count";
 
@@ -39,20 +36,6 @@ export async function getCohortWithCountOrFail({
   if (!cohort) throw new NotFoundError(`Could not find cohort`, undefined, { id, cxId });
 
   return { cohort: cohort.dataValues, count: patientIds.length, patientIds };
-}
-
-export async function getCohortWithPatientIdsOrFail({
-  id,
-  cxId,
-}: GetCohortProps): Promise<CohortWithCount> {
-  const cohort = await CohortModel.findOne({
-    where: { id, cxId },
-  });
-
-  const count = await getCountOfPatientsAssignedToCohort({ cohortId: id });
-  if (!cohort) throw new NotFoundError(`Could not find cohort`, undefined, { id, cxId });
-
-  return { cohort: cohort.dataValues, count };
 }
 
 export async function getCohorts({ cxId }: { cxId: string }): Promise<CohortWithCount[]> {

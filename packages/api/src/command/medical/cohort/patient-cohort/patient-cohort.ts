@@ -1,4 +1,3 @@
-import { PatientCohort, PatientCohortData } from "@metriport/core/domain/cohort";
 import { out } from "@metriport/core/util";
 import { BadRequestError } from "@metriport/shared";
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
@@ -19,14 +18,6 @@ type BulkAssignPatientsToCohortParams = {
   cxId: string;
   patientIds: string[];
 };
-
-export async function getCohortAssignment({
-  patientId,
-  cohortId,
-}: PatientCohortData): Promise<PatientCohort | undefined> {
-  const res = await PatientCohortModel.findOne({ where: { patientId, cohortId } });
-  return res?.dataValues;
-}
 
 export async function getPatientIdsAssignedToCohort({
   cohortId,
