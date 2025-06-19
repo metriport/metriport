@@ -7,11 +7,12 @@ import { requestLogger } from "../helpers/request-logger";
 import { paginated } from "../pagination";
 import { asyncHandler, getCxIdOrFail, getFromParamsOrFail } from "../util";
 import { tcmEncounterListQuerySchema, tcmEncounterUpdateSchema } from "./schemas/tcm-encounter";
+import { validateUUID } from "../schemas/uuid";
 
 const router = Router();
 
 /** ---------------------------------------------------------------------------
- * PUT /tcm/encounter/:id
+ * PUT /dash-oss/medical/v1/tcm/encounter/:id
  *
  * Updates an existing TCM encounter.
  *
@@ -24,7 +25,7 @@ router.put(
   requestLogger,
   asyncHandler(async (req: Request, res: Response): Promise<Response> => {
     const cxId = getCxIdOrFail(req);
-    const id = getFromParamsOrFail("id", req);
+    const id = validateUUID(getFromParamsOrFail("id", req), "id");
     const body = tcmEncounterUpdateSchema.parse(req.body);
 
     const result = await updateTcmEncounter({ ...body, id, cxId });
@@ -34,7 +35,7 @@ router.put(
 );
 
 /** ---------------------------------------------------------------------------
- * GET /tcm/encounter
+ * GET /dash-oss/medical/v1/tcm/encounter
  *
  * Lists TCM encounters for the customer, with optional filtering and pagination.
  *
