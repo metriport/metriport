@@ -25,7 +25,7 @@ function settings(): JobsSettings {
   return {
     runPatientJob: {
       name: "JobsRunPatientJob",
-      entry: "jobs/patient/run-job",
+      entry: "job/patient/run-job",
       lambda: {
         memory: 512,
         timeout: runPatientJobQueueTimeout,
