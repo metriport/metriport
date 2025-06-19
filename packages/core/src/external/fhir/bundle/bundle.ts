@@ -211,11 +211,11 @@ export function buildCollectionBundle(entries: BundleEntry[] = []): CollectionBu
  * @returns The search set bundle.
  */
 export function buildSearchSetBundle(entries: BundleEntry[] = [], total?: number): SearchSetBundle {
-  const bundle = buildBundle({ type: "searchset", entries });
+  const { entry, ...bundle } = buildBundle({ type: "searchset", entries });
   return {
     ...bundle,
-    total: total ?? bundle.entry?.length ?? 0,
-    ...(bundle.entry ? { entry: bundle.entry } : {}),
+    total: total ?? entry?.length ?? 0,
+    ...(entry ? { entry } : {}),
   };
 }
 
