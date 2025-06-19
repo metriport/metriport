@@ -17,17 +17,17 @@ export const tcmEncounterBaseSchema = z.strictObject({
     .datetime()
     .transform(val => buildDayjs(val).toDate())
     .nullish(),
-  clinicalInformation: z.record(z.unknown()),
+  clinicalInformation: z.record(z.unknown()).optional().default({}),
 });
 
 export const tcmEncounterCreateSchema = tcmEncounterBaseSchema.extend({
+  id: z.string().uuid().optional(),
   cxId: z.string().uuid(),
 });
 export type TcmEncounterCreate = z.infer<typeof tcmEncounterCreateSchema>;
 export type TcmEncounterCreateInput = z.input<typeof tcmEncounterCreateSchema>;
 
 export const tcmEncounterUpdateSchema = tcmEncounterBaseSchema.partial();
-export type TcmEncounterUpdate = z.infer<typeof tcmEncounterUpdateSchema>;
 
 export const tcmEncounterResponseSchema = tcmEncounterCreateSchema.extend({
   id: z.string().uuid(),

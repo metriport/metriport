@@ -3,6 +3,7 @@ import { TcmEncounterEventType } from "../../../domain/medical/tcm-encounter";
 import { TcmEncounterModel } from "../../../models/medical/tcm-encounter";
 
 export type CreateTcmEncounter = {
+  id?: string;
   cxId: string;
   patientId: string;
   facilityName: string;
@@ -16,7 +17,7 @@ export type CreateTcmEncounter = {
 export async function createTcmEncounter(data: CreateTcmEncounter): Promise<TcmEncounterModel> {
   const encounter = await TcmEncounterModel.create({
     ...data,
-    id: uuidv4(),
+    id: data.id || uuidv4(),
   });
   return encounter;
 }

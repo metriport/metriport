@@ -90,7 +90,7 @@ async function main() {
   const s3Utils = new S3Utils(AWS_REGION);
 
   // Calculate cutoff date
-  const cutoffDate = dayjs().subtract(10, "hours");
+  const cutoffDate = dayjs().subtract(7, "days");
 
   // Initialize output folder
   initRunsFolder();
