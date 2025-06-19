@@ -198,7 +198,7 @@ router.post(
 );
 
 /**
- * POST /internal/patient/job/:jobId/update-total
+ * POST /internal/patient/job/:jobId/total
  *
  * Updates the total of the job.
  * @param req.query.cxId - The CX ID.
