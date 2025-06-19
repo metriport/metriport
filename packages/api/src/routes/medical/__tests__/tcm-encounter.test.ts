@@ -135,10 +135,8 @@ describe("TCM Encounter Commands", () => {
   describe("getTcmEncounters", () => {
     it("returns list of encounters with default filters", async () => {
       const encounter = makeEncounter();
-      (TcmEncounterModel.findAndCountAll as jest.Mock).mockResolvedValue({
-        rows: [encounter],
-        count: 1,
-      });
+      (TcmEncounterModel.findAll as jest.Mock).mockResolvedValue([encounter]);
+      (TcmEncounterModel.count as jest.Mock).mockResolvedValue(1);
 
       const cmd: GetTcmEncountersCmd = {
         cxId: "cx-123",
@@ -147,7 +145,7 @@ describe("TCM Encounter Commands", () => {
 
       const result = await getTcmEncounters(cmd);
 
-      expect(TcmEncounterModel.findAndCountAll).toHaveBeenCalledWith(
+      expect(TcmEncounterModel.findAll).toHaveBeenCalledWith(
         expect.objectContaining({
           where: {
             cxId: "cx-123",
@@ -189,10 +187,8 @@ describe("TCM Encounter Commands", () => {
         }),
       });
 
-      (TcmEncounterModel.findAndCountAll as jest.Mock).mockResolvedValue({
-        rows: [encounter],
-        count: 2,
-      });
+      (TcmEncounterModel.findAll as jest.Mock).mockResolvedValue([encounter]);
+      (TcmEncounterModel.count as jest.Mock).mockResolvedValue(2);
 
       const cmd: GetTcmEncountersCmd = {
         cxId: "cx-123",
@@ -226,10 +222,8 @@ describe("TCM Encounter Commands", () => {
         admitTime: new Date("2025-07-01"),
       });
 
-      (TcmEncounterModel.findAndCountAll as jest.Mock).mockResolvedValue({
-        rows: [encounter],
-        count: 1,
-      });
+      (TcmEncounterModel.findAll as jest.Mock).mockResolvedValue([encounter]);
+      (TcmEncounterModel.count as jest.Mock).mockResolvedValue(1);
 
       const cmd: GetTcmEncountersCmd = {
         cxId: "cx-123",
@@ -239,7 +233,7 @@ describe("TCM Encounter Commands", () => {
 
       const result = await getTcmEncounters(cmd);
 
-      expect(TcmEncounterModel.findAndCountAll).toHaveBeenCalledWith(
+      expect(TcmEncounterModel.findAll).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({
             cxId: "cx-123",
@@ -275,10 +269,8 @@ describe("TCM Encounter Commands", () => {
         admitTime: new Date("2023-06-01"),
       });
 
-      (TcmEncounterModel.findAndCountAll as jest.Mock).mockResolvedValue({
-        rows: [encounter],
-        count: 1,
-      });
+      (TcmEncounterModel.findAll as jest.Mock).mockResolvedValue([encounter]);
+      (TcmEncounterModel.count as jest.Mock).mockResolvedValue(1);
 
       const cmd: GetTcmEncountersCmd = {
         cxId: "cx-123",
@@ -287,7 +279,7 @@ describe("TCM Encounter Commands", () => {
 
       const result = await getTcmEncounters(cmd);
 
-      expect(TcmEncounterModel.findAndCountAll).toHaveBeenCalledWith(
+      expect(TcmEncounterModel.findAll).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({
             cxId: "cx-123",
