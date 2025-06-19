@@ -115,10 +115,10 @@ export function createAPIService({
   ehrRefreshEhrBundlesQueue,
   ehrGetAppointmentsLambda,
   ehrBundleBucket,
+  ehrResponsesBucket,
   generalBucket,
   conversionBucket,
   medicalDocumentsUploadBucket,
-  ehrResponsesBucket,
   fhirToBundleLambda,
   fhirToBundleCountLambda,
   fhirToMedicalRecordLambda2,
@@ -154,16 +154,16 @@ export function createAPIService({
   patientImportParseLambda: ILambda;
   patientImportResultLambda: ILambda;
   patientImportBucket: s3.IBucket;
-  ehrSyncPatientQueue: IQueue;
-  elationLinkPatientQueue: IQueue;
-  healthieLinkPatientQueue: IQueue;
-  ehrRefreshEhrBundlesQueue: IQueue;
-  ehrGetAppointmentsLambda: ILambda;
-  ehrBundleBucket: s3.IBucket;
+  ehrSyncPatientQueue: IQueue | undefined;
+  elationLinkPatientQueue: IQueue | undefined;
+  healthieLinkPatientQueue: IQueue | undefined;
+  ehrRefreshEhrBundlesQueue: IQueue | undefined;
+  ehrGetAppointmentsLambda: ILambda | undefined;
+  ehrResponsesBucket: s3.IBucket | undefined;
+  ehrBundleBucket: s3.IBucket | undefined;
   generalBucket: s3.IBucket;
   conversionBucket: s3.IBucket;
   medicalDocumentsUploadBucket: s3.IBucket;
-  ehrResponsesBucket: s3.IBucket | undefined;
   fhirToBundleLambda: ILambda;
   fhirToBundleCountLambda: ILambda;
   fhirToMedicalRecordLambda2: ILambda | undefined;
@@ -275,10 +275,6 @@ export function createAPIService({
           ...(props.config.medicalDocumentsUploadBucketName && {
             MEDICAL_DOCUMENTS_UPLOADS_BUCKET_NAME: props.config.medicalDocumentsUploadBucketName,
           }),
-          // TODO we have access to ehrResponsesBucket here, can't we use it instead of a config?
-          ...(props.config.ehrResponsesBucketName && {
-            EHR_RESPONSES_BUCKET_NAME: props.config.ehrResponsesBucketName,
-          }),
           ...(isSandbox(props.config) && {
             SANDBOX_SEED_DATA_BUCKET_NAME: props.config.sandboxSeedDataBucketName,
           }),
@@ -298,12 +294,27 @@ export function createAPIService({
           PATIENT_IMPORT_BUCKET_NAME: patientImportBucket.bucketName,
           PATIENT_IMPORT_PARSE_LAMBDA_NAME: patientImportParseLambda.functionName,
           PATIENT_IMPORT_RESULT_LAMBDA_NAME: patientImportResultLambda.functionName,
-          EHR_SYNC_PATIENT_QUEUE_URL: ehrSyncPatientQueue.queueUrl,
-          ELATION_LINK_PATIENT_QUEUE_URL: elationLinkPatientQueue.queueUrl,
-          HEALTHIE_LINK_PATIENT_QUEUE_URL: healthieLinkPatientQueue.queueUrl,
-          EHR_REFRESH_EHR_BUNDLES_QUEUE_URL: ehrRefreshEhrBundlesQueue.queueUrl,
-          EHR_GET_APPOINTMENTS_LAMBDA_NAME: ehrGetAppointmentsLambda.functionName,
-          EHR_BUNDLE_BUCKET_NAME: ehrBundleBucket.bucketName,
+          ...(ehrSyncPatientQueue && {
+            EHR_SYNC_PATIENT_QUEUE_URL: ehrSyncPatientQueue.queueUrl,
+          }),
+          ...(elationLinkPatientQueue && {
+            ELATION_LINK_PATIENT_QUEUE_URL: elationLinkPatientQueue.queueUrl,
+          }),
+          ...(healthieLinkPatientQueue && {
+            HEALTHIE_LINK_PATIENT_QUEUE_URL: healthieLinkPatientQueue.queueUrl,
+          }),
+          ...(ehrRefreshEhrBundlesQueue && {
+            EHR_REFRESH_EHR_BUNDLES_QUEUE_URL: ehrRefreshEhrBundlesQueue.queueUrl,
+          }),
+          ...(ehrGetAppointmentsLambda && {
+            EHR_GET_APPOINTMENTS_LAMBDA_NAME: ehrGetAppointmentsLambda.functionName,
+          }),
+          ...(ehrBundleBucket && {
+            EHR_BUNDLE_BUCKET_NAME: ehrBundleBucket.bucketName,
+          }),
+          ...(ehrResponsesBucket && {
+            EHR_RESPONSES_BUCKET_NAME: ehrResponsesBucket.bucketName,
+          }),
           FHIR_TO_BUNDLE_LAMBDA_NAME: fhirToBundleLambda.functionName,
           FHIR_TO_BUNDLE_COUNT_LAMBDA_NAME: fhirToBundleCountLambda.functionName,
           ...(fhirToMedicalRecordLambda2 && {
@@ -459,13 +470,14 @@ export function createAPIService({
   fhirToCdaConverterLambda?.grantInvoke(fargateService.taskDefinition.taskRole);
   fhirToBundleLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   fhirToBundleCountLambda.grantInvoke(fargateService.taskDefinition.taskRole);
-  ehrGetAppointmentsLambda.grantInvoke(fargateService.taskDefinition.taskRole);
+  ehrGetAppointmentsLambda?.grantInvoke(fargateService.taskDefinition.taskRole);
   consolidatedSearchLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   // Access grant for buckets
   patientImportBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   conversionBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   medicalDocumentsUploadBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
-  ehrBundleBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
+  ehrBundleBucket?.grantReadWrite(fargateService.taskDefinition.taskRole);
+  ehrResponsesBucket?.grantReadWrite(fargateService.taskDefinition.taskRole);
 
   if (surescriptsAssets) {
     surescriptsAssets.pharmacyConversionBucket.grantReadWrite(
@@ -474,10 +486,6 @@ export function createAPIService({
     surescriptsAssets.surescriptsReplicaBucket.grantReadWrite(
       fargateService.taskDefinition.taskRole
     );
-  }
-
-  if (ehrResponsesBucket) {
-    ehrResponsesBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   }
 
   if (fhirToMedicalRecordLambda2) {
@@ -489,26 +497,37 @@ export function createAPIService({
     cookieStore.grantWrite(fargateService.service.taskDefinition.taskRole);
   }
 
-  provideAccessToQueue({
-    accessType: "send",
-    queue: ehrSyncPatientQueue,
-    resource: fargateService.taskDefinition.taskRole,
-  });
-  provideAccessToQueue({
-    accessType: "send",
-    queue: elationLinkPatientQueue,
-    resource: fargateService.taskDefinition.taskRole,
-  });
-  provideAccessToQueue({
-    accessType: "send",
-    queue: healthieLinkPatientQueue,
-    resource: fargateService.taskDefinition.taskRole,
-  });
-  provideAccessToQueue({
-    accessType: "send",
-    queue: ehrRefreshEhrBundlesQueue,
-    resource: fargateService.taskDefinition.taskRole,
-  });
+  if (ehrSyncPatientQueue) {
+    provideAccessToQueue({
+      accessType: "send",
+      queue: ehrSyncPatientQueue,
+      resource: fargateService.taskDefinition.taskRole,
+    });
+  }
+
+  if (elationLinkPatientQueue) {
+    provideAccessToQueue({
+      accessType: "send",
+      queue: elationLinkPatientQueue,
+      resource: fargateService.taskDefinition.taskRole,
+    });
+  }
+
+  if (healthieLinkPatientQueue) {
+    provideAccessToQueue({
+      accessType: "send",
+      queue: healthieLinkPatientQueue,
+      resource: fargateService.taskDefinition.taskRole,
+    });
+  }
+
+  if (ehrRefreshEhrBundlesQueue) {
+    provideAccessToQueue({
+      accessType: "send",
+      queue: ehrRefreshEhrBundlesQueue,
+      resource: fargateService.taskDefinition.taskRole,
+    });
+  }
 
   if (surescriptsAssets) {
     surescriptsAssets.surescriptsQueues.forEach(({ queue }) => {
