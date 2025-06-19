@@ -1,7 +1,12 @@
 import { PatientJob, validateNewJobStatus } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
-import { InitializeJobParams } from "../../shared";
 import { getPatientJobModelOrFail } from "../get";
+
+export type InitializeJobParams = {
+  jobId: string;
+  cxId: string;
+  forceStatusUpdate?: boolean;
+};
 
 /**
  * Initializes a patient job.

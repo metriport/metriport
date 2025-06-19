@@ -1,10 +1,13 @@
 import {
   buildDayjsFromCompactDate,
   isValidISODate,
+  isValidISODateTime,
   validateDateIsAfter1900,
   validateDateOfBirth,
   ValidateDobFn,
   validateIsPastOrPresentSafe,
+  convertDateToString,
+  convertDateToTimeString,
 } from "../date";
 
 describe("shared date functions", () => {
@@ -12,6 +15,29 @@ describe("shared date functions", () => {
     it("returns true for dates from E2E tests", async () => {
       expect(isValidISODate("2024-12-18T03:50:00.006Z")).toEqual(true);
       expect(isValidISODate("2024-12-18T04:18:01.263Z")).toEqual(true);
+    });
+  });
+
+  describe("isValidISODateTime", () => {
+    it("returns true for dates from E2E tests", async () => {
+      expect(isValidISODateTime("2024-12-18T03:50:00.006Z")).toEqual(true);
+      expect(isValidISODateTime("2024-12-18T04:18:01.263Z")).toEqual(true);
+    });
+
+    it("returns false for invalid date", () => {
+      expect(isValidISODateTime("invalid-date")).toEqual(false);
+    });
+
+    it("returns false for invalid date - missing T", () => {
+      expect(isValidISODateTime("2024-12-1804:18:01.263Z")).toEqual(false);
+    });
+
+    it("returns true if only date is provided", () => {
+      expect(isValidISODateTime("2024-12-18")).toEqual(true);
+    });
+
+    it("returns true for partial match", () => {
+      expect(isValidISODateTime("2024-12-18T04:18:01.263")).toEqual(true);
     });
   });
 
@@ -181,5 +207,36 @@ describe("shared date functions", () => {
       const result = buildDayjsFromCompactDate(invalidDate);
       expect(result.format()).toBe("2024-02-26T12:30:00Z");
     });
+  });
+});
+
+describe("convertDateToString", () => {
+  it("converts date to YYYYMMDD format", () => {
+    const date = new Date("2024-02-26");
+    expect(convertDateToString(date)).toBe("20240226");
+  });
+
+  it("converts date to YYYY-MM-DD format", () => {
+    const date = new Date("2024-02-26");
+    expect(convertDateToString(date, { separator: "-" })).toBe("2024-02-26");
+  });
+
+  it("converts date to YYYYMMDD format with separator", () => {
+    const date = new Date("2024-02-26");
+    expect(convertDateToString(date, { separator: "-" })).toBe("2024-02-26");
+  });
+});
+
+describe("convertDateToTimeString", () => {
+  it("converts date to HHMMSS format", () => {
+    const date = new Date(Date.UTC(2024, 1, 26, 12, 30, 0));
+    expect(convertDateToTimeString(date, { useUtc: true })).toBe("123000");
+  });
+
+  it("converts date to HHMMSSCC format", () => {
+    const date = new Date(Date.UTC(2024, 1, 26, 12, 30, 0, 123));
+    expect(convertDateToTimeString(date, { useUtc: true, includeCentisecond: true })).toBe(
+      "12300012"
+    );
   });
 });

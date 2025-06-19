@@ -33,3 +33,7 @@ export type ResourceDiffBundlesJobPayload = PatientJobPayload<FetchedBundlePreSi
 export function getCreateResourceDiffBundlesJobType(ehr: EhrSource) {
   return `${ehr}-create-resource-diff-bundles`;
 }
+
+export function getCreateResourceDiffBundlesRunUrl(ehr: EhrSource) {
+  return `/internal/ehr/${ehr}/job/create-resource-diff-bundles/run`;
+}

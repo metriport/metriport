@@ -1,6 +1,12 @@
 import { BadRequestError, PatientJob } from "@metriport/shared";
-import { UpdateJobTotalParams } from "../../shared";
 import { getPatientJobModelOrFail } from "../get";
+
+export type UpdateJobTotalParams = {
+  jobId: string;
+  cxId: string;
+  total: number;
+  forceTotalUpdate?: boolean;
+};
 
 /**
  * Updates a patient job's total.

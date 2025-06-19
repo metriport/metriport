@@ -11,6 +11,7 @@ export class PatientJobModel extends BaseModel<PatientJobModel> implements Patie
   declare requestId: string | undefined;
   declare status: JobStatus;
   declare statusReason: string | undefined;
+  declare runUrl: string | undefined;
   declare scheduledAt: Date | undefined;
   declare startedAt: Date | undefined;
   declare finishedAt: Date | undefined;
@@ -47,6 +48,9 @@ export class PatientJobModel extends BaseModel<PatientJobModel> implements Patie
           type: DataTypes.STRING,
         },
         statusReason: {
+          type: DataTypes.STRING,
+        },
+        runUrl: {
           type: DataTypes.STRING,
         },
         scheduledAt: {

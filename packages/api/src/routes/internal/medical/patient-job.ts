@@ -9,7 +9,7 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { z } from "zod";
-import { getPatientJobs } from "../../../command/job/patient/get";
+import { getPatientJobByIdOrFail, getPatientJobs } from "../../../command/job/patient/get";
 import { startJobs } from "../../../command/job/patient/scheduler/start-jobs";
 import { cancelPatientJob } from "../../../command/job/patient/status/cancel";
 import { completePatientJob } from "../../../command/job/patient/status/complete";
@@ -18,19 +18,17 @@ import { initializePatientJob } from "../../../command/job/patient/status/initia
 import { setPatientJobEntryStatus } from "../../../command/job/patient/update/set-entry-status";
 import { updatePatientJobRuntimeData } from "../../../command/job/patient/update/update-runtime-data";
 import { updatePatientJobTotal } from "../../../command/job/patient/update/update-total";
+import { validateISODateOrDateTime } from "../../../shared/date";
 import { requestLogger } from "../../helpers/request-logger";
 import { getUUIDFrom } from "../../schemas/uuid";
 import { asyncHandler, getFrom, getFromQuery, getFromQueryOrFail } from "../../util";
-import patientJobsRouter from "./patient-jobs";
 
 const router = Router();
-
-router.use("/", patientJobsRouter);
 
 /**
  * GET /internal/patient/job
  *
- * Gets the jobs that with filters
+ * Gets the jobs matching the filters.
  * @param req.query.cxId - The CX ID.
  * @param req.query.patientId - The patient ID. Optional.
  * @param req.query.jobType - The job type. Optional.
@@ -44,13 +42,20 @@ router.get(
   "/",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getFromQueryOrFail("cxId", req);
+    const cxId = getFromQuery("cxId", req);
     const patientId = getFromQuery("patientId", req);
     const jobType = getFromQuery("jobType", req);
     const jobGroupId = getFromQuery("jobGroupId", req);
     const status = getFromQuery("status", req);
-    const scheduledAfter = getFromQuery("scheduledAfter", req);
-    const scheduledBefore = getFromQuery("scheduledBefore", req);
+    const scheduledAfter = validateISODateOrDateTime(
+      getFrom("query").optional("scheduledAfter", req)
+    );
+    const scheduledBefore = validateISODateOrDateTime(
+      getFrom("query").optional("scheduledBefore", req)
+    );
+    if (scheduledAfter && scheduledBefore && scheduledAfter > scheduledBefore) {
+      throw new BadRequestError("scheduledAfter must be earlier than or equal to scheduledBefore");
+    }
     if (status && !isValidJobStatus(status)) {
       throw new BadRequestError("Status must be a valid job status");
     }
@@ -59,7 +64,7 @@ router.get(
       patientId,
       jobType,
       jobGroupId,
-      status: status as JobStatus,
+      status: status ? (status as JobStatus) : undefined,
       scheduledAfter: scheduledAfter ? buildDayjs(scheduledAfter).toDate() : undefined,
       scheduledBefore: scheduledBefore ? buildDayjs(scheduledBefore).toDate() : undefined,
     });
@@ -71,7 +76,7 @@ router.get(
  * POST /internal/patient/job/scheduler/start
  *
  * Starts the jobs that are scheduled before the given date.
- * @param req.query.runDate - The run date. Optional.
+ * @param req.query.scheduledAtCutoff - The scheduled at cutoff date. Optional.
  * @param req.query.cxId - The CX ID. Optional.
  * @param req.query.patientId - The patient ID. Optional.
  * @param req.query.jobType - The job type. Optional.
@@ -84,21 +89,24 @@ router.post(
   "/scheduler/start",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    const runDate = getFromQuery("runDate", req);
-    const runDateDate = runDate ? buildDayjs(runDate).toDate() : undefined;
-    const cxId = getFromQuery("cxId", req);
-    const patientId = getFromQuery("patientId", req);
-    const jobType = getFromQuery("jobType", req);
+    const scheduledBefore = validateISODateOrDateTime(
+      getFrom("query").optional("scheduledBefore", req)
+    );
     const status = getFromQuery("status", req);
     if (status && !isValidJobStatus(status)) {
       throw new BadRequestError("Status must be a valid job status");
     }
+    const cxId = getFromQuery("cxId", req);
+    const patientId = getFromQuery("patientId", req);
+    const jobType = getFromQuery("jobType", req);
+    const jobGroupId = getFromQuery("jobGroupId", req);
     await startJobs({
-      runDate: runDateDate,
+      scheduledBefore: scheduledBefore ? buildDayjs(scheduledBefore).toDate() : undefined,
+      status: status ? (status as JobStatus) : undefined,
       cxId,
       patientId,
       jobType,
-      status: status as JobStatus,
+      jobGroupId,
     });
     return res.sendStatus(httpStatus.OK);
   })
@@ -199,7 +207,7 @@ router.post(
  * @returns 200 OK
  */
 router.post(
-  "/:jobId/update-total",
+  "/:jobId/total",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
@@ -217,32 +225,51 @@ router.post(
   })
 );
 
+/**
+ * GET /internal/patient/job/:jobId/runtime-data
+ *
+ * Gets the runtime data of the job.
+ * @param req.query.cxId - The CX ID.
+ * @param req.params.jobId - The job ID.
+ * @returns The runtime data of the job.
+ */
+router.get(
+  "/:jobId/runtime-data",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const jobId = getFrom("params").orFail("jobId", req);
+    const job = await getPatientJobByIdOrFail({ jobId, cxId });
+    return res.status(httpStatus.OK).json({ runtimeData: job.runtimeData });
+  })
+);
+
 const updateRuntimeDataSchema = z.object({
   data: z.record(z.unknown()).optional(),
 });
 
 /**
- * POST /internal/patient/job/:jobId/update-runtime-data
+ * POST /internal/patient/job/:jobId/runtime-data
  *
- * Updates the runtime data of the job.
+ * Updates or sets the runtime data of the job.
  * @param req.query.cxId - The CX ID.
  * @param req.params.jobId - The job ID.
  * @param req.body.data - The runtime data to update.
- * @returns 200 OK
+ * @returns The runtime data of the job.
  */
 router.post(
-  "/:jobId/update-runtime-data",
+  "/:jobId/runtime-data",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const jobId = getFrom("params").orFail("jobId", req);
     const { data } = updateRuntimeDataSchema.parse(req.body);
-    await updatePatientJobRuntimeData({
+    const job = await updatePatientJobRuntimeData({
       jobId,
       cxId,
       data,
     });
-    return res.sendStatus(httpStatus.OK);
+    return res.status(httpStatus.OK).json({ runtimeData: job.runtimeData });
   })
 );
 

@@ -16,6 +16,10 @@ export class Config {
     return process.env.NODE_ENV === this.PROD_ENV;
   }
 
+  static isProduction(): boolean {
+    return Config.getEnvType() === this.PROD_ENV;
+  }
+
   static isSandbox(): boolean {
     return Config.getEnvType() === this.SANDBOX_ENV;
   }
@@ -30,10 +34,6 @@ export class Config {
 
   static getEnvType(): string {
     return getEnvVarOrFail("ENV_TYPE");
-  }
-
-  static getDBCreds(): string {
-    return getEnvVarOrFail("DB_CREDS");
   }
 
   static getSlackAlertUrl(): string | undefined {
@@ -224,9 +224,57 @@ export class Config {
   static getTermServerUrl(): string | undefined {
     return getEnvVar("TERM_SERVER_URL");
   }
-
   static getWriteToS3QueueUrl(): string {
     return getEnvVarOrFail("WRITE_TO_S3_QUEUE_URL");
+  }
+
+  static getSurescriptsHost(): string {
+    return getEnvVarOrFail("SURESCRIPTS_SFTP_HOST");
+  }
+  static getSurescriptsSftpSenderId(): string {
+    return getEnvVarOrFail("SURESCRIPTS_SFTP_SENDER_ID");
+  }
+  static getSurescriptsSftpSenderPassword(): string {
+    return getEnvVarOrFail("SURESCRIPTS_SFTP_SENDER_PASSWORD");
+  }
+  static getSurescriptsSftpReceiverId(): string {
+    return getEnvVarOrFail("SURESCRIPTS_SFTP_RECEIVER_ID");
+  }
+  static getSurescriptsSftpPublicKey(): string {
+    return getEnvVarOrFail("SURESCRIPTS_SFTP_PUBLIC_KEY");
+  }
+  static getSurescriptsSftpPrivateKey(): string {
+    return getEnvVarOrFail("SURESCRIPTS_SFTP_PRIVATE_KEY");
+  }
+  static getSurescriptsReplicaBucketName(): string {
+    return getEnvVarOrFail("SURESCRIPTS_REPLICA_BUCKET_NAME");
+  }
+  static getPharmacyConversionBucketName(): string {
+    return getEnvVarOrFail("PHARMACY_CONVERSION_BUCKET_NAME");
+  }
+  static getSurescriptsSftpActionLambdaName(): string {
+    return getEnvVarOrFail("SURESCRIPTS_SFTP_ACTION_LAMBDA_NAME");
+  }
+  static getSurescriptsConvertPatientResponseLambdaName(): string {
+    return getEnvVarOrFail("SURESCRIPTS_CONVERT_PATIENT_RESPONSE_LAMBDA_NAME");
+  }
+  static getSurescriptsConvertBatchResponseLambdaName(): string {
+    return getEnvVarOrFail("SURESCRIPTS_CONVERT_BATCH_RESPONSE_LAMBDA_NAME");
+  }
+  static getSurescriptsSendPatientRequestQueueUrl(): string {
+    return getEnvVarOrFail("SURESCRIPTS_SEND_PATIENT_REQUEST_QUEUE_URL");
+  }
+  static getSurescriptsSendBatchRequestQueueUrl(): string {
+    return getEnvVarOrFail("SURESCRIPTS_SEND_BATCH_REQUEST_QUEUE_URL");
+  }
+  static getSurescriptsVerifyRequestInHistoryQueueUrl(): string {
+    return getEnvVarOrFail("SURESCRIPTS_VERIFY_REQUEST_IN_HISTORY_QUEUE_URL");
+  }
+  static getSurescriptsReceiveVerificationQueueUrl(): string {
+    return getEnvVarOrFail("SURESCRIPTS_RECEIVE_VERIFICATION_QUEUE_URL");
+  }
+  static getSurescriptsReceiveResponseQueueUrl(): string {
+    return getEnvVarOrFail("SURESCRIPTS_RECEIVE_RESPONSE_QUEUE_URL");
   }
 
   static getAthenaHealthEnv(): string | undefined {
@@ -261,9 +309,6 @@ export class Config {
     return getEnvVar("EHR_ECLINICALWORKS_ENVIRONMENT");
   }
 
-  static getPatientJobsLambdaName(): string {
-    return getEnvVarOrFail("GET_PATIENT_JOBS_LAMBDA_NAME");
-  }
   static getRunPatientJobQueueUrl(): string {
     return getEnvVarOrFail("RUN_PATIENT_JOB_QUEUE_URL");
   }

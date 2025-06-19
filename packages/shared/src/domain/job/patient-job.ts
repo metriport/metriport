@@ -10,6 +10,7 @@ export type PatientJob = {
   requestId?: string;
   status: JobStatus;
   statusReason: string | undefined;
+  runUrl: string | undefined;
   scheduledAt: Date | undefined;
   startedAt: Date | undefined;
   finishedAt: Date | undefined;
@@ -38,6 +39,7 @@ export const patientJobRawColumnNames = {
   requestId: "request_id",
   status: "status",
   statusReason: "status_reason",
+  runUrl: "run_url",
   scheduledAt: "scheduled_at",
   startedAt: "started_at",
   finishedAt: "finished_at",

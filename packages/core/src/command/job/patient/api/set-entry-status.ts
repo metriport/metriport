@@ -26,7 +26,7 @@ export async function setJobEntryStatus({
   cxId,
   entryStatus,
 }: SetJobEntryStatusParams): Promise<void> {
-  const { log, debug } = out(`Ehr setJobEntryStatus - jobId ${jobId} cxId ${cxId}`);
+  const { log, debug } = out(`setJobEntryStatus - jobId ${jobId} cxId ${cxId}`);
   const api = axios.create({ baseURL: Config.getApiUrl() });
   const queryParams = new URLSearchParams({ cxId, entryStatus });
   const updateJobUrl = `/internal/patient/job/${jobId}/set-entry-status?${queryParams.toString()}`;
@@ -43,7 +43,7 @@ export async function setJobEntryStatus({
       jobId,
       entryStatus,
       url: updateJobUrl,
-      context: "ehr.setJobEntryStatus",
+      context: "patient-job.setJobEntryStatus",
     });
   }
 }

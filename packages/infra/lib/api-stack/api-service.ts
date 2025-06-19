@@ -151,9 +151,9 @@ export function createAPIService({
   fhirConverterServiceUrl: string | undefined;
   cdaToVisualizationLambda: ILambda;
   documentDownloaderLambda: ILambda;
-  outboundPatientDiscoveryLambda: ILambda;
-  outboundDocumentQueryLambda: ILambda;
-  outboundDocumentRetrievalLambda: ILambda;
+  outboundPatientDiscoveryLambda: ILambda | undefined;
+  outboundDocumentQueryLambda: ILambda | undefined;
+  outboundDocumentRetrievalLambda: ILambda | undefined;
   patientImportParseLambda: ILambda;
   patientImportResultLambda: ILambda;
   patientImportBucket: s3.IBucket;
@@ -291,9 +291,15 @@ export function createAPIService({
           PROPELAUTH_PUBLIC_KEY: props.config.propelAuth.publicKey,
           CONVERT_DOC_LAMBDA_NAME: cdaToVisualizationLambda.functionName,
           DOCUMENT_DOWNLOADER_LAMBDA_NAME: documentDownloaderLambda.functionName,
-          OUTBOUND_PATIENT_DISCOVERY_LAMBDA_NAME: outboundPatientDiscoveryLambda.functionName,
-          OUTBOUND_DOC_QUERY_LAMBDA_NAME: outboundDocumentQueryLambda.functionName,
-          OUTBOUND_DOC_RETRIEVAL_LAMBDA_NAME: outboundDocumentRetrievalLambda.functionName,
+          ...(outboundPatientDiscoveryLambda && {
+            OUTBOUND_PATIENT_DISCOVERY_LAMBDA_NAME: outboundPatientDiscoveryLambda.functionName,
+          }),
+          ...(outboundDocumentQueryLambda && {
+            OUTBOUND_DOC_QUERY_LAMBDA_NAME: outboundDocumentQueryLambda.functionName,
+          }),
+          ...(outboundDocumentRetrievalLambda && {
+            OUTBOUND_DOC_RETRIEVAL_LAMBDA_NAME: outboundDocumentRetrievalLambda.functionName,
+          }),
           PATIENT_IMPORT_BUCKET_NAME: patientImportBucket.bucketName,
           PATIENT_IMPORT_PARSE_LAMBDA_NAME: patientImportParseLambda.functionName,
           PATIENT_IMPORT_RESULT_LAMBDA_NAME: patientImportResultLambda.functionName,
@@ -369,15 +375,19 @@ export function createAPIService({
           ...(surescriptsAssets && {
             PHARMACY_CONVERSION_BUCKET_NAME: surescriptsAssets.pharmacyConversionBucket.bucketName,
             SURESCRIPTS_REPLICA_BUCKET_NAME: surescriptsAssets.surescriptsReplicaBucket.bucketName,
-            SURESCRIPTS_SYNCHRONIZE_SFTP_QUEUE_URL: surescriptsAssets.synchronizeSftpQueue.queueUrl,
-            SURESCRIPTS_SEND_PATIENT_REQUEST_QUEUE_URL:
-              surescriptsAssets.sendPatientRequestQueue.queueUrl,
-            SURESCRIPTS_RECEIVE_VERIFICATION_RESPONSE_QUEUE_URL:
-              surescriptsAssets.receiveVerificationResponseQueue.queueUrl,
-            SURESCRIPTS_RECEIVE_FLAT_FILE_RESPONSE_QUEUE_URL:
-              surescriptsAssets.receiveFlatFileResponseQueue.queueUrl,
+            ...Object.fromEntries(
+              surescriptsAssets.surescriptsLambdas.map(({ envVarName, lambda }) => [
+                envVarName,
+                lambda.functionName,
+              ])
+            ),
+            ...Object.fromEntries(
+              surescriptsAssets.surescriptsQueues.map(({ envVarName, queue }) => [
+                envVarName,
+                queue.queueUrl,
+              ])
+            ),
           }),
-          GET_PATIENT_JOBS_LAMBDA_NAME: jobAssets.getPatientJobsLambda.functionName,
           RUN_PATIENT_JOB_QUEUE_URL: jobAssets.runPatientJobQueue.queueUrl,
         },
       },
@@ -450,9 +460,9 @@ export function createAPIService({
 
   cdaToVisualizationLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   documentDownloaderLambda.grantInvoke(fargateService.taskDefinition.taskRole);
-  outboundPatientDiscoveryLambda.grantInvoke(fargateService.taskDefinition.taskRole);
-  outboundDocumentQueryLambda.grantInvoke(fargateService.taskDefinition.taskRole);
-  outboundDocumentRetrievalLambda.grantInvoke(fargateService.taskDefinition.taskRole);
+  outboundPatientDiscoveryLambda?.grantInvoke(fargateService.taskDefinition.taskRole);
+  outboundDocumentQueryLambda?.grantInvoke(fargateService.taskDefinition.taskRole);
+  outboundDocumentRetrievalLambda?.grantInvoke(fargateService.taskDefinition.taskRole);
   patientImportParseLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   patientImportResultLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   dischargeRequeryLambda?.grantInvoke(fargateService.taskDefinition.taskRole);
@@ -461,7 +471,6 @@ export function createAPIService({
   fhirToBundleCountLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   ehrGetAppointmentsLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   consolidatedSearchLambda.grantInvoke(fargateService.taskDefinition.taskRole);
-  jobAssets.getPatientJobsLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   // Access grant for buckets
   patientImportBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   conversionBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
@@ -512,13 +521,7 @@ export function createAPIService({
   });
 
   if (surescriptsAssets) {
-    const queuesToProvideAccessTo = [
-      surescriptsAssets.synchronizeSftpQueue,
-      surescriptsAssets.sendPatientRequestQueue,
-      surescriptsAssets.receiveVerificationResponseQueue,
-      surescriptsAssets.receiveFlatFileResponseQueue,
-    ];
-    queuesToProvideAccessTo.forEach(queue => {
+    surescriptsAssets.surescriptsQueues.forEach(({ queue }) => {
       provideAccessToQueue({
         accessType: "send",
         queue,

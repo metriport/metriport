@@ -1,11 +1,18 @@
 import { out } from "@metriport/core/util/log";
 import { PatientJob, validateNewJobStatus } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
-import { FailJobParams } from "../../shared";
 import { getPatientJobModelOrFail } from "../get";
 
+export type FailJobParams = {
+  jobId: string;
+  cxId: string;
+  reason: string;
+  forceStatusUpdate?: boolean;
+  onFailed?: () => Promise<void>;
+};
+
 /**
- * Cancels a patient job.
+ * Fails a patient job.
  *
  * @param jobId - The job ID.
  * @param cxId - The customer ID.
