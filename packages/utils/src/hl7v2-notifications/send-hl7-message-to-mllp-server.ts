@@ -24,8 +24,8 @@ import { createScrambledId } from "@metriport/core/command/hl7v2-subscriptions/u
  * Run with: ts-node src/hl7v2-notifications/send-hl7-message-to-mllp-server.ts
  */
 
-const cxId = "98b3ba4e-5c03-4d4d-8dfa-51b96bc6a39c";
-const ptId = "0196dbd3-15de-7c9c-8d00-5fb6e82a75f4";
+const cxId = "";
+const ptId = "";
 
 const scrambledId = createScrambledId(cxId, ptId);
 const messageId = Math.floor(Math.random() * 999999999);

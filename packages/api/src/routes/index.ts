@@ -17,6 +17,7 @@ import settings from "./settings";
 import sleep from "./sleep";
 import user from "./user";
 import webhook from "./webhook";
+import medical from "./medical";
 
 // Supports requests from the Dashboard through the dedicated JWT-based auth on API GW
 const dash = "/dash-oss";
@@ -37,7 +38,7 @@ export default (app: Application) => {
   app.use("/user", processCxId, reportDeviceUsage, user);
 
   // medical routes with API key auth - report usage is on individual routes
-  app.use("/medical/v1", processCxId, checkMAPIAccess, medicalDash);
+  app.use("/medical/v1", processCxId, checkMAPIAccess, medical);
   app.use(`${dash}/medical/v1`, processCxId, checkMAPIAccess, medicalDash);
   app.use("/fhir/R4", processCxId, checkMAPIAccess, fhirRouter);
 

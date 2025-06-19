@@ -24,8 +24,8 @@ import {
   getMessageUniqueIdentifier,
 } from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion/msh";
 import { Hl7Notification, Hl7NotificationWebhookSender } from "./hl7-notification-webhook-sender";
+import { isSupportedTriggerEvent, SupportedTriggerEvent } from "./utils";
 
-const supportedTypes = ["A01", "A03"];
 const INTERNAL_HL7_ENDPOINT = `notification`;
 const INTERNAL_PATIENT_ENDPOINT = "internal/patient";
 const SIGNED_URL_DURATION_SECONDS = dayjs.duration({ minutes: 10 }).asSeconds();
@@ -45,7 +45,7 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
     const { log } = out(`${this.context}, cx: ${cxId}, pt: ${patientId}, enc: ${encounterId}`);
 
     const { messageCode, triggerEvent } = getHl7MessageTypeOrFail(message);
-    if (!supportedTypes.includes(triggerEvent)) {
+    if (!isSupportedTriggerEvent(triggerEvent)) {
       log(`Trigger event ${triggerEvent} is not supported. Skipping...`);
       return;
     }
@@ -70,8 +70,7 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
     const internalHl7RouteUrl = `${this.apiUrl}/${INTERNAL_PATIENT_ENDPOINT}/${patientId}/${INTERNAL_HL7_ENDPOINT}`;
     const internalGetPatientUrl = `${this.apiUrl}/${INTERNAL_PATIENT_ENDPOINT}/${patientId}?cxId=${cxId}`;
 
-    log(`Creating FHIR bundle`);
-    log(`internalGetPatientUrl: ${internalGetPatientUrl}`);
+    log(`GET internalGetPatientUrl: ${internalGetPatientUrl}`);
     const patient = await executeWithNetworkRetries(
       async () => await axios.get(internalGetPatientUrl)
     );
@@ -93,7 +92,7 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
     const clinicalInformation = this.extractClinicalInformation(newEncounterData);
 
     log(`Writing TCM encounter to DB...`);
-    await this.writeTcmEncounterToDb(
+    await this.persistTcmEncounter(
       {
         id: encounterId,
         cxId,
@@ -104,7 +103,7 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
         dischargeTime: encounterPeriod?.end,
         clinicalInformation,
       },
-      triggerEvent as "A01" | "A03"
+      triggerEvent
     );
 
     log(`Updating encounter bundle in S3...`);
@@ -154,7 +153,7 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
     log(`Done.`);
   }
 
-  private async writeTcmEncounterToDb(
+  private async persistTcmEncounter(
     tcmEncounterPayload: {
       id: string;
       cxId: string;
@@ -165,13 +164,13 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
       dischargeTime: string | undefined;
       clinicalInformation: Record<string, unknown>;
     },
-    triggerEvent: "A01" | "A03"
+    triggerEvent: SupportedTriggerEvent
   ) {
     const encounterId = tcmEncounterPayload.id;
     const admitTime = tcmEncounterPayload.admitTime;
     const dischargeTime = tcmEncounterPayload.dischargeTime;
     const { log } = out(
-      `writeTcmEncounterToDb, cx: ${tcmEncounterPayload.cxId}, pt: ${tcmEncounterPayload.patientId}, enc: ${encounterId}`
+      `persistTcmEncounter, cx: ${tcmEncounterPayload.cxId}, pt: ${tcmEncounterPayload.patientId}, enc: ${encounterId}`
     );
 
     /**
