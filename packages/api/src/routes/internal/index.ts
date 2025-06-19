@@ -53,6 +53,7 @@ import feedbackRoutes from "./medical/feedback";
 import mpiRoutes from "./medical/mpi";
 import organizationRoutes from "./medical/organization";
 import patientRoutes from "./medical/patient";
+import tcmEncounter from "./medical/tcm-encounter";
 
 const router = Router();
 
@@ -69,6 +70,7 @@ router.use("/hie", hieRoutes);
 router.use("/feedback", feedbackRoutes);
 router.use("/token", jwtToken);
 router.use("/ehr", ehr);
+router.use("/tcm/encounter", tcmEncounter);
 
 /** ---------------------------------------------------------------------------
  * POST /internal/mapi-access

@@ -5,6 +5,7 @@ import {
 } from "@metriport/core/domain/organization";
 import { DataTypes, Sequelize } from "sequelize";
 import { BaseModel, ModelSetup } from "../_default";
+import { TcmEncounterModel } from "./tcm-encounter";
 
 export class OrganizationModel extends BaseModel<OrganizationModel> implements Organization {
   static NAME = "organization";
@@ -65,5 +66,12 @@ export class OrganizationModel extends BaseModel<OrganizationModel> implements O
         tableName: OrganizationModel.NAME,
       }
     );
+  };
+
+  static associate = (models: { TcmEncounterModel: typeof TcmEncounterModel }) => {
+    OrganizationModel.hasMany(models.TcmEncounterModel, {
+      foreignKey: "cxId",
+      sourceKey: "cxId",
+    });
   };
 }

@@ -41,6 +41,7 @@ import { Settings } from "./settings";
 import { WebhookRequest } from "./webhook-request";
 import { ModelSetup } from "./_default";
 import { PatientJobModel } from "./patient-job";
+import { TcmEncounterModel } from "./medical/tcm-encounter";
 
 // models to setup with sequelize
 const models: ModelSetup[] = [
@@ -71,6 +72,7 @@ const models: ModelSetup[] = [
   JwtTokenModel.setup,
   InvalidLinksModel.setup,
   PatientJobModel.setup,
+  TcmEncounterModel.setup,
 ];
 
 const modelsReadOnly: ModelSetup[] = [PatientModelReadOnly.setup];
@@ -144,6 +146,9 @@ async function initDB(): Promise<void> {
     // Set up model associations
     PatientModelReadOnly.associate({ PatientSettingsModel });
     PatientSettingsModel.associate({ PatientModelReadOnly });
+    TcmEncounterModel.associate({ PatientModel, OrganizationModel });
+    PatientModel.associate({ TcmEncounterModel });
+    OrganizationModel.associate({ TcmEncounterModel });
 
     let doc: AWS.DynamoDB.DocumentClient;
     // init dynamo db doc client
