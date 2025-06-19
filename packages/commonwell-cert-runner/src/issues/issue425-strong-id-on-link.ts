@@ -3,12 +3,11 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import {
   CommonWell,
-  getId,
   getIdTrailingSlash,
+  getPersonId,
   RequestMetadata,
   StrongId,
 } from "@metriport/commonwell-sdk";
-
 import { makePatient, personStrongId } from "../payloads";
 
 // TODO add CW case number and rename this file accodingly
@@ -79,7 +78,7 @@ async function runWith(id: StrongId, commonWell: CommonWell, queryMeta: RequestM
     });
     // console.log(respEnrollPerson);
     console.log(`>>> Enroll a Person with a Strong ID OK`);
-    personId = getId(respEnrollPerson);
+    personId = getPersonId(respEnrollPerson);
     if (!personId) throw new Error(`Person ID not found in response to enrollPerson`);
   } catch (err) {
     console.log(
