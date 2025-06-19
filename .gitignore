@@ -39,3 +39,4 @@ runs
 
 *.out
 delay-time-in-seconds.txt
+packages/terminology/terminology_v2.1.db
