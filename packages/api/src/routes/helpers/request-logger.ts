@@ -3,9 +3,11 @@ import { NextFunction, Request, Response } from "express";
 import { customAlphabet } from "nanoid";
 import { getCxId, getCxIdFromQuery } from "../util";
 import { analyzeRoute } from "./request-analytics";
+import { out } from "@metriport/core/util";
 
 const asyncLocalStorage = getLocalStorage("reqId");
 const nanoid = customAlphabet("0123456789abcdefghijklmnopqrstuvwxyz");
+const { log } = out("request-logger");
 
 export const requestLogger = (req: Request, res: Response, next: NextFunction): void => {
   const reqId = nanoid();
@@ -23,29 +25,29 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction): 
         ? req.aggregatedParams
         : undefined;
 
-    console.log(
-      "%s ....Begins %s %s %s %s",
-      reqId,
+    log({
+      message: "Begins",
+      requestId: reqId,
       method,
       url,
-      toString(params),
-      toString(query),
-      cxId ? `{"cxId":"${cxId}"}` : ""
-    );
+      params,
+      query,
+      cxId,
+    });
 
     const startHrTime = process.hrtime();
 
     res.on("close", () => {
       const elapsedHrTime = process.hrtime(startHrTime);
       const elapsedTimeInMs = elapsedHrTime[0] * 1000 + elapsedHrTime[1] / 1e6;
-      console.log(
-        "%s ....Done %s %s | %d | %fms",
-        reqId,
+      log({
+        message: "Done",
+        requestId: reqId,
         method,
         url,
-        res.statusCode,
-        elapsedTimeInMs
-      );
+        status: res.statusCode,
+        duration: elapsedTimeInMs,
+      });
 
       analyzeRoute({
         req,
@@ -82,8 +84,4 @@ function replaceParamWithKey(url: string, params: Record<string, string> | undef
   if (!params) return url;
 
   return Object.keys(params).reduce((acc, key) => acc.replace(params[key], `:${key}`), url);
-}
-
-function toString(obj: unknown): string {
-  return obj ? ` ${JSON.stringify(obj)}` : "";
 }

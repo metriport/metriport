@@ -39,3 +39,5 @@ runs
 
 *.out
 delay-time-in-seconds.txt
+
+logs/
