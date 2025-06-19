@@ -1,5 +1,6 @@
 import * as dotenv from "dotenv";
 dotenv.config();
+// keep that ^ above all other imports
 
 export function getEnv(name: string): string | undefined {
   return process.env[name];
