@@ -1,16 +1,21 @@
 import { out } from "@metriport/core/util/log";
 import { PatientJob, validateNewJobStatus } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
-import { CompleteJobParams } from "../shared";
-import { getPatientJobModelOrFail } from "./get";
+import { getPatientJobModelOrFail } from "../get";
+
+export type CompleteJobParams = {
+  jobId: string;
+  cxId: string;
+  forceStatusUpdate?: boolean;
+  onCompleted?: () => Promise<void>;
+};
 
 /**
  * Completes a patient job.
  *
  * @param jobId - The job ID.
  * @param cxId - The customer ID.
- * @param forceStatusUpdate - Whether to force the status update (only to be used by internal
- *                            flows/endpoints).
+ * @param forceStatusUpdate - Whether to force the status update (only to be used by internal flows/endpoints).
  * @param onCompleted - The callback to call once the job is updated.
  * @returns the updated job.
  * @throws BadRequestError if the completed status is not valid based on the current state.

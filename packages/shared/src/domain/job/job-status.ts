@@ -1,12 +1,10 @@
 import { BadRequestError } from "../../error/bad-request";
 
-export const jobStatus = ["waiting", "processing", "completed", "failed"] as const;
+export const jobStatus = ["waiting", "processing", "completed", "failed", "cancelled"] as const;
 export type JobStatus = (typeof jobStatus)[number];
 
 export function isValidJobStatus(status: string): status is JobStatus {
-  return (
-    status === "waiting" || status === "processing" || status === "completed" || status === "failed"
-  );
+  return jobStatus.includes(status as JobStatus);
 }
 
 export const jobInitialStatus: JobStatus = "waiting";
@@ -54,9 +52,18 @@ export function validateNewJobStatus(currentStatus: JobStatus, newStatus: JobSta
       }
       break;
     case "failed":
-      if (currentStatus === "completed") {
+      if (currentStatus !== "processing") {
         throw new BadRequestError(
-          `Job is completed, cannot update to failed`,
+          `Job is not processing, cannot update to failed`,
+          undefined,
+          additionalInfo
+        );
+      }
+      break;
+    case "cancelled":
+      if (currentStatus !== "waiting") {
+        throw new BadRequestError(
+          `Job is not waiting, cannot update to cancelled`,
           undefined,
           additionalInfo
         );

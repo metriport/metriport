@@ -1,8 +1,24 @@
-import { MetriportError } from "@metriport/shared";
+import { JobEntryStatus, JobStatus, MetriportError } from "@metriport/shared";
+import { patientJobRawColumnNames } from "@metriport/shared/domain/job/patient-job";
 import { IncrementDecrementOptionsWithBy } from "sequelize";
-import { PatientJobModel, patientJobRawColumnNames } from "../../../models/patient-job";
-import { UpdateJobCountParams, UpdateJobCountResponse } from "../shared";
-import { completePatientJob } from "./complete";
+import { PatientJobModel } from "../../../../models/patient-job";
+import { completePatientJob } from "../status/complete";
+
+export type SetPatientJobEntryStatusParams = {
+  jobId: string;
+  cxId: string;
+  entryStatus: JobEntryStatus;
+  onCompleted?: () => Promise<void>;
+};
+
+export type SetPatientJobEntryStatusResponse = {
+  jobId: string;
+  cxId: string;
+  status: JobStatus;
+  successful: number;
+  failed: number;
+  total: number;
+};
 
 /**
  * Sets the status of a patient job entry.
@@ -26,7 +42,7 @@ export async function setPatientJobEntryStatus({
   cxId,
   entryStatus,
   onCompleted,
-}: UpdateJobCountParams): Promise<UpdateJobCountResponse> {
+}: SetPatientJobEntryStatusParams): Promise<SetPatientJobEntryStatusResponse> {
   const [[updatedRows]] = await PatientJobModel.increment(
     [
       ...(entryStatus === "successful" ? ["successful" as const] : []),
