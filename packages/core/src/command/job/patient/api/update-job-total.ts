@@ -20,7 +20,7 @@ export async function updateJobTotal({ jobId, cxId, total }: UpdateJobTotalParam
   const { log, debug } = out(`updateJobTotal - jobId ${jobId} cxId ${cxId}`);
   const api = axios.create({ baseURL: Config.getApiUrl() });
   const queryParams = new URLSearchParams({ cxId, total: total.toString() });
-  const updateJobUrl = `/internal/patient/job/${jobId}/total?${queryParams.toString()}`;
+  const updateJobUrl = `/internal/patient/job/${jobId}/total?${queryParams.toString()}`; // TODO: Maybe need to be /update-total
   try {
     const response = await executeWithNetworkRetries(async () => {
       return api.post(updateJobUrl);

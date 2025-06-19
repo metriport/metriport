@@ -154,6 +154,7 @@ function makePatientJob(
     data: params.data,
     runtimeData: params.runtimeData,
     createdAt: params.createdAt ?? new Date(),
+    runUrl: params.runUrl ?? faker.string.alpha({ length: { min: 130, max: 130 } }),
     ...params,
   };
 }

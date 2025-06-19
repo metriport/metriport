@@ -29,7 +29,7 @@ export const dischargeEventCode = "A03";
 const supportedTypes = ["A01", "A03"];
 const INTERNAL_HL7_ENDPOINT = `notification`;
 const INTERNAL_PATIENT_ENDPOINT = "internal/patient";
-const DISCHARGE_REQUERY_ENDPOINT = "job/discharge-requery/create";
+const DISCHARGE_REQUERY_ENDPOINT = "discharge-requery/create";
 const SIGNED_URL_DURATION_SECONDS = dayjs.duration({ minutes: 10 }).asSeconds();
 
 export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhookSender {

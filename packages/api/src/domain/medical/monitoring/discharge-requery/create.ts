@@ -11,12 +11,13 @@ import {
   pickLargestRemainingAttempts,
 } from "@metriport/core/domain/patient-monitoring/utils";
 import { capture, out } from "@metriport/core/util";
+import { PatientJob } from "@metriport/shared/domain/job/patient-job";
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { createPatientJob } from "../../../../command/job/patient/create";
 import { getPatientJobs } from "../../../../command/job/patient/get";
 import { cancelPatientJob } from "../../../../command/job/patient/status/cancel";
-import { PatientJob } from "@metriport/shared/domain/job/patient-job";
 
+const INTERNAL_DISCHARGE_REQUERY_ENDPOINT = "/internal/patient/discharge-requery/run";
 export const dischargeRequeryJobType = "discharge-requery";
 
 export async function createDischargeRequeryJob(
@@ -73,6 +74,7 @@ export async function createDischargeRequeryJob(
     requestId: uuidv7(),
     scheduledAt: newScheduledAt,
     paramsOps,
+    runUrl: INTERNAL_DISCHARGE_REQUERY_ENDPOINT,
   });
 
   log(`newDischargeRequeryJob: ${newDischargeRequeryJob.id}`);

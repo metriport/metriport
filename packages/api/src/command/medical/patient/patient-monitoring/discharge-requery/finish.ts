@@ -83,7 +83,7 @@ export async function finishDischargeRequery({
   const remainingAttempts =
     status === "successful" ? job.paramsOps.remainingAttempts - 1 : job.paramsOps.remainingAttempts;
 
-  // Analytics and runtimeData for visibility
+  // Send analytics and update runtimeData for visibility
   if (status === "successful") {
     try {
       const patient = await getPatientOrFail({ cxId, id: patientId });
@@ -98,6 +98,7 @@ export async function finishDischargeRequery({
           data: {
             downloadCount,
             convertCount,
+            ...job.runtimeData,
           },
         });
         analytics({

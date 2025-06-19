@@ -21,6 +21,8 @@ export type DischargeRequeryParamsOps = z.infer<typeof dischargeRequeryParamsOps
 export const runtimeDataSchema = z.object({
   patientDiscoveryRequestId: z.string().optional(),
   documentQueryRequestId: z.string().optional(),
+  downloadCount: z.number().optional(),
+  convertCount: z.number().optional(),
 });
 
 export type DischargeRequeryJobRuntimeData = z.infer<typeof runtimeDataSchema>;

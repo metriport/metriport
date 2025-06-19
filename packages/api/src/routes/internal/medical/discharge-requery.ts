@@ -1,16 +1,17 @@
+import { jobRunBodySchema } from "@metriport/shared/domain/job/types";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
-import { createDischargeRequeryJob } from "../../../../domain/medical/monitoring/discharge-requery/create";
-import { runDischargeRequeryJob } from "../../../../domain/medical/monitoring/discharge-requery/initialize";
-import { requestLogger } from "../../../helpers/request-logger";
-import { getUUIDFrom } from "../../../schemas/uuid";
-import { asyncHandler, getFrom } from "../../../util";
+import { createDischargeRequeryJob } from "../../../domain/medical/monitoring/discharge-requery/create";
+import { runDischargeRequeryJob } from "../../../domain/medical/monitoring/discharge-requery/initialize";
+import { requestLogger } from "../../helpers/request-logger";
+import { getUUIDFrom } from "../../schemas/uuid";
+import { asyncHandler } from "../../util";
 
 const router = Router();
 
 /**
- * POST /internal/patient/job/discharge-requery/create
+ * POST /internal/patient/discharge-requery/create
  *
  * Creates the discharge requery job.
  *
@@ -30,19 +31,18 @@ router.post(
 );
 
 /**
- * POST /internal/patient/job/discharge-requery/:jobId/run
+ * POST /internal/patient/job/discharge-requery/run
  *
  * Runs the discharge requery job.
- * @param req.query.cxId - The CX ID.
- * @param req.params.jobId - The job ID.
+ * @param req.body.cxId - The CX ID.
+ * @param req.body.jobId - The job ID.
  * @returns 200 OK
  */
 router.post(
-  "/discharge-requery/:jobId/run",
+  "/discharge-requery/run",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const jobId = getFrom("params").orFail("jobId", req);
+    const { cxId, jobId } = jobRunBodySchema.parse(req.body);
     await runDischargeRequeryJob({ cxId, jobId });
 
     return res.sendStatus(httpStatus.OK);
