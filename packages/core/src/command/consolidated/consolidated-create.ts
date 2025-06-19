@@ -17,7 +17,7 @@ import { dangerouslyDeduplicate } from "../../external/fhir/consolidated/dedupli
 import { getDocuments as getDocumentReferences } from "../../external/fhir/document/get-documents";
 import { toFHIR as patientToFhir } from "../../external/fhir/patient/conversion";
 import { insertSourceDocumentToAllDocRefMeta } from "../../external/fhir/shared/meta";
-import { getPharmacyResources } from "../../external/surescripts/command/bundle/get-bundle";
+import { getBundleResources as getPharmacyResources } from "../../external/surescripts/command/bundle/get-bundle";
 import { capture, executeAsynchronously, out } from "../../util";
 import { Config } from "../../util/config";
 import { processAsyncError } from "../../util/error/shared";
