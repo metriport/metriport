@@ -14,8 +14,8 @@ import status from "http-status";
 import { orderBy } from "lodash";
 import { z } from "zod";
 import {
-  assignCohort,
-  unassignCohort,
+  bulkAssignPatientsToCohort,
+  bulkRemovePatientsFromCohort,
 } from "../../command/medical/cohort/patient-cohort/patient-cohort";
 import { areDocumentsProcessing } from "../../command/medical/document/document-status";
 import { startConsolidatedQuery } from "../../command/medical/patient/consolidated-get";
@@ -39,7 +39,7 @@ import { requestLogger } from "../helpers/request-logger";
 import { getPatientInfoOrFail } from "../middlewares/patient-authorization";
 import { checkRateLimit } from "../middlewares/rate-limiting";
 import { asyncHandler, getFrom, getFromQueryAsBoolean } from "../util";
-import { dtoFromPatientCohort } from "./dtos/patient-cohort";
+import { dtoFromCohort } from "./dtos/cohortDTO";
 import { dtoFromModel } from "./dtos/patientDTO";
 import { bundleSchema, getResourcesQueryParam } from "./schemas/fhir";
 import {
@@ -559,9 +559,17 @@ router.post(
     const { cxId, id: patientId } = getPatientInfoOrFail(req);
     const cohortId = cohortIdSchema.parse(req.body).cohortId;
 
-    const cohortAssignment = await assignCohort({ patientId, cohortId, cxId });
+    const cohortWithCount = await bulkAssignPatientsToCohort({
+      cohortId,
+      cxId,
+      patientIds: [patientId],
+    });
 
-    return res.status(status.CREATED).json(dtoFromPatientCohort(cohortAssignment));
+    return res.status(status.CREATED).json({
+      cohort: dtoFromCohort(cohortWithCount.cohort),
+      patientCount: cohortWithCount.count,
+      patientIds: cohortWithCount.patientIds,
+    });
   })
 );
 
@@ -582,9 +590,15 @@ router.delete(
     const { cxId, id: patientId } = getPatientInfoOrFail(req);
     const cohortId = cohortIdSchema.parse(req.body).cohortId;
 
-    await unassignCohort({ patientId, cohortId, cxId });
+    const countUnassigned = await bulkRemovePatientsFromCohort({
+      cohortId,
+      cxId,
+      patientIds: [patientId],
+    });
 
-    return res.sendStatus(status.OK);
+    return res
+      .status(status.NO_CONTENT)
+      .json({ message: "Patient unassigned from cohort", count: countUnassigned });
   })
 );
 

@@ -34,7 +34,7 @@ export async function getCohortWithCountOrFail({
     CohortModel.findOne({
       where: { id, cxId },
     }),
-    getPatientIdsAssignedToCohort({ cohortId: id }),
+    getPatientIdsAssignedToCohort({ cohortId: id, cxId }),
   ]);
   if (!cohort) throw new NotFoundError(`Could not find cohort`, undefined, { id, cxId });
 

@@ -1,15 +1,11 @@
-import {
-  PatientCohort,
-  PatientCohortCreate,
-  PatientCohortData,
-} from "@metriport/core/domain/cohort";
+import { PatientCohort, PatientCohortData } from "@metriport/core/domain/cohort";
 import { out } from "@metriport/core/util";
 import { BadRequestError } from "@metriport/shared";
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { Op } from "sequelize";
 import { PatientCohortModel } from "../../../../models/medical/patient-cohort";
 import { getPatientOrFail } from "../../patient/get-patient";
-import { getCohortModelOrFail, CohortWithPatientIdsAndCount } from "../get-cohort";
+import { CohortWithPatientIdsAndCount, getCohortModelOrFail } from "../get-cohort";
 
 type BulkRemovePatientsFromCohortParams = {
   cohortId: string;
@@ -24,34 +20,6 @@ type BulkAssignPatientsToCohortParams = {
   patientIds: string[];
 };
 
-export async function assignCohort({
-  patientId,
-  cohortId,
-  cxId,
-}: PatientCohortCreate): Promise<PatientCohort> {
-  const [, , existing] = await Promise.all([
-    getCohortModelOrFail({ id: cohortId, cxId }),
-    getPatientOrFail({ id: patientId, cxId }),
-    getCohortAssignment({ patientId, cohortId }),
-  ]);
-
-  if (existing) return existing;
-  return (await PatientCohortModel.create({ id: uuidv7(), patientId, cohortId })).dataValues;
-}
-
-export async function unassignCohort({
-  patientId,
-  cohortId,
-  cxId,
-}: PatientCohortCreate): Promise<void> {
-  await Promise.all([
-    getCohortModelOrFail({ id: cohortId, cxId }),
-    getPatientOrFail({ id: patientId, cxId }),
-  ]);
-
-  await PatientCohortModel.destroy({ where: { patientId, cohortId } });
-}
-
 export async function getCohortAssignment({
   patientId,
   cohortId,
@@ -62,11 +30,21 @@ export async function getCohortAssignment({
 
 export async function getPatientIdsAssignedToCohort({
   cohortId,
+  cxId,
 }: {
   cohortId: string;
+  cxId: string;
 }): Promise<string[]> {
   const res = await PatientCohortModel.findAll({
     where: { cohortId },
+    include: [
+      {
+        association: PatientCohortModel.associations.Cohort,
+        where: { cxId },
+        attributes: [],
+        required: true,
+      },
+    ],
     attributes: ["patientId"],
   });
   return res.map(r => r.dataValues.patientId);
@@ -122,7 +100,7 @@ export async function bulkAssignPatientsToCohort({
   const successCount = createdAssignments.length;
   log(`Assigned ${successCount}/${uniquePatientIds.length} patients to cohort ${cohortId}`);
 
-  const totalAssignedPatientIds = await getPatientIdsAssignedToCohort({ cohortId });
+  const totalAssignedPatientIds = await getPatientIdsAssignedToCohort({ cohortId, cxId });
   return {
     cohort: cohort.dataValues,
     count: totalAssignedPatientIds.length,

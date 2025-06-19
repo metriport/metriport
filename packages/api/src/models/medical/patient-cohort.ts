@@ -35,4 +35,12 @@ export class PatientCohortModel extends BaseModel<PatientCohortModel> implements
       }
     );
   };
+
+  static associate = (models: { CohortModel: typeof CohortModel }) => {
+    PatientCohortModel.belongsTo(models.CohortModel, {
+      foreignKey: "cohortId",
+      targetKey: "id",
+      as: "Cohort",
+    });
+  };
 }

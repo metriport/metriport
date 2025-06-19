@@ -140,7 +140,6 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const id = getFromParamsOrFail("id", req);
-
     const cohortWithCount = await getCohortWithCountOrFail({ id, cxId });
 
     return res.status(status.OK).json({
