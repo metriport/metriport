@@ -1,5 +1,7 @@
 import { out } from "@metriport/core/util";
+import { BadRequestError } from "@metriport/shared";
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
+import { validate as validateUuid } from "uuid";
 import { PatientCohortModel } from "../../../../models/medical/patient-cohort";
 import { strictlyValidateAllAndPatientIds } from "../../../../routes/medical/schemas/shared";
 import { getPatientIds } from "../../patient/get-patient-read-only";
@@ -21,6 +23,10 @@ export async function bulkAssignPatientsToCohort({
 }: BulkAssignPatientsToCohortParams): Promise<CohortWithPatientIdsAndCount> {
   // This validation ensures this command does not require special handling of patientIds vs isAssignAll
   strictlyValidateAllAndPatientIds({ patientIds, all: isAssignAll });
+  const isValidCohortId = validateUuid(cohortId);
+  if (!isValidCohortId) {
+    throw new BadRequestError(`Cohort ID is not a valid UUID`, undefined, { cohortId });
+  }
 
   const { log } = out(`bulkAssignPatientsToCohort - cx ${cxId}, cohort ${cohortId}`);
   const uniquePatientIds = [...new Set(patientIds)];
