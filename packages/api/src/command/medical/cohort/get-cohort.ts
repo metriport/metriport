@@ -1,6 +1,6 @@
 import { Cohort } from "@metriport/core/domain/cohort";
 import { NotFoundError } from "@metriport/shared";
-import { col, fn, Transaction } from "sequelize";
+import { col, fn, Op, Transaction } from "sequelize";
 import { CohortModel } from "../../../models/medical/cohort";
 import { getPatientIdsAssignedToCohort } from "./patient-cohort/get-assigned-ids";
 
@@ -82,4 +82,24 @@ export async function getCohorts({ cxId }: { cxId: string }): Promise<CohortWith
     // Type assertion needed because Sequelize's get() method returns any for computed attributes
     count: Number((cohort.get(countAttr) as number | null) ?? 0),
   }));
+}
+
+export async function getCohortByName({
+  cxId,
+  name,
+}: {
+  cxId: string;
+  name: string;
+}): Promise<Cohort | undefined> {
+  const trimmedName = name.trim();
+
+  const cohort = await CohortModel.findOne({
+    where: {
+      cxId,
+      name: {
+        [Op.iLike]: trimmedName,
+      },
+    },
+  });
+  return cohort?.dataValues ?? undefined;
 }

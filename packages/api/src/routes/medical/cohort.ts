@@ -21,7 +21,7 @@ import {
   dtoFromCohort,
 } from "./dtos/cohortDTO";
 import { cohortCreateSchema, cohortUpdateSchema } from "./schemas/cohort";
-import { bulkPatientCohortSchema } from "./schemas/patient-cohort";
+import { allOrSelectPatientIdsSchema } from "./schemas/shared";
 
 const router = Router();
 
@@ -176,7 +176,7 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const cohortId = getFromParamsOrFail("id", req);
-    const { patientIds, all: isAssignAll } = bulkPatientCohortSchema.parse(req.body);
+    const { patientIds, all: isAssignAll } = allOrSelectPatientIdsSchema.parse(req.body);
 
     const cohortDetails = await bulkAssignPatientsToCohort({
       cohortId,
@@ -212,7 +212,7 @@ router.delete(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const cohortId = getFromParamsOrFail("id", req);
-    const { patientIds, all: isRemoveAll } = bulkPatientCohortSchema.parse(req.body);
+    const { patientIds, all: isRemoveAll } = allOrSelectPatientIdsSchema.parse(req.body);
 
     const unassignedCount = await bulkRemovePatientsFromCohort({
       cohortId,

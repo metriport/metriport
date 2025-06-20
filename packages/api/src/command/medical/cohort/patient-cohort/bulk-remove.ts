@@ -1,6 +1,7 @@
 import { out } from "@metriport/core/util";
 import { Op } from "sequelize";
 import { PatientCohortModel } from "../../../../models/medical/patient-cohort";
+import { allOrSelectPatientIdsRefinedSchema } from "../../../../routes/medical/schemas/shared";
 import { getCohortModelOrFail } from "../get-cohort";
 
 type BulkRemovePatientsFromCohortParams = {
@@ -18,6 +19,7 @@ export async function bulkRemovePatientsFromCohort({
 }: BulkRemovePatientsFromCohortParams): Promise<number> {
   const { log } = out(`bulkRemovePatientsFromCohort - cx ${cxId}, cohort ${cohortId}`);
 
+  allOrSelectPatientIdsRefinedSchema.parse({ patientIds, all: isRemoveAll });
   await getCohortModelOrFail({ id: cohortId, cxId });
 
   const whereClause = isRemoveAll ? { cohortId } : { cohortId, patientId: { [Op.in]: patientIds } };

@@ -1,11 +1,9 @@
 import { Cohort, CohortCreate } from "@metriport/core/domain/cohort";
 import { out } from "@metriport/core/util";
 import { BadRequestError } from "@metriport/shared";
-import { Op } from "sequelize";
 import { validateVersionForUpdate } from "../../../models/_default";
-import { CohortModel } from "../../../models/medical/cohort";
 import { BaseUpdateCmdWithCustomer } from "../base-update-command";
-import { getCohortModelOrFail } from "./get-cohort";
+import { getCohortByName, getCohortModelOrFail } from "./get-cohort";
 
 export type CohortUpdateCmd = BaseUpdateCmdWithCustomer & Partial<CohortCreate>;
 
@@ -24,15 +22,7 @@ export async function updateCohort({
   if (name !== undefined) {
     const trimmedName = name.trim();
 
-    const existingCohort = await CohortModel.findOne({
-      where: {
-        cxId,
-        id: { [Op.ne]: id },
-        name: {
-          [Op.iLike]: trimmedName,
-        },
-      },
-    });
+    const existingCohort = await getCohortByName({ cxId, name: trimmedName });
     if (existingCohort) {
       throw new BadRequestError("A cohort with this name already exists", undefined, {
         cxId,
