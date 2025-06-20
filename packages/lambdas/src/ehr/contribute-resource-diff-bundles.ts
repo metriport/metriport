@@ -1,4 +1,5 @@
 import { EhrContributeResourceDiffBundlesDirect } from "@metriport/core/external/ehr/job/create-resource-diff-bundles/steps/contribute/ehr-contribute-resource-diff-bundles-direct";
+import { MetriportError } from "@metriport/shared";
 import { SQSEvent } from "aws-lambda";
 import { capture } from "../shared/capture";
 import { ehrCreateResourceDiffBundlesSchema } from "../shared/ehr";
@@ -20,6 +21,13 @@ const maxAttempts = parseInt(maxAttemptsRaw);
 
 export const handler = capture.wrapHandler(async (event: SQSEvent) => {
   capture.setExtra({ event, context: lambdaName });
+
+  if (isNaN(waitTimeInMillis)) {
+    throw new MetriportError(`Invalid WAIT_TIME_IN_MILLIS: ${waitTimeInMillisRaw}`);
+  }
+  if (isNaN(maxAttempts)) {
+    throw new MetriportError(`Invalid MAX_ATTEMPTS: ${maxAttemptsRaw}`);
+  }
 
   const startedAt = new Date().getTime();
   const message = getSingleMessageOrFail(event.Records, lambdaName);

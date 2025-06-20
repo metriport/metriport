@@ -22,6 +22,10 @@ const waitTimeInMillis = parseInt(waitTimeInMillisRaw);
 export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
   capture.setExtra({ event, context: lambdaName });
 
+  if (isNaN(waitTimeInMillis)) {
+    throw new MetriportError(`Invalid WAIT_TIME_IN_MILLIS: ${waitTimeInMillisRaw}`);
+  }
+
   const startedAt = new Date().getTime();
   const message = getSingleMessageOrFail(event.Records, lambdaName);
   if (!message) return;
