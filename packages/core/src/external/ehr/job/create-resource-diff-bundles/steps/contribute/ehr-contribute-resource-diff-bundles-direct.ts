@@ -17,7 +17,7 @@ import {
   EhrContributeResourceDiffBundlesHandler,
 } from "./ehr-contribute-resource-diff-bundles";
 
-const hydrateEhrOnlyResourceRounds = 3;
+const hydrateEhrOnlyResourceAttempts = 3;
 
 export class EhrContributeResourceDiffBundlesDirect
   implements EhrContributeResourceDiffBundlesHandler
@@ -54,7 +54,7 @@ export class EhrContributeResourceDiffBundlesDirect
         resourceType,
         jobId,
       });
-      await dangerouslyFetchMissingResources({
+      const hydratedEhrOnlyResources = await hydrateEhrOnlyResources({
         ehr,
         tokenId,
         cxId,
@@ -63,11 +63,11 @@ export class EhrContributeResourceDiffBundlesDirect
         ehrPatientId,
         ehrOnlyResources,
       });
-      const validResources = ehrOnlyResources
+      const validResources = hydratedEhrOnlyResources
         .map(resource => dangerouslyAdjustPatient(resource, metriportPatientId))
         .map(resource => dangerouslyAdjustId(resource, metriportPatientId, ehr))
         .map(resource => dangerouslyAddEhrDataSourceExtension(resource, ehr))
-        .filter(resource => isValidUuid(resource.id ?? ""));
+        .filter(resource => resource.id && isValidUuid(resource.id));
       if (validResources.length < 1) {
         throw new BadRequestError(`No valid resources found`, undefined, {
           cxId,
@@ -131,15 +131,18 @@ async function getEhrOnlyResourcesFromS3({
     bundleType: BundleType.RESOURCE_DIFF_EHR_ONLY,
     jobId,
   });
-  if (!bundle?.bundle.entry) return [];
-  if (bundle.bundle.entry.length < 1) return [];
+  if (!bundle?.bundle.entry || bundle.bundle.entry.length < 1) return [];
   return bundle.bundle.entry.flatMap(entry => {
     if (!entry.resource) return [];
     return [entry.resource];
   });
 }
 
-async function dangerouslyFetchMissingResources({
+/**
+ * This function fetches the missing resources referenced by the ehrOnlyResources and returns a
+ * new list with the missing resources appended.
+ */
+async function hydrateEhrOnlyResources({
   ehr,
   tokenId,
   cxId,
@@ -155,12 +158,15 @@ async function dangerouslyFetchMissingResources({
   metriportPatientId: string;
   ehrPatientId: string;
   ehrOnlyResources: Resource[];
-}): Promise<void> {
+}): Promise<Resource[]> {
+  const hydratedEhrOnlyResources = [...ehrOnlyResources];
   const fetchedResourceIds = new Set<string>([
-    ...ehrOnlyResources.flatMap(resource => resource.id ?? []),
+    ...hydratedEhrOnlyResources.flatMap(resource => resource.id ?? []),
   ]);
-  for (let i = 0; i < hydrateEhrOnlyResourceRounds; i++) {
-    const references = getReferencesFromResources({ resourcesToCheckRefs: ehrOnlyResources });
+  for (let i = 0; i < hydrateEhrOnlyResourceAttempts; i++) {
+    const references = getReferencesFromResources({
+      resourcesToCheckRefs: hydratedEhrOnlyResources,
+    });
     if (references.missingReferences.length < 1) break;
     for (const { id, type } of references.missingReferences) {
       if (fetchedResourceIds.has(id)) continue;
@@ -179,7 +185,7 @@ async function dangerouslyFetchMissingResources({
         fetchedResourceIds.add(id);
         const resource = bundle.entry?.[0]?.resource;
         if (!resource) continue;
-        ehrOnlyResources.push(resource);
+        hydratedEhrOnlyResources.push(resource);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (error: any) {
         if (error instanceof BadRequestError && error.message === "Invalid resource type") {
@@ -189,6 +195,7 @@ async function dangerouslyFetchMissingResources({
       }
     }
   }
+  return hydratedEhrOnlyResources;
 }
 
 function dangerouslyAdjustPatient(resource: Resource, metriportPatientId: string): Resource {

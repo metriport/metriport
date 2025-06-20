@@ -1,7 +1,6 @@
 import { RefreshEhrBundlesRequest } from "@metriport/core/external/ehr/job/create-resource-diff-bundles/steps/refresh/ehr-refresh-ehr-bundles";
 import { EhrRefreshEhrBundlesDirect } from "@metriport/core/external/ehr/job/create-resource-diff-bundles/steps/refresh/ehr-refresh-ehr-bundles-direct";
 import { MetriportError } from "@metriport/shared";
-import * as Sentry from "@sentry/serverless";
 import { SQSEvent } from "aws-lambda";
 import { capture } from "../shared/capture";
 import { ehrCreateResourceDiffBundlesSchema } from "../shared/ehr";
@@ -20,8 +19,7 @@ const waitTimeInMillis = parseInt(waitTimeInMillisRaw);
 const maxAttemptsRaw = getEnvOrFail("MAX_ATTEMPTS");
 const maxAttempts = parseInt(maxAttemptsRaw);
 
-// TODO move to capture.wrapHandler()
-export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
+export const handler = capture.wrapHandler(async (event: SQSEvent) => {
   capture.setExtra({ event, context: lambdaName });
 
   const startedAt = new Date().getTime();

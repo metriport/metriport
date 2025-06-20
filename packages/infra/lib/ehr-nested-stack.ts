@@ -152,7 +152,7 @@ function settings(): {
   const contributeResourceDiffBundlesLambdaTimeout = Duration.minutes(12);
   const contributeResourceDiffBundles: QueueAndLambdaSettings = {
     name: "EhrContributeResourceDiffBundles",
-    entry: "ehr-contribute-resource-diff-bundles",
+    entry: "ehr/contribute-resource-diff-bundles",
     lambda: {
       memory: 512,
       timeout: contributeResourceDiffBundlesLambdaTimeout,
