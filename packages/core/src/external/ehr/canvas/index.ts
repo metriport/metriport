@@ -1117,8 +1117,8 @@ class CanvasApi {
     };
     const fetchResourcesFromEhr = () =>
       fetchEhrFhirResourcesWithPagination({
-        makeRequest: (url: string) =>
-          this.makeRequest<EhrFhirResourceBundle>({
+        makeRequest: async (url: string) => {
+          const bundle = await this.makeRequest<EhrFhirResourceBundle>({
             cxId,
             patientId: canvasPatientId,
             s3Path: `fhir-resources-${resourceType}/resourceId/${resourceId}`,
@@ -1128,7 +1128,9 @@ class CanvasApi {
             additionalInfo,
             debug,
             useFhir: true,
-          }),
+          });
+          return convertBundleToValidStrictBundle(bundle, resourceType, canvasPatientId);
+        },
         url: resourceTypeUrl,
       });
     const bundle = await fetchEhrBundleUsingCache({
