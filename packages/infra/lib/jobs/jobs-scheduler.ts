@@ -1,5 +1,6 @@
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import { IVpc } from "aws-cdk-lib/aws-ec2";
+import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
 import { Construct } from "constructs";
 import { EnvConfig } from "../../config/env-config";
 import { getConfig } from "../shared/config";
@@ -23,16 +24,16 @@ function getSettings(props: JobsSchedulerProps, config: NonNullable<EnvConfig["j
   };
 }
 
-export function createJobsScheduler(props: JobsSchedulerProps) {
+export function createJobsScheduler(props: JobsSchedulerProps): Lambda | undefined {
   const config = getConfig();
-  if (!config.jobs) return;
+  if (!config.jobs) return undefined;
 
   const { stack, lambdaLayers, vpc, alarmSnsAction, name, scheduleExpression, url } = getSettings(
     props,
     config.jobs
   );
 
-  createScheduledLambda({
+  const lambda = createScheduledLambda({
     stack,
     layers: [lambdaLayers.shared],
     name,
@@ -42,4 +43,6 @@ export function createJobsScheduler(props: JobsSchedulerProps) {
     alarmSnsAction,
     envType: config.environmentType,
   });
+
+  return lambda;
 }
