@@ -5,7 +5,7 @@ import { getConsolidatedFile } from "../../../../../../command/consolidated/cons
 import { computeResourcesXorAlongResourceType } from "../../../../../../fhir-deduplication/compute-resources-xor";
 import { deduplicateResources } from "../../../../../../fhir-deduplication/dedup-resources";
 import { out } from "../../../../../../util/log";
-import { setJobEntryStatus } from "../../../../api/job/set-entry-status";
+import { setJobEntryStatus } from "../../../../../../command/job/patient/api/set-entry-status";
 import { BundleType } from "../../../../bundle/bundle-shared";
 import { createOrReplaceBundle } from "../../../../bundle/command/create-or-replace-bundle";
 import { fetchBundle, FetchBundleParams } from "../../../../bundle/command/fetch-bundle";
