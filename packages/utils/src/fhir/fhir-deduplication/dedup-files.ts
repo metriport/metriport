@@ -1,14 +1,14 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
-import { Bundle, Resource, Patient } from "@medplum/fhirtypes";
+import { Bundle, Patient, Resource } from "@medplum/fhirtypes";
 import { MetriportMedicalApi } from "@metriport/api-sdk";
-import { merge } from "@metriport/core/command/consolidated/consolidated-create";
-import { toFHIR as patientToFhir } from "@metriport/core/external/fhir/patient/conversion";
 import {
   buildBundleEntry,
   buildCollectionBundle,
+  dangerouslyAddEntriesToBundle,
 } from "@metriport/core/external/fhir/bundle/bundle";
+import { toFHIR as patientToFhir } from "@metriport/core/external/fhir/patient/conversion";
 import { dangerouslyDeduplicateFhir } from "@metriport/core/fhir-deduplication/deduplicate-fhir";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { getFileContents, getFileNames, makeDir } from "@metriport/core/util/fs";
@@ -120,7 +120,7 @@ async function createOrGetBundles(createBundle: boolean, patientId?: string) {
       console.log(`No valid bundle found in ${filePath}, skipping`);
       return;
     }
-    merge(singleConversion).into(mergedBundle);
+    dangerouslyAddEntriesToBundle(mergedBundle, singleConversion.entry);
   });
 
   const conversions = mergedBundle.entry ?? [];

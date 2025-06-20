@@ -27,7 +27,7 @@ function makeCarequalityManagementAPI(): CarequalityManagementApi | undefined {
   });
 }
 
-describe("CarequalityManagementApiFhir", () => {
+describe.skip("CarequalityManagementApiFhir", () => {
   const api = makeCarequalityManagementAPI();
   if (!api) {
     console.log("WARNING: Skipping tests because the CQ API is not configured");

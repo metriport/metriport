@@ -11,10 +11,10 @@ import { EnvConfig } from "../../config/env-config";
 import { EnvType } from "../env-type";
 import { createLambda } from "../shared/lambda";
 import { LambdaLayers } from "../shared/lambda-layers";
+import { buildSecret } from "../shared/secrets";
 import { LambdaSettings, QueueAndLambdaSettings } from "../shared/settings";
 import { createQueue } from "../shared/sqs";
 import { SurescriptsAssets } from "./types";
-import { buildSecret } from "../shared/secrets";
 
 const sftpActionTimeout = Duration.seconds(30);
 const sendPatientRequestLambdaTimeout = Duration.seconds(30);
@@ -22,8 +22,9 @@ const sendBatchRequestLambdaTimeout = Duration.minutes(5);
 const verifyRequestInHistoryLambdaTimeout = Duration.seconds(30);
 const receiveVerificationLambdaTimeout = Duration.seconds(30);
 const receiveResponseLambdaTimeout = Duration.seconds(30);
+const convertPatientResponseLambdaTimeout = Duration.seconds(30);
+const convertBatchResponseLambdaTimeout = Duration.minutes(5);
 const alarmMaxAgeOfOldestMessage = Duration.hours(1);
-const apiUrlEnvVarName = "API_URL";
 
 interface SurescriptsSettings {
   sendPatientRequest: QueueAndLambdaSettings;
@@ -33,14 +34,11 @@ interface SurescriptsSettings {
   receiveResponse: QueueAndLambdaSettings;
 }
 
-const sftpActionSettings: LambdaSettings = {
-  name: "SurescriptsSftpAction",
-  entry: "surescripts/sftp-action",
-  lambda: {
-    memory: 1024,
-    timeout: sftpActionTimeout,
-  },
-};
+interface SurescriptsLambdaSettings {
+  sftpAction: LambdaSettings;
+  convertPatientResponse: LambdaSettings;
+  convertBatchResponse: LambdaSettings;
+}
 
 const settings: SurescriptsSettings = {
   sendPatientRequest: {
@@ -108,7 +106,7 @@ const settings: SurescriptsSettings = {
     name: "SurescriptsReceiveVerification",
     entry: "surescripts/receive-verification",
     lambda: {
-      memory: 1024,
+      memory: 512,
       timeout: receiveVerificationLambdaTimeout,
     },
     queue: {
@@ -145,6 +143,33 @@ const settings: SurescriptsSettings = {
       maxConcurrency: 100,
     },
     waitTime: Duration.seconds(0),
+  },
+};
+
+const surescriptsLambdaSettings: SurescriptsLambdaSettings = {
+  sftpAction: {
+    name: "SurescriptsSftpAction",
+    entry: "surescripts/sftp-action",
+    lambda: {
+      memory: 1024,
+      timeout: sftpActionTimeout,
+    },
+  },
+  convertPatientResponse: {
+    name: "SurescriptsConvertPatientResponse",
+    entry: "surescripts/convert-patient-response",
+    lambda: {
+      memory: 1024,
+      timeout: convertPatientResponseLambdaTimeout,
+    },
+  },
+  convertBatchResponse: {
+    name: "SurescriptsConvertBatchResponse",
+    entry: "surescripts/convert-batch-response",
+    lambda: {
+      memory: 1024,
+      timeout: convertBatchResponseLambdaTimeout,
+    },
   },
 };
 
@@ -202,6 +227,8 @@ interface SurescriptsNestedStackProps extends NestedStackProps {
 
 export class SurescriptsNestedStack extends NestedStack {
   private readonly sftpActionLambda: Lambda;
+  private readonly convertPatientResponseLambda: Lambda;
+  private readonly convertBatchResponseLambda: Lambda;
   private readonly sendPatientRequestLambda: Lambda;
   private readonly sendPatientRequestQueue: Queue;
   private readonly sendBatchRequestLambda: Lambda;
@@ -252,11 +279,23 @@ export class SurescriptsNestedStack extends NestedStack {
       envVars,
     };
 
-    const sftpAction = this.setupLambda(sftpActionSettings, {
+    const sftpAction = this.setupLambda("sftpAction", {
       ...commonConfig,
       surescriptsReplicaBucket: this.surescriptsReplicaBucket,
     });
     this.sftpActionLambda = sftpAction.lambda;
+
+    const convertPatientResponse = this.setupLambda("convertPatientResponse", {
+      ...commonConfig,
+      surescriptsReplicaBucket: this.surescriptsReplicaBucket,
+    });
+    this.convertPatientResponseLambda = convertPatientResponse.lambda;
+
+    const convertBatchResponse = this.setupLambda("convertBatchResponse", {
+      ...commonConfig,
+      surescriptsReplicaBucket: this.surescriptsReplicaBucket,
+    });
+    this.convertBatchResponseLambda = convertBatchResponse.lambda;
 
     const sendPatientRequest = this.setupLambdaAndQueue("sendPatientRequest", {
       ...commonConfig,
@@ -310,12 +349,27 @@ export class SurescriptsNestedStack extends NestedStack {
       this.verifyRequestInHistoryLambda,
       this.receiveVerificationLambda,
       this.receiveResponseLambda,
+      this.convertPatientResponseLambda,
+      this.convertBatchResponseLambda,
     ];
   }
 
   getAssets(): SurescriptsAssets {
     return {
-      surescriptsLambdas: this.getLambdas(),
+      surescriptsLambdas: [
+        {
+          envVarName: "SURESCRIPTS_SFTP_ACTION_LAMBDA_NAME",
+          lambda: this.sftpActionLambda,
+        },
+        {
+          envVarName: "SURESCRIPTS_CONVERT_PATIENT_RESPONSE_LAMBDA_NAME",
+          lambda: this.convertPatientResponseLambda,
+        },
+        {
+          envVarName: "SURESCRIPTS_CONVERT_BATCH_RESPONSE_LAMBDA_NAME",
+          lambda: this.convertBatchResponseLambda,
+        },
+      ],
       surescriptsQueues: [
         {
           envVarName: "SURESCRIPTS_SEND_PATIENT_REQUEST_QUEUE_URL",
@@ -351,15 +405,13 @@ export class SurescriptsNestedStack extends NestedStack {
       receiveResponseQueue: this.receiveResponseQueue,
       surescriptsReplicaBucket: this.surescriptsReplicaBucket,
       pharmacyConversionBucket: this.pharmacyConversionBucket,
+      convertPatientResponseLambda: this.convertPatientResponseLambda,
+      convertBatchResponseLambda: this.convertBatchResponseLambda,
     };
   }
 
-  setApiUrl(apiUrl: string): void {
-    this.getLambdas().forEach(lambda => lambda.addEnvironment(apiUrlEnvVarName, apiUrl));
-  }
-
-  private setupLambda(
-    settings: LambdaSettings,
+  private setupLambda<T extends keyof SurescriptsLambdaSettings>(
+    job: T,
     props: {
       lambdaLayers: LambdaLayers;
       vpc: ec2.IVpc;
@@ -372,7 +424,7 @@ export class SurescriptsNestedStack extends NestedStack {
       pharmacyConversionBucket?: s3.Bucket;
     }
   ) {
-    const { name, entry, lambda: lambdaSettings } = settings;
+    const { name, entry, lambda: lambdaSettings } = surescriptsLambdaSettings[job];
 
     const {
       lambdaLayers,

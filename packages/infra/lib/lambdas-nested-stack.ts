@@ -24,7 +24,7 @@ import { addBedrockPolicyToLambda } from "./shared/bedrock";
 import { createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
 import { LambdaLayers } from "./shared/lambda-layers";
 import { createScheduledLambda } from "./shared/lambda-scheduled";
-import { Secrets, buildSecret } from "./shared/secrets";
+import { buildSecret, Secrets } from "./shared/secrets";
 import { createQueue } from "./shared/sqs";
 import { isSandbox } from "./shared/util";
 
@@ -46,6 +46,7 @@ interface LambdasNestedStackProps extends NestedStackProps {
   secrets: Secrets;
   dbCluster: rds.IDatabaseCluster;
   medicalDocumentsBucket: s3.Bucket;
+  pharmacyBundleBucket: s3.Bucket | undefined;
   sandboxSeedDataBucket: s3.IBucket | undefined;
   alarmAction?: SnsAction;
   featureFlagsTable: dynamodb.Table;
@@ -59,6 +60,7 @@ type GenericConsolidatedLambdaProps = {
   lambdaLayers: LambdaLayers;
   vpc: ec2.IVpc;
   bundleBucket: s3.IBucket;
+  pharmacyBundleBucket: s3.IBucket | undefined;
   conversionsBucket: s3.IBucket;
   envType: EnvType;
   fhirServerUrl: string;
@@ -196,6 +198,7 @@ export class LambdasNestedStack extends NestedStack {
       fhirServerUrl: props.config.fhirServerUrl,
       bundleBucket: props.medicalDocumentsBucket,
       conversionsBucket: this.fhirConverterConnector.bucket,
+      pharmacyBundleBucket: props.pharmacyBundleBucket,
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: props.alarmAction,
@@ -209,6 +212,7 @@ export class LambdasNestedStack extends NestedStack {
       fhirServerUrl: props.config.fhirServerUrl,
       bundleBucket: props.medicalDocumentsBucket,
       conversionsBucket: this.fhirConverterConnector.bucket,
+      pharmacyBundleBucket: props.pharmacyBundleBucket,
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: props.alarmAction,
@@ -656,6 +660,7 @@ export class LambdasNestedStack extends NestedStack {
     fhirServerUrl,
     bundleBucket,
     conversionsBucket,
+    pharmacyBundleBucket,
     sentryDsn,
     envType,
     alarmAction,
@@ -677,6 +682,9 @@ export class LambdasNestedStack extends NestedStack {
         BUCKET_NAME: bundleBucket.bucketName,
         MEDICAL_DOCUMENTS_BUCKET_NAME: bundleBucket.bucketName,
         CONVERSION_RESULT_BUCKET_NAME: conversionsBucket.bucketName,
+        ...(pharmacyBundleBucket && {
+          PHARMACY_CONVERSION_BUCKET_NAME: pharmacyBundleBucket.bucketName,
+        }),
         FEATURE_FLAGS_TABLE_NAME: featureFlagsTable.tableName,
         ...(bedrock && {
           // API_URL set on the api-stack after the OSS API is created
@@ -697,6 +705,7 @@ export class LambdasNestedStack extends NestedStack {
 
     bundleBucket.grantReadWrite(theLambda);
     conversionsBucket.grantRead(theLambda);
+    pharmacyBundleBucket?.grantRead(theLambda);
 
     featureFlagsTable.grantReadData(theLambda);
 
