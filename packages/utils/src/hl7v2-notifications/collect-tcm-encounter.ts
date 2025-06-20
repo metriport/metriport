@@ -21,7 +21,7 @@ dayjs.extend(duration);
  * Usage:
  * - Set the LOOKBACK_WINDOW environment variable (default: 7d)
  * - Set the CX_ID environment variable
- * - Run with: npm run collect-tcm-encounter
+ * - Run with: npx ts-node src/hl7v2-notifications/collect-tcm-encounter.ts
  */
 
 // Configuration
