@@ -1,6 +1,8 @@
 import { PatientCohort } from "@metriport/core/domain/cohort";
 import { DataTypes, Sequelize } from "sequelize";
 import { BaseModel, ModelSetup } from "../_default";
+import { CohortModel } from "./cohort";
+import { PatientModel } from "./patient";
 
 export class PatientCohortModel extends BaseModel<PatientCohortModel> implements PatientCohort {
   static NAME = "patient_cohort";
@@ -14,9 +16,17 @@ export class PatientCohortModel extends BaseModel<PatientCohortModel> implements
         ...BaseModel.attributes(),
         patientId: {
           type: DataTypes.UUID,
+          references: {
+            model: PatientModel.NAME,
+            key: "id",
+          },
         },
         cohortId: {
           type: DataTypes.UUID,
+          references: {
+            model: CohortModel.NAME,
+            key: "id",
+          },
         },
       },
       {
@@ -24,5 +34,13 @@ export class PatientCohortModel extends BaseModel<PatientCohortModel> implements
         tableName: this.NAME,
       }
     );
+  };
+
+  static associate = (models: { CohortModel: typeof CohortModel }) => {
+    PatientCohortModel.belongsTo(models.CohortModel, {
+      foreignKey: "cohortId",
+      targetKey: "id",
+      as: "Cohort",
+    });
   };
 }
