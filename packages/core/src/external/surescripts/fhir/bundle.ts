@@ -5,8 +5,7 @@ import { IncomingData } from "../schema/shared";
 import { initializeContext } from "./shared";
 import { getAllBundleEntries } from "./bundle-entry";
 
-// TODO: uncomment this, rebuild core, and run utils script again
-// import { dangerouslyDeduplicateFhir } from "../../../fhir-deduplication/deduplicate-fhir";
+import { dangerouslyDeduplicateFhir } from "../../../fhir-deduplication/deduplicate-fhir";
 import { hydrateFhir } from "../../fhir/hydration/hydrate-fhir";
 import { crosswalkNdcToRxNorm } from "../../term-server";
 import { NDC_URL } from "../../../util/constants";
@@ -22,7 +21,7 @@ export async function convertIncomingDataToFhirBundle(
     const entries = getAllBundleEntries(context, detail);
     bundle.entry?.push(...entries);
   }
-  // dangerouslyDeduplicateFhir(bundle, cxId, patientId);
+  dangerouslyDeduplicateFhir(bundle, cxId, patientId);
   await dangerouslyHydrateMedications(bundle);
   await hydrateFhir(bundle, console.log);
 
