@@ -223,7 +223,7 @@ router.delete(
     });
 
     return res
-      .status(status.NO_CONTENT)
+      .status(status.OK)
       .json({ message: "Patient(s) unassigned from cohort", unassignedCount });
   })
 );
