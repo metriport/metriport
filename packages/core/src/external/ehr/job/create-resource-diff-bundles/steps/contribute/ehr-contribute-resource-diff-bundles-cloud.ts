@@ -2,7 +2,7 @@ import { executeWithNetworkRetries } from "@metriport/shared";
 import { createUuidFromText } from "@metriport/shared/common/uuid";
 import { Config } from "../../../../../../util/config";
 import { SQSClient } from "../../../../../aws/sqs";
-import { createSqsGroupId } from "../../create-resource-diff-bundle-shared";
+import { createSqsGroupId } from "../../shared";
 import {
   ContributeResourceDiffBundlesRequest,
   EhrContributeResourceDiffBundlesHandler,
@@ -21,10 +21,9 @@ export class EhrContributeResourceDiffBundlesCloud
 
   constructor(
     private readonly ehrContributeDiffBundlesQueueUrl: string,
-    region: string = Config.getAWSRegion(),
-    sqsClient?: SQSClient
+    sqsClient: SQSClient = new SQSClient({ region: Config.getAWSRegion() })
   ) {
-    this.sqsClient = sqsClient ?? new SQSClient({ region });
+    this.sqsClient = sqsClient;
   }
 
   async contributeResourceDiffBundles(params: ContributeResourceDiffBundlesRequest): Promise<void> {

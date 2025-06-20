@@ -16,10 +16,9 @@ export class EhrRefreshEhrBundlesCloud implements EhrRefreshEhrBundlesHandler {
 
   constructor(
     private readonly ehrRefreshEhrBundlesQueueUrl: string,
-    region: string = Config.getAWSRegion(),
-    sqsClient?: SQSClient
+    sqsClient: SQSClient = new SQSClient({ region: Config.getAWSRegion() })
   ) {
-    this.sqsClient = sqsClient ?? new SQSClient({ region });
+    this.sqsClient = sqsClient;
   }
 
   async refreshEhrBundles(params: RefreshEhrBundlesRequest): Promise<void> {
