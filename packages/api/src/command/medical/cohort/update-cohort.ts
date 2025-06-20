@@ -23,7 +23,7 @@ export async function updateCohort({
     const trimmedName = name.trim();
 
     const existingCohort = await getCohortByName({ cxId, name: trimmedName });
-    if (existingCohort) {
+    if (existingCohort && existingCohort.id !== id) {
       throw new BadRequestError("A cohort with this name already exists", undefined, {
         cxId,
         name: trimmedName,
