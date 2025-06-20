@@ -22,8 +22,8 @@ const paramsOpsSchemaCreateResourceDiffBundles = z.object({
  * POST /internal/ehr/:ehrId/job/create-resource-diff-bundles/run
  *
  * Runs the create resource diff bundles job.
- * @param req.query.cxId - The CX ID.
- * @param req.query.jobId - The job ID.
+ * @param req.body.cxId - The CX ID.
+ * @param req.body.jobId - The job ID.
  * @returns 200 OK
  */
 router.post(

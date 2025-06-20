@@ -1,14 +1,14 @@
 import Router from "express-promise-router";
+import { handleParams } from "../helpers/handle-params";
 import { facilityAuthorization } from "../middlewares/facility-authorization";
 import { patientAuthorization } from "../middlewares/patient-authorization";
-import { handleParams } from "../helpers/handle-params";
 import document from "./document";
 import facility from "./facility";
 import facilityRoot from "./facility-root";
+import networkEntry from "./network-entry";
 import organization from "./organization";
 import patient from "./patient";
 import patientRoot from "./patient-root";
-import networkEntry from "./network-entry";
 
 const routes = Router();
 

@@ -38,6 +38,7 @@ import {
 import { fromCreateResponseToDto, PatientImportDto } from "./dtos/patient-import";
 import { dtoFromModel, PatientDTO } from "./dtos/patientDTO";
 import { schemaCreateToPatientData, schemaDemographicsToPatientData } from "./schemas/patient";
+import { createSampleTcmEncounters } from "../../command/medical/tcm-encounter/create-sample-tcm-encounter";
 
 dayjs.extend(duration);
 
@@ -91,6 +92,10 @@ router.post(
       forceCarequality,
       settings,
     });
+
+    if (!Config.isProdEnv()) {
+      await createSampleTcmEncounters(cxId, patient.id);
+    }
 
     return res.status(httpStatus.CREATED).json(dtoFromModel(patient));
   })

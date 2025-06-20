@@ -16,7 +16,7 @@ export type FailJobParams = {
  *
  * @param jobId - The job ID.
  * @param cxId - The customer ID.
- * @param reason - The reason for cancelling the job.
+ * @param reason - The reason for failing the job.
  * @param forceStatusUpdate - Whether to force the status update (only to be used by internal flows/endpoints).
  * @param onFailed - The callback to call once the job is failed.
  * @returns the updated job.

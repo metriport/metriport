@@ -37,6 +37,7 @@ export async function startJobs({
   jobType,
   jobGroupId,
 }: StartJobsParams): Promise<void> {
+  const { log } = out("startJobs");
   const scheduledBefore = scheduledBeforeParam || buildDayjs().toDate();
   const status = statusParam || jobInitialStatus;
   const jobs = await getPatientJobs({
@@ -48,7 +49,7 @@ export async function startJobs({
     status,
   });
   if (jobs.length === 0) {
-    out("startJobs").log("No scheduled patient jobs found");
+    log("No scheduled patient jobs found");
     return;
   }
   const handler = buildRunJobHandler();
@@ -78,15 +79,21 @@ export async function startJobs({
   );
   if (runJobsErrors.length > 0) {
     const msg = "Failed to run some scheduled patient jobs";
+    const errors = runJobsErrors.map(error => ({
+      id: error.id,
+      cxId: error.cxId,
+      error: errorToString(error.error),
+    }));
+    log(
+      `${msg}. Cause: ${errors
+        .map(error => `jobId ${error.id} cxId ${error.cxId} ${error.error}`)
+        .join(",")}`
+    );
     capture.message(msg, {
       extra: {
         runJobsArgsCount: runJobsArgs.length,
         errorCount: runJobsErrors.length,
-        errors: runJobsErrors.map(error => ({
-          id: error.id,
-          cxId: error.cxId,
-          error: errorToString(error.error),
-        })),
+        errors,
         context: "patient-job.start-jobs",
       },
       level: "warning",

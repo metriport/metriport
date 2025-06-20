@@ -48,7 +48,7 @@ export function mapEncounterAndRelatedResources(adt: Hl7Message, patientId: stri
  *
  * @see {@link https://hl7.org/fhir/R4/valueset-encounter-status.html}
  */
-function getPatientStatus(messageType: Hl7MessageType): NonNullable<Encounter["status"]> {
+export function getPatientStatus(messageType: Hl7MessageType): NonNullable<Encounter["status"]> {
   switch (messageType.triggerEvent) {
     case "A01":
       return "in-progress";
@@ -64,7 +64,7 @@ function getPatientStatus(messageType: Hl7MessageType): NonNullable<Encounter["s
  *
  * @returns {Coding} - The corresponding FHIR Encounter class coding.
  */
-function getEncounterClass(adt: Hl7Message): Coding {
+export function getEncounterClass(adt: Hl7Message): Coding {
   const patientClassCode = getPatientClassCode(adt);
 
   if (!patientClassCode || !isAdtPatientClass(patientClassCode)) {

@@ -38,7 +38,6 @@ type EnvConfigBase = {
      * The API username to connect to the database.
      */
     username: string;
-
     /**
      * From CDK: A preferred maintenance window day/time range. Should be specified as a range ddd:hh24:mi-ddd:hh24:mi (24H Clock UTC).
      *

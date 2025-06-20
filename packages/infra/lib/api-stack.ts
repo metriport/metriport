@@ -46,6 +46,7 @@ import { EnvType } from "./env-type";
 import { FeatureFlagsNestedStack } from "./feature-flags-nested-stack";
 import { Hl7NotificationWebhookSenderNestedStack } from "./hl7-notification-webhook-sender-nested-stack";
 import { IHEGatewayV2LambdasNestedStack } from "./ihe-gateway-v2-stack";
+import { createJobsScheduler } from "./jobs/jobs-scheduler";
 import { JobsNestedStack } from "./jobs/jobs-stack";
 import { LambdasLayersNestedStack } from "./lambda-layers-nested-stack";
 import { CDA_TO_VIS_TIMEOUT, LambdasNestedStack } from "./lambdas-nested-stack";
@@ -376,6 +377,19 @@ export class APIStack extends Stack {
     });
 
     //-------------------------------------------
+    // Surescripts
+    //-------------------------------------------
+    let surescriptsStack: SurescriptsNestedStack | undefined = undefined;
+    if (props.config.surescripts) {
+      surescriptsStack = new SurescriptsNestedStack(this, "SurescriptsNestedStack", {
+        config: props.config,
+        vpc: this.vpc,
+        alarmAction: slackNotification?.alarmAction,
+        lambdaLayers,
+      });
+    }
+
+    //-------------------------------------------
     // General lambdas
     //-------------------------------------------
     const {
@@ -404,6 +418,7 @@ export class APIStack extends Stack {
       dbCluster,
       secrets,
       medicalDocumentsBucket,
+      pharmacyBundleBucket: surescriptsStack?.getAssets()?.pharmacyConversionBucket,
       sandboxSeedDataBucket,
       alarmAction: slackNotification?.alarmAction,
       bedrock: props.config.bedrock,
@@ -500,19 +515,6 @@ export class APIStack extends Stack {
       ehrResponsesBucket,
       medicalDocumentsBucket,
     });
-
-    //-------------------------------------------
-    // Surescripts
-    //-------------------------------------------
-    let surescriptsStack: SurescriptsNestedStack | undefined = undefined;
-    if (props.config.surescripts) {
-      surescriptsStack = new SurescriptsNestedStack(this, "SurescriptsNestedStack", {
-        config: props.config,
-        vpc: this.vpc,
-        alarmAction: slackNotification?.alarmAction,
-        lambdaLayers,
-      });
-    }
 
     //-------------------------------------------
     // Jobs
@@ -751,6 +753,14 @@ export class APIStack extends Stack {
     });
 
     createCqDirectoryRebuilder({
+      lambdaLayers,
+      stack: this,
+      vpc: this.vpc,
+      apiAddress: apiDirectUrl,
+      alarmSnsAction: slackNotification?.alarmAction,
+    });
+
+    createJobsScheduler({
       lambdaLayers,
       stack: this,
       vpc: this.vpc,

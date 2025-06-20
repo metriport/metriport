@@ -1,7 +1,8 @@
-import { SurescriptsConvertPatientResponseHandler } from "./convert-patient-response";
+import { convertPatientResponseToFhirBundle } from "../../fhir-converter";
 import { SurescriptsReplica } from "../../replica";
 import { SurescriptsConversionBundle, SurescriptsJob } from "../../types";
-import { convertPatientResponseToFhirBundle, uploadConversionBundle } from "../../fhir-converter";
+import { saveBundle } from "../bundle/save-bundle";
+import { SurescriptsConvertPatientResponseHandler } from "./convert-patient-response";
 
 export class SurescriptsConvertPatientResponseHandlerDirect
   implements SurescriptsConvertPatientResponseHandler
@@ -23,7 +24,7 @@ export class SurescriptsConvertPatientResponseHandlerDirect
     if (!conversionBundle) return undefined;
 
     const { patientId, bundle } = conversionBundle;
-    await uploadConversionBundle({ bundle, cxId, patientId, jobId: transmissionId });
+    await saveBundle({ bundle, cxId, patientId, jobId: transmissionId });
     return conversionBundle;
   }
 }
