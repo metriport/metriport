@@ -133,39 +133,13 @@ router.get(
 /** ---------------------------------------------------------------------------
  * GET /cohort/:id
  *
- * Returns cohort details and the count of patients assigned to it.
- *
- * @param req.param.id The ID of the cohort to get.
- * @returns Cohort details and count.
- */
-router.get(
-  "/:id",
-  handleParams,
-  requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getCxIdOrFail(req);
-    const id = getFromParamsOrFail("id", req);
-    const cohortWithCount = await getCohortWithCountOrFail({ id, cxId });
-
-    const cohortWithCountDTO: CohortWithCountDTO = {
-      cohort: dtoFromCohort(cohortWithCount.cohort),
-      patientCount: cohortWithCount.count,
-    };
-
-    return res.status(status.OK).json(cohortWithCountDTO);
-  })
-);
-
-/** ---------------------------------------------------------------------------
- * GET /cohort/:id/patient
- *
  * Returns cohort details, count and IDs of the patients assigned to it.
  *
  * @param req.param.id The ID of the cohort to get.
- * @returns Cohort details and count.
+ * @returns Cohort details, count and IDs of the patients assigned to it.
  */
 router.get(
-  "/:id/patient",
+  "/:id",
   handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
