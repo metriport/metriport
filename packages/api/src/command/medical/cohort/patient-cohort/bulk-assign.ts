@@ -1,10 +1,10 @@
+import { out } from "@metriport/core/util";
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { PatientCohortModel } from "../../../../models/medical/patient-cohort";
 import { allOrSelectPatientIdsRefinedSchema } from "../../../../routes/medical/schemas/shared";
 import { getPatientIds } from "../../patient/get-patient-read-only";
 import { CohortWithPatientIdsAndCount, getCohortModelOrFail } from "../get-cohort";
 import { getPatientIdsAssignedToCohort } from "./get-assigned-ids";
-import { out } from "@metriport/core/util";
 
 type BulkAssignPatientsToCohortParams = {
   cohortId: string;
@@ -25,9 +25,6 @@ export async function bulkAssignPatientsToCohort({
 
   const cohort = await getCohortModelOrFail({ id: cohortId, cxId });
   const validatedIds = await getPatientIds({ cxId, ids: uniquePatientIds });
-
-  const sequelize = PatientCohortModel.sequelize;
-  if (!sequelize) throw new Error("Sequelize not found");
 
   const assignments = validatedIds.map(patientId => ({
     id: uuidv7(),
