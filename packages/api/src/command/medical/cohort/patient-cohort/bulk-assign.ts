@@ -26,6 +26,7 @@ export async function bulkAssignPatientsToCohort({
   const uniquePatientIds = [...new Set(patientIds)];
 
   const cohort = await getCohortModelOrFail({ id: cohortId, cxId });
+  // If patient IDs is empty, we will get all patients for the cx
   const validatedIds = await getPatientIds({ cxId, patientIds: uniquePatientIds });
 
   const assignments = validatedIds.map(patientId => ({
