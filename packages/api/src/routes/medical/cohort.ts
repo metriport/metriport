@@ -176,7 +176,7 @@ router.post(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
-    const cohortId = getUUIDFrom("query", req, "cohortId").orFail();
+    const cohortId = getUUIDFrom("params", req, "id").orFail();
     const { patientIds, all: isAssignAll } = allOrSelectPatientIdsSchema.parse(req.body);
 
     const cohortDetails = await bulkAssignPatientsToCohort({
@@ -212,7 +212,7 @@ router.delete(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
-    const cohortId = getUUIDFrom("query", req, "cohortId").orFail();
+    const cohortId = getUUIDFrom("params", req, "id").orFail();
     const { patientIds, all: isRemoveAll } = allOrSelectPatientIdsSchema.parse(req.body);
 
     const unassignedCount = await bulkRemovePatientsFromCohort({
