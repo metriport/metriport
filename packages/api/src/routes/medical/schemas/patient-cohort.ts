@@ -4,11 +4,7 @@ export const patientCohortAssignmentSchema = z.object({
   cohortId: z.string(),
 });
 
-export const bulkPatientCohortAssignmentSchema = z.object({
-  patientIds: z.array(z.string()),
-});
-
-export const bulkPatientCohortRemovalSchema = z
+export const bulkPatientCohortSchema = z
   .object({
     patientIds: z.array(z.string()).optional(),
     all: z.boolean().optional(),

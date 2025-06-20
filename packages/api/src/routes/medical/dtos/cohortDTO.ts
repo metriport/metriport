@@ -8,8 +8,16 @@ export type CohortDTO = {
   monitoring?: {
     adt?: boolean;
   };
-  otherSettings?: Record<string, unknown>;
   dateCreated?: Date;
+};
+
+export type CohortWithCountDTO = {
+  cohort: CohortDTO;
+  patientCount: number;
+};
+
+export type CohortWithPatientIdsAndCountDTO = CohortWithCountDTO & {
+  patientIds: string[];
 };
 
 export function dtoFromCohort(cohort: Cohort): CohortDTO {

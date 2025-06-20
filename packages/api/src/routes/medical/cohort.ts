@@ -3,22 +3,25 @@ import Router from "express-promise-router";
 import status from "http-status";
 import { createCohort } from "../../command/medical/cohort/create-cohort";
 import { deleteCohort } from "../../command/medical/cohort/delete-cohort";
-import { getCohortWithCountOrFail, getCohorts } from "../../command/medical/cohort/get-cohort";
 import {
-  bulkAssignPatientsToCohort,
-  bulkRemovePatientsFromCohort,
-} from "../../command/medical/cohort/patient-cohort/patient-cohort";
+  CohortWithCount,
+  getCohorts,
+  getCohortWithCountOrFail,
+} from "../../command/medical/cohort/get-cohort";
+import { bulkAssignPatientsToCohort } from "../../command/medical/cohort/patient-cohort/bulk-assign";
+import { bulkRemovePatientsFromCohort } from "../../command/medical/cohort/patient-cohort/bulk-unassign";
 import { updateCohort } from "../../command/medical/cohort/update-cohort";
 import { getETag } from "../../shared/http";
 import { handleParams } from "../helpers/handle-params";
 import { requestLogger } from "../helpers/request-logger";
 import { asyncHandler, getCxIdOrFail, getFromParamsOrFail } from "../util";
-import { dtoFromCohort } from "./dtos/cohortDTO";
-import { cohortCreateSchema, cohortUpdateSchema } from "./schemas/cohort";
 import {
-  bulkPatientCohortAssignmentSchema,
-  bulkPatientCohortRemovalSchema,
-} from "./schemas/patient-cohort";
+  CohortWithCountDTO,
+  CohortWithPatientIdsAndCountDTO,
+  dtoFromCohort,
+} from "./dtos/cohortDTO";
+import { cohortCreateSchema, cohortUpdateSchema } from "./schemas/cohort";
+import { bulkPatientCohortSchema } from "./schemas/patient-cohort";
 
 const router = Router();
 
@@ -104,7 +107,7 @@ router.delete(
  *
  * Returns all cohorts defined by the CX.
  *
- * @returns List of cohorts and count.
+ * @returns List of cohorts with count of patients assigned to them.
  */
 router.get(
   "/",
@@ -114,13 +117,15 @@ router.get(
 
     const cohortsWithCounts = await getCohorts({ cxId });
 
+    const buildCohortWithCountDTO = (cohortWithCount: CohortWithCount): CohortWithCountDTO => {
+      return {
+        cohort: dtoFromCohort(cohortWithCount.cohort),
+        patientCount: cohortWithCount.count,
+      };
+    };
+
     return res.status(status.OK).json({
-      cohorts: cohortsWithCounts.map(cohortWithCount => {
-        return {
-          cohort: dtoFromCohort(cohortWithCount.cohort),
-          patientCount: cohortWithCount.count,
-        };
-      }),
+      cohorts: cohortsWithCounts.map(buildCohortWithCountDTO),
     });
   })
 );
@@ -142,10 +147,12 @@ router.get(
     const id = getFromParamsOrFail("id", req);
     const cohortWithCount = await getCohortWithCountOrFail({ id, cxId });
 
-    return res.status(status.OK).json({
+    const cohortWithCountDTO: CohortWithCountDTO = {
       cohort: dtoFromCohort(cohortWithCount.cohort),
       patientCount: cohortWithCount.count,
-    });
+    };
+
+    return res.status(status.OK).json(cohortWithCountDTO);
   })
 );
 
@@ -165,13 +172,15 @@ router.get(
     const cxId = getCxIdOrFail(req);
     const id = getFromParamsOrFail("id", req);
 
-    const cohortWithCount = await getCohortWithCountOrFail({ id, cxId });
+    const cohortDetails = await getCohortWithCountOrFail({ id, cxId });
 
-    return res.status(status.OK).json({
-      cohort: dtoFromCohort(cohortWithCount.cohort),
-      patientCount: cohortWithCount.count,
-      patientIds: cohortWithCount.patientIds,
-    });
+    const cohortWithPatientIdsAndCountDTO: CohortWithPatientIdsAndCountDTO = {
+      cohort: dtoFromCohort(cohortDetails.cohort),
+      patientCount: cohortDetails.count,
+      patientIds: cohortDetails.patientIds,
+    };
+
+    return res.status(status.OK).json(cohortWithPatientIdsAndCountDTO);
   })
 );
 
@@ -191,19 +200,22 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const cohortId = getFromParamsOrFail("id", req);
-    const { patientIds } = bulkPatientCohortAssignmentSchema.parse(req.body);
+    const { patientIds, all: isAssignAll } = bulkPatientCohortSchema.parse(req.body);
 
-    const cohortWithCount = await bulkAssignPatientsToCohort({
+    const cohortDetails = await bulkAssignPatientsToCohort({
       cohortId,
       cxId,
       patientIds,
+      isAssignAll,
     });
 
-    return res.status(status.CREATED).json({
-      cohort: dtoFromCohort(cohortWithCount.cohort),
-      patientCount: cohortWithCount.count,
-      patientIds: cohortWithCount.patientIds,
-    });
+    const cohortWithPatientIdsAndCountDTO: CohortWithPatientIdsAndCountDTO = {
+      cohort: dtoFromCohort(cohortDetails.cohort),
+      patientCount: cohortDetails.count,
+      patientIds: cohortDetails.patientIds,
+    };
+
+    return res.status(status.CREATED).json(cohortWithPatientIdsAndCountDTO);
   })
 );
 
@@ -213,7 +225,8 @@ router.post(
  * Bulk remove patients from a cohort.
  *
  * @param req.param.id The ID of the cohort to remove patients from.
- * @param req.body Either list of patient IDs or all flag.
+ * @param req.body.patientIds The list of patient IDs to remove. Mutually exclusive with the all flag.
+ * @param req.body.all Flag to confirm we want to remove all patients from the cohort. Mutually exclusive with the patientIds list.
  * @returns 204 No Content
  */
 router.delete(
@@ -223,18 +236,18 @@ router.delete(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const cohortId = getFromParamsOrFail("id", req);
-    const { patientIds, all } = bulkPatientCohortRemovalSchema.parse(req.body);
+    const { patientIds, all: isRemoveAll } = bulkPatientCohortSchema.parse(req.body);
 
-    const countUnassigned = await bulkRemovePatientsFromCohort({
+    const unassignedCount = await bulkRemovePatientsFromCohort({
       cohortId,
       cxId,
       patientIds,
-      all,
+      isRemoveAll,
     });
 
     return res
       .status(status.NO_CONTENT)
-      .json({ message: "Patient(s) unassigned from cohort", count: countUnassigned });
+      .json({ message: "Patient(s) unassigned from cohort", unassignedCount });
   })
 );
 

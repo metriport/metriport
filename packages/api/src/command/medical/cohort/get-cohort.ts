@@ -2,11 +2,11 @@ import { Cohort } from "@metriport/core/domain/cohort";
 import { NotFoundError } from "@metriport/shared";
 import { col, fn, Transaction } from "sequelize";
 import { CohortModel } from "../../../models/medical/cohort";
-import { getPatientIdsAssignedToCohort } from "./patient-cohort/patient-cohort";
+import { getPatientIdsAssignedToCohort } from "./patient-cohort/get-assigned-ids";
 
 const countAttr = "count";
 
-type CohortWithCount = { cohort: Cohort; count: number };
+export type CohortWithCount = { cohort: Cohort; count: number };
 export type CohortWithPatientIdsAndCount = CohortWithCount & { patientIds: string[] };
 
 export type GetCohortProps = {
