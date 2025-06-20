@@ -17,7 +17,8 @@ const router = Router();
 /** ---------------------------------------------------------------------------
  * PUT /dash-oss/medical/v1/tcm/encounter/:id
  *
- * Updates an existing TCM encounter.
+ * Updates an existing TCM encounter. This endpoint is used by the frontend, and does not allow
+ * the frontend to create new tcm encounters.
  *
  * @param req.params.id The ID of the TCM encounter to update.
  * @param req.body The data to update the TCM encounter.

@@ -1,22 +1,11 @@
 import { v4 as uuidv4 } from "uuid";
-import { TcmEncounterEventType } from "../../../domain/medical/tcm-encounter";
 import { TcmEncounterModel } from "../../../models/medical/tcm-encounter";
+import { TcmEncounterCreate } from "../../../routes/medical/schemas/tcm-encounter";
 
-export type CreateTcmEncounter = {
-  cxId: string;
-  patientId: string;
-  facilityName: string;
-  latestEvent: TcmEncounterEventType;
-  class: string;
-  admitTime?: Date | undefined;
-  dischargeTime?: Date | null | undefined;
-  clinicalInformation: Record<string, unknown>;
-};
-
-export async function createTcmEncounter(data: CreateTcmEncounter): Promise<TcmEncounterModel> {
+export async function createTcmEncounter(data: TcmEncounterCreate): Promise<TcmEncounterModel> {
   const encounter = await TcmEncounterModel.create({
     ...data,
-    id: uuidv4(),
+    id: data.id || uuidv4(),
   });
   return encounter;
 }

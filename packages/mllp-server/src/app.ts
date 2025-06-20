@@ -45,6 +45,7 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
       withErrorHandling(async ({ message }) => {
         const timestamp = basicToExtendedIso8601(getOrCreateMessageDatetime(message));
         const messageId = getMessageUniqueIdentifier(message);
+
         log(
           `${timestamp}> New Message (id: ${messageId}) from ${connection.socket.remoteAddress}:${connection.socket.remotePort}`
         );
