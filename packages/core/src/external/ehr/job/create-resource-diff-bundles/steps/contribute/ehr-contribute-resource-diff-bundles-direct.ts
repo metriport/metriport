@@ -200,11 +200,11 @@ function prepareEhrOnlyResourcesForContribution(
         ? metriportPatientId
         : createUuidFromText(`${ehr}_${oldResourceId}`);
     resourceIdMap.set(newResourceId, oldResourceId);
-    preparedEhrOnlyResources = replaceResourceId(
-      preparedEhrOnlyResources,
+    preparedEhrOnlyResources = replaceResourceId({
+      resources: preparedEhrOnlyResources,
       oldResourceId,
-      newResourceId
-    );
+      newResourceId,
+    });
   }
   for (const resource of preparedEhrOnlyResources) {
     if (!resource.id) continue;
@@ -230,14 +230,18 @@ function dangerouslyAdjustExtensions(resource: any, predecessorId: string, ehr: 
   resource.extension = [...(resource.extension ?? []), predecessorExtension, dataSourceExtension];
 }
 
-function replaceResourceId(
-  resources: Resource[],
-  oldResourceId: string,
-  newResourceId: string
-): Resource[] {
+function replaceResourceId({
+  resources,
+  oldResourceId,
+  newResourceId,
+}: {
+  resources: Resource[];
+  oldResourceId: string;
+  newResourceId: string;
+}): Resource[] {
   const resourcesAsString = JSON.stringify(resources);
   const resourcesAsStringWithReplacedId = resourcesAsString.replace(
-    `/${oldResourceId}/g`,
+    new RegExp(oldResourceId, "g"),
     newResourceId
   );
   return JSON.parse(resourcesAsStringWithReplacedId);
