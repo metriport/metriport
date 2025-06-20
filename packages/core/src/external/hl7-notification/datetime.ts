@@ -1,0 +1,133 @@
+import { Hl7Field, Hl7Message, Hl7Segment } from "@medplum/core";
+import dayjs from "dayjs";
+import timezone from "dayjs/plugin/timezone";
+import utc from "dayjs/plugin/utc";
+import { flow } from "lodash";
+import { getSendingApplication } from "../../command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/msh";
+import { capture, out } from "../../util";
+
+// Extend dayjs with timezone support
+dayjs.extend(utc);
+dayjs.extend(timezone);
+
+const MSH_DATETIME_OF_MESSAGE_INDEX = 7;
+const EVN_RECORDED_DATETIME_INDEX = 2;
+const EVN_DATETIME_PLANNED_EVENT_INDEX = 3;
+const EVN_EVENT_OCCURRED_INDEX = 6;
+const PV1_ADMIT_DATE_INDEX = 44;
+const PV1_DISCHARGE_DATE_INDEX = 45;
+const PID_DEATH_DATETIME_INDEX = 29;
+const NK1_ROLE_START_DATE_INDEX = 8;
+const NK1_ROLE_END_DATE_INDEX = 9;
+const PV2_EXPECTED_ADMIT_DATE_INDEX = 8;
+const PV2_EXPECTED_DISCHARGE_DATE_INDEX = 9;
+const DG1_DIAGNOSIS_DATETIME_INDEX = 5;
+
+export function utcifyHl7Message(message: Hl7Message): Hl7Message {
+  return flow(
+    message => utcifyHl7Components(message, "MSH", MSH_DATETIME_OF_MESSAGE_INDEX, 1),
+    message => utcifyHl7Components(message, "EVN", EVN_RECORDED_DATETIME_INDEX, 1),
+    message => utcifyHl7Components(message, "EVN", EVN_DATETIME_PLANNED_EVENT_INDEX, 1),
+    message => utcifyHl7Components(message, "EVN", EVN_EVENT_OCCURRED_INDEX, 1),
+    message => utcifyHl7Components(message, "PID", PID_DEATH_DATETIME_INDEX, 1),
+    message => utcifyHl7Components(message, "PV1", PV1_ADMIT_DATE_INDEX, 1),
+    message => utcifyHl7Components(message, "PV1", PV1_DISCHARGE_DATE_INDEX, 1),
+    message => utcifyHl7Components(message, "PV2", PV2_EXPECTED_ADMIT_DATE_INDEX, 1),
+    message => utcifyHl7Components(message, "PV2", PV2_EXPECTED_DISCHARGE_DATE_INDEX, 1),
+    message => utcifyHl7Components(message, "DG1", DG1_DIAGNOSIS_DATETIME_INDEX, 1),
+    message => utcifyHl7Components(message, "NK1", NK1_ROLE_START_DATE_INDEX, 1),
+    message => utcifyHl7Components(message, "NK1", NK1_ROLE_END_DATE_INDEX, 1)
+  )(message);
+}
+
+function utcifyHl7Components(
+  message: Hl7Message,
+  segmentName: string,
+  fieldIndex: number,
+  componentIndex: number
+): Hl7Message {
+  const { log } = out("utcifyHl7Components");
+  const hiePartner = getSendingApplication(message);
+
+  /**
+   * TODO: Properly timezoneify the message using getHieTimezone, which requires making response format requests over email
+   * Temporary to get Hixny ADTs correct for now.
+   * */
+  const resolvedTimezone = hiePartner !== "HIXNY" ? "UTC" : "America/New_York";
+
+  const updatedSegments = message.segments.map(segment => {
+    if (segment.name !== segmentName) return segment;
+
+    let component = segment.getComponent(fieldIndex, componentIndex)?.trim();
+    const noComponent = !component || component === "";
+    if (noComponent) return segment;
+
+    component = stripTimezoneOffset(component, segmentName, fieldIndex);
+    component = stripSubseconds(component);
+
+    let componentUtc;
+    try {
+      componentUtc = dayjs
+        .tz(component, "YYYYMMDDHHmmss", resolvedTimezone)
+        .utc()
+        .format("YYYYMMDDHHmmss");
+    } catch (e) {
+      log(`Error UTCifying component ${component} in segment ${segmentName}`, e);
+      capture.error(e);
+      return segment;
+    }
+
+    const newFields = [...segment.fields];
+    /**
+     * For some reason @medplum/core seems to be indexing MSH differently than the other segments.
+     */
+    const index = segmentName === "MSH" ? fieldIndex - 1 : fieldIndex;
+    newFields[index] = new Hl7Field([[componentUtc]], segment.context);
+
+    return new Hl7Segment(newFields, segment.context);
+  });
+
+  return new Hl7Message(updatedSegments, message.context);
+}
+
+/**
+ * Strips timezone offset (e.g., +0400, -0500) from HL7 datetime string
+ *
+ * Doing this for now to simplify parsing, as there aren't consistently followed formats,
+ * and the vast majority of the time no timezone offset is present.
+ */
+function stripTimezoneOffset(component: string, segmentName: string, fieldIndex: number): string {
+  // Match HL7 datetime format (8-14 digits) followed by timezone offset
+  const timezoneMatch = component.match(/^([\d.]+)([+-]\d{4})$/);
+  if (timezoneMatch) {
+    const [, dateTimePart, offsetPart] = timezoneMatch;
+    if (dateTimePart && offsetPart) {
+      capture.message(
+        `Dropped timezone offset ${offsetPart} in HL7 datetime field, stripping timezone`,
+        {
+          extra: { segmentName, fieldIndex, originalComponent: component, offset: offsetPart },
+          level: "warning",
+        }
+      );
+      return dateTimePart;
+    }
+  }
+  return component;
+}
+
+/**
+ * Strips subsecond units (e.g., .123) from HL7 datetime string
+ *
+ * This is done to simplify parsing, as there aren't consistently followed formats,
+ * and the vast majority of the time no subsecond units are present.
+ */
+function stripSubseconds(component: string): string {
+  const subsecondMatch = component.match(/^(\d{14})(\.\d+)$/);
+  if (subsecondMatch) {
+    const [, dateTimePart] = subsecondMatch;
+    if (dateTimePart) {
+      return dateTimePart;
+    }
+  }
+  return component;
+}
