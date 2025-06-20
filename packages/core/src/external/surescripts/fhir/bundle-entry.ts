@@ -9,7 +9,8 @@ import { getPrescriber } from "./prescriber";
 import { getPharmacy } from "./pharmacy";
 import { getPatient, mergePatient } from "./patient";
 import { getCondition } from "./condition";
-import { deduplicateByCoding, deduplicateBySystemIdentifier } from "./shared";
+import { getInsuranceOrganization, getCoverage } from "./coverage";
+import { deduplicateByCoding, deduplicateByKey, deduplicateBySystemIdentifier } from "./shared";
 
 export function getAllBundleEntries(
   context: SurescriptsContext,
@@ -18,24 +19,17 @@ export function getAllBundleEntries(
   const patient = mergePatient(context.patient, getPatient(data));
   const practitioner = deduplicateBySystemIdentifier(context.practitioner, getPrescriber(data));
   const pharmacy = deduplicateBySystemIdentifier(context.pharmacy, getPharmacy(data));
-  const medication = deduplicateByCoding(context.medication, getMedication(data));
   const condition = deduplicateByCoding(context.condition, getCondition(context, data));
-
-  const medicationDispense = medication
-    ? getMedicationDispense(context, medication, data)
-    : undefined;
-  const medicationRequest = medication
-    ? getMedicationRequest(context, medication, data)
-    : undefined;
+  const medicationResources = getMedicationResources(context, data);
+  const coverageResources = getCoverageResources(context, data);
 
   return [
     patient,
     practitioner,
     pharmacy,
     condition,
-    medication,
-    medicationDispense,
-    medicationRequest,
+    ...medicationResources,
+    ...coverageResources,
   ].flatMap(resource => {
     if (!resource) return [];
     return [
@@ -45,4 +39,30 @@ export function getAllBundleEntries(
       },
     ];
   });
+}
+
+function getMedicationResources(
+  context: SurescriptsContext,
+  data: ResponseDetail
+): (Resource | undefined)[] {
+  const medication = deduplicateByCoding(context.medication, getMedication(data));
+  if (!medication) return [];
+  const medicationDispense = getMedicationDispense(context, medication, data);
+  const medicationRequest = getMedicationRequest(context, medication, data);
+  return [medication, medicationDispense, medicationRequest];
+}
+
+function getCoverageResources(context: SurescriptsContext, data: ResponseDetail): Resource[] {
+  const insuranceOrganization = deduplicateBySystemIdentifier(
+    context.coverageOrganization,
+    getInsuranceOrganization(data)
+  );
+  if (!insuranceOrganization) return [];
+  const coverage = deduplicateByKey(
+    context.coverage,
+    "subscriberId",
+    getCoverage(context, insuranceOrganization, data)
+  );
+  if (!coverage) return [];
+  return [insuranceOrganization, coverage];
 }
