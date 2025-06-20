@@ -21,14 +21,13 @@ export async function updateCohort({
   const cohort = await getCohortModelOrFail({ id, cxId });
   validateVersionForUpdate(cohort, eTag);
 
-  // Check for name uniqueness if name is being updated
   if (name !== undefined) {
     const trimmedName = name.trim();
 
     const existingCohort = await CohortModel.findOne({
       where: {
         cxId,
-        id: { [Op.ne]: id }, // Exclude current cohort from check
+        id: { [Op.ne]: id },
         name: {
           [Op.iLike]: trimmedName,
         },
@@ -41,7 +40,6 @@ export async function updateCohort({
       });
     }
 
-    // Use trimmed name for update
     name = trimmedName;
   }
 
