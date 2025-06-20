@@ -14,6 +14,7 @@ import { updateCohort } from "../../command/medical/cohort/update-cohort";
 import { getETag } from "../../shared/http";
 import { handleParams } from "../helpers/handle-params";
 import { requestLogger } from "../helpers/request-logger";
+import { getUUIDFrom } from "../schemas/uuid";
 import { asyncHandler, getCxIdOrFail, getFromParamsOrFail } from "../util";
 import {
   CohortWithCountDTO,
@@ -175,7 +176,7 @@ router.post(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
-    const cohortId = getFromParamsOrFail("id", req);
+    const cohortId = getUUIDFrom("query", req, "cohortId").orFail();
     const { patientIds, all: isAssignAll } = allOrSelectPatientIdsSchema.parse(req.body);
 
     const cohortDetails = await bulkAssignPatientsToCohort({
@@ -211,7 +212,7 @@ router.delete(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
-    const cohortId = getFromParamsOrFail("id", req);
+    const cohortId = getUUIDFrom("query", req, "cohortId").orFail();
     const { patientIds, all: isRemoveAll } = allOrSelectPatientIdsSchema.parse(req.body);
 
     const unassignedCount = await bulkRemovePatientsFromCohort({
