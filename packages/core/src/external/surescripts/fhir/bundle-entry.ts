@@ -20,6 +20,7 @@ export function getAllBundleEntries(
   const pharmacy = deduplicateBySystemIdentifier(context.pharmacy, getPharmacy(data));
   const medication = deduplicateByCoding(context.medication, getMedication(data));
   const condition = deduplicateByCoding(context.condition, getCondition(context, data));
+
   const medicationDispense = medication
     ? getMedicationDispense(context, medication, data)
     : undefined;

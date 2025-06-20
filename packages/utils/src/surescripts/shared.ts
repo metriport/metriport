@@ -7,6 +7,8 @@ import { S3Utils } from "@metriport/core/external/aws/s3";
 import { getEnvVarOrFail } from "@metriport/shared";
 import { createConsolidatedDataFileNameWithSuffix } from "@metriport/core/domain/consolidated/filename";
 import { dangerouslyDeduplicateFhir } from "@metriport/core/fhir-deduplication/deduplicate-fhir";
+import { buildLatestConversionBundleFileName } from "@metriport/core/external/surescripts/file/file-names";
+import { Config } from "@metriport/core/util/config";
 
 interface PatientTransmission {
   cxId: string;
@@ -58,6 +60,22 @@ export async function getConsolidatedBundle(
   }
   const fileContent = await s3Utils.downloadFile({ bucket: medicalDocsBucketName, key: fileKey });
   return JSON.parse(fileContent.toString());
+}
+
+export async function getConversionBundle(
+  cxId: string,
+  patientId: string
+): Promise<Bundle | undefined> {
+  const s3Utils = new S3Utils("us-west-1");
+  const fileName = buildLatestConversionBundleFileName(cxId, patientId);
+  const bucketName = Config.getPharmacyConversionBucketName();
+  try {
+    const fileContent = await s3Utils.downloadFile({ bucket: bucketName, key: fileName });
+    return JSON.parse(fileContent.toString());
+  } catch (error) {
+    console.error(`Error getting conversion bundle for patient ${patientId}: ${error}`);
+    return undefined;
+  }
 }
 
 export async function writeConsolidatedBundlePreview(

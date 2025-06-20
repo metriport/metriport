@@ -12,6 +12,7 @@ import analyzeResponses from "./analyze-responses";
 import batchAnalysis from "./batch-analysis";
 import preview from "./preview";
 import findLargest from "./find-largest";
+import bundleVerification from "./bundle-verification";
 
 const program = new Command();
 program.addCommand(sftpAction);
@@ -27,4 +28,5 @@ program.addCommand(batchAnalysis);
 program.addCommand(analyzeResponses);
 program.addCommand(preview);
 program.addCommand(findLargest);
+program.addCommand(bundleVerification);
 program.parse();
