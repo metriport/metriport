@@ -38,3 +38,13 @@ export const allOrSelectPatientIdsRefinedSchema = allOrSelectPatientIdsSchema
   .refine(data => !(data.patientIds && data.all), {
     message: "patientIds and all cannot be provided together",
   });
+
+export function strictlyValidateAllAndPatientIds({
+  patientIds,
+  all,
+}: {
+  patientIds: string[] | undefined;
+  all: boolean | undefined;
+}): void {
+  allOrSelectPatientIdsRefinedSchema.parse({ patientIds, all });
+}

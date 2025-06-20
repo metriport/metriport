@@ -53,17 +53,17 @@ export async function getPatientReadOnlyOrFail({
 export async function getPatientIds({
   facilityId,
   cxId,
-  ids,
+  patientIds,
 }: {
   facilityId?: string;
   cxId: string;
-  ids?: string[];
+  patientIds?: string[];
 }): Promise<string[]> {
   const patients = await PatientModelReadOnly.findAll({
     attributes: ["id"],
     where: {
       cxId,
-      ...(ids && ids.length > 0 ? { id: { [Op.in]: ids } } : undefined),
+      ...(patientIds && patientIds.length > 0 ? { id: { [Op.in]: patientIds } } : undefined),
       ...(facilityId
         ? {
             facilityIds: {
