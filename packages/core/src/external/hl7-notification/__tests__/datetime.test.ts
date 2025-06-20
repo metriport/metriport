@@ -34,7 +34,7 @@ describe("utcifyHl7Message", () => {
   describe("common test cases", () => {
     it("should convert PST to UTC", () => {
       const message = makeHl7Message({
-        mshSendingApp: "SacValleyMS",
+        mshSendingApp: "LosAngelesHie",
         evnRecordedDatetime: PST_DATETIME,
       });
 
@@ -47,7 +47,7 @@ describe("utcifyHl7Message", () => {
 
     it("should convert EST to UTC", () => {
       const message = makeHl7Message({
-        mshSendingApp: "Hixny",
+        mshSendingApp: "NewYorkHie",
         evnRecordedDatetime: EST_DATETIME,
       });
 
@@ -73,7 +73,7 @@ describe("utcifyHl7Message", () => {
 
     it("should not fail on empty field", () => {
       const message = makeHl7Message({
-        mshSendingApp: "HealthConnectTexas",
+        mshSendingApp: "NewYorkHie",
         evnRecordedDatetime: "", // Empty datetime
       });
 
@@ -88,7 +88,7 @@ describe("utcifyHl7Message", () => {
   describe("MSH conversion", () => {
     it("should convert EST to UTC for datetime of message", () => {
       const message = makeHl7Message({
-        mshSendingApp: "Hixny", // EST timezone
+        mshSendingApp: "NewYorkHie", // EST timezone
         mshDatetimeOfMessage: EST_DATETIME,
       });
 
@@ -103,7 +103,7 @@ describe("utcifyHl7Message", () => {
   describe("DG1 conversion", () => {
     it("should convert EST to UTC for diagnosis datetime", () => {
       const message = makeHl7Message({
-        mshSendingApp: "Hixny", // EST timezone
+        mshSendingApp: "NewYorkHie", // EST timezone
         dg1DiagnosisDatetime: EST_DATETIME,
       });
 
@@ -116,7 +116,7 @@ describe("utcifyHl7Message", () => {
 
     it("should convert all DG1 segments correctly", () => {
       const message = makeHl7Message({
-        mshSendingApp: "Hixny",
+        mshSendingApp: "NewYorkHie",
         dg1DiagnosisDatetime: EST_DATETIME,
       });
 
@@ -138,7 +138,7 @@ describe("utcifyHl7Message", () => {
   describe("PV1 conversion", () => {
     it("should convert both admit and discharge datetimes", () => {
       const message = makeHl7Message({
-        mshSendingApp: "Hixny", // EST timezone
+        mshSendingApp: "NewYorkHie", // EST timezone
         pv1AdmitDatetime: EST_DATETIME,
         pv1DischargeDatetime: EST_DATETIME,
       });
@@ -156,7 +156,7 @@ describe("utcifyHl7Message", () => {
   describe("Edge cases", () => {
     it("should handle message with only empty datetime fields", () => {
       const message = makeHl7Message({
-        mshSendingApp: "HealthConnectTexas",
+        mshSendingApp: "NewYorkHie",
         evnRecordedDatetime: "",
         dg1DiagnosisDatetime: "",
         pv1AdmitDatetime: "",
@@ -171,7 +171,7 @@ describe("utcifyHl7Message", () => {
 
     it("should preserve other segments and fields unchanged", () => {
       const originalMessage = makeHl7Message({
-        mshSendingApp: "HealthConnectTexas",
+        mshSendingApp: "NewYorkHie",
         evnRecordedDatetime: PST_DATETIME,
         dg1DiagnosisDatetime: PST_DATETIME,
         pv1AdmitDatetime: PST_DATETIME,
@@ -182,7 +182,7 @@ describe("utcifyHl7Message", () => {
 
       // Check that MSH segment is preserved
       const mshSegment = result.getSegment("MSH");
-      expect(mshSegment?.getComponent(3, 1)).toBe("HealthConnectTexas");
+      expect(mshSegment?.getComponent(3, 1)).toBe("NewYorkHie");
       expect(mshSegment?.getComponent(9, 1)).toBe("ADT");
       expect(mshSegment?.getComponent(9, 2)).toBe("A01");
 
@@ -230,7 +230,7 @@ describe("HL7 datetime format parsing", () => {
   describe("datetime strings without timezone", () => {
     it("should apply fallback timezone for YYYYMMDDHHmm format", () => {
       const message = makeHl7Message({
-        mshSendingApp: "Hixny", // EST timezone
+        mshSendingApp: "NewYorkHie", // EST timezone
         evnRecordedDatetime: "202501021200", // Jan 2, 2025 12:00
       });
 
@@ -244,7 +244,7 @@ describe("HL7 datetime format parsing", () => {
 
     it("should handle YYYYMMDDHHmmss.S format", () => {
       const message = makeHl7Message({
-        mshSendingApp: "SacValleyMS", // PST timezone
+        mshSendingApp: "LosAngelesHie", // PST timezone
         evnRecordedDatetime: "20250102120000.5", // Jan 2, 2025 12:00:00.5
       });
 

@@ -26,7 +26,7 @@ export function utcifyHl7Message(message: Hl7Message): Hl7Message {
 
   /**
    * TODO: Properly timezoneify the message using getHieTimezone, which requires making response format requests over email
-   * Temporary to get Hixny ADTs correct for now.
+   * Temporary to get NewYorkHie ADTs correct for now.
    * */
   const resolvedTimezone = hiePartner !== "HIXNY" ? getHieTimezone(hiePartner) : "America/New_York";
 

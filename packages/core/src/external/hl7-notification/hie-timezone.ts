@@ -1,8 +1,6 @@
 export const hieTimezones = {
-  HealthConnectTexas: "America/Chicago",
-  Hixny: "America/New_York",
-  HieTexasPcc: "America/Chicago",
-  SacValleyMS: "America/Los_Angeles",
+  NewYorkHie: "America/New_York",
+  LosAngelesHie: "America/Los_Angeles",
 };
 
 /**
