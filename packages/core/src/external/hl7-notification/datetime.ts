@@ -1,6 +1,6 @@
 import { Hl7Field, Hl7Message, Hl7Segment } from "@medplum/core";
 import { buildDayjsTz } from "@metriport/shared/common/date";
-import { errorToString } from "@metriport/shared/dist/error/shared";
+import { errorToString } from "@metriport/shared";
 import { flow } from "lodash";
 import { getSendingApplication } from "../../command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/msh";
 import { capture, out } from "../../util";
