@@ -277,7 +277,7 @@ export class Config {
     return getEnvVarOrFail("SURESCRIPTS_RECEIVE_RESPONSE_QUEUE_URL");
   }
 
-  static getQuestHost(): string {
+  static getQuestSftpHost(): string {
     return getEnvVarOrFail("QUEST_SFTP_HOST");
   }
   static getQuestSftpUsername(): string {

@@ -21,7 +21,7 @@ export class QuestSftpClient extends SftpClient {
   constructor(config: QuestSftpConfig = {}) {
     super({
       ...config,
-      host: config.host ?? Config.getQuestHost(),
+      host: config.host ?? Config.getQuestSftpHost(),
       port: 11022,
       username: config.username ?? Config.getQuestSftpUsername(),
       password: config.password ?? Config.getQuestSftpPassword(),
