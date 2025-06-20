@@ -71,13 +71,13 @@ function utcifyHl7Components(
     if (isComponentEmpty) return segment;
 
     component = stripTimezoneOffset(component, segmentName, fieldIndex);
-    component = stripSubseconds(component);
+    component = stripDecimals(component);
 
     let componentUtc;
     try {
       componentUtc = buildDayjsTz(component, timezone).format("YYYYMMDDHHmmss");
     } catch (e) {
-      const msg = `Error UTCifying component ${component} in segment ${segmentName}`;
+      const msg = `Error UTCifying component in segment ${segmentName}`;
       log(`${msg}, error - ${errorToString(e)}`);
       capture.error(msg, {
         extra: {
@@ -127,18 +127,18 @@ function stripTimezoneOffset(component: string, segmentName: string, fieldIndex:
 }
 
 /**
- * Strips subsecond decimals (e.g., .123) from HL7 datetime string
+ * Strips decimals (e.g., .123) from HL7 datetime string
  *
  * This is done to simplify parsing, as there aren't consistently followed formats,
- * and the vast majority of the time no subsecond decimals are present.
+ * and the vast majority of the time no decimals are present.
  */
-function stripSubseconds(component: string): string {
-  const { debug } = out("stripSubseconds");
+function stripDecimals(component: string): string {
+  const { debug } = out("stripDecimals");
   const subsecondMatch = component.match(/^(\d{14})(\.\d+)$/);
   if (subsecondMatch) {
     const [, dateTimePart] = subsecondMatch;
     if (dateTimePart) {
-      const msg = `Dropped subsecond decimals in HL7 datetime field, stripping subseconds`;
+      const msg = `Dropped decimals from HL7 datetime field`;
       debug(msg);
       capture.message(msg, {
         extra: { originalComponent: component },
