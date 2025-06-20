@@ -79,7 +79,7 @@ function utcifyHl7Components(
 
     const newFields = [...segment.fields];
     /**
-     * For some reason @medplum/core seems to be indexing MSH differently than the other segments.
+     * @medplum/core indexes MSH differently than the other segments - it includes the MSH field as the first field.
      */
     const index = segmentName === "MSH" ? fieldIndex - 1 : fieldIndex;
     newFields[index] = new Hl7Field([[componentUtc]], segment.context);
@@ -97,7 +97,6 @@ function utcifyHl7Components(
  * and the vast majority of the time no timezone offset is present.
  */
 function stripTimezoneOffset(component: string, segmentName: string, fieldIndex: number): string {
-  // Match HL7 datetime format (8-14 digits) followed by timezone offset
   const timezoneMatch = component.match(/^([\d.]+)([+-]\d{4})$/);
   if (timezoneMatch) {
     const [, dateTimePart, offsetPart] = timezoneMatch;
