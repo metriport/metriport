@@ -1,17 +1,17 @@
 import { Resource } from "@medplum/fhirtypes";
-import { BadRequestError, sleep } from "@metriport/shared";
+import { BadRequestError, NotFoundError, sleep } from "@metriport/shared";
 import { createUuidFromText } from "@metriport/shared/common/uuid";
 import { createBundleFromResourceList } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { EhrSource } from "@metriport/shared/interface/external/ehr/source";
 import { setJobEntryStatus } from "../../../../../../command/job/patient/api/set-entry-status";
-import { isValidUuid } from "../../../../../../util/uuid-v7";
 import { getReferencesFromResources } from "../../../../../fhir/bundle/bundle";
+import { createPredecessorExtensionRelatedArtifact } from "../../../../../fhir/shared/extensions/derived-from";
+import { createExtensionDataSource } from "../../../../../fhir/shared/extensions/extension";
 import { contributeResourceDiffBundle } from "../../../../api/bundle/contribute-resource-diff-bundle";
 import { BundleType } from "../../../../bundle/bundle-shared";
 import { createOrReplaceBundle } from "../../../../bundle/command/create-or-replace-bundle";
 import { fetchBundle, FetchBundleParams } from "../../../../bundle/command/fetch-bundle";
-import { getResourceBundleByResourceId } from "../../../../command/ehr-get-resource-bundle-by-resource-id";
-import { getEhrDataSourceExtension } from "../../../../shared";
+import { getResourceBundleByResourceId } from "../../../../command/get-resource-bundle-by-resource-id";
 import {
   ContributeResourceDiffBundlesRequest,
   EhrContributeResourceDiffBundlesHandler,
@@ -54,6 +54,7 @@ export class EhrContributeResourceDiffBundlesDirect
         resourceType,
         jobId,
       });
+      if (ehrOnlyResources.length < 1) return;
       const hydratedEhrOnlyResources = await hydrateEhrOnlyResources({
         ehr,
         tokenId,
@@ -63,22 +64,14 @@ export class EhrContributeResourceDiffBundlesDirect
         ehrPatientId,
         ehrOnlyResources,
       });
-      const validResources = hydratedEhrOnlyResources
-        .map(resource => dangerouslyAdjustPatient(resource, metriportPatientId))
-        .map(resource => dangerouslyAdjustId(resource, metriportPatientId, ehr))
-        .map(resource => dangerouslyAddEhrDataSourceExtension(resource, ehr))
-        .filter(resource => resource.id && isValidUuid(resource.id));
-      if (validResources.length < 1) {
-        throw new BadRequestError(`No valid resources found`, undefined, {
-          cxId,
-          ehr,
-          metriportPatientId,
-          ehrPatientId,
-          resourceType,
-          jobId,
-        });
-      }
-      const dataContributionBundle = createBundleFromResourceList(validResources);
+      const preparedAndHydratedEhrOnlyResources = prepareEhrOnlyResourcesForContribution(
+        hydratedEhrOnlyResources,
+        metriportPatientId,
+        ehr
+      );
+      const dataContributionBundle = createBundleFromResourceList(
+        preparedAndHydratedEhrOnlyResources
+      );
       await createOrReplaceBundle({
         ehr,
         cxId,
@@ -138,10 +131,6 @@ async function getEhrOnlyResourcesFromS3({
   });
 }
 
-/**
- * This function fetches the missing resources referenced by the ehrOnlyResources and returns a
- * new list with the missing resources appended.
- */
 async function hydrateEhrOnlyResources({
   ehr,
   tokenId,
@@ -164,11 +153,11 @@ async function hydrateEhrOnlyResources({
     ...hydratedEhrOnlyResources.flatMap(resource => resource.id ?? []),
   ]);
   for (let i = 0; i < hydrateEhrOnlyResourceAttempts; i++) {
-    const references = getReferencesFromResources({
+    const { missingReferences } = getReferencesFromResources({
       resourcesToCheckRefs: hydratedEhrOnlyResources,
     });
-    if (references.missingReferences.length < 1) break;
-    for (const { id, type } of references.missingReferences) {
+    if (missingReferences.length < 1) break;
+    for (const { id, type } of missingReferences) {
       if (fetchedResourceIds.has(id)) continue;
       try {
         const bundle = await getResourceBundleByResourceId({
@@ -182,52 +171,75 @@ async function hydrateEhrOnlyResources({
           resourceId: id,
           useCachedBundle: true,
         });
-        fetchedResourceIds.add(id);
         const resource = bundle.entry?.[0]?.resource;
         if (!resource) continue;
         hydratedEhrOnlyResources.push(resource);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } catch (error: any) {
-        if (error instanceof BadRequestError && error.message === "Invalid resource type") {
-          continue;
-        }
+      } catch (error) {
+        if (error instanceof BadRequestError || error instanceof NotFoundError) continue;
         throw error;
+      } finally {
+        fetchedResourceIds.add(id);
       }
     }
   }
   return hydratedEhrOnlyResources;
 }
 
-function dangerouslyAdjustPatient(resource: Resource, metriportPatientId: string): Resource {
-  if ("subject" in resource) {
-    const subject = resource.subject;
-    if ("reference" in subject) {
-      subject.reference = `Patient/${metriportPatientId}`;
-    }
-  }
-  if ("patient" in resource) {
-    resource.patient.reference = `Patient/${metriportPatientId}`;
-  }
-  return resource;
-}
-
-function dangerouslyAdjustId(
-  resource: Resource,
+function prepareEhrOnlyResourcesForContribution(
+  ehrOnlyResources: Resource[],
   metriportPatientId: string,
   ehr: EhrSource
-): Resource {
-  if (resource.resourceType === "Patient") {
-    resource.id = metriportPatientId;
-  } else {
-    if (!resource.id) return resource;
-    resource.id = createUuidFromText(`${ehr}_${resource.id}`);
+): Resource[] {
+  let preparedEhrOnlyResources: Resource[] = [...ehrOnlyResources];
+  const resourceIdMap = new Map<string, string>();
+  for (const resource of ehrOnlyResources) {
+    if (!resource.id) continue;
+    const oldResourceId = resource.id;
+    const newResourceId =
+      resource.resourceType === "Patient"
+        ? metriportPatientId
+        : createUuidFromText(`${ehr}_${oldResourceId}`);
+    resourceIdMap.set(newResourceId, oldResourceId);
+    preparedEhrOnlyResources = replaceResourceId(
+      preparedEhrOnlyResources,
+      oldResourceId,
+      newResourceId
+    );
   }
-  return resource;
+  for (const resource of preparedEhrOnlyResources) {
+    if (!resource.id) continue;
+    const newResourceId = resource.id;
+    const oldResourceId = resourceIdMap.get(newResourceId);
+    if (!oldResourceId) continue;
+    dangerouslyAdjustPatientReference(resource, metriportPatientId);
+    dangerouslyAdjustExtensions(resource, oldResourceId, ehr);
+  }
+  return preparedEhrOnlyResources;
+}
+
+function dangerouslyAdjustPatientReference(resource: Resource, metriportPatientId: string) {
+  const patientReference = { reference: `Patient/${metriportPatientId}` };
+  if ("subject" in resource) resource.subject = patientReference;
+  if ("patient" in resource) resource.patient = patientReference;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function dangerouslyAddEhrDataSourceExtension(resource: any, ehr: EhrSource) {
-  const ehrExtension = getEhrDataSourceExtension(ehr);
-  resource.extension = [...(resource.extension ?? []), ehrExtension];
-  return resource;
+function dangerouslyAdjustExtensions(resource: any, predecessorId: string, ehr: EhrSource) {
+  const predecessorExtension = createPredecessorExtensionRelatedArtifact(predecessorId);
+  const dataSourceExtension = createExtensionDataSource(ehr.toUpperCase());
+  resource.extension = [...(resource.extension ?? []), predecessorExtension, dataSourceExtension];
+}
+
+function replaceResourceId(
+  resources: Resource[],
+  oldResourceId: string,
+  newResourceId: string
+): Resource[] {
+  const resourcesAsString = JSON.stringify(resources);
+  const resourcesAsStringWithReplacedId = resourcesAsString.replace(
+    new RegExp(`"${oldResourceId}"`, "g"),
+    newResourceId
+  );
+  console.log(resourcesAsStringWithReplacedId);
+  return JSON.parse(resourcesAsStringWithReplacedId);
 }

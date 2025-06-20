@@ -1,5 +1,5 @@
 import { Bundle } from "@medplum/fhirtypes";
-import { GetResourceBundleByResourceIdClientRequest } from "../../command/ehr-get-resource-bundle-by-resource-id";
+import { GetResourceBundleByResourceIdClientRequest } from "../../command/get-resource-bundle-by-resource-id";
 import { createCanvasClient } from "../shared";
 
 export async function getResourceBundleByResourceId(
