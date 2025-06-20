@@ -9,7 +9,7 @@ import {
   getCohortWithCountOrFail,
 } from "../../command/medical/cohort/get-cohort";
 import { bulkAssignPatientsToCohort } from "../../command/medical/cohort/patient-cohort/bulk-assign";
-import { bulkRemovePatientsFromCohort } from "../../command/medical/cohort/patient-cohort/bulk-unassign";
+import { bulkRemovePatientsFromCohort } from "../../command/medical/cohort/patient-cohort/bulk-remove";
 import { updateCohort } from "../../command/medical/cohort/update-cohort";
 import { getETag } from "../../shared/http";
 import { handleParams } from "../helpers/handle-params";
@@ -164,7 +164,9 @@ router.get(
  * Bulk assign multiple patients to a cohort.
  *
  * @param req.param.id The ID of the cohort to assign patients to.
- * @param req.body The list of patient IDs to assign.
+ * @param req.body.patientIds The list of patient IDs to assign. Mutually exclusive with the all flag.
+ * @param req.body.all Flag to confirm we want to assign all patients to the cohort. Mutually exclusive with the patientIds list.
+ *
  * @returns Cohort details with the updated patient IDs and count.
  */
 router.post(
