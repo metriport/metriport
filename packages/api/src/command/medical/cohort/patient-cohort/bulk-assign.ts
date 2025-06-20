@@ -2,7 +2,6 @@ import { out } from "@metriport/core/util";
 import { BadRequestError } from "@metriport/shared";
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { PatientCohortModel } from "../../../../models/medical/patient-cohort";
-import { executeOnDBTx } from "../../../../models/transaction-wrapper";
 import { getPatientOrFail } from "../../patient/get-patient";
 import { getPatientIds } from "../../patient/get-patient-read-only";
 import { CohortWithPatientIdsAndCount, getCohortModelOrFail } from "../get-cohort";
@@ -25,55 +24,50 @@ export async function bulkAssignPatientsToCohort({
 
   let patientIdsToAssignToCohort = [...new Set(patientIds)];
 
-  return executeOnDBTx(PatientCohortModel.prototype, async transaction => {
-    const cohort = await getCohortModelOrFail({ id: cohortId, cxId, transaction, lock: true });
+  const cohort = await getCohortModelOrFail({ id: cohortId, cxId });
 
-    if (isAssignAll) {
-      patientIdsToAssignToCohort = await getPatientIds({ cxId });
-    }
+  if (isAssignAll) {
+    patientIdsToAssignToCohort = await getPatientIds({ cxId });
+  }
 
-    const patientValidationResults = await Promise.allSettled(
-      patientIdsToAssignToCohort.map(patientId =>
-        getPatientOrFail({ id: patientId, cxId, transaction })
-      )
-    );
+  const patientValidationResults = await Promise.allSettled(
+    patientIdsToAssignToCohort.map(patientId => getPatientOrFail({ id: patientId, cxId }))
+  );
 
-    const invalidPatientIds = patientValidationResults
-      .filter((result): result is PromiseRejectedResult => result.status === "rejected")
-      .flatMap(result => result.reason.additionalInfo?.id ?? []);
+  const invalidPatientIds = patientValidationResults
+    .filter((result): result is PromiseRejectedResult => result.status === "rejected")
+    .flatMap(result => result.reason.additionalInfo?.id ?? []);
 
-    if (invalidPatientIds.length > 0) {
-      log(`Found ${invalidPatientIds.length} invalid patients`);
-      throw new BadRequestError(`Some patient IDs do not exist`, undefined, {
-        invalidPatientIds: JSON.stringify(invalidPatientIds),
-      });
-    }
-
-    const assignments = patientIdsToAssignToCohort.map(patientId => ({
-      id: uuidv7(),
-      patientId,
-      cohortId,
-    }));
-    const createdAssignments = await PatientCohortModel.bulkCreate(assignments, {
-      ignoreDuplicates: true,
-      transaction,
+  if (invalidPatientIds.length > 0) {
+    log(`Found ${invalidPatientIds.length} invalid patients`);
+    throw new BadRequestError(`Some patient IDs do not exist`, undefined, {
+      invalidPatientIds: JSON.stringify(invalidPatientIds),
     });
+  }
 
-    const successCount = createdAssignments.length;
-    log(
-      `Assigned ${successCount}/${patientIdsToAssignToCohort.length} patients to cohort ${cohortId}`
-    );
+  const assignments = patientIdsToAssignToCohort.map(patientId => ({
+    id: uuidv7(),
+    patientId,
+    cohortId,
+  }));
 
-    const totalAssignedPatientIds = await getPatientIdsAssignedToCohort({
-      cohortId,
-      cxId,
-      transaction,
-    });
-
-    return {
-      cohort: cohort.dataValues,
-      count: totalAssignedPatientIds.length,
-      patientIds: totalAssignedPatientIds,
-    };
+  const createdAssignments = await PatientCohortModel.bulkCreate(assignments, {
+    ignoreDuplicates: true,
   });
+
+  const successCount = createdAssignments.length;
+  log(
+    `Assigned ${successCount}/${patientIdsToAssignToCohort.length} patients to cohort ${cohortId}`
+  );
+
+  const totalAssignedPatientIds = await getPatientIdsAssignedToCohort({
+    cohortId,
+    cxId,
+  });
+
+  return {
+    cohort: cohort.dataValues,
+    count: totalAssignedPatientIds.length,
+    patientIds: totalAssignedPatientIds,
+  };
 }
