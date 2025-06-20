@@ -2,14 +2,14 @@ import { Hl7Message, Hl7Context, Hl7Field, Hl7Segment } from "@medplum/core";
 
 // Helper function to create test HL7 messages
 export function makeHl7Message({
-  mshPartner,
+  mshSendingApp,
   mshDatetimeOfMessage = "20250102120000",
   evnRecordedDatetime = "",
   dg1DiagnosisDatetime = "",
   pv1AdmitDatetime = "",
   pv1DischargeDatetime = "",
 }: {
-  mshPartner: string;
+  mshSendingApp: string;
   mshDatetimeOfMessage?: string;
   evnRecordedDatetime?: string;
   dg1DiagnosisDatetime?: string;
@@ -23,7 +23,7 @@ export function makeHl7Message({
   const mshFields = [
     new Hl7Field([["MSH"]], context),
     new Hl7Field([["^~\\&"]], context),
-    new Hl7Field([[mshPartner]], context), // Field 3: Sending Application
+    new Hl7Field([[mshSendingApp]], context), // Field 3: Sending Application
     new Hl7Field([["SENDING_FACILITY"]], context),
     new Hl7Field([["RECEIVING_APP"]], context),
     new Hl7Field([["RECEIVING_FACILITY"]], context),

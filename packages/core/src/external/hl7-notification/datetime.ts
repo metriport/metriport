@@ -1,14 +1,9 @@
 import { Hl7Field, Hl7Message, Hl7Segment } from "@medplum/core";
-import dayjs from "dayjs";
-import timezone from "dayjs/plugin/timezone";
-import utc from "dayjs/plugin/utc";
+import { buildDayjsTz } from "@metriport/shared/common/date";
 import { flow } from "lodash";
 import { getSendingApplication } from "../../command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/msh";
 import { capture, out } from "../../util";
-
-// Extend dayjs with timezone support
-dayjs.extend(utc);
-dayjs.extend(timezone);
+import { getHieTimezone } from "./hie-timezone";
 
 const MSH_DATETIME_OF_MESSAGE_INDEX = 7;
 const EVN_RECORDED_DATETIME_INDEX = 2;
@@ -47,13 +42,13 @@ function utcifyHl7Components(
   componentIndex: number
 ): Hl7Message {
   const { log } = out("utcifyHl7Components");
-  const hiePartner = getSendingApplication(message);
+  const hiePartner = getSendingApplication(message) ?? "Unknown HIE";
 
   /**
    * TODO: Properly timezoneify the message using getHieTimezone, which requires making response format requests over email
    * Temporary to get Hixny ADTs correct for now.
    * */
-  const resolvedTimezone = hiePartner !== "HIXNY" ? "UTC" : "America/New_York";
+  const resolvedTimezone = hiePartner !== "HIXNY" ? getHieTimezone(hiePartner) : "America/New_York";
 
   const updatedSegments = message.segments.map(segment => {
     if (segment.name !== segmentName) return segment;
@@ -67,10 +62,7 @@ function utcifyHl7Components(
 
     let componentUtc;
     try {
-      componentUtc = dayjs
-        .tz(component, "YYYYMMDDHHmmss", resolvedTimezone)
-        .utc()
-        .format("YYYYMMDDHHmmss");
+      componentUtc = buildDayjsTz(component, resolvedTimezone).format("YYYYMMDDHHmmss");
     } catch (e) {
       log(`Error UTCifying component ${component} in segment ${segmentName}`, e);
       capture.error(e);

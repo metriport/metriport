@@ -34,7 +34,7 @@ describe("utcifyHl7Message", () => {
   describe("common test cases", () => {
     it("should convert PST to UTC", () => {
       const message = makeHl7Message({
-        mshPartner: "SacValleyMS",
+        mshSendingApp: "SacValleyMS",
         evnRecordedDatetime: PST_DATETIME,
       });
 
@@ -47,7 +47,7 @@ describe("utcifyHl7Message", () => {
 
     it("should convert EST to UTC", () => {
       const message = makeHl7Message({
-        mshPartner: "Hixny",
+        mshSendingApp: "Hixny",
         evnRecordedDatetime: EST_DATETIME,
       });
 
@@ -60,7 +60,7 @@ describe("utcifyHl7Message", () => {
 
     it("should fallback to UTC if the partner is unknown", () => {
       const message = makeHl7Message({
-        mshPartner: "UnknownPartner",
+        mshSendingApp: "UnknownPartner",
         evnRecordedDatetime: UTC_DATETIME,
       });
 
@@ -73,7 +73,7 @@ describe("utcifyHl7Message", () => {
 
     it("should not fail on empty field", () => {
       const message = makeHl7Message({
-        mshPartner: "HealthConnectTexas",
+        mshSendingApp: "HealthConnectTexas",
         evnRecordedDatetime: "", // Empty datetime
       });
 
@@ -88,7 +88,7 @@ describe("utcifyHl7Message", () => {
   describe("MSH conversion", () => {
     it("should convert EST to UTC for datetime of message", () => {
       const message = makeHl7Message({
-        mshPartner: "Hixny", // EST timezone
+        mshSendingApp: "Hixny", // EST timezone
         mshDatetimeOfMessage: EST_DATETIME,
       });
 
@@ -103,7 +103,7 @@ describe("utcifyHl7Message", () => {
   describe("DG1 conversion", () => {
     it("should convert EST to UTC for diagnosis datetime", () => {
       const message = makeHl7Message({
-        mshPartner: "Hixny", // EST timezone
+        mshSendingApp: "Hixny", // EST timezone
         dg1DiagnosisDatetime: EST_DATETIME,
       });
 
@@ -116,7 +116,7 @@ describe("utcifyHl7Message", () => {
 
     it("should convert all DG1 segments correctly", () => {
       const message = makeHl7Message({
-        mshPartner: "Hixny",
+        mshSendingApp: "Hixny",
         dg1DiagnosisDatetime: EST_DATETIME,
       });
 
@@ -138,7 +138,7 @@ describe("utcifyHl7Message", () => {
   describe("PV1 conversion", () => {
     it("should convert both admit and discharge datetimes", () => {
       const message = makeHl7Message({
-        mshPartner: "Hixny", // EST timezone
+        mshSendingApp: "Hixny", // EST timezone
         pv1AdmitDatetime: EST_DATETIME,
         pv1DischargeDatetime: EST_DATETIME,
       });
@@ -156,7 +156,7 @@ describe("utcifyHl7Message", () => {
   describe("Edge cases", () => {
     it("should handle message with only empty datetime fields", () => {
       const message = makeHl7Message({
-        mshPartner: "HealthConnectTexas",
+        mshSendingApp: "HealthConnectTexas",
         evnRecordedDatetime: "",
         dg1DiagnosisDatetime: "",
         pv1AdmitDatetime: "",
@@ -171,7 +171,7 @@ describe("utcifyHl7Message", () => {
 
     it("should preserve other segments and fields unchanged", () => {
       const originalMessage = makeHl7Message({
-        mshPartner: "HealthConnectTexas",
+        mshSendingApp: "HealthConnectTexas",
         evnRecordedDatetime: PST_DATETIME,
         dg1DiagnosisDatetime: PST_DATETIME,
         pv1AdmitDatetime: PST_DATETIME,
@@ -200,7 +200,7 @@ describe("HL7 datetime format parsing", () => {
   describe("datetime strings with timezone offsets", () => {
     it("should strip YYYYMMDDHHmm+HHMM format and add 00 to the end", () => {
       const message = makeHl7Message({
-        mshPartner: "UnknownPartner", // Will use UTC as fallback
+        mshSendingApp: "UnknownPartner", // Will use UTC as fallback
         evnRecordedDatetime: "198908181126+0215", // Aug 18, 1989 11:26 +02:15
       });
 
@@ -214,7 +214,7 @@ describe("HL7 datetime format parsing", () => {
 
     it("should strip YYYYMMDDHHmmss.S+HHMM format", () => {
       const message = makeHl7Message({
-        mshPartner: "UnknownPartner",
+        mshSendingApp: "UnknownPartner",
         evnRecordedDatetime: "20210817151943.4+0200", // Aug 17, 2021 15:19:43.4 +02:00
       });
 
@@ -230,7 +230,7 @@ describe("HL7 datetime format parsing", () => {
   describe("datetime strings without timezone", () => {
     it("should apply fallback timezone for YYYYMMDDHHmm format", () => {
       const message = makeHl7Message({
-        mshPartner: "Hixny", // EST timezone
+        mshSendingApp: "Hixny", // EST timezone
         evnRecordedDatetime: "202501021200", // Jan 2, 2025 12:00
       });
 
@@ -244,7 +244,7 @@ describe("HL7 datetime format parsing", () => {
 
     it("should handle YYYYMMDDHHmmss.S format", () => {
       const message = makeHl7Message({
-        mshPartner: "SacValleyMS", // PST timezone
+        mshSendingApp: "SacValleyMS", // PST timezone
         evnRecordedDatetime: "20250102120000.5", // Jan 2, 2025 12:00:00.5
       });
 
@@ -262,7 +262,7 @@ describe("HL7 datetime format parsing", () => {
       "should handle invalid datetime gracefully",
       silenceLogs(() => {
         const message = makeHl7Message({
-          mshPartner: "UnknownPartner",
+          mshSendingApp: "UnknownPartner",
           evnRecordedDatetime: "invalid-datetime",
         });
 
@@ -277,7 +277,7 @@ describe("HL7 datetime format parsing", () => {
 
     it("should not modify datetime that's already UTC without timezone info", () => {
       const message = makeHl7Message({
-        mshPartner: "UnknownPartner", // UTC fallback
+        mshSendingApp: "UnknownPartner", // UTC fallback
         evnRecordedDatetime: "20250102170000",
       });
 
