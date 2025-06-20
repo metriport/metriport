@@ -2,6 +2,7 @@ import { Cohort, CohortCreate } from "@metriport/core/domain/cohort";
 import { out } from "@metriport/core/util";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { BadRequestError } from "@metriport/shared";
+import { Op } from "sequelize";
 import { CohortModel } from "../../../models/medical/cohort";
 
 export async function createCohort({
@@ -11,20 +12,26 @@ export async function createCohort({
 }: Omit<CohortCreate, "id">): Promise<Cohort> {
   const { log } = out(`createCohort - cx: ${cxId}`);
 
+  const trimmedName = name.trim();
   const existingCohort = await CohortModel.findOne({
-    where: { cxId, name },
+    where: {
+      cxId,
+      name: {
+        [Op.iLike]: trimmedName,
+      },
+    },
   });
   if (existingCohort) {
     throw new BadRequestError("A cohort with this name already exists", undefined, {
       cxId,
-      name,
+      name: trimmedName,
     });
   }
 
   const cohortCreate: CohortCreate = {
     id: uuidv7(),
     cxId,
-    name,
+    name: trimmedName,
     monitoring,
   };
 

@@ -1,5 +1,4 @@
 import { out } from "@metriport/core/util";
-import { BadRequestError } from "@metriport/shared";
 import { Op } from "sequelize";
 import { PatientCohortModel } from "../../../../models/medical/patient-cohort";
 import { getCohortModelOrFail } from "../get-cohort";
@@ -18,10 +17,6 @@ export async function bulkRemovePatientsFromCohort({
   isRemoveAll,
 }: BulkRemovePatientsFromCohortParams): Promise<number> {
   const { log } = out(`bulkRemovePatientsFromCohort - cx ${cxId}, cohort ${cohortId}`);
-
-  if ((!patientIds || patientIds.length < 1) && !isRemoveAll) {
-    throw new BadRequestError("Either patientIds or all must be provided");
-  }
 
   await getCohortModelOrFail({ id: cohortId, cxId });
 
