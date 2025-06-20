@@ -23,17 +23,17 @@ export async function bulkAssignPatientsToCohort({
 }: BulkAssignPatientsToCohortParams): Promise<CohortWithPatientIdsAndCount> {
   const { log } = out(`bulkAssignPatientsToCohort - cx ${cxId}, cohort ${cohortId}`);
 
-  let paitentIdsToAssignToCohort = [...new Set(patientIds)];
+  let patientIdsToAssignToCohort = [...new Set(patientIds)];
 
   return executeOnDBTx(PatientCohortModel.prototype, async transaction => {
     const cohort = await getCohortModelOrFail({ id: cohortId, cxId, transaction, lock: true });
 
     if (isAssignAll) {
-      paitentIdsToAssignToCohort = await getPatientIds({ cxId });
+      patientIdsToAssignToCohort = await getPatientIds({ cxId });
     }
 
     const patientValidationResults = await Promise.allSettled(
-      paitentIdsToAssignToCohort.map(patientId =>
+      patientIdsToAssignToCohort.map(patientId =>
         getPatientOrFail({ id: patientId, cxId, transaction })
       )
     );
@@ -49,7 +49,7 @@ export async function bulkAssignPatientsToCohort({
       });
     }
 
-    const assignments = paitentIdsToAssignToCohort.map(patientId => ({
+    const assignments = patientIdsToAssignToCohort.map(patientId => ({
       id: uuidv7(),
       patientId,
       cohortId,
@@ -61,7 +61,7 @@ export async function bulkAssignPatientsToCohort({
 
     const successCount = createdAssignments.length;
     log(
-      `Assigned ${successCount}/${paitentIdsToAssignToCohort.length} patients to cohort ${cohortId}`
+      `Assigned ${successCount}/${patientIdsToAssignToCohort.length} patients to cohort ${cohortId}`
     );
 
     const totalAssignedPatientIds = await getPatientIdsAssignedToCohort({

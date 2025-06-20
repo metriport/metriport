@@ -4,17 +4,8 @@ import { PatientCohortModel } from "../../../../models/medical/patient-cohort";
 export type GetPatientIdsAssignedToCohortParams = {
   cohortId: string;
   cxId: string;
-} & (
-  | {
-      transaction?: never;
-    }
-  | {
-      /**
-       * @see executeOnDBTx() for details about the 'transaction' parameter.
-       */
-      transaction: Transaction;
-    }
-);
+  transaction?: Transaction;
+};
 
 /**
  * @see executeOnDBTx() for details about the 'transaction' parameter.
@@ -22,6 +13,7 @@ export type GetPatientIdsAssignedToCohortParams = {
 export async function getPatientIdsAssignedToCohort({
   cohortId,
   cxId,
+  transaction,
 }: GetPatientIdsAssignedToCohortParams): Promise<string[]> {
   const res = await PatientCohortModel.findAll({
     where: { cohortId },
@@ -34,6 +26,7 @@ export async function getPatientIdsAssignedToCohort({
       },
     ],
     attributes: ["patientId"],
+    transaction,
   });
   return res.map(r => r.dataValues.patientId);
 }
