@@ -23,6 +23,8 @@ export const handler = capture.wrapHandler(async (event: SQSEvent) => {
 });
 
 const surescriptsReceiveResponseSchema = z.object({
+  cxId: z.string(),
+  facilityId: z.string(),
   transmissionId: z.string(),
   populationId: z.string(),
 });

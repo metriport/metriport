@@ -38,6 +38,7 @@ import { PatientCohortModel } from "./medical/patient-cohort";
 import { PatientImportJobModel } from "./medical/patient-import";
 import { PatientImportMappingModel } from "./medical/patient-import-mapping";
 import { PatientModelReadOnly } from "./medical/patient-readonly";
+import { TcmEncounterModel } from "./medical/tcm-encounter";
 import { PatientJobModel } from "./patient-job";
 import { PatientMappingModel } from "./patient-mapping";
 import { PatientSettingsModel } from "./patient-settings";
@@ -75,6 +76,7 @@ const models: ModelSetup[] = [
   PatientJobModel.setup,
   CohortModel.setup,
   PatientCohortModel.setup,
+  TcmEncounterModel.setup,
 ];
 
 const modelsReadOnly: ModelSetup[] = [PatientModelReadOnly.setup];
@@ -150,7 +152,9 @@ async function initDB(): Promise<void> {
     PatientSettingsModel.associate({ PatientModelReadOnly });
     CohortModel.associate({ PatientCohortModel });
     PatientCohortModel.associate({ CohortModel });
-    PatientModel.associate({ PatientCohortModel });
+    PatientModel.associate({ PatientCohortModel, TcmEncounterModel });
+    TcmEncounterModel.associate({ PatientModel, OrganizationModel });
+    OrganizationModel.associate({ TcmEncounterModel });
 
     let doc: AWS.DynamoDB.DocumentClient;
     // init dynamo db doc client

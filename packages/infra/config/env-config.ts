@@ -281,6 +281,10 @@ type EnvConfigBase = {
       SURESCRIPTS_SFTP_PRIVATE_KEY: string;
     };
   };
+  jobs: {
+    startPatientJobsSchedulerScheduleExpression: string;
+    startPatientJobsSchedulerUrl: string;
+  };
 };
 
 export type EnvConfigNonSandbox = EnvConfigBase & {

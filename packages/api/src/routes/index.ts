@@ -8,6 +8,7 @@ import feedback from "./feedback";
 import { reportClientErrors } from "./helpers/report-client-errors";
 import internal from "./internal";
 import medical from "./medical";
+import medicalDash from "./medical/dash";
 import fhirRouter from "./medical/fhir-r4-proxy";
 import { checkMAPIAccess, processCxId } from "./middlewares/auth";
 import { reportDeviceUsage } from "./middlewares/usage";
@@ -38,7 +39,7 @@ export default (app: Application) => {
 
   // medical routes with API key auth - report usage is on individual routes
   app.use("/medical/v1", processCxId, checkMAPIAccess, medical);
-  app.use(`${dash}/medical/v1`, processCxId, checkMAPIAccess, medical);
+  app.use(`${dash}/medical/v1`, processCxId, checkMAPIAccess, medicalDash);
   app.use("/fhir/R4", processCxId, checkMAPIAccess, fhirRouter);
 
   // routes with API key auth - validated on the API Gateway

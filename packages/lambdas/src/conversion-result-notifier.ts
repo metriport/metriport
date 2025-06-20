@@ -1,12 +1,14 @@
-import { ConversionResult } from "@metriport/core/command/conversion-result/types";
 import { sendConversionResults } from "@metriport/core/command/conversion-result/send-multiple-conversion-results";
+import { ConversionResult } from "@metriport/core/command/conversion-result/types";
+import { MedicalDataSource } from "@metriport/core/external";
+import { out } from "@metriport/core/util/log";
 import { getEnvVarOrFail, MetriportError } from "@metriport/shared";
 import * as Sentry from "@sentry/serverless";
 import { SQSEvent } from "aws-lambda";
 import { z } from "zod";
 import { capture } from "./shared/capture";
 import { getEnvOrFail } from "./shared/env";
-import { out } from "@metriport/core/util/log";
+
 // Keep this as early on the file as possible
 capture.init();
 
@@ -38,7 +40,7 @@ const processConversionResultSchema = z.object({
   status: z.enum(["success", "failed"]),
   details: z.string().optional(),
   jobId: z.string().optional(),
-  source: z.string().optional(),
+  source: z.nativeEnum(MedicalDataSource),
 });
 
 function parseBody(body?: unknown): ConversionResult {

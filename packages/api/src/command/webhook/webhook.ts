@@ -4,10 +4,10 @@ import { analytics, EventTypes } from "@metriport/core/external/analytics/postho
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { errorToString, isTrue } from "@metriport/shared";
+import { buildDayjs } from "@metriport/shared/common/date";
 import { PingWebhookRequest, WebhookMetadata } from "@metriport/shared/medical";
 import Axios from "axios";
 import crypto from "crypto";
-import dayjs from "dayjs";
 import stringify from "json-stringify-safe";
 import { nanoid } from "nanoid";
 import { v4 as uuidv4 } from "uuid";
@@ -93,7 +93,7 @@ export async function processRequest(
     const payload = webhookRequest.payload;
     const meta: WebhookMetadata = {
       messageId: webhookRequest.id,
-      when: dayjs(webhookRequest.createdAt).toISOString(),
+      when: buildDayjs(webhookRequest.createdAt).toISOString(),
       type: webhookRequest.type,
       data: cxWHRequestMeta,
     };
@@ -283,7 +283,7 @@ export async function sendPayload(
 
 export async function sendTestPayload(url: string, key: string, cxId: string): Promise<boolean> {
   const ping = nanoid();
-  const when = dayjs().toISOString();
+  const when = buildDayjs().toISOString();
   const payload: PingWebhookRequest = {
     ping,
     meta: {
