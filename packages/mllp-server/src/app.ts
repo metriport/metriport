@@ -8,6 +8,7 @@ import {
   getHl7MessageTypeOrFail,
   getMessageUniqueIdentifier,
   getOrCreateMessageDatetime,
+  getSendingApplication,
 } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/msh";
 import {
   createFileKeyHl7Message,
@@ -29,7 +30,7 @@ initSentry();
 const MLLP_DEFAULT_PORT = 2575;
 const bucketName = Config.getHl7IncomingMessageBucketName();
 const s3Utils = new S3Utils(Config.getAWSRegion());
-
+const hieTimezoneDictionary = Config.getHieTimezoneDictionary();
 /**
  * Avoid using message.toString() as its not stringifying every segment
  */
@@ -44,7 +45,10 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
     connection.addEventListener(
       "message",
       withErrorHandling(async ({ message: rawMessage }) => {
-        const message = utcifyHl7Message(rawMessage);
+        // TODO: We don't want to fail on a failed lookup - most of our HIEs have not been timezone-ified yet.
+        const sendingApplication = getSendingApplication(rawMessage) ?? "Unknown HIE";
+        const hieTimezone = hieTimezoneDictionary[sendingApplication] ?? "UTC";
+        const message = utcifyHl7Message(rawMessage, hieTimezone);
 
         const timestamp = basicToExtendedIso8601(getOrCreateMessageDatetime(message));
         const messageId = getMessageUniqueIdentifier(message);

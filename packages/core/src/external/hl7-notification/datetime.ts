@@ -1,10 +1,8 @@
 import { Hl7Field, Hl7Message, Hl7Segment } from "@medplum/core";
-import { buildDayjsTz } from "@metriport/shared/common/date";
 import { errorToString } from "@metriport/shared";
+import { buildDayjsTz } from "@metriport/shared/common/date";
 import { flow } from "lodash";
-import { getSendingApplication } from "../../command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/msh";
 import { capture, out } from "../../util";
-import { getHieTimezone } from "./hie-timezone";
 
 const MSH_DATETIME_OF_MESSAGE_INDEX = 7;
 const EVN_RECORDED_DATETIME_INDEX = 2;
@@ -19,24 +17,18 @@ const PV2_EXPECTED_ADMIT_DATE_INDEX = 8;
 const PV2_EXPECTED_DISCHARGE_DATE_INDEX = 9;
 const DG1_DIAGNOSIS_DATETIME_INDEX = 5;
 
-export function utcifyHl7Message(message: Hl7Message): Hl7Message {
-  const sendingApplication = getSendingApplication(message);
-  const hiePartner = sendingApplication ?? "Unknown HIE";
-  capture.setExtra({ sendingApplication });
-
+export function utcifyHl7Message(message: Hl7Message, timezone: string): Hl7Message {
   /**
    * TODO: Properly timezoneify the message using getHieTimezone, which requires making response format requests over email
    * Temporary to get NewYorkHie ADTs correct for now.
-   * */
-  const resolvedTimezone = hiePartner !== "HIXNY" ? getHieTimezone(hiePartner) : "America/New_York";
-
+   **/
   function utcifyComponents(
     message: Hl7Message,
     segmentName: string,
     fieldIndex: number,
     componentIndex: number
   ) {
-    return utcifyHl7Components(message, resolvedTimezone, segmentName, fieldIndex, componentIndex);
+    return utcifyHl7Components(message, timezone, segmentName, fieldIndex, componentIndex);
   }
 
   return flow(

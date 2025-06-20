@@ -105,6 +105,14 @@ export class Config {
   static getHl7NotificationQueueUrl(): string {
     return getEnvVarOrFail("HL7_NOTIFICATION_QUEUE_URL");
   }
+  static getHieTimezoneDictionary(): Record<string, string> {
+    const hieTimezoneDictionary = getEnvVarOrFail("HIE_TIMEZONE_DICTIONARY");
+    try {
+      return JSON.parse(hieTimezoneDictionary) as Record<string, string>;
+    } catch (error) {
+      throw new Error(`Failed to parse HIE_TIMEZONE_DICTIONARY env var: ${error}`);
+    }
+  }
 
   static getCdaToFhirConversionBucketName(): string | undefined {
     return getEnvVar("CONVERSION_RESULT_BUCKET_NAME");
