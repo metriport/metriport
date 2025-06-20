@@ -32,7 +32,9 @@ export async function bulkAssignPatientsToCohort({
     cohortId,
   }));
 
-  const createdAssignments = await PatientCohortModel.bulkCreate(assignments);
+  const createdAssignments = await PatientCohortModel.bulkCreate(assignments, {
+    ignoreDuplicates: true,
+  });
   const successCount = createdAssignments.length;
   log(`Assigned ${successCount}/${validatedIds.length} patients to cohort ${cohortId}`);
 
