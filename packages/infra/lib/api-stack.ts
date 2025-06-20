@@ -1,11 +1,11 @@
 import {
   Aspects,
-  aws_wafv2 as wafv2,
   CfnOutput,
   Duration,
   RemovalPolicy,
   Stack,
   StackProps,
+  aws_wafv2 as wafv2,
 } from "aws-cdk-lib";
 import * as apig from "aws-cdk-lib/aws-apigateway";
 import { BackupResource } from "aws-cdk-lib/aws-backup";
@@ -46,6 +46,7 @@ import { EnvType } from "./env-type";
 import { FeatureFlagsNestedStack } from "./feature-flags-nested-stack";
 import { Hl7NotificationWebhookSenderNestedStack } from "./hl7-notification-webhook-sender-nested-stack";
 import { IHEGatewayV2LambdasNestedStack } from "./ihe-gateway-v2-stack";
+import { JobsNestedStack } from "./jobs/jobs-stack";
 import { LambdasLayersNestedStack } from "./lambda-layers-nested-stack";
 import { CDA_TO_VIS_TIMEOUT, LambdasNestedStack } from "./lambdas-nested-stack";
 import { PatientImportNestedStack } from "./patient-import-nested-stack";
@@ -374,6 +375,19 @@ export class APIStack extends Stack {
     });
 
     //-------------------------------------------
+    // Surescripts
+    //-------------------------------------------
+    let surescriptsStack: SurescriptsNestedStack | undefined = undefined;
+    if (props.config.surescripts) {
+      surescriptsStack = new SurescriptsNestedStack(this, "SurescriptsNestedStack", {
+        config: props.config,
+        vpc: this.vpc,
+        alarmAction: slackNotification?.alarmAction,
+        lambdaLayers,
+      });
+    }
+
+    //-------------------------------------------
     // General lambdas
     //-------------------------------------------
     const {
@@ -400,9 +414,9 @@ export class APIStack extends Stack {
       vpc: this.vpc,
       lambdaLayers,
       dbCluster,
-      dbCredsSecret,
       secrets,
       medicalDocumentsBucket,
+      pharmacyBundleBucket: surescriptsStack?.getAssets()?.pharmacyConversionBucket,
       sandboxSeedDataBucket,
       alarmAction: slackNotification?.alarmAction,
       bedrock: props.config.bedrock,
@@ -482,17 +496,14 @@ export class APIStack extends Stack {
     });
 
     //-------------------------------------------
-    // Surescripts
+    // Jobs
     //-------------------------------------------
-    let surescriptsStack: SurescriptsNestedStack | undefined = undefined;
-    if (props.config.surescripts) {
-      surescriptsStack = new SurescriptsNestedStack(this, "SurescriptsNestedStack", {
-        config: props.config,
-        vpc: this.vpc,
-        alarmAction: slackNotification?.alarmAction,
-        lambdaLayers,
-      });
-    }
+    const jobsStack = new JobsNestedStack(this, "JobsNestedStack", {
+      config: props.config,
+      vpc: this.vpc,
+      alarmAction: slackNotification?.alarmAction,
+      lambdaLayers,
+    });
 
     //-------------------------------------------
     // Rate Limiting
@@ -610,6 +621,7 @@ export class APIStack extends Stack {
       featureFlagsTable,
       cookieStore,
       surescriptsAssets: surescriptsStack?.getAssets(),
+      jobAssets: jobsStack.getAssets(),
     });
     const apiLoadBalancerAddress = apiLoadBalancer.loadBalancerDnsName;
 
@@ -695,10 +707,11 @@ export class APIStack extends Stack {
       conversionResultNotifierLambda,
       consolidatedSearchLambda,
       consolidatedIngestionLambda,
+      ...(surescriptsStack?.getLambdas() ?? []),
+      jobsStack.getAssets().runPatientJobLambda,
     ];
     const apiUrl = `http://${apiDirectUrl}`;
     lambdasToGetApiUrl.forEach(lambda => lambda?.addEnvironment("API_URL", apiUrl));
-    if (surescriptsStack) surescriptsStack.setApiUrl(apiDirectUrl);
 
     // TODO move this to each place where it's used
     // Access grant for medical documents bucket

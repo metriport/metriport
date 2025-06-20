@@ -100,6 +100,7 @@ export const config: EnvConfigNonSandbox = {
     placeIndexRegion: "aws_region",
   },
   carequality: {
+    roUsername: "your-ro-username",
     secretNames: {
       CQ_MANAGEMENT_API_KEY: "CQ_MANAGEMENT_API_KEY",
       CQ_ORG_PRIVATE_KEY: "CQ_ORG_PRIVATE_KEY",
@@ -226,6 +227,10 @@ export const config: EnvConfigNonSandbox = {
     SLACK_NOTIFICATION_URL: "url-to-slack-notification",
     workspaceId: "workspace-id",
     alertsChannelId: "alerts-channel-id",
+  },
+  jobs: {
+    startPatientJobsSchedulerScheduleExpression: "0/5 * * * ? *",
+    startPatientJobsSchedulerUrl: "/internal/patient/job/scheduler/start",
   },
 };
 export default config;

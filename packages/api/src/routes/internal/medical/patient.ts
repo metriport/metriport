@@ -935,6 +935,9 @@ router.post(
       fromDashboard,
     } = internalSendConsolidatedSchema.parse(req.body);
 
+    const { log } = out(`cx ${cxId}, pt ${id}, requestId ${requestId})`);
+    log(`conversionType: ${conversionType}, resources: ${resources}`);
+
     const bundle = await getConsolidatedSnapshotFromS3({
       bundleLocation,
       bundleFilename,

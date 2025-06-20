@@ -145,6 +145,7 @@ type EnvConfigBase = {
   };
   openSearch: OpenSearchConnectorConfig;
   carequality?: {
+    roUsername: string;
     secretNames: {
       CQ_MANAGEMENT_API_KEY: string;
       CQ_ORG_PRIVATE_KEY: string;
@@ -279,6 +280,10 @@ type EnvConfigBase = {
       SURESCRIPTS_SFTP_PUBLIC_KEY: string;
       SURESCRIPTS_SFTP_PRIVATE_KEY: string;
     };
+  };
+  jobs: {
+    startPatientJobsSchedulerScheduleExpression: string;
+    startPatientJobsSchedulerUrl: string;
   };
 };
 

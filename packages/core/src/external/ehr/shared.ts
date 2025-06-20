@@ -7,6 +7,8 @@ import {
   Extension,
   Immunization,
   Medication,
+  MedicationAdministration,
+  MedicationDispense,
   MedicationStatement,
   Observation,
   Procedure,
@@ -202,6 +204,8 @@ export async function makeRequest<T>({
           throw new BadRequestError(message, error, fullAdditionalInfoWithError);
         case 404:
           throw new NotFoundError(message, error, fullAdditionalInfoWithError);
+        case 422:
+          throw new BadRequestError(message, error, fullAdditionalInfoWithError);
         default:
           if (isFhirValidationError(error)) {
             throw new NotFoundError(message, error, fullAdditionalInfoWithError);
@@ -290,6 +294,31 @@ export function isNotRetriableAxiosError(error: unknown): boolean {
       isFhirValidationError(error))
   );
 }
+
+// TYPES FROM DASHBOARD
+export type MedicationWithRefs = {
+  medication: Medication;
+  administration: MedicationAdministration[];
+  dispense: MedicationDispense[];
+  statement: MedicationStatement[];
+};
+
+export type GroupedVitals = {
+  mostRecentObservation: Observation;
+  sortedPoints?: DataPoint[];
+};
+
+export type BloodPressure = {
+  systolic: number;
+  diastolic: number;
+};
+
+export type DataPoint = {
+  value: number;
+  date: string;
+  unit?: string;
+  bp?: BloodPressure | undefined;
+};
 
 export function getMedicationRxnormCoding(medication: Medication): Coding | undefined {
   const code = medication.code;
@@ -455,6 +484,12 @@ export function getObservationLoincCoding(observation: Observation): Coding | un
   });
   if (!loincCoding) return undefined;
   return loincCoding;
+}
+
+export function getObservationLoincCode(observation: Observation): string | undefined {
+  const loincCoding = getObservationLoincCoding(observation);
+  if (!loincCoding) return undefined;
+  return loincCoding.code;
 }
 
 export function getObservationUnitAndValue(

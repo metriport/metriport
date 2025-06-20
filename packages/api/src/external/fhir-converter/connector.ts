@@ -14,7 +14,7 @@ export type FHIRConverterRequest = {
   unusedSegments: string;
   invalidAccess: string;
   requestId: string;
-  source?: MedicalDataSource;
+  source: MedicalDataSource;
 };
 
 export interface FHIRConverterConnector {

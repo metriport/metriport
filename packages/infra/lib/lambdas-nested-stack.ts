@@ -24,7 +24,7 @@ import { addBedrockPolicyToLambda } from "./shared/bedrock";
 import { createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
 import { LambdaLayers } from "./shared/lambda-layers";
 import { createScheduledLambda } from "./shared/lambda-scheduled";
-import { Secrets } from "./shared/secrets";
+import { buildSecret, Secrets } from "./shared/secrets";
 import { createQueue } from "./shared/sqs";
 import { isSandbox } from "./shared/util";
 
@@ -45,8 +45,8 @@ interface LambdasNestedStackProps extends NestedStackProps {
   lambdaLayers: LambdaLayers;
   secrets: Secrets;
   dbCluster: rds.IDatabaseCluster;
-  dbCredsSecret: secret.ISecret;
   medicalDocumentsBucket: s3.Bucket;
+  pharmacyBundleBucket: s3.Bucket | undefined;
   sandboxSeedDataBucket: s3.IBucket | undefined;
   alarmAction?: SnsAction;
   featureFlagsTable: dynamodb.Table;
@@ -60,6 +60,7 @@ type GenericConsolidatedLambdaProps = {
   lambdaLayers: LambdaLayers;
   vpc: ec2.IVpc;
   bundleBucket: s3.IBucket;
+  pharmacyBundleBucket: s3.IBucket | undefined;
   conversionsBucket: s3.IBucket;
   envType: EnvType;
   fhirServerUrl: string;
@@ -76,9 +77,9 @@ export class LambdasNestedStack extends NestedStack {
   readonly cdaToVisualizationLambda: Lambda;
   readonly documentDownloaderLambda: Lambda;
   readonly fhirToCdaConverterLambda: Lambda;
-  readonly outboundPatientDiscoveryLambda: Lambda;
-  readonly outboundDocumentQueryLambda: Lambda;
-  readonly outboundDocumentRetrievalLambda: Lambda;
+  readonly outboundPatientDiscoveryLambda: Lambda | undefined;
+  readonly outboundDocumentQueryLambda: Lambda | undefined;
+  readonly outboundDocumentRetrievalLambda: Lambda | undefined;
   readonly fhirToBundleLambda: Lambda;
   readonly fhirToBundleCountLambda: Lambda;
   readonly consolidatedSearchLambda: Lambda;
@@ -124,41 +125,46 @@ export class LambdasNestedStack extends NestedStack {
       sentryDsn: props.config.lambdasSentryDSN,
     });
 
-    this.outboundPatientDiscoveryLambda = this.setupOutboundPatientDiscovery({
-      lambdaLayers: props.lambdaLayers,
-      vpc: props.vpc,
-      envType: props.config.environmentType,
-      sentryDsn: props.config.lambdasSentryDSN,
-      alarmAction: props.alarmAction,
-      dbCluster: props.dbCluster,
-      dbCredsSecret: props.dbCredsSecret,
-      // TODO move this to a config
-      maxPollingDuration: Duration.minutes(2),
-    });
+    const cqConfig = props.config.carequality;
+    if (cqConfig) {
+      const cqRoDbCredsSecret = buildSecret(this, cqConfig.roUsername);
 
-    this.outboundDocumentQueryLambda = this.setupOutboundDocumentQuery({
-      lambdaLayers: props.lambdaLayers,
-      vpc: props.vpc,
-      envType: props.config.environmentType,
-      sentryDsn: props.config.lambdasSentryDSN,
-      alarmAction: props.alarmAction,
-      dbCluster: props.dbCluster,
-      dbCredsSecret: props.dbCredsSecret,
-      // TODO move this to a config
-      maxPollingDuration: Duration.minutes(15),
-    });
+      this.outboundPatientDiscoveryLambda = this.setupOutboundPatientDiscovery({
+        lambdaLayers: props.lambdaLayers,
+        vpc: props.vpc,
+        envType: props.config.environmentType,
+        sentryDsn: props.config.lambdasSentryDSN,
+        alarmAction: props.alarmAction,
+        dbCluster: props.dbCluster,
+        dbCredsSecret: cqRoDbCredsSecret,
+        // TODO move this to a config
+        maxPollingDuration: Duration.minutes(2),
+      });
 
-    this.outboundDocumentRetrievalLambda = this.setupOutboundDocumentRetrieval({
-      lambdaLayers: props.lambdaLayers,
-      vpc: props.vpc,
-      envType: props.config.environmentType,
-      sentryDsn: props.config.lambdasSentryDSN,
-      alarmAction: props.alarmAction,
-      dbCluster: props.dbCluster,
-      dbCredsSecret: props.dbCredsSecret,
-      // TODO move this to a config
-      maxPollingDuration: Duration.minutes(15),
-    });
+      this.outboundDocumentQueryLambda = this.setupOutboundDocumentQuery({
+        lambdaLayers: props.lambdaLayers,
+        vpc: props.vpc,
+        envType: props.config.environmentType,
+        sentryDsn: props.config.lambdasSentryDSN,
+        alarmAction: props.alarmAction,
+        dbCluster: props.dbCluster,
+        dbCredsSecret: cqRoDbCredsSecret,
+        // TODO move this to a config
+        maxPollingDuration: Duration.minutes(15),
+      });
+
+      this.outboundDocumentRetrievalLambda = this.setupOutboundDocumentRetrieval({
+        lambdaLayers: props.lambdaLayers,
+        vpc: props.vpc,
+        envType: props.config.environmentType,
+        sentryDsn: props.config.lambdasSentryDSN,
+        alarmAction: props.alarmAction,
+        dbCluster: props.dbCluster,
+        dbCredsSecret: cqRoDbCredsSecret,
+        // TODO move this to a config
+        maxPollingDuration: Duration.minutes(15),
+      });
+    }
 
     const resultNotifierConnector = this.setupConversionResultNotifier({
       vpc: props.vpc,
@@ -192,6 +198,7 @@ export class LambdasNestedStack extends NestedStack {
       fhirServerUrl: props.config.fhirServerUrl,
       bundleBucket: props.medicalDocumentsBucket,
       conversionsBucket: this.fhirConverterConnector.bucket,
+      pharmacyBundleBucket: props.pharmacyBundleBucket,
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: props.alarmAction,
@@ -205,6 +212,7 @@ export class LambdasNestedStack extends NestedStack {
       fhirServerUrl: props.config.fhirServerUrl,
       bundleBucket: props.medicalDocumentsBucket,
       conversionsBucket: this.fhirConverterConnector.bucket,
+      pharmacyBundleBucket: props.pharmacyBundleBucket,
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: props.alarmAction,
@@ -652,6 +660,7 @@ export class LambdasNestedStack extends NestedStack {
     fhirServerUrl,
     bundleBucket,
     conversionsBucket,
+    pharmacyBundleBucket,
     sentryDsn,
     envType,
     alarmAction,
@@ -673,6 +682,9 @@ export class LambdasNestedStack extends NestedStack {
         BUCKET_NAME: bundleBucket.bucketName,
         MEDICAL_DOCUMENTS_BUCKET_NAME: bundleBucket.bucketName,
         CONVERSION_RESULT_BUCKET_NAME: conversionsBucket.bucketName,
+        ...(pharmacyBundleBucket && {
+          PHARMACY_CONVERSION_BUCKET_NAME: pharmacyBundleBucket.bucketName,
+        }),
         FEATURE_FLAGS_TABLE_NAME: featureFlagsTable.tableName,
         ...(bedrock && {
           // API_URL set on the api-stack after the OSS API is created
@@ -693,6 +705,7 @@ export class LambdasNestedStack extends NestedStack {
 
     bundleBucket.grantReadWrite(theLambda);
     conversionsBucket.grantRead(theLambda);
+    pharmacyBundleBucket?.grantRead(theLambda);
 
     featureFlagsTable.grantReadData(theLambda);
 

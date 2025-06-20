@@ -11,7 +11,6 @@ import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 dayjs.extend(duration);
 
 const context = "cq.patient.post-response.discover";
-const resultPoller = makeOutboundResultPoller();
 const MAX_SAFE_GWS = 100000;
 
 export async function processPostRespOutboundPatientDiscoveryResps({
@@ -34,6 +33,8 @@ export async function processPostRespOutboundPatientDiscoveryResps({
       log(`Kicking off post resp patient discovery`);
       // TODO Internal #1832 (rework)
       await updatePatientDiscoveryStatus({ patient, status: "processing" });
+
+      const resultPoller = makeOutboundResultPoller();
 
       await resultPoller.pollOutboundPatientDiscoveryResults({
         requestId: requestId,
