@@ -237,9 +237,8 @@ function replaceResourceId(
 ): Resource[] {
   const resourcesAsString = JSON.stringify(resources);
   const resourcesAsStringWithReplacedId = resourcesAsString.replace(
-    new RegExp(`"${oldResourceId}"`, "g"),
+    `/${oldResourceId}/g`,
     newResourceId
   );
-  console.log(resourcesAsStringWithReplacedId);
   return JSON.parse(resourcesAsStringWithReplacedId);
 }
