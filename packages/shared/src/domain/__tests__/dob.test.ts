@@ -2,7 +2,7 @@ import { normalizeDob, normalizeDobSafe } from "../dob";
 
 describe("dob", () => {
   describe("normalizeDob", () => {
-    it("should throw an error if zip is an empty string", () => {
+    it("should throw an error if dob is an empty string", () => {
       expect(() => normalizeDob("")).toThrow();
     });
 
@@ -20,8 +20,8 @@ describe("dob", () => {
       expect(normalizeDobSafe(input)).toBe(expectedOutput);
     });
 
-    it("should throw when gets invalid date", () => {
-      expect(() => normalizeDob("something thats not a date")).toThrow();
+    it("should return undefined when gets invalid date", () => {
+      expect(normalizeDobSafe("something thats not a date")).toBeUndefined();
     });
 
     describe("examples from the wild", () => {

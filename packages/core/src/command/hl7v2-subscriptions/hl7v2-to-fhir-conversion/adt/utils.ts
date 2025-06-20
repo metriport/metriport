@@ -10,6 +10,7 @@ import {
   getSegmentByNameOrFail,
   mapHl7SystemNameToSystemUrl,
 } from "../shared";
+import { getMessageUniqueIdentifier } from "../msh";
 
 const NUMBER_OF_DATA_POINTS_PER_CONDITION = 3;
 type CodingIndex = 0 | 1;
@@ -96,22 +97,30 @@ export function getPotentialIdentifiers(adt: Hl7Message) {
   const accountNumber = getOptionalValueFromMessage(adt, "PV1", 18, 1);
   const mrn = getOptionalValueFromMessage(adt, "PID", 3, 1);
   const admitDate = getOptionalValueFromMessage(adt, "PV1", 44, 1);
+  const facilityName = getFacilityName(adt);
+  const messageId = getMessageUniqueIdentifier(adt);
 
   return {
     visitNumber,
     accountNumber,
     mrn,
     admitDate,
+    facilityName,
+    messageId,
   };
 }
 
 export function createEncounterId(adt: Hl7Message, patientId: string) {
-  const { visitNumber, accountNumber, mrn, admitDate } = getPotentialIdentifiers(adt);
+  const { visitNumber, accountNumber, mrn, admitDate, facilityName, messageId } =
+    getPotentialIdentifiers(adt);
 
   if (visitNumber) return createUuidFromText(`${visitNumber}-${patientId}`);
   if (accountNumber) return createUuidFromText(`${accountNumber}-${patientId}`);
   if (mrn && admitDate) {
     return createUuidFromText(`${mrn}-${admitDate}`);
+  }
+  if (facilityName && messageId) {
+    return createUuidFromText(`${facilityName}-${messageId}`);
   }
 
   return uuidv7();
@@ -128,17 +137,14 @@ export function buildCoding({
 }): Coding | undefined {
   if (!code && !display) return undefined;
 
-  const systemUrl = system ?? inferConditionSystem(code);
+  if (!system) {
+    if (!display) return undefined;
+    return { display };
+  }
+
   return {
     ...(code ? { code } : undefined),
     ...(display ? { display } : undefined),
-    ...(systemUrl ? { system: systemUrl } : undefined),
+    ...(system ? { system: system } : undefined),
   };
-}
-
-function inferConditionSystem(code: string | undefined): string | undefined {
-  if (!code) return undefined;
-
-  // TODO 2883: See if we can infer the system being ICD-10 / LOINC / SNOMED
-  return code;
 }

@@ -504,7 +504,7 @@ type FhirTypes = {
   organizations: Organization[];
 };
 
-// TODO: Use the version from "@metriport/core/external/fhir/shared/bundle.ts"
+// TODO: Use the version from "@metriport/core/external/fhir/bundle/bundle.ts"
 function extractFhirTypesFromBundle(bundle: Bundle): FhirTypes {
   let patient: Patient | undefined;
   const practitioners: Practitioner[] = [];
@@ -1319,7 +1319,7 @@ function createSectionInMedications(
           });
 
           return `
-            <tr data-id"${medicationStatement.id}">
+            <tr data-id="${medicationStatement.id}">
               <td>${medication?.code?.text ?? ""}</td>
               <td>${blacklistedInstruction ? "" : medicationStatement.dosage?.[0]?.text ?? ""}</td>
               <td>${medicationStatement.dosage?.[0]?.doseAndRate?.[0]?.doseQuantity?.value ?? ""} ${

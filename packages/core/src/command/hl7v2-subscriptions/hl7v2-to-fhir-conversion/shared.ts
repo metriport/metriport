@@ -5,7 +5,7 @@ import { capture, out } from "../../../util";
 import { Base64Scrambler } from "../../../util/base64-scrambler";
 import { Config } from "../../../util/config";
 import { ICD_10_URL, ICD_9_URL, LOINC_URL, SNOMED_URL } from "../../../util/constants";
-import { HL7_FILE_EXTENSION, JSON_FILE_EXTENSION } from "../../../util/mime";
+import { HL7_FILE_EXTENSION } from "../../../util/mime";
 import { packUuid, unpackUuid } from "../../../util/pack-uuid";
 import { getMessageDatetime, getMessageUniqueIdentifier } from "./msh";
 
@@ -27,6 +27,8 @@ const hl7CodingSystemToUrlMap: Record<string, string> = {
   I9: ICD_9_URL, // ICD-9
   "ICD-9": ICD_9_URL, // ICD-9
 };
+
+const hl7UnknownCodingSystems: Set<string> = new Set(["HRV", "FT"]);
 
 function decompressUuid(shortId: string) {
   return unpackUuid(new Base64Scrambler(Config.getHl7Base64ScramblerSeed()).unscramble(shortId));
@@ -130,8 +132,12 @@ export function getOptionalValueFromField(
 export function mapHl7SystemNameToSystemUrl(systemName: string | undefined): string | undefined {
   if (!systemName) return undefined;
 
-  const systemUrl = hl7CodingSystemToUrlMap[systemName.trim().toUpperCase()];
-  if (!systemUrl) {
+  const cleanedSystemName = systemName.trim().toUpperCase();
+  const systemUrl = hl7CodingSystemToUrlMap[cleanedSystemName];
+  const hasUnknownCodingSystem = hl7UnknownCodingSystems.has(cleanedSystemName);
+
+  // Don't warn on any explicitly unknown coding systems
+  if (!systemUrl && !hasUnknownCodingSystem) {
     const { log } = out(`mapHl7SystemNameToSystemUrl`);
     const msg = "Failed to map HL7 system name to URL";
     log(`${msg}: ${systemName}`);
@@ -146,7 +152,7 @@ export function mapHl7SystemNameToSystemUrl(systemName: string | undefined): str
   return systemUrl;
 }
 
-export function buildHl7MessageFileKey({
+export function createFileKeyHl7Message({
   cxId,
   patientId,
   messageId,
@@ -159,8 +165,4 @@ export function buildHl7MessageFileKey({
 
 export function formatDateToHl7(date: Date): string {
   return buildDayjs(date).format("YYYYMMDDHHmmss");
-}
-
-export function buildHl7MessageFhirBundleFileKey(params: Hl7FileKeyParams) {
-  return `${buildHl7MessageFileKey(params)}.${JSON_FILE_EXTENSION}`;
 }

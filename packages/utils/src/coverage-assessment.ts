@@ -32,9 +32,7 @@ dayjs.extend(duration);
  * The results are saved in a CSV file in the `runs` folder, named with the customer's
  * name and timestamp
  *
- * The delay time between requests is saved in a file called `delay-time-in-seconds.txt` in the
- * packages/utils folder. It should contain a single line, with the delay time in seconds.
- * If the file doesn't exist, it will use the default delay time.
+ * The delay time between requests is obtained from getDelayTime() after each patient/call.
  * @see shared/duration.ts for more details
  *
  * Execute this with:

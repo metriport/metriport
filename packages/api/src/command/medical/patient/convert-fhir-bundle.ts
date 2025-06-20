@@ -1,4 +1,4 @@
-import { Bundle, Resource } from "@medplum/fhirtypes";
+import { Bundle, DocumentReference, Resource } from "@medplum/fhirtypes";
 import { ResourceTypeForConsolidation } from "@metriport/api-sdk";
 import {
   ConsolidationConversionType,
@@ -14,6 +14,10 @@ import { getConsolidatedQueryByRequestId, Patient } from "@metriport/core/domain
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { getLambdaResultPayload, makeLambdaClient } from "@metriport/core/external/aws/lambda";
 import { makeS3Client, S3Utils } from "@metriport/core/external/aws/s3";
+import {
+  buildBundleEntry,
+  buildSearchSetBundle,
+} from "@metriport/core/external/fhir/bundle/bundle";
 import { out } from "@metriport/core/util";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { SearchSetBundle } from "@metriport/shared/medical";
@@ -64,7 +68,6 @@ export async function handleBundleToMedicalRecord({
     const url = await s3Utils.getSignedUrl({
       bucketName,
       fileName,
-      durationSeconds: 60,
     });
     return buildDocRefBundleWithAttachment(patient.id, url, conversionType);
   }
@@ -104,29 +107,21 @@ export function buildDocRefBundleWithAttachment(
   attachmentUrl: string,
   mimeType: ConsolidationConversionType
 ): SearchSetBundle<Resource> {
-  return {
-    resourceType: "Bundle",
-    total: 1,
-    type: "searchset",
-    entry: [
+  const docRef: DocumentReference = {
+    resourceType: "DocumentReference",
+    subject: {
+      reference: `Patient/${patientId}`,
+    },
+    content: [
       {
-        resource: {
-          resourceType: "DocumentReference",
-          subject: {
-            reference: `Patient/${patientId}`,
-          },
-          content: [
-            {
-              attachment: {
-                contentType: `application/${mimeType}`,
-                url: attachmentUrl,
-              },
-            },
-          ],
+        attachment: {
+          contentType: `application/${mimeType}`,
+          url: attachmentUrl,
         },
       },
     ],
   };
+  return buildSearchSetBundle([buildBundleEntry(docRef)]);
 }
 
 async function convertFHIRBundleToMedicalRecord({

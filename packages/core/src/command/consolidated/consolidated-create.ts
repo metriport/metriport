@@ -1,4 +1,5 @@
-import { Bundle, BundleEntry, DocumentReference } from "@medplum/fhirtypes";
+import { Bundle, BundleEntry } from "@medplum/fhirtypes";
+import { errorToString } from "@metriport/shared";
 import { parseFhirBundle } from "@metriport/shared/medical";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -6,16 +7,25 @@ import { generateAiBriefBundleEntry } from "../../domain/ai-brief/generate";
 import { createConsolidatedDataFilePath } from "../../domain/consolidated/filename";
 import { createFolderName } from "../../domain/filename";
 import { Patient } from "../../domain/patient";
-import { isAiBriefFeatureFlagEnabledForCx } from "../feature-flags/domain-ffs";
-import { S3Utils, executeWithRetriesS3 } from "../../external/aws/s3";
-import { deduplicate } from "../../external/fhir/consolidated/deduplicate";
+import { executeWithRetriesS3, S3Utils } from "../../external/aws/s3";
+import {
+  buildBundleEntry,
+  buildCollectionBundle,
+  dangerouslyAddEntriesToBundle,
+} from "../../external/fhir/bundle/bundle";
+import { dangerouslyDeduplicate } from "../../external/fhir/consolidated/deduplicate";
 import { getDocuments as getDocumentReferences } from "../../external/fhir/document/get-documents";
 import { toFHIR as patientToFhir } from "../../external/fhir/patient/conversion";
-import { buildBundle, buildBundleEntry } from "../../external/fhir/shared/bundle";
+import { insertSourceDocumentToAllDocRefMeta } from "../../external/fhir/shared/meta";
+import { getBundleResources as getPharmacyResources } from "../../external/surescripts/command/bundle/get-bundle";
 import { capture, executeAsynchronously, out } from "../../util";
 import { Config } from "../../util/config";
+import { processAsyncError } from "../../util/error/shared";
 import { controlDuration } from "../../util/race-control";
+import { AiBriefControls } from "../ai-brief/shared";
+import { isAiBriefFeatureFlagEnabledForCx } from "../feature-flags/domain-ffs";
 import { getConsolidatedLocation, getConsolidatedSourceLocation } from "./consolidated-shared";
+import { makeIngestConsolidated } from "./search/fhir-resource/ingest-consolidated-factory";
 
 dayjs.extend(duration);
 
@@ -54,69 +64,97 @@ export async function createConsolidatedFromConversions({
   const fhirPatient = patientToFhir(patient);
   const patientEntry = buildBundleEntry(fhirPatient);
 
-  const [conversions, docRefs, isAiBriefFeatureFlagEnabled] = await Promise.all([
+  const [conversions, docRefs, pharmacyResources, isAiBriefFeatureFlagEnabled] = await Promise.all([
     getConversions({ cxId, patient, sourceBucketName }),
     getDocumentReferences({ cxId, patientId }),
+    getPharmacyResources({ cxId, patientId }),
     isAiBriefFeatureFlagEnabledForCx(cxId),
   ]);
   log(`Got ${conversions.length} resources from conversions`);
 
-  const withDups = buildConsolidatedBundle();
-  const docRefsWithUpdatedMeta = updateMetaDataForDocRefs(docRefs);
-  withDups.entry = [...conversions, ...docRefsWithUpdatedMeta.map(buildBundleEntry), patientEntry];
-  withDups.total = withDups.entry.length;
+  const bundle = buildCollectionBundle();
+  const docRefsWithUpdatedMeta = insertSourceDocumentToAllDocRefMeta(docRefs);
+  bundle.entry = [
+    ...conversions,
+    ...docRefsWithUpdatedMeta.map(buildBundleEntry),
+    ...pharmacyResources,
+    patientEntry,
+  ];
   log(
-    `Added ${docRefsWithUpdatedMeta.length} docRefs and the Patient, to a total of ${withDups.entry.length} entries`
+    `Added ${docRefsWithUpdatedMeta.length} docRefs, ` +
+      `${pharmacyResources.length} pharmacy resources, ` +
+      `and the Patient, to a total of ${bundle.entry.length} entries`
   );
+  const lengthWithDups = bundle.entry.length;
 
+  const withDupsDestFileName = createConsolidatedDataFilePath(cxId, patientId, false);
+  log(
+    `Storing consolidated bundle w/ dups on ${destinationBucketName}, key ${withDupsDestFileName}`
+  );
+  try {
+    await s3Utils.uploadFile({
+      bucket: destinationBucketName,
+      key: withDupsDestFileName,
+      file: Buffer.from(JSON.stringify(bundle)),
+      contentType: "application/json",
+    });
+  } catch (e) {
+    log(
+      `Error uploading consolidated bundle to ${destinationBucketName}, key ${withDupsDestFileName}`
+    );
+    log(errorToString(e));
+  }
+
+  // TODO(ENG-328): Before continuing to make changes to this command and duplicative operations,
+  // I recommend you write a unit test to verify the sequencing of these mutative operations
   log(`Deduplicating consolidated bundle...`);
-  const deduped = await deduplicate({ cxId, patientId, bundle: withDups });
-  log(`...done, from ${withDups.entry?.length} to ${deduped.entry?.length} resources`);
+  await dangerouslyDeduplicate({ cxId, patientId, bundle });
+  log(`...done, from ${lengthWithDups} to ${bundle.entry?.length} resources`);
 
+  // TODO This whole section with AI-related logic should be moved to the `generateAiBriefBundleEntry`.
   log(`isAiBriefFeatureFlagEnabled: ${isAiBriefFeatureFlagEnabled}`);
-
-  if (isAiBriefFeatureFlagEnabled && deduped.entry && deduped.entry.length > 0) {
+  if (isAiBriefFeatureFlagEnabled && bundle.entry && bundle.entry.length > 0) {
+    const aiBriefControls: AiBriefControls = {
+      cancelled: false,
+    };
     const binaryBundleEntry = await Promise.race([
-      generateAiBriefBundleEntry(deduped, cxId, patientId, log),
+      generateAiBriefBundleEntry(bundle, cxId, patientId, log, aiBriefControls),
       controlDuration(AI_BRIEF_TIMEOUT.asMilliseconds(), TIMED_OUT),
     ]);
 
     if (binaryBundleEntry === TIMED_OUT) {
+      aiBriefControls.cancelled = true;
       log(`AI Brief generation timed out after ${AI_BRIEF_TIMEOUT.asMinutes()} minutes`);
       capture.message("AI Brief generation timed out", {
         extra: { cxId, patientId, timeoutMinutes: AI_BRIEF_TIMEOUT.asMinutes() },
         level: "warning",
       });
     } else if (binaryBundleEntry) {
-      deduped.entry?.push(binaryBundleEntry);
+      bundle.entry?.push(binaryBundleEntry);
     }
   }
 
   const dedupDestFileName = createConsolidatedDataFilePath(cxId, patientId, true);
-  const withDupsDestFileName = createConsolidatedDataFilePath(cxId, patientId, false);
   log(`Storing consolidated bundle on ${destinationBucketName}, key ${dedupDestFileName}`);
-  log(`Storing consolidated bundle w/ dups on ${destinationBucketName}, key ${dedupDestFileName}`);
-  await Promise.all([
-    s3Utils.uploadFile({
-      bucket: destinationBucketName,
-      key: dedupDestFileName,
-      file: Buffer.from(JSON.stringify(deduped)),
-      contentType: "application/json",
-    }),
-    s3Utils.uploadFile({
-      bucket: destinationBucketName,
-      key: withDupsDestFileName,
-      file: Buffer.from(JSON.stringify(withDups)),
-      contentType: "application/json",
-    }),
-  ]);
+  await s3Utils.uploadFile({
+    bucket: destinationBucketName,
+    key: dedupDestFileName,
+    file: Buffer.from(JSON.stringify(bundle)),
+    contentType: "application/json",
+  });
+
+  try {
+    const ingestor = makeIngestConsolidated();
+    await ingestor.ingestConsolidatedIntoSearchEngine({ cxId, patientId });
+  } catch (error) {
+    // intentionally not re-throwing
+    processAsyncError("createConsolidatedFromConversions.ingestConsolidatedIntoSearchEngine")(
+      error
+    );
+  }
 
   log(`Done`);
-  return deduped;
-}
-
-export function buildConsolidatedBundle(entries: BundleEntry[] = []): Bundle {
-  return buildBundle({ type: "collection", entries });
+  return bundle;
 }
 
 async function getConversions({
@@ -138,7 +176,7 @@ async function getConversions({
     return [];
   }
 
-  const mergedBundle = buildConsolidatedBundle();
+  const mergedBundle = buildCollectionBundle();
   await executeAsynchronously(
     conversionBundles,
     async inputBundle => {
@@ -148,13 +186,13 @@ async function getConversions({
         () => s3Utils.getFileContentsAsString(bucket, key),
         { ...defaultS3RetriesConfig, log }
       );
-      log(`Merging bundle ${key} into the consolidated one`);
+      log(`Merging entries from bundle ${key} into the consolidated one`);
       const singleConversion = parseFhirBundle(contents);
       if (!singleConversion) {
         log(`No valid bundle found in ${bucket}/${key}, skipping`);
         return;
       }
-      merge(singleConversion).into(mergedBundle);
+      dangerouslyAddEntriesToBundle(mergedBundle, singleConversion.entry);
     },
     { numberOfParallelExecutions }
   );
@@ -185,33 +223,4 @@ async function listConversionBundlesFromS3({
     o.Key ? { bucket: sourceBucketName, key: o.Key } : []
   );
   return conversionBundles;
-}
-
-export function merge(inputBundle: Bundle) {
-  return {
-    into: function (destination: Bundle): Bundle {
-      if (!destination.entry) destination.entry = [];
-      for (const entry of inputBundle.entry ?? []) {
-        destination.entry.push(entry);
-      }
-      destination.total = destination.entry.length;
-      return destination;
-    },
-  };
-}
-
-function updateMetaDataForDocRefs(docRefs: DocumentReference[]): DocumentReference[] {
-  return docRefs.map(docRef => {
-    const contentWithTitle = docRef.content?.find(atch => atch.attachment?.title);
-    const sourceFile = contentWithTitle?.attachment?.title;
-    if (!sourceFile) return docRef;
-
-    return {
-      ...docRef,
-      meta: {
-        ...docRef.meta,
-        source: sourceFile,
-      },
-    };
-  });
 }

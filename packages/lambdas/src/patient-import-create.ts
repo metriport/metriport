@@ -6,10 +6,9 @@ import { SQSEvent } from "aws-lambda";
 import { capture } from "./shared/capture";
 import { getEnvOrFail } from "./shared/env";
 import { prefixedLog } from "./shared/log";
+import { parseCxIdAndJob, parseFacilityId } from "./shared/parse-body";
 import {
-  parseCxIdAndJob,
   parseDisableWebhooksOrFail,
-  parseFacilityId,
   parseRerunPdOnNewDemos,
   parseTriggerConsolidatedOrFail,
 } from "./shared/patient-import";
@@ -25,6 +24,7 @@ const patientImportBucket = getEnvOrFail("PATIENT_IMPORT_BUCKET_NAME");
 const waitTimeInMillisRaw = getEnvOrFail("WAIT_TIME_IN_MILLIS");
 const waitTimeInMillis = parseInt(waitTimeInMillisRaw);
 
+// TODO move to capture.wrapHandler()
 export const handler = Sentry.AWSLambda.wrapHandler(async function handler(event: SQSEvent) {
   capture.setExtra({ event, context: lambdaName });
   const startedAt = new Date().getTime();
@@ -85,7 +85,7 @@ function parseBody(body?: unknown): Omit<ProcessPatientCreateRequest, "rowCsv" |
   const bodyAsJson = JSON.parse(bodyString);
 
   const { cxIdRaw, jobIdRaw } = parseCxIdAndJob(bodyAsJson);
-  const { facilityIdRaw } = parseFacilityId(bodyAsJson);
+  const facilityIdRaw = parseFacilityId(bodyAsJson);
   const triggerConsolidatedRaw = parseTriggerConsolidatedOrFail(bodyAsJson);
   const disableWebhooksRaw = parseDisableWebhooksOrFail(bodyAsJson);
   const rerunPdOnNewDemographicsRaw = parseRerunPdOnNewDemos(bodyAsJson);

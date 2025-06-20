@@ -1,5 +1,5 @@
 import { DocumentReference } from "@medplum/fhirtypes";
-import { resourceTypeForConsolidation } from "@metriport/api-sdk";
+import { MedicalDataSource, resourceTypeForConsolidation } from "@metriport/api-sdk";
 import { Patient } from "@metriport/core/domain/patient";
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { getDocuments } from "@metriport/core/external/fhir/document/get-documents";
@@ -95,13 +95,22 @@ export const reConvertDocuments = async (params: ReConvertDocumentsCommand): Pro
     const patientPromise = async ([patientId, documents]: [string, DocRefMapping[]]) => {
       const documentIds = documents.map(d => d.id);
       try {
-        await reConvertByPatient({
-          patient: { id: patientId, cxId },
-          documentIds,
-          requestId,
-          isDisableWH,
-          dryRun,
-        });
+        const docsBySource = groupBy(documents, d => d.source);
+
+        await executeAsynchronously(
+          Object.entries(docsBySource),
+          async ([source, documentsForSource]) => {
+            const documentIdsForSource = documentsForSource.map(d => d.id);
+            await reConvertByPatient({
+              source: source as MedicalDataSource,
+              patient: { id: patientId, cxId },
+              documentIds: documentIdsForSource,
+              requestId,
+              isDisableWH,
+              dryRun,
+            });
+          }
+        );
       } catch (error) {
         const msg = `Error re-converting documents for patient`;
         const extra = { error, patientId, documentIds };
@@ -150,12 +159,14 @@ async function reConvertByPatient({
   patient: patientParam,
   documentIds,
   requestId,
+  source,
   isDisableWH,
   dryRun,
 }: {
   patient: Pick<Patient, "id" | "cxId">;
   documentIds: string[];
   requestId: string;
+  source: MedicalDataSource;
   isDisableWH: boolean;
   dryRun: boolean;
 }): Promise<void> {
@@ -189,6 +200,7 @@ async function reConvertByPatient({
     patient,
     documents,
     requestId,
+    source,
     dryRun,
     log,
   });
@@ -230,12 +242,14 @@ async function reConvertDocumentsInternal({
   patient,
   documents,
   requestId,
+  source,
   dryRun,
   log = console.log,
 }: {
   patient: Patient;
   documents: DocRefWithS3Info[];
   requestId: string;
+  source: MedicalDataSource;
   dryRun?: boolean;
   log?: typeof console.log;
 }): Promise<void> {
@@ -251,6 +265,7 @@ async function reConvertDocumentsInternal({
     await executeAsynchronously(documents, async docWithS3Info =>
       reConvertDocument({
         patient,
+        source,
         docWithS3Info,
         requestId,
       })
@@ -267,10 +282,12 @@ async function reConvertDocument({
   patient,
   docWithS3Info,
   requestId,
+  source,
 }: {
   patient: Patient;
   docWithS3Info: DocRefWithS3Info;
   requestId: string;
+  source: MedicalDataSource;
 }) {
   const { docRef, file } = docWithS3Info;
   const doc = {
@@ -282,6 +299,7 @@ async function reConvertDocument({
   await convertCDAToFHIR({
     patient,
     document: doc,
+    source,
     s3FileName: file.fileName,
     s3BucketName: file.fileLocation,
     requestId,

@@ -34,7 +34,7 @@ dayjs.extend(duration);
  * - this: just triggers the DQ
  * - bulk-query-patients: triggers the DQ, waits for it to complete, and logs the results
  *
- * This supports updating the delay time in-flight, by editing the delay-time-in-seconds.txt file.
+ * This supports updating the delay time in-flight, by editing the respective file.
  * @see shared/duration.ts for more details
  *
  * Execute this with:

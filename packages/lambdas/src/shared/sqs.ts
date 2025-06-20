@@ -3,6 +3,7 @@ import { SQSMessageAttributes, SQSRecord } from "aws-lambda";
 import * as AWS from "aws-sdk";
 import { SQS } from "aws-sdk";
 import { MessageBodyAttributeMap } from "aws-sdk/clients/sqs";
+import { z } from "zod";
 import { capture } from "./capture";
 
 export class SQSUtils {
@@ -80,4 +81,15 @@ export function getSingleMessageOrFail(
   // Safe as we just checked the length
   const message = records[0]!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
   return message;
+}
+
+export function parseBody<T>(schema: z.Schema<T>, body?: unknown): T {
+  if (!body) throw new MetriportError(`Missing message body`);
+
+  const bodyString = typeof body === "string" ? (body as string) : undefined;
+  if (!bodyString) throw new MetriportError(`Invalid body`);
+
+  const bodyAsJson = JSON.parse(bodyString);
+
+  return schema.parse(bodyAsJson);
 }

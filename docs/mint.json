@@ -31,7 +31,7 @@
       "url": "mailto:contact@metriport.com"
     },
     {
-      "name": "Github",
+      "name": "GitHub",
       "url": "https://github.com/metriport/metriport"
     }
   ],
@@ -111,6 +111,7 @@
             "medical-api/api-reference/fhir/consolidated-data-query-get-single",
             "medical-api/api-reference/fhir/consolidated-data-query-get",
             "medical-api/api-reference/fhir/consolidated-data-count",
+            "medical-api/api-reference/fhir/consolidated-data-search",
             "medical-api/api-reference/fhir/create-patient-consolidated",
             "medical-api/api-reference/fhir/get-medical-record-summary-status",
             "medical-api/api-reference/fhir/get-medical-record-summary"

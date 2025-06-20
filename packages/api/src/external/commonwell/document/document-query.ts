@@ -35,7 +35,7 @@ import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { Config } from "../../../shared/config";
 import { mapDocRefToMetriport } from "../../../shared/external";
 import { reportMetric } from "../../aws/cloudwatch";
-import { ingestIntoSearchEngine } from "../../aws/opensearch";
+import { ingestIntoSearchEngine } from "@metriport/core/command/consolidated/search/document-reference/ingest";
 import { convertCDAToFHIR, isConvertible } from "../../fhir-converter/converter";
 import { makeFhirApi } from "../../fhir/api/api-factory";
 import { cwToFHIR } from "../../fhir/document";
@@ -226,6 +226,16 @@ export async function queryAndProcessDocuments({
     });
     log(`Got ${cwDocuments.length} documents from CW`);
 
+    const fhirDocRefs = await downloadDocsAndUpsertFHIR({
+      patient,
+      facilityId,
+      documents: cwDocuments,
+      forceDownload,
+      ignoreDocRefOnFHIRServer,
+      ignoreFhirConversionAndUpsert,
+      requestId,
+    });
+
     const duration = elapsedTimeFromNow(startedAt);
     const contentTypes = cwDocuments.map(getContentTypeOrUnknown);
     const contentTypeCounts = getDocumentReferenceContentTypeCounts(contentTypes);
@@ -241,16 +251,6 @@ export async function queryAndProcessDocuments({
         documentCount: cwDocuments.length,
         ...contentTypeCounts,
       },
-    });
-
-    const fhirDocRefs = await downloadDocsAndUpsertFHIR({
-      patient,
-      facilityId,
-      documents: cwDocuments,
-      forceDownload,
-      ignoreDocRefOnFHIRServer,
-      ignoreFhirConversionAndUpsert,
-      requestId,
     });
 
     log(`Finished processing ${fhirDocRefs.length} documents.`);
@@ -559,6 +559,7 @@ async function downloadDocsAndUpsertFHIR({
     isConvertible(doc.content?.mimeType)
   ).length;
   log(`I have ${docsToDownload.length} docs to download (${convertibleDocCount} convertible)`);
+
   await initPatientDocQuery(patient, docsToDownload.length, convertibleDocCount, requestId);
 
   // TODO move to executeAsynchronously() from core
@@ -707,7 +708,7 @@ async function downloadDocsAndUpsertFHIR({
               }),
               ingestIntoSearchEngine(
                 patient,
-                fhirDocRef,
+                fhirDocRef.id,
                 {
                   key: file.key,
                   bucket: file.bucket,

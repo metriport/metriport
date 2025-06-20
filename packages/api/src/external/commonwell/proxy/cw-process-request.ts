@@ -3,15 +3,19 @@ import {
   docContributionFileParam,
   getDocContributionURL,
 } from "@metriport/core/external/commonwell/document/document-contribution";
+import {
+  buildBundleEntry,
+  buildSearchSetBundle,
+} from "@metriport/core/external/fhir/bundle/bundle";
 import { isDocumentReference } from "@metriport/core/external/fhir/document/document-reference";
 import { toFHIR as orgToFHIR } from "@metriport/core/external/fhir/organization/conversion";
 import { toFHIR as patientToFHIR } from "@metriport/core/external/fhir/patient/conversion";
-import { buildBundle } from "@metriport/core/external/fhir/shared/bundle";
 import { ensureCcdExists } from "@metriport/core/shareback/ensure-ccd-exists";
 import { getMetadataDocumentContents } from "@metriport/core/shareback/metadata/get-metadata-xml";
 import { parseExtrinsicObjectXmlToDocumentReference } from "@metriport/core/shareback/metadata/parse-metadata-xml";
 import { out } from "@metriport/core/util/log";
-import { BadRequestError } from "@metriport/shared";
+import { capture } from "@metriport/core/util/notifications";
+import { BadRequestError, errorToString } from "@metriport/shared";
 import dayjs from "dayjs";
 import { Request } from "express";
 import { partition, uniqBy } from "lodash";
@@ -64,12 +68,26 @@ export async function processRequest(req: Request): Promise<Bundle<Resource>> {
   ];
 
   await ensureCcdExists({ cxId, patientId, log });
-  const metadataFiles = await getMetadataDocumentContents(cxId, patientId);
+  const metadataFileContents = await getMetadataDocumentContents(cxId, patientId);
   const docRefs: DocumentReference[] = [];
-  for (const file of metadataFiles) {
-    const additionalDocRef = await parseExtrinsicObjectXmlToDocumentReference(file, patientId);
-    additionalDocRef.contained = [orgResource];
-    docRefs.push(additionalDocRef);
+  for (const fileContents of metadataFileContents) {
+    try {
+      const additionalDocRef = await parseExtrinsicObjectXmlToDocumentReference({
+        patientId,
+        xmlContents: fileContents,
+      });
+      additionalDocRef.contained = [orgResource];
+      docRefs.push(additionalDocRef);
+    } catch (err) {
+      const error = errorToString(err);
+      const msg = "Error parsing metadata XML during inbound request";
+      log(msg, error);
+      capture.error(msg, {
+        extra: { cxId, patientId, context: "cw.inbound.processRequest", error },
+      });
+      // intentionally ignore the error, we don't want to fail the request so we can provide
+      // the most data we can
+    }
   }
 
   const bundle = prepareBundle([patientResource, ...docRefs], params);
@@ -132,13 +150,13 @@ function getAllowedSearchParams(searchParams: URLSearchParams): URLSearchParams 
 export function prepareBundle(resources: Resource[], params: URLSearchParams): Bundle<Resource> {
   const { documentReferences, otherResources } = splitResources(resources);
   const filteredDocRefs = applyFilterParams(documentReferences, params);
-  if (filteredDocRefs.length < 1) return buildBundle();
+  if (filteredDocRefs.length < 1) return buildSearchSetBundle();
 
   const updatedDocRefs = adjustAttachmentURLs(filteredDocRefs);
   const consolidatedResources = [...updatedDocRefs, ...otherResources];
   const uniqueResources = uniqBy(consolidatedResources, r => r.id);
-  const bundleEntries: BundleEntry[] = uniqueResources.map(r => ({ resource: r }));
-  const bundle = buildBundle({ entries: bundleEntries });
+  const bundleEntries: BundleEntry[] = uniqueResources.map(buildBundleEntry);
+  const bundle = buildSearchSetBundle(bundleEntries);
   return bundle;
 }
 

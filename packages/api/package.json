@@ -1,6 +1,6 @@
 {
   "name": "api",
-  "version": "1.27.2",
+  "version": "1.27.8",
   "description": "",
   "main": "app.js",
   "private": true,
@@ -27,7 +27,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@aws-sdk/client-cloudwatch": "^3.338.0",
+    "@aws-sdk/client-cloudwatch": "^3.800.0",
     "@medplum/core": "^2.2.10",
     "@metriport/api-sdk": "file:packages/api-sdk",
     "@metriport/carequality-sdk": "file:packages/carequality-sdk",

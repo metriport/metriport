@@ -1,5 +1,6 @@
 import { USState } from "@metriport/shared";
-import { Hl7v2Subscriber, Hl7v2Subscription } from "../../domain/patient-settings";
+import { Patient } from "../../domain/patient";
+import { Hl7v2Subscription } from "../../domain/patient-settings";
 
 export type SftpConfig = {
   host: string;
@@ -9,16 +10,47 @@ export type SftpConfig = {
   remotePath: string;
 };
 
-export type HieConfig = {
-  name: string;
-  sftpConfig?: SftpConfig;
-  schema: Record<string, string>;
+export type RosterRowData = {
+  id: string;
+  cxId: string;
+  rosterGenerationDate: string;
+  firstName: string;
+  lastName: string;
+  dob: string;
+  dobNoDelimiter: string;
+  middleName: string | undefined;
+  genderAtBirth: string | undefined;
+  scrambledId: string;
+  ssn: string | undefined;
+  driversLicense: string | undefined;
+  phone: string | undefined;
+  email: string | undefined;
+  address1AddressLine1: string | undefined;
+  address1AddressLine2: string | undefined;
+  address1City: string | undefined;
+  address1State: string | undefined;
+  address1Zip: string | undefined;
+  insuranceId: string | undefined;
+  insuranceCompanyId: string | undefined;
+  insuranceCompanyName: string | undefined;
+  authorizingParticipantFacilityCode: string | undefined;
+  authorizingParticipantMrn: string | undefined;
+  assigningAuthorityIdentifier: string | undefined;
+  lineOfBusiness: string;
+  emptyString: string;
 };
 
-export type Hl7v2RosterConfig = {
-  hieConfig: HieConfig;
+export type HiePatientRosterMapping = {
+  [key: string]: keyof RosterRowData;
+};
+
+export type HieConfig = {
+  name: string;
   states: USState[];
   subscriptions: Hl7v2Subscription[];
+  cron: string;
+  sftpConfig?: SftpConfig;
+  mapping: HiePatientRosterMapping;
 };
 
 export type Hl7v2SubscriberParams = {
@@ -33,7 +65,7 @@ export type Hl7v2RosterUploadDetails = {
 };
 
 export type Hl7v2SubscriberApiResponse = {
-  patients: Hl7v2Subscriber[];
+  patients: Patient[];
   meta: {
     nextPage?: string;
   };

@@ -9,13 +9,14 @@ import { metriportDataSourceExtension } from "@metriport/core/external/fhir/shar
 import { out } from "@metriport/core/util";
 import { getFileExtension } from "@metriport/core/util/mime";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import { sleep } from "@metriport/shared";
+import { emptyFunction, sleep } from "@metriport/shared";
 import {
   MAPIWebhookStatus,
   processPatientDocumentRequest,
 } from "../../../command/medical/document/document-webhook";
 import { appendDocQueryProgress } from "../../../command/medical/patient/append-doc-query-progress";
 import { recreateConsolidated } from "../../../command/medical/patient/consolidated-recreate";
+import { finishSinglePatientImport } from "../../../command/medical/patient/patient-import/finish-single-patient";
 import { toDTO } from "../../../routes/medical/dtos/documentDTO";
 import { Config } from "../../../shared/config";
 import { getSandboxSeedData } from "../../../shared/sandbox/sandbox-seed-data";
@@ -69,6 +70,12 @@ export async function sandboxGetDocRefsAndUpsert({
       requestId,
       []
     );
+    finishSinglePatientImport({
+      cxId,
+      patientId,
+      requestId,
+      status: "successful",
+    }).catch(emptyFunction);
     return;
   }
 
@@ -189,6 +196,13 @@ export async function sandboxGetDocRefsAndUpsert({
     MAPIWebhookStatus.completed,
     ""
   );
+
+  finishSinglePatientImport({
+    cxId,
+    patientId,
+    requestId,
+    status: "successful",
+  }).catch(emptyFunction);
 
   return;
 }

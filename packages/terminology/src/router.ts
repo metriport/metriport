@@ -1,5 +1,6 @@
 import { FhirRequest, HttpMethod } from "@medplum/fhir-router";
 import { Request, Response, Router } from "express";
+import z from "zod";
 import { codeSystemImportHandler } from "./operations/codeImport";
 import { bulkCodeSystemLookupHandler, codeSystemLookupHandler } from "./operations/codeLookup";
 import { conceptMapImportHandler } from "./operations/conceptMapImport";
@@ -19,11 +20,17 @@ function parseIntoFhirRequest(req: Request): FhirRequest {
   };
 }
 
+const importCodeQueryParamsSchema = z.object({
+  isOverwrite: z.enum(["true", "false"]).transform(val => val === "true"),
+});
+
 fhirRouter.post(
   "/code-system/import",
   asyncHandler(async (req: Request, res: Response) => {
+    const { isOverwrite } = importCodeQueryParamsSchema.parse(req.query);
+
     const fhirRequest = parseIntoFhirRequest(req);
-    const response = await codeSystemImportHandler(fhirRequest);
+    const response = await codeSystemImportHandler(fhirRequest, isOverwrite);
     res.status(200).json(response);
     return;
   })
@@ -43,7 +50,6 @@ fhirRouter.post(
   "/code-system/lookup/bulk",
   asyncHandler(async (req: Request, res: Response) => {
     const fhirRequest = parseIntoFhirRequest(req);
-    console.log("Received bulk request body:", JSON.stringify(fhirRequest.body));
     const response = await bulkCodeSystemLookupHandler(fhirRequest);
     return res.status(response.status).json(response.data);
   })
@@ -59,11 +65,16 @@ fhirRouter.post(
   })
 );
 
+const importConceptMapQueryParamsSchema = z.object({
+  isReversible: z.enum(["true", "false"]).transform(val => val === "true"),
+});
 fhirRouter.post(
   "/concept-map/import",
   asyncHandler(async (req: Request, res: Response) => {
+    const { isReversible } = importConceptMapQueryParamsSchema.parse(req.query);
+
     const fhirRequest = parseIntoFhirRequest(req);
-    const response = await conceptMapImportHandler(fhirRequest);
+    const response = await conceptMapImportHandler(fhirRequest, isReversible);
     res.status(200).json({ response });
     return;
   })

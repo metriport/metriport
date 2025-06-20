@@ -2,6 +2,7 @@ import { isCQDirectEnabledForCx } from "@metriport/core/command/feature-flags/do
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { cqExtension } from "@metriport/core/external/carequality/extension";
 import { OutboundDocQueryRespParam } from "@metriport/core/external/carequality/ihe-gateway/outbound-result-poller-direct";
+import { getDocuments } from "@metriport/core/external/fhir/document/get-documents";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { errorToString } from "@metriport/core/util/error/shared";
@@ -35,7 +36,6 @@ import {
 } from "./shared";
 
 const parallelUpsertsToFhir = 10;
-const resultPoller = makeOutboundResultPoller();
 
 export async function processOutboundDocumentQueryResps({
   requestId,
@@ -44,6 +44,8 @@ export async function processOutboundDocumentQueryResps({
   response,
 }: OutboundDocQueryRespParam): Promise<void> {
   const { log } = out(`CQ DR - requestId ${requestId}, patient ${patientId}`);
+
+  const resultPoller = makeOutboundResultPoller();
 
   const interrupt = buildInterrupt({ requestId, patientId, cxId, log });
   if (!resultPoller.isDREnabled()) return interrupt(`IHE DR result poller not available`);
@@ -58,21 +60,6 @@ export async function processOutboundDocumentQueryResps({
     const contentTypes = docRefs.map(getContentTypeOrUnknown);
     const contentTypeCounts = getDocumentReferenceContentTypeCounts(contentTypes);
     const { successCount, failureCount } = getOutboundDocQuerySuccessFailureCount(response);
-
-    analytics({
-      distinctId: cxId,
-      event: EventTypes.documentQuery,
-      properties: {
-        requestId,
-        patientId,
-        hie: MedicalDataSource.CAREQUALITY,
-        duration,
-        documentCount: docRefs.length,
-        successCount,
-        failureCount,
-        ...contentTypeCounts,
-      },
-    });
 
     const responsesWithDocsToDownload = await getRespWithDocsToDownload({
       cxId,
@@ -90,6 +77,23 @@ export async function processOutboundDocumentQueryResps({
     ).length;
 
     log(`I have ${docsToDownload.length} docs to download (${convertibleDocCount} convertible)`);
+
+    analytics({
+      distinctId: cxId,
+      event: EventTypes.documentQuery,
+      properties: {
+        requestId,
+        patientId,
+        hie: MedicalDataSource.CAREQUALITY,
+        duration,
+        documentCount: docRefs.length,
+        docsToDownloadCount: docsToDownload.length,
+        convertibleCount: convertibleDocCount,
+        successCount,
+        failureCount,
+        ...contentTypeCounts,
+      },
+    });
 
     if (docsToDownload.length === 0) {
       log(`No new documents to download.`);
@@ -141,9 +145,6 @@ export async function processOutboundDocumentQueryResps({
     await storeInitDocRefInFHIR(docsToDownload, cxId, patientId, log);
 
     const outboundDocumentQueryResults = await replaceDqUrlWithDrUrl({
-      patientId,
-      requestId,
-      cxId,
       responsesWithDocsToDownload,
       log,
     });
@@ -244,6 +245,8 @@ async function getRespWithDocsToDownload({
   const respWithDocsToDownload: DqRespWithDocRefsWithMetriportId[] = [];
   const seenMetriportIds = new Set<string>();
 
+  const fhirDocRefs = await getDocuments({ cxId, patientId });
+
   await executeAsynchronously(
     response,
     async gwResp => {
@@ -265,7 +268,8 @@ async function getRespWithDocsToDownload({
       const docsToDownload = await getNonExistentDocRefs(
         deduplicatedDocRefsWithMetriportId,
         patientId,
-        cxId
+        cxId,
+        fhirDocRefs
       );
 
       if (docsToDownload.length === 0) {
@@ -348,15 +352,9 @@ async function addMetriportDocRefID({
 }
 
 async function replaceDqUrlWithDrUrl({
-  patientId,
-  requestId,
-  cxId,
   responsesWithDocsToDownload,
   log,
 }: {
-  patientId: string;
-  requestId: string;
-  cxId: string;
   responsesWithDocsToDownload: OutboundDocumentQueryResp[];
   log: typeof console.log;
 }): Promise<OutboundDocumentQueryResp[]> {
@@ -370,15 +368,6 @@ async function replaceDqUrlWithDrUrl({
       if (!gateway) {
         const msg = `Gateway not found - Doc Retrieval`;
         log(`${msg}: ${outboundDocumentQueryResp.gateway.homeCommunityId} skipping...`);
-        capture.message(msg, {
-          extra: {
-            context: `cq.dq.getCQDirectoryEntry`,
-            patientId,
-            requestId,
-            cxId,
-            gateway: outboundDocumentQueryResp.gateway,
-          },
-        });
         return;
       } else if (!gateway.urlDR) {
         log(`Gateway ${gateway.id} has no DR URL, skipping...`);

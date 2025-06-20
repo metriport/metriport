@@ -1,10 +1,10 @@
 import { CqDirectorySimplifiedOrg } from "@metriport/shared/interface/external/carequality/directory/simplified-org";
 import { EnvType } from "../lib/env-type";
 import { RDSAlarmThresholds } from "./aws/rds";
-import { IHEGatewayProps } from "./ihe-gateway-config";
-import { OpenSearchConnectorConfig, SemanticOpenSearchConfig } from "./open-search-config";
-import { PatientImportProps } from "./patient-import";
 import { Hl7NotificationConfig } from "./hl7-notification-config";
+import { IHEGatewayProps } from "./ihe-gateway-config";
+import { OpenSearchConnectorConfig } from "./open-search-config";
+import { PatientImportProps } from "./patient-import";
 
 export type ConnectWidgetConfig = {
   stackName: string;
@@ -122,6 +122,8 @@ type EnvConfigBase = {
   generalBucketName: string;
   medicalDocumentsBucketName: string;
   medicalDocumentsUploadBucketName: string;
+  pharmacyConversionBucketName: string;
+  surescriptsReplicaBucketName: string;
   ehrResponsesBucketName?: string;
   ehrBundleBucketName: string;
   iheResponsesBucketName: string;
@@ -142,8 +144,8 @@ type EnvConfigBase = {
     anthropicVersion: string;
   };
   openSearch: OpenSearchConnectorConfig;
-  semanticOpenSearch?: SemanticOpenSearchConfig;
   carequality?: {
+    roUsername: string;
     secretNames: {
       CQ_MANAGEMENT_API_KEY: string;
       CQ_ORG_PRIVATE_KEY: string;
@@ -238,6 +240,7 @@ type EnvConfigBase = {
   };
   cqDirectoryRebuilder?: {
     scheduleExpressions: string | string[];
+    heartbeatUrl?: string;
   };
   ehrIntegration?: {
     athenaHealth: {
@@ -264,6 +267,23 @@ type EnvConfigBase = {
         EHR_HEALTHIE_API_KEY_MAP: string;
       };
     };
+    eclinicalworks: {
+      env: string;
+    };
+  };
+  surescripts?: {
+    surescriptsSenderId: string;
+    surescriptsReceiverId: string;
+    surescriptsHost: string;
+    secrets: {
+      SURESCRIPTS_SFTP_SENDER_PASSWORD: string;
+      SURESCRIPTS_SFTP_PUBLIC_KEY: string;
+      SURESCRIPTS_SFTP_PRIVATE_KEY: string;
+    };
+  };
+  jobs: {
+    startPatientJobsSchedulerScheduleExpression: string;
+    startPatientJobsSchedulerUrl: string;
   };
 };
 
@@ -285,6 +305,7 @@ export type EnvConfigSandbox = EnvConfigBase & {
   connectWidgetUrl: string;
   sandboxSeedDataBucketName: string;
   engineeringCxId?: never;
+  hl7Notification?: never;
 };
 
 export type EnvConfig = EnvConfigSandbox | EnvConfigNonSandbox;

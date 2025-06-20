@@ -1,10 +1,11 @@
 import { ConsolidatedQuery, consolidationConversionType } from "@metriport/api-sdk";
 import { GetConsolidatedQueryProgressResponse } from "@metriport/api-sdk/medical/models/patient";
+import { getConsolidatedPatientData } from "@metriport/core/command/consolidated/consolidated-get";
+import { makeSearchConsolidated } from "@metriport/core/command/consolidated/search/fhir-resource/search-consolidated-factory";
 import { mrFormat } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { MAXIMUM_UPLOAD_FILE_SIZE } from "@metriport/core/external/aws/lambda-logic/document-uploader";
 import { toFHIR } from "@metriport/core/external/fhir/patient/conversion";
-import { searchSemantic } from "@metriport/core/external/opensearch/semantic/search";
-import { Config } from "@metriport/core/util/config";
+import { out } from "@metriport/core/util/log";
 import { getRequestId } from "@metriport/core/util/request";
 import { BadRequestError, isTrue, NotFoundError, stringToBoolean } from "@metriport/shared";
 import { Request, Response } from "express";
@@ -13,10 +14,7 @@ import status from "http-status";
 import { orderBy } from "lodash";
 import { z } from "zod";
 import { areDocumentsProcessing } from "../../command/medical/document/document-status";
-import {
-  getConsolidatedPatientData,
-  startConsolidatedQuery,
-} from "../../command/medical/patient/consolidated-get";
+import { startConsolidatedQuery } from "../../command/medical/patient/consolidated-get";
 import {
   getMedicalRecordSummary,
   getMedicalRecordSummaryStatus,
@@ -185,35 +183,24 @@ router.get(
 /**
  * GET /patient/:id/consolidated/search
  *
- * Runs a semantic search on a patient's consolidated data and return the
- * resources that match the query.
+ * Searches on a patient's consolidated data and returns the resources that match the query.
  *
- * Also includes DocumentResources that match the query lexically, using the
- * document search (GET /document)
+ * Also includes DocumentResources that match the query, using the document search (GET /document)
  *
  * @param req.cxId The customer ID.
  * @param req.param.id The ID of the patient whose data is to be returned.
  * @param req.query.query The query to search for.
- * @param req.query.similarityThreshold The similarity threshold to use for the semantic search.
  */
 router.get(
   "/consolidated/search",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    // TODO ENG-41 Enable this for prod
-    if (!Config.isSandbox() && !Config.isStaging() && !Config.isDev()) {
-      throw new NotFoundError();
-    }
-
     const { patient } = getPatientInfoOrFail(req);
     const queryParam = getFrom("query").optional("query", req);
     const query = queryParam ? queryParam.trim() : undefined;
-    const similarityParam = getFrom("query").optional("similarityThreshold", req);
-    const similarityThreshold = similarityParam ? parseFloat(similarityParam) : undefined;
 
-    const result = query
-      ? await searchSemantic({ patient, query, similarityThreshold })
-      : await getConsolidatedPatientData({ patient });
+    out(`cx ${patient.cxId} pt ${patient.id}`).log(`Searching for ||${query}||`);
+    const result = await makeSearchConsolidated().search({ patient, query });
 
     return res.status(status.OK).json(result);
   })
@@ -288,12 +275,12 @@ const medicalRecordFormatSchema = z.enum(mrFormat);
  *
  * @param req.cxId The customer ID.
  * @param req.param.id The ID of the patient whose data is to be returned.
+ * @param req.query.conversionType Required to indicate the file format you get the document back in.
+ *        Accepts "pdf", "html", and "json". The Webhook payload will contain a signed URL to download
+ *        the file, which is active for 3 minutes.
  * @param req.query.resources Optional comma-separated list of resources to be returned.
  * @param req.query.dateFrom Optional start date that resources will be filtered by (inclusive).
  * @param req.query.dateTo Optional end date that resources will be filtered by (inclusive).
- * @param req.query.conversionType Optional to indicate the file format you get the document back in.
- *        Accepts "pdf", "html", and "json". If provided, the Webhook payload will contain a signed URL to download
- *        the file, which is active for 3 minutes. If not provided, will send json payload in the webhook.
  * @param req.body Optional metadata to be sent through Webhook.
  * @param req.query.fromDashboard Optional parameter to indicate that the request is coming from the dashboard.
  * @return status for querying the Patient's consolidated data.
@@ -307,10 +294,10 @@ router.post(
     const resources = getResourcesQueryParam(req);
     const dateFrom = parseISODate(getFrom("query").optional("dateFrom", req));
     const dateTo = parseISODate(getFrom("query").optional("dateTo", req));
-    const type = getFrom("query").optional("conversionType", req);
+    const type = getFrom("query").orFail("conversionType", req);
     const fromDashboard = getFromQueryAsBoolean("fromDashboard", req);
 
-    const conversionType = type ? consolidationConversionTypeSchema.parse(type) : undefined;
+    const conversionType = consolidationConversionTypeSchema.parse(type);
     const cxConsolidatedRequestMetadata = cxRequestMetadataSchema.parse(req.body);
 
     const respPayload = await startConsolidatedQuery({

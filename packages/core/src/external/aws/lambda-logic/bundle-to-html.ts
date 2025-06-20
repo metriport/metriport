@@ -355,7 +355,7 @@ export function bundleToHtml(fhirBundle: Bundle, brief?: Brief, isLogoEnabled = 
   return htmlPage;
 }
 
-// TODO: Use the version from "@metriport/core/external/fhir/shared/bundle.ts"
+// TODO: Use the version from "@metriport/core/external/fhir/bundle/bundle.ts"
 function extractFhirTypesFromBundle(bundle: Bundle): {
   diagnosticReports: DiagnosticReport[];
   patient?: Patient | undefined;
@@ -1011,7 +1011,7 @@ function createSectionInMedications(
           });
 
           return `
-            <tr data-id"${medicationStatement.id}">
+            <tr data-id="${medicationStatement.id}">
               <td>${medication?.code?.text ?? ""}</td>
               <td>${blacklistedInstruction ? "" : medicationStatement.dosage?.[0]?.text ?? ""}</td>
               <td>${medicationStatement.dosage?.[0]?.doseAndRate?.[0]?.doseQuantity?.value ?? ""} ${

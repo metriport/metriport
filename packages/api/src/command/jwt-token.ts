@@ -1,8 +1,8 @@
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { NotFoundError } from "@metriport/shared";
+import { Op } from "sequelize";
 import { JwtToken, JwtTokenData, JwtTokenPerSource, JwtTokenSource } from "../domain/jwt-token";
 import { JwtTokenModel } from "../models/jwt-token";
-import { Op } from "sequelize";
 
 export type JwtTokenParams = JwtTokenPerSource;
 
@@ -47,6 +47,26 @@ export async function getJwtTokenOrFail({
   });
   if (!jwtToken) throw new NotFoundError("JwtToken not found", undefined, { token, source });
   return jwtToken;
+}
+
+/**
+ * DOES NOT CHECK EXPIRATION
+ */
+export async function getJwtTokenById(id: string): Promise<JwtToken | undefined> {
+  const existing = await JwtTokenModel.findOne({
+    where: { id },
+  });
+  if (!existing) return undefined;
+  return existing.dataValues;
+}
+
+/**
+ * DOES NOT CHECK EXPIRATION
+ */
+export async function getJwtTokenByIdOrFail(id: string): Promise<JwtToken> {
+  const existing = await getJwtTokenById(id);
+  if (!existing) throw new NotFoundError("JwtToken not found", undefined, { id });
+  return existing;
 }
 
 /**

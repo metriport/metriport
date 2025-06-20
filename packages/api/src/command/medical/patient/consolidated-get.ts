@@ -1,28 +1,25 @@
 import { Bundle, BundleEntry, Resource } from "@medplum/fhirtypes";
 import {
   ConsolidatedQuery,
-  ConsolidationConversionType,
   GetConsolidatedFilters,
   resourcesSearchableByPatient,
   ResourceTypeForConsolidation,
 } from "@metriport/api-sdk";
-import {
-  ConsolidatedSnapshotRequestAsync,
-  ConsolidatedSnapshotRequestSync,
-} from "@metriport/core/command/consolidated/get-snapshot";
-import { buildConsolidatedSnapshotConnector } from "@metriport/core/command/consolidated/get-snapshot-factory";
-import { getConsolidatedSnapshotFromS3 } from "@metriport/core/command/consolidated/snapshot-on-s3";
 import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-summary";
-import { Patient } from "@metriport/core/domain/patient";
+import { getConsolidatedQueryByRequestId, Patient } from "@metriport/core/domain/patient";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
+import {
+  getConsolidatedPatientDataAsync,
+  getConsolidatedPatientData,
+} from "@metriport/core/command/consolidated/consolidated-get";
 import { out } from "@metriport/core/util";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { emptyFunction } from "@metriport/shared";
+import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { SearchSetBundle } from "@metriport/shared/medical";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { intersection } from "lodash";
-import { processAsyncError } from "../../../errors";
 import { Config } from "../../../shared/config";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
@@ -45,17 +42,6 @@ export type GetConsolidatedParams = {
   requestId?: string;
   documentIds?: string[];
 } & GetConsolidatedFilters;
-
-type GetConsolidatedPatientData = {
-  patient: Patient;
-  resources?: ResourceTypeForConsolidation[];
-  dateFrom?: string;
-  dateTo?: string;
-  requestId?: string;
-  fromDashboard?: boolean;
-  // TODO 2215 Remove this when we have contributed data as part of get consolidated (from S3)
-  forceDataFromFhir?: boolean;
-};
 
 export type GetConsolidatedSendToCxParams = GetConsolidatedParams & {
   requestId: string;
@@ -97,7 +83,9 @@ export async function startConsolidatedQuery({
 
   if (currentConsolidatedProgress) {
     log(
-      `Patient ${patientId} consolidatedQuery is already 'processing' with params: ${currentConsolidatedProgress}, skipping...`
+      `Patient ${patientId} consolidatedQuery is already 'processing' with params: ${JSON.stringify(
+        currentConsolidatedProgress
+      )}, skipping...`
     );
     return currentConsolidatedProgress;
   }
@@ -148,7 +136,7 @@ export async function startConsolidatedQuery({
   return progress;
 }
 
-function appendProgressToProcessingQueries(
+export function appendProgressToProcessingQueries(
   currentConsolidatedQueries: ConsolidatedQuery[] | undefined,
   progress: ConsolidatedQuery
 ): ConsolidatedQuery[] {
@@ -250,7 +238,8 @@ export async function getConsolidated({
   conversionType,
   bundle,
 }: GetConsolidatedParams): Promise<ConsolidatedData> {
-  const { log } = out(`API getConsolidated - cxId ${patient.cxId}, patientId ${patient.id}`);
+  const { cxId, id: patientId } = patient;
+  const { log } = out(`API getConsolidated - cxId ${cxId}, patientId ${patientId}`);
   const filters = {
     resources: resources ? resources.join(", ") : undefined,
     dateFrom,
@@ -270,7 +259,25 @@ export async function getConsolidated({
     bundle.entry = filterOutPrelimDocRefs(bundle.entry);
     bundle.total = bundle.entry?.length ?? 0;
     const hasResources = bundle.entry && bundle.entry.length > 0;
-    const shouldCreateMedicalRecord = conversionType && conversionType != "json" && hasResources;
+    const shouldCreateMedicalRecord = conversionType != "json" && hasResources;
+
+    const currentConsolidatedProgress = getConsolidatedQueryByRequestId(patient, requestId);
+    const sendAnalytics = (
+      conversionTypeForAnalytics: string,
+      resourceCount: number | undefined
+    ) => {
+      analytics({
+        distinctId: cxId,
+        event: EventTypes.consolidatedQuery,
+        properties: {
+          patientId: patientId,
+          duration: elapsedTimeFromNow(currentConsolidatedProgress?.startedAt),
+          conversionType: conversionTypeForAnalytics,
+          resourceCount,
+        },
+      });
+    };
+    sendAnalytics("bundle", bundle.entry?.length);
 
     if (shouldCreateMedicalRecord) {
       // If we need to convert to medical record, we also have to update the resulting
@@ -284,6 +291,7 @@ export async function getConsolidated({
         dateTo,
         conversionType,
       });
+      sendAnalytics(conversionType, bundle.entry?.length);
     }
 
     if (conversionType === "json" && hasResources) {
@@ -295,7 +303,7 @@ export async function getConsolidated({
     }
     return { bundle, filters };
   } catch (error) {
-    const msg = "Failed to get FHIR resources";
+    const msg = "Failed to get consolidated data";
     log(`${msg}: ${JSON.stringify(filters)}`);
     capture.error(msg, {
       extra: {
@@ -370,70 +378,4 @@ async function uploadConsolidatedJsonAndReturnUrl({
     const newBundle = buildDocRefBundleWithAttachment(patient.id, signedUrl, "json");
     return { bundle: newBundle, filters };
   }
-}
-
-/**
- * Get consolidated patient data from FHIR server.
- * Uses ConsolidatedDataConnector, which uses an environment-specific strategy/implementation
- * to load data from the FHIR server:
- * - dev/local: loads data from the FHIR server directly;
- * - cloud envs, calls a lambda to execute the loadingn of data from the FHIR server.
- *
- * @param documentIds (Optional) List of document reference IDs to filter by. If provided, only
- *            resources derived from these document references will be returned.
- * @param resources (Optional) List of resources to filter by. If provided, only
- *            those resources will be included.
- * @returns FHIR bundle of resources matching the filters.
- */
-export async function getConsolidatedPatientData({
-  patient,
-  requestId,
-  resources,
-  dateFrom,
-  dateTo,
-  fromDashboard = false,
-  forceDataFromFhir = false,
-}: GetConsolidatedPatientData): Promise<SearchSetBundle> {
-  const payload: ConsolidatedSnapshotRequestSync = {
-    patient,
-    resources,
-    requestId,
-    dateFrom,
-    dateTo,
-    isAsync: false,
-    fromDashboard,
-    forceDataFromFhir,
-  };
-  const connector = buildConsolidatedSnapshotConnector();
-  const { bundleLocation, bundleFilename } = await connector.execute(payload);
-  const bundle = await getConsolidatedSnapshotFromS3({ bundleLocation, bundleFilename });
-  return bundle;
-}
-
-export async function getConsolidatedPatientDataAsync({
-  patient,
-  resources,
-  dateFrom,
-  dateTo,
-  requestId,
-  conversionType,
-  fromDashboard,
-}: GetConsolidatedPatientData & {
-  requestId: string;
-  conversionType?: ConsolidationConversionType;
-}): Promise<void> {
-  const payload: ConsolidatedSnapshotRequestAsync = {
-    patient,
-    requestId,
-    conversionType,
-    resources,
-    dateFrom,
-    dateTo,
-    isAsync: true,
-    fromDashboard,
-  };
-  const connector = buildConsolidatedSnapshotConnector();
-  connector
-    .execute(payload)
-    .catch(processAsyncError("Failed to get consolidated patient data async", true));
 }

@@ -10,6 +10,7 @@ const apiUrl = getEnvOrFail("API_URL");
 const destinationBucket = getEnvOrFail("MEDICAL_DOCUMENTS_DESTINATION_BUCKET");
 const region = getEnvOrFail("AWS_REGION");
 
+// TODO move to capture.wrapHandler()
 export const handler = async (event: S3Event) => {
   for (const record of event.Records) {
     const sourceBucket = record.s3.bucket.name;

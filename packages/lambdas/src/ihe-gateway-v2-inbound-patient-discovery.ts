@@ -1,17 +1,18 @@
-import { APIGatewayProxyEventV2 } from "aws-lambda";
+import { analyticsAsync, EventTypes } from "@metriport/core/external/analytics/posthog";
+import { getSecretValue } from "@metriport/core/external/aws/secret-manager";
+import { createInboundXcpdResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/inbound/xcpd/create/xcpd-response";
+import { processInboundXcpdRequest } from "@metriport/core/external/carequality/ihe-gateway-v2/inbound/xcpd/process/xcpd-request";
+import { processInboundXcpd } from "@metriport/core/external/carequality/pd/process-inbound-pd";
+import { InboundMpiMetriportApi } from "@metriport/core/mpi/inbound-patient-mpi-metriport-api";
+import { getEnvVar, getEnvVarOrFail } from "@metriport/core/util/env-var";
+import { out } from "@metriport/core/util/log";
 import {
   InboundPatientDiscoveryReq,
   InboundPatientDiscoveryResp,
 } from "@metriport/ihe-gateway-sdk";
 import { errorToString } from "@metriport/shared";
-import { processInboundXcpdRequest } from "@metriport/core/external/carequality/ihe-gateway-v2/inbound/xcpd/process/xcpd-request";
-import { processInboundXcpd } from "@metriport/core/external/carequality/pd/process-inbound-pd";
-import { createInboundXcpdResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/inbound/xcpd/create/xcpd-response";
-import { InboundMpiMetriportApi } from "@metriport/core/mpi/inbound-patient-mpi-metriport-api";
-import { getEnvVarOrFail, getEnvVar } from "@metriport/core/util/env-var";
-import { getSecretValue } from "@metriport/core/external/aws/secret-manager";
-import { analyticsAsync, EventTypes } from "@metriport/core/external/analytics/posthog";
-import { out } from "@metriport/core/util/log";
+import { APIGatewayProxyEventV2 } from "aws-lambda";
+import { capture } from "./shared/capture";
 import { getEnvOrFail } from "./shared/env";
 
 const apiUrl = getEnvVarOrFail("API_URL");
@@ -23,7 +24,7 @@ const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
 const mpi = new InboundMpiMetriportApi(apiUrl);
 const { log } = out(`ihe-gateway-v2-inbound-patient-discovery`);
 
-export async function handler(event: APIGatewayProxyEventV2) {
+export const handler = capture.wrapHandler(async (event: APIGatewayProxyEventV2) => {
   try {
     if (!event.body) return buildResponse(400, { message: "The request body is empty" });
 
@@ -67,7 +68,7 @@ export async function handler(event: APIGatewayProxyEventV2) {
     log(`${msg}: ${errorToString(error)}`);
     return buildResponse(500, "Internal Server Error");
   }
-}
+});
 
 function buildResponse(status: number, body: unknown) {
   return {

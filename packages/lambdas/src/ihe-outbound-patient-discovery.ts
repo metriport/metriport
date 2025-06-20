@@ -1,8 +1,8 @@
+import { getSecretValueOrFail } from "@metriport/core/external/aws/secret-manager";
 import { PollOutboundResults } from "@metriport/core/external/carequality/ihe-gateway/outbound-result-poller";
 import { OutboundResultPollerDirect } from "@metriport/core/external/carequality/ihe-gateway/outbound-result-poller-direct";
 import { getEnvType, getEnvVar, getEnvVarOrFail } from "@metriport/core/util/env-var";
 import { errorToString } from "@metriport/core/util/error/shared";
-import { getSecretValueOrFail } from "@metriport/core/external/aws/secret-manager";
 import * as Sentry from "@sentry/serverless";
 import { capture } from "./shared/capture";
 
@@ -17,6 +17,7 @@ const maxPollingDuration = getEnvVarOrFail("MAX_POLLING_DURATION");
 
 capture.setExtra({ lambdaName: lambdaName });
 
+// TODO move to capture.wrapHandler()
 export const handler = Sentry.AWSLambda.wrapHandler(
   async ({ requestId, numOfGateways, patientId, cxId }: PollOutboundResults) => {
     console.log(

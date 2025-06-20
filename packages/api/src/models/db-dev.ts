@@ -1,8 +1,7 @@
 import { partitionKey, sortKey } from "@metriport/core/command/feature-flags/ffs-on-dynamodb";
-import { rateLimitPartitionKey } from "@metriport/shared";
+import { getEnvVarOrFail, rateLimitPartitionKey } from "@metriport/shared";
 import * as AWS from "aws-sdk";
 import { allowMapiAccess } from "../command/medical/mapi-access";
-import { getEnvVarOrFail } from "../shared/config";
 import { docTableNames } from "./db";
 
 //Checks if the table exists in the db

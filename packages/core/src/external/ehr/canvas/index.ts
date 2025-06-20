@@ -1,52 +1,86 @@
 import {
   AllergyIntolerance,
-  Appointment as AppointmentFhir,
-  Bundle as BundleFhir,
+  Bundle,
+  Coding,
   Condition,
-  Encounter,
-  Location,
+  Extension,
+  Immunization,
   Medication,
   MedicationStatement,
-  Patient as PatientFhir,
-  Practitioner,
+  Observation,
+  ResourceType,
 } from "@medplum/fhirtypes";
-import { BadRequestError, errorToString, JwtTokenInfo, MetriportError } from "@metriport/shared";
+import {
+  BadRequestError,
+  EhrFhirResourceBundle,
+  ehrFhirResourceBundleSchema,
+  errorToString,
+  JwtTokenInfo,
+  MetriportError,
+  NotFoundError,
+  sleep,
+} from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import {
+  AllergenResource,
+  allergenResourceSchema,
   Appointment,
   AppointmentListResponse,
   appointmentListResponseSchema,
   canvasClientJwtTokenResponseSchema,
+  Note,
+  NoteListResponse,
+  noteListResponseSchema,
+  noteSchema,
   SlimBookedAppointment,
   slimBookedAppointmentSchema,
 } from "@metriport/shared/interface/external/ehr/canvas/index";
-import {
-  Bundle,
-  createBundleFromResourceList,
-  FhirResource,
-  FhirResourceBundle,
-  fhirResourceBundleSchema,
-  SupportedResourceType,
-} from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { Patient, patientSchema } from "@metriport/shared/interface/external/ehr/patient";
-import { ResourceDiffDirection } from "@metriport/shared/interface/external/ehr/resource-diff";
-import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
-import axios, { AxiosError, AxiosInstance, AxiosResponse } from "axios";
-import { RXNORM_URL as RXNORM_SYSTEM } from "../../../util/constants";
-import { out } from "../../../util/log";
-import { BundleType } from "../bundle/bundle-shared";
 import {
-  createOrReplaceBundle,
-  CreateOrReplaceBundleParams,
-} from "../bundle/commands/create-or-replace-bundle";
-import { FetchBundleParams, fetchBundlePreSignedUrl } from "../bundle/commands/fetch-bundle";
+  Practitioner,
+  practitionerSchema,
+} from "@metriport/shared/interface/external/ehr/practitioner";
+import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
+import { getObservationUnits } from "@metriport/shared/medical";
+import axios, { AxiosInstance } from "axios";
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
+import { uniqBy } from "lodash";
+import { z } from "zod";
+import { ObservationStatus } from "../../../fhir-deduplication/resources/observation-shared";
+import { fetchCodingCodeOrDisplayOrSystem } from "../../../fhir-deduplication/shared";
+import { executeAsynchronously } from "../../../util/concurrency";
+import { log, out } from "../../../util/log";
+import { capture } from "../../../util/notifications";
 import {
   ApiConfig,
-  fetchBundleUsingTtl,
+  convertBundleToValidStrictBundle,
+  DataPoint,
+  fetchEhrBundleUsingCache,
+  fetchEhrFhirResourcesWithPagination,
   formatDate,
+  getAllergyIntoleranceOnsetDate,
+  getAllergyIntoleranceSubstanceRxnormCoding,
+  getConditionIcd10Coding,
+  getConditionStartDate,
+  getConditionStatus,
+  getImmunizationAdministerDate,
+  getImmunizationCvxCoding,
+  getMedicationRxnormCoding,
+  getMedicationStatementStartDate,
+  getObservationLoincCoding,
+  getObservationResultStatus,
+  GroupedVitals,
   makeRequest,
   MakeRequestParamsInEhr,
+  MedicationWithRefs,
+  paginateWaitTime,
 } from "../shared";
+
+dayjs.extend(duration);
+
+const parallelRequests = 5;
+const delayBetweenRequestBatches = dayjs.duration(2, "seconds");
 
 interface CanvasApiConfig extends ApiConfig {
   environment: string;
@@ -54,25 +88,63 @@ interface CanvasApiConfig extends ApiConfig {
 
 const canvasDomainExtension = ".canvasmedical.com";
 const canvasDateFormat = "YYYY-MM-DD";
+const canvasDateTimeFormat = "YYYY-MM-DDTHH:mm:ss.SSSZ";
+const canvasNoteTitle = "Metriport Chart Import";
+const canvasNoteTypeName = "Chart review";
+const canvasNoteStatusForWriting = "NEW";
+const FDB_CODE = "fdb";
+const utcToEstOffset = dayjs.duration(-5, "hours");
+const defaultCountOrLimit = 1000;
 export type CanvasEnv = string;
 
-export const supportedCanvasDiffResources = [
+export const supportedCanvasResources: ResourceType[] = [
   "AllergyIntolerance",
   "Condition",
   "DiagnosticReport",
   "Encounter",
-  "MedicationStatement",
+  "Immunization",
   "MedicationRequest",
+  "MedicationStatement",
   "Observation",
   "Procedure",
-  "Immunization",
-] as SupportedResourceType[];
-export type SupportedCanvasDiffResource = (typeof supportedCanvasDiffResources)[number];
-export const isSupportedCanvasDiffResource = (
+];
+export type SupportedCanvasResource = (typeof supportedCanvasResources)[number];
+export function isSupportedCanvasResource(
   resourceType: string
-): resourceType is SupportedCanvasDiffResource => {
-  return supportedCanvasDiffResources.includes(resourceType as SupportedCanvasDiffResource);
-};
+): resourceType is SupportedCanvasResource {
+  return supportedCanvasResources.includes(resourceType as SupportedCanvasResource);
+}
+
+const problemStatusesMap = new Map<string, string>();
+problemStatusesMap.set("active", "active");
+problemStatusesMap.set("relapse", "active");
+problemStatusesMap.set("recurrence", "active");
+problemStatusesMap.set("remission", "resolved");
+problemStatusesMap.set("resolved", "resolved");
+problemStatusesMap.set("inactive", "resolved");
+
+const vitalSignCodesMapCanvas = new Map<string, string>();
+vitalSignCodesMapCanvas.set("85354-9", "mmHg");
+vitalSignCodesMapCanvas.set("29463-7", "kg");
+vitalSignCodesMapCanvas.set("8302-2", "cm");
+vitalSignCodesMapCanvas.set("8867-4", "bpm");
+vitalSignCodesMapCanvas.set("8310-5", "degf");
+vitalSignCodesMapCanvas.set("2708-6", "%");
+vitalSignCodesMapCanvas.set("59408-5", "%");
+vitalSignCodesMapCanvas.set("9279-1", "bpm");
+vitalSignCodesMapCanvas.set("56086-2", "cm");
+
+const medicationStatementStatuses = ["active", "entered-in-error", "stopped"];
+const immunizationStatuses = ["completed", "entered-in-error", "not-done"];
+const allergyIntoleranceClinicalStatuses = ["active", "inactive"];
+const allergyIntoleranceVerificationStatuses = ["confirmed", "entered-in-error"];
+const allergyIntoleranceSeverityCodes = ["mild", "moderate", "severe"];
+const observationResultStatuses = ["final", "unknown", "entered-in-error"];
+
+const lbsToG = 453.592;
+const gToKg = 1 / 1000;
+const inchesToCm = 2.54;
+const lbsToKg = lbsToG * gToKg;
 
 class CanvasApi {
   private axiosInstanceFhirApi: AxiosInstance;
@@ -150,216 +222,6 @@ class CanvasApi {
     });
   }
 
-  private async handleAxiosRequest<T>(
-    requestFunction: () => Promise<AxiosResponse<T>>
-  ): Promise<AxiosResponse<T>> {
-    try {
-      const response = await requestFunction();
-      return response;
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        const axiosError = error as AxiosError;
-        const statusCode = axiosError.response?.status;
-        const errorMessage = axiosError.response?.data;
-        const msg = `Request failed. Status: ${statusCode}. Message: ${JSON.stringify(
-          errorMessage
-        )}`;
-        console.log("error", JSON.stringify(error, null, 2));
-        throw new Error(msg);
-      }
-      throw new Error("An unexpected error occurred during the request");
-    }
-  }
-
-  async getPractitioner(name: string): Promise<Practitioner> {
-    const response = await this.handleAxiosRequest(() =>
-      this.axiosInstanceFhirApi.get(
-        `Practitioner?name=${name}&include-non-scheduleable-practitioners=true`
-      )
-    );
-    return response.data.entry[0].resource;
-  }
-
-  async createPatient(patient: PatientFhir): Promise<string> {
-    const response = await this.handleAxiosRequest(() =>
-      this.axiosInstanceFhirApi.post("Patient", patient)
-    );
-
-    const locationHeader = response.headers["location"];
-    const patientId = locationHeader?.split("/").pop() ?? "";
-    return patientId;
-  }
-
-  async getLocation(): Promise<Location> {
-    const response = await this.handleAxiosRequest(() => this.axiosInstanceFhirApi.get(`Location`));
-    return response.data.entry[0].resource;
-  }
-
-  async createNote({
-    patientKey,
-    providerKey,
-    practiceLocationKey,
-    noteTypeName,
-  }: {
-    patientKey: string;
-    providerKey: string;
-    practiceLocationKey: string;
-    noteTypeName: string;
-  }) {
-    const payload = {
-      title: "Metriport Chart Import",
-      noteTypeName,
-      patientKey,
-      providerKey,
-      practiceLocationKey,
-      encounterStartTime: new Date().toISOString(),
-    };
-
-    const response = await this.handleAxiosRequest(() =>
-      this.axiosInstanceCustomApi.post("notes/v1/Note", payload)
-    );
-    return response.data.noteKey;
-  }
-
-  async updateNoteTitle({ noteKey, title }: { noteKey: string; title: string }): Promise<void> {
-    const payload = {
-      title,
-    };
-
-    await this.handleAxiosRequest(() =>
-      this.axiosInstanceCustomApi.patch(`notes/v1/Note/${noteKey}`, payload)
-    );
-  }
-
-  async createCondition({
-    condition,
-    patientId,
-    practitionerId,
-    noteId,
-  }: {
-    condition: Condition;
-    patientId: string;
-    practitionerId: string;
-    noteId: string;
-  }): Promise<string> {
-    condition.subject = { reference: `Patient/${patientId}` };
-    condition.recorder = { reference: `Practitioner/${practitionerId}` };
-    condition.extension = [
-      {
-        url: "http://schemas.canvasmedical.com/fhir/extensions/note-id",
-        valueId: noteId,
-      },
-    ];
-    const response = await this.handleAxiosRequest(() =>
-      this.axiosInstanceFhirApi.post("Condition", condition)
-    );
-    return response.headers["location"]?.split("/").pop() ?? "";
-  }
-
-  async createMedicationStatement({
-    medication,
-    patientId,
-    noteId,
-  }: {
-    medication: MedicationStatement;
-    patientId: string;
-    noteId: string;
-  }): Promise<string> {
-    medication.subject = { reference: `Patient/${patientId}` };
-    medication.extension = [
-      {
-        url: "http://schemas.canvasmedical.com/fhir/extensions/note-id",
-        valueId: noteId,
-      },
-    ];
-    const response = await this.handleAxiosRequest(() =>
-      this.axiosInstanceFhirApi.post("MedicationStatement", medication)
-    );
-    return response.headers["location"]?.split("/").pop() ?? "";
-  }
-
-  async createAllergy({
-    allergy,
-    patientId,
-    noteId,
-    practitionerId,
-  }: {
-    allergy: AllergyIntolerance;
-    patientId: string;
-    noteId: string;
-    practitionerId: string;
-  }): Promise<string> {
-    if (!patientId || !noteId || !practitionerId) {
-      throw new Error(
-        "Patient ID, Note ID, and Practitioner ID must be set before adding an allergy"
-      );
-    }
-    allergy.patient = { reference: `Patient/${patientId}` };
-    allergy.recorder = { reference: `Practitioner/${practitionerId}` };
-    allergy.extension = [
-      {
-        url: "http://schemas.canvasmedical.com/fhir/extensions/note-id",
-        valueId: noteId,
-      },
-    ];
-    const response = await this.handleAxiosRequest(() =>
-      this.axiosInstanceFhirApi.post("AllergyIntolerance", allergy)
-    );
-    return response.headers["location"]?.split("/").pop() ?? "";
-  }
-
-  async getFirstEncounter(patientId: string): Promise<Encounter> {
-    const response = await this.handleAxiosRequest(() =>
-      this.axiosInstanceFhirApi.get(`Encounter?patient=${patientId}&_sort=-date&_count=1`)
-    );
-    return response.data.entry[0].resource;
-  }
-
-  async getMedication(medicationId: string): Promise<Medication> {
-    const response = await this.handleAxiosRequest(() =>
-      this.axiosInstanceFhirApi.get(`Medication/${medicationId}`)
-    );
-    return response.data;
-  }
-
-  async searchMedication({
-    rxNormCode,
-    medicationName,
-  }: {
-    rxNormCode?: string;
-    medicationName?: string;
-  }): Promise<BundleFhir> {
-    if (!rxNormCode && !medicationName) {
-      throw new Error("At least one of rxNormCode or medicationName must be provided");
-    }
-
-    let url = "Medication?";
-    const params: string[] = [];
-
-    if (rxNormCode) {
-      params.push(`code=${RXNORM_SYSTEM}|${rxNormCode}`);
-    }
-
-    if (medicationName) {
-      params.push(`_text=${encodeURIComponent(medicationName)}`);
-    }
-
-    url += params.join("&");
-
-    const response = await this.handleAxiosRequest(() => this.axiosInstanceFhirApi.get(url));
-    if (response.data.entry && response.data.entry.length > 0) {
-      return response.data.entry;
-    }
-    throw new Error("Medication not found");
-  }
-
-  async getAppointment(appointmentId: string): Promise<AppointmentFhir> {
-    const response = await this.handleAxiosRequest(() =>
-      this.axiosInstanceFhirApi.get(`Appointment/${appointmentId}`)
-    );
-    return response.data;
-  }
-
   async getPatient({ cxId, patientId }: { cxId: string; patientId: string }): Promise<Patient> {
     const { debug } = out(
       `Canvas getPatient - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
@@ -380,6 +242,762 @@ class CanvasApi {
     return patient;
   }
 
+  async getPractitioner({
+    cxId,
+    patientId,
+    practitionerId,
+  }: {
+    cxId: string;
+    patientId: string;
+    practitionerId: string;
+  }): Promise<Practitioner> {
+    const { debug } = out(
+      `Canvas getPractitioner - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} practitionerId ${practitionerId}`
+    );
+    const practitionerUrl = `/Practitioner/${practitionerId}`;
+    const additionalInfo = { cxId, practiceId: this.practiceId, patientId, practitionerId };
+    const practitioner = await this.makeRequest<Practitioner>({
+      cxId,
+      patientId,
+      s3Path: "practitioner",
+      method: "GET",
+      url: practitionerUrl,
+      schema: practitionerSchema,
+      additionalInfo,
+      debug,
+      useFhir: true,
+    });
+    return practitioner;
+  }
+
+  async getPractitionerPrimaryLocation({
+    cxId,
+    patientId,
+    practitionerId,
+  }: {
+    cxId: string;
+    patientId: string;
+    practitionerId: string;
+  }): Promise<string> {
+    const practitioner = await this.getPractitioner({
+      cxId,
+      patientId,
+      practitionerId,
+    });
+    const additionalInfo = { cxId, practiceId: this.practiceId, patientId, practitionerId };
+    if (!practitioner.extension) {
+      throw new BadRequestError(
+        "Practitioner does not have a primary location",
+        undefined,
+        additionalInfo
+      );
+    }
+    const primaryLocation = practitioner.extension.find(
+      e =>
+        e.url ===
+        "http://schemas.canvasmedical.com/fhir/extensions/practitioner-primary-practice-location"
+    );
+    if (!primaryLocation) {
+      throw new BadRequestError(
+        "Practitioner does not have a primary location",
+        undefined,
+        additionalInfo
+      );
+    }
+    const valueReference = primaryLocation.valueReference;
+    if (!valueReference) {
+      throw new BadRequestError(
+        "Practitioner primary location value reference is missing",
+        undefined,
+        additionalInfo
+      );
+    }
+    if (!valueReference.type || valueReference.type !== "Location") {
+      throw new BadRequestError(
+        "Practitioner primary location type is missing or is not a location",
+        undefined,
+        additionalInfo
+      );
+    }
+    if (!valueReference.reference) {
+      throw new BadRequestError(
+        "Practitioner primary location reference is missing",
+        undefined,
+        additionalInfo
+      );
+    }
+    const locationId = valueReference.reference.split("/")[1];
+    if (!locationId) {
+      throw new BadRequestError(
+        "Practitioner primary location ID is missing",
+        undefined,
+        additionalInfo
+      );
+    }
+    return locationId;
+  }
+
+  async createNote({
+    cxId,
+    patientId,
+    practitionerId,
+    practiceLocationId,
+    title,
+    noteType,
+  }: {
+    cxId: string;
+    patientId: string;
+    practitionerId: string;
+    practiceLocationId: string;
+    title: string;
+    noteType: string;
+  }): Promise<Note> {
+    const { debug } = out(
+      `Canvas createNote - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} practitionerId ${practitionerId}`
+    );
+    const noteUrl = "notes/v1/Note";
+    const additionalInfo = {
+      cxId,
+      practiceId: this.practiceId,
+      patientId,
+      practitionerId,
+      practiceLocationId,
+      title,
+      noteType,
+    };
+    const data = {
+      title,
+      noteTypeName: noteType,
+      patientKey: patientId,
+      providerKey: practitionerId,
+      practiceLocationKey: practiceLocationId,
+      encounterStartTime: buildDayjs().toISOString(),
+    };
+
+    const note = await this.makeRequest<Note>({
+      cxId,
+      patientId,
+      s3Path: "create-note",
+      method: "POST",
+      url: noteUrl,
+      data,
+      schema: noteSchema,
+      additionalInfo,
+      headers: { "content-type": "application/json" },
+      debug,
+    });
+    return note;
+  }
+
+  async listNotes({
+    cxId,
+    patientId,
+    practitionerId,
+    noteType,
+    fromDate,
+    toDate,
+    orderDec = false,
+  }: {
+    cxId: string;
+    patientId: string;
+    practitionerId: string;
+    noteType: string;
+    fromDate: Date;
+    toDate: Date;
+    orderDec?: boolean;
+  }): Promise<Note[]> {
+    const { debug } = out(
+      `Canvas listNotes - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} practitionerId ${practitionerId}`
+    );
+    const params = {
+      note_type_name: noteType,
+      patient_key: patientId,
+      provider_key: practitionerId,
+      datetime_of_service__gte: fromDate.toISOString(),
+      datetime_of_service__lte: toDate.toISOString(),
+      limit: defaultCountOrLimit.toString(),
+      ordering: orderDec ? "-datetime_of_service" : "datetime_of_service",
+    };
+    const urlParams = new URLSearchParams(params);
+    const noteUrl = `notes/v1/Note?${urlParams.toString()}`;
+    const additionalInfo = {
+      cxId,
+      practiceId: this.practiceId,
+      patientId,
+      practitionerId,
+      noteType,
+      fromDate: fromDate.toISOString(),
+      toDate: toDate.toISOString(),
+    };
+    async function paginateNotes(
+      api: CanvasApi,
+      url: string | null | undefined,
+      acc: Note[] | undefined = []
+    ): Promise<Note[]> {
+      if (!url) return acc;
+      const notesListResponse = await api.makeRequest<NoteListResponse>({
+        cxId,
+        patientId,
+        s3Path: "notes",
+        method: "GET",
+        url,
+        schema: noteListResponseSchema,
+        additionalInfo,
+        headers: { "content-type": "application/json" },
+        debug,
+      });
+      acc.push(...(notesListResponse.results ?? []));
+      const nextUrl = notesListResponse.next;
+      return paginateNotes(api, nextUrl, acc);
+    }
+    const notes = await paginateNotes(this, noteUrl);
+    return notes;
+  }
+
+  async getOrCreateMetriportImportNote({
+    cxId,
+    patientId,
+    practitionerId,
+    practiceLocationId,
+  }: {
+    cxId: string;
+    patientId: string;
+    practitionerId: string;
+    practiceLocationId: string;
+  }): Promise<Note> {
+    const notes = await this.listNotes({
+      cxId,
+      patientId,
+      practitionerId,
+      noteType: canvasNoteTypeName,
+      fromDate: buildDayjs().subtract(1, "day").toDate(),
+      toDate: buildDayjs().toDate(),
+      orderDec: true,
+    });
+    const note = notes.find(
+      n =>
+        n.title === canvasNoteTitle &&
+        n.practiceLocationKey === practiceLocationId &&
+        n.currentState === canvasNoteStatusForWriting
+    );
+    if (note) {
+      const noteCreatedAtEst = buildDayjs(note.datetimeOfService).add(utcToEstOffset);
+      const nowEst = buildDayjs().add(utcToEstOffset);
+      const noteCreatedToday =
+        noteCreatedAtEst.format("YYYY-MM-DD") === nowEst.format("YYYY-MM-DD");
+      if (noteCreatedToday) return note;
+    }
+    const newNote = await this.createNote({
+      cxId,
+      patientId,
+      practitionerId,
+      practiceLocationId,
+      title: canvasNoteTitle,
+      noteType: canvasNoteTypeName,
+    });
+    return newNote;
+  }
+
+  async getNoteIdForWriteback({
+    cxId,
+    patientId,
+    practitionerId,
+  }: {
+    cxId: string;
+    patientId: string;
+    practitionerId: string;
+  }): Promise<string> {
+    const practiceLocationId = await this.getPractitionerPrimaryLocation({
+      cxId,
+      patientId,
+      practitionerId,
+    });
+    const note = await this.getOrCreateMetriportImportNote({
+      cxId,
+      patientId,
+      practitionerId,
+      practiceLocationId,
+    });
+    const noteId = note.noteKey;
+    return noteId;
+  }
+
+  async createCondition({
+    cxId,
+    patientId,
+    practitionerId,
+    condition,
+  }: {
+    cxId: string;
+    patientId: string;
+    practitionerId: string;
+    condition: Condition;
+  }): Promise<void> {
+    const { debug } = out(
+      `Canvas createCondition - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
+    );
+    const conditionUrl = `/Condition`;
+    const additionalInfo = {
+      cxId,
+      practiceId: this.practiceId,
+      patientId,
+      conditionId: condition.id,
+    };
+    const formattedCondition = this.formatCondition(condition, additionalInfo);
+    const noteId = await this.getNoteIdForWriteback({
+      cxId,
+      patientId,
+      practitionerId,
+    });
+    formattedCondition.subject = { reference: `Patient/${patientId}` };
+    formattedCondition.recorder = { reference: `Practitioner/${practitionerId}` };
+    formattedCondition.extension = [
+      ...(formattedCondition.extension ?? []),
+      this.formatNoteIdExtension(noteId),
+    ];
+    await this.makeRequest<undefined>({
+      cxId,
+      patientId,
+      s3Path: this.createWriteBackPath("condition", additionalInfo.conditionId),
+      method: "POST",
+      data: { ...formattedCondition },
+      url: conditionUrl,
+      schema: z.undefined(),
+      additionalInfo: { ...additionalInfo, noteId },
+      headers: { "content-type": "application/json" },
+      debug,
+      useFhir: true,
+      emptyResponse: true,
+    });
+  }
+
+  async createMedicationStatements({
+    cxId,
+    patientId,
+    practitionerId,
+    medicationWithRefs,
+  }: {
+    cxId: string;
+    patientId: string;
+    practitionerId: string;
+    medicationWithRefs: MedicationWithRefs;
+  }): Promise<void> {
+    const { debug } = out(
+      `Canvas createMedicationStatements - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} practitionerId ${practitionerId}`
+    );
+    const medicationStatementUrl = `/MedicationStatement`;
+    const additionalInfo = {
+      cxId,
+      practiceId: this.practiceId,
+      patientId,
+      medicationId: medicationWithRefs.medication.id,
+    };
+    if (medicationWithRefs.statement.length < 1) {
+      throw new BadRequestError("No medication statements found", undefined, additionalInfo);
+    }
+    const rxnormCoding = getMedicationRxnormCoding(medicationWithRefs.medication);
+    if (!rxnormCoding) {
+      throw new BadRequestError("No RXNORM code found for medication", undefined, additionalInfo);
+    }
+    const rxnormCodingDisplay = rxnormCoding.display;
+    if (!rxnormCodingDisplay) {
+      throw new BadRequestError("Medication does not have a display", undefined, additionalInfo);
+    }
+    const medicationReference = await this.searchForMedicationByRxNorm({
+      cxId,
+      patientId,
+      practitionerId,
+      rxnormCoding,
+    });
+    if (!medicationReference) {
+      throw new BadRequestError("Medication reference not found", undefined, additionalInfo);
+    }
+    const medicationReferenceId = medicationReference.id;
+    if (!medicationReferenceId) {
+      throw new BadRequestError("Medication reference ID is missing", undefined, additionalInfo);
+    }
+    const noteId = await this.getNoteIdForWriteback({
+      cxId,
+      patientId,
+      practitionerId,
+    });
+    const createMedicationStatementsErrors: { error: unknown; medicationStatement: string }[] = [];
+    const createMedicationStatementsArgs: MedicationStatement[] =
+      medicationWithRefs.statement.flatMap(statement => {
+        const formattedMedicationStatement = this.formatMedicationStatement(statement);
+        if (!formattedMedicationStatement) return [];
+        formattedMedicationStatement.medicationReference = {
+          reference: `Medication/${medicationReferenceId}`,
+          display: rxnormCodingDisplay,
+        };
+        formattedMedicationStatement.subject = { reference: `Patient/${patientId}` };
+        formattedMedicationStatement.extension = [
+          ...(formattedMedicationStatement.extension ?? []),
+          this.formatNoteIdExtension(noteId),
+        ];
+        return formattedMedicationStatement;
+      });
+    if (createMedicationStatementsArgs.length < 1) {
+      throw new BadRequestError("No valid medication statements found", undefined, additionalInfo);
+    }
+    const sortedCreateMedicationStatementsArgs = this.sortMedicationStatementsNewestFirst(
+      createMedicationStatementsArgs
+    );
+    await executeAsynchronously(
+      sortedCreateMedicationStatementsArgs.slice(0, 1),
+      async (params: MedicationStatement) => {
+        try {
+          await this.makeRequest<undefined>({
+            cxId,
+            patientId,
+            s3Path: this.createWriteBackPath("medication-statement", additionalInfo.medicationId),
+            method: "POST",
+            url: medicationStatementUrl,
+            data: { ...params },
+            schema: z.undefined(),
+            additionalInfo: { ...additionalInfo, noteId },
+            headers: { "content-type": "application/json" },
+            debug,
+            useFhir: true,
+            emptyResponse: true,
+          });
+        } catch (error) {
+          if (error instanceof BadRequestError || error instanceof NotFoundError) return;
+          const medicationStatementToString = JSON.stringify(params);
+          log(
+            `Failed to create medication statement ${medicationStatementToString}. Cause: ${errorToString(
+              error
+            )}`
+          );
+          createMedicationStatementsErrors.push({
+            error,
+            medicationStatement: medicationStatementToString,
+          });
+        }
+      },
+      {
+        numberOfParallelExecutions: parallelRequests,
+        delay: delayBetweenRequestBatches.asMilliseconds(),
+      }
+    );
+    if (createMedicationStatementsErrors.length > 0) {
+      const msg = `Failure while creating some medication statements @ Canvas`;
+      capture.message(msg, {
+        extra: {
+          ...additionalInfo,
+          createMedicationStatementsArgsCount: createMedicationStatementsArgs.length,
+          createMedicationStatementsErrorsCount: createMedicationStatementsErrors.length,
+          errors: createMedicationStatementsErrors,
+          context: "canvas.create-medication",
+        },
+        level: "warning",
+      });
+    }
+  }
+
+  async createImmunization({
+    cxId,
+    patientId,
+    practitionerId,
+    immunization,
+  }: {
+    cxId: string;
+    patientId: string;
+    practitionerId: string;
+    immunization: Immunization;
+  }): Promise<void> {
+    const { debug } = out(
+      `Canvas createImmunization - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} practitionerId ${practitionerId}`
+    );
+    const immunizationUrl = `/Immunization`;
+    const additionalInfo = {
+      cxId,
+      practiceId: this.practiceId,
+      patientId,
+      immunizationId: immunization.id,
+    };
+    const formattedImmunization = this.formatImmunization(immunization, additionalInfo);
+    const noteId = await this.getNoteIdForWriteback({
+      cxId,
+      patientId,
+      practitionerId,
+    });
+    formattedImmunization.patient = { reference: `Patient/${patientId}` };
+    formattedImmunization.extension = [
+      ...(formattedImmunization.extension ?? []),
+      this.formatNoteIdExtension(noteId),
+    ];
+    await this.makeRequest<undefined>({
+      cxId,
+      patientId,
+      s3Path: this.createWriteBackPath("immunization", additionalInfo.immunizationId),
+      method: "POST",
+      data: { ...formattedImmunization },
+      url: immunizationUrl,
+      schema: z.undefined(),
+      additionalInfo: { ...additionalInfo, noteId },
+      headers: { "content-type": "application/json" },
+      debug,
+      useFhir: true,
+      emptyResponse: true,
+    });
+  }
+
+  async createAllergyIntolerance({
+    cxId,
+    patientId,
+    practitionerId,
+    allergyIntolerance,
+  }: {
+    cxId: string;
+    patientId: string;
+    practitionerId: string;
+    allergyIntolerance: AllergyIntolerance;
+  }): Promise<void> {
+    const { debug } = out(
+      `Canvas createAllergyIntolerance - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} practitionerId ${practitionerId}`
+    );
+    const allergyIntoleranceUrl = `/AllergyIntolerance`;
+    const additionalInfo = {
+      cxId,
+      practiceId: this.practiceId,
+      patientId,
+      allergyIntoleranceId: allergyIntolerance.id,
+    };
+    const reaction = allergyIntolerance.reaction;
+    if (!reaction || reaction.length < 1) {
+      throw new BadRequestError("No reactions found for allergy", undefined, additionalInfo);
+    }
+    const codingWithSeverityPairs: [Coding, string | undefined][] = reaction.flatMap(r => {
+      const substanceRxnormCoding = getAllergyIntoleranceSubstanceRxnormCoding(r);
+      if (!substanceRxnormCoding) return [];
+      return [[substanceRxnormCoding, r.severity]];
+    });
+    const codingWithSeverityPair = codingWithSeverityPairs[0];
+    if (!codingWithSeverityPair) {
+      throw new BadRequestError(
+        "No RXNORM code found for allergy reaction",
+        undefined,
+        additionalInfo
+      );
+    }
+    const [substanceRxnormCoding, severity] = codingWithSeverityPair;
+    const allergenReference = await this.searchForAllergenByRxNorm({
+      cxId,
+      patientId,
+      practitionerId,
+      rxnormCoding: substanceRxnormCoding,
+    });
+    if (!allergenReference) {
+      throw new BadRequestError("No allergen option found via search", undefined, additionalInfo);
+    }
+    const formattedAllergyIntolerance = this.formatAllergyIntolerance(
+      allergyIntolerance,
+      allergenReference,
+      severity,
+      additionalInfo
+    );
+    const noteId = await this.getNoteIdForWriteback({
+      cxId,
+      patientId,
+      practitionerId,
+    });
+    formattedAllergyIntolerance.patient = { reference: `Patient/${patientId}` };
+    formattedAllergyIntolerance.recorder = { reference: `Practitioner/${practitionerId}` };
+    formattedAllergyIntolerance.extension = [
+      ...(formattedAllergyIntolerance.extension ?? []),
+      this.formatNoteIdExtension(noteId),
+    ];
+    await this.makeRequest<undefined>({
+      cxId,
+      patientId,
+      s3Path: this.createWriteBackPath("allergy-intolerance", additionalInfo.allergyIntoleranceId),
+      method: "POST",
+      url: allergyIntoleranceUrl,
+      data: { ...formattedAllergyIntolerance },
+      schema: z.undefined(),
+      additionalInfo: { ...additionalInfo, noteId },
+      headers: { "content-type": "application/json" },
+      debug,
+      useFhir: true,
+      emptyResponse: true,
+    });
+  }
+
+  async createVitals({
+    cxId,
+    patientId,
+    practitionerId,
+    vitals,
+  }: {
+    cxId: string;
+    patientId: string;
+    practitionerId: string;
+    vitals: GroupedVitals;
+  }): Promise<void> {
+    const { debug } = out(
+      `Canvas createVitals - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} practitionerId ${practitionerId}`
+    );
+    const observationsUrl = `/Observation`;
+    const observation = vitals.mostRecentObservation;
+    const additionalInfo = {
+      cxId,
+      practiceId: this.practiceId,
+      patientId,
+      observationId: observation.id,
+    };
+    if (!vitals.sortedPoints || vitals.sortedPoints.length < 1) {
+      throw new BadRequestError("No points found for vitals", undefined, additionalInfo);
+    }
+    if (uniqBy(vitals.sortedPoints, "date").length !== vitals.sortedPoints.length) {
+      throw new BadRequestError("Duplicate reading taken for vitals", undefined, {
+        ...additionalInfo,
+        dates: vitals.sortedPoints.map(v => v.date).join(", "),
+      });
+    }
+    const noteId = await this.getNoteIdForWriteback({
+      cxId,
+      patientId,
+      practitionerId,
+    });
+    const createObservationsErrors: {
+      error: unknown;
+      observation: string;
+    }[] = [];
+    const createObservationsArgs: Observation[] = vitals.sortedPoints.map(point => {
+      const formattedPoint = this.formatVitalDataPoint(observation, point, additionalInfo);
+      formattedPoint.subject = { reference: `Patient/${patientId}` };
+      formattedPoint.extension = [
+        ...(formattedPoint.extension ?? []),
+        this.formatNoteIdExtension(noteId),
+      ];
+      return formattedPoint;
+    });
+    await executeAsynchronously(
+      createObservationsArgs,
+      async (params: Observation) => {
+        try {
+          await this.makeRequest<undefined>({
+            cxId,
+            patientId,
+            s3Path: this.createWriteBackPath("observations", additionalInfo.observationId),
+            method: "POST",
+            url: observationsUrl,
+            data: { ...params },
+            schema: z.undefined(),
+            additionalInfo: { ...additionalInfo, noteId },
+            headers: { "content-type": "application/json" },
+            debug,
+            useFhir: true,
+            emptyResponse: true,
+          });
+        } catch (error) {
+          if (error instanceof BadRequestError || error instanceof NotFoundError) return;
+          const observationToString = JSON.stringify(params);
+          log(
+            `Failed to create observation ${observationToString}. Cause: ${errorToString(error)}`
+          );
+          createObservationsErrors.push({ error, observation: observationToString });
+        }
+      },
+      {
+        numberOfParallelExecutions: parallelRequests,
+        delay: delayBetweenRequestBatches.asMilliseconds(),
+      }
+    );
+    if (createObservationsErrors.length > 0) {
+      const msg = `Failure while creating some vitals observations @ Canvas`;
+      capture.message(msg, {
+        extra: {
+          ...additionalInfo,
+          createObservationsArgsCount: createObservationsArgs.length,
+          createObservationsErrorsCount: createObservationsErrors.length,
+          errors: createObservationsErrors,
+          context: "canvas.create-vitals",
+        },
+        level: "warning",
+      });
+    }
+  }
+
+  async searchForMedicationByRxNorm({
+    cxId,
+    patientId,
+    practitionerId,
+    rxnormCoding,
+  }: {
+    cxId: string;
+    patientId: string;
+    practitionerId: string;
+    rxnormCoding: Coding;
+  }): Promise<Medication | undefined> {
+    const { debug } = out(
+      `Canvas searchForMedicationByRxNorm - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} practitionerId ${practitionerId} rxnormCoding ${rxnormCoding}`
+    );
+    if (!rxnormCoding.system || !rxnormCoding.code) return undefined;
+    const code = `${rxnormCoding.system}|${rxnormCoding.code}`;
+    const additionalInfo = { cxId, practiceId: this.practiceId, patientId, practitionerId, code };
+    const params = { code: `${rxnormCoding.system}|${rxnormCoding.code}` };
+    const urlParams = new URLSearchParams(params);
+    const medicationUrl = `/Medication?${urlParams.toString()}`;
+    const medicationBundle = await this.makeRequest<EhrFhirResourceBundle>({
+      cxId,
+      patientId,
+      s3Path: this.createReferencePath("medication-reference", code),
+      method: "GET",
+      url: medicationUrl,
+      schema: ehrFhirResourceBundleSchema,
+      additionalInfo,
+      headers: { "content-type": "application/json" },
+      debug,
+      useFhir: true,
+    });
+    const medicationReference = medicationBundle.entry?.[0]?.resource;
+    if (!medicationReference) {
+      throw new BadRequestError("Medication not found", undefined, additionalInfo);
+    }
+    return medicationReference as Medication;
+  }
+
+  async searchForAllergenByRxNorm({
+    cxId,
+    patientId,
+    practitionerId,
+    rxnormCoding,
+  }: {
+    cxId: string;
+    patientId: string;
+    practitionerId: string;
+    rxnormCoding: Coding;
+  }): Promise<AllergenResource | undefined> {
+    const { debug } = out(
+      `Canvas searchForAllergenByRxNorm - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} practitionerId ${practitionerId} rxnormCoding ${rxnormCoding}`
+    );
+    if (!rxnormCoding.system || !rxnormCoding.code) return undefined;
+    const code = `${rxnormCoding.system}|${rxnormCoding.code}`;
+    const additionalInfo = { cxId, practiceId: this.practiceId, patientId, practitionerId, code };
+    const params = { code: `${rxnormCoding.system}|${rxnormCoding.code}` };
+    const urlParams = new URLSearchParams(params);
+    const allergenUrl = `/Allergen?${urlParams.toString()}`;
+    const allergenBundle = await this.makeRequest<EhrFhirResourceBundle>({
+      cxId,
+      patientId,
+      s3Path: this.createReferencePath("allergen-reference", code),
+      method: "GET",
+      url: allergenUrl,
+      schema: ehrFhirResourceBundleSchema,
+      additionalInfo,
+      headers: { "content-type": "application/json" },
+      debug,
+      useFhir: true,
+    });
+    const allergenReference = allergenBundle.entry?.[0]?.resource;
+    if (!allergenReference) return undefined;
+    const parsedAllergenReference = allergenResourceSchema.safeParse(allergenReference);
+    if (!parsedAllergenReference.success) return undefined;
+    return parsedAllergenReference.data;
+  }
+
   async getBundleByResourceType({
     cxId,
     metriportPatientId,
@@ -390,13 +1008,21 @@ class CanvasApi {
     cxId: string;
     metriportPatientId: string;
     canvasPatientId: string;
-    resourceType: SupportedCanvasDiffResource;
+    resourceType: string;
     useCachedBundle?: boolean;
   }): Promise<Bundle> {
     const { debug } = out(
-      `Canvas getBundleByResourceType - cxId ${cxId} practiceId ${this.practiceId} metriportPatientId ${metriportPatientId} canvasPatientId ${canvasPatientId} resourceType ${resourceType}`
+      `Canvas getBundleByResourceType - cxId ${cxId} practiceId ${this.practiceId} canvasPatientId ${canvasPatientId}`
     );
-    const params = { patient: `Patient/${canvasPatientId}` };
+    if (!isSupportedCanvasResource(resourceType)) {
+      throw new BadRequestError("Invalid resource type", undefined, {
+        resourceType,
+      });
+    }
+    const params = {
+      patient: `Patient/${canvasPatientId}`,
+      _count: defaultCountOrLimit.toString(),
+    };
     const urlParams = new URLSearchParams(params);
     const resourceTypeUrl = `/${resourceType}?${urlParams.toString()}`;
     const additionalInfo = {
@@ -405,83 +1031,34 @@ class CanvasApi {
       patientId: canvasPatientId,
       resourceType,
     };
-    if (useCachedBundle) {
-      const cachedBundle = await this.getCachedBundle({
-        cxId,
-        metriportPatientId,
-        canvasPatientId,
-        bundleType: BundleType.EHR,
-        resourceType,
+    const fetchResourcesFromEhr = () =>
+      fetchEhrFhirResourcesWithPagination({
+        makeRequest: async (url: string) => {
+          const bundle = await this.makeRequest<EhrFhirResourceBundle>({
+            cxId,
+            patientId: canvasPatientId,
+            s3Path: `fhir-resources-${resourceType}`,
+            method: "GET",
+            url,
+            schema: ehrFhirResourceBundleSchema,
+            additionalInfo,
+            debug,
+            useFhir: true,
+          });
+          return convertBundleToValidStrictBundle(bundle, resourceType, canvasPatientId);
+        },
+        url: resourceTypeUrl,
       });
-      if (cachedBundle) return cachedBundle;
-    }
-    async function paginateFhirResources(
-      api: CanvasApi,
-      url: string | undefined,
-      acc: FhirResource[] | undefined = []
-    ): Promise<FhirResource[]> {
-      if (!url) return acc;
-      const fhirResourceBundle = await api.makeRequest<FhirResourceBundle>({
-        cxId,
-        patientId: canvasPatientId,
-        s3Path: `fhir-resources-${resourceType}`,
-        method: "GET",
-        url,
-        schema: fhirResourceBundleSchema,
-        additionalInfo,
-        debug,
-        useFhir: true,
-      });
-      acc.push(...(fhirResourceBundle.entry ?? []).map(e => e.resource));
-      const nextUrl = fhirResourceBundle.link?.find(l => l.relation === "next")?.url;
-      return paginateFhirResources(api, nextUrl, acc);
-    }
-    const fhirResources = await paginateFhirResources(this, resourceTypeUrl);
-    const invalidEntry = fhirResources.find(r => r.resourceType !== resourceType);
-    if (invalidEntry) {
-      throw new BadRequestError("Invalid bundle", undefined, {
-        resourceType,
-        resourceTypeInBundle: invalidEntry.resourceType,
-      });
-    }
-    const bundle = createBundleFromResourceList(fhirResources);
-    await this.updateCachedBundle({
+    const bundle = await fetchEhrBundleUsingCache({
+      ehr: EhrSources.canvas,
       cxId,
       metriportPatientId,
-      canvasPatientId,
-      bundleType: BundleType.EHR,
-      bundle,
+      ehrPatientId: canvasPatientId,
       resourceType,
+      fetchResourcesFromEhr,
+      useCachedBundle,
     });
     return bundle;
-  }
-
-  async getResourceDiffBundlePreSignedUrlByResourceType({
-    cxId,
-    metriportPatientId,
-    canvasPatientId,
-    resourceType,
-    direction,
-    jobId,
-  }: {
-    cxId: string;
-    metriportPatientId: string;
-    canvasPatientId: string;
-    resourceType: SupportedCanvasDiffResource;
-    direction: ResourceDiffDirection;
-    jobId: string;
-  }): Promise<string | undefined> {
-    return this.getBundlePreSignedUrl({
-      cxId,
-      metriportPatientId,
-      canvasPatientId,
-      bundleType:
-        direction === ResourceDiffDirection.METRIPORT_ONLY
-          ? BundleType.RESOURCE_DIFF_METRIPORT_ONLY
-          : BundleType.RESOURCE_DIFF_EHR_ONLY,
-      resourceType,
-      jobId,
-    });
   }
 
   async getAppointments({
@@ -494,13 +1071,10 @@ class CanvasApi {
     toDate: Date;
   }): Promise<SlimBookedAppointment[]> {
     const { debug } = out(`Canvas getAppointments - cxId ${cxId} practiceId ${this.practiceId}`);
-    const params = {
-      status: "booked",
-      ...(fromDate && { date: `ge${this.formatDate(fromDate.toISOString()) ?? ""}` }),
-      ...(toDate && { date: `lt${this.formatDate(toDate.toISOString()) ?? ""}` }),
-      _count: "1000",
-    };
+    const params = { status: "booked", _count: defaultCountOrLimit.toString() };
     const urlParams = new URLSearchParams(params);
+    urlParams.append("date", `ge${this.formatDate(fromDate.toISOString())}`);
+    urlParams.append("date", `lt${this.formatDate(toDate.toISOString())}`);
     const appointmentUrl = `/Appointment?${urlParams.toString()}`;
     const additionalInfo = {
       cxId,
@@ -514,6 +1088,7 @@ class CanvasApi {
       acc: Appointment[] | undefined = []
     ): Promise<Appointment[]> {
       if (!url) return acc;
+      await sleep(paginateWaitTime.asMilliseconds());
       const appointmentListResponse = await api.makeRequest<AppointmentListResponse>({
         cxId,
         s3Path: "appointments",
@@ -552,6 +1127,7 @@ class CanvasApi {
     schema,
     additionalInfo,
     debug,
+    emptyResponse = false,
     useFhir = false,
   }: MakeRequestParamsInEhr<T> & { useFhir?: boolean }): Promise<T> {
     const axiosInstance = useFhir ? this.axiosInstanceFhirApi : this.axiosInstanceCustomApi;
@@ -569,75 +1145,405 @@ class CanvasApi {
       schema,
       additionalInfo,
       debug,
-    });
-  }
-
-  private async getBundlePreSignedUrl({
-    cxId,
-    metriportPatientId,
-    canvasPatientId,
-    bundleType,
-    resourceType,
-    jobId,
-  }: Omit<FetchBundleParams, "ehr" | "ehrPatientId"> & {
-    canvasPatientId: string;
-  }): Promise<string | undefined> {
-    const bundlePreSignedUrl = await fetchBundlePreSignedUrl({
-      ehr: EhrSources.canvas,
-      cxId,
-      metriportPatientId,
-      ehrPatientId: canvasPatientId,
-      bundleType,
-      resourceType,
-      jobId,
-    });
-    return bundlePreSignedUrl;
-  }
-
-  private async getCachedBundle({
-    cxId,
-    metriportPatientId,
-    canvasPatientId,
-    bundleType,
-    resourceType,
-  }: Omit<FetchBundleParams, "ehr" | "ehrPatientId"> & {
-    canvasPatientId: string;
-  }): Promise<Bundle | undefined> {
-    const bundleWithLastModified = await fetchBundleUsingTtl({
-      ehr: EhrSources.canvas,
-      cxId,
-      metriportPatientId,
-      ehrPatientId: canvasPatientId,
-      bundleType,
-      resourceType,
-    });
-    if (!bundleWithLastModified) return undefined;
-    return bundleWithLastModified.bundle;
-  }
-
-  private async updateCachedBundle({
-    cxId,
-    metriportPatientId,
-    canvasPatientId,
-    bundleType,
-    bundle,
-    resourceType,
-  }: Omit<CreateOrReplaceBundleParams, "ehr" | "ehrPatientId"> & {
-    canvasPatientId: string;
-  }): Promise<void> {
-    return await createOrReplaceBundle({
-      ehr: EhrSources.canvas,
-      cxId,
-      metriportPatientId,
-      ehrPatientId: canvasPatientId,
-      bundleType,
-      bundle,
-      resourceType,
+      emptyResponse,
     });
   }
 
   private formatDate(date: string | undefined): string | undefined {
     return formatDate(date, canvasDateFormat);
+  }
+
+  private formatDateTime(date: string | undefined): string | undefined {
+    return formatDate(date, canvasDateTimeFormat);
+  }
+
+  private formatCondition(
+    condition: Condition,
+    additionalInfo: Record<string, string | undefined>
+  ): Condition {
+    const formattedCondition: Condition = {
+      resourceType: "Condition",
+      ...(condition.id ? { id: condition.id } : {}),
+      ...(condition.subject ? { subject: condition.subject } : {}),
+      ...(condition.recorder ? { recorder: condition.recorder } : {}),
+      ...(condition.meta ? { meta: condition.meta } : {}),
+      ...(condition.extension ? { extension: condition.extension } : {}),
+    };
+    const icd10Coding = getConditionIcd10Coding(condition);
+    if (!icd10Coding) {
+      throw new BadRequestError("No ICD-10 code found for condition", undefined, additionalInfo);
+    }
+    if (!icd10Coding.code) {
+      throw new BadRequestError("No code found for ICD-10 coding", undefined, additionalInfo);
+    }
+    if (!icd10Coding.display) {
+      throw new BadRequestError("No display found for ICD-10 coding", undefined, additionalInfo);
+    }
+    formattedCondition.code = {
+      coding: [
+        {
+          code: icd10Coding.code,
+          system: "http://hl7.org/fhir/sid/icd-10-cm",
+          display: icd10Coding.display,
+        },
+      ],
+    };
+    const startDate = getConditionStartDate(condition);
+    const formattedStartDate = this.formatDate(startDate);
+    if (!formattedStartDate) {
+      throw new BadRequestError("No start date found for condition", undefined, additionalInfo);
+    }
+    formattedCondition.onsetDateTime = formattedStartDate;
+    const conditionStatus = getConditionStatus(condition);
+    const problemStatus = conditionStatus
+      ? problemStatusesMap.get(conditionStatus.toLowerCase())
+      : undefined;
+    if (!problemStatus) {
+      throw new BadRequestError("No problem status found for condition", undefined, additionalInfo);
+    }
+    formattedCondition.clinicalStatus = {
+      coding: [
+        {
+          system: "http://terminology.hl7.org/CodeSystem/condition-clinical",
+          code: problemStatus,
+        },
+      ],
+    };
+    formattedCondition.category = [
+      {
+        coding: [
+          {
+            system: "http://terminology.hl7.org/CodeSystem/condition-category",
+            code: "encounter-diagnosis",
+          },
+        ],
+      },
+    ];
+    return formattedCondition;
+  }
+
+  private formatMedicationStatement(
+    medicationStatement: MedicationStatement
+  ): MedicationStatement | undefined {
+    const formattedMedicationStatement: MedicationStatement = {
+      resourceType: "MedicationStatement",
+      ...(medicationStatement.id ? { id: medicationStatement.id } : {}),
+      ...(medicationStatement.subject ? { subject: medicationStatement.subject } : {}),
+      ...(medicationStatement.meta ? { meta: medicationStatement.meta } : {}),
+      ...(medicationStatement.extension ? { extension: medicationStatement.extension } : {}),
+    };
+    const startDate = getMedicationStatementStartDate(medicationStatement);
+    const formattedStartDateTime = this.formatDateTime(startDate);
+    if (!formattedStartDateTime) return undefined;
+    const formattedEndDate = this.formatDateTime(medicationStatement.effectivePeriod?.end);
+    formattedMedicationStatement.effectivePeriod = {
+      start: formattedStartDateTime,
+      ...(formattedEndDate ? { end: formattedEndDate } : {}),
+    };
+    const status = medicationStatement.status;
+    if (!status || !medicationStatementStatuses.includes(status)) return undefined;
+    formattedMedicationStatement.status = status;
+    const dosageText = medicationStatement.dosage?.[0]?.text;
+    if (!dosageText) return undefined;
+    formattedMedicationStatement.dosage = [{ text: dosageText }];
+    return formattedMedicationStatement;
+  }
+
+  private formatImmunization(
+    immunization: Immunization,
+    additionalInfo: Record<string, string | undefined>
+  ): Immunization {
+    const formattedImmunization: Immunization = {
+      resourceType: "Immunization",
+      ...(immunization.id ? { id: immunization.id } : {}),
+      ...(immunization.patient ? { patient: immunization.patient } : {}),
+      ...(immunization.meta ? { meta: immunization.meta } : {}),
+      ...(immunization.extension ? { extension: immunization.extension } : {}),
+    };
+    const cvxCoding = getImmunizationCvxCoding(immunization);
+    if (!cvxCoding) {
+      throw new BadRequestError("No CVX code found for immunization", undefined, additionalInfo);
+    }
+    if (!cvxCoding.code) {
+      throw new BadRequestError("No code found for CVX coding", undefined, additionalInfo);
+    }
+    if (!cvxCoding.display) {
+      throw new BadRequestError("No display found for CVX coding", undefined, additionalInfo);
+    }
+    formattedImmunization.vaccineCode = {
+      coding: [
+        { code: cvxCoding.code, system: "http://hl7.org/fhir/sid/cvx", display: cvxCoding.display },
+      ],
+    };
+    const administerDate = getImmunizationAdministerDate(immunization);
+    const formattedAdministerDate = this.formatDate(administerDate);
+    if (!formattedAdministerDate) {
+      throw new BadRequestError(
+        "No administered date found for immunization",
+        undefined,
+        additionalInfo
+      );
+    }
+    formattedImmunization.occurrenceDateTime = formattedAdministerDate;
+    const status = immunization.status;
+    if (!status || !immunizationStatuses.includes(status)) {
+      throw new BadRequestError("No status found for immunization", undefined, additionalInfo);
+    }
+    formattedImmunization.status = status;
+    formattedImmunization.primarySource = false;
+    return formattedImmunization;
+  }
+
+  private formatAllergyIntolerance(
+    allergyIntolerance: AllergyIntolerance,
+    allergenReference: AllergenResource,
+    severity: string | undefined,
+    additionalInfo: Record<string, string | undefined>
+  ): AllergyIntolerance {
+    const formattedAllergyIntolerance: AllergyIntolerance = {
+      resourceType: "AllergyIntolerance",
+      ...(allergyIntolerance.id ? { id: allergyIntolerance.id } : {}),
+      ...(allergyIntolerance.patient ? { patient: allergyIntolerance.patient } : {}),
+      ...(allergyIntolerance.recorder ? { recorder: allergyIntolerance.recorder } : {}),
+      ...(allergyIntolerance.meta ? { meta: allergyIntolerance.meta } : {}),
+      ...(allergyIntolerance.extension ? { extension: allergyIntolerance.extension } : {}),
+    };
+    const fdbCoding = this.getAllergenReferenceFdbCoding(allergenReference);
+    if (!fdbCoding) {
+      throw new BadRequestError("No FDB code found for allergen", undefined, additionalInfo);
+    }
+    if (!fdbCoding.code) {
+      throw new BadRequestError("No code found for FDB code", undefined, additionalInfo);
+    }
+    if (!fdbCoding.display) {
+      throw new BadRequestError("No display found for FDB code", undefined, additionalInfo);
+    }
+    formattedAllergyIntolerance.code = {
+      coding: [fdbCoding],
+      text: fdbCoding.display,
+    };
+    const onsetDate = getAllergyIntoleranceOnsetDate(allergyIntolerance);
+    const formattedOnsetDate = this.formatDate(onsetDate);
+    if (!formattedOnsetDate) {
+      throw new BadRequestError("No onset date found for allergy", undefined, additionalInfo);
+    }
+    formattedAllergyIntolerance.onsetDateTime = formattedOnsetDate;
+    const clinicalStatus = allergyIntolerance.clinicalStatus;
+    if (!clinicalStatus || !clinicalStatus.coding) {
+      throw new BadRequestError(
+        "No clinical status or codings found for allergy intolerance",
+        undefined,
+        additionalInfo
+      );
+    }
+    const clinicalStatusCoding = clinicalStatus.coding.filter(coding =>
+      allergyIntoleranceClinicalStatuses.includes(coding.code ?? "")
+    );
+    if (clinicalStatusCoding.length < 1) {
+      throw new BadRequestError(
+        "No valid clinical status codings found for allergy intolerance",
+        undefined,
+        additionalInfo
+      );
+    }
+    formattedAllergyIntolerance.clinicalStatus = { coding: clinicalStatusCoding };
+    const verificationStatus = allergyIntolerance.verificationStatus;
+    if (!verificationStatus || !verificationStatus.coding) {
+      throw new BadRequestError(
+        "No verification status found for allergy intolerance",
+        undefined,
+        additionalInfo
+      );
+    }
+    const verificationStatusCoding = verificationStatus.coding.filter(coding =>
+      allergyIntoleranceVerificationStatuses.includes(coding.code ?? "")
+    );
+    if (verificationStatusCoding.length < 1) {
+      throw new BadRequestError(
+        "No valid verification status codings found for allergy intolerance",
+        undefined,
+        additionalInfo
+      );
+    }
+    formattedAllergyIntolerance.verificationStatus = { coding: verificationStatusCoding };
+    if (severity && allergyIntoleranceSeverityCodes.includes(severity)) {
+      formattedAllergyIntolerance.reaction = [
+        {
+          manifestation: [
+            {
+              coding: [
+                {
+                  system: "http://terminology.hl7.org/CodeSystem/data-absent-reason",
+                  code: "unknown",
+                },
+              ],
+            },
+          ],
+          severity: severity as "mild" | "moderate" | "severe",
+        },
+      ];
+    }
+    formattedAllergyIntolerance.type = "allergy";
+    return formattedAllergyIntolerance;
+  }
+
+  private formatVitalDataPoint(
+    observation: Observation,
+    dataPoint: DataPoint,
+    additionalInfo: Record<string, string | undefined>
+  ): Observation {
+    const formattedObservation: Observation = {
+      resourceType: "Observation",
+      ...(observation.id ? { id: observation.id } : {}),
+      ...(observation.subject ? { subject: observation.subject } : {}),
+      ...(observation.meta ? { meta: observation.meta } : {}),
+      ...(observation.extension ? { extension: observation.extension } : {}),
+    };
+    const loincCoding = getObservationLoincCoding(observation);
+    if (!loincCoding) {
+      throw new BadRequestError("No LOINC code found for observation", undefined, additionalInfo);
+    }
+    if (!loincCoding.code || !vitalSignCodesMapCanvas.get(loincCoding.code)) {
+      throw new BadRequestError("No valid code found for LOINC coding", undefined, additionalInfo);
+    }
+    if (!loincCoding.display) {
+      throw new BadRequestError("No display found for LOINC coding", undefined, additionalInfo);
+    }
+    formattedObservation.code = {
+      coding: [
+        { code: loincCoding.code, system: "http://loinc.org", display: loincCoding.display },
+      ],
+    };
+    const units = getObservationUnits(observation);
+    if (!units) {
+      throw new BadRequestError("No units found for observation", undefined, additionalInfo);
+    }
+    const resultStatus = getObservationResultStatus(observation);
+    if (!resultStatus || !observationResultStatuses.includes(resultStatus)) {
+      throw new BadRequestError("No status found for observation", undefined, additionalInfo);
+    }
+    formattedObservation.status = resultStatus as ObservationStatus;
+    const effectiveDateTime = this.formatDateTime(dataPoint.date);
+    if (!effectiveDateTime) {
+      throw new BadRequestError(
+        "No effective date time found for observation",
+        undefined,
+        additionalInfo
+      );
+    }
+    formattedObservation.effectiveDateTime = effectiveDateTime;
+    const unitAndValue = this.convertUnitAndValue(loincCoding.code, dataPoint.value, units);
+    if (!unitAndValue) {
+      throw new BadRequestError(
+        "No unit and value found for observation",
+        undefined,
+        additionalInfo
+      );
+    }
+    formattedObservation.valueQuantity = {
+      value: unitAndValue.value,
+      unit: unitAndValue.unit,
+    };
+    return formattedObservation;
+  }
+
+  private getAllergenReferenceFdbCoding(allergenReference: AllergenResource): Coding | undefined {
+    const fdbCoding = allergenReference.code.coding?.find((coding: Coding) => {
+      const system = fetchCodingCodeOrDisplayOrSystem(coding, "system");
+      return system?.includes(FDB_CODE);
+    });
+    return fdbCoding;
+  }
+
+  private formatNoteIdExtension(noteId: string): Extension {
+    return {
+      url: "http://schemas.canvasmedical.com/fhir/extensions/note-id",
+      valueId: noteId,
+    };
+  }
+
+  private convertUnitAndValue(
+    loincCode: string,
+    value: number,
+    units: string
+  ): { value: number; unit: string } | undefined {
+    const targetUnit = vitalSignCodesMapCanvas.get(loincCode);
+    if (!targetUnit) return undefined;
+    const unitParam = { unit: targetUnit };
+    if (units === targetUnit) return { ...unitParam, value };
+    if (targetUnit === "kg") {
+      if (units === "kg" || units === "kilogram" || units === "kilograms")
+        return { ...unitParam, value }; // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
+      if (units === "g" || units === "gram" || units === "grams")
+        return { ...unitParam, value: this.convertGramsToKg(value) }; // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
+      if (units === "lb_av" || units.includes("pound"))
+        return { ...unitParam, value: this.convertLbsToKg(value) }; // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
+    }
+    if (targetUnit === "cm") {
+      if (units === "cm" || units === "centimeter") return { ...unitParam, value }; // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
+      if (units === "in_i" || units.includes("inch"))
+        return { ...unitParam, value: this.convertInchesToCm(value) }; // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
+    }
+    if (targetUnit === "degf") {
+      if (units === "degf" || units === "f" || units.includes("fahrenheit"))
+        return { ...unitParam, value }; // https://hl7.org/fhir/R4/valueset-ucum-bodytemp.html
+      if (units === "cel" || units === "c" || units.includes("celsius"))
+        return { ...unitParam, value: this.convertCelciusToFahrenheit(value) }; // https://hl7.org/fhir/R4/valueset-ucum-bodytemp.html}
+    }
+    throw new BadRequestError("Unknown units", undefined, {
+      units,
+      loincCode,
+      value,
+    });
+  }
+
+  private convertGramsToKg(value: number): number {
+    return value * gToKg;
+  }
+
+  private convertLbsToKg(value: number): number {
+    return value * lbsToKg;
+  }
+
+  private convertInchesToCm(value: number): number {
+    return value * inchesToCm;
+  }
+
+  private convertCelciusToFahrenheit(value: number): number {
+    return value * (9 / 5) + 32;
+  }
+
+  private sortMedicationStatementsNewestFirst(
+    medicationStatements: MedicationStatement[]
+  ): MedicationStatement[] {
+    return medicationStatements
+      .sort((a, b) => {
+        const aDate = a.effectivePeriod?.start;
+        const bDate = b.effectivePeriod?.start;
+        if (!aDate) return -1;
+        if (!bDate) return 1;
+        const aDateUnix = buildDayjs(aDate).unix();
+        const bDateUnix = buildDayjs(bDate).unix();
+        if (aDateUnix === bDateUnix) {
+          const aEndDate = a.effectivePeriod?.end;
+          const bEndDate = b.effectivePeriod?.end;
+          if (!aEndDate) return -1;
+          if (!bEndDate) return 1;
+          const aEndDateUnix = buildDayjs(aEndDate).unix();
+          const bEndDateUnix = buildDayjs(bEndDate).unix();
+          return aEndDateUnix - bEndDateUnix;
+        }
+        return aDateUnix - bDateUnix;
+      })
+      .reverse();
+  }
+
+  private createWriteBackPath(resourceType: string, resourceId: string | undefined): string {
+    return `fhir/${resourceType}/${resourceId ?? "unknown"}`;
+  }
+
+  private createReferencePath(referenceType: string, referenceId: string): string {
+    return `reference/${referenceType}/${referenceId}`;
   }
 }
 

@@ -48,7 +48,7 @@ export function doesGatewayUseSha1(oid: string): boolean {
 const gatewaysThatAcceptOneDocRefPerRequest = [pointClickCareOid, surescriptsOid];
 
 const prefixDocRefsPerRequest: Record<string, number> = {
-  [epicOidPrefix]: 10,
+  [epicOidPrefix]: 9,
   [redoxOidPrefix]: 1,
   [ntstPrefix]: 1,
 };

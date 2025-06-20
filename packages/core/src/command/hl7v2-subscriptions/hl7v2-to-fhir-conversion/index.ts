@@ -2,12 +2,12 @@ import { Hl7Message } from "@medplum/core";
 import { Bundle, Resource } from "@medplum/fhirtypes";
 import { MetriportError } from "@metriport/shared";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
-import { BundleWithEntry, buildBundleFromResources } from "../../../external/fhir/shared/bundle";
+import { BundleWithEntry, buildBundleFromResources } from "../../../external/fhir/bundle/bundle";
 import { buildDocIdFhirExtension } from "../../../external/fhir/shared/extensions/doc-id-extension";
 import { capture, out } from "../../../util";
 import { mapEncounterAndRelatedResources } from "./adt/encounter";
 import { getHl7MessageTypeOrFail, getMessageUniqueIdentifier } from "./msh";
-import { buildHl7MessageFileKey } from "./shared";
+import { createFileKeyHl7Message } from "./shared";
 
 export type Hl7ToFhirParams = {
   cxId: string;
@@ -32,7 +32,7 @@ export function convertHl7v2MessageToFhir({
   const { messageCode, triggerEvent } = getHl7MessageTypeOrFail(message);
   const messageId = getMessageUniqueIdentifier(message);
 
-  const filePath = buildHl7MessageFileKey({
+  const filePath = createFileKeyHl7Message({
     cxId,
     patientId,
     timestamp: timestampString,

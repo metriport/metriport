@@ -26,6 +26,7 @@ import { ISecret } from "aws-cdk-lib/aws-secretsmanager";
 import { IQueue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { EnvConfig } from "../../config/env-config";
+import { JobsAssets } from "../jobs/types";
 import { defaultBedrockPolicyStatement } from "../shared/bedrock";
 import { DnsZones } from "../shared/dns";
 import { getMaxPostgresConnections } from "../shared/rds";
@@ -34,6 +35,7 @@ import { buildSecrets, Secrets, secretsToECS } from "../shared/secrets";
 import { provideAccessToQueue } from "../shared/sqs";
 import { addDefaultMetricsToTargetGroup } from "../shared/target-group";
 import { isProd, isSandbox } from "../shared/util";
+import { SurescriptsAssets } from "../surescripts/types";
 
 interface ApiProps extends StackProps {
   config: EnvConfig;
@@ -112,8 +114,8 @@ export function createAPIService({
   ehrSyncPatientQueue,
   elationLinkPatientQueue,
   healthieLinkPatientQueue,
-  ehrStartResourceDiffBundlesQueue,
   ehrRefreshEhrBundlesQueue,
+  ehrGetAppointmentsLambda,
   ehrBundleBucket,
   generalBucket,
   conversionBucket,
@@ -128,12 +130,12 @@ export function createAPIService({
   searchEndpoint,
   searchAuth,
   searchIndexName,
-  semanticSearchAuth,
-  semanticSearchEndpoint,
-  semanticSearchIndexName,
-  semanticSearchModelId,
+  consolidatedSearchLambda,
+  consolidatedIngestionQueue,
   featureFlagsTable,
   cookieStore,
+  surescriptsAssets,
+  jobAssets,
 }: {
   stack: Construct;
   props: ApiProps;
@@ -150,17 +152,17 @@ export function createAPIService({
   fhirConverterServiceLambda: ILambda | undefined;
   cdaToVisualizationLambda: ILambda;
   documentDownloaderLambda: ILambda;
-  outboundPatientDiscoveryLambda: ILambda;
-  outboundDocumentQueryLambda: ILambda;
-  outboundDocumentRetrievalLambda: ILambda;
+  outboundPatientDiscoveryLambda: ILambda | undefined;
+  outboundDocumentQueryLambda: ILambda | undefined;
+  outboundDocumentRetrievalLambda: ILambda | undefined;
   patientImportParseLambda: ILambda;
   patientImportResultLambda: ILambda;
   patientImportBucket: s3.IBucket;
   ehrSyncPatientQueue: IQueue;
   elationLinkPatientQueue: IQueue;
   healthieLinkPatientQueue: IQueue;
-  ehrStartResourceDiffBundlesQueue: IQueue;
   ehrRefreshEhrBundlesQueue: IQueue;
+  ehrGetAppointmentsLambda: ILambda;
   ehrBundleBucket: s3.IBucket;
   generalBucket: s3.IBucket;
   conversionBucket: s3.IBucket;
@@ -175,13 +177,12 @@ export function createAPIService({
   searchEndpoint: string;
   searchAuth: { userName: string; secret: ISecret };
   searchIndexName: string;
-  semanticSearchEndpoint: string | undefined;
-  semanticSearchIndexName: string | undefined;
-  semanticSearchModelId: string | undefined;
-  // TODO eng-41 Make this an actual Secret before going to prod
-  semanticSearchAuth: { userName: string; secret: string } | undefined;
+  consolidatedSearchLambda: ILambda;
+  consolidatedIngestionQueue: IQueue;
   featureFlagsTable: dynamodb.Table;
   cookieStore: secret.ISecret | undefined;
+  surescriptsAssets: SurescriptsAssets | undefined;
+  jobAssets: JobsAssets;
 }): {
   cluster: ecs.Cluster;
   service: ecs_patterns.ApplicationLoadBalancedFargateService;
@@ -246,10 +247,6 @@ export function createAPIService({
         secrets: {
           DB_CREDS: ecs.Secret.fromSecretsManager(dbCredsSecret),
           SEARCH_PASSWORD: ecs.Secret.fromSecretsManager(searchAuth.secret),
-          // TODO eng-41 Make this an actual Secret before going to prod
-          // ...(semanticSearchAuth && {
-          // SEMANTIC_SEARCH_PASSWORD: ecs.Secret.fromSecretsManager(semanticSearchAuth.secret),
-          // }),
           ...secretsToECS(secrets),
           ...secretsToECS(buildSecrets(stack, props.config.propelAuth.secrets)),
         },
@@ -294,17 +291,23 @@ export function createAPIService({
           PROPELAUTH_PUBLIC_KEY: props.config.propelAuth.publicKey,
           CONVERT_DOC_LAMBDA_NAME: cdaToVisualizationLambda.functionName,
           DOCUMENT_DOWNLOADER_LAMBDA_NAME: documentDownloaderLambda.functionName,
-          OUTBOUND_PATIENT_DISCOVERY_LAMBDA_NAME: outboundPatientDiscoveryLambda.functionName,
-          OUTBOUND_DOC_QUERY_LAMBDA_NAME: outboundDocumentQueryLambda.functionName,
-          OUTBOUND_DOC_RETRIEVAL_LAMBDA_NAME: outboundDocumentRetrievalLambda.functionName,
+          ...(outboundPatientDiscoveryLambda && {
+            OUTBOUND_PATIENT_DISCOVERY_LAMBDA_NAME: outboundPatientDiscoveryLambda.functionName,
+          }),
+          ...(outboundDocumentQueryLambda && {
+            OUTBOUND_DOC_QUERY_LAMBDA_NAME: outboundDocumentQueryLambda.functionName,
+          }),
+          ...(outboundDocumentRetrievalLambda && {
+            OUTBOUND_DOC_RETRIEVAL_LAMBDA_NAME: outboundDocumentRetrievalLambda.functionName,
+          }),
           PATIENT_IMPORT_BUCKET_NAME: patientImportBucket.bucketName,
           PATIENT_IMPORT_PARSE_LAMBDA_NAME: patientImportParseLambda.functionName,
           PATIENT_IMPORT_RESULT_LAMBDA_NAME: patientImportResultLambda.functionName,
           EHR_SYNC_PATIENT_QUEUE_URL: ehrSyncPatientQueue.queueUrl,
           ELATION_LINK_PATIENT_QUEUE_URL: elationLinkPatientQueue.queueUrl,
           HEALTHIE_LINK_PATIENT_QUEUE_URL: healthieLinkPatientQueue.queueUrl,
-          EHR_START_RESOURCE_DIFF_BUNDLES_QUEUE_URL: ehrStartResourceDiffBundlesQueue.queueUrl,
           EHR_REFRESH_EHR_BUNDLES_QUEUE_URL: ehrRefreshEhrBundlesQueue.queueUrl,
+          EHR_GET_APPOINTMENTS_LAMBDA_NAME: ehrGetAppointmentsLambda.functionName,
           EHR_BUNDLE_BUCKET_NAME: ehrBundleBucket.bucketName,
           FHIR_TO_BUNDLE_LAMBDA_NAME: fhirToBundleLambda.functionName,
           FHIR_TO_BUNDLE_COUNT_LAMBDA_NAME: fhirToBundleCountLambda.functionName,
@@ -329,15 +332,10 @@ export function createAPIService({
           SEARCH_ENDPOINT: searchEndpoint,
           SEARCH_USERNAME: searchAuth.userName,
           SEARCH_INDEX: searchIndexName,
-          ...(semanticSearchEndpoint &&
-            semanticSearchAuth && {
-              SEMANTIC_SEARCH_ENDPOINT: semanticSearchEndpoint,
-              SEMANTIC_SEARCH_USERNAME: semanticSearchAuth.userName,
-              // TODO eng-41 Make this an actual Secret before going to prod
-              SEMANTIC_SEARCH_PASSWORD: semanticSearchAuth.secret,
-              SEMANTIC_SEARCH_INDEX: semanticSearchIndexName,
-              SEMANTIC_SEARCH_MODEL_ID: semanticSearchModelId,
-            }),
+          CONSOLIDATED_SEARCH_LAMBDA_NAME: consolidatedSearchLambda.functionName,
+          CONSOLIDATED_INGESTION_QUEUE_URL: consolidatedIngestionQueue.queueUrl,
+          CONSOLIDATED_INGESTION_INITIAL_DATE:
+            props.config.openSearch.consolidatedDataIngestionInitialDate,
           ...(props.config.carequality?.envVars?.CQ_ORG_URLS && {
             CQ_ORG_URLS: props.config.carequality.envVars.CQ_ORG_URLS,
           }),
@@ -365,11 +363,32 @@ export function createAPIService({
             EHR_ATHENA_ENVIRONMENT: props.config.ehrIntegration.athenaHealth.env,
             EHR_ELATION_ENVIRONMENT: props.config.ehrIntegration.elation.env,
             EHR_HEALTHIE_ENVIRONMENT: props.config.ehrIntegration.healthie.env,
+            EHR_ECLINICALWORKS_ENVIRONMENT: props.config.ehrIntegration.eclinicalworks.env,
           }),
           ...(!isSandbox(props.config) && {
             DASH_URL: props.config.dashUrl,
             EHR_DASH_URL: props.config.ehrDashUrl,
           }),
+          ...(props.config.cqDirectoryRebuilder?.heartbeatUrl && {
+            CQ_DIR_REBUILD_HEARTBEAT_URL: props.config.cqDirectoryRebuilder.heartbeatUrl,
+          }),
+          ...(surescriptsAssets && {
+            PHARMACY_CONVERSION_BUCKET_NAME: surescriptsAssets.pharmacyConversionBucket.bucketName,
+            SURESCRIPTS_REPLICA_BUCKET_NAME: surescriptsAssets.surescriptsReplicaBucket.bucketName,
+            ...Object.fromEntries(
+              surescriptsAssets.surescriptsLambdas.map(({ envVarName, lambda }) => [
+                envVarName,
+                lambda.functionName,
+              ])
+            ),
+            ...Object.fromEntries(
+              surescriptsAssets.surescriptsQueues.map(({ envVarName, queue }) => [
+                envVarName,
+                queue.queueUrl,
+              ])
+            ),
+          }),
+          RUN_PATIENT_JOB_QUEUE_URL: jobAssets.runPatientJobQueue.queueUrl,
         },
       },
       healthCheckGracePeriod: Duration.seconds(60),
@@ -441,20 +460,32 @@ export function createAPIService({
 
   cdaToVisualizationLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   documentDownloaderLambda.grantInvoke(fargateService.taskDefinition.taskRole);
-  outboundPatientDiscoveryLambda.grantInvoke(fargateService.taskDefinition.taskRole);
-  outboundDocumentQueryLambda.grantInvoke(fargateService.taskDefinition.taskRole);
-  outboundDocumentRetrievalLambda.grantInvoke(fargateService.taskDefinition.taskRole);
+  outboundPatientDiscoveryLambda?.grantInvoke(fargateService.taskDefinition.taskRole);
+  outboundDocumentQueryLambda?.grantInvoke(fargateService.taskDefinition.taskRole);
+  outboundDocumentRetrievalLambda?.grantInvoke(fargateService.taskDefinition.taskRole);
   patientImportParseLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   patientImportResultLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   fhirToCdaConverterLambda?.grantInvoke(fargateService.taskDefinition.taskRole);
   fhirToBundleLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   fhirToBundleCountLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   fhirConverterServiceLambda?.grantInvoke(fargateService.taskDefinition.taskRole);
+  ehrGetAppointmentsLambda.grantInvoke(fargateService.taskDefinition.taskRole);
+  consolidatedSearchLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   // Access grant for buckets
   patientImportBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   conversionBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   medicalDocumentsUploadBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   ehrBundleBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
+
+  if (surescriptsAssets) {
+    surescriptsAssets.pharmacyConversionBucket.grantReadWrite(
+      fargateService.taskDefinition.taskRole
+    );
+    surescriptsAssets.surescriptsReplicaBucket.grantReadWrite(
+      fargateService.taskDefinition.taskRole
+    );
+  }
+
   if (ehrResponsesBucket) {
     ehrResponsesBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   }
@@ -485,12 +516,23 @@ export function createAPIService({
   });
   provideAccessToQueue({
     accessType: "send",
-    queue: ehrStartResourceDiffBundlesQueue,
+    queue: ehrRefreshEhrBundlesQueue,
     resource: fargateService.taskDefinition.taskRole,
   });
+
+  if (surescriptsAssets) {
+    surescriptsAssets.surescriptsQueues.forEach(({ queue }) => {
+      provideAccessToQueue({
+        accessType: "send",
+        queue,
+        resource: fargateService.taskDefinition.taskRole,
+      });
+    });
+  }
+
   provideAccessToQueue({
     accessType: "send",
-    queue: ehrRefreshEhrBundlesQueue,
+    queue: jobAssets.runPatientJobQueue,
     resource: fargateService.taskDefinition.taskRole,
   });
 
@@ -498,6 +540,11 @@ export function createAPIService({
   provideAccessToQueue({
     accessType: "send",
     queue: searchIngestionQueue,
+    resource: fargateService.taskDefinition.taskRole,
+  });
+  provideAccessToQueue({
+    accessType: "send",
+    queue: consolidatedIngestionQueue,
     resource: fargateService.taskDefinition.taskRole,
   });
   searchAuth.secret.grantRead(fargateService.taskDefinition.taskRole);
@@ -563,7 +610,7 @@ export function createAPIService({
     maxCapacity: maxTaskCount,
   });
   scaling.scaleOnCpuUtilization("autoscale_cpu", {
-    targetUtilizationPercent: 10,
+    targetUtilizationPercent: 15,
     scaleInCooldown: Duration.minutes(2),
     scaleOutCooldown: Duration.minutes(1),
   });

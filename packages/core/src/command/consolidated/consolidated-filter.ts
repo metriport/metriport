@@ -1,4 +1,5 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
+import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import {
   ResourceTypeForConsolidation,
   SearchSetBundle,
@@ -9,12 +10,14 @@ import {
   buildBundleEntry,
   getReferencesFromResources,
   ReferenceWithIdAndType,
-} from "../../external/fhir/shared/bundle";
+  replaceBundleEntries,
+} from "../../external/fhir/bundle/bundle";
 import { out } from "../../util";
 import { createConsolidatedFromConversions } from "./consolidated-create";
 import { filterBundleByDate } from "./consolidated-filter-by-date";
 import { filterBundleByResource } from "./consolidated-filter-by-resource";
-import { getConsolidated } from "./consolidated-get";
+import { getConsolidatedFile } from "./consolidated-get";
+
 const maxHydrationIterations = 5;
 
 /**
@@ -55,7 +58,7 @@ async function getOrCreateConsolidatedOnS3({
 }): Promise<Bundle> {
   const patientId = patient.id;
   const { log } = out(`getOrCreateConsolidatedOnS3 - cx ${cxId}, pat ${patientId}`);
-  const preGenerated = await getConsolidated({
+  const preGenerated = await getConsolidatedFile({
     cxId,
     patientId,
   });
@@ -92,8 +95,13 @@ export async function filterConsolidated(
     `Filtered by date (${dateFrom} - ${dateTo}) to ${filtered?.entry?.length} entries, checking missing refs...`
   );
 
+  const startedAtAddMissingRefs = new Date();
   const hydrated = addMissingReferencesFn(filtered, bundle, addMissingReferencesFn);
-  log(`Hydrated missing refs, the bundle now has ${hydrated?.entry?.length} entries, returning.`);
+  log(
+    `Hydrated missing refs, the bundle now has ${
+      hydrated?.entry?.length
+    } entries, returning... Took ${elapsedTimeFromNow(startedAtAddMissingRefs)}ms`
+  );
 
   return hydrated;
 }
@@ -106,17 +114,17 @@ export function addMissingReferences(
 ): Bundle {
   const filteredResources = (filteredBundle.entry ?? []).flatMap(e => e.resource ?? []);
 
-  const { missingReferences } = getReferencesFromResources({ resources: filteredResources });
+  const { missingReferences } = getReferencesFromResources({
+    resourcesToCheckRefs: filteredResources,
+  });
 
   const resourcesToAdd = getResourcesFromBundle(missingReferences, originalBundle);
 
-  const resultBundle = {
-    ...filteredBundle,
-    entry: [...(filteredBundle.entry ?? []), ...resourcesToAdd.map(buildBundleEntry)],
-  };
+  const newEntries = [...(filteredBundle.entry ?? []), ...resourcesToAdd.map(buildBundleEntry)];
+  const resultBundle = replaceBundleEntries(filteredBundle, newEntries);
 
   const { missingReferences: missingRefsFromAddedResources } = getReferencesFromResources({
-    resources: resourcesToAdd,
+    resourcesToCheckRefs: resourcesToAdd,
   });
 
   if (missingRefsFromAddedResources.length && iteration < maxHydrationIterations) {

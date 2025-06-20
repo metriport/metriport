@@ -1,4 +1,4 @@
-import { Bundle } from "@medplum/fhirtypes";
+import { Bundle, Resource } from "@medplum/fhirtypes";
 import {
   errorToString,
   executeWithNetworkRetries,
@@ -8,15 +8,16 @@ import {
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { SearchSetBundle } from "@metriport/shared/medical";
 import axios from "axios";
-import { getConsolidatedQueryByRequestId } from "../../domain/patient";
-import { analytics, EventTypes } from "../../external/analytics/posthog";
+import { getConsolidatedQueryByRequestId, Patient } from "../../domain/patient";
+import { analyticsAsync, EventTypes } from "../../external/analytics/posthog";
+import { addEntriesToBundle, buildBundleEntry } from "../../external/fhir/bundle/bundle";
 import { checkBundle } from "../../external/fhir/bundle/qa";
+import { removeContainedResources, removeResources } from "../../external/fhir/bundle/remove";
 import { getConsolidatedFhirBundle as getConsolidatedFromFhirServer } from "../../external/fhir/consolidated/consolidated";
-import { deduplicate } from "../../external/fhir/consolidated/deduplicate";
+import { dangerouslyDeduplicate } from "../../external/fhir/consolidated/deduplicate";
 import { normalize } from "../../external/fhir/consolidated/normalize";
 import { toFHIR as patientToFhir } from "../../external/fhir/patient/conversion";
 import { isPatient } from "../../external/fhir/shared";
-import { buildBundleEntry } from "../../external/fhir/shared/bundle";
 import { capture, out } from "../../util";
 import { getConsolidatedFromS3 } from "./consolidated-filter";
 import {
@@ -35,32 +36,54 @@ export class ConsolidatedSnapshotConnectorLocal implements ConsolidatedSnapshotC
   async execute(
     params: ConsolidatedSnapshotRequestSync | ConsolidatedSnapshotRequestAsync
   ): Promise<ConsolidatedSnapshotResponse> {
-    const { patient, requestId } = params;
+    const { patient, requestId, sendAnalytics } = params;
     const { cxId, id: patientId } = patient;
     const { log } = out(`ConsolidatedSnapshotConnectorLocal cx ${cxId} pat ${patientId}`);
 
     const originalBundle = await getBundle(params);
 
-    const fhirPatient = patientToFhir(patient);
-    const patientEntry = buildBundleEntry(fhirPatient);
-    originalBundle.entry = [patientEntry, ...(originalBundle.entry ?? [])];
-    originalBundle.total = originalBundle.entry.length;
-
-    const originalBundleWithoutContainedPatients = removeContainedPatients(
-      originalBundle,
-      patientId
-    );
-
-    const dedupedBundle = await deduplicate({
-      cxId,
-      patientId,
-      bundle: originalBundleWithoutContainedPatients,
+    const bundleWithUpToDatePatient = replacePatient({
+      bundle: originalBundle,
+      patient,
     });
 
+    // TODO ENG-316 move it to createConsolidatedFromConversions
+    const processedBundle = removeContainedPatients(bundleWithUpToDatePatient, patientId);
+
+    try {
+      await uploadConsolidatedSnapshotToS3({
+        ...params,
+        s3BucketName: this.bucketName,
+        bundle: processedBundle,
+        type: "original",
+      });
+    } catch (error) {
+      log(`Failed to store original bundle on S3 - ${errorToString(error)}`);
+    }
+
+    // TODO ENG-316 remove this, already done on createConsolidatedFromConversions
+    await dangerouslyDeduplicate({
+      cxId,
+      patientId,
+      bundle: processedBundle,
+    });
+
+    try {
+      uploadConsolidatedSnapshotToS3({
+        ...params,
+        s3BucketName: this.bucketName,
+        bundle: processedBundle,
+        type: "dedup",
+      });
+    } catch (error) {
+      log(`Failed to store dedup bundle on S3 - ${errorToString(error)}`);
+    }
+
+    // TODO ENG-316 move it to createConsolidatedFromConversions
     const normalizedBundle = await normalize({
       cxId,
       patientId,
-      bundle: dedupedBundle,
+      bundle: processedBundle,
     });
 
     const resultBundle = normalizedBundle;
@@ -86,28 +109,13 @@ export class ConsolidatedSnapshotConnectorLocal implements ConsolidatedSnapshotC
       throw new MetriportError(msg, error, additionalInfo);
     }
 
-    const [, , resultS3Info] = await Promise.all([
-      uploadConsolidatedSnapshotToS3({
-        ...params,
-        s3BucketName: this.bucketName,
-        bundle: originalBundleWithoutContainedPatients,
-        type: "original",
-      }),
-      uploadConsolidatedSnapshotToS3({
-        ...params,
-        s3BucketName: this.bucketName,
-        bundle: dedupedBundle,
-        type: "dedup",
-      }),
-      uploadConsolidatedSnapshotToS3({
-        ...params,
-        s3BucketName: this.bucketName,
-        bundle: resultBundle,
-        type: "normalized",
-      }),
-    ]);
+    const { bucket, key } = await uploadConsolidatedSnapshotToS3({
+      ...params,
+      s3BucketName: this.bucketName,
+      bundle: resultBundle,
+      type: "normalized",
+    });
 
-    const { bucket, key } = resultS3Info;
     const info = {
       bundleLocation: bucket,
       bundleFilename: key,
@@ -125,17 +133,19 @@ export class ConsolidatedSnapshotConnectorLocal implements ConsolidatedSnapshotC
       });
     }
 
-    const currentConsolidatedProgress = getConsolidatedQueryByRequestId(patient, requestId);
-    analytics({
-      distinctId: cxId,
-      event: EventTypes.consolidatedQuery,
-      properties: {
-        patientId: patientId,
-        conversionType: "bundle",
-        duration: elapsedTimeFromNow(currentConsolidatedProgress?.startedAt),
-        resourceCount: resultBundle.entry?.length,
-      },
-    });
+    if (sendAnalytics) {
+      const currentConsolidatedProgress = getConsolidatedQueryByRequestId(patient, requestId);
+      await analyticsAsync({
+        distinctId: cxId,
+        event: EventTypes.consolidatedQuery,
+        properties: {
+          patientId: patientId,
+          conversionType: "bundle",
+          duration: elapsedTimeFromNow(currentConsolidatedProgress?.startedAt),
+          resourceCount: resultBundle.entry?.length,
+        },
+      });
+    }
 
     return info;
   }
@@ -183,26 +193,17 @@ async function postSnapshotToApi({
   );
 }
 
-export function removeContainedPatients(bundle: Bundle, patientId: string): Bundle {
-  if (!bundle.entry) return bundle;
-
-  const updatedEntry = bundle.entry.map(entry => {
-    const resource = entry.resource;
-    if (resource && "contained" in resource) {
-      return {
-        ...entry,
-        resource: {
-          ...resource,
-          contained: resource.contained?.filter(r => !isPatient(r) || r.id === patientId),
-        },
-      };
-    }
-    return entry;
+export function removeContainedPatients(bundle: Bundle, patientIdToKeep: string): Bundle {
+  return removeContainedResources({
+    bundle,
+    shouldRemove: (r: Resource) => isPatient(r) && r.id !== patientIdToKeep,
   });
+}
 
-  return {
-    ...bundle,
-    total: updatedEntry.length,
-    entry: updatedEntry,
-  };
+function replacePatient({ bundle, patient }: { bundle: Bundle; patient: Patient }): Bundle {
+  const bundleWithoutPatient = removeResources({ bundle, shouldRemove: isPatient });
+  const fhirPatient = patientToFhir(patient);
+  const patientEntry = buildBundleEntry(fhirPatient);
+  const newBundle = addEntriesToBundle(bundleWithoutPatient, [patientEntry]);
+  return newBundle;
 }

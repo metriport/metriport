@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from "uuid";
 import { makePatient } from "../../../../domain/__tests__/patient";
 import { Config } from "../../../../util/config";
 import { HapiFhirClient } from "../../api/api-hapi";
-import * as fhirBundle from "../../shared/bundle";
+import * as fhirBundle from "../../bundle/bundle";
 import * as fhirReferences from "../../shared/references";
 import { getConsolidatedFhirBundle } from "../consolidated";
 
@@ -26,9 +26,6 @@ afterAll(() => {
 describe("getConsolidatedFhirBundle", () => {
   const cxId = uuidv4();
   const patientId = uuidv4();
-  afterEach(() => {
-    jest.clearAllMocks();
-  });
 
   it("paginates appropriately", async () => {
     const returnedResource: Observation = {
@@ -59,7 +56,9 @@ describe("getConsolidatedFhirBundle", () => {
     expect(resp).toBeTruthy();
     expect(resp.resourceType).toEqual(`Bundle`);
     expect(resp.total).toEqual(2);
-    expect(resp.entry).toEqual(expect.arrayContaining([{ resource: returnedResource }]));
+    expect(resp.entry).toEqual(
+      expect.arrayContaining([expect.objectContaining({ resource: returnedResource })])
+    );
     expect(fhir_searchResourcePages).toHaveBeenCalledTimes(1);
   });
 
@@ -130,10 +129,10 @@ describe("getConsolidatedFhirBundle", () => {
     expect(resp.total).toEqual(4);
     expect(resp.entry).toEqual(
       expect.arrayContaining([
-        { resource: initialResource },
-        { resource: missingResourceBaseL1 },
-        { resource: missingL2 },
-        { resource: missingL3 },
+        expect.objectContaining({ resource: initialResource }),
+        expect.objectContaining({ resource: missingResourceBaseL1 }),
+        expect.objectContaining({ resource: missingL2 }),
+        expect.objectContaining({ resource: missingL3 }),
       ])
     );
     expect(fhir_searchResourcePages).toHaveBeenCalledTimes(1);
@@ -201,9 +200,9 @@ describe("getConsolidatedFhirBundle", () => {
     expect(resp.total).toEqual(3);
     expect(resp.entry).toEqual(
       expect.arrayContaining([
-        { resource: initialResource },
-        { resource: missingResourceBaseL1 },
-        { resource: missingL2 },
+        expect.objectContaining({ resource: initialResource }),
+        expect.objectContaining({ resource: missingResourceBaseL1 }),
+        expect.objectContaining({ resource: missingL2 }),
       ])
     );
     expect(fhir_searchResourcePages).toHaveBeenCalledTimes(1);

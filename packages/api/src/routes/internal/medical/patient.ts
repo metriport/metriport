@@ -5,8 +5,8 @@ import {
   getCxsWithEnhancedCoverageFeatureFlagValue,
 } from "@metriport/core/command/feature-flags/domain-ffs";
 import { consolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
+import { Patient } from "@metriport/core/domain/patient";
 import {
-  Hl7v2Subscriber,
   hl7v2SubscriptionRequestSchema,
   validHl7v2Subscriptions,
 } from "@metriport/core/domain/patient-settings";
@@ -16,14 +16,15 @@ import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import {
   BadRequestError,
+  errorToString,
   internalSendConsolidatedSchema,
+  MetriportError,
   normalizeState,
   PaginatedResponse,
   sleep,
   stringToBoolean,
 } from "@metriport/shared";
-import { buildDayjs } from "@metriport/shared/common/date";
-import { errorToString } from "@metriport/shared/common/error";
+import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { Request, Response } from "express";
@@ -32,13 +33,13 @@ import status from "http-status";
 import stringify from "json-stringify-safe";
 import { chunk } from "lodash";
 import { z } from "zod";
+import { resetExternalDataSource } from "../../../command/medical/admin/reset-external-data";
 import { getFacilityOrFail } from "../../../command/medical/facility/get-facility";
 import {
-  ConsolidatedQueryParams,
   getConsolidated,
   getConsolidatedAndSendToCx,
-  startConsolidatedQuery,
 } from "../../../command/medical/patient/consolidated-get";
+import { recreateConsolidated } from "../../../command/medical/patient/consolidated-recreate";
 import { getCoverageAssessments } from "../../../command/medical/patient/coverage-assessment-get";
 import { createPatient, PatientCreateCmd } from "../../../command/medical/patient/create-patient";
 import { deletePatient } from "../../../command/medical/patient/delete-patient";
@@ -47,11 +48,14 @@ import {
   GetHl7v2SubscribersParams,
 } from "../../../command/medical/patient/get-hl7v2-subscribers";
 import {
-  getPatientIds,
   getPatientOrFail,
   getPatients,
   getPatientStates,
 } from "../../../command/medical/patient/get-patient";
+import {
+  getPatientIds,
+  getPatientReadOnlyOrFail,
+} from "../../../command/medical/patient/get-patient-read-only";
 import { processHl7FhirBundleWebhook } from "../../../command/medical/patient/hl7-fhir-webhook";
 import {
   PatientUpdateCmd,
@@ -73,8 +77,6 @@ import { PatientUpdaterCommonWell } from "../../../external/commonwell/patient-u
 import { getCqOrgIdsToDenyOnCw } from "../../../external/hie/cross-hie-ids";
 import { runOrSchedulePatientDiscoveryAcrossHies } from "../../../external/hie/run-or-schedule-patient-discovery";
 import { PatientLoaderLocal } from "../../../models/helpers/patient-loader-local";
-import { PatientModel } from "../../../models/medical/patient";
-import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { parseISODate } from "../../../shared/date";
 import { getETag } from "../../../shared/http";
 import { handleParams } from "../../helpers/handle-params";
@@ -95,16 +97,15 @@ import {
   asyncHandler,
   getFrom,
   getFromParamsOrFail,
-  getFromQuery,
   getFromQueryAsArray,
   getFromQueryAsArrayOrFail,
   getFromQueryAsBoolean,
   getFromQueryOrFail,
 } from "../../util";
+import patientConsolidatedRoutes from "./patient-consolidated";
 import patientImportRoutes from "./patient-import";
 import patientJobRoutes from "./patient-job";
 import patientSettingsRoutes from "./patient-settings";
-import { resetExternalDataSource } from "../../../command/medical/admin/reset-external-data";
 
 dayjs.extend(duration);
 
@@ -113,6 +114,7 @@ const router = Router();
 router.use("/settings", patientSettingsRoutes);
 router.use("/job", patientJobRoutes);
 router.use("/bulk", patientImportRoutes);
+router.use("/consolidated", patientConsolidatedRoutes);
 
 const patientChunkSize = 25;
 const SLEEP_TIME = dayjs.duration({ seconds: 5 });
@@ -175,7 +177,7 @@ router.get(
       hostUrl: Config.getApiLoadBalancerAddress(),
     });
 
-    const response: PaginatedResponse<Hl7v2Subscriber, "patients"> = {
+    const response: PaginatedResponse<Patient, "patients"> = {
       meta,
       patients: items,
     };
@@ -667,8 +669,8 @@ const consolidationConversionTypeSchema = z.enum(consolidationConversionType);
  * @param req.query.resources Optional comma-separated list of resources to be returned.
  * @param req.query.dateFrom Optional start date that resources will be filtered by (inclusive).
  * @param req.query.dateTo Optional end date that resources will be filtered by (inclusive).
- * @param req.query.conversionType Optional to indicate how the medical record should be rendered.
- *        Accepts "pdf" or "html". Defaults to no conversion.
+ * @param req.query.conversionType Required to indicate how the medical record should be rendered.
+ *        Accepts "pdf", "html", or "json".
  * @return Patient's consolidated data.
  */
 router.get(
@@ -681,10 +683,8 @@ router.get(
     const resources = getResourcesQueryParam(req);
     const dateFrom = parseISODate(getFrom("query").optional("dateFrom", req));
     const dateTo = parseISODate(getFrom("query").optional("dateTo", req));
-    const typeRaw = getFrom("query").optional("conversionType", req);
-    const conversionType = typeRaw
-      ? consolidationConversionTypeSchema.parse(typeRaw.toLowerCase())
-      : undefined;
+    const typeRaw = getFrom("query").orFail("conversionType", req);
+    const conversionType = consolidationConversionTypeSchema.parse(typeRaw.toLowerCase());
 
     const patient = await getPatientOrFail({ id: patientId, cxId });
     const data = await getConsolidated({
@@ -789,11 +789,11 @@ router.get(
 /** ---------------------------------------------------------------------------
  * GET /internal/patient/:id
  *
- * return a patient given a specific customer id and patient id
+ * Returns a patient given a specific customer and patient IDs
+ *
  * @param req.query.cxId The customer ID.
  * @param req.params.id The patient ID.
  * @return A patient.
- *
  */
 router.get(
   "/:id",
@@ -803,9 +803,10 @@ router.get(
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const id = getFromParamsOrFail("id", req);
 
-    const patient = await getPatientOrFail({ cxId, id });
+    const patient = await getPatientReadOnlyOrFail({ cxId, patientId: id });
+    const dto = dtoFromModel(patient);
 
-    return res.status(status.OK).json(dtoFromModel(patient));
+    return res.status(status.OK).json(dto);
   })
 );
 
@@ -934,6 +935,9 @@ router.post(
       fromDashboard,
     } = internalSendConsolidatedSchema.parse(req.body);
 
+    const { log } = out(`cx ${cxId}, pt ${id}, requestId ${requestId})`);
+    log(`conversionType: ${conversionType}, resources: ${resources}`);
+
     const bundle = await getConsolidatedSnapshotFromS3({
       bundleLocation,
       bundleFilename,
@@ -999,113 +1003,6 @@ router.post(
 );
 
 /**
- * POST /internal/patient/consolidated/query
- *
- * For each patient, get all consolidated queries that are older than 1 hour and are still processing, and:
- * - update the status of the query to "failed"; and
- * - start a new consolidated query with the same parameters.
- *
- * @param req.query.patientIds The patient IDs.
- * @param req.query.minAgeInMinutes The minimum age in minutes for the queries to be processed (optional,
- *        defaults to 60 minutes).
- * @param req.query.dryRun Whether to simply return what would be done or actually execute the changes
- *        and commands.
- * @return The list of consolidated queries that where be executed (or would be executed, if dryRun is true).
- */
-router.post(
-  "/consolidated/query",
-  requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    const patientIds = getFromQueryAsArrayOrFail("patientIds", req);
-    const skipWebhooks = getFromQueryAsBoolean("skipWebhooks", req);
-    if (skipWebhooks === undefined) throw new BadRequestError("skipWebhooks is required");
-    const dryRun = getFromQueryAsBoolean("dryRun", req);
-    if (dryRun === undefined) throw new BadRequestError("dryRun is required");
-    const minAgeRaw = getFromQuery("minAgeInMinutes", req);
-    const minAgeInMinutes = minAgeRaw ? parseInt(minAgeRaw) : 60;
-
-    // TODO move this to an ops/internal command
-
-    const patientsNotFound: string[] = [];
-    const patientsUpdated: string[] = [];
-    const patientsWithoutQueries: string[] = [];
-
-    const triggeredQueries: ConsolidatedQueryParams[] = [];
-    for (const patientId of patientIds) {
-      const { log } = out(`patientId ${patientId} minAge ${minAgeInMinutes} dryRun ${dryRun}`);
-      await executeOnDBTx(PatientModel.prototype, async transaction => {
-        const patient = await PatientModel.findOne({
-          where: { id: patientId },
-          transaction,
-        });
-        if (!patient) {
-          patientsNotFound.push(patientId);
-          log(`not found`);
-          return;
-        }
-        const consolidatedQueries = patient.data.consolidatedQueries ?? [];
-        const queriesToProcess = consolidatedQueries.filter(
-          query =>
-            query.status === "processing" &&
-            buildDayjs(query.startedAt).isBefore(
-              buildDayjs().subtract(minAgeInMinutes, "minutes").toISOString()
-            )
-        );
-        log(`queriesToProcess ${queriesToProcess.length}`);
-        if (queriesToProcess.length > 0) {
-          patientsUpdated.push(patientId);
-          queriesToProcess.forEach(query => {
-            query.status = "failed";
-          });
-          if (!dryRun) {
-            const data = {
-              ...patient.data,
-              consolidatedQueries,
-            };
-            patient.changed("data", true);
-            await patient.update({ data });
-          }
-        } else {
-          patientsWithoutQueries.push(patientId);
-        }
-        for (const query of queriesToProcess) {
-          const cxConsolidatedRequestMetadata = skipWebhooks ? { disableWHFlag: true } : undefined;
-          const startConsolidatedQueryParams: ConsolidatedQueryParams = {
-            cxId: patient.cxId,
-            patientId,
-            resources: query.resources,
-            dateFrom: query.dateFrom,
-            dateTo: query.dateTo,
-            conversionType: query.conversionType,
-            generateAiBrief: query.generateAiBrief,
-            cxConsolidatedRequestMetadata,
-          };
-          triggeredQueries.push(startConsolidatedQueryParams);
-          if (!dryRun) {
-            const query = await startConsolidatedQuery(startConsolidatedQueryParams);
-            log(`triggered query ${JSON.stringify(query)}`);
-          }
-        }
-      });
-    }
-
-    const { log } = out(`dryRun ${dryRun}`);
-
-    const response = {
-      dryRun,
-      skipWebhooks,
-      patientsNotFound,
-      patientsUpdated,
-      patientsWithoutQueries,
-      triggeredQueries,
-    };
-    log(`response ${JSON.stringify(response)}`);
-
-    return res.status(status.OK).json(response);
-  })
-);
-
-/**
  * POST /internal/patient/:id/notification/
  *
  * This is a webhook endpoint for sending HL7 FHIR bundles.
@@ -1153,6 +1050,38 @@ router.delete(
     });
 
     return res.sendStatus(status.OK);
+  })
+);
+
+/**
+ * POST /internal/patient/:id/consolidated/refresh
+ *
+ * Forcefully recreates the consolidated bundle for a patient.
+ *
+ * @param req.query.cxId The customer ID.
+ * @param req.params.id The patient ID.
+ */
+router.post(
+  "/:id/consolidated/refresh",
+  handleParams,
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const id = getFromParamsOrFail("id", req);
+    const { log } = out(`consolidated/refresh, cx - ${cxId}, pt - ${id} `);
+
+    const patient = await getPatientOrFail({ id, cxId });
+    const requestId = uuidv7();
+
+    try {
+      await recreateConsolidated({ patient, context: "internal", requestId });
+      log(`Done recreating consolidated`);
+    } catch (err) {
+      const msg = `Error recreating consolidated`;
+      log(`${msg}, err - ${errorToString(err)}`);
+      throw new MetriportError(msg, undefined, { patientId: id, cxId });
+    }
+    return res.status(status.OK).json({ requestId });
   })
 );
 

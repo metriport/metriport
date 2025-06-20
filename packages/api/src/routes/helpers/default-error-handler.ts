@@ -30,6 +30,7 @@ const metriportResponseBody = (err: MetriportError): string => {
       detail: err.message,
       name: httpStatus[err.status],
     }),
+    ...(err.additionalInfo && { additionalInfo: err.additionalInfo }),
   });
 };
 

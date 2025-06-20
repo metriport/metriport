@@ -16,6 +16,10 @@ export class Config {
     return process.env.NODE_ENV === this.PROD_ENV;
   }
 
+  static isProduction(): boolean {
+    return Config.getEnvType() === this.PROD_ENV;
+  }
+
   static isSandbox(): boolean {
     return Config.getEnvType() === this.SANDBOX_ENV;
   }
@@ -62,20 +66,17 @@ export class Config {
     return getEnvVarOrFail("SEARCH_INGESTION_QUEUE_URL");
   }
 
-  static getSemanticSearchEndpoint(): string {
-    return getEnvVarOrFail("SEMANTIC_SEARCH_ENDPOINT");
+  static getConsolidatedSearchIndexName(): string {
+    return getEnvVarOrFail("CONSOLIDATED_SEARCH_INDEX");
   }
-  static getSemanticSearchUsername(): string {
-    return getEnvVarOrFail("SEMANTIC_SEARCH_USERNAME");
+  static getConsolidatedSearchLambdaName(): string {
+    return getEnvVarOrFail("CONSOLIDATED_SEARCH_LAMBDA_NAME");
   }
-  static getSemanticSearchPassword(): string {
-    return getEnvVarOrFail("SEMANTIC_SEARCH_PASSWORD");
+  static getConsolidatedIngestionQueueUrl(): string {
+    return getEnvVarOrFail("CONSOLIDATED_INGESTION_QUEUE_URL");
   }
-  static getSemanticSearchIndexName(): string {
-    return getEnvVarOrFail("SEMANTIC_SEARCH_INDEX");
-  }
-  static getSemanticSearchModelId(): string {
-    return getEnvVarOrFail("SEMANTIC_SEARCH_MODEL_ID");
+  static getConsolidatedDataIngestionInitialDate(): string | undefined {
+    return getEnvVar("CONSOLIDATED_INGESTION_INITIAL_DATE");
   }
 
   static getSystemRootOID(): string {
@@ -97,6 +98,9 @@ export class Config {
   }
   static getHl7OutgoingMessageBucketName(): string {
     return getEnvVarOrFail("HL7_OUTGOING_MESSAGE_BUCKET_NAME");
+  }
+  static getHl7ConversionBucketName(): string {
+    return getEnvVarOrFail("HL7_CONVERSION_BUCKET_NAME");
   }
   static getHl7NotificationQueueUrl(): string {
     return getEnvVarOrFail("HL7_NOTIFICATION_QUEUE_URL");
@@ -209,11 +213,99 @@ export class Config {
   static getEhrBundleBucketName(): string {
     return getEnvVarOrFail("EHR_BUNDLE_BUCKET_NAME");
   }
+  static getEhrGetAppointmentsLambdaName(): string {
+    return getEnvVarOrFail("EHR_GET_APPOINTMENTS_LAMBDA_NAME");
+  }
+
   static getTermServerUrl(): string | undefined {
     return getEnvVar("TERM_SERVER_URL");
   }
-
   static getWriteToS3QueueUrl(): string {
     return getEnvVarOrFail("WRITE_TO_S3_QUEUE_URL");
+  }
+
+  static getSurescriptsHost(): string {
+    return getEnvVarOrFail("SURESCRIPTS_SFTP_HOST");
+  }
+  static getSurescriptsSftpSenderId(): string {
+    return getEnvVarOrFail("SURESCRIPTS_SFTP_SENDER_ID");
+  }
+  static getSurescriptsSftpSenderPassword(): string {
+    return getEnvVarOrFail("SURESCRIPTS_SFTP_SENDER_PASSWORD");
+  }
+  static getSurescriptsSftpReceiverId(): string {
+    return getEnvVarOrFail("SURESCRIPTS_SFTP_RECEIVER_ID");
+  }
+  static getSurescriptsSftpPublicKey(): string {
+    return getEnvVarOrFail("SURESCRIPTS_SFTP_PUBLIC_KEY");
+  }
+  static getSurescriptsSftpPrivateKey(): string {
+    return getEnvVarOrFail("SURESCRIPTS_SFTP_PRIVATE_KEY");
+  }
+  static getSurescriptsReplicaBucketName(): string {
+    return getEnvVarOrFail("SURESCRIPTS_REPLICA_BUCKET_NAME");
+  }
+  static getPharmacyConversionBucketName(): string | undefined {
+    return getEnvVar("PHARMACY_CONVERSION_BUCKET_NAME");
+  }
+  static getSurescriptsSftpActionLambdaName(): string {
+    return getEnvVarOrFail("SURESCRIPTS_SFTP_ACTION_LAMBDA_NAME");
+  }
+  static getSurescriptsConvertPatientResponseLambdaName(): string {
+    return getEnvVarOrFail("SURESCRIPTS_CONVERT_PATIENT_RESPONSE_LAMBDA_NAME");
+  }
+  static getSurescriptsConvertBatchResponseLambdaName(): string {
+    return getEnvVarOrFail("SURESCRIPTS_CONVERT_BATCH_RESPONSE_LAMBDA_NAME");
+  }
+  static getSurescriptsSendPatientRequestQueueUrl(): string {
+    return getEnvVarOrFail("SURESCRIPTS_SEND_PATIENT_REQUEST_QUEUE_URL");
+  }
+  static getSurescriptsSendBatchRequestQueueUrl(): string {
+    return getEnvVarOrFail("SURESCRIPTS_SEND_BATCH_REQUEST_QUEUE_URL");
+  }
+  static getSurescriptsVerifyRequestInHistoryQueueUrl(): string {
+    return getEnvVarOrFail("SURESCRIPTS_VERIFY_REQUEST_IN_HISTORY_QUEUE_URL");
+  }
+  static getSurescriptsReceiveVerificationQueueUrl(): string {
+    return getEnvVarOrFail("SURESCRIPTS_RECEIVE_VERIFICATION_QUEUE_URL");
+  }
+  static getSurescriptsReceiveResponseQueueUrl(): string {
+    return getEnvVarOrFail("SURESCRIPTS_RECEIVE_RESPONSE_QUEUE_URL");
+  }
+
+  static getAthenaHealthEnv(): string | undefined {
+    return getEnvVar("EHR_ATHENA_ENVIRONMENT");
+  }
+  static getAthenaHealthClientKey(): string | undefined {
+    return getEnvVar("EHR_ATHENA_CLIENT_KEY");
+  }
+  static getAthenaHealthClientSecret(): string | undefined {
+    return getEnvVar("EHR_ATHENA_CLIENT_SECRET");
+  }
+
+  static getElationEnv(): string | undefined {
+    return getEnvVar("EHR_ELATION_ENVIRONMENT");
+  }
+  static getElationClientKeyAndSecretMap(): string | undefined {
+    return getEnvVar("EHR_ELATION_CLIENT_KEY_AND_SECRET_MAP");
+  }
+
+  static getCanvasClientKeyAndSecretMap(): string | undefined {
+    return getEnvVar("EHR_CANVAS_CLIENT_KEY_AND_SECRET_MAP");
+  }
+
+  static getHealthieEnv(): string | undefined {
+    return getEnvVar("EHR_HEALTHIE_ENVIRONMENT");
+  }
+  static getHealthieApiKeyMap(): string | undefined {
+    return getEnvVar("EHR_HEALTHIE_API_KEY_MAP");
+  }
+
+  static getEClinicalWorksEnv(): string | undefined {
+    return getEnvVar("EHR_ECLINICALWORKS_ENVIRONMENT");
+  }
+
+  static getRunPatientJobQueueUrl(): string {
+    return getEnvVarOrFail("RUN_PATIENT_JOB_QUEUE_URL");
   }
 }

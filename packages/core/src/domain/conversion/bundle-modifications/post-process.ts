@@ -1,5 +1,5 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
-import { createFullBundleEntries } from "../../../external/fhir/shared/bundle";
+import { createFullBundleEntries } from "../../../external/fhir/bundle/bundle";
 import {
   addExtensionToConversion,
   removePatientFromConversion,

@@ -1,48 +1,67 @@
 import { MedicationStatement } from "@medplum/fhirtypes";
-import { formatCodeableConcepts } from "../shared/codeable-concept";
+import { defaultHasMinimumData, FHIRResourceToString } from "../fhir-resource-to-string";
+import { formatAnnotations } from "../shared/annotation";
+import { formatCodeableConcept, formatCodeableConcepts } from "../shared/codeable-concept";
+import { formatDosages } from "../shared/dosage";
 import { formatIdentifiers } from "../shared/identifier";
 import { formatPeriod } from "../shared/period";
 import { formatReferences } from "../shared/reference";
 import { FIELD_SEPARATOR } from "../shared/separator";
-import { FHIRResourceToString } from "../types";
 
 /**
  * Converts a FHIR MedicationStatement resource to a string representation
  */
 export class MedicationStatementToString implements FHIRResourceToString<MedicationStatement> {
-  toString(statement: MedicationStatement): string | undefined {
+  toString(statement: MedicationStatement, isDebug?: boolean): string | undefined {
     const parts: string[] = [];
-    let hasRelevantData = false;
+    let hasMinimumData = defaultHasMinimumData;
 
-    // Add identifier
-    const identifierStr = formatIdentifiers(statement.identifier);
+    const identifierStr = formatIdentifiers({ identifiers: statement.identifier });
     if (identifierStr) {
       parts.push(identifierStr);
     }
 
-    // Add status
     if (statement.status) {
-      parts.push(`Status: ${statement.status}`);
+      parts.push(isDebug ? `Status: ${statement.status}` : statement.status);
     }
 
-    // Add medication
+    const statusReasonStr = formatCodeableConcepts({
+      concepts: statement.statusReason,
+      label: "Status Reason",
+      isDebug,
+    });
+    if (statusReasonStr) parts.push(statusReasonStr);
+
+    const categoryStr = formatCodeableConcept({
+      concept: statement.category,
+      label: "Category",
+      isDebug,
+    });
+    if (categoryStr) parts.push(categoryStr);
+
     if (statement.medicationCodeableConcept) {
-      const medicationStr = formatCodeableConcepts(
-        [statement.medicationCodeableConcept],
-        "Medication"
-      );
+      const medicationStr = formatCodeableConcepts({
+        concepts: [statement.medicationCodeableConcept],
+        label: "Medication",
+        isDebug,
+      });
       if (medicationStr) {
         parts.push(medicationStr);
-        hasRelevantData = true;
+        hasMinimumData = true;
       }
-    } else if (statement.medicationReference) {
-      const medicationStr = formatReferences([statement.medicationReference], "Medication");
+    }
+
+    if (statement.medicationReference) {
+      const medicationStr = formatReferences({
+        references: [statement.medicationReference],
+        label: "Medication",
+        isDebug,
+      });
       if (medicationStr) {
         parts.push(medicationStr);
       }
     }
 
-    // Add subject
     // if (statement.subject) {
     //   const subjectStr = formatReferences([statement.subject], "Subject");
     //   if (subjectStr) {
@@ -50,54 +69,58 @@ export class MedicationStatementToString implements FHIRResourceToString<Medicat
     //   }
     // }
 
-    // Add effective time
     if (statement.effectiveDateTime) {
-      parts.push(`Effective: ${statement.effectiveDateTime}`);
-    } else if (statement.effectivePeriod) {
-      const effectiveStr = formatPeriod(statement.effectivePeriod, "Effective");
-      if (effectiveStr) {
-        parts.push(effectiveStr);
-      }
+      parts.push(
+        isDebug ? `Effective: ${statement.effectiveDateTime}` : statement.effectiveDateTime
+      );
     }
 
-    // Add date asserted
+    if (statement.effectivePeriod) {
+      const effectiveStr = formatPeriod({
+        period: statement.effectivePeriod,
+        label: "Effective",
+        isDebug,
+      });
+      if (effectiveStr) parts.push(effectiveStr);
+    }
+
     if (statement.dateAsserted) {
-      parts.push(`Asserted: ${statement.dateAsserted}`);
+      parts.push(isDebug ? `Asserted: ${statement.dateAsserted}` : statement.dateAsserted);
     }
 
-    // Add information source
     if (statement.informationSource) {
-      const sourceStr = formatReferences([statement.informationSource], "Source");
-      if (sourceStr) {
-        parts.push(sourceStr);
-      }
+      const sourceStr = formatReferences({
+        references: [statement.informationSource],
+        label: "Source",
+        isDebug,
+      });
+      if (sourceStr) parts.push(sourceStr);
     }
 
-    // Add derived from
-    const derivedFromStr = formatReferences(statement.derivedFrom, "Derived From");
-    if (derivedFromStr) {
-      parts.push(derivedFromStr);
+    const derivedFromStr = formatReferences({
+      references: statement.derivedFrom,
+      label: "Derived From",
+      isDebug,
+    });
+    if (derivedFromStr) parts.push(derivedFromStr);
+
+    const reasonStr = formatCodeableConcepts({
+      concepts: statement.reasonCode,
+      label: "Reason",
+      isDebug,
+    });
+    if (reasonStr) parts.push(reasonStr);
+
+    const dosageStr = formatDosages({ dosages: statement.dosage, label: "Dosage", isDebug });
+    if (dosageStr) parts.push(dosageStr);
+
+    const notes = formatAnnotations({ annotations: statement.note, label: "Note", isDebug });
+    if (notes) {
+      parts.push(notes);
+      hasMinimumData = true;
     }
 
-    // Add reason
-    const reasonStr = formatCodeableConcepts(statement.reasonCode, "Reason");
-    if (reasonStr) {
-      parts.push(reasonStr);
-    }
-
-    // Add note
-    if (statement.note) {
-      const notes = statement.note
-        .map(note => note.text)
-        .filter(Boolean)
-        .join(FIELD_SEPARATOR);
-      if (notes) {
-        parts.push(`Note: ${notes}`);
-        hasRelevantData = true;
-      }
-    }
-
-    if (!hasRelevantData) return undefined;
+    if (!hasMinimumData) return undefined;
 
     return parts.join(FIELD_SEPARATOR);
   }
