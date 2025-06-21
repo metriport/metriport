@@ -13,11 +13,12 @@ import {
 import { capture, out } from "@metriport/core/util";
 import { PatientJob } from "@metriport/shared/domain/job/patient-job";
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
-import { createPatientJob } from "../../../../command/job/patient/create";
-import { getPatientJobs } from "../../../../command/job/patient/get";
-import { cancelPatientJob } from "../../../../command/job/patient/status/cancel";
+import { createPatientJob } from "../../../../job/patient/create";
+import { getPatientJobs } from "../../../../job/patient/get";
+import { cancelPatientJob } from "../../../../job/patient/status/cancel";
 
-const INTERNAL_DISCHARGE_REQUERY_ENDPOINT = "/internal/discharge-requery/run";
+const INTERNAL_DISCHARGE_REQUERY_ENDPOINT =
+  "/internal/patient/monitoring/job/discharge-requery/run";
 export const dischargeRequeryJobType = "discharge-requery";
 
 export async function createDischargeRequeryJob(
@@ -26,9 +27,9 @@ export async function createDischargeRequeryJob(
   const { cxId, patientId } = props;
   const { log } = out(`initializeDischargeRequeryJob - cx: ${cxId} pt: ${patientId}`);
 
-  let newAttempts = props.remainingAttempts ?? defaultRemainingAttempts;
-  let newScheduledAt = calculateScheduledAt(newAttempts);
-  log(`remainingAttempts: ${newAttempts}, scheduledAt: ${newScheduledAt.toISOString()}`);
+  let remainingAttempts = props.remainingAttempts ?? defaultRemainingAttempts;
+  let scheduledAt = calculateScheduledAt(remainingAttempts);
+  log(`remainingAttempts: ${remainingAttempts}, scheduledAt: ${scheduledAt.toISOString()}`);
 
   const existingJobs = await getPatientJobs({
     cxId,
@@ -47,12 +48,15 @@ export async function createDischargeRequeryJob(
       });
     }
 
-    existingJobs.forEach(async existingJob => {
+    for (const existingJob of existingJobs) {
       const existingRequeryJob = existingJob as DischargeRequeryJob;
       const existingOpsParams = dischargeRequeryParamsOpsSchema.parse(existingRequeryJob.paramsOps);
 
-      newAttempts = pickLargestRemainingAttempts(existingOpsParams.remainingAttempts, newAttempts);
-      newScheduledAt = pickEarliestScheduledAt(existingRequeryJob.scheduledAt, newScheduledAt);
+      remainingAttempts = pickLargestRemainingAttempts(
+        existingOpsParams.remainingAttempts,
+        remainingAttempts
+      );
+      scheduledAt = pickEarliestScheduledAt(existingRequeryJob.scheduledAt, scheduledAt);
 
       log(`cancelling existing job ${existingJob.id}`);
       await cancelPatientJob({
@@ -60,19 +64,19 @@ export async function createDischargeRequeryJob(
         jobId: existingJob.id,
         reason: "Deduplicated into a new job",
       });
-    });
+    }
   }
 
   const paramsOps: DischargeRequeryParamsOps = {
-    remainingAttempts: newAttempts,
+    remainingAttempts,
   };
   const newDischargeRequeryJob = await createPatientJob({
     cxId,
     patientId,
     jobType: dischargeRequeryJobType,
     jobGroupId: uuidv7(),
-    requestId: uuidv7(),
-    scheduledAt: newScheduledAt,
+    requestId: undefined,
+    scheduledAt,
     paramsOps,
     runUrl: INTERNAL_DISCHARGE_REQUERY_ENDPOINT,
   });

@@ -3,7 +3,7 @@ import { Bundle, CodeableConcept, Resource } from "@medplum/fhirtypes";
 import { executeWithNetworkRetries } from "@metriport/shared";
 import axios from "axios";
 import dayjs from "dayjs";
-import { NewDischargeRequeryParams } from "../../domain/patient-monitoring/discharge-requery";
+import { NewDischargeRequeryParams } from "@metriport/shared/src/domain/patient/patient-monitoring/discharge-requery";
 import { S3Utils } from "../../external/aws/s3";
 import {
   mergeBundleIntoAdtSourcedEncounter,
@@ -31,7 +31,7 @@ export const dischargeEventCode = "A03";
 
 const INTERNAL_HL7_ENDPOINT = `notification`;
 const INTERNAL_PATIENT_ENDPOINT = "internal/patient";
-const DISCHARGE_REQUERY_ENDPOINT = "discharge-requery/create";
+const DISCHARGE_REQUERY_ENDPOINT = "monitoring/job/discharge-requery";
 const SIGNED_URL_DURATION_SECONDS = dayjs.duration({ minutes: 10 }).asSeconds();
 
 export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhookSender {
@@ -141,6 +141,7 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
     });
 
     log(`Sending HL7 notification to API...`);
+
     const apiWebhookPromise = executeWithNetworkRetries(
       async () =>
         await axios.post(internalHl7RouteUrl, undefined, {
@@ -154,22 +155,23 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
           },
         })
     );
+    const promises = [apiWebhookPromise];
 
-    let apiDischargeRequeryPromise = Promise.resolve();
     if (triggerEvent === dischargeEventCode) {
       const params: NewDischargeRequeryParams = {
         cxId,
         patientId,
       };
-      apiDischargeRequeryPromise = executeWithNetworkRetries(
+      const apiDischargeRequeryPromise = executeWithNetworkRetries(
         async () =>
           await axios.post(internalDischargeRequeryRouteUrl, undefined, {
             params,
           })
       );
+      promises.push(apiDischargeRequeryPromise);
     }
 
-    await Promise.all([apiWebhookPromise, apiDischargeRequeryPromise]);
+    await Promise.all(promises);
     log(`Done. API notified...`);
   }
 

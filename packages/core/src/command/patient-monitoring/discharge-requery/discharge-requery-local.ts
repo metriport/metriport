@@ -30,22 +30,11 @@ export class DischargeRequeryLocal implements DischargeRequery {
 
     try {
       let dataPipelineRequestId = uuidv7();
-      const { requestId: pdRequestId } = await startPatientQuery({
+      await startPatientQuery({
         cxId,
         patientId,
         dataPipelineRequestId,
         rerunPdOnNewDemographics: defaultRerunPdOnNewDemographics,
-        context: dischargeRequeryContext,
-      });
-      if (dataPipelineRequestId !== pdRequestId) {
-        log(`PD already running, using existing requestId: ${pdRequestId}`);
-        dataPipelineRequestId = pdRequestId;
-      }
-
-      await updateJobRuntimeData({
-        jobId,
-        cxId,
-        runtimeData: { patientDiscoveryRequestId: dataPipelineRequestId },
         context: dischargeRequeryContext,
       });
 
@@ -67,7 +56,6 @@ export class DischargeRequeryLocal implements DischargeRequery {
         jobId,
         cxId,
         runtimeData: {
-          patientDiscoveryRequestId: pdRequestId,
           documentQueryRequestId: dataPipelineRequestId,
         },
         context: dischargeRequeryContext,

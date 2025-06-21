@@ -6,12 +6,10 @@ import { analytics, EventTypes } from "@metriport/core/external/analytics/postho
 import { capture } from "@metriport/core/util";
 import { out } from "@metriport/core/util/log";
 import { PatientImportEntryStatusFinal } from "@metriport/shared/domain/patient/patient-import/types";
-import {
-  createDischargeRequeryJob,
-  dischargeRequeryJobType,
-} from "../../../../../domain/medical/monitoring/discharge-requery/create";
+import { createDischargeRequeryJob, dischargeRequeryJobType } from "./create";
 import { getPatientJobs } from "../../../../job/patient/get";
 import { completePatientJob } from "../../../../job/patient/status/complete";
+import { failPatientJob } from "../../../../job/patient/status/fail";
 import { updatePatientJobRuntimeData } from "../../../../job/patient/update/update-runtime-data";
 import { getPatientOrFail } from "../../get-patient";
 
@@ -59,7 +57,20 @@ export async function finishDischargeRequery({
     return runtimeData.documentQueryRequestId === dataPipelineRequestId;
   });
 
-  if (targetJobs.length != 1) {
+  if (targetJobs.length === 0) {
+    const msg = `No target discharge requery job found`;
+    log(`${msg} for requestId ${dataPipelineRequestId}`);
+    capture.message(msg, {
+      extra: {
+        patientId,
+        cxId,
+        dataPipelineRequestId,
+      },
+    });
+    return;
+  }
+
+  if (targetJobs.length > 1) {
     const msg = `Found an unexpected number of discharge requery jobs`;
     log(`${msg} for requestId ${dataPipelineRequestId}, expected 1, found ${targetJobs.length}`);
     capture.message(msg, {
@@ -71,7 +82,18 @@ export async function finishDischargeRequery({
       },
       level: "warning",
     });
-    return;
+
+    await Promise.all(
+      targetJobs
+        .slice(1) // fail all the jobs except the first one
+        .map(job =>
+          failPatientJob({
+            jobId: job.id,
+            cxId,
+            reason: "Unexpected number of discharge requery jobs",
+          })
+        )
+    );
   }
 
   const targetJob = targetJobs[0];

@@ -2,9 +2,9 @@ import { faker } from "@faker-js/faker";
 import { defaultRemainingAttempts } from "@metriport/core/domain/patient-monitoring/utils";
 import { JobStatus, PatientJob } from "@metriport/shared";
 import dayjs from "dayjs";
-import * as createJobModule from "../../../../../command/job/patient/create";
-import * as getJobModule from "../../../../../command/job/patient/get";
-import * as cancelJobModule from "../../../../../command/job/patient/status/cancel";
+import * as createJobModule from "../../../../../job/patient/create";
+import * as getJobModule from "../../../../../job/patient/get";
+import * as cancelJobModule from "../../../../../job/patient/status/cancel";
 import { createDischargeRequeryJob } from "../create";
 
 describe("createDischargeRequeryJob", () => {

@@ -15,7 +15,7 @@ function settings() {
   const timeout = Duration.seconds(61);
   const patientMonitoringDischargeRequery: LambdaSettings = {
     name: "DischargeRequery",
-    entry: "patient-monitoring-discharge-requery",
+    entry: "patient-monitoring/discharge-requery",
     lambda: {
       memory: 512 as const,
       timeout,

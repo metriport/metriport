@@ -2,16 +2,16 @@ import { jobRunBodySchema } from "@metriport/shared/domain/job/types";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
-import { createDischargeRequeryJob } from "../../../domain/medical/monitoring/discharge-requery/create";
-import { runDischargeRequeryJob } from "../../../domain/medical/monitoring/discharge-requery/initialize";
-import { requestLogger } from "../../helpers/request-logger";
-import { getUUIDFrom } from "../../schemas/uuid";
-import { asyncHandler } from "../../util";
+import { createDischargeRequeryJob } from "../../../../command/medical/patient/patient-monitoring/discharge-requery/create";
+import { runDischargeRequeryJob } from "../../../../command/medical/patient/patient-monitoring/discharge-requery/initialize";
+import { requestLogger } from "../../../helpers/request-logger";
+import { getUUIDFrom } from "../../../schemas/uuid";
+import { asyncHandler } from "../../../util";
 
 const router = Router();
 
 /**
- * POST /internal/discharge-requery
+ * POST /internal/patient/monitoring/job/discharge-requery
  *
  * Creates the discharge requery job.
  *
@@ -33,7 +33,7 @@ router.post(
 );
 
 /**
- * POST /internal/discharge-requery/run
+ * POST /internal/patient/monitoring/job/discharge-requery/run
  *
  * Runs the discharge requery job.
  *

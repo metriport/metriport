@@ -48,7 +48,6 @@ import commonwellRoutes from "./hie/commonwell";
 import jwtToken from "./jwt-token";
 import docsRoutes from "./medical/docs";
 import facilityRoutes from "./medical/facility";
-import dischargeRequeryRoutes from "./medical/discharge-requery";
 import ffsRoutes from "./medical/feature-flags";
 import feedbackRoutes from "./medical/feedback";
 import mpiRoutes from "./medical/mpi";
@@ -71,7 +70,6 @@ router.use("/hie", hieRoutes);
 router.use("/feedback", feedbackRoutes);
 router.use("/token", jwtToken);
 router.use("/ehr", ehr);
-router.use("/discharge-requery", dischargeRequeryRoutes);
 router.use("/tcm/encounter", tcmEncounter);
 
 /** ---------------------------------------------------------------------------

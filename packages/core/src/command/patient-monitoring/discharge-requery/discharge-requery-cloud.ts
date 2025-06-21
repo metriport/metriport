@@ -1,15 +1,17 @@
-import { makeLambdaClient } from "../../../external/aws/lambda";
+import { executeWithNetworkRetries } from "@metriport/shared/dist/net/retry";
+import { LambdaClient, makeLambdaClient } from "../../../external/aws/lambda";
 import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
 import { DischargeRequery, ProcessDischargeRequeryRequest } from "./discharge-requery";
 
-const lambdaClient = makeLambdaClient(Config.getAWSRegion());
-
 export class DischargeRequeryCloud implements DischargeRequery {
-  private readonly lambdaName;
+  private readonly lambdaClient: LambdaClient;
 
-  constructor(lambdaName: string) {
-    this.lambdaName = lambdaName;
+  constructor(
+    private readonly lambdaName: string,
+    lambdaClient: LambdaClient = makeLambdaClient(Config.getAWSRegion())
+  ) {
+    this.lambdaClient = lambdaClient;
   }
 
   async processDischargeRequery(params: ProcessDischargeRequeryRequest): Promise<void> {
@@ -22,13 +24,16 @@ export class DischargeRequeryCloud implements DischargeRequery {
     const payload = JSON.stringify(params);
     log(`Invoking lambda ${this.lambdaName}`);
 
-    await lambdaClient
-      .invoke({
-        FunctionName: this.lambdaName,
-        InvocationType: "Event",
-        Payload: payload,
-      })
-      .promise();
+    await executeWithNetworkRetries(
+      async () =>
+        await this.lambdaClient
+          .invoke({
+            FunctionName: this.lambdaName,
+            InvocationType: "Event",
+            Payload: payload,
+          })
+          .promise()
+    );
     log(`Done`);
   }
 }

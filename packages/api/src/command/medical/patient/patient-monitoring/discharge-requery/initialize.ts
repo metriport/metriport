@@ -3,7 +3,7 @@ import { buildDischargeRequeryHandler } from "@metriport/core/command/patient-mo
 import {
   InitializeJobParams,
   initializePatientJob,
-} from "../../../../command/job/patient/status/initialize";
+} from "../../../../job/patient/status/initialize";
 
 export async function runDischargeRequeryJob(props: InitializeJobParams): Promise<void> {
   const { jobId, cxId } = props;

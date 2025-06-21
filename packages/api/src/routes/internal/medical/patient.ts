@@ -106,6 +106,7 @@ import patientConsolidatedRoutes from "./patient-consolidated";
 import patientImportRoutes from "./patient-import";
 import patientJobRoutes from "./patient-job";
 import patientSettingsRoutes from "./patient-settings";
+import patientMonitoringRoutes from "./monitoring";
 
 dayjs.extend(duration);
 
@@ -115,6 +116,7 @@ router.use("/settings", patientSettingsRoutes);
 router.use("/job", patientJobRoutes);
 router.use("/bulk", patientImportRoutes);
 router.use("/consolidated", patientConsolidatedRoutes);
+router.use("/monitoring", patientMonitoringRoutes);
 
 const patientChunkSize = 25;
 const SLEEP_TIME = dayjs.duration({ seconds: 5 });

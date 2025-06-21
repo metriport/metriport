@@ -5,13 +5,12 @@ dayjs.extend(duration);
 
 export const defaultRemainingAttempts = 7;
 
-const backoffOne = 5 * 60 * 1000; // 5 minutes
-const backoffTwo = 30 * 60 * 1000; // 30 minutes
-const backoffThree = 4 * 60 * 60 * 1000; // 4 hours
-const backoffFour = 12 * 60 * 60 * 1000; // 12 hours
-const backoffFive = 1 * 24 * 60 * 60 * 1000; // 1 day
-const backoffSix = 2 * 24 * 60 * 60 * 1000; // 2 days
-const backoffSeven = 4 * 24 * 60 * 60 * 1000; // 4 days
+export const backoffOne = 5 * 60 * 1000; // 5 minutes
+export const backoffTwo = 30 * 60 * 1000; // 30 minutes
+export const backoffThree = 4 * 60 * 60 * 1000; // 4 hours
+export const backoffFour = 1 * 24 * 60 * 60 * 1000; // 1 day
+export const backoffFive = 2 * 24 * 60 * 60 * 1000; // 2 days
+export const backoffSix = 4 * 24 * 60 * 60 * 1000; // 4 days
 
 const dischargeRequerySchedule = {
   1: dayjs.duration({ milliseconds: backoffOne }),
@@ -20,7 +19,6 @@ const dischargeRequerySchedule = {
   4: dayjs.duration({ milliseconds: backoffFour }),
   5: dayjs.duration({ milliseconds: backoffFive }),
   6: dayjs.duration({ milliseconds: backoffSix }),
-  7: dayjs.duration({ milliseconds: backoffSeven }),
 };
 
 export function calculateScheduledAt(newAttempts: number): Date {
