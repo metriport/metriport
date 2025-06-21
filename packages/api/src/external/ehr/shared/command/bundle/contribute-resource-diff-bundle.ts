@@ -1,10 +1,17 @@
+import { isAthenaCustomFieldsEnabledForCx } from "@metriport/core/command/feature-flags/domain-ffs";
 import { BundleType } from "@metriport/core/external/ehr/bundle/bundle-shared";
-import { fetchBundle } from "@metriport/core/external/ehr/bundle/command/fetch-bundle";
+import {
+  fetchBundle,
+  FetchBundleParams,
+} from "@metriport/core/external/ehr/bundle/command/fetch-bundle";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { getPatientMappingOrFail } from "../../../../../command/mapping/patient";
 import { handleDataContribution } from "../../../../../command/medical/patient/data-contribution/handle-data-contributions";
 import { getPatientOrFail } from "../../../../../command/medical/patient/get-patient";
+import { Config } from "../../../../../shared/config";
 import { ContributeBundleParams } from "../../utils/bundle/types";
+
+const CUSTOM_APPOINTMENET_ID_OPT_OUT = Config.isProdEnv() ? "201" : "201";
 
 /**
  * Contribute the resource diff bundle
@@ -28,19 +35,28 @@ export async function contributeResourceDiffBundle({
     source: ehr,
   });
   const metriportPatientId = patientMapping.patientId;
+  const fetchParams: FetchBundleParams = {
+    ehr,
+    cxId,
+    ehrPatientId,
+    resourceType,
+    metriportPatientId,
+    bundleType: BundleType.RESOURCE_DIFF_DATA_CONTRIBUTION,
+    jobId,
+  };
   const [metriportPatient, bundle] = await Promise.all([
     getPatientOrFail({ cxId, id: metriportPatientId }),
-    fetchBundle({
-      ehr,
-      cxId,
-      metriportPatientId,
-      ehrPatientId,
-      bundleType: BundleType.RESOURCE_DIFF_DATA_CONTRIBUTION,
-      resourceType,
-      jobId,
-    }),
+    fetchBundle(fetchParams),
   ]);
-  if (!bundle || !bundle.bundle || !bundle.bundle.entry) return;
+  if (!bundle?.bundle.entry || bundle.bundle.entry.length < 1) return;
+  if (await isAthenaCustomFieldsEnabledForCx(cxId)) {
+    bundle.bundle.entry = bundle.bundle.entry.filter(entry => {
+      if (entry.resource?.resourceType !== "Encounter") return true;
+      // TODO: check if the encounter has the custom field id opt out
+      console.log(CUSTOM_APPOINTMENET_ID_OPT_OUT);
+      return false;
+    });
+  }
   await handleDataContribution({
     requestId: uuidv7(),
     patient: metriportPatient,

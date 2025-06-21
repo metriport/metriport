@@ -1,10 +1,19 @@
 import { Resource } from "@medplum/fhirtypes";
-import { BadRequestError, NotFoundError, sleep } from "@metriport/shared";
+import { BadRequestError, errorToString, NotFoundError, sleep } from "@metriport/shared";
 import { createUuidFromText } from "@metriport/shared/common/uuid";
 import { createBundleFromResourceList } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { EhrSource } from "@metriport/shared/interface/external/ehr/source";
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
+import { uniqBy } from "lodash";
 import { setJobEntryStatus } from "../../../../../../command/job/patient/api/set-entry-status";
-import { getReferencesFromResources } from "../../../../../fhir/bundle/bundle";
+import { executeAsynchronously } from "../../../../../../util/concurrency";
+import { log } from "../../../../../../util/log";
+import { capture } from "../../../../../../util/notifications";
+import {
+  getReferencesFromResources,
+  ReferenceWithIdAndType,
+} from "../../../../../fhir/bundle/bundle";
 import { createPredecessorExtensionRelatedArtifact } from "../../../../../fhir/shared/extensions/derived-from";
 import { createExtensionDataSource } from "../../../../../fhir/shared/extensions/extension";
 import { contributeResourceDiffBundle } from "../../../../api/bundle/contribute-resource-diff-bundle";
@@ -17,7 +26,11 @@ import {
   EhrContributeResourceDiffBundlesHandler,
 } from "./ehr-contribute-resource-diff-bundles";
 
+dayjs.extend(duration);
+
 const hydrateEhrOnlyResourceAttempts = 3;
+const parallelRequests = 5;
+const delayBetweenRequestBatches = dayjs.duration(2, "seconds");
 
 export class EhrContributeResourceDiffBundlesDirect
   implements EhrContributeResourceDiffBundlesHandler
@@ -149,7 +162,7 @@ async function hydrateEhrOnlyResources({
   ehrOnlyResources: Resource[];
 }): Promise<Resource[]> {
   const hydratedEhrOnlyResources = [...ehrOnlyResources];
-  const fetchedResourceIds = new Set<string>([
+  const fetchedResourceIds = new Set([
     ...hydratedEhrOnlyResources.flatMap(resource => resource.id ?? []),
   ]);
   for (let i = 0; i < hydrateEhrOnlyResourceAttempts; i++) {
@@ -157,29 +170,53 @@ async function hydrateEhrOnlyResources({
       resourcesToCheckRefs: hydratedEhrOnlyResources,
     });
     if (missingReferences.length < 1) break;
-    for (const { id, type } of missingReferences) {
-      if (fetchedResourceIds.has(id)) continue;
-      try {
-        const bundle = await getResourceBundleByResourceId({
-          ehr,
-          ...(tokenId && { tokenId }),
-          cxId,
-          practiceId,
-          metriportPatientId,
-          ehrPatientId,
-          resourceType: type,
-          resourceId: id,
-          useCachedBundle: true,
-        });
-        const resource = bundle.entry?.[0]?.resource;
-        if (!resource) continue;
-        hydratedEhrOnlyResources.push(resource);
-      } catch (error) {
-        if (error instanceof BadRequestError || error instanceof NotFoundError) continue;
-        throw error;
-      } finally {
-        fetchedResourceIds.add(id);
+    const hydrationArgs = uniqBy(missingReferences, "id");
+    const hydrationErrors: { error: unknown; id: string; type: string }[] = [];
+    await executeAsynchronously(
+      hydrationArgs,
+      async (params: ReferenceWithIdAndType) => {
+        const { id, type } = params;
+        if (fetchedResourceIds.has(id)) return;
+        try {
+          const bundle = await getResourceBundleByResourceId({
+            ehr,
+            ...(tokenId && { tokenId }),
+            cxId,
+            practiceId,
+            metriportPatientId,
+            ehrPatientId,
+            resourceType: type,
+            resourceId: id,
+            useCachedBundle: true,
+          });
+          const resource = bundle.entry?.[0]?.resource;
+          if (!resource) return;
+          hydratedEhrOnlyResources.push(resource);
+        } catch (error) {
+          if (error instanceof BadRequestError || error instanceof NotFoundError) return;
+          const refToString = JSON.stringify(params);
+          log(`Failed to hydrate resource ${refToString}. Cause: ${errorToString(error)}`);
+          hydrationErrors.push({ error, ...params });
+        } finally {
+          fetchedResourceIds.add(id);
+        }
+      },
+      {
+        numberOfParallelExecutions: parallelRequests,
+        delay: delayBetweenRequestBatches.asMilliseconds(),
       }
+    );
+    if (hydrationErrors.length > 0) {
+      const msg = `Failure while hydrating some resources @ EHR`;
+      capture.message(msg, {
+        extra: {
+          hydrationArgsCount: hydrationArgs.length,
+          hydrationErrorsCount: hydrationErrors.length,
+          hydrationAttempt: i,
+          errors: hydrationErrors,
+          context: "create-resource-diff-bundles.contribute.hydrateEhrOnlyResources",
+        },
+      });
     }
   }
   return hydratedEhrOnlyResources;

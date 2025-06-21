@@ -154,7 +154,7 @@ function settings(): {
     name: "EhrContributeResourceDiffBundles",
     entry: "ehr/contribute-resource-diff-bundles",
     lambda: {
-      memory: 512,
+      memory: 4096,
       timeout: contributeResourceDiffBundlesLambdaTimeout,
     },
     queue: {
