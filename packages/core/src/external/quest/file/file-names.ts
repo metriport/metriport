@@ -2,14 +2,12 @@ import { QuestRequester } from "../types";
 
 export function buildRequestFileName({
   cxId,
-  patientId,
-  mappedPatientId,
+  populationId,
 }: {
   cxId: string;
-  patientId: string;
-  mappedPatientId: string;
+  populationId: string;
 }) {
-  return `${cxId}_${patientId}_${mappedPatientId}`;
+  return `${cxId}_${populationId}`;
 }
 
 export function buildResponseFileName(requester: QuestRequester, patientId: string) {

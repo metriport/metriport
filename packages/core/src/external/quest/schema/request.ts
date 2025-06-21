@@ -97,7 +97,6 @@ export const requestDetailSchema = z.object({
   providerId: z.string().optional(),
   employerCode: z.string().optional(),
   divisionNumber: z.string().optional(),
-  // TODO: remove some of these fields and replace in schema with toQuestUnused
   planGroup1: z.string().optional(),
   planGroup2: z.string().optional(),
   planGroup3: z.string().optional(),

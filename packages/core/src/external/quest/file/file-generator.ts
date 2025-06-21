@@ -8,6 +8,7 @@ import {
 
 import { RelationshipToSubscriber } from "@metriport/shared/interface/external/quest/relationship-to-subscriber";
 import { QuestGenderCode } from "@metriport/shared/interface/external/quest/gender";
+import { buildLexicalIdGenerator } from "@metriport/shared/common/lexical-id";
 import {
   requestHeaderRow,
   requestHeaderSchema,
@@ -37,18 +38,28 @@ const makeGenderDemographics = genderMapperFromDomain<QuestGenderCode>(
   "U"
 );
 
-export function toQuestRequestFile(patients: Patient[]): Buffer {
+interface QuestRequestFile {
+  content: Buffer;
+  patientIdMapping: Record<string, string>;
+}
+
+export function generateBatchRequestFile(patients: Patient[]): QuestRequestFile {
+  const buildPatientId = buildLexicalIdGenerator(15);
   const requestedPatientIds: string[] = [];
+  const patientIdMapping: Record<string, string> = {};
 
   const header = toQuestRequestRow(
     { recordType: "H", generalMnemonic: "METRIP", fileCreationDate: new Date() },
     requestHeaderSchema,
     requestHeaderRow
   );
+
   const details = patients.flatMap(patient => {
-    const row = toQuestRequestPatientRow(patient);
+    const mappedPatientId = buildPatientId().toString("ascii");
+    const row = generatePatientRequestRow(patient, mappedPatientId);
     if (row) {
       requestedPatientIds.push(patient.id);
+      patientIdMapping[patient.id] = mappedPatientId;
       return [row];
     }
     return [];
@@ -60,11 +71,20 @@ export function toQuestRequestFile(patients: Patient[]): Buffer {
     requestFooterRow
   );
 
-  return Buffer.concat([header, ...details, footer]);
+  return {
+    content: Buffer.concat([header, ...details, footer]),
+    patientIdMapping,
+  };
 }
 
-function toQuestRequestPatientRow(patient: Patient): Buffer | undefined {
+export function generatePatientRequestFile(patient: Patient): QuestRequestFile {
+  return generateBatchRequestFile([patient]);
+}
+
+function generatePatientRequestRow(patient: Patient, mappedPatientId: string): Buffer | undefined {
   const { firstName, lastName, middleName } = makeNameDemographics(patient);
+  const middleInitial = middleName.substring(0, 1);
+
   const gender = makeGenderDemographics(patient.genderAtBirth);
   const dateOfBirth = patient.dob.replace(/-/g, "");
   const address = patient.address[0];
@@ -76,9 +96,9 @@ function toQuestRequestPatientRow(patient: Patient): Buffer | undefined {
       recordType: "E",
       relationshipCode: RelationshipToSubscriber.Self,
       relationshipToSubscriber: RelationshipToSubscriber.Self,
-      patientId: patient.id,
+      patientId: mappedPatientId,
       firstName,
-      middleInitial: middleName.substring(0, 1),
+      middleInitial,
       lastName,
       dateOfBirth,
       gender,
