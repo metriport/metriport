@@ -2,14 +2,14 @@ import { Hl7Message, Hl7Context, Hl7Field, Hl7Segment } from "@medplum/core";
 
 // Helper function to create test HL7 messages
 export function makeHl7Message({
-  mshSendingApp,
+  mshSendingApp = "",
   mshDatetimeOfMessage = "20250102120000",
   evnRecordedDatetime = "",
   dg1DiagnosisDatetime = "",
   pv1AdmitDatetime = "",
   pv1DischargeDatetime = "",
 }: {
-  mshSendingApp: string;
+  mshSendingApp?: string;
   mshDatetimeOfMessage?: string;
   evnRecordedDatetime?: string;
   dg1DiagnosisDatetime?: string;

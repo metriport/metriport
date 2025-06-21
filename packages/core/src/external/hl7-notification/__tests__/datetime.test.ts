@@ -34,11 +34,10 @@ describe("utcifyHl7Message", () => {
   describe("common test cases", () => {
     it("should convert PST to UTC", () => {
       const message = makeHl7Message({
-        mshSendingApp: "LosAngelesHie",
         evnRecordedDatetime: PST_DATETIME,
       });
 
-      const result = utcifyHl7Message(message);
+      const result = utcifyHl7Message(message, "America/Los_Angeles");
       const evnSegment = result.getSegment("EVN");
       const recordedDatetime = evnSegment?.getComponent(2, 1);
 
@@ -47,11 +46,10 @@ describe("utcifyHl7Message", () => {
 
     it("should convert EST to UTC", () => {
       const message = makeHl7Message({
-        mshSendingApp: "NewYorkHie",
         evnRecordedDatetime: EST_DATETIME,
       });
 
-      const result = utcifyHl7Message(message);
+      const result = utcifyHl7Message(message, "America/New_York");
       const evnSegment = result.getSegment("EVN");
       const recordedDatetime = evnSegment?.getComponent(2, 1);
 
@@ -60,11 +58,9 @@ describe("utcifyHl7Message", () => {
 
     it("should fallback to UTC if the partner is unknown", () => {
       const message = makeHl7Message({
-        mshSendingApp: "UnknownPartner",
         evnRecordedDatetime: UTC_DATETIME,
       });
-
-      const result = utcifyHl7Message(message);
+      const result = utcifyHl7Message(message, "America/New_York");
       const evnSegment = result.getSegment("EVN");
       const recordedDatetime = evnSegment?.getComponent(2, 1);
 
@@ -73,11 +69,10 @@ describe("utcifyHl7Message", () => {
 
     it("should not fail on empty field", () => {
       const message = makeHl7Message({
-        mshSendingApp: "NewYorkHie",
         evnRecordedDatetime: "", // Empty datetime
       });
 
-      const result = utcifyHl7Message(message);
+      const result = utcifyHl7Message(message, "America/New_York");
       const evnSegment = result.getSegment("EVN");
       const recordedDatetime = evnSegment?.getComponent(2, 1);
 
@@ -88,11 +83,10 @@ describe("utcifyHl7Message", () => {
   describe("MSH conversion", () => {
     it("should convert EST to UTC for datetime of message", () => {
       const message = makeHl7Message({
-        mshSendingApp: "NewYorkHie", // EST timezone
         mshDatetimeOfMessage: EST_DATETIME,
       });
 
-      const result = utcifyHl7Message(message);
+      const result = utcifyHl7Message(message, "America/New_York");
       const mshSegment = result.getSegment("MSH");
       const datetimeOfMessage = mshSegment?.getComponent(7, 1);
 
@@ -103,11 +97,10 @@ describe("utcifyHl7Message", () => {
   describe("DG1 conversion", () => {
     it("should convert EST to UTC for diagnosis datetime", () => {
       const message = makeHl7Message({
-        mshSendingApp: "NewYorkHie", // EST timezone
         dg1DiagnosisDatetime: EST_DATETIME,
       });
 
-      const result = utcifyHl7Message(message);
+      const result = utcifyHl7Message(message, "America/New_York");
       const dg1Segment = result.getSegment("DG1");
       const diagnosisDatetime = dg1Segment?.getComponent(5, 1);
 
@@ -116,11 +109,10 @@ describe("utcifyHl7Message", () => {
 
     it("should convert all DG1 segments correctly", () => {
       const message = makeHl7Message({
-        mshSendingApp: "NewYorkHie",
         dg1DiagnosisDatetime: EST_DATETIME,
       });
 
-      const result = utcifyHl7Message(message);
+      const result = utcifyHl7Message(message, "America/New_York");
 
       const dg1Segments = result.segments.filter(segment => segment.name === "DG1");
 
@@ -138,12 +130,11 @@ describe("utcifyHl7Message", () => {
   describe("PV1 conversion", () => {
     it("should convert both admit and discharge datetimes", () => {
       const message = makeHl7Message({
-        mshSendingApp: "NewYorkHie", // EST timezone
         pv1AdmitDatetime: EST_DATETIME,
         pv1DischargeDatetime: EST_DATETIME,
       });
 
-      const result = utcifyHl7Message(message);
+      const result = utcifyHl7Message(message, "America/New_York");
       const pv1Segment = result.getSegment("PV1");
       const admitDatetime = pv1Segment?.getComponent(44, 1);
       const dischargeDatetime = pv1Segment?.getComponent(45, 1);
@@ -156,14 +147,13 @@ describe("utcifyHl7Message", () => {
   describe("Edge cases", () => {
     it("should handle message with only empty datetime fields", () => {
       const message = makeHl7Message({
-        mshSendingApp: "NewYorkHie",
         evnRecordedDatetime: "",
         dg1DiagnosisDatetime: "",
         pv1AdmitDatetime: "",
         pv1DischargeDatetime: "",
       });
 
-      const result = utcifyHl7Message(message);
+      const result = utcifyHl7Message(message, "America/New_York");
 
       // Should not throw and should return the same message structure
       expect(result.segments.length).toBe(message.segments.length);
@@ -171,14 +161,13 @@ describe("utcifyHl7Message", () => {
 
     it("should preserve other segments and fields unchanged", () => {
       const originalMessage = makeHl7Message({
-        mshSendingApp: "NewYorkHie",
         evnRecordedDatetime: PST_DATETIME,
         dg1DiagnosisDatetime: PST_DATETIME,
         pv1AdmitDatetime: PST_DATETIME,
         pv1DischargeDatetime: PST_DATETIME,
       });
 
-      const result = utcifyHl7Message(originalMessage);
+      const result = utcifyHl7Message(originalMessage, "America/New_York");
 
       // Check that MSH segment is preserved
       const mshSegment = result.getSegment("MSH");
@@ -200,11 +189,10 @@ describe("HL7 datetime format parsing", () => {
   describe("datetime strings with timezone offsets", () => {
     it("should strip YYYYMMDDHHmm+HHMM format and add 00 to the end", () => {
       const message = makeHl7Message({
-        mshSendingApp: "UnknownPartner", // Will use UTC as fallback
         evnRecordedDatetime: "198908181126+0215", // Aug 18, 1989 11:26 +02:15
       });
 
-      const result = utcifyHl7Message(message);
+      const result = utcifyHl7Message(message, "America/New_York");
       const evnSegment = result.getSegment("EVN");
       const recordedDatetime = evnSegment?.getComponent(2, 1);
 
@@ -214,11 +202,10 @@ describe("HL7 datetime format parsing", () => {
 
     it("should strip YYYYMMDDHHmmss.S+HHMM format", () => {
       const message = makeHl7Message({
-        mshSendingApp: "UnknownPartner",
         evnRecordedDatetime: "20210817151943.4+0200", // Aug 17, 2021 15:19:43.4 +02:00
       });
 
-      const result = utcifyHl7Message(message);
+      const result = utcifyHl7Message(message, "UTC");
       const evnSegment = result.getSegment("EVN");
       const recordedDatetime = evnSegment?.getComponent(2, 1);
 
@@ -230,11 +217,10 @@ describe("HL7 datetime format parsing", () => {
   describe("datetime strings without timezone", () => {
     it("should apply fallback timezone for YYYYMMDDHHmm format", () => {
       const message = makeHl7Message({
-        mshSendingApp: "NewYorkHie", // EST timezone
         evnRecordedDatetime: "202501021200", // Jan 2, 2025 12:00
       });
 
-      const result = utcifyHl7Message(message);
+      const result = utcifyHl7Message(message, "America/New_York");
       const evnSegment = result.getSegment("EVN");
       const recordedDatetime = evnSegment?.getComponent(2, 1);
 
@@ -244,11 +230,10 @@ describe("HL7 datetime format parsing", () => {
 
     it("should handle YYYYMMDDHHmmss.S format", () => {
       const message = makeHl7Message({
-        mshSendingApp: "LosAngelesHie", // PST timezone
         evnRecordedDatetime: "20250102120000.5", // Jan 2, 2025 12:00:00.5
       });
 
-      const result = utcifyHl7Message(message);
+      const result = utcifyHl7Message(message, "UTC");
       const evnSegment = result.getSegment("EVN");
       const recordedDatetime = evnSegment?.getComponent(2, 1);
 
@@ -262,11 +247,10 @@ describe("HL7 datetime format parsing", () => {
       "should handle invalid datetime gracefully",
       silenceLogs(() => {
         const message = makeHl7Message({
-          mshSendingApp: "UnknownPartner",
           evnRecordedDatetime: "invalid-datetime",
         });
 
-        const result = utcifyHl7Message(message);
+        const result = utcifyHl7Message(message, "America/New_York");
         const evnSegment = result.getSegment("EVN");
         const recordedDatetime = evnSegment?.getComponent(2, 1);
 
@@ -274,19 +258,5 @@ describe("HL7 datetime format parsing", () => {
         expect(recordedDatetime).toBe("invalid-datetime");
       })
     );
-
-    it("should not modify datetime that's already UTC without timezone info", () => {
-      const message = makeHl7Message({
-        mshSendingApp: "UnknownPartner", // UTC fallback
-        evnRecordedDatetime: "20250102170000",
-      });
-
-      const result = utcifyHl7Message(message);
-      const evnSegment = result.getSegment("EVN");
-      const recordedDatetime = evnSegment?.getComponent(2, 1);
-
-      // Should remain the same since it's already in the fallback timezone (UTC)
-      expect(recordedDatetime).toBe("20250102170000");
-    });
   });
 });
