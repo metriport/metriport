@@ -32,6 +32,7 @@ const medicationRelatedTypes = [
   "MedicationStatement",
   "MedicationAdministration",
   "MedicationRequest",
+  "MedicationDispense",
 ];
 
 /**
@@ -60,6 +61,7 @@ export function dangerouslyDeduplicateFhir(
     "medicationAdministrations",
     "medicationStatements",
     "medicationRequests",
+    "medicationDispenses",
   ]);
   resourceArrays.medications = medicationsResult.combinedResources;
 
