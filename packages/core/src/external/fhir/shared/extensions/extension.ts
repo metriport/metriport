@@ -1,3 +1,4 @@
+import { Extension } from "@medplum/fhirtypes";
 import { BASE_EXTENSION_URL } from "./base-extension";
 
 // TODO #712: create this extension
@@ -10,3 +11,10 @@ export const dataSourceExtensionDefaults = {
     system: DATA_SOURCE_EXTENSION_URL,
   },
 };
+
+export function createExtensionDataSource(source: string): Extension {
+  return {
+    url: DATA_SOURCE_EXTENSION_URL,
+    valueCoding: { system: DATA_SOURCE_EXTENSION_URL, code: source },
+  };
+}

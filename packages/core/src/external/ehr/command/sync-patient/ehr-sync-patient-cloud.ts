@@ -9,10 +9,9 @@ export class EhrSyncPatientCloud implements EhrSyncPatientHandler {
 
   constructor(
     private readonly ehrSyncPatientQueueUrl: string,
-    region?: string,
-    sqsClient?: SQSClient
+    sqsClient: SQSClient = new SQSClient({ region: Config.getAWSRegion() })
   ) {
-    this.sqsClient = sqsClient ?? new SQSClient({ region: region ?? Config.getAWSRegion() });
+    this.sqsClient = sqsClient;
   }
 
   async processSyncPatient(params: ProcessSyncPatientRequest): Promise<void> {
