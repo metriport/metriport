@@ -11,7 +11,8 @@ export const up: Migration = async ({ context: queryInterface }) => {
       columnName,
       {
         type: DataTypes.TEXT,
-        allowNull: true,
+        allowNull: false,
+        defaultValue: "",
       },
       { transaction }
     );
