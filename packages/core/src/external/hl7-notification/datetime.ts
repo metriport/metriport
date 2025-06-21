@@ -1,6 +1,6 @@
 import { Hl7Field, Hl7Message, Hl7Segment } from "@medplum/core";
 import { errorToString } from "@metriport/shared";
-import { buildDayjsTz } from "@metriport/shared/common/date";
+import { buildDayjs, buildDayjsTz } from "@metriport/shared/common/date";
 import { flow } from "lodash";
 import { capture, out } from "../../util";
 
@@ -62,12 +62,14 @@ function utcifyHl7Components(
     const isComponentEmpty = !component || component === "";
     if (isComponentEmpty) return segment;
 
-    component = stripTimezoneOffset(component, segmentName, fieldIndex);
-    component = stripDecimals(component);
+    const tzOffset = handleTimezoneOffset(component, segmentName, fieldIndex);
+    component = stripDecimals(tzOffset.component);
 
     let componentUtc;
     try {
-      componentUtc = buildDayjsTz(component, timezone).format("YYYYMMDDHHmmss");
+      componentUtc = tzOffset.hadTzOffset
+        ? component
+        : buildDayjsTz(component, timezone).format("YYYYMMDDHHmmss");
     } catch (e) {
       const msg = `Error UTCifying component in segment ${segmentName}`;
       log(`${msg}, error - ${errorToString(e)}`);
@@ -95,27 +97,68 @@ function utcifyHl7Components(
 }
 
 /**
- * Strips timezone offset (e.g., +0400, -0500) from HL7 datetime string
- *
- * Doing this for now to simplify parsing, as there aren't consistently followed formats,
- * and the vast majority of the time no timezone offset is present.
+ * Adjusts HL7 datetime string to UTC if it has timezone offset (e.g., +04:00, +0400)
+ * Returns the original string if no timezone offset is found.
  */
-function stripTimezoneOffset(component: string, segmentName: string, fieldIndex: number): string {
-  const { debug } = out("stripTimezoneOffset");
-  const timezoneMatch = component.match(/^([\d.]+)([+-]\d{4})$/);
-  if (timezoneMatch) {
-    const [, dateTimePart, offsetPart] = timezoneMatch;
-    if (dateTimePart && offsetPart) {
-      const msg = `Dropped timezone offset ${offsetPart} in HL7 datetime field, stripping timezone`;
-      debug(msg);
-      capture.message(msg, {
-        extra: { segmentName, fieldIndex, originalComponent: component, offset: offsetPart },
-        level: "warning",
-      });
-      return dateTimePart;
-    }
+export function handleTimezoneOffset(
+  component: string,
+  segmentName: string,
+  fieldIndex: number
+): { hadTzOffset: boolean; component: string } {
+  // Check for HH:mm format (e.g., +04:00, -05:00)
+  const colonFormatMatch = component.match(/^([\d.]+)([+-]\d{2}:\d{2})$/);
+  let adjustedComponent = component;
+  if (colonFormatMatch && colonFormatMatch[1] && colonFormatMatch[2]) {
+    const [, dateTimePart, offsetPart] = colonFormatMatch;
+    adjustedComponent = adjustToUtc(dateTimePart, offsetPart, segmentName, fieldIndex);
   }
-  return component;
+
+  // Check for HHmm format (e.g., +0400, -0500)
+  const noColonFormatMatch = component.match(/^([\d.]+)([+-]\d{4})$/);
+  if (noColonFormatMatch && noColonFormatMatch[1] && noColonFormatMatch[2]) {
+    const [, dateTimePart, offsetPart] = noColonFormatMatch;
+    adjustedComponent = adjustToUtc(dateTimePart, offsetPart, segmentName, fieldIndex);
+  }
+
+  return { hadTzOffset: !!colonFormatMatch || !!noColonFormatMatch, component: adjustedComponent };
+}
+
+function adjustToUtc(
+  dateTimePart: string,
+  offsetPart: string,
+  segmentName: string,
+  fieldIndex: number
+): string {
+  const { debug } = out("adjustToUtc");
+
+  try {
+    // Parse the offset to get hours and minutes
+    const offsetMatch = offsetPart.match(/([+-])(\d{2}):?(\d{2})/);
+    if (!offsetMatch || !offsetMatch[1] || !offsetMatch[2] || !offsetMatch[3]) return dateTimePart;
+
+    const [, sign, hours, minutes] = offsetMatch;
+    const hoursNum = parseInt(hours);
+    const minutesNum = parseInt(minutes);
+
+    let date = buildDayjs(dateTimePart);
+
+    // If offset is positive (+), subtract to get UTC
+    // If offset is negative (-), add to get UTC
+    if (sign === "+") {
+      date = date.subtract(hoursNum, "hour").subtract(minutesNum, "minute");
+    } else {
+      date = date.add(hoursNum, "hour").add(minutesNum, "minute");
+    }
+
+    return date.format("YYYYMMDDHHmmss");
+  } catch (e) {
+    const msg = `Error adjusting timezone offset in HL7 datetime field`;
+    debug(`${msg}, error - ${errorToString(e)}`);
+    capture.error(msg, {
+      extra: { segmentName, fieldIndex, originalComponent: `${dateTimePart}${offsetPart}` },
+    });
+    return dateTimePart;
+  }
 }
 
 /**

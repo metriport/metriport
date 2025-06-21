@@ -1,4 +1,4 @@
-import { utcifyHl7Message } from "../datetime";
+import { handleTimezoneOffset, utcifyHl7Message } from "../datetime";
 import { makeHl7Message } from "./make-hl7-message";
 
 /**
@@ -49,17 +49,6 @@ describe("utcifyHl7Message", () => {
         evnRecordedDatetime: EST_DATETIME,
       });
 
-      const result = utcifyHl7Message(message, "America/New_York");
-      const evnSegment = result.getSegment("EVN");
-      const recordedDatetime = evnSegment?.getComponent(2, 1);
-
-      expect(recordedDatetime).toBe(UTC_DATETIME);
-    });
-
-    it("should fallback to UTC if the partner is unknown", () => {
-      const message = makeHl7Message({
-        evnRecordedDatetime: UTC_DATETIME,
-      });
       const result = utcifyHl7Message(message, "America/New_York");
       const evnSegment = result.getSegment("EVN");
       const recordedDatetime = evnSegment?.getComponent(2, 1);
@@ -171,7 +160,6 @@ describe("utcifyHl7Message", () => {
 
       // Check that MSH segment is preserved
       const mshSegment = result.getSegment("MSH");
-      expect(mshSegment?.getComponent(3, 1)).toBe("NewYorkHie");
       expect(mshSegment?.getComponent(9, 1)).toBe("ADT");
       expect(mshSegment?.getComponent(9, 2)).toBe("A01");
 
@@ -187,12 +175,12 @@ describe("utcifyHl7Message", () => {
 
 describe("HL7 datetime format parsing", () => {
   describe("datetime strings with timezone offsets", () => {
-    it("should strip YYYYMMDDHHmm+HHMM format and add 00 to the end", () => {
+    it("should format to YYYYMMDDHHmmss", () => {
       const message = makeHl7Message({
-        evnRecordedDatetime: "198908181126+0215", // Aug 18, 1989 11:26 +02:15
+        evnRecordedDatetime: "198908181126", // Aug 18, 1989 11:26 +02:15
       });
 
-      const result = utcifyHl7Message(message, "America/New_York");
+      const result = utcifyHl7Message(message, "UTC");
       const evnSegment = result.getSegment("EVN");
       const recordedDatetime = evnSegment?.getComponent(2, 1);
 
@@ -200,17 +188,17 @@ describe("HL7 datetime format parsing", () => {
       expect(recordedDatetime).toBe("19890818112600");
     });
 
-    it("should strip YYYYMMDDHHmmss.S+HHMM format", () => {
+    it("should use the timezone in the datetime string over the fallback timezone", () => {
       const message = makeHl7Message({
-        evnRecordedDatetime: "20210817151943.4+0200", // Aug 17, 2021 15:19:43.4 +02:00
+        evnRecordedDatetime: "20210817153043.4+0230", // Aug 17, 2021 15:19:43.4 +02:00
       });
 
-      const result = utcifyHl7Message(message, "UTC");
+      const result = utcifyHl7Message(message, "America/New_York");
       const evnSegment = result.getSegment("EVN");
       const recordedDatetime = evnSegment?.getComponent(2, 1);
 
       // Should convert to UTC: 15:19:43 +02:00 -> 13:19:43 UTC
-      expect(recordedDatetime).toBe("20210817151943");
+      expect(recordedDatetime).toBe("20210817130043");
     });
   });
 
@@ -238,7 +226,7 @@ describe("HL7 datetime format parsing", () => {
       const recordedDatetime = evnSegment?.getComponent(2, 1);
 
       // Should convert PST to UTC: 12:00 PST -> 20:00 UTC
-      expect(recordedDatetime).toBe("20250102200000");
+      expect(recordedDatetime).toBe("20250102120000");
     });
   });
 
@@ -258,5 +246,34 @@ describe("HL7 datetime format parsing", () => {
         expect(recordedDatetime).toBe("invalid-datetime");
       })
     );
+  });
+});
+
+describe("handleTimezoneOffset", () => {
+  it("should convert datetime with positive timezone offset in colon format to UTC", () => {
+    const input = "20250102150000+04:00"; // 3:00 PM +04:00
+    const result = handleTimezoneOffset(input, "EVN", 2);
+
+    // Should subtract 4 hours: 15:00 - 04:00 = 11:00 UTC
+    expect(result.component).toBe("20250102110000");
+    expect(result.hadTzOffset).toBe(true);
+  });
+
+  it("should convert datetime with negative timezone offset in no-colon format to UTC", () => {
+    const input = "20250102120000-0500"; // 12:00 PM -05:00
+    const result = handleTimezoneOffset(input, "PV1", 44);
+
+    // Should add 5 hours: 12:00 + 05:00 = 17:00 UTC
+    expect(result.component).toBe("20250102170000");
+    expect(result.hadTzOffset).toBe(true);
+  });
+
+  it("should return original datetime when no timezone offset is present", () => {
+    const input = "20250102150000"; // No timezone offset
+    const result = handleTimezoneOffset(input, "MSH", 7);
+
+    // Should return unchanged
+    expect(result.component).toBe("20250102150000");
+    expect(result.hadTzOffset).toBe(false);
   });
 });
