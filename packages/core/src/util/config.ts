@@ -1,3 +1,4 @@
+import { getEnvVarAsRecordOrFail } from "@metriport/shared/common/env-var";
 import { getEnvVar, getEnvVarOrFail } from "./env-var";
 
 /**
@@ -106,12 +107,7 @@ export class Config {
     return getEnvVarOrFail("HL7_NOTIFICATION_QUEUE_URL");
   }
   static getHieTimezoneDictionary(): Record<string, string> {
-    const hieTimezoneDictionary = getEnvVarOrFail("HIE_TIMEZONE_DICTIONARY");
-    try {
-      return JSON.parse(hieTimezoneDictionary) as Record<string, string>;
-    } catch (error) {
-      throw new Error(`Failed to parse HIE_TIMEZONE_DICTIONARY env var: ${error}`);
-    }
+    return getEnvVarAsRecordOrFail("HIE_TIMEZONE_DICTIONARY");
   }
 
   static getCdaToFhirConversionBucketName(): string | undefined {
