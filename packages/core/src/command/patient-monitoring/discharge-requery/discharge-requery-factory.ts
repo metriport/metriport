@@ -7,6 +7,6 @@ export function buildDischargeRequeryHandler(): DischargeRequery {
   if (Config.isDev()) {
     return new DischargeRequeryLocal();
   }
-  const lambdaName = Config.getDischargeRequeryLambdaName();
-  return new DischargeRequeryCloud(lambdaName);
+  const queueUrl = Config.getDischargeRequeryQueueUrl();
+  return new DischargeRequeryCloud(queueUrl);
 }

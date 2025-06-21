@@ -1,39 +1,28 @@
-import { executeWithNetworkRetries } from "@metriport/shared/dist/net/retry";
-import { LambdaClient, makeLambdaClient } from "../../../external/aws/lambda";
+import { createUuidFromText } from "@metriport/shared/common/uuid";
+import { SQSClient } from "../../../external/aws/sqs";
+import { out } from "../../../util";
 import { Config } from "../../../util/config";
-import { out } from "../../../util/log";
 import { DischargeRequery, ProcessDischargeRequeryRequest } from "./discharge-requery";
 
-export class DischargeRequeryCloud implements DischargeRequery {
-  private readonly lambdaClient: LambdaClient;
+const region = Config.getAWSRegion();
+const sqsClient = new SQSClient({ region });
 
-  constructor(
-    private readonly lambdaName: string,
-    lambdaClient: LambdaClient = makeLambdaClient(Config.getAWSRegion())
-  ) {
-    this.lambdaClient = lambdaClient;
-  }
+export class DischargeRequeryCloud implements DischargeRequery {
+  constructor(private readonly dischargeRequeryQueueUrl: string) {}
 
   async processDischargeRequery(params: ProcessDischargeRequeryRequest): Promise<void> {
-    const { cxId, jobId, patientId } = params;
-
+    const { cxId, patientId, jobId } = params;
     const { log } = out(
-      `PatientMonitoring dischargeRequery.cloud - cx ${cxId}, job ${jobId}, pt ${patientId}`
+      `PatientImport processPatientCreate.cloud - cx, ${cxId}, pt ${patientId}, job ${jobId}`
     );
+
+    log(`Putting message on queue ${this.dischargeRequeryQueueUrl}`);
 
     const payload = JSON.stringify(params);
-    log(`Invoking lambda ${this.lambdaName}`);
-
-    await executeWithNetworkRetries(
-      async () =>
-        await this.lambdaClient
-          .invoke({
-            FunctionName: this.lambdaName,
-            InvocationType: "Event",
-            Payload: payload,
-          })
-          .promise()
-    );
-    log(`Done`);
+    await sqsClient.sendMessageToQueue(this.dischargeRequeryQueueUrl, payload, {
+      fifo: true,
+      messageDeduplicationId: createUuidFromText(payload),
+      messageGroupId: params.cxId,
+    });
   }
 }

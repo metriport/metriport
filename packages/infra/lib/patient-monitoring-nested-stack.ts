@@ -118,6 +118,7 @@ export class PatientMonitoringNestedStack extends NestedStack {
       alarmSnsAction: alarmAction,
       envVars: {
         // API_URL set on the api-stack after the OSS API is created
+        DISCHARGE_REQUERY_QUEUE_URL: queue.queueUrl,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
     });
