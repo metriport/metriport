@@ -168,19 +168,10 @@ function adjustToUtc(
  * and the vast majority of the time no decimals are present.
  */
 function stripDecimals(component: string): string {
-  const { debug } = out("stripDecimals");
-  const subsecondMatch = component.match(/^(\d{14})(\.\d+)$/);
-  if (subsecondMatch) {
-    const [, dateTimePart] = subsecondMatch;
-    if (dateTimePart) {
-      const msg = `Dropped decimals from HL7 datetime field`;
-      debug(msg);
-      capture.message(msg, {
-        extra: { originalComponent: component },
-        level: "warning",
-      });
-      return dateTimePart;
-    }
+  const decimalMatch = component.match(/^(\d{14})(\.\d+)$/);
+  if (decimalMatch) {
+    const [, dateTimePart] = decimalMatch;
+    return dateTimePart ? dateTimePart : component;
   }
   return component;
 }
