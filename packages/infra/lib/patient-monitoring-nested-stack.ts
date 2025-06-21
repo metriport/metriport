@@ -2,28 +2,45 @@ import { Duration, NestedStack, NestedStackProps } from "aws-cdk-lib";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
+import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
 import { ISecret } from "aws-cdk-lib/aws-secretsmanager";
+import { Queue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { EnvConfig } from "../config/env-config";
 import { EnvType } from "./env-type";
 import { createLambda } from "./shared/lambda";
 import { LambdaLayers } from "./shared/lambda-layers";
 import { Secrets } from "./shared/secrets";
-import { LambdaSettings } from "./shared/settings";
+import { QueueAndLambdaSettings } from "./shared/settings";
+import { createQueue } from "./shared/sqs";
+
+const lambdaTimeout = Duration.seconds(25);
+const waitTimePatientQuery = Duration.seconds(0);
 
 function settings() {
   const timeout = Duration.seconds(61);
-  const patientMonitoringDischargeRequery: LambdaSettings = {
+  const dischargeRequery: QueueAndLambdaSettings = {
     name: "DischargeRequery",
     entry: "patient-monitoring/discharge-requery",
     lambda: {
       memory: 512 as const,
       timeout,
     },
+    queue: {
+      alarmMaxAgeOfOldestMessage: Duration.minutes(5),
+      maxReceiveCount: 3,
+      visibilityTimeout: Duration.seconds(lambdaTimeout.toSeconds() * 2 + 1),
+      createRetryLambda: false,
+    },
+    eventSource: {
+      batchSize: 1,
+      reportBatchItemFailures: true,
+    },
+    waitTime: waitTimePatientQuery,
   };
 
   return {
-    patientMonitoringDischargeRequery,
+    dischargeRequery,
   };
 }
 
@@ -37,6 +54,7 @@ interface PatientMonitoringNestedStackProps extends NestedStackProps {
 
 export class PatientMonitoringNestedStack extends NestedStack {
   public readonly dischargeRequeryLambda: Lambda;
+  public readonly dischargeRequeryQueue: Queue;
 
   constructor(scope: Construct, id: string, props: PatientMonitoringNestedStackProps) {
     super(scope, id, props);
@@ -48,7 +66,7 @@ export class PatientMonitoringNestedStack extends NestedStack {
       throw new Error("Analytics secret is required");
     }
 
-    const lambda = this.setupDischargeRequeryLambda({
+    const dischargeRequery = this.setupDischargeRequeryLambda({
       lambdaLayers: props.lambdaLayers,
       vpc: props.vpc,
       envType: props.config.environmentType,
@@ -57,7 +75,8 @@ export class PatientMonitoringNestedStack extends NestedStack {
       analyticsSecret,
     });
 
-    this.dischargeRequeryLambda = lambda;
+    this.dischargeRequeryLambda = dischargeRequery.lambda;
+    this.dischargeRequeryQueue = dischargeRequery.queue;
   }
 
   private setupDischargeRequeryLambda(ownProps: {
@@ -67,9 +86,26 @@ export class PatientMonitoringNestedStack extends NestedStack {
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
     analyticsSecret: ISecret;
-  }): Lambda {
+  }): { lambda: Lambda; queue: Queue } {
     const { lambdaLayers, vpc, sentryDsn, envType, alarmAction, analyticsSecret } = ownProps;
-    const { name, entry, lambda: lambdaSettings } = settings().patientMonitoringDischargeRequery;
+    const {
+      name,
+      entry,
+      eventSource: eventSourceSettings,
+      lambda: lambdaSettings,
+      queue: queueSettings,
+    } = settings().dischargeRequery;
+
+    const queue = createQueue({
+      ...queueSettings,
+      stack: this,
+      name,
+      fifo: true,
+      createDLQ: true,
+      lambdaLayers: [lambdaLayers.shared],
+      envType,
+      alarmSnsAction: alarmAction,
+    });
 
     const lambda = createLambda({
       ...lambdaSettings,
@@ -86,8 +122,9 @@ export class PatientMonitoringNestedStack extends NestedStack {
       },
     });
 
+    lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
     analyticsSecret.grantRead(lambda);
 
-    return lambda;
+    return { lambda, queue };
   }
 }
