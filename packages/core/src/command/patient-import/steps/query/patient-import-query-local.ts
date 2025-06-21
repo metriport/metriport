@@ -4,9 +4,9 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { out } from "../../../../util/log";
 import { capture } from "../../../../util/notifications";
-import { startDocumentQuery } from "../../api/start-document-query";
-import { startPatientQuery } from "../../api/start-patient-query";
-import { reasonForCxInternalError } from "../../patient-import-shared";
+import { startDocumentQuery } from "../../../shared/api/start-document-query";
+import { startPatientQuery } from "../../../shared/api/start-patient-query";
+import { patientImportContext, reasonForCxInternalError } from "../../patient-import-shared";
 import { updatePatientRecord } from "../../record/create-or-update-patient-record";
 import { PatientImportQuery, ProcessPatientQueryRequest } from "./patient-import-query";
 
@@ -36,6 +36,7 @@ export class PatientImportQueryLocal implements PatientImportQuery {
         patientId,
         dataPipelineRequestId,
         rerunPdOnNewDemographics,
+        context: patientImportContext,
       });
       await sleep(waitTimeBetweenPdAndDq().asMilliseconds());
       await startDocumentQuery({
@@ -44,12 +45,15 @@ export class PatientImportQueryLocal implements PatientImportQuery {
         patientId,
         triggerConsolidated,
         disableWebhooks,
+        context: patientImportContext,
       });
       if (this.waitTimeAtTheEndInMillis > 0) await sleep(this.waitTimeAtTheEndInMillis);
     } catch (error) {
-      const { log } = out(`PatientImport processPatientQuery.local - cx ${cxId}, job ${jobId}`);
+      const { log } = out(
+        `${patientImportContext} processPatientQuery.local - cx ${cxId}, job ${jobId}`
+      );
       const msg =
-        `Failure while processing patient query @ PatientImport - row ${rowNumber}, ` +
+        `Failure while processing patient query @ ${patientImportContext} - row ${rowNumber}, ` +
         `patient ${patientId}, dataPipelineReq ${dataPipelineRequestId}`;
       const errorMsg = errorToString(error);
       log(`${msg}. Cause: ${errorMsg}`);

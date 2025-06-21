@@ -4,7 +4,7 @@ import { PatientImportJob } from "@metriport/shared/domain/patient/patient-impor
 import axios from "axios";
 import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
-import { withDefaultApiErrorHandling } from "./shared";
+import { withDefaultApiErrorHandling } from "../../shared/api/shared";
 
 /**
  * Updates the bulk patient import job tracking, which includes the status, and total and failed

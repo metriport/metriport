@@ -3,25 +3,28 @@ import { Config } from "../../../util/config";
 import { withDefaultApiErrorHandling } from "./shared";
 
 /**
- * Starts the patient query for a patient, in the context of a bulk patient import.
+ * Starts the patient discovery query for a patient, in the context of a bulk patient import.
  *
  * @param cxId - The ID of the customer.
  * @param patientId - The ID of the patient.
  * @param dataPipelineRequestId - The ID of the data pipeline request.
  * @param rerunPdOnNewDemographics - Whether to rerun patient discovery on new demographics.
- * @throws MetriportError if the patient query fails.
+ * @param context - The context of the patient discovery query.
+ * @throws MetriportError if the patient discovery query fails.
  */
 export async function startPatientQuery({
   cxId,
   patientId,
   dataPipelineRequestId,
   rerunPdOnNewDemographics,
+  context,
 }: {
   cxId: string;
   patientId: string;
   dataPipelineRequestId: string;
   rerunPdOnNewDemographics?: boolean | undefined;
-}): Promise<void> {
+  context: string;
+}): Promise<{ requestId: string }> {
   const api = axios.create({ baseURL: Config.getApiUrl() });
   const patientUrl = buildPatientDiscoveryUrl(
     cxId,
@@ -30,17 +33,19 @@ export async function startPatientQuery({
     rerunPdOnNewDemographics
   );
 
-  await withDefaultApiErrorHandling({
+  const res = await withDefaultApiErrorHandling({
     functionToRun: () => api.post(patientUrl, {}),
-    messageWhenItFails: `Failure while starting patient query @ PatientImport`,
+    messageWhenItFails: `Failure while starting patient query @ ${context}`,
     additionalInfo: {
       cxId,
       patientId,
       dataPipelineRequestId,
       patientUrl,
-      context: "patient-import.startPatientQuery",
+      context: `${context}.startPatientQuery`,
     },
   });
+
+  return { requestId: res.data.requestId };
 }
 
 function buildPatientDiscoveryUrl(
