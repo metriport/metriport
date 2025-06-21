@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export type JobParamsCx = Record<string, string | boolean>;
-export type JobParamsOps = Record<string, string | boolean>;
+export type JobParamsOps = Record<string, string | boolean | number>;
 
 const failed = "failed" as const;
 const successful = "successful" as const;

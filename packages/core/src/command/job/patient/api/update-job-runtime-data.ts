@@ -7,6 +7,7 @@ import { JobBaseParams } from "./shared";
 
 export type UpdateJobRuntimeDataParams = JobBaseParams & {
   runtimeData: unknown;
+  context: string;
 };
 
 /**
@@ -20,8 +21,10 @@ export async function updateJobRuntimeData({
   jobId,
   cxId,
   runtimeData,
+  context,
 }: UpdateJobRuntimeDataParams): Promise<void> {
-  const { log, debug } = out(`updateJobRuntimeData - jobId ${jobId} cxId ${cxId}`);
+  const fullContext = `${context}.updateJobRuntimeData`;
+  const { log, debug } = out(`${fullContext} - jobId ${jobId} cxId ${cxId}`);
   const api = axios.create({ baseURL: Config.getApiUrl() });
   const queryParams = new URLSearchParams({ cxId });
   const updateJobUrl = `/internal/patient/job/${jobId}/runtime-data?${queryParams.toString()}`;
@@ -37,7 +40,7 @@ export async function updateJobRuntimeData({
       cxId,
       jobId,
       url: updateJobUrl,
-      context: "patient-job.updateJobRuntimeData",
+      context: fullContext,
     });
   }
 }
