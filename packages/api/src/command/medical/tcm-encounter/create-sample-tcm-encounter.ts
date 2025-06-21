@@ -43,6 +43,7 @@ export async function createSampleTcmEncounters(cxId: string, patientId: string)
         admitTime: enc.admitTime.toDate(),
         dischargeTime: enc.dischargeTime?.toDate(),
         clinicalInformation: enc.clinicalInformation,
+        freetextNote: `Sample freetext note for ${enc.latestEvent} encounter`,
       });
     })
   );
