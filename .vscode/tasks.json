@@ -1,0 +1,31 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Run JavaScript File in Package",
+            "type": "shell",
+            "command": "bash",
+            "args": ["${workspaceFolder}/packages/scripts/run-in-package.sh", "${file}", "${workspaceFolder}"],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": true,
+                "panel": "new"
+            }
+        },
+        {
+            "label": "Run TypeScript File in Package", 
+            "type": "shell",
+            "command": "bash",
+            "args": ["${workspaceFolder}/packages/scripts/run-in-package.sh", "${file}", "${workspaceFolder}"],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": true,
+                "panel": "new"
+            }
+        }
+    ]
+}
