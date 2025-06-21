@@ -27,7 +27,7 @@ import { patientImportJobStatus } from "./status";
 // });
 
 export const updateJobSchema = z.object({
-  status: z.enum(patientImportJobStatus),
+  status: z.enum(patientImportJobStatus).optional(),
   total: z.number().optional(),
   failed: z.number().optional(),
   forceStatusUpdate: z.boolean().optional(),

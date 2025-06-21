@@ -1,6 +1,9 @@
 import { ProcessPatientCreateRequest } from "@metriport/core/command/patient-import/steps/create/patient-import-create";
-import { PatientImportCreateLocal } from "@metriport/core/command/patient-import/steps/create/patient-import-create-local";
-import { errorToString } from "@metriport/shared";
+import {
+  processPatientCreate,
+  ProcessPatientCreateCommandRequest,
+} from "@metriport/core/command/patient-import/steps/create/patient-import-create-command";
+import { errorToString, MetriportError } from "@metriport/shared";
 import * as Sentry from "@sentry/serverless";
 import { SQSEvent } from "aws-lambda";
 import { capture } from "./shared/capture";
@@ -29,6 +32,9 @@ export const handler = Sentry.AWSLambda.wrapHandler(async function handler(event
   capture.setExtra({ event, context: lambdaName });
   const startedAt = new Date().getTime();
   try {
+    if (Number.isNaN(waitTimeInMillis)) {
+      throw new MetriportError(`Invalid waitTimeInMillis`, undefined, { waitTimeInMillis });
+    }
     const message = getSingleMessageOrFail(event.Records, lambdaName);
     if (!message) return;
 
@@ -52,7 +58,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async function handler(event
       )}, patientImportBucket ${patientImportBucket}, waitTimeInMillis ${waitTimeInMillis}`
     );
 
-    const processPatientCreateRequest: ProcessPatientCreateRequest = {
+    const processPatientCreateRequest: ProcessPatientCreateCommandRequest = {
       cxId,
       facilityId,
       jobId,
@@ -60,13 +66,10 @@ export const handler = Sentry.AWSLambda.wrapHandler(async function handler(event
       triggerConsolidated,
       disableWebhooks,
       rerunPdOnNewDemographics,
-    };
-    const patientImportHandler = new PatientImportCreateLocal(
       patientImportBucket,
-      waitTimeInMillis
-    );
-
-    await patientImportHandler.processPatientCreate(processPatientCreateRequest);
+      waitTimeInMillis,
+    };
+    await processPatientCreate(processPatientCreateRequest);
 
     const finishedAt = new Date().getTime();
     log(`Done local duration: ${finishedAt - startedAt}ms`);
