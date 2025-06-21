@@ -288,12 +288,14 @@ export class SurescriptsNestedStack extends NestedStack {
     const convertPatientResponse = this.setupLambda("convertPatientResponse", {
       ...commonConfig,
       surescriptsReplicaBucket: this.surescriptsReplicaBucket,
+      pharmacyConversionBucket: this.pharmacyConversionBucket,
     });
     this.convertPatientResponseLambda = convertPatientResponse.lambda;
 
     const convertBatchResponse = this.setupLambda("convertBatchResponse", {
       ...commonConfig,
       surescriptsReplicaBucket: this.surescriptsReplicaBucket,
+      pharmacyConversionBucket: this.pharmacyConversionBucket,
     });
     this.convertBatchResponseLambda = convertBatchResponse.lambda;
 
@@ -435,6 +437,7 @@ export class SurescriptsNestedStack extends NestedStack {
       alarmAction,
       systemRootOID,
       surescriptsReplicaBucket,
+      pharmacyConversionBucket,
     } = props;
 
     const lambda = createLambda({
@@ -454,6 +457,7 @@ export class SurescriptsNestedStack extends NestedStack {
     });
 
     surescriptsReplicaBucket.grantReadWrite(lambda);
+    pharmacyConversionBucket?.grantReadWrite(lambda);
 
     return { lambda };
   }
