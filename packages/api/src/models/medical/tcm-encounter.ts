@@ -16,6 +16,7 @@ export class TcmEncounterModel extends BaseModel<TcmEncounterModel> implements T
   declare admitTime: Date | null;
   declare dischargeTime: Date | null;
   declare clinicalInformation: Record<string, unknown>;
+  declare freetextNote: string | null;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
     TcmEncounterModel.init(
@@ -57,6 +58,9 @@ export class TcmEncounterModel extends BaseModel<TcmEncounterModel> implements T
         clinicalInformation: {
           type: DataTypes.JSONB,
           defaultValue: {},
+        },
+        freetextNote: {
+          type: DataTypes.TEXT,
         },
       },
       {
