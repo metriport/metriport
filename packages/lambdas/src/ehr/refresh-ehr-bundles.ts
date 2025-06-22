@@ -1,5 +1,5 @@
 import { EhrRefreshEhrBundlesDirect } from "@metriport/core/external/ehr/job/create-resource-diff-bundles/steps/refresh/ehr-refresh-ehr-bundles-direct";
-import { MetriportError } from "@metriport/shared";
+import { getEnvAsIntOrFail } from "@metriport/shared";
 import { SQSEvent } from "aws-lambda";
 import { capture } from "../shared/capture";
 import { ehrCreateResourceDiffBundlesSchema } from "../shared/ehr";
@@ -14,20 +14,11 @@ capture.init();
 // Automatically set by AWS
 const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
 // Set by us
-const waitTimeInMillisRaw = getEnvOrFail("WAIT_TIME_IN_MILLIS");
-const waitTimeInMillis = parseInt(waitTimeInMillisRaw);
-const maxAttemptsRaw = getEnvOrFail("MAX_ATTEMPTS");
-const maxAttempts = parseInt(maxAttemptsRaw);
+const waitTimeInMillis = getEnvAsIntOrFail("WAIT_TIME_IN_MILLIS");
+const maxAttempts = getEnvAsIntOrFail("MAX_ATTEMPTS");
 
 export const handler = capture.wrapHandler(async (event: SQSEvent) => {
   capture.setExtra({ event, context: lambdaName });
-
-  if (isNaN(waitTimeInMillis)) {
-    throw new MetriportError(`Invalid WAIT_TIME_IN_MILLIS: ${waitTimeInMillisRaw}`);
-  }
-  if (isNaN(maxAttempts)) {
-    throw new MetriportError(`Invalid MAX_ATTEMPTS: ${maxAttemptsRaw}`);
-  }
 
   const startedAt = new Date().getTime();
   const message = getSingleMessageOrFail(event.Records, lambdaName);

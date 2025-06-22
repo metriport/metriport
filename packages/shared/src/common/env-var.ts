@@ -17,6 +17,15 @@ export const getEnvVarOrFail = (varName: string): string => {
   return value;
 };
 
+export const getEnvAsIntOrFail = (varName: string): number => {
+  const value = getEnvVarOrFail(varName);
+  const int = parseInt(value);
+  if (isNaN(int)) {
+    throw new Error(`${varName} env var is not a number`);
+  }
+  return int;
+};
+
 export function getEnvType(): EnvType {
   const envType = getEnvVarOrFail("ENV_TYPE");
   const envTypeValues = Object.values(EnvType).map(v => v.toString());
