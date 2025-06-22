@@ -24,7 +24,7 @@ export interface Hl7NotificationConfig {
   hl7v2RosterUploadLambda: {
     bucketName: string;
   };
-  hieConfigs?: Record<string, HieConfig>;
+  hieConfigs: Record<string, HieConfig>;
 }
 
 export type Hl7NotificationVpnConfig = {

@@ -1,3 +1,4 @@
+import { getEnvVarAsRecordOrFail } from "@metriport/shared/common/env-var";
 import { getEnvVar, getEnvVarOrFail } from "./env-var";
 
 /**
@@ -104,6 +105,9 @@ export class Config {
   }
   static getHl7NotificationQueueUrl(): string {
     return getEnvVarOrFail("HL7_NOTIFICATION_QUEUE_URL");
+  }
+  static getHieTimezoneDictionary(): Record<string, string> {
+    return getEnvVarAsRecordOrFail("HIE_TIMEZONE_DICTIONARY");
   }
 
   static getCdaToFhirConversionBucketName(): string | undefined {

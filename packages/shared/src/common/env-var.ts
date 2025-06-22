@@ -17,6 +17,15 @@ export const getEnvVarOrFail = (varName: string): string => {
   return value;
 };
 
+export const getEnvVarAsRecordOrFail = (varName: string): Record<string, string> => {
+  const value = getEnvVarOrFail(varName);
+  try {
+    return JSON.parse(value) as Record<string, string>;
+  } catch (error) {
+    throw new Error(`Failed to parse ${varName} env var`);
+  }
+};
+
 export function getEnvType(): EnvType {
   const envType = getEnvVarOrFail("ENV_TYPE");
   const envTypeValues = Object.values(EnvType).map(v => v.toString());
