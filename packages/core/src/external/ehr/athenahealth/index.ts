@@ -526,7 +526,7 @@ class AthenaHealthApi {
     const createdProblem = await this.makeRequest<CreatedProblem>({
       cxId,
       patientId,
-      s3Path: `chart/problem/${additionalInfo.conditionId ?? "unknown"}`,
+      s3Path: this.createWriteBackPath("problem", additionalInfo.conditionId),
       method: "POST",
       data,
       url: chartProblemUrl,
@@ -618,7 +618,7 @@ class AthenaHealthApi {
           const createdMedication = await this.makeRequest<CreatedMedication>({
             cxId,
             patientId,
-            s3Path: `chart/medication/${additionalInfo.medicationId ?? "unknown"}`,
+            s3Path: this.createWriteBackPath("medication", additionalInfo.medicationId),
             method: "POST",
             data: params,
             url: chartMedicationUrl,
@@ -706,7 +706,7 @@ class AthenaHealthApi {
     const createdVaccines = await this.makeRequest<CreatedVaccines>({
       cxId,
       patientId,
-      s3Path: `chart/vaccine/${additionalInfo.immunizationId ?? "unknown"}`,
+      s3Path: this.createWriteBackPath("vaccine", additionalInfo.immunizationId),
       method: "POST",
       data,
       url: chartVaccineUrl,
@@ -769,7 +769,7 @@ class AthenaHealthApi {
     const createdSurgicalHistory = await this.makeRequest<CreatedSurgicalHistory>({
       cxId,
       patientId,
-      s3Path: `chart/surgicalhistory/${additionalInfo.procedureId ?? "unknown"}`,
+      s3Path: this.createWriteBackPath("surgicalhistory", additionalInfo.procedureId),
       method: "POST",
       data,
       url: chartSurgicalHistoryUrl,
@@ -873,7 +873,7 @@ class AthenaHealthApi {
     const createdLabResult = await this.makeRequest<CreatedLabResult>({
       cxId,
       patientId,
-      s3Path: `chart/labresult/${additionalInfo.observationId ?? "unknown"}`,
+      s3Path: this.createWriteBackPath("labresult", additionalInfo.observationId),
       method: "POST",
       data,
       url: chartLabResultUrl,
@@ -927,7 +927,7 @@ class AthenaHealthApi {
     const createdClinicalDocument = await this.makeRequest<CreatedClinicalDocument>({
       cxId,
       patientId,
-      s3Path: `chart/clinicaldocument`,
+      s3Path: this.createWriteBackPath("clinicaldocument"),
       method: "POST",
       data,
       url: chartEncounterUrl,
@@ -1056,7 +1056,7 @@ class AthenaHealthApi {
     const createdAllergy = await this.makeRequest<CreatedAllergy>({
       cxId,
       patientId,
-      s3Path: `chart/allergy/${additionalInfo.allergyIntoleranceId ?? "unknown"}`,
+      s3Path: this.createWriteBackPath("allergy", additionalInfo.allergyIntoleranceId),
       method: "PUT",
       data,
       url: chartAllergyUrl,
@@ -1227,7 +1227,7 @@ class AthenaHealthApi {
           const medicationReferences = await this.makeRequest<MedicationReferences>({
             cxId,
             patientId,
-            s3Path: `reference/medications/${searchValue}`,
+            s3Path: this.createReferencePath("medications", searchValue),
             method: "GET",
             url: `${referenceUrl}?searchvalue=${searchValue}`,
             schema: medicationReferencesSchema,
@@ -1309,7 +1309,7 @@ class AthenaHealthApi {
           const allergenReferences = await this.makeRequest<AllergenReferences>({
             cxId,
             patientId,
-            s3Path: `reference/allergies/${searchValue}`,
+            s3Path: this.createReferencePath("allergies", searchValue),
             method: "GET",
             url: `${referenceUrl}?searchvalue=${searchValue}`,
             schema: allergenReferencesSchema,
@@ -1363,7 +1363,7 @@ class AthenaHealthApi {
     const { debug } = out(
       `AthenaHealth searchForAllergyReactions - cxId ${cxId} practiceId ${this.practiceId}`
     );
-    const referenceUrl = "/reference/allergies/reactions";
+    const referenceUrl = this.createReferencePath("allergies/reactions");
     const additionalInfo = {
       cxId,
       practiceId: this.practiceId,
@@ -1395,7 +1395,7 @@ class AthenaHealthApi {
     };
     const allergySeverityReferences = await this.makeRequest<AllergySeverityReferences>({
       cxId,
-      s3Path: "reference/allergies/severities",
+      s3Path: this.createReferencePath("allergies/severities"),
       method: "GET",
       url: referenceUrl,
       schema: allergySeverityReferencesSchema,
@@ -1449,7 +1449,7 @@ class AthenaHealthApi {
           const bundle = await this.makeRequest<EhrFhirResourceBundle>({
             cxId,
             patientId: athenaPatientId,
-            s3Path: `fhir-resources-${resourceType}`,
+            s3Path: this.createFhirPath(resourceType),
             method: "GET",
             url,
             schema: ehrFhirResourceBundleSchema,
@@ -1520,7 +1520,7 @@ class AthenaHealthApi {
           const bundle = await this.makeRequest<EhrFhirResourceBundle>({
             cxId,
             patientId: athenaPatientId,
-            s3Path: `fhir-resources-${resourceType}/resourceId/${resourceId}`,
+            s3Path: this.createFhirPath(resourceType, resourceId),
             method: "GET",
             url,
             schema: ehrFhirResourceBundleSchema,
@@ -1907,6 +1907,18 @@ class AthenaHealthApi {
       });
     }
     return mostSimilarOption;
+  }
+
+  private createWriteBackPath(resourceType: string, resourceId?: string | undefined): string {
+    return `chart/${resourceType}/${resourceId ?? "unknown"}`;
+  }
+
+  private createFhirPath(resourceType: string, resourceId?: string): string {
+    return `fhir-resources-${resourceType}${resourceId ? `/resourceId/${resourceId}` : ""}`;
+  }
+
+  private createReferencePath(referenceType: string, referenceId?: string): string {
+    return `reference/${referenceType}/${referenceId}`;
   }
 }
 

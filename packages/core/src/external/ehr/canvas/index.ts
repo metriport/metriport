@@ -1053,7 +1053,7 @@ class CanvasApi {
           const bundle = await this.makeRequest<EhrFhirResourceBundle>({
             cxId,
             patientId: canvasPatientId,
-            s3Path: `fhir-resources-${resourceType}`,
+            s3Path: this.createFhirPath(resourceType),
             method: "GET",
             url,
             schema: ehrFhirResourceBundleSchema,
@@ -1121,7 +1121,7 @@ class CanvasApi {
           const bundle = await this.makeRequest<EhrFhirResourceBundle>({
             cxId,
             patientId: canvasPatientId,
-            s3Path: `fhir-resources-${resourceType}/resourceId/${resourceId}`,
+            s3Path: this.createFhirPath(resourceType, resourceId),
             method: "GET",
             url,
             schema: ehrFhirResourceBundleSchema,
@@ -1625,6 +1625,10 @@ class CanvasApi {
 
   private createWriteBackPath(resourceType: string, resourceId: string | undefined): string {
     return `fhir/${resourceType}/${resourceId ?? "unknown"}`;
+  }
+
+  private createFhirPath(resourceType: string, resourceId?: string): string {
+    return `fhir-resources-${resourceType}${resourceId ? `/resourceId/${resourceId}` : ""}`;
   }
 
   private createReferencePath(referenceType: string, referenceId: string): string {
