@@ -13,7 +13,7 @@ export class DischargeRequeryCloud implements DischargeRequery {
   async processDischargeRequery(params: ProcessDischargeRequeryRequest): Promise<void> {
     const { cxId, patientId, jobId } = params;
     const { log } = out(
-      `PatientImport processPatientCreate.cloud - cx, ${cxId}, pt ${patientId}, job ${jobId}`
+      `DischargeRequery processDischargeRequery.cloud - cx ${cxId}, pt ${patientId}, job ${jobId}`
     );
 
     log(`Putting message on queue ${this.dischargeRequeryQueueUrl}`);

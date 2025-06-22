@@ -8,6 +8,7 @@ import {
   aws_wafv2 as wafv2,
 } from "aws-cdk-lib";
 import * as apig from "aws-cdk-lib/aws-apigateway";
+import { IQueue } from "aws-cdk-lib/aws-sqs";
 import { BackupResource } from "aws-cdk-lib/aws-backup";
 import * as cert from "aws-cdk-lib/aws-certificatemanager";
 import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
@@ -460,20 +461,19 @@ export class APIStack extends Stack {
     // Patient Monitoring
     //-------------------------------------------
     let dischargeRequeryLambda: lambda.Function | undefined;
+    let dischargeRequeryQueue: IQueue | undefined;
     if (props.config.hl7Notification) {
-      const { dischargeRequeryLambda: lambda } = new PatientMonitoringNestedStack(
-        this,
-        "PatientMonitoringNestedStack",
-        {
+      const { dischargeRequeryLambda: lambda, dischargeRequeryQueue: queue } =
+        new PatientMonitoringNestedStack(this, "PatientMonitoringNestedStack", {
           config: props.config,
           lambdaLayers,
           vpc: this.vpc,
           alarmAction: slackNotification?.alarmAction,
           secrets,
-        }
-      );
+        });
 
       dischargeRequeryLambda = lambda;
+      dischargeRequeryQueue = queue;
     }
 
     //-------------------------------------------
@@ -618,7 +618,7 @@ export class APIStack extends Stack {
       patientImportParseLambda,
       patientImportResultLambda,
       patientImportBucket,
-      dischargeRequeryLambda,
+      dischargeRequeryQueue,
       ehrSyncPatientQueue,
       elationLinkPatientQueue,
       healthieLinkPatientQueue,

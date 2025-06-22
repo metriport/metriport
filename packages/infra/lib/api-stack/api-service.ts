@@ -110,7 +110,8 @@ export function createAPIService({
   patientImportParseLambda,
   patientImportResultLambda,
   patientImportBucket,
-  dischargeRequeryLambda,
+  // dischargeRequeryLambda,
+  dischargeRequeryQueue,
   ehrSyncPatientQueue,
   elationLinkPatientQueue,
   healthieLinkPatientQueue,
@@ -157,7 +158,8 @@ export function createAPIService({
   patientImportParseLambda: ILambda;
   patientImportResultLambda: ILambda;
   patientImportBucket: s3.IBucket;
-  dischargeRequeryLambda: ILambda | undefined;
+  // dischargeRequeryLambda: ILambda | undefined;
+  dischargeRequeryQueue: IQueue | undefined;
   ehrSyncPatientQueue: IQueue;
   elationLinkPatientQueue: IQueue;
   healthieLinkPatientQueue: IQueue;
@@ -303,8 +305,8 @@ export function createAPIService({
           PATIENT_IMPORT_BUCKET_NAME: patientImportBucket.bucketName,
           PATIENT_IMPORT_PARSE_LAMBDA_NAME: patientImportParseLambda.functionName,
           PATIENT_IMPORT_RESULT_LAMBDA_NAME: patientImportResultLambda.functionName,
-          ...(dischargeRequeryLambda && {
-            DISCHARGE_REQUERY_LAMBDA_NAME: dischargeRequeryLambda.functionName,
+          ...(dischargeRequeryQueue && {
+            DISCHARGE_REQUERY_QUEUE_URL: dischargeRequeryQueue.queueUrl,
           }),
           EHR_SYNC_PATIENT_QUEUE_URL: ehrSyncPatientQueue.queueUrl,
           ELATION_LINK_PATIENT_QUEUE_URL: elationLinkPatientQueue.queueUrl,
@@ -465,7 +467,7 @@ export function createAPIService({
   outboundDocumentRetrievalLambda?.grantInvoke(fargateService.taskDefinition.taskRole);
   patientImportParseLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   patientImportResultLambda.grantInvoke(fargateService.taskDefinition.taskRole);
-  dischargeRequeryLambda?.grantInvoke(fargateService.taskDefinition.taskRole);
+  // dischargeRequeryLambda?.grantInvoke(fargateService.taskDefinition.taskRole);
   fhirToCdaConverterLambda?.grantInvoke(fargateService.taskDefinition.taskRole);
   fhirToBundleLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   fhirToBundleCountLambda.grantInvoke(fargateService.taskDefinition.taskRole);
@@ -519,6 +521,14 @@ export function createAPIService({
     queue: ehrRefreshEhrBundlesQueue,
     resource: fargateService.taskDefinition.taskRole,
   });
+
+  if (dischargeRequeryQueue) {
+    provideAccessToQueue({
+      accessType: "send",
+      queue: dischargeRequeryQueue,
+      resource: fargateService.taskDefinition.taskRole,
+    });
+  }
 
   if (surescriptsAssets) {
     surescriptsAssets.surescriptsQueues.forEach(({ queue }) => {

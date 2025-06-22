@@ -15,7 +15,7 @@ import { QueueAndLambdaSettings } from "./shared/settings";
 import { createQueue } from "./shared/sqs";
 
 const lambdaTimeout = Duration.seconds(25);
-const waitTimePatientQuery = Duration.seconds(0);
+const waitTimeDischargeRequery = Duration.seconds(0);
 
 function settings() {
   const timeout = Duration.seconds(61);
@@ -36,7 +36,7 @@ function settings() {
       batchSize: 1,
       reportBatchItemFailures: true,
     },
-    waitTime: waitTimePatientQuery,
+    waitTime: waitTimeDischargeRequery,
   };
 
   return {
