@@ -1,4 +1,4 @@
-import { Resource } from "@medplum/fhirtypes";
+import { Patient, Reference, Resource } from "@medplum/fhirtypes";
 import { BadRequestError, errorToString, NotFoundError, sleep } from "@metriport/shared";
 import { createUuidFromText } from "@metriport/shared/common/uuid";
 import { createBundleFromResourceList } from "@metriport/shared/interface/external/ehr/fhir-resource";
@@ -14,6 +14,7 @@ import {
   getReferencesFromResources,
   ReferenceWithIdAndType,
 } from "../../../../../fhir/bundle/bundle";
+import { isPatient } from "../../../../../fhir/shared";
 import { createPredecessorExtensionRelatedArtifact } from "../../../../../fhir/shared/extensions/derived-from";
 import { createExtensionDataSource } from "../../../../../fhir/shared/extensions/extension";
 import { contributeResourceDiffBundle } from "../../../../api/bundle/contribute-resource-diff-bundle";
@@ -232,10 +233,9 @@ function prepareEhrOnlyResourcesForContribution(
   for (const resource of ehrOnlyResources) {
     if (!resource.id) continue;
     const oldResourceId = resource.id;
-    const newResourceId =
-      resource.resourceType === "Patient"
-        ? metriportPatientId
-        : createUuidFromText(`${ehr}_${oldResourceId}`);
+    const newResourceId = isPatient(resource)
+      ? metriportPatientId
+      : createUuidFromText(`${ehr}_${oldResourceId}`);
     resourceIdMap.set(newResourceId, oldResourceId);
     preparedEhrOnlyResources = replaceResourceId({
       resources: preparedEhrOnlyResources,
@@ -254,8 +254,12 @@ function prepareEhrOnlyResourcesForContribution(
   return preparedEhrOnlyResources;
 }
 
+function createPatientReference(metriportPatientId: string): Reference<Patient> {
+  return { reference: `Patient/${metriportPatientId}` };
+}
+
 function dangerouslyAdjustPatientReference(resource: Resource, metriportPatientId: string) {
-  const patientReference = { reference: `Patient/${metriportPatientId}` };
+  const patientReference = createPatientReference(metriportPatientId);
   if ("subject" in resource) resource.subject = patientReference;
   if ("patient" in resource) resource.patient = patientReference;
 }
