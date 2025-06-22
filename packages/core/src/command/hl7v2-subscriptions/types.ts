@@ -46,6 +46,8 @@ export type HiePatientRosterMapping = {
 
 export type HieConfig = {
   name: string;
+  identifierInMshSegment?: string;
+  timezone?: string;
   states: USState[];
   subscriptions: Hl7v2Subscription[];
   cron: string;
