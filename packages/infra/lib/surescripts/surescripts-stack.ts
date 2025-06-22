@@ -11,10 +11,10 @@ import { EnvConfig } from "../../config/env-config";
 import { EnvType } from "../env-type";
 import { createLambda } from "../shared/lambda";
 import { LambdaLayers } from "../shared/lambda-layers";
+import { buildSecret } from "../shared/secrets";
 import { LambdaSettings, QueueAndLambdaSettings } from "../shared/settings";
 import { createQueue } from "../shared/sqs";
 import { SurescriptsAssets } from "./types";
-import { buildSecret } from "../shared/secrets";
 
 const sftpActionTimeout = Duration.seconds(30);
 const sendPatientRequestLambdaTimeout = Duration.seconds(30);

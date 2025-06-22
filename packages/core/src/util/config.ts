@@ -1,3 +1,4 @@
+import { getEnvVarAsRecordOrFail } from "@metriport/shared/common/env-var";
 import { getEnvVar, getEnvVarOrFail } from "./env-var";
 
 /**
@@ -104,6 +105,9 @@ export class Config {
   }
   static getHl7NotificationQueueUrl(): string {
     return getEnvVarOrFail("HL7_NOTIFICATION_QUEUE_URL");
+  }
+  static getHieTimezoneDictionary(): Record<string, string> {
+    return getEnvVarAsRecordOrFail("HIE_TIMEZONE_DICTIONARY");
   }
 
   static getCdaToFhirConversionBucketName(): string | undefined {
@@ -245,8 +249,8 @@ export class Config {
   static getSurescriptsReplicaBucketName(): string {
     return getEnvVarOrFail("SURESCRIPTS_REPLICA_BUCKET_NAME");
   }
-  static getPharmacyConversionBucketName(): string {
-    return getEnvVarOrFail("PHARMACY_CONVERSION_BUCKET_NAME");
+  static getPharmacyConversionBucketName(): string | undefined {
+    return getEnvVar("PHARMACY_CONVERSION_BUCKET_NAME");
   }
   static getSurescriptsSftpActionLambdaName(): string {
     return getEnvVarOrFail("SURESCRIPTS_SFTP_ACTION_LAMBDA_NAME");
@@ -303,5 +307,9 @@ export class Config {
 
   static getEClinicalWorksEnv(): string | undefined {
     return getEnvVar("EHR_ECLINICALWORKS_ENVIRONMENT");
+  }
+
+  static getRunPatientJobQueueUrl(): string {
+    return getEnvVarOrFail("RUN_PATIENT_JOB_QUEUE_URL");
   }
 }

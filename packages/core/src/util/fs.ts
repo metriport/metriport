@@ -48,8 +48,8 @@ export function getFileNames({
   return files;
 }
 
-export function getFileContents(fileName: string): string {
-  return fs.readFileSync(fileName, "utf8");
+export function getFileContents(filePath: string): string {
+  return fs.readFileSync(filePath, "utf8");
 }
 export function getFileContentsAsync(fileName: string): Promise<string> {
   return new Promise((resolve, reject) => {

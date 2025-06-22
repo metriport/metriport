@@ -6,6 +6,7 @@ import {
   XCA_DR_STRING,
   XCPD_STRING,
 } from "@metriport/carequality-sdk/common/util";
+import { normalizeState } from "@metriport/shared/domain/address/state";
 import { CQOrgDetailsWithUrls } from "../../shared";
 import { metriportOid } from "./constants";
 
@@ -43,7 +44,7 @@ function getFhirOrganization(
     email,
     addressLine1,
     city,
-    state,
+    state: stateRaw,
     postalCode,
     lat,
     lon,
@@ -51,6 +52,8 @@ function getFhirOrganization(
     oboOid,
     oboName,
   } = orgDetails;
+
+  const state = normalizeState(stateRaw);
   const addressText = `${addressLine1} ${city} ${state} ${postalCode} US`;
   const org: OrganizationWithId = {
     resourceType: "Organization",
@@ -108,6 +111,7 @@ function getFhirOrganization(
           type: "both",
           line: [addressLine1],
           city,
+          state,
           postalCode,
           country: "US",
         },

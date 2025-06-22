@@ -2,7 +2,8 @@ import { NotFoundError } from "@metriport/shared";
 import { SurescriptsConvertBatchResponseHandler } from "./convert-batch-response";
 import { SurescriptsReplica } from "../../replica";
 import { SurescriptsConversionBundle, SurescriptsJob } from "../../types";
-import { convertBatchResponseToFhirBundles, uploadConversionBundle } from "../../fhir-converter";
+import { convertBatchResponseToFhirBundles } from "../../fhir-converter";
+import { saveBundle } from "../bundle/save-bundle";
 
 export class SurescriptsConvertBatchResponseHandlerDirect
   implements SurescriptsConvertBatchResponseHandler
@@ -29,7 +30,7 @@ export class SurescriptsConvertBatchResponseHandlerDirect
 
     const conversionBundles = await convertBatchResponseToFhirBundles(cxId, responseFileContent);
     for (const { patientId, bundle } of conversionBundles) {
-      await uploadConversionBundle({ bundle, cxId, patientId, jobId: transmissionId });
+      await saveBundle({ bundle, cxId, patientId, jobId: transmissionId });
     }
     return conversionBundles;
   }

@@ -1,15 +1,22 @@
 import dayjs, { ConfigType } from "dayjs";
+import timezone from "dayjs/plugin/timezone";
 import utc from "dayjs/plugin/utc";
 import { CustomErrorParams, z } from "zod";
 import { BadRequestError } from "../error/bad-request";
 
 dayjs.extend(utc);
+dayjs.extend(timezone);
 
 export const ISO_DATE = "YYYY-MM-DD";
+export const ISO_DATE_TIME = "YYYY-MM-DDTHH:mm:ss.SSSZ";
 
 /** @see https://day.js.org/docs/en/parse/is-valid  */
 export function isValidISODate(date: string): boolean {
   return buildDayjs(date, ISO_DATE, true).isValid();
+}
+
+export function isValidISODateTime(date: string): boolean {
+  return buildDayjs(date, ISO_DATE_TIME, true).isValid();
 }
 
 function isValidISODateOptional(date: string | undefined | null): boolean {
@@ -85,6 +92,10 @@ export function elapsedTimeFromNow(
 
 export function buildDayjs(date?: ConfigType, format?: string, strict?: boolean): dayjs.Dayjs {
   return dayjs.utc(date, format, strict);
+}
+
+export function buildDayjsTz(date: ConfigType, tz: string): dayjs.Dayjs {
+  return dayjs.tz(date, tz).utc();
 }
 
 /**
