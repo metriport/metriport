@@ -14,11 +14,10 @@ import { Secrets } from "./shared/secrets";
 import { QueueAndLambdaSettings } from "./shared/settings";
 import { createQueue } from "./shared/sqs";
 
-const lambdaTimeout = Duration.seconds(25);
 const waitTimeDischargeRequery = Duration.seconds(0);
 
 function settings() {
-  const timeout = Duration.seconds(61);
+  const timeout = Duration.seconds(30);
   const dischargeRequery: QueueAndLambdaSettings = {
     name: "DischargeRequery",
     entry: "patient-monitoring/discharge-requery",
@@ -29,7 +28,7 @@ function settings() {
     queue: {
       alarmMaxAgeOfOldestMessage: Duration.minutes(5),
       maxReceiveCount: 3,
-      visibilityTimeout: Duration.seconds(lambdaTimeout.toSeconds() * 2 + 1),
+      visibilityTimeout: Duration.seconds(timeout.toSeconds() * 2 + 1),
       createRetryLambda: false,
     },
     eventSource: {
