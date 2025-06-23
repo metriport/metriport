@@ -28,11 +28,9 @@ export async function getBundleByResourceType(
     resourceType,
     fhirConverter: async (payload: string) => {
       return await handler.convertToFhir({
-        payload,
+        cxId,
         patientId: metriportPatientId,
-        unusedSegments: "",
-        invalidAccess: "",
-        source: "elation",
+        rawData: payload,
       });
     },
     useCachedBundle,

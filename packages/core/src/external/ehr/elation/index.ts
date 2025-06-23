@@ -237,19 +237,19 @@ class ElationApi {
     }
     const section = resourceType ? ccdaSectionMap.get(resourceType) : undefined;
     const params = new URLSearchParams({ ...(section && { section }) });
-    const documentUrl = `/ccda/?${params.toString()}`;
+    const ccdaDocumentUrl = `/ccda/${patientId}/?${params.toString()}`;
     const additionalInfo = { cxId, practiceId: this.practiceId, patientId, resourceType };
     const document = await this.makeRequest<CcdaDocument>({
       cxId,
       patientId,
       s3Path: `ccda-document/${resourceType ?? "all"}`,
       method: "GET",
-      url: documentUrl,
+      url: ccdaDocumentUrl,
       schema: ccdaDocumentSchema,
       additionalInfo,
       debug,
     });
-    return document.ccda;
+    return atob(document.base64_ccda);
   }
 
   async updatePatientMetadata({
@@ -361,11 +361,7 @@ class ElationApi {
       patientId: elationPatinetId,
       resourceType,
     };
-    const xml = await this.getCcdaDocument({
-      cxId,
-      patientId: elationPatinetId,
-      resourceType,
-    });
+    const xml = await this.getCcdaDocument({ cxId, patientId: elationPatinetId, resourceType });
     let referenceEhrFhirBundle: EhrFhirResourceBundle | undefined;
     const fetchResourcesFromEhr = async () => {
       const { targetBundle, referenceBundle } = await createEhrFhirBundlesFromXml({

@@ -1,9 +1,9 @@
 import { Bundle } from "@medplum/fhirtypes";
-import { executeWithNetworkRetries } from "@metriport/shared";
+import { FhirConverterParams } from "../../domain/conversion/bundle-modifications/modifications";
 import { getLambdaResultPayload, LambdaClient, makeLambdaClient } from "../../external/aws/lambda";
 import { Config } from "../../util/config";
-import { out } from "../../util/log";
 import { ConversionFhirHandler, ConversionFhirRequest } from "./conversion-fhir";
+import { convertPayloadToFHIR } from "./shared";
 
 export class ConversionFhirCloud implements ConversionFhirHandler {
   private readonly lambdaClient: LambdaClient;
@@ -16,23 +16,26 @@ export class ConversionFhirCloud implements ConversionFhirHandler {
   }
 
   async convertToFhir(params: ConversionFhirRequest): Promise<Bundle> {
-    const { log } = out(`NodejsFhirConvert.cloud`);
-
-    log(`Invoking lambda ${this.nodejsFhirConvertLambdaName}`);
-    const payload = JSON.stringify(params);
-    return await executeWithNetworkRetries(async () => {
-      const result = await this.lambdaClient
+    const lambdaClient = this.lambdaClient;
+    const nodejsFhirConvertLambdaName = this.nodejsFhirConvertLambdaName;
+    async function convertToFhir(payload: string, params: FhirConverterParams): Promise<Bundle> {
+      const lambdaPayload = JSON.stringify({
+        body: payload,
+        queryStringParameters: params,
+      });
+      const result = await lambdaClient
         .invoke({
-          FunctionName: this.nodejsFhirConvertLambdaName,
+          FunctionName: nodejsFhirConvertLambdaName,
           InvocationType: "RequestResponse",
-          Payload: payload,
+          Payload: lambdaPayload,
         })
         .promise();
       const resultPayload = getLambdaResultPayload({
         result,
-        lambdaName: this.nodejsFhirConvertLambdaName,
+        lambdaName: nodejsFhirConvertLambdaName,
       });
-      return JSON.parse(resultPayload).fhirResource;
-    });
+      return JSON.parse(resultPayload).fhirResource as Bundle;
+    }
+    return await convertPayloadToFHIR({ convertToFhir, params });
   }
 }

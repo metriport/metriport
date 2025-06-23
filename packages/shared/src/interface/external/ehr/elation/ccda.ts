@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 export const ccdaDocumentSchema = z.object({
-  ccda: z.string(),
+  id: z.coerce.string(),
+  base64_ccda: z.string(),
 });
 export type CcdaDocument = z.infer<typeof ccdaDocumentSchema>;

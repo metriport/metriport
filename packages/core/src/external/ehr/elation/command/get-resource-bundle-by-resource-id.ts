@@ -1,5 +1,5 @@
 import { Bundle } from "@medplum/fhirtypes";
-import { BadRequestError } from "@metriport/shared/";
+import { BadRequestError } from "@metriport/shared";
 import { GetResourceBundleByResourceIdClientRequest } from "../../command/get-resource-bundle-by-resource-id";
 import { createElationHealthClient } from "../shared";
 
