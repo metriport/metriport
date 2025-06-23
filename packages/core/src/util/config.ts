@@ -319,7 +319,7 @@ export class Config {
   static getNodejsFhirConvertLambdaName(): string {
     return getEnvVarOrFail("NODEJS_FHIR_CONVERT_LAMBDA_NAME");
   }
-  static getNodejsFhirConvertServerURL(): string {
-    return getEnvVarOrFail("NODEJS_FHIR_CONVERT_SERVER_URL");
+  static getFhirConvertServerURL(): string {
+    return getEnvVarOrFail("FHIR_CONVERTER_SERVER_URL");
   }
 }
