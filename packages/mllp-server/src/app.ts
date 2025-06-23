@@ -97,7 +97,7 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
           messageReceivedTimestamp: new Date().toISOString(),
         });
 
-        connection.send(message.buildAck({ ackCode: "AA" }));
+        connection.send(message.buildAck());
 
         const fileKey = createFileKeyHl7Message({
           cxId,

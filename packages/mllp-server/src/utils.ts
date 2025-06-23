@@ -37,7 +37,7 @@ export function withErrorHandling<T>(
         await handler(data);
       } catch (error) {
         if (isMessageEvent) {
-          connection.send(data.buildAck({ ackCode: "AE" }));
+          connection.send(data.buildAck());
         }
 
         logger.log(`Error in handler: ${error}`);
