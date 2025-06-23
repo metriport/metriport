@@ -315,4 +315,11 @@ export class Config {
   static getRunPatientJobQueueUrl(): string {
     return getEnvVarOrFail("RUN_PATIENT_JOB_QUEUE_URL");
   }
+
+  static getNodejsFhirConvertLambdaName(): string {
+    return getEnvVarOrFail("NODEJS_FHIR_CONVERT_LAMBDA_NAME");
+  }
+  static getNodejsFhirConvertServerURL(): string {
+    return getEnvVarOrFail("NODEJS_FHIR_CONVERT_SERVER_URL");
+  }
 }

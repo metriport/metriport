@@ -25,10 +25,11 @@ import {
 } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import {
-  EhrFhirResource,
   EhrFhirResourceBundle,
+  EhrStrictFhirResource,
   EhrStrictFhirResourceBundle,
   createBundleFromResourceList,
+  ehrFhirResourceBundleSchema,
   ehrStrictFhirResourceBundleSchema,
   fhirOperationOutcomeSchema,
 } from "@metriport/shared/interface/external/ehr/fhir-resource";
@@ -36,6 +37,7 @@ import { EhrSource } from "@metriport/shared/interface/external/ehr/source";
 import { AxiosError, AxiosInstance, AxiosResponse, isAxiosError } from "axios";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
+import { partition } from "lodash";
 import { z } from "zod";
 import { createHivePartitionFilePath } from "../../domain/filename";
 import { fetchCodingCodeOrDisplayOrSystem } from "../../fhir-deduplication/shared";
@@ -652,7 +654,7 @@ export async function fetchEhrBundleUsingCache({
   useCachedBundle = true,
   ...params
 }: FetchEhrBundleParams & {
-  fetchResourcesFromEhr: () => Promise<EhrFhirResource[]>;
+  fetchResourcesFromEhr: () => Promise<EhrStrictFhirResource[]>;
   useCachedBundle?: boolean;
 }): Promise<Bundle> {
   if (useCachedBundle) {
@@ -667,6 +669,44 @@ export async function fetchEhrBundleUsingCache({
     bundle,
   });
   return bundle;
+}
+
+/**
+ * Converts an XML document form the EHR to a two FHIR bundles:
+ * - A bundle with the target resource type
+ * - A bundle with the reference resource type
+ *
+ * @param convertXmlToFhir - The function that converts an XML document to a FHIR bundle.
+ * @param resourceType - The resource type of the bundle.
+ * @param xml - The XML document.
+ * @returns The two FHIR bundles.
+ */
+export async function createEhrFhirBundlesFromXml({
+  convertXmlToFhir,
+  resourceType,
+  xml,
+}: {
+  convertXmlToFhir: (xml: string) => Promise<Bundle>;
+  resourceType: string;
+  xml: string;
+}): Promise<{
+  targetBundle: EhrFhirResourceBundle;
+  referenceBundle: EhrFhirResourceBundle;
+}> {
+  const fhirBundle = await convertXmlToFhir(xml);
+  const [targetBundleEntries, referenceBundleEntries] = partition(
+    fhirBundle?.entry ?? [],
+    e => e.resource?.resourceType === resourceType
+  );
+  const targetBundle: EhrFhirResourceBundle = ehrFhirResourceBundleSchema.parse({
+    ...fhirBundle,
+    entry: targetBundleEntries,
+  });
+  const referenceBundle: EhrFhirResourceBundle = ehrFhirResourceBundleSchema.parse({
+    ...fhirBundle,
+    entry: referenceBundleEntries,
+  });
+  return { targetBundle, referenceBundle };
 }
 
 /**
@@ -685,8 +725,8 @@ export async function fetchEhrFhirResourcesWithPagination({
 }: {
   makeRequest: (url: string) => Promise<EhrStrictFhirResourceBundle>;
   url: string | undefined;
-  acc?: EhrFhirResource[] | undefined;
-}): Promise<EhrFhirResource[]> {
+  acc?: EhrStrictFhirResource[] | undefined;
+}): Promise<EhrStrictFhirResource[]> {
   if (!url) return acc;
   await sleep(paginateWaitTime.asMilliseconds());
   const fhirResourceBundle = await makeRequest(url);

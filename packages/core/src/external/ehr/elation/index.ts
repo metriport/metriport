@@ -1,6 +1,10 @@
-import { Condition } from "@medplum/fhirtypes";
+import { Bundle, Condition, Resource, ResourceType } from "@medplum/fhirtypes";
 import {
   BadRequestError,
+  createBundleFromResourceList,
+  EhrFhirResourceBundle,
+  EhrStrictFhirResource,
+  ehrStrictFhirResourceSchema,
   errorToString,
   JwtTokenInfo,
   MetriportError,
@@ -14,6 +18,8 @@ import {
   appointmentListResponseSchema,
   BookedAppointment,
   bookedAppointmentSchema,
+  CcdaDocument,
+  ccdaDocumentSchema,
   CreatedProblem,
   createdProblemSchema,
   CreatedSubscription,
@@ -28,12 +34,20 @@ import {
 } from "@metriport/shared/interface/external/ehr/elation/index";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import axios, { AxiosInstance } from "axios";
+import { uniqBy } from "lodash";
 import { z } from "zod";
+import { executeAsynchronously } from "../../../util/concurrency";
 import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
+import { capture } from "../../../util/notifications";
+import { BundleType } from "../bundle/bundle-shared";
+import { createOrReplaceBundle } from "../bundle/command/create-or-replace-bundle";
 import {
   ApiConfig,
+  convertBundleToValidStrictBundle,
   createDataParams,
+  createEhrFhirBundlesFromXml,
+  fetchEhrBundleUsingCache,
   formatDate,
   getConditionSnomedCode,
   getConditionStartDate,
@@ -66,6 +80,55 @@ problemStatusesMap.set("recurrence", "Active");
 problemStatusesMap.set("remission", "Controlled");
 problemStatusesMap.set("resolved", "Resolved");
 problemStatusesMap.set("inactive", "Resolved");
+
+const ccdaSectionMap = new Map<string, string>();
+ccdaSectionMap.set("AllergyIntolerance", "allergies");
+ccdaSectionMap.set("Condition", "problems");
+ccdaSectionMap.set("DiagnosticReport", "results");
+ccdaSectionMap.set("Encounter", "encounters");
+ccdaSectionMap.set("Immunization", "immunizations");
+ccdaSectionMap.set("MedicationRequest", "medications");
+ccdaSectionMap.set("MedicationStatement", "medications");
+ccdaSectionMap.set("Observation", "vitals");
+ccdaSectionMap.set("Procedure", "procedures");
+
+export function isSupportedCcdaSectionResource(resourceType: string): boolean {
+  return ccdaSectionMap.has(resourceType);
+}
+
+export const supportedElationResources: ResourceType[] = [
+  "AllergyIntolerance",
+  "Condition",
+  "DiagnosticReport",
+  "Encounter",
+  "Immunization",
+  "MedicationRequest",
+  "MedicationStatement",
+  "Observation",
+  "Procedure",
+];
+export const supportedElationReferenceResources: ResourceType[] = [
+  "Medication",
+  "Location",
+  "Organization",
+  "Patient",
+  "Practitioner",
+  "Provenance",
+];
+
+export type SupportedElationResource = (typeof supportedElationResources)[number];
+export function isSupportedElationResource(
+  resourceType: string
+): resourceType is SupportedElationResource {
+  return supportedElationResources.includes(resourceType as ResourceType);
+}
+
+export type SupportedElationReferenceResource = (typeof supportedElationReferenceResources)[number];
+export function isSupportedElationReferenceResource(
+  resourceType: string
+): resourceType is SupportedElationReferenceResource {
+  return supportedElationReferenceResources.includes(resourceType as ResourceType);
+}
 
 class ElationApi {
   private axiosInstance: AxiosInstance;
@@ -155,6 +218,40 @@ class ElationApi {
     return patient;
   }
 
+  async getCcdaDocument({
+    cxId,
+    patientId,
+    resourceType,
+  }: {
+    cxId: string;
+    patientId: string;
+    resourceType?: string;
+  }): Promise<string> {
+    const { debug } = out(
+      `Elation getCcdaDocument - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} resourceType ${resourceType}`
+    );
+    if (resourceType && !isSupportedCcdaSectionResource(resourceType)) {
+      throw new BadRequestError("Invalid resource type", undefined, {
+        resourceType,
+      });
+    }
+    const section = resourceType ? ccdaSectionMap.get(resourceType) : undefined;
+    const params = new URLSearchParams({ ...(section && { section }) });
+    const documentUrl = `/ccda/?${params.toString()}`;
+    const additionalInfo = { cxId, practiceId: this.practiceId, patientId, resourceType };
+    const document = await this.makeRequest<CcdaDocument>({
+      cxId,
+      patientId,
+      s3Path: `ccda-document/${resourceType ?? "all"}`,
+      method: "GET",
+      url: documentUrl,
+      schema: ccdaDocumentSchema,
+      additionalInfo,
+      debug,
+    });
+    return document.ccda;
+  }
+
   async updatePatientMetadata({
     cxId,
     patientId,
@@ -233,6 +330,147 @@ class ElationApi {
       debug,
     });
     return problem;
+  }
+
+  async getBundleByResourceType({
+    cxId,
+    metriportPatientId,
+    elationPatinetId,
+    resourceType,
+    fhirConverter,
+    useCachedBundle = true,
+  }: {
+    cxId: string;
+    metriportPatientId: string;
+    elationPatinetId: string;
+    resourceType: string;
+    fhirConverter: (xml: string) => Promise<Bundle>;
+    useCachedBundle?: boolean;
+  }): Promise<Bundle> {
+    const { log } = out(
+      `Canvas getBundleByResourceType - cxId ${cxId} practiceId ${this.practiceId} elationPatinetId ${elationPatinetId}`
+    );
+    if (!isSupportedElationResource(resourceType)) {
+      throw new BadRequestError("Invalid resource type", undefined, {
+        resourceType,
+      });
+    }
+    const additionalInfo = {
+      cxId,
+      practiceId: this.practiceId,
+      patientId: elationPatinetId,
+      resourceType,
+    };
+    const xml = await this.getCcdaDocument({
+      cxId,
+      patientId: elationPatinetId,
+      resourceType,
+    });
+    let referenceEhrFhirBundle: EhrFhirResourceBundle | undefined;
+    const fetchResourcesFromEhr = async () => {
+      const { targetBundle, referenceBundle } = await createEhrFhirBundlesFromXml({
+        convertXmlToFhir: fhirConverter,
+        resourceType,
+        xml,
+      });
+      referenceEhrFhirBundle = referenceBundle;
+      const strictTargetBundle = convertBundleToValidStrictBundle(targetBundle, resourceType);
+      return [...(strictTargetBundle.entry?.map(e => e.resource) ?? [])];
+    };
+    const bundle = await fetchEhrBundleUsingCache({
+      ehr: EhrSources.elation,
+      cxId,
+      metriportPatientId,
+      ehrPatientId: elationPatinetId,
+      resourceType,
+      fetchResourcesFromEhr,
+      useCachedBundle,
+    });
+    if (referenceEhrFhirBundle) {
+      const saveReferenceBundleArgs = uniqBy(
+        referenceEhrFhirBundle.entry?.flatMap(e => {
+          const resource = e.resource;
+          if (!resource) return [];
+          const parsedResource = ehrStrictFhirResourceSchema.safeParse(resource);
+          if (!parsedResource.success) return [];
+          return parsedResource.data;
+        }) ?? [],
+        "id"
+      );
+      const saveReferenceBundleErrors: { error: unknown; id: string; type: string }[] = [];
+      await executeAsynchronously(
+        saveReferenceBundleArgs,
+        async (params: EhrStrictFhirResource) => {
+          try {
+            await createOrReplaceBundle({
+              ehr: EhrSources.elation,
+              cxId,
+              metriportPatientId,
+              ehrPatientId: elationPatinetId,
+              bundleType: BundleType.EHR,
+              bundle: createBundleFromResourceList([params as Resource]),
+              resourceType,
+              resourceId: params.id,
+            });
+          } catch (error) {
+            log(
+              `Failed to save reference bundle entry ${params.id}. Cause: ${errorToString(error)}`
+            );
+            saveReferenceBundleErrors.push({ error, id: params.id, type: params.resourceType });
+          }
+        }
+      );
+      if (saveReferenceBundleErrors.length > 0) {
+        const msg = `Failure while saving some reference bundle entries @ Elation`;
+        capture.message(msg, {
+          extra: {
+            ...additionalInfo,
+            saveReferenceBundleArgsCount: saveReferenceBundleArgs.length,
+            saveReferenceBundleErrorsCount: saveReferenceBundleErrors.length,
+            errors: saveReferenceBundleErrors,
+            context: "elation.get-bundle-by-resource-type",
+          },
+          level: "warning",
+        });
+      }
+    }
+    return bundle;
+  }
+
+  async getResourceBundleByResourceId({
+    cxId,
+    metriportPatientId,
+    elationPatientId,
+    resourceType,
+    resourceId,
+  }: {
+    cxId: string;
+    metriportPatientId: string;
+    elationPatientId: string;
+    resourceType: string;
+    resourceId: string;
+  }): Promise<Bundle> {
+    if (
+      !isSupportedElationResource(resourceType) &&
+      !isSupportedElationReferenceResource(resourceType)
+    ) {
+      throw new BadRequestError("Invalid resource type", undefined, {
+        elationPatientId,
+        resourceId,
+        resourceType,
+      });
+    }
+    const bundle = await fetchEhrBundleUsingCache({
+      ehr: EhrSources.elation,
+      cxId,
+      metriportPatientId,
+      ehrPatientId: elationPatientId,
+      resourceType,
+      resourceId,
+      fetchResourcesFromEhr: () => Promise.resolve([]),
+      useCachedBundle: true,
+    });
+    return bundle;
   }
 
   async getAppointments({
