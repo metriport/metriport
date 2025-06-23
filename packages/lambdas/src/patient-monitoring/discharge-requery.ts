@@ -20,7 +20,7 @@ export const handler = capture.wrapHandler(async (event: SQSEvent): Promise<void
   if (!message) return;
 
   console.log(`Running with unparsed body: ${message.body}`);
-  const parsedBody = processDischargeRequeryRequestSchema.parse(message.body);
+  const parsedBody = processDischargeRequeryRequestSchema.parse(JSON.parse(message.body));
   const { cxId, jobId, patientId } = parsedBody;
   capture.setExtra({ ...parsedBody });
 

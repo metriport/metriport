@@ -3,8 +3,6 @@ import duration from "dayjs/plugin/duration";
 
 dayjs.extend(duration);
 
-export const defaultRemainingAttempts = 7;
-
 export const backoffOne = 5 * 60 * 1000; // 5 minutes
 export const backoffTwo = 30 * 60 * 1000; // 30 minutes
 export const backoffThree = 4 * 60 * 60 * 1000; // 4 hours
@@ -20,6 +18,7 @@ const dischargeRequerySchedule = {
   5: dayjs.duration({ milliseconds: backoffFive }),
   6: dayjs.duration({ milliseconds: backoffSix }),
 };
+export const defaultRemainingAttempts = Object.keys(dischargeRequerySchedule).length;
 
 export function calculateScheduledAt(newAttempts: number): Date {
   const attemptNumber = defaultRemainingAttempts - newAttempts + 1;
