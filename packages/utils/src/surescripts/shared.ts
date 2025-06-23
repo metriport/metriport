@@ -69,6 +69,9 @@ export async function getConversionBundle(
   const s3Utils = new S3Utils("us-west-1");
   const fileName = buildLatestConversionBundleFileName(cxId, patientId);
   const bucketName = Config.getPharmacyConversionBucketName();
+  if (!bucketName) {
+    return undefined;
+  }
   try {
     const fileContent = await s3Utils.downloadFile({ bucket: bucketName, key: fileName });
     return JSON.parse(fileContent.toString());
