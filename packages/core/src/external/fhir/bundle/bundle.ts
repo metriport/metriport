@@ -381,6 +381,7 @@ export function extractFhirTypesFromBundle(bundle: Bundle): ExtractedFhirTypes {
   const medicationAdministrations: MedicationAdministration[] = [];
   const medicationRequests: MedicationRequest[] = [];
   const medicationStatements: MedicationStatement[] = [];
+  const medicationDispenses: MedicationDispense[] = [];
   const medications: Medication[] = [];
   const conditions: Condition[] = [];
   const allergies: AllergyIntolerance[] = [];
@@ -396,7 +397,6 @@ export function extractFhirTypesFromBundle(bundle: Bundle): ExtractedFhirTypes {
   const relatedPersons: RelatedPerson[] = [];
   const coverages: Coverage[] = [];
   const organizations: Organization[] = [];
-  const medicationDispenses: MedicationDispense[] = [];
   const communications: Communication[] = [];
   const consents: Consent[] = [];
   const devices: Device[] = [];
@@ -499,6 +499,7 @@ export function extractFhirTypesFromBundle(bundle: Bundle): ExtractedFhirTypes {
     medicationAdministrations,
     medicationStatements,
     medicationRequests,
+    medicationDispenses,
     conditions,
     allergies,
     locations,
@@ -513,7 +514,6 @@ export function extractFhirTypesFromBundle(bundle: Bundle): ExtractedFhirTypes {
     relatedPersons,
     coverages,
     organizations,
-    medicationDispenses,
     communications,
     consents,
     devices,
