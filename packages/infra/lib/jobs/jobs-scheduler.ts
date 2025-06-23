@@ -18,7 +18,7 @@ export type JobsSchedulerProps = {
 function getSettings(props: JobsSchedulerProps, config: NonNullable<EnvConfig["jobs"]>) {
   return {
     ...props,
-    name: "StartPatientJobsScheduler",
+    name: "StartScheduledPatientJobs",
     scheduleExpression: config.startPatientJobsSchedulerScheduleExpression, // See: https://docs.aws.amazon.com/lambda/latest/dg/services-cloudwatchevents-expressions.html
     url: `http://${props.apiAddress}${config.startPatientJobsSchedulerUrl}`,
   };
