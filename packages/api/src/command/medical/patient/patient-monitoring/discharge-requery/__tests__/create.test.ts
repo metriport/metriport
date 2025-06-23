@@ -1,6 +1,6 @@
 import { faker } from "@faker-js/faker";
-import { defaultRemainingAttempts } from "@metriport/core/domain/patient-monitoring/utils";
 import { JobStatus, PatientJob } from "@metriport/shared";
+import { defaultRemainingAttempts } from "@metriport/shared/domain/patient/patient-monitoring/utils";
 import dayjs from "dayjs";
 import * as createJobModule from "../../../../../job/patient/create";
 import * as getJobModule from "../../../../../job/patient/get";
