@@ -1,10 +1,8 @@
-import { DataTypes, Sequelize } from "sequelize";
+import { DataTypes, Sequelize, CreationOptional } from "sequelize";
 import { TcmEncounter } from "../../domain/medical/tcm-encounter";
 import { BaseModel, ModelSetup } from "../_default";
 import { OrganizationModel } from "./organization";
 import { PatientModel } from "./patient";
-
-export type TcmEncounterCreation = Omit<TcmEncounter, "id" | "createdAt" | "updatedAt" | "eTag">;
 
 export class TcmEncounterModel extends BaseModel<TcmEncounterModel> implements TcmEncounter {
   static NAME = "tcm_encounter";
@@ -16,6 +14,7 @@ export class TcmEncounterModel extends BaseModel<TcmEncounterModel> implements T
   declare admitTime: Date | null;
   declare dischargeTime: Date | null;
   declare clinicalInformation: Record<string, unknown>;
+  declare freetextNote: CreationOptional<string>;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
     TcmEncounterModel.init(
@@ -57,6 +56,11 @@ export class TcmEncounterModel extends BaseModel<TcmEncounterModel> implements T
         clinicalInformation: {
           type: DataTypes.JSONB,
           defaultValue: {},
+        },
+        freetextNote: {
+          type: DataTypes.TEXT,
+          defaultValue: "",
+          allowNull: false,
         },
       },
       {
