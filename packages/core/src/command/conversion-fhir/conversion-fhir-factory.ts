@@ -5,7 +5,7 @@ import { ConversionFhirDirect } from "./conversion-fhir-direct";
 
 export function buildConversionFhirHandler(): ConversionFhirHandler {
   if (Config.isDev()) {
-    const fhirConverterUrl = Config.getFHIRServerUrl();
+    const fhirConverterUrl = Config.getNodejsFhirConvertServerURL();
     return new ConversionFhirDirect(fhirConverterUrl);
   }
   const nodejsFhirConvertLambdaName = Config.getNodejsFhirConvertLambdaName();
