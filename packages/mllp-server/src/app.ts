@@ -72,7 +72,7 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
           messageCode = msgMessageCode;
           triggerEvent = msgTriggerEvent;
         } catch (error) {
-          connection.send(message.buildAck({ ackCode: "AR" }));
+          connection.send(message.buildAck());
           logger.log(`Error in handler: ${error}`);
           capture.error(error);
           return;
