@@ -38,15 +38,20 @@ export class QuestSftpClient extends SftpClient {
       cxId: request.cxId,
       populationId,
     });
-    await this.writeToQuest(batchRequestFileName, content);
-    return [
-      {
-        cxId: request.cxId,
-        facilityId: request.facility.id,
-        transmissionId: uuidv7(),
-        populationId: request.facility.id,
-      },
-    ];
+    try {
+      await this.connect();
+      await this.writeToQuest(batchRequestFileName, content);
+      return [
+        {
+          cxId: request.cxId,
+          facilityId: request.facility.id,
+          transmissionId: uuidv7(),
+          populationId: request.facility.id,
+        },
+      ];
+    } finally {
+      await this.disconnect();
+    }
   }
 
   async sendPatientRequest(request: QuestPatientRequestData): Promise<QuestJob> {
@@ -58,13 +63,18 @@ export class QuestSftpClient extends SftpClient {
       populationId: patientId,
     });
     const { content } = generatePatientRequestFile(request.patient);
-    await this.writeToQuest(requestFileName, content);
-    return {
-      cxId: request.cxId,
-      facilityId: request.facility.id,
-      transmissionId: uuidv7(),
-      populationId: patientId,
-    };
+    try {
+      await this.connect();
+      await this.writeToQuest(requestFileName, content);
+      return {
+        cxId: request.cxId,
+        facilityId: request.facility.id,
+        transmissionId: uuidv7(),
+        populationId: patientId,
+      };
+    } finally {
+      await this.disconnect();
+    }
   }
 
   async receiveResponse(job: QuestJob) {
