@@ -110,7 +110,6 @@ export function createAPIService({
   patientImportParseLambda,
   patientImportResultLambda,
   patientImportBucket,
-  // dischargeRequeryLambda,
   dischargeRequeryQueue,
   ehrSyncPatientQueue,
   elationLinkPatientQueue,
@@ -158,7 +157,6 @@ export function createAPIService({
   patientImportParseLambda: ILambda;
   patientImportResultLambda: ILambda;
   patientImportBucket: s3.IBucket;
-  // dischargeRequeryLambda: ILambda | undefined;
   dischargeRequeryQueue: IQueue | undefined;
   ehrSyncPatientQueue: IQueue;
   elationLinkPatientQueue: IQueue;
@@ -467,7 +465,6 @@ export function createAPIService({
   outboundDocumentRetrievalLambda?.grantInvoke(fargateService.taskDefinition.taskRole);
   patientImportParseLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   patientImportResultLambda.grantInvoke(fargateService.taskDefinition.taskRole);
-  // dischargeRequeryLambda?.grantInvoke(fargateService.taskDefinition.taskRole);
   fhirToCdaConverterLambda?.grantInvoke(fargateService.taskDefinition.taskRole);
   fhirToBundleLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   fhirToBundleCountLambda.grantInvoke(fargateService.taskDefinition.taskRole);

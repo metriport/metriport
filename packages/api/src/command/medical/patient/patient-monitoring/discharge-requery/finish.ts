@@ -70,7 +70,9 @@ export async function finishDischargeRequery({
     return;
   }
 
-  if (targetJobs.length > 1) {
+  const [targetJob, ...jobsToFail] = targetJobs;
+
+  if (jobsToFail.length > 0) {
     const msg = `Found an unexpected number of discharge requery jobs`;
     log(`${msg} for requestId ${dataPipelineRequestId}, expected 1, found ${targetJobs.length}`);
     capture.message(msg, {
@@ -84,19 +86,16 @@ export async function finishDischargeRequery({
     });
 
     await Promise.all(
-      targetJobs
-        .slice(1) // fail all the jobs except the first one
-        .map(job =>
-          failPatientJob({
-            jobId: job.id,
-            cxId,
-            reason: "Unexpected number of discharge requery jobs",
-          })
-        )
+      jobsToFail.map(job =>
+        failPatientJob({
+          jobId: job.id,
+          cxId,
+          reason: "Unexpected number of discharge requery jobs",
+        })
+      )
     );
   }
 
-  const targetJob = targetJobs[0];
   const job = (await completePatientJob({
     jobId: targetJob.id,
     cxId,
@@ -107,36 +106,32 @@ export async function finishDischargeRequery({
 
   // Send analytics and update runtimeData for visibility
   if (status === "successful") {
-    try {
-      const patient = await getPatientOrFail({ cxId, id: patientId });
-      const dqProgress = patient.data.documentQueryProgress;
-      if (dqProgress) {
-        const downloadCount = dqProgress.download?.total;
-        const convertCount = dqProgress.convert?.total;
+    const patient = await getPatientOrFail({ cxId, id: patientId });
+    const dqProgress = patient.data.documentQueryProgress;
+    if (dqProgress) {
+      const downloadCount = dqProgress.download?.total;
+      const convertCount = dqProgress.convert?.total;
 
-        await updatePatientJobRuntimeData({
-          jobId: targetJob.id,
-          cxId,
-          data: {
-            downloadCount,
-            convertCount,
-            ...job.runtimeData,
-          },
-        });
-        analytics({
-          event: EventTypes.dischargeRequery,
-          distinctId: cxId,
-          properties: {
-            patientId,
-            requestId: dqProgress.requestId,
-            downloadCount,
-            convertCount,
-            remainingAttempts,
-          },
-        });
-      }
-    } catch (error) {
-      log(`Error getting patient ${patientId} for discharge requery analytics: ${error}`);
+      await updatePatientJobRuntimeData({
+        jobId: targetJob.id,
+        cxId,
+        data: {
+          downloadCount,
+          convertCount,
+          ...job.runtimeData,
+        },
+      });
+      analytics({
+        event: EventTypes.dischargeRequery,
+        distinctId: cxId,
+        properties: {
+          patientId,
+          requestId: dqProgress.requestId,
+          downloadCount,
+          convertCount,
+          remainingAttempts,
+        },
+      });
     }
   }
 

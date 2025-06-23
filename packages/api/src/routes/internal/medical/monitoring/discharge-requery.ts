@@ -11,7 +11,7 @@ import { asyncHandler } from "../../../util";
 const router = Router();
 
 /**
- * POST /internal/patient/monitoring/job/discharge-requery
+ * POST /internal/patient/monitoring/discharge-requery
  *
  * Creates the discharge requery job.
  *
@@ -33,7 +33,7 @@ router.post(
 );
 
 /**
- * POST /internal/patient/monitoring/job/discharge-requery/run
+ * POST /internal/patient/monitoring/discharge-requery/run
  *
  * Runs the discharge requery job.
  *

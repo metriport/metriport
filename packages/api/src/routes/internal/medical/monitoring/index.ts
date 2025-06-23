@@ -3,6 +3,6 @@ import dischargeRequery from "./discharge-requery";
 
 const routes = Router();
 
-routes.use("/job/discharge-requery/", dischargeRequery);
+routes.use("/discharge-requery/", dischargeRequery);
 
 export default routes;
