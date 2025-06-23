@@ -1,7 +1,9 @@
 import * as Sentry from "@sentry/node";
 import { Config } from "./config";
 
-export const isSentryEnabled = () => Boolean(Config.getSentryDSN());
+export function isSentryEnabled() {
+  return Boolean(Config.getSentryDSN());
+}
 
 export function initSentry(): void {
   Sentry.init({
