@@ -64,7 +64,7 @@ describe("createDischargeRequeryJob", () => {
     const existingJob = makePatientJob({
       scheduledAt: dayjs(mockDate).add(30, "minutes").toDate(),
       paramsOps: {
-        remainingAttempts: 7,
+        remainingAttempts: defaultRemainingAttempts - 1,
       },
     });
 
@@ -95,7 +95,7 @@ describe("createDischargeRequeryJob", () => {
     const existingJob = makePatientJob({
       scheduledAt: dayjs(mockDate).add(2, "minutes").toDate(),
       paramsOps: {
-        remainingAttempts: 5,
+        remainingAttempts: defaultRemainingAttempts - 2,
         rerunOnNewDemographics: true,
         disableWebhook: true,
       },
