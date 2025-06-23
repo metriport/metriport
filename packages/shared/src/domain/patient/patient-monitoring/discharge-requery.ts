@@ -1,4 +1,4 @@
-import { PatientJob } from "@metriport/shared/domain/job/patient-job";
+import { PatientJob } from "../../../domain/job/patient-job";
 import { z } from "zod";
 import { defaultRemainingAttempts } from "./utils";
 
