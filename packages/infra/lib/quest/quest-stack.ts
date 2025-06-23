@@ -41,7 +41,7 @@ const settings: QuestSettings = {
     name: "QuestSendPatientRequest",
     entry: "quest/send-patient-request",
     lambda: {
-      memory: 1024,
+      memory: 512,
       timeout: sendPatientRequestLambdaTimeout,
     },
     queue: {
@@ -113,7 +113,7 @@ const questLambdaSettings: QuestLambdaSettings = {
     name: "QuestConvertPatientResponse",
     entry: "quest/convert-patient-response",
     lambda: {
-      memory: 1024,
+      memory: 512,
       timeout: convertPatientResponseLambdaTimeout,
     },
   },
