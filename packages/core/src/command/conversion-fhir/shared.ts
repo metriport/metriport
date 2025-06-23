@@ -17,11 +17,11 @@ export async function convertPayloadToFHIR({
   convertToFhir,
   params,
 }: {
-  convertToFhir: (xml: string, parmas: FhirConverterParams) => Promise<Bundle<Resource>>;
+  convertToFhir: (payload: string, parmas: FhirConverterParams) => Promise<Bundle<Resource>>;
   params: ConversionFhirRequest;
 }): Promise<Bundle<Resource>> {
-  const { log } = out(`convertCDAToFHIR - cxId ${params.cxId}, patientId ${params.patientId}`);
-  const { converterParams, partitionedPayloads } = await getConversionParmsAndpayloadPartiions(
+  const { log } = out(`convertCDAToFHIR - cxId ${params.cxId} patientId ${params.patientId}`);
+  const { converterParams, partitionedPayloads } = await getConverterParamsAndPayloadPartitions(
     params
   );
   const combinedBundle: Bundle<Resource> = {
@@ -31,9 +31,9 @@ export async function convertPayloadToFHIR({
   };
   const bundleEntrySet = new Set<BundleEntry<Resource>>();
   for (const [index, payload] of partitionedPayloads.entries()) {
-    const chunkSize = payload ? new Blob([payload]).size : 0;
+    const chunkSize = new Blob([payload]).size;
     if (chunkSize > LARGE_CHUNK_SIZE_IN_BYTES) {
-      const msg = `Chunk size is too large`;
+      const msg = "Chunk size is too large";
       log(`${msg} - chunkSize ${chunkSize} on ${index}`);
       capture.message(msg, {
         extra: {
@@ -46,13 +46,13 @@ export async function convertPayloadToFHIR({
     }
     const conversionResult = await convertToFhir(payload, converterParams);
     if (!conversionResult || !conversionResult.entry || conversionResult.entry.length < 1) continue;
-    conversionResult.entry.forEach(entry => bundleEntrySet.add(entry));
+    for (const entry of conversionResult.entry) bundleEntrySet.add(entry);
   }
   combinedBundle.entry = [...bundleEntrySet];
   return combinedBundle;
 }
 
-export async function getConversionParmsAndpayloadPartiions(
+export async function getConverterParamsAndPayloadPartitions(
   params: ConversionFhirRequest
 ): Promise<{ converterParams: FhirConverterParams; partitionedPayloads: string[] }> {
   const { patientId, keepUnusedSegments = false, keepInvalidAccess = false } = params;
