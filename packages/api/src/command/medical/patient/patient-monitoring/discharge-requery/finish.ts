@@ -1,7 +1,7 @@
 import {
   DischargeRequeryJob,
   runtimeDataSchema,
-} from "@metriport/core/domain/patient-monitoring/discharge-requery";
+} from "@metriport/shared/domain/patient/patient-monitoring/discharge-requery";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { capture } from "@metriport/core/util";
 import { out } from "@metriport/core/util/log";
