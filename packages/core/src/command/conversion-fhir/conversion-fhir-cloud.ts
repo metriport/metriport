@@ -5,7 +5,7 @@ import { Config } from "../../util/config";
 import { out } from "../../util/log";
 import { ConversionFhirHandler, ConversionFhirRequest } from "./conversion-fhir";
 
-export class NodejsFhirConvertCloud implements ConversionFhirHandler {
+export class ConversionFhirCloud implements ConversionFhirHandler {
   private readonly lambdaClient: LambdaClient;
 
   constructor(

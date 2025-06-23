@@ -1,12 +1,13 @@
-import { BadRequestError } from "@metriport/shared/dist/error/bad-request";
 import { Config } from "../../util/config";
 import { ConversionFhirHandler } from "./conversion-fhir";
-import { NodejsFhirConvertCloud } from "./conversion-fhir-cloud";
+import { ConversionFhirCloud } from "./conversion-fhir-cloud";
+import { ConversionFhirDirect } from "./conversion-fhir-direct";
 
 export function buildConversionFhirHandler(): ConversionFhirHandler {
   if (Config.isDev()) {
-    throw new BadRequestError("Conversion FHIR is not supported in dev environment");
+    const fhirConverterUrl = Config.getFHIRServerUrl();
+    return new ConversionFhirDirect(fhirConverterUrl);
   }
   const nodejsFhirConvertLambdaName = Config.getNodejsFhirConvertLambdaName();
-  return new NodejsFhirConvertCloud(nodejsFhirConvertLambdaName);
+  return new ConversionFhirCloud(nodejsFhirConvertLambdaName);
 }
