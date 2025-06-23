@@ -409,7 +409,7 @@ class ElationApi {
               ehrPatientId: elationPatinetId,
               bundleType: BundleType.EHR,
               bundle: createBundleFromResourceList([params as Resource]),
-              resourceType,
+              resourceType: params.resourceType,
               resourceId: params.id,
             });
           } catch (error) {
