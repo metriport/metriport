@@ -6,6 +6,13 @@
     "keywords": ["eslint", "rules"],
     "author": "Your Name",
     "license": "MIT",
+    "scripts": {
+        "build": "echo \"Skipping build\"",
+        "build:cloud": "echo \"Skipping build:cloud\"",
+        "test": "echo \"No test specified yet\"",
+        "clean": "rimraf dist",
+        "deepclean": "npm run clean && rimraf node_modules"
+    },
     "peerDependencies": {
       "eslint": ">=8.0.0"
     },
