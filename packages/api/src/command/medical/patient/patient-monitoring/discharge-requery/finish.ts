@@ -1,17 +1,17 @@
-import {
-  DischargeRequeryJob,
-  runtimeDataSchema,
-} from "@metriport/shared/domain/patient/patient-monitoring/discharge-requery";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { capture } from "@metriport/core/util";
 import { out } from "@metriport/core/util/log";
 import { PatientImportEntryStatusFinal } from "@metriport/shared/domain/patient/patient-import/types";
-import { createDischargeRequeryJob, dischargeRequeryJobType } from "./create";
+import {
+  DischargeRequeryJob,
+  runtimeDataSchema,
+} from "@metriport/shared/domain/patient/patient-monitoring/discharge-requery";
 import { getPatientJobs } from "../../../../job/patient/get";
 import { completePatientJob } from "../../../../job/patient/status/complete";
 import { failPatientJob } from "../../../../job/patient/status/fail";
 import { updatePatientJobRuntimeData } from "../../../../job/patient/update/update-runtime-data";
 import { getPatientOrFail } from "../../get-patient";
+import { createDischargeRequeryJob, dischargeRequeryJobType } from "./create";
 
 /**
  * Finishes the discharge requery job.

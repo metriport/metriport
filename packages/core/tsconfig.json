@@ -20,5 +20,5 @@
     "outDir": "./dist",
     "resolveJsonModule": true
   },
-  "include": ["./src", "../shared/src/domain/patient/patient-monitoring"]
+  "include": ["./src"]
 }
