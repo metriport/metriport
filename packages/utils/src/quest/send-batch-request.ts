@@ -5,9 +5,9 @@ import fs from "fs";
 dotenv.config();
 
 import { Command } from "commander";
-import { SurescriptsSftpClient } from "@metriport/core/external/surescripts/client";
-import { SurescriptsDataMapper } from "@metriport/core/external/surescripts/data-mapper";
-import { SurescriptsSendBatchRequestHandlerDirect } from "@metriport/core/external/surescripts/command/send-batch-request/send-batch-request-direct";
+import { QuestSftpClient } from "@metriport/core/external/quest/client";
+import { QuestDataMapper } from "@metriport/core/external/quest/data-mapper";
+import { QuestSendBatchRequestHandlerDirect } from "@metriport/core/external/quest/command/send-batch-request/send-batch-request-direct";
 import { Patient } from "@metriport/shared/domain/patient";
 
 const program = new Command();
@@ -28,17 +28,17 @@ program
     if (!facilityId) throw new Error("Facility ID is required");
 
     if (patientIds) {
-      const handler = new SurescriptsSendBatchRequestHandlerDirect(
-        new SurescriptsSftpClient({
+      const handler = new QuestSendBatchRequestHandlerDirect(
+        new QuestSftpClient({
           logLevel: "debug",
         })
       );
       await handler.sendBatchRequest({ cxId, facilityId, patientIds });
     } else if (csvData) {
-      const dataMapper = new SurescriptsDataMapper();
+      const dataMapper = new QuestDataMapper();
       const facility = await dataMapper.getFacilityData(cxId, facilityId);
       const patients = await getPatientsFromCsv(csvData);
-      const client = new SurescriptsSftpClient({
+      const client = new QuestSftpClient({
         logLevel: "debug",
       });
       await client.sendBatchRequest({ cxId, facility, patients });

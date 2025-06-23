@@ -12,7 +12,7 @@ import {
   QuestSftpConfig,
 } from "./types";
 import { validateNPI } from "@metriport/shared/common/validate-npi";
-import { MetriportError } from "@metriport/shared/dist/error/metriport-error";
+import { MetriportError } from "@metriport/shared";
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 
 export class QuestSftpClient extends SftpClient {
