@@ -102,8 +102,6 @@ export function createAPIService({
   fhirServerUrl,
   fhirConverterQueueUrl,
   fhirConverterServiceUrl,
-  fhirConverterServiceLambda,
-  fhirConverterBucket,
   cdaToVisualizationLambda,
   documentDownloaderLambda,
   outboundPatientDiscoveryLambda,
@@ -150,8 +148,6 @@ export function createAPIService({
   fhirServerUrl: string;
   fhirConverterQueueUrl: string | undefined;
   fhirConverterServiceUrl: string | undefined;
-  fhirConverterServiceLambda: ILambda | undefined;
-  fhirConverterBucket: s3.IBucket | undefined;
   cdaToVisualizationLambda: ILambda;
   documentDownloaderLambda: ILambda;
   outboundPatientDiscoveryLambda: ILambda | undefined;
@@ -326,12 +322,6 @@ export function createAPIService({
           ...(fhirConverterServiceUrl && {
             FHIR_CONVERTER_SERVER_URL: fhirConverterServiceUrl,
           }),
-          ...(fhirConverterServiceLambda && {
-            FHIR_CONVERTER_LAMBDA_NAME: fhirConverterServiceLambda.functionName,
-          }),
-          ...(fhirConverterBucket && {
-            FHIR_CONVERTER_BUCKET_NAME: fhirConverterBucket.bucketName,
-          }),
           RATE_LIMIT_TABLE_NAME: rateLimitTable.tableName,
           SEARCH_INGESTION_QUEUE_URL: searchIngestionQueue.queueUrl,
           SEARCH_ENDPOINT: searchEndpoint,
@@ -473,7 +463,6 @@ export function createAPIService({
   fhirToCdaConverterLambda?.grantInvoke(fargateService.taskDefinition.taskRole);
   fhirToBundleLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   fhirToBundleCountLambda.grantInvoke(fargateService.taskDefinition.taskRole);
-  fhirConverterServiceLambda?.grantInvoke(fargateService.taskDefinition.taskRole);
   ehrGetAppointmentsLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   consolidatedSearchLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   // Access grant for buckets
@@ -481,7 +470,6 @@ export function createAPIService({
   conversionBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   medicalDocumentsUploadBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   ehrBundleBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
-  fhirConverterBucket?.grantReadWrite(fargateService.taskDefinition.taskRole);
 
   if (surescriptsAssets) {
     surescriptsAssets.pharmacyConversionBucket.grantReadWrite(

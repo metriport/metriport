@@ -593,8 +593,6 @@ export class APIStack extends Stack {
       fhirServerUrl: props.config.fhirServerUrl,
       fhirConverterQueueUrl: fhirConverterQueue.queueUrl,
       fhirConverterServiceUrl: fhirConverter ? `http://${fhirConverter.address}` : undefined,
-      fhirConverterServiceLambda: fhirConverter ? fhirConverter.lambda : undefined,
-      fhirConverterBucket: fhirConverter ? fhirConverter.bucket : undefined,
       cdaToVisualizationLambda,
       documentDownloaderLambda,
       outboundPatientDiscoveryLambda,
