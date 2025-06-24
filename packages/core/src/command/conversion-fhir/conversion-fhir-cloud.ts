@@ -4,14 +4,11 @@ import { Config } from "../../util/config";
 import { ConversionFhirHandler, ConverterRequest } from "./conversion-fhir";
 
 export class ConversionFhirCloud extends ConversionFhirHandler {
-  private readonly lambdaClient: LambdaClient;
-
   constructor(
     private readonly nodejsFhirConvertLambdaName: string = Config.getFhirConverterLambdaName(),
-    lambdaClient: LambdaClient = makeLambdaClient(Config.getAWSRegion())
+    private readonly lambdaClient: LambdaClient = makeLambdaClient(Config.getAWSRegion())
   ) {
     super();
-    this.lambdaClient = lambdaClient;
   }
 
   async callConverter(request: ConverterRequest): Promise<Bundle<Resource>> {
