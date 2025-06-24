@@ -40,6 +40,7 @@
     "@tsconfig/node18": "^18.2.4",
     "@types/node": "^22.13.5",
     "ts-node": "^10.9.2",
-    "typescript": "^5.6.3"
+    "typescript": "^5.6.3",
+    "@metriport/eslint-rules": "file:packages/eslint-rules"
   }
 }
