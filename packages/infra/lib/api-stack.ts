@@ -313,16 +313,6 @@ export class APIStack extends Stack {
       });
     }
 
-    let ehrResponsesBucket: s3.Bucket | undefined;
-    if (!isSandbox(props.config)) {
-      ehrResponsesBucket = new s3.Bucket(this, "EhrResponsedBucket", {
-        bucketName: props.config.ehrResponsesBucketName,
-        publicReadAccess: false,
-        encryption: s3.BucketEncryption.S3_MANAGED,
-        versioned: true,
-      });
-    }
-
     const getSandboxSeedDataBucket = (sandboxConfig: EnvConfigSandbox) => {
       const seedBucketCfnName = "APISandboxSeedDataBucket";
       try {
@@ -473,26 +463,27 @@ export class APIStack extends Stack {
     //-------------------------------------------
     // EHR
     //-------------------------------------------
-    const {
-      getAppointmentsLambda: ehrGetAppointmentsLambda,
-      syncPatientQueue: ehrSyncPatientQueue,
-      syncPatientLambda: ehrSyncPatientLambda,
-      elationLinkPatientQueue,
-      elationLinkPatientLambda,
-      healthieLinkPatientQueue,
-      healthieLinkPatientLambda,
-      computeResourceDiffBundlesLambda: ehrComputeResourceDiffBundlesLambda,
-      refreshEhrBundlesQueue: ehrRefreshEhrBundlesQueue,
-      refreshEhrBundlesLambda: ehrRefreshEhrBundlesLambda,
-      ehrBundleBucket,
-    } = new EhrNestedStack(this, "EhrNestedStack", {
-      config: props.config,
-      lambdaLayers,
-      vpc: this.vpc,
-      alarmAction: slackNotification?.alarmAction,
-      ehrResponsesBucket,
-      medicalDocumentsBucket,
-    });
+    let ehrResponsesBucket: s3.Bucket | undefined;
+    if (!isSandbox(props.config)) {
+      ehrResponsesBucket = new s3.Bucket(this, "EhrResponsedBucket", {
+        bucketName: props.config.ehrResponsesBucketName,
+        publicReadAccess: false,
+        encryption: s3.BucketEncryption.S3_MANAGED,
+        versioned: true,
+      });
+    }
+
+    let ehrStack: EhrNestedStack | undefined = undefined;
+    if (!isSandbox(props.config)) {
+      ehrStack = new EhrNestedStack(this, "EhrNestedStack", {
+        config: props.config,
+        lambdaLayers,
+        vpc: this.vpc,
+        alarmAction: slackNotification?.alarmAction,
+        ehrResponsesBucket,
+        medicalDocumentsBucket,
+      });
+    }
 
     //-------------------------------------------
     // Jobs
@@ -596,16 +587,16 @@ export class APIStack extends Stack {
       patientImportParseLambda,
       patientImportResultLambda,
       patientImportBucket,
-      ehrSyncPatientQueue,
-      elationLinkPatientQueue,
-      healthieLinkPatientQueue,
-      ehrRefreshEhrBundlesQueue,
-      ehrGetAppointmentsLambda,
-      ehrBundleBucket,
+      ehrSyncPatientQueue: ehrStack?.syncPatientQueue,
+      elationLinkPatientQueue: ehrStack?.elationLinkPatientQueue,
+      healthieLinkPatientQueue: ehrStack?.healthieLinkPatientQueue,
+      ehrRefreshEhrBundlesQueue: ehrStack?.refreshEhrBundlesQueue,
+      ehrGetAppointmentsLambda: ehrStack?.getAppointmentsLambda,
+      ehrBundleBucket: ehrStack?.ehrBundleBucket,
+      ehrResponsesBucket,
       generalBucket,
       conversionBucket: fhirConverterBucket,
       medicalDocumentsUploadBucket,
-      ehrResponsesBucket,
       fhirToMedicalRecordLambda2,
       fhirToCdaConverterLambda,
       fhirToBundleLambda,
@@ -695,12 +686,12 @@ export class APIStack extends Stack {
       patientImportParseLambda,
       patientImportQueryLambda,
       patientImportResultLambda,
-      ehrSyncPatientLambda,
-      elationLinkPatientLambda,
-      healthieLinkPatientLambda,
-      ehrComputeResourceDiffBundlesLambda,
-      ehrRefreshEhrBundlesLambda,
-      ehrGetAppointmentsLambda,
+      ehrStack?.syncPatientLambda,
+      ehrStack?.elationLinkPatientLambda,
+      ehrStack?.healthieLinkPatientLambda,
+      ehrStack?.computeResourceDiffBundlesLambda,
+      ehrStack?.refreshEhrBundlesLambda,
+      ehrStack?.getAppointmentsLambda,
       fhirConverterLambda,
       conversionResultNotifierLambda,
       consolidatedSearchLambda,
@@ -718,7 +709,9 @@ export class APIStack extends Stack {
     medicalDocumentsBucket.grantReadWrite(apiService.taskDefinition.taskRole);
     medicalDocumentsBucket.grantReadWrite(documentDownloaderLambda);
     medicalDocumentsBucket.grantRead(fhirConverterLambda);
-    medicalDocumentsBucket.grantRead(ehrComputeResourceDiffBundlesLambda);
+    if (ehrStack?.computeResourceDiffBundlesLambda) {
+      medicalDocumentsBucket.grantRead(ehrStack.computeResourceDiffBundlesLambda);
+    }
 
     createDocQueryChecker({
       lambdaLayers,

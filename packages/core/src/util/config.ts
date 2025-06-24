@@ -176,10 +176,6 @@ export class Config {
     return getEnvVarOrFail("FEATURE_FLAGS_TABLE_NAME");
   }
 
-  static getEhrResponsesBucketName(): string | undefined {
-    return getEnvVar("EHR_RESPONSES_BUCKET_NAME");
-  }
-
   static getPatientImportBucket(): string {
     return getEnvVarOrFail("PATIENT_IMPORT_BUCKET_NAME");
   }
@@ -205,14 +201,14 @@ export class Config {
   static getHealthieLinkPatientQueueUrl(): string {
     return getEnvVarOrFail("HEALTHIE_LINK_PATIENT_QUEUE_URL");
   }
-  static getEhrStartResourceDiffBundlesQueueUrl(): string {
-    return getEnvVarOrFail("EHR_START_RESOURCE_DIFF_BUNDLES_QUEUE_URL");
-  }
   static getEhrComputeResourceDiffBundlesQueueUrl(): string {
     return getEnvVarOrFail("EHR_COMPUTE_RESOURCE_DIFF_BUNDLES_QUEUE_URL");
   }
   static getEhrRefreshEhrBundlesQueueUrl(): string {
     return getEnvVarOrFail("EHR_REFRESH_EHR_BUNDLES_QUEUE_URL");
+  }
+  static getEhrResponsesBucketName(): string {
+    return getEnvVarOrFail("EHR_RESPONSES_BUCKET_NAME");
   }
   static getEhrBundleBucketName(): string {
     return getEnvVarOrFail("EHR_BUNDLE_BUCKET_NAME");
