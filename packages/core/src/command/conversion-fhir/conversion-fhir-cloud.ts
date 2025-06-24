@@ -7,7 +7,7 @@ export class ConversionFhirCloud extends ConversionFhirHandler {
   private readonly lambdaClient: LambdaClient;
 
   constructor(
-    private readonly nodejsFhirConvertLambdaName: string,
+    private readonly nodejsFhirConvertLambdaName: string = Config.getFhirConverterLambdaName(),
     lambdaClient: LambdaClient = makeLambdaClient(Config.getAWSRegion())
   ) {
     super();
