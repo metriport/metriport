@@ -211,7 +211,7 @@ export function createFHIRConverterService(
   addErrorAlarmToLambdaFunc(stack, lambda, `${name}-GeneralLambdaAlarm`, alarmAction);
 
   // Setup alarm - OOM (Out Of Memory) errors
-  const metricFilter = lambda.logGroup?.addMetricFilter(`${props.name}-OOMErrorsFilter`, {
+  const metricFilter = lambda.logGroup?.addMetricFilter(`${name}-OOMErrorsFilter`, {
     metricNamespace: METRICS_NAMESPACE,
     metricName: `${name}-OOMErrors`,
     filterPattern: FilterPattern.anyTerm(
