@@ -6,7 +6,7 @@ module.exports = {
     recommended: {
       plugins: ['@metriport/eslint-rules'],
       rules: {
-        '@metriport/eslint-rules/no-named-arrow-functions': 'error',
+        '@metriport/eslint-rules/no-named-arrow-functions': 'warn',
       },
     },
     all: {
