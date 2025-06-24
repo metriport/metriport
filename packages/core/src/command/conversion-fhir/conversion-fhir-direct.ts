@@ -21,6 +21,6 @@ export class ConversionFhirDirect extends ConversionFhirHandler {
       params: params.params,
       headers: { "Content-Type": TXT_MIME_TYPE },
     });
-    return resp.data.fhirResource as Bundle;
+    return resp.data.fhirResource as Bundle<Resource>;
   }
 }
