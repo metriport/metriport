@@ -533,7 +533,11 @@ export class APIStack extends Stack {
     if (!isSandbox(props.config)) {
       fhirConverter = createFHIRConverterService(
         this,
-        { ...props, generalBucket },
+        {
+          config: props.config,
+          version: props.version,
+          generalBucket,
+        },
         this.vpc,
         slackNotification?.alarmAction
       );
@@ -590,6 +594,7 @@ export class APIStack extends Stack {
       fhirConverterQueueUrl: fhirConverterQueue.queueUrl,
       fhirConverterServiceUrl: fhirConverter ? `http://${fhirConverter.address}` : undefined,
       fhirConverterServiceLambda: fhirConverter ? fhirConverter.lambda : undefined,
+      fhirConverterBucket: fhirConverter ? fhirConverter.bucket : undefined,
       cdaToVisualizationLambda,
       documentDownloaderLambda,
       outboundPatientDiscoveryLambda,
