@@ -367,7 +367,7 @@ class ElationApi {
       resourceType,
     });
     let referenceEhrFhirBundle: EhrFhirResourceBundle | undefined;
-    const fetchResourcesFromEhr = async () => {
+    async function fetchResourcesFromEhr() {
       const bundle = await fhirConverterToEhrBundle({
         inputS3Key: s3key,
         inputS3BucketName: s3BucketName,
@@ -385,7 +385,7 @@ class ElationApi {
         metriportPatientId
       );
       return [...(strictTargetBundle.entry?.map(e => e.resource) ?? [])];
-    };
+    }
     const bundle = await fetchEhrBundleUsingCache({
       ehr: EhrSources.elation,
       cxId,
