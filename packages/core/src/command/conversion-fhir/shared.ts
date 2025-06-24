@@ -101,7 +101,7 @@ export async function getConverterParamsAndPayloadPartitions(
   if (payloadClean.length < 1) throw new BadRequestError("XML document is empty");
   await attemptToSaveConverterStep({
     paramsWithRequestId,
-    result: payloadRaw,
+    result: payloadClean,
     contentType: "text/xml",
     fileName: buildDocumentNameForCleanConversion(paramsWithRequestId.requestId),
     stepName: "clean",

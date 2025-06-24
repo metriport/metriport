@@ -92,7 +92,6 @@ export function isSupportedCcdaSectionResource(resourceType: string): boolean {
 
 export const supportedElationResources: ResourceType[] = [
   "AllergyIntolerance",
-  /*
   "Condition",
   "DiagnosticReport",
   "Encounter",
@@ -101,7 +100,6 @@ export const supportedElationResources: ResourceType[] = [
   "MedicationStatement",
   "Observation",
   "Procedure",
-  */
 ];
 export const supportedElationReferenceResources: ResourceType[] = [
   "Medication",
@@ -341,14 +339,14 @@ class ElationApi {
   async getBundleByResourceType({
     cxId,
     metriportPatientId,
-    elationPatinetId,
+    elationPatientId,
     resourceType,
     fhirConverterToEhrBundle,
     useCachedBundle = true,
   }: {
     cxId: string;
     metriportPatientId: string;
-    elationPatinetId: string;
+    elationPatientId: string;
     resourceType: string;
     fhirConverterToEhrBundle: (params: {
       inputS3Key: string;
@@ -365,7 +363,7 @@ class ElationApi {
     }
     const { s3key, s3BucketName } = await this.getCcdaDocument({
       cxId,
-      patientId: elationPatinetId,
+      patientId: elationPatientId,
       resourceType,
     });
     let referenceEhrFhirBundle: EhrFhirResourceBundle | undefined;
@@ -392,7 +390,7 @@ class ElationApi {
       ehr: EhrSources.elation,
       cxId,
       metriportPatientId,
-      ehrPatientId: elationPatinetId,
+      ehrPatientId: elationPatientId,
       resourceType,
       fetchResourcesFromEhr,
       useCachedBundle,
@@ -402,7 +400,7 @@ class ElationApi {
         ehr: EhrSources.elation,
         cxId,
         metriportPatientId,
-        ehrPatientId: elationPatinetId,
+        ehrPatientId: elationPatientId,
         referenceBundle: referenceEhrFhirBundle,
       });
     }

@@ -5,8 +5,10 @@ import { TXT_MIME_TYPE } from "../../util/mime";
 import { ConversionFhirHandler, ConversionFhirRequest } from "./conversion-fhir";
 import { convertPayloadToFHIR } from "./shared";
 
+const FHIR_CONVERSION_API_PATH = "/api/convert/cda/ccd.hbs";
+
 function buildConversionFhirUrl(fhirConverterUrl: string): string {
-  return `${fhirConverterUrl}/api/convert/cda/ccd.hbs`;
+  return `${fhirConverterUrl}${FHIR_CONVERSION_API_PATH}`;
 }
 
 export class ConversionFhirDirect implements ConversionFhirHandler {

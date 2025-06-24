@@ -25,7 +25,7 @@ export async function getBundleByResourceType(
   const bundle = await client.getBundleByResourceType({
     cxId,
     metriportPatientId,
-    elationPatinetId: ehrPatientId,
+    elationPatientId: ehrPatientId,
     resourceType,
     fhirConverterToEhrBundle: async params => {
       const conversionResult = await handler.convertToFhir({

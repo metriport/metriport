@@ -1,5 +1,4 @@
 import { Bundle } from "@medplum/fhirtypes";
-import { FHIRConverterCDATemplate } from "@metriport/shared/domain/converison-fhir";
 
 export type ConversionFhirRequest = {
   cxId: string;
@@ -9,7 +8,6 @@ export type ConversionFhirRequest = {
   inputS3BucketName: string;
   outputS3Key: string;
   outputS3BucketName: string;
-  template?: FHIRConverterCDATemplate;
   keepUnusedSegments?: boolean;
   keepInvalidAccess?: boolean;
 };
