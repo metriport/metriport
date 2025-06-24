@@ -8,8 +8,6 @@ export type ConversionFhirRequest = {
   requestId?: string;
   inputS3Key: string;
   inputS3BucketName: string;
-  keepUnusedSegments?: boolean;
-  keepInvalidAccess?: boolean;
 };
 
 export type ConverterRequest = {

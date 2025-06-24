@@ -138,8 +138,8 @@ async function getConverterParamsAndPayloadPartitions(
       requestId: paramsWithRequestId.requestId,
       fileName: buildDocumentNameForConversionResult(paramsWithRequestId.requestId),
     }),
-    unusedSegments: `${paramsWithRequestId.keepUnusedSegments ?? false}`,
-    invalidAccess: `${paramsWithRequestId.keepInvalidAccess ?? false}`,
+    unusedSegments: "false",
+    invalidAccess: "false",
   };
   const partitionedPayloads = partitionPayload(payloadClean);
   return { converterParams, partitionedPayloads };
