@@ -90,7 +90,7 @@ export async function createOrReplaceBundle({
       bundleType,
       resourceType,
       key,
-      context: "ehr-resource-diff.createOrReplaceBundle",
+      context: "ehr.createOrReplaceBundle",
     });
   }
 }

@@ -25,7 +25,6 @@ import {
 } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import {
-  EhrFhirResource,
   EhrFhirResourceBundle,
   EhrStrictFhirResource,
   EhrStrictFhirResourceBundle,
@@ -41,9 +40,9 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { partition, uniqBy } from "lodash";
 import { z } from "zod";
-import { capture } from "../../util/notifications";
 import { createHivePartitionFilePath } from "../../domain/filename";
 import { fetchCodingCodeOrDisplayOrSystem } from "../../fhir-deduplication/shared";
+import { executeAsynchronously } from "../../util/concurrency";
 import { Config } from "../../util/config";
 import {
   CPT_CODE,
@@ -54,26 +53,23 @@ import {
   SNOMED_CODE,
 } from "../../util/constants";
 import { out } from "../../util/log";
+import { capture } from "../../util/notifications";
 import { uuidv7 } from "../../util/uuid-v7";
 import { S3Utils } from "../aws/s3";
 import { BundleType } from "./bundle/bundle-shared";
 import { createOrReplaceBundle } from "./bundle/command/create-or-replace-bundle";
 import { FetchBundleParams, fetchBundle } from "./bundle/command/fetch-bundle";
-import { executeAsynchronously } from "../../util/concurrency";
 
 dayjs.extend(duration);
 
 const MAX_AGE = dayjs.duration(24, "hours");
-
-const region = Config.getAWSRegion();
-const responsesBucket = Config.getEhrResponsesBucketName();
 
 export const paginateWaitTime = dayjs.duration(1, "seconds");
 
 const fhirValidationPrefix = "1 validation error for";
 
 function getS3UtilsInstance(): S3Utils {
-  return new S3Utils(region);
+  return new S3Utils(Config.getAWSRegion());
 }
 
 export interface ApiConfig {
@@ -142,6 +138,7 @@ export async function makeRequest<T>({
   const { log } = out(
     `${ehr} makeRequest - cxId ${cxId} patientId ${patientId} method ${method} url ${url}`
   );
+  const responsesBucket = Config.getEhrResponsesBucketName();
   const isJsonContentType =
     headers?.["content-type"] === "application/json" ||
     headers?.["Content-Type"] === "application/json";
@@ -665,7 +662,7 @@ export async function fetchEhrBundleUsingCache({
   useCachedBundle = true,
   ...params
 }: FetchEhrBundleParams & {
-  fetchResourcesFromEhr: () => Promise<EhrFhirResource[]>;
+  fetchResourcesFromEhr: () => Promise<EhrStrictFhirResource[]>;
   useCachedBundle?: boolean;
 }): Promise<Bundle> {
   if (useCachedBundle) {
@@ -683,7 +680,7 @@ export async function fetchEhrBundleUsingCache({
 }
 
 /**
- * Fetches FHIR resources for a given resource type via a FHIR API.
+ * Fetches FHIR resources via a FHIR API and returns them as list.
  * Pagination is handled automatically.
  *
  * @param makeRequest - The function that makes the request to the EHR FHIR endpoint.
@@ -698,8 +695,8 @@ export async function fetchEhrFhirResourcesWithPagination({
 }: {
   makeRequest: (url: string) => Promise<EhrStrictFhirResourceBundle>;
   url: string | undefined;
-  acc?: EhrFhirResource[] | undefined;
-}): Promise<EhrFhirResource[]> {
+  acc?: EhrStrictFhirResource[] | undefined;
+}): Promise<EhrStrictFhirResource[]> {
   if (!url) return acc;
   await sleep(paginateWaitTime.asMilliseconds());
   const fhirResourceBundle = await makeRequest(url);
@@ -709,7 +706,7 @@ export async function fetchEhrFhirResourcesWithPagination({
 }
 
 /**
- * Saves a reference bundle to the S3 bucket.
+ * Saves resources from a reference bundle to the S3 bucket along resource IDs.
  *
  * @param ehr - The EHR source.
  * @param cxId - The CX ID.
@@ -734,7 +731,7 @@ export async function saveEhrReferenceBundle({
     `saveReferenceBundle - cxId ${cxId} metriportPatientId ${metriportPatientId} ehrPatientId ${ehrPatientId}`
   );
   if (!referenceBundle.entry || referenceBundle.entry.length < 1) return;
-  const resources = referenceBundle.entry.flatMap(e => {
+  const resources: EhrStrictFhirResource[] = referenceBundle.entry.flatMap(e => {
     const resource = e.resource;
     if (!resource) return [];
     const parsedResource = ehrStrictFhirResourceSchema.safeParse(resource);
@@ -807,8 +804,8 @@ export function partitionEhrBundle({
 
 /**
  * Converts a single-resource-type EHR bundle to a strict EHR bundle, where all resources have the
- * id and resourceType fields. As well as the patient and subject references being the same as the
- * patientId.
+ * id and resourceType fields. It also checks that the patient and subject references are the same as
+ * the patientId.
  *
  * @param bundle - The bundle to convert.
  * @param resourceType - The resource type of the bundle.
@@ -817,7 +814,7 @@ export function partitionEhrBundle({
  * @throws BadRequestError if the bundle is invalid, contains multiple resource types, or contains
  * a resource with a patient or subject reference that is not the same as the patientId.
  */
-export function convertBundleToValidStrictBundle(
+export function convertEhrBundleToValidEhrStrictBundle(
   bundle: EhrFhirResourceBundle,
   resourceType: string,
   patientId?: string

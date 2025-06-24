@@ -96,7 +96,7 @@ export async function fetchBundle({
       resourceType,
       jobId,
       key,
-      context: "ehr-resource-diff.fetchBundle",
+      context: "ehr.fetchBundle",
     });
   }
 }
@@ -171,7 +171,7 @@ export async function fetchBundlePreSignedUrl({
       resourceType,
       jobId,
       s3BucketName,
-      context: "ehr-resource-diff.fetchBundlePreSignedUrl",
+      context: "ehr.fetchBundlePreSignedUrl",
     });
   }
 }
