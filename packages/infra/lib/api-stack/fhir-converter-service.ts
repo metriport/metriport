@@ -181,6 +181,7 @@ export function createFHIRConverterService(
     handler: "handler",
     runtime: Runtime.NODEJS_18_X,
     bundling: {
+      sourceMap: true,
       commandHooks: {
         beforeBundling(inputDir: string, outputDir: string): string[] {
           return [`cp -r ${inputDir}/packages/fhir-converter/src/templates/ ${outputDir}/`];
