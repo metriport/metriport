@@ -214,14 +214,13 @@ export const supportedAthenaHealthResources: ResourceType[] = [
   "Encounter",
 ];
 
+// TODO Eng-514 -- Add support for more resources
 export const supportedAthenaHealthReferenceResources: ResourceType[] = [
-  "Media",
   "Medication",
   "Binary",
-  "RelatedPerson",
+  "Patient",
   "Location",
   "Organization",
-  "Patient",
   "Practitioner",
   "Provenance",
 ];
