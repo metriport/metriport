@@ -8,10 +8,7 @@ import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { getPatientMappingOrFail } from "../../../../../command/mapping/patient";
 import { handleDataContribution } from "../../../../../command/medical/patient/data-contribution/handle-data-contributions";
 import { getPatientOrFail } from "../../../../../command/medical/patient/get-patient";
-import { Config } from "../../../../../shared/config";
 import { ContributeBundleParams } from "../../utils/bundle/types";
-
-const CUSTOM_APPOINTMENET_ID_OPT_OUT = Config.isProdEnv() ? "201" : "201";
 
 /**
  * Contribute the resource diff bundle
@@ -49,14 +46,7 @@ export async function contributeResourceDiffBundle({
     fetchBundle(fetchParams),
   ]);
   if (!bundle?.bundle.entry || bundle.bundle.entry.length < 1) return;
-  if (await isAthenaCustomFieldsEnabledForCx(cxId)) {
-    bundle.bundle.entry = bundle.bundle.entry.filter(entry => {
-      if (entry.resource?.resourceType !== "Encounter") return true;
-      // TODO: check if the encounter has the custom field id opt out
-      console.log(CUSTOM_APPOINTMENET_ID_OPT_OUT);
-      return false;
-    });
-  }
+  if (await isAthenaCustomFieldsEnabledForCx(cxId)) return;
   await handleDataContribution({
     requestId: uuidv7(),
     patient: metriportPatient,
