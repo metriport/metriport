@@ -110,7 +110,7 @@ import { out } from "../../../util/log";
 import { capture } from "../../../util/notifications";
 import {
   ApiConfig,
-  convertBundleToValidStrictBundle,
+  convertEhrBundleToValidEhrStrictBundle,
   createDataParams,
   DataPoint,
   fetchEhrBundleUsingCache,
@@ -1465,7 +1465,11 @@ class AthenaHealthApi {
             resourceType,
           });
           referenceBundleToSave = referenceBundle;
-          return convertBundleToValidStrictBundle(targetBundle, resourceType, athenaPatientId);
+          return convertEhrBundleToValidEhrStrictBundle(
+            targetBundle,
+            resourceType,
+            athenaPatientId
+          );
         },
         url: resourceTypeUrl,
       });
@@ -1545,7 +1549,7 @@ class AthenaHealthApi {
             debug,
             useFhir: true,
           });
-          return convertBundleToValidStrictBundle(bundle, resourceType, athenaPatientId);
+          return convertEhrBundleToValidEhrStrictBundle(bundle, resourceType, athenaPatientId);
         },
         url: resourceTypeUrl,
       });

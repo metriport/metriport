@@ -37,7 +37,7 @@ import { out } from "../../../util/log";
 import { createOrReplaceCcda } from "../bundle/command/create-or-replace-ccda";
 import {
   ApiConfig,
-  convertBundleToValidStrictBundle,
+  convertEhrBundleToValidEhrStrictBundle,
   createDataParams,
   fetchEhrBundleUsingCache,
   formatDate,
@@ -379,7 +379,7 @@ class ElationApi {
         resourceType,
       });
       referenceEhrFhirBundle = referenceBundle;
-      const strictTargetBundle = convertBundleToValidStrictBundle(
+      const strictTargetBundle = convertEhrBundleToValidEhrStrictBundle(
         targetBundle,
         resourceType,
         metriportPatientId

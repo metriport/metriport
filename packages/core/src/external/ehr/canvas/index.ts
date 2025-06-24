@@ -56,7 +56,7 @@ import { log, out } from "../../../util/log";
 import { capture } from "../../../util/notifications";
 import {
   ApiConfig,
-  convertBundleToValidStrictBundle,
+  convertEhrBundleToValidEhrStrictBundle,
   DataPoint,
   fetchEhrBundleUsingCache,
   fetchEhrFhirResourcesWithPagination,
@@ -1071,7 +1071,11 @@ class CanvasApi {
             resourceType,
           });
           referenceBundleToSave = referenceBundle;
-          return convertBundleToValidStrictBundle(targetBundle, resourceType, canvasPatientId);
+          return convertEhrBundleToValidEhrStrictBundle(
+            targetBundle,
+            resourceType,
+            canvasPatientId
+          );
         },
         url: resourceTypeUrl,
       });
@@ -1148,7 +1152,7 @@ class CanvasApi {
             debug,
             useFhir: true,
           });
-          return convertBundleToValidStrictBundle(bundle, resourceType, canvasPatientId);
+          return convertEhrBundleToValidEhrStrictBundle(bundle, resourceType, canvasPatientId);
         },
         url: resourceTypeUrl,
       });
