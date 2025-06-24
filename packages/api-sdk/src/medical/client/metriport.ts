@@ -17,6 +17,19 @@ import {
   JWT_HEADER,
   optionalDateToISOString,
 } from "../../shared";
+import {
+  CohortCreate,
+  CohortDTO,
+  CohortListResponse,
+  CohortUpdate,
+  CohortWithPatientIdsAndCountDTO,
+  PatientAssignmentRequest,
+  PatientUnassignmentResponse,
+  cohortDTOSchema,
+  cohortListResponseSchema,
+  cohortWithPatientIdsAndCountDTOSchema,
+  patientUnassignmentResponseSchema,
+} from "../models/cohort";
 import { getETagHeader } from "../models/common/base-update";
 import { Demographics } from "../models/demographics";
 import {
@@ -54,6 +67,7 @@ const FACILITY_URL = `/facility`;
 const NETWORK_ENTRY_URL = `/network-entry`;
 const PATIENT_URL = `/patient`;
 const DOCUMENT_URL = `/document`;
+const COHORT_URL = `/cohort`;
 const REQUEST_ID_HEADER_NAME = "x-metriport-request-id";
 
 export type Options = {
@@ -651,6 +665,101 @@ export class MetriportMedicalApi {
   async listPatientsPage(url: string): Promise<PaginatedResponse<PatientDTO, "patients">> {
     const resp = await this.api.get(url);
     return resp.data;
+  }
+
+  /**
+   * Creates a new cohort.
+   *
+   * @param data The data to be used to create a new cohort.
+   *
+   * @return The newly created cohort.
+   */
+  async createCohort(data: CohortCreate): Promise<CohortDTO> {
+    const resp = await this.api.post(COHORT_URL, data);
+    if (!resp.data) throw new Error(NO_DATA_MESSAGE);
+    console.log("RESP DATA IS", resp.data);
+    return cohortDTOSchema.parse(resp.data);
+  }
+
+  /**
+   * Updates a cohort.
+   *
+   * @param cohort The cohort data to be updated.
+   * @return The updated cohort.
+   */
+  async updateCohort(cohort: CohortUpdate): Promise<CohortDTO> {
+    const resp = await this.api.put(`${COHORT_URL}/${cohort.id}`, cohort, {
+      headers: { ...getETagHeader(cohort) },
+    });
+    if (!resp.data) throw new Error(NO_DATA_MESSAGE);
+    return cohortDTOSchema.parse(resp.data);
+  }
+
+  /**
+   * Deletes a cohort. All associated patients must be unassigned first.
+   *
+   * @param cohortId The ID of the cohort to be deleted.
+   */
+  async deleteCohort(cohortId: string): Promise<void> {
+    await this.api.delete(`${COHORT_URL}/${cohortId}`);
+  }
+
+  /**
+   * Returns all cohorts defined by the CX.
+   *
+   * @returns List of cohorts with count of patients assigned to them.
+   */
+  async listCohorts(): Promise<CohortListResponse> {
+    const resp = await this.api.get(COHORT_URL);
+    if (!resp.data) return { cohorts: [] };
+    console.log("RESP DATA IS", resp.data);
+    return cohortListResponseSchema.parse(resp.data);
+  }
+
+  /**
+   * Returns cohort details, count and IDs of the patients assigned to it.
+   *
+   * @param cohortId The ID of the cohort to get.
+   * @returns Cohort details, count and IDs of the patients assigned to it.
+   */
+  async getCohort(cohortId: string): Promise<CohortWithPatientIdsAndCountDTO> {
+    const resp = await this.api.get(`${COHORT_URL}/${cohortId}`);
+    if (!resp.data) throw new Error(NO_DATA_MESSAGE);
+    return cohortWithPatientIdsAndCountDTOSchema.parse(resp.data);
+  }
+
+  /**
+   * Bulk assign multiple patients to a cohort.
+   *
+   * @param cohortId The ID of the cohort to assign patients to.
+   * @param data The patient assignment data containing either patientIds array or all flag.
+   * @returns Cohort details with the updated patient IDs and count.
+   */
+  async assignPatientsToCohort(
+    cohortId: string,
+    data: PatientAssignmentRequest
+  ): Promise<CohortWithPatientIdsAndCountDTO> {
+    const resp = await this.api.post(`${COHORT_URL}/${cohortId}/patient`, data);
+    if (!resp.data) throw new Error(NO_DATA_MESSAGE);
+    return cohortWithPatientIdsAndCountDTOSchema.parse(resp.data);
+  }
+
+  /**
+   * Bulk remove patients from a cohort.
+   *
+   * @param cohortId The ID of the cohort to remove patients from.
+   * @param data The patient unassignment data containing either patientIds array or all flag.
+   * @returns Information about the unassignment operation.
+   */
+  async removePatientsFromCohort(
+    cohortId: string,
+    data: PatientAssignmentRequest
+  ): Promise<PatientUnassignmentResponse> {
+    const resp = await this.api.delete(`${COHORT_URL}/${cohortId}/patient`, {
+      data,
+    });
+    if (!resp.data) throw new Error(NO_DATA_MESSAGE);
+    return patientUnassignmentResponseSchema.parse(resp.data);
   }
 
   /**
