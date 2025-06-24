@@ -1,5 +1,5 @@
-import { Bundle, BundleEntry, Resource } from "@medplum/fhirtypes";
-import { BadRequestError, errorToString } from "@metriport/shared";
+import { Bundle, Resource } from "@medplum/fhirtypes";
+import { BadRequestError, errorToString, MetriportError } from "@metriport/shared";
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { FhirConverterParams } from "../../domain/conversion/bundle-modifications/modifications";
 import { cleanUpPayload } from "../../domain/conversion/cleanup";
@@ -12,8 +12,10 @@ import {
 import { S3Utils } from "../../external/aws/s3";
 import { partitionPayload } from "../../external/cda/partition-payload";
 import { removeBase64PdfEntries } from "../../external/cda/remove-b64";
+import { buildBundleFromResources } from "../../external/fhir/bundle/bundle";
 import { Config } from "../../util/config";
 import { out } from "../../util/log";
+import { JSON_TXT_MIME_TYPE, XML_TXT_MIME_TYPE } from "../../util/mime";
 import { capture } from "../../util/notifications";
 import { ConversionFhirRequest } from "./conversion-fhir";
 
@@ -33,19 +35,18 @@ export async function convertPayloadToFHIR({
 }: {
   convertToFhir: (payload: string, parmas: FhirConverterParams) => Promise<Bundle<Resource>>;
   params: ConversionFhirRequest;
-}): Promise<Bundle<Resource>> {
-  const { log } = out(`convertCDAToFHIR - cxId ${params.cxId} patientId ${params.patientId}`);
+}): Promise<{
+  bundle: Bundle<Resource>;
+  resultKey: string;
+  resultBucket: string;
+}> {
+  const { log } = out(`convertPayloadToFHIR - cxId ${params.cxId} patientId ${params.patientId}`);
   const requestId = params.requestId ?? uuidv7();
   const paramsWithRequestId: ConversionFhirRequestWithRequestId = { ...params, requestId };
   const { converterParams, partitionedPayloads } = await getConverterParamsAndPayloadPartitions(
     paramsWithRequestId
   );
-  const combinedBundle: Bundle<Resource> = {
-    resourceType: "Bundle",
-    type: "batch",
-    entry: [],
-  };
-  const bundleEntrySet = new Set<BundleEntry<Resource>>();
+  const resources = new Set<Resource>();
   for (const [index, payload] of partitionedPayloads.entries()) {
     const chunkSize = new Blob([payload]).size;
     if (chunkSize > LARGE_CHUNK_SIZE_IN_BYTES) {
@@ -62,53 +63,81 @@ export async function convertPayloadToFHIR({
     }
     const conversionResult = await convertToFhir(payload, converterParams);
     if (!conversionResult || !conversionResult.entry || conversionResult.entry.length < 1) continue;
-    for (const entry of conversionResult.entry) bundleEntrySet.add(entry);
+    for (const entry of conversionResult.entry) {
+      if (entry.resource) resources.add(entry.resource);
+    }
   }
-  combinedBundle.entry = [...bundleEntrySet];
-  await Promise.all([
-    attemptToSaveConverterStep({
-      paramsWithRequestId,
-      result: combinedBundle,
-      contentType: "application/json",
-      fileName: buildDocumentNameForConversionResult(requestId),
-      stepName: "result",
-    }),
-    saveConversionResultToOutputBucket({ params, result: combinedBundle }),
-  ]);
-  return combinedBundle;
+  const bundle = buildBundleFromResources({
+    type: "batch",
+    resources: [...resources.values()],
+  });
+  const { key: resultKey, bucket: resultBucket } = await saveConverterStep({
+    paramsWithRequestId,
+    result: bundle,
+    contentType: JSON_TXT_MIME_TYPE,
+    fileName: buildDocumentNameForConversionResult(requestId),
+    stepName: "result",
+  });
+  return { bundle, resultKey, resultBucket };
 }
 
-export async function getConverterParamsAndPayloadPartitions(
+async function getConverterParamsAndPayloadPartitions(
   paramsWithRequestId: ConversionFhirRequestWithRequestId
 ): Promise<{ converterParams: FhirConverterParams; partitionedPayloads: string[] }> {
+  const { log } = out(
+    `getConverterParamsAndPayloadPartitions - cxId ${paramsWithRequestId.cxId} patientId ${paramsWithRequestId.patientId} requestId ${paramsWithRequestId.requestId}`
+  );
   const s3Utils = getS3Utils();
   const payloadRaw = await s3Utils.getFileContentsAsString(
     paramsWithRequestId.inputS3BucketName,
     paramsWithRequestId.inputS3Key
   );
+  const additionalInfo = {
+    cxId: paramsWithRequestId.cxId,
+    patientId: paramsWithRequestId.patientId,
+    inputS3Key: paramsWithRequestId.inputS3Key,
+    inputS3BucketName: paramsWithRequestId.inputS3BucketName,
+  };
   if (payloadRaw.includes("nonXMLBody")) {
-    throw new BadRequestError("XML document is unstructured CDA with nonXMLBody");
+    throw new BadRequestError("XML document is unstructured CDA with nonXMLBody", undefined, {
+      ...additionalInfo,
+    });
   }
-  await attemptToSaveConverterStep({
+  await saveConverterStep({
     paramsWithRequestId,
     result: payloadRaw,
-    contentType: "text/xml",
+    contentType: XML_TXT_MIME_TYPE,
     fileName: buildDocumentNameForPreConversion(paramsWithRequestId.requestId),
     stepName: "pre-conversion",
+    throwError: false,
   });
-  const { documentContents } = removeBase64PdfEntries(payloadRaw);
+  const { documentContents, b64Attachments } = removeBase64PdfEntries(payloadRaw);
+  if (b64Attachments && b64Attachments.total > 0) {
+    // TODO Eng-517: Process B64 attachments
+    log(`Extracted ${b64Attachments.total} B64 attachments - not processing....`);
+  }
   const payloadClean = cleanUpPayload(documentContents).trim();
-  if (payloadClean.length < 1) throw new BadRequestError("XML document is empty");
-  await attemptToSaveConverterStep({
+  if (payloadClean.length < 1) {
+    throw new BadRequestError("XML document is empty", undefined, {
+      ...additionalInfo,
+    });
+  }
+  await saveConverterStep({
     paramsWithRequestId,
     result: payloadClean,
-    contentType: "text/xml",
+    contentType: XML_TXT_MIME_TYPE,
     fileName: buildDocumentNameForCleanConversion(paramsWithRequestId.requestId),
     stepName: "clean",
+    throwError: false,
   });
   const converterParams: FhirConverterParams = {
     patientId: paramsWithRequestId.patientId,
-    fileName: paramsWithRequestId.outputS3Key,
+    fileName: buildKeyForConversionFhir({
+      cxId: paramsWithRequestId.cxId,
+      patientId: paramsWithRequestId.patientId,
+      requestId: paramsWithRequestId.requestId,
+      fileName: buildDocumentNameForConversionResult(paramsWithRequestId.requestId),
+    }),
     unusedSegments: `${paramsWithRequestId.keepUnusedSegments ?? false}`,
     invalidAccess: `${paramsWithRequestId.keepInvalidAccess ?? false}`,
   };
@@ -116,19 +145,21 @@ export async function getConverterParamsAndPayloadPartitions(
   return { converterParams, partitionedPayloads };
 }
 
-export async function attemptToSaveConverterStep({
+async function saveConverterStep({
   paramsWithRequestId,
   result,
   contentType,
   fileName,
   stepName,
+  throwError = true,
 }: {
   paramsWithRequestId: ConversionFhirRequestWithRequestId;
   result: string | Bundle<Resource>;
-  contentType: "application/json" | "text/xml";
+  contentType: typeof JSON_TXT_MIME_TYPE | typeof XML_TXT_MIME_TYPE;
   fileName: string;
   stepName: string;
-}): Promise<void> {
+  throwError?: boolean;
+}): Promise<{ key: string; bucket: string }> {
   const { log } = out(
     `saveConverterStep - cxId ${paramsWithRequestId.cxId} patientId ${paramsWithRequestId.patientId} requestId ${paramsWithRequestId.requestId}`
   );
@@ -148,24 +179,15 @@ export async function attemptToSaveConverterStep({
       contentType,
     });
   } catch (error) {
-    log(
-      `Error saving converter file ${fileName} for step ${stepName}. Cause: ${errorToString(error)}`
-    );
+    const msg = `Error saving converter file ${fileName} for step ${stepName}`;
+    log(`${msg}. Cause: ${errorToString(error)}`);
+    if (throwError) {
+      throw new MetriportError(msg, error, {
+        cxId: paramsWithRequestId.cxId,
+        patientId: paramsWithRequestId.patientId,
+        fileName,
+      });
+    }
   }
-}
-
-export async function saveConversionResultToOutputBucket({
-  params,
-  result,
-}: {
-  params: ConversionFhirRequest;
-  result: Bundle<Resource>;
-}): Promise<void> {
-  const s3Utils = getS3Utils();
-  await s3Utils.uploadFile({
-    bucket: params.outputS3BucketName,
-    key: params.outputS3Key,
-    file: Buffer.from(JSON.stringify(result), "utf8"),
-    contentType: "application/json",
-  });
+  return { key, bucket };
 }

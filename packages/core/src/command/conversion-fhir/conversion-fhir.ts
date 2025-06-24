@@ -6,8 +6,6 @@ export type ConversionFhirRequest = {
   requestId?: string;
   inputS3Key: string;
   inputS3BucketName: string;
-  outputS3Key: string;
-  outputS3BucketName: string;
   keepUnusedSegments?: boolean;
   keepInvalidAccess?: boolean;
 };
@@ -15,5 +13,7 @@ export type ConversionFhirRequest = {
 export interface ConversionFhirHandler {
   convertToFhir(params: ConversionFhirRequest): Promise<{
     bundle: Bundle;
+    resultKey: string;
+    resultBucket: string;
   }>;
 }

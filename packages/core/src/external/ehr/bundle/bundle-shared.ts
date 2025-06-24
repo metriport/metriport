@@ -21,6 +21,17 @@ type CreateBundlePrefixParams = {
 
 type CreateCcdaPrefixParams = Omit<CreateBundlePrefixParams, "resourceId">;
 
+function createPrefix(
+  prefix: string,
+  params: Omit<CreateBundlePrefixParams, "resourceId">
+): string {
+  return `${prefix}/ehr=${params.ehr}/cxid=${params.cxId}/metriportpatientid=${
+    params.metriportPatientId
+  }/ehrpatientid=${params.ehrPatientId}/resourcetype=${params.resourceType}/jobId=${
+    params.jobId ?? "latest"
+  }`;
+}
+
 function createBundlePrefix({
   ehr,
   cxId,
@@ -30,9 +41,14 @@ function createBundlePrefix({
   jobId,
   resourceId,
 }: CreateBundlePrefixParams): string {
-  return `${globalPrefix}/ehr=${ehr}/cxid=${cxId}/metriportpatientid=${metriportPatientId}/ehrpatientid=${ehrPatientId}/resourcetype=${resourceType}/jobId=${
-    jobId ?? "latest"
-  }${resourceId ? `/resourceid=${resourceId}` : ""}`;
+  return `${createPrefix(globalPrefix, {
+    ehr,
+    cxId,
+    metriportPatientId,
+    ehrPatientId,
+    resourceType,
+    jobId,
+  })}${resourceId ? `/resourceid=${resourceId}` : ""}`;
 }
 
 function createCcdaPrefix({
@@ -43,9 +59,14 @@ function createCcdaPrefix({
   resourceType,
   jobId,
 }: CreateCcdaPrefixParams): string {
-  return `${globalCcdaPrefix}/ehr=${ehr}/cxid=${cxId}/metriportpatientid=${metriportPatientId}/ehrpatientid=${ehrPatientId}/resourcetype=${resourceType}/jobId=${
-    jobId ?? "latest"
-  }`;
+  return `${createPrefix(globalCcdaPrefix, {
+    ehr,
+    cxId,
+    metriportPatientId,
+    ehrPatientId,
+    resourceType,
+    jobId,
+  })}`;
 }
 
 export function createFileKeyEhr(params: CreateBundlePrefixParams): string {

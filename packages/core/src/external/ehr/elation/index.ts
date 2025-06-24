@@ -75,7 +75,7 @@ problemStatusesMap.set("remission", "Controlled");
 problemStatusesMap.set("resolved", "Resolved");
 problemStatusesMap.set("inactive", "Resolved");
 
-const ccdaSectionMap = new Map<string, string>();
+const ccdaSectionMap = new Map<ResourceType, string>();
 ccdaSectionMap.set("AllergyIntolerance", "allergies");
 ccdaSectionMap.set("Condition", "problems");
 ccdaSectionMap.set("DiagnosticReport", "results");
@@ -87,7 +87,7 @@ ccdaSectionMap.set("Observation", "vitals");
 ccdaSectionMap.set("Procedure", "procedures");
 
 export function isSupportedCcdaSectionResource(resourceType: string): boolean {
-  return ccdaSectionMap.has(resourceType);
+  return ccdaSectionMap.has(resourceType as ResourceType);
 }
 
 export const supportedElationResources: ResourceType[] = [
@@ -229,7 +229,7 @@ class ElationApi {
         resourceType,
       });
     }
-    const section = resourceType ? ccdaSectionMap.get(resourceType) : undefined;
+    const section = resourceType ? ccdaSectionMap.get(resourceType as ResourceType) : undefined;
     const params = new URLSearchParams({ ...(section && { section }) });
     const ccdaDocumentUrl = `/ccda/${patientId}/?${params.toString()}`;
     const additionalInfo = { cxId, practiceId: this.practiceId, patientId, resourceType };
