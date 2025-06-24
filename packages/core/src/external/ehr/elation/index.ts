@@ -34,6 +34,7 @@ import axios, { AxiosInstance } from "axios";
 import { z } from "zod";
 import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
+import { createOrReplaceCcda } from "../bundle/command/create-or-replace-ccda";
 import {
   ApiConfig,
   convertBundleToValidStrictBundle,
@@ -91,6 +92,7 @@ export function isSupportedCcdaSectionResource(resourceType: string): boolean {
 
 export const supportedElationResources: ResourceType[] = [
   "AllergyIntolerance",
+  /*
   "Condition",
   "DiagnosticReport",
   "Encounter",
@@ -99,6 +101,7 @@ export const supportedElationResources: ResourceType[] = [
   "MedicationStatement",
   "Observation",
   "Procedure",
+  */
 ];
 export const supportedElationReferenceResources: ResourceType[] = [
   "Medication",
@@ -219,7 +222,7 @@ class ElationApi {
     cxId: string;
     patientId: string;
     resourceType?: string;
-  }): Promise<string> {
+  }): Promise<{ payload: string; s3key: string; s3BucketName: string }> {
     const { debug } = out(
       `Elation getCcdaDocument - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} resourceType ${resourceType}`
     );
@@ -232,17 +235,27 @@ class ElationApi {
     const params = new URLSearchParams({ ...(section && { section }) });
     const ccdaDocumentUrl = `/ccda/${patientId}/?${params.toString()}`;
     const additionalInfo = { cxId, practiceId: this.practiceId, patientId, resourceType };
+    const s3PathResourceType = resourceType ?? "all";
     const document = await this.makeRequest<CcdaDocument>({
       cxId,
       patientId,
-      s3Path: `ccda-document/${resourceType ?? "all"}`,
+      s3Path: `ccda-document/${s3PathResourceType}`,
       method: "GET",
       url: ccdaDocumentUrl,
       schema: ccdaDocumentSchema,
       additionalInfo,
       debug,
     });
-    return atob(document.base64_ccda);
+    const payload = atob(document.base64_ccda);
+    const { s3key, s3BucketName } = await createOrReplaceCcda({
+      ehr: EhrSources.elation,
+      cxId,
+      metriportPatientId: patientId,
+      ehrPatientId: patientId,
+      payload,
+      resourceType: s3PathResourceType,
+    });
+    return { payload, s3key, s3BucketName };
   }
 
   async updatePatientMetadata({
@@ -330,14 +343,19 @@ class ElationApi {
     metriportPatientId,
     elationPatinetId,
     resourceType,
-    fhirConverter,
+    fhirConverterToEhrBundle,
     useCachedBundle = true,
   }: {
     cxId: string;
     metriportPatientId: string;
     elationPatinetId: string;
     resourceType: string;
-    fhirConverter: (xml: string) => Promise<EhrFhirResourceBundle>;
+    fhirConverterToEhrBundle: (params: {
+      inputS3Key: string;
+      inputS3BucketName: string;
+      outputS3Key: string;
+      outputS3BucketName: string;
+    }) => Promise<EhrFhirResourceBundle>;
     useCachedBundle?: boolean;
   }): Promise<Bundle> {
     if (!isSupportedElationResource(resourceType)) {
@@ -345,16 +363,29 @@ class ElationApi {
         resourceType,
       });
     }
-    const xml = await this.getCcdaDocument({ cxId, patientId: elationPatinetId, resourceType });
+    const { s3key, s3BucketName } = await this.getCcdaDocument({
+      cxId,
+      patientId: elationPatinetId,
+      resourceType,
+    });
     let referenceEhrFhirBundle: EhrFhirResourceBundle | undefined;
     const fetchResourcesFromEhr = async () => {
-      const bundle = await fhirConverter(xml);
+      const bundle = await fhirConverterToEhrBundle({
+        inputS3Key: s3key,
+        inputS3BucketName: s3BucketName,
+        outputS3Key: `${s3key}.json`,
+        outputS3BucketName: s3BucketName,
+      });
       const { targetBundle, referenceBundle } = partitionEhrBundle({
         bundle,
         resourceType,
       });
       referenceEhrFhirBundle = referenceBundle;
-      const strictTargetBundle = convertBundleToValidStrictBundle(targetBundle, resourceType);
+      const strictTargetBundle = convertBundleToValidStrictBundle(
+        targetBundle,
+        resourceType,
+        metriportPatientId
+      );
       return [...(strictTargetBundle.entry?.map(e => e.resource) ?? [])];
     };
     const bundle = await fetchEhrBundleUsingCache({

@@ -322,4 +322,7 @@ export class Config {
   static getFhirConvertServerURL(): string {
     return getEnvVarOrFail("FHIR_CONVERTER_SERVER_URL");
   }
+  static getFhirConversionBucketName(): string {
+    return getEnvVarOrFail("FHIR_CONVERSION_BUCKET_NAME");
+  }
 }

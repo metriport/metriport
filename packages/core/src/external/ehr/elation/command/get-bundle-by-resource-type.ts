@@ -27,11 +27,11 @@ export async function getBundleByResourceType(
     metriportPatientId,
     elationPatinetId: ehrPatientId,
     resourceType,
-    fhirConverter: async (payload: string) => {
+    fhirConverterToEhrBundle: async params => {
       const conversionResult = await handler.convertToFhir({
+        ...params,
         cxId,
         patientId: metriportPatientId,
-        rawData: payload,
       });
       return ehrFhirResourceBundleSchema.parse(conversionResult.bundle);
     },

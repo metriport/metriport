@@ -4,11 +4,11 @@ import { FHIRConverterCDATemplate } from "@metriport/shared/domain/converison-fh
 export type ConversionFhirRequest = {
   cxId: string;
   patientId: string;
-  s3File?: {
-    fileName: string;
-    bucketName: string;
-  };
-  rawData?: string;
+  requestId?: string;
+  inputS3Key: string;
+  inputS3BucketName: string;
+  outputS3Key: string;
+  outputS3BucketName: string;
   template?: FHIRConverterCDATemplate;
   keepUnusedSegments?: boolean;
   keepInvalidAccess?: boolean;
