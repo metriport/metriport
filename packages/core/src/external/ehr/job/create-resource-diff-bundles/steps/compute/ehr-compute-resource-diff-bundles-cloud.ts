@@ -2,7 +2,6 @@ import { executeWithNetworkRetries } from "@metriport/shared";
 import { createUuidFromText } from "@metriport/shared/common/uuid";
 import { Config } from "../../../../../../util/config";
 import { SQSClient } from "../../../../../aws/sqs";
-import { createSqsGroupId } from "../../shared";
 import {
   ComputeResourceDiffBundlesRequest,
   EhrComputeResourceDiffBundlesHandler,
@@ -19,20 +18,19 @@ export class EhrComputeResourceDiffBundlesCloud implements EhrComputeResourceDif
 
   constructor(
     private readonly ehrComputeResourceDiffQueueUrl: string,
-    region: string = Config.getAWSRegion(),
-    sqsClient?: SQSClient
+    sqsClient: SQSClient = new SQSClient({ region: Config.getAWSRegion() })
   ) {
-    this.sqsClient = sqsClient ?? new SQSClient({ region });
+    this.sqsClient = sqsClient;
   }
 
   async computeResourceDiffBundles(params: ComputeResourceDiffBundlesRequest): Promise<void> {
-    const { metriportPatientId, resourceType } = params;
+    const { metriportPatientId } = params;
     const payload = JSON.stringify(params);
     await executeWithNetworkRetries(async () => {
       await this.sqsClient.sendMessageToQueue(this.ehrComputeResourceDiffQueueUrl, payload, {
         fifo: true,
         messageDeduplicationId: createUuidFromText(payload),
-        messageGroupId: createSqsGroupId(metriportPatientId, resourceType),
+        messageGroupId: metriportPatientId,
       });
     });
   }

@@ -16,6 +16,7 @@ export function makeTcmEncounter(params: Partial<TcmEncounter> = {}): TcmEncount
     admitTime: params?.admitTime ?? faker.date.recent(),
     dischargeTime: params?.dischargeTime ?? null,
     clinicalInformation: params?.clinicalInformation ?? {},
+    freetextNote: params?.freetextNote ?? "",
     createdAt: params?.createdAt ?? faker.date.recent(),
     updatedAt: params?.updatedAt ?? faker.date.recent(),
     eTag: params?.eTag ?? faker.string.uuid(),

@@ -8,18 +8,20 @@ import {
   getHl7MessageTypeOrFail,
   getMessageUniqueIdentifier,
   getOrCreateMessageDatetime,
+  getSendingApplication,
 } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/msh";
 import {
   createFileKeyHl7Message,
   getCxIdAndPatientIdOrFail,
 } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
-import { basicToExtendedIso8601 } from "@metriport/shared/common/date";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { S3Utils } from "@metriport/core/external/aws/s3";
+import { utcifyHl7Message } from "@metriport/core/external/hl7-notification/datetime";
 import { capture } from "@metriport/core/util";
 import { Config } from "@metriport/core/util/config";
 import type { Logger } from "@metriport/core/util/log";
 import { out } from "@metriport/core/util/log";
+import { basicToExtendedIso8601 } from "@metriport/shared/common/date";
 import { initSentry } from "./sentry";
 import { withErrorHandling } from "./utils";
 
@@ -28,7 +30,7 @@ initSentry();
 const MLLP_DEFAULT_PORT = 2575;
 const bucketName = Config.getHl7IncomingMessageBucketName();
 const s3Utils = new S3Utils(Config.getAWSRegion());
-
+const hieTimezoneDictionary = Config.getHieTimezoneDictionary();
 /**
  * Avoid using message.toString() as its not stringifying every segment
  */
@@ -42,7 +44,12 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
   const server = new Hl7Server(connection => {
     connection.addEventListener(
       "message",
-      withErrorHandling(async ({ message }) => {
+      withErrorHandling(async ({ message: rawMessage }) => {
+        // TODO: We don't want to fail on a failed lookup - most of our HIEs have not been timezone-ified yet.
+        const sendingApplication = getSendingApplication(rawMessage) ?? "Unknown HIE";
+        const hieTimezone = hieTimezoneDictionary[sendingApplication] ?? "UTC";
+        const message = utcifyHl7Message(rawMessage, hieTimezone);
+
         const timestamp = basicToExtendedIso8601(getOrCreateMessageDatetime(message));
         const messageId = getMessageUniqueIdentifier(message);
 
