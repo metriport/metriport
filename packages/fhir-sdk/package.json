@@ -1,0 +1,103 @@
+{
+  "name": "@metriport/fhir-sdk",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Metriport's efficient implementations for working with FHIR resources.",
+  "author": "Metriport Inc. <contact@metriport.com>",
+  "homepage": "https://metriport.com/",
+  "license": "MIT",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "package.json"
+  ],
+  "exports": {
+    ".": "./dist/index.js",
+    "./command": "./dist/command/index.js",
+    "./command/*": "./dist/command/*.js",
+    "./resource": "./dist/resource/index.js",
+    "./resource/*": "./dist/resource/*.js",
+    "./bundle": "./dist/bundle/index.js",
+    "./bundle/*": "./dist/bundle/*.js",
+    "./util": "./dist/util/index.js",
+    "./util/*": "./dist/util/*.js"
+  },
+  "typesVersions": {
+    "*": {
+      "/": [
+        "dist/index.d.ts"
+      ],
+      "command": [
+        "dist/command/index.d.ts"
+      ],
+      "command/*": [
+        "dist/command/*"
+      ],
+      "resource": [
+        "dist/resource/index.d.ts"
+      ],
+      "resource/*": [
+        "dist/resource/*"
+      ],
+      "bundle": [
+        "dist/bundle/index.d.ts"
+      ],
+      "bundle/*": [
+        "dist/bundle/*"
+      ],
+      "util": [
+        "dist/util/index.d.ts"
+      ],
+      "util/*": [
+        "dist/util/*"
+      ]
+    }
+  },
+  "scripts": {
+    "clean": "rimraf dist",
+    "deepclean": "npm run clean && rimraf node_modules",
+    "tsc": "tsc",
+    "watch": "tsc --watch",
+    "build": "tsc -p .",
+    "build:cloud": "npm run build",
+    "typecheck": "tsc --noEmit",
+    "lint": "npx eslint . --ext .ts",
+    "lint-fix": "npm run lint --fix",
+    "prettier-fix": "npx prettier '**/*.ts' --write",
+    "test": "jest --runInBand --detectOpenHandles --passWithNoTests",
+    "test:e2e": "E2E=true jest --runInBand --detectOpenHandles --passWithNoTests"
+  },
+  "dependencies": {
+    "@medplum/core": "^3.2.5",
+    "@medplum/fhir-router": "^3.2.5",
+    "@medplum/fhirtypes": "^3.2.5",
+    "@metriport/shared": "^0.23.3",
+    "aws-sdk": "^2.1243.0",
+    "axios": "^1.8.2",
+    "csv-parser": "^3.2.0",
+    "dayjs": "^1.11.9",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "http-status": "^2.0.0",
+    "jest": "^29.7.0",
+    "lodash": "^4.17.21",
+    "ts-node": "^10.9.2",
+    "unzip-stream": "^0.3.4",
+    "uuid": "^10.0.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@aws-sdk/client-s3": "^3.800.0",
+    "@tsconfig/recommended": "^1.0.2",
+    "@types/express": "^4.17.21",
+    "@types/jest": "^29.5.12",
+    "@types/lodash": "^4.14.x",
+    "@types/unzip-stream": "^0.3.4",
+    "@types/uuid": "^10.0.0",
+    "ts-jest": "^29.2.5",
+    "typescript": "^5.6.3"
+  }
+}
