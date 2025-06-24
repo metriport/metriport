@@ -1,6 +1,6 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
 import { FhirConverterParams } from "../../domain/conversion/bundle-modifications/modifications";
-import { convertPayloadToFHIR } from "./shared";
+import { convertPayloadToFHIR } from "./convert-payload-to-fhir";
 
 export type ConversionFhirRequest = {
   cxId: string;
@@ -24,7 +24,7 @@ export abstract class ConversionFhirHandler {
     resultBucket: string;
   }> {
     return await convertPayloadToFHIR({
-      convertToFhir: this.callConverter.bind(this),
+      callConverter: this.callConverter.bind(this),
       params,
     });
   }

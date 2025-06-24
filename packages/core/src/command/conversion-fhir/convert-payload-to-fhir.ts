@@ -30,10 +30,10 @@ type ConversionFhirRequestWithRequestId = Omit<ConversionFhirRequest, "requestId
 };
 
 export async function convertPayloadToFHIR({
-  convertToFhir,
+  callConverter,
   params,
 }: {
-  convertToFhir: (params: ConverterRequest) => Promise<Bundle<Resource>>;
+  callConverter: (params: ConverterRequest) => Promise<Bundle<Resource>>;
   params: ConversionFhirRequest;
 }): Promise<{
   bundle: Bundle<Resource>;
@@ -61,7 +61,7 @@ export async function convertPayloadToFHIR({
         level: "warning",
       });
     }
-    const conversionResult = await convertToFhir({ payload, params: converterParams });
+    const conversionResult = await callConverter({ payload, params: converterParams });
     if (!conversionResult || !conversionResult.entry || conversionResult.entry.length < 1) continue;
     for (const entry of conversionResult.entry) {
       if (entry.resource) resources.add(entry.resource);
