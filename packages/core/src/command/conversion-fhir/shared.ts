@@ -17,7 +17,7 @@ import { Config } from "../../util/config";
 import { out } from "../../util/log";
 import { JSON_TXT_MIME_TYPE, XML_TXT_MIME_TYPE } from "../../util/mime";
 import { capture } from "../../util/notifications";
-import { ConversionFhirRequest } from "./conversion-fhir";
+import { ConversionFhirRequest, ConverterRequest } from "./conversion-fhir";
 
 const LARGE_CHUNK_SIZE_IN_BYTES = 50_000_000;
 
@@ -33,7 +33,7 @@ export async function convertPayloadToFHIR({
   convertToFhir,
   params,
 }: {
-  convertToFhir: (payload: string, parmas: FhirConverterParams) => Promise<Bundle<Resource>>;
+  convertToFhir: (params: ConverterRequest) => Promise<Bundle<Resource>>;
   params: ConversionFhirRequest;
 }): Promise<{
   bundle: Bundle<Resource>;
@@ -61,7 +61,7 @@ export async function convertPayloadToFHIR({
         level: "warning",
       });
     }
-    const conversionResult = await convertToFhir(payload, converterParams);
+    const conversionResult = await convertToFhir({ payload, params: converterParams });
     if (!conversionResult || !conversionResult.entry || conversionResult.entry.length < 1) continue;
     for (const entry of conversionResult.entry) {
       if (entry.resource) resources.add(entry.resource);

@@ -1,9 +1,7 @@
-import { Bundle } from "@medplum/fhirtypes";
+import { Bundle, Resource } from "@medplum/fhirtypes";
 import axios from "axios";
-import { FhirConverterParams } from "../../domain/conversion/bundle-modifications/modifications";
 import { TXT_MIME_TYPE } from "../../util/mime";
-import { ConversionFhirHandler, ConversionFhirRequest } from "./conversion-fhir";
-import { convertPayloadToFHIR } from "./shared";
+import { ConversionFhirHandler, ConverterRequest } from "./conversion-fhir";
 
 const FHIR_CONVERSION_API_PATH = "/api/convert/cda/ccd.hbs";
 
@@ -11,24 +9,17 @@ function buildConversionFhirUrl(fhirConverterUrl: string): string {
   return `${fhirConverterUrl}${FHIR_CONVERSION_API_PATH}`;
 }
 
-export class ConversionFhirDirect implements ConversionFhirHandler {
-  constructor(private readonly fhirConverterUrl: string) {}
+export class ConversionFhirDirect extends ConversionFhirHandler {
+  constructor(private readonly fhirConverterUrl: string) {
+    super();
+  }
 
-  async convertToFhir(
-    params: ConversionFhirRequest
-  ): Promise<{ bundle: Bundle; resultKey: string; resultBucket: string }> {
-    const fhirConverterUrl = this.fhirConverterUrl;
-    async function convertToFhirAxios(
-      payload: string,
-      params: FhirConverterParams
-    ): Promise<Bundle> {
-      const url = buildConversionFhirUrl(fhirConverterUrl);
-      const resp = await axios.post(url, payload, {
-        params,
-        headers: { "Content-Type": TXT_MIME_TYPE },
-      });
-      return resp.data.fhirResource as Bundle;
-    }
-    return await convertPayloadToFHIR({ convertToFhir: convertToFhirAxios, params });
+  async callConverter(params: ConverterRequest): Promise<Bundle<Resource>> {
+    const url = buildConversionFhirUrl(this.fhirConverterUrl);
+    const resp = await axios.post(url, params.payload, {
+      params: params.params,
+      headers: { "Content-Type": TXT_MIME_TYPE },
+    });
+    return resp.data.fhirResource as Bundle;
   }
 }

@@ -1,46 +1,35 @@
-import { Bundle } from "@medplum/fhirtypes";
-import { FhirConverterParams } from "../../domain/conversion/bundle-modifications/modifications";
+import { Bundle, Resource } from "@medplum/fhirtypes";
 import { getLambdaResultPayload, LambdaClient, makeLambdaClient } from "../../external/aws/lambda";
 import { Config } from "../../util/config";
-import { ConversionFhirHandler, ConversionFhirRequest } from "./conversion-fhir";
-import { convertPayloadToFHIR } from "./shared";
+import { ConversionFhirHandler, ConverterRequest } from "./conversion-fhir";
 
-export class ConversionFhirCloud implements ConversionFhirHandler {
+export class ConversionFhirCloud extends ConversionFhirHandler {
   private readonly lambdaClient: LambdaClient;
 
   constructor(
     private readonly nodejsFhirConvertLambdaName: string,
     lambdaClient: LambdaClient = makeLambdaClient(Config.getAWSRegion())
   ) {
+    super();
     this.lambdaClient = lambdaClient;
   }
 
-  async convertToFhir(
-    params: ConversionFhirRequest
-  ): Promise<{ bundle: Bundle; resultKey: string; resultBucket: string }> {
-    const lambdaClient = this.lambdaClient;
-    const nodejsFhirConvertLambdaName = this.nodejsFhirConvertLambdaName;
-    async function convertToFhirLambda(
-      payload: string,
-      params: FhirConverterParams
-    ): Promise<Bundle> {
-      const lambdaPayload = JSON.stringify({
-        body: payload,
-        queryStringParameters: params,
-      });
-      const result = await lambdaClient
-        .invoke({
-          FunctionName: nodejsFhirConvertLambdaName,
-          InvocationType: "RequestResponse",
-          Payload: lambdaPayload,
-        })
-        .promise();
-      const resultPayload = getLambdaResultPayload({
-        result,
-        lambdaName: nodejsFhirConvertLambdaName,
-      });
-      return JSON.parse(resultPayload) as Bundle;
-    }
-    return await convertPayloadToFHIR({ convertToFhir: convertToFhirLambda, params });
+  async callConverter(params: ConverterRequest): Promise<Bundle<Resource>> {
+    const payload = JSON.stringify({
+      body: params.payload,
+      queryStringParameters: params,
+    });
+    const result = await this.lambdaClient
+      .invoke({
+        FunctionName: this.nodejsFhirConvertLambdaName,
+        InvocationType: "RequestResponse",
+        Payload: payload,
+      })
+      .promise();
+    const resultPayload = getLambdaResultPayload({
+      result,
+      lambdaName: this.nodejsFhirConvertLambdaName,
+    });
+    return JSON.parse(resultPayload) as Bundle;
   }
 }
