@@ -50,7 +50,8 @@
     "packages/api",
     "packages/mllp-server",
     "packages/infra",
-    "packages/utils"
+    "packages/utils",
+    "packages/eslint-rules"
   ],
   "lint-staged": {
     "*.{ts,tsx}": [
