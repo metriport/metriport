@@ -1445,13 +1445,14 @@ class AthenaHealthApi {
       resourceType,
     };
     let referenceBundleToSave: EhrFhirResourceBundle | undefined;
-    const fetchResourcesFromEhr = () =>
-      fetchEhrFhirResourcesWithPagination({
+    const client = this; // eslint-disable-line @typescript-eslint/no-this-alias
+    function fetchResourcesFromEhr() {
+      return fetchEhrFhirResourcesWithPagination({
         makeRequest: async (url: string) => {
-          const bundle = await this.makeRequest<EhrFhirResourceBundle>({
+          const bundle = await client.makeRequest<EhrFhirResourceBundle>({
             cxId,
             patientId: athenaPatientId,
-            s3Path: this.createFhirPath(resourceType),
+            s3Path: client.createFhirPath(resourceType),
             method: "GET",
             url,
             schema: ehrFhirResourceBundleSchema,
@@ -1472,6 +1473,7 @@ class AthenaHealthApi {
         },
         url: resourceTypeUrl,
       });
+    }
     const bundle = await fetchEhrBundleUsingCache({
       ehr: EhrSources.athena,
       cxId,
@@ -1534,13 +1536,14 @@ class AthenaHealthApi {
       resourceType,
       resourceId,
     };
-    const fetchResourcesFromEhr = () =>
-      fetchEhrFhirResourcesWithPagination({
+    const client = this; // eslint-disable-line @typescript-eslint/no-this-alias
+    function fetchResourcesFromEhr() {
+      return fetchEhrFhirResourcesWithPagination({
         makeRequest: async (url: string) => {
-          const bundle = await this.makeRequest<EhrFhirResourceBundle>({
+          const bundle = await client.makeRequest<EhrFhirResourceBundle>({
             cxId,
             patientId: athenaPatientId,
-            s3Path: this.createFhirPath(resourceType, resourceId),
+            s3Path: client.createFhirPath(resourceType, resourceId),
             method: "GET",
             url,
             schema: ehrFhirResourceBundleSchema,
@@ -1552,6 +1555,7 @@ class AthenaHealthApi {
         },
         url: resourceTypeUrl,
       });
+    }
     const bundle = await fetchEhrBundleUsingCache({
       ehr: EhrSources.athena,
       cxId,

@@ -43,7 +43,7 @@ app.use((_req, res, next) => {
 mountRoutes(app);
 module.exports = app;
 
-// route used for health checks
+// health check route
 app.get("/", (req: Request, res: Response) => {
   if (req.accepts("application/json")) return res.json({ status: "OK" });
   return res.status(200).send("OK");
