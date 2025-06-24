@@ -282,8 +282,8 @@ type EnvConfigBase = {
     };
   };
   jobs: {
-    startPatientJobsSchedulerScheduleExpression: string;
-    startPatientJobsSchedulerUrl: string;
+    startScheduledPatientJobsScheduleExpression: string;
+    startScheduledPatientJobsSchedulerUrl: string;
   };
 };
 

@@ -30,32 +30,32 @@ describe("patientMonitoringUtils", () => {
     });
 
     it("should calculate correct time for first attempt (5 minutes)", () => {
-      const result = calculateScheduledAt(7);
+      const result = calculateScheduledAt(6);
       expect(result).toEqual(dayjs(mockDate).add(backoffOne).toDate());
     });
 
     it("should calculate correct time for second attempt (30 minutes)", () => {
-      const result = calculateScheduledAt(6);
+      const result = calculateScheduledAt(5);
       expect(result).toEqual(dayjs(mockDate).add(backoffTwo).toDate());
     });
 
     it("should calculate correct time for third attempt (4 hours)", () => {
-      const result = calculateScheduledAt(5);
+      const result = calculateScheduledAt(4);
       expect(result).toEqual(dayjs(mockDate).add(backoffThree).toDate());
     });
 
-    it("should calculate correct time for fourth attempt (12 hours)", () => {
-      const result = calculateScheduledAt(4);
+    it("should calculate correct time for fourth attempt (1 day)", () => {
+      const result = calculateScheduledAt(3);
       expect(result).toEqual(dayjs(mockDate).add(backoffFour).toDate());
     });
 
-    it("should calculate correct time for fifth attempt (1 day)", () => {
-      const result = calculateScheduledAt(3);
+    it("should calculate correct time for fifth attempt (2 days)", () => {
+      const result = calculateScheduledAt(2);
       expect(result).toEqual(dayjs(mockDate).add(backoffFive).toDate());
     });
 
-    it("should calculate correct time for sixth attempt (2 days)", () => {
-      const result = calculateScheduledAt(2);
+    it("should calculate correct time for sixth attempt (4 days)", () => {
+      const result = calculateScheduledAt(1);
       expect(result).toEqual(dayjs(mockDate).add(backoffSix).toDate());
     });
   });

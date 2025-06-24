@@ -19,8 +19,8 @@ function getSettings(props: JobsSchedulerProps, config: NonNullable<EnvConfig["j
   return {
     ...props,
     name: "StartScheduledPatientJobs",
-    scheduleExpression: config.startPatientJobsSchedulerScheduleExpression, // See: https://docs.aws.amazon.com/lambda/latest/dg/services-cloudwatchevents-expressions.html
-    url: `http://${props.apiAddress}${config.startPatientJobsSchedulerUrl}`,
+    scheduleExpression: config.startScheduledPatientJobsScheduleExpression, // See: https://docs.aws.amazon.com/lambda/latest/dg/services-cloudwatchevents-expressions.html
+    url: `http://${props.apiAddress}${config.startScheduledPatientJobsSchedulerUrl}`,
   };
 }
 
