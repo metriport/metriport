@@ -8,10 +8,11 @@ import { FargateService } from "aws-cdk-lib/aws-ecs";
 import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
 import { Runtime } from "aws-cdk-lib/aws-lambda";
 import * as nodejs from "aws-cdk-lib/aws-lambda-nodejs";
+import * as s3 from "aws-cdk-lib/aws-s3";
 import { Bucket } from "aws-cdk-lib/aws-s3";
 import { Construct } from "constructs";
 import path from "path";
-import { EnvConfig } from "../../config/env-config";
+import { EnvConfigNonSandbox } from "../../config/env-config";
 import { getConfig } from "../shared/config";
 import { vCPU } from "../shared/fargate";
 import { MAXIMUM_LAMBDA_TIMEOUT } from "../shared/lambda";
@@ -37,7 +38,7 @@ export function settings() {
 }
 
 interface FhirConverterServiceProps extends StackProps {
-  config: EnvConfig;
+  config: EnvConfigNonSandbox;
   version: string | undefined;
   generalBucket: Bucket;
 }
@@ -47,7 +48,7 @@ export function createFHIRConverterService(
   props: FhirConverterServiceProps,
   vpc: ec2.IVpc,
   alarmAction: SnsAction | undefined
-): { service: FargateService; address: string; lambda: nodejs.NodejsFunction } {
+): { service: FargateService; address: string; lambda: nodejs.NodejsFunction; bucket: s3.Bucket } {
   const { cpu, memoryLimitMiB, taskCountMin, taskCountMax, maxExecutionTimeout } = settings();
 
   // Create a new Amazon Elastic Container Service (ECS) cluster
@@ -156,8 +157,15 @@ export function createFHIRConverterService(
     alarmAction,
   });
 
-  const lambda = new nodejs.NodejsFunction(stack, "FhirConverterNodeJsLambda", {
-    functionName: "FhirConverterNodeJsLambda",
+  const bucket = new s3.Bucket(stack, "FhirConversionBucket", {
+    bucketName: props.config.fhirConversionBucketName,
+    publicReadAccess: false,
+    encryption: s3.BucketEncryption.S3_MANAGED,
+    versioned: true,
+  });
+
+  const lambda = new nodejs.NodejsFunction(stack, "FhirConversionNodeJsLambda", {
+    functionName: "FhirConversionNodeJsLambda",
     entry: path.join(
       __dirname,
       "..",
@@ -192,5 +200,10 @@ export function createFHIRConverterService(
     },
   });
 
-  return { service: fargateService.service, address: serverAddress, lambda };
+  return {
+    service: fargateService.service,
+    address: serverAddress,
+    lambda,
+    bucket,
+  };
 }
