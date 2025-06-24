@@ -1,5 +1,6 @@
 import { Duration, StackProps } from "aws-cdk-lib";
 import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
+import { Metric } from "aws-cdk-lib/aws-cloudwatch";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as ecr_assets from "aws-cdk-lib/aws-ecr-assets";
@@ -8,14 +9,15 @@ import { FargateService } from "aws-cdk-lib/aws-ecs";
 import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
 import { Runtime } from "aws-cdk-lib/aws-lambda";
 import * as nodejs from "aws-cdk-lib/aws-lambda-nodejs";
+import { FilterPattern } from "aws-cdk-lib/aws-logs";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import { Bucket } from "aws-cdk-lib/aws-s3";
 import { Construct } from "constructs";
 import path from "path";
 import { EnvConfigNonSandbox } from "../../config/env-config";
-import { getConfig } from "../shared/config";
+import { getConfig, METRICS_NAMESPACE } from "../shared/config";
 import { vCPU } from "../shared/fargate";
-import { MAXIMUM_LAMBDA_TIMEOUT } from "../shared/lambda";
+import { addErrorAlarmToLambdaFunc, MAXIMUM_LAMBDA_TIMEOUT } from "../shared/lambda";
 import { buildLbAccessLogPrefix } from "../shared/s3";
 import { addDefaultMetricsToTargetGroup } from "../shared/target-group";
 import { isProd } from "../shared/util";
@@ -164,8 +166,9 @@ export function createFHIRConverterService(
     versioned: true,
   });
 
-  const lambda = new nodejs.NodejsFunction(stack, "FhirConversionNodeJsLambda", {
-    functionName: "FhirConversionNodeJsLambda",
+  const name = "FhirConversionNodeJsLambda";
+  const lambda = new nodejs.NodejsFunction(stack, name, {
+    functionName: name,
     entry: path.join(
       __dirname,
       "..",
@@ -200,6 +203,36 @@ export function createFHIRConverterService(
       },
     },
   });
+
+  // Allow the lambda to publish metrics to cloudwatch
+  Metric.grantPutMetricData(lambda);
+
+  // Setup alarm - general errors
+  addErrorAlarmToLambdaFunc(stack, lambda, `${name}-GeneralLambdaAlarm`, alarmAction);
+
+  // Setup alarm - OOM (Out Of Memory) errors
+  const metricFilter = lambda.logGroup?.addMetricFilter(`${props.name}-OOMErrorsFilter`, {
+    metricNamespace: METRICS_NAMESPACE,
+    metricName: `${name}-OOMErrors`,
+    filterPattern: FilterPattern.anyTerm(
+      "Runtime exited with error",
+      "signal: killed Runtime.ExitError",
+      "ELIFECYCLE",
+      "JS heap out of memory",
+      "OUT_OF_MEMORY"
+    ),
+    metricValue: "1",
+  });
+  const metric = metricFilter?.metric();
+  if (metric) {
+    const alarm = metric.createAlarm(stack, `${name}-OOMLambdaAlarm`, {
+      threshold: 1,
+      evaluationPeriods: 1,
+      alarmDescription: "Alarm if we get an OOM error from the Lambda function",
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+    });
+    alarmAction && alarm.addAlarmAction(alarmAction);
+  }
 
   return {
     service: fargateService.service,
