@@ -19,6 +19,15 @@ export function getEnvVarOrFail(varName: string): string {
   return value;
 }
 
+export function getEnvAsIntOrFail(varName: string): number {
+  const value = getEnvVarOrFail(varName);
+  const int = parseInt(value);
+  if (isNaN(int)) {
+    throw new Error(`${varName} env var is not a number`);
+  }
+  return int;
+}
+
 export function getEnvVarAsRecordOrFail(varName: string): Record<string, string> {
   const value = getEnvVarOrFail(varName);
   try {

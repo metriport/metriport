@@ -1,4 +1,4 @@
-import { EhrRefreshEhrBundlesDirect } from "@metriport/core/external/ehr/job/create-resource-diff-bundles/steps/refresh/ehr-refresh-ehr-bundles-direct";
+import { EhrContributeResourceDiffBundlesDirect } from "@metriport/core/external/ehr/job/create-resource-diff-bundles/steps/contribute/ehr-contribute-resource-diff-bundles-direct";
 import { getEnvAsIntOrFail } from "@metriport/shared";
 import { SQSEvent } from "aws-lambda";
 import { capture } from "../shared/capture";
@@ -35,8 +35,13 @@ export const handler = capture.wrapHandler(async (event: SQSEvent) => {
   const reportError = receiveCount >= maxAttempts;
   log(`Receive count: ${receiveCount}, max attempts: ${maxAttempts}, reportError: ${reportError}`);
 
-  const ehrRefreshEhrBundlesHandler = new EhrRefreshEhrBundlesDirect(waitTimeInMillis);
-  await ehrRefreshEhrBundlesHandler.refreshEhrBundles({ ...parsedBody, reportError });
+  const ehrContributeResourceDiffHandler = new EhrContributeResourceDiffBundlesDirect(
+    waitTimeInMillis
+  );
+  await ehrContributeResourceDiffHandler.contributeResourceDiffBundles({
+    ...parsedBody,
+    reportError,
+  });
 
   const finishedAt = new Date().getTime();
   log(`Done local duration: ${finishedAt - startedAt}ms`);
