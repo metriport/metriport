@@ -183,7 +183,7 @@ export function createFHIRConverterService(
     bundling: {
       commandHooks: {
         beforeBundling(inputDir: string, outputDir: string): string[] {
-          return [`cp -r ${inputDir}/packages/fhir-converter/src/templates/${outputDir}/`];
+          return [`cp -r ${inputDir}/packages/fhir-converter/src/templates/ ${outputDir}/`];
         },
         afterBundling(): string[] {
           return [];
