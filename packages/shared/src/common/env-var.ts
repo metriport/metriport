@@ -7,7 +7,9 @@ export enum EnvType {
   development = "dev",
 }
 
-export const getEnvVar = (varName: string): string | undefined => process.env[varName];
+export function getEnvVar(varName: string): string | undefined {
+  return process.env[varName];
+}
 
 export function getEnvVarOrFail(varName: string): string {
   const value = getEnvVar(varName);
