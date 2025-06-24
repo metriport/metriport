@@ -16,7 +16,10 @@ export class ConversionFhirDirect implements ConversionFhirHandler {
 
   async convertToFhir(params: ConversionFhirRequest): Promise<{ bundle: Bundle }> {
     const fhirConverterUrl = this.fhirConverterUrl;
-    async function convertToFhir(payload: string, params: FhirConverterParams): Promise<Bundle> {
+    async function convertToFhirAxios(
+      payload: string,
+      params: FhirConverterParams
+    ): Promise<Bundle> {
       const url = buildConversionFhirUrl(fhirConverterUrl);
       const resp = await axios.post(url, payload, {
         params,
@@ -24,7 +27,7 @@ export class ConversionFhirDirect implements ConversionFhirHandler {
       });
       return resp.data.fhirResource as Bundle;
     }
-    const bundle = await convertPayloadToFHIR({ convertToFhir, params });
+    const bundle = await convertPayloadToFHIR({ convertToFhir: convertToFhirAxios, params });
     return { bundle };
   }
 }
