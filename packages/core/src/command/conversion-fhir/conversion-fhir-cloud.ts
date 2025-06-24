@@ -39,7 +39,7 @@ export class ConversionFhirCloud implements ConversionFhirHandler {
         result,
         lambdaName: nodejsFhirConvertLambdaName,
       });
-      return JSON.parse(resultPayload).fhirResource as Bundle;
+      return JSON.parse(resultPayload) as Bundle;
     }
     return await convertPayloadToFHIR({ convertToFhir: convertToFhirLambda, params });
   }
