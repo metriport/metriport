@@ -1,10 +1,10 @@
 {
     "name": "@metriport/eslint-plugin-eslint-rules",
     "version": "1.0.0",
-    "description": "Custom ESLint rules for our monorepo",
+    "description": "Custom ESLint rules for Metriport's monorepo",
     "main": "index.js",
     "keywords": ["eslint", "rules"],
-    "author": "Your Name",
+    "author": "Metriport",
     "license": "MIT",
     "scripts": {
         "build": "echo \"Skipping build\"",
