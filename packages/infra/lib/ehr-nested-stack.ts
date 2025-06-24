@@ -191,6 +191,8 @@ interface EhrNestedStackProps extends NestedStackProps {
   lambdaLayers: LambdaLayers;
   ehrResponsesBucket: s3.Bucket | undefined;
   medicalDocumentsBucket: s3.Bucket;
+  fhirConverterLambda: Lambda | undefined;
+  fhirConverterBucket: s3.Bucket | undefined;
 }
 
 export class EhrNestedStack extends NestedStack {
@@ -298,6 +300,8 @@ export class EhrNestedStack extends NestedStack {
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: props.alarmAction,
       ehrBundleBucket: this.ehrBundleBucket,
+      fhirConverterLambda: props.fhirConverterLambda,
+      fhirConverterBucket: props.fhirConverterBucket,
       computeResourceDiffBundlesQueue: this.computeResourceDiffBundlesQueue,
     });
     this.refreshEhrBundlesLambda = refreshEhrBundles.lambda;
@@ -605,6 +609,8 @@ export class EhrNestedStack extends NestedStack {
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
     ehrBundleBucket: s3.Bucket;
+    fhirConverterLambda: Lambda | undefined;
+    fhirConverterBucket: s3.Bucket | undefined;
     computeResourceDiffBundlesQueue: Queue;
   }): { lambda: Lambda; queue: Queue } {
     const { lambdaLayers, vpc, envType, sentryDsn, alarmAction } = ownProps;
@@ -651,6 +657,8 @@ export class EhrNestedStack extends NestedStack {
     lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
 
     ownProps.ehrBundleBucket.grantWrite(lambda);
+    ownProps.fhirConverterLambda?.grantInvoke(lambda);
+    ownProps.fhirConverterBucket?.grantReadWrite(lambda);
     ownProps.computeResourceDiffBundlesQueue.grantSendMessages(lambda);
 
     return { lambda, queue };
