@@ -8,6 +8,7 @@ import {
 import { Organization } from "@metriport/core/domain/organization";
 import { Patient } from "@metriport/core/domain/patient";
 import { S3Utils } from "@metriport/core/external/aws/s3";
+import { dangerouslyDeduplicate } from "@metriport/core/external/fhir/consolidated/deduplicate";
 import { toFHIR as toFhirOrganization } from "@metriport/core/external/fhir/organization/conversion";
 import { metriportDataSourceExtension } from "@metriport/core/external/fhir/shared/extensions/metriport";
 import { out } from "@metriport/core/util/log";
@@ -20,7 +21,6 @@ import { bundleSchema } from "../../routes/medical/schemas/fhir";
 import { Config } from "../../shared/config";
 import { validateFhirEntries } from "../fhir/shared/json-validator";
 import { generateEmptyCcd } from "./generate-empty-ccd";
-import { dangerouslyDeduplicate } from "@metriport/core/external/fhir/consolidated/deduplicate";
 
 const region = Config.getAWSRegion();
 const bucket = Config.getMedicalDocumentsBucketName();
@@ -52,7 +52,7 @@ export async function generateCcd(
   dangerouslyDeduplicate({
     cxId: patient.cxId,
     patientId: patient.id,
-    bundle: validatedBundle,
+    bundle,
   });
   const normalizedBundle = normalizeBundle(bundle);
   const parsedBundle = bundleSchema.parse(normalizedBundle);
