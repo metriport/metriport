@@ -140,6 +140,8 @@ import {
   MakeRequestParamsInEhr,
   MedicationWithRefs,
   paginateWaitTime,
+  partitionEhrBundle,
+  saveEhrReferenceBundle,
 } from "../shared";
 
 dayjs.extend(duration);
@@ -1443,6 +1445,7 @@ class AthenaHealthApi {
       patientId: athenaPatientId,
       resourceType,
     };
+    let referenceBundleToSave: EhrFhirResourceBundle | undefined;
     const fetchResourcesFromEhr = () =>
       fetchEhrFhirResourcesWithPagination({
         makeRequest: async (url: string) => {
@@ -1457,7 +1460,12 @@ class AthenaHealthApi {
             debug,
             useFhir: true,
           });
-          return convertBundleToValidStrictBundle(bundle, resourceType, athenaPatientId);
+          const { targetBundle, referenceBundle } = partitionEhrBundle({
+            bundle,
+            resourceType,
+          });
+          referenceBundleToSave = referenceBundle;
+          return convertBundleToValidStrictBundle(targetBundle, resourceType, athenaPatientId);
         },
         url: resourceTypeUrl,
       });
@@ -1470,6 +1478,15 @@ class AthenaHealthApi {
       fetchResourcesFromEhr,
       useCachedBundle,
     });
+    if (referenceBundleToSave) {
+      await saveEhrReferenceBundle({
+        ehr: EhrSources.athena,
+        cxId,
+        metriportPatientId,
+        ehrPatientId: athenaPatientId,
+        referenceBundle: referenceBundleToSave,
+      });
+    }
     return bundle;
   }
 
