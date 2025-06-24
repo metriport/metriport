@@ -316,13 +316,13 @@ export class Config {
     return getEnvVarOrFail("RUN_PATIENT_JOB_QUEUE_URL");
   }
 
-  static getNodejsFhirConvertLambdaName(): string {
-    return getEnvVarOrFail("NODEJS_FHIR_CONVERT_LAMBDA_NAME");
+  static getFhirConverterLambdaName(): string {
+    return getEnvVarOrFail("FHIR_CONVERTER_LAMBDA_NAME");
   }
   static getFhirConvertServerURL(): string {
     return getEnvVarOrFail("FHIR_CONVERTER_SERVER_URL");
   }
   static getFhirConversionBucketName(): string {
-    return getEnvVarOrFail("FHIR_CONVERSION_BUCKET_NAME");
+    return getEnvVarOrFail("FHIR_CONVERTER_BUCKET_NAME");
   }
 }

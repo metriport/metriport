@@ -8,6 +8,6 @@ export function buildConversionFhirHandler(): ConversionFhirHandler {
     const fhirConverterUrl = Config.getFhirConvertServerURL();
     return new ConversionFhirDirect(fhirConverterUrl);
   }
-  const nodejsFhirConvertLambdaName = Config.getNodejsFhirConvertLambdaName();
+  const nodejsFhirConvertLambdaName = Config.getFhirConverterLambdaName();
   return new ConversionFhirCloud(nodejsFhirConvertLambdaName);
 }
