@@ -1,10 +1,7 @@
-import { Bundle, Condition, Resource, ResourceType } from "@medplum/fhirtypes";
+import { Bundle, Condition, ResourceType } from "@medplum/fhirtypes";
 import {
   BadRequestError,
-  createBundleFromResourceList,
   EhrFhirResourceBundle,
-  EhrStrictFhirResource,
-  ehrStrictFhirResourceSchema,
   errorToString,
   JwtTokenInfo,
   MetriportError,
@@ -34,19 +31,13 @@ import {
 } from "@metriport/shared/interface/external/ehr/elation/index";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import axios, { AxiosInstance } from "axios";
-import { uniqBy } from "lodash";
 import { z } from "zod";
-import { executeAsynchronously } from "../../../util/concurrency";
 import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
-import { capture } from "../../../util/notifications";
-import { BundleType } from "../bundle/bundle-shared";
-import { createOrReplaceBundle } from "../bundle/command/create-or-replace-bundle";
 import {
   ApiConfig,
   convertBundleToValidStrictBundle,
   createDataParams,
-  createEhrFhirBundlesFromXml,
   fetchEhrBundleUsingCache,
   formatDate,
   getConditionSnomedCode,
@@ -55,6 +46,8 @@ import {
   makeRequest,
   MakeRequestParamsInEhr,
   paginateWaitTime,
+  partitionEhrBundle,
+  saveEhrReferenceBundle,
 } from "../shared";
 
 const apiUrl = Config.getApiUrl();
@@ -344,30 +337,21 @@ class ElationApi {
     metriportPatientId: string;
     elationPatinetId: string;
     resourceType: string;
-    fhirConverter: (xml: string) => Promise<Bundle>;
+    fhirConverter: (xml: string) => Promise<EhrFhirResourceBundle>;
     useCachedBundle?: boolean;
   }): Promise<Bundle> {
-    const { log } = out(
-      `Canvas getBundleByResourceType - cxId ${cxId} practiceId ${this.practiceId} elationPatinetId ${elationPatinetId}`
-    );
     if (!isSupportedElationResource(resourceType)) {
       throw new BadRequestError("Invalid resource type", undefined, {
         resourceType,
       });
     }
-    const additionalInfo = {
-      cxId,
-      practiceId: this.practiceId,
-      patientId: elationPatinetId,
-      resourceType,
-    };
     const xml = await this.getCcdaDocument({ cxId, patientId: elationPatinetId, resourceType });
     let referenceEhrFhirBundle: EhrFhirResourceBundle | undefined;
     const fetchResourcesFromEhr = async () => {
-      const { targetBundle, referenceBundle } = await createEhrFhirBundlesFromXml({
-        convertXmlToFhir: fhirConverter,
+      const bundle = await fhirConverter(xml);
+      const { targetBundle, referenceBundle } = partitionEhrBundle({
+        bundle,
         resourceType,
-        xml,
       });
       referenceEhrFhirBundle = referenceBundle;
       const strictTargetBundle = convertBundleToValidStrictBundle(targetBundle, resourceType);
@@ -383,52 +367,13 @@ class ElationApi {
       useCachedBundle,
     });
     if (referenceEhrFhirBundle) {
-      const saveReferenceBundleArgs = uniqBy(
-        referenceEhrFhirBundle.entry?.flatMap(e => {
-          const resource = e.resource;
-          if (!resource) return [];
-          const parsedResource = ehrStrictFhirResourceSchema.safeParse(resource);
-          if (!parsedResource.success) return [];
-          return parsedResource.data;
-        }) ?? [],
-        "id"
-      );
-      const saveReferenceBundleErrors: { error: unknown; id: string; type: string }[] = [];
-      await executeAsynchronously(
-        saveReferenceBundleArgs,
-        async (params: EhrStrictFhirResource) => {
-          try {
-            await createOrReplaceBundle({
-              ehr: EhrSources.elation,
-              cxId,
-              metriportPatientId,
-              ehrPatientId: elationPatinetId,
-              bundleType: BundleType.EHR,
-              bundle: createBundleFromResourceList([params as Resource]),
-              resourceType: params.resourceType,
-              resourceId: params.id,
-            });
-          } catch (error) {
-            log(
-              `Failed to save reference bundle entry ${params.id}. Cause: ${errorToString(error)}`
-            );
-            saveReferenceBundleErrors.push({ error, id: params.id, type: params.resourceType });
-          }
-        }
-      );
-      if (saveReferenceBundleErrors.length > 0) {
-        const msg = `Failure while saving some reference bundle entries @ Elation`;
-        capture.message(msg, {
-          extra: {
-            ...additionalInfo,
-            saveReferenceBundleArgsCount: saveReferenceBundleArgs.length,
-            saveReferenceBundleErrorsCount: saveReferenceBundleErrors.length,
-            errors: saveReferenceBundleErrors,
-            context: "elation.get-bundle-by-resource-type",
-          },
-          level: "warning",
-        });
-      }
+      await saveEhrReferenceBundle({
+        ehr: EhrSources.elation,
+        cxId,
+        metriportPatientId,
+        ehrPatientId: elationPatinetId,
+        referenceBundle: referenceEhrFhirBundle,
+      });
     }
     return bundle;
   }

@@ -68,7 +68,13 @@ export class EhrContributeResourceDiffBundlesDirect
         resourceType,
         jobId,
       });
-      if (ehrOnlyResources.length < 1) return;
+      if (ehrOnlyResources.length < 1) {
+        await setJobEntryStatus({
+          ...entryStatusParams,
+          entryStatus: "successful",
+        });
+        return;
+      }
       const hydratedEhrOnlyResources = await hydrateEhrOnlyResources({
         ehr,
         tokenId,
@@ -86,26 +92,24 @@ export class EhrContributeResourceDiffBundlesDirect
       const dataContributionBundle = createBundleFromResourceList(
         preparedAndHydratedEhrOnlyResources
       );
-      await Promise.all([
-        createOrReplaceBundle({
-          ehr,
-          cxId,
-          metriportPatientId,
-          ehrPatientId,
-          bundleType: BundleType.RESOURCE_DIFF_DATA_CONTRIBUTION,
-          bundle: dataContributionBundle,
-          resourceType,
-          jobId,
-          mixedResourceTypes: true,
-        }),
-        contributeResourceDiffBundle({
-          ehr,
-          cxId,
-          patientId: ehrPatientId,
-          resourceType,
-          jobId,
-        }),
-      ]);
+      await createOrReplaceBundle({
+        ehr,
+        cxId,
+        metriportPatientId,
+        ehrPatientId,
+        bundleType: BundleType.RESOURCE_DIFF_DATA_CONTRIBUTION,
+        bundle: dataContributionBundle,
+        resourceType,
+        jobId,
+        mixedResourceTypes: true,
+      });
+      await contributeResourceDiffBundle({
+        ehr,
+        cxId,
+        patientId: ehrPatientId,
+        resourceType,
+        jobId,
+      });
       await setJobEntryStatus({
         ...entryStatusParams,
         entryStatus: "successful",

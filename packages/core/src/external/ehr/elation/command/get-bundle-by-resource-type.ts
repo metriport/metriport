@@ -1,4 +1,5 @@
 import { Bundle } from "@medplum/fhirtypes";
+import { ehrFhirResourceBundleSchema } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { buildConversionFhirHandler } from "../../../../command/conversion-fhir/conversion-fhir-factory";
 import { GetBundleByResourceTypeClientRequest } from "../../command/get-bundle-by-resource-type";
 import { createElationHealthClient } from "../shared";
@@ -27,11 +28,12 @@ export async function getBundleByResourceType(
     elationPatinetId: ehrPatientId,
     resourceType,
     fhirConverter: async (payload: string) => {
-      return await handler.convertToFhir({
+      const conversionResult = await handler.convertToFhir({
         cxId,
         patientId: metriportPatientId,
         rawData: payload,
       });
+      return ehrFhirResourceBundleSchema.parse(conversionResult.bundle);
     },
     useCachedBundle,
   });

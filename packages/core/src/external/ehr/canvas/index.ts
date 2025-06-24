@@ -77,6 +77,8 @@ import {
   MakeRequestParamsInEhr,
   MedicationWithRefs,
   paginateWaitTime,
+  partitionEhrBundle,
+  saveEhrReferenceBundle,
 } from "../shared";
 
 dayjs.extend(duration);
@@ -1049,6 +1051,7 @@ class CanvasApi {
       patientId: canvasPatientId,
       resourceType,
     };
+    let referenceBundleToSave: EhrFhirResourceBundle | undefined;
     const fetchResourcesFromEhr = () =>
       fetchEhrFhirResourcesWithPagination({
         makeRequest: async (url: string) => {
@@ -1063,7 +1066,12 @@ class CanvasApi {
             debug,
             useFhir: true,
           });
-          return convertBundleToValidStrictBundle(bundle, resourceType, canvasPatientId);
+          const { targetBundle, referenceBundle } = partitionEhrBundle({
+            bundle,
+            resourceType,
+          });
+          referenceBundleToSave = referenceBundle;
+          return convertBundleToValidStrictBundle(targetBundle, resourceType, canvasPatientId);
         },
         url: resourceTypeUrl,
       });
@@ -1076,6 +1084,15 @@ class CanvasApi {
       fetchResourcesFromEhr,
       useCachedBundle,
     });
+    if (referenceBundleToSave) {
+      await saveEhrReferenceBundle({
+        ehr: EhrSources.canvas,
+        cxId,
+        metriportPatientId,
+        ehrPatientId: canvasPatientId,
+        referenceBundle: referenceBundleToSave,
+      });
+    }
     return bundle;
   }
 

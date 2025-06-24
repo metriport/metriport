@@ -15,5 +15,7 @@ export type ConversionFhirRequest = {
 };
 
 export interface ConversionFhirHandler {
-  convertToFhir(params: ConversionFhirRequest): Promise<Bundle>;
+  convertToFhir(params: ConversionFhirRequest): Promise<{
+    bundle: Bundle;
+  }>;
 }

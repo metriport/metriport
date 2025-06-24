@@ -12,7 +12,7 @@ function buildConversionFhirUrl(fhirConverterUrl: string): string {
 export class ConversionFhirDirect implements ConversionFhirHandler {
   constructor(private readonly fhirConverterUrl: string) {}
 
-  async convertToFhir(params: ConversionFhirRequest): Promise<Bundle> {
+  async convertToFhir(params: ConversionFhirRequest): Promise<{ bundle: Bundle }> {
     const fhirConverterUrl = this.fhirConverterUrl;
     async function convertToFhir(payload: string, params: FhirConverterParams): Promise<Bundle> {
       const url = buildConversionFhirUrl(fhirConverterUrl);
@@ -22,6 +22,7 @@ export class ConversionFhirDirect implements ConversionFhirHandler {
       });
       return resp.data.fhirResource as Bundle;
     }
-    return await convertPayloadToFHIR({ convertToFhir, params });
+    const bundle = await convertPayloadToFHIR({ convertToFhir, params });
+    return { bundle };
   }
 }

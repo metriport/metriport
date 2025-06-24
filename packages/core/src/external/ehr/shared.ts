@@ -31,16 +31,18 @@ import {
   createBundleFromResourceList,
   ehrFhirResourceBundleSchema,
   ehrStrictFhirResourceBundleSchema,
+  ehrStrictFhirResourceSchema,
   fhirOperationOutcomeSchema,
 } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { EhrSource } from "@metriport/shared/interface/external/ehr/source";
 import { AxiosError, AxiosInstance, AxiosResponse, isAxiosError } from "axios";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import { partition } from "lodash";
+import { partition, uniqBy } from "lodash";
 import { z } from "zod";
 import { createHivePartitionFilePath } from "../../domain/filename";
 import { fetchCodingCodeOrDisplayOrSystem } from "../../fhir-deduplication/shared";
+import { executeAsynchronously } from "../../util/concurrency";
 import { Config } from "../../util/config";
 import {
   CPT_CODE,
@@ -51,6 +53,7 @@ import {
   SNOMED_CODE,
 } from "../../util/constants";
 import { out } from "../../util/log";
+import { capture } from "../../util/notifications";
 import { uuidv7 } from "../../util/uuid-v7";
 import { S3Utils } from "../aws/s3";
 import { BundleType } from "./bundle/bundle-shared";
@@ -621,6 +624,13 @@ export function getProcedurePerformedDate(procedure: Procedure): string | undefi
 
 type FetchEhrBundleParams = Omit<FetchBundleParams, "bundleType">;
 
+/**
+ * Fetches EHR bundle for the given resource type if it is younger than the max age,
+ * otherwise returns undefined.
+ *
+ * @param params - The parameters for the fetch bundle.
+ * @returns The bundle if it is younger than the max age, otherwise undefined.
+ */
 async function fetchEhrBundleIfYoungerThanMaxAge(
   params: Omit<FetchEhrBundleParams, "getLastModified">
 ): Promise<Bundle | undefined> {
@@ -636,9 +646,9 @@ async function fetchEhrBundleIfYoungerThanMaxAge(
 }
 
 /**
- * Fetches a bundle from the EHR for the given resource type.
- * Uses cached EHR bundle if available and requested. Refreshes the cache if the bundle
- * is fetched from the EHR.
+ * Fetches EHR bundle for the given resource type.
+ * Uses cached EHR bundle if available and requested.
+ * Refreshes the cache if the bundle is fetched from the EHR.
  *
  * @param ehr - The EHR source.
  * @param cxId - The CX ID.
@@ -672,45 +682,8 @@ export async function fetchEhrBundleUsingCache({
 }
 
 /**
- * Converts an XML document form the EHR to a two FHIR bundles:
- * - A bundle with the target resource type
- * - A bundle with the reference resource type
- *
- * @param convertXmlToFhir - The function that converts an XML document to a FHIR bundle.
- * @param resourceType - The resource type of the bundle.
- * @param xml - The XML document.
- * @returns The two FHIR bundles.
- */
-export async function createEhrFhirBundlesFromXml({
-  convertXmlToFhir,
-  resourceType,
-  xml,
-}: {
-  convertXmlToFhir: (xml: string) => Promise<Bundle>;
-  resourceType: string;
-  xml: string;
-}): Promise<{
-  targetBundle: EhrFhirResourceBundle;
-  referenceBundle: EhrFhirResourceBundle;
-}> {
-  const fhirBundle = await convertXmlToFhir(xml);
-  const [targetBundleEntries, referenceBundleEntries] = partition(
-    fhirBundle?.entry ?? [],
-    e => e.resource?.resourceType === resourceType
-  );
-  const targetBundle: EhrFhirResourceBundle = ehrFhirResourceBundleSchema.parse({
-    ...fhirBundle,
-    entry: targetBundleEntries,
-  });
-  const referenceBundle: EhrFhirResourceBundle = ehrFhirResourceBundleSchema.parse({
-    ...fhirBundle,
-    entry: referenceBundleEntries,
-  });
-  return { targetBundle, referenceBundle };
-}
-
-/**
  * Fetches FHIR resources from the EHR for the given resource type.
+ * Fetches FHIR resources for a given resource type via a FHIR API.
  * Pagination is handled automatically.
  *
  * @param makeRequest - The function that makes the request to the EHR FHIR endpoint.
@@ -735,6 +708,115 @@ export async function fetchEhrFhirResourcesWithPagination({
   return fetchEhrFhirResourcesWithPagination({ makeRequest, url: nextUrl, acc });
 }
 
+/**
+ * Saves a reference bundle to the S3 bucket.
+ *
+ * @param ehr - The EHR source.
+ * @param cxId - The CX ID.
+ * @param metriportPatientId - The Metriport ID.
+ * @param ehrPatientId - The EHR patient ID.
+ * @param referenceBundle - The reference bundle to save.
+ */
+export async function saveEhrReferenceBundle({
+  ehr,
+  cxId,
+  metriportPatientId,
+  ehrPatientId,
+  referenceBundle,
+}: {
+  ehr: EhrSource;
+  cxId: string;
+  metriportPatientId: string;
+  ehrPatientId: string;
+  referenceBundle: EhrFhirResourceBundle;
+}) {
+  const { log } = out(
+    `saveReferenceBundle - cxId ${cxId} metriportPatientId ${metriportPatientId} ehrPatientId ${ehrPatientId}`
+  );
+  if (!referenceBundle.entry || referenceBundle.entry.length < 1) return;
+  const resources = referenceBundle.entry.flatMap(e => {
+    const resource = e.resource;
+    if (!resource) return [];
+    const parsedResource = ehrStrictFhirResourceSchema.safeParse(resource);
+    if (!parsedResource.success) return [];
+    return parsedResource.data;
+  });
+  const saveReferenceBundleArgs = uniqBy(resources, "id");
+  const saveReferenceBundleErrors: { error: unknown; id: string; type: string }[] = [];
+  await executeAsynchronously(saveReferenceBundleArgs, async (params: EhrStrictFhirResource) => {
+    try {
+      await createOrReplaceBundle({
+        ehr,
+        cxId,
+        metriportPatientId,
+        ehrPatientId,
+        bundleType: BundleType.EHR,
+        bundle: createBundleFromResourceList([params as Resource]),
+        resourceType: params.resourceType,
+        resourceId: params.id,
+      });
+    } catch (error) {
+      log(`Failed to save reference bundle entry ${params.id}. Cause: ${errorToString(error)}`);
+      saveReferenceBundleErrors.push({ error, id: params.id, type: params.resourceType });
+    }
+  });
+  if (saveReferenceBundleErrors.length > 0) {
+    const msg = `Failure while saving some reference bundle entries @ Elation`;
+    capture.message(msg, {
+      extra: {
+        saveReferenceBundleArgsCount: saveReferenceBundleArgs.length,
+        saveReferenceBundleErrorsCount: saveReferenceBundleErrors.length,
+        errors: saveReferenceBundleErrors,
+        context: "elation.get-bundle-by-resource-type",
+      },
+      level: "warning",
+    });
+  }
+}
+
+/**
+ * Partitions an EHR bundle into a target bundle and a reference bundle.
+ * The target bundle contains the resources of the given resource type.
+ * The reference bundle contains the resources of the other resource types.
+ *
+ * @param bundle - The bundle to partition.
+ * @param resourceType - The resource type of the target bundle.
+ * @returns The target bundle and the reference bundle.
+ */
+export function partitionEhrBundle({
+  bundle,
+  resourceType,
+}: {
+  bundle: EhrFhirResourceBundle;
+  resourceType: string;
+}): { targetBundle: EhrFhirResourceBundle; referenceBundle: EhrFhirResourceBundle } {
+  const [targetBundleEntries, referenceBundleEntries] = partition(
+    bundle?.entry ?? [],
+    e => e.resource?.resourceType === resourceType
+  );
+  const targetBundle: EhrFhirResourceBundle = ehrFhirResourceBundleSchema.parse({
+    ...bundle,
+    entry: targetBundleEntries,
+  });
+  const referenceBundle: EhrFhirResourceBundle = ehrFhirResourceBundleSchema.parse({
+    ...bundle,
+    entry: referenceBundleEntries,
+  });
+  return { targetBundle, referenceBundle };
+}
+
+/**
+ * Converts a single-resource-type EHR bundle to a strict EHR bundle, where all resources have the
+ * id and resourceType fields. As well as the patient and subject references being the same as the
+ * patientId.
+ *
+ * @param bundle - The bundle to convert.
+ * @param resourceType - The resource type of the bundle.
+ * @param patientId - The patient ID of the bundle.
+ * @returns The strict EHR bundle.
+ * @throws BadRequestError if the bundle is invalid, contains multiple resource types, or contains
+ * a resource with a patient or subject reference that is not the same as the patientId.
+ */
 export function convertBundleToValidStrictBundle(
   bundle: EhrFhirResourceBundle,
   resourceType: string,

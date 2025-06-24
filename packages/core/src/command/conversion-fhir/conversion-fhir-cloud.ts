@@ -15,7 +15,7 @@ export class ConversionFhirCloud implements ConversionFhirHandler {
     this.lambdaClient = lambdaClient;
   }
 
-  async convertToFhir(params: ConversionFhirRequest): Promise<Bundle> {
+  async convertToFhir(params: ConversionFhirRequest): Promise<{ bundle: Bundle }> {
     const lambdaClient = this.lambdaClient;
     const nodejsFhirConvertLambdaName = this.nodejsFhirConvertLambdaName;
     async function convertToFhir(payload: string, params: FhirConverterParams): Promise<Bundle> {
@@ -36,6 +36,7 @@ export class ConversionFhirCloud implements ConversionFhirHandler {
       });
       return JSON.parse(resultPayload).fhirResource as Bundle;
     }
-    return await convertPayloadToFHIR({ convertToFhir, params });
+    const bundle = await convertPayloadToFHIR({ convertToFhir, params });
+    return { bundle };
   }
 }
