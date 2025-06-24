@@ -15,10 +15,10 @@ export class ConversionFhirDirect extends ConversionFhirHandler {
     super();
   }
 
-  async callConverter(params: ConverterRequest): Promise<Bundle<Resource>> {
+  async callConverter(request: ConverterRequest): Promise<Bundle<Resource>> {
     const url = buildConversionFhirUrl(this.fhirConverterUrl);
-    const resp = await axios.post(url, params.payload, {
-      params: params.params,
+    const resp = await axios.post(url, request.payload, {
+      params: request.params,
       headers: { "Content-Type": TXT_MIME_TYPE },
     });
     return resp.data.fhirResource as Bundle<Resource>;

@@ -14,10 +14,10 @@ export class ConversionFhirCloud extends ConversionFhirHandler {
     this.lambdaClient = lambdaClient;
   }
 
-  async callConverter(params: ConverterRequest): Promise<Bundle<Resource>> {
+  async callConverter(request: ConverterRequest): Promise<Bundle<Resource>> {
     const payload = JSON.stringify({
-      body: params.payload,
-      queryStringParameters: params,
+      body: request.payload,
+      queryStringParameters: request.params,
     });
     const result = await this.lambdaClient
       .invoke({
