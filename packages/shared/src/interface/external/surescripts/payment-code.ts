@@ -57,8 +57,6 @@ export const SourceOfPaymentName: Record<SourceOfPaymentCode, string> = {
   "1": "Medicare",
   "2": "Medicaid",
   "3": "Government",
-  "312": "Military Treatment Facility",
-  "33": "Indian Health Service",
   "4": "Department of Corrections",
   "5": "Private Health Insurance",
   "6": "Blue Cross/Blue Shield",
@@ -67,6 +65,8 @@ export const SourceOfPaymentName: Record<SourceOfPaymentCode, string> = {
   "89": "No Payment",
   "95": "Worker's Compensation",
   "99": "No code available",
+  "33": "Indian Health Service",
+  "312": "Military Treatment Facility",
 };
 
 export const PaymentCodeToSourceOfPaymentCode: Record<PaymentCode, SourceOfPaymentCode> = {
