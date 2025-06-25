@@ -10,10 +10,11 @@ export type FailJobParams = JobBaseParams & {
 };
 
 /**
- * Sends a request to the API to complete the job.
+ * Sends a request to the API to fail the job.
  *
  * @param jobId - The job ID.
  * @param cxId - The CX ID.
+ * @param reason - The reason for failing the job.
  */
 export async function failJob({ jobId, cxId, reason }: FailJobParams): Promise<void> {
   const { log, debug } = out(`failJob - jobId ${jobId} cxId ${cxId}`);
@@ -26,7 +27,7 @@ export async function failJob({ jobId, cxId, reason }: FailJobParams): Promise<v
     });
     logAxiosResponse(failJobUrl, response, debug);
   } catch (error) {
-    const msg = "Failure while completing job @ Api";
+    const msg = "Failure while failing job @ Api";
     log(`${msg}. Cause: ${errorToString(error)}`);
     throw new MetriportError(msg, error, {
       cxId,
