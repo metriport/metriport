@@ -28,8 +28,7 @@ export function calculateScheduledAt(newAttempts: number): Date {
       attemptNumber as keyof typeof dischargeRequerySchedule
     ].asMilliseconds();
 
-  const now = Date.now();
-  const nextScheduledAt = buildDayjs(now).add(backoffDurationMs, "milliseconds").toDate();
+  const nextScheduledAt = buildDayjs().add(backoffDurationMs, "milliseconds").toDate();
 
   return nextScheduledAt;
 }

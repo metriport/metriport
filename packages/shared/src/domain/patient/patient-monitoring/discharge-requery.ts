@@ -28,6 +28,12 @@ export type DischargeRequeryJobRuntimeData = z.infer<typeof dischargeRequeryRunt
 
 export const scheduledAtSchema = z.date();
 
+export type DischargeRequeryJob = PatientJob & {
+  paramsOps: DischargeRequeryParamsOps;
+  scheduledAt: Date;
+  runtimeData: DischargeRequeryJobRuntimeData;
+};
+
 export function parseDischargeRequeryJob(job: PatientJob): DischargeRequeryJob {
   return {
     ...job,
@@ -36,9 +42,3 @@ export function parseDischargeRequeryJob(job: PatientJob): DischargeRequeryJob {
     scheduledAt: scheduledAtSchema.parse(job.scheduledAt),
   };
 }
-
-export type DischargeRequeryJob = PatientJob & {
-  paramsOps: DischargeRequeryParamsOps;
-  scheduledAt: Date;
-  runtimeData: DischargeRequeryJobRuntimeData;
-};

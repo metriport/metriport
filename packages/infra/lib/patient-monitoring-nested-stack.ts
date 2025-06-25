@@ -17,7 +17,7 @@ import { createQueue } from "./shared/sqs";
 const waitTimeDischargeRequery = Duration.seconds(10);
 
 function settings() {
-  const timeout = Duration.seconds(30);
+  const timeout = waitTimeDischargeRequery.plus(Duration.seconds(30));
   const dischargeRequery: QueueAndLambdaSettings = {
     name: "DischargeRequery",
     entry: "patient-monitoring/discharge-requery",
@@ -27,6 +27,7 @@ function settings() {
     },
     queue: {
       alarmMaxAgeOfOldestMessage: Duration.minutes(5),
+      maxMessageCountAlarmThreshold: 500,
       maxReceiveCount: 3,
       visibilityTimeout: Duration.seconds(timeout.toSeconds() * 2 + 1),
       createRetryLambda: false,
@@ -119,6 +120,7 @@ export class PatientMonitoringNestedStack extends NestedStack {
         // API_URL set on the api-stack after the OSS API is created
         DISCHARGE_REQUERY_QUEUE_URL: queue.queueUrl,
         WAIT_TIME_IN_MILLIS: waitTimeDischargeRequery.toMilliseconds().toString(),
+        MAX_ATTEMPTS: queueSettings.maxReceiveCount.toString(),
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
     });
