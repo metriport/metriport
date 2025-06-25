@@ -5,9 +5,9 @@ import {
   getSourceOfPaymentCode,
   getSourceOfPaymentName,
 } from "@metriport/shared/interface/external/surescripts/payment-code";
-import { getSurescriptsDataSourceExtension } from "./shared";
 import { SurescriptsContext } from "./types";
 import { getPatientReference } from "./patient";
+import { getSurescriptsDataSourceExtension } from "./shared";
 import {
   NCPDP_PROVIDER_ID_SYSTEM,
   PLAN_NETWORK_BIN_SYSTEM,
@@ -21,6 +21,7 @@ export function getInsuranceOrganization(detail: ResponseDetail): Organization |
 
   const sourceOfPayment = getSourceOfPayment(paymentCode);
   if (!sourceOfPayment) return undefined;
+  const extension = [getSurescriptsDataSourceExtension()];
 
   return {
     resourceType: "Organization",
@@ -32,6 +33,7 @@ export function getInsuranceOrganization(detail: ResponseDetail): Organization |
         value: sourceOfPayment.code,
       },
     ],
+    extension,
   };
 }
 
