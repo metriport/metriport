@@ -13,7 +13,6 @@ import {
 import { MetriportError } from "@metriport/shared";
 import { Smart, getReferenceField, isReferenceMethod } from "./types/smart-resources";
 
-// Re-export smart resource types for external use
 export { Smart } from "./types/smart-resources";
 
 export {
