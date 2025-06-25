@@ -115,6 +115,7 @@ export function setup({
     },
     retryAttempts,
     timeout,
+    isEnableInsights: true,
     alarmSnsAction,
   });
 

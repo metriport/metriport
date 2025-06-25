@@ -481,6 +481,7 @@ export class APIStack extends Stack {
       elationLinkPatientLambda,
       healthieLinkPatientQueue,
       healthieLinkPatientLambda,
+      contributeResourceDiffBundlesLambda: ehrContributeResourceDiffBundlesLambda,
       computeResourceDiffBundlesLambda: ehrComputeResourceDiffBundlesLambda,
       refreshEhrBundlesQueue: ehrRefreshEhrBundlesQueue,
       refreshEhrBundlesLambda: ehrRefreshEhrBundlesLambda,
@@ -532,7 +533,11 @@ export class APIStack extends Stack {
     if (!isSandbox(props.config)) {
       fhirConverter = createFHIRConverterService(
         this,
-        { ...props, generalBucket },
+        {
+          config: props.config,
+          version: props.version,
+          generalBucket,
+        },
         this.vpc,
         slackNotification?.alarmAction
       );
@@ -698,6 +703,7 @@ export class APIStack extends Stack {
       ehrSyncPatientLambda,
       elationLinkPatientLambda,
       healthieLinkPatientLambda,
+      ehrContributeResourceDiffBundlesLambda,
       ehrComputeResourceDiffBundlesLambda,
       ehrRefreshEhrBundlesLambda,
       ehrGetAppointmentsLambda,
