@@ -1,6 +1,5 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
 import { BadRequestError, errorToString, MetriportError } from "@metriport/shared";
-import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { FhirConverterParams } from "../../domain/conversion/bundle-modifications/modifications";
 import { cleanUpPayload } from "../../domain/conversion/cleanup";
 import {
@@ -12,14 +11,10 @@ import {
 import { S3Utils } from "../../external/aws/s3";
 import { partitionPayload } from "../../external/cda/partition-payload";
 import { removeBase64PdfEntries } from "../../external/cda/remove-b64";
-import { buildBundleFromResources } from "../../external/fhir/bundle/bundle";
 import { Config } from "../../util/config";
 import { out } from "../../util/log";
 import { JSON_TXT_MIME_TYPE, XML_TXT_MIME_TYPE } from "../../util/mime";
-import { capture } from "../../util/notifications";
-import { ConversionFhirRequest, ConverterRequest } from "./conversion-fhir";
-
-const LARGE_CHUNK_SIZE_IN_BYTES = 50_000_000;
+import { ConversionFhirRequest } from "./conversion-fhir";
 
 function getS3Utils(): S3Utils {
   return new S3Utils(Config.getAWSRegion());
@@ -29,59 +24,7 @@ type ConversionFhirRequestWithRequestId = Omit<ConversionFhirRequest, "requestId
   requestId: string;
 };
 
-export async function convertPayloadToFHIR({
-  callConverter,
-  params,
-}: {
-  callConverter: (params: ConverterRequest) => Promise<Bundle<Resource>>;
-  params: ConversionFhirRequest;
-}): Promise<{
-  bundle: Bundle<Resource>;
-  resultKey: string;
-  resultBucket: string;
-}> {
-  const { log } = out(`convertPayloadToFHIR - cxId ${params.cxId} patientId ${params.patientId}`);
-  const requestId = params.requestId ?? uuidv7();
-  const paramsWithRequestId: ConversionFhirRequestWithRequestId = { ...params, requestId };
-  const { converterParams, partitionedPayloads } = await getConverterParamsAndPayloadPartitions(
-    paramsWithRequestId
-  );
-  const resources = new Set<Resource>();
-  for (const [index, payload] of partitionedPayloads.entries()) {
-    const chunkSize = new Blob([payload]).size;
-    if (chunkSize > LARGE_CHUNK_SIZE_IN_BYTES) {
-      const msg = "Chunk size is too large";
-      log(`${msg} - chunkSize ${chunkSize} on ${index}`);
-      capture.message(msg, {
-        extra: {
-          chunkSize,
-          patientId: converterParams.patientId,
-          fileName: converterParams.fileName,
-        },
-        level: "warning",
-      });
-    }
-    const conversionResult = await callConverter({ payload, params: converterParams });
-    if (!conversionResult || !conversionResult.entry || conversionResult.entry.length < 1) continue;
-    for (const entry of conversionResult.entry) {
-      if (entry.resource) resources.add(entry.resource);
-    }
-  }
-  const bundle = buildBundleFromResources({
-    type: "batch",
-    resources: [...resources.values()],
-  });
-  const { key: resultKey, bucket: resultBucket } = await saveConverterStep({
-    paramsWithRequestId,
-    result: bundle,
-    contentType: JSON_TXT_MIME_TYPE,
-    fileName: buildDocumentNameForConversionResult(requestId),
-    stepName: "result",
-  });
-  return { bundle, resultKey, resultBucket };
-}
-
-async function getConverterParamsAndPayloadPartitions(
+export async function getConverterParamsAndPayloadPartitions(
   paramsWithRequestId: ConversionFhirRequestWithRequestId
 ): Promise<{ converterParams: FhirConverterParams; partitionedPayloads: string[] }> {
   const { log } = out(
@@ -146,7 +89,7 @@ async function getConverterParamsAndPayloadPartitions(
   return { converterParams, partitionedPayloads };
 }
 
-async function saveConverterStep({
+export async function saveConverterStep({
   paramsWithRequestId,
   result,
   contentType,

@@ -1,6 +1,14 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
+import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { FhirConverterParams } from "../../domain/conversion/bundle-modifications/modifications";
-import { convertPayloadToFHIR } from "./convert-payload-to-fhir";
+import { buildDocumentNameForConversionResult } from "../../domain/conversion/filename";
+import { buildBundleFromResources } from "../../external/fhir/bundle/bundle";
+import { out } from "../../util/log";
+import { JSON_TXT_MIME_TYPE } from "../../util/mime";
+import { capture } from "../../util/notifications";
+import { getConverterParamsAndPayloadPartitions, saveConverterStep } from "./utils";
+
+const LARGE_CHUNK_SIZE_IN_BYTES = 50_000_000;
 
 export type ConversionFhirRequest = {
   cxId: string;
@@ -21,10 +29,46 @@ export abstract class ConversionFhirHandler {
     resultKey: string;
     resultBucket: string;
   }> {
-    return await convertPayloadToFHIR({
-      callConverter: this.callConverter.bind(this),
-      params,
+    const { log } = out(`convertPayloadToFHIR - cxId ${params.cxId} patientId ${params.patientId}`);
+    const requestId = params.requestId ?? uuidv7();
+    const paramsWithRequestId = { ...params, requestId };
+    const { converterParams, partitionedPayloads } = await getConverterParamsAndPayloadPartitions(
+      paramsWithRequestId
+    );
+    const resources = new Set<Resource>();
+    for (const [index, payload] of partitionedPayloads.entries()) {
+      const chunkSize = new Blob([payload]).size;
+      if (chunkSize > LARGE_CHUNK_SIZE_IN_BYTES) {
+        const msg = "Chunk size is too large";
+        log(`${msg} - chunkSize ${chunkSize} on ${index}`);
+        capture.message(msg, {
+          extra: {
+            chunkSize,
+            patientId: converterParams.patientId,
+            fileName: converterParams.fileName,
+          },
+          level: "warning",
+        });
+      }
+      const conversionResult = await this.callConverter({ payload, params: converterParams });
+      if (!conversionResult || !conversionResult.entry || conversionResult.entry.length < 1)
+        continue;
+      for (const entry of conversionResult.entry) {
+        if (entry.resource) resources.add(entry.resource);
+      }
+    }
+    const bundle = buildBundleFromResources({
+      type: "batch",
+      resources: [...resources.values()],
     });
+    const { key: resultKey, bucket: resultBucket } = await saveConverterStep({
+      paramsWithRequestId,
+      result: bundle,
+      contentType: JSON_TXT_MIME_TYPE,
+      fileName: buildDocumentNameForConversionResult(requestId),
+      stepName: "result",
+    });
+    return { bundle, resultKey, resultBucket };
   }
 
   abstract callConverter(params: ConverterRequest): Promise<Bundle<Resource>>;
