@@ -1,10 +1,14 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import {
+  AllergyIntolerance,
   Bundle,
   BundleEntry,
+  Condition,
   DiagnosticReport,
   Encounter,
+  Location,
   Observation,
+  Organization,
   Patient,
   Practitioner,
   Resource,
@@ -16,9 +20,14 @@ import { Smart, getReferenceField, isReferenceMethod } from "./types/smart-resou
 export { Smart } from "./types/smart-resources";
 
 export {
+  AllergyIntolerance,
+  Bundle,
+  Condition,
   DiagnosticReport,
   Encounter,
+  Location,
   Observation,
+  Organization,
   Patient,
   Practitioner,
   Resource,
@@ -405,8 +414,52 @@ export class FhirBundleSdk {
   }
 
   /**
+   * Get an AllergyIntolerance resource by ID - specialized method with proper typing
+   */
+  getAllergyIntoleranceById(id: string): Smart<AllergyIntolerance> | undefined {
+    const resource = this.getResourceById(id);
+    if (resource && resource.resourceType === "AllergyIntolerance") {
+      return resource as Smart<AllergyIntolerance>;
+    }
+    return undefined;
+  }
+
+  /**
+   * Get a Condition resource by ID - specialized method with proper typing
+   */
+  getConditionById(id: string): Smart<Condition> | undefined {
+    const resource = this.getResourceById(id);
+    if (resource && resource.resourceType === "Condition") {
+      return resource as Smart<Condition>;
+    }
+    return undefined;
+  }
+
+  /**
+   * Get an Organization resource by ID - specialized method with proper typing
+   */
+  getOrganizationById(id: string): Smart<Organization> | undefined {
+    const resource = this.getResourceById(id);
+    if (resource && resource.resourceType === "Organization") {
+      return resource as Smart<Organization>;
+    }
+    return undefined;
+  }
+
+  /**
+   * Get a Location resource by ID - specialized method with proper typing
+   */
+  getLocationById(id: string): Smart<Location> | undefined {
+    const resource = this.getResourceById(id);
+    if (resource && resource.resourceType === "Location") {
+      return resource as Smart<Location>;
+    }
+    return undefined;
+  }
+
+  /**
    * Type-safe version of getResourceById that validates the resource type at runtime
-   * FR-3.1: Get resource by ID with type parameter support and runtime validation
+   * FR-3.1: Get resource by ID with type parameter support
    * FR-3.2: Method searches both resource.id and entry.fullUrl for matches
    * FR-3.4: Method returns undefined if resource not found or type doesn't match
    * FR-3.5: Lookup operates in O(1) time complexity
@@ -495,6 +548,51 @@ export class FhirBundleSdk {
   getDiagnosticReports(): Smart<DiagnosticReport>[] {
     const reports = (this.resourcesByType.get("DiagnosticReport") || []) as DiagnosticReport[];
     return reports.map(report => this.createSmartResource(report));
+  }
+
+  /**
+   * Get all AllergyIntolerance resources
+   * Returns empty array if no resources of that type exist
+   * Uses @medplum/fhirtypes for return type definitions
+   * Returns smart resources with reference resolution methods
+   */
+  getAllergyIntolerances(): Smart<AllergyIntolerance>[] {
+    const allergies = (this.resourcesByType.get("AllergyIntolerance") ||
+      []) as AllergyIntolerance[];
+    return allergies.map(allergy => this.createSmartResource(allergy));
+  }
+
+  /**
+   * Get all Condition resources
+   * Returns empty array if no resources of that type exist
+   * Uses @medplum/fhirtypes for return type definitions
+   * Returns smart resources with reference resolution methods
+   */
+  getConditions(): Smart<Condition>[] {
+    const conditions = (this.resourcesByType.get("Condition") || []) as Condition[];
+    return conditions.map(condition => this.createSmartResource(condition));
+  }
+
+  /**
+   * Get all Organization resources
+   * Returns empty array if no resources of that type exist
+   * Uses @medplum/fhirtypes for return type definitions
+   * Returns smart resources with reference resolution methods
+   */
+  getOrganizations(): Smart<Organization>[] {
+    const organizations = (this.resourcesByType.get("Organization") || []) as Organization[];
+    return organizations.map(organization => this.createSmartResource(organization));
+  }
+
+  /**
+   * Get all Location resources
+   * Returns empty array if no resources of that type exist
+   * Uses @medplum/fhirtypes for return type definitions
+   * Returns smart resources with reference resolution methods
+   */
+  getLocations(): Smart<Location>[] {
+    const locations = (this.resourcesByType.get("Location") || []) as Location[];
+    return locations.map(location => this.createSmartResource(location));
   }
 
   /**

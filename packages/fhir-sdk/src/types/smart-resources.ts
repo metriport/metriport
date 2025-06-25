@@ -12,6 +12,8 @@ import {
   Group,
   Device,
   Location,
+  AllergyIntolerance,
+  Condition,
 } from "@medplum/fhirtypes";
 
 /**
@@ -72,6 +74,49 @@ export interface PractitionerReferenceMethods {
 }
 
 /**
+ * Reference methods for AllergyIntolerance resources
+ */
+export interface AllergyIntoleranceReferenceMethods {
+  getPatient(): Smart<Patient> | undefined;
+  getEncounter(): Smart<Encounter> | undefined;
+  getRecorder<T extends Practitioner | PractitionerRole | Patient | RelatedPerson>():
+    | Smart<T>
+    | undefined;
+  getAsserter<T extends Patient | RelatedPerson | Practitioner | PractitionerRole>():
+    | Smart<T>
+    | undefined;
+}
+
+/**
+ * Reference methods for Condition resources
+ */
+export interface ConditionReferenceMethods {
+  getSubject<T extends Patient | Group>(): Smart<T> | undefined;
+  getEncounter(): Smart<Encounter> | undefined;
+  getRecorder<T extends Practitioner | PractitionerRole | Patient | RelatedPerson>():
+    | Smart<T>
+    | undefined;
+  getAsserter<T extends Practitioner | PractitionerRole | Patient | RelatedPerson>():
+    | Smart<T>
+    | undefined;
+}
+
+/**
+ * Reference methods for Organization resources
+ */
+export interface OrganizationReferenceMethods {
+  getPartOf(): Smart<Organization> | undefined;
+}
+
+/**
+ * Reference methods for Location resources
+ */
+export interface LocationReferenceMethods {
+  getManagingOrganization(): Smart<Organization> | undefined;
+  getPartOf(): Smart<Location> | undefined;
+}
+
+/**
  * Base reference methods for resources that don't have specific reference patterns
  */
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
@@ -92,6 +137,14 @@ export type ReferenceMethodsFor<T extends Resource> = T extends Observation
   ? PatientReferenceMethods
   : T extends Practitioner
   ? PractitionerReferenceMethods
+  : T extends AllergyIntolerance
+  ? AllergyIntoleranceReferenceMethods
+  : T extends Condition
+  ? ConditionReferenceMethods
+  : T extends Organization
+  ? OrganizationReferenceMethods
+  : T extends Location
+  ? LocationReferenceMethods
   : BaseReferenceMethods;
 
 /**
@@ -121,6 +174,25 @@ export const REFERENCE_METHOD_MAPPING: Record<string, Record<string, string>> = 
   Patient: {
     getGeneralPractitioner: "generalPractitioner",
     getManagingOrganization: "managingOrganization",
+  },
+  AllergyIntolerance: {
+    getPatient: "patient",
+    getEncounter: "encounter",
+    getRecorder: "recorder",
+    getAsserter: "asserter",
+  },
+  Condition: {
+    getSubject: "subject",
+    getEncounter: "encounter",
+    getRecorder: "recorder",
+    getAsserter: "asserter",
+  },
+  Organization: {
+    getPartOf: "partOf",
+  },
+  Location: {
+    getManagingOrganization: "managingOrganization",
+    getPartOf: "partOf",
   },
 };
 
