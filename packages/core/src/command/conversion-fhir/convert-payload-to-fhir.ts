@@ -138,6 +138,7 @@ async function getConverterParamsAndPayloadPartitions(
       requestId: paramsWithRequestId.requestId,
       fileName: buildDocumentNameForConversionResult(paramsWithRequestId.requestId),
     }),
+    // TODO Eng-531: Make these optional
     unusedSegments: "false",
     invalidAccess: "false",
   };
