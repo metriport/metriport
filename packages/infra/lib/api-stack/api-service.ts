@@ -36,6 +36,7 @@ import { provideAccessToQueue } from "../shared/sqs";
 import { addDefaultMetricsToTargetGroup } from "../shared/target-group";
 import { isProd, isSandbox } from "../shared/util";
 import { SurescriptsAssets } from "../surescripts/types";
+import { QuestAssets } from "../quest/types";
 
 interface ApiProps extends StackProps {
   config: EnvConfig;
@@ -134,6 +135,7 @@ export function createAPIService({
   featureFlagsTable,
   cookieStore,
   surescriptsAssets,
+  questAssets,
   jobAssets,
 }: {
   stack: Construct;
@@ -180,6 +182,7 @@ export function createAPIService({
   featureFlagsTable: dynamodb.Table;
   cookieStore: secret.ISecret | undefined;
   surescriptsAssets: SurescriptsAssets | undefined;
+  questAssets: QuestAssets | undefined;
   jobAssets: JobsAssets;
 }): {
   cluster: ecs.Cluster;
@@ -383,6 +386,19 @@ export function createAPIService({
               ])
             ),
           }),
+          ...(questAssets && {
+            LAB_CONVERSION_BUCKET_NAME: questAssets.labConversionBucket.bucketName,
+            QUEST_REPLICA_BUCKET_NAME: questAssets.questReplicaBucket.bucketName,
+            ...Object.fromEntries(
+              questAssets.questLambdas.map(({ envVarName, lambda }) => [
+                envVarName,
+                lambda.functionName,
+              ])
+            ),
+            ...Object.fromEntries(
+              questAssets.questQueues.map(({ envVarName, queue }) => [envVarName, queue.queueUrl])
+            ),
+          }),
           RUN_PATIENT_JOB_QUEUE_URL: jobAssets.runPatientJobQueue.queueUrl,
         },
       },
@@ -479,6 +495,10 @@ export function createAPIService({
       fargateService.taskDefinition.taskRole
     );
   }
+  if (questAssets) {
+    questAssets.labConversionBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
+    questAssets.questReplicaBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
+  }
 
   if (ehrResponsesBucket) {
     ehrResponsesBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
@@ -516,6 +536,16 @@ export function createAPIService({
 
   if (surescriptsAssets) {
     surescriptsAssets.surescriptsQueues.forEach(({ queue }) => {
+      provideAccessToQueue({
+        accessType: "send",
+        queue,
+        resource: fargateService.taskDefinition.taskRole,
+      });
+    });
+  }
+
+  if (questAssets) {
+    questAssets.questQueues.forEach(({ queue }) => {
       provideAccessToQueue({
         accessType: "send",
         queue,
