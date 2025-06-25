@@ -10,26 +10,10 @@ import {
   Resource,
 } from "@medplum/fhirtypes";
 
-import {
-  SmartResource,
-  SmartObservation,
-  SmartEncounter,
-  SmartDiagnosticReport,
-  SmartPatient,
-  SmartPractitioner,
-  isReferenceMethod,
-  getReferenceField,
-} from "./types/smart-resources";
+import { Smart, isReferenceMethod, getReferenceField } from "./types/smart-resources";
 
 // Re-export smart resource types for external use
-export {
-  SmartResource,
-  SmartObservation,
-  SmartEncounter,
-  SmartDiagnosticReport,
-  SmartPatient,
-  SmartPractitioner,
-} from "./types/smart-resources";
+export { Smart } from "./types/smart-resources";
 
 export {
   Patient,
@@ -68,10 +52,10 @@ export class FhirBundleSdk {
   private resourcesByType: Map<string, Resource[]> = new Map();
 
   // Smart resource caching to maintain object identity
-  private smartResourceCache: WeakMap<Resource, SmartResource<Resource>> = new WeakMap();
+  private smartResourceCache: WeakMap<Resource, Smart<Resource>> = new WeakMap();
 
   // Smart array caching to maintain array identity
-  private smartArrayCache?: Map<string, SmartResource<Resource>[]>;
+  private smartArrayCache?: Map<string, Smart<Resource>[]>;
 
   // Circular reference protection
   private resolutionStack = new Set<string>();
@@ -133,11 +117,11 @@ export class FhirBundleSdk {
    * FR-5.7: Reference resolution operates in O(1) time complexity per reference
    * FR-5.8: Original reference fields remain unchanged
    */
-  private createSmartResource<T extends Resource>(resource: T): SmartResource<T> {
+  private createSmartResource<T extends Resource>(resource: T): Smart<T> {
     // Check cache first to maintain object identity
     const cached = this.smartResourceCache.get(resource);
     if (cached) {
-      return cached as SmartResource<T>;
+      return cached as Smart<T>;
     }
 
     const smartResource = new Proxy(resource, {
@@ -167,7 +151,7 @@ export class FhirBundleSdk {
         }
         return Reflect.getOwnPropertyDescriptor(target, prop);
       },
-    }) as SmartResource<T>;
+    }) as Smart<T>;
 
     // Cache the smart resource
     this.smartResourceCache.set(resource, smartResource);
@@ -182,7 +166,7 @@ export class FhirBundleSdk {
   private resolveReference(
     methodName: string,
     resource: Resource
-  ): SmartResource<Resource> | SmartResource<Resource>[] | undefined {
+  ): Smart<Resource> | Smart<Resource>[] | undefined {
     const referenceField = getReferenceField(methodName, resource.resourceType);
     if (!referenceField) {
       return undefined;
@@ -197,7 +181,7 @@ export class FhirBundleSdk {
 
     // Handle array references
     if (Array.isArray(referenceValue)) {
-      const resolvedResources: SmartResource<Resource>[] = [];
+      const resolvedResources: Smart<Resource>[] = [];
       for (const ref of referenceValue) {
         const resolved = this.resolveReferenceObject(ref);
         if (resolved) {
@@ -364,17 +348,17 @@ export class FhirBundleSdk {
    * FR-3.5: Lookup operates in O(1) time complexity
    * FR-5.1: Returns smart resource with reference resolution methods
    */
-  getResourceById<T extends Resource>(id: string): SmartResource<T> | undefined {
+  getResourceById<T extends Resource>(id: string): Smart<T> | undefined {
     // First try to find by resource.id
     const resourceById = this.resourcesById.get(id);
     if (resourceById) {
-      return this.createSmartResource(resourceById) as unknown as SmartResource<T>;
+      return this.createSmartResource(resourceById) as unknown as Smart<T>;
     }
 
     // Then try to find by fullUrl
     const resourceByFullUrl = this.resourcesByFullUrl.get(id);
     if (resourceByFullUrl) {
-      return this.createSmartResource(resourceByFullUrl) as unknown as SmartResource<T>;
+      return this.createSmartResource(resourceByFullUrl) as unknown as Smart<T>;
     }
 
     // Return undefined if not found (FR-3.4)
@@ -384,10 +368,10 @@ export class FhirBundleSdk {
   /**
    * Get a Patient resource by ID - specialized method with proper typing
    */
-  getPatientById(id: string): SmartPatient | undefined {
+  getPatientById(id: string): Smart<Patient> | undefined {
     const resource = this.getResourceById(id);
     if (resource && resource.resourceType === "Patient") {
-      return resource as SmartPatient;
+      return resource as Smart<Patient>;
     }
     return undefined;
   }
@@ -395,10 +379,10 @@ export class FhirBundleSdk {
   /**
    * Get an Observation resource by ID - specialized method with proper typing
    */
-  getObservationById(id: string): SmartObservation | undefined {
+  getObservationById(id: string): Smart<Observation> | undefined {
     const resource = this.getResourceById(id);
     if (resource && resource.resourceType === "Observation") {
-      return resource as SmartObservation;
+      return resource as Smart<Observation>;
     }
     return undefined;
   }
@@ -406,10 +390,10 @@ export class FhirBundleSdk {
   /**
    * Get an Encounter resource by ID - specialized method with proper typing
    */
-  getEncounterById(id: string): SmartEncounter | undefined {
+  getEncounterById(id: string): Smart<Encounter> | undefined {
     const resource = this.getResourceById(id);
     if (resource && resource.resourceType === "Encounter") {
-      return resource as SmartEncounter;
+      return resource as Smart<Encounter>;
     }
     return undefined;
   }
@@ -425,17 +409,17 @@ export class FhirBundleSdk {
   getResourceByIdWithType<T extends Resource>(
     id: string,
     resourceType: string
-  ): SmartResource<T> | undefined {
+  ): Smart<T> | undefined {
     // First try to find by resource.id
     const resourceById = this.resourcesById.get(id);
     if (resourceById && resourceById.resourceType === resourceType) {
-      return this.createSmartResource(resourceById) as unknown as SmartResource<T>;
+      return this.createSmartResource(resourceById) as unknown as Smart<T>;
     }
 
     // Then try to find by fullUrl
     const resourceByFullUrl = this.resourcesByFullUrl.get(id);
     if (resourceByFullUrl && resourceByFullUrl.resourceType === resourceType) {
-      return this.createSmartResource(resourceByFullUrl) as unknown as SmartResource<T>;
+      return this.createSmartResource(resourceByFullUrl) as unknown as Smart<T>;
     }
 
     // Return undefined if not found or type doesn't match (FR-3.4)
@@ -448,7 +432,7 @@ export class FhirBundleSdk {
    * FR-4.7: Uses @medplum/fhirtypes for return type definitions
    * FR-5.1: Returns smart resources with reference resolution methods
    */
-  getPatients(): SmartPatient[] {
+  getPatients(): Smart<Patient>[] {
     const patients = (this.resourcesByType.get("Patient") || []) as Patient[];
     // Cache the smart resource array to maintain object identity
     const cacheKey = "patients";
@@ -456,7 +440,7 @@ export class FhirBundleSdk {
       this.smartArrayCache = new Map();
     }
     if (this.smartArrayCache.has(cacheKey)) {
-      return this.smartArrayCache.get(cacheKey) as SmartPatient[];
+      return this.smartArrayCache.get(cacheKey) as Smart<Patient>[];
     }
     const smartPatients = patients.map(patient => this.createSmartResource(patient));
     this.smartArrayCache.set(cacheKey, smartPatients);
@@ -469,7 +453,7 @@ export class FhirBundleSdk {
    * FR-4.7: Uses @medplum/fhirtypes for return type definitions
    * FR-5.1: Returns smart resources with reference resolution methods
    */
-  getObservations(): SmartObservation[] {
+  getObservations(): Smart<Observation>[] {
     const observations = (this.resourcesByType.get("Observation") || []) as Observation[];
     return observations.map(observation => this.createSmartResource(observation));
   }
@@ -480,7 +464,7 @@ export class FhirBundleSdk {
    * FR-4.7: Uses @medplum/fhirtypes for return type definitions
    * FR-5.1: Returns smart resources with reference resolution methods
    */
-  getEncounters(): SmartEncounter[] {
+  getEncounters(): Smart<Encounter>[] {
     const encounters = (this.resourcesByType.get("Encounter") || []) as Encounter[];
     return encounters.map(encounter => this.createSmartResource(encounter));
   }
@@ -491,7 +475,7 @@ export class FhirBundleSdk {
    * FR-4.7: Uses @medplum/fhirtypes for return type definitions
    * FR-5.1: Returns smart resources with reference resolution methods
    */
-  getPractitioners(): SmartPractitioner[] {
+  getPractitioners(): Smart<Practitioner>[] {
     const practitioners = (this.resourcesByType.get("Practitioner") || []) as Practitioner[];
     return practitioners.map(practitioner => this.createSmartResource(practitioner));
   }
@@ -502,7 +486,7 @@ export class FhirBundleSdk {
    * FR-4.7: Uses @medplum/fhirtypes for return type definitions
    * FR-5.1: Returns smart resources with reference resolution methods
    */
-  getDiagnosticReports(): SmartDiagnosticReport[] {
+  getDiagnosticReports(): Smart<DiagnosticReport>[] {
     const reports = (this.resourcesByType.get("DiagnosticReport") || []) as DiagnosticReport[];
     return reports.map(report => this.createSmartResource(report));
   }

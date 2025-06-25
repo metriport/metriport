@@ -20,16 +20,16 @@ npm install @metriport/fhir-sdk
 ## Usage
 
 ```typescript
-import { FhirBundleSdk } from "@metriport/fhir-sdk";
+import { FhirBundleSdk, Smart, Patient, Observation } from "@metriport/fhir-sdk";
 
 const sdk = new FhirBundleSdk(bundle);
 
-// Get all observations
-const observations = sdk.getObservations();
+// Get all observations - returns Smart<Observation>[]
+const observations: Smart<Observation>[] = sdk.getObservations();
 
 // Access referenced patient directly
 const glucoseObs = observations.find(obs => obs.code?.text === "Glucose");
-const patient = glucoseObs?.getSubject(); // Returns typed Patient resource
+const patient: Smart<Patient> | undefined = glucoseObs?.getSubject(); // Returns Smart<Patient>
 const patientName = patient?.name?.[0]?.given?.[0];
 
 // Export subset

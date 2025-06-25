@@ -23,17 +23,17 @@ export interface SmartResourceBase {
 }
 
 /**
- * Generic type that converts any Resource to a SmartResource
+ * Generic type that converts any Resource to a Smart resource
  */
-export type SmartResource<T extends Resource> = T & SmartResourceBase & ReferenceMethodsFor<T>;
+export type Smart<T extends Resource> = T & SmartResourceBase & ReferenceMethodsFor<T>;
 
 /**
  * Reference methods for Observation resources
  */
 export interface ObservationReferenceMethods {
-  getSubject(): SmartResource<Patient | Group | Device | Location> | undefined;
-  getEncounter(): SmartResource<Encounter> | undefined;
-  getPerformer(): SmartResource<
+  getSubject(): Smart<Patient | Group | Device | Location> | undefined;
+  getEncounter(): Smart<Encounter> | undefined;
+  getPerformer(): Smart<
     Practitioner | PractitionerRole | Organization | CareTeam | Patient | RelatedPerson
   >[];
 }
@@ -42,25 +42,25 @@ export interface ObservationReferenceMethods {
  * Reference methods for Encounter resources
  */
 export interface EncounterReferenceMethods {
-  getSubject(): SmartResource<Patient | Group> | undefined;
-  getParticipant(): SmartResource<Practitioner | PractitionerRole | RelatedPerson | Device>[];
+  getSubject(): Smart<Patient | Group> | undefined;
+  getParticipant(): Smart<Practitioner | PractitionerRole | RelatedPerson | Device>[];
 }
 
 /**
  * Reference methods for DiagnosticReport resources
  */
 export interface DiagnosticReportReferenceMethods {
-  getSubject(): SmartResource<Patient | Group | Device | Location> | undefined;
-  getResult(): SmartResource<Observation>[];
-  getPerformer(): SmartResource<Practitioner | PractitionerRole | Organization | CareTeam>[];
+  getSubject(): Smart<Patient | Group | Device | Location> | undefined;
+  getResult(): Smart<Observation>[];
+  getPerformer(): Smart<Practitioner | PractitionerRole | Organization | CareTeam>[];
 }
 
 /**
  * Reference methods for Patient resources
  */
 export interface PatientReferenceMethods {
-  getGeneralPractitioner(): SmartResource<Practitioner | PractitionerRole | Organization>[];
-  getManagingOrganization(): SmartResource<Organization> | undefined;
+  getGeneralPractitioner(): Smart<Practitioner | PractitionerRole | Organization>[];
+  getManagingOrganization(): Smart<Organization> | undefined;
 }
 
 /**
@@ -95,13 +95,10 @@ export type ReferenceMethodsFor<T extends Resource> = T extends Observation
   : BaseReferenceMethods;
 
 /**
- * Specific smart resource types for common use cases
+ * Note: We only use the generic Smart<T> pattern for consistency.
+ * Specific type aliases like SmartObservation are not needed since
+ * Smart<Observation> provides the same functionality.
  */
-export type SmartObservation = SmartResource<Observation>;
-export type SmartEncounter = SmartResource<Encounter>;
-export type SmartDiagnosticReport = SmartResource<DiagnosticReport>;
-export type SmartPatient = SmartResource<Patient>;
-export type SmartPractitioner = SmartResource<Practitioner>;
 
 /**
  * Reference field mapping - maps reference method names to their field paths
