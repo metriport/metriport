@@ -50,7 +50,7 @@ export async function createDischargeRequeryJob(
     cxId,
     patientId,
     jobType: dischargeRequeryJobType,
-    status: ["waiting"],
+    status: "waiting",
   });
 
   if (existingJobs.length > 0) {
