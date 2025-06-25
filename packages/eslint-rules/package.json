@@ -1,27 +1,30 @@
 {
-    "name": "@metriport/eslint-plugin-eslint-rules",
-    "version": "1.0.0",
-    "description": "Custom ESLint rules for Metriport's monorepo",
-    "main": "index.js",
-    "keywords": ["eslint", "rules"],
-    "author": "Metriport",
-    "license": "MIT",
-    "scripts": {
-        "build": "echo \"Skipping build\"",
-        "build:cloud": "echo \"Skipping build:cloud\"",
-        "test": "echo \"No test specified yet\"",
-        "clean": "rimraf dist",
-        "deepclean": "npm run clean && rimraf node_modules"
-    },
-    "peerDependencies": {
-      "eslint": ">=8.0.0"
-    },
-    "devDependencies": {
-      "eslint": "^8.57.0",
-      "@typescript-eslint/rule-tester": "^6.0.0",
-      "jest": "^29.0.0"
-    },
-    "engines": {
-      "node": ">=18.0.0"
-    }
+  "name": "@metriport/eslint-plugin-eslint-rules",
+  "version": "1.0.1-alpha.0",
+  "description": "Custom ESLint rules for Metriport's monorepo",
+  "main": "index.js",
+  "keywords": [
+    "eslint",
+    "rules"
+  ],
+  "author": "Metriport",
+  "license": "MIT",
+  "scripts": {
+    "build": "echo \"Skipping build\"",
+    "build:cloud": "echo \"Skipping build:cloud\"",
+    "test": "echo \"No test specified yet\"",
+    "clean": "rimraf dist",
+    "deepclean": "npm run clean && rimraf node_modules"
+  },
+  "peerDependencies": {
+    "eslint": ">=8.0.0"
+  },
+  "devDependencies": {
+    "@typescript-eslint/rule-tester": "^6.0.0",
+    "eslint": "^8.57.0",
+    "jest": "^29.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
+}
