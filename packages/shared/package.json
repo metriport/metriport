@@ -103,6 +103,7 @@
   "devDependencies": {
     "@faker-js/faker": "^8.0.2",
     "@medplum/fhirtypes": "^2.2.10",
+    "@metriport/eslint-rules": "file:packages/eslint-rules",
     "@tsconfig/recommended": "^1.0.2",
     "@types/jest": "29.5.3",
     "@typescript-eslint/eslint-plugin": "^5.48.2",
@@ -112,7 +113,6 @@
     "prettier": "^2.8.3",
     "ts-essentials": "^9.3.1",
     "ts-jest": "29.1.1",
-    "typescript": "^4.9.5",
-    "@metriport/eslint-rules": "file:packages/eslint-rules"
+    "typescript": "^4.9.5"
   }
 }
