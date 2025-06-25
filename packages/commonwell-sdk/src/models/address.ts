@@ -1,28 +1,35 @@
+import { optionalStringPreprocess } from "@metriport/shared/util/zod";
 import { z } from "zod";
 import { periodSchema } from "./period";
 
-// The use of an address. This value set defines its own terms in the
-// system http://hl7.org/fhir/address-use.
-// See: https://specification.commonwellalliance.org/appendix/terminology-bindings#c1-address-use-codes
+/**
+ * The use of an address.
+ * @see: https://hl7.org/fhir/R4/valueset-address-use.html
+ */
 export enum AddressUseCodes {
   home = "home",
-  work = "work",
-  temp = "temp",
   old = "old",
-  unspecified = "unspecified",
 }
-export const addressUseCodesSchema = z.enum(Object.keys(AddressUseCodes) as [string, ...string[]]);
+export const addressUseCodesSchema = z.nativeEnum(AddressUseCodes);
+
+export enum AddressTypeCodes {
+  postal = "postal",
+  physical = "physical",
+  both = "both",
+}
+export const addressTypeCodesSchema = z.nativeEnum(AddressTypeCodes);
 
 // A postal address.
 // See: https://specification.commonwellalliance.org/services/rest-api-reference (8.4.3 Address)
 export const addressSchema = z.object({
-  use: addressUseCodesSchema.optional().nullable(),
-  line: z.array(z.string()).optional().nullable(),
-  city: z.string().optional().nullable(),
-  state: z.string().optional().nullable(),
-  zip: z.string(),
-  country: z.string().optional().nullable(),
-  period: periodSchema.optional().nullable(),
+  line: z.array(z.string()).nullish(),
+  city: z.string().nullish(),
+  state: z.string().nullish(),
+  country: optionalStringPreprocess(z.string().nullish()),
+  postalCode: z.string(),
+  use: optionalStringPreprocess(addressUseCodesSchema.nullish()),
+  type: optionalStringPreprocess(addressTypeCodesSchema.nullish()),
+  period: periodSchema.nullish(),
 });
 
 export type Address = z.infer<typeof addressSchema>;
