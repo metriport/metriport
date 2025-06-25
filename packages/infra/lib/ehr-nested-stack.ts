@@ -645,6 +645,12 @@ export class EhrNestedStack extends NestedStack {
         EHR_BUNDLE_BUCKET_NAME: ownProps.ehrBundleBucket.bucketName,
         EHR_COMPUTE_RESOURCE_DIFF_BUNDLES_QUEUE_URL:
           ownProps.computeResourceDiffBundlesQueue.queueUrl,
+        ...(ownProps.fhirConverterLambda && {
+          FHIR_CONVERTER_LAMBDA_NAME: ownProps.fhirConverterLambda.functionName,
+        }),
+        ...(ownProps.fhirConverterBucket && {
+          FHIR_CONVERTER_BUCKET_NAME: ownProps.fhirConverterBucket.bucketName,
+        }),
         WAIT_TIME_IN_MILLIS: waitTime.toMilliseconds().toString(),
         MAX_ATTEMPTS: queueSettings.maxReceiveCount.toString(),
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
