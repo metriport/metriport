@@ -41,8 +41,8 @@ export abstract class ConversionFhirHandler {
       fileName: buildKeyForConversionFhir({
         cxId: paramsWithRequestId.cxId,
         patientId: paramsWithRequestId.patientId,
-        requestId: paramsWithRequestId.requestId,
-        fileName: buildDocumentNameForConversionResult(paramsWithRequestId.requestId),
+        requestId,
+        fileName: `${paramsWithRequestId.inputS3BucketName}/${paramsWithRequestId.inputS3Key}`,
       }),
       // TODO Eng-531: Make these optional
       unusedSegments: "false",
