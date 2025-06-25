@@ -1,10 +1,8 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
 import { BadRequestError, errorToString, MetriportError } from "@metriport/shared";
-import { FhirConverterParams } from "../../domain/conversion/bundle-modifications/modifications";
 import { cleanUpPayload } from "../../domain/conversion/cleanup";
 import {
   buildDocumentNameForCleanConversion,
-  buildDocumentNameForConversionResult,
   buildDocumentNameForPreConversion,
   buildKeyForConversionFhir,
 } from "../../domain/conversion/filename";
@@ -24,9 +22,9 @@ type ConversionFhirRequestWithRequestId = Omit<ConversionFhirRequest, "requestId
   requestId: string;
 };
 
-export async function getConverterParamsAndPayloadPartitions(
+export async function getPayloadPartitions(
   paramsWithRequestId: ConversionFhirRequestWithRequestId
-): Promise<{ converterParams: FhirConverterParams; partitionedPayloads: string[] }> {
+): Promise<string[]> {
   const { log } = out(
     `getConverterParamsAndPayloadPartitions - cxId ${paramsWithRequestId.cxId} patientId ${paramsWithRequestId.patientId} requestId ${paramsWithRequestId.requestId}`
   );
@@ -73,20 +71,8 @@ export async function getConverterParamsAndPayloadPartitions(
     stepName: "clean",
     throwError: false,
   });
-  const converterParams: FhirConverterParams = {
-    patientId: paramsWithRequestId.patientId,
-    fileName: buildKeyForConversionFhir({
-      cxId: paramsWithRequestId.cxId,
-      patientId: paramsWithRequestId.patientId,
-      requestId: paramsWithRequestId.requestId,
-      fileName: buildDocumentNameForConversionResult(paramsWithRequestId.requestId),
-    }),
-    // TODO Eng-531: Make these optional
-    unusedSegments: "false",
-    invalidAccess: "false",
-  };
   const partitionedPayloads = partitionPayload(payloadClean);
-  return { converterParams, partitionedPayloads };
+  return partitionedPayloads;
 }
 
 export async function saveConverterStep({

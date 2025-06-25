@@ -1,12 +1,15 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { FhirConverterParams } from "../../domain/conversion/bundle-modifications/modifications";
-import { buildDocumentNameForConversionResult } from "../../domain/conversion/filename";
+import {
+  buildDocumentNameForConversionResult,
+  buildKeyForConversionFhir,
+} from "../../domain/conversion/filename";
 import { buildBundleFromResources } from "../../external/fhir/bundle/bundle";
 import { out } from "../../util/log";
 import { JSON_TXT_MIME_TYPE } from "../../util/mime";
 import { capture } from "../../util/notifications";
-import { getConverterParamsAndPayloadPartitions, saveConverterStep } from "./utils";
+import { getPayloadPartitions, saveConverterStep } from "./utils";
 
 const LARGE_CHUNK_SIZE_IN_BYTES = 50_000_000;
 
@@ -32,9 +35,19 @@ export abstract class ConversionFhirHandler {
     const { log } = out(`convertPayloadToFHIR - cxId ${params.cxId} patientId ${params.patientId}`);
     const requestId = params.requestId ?? uuidv7();
     const paramsWithRequestId = { ...params, requestId };
-    const { converterParams, partitionedPayloads } = await getConverterParamsAndPayloadPartitions(
-      paramsWithRequestId
-    );
+    const partitionedPayloads = await getPayloadPartitions(paramsWithRequestId);
+    const converterParams: FhirConverterParams = {
+      patientId: paramsWithRequestId.patientId,
+      fileName: buildKeyForConversionFhir({
+        cxId: paramsWithRequestId.cxId,
+        patientId: paramsWithRequestId.patientId,
+        requestId: paramsWithRequestId.requestId,
+        fileName: buildDocumentNameForConversionResult(paramsWithRequestId.requestId),
+      }),
+      // TODO Eng-531: Make these optional
+      unusedSegments: "false",
+      invalidAccess: "false",
+    };
     const resources = new Set<Resource>();
     for (const [index, payload] of partitionedPayloads.entries()) {
       const chunkSize = new Blob([payload]).size;
