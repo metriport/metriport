@@ -471,31 +471,6 @@ export class APIStack extends Stack {
     });
 
     //-------------------------------------------
-    // EHR
-    //-------------------------------------------
-    const {
-      getAppointmentsLambda: ehrGetAppointmentsLambda,
-      syncPatientQueue: ehrSyncPatientQueue,
-      syncPatientLambda: ehrSyncPatientLambda,
-      elationLinkPatientQueue,
-      elationLinkPatientLambda,
-      healthieLinkPatientQueue,
-      healthieLinkPatientLambda,
-      contributeResourceDiffBundlesLambda: ehrContributeResourceDiffBundlesLambda,
-      computeResourceDiffBundlesLambda: ehrComputeResourceDiffBundlesLambda,
-      refreshEhrBundlesQueue: ehrRefreshEhrBundlesQueue,
-      refreshEhrBundlesLambda: ehrRefreshEhrBundlesLambda,
-      ehrBundleBucket,
-    } = new EhrNestedStack(this, "EhrNestedStack", {
-      config: props.config,
-      lambdaLayers,
-      vpc: this.vpc,
-      alarmAction: slackNotification?.alarmAction,
-      ehrResponsesBucket,
-      medicalDocumentsBucket,
-    });
-
-    //-------------------------------------------
     // Jobs
     //-------------------------------------------
     const jobsStack = new JobsNestedStack(this, "JobsNestedStack", {
@@ -570,6 +545,33 @@ export class APIStack extends Stack {
       alarmSnsAction: slackNotification?.alarmAction,
     });
     const cookieStore = cwEnhancedQueryQueues?.cookieStore;
+
+    //-------------------------------------------
+    // EHR
+    //-------------------------------------------
+    const {
+      getAppointmentsLambda: ehrGetAppointmentsLambda,
+      syncPatientQueue: ehrSyncPatientQueue,
+      syncPatientLambda: ehrSyncPatientLambda,
+      elationLinkPatientQueue,
+      elationLinkPatientLambda,
+      healthieLinkPatientQueue,
+      healthieLinkPatientLambda,
+      contributeResourceDiffBundlesLambda: ehrContributeResourceDiffBundlesLambda,
+      computeResourceDiffBundlesLambda: ehrComputeResourceDiffBundlesLambda,
+      refreshEhrBundlesQueue: ehrRefreshEhrBundlesQueue,
+      refreshEhrBundlesLambda: ehrRefreshEhrBundlesLambda,
+      ehrBundleBucket,
+    } = new EhrNestedStack(this, "EhrNestedStack", {
+      config: props.config,
+      lambdaLayers,
+      vpc: this.vpc,
+      alarmAction: slackNotification?.alarmAction,
+      ehrResponsesBucket,
+      fhirConverterLambda: fhirConverter?.lambda,
+      fhirConverterBucket: fhirConverter?.bucket,
+      medicalDocumentsBucket,
+    });
 
     //-------------------------------------------
     // ECR + ECS + Fargate for Backend Servers
