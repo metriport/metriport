@@ -1,10 +1,9 @@
 import { FhirBundleSdk } from "../index";
 import {
-  validCompleteBundle,
-  invalidBundleWrongType,
   invalidBundleWrongBundleType,
+  invalidBundleWrongType,
+  validCompleteBundle,
 } from "./fixtures/fhir-bundles";
-import { Patient } from "@medplum/fhirtypes";
 
 describe("FhirBundleSdk - Basic TDD Tests", () => {
   describe("Bundle Loading and Initialization", () => {
@@ -28,54 +27,6 @@ describe("FhirBundleSdk - Basic TDD Tests", () => {
           "Invalid bundle: type must be 'collection'"
         );
       });
-    });
-  });
-
-  describe("Not Implemented Methods - Red Phase", () => {
-    let sdk: FhirBundleSdk;
-
-    beforeEach(() => {
-      sdk = new FhirBundleSdk(validCompleteBundle);
-    });
-
-    it("should throw 'Not implemented' for validateReferences", () => {
-      expect(() => sdk.validateReferences()).toThrow("Not implemented");
-    });
-
-    it("should throw 'Not implemented' for getResourceById", () => {
-      expect(() => sdk.getResourceById<Patient>("patient-123")).toThrow("Not implemented");
-    });
-
-    it("should throw 'Not implemented' for getPatients", () => {
-      expect(() => sdk.getPatients()).toThrow("Not implemented");
-    });
-
-    it("should throw 'Not implemented' for getObservations", () => {
-      expect(() => sdk.getObservations()).toThrow("Not implemented");
-    });
-
-    it("should throw 'Not implemented' for getEncounters", () => {
-      expect(() => sdk.getEncounters()).toThrow("Not implemented");
-    });
-
-    it("should throw 'Not implemented' for getPractitioners", () => {
-      expect(() => sdk.getPractitioners()).toThrow("Not implemented");
-    });
-
-    it("should throw 'Not implemented' for getDiagnosticReports", () => {
-      expect(() => sdk.getDiagnosticReports()).toThrow("Not implemented");
-    });
-
-    it("should throw 'Not implemented' for exportSubset", () => {
-      expect(() => sdk.exportSubset(["patient-123"])).toThrow("Not implemented");
-    });
-
-    it("should throw 'Not implemented' for exportByType", () => {
-      expect(() => sdk.exportByType("Patient")).toThrow("Not implemented");
-    });
-
-    it("should throw 'Not implemented' for exportByTypes", () => {
-      expect(() => sdk.exportByTypes(["Patient", "Observation"])).toThrow("Not implemented");
     });
   });
 });

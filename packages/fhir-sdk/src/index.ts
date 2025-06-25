@@ -10,6 +10,36 @@ import {
   Resource,
 } from "@medplum/fhirtypes";
 
+import {
+  SmartResource,
+  SmartObservation,
+  SmartEncounter,
+  SmartDiagnosticReport,
+  SmartPatient,
+  SmartPractitioner,
+  isReferenceMethod,
+  getReferenceField,
+} from "./types/smart-resources";
+
+// Re-export smart resource types for external use
+export {
+  SmartResource,
+  SmartObservation,
+  SmartEncounter,
+  SmartDiagnosticReport,
+  SmartPatient,
+  SmartPractitioner,
+} from "./types/smart-resources";
+
+export {
+  Patient,
+  Observation,
+  Encounter,
+  DiagnosticReport,
+  Practitioner,
+  Resource,
+} from "@medplum/fhirtypes";
+
 /**
  * Validation result interface
  */
@@ -36,6 +66,15 @@ export class FhirBundleSdk {
   private resourcesById: Map<string, Resource> = new Map();
   private resourcesByFullUrl: Map<string, Resource> = new Map();
   private resourcesByType: Map<string, Resource[]> = new Map();
+
+  // Smart resource caching to maintain object identity
+  private smartResourceCache: WeakMap<Resource, SmartResource<Resource>> = new WeakMap();
+
+  // Smart array caching to maintain array identity
+  private smartArrayCache?: Map<string, SmartResource<Resource>[]>;
+
+  // Circular reference protection
+  private resolutionStack = new Set<string>();
 
   constructor(bundle: Bundle) {
     // FR-1.2: Validate bundle resourceType
@@ -86,6 +125,138 @@ export class FhirBundleSdk {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       this.resourcesByType.get(resourceType)!.push(resource);
     }
+  }
+
+  /**
+   * Create a smart resource with reference resolution methods
+   * FR-5.1: Resources returned by SDK have additional getter methods for each Reference field
+   * FR-5.7: Reference resolution operates in O(1) time complexity per reference
+   * FR-5.8: Original reference fields remain unchanged
+   */
+  private createSmartResource<T extends Resource>(resource: T): SmartResource<T> {
+    // Check cache first to maintain object identity
+    const cached = this.smartResourceCache.get(resource);
+    if (cached) {
+      return cached as SmartResource<T>;
+    }
+
+    const smartResource = new Proxy(resource, {
+      get: (target, prop, receiver) => {
+        // Handle the smart resource marker
+        if (prop === "__isSmartResource") {
+          return true;
+        }
+
+        // Check if this is a reference method call
+        if (typeof prop === "string" && isReferenceMethod(prop, target.resourceType)) {
+          return () => this.resolveReference(prop, target);
+        }
+
+        // Return original property
+        return Reflect.get(target, prop, receiver);
+      },
+
+      // Ensure JSON serialization works correctly (FR-5.8)
+      ownKeys: target => {
+        return Reflect.ownKeys(target).filter(key => key !== "__isSmartResource");
+      },
+
+      getOwnPropertyDescriptor: (target, prop) => {
+        if (prop === "__isSmartResource") {
+          return undefined;
+        }
+        return Reflect.getOwnPropertyDescriptor(target, prop);
+      },
+    }) as SmartResource<T>;
+
+    // Cache the smart resource
+    this.smartResourceCache.set(resource, smartResource);
+
+    return smartResource;
+  }
+
+  /**
+   * Resolve a reference method call to actual resources
+   * FR-5.2-5.6: Handle different reference types and patterns
+   */
+  private resolveReference(
+    methodName: string,
+    resource: Resource
+  ): SmartResource<Resource> | SmartResource<Resource>[] | undefined {
+    const referenceField = getReferenceField(methodName, resource.resourceType);
+    if (!referenceField) {
+      return undefined;
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const referenceValue = (resource as any)[referenceField];
+    if (!referenceValue) {
+      // FR-5.6: Return appropriate empty value for missing references
+      return this.isArrayReferenceField(referenceField, resource.resourceType) ? [] : undefined;
+    }
+
+    // Handle array references
+    if (Array.isArray(referenceValue)) {
+      const resolvedResources: SmartResource<Resource>[] = [];
+      for (const ref of referenceValue) {
+        const resolved = this.resolveReferenceObject(ref);
+        if (resolved) {
+          resolvedResources.push(this.createSmartResource(resolved));
+        }
+      }
+      return resolvedResources;
+    }
+
+    // Handle single reference
+    const resolved = this.resolveReferenceObject(referenceValue);
+    return resolved ? this.createSmartResource(resolved) : undefined;
+  }
+
+  /**
+   * Resolve a single reference object to a resource
+   * FR-5.5: Reference resolution methods handle both resource.id and fullUrl matching
+   */
+  private resolveReferenceObject(referenceObj: unknown): Resource | undefined {
+    if (!referenceObj || typeof referenceObj !== "object" || !("reference" in referenceObj)) {
+      return undefined;
+    }
+
+    const reference = (referenceObj as { reference: string }).reference;
+
+    // Circular reference protection
+    if (this.resolutionStack.has(reference)) {
+      return undefined;
+    }
+
+    this.resolutionStack.add(reference);
+
+    try {
+      // Try to resolve by resource ID (e.g., "Patient/123")
+      if (reference.includes("/")) {
+        const [, resourceId] = reference.split("/");
+        if (resourceId && this.resourcesById.has(resourceId)) {
+          return this.resourcesById.get(resourceId);
+        }
+      }
+
+      // Try to resolve by fullUrl (e.g., "urn:uuid:123")
+      if (this.resourcesByFullUrl.has(reference)) {
+        return this.resourcesByFullUrl.get(reference);
+      }
+
+      return undefined;
+    } finally {
+      this.resolutionStack.delete(reference);
+    }
+  }
+
+  /**
+   * Check if a reference field expects an array of references
+   */
+  private isArrayReferenceField(fieldName: string, resourceType: string): boolean {
+    // Known array reference fields
+    const arrayFields = new Set(["performer", "participant", "result", "generalPractitioner"]);
+    return arrayFields.has(fieldName);
   }
 
   /**
@@ -191,18 +362,19 @@ export class FhirBundleSdk {
    * FR-3.2: Method searches both resource.id and entry.fullUrl for matches
    * FR-3.4: Method returns undefined if resource not found
    * FR-3.5: Lookup operates in O(1) time complexity
+   * FR-5.1: Returns smart resource with reference resolution methods
    */
-  getResourceById<T extends Resource>(id: string): T | undefined {
+  getResourceById<T extends Resource>(id: string): SmartResource<T> | undefined {
     // First try to find by resource.id
     const resourceById = this.resourcesById.get(id);
     if (resourceById) {
-      return resourceById as T;
+      return this.createSmartResource(resourceById) as unknown as SmartResource<T>;
     }
 
     // Then try to find by fullUrl
     const resourceByFullUrl = this.resourcesByFullUrl.get(id);
     if (resourceByFullUrl) {
-      return resourceByFullUrl as T;
+      return this.createSmartResource(resourceByFullUrl) as unknown as SmartResource<T>;
     }
 
     // Return undefined if not found (FR-3.4)
@@ -210,48 +382,129 @@ export class FhirBundleSdk {
   }
 
   /**
+   * Get a Patient resource by ID - specialized method with proper typing
+   */
+  getPatientById(id: string): SmartPatient | undefined {
+    const resource = this.getResourceById(id);
+    if (resource && resource.resourceType === "Patient") {
+      return resource as SmartPatient;
+    }
+    return undefined;
+  }
+
+  /**
+   * Get an Observation resource by ID - specialized method with proper typing
+   */
+  getObservationById(id: string): SmartObservation | undefined {
+    const resource = this.getResourceById(id);
+    if (resource && resource.resourceType === "Observation") {
+      return resource as SmartObservation;
+    }
+    return undefined;
+  }
+
+  /**
+   * Get an Encounter resource by ID - specialized method with proper typing
+   */
+  getEncounterById(id: string): SmartEncounter | undefined {
+    const resource = this.getResourceById(id);
+    if (resource && resource.resourceType === "Encounter") {
+      return resource as SmartEncounter;
+    }
+    return undefined;
+  }
+
+  /**
+   * Type-safe version of getResourceById that validates the resource type at runtime
+   * FR-3.1: Get resource by ID with type parameter support and runtime validation
+   * FR-3.2: Method searches both resource.id and entry.fullUrl for matches
+   * FR-3.4: Method returns undefined if resource not found or type doesn't match
+   * FR-3.5: Lookup operates in O(1) time complexity
+   * FR-5.1: Returns smart resource with reference resolution methods
+   */
+  getResourceByIdWithType<T extends Resource>(
+    id: string,
+    resourceType: string
+  ): SmartResource<T> | undefined {
+    // First try to find by resource.id
+    const resourceById = this.resourcesById.get(id);
+    if (resourceById && resourceById.resourceType === resourceType) {
+      return this.createSmartResource(resourceById) as unknown as SmartResource<T>;
+    }
+
+    // Then try to find by fullUrl
+    const resourceByFullUrl = this.resourcesByFullUrl.get(id);
+    if (resourceByFullUrl && resourceByFullUrl.resourceType === resourceType) {
+      return this.createSmartResource(resourceByFullUrl) as unknown as SmartResource<T>;
+    }
+
+    // Return undefined if not found or type doesn't match (FR-3.4)
+    return undefined;
+  }
+
+  /**
    * FR-4.1: Get all Patient resources
    * FR-4.6: Returns empty array if no resources of that type exist
    * FR-4.7: Uses @medplum/fhirtypes for return type definitions
+   * FR-5.1: Returns smart resources with reference resolution methods
    */
-  getPatients(): Patient[] {
-    return (this.resourcesByType.get("Patient") || []) as Patient[];
+  getPatients(): SmartPatient[] {
+    const patients = (this.resourcesByType.get("Patient") || []) as Patient[];
+    // Cache the smart resource array to maintain object identity
+    const cacheKey = "patients";
+    if (!this.smartArrayCache) {
+      this.smartArrayCache = new Map();
+    }
+    if (this.smartArrayCache.has(cacheKey)) {
+      return this.smartArrayCache.get(cacheKey) as SmartPatient[];
+    }
+    const smartPatients = patients.map(patient => this.createSmartResource(patient));
+    this.smartArrayCache.set(cacheKey, smartPatients);
+    return smartPatients;
   }
 
   /**
    * FR-4.2: Get all Observation resources
    * FR-4.6: Returns empty array if no resources of that type exist
    * FR-4.7: Uses @medplum/fhirtypes for return type definitions
+   * FR-5.1: Returns smart resources with reference resolution methods
    */
-  getObservations(): Observation[] {
-    return (this.resourcesByType.get("Observation") || []) as Observation[];
+  getObservations(): SmartObservation[] {
+    const observations = (this.resourcesByType.get("Observation") || []) as Observation[];
+    return observations.map(observation => this.createSmartResource(observation));
   }
 
   /**
    * FR-4.3: Get all Encounter resources
    * FR-4.6: Returns empty array if no resources of that type exist
    * FR-4.7: Uses @medplum/fhirtypes for return type definitions
+   * FR-5.1: Returns smart resources with reference resolution methods
    */
-  getEncounters(): Encounter[] {
-    return (this.resourcesByType.get("Encounter") || []) as Encounter[];
+  getEncounters(): SmartEncounter[] {
+    const encounters = (this.resourcesByType.get("Encounter") || []) as Encounter[];
+    return encounters.map(encounter => this.createSmartResource(encounter));
   }
 
   /**
    * FR-4.4: Get all Practitioner resources
    * FR-4.6: Returns empty array if no resources of that type exist
    * FR-4.7: Uses @medplum/fhirtypes for return type definitions
+   * FR-5.1: Returns smart resources with reference resolution methods
    */
-  getPractitioners(): Practitioner[] {
-    return (this.resourcesByType.get("Practitioner") || []) as Practitioner[];
+  getPractitioners(): SmartPractitioner[] {
+    const practitioners = (this.resourcesByType.get("Practitioner") || []) as Practitioner[];
+    return practitioners.map(practitioner => this.createSmartResource(practitioner));
   }
 
   /**
    * FR-4.5: Get all DiagnosticReport resources
    * FR-4.6: Returns empty array if no resources of that type exist
    * FR-4.7: Uses @medplum/fhirtypes for return type definitions
+   * FR-5.1: Returns smart resources with reference resolution methods
    */
-  getDiagnosticReports(): DiagnosticReport[] {
-    return (this.resourcesByType.get("DiagnosticReport") || []) as DiagnosticReport[];
+  getDiagnosticReports(): SmartDiagnosticReport[] {
+    const reports = (this.resourcesByType.get("DiagnosticReport") || []) as DiagnosticReport[];
+    return reports.map(report => this.createSmartResource(report));
   }
 
   /**
