@@ -5,6 +5,7 @@ export const processDischargeRequeryRequestSchema = z.object({
   cxId: z.string(),
   jobId: z.string(),
   patientId: z.string(),
+  reportError: z.boolean().optional(),
 });
 
 export type ProcessDischargeRequeryRequest = z.infer<typeof processDischargeRequeryRequestSchema>;
