@@ -245,7 +245,7 @@ router.get(
 );
 
 const updateRuntimeDataSchema = z.object({
-  data: z.record(z.unknown()).optional(),
+  data: z.record(z.unknown()),
 });
 
 /**

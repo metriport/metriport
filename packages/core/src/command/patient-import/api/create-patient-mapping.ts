@@ -1,7 +1,7 @@
 import { AddPatientMappingSchema } from "@metriport/shared";
 import axios from "axios";
 import { Config } from "../../../util/config";
-import { withDefaultApiErrorHandling } from "./shared";
+import { withDefaultApiErrorHandling } from "../../shared/api/shared";
 
 export type CreatePatientMappingParams = {
   cxId: string;
