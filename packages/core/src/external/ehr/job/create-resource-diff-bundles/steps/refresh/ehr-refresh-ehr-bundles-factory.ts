@@ -5,9 +5,7 @@ import { EhrRefreshEhrBundlesDirect } from "./ehr-refresh-ehr-bundles-direct";
 
 export function buildEhrRefreshEhrBundlesHandler(): EhrRefreshEhrBundlesHandler {
   if (Config.isDev()) {
-    const waitTimeAtTheEndInMillis = 0;
-    return new EhrRefreshEhrBundlesDirect(waitTimeAtTheEndInMillis);
+    return new EhrRefreshEhrBundlesDirect();
   }
-  const ehrRefreshEhrBundlesQueueUrl = Config.getEhrRefreshEhrBundlesQueueUrl();
-  return new EhrRefreshEhrBundlesCloud(ehrRefreshEhrBundlesQueueUrl);
+  return new EhrRefreshEhrBundlesCloud();
 }

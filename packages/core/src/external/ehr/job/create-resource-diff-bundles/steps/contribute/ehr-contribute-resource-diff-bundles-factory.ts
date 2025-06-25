@@ -5,9 +5,7 @@ import { EhrContributeResourceDiffBundlesDirect } from "./ehr-contribute-resourc
 
 export function buildEhrContributeResourceDiffBundlesHandler(): EhrContributeResourceDiffBundlesHandler {
   if (Config.isDev()) {
-    const waitTimeAtTheEndInMillis = 0;
-    return new EhrContributeResourceDiffBundlesDirect(waitTimeAtTheEndInMillis);
+    return new EhrContributeResourceDiffBundlesDirect();
   }
-  const ehrContributeDiffBundlesQueueUrl = Config.getEhrContributeDiffBundlesQueueUrl();
-  return new EhrContributeResourceDiffBundlesCloud(ehrContributeDiffBundlesQueueUrl);
+  return new EhrContributeResourceDiffBundlesCloud();
 }
