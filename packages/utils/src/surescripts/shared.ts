@@ -10,6 +10,8 @@ import { dangerouslyDeduplicateFhir } from "@metriport/core/fhir-deduplication/d
 import { buildLatestConversionBundleFileName } from "@metriport/core/external/surescripts/file/file-names";
 import { Config } from "@metriport/core/util/config";
 
+const medicalDocsBucketName = getEnvVarOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
+
 interface PatientTransmission {
   cxId: string;
   patientId: string;
@@ -51,9 +53,7 @@ export async function getConsolidatedBundle(
   cxId: string,
   patientId: string
 ): Promise<Bundle | undefined> {
-  const s3Utils = new S3Utils("us-west-1");
-  const medicalDocsBucketName = getEnvVarOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
-
+  const s3Utils = new S3Utils(Config.getAWSRegion());
   const fileKey = createConsolidatedDataFileNameWithSuffix(cxId, patientId) + ".json";
   if (!(await s3Utils.fileExists(medicalDocsBucketName, fileKey))) {
     return undefined;
@@ -86,19 +86,18 @@ export async function writeConsolidatedBundlePreview(
   patientId: string,
   bundle: Bundle
 ): Promise<string> {
-  const s3Utils = new S3Utils("us-west-1");
-  const bucketName = getEnvVarOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
+  const s3Utils = new S3Utils(Config.getAWSRegion());
 
   const fileName = createConsolidatedDataFileNameWithSuffix(cxId, patientId) + "-preview.json";
   const fileContent = JSON.stringify(bundle);
   await s3Utils.uploadFile({
-    bucket: bucketName,
+    bucket: medicalDocsBucketName,
     key: fileName,
     file: Buffer.from(fileContent),
     contentType: "application/json",
   });
   return await s3Utils.getSignedUrl({
-    bucketName,
+    bucketName: medicalDocsBucketName,
     fileName,
     durationSeconds: 60 * 30,
   });

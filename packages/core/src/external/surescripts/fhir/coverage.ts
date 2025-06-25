@@ -51,7 +51,7 @@ export function getCoverage(
   if (!detail.planCode) return undefined;
   const identifier = getCoverageIdentifiers(detail);
   const beneficiary = getPatientReference(context.patient);
-  const relationship = getCoverageRelationship(context, detail);
+  const relationship = getCoverageRelationship(detail);
   const subscriberId = getCoverageSubscriberId(detail);
   const extension = [getSurescriptsDataSourceExtension()];
   const payor = [getInsuranceOrganizationReference(insuranceOrganization)];
@@ -69,10 +69,7 @@ export function getCoverage(
   };
 }
 
-function getCoverageRelationship(
-  context: SurescriptsContext,
-  detail: ResponseDetail
-): Coverage["relationship"] | undefined {
+function getCoverageRelationship(detail: ResponseDetail): Coverage["relationship"] | undefined {
   if (!detail.paymentCode) return undefined;
   const sourceOfPaymentCode = getSourceOfPaymentCode(detail.paymentCode);
   if (!sourceOfPaymentCode) return undefined;
