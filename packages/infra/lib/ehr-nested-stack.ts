@@ -191,6 +191,8 @@ interface EhrNestedStackProps extends NestedStackProps {
   lambdaLayers: LambdaLayers;
   ehrResponsesBucket: s3.Bucket | undefined;
   medicalDocumentsBucket: s3.Bucket;
+  fhirConverterLambda: Lambda | undefined;
+  fhirConverterBucket: s3.Bucket | undefined;
 }
 
 export class EhrNestedStack extends NestedStack {
@@ -298,6 +300,8 @@ export class EhrNestedStack extends NestedStack {
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: props.alarmAction,
       ehrBundleBucket: this.ehrBundleBucket,
+      fhirConverterLambda: props.fhirConverterLambda,
+      fhirConverterBucket: props.fhirConverterBucket,
       computeResourceDiffBundlesQueue: this.computeResourceDiffBundlesQueue,
     });
     this.refreshEhrBundlesLambda = refreshEhrBundles.lambda;
@@ -605,6 +609,8 @@ export class EhrNestedStack extends NestedStack {
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
     ehrBundleBucket: s3.Bucket;
+    fhirConverterLambda: Lambda | undefined;
+    fhirConverterBucket: s3.Bucket | undefined;
     computeResourceDiffBundlesQueue: Queue;
   }): { lambda: Lambda; queue: Queue } {
     const { lambdaLayers, vpc, envType, sentryDsn, alarmAction } = ownProps;
@@ -639,6 +645,12 @@ export class EhrNestedStack extends NestedStack {
         EHR_BUNDLE_BUCKET_NAME: ownProps.ehrBundleBucket.bucketName,
         EHR_COMPUTE_RESOURCE_DIFF_BUNDLES_QUEUE_URL:
           ownProps.computeResourceDiffBundlesQueue.queueUrl,
+        ...(ownProps.fhirConverterLambda && {
+          FHIR_CONVERTER_LAMBDA_NAME: ownProps.fhirConverterLambda.functionName,
+        }),
+        ...(ownProps.fhirConverterBucket && {
+          FHIR_CONVERTER_BUCKET_NAME: ownProps.fhirConverterBucket.bucketName,
+        }),
         WAIT_TIME_IN_MILLIS: waitTime.toMilliseconds().toString(),
         MAX_ATTEMPTS: queueSettings.maxReceiveCount.toString(),
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
@@ -650,7 +662,9 @@ export class EhrNestedStack extends NestedStack {
 
     lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
 
-    ownProps.ehrBundleBucket.grantWrite(lambda);
+    ownProps.ehrBundleBucket.grantReadWrite(lambda);
+    ownProps.fhirConverterLambda?.grantInvoke(lambda);
+    ownProps.fhirConverterBucket?.grantReadWrite(lambda);
     ownProps.computeResourceDiffBundlesQueue.grantSendMessages(lambda);
 
     return { lambda, queue };

@@ -315,4 +315,14 @@ export class Config {
   static getRunPatientJobQueueUrl(): string {
     return getEnvVarOrFail("RUN_PATIENT_JOB_QUEUE_URL");
   }
+
+  static getFhirConverterLambdaName(): string {
+    return getEnvVarOrFail("FHIR_CONVERTER_LAMBDA_NAME");
+  }
+  static getFhirConvertServerURL(): string {
+    return getEnvVarOrFail("FHIR_CONVERTER_SERVER_URL");
+  }
+  static getFhirConversionBucketName(): string {
+    return getEnvVarOrFail("FHIR_CONVERTER_BUCKET_NAME");
+  }
 }

@@ -758,13 +758,13 @@ export async function saveEhrReferenceBundle({
     }
   });
   if (saveReferenceBundleErrors.length > 0) {
-    const msg = `Failure while saving some reference bundle entries @ Elation`;
+    const msg = `Failure while saving some reference bundle entries @ ${ehr}`;
     capture.message(msg, {
       extra: {
         saveReferenceBundleArgsCount: saveReferenceBundleArgs.length,
         saveReferenceBundleErrorsCount: saveReferenceBundleErrors.length,
         errors: saveReferenceBundleErrors,
-        context: "elation.get-bundle-by-resource-type",
+        context: `${ehr}.save-reference-bundle`,
       },
       level: "warning",
     });

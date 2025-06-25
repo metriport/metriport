@@ -12,8 +12,6 @@ import {
 } from "@medplum/fhirtypes";
 import {
   BadRequestError,
-  EhrFhirResourceBundle,
-  ehrFhirResourceBundleSchema,
   errorToString,
   JwtTokenInfo,
   MetriportError,
@@ -35,6 +33,10 @@ import {
   SlimBookedAppointment,
   slimBookedAppointmentSchema,
 } from "@metriport/shared/interface/external/ehr/canvas/index";
+import {
+  EhrFhirResourceBundle,
+  ehrFhirResourceBundleSchema,
+} from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { Patient, patientSchema } from "@metriport/shared/interface/external/ehr/patient";
 import {
   Practitioner,
