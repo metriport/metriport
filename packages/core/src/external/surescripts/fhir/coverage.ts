@@ -16,10 +16,7 @@ import {
 } from "./constants";
 
 export function getInsuranceOrganization(detail: ResponseDetail): Organization | undefined {
-  const paymentCode = detail.paymentCode ?? detail.planCode;
-  if (!paymentCode) return undefined;
-
-  const sourceOfPayment = getSourceOfPayment(paymentCode);
+  const sourceOfPayment = getSourceOfPayment(detail);
   if (!sourceOfPayment) return undefined;
   const extension = [getSurescriptsDataSourceExtension()];
 
@@ -70,8 +67,7 @@ export function getCoverage(
 }
 
 function getCoverageRelationship(detail: ResponseDetail): Coverage["relationship"] | undefined {
-  if (!detail.paymentCode) return undefined;
-  const sourceOfPayment = getSourceOfPayment(detail.paymentCode);
+  const sourceOfPayment = getSourceOfPayment(detail);
   if (!sourceOfPayment) return undefined;
 
   return {
@@ -113,7 +109,9 @@ function getCoverageIdentifiers(detail: ResponseDetail): Identifier[] {
   return identifiers;
 }
 
-function getSourceOfPayment(paymentCode: string): { code: string; name: string } | undefined {
+function getSourceOfPayment(detail: ResponseDetail): { code: string; name: string } | undefined {
+  const paymentCode = detail.paymentCode ?? detail.planCode;
+  if (!paymentCode) return undefined;
   const sourceOfPaymentCode = getSourceOfPaymentCode(paymentCode);
   if (!sourceOfPaymentCode) return undefined;
   const sourceOfPaymentName = getSourceOfPaymentName(sourceOfPaymentCode);
