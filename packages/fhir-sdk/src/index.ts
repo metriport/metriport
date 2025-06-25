@@ -3,15 +3,29 @@ import {
   AllergyIntolerance,
   Bundle,
   BundleEntry,
+  Composition,
   Condition,
+  Coverage,
   DiagnosticReport,
+  DocumentReference,
   Encounter,
+  FamilyMemberHistory,
+  Immunization,
   Location,
+  Medication,
+  MedicationAdministration,
+  MedicationDispense,
+  MedicationRequest,
+  MedicationStatement,
   Observation,
   Organization,
   Patient,
   Practitioner,
+  Procedure,
+  RelatedPerson,
   Resource,
+  RiskAssessment,
+  ServiceRequest,
 } from "@medplum/fhirtypes";
 
 import { MetriportError } from "@metriport/shared";
@@ -22,15 +36,29 @@ export { Smart } from "./types/smart-resources";
 export {
   AllergyIntolerance,
   Bundle,
+  Composition,
   Condition,
+  Coverage,
   DiagnosticReport,
+  DocumentReference,
   Encounter,
+  FamilyMemberHistory,
+  Immunization,
   Location,
+  Medication,
+  MedicationAdministration,
+  MedicationDispense,
+  MedicationRequest,
+  MedicationStatement,
   Observation,
   Organization,
   Patient,
   Practitioner,
+  Procedure,
+  RelatedPerson,
   Resource,
+  RiskAssessment,
+  ServiceRequest,
 } from "@medplum/fhirtypes";
 
 /**
@@ -148,6 +176,76 @@ export class FhirBundleSdk {
       resourceType: "DiagnosticReport",
       singleGetterMethodName: "getDiagnosticReportById",
       collectionGetterMethodName: "getDiagnosticReports",
+    },
+    {
+      resourceType: "Composition",
+      singleGetterMethodName: "getCompositionById",
+      collectionGetterMethodName: "getCompositions",
+    },
+    {
+      resourceType: "Coverage",
+      singleGetterMethodName: "getCoverageById",
+      collectionGetterMethodName: "getCoverages",
+    },
+    {
+      resourceType: "DocumentReference",
+      singleGetterMethodName: "getDocumentReferenceById",
+      collectionGetterMethodName: "getDocumentReferences",
+    },
+    {
+      resourceType: "Immunization",
+      singleGetterMethodName: "getImmunizationById",
+      collectionGetterMethodName: "getImmunizations",
+    },
+    {
+      resourceType: "Medication",
+      singleGetterMethodName: "getMedicationById",
+      collectionGetterMethodName: "getMedications",
+    },
+    {
+      resourceType: "MedicationRequest",
+      singleGetterMethodName: "getMedicationRequestById",
+      collectionGetterMethodName: "getMedicationRequests",
+    },
+    {
+      resourceType: "Procedure",
+      singleGetterMethodName: "getProcedureById",
+      collectionGetterMethodName: "getProcedures",
+    },
+    {
+      resourceType: "FamilyMemberHistory",
+      singleGetterMethodName: "getFamilyMemberHistoryById",
+      collectionGetterMethodName: "getFamilyMemberHistories",
+    },
+    {
+      resourceType: "MedicationAdministration",
+      singleGetterMethodName: "getMedicationAdministrationById",
+      collectionGetterMethodName: "getMedicationAdministrations",
+    },
+    {
+      resourceType: "MedicationDispense",
+      singleGetterMethodName: "getMedicationDispenseById",
+      collectionGetterMethodName: "getMedicationDispenses",
+    },
+    {
+      resourceType: "MedicationStatement",
+      singleGetterMethodName: "getMedicationStatementById",
+      collectionGetterMethodName: "getMedicationStatements",
+    },
+    {
+      resourceType: "RelatedPerson",
+      singleGetterMethodName: "getRelatedPersonById",
+      collectionGetterMethodName: "getRelatedPersons",
+    },
+    {
+      resourceType: "RiskAssessment",
+      singleGetterMethodName: "getRiskAssessmentById",
+      collectionGetterMethodName: "getRiskAssessments",
+    },
+    {
+      resourceType: "ServiceRequest",
+      singleGetterMethodName: "getServiceRequestById",
+      collectionGetterMethodName: "getServiceRequests",
     },
   ] as const;
 
@@ -518,6 +616,20 @@ export class FhirBundleSdk {
   getLocationById!: (id: string) => Smart<Location> | undefined;
   getPractitionerById!: (id: string) => Smart<Practitioner> | undefined;
   getDiagnosticReportById!: (id: string) => Smart<DiagnosticReport> | undefined;
+  getCompositionById!: (id: string) => Smart<Composition> | undefined;
+  getCoverageById!: (id: string) => Smart<Coverage> | undefined;
+  getDocumentReferenceById!: (id: string) => Smart<DocumentReference> | undefined;
+  getImmunizationById!: (id: string) => Smart<Immunization> | undefined;
+  getMedicationById!: (id: string) => Smart<Medication> | undefined;
+  getMedicationRequestById!: (id: string) => Smart<MedicationRequest> | undefined;
+  getProcedureById!: (id: string) => Smart<Procedure> | undefined;
+  getFamilyMemberHistoryById!: (id: string) => Smart<FamilyMemberHistory> | undefined;
+  getMedicationAdministrationById!: (id: string) => Smart<MedicationAdministration> | undefined;
+  getMedicationDispenseById!: (id: string) => Smart<MedicationDispense> | undefined;
+  getMedicationStatementById!: (id: string) => Smart<MedicationStatement> | undefined;
+  getRelatedPersonById!: (id: string) => Smart<RelatedPerson> | undefined;
+  getRiskAssessmentById!: (id: string) => Smart<RiskAssessment> | undefined;
+  getServiceRequestById!: (id: string) => Smart<ServiceRequest> | undefined;
 
   /**
    * Type-safe version of getResourceById that validates the resource type at runtime
@@ -565,6 +677,20 @@ export class FhirBundleSdk {
   getConditions!: () => Smart<Condition>[];
   getOrganizations!: () => Smart<Organization>[];
   getLocations!: () => Smart<Location>[];
+  getCompositions!: () => Smart<Composition>[];
+  getCoverages!: () => Smart<Coverage>[];
+  getDocumentReferences!: () => Smart<DocumentReference>[];
+  getImmunizations!: () => Smart<Immunization>[];
+  getMedications!: () => Smart<Medication>[];
+  getMedicationRequests!: () => Smart<MedicationRequest>[];
+  getProcedures!: () => Smart<Procedure>[];
+  getFamilyMemberHistories!: () => Smart<FamilyMemberHistory>[];
+  getMedicationAdministrations!: () => Smart<MedicationAdministration>[];
+  getMedicationDispenses!: () => Smart<MedicationDispense>[];
+  getMedicationStatements!: () => Smart<MedicationStatement>[];
+  getRelatedPersons!: () => Smart<RelatedPerson>[];
+  getRiskAssessments!: () => Smart<RiskAssessment>[];
+  getServiceRequests!: () => Smart<ServiceRequest>[];
 
   /**
    * Create a new bundle entry from an existing entry, preserving fullUrl
