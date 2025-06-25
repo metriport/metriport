@@ -18,7 +18,7 @@ import {
 export class EhrComputeResourceDiffBundlesDirect implements EhrComputeResourceDiffBundlesHandler {
   private readonly next = buildEhrContributeResourceDiffBundlesHandler();
 
-  constructor(private readonly waitTimeInMillis: number) {}
+  constructor(private readonly waitTimeInMillis: number = 0) {}
 
   async computeResourceDiffBundles(payload: ComputeResourceDiffBundlesRequest): Promise<void> {
     const {
