@@ -106,7 +106,7 @@ import patientConsolidatedRoutes from "./patient-consolidated";
 import patientImportRoutes from "./patient-import";
 import patientJobRoutes from "./patient-job";
 import patientSettingsRoutes from "./patient-settings";
-import patientMonitoringRoutes from "./monitoring";
+import patientMonitoringRoutes from "./patient-monitoring";
 
 dayjs.extend(duration);
 
