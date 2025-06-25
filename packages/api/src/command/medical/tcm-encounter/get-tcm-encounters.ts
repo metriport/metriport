@@ -1,9 +1,9 @@
-import { Op, WhereOptions } from "sequelize";
+import { buildDayjs } from "@metriport/shared/common/date";
+import { QueryTypes } from "sequelize";
 import { TcmEncounter } from "../../../domain/medical/tcm-encounter";
 import { PatientModel } from "../../../models/medical/patient";
 import { TcmEncounterModel } from "../../../models/medical/tcm-encounter";
-import { Pagination } from "../../pagination";
-import { buildDayjs } from "@metriport/shared/common/date";
+import { Pagination, sortForPagination } from "../../pagination";
 
 /**
  * Add a default filter date far in the past to guarantee hitting the compound index
@@ -21,68 +21,97 @@ export type CountTcmEncountersCmd = {
   after?: string;
 };
 
+export type TcmEncounterQueryResult = TcmEncounterModel & {
+  dataValues: TcmEncounterModel["dataValues"] & {
+    patient_data: PatientModel["dataValues"]["data"];
+  };
+};
+
 type TcmEncounterForDisplay = TcmEncounter & {
   patientName: string;
+  patientDateOfBirth: string;
+  patientPhoneNumbers: string[];
+  patientStates: string[];
 };
+
+const defaultPageSize = 50;
 
 export async function getTcmEncounters({
   cxId,
   after,
   pagination,
 }: GetTcmEncountersCmd): Promise<TcmEncounterForDisplay[]> {
-  const where: WhereOptions<TcmEncounterModel> = {
-    cxId,
-    admitTime: {
-      [Op.gt]: after ? buildDayjs(after).toDate() : DEFAULT_FILTER_DATE,
-    },
-  };
+  const sequelize = TcmEncounterModel.sequelize;
+  if (!sequelize) throw new Error("Sequelize not found");
 
-  const rows = await TcmEncounterModel.findAll({
-    where,
-    include: [
-      {
-        model: PatientModel,
-        as: "PatientModel",
-        attributes: ["id", "cxId", "data"],
-      },
-    ],
-    limit: pagination.count + 1, // Get one extra to determine if there's a next page
-    order: [["admitTime", "DESC"]],
+  const { toItem, fromItem, count } = pagination ?? {};
+
+  const queryString = `
+    SELECT tcm_encounter.*, patient.data as patient_data
+    FROM ${TcmEncounterModel.tableName} tcm_encounter
+    INNER JOIN ${PatientModel.tableName} patient ON tcm_encounter.patient_id = patient.id
+    WHERE tcm_encounter.cx_id = :cxId
+    AND tcm_encounter.admit_time > :afterDate
+    ${toItem ? ` AND tcm_encounter.id >= :toItem` : ""}
+    ${fromItem ? ` AND tcm_encounter.id <= :fromItem` : ""}
+    ORDER BY tcm_encounter.id ${toItem ? "ASC" : "DESC"}
+    ${count ? ` LIMIT :count` : ""}
+  `;
+
+  const afterDate = after ? buildDayjs(after).toDate() : DEFAULT_FILTER_DATE;
+
+  const encounters = await sequelize.query<TcmEncounterQueryResult>(queryString, {
+    replacements: {
+      cxId,
+      ...(toItem ? { toItem } : {}),
+      ...(fromItem ? { fromItem } : {}),
+      ...(count ? { count } : { count: defaultPageSize }),
+      ...{ afterDate },
+    },
+    type: QueryTypes.SELECT,
   });
 
-  const items = rows.map((row: TcmEncounterModel) => {
-    const patient = (row.get("PatientModel") as PatientModel).dataValues.data;
-
-    /** Hack to get around Sequelize type inference not seeing associations */
-    const encounterData = { ...row.dataValues, PatientModel: undefined };
-    delete encounterData.PatientModel;
+  const items: TcmEncounterForDisplay[] = encounters.map(row => {
+    const { patient_data: patientData, ...encounterData } = row.dataValues;
 
     return {
       ...encounterData,
-      patientName: patient.firstName + " " + patient.lastName,
-      patientDateOfBirth: patient.dob,
-      patientPhoneNumbers: patient.contact?.map(contact => contact.phone) ?? [],
-      patientStates: patient.address?.map(address => address.state) ?? [],
+      patientName: patientData.firstName + " " + patientData.lastName,
+      patientDateOfBirth: patientData.dob,
+      patientPhoneNumbers:
+        patientData.contact?.flatMap(contact => (contact.phone ? [contact.phone] : [])) ?? [],
+      patientStates:
+        patientData.address?.flatMap(address => (address.state ? [address.state] : [])) ?? [],
     };
   });
 
-  return items;
+  const sortedItems = sortForPagination(items, pagination);
+  return sortedItems;
 }
 
 export async function getTcmEncountersCount({
   cxId,
   after,
 }: CountTcmEncountersCmd): Promise<number> {
-  const where: WhereOptions<TcmEncounterModel> = {
-    cxId,
-    admitTime: {
-      [Op.gt]: after ? buildDayjs(after).toDate() : DEFAULT_FILTER_DATE,
-    },
-  };
+  const sequelize = TcmEncounterModel.sequelize;
+  if (!sequelize) throw new Error("Sequelize not found");
 
-  const count = await TcmEncounterModel.count({
-    where,
+  const queryString = `
+    SELECT count(tcm_encounter.id) as count
+    FROM ${TcmEncounterModel.tableName} tcm_encounter
+    WHERE tcm_encounter.cx_id = :cxId
+    AND tcm_encounter.admit_time > :afterDate`;
+
+  const afterDate = after ? buildDayjs(after).toDate() : DEFAULT_FILTER_DATE;
+
+  const result = await sequelize.query(queryString, {
+    replacements: {
+      cxId,
+      afterDate,
+    },
+    type: QueryTypes.SELECT,
   });
 
-  return count;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return parseInt((result[0] as any).count);
 }
