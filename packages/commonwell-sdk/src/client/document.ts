@@ -22,7 +22,7 @@ async function initQuery(
     throw new Error(`Could not determine subject ID for document query`);
   }
   const url = `${CommonWell.DOCUMENT_QUERY_ENDPOINT}?subject.id=${subjectId}`;
-  const additionalInfo = { headers, patientId };
+  const additionalInfo = { patientId, url };
   try {
     const response = await api.get(url, { headers });
     return response;
