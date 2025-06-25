@@ -3,8 +3,10 @@ import { Config } from "../../../util/config";
 import { S3Utils } from "../../aws/s3";
 import { supportedAthenaHealthResources } from "../athenahealth";
 import { supportedCanvasResources } from "../canvas";
+import { supportedElationResources } from "../elation";
 
 const globalPrefix = "bundle";
+const globalCcdaPrefix = "ccda";
 const region = Config.getAWSRegion();
 
 type CreateBundlePrefixParams = {
@@ -17,6 +19,19 @@ type CreateBundlePrefixParams = {
   resourceId?: string | undefined;
 };
 
+type CreateCcdaPrefixParams = Omit<CreateBundlePrefixParams, "resourceId">;
+
+function createPrefix(
+  prefix: string,
+  params: Omit<CreateBundlePrefixParams, "resourceId">
+): string {
+  return `${prefix}/ehr=${params.ehr}/cxid=${params.cxId}/metriportpatientid=${
+    params.metriportPatientId
+  }/ehrpatientid=${params.ehrPatientId}/resourcetype=${params.resourceType}/jobId=${
+    params.jobId ?? "latest"
+  }`;
+}
+
 function createBundlePrefix({
   ehr,
   cxId,
@@ -26,9 +41,32 @@ function createBundlePrefix({
   jobId,
   resourceId,
 }: CreateBundlePrefixParams): string {
-  return `${globalPrefix}/ehr=${ehr}/cxid=${cxId}/metriportpatientid=${metriportPatientId}/ehrpatientid=${ehrPatientId}/resourcetype=${resourceType}/jobId=${
-    jobId ?? "latest"
-  }${resourceId ? `/resourceid=${resourceId}` : ""}`;
+  return `${createPrefix(globalPrefix, {
+    ehr,
+    cxId,
+    metriportPatientId,
+    ehrPatientId,
+    resourceType,
+    jobId,
+  })}${resourceId ? `/resourceid=${resourceId}` : ""}`;
+}
+
+function createCcdaPrefix({
+  ehr,
+  cxId,
+  metriportPatientId,
+  ehrPatientId,
+  resourceType,
+  jobId,
+}: CreateCcdaPrefixParams): string {
+  return `${createPrefix(globalCcdaPrefix, {
+    ehr,
+    cxId,
+    metriportPatientId,
+    ehrPatientId,
+    resourceType,
+    jobId,
+  })}`;
 }
 
 export function createFileKeyEhr(params: CreateBundlePrefixParams): string {
@@ -51,6 +89,10 @@ export function createFileKeyMetriportOnly(params: CreateBundlePrefixParams): st
   return `${createBundlePrefix(params)}/metriport-only.json`;
 }
 
+export function createFileKeyCcda(params: CreateCcdaPrefixParams): string {
+  return `${createCcdaPrefix(params)}/ccda.xml`;
+}
+
 export function createFileKeyResourceDiffDataContribution(
   params: CreateBundlePrefixParams
 ): string {
@@ -60,6 +102,7 @@ export function createFileKeyResourceDiffDataContribution(
 export function getSupportedResourcesByEhr(ehr: EhrSource): string[] {
   if (ehr === EhrSources.canvas) return supportedCanvasResources;
   if (ehr === EhrSources.athena) return supportedAthenaHealthResources;
+  if (ehr === EhrSources.elation) return supportedElationResources;
   return [];
 }
 
