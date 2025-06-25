@@ -64,8 +64,9 @@ export abstract class ConversionFhirHandler {
         });
       }
       const conversionResult = await this.callConverter({ payload, params: converterParams });
-      if (!conversionResult || !conversionResult.entry || conversionResult.entry.length < 1)
+      if (!conversionResult || !conversionResult.entry || conversionResult.entry.length < 1) {
         continue;
+      }
       for (const entry of conversionResult.entry) {
         if (entry.resource) resources.add(entry.resource);
       }
