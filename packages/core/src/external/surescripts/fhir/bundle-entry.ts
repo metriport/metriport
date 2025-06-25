@@ -54,7 +54,7 @@ function getMedicationResources(
 
 function getCoverageResources(context: SurescriptsContext, data: ResponseDetail): Resource[] {
   const insuranceOrganization = deduplicateBySystemIdentifier(
-    context.coverageOrganization,
+    context.insuranceOrganization,
     getInsuranceOrganization(data)
   );
   if (!insuranceOrganization) return [];

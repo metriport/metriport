@@ -54,9 +54,11 @@ function getQuantity(detail: ResponseDetail): MedicationDispense["quantity"] | u
     return undefined;
   }
   const unit = getNcpdpName(detail.quantityUnitOfMeasure) ?? detail.quantityUnitOfMeasure;
+  const value = Number(detail.quantityDispensed);
+  if (!Number.isFinite(value)) return undefined;
 
   return {
-    value: Number(detail.quantityDispensed),
+    value,
     unit,
     system: UNIT_OF_MEASURE_URL,
     code: detail.quantityUnitOfMeasure,

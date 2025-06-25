@@ -75,9 +75,6 @@ export function dangerouslyDeduplicateFhir(
   const medStatementResult = deduplicateMedStatements(resourceArrays.medicationStatements);
   resourceArrays.medicationStatements = medStatementResult.combinedResources;
 
-  // const medDispenseResult = deduplicateMedDispenses(resourceArrays.medicationDispenses);
-  // resourceArrays.medicationDispenses = medDispenseResult.combinedResources;
-
   resourceArrays.documentReferences = processDocumentReferences(resourceArrays.documentReferences);
 
   const practitionersResult = deduplicatePractitioners(resourceArrays.practitioners);

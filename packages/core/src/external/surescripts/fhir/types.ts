@@ -13,7 +13,7 @@ export interface SurescriptsContext {
   practitioner: SystemIdentifierMap<Practitioner>;
   pharmacy: SystemIdentifierMap<Organization>;
   coverage: ResourceMap<Coverage>;
-  coverageOrganization: SystemIdentifierMap<Organization>;
+  insuranceOrganization: SystemIdentifierMap<Organization>;
   medication: SystemIdentifierMap<Medication>;
   condition: SystemIdentifierMap<Condition>;
 }
