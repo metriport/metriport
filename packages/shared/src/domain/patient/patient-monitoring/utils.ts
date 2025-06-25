@@ -1,5 +1,6 @@
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
+import { buildDayjs } from "../../../common/date";
 
 dayjs.extend(duration);
 
@@ -28,7 +29,7 @@ export function calculateScheduledAt(newAttempts: number): Date {
     ].asMilliseconds();
 
   const now = Date.now();
-  const nextScheduledAt = dayjs(now).add(backoffDurationMs).toDate();
+  const nextScheduledAt = buildDayjs(now).add(backoffDurationMs, "milliseconds").toDate();
 
   return nextScheduledAt;
 }

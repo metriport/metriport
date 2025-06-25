@@ -4,7 +4,7 @@ import jobRoutes from "./job";
 
 const routes = Router();
 
-routes.use("/job/", jobRoutes);
-routes.use("/discharge-requery/", dischargeRequery);
+routes.use("/job", jobRoutes);
+routes.use("/discharge-requery", dischargeRequery);
 
 export default routes;

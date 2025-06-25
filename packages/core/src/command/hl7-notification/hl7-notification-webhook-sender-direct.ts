@@ -3,7 +3,7 @@ import { Bundle, CodeableConcept, Resource } from "@medplum/fhirtypes";
 import { executeWithNetworkRetries } from "@metriport/shared";
 import axios from "axios";
 import dayjs from "dayjs";
-import { NewDischargeRequeryParams } from "@metriport/shared/src/domain/patient/patient-monitoring/discharge-requery";
+import { CreateDischargeRequeryParams } from "@metriport/shared/src/domain/patient/patient-monitoring/discharge-requery";
 import { S3Utils } from "../../external/aws/s3";
 import {
   mergeBundleIntoAdtSourcedEncounter,
@@ -158,7 +158,7 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
     const promises = [apiWebhookPromise];
 
     if (triggerEvent === dischargeEventCode) {
-      const params: NewDischargeRequeryParams = {
+      const params: CreateDischargeRequeryParams = {
         cxId,
         patientId,
       };

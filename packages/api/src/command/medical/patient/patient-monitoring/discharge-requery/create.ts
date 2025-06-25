@@ -4,7 +4,7 @@ import {
   DischargeRequeryJob,
   DischargeRequeryParamsOps,
   dischargeRequeryParamsOpsSchema,
-  NewDischargeRequeryParams,
+  CreateDischargeRequeryParams,
 } from "@metriport/shared/domain/patient/patient-monitoring/discharge-requery";
 import {
   calculateScheduledAt,
@@ -22,11 +22,25 @@ const INTERNAL_DISCHARGE_REQUERY_ENDPOINT =
   "/internal/patient/monitoring/job/discharge-requery/run";
 export const dischargeRequeryJobType = "discharge-requery";
 
+/**
+ * Creates a new discharge requery job for a patient.
+ *
+ * The job is scheduled to run at a later time based on the number of remaining attempts and a scheduling map.
+ *
+ * If there is already a waiting job for the patient, it will be cancelled and a new one will be created,
+ * with the remaining attempts set to the largest of the two jobs, and the scheduledAt set to the earliest of the two.
+ * This ensures that the job will be run as soon as possible, but not more than once at a time, while also
+ * preserving a paper trail for the previous job.
+ *
+ *
+ * @param props - The parameters for the new discharge requery job.
+ * @returns The newly created patient job.
+ */
 export async function createDischargeRequeryJob(
-  props: NewDischargeRequeryParams
+  props: CreateDischargeRequeryParams
 ): Promise<PatientJob> {
   const { cxId, patientId } = props;
-  const { log } = out(`initializeDischargeRequeryJob - cx: ${cxId} pt: ${patientId}`);
+  const { log } = out(`createDischargeRequeryJob - cx: ${cxId} pt: ${patientId}`);
 
   let remainingAttempts = props.remainingAttempts ?? defaultRemainingAttempts;
   let scheduledAt = calculateScheduledAt(remainingAttempts);
@@ -44,7 +58,7 @@ export async function createDischargeRequeryJob(
       const msg = `Found multiple waiting discharge-requery jobs`;
       log(`${msg} - ${existingJobs.length} jobs!`);
       capture.message(msg, {
-        extra: { patientId, cxId, jobIds: [existingJobs.map(j => j.id)] },
+        extra: { patientId, cxId, jobIds: existingJobs.map(j => j.id) },
         level: "warning",
       });
     }
@@ -82,6 +96,6 @@ export async function createDischargeRequeryJob(
     runUrl: INTERNAL_DISCHARGE_REQUERY_ENDPOINT,
   });
 
-  log(`newDischargeRequeryJob: ${newDischargeRequeryJob.id}`);
+  log(`created discharge requery job id: ${newDischargeRequeryJob.id}`);
   return newDischargeRequeryJob;
 }

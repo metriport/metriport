@@ -1,10 +1,10 @@
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { capture } from "@metriport/core/util";
 import { out } from "@metriport/core/util/log";
-import { PatientImportEntryStatusFinal } from "@metriport/shared/domain/patient/patient-import/types";
+import { JobEntryStatus } from "@metriport/shared/domain/job/types";
 import {
-  DischargeRequeryJob,
-  runtimeDataSchema,
+  dischargeRequeryRuntimeDataSchema,
+  parseDischargeRequeryJob,
 } from "@metriport/shared/domain/patient/patient-monitoring/discharge-requery";
 import { getPatientJobs } from "../../../../job/patient/get";
 import { completePatientJob } from "../../../../job/patient/status/complete";
@@ -16,7 +16,9 @@ import { createDischargeRequeryJob, dischargeRequeryJobType } from "./create";
 /**
  * Finishes the discharge requery job.
  *
+ * // TODO: ENG-536 - Update the exit condition to depend on finding the discharge summary.
  * If the data pipeline was successful, we will decrement the remaining attempts.
+ *  - The existing processing job will be set to completed.
  *  - If the remaining attempts are greater than 0, we will create a new discharge requery job.
  *  - Otherwise, discharge requery is complete, and no new job will be created.
  *
@@ -25,7 +27,7 @@ import { createDischargeRequeryJob, dischargeRequeryJobType } from "./create";
  * @param cxId - The CX ID.
  * @param patientId - The patient ID.
  * @param requestId - The data pipeline request ID.
- * @param status - The status of the job.
+ * @param status - The status of the data pipeline query.
  */
 export async function finishDischargeRequery({
   cxId,
@@ -36,7 +38,7 @@ export async function finishDischargeRequery({
   cxId: string;
   patientId: string;
   requestId: string;
-  status: PatientImportEntryStatusFinal;
+  status: JobEntryStatus;
 }): Promise<void> {
   const { log } = out(`finishDischargeRequery - cx ${cxId}, pt ${patientId}`);
 
@@ -47,19 +49,14 @@ export async function finishDischargeRequery({
     status: "processing",
   });
 
-  // It's expected that there will not always be a job running, so we don't need to fail if we don't find one
-  if (processingJobs.length === 0) {
-    return;
-  }
-
   const targetJobs = processingJobs.filter(job => {
-    const runtimeData = runtimeDataSchema.parse(job.runtimeData);
+    const runtimeData = dischargeRequeryRuntimeDataSchema.parse(job.runtimeData);
     return runtimeData.documentQueryRequestId === dataPipelineRequestId;
   });
 
-  if (targetJobs.length === 0) {
+  if (targetJobs.length < 1) {
     const msg = `No target discharge requery job found`;
-    log(`${msg} for requestId ${dataPipelineRequestId}`);
+    log(`Unexpected state: ${msg} for requestId ${dataPipelineRequestId}`);
     capture.message(msg, {
       extra: {
         patientId,
@@ -96,15 +93,17 @@ export async function finishDischargeRequery({
     );
   }
 
-  const job = (await completePatientJob({
+  const job = await completePatientJob({
     jobId: targetJob.id,
     cxId,
-  })) as DischargeRequeryJob;
+  });
+  const dischargeRequeryJob = parseDischargeRequeryJob(job);
 
   const remainingAttempts =
-    status === "successful" ? job.paramsOps.remainingAttempts - 1 : job.paramsOps.remainingAttempts;
+    status === "successful"
+      ? dischargeRequeryJob.paramsOps.remainingAttempts - 1
+      : dischargeRequeryJob.paramsOps.remainingAttempts;
 
-  // Send analytics and update runtimeData for visibility
   if (status === "successful") {
     const patient = await getPatientOrFail({ cxId, id: patientId });
     const dqProgress = patient.data.documentQueryProgress;
@@ -116,9 +115,9 @@ export async function finishDischargeRequery({
         jobId: targetJob.id,
         cxId,
         data: {
+          ...dischargeRequeryJob.runtimeData,
           downloadCount,
           convertCount,
-          ...job.runtimeData,
         },
       });
       analytics({

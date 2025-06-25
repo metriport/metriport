@@ -15,7 +15,6 @@ const router = Router();
  *
  * @param req.query.cxId - The CX ID.
  * @param req.query.patientId - The patient ID.
- * @param req.body - The discharge requery job parameters.
  * @returns 200 OK
  */
 router.post(
@@ -26,7 +25,7 @@ router.post(
     const patientId = getUUIDFrom("query", req, "patientId").orFail();
     const job = await createDischargeRequeryJob({ cxId, patientId });
 
-    return res.status(httpStatus.OK).json(job);
+    return res.status(httpStatus.OK).json({ job });
   })
 );
 

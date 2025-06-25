@@ -14,7 +14,7 @@ import { Secrets } from "./shared/secrets";
 import { QueueAndLambdaSettings } from "./shared/settings";
 import { createQueue } from "./shared/sqs";
 
-const waitTimeDischargeRequery = Duration.seconds(0);
+const waitTimeDischargeRequery = Duration.seconds(10);
 
 function settings() {
   const timeout = Duration.seconds(30);
@@ -22,7 +22,7 @@ function settings() {
     name: "DischargeRequery",
     entry: "patient-monitoring/discharge-requery",
     lambda: {
-      memory: 512 as const,
+      memory: 512,
       timeout,
     },
     queue: {
@@ -65,7 +65,7 @@ export class PatientMonitoringNestedStack extends NestedStack {
       throw new Error("Analytics secret is required");
     }
 
-    const dischargeRequery = this.setupDischargeRequeryLambda({
+    const dischargeRequery = this.setupDischargeRequery({
       lambdaLayers: props.lambdaLayers,
       vpc: props.vpc,
       envType: props.config.environmentType,
@@ -78,7 +78,7 @@ export class PatientMonitoringNestedStack extends NestedStack {
     this.dischargeRequeryQueue = dischargeRequery.queue;
   }
 
-  private setupDischargeRequeryLambda(ownProps: {
+  private setupDischargeRequery(ownProps: {
     lambdaLayers: LambdaLayers;
     vpc: ec2.IVpc;
     envType: EnvType;
@@ -118,6 +118,7 @@ export class PatientMonitoringNestedStack extends NestedStack {
       envVars: {
         // API_URL set on the api-stack after the OSS API is created
         DISCHARGE_REQUERY_QUEUE_URL: queue.queueUrl,
+        WAIT_TIME_IN_MILLIS: waitTimeDischargeRequery.toMilliseconds().toString(),
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
     });
