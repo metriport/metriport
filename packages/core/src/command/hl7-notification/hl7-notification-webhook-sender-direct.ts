@@ -1,9 +1,9 @@
 import { Hl7Message } from "@medplum/core";
 import { Bundle, CodeableConcept, Resource } from "@medplum/fhirtypes";
 import { executeWithNetworkRetries } from "@metriport/shared";
+import { CreateDischargeRequeryParams } from "@metriport/shared/src/domain/patient/patient-monitoring/discharge-requery";
 import axios from "axios";
 import dayjs from "dayjs";
-import { CreateDischargeRequeryParams } from "@metriport/shared/src/domain/patient/patient-monitoring/discharge-requery";
 import { S3Utils } from "../../external/aws/s3";
 import {
   mergeBundleIntoAdtSourcedEncounter,
@@ -42,6 +42,17 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
     private readonly s3Utils = new S3Utils(Config.getAWSRegion())
   ) {}
 
+  /**
+   * This methods handles HL7 notifications by executing the following steps (in order):
+   * 1. Parse and convert the HL7 message to FHIR
+   * 2. Persist the encounter to the database
+   * 3. Save the FHIR bundle to S3
+   * 4. Send a Discharge Requery job kickoff to the API
+   * 5. Send webhook notification to the API
+   *
+   * @param params - The parameters for the HL7 message.
+   * @returns - A promise that resolves when the message is sent to the API.
+   */
   async execute(params: Hl7Notification): Promise<void> {
     const message = Hl7Message.parse(params.message);
     const { cxId, patientId, sourceTimestamp, messageReceivedTimestamp } = params;
@@ -133,6 +144,20 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
       }),
     ]);
 
+    log(`Sending Discharge Requery kickoff...`);
+    if (triggerEvent === dischargeEventCode) {
+      const params: CreateDischargeRequeryParams = {
+        cxId,
+        patientId,
+      };
+      await executeWithNetworkRetries(
+        async () =>
+          await axios.post(internalDischargeRequeryRouteUrl, undefined, {
+            params,
+          })
+      );
+    }
+
     const bundlePresignedUrl = await this.s3Utils.getSignedUrl({
       bucketName: result.bucket,
       fileName: result.key,
@@ -141,8 +166,7 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
     });
 
     log(`Sending HL7 notification to API...`);
-
-    const apiWebhookPromise = executeWithNetworkRetries(
+    await executeWithNetworkRetries(
       async () =>
         await axios.post(internalHl7RouteUrl, undefined, {
           params: {
@@ -155,23 +179,7 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
           },
         })
     );
-    const promises = [apiWebhookPromise];
 
-    if (triggerEvent === dischargeEventCode) {
-      const params: CreateDischargeRequeryParams = {
-        cxId,
-        patientId,
-      };
-      const apiDischargeRequeryPromise = executeWithNetworkRetries(
-        async () =>
-          await axios.post(internalDischargeRequeryRouteUrl, undefined, {
-            params,
-          })
-      );
-      promises.push(apiDischargeRequeryPromise);
-    }
-
-    await Promise.all(promises);
     log(`Done. API notified...`);
   }
 
