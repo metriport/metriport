@@ -10,16 +10,17 @@ import {
   Resource,
 } from "@medplum/fhirtypes";
 
-import { Smart, isReferenceMethod, getReferenceField } from "./types/smart-resources";
+import { MetriportError } from "@metriport/shared";
+import { Smart, getReferenceField, isReferenceMethod } from "./types/smart-resources";
 
 // Re-export smart resource types for external use
 export { Smart } from "./types/smart-resources";
 
 export {
-  Patient,
-  Observation,
-  Encounter,
   DiagnosticReport,
+  Encounter,
+  Observation,
+  Patient,
   Practitioner,
   Resource,
 } from "@medplum/fhirtypes";
@@ -308,7 +309,7 @@ export class FhirBundleSdk {
    * FR-2.3: Handles both relative and absolute references
    * FR-2.4: Returns validation result with broken reference details
    */
-  validateReferences(): ValidationResult {
+  validateReferences({ throwOnInvalid } = { throwOnInvalid: false }): ValidationResult {
     const brokenReferences: BrokenReference[] = [];
 
     if (!this.bundle.entry) {
@@ -333,6 +334,12 @@ export class FhirBundleSdk {
           });
         }
       }
+    }
+
+    if (throwOnInvalid && brokenReferences.length > 0) {
+      throw new MetriportError(`Invalid bundle: Broken references found`, {
+        brokenReferences,
+      });
     }
 
     return {

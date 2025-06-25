@@ -39,7 +39,8 @@
     "test:e2e": "E2E=true jest --runInBand --detectOpenHandles --passWithNoTests"
   },
   "dependencies": {
-    "@medplum/fhirtypes": "^2.2.10"
+    "@medplum/fhirtypes": "^2.2.10",
+    "@metriport/shared": "file:packages/shared"
   },
   "devDependencies": {
     "@metriport/eslint-rules": "file:packages/eslint-rules",
