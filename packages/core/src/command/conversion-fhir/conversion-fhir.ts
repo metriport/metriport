@@ -5,7 +5,7 @@ import {
   buildDocumentNameForConversionResult,
   buildKeyForConversionFhir,
 } from "../../domain/conversion/filename";
-import { buildBundleFromResources } from "../../external/fhir/bundle/bundle";
+import { buildBatchBundleFromResources } from "../../external/fhir/bundle/bundle";
 import { out } from "../../util/log";
 import { JSON_TXT_MIME_TYPE } from "../../util/mime";
 import { capture } from "../../util/notifications";
@@ -70,10 +70,7 @@ export abstract class ConversionFhirHandler {
         if (entry.resource) resources.add(entry.resource);
       }
     }
-    const bundle = buildBundleFromResources({
-      type: "batch",
-      resources: [...resources.values()],
-    });
+    const bundle = buildBatchBundleFromResources([...resources.values()]);
     const { key: resultKey, bucket: resultBucket } = await saveConverterStep({
       paramsWithRequestId,
       result: bundle,

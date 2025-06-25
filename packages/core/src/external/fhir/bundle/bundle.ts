@@ -174,6 +174,14 @@ export function buildBundleFromResources({
   };
 }
 
+export function buildBatchBundleFromResources(resources: Resource[]): BundleWithEntry {
+  return {
+    resourceType: "Bundle",
+    type: "batch",
+    entry: resources.map(buildBundleEntry),
+  };
+}
+
 export type RequiredBundleType = NonNullable<Bundle["type"]>;
 
 export type BundleType<B extends RequiredBundleType, R extends Resource> = Bundle<R> & {
@@ -312,11 +320,11 @@ export function createFullBundleEntries(bundle: Bundle<Resource>): Bundle<Resour
   return updBundle;
 }
 
-export const buildFullUrl = <T extends Resource>(resource: T | undefined): string | undefined => {
+export function buildFullUrl<T extends Resource>(resource: T | undefined): string | undefined {
   if (!resource || !resource.id) return undefined;
   if (isValidUuid(resource.id)) return wrapIdInUrnUuid(resource.id);
   return wrapIdInUrnId(resource.id);
-};
+}
 
 export function buildFhirRequest(resource: Resource | undefined): BundleEntryRequest | undefined {
   if (!resource?.id) return undefined;
