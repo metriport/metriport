@@ -229,8 +229,8 @@ export const config: EnvConfigNonSandbox = {
     alertsChannelId: "alerts-channel-id",
   },
   jobs: {
-    startPatientJobsSchedulerScheduleExpression: "0/5 * * * ? *",
-    startPatientJobsSchedulerUrl: "/internal/patient/job/scheduler/start",
+    startScheduledPatientJobsScheduleExpression: "0/5 * * * ? *",
+    startScheduledPatientJobsSchedulerUrl: "/internal/patient/job/scheduler/start",
   },
 };
 export default config;
