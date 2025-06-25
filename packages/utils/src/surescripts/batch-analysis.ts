@@ -11,8 +11,11 @@ import { SurescriptsConvertBatchResponseHandlerDirect } from "@metriport/core/ex
 import { SurescriptsReplica } from "@metriport/core/external/surescripts/replica";
 import { dangerouslyDeduplicateFhir } from "@metriport/core/fhir-deduplication/deduplicate-fhir";
 import { getConsolidatedBundle } from "./shared";
+import { initRunsFolder, buildGetDirPathInside } from "../shared/folder";
 
 const program = new Command();
+initRunsFolder("surescripts");
+const getDirPath = buildGetDirPathInside("surescripts");
 
 interface DataPoint {
   patientId: string;
@@ -32,15 +35,18 @@ program
   .description("analyze surescripts batch data for a customer")
   .option("--cx-id <cxId>", "The customer ID")
   .option("--facility-id <facilityId>", "The facility ID")
+  .option("--org-name <orgName>", "The organization name")
   .option("--transmission-id <transmissionId>", "The batch transmission ID")
   .action(
     async ({
       cxId,
       facilityId,
+      orgName,
       transmissionId,
     }: {
       cxId: string;
       facilityId: string;
+      orgName?: string;
       transmissionId: string;
     }) => {
       if (!cxId) throw new Error("Customer ID is required");
@@ -137,7 +143,9 @@ program
             ].join(",")
           )
           .join("\n");
-      fs.writeFileSync(path.join(process.cwd(), "runs/surescripts/1to1_data.csv"), csvContent);
+      const filePath = path.join(getDirPath(orgName ?? cxId), "analysis.csv");
+      fs.writeFileSync(filePath, csvContent);
+      console.log(`Wrote analysis to ${filePath}`);
     }
   );
 
