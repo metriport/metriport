@@ -51,7 +51,8 @@
     "packages/mllp-server",
     "packages/infra",
     "packages/utils",
-    "packages/eslint-rules"
+    "packages/eslint-rules",
+    "packages/fhir-sdk"
   ],
   "lint-staged": {
     "*.{ts,tsx}": [
