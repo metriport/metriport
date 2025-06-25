@@ -220,7 +220,7 @@ class ElationApi {
     cxId: string;
     patientId: string;
     resourceType?: string;
-  }): Promise<{ payload: string; s3key: string; s3BucketName: string }> {
+  }): Promise<string> {
     const { debug } = out(
       `Elation getCcdaDocument - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} resourceType ${resourceType}`
     );
@@ -245,15 +245,7 @@ class ElationApi {
       debug,
     });
     const payload = atob(document.base64_ccda);
-    const { s3key, s3BucketName } = await createOrReplaceCcda({
-      ehr: EhrSources.elation,
-      cxId,
-      metriportPatientId: patientId,
-      ehrPatientId: patientId,
-      payload,
-      resourceType: s3PathResourceType,
-    });
-    return { payload, s3key, s3BucketName };
+    return payload;
   }
 
   async updatePatientMetadata({
@@ -359,9 +351,17 @@ class ElationApi {
         resourceType,
       });
     }
-    const { s3key, s3BucketName } = await this.getCcdaDocument({
+    const payload = await this.getCcdaDocument({
       cxId,
       patientId: elationPatientId,
+      resourceType,
+    });
+    const { s3key, s3BucketName } = await createOrReplaceCcda({
+      ehr: EhrSources.elation,
+      cxId,
+      metriportPatientId,
+      ehrPatientId: elationPatientId,
+      payload,
       resourceType,
     });
     let referenceEhrFhirBundle: EhrFhirResourceBundle | undefined;
