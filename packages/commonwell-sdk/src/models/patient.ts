@@ -1,55 +1,87 @@
 import { z } from "zod";
 import { demographicsSchema } from "./demographics";
-import { identifierSchema } from "./identifier";
-import { linkSchema, networkLinkSchema } from "./link";
 import { facilitySchema } from "./facility";
-import { patientLinkSchema } from "./person";
-import { patientOrganizationSchema } from "./patient-organization";
+import { linkSchema, networkLinkSchema } from "./link";
+import { managingOrganizationSchema } from "./patient-organization";
+
+const statusSchema = z.object({
+  message: z.string().nullish(),
+  code: z.number().nullish(),
+});
+
+const localLinkSchema = z.string().nullish();
 
 export const patientLinksSchema = z.object({
-  self: linkSchema,
-  networkLink: linkSchema.optional().nullable(),
-  person: linkSchema.optional().nullable(),
-  personMatch: linkSchema.optional().nullable(),
-  upgrade: linkSchema.optional().nullable(),
-  downgrade: linkSchema.optional().nullable(),
+  Self: localLinkSchema,
+  /**
+   * 8.4.1 Get Patient Links
+   * An Edge System can search and request Patient Links by a local patient identifier. The result
+   * of the query will include local and remote patient’s links that are autolinked by the rules
+   * engine or manually linked.
+   * The links returned are confirmed links of LOLA 2 or higher.
+   */
+  PatientkLink: localLinkSchema.nullish(),
+  ResetLink: localLinkSchema.nullish(),
+  Delete: localLinkSchema.nullish(),
+  ProbableLink: localLinkSchema.nullish(),
 });
 
 // The Patient resource represents a natural patient independent of a specific healthcare context.
 // See: https://specification.commonwellalliance.org/services/rest-api-reference (8.6.4 Patient)
-export const patientSchema = z.object({
-  active: z.boolean().optional().nullable(),
-  identifier: z.array(identifierSchema).optional().nullable(),
-  provider: patientOrganizationSchema.optional().nullable(),
-  details: demographicsSchema,
-  _links: patientLinksSchema.optional().nullable(),
-  facilities: z.array(facilitySchema).optional().nullable(),
-});
-
+export const patientSchema = demographicsSchema.merge(
+  z.object({
+    active: z.boolean().nullish(),
+    managingOrganization: managingOrganizationSchema.nullish(),
+    link: z.array(patientLinksSchema).nullish(),
+    disclosure: z.array(facilitySchema).nullish(),
+  })
+);
 export type Patient = z.infer<typeof patientSchema>;
 
+export const patientCollectionItemSchema = z.object({
+  Patient: patientSchema.nullish(),
+  Links: patientLinksSchema.nullish(),
+});
+export type PatientCollectionItem = z.infer<typeof patientCollectionItemSchema>;
+
+export const patientCollectionSchema = z.object({
+  Patients: z.array(patientCollectionItemSchema),
+  status: statusSchema.nullish(),
+});
+export type PatientCollection = z.infer<typeof patientCollectionSchema>;
+
+// TODO ENG-200 review
 export const patientSearchRespSchema = z.object({
   message: z.string(),
   _embedded: z.object({ patient: z.array(patientSchema) }),
   _links: z.object({ self: linkSchema }),
 });
-
 export type PatientSearchResp = z.infer<typeof patientSearchRespSchema>;
 
+// TODO ENG-200 review
 export const patientNetworkLinkRespSchema = z.object({
   _embedded: z.object({
-    networkLink: z.array(networkLinkSchema.optional().nullable()).optional().nullable(),
+    networkLink: z.array(networkLinkSchema.nullish()).nullish(),
   }),
   _links: z.object({ self: linkSchema }).optional(),
 });
-
 export type PatientNetworkLinkResp = z.infer<typeof patientNetworkLinkRespSchema>;
 
+// TODO ENG-200 review
 export const patientLinkRespSchema = z.object({
   _embedded: z.object({
-    patientLink: z.array(patientLinkSchema).optional().nullable(),
+    patientLink: z.array(linkSchema).nullish(),
   }),
   _links: z.object({ self: linkSchema }).optional(),
 });
-
 export type PatientLinkResp = z.infer<typeof patientLinkRespSchema>;
+
+export const patientMergeResponseSchema = z.object({
+  status: statusSchema.nullish(),
+});
+export type PatientMergeResponse = z.infer<typeof patientMergeResponseSchema>;
+
+export const patientLinkSearchRespSchema = patientCollectionSchema.omit({
+  status: true,
+});
+export type PatientLinkSearchResp = z.infer<typeof patientLinkSearchRespSchema>;

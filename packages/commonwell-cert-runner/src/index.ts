@@ -1,19 +1,9 @@
 import * as dotenv from "dotenv";
 // keep that ^ above all other imports
-import { APIMode, CommonWell, RequestMetadata } from "@metriport/commonwell-sdk";
-import { PurposeOfUse } from "@metriport/shared";
 import { Command } from "commander";
-import {
-  memberCertificateString,
-  memberId,
-  memberName,
-  memberPrivateKeyString,
-  orgCertificateString,
-  orgPrivateKeyString,
-} from "./env";
-import { orgManagement } from "./org-management";
-import { patientManagement } from "./patient-management";
-// import { getEnvOrFail } from "./util";
+import { linkManagement } from "./flows/link-management";
+import { orgManagement } from "./flows/org-management";
+import { patientManagement } from "./flows/patient-management";
 
 function metriportBanner(): string {
   return `
@@ -55,6 +45,7 @@ async function main() {
   const options = program.opts();
   dotenv.config({ path: options.envFile });
 
+  // TODO ENG-200 address this
   // // Sandbox Account Org
   // const commonwellSandboxOID = getEnvOrFail("CW_SANDBOX_ORG_OID");
   // const commonwellSandboxOrgName = getEnvOrFail("CW_SANDBOX_ORG_NAME");
@@ -66,50 +57,27 @@ async function main() {
   //   APIMode.integration
   // );
 
-  // Run through the CommonWell certification test cases
+  try {
+    // Run through the CommonWell certification test cases
+    const { commonWell, orgQueryMeta } = await orgManagement();
+    await patientManagement(commonWell, orgQueryMeta);
+    await linkManagement(commonWell, orgQueryMeta);
+    // await personManagement(commonWell, queryMeta);
+    // await patientManagement(commonWell, commonWellSandbox, queryMeta);
+    // await documentConsumption(commonWell, queryMeta);
+    // await documentContribution({ memberManagementApi: commonWellMember, api: commonWell, queryMeta });
 
-  // try {
-  const memberQueryMeta: RequestMetadata = {
-    purposeOfUse: PurposeOfUse.TREATMENT,
-    role: "ict",
-    subjectId: "admin",
-  };
-  const commonWellMember = new CommonWell(
-    memberCertificateString,
-    memberPrivateKeyString,
-    memberName,
-    memberId,
-    APIMode.integration
-  );
-  const org = await orgManagement(commonWellMember, memberQueryMeta);
+    // Issue #425
+    // await patientLinksWithStrongIds(commonWell, queryMeta);
 
-  const orgQueryMeta: RequestMetadata = {
-    purposeOfUse: PurposeOfUse.TREATMENT,
-    role: "ict",
-    subjectId: `${org.name} System User`,
-  };
-  const commonWell = new CommonWell(
-    orgCertificateString,
-    orgPrivateKeyString,
-    org.name,
-    org.organizationId,
-    APIMode.integration
-  );
-  await patientManagement(commonWell, orgQueryMeta);
-  // await personManagement(commonWell, queryMeta);
-  // await patientManagement(commonWell, commonWellSandbox, queryMeta);
-  // await linkManagement(commonWell, queryMeta);
-  // await documentConsumption(commonWell, queryMeta);
-  // await documentContribution({ memberManagementApi: commonWellMember, api: commonWell, queryMeta });
-
-  // Issue #425Ø
-  // await patientLinksWithStrongIds(commonWell, queryMeta);
-  // } catch (error: any) {
-  //   console.error(`Error (${error.response?.status}): ${error.message}`);
-  //   console.error(JSON.stringify(error.response?.data ?? error, null, 2));
-  //   // console.error(error);
-  //   process.exit(1);
-  // }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (error: any) {
+    console.error(`Error (${error.response?.status}): ${error.message}`);
+    if (error.response?.data) {
+      console.error(JSON.stringify(error.response.data, null, 2));
+    }
+    process.exit(1);
+  }
 }
 
 main();
