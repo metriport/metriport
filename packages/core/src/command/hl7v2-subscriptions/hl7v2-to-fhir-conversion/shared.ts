@@ -24,6 +24,7 @@ const hl7CodingSystemToUrlMap: Record<string, string> = {
   L: LOINC_URL, // LOINC
   I10: ICD_10_URL, // ICD-10
   "ICD-10": ICD_10_URL, // ICD-10
+  "ICD-10-CM": ICD_10_URL, // ICD-10
   I9: ICD_9_URL, // ICD-9
   "ICD-9": ICD_9_URL, // ICD-9
 };

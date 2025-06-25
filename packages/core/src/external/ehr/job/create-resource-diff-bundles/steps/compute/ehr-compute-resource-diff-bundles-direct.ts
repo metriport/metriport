@@ -2,20 +2,23 @@ import { Resource } from "@medplum/fhirtypes";
 import { errorToString, sleep } from "@metriport/shared";
 import { createBundleFromResourceList } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { getConsolidatedFile } from "../../../../../../command/consolidated/consolidated-get";
+import { setJobEntryStatus } from "../../../../../../command/job/patient/api/set-entry-status";
 import { computeResourcesXorAlongResourceType } from "../../../../../../fhir-deduplication/compute-resources-xor";
 import { deduplicateResources } from "../../../../../../fhir-deduplication/dedup-resources";
 import { out } from "../../../../../../util/log";
-import { setCreateResourceDiffBundlesJobEntryStatus } from "../../../../api/job/create-resource-diff-bundles/set-entry-status";
 import { BundleType } from "../../../../bundle/bundle-shared";
 import { createOrReplaceBundle } from "../../../../bundle/command/create-or-replace-bundle";
 import { fetchBundle, FetchBundleParams } from "../../../../bundle/command/fetch-bundle";
+import { buildEhrContributeResourceDiffBundlesHandler } from "../contribute/ehr-contribute-resource-diff-bundles-factory";
 import {
   ComputeResourceDiffBundlesRequest,
   EhrComputeResourceDiffBundlesHandler,
 } from "./ehr-compute-resource-diff-bundles";
 
-export class EhrComputeResourceDiffBundlesLocal implements EhrComputeResourceDiffBundlesHandler {
-  constructor(private readonly waitTimeInMillis: number) {}
+export class EhrComputeResourceDiffBundlesDirect implements EhrComputeResourceDiffBundlesHandler {
+  private readonly next = buildEhrContributeResourceDiffBundlesHandler();
+
+  constructor(private readonly waitTimeInMillis: number = 0) {}
 
   async computeResourceDiffBundles(payload: ComputeResourceDiffBundlesRequest): Promise<void> {
     const {
@@ -120,13 +123,10 @@ export class EhrComputeResourceDiffBundlesLocal implements EhrComputeResourceDif
             })
           : undefined,
       ]);
-      await setCreateResourceDiffBundlesJobEntryStatus({
-        ...entryStatusParams,
-        entryStatus: "successful",
-      });
+      await this.next.contributeResourceDiffBundles(payload);
     } catch (error) {
       if (reportError) {
-        await setCreateResourceDiffBundlesJobEntryStatus({
+        await setJobEntryStatus({
           ...entryStatusParams,
           entryStatus: "failed",
         });
@@ -147,7 +147,7 @@ async function getMetriportResourcesFromS3({
   resourceType: string;
 }): Promise<Resource[]> {
   const consolidated = await getConsolidatedFile({ cxId, patientId });
-  if (!consolidated?.bundle?.entry) return [];
+  if (!consolidated?.bundle?.entry || consolidated.bundle.entry.length < 1) return [];
   const resources = consolidated.bundle.entry.filter(
     entry => entry.resource?.resourceType === resourceType
   );
@@ -173,8 +173,7 @@ async function getEhrResourcesFromS3({
     resourceType,
     bundleType: BundleType.EHR,
   });
-  if (!bundle?.bundle.entry) return [];
-  if (bundle.bundle.entry.length < 1) return [];
+  if (!bundle?.bundle.entry || bundle.bundle.entry.length < 1) return [];
   return bundle.bundle.entry.flatMap(entry => {
     if (!entry.resource) return [];
     return [entry.resource];

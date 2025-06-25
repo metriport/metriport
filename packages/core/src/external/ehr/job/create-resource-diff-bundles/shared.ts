@@ -12,11 +12,11 @@ export type CreateResourceDiffBundlesBaseRequest = {
   reportError?: boolean;
 };
 
-export function createSqsGroupId(metriportPatientId: string, resourceType: string): string {
-  return `${metriportPatientId}-${resourceType}`;
-}
-
-const ehrSourcesWithCreateResourceDiffBundles = [EhrSources.canvas, EhrSources.athena] as const;
+const ehrSourcesWithCreateResourceDiffBundles = [
+  EhrSources.canvas,
+  EhrSources.athena,
+  EhrSources.elation,
+] as const;
 export type EhrSourceWithCreateResourceDiffBundles =
   (typeof ehrSourcesWithCreateResourceDiffBundles)[number];
 export function isEhrSourceWithCreateResourceDiffBundles(
