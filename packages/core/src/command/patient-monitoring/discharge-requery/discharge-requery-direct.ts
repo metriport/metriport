@@ -1,4 +1,4 @@
-import { BadRequestError, errorToString, NotFoundError, sleep } from "@metriport/shared";
+import { BadRequestError, NotFoundError, sleep } from "@metriport/shared";
 import { randomIntBetween } from "@metriport/shared/common/numbers";
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import dayjs from "dayjs";
@@ -61,21 +61,14 @@ export class DischargeRequeryDirect implements DischargeRequery {
           log(`DQ already running, using existing requestId: ${dqRequestId}`);
           dataPipelineRequestId = dqRequestId;
         }
-
-        if (this.waitTimeInMillis > 0) await sleep(this.waitTimeInMillis);
       } catch (error) {
-        const errorMsg = errorToString(error);
-        const msg = `Failed to start document query`;
-        log(`${msg} - cause: ${errorMsg}`);
-
         if (error instanceof BadRequestError || error instanceof NotFoundError) {
-          if (reportError) {
-            await failJob({
-              jobId,
-              cxId,
-              reason: JSON.stringify(error.status),
-            });
-          }
+          await failJob({
+            jobId,
+            cxId,
+            reason: JSON.stringify(error.status),
+            context: dischargeRequeryContext,
+          });
           return;
         }
 
@@ -96,6 +89,7 @@ export class DischargeRequeryDirect implements DischargeRequery {
           jobId,
           cxId,
           reason: "Error processing discharge requery",
+          context: dischargeRequeryContext,
         });
       }
 
@@ -110,5 +104,7 @@ export class DischargeRequeryDirect implements DischargeRequery {
       log(`Error processing discharge requery: ${error}`);
       throw error;
     }
+
+    if (this.waitTimeInMillis > 0) await sleep(this.waitTimeInMillis);
   }
 }

@@ -7,6 +7,7 @@ import { JobBaseParams } from "./shared";
 
 export type FailJobParams = JobBaseParams & {
   reason: string;
+  context: string;
 };
 
 /**
@@ -15,9 +16,11 @@ export type FailJobParams = JobBaseParams & {
  * @param jobId - The job ID.
  * @param cxId - The CX ID.
  * @param reason - The reason for failing the job.
+ * @param context - The context for the job.
  */
-export async function failJob({ jobId, cxId, reason }: FailJobParams): Promise<void> {
-  const { log, debug } = out(`failJob - jobId ${jobId} cxId ${cxId}`);
+export async function failJob({ jobId, cxId, reason, context }: FailJobParams): Promise<void> {
+  const fullContext = `${context}.failJob`;
+  const { log, debug } = out(`${fullContext} - jobId ${jobId} cxId ${cxId}`);
   const api = axios.create({ baseURL: Config.getApiUrl() });
   const queryParams = new URLSearchParams({ cxId });
   const failJobUrl = `/internal/patient/job/${jobId}/fail?${queryParams.toString()}`;
@@ -33,7 +36,7 @@ export async function failJob({ jobId, cxId, reason }: FailJobParams): Promise<v
       cxId,
       jobId,
       url: failJobUrl,
-      context: "patient-job.failJob",
+      context: fullContext,
     });
   }
 }
