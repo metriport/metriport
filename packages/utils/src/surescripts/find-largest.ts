@@ -4,7 +4,6 @@ dotenv.config();
 
 import fs from "fs";
 import path from "path";
-
 import { Command } from "commander";
 import { SurescriptsReplica } from "@metriport/core/external/surescripts/replica";
 import { parseResponseFile } from "@metriport/core/external/surescripts/file/file-parser";
@@ -12,6 +11,10 @@ import { buildCsvPath, getTransmissionsFromCsv } from "./shared";
 import { initRunsFolder, buildGetDirPathInside } from "../shared/folder";
 
 const program = new Command();
+
+initRunsFolder("surescripts");
+const getDirPath = buildGetDirPathInside("surescripts");
+const replica = new SurescriptsReplica();
 const dataPoints: Array<{ patientId: string; transmissionId: string; size: number }> = [];
 const reportingThreshold = 200;
 
@@ -38,10 +41,6 @@ program
       if (!facilityId) throw new Error("Facility ID is required");
       if (!csvData) throw new Error("Either patient ID or CSV data is required");
       csvData = buildCsvPath(csvData);
-      initRunsFolder("surescripts");
-      const getDirPath = buildGetDirPathInside("surescripts");
-
-      const replica = new SurescriptsReplica();
       const transmissions = await getTransmissionsFromCsv(cxId, csvData);
       let totalProcessed = 0;
 
