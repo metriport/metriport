@@ -1,6 +1,5 @@
 **/terminology.db
-**/terminology_v2.db
-**/terminology_v2.1.db
+**/terminology*.db
 dist
 node_modules
 # dotenv environment variable files
