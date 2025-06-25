@@ -351,8 +351,6 @@ class ElationApi {
     fhirConverterToEhrBundle: (params: {
       inputS3Key: string;
       inputS3BucketName: string;
-      outputS3Key: string;
-      outputS3BucketName: string;
     }) => Promise<EhrFhirResourceBundle>;
     useCachedBundle?: boolean;
   }): Promise<Bundle> {
@@ -371,8 +369,6 @@ class ElationApi {
       const bundle = await fhirConverterToEhrBundle({
         inputS3Key: s3key,
         inputS3BucketName: s3BucketName,
-        outputS3Key: `${s3key}.json`,
-        outputS3BucketName: s3BucketName,
       });
       const { targetBundle, referenceBundle } = partitionEhrBundle({
         bundle,
