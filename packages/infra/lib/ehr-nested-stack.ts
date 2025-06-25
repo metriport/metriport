@@ -662,7 +662,7 @@ export class EhrNestedStack extends NestedStack {
 
     lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
 
-    ownProps.ehrBundleBucket.grantWrite(lambda);
+    ownProps.ehrBundleBucket.grantReadWrite(lambda);
     ownProps.fhirConverterLambda?.grantInvoke(lambda);
     ownProps.fhirConverterBucket?.grantReadWrite(lambda);
     ownProps.computeResourceDiffBundlesQueue.grantSendMessages(lambda);
