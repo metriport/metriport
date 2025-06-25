@@ -21,7 +21,8 @@ export type ResultEntry = {
   rowCsv: string;
   status: PatientImportEntryStatus;
   patientId: string | undefined;
-  reason: string | undefined;
+  reasonForCx: string | undefined;
+  reasonForDev: string | undefined;
 };
 
 /**
@@ -87,6 +88,6 @@ export async function storeResults({
 function entryToCsv(e: ResultEntry): string {
   const status = escapeCsvValueIfNeeded(e.status);
   const patientId = e.patientId ? escapeCsvValueIfNeeded(e.patientId) : "";
-  const reason = e.reason ? escapeCsvValueIfNeeded(e.reason) : "";
+  const reason = e.reasonForCx ? escapeCsvValueIfNeeded(e.reasonForCx) : "";
   return `${e.rowCsv},${patientId},${status},${reason}`;
 }

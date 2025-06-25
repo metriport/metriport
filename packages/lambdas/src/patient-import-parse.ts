@@ -1,5 +1,8 @@
 import { PatientImportParseRequest } from "@metriport/core/command/patient-import/steps/parse/patient-import-parse";
-import { PatientImportParseLocal } from "@metriport/core/command/patient-import/steps/parse/patient-import-parse-local";
+import {
+  processJobParse,
+  ProcessJobParseCommandRequest,
+} from "@metriport/core/command/patient-import/steps/parse/patient-import-parse-command";
 import { out } from "@metriport/core/util/log";
 import { errorToString } from "@metriport/shared";
 import * as Sentry from "@sentry/serverless";
@@ -24,9 +27,11 @@ export const handler = Sentry.AWSLambda.wrapHandler(
 
     const startedAt = new Date().getTime();
     try {
-      const patientImportParser = new PatientImportParseLocal(patientImportBucket);
-
-      await patientImportParser.processJobParse(params);
+      const cmdParams: ProcessJobParseCommandRequest = {
+        ...params,
+        patientImportBucket,
+      };
+      await processJobParse(cmdParams);
 
       const finishedAt = new Date().getTime();
       log(`Done local duration: ${finishedAt - startedAt}ms`);
