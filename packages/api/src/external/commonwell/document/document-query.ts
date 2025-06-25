@@ -7,6 +7,7 @@ import {
   operationOutcomeResourceType,
   organizationQueryMeta,
 } from "@metriport/commonwell-sdk";
+import { ingestIntoSearchEngine } from "@metriport/core/command/consolidated/search/document-reference/ingest";
 import {
   isCQDirectEnabledForCx,
   isEnhancedCoverageEnabledForCx,
@@ -35,7 +36,6 @@ import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { Config } from "../../../shared/config";
 import { mapDocRefToMetriport } from "../../../shared/external";
 import { reportMetric } from "../../aws/cloudwatch";
-import { ingestIntoSearchEngine } from "@metriport/core/command/consolidated/search/document-reference/ingest";
 import { convertCDAToFHIR, isConvertible } from "../../fhir-converter/converter";
 import { makeFhirApi } from "../../fhir/api/api-factory";
 import { cwToFHIR } from "../../fhir/document";
@@ -267,18 +267,17 @@ export async function queryAndProcessDocuments({
 
     const cwReference = error instanceof CommonwellError ? error.cwReference : undefined;
 
-    capture.message(msg, {
+    capture.error(msg, {
       extra: {
         context: `cw.queryAndProcessDocuments`,
-        error,
         patientId: patientParam.id,
         facilityId,
         forceDownload,
         requestId,
         ignoreDocRefOnFHIRServer,
         cwReference,
+        error: errorToString(error),
       },
-      level: "error",
     });
     throw error;
   }
@@ -302,7 +301,7 @@ export async function internalGetDocuments({
 
   const cwData = patient.data.externalData.COMMONWELL;
 
-  const reportDocQueryMetric = (queryStart: number) => {
+  function reportDocQueryMetric(queryStart: number) {
     const queryDuration = Date.now() - queryStart;
     reportMetric({
       name: context,
@@ -310,7 +309,7 @@ export async function internalGetDocuments({
       unit: "Milliseconds",
       additionalDimension: "CommonWell",
     });
-  };
+  }
   const commonWell = makeCommonWellAPI(initiator.name, addOidPrefix(initiator.oid));
   const queryMeta = organizationQueryMeta(initiator.oid, { npi: initiator.npi });
 
@@ -389,9 +388,8 @@ function reportCWErrors({
   for (const [category, errors] of Object.entries(errorsByCategory)) {
     const msg = `CW Document query error`;
     log(`${msg} - Category: ${category}. Cause: ${JSON.stringify(errors)}`);
-    capture.message(msg, {
+    capture.error(msg, {
       extra: { ...context, errors, category },
-      level: "error",
     });
   }
 }
@@ -526,10 +524,11 @@ async function downloadDocsAndUpsertFHIR({
   log(`I have ${validDocs.length} valid docs to process`);
 
   // Get File info from S3 (or from memory, if override = true)
-  const getFilesWithStorageInfo = async () =>
-    forceDownload
+  async function getFilesWithStorageInfo() {
+    return forceDownload
       ? await Promise.all(validDocs.map(convertToNonExistingS3Info(patient)))
       : await getS3Info(validDocs, patient);
+  }
 
   // Get all DocumentReferences for this patient + File info from S3
   const [foundOnFHIR, filesWithStorageInfo] = await Promise.all([
@@ -553,7 +552,9 @@ async function downloadDocsAndUpsertFHIR({
 
   const docsToDownload = filesToDownload.flatMap(f => validDocs.find(d => d.id === f.docId) ?? []);
 
-  const fileInfoByDocId = (docId: string) => filesWithStorageInfo.find(f => f.docId === docId);
+  function fileInfoByDocId(docId: string) {
+    return filesWithStorageInfo.find(f => f.docId === docId);
+  }
 
   const convertibleDocCount = docsToDownload.filter(doc =>
     isConvertible(doc.content?.mimeType)
@@ -639,9 +640,8 @@ async function downloadDocsAndUpsertFHIR({
                 patientId: patient.id,
                 documentReference: doc,
                 requestId,
-                error,
+                error: errorToString(error),
               },
-              level: "error",
             });
             throw error;
           }
@@ -746,15 +746,14 @@ async function downloadDocsAndUpsertFHIR({
           const msg = `Error processing doc from CW`;
           log(`${msg}: ${error}; doc ${JSON.stringify(doc)}`);
           if (!errorReported && !(error instanceof NotFoundError)) {
-            capture.message(msg, {
+            capture.error(msg, {
               extra: {
                 context: `cw.downloadDocsAndUpsertFHIR`,
                 patientId: patient.id,
                 document: doc,
                 requestId,
-                error,
+                error: errorToString(error),
               },
-              level: "error",
             });
           }
           throw error;
@@ -835,7 +834,9 @@ async function triggerDownloadDocument({
   }
 }
 
-const fileIsConvertible = (f: File) => isConvertible(f.contentType);
+function fileIsConvertible(f: File) {
+  return isConvertible(f.contentType);
+}
 
 async function sleepBetweenChunks(): Promise<void> {
   return sleepRandom(DOC_DOWNLOAD_CHUNK_DELAY_MAX_MS, DOC_DOWNLOAD_CHUNK_DELAY_MIN_PCT / 100);
