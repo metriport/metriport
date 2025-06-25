@@ -20,7 +20,7 @@ export function initializeContext(patientId: string): SurescriptsContext {
     practitioner: {},
     pharmacy: {},
     coverage: {},
-    coverageOrganization: {},
+    insuranceOrganization: {},
     medication: {},
     condition: {},
   };
