@@ -3,7 +3,6 @@ import { PatientJob } from "@metriport/shared/domain/job/patient-job";
 import {
   CreateDischargeRequeryParams,
   DischargeRequeryParamsOps,
-  dischargeRequeryParamsOpsSchema,
   parseDischargeRequeryJob,
 } from "@metriport/shared/domain/patient/patient-monitoring/discharge-requery";
 import {
@@ -65,10 +64,9 @@ export async function createDischargeRequeryJob(
 
     for (const existingJob of existingJobs) {
       const existingRequeryJob = parseDischargeRequeryJob(existingJob);
-      const existingOpsParams = dischargeRequeryParamsOpsSchema.parse(existingRequeryJob.paramsOps);
 
       remainingAttempts = pickLargestRemainingAttempts(
-        existingOpsParams.remainingAttempts,
+        existingRequeryJob.paramsOps.remainingAttempts,
         remainingAttempts
       );
       scheduledAt = pickEarliestScheduledAt(existingRequeryJob.scheduledAt, scheduledAt);
