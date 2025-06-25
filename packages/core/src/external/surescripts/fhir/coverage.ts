@@ -19,19 +19,17 @@ export function getInsuranceOrganization(detail: ResponseDetail): Organization |
   const paymentCode = detail.paymentCode ?? detail.planCode;
   if (!paymentCode) return undefined;
 
-  const sourceOfPaymentCode = getSourceOfPaymentCode(paymentCode);
-  if (!sourceOfPaymentCode) return undefined;
-  const sourceOfPaymentName = getSourceOfPaymentName(sourceOfPaymentCode);
-  if (!sourceOfPaymentName) return undefined;
+  const sourceOfPayment = getSourceOfPayment(paymentCode);
+  if (!sourceOfPayment) return undefined;
 
   return {
     resourceType: "Organization",
     id: uuidv7(),
-    name: sourceOfPaymentName,
+    name: sourceOfPayment.name,
     identifier: [
       {
         system: SOURCE_OF_PAYMENT_TYPOLOGY_SYSTEM,
-        value: sourceOfPaymentCode,
+        value: sourceOfPayment.code,
       },
     ],
   };
@@ -71,17 +69,15 @@ export function getCoverage(
 
 function getCoverageRelationship(detail: ResponseDetail): Coverage["relationship"] | undefined {
   if (!detail.paymentCode) return undefined;
-  const sourceOfPaymentCode = getSourceOfPaymentCode(detail.paymentCode);
-  if (!sourceOfPaymentCode) return undefined;
-  const sourceOfPaymentName = getSourceOfPaymentName(sourceOfPaymentCode);
-  if (!sourceOfPaymentName) return undefined;
+  const sourceOfPayment = getSourceOfPayment(detail.paymentCode);
+  if (!sourceOfPayment) return undefined;
 
   return {
     coding: [
       {
         system: SOURCE_OF_PAYMENT_TYPOLOGY_SYSTEM,
-        code: sourceOfPaymentCode,
-        display: sourceOfPaymentName,
+        code: sourceOfPayment.code,
+        display: sourceOfPayment.name,
       },
     ],
   };
@@ -113,4 +109,12 @@ function getCoverageIdentifiers(detail: ResponseDetail): Identifier[] {
     });
   }
   return identifiers;
+}
+
+function getSourceOfPayment(paymentCode: string): { code: string; name: string } | undefined {
+  const sourceOfPaymentCode = getSourceOfPaymentCode(paymentCode);
+  if (!sourceOfPaymentCode) return undefined;
+  const sourceOfPaymentName = getSourceOfPaymentName(sourceOfPaymentCode);
+  if (!sourceOfPaymentName) return undefined;
+  return { code: sourceOfPaymentCode, name: sourceOfPaymentName };
 }
