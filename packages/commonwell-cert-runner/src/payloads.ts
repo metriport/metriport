@@ -1,5 +1,4 @@
 import {
-  AddressUseCodes,
   CertificatePurpose,
   Demographics,
   Identifier,
@@ -7,12 +6,10 @@ import {
   Organization,
   OrganizationWithNetworkInfo,
   Patient,
-  Person,
 } from "@metriport/commonwell-sdk";
 import { X509Certificate } from "crypto";
 import dayjs from "dayjs";
 import * as nanoid from "nanoid";
-import { faker } from "@faker-js/faker";
 import {
   clientId,
   clientSecret,
@@ -32,7 +29,8 @@ import {
   orgGatewayAuthorizationServerEndpoint,
   orgGatewayEndpoint,
 } from "./env";
-import { getCertificateContent } from "./util";
+import { patientTracyCrane } from "./payloads/patient-crane";
+import { getCertificateContent, makeShortName } from "./util";
 
 const ORGANIZATION = "5";
 const LOCATION = "4";
@@ -62,98 +60,82 @@ export function makePatientId({
   return `${facility}.${PATIENT}.${patient}`;
 }
 
+// TODO ENG-200 address this
 // PERSON
 export const caDriversLicenseUri = `${CW_ID_PREFIX}2.16.840.1.113883.4.3.6`;
 export const driversLicenseId = nanoid.nanoid();
 
 export const identifier: Identifier = {
-  use: "usual",
-  key: driversLicenseId,
+  use: "secondary",
+  value: driversLicenseId,
   system: caDriversLicenseUri,
   period: {
     start: "1996-04-20T00:00:00Z",
   },
 };
 
-export const mainDetails = {
-  address: [
-    {
-      use: AddressUseCodes.home,
-      zip: "94041",
-      state: "CA",
-      line: ["335 Pioneer Way"],
-      city: "Mountain View",
-    },
-  ],
-  name: [
-    {
-      use: NameUseCodes.usual,
-      given: ["Paul"],
-      family: ["Greyham"],
-    },
-  ],
-  gender: {
-    code: "M",
-  },
-  birthDate: "1980-04-20T00:00:00Z",
-  identifier: [identifier],
-};
+// TODO ENG-200 address this
+// const secondaryDetails = {
+//   address: [
+//     {
+//       use: AddressUseCodes.home,
+//       zip: "94111",
+//       state: "CA",
+//       line: ["755 Sansome Street"],
+//       city: "San Francisco",
+//     },
+//   ],
+//   name: [
+//     {
+//       use: NameUseCodes.usual,
+//       given: ["Mary"],
+//       family: ["Jane"],
+//     },
+//   ],
+//   gender: {
+//     code: "F",
+//   },
+//   birthDate: "2000-04-20T00:00:00Z",
+// };
 
-const secondaryDetails = {
-  address: [
-    {
-      use: AddressUseCodes.home,
-      zip: "94111",
-      state: "CA",
-      line: ["755 Sansome Street"],
-      city: "San Francisco",
-    },
-  ],
-  name: [
-    {
-      use: NameUseCodes.usual,
-      given: ["Mary"],
-      family: ["Jane"],
-    },
-  ],
-  gender: {
-    code: "F",
-  },
-  birthDate: "2000-04-20T00:00:00Z",
-};
+// export const personStrongId: Person = {
+//   details: {
+//     ...patientTracyCraneTest,
+//     identifier: [identifier],
+//   },
+// };
 
-export const personStrongId: Person = {
-  details: {
-    ...mainDetails,
-    identifier: [identifier],
-  },
-};
+// export const personNoStrongId: Person = {
+//   details: secondaryDetails,
+// };
 
-export const personNoStrongId: Person = {
-  details: secondaryDetails,
-};
-
-// PATIENT
 export function makePatient({
   facilityId = makeFacilityId(),
-  details = mainDetails,
-}: { facilityId?: string; details?: Demographics } = {}): Patient {
+  demographics = patientTracyCrane,
+}: {
+  facilityId?: string;
+  demographics?: Omit<Demographics, "identifier"> & Partial<Pick<Demographics, "identifier">>;
+} = {}): Patient {
   return {
+    ...demographics,
     identifier: [
+      ...(demographics.identifier ?? []),
       {
-        use: "old", // official?
-        label: memberName,
-        system: `${CW_ID_PREFIX}${facilityId}`,
-        key: makePatientId({ facilityId }),
+        use: "official",
+        system: `${facilityId}`,
+        value: makePatientId({ facilityId }),
         assigner: memberName,
       },
     ],
-    details,
+    managingOrganization: {
+      identifier: [
+        {
+          system: facilityId,
+        },
+      ],
+    },
   };
 }
-
-export const makeMergePatient = ({ facilityId = makeFacilityId() }: { facilityId?: string } = {}) =>
-  makePatient({ facilityId, details: secondaryDetails });
 
 export type PersonData = {
   firstName?: string;
@@ -204,14 +186,6 @@ export const makeDocPerson = (init?: PersonDataOnOrg) => {
     },
   };
 };
-
-function makeShortName(): string {
-  let shortName = " ";
-  while (shortName.includes(" ")) {
-    shortName = faker.helpers.fake("{{word.adjective}}-{{color.human}}-{{animal.type()}}");
-  }
-  return shortName;
-}
 
 // ORGANIZATION
 const shortName = makeShortName();
@@ -267,6 +241,8 @@ export function makeOrganization(suffixId?: string): OrganizationWithNetworkInfo
             queryResponder: true,
           },
         ],
+        // TODO ENG-200 address this
+        // doa: [],
       },
     ],
     technicalContacts: [
@@ -339,6 +315,8 @@ export function makeDocContribOrganization(suffixId?: string): Organization {
             queryResponder: true,
           },
         ],
+        // TODO ENG-200 address this
+        // doa: [],
       },
     ],
   };

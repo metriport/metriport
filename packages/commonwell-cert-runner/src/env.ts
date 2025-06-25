@@ -39,6 +39,7 @@ export const docPatientDateOfBirth = getEnvOrFail("DOCUMENT_PATIENT_DATE_OF_BIRT
 export const docPatientGender = getEnvOrFail("DOCUMENT_PATIENT_GENDER");
 export const docPatientZip = getEnvOrFail("DOCUMENT_PATIENT_ZIP");
 
+// TODO ENG-200 remove this and use orgGateway* instead
 export const docAuthUrl = getEnvOrFail("DOCUMENT_CONTRIBUTION_AUTH_URL");
 export const clientId = getEnvOrFail("DOCUMENT_CONTRIBUTION_CLIENT_ID");
 export const clientSecret = getEnvOrFail("DOCUMENT_CONTRIBUTION_CLIENT_SECRET");

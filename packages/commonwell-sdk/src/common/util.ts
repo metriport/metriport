@@ -1,42 +1,20 @@
 import { PurposeOfUse } from "@metriport/shared";
 import { RequestMetadata } from "../client/commonwell";
-import { Demographics } from "../models/demographics";
 import { StrongId } from "../models/identifier";
-import { Organization } from "../models/organization";
-import { Patient } from "../models/patient";
-import { Person, PersonSearchResp } from "../models/person";
-
-export function getPersonId(object: Person | undefined): string | undefined {
-  if (!object) return undefined;
-  const url = object._links?.self?.href;
-  return getPersonIdFromUrl(url);
-}
+import { Patient, PatientCollectionItem } from "../models/patient";
 
 /**
- * Returns the ID of a person from its URL.
- *
- * @param personUrl - The person's URL as returned from `Person._links.self.href`
+ * Regex pattern to extract code, system, and optional assignAuthType from CommonWell patient ID
+ * Matches: code^^^&system&assignAuthType
+ * Where assignAuthType is optional
  */
-export function getPersonIdFromUrl(personUrl: string | undefined | null): string | undefined {
-  if (!personUrl) return undefined;
-  return personUrl.substring(personUrl.lastIndexOf("/") + 1);
-}
+export const CW_PATIENT_ID_REGEX = /^(.+)\^\^\^&([^&]+)(?:&(.+))?$/i;
 
-export function getPersonIdFromSearchByPatientDemo(object: PersonSearchResp): string | undefined {
-  if (!object._embedded || !object._embedded.person) return undefined;
-  const embeddedPersons = object._embedded.person.filter(p => p.enrolled);
-  if (embeddedPersons.length < 1) return undefined;
-  if (embeddedPersons.length > 1) {
-    console.log(`Found more than one person, using the first one: `, object);
-  }
-  const person = embeddedPersons[0];
-  return person && getPersonId(person);
-}
-
-export function getIdTrailingSlash(object: Patient | Organization): string | undefined {
-  const url = object._links?.self?.href;
+export function getPatientIdTrailingSlash(object: PatientCollectionItem): string | undefined {
+  const url = object.Links?.Self;
   if (!url) return undefined;
-  const removeTrailingSlash = url.substring(0, url.length - 1);
+  const isLastCharSlash = url.endsWith("/");
+  const removeTrailingSlash = isLastCharSlash ? url.substring(0, url.length - 1) : url;
   return removeTrailingSlash.substring(removeTrailingSlash.lastIndexOf("/") + 1);
 }
 
@@ -58,24 +36,38 @@ function buildPatiendIdToDocQuery(code: string, system: string): string {
  * @see {@link https://specification.commonwellalliance.org/services/data-broker/protocol-operations-data-broker#8781-find-documents|API spec}
  */
 export function convertPatientIdToSubjectId(patientId: string): string | undefined {
-  const value = decodeURIComponent(decodeURI(patientId));
-  const regex = /(.+)\^\^\^(.+)/i;
-  const match = value.match(regex);
-  const code = match && match[1];
-  const system = match && match[2];
-  return code && system ? buildPatiendIdToDocQuery(code, system) : undefined;
+  const { value, assignAuthority } = decodeCwPatientId(patientId);
+  return value && assignAuthority ? buildPatiendIdToDocQuery(value, assignAuthority) : undefined;
 }
 
-/**
- * Return the demographics for the results of a person search or a list of persons.
- *
- * @param personRelated structure containing person data, either an array of Person or a PersonSearchResp
- */
-export function getDemographics(personRelated: Person[] | PersonSearchResp): Demographics[] {
-  if (personRelated instanceof Array) {
-    return personRelated.map(p => p.details);
-  }
-  return personRelated._embedded.person.map(p => p.details);
+export function decodeCwPatientId(patientId: string): {
+  value: string | undefined;
+  assignAuthority: string | undefined;
+  assignAuthorityType: string | undefined;
+} {
+  const decoded = decodeURIComponent(decodeURI(patientId));
+  const match = decoded.match(CW_PATIENT_ID_REGEX) ?? undefined;
+  const value = match && match[1];
+  const assignAuthority = match && match[2];
+  const assignAuthorityType = match && match[3];
+  return { value, assignAuthority, assignAuthorityType };
+}
+
+export function encodeToCwPatientId({
+  patientId,
+  assignAuthority,
+  assignAuthorityType,
+}: {
+  patientId: string;
+  assignAuthority: string;
+  assignAuthorityType?: string | undefined;
+}): string {
+  // TODO ENG-200 CAN JUST SKIP TYPE IF NOT PROVIDED?
+  return `${patientId}^^^&${assignAuthority}&${assignAuthorityType ?? "ISO"}`;
+}
+
+export function encodeId(id: string): string {
+  return encodeURIComponent(id);
 }
 
 export function organizationQueryMeta(
@@ -98,3 +90,26 @@ export const baseQueryMeta = (orgName: string) => ({
   role: "ict",
   subjectId: `${orgName} System User`,
 });
+
+/**
+ * Extracts code, system, and optional assignAuthType from a CommonWell patient ID
+ *
+ * @param patientId - The patient ID in format: code^^^&system&assignAuthType
+ * @returns Object with code, system, and assignAuthType (optional)
+ */
+export function extractCwPatientIdComponents(patientId: string): {
+  code: string | undefined;
+  system: string | undefined;
+  assignAuthType: string | undefined;
+} {
+  const match = patientId.match(CW_PATIENT_ID_REGEX);
+  if (!match) {
+    return { code: undefined, system: undefined, assignAuthType: undefined };
+  }
+
+  return {
+    code: match[1],
+    system: match[2],
+    assignAuthType: match[3],
+  };
+}
