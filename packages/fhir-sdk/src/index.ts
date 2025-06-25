@@ -63,11 +63,121 @@ export class FhirBundleSdk {
   // Smart resource caching to maintain object identity
   private smartResourceCache: WeakMap<Resource, Smart<Resource>> = new WeakMap();
 
-  // Smart array caching to maintain array identity
-  private smartArrayCache?: Map<string, Smart<Resource>[]>;
-
   // Circular reference protection
   private resolutionStack = new Set<string>();
+
+  /**
+   * Configuration for dynamically generated resource getter methods.
+   *
+   * Each entry in this array automatically generates both single and collection getter methods.
+   *
+   * **Example:**
+   * ```typescript
+   * {
+   *   resourceType: 'Patient',
+   *   singleGetterMethodName: 'getPatientById',
+   *   collectionGetterMethodName: 'getPatients'
+   * }
+   * ```
+   *
+   * **Generates the equivalent of:**
+   * ```typescript
+   * // Single resource getter
+   * getPatientById(id: string): Smart<Patient> | undefined {
+   *   return this.getResourceByIdAndType<Patient>(id, 'Patient');
+   * }
+   *
+   * // Collection getter
+   * getPatients(): Smart<Patient>[] {
+   *   return this.getResourcesByType<Patient>('Patient');
+   * }
+   * ```
+   *
+   * **Usage:**
+   * ```typescript
+   * const sdk = new FhirBundleSdk(bundle);
+   * const patient = sdk.getPatientById('patient-123'); // Smart<Patient> | undefined
+   * const allPatients = sdk.getPatients(); // Smart<Patient>[]
+   * ```
+   *
+   * To add a new resource type, simply add a new entry to this array and declare
+   * the corresponding method signatures in the class body.
+   */
+  private static readonly RESOURCE_METHODS = [
+    {
+      resourceType: "Patient",
+      singleGetterMethodName: "getPatientById",
+      collectionGetterMethodName: "getPatients",
+    },
+    {
+      resourceType: "Observation",
+      singleGetterMethodName: "getObservationById",
+      collectionGetterMethodName: "getObservations",
+    },
+    {
+      resourceType: "Encounter",
+      singleGetterMethodName: "getEncounterById",
+      collectionGetterMethodName: "getEncounters",
+    },
+    {
+      resourceType: "AllergyIntolerance",
+      singleGetterMethodName: "getAllergyIntoleranceById",
+      collectionGetterMethodName: "getAllergyIntolerances",
+    },
+    {
+      resourceType: "Condition",
+      singleGetterMethodName: "getConditionById",
+      collectionGetterMethodName: "getConditions",
+    },
+    {
+      resourceType: "Organization",
+      singleGetterMethodName: "getOrganizationById",
+      collectionGetterMethodName: "getOrganizations",
+    },
+    {
+      resourceType: "Location",
+      singleGetterMethodName: "getLocationById",
+      collectionGetterMethodName: "getLocations",
+    },
+    {
+      resourceType: "Practitioner",
+      singleGetterMethodName: "getPractitionerById",
+      collectionGetterMethodName: "getPractitioners",
+    },
+    {
+      resourceType: "DiagnosticReport",
+      singleGetterMethodName: "getDiagnosticReportById",
+      collectionGetterMethodName: "getDiagnosticReports",
+    },
+  ] as const;
+
+  // Static initialization block to generate methods
+  static {
+    // Generate both single and collection getter methods from unified configuration
+    for (const {
+      resourceType,
+      singleGetterMethodName,
+      collectionGetterMethodName,
+    } of FhirBundleSdk.RESOURCE_METHODS) {
+      // Generate single resource getter (e.g., getPatientById)
+      Object.defineProperty(FhirBundleSdk.prototype, singleGetterMethodName, {
+        value: function (this: FhirBundleSdk, id: string) {
+          return this.getResourceByIdAndType(id, resourceType);
+        },
+        writable: false,
+        configurable: false,
+      });
+
+      // Generate collection getter (e.g., getPatients)
+      Object.defineProperty(FhirBundleSdk.prototype, collectionGetterMethodName, {
+        value: function (this: FhirBundleSdk) {
+          return this.getResourcesByType(resourceType);
+        },
+        writable: false,
+        configurable: false,
+      });
+    }
+  }
 
   constructor(bundle: Bundle) {
     // FR-1.2: Validate bundle resourceType
@@ -200,9 +310,13 @@ export class FhirBundleSdk {
       return resolvedResources;
     }
 
-    // Handle single reference
+    // Handle single reference - we know it's not an array at this point
     const resolved = this.resolveReferenceObject(referenceValue);
-    return resolved ? this.createSmartResource(resolved) : undefined;
+    if (resolved) {
+      // Type assertion is safe here because we've established this is the single reference path
+      return this.createSmartResource(resolved) as Smart<Resource>;
+    }
+    return undefined;
   }
 
   /**
@@ -381,81 +495,29 @@ export class FhirBundleSdk {
   }
 
   /**
-   * Get a Patient resource by ID - specialized method with proper typing
+   * Generic helper method to get a resource by ID with type validation
    */
-  getPatientById(id: string): Smart<Patient> | undefined {
+  private getResourceByIdAndType<T extends Resource>(
+    id: string,
+    resourceType: string
+  ): Smart<T> | undefined {
     const resource = this.getResourceById(id);
-    if (resource && resource.resourceType === "Patient") {
-      return resource as Smart<Patient>;
+    if (resource && resource.resourceType === resourceType) {
+      return resource as Smart<T>;
     }
     return undefined;
   }
 
-  /**
-   * Get an Observation resource by ID - specialized method with proper typing
-   */
-  getObservationById(id: string): Smart<Observation> | undefined {
-    const resource = this.getResourceById(id);
-    if (resource && resource.resourceType === "Observation") {
-      return resource as Smart<Observation>;
-    }
-    return undefined;
-  }
-
-  /**
-   * Get an Encounter resource by ID - specialized method with proper typing
-   */
-  getEncounterById(id: string): Smart<Encounter> | undefined {
-    const resource = this.getResourceById(id);
-    if (resource && resource.resourceType === "Encounter") {
-      return resource as Smart<Encounter>;
-    }
-    return undefined;
-  }
-
-  /**
-   * Get an AllergyIntolerance resource by ID - specialized method with proper typing
-   */
-  getAllergyIntoleranceById(id: string): Smart<AllergyIntolerance> | undefined {
-    const resource = this.getResourceById(id);
-    if (resource && resource.resourceType === "AllergyIntolerance") {
-      return resource as Smart<AllergyIntolerance>;
-    }
-    return undefined;
-  }
-
-  /**
-   * Get a Condition resource by ID - specialized method with proper typing
-   */
-  getConditionById(id: string): Smart<Condition> | undefined {
-    const resource = this.getResourceById(id);
-    if (resource && resource.resourceType === "Condition") {
-      return resource as Smart<Condition>;
-    }
-    return undefined;
-  }
-
-  /**
-   * Get an Organization resource by ID - specialized method with proper typing
-   */
-  getOrganizationById(id: string): Smart<Organization> | undefined {
-    const resource = this.getResourceById(id);
-    if (resource && resource.resourceType === "Organization") {
-      return resource as Smart<Organization>;
-    }
-    return undefined;
-  }
-
-  /**
-   * Get a Location resource by ID - specialized method with proper typing
-   */
-  getLocationById(id: string): Smart<Location> | undefined {
-    const resource = this.getResourceById(id);
-    if (resource && resource.resourceType === "Location") {
-      return resource as Smart<Location>;
-    }
-    return undefined;
-  }
+  // Dynamically generated methods - see static initialization block below
+  getPatientById!: (id: string) => Smart<Patient> | undefined;
+  getObservationById!: (id: string) => Smart<Observation> | undefined;
+  getEncounterById!: (id: string) => Smart<Encounter> | undefined;
+  getAllergyIntoleranceById!: (id: string) => Smart<AllergyIntolerance> | undefined;
+  getConditionById!: (id: string) => Smart<Condition> | undefined;
+  getOrganizationById!: (id: string) => Smart<Organization> | undefined;
+  getLocationById!: (id: string) => Smart<Location> | undefined;
+  getPractitionerById!: (id: string) => Smart<Practitioner> | undefined;
+  getDiagnosticReportById!: (id: string) => Smart<DiagnosticReport> | undefined;
 
   /**
    * Type-safe version of getResourceById that validates the resource type at runtime
@@ -486,114 +548,23 @@ export class FhirBundleSdk {
   }
 
   /**
-   * FR-4.1: Get all Patient resources
-   * FR-4.6: Returns empty array if no resources of that type exist
-   * FR-4.7: Uses @medplum/fhirtypes for return type definitions
-   * FR-5.1: Returns smart resources with reference resolution methods
+   * Generic helper method to get all resources of a specific type
    */
-  getPatients(): Smart<Patient>[] {
-    const patients = (this.resourcesByType.get("Patient") || []) as Patient[];
-    // Cache the smart resource array to maintain object identity
-    const cacheKey = "patients";
-    if (!this.smartArrayCache) {
-      this.smartArrayCache = new Map();
-    }
-    if (this.smartArrayCache.has(cacheKey)) {
-      return this.smartArrayCache.get(cacheKey) as Smart<Patient>[];
-    }
-    const smartPatients = patients.map(patient => this.createSmartResource(patient));
-    this.smartArrayCache.set(cacheKey, smartPatients);
-    return smartPatients;
+  private getResourcesByType<T extends Resource>(resourceType: string): Smart<T>[] {
+    const resources = (this.resourcesByType.get(resourceType) || []) as T[];
+    return resources.map(resource => this.createSmartResource(resource) as Smart<T>);
   }
 
-  /**
-   * FR-4.2: Get all Observation resources
-   * FR-4.6: Returns empty array if no resources of that type exist
-   * FR-4.7: Uses @medplum/fhirtypes for return type definitions
-   * FR-5.1: Returns smart resources with reference resolution methods
-   */
-  getObservations(): Smart<Observation>[] {
-    const observations = (this.resourcesByType.get("Observation") || []) as Observation[];
-    return observations.map(observation => this.createSmartResource(observation));
-  }
-
-  /**
-   * FR-4.3: Get all Encounter resources
-   * FR-4.6: Returns empty array if no resources of that type exist
-   * FR-4.7: Uses @medplum/fhirtypes for return type definitions
-   * FR-5.1: Returns smart resources with reference resolution methods
-   */
-  getEncounters(): Smart<Encounter>[] {
-    const encounters = (this.resourcesByType.get("Encounter") || []) as Encounter[];
-    return encounters.map(encounter => this.createSmartResource(encounter));
-  }
-
-  /**
-   * FR-4.4: Get all Practitioner resources
-   * FR-4.6: Returns empty array if no resources of that type exist
-   * FR-4.7: Uses @medplum/fhirtypes for return type definitions
-   * FR-5.1: Returns smart resources with reference resolution methods
-   */
-  getPractitioners(): Smart<Practitioner>[] {
-    const practitioners = (this.resourcesByType.get("Practitioner") || []) as Practitioner[];
-    return practitioners.map(practitioner => this.createSmartResource(practitioner));
-  }
-
-  /**
-   * FR-4.5: Get all DiagnosticReport resources
-   * FR-4.6: Returns empty array if no resources of that type exist
-   * FR-4.7: Uses @medplum/fhirtypes for return type definitions
-   * FR-5.1: Returns smart resources with reference resolution methods
-   */
-  getDiagnosticReports(): Smart<DiagnosticReport>[] {
-    const reports = (this.resourcesByType.get("DiagnosticReport") || []) as DiagnosticReport[];
-    return reports.map(report => this.createSmartResource(report));
-  }
-
-  /**
-   * Get all AllergyIntolerance resources
-   * Returns empty array if no resources of that type exist
-   * Uses @medplum/fhirtypes for return type definitions
-   * Returns smart resources with reference resolution methods
-   */
-  getAllergyIntolerances(): Smart<AllergyIntolerance>[] {
-    const allergies = (this.resourcesByType.get("AllergyIntolerance") ||
-      []) as AllergyIntolerance[];
-    return allergies.map(allergy => this.createSmartResource(allergy));
-  }
-
-  /**
-   * Get all Condition resources
-   * Returns empty array if no resources of that type exist
-   * Uses @medplum/fhirtypes for return type definitions
-   * Returns smart resources with reference resolution methods
-   */
-  getConditions(): Smart<Condition>[] {
-    const conditions = (this.resourcesByType.get("Condition") || []) as Condition[];
-    return conditions.map(condition => this.createSmartResource(condition));
-  }
-
-  /**
-   * Get all Organization resources
-   * Returns empty array if no resources of that type exist
-   * Uses @medplum/fhirtypes for return type definitions
-   * Returns smart resources with reference resolution methods
-   */
-  getOrganizations(): Smart<Organization>[] {
-    const organizations = (this.resourcesByType.get("Organization") || []) as Organization[];
-    return organizations.map(organization => this.createSmartResource(organization));
-  }
-
-  /**
-   * Get all Location resources
-   * Returns empty array if no resources of that type exist
-   * Uses @medplum/fhirtypes for return type definitions
-   * Returns smart resources with reference resolution methods
-   */
-  getLocations(): Smart<Location>[] {
-    const locations = (this.resourcesByType.get("Location") || []) as Location[];
-    return locations.map(location => this.createSmartResource(location));
-  }
+  // Dynamically generated array getter methods - see static initialization block below
+  getPatients!: () => Smart<Patient>[];
+  getObservations!: () => Smart<Observation>[];
+  getEncounters!: () => Smart<Encounter>[];
+  getPractitioners!: () => Smart<Practitioner>[];
+  getDiagnosticReports!: () => Smart<DiagnosticReport>[];
+  getAllergyIntolerances!: () => Smart<AllergyIntolerance>[];
+  getConditions!: () => Smart<Condition>[];
+  getOrganizations!: () => Smart<Organization>[];
+  getLocations!: () => Smart<Location>[];
 
   /**
    * Create a new bundle entry from an existing entry, preserving fullUrl
