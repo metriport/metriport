@@ -49,6 +49,10 @@ export async function finishDischargeRequery({
     status: "processing",
   });
 
+  if (processingJobs.length === 0) {
+    return;
+  }
+
   const targetJobs = processingJobs.filter(job => {
     const runtimeData = dischargeRequeryRuntimeDataSchema.parse(job.runtimeData);
     return runtimeData.documentQueryRequestId === dataPipelineRequestId;
@@ -87,7 +91,7 @@ export async function finishDischargeRequery({
         failPatientJob({
           jobId: job.id,
           cxId,
-          reason: "Unexpected number of discharge requery jobs",
+          reason: "Unexpected number of processingdischarge requery jobs",
         })
       )
     );
