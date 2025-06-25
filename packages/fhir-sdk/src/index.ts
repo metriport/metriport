@@ -91,6 +91,10 @@ export class FhirBundleSdk {
   // Smart resource caching to maintain object identity
   private smartResourceCache: WeakMap<Resource, Smart<Resource>> = new WeakMap();
 
+  // Array caching for type-specific getters to maintain reference identity
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private smartResourceArrayCache: Map<string, Smart<any>[]> = new Map();
+
   // Circular reference protection
   private resolutionStack = new Set<string>();
 
@@ -661,10 +665,24 @@ export class FhirBundleSdk {
 
   /**
    * Generic helper method to get all resources of a specific type
+   * FR-10.1: Returns references to cached objects, not copies
    */
   private getResourcesByType<T extends Resource>(resourceType: string): Smart<T>[] {
+    // Check cache first to maintain array reference identity
+    const cached = this.smartResourceArrayCache.get(resourceType);
+    if (cached) {
+      return cached as Smart<T>[];
+    }
+
     const resources = (this.resourcesByType.get(resourceType) || []) as T[];
-    return resources.map(resource => this.createSmartResource(resource) as Smart<T>);
+    const smartResources = resources.map(
+      resource => this.createSmartResource(resource) as Smart<T>
+    );
+
+    // Cache the array to maintain reference identity
+    this.smartResourceArrayCache.set(resourceType, smartResources);
+
+    return smartResources;
   }
 
   // Dynamically generated array getter methods - see static initialization block below
