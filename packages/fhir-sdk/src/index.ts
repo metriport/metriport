@@ -28,7 +28,6 @@ import {
   ServiceRequest,
 } from "@medplum/fhirtypes";
 
-import { MetriportError } from "@metriport/shared";
 import { Smart, getReferenceField, isReferenceMethod } from "./types/smart-resources";
 
 export { Smart } from "./types/smart-resources";
