@@ -11,12 +11,8 @@ export type FailJobParams = JobBaseParams & {
 };
 
 /**
- * Sends a request to the API to fail the job.
- *
- * @param jobId - The job ID.
- * @param cxId - The CX ID.
- * @param reason - The reason for failing the job.
- * @param context - The context for the job.
+ * Marks a patient job as failed when processing cannot continue, enabling proper job lifecycle
+ * management and error tracking in the discharge requery flow.
  */
 export async function failJob({ jobId, cxId, reason, context }: FailJobParams): Promise<void> {
   const fullContext = `${context}.failJob`;
