@@ -20,13 +20,12 @@ export class EhrComputeResourceDiffBundlesCloud implements EhrComputeResourceDif
   ) {}
 
   async computeResourceDiffBundles(params: ComputeResourceDiffBundlesRequest): Promise<void> {
-    const { metriportPatientId } = params;
     const payload = JSON.stringify(params);
     await executeWithNetworkRetries(async () => {
       await this.sqsClient.sendMessageToQueue(this.ehrComputeResourceDiffQueueUrl, payload, {
         fifo: true,
         messageDeduplicationId: createUuidFromText(payload),
-        messageGroupId: metriportPatientId,
+        messageGroupId: params.cxId,
       });
     });
   }
