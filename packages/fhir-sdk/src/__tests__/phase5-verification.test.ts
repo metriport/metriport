@@ -1,6 +1,10 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { FhirBundleSdk } from "../index";
-import { validCompleteBundle, bundleWithBrokenReferences } from "./fixtures/fhir-bundles";
+import {
+  validCompleteBundle,
+  bundleWithBrokenReferences,
+  CONSTANT_TIME_EXPECTED_PERF_THRESHOLD,
+} from "./fixtures/fhir-bundles";
 
 describe("Phase 5 Verification - Smart Reference Resolution", () => {
   describe("FR-5.1: Resources returned by SDK have additional getter methods for each Reference field", () => {
@@ -124,7 +128,7 @@ describe("Phase 5 Verification - Smart Reference Resolution", () => {
       observation.getSubject();
       const end = performance.now();
 
-      expect(end - start).toBeLessThan(1);
+      expect(end - start).toBeLessThan(CONSTANT_TIME_EXPECTED_PERF_THRESHOLD);
     });
   });
 

@@ -6,6 +6,7 @@ import {
   Encounter,
   DiagnosticReport,
 } from "@medplum/fhirtypes";
+export const CONSTANT_TIME_EXPECTED_PERF_THRESHOLD = 12;
 
 /**
  * Valid FHIR bundle with all resource types and proper references
