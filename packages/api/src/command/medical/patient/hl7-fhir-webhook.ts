@@ -67,7 +67,7 @@ export async function processHl7FhirBundleWebhook({
 
         const message: SlackMessage = {
           subject: `Patient Discharge Detected`,
-          message: JSON.stringify(messagePayload),
+          message: JSON.stringify(messagePayload, null, 2),
           emoji: ":hospital:",
         };
 
