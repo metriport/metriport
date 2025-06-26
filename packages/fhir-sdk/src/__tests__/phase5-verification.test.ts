@@ -8,8 +8,8 @@ import {
 
 describe("Phase 5 Verification - Smart Reference Resolution", () => {
   describe("FR-5.1: Resources returned by SDK have additional getter methods for each Reference field", () => {
-    it("should add reference methods to Observation resources", () => {
-      const sdk = new FhirBundleSdk(validCompleteBundle);
+    it("should add reference methods to Observation resources", async () => {
+      const sdk = await FhirBundleSdk.create(validCompleteBundle);
       const observations = sdk.getObservations();
 
       expect(observations.length).toBeGreaterThan(0);
@@ -20,8 +20,8 @@ describe("Phase 5 Verification - Smart Reference Resolution", () => {
       expect(typeof observation.getPerformers).toBe("function");
     });
 
-    it("should add reference methods to Encounter resources", () => {
-      const sdk = new FhirBundleSdk(validCompleteBundle);
+    it("should add reference methods to Encounter resources", async () => {
+      const sdk = await FhirBundleSdk.create(validCompleteBundle);
       const encounters = sdk.getEncounters();
 
       expect(encounters.length).toBeGreaterThan(0);
@@ -33,8 +33,8 @@ describe("Phase 5 Verification - Smart Reference Resolution", () => {
   });
 
   describe("FR-5.2: For Observation.subject reference, SDK adds getSubject() method", () => {
-    it("should resolve subject reference to Patient", () => {
-      const sdk = new FhirBundleSdk(validCompleteBundle);
+    it("should resolve subject reference to Patient", async () => {
+      const sdk = await FhirBundleSdk.create(validCompleteBundle);
       const observations = sdk.getObservations();
 
       expect(observations.length).toBeGreaterThan(0);
@@ -48,8 +48,8 @@ describe("Phase 5 Verification - Smart Reference Resolution", () => {
   });
 
   describe("FR-5.3: For Observation.encounter reference, SDK adds getEncounter() method", () => {
-    it("should resolve encounter reference to Encounter", () => {
-      const sdk = new FhirBundleSdk(validCompleteBundle);
+    it("should resolve encounter reference to Encounter", async () => {
+      const sdk = await FhirBundleSdk.create(validCompleteBundle);
       const observations = sdk.getObservations();
 
       expect(observations.length).toBeGreaterThan(0);
@@ -63,8 +63,8 @@ describe("Phase 5 Verification - Smart Reference Resolution", () => {
   });
 
   describe("FR-5.4: For Observation.performer reference array, SDK adds getPerformers() method", () => {
-    it("should resolve performer references to array of resources", () => {
-      const sdk = new FhirBundleSdk(validCompleteBundle);
+    it("should resolve performer references to array of resources", async () => {
+      const sdk = await FhirBundleSdk.create(validCompleteBundle);
       const observations = sdk.getObservations();
 
       expect(observations.length).toBeGreaterThan(0);
@@ -79,8 +79,8 @@ describe("Phase 5 Verification - Smart Reference Resolution", () => {
   });
 
   describe("FR-5.5: Reference resolution methods handle both resource.id and fullUrl matching", () => {
-    it("should resolve references by resource.id", () => {
-      const sdk = new FhirBundleSdk(validCompleteBundle);
+    it("should resolve references by resource.id", async () => {
+      const sdk = await FhirBundleSdk.create(validCompleteBundle);
       const observations = sdk.getObservations();
 
       expect(observations.length).toBeGreaterThan(0);
@@ -92,8 +92,8 @@ describe("Phase 5 Verification - Smart Reference Resolution", () => {
   });
 
   describe("FR-5.6: Reference resolution methods return undefined for unresolvable references", () => {
-    it("should return undefined for broken references", () => {
-      const sdk = new FhirBundleSdk(bundleWithBrokenReferences);
+    it("should return undefined for broken references", async () => {
+      const sdk = await FhirBundleSdk.create(bundleWithBrokenReferences);
       const observations = sdk.getObservations();
 
       if (observations.length > 0) {
@@ -103,8 +103,8 @@ describe("Phase 5 Verification - Smart Reference Resolution", () => {
       }
     });
 
-    it("should return empty array for missing array references", () => {
-      const sdk = new FhirBundleSdk(bundleWithBrokenReferences);
+    it("should return empty array for missing array references", async () => {
+      const sdk = await FhirBundleSdk.create(bundleWithBrokenReferences);
       const observations = sdk.getObservations();
 
       if (observations.length > 0) {
@@ -117,8 +117,8 @@ describe("Phase 5 Verification - Smart Reference Resolution", () => {
   });
 
   describe("FR-5.7: Reference resolution operates in O(1) time complexity per reference", () => {
-    it("should resolve references in O(1) time", () => {
-      const sdk = new FhirBundleSdk(validCompleteBundle);
+    it("should resolve references in O(1) time", async () => {
+      const sdk = await FhirBundleSdk.create(validCompleteBundle);
       const observations = sdk.getObservations();
 
       expect(observations.length).toBeGreaterThan(0);
@@ -133,8 +133,8 @@ describe("Phase 5 Verification - Smart Reference Resolution", () => {
   });
 
   describe("FR-5.8: Original reference fields remain unchanged", () => {
-    it("should preserve original reference fields", () => {
-      const sdk = new FhirBundleSdk(validCompleteBundle);
+    it("should preserve original reference fields", async () => {
+      const sdk = await FhirBundleSdk.create(validCompleteBundle);
       const observations = sdk.getObservations();
 
       expect(observations.length).toBeGreaterThan(0);
@@ -145,8 +145,8 @@ describe("Phase 5 Verification - Smart Reference Resolution", () => {
       expect(observation.performer).toEqual([{ reference: "Practitioner/practitioner-456" }]);
     });
 
-    it("should not include getter methods in JSON serialization", () => {
-      const sdk = new FhirBundleSdk(validCompleteBundle);
+    it("should not include getter methods in JSON serialization", async () => {
+      const sdk = await FhirBundleSdk.create(validCompleteBundle);
       const observations = sdk.getObservations();
 
       expect(observations.length).toBeGreaterThan(0);
@@ -160,8 +160,8 @@ describe("Phase 5 Verification - Smart Reference Resolution", () => {
   });
 
   describe("Reference Chaining", () => {
-    it("should support chaining through resolved references", () => {
-      const sdk = new FhirBundleSdk(validCompleteBundle);
+    it("should support chaining through resolved references", async () => {
+      const sdk = await FhirBundleSdk.create(validCompleteBundle);
       const observations = sdk.getObservations();
 
       expect(observations.length).toBeGreaterThan(0);
@@ -175,8 +175,8 @@ describe("Phase 5 Verification - Smart Reference Resolution", () => {
       expect(patientViaChain?.id).toBe("patient-123");
     });
 
-    it("should handle broken chains gracefully", () => {
-      const sdk = new FhirBundleSdk(bundleWithBrokenReferences);
+    it("should handle broken chains gracefully", async () => {
+      const sdk = await FhirBundleSdk.create(bundleWithBrokenReferences);
       const observations = sdk.getObservations();
 
       if (observations.length > 0) {
@@ -188,24 +188,24 @@ describe("Phase 5 Verification - Smart Reference Resolution", () => {
   });
 
   describe("Smart Resource Identity and Caching", () => {
-    it("should maintain object identity for cached resources", () => {
-      const sdk = new FhirBundleSdk(validCompleteBundle);
+    it("should maintain object identity for cached resources", async () => {
+      const sdk = await FhirBundleSdk.create(validCompleteBundle);
       const observation1 = sdk.getObservations()[0];
       const observation2 = sdk.getObservations()[0];
 
       expect(observation1).toBe(observation2);
     });
 
-    it("should maintain consistency across different access methods", () => {
-      const sdk = new FhirBundleSdk(validCompleteBundle);
+    it("should maintain consistency across different access methods", async () => {
+      const sdk = await FhirBundleSdk.create(validCompleteBundle);
       const observationFromList = sdk.getObservations()[0];
       const observationById = sdk.getResourceById("observation-001");
 
       expect(observationFromList).toBe(observationById);
     });
 
-    it("should cache resolved references", () => {
-      const sdk = new FhirBundleSdk(validCompleteBundle);
+    it("should cache resolved references", async () => {
+      const sdk = await FhirBundleSdk.create(validCompleteBundle);
       const observations = sdk.getObservations();
 
       expect(observations.length).toBeGreaterThan(0);
@@ -219,8 +219,8 @@ describe("Phase 5 Verification - Smart Reference Resolution", () => {
   });
 
   describe("Array Reference Chaining", () => {
-    it("should support chaining through array elements", () => {
-      const sdk = new FhirBundleSdk(validCompleteBundle);
+    it("should support chaining through array elements", async () => {
+      const sdk = await FhirBundleSdk.create(validCompleteBundle);
       const reports = sdk.getDiagnosticReports();
 
       if (reports.length > 0) {
@@ -240,8 +240,8 @@ describe("Phase 5 Verification - Smart Reference Resolution", () => {
   });
 
   describe("Smart Resource Marker", () => {
-    it("should mark resources as smart resources", () => {
-      const sdk = new FhirBundleSdk(validCompleteBundle);
+    it("should mark resources as smart resources", async () => {
+      const sdk = await FhirBundleSdk.create(validCompleteBundle);
       const observations = sdk.getObservations();
 
       expect(observations.length).toBeGreaterThan(0);

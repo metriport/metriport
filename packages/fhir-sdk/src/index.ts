@@ -126,7 +126,7 @@ export class FhirBundleSdk {
    *
    * **Usage:**
    * ```typescript
-   * const sdk = new FhirBundleSdk(bundle);
+   * const sdk = await FhirBundleSdk.create(bundle);
    * const patient = sdk.getPatientById('patient-123'); // Smart<Patient> | undefined
    * const allPatients = sdk.getPatients(); // Smart<Patient>[]
    * ```

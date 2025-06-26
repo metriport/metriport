@@ -7,8 +7,8 @@ import {
 
 describe("Phase 3 Verification - Reference Validation", () => {
   describe("FR-2.1: lookForBrokenReferences() method returns validation result", () => {
-    it("should return validation result for valid bundle", () => {
-      const sdk = new FhirBundleSdk(validCompleteBundle);
+    it("should return validation result for valid bundle", async () => {
+      const sdk = await FhirBundleSdk.create(validCompleteBundle);
       const result = sdk.lookForBrokenReferences();
 
       expect(result).toBeDefined();
@@ -16,16 +16,16 @@ describe("Phase 3 Verification - Reference Validation", () => {
       expect(Array.isArray(result.brokenReferences)).toBe(true);
     });
 
-    it("should return true for valid references", () => {
-      const sdk = new FhirBundleSdk(validCompleteBundle);
+    it("should return true for valid references", async () => {
+      const sdk = await FhirBundleSdk.create(validCompleteBundle);
       const result = sdk.lookForBrokenReferences();
 
       expect(result.hasBrokenReferences).toBe(false);
       expect(result.brokenReferences).toHaveLength(0);
     });
 
-    it("should return false for invalid references", () => {
-      const sdk = new FhirBundleSdk(bundleWithBrokenReferences);
+    it("should return false for invalid references", async () => {
+      const sdk = await FhirBundleSdk.create(bundleWithBrokenReferences);
       const result = sdk.lookForBrokenReferences();
 
       expect(result.hasBrokenReferences).toBe(true);
@@ -34,8 +34,8 @@ describe("Phase 3 Verification - Reference Validation", () => {
   });
 
   describe("FR-2.2: Validation identifies references by Resource/id pattern and fullUrl references", () => {
-    it("should identify Resource/id pattern references", () => {
-      const sdk = new FhirBundleSdk(bundleWithBrokenReferences);
+    it("should identify Resource/id pattern references", async () => {
+      const sdk = await FhirBundleSdk.create(bundleWithBrokenReferences);
       const result = sdk.lookForBrokenReferences();
 
       const brokenSubjectRef = result.brokenReferences.find(
@@ -44,8 +44,8 @@ describe("Phase 3 Verification - Reference Validation", () => {
       expect(brokenSubjectRef).toBeDefined();
     });
 
-    it("should validate fullUrl references", () => {
-      const sdk = new FhirBundleSdk(bundleWithFullUrlReferences);
+    it("should validate fullUrl references", async () => {
+      const sdk = await FhirBundleSdk.create(bundleWithFullUrlReferences);
       const result = sdk.lookForBrokenReferences();
 
       expect(result.hasBrokenReferences).toBe(false);
@@ -53,15 +53,15 @@ describe("Phase 3 Verification - Reference Validation", () => {
   });
 
   describe("FR-2.3: Validation handles both relative and absolute references", () => {
-    it("should handle relative references (Patient/123)", () => {
-      const sdk = new FhirBundleSdk(validCompleteBundle);
+    it("should handle relative references (Patient/123)", async () => {
+      const sdk = await FhirBundleSdk.create(validCompleteBundle);
       const result = sdk.lookForBrokenReferences();
 
       expect(result.hasBrokenReferences).toBe(false);
     });
 
-    it("should handle absolute references (urn:uuid:123)", () => {
-      const sdk = new FhirBundleSdk(bundleWithFullUrlReferences);
+    it("should handle absolute references (urn:uuid:123)", async () => {
+      const sdk = await FhirBundleSdk.create(bundleWithFullUrlReferences);
       const result = sdk.lookForBrokenReferences();
 
       expect(result.hasBrokenReferences).toBe(false);
@@ -69,8 +69,8 @@ describe("Phase 3 Verification - Reference Validation", () => {
   });
 
   describe("FR-2.4: Validation result includes list of broken references with details", () => {
-    it("should provide detailed broken reference information", () => {
-      const sdk = new FhirBundleSdk(bundleWithBrokenReferences);
+    it("should provide detailed broken reference information", async () => {
+      const sdk = await FhirBundleSdk.create(bundleWithBrokenReferences);
       const result = sdk.lookForBrokenReferences();
 
       expect(result.brokenReferences.length).toBeGreaterThan(0);
@@ -84,8 +84,8 @@ describe("Phase 3 Verification - Reference Validation", () => {
       }
     });
 
-    it("should identify specific broken reference details", () => {
-      const sdk = new FhirBundleSdk(bundleWithBrokenReferences);
+    it("should identify specific broken reference details", async () => {
+      const sdk = await FhirBundleSdk.create(bundleWithBrokenReferences);
       const result = sdk.lookForBrokenReferences();
 
       const brokenSubjectRef = result.brokenReferences.find(
@@ -100,16 +100,16 @@ describe("Phase 3 Verification - Reference Validation", () => {
   });
 
   describe("Edge Cases and Advanced Validation", () => {
-    it("should handle empty bundle gracefully", () => {
+    it("should handle empty bundle gracefully", async () => {
       const emptyBundle = { resourceType: "Bundle" as const, type: "collection" as const };
-      const sdk = new FhirBundleSdk(emptyBundle);
+      const sdk = await FhirBundleSdk.create(emptyBundle);
       const result = sdk.lookForBrokenReferences();
 
       expect(result.hasBrokenReferences).toBe(false);
       expect(result.brokenReferences).toHaveLength(0);
     });
 
-    it("should handle resources without references", () => {
+    it("should handle resources without references", async () => {
       const bundleWithoutRefs = {
         resourceType: "Bundle" as const,
         type: "collection" as const,
@@ -124,15 +124,15 @@ describe("Phase 3 Verification - Reference Validation", () => {
         ],
       };
 
-      const sdk = new FhirBundleSdk(bundleWithoutRefs);
+      const sdk = await FhirBundleSdk.create(bundleWithoutRefs);
       const result = sdk.lookForBrokenReferences();
 
       expect(result.hasBrokenReferences).toBe(false);
       expect(result.brokenReferences).toHaveLength(0);
     });
 
-    it("should handle bundles with some valid and some broken references", () => {
-      const sdk = new FhirBundleSdk(bundleWithBrokenReferences);
+    it("should handle bundles with some valid and some broken references", async () => {
+      const sdk = await FhirBundleSdk.create(bundleWithBrokenReferences);
       const result = sdk.lookForBrokenReferences();
 
       expect(result.hasBrokenReferences).toBe(true);
@@ -141,8 +141,8 @@ describe("Phase 3 Verification - Reference Validation", () => {
   });
 
   describe("Performance Requirements", () => {
-    it("should validate references efficiently for large bundles", () => {
-      const sdk = new FhirBundleSdk(validCompleteBundle);
+    it("should validate references efficiently for large bundles", async () => {
+      const sdk = await FhirBundleSdk.create(validCompleteBundle);
 
       const start = performance.now();
       const result = sdk.lookForBrokenReferences();
