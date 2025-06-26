@@ -162,6 +162,7 @@ const failOrCancelSchema = z.object({
  * @param req.query.cxId - The CX ID.
  * @param req.params.jobId - The job ID.
  * @param req.body.reason - The reason for failing the job.
+ *
  * @returns 200 OK
  */
 router.post(
