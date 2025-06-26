@@ -66,7 +66,7 @@ export async function getConversionBundle(
   cxId: string,
   patientId: string
 ): Promise<Bundle | undefined> {
-  const s3Utils = new S3Utils("us-west-1");
+  const s3Utils = new S3Utils(Config.getAWSRegion());
   const fileName = buildLatestConversionBundleFileName(cxId, patientId);
   const bucketName = Config.getPharmacyConversionBucketName();
   if (!bucketName) {
