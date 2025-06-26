@@ -5,10 +5,11 @@ import {
   Medication,
   Organization,
   Practitioner,
+  Resource,
 } from "@medplum/fhirtypes";
 import { dataSourceExtensionDefaults } from "../../fhir/shared/extensions/extension";
 import { NPI_URL } from "./constants";
-import { SurescriptsContext, SystemIdentifierMap } from "./types";
+import { ResourceMap, SurescriptsContext, SystemIdentifierMap } from "./types";
 
 export function initializeContext(patientId: string): SurescriptsContext {
   const context: SurescriptsContext = {
@@ -19,6 +20,7 @@ export function initializeContext(patientId: string): SurescriptsContext {
     practitioner: {},
     pharmacy: {},
     coverage: {},
+    insuranceOrganization: {},
     medication: {},
     condition: {},
   };
@@ -67,6 +69,24 @@ export function deduplicateByCoding<R extends Medication | Condition>(
     codingMap[coding.code] = resource;
   }
   return masterResource;
+}
+
+export function deduplicateByKey<R extends Resource, K extends keyof R>(
+  resourceMap: ResourceMap<R>,
+  key: K,
+  resource?: R
+): R | undefined {
+  if (!resource) return undefined;
+
+  const resourceValue = resource[key] as keyof ResourceMap<R> | undefined;
+  if (!resourceValue) return resource;
+
+  const existingResource = resourceMap[resourceValue];
+  if (existingResource) {
+    return existingResource;
+  }
+  resourceMap[resourceValue] = resource;
+  return resource;
 }
 
 export function getResourceByNpiNumber<R extends Practitioner | Organization | Coverage>(

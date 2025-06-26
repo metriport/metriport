@@ -37,6 +37,7 @@ export const cxBasedFFsSchema = z.object({
   cxsWithPcpVisitAiSummaryFeatureFlag: ffStringValuesSchema,
   cxsWithHl7NotificationWebhookFeatureFlag: ffStringValuesSchema,
   cxsWithDischargeSlackNotificationFeatureFlag: ffStringValuesSchema,
+  cxsWithDischargeRequeryFeatureFlag: ffStringValuesSchema,
 });
 export type CxBasedFFsSchema = z.infer<typeof cxBasedFFsSchema>;
 

@@ -129,6 +129,8 @@ async function handleConversionWebhook(
   }
 }
 
+// TODO: For some reason turning this into an arrow function makes tests fail
+// eslint-disable-next-line @metriport/eslint-rules/no-named-arrow-functions
 export const composeDocRefPayload = async (
   patientId: string,
   cxId: string,
