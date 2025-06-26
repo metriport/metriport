@@ -13,10 +13,9 @@ export class EhrGetAppointmentsCloud implements EhrGetAppointmentsHandler {
 
   constructor(
     private readonly ehrGetAppointmentsLambdaName: string,
-    region?: string,
-    lambdaClient?: LambdaClient
+    lambdaClient: LambdaClient = makeLambdaClient(Config.getAWSRegion())
   ) {
-    this.lambdaClient = lambdaClient ?? makeLambdaClient(region ?? Config.getAWSRegion());
+    this.lambdaClient = lambdaClient;
   }
 
   async getAppointments<T extends Appointment>(params: GetAppointmentsRequest): Promise<T[]> {

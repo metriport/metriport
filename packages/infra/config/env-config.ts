@@ -298,6 +298,7 @@ export type EnvConfigNonSandbox = EnvConfigBase & {
   connectWidget: ConnectWidgetConfig;
   engineeringCxId: string;
   hl7Notification: Hl7NotificationConfig;
+  fhirConversionBucketName: string;
 };
 
 export type EnvConfigSandbox = EnvConfigBase & {

@@ -218,6 +218,9 @@ export class Config {
   static getEhrRefreshEhrBundlesQueueUrl(): string {
     return getEnvVarOrFail("EHR_REFRESH_EHR_BUNDLES_QUEUE_URL");
   }
+  static getEhrContributeDiffBundlesQueueUrl(): string {
+    return getEnvVarOrFail("EHR_CONTRIBUTE_RESOURCE_DIFF_BUNDLES_QUEUE_URL");
+  }
   static getEhrBundleBucketName(): string {
     return getEnvVarOrFail("EHR_BUNDLE_BUCKET_NAME");
   }
@@ -315,5 +318,15 @@ export class Config {
 
   static getRunPatientJobQueueUrl(): string {
     return getEnvVarOrFail("RUN_PATIENT_JOB_QUEUE_URL");
+  }
+
+  static getFhirConverterLambdaName(): string {
+    return getEnvVarOrFail("FHIR_CONVERTER_LAMBDA_NAME");
+  }
+  static getFhirConvertServerURL(): string {
+    return getEnvVarOrFail("FHIR_CONVERTER_SERVER_URL");
+  }
+  static getFhirConversionBucketName(): string {
+    return getEnvVarOrFail("FHIR_CONVERTER_BUCKET_NAME");
   }
 }

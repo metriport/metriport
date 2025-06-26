@@ -221,6 +221,7 @@ export const config: EnvConfigNonSandbox = {
   iheResponsesBucketName: "test-ihe-responses-bucket",
   iheParsedResponsesBucketName: "test-ihe-parsed-responses-bucket",
   iheRequestsBucketName: "test-ihe-requests-bucket",
+  fhirConversionBucketName: "test-fhir-conversion-bucket",
   engineeringCxId: "12345678-1234-1234-1234-123456789012",
   slack: {
     SLACK_ALERT_URL: "url-to-slack-alert",

@@ -1,5 +1,5 @@
 import { Resource } from "@medplum/fhirtypes";
-import { MetriportError } from "@metriport/shared";
+import { errorToString, MetriportError } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import { Client } from "@opensearch-project/opensearch";
 import dayjs from "dayjs";
@@ -96,36 +96,44 @@ export class OpenSearchFhirIngestor {
     const indexName = this.indexName;
     const auth = { username: this.username, password: this.password };
     const client = new Client({ node: this.endpoint, auth });
+    try {
+      log(`Ingesting ${resources.length} resources into index ${indexName}...`);
+      const startedAt = Date.now();
 
-    log(`Ingesting ${resources.length} resources into index ${indexName}...`);
-    const startedAt = Date.now();
+      let errorCount = 0;
+      const _onItemError = onItemError ?? buildOnItemError(errors);
+      const mutatingMissingResourceIdsByType: Record<string, string[]> = {};
 
-    let errorCount = 0;
-    const _onItemError = onItemError ?? buildOnItemError(errors);
-    const mutatingMissingResourceIdsByType: Record<string, string[]> = {};
+      const chunks = chunk(resources, bulkChunkSize);
+      for (const resourceChunk of chunks) {
+        const errorCountChunk = await this.ingestBulkInternal({
+          cxId,
+          patientId,
+          resources: resourceChunk,
+          indexName,
+          client,
+          onItemError: _onItemError,
+          mutatingMissingResourceIdsByType,
+        });
+        errorCount += errorCountChunk;
+      }
 
-    const chunks = chunk(resources, bulkChunkSize);
-    for (const resourceChunk of chunks) {
-      const errorCountChunk = await this.ingestBulkInternal({
-        cxId,
-        patientId,
-        resources: resourceChunk,
-        indexName,
-        client,
-        onItemError: _onItemError,
-        mutatingMissingResourceIdsByType,
-      });
-      errorCount += errorCountChunk;
+      const time = Date.now() - startedAt;
+      log(`Ingested ${resources.length} resources in ${time} ms, ${errorCount} errors`);
+      if (Object.keys(mutatingMissingResourceIdsByType).length > 0) {
+        log(
+          `WARNING - Resources not ingested, either missing relevant info or not ingestible:`,
+          () => JSON.stringify(mutatingMissingResourceIdsByType)
+        );
+      }
+      return errors;
+    } finally {
+      try {
+        await client.close();
+      } catch (error) {
+        log(`Error closing OS client: ${errorToString(error)}`);
+      }
     }
-
-    const time = Date.now() - startedAt;
-    log(`Ingested ${resources.length} resources in ${time} ms, ${errorCount} errors`);
-    if (Object.keys(mutatingMissingResourceIdsByType).length > 0) {
-      log(`WARNING - Resources not ingested, either missing relevant info or not ingestible:`, () =>
-        JSON.stringify(mutatingMissingResourceIdsByType)
-      );
-    }
-    return errors;
   }
 
   private async ingestBulkInternal({
@@ -190,16 +198,23 @@ export class OpenSearchFhirIngestor {
     const indexName = this.indexName;
     const auth = { username: this.username, password: this.password };
     const client = new Client({ node: this.endpoint, auth });
+    try {
+      log(`Deleting resources from index ${indexName}...`);
+      const startedAt = Date.now();
 
-    log(`Deleting resources from index ${indexName}...`);
-    const startedAt = Date.now();
-
-    await client.deleteByQuery({
-      index: indexName,
-      body: createDeleteQuery({ cxId, patientId }),
-    });
-    const time = Date.now() - startedAt;
-    log(`Successfully deleted in ${time} milliseconds`);
+      await client.deleteByQuery({
+        index: indexName,
+        body: createDeleteQuery({ cxId, patientId }),
+      });
+      const time = Date.now() - startedAt;
+      log(`Successfully deleted in ${time} milliseconds`);
+    } finally {
+      try {
+        await client.close();
+      } catch (error) {
+        log(`Error closing OS client: ${errorToString(error)}`);
+      }
+    }
   }
 }
 

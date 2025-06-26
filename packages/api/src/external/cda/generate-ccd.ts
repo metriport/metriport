@@ -8,6 +8,7 @@ import {
 import { Organization } from "@metriport/core/domain/organization";
 import { Patient } from "@metriport/core/domain/patient";
 import { S3Utils } from "@metriport/core/external/aws/s3";
+import { dangerouslyDeduplicate } from "@metriport/core/external/fhir/consolidated/deduplicate";
 import { toFHIR as toFhirOrganization } from "@metriport/core/external/fhir/organization/conversion";
 import { metriportDataSourceExtension } from "@metriport/core/external/fhir/shared/extensions/metriport";
 import { out } from "@metriport/core/util/log";
@@ -48,6 +49,11 @@ export async function generateCcd(
     type: "collection",
     entry: [...metriportGenerated, { resource: fhirOrganization }],
   };
+  dangerouslyDeduplicate({
+    cxId: patient.cxId,
+    patientId: patient.id,
+    bundle,
+  });
   const normalizedBundle = normalizeBundle(bundle);
   const parsedBundle = bundleSchema.parse(normalizedBundle);
   await uploadCcdFhirDataToS3(patient, parsedBundle, requestId);
