@@ -98,7 +98,7 @@ export function getLambdaResultPayload(params: {
   lambdaName?: string;
   failGracefully: true;
   failOnEmptyResponse?: boolean | false;
-  sNodeServerLambda?: boolean | false;
+  isNodeServerLambda?: boolean | false;
   log?: typeof console.log;
 }): string | undefined;
 export function getLambdaResultPayload({
