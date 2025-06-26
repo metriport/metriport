@@ -21,7 +21,9 @@ const defaultTriggerConsolidated = false;
 const defaultDisableWebhooks = true;
 const defaultRerunPdOnNewDemographics = true;
 
-const waitTimeBetweenPdAndDq = () => dayjs.duration(randomIntBetween(80, 120), "milliseconds");
+function waitTimeBetweenPdAndDq() {
+  return dayjs.duration(randomIntBetween(80, 120), "milliseconds");
+}
 
 export class DischargeRequeryDirect implements DischargeRequery {
   constructor(private readonly waitTimeInMillis: number = 0) {}
