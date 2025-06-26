@@ -7,7 +7,7 @@ const missingRefsFileName = "missing-refs.csv";
 /**
  * Go through each resource, find other resources it references, and check if they are present in the bundle.
  */
-export function validateReferences(resources: Resource[], dirName: string): boolean {
+export function lookForBrokenReferences(resources: Resource[], dirName: string): boolean {
   const resourceMap = new Map<string, Resource>();
   resources.forEach(r => resourceMap.set(r.id ?? "", r));
 
