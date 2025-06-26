@@ -725,7 +725,7 @@ export class FhirBundleSdk {
   private createExportBundle(entries: BundleEntry[]): Bundle {
     const exportBundle: Bundle = {
       resourceType: "Bundle",
-      type: this.bundle.type,
+      type: this.bundle.type || "collection",
       entry: entries,
     };
 
