@@ -251,3 +251,11 @@ export async function isHl7NotificationWebhookFeatureFlagEnabledForCx(
     await getCxsWithHl7NotificationWebhookFeatureFlag();
   return cxIdsWithHl7NotificationWebhookEnabled.some(i => i === cxId);
 }
+
+export async function getCxsWithDischargeRequeryFeatureFlag(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithDischargeRequeryFeatureFlag");
+}
+export async function isDischargeRequeryFeatureFlagEnabledForCx(cxId: string): Promise<boolean> {
+  const cxIdsWithDischargeRequeryEnabled = await getCxsWithDischargeRequeryFeatureFlag();
+  return cxIdsWithDischargeRequeryEnabled.some(i => i === cxId);
+}
