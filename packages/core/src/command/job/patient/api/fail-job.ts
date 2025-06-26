@@ -5,41 +5,33 @@ import { Config } from "../../../../util/config";
 import { out } from "../../../../util/log";
 import { JobBaseParams } from "./shared";
 
-export type UpdateJobRuntimeDataParams = JobBaseParams & {
-  runtimeData: unknown;
+export type FailJobParams = JobBaseParams & {
+  reason: string;
   context: string;
 };
 
 /**
- * Sends a request to the API to update the job runtime data.
- *
- * @param jobId - The job ID.
- * @param cxId - The CX ID.
- * @param runtimeData - The runtime data to update.
+ * Marks a patient job as failed when processing cannot continue, enabling proper job lifecycle
+ * management and error tracking in the discharge requery flow.
  */
-export async function updateJobRuntimeData({
-  jobId,
-  cxId,
-  runtimeData,
-  context,
-}: UpdateJobRuntimeDataParams): Promise<void> {
-  const fullContext = `${context}.updateJobRuntimeData`;
+export async function failJob({ jobId, cxId, reason, context }: FailJobParams): Promise<void> {
+  const fullContext = `${context}.failJob`;
   const { log, debug } = out(`${fullContext} - jobId ${jobId} cxId ${cxId}`);
   const api = axios.create({ baseURL: Config.getApiUrl() });
   const queryParams = new URLSearchParams({ cxId });
-  const updateJobUrl = `/internal/patient/job/${jobId}/runtime-data?${queryParams.toString()}`;
+  const failJobUrl = `/internal/patient/job/${jobId}/fail?${queryParams.toString()}`;
   try {
     const response = await executeWithNetworkRetries(async () => {
-      return api.post(updateJobUrl, { data: runtimeData });
+      return api.post(failJobUrl, { reason });
     });
-    logAxiosResponse(updateJobUrl, response, debug);
+    logAxiosResponse(failJobUrl, response, debug);
   } catch (error) {
-    const msg = "Failure while updating job runtime data @ Api";
+    const msg = "Failure while failing job @ Api";
     log(`${msg}. Cause: ${errorToString(error)}`);
     throw new MetriportError(msg, error, {
       cxId,
       jobId,
-      url: updateJobUrl,
+      url: failJobUrl,
       context: fullContext,
     });
   }
