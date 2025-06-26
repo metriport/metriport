@@ -389,6 +389,10 @@ export function createAPIService({
             ),
           }),
           RUN_PATIENT_JOB_QUEUE_URL: jobAssets.runPatientJobQueue.queueUrl,
+          ...(props.config.hl7Notification?.dischargeNotificationSlackUrl && {
+            DISCHARGE_NOTIFICATION_SLACK_URL:
+              props.config.hl7Notification.dischargeNotificationSlackUrl,
+          }),
         },
       },
       healthCheckGracePeriod: Duration.seconds(60),

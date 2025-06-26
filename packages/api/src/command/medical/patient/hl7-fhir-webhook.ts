@@ -1,13 +1,18 @@
-import { isHl7NotificationWebhookFeatureFlagEnabledForCx } from "@metriport/core/command/feature-flags/domain-ffs";
+import {
+  isDischargeSlackNotificationFeatureFlagEnabledForCx,
+  isHl7NotificationWebhookFeatureFlagEnabledForCx,
+} from "@metriport/core/command/feature-flags/domain-ffs";
+import { sendToSlack, SlackMessage } from "@metriport/core/external/slack";
 import { capture, out } from "@metriport/core/util";
+import { Config } from "@metriport/core/util/config";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import { MetriportError, errorToString } from "@metriport/shared";
+import { errorToString, MetriportError } from "@metriport/shared";
+import { Hl7WebhookTypeSchemaType } from "@metriport/shared/medical";
+import { Hl7NotificationWebhookRequest } from "../../../routes/medical/schemas/hl7-notification";
 import { getSettingsOrFail } from "../../settings/getSettings";
 import { processRequest } from "../../webhook/webhook";
 import { createWebhookRequest } from "../../webhook/webhook-request";
 import { getPatientOrFail } from "./get-patient";
-import { Hl7NotificationWebhookRequest } from "../../../routes/medical/schemas/hl7-notification";
-import { Hl7WebhookTypeSchemaType } from "@metriport/shared/medical";
 
 const EVENT_TARGET_PATIENT = "patient";
 const EVENT_ADMIT = "admit";
@@ -46,6 +51,28 @@ export async function processHl7FhirBundleWebhook({
         dischargeTimestamp,
       },
     };
+
+    // ENG-536 remove this once we automatically find the discharge summary
+    if (
+      triggerEvent === "A03" &&
+      (await isDischargeSlackNotificationFeatureFlagEnabledForCx(cxId))
+    ) {
+      const messagePayload = {
+        cxId,
+        patientId,
+        admitTimestamp,
+        dischargeTimestamp,
+      };
+
+      const message: SlackMessage = {
+        subject: `Patient Discharge Detected`,
+        message: JSON.stringify(messagePayload),
+        emoji: ":hospital:",
+      };
+
+      const channelUrl = Config.getDischargeNotificationSlackUrl();
+      await sendToSlack(message, channelUrl);
+    }
 
     if (!(await isHl7NotificationWebhookFeatureFlagEnabledForCx(cxId))) {
       log(`WH FF disabled. Not sending it...`);
