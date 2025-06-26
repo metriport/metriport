@@ -1,12 +1,17 @@
 import {
   Bundle,
+  DiagnosticReport,
+  Encounter,
+  Observation,
   Patient,
   Practitioner,
-  Observation,
-  Encounter,
-  DiagnosticReport,
 } from "@medplum/fhirtypes";
-export const CONSTANT_TIME_EXPECTED_PERF_THRESHOLD = 12;
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
+
+dayjs.extend(duration);
+
+export const CONSTANT_TIME_EXPECTED_THRESHOLD_MS = dayjs.duration({ milliseconds: 12 });
 
 /**
  * Valid FHIR bundle with all resource types and proper references

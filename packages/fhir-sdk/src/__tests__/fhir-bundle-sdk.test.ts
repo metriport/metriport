@@ -8,7 +8,7 @@ import {
   invalidBundleWrongType,
   invalidBundleWrongBundleType,
   mixedResourceTypesBundle,
-  CONSTANT_TIME_EXPECTED_PERF_THRESHOLD,
+  CONSTANT_TIME_EXPECTED_THRESHOLD_MS,
 } from "./fixtures/fhir-bundles";
 import { Patient } from "@medplum/fhirtypes";
 
@@ -391,7 +391,7 @@ describe("FhirBundleSdk", () => {
         const end = performance.now();
 
         // O(1) resolution should be very fast
-        expect(end - start).toBeLessThan(CONSTANT_TIME_EXPECTED_PERF_THRESHOLD);
+        expect(end - start).toBeLessThan(CONSTANT_TIME_EXPECTED_THRESHOLD_MS);
       });
     });
 

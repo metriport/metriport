@@ -3,7 +3,7 @@ import { FhirBundleSdk } from "../index";
 import {
   validCompleteBundle,
   bundleWithBrokenReferences,
-  CONSTANT_TIME_EXPECTED_PERF_THRESHOLD,
+  CONSTANT_TIME_EXPECTED_THRESHOLD_MS,
 } from "./fixtures/fhir-bundles";
 
 describe("Phase 5 Verification - Smart Reference Resolution", () => {
@@ -128,7 +128,7 @@ describe("Phase 5 Verification - Smart Reference Resolution", () => {
       observation.getSubject();
       const end = performance.now();
 
-      expect(end - start).toBeLessThan(CONSTANT_TIME_EXPECTED_PERF_THRESHOLD);
+      expect(end - start).toBeLessThan(CONSTANT_TIME_EXPECTED_THRESHOLD_MS);
     });
   });
 
