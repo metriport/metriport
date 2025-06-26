@@ -3,6 +3,7 @@ import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { FhirConverterParams } from "../../domain/conversion/bundle-modifications/modifications";
 import {
   buildDocumentNameForConversionResult,
+  buildDocumentNameForPreConversion,
   buildKeyForConversionFhir,
 } from "../../domain/conversion/filename";
 import { buildBatchBundleFromResources } from "../../external/fhir/bundle/bundle";
@@ -42,7 +43,7 @@ export abstract class ConversionFhirHandler {
         cxId: paramsWithRequestId.cxId,
         patientId: paramsWithRequestId.patientId,
         requestId,
-        fileName: `${paramsWithRequestId.inputS3BucketName}/${paramsWithRequestId.inputS3Key}`,
+        fileName: buildDocumentNameForPreConversion(requestId),
       }),
       // TODO Eng-531: Make these optional
       unusedSegments: "false",
