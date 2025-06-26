@@ -27,6 +27,7 @@ export class ConversionFhirCloud extends ConversionFhirHandler {
       result,
       lambdaName: this.nodejsFhirConvertLambdaName,
     });
-    return JSON.parse(resultPayload).fhirResource as Bundle<Resource>;
+    const response = JSON.parse(resultPayload) as { statusCode: number; body: string };
+    return JSON.parse(response.body) as Bundle<Resource>;
   }
 }

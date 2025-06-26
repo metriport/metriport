@@ -229,8 +229,8 @@ class ElationApi {
         resourceType,
       });
     }
-    const section = resourceType ? ccdaSectionMap.get(resourceType as ResourceType) : undefined;
-    const params = new URLSearchParams({ ...(section && { section }) });
+    const sections = resourceType ? ccdaSectionMap.get(resourceType as ResourceType) : undefined;
+    const params = new URLSearchParams({ ...(sections && { sections }) });
     const ccdaDocumentUrl = `/ccda/${patientId}/?${params.toString()}`;
     const additionalInfo = { cxId, practiceId: this.practiceId, patientId, resourceType };
     const s3PathResourceType = resourceType ?? "all";
@@ -244,8 +244,7 @@ class ElationApi {
       additionalInfo,
       debug,
     });
-    const payload = atob(document.base64_ccda);
-    return payload;
+    return atob(document.base64_ccda);
   }
 
   async updatePatientMetadata({

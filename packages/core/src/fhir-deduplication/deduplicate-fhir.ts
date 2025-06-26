@@ -58,6 +58,7 @@ export function dangerouslyDeduplicateFhir(
   use medication references. This is different than all other resources.
   */
   resourceArrays = replaceResourceReferences(resourceArrays, medicationsResult.refReplacementMap, [
+    "medicationDispenses",
     "medicationAdministrations",
     "medicationStatements",
     "medicationRequests",

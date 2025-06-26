@@ -12,6 +12,7 @@ export function getMedicationRequest(
   detail: ResponseDetail
 ): MedicationRequest {
   const dispenseRequest = getDispenseRequest(detail);
+  const note = getDispenseNote(detail);
   const substitution = getMedicationRequestSubstitution(detail);
   const medicationReference = getMedicationReference(medication);
   const dosageInstruction = getDosageInstruction(detail);
@@ -22,7 +23,9 @@ export function getMedicationRequest(
   return {
     resourceType: "MedicationRequest",
     id: uuidv7(),
+    status: "completed",
     medicationReference,
+    ...(note ? { note } : undefined),
     ...(category ? { category } : undefined),
     ...(authoredOn ? { authoredOn } : undefined),
     ...(dispenseRequest ? { dispenseRequest } : undefined),
@@ -70,6 +73,14 @@ function getDosageInstruction(
   ];
 }
 
+function getDispenseNote(detail: ResponseDetail): MedicationRequest["note"] | undefined {
+  if (!detail.directions) return undefined;
+  return [
+    {
+      text: detail.directions,
+    },
+  ];
+}
 // Field 36 of the FFM specification
 function getMedicationRequestSubstitution(
   detail: ResponseDetail

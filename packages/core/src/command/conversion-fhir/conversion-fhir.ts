@@ -32,17 +32,20 @@ export abstract class ConversionFhirHandler {
     resultKey: string;
     resultBucket: string;
   }> {
-    const { log } = out(`convertPayloadToFHIR - cxId ${params.cxId} patientId ${params.patientId}`);
+    const { cxId, patientId } = params;
+    const { log } = out(`convertPayloadToFHIR - cxId ${cxId} patientId ${patientId}`);
     const requestId = params.requestId ?? uuidv7();
     const paramsWithRequestId = { ...params, requestId };
-    const partitionedPayloads = await getPayloadPartitions(paramsWithRequestId);
+    const { partitionedPayloads, preConversionFileName } = await getPayloadPartitions(
+      paramsWithRequestId
+    );
     const converterParams: FhirConverterParams = {
-      patientId: paramsWithRequestId.patientId,
+      patientId,
       fileName: buildKeyForConversionFhir({
-        cxId: paramsWithRequestId.cxId,
-        patientId: paramsWithRequestId.patientId,
+        cxId,
+        patientId,
         requestId,
-        fileName: `${paramsWithRequestId.inputS3BucketName}/${paramsWithRequestId.inputS3Key}`,
+        fileName: preConversionFileName,
       }),
       // TODO Eng-531: Make these optional
       unusedSegments: "false",
