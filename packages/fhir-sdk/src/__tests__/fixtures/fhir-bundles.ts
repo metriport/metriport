@@ -11,7 +11,9 @@ import duration from "dayjs/plugin/duration";
 
 dayjs.extend(duration);
 
-export const CONSTANT_TIME_EXPECTED_THRESHOLD_MS = dayjs.duration({ milliseconds: 12 });
+export const CONSTANT_TIME_EXPECTED_THRESHOLD_MS = dayjs
+  .duration({ milliseconds: 12 })
+  .asMilliseconds();
 
 /**
  * Valid FHIR bundle with all resource types and proper references
