@@ -276,6 +276,7 @@ export class SurescriptsNestedStack extends NestedStack {
       alarmAction: props.alarmAction,
       surescripts: props.config.surescripts,
       systemRootOID: props.config.systemRootOID,
+      termServerUrl: props.config.termServerUrl,
       envVars,
     };
 
@@ -424,6 +425,7 @@ export class SurescriptsNestedStack extends NestedStack {
       systemRootOID: string;
       surescriptsReplicaBucket: s3.Bucket;
       pharmacyConversionBucket?: s3.Bucket;
+      termServerUrl?: string;
     }
   ) {
     const { name, entry, lambda: lambdaSettings } = surescriptsLambdaSettings[job];
@@ -438,6 +440,7 @@ export class SurescriptsNestedStack extends NestedStack {
       systemRootOID,
       surescriptsReplicaBucket,
       pharmacyConversionBucket,
+      termServerUrl,
     } = props;
 
     const lambda = createLambda({
@@ -449,6 +452,7 @@ export class SurescriptsNestedStack extends NestedStack {
       envVars: {
         ...envVars,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+        ...(termServerUrl ? { TERM_SERVER_URL: termServerUrl } : {}),
         SYSTEM_ROOT_OID: systemRootOID,
       },
       layers: [lambdaLayers.shared],
@@ -474,6 +478,7 @@ export class SurescriptsNestedStack extends NestedStack {
       systemRootOID: string;
       surescriptsReplicaBucket: s3.Bucket;
       pharmacyConversionBucket?: s3.Bucket;
+      termServerUrl?: string;
     }
   ): { lambda: Lambda; queue: Queue } {
     const {
@@ -486,6 +491,7 @@ export class SurescriptsNestedStack extends NestedStack {
       systemRootOID,
       surescriptsReplicaBucket,
       pharmacyConversionBucket,
+      termServerUrl,
     } = props;
 
     const {
@@ -516,6 +522,7 @@ export class SurescriptsNestedStack extends NestedStack {
       envVars: {
         ...envVars,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+        ...(termServerUrl ? { TERM_SERVER_URL: termServerUrl } : {}),
         SYSTEM_ROOT_OID: systemRootOID,
       },
       layers: [lambdaLayers.shared],
