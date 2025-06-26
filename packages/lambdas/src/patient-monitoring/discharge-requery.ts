@@ -4,7 +4,8 @@ import { SQSEvent } from "aws-lambda";
 import { capture } from "../shared/capture";
 import { getEnvOrFail } from "../shared/env";
 import { prefixedLog } from "../shared/log";
-import { getSingleMessageOrFail, parseBody } from "../shared/sqs";
+import { getSingleMessageOrFail } from "../shared/sqs";
+import { parseBody } from "../shared/parse-body";
 
 // Keep this as early on the file as possible
 capture.init();
