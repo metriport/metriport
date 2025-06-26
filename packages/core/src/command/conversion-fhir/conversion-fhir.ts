@@ -3,7 +3,6 @@ import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { FhirConverterParams } from "../../domain/conversion/bundle-modifications/modifications";
 import {
   buildDocumentNameForConversionResult,
-  buildDocumentNameForPreConversion,
   buildKeyForConversionFhir,
 } from "../../domain/conversion/filename";
 import { buildBatchBundleFromResources } from "../../external/fhir/bundle/bundle";
@@ -37,14 +36,16 @@ export abstract class ConversionFhirHandler {
     const { log } = out(`convertPayloadToFHIR - cxId ${cxId} patientId ${patientId}`);
     const requestId = params.requestId ?? uuidv7();
     const paramsWithRequestId = { ...params, requestId };
-    const partitionedPayloads = await getPayloadPartitions(paramsWithRequestId);
+    const { partitionedPayloads, preConversionFileName } = await getPayloadPartitions(
+      paramsWithRequestId
+    );
     const converterParams: FhirConverterParams = {
       patientId,
       fileName: buildKeyForConversionFhir({
         cxId,
         patientId,
         requestId,
-        fileName: buildDocumentNameForPreConversion(requestId),
+        fileName: preConversionFileName,
       }),
       // TODO Eng-531: Make these optional
       unusedSegments: "false",
