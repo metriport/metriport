@@ -629,34 +629,6 @@ export class FhirBundleSdk {
   getServiceRequestById!: (id: string) => Smart<ServiceRequest> | undefined;
 
   /**
-   * Type-safe version of getResourceById that validates the resource type at runtime
-   * FR-3.1: Get resource by ID with type parameter support
-   * FR-3.2: Method searches both resource.id and entry.fullUrl for matches
-   * FR-3.4: Method returns undefined if resource not found or type doesn't match
-   * FR-3.5: Lookup operates in O(1) time complexity
-   * FR-5.1: Returns smart resource with reference resolution methods
-   */
-  getResourceByIdWithType<T extends Resource>(
-    id: string,
-    resourceType: string
-  ): Smart<T> | undefined {
-    // First try to find by resource.id
-    const resourceById = this.resourcesById.get(id);
-    if (resourceById && resourceById.resourceType === resourceType) {
-      return this.createSmartResource(resourceById) as unknown as Smart<T>;
-    }
-
-    // Then try to find by fullUrl
-    const resourceByFullUrl = this.resourcesByFullUrl.get(id);
-    if (resourceByFullUrl && resourceByFullUrl.resourceType === resourceType) {
-      return this.createSmartResource(resourceByFullUrl) as unknown as Smart<T>;
-    }
-
-    // Return undefined if not found or type doesn't match (FR-3.4)
-    return undefined;
-  }
-
-  /**
    * Generic helper method to get all resources of a specific type
    * FR-10.1: Returns references to cached objects, not copies
    */
