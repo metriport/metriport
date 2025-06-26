@@ -14,8 +14,21 @@ jest.mock("../../../models/medical/tcm-encounter");
 jest.mock("../../../models/medical/patient");
 
 describe("TCM Encounter Commands", () => {
+  const mockSequelize = {
+    query: jest.fn(),
+  };
+
   beforeEach(() => {
     jest.clearAllMocks();
+    /**
+     * Stub and set key fields for models usually set up during initialization
+     */
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (TcmEncounterModel as any).sequelize = mockSequelize;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (TcmEncounterModel as any).tableName = "tcm_encounter";
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (PatientModel as any).tableName = "patient";
   });
 
   function makePatientData(
@@ -135,8 +148,17 @@ describe("TCM Encounter Commands", () => {
   describe("getTcmEncounters", () => {
     it("returns list of encounters with default filters", async () => {
       const encounter = makeEncounter();
-      (TcmEncounterModel.findAll as jest.Mock).mockResolvedValue([encounter]);
-      (TcmEncounterModel.count as jest.Mock).mockResolvedValue(1);
+      const mockQueryResult = [
+        {
+          ...encounter,
+          dataValues: {
+            ...encounter.dataValues,
+            patient_data: encounter.PatientModel.data,
+          },
+        },
+      ];
+
+      mockSequelize.query.mockResolvedValue(mockQueryResult);
 
       const cmd: GetTcmEncountersCmd = {
         cxId: "cx-123",
@@ -145,22 +167,14 @@ describe("TCM Encounter Commands", () => {
 
       const result = await getTcmEncounters(cmd);
 
-      expect(TcmEncounterModel.findAll).toHaveBeenCalledWith(
+      expect(mockSequelize.query).toHaveBeenCalledWith(
+        expect.stringContaining("SELECT tcm_encounter.*, patient.data as patient_data"),
         expect.objectContaining({
-          where: {
+          replacements: expect.objectContaining({
             cxId: "cx-123",
-            admitTime: {
-              [Symbol.for("gt")]: new Date("2020-01-01T00:00:00.000Z"),
-            },
-          },
-          include: [
-            {
-              model: PatientModel,
-              as: "PatientModel",
-              attributes: ["id", "cxId", "data"],
-            },
-          ],
-          order: [["admitTime", "DESC"]],
+            count: 10,
+            afterDate: new Date("2020-01-01T00:00:00.000Z"),
+          }),
         })
       );
       expect(result).toEqual([
@@ -187,8 +201,17 @@ describe("TCM Encounter Commands", () => {
         }),
       });
 
-      (TcmEncounterModel.findAll as jest.Mock).mockResolvedValue([encounter]);
-      (TcmEncounterModel.count as jest.Mock).mockResolvedValue(2);
+      const mockQueryResult = [
+        {
+          ...encounter,
+          dataValues: {
+            ...encounter.dataValues,
+            patient_data: encounter.PatientModel.data,
+          },
+        },
+      ];
+
+      mockSequelize.query.mockResolvedValue(mockQueryResult);
 
       const cmd: GetTcmEncountersCmd = {
         cxId: "cx-123",
@@ -222,8 +245,17 @@ describe("TCM Encounter Commands", () => {
         admitTime: new Date("2025-07-01"),
       });
 
-      (TcmEncounterModel.findAll as jest.Mock).mockResolvedValue([encounter]);
-      (TcmEncounterModel.count as jest.Mock).mockResolvedValue(1);
+      const mockQueryResult = [
+        {
+          ...encounter,
+          dataValues: {
+            ...encounter.dataValues,
+            patient_data: encounter.PatientModel.data,
+          },
+        },
+      ];
+
+      mockSequelize.query.mockResolvedValue(mockQueryResult);
 
       const cmd: GetTcmEncountersCmd = {
         cxId: "cx-123",
@@ -233,13 +265,12 @@ describe("TCM Encounter Commands", () => {
 
       const result = await getTcmEncounters(cmd);
 
-      expect(TcmEncounterModel.findAll).toHaveBeenCalledWith(
+      expect(mockSequelize.query).toHaveBeenCalledWith(
+        expect.stringContaining("SELECT tcm_encounter.*, patient.data as patient_data"),
         expect.objectContaining({
-          where: expect.objectContaining({
+          replacements: expect.objectContaining({
             cxId: "cx-123",
-            admitTime: expect.objectContaining({
-              [Symbol.for("gt")]: new Date(afterDate),
-            }),
+            afterDate: new Date(afterDate),
           }),
         })
       );
@@ -269,8 +300,17 @@ describe("TCM Encounter Commands", () => {
         admitTime: new Date("2023-06-01"),
       });
 
-      (TcmEncounterModel.findAll as jest.Mock).mockResolvedValue([encounter]);
-      (TcmEncounterModel.count as jest.Mock).mockResolvedValue(1);
+      const mockQueryResult = [
+        {
+          ...encounter,
+          dataValues: {
+            ...encounter.dataValues,
+            patient_data: encounter.PatientModel.data,
+          },
+        },
+      ];
+
+      mockSequelize.query.mockResolvedValue(mockQueryResult);
 
       const cmd: GetTcmEncountersCmd = {
         cxId: "cx-123",
@@ -279,13 +319,12 @@ describe("TCM Encounter Commands", () => {
 
       const result = await getTcmEncounters(cmd);
 
-      expect(TcmEncounterModel.findAll).toHaveBeenCalledWith(
+      expect(mockSequelize.query).toHaveBeenCalledWith(
+        expect.stringContaining("SELECT tcm_encounter.*, patient.data as patient_data"),
         expect.objectContaining({
-          where: expect.objectContaining({
+          replacements: expect.objectContaining({
             cxId: "cx-123",
-            admitTime: expect.objectContaining({
-              [Symbol.for("gt")]: new Date("2020-01-01T00:00:00.000Z"),
-            }),
+            afterDate: new Date("2020-01-01T00:00:00.000Z"),
           }),
         })
       );
