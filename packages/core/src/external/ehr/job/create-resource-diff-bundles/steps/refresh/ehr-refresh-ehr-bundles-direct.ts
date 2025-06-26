@@ -10,7 +10,7 @@ import { EhrRefreshEhrBundlesHandler, RefreshEhrBundlesRequest } from "./ehr-ref
 export class EhrRefreshEhrBundlesDirect implements EhrRefreshEhrBundlesHandler {
   private readonly next = buildEhrComputeResourceDiffBundlesHandler();
 
-  constructor(private readonly waitTimeInMillis: number) {}
+  constructor(private readonly waitTimeInMillis: number = 0) {}
 
   async refreshEhrBundles(payload: RefreshEhrBundlesRequest): Promise<void> {
     const {

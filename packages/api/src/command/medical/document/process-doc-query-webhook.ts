@@ -8,6 +8,7 @@ import { DocumentReferenceDTO, toDTO } from "../../../routes/medical/dtos/docume
 import { Config } from "../../../shared/config";
 import { getAllDocRefMapping } from "../docref-mapping/get-docref-mapping";
 import { finishSinglePatientImport } from "../patient/patient-import/finish-single-patient";
+import { finishDischargeRequery } from "../patient/patient-monitoring/discharge-requery/finish";
 import { MAPIWebhookStatus, processPatientDocumentRequest } from "./document-webhook";
 
 const { log } = out(`Doc Query Webhook`);
@@ -118,14 +119,21 @@ async function handleConversionWebhook(
       requestId,
       status: convertIsCompleted ? "successful" : "failed",
     }).catch(emptyFunction);
+
+    finishDischargeRequery({
+      cxId: patient.cxId,
+      patientId: patient.id,
+      requestId,
+      status: convertIsCompleted ? "successful" : "failed",
+    }).catch(emptyFunction);
   }
 }
 
-export const composeDocRefPayload = async (
+export async function composeDocRefPayload(
   patientId: string,
   cxId: string,
   requestId: string
-): Promise<DocumentReferenceDTO[]> => {
+): Promise<DocumentReferenceDTO[]> {
   const docRefs = await getAllDocRefMapping({ requestId });
   const docRefsIds = docRefs.map(docRef => docRef.id);
 
@@ -135,4 +143,4 @@ export const composeDocRefPayload = async (
     docRefsIds.length > 0 ? await getDocuments({ patientId, cxId, documentIds: docRefsIds }) : [];
 
   return toDTO(documents);
-};
+}

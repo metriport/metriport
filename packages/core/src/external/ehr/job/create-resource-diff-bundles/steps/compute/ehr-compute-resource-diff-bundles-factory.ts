@@ -5,9 +5,7 @@ import { EhrComputeResourceDiffBundlesDirect } from "./ehr-compute-resource-diff
 
 export function buildEhrComputeResourceDiffBundlesHandler(): EhrComputeResourceDiffBundlesHandler {
   if (Config.isDev()) {
-    const waitTimeAtTheEndInMillis = 0;
-    return new EhrComputeResourceDiffBundlesDirect(waitTimeAtTheEndInMillis);
+    return new EhrComputeResourceDiffBundlesDirect();
   }
-  const ehrComputeResourceDiffBundlesQueueUrl = Config.getEhrComputeResourceDiffBundlesQueueUrl();
-  return new EhrComputeResourceDiffBundlesCloud(ehrComputeResourceDiffBundlesQueueUrl);
+  return new EhrComputeResourceDiffBundlesCloud();
 }

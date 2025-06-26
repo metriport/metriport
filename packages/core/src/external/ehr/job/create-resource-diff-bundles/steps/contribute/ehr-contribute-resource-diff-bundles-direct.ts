@@ -36,7 +36,7 @@ const delayBetweenRequestBatches = dayjs.duration(2, "seconds");
 export class EhrContributeResourceDiffBundlesDirect
   implements EhrContributeResourceDiffBundlesHandler
 {
-  constructor(private readonly waitTimeInMillis: number) {}
+  constructor(private readonly waitTimeInMillis: number = 0) {}
 
   async contributeResourceDiffBundles(
     payload: ContributeResourceDiffBundlesRequest

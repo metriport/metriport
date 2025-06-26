@@ -12,7 +12,8 @@ export interface SurescriptsContext {
   patient: Patient;
   practitioner: SystemIdentifierMap<Practitioner>;
   pharmacy: SystemIdentifierMap<Organization>;
-  coverage: SystemIdentifierMap<Coverage>;
+  coverage: ResourceMap<Coverage>;
+  insuranceOrganization: SystemIdentifierMap<Organization>;
   medication: SystemIdentifierMap<Medication>;
   condition: SystemIdentifierMap<Condition>;
 }
