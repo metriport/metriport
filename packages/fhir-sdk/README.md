@@ -59,12 +59,12 @@ const observationBundle = sdk.exportByType("Observation");
 
 ### 4. Validation
 
-Validate your bundle to ensure there are no broken references.
+Validate your bundle to ensure there are no broken references. A broken reference is a reference that points to a resource that does not exist in the bundle.
 
 ```typescript
-const result = sdk.validateReferences();
-console.log(result.isValid); // boolean
-console.log(result.brokenReferences); // Array of broken references
+const result = sdk.lookForBrokenReferences();
+console.log(result.hasBrokenReferences); // true if at least one broken reference is found, false otherwise
+console.log(result.brokenReferences); // All broken references in bundle
 ```
 
 ## Example Use Cases
@@ -97,8 +97,13 @@ const orgName = sdk.getPatients()[0]?.getManagingOrganization()?.name;
 const processBundle = (bundle: Bundle) => {
   const sdk = new FhirBundleSdk(bundle);
 
-  // Validate
-  sdk.validateReferences({ throwOnInvalid: true });
+  const { hasBrokenReferences, brokenReferences } = sdk.lookForBrokenReferences();
+
+  if (hasBrokenReferences) {
+    throw new MetriportError("Broken references found in bundle", {
+      brokenReferences,
+    });
+  }
 
   // Process
   const patients = sdk.getPatients();
@@ -112,24 +117,8 @@ const processBundle = (bundle: Bundle) => {
 };
 ```
 
-## Available Resource Types
-
-All FHIR resource types are supported with corresponding `get{ResourceType}()` and `get{ResourceType}ById()` methods:
-
-`Patient`, `Observation`, `Encounter`, `Practitioner`, `Organization`, `Location`, `DiagnosticReport`, `Condition`, `AllergyIntolerance`, `MedicationRequest`, `Procedure`, `CarePlan`, `Goal`, `Device`, `Specimen`, `ImagingStudy`, `DocumentReference`, `Binary`, `Composition`, `ClinicalImpression`, `RiskAssessment`
-
-## Smart Reference Methods
-
-Each resource type includes appropriate reference resolution methods based on the FHIR specification:
-
-- **Observation**: `getSubject()`, `getEncounter()`, `getPerformers()`
-- **Patient**: `getGeneralPractitioners()`, `getManagingOrganization()`
-- **Encounter**: `getSubject()`, `getParticipants()`
-- **DiagnosticReport**: `getSubject()`, `getResults()`, `getPerformers()`
-
 ## Performance
 
 - **getById**: O(1) lookup
 - **getByType**: O(n) where n = resources of that type
 - **Reference resolution**: O(1) traversal
-- Memory efficient with smart caching

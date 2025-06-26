@@ -65,7 +65,7 @@ export {
  * Validation result interface
  */
 export interface ValidationResult {
-  isValid: boolean;
+  hasBrokenReferences: boolean;
   brokenReferences: BrokenReference[];
 }
 
@@ -533,11 +533,11 @@ export class FhirBundleSdk {
    * FR-2.3: Handles both relative and absolute references
    * FR-2.4: Returns validation result with broken reference details
    */
-  validateReferences({ throwOnInvalid } = { throwOnInvalid: false }): ValidationResult {
+  lookForBrokenReferences(): ValidationResult {
     const brokenReferences: BrokenReference[] = [];
 
     if (!this.bundle.entry) {
-      return { isValid: true, brokenReferences: [] };
+      return { hasBrokenReferences: true, brokenReferences: [] };
     }
 
     for (const entry of this.bundle.entry) {
@@ -560,14 +560,8 @@ export class FhirBundleSdk {
       }
     }
 
-    if (throwOnInvalid && brokenReferences.length > 0) {
-      throw new MetriportError(`Invalid bundle: Broken references found`, {
-        brokenReferences,
-      });
-    }
-
     return {
-      isValid: brokenReferences.length === 0,
+      hasBrokenReferences: brokenReferences.length === 0,
       brokenReferences: brokenReferences,
     };
   }

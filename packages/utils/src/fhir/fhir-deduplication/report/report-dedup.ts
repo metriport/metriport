@@ -30,7 +30,7 @@ import { processOrganization } from "./organization";
 import { processPractitioner } from "./practitioner";
 import { processProcedure } from "./procedure";
 import { processRelatedPerson } from "./related-person";
-import { validateReferences } from "./validate-references";
+import { lookForBrokenReferences } from "./validate-references";
 
 /**
  * Utility to report differences between two FHIR bundles.
@@ -144,7 +144,7 @@ async function main() {
     await processRelatedPerson(groupedOriginal, groupedDedup, patientDirName);
 
     log(`Validating references on deduped bundle...`);
-    if (!validateReferences(dedupResources, patientDirName)) {
+    if (!lookForBrokenReferences(dedupResources, patientDirName)) {
       patientsWithMissingRefs.push(pair.patientId);
     }
   }

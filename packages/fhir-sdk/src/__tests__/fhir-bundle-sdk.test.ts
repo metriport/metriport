@@ -53,29 +53,29 @@ describe("FhirBundleSdk", () => {
   });
 
   describe("Reference Validation", () => {
-    describe("FR-2.1: validateReferences() method returns validation result", () => {
+    describe("FR-2.1: lookForBrokenReferences() method returns validation result", () => {
       it("should return validation result for valid bundle", () => {
         const sdk = new FhirBundleSdk(validCompleteBundle);
-        const result = sdk.validateReferences();
+        const result = sdk.lookForBrokenReferences();
 
         expect(result).toBeDefined();
-        expect(typeof result.isValid).toBe("boolean");
+        expect(typeof result.hasBrokenReferences).toBe("boolean");
         expect(Array.isArray(result.brokenReferences)).toBe(true);
       });
 
       it("should return true for valid references", () => {
         const sdk = new FhirBundleSdk(validCompleteBundle);
-        const result = sdk.validateReferences();
+        const result = sdk.lookForBrokenReferences();
 
-        expect(result.isValid).toBe(true);
+        expect(result.hasBrokenReferences).toBe(true);
         expect(result.brokenReferences).toHaveLength(0);
       });
 
       it("should return false for invalid references", () => {
         const sdk = new FhirBundleSdk(bundleWithBrokenReferences);
-        const result = sdk.validateReferences();
+        const result = sdk.lookForBrokenReferences();
 
-        expect(result.isValid).toBe(false);
+        expect(result.hasBrokenReferences).toBe(false);
         expect(result.brokenReferences.length).toBeGreaterThan(0);
       });
     });
@@ -83,7 +83,7 @@ describe("FhirBundleSdk", () => {
     describe("FR-2.2: Validation identifies references by Resource/id pattern and fullUrl references", () => {
       it("should identify Resource/id pattern references", () => {
         const sdk = new FhirBundleSdk(bundleWithBrokenReferences);
-        const result = sdk.validateReferences();
+        const result = sdk.lookForBrokenReferences();
 
         const brokenSubjectRef = result.brokenReferences.find(
           ref => ref.reference === "Patient/nonexistent-patient"
@@ -93,32 +93,32 @@ describe("FhirBundleSdk", () => {
 
       it("should validate fullUrl references", () => {
         const sdk = new FhirBundleSdk(bundleWithFullUrlReferences);
-        const result = sdk.validateReferences();
+        const result = sdk.lookForBrokenReferences();
 
-        expect(result.isValid).toBe(true);
+        expect(result.hasBrokenReferences).toBe(true);
       });
     });
 
     describe("FR-2.3: Validation handles both relative and absolute references", () => {
       it("should handle relative references (Patient/123)", () => {
         const sdk = new FhirBundleSdk(validCompleteBundle);
-        const result = sdk.validateReferences();
+        const result = sdk.lookForBrokenReferences();
 
-        expect(result.isValid).toBe(true);
+        expect(result.hasBrokenReferences).toBe(true);
       });
 
       it("should handle absolute references (urn:uuid:123)", () => {
         const sdk = new FhirBundleSdk(bundleWithFullUrlReferences);
-        const result = sdk.validateReferences();
+        const result = sdk.lookForBrokenReferences();
 
-        expect(result.isValid).toBe(true);
+        expect(result.hasBrokenReferences).toBe(true);
       });
     });
 
     describe("FR-2.4: Validation result includes list of broken references with details", () => {
       it("should provide detailed broken reference information", () => {
         const sdk = new FhirBundleSdk(bundleWithBrokenReferences);
-        const result = sdk.validateReferences();
+        const result = sdk.lookForBrokenReferences();
 
         expect(result.brokenReferences.length).toBeGreaterThan(0);
         const brokenRef = result.brokenReferences[0];
