@@ -67,7 +67,7 @@ describe("FhirBundleSdk", () => {
         const sdk = new FhirBundleSdk(validCompleteBundle);
         const result = sdk.lookForBrokenReferences();
 
-        expect(result.hasBrokenReferences).toBe(true);
+        expect(result.hasBrokenReferences).toBe(false);
         expect(result.brokenReferences).toHaveLength(0);
       });
 
@@ -75,7 +75,7 @@ describe("FhirBundleSdk", () => {
         const sdk = new FhirBundleSdk(bundleWithBrokenReferences);
         const result = sdk.lookForBrokenReferences();
 
-        expect(result.hasBrokenReferences).toBe(false);
+        expect(result.hasBrokenReferences).toBe(true);
         expect(result.brokenReferences.length).toBeGreaterThan(0);
       });
     });
@@ -95,7 +95,7 @@ describe("FhirBundleSdk", () => {
         const sdk = new FhirBundleSdk(bundleWithFullUrlReferences);
         const result = sdk.lookForBrokenReferences();
 
-        expect(result.hasBrokenReferences).toBe(true);
+        expect(result.hasBrokenReferences).toBe(false);
       });
     });
 
@@ -104,14 +104,14 @@ describe("FhirBundleSdk", () => {
         const sdk = new FhirBundleSdk(validCompleteBundle);
         const result = sdk.lookForBrokenReferences();
 
-        expect(result.hasBrokenReferences).toBe(true);
+        expect(result.hasBrokenReferences).toBe(false);
       });
 
       it("should handle absolute references (urn:uuid:123)", () => {
         const sdk = new FhirBundleSdk(bundleWithFullUrlReferences);
         const result = sdk.lookForBrokenReferences();
 
-        expect(result.hasBrokenReferences).toBe(true);
+        expect(result.hasBrokenReferences).toBe(false);
       });
     });
 

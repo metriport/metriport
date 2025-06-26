@@ -536,7 +536,7 @@ export class FhirBundleSdk {
     const brokenReferences: BrokenReference[] = [];
 
     if (!this.bundle.entry) {
-      return { hasBrokenReferences: true, brokenReferences: [] };
+      return { hasBrokenReferences: false, brokenReferences: [] };
     }
 
     for (const entry of this.bundle.entry) {
@@ -560,7 +560,7 @@ export class FhirBundleSdk {
     }
 
     return {
-      hasBrokenReferences: brokenReferences.length === 0,
+      hasBrokenReferences: brokenReferences.length > 0,
       brokenReferences: brokenReferences,
     };
   }
