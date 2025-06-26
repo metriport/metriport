@@ -1,6 +1,6 @@
 # @metriport/fhir-sdk
 
-TypeScript SDK for parsing, querying, and manipulating FHIR bundles with smart reference resolution.
+TypeScript SDK for parsing, querying, and manipulating FHIR R4 bundles with smart reference resolution.
 
 ## Quick Start
 
