@@ -38,6 +38,7 @@
     "full-hbs-lint": "cd packages/fhir-converter && ./full-hbs-lint.sh"
   },
   "workspaces": [
+    "packages/eslint-rules",
     "packages/shared",
     "packages/api-sdk",
     "packages/ihe-gateway-sdk",
@@ -50,9 +51,8 @@
     "packages/api",
     "packages/mllp-server",
     "packages/infra",
-    "packages/utils",
-    "packages/eslint-rules",
-    "packages/fhir-sdk"
+    "packages/fhir-sdk",
+    "packages/utils"
   ],
   "lint-staged": {
     "*.{ts,tsx}": [
