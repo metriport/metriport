@@ -1,4 +1,5 @@
 import { faker } from "@faker-js/faker";
+import * as domainFfsModule from "@metriport/core/command/feature-flags/domain-ffs";
 import { JobStatus, PatientJob } from "@metriport/shared";
 import { defaultRemainingAttempts } from "@metriport/shared/domain/patient/patient-monitoring/utils";
 import dayjs from "dayjs";
@@ -11,6 +12,7 @@ describe("createDischargeRequeryJob", () => {
   const mockDate = new Date("2024-01-01T12:00:00Z");
 
   let createPatientJobMock: jest.SpyInstance;
+  let isFeatureFlagEnabledMock: jest.SpyInstance;
   let getPatientJobMock: jest.SpyInstance;
   let cancelPatientJobMock: jest.SpyInstance;
   let cxId: string;
@@ -31,6 +33,11 @@ describe("createDischargeRequeryJob", () => {
       .spyOn(createJobModule, "createPatientJob")
       .mockResolvedValue(mockJob);
 
+    isFeatureFlagEnabledMock = jest.spyOn(
+      domainFfsModule,
+      "isDischargeRequeryFeatureFlagEnabledForCx"
+    );
+
     getPatientJobMock = jest.spyOn(getJobModule, "getPatientJobs");
     cancelPatientJobMock = jest.spyOn(cancelJobModule, "cancelPatientJob");
   });
@@ -41,6 +48,7 @@ describe("createDischargeRequeryJob", () => {
 
   it("should create a new discharge requery job with default parameters", async () => {
     getPatientJobMock.mockResolvedValue([]);
+    isFeatureFlagEnabledMock.mockResolvedValue(true);
 
     await createDischargeRequeryJob({
       cxId,
@@ -61,6 +69,7 @@ describe("createDischargeRequeryJob", () => {
   });
 
   it("should create a new job with the closest scheduledAt", async () => {
+    isFeatureFlagEnabledMock.mockResolvedValue(true);
     const existingJob = makePatientJob({
       scheduledAt: dayjs(mockDate).add(30, "minutes").toDate(),
       paramsOps: {
@@ -92,6 +101,7 @@ describe("createDischargeRequeryJob", () => {
   });
 
   it("should create a new job with the correct remainingAttempts", async () => {
+    isFeatureFlagEnabledMock.mockResolvedValue(true);
     const existingJob = makePatientJob({
       scheduledAt: dayjs(mockDate).add(2, "minutes").toDate(),
       paramsOps: {
