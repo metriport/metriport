@@ -207,6 +207,7 @@ export const config: EnvConfigNonSandbox = {
         },
       },
     },
+    dischargeNotificationSlackUrl: "url-to-slack-channel",
   },
   acmCertMonitor: {
     scheduleExpressions: ["cw-schedule-expression"],

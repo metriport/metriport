@@ -57,21 +57,26 @@ export async function processHl7FhirBundleWebhook({
       triggerEvent === "A03" &&
       (await isDischargeSlackNotificationFeatureFlagEnabledForCx(cxId))
     ) {
-      const messagePayload = {
-        cxId,
-        patientId,
-        admitTimestamp,
-        dischargeTimestamp,
-      };
+      try {
+        const messagePayload = {
+          cxId,
+          patientId,
+          admitTimestamp,
+          dischargeTimestamp,
+        };
 
-      const message: SlackMessage = {
-        subject: `Patient Discharge Detected`,
-        message: JSON.stringify(messagePayload),
-        emoji: ":hospital:",
-      };
+        const message: SlackMessage = {
+          subject: `Patient Discharge Detected`,
+          message: JSON.stringify(messagePayload),
+          emoji: ":hospital:",
+        };
 
-      const channelUrl = Config.getDischargeNotificationSlackUrl();
-      await sendToSlack(message, channelUrl);
+        const channelUrl = Config.getDischargeNotificationSlackUrl();
+        await sendToSlack(message, channelUrl);
+        log(`Slack discharge notification sent successfully`);
+      } catch (slackError) {
+        log(`Failed to send Slack discharge notification: ${errorToString(slackError)}`);
+      }
     }
 
     if (!(await isHl7NotificationWebhookFeatureFlagEnabledForCx(cxId))) {
