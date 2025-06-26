@@ -24,7 +24,7 @@ type ConversionFhirRequestWithRequestId = Omit<ConversionFhirRequest, "requestId
 
 export async function getPayloadPartitions(
   paramsWithRequestId: ConversionFhirRequestWithRequestId
-): Promise<string[]> {
+): Promise<{ partitionedPayloads: string[]; preConversionFileName: string }> {
   const { log } = out(
     `getConverterParamsAndPayloadPartitions - cxId ${paramsWithRequestId.cxId} patientId ${paramsWithRequestId.patientId} requestId ${paramsWithRequestId.requestId}`
   );
@@ -44,11 +44,12 @@ export async function getPayloadPartitions(
       ...additionalInfo,
     });
   }
+  const preConversionFileName = buildDocumentNameForPreConversion(paramsWithRequestId.requestId);
   await saveConverterStep({
     paramsWithRequestId,
     result: payloadRaw,
     contentType: XML_TXT_MIME_TYPE,
-    fileName: buildDocumentNameForPreConversion(paramsWithRequestId.requestId),
+    fileName: preConversionFileName,
     stepName: "pre-conversion",
     throwError: false,
   });
@@ -72,7 +73,7 @@ export async function getPayloadPartitions(
     throwError: false,
   });
   const partitionedPayloads = partitionPayload(payloadClean);
-  return partitionedPayloads;
+  return { partitionedPayloads, preConversionFileName };
 }
 
 export async function saveConverterStep({
