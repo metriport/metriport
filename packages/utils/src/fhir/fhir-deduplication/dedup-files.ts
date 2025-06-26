@@ -18,7 +18,7 @@ import { parseFhirBundle } from "@metriport/shared/medical";
 import dayjs from "dayjs";
 import fs from "fs";
 import { v4 as uuidv4 } from "uuid";
-import { validateReferences } from "./report/validate-references";
+import { lookForBrokenReferences } from "./report/validate-references";
 
 /**
  * Folder with consolidated files/bundles. If the files need to be combined into a bundle
@@ -79,7 +79,7 @@ async function main() {
 
     const resources =
       bundle.entry?.map(entry => entry.resource).filter((r): r is Resource => !!r) ?? [];
-    const isValid = validateReferences(resources, logsFolderName);
+    const isValid = lookForBrokenReferences(resources, logsFolderName);
     console.log(`Reference validation result: ${isValid ? "Valid" : "Invalid"}`);
 
     const lastSlash = filePath.lastIndexOf("/");

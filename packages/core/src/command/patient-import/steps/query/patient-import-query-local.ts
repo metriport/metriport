@@ -12,7 +12,9 @@ import { PatientImportQuery, ProcessPatientQueryRequest } from "./patient-import
 
 dayjs.extend(duration);
 
-const waitTimeBetweenPdAndDq = () => dayjs.duration(randomIntBetween(80, 120), "milliseconds");
+function waitTimeBetweenPdAndDq() {
+  return dayjs.duration(randomIntBetween(80, 120), "milliseconds");
+}
 
 export class PatientImportQueryLocal implements PatientImportQuery {
   constructor(
