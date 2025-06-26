@@ -10,6 +10,7 @@ import { requestLogger } from "../helpers/request-logger";
 import { paginated } from "../pagination";
 import { validateUUID } from "../schemas/uuid";
 import { asyncHandler, getCxIdOrFail, getFromParamsOrFail } from "../util";
+import { dtoFromTcmEncounter } from "./dtos/tcm-encounter-dto";
 import { tcmEncounterListQuerySchema, tcmEncounterUpdateSchema } from "./schemas/tcm-encounter";
 
 const router = Router();
@@ -74,7 +75,7 @@ router.get(
       },
     });
 
-    return res.status(httpStatus.OK).json(result);
+    return res.status(httpStatus.OK).json(result.items.map(dtoFromTcmEncounter));
   })
 );
 
