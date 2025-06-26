@@ -1,5 +1,5 @@
+import { isDischargeRequeryFeatureFlagEnabledForCx } from "@metriport/core/command/feature-flags/domain-ffs";
 import { out } from "@metriport/core/util/log";
-import { PatientJob } from "@metriport/shared/domain/job/patient-job";
 import {
   CreateDischargeRequeryParams,
   DischargeRequeryParamsOps,
@@ -37,9 +37,11 @@ export const dischargeRequeryJobType = "discharge-requery";
  */
 export async function createDischargeRequeryJob(
   props: CreateDischargeRequeryParams
-): Promise<PatientJob> {
+): Promise<void> {
   const { cxId, patientId } = props;
   const { log } = out(`createDischargeRequeryJob - cx: ${cxId} pt: ${patientId}`);
+
+  if (!(await isDischargeRequeryFeatureFlagEnabledForCx(cxId))) return;
 
   let remainingAttempts = props.remainingAttempts ?? defaultRemainingAttempts;
   let scheduledAt = calculateScheduledAt(remainingAttempts);
@@ -95,5 +97,5 @@ export async function createDischargeRequeryJob(
   });
 
   log(`created discharge requery job id: ${newDischargeRequeryJob.id}`);
-  return newDischargeRequeryJob;
+  return;
 }
