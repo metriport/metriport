@@ -48,7 +48,7 @@ export type Smart<T extends Resource> = T & SmartResourceBase & ReferenceMethods
 export interface ObservationReferenceMethods {
   getSubject<T extends Patient | Group | Device | Location>(): Smart<T> | undefined;
   getEncounter(): Smart<Encounter> | undefined;
-  getPerformer<
+  getPerformers<
     T extends Practitioner | PractitionerRole | Organization | CareTeam | Patient | RelatedPerson
   >(): Smart<T>[];
 }
@@ -58,7 +58,7 @@ export interface ObservationReferenceMethods {
  */
 export interface EncounterReferenceMethods {
   getSubject<T extends Patient | Group>(): Smart<T> | undefined;
-  getParticipant<T extends Practitioner | PractitionerRole | RelatedPerson | Device>(): Smart<T>[];
+  getParticipants<T extends Practitioner | PractitionerRole | RelatedPerson | Device>(): Smart<T>[];
 }
 
 /**
@@ -66,15 +66,15 @@ export interface EncounterReferenceMethods {
  */
 export interface DiagnosticReportReferenceMethods {
   getSubject<T extends Patient | Group | Device | Location>(): Smart<T> | undefined;
-  getResult(): Smart<Observation>[];
-  getPerformer<T extends Practitioner | PractitionerRole | Organization | CareTeam>(): Smart<T>[];
+  getResults(): Smart<Observation>[];
+  getPerformers<T extends Practitioner | PractitionerRole | Organization | CareTeam>(): Smart<T>[];
 }
 
 /**
  * Reference methods for Patient resources
  */
 export interface PatientReferenceMethods {
-  getGeneralPractitioner<T extends Practitioner | PractitionerRole | Organization>(): Smart<T>[];
+  getGeneralPractitioners<T extends Practitioner | PractitionerRole | Organization>(): Smart<T>[];
   getManagingOrganization(): Smart<Organization> | undefined;
 }
 
@@ -135,7 +135,7 @@ export interface LocationReferenceMethods {
 export interface CompositionReferenceMethods {
   getSubject<T extends Patient | Group | Device | Location>(): Smart<T> | undefined;
   getEncounter(): Smart<Encounter> | undefined;
-  getAuthor<
+  getAuthors<
     T extends Practitioner | PractitionerRole | Device | Patient | RelatedPerson | Organization
   >(): Smart<T>[];
   getCustodian(): Smart<Organization> | undefined;
@@ -147,7 +147,7 @@ export interface CompositionReferenceMethods {
 export interface CoverageReferenceMethods {
   getBeneficiary(): Smart<Patient> | undefined;
   getSubscriber<T extends Patient | RelatedPerson>(): Smart<T> | undefined;
-  getPayor<T extends Organization | Patient | RelatedPerson>(): Smart<T>[];
+  getPayors<T extends Organization | Patient | RelatedPerson>(): Smart<T>[];
   getPolicyHolder<T extends Patient | RelatedPerson | Organization>(): Smart<T> | undefined;
 }
 
@@ -158,7 +158,7 @@ export interface DocumentReferenceReferenceMethods {
   getSubject<T extends Patient | Group | Practitioner | PractitionerRole | Device>():
     | Smart<T>
     | undefined;
-  getAuthor<
+  getAuthors<
     T extends Practitioner | PractitionerRole | Organization | Device | Patient | RelatedPerson
   >(): Smart<T>[];
   getAuthenticator<T extends Practitioner | PractitionerRole | Organization>():
@@ -173,7 +173,7 @@ export interface DocumentReferenceReferenceMethods {
 export interface ImmunizationReferenceMethods {
   getPatient(): Smart<Patient> | undefined;
   getEncounter(): Smart<Encounter> | undefined;
-  getPerformer<T extends Practitioner | PractitionerRole | Organization>(): Smart<T>[];
+  getPerformers<T extends Practitioner | PractitionerRole | Organization>(): Smart<T>[];
 }
 
 /**
@@ -211,7 +211,7 @@ export interface MedicationRequestReferenceMethods {
 export interface ProcedureReferenceMethods {
   getSubject<T extends Patient | Group>(): Smart<T> | undefined;
   getEncounter(): Smart<Encounter> | undefined;
-  getPerformer<
+  getPerformers<
     T extends Practitioner | PractitionerRole | Organization | Patient | RelatedPerson | Device
   >(): Smart<T>[];
 }
@@ -229,7 +229,7 @@ export interface FamilyMemberHistoryReferenceMethods {
 export interface MedicationAdministrationReferenceMethods {
   getSubject<T extends Patient | Group>(): Smart<T> | undefined;
   getContext<T extends Encounter>(): Smart<T> | undefined;
-  getPerformer<
+  getPerformers<
     T extends Practitioner | PractitionerRole | Patient | RelatedPerson | Device
   >(): Smart<T>[];
   getMedicationReference(): Smart<Medication> | undefined;
@@ -241,7 +241,7 @@ export interface MedicationAdministrationReferenceMethods {
 export interface MedicationDispenseReferenceMethods {
   getSubject<T extends Patient | Group>(): Smart<T> | undefined;
   getContext<T extends Encounter>(): Smart<T> | undefined;
-  getPerformer<
+  getPerformers<
     T extends Practitioner | PractitionerRole | Organization | Patient | Device | RelatedPerson
   >(): Smart<T>[];
   getMedicationReference(): Smart<Medication> | undefined;
@@ -284,7 +284,7 @@ export interface ServiceRequestReferenceMethods {
   getRequester<
     T extends Practitioner | PractitionerRole | Organization | Patient | RelatedPerson | Device
   >(): Smart<T> | undefined;
-  getPerformer<
+  getPerformers<
     T extends
       | Practitioner
       | PractitionerRole
@@ -368,19 +368,19 @@ export const REFERENCE_METHOD_MAPPING: Record<string, Record<string, string>> = 
   Observation: {
     getSubject: "subject",
     getEncounter: "encounter",
-    getPerformer: "performer",
+    getPerformers: "performer",
   },
   Encounter: {
     getSubject: "subject",
-    getParticipant: "participant",
+    getParticipants: "participant",
   },
   DiagnosticReport: {
     getSubject: "subject",
-    getResult: "result",
-    getPerformer: "performer",
+    getResults: "result",
+    getPerformers: "performer",
   },
   Patient: {
-    getGeneralPractitioner: "generalPractitioner",
+    getGeneralPractitioners: "generalPractitioner",
     getManagingOrganization: "managingOrganization",
   },
   AllergyIntolerance: {
@@ -405,25 +405,25 @@ export const REFERENCE_METHOD_MAPPING: Record<string, Record<string, string>> = 
   Composition: {
     getSubject: "subject",
     getEncounter: "encounter",
-    getAuthor: "author",
+    getAuthors: "author",
     getCustodian: "custodian",
   },
   Coverage: {
     getBeneficiary: "beneficiary",
     getSubscriber: "subscriber",
-    getPayor: "payor",
+    getPayors: "payor",
     getPolicyHolder: "policyHolder",
   },
   DocumentReference: {
     getSubject: "subject",
-    getAuthor: "author",
+    getAuthors: "author",
     getAuthenticator: "authenticator",
     getCustodian: "custodian",
   },
   Immunization: {
     getPatient: "patient",
     getEncounter: "encounter",
-    getPerformer: "performer.actor",
+    getPerformers: "performer.actor",
   },
   Medication: {
     getManufacturer: "manufacturer",
@@ -438,7 +438,7 @@ export const REFERENCE_METHOD_MAPPING: Record<string, Record<string, string>> = 
   Procedure: {
     getSubject: "subject",
     getEncounter: "encounter",
-    getPerformer: "performer.actor",
+    getPerformers: "performer.actor",
   },
   FamilyMemberHistory: {
     getPatient: "patient",
@@ -446,13 +446,13 @@ export const REFERENCE_METHOD_MAPPING: Record<string, Record<string, string>> = 
   MedicationAdministration: {
     getSubject: "subject",
     getContext: "context",
-    getPerformer: "performer",
+    getPerformers: "performer",
     getMedicationReference: "medicationReference",
   },
   MedicationDispense: {
     getSubject: "subject",
     getContext: "context",
-    getPerformer: "performer",
+    getPerformers: "performer",
     getMedicationReference: "medicationReference",
   },
   MedicationStatement: {
@@ -473,7 +473,7 @@ export const REFERENCE_METHOD_MAPPING: Record<string, Record<string, string>> = 
     getSubject: "subject",
     getEncounter: "encounter",
     getRequester: "requester",
-    getPerformer: "performer",
+    getPerformers: "performer",
   },
 };
 

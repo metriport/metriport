@@ -13,7 +13,7 @@ describe("Phase 5 Verification - Smart Reference Resolution", () => {
 
       expect(typeof observation.getSubject).toBe("function");
       expect(typeof observation.getEncounter).toBe("function");
-      expect(typeof observation.getPerformer).toBe("function");
+      expect(typeof observation.getPerformers).toBe("function");
     });
 
     it("should add reference methods to Encounter resources", () => {
@@ -24,7 +24,7 @@ describe("Phase 5 Verification - Smart Reference Resolution", () => {
       const encounter = encounters[0]!;
 
       expect(typeof encounter.getSubject).toBe("function");
-      expect(typeof encounter.getParticipant).toBe("function");
+      expect(typeof encounter.getParticipants).toBe("function");
     });
   });
 
@@ -58,14 +58,14 @@ describe("Phase 5 Verification - Smart Reference Resolution", () => {
     });
   });
 
-  describe("FR-5.4: For Observation.performer reference array, SDK adds getPerformer() method", () => {
+  describe("FR-5.4: For Observation.performer reference array, SDK adds getPerformers() method", () => {
     it("should resolve performer references to array of resources", () => {
       const sdk = new FhirBundleSdk(validCompleteBundle);
       const observations = sdk.getObservations();
 
       expect(observations.length).toBeGreaterThan(0);
       const observation = observations[0]!;
-      const performers = observation.getPerformer();
+      const performers = observation.getPerformers();
 
       expect(Array.isArray(performers)).toBe(true);
       expect(performers.length).toBe(1);
@@ -105,7 +105,7 @@ describe("Phase 5 Verification - Smart Reference Resolution", () => {
 
       if (observations.length > 0) {
         const observation = observations[0]!;
-        const performers = observation.getPerformer();
+        const performers = observation.getPerformers();
         expect(Array.isArray(performers)).toBe(true);
         expect(performers).toHaveLength(0);
       }
@@ -221,7 +221,7 @@ describe("Phase 5 Verification - Smart Reference Resolution", () => {
 
       if (reports.length > 0) {
         const report = reports[0]!;
-        const results = report.getResult();
+        const results = report.getResults();
 
         expect(Array.isArray(results)).toBe(true);
         if (results.length > 0) {

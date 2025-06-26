@@ -305,7 +305,7 @@ describe("FhirBundleSdk", () => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         expect(typeof (observation as any)?.getEncounter).toBe("function");
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        expect(typeof (observation as any)?.getPerformer).toBe("function");
+        expect(typeof (observation as any)?.getPerformers).toBe("function");
       });
     });
 
@@ -341,7 +341,7 @@ describe("FhirBundleSdk", () => {
         const observations = sdk.getObservations();
         const observation = observations[0];
 
-        const performers = observation?.getPerformer();
+        const performers = observation?.getPerformers();
         expect(Array.isArray(performers)).toBe(true);
         expect(performers).toHaveLength(1);
         expect(performers?.[0]?.resourceType).toBe("Practitioner");
@@ -375,7 +375,7 @@ describe("FhirBundleSdk", () => {
 
         expect(observation?.getSubject()).toBeUndefined();
         expect(observation?.getEncounter()).toBeUndefined();
-        expect(observation?.getPerformer()).toEqual([]);
+        expect(observation?.getPerformers()).toEqual([]);
       });
     });
 
