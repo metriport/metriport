@@ -129,11 +129,13 @@ async function handleConversionWebhook(
   }
 }
 
-export async function composeDocRefPayload(
+// TODO: For some reason turning this into an arrow function makes tests fail
+// eslint-disable-next-line @metriport/eslint-rules/no-named-arrow-functions
+export const composeDocRefPayload = async (
   patientId: string,
   cxId: string,
   requestId: string
-): Promise<DocumentReferenceDTO[]> {
+): Promise<DocumentReferenceDTO[]> => {
   const docRefs = await getAllDocRefMapping({ requestId });
   const docRefsIds = docRefs.map(docRef => docRef.id);
 
@@ -143,4 +145,4 @@ export async function composeDocRefPayload(
     docRefsIds.length > 0 ? await getDocuments({ patientId, cxId, documentIds: docRefsIds }) : [];
 
   return toDTO(documents);
-}
+};
