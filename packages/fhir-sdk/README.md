@@ -7,7 +7,7 @@ TypeScript SDK for parsing, querying, and manipulating FHIR R4 bundles with smar
 ```typescript
 import { FhirBundleSdk } from "@metriport/fhir-sdk";
 
-const sdk = new FhirBundleSdk(fhirBundle);
+const sdk = await FhirBundleSdk.create(fhirBundle);
 ```
 
 ## Core Functionality
@@ -94,8 +94,8 @@ const orgName = sdk.getPatients()[0]?.getManagingOrganization()?.name;
 ### Example Use Case: Processing a bundle
 
 ```typescript
-const processBundle = (bundle: Bundle) => {
-  const sdk = new FhirBundleSdk(bundle);
+const processBundle = async (bundle: Bundle) => {
+  const sdk = await FhirBundleSdk.create(bundle);
 
   const { hasBrokenReferences, brokenReferences } = sdk.lookForBrokenReferences();
 

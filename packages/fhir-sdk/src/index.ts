@@ -280,7 +280,18 @@ export class FhirBundleSdk {
     }
   }
 
-  constructor(bundle: Bundle) {
+  private constructor(bundle: Bundle) {
+    // FR-1.1, FR-1.4: Initialize bundle and create indexes
+    this.bundle = bundle;
+    this.buildResourceIndexes();
+  }
+
+  /**
+   * Create a new FhirBundleSdk instance
+   * FR-1.2: Validate bundle resourceType
+   * FR-1.3: Validate bundle type
+   */
+  static async create(bundle: Bundle): Promise<FhirBundleSdk> {
     // FR-1.2: Validate bundle resourceType
     if (bundle.resourceType !== "Bundle") {
       throw new Error("Invalid bundle: resourceType must be 'Bundle'");
@@ -291,9 +302,7 @@ export class FhirBundleSdk {
       throw new Error("Invalid bundle: type must be 'collection'");
     }
 
-    // FR-1.1, FR-1.4: Initialize bundle and create indexes
-    this.bundle = bundle;
-    this.buildResourceIndexes();
+    return new FhirBundleSdk(bundle);
   }
 
   /**
