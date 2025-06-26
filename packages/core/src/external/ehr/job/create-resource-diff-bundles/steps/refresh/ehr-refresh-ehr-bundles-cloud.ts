@@ -17,13 +17,12 @@ export class EhrRefreshEhrBundlesCloud implements EhrRefreshEhrBundlesHandler {
   ) {}
 
   async refreshEhrBundles(params: RefreshEhrBundlesRequest): Promise<void> {
-    const { metriportPatientId } = params;
     const payload = JSON.stringify(params);
     await executeWithNetworkRetries(async () => {
       await this.sqsClient.sendMessageToQueue(this.ehrRefreshEhrBundlesQueueUrl, payload, {
         fifo: true,
         messageDeduplicationId: createUuidFromText(payload),
-        messageGroupId: metriportPatientId,
+        messageGroupId: params.cxId,
       });
     });
   }

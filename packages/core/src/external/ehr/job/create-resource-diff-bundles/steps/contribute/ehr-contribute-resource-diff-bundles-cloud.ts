@@ -22,13 +22,12 @@ export class EhrContributeResourceDiffBundlesCloud
   ) {}
 
   async contributeResourceDiffBundles(params: ContributeResourceDiffBundlesRequest): Promise<void> {
-    const { metriportPatientId } = params;
     const payload = JSON.stringify(params);
     await executeWithNetworkRetries(async () => {
       await this.sqsClient.sendMessageToQueue(this.ehrContributeDiffBundlesQueueUrl, payload, {
         fifo: true,
         messageDeduplicationId: createUuidFromText(payload),
-        messageGroupId: metriportPatientId,
+        messageGroupId: params.cxId,
       });
     });
   }
