@@ -55,7 +55,7 @@ export async function finishDischargeRequery({
 
   const targetJobs = processingJobs.filter(job => {
     const runtimeData = dischargeRequeryRuntimeDataSchema.parse(job.runtimeData);
-    return runtimeData.documentQueryRequestId === dataPipelineRequestId;
+    return runtimeData?.documentQueryRequestId === dataPipelineRequestId;
   });
 
   if (targetJobs.length < 1) {

@@ -96,8 +96,6 @@ describe("createDischargeRequeryJob", () => {
       scheduledAt: dayjs(mockDate).add(2, "minutes").toDate(),
       paramsOps: {
         remainingAttempts: defaultRemainingAttempts - 2,
-        rerunOnNewDemographics: true,
-        disableWebhook: true,
       },
     });
 

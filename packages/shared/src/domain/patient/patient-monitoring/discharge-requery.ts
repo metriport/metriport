@@ -18,11 +18,13 @@ export const dischargeRequeryParamsOpsSchema = z.object({
 
 export type DischargeRequeryParamsOps = z.infer<typeof dischargeRequeryParamsOpsSchema>;
 
-export const dischargeRequeryRuntimeDataSchema = z.object({
-  documentQueryRequestId: z.string().optional(),
-  downloadCount: z.number().optional(),
-  convertCount: z.number().optional(),
-});
+export const dischargeRequeryRuntimeDataSchema = z
+  .object({
+    documentQueryRequestId: z.string().optional(),
+    downloadCount: z.number().optional(),
+    convertCount: z.number().optional(),
+  })
+  .optional();
 
 export type DischargeRequeryJobRuntimeData = z.infer<typeof dischargeRequeryRuntimeDataSchema>;
 
@@ -31,7 +33,7 @@ export const scheduledAtSchema = z.date();
 export type DischargeRequeryJob = PatientJob & {
   paramsOps: DischargeRequeryParamsOps;
   scheduledAt: Date;
-  runtimeData: DischargeRequeryJobRuntimeData;
+  runtimeData?: DischargeRequeryJobRuntimeData;
 };
 
 export function parseDischargeRequeryJob(job: PatientJob): DischargeRequeryJob {
