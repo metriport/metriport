@@ -220,7 +220,7 @@ class ElationApi {
     cxId: string;
     patientId: string;
     resourceType?: string;
-  }): Promise<{ payload: string; s3key: string; s3BucketName: string }> {
+  }): Promise<string> {
     const { debug } = out(
       `Elation getCcdaDocument - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} resourceType ${resourceType}`
     );
@@ -229,8 +229,8 @@ class ElationApi {
         resourceType,
       });
     }
-    const section = resourceType ? ccdaSectionMap.get(resourceType as ResourceType) : undefined;
-    const params = new URLSearchParams({ ...(section && { section }) });
+    const sections = resourceType ? ccdaSectionMap.get(resourceType as ResourceType) : undefined;
+    const params = new URLSearchParams({ ...(sections && { sections }) });
     const ccdaDocumentUrl = `/ccda/${patientId}/?${params.toString()}`;
     const additionalInfo = { cxId, practiceId: this.practiceId, patientId, resourceType };
     const s3PathResourceType = resourceType ?? "all";
@@ -244,16 +244,7 @@ class ElationApi {
       additionalInfo,
       debug,
     });
-    const payload = atob(document.base64_ccda);
-    const { s3key, s3BucketName } = await createOrReplaceCcda({
-      ehr: EhrSources.elation,
-      cxId,
-      metriportPatientId: patientId,
-      ehrPatientId: patientId,
-      payload,
-      resourceType: s3PathResourceType,
-    });
-    return { payload, s3key, s3BucketName };
+    return atob(document.base64_ccda);
   }
 
   async updatePatientMetadata({
@@ -359,9 +350,17 @@ class ElationApi {
         resourceType,
       });
     }
-    const { s3key, s3BucketName } = await this.getCcdaDocument({
+    const payload = await this.getCcdaDocument({
       cxId,
       patientId: elationPatientId,
+      resourceType,
+    });
+    const { s3key, s3BucketName } = await createOrReplaceCcda({
+      ehr: EhrSources.elation,
+      cxId,
+      metriportPatientId,
+      ehrPatientId: elationPatientId,
+      payload,
       resourceType,
     });
     let referenceEhrFhirBundle: EhrFhirResourceBundle | undefined;
