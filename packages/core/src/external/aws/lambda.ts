@@ -90,7 +90,6 @@ export function getLambdaResultPayload(params: {
   lambdaName?: string;
   failGracefully?: boolean | false;
   failOnEmptyResponse?: boolean | false;
-  isNodeServerLambda?: boolean | false;
   log?: typeof console.log;
 }): string;
 export function getLambdaResultPayload(params: {
@@ -98,7 +97,6 @@ export function getLambdaResultPayload(params: {
   lambdaName?: string;
   failGracefully: true;
   failOnEmptyResponse?: boolean | false;
-  isNodeServerLambda?: boolean | false;
   log?: typeof console.log;
 }): string | undefined;
 export function getLambdaResultPayload({
@@ -106,14 +104,12 @@ export function getLambdaResultPayload({
   lambdaName = "<unknown-name>",
   failGracefully = false,
   failOnEmptyResponse = true,
-  isNodeServerLambda = false,
   log = out("getLambdaResultPayload").log,
 }: {
   result: PromiseResult<AWS.Lambda.InvocationResponse, AWS.AWSError>;
   lambdaName?: string;
   failGracefully?: boolean;
   failOnEmptyResponse?: boolean;
-  isNodeServerLambda?: boolean;
   log?: typeof console.log;
 }): string | undefined {
   if (!result.StatusCode || result.StatusCode < 200 || result.StatusCode > 299) {
@@ -142,7 +138,5 @@ export function getLambdaResultPayload({
     }
     throw new MetriportError(msg, undefined, { lambdaName, errorDetails });
   }
-  const stringPayload = result.Payload.toString();
-  if (isNodeServerLambda) return JSON.parse(stringPayload).body as string;
-  return stringPayload;
+  return result.Payload.toString();
 }
