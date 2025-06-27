@@ -22,7 +22,7 @@ export class EhrRefreshEhrBundlesCloud implements EhrRefreshEhrBundlesHandler {
       await this.sqsClient.sendMessageToQueue(this.ehrRefreshEhrBundlesQueueUrl, payload, {
         fifo: true,
         messageDeduplicationId: createUuidFromText(payload),
-        messageGroupId: params.cxId,
+        messageGroupId: params.metriportPatientId,
       });
     });
   }
