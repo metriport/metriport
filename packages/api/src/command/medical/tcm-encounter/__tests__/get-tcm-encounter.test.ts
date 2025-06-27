@@ -1,15 +1,12 @@
 import { NotFoundError } from "@metriport/shared";
-import { TcmEncounterModel } from "../../../models/medical/tcm-encounter";
-import { PatientModel } from "../../../models/medical/patient";
-import {
-  updateTcmEncounter,
-  UpdateTcmEncounter,
-} from "../../../command/medical/tcm-encounter/update-tcm-encounter";
-import { getTcmEncounters } from "../../../command/medical/tcm-encounter/get-tcm-encounters";
+import { getTcmEncounters } from "../get-tcm-encounters";
+import { updateTcmEncounter, UpdateTcmEncounter } from "../update-tcm-encounter";
+import { PatientModel } from "../../../../models/medical/patient";
+import { TcmEncounterModel } from "../../../../models/medical/tcm-encounter";
 import { makeEncounter, makePatient } from "./fixtures";
 
-jest.mock("../../../models/medical/tcm-encounter");
-jest.mock("../../../models/medical/patient");
+jest.mock("../../../../models/medical/tcm-encounter");
+jest.mock("../../../../models/medical/patient");
 
 describe("TCM Encounter Commands", () => {
   const mockSequelize = {
@@ -77,7 +74,16 @@ describe("TCM Encounter Commands", () => {
 
   describe("getTcmEncounters", () => {
     it("returns list of encounters with default filters", async () => {
-      const encounter = makeEncounter();
+      const encounter = makeEncounter({
+        patient: makePatient({
+          patientData: {
+            firstName: "John",
+            lastName: "Doe",
+            dob: "1990-01-01",
+          },
+        }),
+      });
+
       const mockQueryResult = [
         {
           ...encounter,
@@ -99,14 +105,12 @@ describe("TCM Encounter Commands", () => {
 
       expect(result).toEqual([
         expect.objectContaining({
-          id: "enc-1",
-          patientData: {
+          id: encounter.id,
+          patientData: expect.objectContaining({
             firstName: "John",
             lastName: "Doe",
             dob: "1990-01-01",
-            contact: [{ phone: "555-1234" }],
-            address: [{ state: "CA" }],
-          },
+          }),
         }),
       ]);
     });
@@ -119,8 +123,6 @@ describe("TCM Encounter Commands", () => {
             firstName: "John",
             lastName: "Doe",
             dob: "1990-01-01",
-            contact: [{ phone: "555-1234" }],
-            address: [{ state: "CA" }],
           },
         }),
       });
@@ -147,13 +149,11 @@ describe("TCM Encounter Commands", () => {
       expect(result).toEqual([
         expect.objectContaining({
           facilityName: "Some Facility",
-          patientData: {
+          patientData: expect.objectContaining({
             firstName: "John",
             lastName: "Doe",
             dob: "1990-01-01",
-            contact: [{ phone: "555-1234" }],
-            address: [{ state: "CA" }],
-          },
+          }),
         }),
       ]);
     });
@@ -166,8 +166,6 @@ describe("TCM Encounter Commands", () => {
             firstName: "John",
             lastName: "Doe",
             dob: "1990-01-01",
-            contact: [{ phone: "555-1234" }],
-            address: [{ state: "CA" }],
           },
         }),
         admitTime: new Date("2025-07-01"),
@@ -195,13 +193,11 @@ describe("TCM Encounter Commands", () => {
 
       expect(result).toEqual([
         expect.objectContaining({
-          patientData: {
+          patientData: expect.objectContaining({
             firstName: "John",
             lastName: "Doe",
             dob: "1990-01-01",
-            contact: [{ phone: "555-1234" }],
-            address: [{ state: "CA" }],
-          },
+          }),
         }),
       ]);
     });
@@ -214,8 +210,6 @@ describe("TCM Encounter Commands", () => {
             firstName: "John",
             lastName: "Doe",
             dob: "1990-01-01",
-            contact: [{ phone: "555-1234" }],
-            address: [{ state: "CA" }],
           },
         }),
       });
@@ -242,13 +236,11 @@ describe("TCM Encounter Commands", () => {
       expect(result).toEqual([
         expect.objectContaining({
           facilityName: "Some Facility",
-          patientData: {
+          patientData: expect.objectContaining({
             firstName: "John",
             lastName: "Doe",
             dob: "1990-01-01",
-            contact: [{ phone: "555-1234" }],
-            address: [{ state: "CA" }],
-          },
+          }),
         }),
       ]);
     });

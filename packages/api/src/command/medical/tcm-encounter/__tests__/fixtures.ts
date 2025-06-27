@@ -1,21 +1,4 @@
-export function makePatientData(
-  overrides: Partial<{
-    firstName: string;
-    lastName: string;
-    dob: string;
-    contact: Array<{ phone: string }>;
-    address: Array<{ state: string }>;
-  }> = {}
-) {
-  return {
-    firstName: "John",
-    lastName: "Doe",
-    dob: "1990-01-01",
-    contact: [{ phone: "555-1234" }],
-    address: [{ state: "CA" }],
-    ...overrides,
-  };
-}
+import { makePatientData } from "@metriport/core/domain/__tests__/patient";
 
 export function makePatient(
   overrides: { patientData?: Partial<ReturnType<typeof makePatientData>> } & Record<
