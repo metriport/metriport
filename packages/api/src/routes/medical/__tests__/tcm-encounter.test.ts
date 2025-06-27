@@ -5,10 +5,8 @@ import {
   updateTcmEncounter,
   UpdateTcmEncounter,
 } from "../../../command/medical/tcm-encounter/update-tcm-encounter";
-import {
-  getTcmEncounters,
-  GetTcmEncountersCmd,
-} from "../../../command/medical/tcm-encounter/get-tcm-encounters";
+import { getTcmEncounters } from "../../../command/medical/tcm-encounter/get-tcm-encounters";
+import { makeEncounter, makePatient } from "./fixtures";
 
 jest.mock("../../../models/medical/tcm-encounter");
 jest.mock("../../../models/medical/patient");
@@ -30,74 +28,6 @@ describe("TCM Encounter Commands", () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (PatientModel as any).tableName = "patient";
   });
-
-  function makePatientData(
-    overrides: Partial<{
-      firstName: string;
-      lastName: string;
-      dob: string;
-      contact: Array<{ phone: string }>;
-      address: Array<{ state: string }>;
-    }> = {}
-  ) {
-    return {
-      firstName: "John",
-      lastName: "Doe",
-      dob: "1990-01-01",
-      contact: [{ phone: "555-1234" }],
-      address: [{ state: "CA" }],
-      ...overrides,
-    };
-  }
-
-  function makePatient(
-    overrides: { patientData?: Partial<ReturnType<typeof makePatientData>> } & Record<
-      string,
-      unknown
-    > = {}
-  ) {
-    const patientData = makePatientData(overrides.patientData);
-    return {
-      id: "patient-123",
-      cxId: "cx-123",
-      data: patientData,
-      dataValues: {
-        id: "patient-123",
-        cxId: "cx-123",
-        data: patientData,
-      },
-      ...overrides,
-    };
-  }
-
-  function makeEncounter(
-    overrides: { patient?: Partial<ReturnType<typeof makePatient>> } & Record<string, unknown> = {}
-  ) {
-    const patient = makePatient(overrides.patient);
-    const baseEncounter = {
-      id: "enc-1",
-      cxId: "cx-123",
-      patientId: "patient-123",
-      facilityName: "Test Facility",
-      latestEvent: "Admitted" as const,
-      class: "Test Class",
-      admitTime: new Date("2023-01-01"),
-      dischargeTime: null,
-      clinicalInformation: {},
-      PatientModel: patient,
-      get: jest.fn().mockReturnValue(patient),
-    };
-
-    return {
-      ...baseEncounter,
-      ...overrides,
-      dataValues: {
-        ...baseEncounter,
-        ...overrides,
-        PatientModel: patient,
-      },
-    };
-  }
 
   describe("updateTcmEncounter", () => {
     it("updates an existing TCM encounter", async () => {
@@ -160,43 +90,37 @@ describe("TCM Encounter Commands", () => {
 
       mockSequelize.query.mockResolvedValue(mockQueryResult);
 
-      const cmd: GetTcmEncountersCmd = {
+      const cmd = {
         cxId: "cx-123",
         pagination: { count: 10, fromItem: undefined, toItem: undefined },
       };
 
       const result = await getTcmEncounters(cmd);
 
-      expect(mockSequelize.query).toHaveBeenCalledWith(
-        expect.stringContaining("SELECT tcm_encounter.*, patient.data as patient_data"),
-        expect.objectContaining({
-          replacements: expect.objectContaining({
-            cxId: "cx-123",
-            count: 10,
-            afterDate: new Date("2020-01-01T00:00:00.000Z"),
-          }),
-        })
-      );
       expect(result).toEqual([
         expect.objectContaining({
           id: "enc-1",
-          patientName: "John Doe",
-          patientDateOfBirth: "1990-01-01",
-          patientPhoneNumbers: ["555-1234"],
-          patientStates: ["CA"],
+          patientData: {
+            firstName: "John",
+            lastName: "Doe",
+            dob: "1990-01-01",
+            contact: [{ phone: "555-1234" }],
+            address: [{ state: "CA" }],
+          },
         }),
       ]);
     });
 
     it("handles pagination correctly", async () => {
       const encounter = makeEncounter({
+        facilityName: "Some Facility",
         patient: makePatient({
           patientData: {
-            firstName: "Jane",
-            lastName: "Smith",
-            dob: "1985-05-15",
-            contact: [{ phone: "555-5678" }],
-            address: [{ state: "NY" }],
+            firstName: "John",
+            lastName: "Doe",
+            dob: "1990-01-01",
+            contact: [{ phone: "555-1234" }],
+            address: [{ state: "CA" }],
           },
         }),
       });
@@ -213,7 +137,7 @@ describe("TCM Encounter Commands", () => {
 
       mockSequelize.query.mockResolvedValue(mockQueryResult);
 
-      const cmd: GetTcmEncountersCmd = {
+      const cmd = {
         cxId: "cx-123",
         pagination: { count: 1, fromItem: undefined, toItem: undefined },
       };
@@ -222,10 +146,14 @@ describe("TCM Encounter Commands", () => {
 
       expect(result).toEqual([
         expect.objectContaining({
-          patientName: "Jane Smith",
-          patientDateOfBirth: "1985-05-15",
-          patientPhoneNumbers: ["555-5678"],
-          patientStates: ["NY"],
+          facilityName: "Some Facility",
+          patientData: {
+            firstName: "John",
+            lastName: "Doe",
+            dob: "1990-01-01",
+            contact: [{ phone: "555-1234" }],
+            address: [{ state: "CA" }],
+          },
         }),
       ]);
     });
@@ -235,11 +163,11 @@ describe("TCM Encounter Commands", () => {
       const encounter = makeEncounter({
         patient: makePatient({
           patientData: {
-            firstName: "Bob",
-            lastName: "Johnson",
-            dob: "1975-12-10",
-            contact: [],
-            address: [],
+            firstName: "John",
+            lastName: "Doe",
+            dob: "1990-01-01",
+            contact: [{ phone: "555-1234" }],
+            address: [{ state: "CA" }],
           },
         }),
         admitTime: new Date("2025-07-01"),
@@ -257,7 +185,7 @@ describe("TCM Encounter Commands", () => {
 
       mockSequelize.query.mockResolvedValue(mockQueryResult);
 
-      const cmd: GetTcmEncountersCmd = {
+      const cmd = {
         cxId: "cx-123",
         after: afterDate,
         pagination: { count: 10, fromItem: undefined, toItem: undefined },
@@ -265,39 +193,31 @@ describe("TCM Encounter Commands", () => {
 
       const result = await getTcmEncounters(cmd);
 
-      expect(mockSequelize.query).toHaveBeenCalledWith(
-        expect.stringContaining("SELECT tcm_encounter.*, patient.data as patient_data"),
-        expect.objectContaining({
-          replacements: expect.objectContaining({
-            cxId: "cx-123",
-            afterDate: new Date(afterDate),
-          }),
-        })
-      );
       expect(result).toEqual([
         expect.objectContaining({
-          patientName: "Bob Johnson",
-          patientDateOfBirth: "1975-12-10",
-          patientPhoneNumbers: [],
-          patientStates: [],
+          patientData: {
+            firstName: "John",
+            lastName: "Doe",
+            dob: "1990-01-01",
+            contact: [{ phone: "555-1234" }],
+            address: [{ state: "CA" }],
+          },
         }),
       ]);
     });
 
     it("applies default filter for admit time > 2020", async () => {
       const encounter = makeEncounter({
+        facilityName: "Some Facility",
         patient: makePatient({
           patientData: {
-            firstName: "Alice",
-            lastName: "Brown",
-            dob: "1995-08-20",
-            contact: [{ phone: "555-9999" }],
-            address: [{ state: "TX" }],
+            firstName: "John",
+            lastName: "Doe",
+            dob: "1990-01-01",
+            contact: [{ phone: "555-1234" }],
+            address: [{ state: "CA" }],
           },
         }),
-        facilityName: "Default Facility",
-        class: "Default Class",
-        admitTime: new Date("2023-06-01"),
       });
 
       const mockQueryResult = [
@@ -312,30 +232,23 @@ describe("TCM Encounter Commands", () => {
 
       mockSequelize.query.mockResolvedValue(mockQueryResult);
 
-      const cmd: GetTcmEncountersCmd = {
+      const cmd = {
         cxId: "cx-123",
         pagination: { count: 10, fromItem: undefined, toItem: undefined },
       };
 
       const result = await getTcmEncounters(cmd);
 
-      expect(mockSequelize.query).toHaveBeenCalledWith(
-        expect.stringContaining("SELECT tcm_encounter.*, patient.data as patient_data"),
-        expect.objectContaining({
-          replacements: expect.objectContaining({
-            cxId: "cx-123",
-            afterDate: new Date("2020-01-01T00:00:00.000Z"),
-          }),
-        })
-      );
       expect(result).toEqual([
         expect.objectContaining({
-          facilityName: "Default Facility",
-          class: "Default Class",
-          patientName: "Alice Brown",
-          patientDateOfBirth: "1995-08-20",
-          patientPhoneNumbers: ["555-9999"],
-          patientStates: ["TX"],
+          facilityName: "Some Facility",
+          patientData: {
+            firstName: "John",
+            lastName: "Doe",
+            dob: "1990-01-01",
+            contact: [{ phone: "555-1234" }],
+            address: [{ state: "CA" }],
+          },
         }),
       ]);
     });

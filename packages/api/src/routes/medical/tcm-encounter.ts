@@ -68,14 +68,14 @@ router.get(
         });
       },
       getTotalCount: async () => {
-        return await getTcmEncountersCount({
-          cxId,
-          after: query.after,
-        });
+        return await getTcmEncountersCount({ cxId, after: query.after });
       },
     });
 
-    return res.status(httpStatus.OK).json(result.items.map(dtoFromTcmEncounter));
+    return res.status(httpStatus.OK).json({
+      ...result,
+      items: result.items.map(dtoFromTcmEncounter),
+    });
   })
 );
 

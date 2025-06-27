@@ -1,13 +1,13 @@
-import { TcmEncounterQueryData } from "../../../command/medical/tcm-encounter/get-tcm-encounters";
+import { TcmEncounterResult } from "../../../command/medical/tcm-encounter/get-tcm-encounters";
 
-export type TcmEncounterDTO = Omit<TcmEncounterQueryData, "patientData"> & {
+export type TcmEncounterDTO = Omit<TcmEncounterResult, "patientData"> & {
   patientName: string;
   patientDateOfBirth: string;
   patientPhoneNumbers: string[];
   patientStates: string[];
 };
 
-export function dtoFromTcmEncounter(queryResult: TcmEncounterQueryData): TcmEncounterDTO {
+export function dtoFromTcmEncounter(queryResult: TcmEncounterResult): TcmEncounterDTO {
   const { patientData, ...encounterData } = queryResult;
 
   return {
