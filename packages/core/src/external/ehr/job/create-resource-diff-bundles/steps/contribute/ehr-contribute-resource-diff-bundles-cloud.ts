@@ -27,7 +27,7 @@ export class EhrContributeResourceDiffBundlesCloud
       await this.sqsClient.sendMessageToQueue(this.ehrContributeDiffBundlesQueueUrl, payload, {
         fifo: true,
         messageDeduplicationId: createUuidFromText(payload),
-        messageGroupId: params.cxId,
+        messageGroupId: params.metriportPatientId,
       });
     });
   }

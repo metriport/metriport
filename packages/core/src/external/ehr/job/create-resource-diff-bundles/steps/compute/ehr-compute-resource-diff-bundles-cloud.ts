@@ -25,7 +25,7 @@ export class EhrComputeResourceDiffBundlesCloud implements EhrComputeResourceDif
       await this.sqsClient.sendMessageToQueue(this.ehrComputeResourceDiffQueueUrl, payload, {
         fifo: true,
         messageDeduplicationId: createUuidFromText(payload),
-        messageGroupId: params.cxId,
+        messageGroupId: params.metriportPatientId,
       });
     });
   }
