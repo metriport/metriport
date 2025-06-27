@@ -1,6 +1,6 @@
 {
   "name": "@metriport/fhir-sdk",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "FHIR Bundle SDK for parsing, querying, and manipulating FHIR bundles with reference resolution",
   "author": "Metriport Inc. <contact@metriport.com>",
@@ -56,4 +56,4 @@
     "ts-jest": "29.1.1",
     "typescript": "^4.9.5"
   }
-} 
+}

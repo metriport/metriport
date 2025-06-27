@@ -1,6 +1,6 @@
 {
   "name": "@metriport/core",
-  "version": "1.24.8",
+  "version": "1.24.10",
   "private": true,
   "description": "Metriport helps you access and manage health and medical data, through a single open source API. Common code shared across packages.",
   "author": "Metriport Inc. <contact@metriport.com>",
@@ -152,8 +152,8 @@
     "zod-to-json-schema": "3.22.5"
   },
   "devDependencies": {
-    "@metriport/eslint-rules": "file:packages/eslint-rules",
     "@medplum/fhirtypes": "^2.2.10",
+    "@metriport/eslint-rules": "file:packages/eslint-rules",
     "@tsconfig/recommended": "^1.0.2",
     "@types/formidable": "^3.4.5",
     "@types/jest": "29.5.3",
