@@ -60,7 +60,7 @@ const containedSchema = z.object({
 });
 export type Contained = z.infer<typeof containedSchema>;
 
-const statusSchema = z.enum(["current", "superceded", "entered in error"]);
+const statusSchema = z.enum(["current", "superseded", "entered-in-error"]);
 export type DocumentStatus = z.infer<typeof statusSchema>;
 
 // Main Clinical Acts Documented
@@ -158,7 +158,7 @@ export const documentReferenceResourceType = "DocumentReference";
 export const operationOutcomeResourceType = "OperationOutcome";
 
 export const documentQueryResponseSchema = z.object({
-  resourceType: resourceTypeSchema,
+  resourceType: z.literal("Bundle"),
   entry: z.preprocess(entries => {
     const result = z.array(z.any()).parse(entries);
     return result.filter(e => e.content?.resourceType === documentReferenceResourceType);

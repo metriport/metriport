@@ -33,16 +33,25 @@ const payloadHashClaim = "urn:commonwell-alliance:payload-hash";
  *                        body (optional).
  * @returns The JWT token.
  */
-export async function makeJwt(
-  rsaPrivateKey: string,
-  role: string,
-  subjectId: string,
-  orgName: string,
-  oid: string,
-  purposeOfUse: PurposeOfUse,
-  npi?: string,
-  payloadHash?: string
-): Promise<string> {
+export async function makeJwt({
+  rsaPrivateKey,
+  role,
+  subjectId,
+  orgName,
+  oid,
+  purposeOfUse,
+  npi,
+  payloadHash,
+}: {
+  rsaPrivateKey: string;
+  role: string;
+  subjectId: string;
+  orgName: string;
+  oid: string;
+  purposeOfUse: PurposeOfUse;
+  npi?: string | undefined;
+  payloadHash?: string | undefined;
+}): Promise<string> {
   if (npi && !validateNPI(npi)) {
     throw new Error(`NPI number ${npi} is not valid!`);
   }

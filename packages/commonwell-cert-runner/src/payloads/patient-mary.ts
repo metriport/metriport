@@ -23,5 +23,5 @@ export const patientMaryLopez: Omit<Demographics, "identifier"> = {
     },
   ],
   gender: GenderCodes.F,
-  birthDate: "1937-12-07",
+  birthDate: "1937-07-12",
 };
