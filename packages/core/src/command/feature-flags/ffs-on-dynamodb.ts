@@ -60,6 +60,7 @@ export const initialFeatureFlags: FeatureFlagDatastore = {
   cxsWithPcpVisitAiSummaryFeatureFlag: { enabled: false, values: [] },
   cxsWithHl7NotificationWebhookFeatureFlag: { enabled: false, values: [] },
   cxsWithDischargeRequeryFeatureFlag: { enabled: false, values: [] },
+  cxsWithDischargeSlackNotificationFeatureFlag: { enabled: false, values: [] },
 };
 
 /**

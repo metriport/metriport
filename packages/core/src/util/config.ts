@@ -329,4 +329,9 @@ export class Config {
   static getFhirConversionBucketName(): string {
     return getEnvVarOrFail("FHIR_CONVERTER_BUCKET_NAME");
   }
+
+  // ENG-536 remove this once we automatically find the discharge summary
+  static getDischargeNotificationSlackUrl(): string {
+    return getEnvVarOrFail("DISCHARGE_NOTIFICATION_SLACK_URL");
+  }
 }
