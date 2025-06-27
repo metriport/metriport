@@ -241,7 +241,7 @@ function prepareEhrOnlyResourcesForContribution(
     const oldResourceId = resource.id;
     const newResourceId = isPatient(resource)
       ? metriportPatientId
-      : createUuidFromText(`${ehr}_${oldResourceId}`);
+      : createUuidFromText(`${ehr}_${metriportPatientId}_${oldResourceId}`);
     resourceIdMap.set(newResourceId, oldResourceId);
     preparedEhrOnlyResources = replaceResourceId({
       resources: preparedEhrOnlyResources,
