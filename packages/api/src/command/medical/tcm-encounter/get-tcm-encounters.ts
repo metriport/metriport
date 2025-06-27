@@ -35,6 +35,8 @@ export async function getTcmEncounters({
   const sequelize = TcmEncounterModel.sequelize;
   if (!sequelize) throw new Error("Sequelize not found");
 
+  const { toItem, fromItem } = pagination;
+
   /**
    * ⚠️ Always change this query and the count query together.
    */
@@ -45,7 +47,9 @@ export async function getTcmEncounters({
       ON tcm_encounter.patient_id = patient.id
       WHERE tcm_encounter.cx_id = :cxId
       AND tcm_encounter.admit_time > :afterDate
-      ORDER BY tcm_encounter.id DESC
+      ${toItem ? ` AND tcm_encounter.id >= :toItem` : ""}
+      ${fromItem ? ` AND tcm_encounter.id <= :fromItem` : ""}
+      ORDER BY tcm_encounter.id ${toItem ? "ASC" : "DESC"}
       LIMIT :count
     `;
 

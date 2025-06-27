@@ -39,8 +39,9 @@ describe("TCM encounters pagination", () => {
       const [dataQuery] = mockSequelize.query.mock.calls[0];
       expect(dataQuery).toContain("tcm_encounter.cx_id = :cxId");
       expect(dataQuery).toContain("tcm_encounter.admit_time > :afterDate");
-      expect(dataQuery).toContain("GROUP BY tcm_encounter.id");
-      expect(dataQuery).toContain("ORDER BY tcm_encounter.id DESC");
+      expect(dataQuery).toContain("tcm_encounter.id >= :toItem");
+      expect(dataQuery).toContain("tcm_encounter.id <= :fromItem");
+      expect(dataQuery).toContain("ORDER BY tcm_encounter.id");
       expect(dataQuery).toContain("LIMIT :count");
 
       const [countQuery] = mockSequelize.query.mock.calls[1];
