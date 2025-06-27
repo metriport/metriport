@@ -8,13 +8,13 @@ import { Patient, Practitioner, Observation } from "@medplum/fhirtypes";
 
 describe("Phase 1 Verification - Bundle Initialization & Resource Retrieval", () => {
   describe("Bundle Initialization", () => {
-    it("should initialize with valid bundle and build indexes", () => {
-      const sdk = new FhirBundleSdk(validCompleteBundle);
+    it("should initialize with valid bundle and build indexes", async () => {
+      const sdk = await FhirBundleSdk.create(validCompleteBundle);
       expect(sdk).toBeDefined();
     });
 
-    it("should handle empty bundle", () => {
-      const sdk = new FhirBundleSdk(emptyBundle);
+    it("should handle empty bundle", async () => {
+      const sdk = await FhirBundleSdk.create(emptyBundle);
       expect(sdk).toBeDefined();
     });
   });
@@ -22,8 +22,8 @@ describe("Phase 1 Verification - Bundle Initialization & Resource Retrieval", ()
   describe("Resource Retrieval by ID - FR-3.1 to FR-3.5", () => {
     let sdk: FhirBundleSdk;
 
-    beforeEach(() => {
-      sdk = new FhirBundleSdk(validCompleteBundle);
+    beforeEach(async () => {
+      sdk = await FhirBundleSdk.create(validCompleteBundle);
     });
 
     describe("FR-3.1: getResourceById<T>(id: string): T | undefined returns resource matching the ID", () => {
@@ -120,8 +120,8 @@ describe("Phase 1 Verification - Bundle Initialization & Resource Retrieval", ()
   });
 
   describe("FullUrl Reference Handling", () => {
-    it("should handle fullUrl references correctly", () => {
-      const sdk = new FhirBundleSdk(bundleWithFullUrlReferences);
+    it("should handle fullUrl references correctly", async () => {
+      const sdk = await FhirBundleSdk.create(bundleWithFullUrlReferences);
 
       // Should find by resource.id
       const patient1 = sdk.getResourceById<Patient>("patient-fullurl");
@@ -139,13 +139,13 @@ describe("Phase 1 Verification - Bundle Initialization & Resource Retrieval", ()
   });
 
   describe("Edge Cases", () => {
-    it("should handle bundle with no entries", () => {
-      const sdk = new FhirBundleSdk(emptyBundle);
+    it("should handle bundle with no entries", async () => {
+      const sdk = await FhirBundleSdk.create(emptyBundle);
       const result = sdk.getResourceById<Patient>("any-id");
       expect(result).toBeUndefined();
     });
 
-    it("should handle resources without IDs", () => {
+    it("should handle resources without IDs", async () => {
       const bundleWithoutIds = {
         resourceType: "Bundle" as const,
         type: "collection" as const,
@@ -162,7 +162,7 @@ describe("Phase 1 Verification - Bundle Initialization & Resource Retrieval", ()
         ],
       };
 
-      const sdk = new FhirBundleSdk(bundleWithoutIds);
+      const sdk = await FhirBundleSdk.create(bundleWithoutIds);
 
       // Should find by fullUrl even without resource.id
       const patient = sdk.getResourceById<Patient>("urn:uuid:no-id-resource");

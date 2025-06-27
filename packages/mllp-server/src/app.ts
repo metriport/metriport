@@ -13,6 +13,7 @@ import {
 import {
   createFileKeyHl7Message,
   getCxIdAndPatientIdOrFail,
+  getOptionalValueFromMessage,
 } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { S3Utils } from "@metriport/core/external/aws/s3";
@@ -44,7 +45,7 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
   const server = new Hl7Server(connection => {
     connection.addEventListener(
       "message",
-      withErrorHandling(async ({ message: rawMessage }) => {
+      withErrorHandling(connection, logger, async ({ message: rawMessage }) => {
         // TODO: We don't want to fail on a failed lookup - most of our HIEs have not been timezone-ified yet.
         const sendingApplication = getSendingApplication(rawMessage) ?? "Unknown HIE";
         const hieTimezone = hieTimezoneDictionary[sendingApplication] ?? "UTC";
@@ -52,13 +53,22 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
 
         const timestamp = basicToExtendedIso8601(getOrCreateMessageDatetime(message));
         const messageId = getMessageUniqueIdentifier(message);
+        const pidComponent = getOptionalValueFromMessage(message, "PID", 3, 1) ?? "Missing PID";
 
         log(
-          `${timestamp}> New Message (id: ${messageId}) from ${connection.socket.remoteAddress}:${connection.socket.remotePort}`
+          `${timestamp}> New Message for pid ${pidComponent}, messageId: ${messageId} with sending application ${sendingApplication}`
         );
+
+        if (0 < Math.random()) {
+          throw new Error("PID FAILING TO PARSE");
+        }
 
         const { cxId, patientId } = getCxIdAndPatientIdOrFail(message);
         const { messageCode, triggerEvent } = getHl7MessageTypeOrFail(message);
+
+        log(
+          `cx: ${cxId}, pt: ${patientId} Received ${triggerEvent} message (messageId: ${messageId})`
+        );
 
         capture.setExtra({
           cxId,
@@ -77,17 +87,19 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
 
         connection.send(message.buildAck());
 
-        log("Init S3 upload");
+        const fileKey = createFileKeyHl7Message({
+          cxId,
+          patientId,
+          timestamp,
+          messageId,
+          messageCode,
+          triggerEvent,
+        });
+
+        log(`Init S3 upload to bucket ${bucketName} with key ${fileKey}`);
         s3Utils.uploadFile({
           bucket: bucketName,
-          key: createFileKeyHl7Message({
-            cxId,
-            patientId,
-            timestamp,
-            messageId,
-            messageCode,
-            triggerEvent,
-          }),
+          key: fileKey,
           file: Buffer.from(asString(message)),
           contentType: "text/plain",
         });
@@ -103,19 +115,19 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
             platform: "mllp-server",
           },
         });
-      }, logger)
+      })
     );
 
     connection.addEventListener(
       "error",
-      withErrorHandling(error => {
+      withErrorHandling(connection, logger, error => {
         if (error instanceof Error) {
           logger.log("Connection error:", error);
           capture.error(error);
         } else {
           logger.log("Connection terminated by client");
         }
-      }, logger)
+      })
     );
   });
 

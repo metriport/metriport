@@ -11,12 +11,12 @@ describe("Phase 2 Verification - Type-Specific Resource Getters", () => {
   describe("Type-Specific Resource Getters - FR-4.1 to FR-4.7", () => {
     let sdk: FhirBundleSdk;
 
-    beforeEach(() => {
-      sdk = new FhirBundleSdk(validCompleteBundle);
+    beforeEach(async () => {
+      sdk = await FhirBundleSdk.create(validCompleteBundle);
     });
 
     describe("FR-4.1: getPatients(): Patient[] returns all Patient resources", () => {
-      it("should return all patients from validCompleteBundle", () => {
+      it("should return all patients from validCompleteBundle", async () => {
         const patients = sdk.getPatients();
 
         expect(Array.isArray(patients)).toBe(true);
@@ -27,8 +27,8 @@ describe("Phase 2 Verification - Type-Specific Resource Getters", () => {
         expect(patients[0]?.name?.[0]?.given?.[0]).toBe("Jane");
       });
 
-      it("should return multiple patients from mixedResourceTypesBundle", () => {
-        const mixedSdk = new FhirBundleSdk(mixedResourceTypesBundle);
+      it("should return multiple patients from mixedResourceTypesBundle", async () => {
+        const mixedSdk = await FhirBundleSdk.create(mixedResourceTypesBundle);
         const patients = mixedSdk.getPatients();
 
         expect(patients).toHaveLength(2);
@@ -39,7 +39,7 @@ describe("Phase 2 Verification - Type-Specific Resource Getters", () => {
     });
 
     describe("FR-4.2: getObservations(): Observation[] returns all Observation resources", () => {
-      it("should return all observations", () => {
+      it("should return all observations", async () => {
         const observations = sdk.getObservations();
 
         expect(Array.isArray(observations)).toBe(true);
@@ -50,8 +50,8 @@ describe("Phase 2 Verification - Type-Specific Resource Getters", () => {
         expect(observations[0]?.status).toBe("final");
       });
 
-      it("should return multiple observations from mixedResourceTypesBundle", () => {
-        const mixedSdk = new FhirBundleSdk(mixedResourceTypesBundle);
+      it("should return multiple observations from mixedResourceTypesBundle", async () => {
+        const mixedSdk = await FhirBundleSdk.create(mixedResourceTypesBundle);
         const observations = mixedSdk.getObservations();
 
         expect(observations).toHaveLength(2);
@@ -62,7 +62,7 @@ describe("Phase 2 Verification - Type-Specific Resource Getters", () => {
     });
 
     describe("FR-4.3: getEncounters(): Encounter[] returns all Encounter resources", () => {
-      it("should return all encounters", () => {
+      it("should return all encounters", async () => {
         const encounters = sdk.getEncounters();
 
         expect(Array.isArray(encounters)).toBe(true);
@@ -75,7 +75,7 @@ describe("Phase 2 Verification - Type-Specific Resource Getters", () => {
     });
 
     describe("FR-4.4: getPractitioners(): Practitioner[] returns all Practitioner resources", () => {
-      it("should return all practitioners", () => {
+      it("should return all practitioners", async () => {
         const practitioners = sdk.getPractitioners();
 
         expect(Array.isArray(practitioners)).toBe(true);
@@ -88,7 +88,7 @@ describe("Phase 2 Verification - Type-Specific Resource Getters", () => {
     });
 
     describe("FR-4.5: getDiagnosticReports(): DiagnosticReport[] returns all DiagnosticReport resources", () => {
-      it("should return all diagnostic reports", () => {
+      it("should return all diagnostic reports", async () => {
         const reports = sdk.getDiagnosticReports();
 
         expect(Array.isArray(reports)).toBe(true);
@@ -101,8 +101,8 @@ describe("Phase 2 Verification - Type-Specific Resource Getters", () => {
     });
 
     describe("FR-4.6: All type-specific getters return empty array if no resources of that type exist", () => {
-      it("should return empty arrays for empty bundle", () => {
-        const emptySdk = new FhirBundleSdk(emptyBundle);
+      it("should return empty arrays for empty bundle", async () => {
+        const emptySdk = await FhirBundleSdk.create(emptyBundle);
 
         expect(emptySdk.getPatients()).toEqual([]);
         expect(emptySdk.getObservations()).toEqual([]);
@@ -111,8 +111,8 @@ describe("Phase 2 Verification - Type-Specific Resource Getters", () => {
         expect(emptySdk.getDiagnosticReports()).toEqual([]);
       });
 
-      it("should return empty arrays for missing resource types in patientsOnlyBundle", () => {
-        const patientsSdk = new FhirBundleSdk(patientsOnlyBundle);
+      it("should return empty arrays for missing resource types in patientsOnlyBundle", async () => {
+        const patientsSdk = await FhirBundleSdk.create(patientsOnlyBundle);
 
         expect(patientsSdk.getPatients()).toHaveLength(3); // Has patients
         expect(patientsSdk.getObservations()).toEqual([]);
@@ -123,7 +123,7 @@ describe("Phase 2 Verification - Type-Specific Resource Getters", () => {
     });
 
     describe("FR-4.7: All methods use @medplum/fhirtypes for return type definitions", () => {
-      it("should return properly typed resources with TypeScript compilation", () => {
+      it("should return properly typed resources with TypeScript compilation", async () => {
         const patients = sdk.getPatients();
         const observations = sdk.getObservations();
         const encounters = sdk.getEncounters();
@@ -152,8 +152,8 @@ describe("Phase 2 Verification - Type-Specific Resource Getters", () => {
 
   describe("Performance Requirements", () => {
     describe("FR-9.2: Type-specific getters complete in O(n) time where n is number of resources of that type", () => {
-      it("should perform type-specific queries efficiently", () => {
-        const mixedSdk = new FhirBundleSdk(mixedResourceTypesBundle);
+      it("should perform type-specific queries efficiently", async () => {
+        const mixedSdk = await FhirBundleSdk.create(mixedResourceTypesBundle);
 
         const start = performance.now();
         const patients = mixedSdk.getPatients();
@@ -164,8 +164,8 @@ describe("Phase 2 Verification - Type-Specific Resource Getters", () => {
         expect(end - start).toBeLessThan(5);
       });
 
-      it("should handle multiple type queries efficiently", () => {
-        const mixedSdk = new FhirBundleSdk(mixedResourceTypesBundle);
+      it("should handle multiple type queries efficiently", async () => {
+        const mixedSdk = await FhirBundleSdk.create(mixedResourceTypesBundle);
 
         const start = performance.now();
 
@@ -191,8 +191,8 @@ describe("Phase 2 Verification - Type-Specific Resource Getters", () => {
   });
 
   describe("Memory Management - FR-10.1 and FR-10.2", () => {
-    it("should return references to cached objects, not copies", () => {
-      const testSdk = new FhirBundleSdk(validCompleteBundle);
+    it("should return references to cached objects, not copies", async () => {
+      const testSdk = await FhirBundleSdk.create(validCompleteBundle);
       const patients1 = testSdk.getPatients();
       const patients2 = testSdk.getPatients();
 
@@ -203,8 +203,8 @@ describe("Phase 2 Verification - Type-Specific Resource Getters", () => {
       expect(patients1[0]).toBe(patients2[0]);
     });
 
-    it("should maintain object identity across different access methods", () => {
-      const testSdk = new FhirBundleSdk(validCompleteBundle);
+    it("should maintain object identity across different access methods", async () => {
+      const testSdk = await FhirBundleSdk.create(validCompleteBundle);
       const patient1 = testSdk.getResourceById<Patient>("patient-123");
       const patients = testSdk.getPatients();
       const patient2 = patients[0];
@@ -215,7 +215,7 @@ describe("Phase 2 Verification - Type-Specific Resource Getters", () => {
   });
 
   describe("Edge Cases and Robustness", () => {
-    it("should handle bundle with undefined entries gracefully", () => {
+    it("should handle bundle with undefined entries gracefully", async () => {
       const bundleWithUndefinedEntries = {
         resourceType: "Bundle" as const,
         type: "collection" as const,
@@ -236,14 +236,14 @@ describe("Phase 2 Verification - Type-Specific Resource Getters", () => {
         ],
       };
 
-      const testSdk = new FhirBundleSdk(bundleWithUndefinedEntries);
+      const testSdk = await FhirBundleSdk.create(bundleWithUndefinedEntries);
       const patients = testSdk.getPatients();
 
       expect(patients).toHaveLength(1);
       expect(patients[0]?.id).toBe("patient-valid");
     });
 
-    it("should handle resources with same type but different structures", () => {
+    it("should handle resources with same type but different structures", async () => {
       const bundleWithVariedPatients = {
         resourceType: "Bundle" as const,
         type: "collection" as const,
@@ -270,7 +270,7 @@ describe("Phase 2 Verification - Type-Specific Resource Getters", () => {
         ],
       };
 
-      const testSdk = new FhirBundleSdk(bundleWithVariedPatients);
+      const testSdk = await FhirBundleSdk.create(bundleWithVariedPatients);
       const patients = testSdk.getPatients();
 
       expect(patients).toHaveLength(2);
