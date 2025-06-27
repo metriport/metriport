@@ -13,6 +13,7 @@ import {
 import {
   createFileKeyHl7Message,
   getCxIdAndPatientIdOrFail,
+  getOptionalValueFromMessage,
 } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { S3Utils } from "@metriport/core/external/aws/s3";
@@ -52,9 +53,10 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
 
         const timestamp = basicToExtendedIso8601(getOrCreateMessageDatetime(message));
         const messageId = getMessageUniqueIdentifier(message);
+        const pidComponent = getOptionalValueFromMessage(message, "PID", 3, 1) ?? "Missing PID";
 
         log(
-          `${timestamp}> New Message (id: ${messageId}) from ${connection.socket.remoteAddress}:${connection.socket.remotePort}`
+          `${timestamp}> New Message for pid ${pidComponent}, messageId: ${messageId} with sending application ${sendingApplication}`
         );
 
         let cxId: string;
