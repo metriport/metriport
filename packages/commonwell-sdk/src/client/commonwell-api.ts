@@ -1,73 +1,67 @@
+import { PurposeOfUse } from "@metriport/shared";
 import * as stream from "stream";
-import { CertificateParam, CertificateResp } from "../models/certificates";
-import { DocumentQueryFullResponse, DocumentQueryResponse } from "../models/document";
-import { Organization, OrganizationList } from "../models/organization";
+import { DocumentQueryResponse, DocumentStatus } from "../models/document";
 import {
   Patient,
   PatientCollection,
   PatientLinkSearchResp,
   PatientMergeResponse,
 } from "../models/patient";
-import { RequestMetadata } from "./commonwell";
+
+export type BaseOptions = {
+  meta?: OrganizationRequestMetadata;
+};
+
+export type OrganizationRequestMetadata = {
+  role: string;
+  subjectId: string;
+  purposeOfUse: PurposeOfUse;
+  payloadHash?: string;
+  npi: string;
+};
 
 export type GetPatientParams = {
-  meta: RequestMetadata;
   id: string;
   assignAuthority: string;
   assignAuthorityType?: string | undefined;
 };
 
+export interface DocumentQueryParams {
+  /** ID of who/what is the subject of the document */
+  subjectId?: string;
+  /** Author information for the document */
+  author?: {
+    /** Given name of who and/or what authored the document */
+    given?: string;
+    /** Family name of who and/or what authored the document */
+    family?: string;
+  };
+  /** Status of the document reference */
+  status?: DocumentStatus;
+  /** Time of service period being documented */
+  period?: {
+    /** Time of service start that is being documented. Comparators: ge */
+    start?: string;
+    /** Time of service end that is being documented. Comparators: le */
+    end?: string;
+  };
+  /** When the document reference was created */
+  date?: {
+    /** When the document reference was created. Comparators: ge */
+    start?: string;
+    /** When the document reference was created. Comparators: le */
+    end?: string;
+  };
+}
+
 // TODO ENG-200 Review the remaining methods here
 export interface CommonWellAPI {
   get lastTransactionId(): string | undefined;
-  createOrg(meta: RequestMetadata, organization: Organization): Promise<Organization>;
-  updateOrg(meta: RequestMetadata, organization: Organization, id: string): Promise<Organization>;
-  getAllOrgs(
-    meta: RequestMetadata,
-    summary?: boolean,
-    offset?: number,
-    limit?: number,
-    sort?: string
-  ): Promise<OrganizationList>;
-  getOneOrg(meta: RequestMetadata, id: string): Promise<Organization | undefined>;
-  addCertificateToOrg(
-    meta: RequestMetadata,
-    certificate: CertificateParam,
-    id: string
-  ): Promise<CertificateResp>;
-  replaceCertificateForOrg(
-    meta: RequestMetadata,
-    certificate: CertificateParam,
-    id: string
-  ): Promise<CertificateResp>;
-  deleteCertificateFromOrg(
-    meta: RequestMetadata,
-    id: string,
-    thumbprint: string,
-    purpose: string
-  ): Promise<string>;
-  getCertificatesFromOrg(
-    meta: RequestMetadata,
-    id: string,
-    thumbprint?: string,
-    purpose?: string
-  ): Promise<CertificateResp>;
-  getCertificatesFromOrgByThumbprint(
-    meta: RequestMetadata,
-    id: string,
-    thumbprint: string,
-    purpose?: string
-  ): Promise<CertificateResp>;
-  getCertificatesFromOrgByThumbprintAndPurpose(
-    meta: RequestMetadata,
-    id: string,
-    thumbprint: string,
-    purpose: string
-  ): Promise<CertificateResp>;
-  createOrUpdatePatient(meta: RequestMetadata, patient: Patient): Promise<PatientCollection>;
 
-  getPatient(params: GetPatientParams): Promise<PatientCollection>;
-  getPatient(meta: RequestMetadata, id: string): Promise<PatientCollection>;
+  createOrUpdatePatient(patient: Patient, options?: BaseOptions): Promise<PatientCollection>;
+
+  getPatient(params: GetPatientParams, options?: BaseOptions): Promise<PatientCollection>;
+  getPatient(id: string, options?: BaseOptions): Promise<PatientCollection>;
 
   // searchPatient(
   //   meta: RequestMetadata,
@@ -78,45 +72,59 @@ export interface CommonWellAPI {
   //   zip?: string
   // ): Promise<PatientSearchResp>;
   // updatePatient(meta: RequestMetadata, patient: Patient, id: string): Promise<Patient>;
-  mergePatients({
-    meta,
-    nonSurvivingPatientId,
-    survivingPatientId,
-  }: {
-    meta: RequestMetadata;
-    nonSurvivingPatientId: string;
-    survivingPatientId: string;
-  }): Promise<PatientMergeResponse>;
+
+  mergePatients(
+    {
+      nonSurvivingPatientId,
+      survivingPatientId,
+    }: {
+      nonSurvivingPatientId: string;
+      survivingPatientId: string;
+    },
+    options?: BaseOptions
+  ): Promise<PatientMergeResponse>;
+
   // getNetworkLinks(meta: RequestMetadata, patientId: string): Promise<PatientNetworkLinkResp>;
-  deletePatient(meta: RequestMetadata, id: string): Promise<void>;
-  queryDocuments(meta: RequestMetadata, patientId: string): Promise<DocumentQueryResponse>;
-  queryDocumentsFull(meta: RequestMetadata, patientId: string): Promise<DocumentQueryFullResponse>;
+
+  deletePatient(id: string, options?: BaseOptions): Promise<void>;
+
+  // TODO ENG-200 Choose one
+  queryDocuments(
+    patientId: string,
+    options?: BaseOptions & DocumentQueryParams
+  ): Promise<DocumentQueryResponse>;
+  // queryDocumentsFull(patientId: string, options?: BaseOptions): Promise<DocumentQueryFullResponse>;
+
+  // TODO ENG-200 Implement this
   retrieveDocument(
-    meta: RequestMetadata,
     inputUrl: string,
-    outputStream: stream.Writable
+    outputStream: stream.Writable,
+    options?: BaseOptions
   ): Promise<void>;
+
   // upgradeOrDowngradeNetworkLink(
-  //   meta: RequestMetadata,
   //   href: string,
-  //   proxy?: PatientLinkProxy
+  //   proxy?: PatientLinkProxy, options?: BaseOptions
   // ): Promise<NetworkLink>;
   // updatePatientLink(
-  //   meta: RequestMetadata,
   //   patientLinkUri: string,
   //   patientUri?: string,
-  //   identifier?: Identifier
+  //   identifier?: Identifier, options?: BaseOptions
   // ): Promise<PatientLink>;
+
   getPatientLinksByPatientId(
-    meta: RequestMetadata,
-    patientId: string
-    // limitToOrg?: boolean
+    patientId: string,
+    options?: BaseOptions
   ): Promise<PatientLinkSearchResp>;
+
   // getPatientLink(
-  //   meta: RequestMetadata,
   //   personId: string,
-  //   patientId: string
+  //   patientId: string, options?: BaseOptions
   // ): Promise<PatientLinkResp>;
-  deletePatientLink(meta: RequestMetadata, patientLinkUri: string): Promise<void>;
-  resetPatientLink(meta: RequestMetadata, personId: string, patientId: string): Promise<void>;
+
+  // TODO ENG-200 Implement this
+  deletePatientLink(patientLinkUri: string, options?: BaseOptions): Promise<void>;
+
+  // TODO ENG-200 Implement this
+  resetPatientLink(personId: string, patientId: string, options?: BaseOptions): Promise<void>;
 }

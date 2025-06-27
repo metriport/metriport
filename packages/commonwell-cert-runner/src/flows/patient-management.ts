@@ -1,5 +1,6 @@
-import { CommonWell, Patient, RequestMetadata } from "@metriport/commonwell-sdk";
+import { CommonWell, Patient } from "@metriport/commonwell-sdk";
 import { encodeToCwPatientId } from "@metriport/commonwell-sdk/common/util";
+import { errorToString } from "@metriport/shared";
 import { cloneDeep, uniq } from "lodash";
 import { makePatient } from "../payloads";
 import { patientConnieCarin } from "../payloads/patient-carin";
@@ -19,7 +20,7 @@ import { getMetriportPatientIdOrFail, makeShortName } from "../util";
  * @param commonWell - CommonWell API client configured with the Organization that "owns" the patient - not the CW member one.
  * @param queryMeta - Request metadata for the CommonWell API client.
  */
-export async function patientManagement(commonWell: CommonWell, queryMeta: RequestMetadata) {
+export async function patientManagement(commonWell: CommonWell) {
   const patientIds: string[] = [];
   try {
     console.log(`>>> 1.1 Create Patient`);
@@ -28,7 +29,7 @@ export async function patientManagement(commonWell: CommonWell, queryMeta: Reque
       demographics: patientTracyCrane,
     });
     // console.log(`>>> >>>> PAYLOAD: ${JSON.stringify(firstPatientCreate, null, 2)}`);
-    const resp_1_1 = await commonWell.createOrUpdatePatient(queryMeta, firstPatientCreate);
+    const resp_1_1 = await commonWell.createOrUpdatePatient(firstPatientCreate);
     console.log(">>> Transaction ID: " + commonWell.lastTransactionId);
     console.log(">>> 1.1 Response: " + JSON.stringify(resp_1_1, null, 2));
     const firstPatientId = getMetriportPatientIdOrFail(resp_1_1.Patients[0], "createPatient");
@@ -39,7 +40,7 @@ export async function patientManagement(commonWell: CommonWell, queryMeta: Reque
     });
 
     console.log(`>>> 1.3 Get Patient - ID ${firstPatientId}`);
-    const resp_1_3 = await commonWell.getPatient(queryMeta, firstPatientIdEncoded);
+    const resp_1_3 = await commonWell.getPatient(firstPatientIdEncoded);
     console.log(">>> Transaction ID: " + commonWell.lastTransactionId);
     console.log(">>> 1.3 Response: " + JSON.stringify(resp_1_3, null, 2));
 
@@ -52,12 +53,12 @@ export async function patientManagement(commonWell: CommonWell, queryMeta: Reque
     const newGivenName = "Anna " + makeShortName();
     patientToUpdate.name[0].given[0] = newGivenName;
     // console.log(`>>> >>>> PAYLOAD: ${JSON.stringify(patientToUpdate, null, 2)}`);
-    const resp_1_2_1 = await commonWell.createOrUpdatePatient(queryMeta, patientToUpdate);
+    const resp_1_2_1 = await commonWell.createOrUpdatePatient(patientToUpdate);
     console.log(">>> Transaction ID: " + commonWell.lastTransactionId);
     console.log(">>> 1.2.1 Response: " + JSON.stringify(resp_1_2_1, null, 2));
 
     console.log(`>>> 1.2.2: Confirm it was updated correctly`);
-    const resp_1_2_2 = await commonWell.getPatient(queryMeta, firstPatientIdEncoded);
+    const resp_1_2_2 = await commonWell.getPatient(firstPatientIdEncoded);
     console.log(">>> 1.2.2 Response: " + JSON.stringify(resp_1_2_2, null, 2));
     console.log(">>> Transaction ID: " + commonWell.lastTransactionId);
     const patientToUpdateId = getMetriportPatientIdOrFail(
@@ -84,7 +85,7 @@ export async function patientManagement(commonWell: CommonWell, queryMeta: Reque
       demographics: patientConnieCarin,
     });
     // console.log(`>>> >>>> PAYLOAD: ${JSON.stringify(patientToMerge, null, 2)}`);
-    const resp_1_4_1 = await commonWell.createOrUpdatePatient(queryMeta, patientToMerge);
+    const resp_1_4_1 = await commonWell.createOrUpdatePatient(patientToMerge);
     console.log(">>> Transaction ID: " + commonWell.lastTransactionId);
     console.log(">>> 1.4.1 Response: " + JSON.stringify(resp_1_4_1, null, 2));
     const patientToMergeId = getMetriportPatientIdOrFail(resp_1_4_1.Patients[0], "patientToMerge");
@@ -96,7 +97,6 @@ export async function patientManagement(commonWell: CommonWell, queryMeta: Reque
 
     console.log(`>>> 1.4.2 Merge Patient`);
     const resp_1_4_2 = await commonWell.mergePatients({
-      meta: queryMeta,
       nonSurvivingPatientId: patientToMergeIdEncoded,
       survivingPatientId: firstPatientIdEncoded,
     });
@@ -104,13 +104,13 @@ export async function patientManagement(commonWell: CommonWell, queryMeta: Reque
     console.log(">>> 1.4.2 Response: " + JSON.stringify(resp_1_4_2, null, 2));
 
     console.log(`>>> 1.4.3: Confirm it was merged correctly`);
-    const resp_1_4_3_1 = await commonWell.getPatient(queryMeta, firstPatientIdEncoded);
+    const resp_1_4_3_1 = await commonWell.getPatient(firstPatientIdEncoded);
     console.log(">>> Transaction ID: " + commonWell.lastTransactionId);
     console.log(">>> 1.4.3.1 Response: " + JSON.stringify(resp_1_4_3_1, null, 2));
     const mergedPatient = resp_1_4_3_1.Patients[0]?.Patient;
     let foundNonSurvivingPatient: boolean;
     try {
-      const resp_1_4_3_2 = await commonWell.getPatient(queryMeta, patientToMergeIdEncoded);
+      const resp_1_4_3_2 = await commonWell.getPatient(patientToMergeIdEncoded);
       console.log(">>> Transaction ID: " + commonWell.lastTransactionId);
       console.log(">>> 1.4.3.2 Response: " + JSON.stringify(resp_1_4_3_2, null, 2));
       foundNonSurvivingPatient = true;
@@ -138,7 +138,7 @@ export async function patientManagement(commonWell: CommonWell, queryMeta: Reque
       demographics: patientMaryLopez,
     });
     // console.log(`>>> >>>> PAYLOAD: ${JSON.stringify(patientToDelete, null, 2)}`);
-    const resp_1_5_1 = await commonWell.createOrUpdatePatient(queryMeta, patientToDelete);
+    const resp_1_5_1 = await commonWell.createOrUpdatePatient(patientToDelete);
     console.log(">>> Transaction ID: " + commonWell.lastTransactionId);
     console.log(">>> 1.5.1 Response: " + JSON.stringify(resp_1_5_1, null, 2));
     const patientToDeleteId = getMetriportPatientIdOrFail(
@@ -151,11 +151,11 @@ export async function patientManagement(commonWell: CommonWell, queryMeta: Reque
       assignAuthority: commonWell.oid,
     });
     console.log(`>>> 1.5.2 Delete Patient`);
-    await commonWell.deletePatient(queryMeta, patientToDeleteIdEncoded);
+    await commonWell.deletePatient(patientToDeleteIdEncoded);
     console.log(">>> Transaction ID: " + commonWell.lastTransactionId);
     console.log(`>>> 1.5.2 Patient deleted successfully`);
     try {
-      await commonWell.getPatient(queryMeta, patientToDeleteIdEncoded);
+      await commonWell.getPatient(patientToDeleteIdEncoded);
       console.log(`>>> 1.5 Patient NOT deleted successfully <<<`);
     } catch (err) {
       console.log(`>>> 1.5 Patient delete confirmed`);
@@ -179,6 +179,9 @@ export async function patientManagement(commonWell: CommonWell, queryMeta: Reque
     // We're not implementing this on the cert runner since we have a process in place for patient opt-out.
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (error) {
+    console.log(`Error (txId ${commonWell.lastTransactionId}): ${errorToString(error)}`);
+    throw error;
   } finally {
     console.log(`>>> Delete Patients created in this run`);
     const uniquePatientIds = uniq(patientIds);
@@ -188,7 +191,7 @@ export async function patientManagement(commonWell: CommonWell, queryMeta: Reque
           patientId: metriportPatientId,
           assignAuthority: commonWell.oid,
         });
-        await commonWell.deletePatient(queryMeta, patientId);
+        await commonWell.deletePatient(patientId);
         console.log(`>>> Patient deleted: ${metriportPatientId}`);
       } catch (err) {
         console.log(`>>> Patient NOT deleted: ${metriportPatientId}`);

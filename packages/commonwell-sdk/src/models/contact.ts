@@ -26,7 +26,6 @@ export enum ContactSystemCodes {
   pager = "pager",
   url = "url",
   sms = "sms",
-  mobile = "mobile", // not in the spec but the API accepts it and there are entries w/ this value
   other = "other",
 }
 export const contactSystemCodesSchema = z.nativeEnum(ContactSystemCodes);
@@ -36,9 +35,21 @@ export const contactSystemCodesSchema = z.nativeEnum(ContactSystemCodes);
 // See: https://specification.commonwellalliance.org/services/rest-api-reference (8.4.7 Contact)
 export const contactSchema = z.object({
   value: z.string().nullish(),
-  system: z.preprocess(zodToLowerCase, contactSystemCodesSchema.nullish()),
+  system: z
+    .string()
+    .transform(zodToLowerCase)
+    .transform(normalizeContactSystem)
+    .pipe(contactSystemCodesSchema.nullish()),
   use: optionalStringPreprocess(contactUseCodesSchema.nullish()),
   period: periodSchema.nullish(),
 });
-
 export type Contact = z.infer<typeof contactSchema>;
+
+function normalizeContactSystem(system: unknown): unknown {
+  if (typeof system !== "string") return system;
+  switch (system.toLowerCase()) {
+    case "mobile":
+      return "phone";
+  }
+  return system;
+}

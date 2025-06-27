@@ -7,6 +7,7 @@ import {
   OrganizationWithNetworkInfo,
   Patient,
 } from "@metriport/commonwell-sdk";
+import { makeNPI } from "@metriport/shared/common/__tests__/npi";
 import { X509Certificate } from "crypto";
 import dayjs from "dayjs";
 import * as nanoid from "nanoid";
@@ -199,6 +200,7 @@ export function makeOrganization(suffixId?: string): OrganizationWithNetworkInfo
     displayName: shortName,
     memberName: "Metriport",
     type: "Hospital",
+    npiType2: makeNPI(),
     searchRadius: 50,
     patientIdAssignAuthority: `${orgId}`,
     isActive: true,
@@ -328,7 +330,7 @@ function getCertificateAndFingerprint(certString: string) {
   const validTo = dayjs(x509.validTo).toString();
   const certificateContent = getCertificateContent(certString);
 
-  const fingerprint = x509.fingerprint;
+  const fingerprint = normalizeFingerprint(x509.fingerprint);
 
   const certificate = {
     Certificates: [
@@ -360,3 +362,7 @@ export const memberCertificate = memberCertData.certificate;
 const orgCertData = getCertificateAndFingerprint(orgCertificateString);
 export const orgCertificateFingerprint = orgCertData.fingerprint;
 export const orgCertificate = orgCertData.certificate;
+
+function normalizeFingerprint(fingerprint: string): string {
+  return fingerprint.replace(/:/g, "");
+}

@@ -1,3 +1,5 @@
+import * as dotenv from "dotenv";
+dotenv.config();
 // keep that ^ above all other imports
 import { encodeToCwPatientId } from "@metriport/commonwell-sdk/common/util";
 import { initApiForExistingOrg } from "../flows/org-management";
@@ -11,7 +13,7 @@ export async function getPatientLinks() {
   if (!patientId || patientId.trim().length < 1) {
     throw new Error("No patientId provided. Add it as an argument to the command");
   }
-  const { commonWell, orgQueryMeta } = await initApiForExistingOrg();
+  const { commonWell } = await initApiForExistingOrg();
 
   const encodedPatientId = encodeToCwPatientId({
     patientId: patientId,
@@ -19,7 +21,7 @@ export async function getPatientLinks() {
   });
 
   console.log(`Get Patient Links for ${patientId}`);
-  const resp = await commonWell.getPatientLinksByPatientId(orgQueryMeta, encodedPatientId);
+  const resp = await commonWell.getPatientLinksByPatientId(encodedPatientId);
   console.log("Transaction ID: " + commonWell.lastTransactionId);
   console.log("Response: " + JSON.stringify(resp, null, 2));
 }

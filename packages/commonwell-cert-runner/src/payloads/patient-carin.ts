@@ -24,7 +24,7 @@ export const patientConnieCarin: Demographics = {
     },
   ],
   gender: GenderCodes.F,
-  birthDate: "1945-12-01",
+  birthDate: "1945-01-12",
   identifier: [
     {
       use: "official",

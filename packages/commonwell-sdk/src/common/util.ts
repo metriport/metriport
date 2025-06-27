@@ -1,5 +1,5 @@
 import { PurposeOfUse } from "@metriport/shared";
-import { RequestMetadata } from "../client/commonwell";
+import { BaseRequestMetadata } from "../client/common";
 import { StrongId } from "../models/identifier";
 import { Patient, PatientCollectionItem } from "../models/patient";
 
@@ -22,10 +22,6 @@ export function getPatientStrongIds(object: Patient): StrongId[] | undefined {
   return object.identifier ?? undefined;
 }
 
-function buildPatiendIdToDocQuery(code: string, system: string): string {
-  return `${system}|${code}`;
-}
-
 /**
  * Converts the patient ID into subject ID, to be used during document query.
  *
@@ -37,7 +33,12 @@ function buildPatiendIdToDocQuery(code: string, system: string): string {
  */
 export function convertPatientIdToSubjectId(patientId: string): string | undefined {
   const { value, assignAuthority } = decodeCwPatientId(patientId);
-  return value && assignAuthority ? buildPatiendIdToDocQuery(value, assignAuthority) : undefined;
+  return value && assignAuthority
+    ? encodeToDocumentExchange({
+        patientId: value,
+        assignAuthority,
+      })
+    : undefined;
 }
 
 export function decodeCwPatientId(patientId: string): {
@@ -66,30 +67,35 @@ export function encodeToCwPatientId({
   return `${patientId}^^^&${assignAuthority}&${assignAuthorityType ?? "ISO"}`;
 }
 
+/**
+ * Converts the patient ID into subject ID, to be used during document query.
+ *
+ * @param patientId - The patient's ID.
+ * @param assignAuthority - The assign authority of the patient.
+ * @returns The subject ID as defined by the specification: [system]|[code] where 'system'
+ * is the OID of the organization and 'code' is the first part of the patient ID.
+ */
+export function encodeToDocumentExchange({
+  patientId,
+  assignAuthority,
+}: {
+  patientId: string;
+  assignAuthority: string;
+}): string {
+  return `${assignAuthority}|${patientId}`;
+}
+
 export function encodeId(id: string): string {
   return encodeURIComponent(id);
 }
 
-export function organizationQueryMeta(
-  orgName: string,
-  meta: Omit<RequestMetadata, "npi" | "role" | "purposeOfUse" | "subjectId"> &
-    Required<Pick<RequestMetadata, "npi">> &
-    Partial<Pick<RequestMetadata, "role" | "purposeOfUse">>
-): RequestMetadata {
-  const base = baseQueryMeta(orgName);
+export function buildBaseQueryMeta(orgName: string): BaseRequestMetadata {
   return {
-    subjectId: base.subjectId,
-    role: meta.role ?? base.role,
-    purposeOfUse: meta.purposeOfUse ?? base.purposeOfUse,
-    npi: meta.npi,
+    purposeOfUse: PurposeOfUse.TREATMENT,
+    role: "ict",
+    subjectId: `${orgName} System User`,
   };
 }
-
-export const baseQueryMeta = (orgName: string) => ({
-  purposeOfUse: PurposeOfUse.TREATMENT,
-  role: "ict",
-  subjectId: `${orgName} System User`,
-});
 
 /**
  * Extracts code, system, and optional assignAuthType from a CommonWell patient ID
@@ -106,7 +112,6 @@ export function extractCwPatientIdComponents(patientId: string): {
   if (!match) {
     return { code: undefined, system: undefined, assignAuthType: undefined };
   }
-
   return {
     code: match[1],
     system: match[2],

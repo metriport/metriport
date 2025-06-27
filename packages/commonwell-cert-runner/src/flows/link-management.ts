@@ -1,4 +1,4 @@
-import { CommonWell, RequestMetadata } from "@metriport/commonwell-sdk";
+import { CommonWell } from "@metriport/commonwell-sdk";
 import { encodeToCwPatientId } from "@metriport/commonwell-sdk/common/util";
 import { errorToString, sleep } from "@metriport/shared";
 import { uniq } from "lodash";
@@ -7,11 +7,12 @@ import { patientTracyCrane } from "../payloads/patient-crane";
 import { getMetriportPatientIdOrFail } from "../util";
 
 /**
+ * This flow is used to test the patient link management API.
  *
- * @param commonWell
- * @param queryMeta
+ * @param commonWell The CommonWell client.
+ * @param queryMeta The query metadata.
  */
-export async function linkManagement(commonWell: CommonWell, queryMeta: RequestMetadata) {
+export async function linkManagement(commonWell: CommonWell) {
   const patientIds: string[] = [];
   try {
     console.log(`>>> 2.1 Get Patient Links`);
@@ -19,8 +20,13 @@ export async function linkManagement(commonWell: CommonWell, queryMeta: RequestM
     const patientWithLinks = makePatient({
       facilityId: commonWell.oid,
       demographics: patientTracyCrane,
+      // demographics: patientConnieCarin,
+      // demographics: patientMaryLopez,
+      // demographics: patientRichardEdmundo,
+      // demographics: patientRobertLang,
+      // demographics: patientShirleyDouglas,
     });
-    const resp_2_1_1 = await commonWell.createOrUpdatePatient(queryMeta, patientWithLinks);
+    const resp_2_1_1 = await commonWell.createOrUpdatePatient(patientWithLinks);
     console.log(">>> Transaction ID: " + commonWell.lastTransactionId);
     const patientWithLinksId = getMetriportPatientIdOrFail(
       resp_2_1_1.Patients[0],
@@ -38,10 +44,7 @@ export async function linkManagement(commonWell: CommonWell, queryMeta: RequestM
     // Had to add this try/catch because the API is returning invalid data according to the spec (DOB in non-ISO format and pt's identifier type 'IAL2')
     try {
       console.log(`>>> 2.1.2 Get Patient Links - ID ${patientWithLinksId}`);
-      const resp_2_1_2 = await commonWell.getPatientLinksByPatientId(
-        queryMeta,
-        patientWithLinksIdEncoded
-      );
+      const resp_2_1_2 = await commonWell.getPatientLinksByPatientId(patientWithLinksIdEncoded);
       console.log(">>> Transaction ID: " + commonWell.lastTransactionId);
       console.log(">>> 2.1.2 Response: " + JSON.stringify(resp_2_1_2, null, 2));
     } catch (error) {
@@ -94,6 +97,9 @@ export async function linkManagement(commonWell: CommonWell, queryMeta: RequestM
     // // Note: will be deleting patient & person created in this run
     // await commonWell.deletePerson(queryMeta, personId);
     // await commonWell.deletePatient(queryMeta, patientId);
+  } catch (error) {
+    console.log(`Error (txId ${commonWell.lastTransactionId}): ${errorToString(error)}`);
+    throw error;
   } finally {
     console.log(`>>> Delete Patients created in this run`);
     const uniquePatientIds = uniq(patientIds);
@@ -103,7 +109,7 @@ export async function linkManagement(commonWell: CommonWell, queryMeta: RequestM
           patientId: metriportPatientId,
           assignAuthority: commonWell.oid,
         });
-        await commonWell.deletePatient(queryMeta, patientId);
+        await commonWell.deletePatient(patientId);
         console.log(`>>> Patient deleted: ${metriportPatientId}`);
       } catch (err) {
         console.log(`>>> Patient NOT deleted: ${metriportPatientId}`);
