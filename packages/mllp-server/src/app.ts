@@ -59,26 +59,8 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
           `${timestamp}> New Message for pid ${pidComponent}, messageId: ${messageId} with sending application ${sendingApplication}`
         );
 
-        let cxId: string;
-        let patientId: string;
-        let messageCode: string;
-        let triggerEvent: string;
-
-        try {
-          const { cxId: msgCxId, patientId: msgPatientId } = getCxIdAndPatientIdOrFail(message);
-          const { messageCode: msgMessageCode, triggerEvent: msgTriggerEvent } =
-            getHl7MessageTypeOrFail(message);
-
-          cxId = msgCxId;
-          patientId = msgPatientId;
-          messageCode = msgMessageCode;
-          triggerEvent = msgTriggerEvent;
-        } catch (error) {
-          connection.send(message.buildAck());
-          logger.log(`Error in handler: ${error}`);
-          capture.error(error);
-          return;
-        }
+        const { cxId, patientId } = getCxIdAndPatientIdOrFail(message);
+        const { messageCode, triggerEvent } = getHl7MessageTypeOrFail(message);
 
         log(
           `Received ${triggerEvent} message for cxId: ${cxId}, ptId: ${patientId} (messageId: ${messageId})`
