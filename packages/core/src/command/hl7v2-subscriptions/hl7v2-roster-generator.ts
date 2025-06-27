@@ -10,7 +10,7 @@ import axios, { AxiosResponse } from "axios";
 import { stringify } from "csv-stringify/sync";
 import dayjs from "dayjs";
 import _ from "lodash";
-import { getMiddleName, Patient } from "../../domain/patient";
+import { getFirstNameAndMiddleInitial, Patient } from "../../domain/patient";
 import { Hl7v2Subscription } from "../../domain/patient-settings";
 import { S3Utils, storeInS3WithRetries } from "../../external/aws/s3";
 import { out } from "../../util";
@@ -205,7 +205,7 @@ export function createRosterRowInput(
   const assigningAuthorityIdentifier = METRIPORT_ASSIGNING_AUTHORITY_IDENTIFIER;
   const lineOfBusiness = "COMMERCIAL";
   const emptyString = "";
-  const [firstName, middleName] = getMiddleName(data.firstName);
+  const [firstName, middleName] = getFirstNameAndMiddleInitial(data.firstName);
 
   return {
     id: p.id,
