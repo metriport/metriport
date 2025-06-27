@@ -788,7 +788,7 @@ export function partitionEhrBundle({
   resourceType: string;
 }): { targetBundle: EhrFhirResourceBundle; referenceBundle: EhrFhirResourceBundle } {
   const [targetBundleEntries, referenceBundleEntries] = partition(
-    bundle?.entry ?? [],
+    bundle.entry ?? [],
     e => e.resource?.resourceType === resourceType
   );
   const targetBundle: EhrFhirResourceBundle = ehrFhirResourceBundleSchema.parse({

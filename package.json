@@ -51,6 +51,7 @@
     "packages/api",
     "packages/mllp-server",
     "packages/infra",
+    "packages/fhir-sdk",
     "packages/utils"
   ],
   "lint-staged": {

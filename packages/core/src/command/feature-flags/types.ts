@@ -36,6 +36,7 @@ export const cxBasedFFsSchema = z.object({
   cxsWithAthenaCustomFieldsEnabled: ffStringValuesSchema,
   cxsWithPcpVisitAiSummaryFeatureFlag: ffStringValuesSchema,
   cxsWithHl7NotificationWebhookFeatureFlag: ffStringValuesSchema,
+  cxsWithDischargeRequeryFeatureFlag: ffStringValuesSchema,
 });
 export type CxBasedFFsSchema = z.infer<typeof cxBasedFFsSchema>;
 
