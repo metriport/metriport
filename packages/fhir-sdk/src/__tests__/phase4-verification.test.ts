@@ -8,8 +8,8 @@ import {
 
 describe("Phase 4 Verification - Bundle Export Functionality", () => {
   describe("FR-6.1: exportSubset(resourceIds: string[]): Bundle creates new bundle with specified resources", () => {
-    it("should export subset of resources by ID", () => {
-      const sdk = new FhirBundleSdk(validCompleteBundle);
+    it("should export subset of resources by ID", async () => {
+      const sdk = await FhirBundleSdk.create(validCompleteBundle);
       const resourceIds = ["patient-123", "observation-001"];
 
       const exportedBundle = sdk.exportSubset(resourceIds);
@@ -27,8 +27,8 @@ describe("Phase 4 Verification - Bundle Export Functionality", () => {
       expect(observationEntry?.resource?.id).toBe("observation-001");
     });
 
-    it("should handle subset with some nonexistent resources (FR-6.5)", () => {
-      const sdk = new FhirBundleSdk(validCompleteBundle);
+    it("should handle subset with some nonexistent resources (FR-6.5)", async () => {
+      const sdk = await FhirBundleSdk.create(validCompleteBundle);
       const resourceIds = ["patient-123", "nonexistent-id", "observation-001"];
 
       const exportedBundle = sdk.exportSubset(resourceIds);
@@ -44,16 +44,16 @@ describe("Phase 4 Verification - Bundle Export Functionality", () => {
       expect(observationEntry?.resource?.id).toBe("observation-001");
     });
 
-    it("should handle empty resource ID list", () => {
-      const sdk = new FhirBundleSdk(validCompleteBundle);
+    it("should handle empty resource ID list", async () => {
+      const sdk = await FhirBundleSdk.create(validCompleteBundle);
       const exportedBundle = sdk.exportSubset([]);
 
       expect(exportedBundle.entry).toHaveLength(0);
       expect(exportedBundle.total).toBe(0);
     });
 
-    it("should handle all nonexistent resource IDs", () => {
-      const sdk = new FhirBundleSdk(validCompleteBundle);
+    it("should handle all nonexistent resource IDs", async () => {
+      const sdk = await FhirBundleSdk.create(validCompleteBundle);
       const exportedBundle = sdk.exportSubset(["nonexistent-1", "nonexistent-2"]);
 
       expect(exportedBundle.entry).toHaveLength(0);
@@ -62,8 +62,8 @@ describe("Phase 4 Verification - Bundle Export Functionality", () => {
   });
 
   describe("FR-6.2: exportByType(resourceType: string): Bundle creates new bundle with all resources of specified type", () => {
-    it("should export all resources of specified type", () => {
-      const sdk = new FhirBundleSdk(mixedResourceTypesBundle);
+    it("should export all resources of specified type", async () => {
+      const sdk = await FhirBundleSdk.create(mixedResourceTypesBundle);
       const exportedBundle = sdk.exportByType("Patient");
 
       expect(exportedBundle).toBeDefined();
@@ -76,16 +76,16 @@ describe("Phase 4 Verification - Bundle Export Functionality", () => {
       });
     });
 
-    it("should return empty bundle for nonexistent resource type", () => {
-      const sdk = new FhirBundleSdk(patientsOnlyBundle);
+    it("should return empty bundle for nonexistent resource type", async () => {
+      const sdk = await FhirBundleSdk.create(patientsOnlyBundle);
       const exportedBundle = sdk.exportByType("Observation");
 
       expect(exportedBundle.entry).toHaveLength(0);
       expect(exportedBundle.total).toBe(0);
     });
 
-    it("should export all observations from mixed bundle", () => {
-      const sdk = new FhirBundleSdk(mixedResourceTypesBundle);
+    it("should export all observations from mixed bundle", async () => {
+      const sdk = await FhirBundleSdk.create(mixedResourceTypesBundle);
       const exportedBundle = sdk.exportByType("Observation");
 
       expect(exportedBundle.entry?.length).toBeGreaterThan(0);
@@ -96,8 +96,8 @@ describe("Phase 4 Verification - Bundle Export Functionality", () => {
   });
 
   describe("FR-6.3: exportByTypes(resourceTypes: string[]): Bundle creates new bundle with all resources of specified types", () => {
-    it("should export all resources of specified types", () => {
-      const sdk = new FhirBundleSdk(mixedResourceTypesBundle);
+    it("should export all resources of specified types", async () => {
+      const sdk = await FhirBundleSdk.create(mixedResourceTypesBundle);
       const exportedBundle = sdk.exportByTypes(["Patient", "Observation"]);
 
       expect(exportedBundle).toBeDefined();
@@ -109,16 +109,16 @@ describe("Phase 4 Verification - Bundle Export Functionality", () => {
       });
     });
 
-    it("should handle empty resource types array", () => {
-      const sdk = new FhirBundleSdk(mixedResourceTypesBundle);
+    it("should handle empty resource types array", async () => {
+      const sdk = await FhirBundleSdk.create(mixedResourceTypesBundle);
       const exportedBundle = sdk.exportByTypes([]);
 
       expect(exportedBundle.entry).toHaveLength(0);
       expect(exportedBundle.total).toBe(0);
     });
 
-    it("should handle mix of existing and nonexistent resource types", () => {
-      const sdk = new FhirBundleSdk(patientsOnlyBundle);
+    it("should handle mix of existing and nonexistent resource types", async () => {
+      const sdk = await FhirBundleSdk.create(patientsOnlyBundle);
       const exportedBundle = sdk.exportByTypes(["Patient", "Observation", "Encounter"]);
 
       expect(exportedBundle.entry?.length).toBeGreaterThan(0);
@@ -129,8 +129,8 @@ describe("Phase 4 Verification - Bundle Export Functionality", () => {
   });
 
   describe("FR-6.4: Exported bundles maintain original bundle metadata but update total count", () => {
-    it("should maintain original bundle metadata", () => {
-      const sdk = new FhirBundleSdk(validCompleteBundle);
+    it("should maintain original bundle metadata", async () => {
+      const sdk = await FhirBundleSdk.create(validCompleteBundle);
       const exportedBundle = sdk.exportSubset(["patient-123"]);
 
       expect(exportedBundle.resourceType).toBe("Bundle");
@@ -148,16 +148,16 @@ describe("Phase 4 Verification - Bundle Export Functionality", () => {
       }
     });
 
-    it("should update total count correctly", () => {
-      const sdk = new FhirBundleSdk(mixedResourceTypesBundle);
+    it("should update total count correctly", async () => {
+      const sdk = await FhirBundleSdk.create(mixedResourceTypesBundle);
       const exportedBundle = sdk.exportByType("Patient");
 
       expect(exportedBundle.total).toBe(exportedBundle.entry?.length);
       expect(exportedBundle.total).toBeGreaterThan(0);
     });
 
-    it("should set total to 0 for empty exports", () => {
-      const sdk = new FhirBundleSdk(validCompleteBundle);
+    it("should set total to 0 for empty exports", async () => {
+      const sdk = await FhirBundleSdk.create(validCompleteBundle);
       const exportedBundle = sdk.exportSubset([]);
 
       expect(exportedBundle.total).toBe(0);
@@ -166,8 +166,8 @@ describe("Phase 4 Verification - Bundle Export Functionality", () => {
   });
 
   describe("FR-6.6: Exported bundles preserve original entry.fullUrl values", () => {
-    it("should preserve fullUrl values in exported entries", () => {
-      const sdk = new FhirBundleSdk(bundleWithFullUrlReferences);
+    it("should preserve fullUrl values in exported entries", async () => {
+      const sdk = await FhirBundleSdk.create(bundleWithFullUrlReferences);
       const exportedBundle = sdk.exportSubset(["patient-fullurl"]);
 
       expect(exportedBundle.entry).toHaveLength(1);
@@ -177,8 +177,8 @@ describe("Phase 4 Verification - Bundle Export Functionality", () => {
       expect(entry?.fullUrl).toContain("urn:uuid:");
     });
 
-    it("should maintain fullUrl consistency across export types", () => {
-      const sdk = new FhirBundleSdk(bundleWithFullUrlReferences);
+    it("should maintain fullUrl consistency across export types", async () => {
+      const sdk = await FhirBundleSdk.create(bundleWithFullUrlReferences);
       const exportBySubset = sdk.exportSubset(["patient-fullurl"]);
       const exportByType = sdk.exportByType("Patient");
 
@@ -190,8 +190,8 @@ describe("Phase 4 Verification - Bundle Export Functionality", () => {
   });
 
   describe("Performance and Edge Cases", () => {
-    it("should handle large resource lists efficiently", () => {
-      const sdk = new FhirBundleSdk(mixedResourceTypesBundle);
+    it("should handle large resource lists efficiently", async () => {
+      const sdk = await FhirBundleSdk.create(mixedResourceTypesBundle);
 
       const start = performance.now();
       const exportedBundle = sdk.exportByTypes(["Patient", "Observation", "Encounter"]);
@@ -201,9 +201,9 @@ describe("Phase 4 Verification - Bundle Export Functionality", () => {
       expect(end - start).toBeLessThan(50); // Should be efficient
     });
 
-    it("should handle bundles with undefined entries", () => {
+    it("should handle bundles with undefined entries", async () => {
       const emptyBundle = { resourceType: "Bundle" as const, type: "collection" as const };
-      const sdk = new FhirBundleSdk(emptyBundle);
+      const sdk = await FhirBundleSdk.create(emptyBundle);
 
       const exportedBundle = sdk.exportSubset(["any-id"]);
 
@@ -211,8 +211,8 @@ describe("Phase 4 Verification - Bundle Export Functionality", () => {
       expect(exportedBundle.total).toBe(0);
     });
 
-    it("should return new bundle instances, not references", () => {
-      const sdk = new FhirBundleSdk(validCompleteBundle);
+    it("should return new bundle instances, not references", async () => {
+      const sdk = await FhirBundleSdk.create(validCompleteBundle);
       const exportedBundle1 = sdk.exportSubset(["patient-123"]);
       const exportedBundle2 = sdk.exportSubset(["patient-123"]);
 
