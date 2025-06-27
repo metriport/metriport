@@ -205,7 +205,7 @@ export function createRosterRowInput(
   const assigningAuthorityIdentifier = METRIPORT_ASSIGNING_AUTHORITY_IDENTIFIER;
   const lineOfBusiness = "COMMERCIAL";
   const emptyString = "";
-  const [firstName, middleName] = getFirstNameAndMiddleInitial(data.firstName);
+  const { firstName, middleInitial } = getFirstNameAndMiddleInitial(data.firstName);
 
   return {
     id: p.id,
@@ -214,7 +214,7 @@ export function createRosterRowInput(
     scrambledId,
     lastName: data.lastName,
     firstName,
-    middleName,
+    middleName: middleInitial,
     dob,
     dobNoDelimiter,
     genderAtBirth: data.genderAtBirth,

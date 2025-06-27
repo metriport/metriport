@@ -33,7 +33,6 @@ export function withErrorHandling<T>(
     const isMessageEvent = data instanceof Hl7Message;
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     await Sentry.withScope(async (_: Sentry.Scope) => {
-      console.log("withErrorHandling", _);
       try {
         await handler(data);
       } catch (error) {
