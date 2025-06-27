@@ -2,7 +2,7 @@ import {
   isDischargeSlackNotificationFeatureFlagEnabledForCx,
   isHl7NotificationWebhookFeatureFlagEnabledForCx,
 } from "@metriport/core/command/feature-flags/domain-ffs";
-import { sendToSlack, SlackMessage } from "@metriport/core/external/slack";
+import { sendToSlack, SlackMessage } from "@metriport/core/external/slack/index";
 import { capture, out } from "@metriport/core/util";
 import { Config } from "@metriport/core/util/config";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
