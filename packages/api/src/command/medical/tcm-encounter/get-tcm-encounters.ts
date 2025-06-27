@@ -2,7 +2,7 @@ import { buildDayjs } from "@metriport/shared/common/date";
 import { QueryTypes } from "sequelize";
 import { PatientModel } from "../../../models/medical/patient";
 import { TcmEncounterModel } from "../../../models/medical/tcm-encounter";
-import { Pagination, sortForPagination } from "../../pagination";
+import { getPaginationSorting, Pagination, sortForPagination } from "../../pagination";
 import { omit } from "lodash";
 
 /**
@@ -36,6 +36,7 @@ export async function getTcmEncounters({
   if (!sequelize) throw new Error("Sequelize not found");
 
   const { toItem, fromItem } = pagination;
+  const [, order] = getPaginationSorting(pagination);
 
   /**
    * ⚠️ Always change this query and the count query together.
@@ -46,10 +47,10 @@ export async function getTcmEncounters({
       INNER JOIN ${patientTable} patient 
       ON tcm_encounter.patient_id = patient.id
       WHERE tcm_encounter.cx_id = :cxId
-      AND tcm_encounter.admit_time > :afterDate
+      AND tcm_encounter.admit_time > :admittedAfter
       ${toItem ? ` AND tcm_encounter.id >= :toItem` : ""}
       ${fromItem ? ` AND tcm_encounter.id <= :fromItem` : ""}
-      ORDER BY tcm_encounter.id ${toItem ? "ASC" : "DESC"}
+      ORDER BY tcm_encounter.id ${order}
       LIMIT :count
     `;
 
@@ -61,7 +62,7 @@ export async function getTcmEncounters({
     mapToModel: true,
     replacements: {
       cxId,
-      ...{ afterDate: after ? buildDayjs(after).toDate() : DEFAULT_FILTER_DATE },
+      ...{ admittedAfter: after ? buildDayjs(after).toISOString() : DEFAULT_FILTER_DATE },
       ...pagination,
     },
     type: QueryTypes.SELECT,
@@ -94,13 +95,13 @@ export async function getTcmEncountersCount({
     SELECT count(tcm_encounter.id) as count
     FROM ${tcmEncounterTable} tcm_encounter
     WHERE tcm_encounter.cx_id = :cxId
-    AND tcm_encounter.admit_time > :afterDate
+    AND tcm_encounter.admit_time > :admittedAfter
   `;
 
   const result = await sequelize.query<{ count: number }>(queryString, {
     replacements: {
       cxId,
-      ...{ afterDate: after ? buildDayjs(after).toDate() : DEFAULT_FILTER_DATE },
+      ...{ admittedAfter: after ? buildDayjs(after).toDate() : DEFAULT_FILTER_DATE },
     },
     type: QueryTypes.SELECT,
   });
