@@ -3,6 +3,7 @@ import { BadRequestError } from "@metriport/shared";
 import { EhrSource, EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { getBundleByResourceType as getBundleByResourceTypeAthena } from "../athenahealth/command/get-bundle-by-resource-type";
 import { getBundleByResourceType as getBundleByResourceTypeCanvas } from "../canvas/command/get-bundle-by-resource-type";
+import { getBundleByResourceType as getBundleByResourceTypeElation } from "../elation/command/get-bundle-by-resource-type";
 
 export type GetBundleByResourceTypeRequest = {
   ehr: EhrSource;
@@ -32,7 +33,7 @@ type GetBundleByResourceTypeFnMap = Record<EhrSource, GetBundleByResourceTypeFn 
 const ehrGetBundleByResourceTypeMap: GetBundleByResourceTypeFnMap = {
   [EhrSources.canvas]: getBundleByResourceTypeCanvas,
   [EhrSources.athena]: getBundleByResourceTypeAthena,
-  [EhrSources.elation]: undefined,
+  [EhrSources.elation]: getBundleByResourceTypeElation,
   [EhrSources.healthie]: undefined,
   [EhrSources.eclinicalworks]: undefined,
 };

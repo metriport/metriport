@@ -1,6 +1,6 @@
 {
   "name": "api",
-  "version": "1.27.8",
+  "version": "1.27.10",
   "description": "",
   "main": "app.js",
   "private": true,
@@ -74,6 +74,7 @@
   "devDependencies": {
     "@faker-js/faker": "^8.0.2",
     "@medplum/fhirtypes": "^2.2.10",
+    "@metriport/eslint-rules": "file:packages/eslint-rules",
     "@ngrok/ngrok": "^1.2.0",
     "@tsconfig/node18": "^1.0.1",
     "@types/convert-units": "^2.3.5",

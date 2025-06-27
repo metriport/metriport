@@ -281,6 +281,10 @@ type EnvConfigBase = {
       SURESCRIPTS_SFTP_PRIVATE_KEY: string;
     };
   };
+  jobs: {
+    startScheduledPatientJobsScheduleExpression: string;
+    startScheduledPatientJobsSchedulerUrl: string;
+  };
 };
 
 export type EnvConfigNonSandbox = EnvConfigBase & {
@@ -294,6 +298,7 @@ export type EnvConfigNonSandbox = EnvConfigBase & {
   connectWidget: ConnectWidgetConfig;
   engineeringCxId: string;
   hl7Notification: Hl7NotificationConfig;
+  fhirConversionBucketName: string;
 };
 
 export type EnvConfigSandbox = EnvConfigBase & {

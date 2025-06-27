@@ -1,14 +1,14 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
-import { Bundle, Resource, Patient } from "@medplum/fhirtypes";
+import { Bundle, Patient, Resource } from "@medplum/fhirtypes";
 import { MetriportMedicalApi } from "@metriport/api-sdk";
-import { merge } from "@metriport/core/command/consolidated/consolidated-create";
-import { toFHIR as patientToFhir } from "@metriport/core/external/fhir/patient/conversion";
 import {
   buildBundleEntry,
   buildCollectionBundle,
+  dangerouslyAddEntriesToBundle,
 } from "@metriport/core/external/fhir/bundle/bundle";
+import { toFHIR as patientToFhir } from "@metriport/core/external/fhir/patient/conversion";
 import { dangerouslyDeduplicateFhir } from "@metriport/core/fhir-deduplication/deduplicate-fhir";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { getFileContents, getFileNames, makeDir } from "@metriport/core/util/fs";
@@ -18,7 +18,7 @@ import { parseFhirBundle } from "@metriport/shared/medical";
 import dayjs from "dayjs";
 import fs from "fs";
 import { v4 as uuidv4 } from "uuid";
-import { validateReferences } from "./report/validate-references";
+import { lookForBrokenReferences } from "./report/validate-references";
 
 /**
  * Folder with consolidated files/bundles. If the files need to be combined into a bundle
@@ -79,7 +79,7 @@ async function main() {
 
     const resources =
       bundle.entry?.map(entry => entry.resource).filter((r): r is Resource => !!r) ?? [];
-    const isValid = validateReferences(resources, logsFolderName);
+    const isValid = lookForBrokenReferences(resources, logsFolderName);
     console.log(`Reference validation result: ${isValid ? "Valid" : "Invalid"}`);
 
     const lastSlash = filePath.lastIndexOf("/");
@@ -120,7 +120,7 @@ async function createOrGetBundles(createBundle: boolean, patientId?: string) {
       console.log(`No valid bundle found in ${filePath}, skipping`);
       return;
     }
-    merge(singleConversion).into(mergedBundle);
+    dangerouslyAddEntriesToBundle(mergedBundle, singleConversion.entry);
   });
 
   const conversions = mergedBundle.entry ?? [];

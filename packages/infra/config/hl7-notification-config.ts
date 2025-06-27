@@ -24,7 +24,9 @@ export interface Hl7NotificationConfig {
   hl7v2RosterUploadLambda: {
     bucketName: string;
   };
-  hieConfigs?: Record<string, HieConfig>;
+  hieConfigs: Record<string, HieConfig>;
+  // ENG-536 remove this once we automatically find the discharge summary
+  dischargeNotificationSlackUrl: string;
 }
 
 export type Hl7NotificationVpnConfig = {

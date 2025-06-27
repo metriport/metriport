@@ -1,16 +1,9 @@
-import { executeWithNetworkRetries, MetriportError } from "@metriport/shared";
-import { Bundle } from "@medplum/fhirtypes";
+import { MetriportError } from "@metriport/shared";
+import { convertIncomingDataToFhirBundle } from "./fhir/bundle";
 import { parseResponseFile } from "./file/file-parser";
 import { ParsedResponseFile, ResponseDetail } from "./schema/response";
 import { IncomingData } from "./schema/shared";
 import { SurescriptsConversionBundle } from "./types";
-import {
-  buildLatestConversionBundleFileName,
-  buildConversionBundleFileNameForJob,
-} from "./file/file-names";
-import { S3Utils } from "../aws/s3";
-import { Config } from "../../util/config";
-import { convertIncomingDataToFhirBundle } from "./fhir/bundle";
 
 export async function convertPatientResponseToFhirBundle(
   cxId: string,
@@ -55,41 +48,6 @@ export async function convertBatchResponseToFhirBundles(
     });
   }
   return conversionBundles;
-}
-
-export async function uploadConversionBundle({
-  bundle,
-  cxId,
-  patientId,
-  jobId,
-}: {
-  bundle: Bundle;
-  cxId: string;
-  patientId: string;
-  jobId: string;
-}): Promise<void> {
-  const latestBundleName = buildLatestConversionBundleFileName(cxId, patientId);
-  const conversionBundleName = buildConversionBundleFileNameForJob({
-    cxId,
-    patientId,
-    jobId,
-  });
-  const conversionBucket = new S3Utils(Config.getAWSRegion());
-  const fileContent = Buffer.from(JSON.stringify(bundle));
-  await executeWithNetworkRetries(async () => {
-    await Promise.all([
-      conversionBucket.uploadFile({
-        bucket: Config.getPharmacyConversionBucketName(),
-        key: latestBundleName,
-        file: fileContent,
-      }),
-      conversionBucket.uploadFile({
-        bucket: Config.getPharmacyConversionBucketName(),
-        key: conversionBundleName,
-        file: fileContent,
-      }),
-    ]);
-  });
 }
 
 function buildPatientIdToDetailsMap(

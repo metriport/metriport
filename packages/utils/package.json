@@ -1,6 +1,6 @@
 {
   "name": "utils",
-  "version": "1.25.8",
+  "version": "1.25.10",
   "description": "",
   "private": true,
   "scripts": {
@@ -36,7 +36,9 @@
     "cda-to-html": "ts-node --files src/customer-requests/cda-to-html.ts",
     "saml-server": "ts-node src/saml/saml-server",
     "load-test": "artillery run ./src/terminology/load-test.yml",
-    "npi": "ts-node src/facility/make-npi"
+    "npi": "ts-node src/facility/make-npi",
+    "fhir-demo": "ts-node src/fhir-sdk-demo.ts",
+    "test-typing": "ts-node src/test-typing.ts"
   },
   "keywords": [],
   "author": "",
@@ -78,6 +80,7 @@
     "@faker-js/faker": "^8.0.2",
     "@medplum/core": "^3.2.33",
     "@medplum/fhirtypes": "^2.2.10",
+    "@metriport/fhir-sdk": "file:packages/fhir-sdk",
     "@tsconfig/recommended": "^1.0.1",
     "@types/aws-serverless-express": "^3.3.9",
     "@types/express": "^4.17.14",

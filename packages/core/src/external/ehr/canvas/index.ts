@@ -12,8 +12,6 @@ import {
 } from "@medplum/fhirtypes";
 import {
   BadRequestError,
-  EhrFhirResourceBundle,
-  ehrFhirResourceBundleSchema,
   errorToString,
   JwtTokenInfo,
   MetriportError,
@@ -35,6 +33,10 @@ import {
   SlimBookedAppointment,
   slimBookedAppointmentSchema,
 } from "@metriport/shared/interface/external/ehr/canvas/index";
+import {
+  EhrFhirResourceBundle,
+  ehrFhirResourceBundleSchema,
+} from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { Patient, patientSchema } from "@metriport/shared/interface/external/ehr/patient";
 import {
   Practitioner,
@@ -54,7 +56,7 @@ import { log, out } from "../../../util/log";
 import { capture } from "../../../util/notifications";
 import {
   ApiConfig,
-  convertBundleToValidStrictBundle,
+  convertEhrBundleToValidEhrStrictBundle,
   DataPoint,
   fetchEhrBundleUsingCache,
   fetchEhrFhirResourcesWithPagination,
@@ -75,6 +77,8 @@ import {
   MakeRequestParamsInEhr,
   MedicationWithRefs,
   paginateWaitTime,
+  partitionEhrBundle,
+  saveEhrReferenceBundle,
 } from "../shared";
 
 dayjs.extend(duration);
@@ -108,11 +112,27 @@ export const supportedCanvasResources: ResourceType[] = [
   "Observation",
   "Procedure",
 ];
+export const supportedCanvasReferenceResources: ResourceType[] = [
+  "Medication",
+  "Location",
+  "Organization",
+  "Patient",
+  "Practitioner",
+  "Provenance",
+];
+
 export type SupportedCanvasResource = (typeof supportedCanvasResources)[number];
 export function isSupportedCanvasResource(
   resourceType: string
 ): resourceType is SupportedCanvasResource {
-  return supportedCanvasResources.includes(resourceType as SupportedCanvasResource);
+  return supportedCanvasResources.includes(resourceType as ResourceType);
+}
+
+export type SupportedCanvasReferenceResource = (typeof supportedCanvasReferenceResources)[number];
+export function isSupportedCanvasReferenceResource(
+  resourceType: string
+): resourceType is SupportedCanvasReferenceResource {
+  return supportedCanvasReferenceResources.includes(resourceType as ResourceType);
 }
 
 const problemStatusesMap = new Map<string, string>();
@@ -558,7 +578,7 @@ class CanvasApi {
     await this.makeRequest<undefined>({
       cxId,
       patientId,
-      s3Path: `fhir/condition/${additionalInfo.conditionId ?? "unknown"}`,
+      s3Path: this.createWriteBackPath("condition", additionalInfo.conditionId),
       method: "POST",
       data: { ...formattedCondition },
       url: conditionUrl,
@@ -650,7 +670,7 @@ class CanvasApi {
           await this.makeRequest<undefined>({
             cxId,
             patientId,
-            s3Path: `/medication-statement/${additionalInfo.medicationId}`,
+            s3Path: this.createWriteBackPath("medication-statement", additionalInfo.medicationId),
             method: "POST",
             url: medicationStatementUrl,
             data: { ...params },
@@ -730,7 +750,7 @@ class CanvasApi {
     await this.makeRequest<undefined>({
       cxId,
       patientId,
-      s3Path: `/immunization/${additionalInfo.immunizationId}`,
+      s3Path: this.createWriteBackPath("immunization", additionalInfo.immunizationId),
       method: "POST",
       data: { ...formattedImmunization },
       url: immunizationUrl,
@@ -811,7 +831,7 @@ class CanvasApi {
     await this.makeRequest<undefined>({
       cxId,
       patientId,
-      s3Path: `/allergy-intolerance/${additionalInfo.allergyIntoleranceId}`,
+      s3Path: this.createWriteBackPath("allergy-intolerance", additionalInfo.allergyIntoleranceId),
       method: "POST",
       url: allergyIntoleranceUrl,
       data: { ...formattedAllergyIntolerance },
@@ -880,7 +900,7 @@ class CanvasApi {
           await this.makeRequest<undefined>({
             cxId,
             patientId,
-            s3Path: `/observations/${additionalInfo.observationId ?? "unknown"}`,
+            s3Path: this.createWriteBackPath("observations", additionalInfo.observationId),
             method: "POST",
             url: observationsUrl,
             data: { ...params },
@@ -943,7 +963,7 @@ class CanvasApi {
     const medicationBundle = await this.makeRequest<EhrFhirResourceBundle>({
       cxId,
       patientId,
-      s3Path: `/medication-reference/${code}`,
+      s3Path: this.createReferencePath("medication-reference", code),
       method: "GET",
       url: medicationUrl,
       schema: ehrFhirResourceBundleSchema,
@@ -982,7 +1002,7 @@ class CanvasApi {
     const allergenBundle = await this.makeRequest<EhrFhirResourceBundle>({
       cxId,
       patientId,
-      s3Path: `/allergen-reference/${code}`,
+      s3Path: this.createReferencePath("allergen-reference", code),
       method: "GET",
       url: allergenUrl,
       schema: ehrFhirResourceBundleSchema,
@@ -1031,13 +1051,15 @@ class CanvasApi {
       patientId: canvasPatientId,
       resourceType,
     };
-    const fetchResourcesFromEhr = () =>
-      fetchEhrFhirResourcesWithPagination({
+    let referenceBundleToSave: EhrFhirResourceBundle | undefined;
+    const client = this; // eslint-disable-line @typescript-eslint/no-this-alias
+    function fetchResourcesFromEhr() {
+      return fetchEhrFhirResourcesWithPagination({
         makeRequest: async (url: string) => {
-          const bundle = await this.makeRequest<EhrFhirResourceBundle>({
+          const bundle = await client.makeRequest<EhrFhirResourceBundle>({
             cxId,
             patientId: canvasPatientId,
-            s3Path: `fhir-resources-${resourceType}`,
+            s3Path: client.createFhirPath(resourceType),
             method: "GET",
             url,
             schema: ehrFhirResourceBundleSchema,
@@ -1045,16 +1067,106 @@ class CanvasApi {
             debug,
             useFhir: true,
           });
-          return convertBundleToValidStrictBundle(bundle, resourceType, canvasPatientId);
+          const { targetBundle, referenceBundle } = partitionEhrBundle({
+            bundle,
+            resourceType,
+          });
+          referenceBundleToSave = referenceBundle;
+          return convertEhrBundleToValidEhrStrictBundle(
+            targetBundle,
+            resourceType,
+            canvasPatientId
+          );
         },
         url: resourceTypeUrl,
       });
+    }
     const bundle = await fetchEhrBundleUsingCache({
       ehr: EhrSources.canvas,
       cxId,
       metriportPatientId,
       ehrPatientId: canvasPatientId,
       resourceType,
+      fetchResourcesFromEhr,
+      useCachedBundle,
+    });
+    if (referenceBundleToSave) {
+      await saveEhrReferenceBundle({
+        ehr: EhrSources.canvas,
+        cxId,
+        metriportPatientId,
+        ehrPatientId: canvasPatientId,
+        referenceBundle: referenceBundleToSave,
+      });
+    }
+    return bundle;
+  }
+
+  async getResourceBundleByResourceId({
+    cxId,
+    metriportPatientId,
+    canvasPatientId,
+    resourceType,
+    resourceId,
+    useCachedBundle = true,
+  }: {
+    cxId: string;
+    metriportPatientId: string;
+    canvasPatientId: string;
+    resourceType: string;
+    resourceId: string;
+    useCachedBundle?: boolean;
+  }): Promise<Bundle> {
+    const { debug } = out(
+      `Canvas getResourceBundleByResourceId - cxId ${cxId} practiceId ${this.practiceId} metriportPatientId ${metriportPatientId} canvasPatientId ${canvasPatientId} resourceType ${resourceType}`
+    );
+    if (
+      !isSupportedCanvasResource(resourceType) &&
+      !isSupportedCanvasReferenceResource(resourceType)
+    ) {
+      throw new BadRequestError("Invalid resource type", undefined, {
+        canvasPatientId,
+        resourceId,
+        resourceType,
+      });
+    }
+    const params = { _id: resourceId };
+    const urlParams = new URLSearchParams(params);
+    const resourceTypeUrl = `/${resourceType}?${urlParams.toString()}`;
+    const additionalInfo = {
+      cxId,
+      practiceId: this.practiceId,
+      patientId: canvasPatientId,
+      resourceType,
+      resourceId,
+    };
+    const client = this; // eslint-disable-line @typescript-eslint/no-this-alias
+    function fetchResourcesFromEhr() {
+      return fetchEhrFhirResourcesWithPagination({
+        makeRequest: async (url: string) => {
+          const bundle = await client.makeRequest<EhrFhirResourceBundle>({
+            cxId,
+            patientId: canvasPatientId,
+            s3Path: client.createFhirPath(resourceType, resourceId),
+            method: "GET",
+            url,
+            schema: ehrFhirResourceBundleSchema,
+            additionalInfo,
+            debug,
+            useFhir: true,
+          });
+          return convertEhrBundleToValidEhrStrictBundle(bundle, resourceType, canvasPatientId);
+        },
+        url: resourceTypeUrl,
+      });
+    }
+    const bundle = await fetchEhrBundleUsingCache({
+      ehr: EhrSources.canvas,
+      cxId,
+      metriportPatientId,
+      ehrPatientId: canvasPatientId,
+      resourceType,
+      resourceId,
       fetchResourcesFromEhr,
       useCachedBundle,
     });
@@ -1536,6 +1648,18 @@ class CanvasApi {
         return aDateUnix - bDateUnix;
       })
       .reverse();
+  }
+
+  private createWriteBackPath(resourceType: string, resourceId: string | undefined): string {
+    return `fhir/${resourceType}/${resourceId ?? "unknown"}`;
+  }
+
+  private createFhirPath(resourceType: string, resourceId?: string): string {
+    return `fhir-resources-${resourceType}${resourceId ? `/resourceId/${resourceId}` : ""}`;
+  }
+
+  private createReferencePath(referenceType: string, referenceId: string): string {
+    return `reference/${referenceType}/${referenceId}`;
   }
 }
 

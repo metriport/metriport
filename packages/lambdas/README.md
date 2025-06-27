@@ -35,7 +35,7 @@ To deploy locally:
 
 1. Prepare the shared lambda layer (containing the lambdas' `node_modules`)
    ```shell
-   $ npm prep-deploy
+   $ npm run prep-deploy
    ```
 1. Compile TS into JS
    ```shell

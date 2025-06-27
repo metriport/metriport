@@ -4,7 +4,7 @@ dotenv.config();
 
 import { Command } from "commander";
 import { SurescriptsConvertPatientResponseHandlerDirect } from "@metriport/core/external/surescripts/command/convert-patient-response/convert-patient-response-direct";
-import { getTransmissionsFromCsv } from "./shared";
+import { buildCsvPath, getTransmissionsFromCsv } from "./shared";
 import { buildLatestConversionBundleFileName } from "@metriport/core/external/surescripts/file/file-names";
 
 const program = new Command();
@@ -37,6 +37,7 @@ program
     if (!cxId) throw new Error("Customer ID is required");
     if (!facilityId) throw new Error("Facility ID is required");
     if (!csvData) throw new Error("CSV data is required");
+    csvData = buildCsvPath(csvData);
 
     let transmissions = await getTransmissionsFromCsv(cxId, csvData);
     if (start != null || end != null) {
@@ -47,8 +48,8 @@ program
     }
 
     let convertedCount = 0;
+    const handler = new SurescriptsConvertPatientResponseHandlerDirect();
     for (const { patientId, transmissionId } of transmissions) {
-      const handler = new SurescriptsConvertPatientResponseHandlerDirect();
       await handler.convertPatientResponse({
         cxId,
         facilityId,

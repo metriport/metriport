@@ -5,6 +5,7 @@ import {
   MedicationDispensePerformer,
 } from "@medplum/fhirtypes";
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
+import { buildDayjs } from "@metriport/shared/common/date";
 import { ResponseDetail } from "../schema/response";
 import { MEDICATION_DISPENSE_FILL_NUMBER_EXTENSION, UNIT_OF_MEASURE_URL } from "./constants";
 import { getMedicationReference } from "./medication";
@@ -12,6 +13,7 @@ import { getPatientReference } from "./patient";
 import { getPrescriberReference } from "./prescriber";
 import { getResourceByNpiNumber, getSurescriptsDataSourceExtension } from "./shared";
 import { SurescriptsContext } from "./types";
+import { getNcpdpName } from "@metriport/shared/interface/external/surescripts/ncpdp";
 
 export function getMedicationDispense(
   context: SurescriptsContext,
@@ -20,6 +22,7 @@ export function getMedicationDispense(
 ): MedicationDispense {
   const daysSupply = getDaysSupply(detail);
   const performer = getMedicationDispensePerformer(context, detail);
+  const quantity = getQuantity(detail);
   const dosageInstruction = getDosageInstruction(detail);
   const subject = getPatientReference(context.patient);
   const medicationReference = getMedicationReference(medication);
@@ -35,6 +38,7 @@ export function getMedicationDispense(
     subject,
     medicationReference,
     status: "completed",
+    ...(quantity ? { quantity } : undefined),
     ...(whenHandedOver ? { whenHandedOver } : undefined),
     ...(dosageInstruction ? { dosageInstruction } : undefined),
     ...(daysSupply ? { daysSupply } : undefined),
@@ -45,11 +49,26 @@ export function getMedicationDispense(
   return medicationDispense;
 }
 
+function getQuantity(detail: ResponseDetail): MedicationDispense["quantity"] | undefined {
+  if (!detail.quantityDispensed || !detail.quantityUnitOfMeasure) {
+    return undefined;
+  }
+  const unit = getNcpdpName(detail.quantityUnitOfMeasure) ?? detail.quantityUnitOfMeasure;
+  const value = Number(detail.quantityDispensed);
+  if (!Number.isFinite(value)) return undefined;
+
+  return {
+    value,
+    unit,
+    system: UNIT_OF_MEASURE_URL,
+    code: detail.quantityUnitOfMeasure,
+  };
+}
 function getWhenHandedOver(
   detail: ResponseDetail
 ): MedicationDispense["whenHandedOver"] | undefined {
   if (!detail.dateWritten) return undefined;
-  return detail.dateWritten.toISOString();
+  return buildDayjs(detail.dateWritten).toISOString();
 }
 
 function getDosageInstruction(

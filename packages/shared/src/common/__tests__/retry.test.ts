@@ -50,9 +50,9 @@ describe("retry", () => {
     });
 
     it("uses custom shouldRetry when provided", async () => {
-      const shouldRetry = (_r: unknown, _e: unknown, attempt: number): boolean => {
+      function shouldRetry(_r: unknown, _e: unknown, attempt: number): boolean {
         return attempt !== 2;
-      };
+      }
       await expect(async () =>
         executeWithRetries(fn, {
           initialDelay: 1,

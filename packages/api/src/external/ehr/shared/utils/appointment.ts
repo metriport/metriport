@@ -8,7 +8,7 @@ dayjs.extend(duration);
 export const delayBetweenPracticeBatches = dayjs.duration(15, "seconds");
 export const delayBetweenPatientBatches = dayjs.duration(1, "seconds");
 export const parallelPractices = 10;
-export const parallelPatients = 200;
+export const parallelPatients = 100;
 
 export type Appointment = {
   cxId: string;

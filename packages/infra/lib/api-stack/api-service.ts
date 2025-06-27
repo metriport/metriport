@@ -26,6 +26,7 @@ import { ISecret } from "aws-cdk-lib/aws-secretsmanager";
 import { IQueue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { EnvConfig } from "../../config/env-config";
+import { JobsAssets } from "../jobs/types";
 import { defaultBedrockPolicyStatement } from "../shared/bedrock";
 import { DnsZones } from "../shared/dns";
 import { getMaxPostgresConnections } from "../shared/rds";
@@ -109,6 +110,7 @@ export function createAPIService({
   patientImportParseLambda,
   patientImportResultLambda,
   patientImportBucket,
+  dischargeRequeryQueue,
   ehrSyncPatientQueue,
   elationLinkPatientQueue,
   healthieLinkPatientQueue,
@@ -133,6 +135,7 @@ export function createAPIService({
   featureFlagsTable,
   cookieStore,
   surescriptsAssets,
+  jobAssets,
 }: {
   stack: Construct;
   props: ApiProps;
@@ -154,6 +157,7 @@ export function createAPIService({
   patientImportParseLambda: ILambda;
   patientImportResultLambda: ILambda;
   patientImportBucket: s3.IBucket;
+  dischargeRequeryQueue: IQueue | undefined;
   ehrSyncPatientQueue: IQueue;
   elationLinkPatientQueue: IQueue;
   healthieLinkPatientQueue: IQueue;
@@ -178,6 +182,7 @@ export function createAPIService({
   featureFlagsTable: dynamodb.Table;
   cookieStore: secret.ISecret | undefined;
   surescriptsAssets: SurescriptsAssets | undefined;
+  jobAssets: JobsAssets;
 }): {
   cluster: ecs.Cluster;
   service: ecs_patterns.ApplicationLoadBalancedFargateService;
@@ -298,6 +303,9 @@ export function createAPIService({
           PATIENT_IMPORT_BUCKET_NAME: patientImportBucket.bucketName,
           PATIENT_IMPORT_PARSE_LAMBDA_NAME: patientImportParseLambda.functionName,
           PATIENT_IMPORT_RESULT_LAMBDA_NAME: patientImportResultLambda.functionName,
+          ...(dischargeRequeryQueue && {
+            DISCHARGE_REQUERY_QUEUE_URL: dischargeRequeryQueue.queueUrl,
+          }),
           EHR_SYNC_PATIENT_QUEUE_URL: ehrSyncPatientQueue.queueUrl,
           ELATION_LINK_PATIENT_QUEUE_URL: elationLinkPatientQueue.queueUrl,
           HEALTHIE_LINK_PATIENT_QUEUE_URL: healthieLinkPatientQueue.queueUrl,
@@ -379,6 +387,11 @@ export function createAPIService({
                 queue.queueUrl,
               ])
             ),
+          }),
+          RUN_PATIENT_JOB_QUEUE_URL: jobAssets.runPatientJobQueue.queueUrl,
+          ...(props.config.hl7Notification?.dischargeNotificationSlackUrl && {
+            DISCHARGE_NOTIFICATION_SLACK_URL:
+              props.config.hl7Notification.dischargeNotificationSlackUrl,
           }),
         },
       },
@@ -510,6 +523,14 @@ export function createAPIService({
     resource: fargateService.taskDefinition.taskRole,
   });
 
+  if (dischargeRequeryQueue) {
+    provideAccessToQueue({
+      accessType: "send",
+      queue: dischargeRequeryQueue,
+      resource: fargateService.taskDefinition.taskRole,
+    });
+  }
+
   if (surescriptsAssets) {
     surescriptsAssets.surescriptsQueues.forEach(({ queue }) => {
       provideAccessToQueue({
@@ -519,6 +540,12 @@ export function createAPIService({
       });
     });
   }
+
+  provideAccessToQueue({
+    accessType: "send",
+    queue: jobAssets.runPatientJobQueue,
+    resource: fargateService.taskDefinition.taskRole,
+  });
 
   // Allow access to search services/infra
   provideAccessToQueue({

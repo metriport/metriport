@@ -251,3 +251,23 @@ export async function isHl7NotificationWebhookFeatureFlagEnabledForCx(
     await getCxsWithHl7NotificationWebhookFeatureFlag();
   return cxIdsWithHl7NotificationWebhookEnabled.some(i => i === cxId);
 }
+
+// ENG-536 remove this once we automatically find the discharge summary
+export async function getCxsWithDischargeSlackNotificationFeatureFlag(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithDischargeSlackNotificationFeatureFlag");
+}
+export async function isDischargeSlackNotificationFeatureFlagEnabledForCx(
+  cxId: string
+): Promise<boolean> {
+  const cxsWithDischargeSlackNotificationFeatureFlag =
+    await getCxsWithDischargeSlackNotificationFeatureFlag();
+  return cxsWithDischargeSlackNotificationFeatureFlag.some(i => i === cxId);
+}
+
+export async function getCxsWithDischargeRequeryFeatureFlag(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithDischargeRequeryFeatureFlag");
+}
+export async function isDischargeRequeryFeatureFlagEnabledForCx(cxId: string): Promise<boolean> {
+  const cxIdsWithDischargeRequeryEnabled = await getCxsWithDischargeRequeryFeatureFlag();
+  return cxIdsWithDischargeRequeryEnabled.some(i => i === cxId);
+}

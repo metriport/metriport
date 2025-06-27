@@ -18,6 +18,7 @@ const waitTimeElationLinkPatient = Duration.seconds(10); // 6 patients/min
 const waitTimeHealthieLinkPatient = Duration.seconds(10); // 6 patients/min
 const waitTimeComputeResourceDiff = Duration.millis(0); // No limit
 const waitTimeRefreshBundle = Duration.seconds(0); // No limit
+const waitTimeContributeResourceDiffBundles = Duration.seconds(0); // No limit
 
 function settings(): {
   getAppointments: LambdaSettings;
@@ -26,6 +27,7 @@ function settings(): {
   healthieLinkPatient: QueueAndLambdaSettings;
   computeResourceDiffBundles: QueueAndLambdaSettings;
   refreshEhrBundles: QueueAndLambdaSettings;
+  contributeResourceDiffBundles: QueueAndLambdaSettings;
 } {
   const getAppointmentsLambdaTimeout = Duration.minutes(15);
   const getAppointments: LambdaSettings = {
@@ -147,6 +149,30 @@ function settings(): {
     },
     waitTime: waitTimeRefreshBundle,
   };
+  const contributeResourceDiffBundlesLambdaTimeout = Duration.minutes(12);
+  const contributeResourceDiffBundles: QueueAndLambdaSettings = {
+    name: "EhrContributeResourceDiffBundles",
+    entry: "ehr/contribute-resource-diff-bundles",
+    lambda: {
+      memory: 4096,
+      timeout: contributeResourceDiffBundlesLambdaTimeout,
+    },
+    queue: {
+      alarmMaxAgeOfOldestMessage: Duration.hours(1),
+      maxMessageCountAlarmThreshold: 15_000,
+      maxReceiveCount: 3,
+      visibilityTimeout: Duration.seconds(
+        contributeResourceDiffBundlesLambdaTimeout.toSeconds() * 2 + 1
+      ),
+      createRetryLambda: false,
+    },
+    eventSource: {
+      batchSize: 1,
+      reportBatchItemFailures: true,
+      maxConcurrency: 4,
+    },
+    waitTime: waitTimeContributeResourceDiffBundles,
+  };
   return {
     getAppointments,
     syncPatient,
@@ -154,6 +180,7 @@ function settings(): {
     healthieLinkPatient,
     computeResourceDiffBundles,
     refreshEhrBundles,
+    contributeResourceDiffBundles,
   };
 }
 
@@ -164,6 +191,8 @@ interface EhrNestedStackProps extends NestedStackProps {
   lambdaLayers: LambdaLayers;
   ehrResponsesBucket: s3.Bucket | undefined;
   medicalDocumentsBucket: s3.Bucket;
+  fhirConverterLambda: Lambda | undefined;
+  fhirConverterBucket: s3.Bucket | undefined;
 }
 
 export class EhrNestedStack extends NestedStack {
@@ -178,6 +207,8 @@ export class EhrNestedStack extends NestedStack {
   readonly computeResourceDiffBundlesQueue: Queue;
   readonly refreshEhrBundlesLambda: Lambda;
   readonly refreshEhrBundlesQueue: Queue;
+  readonly contributeResourceDiffBundlesLambda: Lambda;
+  readonly contributeResourceDiffBundlesQueue: Queue;
   readonly ehrBundleBucket: s3.Bucket;
 
   constructor(scope: Construct, id: string, props: EhrNestedStackProps) {
@@ -238,6 +269,17 @@ export class EhrNestedStack extends NestedStack {
     this.healthieLinkPatientLambda = healthieLinkPatient.lambda;
     this.healthieLinkPatientQueue = healthieLinkPatient.queue;
 
+    const contributeResourceDiffBundles = this.setupContributeResourceDiffBundles({
+      lambdaLayers: props.lambdaLayers,
+      vpc: props.vpc,
+      envType: props.config.environmentType,
+      sentryDsn: props.config.lambdasSentryDSN,
+      alarmAction: props.alarmAction,
+      ehrBundleBucket: this.ehrBundleBucket,
+    });
+    this.contributeResourceDiffBundlesLambda = contributeResourceDiffBundles.lambda;
+    this.contributeResourceDiffBundlesQueue = contributeResourceDiffBundles.queue;
+
     const computeResourceDiffBundles = this.setupComputeResourceDiffBundles({
       lambdaLayers: props.lambdaLayers,
       vpc: props.vpc,
@@ -246,6 +288,7 @@ export class EhrNestedStack extends NestedStack {
       alarmAction: props.alarmAction,
       medicalDocumentsBucket: props.medicalDocumentsBucket,
       ehrBundleBucket: this.ehrBundleBucket,
+      contributeResourceDiffBundlesQueue: this.contributeResourceDiffBundlesQueue,
     });
     this.computeResourceDiffBundlesLambda = computeResourceDiffBundles.lambda;
     this.computeResourceDiffBundlesQueue = computeResourceDiffBundles.queue;
@@ -257,6 +300,8 @@ export class EhrNestedStack extends NestedStack {
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: props.alarmAction,
       ehrBundleBucket: this.ehrBundleBucket,
+      fhirConverterLambda: props.fhirConverterLambda,
+      fhirConverterBucket: props.fhirConverterBucket,
       computeResourceDiffBundlesQueue: this.computeResourceDiffBundlesQueue,
     });
     this.refreshEhrBundlesLambda = refreshEhrBundles.lambda;
@@ -442,6 +487,60 @@ export class EhrNestedStack extends NestedStack {
     return { lambda, queue };
   }
 
+  private setupContributeResourceDiffBundles(ownProps: {
+    lambdaLayers: LambdaLayers;
+    vpc: ec2.IVpc;
+    envType: EnvType;
+    sentryDsn: string | undefined;
+    alarmAction: SnsAction | undefined;
+    ehrBundleBucket: s3.Bucket;
+  }): { lambda: Lambda; queue: Queue } {
+    const { lambdaLayers, vpc, envType, sentryDsn, alarmAction } = ownProps;
+    const {
+      name,
+      entry,
+      lambda: lambdaSettings,
+      queue: queueSettings,
+      eventSource: eventSourceSettings,
+      waitTime,
+    } = settings().contributeResourceDiffBundles;
+
+    const queue = createQueue({
+      ...queueSettings,
+      stack: this,
+      name,
+      fifo: true,
+      createDLQ: true,
+      lambdaLayers: [lambdaLayers.shared],
+      envType,
+      alarmSnsAction: alarmAction,
+    });
+
+    const lambda = createLambda({
+      ...lambdaSettings,
+      stack: this,
+      name,
+      entry,
+      envType,
+      envVars: {
+        // API_URL set on the api-stack after the OSS API is created
+        EHR_BUNDLE_BUCKET_NAME: ownProps.ehrBundleBucket.bucketName,
+        WAIT_TIME_IN_MILLIS: waitTime.toMilliseconds().toString(),
+        MAX_ATTEMPTS: queueSettings.maxReceiveCount.toString(),
+        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+      },
+      layers: [lambdaLayers.shared],
+      vpc,
+      alarmSnsAction: alarmAction,
+    });
+
+    lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
+
+    ownProps.ehrBundleBucket.grantReadWrite(lambda);
+
+    return { lambda, queue };
+  }
+
   private setupComputeResourceDiffBundles(ownProps: {
     lambdaLayers: LambdaLayers;
     vpc: ec2.IVpc;
@@ -450,6 +549,7 @@ export class EhrNestedStack extends NestedStack {
     alarmAction: SnsAction | undefined;
     medicalDocumentsBucket: s3.Bucket;
     ehrBundleBucket: s3.Bucket;
+    contributeResourceDiffBundlesQueue: Queue;
   }): { lambda: Lambda; queue: Queue } {
     const { lambdaLayers, vpc, envType, sentryDsn, alarmAction } = ownProps;
     const {
@@ -482,6 +582,8 @@ export class EhrNestedStack extends NestedStack {
         // API_URL set on the api-stack after the OSS API is created
         MEDICAL_DOCUMENTS_BUCKET_NAME: ownProps.medicalDocumentsBucket.bucketName,
         EHR_BUNDLE_BUCKET_NAME: ownProps.ehrBundleBucket.bucketName,
+        EHR_CONTRIBUTE_RESOURCE_DIFF_BUNDLES_QUEUE_URL:
+          ownProps.contributeResourceDiffBundlesQueue.queueUrl,
         WAIT_TIME_IN_MILLIS: waitTime.toMilliseconds().toString(),
         MAX_ATTEMPTS: queueSettings.maxReceiveCount.toString(),
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
@@ -495,6 +597,7 @@ export class EhrNestedStack extends NestedStack {
 
     // Grant read to medical document bucket set on the api-stack
     ownProps.ehrBundleBucket.grantReadWrite(lambda);
+    ownProps.contributeResourceDiffBundlesQueue.grantSendMessages(lambda);
 
     return { lambda, queue };
   }
@@ -506,6 +609,8 @@ export class EhrNestedStack extends NestedStack {
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
     ehrBundleBucket: s3.Bucket;
+    fhirConverterLambda: Lambda | undefined;
+    fhirConverterBucket: s3.Bucket | undefined;
     computeResourceDiffBundlesQueue: Queue;
   }): { lambda: Lambda; queue: Queue } {
     const { lambdaLayers, vpc, envType, sentryDsn, alarmAction } = ownProps;
@@ -540,6 +645,12 @@ export class EhrNestedStack extends NestedStack {
         EHR_BUNDLE_BUCKET_NAME: ownProps.ehrBundleBucket.bucketName,
         EHR_COMPUTE_RESOURCE_DIFF_BUNDLES_QUEUE_URL:
           ownProps.computeResourceDiffBundlesQueue.queueUrl,
+        ...(ownProps.fhirConverterLambda && {
+          FHIR_CONVERTER_LAMBDA_NAME: ownProps.fhirConverterLambda.functionName,
+        }),
+        ...(ownProps.fhirConverterBucket && {
+          FHIR_CONVERTER_BUCKET_NAME: ownProps.fhirConverterBucket.bucketName,
+        }),
         WAIT_TIME_IN_MILLIS: waitTime.toMilliseconds().toString(),
         MAX_ATTEMPTS: queueSettings.maxReceiveCount.toString(),
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
@@ -551,7 +662,9 @@ export class EhrNestedStack extends NestedStack {
 
     lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
 
-    ownProps.ehrBundleBucket.grantWrite(lambda);
+    ownProps.ehrBundleBucket.grantReadWrite(lambda);
+    ownProps.fhirConverterLambda?.grantInvoke(lambda);
+    ownProps.fhirConverterBucket?.grantReadWrite(lambda);
     ownProps.computeResourceDiffBundlesQueue.grantSendMessages(lambda);
 
     return { lambda, queue };

@@ -1,13 +1,11 @@
 import { Config } from "../../../../../../util/config";
 import { EhrComputeResourceDiffBundlesHandler } from "./ehr-compute-resource-diff-bundles";
 import { EhrComputeResourceDiffBundlesCloud } from "./ehr-compute-resource-diff-bundles-cloud";
-import { EhrComputeResourceDiffBundlesLocal } from "./ehr-compute-resource-diff-bundles-local";
+import { EhrComputeResourceDiffBundlesDirect } from "./ehr-compute-resource-diff-bundles-direct";
 
 export function buildEhrComputeResourceDiffBundlesHandler(): EhrComputeResourceDiffBundlesHandler {
   if (Config.isDev()) {
-    const waitTimeAtTheEndInMillis = 0;
-    return new EhrComputeResourceDiffBundlesLocal(waitTimeAtTheEndInMillis);
+    return new EhrComputeResourceDiffBundlesDirect();
   }
-  const ehrComputeResourceDiffBundlesQueueUrl = Config.getEhrComputeResourceDiffBundlesQueueUrl();
-  return new EhrComputeResourceDiffBundlesCloud(ehrComputeResourceDiffBundlesQueueUrl);
+  return new EhrComputeResourceDiffBundlesCloud();
 }

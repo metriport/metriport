@@ -32,6 +32,7 @@ const medicationRelatedTypes = [
   "MedicationStatement",
   "MedicationAdministration",
   "MedicationRequest",
+  "MedicationDispense",
 ];
 
 /**
@@ -57,9 +58,11 @@ export function dangerouslyDeduplicateFhir(
   use medication references. This is different than all other resources.
   */
   resourceArrays = replaceResourceReferences(resourceArrays, medicationsResult.refReplacementMap, [
+    "medicationDispenses",
     "medicationAdministrations",
     "medicationStatements",
     "medicationRequests",
+    "medicationDispenses",
   ]);
   resourceArrays.medications = medicationsResult.combinedResources;
 

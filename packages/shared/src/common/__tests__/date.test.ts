@@ -1,6 +1,7 @@
 import {
   buildDayjsFromCompactDate,
   isValidISODate,
+  isValidISODateTime,
   validateDateIsAfter1900,
   validateDateOfBirth,
   ValidateDobFn,
@@ -14,6 +15,29 @@ describe("shared date functions", () => {
     it("returns true for dates from E2E tests", async () => {
       expect(isValidISODate("2024-12-18T03:50:00.006Z")).toEqual(true);
       expect(isValidISODate("2024-12-18T04:18:01.263Z")).toEqual(true);
+    });
+  });
+
+  describe("isValidISODateTime", () => {
+    it("returns true for dates from E2E tests", async () => {
+      expect(isValidISODateTime("2024-12-18T03:50:00.006Z")).toEqual(true);
+      expect(isValidISODateTime("2024-12-18T04:18:01.263Z")).toEqual(true);
+    });
+
+    it("returns false for invalid date", () => {
+      expect(isValidISODateTime("invalid-date")).toEqual(false);
+    });
+
+    it("returns false for invalid date - missing T", () => {
+      expect(isValidISODateTime("2024-12-1804:18:01.263Z")).toEqual(false);
+    });
+
+    it("returns true if only date is provided", () => {
+      expect(isValidISODateTime("2024-12-18")).toEqual(true);
+    });
+
+    it("returns true for partial match", () => {
+      expect(isValidISODateTime("2024-12-18T04:18:01.263")).toEqual(true);
     });
   });
 

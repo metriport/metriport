@@ -20,6 +20,7 @@ export function initializeContext(patientId: string): SurescriptsContext {
     practitioner: {},
     pharmacy: {},
     coverage: {},
+    insuranceOrganization: {},
     medication: {},
     condition: {},
   };
@@ -31,6 +32,7 @@ export function deduplicateBySystemIdentifier<R extends Practitioner | Organizat
   resource?: R
 ): R | undefined {
   if (!resource || !resource.identifier) return undefined;
+  let masterResource: R = resource;
 
   for (const identifier of resource.identifier) {
     if (!identifier.value || !identifier.system) continue;
@@ -40,12 +42,11 @@ export function deduplicateBySystemIdentifier<R extends Practitioner | Organizat
     }
     const existingResource = identifierMap[identifier.value];
     if (existingResource) {
-      return existingResource;
+      masterResource = existingResource;
     }
     identifierMap[identifier.value] = resource;
-    return resource;
   }
-  return undefined;
+  return masterResource;
 }
 
 export function deduplicateByCoding<R extends Medication | Condition>(
@@ -53,6 +54,7 @@ export function deduplicateByCoding<R extends Medication | Condition>(
   resource?: R
 ): R | undefined {
   if (!resource || !resource.code || !resource.code.coding) return undefined;
+  let masterResource: R = resource;
 
   for (const coding of resource.code.coding) {
     if (!coding.system || !coding.code) continue;
@@ -62,11 +64,29 @@ export function deduplicateByCoding<R extends Medication | Condition>(
     }
     const existingResource = codingMap[coding.code];
     if (existingResource) {
-      return existingResource;
+      masterResource = existingResource;
     }
     codingMap[coding.code] = resource;
   }
-  return undefined;
+  return masterResource;
+}
+
+export function deduplicateByKey<R extends Resource, K extends keyof R>(
+  resourceMap: ResourceMap<R>,
+  key: K,
+  resource?: R
+): R | undefined {
+  if (!resource) return undefined;
+
+  const resourceValue = resource[key] as keyof ResourceMap<R> | undefined;
+  if (!resourceValue) return resource;
+
+  const existingResource = resourceMap[resourceValue];
+  if (existingResource) {
+    return existingResource;
+  }
+  resourceMap[resourceValue] = resource;
+  return resource;
 }
 
 export function getResourceByNpiNumber<R extends Practitioner | Organization | Coverage>(
@@ -75,23 +95,6 @@ export function getResourceByNpiNumber<R extends Practitioner | Organization | C
 ): R | undefined {
   if (!systemMap[NPI_URL]) return undefined;
   return systemMap[NPI_URL][npiNumber];
-}
-
-export function getResourceFromResourceMap<R extends Resource>(
-  resourceMap: ResourceMap<R>,
-  resourceKeys: (keyof R)[],
-  resource?: R
-): R | undefined {
-  if (!resource) return undefined;
-
-  for (const key of resourceKeys) {
-    const resourceValue = resource[key];
-    if (resourceValue != null && resourceValue === resourceMap[key]) {
-      return resourceMap[key];
-    }
-    resourceMap[key] = resource;
-  }
-  return resource;
 }
 
 export function getSurescriptsDataSourceExtension(): Extension {

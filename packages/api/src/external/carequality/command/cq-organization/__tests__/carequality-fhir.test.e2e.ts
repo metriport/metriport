@@ -6,7 +6,7 @@ dotenv.config();
 import { faker } from "@faker-js/faker";
 import { APIMode, CarequalityManagementApi } from "@metriport/carequality-sdk";
 import { OrganizationWithId } from "@metriport/carequality-sdk/client/carequality";
-import { getEnvVar, getEnvVarOrFail } from "@metriport/shared";
+import { getEnvVar, getEnvVarOrFail, normalizeState } from "@metriport/shared";
 import { cloneDeep } from "lodash";
 import { metriportOid } from "../constants";
 import { getOrganizationFhirTemplate } from "../organization-template";
@@ -69,7 +69,7 @@ describe("CarequalityManagementApiFhir", () => {
       name: faker.company.name(),
       addressLine1: faker.location.streetAddress(),
       city: faker.location.city(),
-      state: faker.location.state(),
+      state: normalizeState(faker.location.state()),
       postalCode: faker.location.zipCode(),
       lat: faker.location.latitude().toString(),
       lon: faker.location.longitude().toString(),

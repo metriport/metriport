@@ -1,8 +1,8 @@
 import { MetriportError, patientCreateResponseSchema } from "@metriport/shared";
 import axios from "axios";
 import { Config } from "../../../util/config";
+import { withDefaultApiErrorHandling } from "../../shared/api/shared";
 import { PatientPayload } from "../patient-import";
-import { withDefaultApiErrorHandling } from "./shared";
 
 /**
  * Creates a patient in the API.

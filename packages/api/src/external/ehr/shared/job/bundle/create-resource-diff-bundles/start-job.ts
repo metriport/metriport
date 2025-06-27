@@ -1,17 +1,12 @@
-import { getSupportedResourcesByEhr } from "@metriport/core/external/ehr/bundle/bundle-shared";
-import { isEhrSourceWithClientCredentials } from "@metriport/core/external/ehr/environment";
-import { buildEhrRefreshEhrBundlesHandler } from "@metriport/core/external/ehr/job/create-resource-diff-bundles/steps/refresh/ehr-refresh-ehr-bundles-factory";
-import { processAsyncError } from "@metriport/core/util/error/shared";
-import { completePatientJob } from "../../../../../../command/job/patient/complete";
+import { BadRequestError } from "@metriport/shared";
 import { createPatientJob } from "../../../../../../command/job/patient/create";
-import { initializePatientJob } from "../../../../../../command/job/patient/initialize";
-import { updatePatientJobTotal } from "../../../../../../command/job/patient/update-total";
+import { getLatestPatientJob } from "../../../../../../command/job/patient/get";
 import { getPatientMappingOrFail } from "../../../../../../command/mapping/patient";
 import { getPatientOrFail } from "../../../../../../command/medical/patient/get-patient";
-import { getTwoLeggedClientWithTokenIdAndEnvironment } from "../../../command/clients/get-two-legged-client";
 import {
   StartCreateResourceDiffBundlesJobParams,
   getCreateResourceDiffBundlesJobType,
+  getCreateResourceDiffBundlesRunUrl,
 } from "../../../utils/job";
 
 /**
@@ -42,45 +37,36 @@ export async function startCreateResourceDiffBundlesJob({
     id: patientMapping.patientId,
   });
   const metriportPatientId = metriportPatient.id;
+  const jobType = getCreateResourceDiffBundlesJobType(ehr);
+  const runUrl = getCreateResourceDiffBundlesRunUrl(ehr);
+  const jobGroupId = ehrPatientId;
+  const runningJob = await getLatestPatientJob({
+    cxId,
+    patientId: metriportPatientId,
+    jobType,
+    jobGroupId,
+    status: ["waiting", "processing"],
+  });
+  if (runningJob) {
+    throw new BadRequestError("Only one job can be running at a time", undefined, {
+      cxId,
+      metriportPatientId,
+      ehrPatientId,
+      runningJobId: runningJob.id,
+    });
+  }
   const job = await createPatientJob({
     cxId,
     patientId: metriportPatientId,
-    jobType: getCreateResourceDiffBundlesJobType(ehr),
-    jobGroupId: ehrPatientId,
+    jobType,
+    jobGroupId,
     requestId,
-    limitedToOneRunningJob: true,
-  });
-  const jobId = job.id;
-  await initializePatientJob({ cxId, jobId });
-  const resourceTypes = getSupportedResourcesByEhr(ehr);
-  if (resourceTypes.length < 1) {
-    await completePatientJob({ cxId, jobId });
-    return jobId;
-  }
-  await updatePatientJobTotal({ cxId, jobId, total: resourceTypes.length });
-  const ehrResourceDiffHandler = buildEhrRefreshEhrBundlesHandler();
-  let tokenId: string | undefined;
-  if (isEhrSourceWithClientCredentials(ehr)) {
-    const clientWithTokenIdAndEnvironment = await getTwoLeggedClientWithTokenIdAndEnvironment({
-      ehr,
-      cxId,
+    scheduledAt: undefined,
+    runUrl,
+    paramsOps: {
       practiceId,
-    });
-    tokenId = clientWithTokenIdAndEnvironment.tokenId;
-  }
-  for (const resourceType of resourceTypes) {
-    ehrResourceDiffHandler
-      .refreshEhrBundles({
-        ehr,
-        ...(tokenId ? { tokenId } : {}),
-        cxId,
-        practiceId,
-        metriportPatientId,
-        ehrPatientId,
-        resourceType,
-        jobId,
-      })
-      .catch(processAsyncError(`${ehr} ${resourceType} refreshEhrBundles`));
-  }
-  return jobId;
+      ehrPatientId,
+    },
+  });
+  return job.id;
 }
