@@ -90,6 +90,10 @@ jobs:
           npm ci --ignore-scripts --no-fund
         working-directory: "metriport/"
 
+      - name: Build fhir converter dependencies
+        run: npm install --only=production --no-fund --no-optional --no-audit
+        working-directory: "metriport/packages/fhir-converter"
+
       - name: Lambdas build shared layer
         run: npm run prep-deploy
         working-directory: "metriport/packages/lambdas/"
