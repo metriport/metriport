@@ -19,6 +19,7 @@ export const tcmEncounterBaseSchema = z.strictObject({
     .nullish(),
   clinicalInformation: z.record(z.unknown()).optional().default({}),
   freetextNote: z.string().optional(),
+  dischargeSummaryPath: z.string().optional(),
 });
 
 export const tcmEncounterCreateSchema = tcmEncounterBaseSchema.extend({
