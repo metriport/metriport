@@ -1,14 +1,16 @@
-export { APIMode, CommonWell, RequestMetadata } from "./client/commonwell";
-export { CommonWellAPI } from "./client/commonwell-api";
+export { APIMode } from "./client/common";
+export { CommonWell } from "./client/commonwell";
+export { CommonWellAPI, OrganizationRequestMetadata } from "./client/commonwell-api";
+export { CommonWellMember } from "./client/commonwell-member";
+export { CommonWellMemberAPI, MemberRequestMetadata } from "./client/commonwell-member-api";
 export { CommonwellError } from "./common/commonwell-error";
 export { downloadFile } from "./common/fileDownload";
 export { makeJwt } from "./common/make-jwt";
 export {
-  baseQueryMeta,
+  buildBaseQueryMeta,
   decodeCwPatientId,
   getPatientIdTrailingSlash,
   getPatientStrongIds,
-  organizationQueryMeta,
 } from "./common/util";
 export { validateNPI } from "./common/validate-npi";
 export * from "./models/address";
