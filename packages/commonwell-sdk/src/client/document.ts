@@ -5,8 +5,8 @@ import { downloadFile } from "../common/fileDownload";
 import { convertPatientIdToSubjectId } from "../common/util";
 import {
   DocumentQueryFullResponse,
-  DocumentQueryResponse,
   documentQueryFullResponseSchema,
+  DocumentQueryResponse,
   documentQueryResponseSchema,
 } from "../models/document";
 import { CommonWell } from "./commonwell";
@@ -22,7 +22,7 @@ async function initQuery(
     throw new Error(`Could not determine subject ID for document query`);
   }
   const url = `${CommonWell.DOCUMENT_QUERY_ENDPOINT}?subject.id=${subjectId}`;
-  const additionalInfo = { headers, patientId };
+  const additionalInfo = { patientId, url };
   try {
     const response = await api.get(url, { headers });
     return response;
@@ -40,11 +40,7 @@ export async function query(
   try {
     return documentQueryResponseSchema.parse(response.data);
   } catch (err) {
-    throw new CommonwellError(`Error parsing document query response`, err, {
-      headers,
-      patientId,
-      response,
-    });
+    throw new CommonwellError(`Error parsing document query response`, err, { patientId });
   }
 }
 
@@ -57,11 +53,7 @@ export async function queryFull(
   try {
     return documentQueryFullResponseSchema.parse(response.data);
   } catch (err) {
-    throw new CommonwellError(`Error parsing document query response`, err, {
-      headers,
-      patientId,
-      response,
-    });
+    throw new CommonwellError(`Error parsing document query full response`, err, { patientId });
   }
 }
 
@@ -79,10 +71,6 @@ export async function retrieve(
       headers,
     });
   } catch (err) {
-    throw new CommonwellError(`Error retrieve document`, err, {
-      headers,
-      inputUrl,
-      outputStream: outputStream ? "[object]" : outputStream,
-    });
+    throw new CommonwellError(`Error retrieve document`, err, { inputUrl });
   }
 }
