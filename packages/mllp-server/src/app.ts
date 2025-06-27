@@ -59,10 +59,6 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
           `${timestamp}> New Message for pid ${pidComponent}, messageId: ${messageId} with sending application ${sendingApplication}`
         );
 
-        if (0 < Math.random()) {
-          throw new Error("PID FAILING TO PARSE");
-        }
-
         const { cxId, patientId } = getCxIdAndPatientIdOrFail(message);
         const { messageCode, triggerEvent } = getHl7MessageTypeOrFail(message);
 
