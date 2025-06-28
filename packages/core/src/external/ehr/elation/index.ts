@@ -34,7 +34,8 @@ import axios, { AxiosInstance } from "axios";
 import { z } from "zod";
 import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
-import { createOrReplaceCcda } from "../bundle/command/create-or-replace-ccda";
+import { createOrReplaceDocument } from "../document/command/create-or-replace-document";
+import { DocumentType } from "../document/document-shared";
 import {
   ApiConfig,
   convertEhrBundleToValidEhrStrictBundle,
@@ -355,11 +356,12 @@ class ElationApi {
       patientId: elationPatientId,
       resourceType,
     });
-    const { s3key, s3BucketName } = await createOrReplaceCcda({
+    const { s3key, s3BucketName } = await createOrReplaceDocument({
       ehr: EhrSources.elation,
       cxId,
       metriportPatientId,
       ehrPatientId: elationPatientId,
+      documentType: DocumentType.CCDA,
       payload,
       resourceType,
     });

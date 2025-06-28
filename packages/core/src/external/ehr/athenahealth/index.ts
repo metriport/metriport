@@ -1,11 +1,13 @@
 import {
   AllergyIntolerance,
   Bundle,
+  BundleEntry,
   Coding,
   Condition,
   Immunization,
   Observation,
   Procedure,
+  Resource,
   ResourceType,
 } from "@medplum/fhirtypes";
 import {
@@ -31,9 +33,11 @@ import {
   AllergySeverityReference,
   AllergySeverityReferences,
   allergySeverityReferencesSchema,
+  Appointment,
   AppointmentEvent,
   AppointmentEventListResponse,
   appointmentEventListResponseSchema,
+  appointmentSchema,
   athenaClientJwtTokenResponseSchema,
   BookedAppointment,
   BookedAppointmentListResponse,
@@ -77,6 +81,10 @@ import {
   createdVitalsSuccessSchema,
   Departments,
   departmentsSchema,
+  Encounter,
+  encounterSchema,
+  EncounterSummary,
+  encounterSummarySchema,
   EventType,
   FeedType,
   MedicationCreateParams,
@@ -108,6 +116,8 @@ import { uniqBy } from "lodash";
 import { executeAsynchronously } from "../../../util/concurrency";
 import { out } from "../../../util/log";
 import { capture } from "../../../util/notifications";
+import { createOrReplaceDocument } from "../document/command/create-or-replace-document";
+import { DocumentType } from "../document/document-shared";
 import {
   ApiConfig,
   convertEhrBundleToValidEhrStrictBundle,
@@ -480,6 +490,60 @@ class AthenaHealthApi {
     return patientCustomFields;
   }
 
+  async getEncounter({
+    cxId,
+    patientId,
+    encounterId,
+  }: {
+    cxId: string;
+    patientId: string;
+    encounterId: string;
+  }): Promise<Encounter> {
+    const { debug } = out(
+      `AthenaHealth getEncounter - cxId ${cxId} practiceId ${this.practiceId} encounterId ${encounterId}`
+    );
+    const encounterUrl = `/chart/${this.practiceId}/encounter/${encounterId}`;
+    const additionalInfo = { cxId, practiceId: this.practiceId, patientId, encounterId };
+    const encounter = await this.makeRequest<Encounter>({
+      cxId,
+      patientId,
+      s3Path: "encounter",
+      method: "GET",
+      url: encounterUrl,
+      schema: encounterSchema,
+      additionalInfo,
+      debug,
+    });
+    return encounter;
+  }
+
+  async getEncounterSummary({
+    cxId,
+    patientId,
+    encounterId,
+  }: {
+    cxId: string;
+    patientId: string;
+    encounterId: string;
+  }): Promise<EncounterSummary> {
+    const { debug } = out(
+      `AthenaHealth getEncounterSummary - cxId ${cxId} practiceId ${this.practiceId} encounterId ${encounterId}`
+    );
+    const encounterUrl = `/chart/${this.practiceId}/encounters/${encounterId}/summary`;
+    const additionalInfo = { cxId, practiceId: this.practiceId, patientId, encounterId };
+    const encounterSummary = await this.makeRequest<EncounterSummary>({
+      cxId,
+      patientId,
+      s3Path: "encounter-summary",
+      method: "GET",
+      url: encounterUrl,
+      schema: encounterSummarySchema,
+      additionalInfo,
+      debug,
+    });
+    return encounterSummary;
+  }
+
   async createProblem({
     cxId,
     patientId,
@@ -647,7 +711,7 @@ class AthenaHealthApi {
       }
     );
     if (createMedicationErrors.length > 0) {
-      const msg = `Failure while creating some medications @ AthenaHealth`;
+      const msg = "Failure while creating some medications @ AthenaHealth";
       capture.message(msg, {
         extra: {
           ...additionalInfo,
@@ -1177,7 +1241,7 @@ class AthenaHealthApi {
       }
     );
     if (createVitalsErrors.length > 0) {
-      const msg = `Failure while creating some vitals @ AthenaHealth`;
+      const msg = "Failure while creating some vitals @ AthenaHealth";
       capture.message(msg, {
         extra: {
           ...additionalInfo,
@@ -1252,7 +1316,7 @@ class AthenaHealthApi {
       }
     );
     if (searchMedicationErrors.length > 0) {
-      const msg = `Failure while searching for some medications @ AthenaHealth`;
+      const msg = "Failure while searching for some medications @ AthenaHealth";
       capture.message(msg, {
         extra: {
           ...additionalInfo,
@@ -1334,7 +1398,7 @@ class AthenaHealthApi {
       }
     );
     if (searchAllergenErrors.length > 0) {
-      const msg = `Failure while searching for some allergens @ AthenaHealth`;
+      const msg = "Failure while searching for some allergens @ AthenaHealth";
       capture.message(msg, {
         extra: {
           ...additionalInfo,
@@ -1492,6 +1556,12 @@ class AthenaHealthApi {
         referenceBundle: referenceBundleToSave,
       });
     }
+    await this.dangerouslyAdjustEncountersInBundle({
+      cxId,
+      metriportPatientId,
+      athenaPatientId,
+      bundle,
+    });
     return bundle;
   }
 
@@ -1566,6 +1636,12 @@ class AthenaHealthApi {
       fetchResourcesFromEhr,
       useCachedBundle,
     });
+    await this.dangerouslyAdjustEncountersInBundle({
+      cxId,
+      metriportPatientId,
+      athenaPatientId,
+      bundle,
+    });
     return bundle;
   }
 
@@ -1602,6 +1678,33 @@ class AthenaHealthApi {
       throw new MetriportError(`Subscription failed`, undefined, additionalInfo);
     }
     return createdSubscriptionSuccessSchema.parse(createdSubscription);
+  }
+
+  async getAppointment({
+    cxId,
+    patientId,
+    appointmentId,
+  }: {
+    cxId: string;
+    patientId: string;
+    appointmentId: string;
+  }): Promise<Appointment> {
+    const { debug } = out(
+      `AthenaHealth getAppointment - cxId ${cxId} practiceId ${this.practiceId} appointmentId ${appointmentId}`
+    );
+    const appointmentUrl = `/chart/${this.practiceId}/appointment/${appointmentId}`;
+    const additionalInfo = { cxId, practiceId: this.practiceId, patientId, appointmentId };
+    const appointment = await this.makeRequest<Appointment>({
+      cxId,
+      patientId,
+      s3Path: "appointment",
+      method: "GET",
+      url: appointmentUrl,
+      schema: appointmentSchema,
+      additionalInfo,
+      debug,
+    });
+    return appointment;
   }
 
   async getAppointments({
@@ -1784,6 +1887,98 @@ class AthenaHealthApi {
     acc.push(...listOfItems);
     if (!nextUrl) return acc;
     return api.paginateListResponse(api, requester, nextUrl, acc);
+  }
+
+  private async dangerouslyAdjustEncountersInBundle({
+    cxId,
+    metriportPatientId,
+    athenaPatientId,
+    bundle,
+  }: {
+    cxId: string;
+    metriportPatientId: string;
+    athenaPatientId: string;
+    jobId?: string | undefined;
+    bundle: Bundle;
+  }): Promise<void> {
+    const { log } = out(
+      `AthenaHealth dangerouslyAdjustEncountersInBundle - cxId ${cxId} athenaPatientId ${athenaPatientId}`
+    );
+    if (!bundle.entry || bundle.entry.length < 1) return;
+    const processEncountersErrors: {
+      error: unknown;
+      cxId: string;
+      athenaPatientId: string;
+      encounterId: string;
+    }[] = [];
+    await executeAsynchronously(
+      bundle.entry,
+      async (entry: BundleEntry<Resource>) => {
+        if (!entry.resource || entry.resource.resourceType !== "Encounter" || !entry.resource.id)
+          return;
+        const encounterId = entry.resource.id;
+        try {
+          const encounter = await this.getEncounter({
+            cxId,
+            patientId: athenaPatientId,
+            encounterId,
+          });
+          const encounterSummary = await this.getEncounterSummary({
+            cxId,
+            patientId: athenaPatientId,
+            encounterId,
+          });
+          await createOrReplaceDocument({
+            ehr: EhrSources.athena,
+            cxId,
+            metriportPatientId,
+            ehrPatientId: athenaPatientId,
+            documentType: DocumentType.HTML,
+            payload: encounterSummary.summaryhtml,
+            resourceType: "Encounter",
+            resourceId: encounterId,
+          });
+          const appointment = await this.getAppointment({
+            cxId,
+            patientId: athenaPatientId,
+            appointmentId: encounter.appointmentid,
+          });
+          entry.resource.extension = [
+            ...(entry.resource.extension ?? []),
+            {
+              url: "http://hl7.org/fhir/StructureDefinition/encounter-appointment-type-id",
+              valueString: appointment.appointmenttypeid,
+            },
+          ];
+        } catch (error) {
+          if (error instanceof BadRequestError || error instanceof NotFoundError) return;
+          log(
+            `Failed to process encounter with encounterId ${encounterId}. Cause: ${errorToString(
+              error
+            )}`
+          );
+          processEncountersErrors.push({ error, cxId, athenaPatientId, encounterId });
+        }
+      },
+      {
+        numberOfParallelExecutions: parallelRequests,
+        delay: delayBetweenRequestBatches.asMilliseconds(),
+      }
+    );
+    if (processEncountersErrors.length > 0) {
+      const msg = "Failure while processing some encounters @ AthenaHealth";
+      capture.message(msg, {
+        extra: {
+          cxId,
+          athenaPatientId,
+          bundleEntryCount: bundle.entry.length,
+          processEncountersErrorsCount: processEncountersErrors.length,
+          errors: processEncountersErrors,
+          context: "athenahealth.dangerously-adjust-encounters-in-bundle",
+        },
+        level: "warning",
+      });
+    }
   }
 
   private formatDate(date: string | undefined): string | undefined {
