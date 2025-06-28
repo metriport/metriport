@@ -26,6 +26,15 @@ export type CodeSystemLookupParameters = {
   property?: string[];
 };
 
+export type ConceptMapTranslateParameters = {
+  code?: string;
+  id?: string;
+  system?: string;
+  version?: string;
+  coding?: Coding;
+  property?: string[];
+};
+
 export function parseParameters<T>(input: T | Parameters): T {
   if (
     input &&
@@ -73,7 +82,7 @@ export function parseInputParameters(
   }
 }
 
-export function parseBulkInputParameters(
+export function parseBulkLookupInputParameters(
   operation: OperationDefinition,
   parameters: Parameters[]
 ): CodeSystemLookupParameters[] {
@@ -323,7 +332,7 @@ export function isValidParameter(parameter: unknown): boolean {
   );
 }
 
-export function isValidParametersResource(obj: unknown): boolean {
+export function isValidLookupParametersResource(obj: unknown): boolean {
   if (typeof obj !== "object" || obj === null || !("resourceType" in obj)) return false;
 
   const { id, resourceType, parameter } = obj as Parameters;
@@ -337,4 +346,37 @@ export function isValidParametersResource(obj: unknown): boolean {
     parameter.some(p => isValidParameter(p) && p.name === "code");
 
   return hasValidParameters;
+}
+
+export function isValidTranslateParametersResource(obj: unknown): boolean {
+  if (typeof obj !== "object" || obj === null || !("resourceType" in obj)) return false;
+
+  const { id, resourceType, parameter } = obj as Parameters;
+  if (typeof id !== "string" || resourceType !== "Parameters" || !Array.isArray(parameter)) {
+    return false;
+  }
+
+  const hasValidParameters =
+    parameter.length > 0 &&
+    parameter.some(p => isValidParameter(p) && p.name === "system") &&
+    parameter.some(p => isValidParameter(p) && p.name === "code") &&
+    parameter.some(p => isValidParameter(p) && p.name === "targetsystem");
+
+  return hasValidParameters;
+}
+
+export function parseBulkTranslateInputParameters(
+  operation: OperationDefinition,
+  parameters: Parameters[]
+): CodeSystemLookupParameters[] {
+  if (!operation.parameter) return [];
+
+  const inputParameters = operation.parameter.filter(p => p.use === "in");
+
+  const params: CodeSystemLookupParameters[] = [];
+  parameters.forEach(param => {
+    if (!param.parameter) return;
+    params.push(parseParams(inputParameters, param.parameter, param.id));
+  });
+  return params;
 }
