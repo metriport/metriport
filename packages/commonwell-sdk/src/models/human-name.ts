@@ -1,9 +1,11 @@
+import { optionalStringPreprocess } from "@metriport/shared/util/zod";
 import { z } from "zod";
 import { periodSchema } from "./period";
 
-// The value set definition for use of a human name. This value set defines its own
-// terms in the system http://hl7.org/fhir/R4/valueset-name-use.html.
-// See https://specification.commonwellalliance.org/appendix/terminology-bindings#c9-name-use-codes
+/**
+ * The value set definition for use of a human name.
+ * @see https://hl7.org/fhir/R4/valueset-name-use.html
+ */
 export enum NameUseCodes {
   usual = "usual",
   official = "official",
@@ -12,9 +14,8 @@ export enum NameUseCodes {
   anonymous = "anonymous",
   old = "old",
   maiden = "maiden",
-  unspecified = "unspecified",
 }
-export const nameUseCodesSchema = z.enum(Object.keys(NameUseCodes) as [string, ...string[]]);
+export const nameUseCodesSchema = z.nativeEnum(NameUseCodes);
 
 // A name of a Person with text, parts and usage information.
 // Names may be changed or repudiated. People may have different names in different contexts.
@@ -26,13 +27,13 @@ export const nameUseCodesSchema = z.enum(Object.keys(NameUseCodes) as [string, .
 //
 // See: https://specification.commonwellalliance.org/services/rest-api-reference (8.4.10 HumanName)
 export const humanNameSchema = z.object({
-  use: nameUseCodesSchema.optional().nullable(),
-  text: z.string().optional().nullable(),
+  given: z.array(z.string()),
   family: z.array(z.string()),
-  given: z.array(z.string()).optional(),
-  prefix: z.string().or(z.array(z.string())).optional().nullable(),
-  suffix: z.string().or(z.array(z.string())).optional().nullable(),
-  period: periodSchema.optional().nullable(),
+  prefix: optionalStringPreprocess(z.string().or(z.array(z.string().nullish())).nullish()),
+  suffix: optionalStringPreprocess(z.string().or(z.array(z.string().nullish())).nullish()),
+  use: optionalStringPreprocess(nameUseCodesSchema.nullish()),
+  period: periodSchema.nullish(),
+  text: z.string().nullish(),
 });
 
 export type HumanName = z.infer<typeof humanNameSchema>;
