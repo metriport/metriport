@@ -15,6 +15,7 @@ export class TcmEncounterModel extends BaseModel<TcmEncounterModel> implements T
   declare dischargeTime: Date | null;
   declare clinicalInformation: Record<string, unknown>;
   declare freetextNote: CreationOptional<string>;
+  declare dischargeSummaryPath: string | undefined;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
     TcmEncounterModel.init(
@@ -61,6 +62,9 @@ export class TcmEncounterModel extends BaseModel<TcmEncounterModel> implements T
           type: DataTypes.TEXT,
           defaultValue: "",
           allowNull: false,
+        },
+        dischargeSummaryPath: {
+          type: DataTypes.TEXT,
         },
       },
       {
