@@ -3,9 +3,8 @@ import { encodeToCwPatientId } from "@metriport/commonwell-sdk/common/util";
 import { errorToString } from "@metriport/shared";
 import { cloneDeep, uniq } from "lodash";
 import { makePatient } from "../payloads";
-import { patientConnieCarin } from "../payloads/patient-carin";
-import { patientTracyCrane } from "../payloads/patient-crane";
-import { patientMaryLopez } from "../payloads/patient-mary";
+import { patientConnieCarin } from "../payloads/patient-connie";
+import { patientTracyCrane } from "../payloads/patient-tracy";
 import { getMetriportPatientIdOrFail, makeShortName } from "../util";
 
 /**
@@ -23,7 +22,7 @@ import { getMetriportPatientIdOrFail, makeShortName } from "../util";
 export async function patientManagement(commonWell: CommonWell) {
   const patientIds: string[] = [];
   try {
-    console.log(`>>> 1.1 Create Patient`);
+    console.log(`>>> 1.1 Create Patient --------------------------------`);
     const firstPatientCreate: Patient = makePatient({
       facilityId: commonWell.oid,
       demographics: patientTracyCrane,
@@ -47,7 +46,8 @@ export async function patientManagement(commonWell: CommonWell) {
     const firstPatientGet: Patient | null | undefined = resp_1_3.Patients[0]?.Patient;
     if (!firstPatientGet) throw new Error("No patient on response from getPatient");
 
-    console.log(`>>> 1.2: Update a Patient`);
+    console.log(`>>> 1.2: Update a Patient --------------------------------`);
+
     console.log(`>>> 1.2.1: Update a Patient`);
     const patientToUpdate = cloneDeep(firstPatientGet);
     const newGivenName = "Anna " + makeShortName();
@@ -78,7 +78,8 @@ export async function patientManagement(commonWell: CommonWell) {
       }
     }
 
-    console.log(`>>> 1.4 Merge Patient`);
+    console.log(`>>> 1.4 Merge Patient --------------------------------`);
+
     console.log(`>>> 1.4.1 Create 2nd Patient`);
     const patientToMerge = makePatient({
       facilityId: commonWell.oid,
@@ -131,12 +132,10 @@ export async function patientManagement(commonWell: CommonWell) {
       }
     }
 
-    console.log(`>>> 1.5 Delete Patient`);
-    console.log(`>>> 1.5.1 Create Patient`);
-    const patientToDelete = makePatient({
-      facilityId: commonWell.oid,
-      demographics: patientMaryLopez,
-    });
+    console.log(`>>> 1.5 Delete Patient --------------------------------`);
+
+    console.log(`>>> 1.5.1 Create Patient (random demographics)`);
+    const patientToDelete = makePatient({ facilityId: commonWell.oid });
     // console.log(`>>> >>>> PAYLOAD: ${JSON.stringify(patientToDelete, null, 2)}`);
     const resp_1_5_1 = await commonWell.createOrUpdatePatient(patientToDelete);
     console.log(">>> Transaction ID: " + commonWell.lastTransactionId);
@@ -162,19 +161,7 @@ export async function patientManagement(commonWell: CommonWell) {
       patientIds.splice(patientIds.indexOf(patientToDeleteId), 1);
     }
 
-    // TODO ENG-200 address this
-    // console.log(`>>> D3a: Search for a Patient`);
-    // const respD3a = await commonWell.searchPatient(
-    //   queryMeta,
-    //   firstElementOrFail(...somePatient.details.name[0].given, "given name"),
-    //   ...somePatient.details.name[0].family[0],
-    //   ...somePatient.details.birthDate,
-    //   ...somePatient.details.gender.code,
-    //   .details.address[0].zip
-    // );
-    // console.log(respD3a);
-
-    // 1.6 Patient Disclosure
+    // 1.6 Patient Disclosure --------------------------------
     // https://commonwellalliance.sharepoint.com/sites/CommonWellServicesPlatform/SitePages/Onboarding-Checklist.aspx
     // We're not implementing this on the cert runner since we have a process in place for patient opt-out.
 

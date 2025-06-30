@@ -1,9 +1,11 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { CommonWell } from "@metriport/commonwell-sdk";
 import { encodeToCwPatientId } from "@metriport/commonwell-sdk/common/util";
 import { errorToString, sleep } from "@metriport/shared";
 import { uniq } from "lodash";
 import { makePatient } from "../payloads";
-import { patientTracyCrane } from "../payloads/patient-crane";
+import { patientTracyCrane } from "../payloads/patient-tracy";
+import { createProbablePatientSina } from "../payloads/probable-patient-sina";
 import { getMetriportPatientIdOrFail } from "../util";
 
 /**
@@ -15,7 +17,8 @@ import { getMetriportPatientIdOrFail } from "../util";
 export async function linkManagement(commonWell: CommonWell) {
   const patientIds: string[] = [];
   try {
-    console.log(`>>> 2.1 Get Patient Links`);
+    console.log(`>>> 2.1 Get Patient Links --------------------------------`);
+
     console.log(`>>> 2.1.1 Create Patient`);
     const patientWithLinks = makePatient({
       facilityId: commonWell.oid,
@@ -38,8 +41,10 @@ export async function linkManagement(commonWell: CommonWell) {
       assignAuthority: commonWell.oid,
     });
 
-    // Had to add a delay in order to get links
-    await sleep(5_000);
+    // Had to add a delay in order to get links :/
+    let delayInSeconds = 5;
+    console.log(`waiting ${delayInSeconds} seconds...`);
+    await sleep(5 * 1_000);
 
     // Had to add this try/catch because the API is returning invalid data according to the spec (DOB in non-ISO format and pt's identifier type 'IAL2')
     try {
@@ -52,51 +57,92 @@ export async function linkManagement(commonWell: CommonWell) {
       console.log(`>>> 2.1.2 Got errors: ${errorToString(error)}`);
     }
 
-    // TODO ENG-200 address this
+    console.log(`>>> 2.2 Get Probable Links --------------------------------`);
 
-    // // C5: Levels of Link Assurance
-    // console.log(`>>> C5a : Link a Patient to a Person upgrading from LOLA 1 to LOLA 2.`);
-    // const person = await commonWell.enrollPerson(queryMeta, personStrongId);
-    // const personId = getPersonId(person);
-    // if (!personId) throw new Error("No personId on response from enrollPerson");
+    console.log(`>>> 2.2.1 Create Patient w/ probable match demo`);
+    const patientWithProbableLinks = makePatient({
+      facilityId: commonWell.oid,
+      demographics: createProbablePatientSina(),
+    });
+    const resp_2_2_1 = await commonWell.createOrUpdatePatient(patientWithProbableLinks);
+    console.log(">>> Transaction ID: " + commonWell.lastTransactionId);
+    const patientWithProbableLinksId = getMetriportPatientIdOrFail(
+      resp_2_2_1.Patients[0],
+      "patientWithLinks"
+    );
+    patientIds.push(patientWithProbableLinksId);
+    const patientWithProbableLinksIdEnconded = encodeToCwPatientId({
+      patientId: patientWithProbableLinksId,
+      assignAuthority: commonWell.oid,
+    });
+    const pt = await commonWell.getPatient(patientWithProbableLinksIdEnconded);
+    console.log(">>> 2.2.1 Get Patient Response: " + JSON.stringify(pt, null, 2));
 
-    // const respPatient = await commonWell.createPatient(
-    //   queryMeta,
-    //   makePatient({ facilityId: commonWell.oid })
-    // );
-    // const patientUri = respPatient._links?.self.href;
-    // if (!patientUri) throw new Error("No patientUri on response from registerPatient");
-    // const patientId = getIdTrailingSlash(respPatient);
-    // if (!patientId) throw new Error("No patientId on response from registerPatient");
-    // const referenceLink = respPatient._links?.self.href;
-    // if (!referenceLink) throw new Error("No referenceLink on response from registerPatient");
-    // const respC5a = await commonWell.addPatientLink(queryMeta, personId, referenceLink);
-    // console.log(respC5a);
-    // const patientLinkUri = respC5a._links?.self?.href;
-    // if (!patientLinkUri) throw new Error("No patientLinkUri on response from addPatientLink");
+    // Had to add a delay in order to get probable links :/
+    delayInSeconds = 5;
+    console.log(`waiting ${delayInSeconds} seconds...`);
+    await sleep(delayInSeconds * 1_000);
 
-    // console.log(`>>> C5b : Upgrade Patient link from LOLA 2 to LOLA 3 (with Strong ID).`);
-    // const respC5b = await commonWell.updatePatientLink(
-    //   queryMeta,
-    //   patientLinkUri,
-    //   patientUri,
-    //   identifier
-    // );
-    // console.log(respC5b);
+    // TODO ENG-200 Waiting on EllKay, the responses of the following endpoints are not deterministic
+    try {
+      console.log(`>>> 2.2.2 Get Probable Links for patient ${patientWithProbableLinksId}`);
+      const resp_2_2_2 = await commonWell.getProbableLinksById(patientWithProbableLinksIdEnconded);
+      console.log(">>> Transaction ID: " + commonWell.lastTransactionId);
+      // console.log(
+      //   `>>> 2.2.2 Response (${resp_2_2_2.Patients?.length}): ` +
+      //     JSON.stringify(resp_2_2_2, null, 2)
+      // );
+      console.log(`>>> 2.2.2 Response (${resp_2_2_2.Patients?.length})`);
+    } catch (error) {
+      console.log(">>> Transaction ID: " + commonWell.lastTransactionId);
+      console.log(`>>> 2.2.2 Got errors: ${errorToString(error)}`);
+    }
+    try {
+      console.log(`>>> 2.2.2' Get Probable Links for patient ${patientWithProbableLinksId}`);
+      const resp_2_2_2 = await commonWell.getProbableLinksById(patientWithProbableLinksIdEnconded);
+      console.log(">>> Transaction ID: " + commonWell.lastTransactionId);
+      console.log(
+        `>>> 2.2.2' Response (${resp_2_2_2.Patients?.length}): ` +
+          JSON.stringify(resp_2_2_2, null, 2)
+      );
+      // console.log(`>>> 2.2.2' Response (${resp_2_2_2.Patients?.length})`);
+    } catch (error) {
+      console.log(">>> Transaction ID: " + commonWell.lastTransactionId);
+      console.log(`>>> 2.2.2 Got errors: ${errorToString(error)}`);
+    }
+    try {
+      console.log(
+        `>>> 2.2.3 Get Probable Links for demographics of pt ${patientWithProbableLinksId}`
+      );
+      const resp_2_2_3 = await commonWell.getProbableLinksByDemographics({
+        firstName: patientWithProbableLinks.name[0].given[0]!,
+        lastName: patientWithProbableLinks.name[0].family[0]!,
+        dob: patientWithProbableLinks.birthDate!,
+        gender: patientWithProbableLinks.gender!,
+        zip: patientWithProbableLinks.address[0].postalCode!,
+      });
+      console.log(">>> Transaction ID: " + commonWell.lastTransactionId);
+      // console.log(
+      //   `>>> 2.2.3 Response (${resp_2_2_3.Patients?.length}): ` +
+      //     JSON.stringify(resp_2_2_3, null, 2)
+      // );
+      console.log(`>>> 2.2.3 Response (${resp_2_2_3.Patients?.length})`);
+    } catch (error) {
+      console.log(">>> Transaction ID: " + commonWell.lastTransactionId);
+      console.log(`>>> 2.2.3 Got errors: ${errorToString(error)}`);
+    }
 
-    // console.log(`>>> C5c : Downgrade Patient link from LOLA 3 to LOLA 2 (without Strong ID).`);
-    // const respC5c = await commonWell.updatePatientLink(queryMeta, patientLinkUri, patientUri);
-    // console.log(respC5c);
-    // const patientLinkFromUpdate = respC5c._links?.self.href;
-    // if (!patientLinkFromUpdate)
-    //   throw new Error("No patientLinkFromUpdate on response from updatePatientLink");
+    // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-    // console.log(`>>> C5a : Delete Patient/Person link that exists as LOLA 2.`);
-    // await commonWell.deletePatientLink(queryMeta, patientLinkFromUpdate);
-
-    // // Note: will be deleting patient & person created in this run
-    // await commonWell.deletePerson(queryMeta, personId);
-    // await commonWell.deletePatient(queryMeta, patientId);
+    // console.log(`>>> 2.3 Link Patient --------------------------------`);
+    // console.log(`>>> 2.4 Unlink Patient --------------------------------`);
+    // console.log(`>>> 2.5 Reset Link --------------------------------`);
   } catch (error) {
     console.log(`Error (txId ${commonWell.lastTransactionId}): ${errorToString(error)}`);
     throw error;

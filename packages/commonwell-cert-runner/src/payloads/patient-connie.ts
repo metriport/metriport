@@ -28,7 +28,7 @@ export const patientConnieCarin: Demographics = {
   identifier: [
     {
       use: "official",
-      type: "SSN",
+      type: "SB",
       value: "109887878",
       system: KnownIdentifierSystems.SSN,
     },

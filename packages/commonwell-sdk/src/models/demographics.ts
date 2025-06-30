@@ -1,3 +1,4 @@
+import { MetriportError } from "@metriport/shared";
 import { zodToLowerCase } from "@metriport/shared/util/zod";
 import { z } from "zod";
 import { addressSchema } from "./address";
@@ -11,8 +12,10 @@ export enum GenderCodes {
   F = "female",
   M = "male",
   O = "other",
-  /* Undifferentiated: the gender of a person could not be uniquely defined as male or female, such as hermaphrodite. */
-  UN = "UN",
+  U = "unknown",
+}
+export enum GenderCodesBackwardsCompatible {
+  UN = "UN", // undifferentiated, convert to O
   UNKNOWN = "unknown",
   UNK = "unknown",
 }
@@ -20,7 +23,9 @@ export const genderCodesSchema = z.preprocess(
   zodToLowerCase,
   z
     .nativeEnum(GenderCodes)
+    .or(z.nativeEnum(GenderCodesBackwardsCompatible))
     .or(z.enum(Object.keys(GenderCodes).map(k => k.toLowerCase()) as [string, ...string[]]))
+    .transform(coerceGender)
 );
 export type Gender = z.infer<typeof genderCodesSchema>;
 
@@ -30,11 +35,40 @@ export const demographicsSchema = z.object({
   identifier: z.array(identifierSchema).min(1),
   name: z.array(humanNameSchema).min(1),
   gender: genderCodesSchema.nullish(),
-  // TODO ENG-200 remove the isoDateTimeSchema option it's not in the spec
-  // birthDate: isoDateSchema.or(isoDateTimeSchema),
   birthDate: isoDateSchema,
   address: z.array(addressSchema).min(1),
   telecom: z.array(contactSchema).nullish(),
 });
 
 export type Demographics = z.infer<typeof demographicsSchema>;
+
+export function fhirGenderToCommonwell(gender: Gender): string {
+  switch (gender) {
+    case GenderCodes.F:
+      return "F";
+    case GenderCodes.M:
+      return "M";
+    case GenderCodes.O:
+    case GenderCodesBackwardsCompatible.UN:
+      return "O";
+    case GenderCodes.U:
+    case GenderCodesBackwardsCompatible.UNKNOWN:
+    case GenderCodesBackwardsCompatible.UNK:
+      return "U";
+    default:
+      throw new Error(`Unknown gender: ${gender}`);
+  }
+}
+
+export function coerceGender(value: string): string {
+  if (typeof value !== "string") throw new MetriportError(`Invalid gender`, undefined, { value });
+  const v = value.toLowerCase();
+
+  if (v === "f" || v === "female") return GenderCodes.F;
+  if (v === "m" || v === "male") return GenderCodes.M;
+  if (v === "o" || v === "other") return GenderCodes.O;
+  if (v === "un" || v === "undifferentiated") return GenderCodes.O;
+  if (v === "u" || v === "unk" || v === "unknown") return GenderCodes.U;
+
+  throw new MetriportError(`Invalid gender`, undefined, { value });
+}

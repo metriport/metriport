@@ -1,7 +1,6 @@
 import { z } from "zod";
 import { demographicsSchema } from "./demographics";
 import { facilitySchema } from "./facility";
-import { linkSchema, networkLinkSchema } from "./link";
 import { managingOrganizationSchema } from "./patient-organization";
 
 const statusSchema = z.object({
@@ -49,32 +48,6 @@ export const patientCollectionSchema = z.object({
   status: statusSchema.nullish(),
 });
 export type PatientCollection = z.infer<typeof patientCollectionSchema>;
-
-// TODO ENG-200 review
-export const patientSearchRespSchema = z.object({
-  message: z.string(),
-  _embedded: z.object({ patient: z.array(patientSchema) }),
-  _links: z.object({ self: linkSchema }),
-});
-export type PatientSearchResp = z.infer<typeof patientSearchRespSchema>;
-
-// TODO ENG-200 review
-export const patientNetworkLinkRespSchema = z.object({
-  _embedded: z.object({
-    networkLink: z.array(networkLinkSchema.nullish()).nullish(),
-  }),
-  _links: z.object({ self: linkSchema }).optional(),
-});
-export type PatientNetworkLinkResp = z.infer<typeof patientNetworkLinkRespSchema>;
-
-// TODO ENG-200 review
-export const patientLinkRespSchema = z.object({
-  _embedded: z.object({
-    patientLink: z.array(linkSchema).nullish(),
-  }),
-  _links: z.object({ self: linkSchema }).optional(),
-});
-export type PatientLinkResp = z.infer<typeof patientLinkRespSchema>;
 
 export const patientMergeResponseSchema = z.object({
   status: statusSchema.nullish(),
