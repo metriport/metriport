@@ -1544,17 +1544,21 @@ class CanvasApi {
       );
     }
     formattedObservation.effectiveDateTime = effectiveDateTime;
-    const unitAndValue = this.convertUnitAndValue(loincCoding.code, dataPoint.value, units);
-    if (!unitAndValue) {
+    const convertedUnitAndValue = this.convertUnitAndValue(
+      loincCoding.code,
+      dataPoint.value,
+      units
+    );
+    if (!convertedUnitAndValue) {
       throw new BadRequestError(
-        "No unit and value found for observation",
+        "No unit and value converted for observation",
         undefined,
         additionalInfo
       );
     }
     formattedObservation.valueQuantity = {
-      value: unitAndValue.value,
-      unit: unitAndValue.unit,
+      value: convertedUnitAndValue.value,
+      unit: convertedUnitAndValue.unit,
     };
     return formattedObservation;
   }

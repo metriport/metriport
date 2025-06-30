@@ -752,14 +752,15 @@ class AthenaHealthApi {
       throw new BadRequestError("No CPT code found for procedure", undefined, additionalInfo);
     }
     const performedDate = getProcedurePerformedDate(procedure);
-    if (!performedDate) {
+    const formattedPerformedDate = this.formatDate(performedDate);
+    if (!formattedPerformedDate) {
       throw new BadRequestError("No performed date found for procedure", undefined, additionalInfo);
     }
     const procedures = [
       {
         note: "Added via Metriport App",
         procedurecode: cptCode,
-        proceduredate: this.formatDate(performedDate),
+        proceduredate: formattedPerformedDate,
       },
     ];
     const data = {
@@ -844,7 +845,8 @@ class AthenaHealthApi {
       );
     }
     const observedDate = getObservationObservedDate(observation);
-    if (!observedDate) {
+    const formattedObservedDate = this.formatDate(observedDate);
+    if (!formattedObservedDate) {
       throw new BadRequestError(
         "No observed date found for observation",
         undefined,
@@ -867,7 +869,7 @@ class AthenaHealthApi {
     const data = {
       departmentid: this.stripDepartmentId(departmentId),
       analytes,
-      observationdate: this.formatDate(observedDate),
+      observationdate: formattedObservedDate,
       internalnote: loincCoding.display,
       documenttypeid: labResultDocumentId,
       autoclose: "true",
@@ -1109,7 +1111,7 @@ class AthenaHealthApi {
     }
     const loincCode = getObservationLoincCode(observation);
     if (!loincCode) {
-      throw new BadRequestError("No code found for observation", undefined, additionalInfo);
+      throw new BadRequestError("No LOINC code found for observation", undefined, additionalInfo);
     }
     const clinicalElementId = vitalSignCodesMap.get(loincCode);
     if (!clinicalElementId) {

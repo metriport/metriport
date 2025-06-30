@@ -32,7 +32,6 @@ import {
   subscriptionsSchema,
 } from "@metriport/shared/interface/external/ehr/elation/index";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
-import { getObservationUnits } from "@metriport/shared/medical/fhir/observations";
 import axios, { AxiosInstance } from "axios";
 import { z } from "zod";
 import { Config } from "../../../util/config";
@@ -61,6 +60,7 @@ import {
   paginateWaitTime,
   partitionEhrBundle,
   saveEhrReferenceBundle,
+  getObservationUnit,
 } from "../shared";
 
 const apiUrl = Config.getApiUrl();
@@ -782,7 +782,7 @@ class ElationApi {
         additionalInfo
       );
     }
-    const [units, value] = unitAndValue;
+    const [unit, value] = unitAndValue;
     const referenceRange = buildObservationReferenceRange(observation);
     const resultStatus = getObservationResultStatus(observation);
     if (!resultStatus) {
@@ -828,7 +828,7 @@ class ElationApi {
               value: value.toString(),
               ...(referenceRange?.low ? { reference_min: referenceRange.low.toString() } : {}),
               ...(referenceRange?.high ? { reference_max: referenceRange.high.toString() } : {}),
-              units,
+              units: unit,
               is_abnormal: isAbnormal ? "1" : "0",
               abnormal_flag: interpretation,
               test: {
@@ -849,13 +849,13 @@ class ElationApi {
   ): Record<string, { value: string }[]> {
     const loincCode = getObservationLoincCode(observation);
     if (!loincCode) {
-      throw new BadRequestError("No code found for observation", undefined, additionalInfo);
+      throw new BadRequestError("No LOINC code found for observation", undefined, additionalInfo);
     }
     const codeAndUnits = vitalSignCodesMap.get(loincCode);
     if (!codeAndUnits) {
-      throw new BadRequestError("No valid code found for LOINC code", undefined, additionalInfo);
+      throw new BadRequestError("No valid code found for LOINC coding", undefined, additionalInfo);
     }
-    const units = getObservationUnits(observation);
+    const units = getObservationUnit(observation);
     if (!units) {
       throw new BadRequestError("No units found for observation", undefined, additionalInfo);
     }
@@ -863,24 +863,20 @@ class ElationApi {
     if (!value) {
       throw new BadRequestError("No value found for observation", undefined, additionalInfo);
     }
-    const unitAndValue = this.convertUnitAndValue(loincCode, +value, units);
-    if (!unitAndValue) {
-      throw new BadRequestError(
-        "No unit and value found for observation",
-        undefined,
-        additionalInfo
-      );
+    const convertedValue = this.convertValue(loincCode, +value, units);
+    if (!convertedValue) {
+      throw new BadRequestError("No value converted for observation", undefined, additionalInfo);
     }
     return {
       [codeAndUnits.codeKey]: [
         {
-          value: unitAndValue.value.toString(),
+          value: convertedValue.toString(),
         },
       ],
     };
   }
 
-  private convertUnitAndValue(
+  private convertValue(
     loincCode: string,
     value: number,
     units: string
