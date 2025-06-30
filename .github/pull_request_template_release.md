@@ -4,8 +4,8 @@ Issues:
 
 ### Dependencies
 
-- Upstream: _[this PR points to another PR or depends on its release]_
-- Downstream: _[PRs that depend on this one, either point to this or can only be released after this one is released]_
+- Upstream:
+- Downstream:
 
 ### Description
 
