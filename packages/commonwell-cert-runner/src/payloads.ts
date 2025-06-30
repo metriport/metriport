@@ -1,6 +1,9 @@
+import { faker } from "@faker-js/faker";
 import {
+  AddressUseCodes,
   CertificatePurpose,
   Demographics,
+  GenderCodes,
   Identifier,
   NameUseCodes,
   Organization,
@@ -15,11 +18,6 @@ import {
   clientId,
   clientSecret,
   docAuthUrl,
-  docPatientDateOfBirth,
-  docPatientFirstName,
-  docPatientGender,
-  docPatientLastName,
-  docPatientZip,
   docUrl,
   memberCertificateString,
   memberName,
@@ -30,7 +28,6 @@ import {
   orgGatewayAuthorizationServerEndpoint,
   orgGatewayEndpoint,
 } from "./env";
-import { patientTracyCrane } from "./payloads/patient-crane";
 import { getCertificateContent, makeShortName } from "./util";
 
 const ORGANIZATION = "5";
@@ -61,58 +58,44 @@ export function makePatientId({
   return `${facility}.${PATIENT}.${patient}`;
 }
 
-// TODO ENG-200 address this
-// PERSON
 export const caDriversLicenseUri = `${CW_ID_PREFIX}2.16.840.1.113883.4.3.6`;
-export const driversLicenseId = nanoid.nanoid();
 
-export const identifier: Identifier = {
-  use: "secondary",
-  value: driversLicenseId,
-  system: caDriversLicenseUri,
-  period: {
-    start: "1996-04-20T00:00:00Z",
-  },
-};
-
-// TODO ENG-200 address this
-// const secondaryDetails = {
-//   address: [
-//     {
-//       use: AddressUseCodes.home,
-//       zip: "94111",
-//       state: "CA",
-//       line: ["755 Sansome Street"],
-//       city: "San Francisco",
-//     },
-//   ],
-//   name: [
-//     {
-//       use: NameUseCodes.usual,
-//       given: ["Mary"],
-//       family: ["Jane"],
-//     },
-//   ],
-//   gender: {
-//     code: "F",
-//   },
-//   birthDate: "2000-04-20T00:00:00Z",
-// };
-
-// export const personStrongId: Person = {
-//   details: {
-//     ...patientTracyCraneTest,
-//     identifier: [identifier],
-//   },
-// };
-
-// export const personNoStrongId: Person = {
-//   details: secondaryDetails,
-// };
+export function makeDemographics(): Omit<Demographics, "identifier"> {
+  const shouldAddDriversLicense = Math.random() < 0.5;
+  const driversLicense: Identifier | undefined = shouldAddDriversLicense
+    ? {
+        type: "DL",
+        value: makeId(),
+        system: caDriversLicenseUri,
+        use: "secondary",
+      }
+    : undefined;
+  return {
+    address: [
+      {
+        use: AddressUseCodes.home,
+        postalCode: faker.location.zipCode(),
+        state: faker.location.state(),
+        line: [faker.location.streetAddress()],
+        city: faker.location.city(),
+      },
+    ],
+    name: [
+      {
+        use: NameUseCodes.usual,
+        given: [faker.person.firstName()],
+        family: [faker.person.lastName()],
+      },
+    ],
+    gender: faker.helpers.arrayElement([GenderCodes.M, GenderCodes.F]),
+    birthDate: faker.date.birthdate().toISOString().split("T")[0],
+    ...(driversLicense ? { identifier: [driversLicense] } : {}),
+  };
+}
 
 export function makePatient({
   facilityId = makeFacilityId(),
-  demographics = patientTracyCrane,
+  demographics = makeDemographics(),
 }: {
   facilityId?: string;
   demographics?: Omit<Demographics, "identifier"> & Partial<Pick<Demographics, "identifier">>;
@@ -138,58 +121,7 @@ export function makePatient({
   };
 }
 
-export type PersonData = {
-  firstName?: string;
-  lastName?: string;
-  dob?: string;
-  gender?: string;
-  zip?: string;
-};
-type PersonDataOnOrg = PersonData & { facilityId?: string };
-
-export const makeDocPatient = ({
-  firstName = docPatientFirstName,
-  lastName = docPatientLastName,
-  dob = docPatientDateOfBirth,
-  gender = docPatientGender,
-  zip = docPatientZip,
-  facilityId = makeFacilityId(),
-}: PersonDataOnOrg = {}) => ({
-  identifier: makePatient({ facilityId }).identifier,
-  details: {
-    address: [
-      {
-        use: NameUseCodes.usual,
-        zip,
-        country: "USA",
-      },
-    ],
-    name: [
-      {
-        use: NameUseCodes.usual,
-        family: [lastName],
-        given: [firstName],
-      },
-    ],
-    gender: {
-      code: gender,
-    },
-    birthDate: dob,
-  },
-});
-export const makeDocPerson = (init?: PersonDataOnOrg) => {
-  const docPatient = makeDocPatient(init);
-  return {
-    ...docPatient,
-    details: {
-      ...docPatient.details,
-      identifier: [],
-    },
-  };
-};
-
-// ORGANIZATION
-const shortName = makeShortName();
+const shortName = "z_" + makeShortName();
 
 export function makeOrganization(suffixId?: string): OrganizationWithNetworkInfo {
   const orgId = makeOrgId(suffixId);

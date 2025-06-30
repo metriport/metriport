@@ -19,7 +19,7 @@ export function optionalString(zodSchema: ZodString) {
   return zodSchema.or(z.string().optional()).transform(emptyStringToUndefined);
 }
 
-export function optionalStringPreprocess(zodSchema: ZodType = z.string().optional()) {
+export function optionalStringPreprocess<T>(zodSchema: ZodType<T>) {
   return z.preprocess(arg => {
     if (typeof arg === "string" && ["", "undefined", "null"].includes(arg.trim())) return undefined;
     else return arg;

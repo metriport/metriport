@@ -8,6 +8,8 @@ const organizationBaseSchema = z.object({
   displayName: z.string(),
   memberName: z.string(),
   type: z.string(),
+  npiType1: z.string().nullish(), // Physicians
+  npiType2: z.string().nullish(), // Organization
   patientIdAssignAuthority: z.string(),
   sendingFacility: z
     .object({
