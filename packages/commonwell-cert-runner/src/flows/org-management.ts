@@ -176,7 +176,7 @@ export async function getOneOrg(
   console.log(`>>> Get one org`);
   const respGetOneOrg = await commonWell.getOneOrg(orgId);
   console.log(">>> Transaction ID: " + commonWell.lastTransactionId);
-  console.log(">>> Response: " + JSON.stringify(respGetOneOrg, null, 2));
+  // console.log(">>> Response: " + JSON.stringify(respGetOneOrg, null, 2));
   if (!respGetOneOrg) throw new Error("No org on response from getOneOrg");
   return respGetOneOrg;
 }
