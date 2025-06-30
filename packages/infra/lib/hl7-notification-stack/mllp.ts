@@ -162,6 +162,7 @@ export class MllpStack extends cdk.NestedStack {
         HL7_INCOMING_MESSAGE_BUCKET_NAME: incomingHl7NotificationBucket.bucketName,
         HL7_NOTIFICATION_QUEUE_URL: notificationWebhookSenderQueue.url,
         HIE_TIMEZONE_DICTIONARY: JSON.stringify(createHieTimezoneMap(hieConfigs)),
+        ...(config.sentryDSN ? { SENTRY_DSN: config.sentryDSN } : {}),
         ...(props.version ? { RELEASE_SHA: props.version } : undefined),
       },
       portMappings: [{ containerPort: MLLP_DEFAULT_PORT }],
