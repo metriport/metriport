@@ -54,7 +54,6 @@ export interface DocumentQueryParams {
   };
 }
 
-// TODO ENG-200 Review the remaining methods here
 export interface CommonWellAPI {
   get lastTransactionId(): string | undefined;
 
@@ -62,16 +61,6 @@ export interface CommonWellAPI {
 
   getPatient(params: GetPatientParams, options?: BaseOptions): Promise<PatientCollection>;
   getPatient(id: string, options?: BaseOptions): Promise<PatientCollection>;
-
-  // searchPatient(
-  //   meta: RequestMetadata,
-  //   fname: string,
-  //   lname: string,
-  //   dob: string,
-  //   gender?: string,
-  //   zip?: string
-  // ): Promise<PatientSearchResp>;
-  // updatePatient(meta: RequestMetadata, patient: Patient, id: string): Promise<Patient>;
 
   mergePatients(
     {
@@ -84,9 +73,30 @@ export interface CommonWellAPI {
     options?: BaseOptions
   ): Promise<PatientMergeResponse>;
 
-  // getNetworkLinks(meta: RequestMetadata, patientId: string): Promise<PatientNetworkLinkResp>;
-
   deletePatient(id: string, options?: BaseOptions): Promise<void>;
+
+  getPatientLinksByPatientId(
+    patientId: string,
+    options?: BaseOptions
+  ): Promise<PatientLinkSearchResp>;
+
+  getProbableLinksById(patientId: string, options?: BaseOptions): Promise<PatientLinkSearchResp>;
+  getProbableLinksByDemographics(
+    params: {
+      firstName: string;
+      lastName: string;
+      dob: string;
+      gender: string;
+      zip: string;
+    },
+    options?: BaseOptions
+  ): Promise<PatientLinkSearchResp>;
+
+  // TODO ENG-200 Implement this
+  // linkPatients(patientId: string, linkId: string, options?: BaseOptions): Promise<void>;
+
+  // TODO ENG-200 Implement this
+  // unlinkPatients(patientId: string, linkId: string, options?: BaseOptions): Promise<void>;
 
   // TODO ENG-200 Choose one
   queryDocuments(
@@ -101,30 +111,4 @@ export interface CommonWellAPI {
     outputStream: stream.Writable,
     options?: BaseOptions
   ): Promise<void>;
-
-  // upgradeOrDowngradeNetworkLink(
-  //   href: string,
-  //   proxy?: PatientLinkProxy, options?: BaseOptions
-  // ): Promise<NetworkLink>;
-  // updatePatientLink(
-  //   patientLinkUri: string,
-  //   patientUri?: string,
-  //   identifier?: Identifier, options?: BaseOptions
-  // ): Promise<PatientLink>;
-
-  getPatientLinksByPatientId(
-    patientId: string,
-    options?: BaseOptions
-  ): Promise<PatientLinkSearchResp>;
-
-  // getPatientLink(
-  //   personId: string,
-  //   patientId: string, options?: BaseOptions
-  // ): Promise<PatientLinkResp>;
-
-  // TODO ENG-200 Implement this
-  deletePatientLink(patientLinkUri: string, options?: BaseOptions): Promise<void>;
-
-  // TODO ENG-200 Implement this
-  resetPatientLink(personId: string, patientId: string, options?: BaseOptions): Promise<void>;
 }

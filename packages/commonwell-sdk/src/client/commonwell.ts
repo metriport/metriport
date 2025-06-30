@@ -11,13 +11,12 @@ import {
   convertPatientIdToSubjectId,
   encodeToCwPatientId,
 } from "../common/util";
+import { fhirGenderToCommonwell } from "../models/demographics";
 import { DocumentQueryResponse, documentQueryResponseSchema } from "../models/document";
 import {
   Patient,
   PatientCollection,
   patientCollectionSchema,
-  PatientLinkResp,
-  patientLinkRespSchema,
   PatientLinkSearchResp,
   patientLinkSearchRespSchema,
   PatientMergeResponse,
@@ -150,8 +149,8 @@ export class CommonWell implements CommonWellAPI {
   async createOrUpdatePatient(patient: Patient, options?: BaseOptions): Promise<PatientCollection> {
     const headers = await this.buildQueryHeaders(options?.meta);
     const url = buildPatientEndpoint(this.oid);
-    const resp = await this.api.post(url, patient, { headers });
-    // console.log(`>>> RESPONSE RAW: ${JSON.stringify(resp.data, null, 2)}`);
+    const normalizedPatient = normalizePatient(patient);
+    const resp = await this.api.post(url, normalizedPatient, { headers });
     return patientCollectionSchema.parse(resp.data);
   }
 
@@ -173,6 +172,7 @@ export class CommonWell implements CommonWellAPI {
    * @returns The patient collection containing the patient in the first position.
    */
   async getPatient(id: string, options?: BaseOptions): Promise<PatientCollection>;
+
   async getPatient(
     idOrParams: string | GetPatientParams,
     options?: BaseOptions
@@ -195,42 +195,28 @@ export class CommonWell implements CommonWellAPI {
     const headers = await this.buildQueryHeaders(options?.meta);
     const url = buildPatientEndpoint(this.oid, patientId);
     const resp = await this.executeWithRetriesOn500IfEnabled(() => this.api.get(url, { headers }));
-    // console.log(`>>> RESPONSE RAW: ${JSON.stringify(resp.data, null, 2)}`);
     return patientCollectionSchema.parse(resp.data);
   }
 
-  // TODO ENG-200 See "10.2.3 Patient Match"
   /**
-   * Searches for a patient based on params.
+   * Deletes a patient.
    *
-   * @param meta    Metadata about the request.
-   * @param fname   Patient's first name.
-   * @param lname   Patient's last name.
-   * @param dob     Patient's date of birth.
-   * @param gender  Patient's gender.
-   * @param zip     Patient's zip code.
-   * @returns
+   * @param patientId The patient to be deleted.
+   * @param options Optional parameters.
+   * @param options.meta Metadata about the request. Defaults to the data used to initialize the client.
    */
-  // async searchPatient(
-  //   meta: RequestMetadata,
-  //   fname: string,
-  //   lname: string,
-  //   dob: string,
-  //   gender?: string,
-  //   zip?: string
-  // ): Promise<PatientSearchResp> {
-  //   const headers = await this.buildQueryHeaders(meta);
-  //   const resp = await this.executeWithRetriesOn500(() =>
-  //     this.api.get(`${CommonWell.ORG_ENDPOINT}/${this.oid}/patient`, {
-  //       headers,
-  //       params: { fname, lname, dob, gender, zip },
-  //     })
-  //   );
-  //   return patientSearchRespSchema.parse(resp.data);
-  // }
+  async deletePatient(patientId: string, options?: BaseOptions): Promise<void> {
+    const headers = await this.buildQueryHeaders(options?.meta);
+    const url = buildPatientEndpoint(this.oid, patientId);
+    await this.executeWithRetriesOn500IfEnabled(() => this.api.delete(url, { headers }));
+  }
+
+  //--------------------------------------------------------------------------------------------
+  // Link Management
+  //--------------------------------------------------------------------------------------------
 
   /**
-   * Merges patients.
+   * Merges two patients into one.
    *
    * @param nonSurvivingPatientId The local Patient ID of the non-surviving Patient Record (This patient gets replaced).
    * @param survivingPatientId The patient ID of the patient that will replace the non surviving patient
@@ -266,46 +252,165 @@ export class CommonWell implements CommonWellAPI {
         }
       )
     );
-    // console.log(`>>> RESPONSE RAW: ${JSON.stringify(resp.data, null, 2)}`);
     return patientMergeResponseSchema.parse(resp.data);
   }
 
   /**
-   * Get Patient's Network Links.
+   * Returns the links the patient has with other patients.
    *
-   * @param meta        Metadata about the request.
-   * @param patientId   Patient for which to get the network links.
-   * @returns
+   * An Edge System can search and request Patient Links by a local patient identifier. The result of the query will
+   * include local and remote patient's links that are autolinked by the rules engine or manually linked.
+   *
+   * The links returned are confirmed links of LOLA 2 or higher.
+   *
+   * @param meta                Metadata about the request.
+   * @param patientId            The person id to be link to a patient.
+   * @returns Response with list of links to Patients
    */
-  // async getNetworkLinks(meta: RequestMetadata, patientId: string): Promise<PatientNetworkLinkResp> {
-  //   const headers = await this.buildQueryHeaders(meta);
-  //   // Error handling: https://github.com/metriport/metriport-internal/issues/322
-  //   try {
-  //     const resp = await this.executeWithRetriesOn500(() =>
-  //       this.api.get(`${CommonWell.ORG_ENDPOINT}/${this.oid}/patient/${patientId}/networkLink`, {
-  //         headers,
-  //       })
-  //     );
-  //     return patientNetworkLinkRespSchema.parse(resp.data);
-  //     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  //   } catch (err: any) {
-  //     // when there's no NetworkLink, CW's API return 412
-  //     if (err.response?.status === 412) return { _embedded: { networkLink: [] } };
-  //     throw err;
-  //   }
-  // }
+  async getPatientLinksByPatientId(
+    patientId: string,
+    options?: BaseOptions
+  ): Promise<PatientLinkSearchResp> {
+    const headers = await this.buildQueryHeaders(options?.meta);
+    const url = buildPatientLinkEndpoint(this.oid, patientId);
+    const resp = await this.executeWithRetriesOn500IfEnabled(() => this.api.get(url, { headers }));
+    // TODO ENG-200: Remove this
+    console.log(`>>> RESPONSE RAW: ${JSON.stringify(resp.data, null, 2)}`);
+    return patientLinkSearchRespSchema.parse(resp.data);
+  }
 
   /**
-   * Deletes a patient.
+   * Returns the potential links the patient has. Those are links the CommonWell MPI was not
+   * confident enough to confirm (LOLA2+), but could potentially be a match in case some of
+   * the patient's demographics have changed.
    *
-   * @param patientId The patient to be deleted.
+   * An Edge System can request probable patient links by a local patient identifier. MPI will identify probable
+   * patients based on MPI match scores that are within a certain threshold range but are not auto matched.
+   * Probable matches are determined by probabilistic algorithms. This will enable Edge Systems to confirm
+   * additional patient matches across other organizations. On confirmation, the patient will be matched to a
+   * person. Probable links need to be manually linked to the local patient before documents can be requested.
+   *
+   * The links returned are LOLA 1.
+   *
+   * @param patientId The ID of the patient to get probable links for.
+   * @returns Response with list of probable (LOLA1) links to other Patients
+   */
+  async getProbableLinksById(
+    patientId: string,
+    options?: BaseOptions
+  ): Promise<PatientLinkSearchResp> {
+    const headers = await this.buildQueryHeaders(options?.meta);
+    const url = buildProbableLinkEndpoint(this.oid, patientId);
+    const resp = await this.executeWithRetriesOn500IfEnabled(() => this.api.get(url, { headers }));
+    return patientLinkSearchRespSchema.parse(resp.data);
+  }
+
+  /**
+   * Returns the potential links for a patient with the provided demographics.
+   *
+   * An Edge System can request probable patient links by a local patient identifier. MPI will identify probable
+   * patients based on MPI match scores that are within a certain threshold range but are not auto matched.
+   * Probable matches are determined by probabilistic algorithms. This will enable Edge Systems to confirm
+   * additional patient matches across other organizations. On confirmation, the patient will be matched to a
+   * person. Probable links need to be manually linked to the local patient before documents can be requested.
+   *
+   * The links returned are LOLA 1.
+   *
+   * @param firstName The first name of the patient.
+   * @param lastName The last name of the patient.
+   * @param dob The date of birth of the patient.
+   * @param gender The gender of the patient.
+   * @param zip The zip code of the patient.
+   * @param options Optional parameters.
+   * @param options.meta Metadata about the request. Defaults to the data used to initialize the client.
+   * @returns Response with list of probable (LOLA1) links to existing Patients
+   */
+  async getProbableLinksByDemographics(
+    {
+      firstName,
+      lastName,
+      dob,
+      gender,
+      zip,
+    }: {
+      firstName: string;
+      lastName: string;
+      dob: string;
+      gender: string;
+      zip: string;
+    },
+    options?: BaseOptions
+  ): Promise<PatientLinkSearchResp> {
+    const headers = await this.buildQueryHeaders(options?.meta);
+    const params = new URLSearchParams();
+    params.append("fname", firstName);
+    params.append("lname", lastName);
+    params.append("dob", dob);
+    params.append("gender", fhirGenderToCommonwell(gender));
+    params.append("zip", zip);
+    const url = buildProbableLinkEndpoint(this.oid);
+    const resp = await this.executeWithRetriesOn500IfEnabled(() =>
+      this.api.get(url + `?${params.toString()}`, { headers })
+    );
+    return patientLinkSearchRespSchema.parse(resp.data);
+  }
+
+  /**
+   * An Edge System reviews the probable matches. An Edge System can link remote patient(s) if these patients are
+   * the same as local patient.
+   *
+   * Use the response from Get Probable Links to find the LinkID.
+   *
+   * Remote patients will be linked with the local patient and now considered as a manual confirmed LOLA 2 link.
+   *
+   * @param patientId The ID of the patient to unlink.
+   * @param linkId The ID of the link to unlink.
    * @param options Optional parameters.
    * @param options.meta Metadata about the request. Defaults to the data used to initialize the client.
    */
-  async deletePatient(patientId: string, options?: BaseOptions): Promise<void> {
-    const headers = await this.buildQueryHeaders(options?.meta);
-    const url = buildPatientEndpoint(this.oid, patientId);
-    await this.executeWithRetriesOn500IfEnabled(() => this.api.delete(url, { headers }));
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async linkPatients(patientId: string, linkId: string, options?: BaseOptions): Promise<void> {
+    // const headers = await this.buildQueryHeaders(options?.meta);
+    // await this.executeWithRetriesOn500IfEnabled(() =>
+    //   this.api.put(
+    //     `/v1/person/${personId}/patientLink/${patientId}/reset`,
+    //     {},
+    //     {
+    //       headers,
+    //     }
+    //   )
+    // );
+    // return;
+  }
+
+  // TODO ENG-200: Implement this
+  /**
+   * After reviewing remote patient links for their local patient, an Edge System can unlink a remote patient that
+   * does not belong in the Patient collection and remove the existing LOLA2 network link.
+   *
+   * Use Get Patient Links to find the LinkID.
+   *
+   * Patient Links that are manually unlinked will no longer be autolinked to the same patient in the future by the
+   * matching algorithm.
+   *
+   * @param patientId The ID of the patient to unlink.
+   * @param linkId The ID of the link to unlink.
+   * @param options Optional parameters.
+   * @param options.meta Metadata about the request. Defaults to the data used to initialize the client.
+   */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async unlinkPatients(patientId: string, linkId: string, options?: BaseOptions): Promise<void> {
+    // const headers = await this.buildQueryHeaders(options?.meta);
+    // await this.executeWithRetriesOn500IfEnabled(() =>
+    //   this.api.put(
+    //     `/v1/person/${personId}/patientLink/${patientId}/reset`,
+    //     {},
+    //     {
+    //       headers,
+    //     }
+    //   )
+    // );
+    // return;
   }
 
   //--------------------------------------------------------------------------------------------
@@ -387,189 +492,8 @@ export class CommonWell implements CommonWellAPI {
   }
 
   //--------------------------------------------------------------------------------------------
-  // Link Management
+  // Private methods
   //--------------------------------------------------------------------------------------------
-
-  // TODO ENG-200 address this
-  /**
-   * Upgrade or downgrade network link.
-   * See: https://specification.commonwellalliance.org/services/record-locator-service/protocol-operations-record-locator-service#8772-upgrading-a-network-link
-   *
-   * @param meta    Metadata about the request.
-   * @param href    The href of network link to be upgraded or downgraded
-   * @param proxy   The proxy for the patient link action.
-   * @returns
-   */
-  // async upgradeOrDowngradeNetworkLink(
-  //   href: string,
-  //   proxy?: PatientLinkProxy,
-  //   options?: BaseOptions
-  // ): Promise<NetworkLink> {
-  //   const meta = options?.meta ?? buildOrganizationQueryMeta(this.orgName, this.npi);
-  //   const headers = await this.buildQueryHeaders(meta);
-  //   const resp = await this.executeWithRetriesOn500(() =>
-  //     this.api.post(href, { proxy }, { headers })
-  //   );
-  //   return networkLinkSchema.parse(resp.data);
-  // }
-
-  // TODO ENG-200 address this
-  /**
-   * Update a patient link.
-   * See: https://specification.commonwellalliance.org/services/patient-identity-and-linking/protocol-operations#8722-updating-a-patient-link
-   *
-   * @param meta              Metadata about the request.
-   * @param patientLinkUri    The uri of patient link to be updated
-   * @param patientUri        The uri of patient that belongs to this link
-   * @param identifier        Add identifier information to the patient link
-   * @returns
-   */
-  // async updatePatientLink(
-  //   meta: RequestMetadata,
-  //   patientLinkUri: string,
-  //   patientUri?: string,
-  //   identifier?: Identifier
-  // ): Promise<PatientLink> {
-  //   const headers = await this.buildQueryHeaders(meta);
-  //   const resp = await this.executeWithRetriesOn500(() =>
-  //     this.api.post(
-  //       patientLinkUri,
-  //       {
-  //         patient: patientUri,
-  //         identifier: identifier,
-  //       },
-  //       {
-  //         headers,
-  //       }
-  //     )
-  //   );
-
-  //   return patientLinkSchema.parse(resp.data);
-  // }
-
-  /**
-   * An Edge System can search and request Patient Links by a local patient identifier. The result of the query will
-   * include local and remote patient's links that are autolinked by the rules engine or manually linked.
-   * The links returned are confirmed links of LOLA 2 or higher.
-   * @see: https://www.commonwellalliance.org/wp-content/uploads/2025/06/Services-Specification-v4.3-Approved-2025.06.03-1.pdf
-   *
-   * @param meta                Metadata about the request.
-   * @param patientId            The person id to be link to a patient.
-   * @param [limitToOrg=true]   Whether to limit the search to the current organization (optional).
-   * @returns Response with list of links to Patients
-   */
-  async getPatientLinksByPatientId(
-    patientId: string,
-    options?: BaseOptions
-  ): Promise<PatientLinkSearchResp> {
-    const headers = await this.buildQueryHeaders(options?.meta);
-    const url = buildPatientLinkEndpoint(this.oid, patientId);
-    const resp = await this.executeWithRetriesOn500IfEnabled(() => this.api.get(url, { headers }));
-    // console.log(`>>> RESPONSE RAW: ${JSON.stringify(resp.data, null, 2)}`);
-    return patientLinkSearchRespSchema.parse(resp.data);
-  }
-  // TODO Can this be used to search??
-  // TODO Can this be used to search??
-  // TODO Can this be used to search??
-  /**
-   * OrgId = Unique Organization OID
-   * fname = Patient's First Name
-   * lname = Patient's Last Name
-   * dob = Patient's Date of Birth in yyyy-MM-dd format
-   * gender = Patient's Gender [possible values: M (Male); F (Female); U (Unknown); O (Other)]
-   * zip = Patient's ZIP code
-   * ***Fname, Lname, DOB, and zip are required parameters to get links for a specific patient.
-   */
-  // async getPatientLinksByPatientDemo(
-  //   meta: RequestMetadata,
-  //   patientId: string
-  //   // limitToOrg = true
-  // ): Promise<PatientLinkSearchResp> {
-  //   const headers = await this.buildQueryHeaders(meta);
-  //   const url = CommonWell.getPatientEndpoint(this.oid);
-  //   const resp = await this.executeWithRetriesOn500(() =>
-  //     this.api.get(`${url}/${patientId}`, { headers })
-  //   );
-  //   const resp = await this.executeWithRetriesOn500(() =>
-  //     this.api.get(`${CommonWell.PERSON_ENDPOINT}/${patientId}/patientLink`, {
-  //       headers,
-  //       params: {
-  //         ...(limitToOrg ? { orgId: this.oid } : undefined),
-  //       },
-  //     })
-  //   );
-  //   return patientLinkSearchRespSchema.parse(resp.data);
-  // }
-
-  /**
-   * Gets a patient link.
-   * See: https://specification.commonwellalliance.org/services/patient-identity-and-linking/protocol-operations#8723-getting-a-patient-link
-   *
-   * @param meta              Metadata about the request.
-   * @param personId          Person that is linked
-   * @param patientId         Patient that is linked
-   * @returns
-   */
-  async getPatientLink(
-    personId: string,
-    patientId: string,
-    options?: BaseOptions
-  ): Promise<PatientLinkResp> {
-    const headers = await this.buildQueryHeaders(options?.meta);
-    const resp = await this.executeWithRetriesOn500IfEnabled(() =>
-      this.api.get(`/v1/person/${personId}/patientLink/${patientId}/`, {
-        headers,
-      })
-    );
-
-    return patientLinkRespSchema.parse(resp.data);
-  }
-
-  /**
-   * Deletes a patient link - the link will be moved to LOLA 0 and cannot be used again.
-   * See: https://specification.commonwellalliance.org/services/patient-identity-and-linking/protocol-operations#8724-deleting-a-patient-link
-   *
-   * WARNING: This shouldn't be used except under the explicit request of a person.
-   *
-   * @param meta              Metadata about the request.
-   * @param patientLinkUri    The uri of patient link to be deleted
-   * @returns
-   */
-  async deletePatientLink(patientLinkUri: string, options?: BaseOptions): Promise<void> {
-    const headers = await this.buildQueryHeaders(options?.meta);
-    await this.executeWithRetriesOn500IfEnabled(() =>
-      this.api.post(patientLinkUri, {}, { headers })
-    );
-    return;
-  }
-
-  /**
-   * Resets a patient link - the link will be moved to LOLA 1 and can be relinked later.
-   * See: https://specification.commonwellalliance.org/services/patient-identity-and-linking/protocol-operations#8725-resetting-a-patient-link
-   *
-   * @param meta              Metadata about the request.
-   * @param personId          Person that is linked
-   * @param patientId         Patient that is linked
-   * @returns
-   */
-  async resetPatientLink(
-    personId: string,
-    patientId: string,
-    options?: BaseOptions
-  ): Promise<void> {
-    const headers = await this.buildQueryHeaders(options?.meta);
-    await this.executeWithRetriesOn500IfEnabled(() =>
-      this.api.put(
-        `/v1/person/${personId}/patientLink/${patientId}/reset`,
-        {},
-        {
-          headers,
-        }
-      )
-    );
-
-    return;
-  }
 
   // TODO ENG-200 need to add DOA here?
   private async buildQueryHeaders(
@@ -620,6 +544,10 @@ function buildPatientLinkEndpoint(orgId: string, patientId: string) {
   return `${buildOrgEndpoint(orgId)}/PatientLink/${patientId}`;
 }
 
+function buildProbableLinkEndpoint(orgId: string, patientId?: string) {
+  return `${buildOrgEndpoint(orgId)}/ProbableLink${patientId ? `/${patientId}` : ""}`;
+}
+
 function buildPatientMergeEndpoint(orgId: string, nonSurvivingPatientId: string) {
   return `${buildPatientEndpoint(orgId, nonSurvivingPatientId)}/Merge`;
 }
@@ -635,4 +563,11 @@ function buildDocumentQueryUrl(subjectId: string, params: DocumentQueryParams): 
   if (params.date?.start) urlParams.append("date.start", params.date.start);
   if (params.date?.end) urlParams.append("date.end", params.date.end);
   return `/v2/R4/DocumentReference?${urlParams.toString()}`;
+}
+
+function normalizePatient(patient: Patient): Patient {
+  return {
+    ...patient,
+    ...(patient.gender ? { gender: fhirGenderToCommonwell(patient.gender) } : {}),
+  };
 }

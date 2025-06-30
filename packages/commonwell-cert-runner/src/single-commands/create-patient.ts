@@ -4,7 +4,7 @@ dotenv.config();
 import { Demographics, Patient } from "@metriport/commonwell-sdk";
 import { initApiForExistingOrg } from "../flows/org-management";
 import { makePatient } from "../payloads";
-import { patientTracyCrane } from "../payloads/patient-crane";
+import { patientTracyCrane } from "../payloads/patient-tracy";
 import { getMetriportPatientIdOrFail } from "../util";
 
 // Set one of the patient demographics from "../payloads" here
