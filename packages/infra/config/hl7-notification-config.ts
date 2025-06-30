@@ -14,6 +14,7 @@ export interface Hl7NotificationConfig {
   };
   vpnConfigs: Hl7NotificationVpnConfig[];
   mllpServer: {
+    sentryDSN: string;
     fargateCpu: number;
     fargateMemoryLimitMiB: number;
     fargateTaskCountMin: number;
