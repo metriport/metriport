@@ -99,7 +99,6 @@ import {
   patientSearchSchema,
 } from "@metriport/shared/interface/external/ehr/patient";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
-import { getObservationUnits } from "@metriport/shared/medical";
 import axios, { AxiosInstance } from "axios";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -142,6 +141,7 @@ import {
   paginateWaitTime,
   partitionEhrBundle,
   saveEhrReferenceBundle,
+  getObservationUnit,
 } from "../shared";
 
 dayjs.extend(duration);
@@ -174,16 +174,17 @@ const problemStatusesMap = new Map<string, string>();
 problemStatusesMap.set("relapse", "CHRONIC");
 problemStatusesMap.set("recurrence", "CHRONIC");
 
-const vitalSignCodesMapAthena = new Map<string, string>();
-vitalSignCodesMapAthena.set("8310-5", "VITALS.TEMPERATURE");
-vitalSignCodesMapAthena.set("8867-4", "VITALS.HEARTRATE");
-vitalSignCodesMapAthena.set("9279-1", "VITALS.RESPIRATIONRATE");
-vitalSignCodesMapAthena.set("2708-6", "VITALS.INHALEDO2CONCENTRATION");
-vitalSignCodesMapAthena.set("8462-4", "VITALS.BLOODPRESSURE.DIASTOLIC");
-vitalSignCodesMapAthena.set("8480-6", "VITALS.BLOODPRESSURE.SYSTOLIC");
-vitalSignCodesMapAthena.set("29463-7", "VITALS.WEIGHT");
-vitalSignCodesMapAthena.set("8302-2", "VITALS.HEIGHT");
-vitalSignCodesMapAthena.set("39156-5", "VITALS.BMI");
+const vitalSignCodesMap = new Map<string, string>();
+vitalSignCodesMap.set("8310-5", "VITALS.TEMPERATURE");
+vitalSignCodesMap.set("8867-4", "VITALS.HEARTRATE");
+vitalSignCodesMap.set("9279-1", "VITALS.RESPIRATIONRATE");
+vitalSignCodesMap.set("2708-6", "VITALS.INHALEDO2CONCENTRATION");
+vitalSignCodesMap.set("59408-5", "VITALS.INHALEDO2CONCENTRATION");
+vitalSignCodesMap.set("8462-4", "VITALS.BLOODPRESSURE.DIASTOLIC");
+vitalSignCodesMap.set("8480-6", "VITALS.BLOODPRESSURE.SYSTOLIC");
+vitalSignCodesMap.set("29463-7", "VITALS.WEIGHT");
+vitalSignCodesMap.set("8302-2", "VITALS.HEIGHT");
+vitalSignCodesMap.set("39156-5", "VITALS.BMI");
 
 const clinicalElementsThatRequireUnits = ["VITALS.WEIGHT", "VITALS.HEIGHT", "VITALS.TEMPERATURE"];
 
@@ -1110,14 +1111,14 @@ class AthenaHealthApi {
     if (!loincCode) {
       throw new BadRequestError("No code found for observation", undefined, additionalInfo);
     }
-    const clinicalElementId = vitalSignCodesMapAthena.get(loincCode);
+    const clinicalElementId = vitalSignCodesMap.get(loincCode);
     if (!clinicalElementId) {
-      throw new BadRequestError("No clinical element id found for observation", undefined, {
+      throw new BadRequestError("No clinical element id found for LOINC code", undefined, {
         ...additionalInfo,
         loincCode,
       });
     }
-    const units = getObservationUnits(observation);
+    const units = getObservationUnit(observation);
     if (!units) {
       throw new BadRequestError("No units found for observation", undefined, {
         ...additionalInfo,

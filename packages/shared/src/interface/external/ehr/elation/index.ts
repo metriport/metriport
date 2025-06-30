@@ -6,3 +6,4 @@ export * from "./subscription";
 export * from "./cx-mapping";
 export * from "./event";
 export * from "./ccda";
+export * from "./vtial";

@@ -10,13 +10,15 @@ import { BundleType } from "../../../../bundle/bundle-shared";
 import { createOrReplaceBundle } from "../../../../bundle/command/create-or-replace-bundle";
 import { fetchBundle, FetchBundleParams } from "../../../../bundle/command/fetch-bundle";
 import { buildEhrContributeResourceDiffBundlesHandler } from "../contribute/ehr-contribute-resource-diff-bundles-factory";
+import { buildEhrWriteBackResourceDiffBundlesHandler } from "../write-back/ehr-write-back-resource-diff-bundles-factory";
 import {
   ComputeResourceDiffBundlesRequest,
   EhrComputeResourceDiffBundlesHandler,
 } from "./ehr-compute-resource-diff-bundles";
 
 export class EhrComputeResourceDiffBundlesDirect implements EhrComputeResourceDiffBundlesHandler {
-  private readonly next = buildEhrContributeResourceDiffBundlesHandler();
+  private readonly nextContribute = buildEhrContributeResourceDiffBundlesHandler();
+  private readonly nextWriteBack = buildEhrWriteBackResourceDiffBundlesHandler();
 
   constructor(private readonly waitTimeInMillis: number = 0) {}
 
@@ -123,7 +125,10 @@ export class EhrComputeResourceDiffBundlesDirect implements EhrComputeResourceDi
             })
           : undefined,
       ]);
-      await this.next.contributeResourceDiffBundles(payload);
+      await Promise.all([
+        this.nextContribute.contributeResourceDiffBundles(payload),
+        this.nextWriteBack.writeBackResourceDiffBundles(payload),
+      ]);
     } catch (error) {
       if (reportError) {
         await setJobEntryStatus({

@@ -1,4 +1,4 @@
-import { Bundle, Condition, ResourceType } from "@medplum/fhirtypes";
+import { Bundle, Condition, Observation, ResourceType } from "@medplum/fhirtypes";
 import {
   BadRequestError,
   EhrFhirResourceBundle,
@@ -21,6 +21,8 @@ import {
   createdProblemSchema,
   CreatedSubscription,
   createdSubscriptionSchema,
+  CreatedVital,
+  createdVitalSchema,
   elationClientJwtTokenResponseSchema,
   Metadata,
   Patient,
@@ -30,13 +32,16 @@ import {
   subscriptionsSchema,
 } from "@metriport/shared/interface/external/ehr/elation/index";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
+import { getObservationUnits } from "@metriport/shared/medical/fhir/observations";
 import axios, { AxiosInstance } from "axios";
 import { z } from "zod";
 import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
+import { uuidv7 } from "../../../util/uuid-v7";
 import { createOrReplaceCcda } from "../bundle/command/create-or-replace-ccda";
 import {
   ApiConfig,
+  buildObservationReferenceRange,
   convertEhrBundleToValidEhrStrictBundle,
   createDataParams,
   fetchEhrBundleUsingCache,
@@ -44,6 +49,13 @@ import {
   getConditionSnomedCode,
   getConditionStartDate,
   getConditionStatus,
+  getObservationInterpretation,
+  getObservationLoincCode,
+  getObservationLoincCoding,
+  getObservationObservedDate,
+  getObservationResultStatus,
+  getObservationUnitAndValue,
+  getObservationValue,
   makeRequest,
   MakeRequestParamsInEhr,
   paginateWaitTime,
@@ -58,6 +70,7 @@ interface ElationApiConfig extends ApiConfig {
 }
 
 const elationDateFormat = "YYYY-MM-DD";
+const elationDateTimeFormat = "YYYY-MM-DDTHH:mm:ssZ";
 const maxSubscribeAttempts = 3;
 const defaultCountOrLimit = 1000;
 
@@ -75,6 +88,18 @@ problemStatusesMap.set("remission", "Controlled");
 problemStatusesMap.set("resolved", "Resolved");
 problemStatusesMap.set("inactive", "Resolved");
 
+const vitalSignCodesMap = new Map<string, { codeKey: string; units: string }>();
+vitalSignCodesMap.set("8310-5", { codeKey: "temperature", units: "degf" });
+vitalSignCodesMap.set("8867-4", { codeKey: "hr", units: "bpm" });
+vitalSignCodesMap.set("9279-1", { codeKey: "rr", units: "bpm" });
+vitalSignCodesMap.set("2708-6", { codeKey: "oxygen", units: "%" });
+vitalSignCodesMap.set("59408-5", { codeKey: "oxygen", units: "%" });
+vitalSignCodesMap.set("8462-4", { codeKey: "bp", units: "mmHg" });
+vitalSignCodesMap.set("8480-6", { codeKey: "bp", units: "mmHg" });
+vitalSignCodesMap.set("29463-7", { codeKey: "weight", units: "lb_av" });
+vitalSignCodesMap.set("8302-2", { codeKey: "height", units: "in_i" });
+vitalSignCodesMap.set("56086-2", { codeKey: "wc", units: "cm" });
+
 const ccdaSectionMap = new Map<ResourceType, string>();
 ccdaSectionMap.set("AllergyIntolerance", "allergies");
 ccdaSectionMap.set("Condition", "problems");
@@ -85,6 +110,34 @@ ccdaSectionMap.set("MedicationRequest", "medications");
 ccdaSectionMap.set("MedicationStatement", "medications");
 ccdaSectionMap.set("Observation", "vitals");
 ccdaSectionMap.set("Procedure", "procedures");
+
+type ElationLab = {
+  report_type: string;
+  document_date: string;
+  reported_date: string;
+  chart_date: string;
+  grids: {
+    accession_number: string;
+    resulted_date: string;
+    collected_date: string;
+    status: string;
+    note: string;
+    results: {
+      status: string;
+      value: string;
+      reference_min?: string;
+      reference_max?: string;
+      units: string;
+      is_abnormal?: string;
+      abnormal_flag?: string;
+      test: {
+        name: string;
+        loinc: string;
+      };
+      test_category: string;
+    }[];
+  }[];
+};
 
 export function isSupportedCcdaSectionResource(resourceType: string): boolean {
   return ccdaSectionMap.has(resourceType as ResourceType);
@@ -123,6 +176,11 @@ export function isSupportedElationReferenceResource(
 ): resourceType is SupportedElationReferenceResource {
   return supportedElationReferenceResources.includes(resourceType as ResourceType);
 }
+
+const gToLbs = 0.00220462;
+const kgToLbs = 2.20462;
+const cmToInches = 0.393701;
+const inchesToCm = 2.54;
 
 class ElationApi {
   private axiosInstance: AxiosInstance;
@@ -315,7 +373,7 @@ class ElationApi {
     const problem = await this.makeRequest<CreatedProblem>({
       cxId,
       patientId,
-      s3Path: "problem",
+      s3Path: this.createWriteBackPath("problem", condition.id),
       method: "POST",
       url: problemUrl,
       data,
@@ -325,6 +383,85 @@ class ElationApi {
       debug,
     });
     return problem;
+  }
+
+  async createLab({
+    cxId,
+    patientId,
+    observation,
+  }: {
+    cxId: string;
+    patientId: string;
+    observation: Observation;
+  }): Promise<CreatedVital> {
+    const { debug } = out(
+      `Elation createVital - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
+    );
+    const reportsUrl = `/reports/`;
+    const additionalInfo = {
+      cxId,
+      practiceId: this.practiceId,
+      patientId,
+      observationId: observation.id,
+    };
+    const data = {
+      patient: patientId,
+      practiceId: this.practiceId,
+      physician: 1,
+      ...this.formatLab(observation, additionalInfo),
+    };
+    const vital = await this.makeRequest<CreatedVital>({
+      cxId,
+      patientId,
+      s3Path: this.createWriteBackPath("lab", observation.id),
+      method: "POST",
+      url: reportsUrl,
+      data,
+      schema: createdVitalSchema,
+      additionalInfo,
+      headers: { "Content-Type": "application/json" },
+      debug,
+    });
+    return vital;
+  }
+
+  async createVital({
+    cxId,
+    patientId,
+    observation,
+  }: {
+    cxId: string;
+    patientId: string;
+    observation: Observation;
+  }): Promise<CreatedVital> {
+    const { debug } = out(
+      `Elation createVital - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
+    );
+    const vitalsUrl = `/vitals/`;
+    const additionalInfo = {
+      cxId,
+      practiceId: this.practiceId,
+      patientId,
+      observationId: observation.id,
+    };
+    const data = {
+      patient: patientId,
+      practiceId: this.practiceId,
+      ...this.formatVital(observation, additionalInfo),
+    };
+    const vital = await this.makeRequest<CreatedVital>({
+      cxId,
+      patientId,
+      s3Path: this.createWriteBackPath("vital", observation.id),
+      method: "POST",
+      url: vitalsUrl,
+      data,
+      schema: createdVitalSchema,
+      additionalInfo,
+      headers: { "Content-Type": "application/json" },
+      debug,
+    });
+    return vital;
   }
 
   async getBundleByResourceType({
@@ -613,6 +750,190 @@ class ElationApi {
 
   private formatDate(date: string | undefined): string | undefined {
     return formatDate(date, elationDateFormat);
+  }
+
+  private formatDateTime(date: string | undefined): string | undefined {
+    return formatDate(date, elationDateTimeFormat);
+  }
+
+  private createWriteBackPath(resourceType: string, resourceId: string | undefined): string {
+    return `write-back/${resourceType}/${resourceId ?? "unknown"}`;
+  }
+
+  private formatLab(
+    observation: Observation,
+    additionalInfo: Record<string, string | undefined>
+  ): ElationLab {
+    const loincCoding = getObservationLoincCoding(observation);
+    if (!loincCoding) {
+      throw new BadRequestError("No LOINC coding found for observation", undefined, additionalInfo);
+    }
+    if (!loincCoding.code) {
+      throw new BadRequestError("No valid code found for LOINC coding", undefined, additionalInfo);
+    }
+    if (!loincCoding.display) {
+      throw new BadRequestError("No display found for LOINC coding", undefined, additionalInfo);
+    }
+    const unitAndValue = getObservationUnitAndValue(observation);
+    if (!unitAndValue) {
+      throw new BadRequestError(
+        "No unit and value found for observation",
+        undefined,
+        additionalInfo
+      );
+    }
+    const [units, value] = unitAndValue;
+    const referenceRange = buildObservationReferenceRange(observation);
+    const resultStatus = getObservationResultStatus(observation);
+    if (!resultStatus) {
+      throw new BadRequestError(
+        "No result status found for observation",
+        undefined,
+        additionalInfo
+      );
+    }
+    const observedDate = getObservationObservedDate(observation);
+    const formattedObservedDate = this.formatDateTime(observedDate);
+    if (!formattedObservedDate) {
+      throw new BadRequestError(
+        "No observed date found for observation",
+        undefined,
+        additionalInfo
+      );
+    }
+    const interpretation = getObservationInterpretation(observation, value);
+    if (!interpretation) {
+      throw new BadRequestError(
+        "No interpretation found for observation",
+        undefined,
+        additionalInfo
+      );
+    }
+    const isAbnormal = interpretation !== "normal";
+    return {
+      report_type: "Lab",
+      document_date: formattedObservedDate,
+      reported_date: formattedObservedDate,
+      chart_date: this.formatDateTime(buildDayjs().toISOString()) ?? "",
+      grids: [
+        {
+          accession_number: uuidv7(),
+          resulted_date: formattedObservedDate,
+          collected_date: formattedObservedDate,
+          status: resultStatus,
+          note: "Added via Metriport App",
+          results: [
+            {
+              status: resultStatus,
+              value: value.toString(),
+              ...(referenceRange?.low ? { reference_min: referenceRange.low.toString() } : {}),
+              ...(referenceRange?.high ? { reference_max: referenceRange.high.toString() } : {}),
+              units,
+              is_abnormal: isAbnormal ? "1" : "0",
+              abnormal_flag: interpretation,
+              test: {
+                name: loincCoding.display,
+                loinc: loincCoding.code,
+              },
+              test_category: loincCoding.display,
+            },
+          ],
+        },
+      ],
+    };
+  }
+
+  private formatVital(
+    observation: Observation,
+    additionalInfo: Record<string, string | undefined>
+  ): Record<string, { value: string }[]> {
+    const loincCode = getObservationLoincCode(observation);
+    if (!loincCode) {
+      throw new BadRequestError("No code found for observation", undefined, additionalInfo);
+    }
+    const codeAndUnits = vitalSignCodesMap.get(loincCode);
+    if (!codeAndUnits) {
+      throw new BadRequestError("No valid code found for LOINC code", undefined, additionalInfo);
+    }
+    const units = getObservationUnits(observation);
+    if (!units) {
+      throw new BadRequestError("No units found for observation", undefined, additionalInfo);
+    }
+    const value = getObservationValue(observation);
+    if (!value) {
+      throw new BadRequestError("No value found for observation", undefined, additionalInfo);
+    }
+    const unitAndValue = this.convertUnitAndValue(loincCode, +value, units);
+    if (!unitAndValue) {
+      throw new BadRequestError(
+        "No unit and value found for observation",
+        undefined,
+        additionalInfo
+      );
+    }
+    return {
+      [codeAndUnits.codeKey]: [
+        {
+          value: unitAndValue.value.toString(),
+        },
+      ],
+    };
+  }
+
+  private convertUnitAndValue(
+    loincCode: string,
+    value: number,
+    units: string
+  ): { value: number | string } | undefined {
+    const { units: targetUnit } = vitalSignCodesMap.get(loincCode) ?? {};
+    if (!targetUnit) return undefined;
+    if (units === targetUnit) return { value };
+    if (targetUnit === "lb_av") {
+      if (units === "kg" || units === "kilogram" || units === "kilograms")
+        return { value: this.convertKgToLbs(value) }; // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
+      if (units === "g" || units === "gram" || units === "grams")
+        return { value: this.convertGramsToLbs(value) }; // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
+      if (units === "lb_av" || units.includes("pound")) return { value }; // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
+    }
+    if (targetUnit === "in_i") {
+      if (units === "cm" || units === "centimeter") return { value: this.convertCmToInches(value) }; // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
+      if (units === "in_i" || units.includes("inch")) return { value }; // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
+    }
+    if (targetUnit === "cm") {
+      if (units === "cm" || units === "centimeter") return { value }; // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
+      if (units === "in_i" || units.includes("inch"))
+        return { value: this.convertInchesToCm(value) }; // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
+    }
+    if (targetUnit === "degf") {
+      if (units === "degf" || units === "f" || units.includes("fahrenheit")) return { value }; // https://hl7.org/fhir/R4/valueset-ucum-bodytemp.html
+      if (units === "cel" || units === "c" || units.includes("celsius"))
+        return { value: this.convertCelciusToFahrenheit(value) }; // https://hl7.org/fhir/R4/valueset-ucum-bodytemp.html}
+    }
+    throw new BadRequestError("Unknown units", undefined, {
+      units,
+      loincCode,
+      value,
+    });
+  }
+
+  private convertGramsToLbs(value: number): number {
+    return value * gToLbs;
+  }
+
+  private convertKgToLbs(value: number): number {
+    return value * kgToLbs;
+  }
+
+  private convertCmToInches(value: number): number {
+    return value * cmToInches;
+  }
+
+  private convertInchesToCm(value: number): number {
+    return value * inchesToCm;
+  }
+
+  private convertCelciusToFahrenheit(value: number): number {
+    return value * (9 / 5) + 32;
   }
 }
 

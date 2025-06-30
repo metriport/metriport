@@ -43,7 +43,6 @@ import {
   practitionerSchema,
 } from "@metriport/shared/interface/external/ehr/practitioner";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
-import { getObservationUnits } from "@metriport/shared/medical";
 import axios, { AxiosInstance } from "axios";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -52,7 +51,7 @@ import { z } from "zod";
 import { ObservationStatus } from "../../../fhir-deduplication/resources/observation-shared";
 import { fetchCodingCodeOrDisplayOrSystem } from "../../../fhir-deduplication/shared";
 import { executeAsynchronously } from "../../../util/concurrency";
-import { log, out } from "../../../util/log";
+import { out } from "../../../util/log";
 import { capture } from "../../../util/notifications";
 import {
   ApiConfig,
@@ -72,6 +71,7 @@ import {
   getMedicationStatementStartDate,
   getObservationLoincCoding,
   getObservationResultStatus,
+  getObservationUnit,
   GroupedVitals,
   makeRequest,
   MakeRequestParamsInEhr,
@@ -143,16 +143,16 @@ problemStatusesMap.set("remission", "resolved");
 problemStatusesMap.set("resolved", "resolved");
 problemStatusesMap.set("inactive", "resolved");
 
-const vitalSignCodesMapCanvas = new Map<string, string>();
-vitalSignCodesMapCanvas.set("85354-9", "mmHg");
-vitalSignCodesMapCanvas.set("29463-7", "kg");
-vitalSignCodesMapCanvas.set("8302-2", "cm");
-vitalSignCodesMapCanvas.set("8867-4", "bpm");
-vitalSignCodesMapCanvas.set("8310-5", "degf");
-vitalSignCodesMapCanvas.set("2708-6", "%");
-vitalSignCodesMapCanvas.set("59408-5", "%");
-vitalSignCodesMapCanvas.set("9279-1", "bpm");
-vitalSignCodesMapCanvas.set("56086-2", "cm");
+const vitalSignCodesMap = new Map<string, string>();
+vitalSignCodesMap.set("8310-5", "degf");
+vitalSignCodesMap.set("8867-4", "bpm");
+vitalSignCodesMap.set("9279-1", "bpm");
+vitalSignCodesMap.set("2708-6", "%");
+vitalSignCodesMap.set("59408-5", "%");
+vitalSignCodesMap.set("85354-9", "mmHg");
+vitalSignCodesMap.set("29463-7", "kg");
+vitalSignCodesMap.set("8302-2", "cm");
+vitalSignCodesMap.set("56086-2", "cm");
 
 const medicationStatementStatuses = ["active", "entered-in-error", "stopped"];
 const immunizationStatuses = ["completed", "entered-in-error", "not-done"];
@@ -602,7 +602,7 @@ class CanvasApi {
     practitionerId: string;
     medicationWithRefs: MedicationWithRefs;
   }): Promise<void> {
-    const { debug } = out(
+    const { log, debug } = out(
       `Canvas createMedicationStatements - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} practitionerId ${practitionerId}`
     );
     const medicationStatementUrl = `/MedicationStatement`;
@@ -855,7 +855,7 @@ class CanvasApi {
     practitionerId: string;
     vitals: GroupedVitals;
   }): Promise<void> {
-    const { debug } = out(
+    const { log, debug } = out(
       `Canvas createVitals - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} practitionerId ${practitionerId}`
     );
     const observationsUrl = `/Observation`;
@@ -1513,9 +1513,9 @@ class CanvasApi {
     };
     const loincCoding = getObservationLoincCoding(observation);
     if (!loincCoding) {
-      throw new BadRequestError("No LOINC code found for observation", undefined, additionalInfo);
+      throw new BadRequestError("No LOINC coding found for observation", undefined, additionalInfo);
     }
-    if (!loincCoding.code || !vitalSignCodesMapCanvas.get(loincCoding.code)) {
+    if (!loincCoding.code || !vitalSignCodesMap.get(loincCoding.code)) {
       throw new BadRequestError("No valid code found for LOINC coding", undefined, additionalInfo);
     }
     if (!loincCoding.display) {
@@ -1526,7 +1526,7 @@ class CanvasApi {
         { code: loincCoding.code, system: "http://loinc.org", display: loincCoding.display },
       ],
     };
-    const units = getObservationUnits(observation);
+    const units = getObservationUnit(observation);
     if (!units) {
       throw new BadRequestError("No units found for observation", undefined, additionalInfo);
     }
@@ -1579,7 +1579,7 @@ class CanvasApi {
     value: number,
     units: string
   ): { value: number; unit: string } | undefined {
-    const targetUnit = vitalSignCodesMapCanvas.get(loincCode);
+    const targetUnit = vitalSignCodesMap.get(loincCode);
     if (!targetUnit) return undefined;
     const unitParam = { unit: targetUnit };
     if (units === targetUnit) return { ...unitParam, value };

@@ -321,6 +321,20 @@ export type DataPoint = {
   bp?: BloodPressure | undefined;
 };
 
+export function isVital(observation: Observation): boolean {
+  const isVital = observation.category?.find(
+    ext => ext.coding?.[0]?.code?.toLowerCase() === "vital-signs"
+  );
+  return isVital !== undefined;
+}
+
+export function isLab(observation: Observation): boolean {
+  const isLab = observation.category?.find(
+    ext => ext.coding?.[0]?.code?.toLowerCase() === "laboratory"
+  );
+  return isLab !== undefined;
+}
+
 export function getMedicationRxnormCoding(medication: Medication): Coding | undefined {
   const code = medication.code;
   const rxnormCoding = code?.coding?.find(coding => {
@@ -406,7 +420,7 @@ export function getImmunizationAdministerDate(immunization: Immunization): strin
   return parsedDate.toISOString();
 }
 
-function getObservationUnit(observation: Observation): string | undefined {
+export function getObservationUnit(observation: Observation): string | undefined {
   const firstReference = observation.referenceRange?.[0];
   return (
     observation.valueQuantity?.unit?.toString() ??
@@ -416,7 +430,7 @@ function getObservationUnit(observation: Observation): string | undefined {
 }
 
 const blacklistedValues = ["see below", "see text", "see comments", "see note"];
-function getObservationValue(observation: Observation): number | string | undefined {
+export function getObservationValue(observation: Observation): number | string | undefined {
   let value: number | string | undefined;
   if (observation.valueQuantity) {
     value = observation.valueQuantity.value;
@@ -437,7 +451,9 @@ type ReferenceRange = {
   unit: string | undefined;
   text?: string | undefined;
 };
-function buildObservationReferenceRange(observation: Observation): ReferenceRange | undefined {
+export function buildObservationReferenceRange(
+  observation: Observation
+): ReferenceRange | undefined {
   const firstReference = observation.referenceRange?.[0];
   if (!firstReference) return undefined;
   const range: ReferenceRange = {
