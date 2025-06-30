@@ -1,10 +1,13 @@
+import { isXmlRedownloadFeatureFlagEnabledForCx } from "@metriport/core/command/feature-flags/domain-ffs";
 import { createDocumentFilePath } from "@metriport/core/domain/document/filename";
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { DocumentReferenceWithId } from "@metriport/core/external/fhir/document/document-reference";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { errorToString } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
+import { XML_APP_MIME_TYPE, XML_TXT_MIME_TYPE } from "@metriport/core/util/mime";
 import { capture } from "@metriport/core/util/notifications";
+import { uniqBy } from "lodash";
 import { DocumentReferenceWithMetriportId } from "../../../external/carequality/document/shared";
 import { Config } from "../../../shared/config";
 
@@ -29,8 +32,23 @@ export async function getNonExistentDocRefs(
     f => !fhirDocRefs.find(d => d.id === f.metriportId)
   );
 
-  const docsToDownload = nonExistingDocRefs.concat(foundOnStorageButNotOnFHIR);
+  let docsToDownload = nonExistingDocRefs.concat(foundOnStorageButNotOnFHIR);
 
+  const isForceRedownloadEnabled = await isXmlRedownloadFeatureFlagEnabledForCx(cxId);
+  if (isForceRedownloadEnabled) {
+    const { log } = out(`CQ getNonExistentDocRefs - patient ${patientId}`);
+    log(
+      `Force redownload is enabled for CX. There's currently ${docsToDownload.length} documents to download`
+    );
+    const isEligibleForRedownload = existingDocRefs.filter(
+      d => d.contentType === XML_APP_MIME_TYPE || d.contentType === XML_TXT_MIME_TYPE
+    );
+    log(`Found ${isEligibleForRedownload.length} XMLs that we're gonna redownload.`);
+
+    docsToDownload.push(...isEligibleForRedownload);
+    docsToDownload = uniqBy(docsToDownload, d => d.metriportId);
+    log(`Including redownload, there's now ${docsToDownload.length} documents to download`);
+  }
   return docsToDownload;
 }
 
@@ -40,15 +58,15 @@ type ObservedDocRefs = {
 };
 
 async function checkDocRefsExistInS3(
-  documents: DocumentReferenceWithMetriportId[],
+  newDocRefs: DocumentReferenceWithMetriportId[],
   patientId: string,
   cxId: string
 ): Promise<ObservedDocRefs> {
   const { log } = out(`CQ checkDocRefsExistInS3 - patient ${patientId}`);
-  const successfulDocs: { docId: string; exists: boolean }[] = [];
+  const existingDocs: { docId: string; exists: boolean }[] = [];
 
   await executeAsynchronously(
-    documents,
+    newDocRefs,
     async doc => {
       try {
         const fileName = createDocumentFilePath(
@@ -60,7 +78,7 @@ async function checkDocRefsExistInS3(
 
         const { exists } = await s3Utils.getFileInfoFromS3(fileName, s3BucketName);
 
-        successfulDocs.push({
+        existingDocs.push({
           docId: doc.metriportId,
           exists,
         });
@@ -87,8 +105,8 @@ async function checkDocRefsExistInS3(
     nonExistingDocRefs: [],
   };
 
-  for (const doc of documents) {
-    const matchingDoc = successfulDocs.find(succDoc => succDoc.docId === doc.metriportId);
+  for (const doc of newDocRefs) {
+    const matchingDoc = existingDocs.find(existingDoc => existingDoc.docId === doc.metriportId);
 
     if (matchingDoc && matchingDoc.exists) {
       observedDocRefs.existingDocRefs.push(doc);

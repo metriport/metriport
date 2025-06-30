@@ -2,6 +2,7 @@ import { deleteConsolidated } from "@metriport/core/command/consolidated/consoli
 import {
   isCarequalityEnabled,
   isCommonwellEnabled,
+  isXmlRedownloadFeatureFlagEnabledForCx,
 } from "@metriport/core/command/feature-flags/domain-ffs";
 import {
   ConvertResult,
@@ -122,6 +123,7 @@ export async function queryDocumentsAcrossHIEs({
 
   let triggeredDocumentQuery = false;
 
+  const isForceRedownloadEnabled = override ?? (await isXmlRedownloadFeatureFlagEnabledForCx(cxId));
   /**
    * This is likely safe to remove based on the usage of this function with the `cqManagingOrgName` param.
    * But because it touches a core flow and we don't have time to review/test it now, leaving as is.
@@ -135,7 +137,7 @@ export async function queryDocumentsAcrossHIEs({
       getDocumentsFromCW({
         patient: updatedPatient,
         facilityId,
-        forceDownload: override,
+        forceDownload: isForceRedownloadEnabled,
         forceQuery,
         forcePatientDiscovery,
         requestId,
@@ -167,10 +169,10 @@ export async function queryDocumentsAcrossHIEs({
   return createQueryResponse("processing", updatedPatient);
 }
 
-export const createQueryResponse = (
+export function createQueryResponse(
   status: DocumentQueryStatus,
   patient?: Patient
-): DocumentQueryProgress => {
+): DocumentQueryProgress {
   return {
     download: {
       status,
@@ -178,7 +180,7 @@ export const createQueryResponse = (
     },
     ...patient?.data.documentQueryProgress,
   };
-};
+}
 
 type UpdateResult = {
   patient: Pick<Patient, "id" | "cxId">;
@@ -244,4 +246,6 @@ export function getOrGenerateRequestId(
   return generateRequestId();
 }
 
-const generateRequestId = (): string => uuidv7();
+function generateRequestId(): string {
+  return uuidv7();
+}
