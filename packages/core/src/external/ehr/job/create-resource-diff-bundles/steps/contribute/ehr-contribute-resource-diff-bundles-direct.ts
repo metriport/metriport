@@ -236,6 +236,7 @@ function prepareEhrOnlyResourcesForContribution(
 ): Resource[] {
   let preparedEhrOnlyResources: Resource[] = [...ehrOnlyResources];
   const resourceIdMap = new Map<string, string>();
+  const resourceIdMapReverse = new Map<string, string>();
   for (const resource of ehrOnlyResources) {
     if (!resource.id) continue;
     const oldResourceId = resource.id;
@@ -243,6 +244,12 @@ function prepareEhrOnlyResourcesForContribution(
       ? metriportPatientId
       : createUuidFromText(`${ehr}_${metriportPatientId}_${oldResourceId}`);
     resourceIdMap.set(newResourceId, oldResourceId);
+    resourceIdMapReverse.set(oldResourceId, newResourceId);
+  }
+  const idsToReplace = reverseSortIds(Array.from(resourceIdMapReverse.keys()));
+  for (const oldResourceId of idsToReplace) {
+    const newResourceId = resourceIdMapReverse.get(oldResourceId);
+    if (!newResourceId) continue;
     preparedEhrOnlyResources = replaceResourceId({
       resources: preparedEhrOnlyResources,
       oldResourceId,
@@ -292,4 +299,10 @@ function replaceResourceId({
     newResourceId
   );
   return JSON.parse(resourcesAsStringWithReplacedId);
+}
+
+export function reverseSortIds(ids: string[]): string[] {
+  const sortByValue = ids.sort((a, b) => (a > b ? -1 : 1));
+  const sortByLength = sortByValue.sort((a, b) => (a.length > b.length ? -1 : 1));
+  return sortByLength;
 }
