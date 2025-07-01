@@ -567,6 +567,32 @@ export class S3Utils {
     } while (continuationToken);
     return allObjects;
   }
+
+  async listDirectoryNames(bucket: string, prefix: string): Promise<string[]> {
+    const allNames: string[] = [];
+    let continuationToken: string | undefined;
+    do {
+      const res = await executeWithRetriesS3(() =>
+        this._s3
+          .listObjectsV2({
+            Bucket: bucket,
+            Prefix: prefix,
+            Delimiter: "/",
+            ...(continuationToken ? { ContinuationToken: continuationToken } : {}),
+          })
+          .promise()
+      );
+      if (res.Contents) {
+        for (const content of res.Contents) {
+          if (content.Key) {
+            allNames.push(content.Key.substring(prefix.length));
+          }
+        }
+      }
+      continuationToken = res.NextContinuationToken;
+    } while (continuationToken);
+    return allNames;
+  }
 }
 
 export function splitS3Location(location: string): { bucketName: string; key: string } | undefined {

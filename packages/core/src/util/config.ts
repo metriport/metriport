@@ -334,4 +334,11 @@ export class Config {
   static getDischargeNotificationSlackUrl(): string {
     return getEnvVarOrFail("DISCHARGE_NOTIFICATION_SLACK_URL");
   }
+
+  static getAwsComprehendRegion(): string {
+    return getEnvVarOrFail("AWS_COMPREHEND_REGION");
+  }
+  static getExtractionBucketName(): string {
+    return getEnvVarOrFail("EXTRACTION_BUCKET_NAME");
+  }
 }
