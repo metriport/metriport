@@ -6,6 +6,7 @@ import { SamlClientResponse, sendSignedXml } from "../../../saml/saml-client";
 import { SignedDqRequest } from "../create/iti38-envelope";
 import { out } from "../../../../../../util/log";
 import { storeDqResponse } from "../../../monitor/store";
+import { shouldReportOutboundError } from "./shared";
 
 const { log } = out("Sending DQ Requests");
 const context = "ihe-gateway-v2-dq-saml-client";
@@ -61,19 +62,16 @@ export async function sendSignedDqRequest({
       log(`error details: ${JSON.stringify(error?.response?.data)}`);
     }
     const errorString: string = errorToString(error);
-    const extra = {
-      errorString,
-      outboundRequest: request.outboundRequest,
-      patientId,
-      cxId,
-    };
-    capture.error(msg, {
-      extra: {
-        context,
-        extra,
-        error,
-      },
-    });
+    const isReportError = shouldReportOutboundError(error);
+    if (isReportError) {
+      const extra = {
+        errorString,
+        outboundRequest: request.outboundRequest,
+        patientId,
+        cxId,
+      };
+      capture.error(msg, { extra: { context, extra } });
+    }
     return {
       gateway: request.gateway,
       outboundRequest: request.outboundRequest,
