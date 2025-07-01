@@ -4,6 +4,7 @@ export type PollOutboundResults = {
   cxId: string;
   numOfGateways: number;
   maxPollingDuration?: number;
+  forceDownload?: boolean;
 };
 
 export abstract class OutboundResultPoller {
