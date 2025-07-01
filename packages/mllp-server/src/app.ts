@@ -10,32 +10,26 @@ import {
   getOrCreateMessageDatetime,
   getSendingApplication,
 } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/msh";
-import {
-  createFileKeyHl7Message,
-  getCxIdAndPatientIdOrFail,
-  getOptionalValueFromMessage,
-} from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
+import { createFileKeyHl7Message } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { S3Utils } from "@metriport/core/external/aws/s3";
-import { utcifyHl7Message } from "@metriport/core/external/hl7-notification/datetime";
 import { capture } from "@metriport/core/util";
 import { Config } from "@metriport/core/util/config";
 import type { Logger } from "@metriport/core/util/log";
 import { out } from "@metriport/core/util/log";
-import { basicToExtendedIso8601 } from "@metriport/shared/common/date";
 import { initSentry } from "./sentry";
-import { withErrorHandling } from "./utils";
+import { handleParsingError, ParsedHl7Data, parseHl7Message, withErrorHandling } from "./utils";
 
 initSentry();
 
 const MLLP_DEFAULT_PORT = 2575;
-const bucketName = Config.getHl7IncomingMessageBucketName();
-const s3Utils = new S3Utils(Config.getAWSRegion());
-const hieTimezoneDictionary = Config.getHieTimezoneDictionary();
+export const bucketName = Config.getHl7IncomingMessageBucketName();
+export const s3Utils = new S3Utils(Config.getAWSRegion());
+export const hieTimezoneDictionary = Config.getHieTimezoneDictionary();
 /**
  * Avoid using message.toString() as its not stringifying every segment
  */
-function asString(message: Hl7Message) {
+export function asString(message: Hl7Message) {
   return message.segments.map(s => s.toString()).join("\n");
 }
 
@@ -46,24 +40,24 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
     connection.addEventListener(
       "message",
       withErrorHandling(connection, logger, async ({ message: rawMessage }) => {
-        // TODO: We don't want to fail on a failed lookup - most of our HIEs have not been timezone-ified yet.
-        const sendingApplication = getSendingApplication(rawMessage) ?? "Unknown HIE";
-        const hieTimezone = hieTimezoneDictionary[sendingApplication] ?? "UTC";
-        const message = utcifyHl7Message(rawMessage, hieTimezone);
+        let parsedData: ParsedHl7Data;
 
-        const timestamp = basicToExtendedIso8601(getOrCreateMessageDatetime(message));
+        try {
+          parsedData = await parseHl7Message(rawMessage);
+        } catch (parseError) {
+          await handleParsingError(rawMessage, logger);
+          throw parseError;
+        }
+
+        const { message, cxId, patientId } = parsedData;
+
         const messageId = getMessageUniqueIdentifier(message);
-        const pidComponent = getOptionalValueFromMessage(message, "PID", 3, 1) ?? "Missing PID";
-
-        log(
-          `${timestamp}> New Message for pid ${pidComponent}, messageId: ${messageId} with sending application ${sendingApplication}`
-        );
-
-        const { cxId, patientId } = getCxIdAndPatientIdOrFail(message);
+        const sendingApplication = getSendingApplication(message) ?? "Unknown HIE";
+        const timestamp = getOrCreateMessageDatetime(message);
         const { messageCode, triggerEvent } = getHl7MessageTypeOrFail(message);
 
         log(
-          `cx: ${cxId}, pt: ${patientId} Received ${triggerEvent} message (messageId: ${messageId})`
+          `cx: ${cxId}, pt: ${patientId} Received ${triggerEvent} message from ${sendingApplication} at ${timestamp} (messageId: ${messageId})`
         );
 
         capture.setExtra({
