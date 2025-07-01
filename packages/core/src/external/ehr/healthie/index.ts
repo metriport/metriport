@@ -1,3 +1,4 @@
+import { ResourceType } from "@medplum/fhirtypes";
 import { MetriportError, NotFoundError, sleep } from "@metriport/shared";
 import { normalizeGenderSafe, unknownGender } from "@metriport/shared/domain/gender";
 import {
@@ -33,7 +34,33 @@ import {
   paginateWaitTime,
 } from "../shared";
 
-const apiUrl = Config.getApiUrl();
+export const supportedHealthieResources: ResourceType[] = [
+  "MedicationRequest",
+  "MedicationStatement",
+  "Observation",
+];
+export const supportedHealthieReferenceResources: ResourceType[] = [
+  "Medication",
+  "Location",
+  "Organization",
+  "Patient",
+  "Practitioner",
+];
+
+export type SupportedHealthieResource = (typeof supportedHealthieResources)[number];
+export function isSupportedHealthieResource(
+  resourceType: string
+): resourceType is SupportedHealthieResource {
+  return supportedHealthieResources.includes(resourceType as ResourceType);
+}
+
+export type SupportedHealthieReferenceResource =
+  (typeof supportedHealthieReferenceResources)[number];
+export function isSupportedHealthieReferenceResource(
+  resourceType: string
+): resourceType is SupportedHealthieReferenceResource {
+  return supportedHealthieReferenceResources.includes(resourceType as ResourceType);
+}
 
 interface HealthieApiConfig
   extends Omit<ApiConfig, "twoLeggedAuthTokenInfo" | "clientKey" | "clientSecret"> {
@@ -404,6 +431,7 @@ class HealthieApi {
       `Healthie subscribeToResource - cxId ${cxId} practiceId ${this.practiceId} resource ${resource}`
     );
     const additionalInfo = { cxId, practiceId: this.practiceId, resource };
+    const apiUrl = Config.getApiUrl();
     const url = `${apiUrl}/ehr/webhook/healthie?practiceId=${this.practiceId}`;
     const existingSubscriptions = await this.getSubscriptions({ cxId });
     if (
@@ -510,6 +538,521 @@ class HealthieApi {
       gender: patient.gender ? normalizeGenderSafe(patient.gender) ?? unknownGender : unknownGender,
     };
   }
+
+  async getMedications({ cxId, patientId }: { cxId: string; patientId: string }): Promise<void> {
+    const { debug } = out(
+      `Healthie getMedications - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
+    );
+    const additionalInfo = { cxId, practiceId: this.practiceId, patientId };
+    const operationName = "getMedications";
+    const query = `query getMedications($userId: ID!) {
+      medications(user_id: $userId) {
+        id
+        name
+        dosage
+        frequency
+        start_date
+        end_date
+        status
+      }
+    }`;
+    const variables = { userId: patientId };
+
+    await this.makeRequest<SubscriptionWithSignatureSecretGraphql>({
+      cxId,
+      patientId: patientId.toString(),
+      s3Path: "medications",
+      operationName,
+      query,
+      variables,
+      schema: subscriptionWithSignatureSecretGraphqlSchema,
+      additionalInfo,
+      debug,
+    });
+  }
+  /*
+  async getImmunizations({
+    cxId,
+    patientId,
+  }: {
+    cxId: string;
+    patientId: string;
+  }): Promise<fhir4.Immunization[]> {
+    const { debug } = out(
+      `Healthie getImmunizations - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
+    );
+    const additionalInfo = { cxId, practiceId: this.practiceId, patientId };
+    const operationName = "getImmunizations";
+    const query = `query getImmunizations($userId: ID!) {
+      immunizations(user_id: $userId) {
+        id
+        name
+        date_given
+        lot_number
+        manufacturer
+        administered_by {
+          id
+          first_name
+          last_name
+        }
+        location {
+          id
+          name
+          address
+        }
+      }
+    }`;
+    const variables = { userId: patientId };
+    
+    const response = await this.makeRequest<{ immunizations: any[] }>({
+      cxId,
+      patientId: patientId.toString(),
+      s3Path: "immunizations",
+      operationName,
+      query,
+      variables,
+      schema: z.object({ immunizations: z.array(z.any()) }),
+      additionalInfo,
+      debug,
+    });
+
+    return response.immunizations.map(imm => this.convertImmunizationToFhir(imm));
+  }
+
+  async getAllergies({
+    cxId,
+    patientId,
+  }: {
+    cxId: string;
+    patientId: string;
+  }): Promise<fhir4.AllergyIntolerance[]> {
+    const { debug } = out(
+      `Healthie getAllergies - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
+    );
+    const additionalInfo = { cxId, practiceId: this.practiceId, patientId };
+    const operationName = "getAllergies";
+    const query = `query getAllergies($userId: ID!) {
+      allergies(user_id: $userId) {
+        id
+        name
+        severity
+        reaction
+        onset_date
+        status
+        notes
+      }
+    }`;
+    const variables = { userId: patientId };
+    
+    const response = await this.makeRequest<{ allergies: any[] }>({
+      cxId,
+      patientId: patientId.toString(),
+      s3Path: "allergies",
+      operationName,
+      query,
+      variables,
+      schema: z.object({ allergies: z.array(z.any()) }),
+      additionalInfo,
+      debug,
+    });
+
+    return response.allergies.map(allergy => this.convertAllergyToFhir(allergy));
+  }
+
+  async getConditions({
+    cxId,
+    patientId,
+  }: {
+    cxId: string;
+    patientId: string;
+  }): Promise<fhir4.Condition[]> {
+    const { debug } = out(
+      `Healthie getConditions - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
+    );
+    const additionalInfo = { cxId, practiceId: this.practiceId, patientId };
+    const operationName = "getConditions";
+    const query = `query getConditions($userId: ID!) {
+      conditions(user_id: $userId) {
+        id
+        name
+        diagnosis_date
+        status
+        severity
+        notes
+        diagnosed_by {
+          id
+          first_name
+          last_name
+        }
+      }
+    }`;
+    const variables = { userId: patientId };
+    
+    const response = await this.makeRequest<{ conditions: any[] }>({
+      cxId,
+      patientId: patientId.toString(),
+      s3Path: "conditions",
+      operationName,
+      query,
+      variables,
+      schema: z.object({ conditions: z.array(z.any()) }),
+      additionalInfo,
+      debug,
+    });
+
+    return response.conditions.map(condition => this.convertConditionToFhir(condition));
+  }
+
+  async getLabResults({
+    cxId,
+    patientId,
+  }: {
+    cxId: string;
+    patientId: string;
+  }): Promise<fhir4.Observation[]> {
+    const { debug } = out(
+      `Healthie getLabResults - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
+    );
+    const additionalInfo = { cxId, practiceId: this.practiceId, patientId };
+    const operationName = "getLabResults";
+    const query = `query getLabResults($userId: ID!) {
+      lab_results(user_id: $userId) {
+        id
+        test_name
+        result_value
+        unit
+        reference_range
+        date_taken
+        status
+        lab {
+          id
+          name
+          address
+        }
+        ordered_by {
+          id
+          first_name
+          last_name
+        }
+      }
+    }`;
+    const variables = { userId: patientId };
+    
+    const response = await this.makeRequest<{ lab_results: any[] }>({
+      cxId,
+      patientId: patientId.toString(),
+      s3Path: "lab_results",
+      operationName,
+      query,
+      variables,
+      schema: z.object({ lab_results: z.array(z.any()) }),
+      additionalInfo,
+      debug,
+    });
+
+    return response.lab_results.map(lab => this.convertLabResultToFhir(lab));
+  }
+
+  async getVitals({
+    cxId,
+    patientId,
+  }: {
+    cxId: string;
+    patientId: string;
+  }): Promise<fhir4.Observation[]> {
+    const { debug } = out(
+      `Healthie getVitals - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
+    );
+    const additionalInfo = { cxId, practiceId: this.practiceId, patientId };
+    const operationName = "getVitals";
+    const query = `query getVitals($userId: ID!) {
+      vitals(user_id: $userId) {
+        id
+        vital_type
+        value
+        unit
+        date_taken
+        notes
+        taken_by {
+          id
+          first_name
+          last_name
+        }
+      }
+    }`;
+    const variables = { userId: patientId };
+    
+    const response = await this.makeRequest<{ vitals: any[] }>({
+      cxId,
+      patientId: patientId.toString(),
+      s3Path: "vitals",
+      operationName,
+      query,
+      variables,
+      schema: z.object({ vitals: z.array(z.any()) }),
+      additionalInfo,
+      debug,
+    });
+
+    return response.vitals.map(vital => this.convertVitalToFhir(vital));
+  }
+
+  private convertMedicationToFhir(medication: any): MedicationRequest {
+    return {
+      resourceType: "MedicationRequest",
+      id: medication.id,
+      status: this.mapMedicationStatus(medication.status),
+      intent: "order",
+      subject: {
+        reference: `Patient/${medication.user_id}`,
+      },
+      authoredOn: medication.start_date,
+      requester: medication.prescribed_by ? {
+        reference: `Practitioner/${medication.prescribed_by.id}`,
+        display: `${medication.prescribed_by.first_name} ${medication.prescribed_by.last_name}`,
+      } : undefined,
+      dosageInstruction: [{
+        text: `${medication.dosage} ${medication.frequency}`,
+      }],
+      dispenseRequest: medication.pharmacy ? {
+        performer: {
+          reference: `Organization/${medication.pharmacy.id}`,
+          display: medication.pharmacy.name,
+        },
+      } : undefined,
+    };
+  }
+
+  private convertImmunizationToFhir(immunization: any): fhir4.Immunization {
+    return {
+      resourceType: "Immunization",
+      id: immunization.id,
+      status: "completed",
+      vaccineCode: {
+        text: immunization.name,
+      },
+      patient: {
+        reference: `Patient/${immunization.user_id}`,
+      },
+  private convertAllergyToFhir(allergy: any): fhir4.AllergyIntolerance {
+    return {
+      resourceType: "AllergyIntolerance",
+      id: allergy.id,
+      clinicalStatus: {
+        coding: [{
+          system: "http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical",
+          code: "active",
+          display: "Active",
+        }],
+      },
+      verificationStatus: {
+        coding: [{
+          system: "http://terminology.hl7.org/CodeSystem/allergyintolerance-verification",
+          code: "confirmed",
+          display: "Confirmed",
+        }],
+      },
+      type: "allergy",
+      category: ["medication"],
+      code: {
+        text: allergy.name,
+      },
+      patient: {
+        reference: `Patient/${allergy.user_id}`,
+      },
+      onsetDateTime: allergy.reaction_date,
+      reaction: allergy.reaction ? [{
+        manifestation: [{
+          text: allergy.reaction,
+        }],
+        severity: this.mapAllergySeverity(allergy.severity),
+      }] : undefined,
+    };
+  }
+
+  private convertConditionToFhir(condition: any): fhir4.Condition {
+    return {
+      resourceType: "Condition",
+      id: condition.id,
+      clinicalStatus: {
+        coding: [{
+          system: "http://terminology.hl7.org/CodeSystem/condition-clinical",
+          code: this.mapConditionStatus(condition.status),
+          display: this.mapConditionStatusDisplay(condition.status),
+        }],
+      },
+      verificationStatus: {
+        coding: [{
+          system: "http://terminology.hl7.org/CodeSystem/condition-ver-status",
+          code: "confirmed",
+          display: "Confirmed",
+        }],
+      },
+      code: {
+        text: condition.name,
+      },
+      subject: {
+        reference: `Patient/${condition.user_id}`,
+      },
+      onsetDateTime: condition.diagnosis_date,
+      recordedDate: condition.created_at,
+      recorder: condition.diagnosed_by ? {
+        reference: `Practitioner/${condition.diagnosed_by.id}`,
+        display: `${condition.diagnosed_by.first_name} ${condition.diagnosed_by.last_name}`,
+      } : undefined,
+    };
+  }
+
+  private convertLabResultToFhir(labResult: any): fhir4.Observation {
+    return {
+      resourceType: "Observation",
+      id: labResult.id,
+      status: this.mapLabResultStatus(labResult.status),
+      category: [{
+        coding: [{
+          system: "http://terminology.hl7.org/CodeSystem/observation-category",
+          code: "laboratory",
+          display: "Laboratory",
+        }],
+      }],
+      code: {
+        text: labResult.test_name,
+      },
+      subject: {
+        reference: `Patient/${labResult.user_id}`,
+      },
+      effectiveDateTime: labResult.test_date,
+      issued: labResult.report_date,
+      valueQuantity: labResult.result_value ? {
+        value: parseFloat(labResult.result_value),
+        unit: labResult.unit,
+      } : undefined,
+      valueString: labResult.result_text,
+      interpretation: labResult.interpretation ? [{
+        coding: [{
+          system: "http://terminology.hl7.org/CodeSystem/v3-ObservationInterpretation",
+          code: this.mapLabInterpretation(labResult.interpretation),
+          display: labResult.interpretation,
+        }],
+      }] : undefined,
+      referenceRange: labResult.reference_range ? [{
+        text: labResult.reference_range,
+      }] : undefined,
+      performer: labResult.ordered_by ? [{
+        reference: `Practitioner/${labResult.ordered_by.id}`,
+        display: `${labResult.ordered_by.first_name} ${labResult.ordered_by.last_name}`,
+      }] : undefined,
+    };
+  }
+
+  private convertVitalToFhir(vital: any): fhir4.Observation {
+    return {
+      resourceType: "Observation",
+      id: vital.id,
+      status: "final",
+      category: [{
+        coding: [{
+          system: "http://terminology.hl7.org/CodeSystem/observation-category",
+          code: "vital-signs",
+          display: "Vital Signs",
+        }],
+      }],
+      code: {
+        text: vital.name,
+      },
+      subject: {
+        reference: `Patient/${vital.user_id}`,
+      },
+      effectiveDateTime: vital.measurement_date,
+      valueQuantity: {
+        value: parseFloat(vital.value),
+        unit: vital.unit,
+      },
+      performer: vital.measured_by ? [{
+        reference: `Practitioner/${vital.measured_by.id}`,
+        display: `${vital.measured_by.first_name} ${vital.measured_by.last_name}`,
+      }] : undefined,
+    };
+  }
+
+  private mapMedicationStatus(status: string): fhir4.MedicationRequestStatus {
+    switch (status?.toLowerCase()) {
+      case "active":
+        return "active";
+      case "discontinued":
+        return "stopped";
+      case "completed":
+        return "completed";
+      default:
+        return "unknown";
+    }
+  }
+
+  private mapAllergySeverity(severity: string): fhir4.AllergyIntoleranceReactionSeverity {
+    switch (severity?.toLowerCase()) {
+      case "mild":
+        return "mild";
+      case "moderate":
+        return "moderate";
+      case "severe":
+        return "severe";
+      default:
+        return "mild";
+    }
+  }
+
+  private mapConditionStatus(status: string): string {
+    switch (status?.toLowerCase()) {
+      case "active":
+        return "active";
+      case "inactive":
+        return "inactive";
+      case "resolved":
+        return "resolved";
+      default:
+        return "active";
+    }
+  }
+
+  private mapConditionStatusDisplay(status: string): string {
+    switch (status?.toLowerCase()) {
+      case "active":
+        return "Active";
+      case "inactive":
+        return "Inactive";
+      case "resolved":
+        return "Resolved";
+      default:
+        return "Active";
+    }
+  }
+
+  private mapLabResultStatus(status: string): fhir4.ObservationStatus {
+    switch (status?.toLowerCase()) {
+      case "final":
+        return "final";
+      case "preliminary":
+        return "preliminary";
+      case "amended":
+        return "amended";
+      default:
+        return "final";
+    }
+  }
+
+  private mapLabInterpretation(interpretation: string): string {
+    switch (interpretation?.toLowerCase()) {
+      case "high":
+        return "H";
+      case "low":
+        return "L";
+      case "normal":
+        return "N";
+      default:
+        return "N";
+    }
+  }
+  */
 }
 
 export default HealthieApi;
