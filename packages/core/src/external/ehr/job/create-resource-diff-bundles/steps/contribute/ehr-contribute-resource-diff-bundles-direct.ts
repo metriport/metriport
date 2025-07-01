@@ -302,7 +302,10 @@ function replaceResourceId({
 }
 
 export function reverseSortIds(ids: string[]): string[] {
-  const sortByValue = ids.sort((a, b) => (a > b ? -1 : 1));
-  const sortByLength = sortByValue.sort((a, b) => (a.length > b.length ? -1 : 1));
-  return sortByLength;
+  return [...ids].sort((a, b) => {
+    if (a.length !== b.length) {
+      return b.length - a.length;
+    }
+    return a > b ? -1 : 1;
+  });
 }
