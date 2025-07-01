@@ -121,7 +121,7 @@ async function checkDocRefsExistInS3(
 
 /**
  * Since not all documents have a creation date, we return true if the document
- * has no creation date or if the creation date is more than one year ago.
+ * has no creation date or if the creation date is within the last year.
  */
 function isEligibleForRedownload(creation: string | null | undefined): boolean {
   if (!creation) return true;
