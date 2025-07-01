@@ -3,6 +3,7 @@ import { errorToString } from "@metriport/shared";
 import { buildDayjs, buildDayjsTz } from "@metriport/shared/common/date";
 import { flow } from "lodash";
 import { capture, out } from "../../util";
+import { getOptionalValueFromMessage } from "../../command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
 
 const MSH_DATETIME_OF_MESSAGE_INDEX = 7;
 const EVN_RECORDED_DATETIME_INDEX = 2;
@@ -78,6 +79,8 @@ function utcifyHl7Components(
           segmentName,
           fieldIndex,
           componentIndex,
+          component,
+          rawPatientIdentifier: getOptionalValueFromMessage(message, "PID", 3, 1),
         },
       });
       return segment;
