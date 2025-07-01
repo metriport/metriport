@@ -80,6 +80,7 @@ function utcifyHl7Components(
           fieldIndex,
           componentIndex,
           component,
+          error: errorToString(e),
           rawPatientIdentifier: getOptionalValueFromMessage(message, "PID", 3, 1),
         },
       });
