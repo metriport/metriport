@@ -6,6 +6,7 @@ import { errorToString } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { isMimeTypeXML } from "@metriport/core/util/mime";
 import { capture } from "@metriport/core/util/notifications";
+import { buildDayjs } from "@metriport/shared/common/date";
 import { uniqBy } from "lodash";
 import { DocumentReferenceWithMetriportId } from "../../../external/carequality/document/shared";
 import { Config } from "../../../shared/config";
@@ -39,10 +40,12 @@ export async function getNonExistentDocRefs(
     log(
       `Force redownload is enabled for CX. There's currently ${docsToDownload.length} documents to download`
     );
-    const isEligibleForRedownload = existingDocRefs.filter(d => isMimeTypeXML(d.contentType ?? ""));
+    const isDocEligibleForRedownload = existingDocRefs.filter(
+      d => isMimeTypeXML(d.contentType ?? "") && isEligibleForRedownload(d.creation)
+    );
     log(`Found ${isEligibleForRedownload.length} XMLs that we're gonna redownload.`);
 
-    docsToDownload.push(...isEligibleForRedownload);
+    docsToDownload.push(...isDocEligibleForRedownload);
     docsToDownload = uniqBy(docsToDownload, d => d.metriportId);
     log(`Including redownload, there's now ${docsToDownload.length} documents to download`);
   }
@@ -113,4 +116,17 @@ async function checkDocRefsExistInS3(
   }
 
   return observedDocRefs;
+}
+
+/**
+ * Since not all documents have a creation date, we return true if the document
+ * has no creation date or if the creation date is more than one year ago.
+ */
+function isEligibleForRedownload(creation: string | null | undefined): boolean {
+  if (!creation) return true;
+
+  const creationDate = buildDayjs(creation);
+  const oneYearAgo = buildDayjs().subtract(1, "year");
+
+  return creationDate > oneYearAgo;
 }
