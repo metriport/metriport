@@ -1,0 +1,58 @@
+import { Bundle } from "@medplum/fhirtypes";
+import { ExtractionSource } from "./types";
+import { S3Utils } from "../aws/s3";
+
+export class ComprehendExtractionSource implements ExtractionSource {
+  private readonly medicalDocumentsBucketName: string;
+  private readonly ccdaToFhirBucketName: string;
+  private readonly s3: S3Utils;
+
+  constructor({
+    medicalDocumentsBucketName,
+    ccdaToFhirBucketName,
+    region,
+  }: {
+    medicalDocumentsBucketName: string;
+    ccdaToFhirBucketName: string;
+    region: string;
+  }) {
+    this.medicalDocumentsBucketName = medicalDocumentsBucketName;
+    this.ccdaToFhirBucketName = ccdaToFhirBucketName;
+    this.s3 = new S3Utils(region);
+  }
+
+  async getConsolidatedBundle(cxId: string, patientId: string): Promise<Bundle> {
+    const bucketName = this.medicalDocumentsBucketName;
+    const key = `${cxId}/${patientId}/${cxId}_${patientId}_CONSOLIDATED_DATA.json`;
+    const bundle = await this.s3.downloadFile({ bucket: bucketName, key });
+    return JSON.parse(bundle.toString()) as Bundle;
+  }
+
+  async listPatients(cxId: string): Promise<string[]> {
+    const keyPrefix = `${cxId}/`;
+    const directoryNames = await this.s3.listDirectoryNames(
+      this.medicalDocumentsBucketName,
+      keyPrefix
+    );
+    return directoryNames;
+  }
+
+  async listDocumentNames(cxId: string, patientId: string): Promise<string[]> {
+    const keyPrefix = `${cxId}/${patientId}/`;
+    const documentObjects = await this.s3.listObjects(this.ccdaToFhirBucketName, keyPrefix);
+    const documentNames = documentObjects.flatMap(({ Key }) => {
+      if (!Key) return [];
+      const name = Key.substring(keyPrefix.length);
+      if (!name.endsWith(".xml.from_converter.json")) return [];
+      return [name];
+    });
+    return documentNames;
+  }
+
+  async getDocument(cxId: string, patientId: string, documentName: string): Promise<Bundle> {
+    const bucketName = this.medicalDocumentsBucketName;
+    const key = `${cxId}/${patientId}/${documentName}`;
+    const bundle = await this.s3.downloadFile({ bucket: bucketName, key });
+    return JSON.parse(bundle.toString()) as Bundle;
+  }
+}
