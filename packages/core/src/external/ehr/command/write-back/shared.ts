@@ -1,7 +1,6 @@
 import { Condition, Observation, Resource } from "@medplum/fhirtypes";
 import { BadRequestError } from "@metriport/shared";
 import { EhrSource } from "@metriport/shared/interface/external/ehr/source";
-import { isLab, isVital } from "../../shared";
 import { writeBackCondition } from "./condition";
 import { writeBackLab } from "./lab";
 import { writeBackVital } from "./vital";
@@ -13,26 +12,22 @@ export type WriteBackConditionRequest = {
   practiceId: string;
   ehrPatientId: string;
   resource: Resource;
+  writeBackResource: "condition" | "lab" | "vital";
 };
 
 export type WriteBackConditionClientRequest = Omit<WriteBackConditionRequest, "ehr">;
 
 export async function writeBackResource({ ...params }: WriteBackConditionRequest): Promise<void> {
-  const resourceType = params.resource.resourceType;
-  if (resourceType === "Condition") {
-    const condition = params.resource as Condition;
-    return await writeBackCondition({ ...params, condition });
-  } else if (resourceType === "Observation") {
-    const observation = params.resource as Observation;
-    if (isVital(observation)) {
-      return await writeBackVital({ ...params, observation });
-    } else if (isLab(observation)) {
-      return await writeBackLab({ ...params, observation });
-    }
-  } else {
-    throw new BadRequestError("Could not find handler to write back resource", undefined, {
-      ehr: params.ehr,
-      resourceType,
-    });
+  if (params.writeBackResource === "condition") {
+    return await writeBackCondition({ ...params, condition: params.resource as Condition });
+  } else if (params.writeBackResource === "lab") {
+    return await writeBackLab({ ...params, observation: params.resource as Observation });
+  } else if (params.writeBackResource === "vital") {
+    return await writeBackVital({ ...params, observation: params.resource as Observation });
   }
+  throw new BadRequestError("Could not find handler to write back resource", undefined, {
+    ehr: params.ehr,
+    writeBackResource: params.writeBackResource,
+    resourceType: params.resource.resourceType,
+  });
 }

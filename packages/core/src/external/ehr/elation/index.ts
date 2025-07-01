@@ -125,11 +125,11 @@ type ElationLab = {
     results: {
       status: string;
       value: string;
-      reference_min?: string;
-      reference_max?: string;
+      reference_min: string | undefined;
+      reference_max: string | undefined;
       units: string;
-      is_abnormal?: string;
-      abnormal_flag?: string;
+      is_abnormal: string;
+      abnormal_flag: string;
       test: {
         name: string;
         loinc: string;
@@ -784,6 +784,13 @@ class ElationApi {
     }
     const [unit, value] = unitAndValue;
     const referenceRange = buildObservationReferenceRange(observation);
+    if (!referenceRange || (!referenceRange.low && !referenceRange.high)) {
+      throw new BadRequestError(
+        "No reference range found for observation",
+        undefined,
+        additionalInfo
+      );
+    }
     const resultStatus = getObservationResultStatus(observation);
     if (!resultStatus) {
       throw new BadRequestError(
@@ -809,7 +816,7 @@ class ElationApi {
         additionalInfo
       );
     }
-    const isAbnormal = interpretation !== "normal";
+    const isAbnormal = interpretation === "abnormal";
     return {
       report_type: "Lab",
       document_date: formattedObservedDate,
@@ -826,8 +833,8 @@ class ElationApi {
             {
               status: resultStatus,
               value: value.toString(),
-              ...(referenceRange?.low ? { reference_min: referenceRange.low.toString() } : {}),
-              ...(referenceRange?.high ? { reference_max: referenceRange.high.toString() } : {}),
+              reference_min: referenceRange.low?.toString(),
+              reference_max: referenceRange.high?.toString(),
               units: unit,
               is_abnormal: isAbnormal ? "1" : "0",
               abnormal_flag: interpretation,

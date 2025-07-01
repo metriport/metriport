@@ -1,5 +1,7 @@
-import { Resource } from "@medplum/fhirtypes";
+import { Condition, Observation, Resource } from "@medplum/fhirtypes";
 import { BadRequestError, errorToString, NotFoundError, sleep } from "@metriport/shared";
+import { buildDayjs } from "@metriport/shared/common/date";
+import { WriteBackFiltersPerResourceType } from "@metriport/shared/interface/external/ehr/shared";
 import { EhrSource } from "@metriport/shared/interface/external/ehr/source";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -7,9 +9,18 @@ import { setJobEntryStatus } from "../../../../../../command/job/patient/api/set
 import { executeAsynchronously } from "../../../../../../util/concurrency";
 import { log } from "../../../../../../util/log";
 import { capture } from "../../../../../../util/notifications";
+import { getSecondaryMappings } from "../../../../api/get-secondary-mappings";
 import { BundleType } from "../../../../bundle/bundle-shared";
 import { fetchBundle, FetchBundleParams } from "../../../../bundle/command/fetch-bundle";
 import { writeBackResource } from "../../../../command/write-back/shared";
+import { ehrCxMappingSecondaryMappingsSchemaMap } from "../../../../mappings";
+import {
+  getObservationLoincCode,
+  getObservationObservedDate,
+  isChronicCondition,
+  isLab,
+  isVital,
+} from "../../../../shared";
 import {
   EhrWriteBackResourceDiffBundlesHandler,
   EhrWriteBackResourceDiffBundlesRequest,
@@ -131,6 +142,16 @@ async function writeBackMetriportOnlyResources({
     metriportOnlyResources,
     async resource => {
       try {
+        const writeBackResourceType = getWriteBackResourceType(resource);
+        if (!writeBackResourceType) return;
+        const writeBackFilters = await getWriteBackFilters({ ehr, practiceId });
+        const shouldWriteBack = filterResource({
+          resource,
+          resources: metriportOnlyResources,
+          writeBackResourceType,
+          writeBackFilters,
+        });
+        if (!shouldWriteBack) return;
         await writeBackResource({
           ehr,
           ...(tokenId && { tokenId }),
@@ -138,6 +159,7 @@ async function writeBackMetriportOnlyResources({
           practiceId,
           ehrPatientId,
           resource,
+          writeBackResource: writeBackResourceType,
         });
       } catch (error) {
         if (error instanceof BadRequestError || error instanceof NotFoundError) return;
@@ -162,4 +184,155 @@ async function writeBackMetriportOnlyResources({
       },
     });
   }
+}
+
+async function getWriteBackFilters({
+  ehr,
+  practiceId,
+}: {
+  ehr: EhrSource;
+  practiceId: string;
+}): Promise<WriteBackFiltersPerResourceType | undefined> {
+  const mappingsSchema = ehrCxMappingSecondaryMappingsSchemaMap[ehr];
+  if (!mappingsSchema) return undefined;
+  const secondaryMappings = await getSecondaryMappings({
+    ehr,
+    practiceId,
+    schema: mappingsSchema,
+  });
+  if (!secondaryMappings) return undefined;
+  return secondaryMappings.writeBackFilters;
+}
+
+function getWriteBackResourceType(resource: Resource): "condition" | "lab" | "vital" {
+  if (resource.resourceType === "Condition") return "condition";
+  if (resource.resourceType === "Observation") {
+    if (isLab(resource as Observation)) return "lab";
+    if (isVital(resource as Observation)) return "vital";
+  }
+  throw new BadRequestError("Could not find handler to write back resource", undefined, {
+    resourceType: resource.resourceType,
+  });
+}
+
+function filterResource({
+  resource,
+  resources,
+  writeBackResourceType,
+  writeBackFilters,
+}: {
+  resource: Resource;
+  resources: Resource[];
+  writeBackResourceType: "condition" | "lab" | "vital";
+  writeBackFilters: WriteBackFiltersPerResourceType | undefined;
+}): boolean {
+  if (!writeBackFilters) return false;
+  if (writeBackResourceType === "condition") {
+    const condition = resource as Condition;
+    if (skipConditionChronicity(condition, writeBackFilters)) return false;
+    return true;
+  } else if (writeBackResourceType === "lab") {
+    const observation = resource as Observation;
+    const labObservations = resources.filter(
+      r => r.resourceType === "Observation" && isLab(r as Observation)
+    ) as Observation[];
+    if (skipLabLoinCode(observation, writeBackFilters)) return false;
+    if (skipLabDate(observation, writeBackFilters)) return false;
+    if (skipLabNonTrending(observation, labObservations, writeBackFilters)) return false;
+    return true;
+  } else if (writeBackResourceType === "vital") {
+    const observation = resource as Observation;
+    if (skipVitalDate(observation, writeBackFilters)) return false;
+    if (skipVitalLoinCode(observation, writeBackFilters)) return false;
+    return true;
+  }
+  return false;
+}
+
+function skipConditionChronicity(
+  condition: Condition,
+  writeBackFilters: WriteBackFiltersPerResourceType
+): boolean {
+  const chronicityFilters = writeBackFilters.problems?.chronicityFilters;
+  if (chronicityFilters === "all") return false;
+  if (isChronicCondition(condition) && chronicityFilters !== "chronic") return true;
+  if (!isChronicCondition(condition) && chronicityFilters === "non-chronic") return true;
+  return false;
+}
+
+function skipLabDate(
+  observation: Observation,
+  writeBackFilters: WriteBackFiltersPerResourceType
+): boolean {
+  const relativeDateRange = writeBackFilters?.lab?.relativeDateRange;
+  if (!relativeDateRange) return false;
+  const observationDate = getObservationObservedDate(observation);
+  if (!observationDate) return false;
+  let beginDate = buildDayjs();
+  if (relativeDateRange.days) {
+    beginDate = beginDate.subtract(relativeDateRange.days, "day");
+  }
+  if (relativeDateRange.months) {
+    beginDate = beginDate.subtract(relativeDateRange.months, "month");
+  }
+  if (relativeDateRange.years) {
+    beginDate = beginDate.subtract(relativeDateRange.years, "year");
+  }
+  return buildDayjs(observationDate).isAfter(beginDate);
+}
+
+function skipLabLoinCode(
+  observation: Observation,
+  writeBackFilters: WriteBackFiltersPerResourceType
+): boolean {
+  const loincCodes = writeBackFilters?.lab?.loincCodes;
+  if (!loincCodes || loincCodes.length < 1) return false;
+  const loincCode = getObservationLoincCode(observation);
+  if (!loincCode) return false;
+  return !loincCodes.includes(loincCode);
+}
+
+function skipLabNonTrending(
+  observation: Observation,
+  labObservations: Observation[],
+  writeBackFilters: WriteBackFiltersPerResourceType
+): boolean {
+  const minCountPerCode = writeBackFilters?.lab?.minCountPerCode;
+  if (!minCountPerCode) return false;
+  const loincCode = getObservationLoincCode(observation);
+  if (!loincCode) return false;
+  const count = labObservations.filter(o => getObservationLoincCode(o) === loincCode).length;
+  return count >= minCountPerCode;
+}
+
+function skipVitalDate(
+  observation: Observation,
+  writeBackFilters: WriteBackFiltersPerResourceType
+): boolean {
+  const relativeDateRange = writeBackFilters?.vital?.relativeDateRange;
+  if (!relativeDateRange) return false;
+  const observationDate = getObservationObservedDate(observation);
+  if (!observationDate) return false;
+  let beginDate = buildDayjs();
+  if (relativeDateRange.days) {
+    beginDate = beginDate.subtract(relativeDateRange.days, "day");
+  }
+  if (relativeDateRange.months) {
+    beginDate = beginDate.subtract(relativeDateRange.months, "month");
+  }
+  if (relativeDateRange.years) {
+    beginDate = beginDate.subtract(relativeDateRange.years, "year");
+  }
+  return buildDayjs(observationDate).isAfter(beginDate);
+}
+
+function skipVitalLoinCode(
+  observation: Observation,
+  writeBackFilters: WriteBackFiltersPerResourceType
+): boolean {
+  const loincCodes = writeBackFilters?.vital?.loincCodes;
+  if (!loincCodes || loincCodes.length < 1) return false;
+  const loincCode = getObservationLoincCode(observation);
+  if (!loincCode) return false;
+  return !loincCodes.includes(loincCode);
 }

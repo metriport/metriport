@@ -4,6 +4,7 @@ import {
   Bundle,
   Coding,
   Condition,
+  Extension,
   Immunization,
   Medication,
   MedicationAdministration,
@@ -52,6 +53,7 @@ import {
   RXNORM_CODE,
   SNOMED_CODE,
 } from "../../util/constants";
+import { CONDITION_RELATED_URL } from "../fhir/shared/extensions/chronicity-extension";
 import { out } from "../../util/log";
 import { capture } from "../../util/notifications";
 import { uuidv7 } from "../../util/uuid-v7";
@@ -335,6 +337,14 @@ export function isLab(observation: Observation): boolean {
   return isLab !== undefined;
 }
 
+export function isChronicCondition(condition?: Condition): boolean {
+  if (!condition) return false;
+  const chronicityExtension = condition.extension?.find(
+    (e: Extension) => e.url === CONDITION_RELATED_URL
+  );
+  return chronicityExtension?.valueCoding?.code === "C" ? true : false;
+}
+
 export function getMedicationRxnormCoding(medication: Medication): Coding | undefined {
   const code = medication.code;
   const rxnormCoding = code?.coding?.find(coding => {
@@ -531,9 +541,8 @@ export function getObservationReferenceRange(observation: Observation): string |
     return `<= ${range?.high} ${unit}`;
   } else if (range?.text && range?.text !== "unknown") {
     return range?.text;
-  } else {
-    return "-";
   }
+  return undefined;
 }
 
 export function getObservationResultStatus(observation: Observation): string | undefined {
