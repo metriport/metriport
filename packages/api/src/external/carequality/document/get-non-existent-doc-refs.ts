@@ -33,23 +33,24 @@ export async function getNonExistentDocRefs(
     f => !fhirDocRefs.find(d => d.id === f.metriportId)
   );
 
-  let docsToDownload = nonExistingDocRefs.concat(foundOnStorageButNotOnFHIR);
+  const docsToDownload = nonExistingDocRefs.concat(foundOnStorageButNotOnFHIR);
 
-  if (forceDownload) {
-    const { log } = out(`CQ getNonExistentDocRefs - patient ${patientId}`);
-    log(
-      `Force redownload is enabled for CX. There's currently ${docsToDownload.length} documents to download`
-    );
-    const isDocEligibleForRedownload = existingDocRefs.filter(
-      d => isMimeTypeXML(d.contentType ?? "") && isEligibleForRedownload(d.creation)
-    );
-    log(`Found ${isEligibleForRedownload.length} XMLs that we're gonna redownload.`);
+  if (!forceDownload) return docsToDownload;
 
-    docsToDownload.push(...isDocEligibleForRedownload);
-    docsToDownload = uniqBy(docsToDownload, d => d.metriportId);
-    log(`Including redownload, there's now ${docsToDownload.length} documents to download`);
-  }
-  return docsToDownload;
+  const { log } = out(`CQ getNonExistentDocRefs - patient ${patientId}`);
+  log(
+    `Force redownload is enabled for CX. There's currently ${docsToDownload.length} documents to download`
+  );
+  const eligibleDocsForRedownload = existingDocRefs.filter(
+    d => isMimeTypeXML(d.contentType ?? "") && isEligibleForRedownload(d.creation)
+  );
+  log(`Found ${eligibleDocsForRedownload.length} XMLs that we're gonna redownload.`);
+
+  const docsToDownloadWithRedownload = docsToDownload.concat(eligibleDocsForRedownload);
+  const docsToDownloadUniq = uniqBy(docsToDownloadWithRedownload, d => d.metriportId);
+  log(`Including redownload, there's now ${docsToDownloadUniq.length} documents to download`);
+
+  return docsToDownloadUniq;
 }
 
 type ObservedDocRefs = {
@@ -58,7 +59,7 @@ type ObservedDocRefs = {
 };
 
 async function checkDocRefsExistInS3(
-  docsFound: DocumentReferenceWithMetriportId[],
+  documents: DocumentReferenceWithMetriportId[],
   patientId: string,
   cxId: string
 ): Promise<ObservedDocRefs> {
@@ -66,7 +67,7 @@ async function checkDocRefsExistInS3(
   const existingDocs: { docId: string; exists: boolean }[] = [];
 
   await executeAsynchronously(
-    docsFound,
+    documents,
     async doc => {
       try {
         const fileName = createDocumentFilePath(
@@ -105,7 +106,7 @@ async function checkDocRefsExistInS3(
     nonExistingDocRefs: [],
   };
 
-  for (const doc of docsFound) {
+  for (const doc of documents) {
     const matchingDoc = existingDocs.find(existingDoc => existingDoc.docId === doc.metriportId);
 
     if (matchingDoc && matchingDoc.exists) {
@@ -128,5 +129,5 @@ function isEligibleForRedownload(creation: string | null | undefined): boolean {
   const creationDate = buildDayjs(creation);
   const oneYearAgo = buildDayjs().subtract(1, "year");
 
-  return creationDate > oneYearAgo;
+  return creationDate.isAfter(oneYearAgo);
 }

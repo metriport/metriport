@@ -50,7 +50,7 @@ export async function queryDocumentsAcrossHIEs({
   patientId,
   facilityId,
   requestId: requestIdParam,
-  override,
+  forceDownload,
   cxDocumentRequestMetadata,
   forceQuery = false,
   forcePatientDiscovery = false,
@@ -63,7 +63,7 @@ export async function queryDocumentsAcrossHIEs({
   patientId: string;
   facilityId?: string;
   requestId?: string | undefined;
-  override?: boolean;
+  forceDownload?: boolean;
   cxDocumentRequestMetadata?: unknown;
   forceQuery?: boolean;
   forcePatientDiscovery?: boolean;
@@ -123,7 +123,8 @@ export async function queryDocumentsAcrossHIEs({
 
   let triggeredDocumentQuery = false;
 
-  const isForceRedownloadEnabled = override ?? (await isXmlRedownloadFeatureFlagEnabledForCx(cxId));
+  const isForceRedownloadEnabled =
+    forceDownload ?? (await isXmlRedownloadFeatureFlagEnabledForCx(cxId));
   /**
    * This is likely safe to remove based on the usage of this function with the `cqManagingOrgName` param.
    * But because it touches a core flow and we don't have time to review/test it now, leaving as is.
