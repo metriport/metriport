@@ -31,7 +31,7 @@ dayjs.extend(duration);
 
 const hydrateEhrOnlyResourceAttempts = 3;
 const parallelRequests = 5;
-const delayBetweenRequestBatches = dayjs.duration(2, "seconds");
+const maxJitter = dayjs.duration(2, "seconds");
 
 export class EhrContributeResourceDiffBundlesDirect
   implements EhrContributeResourceDiffBundlesHandler
@@ -210,7 +210,7 @@ async function hydrateEhrOnlyResources({
       },
       {
         numberOfParallelExecutions: parallelRequests,
-        delay: delayBetweenRequestBatches.asMilliseconds(),
+        maxJitterMillis: maxJitter.asMilliseconds(),
       }
     );
     if (hydrationErrors.length > 0) {
