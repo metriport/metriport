@@ -1,4 +1,5 @@
 import { Hl7Field, Hl7Message, Hl7Segment } from "@medplum/core";
+import { nanoid } from "nanoid";
 import { MetriportError } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import { capture, out } from "../../../util";
@@ -180,5 +181,5 @@ export function createUnpackPidFailureFileKey({
   messageCode: string;
   triggerEvent: string;
 }) {
-  return `unpack-pid-failure/${rawPtIdentifier}_${rawTimestamp}_${messageCode}_${triggerEvent}_${nanoid()}.hl7`;
+  return `unpack-pid-failure/${rawTimestamp}_${rawPtIdentifier}_${messageCode}_${triggerEvent}_${nanoid()}.hl7`;
 }
