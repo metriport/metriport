@@ -1,4 +1,4 @@
-import { reverseSortIds } from "../job/create-resource-diff-bundles/steps/contribute/ehr-contribute-resource-diff-bundles-direct";
+import { reverseSortIds } from "../ehr-contribute-resource-diff-bundles-direct";
 
 describe("reverseSortIds", () => {
   describe("reverseSortIds", () => {
