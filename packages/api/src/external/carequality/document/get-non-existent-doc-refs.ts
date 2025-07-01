@@ -1,11 +1,10 @@
-import { isXmlRedownloadFeatureFlagEnabledForCx } from "@metriport/core/command/feature-flags/domain-ffs";
 import { createDocumentFilePath } from "@metriport/core/domain/document/filename";
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { DocumentReferenceWithId } from "@metriport/core/external/fhir/document/document-reference";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { errorToString } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
-import { XML_APP_MIME_TYPE, XML_TXT_MIME_TYPE } from "@metriport/core/util/mime";
+import { isXml } from "@metriport/core/util/mime";
 import { capture } from "@metriport/core/util/notifications";
 import { uniqBy } from "lodash";
 import { DocumentReferenceWithMetriportId } from "../../../external/carequality/document/shared";
@@ -20,7 +19,8 @@ export async function getNonExistentDocRefs(
   documents: DocumentReferenceWithMetriportId[],
   patientId: string,
   cxId: string,
-  fhirDocRefs: DocumentReferenceWithId[]
+  fhirDocRefs: DocumentReferenceWithId[],
+  forceDownload: boolean | undefined
 ): Promise<DocumentReferenceWithMetriportId[]> {
   const { existingDocRefs, nonExistingDocRefs } = await checkDocRefsExistInS3(
     documents,
@@ -34,15 +34,12 @@ export async function getNonExistentDocRefs(
 
   let docsToDownload = nonExistingDocRefs.concat(foundOnStorageButNotOnFHIR);
 
-  const isForceRedownloadEnabled = await isXmlRedownloadFeatureFlagEnabledForCx(cxId);
-  if (isForceRedownloadEnabled) {
+  if (forceDownload) {
     const { log } = out(`CQ getNonExistentDocRefs - patient ${patientId}`);
     log(
       `Force redownload is enabled for CX. There's currently ${docsToDownload.length} documents to download`
     );
-    const isEligibleForRedownload = existingDocRefs.filter(
-      d => d.contentType === XML_APP_MIME_TYPE || d.contentType === XML_TXT_MIME_TYPE
-    );
+    const isEligibleForRedownload = existingDocRefs.filter(d => isXml(d.contentType ?? ""));
     log(`Found ${isEligibleForRedownload.length} XMLs that we're gonna redownload.`);
 
     docsToDownload.push(...isEligibleForRedownload);
@@ -58,7 +55,7 @@ type ObservedDocRefs = {
 };
 
 async function checkDocRefsExistInS3(
-  newDocRefs: DocumentReferenceWithMetriportId[],
+  docsFound: DocumentReferenceWithMetriportId[],
   patientId: string,
   cxId: string
 ): Promise<ObservedDocRefs> {
@@ -66,7 +63,7 @@ async function checkDocRefsExistInS3(
   const existingDocs: { docId: string; exists: boolean }[] = [];
 
   await executeAsynchronously(
-    newDocRefs,
+    docsFound,
     async doc => {
       try {
         const fileName = createDocumentFilePath(
@@ -105,7 +102,7 @@ async function checkDocRefsExistInS3(
     nonExistingDocRefs: [],
   };
 
-  for (const doc of newDocRefs) {
+  for (const doc of docsFound) {
     const matchingDoc = existingDocs.find(existingDoc => existingDoc.docId === doc.metriportId);
 
     if (matchingDoc && matchingDoc.exists) {

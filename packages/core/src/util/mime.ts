@@ -67,3 +67,7 @@ export function getFileExtension(value: string | undefined): string {
   const fileExtension = extension(value);
   return fileExtension ? `.${fileExtension}` : "";
 }
+
+export function isXml(mimeType: string): boolean {
+  return mimeType === XML_APP_MIME_TYPE || mimeType === XML_TXT_MIME_TYPE;
+}

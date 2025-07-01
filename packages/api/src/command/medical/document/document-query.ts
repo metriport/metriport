@@ -152,6 +152,7 @@ export async function queryDocumentsAcrossHIEs({
     getDocumentsFromCQ({
       patient: updatedPatient,
       facilityId,
+      forceDownload: isForceRedownloadEnabled,
       requestId,
       cqManagingOrgName,
       forcePatientDiscovery,
