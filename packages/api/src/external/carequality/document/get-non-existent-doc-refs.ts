@@ -4,7 +4,7 @@ import { DocumentReferenceWithId } from "@metriport/core/external/fhir/document/
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { errorToString } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
-import { isXml } from "@metriport/core/util/mime";
+import { isMimeTypeXML } from "@metriport/core/util/mime";
 import { capture } from "@metriport/core/util/notifications";
 import { uniqBy } from "lodash";
 import { DocumentReferenceWithMetriportId } from "../../../external/carequality/document/shared";
@@ -39,7 +39,7 @@ export async function getNonExistentDocRefs(
     log(
       `Force redownload is enabled for CX. There's currently ${docsToDownload.length} documents to download`
     );
-    const isEligibleForRedownload = existingDocRefs.filter(d => isXml(d.contentType ?? ""));
+    const isEligibleForRedownload = existingDocRefs.filter(d => isMimeTypeXML(d.contentType ?? ""));
     log(`Found ${isEligibleForRedownload.length} XMLs that we're gonna redownload.`);
 
     docsToDownload.push(...isEligibleForRedownload);
