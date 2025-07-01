@@ -359,6 +359,7 @@ router.get(
  * @param req.query.facilityId - Optional; The facility providing NPI for the document query.
  * @param req.query.requestId - Optional; The request ID for the document query.
  * @param req.body Optional metadata to be sent through webhook. {"disableWHFlag": "true"} can be sent here to disable webhook.
+ * @param req.query.override - Optional; Whether to override files already downloaded. Defaults to false.
  * @param req.query.forceQuery - Optional; Whether to force doc query to run. DEFAULTS TRUE.
  * @param req.query.forcePatientDiscovery - Optional; Whether to force patient discovery before document query.
  * @param req.query.cqManagingOrgName - Optional; The CQ managing organization name.
@@ -373,6 +374,7 @@ router.post(
     const patientId = getFrom("query").orFail("patientId", req);
     const facilityId = getFrom("query").optional("facilityId", req);
     const requestId = getFrom("query").optional("requestId", req);
+    const override = getFromQueryAsBoolean("override", req) ?? false;
     const forceQuery = getFromQueryAsBoolean("forceQuery", req) ?? true;
     const forcePatientDiscovery = getFromQueryAsBoolean("forcePatientDiscovery", req);
     const cqManagingOrgName = getFrom("query").optional("cqManagingOrgName", req);
@@ -384,6 +386,7 @@ router.post(
       patientId,
       facilityId,
       requestId,
+      override,
       forceQuery,
       forcePatientDiscovery,
       cqManagingOrgName,
