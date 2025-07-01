@@ -61,6 +61,7 @@ export const initialFeatureFlags: FeatureFlagDatastore = {
   cxsWithHl7NotificationWebhookFeatureFlag: { enabled: false, values: [] },
   cxsWithDischargeRequeryFeatureFlag: { enabled: false, values: [] },
   cxsWithDischargeSlackNotificationFeatureFlag: { enabled: false, values: [] },
+  cxsWithXmlRedownloadFeatureFlag: { enabled: false, values: [] },
 };
 
 /**
