@@ -1,6 +1,6 @@
 import { reverseSortIds } from "../ehr-contribute-resource-diff-bundles-direct";
 
-describe("reverseSortIds", () => {
+describe("contribute-resource-diff-bundles-direct", () => {
   describe("reverseSortIds", () => {
     const inputIds = [
       "a-XXXX.vitalamb-1054510",
