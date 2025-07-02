@@ -5,7 +5,7 @@ import { cloneDeep, uniq } from "lodash";
 import { makePatient } from "../payloads";
 import { patientConnieCarin } from "../payloads/patient-connie";
 import { patientTracyCrane } from "../payloads/patient-tracy";
-import { getMetriportPatientIdOrFail, makeShortName } from "../util";
+import { getMetriportPatientIdOrFail, logError, makeShortName } from "../util";
 
 /**
  * Flow to validate the patient management API (item 8.3.2 in the spec).
@@ -168,6 +168,7 @@ export async function patientManagement(commonWell: CommonWell) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error) {
     console.log(`Error (txId ${commonWell.lastTransactionId}): ${errorToString(error)}`);
+    logError(error);
     throw error;
   } finally {
     console.log(`>>> Delete Patients created in this run`);

@@ -3,9 +3,11 @@ dotenv.config();
 // keep that ^ above all other imports
 import { Command } from "commander";
 import { documentConsumption } from "./flows/document-consumption";
+import { documentContribution } from "./flows/document-contribution";
 import { linkManagement } from "./flows/link-management";
 import { orgManagement } from "./flows/org-management";
 import { patientManagement } from "./flows/patient-management";
+import { logError } from "./util";
 
 function metriportBanner(): string {
   return `
@@ -41,20 +43,24 @@ async function main() {
   console.log(metriportBanner());
   program.parse();
 
+  const failedFlows: string[] = [];
   try {
     // Run through the CommonWell certification test cases
     const { commonWell } = await orgManagement();
-    await patientManagement(commonWell);
-    await linkManagement(commonWell);
-    await documentConsumption(commonWell);
-    // await documentContribution({ memberManagementApi: commonWellMember, api: commonWell, queryMeta });
+    await patientManagement(commonWell).catch(() => failedFlows.push("patientManagement"));
+    await linkManagement(commonWell).catch(() => failedFlows.push("linkManagement"));
+    await documentConsumption(commonWell).catch(() => failedFlows.push("documentConsumption"));
+    await documentContribution(commonWell).catch(() => failedFlows.push("documentContribution"));
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
-    console.error(`Error (${error.response?.status}): ${error.message}`);
-    if (error.response?.data) {
-      console.error(JSON.stringify(error.response.data, null, 2));
+    if (failedFlows.length < 1) {
+      console.error(`\n>>> >>> All flows passed! <<< <<<\n`);
+      process.exit(0);
+    } else {
+      console.error(`\n>>> >>> Failed flows:\n- ${failedFlows.join("\n- ")}\n`);
+      process.exit(1);
     }
+  } catch (error) {
+    logError(error);
     process.exit(1);
   }
 }
