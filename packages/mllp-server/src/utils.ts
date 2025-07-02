@@ -1,7 +1,9 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 
+import { Hl7Message } from "@medplum/core";
 import { Hl7Connection, Hl7ErrorEvent, Hl7MessageEvent } from "@medplum/hl7";
+import { S3Utils } from "@metriport/core/external/aws/s3";
 import { Base64Scrambler } from "@metriport/core/util/base64-scrambler";
 import { Config } from "@metriport/core/util/config";
 import { Logger } from "@metriport/core/util/log";
@@ -9,18 +11,14 @@ import { unpackUuid } from "@metriport/core/util/pack-uuid";
 import * as Sentry from "@sentry/node";
 
 const crypto = new Base64Scrambler(Config.getHl7Base64ScramblerSeed());
+export const s3Utils = new S3Utils(Config.getAWSRegion());
+export const bucketName = Config.getHl7IncomingMessageBucketName();
 
-function reformUuid(shortId: string) {
-  return unpackUuid(crypto.unscramble(shortId));
-}
-
-export function unpackPidField(pid: string | undefined) {
-  if (!pid) {
-    return { cxId: "UNK", patientId: "UNK" };
-  }
-
-  const [cxId, patientId] = pid.split("_").map(reformUuid);
-  return { cxId, patientId };
+/**
+ * Avoid using message.toString() as its not stringifying every segment
+ */
+export function asString(message: Hl7Message) {
+  return message.segments.map(s => s.toString()).join("\n");
 }
 
 export function withErrorHandling<T extends Hl7MessageEvent | Hl7ErrorEvent>(
@@ -44,4 +42,17 @@ export function withErrorHandling<T extends Hl7MessageEvent | Hl7ErrorEvent>(
       }
     });
   };
+}
+
+export function unpackPidField(pid: string | undefined) {
+  if (!pid) {
+    return { cxId: "UNK", patientId: "UNK" };
+  }
+
+  const [cxId, patientId] = pid.split("_").map(reformUuid);
+  return { cxId, patientId };
+}
+
+function reformUuid(shortId: string) {
+  return unpackUuid(crypto.unscramble(shortId));
 }
