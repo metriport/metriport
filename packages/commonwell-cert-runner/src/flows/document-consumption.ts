@@ -4,8 +4,8 @@ import { errorToString, sleep } from "@metriport/shared";
 import fs from "fs";
 import { uniq } from "lodash";
 import { makeId, makePatient } from "../payloads";
-import { patientTracyCrane } from "../payloads/patient-crane";
-import { getMetriportPatientIdOrFail } from "../util";
+import { patientTracyCrane } from "../payloads/patient-tracy";
+import { getMetriportPatientIdOrFail, logError } from "../util";
 
 /**
  * Flow to validate the document consumption API (item 10.1 and 10.2 in the spec).
@@ -55,6 +55,7 @@ export async function documentConsumption(commonWell: CommonWell) {
     // }
   } catch (error) {
     console.log(`Error (txId ${commonWell.lastTransactionId}): ${errorToString(error)}`);
+    logError(error);
     throw error;
   } finally {
     console.log(`>>> Delete Patients created in this run`);

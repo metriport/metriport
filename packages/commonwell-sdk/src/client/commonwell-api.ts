@@ -62,6 +62,11 @@ export interface CommonWellAPI {
   getPatient(params: GetPatientParams, options?: BaseOptions): Promise<PatientCollection>;
   getPatient(id: string, options?: BaseOptions): Promise<PatientCollection>;
 
+  // ENG-200: Search patients
+  // 10.2.3 Patient Match
+  // This allows us to do a patient search that retrieves patient matches.
+  // https://www.commonwellalliance.org/wp-content/uploads/2025/06/Services-Specification-v4.3-Approved-2025.06.03-1.pdf
+
   mergePatients(
     {
       nonSurvivingPatientId,

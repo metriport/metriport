@@ -55,3 +55,11 @@ export function getMetriportPatientIdOrFail(
   console.log(`>>> [${context}] Patient ID: ${patientId}`);
   return patientId;
 }
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function logError(error: any) {
+  console.error(`Error (${error.response?.status}): ${error.message}`);
+  if (error.response?.data) {
+    console.error(JSON.stringify(error.response.data, null, 2));
+  }
+}
