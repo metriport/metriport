@@ -65,7 +65,6 @@ export async function persistHl7MessageError(
   });
 
   log(`Parsing failed, uploading error message to S3 with key: ${errorFileKey}`);
-  console.log(errorToString(parseError));
   await s3Utils.uploadFile({
     bucket: bucketName,
     key: errorFileKey,
