@@ -275,7 +275,7 @@ export class CommonWell implements CommonWellAPI {
     const url = buildPatientLinkEndpoint(this.oid, patientId);
     const resp = await this.executeWithRetriesOn500IfEnabled(() => this.api.get(url, { headers }));
     // TODO ENG-200: Remove this
-    console.log(`>>> RESPONSE RAW: ${JSON.stringify(resp.data, null, 2)}`);
+    // console.log(`>>> RESPONSE RAW: ${JSON.stringify(resp.data, null, 2)}`);
     return patientLinkSearchRespSchema.parse(resp.data);
   }
 

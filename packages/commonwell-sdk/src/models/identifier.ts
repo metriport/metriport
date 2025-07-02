@@ -29,6 +29,8 @@ export const regularIdentifierTypeCodesSchema = z.enum([
   "SB", // Social Beneficiary Identifier
   "PLAC", // Placer Identifier
   "FILL", // Filler Identifier
+  "IAL2", // Identify proofing - see 11.1 on https://www.commonwellalliance.org/wp-content/uploads/2025/06/Services-Specification-v4.3-Approved-2025.06.03-1.pdf
+  "IAL3", // Identify proofing - see 11.1 on https://www.commonwellalliance.org/wp-content/uploads/2025/06/Services-Specification-v4.3-Approved-2025.06.03-1.pdf
 ]);
 const identifierTypeCodesSchema = z.enum([
   ...strongIdentifierTypeCodesSchema.options,
