@@ -14,7 +14,7 @@ import { Logger } from "@metriport/core/util/log";
 import { buildDayjs, ISO_DATE_TIME } from "@metriport/shared/common/date";
 import { Config } from "./config";
 import { asString, bucketName, s3Utils } from "./utils";
-import { errorToString } from "@metriport/shared/dist/error/shared";
+import { errorToString } from "@metriport/shared";
 
 const hieTimezoneDictionary = Config.getHieTimezoneDictionary();
 
