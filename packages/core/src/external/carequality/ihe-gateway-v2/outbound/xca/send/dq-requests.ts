@@ -65,10 +65,10 @@ export async function sendSignedDqRequest({
     const isReportError = shouldReportOutboundError(error);
     if (isReportError) {
       const extra = {
+        cxId,
+        patientId,
         errorString,
         outboundRequest: request.outboundRequest,
-        patientId,
-        cxId,
       };
       capture.error(msg, { extra: { context, extra } });
     }
