@@ -15,7 +15,7 @@ import { capture } from "@metriport/core/util";
 import type { Logger } from "@metriport/core/util/log";
 import { out } from "@metriport/core/util/log";
 import { basicToExtendedIso8601 } from "@metriport/shared/common/date";
-import { ParsedHl7Data, parseHl7Message, persistHl7MessageToErrorPath } from "./parsing";
+import { ParsedHl7Data, parseHl7Message, persistHl7MessageError } from "./parsing";
 import { initSentry } from "./sentry";
 import { asString, bucketName, s3Utils, withErrorHandling } from "./utils";
 
@@ -34,8 +34,8 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
 
         try {
           parsedData = await parseHl7Message(rawMessage);
-        } catch (parseError) {
-          await persistHl7MessageToErrorPath(rawMessage, logger);
+        } catch (parseError: unknown) {
+          await persistHl7MessageError(rawMessage, parseError, logger);
           throw parseError;
         }
 
