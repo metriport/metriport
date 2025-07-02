@@ -8,29 +8,17 @@ import { Config } from "@metriport/core/util/config";
 import { Logger } from "@metriport/core/util/log";
 import { unpackUuid } from "@metriport/core/util/pack-uuid";
 import * as Sentry from "@sentry/node";
-import { getSendingApplication } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/msh";
-import {
-  getCxIdAndPatientIdOrFail,
-  createUnpackPidFailureFileKey,
-  getOptionalValueFromMessage,
-} from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
-import { utcifyHl7Message } from "@metriport/core/external/hl7-notification/datetime";
-import { buildDayjs, ISO_DATE_TIME } from "@metriport/shared/common/date";
-import { hieTimezoneDictionary, s3Utils, bucketName, asString } from "./app";
+import { S3Utils } from "@metriport/core/external/aws/s3";
 
 const crypto = new Base64Scrambler(Config.getHl7Base64ScramblerSeed());
+export const s3Utils = new S3Utils(Config.getAWSRegion());
+export const bucketName = Config.getHl7IncomingMessageBucketName();
 
-function reformUuid(shortId: string) {
-  return unpackUuid(crypto.unscramble(shortId));
-}
-
-export function unpackPidField(pid: string | undefined) {
-  if (!pid) {
-    return { cxId: "UNK", patientId: "UNK" };
-  }
-
-  const [cxId, patientId] = pid.split("_").map(reformUuid);
-  return { cxId, patientId };
+/**
+ * Avoid using message.toString() as its not stringifying every segment
+ */
+export function asString(message: Hl7Message) {
+  return message.segments.map(s => s.toString()).join("\n");
 }
 
 export function withErrorHandling<T>(
@@ -56,41 +44,15 @@ export function withErrorHandling<T>(
   };
 }
 
-export interface ParsedHl7Data {
-  message: Hl7Message;
-  cxId: string;
-  patientId: string;
+export function unpackPidField(pid: string | undefined) {
+  if (!pid) {
+    return { cxId: "UNK", patientId: "UNK" };
+  }
+
+  const [cxId, patientId] = pid.split("_").map(reformUuid);
+  return { cxId, patientId };
 }
 
-export async function parseHl7Message(rawMessage: Hl7Message): Promise<ParsedHl7Data> {
-  const sendingApplication = getSendingApplication(rawMessage) ?? "Unknown HIE";
-  const hieTimezone = hieTimezoneDictionary[sendingApplication] ?? "UTC";
-  const message = utcifyHl7Message(rawMessage, hieTimezone);
-
-  const { cxId, patientId } = getCxIdAndPatientIdOrFail(message);
-
-  return {
-    message,
-    cxId,
-    patientId,
-  };
-}
-export async function handleParsingError(rawMessage: Hl7Message, logger: Logger) {
-  const { log } = logger;
-
-  const fileKey = createUnpackPidFailureFileKey({
-    rawPtIdentifier: getOptionalValueFromMessage(rawMessage, "PID", 3, 1) ?? "unknown-patient",
-    rawTimestamp:
-      getOptionalValueFromMessage(rawMessage, "MSH", 7, 1) ?? buildDayjs().format(ISO_DATE_TIME),
-    messageCode: getOptionalValueFromMessage(rawMessage, "MSH", 9, 1) ?? "UNK",
-    triggerEvent: getOptionalValueFromMessage(rawMessage, "MSH", 9, 2) ?? "UNK",
-  });
-
-  log(`Parsing failed, uploading raw HL7 message to S3 with key: ${fileKey}`);
-  await s3Utils.uploadFile({
-    bucket: bucketName,
-    key: fileKey,
-    file: Buffer.from(asString(rawMessage)),
-    contentType: "text/plain",
-  });
+function reformUuid(shortId: string) {
+  return unpackUuid(crypto.unscramble(shortId));
 }

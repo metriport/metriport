@@ -1,7 +1,6 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 
-import { Hl7Message } from "@medplum/core";
 import { Hl7Server } from "@medplum/hl7";
 import { buildHl7NotificationWebhookSender } from "@metriport/core/command/hl7-notification/hl7-notification-webhook-sender-factory";
 import {
@@ -12,26 +11,16 @@ import {
 } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/msh";
 import { createFileKeyHl7Message } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
-import { S3Utils } from "@metriport/core/external/aws/s3";
 import { capture } from "@metriport/core/util";
-import { Config } from "@metriport/core/util/config";
 import type { Logger } from "@metriport/core/util/log";
 import { out } from "@metriport/core/util/log";
+import { handleParsingError, ParsedHl7Data, parseHl7Message } from "./parsing";
+import { asString, bucketName, s3Utils, withErrorHandling } from "./utils";
 import { initSentry } from "./sentry";
-import { handleParsingError, ParsedHl7Data, parseHl7Message, withErrorHandling } from "./utils";
 
 initSentry();
 
 const MLLP_DEFAULT_PORT = 2575;
-export const bucketName = Config.getHl7IncomingMessageBucketName();
-export const s3Utils = new S3Utils(Config.getAWSRegion());
-export const hieTimezoneDictionary = Config.getHieTimezoneDictionary();
-/**
- * Avoid using message.toString() as its not stringifying every segment
- */
-export function asString(message: Hl7Message) {
-  return message.segments.map(s => s.toString()).join("\n");
-}
 
 async function createHl7Server(logger: Logger): Promise<Hl7Server> {
   const { log } = logger;
