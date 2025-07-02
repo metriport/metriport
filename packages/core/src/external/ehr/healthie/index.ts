@@ -1,12 +1,35 @@
-import { ResourceType } from "@medplum/fhirtypes";
-import { MetriportError, NotFoundError, sleep } from "@metriport/shared";
+import {
+  AllergyIntolerance,
+  Condition as ConditionFhir,
+  Immunization as ImmunizationFhir,
+  MedicationStatement,
+  Observation,
+  ResourceType,
+} from "@medplum/fhirtypes";
+import { MetriportError, NotFoundError, sleep, toTitleCase } from "@metriport/shared";
+import { buildDayjs } from "@metriport/shared/common/date";
 import { normalizeGenderSafe, unknownGender } from "@metriport/shared/domain/gender";
 import {
+  AllergiesGraphql,
+  allergiesGraphqlSchema,
+  Allergy,
   AppointmentGetResponseGraphql,
   appointmentGetResponseGraphqlSchema,
   AppointmentListResponseGraphql,
   appointmentListResponseGraphqlSchema,
   AppointmentWithAttendee,
+  Condition,
+  ConditionsGraphql,
+  conditionsGraphqlSchema,
+  Immunization,
+  ImmunizationsGraphql,
+  immunizationsGraphqlSchema,
+  LabOrder,
+  LabOrdersGraphql,
+  labOrdersGraphqlSchema,
+  Medication,
+  MedicationsGraphql,
+  medicationsGraphqlSchema,
   Patient,
   PatientGraphql,
   patientGraphqlSchema,
@@ -38,6 +61,9 @@ export const supportedHealthieResources: ResourceType[] = [
   "MedicationRequest",
   "MedicationStatement",
   "Observation",
+  "Immunization",
+  "AllergyIntolerance",
+  "Condition",
 ];
 export const supportedHealthieReferenceResources: ResourceType[] = [
   "Medication",
@@ -245,6 +271,243 @@ class HealthieApi {
     if (!patientUpdateQuickNotesGraphql.data.updateClient.user) {
       throw new MetriportError("Patient quick notes not updated", undefined, additionalInfo);
     }
+  }
+
+  async getMedicationStatements({
+    cxId,
+    patientId,
+  }: {
+    cxId: string;
+    patientId: string;
+  }): Promise<MedicationStatement[]> {
+    const { debug } = out(
+      `Healthie getMedications - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
+    );
+    const additionalInfo = { cxId, practiceId: this.practiceId, patientId };
+    const operationName = "getMedications";
+    const query = `query getMedications($patient_id: ID) {
+      medications(patient_id: $patient_id) {
+        id
+        active
+        code
+        start_date
+        end_date
+        directions
+        dosage
+        frequency
+        comment
+      }
+    }`;
+    const variables = { patient_id: patientId };
+
+    const medicationsGraphqlResponse = await this.makeRequest<MedicationsGraphql>({
+      cxId,
+      patientId: patientId.toString(),
+      s3Path: "medications",
+      operationName,
+      query,
+      variables,
+      schema: medicationsGraphqlSchema,
+      additionalInfo,
+      debug,
+    });
+    return medicationsGraphqlResponse.data.medications.map(medication =>
+      this.convertMedicationToFhir(patientId, medication)
+    );
+  }
+
+  async getImmunizations({
+    cxId,
+    patientId,
+  }: {
+    cxId: string;
+    patientId: string;
+  }): Promise<ImmunizationFhir[]> {
+    const { debug } = out(
+      `Healthie getImmunizations - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
+    );
+    const additionalInfo = { cxId, practiceId: this.practiceId, patientId };
+    const operationName = "getImmunizations";
+    const query = `query getImmunizations($userId: ID!) {
+      user(id: $userId) {
+        immunizations {
+          id
+          received_at
+          status
+          cvx_code
+          vaccine_name
+          additional_notes
+        }
+      }
+    }`;
+    const variables = { userId: patientId };
+
+    const immunizationsGraphqlResponse = await this.makeRequest<ImmunizationsGraphql>({
+      cxId,
+      patientId: patientId.toString(),
+      s3Path: "immunizations",
+      operationName,
+      query,
+      variables,
+      schema: immunizationsGraphqlSchema,
+      additionalInfo,
+      debug,
+    });
+    return immunizationsGraphqlResponse.data.user.immunizations.map(immunization =>
+      this.convertImmunizationToFhir(patientId, immunization)
+    );
+  }
+
+  async getAllergies({
+    cxId,
+    patientId,
+  }: {
+    cxId: string;
+    patientId: string;
+  }): Promise<AllergyIntolerance[]> {
+    const { debug } = out(
+      `Healthie getAllergies - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
+    );
+    const additionalInfo = { cxId, practiceId: this.practiceId, patientId };
+    const operationName = "getAllergies";
+    const query = `query getAllergies($userId: ID!) {
+      user(id: $userId) {
+        id
+        allergy_sensitivities {
+          id
+          category
+          name
+          onset_date
+          reaction
+          severity
+          status
+        }
+      }
+    }`;
+    const variables = { userId: patientId };
+
+    const allergiesGraphqlResponse = await this.makeRequest<AllergiesGraphql>({
+      cxId,
+      patientId: patientId.toString(),
+      s3Path: "allergies",
+      operationName,
+      query,
+      variables,
+      schema: allergiesGraphqlSchema,
+      additionalInfo,
+      debug,
+    });
+    return allergiesGraphqlResponse.data.user.allergy_sensitivities.map(allergy =>
+      this.convertAllergyToFhir(patientId, allergy)
+    );
+  }
+
+  async getConditions({
+    cxId,
+    patientId,
+  }: {
+    cxId: string;
+    patientId: string;
+  }): Promise<ConditionFhir[]> {
+    const { debug } = out(
+      `Healthie getConditions - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
+    );
+    const additionalInfo = { cxId, practiceId: this.practiceId, patientId };
+    const operationName = "getConditions";
+    const query = `query getConditions($userId: ID!) {
+      user(id: $userId) {
+        id
+        diagnoses {
+          id
+          first_symptom_date
+          end_date
+          active
+          icd_code {
+            code
+            display_name
+          }
+        }
+      }
+    }`;
+    const variables = { userId: patientId };
+
+    const conditionsGraphqlResponse = await this.makeRequest<ConditionsGraphql>({
+      cxId,
+      patientId: patientId.toString(),
+      s3Path: "conditions",
+      operationName,
+      query,
+      variables,
+      schema: conditionsGraphqlSchema,
+      additionalInfo,
+      debug,
+    });
+    return conditionsGraphqlResponse.data.user.diagnoses.map(condition =>
+      this.convertConditionToFhir(patientId, condition)
+    );
+  }
+
+  async getLabObservations({
+    cxId,
+    patientId,
+  }: {
+    cxId: string;
+    patientId: string;
+  }): Promise<Observation[]> {
+    const { debug } = out(
+      `Healthie getLabResults - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
+    );
+    const additionalInfo = { cxId, practiceId: this.practiceId, patientId };
+    const operationName = "getLabResults";
+    const query = `query getLabResults(
+      $client_id: ID
+      $status_filter: String
+    ) {
+      labOrders(
+        client_id: $client_id
+        status_filter: $status_filter
+      ) {
+        id
+        status
+        normalized_status
+        test_date
+        lab_results {
+          id
+          lab_observation_requests {
+            id
+            lab_analyte
+            lab_observation_results {
+              id
+              interpretation
+              units
+              reference_range
+              quantitative_result
+              abnormal_flag
+              is_abnormal
+              notes
+            }
+          }
+        }
+      }
+    }`;
+    const variables = { userId: patientId };
+
+    const labOrdersGraphqlResponse = await this.makeRequest<LabOrdersGraphql>({
+      cxId,
+      patientId: patientId.toString(),
+      s3Path: "lab_results",
+      operationName,
+      query,
+      variables,
+      schema: labOrdersGraphqlSchema,
+      additionalInfo,
+      debug,
+    });
+    return labOrdersGraphqlResponse.data.labOrders.flatMap(labOrder => {
+      const convertedLabOrder = this.convertLabOrderToFhir(patientId, labOrder);
+      if (!convertedLabOrder) return [];
+      return [convertedLabOrder];
+    });
   }
 
   async getAppointments({
@@ -539,520 +802,201 @@ class HealthieApi {
     };
   }
 
-  async getMedications({ cxId, patientId }: { cxId: string; patientId: string }): Promise<void> {
-    const { debug } = out(
-      `Healthie getMedications - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
-    );
-    const additionalInfo = { cxId, practiceId: this.practiceId, patientId };
-    const operationName = "getMedications";
-    const query = `query getMedications($userId: ID!) {
-      medications(user_id: $userId) {
-        id
-        name
-        dosage
-        frequency
-        start_date
-        end_date
-        status
-      }
-    }`;
-    const variables = { userId: patientId };
-
-    await this.makeRequest<SubscriptionWithSignatureSecretGraphql>({
-      cxId,
-      patientId: patientId.toString(),
-      s3Path: "medications",
-      operationName,
-      query,
-      variables,
-      schema: subscriptionWithSignatureSecretGraphqlSchema,
-      additionalInfo,
-      debug,
-    });
-  }
-  /*
-  async getImmunizations({
-    cxId,
-    patientId,
-  }: {
-    cxId: string;
-    patientId: string;
-  }): Promise<fhir4.Immunization[]> {
-    const { debug } = out(
-      `Healthie getImmunizations - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
-    );
-    const additionalInfo = { cxId, practiceId: this.practiceId, patientId };
-    const operationName = "getImmunizations";
-    const query = `query getImmunizations($userId: ID!) {
-      immunizations(user_id: $userId) {
-        id
-        name
-        date_given
-        lot_number
-        manufacturer
-        administered_by {
-          id
-          first_name
-          last_name
-        }
-        location {
-          id
-          name
-          address
-        }
-      }
-    }`;
-    const variables = { userId: patientId };
-    
-    const response = await this.makeRequest<{ immunizations: any[] }>({
-      cxId,
-      patientId: patientId.toString(),
-      s3Path: "immunizations",
-      operationName,
-      query,
-      variables,
-      schema: z.object({ immunizations: z.array(z.any()) }),
-      additionalInfo,
-      debug,
-    });
-
-    return response.immunizations.map(imm => this.convertImmunizationToFhir(imm));
-  }
-
-  async getAllergies({
-    cxId,
-    patientId,
-  }: {
-    cxId: string;
-    patientId: string;
-  }): Promise<fhir4.AllergyIntolerance[]> {
-    const { debug } = out(
-      `Healthie getAllergies - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
-    );
-    const additionalInfo = { cxId, practiceId: this.practiceId, patientId };
-    const operationName = "getAllergies";
-    const query = `query getAllergies($userId: ID!) {
-      allergies(user_id: $userId) {
-        id
-        name
-        severity
-        reaction
-        onset_date
-        status
-        notes
-      }
-    }`;
-    const variables = { userId: patientId };
-    
-    const response = await this.makeRequest<{ allergies: any[] }>({
-      cxId,
-      patientId: patientId.toString(),
-      s3Path: "allergies",
-      operationName,
-      query,
-      variables,
-      schema: z.object({ allergies: z.array(z.any()) }),
-      additionalInfo,
-      debug,
-    });
-
-    return response.allergies.map(allergy => this.convertAllergyToFhir(allergy));
-  }
-
-  async getConditions({
-    cxId,
-    patientId,
-  }: {
-    cxId: string;
-    patientId: string;
-  }): Promise<fhir4.Condition[]> {
-    const { debug } = out(
-      `Healthie getConditions - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
-    );
-    const additionalInfo = { cxId, practiceId: this.practiceId, patientId };
-    const operationName = "getConditions";
-    const query = `query getConditions($userId: ID!) {
-      conditions(user_id: $userId) {
-        id
-        name
-        diagnosis_date
-        status
-        severity
-        notes
-        diagnosed_by {
-          id
-          first_name
-          last_name
-        }
-      }
-    }`;
-    const variables = { userId: patientId };
-    
-    const response = await this.makeRequest<{ conditions: any[] }>({
-      cxId,
-      patientId: patientId.toString(),
-      s3Path: "conditions",
-      operationName,
-      query,
-      variables,
-      schema: z.object({ conditions: z.array(z.any()) }),
-      additionalInfo,
-      debug,
-    });
-
-    return response.conditions.map(condition => this.convertConditionToFhir(condition));
-  }
-
-  async getLabResults({
-    cxId,
-    patientId,
-  }: {
-    cxId: string;
-    patientId: string;
-  }): Promise<fhir4.Observation[]> {
-    const { debug } = out(
-      `Healthie getLabResults - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
-    );
-    const additionalInfo = { cxId, practiceId: this.practiceId, patientId };
-    const operationName = "getLabResults";
-    const query = `query getLabResults($userId: ID!) {
-      lab_results(user_id: $userId) {
-        id
-        test_name
-        result_value
-        unit
-        reference_range
-        date_taken
-        status
-        lab {
-          id
-          name
-          address
-        }
-        ordered_by {
-          id
-          first_name
-          last_name
-        }
-      }
-    }`;
-    const variables = { userId: patientId };
-    
-    const response = await this.makeRequest<{ lab_results: any[] }>({
-      cxId,
-      patientId: patientId.toString(),
-      s3Path: "lab_results",
-      operationName,
-      query,
-      variables,
-      schema: z.object({ lab_results: z.array(z.any()) }),
-      additionalInfo,
-      debug,
-    });
-
-    return response.lab_results.map(lab => this.convertLabResultToFhir(lab));
-  }
-
-  async getVitals({
-    cxId,
-    patientId,
-  }: {
-    cxId: string;
-    patientId: string;
-  }): Promise<fhir4.Observation[]> {
-    const { debug } = out(
-      `Healthie getVitals - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
-    );
-    const additionalInfo = { cxId, practiceId: this.practiceId, patientId };
-    const operationName = "getVitals";
-    const query = `query getVitals($userId: ID!) {
-      vitals(user_id: $userId) {
-        id
-        vital_type
-        value
-        unit
-        date_taken
-        notes
-        taken_by {
-          id
-          first_name
-          last_name
-        }
-      }
-    }`;
-    const variables = { userId: patientId };
-    
-    const response = await this.makeRequest<{ vitals: any[] }>({
-      cxId,
-      patientId: patientId.toString(),
-      s3Path: "vitals",
-      operationName,
-      query,
-      variables,
-      schema: z.object({ vitals: z.array(z.any()) }),
-      additionalInfo,
-      debug,
-    });
-
-    return response.vitals.map(vital => this.convertVitalToFhir(vital));
-  }
-
-  private convertMedicationToFhir(medication: any): MedicationRequest {
+  private convertMedicationToFhir(patientId: string, medication: Medication): MedicationStatement {
+    const isCompleted = !medication.active && medication.end_date !== null;
     return {
-      resourceType: "MedicationRequest",
+      resourceType: "MedicationStatement",
       id: medication.id,
-      status: this.mapMedicationStatus(medication.status),
-      intent: "order",
       subject: {
-        reference: `Patient/${medication.user_id}`,
+        reference: `Patient/${patientId}`,
       },
-      authoredOn: medication.start_date,
-      requester: medication.prescribed_by ? {
-        reference: `Practitioner/${medication.prescribed_by.id}`,
-        display: `${medication.prescribed_by.first_name} ${medication.prescribed_by.last_name}`,
-      } : undefined,
-      dosageInstruction: [{
-        text: `${medication.dosage} ${medication.frequency}`,
-      }],
-      dispenseRequest: medication.pharmacy ? {
-        performer: {
-          reference: `Organization/${medication.pharmacy.id}`,
-          display: medication.pharmacy.name,
-        },
-      } : undefined,
+      status: medication.active ? "active" : isCompleted ? "completed" : "stopped",
+      medicationCodeableConcept: {
+        coding: [
+          {
+            system: "http://www.nlm.nih.gov/research/umls/rxnorm",
+            code: medication.code,
+          },
+        ],
+      },
+      ...(medication.start_date && medication.end_date
+        ? {
+            effectivePeriod: {
+              start: buildDayjs(medication.start_date).toISOString(),
+              end: buildDayjs(medication.end_date).toISOString(),
+            },
+          }
+        : medication.start_date
+        ? {
+            effectiveDateTime: buildDayjs(medication.start_date).toISOString(),
+          }
+        : medication.end_date
+        ? {
+            effectiveDateTime: buildDayjs(medication.end_date).toISOString(),
+          }
+        : {}),
+      ...(medication.dosage
+        ? {
+            dosage: [
+              {
+                text: `${medication.dosage}${
+                  medication.directions ? ` ${medication.directions}` : ""
+                }${medication.frequency ? ` ${medication.frequency}` : ""}`,
+              },
+            ],
+          }
+        : {}),
+      ...(medication.comment ? { note: [{ text: medication.comment }] } : {}),
     };
   }
 
-  private convertImmunizationToFhir(immunization: any): fhir4.Immunization {
+  private convertImmunizationToFhir(
+    patientId: string,
+    immunization: Immunization
+  ): ImmunizationFhir {
+    const isCompleted = immunization.status === "completed";
     return {
       resourceType: "Immunization",
       id: immunization.id,
-      status: "completed",
-      vaccineCode: {
-        text: immunization.name,
-      },
       patient: {
-        reference: `Patient/${immunization.user_id}`,
+        reference: `Patient/${patientId}`,
       },
-  private convertAllergyToFhir(allergy: any): fhir4.AllergyIntolerance {
+      status: isCompleted ? "completed" : "not-done",
+      vaccineCode: {
+        coding: [
+          {
+            system: "http://hl7.org/fhir/sid/cvx",
+            code: immunization.cvx_code,
+          },
+        ],
+      },
+      occurrenceDateTime: buildDayjs(immunization.received_at).toISOString(),
+      ...(immunization.additional_notes ? { note: [{ text: immunization.additional_notes }] } : {}),
+    };
+  }
+
+  private convertAllergyToFhir(patientId: string, allergy: Allergy): AllergyIntolerance {
+    const allergyCategory = allergy.category_type
+      ? this.mapAllergyCategory(allergy.category_type)
+      : undefined;
     return {
       resourceType: "AllergyIntolerance",
       id: allergy.id,
-      clinicalStatus: {
-        coding: [{
-          system: "http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical",
-          code: "active",
-          display: "Active",
-        }],
-      },
-      verificationStatus: {
-        coding: [{
-          system: "http://terminology.hl7.org/CodeSystem/allergyintolerance-verification",
-          code: "confirmed",
-          display: "Confirmed",
-        }],
-      },
-      type: "allergy",
-      category: ["medication"],
-      code: {
-        text: allergy.name,
-      },
       patient: {
-        reference: `Patient/${allergy.user_id}`,
+        reference: `Patient/${patientId}`,
       },
-      onsetDateTime: allergy.reaction_date,
-      reaction: allergy.reaction ? [{
-        manifestation: [{
-          text: allergy.reaction,
-        }],
-        severity: this.mapAllergySeverity(allergy.severity),
-      }] : undefined,
+      clinicalStatus: {
+        coding: [
+          {
+            system: "http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical",
+            code: allergy.status,
+          },
+        ],
+      },
+      code: { text: allergy.name },
+      onsetDateTime: buildDayjs(allergy.onset_date).toISOString(),
+      type: allergy.category === "allergy" ? "allergy" : "intolerance",
+      ...(allergyCategory && allergyCategory !== "other" ? { category: [allergyCategory] } : {}),
+      reaction: [
+        {
+          manifestation: [{ text: allergy.reaction }],
+          ...(allergy.severity !== "unknown" ? { severity: allergy.severity } : {}),
+        },
+      ],
     };
   }
 
-  private convertConditionToFhir(condition: any): fhir4.Condition {
+  private convertConditionToFhir(patientId: string, condition: Condition): ConditionFhir {
     return {
       resourceType: "Condition",
       id: condition.id,
+      subject: {
+        reference: `Patient/${patientId}`,
+      },
       clinicalStatus: {
-        coding: [{
-          system: "http://terminology.hl7.org/CodeSystem/condition-clinical",
-          code: this.mapConditionStatus(condition.status),
-          display: this.mapConditionStatusDisplay(condition.status),
-        }],
-      },
-      verificationStatus: {
-        coding: [{
-          system: "http://terminology.hl7.org/CodeSystem/condition-ver-status",
-          code: "confirmed",
-          display: "Confirmed",
-        }],
+        coding: [
+          {
+            system: "http://terminology.hl7.org/CodeSystem/condition-clinical",
+            code: condition.active ? "active" : "inactive",
+          },
+        ],
       },
       code: {
-        text: condition.name,
+        coding: [
+          {
+            system: condition.icd_code.system,
+            code: condition.icd_code.code,
+          },
+        ],
       },
-      subject: {
-        reference: `Patient/${condition.user_id}`,
-      },
-      onsetDateTime: condition.diagnosis_date,
-      recordedDate: condition.created_at,
-      recorder: condition.diagnosed_by ? {
-        reference: `Practitioner/${condition.diagnosed_by.id}`,
-        display: `${condition.diagnosed_by.first_name} ${condition.diagnosed_by.last_name}`,
-      } : undefined,
+      ...(condition.first_symptom_date && condition.end_date
+        ? {
+            effectivePeriod: {
+              start: buildDayjs(condition.first_symptom_date).toISOString(),
+              end: buildDayjs(condition.end_date).toISOString(),
+            },
+          }
+        : condition.first_symptom_date
+        ? {
+            effectiveDateTime: buildDayjs(condition.first_symptom_date).toISOString(),
+          }
+        : condition.end_date
+        ? {
+            effectiveDateTime: buildDayjs(condition.end_date).toISOString(),
+          }
+        : {}),
     };
   }
 
-  private convertLabResultToFhir(labResult: any): fhir4.Observation {
+  private convertLabOrderToFhir(patientId: string, labOrder: LabOrder): Observation | undefined {
+    const isFinal = labOrder.normalized_status === "final";
+    const labResult = labOrder.lab_results[0];
+    if (!labResult) return undefined;
+    const labObservationRequest = labResult.lab_observation_requests[0];
+    if (!labObservationRequest) return undefined;
+    const labObservationResult = labObservationRequest.lab_observation_results[0];
+    if (!labObservationResult) return undefined;
+    const quantitativeResult = labObservationResult.quantitative_result;
+    const units = labObservationResult.units;
     return {
       resourceType: "Observation",
-      id: labResult.id,
-      status: this.mapLabResultStatus(labResult.status),
-      category: [{
-        coding: [{
-          system: "http://terminology.hl7.org/CodeSystem/observation-category",
-          code: "laboratory",
-          display: "Laboratory",
-        }],
-      }],
-      code: {
-        text: labResult.test_name,
-      },
+      id: labOrder.id,
       subject: {
-        reference: `Patient/${labResult.user_id}`,
+        reference: `Patient/${patientId}`,
       },
-      effectiveDateTime: labResult.test_date,
-      issued: labResult.report_date,
-      valueQuantity: labResult.result_value ? {
-        value: parseFloat(labResult.result_value),
-        unit: labResult.unit,
-      } : undefined,
-      valueString: labResult.result_text,
-      interpretation: labResult.interpretation ? [{
-        coding: [{
-          system: "http://terminology.hl7.org/CodeSystem/v3-ObservationInterpretation",
-          code: this.mapLabInterpretation(labResult.interpretation),
-          display: labResult.interpretation,
-        }],
-      }] : undefined,
-      referenceRange: labResult.reference_range ? [{
-        text: labResult.reference_range,
-      }] : undefined,
-      performer: labResult.ordered_by ? [{
-        reference: `Practitioner/${labResult.ordered_by.id}`,
-        display: `${labResult.ordered_by.first_name} ${labResult.ordered_by.last_name}`,
-      }] : undefined,
+      status: isFinal ? "final" : "registered",
+      category: [
+        {
+          coding: [
+            {
+              system: "http://terminology.hl7.org/CodeSystem/observation-category",
+              code: "laboratory",
+              display: "Laboratory",
+            },
+          ],
+        },
+      ],
+      code: { text: labObservationRequest.lab_analyte },
+      effectiveDateTime: buildDayjs(labOrder.test_date).toISOString(),
+      valueQuantity: { value: parseFloat(quantitativeResult), unit: units },
+      referenceRange: [{ text: labObservationResult.reference_range }],
+      interpretation: [{ text: toTitleCase(labObservationResult.interpretation) }],
+      ...(labObservationResult.notes ? { note: [{ text: labObservationResult.notes }] } : {}),
     };
   }
 
-  private convertVitalToFhir(vital: any): fhir4.Observation {
-    return {
-      resourceType: "Observation",
-      id: vital.id,
-      status: "final",
-      category: [{
-        coding: [{
-          system: "http://terminology.hl7.org/CodeSystem/observation-category",
-          code: "vital-signs",
-          display: "Vital Signs",
-        }],
-      }],
-      code: {
-        text: vital.name,
-      },
-      subject: {
-        reference: `Patient/${vital.user_id}`,
-      },
-      effectiveDateTime: vital.measurement_date,
-      valueQuantity: {
-        value: parseFloat(vital.value),
-        unit: vital.unit,
-      },
-      performer: vital.measured_by ? [{
-        reference: `Practitioner/${vital.measured_by.id}`,
-        display: `${vital.measured_by.first_name} ${vital.measured_by.last_name}`,
-      }] : undefined,
-    };
-  }
-
-  private mapMedicationStatus(status: string): fhir4.MedicationRequestStatus {
-    switch (status?.toLowerCase()) {
-      case "active":
-        return "active";
-      case "discontinued":
-        return "stopped";
-      case "completed":
-        return "completed";
+  private mapAllergyCategory(category: string): "medication" | "food" | "environment" | "other" {
+    switch (category.toLowerCase()) {
+      case "drug":
+        return "medication";
+      case "food":
+        return "food";
+      case "environmental":
+        return "environment";
       default:
-        return "unknown";
+        return "other";
     }
   }
-
-  private mapAllergySeverity(severity: string): fhir4.AllergyIntoleranceReactionSeverity {
-    switch (severity?.toLowerCase()) {
-      case "mild":
-        return "mild";
-      case "moderate":
-        return "moderate";
-      case "severe":
-        return "severe";
-      default:
-        return "mild";
-    }
-  }
-
-  private mapConditionStatus(status: string): string {
-    switch (status?.toLowerCase()) {
-      case "active":
-        return "active";
-      case "inactive":
-        return "inactive";
-      case "resolved":
-        return "resolved";
-      default:
-        return "active";
-    }
-  }
-
-  private mapConditionStatusDisplay(status: string): string {
-    switch (status?.toLowerCase()) {
-      case "active":
-        return "Active";
-      case "inactive":
-        return "Inactive";
-      case "resolved":
-        return "Resolved";
-      default:
-        return "Active";
-    }
-  }
-
-  private mapLabResultStatus(status: string): fhir4.ObservationStatus {
-    switch (status?.toLowerCase()) {
-      case "final":
-        return "final";
-      case "preliminary":
-        return "preliminary";
-      case "amended":
-        return "amended";
-      default:
-        return "final";
-    }
-  }
-
-  private mapLabInterpretation(interpretation: string): string {
-    switch (interpretation?.toLowerCase()) {
-      case "high":
-        return "H";
-      case "low":
-        return "L";
-      case "normal":
-        return "N";
-      default:
-        return "N";
-    }
-  }
-  */
 }
 
 export default HealthieApi;
