@@ -2,13 +2,10 @@ import { z } from "zod";
 
 export const conditionSchema = z.object({
   id: z.string(),
-  first_symptom_date: z.string(),
+  active: z.boolean().nullable(),
+  icd_code: z.object({ code: z.string().nullable() }).nullable(),
+  first_symptom_date: z.string().nullable(),
   end_date: z.string().nullable(),
-  active: z.boolean(),
-  icd_code: z.object({
-    code: z.string(),
-    system: z.string(),
-  }),
 });
 export type Condition = z.infer<typeof conditionSchema>;
 

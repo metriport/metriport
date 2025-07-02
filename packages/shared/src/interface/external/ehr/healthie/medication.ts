@@ -2,8 +2,9 @@ import { z } from "zod";
 
 export const medicationSchema = z.object({
   id: z.string(),
-  active: z.boolean(),
-  code: z.string(),
+  active: z.boolean().nullable(),
+  name: z.string().nullable(),
+  code: z.string().nullable(),
   start_date: z.string().nullable(),
   end_date: z.string().nullable(),
   directions: z.string().nullable(),

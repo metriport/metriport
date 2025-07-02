@@ -59,6 +59,7 @@ import {
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import axios, { AxiosInstance } from "axios";
 import { Config } from "../../../util/config";
+import { CVX_URL, ICD_10_URL } from "../../../util/constants";
 import { out } from "../../../util/log";
 import {
   ApiConfig,
@@ -285,6 +286,7 @@ class HealthieApi {
       medications(patient_id: $patient_id) {
         id
         active
+        name
         code
         start_date
         end_date
@@ -307,9 +309,11 @@ class HealthieApi {
       additionalInfo,
       debug,
     });
-    return medicationsGraphqlResponse.data.medications.map(medication =>
-      this.convertMedicationToFhir(patientId, medication)
-    );
+    return medicationsGraphqlResponse.data.medications.flatMap(medication => {
+      const convertedMedication = this.convertMedicationToFhir(patientId, medication);
+      if (!convertedMedication) return [];
+      return [convertedMedication];
+    });
   }
 
   async getImmunizations({
@@ -349,9 +353,11 @@ class HealthieApi {
       additionalInfo,
       debug,
     });
-    return immunizationsGraphqlResponse.data.user.immunizations.map(immunization =>
-      this.convertImmunizationToFhir(patientId, immunization)
-    );
+    return immunizationsGraphqlResponse.data.user.immunizations.flatMap(immunization => {
+      const convertedImmunization = this.convertImmunizationToFhir(patientId, immunization);
+      if (!convertedImmunization) return [];
+      return [convertedImmunization];
+    });
   }
 
   async getAllergies({
@@ -393,9 +399,11 @@ class HealthieApi {
       additionalInfo,
       debug,
     });
-    return allergiesGraphqlResponse.data.user.allergy_sensitivities.map(allergy =>
-      this.convertAllergyToFhir(patientId, allergy)
-    );
+    return allergiesGraphqlResponse.data.user.allergy_sensitivities.flatMap(allergy => {
+      const convertedAllergy = this.convertAllergyToFhir(patientId, allergy);
+      if (!convertedAllergy) return [];
+      return [convertedAllergy];
+    });
   }
 
   async getConditions({
@@ -438,9 +446,11 @@ class HealthieApi {
       additionalInfo,
       debug,
     });
-    return conditionsGraphqlResponse.data.user.diagnoses.map(condition =>
-      this.convertConditionToFhir(patientId, condition)
-    );
+    return conditionsGraphqlResponse.data.user.diagnoses.flatMap(condition => {
+      const convertedCondition = this.convertConditionToFhir(patientId, condition);
+      if (!convertedCondition) return [];
+      return [convertedCondition];
+    });
   }
 
   async getLabObservations({
@@ -500,9 +510,9 @@ class HealthieApi {
       debug,
     });
     return labOrdersGraphqlResponse.data.labOrders.flatMap(labOrder => {
-      const convertedLabOrder = this.convertLabOrderToFhir(patientId, labOrder);
-      if (!convertedLabOrder) return [];
-      return [convertedLabOrder];
+      const convertedLabOrders = this.convertLabOrdersToFhir(patientId, labOrder);
+      if (!convertedLabOrders) return [];
+      return convertedLabOrders;
     });
   }
 
@@ -875,22 +885,31 @@ class HealthieApi {
     };
   }
 
-  private convertMedicationToFhir(patientId: string, medication: Medication): MedicationStatement {
-    const isCompleted = !medication.active && medication.end_date !== null;
+  private convertMedicationToFhir(
+    patientId: string,
+    medication: Medication
+  ): MedicationStatement | undefined {
+    if (!medication.active) return undefined;
+    if (!medication.name && !medication.code) return undefined;
+    if (!medication.start_date && !medication.end_date) return undefined;
+    const isCompleted =
+      !medication.active &&
+      medication.end_date !== null &&
+      buildDayjs(medication.end_date).isBefore(buildDayjs());
     return {
       resourceType: "MedicationStatement",
       id: medication.id,
-      subject: {
-        reference: `Patient/${patientId}`,
-      },
+      subject: { reference: `Patient/${patientId}` },
       status: medication.active ? "active" : isCompleted ? "completed" : "stopped",
       medicationCodeableConcept: {
-        coding: [
-          {
-            system: "http://www.nlm.nih.gov/research/umls/rxnorm",
-            code: medication.code,
-          },
-        ],
+        ...(medication.code
+          ? {
+              coding: [
+                { system: "http://www.nlm.nih.gov/research/umls/rxnorm", code: medication.code },
+              ],
+            }
+          : {}),
+        ...(medication.name ? { text: medication.name } : {}),
       },
       ...(medication.start_date && medication.end_date
         ? {
@@ -912,9 +931,9 @@ class HealthieApi {
         ? {
             dosage: [
               {
-                text: `${medication.dosage}${
-                  medication.directions ? ` ${medication.directions}` : ""
-                }${medication.frequency ? ` ${medication.frequency}` : ""}`,
+                text: `${medication.dosage} ${
+                  medication.frequency ? ` ${medication.frequency}` : ""
+                } ${medication.directions ? ` ${medication.directions}` : ""}`,
               },
             ],
           }
@@ -931,33 +950,28 @@ class HealthieApi {
     return {
       resourceType: "Immunization",
       id: immunization.id,
-      patient: {
-        reference: `Patient/${patientId}`,
-      },
+      patient: { reference: `Patient/${patientId}` },
       status: isCompleted ? "completed" : "not-done",
-      vaccineCode: {
-        coding: [
-          {
-            system: "http://hl7.org/fhir/sid/cvx",
-            code: immunization.cvx_code,
-          },
-        ],
-      },
+      vaccineCode: { coding: [{ system: CVX_URL, code: immunization.cvx_code }] },
       occurrenceDateTime: buildDayjs(immunization.received_at).toISOString(),
       ...(immunization.additional_notes ? { note: [{ text: immunization.additional_notes }] } : {}),
     };
   }
 
-  private convertAllergyToFhir(patientId: string, allergy: Allergy): AllergyIntolerance {
+  private convertAllergyToFhir(
+    patientId: string,
+    allergy: Allergy
+  ): AllergyIntolerance | undefined {
+    if (!allergy.name || !allergy.status || !allergy.onset_date || !allergy.reaction)
+      return undefined;
     const allergyCategory = allergy.category_type
       ? this.mapAllergyCategory(allergy.category_type)
       : undefined;
     return {
       resourceType: "AllergyIntolerance",
       id: allergy.id,
-      patient: {
-        reference: `Patient/${patientId}`,
-      },
+      patient: { reference: `Patient/${patientId}` },
+      code: { text: allergy.name },
       clinicalStatus: {
         coding: [
           {
@@ -966,39 +980,38 @@ class HealthieApi {
           },
         ],
       },
-      code: { text: allergy.name },
       onsetDateTime: buildDayjs(allergy.onset_date).toISOString(),
-      type: allergy.category === "allergy" ? "allergy" : "intolerance",
+      ...(["allergy", "intolerance"].includes(allergy.category)
+        ? { type: allergy.category as "allergy" | "intolerance" }
+        : {}),
       ...(allergyCategory && allergyCategory !== "other" ? { category: [allergyCategory] } : {}),
       reaction: [
         {
           manifestation: [{ text: allergy.reaction }],
-          ...(allergy.severity !== "unknown" ? { severity: allergy.severity } : {}),
+          ...(allergy.severity && allergy.severity !== "unknown"
+            ? { severity: allergy.severity }
+            : {}),
         },
       ],
     };
   }
 
-  private convertConditionToFhir(patientId: string, condition: Condition): ConditionFhir {
+  private convertConditionToFhir(
+    patientId: string,
+    condition: Condition
+  ): ConditionFhir | undefined {
+    if (!condition.active || !condition.icd_code?.code) return undefined;
+    if (!condition.first_symptom_date && !condition.end_date) return undefined;
     return {
       resourceType: "Condition",
       id: condition.id,
-      subject: {
-        reference: `Patient/${patientId}`,
-      },
+      subject: { reference: `Patient/${patientId}` },
+      code: { coding: [{ system: ICD_10_URL, code: condition.icd_code.code }] },
       clinicalStatus: {
         coding: [
           {
             system: "http://terminology.hl7.org/CodeSystem/condition-clinical",
             code: condition.active ? "active" : "inactive",
-          },
-        ],
-      },
-      code: {
-        coding: [
-          {
-            system: condition.icd_code.system,
-            code: condition.icd_code.code,
           },
         ],
       },
@@ -1021,41 +1034,53 @@ class HealthieApi {
     };
   }
 
-  private convertLabOrderToFhir(patientId: string, labOrder: LabOrder): Observation | undefined {
-    const isFinal = labOrder.normalized_status === "final";
-    const labResult = labOrder.lab_results[0];
-    if (!labResult) return undefined;
-    const labObservationRequest = labResult.lab_observation_requests[0];
-    if (!labObservationRequest) return undefined;
-    const labObservationResult = labObservationRequest.lab_observation_results[0];
-    if (!labObservationResult) return undefined;
-    const quantitativeResult = labObservationResult.quantitative_result;
-    const units = labObservationResult.units;
-    return {
-      resourceType: "Observation",
-      id: labOrder.id,
-      subject: {
-        reference: `Patient/${patientId}`,
-      },
-      status: isFinal ? "final" : "registered",
-      category: [
-        {
-          coding: [
-            {
-              system: "http://terminology.hl7.org/CodeSystem/observation-category",
-              code: "laboratory",
-              display: "Laboratory",
-            },
-          ],
-        },
-      ],
-      code: { text: labObservationRequest.lab_analyte },
-      effectiveDateTime: buildDayjs(labOrder.test_date).toISOString(),
-      valueQuantity: { value: parseFloat(quantitativeResult), unit: units },
-      referenceRange: [{ text: labObservationResult.reference_range }],
-      interpretation: [{ text: toTitleCase(labObservationResult.interpretation) }],
-      ...(labObservationResult.notes ? { note: [{ text: labObservationResult.notes }] } : {}),
-    };
+  private convertLabOrdersToFhir(patientId: string, labOrder: LabOrder): Observation[] | undefined {
+    const testDate = labOrder.test_date;
+    if (!labOrder.status || !testDate || labOrder.lab_results.length < 1) return undefined;
+    const isFinal = labOrder.status === "final";
+    return labOrder.lab_results.flatMap(labResult => {
+      if (!labResult.lab_observation_requests || labResult.lab_observation_requests.length < 1) {
+        return [];
+      }
+      return labResult.lab_observation_requests.flatMap(labObservationRequest => {
+        const labAnalyte = labObservationRequest.lab_analyte;
+        if (!labAnalyte) return [];
+        return labObservationRequest.lab_observation_results.flatMap(labObservationResult => {
+          if (
+            !labObservationResult.quantitative_result ||
+            !labObservationResult.units ||
+            !labObservationResult.reference_range
+          ) {
+            return [];
+          }
+          const quantitativeResult = labObservationResult.quantitative_result;
+          const units = labObservationResult.units;
+          return {
+            resourceType: "Observation",
+            id: labObservationResult.id,
+            subject: { reference: `Patient/${patientId}` },
+            status: isFinal ? "final" : "registered",
+            code: { text: labAnalyte },
+            category: [
+              {
+                coding: [
+                  {
+                    system: "http://terminology.hl7.org/CodeSystem/observation-category",
+                    code: "laboratory",
+                    display: "Laboratory",
+                  },
+                ],
+              },
+            ],
+            effectiveDateTime: buildDayjs(testDate).toISOString(),
+            valueQuantity: { value: parseFloat(quantitativeResult), unit: units },
+            referenceRange: [{ text: labObservationResult.reference_range }],
+            interpretation: [{ text: toTitleCase(labObservationResult.interpretation) }],
+            ...(labObservationResult.notes ? { note: [{ text: labObservationResult.notes }] } : {}),
+          };
+        });
+      });
+    });
   }
 
   private mapAllergyCategory(category: string): "medication" | "food" | "environment" | "other" {
