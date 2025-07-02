@@ -1,14 +1,25 @@
 import {
   AllergyIntolerance,
+  Bundle,
   Condition as ConditionFhir,
   Immunization as ImmunizationFhir,
   MedicationStatement,
   Observation,
   ResourceType,
 } from "@medplum/fhirtypes";
-import { MetriportError, NotFoundError, sleep, toTitleCase } from "@metriport/shared";
+import {
+  BadRequestError,
+  MetriportError,
+  NotFoundError,
+  sleep,
+  toTitleCase,
+} from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import { normalizeGenderSafe, unknownGender } from "@metriport/shared/domain/gender";
+import {
+  EhrStrictFhirResource,
+  ehrStrictFhirResourceSchema,
+} from "@metriport/shared/interface/external/ehr/fhir-resource";
 import {
   AllergiesGraphql,
   allergiesGraphqlSchema,
@@ -51,6 +62,7 @@ import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
 import {
   ApiConfig,
+  fetchEhrBundleUsingCache,
   formatDate,
   makeRequest,
   MakeRequestParamsInEhr,
@@ -58,19 +70,11 @@ import {
 } from "../shared";
 
 export const supportedHealthieResources: ResourceType[] = [
-  "MedicationRequest",
   "MedicationStatement",
-  "Observation",
   "Immunization",
   "AllergyIntolerance",
   "Condition",
-];
-export const supportedHealthieReferenceResources: ResourceType[] = [
-  "Medication",
-  "Location",
-  "Organization",
-  "Patient",
-  "Practitioner",
+  "Observation",
 ];
 
 export type SupportedHealthieResource = (typeof supportedHealthieResources)[number];
@@ -78,14 +82,6 @@ export function isSupportedHealthieResource(
   resourceType: string
 ): resourceType is SupportedHealthieResource {
   return supportedHealthieResources.includes(resourceType as ResourceType);
-}
-
-export type SupportedHealthieReferenceResource =
-  (typeof supportedHealthieReferenceResources)[number];
-export function isSupportedHealthieReferenceResource(
-  resourceType: string
-): resourceType is SupportedHealthieReferenceResource {
-  return supportedHealthieReferenceResources.includes(resourceType as ResourceType);
 }
 
 interface HealthieApiConfig
@@ -508,6 +504,83 @@ class HealthieApi {
       if (!convertedLabOrder) return [];
       return [convertedLabOrder];
     });
+  }
+
+  async getBundleByResourceType({
+    cxId,
+    metriportPatientId,
+    healthiePatientId,
+    resourceType,
+    useCachedBundle = true,
+  }: {
+    cxId: string;
+    metriportPatientId: string;
+    healthiePatientId: string;
+    resourceType: string;
+    useCachedBundle?: boolean;
+  }): Promise<Bundle> {
+    if (!isSupportedHealthieResource(resourceType)) {
+      throw new BadRequestError("Invalid resource type", undefined, {
+        resourceType,
+      });
+    }
+    const additionalInfo = {
+      cxId,
+      practiceId: this.practiceId,
+      patientId: healthiePatientId,
+      resourceType,
+    };
+    const client = this; // eslint-disable-line @typescript-eslint/no-this-alias
+    async function fetchResourcesFromEhr(): Promise<EhrStrictFhirResource[]> {
+      switch (resourceType) {
+        case "Condition": {
+          const conditions = await client.getConditions({ cxId, patientId: healthiePatientId });
+          return conditions.map(condition => ehrStrictFhirResourceSchema.parse(condition));
+        }
+        case "MedicationStatement": {
+          const medicationStatements = await client.getMedicationStatements({
+            cxId,
+            patientId: healthiePatientId,
+          });
+          return medicationStatements.map(medicationStatement =>
+            ehrStrictFhirResourceSchema.parse(medicationStatement)
+          );
+        }
+        case "Immunization": {
+          const immunizations = await client.getImmunizations({
+            cxId,
+            patientId: healthiePatientId,
+          });
+          return immunizations.map(immunization => ehrStrictFhirResourceSchema.parse(immunization));
+        }
+        case "AllergyIntolerance": {
+          const allergies = await client.getAllergies({ cxId, patientId: healthiePatientId });
+          return allergies.map(allergy => ehrStrictFhirResourceSchema.parse(allergy));
+        }
+        case "Observation": {
+          const labObservations = await client.getLabObservations({
+            cxId,
+            patientId: healthiePatientId,
+          });
+          return labObservations.map(labObservation =>
+            ehrStrictFhirResourceSchema.parse(labObservation)
+          );
+        }
+        default: {
+          throw new BadRequestError("Invalid resource type", undefined, additionalInfo);
+        }
+      }
+    }
+    const bundle = await fetchEhrBundleUsingCache({
+      ehr: EhrSources.canvas,
+      cxId,
+      metriportPatientId,
+      ehrPatientId: healthiePatientId,
+      resourceType,
+      fetchResourcesFromEhr,
+      useCachedBundle,
+    });
+    return bundle;
   }
 
   async getAppointments({
