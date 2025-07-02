@@ -59,7 +59,7 @@ import {
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import axios, { AxiosInstance } from "axios";
 import { Config } from "../../../util/config";
-import { CVX_URL, ICD_10_URL } from "../../../util/constants";
+import { CVX_URL, ICD_10_URL, RXNORM_URL } from "../../../util/constants";
 import { out } from "../../../util/log";
 import {
   ApiConfig,
@@ -902,13 +902,7 @@ class HealthieApi {
       subject: { reference: `Patient/${patientId}` },
       status: medication.active ? "active" : isCompleted ? "completed" : "stopped",
       medicationCodeableConcept: {
-        ...(medication.code
-          ? {
-              coding: [
-                { system: "http://www.nlm.nih.gov/research/umls/rxnorm", code: medication.code },
-              ],
-            }
-          : {}),
+        ...(medication.code ? { coding: [{ system: RXNORM_URL, code: medication.code }] } : {}),
         ...(medication.name ? { text: medication.name } : {}),
       },
       ...(medication.start_date && medication.end_date
