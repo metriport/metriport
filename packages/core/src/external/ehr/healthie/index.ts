@@ -1032,6 +1032,7 @@ class HealthieApi {
     const testDate = labOrder.test_date;
     if (!labOrder.status || !testDate || labOrder.lab_results.length < 1) return undefined;
     const isFinal = labOrder.status === "final";
+    if (!isFinal) return undefined;
     return labOrder.lab_results.flatMap(labResult => {
       if (!labResult.lab_observation_requests || labResult.lab_observation_requests.length < 1) {
         return [];
@@ -1053,7 +1054,7 @@ class HealthieApi {
             resourceType: "Observation",
             id: labObservationResult.id,
             subject: { reference: `Patient/${patientId}` },
-            status: isFinal ? "final" : "registered",
+            status: "final",
             code: { text: labAnalyte },
             category: [
               {
