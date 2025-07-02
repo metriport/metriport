@@ -1,5 +1,6 @@
 import crypto from "crypto";
 import { z } from "zod";
+import { BaseMessageLike } from "@langchain/core/messages";
 
 import {
   ComprehendMedicalClient,
@@ -47,68 +48,86 @@ export class ComprehendClient {
         },
       ],
     });
+
     this.bedrock = bedrockChat.bindTools([
       {
-        name: "inferRxNorm",
-        description: "Infer RxNorm entities from the given text",
+        name: "extractMedications",
+        description: "Extract medication information using RxNorm codes",
         schema: z.object({ text: z.string() }),
-        execute: async ({ text }: { text: string }) => {
-          console.log("inferRxNorm", text);
-          return text;
-          // const { Entities } = await this.inferRxNorm(text);
-          // return Entities;
-        },
       },
       {
-        name: "inferICD10CM",
-        description: "Infer ICD-10-CM entities from the given text",
+        name: "extractConditions",
+        description: "Extract medical conditions with ICD-10-CM codes",
         schema: z.object({ text: z.string() }),
-        execute: async ({ text }: { text: string }) => {
-          console.log("inferICD10CM", text);
-          return text;
-        },
       },
       {
-        name: "inferSNOMEDCT",
-        description: "Infer SNOMED CT entities from the given text",
+        name: "extractProcedures",
+        description: "Extract medical procedures with SNOMED CT codes",
         schema: z.object({ text: z.string() }),
-        execute: async ({ text }: { text: string }) => {
-          console.log("inferSNOMEDCT", text);
-          return text;
-        },
       },
     ]);
   }
 
   async comprehendText(text: string): Promise<string> {
-    const prompt = `Given the following text, use the following tools to extract structured medical information from the text:
-    - The "inferRxNorm" tool extracts medications
-    - The "inferICD10CM" tool extracts ICD-10-CM codes
-    - The "inferSNOMEDCT" tool extracts SNOMED CT codes
+    const prompt = `You are an agent that passes a related chunk of medical information from the given text to an extraction tool for
+    further processing. You should call tools with substrings of the provided clinical text. You should only pass relevant text to the tools. Do not perform any inference, make any transformations or modifications to the
+    original text, or attempt to add any medical coding.
+
+    - The "extractConditions" tool extracts conditions with ICD-10-CM codes
+    - The "extractProcedures" tool extracts procedures with SNOMED CT codes
+    - The "extractMedications" tool extracts medication information using RxNorm codes
     
-    Here is the clinical text to analyze:\n\n${text}`;
-    const response = await this.bedrock.invoke(prompt);
+    Here is the clinical text to analyze:\n\n"${text}"`;
+
+    const response = (await this.bedrock.invoke(prompt)) as Awaited<
+      ReturnType<typeof BedrockChat.prototype.invoke>
+    >;
 
     const toolCalls = response.tool_calls ?? [];
-    console.log("toolCalls", toolCalls);
+    const firstToolCall = toolCalls[0];
 
-    for (const toolCall of toolCalls) {
-      if (toolCall.name === "inferRxNorm") {
-        const { text } = toolCall.args;
-        const { Entities } = await this.inferRxNorm(text);
-        console.log("rxnorm", Entities);
-      } else if (toolCall.name === "inferICD10CM") {
-        const { text } = toolCall.args;
-        const { Entities } = await this.inferICD10CM(text);
-        console.log("icd10", Entities);
-      } else if (toolCall.name === "inferSNOMEDCT") {
-        const { text } = toolCall.args;
-        const { Entities } = await this.inferSNOMEDCT(text);
-        console.log("snomed", Entities);
-      }
+    if (!firstToolCall) {
+      console.log("No tools were called");
+      return "No tools were called";
     }
 
-    console.log("response", response);
+    console.log("firstToolCall", firstToolCall, toolCalls.length);
+
+    let nextToolCall: typeof firstToolCall | null = null;
+    const conversation: BaseMessageLike[] = [
+      prompt,
+      response,
+      {
+        role: "user",
+        content: [
+          {
+            type: "tool_result",
+            tool_use_id: firstToolCall.id,
+          },
+        ],
+      },
+    ];
+
+    do {
+      console.log("Invoking with tool response");
+      const nextResponse = (await this.bedrock.invoke(conversation)) as Awaited<
+        ReturnType<typeof BedrockChat.prototype.invoke>
+      >;
+      nextToolCall = nextResponse.tool_calls?.[0] ?? null;
+      console.log("nextToolCall", nextToolCall, nextResponse.tool_calls?.length ?? 0);
+      if (nextToolCall) {
+        conversation.push(nextResponse);
+        conversation.push({
+          type: "user",
+          content: [
+            {
+              type: "tool_result",
+              tool_use_id: nextToolCall.id,
+            },
+          ],
+        });
+      }
+    } while (nextToolCall != null);
 
     return "done";
   }
