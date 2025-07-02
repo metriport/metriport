@@ -1,3 +1,6 @@
+import * as dotenv from "dotenv";
+dotenv.config();
+
 import { Hl7Server } from "@medplum/hl7";
 import { buildHl7NotificationWebhookSender } from "@metriport/core/command/hl7-notification/hl7-notification-webhook-sender-factory";
 import {
@@ -11,7 +14,8 @@ import { analytics, EventTypes } from "@metriport/core/external/analytics/postho
 import { capture } from "@metriport/core/util";
 import type { Logger } from "@metriport/core/util/log";
 import { out } from "@metriport/core/util/log";
-import { handleParsingError, ParsedHl7Data, parseHl7Message } from "./parsing";
+import { basicToExtendedIso8601 } from "@metriport/shared/common/date";
+import { ParsedHl7Data, parseHl7Message, persistHl7MessageToErrorPath } from "./parsing";
 import { initSentry } from "./sentry";
 import { asString, bucketName, s3Utils, withErrorHandling } from "./utils";
 
@@ -31,7 +35,7 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
         try {
           parsedData = await parseHl7Message(rawMessage);
         } catch (parseError) {
-          await handleParsingError(rawMessage, logger);
+          await persistHl7MessageToErrorPath(rawMessage, logger);
           throw parseError;
         }
 
@@ -39,7 +43,7 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
 
         const messageId = getMessageUniqueIdentifier(message);
         const sendingApplication = getSendingApplication(message) ?? "Unknown HIE";
-        const timestamp = getOrCreateMessageDatetime(message);
+        const timestamp = basicToExtendedIso8601(getOrCreateMessageDatetime(message));
         const { messageCode, triggerEvent } = getHl7MessageTypeOrFail(message);
 
         log(

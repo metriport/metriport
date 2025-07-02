@@ -4,7 +4,8 @@ dotenv.config();
 import { Hl7Message } from "@medplum/core";
 import { getSendingApplication } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/msh";
 import {
-  createUnpackPidFailureFileKey,
+  createUnparseableHl7MessageErrorMessageFileKey,
+  createUnparseableHl7MessageFileKey,
   getCxIdAndPatientIdOrFail,
   getOptionalValueFromMessage,
 } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
@@ -35,21 +36,33 @@ export async function parseHl7Message(rawMessage: Hl7Message): Promise<ParsedHl7
     patientId,
   };
 }
-export async function handleParsingError(rawMessage: Hl7Message, logger: Logger) {
+
+export async function persistHl7MessageToErrorPath(rawMessage: Hl7Message, logger: Logger) {
   const { log } = logger;
 
-  const fileKey = createUnpackPidFailureFileKey({
+  const keyParams = {
     rawPtIdentifier: getOptionalValueFromMessage(rawMessage, "PID", 3, 1) ?? "unknown-patient",
     rawTimestamp:
       getOptionalValueFromMessage(rawMessage, "MSH", 7, 1) ?? buildDayjs().format(ISO_DATE_TIME),
     messageCode: getOptionalValueFromMessage(rawMessage, "MSH", 9, 1) ?? "UNK",
     triggerEvent: getOptionalValueFromMessage(rawMessage, "MSH", 9, 2) ?? "UNK",
-  });
+  };
+
+  const fileKey = createUnparseableHl7MessageFileKey(keyParams);
+  const errorFileKey = createUnparseableHl7MessageErrorMessageFileKey(keyParams);
 
   log(`Parsing failed, uploading raw HL7 message to S3 with key: ${fileKey}`);
   await s3Utils.uploadFile({
     bucket: bucketName,
     key: fileKey,
+    file: Buffer.from(asString(rawMessage)),
+    contentType: "text/plain",
+  });
+
+  log(`Parsing failed, uploading error message to S3 with key: ${errorFileKey}`);
+  await s3Utils.uploadFile({
+    bucket: bucketName,
+    key: errorFileKey,
     file: Buffer.from(asString(rawMessage)),
     contentType: "text/plain",
   });

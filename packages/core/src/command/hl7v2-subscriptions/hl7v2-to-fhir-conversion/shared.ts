@@ -170,7 +170,7 @@ export function formatDateToHl7(date: Date): string {
   return buildDayjs(date).format("YYYYMMDDHHmmss");
 }
 
-export function createUnpackPidFailureFileKey({
+export function createUnparseableHl7MessageFileKey({
   rawPtIdentifier,
   rawTimestamp,
   messageCode,
@@ -181,5 +181,19 @@ export function createUnpackPidFailureFileKey({
   messageCode: string;
   triggerEvent: string;
 }) {
-  return `unpack-pid-failure/${rawTimestamp}_${rawPtIdentifier}_${messageCode}_${triggerEvent}_${nanoid()}.hl7`;
+  return `parse-failure/${rawTimestamp}_${rawPtIdentifier}_${messageCode}_${triggerEvent}_${nanoid()}.hl7`;
+}
+
+export function createUnparseableHl7MessageErrorMessageFileKey({
+  rawPtIdentifier,
+  rawTimestamp,
+  messageCode,
+  triggerEvent,
+}: {
+  rawPtIdentifier: string;
+  rawTimestamp: string;
+  messageCode: string;
+  triggerEvent: string;
+}) {
+  return `parse-failure/${rawTimestamp}_${rawPtIdentifier}_${messageCode}_${triggerEvent}_${nanoid()}_error.txt`;
 }
