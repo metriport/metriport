@@ -173,6 +173,7 @@ export const config: EnvConfigNonSandbox = {
       },
     ],
     mllpServer: {
+      sentryDSN: "your-sentry-dsn",
       fargateCpu: 1 * vCPU,
       fargateMemoryLimitMiB: 2048,
       fargateTaskCountMin: 2,

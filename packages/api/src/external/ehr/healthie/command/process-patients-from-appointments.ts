@@ -18,10 +18,10 @@ import { uniqBy } from "lodash";
 import { getCxMappingsBySource } from "../../../../command/mapping/cx";
 import {
   Appointment,
-  delayBetweenPatientBatches,
-  delayBetweenPracticeBatches,
   getLookForwardTimeRange,
   getLookForwardTimeRangeWithOffset,
+  maxJitterPatientBatches,
+  maxJitterPracticeBatches,
   parallelPatients,
   parallelPractices,
 } from "../../shared/utils/appointment";
@@ -100,7 +100,7 @@ export async function processPatientsFromAppointments({ lookupMode }: { lookupMo
     },
     {
       numberOfParallelExecutions: parallelPractices,
-      delay: delayBetweenPracticeBatches.asMilliseconds(),
+      maxJitterMillis: maxJitterPracticeBatches.asMilliseconds(),
     }
   );
 
@@ -134,7 +134,7 @@ export async function processPatientsFromAppointments({ lookupMode }: { lookupMo
 
   await executeAsynchronously(linkPatientArgs, linkPatient, {
     numberOfParallelExecutions: parallelPatients,
-    delay: delayBetweenPatientBatches.asMilliseconds(),
+    maxJitterMillis: maxJitterPatientBatches.asMilliseconds(),
   });
 
   const syncPatientsArgs: SyncHealthiePatientIntoMetriportParams[] = linkPatientArgs.flatMap(
@@ -164,7 +164,7 @@ export async function processPatientsFromAppointments({ lookupMode }: { lookupMo
 
   await executeAsynchronously(syncPatientsArgs, syncPatient, {
     numberOfParallelExecutions: parallelPatients,
-    delay: delayBetweenPatientBatches.asMilliseconds(),
+    maxJitterMillis: maxJitterPatientBatches.asMilliseconds(),
   });
 }
 

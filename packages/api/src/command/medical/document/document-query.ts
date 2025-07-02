@@ -2,6 +2,7 @@ import { deleteConsolidated } from "@metriport/core/command/consolidated/consoli
 import {
   isCarequalityEnabled,
   isCommonwellEnabled,
+  isXmlRedownloadFeatureFlagEnabledForCx,
 } from "@metriport/core/command/feature-flags/domain-ffs";
 import {
   ConvertResult,
@@ -49,7 +50,7 @@ export async function queryDocumentsAcrossHIEs({
   patientId,
   facilityId,
   requestId: requestIdParam,
-  override,
+  forceDownload,
   cxDocumentRequestMetadata,
   forceQuery = false,
   forcePatientDiscovery = false,
@@ -62,7 +63,7 @@ export async function queryDocumentsAcrossHIEs({
   patientId: string;
   facilityId?: string;
   requestId?: string | undefined;
-  override?: boolean;
+  forceDownload?: boolean;
   cxDocumentRequestMetadata?: unknown;
   forceQuery?: boolean;
   forcePatientDiscovery?: boolean;
@@ -122,6 +123,8 @@ export async function queryDocumentsAcrossHIEs({
 
   let triggeredDocumentQuery = false;
 
+  const isForceRedownloadEnabled =
+    forceDownload ?? (await isXmlRedownloadFeatureFlagEnabledForCx(cxId));
   /**
    * This is likely safe to remove based on the usage of this function with the `cqManagingOrgName` param.
    * But because it touches a core flow and we don't have time to review/test it now, leaving as is.
@@ -135,7 +138,7 @@ export async function queryDocumentsAcrossHIEs({
       getDocumentsFromCW({
         patient: updatedPatient,
         facilityId,
-        forceDownload: override,
+        forceDownload: isForceRedownloadEnabled,
         forceQuery,
         forcePatientDiscovery,
         requestId,
@@ -150,6 +153,7 @@ export async function queryDocumentsAcrossHIEs({
     getDocumentsFromCQ({
       patient: updatedPatient,
       facilityId,
+      forceDownload: isForceRedownloadEnabled,
       requestId,
       cqManagingOrgName,
       forcePatientDiscovery,
@@ -167,10 +171,10 @@ export async function queryDocumentsAcrossHIEs({
   return createQueryResponse("processing", updatedPatient);
 }
 
-export const createQueryResponse = (
+export function createQueryResponse(
   status: DocumentQueryStatus,
   patient?: Patient
-): DocumentQueryProgress => {
+): DocumentQueryProgress {
   return {
     download: {
       status,
@@ -178,7 +182,7 @@ export const createQueryResponse = (
     },
     ...patient?.data.documentQueryProgress,
   };
-};
+}
 
 type UpdateResult = {
   patient: Pick<Patient, "id" | "cxId">;
@@ -244,4 +248,6 @@ export function getOrGenerateRequestId(
   return generateRequestId();
 }
 
-const generateRequestId = (): string => uuidv7();
+function generateRequestId(): string {
+  return uuidv7();
+}

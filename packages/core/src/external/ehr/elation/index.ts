@@ -63,8 +63,6 @@ import {
   getObservationUnit,
 } from "../shared";
 
-const apiUrl = Config.getApiUrl();
-
 interface ElationApiConfig extends ApiConfig {
   environment: ElationEnv;
 }
@@ -690,6 +688,7 @@ class ElationApi {
     }
     const subscriptionUrl = "/app/subscriptions/";
     const additionalInfo = { cxId, practiceId: this.practiceId };
+    const apiUrl = Config.getApiUrl();
     const data = {
       resource,
       target: `${apiUrl}/ehr/webhook/elation`,

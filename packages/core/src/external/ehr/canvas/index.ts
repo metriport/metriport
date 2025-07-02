@@ -84,7 +84,7 @@ import {
 dayjs.extend(duration);
 
 const parallelRequests = 5;
-const delayBetweenRequestBatches = dayjs.duration(2, "seconds");
+const maxJitter = dayjs.duration(2, "seconds");
 
 interface CanvasApiConfig extends ApiConfig {
   environment: string;
@@ -697,7 +697,7 @@ class CanvasApi {
       },
       {
         numberOfParallelExecutions: parallelRequests,
-        delay: delayBetweenRequestBatches.asMilliseconds(),
+        maxJitterMillis: maxJitter.asMilliseconds(),
       }
     );
     if (createMedicationStatementsErrors.length > 0) {
@@ -922,7 +922,7 @@ class CanvasApi {
       },
       {
         numberOfParallelExecutions: parallelRequests,
-        delay: delayBetweenRequestBatches.asMilliseconds(),
+        maxJitterMillis: maxJitter.asMilliseconds(),
       }
     );
     if (createObservationsErrors.length > 0) {

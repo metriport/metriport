@@ -147,7 +147,7 @@ import {
 dayjs.extend(duration);
 
 const parallelRequests = 5;
-const delayBetweenRequestBatches = dayjs.duration(2, "seconds");
+const maxJitter = dayjs.duration(2, "seconds");
 
 interface AthenaHealthApiConfig extends ApiConfig {
   environment: AthenaEnv;
@@ -644,7 +644,7 @@ class AthenaHealthApi {
       },
       {
         numberOfParallelExecutions: parallelRequests,
-        delay: delayBetweenRequestBatches.asMilliseconds(),
+        maxJitterMillis: maxJitter.asMilliseconds(),
       }
     );
     if (createMedicationErrors.length > 0) {
@@ -1176,7 +1176,7 @@ class AthenaHealthApi {
       },
       {
         numberOfParallelExecutions: parallelRequests,
-        delay: delayBetweenRequestBatches.asMilliseconds(),
+        maxJitterMillis: maxJitter.asMilliseconds(),
       }
     );
     if (createVitalsErrors.length > 0) {
@@ -1251,7 +1251,7 @@ class AthenaHealthApi {
       },
       {
         numberOfParallelExecutions: parallelRequests,
-        delay: delayBetweenRequestBatches.asMilliseconds(),
+        maxJitterMillis: maxJitter.asMilliseconds(),
       }
     );
     if (searchMedicationErrors.length > 0) {
@@ -1333,7 +1333,7 @@ class AthenaHealthApi {
       },
       {
         numberOfParallelExecutions: parallelRequests,
-        delay: delayBetweenRequestBatches.asMilliseconds(),
+        maxJitterMillis: maxJitter.asMilliseconds(),
       }
     );
     if (searchAllergenErrors.length > 0) {
