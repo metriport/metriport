@@ -2,7 +2,7 @@ import * as dotenv from "dotenv";
 dotenv.config();
 
 import { Hl7Message } from "@medplum/core";
-import { Hl7Connection } from "@medplum/hl7";
+import { Hl7Connection, Hl7ErrorEvent, Hl7MessageEvent } from "@medplum/hl7";
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { Base64Scrambler } from "@metriport/core/util/base64-scrambler";
 import { Config } from "@metriport/core/util/config";
@@ -21,20 +21,20 @@ export function asString(message: Hl7Message) {
   return message.segments.map(s => s.toString()).join("\n");
 }
 
-export function withErrorHandling<T>(
+export function withErrorHandling<T extends Hl7MessageEvent | Hl7ErrorEvent>(
   connection: Hl7Connection,
   logger: Logger,
   handler: (data: T) => void
 ): (data: T) => Promise<void> {
   return async (data: T) => {
-    const isMessageEvent = data instanceof Hl7Message;
+    const isMessageEvent = data instanceof Hl7MessageEvent;
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     await Sentry.withScope(async (_: Sentry.Scope) => {
       try {
         await handler(data);
       } catch (error) {
         if (isMessageEvent) {
-          connection.send(data.buildAck());
+          connection.send(data.message.buildAck());
         }
 
         logger.log(`Error in handler: ${error}`);

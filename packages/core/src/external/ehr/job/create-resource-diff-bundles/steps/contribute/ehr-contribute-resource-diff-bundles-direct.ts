@@ -31,7 +31,7 @@ dayjs.extend(duration);
 
 const hydrateEhrOnlyResourceAttempts = 3;
 const parallelRequests = 5;
-const delayBetweenRequestBatches = dayjs.duration(2, "seconds");
+const maxJitter = dayjs.duration(2, "seconds");
 
 export class EhrContributeResourceDiffBundlesDirect
   implements EhrContributeResourceDiffBundlesHandler
@@ -210,7 +210,7 @@ async function hydrateEhrOnlyResources({
       },
       {
         numberOfParallelExecutions: parallelRequests,
-        delay: delayBetweenRequestBatches.asMilliseconds(),
+        maxJitterMillis: maxJitter.asMilliseconds(),
       }
     );
     if (hydrationErrors.length > 0) {
@@ -236,6 +236,7 @@ function prepareEhrOnlyResourcesForContribution(
 ): Resource[] {
   let preparedEhrOnlyResources: Resource[] = [...ehrOnlyResources];
   const resourceIdMap = new Map<string, string>();
+  const resourceIdMapReverse = new Map<string, string>();
   for (const resource of ehrOnlyResources) {
     if (!resource.id) continue;
     const oldResourceId = resource.id;
@@ -243,6 +244,12 @@ function prepareEhrOnlyResourcesForContribution(
       ? metriportPatientId
       : createUuidFromText(`${ehr}_${metriportPatientId}_${oldResourceId}`);
     resourceIdMap.set(newResourceId, oldResourceId);
+    resourceIdMapReverse.set(oldResourceId, newResourceId);
+  }
+  const idsToReplace = reverseSortIds(Array.from(resourceIdMapReverse.keys()));
+  for (const oldResourceId of idsToReplace) {
+    const newResourceId = resourceIdMapReverse.get(oldResourceId);
+    if (!newResourceId) continue;
     preparedEhrOnlyResources = replaceResourceId({
       resources: preparedEhrOnlyResources,
       oldResourceId,
@@ -292,4 +299,13 @@ function replaceResourceId({
     newResourceId
   );
   return JSON.parse(resourcesAsStringWithReplacedId);
+}
+
+export function reverseSortIds(ids: string[]): string[] {
+  return [...ids].sort((a, b) => {
+    if (a.length !== b.length) {
+      return b.length - a.length;
+    }
+    return a > b ? -1 : 1;
+  });
 }

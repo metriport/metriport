@@ -271,3 +271,11 @@ export async function isDischargeRequeryFeatureFlagEnabledForCx(cxId: string): P
   const cxIdsWithDischargeRequeryEnabled = await getCxsWithDischargeRequeryFeatureFlag();
   return cxIdsWithDischargeRequeryEnabled.some(i => i === cxId);
 }
+
+export async function getCxsWithXmlRedownloadFeatureFlag(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithXmlRedownloadFeatureFlag");
+}
+export async function isXmlRedownloadFeatureFlagEnabledForCx(cxId: string): Promise<boolean> {
+  const cxIdsWithXmlRedownloadEnabled = await getCxsWithXmlRedownloadFeatureFlag();
+  return cxIdsWithXmlRedownloadEnabled.some(i => i === cxId);
+}
