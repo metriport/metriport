@@ -3,12 +3,12 @@ dotenv.config();
 
 import { Hl7Message } from "@medplum/core";
 import { Hl7Connection } from "@medplum/hl7";
+import { S3Utils } from "@metriport/core/external/aws/s3";
 import { Base64Scrambler } from "@metriport/core/util/base64-scrambler";
 import { Config } from "@metriport/core/util/config";
 import { Logger } from "@metriport/core/util/log";
 import { unpackUuid } from "@metriport/core/util/pack-uuid";
 import * as Sentry from "@sentry/node";
-import { S3Utils } from "@metriport/core/external/aws/s3";
 
 const crypto = new Base64Scrambler(Config.getHl7Base64ScramblerSeed());
 export const s3Utils = new S3Utils(Config.getAWSRegion());

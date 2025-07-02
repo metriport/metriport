@@ -1,6 +1,3 @@
-import * as dotenv from "dotenv";
-dotenv.config();
-
 import { Hl7Server } from "@medplum/hl7";
 import { buildHl7NotificationWebhookSender } from "@metriport/core/command/hl7-notification/hl7-notification-webhook-sender-factory";
 import {
@@ -15,8 +12,8 @@ import { capture } from "@metriport/core/util";
 import type { Logger } from "@metriport/core/util/log";
 import { out } from "@metriport/core/util/log";
 import { handleParsingError, ParsedHl7Data, parseHl7Message } from "./parsing";
-import { asString, bucketName, s3Utils, withErrorHandling } from "./utils";
 import { initSentry } from "./sentry";
+import { asString, bucketName, s3Utils, withErrorHandling } from "./utils";
 
 initSentry();
 
