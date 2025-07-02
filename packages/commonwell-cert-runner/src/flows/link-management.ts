@@ -6,7 +6,7 @@ import { uniq } from "lodash";
 import { makePatient } from "../payloads";
 import { patientTracyCrane } from "../payloads/patient-tracy";
 import { createProbablePatientSina } from "../payloads/probable-patient-sina";
-import { getMetriportPatientIdOrFail } from "../util";
+import { getMetriportPatientIdOrFail, logError } from "../util";
 
 /**
  * This flow is used to test the patient link management API.
@@ -145,6 +145,7 @@ export async function linkManagement(commonWell: CommonWell) {
     // console.log(`>>> 2.5 Reset Link --------------------------------`);
   } catch (error) {
     console.log(`Error (txId ${commonWell.lastTransactionId}): ${errorToString(error)}`);
+    logError(error);
     throw error;
   } finally {
     console.log(`>>> Delete Patients created in this run`);
