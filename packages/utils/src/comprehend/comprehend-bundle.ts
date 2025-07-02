@@ -3,7 +3,7 @@ import { Command } from "commander";
 const program = new Command();
 
 program
-  .command("bundle")
+  .name("bundle")
   .description("Run AWS Comprehend on a bundle")
   .option("--cx-id <cx-id>", "The customer ID")
   .option("--patient-id <patient-id>", "The patient ID")

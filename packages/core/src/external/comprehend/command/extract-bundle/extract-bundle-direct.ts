@@ -7,5 +7,7 @@ export class ExtractBundleDirectCommand implements ExtractBundleCommand {
 
   async extractFhir(job: ExtractionJob) {
     console.log("Extracting", job);
+    const entityGraph = await this.client.buildEntityGraph(job.cxId);
+    console.log("Entity graph", entityGraph);
   }
 }

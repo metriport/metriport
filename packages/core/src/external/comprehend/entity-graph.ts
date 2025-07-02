@@ -1,11 +1,28 @@
 import { Entity, RxNormEntityCategory } from "@aws-sdk/client-comprehendmedical";
 import { Medication, MedicationRequest, MedicationStatement } from "@medplum/fhirtypes";
 import { buildMedicationStatement } from "./fhir/medication-statement";
-import { EntityGraph } from "./types";
+import { EntityGraph, MedicationEntityGraph } from "./types";
 
 export function buildEntityGraph(entities: Entity[]): EntityGraph {
-  const rxNormEntities = getRxNormEntities(entities);
+  const medicationEntityGraph = buildMedicationEntityGraph(entities);
 
+  return {
+    entities,
+    ...medicationEntityGraph,
+  };
+}
+
+// export function mergeEntityGraphs(entityGraphs: EntityGraph[]): EntityGraph {
+//   return {
+//     entities: mergeEntityGraphArray(entityGraphs, "entities"),
+//     medications: mergeEntityGraphArray(entityGraphs, "medications"),
+//     medicationRequests: mergeEntityGraphArray(entityGraphs, "medicationRequests"),
+//     medicationStatements: mergeEntityGraphArray(entityGraphs, "medicationStatements"),
+//   }
+// }
+
+export function buildMedicationEntityGraph(entities: Entity[]): MedicationEntityGraph {
+  const rxNormEntities = getRxNormEntities(entities);
   const medications: Medication[] = [];
   const medicationRequests: MedicationRequest[] = [];
   const medicationStatements: MedicationStatement[] = [];
@@ -18,7 +35,6 @@ export function buildEntityGraph(entities: Entity[]): EntityGraph {
   }
 
   return {
-    entities,
     medications,
     medicationRequests,
     medicationStatements,

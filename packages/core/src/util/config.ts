@@ -335,7 +335,7 @@ export class Config {
     return getEnvVarOrFail("DISCHARGE_NOTIFICATION_SLACK_URL");
   }
 
-  static getAwsComprehendRegion(): string {
+  static getAWSComprehendRegion(): string {
     return getEnvVarOrFail("AWS_COMPREHEND_REGION");
   }
   static getExtractionBucketName(): string {

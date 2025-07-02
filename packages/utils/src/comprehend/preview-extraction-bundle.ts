@@ -1,8 +1,8 @@
 import { Command } from "commander";
 
-const previewExtractionBundle = new Command();
+const program = new Command();
 
-previewExtractionBundle
+program
   .name("preview-extraction-bundle")
   .description("Preview an extraction bundle")
   .option("--cx-id <cx-id>", "The ID of the customer")
@@ -16,4 +16,4 @@ previewExtractionBundle
     console.log("Previewing extraction bundle", cxId, patientId);
   });
 
-export default previewExtractionBundle;
+export default program;
