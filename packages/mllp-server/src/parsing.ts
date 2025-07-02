@@ -14,6 +14,7 @@ import { Logger } from "@metriport/core/util/log";
 import { buildDayjs, ISO_DATE_TIME } from "@metriport/shared/common/date";
 import { Config } from "./config";
 import { asString, bucketName, s3Utils } from "./utils";
+import { errorToString } from "@metriport/shared/dist/error/shared";
 
 const hieTimezoneDictionary = Config.getHieTimezoneDictionary();
 
@@ -37,7 +38,11 @@ export async function parseHl7Message(rawMessage: Hl7Message): Promise<ParsedHl7
   };
 }
 
-export async function persistHl7MessageToErrorPath(rawMessage: Hl7Message, logger: Logger) {
+export async function persistHl7MessageError(
+  rawMessage: Hl7Message,
+  parseError: unknown,
+  logger: Logger
+) {
   const { log } = logger;
 
   const keyParams = {
@@ -60,10 +65,11 @@ export async function persistHl7MessageToErrorPath(rawMessage: Hl7Message, logge
   });
 
   log(`Parsing failed, uploading error message to S3 with key: ${errorFileKey}`);
+  console.log(errorToString(parseError));
   await s3Utils.uploadFile({
     bucket: bucketName,
     key: errorFileKey,
-    file: Buffer.from(asString(rawMessage)),
+    file: Buffer.from(errorToString(parseError)),
     contentType: "text/plain",
   });
 }
