@@ -52,7 +52,7 @@ export class EhrWriteBackResourceDiffBundlesDirect
       metriportPatientId,
       ehrPatientId,
       resourceType,
-      createResourceDiffBundleJobId,
+      createResourceDiffBundlesJobId,
       jobId,
       reportError = true,
     } = payload;
@@ -70,7 +70,7 @@ export class EhrWriteBackResourceDiffBundlesDirect
         metriportPatientId,
         ehrPatientId,
         resourceType,
-        jobId: createResourceDiffBundleJobId,
+        jobId: createResourceDiffBundlesJobId,
       });
       if (metriportOnlyResources.length < 1) {
         await setJobEntryStatus({

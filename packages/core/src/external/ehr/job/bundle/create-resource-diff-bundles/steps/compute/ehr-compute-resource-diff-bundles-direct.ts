@@ -135,7 +135,7 @@ export class EhrComputeResourceDiffBundlesDirect implements EhrComputeResourceDi
           cxId,
           patientId: ehrPatientId,
           resourceType,
-          createResourceDiffBundleJobId: jobId,
+          createResourceDiffBundlesJobId: jobId,
         }),
         ...((await shouldWriteBack({ ehr, practiceId }))
           ? [
@@ -144,7 +144,7 @@ export class EhrComputeResourceDiffBundlesDirect implements EhrComputeResourceDi
                 cxId,
                 patientId: ehrPatientId,
                 resourceType,
-                createResourceDiffBundleJobId: jobId,
+                createResourceDiffBundlesJobId: jobId,
               }),
             ]
           : []),

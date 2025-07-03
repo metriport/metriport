@@ -1,6 +1,6 @@
 import { getSupportedResourcesByEhr } from "@metriport/core/external/ehr/bundle/bundle-shared";
 import { isEhrSourceWithClientCredentials } from "@metriport/core/external/ehr/environment";
-import { buildEhrContributeBundlesHandler } from "@metriport/core/external/ehr/job/bundle/contribute-bundles/ehr-contribute-bundles-factory";
+import { buildEhrContributeResourceDiffBundlesHandler } from "@metriport/core/external/ehr/job/bundle/contribute-bundles/ehr-contribute-resource-diff-bundles-factory";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { completePatientJob } from "../../../../../../command/job/patient/status/complete";
 import { updatePatientJobTotal } from "../../../../../../command/job/patient/update/update-total";
@@ -33,10 +33,10 @@ export async function runJob({
     });
     tokenId = clientWithTokenIdAndEnvironment.tokenId;
   }
-  const ehrResourceDiffHandler = buildEhrContributeBundlesHandler();
+  const ehrResourceDiffHandler = buildEhrContributeResourceDiffBundlesHandler();
   for (const resourceType of resourceTypes) {
     ehrResourceDiffHandler
-      .contributeBundles({
+      .contributeResourceDiffBundles({
         ehr,
         ...(tokenId ? { tokenId } : {}),
         cxId,
@@ -47,6 +47,6 @@ export async function runJob({
         jobId,
         createResourceDiffBundlesJobId,
       })
-      .catch(processAsyncError(`${ehr} ${resourceType} contributeBundles`));
+      .catch(processAsyncError(`${ehr} ${resourceType} contributeResourceDiffBundles`));
   }
 }

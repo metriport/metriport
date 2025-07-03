@@ -4,7 +4,7 @@ import { getLatestPatientJob } from "../../../../../../command/job/patient/get";
 import { getPatientMappingOrFail } from "../../../../../../command/mapping/patient";
 import { getPatientOrFail } from "../../../../../../command/medical/patient/get-patient";
 import {
-  StartCreateResourceDiffBundlesJobParams,
+  StartBundlesJobParams,
   getWriteBackBundlesJobType,
   getWriteBackBundlesRunUrl,
 } from "../../../utils/job";
@@ -27,7 +27,7 @@ export async function startWriteBackBundlesJob({
   ehrPatientId,
   createResourceDiffBundlesJobId,
   requestId,
-}: StartCreateResourceDiffBundlesJobParams & {
+}: StartBundlesJobParams & {
   createResourceDiffBundlesJobId: string;
 }): Promise<string> {
   const patientMapping = await getPatientMappingOrFail({

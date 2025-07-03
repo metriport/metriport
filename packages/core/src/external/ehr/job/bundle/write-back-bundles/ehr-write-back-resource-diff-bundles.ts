@@ -1,7 +1,7 @@
 import { ResourceDiffBundlesBaseRequest } from "../shared";
 
 export type WriteBackResourceDiffBundlesRequest = ResourceDiffBundlesBaseRequest & {
-  createResourceDiffBundleJobId: string;
+  createResourceDiffBundlesJobId: string;
 };
 
 export interface EhrWriteBackResourceDiffBundlesHandler {

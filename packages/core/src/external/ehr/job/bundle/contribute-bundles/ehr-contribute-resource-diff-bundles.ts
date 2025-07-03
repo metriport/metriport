@@ -1,7 +1,7 @@
 import { ResourceDiffBundlesBaseRequest } from "../shared";
 
 export type ContributeResourceDiffBundlesRequest = ResourceDiffBundlesBaseRequest & {
-  createResourceDiffBundleJobId: string;
+  createResourceDiffBundlesJobId: string;
 };
 
 export interface EhrContributeResourceDiffBundlesHandler {

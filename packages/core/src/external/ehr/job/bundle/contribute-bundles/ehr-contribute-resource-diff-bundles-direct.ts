@@ -46,7 +46,7 @@ export class EhrContributeResourceDiffBundlesDirect
       metriportPatientId,
       ehrPatientId,
       resourceType,
-      createResourceDiffBundleJobId,
+      createResourceDiffBundlesJobId,
       jobId,
       reportError = true,
     } = payload;
@@ -64,7 +64,7 @@ export class EhrContributeResourceDiffBundlesDirect
         metriportPatientId,
         ehrPatientId,
         resourceType,
-        jobId: createResourceDiffBundleJobId,
+        jobId: createResourceDiffBundlesJobId,
       });
       if (ehrOnlyResources.length < 1) {
         await setJobEntryStatus({

@@ -6,7 +6,7 @@ import { ApiBaseParams, validateAndLogResponse } from "../api-shared";
 
 export type StartContributeBundlesJobParams = Omit<ApiBaseParams, "practiceId" | "departmentId"> & {
   resourceType: string;
-  createResourceDiffBundleJobId: string;
+  createResourceDiffBundlesJobId: string;
 };
 
 /**
@@ -16,21 +16,21 @@ export type StartContributeBundlesJobParams = Omit<ApiBaseParams, "practiceId" |
  * @param cxId - The CX ID.
  * @param patientId - The patient ID.
  * @param resourceType - The resource type.
- * @param createResourceDiffBundleJobId - The create resource diff bundle job ID.
+ * @param createResourceDiffBundlesJobId - The create resource diff bundle job ID.
  */
 export async function startContributeBundlesJob({
   ehr,
   cxId,
   patientId,
   resourceType,
-  createResourceDiffBundleJobId,
+  createResourceDiffBundlesJobId,
 }: StartContributeBundlesJobParams): Promise<void> {
   const { log, debug } = out(`Ehr startContributeBundlesJob - cxId ${cxId}`);
   const api = axios.create({ baseURL: Config.getApiUrl() });
   const queryParams = new URLSearchParams({
     cxId,
     resourceType,
-    createResourceDiffBundleJobId,
+    createResourceDiffBundlesJobId,
   });
   const startContributeBundlesJobUrl = `/internal/ehr/${ehr}/patient/${patientId}/resource/contribute?${queryParams.toString()}`;
   try {
@@ -46,7 +46,7 @@ export async function startContributeBundlesJob({
       cxId,
       patientId,
       resourceType,
-      createResourceDiffBundleJobId,
+      createResourceDiffBundlesJobId,
       url: startContributeBundlesJobUrl,
       context: "ehr.startContributeBundlesJob",
     });
