@@ -1,0 +1,11 @@
+<ParamField body="patientIds" type="array" required="No*">
+  Array of patient IDs to assign to the cohort. Mutually
+  exclusive with <code>all</code>.
+</ParamField>
+
+<ParamField body="all" type="boolean" required="No*">
+  Flag to assign all patients to the cohort. Mutually
+  exclusive with <code>patientIds</code>.
+</ParamField>
+
+\*Either <code>patientIds</code> or <code>all</code> must be provided, but not both.
