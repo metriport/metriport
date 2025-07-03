@@ -8,7 +8,7 @@ const statusSchema = z.object({
   code: z.number().nullish(),
 });
 
-const localLinkSchema = z.string().nullish();
+const localLinkSchema = z.string();
 
 export const patientLinksSchema = z.object({
   Self: localLinkSchema,
@@ -19,7 +19,7 @@ export const patientLinksSchema = z.object({
    * engine or manually linked.
    * The links returned are confirmed links of LOLA 2 or higher.
    */
-  PatientkLink: localLinkSchema.nullish(),
+  PatientLink: localLinkSchema.nullish(),
   ResetLink: localLinkSchema.nullish(),
   Delete: localLinkSchema.nullish(),
   ProbableLink: localLinkSchema.nullish(),
@@ -49,12 +49,25 @@ export const patientCollectionSchema = z.object({
 });
 export type PatientCollection = z.infer<typeof patientCollectionSchema>;
 
-export const patientMergeResponseSchema = z.object({
+export const statusResponseSchema = z.object({
   status: statusSchema.nullish(),
 });
-export type PatientMergeResponse = z.infer<typeof patientMergeResponseSchema>;
+export type StatusResponse = z.infer<typeof statusResponseSchema>;
 
-export const patientLinkSearchRespSchema = patientCollectionSchema.omit({
-  status: true,
+export const patientProbableLinksSchema = z.object({
+  Self: localLinkSchema,
+  Link: localLinkSchema,
+  Unlink: localLinkSchema,
 });
-export type PatientLinkSearchResp = z.infer<typeof patientLinkSearchRespSchema>;
+
+export const patientProbableLinkItemRespSchema = z.object({
+  Patient: patientSchema.nullish(),
+  Links: patientProbableLinksSchema,
+});
+export type PatientProbableLinkItem = z.infer<typeof patientProbableLinkItemRespSchema>;
+
+export const patientProbableLinkRespSchema = z.object({
+  Patients: z.array(patientProbableLinkItemRespSchema),
+  status: statusSchema.nullish(),
+});
+export type PatientProbableLinkResp = z.infer<typeof patientProbableLinkRespSchema>;

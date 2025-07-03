@@ -4,8 +4,8 @@ import { DocumentQueryResponse, DocumentStatus } from "../models/document";
 import {
   Patient,
   PatientCollection,
-  PatientLinkSearchResp,
-  PatientMergeResponse,
+  PatientCollectionItem,
+  StatusResponse,
 } from "../models/patient";
 
 export type BaseOptions = {
@@ -59,8 +59,11 @@ export interface CommonWellAPI {
 
   createOrUpdatePatient(patient: Patient, options?: BaseOptions): Promise<PatientCollection>;
 
-  getPatient(params: GetPatientParams, options?: BaseOptions): Promise<PatientCollection>;
-  getPatient(id: string, options?: BaseOptions): Promise<PatientCollection>;
+  getPatient(
+    params: GetPatientParams,
+    options?: BaseOptions
+  ): Promise<PatientCollectionItem | undefined>;
+  getPatient(id: string, options?: BaseOptions): Promise<PatientCollectionItem | undefined>;
 
   // ENG-200: Search patients
   // 10.2.3 Patient Match
@@ -76,16 +79,13 @@ export interface CommonWellAPI {
       survivingPatientId: string;
     },
     options?: BaseOptions
-  ): Promise<PatientMergeResponse>;
+  ): Promise<StatusResponse>;
 
   deletePatient(id: string, options?: BaseOptions): Promise<void>;
 
-  getPatientLinksByPatientId(
-    patientId: string,
-    options?: BaseOptions
-  ): Promise<PatientLinkSearchResp>;
+  getPatientLinksByPatientId(patientId: string, options?: BaseOptions): Promise<PatientCollection>;
 
-  getProbableLinksById(patientId: string, options?: BaseOptions): Promise<PatientLinkSearchResp>;
+  getProbableLinksById(patientId: string, options?: BaseOptions): Promise<PatientCollection>;
   getProbableLinksByDemographics(
     params: {
       firstName: string;
@@ -95,10 +95,11 @@ export interface CommonWellAPI {
       zip: string;
     },
     options?: BaseOptions
-  ): Promise<PatientLinkSearchResp>;
+  ): Promise<PatientCollection>;
 
-  // TODO ENG-200 Implement this
-  // linkPatients(patientId: string, linkId: string, options?: BaseOptions): Promise<void>;
+  linkPatients(urlToLinkPatients: string, options?: BaseOptions): Promise<StatusResponse>;
+  unlinkPatients(urlToUnlinkPatients: string, options?: BaseOptions): Promise<StatusResponse>;
+  resetPatientLinks(urlToResetPatientLinks: string, options?: BaseOptions): Promise<StatusResponse>;
 
   // TODO ENG-200 Implement this
   // unlinkPatients(patientId: string, linkId: string, options?: BaseOptions): Promise<void>;

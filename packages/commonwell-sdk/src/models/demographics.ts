@@ -5,7 +5,7 @@ import { addressSchema } from "./address";
 import { contactSchema } from "./contact";
 import { humanNameSchema } from "./human-name";
 import { identifierSchema } from "./identifier";
-import { isoDateSchema } from "./iso-date";
+import { dateStringToIsoDateString, isoDateSchema, usDateSchema } from "./date";
 
 /** @see https://hl7.org/fhir/R4/valueset-administrative-gender.html */
 export enum GenderCodes {
@@ -29,13 +29,15 @@ export const genderCodesSchema = z.preprocess(
 );
 export type Gender = z.infer<typeof genderCodesSchema>;
 
+export const birthDateSchema = isoDateSchema.or(usDateSchema).transform(dateStringToIsoDateString);
+
 // The demographic details for a Person.
 // See: https://specification.commonwellalliance.org/services/rest-api-reference (8.4.8 Demographics)
 export const demographicsSchema = z.object({
   identifier: z.array(identifierSchema).min(1),
   name: z.array(humanNameSchema).min(1),
   gender: genderCodesSchema.nullish(),
-  birthDate: isoDateSchema,
+  birthDate: birthDateSchema,
   address: z.array(addressSchema).min(1),
   telecom: z.array(contactSchema).nullish(),
 });
