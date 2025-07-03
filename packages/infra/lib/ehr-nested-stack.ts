@@ -112,7 +112,7 @@ function settings(): {
     },
     queue: {
       alarmMaxAgeOfOldestMessage: Duration.hours(2),
-      maxMessageCountAlarmThreshold: 15_000,
+      maxMessageCountAlarmThreshold: 5_000,
       maxReceiveCount: 3,
       visibilityTimeout: Duration.seconds(
         computeResourceDiffBundlesLambdaTimeout.toSeconds() * 2 + 1
@@ -137,7 +137,7 @@ function settings(): {
     },
     queue: {
       alarmMaxAgeOfOldestMessage: Duration.hours(2),
-      maxMessageCountAlarmThreshold: 15_000,
+      maxMessageCountAlarmThreshold: 5_000,
       maxReceiveCount: 3,
       visibilityTimeout: Duration.seconds(refreshEhrBundlesLambdaTimeout.toSeconds() * 2 + 1),
       createRetryLambda: false,
@@ -149,7 +149,7 @@ function settings(): {
     },
     waitTime: waitTimeRefreshBundle,
   };
-  const contributeResourceDiffBundlesLambdaTimeout = Duration.minutes(12);
+  const contributeResourceDiffBundlesLambdaTimeout = Duration.minutes(15);
   const contributeResourceDiffBundles: QueueAndLambdaSettings = {
     name: "EhrContributeResourceDiffBundles",
     entry: "ehr/contribute-resource-diff-bundles",
@@ -158,8 +158,8 @@ function settings(): {
       timeout: contributeResourceDiffBundlesLambdaTimeout,
     },
     queue: {
-      alarmMaxAgeOfOldestMessage: Duration.hours(1),
-      maxMessageCountAlarmThreshold: 15_000,
+      alarmMaxAgeOfOldestMessage: Duration.hours(4),
+      maxMessageCountAlarmThreshold: 5_000,
       maxReceiveCount: 3,
       visibilityTimeout: Duration.seconds(
         contributeResourceDiffBundlesLambdaTimeout.toSeconds() * 2 + 1
@@ -169,7 +169,7 @@ function settings(): {
     eventSource: {
       batchSize: 1,
       reportBatchItemFailures: true,
-      maxConcurrency: 4,
+      maxConcurrency: 2,
     },
     waitTime: waitTimeContributeResourceDiffBundles,
   };
