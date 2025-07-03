@@ -18,9 +18,16 @@ export interface DocumentExtractionJob {
   feature: ExtractionFeature[];
 }
 
+export type ExtractionFeatureType = "medication" | "condition" | "procedure";
+
 export interface ExtractionFeature {
-  type: "medication";
+  type: ExtractionFeatureType;
   confidenceThreshold: number;
+}
+
+export interface ExtractionFeaturePrompt {
+  toolName: string;
+  toolPrompt: string;
 }
 
 export interface EntityGraph extends MedicationEntityGraph {
