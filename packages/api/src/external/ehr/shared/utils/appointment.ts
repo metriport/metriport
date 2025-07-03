@@ -5,8 +5,8 @@ import duration, { Duration } from "dayjs/plugin/duration";
 
 dayjs.extend(duration);
 
-export const delayBetweenPracticeBatches = dayjs.duration(15, "seconds");
-export const delayBetweenPatientBatches = dayjs.duration(1, "seconds");
+export const maxJitterPracticeBatches = dayjs.duration(15, "seconds");
+export const maxJitterPatientBatches = dayjs.duration(1, "seconds");
 export const parallelPractices = 10;
 export const parallelPatients = 100;
 

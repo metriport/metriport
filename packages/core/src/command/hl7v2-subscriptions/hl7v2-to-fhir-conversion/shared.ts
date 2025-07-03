@@ -1,4 +1,5 @@
 import { Hl7Field, Hl7Message, Hl7Segment } from "@medplum/core";
+import { nanoid } from "nanoid";
 import { MetriportError } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import { capture, out } from "../../../util";
@@ -24,6 +25,7 @@ const hl7CodingSystemToUrlMap: Record<string, string> = {
   L: LOINC_URL, // LOINC
   I10: ICD_10_URL, // ICD-10
   "ICD-10": ICD_10_URL, // ICD-10
+  ICD10: ICD_10_URL, // ICD-10
   "ICD-10-CM": ICD_10_URL, // ICD-10
   I9: ICD_9_URL, // ICD-9
   "ICD-9": ICD_9_URL, // ICD-9
@@ -166,4 +168,32 @@ export function createFileKeyHl7Message({
 
 export function formatDateToHl7(date: Date): string {
   return buildDayjs(date).format("YYYYMMDDHHmmss");
+}
+
+export function createUnparseableHl7MessageFileKey({
+  rawPtIdentifier,
+  rawTimestamp,
+  messageCode,
+  triggerEvent,
+}: {
+  rawPtIdentifier: string;
+  rawTimestamp: string;
+  messageCode: string;
+  triggerEvent: string;
+}) {
+  return `parse-failure/${rawTimestamp}_${rawPtIdentifier}_${messageCode}_${triggerEvent}_${nanoid()}.hl7`;
+}
+
+export function createUnparseableHl7MessageErrorMessageFileKey({
+  rawPtIdentifier,
+  rawTimestamp,
+  messageCode,
+  triggerEvent,
+}: {
+  rawPtIdentifier: string;
+  rawTimestamp: string;
+  messageCode: string;
+  triggerEvent: string;
+}) {
+  return `parse-failure/${rawTimestamp}_${rawPtIdentifier}_${messageCode}_${triggerEvent}_${nanoid()}_error.txt`;
 }
