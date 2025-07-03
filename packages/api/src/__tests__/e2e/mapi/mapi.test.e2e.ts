@@ -1,6 +1,7 @@
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { initMapiE2e, tearDownMapiE2e } from "./init";
+import { runCohortTestsPart1, runCohortTestsPart2 } from "./parts/cohort.test.part";
 import { runConsolidatedTests } from "./parts/consolidated.test.part";
 import { runContributedTests } from "./parts/contributed.test.part";
 import { runDocumentQueryTests } from "./parts/document-query.test.part";
@@ -38,6 +39,10 @@ describe("MAPI E2E Tests", () => {
     runFacilityTestsPart1(e2e);
   });
 
+  describe("Cohort", () => {
+    runCohortTestsPart1(e2e);
+  });
+
   describe("Patient", () => {
     runPatientTestsPart1(e2e);
   });
@@ -56,6 +61,10 @@ describe("MAPI E2E Tests", () => {
 
   describe("Patient Part 2", () => {
     runPatientTestsPart2(e2e);
+  });
+
+  describe("Cohort Part2", () => {
+    runCohortTestsPart2(e2e);
   });
 
   describe("Facility Part 2", () => {

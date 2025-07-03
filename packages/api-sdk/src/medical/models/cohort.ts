@@ -44,8 +44,11 @@ export const patientUnassignmentResponseSchema = z.object({
   unassignedCount: z.number(),
 });
 
+export const cohortSchema = cohortCreateSchema.merge(baseUpdateSchema);
+
 export type CohortMonitoring = z.infer<typeof cohortMonitoringSchema>;
 export type CohortCreate = z.infer<typeof cohortCreateSchema>;
+export type Cohort = z.infer<typeof cohortSchema>;
 export type CohortUpdate = z.infer<typeof cohortUpdateSchema>;
 export type CohortDTO = z.infer<typeof cohortDTOSchema>;
 export type CohortWithCountDTO = z.infer<typeof cohortWithCountDTOSchema>;

@@ -677,7 +677,6 @@ export class MetriportMedicalApi {
   async createCohort(data: CohortCreate): Promise<CohortDTO> {
     const resp = await this.api.post(COHORT_URL, data);
     if (!resp.data) throw new Error(NO_DATA_MESSAGE);
-    console.log("RESP DATA IS", resp.data);
     return cohortDTOSchema.parse(resp.data);
   }
 
@@ -712,7 +711,6 @@ export class MetriportMedicalApi {
   async listCohorts(): Promise<CohortListResponse> {
     const resp = await this.api.get(COHORT_URL);
     if (!resp.data) return { cohorts: [] };
-    console.log("RESP DATA IS", resp.data);
     return cohortListResponseSchema.parse(resp.data);
   }
 
