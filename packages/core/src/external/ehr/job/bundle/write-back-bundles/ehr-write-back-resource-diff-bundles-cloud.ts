@@ -1,9 +1,9 @@
 import { executeWithNetworkRetries } from "@metriport/shared";
 import { createUuidFromText } from "@metriport/shared/common/uuid";
-import { Config } from "../../../../../../util/config";
-import { SQSClient } from "../../../../../aws/sqs";
+import { Config } from "../../../../../util/config";
+import { SQSClient } from "../../../../aws/sqs";
 import {
-  EhrWriteBackResourceDiffBundlesRequest,
+  WriteBackResourceDiffBundlesRequest,
   EhrWriteBackResourceDiffBundlesHandler,
 } from "./ehr-write-back-resource-diff-bundles";
 
@@ -21,9 +21,7 @@ export class EhrWriteBackResourceDiffBundlesCloud
     private readonly sqsClient: SQSClient = new SQSClient({ region: Config.getAWSRegion() })
   ) {}
 
-  async writeBackResourceDiffBundles(
-    params: EhrWriteBackResourceDiffBundlesRequest
-  ): Promise<void> {
+  async writeBackResourceDiffBundles(params: WriteBackResourceDiffBundlesRequest): Promise<void> {
     const payload = JSON.stringify(params);
     await executeWithNetworkRetries(async () => {
       await this.sqsClient.sendMessageToQueue(this.ehrWriteBackDiffBundlesQueueUrl, payload, {

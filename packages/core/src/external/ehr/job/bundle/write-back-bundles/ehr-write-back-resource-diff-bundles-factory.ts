@@ -1,4 +1,4 @@
-import { Config } from "../../../../../../util/config";
+import { Config } from "../../../../../util/config";
 import { EhrWriteBackResourceDiffBundlesHandler } from "./ehr-write-back-resource-diff-bundles";
 import { EhrWriteBackResourceDiffBundlesCloud } from "./ehr-write-back-resource-diff-bundles-cloud";
 import { EhrWriteBackResourceDiffBundlesDirect } from "./ehr-write-back-resource-diff-bundles-direct";

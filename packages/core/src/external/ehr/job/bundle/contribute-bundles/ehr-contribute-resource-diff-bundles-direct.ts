@@ -6,22 +6,19 @@ import { EhrSource } from "@metriport/shared/interface/external/ehr/source";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { uniqBy } from "lodash";
-import { setJobEntryStatus } from "../../../../../../command/job/patient/api/set-entry-status";
-import { executeAsynchronously } from "../../../../../../util/concurrency";
-import { log } from "../../../../../../util/log";
-import { capture } from "../../../../../../util/notifications";
-import {
-  getReferencesFromResources,
-  ReferenceWithIdAndType,
-} from "../../../../../fhir/bundle/bundle";
-import { isPatient } from "../../../../../fhir/shared";
-import { createPredecessorExtensionRelatedArtifact } from "../../../../../fhir/shared/extensions/derived-from";
-import { createExtensionDataSource } from "../../../../../fhir/shared/extensions/extension";
-import { contributeResourceDiffBundle } from "../../../../api/bundle/contribute-resource-diff-bundle";
-import { BundleType } from "../../../../bundle/bundle-shared";
-import { createOrReplaceBundle } from "../../../../bundle/command/create-or-replace-bundle";
-import { fetchBundle, FetchBundleParams } from "../../../../bundle/command/fetch-bundle";
-import { getResourceBundleByResourceId } from "../../../../command/get-resource-bundle-by-resource-id";
+import { setJobEntryStatus } from "../../../../../command/job/patient/api/set-entry-status";
+import { executeAsynchronously } from "../../../../../util/concurrency";
+import { log } from "../../../../../util/log";
+import { capture } from "../../../../../util/notifications";
+import { getReferencesFromResources, ReferenceWithIdAndType } from "../../../../fhir/bundle/bundle";
+import { isPatient } from "../../../../fhir/shared";
+import { createPredecessorExtensionRelatedArtifact } from "../../../../fhir/shared/extensions/derived-from";
+import { createExtensionDataSource } from "../../../../fhir/shared/extensions/extension";
+import { contributeBundle } from "../../../api/job/contribute-bundle";
+import { BundleType } from "../../../bundle/bundle-shared";
+import { createOrReplaceBundle } from "../../../bundle/command/create-or-replace-bundle";
+import { fetchBundle, FetchBundleParams } from "../../../bundle/command/fetch-bundle";
+import { getResourceBundleByResourceId } from "../../../command/get-resource-bundle-by-resource-id";
 import {
   ContributeResourceDiffBundlesRequest,
   EhrContributeResourceDiffBundlesHandler,
@@ -49,6 +46,7 @@ export class EhrContributeResourceDiffBundlesDirect
       metriportPatientId,
       ehrPatientId,
       resourceType,
+      createResourceDiffBundleJobId,
       jobId,
       reportError = true,
     } = payload;
@@ -66,7 +64,7 @@ export class EhrContributeResourceDiffBundlesDirect
         metriportPatientId,
         ehrPatientId,
         resourceType,
-        jobId,
+        jobId: createResourceDiffBundleJobId,
       });
       if (ehrOnlyResources.length < 1) {
         await setJobEntryStatus({
@@ -89,21 +87,18 @@ export class EhrContributeResourceDiffBundlesDirect
         metriportPatientId,
         ehr
       );
-      const dataContributionBundle = createBundleFromResourceList(
-        preparedAndHydratedEhrOnlyResources
-      );
       await createOrReplaceBundle({
         ehr,
         cxId,
         metriportPatientId,
         ehrPatientId,
         bundleType: BundleType.RESOURCE_DIFF_DATA_CONTRIBUTION,
-        bundle: dataContributionBundle,
+        bundle: createBundleFromResourceList(preparedAndHydratedEhrOnlyResources),
         resourceType,
         jobId,
         mixedResourceTypes: true,
       });
-      await contributeResourceDiffBundle({
+      await contributeBundle({
         ehr,
         cxId,
         patientId: ehrPatientId,

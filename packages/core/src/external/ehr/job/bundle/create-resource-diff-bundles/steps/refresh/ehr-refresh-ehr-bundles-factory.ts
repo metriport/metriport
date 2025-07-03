@@ -1,4 +1,4 @@
-import { Config } from "../../../../../../util/config";
+import { Config } from "../../../../../../../util/config";
 import { EhrRefreshEhrBundlesHandler } from "./ehr-refresh-ehr-bundles";
 import { EhrRefreshEhrBundlesCloud } from "./ehr-refresh-ehr-bundles-cloud";
 import { EhrRefreshEhrBundlesDirect } from "./ehr-refresh-ehr-bundles-direct";

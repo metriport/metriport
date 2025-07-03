@@ -2,27 +2,24 @@ import { Resource } from "@medplum/fhirtypes";
 import { errorToString, sleep } from "@metriport/shared";
 import { createBundleFromResourceList } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { EhrSource } from "@metriport/shared/interface/external/ehr/source";
-import { getConsolidatedFile } from "../../../../../../command/consolidated/consolidated-get";
-import { setJobEntryStatus } from "../../../../../../command/job/patient/api/set-entry-status";
-import { computeResourcesXorAlongResourceType } from "../../../../../../fhir-deduplication/compute-resources-xor";
-import { deduplicateResources } from "../../../../../../fhir-deduplication/dedup-resources";
-import { out } from "../../../../../../util/log";
-import { getSecondaryMappings } from "../../../../api/get-secondary-mappings";
-import { BundleType } from "../../../../bundle/bundle-shared";
-import { createOrReplaceBundle } from "../../../../bundle/command/create-or-replace-bundle";
-import { fetchBundle, FetchBundleParams } from "../../../../bundle/command/fetch-bundle";
-import { ehrCxMappingSecondaryMappingsSchemaMap } from "../../../../mappings";
-import { buildEhrContributeResourceDiffBundlesHandler } from "../contribute/ehr-contribute-resource-diff-bundles-factory";
-import { buildEhrWriteBackResourceDiffBundlesHandler } from "../write-back/ehr-write-back-resource-diff-bundles-factory";
+import { getConsolidatedFile } from "../../../../../../../command/consolidated/consolidated-get";
+import { setJobEntryStatus } from "../../../../../../../command/job/patient/api/set-entry-status";
+import { computeResourcesXorAlongResourceType } from "../../../../../../../fhir-deduplication/compute-resources-xor";
+import { deduplicateResources } from "../../../../../../../fhir-deduplication/dedup-resources";
+import { out } from "../../../../../../../util/log";
+import { getSecondaryMappings } from "../../../../../api/get-secondary-mappings";
+import { startContributeBundlesJob } from "../../../../../api/job/start-contribute-bundles-job";
+import { startWriteBackBundlesJob } from "../../../../../api/job/start-write-back-bundles-job";
+import { BundleType } from "../../../../../bundle/bundle-shared";
+import { createOrReplaceBundle } from "../../../../../bundle/command/create-or-replace-bundle";
+import { fetchBundle, FetchBundleParams } from "../../../../../bundle/command/fetch-bundle";
+import { ehrCxMappingSecondaryMappingsSchemaMap } from "../../../../../mappings";
 import {
   ComputeResourceDiffBundlesRequest,
   EhrComputeResourceDiffBundlesHandler,
 } from "./ehr-compute-resource-diff-bundles";
 
 export class EhrComputeResourceDiffBundlesDirect implements EhrComputeResourceDiffBundlesHandler {
-  private readonly nextContribute = buildEhrContributeResourceDiffBundlesHandler();
-  private readonly nextWriteBack = buildEhrWriteBackResourceDiffBundlesHandler();
-
   constructor(private readonly waitTimeInMillis: number = 0) {}
 
   async computeResourceDiffBundles(payload: ComputeResourceDiffBundlesRequest): Promise<void> {
@@ -128,10 +125,28 @@ export class EhrComputeResourceDiffBundlesDirect implements EhrComputeResourceDi
             })
           : undefined,
       ]);
+      await setJobEntryStatus({
+        ...entryStatusParams,
+        entryStatus: "successful",
+      });
       await Promise.all([
-        this.nextContribute.contributeResourceDiffBundles(payload),
+        startContributeBundlesJob({
+          ehr,
+          cxId,
+          patientId: ehrPatientId,
+          resourceType,
+          createResourceDiffBundleJobId: jobId,
+        }),
         ...((await shouldWriteBack({ ehr, practiceId }))
-          ? [this.nextWriteBack.writeBackResourceDiffBundles(payload)]
+          ? [
+              startWriteBackBundlesJob({
+                ehr,
+                cxId,
+                patientId: ehrPatientId,
+                resourceType,
+                createResourceDiffBundleJobId: jobId,
+              }),
+            ]
           : []),
       ]);
     } catch (error) {

@@ -3,7 +3,7 @@ import { EhrSource } from "@metriport/shared/interface/external/ehr/source";
 import { PatientJobPayload } from "../../../../command/job/patient/get";
 import { FetchedBundlePreSignedUrls } from "./bundle/types";
 
-export type StartCreateResourceDiffBundlesJobParams = {
+export type StartBundlesJobParams = {
   ehr: EhrSource;
   cxId: string;
   practiceId: string;
@@ -11,7 +11,7 @@ export type StartCreateResourceDiffBundlesJobParams = {
   requestId?: string;
 };
 
-export type RunCreateResourceDiffBundlesJobParams = {
+export type RunBundlesJobParams = {
   jobId: string;
   ehr: EhrSource;
   cxId: string;
@@ -34,6 +34,22 @@ export function getCreateResourceDiffBundlesJobType(ehr: EhrSource) {
   return `${ehr}-create-resource-diff-bundles`;
 }
 
+export function getContributeBundlesJobType(ehr: EhrSource) {
+  return `${ehr}-contribute-bundles`;
+}
+
+export function getWriteBackBundlesJobType(ehr: EhrSource) {
+  return `${ehr}-write-back-bundles`;
+}
+
 export function getCreateResourceDiffBundlesRunUrl(ehr: EhrSource) {
   return `/internal/ehr/${ehr}/job/create-resource-diff-bundles/run`;
+}
+
+export function getContributeBundlesRunUrl(ehr: EhrSource) {
+  return `/internal/ehr/${ehr}/job/contribute-bundles/run`;
+}
+
+export function getWriteBackBundlesRunUrl(ehr: EhrSource) {
+  return `/internal/ehr/${ehr}/job/write-back-bundles/run`;
 }

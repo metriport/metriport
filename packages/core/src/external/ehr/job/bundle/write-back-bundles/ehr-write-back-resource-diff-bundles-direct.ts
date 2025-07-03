@@ -1,29 +1,36 @@
 import { Condition, Observation, Resource } from "@medplum/fhirtypes";
-import { BadRequestError, errorToString, NotFoundError, sleep } from "@metriport/shared";
+import {
+  BadRequestError,
+  createBundleFromResourceList,
+  errorToString,
+  NotFoundError,
+  sleep,
+} from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import { WriteBackFiltersPerResourceType } from "@metriport/shared/interface/external/ehr/shared";
 import { EhrSource } from "@metriport/shared/interface/external/ehr/source";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import { setJobEntryStatus } from "../../../../../../command/job/patient/api/set-entry-status";
-import { executeAsynchronously } from "../../../../../../util/concurrency";
-import { log } from "../../../../../../util/log";
-import { capture } from "../../../../../../util/notifications";
-import { getSecondaryMappings } from "../../../../api/get-secondary-mappings";
-import { BundleType } from "../../../../bundle/bundle-shared";
-import { fetchBundle, FetchBundleParams } from "../../../../bundle/command/fetch-bundle";
-import { writeBackResource } from "../../../../command/write-back/shared";
-import { ehrCxMappingSecondaryMappingsSchemaMap } from "../../../../mappings";
+import { setJobEntryStatus } from "../../../../../command/job/patient/api/set-entry-status";
+import { executeAsynchronously } from "../../../../../util/concurrency";
+import { log, out } from "../../../../../util/log";
+import { capture } from "../../../../../util/notifications";
+import { getSecondaryMappings } from "../../../api/get-secondary-mappings";
+import { BundleType } from "../../../bundle/bundle-shared";
+import { createOrReplaceBundle } from "../../../bundle/command/create-or-replace-bundle";
+import { fetchBundle, FetchBundleParams } from "../../../bundle/command/fetch-bundle";
+import { writeBackResource } from "../../../command/write-back/shared";
+import { ehrCxMappingSecondaryMappingsSchemaMap } from "../../../mappings";
 import {
   getObservationLoincCode,
   getObservationObservedDate,
   isChronicCondition,
   isLab,
   isVital,
-} from "../../../../shared";
+} from "../../../shared";
 import {
   EhrWriteBackResourceDiffBundlesHandler,
-  EhrWriteBackResourceDiffBundlesRequest,
+  WriteBackResourceDiffBundlesRequest,
 } from "./ehr-write-back-resource-diff-bundles";
 
 dayjs.extend(duration);
@@ -36,9 +43,7 @@ export class EhrWriteBackResourceDiffBundlesDirect
 {
   constructor(private readonly waitTimeInMillis: number = 0) {}
 
-  async writeBackResourceDiffBundles(
-    payload: EhrWriteBackResourceDiffBundlesRequest
-  ): Promise<void> {
+  async writeBackResourceDiffBundles(payload: WriteBackResourceDiffBundlesRequest): Promise<void> {
     const {
       ehr,
       tokenId,
@@ -47,6 +52,7 @@ export class EhrWriteBackResourceDiffBundlesDirect
       metriportPatientId,
       ehrPatientId,
       resourceType,
+      createResourceDiffBundleJobId,
       jobId,
       reportError = true,
     } = payload;
@@ -64,7 +70,7 @@ export class EhrWriteBackResourceDiffBundlesDirect
         metriportPatientId,
         ehrPatientId,
         resourceType,
-        jobId,
+        jobId: createResourceDiffBundleJobId,
       });
       if (metriportOnlyResources.length < 1) {
         await setJobEntryStatus({
@@ -73,13 +79,34 @@ export class EhrWriteBackResourceDiffBundlesDirect
         });
         return;
       }
-      await writeBackMetriportOnlyResources({
+      const resourcesToWriteBack = await getResourcesToWriteBack({
+        ehr,
+        practiceId,
+        resources: metriportOnlyResources,
+      });
+      try {
+        await createOrReplaceBundle({
+          ehr,
+          cxId,
+          metriportPatientId,
+          ehrPatientId,
+          bundleType: BundleType.RESOURCE_DIFF_WRITE_BACK,
+          bundle: createBundleFromResourceList(resourcesToWriteBack),
+          resourceType,
+          jobId,
+        });
+      } catch (error) {
+        out(
+          `writeBackResourceDiffBundles - metriportPatientId ${metriportPatientId} ehrPatientId ${ehrPatientId} resourceType ${resourceType}`
+        ).log(`Error creating write back bundle. Cause: ${errorToString(error)}`);
+      }
+      await writeBackResources({
         ehr,
         tokenId,
         cxId,
         practiceId,
         ehrPatientId,
-        metriportOnlyResources,
+        resources: resourcesToWriteBack,
       });
       await setJobEntryStatus({
         ...entryStatusParams,
@@ -122,36 +149,53 @@ async function getMetriportOnlyResourcesFromS3({
   });
 }
 
-async function writeBackMetriportOnlyResources({
+async function getResourcesToWriteBack({
+  ehr,
+  practiceId,
+  resources,
+}: {
+  ehr: EhrSource;
+  practiceId: string;
+  resources: Resource[];
+}): Promise<Resource[]> {
+  const resourcesToWriteBack: Resource[] = [];
+  for (const resource of resources) {
+    const writeBackResourceType = getWriteBackResourceType(resource);
+    if (!writeBackResourceType) continue;
+    const writeBackFilters = await getWriteBackFilters({ ehr, practiceId });
+    const shouldWriteBack = filterResource({
+      resource,
+      resources,
+      writeBackResourceType,
+      writeBackFilters,
+    });
+    if (!shouldWriteBack) continue;
+    resourcesToWriteBack.push(resource);
+  }
+  return resourcesToWriteBack;
+}
+
+async function writeBackResources({
   ehr,
   tokenId,
   cxId,
   practiceId,
   ehrPatientId,
-  metriportOnlyResources,
+  resources,
 }: {
   ehr: EhrSource;
   tokenId: string | undefined;
   cxId: string;
   practiceId: string;
   ehrPatientId: string;
-  metriportOnlyResources: Resource[];
+  resources: Resource[];
 }): Promise<void> {
   const writeBackErrors: { error: unknown; resource: Resource }[] = [];
   await executeAsynchronously(
-    metriportOnlyResources,
+    resources,
     async resource => {
       try {
         const writeBackResourceType = getWriteBackResourceType(resource);
-        if (!writeBackResourceType) return;
-        const writeBackFilters = await getWriteBackFilters({ ehr, practiceId });
-        const shouldWriteBack = filterResource({
-          resource,
-          resources: metriportOnlyResources,
-          writeBackResourceType,
-          writeBackFilters,
-        });
-        if (!shouldWriteBack) return;
         await writeBackResource({
           ehr,
           ...(tokenId && { tokenId }),
@@ -177,7 +221,7 @@ async function writeBackMetriportOnlyResources({
     const msg = `Failure while writing back some resources @ EHR`;
     capture.message(msg, {
       extra: {
-        writeBackArgsCount: metriportOnlyResources.length,
+        writeBackArgsCount: resources.length,
         writeBackErrorsCount: writeBackErrors.length,
         errors: writeBackErrors,
         context: "create-resource-diff-bundles.write-back.writeBackMetriportOnlyResources",
