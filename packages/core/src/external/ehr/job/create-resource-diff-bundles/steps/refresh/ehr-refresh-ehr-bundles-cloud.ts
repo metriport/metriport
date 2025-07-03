@@ -11,23 +11,18 @@ import { EhrRefreshEhrBundlesHandler, RefreshEhrBundlesRequest } from "./ehr-ref
  *
  */
 export class EhrRefreshEhrBundlesCloud implements EhrRefreshEhrBundlesHandler {
-  private readonly sqsClient: SQSClient;
-
   constructor(
-    private readonly ehrRefreshEhrBundlesQueueUrl: string,
-    sqsClient: SQSClient = new SQSClient({ region: Config.getAWSRegion() })
-  ) {
-    this.sqsClient = sqsClient;
-  }
+    private readonly ehrRefreshEhrBundlesQueueUrl: string = Config.getEhrRefreshEhrBundlesQueueUrl(),
+    private readonly sqsClient: SQSClient = new SQSClient({ region: Config.getAWSRegion() })
+  ) {}
 
   async refreshEhrBundles(params: RefreshEhrBundlesRequest): Promise<void> {
-    const { metriportPatientId } = params;
     const payload = JSON.stringify(params);
     await executeWithNetworkRetries(async () => {
       await this.sqsClient.sendMessageToQueue(this.ehrRefreshEhrBundlesQueueUrl, payload, {
         fifo: true,
         messageDeduplicationId: createUuidFromText(payload),
-        messageGroupId: metriportPatientId,
+        messageGroupId: params.metriportPatientId,
       });
     });
   }

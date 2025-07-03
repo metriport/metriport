@@ -8,6 +8,7 @@ import {
   aws_wafv2 as wafv2,
 } from "aws-cdk-lib";
 import * as apig from "aws-cdk-lib/aws-apigateway";
+import { IQueue } from "aws-cdk-lib/aws-sqs";
 import { BackupResource } from "aws-cdk-lib/aws-backup";
 import * as cert from "aws-cdk-lib/aws-certificatemanager";
 import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
@@ -46,10 +47,12 @@ import { EnvType } from "./env-type";
 import { FeatureFlagsNestedStack } from "./feature-flags-nested-stack";
 import { Hl7NotificationWebhookSenderNestedStack } from "./hl7-notification-webhook-sender-nested-stack";
 import { IHEGatewayV2LambdasNestedStack } from "./ihe-gateway-v2-stack";
+import { createJobsScheduler } from "./jobs/jobs-scheduler";
 import { JobsNestedStack } from "./jobs/jobs-stack";
 import { LambdasLayersNestedStack } from "./lambda-layers-nested-stack";
 import { CDA_TO_VIS_TIMEOUT, LambdasNestedStack } from "./lambdas-nested-stack";
 import { PatientImportNestedStack } from "./patient-import-nested-stack";
+import { PatientMonitoringNestedStack } from "./patient-monitoring-nested-stack";
 import { RateLimitingNestedStack } from "./rate-limiting-nested-stack";
 import { DailyBackup } from "./shared/backup";
 import { addErrorAlarmToLambdaFunc, createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
@@ -455,6 +458,25 @@ export class APIStack extends Stack {
     }
 
     //-------------------------------------------
+    // Patient Monitoring
+    //-------------------------------------------
+    let dischargeRequeryLambda: lambda.Function | undefined;
+    let dischargeRequeryQueue: IQueue | undefined;
+    if (props.config.hl7Notification) {
+      const { dischargeRequeryLambda: lambda, dischargeRequeryQueue: queue } =
+        new PatientMonitoringNestedStack(this, "PatientMonitoringNestedStack", {
+          config: props.config,
+          lambdaLayers,
+          vpc: this.vpc,
+          alarmAction: slackNotification?.alarmAction,
+          secrets,
+        });
+
+      dischargeRequeryLambda = lambda;
+      dischargeRequeryQueue = queue;
+    }
+
+    //-------------------------------------------
     // Patient Import
     //-------------------------------------------
     const {
@@ -468,31 +490,6 @@ export class APIStack extends Stack {
       lambdaLayers,
       vpc: this.vpc,
       alarmAction: slackNotification?.alarmAction,
-    });
-
-    //-------------------------------------------
-    // EHR
-    //-------------------------------------------
-    const {
-      getAppointmentsLambda: ehrGetAppointmentsLambda,
-      syncPatientQueue: ehrSyncPatientQueue,
-      syncPatientLambda: ehrSyncPatientLambda,
-      elationLinkPatientQueue,
-      elationLinkPatientLambda,
-      healthieLinkPatientQueue,
-      healthieLinkPatientLambda,
-      contributeResourceDiffBundlesLambda: ehrContributeResourceDiffBundlesLambda,
-      computeResourceDiffBundlesLambda: ehrComputeResourceDiffBundlesLambda,
-      refreshEhrBundlesQueue: ehrRefreshEhrBundlesQueue,
-      refreshEhrBundlesLambda: ehrRefreshEhrBundlesLambda,
-      ehrBundleBucket,
-    } = new EhrNestedStack(this, "EhrNestedStack", {
-      config: props.config,
-      lambdaLayers,
-      vpc: this.vpc,
-      alarmAction: slackNotification?.alarmAction,
-      ehrResponsesBucket,
-      medicalDocumentsBucket,
     });
 
     //-------------------------------------------
@@ -533,7 +530,11 @@ export class APIStack extends Stack {
     if (!isSandbox(props.config)) {
       fhirConverter = createFHIRConverterService(
         this,
-        { ...props, generalBucket },
+        {
+          config: props.config,
+          version: props.version,
+          generalBucket,
+        },
         this.vpc,
         slackNotification?.alarmAction
       );
@@ -568,6 +569,33 @@ export class APIStack extends Stack {
     const cookieStore = cwEnhancedQueryQueues?.cookieStore;
 
     //-------------------------------------------
+    // EHR
+    //-------------------------------------------
+    const {
+      getAppointmentsLambda: ehrGetAppointmentsLambda,
+      syncPatientQueue: ehrSyncPatientQueue,
+      syncPatientLambda: ehrSyncPatientLambda,
+      elationLinkPatientQueue,
+      elationLinkPatientLambda,
+      healthieLinkPatientQueue,
+      healthieLinkPatientLambda,
+      contributeResourceDiffBundlesLambda: ehrContributeResourceDiffBundlesLambda,
+      computeResourceDiffBundlesLambda: ehrComputeResourceDiffBundlesLambda,
+      refreshEhrBundlesQueue: ehrRefreshEhrBundlesQueue,
+      refreshEhrBundlesLambda: ehrRefreshEhrBundlesLambda,
+      ehrBundleBucket,
+    } = new EhrNestedStack(this, "EhrNestedStack", {
+      config: props.config,
+      lambdaLayers,
+      vpc: this.vpc,
+      alarmAction: slackNotification?.alarmAction,
+      ehrResponsesBucket,
+      fhirConverterLambda: fhirConverter?.lambda,
+      fhirConverterBucket: fhirConverter?.bucket,
+      medicalDocumentsBucket,
+    });
+
+    //-------------------------------------------
     // ECR + ECS + Fargate for Backend Servers
     //-------------------------------------------
     const {
@@ -597,6 +625,7 @@ export class APIStack extends Stack {
       patientImportParseLambda,
       patientImportResultLambda,
       patientImportBucket,
+      dischargeRequeryQueue,
       ehrSyncPatientQueue,
       elationLinkPatientQueue,
       healthieLinkPatientQueue,
@@ -692,6 +721,7 @@ export class APIStack extends Stack {
       fhirToBundleCountLambda,
       ...(hl7v2RosterUploadLambdas ?? []),
       hl7NotificationWebhookSenderLambda,
+      dischargeRequeryLambda,
       patientImportCreateLambda,
       patientImportParseLambda,
       patientImportQueryLambda,
@@ -731,6 +761,14 @@ export class APIStack extends Stack {
     });
 
     createCqDirectoryRebuilder({
+      lambdaLayers,
+      stack: this,
+      vpc: this.vpc,
+      apiAddress: apiDirectUrl,
+      alarmSnsAction: slackNotification?.alarmAction,
+    });
+
+    createJobsScheduler({
       lambdaLayers,
       stack: this,
       vpc: this.vpc,

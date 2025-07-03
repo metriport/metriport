@@ -282,8 +282,8 @@ type EnvConfigBase = {
     };
   };
   jobs: {
-    startPatientJobsSchedulerScheduleExpression: string;
-    startPatientJobsSchedulerUrl: string;
+    startScheduledPatientJobsScheduleExpression: string;
+    startScheduledPatientJobsSchedulerUrl: string;
   };
 };
 
@@ -298,6 +298,7 @@ export type EnvConfigNonSandbox = EnvConfigBase & {
   connectWidget: ConnectWidgetConfig;
   engineeringCxId: string;
   hl7Notification: Hl7NotificationConfig;
+  fhirConversionBucketName: string;
 };
 
 export type EnvConfigSandbox = EnvConfigBase & {

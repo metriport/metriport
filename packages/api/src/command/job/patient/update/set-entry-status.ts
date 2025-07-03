@@ -3,6 +3,7 @@ import { patientJobRawColumnNames } from "@metriport/shared/domain/job/patient-j
 import { IncrementDecrementOptionsWithBy } from "sequelize";
 import { PatientJobModel } from "../../../../models/patient-job";
 import { completePatientJob } from "../status/complete";
+import { getPatientJobModelOrFail } from "../get";
 
 export type SetPatientJobEntryStatusParams = {
   jobId: string;
@@ -43,6 +44,7 @@ export async function setPatientJobEntryStatus({
   entryStatus,
   onCompleted,
 }: SetPatientJobEntryStatusParams): Promise<SetPatientJobEntryStatusResponse> {
+  await getPatientJobModelOrFail({ jobId, cxId });
   const [[updatedRows]] = await PatientJobModel.increment(
     [
       ...(entryStatus === "successful" ? ["successful" as const] : []),

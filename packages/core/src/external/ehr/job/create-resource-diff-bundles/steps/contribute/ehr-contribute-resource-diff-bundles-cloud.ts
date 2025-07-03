@@ -16,23 +16,18 @@ import {
 export class EhrContributeResourceDiffBundlesCloud
   implements EhrContributeResourceDiffBundlesHandler
 {
-  private readonly sqsClient: SQSClient;
-
   constructor(
-    private readonly ehrContributeDiffBundlesQueueUrl: string,
-    sqsClient: SQSClient = new SQSClient({ region: Config.getAWSRegion() })
-  ) {
-    this.sqsClient = sqsClient;
-  }
+    private readonly ehrContributeDiffBundlesQueueUrl: string = Config.getEhrContributeDiffBundlesQueueUrl(),
+    private readonly sqsClient: SQSClient = new SQSClient({ region: Config.getAWSRegion() })
+  ) {}
 
   async contributeResourceDiffBundles(params: ContributeResourceDiffBundlesRequest): Promise<void> {
-    const { metriportPatientId } = params;
     const payload = JSON.stringify(params);
     await executeWithNetworkRetries(async () => {
       await this.sqsClient.sendMessageToQueue(this.ehrContributeDiffBundlesQueueUrl, payload, {
         fifo: true,
         messageDeduplicationId: createUuidFromText(payload),
-        messageGroupId: metriportPatientId,
+        messageGroupId: params.metriportPatientId,
       });
     });
   }
