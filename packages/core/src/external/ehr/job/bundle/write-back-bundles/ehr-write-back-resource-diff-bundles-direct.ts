@@ -207,7 +207,7 @@ function getWriteBackResourceType(resource: Resource): WriteBackResourceType | u
   if (resource.resourceType === "Condition") return "condition";
   if (resource.resourceType === "Observation") {
     if (isLab(resource as Observation)) return "lab";
-    if (isVital(resource as Observation)) return undefined;
+    if (isVital(resource as Observation)) return "vital";
     return undefined;
   }
   throw new BadRequestError("Could not find write back resource type for resource", undefined, {
