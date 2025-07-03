@@ -299,6 +299,7 @@ export class EhrNestedStack extends NestedStack {
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: props.alarmAction,
+      ehrResponsesBucket: props.ehrResponsesBucket,
       ehrBundleBucket: this.ehrBundleBucket,
       fhirConverterLambda: props.fhirConverterLambda,
       fhirConverterBucket: props.fhirConverterBucket,
@@ -335,7 +336,7 @@ export class EhrNestedStack extends NestedStack {
       alarmSnsAction: alarmAction,
     });
 
-    if (ehrResponsesBucket) ehrResponsesBucket.grantWrite(lambda);
+    ehrResponsesBucket?.grantWrite(lambda);
 
     return lambda;
   }
@@ -608,12 +609,13 @@ export class EhrNestedStack extends NestedStack {
     envType: EnvType;
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
+    ehrResponsesBucket: s3.Bucket | undefined;
     ehrBundleBucket: s3.Bucket;
     fhirConverterLambda: Lambda | undefined;
     fhirConverterBucket: s3.Bucket | undefined;
     computeResourceDiffBundlesQueue: Queue;
   }): { lambda: Lambda; queue: Queue } {
-    const { lambdaLayers, vpc, envType, sentryDsn, alarmAction } = ownProps;
+    const { lambdaLayers, vpc, envType, sentryDsn, alarmAction, ehrResponsesBucket } = ownProps;
     const {
       name,
       entry,
@@ -654,6 +656,7 @@ export class EhrNestedStack extends NestedStack {
         WAIT_TIME_IN_MILLIS: waitTime.toMilliseconds().toString(),
         MAX_ATTEMPTS: queueSettings.maxReceiveCount.toString(),
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+        ...(ehrResponsesBucket ? { EHR_RESPONSES_BUCKET_NAME: ehrResponsesBucket.bucketName } : {}),
       },
       layers: [lambdaLayers.shared, lambdaLayers.langchain],
       vpc,
@@ -662,6 +665,7 @@ export class EhrNestedStack extends NestedStack {
 
     lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
 
+    ehrResponsesBucket?.grantWrite(lambda);
     ownProps.ehrBundleBucket.grantReadWrite(lambda);
     ownProps.fhirConverterLambda?.grantInvoke(lambda);
     ownProps.fhirConverterBucket?.grantReadWrite(lambda);
