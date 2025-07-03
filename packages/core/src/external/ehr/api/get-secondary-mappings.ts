@@ -27,7 +27,7 @@ export async function getSecondaryMappings<T>({
       return api.get(getSecondaryMappingsUrl);
     });
     validateAndLogResponse(getSecondaryMappingsUrl, response, debug);
-    return schema.parse(response.data);
+    return schema.parse(response.data.secondaryMappings);
   } catch (error) {
     const msg = "Failure while getting secondary mappings @ Api";
     log(`${msg}. Cause: ${errorToString(error)}`);

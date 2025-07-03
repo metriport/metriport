@@ -4,7 +4,7 @@ import { Config } from "../../../../util/config";
 import { out } from "../../../../util/log";
 import { ApiBaseParams, validateAndLogResponse } from "../api-shared";
 
-export type StartWriteBackBundlesJobParams = Omit<ApiBaseParams, "practiceId" | "departmentId"> & {
+export type StartWriteBackBundlesJobParams = Omit<ApiBaseParams, "departmentId"> & {
   resourceType: string;
   createResourceDiffBundlesJobId: string;
 };
@@ -21,6 +21,7 @@ export type StartWriteBackBundlesJobParams = Omit<ApiBaseParams, "practiceId" | 
 export async function startWriteBackBundlesJob({
   ehr,
   cxId,
+  practiceId,
   patientId,
   resourceType,
   createResourceDiffBundlesJobId,
@@ -29,6 +30,7 @@ export async function startWriteBackBundlesJob({
   const api = axios.create({ baseURL: Config.getApiUrl() });
   const queryParams = new URLSearchParams({
     cxId,
+    practiceId,
     resourceType,
     createResourceDiffBundlesJobId,
   });

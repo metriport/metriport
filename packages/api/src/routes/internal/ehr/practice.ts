@@ -61,7 +61,7 @@ router.get(
       throw new BadRequestError("EHR does not support dynamic secrets", undefined, { ehr });
     }
     const practiceId = getFrom("params").orFail("id", req);
-    const secondaryMappings = getSecondaryMappingsOrFail({
+    const secondaryMappings = await getSecondaryMappingsOrFail({
       source: ehr,
       externalId: practiceId,
     });

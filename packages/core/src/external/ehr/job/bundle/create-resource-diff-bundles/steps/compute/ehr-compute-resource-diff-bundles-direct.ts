@@ -133,6 +133,7 @@ export class EhrComputeResourceDiffBundlesDirect implements EhrComputeResourceDi
         startContributeBundlesJob({
           ehr,
           cxId,
+          practiceId,
           patientId: ehrPatientId,
           resourceType,
           createResourceDiffBundlesJobId: jobId,
@@ -142,6 +143,7 @@ export class EhrComputeResourceDiffBundlesDirect implements EhrComputeResourceDi
               startWriteBackBundlesJob({
                 ehr,
                 cxId,
+                practiceId,
                 patientId: ehrPatientId,
                 resourceType,
                 createResourceDiffBundlesJobId: jobId,
