@@ -1,4 +1,4 @@
-import { isEhrSourceWithCreateResourceDiffBundles } from "@metriport/core/external/ehr/job/create-resource-diff-bundles/shared";
+import { isEhrSourceWithResourceDiffBundles } from "@metriport/core/external/ehr/job/bundle/shared";
 import { BadRequestError } from "@metriport/shared";
 import { jobRunBodySchema } from "@metriport/shared/domain/job/types";
 import { isEhrSource } from "@metriport/shared/interface/external/ehr/source";
@@ -34,7 +34,7 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const ehr = getFromQueryOrFail("ehrId", req);
     if (!isEhrSource(ehr)) throw new BadRequestError("Invalid EHR", undefined, { ehr });
-    if (!isEhrSourceWithCreateResourceDiffBundles(ehr)) {
+    if (!isEhrSourceWithResourceDiffBundles(ehr)) {
       throw new BadRequestError("EHR does not support create resource diff bundles", undefined, {
         ehr,
       });
@@ -76,7 +76,7 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const ehr = getFromQueryOrFail("ehrId", req);
     if (!isEhrSource(ehr)) throw new BadRequestError("Invalid EHR", undefined, { ehr });
-    if (!isEhrSourceWithCreateResourceDiffBundles(ehr)) {
+    if (!isEhrSourceWithResourceDiffBundles(ehr)) {
       throw new BadRequestError("EHR does not support create resource diff bundles", undefined, {
         ehr,
       });
@@ -112,7 +112,7 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const ehr = getFromQueryOrFail("ehrId", req);
     if (!isEhrSource(ehr)) throw new BadRequestError("Invalid EHR", undefined, { ehr });
-    if (!isEhrSourceWithCreateResourceDiffBundles(ehr)) {
+    if (!isEhrSourceWithResourceDiffBundles(ehr)) {
       throw new BadRequestError("EHR does not support create resource diff bundles", undefined, {
         ehr,
       });
