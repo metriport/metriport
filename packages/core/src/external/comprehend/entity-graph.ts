@@ -1,15 +1,43 @@
 import { Entity, RxNormEntityCategory } from "@aws-sdk/client-comprehendmedical";
-import { Medication, MedicationRequest, MedicationStatement } from "@medplum/fhirtypes";
+import {
+  Bundle,
+  BundleEntry,
+  Resource,
+  Medication,
+  MedicationRequest,
+  MedicationStatement,
+} from "@medplum/fhirtypes";
 import { buildMedicationStatement } from "./fhir/medication-statement";
 import { EntityGraph, MedicationEntityGraph } from "./types";
 
-export function buildEntityGraph(entities: Entity[]): EntityGraph {
+export function buildEntityGraph(entities: Entity[] = []): EntityGraph {
   const medicationEntityGraph = buildMedicationEntityGraph(entities);
 
   return {
     entities,
     ...medicationEntityGraph,
   };
+}
+
+export function buildBundleFromEntityGraph(entityGraph: EntityGraph): Bundle {
+  return {
+    resourceType: "Bundle",
+    type: "collection",
+    entry: [
+      ...resourceToEntry(entityGraph.medications),
+      ...resourceToEntry(entityGraph.medicationRequests),
+      ...resourceToEntry(entityGraph.medicationStatements),
+    ],
+  };
+}
+
+export function resourceToEntry(resources?: Resource[]): BundleEntry[] {
+  if (!resources) return [];
+
+  return resources.map(resource => ({
+    fullUrl: "urn:uuid:" + resource.id,
+    resource,
+  }));
 }
 
 // export function mergeEntityGraphs(entityGraphs: EntityGraph[]): EntityGraph {

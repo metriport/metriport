@@ -1,5 +1,20 @@
+import type { BedrockChat } from "../langchain/bedrock";
 import { Entity } from "@aws-sdk/client-comprehendmedical";
 import { Bundle, Medication, MedicationRequest, MedicationStatement } from "@medplum/fhirtypes";
+
+export type BedrockAgent = ReturnType<typeof BedrockChat.prototype.bindTools>;
+export type BedrockChatResult = Awaited<ReturnType<typeof BedrockChat.prototype.invoke>>;
+
+export interface ExtractionBudget {
+  tokensToLLM: number;
+  charactersToComprehend: number;
+}
+
+export interface ExtractionUsage {
+  llmInputTokens: number;
+  llmOutputTokens: number;
+  comprehendInputCharacters: number;
+}
 
 export interface ExtractionSource {
   getConsolidatedBundle(cxId: string, patientId: string): Promise<Bundle>;
