@@ -1,11 +1,11 @@
-import { ProcessSyncPatientRequest } from "@metriport/core/external/ehr/command/sync-patient/ehr-sync-patient";
-import { EhrSyncPatientLocal } from "@metriport/core/external/ehr/command/sync-patient/ehr-sync-patient-local";
-import { getEnvAsIntOrFail, MetriportError } from "@metriport/shared";
+import { EhrSyncPatientDirect } from "@metriport/core/external/ehr/command/sync-patient/ehr-sync-patient-direct";
+import { getEnvAsIntOrFail } from "@metriport/shared";
 import { SQSEvent } from "aws-lambda";
 import { capture } from "../shared/capture";
-import { parseSyncPatient } from "../shared/ehr";
+import { ehrSyncPatientSchema } from "../shared/ehr";
 import { getEnvOrFail } from "../shared/env";
 import { prefixedLog } from "../shared/log";
+import { parseBody } from "../shared/parse-body";
 import { getSingleMessageOrFail } from "../shared/sqs";
 
 // Keep this as early on the file as possible
@@ -22,7 +22,7 @@ export const handler = capture.wrapHandler(async (event: SQSEvent) => {
   const message = getSingleMessageOrFail(event.Records, lambdaName);
   if (!message) return;
 
-  const parsedBody = parseBody(message.body);
+  const parsedBody = parseBody(ehrSyncPatientSchema, message.body);
   const { ehr, cxId, practiceId, patientId } = parsedBody;
 
   const log = prefixedLog(
@@ -30,17 +30,6 @@ export const handler = capture.wrapHandler(async (event: SQSEvent) => {
   );
   log(`Parsed: ${JSON.stringify(parsedBody)}, waitTimeInMillis ${waitTimeInMillis}`);
 
-  const ehrSyncPatientHandler = new EhrSyncPatientLocal(waitTimeInMillis);
+  const ehrSyncPatientHandler = new EhrSyncPatientDirect(waitTimeInMillis);
   await ehrSyncPatientHandler.processSyncPatient(parsedBody);
 });
-
-function parseBody(body?: unknown): ProcessSyncPatientRequest {
-  if (!body) throw new MetriportError(`Missing message body`);
-
-  const bodyString = typeof body === "string" ? (body as string) : undefined;
-  if (!bodyString) throw new MetriportError(`Invalid body`);
-
-  const bodyAsJson = JSON.parse(bodyString);
-
-  return parseSyncPatient(bodyAsJson);
-}
