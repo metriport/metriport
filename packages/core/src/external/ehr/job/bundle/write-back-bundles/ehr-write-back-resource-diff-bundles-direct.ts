@@ -92,10 +92,10 @@ export class EhrWriteBackResourceDiffBundlesDirect
         });
         return;
       }
-      const resourcesToWriteBack = await getResourcesToWriteBack({
-        ehr,
-        practiceId,
+      const writeBackFilters = await getWriteBackFilters({ ehr, practiceId });
+      const resourcesToWriteBack = getResourcesToWriteBack({
         resources: metriportOnlyResources,
+        writeBackFilters,
       });
       try {
         await createOrReplaceBundle({
@@ -162,32 +162,6 @@ async function getMetriportOnlyResourcesFromS3({
   });
 }
 
-async function getResourcesToWriteBack({
-  ehr,
-  practiceId,
-  resources,
-}: {
-  ehr: EhrSource;
-  practiceId: string;
-  resources: Resource[];
-}): Promise<Resource[]> {
-  const resourcesToWriteBack: Resource[] = [];
-  for (const resource of resources) {
-    const writeBackResourceType = getWriteBackResourceType(resource);
-    if (!writeBackResourceType) continue;
-    const writeBackFilters = await getWriteBackFilters({ ehr, practiceId });
-    const shouldWriteBack = filterResource({
-      resource,
-      resources,
-      writeBackResourceType,
-      writeBackFilters,
-    });
-    if (!shouldWriteBack) continue;
-    resourcesToWriteBack.push(resource);
-  }
-  return resourcesToWriteBack;
-}
-
 async function getWriteBackFilters({
   ehr,
   practiceId,
@@ -206,11 +180,34 @@ async function getWriteBackFilters({
   return secondaryMappings.writeBackFilters;
 }
 
+function getResourcesToWriteBack({
+  resources,
+  writeBackFilters,
+}: {
+  resources: Resource[];
+  writeBackFilters: WriteBackFiltersPerResourceType | undefined;
+}): Resource[] {
+  const resourcesToWriteBack: Resource[] = [];
+  for (const resource of resources) {
+    const writeBackResourceType = getWriteBackResourceType(resource);
+    if (!writeBackResourceType) continue;
+    const shouldWriteBack = filterResource({
+      resource,
+      resources,
+      writeBackResourceType,
+      writeBackFilters,
+    });
+    if (!shouldWriteBack) continue;
+    resourcesToWriteBack.push(resource);
+  }
+  return resourcesToWriteBack;
+}
+
 function getWriteBackResourceType(resource: Resource): WriteBackResourceType | undefined {
   if (resource.resourceType === "Condition") return "condition";
   if (resource.resourceType === "Observation") {
     if (isLab(resource as Observation)) return "lab";
-    if (isVital(resource as Observation)) return "vital";
+    if (isVital(resource as Observation)) return undefined;
     return undefined;
   }
   throw new BadRequestError("Could not find write back resource type for resource", undefined, {

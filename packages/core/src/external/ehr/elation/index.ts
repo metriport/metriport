@@ -128,6 +128,8 @@ type ElationLab = {
     results: {
       status: string;
       value: string;
+      text: string;
+      note: string;
       reference_min: string | undefined;
       reference_max: string | undefined;
       units: string;
@@ -135,12 +137,32 @@ type ElationLab = {
       abnormal_flag: string;
       test: {
         name: string;
+        code: string;
         loinc: string;
       };
-      test_category: string;
+      test_category: {
+        value: string;
+        description: string;
+      };
     }[];
   }[];
 };
+
+const validLabResultStatuses = [
+  "CORRECTED",
+  "DELETED",
+  "FINAL",
+  "PENDING",
+  "PRELIMINARY",
+  "RESULTS ENTERED -- NOT VERIFIED",
+  "PARTIAL",
+  "RESULTS STATUS CHANGE TO FINAL. RESULTS DID NOT CHANGE ( DONT TRANSMIT TEST).",
+  "RESULT CANCELED DUE TO NON-PERFORMANCE",
+  "ERROR",
+  "AMENDED",
+];
+
+const maxUnitsCharacters = 20;
 
 export function isSupportedCcdaSectionResource(resourceType: string): boolean {
   return ccdaSectionMap.has(resourceType as ResourceType);
@@ -858,6 +880,13 @@ class ElationApi {
         additionalInfo
       );
     }
+    const formattedResultStatus = resultStatus.toUpperCase();
+    if (!validLabResultStatuses.includes(formattedResultStatus)) {
+      throw new BadRequestError("Invalid result status", undefined, {
+        ...additionalInfo,
+        resultStatus: formattedResultStatus,
+      });
+    }
     const observedDate = getObservationObservedDate(observation);
     const formattedObservedDate = this.formatDateTime(observedDate);
     if (!formattedObservedDate) {
@@ -886,22 +915,28 @@ class ElationApi {
           accession_number: uuidv7(),
           resulted_date: formattedObservedDate,
           collected_date: formattedObservedDate,
-          status: resultStatus,
+          status: formattedResultStatus,
           note: "Added via Metriport App",
           results: [
             {
-              status: resultStatus,
+              status: formattedResultStatus,
               value: value.toString(),
+              text: loincCoding.display,
+              note: "Added via Metriport App",
               reference_min: referenceRange.low?.toString(),
               reference_max: referenceRange.high?.toString(),
-              units: unit,
+              units: unit.slice(0, maxUnitsCharacters),
               is_abnormal: isAbnormal ? "1" : "0",
-              abnormal_flag: interpretation,
+              abnormal_flag: this.mapInterpretationToAbnormalFlag(interpretation),
               test: {
                 name: loincCoding.display,
+                code: loincCoding.code,
                 loinc: loincCoding.code,
               },
-              test_category: loincCoding.display,
+              test_category: {
+                value: loincCoding.display,
+                description: loincCoding.display,
+              },
             },
           ],
         },
@@ -995,6 +1030,14 @@ class ElationApi {
 
   private convertCelciusToFahrenheit(value: number): number {
     return value * (9 / 5) + 32;
+  }
+
+  private mapInterpretationToAbnormalFlag(interpretation: string): string {
+    if (interpretation === "abnormal") return "Abnormal";
+    if (interpretation === "normal") return "Intermediate result";
+    if (interpretation === "low") return "Below low normal";
+    if (interpretation === "high") return "Above high normal";
+    return "Not Applicable";
   }
 }
 
