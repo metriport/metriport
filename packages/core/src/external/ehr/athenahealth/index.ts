@@ -1962,7 +1962,7 @@ class AthenaHealthApi {
       },
       {
         numberOfParallelExecutions: parallelRequests,
-        delay: delayBetweenRequestBatches.asMilliseconds(),
+        maxJitterMillis: maxJitter.asMilliseconds(),
       }
     );
     if (processEncountersErrors.length > 0) {
