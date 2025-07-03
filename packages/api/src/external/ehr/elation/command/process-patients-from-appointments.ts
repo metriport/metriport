@@ -201,5 +201,6 @@ async function syncPatient({
     practiceId: elationPracticeId,
     patientId: elationPatientId,
     triggerDq: true,
+    isAppointment: true,
   });
 }

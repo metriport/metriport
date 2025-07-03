@@ -8,6 +8,7 @@ import {
   createMetriportPatientDemosFhir,
   getOrCreateMetriportPatientFhir,
 } from "../../shared/utils/fhir";
+import { isDqCooldownExpired } from "../../shared/utils/patient";
 import { createCanvasClient } from "../shared";
 
 export type SyncCanvasPatientIntoMetriportParams = {
@@ -16,6 +17,7 @@ export type SyncCanvasPatientIntoMetriportParams = {
   canvasPatientId: string;
   api?: CanvasApi;
   triggerDq?: boolean;
+  triggerDqForExistingPatient?: boolean;
 };
 
 export async function syncCanvasPatientIntoMetriport({
@@ -24,6 +26,7 @@ export async function syncCanvasPatientIntoMetriport({
   canvasPatientId,
   api,
   triggerDq = false,
+  triggerDqForExistingPatient = false,
 }: SyncCanvasPatientIntoMetriportParams): Promise<string> {
   const existingPatient = await getPatientMapping({
     cxId,
@@ -35,6 +38,12 @@ export async function syncCanvasPatientIntoMetriport({
       cxId,
       id: existingPatient.patientId,
     });
+    if (triggerDqForExistingPatient && isDqCooldownExpired(metriportPatient)) {
+      queryDocumentsAcrossHIEs({
+        cxId,
+        patientId: metriportPatient.id,
+      }).catch(processAsyncError(`Canvas queryDocumentsAcrossHIEs`));
+    }
     const metriportPatientId = metriportPatient.id;
     return metriportPatientId;
   }
