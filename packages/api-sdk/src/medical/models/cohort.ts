@@ -46,7 +46,10 @@ export const patientUnassignmentResponseSchema = z.object({
 
 export const cohortSchema = cohortCreateSchema.merge(baseUpdateSchema);
 
-export type CohortMonitoring = z.infer<typeof cohortMonitoringSchema>;
+export const cohortPatientIdsSchema = z.object({
+  patientIds: z.array(z.string()),
+});
+
 export type CohortCreate = z.infer<typeof cohortCreateSchema>;
 export type Cohort = z.infer<typeof cohortSchema>;
 export type CohortUpdate = z.infer<typeof cohortUpdateSchema>;
@@ -54,7 +57,7 @@ export type CohortDTO = z.infer<typeof cohortDTOSchema>;
 export type CohortWithCountDTO = z.infer<typeof cohortWithCountDTOSchema>;
 export type CohortWithPatientIdsAndCountDTO = z.infer<typeof cohortWithPatientIdsAndCountDTOSchema>;
 export type CohortListResponse = z.infer<typeof cohortListResponseSchema>;
-
+export type CohortPatientIds = z.infer<typeof cohortPatientIdsSchema>;
 export type PatientAssignmentRequest = {
   patientIds?: string[];
   all?: boolean;

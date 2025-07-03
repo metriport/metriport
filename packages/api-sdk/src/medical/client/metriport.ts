@@ -21,12 +21,15 @@ import {
   CohortCreate,
   CohortDTO,
   CohortListResponse,
+  CohortPatientIds,
   CohortUpdate,
+  CohortWithCountDTO,
   CohortWithPatientIdsAndCountDTO,
   PatientAssignmentRequest,
   PatientUnassignmentResponse,
   cohortDTOSchema,
   cohortListResponseSchema,
+  cohortWithCountDTOSchema,
   cohortWithPatientIdsAndCountDTOSchema,
   patientUnassignmentResponseSchema,
 } from "../models/cohort";
@@ -715,15 +718,15 @@ export class MetriportMedicalApi {
   }
 
   /**
-   * Returns cohort details, count and IDs of the patients assigned to it.
+   * Returns cohort details and the count of patients assigned to it.
    *
    * @param cohortId The ID of the cohort to get.
-   * @returns Cohort details, count and IDs of the patients assigned to it.
+   * @returns Cohort details and the count of patients assigned to it.
    */
-  async getCohort(cohortId: string): Promise<CohortWithPatientIdsAndCountDTO> {
+  async getCohort(cohortId: string): Promise<CohortWithCountDTO> {
     const resp = await this.api.get(`${COHORT_URL}/${cohortId}`);
     if (!resp.data) throw new Error(NO_DATA_MESSAGE);
-    return cohortWithPatientIdsAndCountDTOSchema.parse(resp.data);
+    return cohortWithCountDTOSchema.parse(resp.data);
   }
 
   /**
@@ -740,6 +743,33 @@ export class MetriportMedicalApi {
     const resp = await this.api.post(`${COHORT_URL}/${cohortId}/patient`, data);
     if (!resp.data) throw new Error(NO_DATA_MESSAGE);
     return cohortWithPatientIdsAndCountDTOSchema.parse(resp.data);
+  }
+
+  /**
+   * Returns the patient IDs associated with a cohort.
+   *
+   * @param cohortId The ID of the cohort to get.
+   * @param pagination Pagination settings, optional. If not provided, the first page will be returned.
+   *                   See https://docs.metriport.com/medical-api/more-info/pagination
+   * @returns IDs of the patients assigned to the cohort.
+   */
+  async getCohortAssociatedPatientIds({
+    cohortId,
+    pagination,
+  }: {
+    cohortId: string;
+    pagination?: Pagination | undefined;
+  }): Promise<PaginatedResponse<CohortPatientIds, "patientIds">> {
+    const resp = await this.api.get(`${COHORT_URL}/${cohortId}/patient`, {
+      params: {
+        ...getPaginationParams(pagination),
+      },
+    });
+    if (!resp.data) return { meta: { itemsOnPage: 0 }, patientIds: [] };
+    return {
+      meta: resp.data.meta,
+      patientIds: resp.data.patientIds,
+    };
   }
 
   /**
