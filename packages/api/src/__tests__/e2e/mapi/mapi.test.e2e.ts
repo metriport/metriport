@@ -39,12 +39,12 @@ describe("MAPI E2E Tests", () => {
     runFacilityTestsPart1(e2e);
   });
 
-  describe("Cohort", () => {
-    runCohortTestsPart1(e2e);
-  });
-
   describe("Patient", () => {
     runPatientTestsPart1(e2e);
+  });
+
+  describe("Cohort", () => {
+    runCohortTestsPart1(e2e);
   });
 
   describe("Contributed", () => {
