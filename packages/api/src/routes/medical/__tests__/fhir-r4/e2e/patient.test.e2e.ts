@@ -29,7 +29,9 @@ describe("Integration FHIR Patient", () => {
     if (!patient.name || patient.name.length < 1) throw new Error("Patient must have a name");
     if (!patient.name[0].given || patient.name[0].given.length < 1)
       throw new Error("Patient must have a given name");
-    const res = await api.get(`/fhir/R4/Patient/?name=${patient.name[0].given[0]}`);
+    const res = await api.get(`/fhir/R4/Patient/?name=${patient.name[0].given[0]}`, {
+      timeout: 30000,
+    });
     expect(res.status).toBe(200);
     const body = res.data;
     expect(body.resourceType).toBeTruthy();
