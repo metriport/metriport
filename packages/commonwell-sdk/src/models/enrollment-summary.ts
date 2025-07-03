@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { isoDateSchema } from "./iso-date";
-import { isoDateTimeSchema } from "./iso-datetime";
+import { isoDateSchema } from "./date";
+import { isoDateTimeSchema } from "./date";
 
 // A summary of a Person’s enrollment status.
 // See: https://specification.commonwellalliance.org/services/rest-api-reference (8.4.9 EnrollmentSummary)

@@ -43,7 +43,7 @@ export async function patientManagement(commonWell: CommonWell) {
     console.log(">>> Transaction ID: " + commonWell.lastTransactionId);
     console.log(">>> 1.3 Response: " + JSON.stringify(resp_1_3, null, 2));
 
-    const firstPatientGet: Patient | null | undefined = resp_1_3.Patients[0]?.Patient;
+    const firstPatientGet: Patient | null | undefined = resp_1_3?.Patient;
     if (!firstPatientGet) throw new Error("No patient on response from getPatient");
 
     console.log(`>>> 1.2: Update a Patient --------------------------------`);
@@ -57,16 +57,13 @@ export async function patientManagement(commonWell: CommonWell) {
     console.log(">>> Transaction ID: " + commonWell.lastTransactionId);
     console.log(">>> 1.2.1 Response: " + JSON.stringify(resp_1_2_1, null, 2));
 
-    console.log(`>>> 1.2.2: Confirm it was updated correctly`);
+    console.log(`>>> 1.2.2 Get Patient - ID ${firstPatientId}`);
     const resp_1_2_2 = await commonWell.getPatient(firstPatientIdEncoded);
     console.log(">>> 1.2.2 Response: " + JSON.stringify(resp_1_2_2, null, 2));
     console.log(">>> Transaction ID: " + commonWell.lastTransactionId);
-    const patientToUpdateId = getMetriportPatientIdOrFail(
-      resp_1_2_2.Patients[0],
-      "patientToUpdate"
-    );
+    const patientToUpdateId = getMetriportPatientIdOrFail(resp_1_2_2, "patientToUpdate");
     patientIds.push(patientToUpdateId);
-    const updatedPatient = resp_1_2_2.Patients[0]?.Patient;
+    const updatedPatient = resp_1_2_2?.Patient;
     if (!updatedPatient) {
       console.log(`>>> 1.2.2: Couldn't get patient!`);
     } else {
@@ -77,6 +74,11 @@ export async function patientManagement(commonWell: CommonWell) {
         console.log(`>>> 1.2.2: Patient was updated correctly!`);
       }
     }
+
+    console.log(`>>> 1.3' Get Patient - ID ${firstPatientId}`);
+    const resp_1_3x = await commonWell.getPatient(firstPatientIdEncoded);
+    console.log(">>> Transaction ID: " + commonWell.lastTransactionId);
+    console.log(">>> 1.3' Response: " + JSON.stringify(resp_1_3x, null, 2));
 
     console.log(`>>> 1.4 Merge Patient --------------------------------`);
 
@@ -108,7 +110,7 @@ export async function patientManagement(commonWell: CommonWell) {
     const resp_1_4_3_1 = await commonWell.getPatient(firstPatientIdEncoded);
     console.log(">>> Transaction ID: " + commonWell.lastTransactionId);
     console.log(">>> 1.4.3.1 Response: " + JSON.stringify(resp_1_4_3_1, null, 2));
-    const mergedPatient = resp_1_4_3_1.Patients[0]?.Patient;
+    const mergedPatient = resp_1_4_3_1?.Patient;
     let foundNonSurvivingPatient: boolean;
     try {
       const resp_1_4_3_2 = await commonWell.getPatient(patientToMergeIdEncoded);

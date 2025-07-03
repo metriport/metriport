@@ -3,7 +3,7 @@ import { addressSchema } from "./address";
 import { genderCodesSchema } from "./demographics";
 import { humanNameSchema } from "./human-name";
 import { identifierUseCodesSchema } from "./identifier";
-import { isoDateTimeSchema } from "./iso-datetime";
+import { isoDateTimeSchema } from "./date";
 import { periodSchema } from "./period";
 
 // Used as a reference, but not exactly the actual definition:

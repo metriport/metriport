@@ -1,4 +1,8 @@
-import { defaultOptionsRequestNotAccepted, executeWithNetworkRetries } from "@metriport/shared";
+import {
+  defaultOptionsRequestNotAccepted,
+  executeWithNetworkRetries,
+  MetriportError,
+} from "@metriport/shared";
 import axios, { AxiosInstance, AxiosResponse } from "axios";
 import httpStatus from "http-status";
 import { Agent } from "https";
@@ -11,16 +15,18 @@ import {
   convertPatientIdToSubjectId,
   encodeToCwPatientId,
 } from "../common/util";
+import { normalizeDatetime } from "../models/date";
 import { fhirGenderToCommonwell } from "../models/demographics";
 import { DocumentQueryResponse, documentQueryResponseSchema } from "../models/document";
 import {
   Patient,
   PatientCollection,
+  PatientCollectionItem,
   patientCollectionSchema,
-  PatientLinkSearchResp,
-  patientLinkSearchRespSchema,
-  PatientMergeResponse,
-  patientMergeResponseSchema,
+  PatientProbableLinkResp,
+  patientProbableLinkRespSchema,
+  StatusResponse,
+  statusResponseSchema,
 } from "../models/patient";
 import {
   APIMode,
@@ -161,8 +167,12 @@ export class CommonWell implements CommonWellAPI {
    * @param options Optional parameters.
    * @param options.meta Metadata about the request. Defaults to the data used to initialize the client.
    * @returns The patient collection containing the patient in the first position.
+   * @throws MetriportError if multiple patients are found for the given ID.
    */
-  async getPatient(params: GetPatientParams, options?: BaseOptions): Promise<PatientCollection>;
+  async getPatient(
+    params: GetPatientParams,
+    options?: BaseOptions
+  ): Promise<PatientCollectionItem | undefined>;
   /**
    * Returns a patient based on its ID.
    *
@@ -170,13 +180,13 @@ export class CommonWell implements CommonWellAPI {
    * @param options Optional parameters.
    * @param options.meta Metadata about the request. Defaults to the data used to initialize the client.
    * @returns The patient collection containing the patient in the first position.
+   * @throws MetriportError if multiple patients are found for the given ID.
    */
-  async getPatient(id: string, options?: BaseOptions): Promise<PatientCollection>;
-
+  async getPatient(id: string, options?: BaseOptions): Promise<PatientCollectionItem | undefined>;
   async getPatient(
     idOrParams: string | GetPatientParams,
     options?: BaseOptions
-  ): Promise<PatientCollection> {
+  ): Promise<PatientCollectionItem | undefined> {
     let patientId: string;
     if (typeof idOrParams !== "string") {
       patientId = idOrParams.id;
@@ -195,7 +205,14 @@ export class CommonWell implements CommonWellAPI {
     const headers = await this.buildQueryHeaders(options?.meta);
     const url = buildPatientEndpoint(this.oid, patientId);
     const resp = await this.executeWithRetriesOn500IfEnabled(() => this.api.get(url, { headers }));
-    return patientCollectionSchema.parse(resp.data);
+    const collection = patientCollectionSchema.parse(resp.data);
+    if (collection.Patients.length > 1) {
+      throw new MetriportError("Multiple patients found for the given ID", undefined, {
+        patientId,
+        count: collection.Patients.length,
+      });
+    }
+    return collection.Patients[0];
   }
 
   /**
@@ -233,7 +250,7 @@ export class CommonWell implements CommonWellAPI {
       survivingPatientId: string;
     },
     options?: BaseOptions
-  ): Promise<PatientMergeResponse> {
+  ): Promise<StatusResponse> {
     const headers = await this.buildQueryHeaders(options?.meta);
     const url = buildPatientMergeEndpoint(this.oid, nonSurvivingPatientId);
     const resp = await this.executeWithRetriesOn500IfEnabled(() =>
@@ -252,7 +269,7 @@ export class CommonWell implements CommonWellAPI {
         }
       )
     );
-    return patientMergeResponseSchema.parse(resp.data);
+    return statusResponseSchema.parse(resp.data);
   }
 
   /**
@@ -270,13 +287,11 @@ export class CommonWell implements CommonWellAPI {
   async getPatientLinksByPatientId(
     patientId: string,
     options?: BaseOptions
-  ): Promise<PatientLinkSearchResp> {
+  ): Promise<PatientCollection> {
     const headers = await this.buildQueryHeaders(options?.meta);
     const url = buildPatientLinkEndpoint(this.oid, patientId);
     const resp = await this.executeWithRetriesOn500IfEnabled(() => this.api.get(url, { headers }));
-    // TODO ENG-200: Remove this
-    // console.log(`>>> RESPONSE RAW: ${JSON.stringify(resp.data, null, 2)}`);
-    return patientLinkSearchRespSchema.parse(resp.data);
+    return patientCollectionSchema.parse(resp.data);
   }
 
   /**
@@ -298,11 +313,11 @@ export class CommonWell implements CommonWellAPI {
   async getProbableLinksById(
     patientId: string,
     options?: BaseOptions
-  ): Promise<PatientLinkSearchResp> {
+  ): Promise<PatientProbableLinkResp> {
     const headers = await this.buildQueryHeaders(options?.meta);
     const url = buildProbableLinkEndpoint(this.oid, patientId);
     const resp = await this.executeWithRetriesOn500IfEnabled(() => this.api.get(url, { headers }));
-    return patientLinkSearchRespSchema.parse(resp.data);
+    return patientProbableLinkRespSchema.parse(resp.data);
   }
 
   /**
@@ -340,7 +355,7 @@ export class CommonWell implements CommonWellAPI {
       zip: string;
     },
     options?: BaseOptions
-  ): Promise<PatientLinkSearchResp> {
+  ): Promise<PatientProbableLinkResp> {
     const headers = await this.buildQueryHeaders(options?.meta);
     const params = new URLSearchParams();
     params.append("fname", firstName);
@@ -352,65 +367,72 @@ export class CommonWell implements CommonWellAPI {
     const resp = await this.executeWithRetriesOn500IfEnabled(() =>
       this.api.get(url + `?${params.toString()}`, { headers })
     );
-    return patientLinkSearchRespSchema.parse(resp.data);
+    return patientProbableLinkRespSchema.parse(resp.data);
   }
 
   /**
    * An Edge System reviews the probable matches. An Edge System can link remote patient(s) if these patients are
    * the same as local patient.
    *
-   * Use the response from Get Probable Links to find the LinkID.
+   * Use getPatientLinksByPatientId to get the Link URL.
    *
    * Remote patients will be linked with the local patient and now considered as a manual confirmed LOLA 2 link.
    *
-   * @param patientId The ID of the patient to unlink.
-   * @param linkId The ID of the link to unlink.
+   * @param urlToLinkPatients The URL to link the patients.
    * @param options Optional parameters.
    * @param options.meta Metadata about the request. Defaults to the data used to initialize the client.
    */
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async linkPatients(patientId: string, linkId: string, options?: BaseOptions): Promise<void> {
-    // const headers = await this.buildQueryHeaders(options?.meta);
-    // await this.executeWithRetriesOn500IfEnabled(() =>
-    //   this.api.put(
-    //     `/v1/person/${personId}/patientLink/${patientId}/reset`,
-    //     {},
-    //     {
-    //       headers,
-    //     }
-    //   )
-    // );
-    // return;
+  async linkPatients(urlToLinkPatients: string, options?: BaseOptions): Promise<StatusResponse> {
+    const headers = await this.buildQueryHeaders(options?.meta);
+    const resp = await this.executeWithRetriesOn500IfEnabled(() =>
+      this.api.put(urlToLinkPatients, {}, { headers })
+    );
+    return statusResponseSchema.parse(resp.data);
   }
 
-  // TODO ENG-200: Implement this
   /**
    * After reviewing remote patient links for their local patient, an Edge System can unlink a remote patient that
    * does not belong in the Patient collection and remove the existing LOLA2 network link.
    *
-   * Use Get Patient Links to find the LinkID.
+   * Use getPatientLinksByPatientId to get the Unlink URL.
    *
    * Patient Links that are manually unlinked will no longer be autolinked to the same patient in the future by the
    * matching algorithm.
    *
-   * @param patientId The ID of the patient to unlink.
-   * @param linkId The ID of the link to unlink.
+   * @param urlToUnlinkPatients The URL to unlink the patients.
    * @param options Optional parameters.
    * @param options.meta Metadata about the request. Defaults to the data used to initialize the client.
    */
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async unlinkPatients(patientId: string, linkId: string, options?: BaseOptions): Promise<void> {
-    // const headers = await this.buildQueryHeaders(options?.meta);
-    // await this.executeWithRetriesOn500IfEnabled(() =>
-    //   this.api.put(
-    //     `/v1/person/${personId}/patientLink/${patientId}/reset`,
-    //     {},
-    //     {
-    //       headers,
-    //     }
-    //   )
-    // );
-    // return;
+  async unlinkPatients(
+    urlToUnlinkPatients: string,
+    options?: BaseOptions
+  ): Promise<StatusResponse> {
+    const headers = await this.buildQueryHeaders(options?.meta);
+    const resp = await this.executeWithRetriesOn500IfEnabled(() =>
+      this.api.put(urlToUnlinkPatients, {}, { headers })
+    );
+    return statusResponseSchema.parse(resp.data);
+  }
+
+  /**
+   * Edge Systems can perform a “reset” to a Patient which will detach all LOLA 2 links to the specified Patient. This
+   * patient may be linked to the same collection of Patients (Person) again in the future.
+   *
+   * Use getPatientLinksByPatientId to get the ResetLink URL.
+   *
+   * @param urlToResetPatientLinks The URL to reset the patient links.
+   * @param options Optional parameters.
+   * @param options.meta Metadata about the request. Defaults to the data used to initialize the client.
+   */
+  async resetPatientLinks(
+    urlToResetPatientLinks: string,
+    options?: BaseOptions
+  ): Promise<StatusResponse> {
+    const headers = await this.buildQueryHeaders(options?.meta);
+    const resp = await this.executeWithRetriesOn500IfEnabled(() =>
+      this.api.put(urlToResetPatientLinks, {}, { headers })
+    );
+    return statusResponseSchema.parse(resp.data);
   }
 
   //--------------------------------------------------------------------------------------------
@@ -569,5 +591,6 @@ function normalizePatient(patient: Patient): Patient {
   return {
     ...patient,
     ...(patient.gender ? { gender: fhirGenderToCommonwell(patient.gender) } : {}),
+    ...(patient.birthDate ? { birthDate: normalizeDatetime(patient.birthDate) } : {}),
   };
 }
