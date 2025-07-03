@@ -138,5 +138,6 @@ async function syncPatient({
     practiceId: canvasPracticeId,
     patientId: canvasPatientId,
     triggerDq: true,
+    isAppointment: true,
   });
 }
