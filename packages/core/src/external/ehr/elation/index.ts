@@ -905,6 +905,7 @@ class ElationApi {
       );
     }
     const isAbnormal = interpretation === "abnormal";
+    const text = observation.text?.div;
     return {
       report_type: "Lab",
       document_date: formattedObservedDate,
@@ -921,7 +922,7 @@ class ElationApi {
             {
               status: formattedResultStatus,
               value: value.toString(),
-              text: loincCoding.display,
+              text: text ?? loincCoding.display,
               note: "Added via Metriport App",
               reference_min: referenceRange.low?.toString(),
               reference_max: referenceRange.high?.toString(),
