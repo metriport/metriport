@@ -14,6 +14,7 @@ import { BundleType } from "../../../../../bundle/bundle-shared";
 import { createOrReplaceBundle } from "../../../../../bundle/command/create-or-replace-bundle";
 import { fetchBundle, FetchBundleParams } from "../../../../../bundle/command/fetch-bundle";
 import { ehrCxMappingSecondaryMappingsSchemaMap } from "../../../../../mappings";
+import { isSupportedWriteBackResourceType } from "../../../write-back-bundles/ehr-write-back-resource-diff-bundles-direct";
 import {
   ComputeResourceDiffBundlesRequest,
   EhrComputeResourceDiffBundlesHandler,
@@ -138,7 +139,7 @@ export class EhrComputeResourceDiffBundlesDirect implements EhrComputeResourceDi
           resourceType,
           createResourceDiffBundlesJobId: jobId,
         }),
-        ...((await shouldWriteBack({ ehr, practiceId }))
+        ...((await shouldWriteBack({ ehr, practiceId, resourceType }))
           ? [
               startWriteBackBundlesJob({
                 ehr,
@@ -210,10 +211,13 @@ async function getEhrResourcesFromS3({
 async function shouldWriteBack({
   ehr,
   practiceId,
+  resourceType,
 }: {
   ehr: EhrSource;
   practiceId: string;
+  resourceType: string;
 }): Promise<boolean> {
+  if (!isSupportedWriteBackResourceType(resourceType)) return false;
   const mappingsSchema = ehrCxMappingSecondaryMappingsSchemaMap[ehr];
   if (!mappingsSchema) return false;
   const secondaryMappings = await getSecondaryMappings({

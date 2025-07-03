@@ -5,6 +5,8 @@ import { writeBackCondition } from "./condition";
 import { writeBackLab } from "./lab";
 import { writeBackVital } from "./vital";
 
+export type WriteBackResourceType = "condition" | "lab" | "vital";
+
 export type WriteBackConditionRequest = {
   ehr: EhrSource;
   tokenId?: string;
@@ -12,7 +14,7 @@ export type WriteBackConditionRequest = {
   practiceId: string;
   ehrPatientId: string;
   resource: Resource;
-  writeBackResource: "condition" | "lab" | "vital";
+  writeBackResource: WriteBackResourceType;
 };
 
 export type WriteBackConditionClientRequest = Omit<WriteBackConditionRequest, "ehr">;

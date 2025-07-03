@@ -1,4 +1,4 @@
-import { Condition, Observation, Resource } from "@medplum/fhirtypes";
+import { Condition, Observation, Resource, ResourceType } from "@medplum/fhirtypes";
 import {
   BadRequestError,
   createBundleFromResourceList,
@@ -19,7 +19,7 @@ import { getSecondaryMappings } from "../../../api/get-secondary-mappings";
 import { BundleType } from "../../../bundle/bundle-shared";
 import { createOrReplaceBundle } from "../../../bundle/command/create-or-replace-bundle";
 import { fetchBundle, FetchBundleParams } from "../../../bundle/command/fetch-bundle";
-import { writeBackResource } from "../../../command/write-back/shared";
+import { writeBackResource, WriteBackResourceType } from "../../../command/write-back/shared";
 import { ehrCxMappingSecondaryMappingsSchemaMap } from "../../../mappings";
 import {
   getObservationLoincCode,
@@ -37,6 +37,14 @@ dayjs.extend(duration);
 
 const parallelRequests = 5;
 const delayBetweenRequestBatches = dayjs.duration(2, "seconds");
+
+const supportedWriteBackResourceTypes: ResourceType[] = ["Condition", "Observation"];
+export type SupportedWriteBackResourceType = (typeof supportedWriteBackResourceTypes)[number];
+export function isSupportedWriteBackResourceType(
+  resourceType: string
+): resourceType is SupportedWriteBackResourceType {
+  return supportedWriteBackResourceTypes.includes(resourceType as ResourceType);
+}
 
 export class EhrWriteBackResourceDiffBundlesDirect
   implements EhrWriteBackResourceDiffBundlesHandler
@@ -64,6 +72,11 @@ export class EhrWriteBackResourceDiffBundlesDirect
       jobId,
     };
     try {
+      if (!isSupportedWriteBackResourceType(resourceType)) {
+        throw new BadRequestError("Unsupported resource type", undefined, {
+          resourceType,
+        });
+      }
       const metriportOnlyResources = await getMetriportOnlyResourcesFromS3({
         ehr,
         cxId,
@@ -175,61 +188,6 @@ async function getResourcesToWriteBack({
   return resourcesToWriteBack;
 }
 
-async function writeBackResources({
-  ehr,
-  tokenId,
-  cxId,
-  practiceId,
-  ehrPatientId,
-  resources,
-}: {
-  ehr: EhrSource;
-  tokenId: string | undefined;
-  cxId: string;
-  practiceId: string;
-  ehrPatientId: string;
-  resources: Resource[];
-}): Promise<void> {
-  const writeBackErrors: { error: unknown; resource: Resource }[] = [];
-  await executeAsynchronously(
-    resources,
-    async resource => {
-      try {
-        const writeBackResourceType = getWriteBackResourceType(resource);
-        await writeBackResource({
-          ehr,
-          ...(tokenId && { tokenId }),
-          cxId,
-          practiceId,
-          ehrPatientId,
-          resource,
-          writeBackResource: writeBackResourceType,
-        });
-      } catch (error) {
-        if (error instanceof BadRequestError || error instanceof NotFoundError) return;
-        const resourceToString = JSON.stringify(resource);
-        log(`Failed to write back resource ${resourceToString}. Cause: ${errorToString(error)}`);
-        writeBackErrors.push({ error, resource });
-      }
-    },
-    {
-      numberOfParallelExecutions: parallelRequests,
-      delay: delayBetweenRequestBatches.asMilliseconds(),
-    }
-  );
-  if (writeBackErrors.length > 0) {
-    const msg = `Failure while writing back some resources @ EHR`;
-    capture.message(msg, {
-      extra: {
-        writeBackArgsCount: resources.length,
-        writeBackErrorsCount: writeBackErrors.length,
-        errors: writeBackErrors,
-        context: "create-resource-diff-bundles.write-back.writeBackMetriportOnlyResources",
-      },
-    });
-  }
-}
-
 async function getWriteBackFilters({
   ehr,
   practiceId,
@@ -248,13 +206,14 @@ async function getWriteBackFilters({
   return secondaryMappings.writeBackFilters;
 }
 
-function getWriteBackResourceType(resource: Resource): "condition" | "lab" | "vital" {
+function getWriteBackResourceType(resource: Resource): WriteBackResourceType | undefined {
   if (resource.resourceType === "Condition") return "condition";
   if (resource.resourceType === "Observation") {
     if (isLab(resource as Observation)) return "lab";
     if (isVital(resource as Observation)) return "vital";
+    return undefined;
   }
-  throw new BadRequestError("Could not find handler to write back resource", undefined, {
+  throw new BadRequestError("Could not find write back resource type for resource", undefined, {
     resourceType: resource.resourceType,
   });
 }
@@ -267,10 +226,10 @@ function filterResource({
 }: {
   resource: Resource;
   resources: Resource[];
-  writeBackResourceType: "condition" | "lab" | "vital";
+  writeBackResourceType: WriteBackResourceType;
   writeBackFilters: WriteBackFiltersPerResourceType | undefined;
 }): boolean {
-  if (!writeBackFilters) return false;
+  if (!writeBackFilters) return true;
   if (writeBackResourceType === "condition") {
     const condition = resource as Condition;
     if (skipConditionChronicity(condition, writeBackFilters)) return false;
@@ -290,7 +249,9 @@ function filterResource({
     if (skipVitalLoinCode(observation, writeBackFilters)) return false;
     return true;
   }
-  return false;
+  throw new BadRequestError("Could not find write back resource type", undefined, {
+    writeBackResourceType,
+  });
 }
 
 function skipConditionChronicity(
@@ -379,4 +340,60 @@ function skipVitalLoinCode(
   const loincCode = getObservationLoincCode(observation);
   if (!loincCode) return false;
   return !loincCodes.includes(loincCode);
+}
+
+async function writeBackResources({
+  ehr,
+  tokenId,
+  cxId,
+  practiceId,
+  ehrPatientId,
+  resources,
+}: {
+  ehr: EhrSource;
+  tokenId: string | undefined;
+  cxId: string;
+  practiceId: string;
+  ehrPatientId: string;
+  resources: Resource[];
+}): Promise<void> {
+  const writeBackErrors: { error: unknown; resource: Resource }[] = [];
+  await executeAsynchronously(
+    resources,
+    async resource => {
+      try {
+        const writeBackResourceType = getWriteBackResourceType(resource);
+        if (!writeBackResourceType) return;
+        await writeBackResource({
+          ehr,
+          ...(tokenId && { tokenId }),
+          cxId,
+          practiceId,
+          ehrPatientId,
+          resource,
+          writeBackResource: writeBackResourceType,
+        });
+      } catch (error) {
+        if (error instanceof BadRequestError || error instanceof NotFoundError) return;
+        const resourceToString = JSON.stringify(resource);
+        log(`Failed to write back resource ${resourceToString}. Cause: ${errorToString(error)}`);
+        writeBackErrors.push({ error, resource });
+      }
+    },
+    {
+      numberOfParallelExecutions: parallelRequests,
+      delay: delayBetweenRequestBatches.asMilliseconds(),
+    }
+  );
+  if (writeBackErrors.length > 0) {
+    const msg = `Failure while writing back some resources @ EHR`;
+    capture.message(msg, {
+      extra: {
+        writeBackArgsCount: resources.length,
+        writeBackErrorsCount: writeBackErrors.length,
+        errors: writeBackErrors,
+        context: "create-resource-diff-bundles.write-back.writeBackMetriportOnlyResources",
+      },
+    });
+  }
 }

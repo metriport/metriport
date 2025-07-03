@@ -17,6 +17,8 @@ import {
   bookedAppointmentSchema,
   CcdaDocument,
   ccdaDocumentSchema,
+  CreatedLab,
+  createdLabSchema,
   CreatedProblem,
   createdProblemSchema,
   CreatedSubscription,
@@ -27,6 +29,9 @@ import {
   Metadata,
   Patient,
   patientSchema,
+  Practice,
+  Practices,
+  practicesSchema,
   SubscriptionResource,
   Subscriptions,
   subscriptionsSchema,
@@ -53,6 +58,7 @@ import {
   getObservationLoincCoding,
   getObservationObservedDate,
   getObservationResultStatus,
+  getObservationUnit,
   getObservationUnitAndValue,
   getObservationValue,
   makeRequest,
@@ -60,7 +66,6 @@ import {
   paginateWaitTime,
   partitionEhrBundle,
   saveEhrReferenceBundle,
-  getObservationUnit,
 } from "../shared";
 
 interface ElationApiConfig extends ApiConfig {
@@ -268,6 +273,53 @@ class ElationApi {
     return patient;
   }
 
+  async getPractices(cxId: string): Promise<Practice[]> {
+    const { debug } = out(`Elation getPractices - cxId ${cxId} practiceId ${this.practiceId}`);
+    const practicesUrl = `/practices/`;
+    const practices = await this.makeRequest<Practices>({
+      cxId,
+      s3Path: "practices",
+      method: "GET",
+      url: practicesUrl,
+      schema: practicesSchema,
+      additionalInfo: { cxId, practiceId: this.practiceId },
+      debug,
+    });
+    return practices.results.filter(practice => practice.status === "active");
+  }
+
+  async getPracticeAndPhysician(
+    cxId: string
+  ): Promise<{ practiceId: string; physicianId: string }> {
+    const practices = await this.getPractices(cxId);
+    const practice = practices[0];
+    if (!practice) {
+      throw new BadRequestError("Practice not found", undefined, {
+        cxId,
+        practiceId: this.practiceId,
+      });
+    }
+    if (practices.length !== 1) {
+      throw new BadRequestError("Multiple practices found", undefined, {
+        cxId,
+        practiceId: this.practiceId,
+      });
+    }
+    const physicianId = practice.physicians[0];
+    if (!physicianId) {
+      throw new BadRequestError("Physician not found", undefined, {
+        cxId,
+        practiceId: this.practiceId,
+      });
+    }
+    /*
+    if (practice.physicians.length !== 1) {
+      throw new BadRequestError("Multiple physicians found", undefined, { cxId, practiceId: this.practiceId });
+    }
+    */
+    return { practiceId: practice.id, physicianId };
+  }
+
   async getCcdaDocument({
     cxId,
     patientId,
@@ -345,7 +397,12 @@ class ElationApi {
       `Elation createProblem - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
     );
     const problemUrl = `/problems/`;
-    const additionalInfo = { cxId, practiceId: this.practiceId, patientId };
+    const additionalInfo = {
+      cxId,
+      practiceId: this.practiceId,
+      patientId,
+      conditionId: condition.id,
+    };
     const snomedCode = getConditionSnomedCode(condition);
     if (!snomedCode) {
       throw new BadRequestError("No SNOMED code found for condition", undefined, additionalInfo);
@@ -391,9 +448,9 @@ class ElationApi {
     cxId: string;
     patientId: string;
     observation: Observation;
-  }): Promise<CreatedVital> {
+  }): Promise<CreatedLab> {
     const { debug } = out(
-      `Elation createVital - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
+      `Elation createLab - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
     );
     const reportsUrl = `/reports/`;
     const additionalInfo = {
@@ -402,25 +459,26 @@ class ElationApi {
       patientId,
       observationId: observation.id,
     };
+    const { practiceId, physicianId } = await this.getPracticeAndPhysician(cxId);
     const data = {
       patient: patientId,
-      practiceId: this.practiceId,
-      physician: 1,
+      practice: practiceId,
+      physician: physicianId,
       ...this.formatLab(observation, additionalInfo),
     };
-    const vital = await this.makeRequest<CreatedVital>({
+    const lab = await this.makeRequest<CreatedLab>({
       cxId,
       patientId,
       s3Path: this.createWriteBackPath("lab", observation.id),
       method: "POST",
       url: reportsUrl,
       data,
-      schema: createdVitalSchema,
+      schema: createdLabSchema,
       additionalInfo,
       headers: { "Content-Type": "application/json" },
       debug,
     });
-    return vital;
+    return lab;
   }
 
   async createVital({
@@ -442,9 +500,11 @@ class ElationApi {
       patientId,
       observationId: observation.id,
     };
+    const { practiceId, physicianId } = await this.getPracticeAndPhysician(cxId);
     const data = {
       patient: patientId,
-      practiceId: this.practiceId,
+      practice: practiceId,
+      physician: physicianId,
       ...this.formatVital(observation, additionalInfo),
     };
     const vital = await this.makeRequest<CreatedVital>({
@@ -886,30 +946,29 @@ class ElationApi {
     loincCode: string,
     value: number,
     units: string
-  ): { value: number | string } | undefined {
+  ): number | string | undefined {
     const { units: targetUnit } = vitalSignCodesMap.get(loincCode) ?? {};
     if (!targetUnit) return undefined;
-    if (units === targetUnit) return { value };
+    if (units === targetUnit) return value;
     if (targetUnit === "lb_av") {
       if (units === "kg" || units === "kilogram" || units === "kilograms")
-        return { value: this.convertKgToLbs(value) }; // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
+        return this.convertKgToLbs(value); // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
       if (units === "g" || units === "gram" || units === "grams")
-        return { value: this.convertGramsToLbs(value) }; // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
-      if (units === "lb_av" || units.includes("pound")) return { value }; // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
+        return this.convertGramsToLbs(value); // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
+      if (units === "lb_av" || units.includes("pound")) return value; // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
     }
     if (targetUnit === "in_i") {
-      if (units === "cm" || units === "centimeter") return { value: this.convertCmToInches(value) }; // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
-      if (units === "in_i" || units.includes("inch")) return { value }; // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
+      if (units === "cm" || units === "centimeter") return this.convertCmToInches(value); // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
+      if (units === "in_i" || units.includes("inch")) return value; // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
     }
     if (targetUnit === "cm") {
-      if (units === "cm" || units === "centimeter") return { value }; // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
-      if (units === "in_i" || units.includes("inch"))
-        return { value: this.convertInchesToCm(value) }; // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
+      if (units === "cm" || units === "centimeter") return value; // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
+      if (units === "in_i" || units.includes("inch")) return this.convertInchesToCm(value); // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
     }
     if (targetUnit === "degf") {
-      if (units === "degf" || units === "f" || units.includes("fahrenheit")) return { value }; // https://hl7.org/fhir/R4/valueset-ucum-bodytemp.html
+      if (units === "degf" || units === "f" || units.includes("fahrenheit")) return value; // https://hl7.org/fhir/R4/valueset-ucum-bodytemp.html
       if (units === "cel" || units === "c" || units.includes("celsius"))
-        return { value: this.convertCelciusToFahrenheit(value) }; // https://hl7.org/fhir/R4/valueset-ucum-bodytemp.html}
+        return this.convertCelciusToFahrenheit(value); // https://hl7.org/fhir/R4/valueset-ucum-bodytemp.html}
     }
     throw new BadRequestError("Unknown units", undefined, {
       units,
