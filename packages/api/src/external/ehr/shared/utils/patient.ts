@@ -78,8 +78,8 @@ export function isDqCooldownExpired(patient: Patient): boolean {
   const lastDqStartedAt = patient.data.documentQueryProgress?.startedAt;
   if (!lastDqStartedAt) return true;
   const lastStartedAt = buildDayjs(lastDqStartedAt);
-  const diff = buildDayjs().diff(lastStartedAt, "days");
-  if (diff > patientDqCooldown.asDays()) {
+  const diff = buildDayjs().diff(lastStartedAt, "hours");
+  if (diff > patientDqCooldown.asHours()) {
     return true;
   } else {
     return false;
