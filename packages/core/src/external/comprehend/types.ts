@@ -27,6 +27,7 @@ export interface ExtractionFeature {
 
 export interface ExtractionFeaturePrompt {
   toolName: string;
+  toolDescription: string;
   toolPrompt: string;
 }
 

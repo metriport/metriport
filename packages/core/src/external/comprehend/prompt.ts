@@ -3,24 +3,35 @@ import { ExtractionFeature, ExtractionFeatureType, ExtractionFeaturePrompt } fro
 export const extractionFeaturePrompt: Record<ExtractionFeatureType, ExtractionFeaturePrompt> = {
   condition: {
     toolName: "extractConditions",
+    toolDescription: "Extract medical conditions with ICD-10-CM codes",
     toolPrompt: `The "extractConditions" tool extracts conditions with ICD-10-CM codes`,
   },
   procedure: {
     toolName: "extractProcedures",
+    toolDescription: "Extract medical procedures with SNOMED CT codes",
     toolPrompt: `The "extractProcedures" tool extracts procedures with SNOMED CT codes`,
   },
   medication: {
     toolName: "extractMedications",
+    toolDescription: "Extract medication information using RxNorm codes",
     toolPrompt: `The "extractMedications" tool extracts medication information using RxNorm codes`,
   },
 };
+
+export function getToolName(feature: ExtractionFeature) {
+  return extractionFeaturePrompt[feature.type].toolName;
+}
+
+export function getToolDescription(feature: ExtractionFeature) {
+  return extractionFeaturePrompt[feature.type].toolDescription;
+}
 
 export function buildPrompt(text: string, features: ExtractionFeature[]) {
   return [
     buildPromptInstructions(),
     buildPromptTools(features),
     `Here is the clinical text to analyze:\n\n"${text}"`,
-  ];
+  ].join("\n");
 }
 
 function buildPromptInstructions() {

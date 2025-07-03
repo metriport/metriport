@@ -17,6 +17,7 @@ import { Config } from "../../util/config";
 import { buildEntityGraph } from "./entity-graph";
 import { EntityGraph } from "./types";
 import { BedrockChat } from "../langchain/bedrock";
+// import { buildPrompt } from "./prompt";
 
 export class ComprehendClient {
   private bedrock: ReturnType<typeof BedrockChat.prototype.bindTools>;
