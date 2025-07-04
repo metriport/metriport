@@ -157,7 +157,8 @@
         "medical-api/handling-data/data-analytics",
         "medical-api/handling-data/filters",
         "medical-api/handling-data/pagination",
-        "medical-api/handling-data/contribution"
+        "medical-api/handling-data/contribution",
+        "medical-api/handling-data/cohort"
       ]
     },
     {
