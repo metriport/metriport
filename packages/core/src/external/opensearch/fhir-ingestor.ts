@@ -21,8 +21,7 @@ import { getEntryId } from "./shared/id";
 dayjs.extend(duration);
 
 const ERROR_CODES_TO_RETRY = [409, 503];
-const MAX_RETRY_ATTEMPTS = 3;
-const INITIAL_WAIT_TIME_BETWEEN_RETRIES = dayjs.duration({ seconds: 0.2 });
+const INITIAL_WAIT_TIME_BETWEEN_RETRIES = dayjs.duration({ milliseconds: 200 });
 const DEFAULT_BULK_INGESTION_TIMEOUT = dayjs.duration(2, "minute").asMilliseconds();
 const MAX_BULK_RETRIES = 3;
 
@@ -193,7 +192,7 @@ export class OpenSearchFhirIngestor {
       {
         httpStatusCodesToRetry: ERROR_CODES_TO_RETRY,
         initialDelay: INITIAL_WAIT_TIME_BETWEEN_RETRIES.asMilliseconds(),
-        maxAttempts: MAX_RETRY_ATTEMPTS,
+        maxAttempts: 3,
       }
     );
 
@@ -225,7 +224,7 @@ export class OpenSearchFhirIngestor {
         {
           httpStatusCodesToRetry: ERROR_CODES_TO_RETRY,
           initialDelay: INITIAL_WAIT_TIME_BETWEEN_RETRIES.asMilliseconds(),
-          maxAttempts: MAX_RETRY_ATTEMPTS,
+          maxAttempts: 10,
         }
       );
       const time = Date.now() - startedAt;
