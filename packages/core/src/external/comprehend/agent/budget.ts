@@ -1,4 +1,4 @@
-import { ExtractionBudget, ExtractionUsage } from "../types";
+import { ExtractionBudget, ExtractionUsage } from "./types";
 
 export function withinBudget(usage: ExtractionUsage, budget: ExtractionBudget) {
   return (
@@ -29,4 +29,8 @@ export function incrementLLMUsage(
 ) {
   usage.llmInputTokens += llmUsage.input_tokens;
   usage.llmOutputTokens += llmUsage.output_tokens;
+}
+
+export function incrementComprehendUsage(usage: ExtractionUsage, textToComprehend: string) {
+  usage.comprehendInputCharacters += textToComprehend.length;
 }

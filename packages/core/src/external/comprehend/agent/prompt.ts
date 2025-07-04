@@ -1,35 +1,15 @@
-import { ExtractionFeature, ExtractionFeatureType, ExtractionFeaturePrompt } from "../types";
+import { ExtractionFeature } from "../types";
+import { BedrockChatThread } from "./types";
+import { extractionFeaturePrompt } from "./tools";
 
-export const extractionFeaturePrompt: Record<ExtractionFeatureType, ExtractionFeaturePrompt> = {
-  condition: {
-    toolName: "extractConditions",
-    toolDescription: "Extract medical conditions with ICD-10-CM codes",
-    toolPrompt: `The "extractConditions" tool extracts conditions with ICD-10-CM codes`,
-  },
-  procedure: {
-    toolName: "extractProcedures",
-    toolDescription: "Extract medical procedures with SNOMED CT codes",
-    toolPrompt: `The "extractProcedures" tool extracts procedures with SNOMED CT codes`,
-  },
-  medication: {
-    toolName: "extractMedications",
-    toolDescription: "Extract medication information using RxNorm codes",
-    toolPrompt: `The "extractMedications" tool extracts medication information using RxNorm codes`,
-  },
-};
-
-export function getToolName(feature: ExtractionFeature) {
-  return extractionFeaturePrompt[feature.type].toolName;
-}
-
-export function getToolDescription(feature: ExtractionFeature) {
-  return extractionFeaturePrompt[feature.type].toolDescription;
+export function buildChatThread(text: string, features: ExtractionFeature[]): BedrockChatThread {
+  return [buildPrompt(text, features)];
 }
 
 export function buildPrompt(text: string, features: ExtractionFeature[]) {
   return [
     buildPromptInstructions(),
-    buildPromptTools(features),
+    buildToolPrompt(features),
     `Here is the clinical text to analyze:\n\n"${text}"`,
   ].join("\n");
 }
@@ -42,7 +22,9 @@ function buildPromptInstructions() {
     Your only goal is to extract the relevant information that each tool should use.`;
 }
 
-function buildPromptTools(features: ExtractionFeature[]) {
+function buildToolPrompt(features: ExtractionFeature[]) {
   const tools = features.map(feature => extractionFeaturePrompt[feature.type]);
-  return `The tools are: ${tools.map(tool => `- ${tool.toolName}: ${tool.toolPrompt}`).join("\n")}`;
+  return `The tools are:\n${tools
+    .map(tool => `- ${tool.toolName}: ${tool.toolPrompt}`)
+    .join("\n")}`;
 }

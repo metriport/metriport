@@ -1,26 +1,30 @@
-import type { BedrockChat } from "../langchain/bedrock";
 import { Entity } from "@aws-sdk/client-comprehendmedical";
-import { Bundle, Medication, MedicationRequest, MedicationStatement } from "@medplum/fhirtypes";
+import {
+  Bundle,
+  Medication,
+  MedicationRequest,
+  MedicationStatement,
+  Condition,
+  Procedure,
+} from "@medplum/fhirtypes";
 
-export type BedrockAgent = ReturnType<typeof BedrockChat.prototype.bindTools>;
-export type BedrockChatResult = Awaited<ReturnType<typeof BedrockChat.prototype.invoke>>;
+// EXTRACTION FEATURES
+// Each extraction feature corresponds to a tool call provided to the LLM
+export type ExtractionFeatureType = "medication" | "condition" | "procedure";
 
-export interface ExtractionBudget {
-  tokensToLLM: number;
-  charactersToComprehend: number;
+export interface ExtractionFeature {
+  type: ExtractionFeatureType;
+  confidenceThreshold: number;
 }
 
-export interface ExtractionUsage {
-  llmInputTokens: number;
-  llmOutputTokens: number;
-  comprehendInputCharacters: number;
+export interface ExtractionFeatureConfig {
+  toolName: string;
+  toolDescription: string;
+  toolPrompt: string;
 }
 
-export interface ExtractionSource {
-  getConsolidatedBundle(cxId: string, patientId: string): Promise<Bundle>;
-  listDocumentNames(cxId: string, patientId: string): Promise<string[]>;
-  getDocument(cxId: string, patientId: string, documentName: string): Promise<Bundle>;
-}
+// EXTRACTION JOBS
+// - may either
 
 export interface ExtractionJob {
   cxId: string;
@@ -33,11 +37,9 @@ export interface DocumentExtractionJob {
   feature: ExtractionFeature[];
 }
 
-export type ExtractionFeatureType = "medication" | "condition" | "procedure";
-
-export interface ExtractionFeature {
+export interface ExtractionToolCall {
   type: ExtractionFeatureType;
-  confidenceThreshold: number;
+  text: string;
 }
 
 export interface ExtractionFeaturePrompt {
@@ -46,7 +48,10 @@ export interface ExtractionFeaturePrompt {
   toolPrompt: string;
 }
 
-export interface EntityGraph extends MedicationEntityGraph {
+export interface EntityGraph
+  extends MedicationEntityGraph,
+    ConditionEntityGraph,
+    ProcedureEntityGraph {
   entities: Entity[];
 }
 
@@ -54,4 +59,18 @@ export interface MedicationEntityGraph {
   medications: Medication[];
   medicationStatements: MedicationStatement[];
   medicationRequests: MedicationRequest[];
+}
+
+export interface ConditionEntityGraph {
+  conditions: Condition[];
+}
+
+export interface ProcedureEntityGraph {
+  procedures: Procedure[];
+}
+
+export interface ExtractionSource {
+  getConsolidatedBundle(cxId: string, patientId: string): Promise<Bundle>;
+  listDocumentNames(cxId: string, patientId: string): Promise<string[]>;
+  getDocument(cxId: string, patientId: string, documentName: string): Promise<Bundle>;
 }
