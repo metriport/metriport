@@ -1,54 +1,30 @@
 ---
-title: "Cohorts"
-icon: "users"
-description: "Organize and monitor groups of patients for targeted care management"
+title: "Patient Monitoring"
+icon: "magnifying-glass"
+description: "Monitor your patients' healthcare journey in real-time for proactive care management"
 ---
 
 # Overview
 
-**Cohorts** in Metriport enable you to organize patients into logical groups for targeted monitoring, care management, and workflow automation. Think of cohorts as patient lists that you can use to apply specific monitoring rules at scale.
+**Patient Monitoring** provides real-time visibility into your patients' healthcare journey across multiple facilities and systems. Through instant notifications and comprehensive tracking, you can proactively manage patient care and improve outcomes.
 
-## What are Cohorts?
+## What is Patient Monitoring?
 
-Cohorts are named collections of patients that share common characteristics or care requirements. Currently, we support the following attributes:
+Patient Monitoring is a comprehensive system that tracks patient movements and status changes through healthcare facilities in real-time. It provides immediate notifications when patients are admitted, transferred, or discharged, giving you the information you need to:
 
-- **Name**: A descriptive name for your cohort that helps identify the patient group. Examples: "High Risk Population", "Chronic Care Management"
-- **Patient Monitoring**: Apply specific monitoring rules to groups of patients, such as [realtime patient notifications](/medical-api/handling-data/realtime-patient-notifications)
-- More features coming soon...
+- **Coordinate Care**: Respond immediately to patient admissions and coordinate follow-up care
+- **Track Patient Journey**: Monitor patient transfers between departments, units, or facilities
+- **Ensure Continuity**: Stay informed about patient discharges to plan post-discharge care
+- **Improve Outcomes**: Proactively manage high-risk patients and prevent readmissions
 
-## Creating and Managing Cohorts
+## Realtime Patient Notifications
 
-### Basic Cohort Structure
+The core of Patient Monitoring is realtime patient notifications - webhook-based alerts that provide immediate updates about your patients' healthcare events. These notifications include administrative and clinical data and enable you to build automated workflows around patient care. Learn more about these [here](/medical-api/handling-data/realtime-patient-monitoring).
 
-Each cohort has a unique name and optional monitoring configuration:
+Following the discharge, we will requery the networks for the most up-to-date clinical data from the participating healthcare institutions.
 
-```json
-{
-  "name": "Diabetes Patients",
-  "monitoring": {
-    "adt": true
-  }
-}
-```
+In the near future, we will also add patient monitoring support for updating laboratory and pharmaceutical data.
 
-## Use Cases
+## Enabling Patient Monitoring with Cohorts
 
-### High-Risk Patient Monitoring
-
-Monitor high-risk patients for hospital admissions and coordinate follow-up care by creating dedicated cohorts for specific risk factors.
-
-## Working with Cohort Members
-
-1. **Create a Cohort**: Start by creating a new cohort using the [Create Cohort](/medical-api/api-reference/cohort/create-cohort) endpoint
-2. **Assign Patients**: Add patients to your cohort using the [Assign to Cohort](/medical-api/api-reference/cohort/assign-to-cohort) endpoint. This automatically applies all cohort settings to the assigned patients
-3. **Remove Patients**: When needed, remove patients from a cohort using the [Remove from Cohort](/medical-api/api-reference/cohort/remove-from-cohort) endpoint
-
-## API Reference
-
-- [Create Cohort](/medical-api/api-reference/cohort/create-cohort)
-- [List Cohorts](/medical-api/api-reference/cohort/list-cohorts)
-- [Get Cohort](/medical-api/api-reference/cohort/get-cohort)
-- [Update Cohort](/medical-api/api-reference/cohort/update-cohort)
-- [Delete Cohort](/medical-api/api-reference/cohort/delete-cohort)
-- [Assign Patients to Cohort](/medical-api/api-reference/cohort/assign-to-cohort)
-- [Remove Patients from Cohort](/medical-api/api-reference/cohort/remove-from-cohort)
+Patient Monitoring is enabled through **cohorts** - named collections of patients that share common characteristics or care requirements. Cohorts allow you to apply monitoring rules at scale and organize patients for targeted care management. Follow [this link](/medical-api/handling-data/cohort) to learn more about cohorts.

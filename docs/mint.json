@@ -158,6 +158,7 @@
         "medical-api/handling-data/filters",
         "medical-api/handling-data/pagination",
         "medical-api/handling-data/contribution",
+        "medical-api/handling-data/patient-monitoring",
         "medical-api/handling-data/cohort"
       ]
     },
