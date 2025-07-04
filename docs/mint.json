@@ -153,13 +153,18 @@
         "medical-api/handling-data/ai-summaries",
         "medical-api/handling-data/medical-record-summary",
         "medical-api/handling-data/webhooks",
-        "medical-api/handling-data/realtime-patient-notifications",
         "medical-api/handling-data/data-analytics",
         "medical-api/handling-data/filters",
         "medical-api/handling-data/pagination",
         "medical-api/handling-data/contribution",
-        "medical-api/handling-data/patient-monitoring",
-        "medical-api/handling-data/cohort"
+        {
+          "group": "Patient Monitoring",
+          "pages": [
+            "medical-api/handling-data/patient-monitoring/overview",
+            "medical-api/handling-data/patient-monitoring/realtime-patient-notifications",
+            "medical-api/handling-data/patient-monitoring/cohort"
+          ]
+        }
       ]
     },
     {
