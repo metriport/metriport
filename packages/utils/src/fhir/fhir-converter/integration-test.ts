@@ -121,19 +121,26 @@ export async function main() {
   });
   console.log(`Found ${ccdaFileNames.length} XML files.`);
 
-  let nonConvertibleDocumentCount = 0;
+  const nonConvertibleDocMap = new Map<string, string[]>();
   const clinicalDocuments = ccdaFileNames.flatMap(f => {
     const fileContents = getFileContents(f);
-    const isConvertibleResult = isConvertible(fileContents, f);
+    const isConvertibleResult = isConvertible(fileContents);
     if (!isConvertibleResult.isValid) {
-      nonConvertibleDocumentCount++;
+      const existingReasons = nonConvertibleDocMap.get(isConvertibleResult.reason) ?? [];
+      if (!existingReasons.includes(f)) {
+        nonConvertibleDocMap.set(isConvertibleResult.reason, [...existingReasons, f]);
+      } else {
+        nonConvertibleDocMap.set(isConvertibleResult.reason, [f]);
+      }
       return [];
     }
     return f;
   });
 
   console.log(`Found ${clinicalDocuments.length} clinical documents.`);
-  console.log(`Filtered out ${nonConvertibleDocumentCount} non-convertible documents.`);
+  for (const [reason, files] of nonConvertibleDocMap.entries()) {
+    console.log(`Non-convertible due to "${reason}": ${files.length} files`);
+  }
 
   const relativeFileNames = clinicalDocuments.map(f => f.replace(cdaLocation, ""));
 
