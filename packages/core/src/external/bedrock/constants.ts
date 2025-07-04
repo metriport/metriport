@@ -1,0 +1,9 @@
+export const CLAUDE_3_5_SONNET_MODEL_ID = "us.anthropic.claude-3-5-sonnet-20241022-v2:0" as const;
+export const CLAUDE_3_7_SONNET_MODEL_ID = "us.anthropic.claude-3-7-sonnet-20250219-v1:0" as const;
+
+export enum AnthropicModel {
+  CLAUDE_3_HAIKU = "anthropic.claude-3-haiku-20240307-v1:0",
+  CLAUDE_3_5_HAIKU = "anthropic.claude-3-5-haiku-20241022-v1:0",
+  CLAUDE_3_5_SONNET = "us.anthropic.claude-3-5-sonnet-20241022-v2:0",
+  CLAUDE_3_7_SONNET = "us.anthropic.claude-3-7-sonnet-20250219-v1:0",
+}
