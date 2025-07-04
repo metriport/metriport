@@ -7,6 +7,7 @@ import {
   resourcesSearchableByPatient,
   resourcesSearchableBySubject,
 } from "@metriport/api-sdk";
+import { isConvertible } from "@metriport/core/external/cda/is-convertible";
 import { makeFhirAdminApi, makeFhirApi } from "@metriport/core/external/fhir/api/api-factory";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { sleep } from "@metriport/shared";
@@ -120,7 +121,21 @@ export async function main() {
   });
   console.log(`Found ${ccdaFileNames.length} XML files.`);
 
-  const relativeFileNames = ccdaFileNames.map(f => f.replace(cdaLocation, ""));
+  let nonConvertibleDocumentCount = 0;
+  const clinicalDocuments = ccdaFileNames.flatMap(f => {
+    const fileContents = getFileContents(f);
+    const isConvertibleResult = isConvertible(fileContents, f);
+    if (!isConvertibleResult.isValid) {
+      nonConvertibleDocumentCount++;
+      return [];
+    }
+    return f;
+  });
+
+  console.log(`Found ${clinicalDocuments.length} clinical documents.`);
+  console.log(`Filtered out ${nonConvertibleDocumentCount} non-convertible documents.`);
+
+  const relativeFileNames = clinicalDocuments.map(f => f.replace(cdaLocation, ""));
 
   // Convert them into JSON files
   const { nonXMLBodyCount } = await convertCDAsToFHIR(
