@@ -1,3 +1,7 @@
+#!/usr/bin/env node
+import dotenv from "dotenv";
+dotenv.config();
+
 import { Command } from "commander";
 import sftpAction from "./sftp-action";
 import sendPatientRequest from "./send-patient-request";
@@ -13,6 +17,7 @@ import batchAnalysis from "./batch-analysis";
 import preview from "./preview";
 import findLargest from "./find-largest";
 import bundleVerification from "./bundle-verification";
+import drFirst from "./compare/dr-first";
 
 const program = new Command();
 program.addCommand(sftpAction);
@@ -29,4 +34,5 @@ program.addCommand(analyzeResponses);
 program.addCommand(preview);
 program.addCommand(findLargest);
 program.addCommand(bundleVerification);
+program.addCommand(drFirst);
 program.parse();

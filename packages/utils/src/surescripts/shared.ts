@@ -81,6 +81,25 @@ export async function getConversionBundle(
   }
 }
 
+export async function mergeConversionBundles(
+  cxId: string,
+  patientId: string
+): Promise<Bundle | undefined> {
+  const s3Utils = new S3Utils(Config.getAWSRegion());
+  const fileName = buildLatestConversionBundleFileName(cxId, patientId);
+  const bucketName = Config.getPharmacyConversionBucketName();
+  if (!bucketName) {
+    return undefined;
+  }
+  try {
+    const fileContent = await s3Utils.downloadFile({ bucket: bucketName, key: fileName });
+    return JSON.parse(fileContent.toString());
+  } catch (error) {
+    console.error(`Error getting conversion bundle for patient ${patientId}: ${error}`);
+    return undefined;
+  }
+}
+
 export async function writeConsolidatedBundlePreview(
   cxId: string,
   patientId: string,
