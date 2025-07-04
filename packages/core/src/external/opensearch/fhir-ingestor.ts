@@ -20,7 +20,7 @@ import { getEntryId } from "./shared/id";
 
 dayjs.extend(duration);
 
-const ERROR_CODES_TO_RETRY = [409, 504];
+const ERROR_CODES_TO_RETRY = [409, 503];
 const MAX_RETRY_ATTEMPTS = 3;
 const INITIAL_WAIT_TIME_BETWEEN_RETRIES = dayjs.duration({ seconds: 0.2 });
 const DEFAULT_BULK_INGESTION_TIMEOUT = dayjs.duration(2, "minute").asMilliseconds();
