@@ -146,16 +146,17 @@ export const handler = capture.wrapHandler(async (event: SQSEvent) => {
       log(`Getting contents from bucket ${s3BucketName}, key ${s3FileName}`);
       const downloadStart = Date.now();
       const payloadRaw = await s3Utils.getFileContentsAsString(s3BucketName, s3FileName);
-      if (payloadRaw.includes("nonXMLBody")) {
-        log(
-          `XML document is unstructured CDA with nonXMLBody, skipping... Filename: ${s3FileName}`
-        );
+
+      const { isValid, reason } = isConvertible(payloadRaw, s3FileName);
+      if (!isValid) {
+        log(reason ?? "Unknown validation error");
         await conversionResultHandler.notifyApi(
           { ...lambdaParams, source: medicalDataSource, status: "failed" },
           log
         );
         continue;
       }
+
       const { documentContents: payloadNoB64, b64Attachments } = removeBase64PdfEntries(payloadRaw);
 
       if (b64Attachments && b64Attachments.total > 0) {
@@ -470,4 +471,35 @@ async function sendConversionResult({
     source: medicalDataSource,
     status: "success",
   });
+}
+
+/**
+ * Checks if the XML payload is a convertible CDA document
+ * @param payloadRaw - The raw XML content as string
+ * @param s3FileName - The filename for logging purposes
+ *
+ * @returns Object with validation result and reason if invalid
+ */
+function isConvertible(
+  payloadRaw: string,
+  s3FileName: string
+): {
+  isValid: boolean;
+  reason?: string;
+} {
+  if (payloadRaw.includes("nonXMLBody")) {
+    return {
+      isValid: false,
+      reason: `XML document is unstructured CDA with nonXMLBody - Filename: ${s3FileName}`,
+    };
+  }
+
+  if (!payloadRaw.includes("ClinicalDocument")) {
+    return {
+      isValid: false,
+      reason: `XML document is not a clinical document - Filename: ${s3FileName}`,
+    };
+  }
+
+  return { isValid: true };
 }
