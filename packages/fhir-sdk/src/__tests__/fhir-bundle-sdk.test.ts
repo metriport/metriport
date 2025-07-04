@@ -542,7 +542,7 @@ describe("FhirBundleSdk", () => {
         observations[0]?.getSubject();
         const end = performance.now();
 
-        expect(end - start).toBeLessThan(1);
+        expect(end - start).toBeLessThan(CONSTANT_TIME_EXPECTED_THRESHOLD_MS);
       });
     });
   });

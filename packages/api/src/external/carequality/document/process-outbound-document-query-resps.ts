@@ -78,7 +78,9 @@ export async function processOutboundDocumentQueryResps({
       isConvertible(doc.contentType || undefined)
     ).length;
 
-    log(`I have ${docsToDownload.length} docs to download (${convertibleDocCount} convertible)`);
+    log(
+      `I have ${docsToDownload.length} docs to download (${convertibleDocCount} convertible (based on the contentType))`
+    );
 
     analytics({
       distinctId: cxId,
