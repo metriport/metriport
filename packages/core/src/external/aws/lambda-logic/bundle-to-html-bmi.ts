@@ -874,11 +874,13 @@ const listOfConditionNames = [
   "Atherosclerotic cardiovascular disease",
 ];
 
-const matchesCode = (codingCode: string | undefined, listOfCodes: string[]): boolean =>
-  !!codingCode &&
-  listOfCodes.some(code => code.trim().toLowerCase() === codingCode.trim().toLowerCase());
-
-const matchesDisplay = (codingDisplay: string | undefined, listOfNames: string[]): boolean => {
+function matchesCode(codingCode: string | undefined, listOfCodes: string[]): boolean {
+  return (
+    !!codingCode &&
+    listOfCodes.some(code => code.trim().toLowerCase() === String(codingCode).trim().toLowerCase())
+  );
+}
+function matchesDisplay(codingDisplay: string | undefined, listOfNames: string[]): boolean {
   const display = codingDisplay?.trim().toLowerCase();
 
   return (
@@ -887,9 +889,9 @@ const matchesDisplay = (codingDisplay: string | undefined, listOfNames: string[]
       .map(name => name.trim().toLowerCase())
       .some(name => display.includes(name) || name.includes(display))
   );
-};
+}
 
-const matchesText = (codeText: string | undefined, listOfNames: string[]): boolean => {
+function matchesText(codeText: string | undefined, listOfNames: string[]): boolean {
   const text = codeText?.trim().toLowerCase();
   return (
     !!text &&
@@ -897,7 +899,7 @@ const matchesText = (codeText: string | undefined, listOfNames: string[]): boole
       .map(name => name.trim().toLowerCase())
       .some(name => text.includes(name) || name.includes(text))
   );
-};
+}
 
 function createWeightComoborbidities(
   conditions: Condition[],

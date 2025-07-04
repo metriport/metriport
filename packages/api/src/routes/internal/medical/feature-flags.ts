@@ -11,7 +11,7 @@ import { asyncHandler } from "../../util";
 const router = Router();
 
 /** ---------------------------------------------------------------------------
- * GET /internal/medical/feature-flags
+ * GET /internal/feature-flags
  *
  * Get the feature flags from the database.
  *
@@ -27,16 +27,16 @@ router.get(
 );
 
 /** ---------------------------------------------------------------------------
- * POST /internal/medical/feature-flags
+ * POST /internal/feature-flags
  *
  * Update the feature flags in the database.
  *
- * Requires a version number to be provided, so that we can ensure we're
+ * Requires an existing version number to be provided, so that we can ensure we're
  * updating based on the latest version.
  *
  * @param req.body The new feature flags record.
  *        req.body.featureFlags: The feature flags to update.
- *        req.body.version: The current version of the feature flags.
+ *        req.body.existingVersion: The current version of the feature flags.
  *        req.body.updatedBy: The user who is updating the feature flags.
  * @return 200 the updated feature flags record.
  *         400 if the update was not successful (usually due to a version mismatch).
