@@ -26,6 +26,7 @@ import { executeWithRetriesS3, S3Utils } from "@metriport/core/external/aws/s3";
 import { partitionPayload } from "@metriport/core/external/cda/partition-payload";
 import { processAttachments } from "@metriport/core/external/cda/process-attachments";
 import { removeBase64PdfEntries } from "@metriport/core/external/cda/remove-b64";
+import { isConvertible } from "@metriport/core/external/cda/is-convertible";
 import { hydrate } from "@metriport/core/external/fhir/consolidated/hydrate";
 import { normalize } from "@metriport/core/external/fhir/consolidated/normalize";
 import { FHIR_APP_MIME_TYPE, TXT_MIME_TYPE } from "@metriport/core/util/mime";
@@ -471,35 +472,4 @@ async function sendConversionResult({
     source: medicalDataSource,
     status: "success",
   });
-}
-
-/**
- * Checks if the XML payload is a convertible CDA document
- * @param payloadRaw - The raw XML content as string
- * @param s3FileName - The filename for logging purposes
- *
- * @returns Object with validation result and reason if invalid
- */
-function isConvertible(
-  payloadRaw: string,
-  s3FileName: string
-): {
-  isValid: boolean;
-  reason?: string;
-} {
-  if (payloadRaw.includes("nonXMLBody")) {
-    return {
-      isValid: false,
-      reason: `XML document is unstructured CDA with nonXMLBody - Filename: ${s3FileName}`,
-    };
-  }
-
-  if (!payloadRaw.includes("ClinicalDocument")) {
-    return {
-      isValid: false,
-      reason: `XML document is not a clinical document - Filename: ${s3FileName}`,
-    };
-  }
-
-  return { isValid: true };
 }
