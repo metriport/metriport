@@ -3,26 +3,7 @@ import { zodToJsonSchema } from "zod-to-json-schema";
 import { BedrockAgent } from "./agent/agent";
 import { BedrockClient } from "./client";
 import { AnthropicModel } from "./constants";
-import { BedrockTool } from "./agent/tool";
 import { InvokeRequest, InvokeResponse, InvokeToolCall } from "./types";
-
-export class ExtractMedicationTool extends BedrockTool<{ text: string }> {
-  constructor() {
-    super(
-      "extractMedication",
-      "Extract medication information from the provided medical text.",
-      z.object({
-        text: z.string(),
-      })
-    );
-  }
-
-  async execute(input: { text: string }): Promise<unknown> {
-    return {
-      medication: "Medication information" + input.text,
-    };
-  }
-}
 
 async function main() {
   const agent = new BedrockAgent(

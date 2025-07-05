@@ -7,7 +7,7 @@ export class BedrockAgentThread {
     this.messages = messages;
   }
 
-  addUserMessage(messageText: string) {
+  addUserMessage(messageText: string): void {
     this.messages.push({
       role: "user",
       content: [
@@ -17,18 +17,16 @@ export class BedrockAgentThread {
         },
       ],
     });
-    return this;
   }
 
-  addToolCall(toolCall: InvokeToolCall) {
+  addToolCall(toolCall: InvokeToolCall): void {
     this.messages.push({
       role: "assistant",
       content: [toolCall],
     });
-    return this;
   }
 
-  addToolResult(toolCall: InvokeToolCall, result?: unknown) {
+  addToolResult(toolCall: InvokeToolCall, result?: unknown): void {
     this.messages.push({
       role: "user",
       content: [
@@ -39,10 +37,20 @@ export class BedrockAgentThread {
         },
       ],
     });
-    return this;
   }
 
-  getMessages() {
+  addToolError(toolCall: InvokeToolCall, error: unknown): void {
+    const errorMessage = error instanceof Error ? error.toString() : String(error);
+
+    this.messages.push({
+      role: "user",
+      content: [
+        { type: "tool_result", tool_use_id: toolCall.id, content: "Error: " + errorMessage },
+      ],
+    });
+  }
+
+  getMessages(): InvokeMessage[] {
     return this.messages;
   }
 }
