@@ -1,6 +1,6 @@
-import { InvokeMessage, InvokeToolCall } from "./types";
+import { InvokeMessage, InvokeToolCall } from "../types";
 
-export class BedrockThread {
+export class BedrockAgentThread {
   private messages: InvokeMessage[];
 
   constructor(messages: InvokeMessage[] = []) {

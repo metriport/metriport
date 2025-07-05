@@ -1,9 +1,9 @@
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
-import { BedrockAgent } from "./agent";
+import { BedrockAgent } from "./agent/agent";
 import { BedrockClient } from "./client";
 import { AnthropicModel } from "./constants";
-import { BedrockTool } from "./tool";
+import { BedrockTool } from "./agent/tool";
 import { InvokeRequest, InvokeResponse, InvokeToolCall } from "./types";
 
 export class ExtractMedicationTool extends BedrockTool<{ text: string }> {

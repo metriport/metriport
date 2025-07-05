@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
-import { InvokeTool } from "./types";
+import { InvokeTool } from "../types";
 
 export abstract class BedrockTool<T = unknown> {
   private name: string;
