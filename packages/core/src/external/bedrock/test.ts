@@ -1,11 +1,53 @@
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
+import { BedrockAgent } from "./agent";
 import { BedrockClient } from "./client";
 import { AnthropicModel } from "./constants";
+import { BedrockTool } from "./tool";
 import { InvokeRequest, InvokeResponse, InvokeToolCall } from "./types";
 
+export class ExtractMedicationTool extends BedrockTool<{ text: string }> {
+  constructor() {
+    super(
+      "extractMedication",
+      "Extract medication information from the provided medical text.",
+      z.object({
+        text: z.string(),
+      })
+    );
+  }
+
+  async execute(input: { text: string }): Promise<unknown> {
+    return {
+      medication: "Medication information" + input.text,
+    };
+  }
+}
+
 async function main() {
-  const client = new BedrockClient(AnthropicModel.CLAUDE_3_5_SONNET, "us-east-2");
+  const agent = new BedrockAgent(
+    new BedrockClient({
+      region: "us-east-2",
+      model: AnthropicModel.CLAUDE_3_5_SONNET,
+    }),
+    {
+      systemPrompt:
+        "Your role is to choose an extraction tool from the provided tools, and call them with substrings of medical text provided by the user. " +
+        "The extraction tools are specialized in tagging the text with medical codes. " +
+        "You should pass this text without modification to the appropriate tool for detailed extraction. " +
+        "Do not produce any output or tell me what you are doing. ",
+    }
+  );
+
+  const response2 = await agent.invokeWithUserMessage(
+    "Extract medication information from the provided medical text."
+  );
+  console.log(response2);
+
+  const client = new BedrockClient({
+    model: AnthropicModel.CLAUDE_3_5_SONNET,
+    region: "us-east-2",
+  });
   let response: InvokeResponse | undefined = undefined;
   const messages: InvokeRequest["messages"] = [
     {

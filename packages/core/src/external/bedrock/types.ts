@@ -1,4 +1,19 @@
 import { z } from "zod";
+import { AnthropicModel } from "./constants";
+
+export type BedrockRegion = "us-east-1" | "us-east-2" | "us-west-2";
+
+export interface BedrockConfig {
+  region: BedrockRegion;
+  model: AnthropicModel;
+}
+
+export interface BedrockAgentConfig {
+  systemPrompt: string;
+  tools?: BedrockToolConfig[];
+  maxTokens?: number;
+  temperature?: number;
+}
 
 export interface BedrockToolConfig {
   name: string;
@@ -7,8 +22,7 @@ export interface BedrockToolConfig {
 }
 
 /**
- * MODEL INVOCATION TYPING
- * Objects of these types are serialized and deserialized in the body and response from InvokeModel.
+ * An invocation request to a Bedrock LLM, serialized in the message body to InvokeModel.
  */
 export interface InvokeRequest {
   /**
@@ -23,6 +37,9 @@ export interface InvokeRequest {
    */
   max_tokens: number;
 
+  /**
+   * Array of conversation history with the model, including tool calls and results.
+   */
   messages: Array<InvokeMessage>;
 
   /**
@@ -38,6 +55,9 @@ export interface InvokeRequest {
     name: string;
   };
 
+  /**
+   * The temperature parameter to use for invocation.
+   */
   temperature?: number;
 
   /**
@@ -51,6 +71,10 @@ export interface InvokeRequest {
    * Only sample from the top K options for each subsequent token.
    */
   top_k?: number;
+
+  /**
+   * The sequences that will stop the model from generating more tokens.
+   */
   stop_sequences?: string[];
 }
 
