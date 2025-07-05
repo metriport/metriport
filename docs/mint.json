@@ -77,6 +77,19 @@
           ]
         },
         {
+          "group": "Cohort",
+          "icon": "people",
+          "pages": [
+            "medical-api/api-reference/cohort/create-cohort",
+            "medical-api/api-reference/cohort/get-cohort",
+            "medical-api/api-reference/cohort/update-cohort",
+            "medical-api/api-reference/cohort/list-cohorts",
+            "medical-api/api-reference/cohort/assign-to-cohort",
+            "medical-api/api-reference/cohort/remove-from-cohort",
+            "medical-api/api-reference/cohort/delete-cohort"
+          ]
+        },
+        {
           "group": "Patient",
           "icon": "person",
           "pages": [
@@ -140,11 +153,18 @@
         "medical-api/handling-data/ai-summaries",
         "medical-api/handling-data/medical-record-summary",
         "medical-api/handling-data/webhooks",
-        "medical-api/handling-data/realtime-patient-notifications",
         "medical-api/handling-data/data-analytics",
         "medical-api/handling-data/filters",
         "medical-api/handling-data/pagination",
-        "medical-api/handling-data/contribution"
+        "medical-api/handling-data/contribution",
+        {
+          "group": "Patient Monitoring",
+          "pages": [
+            "medical-api/handling-data/patient-monitoring/overview",
+            "medical-api/handling-data/patient-monitoring/realtime-patient-notifications",
+            "medical-api/handling-data/patient-monitoring/cohort"
+          ]
+        }
       ]
     },
     {
@@ -238,9 +258,7 @@
         {
           "group": "Extensions",
           "icon": "asterisk",
-          "pages": [
-            "medical-api/fhir/extensions/chronicity"
-          ]
+          "pages": ["medical-api/fhir/extensions/chronicity"]
         }
       ]
     },

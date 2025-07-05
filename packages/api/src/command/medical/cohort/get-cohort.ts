@@ -2,7 +2,6 @@ import { Cohort } from "@metriport/core/domain/cohort";
 import { NotFoundError } from "@metriport/shared";
 import { col, fn, Op, Transaction } from "sequelize";
 import { CohortModel } from "../../../models/medical/cohort";
-import { getPatientIdsAssignedToCohort } from "./patient-cohort/get-assigned-ids";
 
 const countAttr = "count";
 
@@ -51,17 +50,32 @@ export async function getCohortModelOrFail({
 export async function getCohortWithCountOrFail({
   id,
   cxId,
-}: GetCohortProps): Promise<CohortWithPatientIdsAndCount> {
-  const [cohort, patientIds] = await Promise.all([
-    getCohortModelOrFail({ id, cxId }),
-    getPatientIdsAssignedToCohort({ cohortId: id, cxId }),
-  ]);
-  if (!cohort) throw new NotFoundError(`Could not find cohort`, undefined, { id, cxId });
+}: GetCohortProps): Promise<CohortWithCount> {
+  const cohortWithCount = await CohortModel.findOne({
+    where: { cxId, id },
+    attributes: {
+      include: [[fn("COUNT", col("PatientCohort.id")), countAttr]],
+    },
+    include: [
+      {
+        association: CohortModel.associations.PatientCohort,
+        attributes: [],
+      },
+    ],
+    group: [col("CohortModel.id")],
+  });
+  if (!cohortWithCount) {
+    throw new NotFoundError(`Could not find cohort`, undefined, { id, cxId });
+  }
 
-  return { cohort: cohort.dataValues, count: patientIds.length, patientIds };
+  return {
+    cohort: cohortWithCount.dataValues,
+    // Type assertion needed because Sequelize's get() method returns any for computed attributes
+    count: Number((cohortWithCount.get(countAttr) as number | null) ?? 0),
+  };
 }
 
-export async function getCohorts({ cxId }: { cxId: string }): Promise<CohortWithCount[]> {
+export async function getCohortsWithCount({ cxId }: { cxId: string }): Promise<CohortWithCount[]> {
   const cohortsWithCounts = await CohortModel.findAll({
     where: { cxId },
     include: [

@@ -52,6 +52,7 @@ export {
   UploadDocumentResult,
 } from "./medical/models/document";
 export { MedicalRecordsStatusDTO } from "./medical/models/medicalRecordStatus";
+export { Cohort, CohortCreate, CohortUpdate } from "./medical/models/cohort";
 export {
   Facility,
   FacilityCreate,

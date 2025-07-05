@@ -1,0 +1,63 @@
+---
+title: "Remove Patients from Cohort"
+description: "Bulk remove multiple patients from a Cohort in Metriport."
+api: "DELETE /medical/v1/cohort/{cohortId}/patient"
+---
+
+## Body
+
+<Snippet file="cohort-assignment.mdx" />
+
+## Response
+
+<ResponseField name="message" type="string" required>
+  A message confirming the unassignment operation.
+</ResponseField>
+
+<ResponseField
+  name="unassignedCount"
+  type="number"
+  required
+>
+  The number of patients that were unassigned from the
+  Cohort.
+</ResponseField>
+
+<ResponseExample>
+
+```javascript Metriport SDK
+import { MetriportMedicalApi } from "@metriport/api-sdk";
+
+const metriport = new MetriportMedicalApi("YOUR_API_KEY");
+
+// Remove specific patients from a cohort
+const unassignmentResult =
+  await metriport.removePatientsFromCohort(
+    "cohort-id-123",
+    {
+      patientIds: [
+        "patient-id-1",
+        "patient-id-2",
+        "patient-id-3",
+      ],
+    }
+  );
+
+// Or remove all patients from a cohort
+const allPatientsRemoved =
+  await metriport.removePatientsFromCohort(
+    "cohort-id-123",
+    {
+      all: true,
+    }
+  );
+```
+
+</ResponseExample>
+
+```json
+{
+  "message": "Patient(s) unassigned from cohort",
+  "unassignedCount": 3
+}
+```

@@ -1,0 +1,54 @@
+---
+title: "Cohorts"
+icon: "users"
+description: "Organize and monitor groups of patients for targeted care management"
+---
+
+# Overview
+
+**Cohorts** in Metriport enable you to organize patients into logical groups for targeted monitoring, care management, and workflow automation. Think of cohorts as patient lists that you can use to apply specific monitoring rules at scale.
+
+## What are Cohorts?
+
+Cohorts are named collections of patients that share common characteristics or care requirements. Currently, we support the following attributes:
+
+- **Name**: A descriptive name for your cohort that helps identify the patient group. Examples: "High Risk Population", "Chronic Care Management"
+- **Patient Monitoring**: Apply specific monitoring rules to groups of patients, such as [realtime patient notifications](/medical-api/handling-data/realtime-patient-notifications)
+- More features coming soon...
+
+## Creating and Managing Cohorts
+
+### Basic Cohort Structure
+
+Each cohort has a unique name and optional monitoring configuration:
+
+```json
+{
+  "name": "Diabetes Patients",
+  "monitoring": {
+    "adt": true
+  }
+}
+```
+
+## Use Cases
+
+### High-Risk Patient Monitoring
+
+Monitor high-risk patients for hospital admissions and coordinate follow-up care by creating dedicated cohorts for specific risk factors.
+
+## Working with Cohort Members
+
+1. **Create a Cohort**: Start by creating a new cohort using the [Create Cohort](/medical-api/api-reference/cohort/create-cohort) endpoint
+2. **Assign Patients**: Add patients to your cohort using the [Assign to Cohort](/medical-api/api-reference/cohort/assign-to-cohort) endpoint. This automatically applies all cohort settings to the assigned patients
+3. **Remove Patients**: When needed, remove patients from a cohort using the [Remove from Cohort](/medical-api/api-reference/cohort/remove-from-cohort) endpoint
+
+## API Reference
+
+- [Create Cohort](/medical-api/api-reference/cohort/create-cohort)
+- [List Cohorts](/medical-api/api-reference/cohort/list-cohorts)
+- [Get Cohort](/medical-api/api-reference/cohort/get-cohort)
+- [Update Cohort](/medical-api/api-reference/cohort/update-cohort)
+- [Delete Cohort](/medical-api/api-reference/cohort/delete-cohort)
+- [Assign Patients to Cohort](/medical-api/api-reference/cohort/assign-to-cohort)
+- [Remove Patients from Cohort](/medical-api/api-reference/cohort/remove-from-cohort)

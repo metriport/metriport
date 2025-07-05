@@ -1,0 +1,39 @@
+---
+title: "Update Cohort"
+description: "Updates a Cohort in Metriport to modify its name and settings."
+api: "PUT /medical/v1/cohort/{id}"
+---
+
+## Path Params
+
+<ParamField path="id" type="string" required>
+  The ID of your Cohort.
+</ParamField>
+
+## Body
+
+<Snippet file="cohort.mdx" />
+
+## Response
+
+<Snippet file="cohort-response.mdx" />
+
+<ResponseExample>
+
+```javascript Metriport SDK
+import { MetriportMedicalApi } from "@metriport/api-sdk";
+
+const metriport = new MetriportMedicalApi("YOUR_API_KEY");
+
+const cohort = await metriport.updateCohort({
+  id: "550e8400-e29b-41d4-a716-446655440000",
+  name: "High-risk Diabetes Patients",
+  monitoring: {
+    adt: true,
+  },
+});
+```
+
+</ResponseExample>
+
+<Snippet file="cohort-response-json.mdx" />
