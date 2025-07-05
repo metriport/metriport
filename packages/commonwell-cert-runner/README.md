@@ -14,6 +14,12 @@ Note: you may have to run the command with `sudo`.
 
 ## Usage
 
+For context:
+
+- Member: the management organization, or Service Adopter, manages Orgs;
+- Org: the organization that manages Patients, usually a customer of Member;
+- Sandbox: the organization on sandbox for patient management and document contribution
+
 After installation, create a `.env` file defining the following variables:
 
 - `COMMONWELL_ORG_NAME`: the organization that will be making the requests.

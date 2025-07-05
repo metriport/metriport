@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { addressSchema } from "./address";
-import { genderSchema } from "./demographics";
+import { genderCodesSchema } from "./demographics";
 import { humanNameSchema } from "./human-name";
 import { identifierUseCodesSchema } from "./identifier";
 import { isoDateTimeSchema } from "./iso-datetime";
@@ -37,7 +37,7 @@ const codeableConceptSchema = z.object({
 export type CodeableConcept = z.infer<typeof codeableConceptSchema>;
 
 const containedAddress = addressSchema.partial({
-  zip: true,
+  postalCode: true,
 });
 
 const containedSchema = z.object({
@@ -52,7 +52,7 @@ const containedSchema = z.object({
     .nullish(),
   gender: z
     .object({
-      coding: z.array(genderSchema).optional(),
+      coding: z.array(genderCodesSchema).optional(),
     })
     .nullish(),
   birthDate: z.string().nullish(),
@@ -60,7 +60,7 @@ const containedSchema = z.object({
 });
 export type Contained = z.infer<typeof containedSchema>;
 
-const statusSchema = z.enum(["current", "superceded", "entered in error"]);
+const statusSchema = z.enum(["current", "superseded", "entered-in-error"]);
 export type DocumentStatus = z.infer<typeof statusSchema>;
 
 // Main Clinical Acts Documented
@@ -158,7 +158,7 @@ export const documentReferenceResourceType = "DocumentReference";
 export const operationOutcomeResourceType = "OperationOutcome";
 
 export const documentQueryResponseSchema = z.object({
-  resourceType: resourceTypeSchema,
+  resourceType: z.literal("Bundle"),
   entry: z.preprocess(entries => {
     const result = z.array(z.any()).parse(entries);
     return result.filter(e => e.content?.resourceType === documentReferenceResourceType);

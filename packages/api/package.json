@@ -31,7 +31,7 @@
     "@medplum/core": "^2.2.10",
     "@metriport/api-sdk": "file:packages/api-sdk",
     "@metriport/carequality-sdk": "file:packages/carequality-sdk",
-    "@metriport/commonwell-sdk": "file:packages/commonwell-sdk",
+    "@metriport/commonwell-sdk": "5.9.8",
     "@metriport/core": "file:packages/core",
     "@metriport/ihe-gateway-sdk": "file:packages/ihe-gateway-sdk",
     "@metriport/shared": "file:packages/shared",
