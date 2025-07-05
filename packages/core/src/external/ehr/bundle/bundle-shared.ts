@@ -4,6 +4,7 @@ import { S3Utils } from "../../aws/s3";
 import { supportedAthenaHealthResources } from "../athenahealth";
 import { supportedCanvasResources } from "../canvas";
 import { supportedElationResources } from "../elation";
+import { supportedHealthieResources } from "../healthie";
 
 const globalPrefix = "bundle";
 const globalCcdaPrefix = "ccda";
@@ -103,6 +104,7 @@ export function getSupportedResourcesByEhr(ehr: EhrSource): string[] {
   if (ehr === EhrSources.canvas) return supportedCanvasResources;
   if (ehr === EhrSources.athena) return supportedAthenaHealthResources;
   if (ehr === EhrSources.elation) return supportedElationResources;
+  if (ehr === EhrSources.healthie) return supportedHealthieResources;
   return [];
 }
 
