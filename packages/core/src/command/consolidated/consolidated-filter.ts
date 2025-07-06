@@ -142,9 +142,13 @@ function getResourcesFromBundle(
   references: ReferenceWithIdAndType[],
   originalBundle: Bundle<Resource>
 ): Resource[] {
+  const bundleResourceIndex = new Map(
+    originalBundle.entry?.map(e => [e.resource?.id, e.resource]) ?? []
+  );
+
   const resourcesToAdd: Resource[] = [];
   for (const missingRef of references) {
-    const resource = originalBundle.entry?.find(e => e.resource?.id === missingRef.id)?.resource;
+    const resource = bundleResourceIndex.get(missingRef.id);
     if (resource) resourcesToAdd.push(resource);
   }
   return resourcesToAdd;
