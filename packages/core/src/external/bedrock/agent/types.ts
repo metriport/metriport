@@ -1,8 +1,8 @@
-import { InvokeResponse, InvokeToolCall } from "../types";
+import { InvokeResponse, InvokeToolCall, BedrockConfig } from "../types";
 import type { BedrockTool } from "./tool";
 import { z } from "zod";
 
-export interface BedrockAgentConfig {
+export interface BedrockAgentConfig extends BedrockConfig {
   systemPrompt: string;
   tools?: BedrockTool[];
   maxTokens?: number;

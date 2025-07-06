@@ -13,8 +13,8 @@ export class BedrockAgent {
   private client: BedrockClient;
   private tools?: BedrockTool[] | undefined;
 
-  constructor(client: BedrockClient, config: BedrockAgentConfig) {
-    this.client = client;
+  constructor(config: BedrockAgentConfig) {
+    this.client = new BedrockClient(config);
     this.config = config;
     this.tools = config.tools;
   }
