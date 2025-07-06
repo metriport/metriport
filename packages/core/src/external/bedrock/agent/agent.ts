@@ -34,6 +34,7 @@ export class BedrockAgent {
       temperature: this.config.temperature ?? DEFAULT_TEMPERATURE,
     });
 
+    // Execute the tool call and push the tool result onto the thread
     if (this.tools && response.stop_reason === "tool_use") {
       const toolCall = getToolCallOrFail(response);
       const tool = this.tools.find(tool => tool.getName() === toolCall.name);
@@ -41,12 +42,12 @@ export class BedrockAgent {
 
       thread.addToolCall(toolCall);
       try {
-        const result = await tool.execute(toolCall.input);
-        thread.addToolResult(toolCall, result);
-        return { response, toolCall };
-      } catch (error) {
-        thread.addToolError(toolCall, error);
-        return { response, toolCall };
+        const toolResult = await tool.execute(toolCall.input);
+        thread.addToolResult(toolCall, toolResult);
+        return { response, toolCall, toolResult };
+      } catch (toolError) {
+        thread.addToolError(toolCall, toolError);
+        return { response, toolCall, toolError };
       }
     }
 

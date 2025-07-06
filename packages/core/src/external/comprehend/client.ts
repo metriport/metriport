@@ -1,7 +1,5 @@
 import crypto from "crypto";
-import { z } from "zod";
-import { BaseMessageLike } from "@langchain/core/messages";
-
+import { out } from "../../util/log";
 import {
   ComprehendMedicalClient,
   DetectEntitiesV2Command,
@@ -14,167 +12,92 @@ import {
   InferSNOMEDCTCommandOutput,
 } from "@aws-sdk/client-comprehendmedical";
 import { Config } from "../../util/config";
-import { buildEntityGraph } from "./entity-graph";
-import { EntityGraph } from "./types";
-import { BedrockChat } from "../langchain/bedrock";
-// import { buildPrompt } from "./prompt";
+
+type LogLevel = "debug" | "info" | "none";
 
 export class ComprehendClient {
-  private bedrock: ReturnType<typeof BedrockChat.prototype.bindTools>;
   private comprehend: ComprehendMedicalClient;
-  private totalTokensUsed: { input: number; output: number } = { input: 0, output: 0 };
+  private readonly logger: ReturnType<typeof out>;
 
   constructor({
-    comprehendRegion = Config.getAWSComprehendRegion(),
-  }: // bedrockRegion = Config.getAWSRegion()
-  { comprehendRegion?: string } = {}) {
+    region = Config.getAWSComprehendRegion(),
+    logLevel = "info",
+  }: { region?: string; logLevel?: LogLevel } = {}) {
     this.comprehend = new ComprehendMedicalClient({
-      region: comprehendRegion,
+      region,
     });
-
-    const bedrockChat = new BedrockChat({
-      model: "us.anthropic.claude-3-5-sonnet-20241022-v2:0",
-      temperature: 0,
-      region: "us-east-2",
-      callbacks: [
-        {
-          handleLLMEnd: output => {
-            const usage = output.llmOutput?.usage;
-            if (usage) {
-              console.log("usage", usage);
-              this.totalTokensUsed.input += usage.input_tokens;
-              this.totalTokensUsed.output += usage.output_tokens;
-            }
-          },
-        },
-      ],
-    });
-
-    this.bedrock = bedrockChat.bindTools([
-      {
-        name: "extractMedications",
-        description: "Extract medication information using RxNorm codes",
-        schema: z.object({ text: z.string() }),
-      },
-      {
-        name: "extractConditions",
-        description: "Extract medical conditions with ICD-10-CM codes",
-        schema: z.object({ text: z.string() }),
-      },
-      {
-        name: "extractProcedures",
-        description: "Extract medical procedures with SNOMED CT codes",
-        schema: z.object({ text: z.string() }),
-      },
-    ]);
-  }
-
-  async comprehendText(text: string): Promise<string> {
-    const prompt = `You are an agent that passes a related chunk of medical information from the given text to an extraction tool for
-    further processing. You should call tools with substrings of the provided clinical text. You should only pass relevant text to the tools. Do not perform any inference, make any transformations or modifications to the
-    original text, or attempt to add any medical coding.
-
-    - The "extractConditions" tool extracts conditions with ICD-10-CM codes
-    - The "extractProcedures" tool extracts procedures with SNOMED CT codes
-    - The "extractMedications" tool extracts medication information using RxNorm codes
-    
-    Here is the clinical text to analyze:\n\n"${text}"`;
-
-    const response = (await this.bedrock.invoke(prompt)) as Awaited<
-      ReturnType<typeof BedrockChat.prototype.invoke>
-    >;
-
-    const toolCalls = response.tool_calls ?? [];
-    const firstToolCall = toolCalls[0];
-
-    if (!firstToolCall) {
-      console.log("No tools were called");
-      return "No tools were called";
-    }
-
-    console.log("firstToolCall", firstToolCall, toolCalls.length);
-
-    let nextToolCall: typeof firstToolCall | null = null;
-    const conversation: BaseMessageLike[] = [
-      prompt,
-      response,
-      {
-        role: "user",
-        content: [
-          {
-            type: "tool_result",
-            tool_use_id: firstToolCall.id,
-          },
-        ],
-      },
-    ];
-
-    do {
-      console.log("Invoking with tool response");
-      const nextResponse = (await this.bedrock.invoke(conversation)) as Awaited<
-        ReturnType<typeof BedrockChat.prototype.invoke>
-      >;
-      nextToolCall = nextResponse.tool_calls?.[0] ?? null;
-      console.log("nextToolCall", nextToolCall, nextResponse.tool_calls?.length ?? 0);
-      if (nextToolCall) {
-        conversation.push(nextResponse);
-        conversation.push({
-          type: "user",
-          content: [
-            {
-              type: "tool_result",
-              tool_use_id: nextToolCall.id,
-            },
-          ],
-        });
-      }
-    } while (nextToolCall != null);
-
-    return "done";
-  }
-
-  async buildEntityGraph(text: string): Promise<EntityGraph | undefined> {
-    const { Entities } = await this.detectEntities(text);
-    const entityGraph = buildEntityGraph(Entities ?? []);
-    return entityGraph;
+    this.logger = buildLogger(logLevel);
   }
 
   async inferRxNorm(text: string): Promise<InferRxNormCommandOutput> {
+    this.debug("Inferring RxNorm codes", text);
     const command = new InferRxNormCommand({
-      Text: text,
-    });
-    const response = await this.comprehend.send(command);
-    return response;
-  }
-
-  async inferICD10CM(text: string): Promise<InferICD10CMCommandOutput> {
-    const command = new InferICD10CMCommand({
-      Text: text,
-    });
-    const response = await this.comprehend.send(command);
-    return response;
-  }
-
-  async inferSNOMEDCT(text: string): Promise<InferSNOMEDCTCommandOutput> {
-    const command = new InferSNOMEDCTCommand({
-      Text: text,
-    });
-    const response = await this.comprehend.send(command);
-    return response;
-  }
-
-  async detectEntities(text: string): Promise<DetectEntitiesV2CommandOutput> {
-    const command = new DetectEntitiesV2Command({
       Text: text,
     });
     const startTime = Date.now();
     const response = await this.comprehend.send(command);
-    const endTime = Date.now();
-    console.log(`Comprehend detected entities in ${endTime - startTime}ms`);
+    this.log(`Completed RxNorm inference in ${Date.now() - startTime}ms`);
+    return response;
+  }
+
+  async inferICD10CM(text: string): Promise<InferICD10CMCommandOutput> {
+    this.debug("Inferring ICD-10-CM codes", text);
+    const startTime = Date.now();
+    const command = new InferICD10CMCommand({
+      Text: text,
+    });
+    const response = await this.comprehend.send(command);
+    this.log(`Completed ICD-10-CM inference in ${Date.now() - startTime}ms`);
+    return response;
+  }
+
+  async inferSNOMEDCT(text: string): Promise<InferSNOMEDCTCommandOutput> {
+    this.debug("Inferring SNOMED CT codes", text);
+    const startTime = Date.now();
+    const command = new InferSNOMEDCTCommand({
+      Text: text,
+    });
+    const response = await this.comprehend.send(command);
+    this.log(`Completed SNOMED CT inference in ${Date.now() - startTime}ms`);
+    return response;
+  }
+
+  async detectEntities(text: string): Promise<DetectEntitiesV2CommandOutput> {
+    this.debug("Detecting entities", text);
+    const startTime = Date.now();
+    const command = new DetectEntitiesV2Command({
+      Text: text,
+    });
+    const response = await this.comprehend.send(command);
+    this.log(`Completed entity detection in ${Date.now() - startTime}ms`);
     return response;
   }
 
   getCacheKey(text: string): string {
     return crypto.createHash("sha256").update(text).digest("hex");
   }
+
+  private log(message: string, ...optionalParams: unknown[]): void {
+    this.logger.log(message, ...optionalParams);
+  }
+
+  private debug(message: string, ...optionalParams: unknown[]): void {
+    this.logger.debug(message, ...optionalParams);
+  }
+}
+
+function buildLogger(logLevel: LogLevel): ReturnType<typeof out> {
+  if (logLevel === "none") {
+    return {
+      log: () => {}, //eslint-disable-line @typescript-eslint/no-empty-function
+      debug: () => {}, //eslint-disable-line @typescript-eslint/no-empty-function
+    };
+  }
+  if (logLevel === "info") {
+    return {
+      debug: () => {}, //eslint-disable-line @typescript-eslint/no-empty-function
+      log: out("comprehend").log,
+    };
+  }
+  return out("comprehend");
 }

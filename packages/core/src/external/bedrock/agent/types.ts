@@ -18,4 +18,6 @@ export interface BedrockToolConfig<T> {
 export interface BedrockAgentResponse {
   response: InvokeResponse;
   toolCall?: InvokeToolCall;
+  toolResult?: unknown;
+  toolError?: unknown;
 }

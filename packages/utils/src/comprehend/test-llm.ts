@@ -9,7 +9,7 @@ program
   .argument("<text>", "The input text to submit to Bedrock + Comprehend")
   .action(async text => {
     const comprehendClient = new ComprehendClient();
-    const response = await comprehendClient.comprehendText(text);
+    const response = await comprehendClient.inferRxNorm(text);
     console.log("response", response);
   });
 
