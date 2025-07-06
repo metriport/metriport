@@ -1,4 +1,3 @@
-import { z } from "zod";
 import { AnthropicModel } from "./constants";
 
 export type BedrockRegion = "us-east-1" | "us-east-2" | "us-west-2";
@@ -6,19 +5,6 @@ export type BedrockRegion = "us-east-1" | "us-east-2" | "us-west-2";
 export interface BedrockConfig {
   region: BedrockRegion;
   model: AnthropicModel;
-}
-
-export interface BedrockAgentConfig {
-  systemPrompt: string;
-  tools?: BedrockToolConfig[];
-  maxTokens?: number;
-  temperature?: number;
-}
-
-export interface BedrockToolConfig {
-  name: string;
-  description: string;
-  inputSchema: z.ZodSchema;
 }
 
 /**
