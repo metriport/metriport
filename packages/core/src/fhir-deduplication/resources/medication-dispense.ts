@@ -9,26 +9,28 @@ import {
 } from "../shared";
 
 const medicationDispenseStatus = [
-  "active",
+  "preparation",
+  "in-progress",
+  "cancelled",
+  "on-hold",
   "completed",
   "entered-in-error",
   "stopped",
-  "on-hold",
+  "declined",
   "unknown",
-  "cancelled",
-  "draft",
 ] as const;
 export type MedicationDispenseStatus = (typeof medicationDispenseStatus)[number];
 
 const statusRanking: Record<MedicationDispenseStatus, number> = {
   unknown: 0,
   "entered-in-error": 1,
-  draft: 2,
+  "in-progress": 2,
   "on-hold": 3,
-  active: 4,
-  stopped: 5,
-  cancelled: 6,
-  completed: 7,
+  preparation: 4,
+  cancelled: 5,
+  completed: 6,
+  stopped: 7,
+  declined: 8,
 };
 
 function preprocessStatus(existing: MedicationDispense, target: MedicationDispense) {
