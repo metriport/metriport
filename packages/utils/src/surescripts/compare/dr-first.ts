@@ -1,10 +1,11 @@
 import { Command } from "commander";
 import fs from "fs";
 import path from "path";
-
-import { getConsolidatedBundle } from "../shared";
-
-// import { dangerouslyDeduplicateFhir } from "@metriport/core/fhir-deduplication/deduplicate-fhir";
+import dayjs from "dayjs";
+import { Bundle } from "@medplum/fhirtypes";
+import { dangerouslyDeduplicateFhir } from "@metriport/core/fhir-deduplication/deduplicate-fhir";
+import { HistoryData, historyPage } from "./history-table";
+import { Medication, Organization } from "@medplum/fhirtypes";
 
 const DR_FIRST_DIR = path.join(process.cwd(), "runs", "drfirst");
 const CX_ID = process.env.TARGET_COMPARISON_CX_ID ?? "";
@@ -18,24 +19,35 @@ async function main() {
   if (!CX_ID) throw new Error("TARGET_COMPARISON_CX_ID is not set");
 
   const patientIdMap = getPatientIdMapping();
-  console.log(patientIdMap);
   const nameIds = getDrFirstOutputNameIds();
-  console.log(nameIds);
 
+  const csvOutput: Array<Array<string | number>> = [
+    ["nameId", "drFirstMedications", "drFirstFills", "metriportMedications", "metriportFills"],
+  ];
   for (const nameId of nameIds) {
-    const drFirstOutput = getDrFirstOutput(nameId);
-    const drFirstStatistics = computeDrFirstStatistics(drFirstOutput);
-    console.log(nameId, drFirstStatistics);
-
     const patientId = patientIdMap[nameId];
     if (!patientId) throw new Error(`Patient ID not found for ${nameId}`);
 
-    const consolidatedBundle = await getConsolidatedBundle(CX_ID, patientId);
-    console.log("found HIE bundle", consolidatedBundle != null);
-
-    // const conversionBundle = await getConversionBundle(CX_ID, patientId);
-    // console.log(conversionBundle);
+    const drFirstOutput = getDrFirstOutput(nameId);
+    const metriportBundle = getMetriportBundle(nameId);
+    dangerouslyDeduplicateFhir(metriportBundle, CX_ID, patientId);
+    writeDrFirstHtml(nameId, drFirstOutput);
+    writeMetriportHtml(nameId, metriportBundle);
+    const drFirstStatistics = computeDrFirstStatistics(drFirstOutput);
+    const metriportStatistics = computeMetriportStatistics(metriportBundle);
+    csvOutput.push([
+      nameId,
+      drFirstStatistics.medications,
+      drFirstStatistics.fills,
+      metriportStatistics.medications,
+      metriportStatistics.fills,
+    ]);
   }
+  fs.writeFileSync(
+    path.join(DR_FIRST_DIR, "count.csv"),
+    csvOutput.map(row => row.join(",")).join("\n"),
+    "utf-8"
+  );
 }
 
 function computeDrFirstStatistics(drFirstOutput: DrFirstOutput) {
@@ -49,6 +61,109 @@ function computeDrFirstStatistics(drFirstOutput: DrFirstOutput) {
     fills: totalFills,
   };
   return statistics;
+}
+
+function getDrFirstHistoryData(nameId: string, drFirstOutput: DrFirstOutput): HistoryData {
+  const historyData: HistoryData = {
+    nameId,
+    events: [],
+  };
+  drFirstOutput.medications.forEach(medication => {
+    medication.fills.forEach(fill => {
+      historyData.events.push({
+        date: dayjs(fill.dateWritten, "MM/DD/YYYY").toISOString(),
+        medicationName: medication.genericName,
+        medicationNdc: medication.ndcId,
+        daysSupply: fill.daysSupply,
+        directions: fill.sig,
+      });
+    });
+    // medication.timeline.oneYear.filled.forEach(fill => {
+    //   historyData.events.push({
+    //     date: dayjs(fill.startDate, "MM/DD/YYYY").toISOString(),
+    //     medicationName: medication.genericName,
+    //     medicationNdc: medication.ndcId,
+    //     daysSupply: fill.daysCount,
+    //   });
+    // });
+  });
+  return historyData;
+}
+
+function writeDrFirstHtml(nameId: string, output: DrFirstOutput) {
+  const historyData = getDrFirstHistoryData(nameId, output);
+  const outputHtml = historyPage(historyData);
+  fs.writeFileSync(path.join(DR_FIRST_DIR, "html", nameId + "-drfirst.html"), outputHtml, "utf-8");
+}
+
+function computeMetriportStatistics(metriportBundle: Bundle) {
+  const statistics = {
+    medications: 0,
+    fills: 0,
+  };
+  metriportBundle.entry?.forEach(entry => {
+    if (entry.resource?.resourceType === "Medication") {
+      statistics.medications++;
+    }
+    if (entry.resource?.resourceType === "MedicationDispense") {
+      statistics.fills++;
+    }
+  });
+  return statistics;
+}
+
+function getMetriportHistoryData(nameId: string, metriportBundle: Bundle): HistoryData {
+  const historyData: HistoryData = {
+    nameId,
+    events: [],
+  };
+
+  const medicationMap = new Map<string, { name: string; ndc: string }>();
+  const organizationMap = new Map<string, { name: string }>();
+  metriportBundle.entry?.forEach(entry => {
+    if (entry.resource?.resourceType === "Medication" && entry.resource.id) {
+      const medication = entry.resource as Medication;
+      const ndc = medication.code?.coding?.find(
+        c => c.system === "http://hl7.org/fhir/sid/ndc"
+      )?.code;
+      medicationMap.set("Medication/" + entry.resource.id, {
+        name: medication.code?.text ?? "",
+        ndc: ndc ?? "",
+      });
+    }
+    if (entry.resource?.resourceType === "Organization" && entry.resource.id) {
+      const organization = entry.resource as Organization;
+      organizationMap.set("Organization/" + entry.resource.id, { name: organization.name ?? "" });
+    }
+  });
+
+  metriportBundle.entry?.forEach(({ resource }) => {
+    if (resource?.resourceType === "MedicationDispense") {
+      const medication = medicationMap.get(resource.medicationReference?.reference ?? "");
+      if (!medication) {
+        throw new Error(`Medication not found for ${resource.medicationReference?.reference}`);
+      }
+      historyData.events.push({
+        date: resource.whenHandedOver ?? "",
+        medicationName: medication.name ?? "",
+        medicationNdc: medication.ndc ?? "",
+        daysSupply: resource.daysSupply?.value?.toString() ?? "",
+        directions: resource.note?.[0]?.text ?? "",
+        // pharmacyName: resource.performer?.[0]?.reference ? organizationMap.get(resource.performer?.[0]?.reference)?.name ?? "" : ""
+      });
+    }
+  });
+  return historyData;
+}
+
+function writeMetriportHtml(nameId: string, metriportBundle: Bundle) {
+  const historyData = getMetriportHistoryData(nameId, metriportBundle);
+  const outputHtml = historyPage(historyData);
+  fs.writeFileSync(
+    path.join(DR_FIRST_DIR, "html", nameId + "-metriport.html"),
+    outputHtml,
+    "utf-8"
+  );
 }
 
 function getPatientIdMapping(): Record<string, string> {
@@ -68,6 +183,13 @@ function getDrFirstOutput(nameId: string): DrFirstOutput {
     fs.readFileSync(path.join(DR_FIRST_DIR, "data", nameId + ".json"), "utf8")
   );
   return drFirstOutput;
+}
+
+function getMetriportBundle(nameId: string): Bundle {
+  const bundle = JSON.parse(
+    fs.readFileSync(path.join(DR_FIRST_DIR, "bundle", nameId + ".json"), "utf8")
+  );
+  return bundle;
 }
 
 export default program;
