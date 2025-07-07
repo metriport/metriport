@@ -67,10 +67,10 @@ export function groupSameMedDipenses(medDipenses: MedicationDispense[]): {
   for (const medDipense of medDipenses) {
     const medRef = medDipense.medicationReference?.reference;
     const date = medDipense.whenHandedOver;
-    const quantity = medDipense.quantity;
-    if (medRef && date && quantity) {
+    const daysSupply = medDipense.daysSupply;
+    if (medRef && date && daysSupply) {
       const datetime = getDateFromString(date, "datetime");
-      const key = JSON.stringify({ medRef, datetime, quantity });
+      const key = JSON.stringify({ medRef, datetime, daysSupply });
       deduplicateWithinMap({
         dedupedResourcesMap: medDipensesMap,
         dedupKey: key,

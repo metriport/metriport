@@ -1,7 +1,7 @@
 import { Command } from "commander";
 import fs from "fs";
 import path from "path";
-import dayjs from "dayjs";
+import { buildDayjs } from "@metriport/shared/common/date";
 import { Bundle } from "@medplum/fhirtypes";
 import { dangerouslyDeduplicateFhir } from "@metriport/core/fhir-deduplication/deduplicate-fhir";
 import { HistoryData, historyPage } from "./history-table";
@@ -52,8 +52,15 @@ async function main() {
 
 function computeDrFirstStatistics(drFirstOutput: DrFirstOutput) {
   let totalFills = 0;
+  const seenFill = new Set<string>();
   drFirstOutput.medications.forEach(medication => {
-    totalFills += medication.timeline.oneYear.filled.length;
+    medication.fills.forEach(fill => {
+      const fillKey = `${fill.dateWritten}-${fill.sig}-${fill.daysSupply}-${fill.drugName}`;
+      if (!seenFill.has(fillKey)) {
+        totalFills++;
+        seenFill.add(fillKey);
+      }
+    });
   });
 
   const statistics = {
@@ -71,22 +78,39 @@ function getDrFirstHistoryData(nameId: string, drFirstOutput: DrFirstOutput): Hi
   drFirstOutput.medications.forEach(medication => {
     medication.fills.forEach(fill => {
       historyData.events.push({
-        date: dayjs(fill.dateWritten, "MM/DD/YYYY").toISOString(),
+        date: buildDayjs(fill.dateWritten, "MM/DD/YYYY").toISOString(),
         medicationName: medication.genericName,
         medicationNdc: medication.ndcId,
         daysSupply: fill.daysSupply,
         directions: fill.sig,
       });
     });
-    // medication.timeline.oneYear.filled.forEach(fill => {
-    //   historyData.events.push({
-    //     date: dayjs(fill.startDate, "MM/DD/YYYY").toISOString(),
-    //     medicationName: medication.genericName,
-    //     medicationNdc: medication.ndcId,
-    //     daysSupply: fill.daysCount,
-    //   });
-    // });
   });
+
+  historyData.events.sort((a, b) => {
+    const dateDiff = buildDayjs(a.date).diff(buildDayjs(b.date));
+    if (dateDiff === 0) {
+      return a.medicationName.localeCompare(b.medicationName);
+    }
+    return dateDiff;
+  });
+
+  for (let i = 0; i < historyData.events.length; i++) {
+    const event = historyData.events[i];
+    const nextEvent = historyData.events[i + 1];
+    if (
+      nextEvent &&
+      buildDayjs(event.date).isSame(buildDayjs(nextEvent.date)) &&
+      event.medicationName == nextEvent.medicationName &&
+      event.medicationNdc == nextEvent.medicationNdc &&
+      event.daysSupply == nextEvent.daysSupply &&
+      event.directions == nextEvent.directions
+    ) {
+      // historyData.events.splice(i + 1, 1);
+      // i--;
+    }
+  }
+
   return historyData;
 }
 

@@ -10,16 +10,15 @@ import { getPharmacy } from "./pharmacy";
 import { getPatient, mergePatient } from "./patient";
 import { getCondition } from "./condition";
 import { getInsuranceOrganization, getCoverage } from "./coverage";
-import { deduplicateByCoding, deduplicateByKey, deduplicateBySystemIdentifier } from "./shared";
 
 export function getAllBundleEntries(
   context: SurescriptsContext,
   { data }: IncomingData<ResponseDetail>
 ): BundleEntry<Resource>[] {
   const patient = mergePatient(context.patient, getPatient(data));
-  const practitioner = deduplicateBySystemIdentifier(context.practitioner, getPrescriber(data));
-  const pharmacy = deduplicateBySystemIdentifier(context.pharmacy, getPharmacy(data));
-  const condition = deduplicateByCoding(context.condition, getCondition(context, data));
+  const practitioner = getPrescriber(data);
+  const pharmacy = getPharmacy(data);
+  const condition = getCondition(context, data);
   const medicationResources = getMedicationResources(context, data);
   const coverageResources = getCoverageResources(context, data);
 
@@ -45,7 +44,6 @@ function getMedicationResources(
   context: SurescriptsContext,
   data: ResponseDetail
 ): (Resource | undefined)[] {
-  // const medication = deduplicateByCoding(context.medication, getMedication(data));
   const medication = getMedication(data);
   if (!medication) return [];
   const medicationDispense = getMedicationDispense(context, medication, data);
@@ -54,16 +52,9 @@ function getMedicationResources(
 }
 
 function getCoverageResources(context: SurescriptsContext, data: ResponseDetail): Resource[] {
-  const insuranceOrganization = deduplicateBySystemIdentifier(
-    context.insuranceOrganization,
-    getInsuranceOrganization(data)
-  );
+  const insuranceOrganization = getInsuranceOrganization(data);
   if (!insuranceOrganization) return [];
-  const coverage = deduplicateByKey(
-    context.coverage,
-    "subscriberId",
-    getCoverage(context, insuranceOrganization, data)
-  );
+  const coverage = getCoverage(context, insuranceOrganization, data);
   if (!coverage) return [];
   return [insuranceOrganization, coverage];
 }

@@ -1,4 +1,4 @@
-import dayjs from "dayjs";
+import { buildDayjs } from "@metriport/shared/common/date";
 
 export interface HistoryData {
   nameId: string;
@@ -22,7 +22,13 @@ export function historyPage({ nameId, events }: HistoryData): string {
 }
 
 export function historyTable(events: HistoryEvent[]): string {
-  events.sort((a, b) => dayjs(a.date).diff(dayjs(b.date)));
+  events.sort((a, b) => {
+    const dateDiff = buildDayjs(a.date).diff(buildDayjs(b.date));
+    if (dateDiff === 0) {
+      return a.medicationName.localeCompare(b.medicationName);
+    }
+    return dateDiff;
+  });
 
   const html: string[] = ["<table>"];
   html.push("<thead>");
@@ -39,7 +45,7 @@ export function historyTable(events: HistoryEvent[]): string {
   html.push("<tbody>");
   events.forEach(event => {
     html.push("<tr>");
-    html.push("<td>", dayjs(event.date).format("YYYY-MM-DD"), "</td>");
+    html.push("<td>", buildDayjs(event.date).format("YYYY-MM-DD"), "</td>");
     html.push("<td>", event.medicationName, "</td>");
     html.push("<td>", event.medicationNdc, "</td>");
     html.push("<td>", event.daysSupply ? event.daysSupply.toString() : "", "</td>");

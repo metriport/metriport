@@ -9,6 +9,7 @@ import { dangerouslyDeduplicateFhir } from "../../../fhir-deduplication/deduplic
 import { hydrateFhir } from "../../fhir/hydration/hydrate-fhir";
 import { crosswalkNdcToRxNorm } from "../../term-server";
 import { NDC_URL } from "../../../util/constants";
+import { RELATED_ARTIFACT_URL } from "./constants";
 
 export async function convertIncomingDataToFhirBundle(
   cxId: string,
@@ -22,10 +23,29 @@ export async function convertIncomingDataToFhirBundle(
     bundle.entry?.push(...entries);
   }
   dangerouslyDeduplicateFhir(bundle, cxId, patientId);
+  dangerouslyRemoveDerivedFromExtensions(bundle);
   await dangerouslyHydrateMedications(bundle);
   await hydrateFhir(bundle, console.log);
 
   return bundle;
+}
+
+function dangerouslyRemoveDerivedFromExtensions(bundle: Bundle): void {
+  if (!bundle.entry) return;
+  for (const entry of bundle.entry) {
+    if (!entry.resource) continue;
+    if ("extension" in entry.resource) {
+      entry.resource.extension = entry.resource.extension.filter(extension => {
+        if (
+          extension.url == RELATED_ARTIFACT_URL &&
+          extension.valueRelatedArtifact?.type === "derived-from"
+        ) {
+          return false;
+        }
+        return true;
+      });
+    }
+  }
 }
 
 async function dangerouslyHydrateMedications(bundle: Bundle): Promise<void> {
