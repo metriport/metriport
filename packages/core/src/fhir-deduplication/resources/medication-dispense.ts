@@ -70,9 +70,21 @@ export function groupSameMedDispenses(medDispenses: MedicationDispense[]): {
     const medRef = medDispense.medicationReference?.reference;
     const date = medDispense.whenHandedOver;
     const daysSupply = medDispense.daysSupply;
+    const quantity = medDispense.quantity;
+
     if (medRef && date && daysSupply) {
       const datetime = getDateFromString(date, "datetime");
       const key = JSON.stringify({ medRef, datetime, daysSupply });
+      deduplicateWithinMap({
+        dedupedResourcesMap: medDispensesMap,
+        dedupKey: key,
+        candidateResource: medDispense,
+        refReplacementMap,
+        onPremerge: preprocessStatus,
+      });
+    } else if (medRef && date && quantity) {
+      const datetime = getDateFromString(date, "datetime");
+      const key = JSON.stringify({ medRef, datetime, quantity });
       deduplicateWithinMap({
         dedupedResourcesMap: medDispensesMap,
         dedupKey: key,
