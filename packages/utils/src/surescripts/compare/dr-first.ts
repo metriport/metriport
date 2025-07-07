@@ -7,7 +7,7 @@ import { dangerouslyDeduplicateFhir } from "@metriport/core/fhir-deduplication/d
 import { HistoryData, historyPage } from "./history-table";
 import { Medication, Organization } from "@medplum/fhirtypes";
 
-const DR_FIRST_DIR = path.join(process.cwd(), "runs", "drfirst");
+export const DR_FIRST_DIR = path.join(process.cwd(), "runs", "drfirst");
 const CX_ID = process.env.TARGET_COMPARISON_CX_ID ?? "";
 
 const program = new Command();
@@ -166,12 +166,12 @@ function writeMetriportHtml(nameId: string, metriportBundle: Bundle) {
   );
 }
 
-function getPatientIdMapping(): Record<string, string> {
+export function getPatientIdMapping(): Record<string, string> {
   const mapping = JSON.parse(fs.readFileSync(path.join(DR_FIRST_DIR, "mapping.json"), "utf8"));
   return mapping;
 }
 
-function getDrFirstOutputNameIds() {
+export function getDrFirstOutputNameIds() {
   const nameIds = fs.readdirSync(path.join(DR_FIRST_DIR, "data"));
   return nameIds
     .filter(nameId => nameId.endsWith(".json"))

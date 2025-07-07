@@ -18,6 +18,36 @@ interface PatientTransmission {
   transmissionId: string;
 }
 
+export function getSurescriptsDirOrFail(): string {
+  const dir = path.join(process.cwd(), "runs", "surescripts");
+  if (!fs.existsSync(dir)) {
+    throw new Error(
+      "Surescripts directory not found. Please use `npm run surescripts` from the utils directory."
+    );
+  }
+  return dir;
+}
+
+export function writeSurescriptsRunsFile(filePath: string, content: string): void {
+  const dir = getSurescriptsDirOrFail();
+  const fullFilePath = path.join(dir, filePath);
+  const fileDir = path.dirname(fullFilePath);
+  if (!fs.existsSync(fileDir)) {
+    fs.mkdirSync(fileDir, { recursive: true });
+  }
+  fs.writeFileSync(fullFilePath, content, "utf-8");
+}
+
+export function openSurescriptsRunsFile(filePath: string): void {
+  const dir = getSurescriptsDirOrFail();
+  const fullFilePath = path.join(dir, filePath);
+  if (fs.existsSync(fullFilePath)) {
+    execSync(`open ${fullFilePath}`);
+  } else {
+    console.error(`File not found: ${fullFilePath}`);
+  }
+}
+
 export function buildCsvPath(csvPath: string): string {
   if (csvPath.startsWith("/")) {
     return csvPath;

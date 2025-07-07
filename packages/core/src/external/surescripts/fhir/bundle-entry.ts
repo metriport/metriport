@@ -45,7 +45,8 @@ function getMedicationResources(
   context: SurescriptsContext,
   data: ResponseDetail
 ): (Resource | undefined)[] {
-  const medication = deduplicateByCoding(context.medication, getMedication(data));
+  // const medication = deduplicateByCoding(context.medication, getMedication(data));
+  const medication = getMedication(data);
   if (!medication) return [];
   const medicationDispense = getMedicationDispense(context, medication, data);
   const medicationRequest = getMedicationRequest(context, medication, data);

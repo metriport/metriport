@@ -53,7 +53,7 @@ export function deduplicateByCoding<R extends Medication | Condition>(
   systemMap: SystemIdentifierMap<R>,
   resource?: R
 ): R | undefined {
-  if (!resource || !resource.code || !resource.code.coding) return undefined;
+  if (!resource || !resource.code || !resource.code.coding) return resource;
   let masterResource: R = resource;
 
   for (const coding of resource.code.coding) {
