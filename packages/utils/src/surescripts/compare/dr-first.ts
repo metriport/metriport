@@ -190,6 +190,10 @@ function getMetriportHistoryData(nameId: string, metriportBundle: Bundle): Histo
         }
       }
 
+      if (!medicationRequest?.authoredOn) {
+        console.log("missing authored on", medicationRequest);
+      }
+
       historyData.events.push({
         dateWritten: medicationRequest?.authoredOn ?? "",
         soldDate: resource.whenHandedOver ?? "",

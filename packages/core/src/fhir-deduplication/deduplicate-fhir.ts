@@ -20,7 +20,7 @@ import { deduplicateMedications } from "./resources/medication";
 import { deduplicateMedAdmins } from "./resources/medication-administration";
 import { deduplicateMedRequests } from "./resources/medication-request";
 import { deduplicateMedStatements } from "./resources/medication-statement";
-import { deduplicateMedDipenses } from "./resources/medication-dispense";
+import { deduplicateMedDispenses } from "./resources/medication-dispense";
 import { deduplicateObservations } from "./resources/observation";
 import { deduplicateObservationsSocial } from "./resources/observation-social";
 import { deduplicateOrganizations } from "./resources/organization";
@@ -63,7 +63,6 @@ export function dangerouslyDeduplicateFhir(
     "medicationAdministrations",
     "medicationStatements",
     "medicationRequests",
-    "medicationDispenses",
   ]);
   resourceArrays.medications = medicationsResult.combinedResources;
 
@@ -76,8 +75,8 @@ export function dangerouslyDeduplicateFhir(
   const medStatementResult = deduplicateMedStatements(resourceArrays.medicationStatements);
   resourceArrays.medicationStatements = medStatementResult.combinedResources;
 
-  const medDipensesResult = deduplicateMedDipenses(resourceArrays.medicationDispenses);
-  resourceArrays.medicationDispenses = medDipensesResult.combinedResources;
+  const medDispensesResult = deduplicateMedDispenses(resourceArrays.medicationDispenses);
+  resourceArrays.medicationDispenses = medDispensesResult.combinedResources;
 
   resourceArrays.documentReferences = processDocumentReferences(resourceArrays.documentReferences);
 
@@ -150,7 +149,7 @@ export function dangerouslyDeduplicateFhir(
     ...medAdminsResult.danglingReferences,
     ...medRequestResult.danglingReferences,
     ...medStatementResult.danglingReferences,
-    ...medDipensesResult.danglingReferences,
+    ...medDispensesResult.danglingReferences,
     ...practitionersResult.danglingReferences,
     ...conditionsResult.danglingReferences,
     ...allergiesResult.danglingReferences,
@@ -174,7 +173,7 @@ export function dangerouslyDeduplicateFhir(
     ...medAdminsResult.refReplacementMap,
     ...medRequestResult.refReplacementMap,
     ...medStatementResult.refReplacementMap,
-    ...medDipensesResult.refReplacementMap,
+    ...medDispensesResult.refReplacementMap,
     ...practitionersResult.refReplacementMap,
     ...conditionsResult.refReplacementMap,
     ...allergiesResult.refReplacementMap,
@@ -649,6 +648,16 @@ function replaceResourceReference<T extends Resource>(
     if (newReference) {
       entry.medicationReference.reference = newReference;
     }
+  }
+
+  if ("authorizingPrescription" in entry && Array.isArray(entry.authorizingPrescription)) {
+    entry.authorizingPrescription = entry.authorizingPrescription.map(prescription => {
+      if (prescription.reference) {
+        const newReference = referenceMap.get(prescription.reference);
+        if (newReference) prescription.reference = newReference;
+      }
+      return prescription;
+    });
   }
 
   if ("recorder" in entry && entry.recorder?.reference) {

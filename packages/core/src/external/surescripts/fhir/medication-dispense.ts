@@ -80,13 +80,13 @@ function getQuantity(detail: ResponseDetail): MedicationDispense["quantity"] | u
 function getWhenHandedOver(
   detail: ResponseDetail
 ): MedicationDispense["whenHandedOver"] | undefined {
-  if (!detail.soldDate) {
-    if (detail.lastFilledDate) {
-      return buildDayjs(detail.lastFilledDate).toISOString();
-    }
-    return undefined;
+  if (detail.soldDate) {
+    return buildDayjs(detail.soldDate).toISOString();
   }
-  return buildDayjs(detail.dateWritten).toISOString();
+  if (detail.lastFilledDate) {
+    return buildDayjs(detail.lastFilledDate).toISOString();
+  }
+  return undefined;
 }
 
 function getDosageInstruction(
