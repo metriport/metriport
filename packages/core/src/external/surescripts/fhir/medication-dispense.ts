@@ -1,6 +1,9 @@
 import {
   Extension,
   Medication,
+  MedicationRequest,
+  Patient,
+  Organization,
   MedicationDispense,
   MedicationDispensePerformer,
 } from "@medplum/fhirtypes";
@@ -9,23 +12,32 @@ import { buildDayjs } from "@metriport/shared/common/date";
 import { ResponseDetail } from "../schema/response";
 import { MEDICATION_DISPENSE_FILL_NUMBER_EXTENSION, UNIT_OF_MEASURE_URL } from "./constants";
 import { getMedicationReference } from "./medication";
+import { getMedicationRequestReference } from "./medication-request";
 import { getPatientReference } from "./patient";
-import { getPrescriberReference } from "./prescriber";
-import { getResourceByNpiNumber, getSurescriptsDataSourceExtension } from "./shared";
-import { SurescriptsContext } from "./types";
+import { getSurescriptsDataSourceExtension } from "./shared";
 import { getNcpdpName } from "@metriport/shared/interface/external/surescripts/ncpdp";
+import { getPharmacyReference } from "./pharmacy";
 
-export function getMedicationDispense(
-  context: SurescriptsContext,
-  medication: Medication,
-  detail: ResponseDetail
-): MedicationDispense {
+export function getMedicationDispense({
+  pharmacy,
+  medicationRequest,
+  patient,
+  medication,
+  detail,
+}: {
+  pharmacy?: Organization | undefined;
+  medicationRequest?: MedicationRequest | undefined;
+  medication: Medication;
+  detail: ResponseDetail;
+  patient: Patient;
+}): MedicationDispense {
   const daysSupply = getDaysSupply(detail);
-  const performer = getMedicationDispensePerformer(context, detail);
+  const medicationReference = getMedicationReference(medication);
+  const performer = getMedicationDispensePerformer(pharmacy);
+  const authorizingPrescription = getAuthorizingPrescription(medicationRequest);
   const quantity = getQuantity(detail);
   const dosageInstruction = getDosageInstruction(detail);
-  const subject = getPatientReference(context.patient);
-  const medicationReference = getMedicationReference(medication);
+  const subject = getPatientReference(patient);
   const whenHandedOver = getWhenHandedOver(detail);
   const fillNumber = getFillNumberAsExtension(detail);
   const extensions = [fillNumber, getSurescriptsDataSourceExtension()].filter(
@@ -38,6 +50,7 @@ export function getMedicationDispense(
     subject,
     medicationReference,
     status: "completed",
+    ...(authorizingPrescription ? { authorizingPrescription } : undefined),
     ...(quantity ? { quantity } : undefined),
     ...(whenHandedOver ? { whenHandedOver } : undefined),
     ...(dosageInstruction ? { dosageInstruction } : undefined),
@@ -90,21 +103,22 @@ function getDosageInstruction(
   ];
 }
 
-function getMedicationDispensePerformer(
-  context: SurescriptsContext,
-  detail: ResponseDetail
-): MedicationDispensePerformer[] {
-  if (!detail.prescriberNpiNumber) return [];
-  const prescriber = getResourceByNpiNumber(context.practitioner, detail.prescriberNpiNumber);
-  if (!prescriber) return [];
-  const actor = getPrescriberReference(prescriber);
-
+function getMedicationDispensePerformer(pharmacy?: Organization): MedicationDispensePerformer[] {
+  if (!pharmacy) return [];
+  const actor = getPharmacyReference(pharmacy);
   return [
     {
       id: uuidv7(),
       actor,
     },
   ];
+}
+
+function getAuthorizingPrescription(
+  medicationRequest?: MedicationRequest
+): MedicationDispense["authorizingPrescription"] | undefined {
+  if (!medicationRequest) return undefined;
+  return [getMedicationRequestReference(medicationRequest)];
 }
 
 function getDaysSupply(detail: ResponseDetail): MedicationDispense["daysSupply"] | undefined {

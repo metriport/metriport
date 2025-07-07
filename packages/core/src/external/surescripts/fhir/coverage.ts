@@ -1,11 +1,10 @@
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
-import { Coverage, Organization, Identifier, Reference } from "@medplum/fhirtypes";
+import { Coverage, Organization, Identifier, Reference, Patient } from "@medplum/fhirtypes";
 import { ResponseDetail } from "../schema/response";
 import {
   getSourceOfPaymentCode,
   getSourceOfPaymentName,
 } from "@metriport/shared/interface/external/surescripts/payment-code";
-import { SurescriptsContext } from "./types";
 import { getPatientReference } from "./patient";
 import { getSurescriptsDataSourceExtension } from "./shared";
 import {
@@ -41,13 +40,13 @@ function getInsuranceOrganizationReference(organization: Organization): Referenc
 }
 
 export function getCoverage(
-  context: SurescriptsContext,
+  patient: Patient,
   insuranceOrganization: Organization,
   detail: ResponseDetail
 ): Coverage | undefined {
   if (!detail.planCode) return undefined;
   const identifier = getCoverageIdentifiers(detail);
-  const beneficiary = getPatientReference(context.patient);
+  const beneficiary = getPatientReference(patient);
   const relationship = getCoverageRelationship(detail);
   const subscriberId = getCoverageSubscriberId(detail);
   const extension = [getSurescriptsDataSourceExtension()];

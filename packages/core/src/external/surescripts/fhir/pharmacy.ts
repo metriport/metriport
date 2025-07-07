@@ -1,4 +1,4 @@
-import { Organization, Identifier } from "@medplum/fhirtypes";
+import { Organization, Identifier, Reference } from "@medplum/fhirtypes";
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { ResponseDetail } from "../schema/response";
 import { NCPDP_PROVIDER_ID_SYSTEM } from "./constants";
@@ -22,6 +22,12 @@ export function getPharmacy(detail: ResponseDetail): Organization | undefined {
     ...(address && address.length > 0 ? { address } : undefined),
     ...(telecom && telecom.length > 0 ? { telecom } : undefined),
     extension,
+  };
+}
+
+export function getPharmacyReference(pharmacy: Organization): Reference<Organization> {
+  return {
+    reference: `Organization/${pharmacy.id}`,
   };
 }
 
