@@ -86,6 +86,7 @@ function getDrFirstHistoryData(nameId: string, drFirstOutput: DrFirstOutput): Hi
         medicationNdc: medication.ndcId,
         daysSupply: fill.daysSupply,
         directions: fill.sig,
+        pharmacyName: fill.pharmacy?.name ?? "",
       });
     });
   });
@@ -180,6 +181,14 @@ function getMetriportHistoryData(nameId: string, metriportBundle: Bundle): Histo
       const medicationRequest = medicationRequestMap.get(
         resource.authorizingPrescription?.[0].reference ?? ""
       );
+      let pharmacyName = "";
+      if (resource.performer) {
+        const performer = resource.performer[0].actor;
+        if (performer && performer.reference) {
+          const organization = organizationMap.get(performer.reference);
+          pharmacyName = organization?.name ?? "";
+        }
+      }
 
       historyData.events.push({
         dateWritten: medicationRequest?.authoredOn ?? "",
@@ -188,7 +197,7 @@ function getMetriportHistoryData(nameId: string, metriportBundle: Bundle): Histo
         medicationNdc: medication.ndc ?? "",
         daysSupply: resource.daysSupply?.value?.toString() ?? "",
         directions: resource.note?.[0]?.text ?? "",
-        // pharmacyName: resource.performer?.[0]?.reference ? organizationMap.get(resource.performer?.[0]?.reference)?.name ?? "" : ""
+        pharmacyName,
       });
     }
   });

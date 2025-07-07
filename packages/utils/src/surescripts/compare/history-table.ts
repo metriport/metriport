@@ -24,7 +24,7 @@ export function historyPage({ nameId, events }: HistoryData): string {
 
 export function historyTable(events: HistoryEvent[]): string {
   events.sort((a, b) => {
-    const dateDiff = buildDayjs(a.dateWritten).diff(buildDayjs(b.dateWritten));
+    const dateDiff = buildDayjs(a.soldDate).diff(buildDayjs(b.soldDate));
     if (dateDiff === 0) {
       return a.medicationName.localeCompare(b.medicationName);
     }
