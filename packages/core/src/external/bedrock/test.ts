@@ -2,7 +2,6 @@ import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 // import { BedrockAgent } from "./agent/agent";
 import { BedrockClient } from "./client";
-import { AnthropicModel } from "./constants";
 import { InvokeRequest, InvokeResponse, InvokeToolCall } from "./types";
 
 async function main() {
@@ -26,8 +25,8 @@ async function main() {
   // console.log(response2);
 
   const client = new BedrockClient({
-    model: AnthropicModel.CLAUDE_3_5_SONNET,
-    region: "us-east-2",
+    model: "us.anthropic.claude-3-5-sonnet-20241022-v2:0",
+    region: "us-west-2",
   });
   let response: InvokeResponse | undefined = undefined;
   const messages: InvokeRequest["messages"] = [
@@ -41,6 +40,23 @@ async function main() {
       ],
     },
   ];
+
+  await client.invokeModel({
+    max_tokens: 1000,
+    temperature: 0,
+    system: "You are a helpful assistant.",
+    messages: [
+      {
+        role: "user",
+        content: [
+          {
+            type: "text",
+            text: `What is the origin story behind printing "hello world"?`,
+          },
+        ],
+      },
+    ],
+  });
 
   let iterations = 0;
   do {
