@@ -67,19 +67,18 @@ export function groupSameMedDipenses(medDipenses: MedicationDispense[]): {
   for (const medDipense of medDipenses) {
     const medRef = medDipense.medicationReference?.reference;
     const date = medDipense.whenHandedOver;
-    // const quantity = medDipense.quantity;
-    // if (medRef && date && quantity) {
-    //   const datetime = getDateFromString(date, "datetime");
-    //   const key = JSON.stringify({ medRef, datetime, quantity });
-    //   deduplicateWithinMap({
-    //     dedupedResourcesMap: medDipensesMap,
-    //     dedupKey: key,
-    //     candidateResource: medDipense,
-    //     refReplacementMap,
-    //     onPremerge: preprocessStatus,
-    //   });
-    // } else
-    if (medRef && date) {
+    const quantity = medDipense.quantity;
+    if (medRef && date && quantity) {
+      const datetime = getDateFromString(date, "datetime");
+      const key = JSON.stringify({ medRef, datetime, quantity });
+      deduplicateWithinMap({
+        dedupedResourcesMap: medDipensesMap,
+        dedupKey: key,
+        candidateResource: medDipense,
+        refReplacementMap,
+        onPremerge: preprocessStatus,
+      });
+    } else if (medRef && date) {
       const datetime = getDateFromString(date, "datetime");
       const key = JSON.stringify({ medRef, datetime });
       deduplicateWithinMap({

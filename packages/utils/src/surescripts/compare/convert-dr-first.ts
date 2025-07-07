@@ -5,7 +5,10 @@ import { SurescriptsConvertPatientResponseHandlerDirect } from "@metriport/core/
 import { SurescriptsReplica } from "@metriport/core/external/surescripts/replica";
 import { buildCsvPath, getTransmissionsFromCsv } from "../shared";
 import { DR_FIRST_DIR, getPatientIdMapping } from "./dr-first";
-import { Bundle } from "@medplum/fhirtypes";
+import { getAllConversionBundleJobIds, writeLatestConversionBundle } from "../shared";
+import { Bundle, BundleEntry } from "@medplum/fhirtypes";
+import { buildBundle } from "@metriport/core/external/fhir/bundle/bundle";
+import { dangerouslyDeduplicateFhir } from "@metriport/core/fhir-deduplication/deduplicate-fhir";
 
 const program = new Command();
 const CX_ID = process.env.TARGET_COMPARISON_CX_ID ?? "";
@@ -27,24 +30,34 @@ program
     const transmissions = await getTransmissionsFromCsv(CX_ID, buildCsvPath("wellpath_round2.csv"));
 
     for (const { transmissionId, patientId } of transmissions) {
-      console.log(`Converting ${patientId}/jobId=${transmissionId}`);
-      const conversion = await handler.convertPatientResponse({
-        cxId: CX_ID,
-        facilityId: FACILITY_ID,
-        transmissionId,
-        populationId: patientId,
-      });
-      if (!conversion) {
-        console.log("No conversion");
-        continue;
+      const transmissionIds = await getAllConversionBundleJobIds(CX_ID, patientId);
+      if (!transmissionIds.includes(transmissionId)) {
+        throw new Error(`Invalid transmission ID ${transmissionId}`);
       }
-      console.log("Done converting");
+
+      const entries: BundleEntry[] = [];
+      for (const transmissionId of transmissionIds) {
+        const conversion = await handler.convertPatientResponse({
+          cxId: CX_ID,
+          facilityId: FACILITY_ID,
+          transmissionId,
+          populationId: patientId,
+        });
+        if (conversion && conversion.bundle && conversion.bundle.entry) {
+          entries.push(...conversion.bundle.entry);
+        }
+      }
+      const bundle = buildBundle({ type: "collection", entries });
+      dangerouslyDeduplicateFhir(bundle, CX_ID, patientId);
+      await writeLatestConversionBundle(CX_ID, patientId, bundle);
+
+      console.log("Done converting and deduplicating");
       const nameId = nameIdMapping[patientId];
       if (!nameId) {
         console.log("No nameId");
         continue;
       }
-      writeLocalBundle(nameId, conversion.bundle);
+      writeLocalBundle(nameId, bundle);
       console.log(`Wrote bundle to local directory`);
     }
     const end = Date.now();

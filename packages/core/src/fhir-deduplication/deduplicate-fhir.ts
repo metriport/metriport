@@ -20,7 +20,7 @@ import { deduplicateMedications } from "./resources/medication";
 import { deduplicateMedAdmins } from "./resources/medication-administration";
 import { deduplicateMedRequests } from "./resources/medication-request";
 import { deduplicateMedStatements } from "./resources/medication-statement";
-// import { deduplicateMedDipenses } from "./resources/medication-dispense";
+import { deduplicateMedDipenses } from "./resources/medication-dispense";
 import { deduplicateObservations } from "./resources/observation";
 import { deduplicateObservationsSocial } from "./resources/observation-social";
 import { deduplicateOrganizations } from "./resources/organization";
@@ -76,8 +76,8 @@ export function dangerouslyDeduplicateFhir(
   const medStatementResult = deduplicateMedStatements(resourceArrays.medicationStatements);
   resourceArrays.medicationStatements = medStatementResult.combinedResources;
 
-  // const medDipensesResult = deduplicateMedDipenses(resourceArrays.medicationDispenses);
-  // resourceArrays.medicationDispenses = medDipensesResult.combinedResources;
+  const medDipensesResult = deduplicateMedDipenses(resourceArrays.medicationDispenses);
+  resourceArrays.medicationDispenses = medDipensesResult.combinedResources;
 
   resourceArrays.documentReferences = processDocumentReferences(resourceArrays.documentReferences);
 
@@ -150,7 +150,7 @@ export function dangerouslyDeduplicateFhir(
     ...medAdminsResult.danglingReferences,
     ...medRequestResult.danglingReferences,
     ...medStatementResult.danglingReferences,
-    // ...medDipensesResult.danglingReferences,
+    ...medDipensesResult.danglingReferences,
     ...practitionersResult.danglingReferences,
     ...conditionsResult.danglingReferences,
     ...allergiesResult.danglingReferences,
@@ -174,7 +174,7 @@ export function dangerouslyDeduplicateFhir(
     ...medAdminsResult.refReplacementMap,
     ...medRequestResult.refReplacementMap,
     ...medStatementResult.refReplacementMap,
-    // ...medDipensesResult.refReplacementMap,
+    ...medDipensesResult.refReplacementMap,
     ...practitionersResult.refReplacementMap,
     ...conditionsResult.refReplacementMap,
     ...allergiesResult.refReplacementMap,

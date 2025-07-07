@@ -111,6 +111,27 @@ export async function getConversionBundle(
   }
 }
 
+export async function getAllConversionBundleJobIds(
+  cxId: string,
+  patientId: string
+): Promise<string[]> {
+  const s3Utils = new S3Utils(Config.getAWSRegion());
+  const bucketName = Config.getPharmacyConversionBucketName();
+  if (!bucketName) {
+    return [];
+  }
+  const files = await s3Utils.listObjects(
+    bucketName,
+    `surescripts/cxId=${cxId}/ptId=${patientId}/`
+  );
+  return files.flatMap(file => {
+    if (!file.Key) return [];
+    console.log(file.Key);
+    const jobIdMatch = file.Key.match(/jobId=([\w\-_\d]{10})/);
+    return jobIdMatch ? [jobIdMatch[1]] : [];
+  });
+}
+
 export async function mergeConversionBundles(
   cxId: string,
   patientId: string
@@ -152,6 +173,23 @@ export async function writeConsolidatedBundlePreview(
   });
 }
 
+export async function writeLatestConversionBundle(
+  cxId: string,
+  patientId: string,
+  bundle: Bundle
+): Promise<void> {
+  const s3Utils = new S3Utils(Config.getAWSRegion());
+  const fileName = buildLatestConversionBundleFileName(cxId, patientId);
+  const bucketName = Config.getPharmacyConversionBucketName();
+  if (!bucketName) throw new Error("Pharmacy conversion bucket name not found");
+
+  await s3Utils.uploadFile({
+    bucket: bucketName,
+    key: fileName,
+    file: Buffer.from(JSON.stringify(bundle)),
+    contentType: "application/json",
+  });
+}
 export function openPreviewUrl(url: string): void {
   execSync(`open https://preview.metriport.com/?url=${encodeURIComponent(url)}`);
 }
