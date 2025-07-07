@@ -41,7 +41,6 @@ import axios, { AxiosInstance } from "axios";
 import { z } from "zod";
 import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
-import { uuidv7 } from "../../../util/uuid-v7";
 import { createOrReplaceCcda } from "../bundle/command/create-or-replace-ccda";
 import {
   ApiConfig,
@@ -913,7 +912,7 @@ class ElationApi {
       chart_date: this.formatDateTime(buildDayjs().toISOString()) ?? "",
       grids: [
         {
-          accession_number: uuidv7(),
+          accession_number: "",
           resulted_date: formattedObservedDate,
           collected_date: formattedObservedDate,
           status: formattedResultStatus,

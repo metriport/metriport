@@ -88,3 +88,11 @@ export const ehrCreateResourceDiffBundlesSchema = z.object({
   resourceType: z.string(),
   jobId: z.string(),
 });
+
+export const ehrContributeResourceDiffBundlesSchema = ehrCreateResourceDiffBundlesSchema.extend({
+  createResourceDiffBundlesJobId: z.string(),
+});
+
+export const ehrWriteBackResourceDiffBundlesSchema = ehrCreateResourceDiffBundlesSchema.extend({
+  createResourceDiffBundlesJobId: z.string(),
+});
