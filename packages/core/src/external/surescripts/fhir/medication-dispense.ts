@@ -26,7 +26,7 @@ export function getMedicationDispense({
   detail,
 }: {
   pharmacy?: Organization | undefined;
-  medicationRequest?: MedicationRequest | undefined;
+  medicationRequest: MedicationRequest;
   medication: Medication;
   detail: ResponseDetail;
   patient: Patient;
@@ -80,15 +80,7 @@ function getQuantity(detail: ResponseDetail): MedicationDispense["quantity"] | u
 function getWhenHandedOver(
   detail: ResponseDetail
 ): MedicationDispense["whenHandedOver"] | undefined {
-  if (!detail.soldDate) {
-    if (detail.dateWritten) {
-      return buildDayjs(detail.dateWritten).toISOString();
-    }
-    if (detail.lastFilledDate) {
-      return buildDayjs(detail.lastFilledDate).toISOString();
-    }
-    return undefined;
-  }
+  if (!detail.soldDate) return undefined;
   return buildDayjs(detail.soldDate).toISOString();
 }
 
@@ -115,9 +107,8 @@ function getMedicationDispensePerformer(pharmacy?: Organization): MedicationDisp
 }
 
 function getAuthorizingPrescription(
-  medicationRequest?: MedicationRequest
-): MedicationDispense["authorizingPrescription"] | undefined {
-  if (!medicationRequest) return undefined;
+  medicationRequest: MedicationRequest
+): MedicationDispense["authorizingPrescription"] {
   return [getMedicationRequestReference(medicationRequest)];
 }
 

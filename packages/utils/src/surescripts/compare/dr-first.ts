@@ -2,7 +2,7 @@ import { Command } from "commander";
 import fs from "fs";
 import path from "path";
 import { buildDayjs } from "@metriport/shared/common/date";
-import { Bundle } from "@medplum/fhirtypes";
+import { Bundle, MedicationRequest } from "@medplum/fhirtypes";
 import { dangerouslyDeduplicateFhir } from "@metriport/core/fhir-deduplication/deduplicate-fhir";
 import { HistoryData, historyPage } from "./history-table";
 import { Medication, Organization } from "@medplum/fhirtypes";
@@ -78,7 +78,10 @@ function getDrFirstHistoryData(nameId: string, drFirstOutput: DrFirstOutput): Hi
   drFirstOutput.medications.forEach(medication => {
     medication.fills.forEach(fill => {
       historyData.events.push({
-        date: buildDayjs(fill.dateWritten, "MM/DD/YYYY").toISOString(),
+        dateWritten: fill.dateWritten
+          ? buildDayjs(fill.dateWritten, "MM/DD/YYYY").toISOString()
+          : "",
+        soldDate: fill.soldDate,
         medicationName: medication.genericName,
         medicationNdc: medication.ndcId,
         daysSupply: fill.daysSupply,
@@ -88,7 +91,7 @@ function getDrFirstHistoryData(nameId: string, drFirstOutput: DrFirstOutput): Hi
   });
 
   historyData.events.sort((a, b) => {
-    const dateDiff = buildDayjs(a.date).diff(buildDayjs(b.date));
+    const dateDiff = buildDayjs(a.dateWritten).diff(buildDayjs(b.dateWritten));
     if (dateDiff === 0) {
       return a.medicationName.localeCompare(b.medicationName);
     }
@@ -100,14 +103,14 @@ function getDrFirstHistoryData(nameId: string, drFirstOutput: DrFirstOutput): Hi
     const nextEvent = historyData.events[i + 1];
     if (
       nextEvent &&
-      buildDayjs(event.date).isSame(buildDayjs(nextEvent.date)) &&
+      buildDayjs(event.dateWritten).isSame(buildDayjs(nextEvent.dateWritten)) &&
       event.medicationName == nextEvent.medicationName &&
       event.medicationNdc == nextEvent.medicationNdc &&
       event.daysSupply == nextEvent.daysSupply &&
       event.directions == nextEvent.directions
     ) {
-      // historyData.events.splice(i + 1, 1);
-      // i--;
+      historyData.events.splice(i + 1, 1);
+      i--;
     }
   }
 
@@ -143,21 +146,28 @@ function getMetriportHistoryData(nameId: string, metriportBundle: Bundle): Histo
   };
 
   const medicationMap = new Map<string, { name: string; ndc: string }>();
+  const medicationRequestMap = new Map<string, { authoredOn: string }>();
   const organizationMap = new Map<string, { name: string }>();
-  metriportBundle.entry?.forEach(entry => {
-    if (entry.resource?.resourceType === "Medication" && entry.resource.id) {
-      const medication = entry.resource as Medication;
+  metriportBundle.entry?.forEach(({ resource }) => {
+    if (resource?.resourceType === "Medication" && resource.id) {
+      const medication = resource as Medication;
       const ndc = medication.code?.coding?.find(
         c => c.system === "http://hl7.org/fhir/sid/ndc"
       )?.code;
-      medicationMap.set("Medication/" + entry.resource.id, {
+      medicationMap.set("Medication/" + resource.id, {
         name: medication.code?.text ?? "",
         ndc: ndc ?? "",
       });
     }
-    if (entry.resource?.resourceType === "Organization" && entry.resource.id) {
-      const organization = entry.resource as Organization;
-      organizationMap.set("Organization/" + entry.resource.id, { name: organization.name ?? "" });
+    if (resource?.resourceType === "Organization" && resource.id) {
+      const organization = resource as Organization;
+      organizationMap.set("Organization/" + resource.id, { name: organization.name ?? "" });
+    }
+    if (resource?.resourceType === "MedicationRequest" && resource.id) {
+      const medicationRequest = resource as MedicationRequest;
+      medicationRequestMap.set("MedicationRequest/" + resource.id, {
+        authoredOn: medicationRequest.authoredOn ?? "",
+      });
     }
   });
 
@@ -167,8 +177,13 @@ function getMetriportHistoryData(nameId: string, metriportBundle: Bundle): Histo
       if (!medication) {
         throw new Error(`Medication not found for ${resource.medicationReference?.reference}`);
       }
+      const medicationRequest = medicationRequestMap.get(
+        resource.authorizingPrescription?.[0].reference ?? ""
+      );
+
       historyData.events.push({
-        date: resource.whenHandedOver ?? "",
+        dateWritten: medicationRequest?.authoredOn ?? "",
+        soldDate: resource.whenHandedOver ?? "",
         medicationName: medication.name ?? "",
         medicationNdc: medication.ndc ?? "",
         daysSupply: resource.daysSupply?.value?.toString() ?? "",

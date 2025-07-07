@@ -6,7 +6,8 @@ export interface HistoryData {
 }
 
 export interface HistoryEvent {
-  date: string;
+  dateWritten: string;
+  soldDate: string;
   medicationName: string;
   medicationNdc: string;
   daysSupply?: string | number;
@@ -23,7 +24,7 @@ export function historyPage({ nameId, events }: HistoryData): string {
 
 export function historyTable(events: HistoryEvent[]): string {
   events.sort((a, b) => {
-    const dateDiff = buildDayjs(a.date).diff(buildDayjs(b.date));
+    const dateDiff = buildDayjs(a.dateWritten).diff(buildDayjs(b.dateWritten));
     if (dateDiff === 0) {
       return a.medicationName.localeCompare(b.medicationName);
     }
@@ -33,7 +34,8 @@ export function historyTable(events: HistoryEvent[]): string {
   const html: string[] = ["<table>"];
   html.push("<thead>");
   html.push("<tr>");
-  html.push("<th>Date</th>");
+  html.push("<th>Date Written</th>");
+  html.push("<th>Sold Date</th>");
   html.push("<th>Medication Name</th>");
   html.push("<th>Medication NDC</th>");
   html.push("<th>Days Supply</th>");
@@ -45,7 +47,8 @@ export function historyTable(events: HistoryEvent[]): string {
   html.push("<tbody>");
   events.forEach(event => {
     html.push("<tr>");
-    html.push("<td>", buildDayjs(event.date).format("YYYY-MM-DD"), "</td>");
+    html.push("<td>", buildDayjs(event.dateWritten).format("YYYY-MM-DD"), "</td>");
+    html.push("<td>", buildDayjs(event.soldDate).format("YYYY-MM-DD"), "</td>");
     html.push("<td>", event.medicationName, "</td>");
     html.push("<td>", event.medicationNdc, "</td>");
     html.push("<td>", event.daysSupply ? event.daysSupply.toString() : "", "</td>");
