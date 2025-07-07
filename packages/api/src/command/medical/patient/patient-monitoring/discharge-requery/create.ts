@@ -38,7 +38,7 @@ export const dischargeRequeryJobType = "discharge-requery";
 export async function createDischargeRequeryJob(
   props: CreateDischargeRequeryParams
 ): Promise<void> {
-  const { cxId, patientId } = props;
+  const { cxId, patientId, goals } = props;
   const { log } = out(`createDischargeRequeryJob - cx: ${cxId} pt: ${patientId}`);
 
   if (!(await isDischargeRequeryFeatureFlagEnabledForCx(cxId))) return;
@@ -72,6 +72,7 @@ export async function createDischargeRequeryJob(
         remainingAttempts
       );
       scheduledAt = pickEarliestScheduledAt(existingRequeryJob.scheduledAt, scheduledAt);
+      goals.push(...existingRequeryJob.paramsOps.goals);
 
       log(`cancelling existing job ${existingJob.id}`);
       await cancelPatientJob({
@@ -84,6 +85,7 @@ export async function createDischargeRequeryJob(
 
   const paramsOps: DischargeRequeryParamsOps = {
     remainingAttempts,
+    goals,
   };
   const newDischargeRequeryJob = await createPatientJob({
     cxId,

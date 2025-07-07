@@ -1,8 +1,15 @@
+import { getConsolidatedFile } from "@metriport/core/command/consolidated/consolidated-get";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
+import { findEncounterResources } from "@metriport/core/external/fhir/shared";
+import { isDocIdExtension } from "@metriport/core/external/fhir/shared/extensions/doc-id-extension";
+import { sendToSlack, SlackMessage } from "@metriport/core/external/slack/index";
 import { capture } from "@metriport/core/util";
+import { Config } from "@metriport/core/util/config";
 import { out } from "@metriport/core/util/log";
 import { JobEntryStatus } from "@metriport/shared/domain/job/types";
 import {
+  DischargeRequeryGoal,
+  DischargeRequeryGoals,
   dischargeRequeryRuntimeDataSchema,
   parseDischargeRequeryJob,
 } from "@metriport/shared/domain/patient/patient-monitoring/discharge-requery";
@@ -12,6 +19,14 @@ import { failPatientJob } from "../../../../job/patient/status/fail";
 import { updatePatientJobRuntimeData } from "../../../../job/patient/update/update-runtime-data";
 import { getPatientOrFail } from "../../get-patient";
 import { createDischargeRequeryJob, dischargeRequeryJobType } from "./create";
+
+type GoalBreakdown = {
+  goal: DischargeRequeryGoal;
+  status: "met" | "unmet" | "failed";
+  dischargeSummaryFilePath?: string;
+  reason?: string;
+  encounterIds?: string[];
+};
 
 /**
  * Finishes the discharge requery job.
@@ -103,6 +118,8 @@ export async function finishDischargeRequery({
   });
   const dischargeRequeryJob = parseDischargeRequeryJob(job);
 
+  const goalsBreakdown = await checkGoals(dischargeRequeryJob.paramsOps.goals, cxId, patientId);
+
   const remainingAttempts =
     status === "successful"
       ? dischargeRequeryJob.paramsOps.remainingAttempts - 1
@@ -122,8 +139,11 @@ export async function finishDischargeRequery({
           ...dischargeRequeryJob.runtimeData,
           downloadCount,
           convertCount,
+          metGoals: goalsBreakdown.metGoals,
+          failedGoals: goalsBreakdown.failedGoals,
         },
       });
+
       analytics({
         event: EventTypes.dischargeRequery,
         distinctId: cxId,
@@ -138,15 +158,122 @@ export async function finishDischargeRequery({
     }
   }
 
-  if (remainingAttempts > 0) {
+  if (remainingAttempts > 0 && goalsBreakdown.unmetGoals.length > 0) {
     await createDischargeRequeryJob({
       patientId,
       cxId,
       remainingAttempts,
+      goals: goalsBreakdown.unmetGoals.map(u => u.goal),
     });
     log(`Created a new discharge requery job with ${remainingAttempts} remaining attempts`);
     return;
   }
 
-  log(`No remaining attempts, discharge requery is complete.`);
+  log(
+    `Discharge requery is complete - ${
+      remainingAttempts < 1 ? "reached max attempts" : "all goals met"
+    }`
+  );
+}
+
+export async function checkGoals(
+  goals: DischargeRequeryGoals,
+  cxId: string,
+  patientId: string
+): Promise<{
+  unmetGoals: GoalBreakdown[];
+  failedGoals: GoalBreakdown[];
+  metGoals: GoalBreakdown[];
+}> {
+  const { log } = out(`checkGoals - cx ${cxId}, pt ${patientId}`);
+  log(`Checking goals: ${JSON.stringify(goals)}`);
+
+  const unmetGoals: GoalBreakdown[] = [];
+  const failedGoals: GoalBreakdown[] = [];
+  const metGoals: GoalBreakdown[] = [];
+
+  const consolidated = await getConsolidatedFile({
+    cxId,
+    patientId,
+  });
+
+  if (!consolidated.bundle) {
+    unmetGoals.push(
+      ...goals.map(goal => ({
+        goal,
+        status: "unmet" as const,
+        reason: "No consolidated file found",
+      }))
+    );
+    return { unmetGoals, failedGoals, metGoals };
+  }
+
+  const encounters = findEncounterResources(consolidated.bundle);
+  await Promise.all(
+    goals.map(async goal => {
+      const matchingEncounters = encounters.filter(e => e.period?.end === goal.encounterEndDate);
+
+      if (matchingEncounters.length === 0) {
+        unmetGoals.push({ goal, status: "unmet", reason: "No matching encounters found" });
+        return;
+      }
+
+      if (matchingEncounters.length > 1) {
+        const channelUrl = Config.getDischargeNotificationSlackUrl();
+        const encounterIds = matchingEncounters.flatMap(e => e.id ?? []);
+
+        const msg = "Multiple encounters found for the same date";
+        log(`${msg} for encounters: ${JSON.stringify(encounterIds)}`);
+        const message: SlackMessage = {
+          subject: msg,
+          message: JSON.stringify(encounterIds, null, 2),
+          emoji: ":peepo_hey:",
+        };
+
+        await sendToSlack(message, channelUrl);
+
+        failedGoals.push({
+          goal,
+          status: "failed",
+          reason: msg,
+          encounterIds,
+        });
+        return;
+      }
+
+      const dischargeEncounter = matchingEncounters[0];
+      const dischargeSummaryFilePath =
+        dischargeEncounter.meta?.source ??
+        dischargeEncounter.extension?.find(isDocIdExtension)?.valueString;
+
+      if (!dischargeSummaryFilePath) {
+        const msg = "Encounter resource missing source";
+        log(msg);
+        capture.message(msg, {
+          extra: {
+            cxId,
+            patientId,
+            encounterId: dischargeEncounter.id,
+          },
+          level: "warning",
+        });
+
+        failedGoals.push({ goal, status: "failed", reason: msg });
+        return;
+      }
+
+      const successReason = dischargeEncounter.hospitalization?.dischargeDisposition
+        ? "Discharge disposition found in encounter"
+        : "Matching encounter datetime";
+
+      metGoals.push({
+        goal,
+        status: "met",
+        dischargeSummaryFilePath,
+        reason: successReason,
+      });
+    })
+  );
+
+  return { unmetGoals, failedGoals, metGoals };
 }
