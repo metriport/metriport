@@ -1,25 +1,27 @@
-import { PatientJob } from "../../../domain/job/patient-job";
 import { z } from "zod";
+import { PatientJob } from "../../../domain/job/patient-job";
 import { defaultRemainingAttempts } from "./utils";
 
 export const remainingAttemptsSchema = z.number().max(defaultRemainingAttempts);
-export const dischargeRequeryGoalSchema = z.object({ encounterEndDate: z.string() });
-export const dischargeRequeryGoalsSchema = z.array(dischargeRequeryGoalSchema);
-export type DischargeRequeryGoal = z.infer<typeof dischargeRequeryGoalSchema>;
-export type DischargeRequeryGoals = z.infer<typeof dischargeRequeryGoalsSchema>;
+export const dischargeDataSchema = z.object({
+  encounterEndDate: z.string(),
+  type: z.enum(["findDischargeSummary"]),
+});
+export type DischargeData = z.infer<typeof dischargeDataSchema>;
+export const multipleDischargeDataSchema = z.array(dischargeDataSchema);
 
 export const createDischargeRequeryParamsSchema = z.object({
   patientId: z.string(),
   cxId: z.string(),
   remainingAttempts: remainingAttemptsSchema.optional(),
-  goals: dischargeRequeryGoalsSchema,
+  dischargeData: multipleDischargeDataSchema,
 });
 
 export type CreateDischargeRequeryParams = z.infer<typeof createDischargeRequeryParamsSchema>;
 
 export const dischargeRequeryParamsOpsSchema = z.object({
   remainingAttempts: remainingAttemptsSchema,
-  goals: dischargeRequeryGoalsSchema,
+  dischargeData: multipleDischargeDataSchema,
 });
 
 export type DischargeRequeryParamsOps = z.infer<typeof dischargeRequeryParamsOpsSchema>;

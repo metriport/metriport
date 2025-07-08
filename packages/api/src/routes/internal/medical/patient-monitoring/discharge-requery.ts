@@ -1,4 +1,4 @@
-import { dischargeRequeryGoalsSchema } from "@metriport/shared/domain/patient/patient-monitoring/discharge-requery";
+import { multipleDischargeDataSchema } from "@metriport/shared/domain/patient/patient-monitoring/discharge-requery";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
@@ -24,9 +24,9 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const patientId = getUUIDFrom("query", req, "patientId").orFail();
-    const goals = dischargeRequeryGoalsSchema.parse(req.body);
+    const dischargeData = multipleDischargeDataSchema.parse(req.body);
 
-    await createDischargeRequeryJob({ cxId, patientId, goals });
+    await createDischargeRequeryJob({ cxId, patientId, dischargeData });
 
     return res.sendStatus(httpStatus.OK);
   })

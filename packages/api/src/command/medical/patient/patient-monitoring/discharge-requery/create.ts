@@ -12,6 +12,7 @@ import {
   pickLargestRemainingAttempts,
 } from "@metriport/shared/domain/patient/patient-monitoring/utils";
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
+import _ from "lodash";
 import { capture } from "../../../../../shared/notifications";
 import { createPatientJob } from "../../../../job/patient/create";
 import { getPatientJobs } from "../../../../job/patient/get";
@@ -38,7 +39,7 @@ export const dischargeRequeryJobType = "discharge-requery";
 export async function createDischargeRequeryJob(
   props: CreateDischargeRequeryParams
 ): Promise<void> {
-  const { cxId, patientId, goals } = props;
+  const { cxId, patientId, dischargeData } = props;
   const { log } = out(`createDischargeRequeryJob - cx: ${cxId} pt: ${patientId}`);
 
   if (!(await isDischargeRequeryFeatureFlagEnabledForCx(cxId))) return;
@@ -72,7 +73,7 @@ export async function createDischargeRequeryJob(
         remainingAttempts
       );
       scheduledAt = pickEarliestScheduledAt(existingRequeryJob.scheduledAt, scheduledAt);
-      goals.push(...existingRequeryJob.paramsOps.goals);
+      dischargeData.push(...existingRequeryJob.paramsOps.goals);
 
       log(`cancelling existing job ${existingJob.id}`);
       await cancelPatientJob({
@@ -85,7 +86,7 @@ export async function createDischargeRequeryJob(
 
   const paramsOps: DischargeRequeryParamsOps = {
     remainingAttempts,
-    goals,
+    dischargeData: _.uniqBy(dischargeData, "encounterEndDate"),
   };
   const newDischargeRequeryJob = await createPatientJob({
     cxId,

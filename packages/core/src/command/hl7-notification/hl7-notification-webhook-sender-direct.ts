@@ -1,6 +1,7 @@
 import { Hl7Message } from "@medplum/core";
 import { Bundle, CodeableConcept, Resource } from "@medplum/fhirtypes";
 import { executeWithNetworkRetries } from "@metriport/shared";
+import { DischargeData } from "@metriport/shared/domain/patient/patient-monitoring/discharge-requery";
 import axios from "axios";
 import dayjs from "dayjs";
 import { S3Utils } from "../../external/aws/s3";
@@ -145,7 +146,9 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
 
     log(`Sending Discharge Requery kickoff...`);
     if (triggerEvent === dischargeEventCode) {
-      const goals = encounterPeriod?.end ? [{ endDate: encounterPeriod.end }] : [];
+      const goals: DischargeData[] = encounterPeriod?.end
+        ? [{ type: "findDischargeSummary", encounterEndDate: encounterPeriod.end }]
+        : [];
 
       const params = {
         cxId,
