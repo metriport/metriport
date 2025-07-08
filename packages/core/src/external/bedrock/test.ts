@@ -1,35 +1,54 @@
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 // import { BedrockAgent } from "./agent/agent";
-import { BedrockClient } from "./client";
-import { InvokeRequest, InvokeResponse, InvokeToolCall } from "./types";
+import { ClaudeSonnet, ClaudeSonnetRequest, ClaudeSonnetResponse } from "./model/claude-sonnet";
+import { InvokeToolCall } from "./types";
 
 async function main() {
-  // const agent = new BedrockAgent(
-  //   new BedrockClient({
-  //     region: "us-east-2",
-  //     model: AnthropicModel.CLAUDE_3_5_SONNET,
-  //   }),
-  //   {
-  //     systemPrompt:
-  //       "Your role is to choose an extraction tool from the provided tools, and call them with substrings of medical text provided by the user. " +
-  //       "The extraction tools are specialized in tagging the text with medical codes. " +
-  //       "You should pass this text without modification to the appropriate tool for detailed extraction. " +
-  //       "Do not produce any output or tell me what you are doing. ",
-  //   }
-  // );
+  const model = new ClaudeSonnet("3.7", "us-west-2");
 
-  // const response2 = await agent.invokeWithUserMessage(
-  //   "Extract medication information from the provided medical text."
-  // );
-  // console.log(response2);
-
-  const client = new BedrockClient({
-    model: "us.anthropic.claude-3-5-sonnet-20241022-v2:0",
-    region: "us-west-2",
+  const convo = await model.invoke({
+    max_tokens: 1000,
+    temperature: 0,
+    system: "You are a helpful assistant.",
+    messages: [
+      {
+        role: "user",
+        content: [{ type: "text", text: "Hello, how are you?" }],
+      },
+      {
+        role: "assistant",
+        content: [
+          {
+            type: "text",
+            text: "I'm doing great, thank you for asking!",
+          },
+        ],
+      },
+      {
+        role: "user",
+        content: [{ type: "text", text: "What is the capital of France?" }],
+      },
+    ],
+    tools: [
+      {
+        type: "custom",
+        name: "get_capital",
+        description: "Get the capital of a given country.",
+        input_schema: zodToJsonSchema(
+          z.object({
+            country: z.string(),
+          })
+        ),
+      },
+    ],
   });
-  let response: InvokeResponse | undefined = undefined;
-  const messages: InvokeRequest["messages"] = [
+
+  console.log(JSON.stringify(convo, null, 2));
+  if (convo != null) return;
+
+  let response: ClaudeSonnetResponse | undefined = undefined;
+  const messages: ClaudeSonnetRequest["messages"] = [
     {
       role: "user",
       content: [
@@ -41,7 +60,7 @@ async function main() {
     },
   ];
 
-  await client.invokeModel({
+  await model.invoke({
     max_tokens: 1000,
     temperature: 0,
     system: "You are a helpful assistant.",
@@ -60,7 +79,7 @@ async function main() {
 
   let iterations = 0;
   do {
-    response = await client.invokeModel({
+    response = await model.invoke({
       max_tokens: 1000,
       temperature: 0,
       system:

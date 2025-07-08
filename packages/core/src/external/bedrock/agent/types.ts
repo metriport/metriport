@@ -1,8 +1,9 @@
-import { InvokeResponse, InvokeToolCall, BedrockConfig } from "../types";
+import { InvokeToolCall, BedrockRegion } from "../types";
 import type { BedrockTool } from "./tool";
 import { z } from "zod";
 
-export interface BedrockAgentConfig extends BedrockConfig {
+export interface BedrockAgentConfig {
+  region: BedrockRegion;
   systemPrompt: string;
   tools?: BedrockTool[];
   maxTokens?: number;
@@ -15,8 +16,8 @@ export interface BedrockToolConfig<T> {
   inputSchema: z.ZodSchema<T>;
 }
 
-export interface BedrockAgentResponse {
-  response: InvokeResponse;
+export interface BedrockAgentResponse<R = unknown> {
+  response: R;
   toolCall?: InvokeToolCall;
   toolResult?: unknown;
   toolError?: unknown;
