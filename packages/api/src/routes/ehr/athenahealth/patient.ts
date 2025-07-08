@@ -3,7 +3,7 @@ import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
-import { syncAthenaPatientIntoMetriport } from "../../../external/ehr/athenahealth/command/sync-patient";
+import { syncPatient } from "../../../external/ehr/shared/command/sync/sync-patient";
 import {
   getLatestResourceDiffBundlesJobPayload,
   getResourceDiffBundlesJobPayload,
@@ -33,11 +33,12 @@ router.get(
     const athenaPatientId = getFrom("params").orFail("id", req);
     const athenaPracticeId = getFromQueryOrFail("practiceId", req);
     const athenaDepartmentId = getFromQueryOrFail("departmentId", req);
-    const patientId = await syncAthenaPatientIntoMetriport({
+    const patientId = await syncPatient({
+      ehr: EhrSources.athena,
       cxId,
-      athenaPracticeId,
-      athenaPatientId,
-      athenaDepartmentId,
+      practiceId: athenaPracticeId,
+      ehrPatientId: athenaPatientId,
+      departmentId: athenaDepartmentId,
     });
     return res.status(httpStatus.OK).json(patientId);
   })
@@ -63,8 +64,8 @@ router.post(
     const athenaDepartmentId = getFromQueryOrFail("departmentId", req);
     const patientId = await syncAthenaPatientIntoMetriport({
       cxId,
-      athenaPracticeId,
-      athenaPatientId,
+      practiceId: athenaPracticeId,
+      ehrPatientId: athenaPatientId,
       athenaDepartmentId,
     });
     return res.status(httpStatus.OK).json(patientId);
