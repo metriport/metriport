@@ -13,6 +13,7 @@ import { dangerouslyDeduplicateFhir } from "@metriport/core/fhir-deduplication/d
 const program = new Command();
 const CX_ID = process.env.TARGET_COMPARISON_CX_ID ?? "";
 const FACILITY_ID = process.env.TARGET_COMPARISON_FACILITY_ID ?? "";
+const CSV_PATH = process.env.TARGET_COMPARISON_CSV ?? "";
 
 program
   .name("convert-dr-first")
@@ -27,7 +28,7 @@ program
     const nameIdMapping = Object.fromEntries(
       Object.entries(patientIdMapping).map(([k, v]) => [v, k])
     );
-    const transmissions = await getTransmissionsFromCsv(CX_ID, buildCsvPath("wellpath_round2.csv"));
+    const transmissions = await getTransmissionsFromCsv(CX_ID, buildCsvPath(CSV_PATH));
 
     for (const { transmissionId, patientId } of transmissions) {
       const transmissionIds = await getAllConversionBundleJobIds(CX_ID, patientId);
@@ -50,13 +51,7 @@ program
       const bundle = buildBundle({ type: "collection", entries });
       dangerouslyDeduplicateFhir(bundle, CX_ID, patientId);
       await writeLatestConversionBundle(CX_ID, patientId, bundle);
-
-      console.log("Done converting and deduplicating");
       const nameId = nameIdMapping[patientId];
-      if (!nameId) {
-        console.log("No nameId");
-        continue;
-      }
       writeLocalBundle(nameId, bundle);
       console.log(`Wrote bundle to local directory`);
     }
