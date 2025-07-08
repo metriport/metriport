@@ -5,7 +5,7 @@ import { ClaudeSonnet, ClaudeSonnetRequest, ClaudeSonnetResponse } from "./model
 import { InvokeToolCall } from "./types";
 
 async function main() {
-  const model = new ClaudeSonnet("3.7", "us-west-2");
+  const model = new ClaudeSonnet("4", "us-west-2");
 
   const convo = await model.invoke({
     max_tokens: 1000,
