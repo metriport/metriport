@@ -20,6 +20,7 @@ async function main() {
 
   const patientIdMap = getPatientIdMapping();
   const nameIds = getDrFirstOutputNameIds();
+  const responsePbmCount = new Map<string, number>();
 
   const csvOutput: Array<Array<string | number>> = [
     ["nameId", "drFirstMedications", "drFirstFills", "metriportMedications", "metriportFills"],
@@ -33,7 +34,7 @@ async function main() {
     dangerouslyDeduplicateFhir(metriportBundle, CX_ID, patientId);
     writeDrFirstHtml(nameId, drFirstOutput);
     writeMetriportHtml(nameId, metriportBundle);
-    const drFirstStatistics = computeDrFirstStatistics(drFirstOutput);
+    const drFirstStatistics = computeDrFirstStatistics(drFirstOutput, responsePbmCount);
     const metriportStatistics = computeMetriportStatistics(metriportBundle);
     csvOutput.push([
       nameId,
@@ -43,6 +44,8 @@ async function main() {
       metriportStatistics.fills,
     ]);
   }
+
+  console.log(responsePbmCount);
   fs.writeFileSync(
     path.join(DR_FIRST_DIR, "count.csv"),
     csvOutput.map(row => row.join(",")).join("\n"),
@@ -50,15 +53,26 @@ async function main() {
   );
 }
 
-function computeDrFirstStatistics(drFirstOutput: DrFirstOutput) {
+function computeDrFirstStatistics(
+  drFirstOutput: DrFirstOutput,
+  responsePbmCount: Map<string, number>
+) {
   let totalFills = 0;
   const seenFill = new Set<string>();
   drFirstOutput.medications.forEach(medication => {
     medication.fills.forEach(fill => {
-      const fillKey = `${fill.dateWritten}-${fill.sig}-${fill.daysSupply}-${fill.drugName}`;
+      const fillKey = `${fill.dateWritten}-${fill.soldDate ?? fill.fillDate}-${fill.sig}-${
+        fill.daysSupply
+      }-${fill.drugName}`;
       if (!seenFill.has(fillKey)) {
         totalFills++;
         seenFill.add(fillKey);
+        if (fill.responsePbmName) {
+          responsePbmCount.set(
+            fill.responsePbmName,
+            (responsePbmCount.get(fill.responsePbmName) ?? 0) + 1
+          );
+        }
       }
     });
   });
@@ -66,6 +80,7 @@ function computeDrFirstStatistics(drFirstOutput: DrFirstOutput) {
   const statistics = {
     medications: drFirstOutput.medications.length,
     fills: totalFills,
+    responsePbmCount: Object.fromEntries(responsePbmCount),
   };
   return statistics;
 }
@@ -81,7 +96,11 @@ function getDrFirstHistoryData(nameId: string, drFirstOutput: DrFirstOutput): Hi
         dateWritten: fill.dateWritten
           ? buildDayjs(fill.dateWritten, "MM/DD/YYYY").toISOString()
           : "",
-        soldDate: fill.soldDate,
+        soldDate: fill.soldDate
+          ? buildDayjs(fill.soldDate, "MM/DD/YYYY").toISOString()
+          : fill.fillDate
+          ? buildDayjs(fill.fillDate, "MM/DD/YYYY").toISOString()
+          : "",
         medicationName: medication.genericName,
         medicationNdc: medication.ndcId,
         daysSupply: fill.daysSupply,
@@ -191,7 +210,7 @@ function getMetriportHistoryData(nameId: string, metriportBundle: Bundle): Histo
       }
 
       if (!medicationRequest?.authoredOn) {
-        console.log("missing authored on", medicationRequest);
+        // console.log("missing authored on", nameId, medicationRequest);
       }
 
       historyData.events.push({
