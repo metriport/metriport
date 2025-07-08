@@ -1,6 +1,5 @@
 import { PatientDemoData } from "@metriport/core/domain/patient";
 import HealthieApi from "@metriport/core/external/ehr/healthie";
-import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import {
@@ -20,19 +19,13 @@ import {
   deleteTokenBasedOnExpBySourceAndData,
   findOrCreateJwtToken,
 } from "../../../../command/jwt-token";
-import { findOrCreatePatientMapping, getPatientMapping } from "../../../../command/mapping/patient";
-import { queryDocumentsAcrossHIEs } from "../../../../command/medical/document/document-query";
 import {
   getPatientByDemo,
-  getPatientOrFail,
   PatientWithIdentifiers,
 } from "../../../../command/medical/patient/get-patient";
 import { Config } from "../../../../shared/config";
-import {
-  handleMetriportSync,
-  HandleMetriportSyncParams,
-  isDqCooldownExpired,
-} from "../../shared/utils/patient";
+import { SyncPatientParamsWithPracticeId } from "../../shared/command/sync/sync-patient";
+import { handleMetriportSync, HandleMetriportSyncParams } from "../../shared/utils/patient";
 import { createAddresses, createContacts, createHealthieClient, createNames } from "../shared";
 
 dayjs.extend(duration);
@@ -40,78 +33,27 @@ dayjs.extend(duration);
 export const longDurationTokenDuration = dayjs.duration(1, "year");
 export const shortDurationTokenDuration = dayjs.duration(10, "hours");
 
-export type SyncHealthiePatientIntoMetriportParams = {
-  cxId: string;
-  healthiePracticeId: string;
-  healthiePatientId: string;
-  api?: HealthieApi;
-  triggerDq?: boolean;
-  triggerDqForExistingPatient?: boolean;
-};
-
 export async function syncHealthiePatientIntoMetriport({
   cxId,
-  healthiePracticeId,
-  healthiePatientId,
-  api,
-  triggerDq = false,
-  triggerDqForExistingPatient = false,
-}: SyncHealthiePatientIntoMetriportParams): Promise<string> {
-  const existingPatient = await getPatientMapping({
-    cxId,
-    externalId: healthiePatientId,
-    source: EhrSources.healthie,
-  });
-  if (existingPatient) {
-    const metriportPatient = await getPatientOrFail({
-      cxId,
-      id: existingPatient.patientId,
-    });
-    if (triggerDqForExistingPatient && isDqCooldownExpired(metriportPatient)) {
-      queryDocumentsAcrossHIEs({
-        cxId,
-        patientId: metriportPatient.id,
-      }).catch(processAsyncError(`Healthie queryDocumentsAcrossHIEs`));
-    }
-    const metriportPatientId = metriportPatient.id;
-    await updateHealthiePatientQuickNotes({
-      cxId,
-      healthiePracticeId,
-      healthiePatientId,
-    });
-    return metriportPatientId;
-  }
-
-  const healthieApi = api ?? (await createHealthieClient({ cxId, practiceId: healthiePracticeId }));
-  const healthiePatient = await healthieApi.getPatient({ cxId, patientId: healthiePatientId });
+  practiceId,
+  ehrPatientId,
+}: SyncPatientParamsWithPracticeId): Promise<string> {
+  const healthieApi = await createHealthieClient({ cxId, practiceId });
+  const healthiePatient = await healthieApi.getPatient({ cxId, patientId: ehrPatientId });
   const demographics = createMetriportPatientDemographics(healthiePatient);
   const metriportPatient = await getOrCreateMetriportPatient({
     cxId,
-    practiceId: healthiePracticeId,
+    practiceId,
     demographics,
-    externalId: healthiePatientId,
+    externalId: ehrPatientId,
   });
   const metriportPatientId = metriportPatient.id;
-  if (triggerDq) {
-    queryDocumentsAcrossHIEs({
-      cxId,
-      patientId: metriportPatientId,
-    }).catch(processAsyncError(`Healthie queryDocumentsAcrossHIEs`));
-  }
-  await Promise.all([
-    findOrCreatePatientMapping({
-      cxId,
-      patientId: metriportPatientId,
-      externalId: healthiePatientId,
-      source: EhrSources.healthie,
-    }),
-    updateHealthiePatientQuickNotes({
-      cxId,
-      healthiePracticeId,
-      healthiePatientId,
-      healthieApi,
-    }),
-  ]);
+  await updateHealthiePatientQuickNotes({
+    cxId,
+    healthiePracticeId: practiceId,
+    healthiePatientId: ehrPatientId,
+    healthieApi,
+  });
   return metriportPatientId;
 }
 
