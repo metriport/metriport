@@ -472,6 +472,7 @@ class HealthieApi {
       labOrders(
         client_id: $client_id
         status_filter: $status_filter
+        page_size: ${defaultCountOrLimit}
       ) {
         id
         status
@@ -496,7 +497,7 @@ class HealthieApi {
         }
       }
     }`;
-    const variables = { userId: patientId };
+    const variables = { client_id: patientId, status_filter: "completed" };
 
     const labOrdersGraphqlResponse = await this.makeRequest<LabOrdersGraphql>({
       cxId,
@@ -582,7 +583,7 @@ class HealthieApi {
       }
     }
     const bundle = await fetchEhrBundleUsingCache({
-      ehr: EhrSources.canvas,
+      ehr: EhrSources.healthie,
       cxId,
       metriportPatientId,
       ehrPatientId: healthiePatientId,
@@ -994,7 +995,7 @@ class HealthieApi {
     patientId: string,
     condition: Condition
   ): ConditionFhir | undefined {
-    if (!condition.active || !condition.icd_code?.code) return undefined;
+    if (!condition.icd_code?.code) return undefined;
     if (!condition.first_symptom_date && !condition.end_date) return undefined;
     return {
       resourceType: "Condition",
@@ -1031,7 +1032,7 @@ class HealthieApi {
   private convertLabOrdersToFhir(patientId: string, labOrder: LabOrder): Observation[] | undefined {
     const testDate = labOrder.test_date;
     if (!labOrder.status || !testDate || labOrder.lab_results.length < 1) return undefined;
-    const isFinal = labOrder.status === "final";
+    const isFinal = labOrder.status === "completed";
     if (!isFinal) return undefined;
     return labOrder.lab_results.flatMap(labResult => {
       if (!labResult.lab_observation_requests || labResult.lab_observation_requests.length < 1) {
