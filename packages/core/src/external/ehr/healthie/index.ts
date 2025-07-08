@@ -890,7 +890,6 @@ class HealthieApi {
     patientId: string,
     medication: Medication
   ): MedicationStatement | undefined {
-    if (!medication.active) return undefined;
     if (!medication.name && !medication.code) return undefined;
     if (!medication.start_date && !medication.end_date) return undefined;
     const isCompleted =
