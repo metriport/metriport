@@ -1,7 +1,7 @@
 import { Encounter } from "@medplum/fhirtypes";
 import { getConsolidatedFile } from "@metriport/core/command/consolidated/consolidated-get";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
-import { findEncounterResources } from "@metriport/core/external/fhir/shared";
+import { findEncounterResources } from "@metriport/core/external/fhir/shared/index";
 import { isDocIdExtension } from "@metriport/core/external/fhir/shared/extensions/doc-id-extension";
 import { sendToSlack, SlackMessage } from "@metriport/core/external/slack/index";
 import { capture } from "@metriport/core/util";
@@ -243,7 +243,7 @@ function getPotentiallyMatchingEncounters(encounters: Encounter[], discharge: Di
   return encounters.filter(e => e.period?.end === discharge.encounterEndDate);
 }
 
-async function processDischargeData(
+export async function processDischargeData(
   encounters: Encounter[],
   discharge: DischargeData,
   log: typeof console.log

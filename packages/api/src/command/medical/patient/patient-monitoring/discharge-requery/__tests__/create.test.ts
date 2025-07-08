@@ -53,7 +53,7 @@ describe("createDischargeRequeryJob", () => {
     await createDischargeRequeryJob({
       cxId,
       patientId,
-      goals: [],
+      dischargeData: [],
     });
 
     expect(createPatientJobMock).toHaveBeenCalledWith(
@@ -83,7 +83,7 @@ describe("createDischargeRequeryJob", () => {
     await createDischargeRequeryJob({
       cxId,
       patientId,
-      goals: [],
+      dischargeData: [],
     });
 
     expect(cancelPatientJobMock).toHaveBeenCalledWith(
@@ -116,7 +116,7 @@ describe("createDischargeRequeryJob", () => {
     await createDischargeRequeryJob({
       cxId,
       patientId,
-      goals: [],
+      dischargeData: [],
     });
 
     expect(cancelPatientJobMock).toHaveBeenCalledWith(
