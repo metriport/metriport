@@ -73,7 +73,7 @@ export async function createDischargeRequeryJob(
         remainingAttempts
       );
       scheduledAt = pickEarliestScheduledAt(existingRequeryJob.scheduledAt, scheduledAt);
-      dischargeData.push(...existingRequeryJob.paramsOps.goals);
+      dischargeData.push(...existingRequeryJob.paramsOps.dischargeData);
 
       log(`cancelling existing job ${existingJob.id}`);
       await cancelPatientJob({
