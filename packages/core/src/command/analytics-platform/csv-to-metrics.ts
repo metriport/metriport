@@ -1,5 +1,4 @@
 import { BatchUtils } from "../../external/aws/batch";
-import { getSnowflakeCreds } from "../../external/snowflake/creds";
 import { Config } from "../../util/config";
 
 export async function startCsvToMetricsBatchJob({ cxId, jobId }: { cxId: string; jobId: string }) {
@@ -10,7 +9,7 @@ export async function startCsvToMetricsBatchJob({ cxId, jobId }: { cxId: string;
     throw new Error("Job queue or definition ARN is not set");
   }
 
-  const snowflakeCreds = getSnowflakeCreds();
+  const snowflakeCreds = Config.getSnowflakeCreds();
 
   const batch = new BatchUtils(Config.getAWSRegion());
 

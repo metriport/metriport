@@ -243,7 +243,9 @@ export const config: EnvConfigNonSandbox = {
     snowflake: {
       warehouse: "test-warehouse",
       role: "test-role",
-      integration: "test-integration",
+      integrationName: "test-integration",
+      integrationUserArn: "arn:aws:iam::000000000000:role/SnowflakeIntegrationRole",
+      integrationExternalId: "000000000000",
     },
   },
 };

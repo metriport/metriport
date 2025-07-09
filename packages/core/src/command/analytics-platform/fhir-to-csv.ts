@@ -1,5 +1,4 @@
 import { BatchUtils } from "@metriport/core/external/aws/batch";
-import { getSnowflakeCreds } from "../../external/snowflake/creds";
 import { Config } from "../../util/config";
 
 export async function startFhirToCsvBatchJob({ cxId, jobId }: { cxId: string; jobId: string }) {
@@ -10,7 +9,7 @@ export async function startFhirToCsvBatchJob({ cxId, jobId }: { cxId: string; jo
     throw new Error("Job queue or definition ARN is not set");
   }
 
-  const snowflakeCreds = getSnowflakeCreds();
+  const snowflakeCreds = Config.getSnowflakeCreds();
 
   const batch = new BatchUtils(Config.getAWSRegion());
 

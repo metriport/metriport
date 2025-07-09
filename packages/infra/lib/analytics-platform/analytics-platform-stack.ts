@@ -3,6 +3,7 @@ import * as batch from "aws-cdk-lib/aws-batch";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as ecr from "aws-cdk-lib/aws-ecr";
 import * as ecs from "aws-cdk-lib/aws-ecs";
+import * as iam from "aws-cdk-lib/aws-iam";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import { Construct } from "constructs";
 import { EnvConfigNonSandbox } from "../../config/env-config";
@@ -59,6 +60,43 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       publicReadAccess: false,
       encryption: s3.BucketEncryption.S3_MANAGED,
       versioned: true,
+    });
+
+    // Snowflake access via S3 Integration https://docs.snowflake.com/en/user-guide/data-load-s3-config-storage-integration
+    const snowflakePrefix = "snowflake";
+    const s3Policy = new iam.Policy(this, "SnowflakeAnalyticsPlatformS3Policy", {
+      statements: [
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: [
+            "s3:PutObject",
+            "s3:GetObject",
+            "s3:GetObjectVersion",
+            "s3:DeleteObject",
+            "s3:DeleteObjectVersion",
+          ],
+          resources: [analyticsPlatformBucket.bucketArn + "/" + snowflakePrefix + "/*"],
+        }),
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: ["s3:ListBucket", "s3:GetBucketLocation"],
+          resources: [analyticsPlatformBucket.bucketArn],
+          conditions: {
+            StringLike: {
+              "s3:prefix": [`${snowflakePrefix}/*`],
+            },
+          },
+        }),
+      ],
+    });
+    new iam.Role(this, "SnowflakeIntegrationRole", {
+      assumedBy: new iam.AccountPrincipal(
+        props.config.analyticsPlatform.snowflake.integrationUserArn
+      ),
+      externalIds: [props.config.analyticsPlatform.snowflake.integrationExternalId],
+      inlinePolicies: {
+        SnowflakeAnalyticsPlatformS3Policy: s3Policy.document,
+      },
     });
 
     const analyticsPlatformRepository = new ecr.Repository(this, "AnalyticsPlatformRepository", {
@@ -146,7 +184,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
         OUTPUT_S3_BUCKET: ownProps.analyticsPlatformBucket.bucketName,
         SNOWFLAKE_ROLE: ownProps.config.analyticsPlatform.snowflake.role,
         SNOWFLAKE_WAREHOUSE: ownProps.config.analyticsPlatform.snowflake.warehouse,
-        SNOWFLAKE_INTEGRATION: ownProps.config.analyticsPlatform.snowflake.integration,
+        SNOWFLAKE_INTEGRATION: ownProps.config.analyticsPlatform.snowflake.integrationName,
       },
     });
 

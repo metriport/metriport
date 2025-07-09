@@ -1,4 +1,5 @@
 import { getEnvVarAsRecordOrFail } from "@metriport/shared/common/env-var";
+import { SnowflakeCreds, snowflakeCredsSchema } from "../external/snowflake/creds";
 import { getEnvVar, getEnvVarOrFail } from "./env-var";
 
 /**
@@ -347,7 +348,7 @@ export class Config {
   static getCsvToMetricsBatchJobDefinitionArn(): string | undefined {
     return getEnvVar("CSV_TO_METRICS_BATCH_JOB_DEFINITION_ARN");
   }
-  static getSnowflakeCreds(): Record<string, string> {
-    return getEnvVarAsRecordOrFail("SNOWFLAKE_CREDS");
+  static getSnowflakeCreds(): SnowflakeCreds {
+    return snowflakeCredsSchema.parse(getEnvVarAsRecordOrFail("SNOWFLAKE_CREDS"));
   }
 }

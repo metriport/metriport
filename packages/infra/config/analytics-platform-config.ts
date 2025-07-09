@@ -6,6 +6,8 @@ export interface AnalyticsPlatformConfig {
   snowflake: {
     warehouse: string;
     role: string;
-    integration: string;
+    integrationName: string;
+    integrationUserArn: string;
+    integrationExternalId: string;
   };
 }
