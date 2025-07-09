@@ -8,7 +8,6 @@ import {
   aws_wafv2 as wafv2,
 } from "aws-cdk-lib";
 import * as apig from "aws-cdk-lib/aws-apigateway";
-import { IQueue } from "aws-cdk-lib/aws-sqs";
 import { BackupResource } from "aws-cdk-lib/aws-backup";
 import * as cert from "aws-cdk-lib/aws-certificatemanager";
 import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
@@ -29,8 +28,10 @@ import * as s3 from "aws-cdk-lib/aws-s3";
 import * as secret from "aws-cdk-lib/aws-secretsmanager";
 import * as sns from "aws-cdk-lib/aws-sns";
 import { ITopic } from "aws-cdk-lib/aws-sns";
+import { IQueue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
-import { EnvConfig, EnvConfigNonSandbox, EnvConfigSandbox } from "../config/env-config";
+import { EnvConfig, EnvConfigSandbox } from "../config/env-config";
+import { AnalyticsPlatformsNestedStack } from "./analytics-platform/analytics-platform-stack";
 import { AlarmSlackBot } from "./api-stack/alarm-slack-chatbot";
 import { createScheduledAPIQuotaChecker } from "./api-stack/api-quota-checker";
 import { createAPIService } from "./api-stack/api-service";
@@ -63,7 +64,6 @@ import { provideAccessToQueue } from "./shared/sqs";
 import { isProd, isSandbox } from "./shared/util";
 import { wafRules } from "./shared/waf-rules";
 import { SurescriptsNestedStack } from "./surescripts/surescripts-stack";
-import { AnalyticsPlatformsNestedStack } from "./analytics-platform/analytics-platform-stack";
 
 const FITBIT_LAMBDA_TIMEOUT = Duration.seconds(60);
 
@@ -512,7 +512,7 @@ export class APIStack extends Stack {
         this,
         "AnalyticsPlatformsNestedStack",
         {
-          config: props.config as EnvConfigNonSandbox,
+          config: props.config,
           vpc: this.vpc,
           medicalDocumentsBucket,
         }

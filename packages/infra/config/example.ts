@@ -235,5 +235,16 @@ export const config: EnvConfigNonSandbox = {
     startScheduledPatientJobsScheduleExpression: "0/5 * * * ? *",
     startScheduledPatientJobsSchedulerUrl: "/internal/patient/job/scheduler/start",
   },
+  analyticsPlatform: {
+    bucketName: "test-bucket",
+    secrets: {
+      SNOWFLAKE_CREDS: "your-snowflake-creds-as-json",
+    },
+    snowflake: {
+      warehouse: "test-warehouse",
+      role: "test-role",
+      integration: "test-integration",
+    },
+  },
 };
 export default config;

@@ -59,12 +59,6 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       publicReadAccess: false,
       encryption: s3.BucketEncryption.S3_MANAGED,
       versioned: true,
-      cors: [
-        {
-          allowedOrigins: ["*"],
-          allowedMethods: [s3.HttpMethods.GET],
-        },
-      ],
     });
 
     const analyticsPlatformRepository = new ecr.Repository(this, "AnalyticsPlatformRepository", {
@@ -150,9 +144,9 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
         AWS_REGION: ownProps.awsRegion,
         INPUT_S3_BUCKET: ownProps.medicalDocumentsBucket.bucketName,
         OUTPUT_S3_BUCKET: ownProps.analyticsPlatformBucket.bucketName,
-        SNOWFLAKE_ROLE: ownProps.config.analyticsPlatform.snowflake.snowflakeRole,
-        SNOWFLAKE_WAREHOUSE: ownProps.config.analyticsPlatform.snowflake.snowflakeWarehouse,
-        SNOWFLAKE_INTEGRATION: ownProps.config.analyticsPlatform.snowflake.snowflakeIntegration,
+        SNOWFLAKE_ROLE: ownProps.config.analyticsPlatform.snowflake.role,
+        SNOWFLAKE_WAREHOUSE: ownProps.config.analyticsPlatform.snowflake.warehouse,
+        SNOWFLAKE_INTEGRATION: ownProps.config.analyticsPlatform.snowflake.integration,
       },
     });
 
@@ -201,8 +195,8 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       environment: {
         ENV: ownProps.envType,
         DBT_TARGET: ownProps.envType === EnvType.production ? "prod" : "dev",
-        DBT_SNOWFLAKE_CI_ROLE: ownProps.config.analyticsPlatform.snowflake.snowflakeRole,
-        DBT_SNOWFLAKE_CI_WAREHOUSE: ownProps.config.analyticsPlatform.snowflake.snowflakeWarehouse,
+        DBT_SNOWFLAKE_CI_ROLE: ownProps.config.analyticsPlatform.snowflake.role,
+        DBT_SNOWFLAKE_CI_WAREHOUSE: ownProps.config.analyticsPlatform.snowflake.warehouse,
       },
       volumes: [
         {

@@ -1,5 +1,6 @@
 import { CqDirectorySimplifiedOrg } from "@metriport/shared/interface/external/carequality/directory/simplified-org";
 import { EnvType } from "../lib/env-type";
+import { AnalyticsPlatformConfig } from "./analytics-platform-config";
 import { RDSAlarmThresholds } from "./aws/rds";
 import { Hl7NotificationConfig } from "./hl7-notification-config";
 import { IHEGatewayProps } from "./ihe-gateway-config";
@@ -299,16 +300,7 @@ export type EnvConfigNonSandbox = EnvConfigBase & {
   engineeringCxId: string;
   hl7Notification: Hl7NotificationConfig;
   fhirConversionBucketName: string;
-  analyticsPlatform: {
-    bucketName: string;
-    snowflake: {
-      secrets: {
-        SNOWFLAKE_CREDS: string;
-      };
-      snowflakeRole: string;
-      snowflakeWarehouse: string;
-    };
-  };
+  analyticsPlatform: AnalyticsPlatformConfig;
 };
 
 export type EnvConfigSandbox = EnvConfigBase & {
