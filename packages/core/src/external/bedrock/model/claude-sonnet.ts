@@ -6,6 +6,7 @@ import {
   InvokeResponseMessage,
   BedrockRegion,
   InvokeToolResult,
+  InvokeThinkingMessage,
 } from "../types";
 
 export type ClaudeSonnetVersion = "3.5" | "3.7" | "4";
@@ -15,15 +16,18 @@ export const ClaudeSonnetModelId: Record<ClaudeSonnetVersion, string> = {
   "4": "us.anthropic.claude-sonnet-4-20250514-v1:0",
 };
 
-export class ClaudeSonnet extends BedrockModel<ClaudeSonnetRequest, ClaudeSonnetResponse> {
-  version: ClaudeSonnetVersion;
+export class ClaudeSonnet<V extends ClaudeSonnetVersion> extends BedrockModel<
+  ClaudeSonnetRequest<V>,
+  ClaudeSonnetResponse
+> {
+  version: V;
 
-  constructor(version: ClaudeSonnetVersion, region: BedrockRegion) {
+  constructor(version: V, region: BedrockRegion) {
     super(ClaudeSonnetModelId[version], region);
     this.version = version;
   }
 
-  override async invoke(input: ClaudeSonnetRequest): Promise<ClaudeSonnetResponse> {
+  override async invoke(input: ClaudeSonnetRequest<V>): Promise<ClaudeSonnetResponse> {
     return super.invoke({
       anthropic_version: "bedrock-2023-05-31",
       ...input,
@@ -35,7 +39,7 @@ export class ClaudeSonnet extends BedrockModel<ClaudeSonnetRequest, ClaudeSonnet
  * An invocation request to a Bedrock LLM, serialized in the message body to InvokeModel.
  * https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-anthropic-claude-messages-request-response.html
  */
-export interface ClaudeSonnetRequest {
+export interface ClaudeSonnetRequest<V extends ClaudeSonnetVersion> {
   // Required anthropic version.
   anthropic_version?: "bedrock-2023-05-31";
 
@@ -71,6 +75,14 @@ export interface ClaudeSonnetRequest {
 
   // The sequences that will stop the model from generating more tokens.
   stop_sequences?: string[];
+
+  // Introduced in Claude 3.7
+  thinking?: V extends "3.5"
+    ? never
+    : {
+        type: "enabled";
+        budget_tokens: number;
+      };
 }
 
 // https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-anthropic-claude-messages-request-response.html
@@ -82,7 +94,7 @@ export interface ClaudeSonnetResponse {
   role: "assistant";
 
   // Messages, responses, and tool calls/results
-  content: (InvokeResponseMessage | InvokeToolCall | InvokeToolResult)[];
+  content: (InvokeResponseMessage | InvokeToolCall | InvokeToolResult | InvokeThinkingMessage)[];
   stop_reason: "end_turn" | "tool_use" | "max_tokens";
   stop_sequence?: string | null;
   usage: {

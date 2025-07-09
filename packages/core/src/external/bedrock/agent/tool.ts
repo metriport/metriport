@@ -3,18 +3,18 @@ import { zodToJsonSchema } from "zod-to-json-schema";
 import { InvokeTool } from "../types";
 import { BedrockToolConfig } from "./types";
 
-export abstract class BedrockTool<T = unknown> {
+export abstract class AgentTool<I = unknown, O = unknown> {
   private name: string;
   private description: string;
   private inputSchema: z.ZodSchema;
 
-  constructor(config: BedrockToolConfig<T>) {
+  constructor(config: BedrockToolConfig<I>) {
     this.name = config.name;
     this.description = config.description;
     this.inputSchema = config.inputSchema;
   }
 
-  abstract execute(input: T): Promise<unknown>;
+  abstract execute(input: I): Promise<O>;
 
   getName() {
     return this.name;

@@ -2,17 +2,17 @@ import { AgentTool } from "../../../bedrock/agent/tool";
 import { ComprehendClient } from "../../client";
 import { ExtractTextRequest, extractTextRequestSchema } from "./schema";
 
-export class ExtractMedicationTool extends AgentTool<ExtractTextRequest> {
+export class ExtractProcedureTool extends AgentTool<ExtractTextRequest> {
   constructor(private readonly client: ComprehendClient) {
     super({
-      name: "extractMedication",
-      description: "Extract medication information from the provided medical text.",
+      name: "extractProcedure",
+      description: "Extracts Procedure FHIR resources from the medical text with ICD-10-CM codes.",
       inputSchema: extractTextRequestSchema,
     });
   }
 
   async execute(input: ExtractTextRequest): Promise<unknown> {
-    const result = await this.client.inferRxNorm(input.text);
+    const result = await this.client.inferICD10CM(input.text);
     return result;
   }
 }

@@ -1,14 +1,14 @@
 import { z } from "zod";
-import { BedrockTool } from "../agent/tool";
+import { AgentTool } from "../agent/tool";
 
 describe("BedrockTool", () => {
   it("should be defined", () => {
-    expect(BedrockTool).toBeDefined();
+    expect(AgentTool).toBeDefined();
   });
 
   it("should get a tool invocation", () => {
     type GetWeatherInput = { city: string };
-    class GetWeatherTool extends BedrockTool<GetWeatherInput> {
+    class GetWeatherTool extends AgentTool<GetWeatherInput> {
       constructor() {
         super({
           name: "get_weather",

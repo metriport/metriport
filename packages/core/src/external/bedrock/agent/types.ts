@@ -1,11 +1,11 @@
 import { InvokeToolCall, BedrockRegion } from "../types";
-import type { BedrockTool } from "./tool";
+import type { AgentTool } from "./tool";
 import { z } from "zod";
 
 export interface BedrockAgentConfig {
   region: BedrockRegion;
   systemPrompt: string;
-  tools?: BedrockTool[];
+  tools?: AgentTool[];
   maxTokens?: number;
   temperature?: number;
 }

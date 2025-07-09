@@ -48,7 +48,7 @@ async function main() {
   if (convo != null) return;
 
   let response: ClaudeSonnetResponse | undefined = undefined;
-  const messages: ClaudeSonnetRequest["messages"] = [
+  const messages: ClaudeSonnetRequest<"3.7">["messages"] = [
     {
       role: "user",
       content: [

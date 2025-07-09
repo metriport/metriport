@@ -14,6 +14,11 @@ export interface InvokeResponseMessage {
   type: "message";
 }
 
+export interface InvokeThinkingMessage {
+  type: "thinking";
+  text: string;
+}
+
 export interface InvokeToolCall<T = unknown> {
   type: "tool_use";
   id: string;
