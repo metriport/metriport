@@ -11,6 +11,7 @@ import {
   createMetriportPatientDemosFhir,
   getOrCreateMetriportPatientFhir,
 } from "../../shared/utils/fhir";
+import { isDqCooldownExpired } from "../../shared/utils/patient";
 import { createAthenaClient } from "../shared";
 
 const CUSTOM_FIELD_ID_OPT_IN = Config.isProdEnv() ? "121" : "1269";
@@ -23,6 +24,7 @@ export type SyncAthenaPatientIntoMetriportParams = {
   athenaDepartmentId: string;
   api?: AthenaHealthApi;
   triggerDq?: boolean;
+  triggerDqForExistingPatient?: boolean;
 };
 
 export async function syncAthenaPatientIntoMetriport({
@@ -32,6 +34,7 @@ export async function syncAthenaPatientIntoMetriport({
   athenaDepartmentId,
   api,
   triggerDq = false,
+  triggerDqForExistingPatient = false,
 }: SyncAthenaPatientIntoMetriportParams): Promise<string> {
   let athenaApi: AthenaHealthApi | undefined;
   if (await isAthenaCustomFieldsEnabledForCx(cxId)) {
@@ -62,6 +65,12 @@ export async function syncAthenaPatientIntoMetriport({
       cxId,
       id: existingPatient.patientId,
     });
+    if (triggerDqForExistingPatient && isDqCooldownExpired(metriportPatient)) {
+      queryDocumentsAcrossHIEs({
+        cxId,
+        patientId: metriportPatient.id,
+      }).catch(processAsyncError(`AthenaHealth queryDocumentsAcrossHIEs`));
+    }
     const metriportPatientId = metriportPatient.id;
     return metriportPatientId;
   }

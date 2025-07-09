@@ -2,6 +2,7 @@ import {
   isDischargeSlackNotificationFeatureFlagEnabledForCx,
   isHl7NotificationWebhookFeatureFlagEnabledForCx,
 } from "@metriport/core/command/feature-flags/domain-ffs";
+import { createConsolidatedDataFileNameWithSuffix } from "@metriport/core/domain/consolidated/filename";
 import { sendToSlack, SlackMessage } from "@metriport/core/external/slack/index";
 import { capture, out } from "@metriport/core/util";
 import { Config } from "@metriport/core/util/config";
@@ -57,12 +58,14 @@ export async function processHl7FhirBundleWebhook({
       triggerEvent === "A03" &&
       (await isDischargeSlackNotificationFeatureFlagEnabledForCx(cxId))
     ) {
+      const consolidatedBundleFilePath = createConsolidatedDataFileNameWithSuffix(cxId, patientId);
       try {
         const messagePayload = {
           cxId,
           patientId,
           admitTimestamp,
           dischargeTimestamp,
+          consolidatedBundleFilePath,
         };
 
         const message: SlackMessage = {

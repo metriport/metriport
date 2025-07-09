@@ -5,14 +5,10 @@ import { Config } from "../../../../util/config";
 import { EhrSyncPatientHandler, ProcessSyncPatientRequest } from "./ehr-sync-patient";
 
 export class EhrSyncPatientCloud implements EhrSyncPatientHandler {
-  private readonly sqsClient: SQSClient;
-
   constructor(
-    private readonly ehrSyncPatientQueueUrl: string,
-    sqsClient: SQSClient = new SQSClient({ region: Config.getAWSRegion() })
-  ) {
-    this.sqsClient = sqsClient;
-  }
+    private readonly ehrSyncPatientQueueUrl: string = Config.getEhrSyncPatientQueueUrl(),
+    private readonly sqsClient: SQSClient = new SQSClient({ region: Config.getAWSRegion() })
+  ) {}
 
   async processSyncPatient(params: ProcessSyncPatientRequest): Promise<void> {
     const { cxId } = params;
