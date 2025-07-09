@@ -1,6 +1,6 @@
 import { getEnvVarAsRecordOrFail } from "@metriport/shared/common/env-var";
+import { SnowflakeCreds, snowflakeCredsSchema } from "../external/snowflake/creds";
 import { getEnvVar, getEnvVarOrFail } from "./env-var";
-import { snowflakeCredsSchema, SnowflakeCreds } from "../external/snowflake/creds";
 
 /**
  * Shared configs, still defining how to work with this. For now:
