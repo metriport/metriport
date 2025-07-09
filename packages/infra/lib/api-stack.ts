@@ -507,7 +507,7 @@ export class APIStack extends Stack {
     // Analytics Platform
     //-------------------------------------------
     if (!isSandbox(props.config)) {
-      new AnalyticsPlatformsNestedStack(this, "AnalyticsPlatformsNestedStack", {
+      new AnalyticsPlatformsNestedStack(this, "AnalyticsPlatforms", {
         config: props.config,
       });
     }
