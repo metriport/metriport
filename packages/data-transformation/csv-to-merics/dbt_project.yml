@@ -1,0 +1,39 @@
+name: "metriport_connector"
+version: "1.0.0"
+config-version: 2
+
+profile: "default"
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+target-path: "target"
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+vars:
+  input_database:  "{{ env_var('INPUT_DATABASE') }}"
+  input_schema: "{{ env_var('INPUT_SCHEMA') }}"
+  clinical_enabled: true
+  cms_hcc_payment_year: 2023
+  quality_measures_period_end: "2023-12-31"
+  tuva_last_run: '{{ run_started_at.astimezone(modules.pytz.timezone("UTC")) }}'
+
+models:
+  metriport_connector:
+    +schema: input_layer
+    +materialized: table
+    stage:
+      +materialized: ephemeral
+    intermediate:
+      +schema: input_layer_stage
+      +materialized: table
+
+seeds:
+  metriport_connector:
+    +schema: input_layer_stage

@@ -1,0 +1,39 @@
+Hg_Type,tuva_type
+Office Visit,office visit
+Telephone,telehealth
+Refill,other
+Travel,other
+Orders Only,other
+Hospital Encounter,acute inpatient
+Ancillary Procedure,other
+Lab Visit,other
+Notes/Orders,other
+PN Conversion Only,other
+Imaging,ambulatory surgical center
+Therapy Visit,other
+Emergency,emergency department
+Nurse Triage,other
+Surgery,ambulatory surgical center
+Correspondence,other
+Telemedicine,telehealth
+Virtual Visit,other
+Therapy,other
+Nurse/Clinic Staff Only,outpatient
+Office Visit-UMP,office visit
+Home Care Visit,home health
+Historic Results,other
+Results Only,other
+Anesthesia Event,other
+Documentation Only,other
+Clinical Communication,other
+Immunization,other
+Radiant Appointment,other
+Nursing Visit,outpatient
+Lab,other
+Patient Outreach,telehealth
+Medical Correspondence,telehealth
+Outpatient,outpatient
+Preop Visit,other
+PRE VISIT,other
+Phone Visit,telehealth
+Phone Office Visit,telehealth

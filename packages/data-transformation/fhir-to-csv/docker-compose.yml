@@ -1,0 +1,21 @@
+version: "3.8"
+
+name: fhir-to-csv
+services:
+  fhir-to-csv:
+    container_name: fhir-to-csv
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    volumes:
+      - .:/app # Mount your dbt project directory
+      - ~/.aws:/root/.aws:ro
+      - ~/.snowflake:/root/.snowflake:ro
+    environment:
+      ENV: ${ENV}
+      AWS_REGION: ${AWS_REGION}
+      INPUT_S3_BUCKET: ${INPUT_S3_BUCKET}
+      OUTPUT_S3_BUCKET: ${OUTPUT_S3_BUCKET}
+      CX_ID: ${CX_ID}
+      SNOWFLAKE_INTEGRATION: ${SNOWFLAKE_INTEGRATION}
+      CONFIG_FOLDER: src/parseFhir/configurations

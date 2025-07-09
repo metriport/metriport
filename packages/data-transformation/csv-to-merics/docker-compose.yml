@@ -1,0 +1,22 @@
+version: "3.8"
+
+name: csv-to-metrics
+services:
+  csv-to-metrics:
+    container_name: csv-to-metrics
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    volumes:
+      - .:/usr/app/data
+    environment:
+      DBT_PROFILES_DIR: /usr/app/dbt/profiles/snowflake
+      DBT_TARGET: ${DBT_TARGET}
+      DBT_SNOWFLAKE_ACCOUNT: ${DBT_SNOWFLAKE_ACCOUNT}
+      DBT_SNOWFLAKE_CI_ROLE: ${DBT_SNOWFLAKE_CI_ROLE}
+      DBT_SNOWFLAKE_CI_USER: ${DBT_SNOWFLAKE_CI_USER}
+      DBT_SNOWFLAKE_CI_PASSWORD: ${DBT_SNOWFLAKE_CI_PASSWORD}
+      DBT_SNOWFLAKE_CI_WAREHOUSE: ${DBT_SNOWFLAKE_CI_WAREHOUSE}
+      DBT_SNOWFLAKE_CI_DATABASE_PREFIX: ${DBT_SNOWFLAKE_CI_DATABASE_PREFIX}
+      DBT_SNOWFLAKE_CI_SCHEMA: ${DBT_SNOWFLAKE_CI_SCHEMA}
+      CX_ID: ${CX_ID}
