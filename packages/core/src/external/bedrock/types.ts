@@ -11,12 +11,14 @@ export interface InvokeMessage {
 }
 
 export interface InvokeResponseMessage {
-  type: "message";
+  type: "text";
+  text: string;
 }
 
 export interface InvokeThinkingMessage {
   type: "thinking";
   text: string;
+  signature: string;
 }
 
 export interface InvokeToolCall<T = unknown> {

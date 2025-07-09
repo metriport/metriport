@@ -1,8 +1,9 @@
 import { BedrockAgentConfig, BedrockAgentResponse } from "./types";
-import { BedrockAgentThread } from "./thread";
 import { AgentTool } from "./tool";
-import { AnthropicModel, AnthropicResponse, AnthropicModelVersion } from "../model/anthropic";
-import { InvokeToolCall } from "../types";
+import { AnthropicModel } from "../model/anthropic";
+import { AnthropicResponse } from "../model/anthropic/response";
+import { AnthropicModelVersion } from "../model/anthropic/version";
+import { AnthropicMessageThread, AnthropicAssistantContent } from "../model/anthropic/messages";
 
 export interface AnthropicAgentConfig<V extends AnthropicModelVersion> extends BedrockAgentConfig {
   version: V;
@@ -18,35 +19,60 @@ const DEFAULT_TEMPERATURE = 0;
 export class AnthropicAgent<V extends AnthropicModelVersion> {
   private model: AnthropicModel<V>;
   private config: AnthropicAgentConfig<V>;
-  private thread: BedrockAgentThread;
+  private messages: AnthropicMessageThread = [];
   private tools?: AgentTool[] | undefined;
 
   constructor(config: AnthropicAgentConfig<V>) {
     this.model = new AnthropicModel<V>(config.version, config.region);
     this.config = config;
     this.tools = config.tools;
-    this.thread = new BedrockAgentThread();
   }
 
+  /**
+   * Adds a user message to the agent's conversation thread. This is usually the first step in starting
+   * a conversation with the agent.
+   * @param messageText - The text of the user message.
+   */
+  addUserMessage(messageText: string): void {
+    this.messages.push({
+      role: "user",
+      content: [
+        {
+          type: "text",
+          text: messageText,
+        },
+      ],
+    });
+  }
+
+  /**
+   * Starts model invocation with the given user message.
+   * @param messageText
+   * @returns
+   */
   async invokeWithUserMessage(messageText: string): Promise<BedrockAgentResponse> {
-    this.thread.addUserMessage(messageText);
+    this.addUserMessage(messageText);
     return this.invokeThread();
   }
 
   /**
-   * Performs a single model invocation for this agent's conversation thread. This process executes the
-   * latest tool call if one is specified by the model.
-   * @param thread
+   * Performs a single model invocation for this agent's conversation thread, and adds the response
+   * content onto the conversation thread.
    * @returns
    */
   async invokeThread(): Promise<BedrockAgentResponse> {
     // Invoke the underlying Claude Sonnet model
     const response = await this.model.invoke({
       system: this.config.systemPrompt,
-      messages: this.thread.getMessages(),
+      messages: this.messages,
       ...(this.tools ? { tools: this.tools.map(tool => tool.getInvocation()) } : {}),
       max_tokens: this.config.maxTokens ?? DEFAULT_MAX_TOKENS,
       temperature: this.config.temperature ?? DEFAULT_TEMPERATURE,
+    });
+
+    this.messages.push({
+      role: "assistant",
+      content: response.content as AnthropicAssistantContent,
     });
 
     // Add the response to the thread
@@ -58,7 +84,10 @@ export class AnthropicAgent<V extends AnthropicModelVersion> {
       const tool = this.tools.find(tool => tool.getName() === toolCall.name);
       if (!tool) throw new Error(`Tool ${toolCall.name} not found`);
 
-      this.thread.addToolCall(toolCall);
+      this.messages.push({
+        role: "assistant",
+        content: [toolCall],
+      });
       try {
         const toolResult = await tool.execute(toolCall.input);
         this.thread.addToolResult(toolCall, toolResult);
@@ -70,6 +99,10 @@ export class AnthropicAgent<V extends AnthropicModelVersion> {
     }
 
     return { response };
+  }
+
+  getConversation(): InvokeMessage[] {
+    return this.messages;
   }
 }
 

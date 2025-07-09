@@ -1,8 +1,10 @@
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 // import { BedrockAgent } from "./agent/agent";
-import { AnthropicModel, AnthropicRequest, AnthropicResponse } from "./model/anthropic";
-import { InvokeToolCall } from "./types";
+import { AnthropicModel } from "./model/anthropic";
+import { AnthropicRequest } from "./model/anthropic/request";
+import { AnthropicResponse } from "./model/anthropic/response";
+import { AnthropicToolCall } from "./model/anthropic/messages";
 
 async function main() {
   const model = new AnthropicModel("claude-sonnet-3.7", "us-west-2");
@@ -47,7 +49,7 @@ async function main() {
   console.log(JSON.stringify(convo, null, 2));
   if (convo != null) return;
 
-  let response: AnthropicResponse | undefined = undefined;
+  let response: AnthropicResponse<"claude-sonnet-3.7"> | undefined = undefined;
   const messages: AnthropicRequest<"claude-sonnet-3.7">["messages"] = [
     {
       role: "user",
@@ -82,6 +84,10 @@ async function main() {
     response = await model.invoke({
       max_tokens: 1000,
       temperature: 0,
+      thinking: {
+        type: "enabled",
+        budget_tokens: 1000,
+      },
       system:
         "Your role is to choose an extraction tool from the provided tools, and call them with substrings of medical text provided by the user. " +
         "The extraction tools are specialized in tagging the text with medical codes. " +
@@ -127,9 +133,7 @@ async function main() {
 
     console.log(JSON.stringify(response, null, 2));
     if (response.stop_reason === "tool_use") {
-      const toolCall = response.content[response.content.length - 1] as InvokeToolCall<{
-        text: string;
-      }>;
+      const toolCall = response.content[response.content.length - 1] as AnthropicToolCall;
       messages.push({
         role: "assistant",
         content: [toolCall],
