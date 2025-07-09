@@ -240,6 +240,10 @@ export const config: EnvConfigNonSandbox = {
     secrets: {
       SNOWFLAKE_CREDS: "your-snowflake-creds-as-json",
     },
+    snowflake: {
+      integrationUserArn: "arn:aws:iam::000000000000:role/SnowflakeIntegrationRole",
+      integrationExternalId: "000000000000",
+    },
   },
 };
 export default config;

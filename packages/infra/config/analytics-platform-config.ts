@@ -3,4 +3,8 @@ export interface AnalyticsPlatformConfig {
   secrets: {
     SNOWFLAKE_CREDS: string;
   };
+  snowflake: {
+    integrationUserArn: string;
+    integrationExternalId: string;
+  };
 }
