@@ -112,7 +112,7 @@ function settings(): {
     },
     queue: {
       alarmMaxAgeOfOldestMessage: Duration.hours(2),
-      maxMessageCountAlarmThreshold: 15_000,
+      maxMessageCountAlarmThreshold: 5_000,
       maxReceiveCount: 3,
       visibilityTimeout: Duration.seconds(
         computeResourceDiffBundlesLambdaTimeout.toSeconds() * 2 + 1
@@ -137,7 +137,7 @@ function settings(): {
     },
     queue: {
       alarmMaxAgeOfOldestMessage: Duration.hours(2),
-      maxMessageCountAlarmThreshold: 15_000,
+      maxMessageCountAlarmThreshold: 5_000,
       maxReceiveCount: 3,
       visibilityTimeout: Duration.seconds(refreshEhrBundlesLambdaTimeout.toSeconds() * 2 + 1),
       createRetryLambda: false,
@@ -149,7 +149,7 @@ function settings(): {
     },
     waitTime: waitTimeRefreshBundle,
   };
-  const contributeResourceDiffBundlesLambdaTimeout = Duration.minutes(12);
+  const contributeResourceDiffBundlesLambdaTimeout = Duration.minutes(15);
   const contributeResourceDiffBundles: QueueAndLambdaSettings = {
     name: "EhrContributeResourceDiffBundles",
     entry: "ehr/contribute-resource-diff-bundles",
@@ -158,8 +158,8 @@ function settings(): {
       timeout: contributeResourceDiffBundlesLambdaTimeout,
     },
     queue: {
-      alarmMaxAgeOfOldestMessage: Duration.hours(1),
-      maxMessageCountAlarmThreshold: 15_000,
+      alarmMaxAgeOfOldestMessage: Duration.hours(4),
+      maxMessageCountAlarmThreshold: 5_000,
       maxReceiveCount: 3,
       visibilityTimeout: Duration.seconds(
         contributeResourceDiffBundlesLambdaTimeout.toSeconds() * 2 + 1
@@ -169,7 +169,7 @@ function settings(): {
     eventSource: {
       batchSize: 1,
       reportBatchItemFailures: true,
-      maxConcurrency: 4,
+      maxConcurrency: 2,
     },
     waitTime: waitTimeContributeResourceDiffBundles,
   };
@@ -299,6 +299,7 @@ export class EhrNestedStack extends NestedStack {
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: props.alarmAction,
+      ehrResponsesBucket: props.ehrResponsesBucket,
       ehrBundleBucket: this.ehrBundleBucket,
       fhirConverterLambda: props.fhirConverterLambda,
       fhirConverterBucket: props.fhirConverterBucket,
@@ -335,7 +336,7 @@ export class EhrNestedStack extends NestedStack {
       alarmSnsAction: alarmAction,
     });
 
-    if (ehrResponsesBucket) ehrResponsesBucket.grantWrite(lambda);
+    ehrResponsesBucket?.grantWrite(lambda);
 
     return lambda;
   }
@@ -608,12 +609,13 @@ export class EhrNestedStack extends NestedStack {
     envType: EnvType;
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
+    ehrResponsesBucket: s3.Bucket | undefined;
     ehrBundleBucket: s3.Bucket;
     fhirConverterLambda: Lambda | undefined;
     fhirConverterBucket: s3.Bucket | undefined;
     computeResourceDiffBundlesQueue: Queue;
   }): { lambda: Lambda; queue: Queue } {
-    const { lambdaLayers, vpc, envType, sentryDsn, alarmAction } = ownProps;
+    const { lambdaLayers, vpc, envType, sentryDsn, alarmAction, ehrResponsesBucket } = ownProps;
     const {
       name,
       entry,
@@ -654,6 +656,7 @@ export class EhrNestedStack extends NestedStack {
         WAIT_TIME_IN_MILLIS: waitTime.toMilliseconds().toString(),
         MAX_ATTEMPTS: queueSettings.maxReceiveCount.toString(),
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+        ...(ehrResponsesBucket ? { EHR_RESPONSES_BUCKET_NAME: ehrResponsesBucket.bucketName } : {}),
       },
       layers: [lambdaLayers.shared, lambdaLayers.langchain],
       vpc,
@@ -662,6 +665,7 @@ export class EhrNestedStack extends NestedStack {
 
     lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
 
+    ehrResponsesBucket?.grantWrite(lambda);
     ownProps.ehrBundleBucket.grantReadWrite(lambda);
     ownProps.fhirConverterLambda?.grantInvoke(lambda);
     ownProps.fhirConverterBucket?.grantReadWrite(lambda);
