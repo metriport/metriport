@@ -1,17 +1,8 @@
 import { BatchUtils } from "@metriport/core/external/aws/batch";
-import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { getSnowflakeCreds } from "../../external/snowflake/creds";
 import { Config } from "../../util/config";
 
-// TODO Get snowflake credentials from secrets manager
-
-export async function startFhirToCsvBatchJob({
-  cxId,
-  requestId: requestIdParams,
-}: {
-  cxId: string;
-  requestId?: string;
-}) {
+export async function startFhirToCsvBatchJob({ cxId, jobId }: { cxId: string; jobId: string }) {
   const fhirToCsvBatchJobQueueArn = Config.getFhirToCsvBatchJobQueueArn();
   const fhirToCsvBatchJobDefinitionArn = Config.getFhirToCsvBatchJobDefinitionArn();
 
@@ -19,18 +10,17 @@ export async function startFhirToCsvBatchJob({
     throw new Error("Job queue or definition ARN is not set");
   }
 
-  const requestId = requestIdParams || uuidv7();
   const snowflakeCreds = getSnowflakeCreds();
 
   const batch = new BatchUtils(Config.getAWSRegion());
 
   const response = await batch.startJob({
-    jobName: `fhir-to-csv-${requestId}`,
+    jobName: `fhir-to-csv-${jobId}`,
     jobQueueArn: fhirToCsvBatchJobQueueArn,
     jobDefinitionArn: fhirToCsvBatchJobDefinitionArn,
     parameters: {
       CX_ID: cxId,
-      REQUEST_ID: requestId,
+      JOB_ID: jobId,
       SNOWFLAKE_ACCOUNT: snowflakeCreds.account,
       SNOWFLAKE_USER: snowflakeCreds.user,
       SNOWFLAKE_PASSWORD: snowflakeCreds.password,
