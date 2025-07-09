@@ -2,6 +2,7 @@ import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as secret from "aws-cdk-lib/aws-secretsmanager";
 import { Construct } from "constructs";
 import { EnvConfig } from "../../config/env-config";
+import { isSandbox } from "./util";
 
 export type Secrets = { [key: string]: secret.ISecret };
 
@@ -41,6 +42,7 @@ export function getSecrets(scope: Construct, config: EnvConfig): Secrets {
     ...(config.hl7Notification?.secrets
       ? buildSecrets(scope, config.hl7Notification?.secrets)
       : undefined),
+    ...(!isSandbox(config) ? buildSecrets(scope, config.analyticsPlatform.secrets) : undefined),
   };
   return secrets;
 }
