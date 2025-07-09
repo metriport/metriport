@@ -1,5 +1,6 @@
 import { getEnvVarAsRecordOrFail } from "@metriport/shared/common/env-var";
 import { getEnvVar, getEnvVarOrFail } from "./env-var";
+import { snowflakeCredsSchema, SnowflakeCreds } from "../external/snowflake/creds";
 
 /**
  * Shared configs, still defining how to work with this. For now:
@@ -335,7 +336,7 @@ export class Config {
     return getEnvVarOrFail("DISCHARGE_NOTIFICATION_SLACK_URL");
   }
 
-  static getSnowflakeCreds(): Record<string, string> {
-    return getEnvVarAsRecordOrFail("SNOWFLAKE_CREDS");
+  static getSnowflakeCreds(): SnowflakeCreds {
+    return snowflakeCredsSchema.parse(getEnvVarAsRecordOrFail("SNOWFLAKE_CREDS"));
   }
 }
