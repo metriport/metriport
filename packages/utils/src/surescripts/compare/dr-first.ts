@@ -2,7 +2,13 @@ import { Command } from "commander";
 import fs from "fs";
 import path from "path";
 import { buildDayjs } from "@metriport/shared/common/date";
-import { Bundle, MedicationRequest, Resource, Extension } from "@medplum/fhirtypes";
+import {
+  Bundle,
+  MedicationRequest,
+  Resource,
+  Extension,
+  MedicationDispense,
+} from "@medplum/fhirtypes";
 import { dangerouslyDeduplicateFhir } from "@metriport/core/fhir-deduplication/deduplicate-fhir";
 import { HistoryData, historyPage } from "./history-table";
 import { Medication, Organization } from "@medplum/fhirtypes";
@@ -18,9 +24,18 @@ program
   .description("Run the comparison of Dr First to Metriport")
   .option("--include-hie", "Include HIE data in the comparison")
   .option("--hie-only", "Remove Surescripts data from the comparison")
+  .option("--start-date <startDate>", "Start date for the comparison")
   .action(main);
 
-async function main({ includeHie, hieOnly }: { includeHie?: boolean; hieOnly?: boolean }) {
+async function main({
+  includeHie,
+  hieOnly,
+  startDate,
+}: {
+  includeHie?: boolean;
+  hieOnly?: boolean;
+  startDate?: string;
+}) {
   console.log("Running comparison of Dr First to Metriport");
   if (!CX_ID) throw new Error("TARGET_COMPARISON_CX_ID is not set");
 
@@ -58,6 +73,26 @@ async function main({ includeHie, hieOnly }: { includeHie?: boolean; hieOnly?: b
           `Removed ${originalEntryCount - finalEntryCount} Surescripts entries for ${nameId}`
         );
       }
+    }
+
+    if (startDate) {
+      console.log(`Filtering bundle for ${nameId} to medication resources after ${startDate}`);
+      const threshold = buildDayjs(startDate);
+      metriportBundle.entry = metriportBundle.entry?.filter(entry => {
+        if (entry.resource?.resourceType === "MedicationDispense") {
+          const medicationDispense = entry.resource as MedicationDispense;
+          if (medicationDispense.whenHandedOver) {
+            const handedOver = buildDayjs(medicationDispense.whenHandedOver);
+            return handedOver.isAfter(threshold);
+          }
+        }
+        if (entry.resource?.meta?.lastUpdated) {
+          const lastUpdated = buildDayjs(entry.resource.meta.lastUpdated);
+          return lastUpdated.isAfter(threshold);
+        }
+        return true;
+      });
+      writeMetriportBundle(nameId, metriportBundle);
     }
 
     try {
@@ -190,12 +225,26 @@ function writeDrFirstHtml(nameId: string, output: DrFirstOutput) {
   fs.writeFileSync(path.join(DR_FIRST_DIR, "html", nameId + "-drfirst.html"), outputHtml, "utf-8");
 }
 
+function writeMetriportBundle(nameId: string, metriportBundle: Bundle) {
+  fs.writeFileSync(
+    path.join(DR_FIRST_DIR, "latest-bundle", nameId + ".json"),
+    JSON.stringify(metriportBundle, null, 2),
+    "utf-8"
+  );
+}
+
 function computeMetriportStatistics(metriportBundle: Bundle) {
   const statistics = {
     medications: 0,
     fills: 0,
   };
   metriportBundle.entry?.forEach(entry => {
+    if (entry.resource?.meta?.lastUpdated) {
+      const lastUpdated = buildDayjs(entry.resource.meta.lastUpdated);
+      if (lastUpdated.isBefore(buildDayjs("2024-07-01"))) {
+        return;
+      }
+    }
     if (entry.resource?.resourceType === "Medication") {
       statistics.medications++;
     }
