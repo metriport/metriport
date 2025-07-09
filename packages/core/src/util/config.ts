@@ -334,4 +334,8 @@ export class Config {
   static getDischargeNotificationSlackUrl(): string {
     return getEnvVarOrFail("DISCHARGE_NOTIFICATION_SLACK_URL");
   }
+
+  static getSnowflakeCreds(): Record<string, string> {
+    return getEnvVarAsRecordOrFail("SNOWFLAKE_CREDS");
+  }
 }
