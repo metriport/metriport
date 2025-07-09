@@ -51,6 +51,5 @@ export async function queryLogs(
     }
   } while (nextToken);
 
-  console.log(`Total events retrieved: ${allEvents.length}`);
   return allEvents;
 }
