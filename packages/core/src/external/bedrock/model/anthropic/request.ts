@@ -1,7 +1,7 @@
 import { AnthropicModelVersion } from "./version";
 
 import { AnthropicMessageThread } from "./messages";
-import { AnthropicTool } from "./tools";
+import { AnthropicToolConfig } from "./tools";
 
 /**
  * An invocation request to a Bedrock LLM, serialized in the message body to InvokeModel.
@@ -19,10 +19,10 @@ export interface AnthropicRequest<V extends AnthropicModelVersion> {
   max_tokens: number;
 
   // Array of conversation history with the model, including tool calls and results.
-  messages: AnthropicMessageThread;
+  messages: AnthropicMessageThread<V>;
 
   // Definitions of tools that the model may use.
-  tools?: Array<AnthropicTool>;
+  tools?: Array<AnthropicToolConfig>;
 
   // Specifices how the model should use the provided tools. The model can use a specific tool, any available tool, or decide by itself.
   tool_choice?: {

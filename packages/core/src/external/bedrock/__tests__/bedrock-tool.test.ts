@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { AgentTool } from "../agent/tool";
+import { AgentTool } from "../agent/anthropic/tool";
 
 describe("BedrockTool", () => {
   it("should be defined", () => {

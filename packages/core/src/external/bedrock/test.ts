@@ -4,12 +4,12 @@ import { zodToJsonSchema } from "zod-to-json-schema";
 import { AnthropicModel } from "./model/anthropic";
 import { AnthropicRequest } from "./model/anthropic/request";
 import { AnthropicResponse } from "./model/anthropic/response";
-import { AnthropicToolCall } from "./model/anthropic/messages";
+import { AnthropicToolCall } from "./model/anthropic/tools";
 
 async function main() {
-  const model = new AnthropicModel("claude-sonnet-3.7", "us-west-2");
+  const claude = new AnthropicModel("claude-sonnet-3.7", "us-west-2");
 
-  const convo = await model.invoke({
+  const convo = await claude.invokeModel({
     max_tokens: 1000,
     temperature: 0,
     system: "You are a helpful assistant.",
@@ -62,7 +62,7 @@ async function main() {
     },
   ];
 
-  await model.invoke({
+  await claude.invokeModel({
     max_tokens: 1000,
     temperature: 0,
     system: "You are a helpful assistant.",
@@ -81,7 +81,7 @@ async function main() {
 
   let iterations = 0;
   do {
-    response = await model.invoke({
+    response = await claude.invokeModel({
       max_tokens: 1000,
       temperature: 0,
       thinking: {

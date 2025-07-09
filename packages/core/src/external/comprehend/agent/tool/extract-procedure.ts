@@ -1,4 +1,4 @@
-import { AgentTool } from "../../../bedrock/agent/tool";
+import { AgentTool } from "../../../bedrock/agent/anthropic/tool";
 import { ComprehendClient } from "../../client";
 import { ExtractTextRequest, extractTextRequestSchema } from "./schema";
 

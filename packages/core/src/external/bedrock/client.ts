@@ -4,7 +4,7 @@ import { BedrockConfig } from "./types";
 /**
  * A basic client for invoking Bedrock models. See the model/ directory for specialized clients.
  */
-export class BedrockClient {
+export class BedrockClient<I = unknown, O = unknown> {
   private client: BedrockRuntimeClient;
   private modelId: string;
 
@@ -19,7 +19,7 @@ export class BedrockClient {
    * @param body - The body of the request
    * @returns The model response
    */
-  async invokeModel(body: Record<string, unknown>): Promise<Record<string, unknown>> {
+  async invokeModel(body: I): Promise<O> {
     const command = new InvokeModelCommand({
       modelId: this.modelId,
       body: JSON.stringify(body),
@@ -28,6 +28,6 @@ export class BedrockClient {
     if (!response.body) throw new Error("No response body");
     const responseBody = response.body.transformToString();
     if (!responseBody) throw new Error("invalid response body");
-    return JSON.parse(responseBody);
+    return JSON.parse(responseBody) as O;
   }
 }

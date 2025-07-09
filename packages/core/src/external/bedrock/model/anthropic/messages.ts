@@ -1,16 +1,11 @@
 import { AnthropicModelVersion } from "./version";
+import { AnthropicToolCall, AnthropicToolResult } from "./tools";
 
 /**
  * A thread of messages between the user and the LLM.
  */
 export type AnthropicMessageThread<V extends AnthropicModelVersion> = Array<
   AnthropicUserMessage | AnthropicAssistantMessage<V>
->;
-
-export type AnthropicUserContent = Array<AnthropicMessageText | AnthropicToolResult>;
-
-export type AnthropicAssistantContent<V extends AnthropicModelVersion> = Array<
-  AnthropicMessageText | AnthropicToolCall | (V extends "3.5" ? never : AnthropicThinking)
 >;
 
 /**
@@ -21,40 +16,26 @@ export interface AnthropicUserMessage {
   content: AnthropicUserContent;
 }
 
-/**
- * A text message to/from the LLM.
- */
-export interface AnthropicMessageText {
-  type: "text";
-  text: string;
-}
+export type AnthropicUserContent = Array<AnthropicMessageText | AnthropicToolResult>;
 
 /**
- * A message can also be an assistant response, which may contain multiple content blocks of text and may
- * include one or more tool calls.
+ * An assistant response may contain multiple content blocks with text and possibly one or more tool calls.
  */
 export interface AnthropicAssistantMessage<V extends AnthropicModelVersion> {
   role: "assistant";
   content: AnthropicAssistantContent<V>;
 }
 
-/**
- * Returned by the LLM as a request to invoke a tool.
- */
-export interface AnthropicToolCall {
-  type: "tool_use";
-  id: string;
-  name: string;
-  input: Record<string, unknown>;
-}
+export type AnthropicAssistantContent<V extends AnthropicModelVersion> = Array<
+  AnthropicMessageText | AnthropicToolCall | (V extends "3.5" ? never : AnthropicThinking)
+>;
 
 /**
- * Provided to the LLM in a user
+ * A text message to/from the LLM.
  */
-export interface AnthropicToolResult {
-  type: "tool_result";
-  tool_use_id: string;
-  content?: unknown;
+export interface AnthropicMessageText {
+  type: "text";
+  text: string;
 }
 
 export interface AnthropicThinking {

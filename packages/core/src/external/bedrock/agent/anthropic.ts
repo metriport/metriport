@@ -1,13 +1,10 @@
-import { BedrockAgentConfig, BedrockAgentResponse } from "./types";
-import { AgentTool } from "./tool";
+import { AnthropicAgentConfig } from "./anthropic/types";
+import { AnthropicTool } from "./anthropic/tool";
 import { AnthropicModel } from "../model/anthropic";
 import { AnthropicResponse } from "../model/anthropic/response";
 import { AnthropicModelVersion } from "../model/anthropic/version";
-import { AnthropicMessageThread, AnthropicAssistantContent } from "../model/anthropic/messages";
-
-export interface AnthropicAgentConfig<V extends AnthropicModelVersion> extends BedrockAgentConfig {
-  version: V;
-}
+import { AnthropicMessageThread } from "../model/anthropic/messages";
+import { AnthropicToolCall, AnthropicToolResult } from "../model/anthropic/tools";
 
 // Default parameters for Claude requests
 const DEFAULT_MAX_TOKENS = 1024;
@@ -19,13 +16,13 @@ const DEFAULT_TEMPERATURE = 0;
 export class AnthropicAgent<V extends AnthropicModelVersion> {
   private model: AnthropicModel<V>;
   private config: AnthropicAgentConfig<V>;
-  private messages: AnthropicMessageThread = [];
-  private tools?: AgentTool[] | undefined;
+  private messages: AnthropicMessageThread<V> = [];
+  private tools: AnthropicTool[] = [];
 
   constructor(config: AnthropicAgentConfig<V>) {
     this.model = new AnthropicModel<V>(config.version, config.region);
     this.config = config;
-    this.tools = config.tools;
+    this.tools = config.tools ?? [];
   }
 
   /**
@@ -50,9 +47,9 @@ export class AnthropicAgent<V extends AnthropicModelVersion> {
    * @param messageText
    * @returns
    */
-  async invokeWithUserMessage(messageText: string): Promise<BedrockAgentResponse> {
+  async startConversation(messageText: string): Promise<AnthropicResponse<V>> {
     this.addUserMessage(messageText);
-    return this.invokeThread();
+    return this.continueConversation();
   }
 
   /**
@@ -60,60 +57,65 @@ export class AnthropicAgent<V extends AnthropicModelVersion> {
    * content onto the conversation thread.
    * @returns
    */
-  async invokeThread(): Promise<BedrockAgentResponse> {
+  async continueConversation(): Promise<AnthropicResponse<V>> {
     // Invoke the underlying Claude Sonnet model
-    const response = await this.model.invoke({
+    const response = await this.model.invokeModel({
       system: this.config.systemPrompt,
       messages: this.messages,
-      ...(this.tools ? { tools: this.tools.map(tool => tool.getInvocation()) } : {}),
+      ...(this.tools && this.tools.length > 0
+        ? { tools: this.tools.map(tool => tool.getConfig()) }
+        : {}),
       max_tokens: this.config.maxTokens ?? DEFAULT_MAX_TOKENS,
       temperature: this.config.temperature ?? DEFAULT_TEMPERATURE,
     });
 
     this.messages.push({
       role: "assistant",
-      content: response.content as AnthropicAssistantContent,
+      content: response.content,
     });
 
-    // Add the response to the thread
-    // this.thread.addAssistantMessage(response.content);
+    return response;
+  }
 
-    // If stopped for a tool call, execute the tool call and push the tool result onto the thread
-    if (this.tools && response.stop_reason === "tool_use") {
-      const toolCall = getToolCallOrFail(response);
+  /**
+   * After continuing a conversation, check the response object to see if the model has invoked any tools.
+   * @param response
+   * @returns
+   */
+  shouldExecuteTools(response: AnthropicResponse<V>): boolean {
+    if (!this.tools || response.stop_reason !== "tool_use") return false;
+    return response.content.some(({ type }) => type === "tool_use");
+  }
+
+  /**
+   * If a model response contains tool calls, execute the tools and add the results to as a new user message
+   * on the agent's conversation thread.
+   * @param response
+   * @returns
+   */
+  async executeTools(response: AnthropicResponse<V>): Promise<void> {
+    if (!this.tools || response.stop_reason !== "tool_use") return;
+    const toolCalls = response.content.filter(
+      content => content.type === "tool_use"
+    ) as AnthropicToolCall[];
+    if (toolCalls.length === 0) return;
+
+    const toolResults: AnthropicToolResult[] = [];
+    for (const toolCall of toolCalls) {
       const tool = this.tools.find(tool => tool.getName() === toolCall.name);
-      if (!tool) throw new Error(`Tool ${toolCall.name} not found`);
-
-      this.messages.push({
-        role: "assistant",
-        content: [toolCall],
+      if (!tool) continue;
+      const toolResultContent = await tool.execute(toolCall.input);
+      toolResults.push({
+        type: "tool_result",
+        tool_use_id: toolCall.id,
+        content: toolResultContent,
       });
-      try {
-        const toolResult = await tool.execute(toolCall.input);
-        this.thread.addToolResult(toolCall, toolResult);
-        return { response, toolCall, toolResult };
-      } catch (toolError) {
-        this.thread.addToolError(toolCall, toolError);
-        return { response, toolCall, toolError };
-      }
     }
 
-    return { response };
+    this.messages.push({ role: "user", content: toolResults });
   }
 
-  getConversation(): InvokeMessage[] {
+  getConversation(): AnthropicMessageThread<V> {
     return this.messages;
   }
-}
-
-// Validate a tool call
-function getToolCallOrFail(response: AnthropicResponse): InvokeToolCall {
-  const latestMessage = response.content[response.content.length - 1];
-  if (!latestMessage) throw new Error("Unexpected empty response");
-
-  if (latestMessage.type !== "tool_use") {
-    throw new Error(`Expected tool call, but got ${latestMessage.type}`);
-  }
-
-  return latestMessage as InvokeToolCall;
 }
