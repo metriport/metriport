@@ -6,15 +6,20 @@ import { Bundle, MedicationRequest } from "@medplum/fhirtypes";
 import { dangerouslyDeduplicateFhir } from "@metriport/core/fhir-deduplication/deduplicate-fhir";
 import { HistoryData, historyPage } from "./history-table";
 import { Medication, Organization } from "@medplum/fhirtypes";
+import { getConsolidatedBundle } from "../shared";
 
 export const DR_FIRST_DIR = path.join(process.cwd(), "runs", "drfirst");
 const CX_ID = process.env.TARGET_COMPARISON_CX_ID ?? "";
 
 const program = new Command();
 
-program.name("dr-first").description("Run the comparison of Dr First to Metriport").action(main);
+program
+  .name("dr-first")
+  .description("Run the comparison of Dr First to Metriport")
+  .option("--include-hie", "Include HIE data in the comparison")
+  .action(main);
 
-async function main() {
+async function main({ includeHie }: { includeHie?: boolean }) {
   console.log("Running comparison of Dr First to Metriport");
   if (!CX_ID) throw new Error("TARGET_COMPARISON_CX_ID is not set");
 
@@ -31,6 +36,18 @@ async function main() {
 
     const drFirstOutput = getDrFirstOutput(nameId);
     const metriportBundle = getMetriportBundle(nameId);
+
+    // Include consolidated bundle
+    if (includeHie) {
+      const consolidatedBundle = await getConsolidatedBundle(CX_ID, patientId);
+      if (consolidatedBundle && metriportBundle.entry && consolidatedBundle.entry) {
+        console.log(`Adding ${consolidatedBundle.entry.length} consolidated entries for ${nameId}`);
+        metriportBundle.entry.push(...consolidatedBundle.entry);
+      } else {
+        console.log(`No consolidated bundle found for ${nameId}`);
+      }
+    }
+
     dangerouslyDeduplicateFhir(metriportBundle, CX_ID, patientId);
     writeDrFirstHtml(nameId, drFirstOutput);
     writeMetriportHtml(nameId, metriportBundle);
