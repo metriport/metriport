@@ -299,6 +299,16 @@ export type EnvConfigNonSandbox = EnvConfigBase & {
   engineeringCxId: string;
   hl7Notification: Hl7NotificationConfig;
   fhirConversionBucketName: string;
+  analyticsPlatform: {
+    bucketName: string;
+    snowflake: {
+      secrets: {
+        SNOWFLAKE_CREDS: string;
+      };
+      snowflakeRole: string;
+      snowflakeWarehouse: string;
+    };
+  };
 };
 
 export type EnvConfigSandbox = EnvConfigBase & {

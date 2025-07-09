@@ -30,7 +30,7 @@ import * as secret from "aws-cdk-lib/aws-secretsmanager";
 import * as sns from "aws-cdk-lib/aws-sns";
 import { ITopic } from "aws-cdk-lib/aws-sns";
 import { Construct } from "constructs";
-import { EnvConfig, EnvConfigSandbox } from "../config/env-config";
+import { EnvConfig, EnvConfigNonSandbox, EnvConfigSandbox } from "../config/env-config";
 import { AlarmSlackBot } from "./api-stack/alarm-slack-chatbot";
 import { createScheduledAPIQuotaChecker } from "./api-stack/api-quota-checker";
 import { createAPIService } from "./api-stack/api-service";
@@ -63,6 +63,7 @@ import { provideAccessToQueue } from "./shared/sqs";
 import { isProd, isSandbox } from "./shared/util";
 import { wafRules } from "./shared/waf-rules";
 import { SurescriptsNestedStack } from "./surescripts/surescripts-stack";
+import { AnalyticsPlatformsNestedStack } from "./analytics-platform/analytics-platform-stack";
 
 const FITBIT_LAMBDA_TIMEOUT = Duration.seconds(60);
 
@@ -503,6 +504,22 @@ export class APIStack extends Stack {
     });
 
     //-------------------------------------------
+    // Analytics Platform
+    //-------------------------------------------
+    let analyticsPlatformStack: AnalyticsPlatformsNestedStack | undefined = undefined;
+    if (!isSandbox(props.config)) {
+      analyticsPlatformStack = new AnalyticsPlatformsNestedStack(
+        this,
+        "AnalyticsPlatformsNestedStack",
+        {
+          config: props.config as EnvConfigNonSandbox,
+          vpc: this.vpc,
+          medicalDocumentsBucket,
+        }
+      );
+    }
+
+    //-------------------------------------------
     // Rate Limiting
     //-------------------------------------------
     const { rateLimitTable } = new RateLimitingNestedStack(this, "RateLimitingNestedStack", {
@@ -651,6 +668,7 @@ export class APIStack extends Stack {
       cookieStore,
       surescriptsAssets: surescriptsStack?.getAssets(),
       jobAssets: jobsStack.getAssets(),
+      analyticsPlatformAssets: analyticsPlatformStack?.getAssets(),
     });
     const apiLoadBalancerAddress = apiLoadBalancer.loadBalancerDnsName;
 
@@ -751,6 +769,9 @@ export class APIStack extends Stack {
     medicalDocumentsBucket.grantReadWrite(documentDownloaderLambda);
     medicalDocumentsBucket.grantRead(fhirConverterLambda);
     medicalDocumentsBucket.grantRead(ehrComputeResourceDiffBundlesLambda);
+    if (analyticsPlatformStack) {
+      medicalDocumentsBucket.grantRead(analyticsPlatformStack.fhirToCsvContainer.executionRole);
+    }
 
     createDocQueryChecker({
       lambdaLayers,

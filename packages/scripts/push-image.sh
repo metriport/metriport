@@ -28,12 +28,17 @@ GITHUB_SHA=$(git rev-parse --short HEAD)
 PACKAGE_NAME=$1
 PACKAGE_FOLDER=packages/$PACKAGE_NAME
 
+TAG_PREFIX="$2-"
+if [[ -z "$TAG_PREFIX" ]]; then
+  TAG_PREFIX=""
+fi
+
 pushd ${PACKAGE_FOLDER}
 
 # Build and push Docker images
 docker buildx build \
   --platform linux/amd64 \
-  --tag "$ECR_REPO_URI:latest" \
+  --tag "$ECR_REPO_URI:${TAG_PREFIX}latest" \
   --tag "$ECR_REPO_URI:$GITHUB_SHA" \
   --push \
   .

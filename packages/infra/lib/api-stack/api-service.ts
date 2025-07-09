@@ -36,6 +36,7 @@ import { provideAccessToQueue } from "../shared/sqs";
 import { addDefaultMetricsToTargetGroup } from "../shared/target-group";
 import { isProd, isSandbox } from "../shared/util";
 import { SurescriptsAssets } from "../surescripts/types";
+import { AnalyticsPlatformsAssets } from "../analytics-platform/types";
 
 interface ApiProps extends StackProps {
   config: EnvConfig;
@@ -136,6 +137,7 @@ export function createAPIService({
   cookieStore,
   surescriptsAssets,
   jobAssets,
+  analyticsPlatformAssets,
 }: {
   stack: Construct;
   props: ApiProps;
@@ -183,6 +185,7 @@ export function createAPIService({
   cookieStore: secret.ISecret | undefined;
   surescriptsAssets: SurescriptsAssets | undefined;
   jobAssets: JobsAssets;
+  analyticsPlatformAssets: AnalyticsPlatformsAssets | undefined;
 }): {
   cluster: ecs.Cluster;
   service: ecs_patterns.ApplicationLoadBalancedFargateService;
@@ -393,6 +396,15 @@ export function createAPIService({
             DISCHARGE_NOTIFICATION_SLACK_URL:
               props.config.hl7Notification.dischargeNotificationSlackUrl,
           }),
+          ...(analyticsPlatformAssets && {
+            FHIR_TO_CSV_BATCH_JOB_QUEUE_ARN: analyticsPlatformAssets.fhirToCsvQueue.jobQueueArn,
+            FHIR_TO_CSV_BATCH_JOB_DEFINITION_ARN:
+              analyticsPlatformAssets.fhirToCsvBatchJob.jobDefinitionArn,
+            CSV_TO_METRICS_BATCH_JOB_QUEUE_ARN:
+              analyticsPlatformAssets.csvToMetricsQueue.jobQueueArn,
+            CSV_TO_METRICS_BATCH_JOB_DEFINITION_ARN:
+              analyticsPlatformAssets.csvToMetricsBatchJob.jobDefinitionArn,
+          }),
         },
       },
       healthCheckGracePeriod: Duration.seconds(60),
@@ -486,6 +498,17 @@ export function createAPIService({
     );
     surescriptsAssets.surescriptsReplicaBucket.grantReadWrite(
       fargateService.taskDefinition.taskRole
+    );
+  }
+
+  if (analyticsPlatformAssets) {
+    analyticsPlatformAssets.fhirToCsvBatchJob.grantSubmitJob(
+      fargateService.taskDefinition.taskRole,
+      analyticsPlatformAssets.fhirToCsvQueue
+    );
+    analyticsPlatformAssets.csvToMetricsBatchJob.grantSubmitJob(
+      fargateService.taskDefinition.taskRole,
+      analyticsPlatformAssets.csvToMetricsQueue
     );
   }
 

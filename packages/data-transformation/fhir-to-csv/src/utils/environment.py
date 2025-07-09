@@ -1,9 +1,9 @@
 from enum import Enum
 
 class Environment(Enum):
-    DEV = "DEV"
-    STAGING = "STAGING"
-    PROD = "PROD"
+    DEV = "development"
+    STAGING = "staging"
+    PROD = "production"
 
     def __str__(self):
         return self.value

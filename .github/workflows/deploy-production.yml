@@ -37,6 +37,7 @@ jobs:
       secrets: ${{ steps.changes.outputs.secrets }}
       location_services: ${{ steps.changes.outputs.location_services }}
       infra-hl7-notification: ${{ steps.changes.outputs.infra-hl7-notification }}
+      analytics-platform: ${{ steps.changes.outputs.analytics-platform }}
     steps:
       - name: Login to Docker Hub
         uses: docker/login-action@v2
@@ -100,6 +101,9 @@ jobs:
               - "packages/infra/lib/hl7-notification-stack/**"
               - "packages/infra/bin/infrastructure.ts"
               - "package*.json"
+            analytics-platform:
+              - "packages/data-transformation/**"
+              - "package*.json"
 
   api-prod:
     if: needs.files-changed.outputs.api == 'true'
@@ -145,6 +149,22 @@ jobs:
       ECR_REPO_URI: ${{ vars.ECR_REPO_URI_MLLP_SERVER_PRODUCTION }}
       ECS_CLUSTER: ${{ vars.ECS_CLUSTER_MLLP_SERVER_PRODUCTION }}
       ECS_SERVICE: ${{ vars.ECS_SERVICE_MLLP_SERVER_PRODUCTION }}
+      AWS_REGION: ${{ vars.API_REGION_PRODUCTION }}
+    secrets:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+
+  analytics-platform:
+    if: needs.files-changed.outputs.analytics-platform == 'true'
+    needs: files-changed
+    uses: ./.github/workflows/_deploy-analytics-platform.yml
+    with:
+      deploy_env: "production"
+      ECR_REPO_URI: ${{ vars.ECR_REPO_URI_ANALYTICS_PLATFORM_PRODUCTION }}
       AWS_REGION: ${{ vars.API_REGION_PRODUCTION }}
     secrets:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
