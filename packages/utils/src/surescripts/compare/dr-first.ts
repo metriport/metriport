@@ -2,7 +2,7 @@ import { Command } from "commander";
 import fs from "fs";
 import path from "path";
 import { buildDayjs } from "@metriport/shared/common/date";
-import { Bundle, MedicationRequest } from "@medplum/fhirtypes";
+import { Bundle, MedicationRequest, Resource, Extension } from "@medplum/fhirtypes";
 import { dangerouslyDeduplicateFhir } from "@metriport/core/fhir-deduplication/deduplicate-fhir";
 import { HistoryData, historyPage } from "./history-table";
 import { Medication, Organization } from "@medplum/fhirtypes";
@@ -17,9 +17,10 @@ program
   .name("dr-first")
   .description("Run the comparison of Dr First to Metriport")
   .option("--include-hie", "Include HIE data in the comparison")
+  .option("--hie-only", "Remove Surescripts data from the comparison")
   .action(main);
 
-async function main({ includeHie }: { includeHie?: boolean }) {
+async function main({ includeHie, hieOnly }: { includeHie?: boolean; hieOnly?: boolean }) {
   console.log("Running comparison of Dr First to Metriport");
   if (!CX_ID) throw new Error("TARGET_COMPARISON_CX_ID is not set");
 
@@ -38,7 +39,7 @@ async function main({ includeHie }: { includeHie?: boolean }) {
     const metriportBundle = getMetriportBundle(nameId);
 
     // Include consolidated bundle
-    if (includeHie) {
+    if (includeHie || hieOnly) {
       const consolidatedBundle = await getConsolidatedBundle(CX_ID, patientId);
       if (consolidatedBundle && metriportBundle.entry && consolidatedBundle.entry) {
         console.log(`Adding ${consolidatedBundle.entry.length} consolidated entries for ${nameId}`);
@@ -46,9 +47,24 @@ async function main({ includeHie }: { includeHie?: boolean }) {
       } else {
         console.log(`No consolidated bundle found for ${nameId}`);
       }
+
+      if (hieOnly) {
+        const originalEntryCount = metriportBundle.entry?.length ?? 0;
+        metriportBundle.entry = metriportBundle.entry?.filter(
+          entry => !isSurescriptsResource(entry.resource)
+        );
+        const finalEntryCount = metriportBundle?.entry?.length ?? 0;
+        console.log(
+          `Removed ${originalEntryCount - finalEntryCount} Surescripts entries for ${nameId}`
+        );
+      }
     }
 
-    dangerouslyDeduplicateFhir(metriportBundle, CX_ID, patientId);
+    try {
+      dangerouslyDeduplicateFhir(metriportBundle, CX_ID, patientId);
+    } catch (error) {
+      console.error(`Error deduplicating ${nameId}:`, error);
+    }
     writeDrFirstHtml(nameId, drFirstOutput);
     writeMetriportHtml(nameId, metriportBundle);
     const drFirstStatistics = computeDrFirstStatistics(drFirstOutput, responsePbmCount);
@@ -62,9 +78,10 @@ async function main({ includeHie }: { includeHie?: boolean }) {
     ]);
   }
 
-  console.log(responsePbmCount);
+  const countFileName =
+    includeHie || hieOnly ? (hieOnly ? "count-hie-only.csv" : "count-with-hie.csv") : "count.csv";
   fs.writeFileSync(
-    path.join(DR_FIRST_DIR, includeHie ? "count-with-hie.csv" : "count.csv"),
+    path.join(DR_FIRST_DIR, countFileName),
     csvOutput.map(row => row.join(",")).join("\n"),
     "utf-8"
   );
@@ -152,6 +169,19 @@ function getDrFirstHistoryData(nameId: string, drFirstOutput: DrFirstOutput): Hi
   }
 
   return historyData;
+}
+
+function isSurescriptsResource(resource?: Resource): boolean {
+  if (resource == null) return false;
+  if ("extension" in resource && resource.extension != null) {
+    return resource.extension.some(isSurescriptsExtension);
+  }
+  return false;
+}
+
+function isSurescriptsExtension(extension?: Extension): boolean {
+  if (extension == null) return false;
+  return extension.valueCoding?.code === "SURESCRIPTS";
 }
 
 function writeDrFirstHtml(nameId: string, output: DrFirstOutput) {
