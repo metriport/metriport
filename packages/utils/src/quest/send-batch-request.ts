@@ -16,7 +16,7 @@ program
   .name("batch-request")
   .option("--cx-id <cx>", "The CX ID of the requester")
   .option("--facility-id <facility>", "The facility ID of the requester")
-  .option("--patient-ids <patient>", "Specific patient IDs (comma separated) for the request")
+  .option("--patient-ids <patientIds>", "Specific patient IDs (comma separated) for the request")
   .option("--csv-data <csv>", "The CSV data file to use for patient load")
   .description("Generate a patient load file and place into the outgoing replica directory")
   .showHelpAfterError()
@@ -28,12 +28,13 @@ program
     if (!facilityId) throw new Error("Facility ID is required");
 
     if (patientIds) {
+      const ids: string[] = patientIds.split(",");
       const handler = new QuestSendBatchRequestHandlerDirect(
         new QuestSftpClient({
           logLevel: "debug",
         })
       );
-      await handler.sendBatchRequest({ cxId, facilityId, patientIds });
+      await handler.sendBatchRequest({ cxId, facilityId, patientIds: ids });
     } else if (csvData) {
       const dataMapper = new QuestDataMapper();
       const facility = await dataMapper.getFacilityData(cxId, facilityId);
