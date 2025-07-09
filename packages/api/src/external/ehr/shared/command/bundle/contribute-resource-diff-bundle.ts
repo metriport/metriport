@@ -47,6 +47,7 @@ export async function contributeResourceDiffBundle({
   ]);
   if (!bundle?.bundle.entry || bundle.bundle.entry.length < 1) return;
   if (await isAthenaCustomFieldsEnabledForCx(cxId)) return;
+  if (ehr === Ehr.ATHENA_HEALTH) return;
   await handleDataContribution({
     requestId: uuidv7(),
     patient: metriportPatient,
