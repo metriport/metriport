@@ -173,6 +173,7 @@ export const config: EnvConfigNonSandbox = {
       },
     ],
     mllpServer: {
+      sentryDSN: "your-sentry-dsn",
       fargateCpu: 1 * vCPU,
       fargateMemoryLimitMiB: 2048,
       fargateTaskCountMin: 2,
@@ -207,6 +208,7 @@ export const config: EnvConfigNonSandbox = {
         },
       },
     },
+    dischargeNotificationSlackUrl: "url-to-slack-channel",
   },
   acmCertMonitor: {
     scheduleExpressions: ["cw-schedule-expression"],
@@ -221,6 +223,7 @@ export const config: EnvConfigNonSandbox = {
   iheResponsesBucketName: "test-ihe-responses-bucket",
   iheParsedResponsesBucketName: "test-ihe-parsed-responses-bucket",
   iheRequestsBucketName: "test-ihe-requests-bucket",
+  fhirConversionBucketName: "test-fhir-conversion-bucket",
   engineeringCxId: "12345678-1234-1234-1234-123456789012",
   slack: {
     SLACK_ALERT_URL: "url-to-slack-alert",
@@ -229,8 +232,8 @@ export const config: EnvConfigNonSandbox = {
     alertsChannelId: "alerts-channel-id",
   },
   jobs: {
-    startPatientJobsSchedulerScheduleExpression: "0/5 * * * ? *",
-    startPatientJobsSchedulerUrl: "/internal/patient/job/scheduler/start",
+    startScheduledPatientJobsScheduleExpression: "0/5 * * * ? *",
+    startScheduledPatientJobsSchedulerUrl: "/internal/patient/job/scheduler/start",
   },
 };
 export default config;

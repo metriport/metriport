@@ -110,7 +110,7 @@ import { out } from "../../../util/log";
 import { capture } from "../../../util/notifications";
 import {
   ApiConfig,
-  convertBundleToValidStrictBundle,
+  convertEhrBundleToValidEhrStrictBundle,
   createDataParams,
   DataPoint,
   fetchEhrBundleUsingCache,
@@ -140,12 +140,14 @@ import {
   MakeRequestParamsInEhr,
   MedicationWithRefs,
   paginateWaitTime,
+  partitionEhrBundle,
+  saveEhrReferenceBundle,
 } from "../shared";
 
 dayjs.extend(duration);
 
 const parallelRequests = 5;
-const delayBetweenRequestBatches = dayjs.duration(2, "seconds");
+const maxJitter = dayjs.duration(2, "seconds");
 
 interface AthenaHealthApiConfig extends ApiConfig {
   environment: AthenaEnv;
@@ -212,11 +214,11 @@ export const supportedAthenaHealthResources: ResourceType[] = [
   "Encounter",
 ];
 
+// TODO Eng-514 -- Add support for more resources
 export const supportedAthenaHealthReferenceResources: ResourceType[] = [
-  "Media",
   "Medication",
   "Binary",
-  "RelatedPerson",
+  "Patient",
   "Location",
   "Organization",
   "Practitioner",
@@ -232,6 +234,14 @@ export function isSupportedAthenaHealthResource(
   resourceType: string
 ): resourceType is SupportedAthenaHealthResource {
   return supportedAthenaHealthResources.includes(resourceType as ResourceType);
+}
+
+export type SupportedAthenaHealthReferenceResource =
+  (typeof supportedAthenaHealthReferenceResources)[number];
+export function isSupportedAthenaHealthReferenceResource(
+  resourceType: string
+): resourceType is SupportedAthenaHealthReferenceResource {
+  return supportedAthenaHealthReferenceResources.includes(resourceType as ResourceType);
 }
 
 class AthenaHealthApi {
@@ -517,7 +527,7 @@ class AthenaHealthApi {
     const createdProblem = await this.makeRequest<CreatedProblem>({
       cxId,
       patientId,
-      s3Path: `chart/problem/${additionalInfo.conditionId ?? "unknown"}`,
+      s3Path: this.createWriteBackPath("problem", additionalInfo.conditionId),
       method: "POST",
       data,
       url: chartProblemUrl,
@@ -609,7 +619,7 @@ class AthenaHealthApi {
           const createdMedication = await this.makeRequest<CreatedMedication>({
             cxId,
             patientId,
-            s3Path: `chart/medication/${additionalInfo.medicationId ?? "unknown"}`,
+            s3Path: this.createWriteBackPath("medication", additionalInfo.medicationId),
             method: "POST",
             data: params,
             url: chartMedicationUrl,
@@ -633,7 +643,7 @@ class AthenaHealthApi {
       },
       {
         numberOfParallelExecutions: parallelRequests,
-        delay: delayBetweenRequestBatches.asMilliseconds(),
+        maxJitterMillis: maxJitter.asMilliseconds(),
       }
     );
     if (createMedicationErrors.length > 0) {
@@ -697,7 +707,7 @@ class AthenaHealthApi {
     const createdVaccines = await this.makeRequest<CreatedVaccines>({
       cxId,
       patientId,
-      s3Path: `chart/vaccine/${additionalInfo.immunizationId ?? "unknown"}`,
+      s3Path: this.createWriteBackPath("vaccine", additionalInfo.immunizationId),
       method: "POST",
       data,
       url: chartVaccineUrl,
@@ -760,7 +770,7 @@ class AthenaHealthApi {
     const createdSurgicalHistory = await this.makeRequest<CreatedSurgicalHistory>({
       cxId,
       patientId,
-      s3Path: `chart/surgicalhistory/${additionalInfo.procedureId ?? "unknown"}`,
+      s3Path: this.createWriteBackPath("surgicalhistory", additionalInfo.procedureId),
       method: "POST",
       data,
       url: chartSurgicalHistoryUrl,
@@ -864,7 +874,7 @@ class AthenaHealthApi {
     const createdLabResult = await this.makeRequest<CreatedLabResult>({
       cxId,
       patientId,
-      s3Path: `chart/labresult/${additionalInfo.observationId ?? "unknown"}`,
+      s3Path: this.createWriteBackPath("labresult", additionalInfo.observationId),
       method: "POST",
       data,
       url: chartLabResultUrl,
@@ -918,7 +928,7 @@ class AthenaHealthApi {
     const createdClinicalDocument = await this.makeRequest<CreatedClinicalDocument>({
       cxId,
       patientId,
-      s3Path: `chart/clinicaldocument`,
+      s3Path: this.createWriteBackPath("clinicaldocument"),
       method: "POST",
       data,
       url: chartEncounterUrl,
@@ -1047,7 +1057,7 @@ class AthenaHealthApi {
     const createdAllergy = await this.makeRequest<CreatedAllergy>({
       cxId,
       patientId,
-      s3Path: `chart/allergy/${additionalInfo.allergyIntoleranceId ?? "unknown"}`,
+      s3Path: this.createWriteBackPath("allergy", additionalInfo.allergyIntoleranceId),
       method: "PUT",
       data,
       url: chartAllergyUrl,
@@ -1163,7 +1173,7 @@ class AthenaHealthApi {
       },
       {
         numberOfParallelExecutions: parallelRequests,
-        delay: delayBetweenRequestBatches.asMilliseconds(),
+        maxJitterMillis: maxJitter.asMilliseconds(),
       }
     );
     if (createVitalsErrors.length > 0) {
@@ -1218,7 +1228,7 @@ class AthenaHealthApi {
           const medicationReferences = await this.makeRequest<MedicationReferences>({
             cxId,
             patientId,
-            s3Path: `reference/medications/${searchValue}`,
+            s3Path: this.createReferencePath("medications", searchValue),
             method: "GET",
             url: `${referenceUrl}?searchvalue=${searchValue}`,
             schema: medicationReferencesSchema,
@@ -1238,7 +1248,7 @@ class AthenaHealthApi {
       },
       {
         numberOfParallelExecutions: parallelRequests,
-        delay: delayBetweenRequestBatches.asMilliseconds(),
+        maxJitterMillis: maxJitter.asMilliseconds(),
       }
     );
     if (searchMedicationErrors.length > 0) {
@@ -1300,7 +1310,7 @@ class AthenaHealthApi {
           const allergenReferences = await this.makeRequest<AllergenReferences>({
             cxId,
             patientId,
-            s3Path: `reference/allergies/${searchValue}`,
+            s3Path: this.createReferencePath("allergies", searchValue),
             method: "GET",
             url: `${referenceUrl}?searchvalue=${searchValue}`,
             schema: allergenReferencesSchema,
@@ -1320,7 +1330,7 @@ class AthenaHealthApi {
       },
       {
         numberOfParallelExecutions: parallelRequests,
-        delay: delayBetweenRequestBatches.asMilliseconds(),
+        maxJitterMillis: maxJitter.asMilliseconds(),
       }
     );
     if (searchAllergenErrors.length > 0) {
@@ -1354,7 +1364,7 @@ class AthenaHealthApi {
     const { debug } = out(
       `AthenaHealth searchForAllergyReactions - cxId ${cxId} practiceId ${this.practiceId}`
     );
-    const referenceUrl = "/reference/allergies/reactions";
+    const referenceUrl = this.createReferencePath("allergies/reactions");
     const additionalInfo = {
       cxId,
       practiceId: this.practiceId,
@@ -1386,7 +1396,7 @@ class AthenaHealthApi {
     };
     const allergySeverityReferences = await this.makeRequest<AllergySeverityReferences>({
       cxId,
-      s3Path: "reference/allergies/severities",
+      s3Path: this.createReferencePath("allergies/severities"),
       method: "GET",
       url: referenceUrl,
       schema: allergySeverityReferencesSchema,
@@ -1434,13 +1444,15 @@ class AthenaHealthApi {
       patientId: athenaPatientId,
       resourceType,
     };
-    const fetchResourcesFromEhr = () =>
-      fetchEhrFhirResourcesWithPagination({
+    let referenceBundleToSave: EhrFhirResourceBundle | undefined;
+    const client = this; // eslint-disable-line @typescript-eslint/no-this-alias
+    function fetchResourcesFromEhr() {
+      return fetchEhrFhirResourcesWithPagination({
         makeRequest: async (url: string) => {
-          const bundle = await this.makeRequest<EhrFhirResourceBundle>({
+          const bundle = await client.makeRequest<EhrFhirResourceBundle>({
             cxId,
             patientId: athenaPatientId,
-            s3Path: `fhir-resources-${resourceType}`,
+            s3Path: client.createFhirPath(resourceType),
             method: "GET",
             url,
             schema: ehrFhirResourceBundleSchema,
@@ -1448,16 +1460,109 @@ class AthenaHealthApi {
             debug,
             useFhir: true,
           });
-          return convertBundleToValidStrictBundle(bundle, resourceType, athenaPatientId);
+          const { targetBundle, referenceBundle } = partitionEhrBundle({
+            bundle,
+            resourceType,
+          });
+          referenceBundleToSave = referenceBundle;
+          return convertEhrBundleToValidEhrStrictBundle(
+            targetBundle,
+            resourceType,
+            athenaPatientId
+          );
         },
         url: resourceTypeUrl,
       });
+    }
     const bundle = await fetchEhrBundleUsingCache({
       ehr: EhrSources.athena,
       cxId,
       metriportPatientId,
       ehrPatientId: athenaPatientId,
       resourceType,
+      fetchResourcesFromEhr,
+      useCachedBundle,
+    });
+    if (referenceBundleToSave) {
+      await saveEhrReferenceBundle({
+        ehr: EhrSources.athena,
+        cxId,
+        metriportPatientId,
+        ehrPatientId: athenaPatientId,
+        referenceBundle: referenceBundleToSave,
+      });
+    }
+    return bundle;
+  }
+
+  async getResourceBundleByResourceId({
+    cxId,
+    metriportPatientId,
+    athenaPatientId,
+    resourceType,
+    resourceId,
+    useCachedBundle = true,
+  }: {
+    cxId: string;
+    metriportPatientId: string;
+    athenaPatientId: string;
+    resourceType: string;
+    resourceId: string;
+    useCachedBundle?: boolean;
+  }): Promise<Bundle> {
+    const { debug } = out(
+      `AthenaHealth getResourceBundleByResourceId - cxId ${cxId} practiceId ${this.practiceId} metriportPatientId ${metriportPatientId} athenaPatientId ${athenaPatientId} resourceType ${resourceType}`
+    );
+    if (
+      !isSupportedAthenaHealthResource(resourceType) &&
+      !isSupportedAthenaHealthReferenceResource(resourceType)
+    ) {
+      throw new BadRequestError("Invalid resource type", undefined, {
+        athenaPatientId,
+        resourceId,
+        resourceType,
+      });
+    }
+    const params = {
+      _id: resourceId,
+      "ah-practice": this.createPracticetId(this.practiceId),
+    };
+    const urlParams = new URLSearchParams(params);
+    const resourceTypeUrl = `/${resourceType}?${urlParams.toString()}`;
+    const additionalInfo = {
+      cxId,
+      practiceId: this.practiceId,
+      patientId: athenaPatientId,
+      resourceType,
+      resourceId,
+    };
+    const client = this; // eslint-disable-line @typescript-eslint/no-this-alias
+    function fetchResourcesFromEhr() {
+      return fetchEhrFhirResourcesWithPagination({
+        makeRequest: async (url: string) => {
+          const bundle = await client.makeRequest<EhrFhirResourceBundle>({
+            cxId,
+            patientId: athenaPatientId,
+            s3Path: client.createFhirPath(resourceType, resourceId),
+            method: "GET",
+            url,
+            schema: ehrFhirResourceBundleSchema,
+            additionalInfo,
+            debug,
+            useFhir: true,
+          });
+          return convertEhrBundleToValidEhrStrictBundle(bundle, resourceType, athenaPatientId);
+        },
+        url: resourceTypeUrl,
+      });
+    }
+    const bundle = await fetchEhrBundleUsingCache({
+      ehr: EhrSources.athena,
+      cxId,
+      metriportPatientId,
+      ehrPatientId: athenaPatientId,
+      resourceType,
+      resourceId,
       fetchResourcesFromEhr,
       useCachedBundle,
     });
@@ -1826,6 +1931,18 @@ class AthenaHealthApi {
       });
     }
     return mostSimilarOption;
+  }
+
+  private createWriteBackPath(resourceType: string, resourceId?: string | undefined): string {
+    return `chart/${resourceType}/${resourceId ?? "unknown"}`;
+  }
+
+  private createFhirPath(resourceType: string, resourceId?: string): string {
+    return `fhir-resources-${resourceType}${resourceId ? `/resourceId/${resourceId}` : ""}`;
+  }
+
+  private createReferencePath(referenceType: string, referenceId?: string): string {
+    return `reference/${referenceType}/${referenceId}`;
   }
 }
 

@@ -59,6 +59,9 @@ export const initialFeatureFlags: FeatureFlagDatastore = {
   carequalityFeatureFlag: { enabled: false },
   cxsWithPcpVisitAiSummaryFeatureFlag: { enabled: false, values: [] },
   cxsWithHl7NotificationWebhookFeatureFlag: { enabled: false, values: [] },
+  cxsWithDischargeRequeryFeatureFlag: { enabled: false, values: [] },
+  cxsWithDischargeSlackNotificationFeatureFlag: { enabled: false, values: [] },
+  cxsWithXmlRedownloadFeatureFlag: { enabled: false, values: [] },
 };
 
 /**

@@ -111,6 +111,7 @@ export function createAPIService({
   patientImportParseLambda,
   patientImportResultLambda,
   patientImportBucket,
+  dischargeRequeryQueue,
   ehrSyncPatientQueue,
   elationLinkPatientQueue,
   healthieLinkPatientQueue,
@@ -158,6 +159,7 @@ export function createAPIService({
   patientImportParseLambda: ILambda;
   patientImportResultLambda: ILambda;
   patientImportBucket: s3.IBucket;
+  dischargeRequeryQueue: IQueue | undefined;
   ehrSyncPatientQueue: IQueue;
   elationLinkPatientQueue: IQueue;
   healthieLinkPatientQueue: IQueue;
@@ -304,6 +306,9 @@ export function createAPIService({
           PATIENT_IMPORT_BUCKET_NAME: patientImportBucket.bucketName,
           PATIENT_IMPORT_PARSE_LAMBDA_NAME: patientImportParseLambda.functionName,
           PATIENT_IMPORT_RESULT_LAMBDA_NAME: patientImportResultLambda.functionName,
+          ...(dischargeRequeryQueue && {
+            DISCHARGE_REQUERY_QUEUE_URL: dischargeRequeryQueue.queueUrl,
+          }),
           EHR_SYNC_PATIENT_QUEUE_URL: ehrSyncPatientQueue.queueUrl,
           ELATION_LINK_PATIENT_QUEUE_URL: elationLinkPatientQueue.queueUrl,
           HEALTHIE_LINK_PATIENT_QUEUE_URL: healthieLinkPatientQueue.queueUrl,
@@ -400,6 +405,10 @@ export function createAPIService({
             ),
           }),
           RUN_PATIENT_JOB_QUEUE_URL: jobAssets.runPatientJobQueue.queueUrl,
+          ...(props.config.hl7Notification?.dischargeNotificationSlackUrl && {
+            DISCHARGE_NOTIFICATION_SLACK_URL:
+              props.config.hl7Notification.dischargeNotificationSlackUrl,
+          }),
         },
       },
       healthCheckGracePeriod: Duration.seconds(60),
@@ -533,6 +542,14 @@ export function createAPIService({
     queue: ehrRefreshEhrBundlesQueue,
     resource: fargateService.taskDefinition.taskRole,
   });
+
+  if (dischargeRequeryQueue) {
+    provideAccessToQueue({
+      accessType: "send",
+      queue: dischargeRequeryQueue,
+      resource: fargateService.taskDefinition.taskRole,
+    });
+  }
 
   if (surescriptsAssets) {
     surescriptsAssets.surescriptsQueues.forEach(({ queue }) => {

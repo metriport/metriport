@@ -105,10 +105,22 @@ export function joinName(name: string[]): string {
  * @param firstName - The first name to get the middle name from.
  * @returns The middle name or undefined if there is no middle name.
  */
-export function getMiddleName(firstName: string): string | undefined {
-  const cleanFirstName = firstName.replace(/[^a-zA-Z ]/g, "");
+export function getFirstNameAndMiddleInitial(combinedFirstName: string): {
+  firstName: string;
+  middleInitial: string | undefined;
+} {
+  const cleanFirstName = combinedFirstName.replace(/[^a-zA-Z ]/g, "");
   const lastTwoChars = cleanFirstName.substring(cleanFirstName.length - 2);
-  return lastTwoChars[0] === " " ? lastTwoChars[1] : undefined;
+  const hasMiddleInitial = lastTwoChars[0] === " ";
+
+  if (hasMiddleInitial) {
+    return {
+      firstName: cleanFirstName.substring(0, cleanFirstName.length - 2),
+      middleInitial: lastTwoChars[1],
+    };
+  }
+
+  return { firstName: combinedFirstName, middleInitial: undefined };
 }
 
 export interface Patient extends BaseDomain, PatientCreate {}

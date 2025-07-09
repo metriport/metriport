@@ -77,6 +77,7 @@ export class MllpStack extends cdk.NestedStack {
     const { vpc, ecrRepo, incomingHl7NotificationBucket, config } = props;
     const { notificationWebhookSenderQueue, hieConfigs } = config.hl7Notification;
     const {
+      sentryDSN,
       fargateCpu,
       fargateMemoryLimitMiB,
       fargateTaskCountMin,
@@ -162,6 +163,7 @@ export class MllpStack extends cdk.NestedStack {
         HL7_INCOMING_MESSAGE_BUCKET_NAME: incomingHl7NotificationBucket.bucketName,
         HL7_NOTIFICATION_QUEUE_URL: notificationWebhookSenderQueue.url,
         HIE_TIMEZONE_DICTIONARY: JSON.stringify(createHieTimezoneMap(hieConfigs)),
+        ...(sentryDSN ? { SENTRY_DSN: sentryDSN } : {}),
         ...(props.version ? { RELEASE_SHA: props.version } : undefined),
       },
       portMappings: [{ containerPort: MLLP_DEFAULT_PORT }],

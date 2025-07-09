@@ -129,7 +129,7 @@ router.post(
       cxId,
       patientId,
       facilityId,
-      override,
+      forceDownload: override,
       cxDocumentRequestMetadata: cxDocumentRequestMetadata?.metadata,
       forceCommonwell,
       forceCarequality,

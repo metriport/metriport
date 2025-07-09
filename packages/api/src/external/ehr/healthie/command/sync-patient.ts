@@ -28,7 +28,11 @@ import {
   PatientWithIdentifiers,
 } from "../../../../command/medical/patient/get-patient";
 import { Config } from "../../../../shared/config";
-import { handleMetriportSync, HandleMetriportSyncParams } from "../../shared/utils/patient";
+import {
+  handleMetriportSync,
+  HandleMetriportSyncParams,
+  isDqCooldownExpired,
+} from "../../shared/utils/patient";
 import { createAddresses, createContacts, createHealthieClient, createNames } from "../shared";
 
 dayjs.extend(duration);
@@ -42,6 +46,7 @@ export type SyncHealthiePatientIntoMetriportParams = {
   healthiePatientId: string;
   api?: HealthieApi;
   triggerDq?: boolean;
+  triggerDqForExistingPatient?: boolean;
 };
 
 export async function syncHealthiePatientIntoMetriport({
@@ -50,6 +55,7 @@ export async function syncHealthiePatientIntoMetriport({
   healthiePatientId,
   api,
   triggerDq = false,
+  triggerDqForExistingPatient = false,
 }: SyncHealthiePatientIntoMetriportParams): Promise<string> {
   const existingPatient = await getPatientMapping({
     cxId,
@@ -61,6 +67,12 @@ export async function syncHealthiePatientIntoMetriport({
       cxId,
       id: existingPatient.patientId,
     });
+    if (triggerDqForExistingPatient && isDqCooldownExpired(metriportPatient)) {
+      queryDocumentsAcrossHIEs({
+        cxId,
+        patientId: metriportPatient.id,
+      }).catch(processAsyncError(`Healthie queryDocumentsAcrossHIEs`));
+    }
     const metriportPatientId = metriportPatient.id;
     await updateHealthiePatientQuickNotes({
       cxId,

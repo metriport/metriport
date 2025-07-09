@@ -64,11 +64,13 @@ router.post(
     const healthiePatientId = getFromQueryOrFail("patientId", req);
     const healthiePracticeId = getFromQueryOrFail("practiceId", req);
     const triggerDq = getFromQueryAsBoolean("triggerDq", req);
+    const isAppointment = getFromQueryAsBoolean("isAppointment", req);
     syncHealthiePatientIntoMetriport({
       cxId,
       healthiePracticeId,
       healthiePatientId,
       triggerDq,
+      triggerDqForExistingPatient: isAppointment,
     }).catch(processAsyncError("Healthie syncHealthiePatientIntoMetriport"));
     return res.sendStatus(httpStatus.OK);
   })

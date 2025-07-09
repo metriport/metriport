@@ -14,6 +14,7 @@ export interface Hl7NotificationConfig {
   };
   vpnConfigs: Hl7NotificationVpnConfig[];
   mllpServer: {
+    sentryDSN: string;
     fargateCpu: number;
     fargateMemoryLimitMiB: number;
     fargateTaskCountMin: number;
@@ -25,6 +26,8 @@ export interface Hl7NotificationConfig {
     bucketName: string;
   };
   hieConfigs: Record<string, HieConfig>;
+  // ENG-536 remove this once we automatically find the discharge summary
+  dischargeNotificationSlackUrl: string;
 }
 
 export type Hl7NotificationVpnConfig = {

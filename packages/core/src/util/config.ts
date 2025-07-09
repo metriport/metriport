@@ -196,6 +196,10 @@ export class Config {
     return getEnvVarOrFail("PATIENT_IMPORT_RESULT_LAMBDA_NAME");
   }
 
+  static getDischargeRequeryQueueUrl(): string {
+    return getEnvVarOrFail("DISCHARGE_REQUERY_QUEUE_URL");
+  }
+
   static getEhrSyncPatientQueueUrl(): string {
     return getEnvVarOrFail("EHR_SYNC_PATIENT_QUEUE_URL");
   }
@@ -213,6 +217,9 @@ export class Config {
   }
   static getEhrRefreshEhrBundlesQueueUrl(): string {
     return getEnvVarOrFail("EHR_REFRESH_EHR_BUNDLES_QUEUE_URL");
+  }
+  static getEhrContributeDiffBundlesQueueUrl(): string {
+    return getEnvVarOrFail("EHR_CONTRIBUTE_RESOURCE_DIFF_BUNDLES_QUEUE_URL");
   }
   static getEhrBundleBucketName(): string {
     return getEnvVarOrFail("EHR_BUNDLE_BUCKET_NAME");
@@ -349,5 +356,20 @@ export class Config {
 
   static getRunPatientJobQueueUrl(): string {
     return getEnvVarOrFail("RUN_PATIENT_JOB_QUEUE_URL");
+  }
+
+  static getFhirConverterLambdaName(): string {
+    return getEnvVarOrFail("FHIR_CONVERTER_LAMBDA_NAME");
+  }
+  static getFhirConvertServerURL(): string {
+    return getEnvVarOrFail("FHIR_CONVERTER_SERVER_URL");
+  }
+  static getFhirConversionBucketName(): string {
+    return getEnvVarOrFail("FHIR_CONVERTER_BUCKET_NAME");
+  }
+
+  // ENG-536 remove this once we automatically find the discharge summary
+  static getDischargeNotificationSlackUrl(): string {
+    return getEnvVarOrFail("DISCHARGE_NOTIFICATION_SLACK_URL");
   }
 }

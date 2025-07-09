@@ -11,4 +11,6 @@ export interface TcmEncounter extends BaseDomain {
   admitTime: Date | null;
   dischargeTime: Date | null;
   clinicalInformation: Record<string, unknown>;
+  freetextNote: string;
+  dischargeSummaryPath?: string;
 }
