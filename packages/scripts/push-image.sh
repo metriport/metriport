@@ -28,9 +28,11 @@ GITHUB_SHA=$(git rev-parse --short HEAD)
 PACKAGE_NAME=$1
 PACKAGE_FOLDER=packages/$PACKAGE_NAME
 
-TAG_PREFIX="$2-"
+TAG_PREFIX=$2
 if [[ -z "$TAG_PREFIX" ]]; then
   TAG_PREFIX=""
+else
+  TAG_PREFIX="$TAG_PREFIX-"
 fi
 
 pushd ${PACKAGE_FOLDER}
