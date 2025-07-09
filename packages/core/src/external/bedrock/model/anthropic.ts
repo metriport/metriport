@@ -9,16 +9,16 @@ import {
   InvokeThinkingMessage,
 } from "../types";
 
-export type ClaudeSonnetVersion = "3.5" | "3.7" | "4";
-export const ClaudeSonnetModelId: Record<ClaudeSonnetVersion, string> = {
-  "3.5": "us.anthropic.claude-3-5-sonnet-20241022-v2:0",
-  "3.7": "us.anthropic.claude-3-7-sonnet-20250219-v1:0",
-  "4": "us.anthropic.claude-sonnet-4-20250514-v1:0",
+export type AnthropicModelVersion = "claude-sonnet-3.5" | "claude-sonnet-3.7" | "claude-sonnet-4";
+export const ClaudeSonnetModelId: Record<AnthropicModelVersion, string> = {
+  "claude-sonnet-3.5": "us.anthropic.claude-3-5-sonnet-20241022-v2:0",
+  "claude-sonnet-3.7": "us.anthropic.claude-3-7-sonnet-20250219-v1:0",
+  "claude-sonnet-4": "us.anthropic.claude-sonnet-4-20250514-v1:0",
 };
 
-export class ClaudeSonnet<V extends ClaudeSonnetVersion> extends BedrockModel<
-  ClaudeSonnetRequest<V>,
-  ClaudeSonnetResponse
+export class AnthropicModel<V extends AnthropicModelVersion> extends BedrockModel<
+  AnthropicRequest<V>,
+  AnthropicResponse
 > {
   version: V;
 
@@ -27,7 +27,7 @@ export class ClaudeSonnet<V extends ClaudeSonnetVersion> extends BedrockModel<
     this.version = version;
   }
 
-  override async invoke(input: ClaudeSonnetRequest<V>): Promise<ClaudeSonnetResponse> {
+  override async invoke(input: AnthropicRequest<V>): Promise<AnthropicResponse> {
     return super.invoke({
       anthropic_version: "bedrock-2023-05-31",
       ...input,
@@ -39,7 +39,7 @@ export class ClaudeSonnet<V extends ClaudeSonnetVersion> extends BedrockModel<
  * An invocation request to a Bedrock LLM, serialized in the message body to InvokeModel.
  * https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-anthropic-claude-messages-request-response.html
  */
-export interface ClaudeSonnetRequest<V extends ClaudeSonnetVersion> {
+export interface AnthropicRequest<V extends AnthropicModelVersion> {
   // Required anthropic version.
   anthropic_version?: "bedrock-2023-05-31";
 
@@ -86,7 +86,7 @@ export interface ClaudeSonnetRequest<V extends ClaudeSonnetVersion> {
 }
 
 // https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-anthropic-claude-messages-request-response.html
-export interface ClaudeSonnetResponse {
+export interface AnthropicResponse {
   // Unique ID that starts with "msg_bdrk_..."
   id: string;
   type: "message";

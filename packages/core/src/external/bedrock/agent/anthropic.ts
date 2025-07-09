@@ -1,10 +1,10 @@
 import { BedrockAgentConfig, BedrockAgentResponse } from "./types";
 import { BedrockAgentThread } from "./thread";
 import { AgentTool } from "./tool";
-import { ClaudeSonnet, ClaudeSonnetResponse, ClaudeSonnetVersion } from "../model/claude-sonnet";
+import { AnthropicModel, AnthropicResponse, AnthropicModelVersion } from "../model/anthropic";
 import { InvokeToolCall } from "../types";
 
-export interface ClaudeAgentConfig<V extends ClaudeSonnetVersion> extends BedrockAgentConfig {
+export interface AnthropicAgentConfig<V extends AnthropicModelVersion> extends BedrockAgentConfig {
   version: V;
 }
 
@@ -15,14 +15,14 @@ const DEFAULT_TEMPERATURE = 0;
 /**
  * An agent creates BedrockAgentThread instances to manage conversations, memory, and tool calls with the underlying BedrockClient.
  */
-export class ClaudeAgent<V extends ClaudeSonnetVersion> {
-  private model: ClaudeSonnet<V>;
-  private config: ClaudeAgentConfig<V>;
+export class AnthropicAgent<V extends AnthropicModelVersion> {
+  private model: AnthropicModel<V>;
+  private config: AnthropicAgentConfig<V>;
   private thread: BedrockAgentThread;
   private tools?: AgentTool[] | undefined;
 
-  constructor(config: ClaudeAgentConfig<V>) {
-    this.model = new ClaudeSonnet<V>(config.version, config.region);
+  constructor(config: AnthropicAgentConfig<V>) {
+    this.model = new AnthropicModel<V>(config.version, config.region);
     this.config = config;
     this.tools = config.tools;
     this.thread = new BedrockAgentThread();
@@ -49,6 +49,9 @@ export class ClaudeAgent<V extends ClaudeSonnetVersion> {
       temperature: this.config.temperature ?? DEFAULT_TEMPERATURE,
     });
 
+    // Add the response to the thread
+    // this.thread.addAssistantMessage(response.content);
+
     // If stopped for a tool call, execute the tool call and push the tool result onto the thread
     if (this.tools && response.stop_reason === "tool_use") {
       const toolCall = getToolCallOrFail(response);
@@ -71,7 +74,7 @@ export class ClaudeAgent<V extends ClaudeSonnetVersion> {
 }
 
 // Validate a tool call
-function getToolCallOrFail(response: ClaudeSonnetResponse): InvokeToolCall {
+function getToolCallOrFail(response: AnthropicResponse): InvokeToolCall {
   const latestMessage = response.content[response.content.length - 1];
   if (!latestMessage) throw new Error("Unexpected empty response");
 

@@ -1,11 +1,11 @@
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 // import { BedrockAgent } from "./agent/agent";
-import { ClaudeSonnet, ClaudeSonnetRequest, ClaudeSonnetResponse } from "./model/claude-sonnet";
+import { AnthropicModel, AnthropicRequest, AnthropicResponse } from "./model/anthropic";
 import { InvokeToolCall } from "./types";
 
 async function main() {
-  const model = new ClaudeSonnet("4", "us-west-2");
+  const model = new AnthropicModel("claude-sonnet-3.7", "us-west-2");
 
   const convo = await model.invoke({
     max_tokens: 1000,
@@ -47,8 +47,8 @@ async function main() {
   console.log(JSON.stringify(convo, null, 2));
   if (convo != null) return;
 
-  let response: ClaudeSonnetResponse | undefined = undefined;
-  const messages: ClaudeSonnetRequest<"3.7">["messages"] = [
+  let response: AnthropicResponse | undefined = undefined;
+  const messages: AnthropicRequest<"claude-sonnet-3.7">["messages"] = [
     {
       role: "user",
       content: [
