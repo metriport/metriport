@@ -29,6 +29,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
     // Snowflake access via S3 Integration https://docs.snowflake.com/en/user-guide/data-load-s3-config-storage-integration
     const snowflakePrefix = "snowflake";
     const s3Policy = new iam.Policy(this, "SnowflakeAnalyticsPlatformS3Policy", {
+      policyName: `SnowflakeAnalyticsPlatformS3Policy-${props.config.environmentType}`,
       statements: [
         new iam.PolicyStatement({
           effect: iam.Effect.ALLOW,
@@ -54,6 +55,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       ],
     });
     new iam.Role(this, "SnowflakeIntegrationRole", {
+      roleName: `SnowflakeIntegrationRole-${props.config.environmentType}`,
       assumedBy: new iam.AccountPrincipal(
         props.config.analyticsPlatform.snowflake.integrationUserArn
       ),
