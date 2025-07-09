@@ -111,6 +111,13 @@ export class SecretsStack extends Stack {
         });
         logSecretInfo(this, secret, secretName);
       }
+
+      if (props.config.analyticsPlatform) {
+        for (const secretName of Object.values(props.config.analyticsPlatform.secrets)) {
+          const secret = makeSecret(secretName);
+          logSecretInfo(this, secret, secretName);
+        }
+      }
     }
   }
 }
