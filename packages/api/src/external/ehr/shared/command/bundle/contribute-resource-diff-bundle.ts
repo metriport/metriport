@@ -5,6 +5,7 @@ import {
   FetchBundleParams,
 } from "@metriport/core/external/ehr/bundle/command/fetch-bundle";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
+import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { getPatientMappingOrFail } from "../../../../../command/mapping/patient";
 import { handleDataContribution } from "../../../../../command/medical/patient/data-contribution/handle-data-contributions";
 import { getPatientOrFail } from "../../../../../command/medical/patient/get-patient";
@@ -47,7 +48,7 @@ export async function contributeResourceDiffBundle({
   ]);
   if (!bundle?.bundle.entry || bundle.bundle.entry.length < 1) return;
   if (await isAthenaCustomFieldsEnabledForCx(cxId)) return;
-  if (ehr === Ehr.ATHENA_HEALTH) return;
+  if (ehr === EhrSources.healthie) return;
   await handleDataContribution({
     requestId: uuidv7(),
     patient: metriportPatient,
