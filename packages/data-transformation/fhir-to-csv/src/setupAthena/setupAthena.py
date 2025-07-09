@@ -2,6 +2,7 @@ import boto3
 import os
 import configparser
 from src.utils.environment import Environment
+from src.utils.dwh import DWH
 from src.utils.database import format_database_name, format_table_name, get_data_type
 from src.utils.file import create_upload_path_with_table_name
 
@@ -25,7 +26,7 @@ def process_ini_files(cx_id, s3_bucket, config_folder: str, date_types=False) ->
         create_statement += "\n)\n"
         create_statement += f"ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.OpenCSVSerde'\n"
         create_statement += f"WITH SERDEPROPERTIES ('separatorChar' = ',', 'escapeChar' = '\\\\', 'quoteChar' = '\"')\n"
-        create_statement += f"LOCATION 's3://{s3_bucket}/{create_upload_path_with_table_name(cx_id, table_name)}/'\n"
+        create_statement += f"LOCATION 's3://{s3_bucket}/{create_upload_path_with_table_name(DWH.ATHENA, cx_id, table_name)}/'\n"
         create_statement += f"TBLPROPERTIES ('skip.header.line.count'='1');\n"
         create_table_statements.append((create_statement, table_name))
 

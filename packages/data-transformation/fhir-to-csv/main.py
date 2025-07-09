@@ -5,10 +5,20 @@ import json
 import ndjson
 from src.parseNdjsonBundle import parseNdjsonBundle
 from src.setupSnowflake.setupSnowflake import process_snowflake
+from src.setupAthena.setupAthena import process_athena
 from src.utils.environment import Environment
-from src.utils.file import create_upload_path, create_bundle_path_and_file_name, create_output_path, consolidated_data_file_suffix, parse_parser_file_name, create_upload_path_with_table_name
+from src.utils.dwh import DWH
+from src.utils.file import (
+    create_upload_path,
+    create_bundle_path_and_file_name,
+    create_output_path,
+    consolidated_data_file_suffix,
+    parse_parser_file_name,
+    create_upload_path_with_table_name,
+)
 
 env = Environment(os.getenv("ENV") or Environment.DEV)
+dwh = DWH(os.getenv("DWH") or DWH.SNOWFLAKE)
 
 s3_client = boto3.client("s3")
 input_bucket = os.getenv("INPUT_S3_BUCKET")
@@ -54,7 +64,7 @@ def transform_and_upload_data(input_bucket: str, output_bucket: str, cx_id: str,
         logging.error(msg)
         raise ValueError(msg)
 
-    upload_file_path = create_upload_path(cx_id)
+    upload_file_path = create_upload_path(dwh, cx_id)
     try:
         s3_client.delete_objects(Bucket=output_bucket, Delete={"Prefix": upload_file_path})
     except Exception as e:
@@ -64,7 +74,7 @@ def transform_and_upload_data(input_bucket: str, output_bucket: str, cx_id: str,
     for output_file_name in output_files:
         table_name = parse_parser_file_name(output_file_name, output_format)
         with open(f"{output_file_path}/{output_file_name}", "rb") as f:
-            s3_client.upload_fileobj(f, output_bucket, f"{create_upload_path_with_table_name(cx_id, table_name)}/{output_file_name}")
+            s3_client.upload_fileobj(f, output_bucket, f"{create_upload_path_with_table_name(dwh, cx_id, table_name)}/{output_file_name}")
 
     return
 
@@ -78,4 +88,10 @@ if __name__ == "__main__":
     if not config_folder:
         raise ValueError("CONFIG_FOLDER is not set")    
     transform_and_upload_data(input_bucket, output_bucket, cx_id, config_folder)
-    process_snowflake(cx_id, env, output_bucket, config_folder)
+    if dwh == DWH.SNOWFLAKE:
+        process_snowflake(cx_id, env, output_bucket, config_folder)
+    elif dwh == DWH.ATHENA:
+        athena_work_group = os.getenv("ATHENA_WORK_GROUP")
+        if not athena_work_group:
+            raise ValueError("ATHENA_WORK_GROUP is not set")
+        process_athena(athena_work_group, cx_id, env, output_bucket, config_folder)

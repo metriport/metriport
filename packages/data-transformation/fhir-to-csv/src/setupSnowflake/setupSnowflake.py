@@ -5,6 +5,7 @@ import logging
 from src.utils.environment import Environment
 from src.utils.database import format_database_name, format_table_name, get_data_type
 from src.utils.file import create_upload_path_with_table_name
+from src.utils.dwh import DWH
 
 snowflake_integration = os.getenv("SNOWFLAKE_INTEGRATION")
 if snowflake_integration is None:
@@ -50,7 +51,7 @@ def process_ini_files(config_folder: str, date_types=False) -> list[tuple[str, s
 def setup_database_and_tables(cx_id,  env: Environment, config_folder, date_types=False):
     database_name = format_database_name(cx_id, env)
     table_names = []
-    with snowflake.connector.connect(connection_name="fhir-to-csv", **get_snowflake_credentials()) as snowflake_conn:
+    with snowflake.connector.connect(**get_snowflake_credentials()) as snowflake_conn:
         snowflake_conn.cursor().execute(f"CREATE DATABASE IF NOT EXISTS {database_name}")
         snowflake_conn.cursor().execute(f"USE DATABASE {database_name}")
         snowflake_conn.cursor().execute(f"USE SCHEMA PUBLIC")
@@ -63,7 +64,7 @@ def setup_database_and_tables(cx_id,  env: Environment, config_folder, date_type
 
 def copy_data_to_snowflake(cx_id, env: Environment, s3_bucket, table_names):
     database_name = format_database_name(cx_id, env)
-    with snowflake.connector.connect(connection_name="fhir-to-csv", **get_snowflake_credentials()) as snowflake_conn:
+    with snowflake.connector.connect(**get_snowflake_credentials()) as snowflake_conn:
         snowflake_conn.cursor().execute(f"USE DATABASE {database_name}")
         snowflake_conn.cursor().execute(f"USE SCHEMA PUBLIC")
         for table_name in table_names:
@@ -72,7 +73,7 @@ def copy_data_to_snowflake(cx_id, env: Environment, s3_bucket, table_names):
             snowflake_conn.cursor().execute(f"""
             CREATE STAGE {stage_name}
             STORAGE_INTEGRATION = {snowflake_integration}
-            URL = 's3://{s3_bucket}/{create_upload_path_with_table_name(cx_id, table_name)}/';
+            URL = 's3://{s3_bucket}/{create_upload_path_with_table_name(DWH.SNOWFLAKE, cx_id, table_name)}/';
             """)
             try: 
                 snowflake_conn.cursor().execute(f"""

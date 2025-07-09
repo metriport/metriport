@@ -1,6 +1,7 @@
 import os
 from datetime import datetime
 from .environment import Environment
+from .dwh import DWH
 
 consolidated_data_file_suffix = 'CONSOLIDATED_DATA.json'
 phi_prefix = '../../../../phi/runs'
@@ -24,11 +25,11 @@ def create_output_path(cx_id: str, env: Environment) -> str:
     local_path_env_prefix = create_path_prefix(cx_id, env)
     return f'{local_path_env_prefix}{output_file_path_prefix}/{cx_id}'
 
-def create_upload_path(cx_id: str) -> str:
-    return f'{output_file_path_prefix}/{cx_id}'
+def create_upload_path(dwh: DWH, cx_id: str) -> str:
+    return f'{dwh}/{output_file_path_prefix}/{cx_id}'
 
-def create_upload_path_with_table_name(cx_id: str, table_name: str) -> str:
-    return f'{create_upload_path(cx_id)}/{table_name}'
+def create_upload_path_with_table_name(dwh: DWH, cx_id: str, table_name: str) -> str:
+    return f'{create_upload_path(dwh, cx_id)}/{table_name}'
 
 def create_parser_file_name(table_name: str, output_format: str) -> str:
     return f'{table_name}.{output_format}'
