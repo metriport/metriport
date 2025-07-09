@@ -64,7 +64,7 @@ async function main({ includeHie }: { includeHie?: boolean }) {
 
   console.log(responsePbmCount);
   fs.writeFileSync(
-    path.join(DR_FIRST_DIR, "count.csv"),
+    path.join(DR_FIRST_DIR, includeHie ? "count-with-hie.csv" : "count.csv"),
     csvOutput.map(row => row.join(",")).join("\n"),
     "utf-8"
   );
