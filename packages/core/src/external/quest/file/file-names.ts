@@ -7,7 +7,7 @@ export function buildRequestFileName({
   cxId: string;
   populationId: string;
 }) {
-  return `${cxId}_${populationId}`;
+  return `${cxId}_${populationId}.txt`;
 }
 
 export function buildResponseFileName(requester: QuestRequester, patientId: string) {

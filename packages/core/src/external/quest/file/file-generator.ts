@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import { z } from "zod";
 import { Patient } from "@metriport/shared/domain/patient";
 import { MetriportError } from "@metriport/shared";
@@ -8,7 +9,6 @@ import {
 
 import { RelationshipToSubscriber } from "@metriport/shared/interface/external/quest/relationship-to-subscriber";
 import { QuestGenderCode } from "@metriport/shared/interface/external/quest/gender";
-import { buildLexicalIdGenerator } from "@metriport/shared/common/lexical-id";
 import {
   requestHeaderRow,
   requestHeaderSchema,
@@ -43,8 +43,13 @@ interface QuestRequestFile {
   patientIdMapping: Record<string, string>;
 }
 
+// Builds a 15 character patient ID
+function buildPatientId(): string {
+  const randomSixteenChars = crypto.randomBytes(8).toString("hex");
+  return randomSixteenChars.substring(0, 15);
+}
+
 export function generateBatchRequestFile(patients: Patient[]): QuestRequestFile {
-  const buildPatientId = buildLexicalIdGenerator(15);
   const requestedPatientIds: string[] = [];
   const patientIdMapping: Record<string, string> = {};
 
@@ -55,7 +60,13 @@ export function generateBatchRequestFile(patients: Patient[]): QuestRequestFile 
   );
 
   const details = patients.flatMap(patient => {
-    const mappedPatientId = buildPatientId().toString("ascii");
+    // Build a unique patient ID mapping
+    let mappedPatientId = buildPatientId();
+    while (patientIdMapping[mappedPatientId]) {
+      mappedPatientId = buildPatientId();
+    }
+
+    // Generate the request row for this patient
     const row = generatePatientRequestRow(patient, mappedPatientId);
     if (row) {
       requestedPatientIds.push(patient.id);

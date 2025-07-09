@@ -32,12 +32,13 @@ export class QuestSftpClient extends SftpClient {
   }
 
   async sendBatchRequest(request: QuestBatchRequestData): Promise<QuestJob[]> {
-    const { content } = generateBatchRequestFile(request.patients);
+    const { content, patientIdMapping } = generateBatchRequestFile(request.patients);
     const populationId = uuidv7();
     const batchRequestFileName = buildRequestFileName({
       cxId: request.cxId,
       populationId,
     });
+    console.log(patientIdMapping);
     try {
       await this.connect();
       await this.writeToQuest(batchRequestFileName, content);
@@ -87,11 +88,11 @@ export class QuestSftpClient extends SftpClient {
   // }
 
   async writeToQuest(fileName: string, fileContent: Buffer) {
-    await this.write(`/IN/${fileName}`, fileContent);
+    await this.write(`/OUT/${fileName}`, fileContent);
   }
 
   async readFromQuest(fileName: string) {
-    return await this.read(`/IN/${fileName}`);
+    return await this.read(`/OUT/${fileName}`);
   }
 
   /**
