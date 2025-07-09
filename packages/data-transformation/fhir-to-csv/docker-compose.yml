@@ -8,14 +8,17 @@ services:
       context: .
       dockerfile: ./Dockerfile
     volumes:
-      - .:/app # Mount your dbt project directory
-      - ~/.aws:/root/.aws:ro
-      - ~/.snowflake:/root/.snowflake:ro
+      - .:/usr/app/data
     environment:
       ENV: ${ENV}
       AWS_REGION: ${AWS_REGION}
+      CX_ID: ${CX_ID}
+      CONFIG_FOLDER: src/parseFhir/configurations
       INPUT_S3_BUCKET: ${INPUT_S3_BUCKET}
       OUTPUT_S3_BUCKET: ${OUTPUT_S3_BUCKET}
-      CX_ID: ${CX_ID}
+      SNOWFLAKE_ACCOUNT: ${SNOWFLAKE_ACCOUNT}
+      SNOWFLAKE_USER: ${SNOWFLAKE_USER}
+      SNOWFLAKE_PASSWORD: ${SNOWFLAKE_PASSWORD}
+      SNOWFLAKE_ROLE: ${SNOWFLAKE_ROLE}
+      SNOWFLAKE_WAREHOUSE: ${SNOWFLAKE_WAREHOUSE}
       SNOWFLAKE_INTEGRATION: ${SNOWFLAKE_INTEGRATION}
-      CONFIG_FOLDER: src/parseFhir/configurations

@@ -8,15 +8,13 @@ from src.setupSnowflake.setupSnowflake import process_snowflake
 from src.utils.environment import Environment
 from src.utils.file import create_upload_path, create_bundle_path_and_file_name, create_output_path, consolidated_data_file_suffix, parse_parser_file_name, create_upload_path_with_table_name
 
+env = Environment(os.getenv("ENV") or Environment.DEV)
+
 s3_client = boto3.client("s3")
 input_bucket = os.getenv("INPUT_S3_BUCKET")
 output_bucket = os.getenv("OUTPUT_S3_BUCKET")
 cx_id = os.getenv("CX_ID")
-env = Environment(os.getenv("ENV") or Environment.DEV)
 config_folder = os.getenv("CONFIG_FOLDER")
-
-if not config_folder:
-    raise ValueError("CONFIG_FOLDER is not set")
 
 def transform_and_upload_data(input_bucket: str, output_bucket: str, cx_id: str, config_folder: str):
     response = s3_client.list_objects_v2(Bucket=input_bucket, Prefix=cx_id)
@@ -77,5 +75,7 @@ if __name__ == "__main__":
         raise ValueError("OUTPUT_S3_BUCKET is not set")
     if not cx_id:
         raise ValueError("CX_ID is not set")
+    if not config_folder:
+        raise ValueError("CONFIG_FOLDER is not set")    
     transform_and_upload_data(input_bucket, output_bucket, cx_id, config_folder)
     process_snowflake(cx_id, env, output_bucket, config_folder)

@@ -194,7 +194,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       cpu,
       environment: {
         ENV: ownProps.envType,
-        DBT_TARGET: ownProps.envType === EnvType.production ? "prod" : "dev",
+        DBT_TARGET: ownProps.envType === EnvType.production ? "production" : "staging",
         DBT_SNOWFLAKE_CI_ROLE: ownProps.config.analyticsPlatform.snowflake.role,
         DBT_SNOWFLAKE_CI_WAREHOUSE: ownProps.config.analyticsPlatform.snowflake.warehouse,
       },

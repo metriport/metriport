@@ -39,7 +39,15 @@ RUN dbt deps
 
 HEALTHCHECK CMD dbt --version || exit 1
 
-RUN sed -i "s/{{ env_var('INPUT_DATABASE') }}/${DBT_SNOWFLAKE_CI_DATABASE_PREFIX}${CX_ID}/g" /usr/app/dbt/dbt_project.yml
-RUN sed -i "s/{{ env_var('INPUT_SCHEMA') }}/${DBT_SNOWFLAKE_CI_SCHEMA}/g" /usr/app/dbt/dbt_project.yml
+RUN if [ "$DBT_TARGET" = "production" ]; then \
+        echo "Building for production..."; \
+        sed -i "s/{{ env_var('INPUT_DATABASE') }}/PROD_METRICS_${CX_ID}/g" /usr/app/dbt/dbt_project.yml; \
+    elif [ "$DBT_TARGET" = "staging" ]; then \
+        echo "Building for staging..."; \
+        sed -i "s/{{ env_var('INPUT_DATABASE') }}/STAGING_METRICS_${CX_ID}/g" /usr/app/dbt/dbt_project.yml; \
+    else \
+        echo "Building for development..."; \
+        sed -i "s/{{ env_var('INPUT_DATABASE') }}/DEV_METRICS_${CX_ID}/g" /usr/app/dbt/dbt_project.yml; \
+    fi
 
 ENTRYPOINT ["dbt", "build"]

@@ -1,10 +1,8 @@
 from .environment import Environment
 from .file import strip_config_file_name
 
-database_prefix = 'fhirToCsv'
-
 def format_database_name(cx_id: str, env: Environment):
-    return f"{env.value.upper()}_{database_prefix}_{cx_id.replace('-', '')}"
+    return f"{env.value.upper()}_METRICS_{cx_id.replace('-', '')}"
 
 def format_table_name(file_name):
     return strip_config_file_name(file_name).replace('.', '_').lower()

@@ -1,14 +1,34 @@
 default:
   outputs:
-    dev:
-      account: "{{ env_var('DBT_SNOWFLAKE_ACCOUNT') }}"
+    development:
+      account: "{{ env_var('DBT_SNOWFLAKE_CI_ACCOUNT') }}"
       role: "{{ env_var('DBT_SNOWFLAKE_CI_ROLE') }}"
       user: "{{ env_var('DBT_SNOWFLAKE_CI_USER') }}"
       password: "{{ env_var('DBT_SNOWFLAKE_CI_PASSWORD') }}"
       warehouse: "{{ env_var('DBT_SNOWFLAKE_CI_WAREHOUSE') }}"
-      database: "{{ env_var('DBT_SNOWFLAKE_CI_DATABASE_PREFIX') }}{{ env_var('CX_ID') }}"
-      schema: "{{ env_var('DBT_SNOWFLAKE_CI_SCHEMA') }}"
+      database: "DEV_METRICS_{{ env_var('CX_ID') }}"
+      schema: public
       threads: 5
       type: snowflake
-      
-  target: dev
+    staging:
+      account: "{{ env_var('DBT_SNOWFLAKE_CI_ACCOUNT') }}"
+      role: "{{ env_var('DBT_SNOWFLAKE_CI_ROLE') }}"
+      user: "{{ env_var('DBT_SNOWFLAKE_CI_USER') }}"
+      password: "{{ env_var('DBT_SNOWFLAKE_CI_PASSWORD') }}"
+      warehouse: "{{ env_var('DBT_SNOWFLAKE_CI_WAREHOUSE') }}"
+      database: "STAGING_METRICS_{{ env_var('CX_ID') }}"
+      schema: public
+      threads: 5
+      type: snowflake
+    production:
+      account: "{{ env_var('DBT_SNOWFLAKE_CI_ACCOUNT') }}"
+      role: "{{ env_var('DBT_SNOWFLAKE_CI_ROLE') }}"
+      user: "{{ env_var('DBT_SNOWFLAKE_CI_USER') }}"
+      password: "{{ env_var('DBT_SNOWFLAKE_CI_PASSWORD') }}"
+      warehouse: "{{ env_var('DBT_SNOWFLAKE_CI_WAREHOUSE') }}"
+      database: "PROD_METRICS_{{ env_var('CX_ID') }}"
+      schema: public
+      threads: 5
+      type: snowflake
+
+  target: development

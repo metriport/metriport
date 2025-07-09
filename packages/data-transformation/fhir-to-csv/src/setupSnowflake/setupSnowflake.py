@@ -6,6 +6,26 @@ from src.utils.environment import Environment
 from src.utils.database import format_database_name, format_table_name, get_data_type
 from src.utils.file import create_upload_path_with_table_name
 
+snowflake_integration = os.getenv("SNOWFLAKE_INTEGRATION")
+if snowflake_integration is None:
+    raise ValueError("SNOWFLAKE_INTEGRATION is not set")
+
+def get_snowflake_credentials() -> dict[str, str]:
+    snowflake_account = os.getenv("SNOWFLAKE_ACCOUNT")
+    snowflake_user = os.getenv("SNOWFLAKE_USER")
+    snowflake_password = os.getenv("SNOWFLAKE_PASSWORD")
+    snowflake_role = os.getenv("SNOWFLAKE_ROLE")
+    snowflake_warehouse = os.getenv("SNOWFLAKE_WAREHOUSE")
+    if (snowflake_account is None or snowflake_user is None or snowflake_password is None or snowflake_warehouse is None or snowflake_role is None):
+        raise ValueError("Snowflake credentials are not set")
+    return {
+        "account": snowflake_account,
+        "user": snowflake_user,
+        "password": snowflake_password,
+        "warehouse": snowflake_warehouse,
+        "role": snowflake_role
+    }
+
 def format_stage_name(table_name):
     return f"{table_name}_stage"
 
@@ -30,7 +50,7 @@ def process_ini_files(config_folder: str, date_types=False) -> list[tuple[str, s
 def setup_database_and_tables(cx_id,  env: Environment, config_folder, date_types=False):
     database_name = format_database_name(cx_id, env)
     table_names = []
-    with snowflake.connector.connect(connection_name="engineering") as snowflake_conn:
+    with snowflake.connector.connect(connection_name="fhir-to-csv", **get_snowflake_credentials()) as snowflake_conn:
         snowflake_conn.cursor().execute(f"CREATE DATABASE IF NOT EXISTS {database_name}")
         snowflake_conn.cursor().execute(f"USE DATABASE {database_name}")
         snowflake_conn.cursor().execute(f"USE SCHEMA PUBLIC")
@@ -42,11 +62,8 @@ def setup_database_and_tables(cx_id,  env: Environment, config_folder, date_type
     return table_names
 
 def copy_data_to_snowflake(cx_id, env: Environment, s3_bucket, table_names):
-    integration_name = os.getenv("SNOWFLAKE_INTEGRATION")
-    if not integration_name:
-        raise ValueError("SNOWFLAKE_INTEGRATION is not set")
     database_name = format_database_name(cx_id, env)
-    with snowflake.connector.connect(connection_name="engineering") as snowflake_conn:
+    with snowflake.connector.connect(connection_name="fhir-to-csv", **get_snowflake_credentials()) as snowflake_conn:
         snowflake_conn.cursor().execute(f"USE DATABASE {database_name}")
         snowflake_conn.cursor().execute(f"USE SCHEMA PUBLIC")
         for table_name in table_names:
@@ -54,7 +71,7 @@ def copy_data_to_snowflake(cx_id, env: Environment, s3_bucket, table_names):
             snowflake_conn.cursor().execute(f"DROP STAGE IF EXISTS {stage_name}")
             snowflake_conn.cursor().execute(f"""
             CREATE STAGE {stage_name}
-            STORAGE_INTEGRATION = {integration_name}
+            STORAGE_INTEGRATION = {snowflake_integration}
             URL = 's3://{s3_bucket}/{create_upload_path_with_table_name(cx_id, table_name)}/';
             """)
             try: 

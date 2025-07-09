@@ -18,7 +18,7 @@ clean-targets:
 
 vars:
   input_database:  "{{ env_var('INPUT_DATABASE') }}"
-  input_schema: "{{ env_var('INPUT_SCHEMA') }}"
+  input_schema: public
   clinical_enabled: true
   cms_hcc_payment_year: 2023
   quality_measures_period_end: "2023-12-31"

@@ -1,5 +1,6 @@
 import { BatchUtils } from "@metriport/core/external/aws/batch";
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
+import { getSnowflakeCreds } from "../../external/snowflake/creds";
 import { Config } from "../../util/config";
 
 // TODO Get snowflake credentials from secrets manager
@@ -19,6 +20,7 @@ export async function startFhirToCsvBatchJob({
   }
 
   const requestId = requestIdParams || uuidv7();
+  const snowflakeCreds = getSnowflakeCreds();
 
   const batch = new BatchUtils(Config.getAWSRegion());
 
@@ -29,6 +31,9 @@ export async function startFhirToCsvBatchJob({
     parameters: {
       CX_ID: cxId,
       REQUEST_ID: requestId,
+      SNOWFLAKE_ACCOUNT: snowflakeCreds.account,
+      SNOWFLAKE_USER: snowflakeCreds.user,
+      SNOWFLAKE_PASSWORD: snowflakeCreds.password,
     },
   });
 
