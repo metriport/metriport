@@ -19,11 +19,7 @@ import { attachPatientIdentifiers, getPatientByDemo, PatientWithIdentifiers } fr
 import { createPatientSettings } from "./settings/create-patient-settings";
 import { sanitize, validate } from "./shared";
 
-type Identifier = Pick<Patient, "cxId" | "externalId"> & {
-  facilityId: string;
-  additionalFacilityIds?: string[];
-};
-
+type Identifier = Pick<Patient, "cxId" | "externalId"> & { facilityId: string };
 type PatientNoExternalData = Omit<PatientData, "externalData">;
 export type PatientCreateCmd = PatientNoExternalData & Identifier;
 
@@ -42,7 +38,7 @@ export async function createPatient({
   forceCarequality?: boolean;
   settings?: PatientSettingsData;
 }): Promise<PatientWithIdentifiers> {
-  const { cxId, facilityId, additionalFacilityIds = [], externalId } = patient;
+  const { cxId, facilityId, externalId } = patient;
   const { log } = out(`createPatient.${cxId}`);
 
   const sanitized = sanitize(patient);
@@ -62,22 +58,13 @@ export async function createPatient({
   const patientExists = await getPatientByDemo({ cxId, demo });
   if (patientExists) return patientExists;
 
-  // Validate primary facility exists and cx has access to it
+  // validate facility exists and cx has access to it
   await getFacilityOrFail({ cxId, id: facilityId });
-
-  // Validate all additional facilities exist and cx has access to them
-  if (additionalFacilityIds.length > 0) {
-    await Promise.all(
-      additionalFacilityIds.map(facilityId => getFacilityOrFail({ cxId, id: facilityId }))
-    );
-  }
-
-  const allFacilityIds = [facilityId, ...additionalFacilityIds];
 
   const patientCreate: PatientCreate = {
     id: uuidv7(),
     cxId,
-    facilityIds: allFacilityIds,
+    facilityIds: [facilityId],
     externalId,
     data: {
       firstName,

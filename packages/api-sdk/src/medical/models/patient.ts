@@ -8,7 +8,6 @@ export const patientCreateSchema = demographicsSchema
   .merge(
     z.object({
       externalId: z.string().optional(),
-      additionalFacilityIds: z.array(z.string()).optional(),
     })
   )
   .merge(

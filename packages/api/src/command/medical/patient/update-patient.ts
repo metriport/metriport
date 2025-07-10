@@ -19,11 +19,7 @@ import { sanitize, validate } from "./shared";
 
 type PatientNoExternalData = Omit<PatientData, "externalData">;
 export type PatientUpdateCmd = BaseUpdateCmdWithCustomer &
-  PatientNoExternalData & {
-    externalId?: string;
-    facilityId: string;
-    additionalFacilityIds?: string[];
-  };
+  PatientNoExternalData & { externalId?: string; facilityId: string };
 
 // TODO build unit test to validate the patient is being sent correctly to Sequelize
 // See: document-query.test.ts, "send a modified object to Sequelize"
@@ -43,17 +39,10 @@ export async function updatePatient({
   // END TODO #1572 - remove
   emit?: boolean;
 }): Promise<PatientWithIdentifiers> {
-  const { cxId, facilityId, additionalFacilityIds = [] } = patientUpdate;
+  const { cxId, facilityId } = patientUpdate;
 
-  // Validate primary facility exists and cx has access to it
+  // validate facility exists and cx has access to it
   await getFacilityOrFail({ cxId, id: facilityId });
-
-  // Validate all additional facilities exist and cx has access to them
-  if (additionalFacilityIds.length > 0) {
-    await Promise.all(
-      additionalFacilityIds.map(facilityId => getFacilityOrFail({ cxId, id: facilityId }))
-    );
-  }
 
   const patient = await updatePatientWithoutHIEs(patientUpdate, emit);
 
@@ -76,7 +65,7 @@ export async function updatePatientWithoutHIEs(
   patientUpdate: PatientUpdateCmd,
   emit = true
 ): Promise<Patient> {
-  const { id, cxId, eTag, additionalFacilityIds = [] } = patientUpdate;
+  const { id, cxId, eTag } = patientUpdate;
 
   const sanitized = sanitize(patientUpdate);
   validate(sanitized);
@@ -98,9 +87,6 @@ export async function updatePatientWithoutHIEs(
 
     validateVersionForUpdate(patient, eTag);
 
-    // Combine primary and additional facility IDs
-    const allFacilityIds = [patientUpdate.facilityId, ...additionalFacilityIds];
-
     return patient.update(
       {
         data: {
@@ -114,7 +100,6 @@ export async function updatePatientWithoutHIEs(
           contact: sanitized.contact,
         },
         externalId: sanitized.externalId,
-        facilityIds: allFacilityIds,
       },
       { transaction }
     );
