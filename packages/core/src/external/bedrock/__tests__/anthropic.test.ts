@@ -4,7 +4,8 @@ import { AnthropicAgent } from "../agent/anthropic";
 import { AnthropicTool } from "../agent/anthropic/tool";
 import { AnthropicResponse } from "../model/anthropic/response";
 import { AnthropicToolCall } from "../model/anthropic/tools";
-import { AnthropicMessageThread } from "../model/anthropic/messages";
+import { AnthropicMessageText, AnthropicMessageThread } from "../model/anthropic/messages";
+import { AnthropicModel } from "../model/anthropic";
 
 describe("Anthropic test", () => {
   it("should get a correct model ID", () => {
@@ -17,6 +18,31 @@ describe("Anthropic test", () => {
     expect(getAnthropicModelId("claude-sonnet-4")).toBe(
       "us.anthropic.claude-sonnet-4-20250514-v1:0"
     );
+  });
+
+  it("should instantiate with a correct model ID", () => {
+    expect(new AnthropicModel("claude-sonnet-3.5", "us-east-1")).toBeDefined();
+    expect(new AnthropicModel("claude-sonnet-3.7", "us-east-1")).toBeDefined();
+    expect(new AnthropicModel("claude-sonnet-4", "us-east-1")).toBeDefined();
+  });
+
+  it("should be able to invoke a model", async () => {
+    const model = new AnthropicModel("claude-sonnet-3.7", "us-east-1");
+    const response = await model.invokeModel({
+      system: "You are an automated test. Reply with YES to confirm that you are working.",
+      temperature: 0,
+      max_tokens: 100,
+      messages: [
+        {
+          role: "user",
+          content: [{ type: "text", text: "Reply with YES to confirm that this works." }],
+        },
+      ],
+    });
+    expect(response.stop_reason).toBe("end_turn");
+    const responseContent = response.content[0] as AnthropicMessageText;
+    expect(responseContent.type).toBe("text");
+    expect(responseContent.text.toLowerCase()).toContain("yes");
   });
 
   it("should validate tool calls", async () => {
