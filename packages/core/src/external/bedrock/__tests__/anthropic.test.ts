@@ -2,7 +2,7 @@ import { z } from "zod";
 import { getAnthropicModelId } from "../model/anthropic/version";
 import { AnthropicAgent } from "../agent/anthropic";
 import { AnthropicTool } from "../agent/anthropic/tool";
-import { AnthropicResponse } from "../model/anthropic/response";
+import { AnthropicResponse, getAssistantResponseText } from "../model/anthropic/response";
 import { AnthropicToolCall } from "../model/anthropic/tools";
 import { AnthropicMessageText, AnthropicMessageThread } from "../model/anthropic/messages";
 import { AnthropicModel } from "../model/anthropic";
@@ -147,5 +147,57 @@ describe("Anthropic test", () => {
         content: [{ type: "tool_result", tool_use_id: "1", content: { capital: "Paris" } }],
       },
     ]);
+  });
+
+  it("should be able to parse assistant responses", () => {
+    const response: AnthropicResponse<"claude-sonnet-3.7"> = {
+      id: "1",
+      type: "message",
+      model: "claude-sonnet-3.7",
+      role: "assistant",
+      stop_reason: "end_turn",
+      usage: {
+        input_tokens: 100,
+        output_tokens: 20,
+        cache_read_input_tokens: 0,
+        cache_creation_input_tokens: 0,
+      },
+      content: [
+        {
+          type: "text",
+          text: "The capital of France is Paris.",
+        },
+      ],
+    };
+
+    const text = getAssistantResponseText(response);
+    expect(text).toBe("The capital of France is Paris.");
+
+    const toolUseResponse: AnthropicResponse<"claude-sonnet-3.7"> = {
+      id: "1",
+      type: "message",
+      model: "claude-sonnet-3.7",
+      role: "assistant",
+      stop_reason: "tool_use",
+      usage: {
+        input_tokens: 100,
+        output_tokens: 20,
+        cache_read_input_tokens: 0,
+        cache_creation_input_tokens: 0,
+      },
+      content: [
+        {
+          type: "tool_use",
+          id: "1",
+          name: "get_capital",
+          input: {
+            country: "France",
+          },
+        },
+      ],
+    };
+
+    const toolUseText = getAssistantResponseText(toolUseResponse);
+    expect(toolUseText).toBeUndefined();
   });
 });

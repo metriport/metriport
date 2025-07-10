@@ -113,7 +113,6 @@ export class AnthropicAgent<V extends AnthropicModelVersion> {
           content: toolResultContent,
         });
       } catch (error) {
-        console.error(`Error executing tool ${toolCall.name}:`, error);
         toolResults.push({
           type: "tool_result",
           tool_use_id: toolCall.id,

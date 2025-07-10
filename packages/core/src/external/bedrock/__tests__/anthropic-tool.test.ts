@@ -39,4 +39,20 @@ describe("Anthropic tool test", () => {
     const result = await tool.safelyExecute({ name: "hello" });
     expect(result.uppercased).toBe("HELLO");
   });
+
+  it("should allow a tool with no output schema", async () => {
+    const tool = new AnthropicTool({
+      name: "toLowerCase",
+      description: "Convert a string to lowercase",
+      inputSchema: z.object({
+        name: z.string(),
+      }),
+      handler: async ({ name }) => {
+        return name.toLowerCase();
+      },
+    });
+
+    const result = await tool.safelyExecute({ name: "HELLO" });
+    expect(result).toBe("hello");
+  });
 });
