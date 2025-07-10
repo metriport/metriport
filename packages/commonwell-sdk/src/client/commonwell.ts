@@ -37,8 +37,8 @@ import {
 import {
   APIMode,
   CommonWellOptions,
-  defaultOnError500,
   DEFAULT_AXIOS_TIMEOUT_SECONDS,
+  defaultOnError500,
   OnError500Options,
 } from "./common";
 import {

@@ -73,6 +73,18 @@ export const identifierSchema = z.object({
   assigner: referenceInIdentifierSchema.nullish(),
   period: periodSchema.nullish(),
 });
+export type PatientIdentifier = z.infer<typeof patientIdentifierSchema>;
+
+export const identifierSchema = z.object({
+  /** Patient identifier that uniquely identifies the patient in the Edge System */
+  value: z.string(),
+  /** Assigning Authority ID for the unique Patient ID */
+  system: z.string().nullish(),
+  use: optionalStringPreprocess(z.string().nullish()),
+  type: optionalStringPreprocess(z.string().nullish()),
+  assigner: referenceInIdentifierSchema.nullish(),
+  period: periodSchema.nullish(),
+});
 export type Identifier = z.infer<typeof identifierSchema>;
 
 export const strongIdSchema = patientIdentifierSchema

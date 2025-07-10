@@ -12,6 +12,9 @@ import { getMetriportPatientIdOrFail, logError, waitSeconds } from "../util";
 
 const runTimestamp = buildDayjs().toISOString();
 
+const outputBaseDir = "./downloads";
+const runTimestamp = buildDayjs().toISOString();
+
 /**
  * Flow to validate the document consumption API (item 10.1 and 10.2 in the spec).
  * @see https://www.commonwellalliance.org/specification/
