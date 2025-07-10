@@ -185,6 +185,8 @@ export function isAthenaEnv(env: string): env is AthenaEnv {
   return athenaEnv.includes(env as AthenaEnv);
 }
 
+const athenaClosedStatus = "CLOSED";
+
 const problemStatusesMap = new Map<string, string>();
 problemStatusesMap.set("relapse", "CHRONIC");
 problemStatusesMap.set("recurrence", "CHRONIC");
@@ -1944,25 +1946,18 @@ class AthenaHealthApi {
         }
         const encounterId = entry.resource.id;
         try {
-          const [encounter, encounterSummary] = await Promise.all([
-            this.getEncounter({
+          const encounter = await this.getEncounter({
+            cxId,
+            patientId: athenaPatientId,
+            encounterId,
+          });
+          if (encounter.status === athenaClosedStatus) {
+            const encounterSummary = await this.getEncounterSummary({
               cxId,
               patientId: athenaPatientId,
               encounterId,
-            }),
-            this.getEncounterSummary({
-              cxId,
-              patientId: athenaPatientId,
-              encounterId,
-            }),
-          ]);
-          const [appointment] = await Promise.all([
-            this.getAppointment({
-              cxId,
-              patientId: athenaPatientId,
-              appointmentId: encounter.appointmentid,
-            }),
-            createOrReplaceDocument({
+            });
+            await createOrReplaceDocument({
               ehr: EhrSources.athena,
               cxId,
               metriportPatientId,
@@ -1971,8 +1966,13 @@ class AthenaHealthApi {
               payload: encounterSummary,
               resourceType: "Encounter",
               resourceId: encounterId,
-            }),
-          ]);
+            });
+          }
+          const appointment = await this.getAppointment({
+            cxId,
+            patientId: athenaPatientId,
+            appointmentId: encounter.appointmentid,
+          });
           entry.resource.extension = [
             ...(entry.resource.extension ?? []),
             {
