@@ -45,11 +45,11 @@ router.get(
 /**
  * GET /internal/ehr/:ehrId/practice/:id/secondary-mappings
  *
- * Get the secrets for the practice
+ * Get the secondary mappings for the practice
  *
  * @param req.query.ehrId - The EHR source.
  * @param req.params.id - The practice id of the EHR integration.
- * @returns The secrets for the practice
+ * @returns The secondary mappings for the practice
  */
 router.get(
   "/:id/secondary-mappings",

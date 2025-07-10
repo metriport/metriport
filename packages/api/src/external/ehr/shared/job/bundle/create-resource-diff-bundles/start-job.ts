@@ -1,8 +1,5 @@
-import { BadRequestError } from "@metriport/shared";
 import { createPatientJob } from "../../../../../../command/job/patient/create";
-import { getLatestPatientJob } from "../../../../../../command/job/patient/get";
-import { getPatientMappingOrFail } from "../../../../../../command/mapping/patient";
-import { getPatientOrFail } from "../../../../../../command/medical/patient/get-patient";
+import { validatePatientAndLatestJobStatus } from "../../../command/job/validate-patient-and-lastest-job-status";
 import {
   StartBundlesJobParams,
   getCreateResourceDiffBundlesJobType,
@@ -27,34 +24,17 @@ export async function startCreateResourceDiffBundlesJob({
   ehrPatientId,
   requestId,
 }: StartBundlesJobParams): Promise<string> {
-  const patientMapping = await getPatientMappingOrFail({
-    cxId,
-    externalId: ehrPatientId,
-    source: ehr,
-  });
-  const metriportPatient = await getPatientOrFail({
-    cxId,
-    id: patientMapping.patientId,
-  });
-  const metriportPatientId = metriportPatient.id;
+  const jobGroupId = ehrPatientId;
   const jobType = getCreateResourceDiffBundlesJobType(ehr);
   const runUrl = getCreateResourceDiffBundlesRunUrl(ehr);
-  const jobGroupId = ehrPatientId;
-  const runningJob = await getLatestPatientJob({
+  const metriportPatientId = await validatePatientAndLatestJobStatus({
+    ehr,
     cxId,
-    patientId: metriportPatientId,
+    ehrPatientId,
     jobType,
     jobGroupId,
-    status: ["waiting", "processing"],
+    jobStatuses: ["waiting", "processing"],
   });
-  if (runningJob) {
-    throw new BadRequestError("Only one job can be running at a time", undefined, {
-      cxId,
-      metriportPatientId,
-      ehrPatientId,
-      runningJobId: runningJob.id,
-    });
-  }
   const job = await createPatientJob({
     cxId,
     patientId: metriportPatientId,

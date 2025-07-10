@@ -5,7 +5,7 @@ import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
 import { ApiBaseParams, validateAndLogResponse } from "./api-shared";
 
-export type GetSecretsParams = Omit<ApiBaseParams, "cxId" | "departmentId" | "patientId">;
+export type GetSecondaryMappingsParams = Omit<ApiBaseParams, "cxId" | "departmentId" | "patientId">;
 
 /**
  * Sends a request to the API to get the secondary mappings for a practice.
@@ -18,7 +18,7 @@ export async function getSecondaryMappings<T>({
   ehr,
   practiceId,
   schema,
-}: GetSecretsParams & { schema: z.ZodSchema<T> }): Promise<T> {
+}: GetSecondaryMappingsParams & { schema: z.ZodSchema<T> }): Promise<T> {
   const { log, debug } = out(`Ehr getSecondaryMappings - ehr ${ehr} practiceId ${practiceId}`);
   const api = axios.create({ baseURL: Config.getApiUrl() });
   const getSecondaryMappingsUrl = `/internal/ehr/${ehr}/practice/${practiceId}/secondary-mappings`;

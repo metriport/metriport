@@ -10,7 +10,7 @@ export type ContributeBundleParams = Omit<ApiBaseParams, "practiceId" | "departm
 };
 
 /**
- * Sends a request to the API to contribute the bundle.
+ * Sends a request to the API to contribute the resource type contribution bundle.
  *
  * @param ehr - The EHR source.
  * @param cxId - The CX ID.

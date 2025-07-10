@@ -131,6 +131,7 @@ import {
   getObservationObservedDate,
   getObservationReferenceRange,
   getObservationResultStatus,
+  getObservationUnit,
   getObservationUnitAndValue,
   getProcedureCptCode,
   getProcedurePerformedDate,
@@ -141,7 +142,6 @@ import {
   paginateWaitTime,
   partitionEhrBundle,
   saveEhrReferenceBundle,
-  getObservationUnit,
 } from "../shared";
 
 dayjs.extend(duration);
@@ -919,13 +919,17 @@ class AthenaHealthApi {
       patientId,
       departmentId,
     };
+    const formattedDate = this.formatDate(date);
+    if (!formattedDate) {
+      throw new BadRequestError("No date found for clinical document", undefined, additionalInfo);
+    }
     const data = {
       departmentid: this.stripDepartmentId(departmentId),
       documentdata: encounterText,
       documentsubclass: clinicalNoteDocumentSubclass,
       documenttypeid: clinicalNoteDocumentId,
       internalnote: "Note Added via Metriport App",
-      observationdate: this.formatDate(date),
+      observationdate: formattedDate,
       autoclose: "true",
     };
     const createdClinicalDocument = await this.makeRequest<CreatedClinicalDocument>({
@@ -1832,16 +1836,18 @@ class AthenaHealthApi {
     clinicalElementId: string,
     units: string
   ): { [key: string]: string | undefined }[] {
+    const formattedDate = this.formatDate(dataPoint.date);
+    if (!formattedDate) return [];
     if (dataPoint.bp) {
       return [
         {
           clinicalelementid: "VITALS.BLOODPRESSURE.DIASTOLIC",
-          readingtaken: this.formatDate(dataPoint.date),
+          readingtaken: formattedDate,
           value: dataPoint.bp.diastolic.toString(),
         },
         {
           clinicalelementid: "VITALS.BLOODPRESSURE.SYSTOLIC",
-          readingtaken: this.formatDate(dataPoint.date),
+          readingtaken: formattedDate,
           value: dataPoint.bp.systolic.toString(),
         },
       ];
@@ -1849,7 +1855,7 @@ class AthenaHealthApi {
     return [
       {
         clinicalelementid: clinicalElementId,
-        readingtaken: this.formatDate(dataPoint.date),
+        readingtaken: formattedDate,
         value: this.convertValue(clinicalElementId, dataPoint.value, units).toString(),
       },
     ];

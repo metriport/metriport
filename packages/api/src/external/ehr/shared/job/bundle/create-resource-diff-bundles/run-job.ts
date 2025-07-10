@@ -1,10 +1,9 @@
 import { getSupportedResourcesByEhr } from "@metriport/core/external/ehr/bundle/bundle-shared";
-import { isEhrSourceWithClientCredentials } from "@metriport/core/external/ehr/environment";
 import { buildEhrRefreshEhrBundlesHandler } from "@metriport/core/external/ehr/job/bundle/create-resource-diff-bundles/steps/refresh/ehr-refresh-ehr-bundles-factory";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { completePatientJob } from "../../../../../../command/job/patient/status/complete";
 import { updatePatientJobTotal } from "../../../../../../command/job/patient/update/update-total";
-import { getTwoLeggedClientWithTokenIdAndEnvironment } from "../../../command/clients/get-two-legged-client";
+import { getTokenIdFromClientWithClientCredentials } from "../../../command/clients/get-token-id-from-client";
 import { RunBundlesJobParams } from "../../../utils/job";
 
 export async function runJob({
@@ -21,15 +20,7 @@ export async function runJob({
     return;
   }
   await updatePatientJobTotal({ cxId, jobId, total: resourceTypes.length });
-  let tokenId: string | undefined;
-  if (isEhrSourceWithClientCredentials(ehr)) {
-    const clientWithTokenIdAndEnvironment = await getTwoLeggedClientWithTokenIdAndEnvironment({
-      ehr,
-      cxId,
-      practiceId,
-    });
-    tokenId = clientWithTokenIdAndEnvironment.tokenId;
-  }
+  const tokenId = await getTokenIdFromClientWithClientCredentials({ ehr, cxId, practiceId });
   const ehrResourceDiffHandler = buildEhrRefreshEhrBundlesHandler();
   for (const resourceType of resourceTypes) {
     ehrResourceDiffHandler

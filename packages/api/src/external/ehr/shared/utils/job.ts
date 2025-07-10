@@ -42,14 +42,18 @@ export function getWriteBackBundlesJobType(ehr: EhrSource) {
   return `${ehr}-write-back-bundles`;
 }
 
+export function getRunJobUrl(ehr: EhrSource, jobType: string) {
+  return `/internal/ehr/${ehr}/job/${jobType}/run`;
+}
+
 export function getCreateResourceDiffBundlesRunUrl(ehr: EhrSource) {
-  return `/internal/ehr/${ehr}/job/create-resource-diff-bundles/run`;
+  return getRunJobUrl(ehr, "create-resource-diff-bundles");
 }
 
 export function getContributeBundlesRunUrl(ehr: EhrSource) {
-  return `/internal/ehr/${ehr}/job/contribute-bundles/run`;
+  return getRunJobUrl(ehr, "contribute-bundles");
 }
 
 export function getWriteBackBundlesRunUrl(ehr: EhrSource) {
-  return `/internal/ehr/${ehr}/job/write-back-bundles/run`;
+  return getRunJobUrl(ehr, "write-back-bundles");
 }

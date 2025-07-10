@@ -8,19 +8,25 @@ export const relativeDateRangeSchema = z.object({
 export type RelativeDateRange = z.infer<typeof relativeDateRangeSchema>;
 
 export const writeBackFiltersPerResourceTypeSchema = z.object({
-  lab: z.object({
-    loincCodes: z.array(z.string()).optional(),
-    minCountPerCode: z.number().optional(),
-    relativeDateRange: relativeDateRangeSchema.optional(),
-  }),
-  problems: z.object({
-    chronicityFilters: z.enum(["all", "chronic", "non-chronic"]).optional(),
-    relativeDateRange: relativeDateRangeSchema.optional(),
-  }),
-  vital: z.object({
-    loincCodes: z.array(z.string()).optional(),
-    relativeDateRange: relativeDateRangeSchema.optional(),
-  }),
+  lab: z
+    .object({
+      loincCodes: z.array(z.string()).optional(),
+      minCountPerCode: z.number().optional(),
+      relativeDateRange: relativeDateRangeSchema.optional(),
+    })
+    .optional(),
+  problems: z
+    .object({
+      chronicityFilter: z.enum(["all", "chronic", "non-chronic"]).optional(),
+      relativeDateRange: relativeDateRangeSchema.optional(),
+    })
+    .optional(),
+  vital: z
+    .object({
+      loincCodes: z.array(z.string()).optional(),
+      relativeDateRange: relativeDateRangeSchema.optional(),
+    })
+    .optional(),
 });
 export type WriteBackFiltersPerResourceType = z.infer<typeof writeBackFiltersPerResourceTypeSchema>;
 

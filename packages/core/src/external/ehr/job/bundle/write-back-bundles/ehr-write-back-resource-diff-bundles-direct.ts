@@ -35,8 +35,9 @@ import {
 
 dayjs.extend(duration);
 
-const parallelRequests = 5;
-const delayBetweenRequestBatches = dayjs.duration(2, "seconds");
+const parallelRequests = 2;
+const minJitter = dayjs.duration(2, "seconds");
+const maxJitter = dayjs.duration(5, "seconds");
 
 const supportedWriteBackResourceTypes: ResourceType[] = ["Condition", "Observation"];
 export type SupportedWriteBackResourceType = (typeof supportedWriteBackResourceTypes)[number];
@@ -191,7 +192,7 @@ function getResourcesToWriteBack({
   for (const resource of resources) {
     const writeBackResourceType = getWriteBackResourceType(resource);
     if (!writeBackResourceType) continue;
-    const shouldWriteBack = filterResource({
+    const shouldWriteBack = shouldWriteBackResource({
       resource,
       resources,
       writeBackResourceType,
@@ -215,7 +216,7 @@ function getWriteBackResourceType(resource: Resource): WriteBackResourceType | u
   });
 }
 
-function filterResource({
+export function shouldWriteBackResource({
   resource,
   resources,
   writeBackResourceType,
@@ -234,10 +235,10 @@ function filterResource({
   } else if (writeBackResourceType === "lab") {
     const observation = resource as Observation;
     const labObservations = resources.filter(
-      r => r.resourceType === "Observation" && isLab(r as Observation)
+      r => r.resourceType === "Observation" && isLab(r)
     ) as Observation[];
-    if (skipLabLoinCode(observation, writeBackFilters)) return false;
     if (skipLabDate(observation, writeBackFilters)) return false;
+    if (skipLabLoinCode(observation, writeBackFilters)) return false;
     if (skipLabNonTrending(observation, labObservations, writeBackFilters)) return false;
     return true;
   } else if (writeBackResourceType === "vital") {
@@ -251,26 +252,27 @@ function filterResource({
   });
 }
 
-function skipConditionChronicity(
+export function skipConditionChronicity(
   condition: Condition,
   writeBackFilters: WriteBackFiltersPerResourceType
 ): boolean {
-  const chronicityFilters = writeBackFilters.problems?.chronicityFilters;
-  if (chronicityFilters === "all") return false;
-  if (isChronicCondition(condition) && chronicityFilters !== "chronic") return true;
-  if (!isChronicCondition(condition) && chronicityFilters === "non-chronic") return true;
-  return false;
+  const chronicityFilter = writeBackFilters.problems?.chronicityFilter;
+  if (!chronicityFilter || chronicityFilter === "all") return false;
+  if (isChronicCondition(condition) && chronicityFilter === "chronic") return false;
+  if (!isChronicCondition(condition) && chronicityFilter === "non-chronic") return false;
+  return true;
 }
 
-function skipLabDate(
+export function skipLabDate(
   observation: Observation,
-  writeBackFilters: WriteBackFiltersPerResourceType
+  writeBackFilters: WriteBackFiltersPerResourceType,
+  startDate?: Date
 ): boolean {
-  const relativeDateRange = writeBackFilters?.lab?.relativeDateRange;
+  const relativeDateRange = writeBackFilters.lab?.relativeDateRange;
   if (!relativeDateRange) return false;
   const observationDate = getObservationObservedDate(observation);
   if (!observationDate) return false;
-  let beginDate = buildDayjs();
+  let beginDate = startDate ? buildDayjs(startDate) : buildDayjs();
   if (relativeDateRange.days) {
     beginDate = beginDate.subtract(relativeDateRange.days, "day");
   }
@@ -280,42 +282,43 @@ function skipLabDate(
   if (relativeDateRange.years) {
     beginDate = beginDate.subtract(relativeDateRange.years, "year");
   }
-  return buildDayjs(observationDate).isAfter(beginDate);
+  return buildDayjs(observationDate).isBefore(beginDate);
 }
 
-function skipLabLoinCode(
+export function skipLabLoinCode(
   observation: Observation,
   writeBackFilters: WriteBackFiltersPerResourceType
 ): boolean {
-  const loincCodes = writeBackFilters?.lab?.loincCodes;
-  if (!loincCodes || loincCodes.length < 1) return false;
+  const loincCodes = writeBackFilters.lab?.loincCodes;
+  if (!loincCodes) return false;
   const loincCode = getObservationLoincCode(observation);
   if (!loincCode) return false;
   return !loincCodes.includes(loincCode);
 }
 
-function skipLabNonTrending(
+export function skipLabNonTrending(
   observation: Observation,
   labObservations: Observation[],
   writeBackFilters: WriteBackFiltersPerResourceType
 ): boolean {
-  const minCountPerCode = writeBackFilters?.lab?.minCountPerCode;
+  const minCountPerCode = writeBackFilters.lab?.minCountPerCode;
   if (!minCountPerCode) return false;
   const loincCode = getObservationLoincCode(observation);
   if (!loincCode) return false;
   const count = labObservations.filter(o => getObservationLoincCode(o) === loincCode).length;
-  return count >= minCountPerCode;
+  return count < minCountPerCode;
 }
 
-function skipVitalDate(
+export function skipVitalDate(
   observation: Observation,
-  writeBackFilters: WriteBackFiltersPerResourceType
+  writeBackFilters: WriteBackFiltersPerResourceType,
+  startDate?: Date
 ): boolean {
   const relativeDateRange = writeBackFilters?.vital?.relativeDateRange;
   if (!relativeDateRange) return false;
   const observationDate = getObservationObservedDate(observation);
   if (!observationDate) return false;
-  let beginDate = buildDayjs();
+  let beginDate = startDate ? buildDayjs(startDate) : buildDayjs();
   if (relativeDateRange.days) {
     beginDate = beginDate.subtract(relativeDateRange.days, "day");
   }
@@ -325,15 +328,15 @@ function skipVitalDate(
   if (relativeDateRange.years) {
     beginDate = beginDate.subtract(relativeDateRange.years, "year");
   }
-  return buildDayjs(observationDate).isAfter(beginDate);
+  return buildDayjs(observationDate).isBefore(beginDate);
 }
 
-function skipVitalLoinCode(
+export function skipVitalLoinCode(
   observation: Observation,
   writeBackFilters: WriteBackFiltersPerResourceType
 ): boolean {
   const loincCodes = writeBackFilters?.vital?.loincCodes;
-  if (!loincCodes || loincCodes.length < 1) return false;
+  if (!loincCodes) return false;
   const loincCode = getObservationLoincCode(observation);
   if (!loincCode) return false;
   return !loincCodes.includes(loincCode);
@@ -379,7 +382,8 @@ async function writeBackResources({
     },
     {
       numberOfParallelExecutions: parallelRequests,
-      delay: delayBetweenRequestBatches.asMilliseconds(),
+      maxJitterMillis: maxJitter.asMilliseconds(),
+      minJitterMillis: minJitter.asMilliseconds(),
     }
   );
   if (writeBackErrors.length > 0) {
