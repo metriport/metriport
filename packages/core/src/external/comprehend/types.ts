@@ -8,6 +8,8 @@ import {
   Procedure,
 } from "@medplum/fhirtypes";
 
+export type ComprehendInferenceType = "rxnorm" | "icd10cm" | "snomedct" | "entity";
+
 // EXTRACTION FEATURES
 // Each extraction feature corresponds to a tool call provided to the LLM
 export type ExtractionFeatureType = "medication" | "condition" | "procedure";
