@@ -8,11 +8,10 @@ export class ExtractMedicationTool extends AnthropicTool<ExtractTextRequest> {
       name: "extractMedication",
       description: "Extract medication information from the provided medical text.",
       inputSchema: extractTextRequestSchema,
+      handler: async input => {
+        const result = await this.client.inferRxNorm(input.text);
+        return result;
+      },
     });
-  }
-
-  async execute(input: ExtractTextRequest): Promise<unknown> {
-    const result = await this.client.inferRxNorm(input.text);
-    return result;
   }
 }

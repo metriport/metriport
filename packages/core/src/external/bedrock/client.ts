@@ -26,9 +26,7 @@ export class BedrockClient<I = unknown, O = unknown> {
       body: JSON.stringify(body),
     });
     const response = await this.client.send(command);
-    if (!response.body) throw new Error("No response body");
-    const responseBody = response.body.transformToString();
-    if (!responseBody) throw new Error("invalid response body");
+    const responseBody = response.body?.transformToString();
     return JSON.parse(responseBody) as O;
   }
 }

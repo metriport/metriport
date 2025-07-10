@@ -2,35 +2,37 @@ import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { AnthropicToolConfig } from "../../model/anthropic/tools";
 
-export abstract class AnthropicTool<I = unknown, O = unknown> {
+export class AnthropicTool<I = unknown, O = unknown> {
   private name: string;
   private description: string;
   private inputSchema: z.ZodSchema;
   private outputSchema: z.ZodSchema;
+  private handler: (input: I) => Promise<O>;
 
   constructor({
     name,
     description,
     inputSchema,
     outputSchema,
+    handler,
   }: Pick<AnthropicToolConfig, "name" | "description"> & {
-    inputSchema: z.ZodSchema;
-    outputSchema?: z.ZodSchema;
+    inputSchema: z.ZodSchema<I>;
+    outputSchema?: z.ZodSchema<O>;
+    handler: (input: I) => Promise<O>;
   }) {
     this.name = name;
     this.description = description;
     this.inputSchema = inputSchema;
     this.outputSchema = outputSchema ?? z.any();
+    this.handler = handler;
   }
 
   async safelyExecute(input: I): Promise<O> {
     const validatedInput = this.inputSchema.parse(input);
-    const result = await this.execute(validatedInput);
+    const result = await this.handler(validatedInput);
     const validatedResult = this.outputSchema.parse(result);
     return validatedResult;
   }
-
-  abstract execute(input: I): Promise<O>;
 
   getName() {
     return this.name;

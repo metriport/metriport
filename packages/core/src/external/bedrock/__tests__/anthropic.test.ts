@@ -81,29 +81,24 @@ describe("Anthropic test", () => {
   });
 
   it("should validate tool calls", async () => {
-    class GetCapitalTool extends AnthropicTool<{ country: string }, { capital: string }> {
-      constructor() {
-        super({
-          name: "get_capital",
-          description: "Get the capital of a given country.",
-          inputSchema: z.object({ country: z.string() }),
-          outputSchema: z.object({ capital: z.string() }),
-        });
-      }
-
-      async execute(input: { country: string }): Promise<{ capital: string }> {
+    const getCapitalTool = new AnthropicTool<{ country: string }, { capital: string }>({
+      name: "get_capital",
+      description: "Get the capital of a given country.",
+      inputSchema: z.object({ country: z.string() }),
+      outputSchema: z.object({ capital: z.string() }),
+      handler: async input => {
         if (input.country === "France") {
           return { capital: "Paris" };
         }
         throw new Error("Country not found");
-      }
-    }
+      },
+    });
 
     const agent = new AnthropicAgent({
       region: "us-east-1",
       version: "claude-sonnet-3.7",
       systemPrompt: "You are a helpful assistant.",
-      tools: [new GetCapitalTool()],
+      tools: [getCapitalTool],
     });
 
     const mockToolCall: AnthropicToolCall = {

@@ -8,11 +8,10 @@ export class ExtractConditionTool extends AnthropicTool<ExtractTextRequest> {
       name: "extractCondition",
       description: "Extracts Condition FHIR resources from the medical text with ICD-10-CM codes.",
       inputSchema: extractTextRequestSchema,
+      handler: async input => {
+        const result = await this.client.inferICD10CM(input.text);
+        return result;
+      },
     });
-  }
-
-  async execute(input: ExtractTextRequest): Promise<unknown> {
-    const result = await this.client.inferICD10CM(input.text);
-    return result;
   }
 }
