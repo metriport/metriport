@@ -66,8 +66,11 @@ function reformUuid(shortId: string) {
  * Removes the ::ffff: prefix if present
  */
 export function getCleanIpAddress(address: string | undefined): string {
-  if (!address) return "unknown";
-
+  if (!address) {
+    throw new MetriportError("IP address is undefined", undefined, {
+      context: "mllp-server.getCleanIpAddress",
+    });
+  }
   // Remove IPv4-mapped IPv6 prefix if present
   if (address.startsWith("::ffff:")) {
     return address.substring(7);
