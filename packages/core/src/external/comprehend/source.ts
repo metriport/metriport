@@ -11,12 +11,12 @@ export class ComprehendExtractionSource implements ExtractionSource {
   constructor({
     medicalDocumentsBucketName = Config.getMedicalDocumentsBucketName(),
     cdaToFhirBucketName = Config.getCdaToFhirConversionBucketName(),
-    region,
+    region = Config.getAWSRegion(),
   }: {
-    medicalDocumentsBucketName: string;
+    medicalDocumentsBucketName?: string;
     cdaToFhirBucketName?: string;
-    region: string;
-  }) {
+    region?: string;
+  } = {}) {
     this.medicalDocumentsBucketName = medicalDocumentsBucketName;
     this.cdaToFhirBucketName = cdaToFhirBucketName;
     this.s3 = new S3Utils(region);
