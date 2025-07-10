@@ -42,11 +42,23 @@ dayjs.extend(duration);
  */
 
 // Add patient IDs here to kick off queries for specific patient IDs
-const patientIds: string[] = [];
+const patientIds: string[] = [
+  "019728d0-d9db-7b1e-8929-653959de8836",
+  "019728d1-3c3d-7406-b152-5ff1faab98a1",
+  "0197e6d7-3940-7a36-a7ca-a3ca0cd9dc19",
+  "019728d1-0b1c-7b55-8e58-3982a42121d5",
+  "01973ea9-3bb6-718a-aee8-2d8e61011f92",
+  "01973867-d134-749b-b3a3-a949e7943f66",
+  "0197e87b-27d0-7c7e-98c6-406d4563001f",
+  "0197d2f3-68a0-784e-bd3d-f3eca050874f",
+  "0197ebd4-1c4f-7ce8-ae78-ce038f200982",
+  "019728d0-a84a-7b34-b611-46f5dc9743ce",
+  "0197cee9-8352-792c-b7da-82e3c84364c2",
+];
 // Alternatively, you can provide a file with patient IDs, one per line
 const fileName = "";
 
-const cxId = getEnvVarOrFail("CX_ID");
+const cxId = "c7a73203-7ee1-4d51-a138-eb561500eb43"; //getEnvVarOrFail("CX_ID");
 const apiUrl = getEnvVarOrFail("API_URL");
 const api = axios.create({ baseURL: apiUrl });
 
