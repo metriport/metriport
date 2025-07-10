@@ -46,6 +46,7 @@ const setupNlb = (identifier: string, vpc: ec2.Vpc, nlb: elbv2.NetworkLoadBalanc
   const targetGroup = listener.addTargets(`MllpTargets${identifier}`, {
     port: MLLP_DEFAULT_PORT,
     protocol: elbv2.Protocol.TCP,
+    preserveClientIp: true,
     healthCheck: {
       port: MLLP_DEFAULT_PORT.toString(),
       protocol: elbv2.Protocol.TCP,

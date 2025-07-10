@@ -31,6 +31,9 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
       "message",
       withErrorHandling(connection, logger, async ({ message: rawMessage }) => {
         let parsedData: ParsedHl7Data;
+        log(
+          `New message over socket from ${connection.socket.remoteAddress}:${connection.socket.remotePort}`
+        );
 
         try {
           parsedData = await parseHl7Message(rawMessage);
