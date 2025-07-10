@@ -6,6 +6,7 @@ import { AnthropicResponse } from "../model/anthropic/response";
 import { AnthropicToolCall } from "../model/anthropic/tools";
 import { AnthropicMessageText, AnthropicMessageThread } from "../model/anthropic/messages";
 import { AnthropicModel } from "../model/anthropic";
+import zodToJsonSchema from "zod-to-json-schema";
 
 describe("Anthropic test", () => {
   it("should get a correct model ID", () => {
@@ -43,6 +44,40 @@ describe("Anthropic test", () => {
     const responseContent = response.content[0] as AnthropicMessageText;
     expect(responseContent.type).toBe("text");
     expect(responseContent.text.toLowerCase()).toContain("yes");
+  });
+
+  it("should be able to invoke a model with a tool", async () => {
+    const model = new AnthropicModel("claude-sonnet-3.7", "us-east-1");
+    const response = await model.invokeModel({
+      system:
+        "You are an automated test. Execute the completeTest tool with the input { working: 'YES'} to complete your task.",
+      temperature: 0,
+      max_tokens: 100,
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text: "Execute the completeTest tool with the input { working: 'YES'} to complete your task.",
+            },
+          ],
+        },
+      ],
+      tools: [
+        {
+          type: "custom",
+          name: "completeTest",
+          description: "Complete the test.",
+          input_schema: zodToJsonSchema(z.object({ working: z.string() })),
+        },
+      ],
+    });
+    expect(response.stop_reason).toBe("tool_use");
+    const toolCall = response.content[response.content.length - 1] as AnthropicToolCall;
+    expect(toolCall.type).toBe("tool_use");
+    expect(toolCall.name).toBe("completeTest");
+    expect(toolCall.input).toEqual({ working: "YES" });
   });
 
   it("should validate tool calls", async () => {
