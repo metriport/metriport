@@ -5,6 +5,7 @@ import { BadRequestError } from "@metriport/shared";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { findOrCreatePatientMapping, getPatientMapping } from "../../../../command/mapping/patient";
 import { queryDocumentsAcrossHIEs } from "../../../../command/medical/document/document-query";
+import { getPatientPrimaryFacilityIdOrFail } from "../../../../command/medical/patient/get-patient-facilities";
 import { getPatientOrFail } from "../../../../command/medical/patient/get-patient";
 import { Config } from "../../../../shared/config";
 import {
@@ -65,10 +66,17 @@ export async function syncAthenaPatientIntoMetriport({
       cxId,
       id: existingPatient.patientId,
     });
+
+    const facilityId = await getPatientPrimaryFacilityIdOrFail({
+      cxId,
+      patientId: metriportPatient.id,
+    });
+
     if (triggerDqForExistingPatient && isDqCooldownExpired(metriportPatient)) {
       queryDocumentsAcrossHIEs({
         cxId,
         patientId: metriportPatient.id,
+        facilityId,
       }).catch(processAsyncError(`AthenaHealth queryDocumentsAcrossHIEs`));
     }
     const metriportPatientId = metriportPatient.id;
@@ -86,10 +94,17 @@ export async function syncAthenaPatientIntoMetriport({
     possibleDemographics,
     externalId: athenaApi.stripPatientId(athenaPatientId),
   });
+
+  const facilityId = await getPatientPrimaryFacilityIdOrFail({
+    cxId,
+    patientId: metriportPatient.id,
+  });
+
   if (triggerDq) {
     queryDocumentsAcrossHIEs({
       cxId,
       patientId: metriportPatient.id,
+      facilityId,
     }).catch(processAsyncError(`AthenaHealth queryDocumentsAcrossHIEs`));
   }
   await findOrCreatePatientMapping({

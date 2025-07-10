@@ -25,6 +25,8 @@ import { getConsolidatedWebhook } from "../../command/medical/patient/get-consol
 import { getPatientFacilityMatches } from "../../command/medical/patient/get-patient-facility-matches";
 import { getHieOptOut, setHieOptOut } from "../../command/medical/patient/update-hie-opt-out";
 import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
+import { assignPatientFacilities } from "../../command/medical/patient/assign-patient-facilities";
+import { getPatientFacilities } from "../../command/medical/patient/get-patient-facilities";
 import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
 import { countResources } from "../../external/fhir/patient/count-resources";
 import { REQUEST_ID_HEADER_NAME } from "../../routes/header";
@@ -36,12 +38,14 @@ import { getPatientInfoOrFail } from "../middlewares/patient-authorization";
 import { checkRateLimit } from "../middlewares/rate-limiting";
 import { asyncHandler, getFrom, getFromQueryAsBoolean } from "../util";
 import { dtoFromModel } from "./dtos/patientDTO";
+import { dtoFromModel as facilityDtoFromModel } from "./dtos/facilityDTO";
 import { bundleSchema, getResourcesQueryParam } from "./schemas/fhir";
 import {
   PatientHieOptOutResponse,
   patientUpdateSchema,
   schemaUpdateToPatientData,
 } from "./schemas/patient";
+import { assignPatientFacilitiesSchema } from "./schemas/patient-facilities";
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
 
 const router = Router();
@@ -530,6 +534,67 @@ router.get(
     };
 
     return res.status(status.OK).json(respPayload);
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * POST /patient/:id/facilities
+ *
+ * Assigns a patient to multiple facilities.
+ *
+ * @param req.cxId The customer ID.
+ * @param req.param.id The ID of the patient to assign facilities to.
+ * @param req.body The facility IDs to assign to the patient.
+ * @return The updated patient.
+ */
+router.post(
+  "/facilities",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const { cxId, id: patientId } = getPatientInfoOrFail(req);
+    const payload = assignPatientFacilitiesSchema.parse(req.body);
+
+    await assignPatientFacilities({
+      cxId,
+      patientId,
+      facilityIds: payload.facilityIds,
+      ...getETag(req),
+    });
+
+    const facilities = await getPatientFacilities({
+      cxId,
+      patientId,
+    });
+
+    const facilitiesData = facilities.map(facilityDtoFromModel);
+
+    return res.status(status.OK).json({ facilities: facilitiesData });
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * GET /patient/:id/facilities
+ *
+ * Gets all facilities associated with a patient.
+ *
+ * @param req.cxId The customer ID.
+ * @param req.param.id The ID of the patient whose facilities are to be returned.
+ * @return Array of facilities associated with the patient.
+ */
+router.get(
+  "/facilities",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const { cxId, id: patientId } = getPatientInfoOrFail(req);
+
+    const facilities = await getPatientFacilities({
+      cxId,
+      patientId,
+    });
+
+    const facilitiesData = facilities.map(facilityDtoFromModel);
+
+    return res.status(status.OK).json({ facilities: facilitiesData });
   })
 );
 

@@ -61,7 +61,7 @@ export async function queryDocumentsAcrossHIEs({
 }: {
   cxId: string;
   patientId: string;
-  facilityId?: string;
+  facilityId: string;
   requestId?: string | undefined;
   forceDownload?: boolean;
   cxDocumentRequestMetadata?: unknown;
