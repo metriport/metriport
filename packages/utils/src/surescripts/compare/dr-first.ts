@@ -2,6 +2,7 @@ import { Command } from "commander";
 import fs from "fs";
 import path from "path";
 import { buildDayjs } from "@metriport/shared/common/date";
+import { crosswalkNdcToRxNorm } from "@metriport/core/external/term-server/index";
 import {
   Bundle,
   MedicationRequest,
@@ -25,16 +26,19 @@ program
   .option("--include-hie", "Include HIE data in the comparison")
   .option("--hie-only", "Remove Surescripts data from the comparison")
   .option("--start-date <startDate>", "Start date for the comparison")
+  .option("--compare-rxnorm", "Compare RxNorms")
   .action(main);
 
 async function main({
   includeHie,
   hieOnly,
   startDate,
+  compareRxnorm,
 }: {
   includeHie?: boolean;
   hieOnly?: boolean;
   startDate?: string;
+  compareRxnorm?: boolean;
 }) {
   console.log("Running comparison of Dr First to Metriport");
   if (!CX_ID) throw new Error("TARGET_COMPARISON_CX_ID is not set");
@@ -42,9 +46,15 @@ async function main({
   const patientIdMap = getPatientIdMapping();
   const nameIds = getDrFirstOutputNameIds();
   const responsePbmCount = new Map<string, number>();
+  let compareRxnormCount = 0;
+  let compareRxnormTotal = 0;
 
   const csvOutput: Array<Array<string | number>> = [
     ["nameId", "drFirstMedications", "drFirstFills", "metriportMedications", "metriportFills"],
+  ];
+
+  const csvCoverageOutput: Array<Array<string | number>> = [
+    ["nameId", "drFirstRxNorms", "metriportRxNorms", "sharedRxNorms"],
   ];
   for (const nameId of nameIds) {
     const patientId = patientIdMap[nameId];
@@ -76,7 +86,7 @@ async function main({
     }
 
     if (startDate) {
-      console.log(`Filtering bundle for ${nameId} to medication resources after ${startDate}`);
+      // console.log(`Filtering bundle for ${nameId} to medication resources after ${startDate}`);
       const threshold = buildDayjs(startDate);
       metriportBundle.entry = metriportBundle.entry?.filter(entry => {
         if (entry.resource?.resourceType === "MedicationDispense") {
@@ -98,7 +108,7 @@ async function main({
     try {
       dangerouslyDeduplicateFhir(metriportBundle, CX_ID, patientId);
     } catch (error) {
-      console.error(`Error deduplicating ${nameId}:`, error);
+      console.error(`Error deduplicating ${nameId}'s bundle`);
     }
     writeDrFirstHtml(nameId, drFirstOutput);
     writeMetriportHtml(nameId, metriportBundle);
@@ -111,15 +121,68 @@ async function main({
       metriportStatistics.medications,
       metriportStatistics.fills,
     ]);
+
+    if (compareRxnorm) {
+      const drFirstEvents = getDrFirstHistoryData(nameId, drFirstOutput).events;
+      const metriportRxNorms = getMetriportBundleRxNorms(metriportBundle);
+      const { drFirstRxNorms, sharedRxNorms } = await getDrFirstRxNorms(
+        drFirstEvents,
+        metriportRxNorms
+      );
+
+      if (drFirstRxNorms.size > 0) {
+        compareRxnormCount += sharedRxNorms.size;
+        compareRxnormTotal += drFirstRxNorms.size;
+      }
+      console.log(
+        `${nameId}: Dr First: ${drFirstRxNorms.size} -> ${sharedRxNorms.size} overlap <- Metriport: ${metriportRxNorms.size}`
+      );
+      csvCoverageOutput.push([
+        nameId,
+        drFirstRxNorms.size,
+        metriportRxNorms.size,
+        sharedRxNorms.size,
+      ]);
+    }
   }
 
-  const countFileName =
-    includeHie || hieOnly ? (hieOnly ? "count-hie-only.csv" : "count-with-hie.csv") : "count.csv";
-  fs.writeFileSync(
-    path.join(DR_FIRST_DIR, countFileName),
-    csvOutput.map(row => row.join(",")).join("\n"),
-    "utf-8"
-  );
+  const countFileName = buildCsvFileName("count", { includeHie, hieOnly, startDate });
+  writeCsvFile(path.join(DR_FIRST_DIR, countFileName), csvOutput);
+
+  if (compareRxnorm) {
+    const coverageFileName = buildCsvFileName("coverage", { includeHie, hieOnly, startDate });
+    writeCsvFile(path.join(DR_FIRST_DIR, coverageFileName), csvCoverageOutput);
+
+    console.log(
+      `${compareRxnormCount} / ${compareRxnormTotal} = ${Math.round(
+        (100 * compareRxnormCount) / compareRxnormTotal
+      )}%`
+    );
+  }
+}
+
+function buildCsvFileName(
+  name: string,
+  {
+    includeHie,
+    hieOnly,
+    startDate,
+  }: { includeHie?: boolean; hieOnly?: boolean; startDate?: string }
+) {
+  if (includeHie || hieOnly) {
+    if (hieOnly) {
+      return `${name}-hie-only${startDate ? `-${startDate}` : ""}.csv`;
+    }
+    return `${name}-with-hie${startDate ? `-${startDate}` : ""}.csv`;
+  }
+  if (startDate) {
+    return `${name}-${startDate}.csv`;
+  }
+  return `${name}.csv`;
+}
+
+function writeCsvFile(filePath: string, data: Array<Array<string | number>>) {
+  fs.writeFileSync(filePath, data.map(row => row.join(",")).join("\n"), "utf-8");
 }
 
 function computeDrFirstStatistics(
@@ -225,12 +288,51 @@ function writeDrFirstHtml(nameId: string, output: DrFirstOutput) {
   fs.writeFileSync(path.join(DR_FIRST_DIR, "html", nameId + "-drfirst.html"), outputHtml, "utf-8");
 }
 
-function writeMetriportBundle(nameId: string, metriportBundle: Bundle) {
+function writeMetriportBundle(nameId: string, metriportBundle: Bundle): void {
   fs.writeFileSync(
     path.join(DR_FIRST_DIR, "latest-bundle", nameId + ".json"),
     JSON.stringify(metriportBundle, null, 2),
     "utf-8"
   );
+}
+
+function getMetriportBundleRxNorms(metriportBundle: Bundle): Set<string> {
+  const metriportRxNorms = new Set<string>();
+  for (const entry of metriportBundle.entry ?? []) {
+    if (entry.resource?.resourceType === "Medication") {
+      const medication = entry.resource as Medication;
+      const rxNormCoding = medication.code?.coding?.find(
+        c => c.system === "http://www.nlm.nih.gov/research/umls/rxnorm"
+      );
+      if (rxNormCoding && rxNormCoding.code) {
+        metriportRxNorms.add(rxNormCoding.code);
+      }
+    }
+  }
+  return metriportRxNorms;
+}
+
+async function getDrFirstRxNorms(
+  drFirstEvents: HistoryData["events"],
+  metriportRxNorms: Set<string>
+): Promise<{ drFirstRxNorms: Set<string>; sharedRxNorms: Set<string> }> {
+  const drFirstRxNorms = new Set<string>();
+  const sharedRxNorms = new Set<string>();
+
+  for (const event of drFirstEvents) {
+    if (event.medicationNdc) {
+      const ndc = event.medicationNdc;
+      const rxNorm = await crosswalkNdcToRxNorm(ndc);
+      if (rxNorm && rxNorm.code) {
+        drFirstRxNorms.add(rxNorm.code);
+        if (metriportRxNorms.has(rxNorm.code)) {
+          sharedRxNorms.add(rxNorm.code);
+        }
+      }
+    }
+  }
+
+  return { drFirstRxNorms, sharedRxNorms };
 }
 
 function computeMetriportStatistics(metriportBundle: Bundle) {
