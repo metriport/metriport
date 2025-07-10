@@ -84,12 +84,14 @@ router.post(
     const athenaPracticeId = getFromQueryOrFail("practiceId", req);
     const athenaDepartmentId = getFromQueryOrFail("departmentId", req);
     const triggerDq = getFromQueryAsBoolean("triggerDq", req);
+    const isAppointment = getFromQueryAsBoolean("isAppointment", req);
     syncAthenaPatientIntoMetriport({
       cxId,
       athenaPracticeId,
       athenaPatientId,
       athenaDepartmentId,
       triggerDq,
+      triggerDqForExistingPatient: isAppointment,
     }).catch(processAsyncError("AthenaHealth syncAthenaPatientIntoMetriport"));
     return res.sendStatus(httpStatus.OK);
   })

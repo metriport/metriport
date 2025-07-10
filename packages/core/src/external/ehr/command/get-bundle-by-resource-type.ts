@@ -4,6 +4,7 @@ import { EhrSource, EhrSources } from "@metriport/shared/interface/external/ehr/
 import { getBundleByResourceType as getBundleByResourceTypeAthena } from "../athenahealth/command/get-bundle-by-resource-type";
 import { getBundleByResourceType as getBundleByResourceTypeCanvas } from "../canvas/command/get-bundle-by-resource-type";
 import { getBundleByResourceType as getBundleByResourceTypeElation } from "../elation/command/get-bundle-by-resource-type";
+import { getBundleByResourceType as getBundleByResourceTypeHealthie } from "../healthie/command/get-bundle-by-resource-type";
 
 export type GetBundleByResourceTypeRequest = {
   ehr: EhrSource;
@@ -34,7 +35,7 @@ const ehrGetBundleByResourceTypeMap: GetBundleByResourceTypeFnMap = {
   [EhrSources.canvas]: getBundleByResourceTypeCanvas,
   [EhrSources.athena]: getBundleByResourceTypeAthena,
   [EhrSources.elation]: getBundleByResourceTypeElation,
-  [EhrSources.healthie]: undefined,
+  [EhrSources.healthie]: getBundleByResourceTypeHealthie,
   [EhrSources.eclinicalworks]: undefined,
 };
 

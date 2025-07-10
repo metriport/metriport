@@ -4,3 +4,8 @@ export * from "./appointment";
 export * from "./patient";
 export * from "./subscription";
 export * from "./event";
+export * from "./medication";
+export * from "./immunization";
+export * from "./lab";
+export * from "./allergy";
+export * from "./condition";

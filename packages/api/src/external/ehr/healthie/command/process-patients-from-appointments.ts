@@ -265,5 +265,6 @@ async function syncPatient({
     practiceId: healthiePracticeId,
     patientId: healthiePatientId,
     triggerDq: true,
+    isAppointment: true,
   });
 }

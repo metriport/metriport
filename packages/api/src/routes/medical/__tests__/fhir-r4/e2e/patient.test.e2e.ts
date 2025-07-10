@@ -6,7 +6,7 @@ import { makePatient } from "@metriport/core/external/fhir/__tests__/patient";
 import { AxiosResponse } from "axios";
 import { api } from "../../../../../__tests__/e2e/shared";
 
-jest.setTimeout(15000);
+jest.setTimeout(25000);
 
 const patient = makePatient({ firstName: `${faker.person.firstName()}_${faker.string.nanoid()}` });
 

@@ -1,4 +1,5 @@
 import { getEnvVarAsRecordOrFail } from "@metriport/shared/common/env-var";
+import { SnowflakeCreds, snowflakeCredsSchema } from "../external/snowflake/creds";
 import { getEnvVar, getEnvVarOrFail } from "./env-var";
 
 /**
@@ -333,5 +334,9 @@ export class Config {
   // ENG-536 remove this once we automatically find the discharge summary
   static getDischargeNotificationSlackUrl(): string {
     return getEnvVarOrFail("DISCHARGE_NOTIFICATION_SLACK_URL");
+  }
+
+  static getSnowflakeCreds(): SnowflakeCreds {
+    return snowflakeCredsSchema.parse(getEnvVarAsRecordOrFail("SNOWFLAKE_CREDS"));
   }
 }
