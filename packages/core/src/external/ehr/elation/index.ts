@@ -309,38 +309,6 @@ class ElationApi {
     return practices.results.filter(practice => practice.status === "active");
   }
 
-  async getPracticeAndPhysician(
-    cxId: string
-  ): Promise<{ practiceId: string; physicianId: string }> {
-    const practices = await this.getPractices(cxId);
-    const practice = practices[0];
-    if (!practice) {
-      throw new BadRequestError("Practice not found", undefined, {
-        cxId,
-        practiceId: this.practiceId,
-      });
-    }
-    if (practices.length !== 1) {
-      throw new BadRequestError("Multiple practices found", undefined, {
-        cxId,
-        practiceId: this.practiceId,
-      });
-    }
-    const physicianId = practice.physicians[0];
-    if (!physicianId) {
-      throw new BadRequestError("Physician not found", undefined, {
-        cxId,
-        practiceId: this.practiceId,
-      });
-    }
-    /*
-    if (practice.physicians.length !== 1) {
-      throw new BadRequestError("Multiple physicians found", undefined, { cxId, practiceId: this.practiceId });
-    }
-    */
-    return { practiceId: practice.id, physicianId };
-  }
-
   async getCcdaDocument({
     cxId,
     patientId,
@@ -463,10 +431,14 @@ class ElationApi {
 
   async createLab({
     cxId,
+    elationPracticeId,
+    elationPhysicianId,
     patientId,
     observation,
   }: {
     cxId: string;
+    elationPracticeId: string;
+    elationPhysicianId: string;
     patientId: string;
     observation: Observation;
   }): Promise<CreatedLab> {
@@ -480,11 +452,10 @@ class ElationApi {
       patientId,
       observationId: observation.id,
     };
-    const { practiceId, physicianId } = await this.getPracticeAndPhysician(cxId);
     const data = {
       patient: patientId,
-      practice: practiceId,
-      physician: physicianId,
+      practice: elationPracticeId,
+      physician: elationPhysicianId,
       ...this.formatLab(observation, additionalInfo),
     };
     const lab = await this.makeRequest<CreatedLab>({
@@ -504,10 +475,14 @@ class ElationApi {
 
   async createVital({
     cxId,
+    elationPracticeId,
+    elationPhysicianId,
     patientId,
     observation,
   }: {
     cxId: string;
+    elationPracticeId: string;
+    elationPhysicianId: string;
     patientId: string;
     observation: Observation;
   }): Promise<CreatedVital> {
@@ -521,11 +496,10 @@ class ElationApi {
       patientId,
       observationId: observation.id,
     };
-    const { practiceId, physicianId } = await this.getPracticeAndPhysician(cxId);
     const data = {
       patient: patientId,
-      practice: practiceId,
-      physician: physicianId,
+      practice: elationPracticeId,
+      physician: elationPhysicianId,
       ...this.formatVital(observation, additionalInfo),
     };
     const vital = await this.makeRequest<CreatedVital>({
@@ -904,12 +878,16 @@ class ElationApi {
       );
     }
     const isAbnormal = interpretation === "abnormal";
+    const formattedChartDate = this.formatDateTime(buildDayjs().toISOString());
+    if (!formattedChartDate) {
+      throw new BadRequestError("No chart date found for observation", undefined, additionalInfo);
+    }
     const text = observation.text?.div;
     return {
       report_type: "Lab",
       document_date: formattedObservedDate,
       reported_date: formattedObservedDate,
-      chart_date: this.formatDateTime(buildDayjs().toISOString()) ?? "",
+      chart_date: formattedChartDate,
       grids: [
         {
           accession_number: "",

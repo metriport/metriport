@@ -16,6 +16,8 @@ export const elationSecondaryMappingsSchema = z
     webhookAppointmentPatientProcessingDisabled: z.boolean().optional(),
     backgroundAppointmentsDisabled: z.boolean().optional(),
     backgroundAppointmentPatientProcessingDisabled: z.boolean().optional(),
+    defaultPracticeId: z.string().optional(),
+    defaultPhysicianId: z.string().optional(),
   })
   .merge(writeBackFiltersSchema);
 export type ElationSecondaryMappings = z.infer<typeof elationSecondaryMappingsSchema>;

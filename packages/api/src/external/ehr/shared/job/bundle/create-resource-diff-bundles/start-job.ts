@@ -14,7 +14,7 @@ import {
  * @param cxId - The CX ID of the patient.
  * @param practiceId - The practice id of the EHR patient.
  * @param ehrPatientId - The patient id of the EHR patient.
- * @param requestId - The request id of the job. Optional, defaults to a new UUID.
+ * @param requestId - The request id of the job. Opional.
  * @returns The job id of the resource diff bundles job.
  */
 export async function startCreateResourceDiffBundlesJob({

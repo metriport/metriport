@@ -6,7 +6,7 @@ import { getPatientMappingOrFail } from "../../../../../command/mapping/patient"
 import { getPatientOrFail } from "../../../../../command/medical/patient/get-patient";
 
 /**
- * Validates that the EHR patient and there is no current job with the given statuses for the patient.
+ * Validates the EHR patient and that there is no current job with the given statuses for the patient.
  *
  * @param ehr - The EHR source.
  * @param cxId - The CX ID.

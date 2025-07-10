@@ -171,13 +171,28 @@ async function getWriteBackFilters({
   practiceId: string;
 }): Promise<WriteBackFiltersPerResourceType | undefined> {
   const mappingsSchema = ehrCxMappingSecondaryMappingsSchemaMap[ehr];
-  if (!mappingsSchema) return undefined;
+  if (!mappingsSchema) {
+    throw new BadRequestError("No mappings schema found for EHR", undefined, {
+      ehr,
+    });
+  }
   const secondaryMappings = await getSecondaryMappings({
     ehr,
     practiceId,
     schema: mappingsSchema,
   });
-  if (!secondaryMappings) return undefined;
+  if (!secondaryMappings) {
+    throw new BadRequestError("No secondary mappings found for EHR", undefined, {
+      ehr,
+      practiceId,
+    });
+  }
+  if (!secondaryMappings.writeBackEnabled) {
+    throw new BadRequestError("Write back is not enabled for EHR", undefined, {
+      ehr,
+      practiceId,
+    });
+  }
   return secondaryMappings.writeBackFilters;
 }
 
