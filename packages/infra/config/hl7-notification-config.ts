@@ -28,9 +28,3 @@ export interface Hl7NotificationConfig {
   // ENG-536 remove this once we automatically find the discharge summary
   dischargeNotificationSlackUrl: string;
 }
-
-export type Hl7NotificationVpnConfig = {
-  partnerName: string;
-  partnerGatewayPublicIp: string;
-  partnerInternalCidrBlock: string;
-};
