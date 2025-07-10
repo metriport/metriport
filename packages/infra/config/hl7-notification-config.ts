@@ -12,7 +12,6 @@ export interface Hl7NotificationConfig {
     arn: string;
     url: string;
   };
-  vpnConfigs: Hl7NotificationVpnConfig[];
   mllpServer: {
     sentryDSN: string;
     fargateCpu: number;

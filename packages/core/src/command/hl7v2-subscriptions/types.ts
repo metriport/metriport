@@ -46,8 +46,9 @@ export type HiePatientRosterMapping = {
 
 export type HieConfig = {
   name: string;
-  identifierInMshSegment?: string;
-  timezone?: string;
+  gatewayPublicIp: string;
+  internalCidrBlock: string;
+  timezone: "America/Los_Angeles" | "America/Denver" | "America/Chicago" | "America/New_York";
   states: USState[];
   subscriptions: Hl7v2Subscription[];
   cron: string;

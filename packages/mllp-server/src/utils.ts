@@ -11,6 +11,7 @@ import { unpackUuid } from "@metriport/core/util/pack-uuid";
 import IPCIDR from "ip-cidr";
 
 import * as Sentry from "@sentry/node";
+import { HieTimezoneDictionary } from "@metriport/core/external/hl7-notification/hie-timezone";
 
 const crypto = new Base64Scrambler(Config.getHl7Base64ScramblerSeed());
 export const s3Utils = new S3Utils(Config.getAWSRegion());
@@ -74,21 +75,18 @@ export function getCleanIpAddress(address: string | undefined): string {
   return address;
 }
 
-export function lookupHieTzEntryForIp(
-  hieTimezoneDictionary: Record<string, { range: string; timezone: string }>,
-  ip: string
-) {
+export function lookupHieTzEntryForIp(hieTimezoneDictionary: HieTimezoneDictionary, ip: string) {
   const cidrToTimezoneRows = Object.entries(hieTimezoneDictionary).map(
-    ([hieName, { range, timezone }]) => ({ hieName, range, timezone })
+    ([hieName, { cidrBlock, timezone }]) => ({ hieName, cidrBlock, timezone })
   );
-  const hieRow = cidrToTimezoneRows.find(({ range }) => isIpInRange(range, ip));
+  const hieRow = cidrToTimezoneRows.find(({ cidrBlock }) => isIpInRange(cidrBlock, ip));
   if (!hieRow) {
     throw new Error(`IP ${ip} not found in any CIDR block`);
   }
   return hieRow;
 }
 
-export function isIpInRange(range: string, ip: string): boolean {
-  const cidr = new IPCIDR(range);
+export function isIpInRange(cidrBlock: string, ip: string): boolean {
+  const cidr = new IPCIDR(cidrBlock);
   return cidr.contains(ip);
 }
