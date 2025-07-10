@@ -36,6 +36,7 @@ import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
 import { createOrReplaceDocument } from "../document/command/create-or-replace-document";
 import { DocumentType } from "../document/document-shared";
+import { base64ToString } from "../../../util/base64";
 import {
   ApiConfig,
   convertEhrBundleToValidEhrStrictBundle,
@@ -243,7 +244,7 @@ class ElationApi {
       additionalInfo,
       debug,
     });
-    return atob(document.base64_ccda);
+    return base64ToString(document.base64_ccda);
   }
 
   async updatePatientMetadata({
