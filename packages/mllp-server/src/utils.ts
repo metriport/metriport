@@ -56,3 +56,18 @@ export function unpackPidField(pid: string | undefined) {
 function reformUuid(shortId: string) {
   return unpackUuid(crypto.unscramble(shortId));
 }
+
+/**
+ * Extract clean IP address from IPv4-mapped IPv6 address
+ * Removes the ::ffff: prefix if present
+ */
+export function getCleanIpAddress(address: string | undefined): string {
+  if (!address) return "unknown";
+
+  // Remove IPv4-mapped IPv6 prefix if present
+  if (address.startsWith("::ffff:")) {
+    return address.substring(7);
+  }
+
+  return address;
+}

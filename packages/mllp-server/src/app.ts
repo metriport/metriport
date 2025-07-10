@@ -17,7 +17,7 @@ import { out } from "@metriport/core/util/log";
 import { basicToExtendedIso8601 } from "@metriport/shared/common/date";
 import { ParsedHl7Data, parseHl7Message, persistHl7MessageError } from "./parsing";
 import { initSentry } from "./sentry";
-import { asString, bucketName, s3Utils, withErrorHandling } from "./utils";
+import { asString, bucketName, getCleanIpAddress, s3Utils, withErrorHandling } from "./utils";
 
 initSentry();
 
@@ -31,9 +31,10 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
       "message",
       withErrorHandling(connection, logger, async ({ message: rawMessage }) => {
         let parsedData: ParsedHl7Data;
-        log(
-          `New message over socket from ${connection.socket.remoteAddress}:${connection.socket.remotePort}`
-        );
+        const clientIp = getCleanIpAddress(connection.socket.remoteAddress);
+        const clientPort = connection.socket.remotePort;
+
+        log(`New message from sender ${clientIp}:${clientPort}`);
 
         try {
           parsedData = await parseHl7Message(rawMessage);
