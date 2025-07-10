@@ -1,5 +1,6 @@
 import { BedrockRuntimeClient, InvokeModelCommand } from "@aws-sdk/client-bedrock-runtime";
-import { BedrockConfig } from "./types";
+
+export type BedrockRegion = "us-east-1" | "us-east-2" | "us-west-2";
 
 /**
  * A basic client for invoking Bedrock models. See the model/ directory for specialized clients.
@@ -8,9 +9,9 @@ export class BedrockClient<I = unknown, O = unknown> {
   private client: BedrockRuntimeClient;
   private modelId: string;
 
-  constructor(config: BedrockConfig) {
-    this.client = new BedrockRuntimeClient({ region: config.region });
-    this.modelId = config.model;
+  constructor({ model, region }: { model: string; region: BedrockRegion }) {
+    this.client = new BedrockRuntimeClient({ region });
+    this.modelId = model;
   }
 
   /**
