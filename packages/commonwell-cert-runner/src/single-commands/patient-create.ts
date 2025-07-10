@@ -11,7 +11,12 @@ import { getMetriportPatientIdOrFail } from "../util";
 const patientDemo: Omit<Demographics, "identifier"> = patientTracyCrane;
 
 /**
- * Supporting function used to create a patient.
+ * Utility to create a patient in CommonWell.
+ *
+ * Usage:
+ * - Set env vars - see README.md for details
+ * - Run the command
+ *   $ ts-node src/single-commands/patient-create.ts
  */
 export async function createPatient() {
   if (!patientDemo) {

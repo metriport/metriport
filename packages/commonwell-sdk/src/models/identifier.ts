@@ -44,10 +44,14 @@ export enum KnownIdentifierSystems {
   URI = "urn:ietf:rfc:3986",
 }
 
-// An identifier intended for use external to the FHIR protocol. As an external identifier,
-// it may be changed or retired due to human or system process and errors.
-// See: https://specification.commonwellalliance.org/services/rest-api-reference (8.4.11 Identifier)
-export const identifierSchema = z.object({
+const referenceInIdentifierSchema = z.object({
+  reference: z.string().nullish(),
+  type: z.string().nullish(),
+  identifier: z.any().nullish(),
+  display: z.string().nullish(),
+});
+
+export const patientIdentifierSchema = z.object({
   /** Patient identifier that uniquely identifies the patient in the Edge System */
   value: z.string(),
   /** Assigning Authority ID for the unique Patient ID */
@@ -57,15 +61,27 @@ export const identifierSchema = z.object({
   assigner: optionalStringPreprocess(z.string().nullish()),
   period: periodSchema.nullish(),
 });
+export type PatientIdentifier = z.infer<typeof patientIdentifierSchema>;
+
+export const identifierSchema = z.object({
+  /** Patient identifier that uniquely identifies the patient in the Edge System */
+  value: z.string(),
+  /** Assigning Authority ID for the unique Patient ID */
+  system: z.string().nullish(),
+  use: optionalStringPreprocess(z.string().nullish()),
+  type: optionalStringPreprocess(z.string().nullish()),
+  assigner: referenceInIdentifierSchema.nullish(),
+  period: periodSchema.nullish(),
+});
 export type Identifier = z.infer<typeof identifierSchema>;
 
-export const strongIdSchema = identifierSchema
+export const strongIdSchema = patientIdentifierSchema
   .omit({
     system: true,
     value: true,
   })
   .merge(
-    identifierSchema.required({
+    patientIdentifierSchema.required({
       system: true,
       value: true,
     })

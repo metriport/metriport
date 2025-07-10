@@ -13,7 +13,21 @@ export enum ContactUseCodes {
   old = "old",
   mobile = "mobile",
 }
-export const contactUseCodesSchema = z.preprocess(zodToLowerCase, z.nativeEnum(ContactUseCodes));
+// export const contactUseCodesSchema = z.preprocess(zodToLowerCase, z.nativeEnum(ContactUseCodes));
+export const contactUseCodesSchema = z
+  .string()
+  .transform(zodToLowerCase)
+  .transform(normalizeContactUse)
+  .pipe(z.nativeEnum(ContactUseCodes));
+
+function normalizeContactUse(use: unknown): unknown {
+  if (typeof use !== "string") return use;
+  switch (use.toLowerCase()) {
+    case "cell":
+      return "mobile";
+  }
+  return use;
+}
 
 /**
  * Describes the kind of contact.
@@ -28,22 +42,11 @@ export enum ContactSystemCodes {
   sms = "sms",
   other = "other",
 }
-export const contactSystemCodesSchema = z.nativeEnum(ContactSystemCodes);
-
-// A variety of technology-mediated contact details for a person or organization, including
-// telephone, email, etc.
-// See: https://specification.commonwellalliance.org/services/rest-api-reference (8.4.7 Contact)
-export const contactSchema = z.object({
-  value: z.string().nullish(),
-  system: z
-    .string()
-    .transform(zodToLowerCase)
-    .transform(normalizeContactSystem)
-    .pipe(contactSystemCodesSchema.nullish()),
-  use: optionalStringPreprocess(contactUseCodesSchema.nullish()),
-  period: periodSchema.nullish(),
-});
-export type Contact = z.infer<typeof contactSchema>;
+export const contactSystemCodesSchema = z
+  .string()
+  .transform(zodToLowerCase)
+  .transform(normalizeContactSystem)
+  .pipe(z.nativeEnum(ContactSystemCodes));
 
 function normalizeContactSystem(system: unknown): unknown {
   if (typeof system !== "string") return system;
@@ -53,3 +56,14 @@ function normalizeContactSystem(system: unknown): unknown {
   }
   return system;
 }
+
+// A variety of technology-mediated contact details for a person or organization, including
+// telephone, email, etc.
+// See: https://specification.commonwellalliance.org/services/rest-api-reference (8.4.7 Contact)
+export const contactSchema = z.object({
+  value: z.string().nullish(),
+  system: optionalStringPreprocess(contactSystemCodesSchema.nullish()),
+  use: optionalStringPreprocess(contactUseCodesSchema.nullish()),
+  period: periodSchema.nullish(),
+});
+export type Contact = z.infer<typeof contactSchema>;
