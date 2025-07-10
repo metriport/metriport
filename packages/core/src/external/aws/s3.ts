@@ -584,8 +584,8 @@ export class S3Utils {
       );
       if (res.Contents) {
         for (const content of res.Contents) {
-          if (content.Key) {
-            allNames.push(content.Key.substring(prefix.length));
+          if (content.Key && content.Key.endsWith("/")) {
+            allNames.push(content.Key.substring(prefix.length, content.Key.length - 1));
           }
         }
       }
