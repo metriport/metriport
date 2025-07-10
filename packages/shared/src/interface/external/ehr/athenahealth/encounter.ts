@@ -2,6 +2,7 @@ import { z } from "zod";
 
 const encounterSchema = z.object({
   appointmentid: z.coerce.string(),
+  status: z.string(),
 });
 export type Encounter = z.infer<typeof encounterSchema>;
 
