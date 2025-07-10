@@ -88,7 +88,6 @@ export function bundleToHtmlDerm(fhirBundle: Bundle, brief?: Brief): string {
   const dermConditions = conditions.filter(condition => isDermCondition(condition));
   const rheumatoidConditions = conditions.filter(condition => isRheumatoidCondition(condition));
   const asthmaConditions = conditions.filter(condition => isAsthmaCondition(condition));
-  const twoYearAgo = buildDayjs().subtract(2, "year").format(ISO_DATE);
 
   const {
     section: bpSection,
@@ -395,8 +394,7 @@ export function bundleToHtmlDerm(fhirBundle: Bundle, brief?: Brief): string {
             encounters,
             locations,
             "Dermatology Notes",
-            "derm",
-            twoYearAgo
+            "derm"
           )}
           ${createFilteredReportSection(
             diagnosticReports,
@@ -405,8 +403,7 @@ export function bundleToHtmlDerm(fhirBundle: Bundle, brief?: Brief): string {
             encounters,
             locations,
             "Rheumatology Notes",
-            "rheumatoid",
-            twoYearAgo
+            "rheumatoid"
           )}
           ${createFilteredReportSection(
             diagnosticReports,
@@ -415,8 +412,7 @@ export function bundleToHtmlDerm(fhirBundle: Bundle, brief?: Brief): string {
             encounters,
             locations,
             "Asthma Notes",
-            "asthma",
-            twoYearAgo
+            "asthma"
           )}
           ${createDiagnosticReportsSection(
             diagnosticReports,
