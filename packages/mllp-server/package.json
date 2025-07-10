@@ -33,7 +33,9 @@
     "@metriport/core": "file:packages/core",
     "@metriport/shared": "file:packages/shared",
     "@sentry/cli": "^2.42.1",
-    "dotenv": "^16.4.5"
+    "dotenv": "^16.4.5",
+    "ip-cidr": "^4.0.2",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@metriport/eslint-rules": "file:packages/eslint-rules",

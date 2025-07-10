@@ -17,7 +17,17 @@ import { out } from "@metriport/core/util/log";
 import { basicToExtendedIso8601 } from "@metriport/shared/common/date";
 import { ParsedHl7Data, parseHl7Message, persistHl7MessageError } from "./parsing";
 import { initSentry } from "./sentry";
-import { asString, bucketName, getCleanIpAddress, s3Utils, withErrorHandling } from "./utils";
+import {
+  asString,
+  bucketName,
+  getCleanIpAddress,
+  lookupHieTzEntryForIp,
+  s3Utils,
+  withErrorHandling,
+} from "./utils";
+import { Config } from "@metriport/core/util/config";
+
+const hieTimezoneDictionary = Config.getHieTimezoneDictionary();
 
 initSentry();
 
@@ -30,14 +40,15 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
     connection.addEventListener(
       "message",
       withErrorHandling(connection, logger, async ({ message: rawMessage }) => {
-        let parsedData: ParsedHl7Data;
         const clientIp = getCleanIpAddress(connection.socket.remoteAddress);
         const clientPort = connection.socket.remotePort;
+        const { hieName, timezone } = lookupHieTzEntryForIp(hieTimezoneDictionary, clientIp);
 
-        log(`New message from sender ${clientIp}:${clientPort}`);
+        log(`New message from ${hieName} over connection ${clientIp}:${clientPort}`);
 
+        let parsedData: ParsedHl7Data;
         try {
-          parsedData = await parseHl7Message(rawMessage);
+          parsedData = await parseHl7Message(rawMessage, timezone);
         } catch (parseError: unknown) {
           await persistHl7MessageError(rawMessage, parseError, logger);
           throw parseError;

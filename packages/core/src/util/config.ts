@@ -1,6 +1,10 @@
 import { getEnvVarAsRecordOrFail } from "@metriport/shared/common/env-var";
 import { SnowflakeCreds, snowflakeCredsSchema } from "../external/snowflake/creds";
 import { getEnvVar, getEnvVarOrFail } from "./env-var";
+import {
+  HieTimezoneDictionary,
+  hieTimezoneDictionarySchema,
+} from "../external/hl7-notification/hie-timezone";
 
 /**
  * Shared configs, still defining how to work with this. For now:
@@ -107,8 +111,8 @@ export class Config {
   static getHl7NotificationQueueUrl(): string {
     return getEnvVarOrFail("HL7_NOTIFICATION_QUEUE_URL");
   }
-  static getHieTimezoneDictionary(): Record<string, string> {
-    return getEnvVarAsRecordOrFail("HIE_TIMEZONE_DICTIONARY");
+  static getHieTimezoneDictionary(): HieTimezoneDictionary {
+    return hieTimezoneDictionarySchema.parse(getEnvVarAsRecordOrFail("HIE_TIMEZONE_DICTIONARY"));
   }
 
   static getCdaToFhirConversionBucketName(): string | undefined {

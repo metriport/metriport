@@ -8,6 +8,8 @@ import { Base64Scrambler } from "@metriport/core/util/base64-scrambler";
 import { Config } from "@metriport/core/util/config";
 import { Logger } from "@metriport/core/util/log";
 import { unpackUuid } from "@metriport/core/util/pack-uuid";
+import IPCIDR from "ip-cidr";
+
 import * as Sentry from "@sentry/node";
 
 const crypto = new Base64Scrambler(Config.getHl7Base64ScramblerSeed());
@@ -70,4 +72,23 @@ export function getCleanIpAddress(address: string | undefined): string {
   }
 
   return address;
+}
+
+export function lookupHieTzEntryForIp(
+  hieTimezoneDictionary: Record<string, { range: string; timezone: string }>,
+  ip: string
+) {
+  const cidrToTimezoneRows = Object.entries(hieTimezoneDictionary).map(
+    ([hieName, { range, timezone }]) => ({ hieName, range, timezone })
+  );
+  const hieRow = cidrToTimezoneRows.find(({ range }) => isIpInRange(range, ip));
+  if (!hieRow) {
+    throw new Error(`IP ${ip} not found in any CIDR block`);
+  }
+  return hieRow;
+}
+
+export function isIpInRange(range: string, ip: string): boolean {
+  const cidr = new IPCIDR(range);
+  return cidr.contains(ip);
 }
