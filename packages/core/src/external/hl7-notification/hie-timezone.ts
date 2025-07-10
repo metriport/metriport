@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { Config } from "../../util/config";
 
 export const hieTimezoneDictionarySchema = z.record(
   z.string(),
@@ -9,3 +10,7 @@ export const hieTimezoneDictionarySchema = z.record(
 );
 
 export type HieTimezoneDictionary = z.infer<typeof hieTimezoneDictionarySchema>;
+
+export function getHieTimezoneDictionary(): HieTimezoneDictionary {
+  return hieTimezoneDictionarySchema.parse(Config.getHieTimezoneDictionary());
+}

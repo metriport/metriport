@@ -11,6 +11,7 @@ import {
 } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/msh";
 import { createFileKeyHl7Message } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
+import { getHieTimezoneDictionary } from "@metriport/core/external/hl7-notification/hie-timezone";
 import { capture } from "@metriport/core/util";
 import type { Logger } from "@metriport/core/util/log";
 import { out } from "@metriport/core/util/log";
@@ -25,7 +26,6 @@ import {
   s3Utils,
   withErrorHandling,
 } from "./utils";
-import { Config } from "@metriport/core/util/config";
 
 initSentry();
 
@@ -33,7 +33,7 @@ const MLLP_DEFAULT_PORT = 2575;
 
 async function createHl7Server(logger: Logger): Promise<Hl7Server> {
   const { log } = logger;
-  const hieTimezoneDictionary = Config.getHieTimezoneDictionary();
+  const hieTimezoneDictionary = getHieTimezoneDictionary();
 
   const server = new Hl7Server(connection => {
     connection.addEventListener(
