@@ -1,12 +1,7 @@
+import { BadRequestError } from "@metriport/shared";
 import { Facility } from "../../../domain/medical/facility";
 import { getPatientOrFail } from "./get-patient";
 import { getFacilities } from "../facility/get-facility";
-import { BadRequestError } from "../../../../../shared/dist";
-
-export type GetPatientFacilitiesCmd = {
-  cxId: string;
-  patientId: string;
-};
 
 export async function getPatientFacilities({
   cxId,
