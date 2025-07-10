@@ -253,5 +253,6 @@ async function syncPatient({
     patientId: athenaPatientId,
     departmentId: athenaDepartmentId,
     triggerDq: true,
+    isAppointment: true,
   });
 }

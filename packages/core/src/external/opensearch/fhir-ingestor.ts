@@ -1,5 +1,5 @@
 import { Resource } from "@medplum/fhirtypes";
-import { errorToString, MetriportError } from "@metriport/shared";
+import { errorToString, executeWithNetworkRetries, MetriportError } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import { Client } from "@opensearch-project/opensearch";
 import dayjs from "dayjs";
@@ -20,6 +20,8 @@ import { getEntryId } from "./shared/id";
 
 dayjs.extend(duration);
 
+const ERROR_CODES_TO_RETRY = [409, 503];
+const INITIAL_WAIT_TIME_BETWEEN_RETRIES = dayjs.duration({ milliseconds: 200 });
 const DEFAULT_BULK_INGESTION_TIMEOUT = dayjs.duration(2, "minute").asMilliseconds();
 const MAX_BULK_RETRIES = 3;
 
@@ -180,10 +182,20 @@ export class OpenSearchFhirIngestor {
     }
 
     const startedAt = Date.now();
-    const response = await client.bulk(
-      { index: indexName, body: bulkRequest },
-      { requestTimeout: DEFAULT_BULK_INGESTION_TIMEOUT, maxRetries: MAX_BULK_RETRIES }
+
+    const response = await executeWithNetworkRetries(
+      async () =>
+        client.bulk(
+          { index: indexName, body: bulkRequest },
+          { requestTimeout: DEFAULT_BULK_INGESTION_TIMEOUT, maxRetries: MAX_BULK_RETRIES }
+        ),
+      {
+        httpStatusCodesToRetry: ERROR_CODES_TO_RETRY,
+        initialDelay: INITIAL_WAIT_TIME_BETWEEN_RETRIES.asMilliseconds(),
+        maxAttempts: 3,
+      }
     );
+
     const time = Date.now() - startedAt;
 
     const errorCount = processErrorsFromBulkResponse(response, operation, onItemError);
@@ -202,10 +214,19 @@ export class OpenSearchFhirIngestor {
       log(`Deleting resources from index ${indexName}...`);
       const startedAt = Date.now();
 
-      await client.deleteByQuery({
-        index: indexName,
-        body: createDeleteQuery({ cxId, patientId }),
-      });
+      await executeWithNetworkRetries(
+        async () => {
+          await client.deleteByQuery({
+            index: indexName,
+            body: createDeleteQuery({ cxId, patientId }),
+          });
+        },
+        {
+          httpStatusCodesToRetry: ERROR_CODES_TO_RETRY,
+          initialDelay: INITIAL_WAIT_TIME_BETWEEN_RETRIES.asMilliseconds(),
+          maxAttempts: 10,
+        }
+      );
       const time = Date.now() - startedAt;
       log(`Successfully deleted in ${time} milliseconds`);
     } finally {
