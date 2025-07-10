@@ -17,7 +17,7 @@ clean-targets:
   - "dbt_packages"
 
 vars:
-  input_database:  "{{ env_var('INPUT_DATABASE') }}"
+  input_database: default
   input_schema: public
   clinical_enabled: true
   cms_hcc_payment_year: 2023

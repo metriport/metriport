@@ -5,7 +5,6 @@ services:
   csv-to-metrics:
     container_name: csv-to-metrics
     build:
-      context: .
       dockerfile: ./Dockerfile
     volumes:
       - .:/usr/app/data

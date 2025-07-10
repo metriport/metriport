@@ -25,11 +25,14 @@ RUN python -m pip install --upgrade "pip==24.0" "setuptools==69.2.0" "wheel==0.4
 
 COPY . /usr/app/dbt/
 WORKDIR /usr/app/dbt/
+
 ARG commit_ref=main
 
 FROM base as dbt-core
 
 RUN python -m pip install --no-cache-dir "dbt-core @ git+https://github.com/dbt-labs/dbt-core@${commit_ref}#subdirectory=core"
+
+ARG commit_ref=main
 
 FROM base as dbt-snowflake
 
@@ -37,17 +40,7 @@ RUN python -m pip install --no-cache-dir "dbt-snowflake @ git+https://github.com
 
 RUN dbt deps
 
-HEALTHCHECK CMD dbt --version || exit 1
+HEALTHCHECK CMD dbt --version // exit 1
 
-RUN if [ "$DBT_TARGET" = "production" ]; then \
-        echo "Building for production..."; \
-        sed -i "s/{{ env_var('INPUT_DATABASE') }}/PROD_METRICS_${CX_ID}/g" /usr/app/dbt/dbt_project.yml; \
-    elif [ "$DBT_TARGET" = "staging" ]; then \
-        echo "Building for staging..."; \
-        sed -i "s/{{ env_var('INPUT_DATABASE') }}/STAGING_METRICS_${CX_ID}/g" /usr/app/dbt/dbt_project.yml; \
-    else \
-        echo "Building for development..."; \
-        sed -i "s/{{ env_var('INPUT_DATABASE') }}/DEV_METRICS_${CX_ID}/g" /usr/app/dbt/dbt_project.yml; \
-    fi
-
-ENTRYPOINT ["dbt", "build"]
+RUN chmod +x /usr/app/dbt/entrypoint.sh
+ENTRYPOINT ["/usr/app/dbt/entrypoint.sh"]

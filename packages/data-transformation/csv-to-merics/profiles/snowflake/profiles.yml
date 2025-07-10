@@ -6,7 +6,7 @@ default:
       user: "{{ env_var('DBT_SNOWFLAKE_CI_USER') }}"
       password: "{{ env_var('DBT_SNOWFLAKE_CI_PASSWORD') }}"
       warehouse: "{{ env_var('DBT_SNOWFLAKE_CI_WAREHOUSE') }}"
-      database: "DEV_METRICS_{{ env_var('CX_ID') }}"
+      database: "DEVELOPMENT_METRICS_{{ env_var('CX_ID') }}"
       schema: public
       threads: 5
       type: snowflake
@@ -26,7 +26,7 @@ default:
       user: "{{ env_var('DBT_SNOWFLAKE_CI_USER') }}"
       password: "{{ env_var('DBT_SNOWFLAKE_CI_PASSWORD') }}"
       warehouse: "{{ env_var('DBT_SNOWFLAKE_CI_WAREHOUSE') }}"
-      database: "PROD_METRICS_{{ env_var('CX_ID') }}"
+      database: "PRODUCTION_METRICS_{{ env_var('CX_ID') }}"
       schema: public
       threads: 5
       type: snowflake

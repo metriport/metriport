@@ -5,7 +5,6 @@ services:
   fhir-to-csv:
     container_name: fhir-to-csv
     build:
-      context: .
       dockerfile: ./Dockerfile
     volumes:
       - .:/usr/app/data
