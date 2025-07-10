@@ -1,4 +1,4 @@
-import { EhrWriteBackResourceDiffBundlesDirect } from "@metriport/core/external/ehr/job/write-back-bundles/write-back/ehr-write-back-resource-diff-bundles-direct";
+import { EhrWriteBackResourceDiffBundlesDirect } from "@metriport/core/external/ehr/job/bundle/write-back-bundles/ehr-write-back-resource-diff-bundles-direct";
 import { getEnvAsIntOrFail } from "@metriport/shared";
 import { SQSEvent } from "aws-lambda";
 import { capture } from "../shared/capture";
