@@ -12,6 +12,7 @@ import IPCIDR from "ip-cidr";
 
 import * as Sentry from "@sentry/node";
 import { HieTimezoneDictionary } from "@metriport/core/external/hl7-notification/hie-timezone";
+import { MetriportError } from "@metriport/shared/dist/error/metriport-error";
 
 const crypto = new Base64Scrambler(Config.getHl7Base64ScramblerSeed());
 export const s3Utils = new S3Utils(Config.getAWSRegion());
@@ -81,7 +82,10 @@ export function lookupHieTzEntryForIp(hieTimezoneDictionary: HieTimezoneDictiona
   );
   const hieRow = cidrToTimezoneRows.find(({ cidrBlock }) => isIpInRange(cidrBlock, ip));
   if (!hieRow) {
-    throw new Error(`IP ${ip} not found in any CIDR block`);
+    throw new MetriportError(`Sender IP not found in any CIDR block`, {
+      cause: undefined,
+      additionalInfo: { ip, hieTimezoneDictionary },
+    });
   }
   return hieRow;
 }
