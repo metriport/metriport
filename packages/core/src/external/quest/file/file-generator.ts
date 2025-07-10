@@ -120,7 +120,7 @@ function generatePatientRequestRow(patient: Patient, mappedPatientId: string): B
       zipCode: address.zip,
       subscriberFirstName: patient.firstName,
       subscriberLastName: patient.lastName,
-      programType: "01",
+      programType: "HMO",
       effectiveDate: new Date(),
       expirationDate: "99991231",
     },
