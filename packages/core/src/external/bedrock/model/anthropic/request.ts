@@ -1,5 +1,4 @@
 import { AnthropicModelVersion } from "./version";
-
 import { AnthropicMessageThread } from "./messages";
 import { AnthropicToolConfig } from "./tools";
 

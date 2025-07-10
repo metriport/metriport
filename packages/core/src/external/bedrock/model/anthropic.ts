@@ -1,5 +1,4 @@
-import { BedrockClient } from "../client";
-import { BedrockRegion } from "../types";
+import { BedrockClient, BedrockRegion } from "../client";
 import { AnthropicModelVersion, getAnthropicModelId } from "./anthropic/version";
 import { AnthropicRequest } from "./anthropic/request";
 import { AnthropicResponse } from "./anthropic/response";

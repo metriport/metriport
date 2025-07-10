@@ -104,17 +104,33 @@ export class AnthropicAgent<V extends AnthropicModelVersion> {
     for (const toolCall of toolCalls) {
       const tool = this.tools.find(tool => tool.getName() === toolCall.name);
       if (!tool) continue;
-      const toolResultContent = await tool.execute(toolCall.input);
-      toolResults.push({
-        type: "tool_result",
-        tool_use_id: toolCall.id,
-        content: toolResultContent,
-      });
+
+      try {
+        const toolResultContent = await tool.safelyExecute(toolCall.input);
+        toolResults.push({
+          type: "tool_result",
+          tool_use_id: toolCall.id,
+          content: toolResultContent,
+        });
+      } catch (error) {
+        console.error(`Error executing tool ${toolCall.name}:`, error);
+        toolResults.push({
+          type: "tool_result",
+          tool_use_id: toolCall.id,
+          content: {
+            error: error instanceof Error ? error.message : String(error),
+          },
+        });
+      }
     }
 
     this.messages.push({ role: "user", content: toolResults });
   }
 
+  /**
+   * Returns the conversation thread for this agent.
+   * @returns The history of messages between the user and assistant.
+   */
   getConversation(): AnthropicMessageThread<V> {
     return this.messages;
   }

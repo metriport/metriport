@@ -1,5 +1,4 @@
 import { AnthropicModelVersion } from "./version";
-
 import { AnthropicAssistantContent } from "./messages";
 
 // https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-anthropic-claude-messages-request-response.html
