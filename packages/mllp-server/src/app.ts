@@ -27,14 +27,13 @@ import {
 } from "./utils";
 import { Config } from "@metriport/core/util/config";
 
-const hieTimezoneDictionary = Config.getHieTimezoneDictionary();
-
 initSentry();
 
 const MLLP_DEFAULT_PORT = 2575;
 
 async function createHl7Server(logger: Logger): Promise<Hl7Server> {
   const { log } = logger;
+  const hieTimezoneDictionary = Config.getHieTimezoneDictionary();
 
   const server = new Hl7Server(connection => {
     connection.addEventListener(
@@ -131,8 +130,14 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
 
 async function main() {
   const logger = out("MLLP Server");
-  const server = await createHl7Server(logger);
-  server.start(MLLP_DEFAULT_PORT);
+  try {
+    const server = await createHl7Server(logger);
+    server.start(MLLP_DEFAULT_PORT);
+  } catch (error) {
+    logger.log("Error starting MLLP server", error);
+    capture.error(error);
+    process.exit(1);
+  }
 }
 
 main();
