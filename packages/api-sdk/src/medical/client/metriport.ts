@@ -448,6 +448,36 @@ export class MetriportMedicalApi {
     return resp.data;
   }
 
+  /**
+   * Associates a patient to multiple facilities.
+   *
+   * @param patientId The ID of the patient to associate facilities to.
+   * @param facilityIds The array of facility IDs to associate with the patient.
+   * @returns The updated facilities associated with the patient.
+   */
+  async assignPatientFacilities(
+    patientId: string,
+    facilityIds: string[]
+  ): Promise<{ facilities: Facility[] }> {
+    const resp = await this.api.post(`${PATIENT_URL}/${patientId}/facilities`, {
+      facilityIds,
+    });
+    if (!resp.data) throw new Error(NO_DATA_MESSAGE);
+    return resp.data;
+  }
+
+  /**
+   * Gets all facilities associated with a patient.
+   *
+   * @param patientId The ID of the patient whose facilities are to be returned.
+   * @returns Array of facilities associated with the patient.
+   */
+  async getPatientFacilities(patientId: string): Promise<{ facilities: Facility[] }> {
+    const resp = await this.api.get(`${PATIENT_URL}/${patientId}/facilities`);
+    if (!resp.data) throw new Error(NO_DATA_MESSAGE);
+    return resp.data;
+  }
+
   // TODO #870 remove this
   /** ---------------------------------------------------------------------------
    * Returns a patient's consolidated data.
