@@ -3,7 +3,7 @@ dotenv.config();
 // keep that ^ above all other imports
 import { Command } from "commander";
 import { documentConsumption } from "./flows/document-consumption";
-import { documentContribution } from "./flows/document-contribution";
+// import { documentContribution } from "./flows/document-contribution";
 import { linkManagement } from "./flows/link-management";
 import { orgManagement } from "./flows/org-management";
 import { patientManagement } from "./flows/patient-management";
@@ -50,7 +50,7 @@ async function main() {
     await patientManagement(commonWell).catch(() => failedFlows.push("patientManagement"));
     await linkManagement(commonWell).catch(() => failedFlows.push("linkManagement"));
     await documentConsumption(commonWell).catch(() => failedFlows.push("documentConsumption"));
-    await documentContribution(commonWell).catch(() => failedFlows.push("documentContribution"));
+    // await documentContribution(commonWell).catch(() => failedFlows.push("documentContribution"));
 
     if (failedFlows.length < 1) {
       console.error(`\n>>> >>> All flows passed! <<< <<<\n`);

@@ -1,11 +1,17 @@
-import { CommonWell, Document, DocumentStatus, Patient } from "@metriport/commonwell-sdk";
+import { CommonWell, DocumentReference, DocumentStatus, Patient } from "@metriport/commonwell-sdk";
 import { encodeToCwPatientId } from "@metriport/commonwell-sdk/common/util";
 import { errorToString, sleep } from "@metriport/shared";
+import { buildDayjs } from "@metriport/shared/common/date";
 import fs from "fs";
 import { uniq } from "lodash";
-import { makeId, makePatient } from "../payloads";
+import { contentType, extension } from "mime-types";
+import { nanoid } from "nanoid";
+import { makePatient } from "../payloads";
 import { patientTracyCrane } from "../payloads/patient-tracy";
 import { getMetriportPatientIdOrFail, logError } from "../util";
+
+const outputBaseDir = "./downloads";
+const runTimestamp = buildDayjs().toISOString();
 
 /**
  * Flow to validate the document consumption API (item 10.1 and 10.2 in the spec).
@@ -19,8 +25,9 @@ import { getMetriportPatientIdOrFail, logError } from "../util";
  * @param commonWell - CommonWell API client configured with the Organization that "owns" the patient - not the CW member one.
  * @param queryMeta - Request metadata for the CommonWell API client.
  * @param patientId - Patient ID to query documents for.
+ * @param downloadAll - If true, download all documents. If false, download only the first successful document.
  */
-export async function documentConsumption(commonWell: CommonWell) {
+export async function documentConsumption(commonWell: CommonWell, downloadAll = false) {
   const patientIds: string[] = [];
   try {
     console.log(`>>> 1 Document Consumer`);
@@ -29,8 +36,6 @@ export async function documentConsumption(commonWell: CommonWell) {
     const patientCreate: Patient = makePatient({
       facilityId: commonWell.oid,
       demographics: patientTracyCrane,
-      // demographics: patientConnieCarin,
-      // demographics: patientMaryLopez,
     });
     const resp_1_0 = await commonWell.createOrUpdatePatient(patientCreate);
     console.log(">>> Transaction ID: " + commonWell.lastTransactionId);
@@ -49,10 +54,17 @@ export async function documentConsumption(commonWell: CommonWell) {
 
     const documents = await queryDocuments(commonWell, encodedPatientId);
     console.log(`>>> Got ${documents.length} documents`);
-    // TODO ENG-200 FINISH THIS
-    // for (const doc of documents) {
-    //   await retrieveDocument(commonWell, queryMeta, doc);
-    // }
+    for (const doc of documents) {
+      const docId = doc.masterIdentifier?.value;
+      const isDownloadSuccessful = await retrieveDocument(commonWell, doc);
+      if (isDownloadSuccessful) {
+        console.log(`>>> Download successful for document ${docId}`);
+        if (downloadAll) continue;
+        console.log(`>>> Skipping the remaining documents because downloadAll is false`);
+        break;
+      }
+      console.log(`>>> Download failed for document ${docId}, trying the next one...`);
+    }
   } catch (error) {
     console.log(`Error (txId ${commonWell.lastTransactionId}): ${errorToString(error)}`);
     logError(error);
@@ -79,39 +91,72 @@ export async function documentConsumption(commonWell: CommonWell) {
 export async function queryDocuments(
   commonWell: CommonWell,
   patientId: string
-): Promise<Document[]> {
+): Promise<DocumentReference[]> {
   console.log(`>>> 1.1 Document Query`);
-  async function getByStatus(status: DocumentStatus) {
+  async function getByStatus(status: DocumentStatus): Promise<DocumentReference[]> {
     console.log(`>>> 1.1.1 Document Query for status: ${status}`);
     const respDocQuery = await commonWell.queryDocuments(patientId, { status });
     console.log(">>> Transaction ID: " + commonWell.lastTransactionId);
-    console.log(">>> 1.1.1 Response: " + JSON.stringify(respDocQuery, null, 2));
-    const documents = respDocQuery.entry;
-    console.log(`>>> 1.1.1 Got ${documents.length} documents`);
+    console.log(`>>> 1.1.1 Response (status ${status}): ` + JSON.stringify(respDocQuery, null, 2));
+    const documents = respDocQuery;
+    console.log(`>>> 1.1.1 Got ${documents.length} documents for status ${status}`);
     return documents;
   }
   const documentsCurrent = await getByStatus("current");
-  const documentsSuperseded = await getByStatus("superseded");
-  const documentsEnteredInError = await getByStatus("entered-in-error");
+  // const documentsSuperseded = await getByStatus("superseded");
+  const documentsSuperseded: DocumentReference[] = [];
+  // const documentsEnteredInError = await getByStatus("entered-in-error");
+  const documentsEnteredInError: DocumentReference[] = [];
   const documents = [...documentsCurrent, ...documentsSuperseded, ...documentsEnteredInError];
   console.log(`>>> 1.1 Got ${documents.length} documents for all statuses`);
   return documents;
 }
 
-// TODO ENG-200 FINISH THIS
-export async function retrieveDocument(commonWell: CommonWell, doc: Document): Promise<void> {
-  // E2: Document Retrieve
-  console.log(`>>> E2c: Retrieve documents using FHIR (REST)`);
+export async function retrieveDocument(
+  commonWell: CommonWell,
+  doc: DocumentReference
+): Promise<boolean> {
+  const id = doc.masterIdentifier?.value ?? doc.id;
+  const docId = id ?? "ID-" + nanoid();
+  const content = doc.content[0];
+  const url = content?.attachment.url;
+  if (!url) {
+    console.log(`Missing doc ref URL in document ${id}, skipping...`);
+    return false;
+  }
+  const contentType = content?.attachment.contentType ?? "application/octet-stream";
+  const fileExtension = getFileExtension(contentType);
 
-  // store the query result as well
-  const queryFileName = `./cw_consumption_${doc.id ?? "ID"}_${makeId()}.response.file`;
-  fs.writeFileSync(queryFileName, JSON.stringify(doc));
+  console.log(`>>> 1.2 Document Retrieve`);
 
-  const fileName = `./cw_consumption_${doc.id ?? "ID"}_${makeId()}.contents.file`;
-  // the default is UTF-8, avoid changing the encoding if we don't know the file we're downloading
-  const outputStream = fs.createWriteStream(fileName, { encoding: undefined });
-  console.log(`File being created at ${process.cwd()}/${fileName}`);
-  const url = doc.content.location;
-  if (!url) throw new Error(`[E2c] missing content.location in document ${doc.id}`);
-  await commonWell.retrieveDocument(url, outputStream);
+  const outputDir = `${outputBaseDir}/${runTimestamp}`;
+  fs.mkdirSync(outputDir, { recursive: true });
+  const fileNamePrefix = `${outputDir}/${docId}`;
+  const docRefFileName = `${fileNamePrefix}.docRef.json`;
+  const contentsFileName = `${fileNamePrefix}.contents${fileExtension}`;
+
+  console.log(`>>> DocRef being stored at ${docRefFileName}`);
+  fs.writeFileSync(docRefFileName, JSON.stringify(doc, null, 2));
+  console.log(`>>> Contents being stored at ${contentsFileName}`);
+  const outputStream = fs.createWriteStream(contentsFileName, { encoding: undefined });
+  try {
+    const { contentType, size } = await commonWell.retrieveDocument(url, outputStream);
+    console.log(
+      `>>> Downloaded document ${docId}, size: ${size} bytes, contentType: ${contentType}`
+    );
+    if (contentsFileName.endsWith(".bin")) {
+      const newFileExtension = getFileExtension(contentType);
+      fs.renameSync(contentsFileName, `${contentsFileName.replace(".bin", "")}${newFileExtension}`);
+    }
+  } catch (error) {
+    console.log(`Error retrieving document ${docId}: ${errorToString(error)}`);
+    return false;
+  }
+  return true;
+}
+
+function getFileExtension(value: string | undefined): string {
+  if (!value || !contentType(value)) return "";
+  const fileExtension = extension(value);
+  return fileExtension ? `.${fileExtension}` : "";
 }

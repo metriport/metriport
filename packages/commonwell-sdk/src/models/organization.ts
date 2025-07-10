@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { linkSchema } from "./link";
+// import { linkSchema } from "./link";
 
 const organizationBaseSchema = z.object({
   organizationId: z.string(),
@@ -49,12 +49,6 @@ const organizationBaseSchema = z.object({
       phone: z.string(),
     })
   ),
-  _links: z
-    .object({
-      self: linkSchema.nullish(),
-      certificate: linkSchema.nullish(),
-    })
-    .nullish(),
 });
 
 export const organizationSchemaWithNetworkInfo = organizationBaseSchema.extend({
@@ -123,7 +117,6 @@ export const organizationListSchema = z.object({
   from: z.number(),
   to: z.number(),
   organizations: z.array(organizationSchema),
-  _links: linkSchema,
 });
 
 export type OrganizationList = z.infer<typeof organizationListSchema>;

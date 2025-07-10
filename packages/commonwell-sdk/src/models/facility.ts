@@ -1,5 +1,4 @@
 import { z } from "zod";
-
 import { addressSchema } from "./address";
 
 export const facilitySchema = z.object({
