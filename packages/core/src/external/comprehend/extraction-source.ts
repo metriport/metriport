@@ -1,23 +1,24 @@
 import { Bundle } from "@medplum/fhirtypes";
 import { ExtractionSource } from "./types";
 import { S3Utils } from "../aws/s3";
+import { Config } from "../../util/config";
 
 export class ComprehendExtractionSource implements ExtractionSource {
   private readonly medicalDocumentsBucketName: string;
-  private readonly ccdaToFhirBucketName: string;
+  private readonly cdaToFhirBucketName: string | undefined;
   private readonly s3: S3Utils;
 
   constructor({
-    medicalDocumentsBucketName,
-    ccdaToFhirBucketName,
+    medicalDocumentsBucketName = Config.getMedicalDocumentsBucketName(),
+    cdaToFhirBucketName = Config.getCdaToFhirConversionBucketName(),
     region,
   }: {
     medicalDocumentsBucketName: string;
-    ccdaToFhirBucketName: string;
+    cdaToFhirBucketName?: string;
     region: string;
   }) {
     this.medicalDocumentsBucketName = medicalDocumentsBucketName;
-    this.ccdaToFhirBucketName = ccdaToFhirBucketName;
+    this.cdaToFhirBucketName = cdaToFhirBucketName;
     this.s3 = new S3Utils(region);
   }
 
@@ -38,8 +39,11 @@ export class ComprehendExtractionSource implements ExtractionSource {
   }
 
   async listDocumentNames(cxId: string, patientId: string): Promise<string[]> {
+    if (!this.cdaToFhirBucketName) {
+      throw new Error("CdaToFhirConversionBucketName is not set");
+    }
     const keyPrefix = `${cxId}/${patientId}/`;
-    const documentObjects = await this.s3.listObjects(this.ccdaToFhirBucketName, keyPrefix);
+    const documentObjects = await this.s3.listObjects(this.cdaToFhirBucketName, keyPrefix);
     const documentNames = documentObjects.flatMap(({ Key }) => {
       if (!Key) return [];
       const name = Key.substring(keyPrefix.length);
