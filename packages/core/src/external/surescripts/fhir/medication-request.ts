@@ -1,16 +1,20 @@
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { buildDayjs } from "@metriport/shared/common/date";
-import { Medication, MedicationRequest } from "@medplum/fhirtypes";
-import type { SurescriptsContext } from "./types";
+import { Medication, MedicationRequest, Practitioner, Reference } from "@medplum/fhirtypes";
 import { ResponseDetail } from "../schema/response";
 import { getMedicationReference } from "./medication";
 import { getSurescriptsDataSourceExtension } from "./shared";
 
-export function getMedicationRequest(
-  context: SurescriptsContext,
-  medication: Medication,
-  detail: ResponseDetail
-): MedicationRequest {
+export function getMedicationRequest({
+  prescriber,
+  medication,
+  detail,
+}: {
+  prescriber?: Practitioner | undefined;
+  medication: Medication;
+  detail: ResponseDetail;
+}): MedicationRequest {
+  const requester = getRequester(prescriber);
   const dispenseRequest = getDispenseRequest(detail);
   const note = getDispenseNote(detail);
   const substitution = getMedicationRequestSubstitution(detail);
@@ -25,6 +29,7 @@ export function getMedicationRequest(
     id: uuidv7(),
     status: "completed",
     medicationReference,
+    ...(requester ? { requester } : undefined),
     ...(note ? { note } : undefined),
     ...(category ? { category } : undefined),
     ...(authoredOn ? { authoredOn } : undefined),
@@ -32,6 +37,25 @@ export function getMedicationRequest(
     ...(dosageInstruction ? { dosageInstruction } : undefined),
     ...(substitution ? { substitution } : undefined),
     extension,
+  };
+}
+
+export function getRequester(
+  prescriber?: Practitioner
+): MedicationRequest["requester"] | undefined {
+  if (!prescriber) return undefined;
+  const display = prescriber.name?.[0]?.text ?? "";
+  return {
+    reference: `Practitioner/${prescriber.id}`,
+    ...(display ? { display } : undefined),
+  };
+}
+
+export function getMedicationRequestReference(
+  medicationRequest: MedicationRequest
+): Reference<MedicationRequest> {
+  return {
+    reference: `MedicationRequest/${medicationRequest.id}`,
   };
 }
 
