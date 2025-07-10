@@ -1,0 +1,95 @@
+import { z } from "zod";
+import { getAnthropicModelId } from "../model/anthropic/version";
+import { AnthropicAgent } from "../agent/anthropic";
+import { AnthropicTool } from "../agent/anthropic/tool";
+import { AnthropicResponse } from "../model/anthropic/response";
+import { AnthropicToolCall } from "../model/anthropic/tools";
+import { AnthropicMessageThread } from "../model/anthropic/messages";
+
+describe("Anthropic test", () => {
+  it("should get a correct model ID", () => {
+    expect(getAnthropicModelId("claude-sonnet-3.5")).toBe(
+      "us.anthropic.claude-3-5-sonnet-20241022-v2:0"
+    );
+    expect(getAnthropicModelId("claude-sonnet-3.7")).toBe(
+      "us.anthropic.claude-3-7-sonnet-20250219-v1:0"
+    );
+    expect(getAnthropicModelId("claude-sonnet-4")).toBe(
+      "us.anthropic.claude-sonnet-4-20250514-v1:0"
+    );
+  });
+
+  it("should validate tool calls", async () => {
+    class GetCapitalTool extends AnthropicTool<{ country: string }, { capital: string }> {
+      constructor() {
+        super({
+          name: "get_capital",
+          description: "Get the capital of a given country.",
+          inputSchema: z.object({ country: z.string() }),
+          outputSchema: z.object({ capital: z.string() }),
+        });
+      }
+
+      async execute(input: { country: string }): Promise<{ capital: string }> {
+        if (input.country === "France") {
+          return { capital: "Paris" };
+        }
+        throw new Error("Country not found");
+      }
+    }
+
+    const agent = new AnthropicAgent({
+      region: "us-east-1",
+      version: "claude-sonnet-3.7",
+      systemPrompt: "You are a helpful assistant.",
+      tools: [new GetCapitalTool()],
+    });
+
+    const mockToolCall: AnthropicToolCall = {
+      type: "tool_use",
+      id: "1",
+      name: "get_capital",
+      input: {
+        country: "France",
+      },
+    };
+
+    const mockConversation: AnthropicMessageThread<"claude-sonnet-3.7"> = [
+      {
+        role: "user",
+        content: [{ type: "text", text: "What is the capital of France?" }],
+      },
+      {
+        role: "assistant",
+        content: [mockToolCall],
+      },
+    ];
+
+    agent.setConversation(mockConversation);
+
+    const mockResponse: AnthropicResponse<"claude-sonnet-3.7"> = {
+      id: "1",
+      type: "message",
+      model: "claude-sonnet-3.7",
+      role: "assistant",
+      content: [mockToolCall],
+      stop_reason: "tool_use",
+      usage: {
+        input_tokens: 100,
+        output_tokens: 20,
+        cache_read_input_tokens: 0,
+        cache_creation_input_tokens: 0,
+      },
+    };
+
+    expect(agent.shouldExecuteTools(mockResponse)).toBe(true);
+    await agent.executeTools(mockResponse);
+    expect(agent.getConversation()).toEqual([
+      ...mockConversation,
+      {
+        role: "user",
+        content: [{ type: "tool_result", tool_use_id: "1", content: { capital: "Paris" } }],
+      },
+    ]);
+  });
+});

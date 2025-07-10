@@ -134,4 +134,12 @@ export class AnthropicAgent<V extends AnthropicModelVersion> {
   getConversation(): AnthropicMessageThread<V> {
     return this.messages;
   }
+
+  /**
+   * Sets the conversation thread for this agent. Used for testing agent methods.
+   * @param messages The history of messages between the user and assistant.
+   */
+  setConversation(messages: AnthropicMessageThread<V>): void {
+    this.messages = [...messages];
+  }
 }
