@@ -1,13 +1,11 @@
 import {
   AllergyIntolerance,
   Bundle,
-  BundleEntry,
   Coding,
   Condition,
   Immunization,
   Observation,
   Procedure,
-  Resource,
   ResourceType,
 } from "@medplum/fhirtypes";
 import {
@@ -37,7 +35,8 @@ import {
   AppointmentEvent,
   AppointmentEventListResponse,
   appointmentEventListResponseSchema,
-  appointmentSchema,
+  Appointments,
+  appointmentsSchema,
   athenaClientJwtTokenResponseSchema,
   BookedAppointment,
   BookedAppointmentListResponse,
@@ -82,7 +81,8 @@ import {
   Departments,
   departmentsSchema,
   Encounter,
-  encounterSchema,
+  Encounters,
+  encountersSchema,
   EncounterSummary,
   encounterSummarySchema,
   EventType,
@@ -99,6 +99,8 @@ import {
 import {
   EhrFhirResourceBundle,
   ehrFhirResourceBundleSchema,
+  EhrStrictFhirResourceBundle,
+  EhrStrictFhirResourceBundleEntry,
 } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import {
   Patient,
@@ -217,6 +219,7 @@ const kgToG = 1000;
 const inchesToCm = 2.54;
 
 export const supportedAthenaHealthResources: ResourceType[] = [
+  /*
   "AllergyIntolerance",
   "Condition",
   "DiagnosticReport",
@@ -224,6 +227,7 @@ export const supportedAthenaHealthResources: ResourceType[] = [
   "MedicationRequest",
   "Observation",
   "Procedure",
+  */
   "Encounter",
 ];
 
@@ -505,18 +509,25 @@ class AthenaHealthApi {
     const { debug } = out(
       `AthenaHealth getEncounter - cxId ${cxId} practiceId ${this.practiceId} encounterId ${encounterId}`
     );
-    const encounterUrl = `/chart/${this.practiceId}/encounter/${encounterId}`;
+    const encounterUrl = `/chart/encounter/${this.stripEncounterId(encounterId)}`;
     const additionalInfo = { cxId, practiceId: this.practiceId, patientId, encounterId };
-    const encounter = await this.makeRequest<Encounter>({
+    const encounters = await this.makeRequest<Encounters>({
       cxId,
       patientId,
       s3Path: "encounter",
       method: "GET",
       url: encounterUrl,
-      schema: encounterSchema,
+      schema: encountersSchema,
       additionalInfo,
       debug,
     });
+    const encounter = encounters[0];
+    if (!encounter) {
+      throw new NotFoundError("Encounter not found", undefined, additionalInfo);
+    }
+    if (encounters.length > 1) {
+      throw new BadRequestError("Multiple encounters found", undefined, additionalInfo);
+    }
     return encounter;
   }
 
@@ -528,11 +539,11 @@ class AthenaHealthApi {
     cxId: string;
     patientId: string;
     encounterId: string;
-  }): Promise<EncounterSummary> {
+  }): Promise<string> {
     const { debug } = out(
       `AthenaHealth getEncounterSummary - cxId ${cxId} practiceId ${this.practiceId} encounterId ${encounterId}`
     );
-    const encounterUrl = `/chart/${this.practiceId}/encounters/${encounterId}/summary`;
+    const encounterUrl = `/chart/encounters/${this.stripEncounterId(encounterId)}/summary`;
     const additionalInfo = { cxId, practiceId: this.practiceId, patientId, encounterId };
     const encounterSummary = await this.makeRequest<EncounterSummary>({
       cxId,
@@ -544,7 +555,7 @@ class AthenaHealthApi {
       additionalInfo,
       debug,
     });
-    return encounterSummary;
+    return encounterSummary.summaryhtml;
   }
 
   async createProblem({
@@ -1532,11 +1543,18 @@ class AthenaHealthApi {
             resourceType,
           });
           referenceBundleToSave = referenceBundle;
-          return convertEhrBundleToValidEhrStrictBundle(
+          const validBundle = convertEhrBundleToValidEhrStrictBundle(
             targetBundle,
             resourceType,
             athenaPatientId
           );
+          await client.dangerouslyAdjustEncountersInBundle({
+            cxId,
+            metriportPatientId,
+            athenaPatientId,
+            bundle: validBundle,
+          });
+          return validBundle;
         },
         url: resourceTypeUrl,
       });
@@ -1559,12 +1577,6 @@ class AthenaHealthApi {
         referenceBundle: referenceBundleToSave,
       });
     }
-    await this.dangerouslyAdjustEncountersInBundle({
-      cxId,
-      metriportPatientId,
-      athenaPatientId,
-      bundle,
-    });
     return bundle;
   }
 
@@ -1624,7 +1636,18 @@ class AthenaHealthApi {
             debug,
             useFhir: true,
           });
-          return convertEhrBundleToValidEhrStrictBundle(bundle, resourceType, athenaPatientId);
+          const validBundle = convertEhrBundleToValidEhrStrictBundle(
+            bundle,
+            resourceType,
+            athenaPatientId
+          );
+          await client.dangerouslyAdjustEncountersInBundle({
+            cxId,
+            metriportPatientId,
+            athenaPatientId,
+            bundle: validBundle,
+          });
+          return validBundle;
         },
         url: resourceTypeUrl,
       });
@@ -1638,12 +1661,6 @@ class AthenaHealthApi {
       resourceId,
       fetchResourcesFromEhr,
       useCachedBundle,
-    });
-    await this.dangerouslyAdjustEncountersInBundle({
-      cxId,
-      metriportPatientId,
-      athenaPatientId,
-      bundle,
     });
     return bundle;
   }
@@ -1695,18 +1712,25 @@ class AthenaHealthApi {
     const { debug } = out(
       `AthenaHealth getAppointment - cxId ${cxId} practiceId ${this.practiceId} appointmentId ${appointmentId}`
     );
-    const appointmentUrl = `/chart/${this.practiceId}/appointment/${appointmentId}`;
+    const appointmentUrl = `/appointments/${appointmentId}`;
     const additionalInfo = { cxId, practiceId: this.practiceId, patientId, appointmentId };
-    const appointment = await this.makeRequest<Appointment>({
+    const appointments = await this.makeRequest<Appointments>({
       cxId,
       patientId,
       s3Path: "appointment",
       method: "GET",
       url: appointmentUrl,
-      schema: appointmentSchema,
+      schema: appointmentsSchema,
       additionalInfo,
       debug,
     });
+    const appointment = appointments[0];
+    if (!appointment) {
+      throw new NotFoundError("Appointment not found", undefined, additionalInfo);
+    }
+    if (appointments.length > 1) {
+      throw new BadRequestError("Multiple appointments found", undefined, additionalInfo);
+    }
     return appointment;
   }
 
@@ -1902,7 +1926,7 @@ class AthenaHealthApi {
     metriportPatientId: string;
     athenaPatientId: string;
     jobId?: string | undefined;
-    bundle: Bundle;
+    bundle: EhrStrictFhirResourceBundle;
   }): Promise<void> {
     const { log } = out(
       `AthenaHealth dangerouslyAdjustEncountersInBundle - cxId ${cxId} athenaPatientId ${athenaPatientId}`
@@ -1916,7 +1940,7 @@ class AthenaHealthApi {
     }[] = [];
     await executeAsynchronously(
       bundle.entry,
-      async (entry: BundleEntry<Resource>) => {
+      async (entry: EhrStrictFhirResourceBundleEntry) => {
         if (!entry.resource || entry.resource.resourceType !== "Encounter" || !entry.resource.id) {
           return;
         }
@@ -1946,7 +1970,7 @@ class AthenaHealthApi {
               metriportPatientId,
               ehrPatientId: athenaPatientId,
               documentType: DocumentType.HTML,
-              payload: encounterSummary.summaryhtml,
+              payload: encounterSummary,
               resourceType: "Encounter",
               resourceId: encounterId,
             }),
@@ -2025,6 +2049,10 @@ class AthenaHealthApi {
     const prefix = `a-${this.practiceId}.${athenaDepartmentPrefix}-`;
     if (id.startsWith(prefix)) return id;
     return `${prefix}${id}`;
+  }
+
+  stripEncounterId(id: string) {
+    return id.replace(`a-${this.stripPracticeId(this.practiceId)}.encounter-`, "");
   }
 
   private createVitalsData(

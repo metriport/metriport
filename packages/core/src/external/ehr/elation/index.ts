@@ -349,7 +349,7 @@ class ElationApi {
         resourceType,
       });
     }
-    const payload = await this.getCcdaDocument({
+    const ccda = await this.getCcdaDocument({
       cxId,
       patientId: elationPatientId,
       resourceType,
@@ -360,7 +360,7 @@ class ElationApi {
       metriportPatientId,
       ehrPatientId: elationPatientId,
       documentType: DocumentType.CCDA,
-      payload,
+      payload: ccda,
       resourceType,
     });
     let referenceEhrFhirBundle: EhrFhirResourceBundle | undefined;

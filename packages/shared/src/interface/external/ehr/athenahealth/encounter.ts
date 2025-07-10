@@ -1,12 +1,12 @@
 import { z } from "zod";
 
-export const encounterSchema = z.object({
-  encounterid: z.string(),
-  appointmentid: z.string(),
-  patientid: z.string(),
-  departmentid: z.string(),
+const encounterSchema = z.object({
+  appointmentid: z.coerce.string(),
 });
 export type Encounter = z.infer<typeof encounterSchema>;
+
+export const encountersSchema = encounterSchema.array();
+export type Encounters = z.infer<typeof encountersSchema>;
 
 export const encounterSummarySchema = z.object({
   summaryhtml: z.string(),
