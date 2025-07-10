@@ -163,6 +163,9 @@ interface AthenaHealthApiConfig extends ApiConfig {
   environment: AthenaEnv;
 }
 
+export const encounterAppointmentExtensionUrl =
+  "http://hl7.org/fhir/StructureDefinition/encounter-appointment-type-id";
+
 const athenaPracticePrefix = "Practice";
 const athenaPatientPrefix = "E";
 const athenaDepartmentPrefix = "Department";
@@ -1914,39 +1917,44 @@ class AthenaHealthApi {
     await executeAsynchronously(
       bundle.entry,
       async (entry: BundleEntry<Resource>) => {
-        if (!entry.resource || entry.resource.resourceType !== "Encounter" || !entry.resource.id)
+        if (!entry.resource || entry.resource.resourceType !== "Encounter" || !entry.resource.id) {
           return;
+        }
         const encounterId = entry.resource.id;
         try {
-          const encounter = await this.getEncounter({
-            cxId,
-            patientId: athenaPatientId,
-            encounterId,
-          });
-          const encounterSummary = await this.getEncounterSummary({
-            cxId,
-            patientId: athenaPatientId,
-            encounterId,
-          });
-          await createOrReplaceDocument({
-            ehr: EhrSources.athena,
-            cxId,
-            metriportPatientId,
-            ehrPatientId: athenaPatientId,
-            documentType: DocumentType.HTML,
-            payload: encounterSummary.summaryhtml,
-            resourceType: "Encounter",
-            resourceId: encounterId,
-          });
-          const appointment = await this.getAppointment({
-            cxId,
-            patientId: athenaPatientId,
-            appointmentId: encounter.appointmentid,
-          });
+          const [encounter, encounterSummary] = await Promise.all([
+            this.getEncounter({
+              cxId,
+              patientId: athenaPatientId,
+              encounterId,
+            }),
+            this.getEncounterSummary({
+              cxId,
+              patientId: athenaPatientId,
+              encounterId,
+            }),
+          ]);
+          const [appointment] = await Promise.all([
+            this.getAppointment({
+              cxId,
+              patientId: athenaPatientId,
+              appointmentId: encounter.appointmentid,
+            }),
+            createOrReplaceDocument({
+              ehr: EhrSources.athena,
+              cxId,
+              metriportPatientId,
+              ehrPatientId: athenaPatientId,
+              documentType: DocumentType.HTML,
+              payload: encounterSummary.summaryhtml,
+              resourceType: "Encounter",
+              resourceId: encounterId,
+            }),
+          ]);
           entry.resource.extension = [
             ...(entry.resource.extension ?? []),
             {
-              url: "http://hl7.org/fhir/StructureDefinition/encounter-appointment-type-id",
+              url: encounterAppointmentExtensionUrl,
               valueString: appointment.appointmenttypeid,
             },
           ];
