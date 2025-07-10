@@ -22,7 +22,7 @@ export class VpnStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: VpnStackProps) {
     super(scope, id, props);
 
-    const { name: hieName, internalCidrBlock } = props.hieConfig;
+    const { name: hieName, internalCidrBlock, gatewayPublicIp } = props.hieConfig;
 
     const networkAcl = ec2.NetworkAcl.fromNetworkAclId(
       this,
@@ -33,7 +33,7 @@ export class VpnStack extends cdk.Stack {
     const vgwId = Fn.importValue(`${props.networkStackId}-VgwId`);
 
     const customerGateway = new ec2.CfnCustomerGateway(this, `CustomerGateway-${hieName}`, {
-      ipAddress: props.hieConfig.gatewayPublicIp,
+      ipAddress: gatewayPublicIp,
       type: IPSEC_1,
       bgpAsn: 65000,
       tags: [
@@ -115,7 +115,7 @@ export class VpnStack extends cdk.Stack {
     });
 
     new ec2.CfnVPNConnectionRoute(this, `VpnConnectionRoute-${hieName}`, {
-      destinationCidrBlock: props.hieConfig.internalCidrBlock,
+      destinationCidrBlock: internalCidrBlock,
       vpnConnectionId: vpnConnection.ref,
     });
 
