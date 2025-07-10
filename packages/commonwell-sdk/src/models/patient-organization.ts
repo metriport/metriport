@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { identifierSchema } from "./identifier";
+import { patientIdentifierSchema } from "./identifier";
 
 // TODO ENG-200 REMOVE THIS?
 export const patientOrganizationSchema = z.object({
@@ -9,6 +9,6 @@ export const patientOrganizationSchema = z.object({
 });
 
 export const managingOrganizationSchema = z.object({
-  identifier: z.array(identifierSchema.pick({ system: true })).min(1),
+  identifier: z.array(patientIdentifierSchema.pick({ system: true })).min(1),
   name: z.string().optional().nullable(),
 });

@@ -7,9 +7,14 @@ import { initApiForExistingOrg } from "../flows/org-management";
 const patientId: string = process.argv[2]; // read patient ID from command line argument
 
 /**
- * Supporting function used in case the flow breaks and we don't delete the patient.
+ * Utility to get a patient by ID.
+ *
+ * Usage:
+ * - Set env vars - see README.md for details
+ * - Run the command
+ *   $ ts-node src/single-commands/patient-get.ts <patient-id>
  */
-export async function deletePatient() {
+export async function getPatient() {
   if (!patientId || patientId.trim().length < 1) {
     throw new Error("No patientId provided. Add it as an argument to the command");
   }
@@ -19,9 +24,11 @@ export async function deletePatient() {
     patientId: patientId,
     assignAuthority: commonWell.oid,
   });
-  console.log(`Delete Patient ${patientId}`);
-  await commonWell.deletePatient(encodedPatientId);
-  console.log(`Patient deleted successfully`);
+
+  console.log(`Get Patient ${patientId}`);
+  const resp = await commonWell.getPatient(encodedPatientId);
+  console.log("Transaction ID: " + commonWell.lastTransactionId);
+  console.log("Response: " + JSON.stringify(resp, null, 2));
 }
 
-deletePatient();
+getPatient();

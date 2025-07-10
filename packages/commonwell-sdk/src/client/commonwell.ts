@@ -1,4 +1,5 @@
 import {
+  base64ToBuffer,
   defaultOptionsRequestNotAccepted,
   executeWithNetworkRetries,
   MetriportError,
@@ -8,7 +9,7 @@ import httpStatus from "http-status";
 import { Agent } from "https";
 import * as stream from "stream";
 import { CommonwellError } from "../common/commonwell-error";
-import { downloadFile } from "../common/fileDownload";
+import { downloadFileInMemory } from "../common/fileDownload";
 import { makeJwt } from "../common/make-jwt";
 import {
   buildBaseQueryMeta,
@@ -17,7 +18,12 @@ import {
 } from "../common/util";
 import { normalizeDatetime } from "../models/date";
 import { fhirGenderToCommonwell } from "../models/demographics";
-import { DocumentQueryResponse, documentQueryResponseSchema } from "../models/document";
+import {
+  DocumentQueryFullResponse,
+  documentQueryFullResponseSchema,
+  documentQueryResponseSchema,
+  DocumentReference,
+} from "../models/document";
 import {
   Patient,
   PatientCollection,
@@ -41,6 +47,7 @@ import {
   DocumentQueryParams,
   GetPatientParams,
   OrganizationRequestMetadata,
+  RetrieveDocumentResponse,
 } from "./commonwell-api";
 
 /**
@@ -439,20 +446,11 @@ export class CommonWell implements CommonWellAPI {
   // Document Management
   //--------------------------------------------------------------------------------------------
 
-  /**
-   * Queries a patient's Documents.
-   *
-   * @param patientId The patient's ID.
-   * @param options Query parameters and query parameters.
-   * @param options.status The status of the document. Defaults to `current`, even if a param is
-   *                      provided without status.
-   * @param options.meta Metadata about the request. Defaults to the data used to initialize the client.
-   * @returns a Bundle containing DocumentReferences FHIR resources in the entry array.
-   */
-  async queryDocuments(
+  private async queryDocumentsInternal(
     patientId: string,
     options?: BaseOptions & DocumentQueryParams
-  ): Promise<DocumentQueryResponse> {
+    //eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ): Promise<any> {
     const { meta, ...params } = options ?? {};
     const headers = await this.buildQueryHeaders(meta);
     const actualParams = {
@@ -469,48 +467,92 @@ export class CommonWell implements CommonWellAPI {
     const response = await this.executeWithRetriesOn500IfEnabled(() =>
       this.api.get(url, { headers })
     );
-    console.log(`>>> RESPONSE RAW: ${JSON.stringify(response.data, null, 2)}`);
-    return documentQueryResponseSchema.parse(response.data);
+    return response.data;
   }
 
-  // TODO ENG-200 Decide if we need this
   /**
-   * Queries a patient's Documents - including other possible results.
+   * Queries a patient's Documents. Returns only documents.
    *
-   * @param meta       Metadata about the request.
-   * @param patientId  The patient's ID.
-   * @returns The DocumentReferences of a patient's available documents and/or OperationOutcomes denoting problems with the query.
+   * @param patientId The patient's ID.
+   * @param options Query parameters and query parameters.
+   * @param options.status The status of the document. Defaults to `current`, even if a param is
+   *                      provided without status.
+   * @param options.meta Metadata about the request. Defaults to the data used to initialize the client.
+   * @returns an array of DocumentReference FHIR resources.
    */
-  // async queryDocumentsFull(
-  //   meta: RequestMetadata,
-  //   patientId: string
-  // ): Promise<DocumentQueryFullResponse> {
-  //   const headers = await this.buildQueryHeaders(meta);
-  //   return this.executeWithRetriesOn500(() => document.queryFull(this.api, headers, patientId));
-  // }
+  async queryDocuments(
+    patientId: string,
+    options?: BaseOptions & DocumentQueryParams
+  ): Promise<DocumentReference[]> {
+    const response = await this.queryDocumentsInternal(patientId, options);
+    const entry = documentQueryResponseSchema.parse(response).entry;
+    return entry.flatMap(entry => entry.resource ?? []);
+  }
 
   /**
-   * Retrieve a Document and pipe its bytes into the outputStream.
+   * Queries a patient's Documents. Returns documents and errors from the fanout to other gateways.
    *
-   * @param inputUrl The URL of the file to be downloaded.
+   * @param patientId The patient's ID.
+   * @param options Query parameters and query parameters.
+   * @param options.status The status of the document. Defaults to `current`, even if a param is
+   *                      provided without status.
+   * @param options.meta Metadata about the request. Defaults to the data used to initialize the client.
+   * @returns a Bundle containing DocumentReferences of a patient's available DocumentReferences
+   *          and/or OperationOutcomes denoting problems with the query.
+   */
+  async queryDocumentsFull(
+    patientId: string,
+    options?: BaseOptions & DocumentQueryParams
+  ): Promise<DocumentQueryFullResponse> {
+    const response = await this.queryDocumentsInternal(patientId, options);
+    return documentQueryFullResponseSchema.parse(response);
+  }
+
+  /**
+   * Retrieve a Document and send its bytes to the outputStream.
+   *
+   * @param inputUrl The URL of the file to be downloaded. Obtained from a DocumentReference that
+   *                 was retrieved from a previous call to `queryDocuments`.
    * @param outputStream The stream to receive the downloaded file's bytes.
    * @param options Optional parameters.
    * @param options.meta Metadata about the request. Defaults to the data used to initialize the client.
+   * @returns The content type and size of the downloaded file.
    */
   async retrieveDocument(
     inputUrl: string,
     outputStream: stream.Writable,
     options?: BaseOptions
-  ): Promise<void> {
+  ): Promise<RetrieveDocumentResponse> {
     const headers = await this.buildQueryHeaders(options?.meta);
-    await this.executeWithRetriesOn500IfEnabled(() =>
-      downloadFile({
+    const binary = await this.executeWithRetriesOn500IfEnabled(() =>
+      downloadFileInMemory({
         url: inputUrl,
-        outputStream,
         client: this.api,
+        responseType: "json",
         headers,
       })
     );
+    const errorMessage = "Invalid binary contents";
+    if (!("resourceType" in binary)) {
+      throw new CommonwellError(errorMessage, undefined, { reason: "Missing resourceType" });
+    }
+    const resourceType = binary.resourceType;
+    if (typeof resourceType !== "string" || resourceType !== "Binary") {
+      throw new CommonwellError(errorMessage, undefined, { reason: "Invalid resourceType" });
+    }
+    const contentType = binary.contentType;
+    if (!contentType || typeof contentType !== "string") {
+      throw new CommonwellError(errorMessage, undefined, {
+        reason: "Missing or invalid contentType",
+        contentType,
+      });
+    }
+    const data = binary.data;
+    if (!data) throw new CommonwellError(errorMessage, undefined, { reason: "Missing data" });
+    const dataBuffer = base64ToBuffer(data);
+    outputStream.write(dataBuffer);
+    outputStream.end();
+    return { contentType, size: dataBuffer.byteLength };
   }
 
   //--------------------------------------------------------------------------------------------

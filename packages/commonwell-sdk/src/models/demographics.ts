@@ -4,7 +4,7 @@ import { z } from "zod";
 import { addressSchema } from "./address";
 import { contactSchema } from "./contact";
 import { humanNameSchema } from "./human-name";
-import { identifierSchema } from "./identifier";
+import { patientIdentifierSchema } from "./identifier";
 import { dateStringToIsoDateString, isoDateSchema, usDateSchema } from "./date";
 
 /** @see https://hl7.org/fhir/R4/valueset-administrative-gender.html */
@@ -34,7 +34,7 @@ export const birthDateSchema = isoDateSchema.or(usDateSchema).transform(dateStri
 // The demographic details for a Person.
 // See: https://specification.commonwellalliance.org/services/rest-api-reference (8.4.8 Demographics)
 export const demographicsSchema = z.object({
-  identifier: z.array(identifierSchema).min(1),
+  identifier: z.array(patientIdentifierSchema).min(1),
   name: z.array(humanNameSchema).min(1),
   gender: genderCodesSchema.nullish(),
   birthDate: birthDateSchema,

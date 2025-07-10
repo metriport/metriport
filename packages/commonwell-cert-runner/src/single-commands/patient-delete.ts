@@ -7,9 +7,16 @@ import { initApiForExistingOrg } from "../flows/org-management";
 const patientId: string = process.argv[2]; // read patient ID from command line argument
 
 /**
- * Supporting function used to get links for a patient by ID.
+ * Utility to delete a patient from CommonWell.
+ *
+ * Used in case the cert flow breaks and we don't delete the patient.
+ *
+ * Usage:
+ * - Set env vars - see README.md for details
+ * - Run the command
+ *   $ ts-node src/single-commands/patient-delete.ts <patient-id>
  */
-export async function getPatientLinks() {
+export async function deletePatient() {
   if (!patientId || patientId.trim().length < 1) {
     throw new Error("No patientId provided. Add it as an argument to the command");
   }
@@ -19,11 +26,9 @@ export async function getPatientLinks() {
     patientId: patientId,
     assignAuthority: commonWell.oid,
   });
-
-  console.log(`Get Patient Links for ${patientId}`);
-  const resp = await commonWell.getPatientLinksByPatientId(encodedPatientId);
-  console.log("Transaction ID: " + commonWell.lastTransactionId);
-  console.log("Response: " + JSON.stringify(resp, null, 2));
+  console.log(`Delete Patient ${patientId}`);
+  await commonWell.deletePatient(encodedPatientId);
+  console.log(`Patient deleted successfully`);
 }
 
-getPatientLinks();
+deletePatient();

@@ -1,6 +1,6 @@
 import { PurposeOfUse } from "@metriport/shared";
 import * as stream from "stream";
-import { DocumentQueryResponse, DocumentStatus } from "../models/document";
+import { DocumentQueryFullResponse, DocumentReference, DocumentStatus } from "../models/document";
 import {
   Patient,
   PatientCollection,
@@ -24,6 +24,11 @@ export type GetPatientParams = {
   id: string;
   assignAuthority: string;
   assignAuthorityType?: string | undefined;
+};
+
+export type RetrieveDocumentResponse = {
+  contentType: string;
+  size: number;
 };
 
 export interface DocumentQueryParams {
@@ -101,20 +106,15 @@ export interface CommonWellAPI {
   unlinkPatients(urlToUnlinkPatients: string, options?: BaseOptions): Promise<StatusResponse>;
   resetPatientLinks(urlToResetPatientLinks: string, options?: BaseOptions): Promise<StatusResponse>;
 
-  // TODO ENG-200 Implement this
-  // unlinkPatients(patientId: string, linkId: string, options?: BaseOptions): Promise<void>;
-
-  // TODO ENG-200 Choose one
   queryDocuments(
     patientId: string,
     options?: BaseOptions & DocumentQueryParams
-  ): Promise<DocumentQueryResponse>;
-  // queryDocumentsFull(patientId: string, options?: BaseOptions): Promise<DocumentQueryFullResponse>;
+  ): Promise<DocumentReference[]>;
+  queryDocumentsFull(patientId: string, options?: BaseOptions): Promise<DocumentQueryFullResponse>;
 
-  // TODO ENG-200 Implement this
   retrieveDocument(
     inputUrl: string,
     outputStream: stream.Writable,
     options?: BaseOptions
-  ): Promise<void>;
+  ): Promise<RetrieveDocumentResponse>;
 }

@@ -1,13 +1,14 @@
+import { zodToLowerCase } from "@metriport/shared/util/zod";
 import { z } from "zod";
-import { linkSchema } from "./link";
 
 export enum CertificatePurpose {
   Signing = "Signing",
   Authentication = "Authentication",
 }
-export const certificatePurposeSchema = z.enum(
-  Object.keys(CertificatePurpose) as [string, ...string[]]
-);
+export const certificatePurposeSchema = z
+  .string()
+  .transform(zodToLowerCase)
+  .pipe(z.nativeEnum(CertificatePurpose));
 
 export const certificateSchema = z.object({
   startDate: z.string().optional().nullable(),
@@ -20,15 +21,12 @@ export const certificateSchema = z.object({
 
 export type Certificate = z.infer<typeof certificateSchema>;
 
-export const certificatesParamSchema = z.object({
-  Certificates: z.array(certificateSchema),
-});
-
-export type CertificateParam = z.infer<typeof certificatesParamSchema>;
+export type CertificateParam = {
+  Certificates: Certificate[];
+};
 
 export const certificateRespSchema = z.object({
   certificates: z.array(certificateSchema),
-  _links: z.object({ self: linkSchema.optional().nullable() }),
 });
 
 export type CertificateResp = z.infer<typeof certificateRespSchema>;

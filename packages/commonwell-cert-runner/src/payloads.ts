@@ -4,7 +4,7 @@ import {
   CertificatePurpose,
   Demographics,
   GenderCodes,
-  Identifier,
+  PatientIdentifier,
   NameUseCodes,
   Organization,
   OrganizationWithNetworkInfo,
@@ -62,7 +62,7 @@ export const caDriversLicenseUri = `${CW_ID_PREFIX}2.16.840.1.113883.4.3.6`;
 
 export function makeDemographics(): Omit<Demographics, "identifier"> {
   const shouldAddDriversLicense = Math.random() < 0.5;
-  const driversLicense: Identifier | undefined = shouldAddDriversLicense
+  const driversLicense: PatientIdentifier | undefined = shouldAddDriversLicense
     ? {
         type: "DL",
         value: makeId(),

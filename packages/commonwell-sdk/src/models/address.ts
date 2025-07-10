@@ -1,4 +1,4 @@
-import { optionalStringPreprocess } from "@metriport/shared/util/zod";
+import { optionalStringPreprocess, zodToLowerCase } from "@metriport/shared/util/zod";
 import { z } from "zod";
 import { periodSchema } from "./period";
 
@@ -10,14 +10,14 @@ export enum AddressUseCodes {
   home = "home",
   old = "old",
 }
-export const addressUseCodesSchema = z.nativeEnum(AddressUseCodes);
+export const addressUseCodesSchema = z.preprocess(zodToLowerCase, z.nativeEnum(AddressUseCodes));
 
 export enum AddressTypeCodes {
   postal = "postal",
   physical = "physical",
   both = "both",
 }
-export const addressTypeCodesSchema = z.nativeEnum(AddressTypeCodes);
+export const addressTypeCodesSchema = z.preprocess(zodToLowerCase, z.nativeEnum(AddressTypeCodes));
 
 // A postal address.
 // See: https://specification.commonwellalliance.org/services/rest-api-reference (8.4.3 Address)

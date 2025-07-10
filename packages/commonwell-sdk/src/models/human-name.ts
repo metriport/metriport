@@ -1,4 +1,4 @@
-import { optionalStringPreprocess } from "@metriport/shared/util/zod";
+import { optionalStringPreprocess, zodToLowerCase } from "@metriport/shared/util/zod";
 import { z } from "zod";
 import { periodSchema } from "./period";
 
@@ -15,7 +15,7 @@ export enum NameUseCodes {
   old = "old",
   maiden = "maiden",
 }
-export const nameUseCodesSchema = z.nativeEnum(NameUseCodes);
+export const nameUseCodesSchema = z.preprocess(zodToLowerCase, z.nativeEnum(NameUseCodes));
 
 // A name of a Person with text, parts and usage information.
 // Names may be changed or repudiated. People may have different names in different contexts.
