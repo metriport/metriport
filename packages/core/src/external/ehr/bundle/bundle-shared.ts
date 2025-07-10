@@ -14,23 +14,8 @@ type CreateBundlePrefixParams = CreatePrefixParams & {
   resourceId?: string | undefined;
 };
 
-function createBundlePrefix({
-  ehr,
-  cxId,
-  metriportPatientId,
-  ehrPatientId,
-  resourceType,
-  jobId,
-  resourceId,
-}: CreateBundlePrefixParams): string {
-  return `${createPrefix(globalPrefix, {
-    ehr,
-    cxId,
-    metriportPatientId,
-    ehrPatientId,
-    resourceType,
-    jobId,
-  })}${resourceId ? `/resourceid=${resourceId}` : ""}`;
+function createBundlePrefix({ resourceId, ...rest }: CreateBundlePrefixParams): string {
+  return `${createPrefix(globalPrefix, rest)}${resourceId ? `/resourceid=${resourceId}` : ""}`;
 }
 
 export function createFileKeyEhr(params: CreateBundlePrefixParams): string {

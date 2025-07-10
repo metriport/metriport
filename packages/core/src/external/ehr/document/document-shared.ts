@@ -11,49 +11,19 @@ type CreateDocumentPrefixParams = CreatePrefixParams & {
   resourceId?: string | undefined;
 };
 
-function createCcdaPrefix({
-  ehr,
-  cxId,
-  metriportPatientId,
-  ehrPatientId,
-  resourceType,
-  jobId,
-  resourceId,
-}: CreateDocumentPrefixParams): string {
-  return `${createPrefix(globalCcdaPrefix, {
-    ehr,
-    cxId,
-    metriportPatientId,
-    ehrPatientId,
-    resourceType,
-    jobId,
-  })}${resourceId ? `/resourceid=${resourceId}` : ""}`;
+function createCcdaPrefix({ resourceId, ...rest }: CreateDocumentPrefixParams): string {
+  return `${createPrefix(globalCcdaPrefix, rest)}${resourceId ? `/resourceid=${resourceId}` : ""}`;
 }
 
-function createHtmlPrefix({
-  ehr,
-  cxId,
-  metriportPatientId,
-  ehrPatientId,
-  resourceType,
-  jobId,
-  resourceId,
-}: CreateDocumentPrefixParams): string {
-  return `${createPrefix(globalHtmlPrefix, {
-    ehr,
-    cxId,
-    metriportPatientId,
-    ehrPatientId,
-    resourceType,
-    jobId,
-  })}${resourceId ? `/resourceid=${resourceId}` : ""}`;
+function createHtmlPrefix({ resourceId, ...rest }: CreateDocumentPrefixParams): string {
+  return `${createPrefix(globalHtmlPrefix, rest)}${resourceId ? `/resourceid=${resourceId}` : ""}`;
 }
 
 export function createFileKeyCcda(params: CreateDocumentPrefixParams): string {
   return `${createCcdaPrefix(params)}/ccda.xml`;
 }
 
-export function createFileKeyHtml(params: CreatePrefixParams): string {
+export function createFileKeyHtml(params: CreateDocumentPrefixParams): string {
   return `${createHtmlPrefix(params)}/html.html`;
 }
 
