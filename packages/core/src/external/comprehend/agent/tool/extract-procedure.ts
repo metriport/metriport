@@ -1,8 +1,8 @@
-import { AgentTool } from "../../../bedrock/agent/anthropic/tool";
+import { AnthropicTool } from "../../../bedrock/agent/anthropic/tool";
 import { ComprehendClient } from "../../client";
 import { ExtractTextRequest, extractTextRequestSchema } from "./schema";
 
-export class ExtractProcedureTool extends AgentTool<ExtractTextRequest> {
+export class ExtractProcedureTool extends AnthropicTool<ExtractTextRequest> {
   constructor(private readonly client: ComprehendClient) {
     super({
       name: "extractProcedure",
