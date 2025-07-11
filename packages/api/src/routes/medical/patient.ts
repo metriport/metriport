@@ -56,6 +56,8 @@ const router = Router();
  * Updates the patient corresponding to the specified facility at the customer's organization.
  * Note: this is not a PATCH, so requests must include all patient data in the payload.
  *
+ * TODO ENG-618: FacilityID will be made required in the future
+ *
  * @param req.query.facilityId The facility providing NPI for the patient update
  * @return The patient to be updated
  */

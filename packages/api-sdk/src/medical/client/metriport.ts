@@ -414,7 +414,7 @@ export class MetriportMedicalApi {
    */
   async updatePatient(
     patient: PatientUpdate,
-    facilityId?: string,
+    facilityId: string,
     additionalQueryParams: Record<string, string | number | boolean> = {}
   ): Promise<PatientDTO> {
     type FieldsToOmit = "id";

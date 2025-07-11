@@ -1,15 +1,17 @@
-import { BadRequestError } from "@metriport/shared";
 import { Facility } from "../../../domain/medical/facility";
 import { getPatientOrFail } from "./get-patient";
 import { getFacilities } from "../facility/get-facility";
+import { BadRequestError } from "../../../../../shared/dist";
+
+export type GetPatientFacilitiesCmd = {
+  cxId: string;
+  patientId: string;
+};
 
 export async function getPatientFacilities({
   cxId,
   patientId,
-}: {
-  cxId: string;
-  patientId: string;
-}): Promise<Facility[]> {
+}: GetPatientFacilitiesCmd): Promise<Facility[]> {
   const patient = await getPatientOrFail({
     id: patientId,
     cxId,
@@ -30,10 +32,7 @@ export async function getPatientFacilities({
 export async function getPatientPrimaryFacilityIdOrFail({
   cxId,
   patientId,
-}: {
-  cxId: string;
-  patientId: string;
-}): Promise<string> {
+}: GetPatientFacilitiesCmd): Promise<string> {
   const facilities = await getPatientFacilities({ cxId, patientId });
   if (!facilities.length) {
     throw new BadRequestError("Patient has no facilities");

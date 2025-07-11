@@ -42,6 +42,10 @@ dayjs.extend(duration);
  * $ ts-node src/bulk-query-patients-simplified.ts
  */
 
+// Set this to use a specific facility ID for all document queries
+// If not set, will use the first facility ID from each patient's facilityIds array
+const preferredFacilityId: string | undefined = undefined;
+
 // add patient IDs here to kick off queries for specific patient IDs
 const patientIds: string[] = [];
 
@@ -97,15 +101,14 @@ async function queryDocsForPatient(
   log: typeof console.log
 ) {
   try {
-    const getPatientPromise = async () => metriportAPI.getPatient(patientId);
-    const patient = await getPatientPromise();
+    const patient = await metriportAPI.getPatient(patientId);
 
     if (!patient.facilityIds || patient.facilityIds.length === 0) {
       log(`Patient ${patientId} has no facilities, skipping...`);
       return;
     }
 
-    const facilityId = patient.facilityIds[0];
+    const facilityId = preferredFacilityId ?? patient.facilityIds[0];
     const docQueryPromise = async () =>
       triggerDocQuery(cxId, patientId, facilityId, triggerWHNotificationsToCx);
 
