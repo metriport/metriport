@@ -4,7 +4,10 @@ import z from "zod";
 import { codeSystemImportHandler } from "./operations/codeImport";
 import { bulkCodeSystemLookupHandler, codeSystemLookupHandler } from "./operations/codeLookup";
 import { conceptMapImportHandler } from "./operations/conceptMapImport";
-import { conceptMapTranslateHandler } from "./operations/conceptMapTranslate";
+import {
+  bulkConceptMapTranslateHandler,
+  conceptMapTranslateHandler,
+} from "./operations/conceptMapTranslate";
 import { asyncHandler } from "./util";
 
 const fhirRouter = Router();
@@ -86,6 +89,16 @@ fhirRouter.post(
     const fhirRequest = parseIntoFhirRequest(req);
     const response = await conceptMapTranslateHandler(fhirRequest);
     res.status(200).json({ response });
+    return;
+  })
+);
+
+fhirRouter.post(
+  "/concept-map/translate/bulk",
+  asyncHandler(async (req: Request, res: Response) => {
+    const fhirRequest = parseIntoFhirRequest(req);
+    const response = await bulkConceptMapTranslateHandler(fhirRequest);
+    res.status(200).json(response);
     return;
   })
 );
