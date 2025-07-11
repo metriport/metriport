@@ -38,6 +38,41 @@ const PERSONAL_RELATIONSHIP_TYPE_CODE = "2.16.840.1.113883.1.11.19563";
 const decimal_regex = /-?(?:(?:0|[1-9][0-9]*)\.?[0-9]*|\.[0-9]+)(?:[eE][+-]?[0-9]+)?/;
 const DECIMAL_REGEX_STR = decimal_regex.toString().slice(1, -1);
 
+const SYSTEM_URL_MAP = {
+  "2.16.840.1.113883.6.1": "http://loinc.org",
+  "2.16.840.1.113883.6.96": "http://snomed.info/sct",
+  "2.16.840.1.113883.6.88": "http://www.nlm.nih.gov/research/umls/rxnorm",
+  "2.16.840.1.113883.6.69": "http://hl7.org/fhir/sid/ndc",
+  "2.16.840.1.113883.3.88.12.3221.8.9": "http://snomed.info/sct",
+  "2.16.840.1.113883.5.83": "http://terminology.hl7.org/CodeSystem/v3-ObservationInterpretation",
+  "2.16.840.1.113883.4.1": "http://hl7.org/fhir/sid/us-ssn",
+  "2.16.840.1.113883.4.6": "http://hl7.org/fhir/sid/us-npi",
+  "2.16.840.1.113883.4.572": "http://hl7.org/fhir/sid/us-medicare",
+  "2.16.840.1.113883.4.927": "http://hl7.org/fhir/sid/us-mbi",
+  "2.16.840.1.113883.12.292": "http://hl7.org/fhir/sid/cvx",
+  "2.16.840.1.113883.6.59": "http://terminology.hl7.org/2.1.0/CodeSystem-CVX",
+  "2.16.840.1.113883.6.101": "http://nucc.org/provider-taxonomy",
+  "2.16.840.1.113883.2.20.5.1": "http://fhir.infoway-inforoute.ca/CodeSystem/pCLOCD",
+  "2.16.840.1.113883.6.8": "http://unitsofmeasure.org",
+  "2.16.840.1.113883.6.12": "http://www.ama-assn.org/go/cpt",
+  "2.16.840.1.113883.6.345": "http://va.gov/terminology/medrt",
+  "2.16.840.1.113883.6.209": "http://hl7.org/fhir/ndfrt",
+  "2.16.840.1.113883.4.9": "http://fdasis.nlm.nih.gov",
+  "2.16.840.1.113883.6.24": "urn:iso:std:iso:11073:10101",
+  "2.16.840.1.113883.6.103": "http://terminology.hl7.org/CodeSystem/ICD-9CM-diagnosiscodes",
+  "2.16.840.1.113883.6.104": "http://terminology.hl7.org/CodeSystem/ICD-9CM-procedurecodes",
+  "2.16.840.1.113883.6.90": "http://hl7.org/fhir/sid/icd-10-cm",
+  "2.16.840.1.113883.6.4": "http://www.cms.gov/Medicare/Coding/ICD10",
+  "2.16.840.1.113883.6.238": "http://terminology.hl7.org/CodeSystem-CDCREC.html",
+  "2.16.840.1.113883.6.208": "http://terminology.hl7.org/CodeSystem/nddf",
+  "2.16.840.1.113883.5.4": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+  "2.16.840.1.113883.3.26.1.1": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl",
+  "2.16.840.1.113883.5.1": "http://terminology.hl7.org/CodeSystem/v3-AdministrativeGender",
+  "2.16.840.1.113883.1.11.19563":
+    "http://terminology.hl7.org/ValueSet/v3-PersonalRelationshipRoleType",
+  "2.16.840.1.113883.5.111": "http://terminology.hl7.org/CodeSystem/v3-RoleCode",
+};
+
 // Some helpers will be referenced in other helpers and declared outside the export below.
 
 var evaluateTemplate = function (templatePath, inObj, returnEmptyObject = false) {
@@ -75,6 +110,71 @@ var evaluateTemplate = function (templatePath, inObj, returnEmptyObject = false)
   } catch (err) {
     throw `helper "evaluateTemplate" : ${err}`;
   }
+};
+
+var concatDefinedShared = function (...args) {
+  const isDefined = obj => {
+    return obj !== null && obj !== undefined && !allValuesInObjAreNullFlavor(obj);
+  };
+  return args
+    .filter(arg => isDefined(arg))
+    .map(arg => JSON.stringify(arg))
+    .join("");
+};
+
+/**
+ * @warning - If you are updating this, please also update the GeneratePractitionerId.hbs function.
+ * Otherwise, the generated practitioner IDs will not match across different CDA sections.
+ */
+var generatePractitionerId = function (practitioner) {
+  if (!practitioner) return undefined;
+
+  const practitionerIds = Array.isArray(practitioner.id) ? practitioner.id : [practitioner.id];
+  const firstId = practitionerIds[0];
+
+  if (firstId && firstId.root && firstId.extension) {
+    const combined = [firstId.root, "|", firstId.extension].join("");
+    const id = uuidv3(combined, uuidv3.URL);
+    return id;
+  } else if (practitioner.assignedPerson?.name) {
+    const combined = [
+      JSON.stringify(practitioner.assignedPerson.name),
+      JSON.stringify(practitioner.addr),
+      JSON.stringify(practitioner.telecom),
+    ].join("");
+
+    const id = uuidv3(combined, uuidv3.URL);
+    return id;
+  }
+
+  return undefined;
+};
+
+/**
+ * @warning - If you are updating this, please also update the GenerateLocationId.hbs function.
+ * Otherwise, the generated location IDs will not match across different CDA sections.
+ */
+var generateLocationId = function (location) {
+  if (!location) return undefined;
+
+  if (location.location?.addr) {
+    const id = uuidv3(
+      concatDefinedShared(location.location.addr, location.location.name, location.code),
+      uuidv3.URL
+    );
+    return id;
+  } else if (location.addr) {
+    const id = uuidv3(
+      concatDefinedShared(location.addr, location.playingEntity?.name, location.code),
+      uuidv3.URL
+    );
+    return id;
+  } else if (location.playingEntity?.name) {
+    const id = uuidv3(concatDefinedShared(location.playingEntity.name), uuidv3.URL);
+    return id;
+  }
+
+  return undefined;
 };
 
 var getSegmentListsInternal = function (msg, ...segmentIds) {
@@ -117,6 +217,111 @@ var validDatetimeString = function (dateTimeString) {
     return false;
   }
   return true;
+};
+
+var parseReferenceData = function (referenceData) {
+  if (referenceData == undefined) {
+    return "";
+  }
+  return JSON.stringify(referenceData).slice(1, -1).replace(/ {2,}/g, " ").trim();
+};
+
+var getSystemUrl = function (codeOid, canBeUnknown = false) {
+  if (!codeOid) {
+    if (canBeUnknown) {
+      return "http://terminology.hl7.org/ValueSet/v3-Unknown";
+    }
+    return undefined;
+  }
+
+  if (codeOid.startsWith("2.16.840.1.113883.3.247")) {
+    return "http://terminology.hl7.org/CodeSystem-IMO.html";
+  }
+
+  const systemUrl = SYSTEM_URL_MAP[codeOid];
+  if (systemUrl) {
+    return systemUrl;
+  }
+
+  if (/^[0-9.]+$/.test(codeOid)) {
+    return `urn:oid:${codeOid}`;
+  }
+
+  if (canBeUnknown) {
+    return "http://terminology.hl7.org/ValueSet/v3-Unknown";
+  }
+
+  return `http://terminology.hl7.org/CodeSystem/${codeOid.replace(/ /g, "")}`;
+};
+
+var buildCoding = function (code, canBeUnknown = false) {
+  if (!code) {
+    return undefined;
+  }
+
+  return {
+    code: code.code ? code.code.trim() : canBeUnknown ? "UNK" : undefined,
+    display: code.displayName
+      ? parseReferenceData(code.displayName)
+      : canBeUnknown
+      ? "unknown"
+      : undefined,
+    version: code.codeSystemVersion,
+    system: getSystemUrl(code.codeSystem, canBeUnknown),
+  };
+};
+
+var buildCodeableConcept = function (code, canBeUnknown = false) {
+  if (!code) {
+    return undefined;
+  }
+
+  let text;
+  if (code.originalText?._) {
+    text = parseReferenceData(code.originalText?._);
+  } else if (code.text) {
+    text = parseReferenceData(code.text);
+  } else if (canBeUnknown) {
+    text = "unknown";
+  }
+
+  const codeableConcept = {
+    text: text ?? undefined,
+    coding: buildCoding(code, canBeUnknown),
+  };
+
+  return codeableConcept;
+};
+
+var startDateLteEndDate = function (v1, v2) {
+  return new Date(getDateTime(v1)).getTime() <= new Date(getDateTime(v2)).getTime();
+};
+
+var buildPeriod = function (period) {
+  if (!period) {
+    return undefined;
+  }
+
+  const result = {};
+
+  if (period.low && period.high && startDateLteEndDate(period.low.value, period.high.value)) {
+    result.start = getDateTime(period.low.value);
+    result.end = getDateTime(period.high.value);
+  } else if (
+    period.low?.value &&
+    period.high?.value &&
+    !startDateLteEndDate(period.low.value, period.high.value)
+  ) {
+    result.start = getDateTime(period.low.value);
+  } else if (period.low) {
+    result.start = getDateTime(period.low.value);
+  } else if (period.high) {
+    result.end = getDateTime(period.high.value);
+  } else {
+    result.start = getDateTime(period.value);
+  }
+
+  return result;
 };
 
 // convert the dateString to date string with hyphens
@@ -1562,6 +1767,103 @@ module.exports.external = [
     },
   },
   {
+    name: "generatePractitionerId",
+    description: "Generates a practitioner UUID from a performer object",
+    func: function (practitioner) {
+      return generatePractitionerId(practitioner);
+    },
+  },
+  {
+    name: "generateLocationId",
+    description: "Generates a location UUID from a participantRole object",
+    func: function (location) {
+      return generateLocationId(location);
+    },
+  },
+  {
+    name: "getActivityFromTreatmentPlanEncounter",
+    description: "Builds the activity field for the CarePlan resource",
+    func: function (encounter) {
+      if (!encounter) return undefined;
+
+      /**
+       * Status codes are taken from the FHIR CarePlan resource
+       * @see https://hl7.org/fhir/R4/valueset-care-plan-activity-status.html
+       */
+      function getCarePlanActivityStatus(statusCode) {
+        switch (statusCode?.trim().toLowerCase()) {
+          case "not-started":
+            return "not-started";
+          case "scheduled":
+            return "scheduled";
+          case "in-progress":
+            return "in-progress";
+          case "on-hold":
+            return "on-hold";
+          case "completed":
+            return "completed";
+          case "cancelled":
+            return "cancelled";
+          case "stopped":
+            return "stopped";
+          case "unknown":
+            return "unknown";
+          case "entered-in-error":
+            return "entered-in-error";
+          default:
+            return "unknown";
+        }
+      }
+
+      const activity = [];
+
+      const status = getCarePlanActivityStatus(
+        encounter.entryRelationship?.act?.statusCode?.code ?? encounter.statusCode?.code
+      );
+
+      const detail = { status };
+      const performer = encounter.performer?.assignedEntity;
+      if (performer) {
+        const performerId = generatePractitionerId(performer);
+
+        detail.performer = [
+          {
+            reference: `Practitioner/${performerId}`,
+          },
+        ];
+      }
+
+      const participantRole = encounter.participant?.participantRole;
+      if (participantRole) {
+        const participantRoleId = generateLocationId(participantRole);
+        detail.location = {
+          reference: `Location/${participantRoleId}`,
+        };
+      }
+
+      const scheduledPeriod = buildPeriod(encounter.effectiveTime);
+      if (scheduledPeriod) {
+        detail.scheduledPeriod = scheduledPeriod;
+      }
+
+      if (encounter.entryRelationship?.act) {
+        const code = buildCodeableConcept(encounter.entryRelationship.act.code);
+        if (code) {
+          detail.code = code;
+        }
+
+        const activityDescription = encounter.entryRelationship.act.text?._;
+        if (activityDescription) {
+          detail.description = activityDescription;
+        }
+      }
+
+      activity.push({ detail });
+
+      return JSON.stringify(activity);
+    },
+  },
+  {
     name: "extractAndMapTableData",
     description:
       "Extracts and maps table data from a JSON structure to an array of objects based on table headers and rows.",
@@ -1705,6 +2007,13 @@ module.exports.external = [
         .filter(arg => isDefined(arg))
         .map(arg => JSON.stringify(arg))
         .join("");
+    },
+  },
+  {
+    name: "concatDefinedV2",
+    description: "Concatenates defined objects, checking for null, undefined, or UNK nullFlavor.",
+    func: function (...args) {
+      return concatDefinedShared(...args);
     },
   },
   {

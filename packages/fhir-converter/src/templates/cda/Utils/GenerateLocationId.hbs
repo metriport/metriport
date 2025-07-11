@@ -24,11 +24,17 @@
   //     CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.  
   // -------------------------------------------------------------------------------------------------
 --}}
-{{!-- ID composed of code, addr, name --}}
+
+{{!-- @deprecated - Use the generateLocationId from the helpers file instead --}}
+{{!-- TODO: Migrate away from using this anywhere in the Converter. --}}
+{{!-- @warning - If you are updating this, please also update the generateLocationId function in the handlebars-helpers.js file --}}
 {
+    {{!-- ID composed of code, addr, name --}}
     {{#if location.location.addr}}
         "Id": "{{generateUUID (concatDefined location.location.addr location.location.name location.code)}}"
     {{else if location.addr}}
         "Id": "{{generateUUID (concatDefined location.addr location.playingEntity.name location.code)}}"
+    {{else if location.playingEntity.name}}
+        "Id": "{{generateUUID location.playingEntity.name}}"
     {{/if}}
 }

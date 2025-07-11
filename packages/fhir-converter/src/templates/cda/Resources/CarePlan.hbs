@@ -1,0 +1,45 @@
+{
+    "fullUrl": "urn:uuid:{{ID}}",
+    "resource": {
+        "resourceType": "CarePlan",
+        "id":"{{ID}}",
+        "identifier":
+        [
+        	{{#each (toArray encounter.id)}}
+        		{{>DataType/Identifier.hbs id=this}},
+            {{/each}}
+        ],
+        {{#if encounter.text}}
+            "text": {{>DataType/Narrative.hbs narrative=encounter.text._b64}},
+        {{/if}}
+
+        "status":{{>ValueSet/CarePlanStatus.hbs code=encounter.statusCode.code}},
+        "intent":{{>ValueSet/CarePlanIntent.hbs code=encounter.statusCode.intent}},
+
+        {{#if encounter.code.originalText._}}
+            "description": "{{encounter.code.originalText._}}",
+        {{/if}}
+
+        "category":[
+            {{>DataType/CodeableConcept.hbs code=encounter.categoryCode}}
+        ],
+
+        "period": {{>DataType/Period.hbs period=encounter.effectiveTime}},
+
+        {{#if encounter.author.time.low.value}}
+            "created": "{{formatAsDateTime encounter.author.time.low.value}}",
+        {{else if encounter.author.time.value}}
+            "created": "{{formatAsDateTime encounter.author.time.value}}",
+        {{/if}}
+
+        {{#with (getActivityFromTreatmentPlanEncounter encounter) as |activity|}}
+            {{#if activity}}    
+                "activity":{{{activity}}},
+            {{/if}}
+        {{/with}}
+    },
+    "request":{
+        "method":"PUT",
+        "url":"Encounter/{{ID}}",
+    },
+},
