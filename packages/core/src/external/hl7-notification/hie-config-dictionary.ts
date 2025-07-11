@@ -23,3 +23,12 @@ export type HieConfigDictionary = z.infer<typeof hieConfigDictionarySchema>;
 export function getHieConfigDictionary(): HieConfigDictionary {
   return hieConfigDictionarySchema.parse(Config.getHieConfigDictionary());
 }
+
+export function getHieNames(): string[] {
+  return Object.keys(getHieConfigDictionary());
+}
+
+export function throwOnInvalidHieName(name: string): string {
+  const hieNameSchema = z.enum(getHieNames() as [string, ...string[]]);
+  return hieNameSchema.parse(name);
+}

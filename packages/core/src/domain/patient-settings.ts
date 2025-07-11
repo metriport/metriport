@@ -3,7 +3,7 @@ import { z } from "zod";
 import { BaseDomain, BaseDomainCreate } from "./base-domain";
 
 export type Subscriptions = {
-  adt?: boolean;
+  adt?: string[];
 };
 
 export type PatientSettingsData = {

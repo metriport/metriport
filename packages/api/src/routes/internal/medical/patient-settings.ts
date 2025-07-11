@@ -1,4 +1,5 @@
 import { patientSettingsSchema } from "@metriport/api-sdk";
+import { throwOnInvalidHieName } from "@metriport/core/external/hl7-notification/hie-config-dictionary";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { Request, Response } from "express";
@@ -38,6 +39,8 @@ router.post(
     const patientIds = getFromQueryAsArrayOrFail("patientIds", req);
     const settings = patientSettingsSchema.parse(req.body) ?? defaultSettings;
 
+    settings.subscriptions?.adt?.forEach(throwOnInvalidHieName);
+
     const result = await upsertPatientSettingsForPatientList({
       cxId,
       facilityId,
@@ -66,6 +69,8 @@ router.post(
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const facilityId = getUUIDFrom("query", req, "facilityId").optional();
     const settings = patientSettingsSchema.parse(req.body) ?? defaultSettings;
+
+    settings.subscriptions?.adt?.forEach(throwOnInvalidHieName);
 
     const result = await upsertPatientSettingsForCx({
       cxId,
