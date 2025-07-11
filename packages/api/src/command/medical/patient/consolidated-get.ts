@@ -115,10 +115,7 @@ export async function startConsolidatedQuery({
     id: patient.id,
     cxId: patient.cxId,
     cmd: {
-      consolidatedQueries: appendProgressToProcessingQueries(
-        patient.data.consolidatedQueries,
-        progress
-      ),
+      consolidatedQuery: progress,
       cxConsolidatedRequestMetadata,
     },
   });
@@ -262,22 +259,7 @@ export async function getConsolidated({
     const shouldCreateMedicalRecord = conversionType != "json" && hasResources;
 
     const currentConsolidatedProgress = getConsolidatedQueryByRequestId(patient, requestId);
-    const sendAnalytics = (
-      conversionTypeForAnalytics: string,
-      resourceCount: number | undefined
-    ) => {
-      analytics({
-        distinctId: cxId,
-        event: EventTypes.consolidatedQuery,
-        properties: {
-          patientId: patientId,
-          duration: elapsedTimeFromNow(currentConsolidatedProgress?.startedAt),
-          conversionType: conversionTypeForAnalytics,
-          resourceCount,
-        },
-      });
-    };
-    sendAnalytics("bundle", bundle.entry?.length);
+    sendAnalytics(cxId, patientId, currentConsolidatedProgress, "bundle", bundle.entry?.length);
 
     if (shouldCreateMedicalRecord) {
       // If we need to convert to medical record, we also have to update the resulting
@@ -291,7 +273,13 @@ export async function getConsolidated({
         dateTo,
         conversionType,
       });
-      sendAnalytics(conversionType, bundle.entry?.length);
+      sendAnalytics(
+        cxId,
+        patientId,
+        currentConsolidatedProgress,
+        conversionType,
+        bundle.entry?.length
+      );
     }
 
     if (conversionType === "json" && hasResources) {
@@ -378,4 +366,23 @@ async function uploadConsolidatedJsonAndReturnUrl({
     const newBundle = buildDocRefBundleWithAttachment(patient.id, signedUrl, "json");
     return { bundle: newBundle, filters };
   }
+}
+
+function sendAnalytics(
+  cxId: string,
+  patientId: string,
+  currentConsolidatedProgress: ConsolidatedQuery | undefined,
+  conversionTypeForAnalytics: string,
+  resourceCount: number | undefined
+) {
+  analytics({
+    distinctId: cxId,
+    event: EventTypes.consolidatedQuery,
+    properties: {
+      patientId: patientId,
+      duration: elapsedTimeFromNow(currentConsolidatedProgress?.startedAt),
+      conversionType: conversionTypeForAnalytics,
+      resourceCount,
+    },
+  });
 }
