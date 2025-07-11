@@ -5,7 +5,6 @@ import {
 } from "@metriport/core/domain/document-query/trigger-and-query";
 import { getPatientOrFail } from "../patient/get-patient";
 import { queryDocumentsAcrossHIEs } from "./document-query";
-import { getPatientPrimaryFacilityIdOrFail } from "../patient/get-patient-facilities";
 
 /**
  * Implementation of TriggerAndQueryDocRefs that excutes the logic local.
@@ -14,15 +13,15 @@ export class TriggerAndQueryDocRefsLocal extends TriggerAndQueryDocRefs {
   protected override async triggerDocQuery(
     cxId: string,
     patientId: string,
+    facilityId: string,
     triggerWHNotifs: boolean
   ): Promise<void> {
     const cxDocumentRequestMetadata = triggerWHNotifs ? {} : disableWHMetadata;
-    const patientFacilityId = await getPatientPrimaryFacilityIdOrFail({ cxId, patientId });
 
     await queryDocumentsAcrossHIEs({
       cxId,
       patientId,
-      facilityId: patientFacilityId,
+      facilityId,
       forceQuery: true,
       cxDocumentRequestMetadata,
     });

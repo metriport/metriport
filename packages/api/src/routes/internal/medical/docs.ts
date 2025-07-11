@@ -21,7 +21,6 @@ import { checkDocumentQueries } from "../../../command/medical/document/check-do
 import { calculateDocumentConversionStatus } from "../../../command/medical/document/document-conversion-status";
 import { queryDocumentsAcrossHIEs } from "../../../command/medical/document/document-query";
 import { reConvertDocuments } from "../../../command/medical/document/document-reconvert";
-import { getPatientPrimaryFacilityIdOrFail } from "../../../command/medical/patient/get-patient-facilities";
 import {
   MAPIWebhookStatus,
   processPatientDocumentRequest,
@@ -373,7 +372,7 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getFrom("query").orFail("cxId", req);
     const patientId = getFrom("query").orFail("patientId", req);
-    const facilityId = getFrom("query").optional("facilityId", req);
+    const facilityId = getFrom("query").orFail("facilityId", req);
     const requestId = getFrom("query").optional("requestId", req);
     const forceDownload = getFromQueryAsBoolean("forceDownload", req) ?? false;
     const forceQuery = getFromQueryAsBoolean("forceQuery", req) ?? true;
@@ -382,18 +381,10 @@ router.post(
     const triggerConsolidated = getFromQueryAsBoolean("triggerConsolidated", req);
     const cxDocumentRequestMetadata = cxRequestMetadataSchema.parse(req.body);
 
-    // TODO ENG-618: Get patients first facility id if no facility id is provided
-    const patientFacilityId = facilityId
-      ? facilityId
-      : await getPatientPrimaryFacilityIdOrFail({
-          cxId,
-          patientId,
-        });
-
     const docQueryProgress = await queryDocumentsAcrossHIEs({
       cxId,
       patientId,
-      facilityId: patientFacilityId,
+      facilityId,
       requestId,
       forceDownload,
       forceQuery,

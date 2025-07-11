@@ -17,7 +17,7 @@ import { out } from "@metriport/core/util/log";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { BadRequestError, emptyFunction } from "@metriport/shared";
 import { calculateConversionProgress } from "../../../domain/medical/conversion-progress";
-import { validateOptionalFacilityId } from "../../../domain/medical/patient-facility";
+import { isPatientAssociatedWithFacility } from "../../../domain/medical/patient-facility";
 import { processAsyncError } from "../../../errors";
 import { getDocumentsFromCQ } from "../../../external/carequality/document/query-documents";
 import { queryAndProcessDocuments as getDocumentsFromCW } from "../../../external/commonwell/document/document-query";
@@ -80,7 +80,12 @@ export async function queryDocumentsAcrossHIEs({
     throw new BadRequestError("Patient has opted out from the networks");
   }
 
-  validateOptionalFacilityId(patient, facilityId);
+  if (!isPatientAssociatedWithFacility(patient, facilityId)) {
+    throw new BadRequestError("Patient not associated with given facility", undefined, {
+      patientId: patient.id,
+      facilityId,
+    });
+  }
 
   const docQueryProgress = patient.data.documentQueryProgress;
   const requestId = requestIdParam ?? getOrGenerateRequestId(docQueryProgress, forceQuery);

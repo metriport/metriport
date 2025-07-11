@@ -126,7 +126,7 @@ router.post(
     const forceCommonwell = stringToBoolean(getFrom("query").optional("commonwell", req));
     const forceCarequality = stringToBoolean(getFrom("query").optional("carequality", req));
 
-    // TODO ENG-618: Get patients first facility id if no facility id is provided
+    // TODO ENG-618: Temporary fix until we make facilityId required in the API
     const patientFacilityId = facilityId
       ? facilityId
       : await getPatientPrimaryFacilityIdOrFail({ cxId, patientId });

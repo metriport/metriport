@@ -449,21 +449,19 @@ export class MetriportMedicalApi {
   }
 
   /**
-   * Associates a patient to multiple facilities.
+   * Sets the facilities associated with a patient. This operation overrides any existing
+   * facility associations and replaces them with the provided list.
    *
-   * @param patientId The ID of the patient to associate facilities to.
-   * @param facilityIds The array of facility IDs to associate with the patient.
+   * @param patientId The ID of the patient to set facilities for.
+   * @param facilityIds The array of facility IDs to associate with the patient. This will replace all existing associations.
    * @returns The updated facilities associated with the patient.
    */
-  async assignPatientFacilities(
-    patientId: string,
-    facilityIds: string[]
-  ): Promise<{ facilities: Facility[] }> {
-    const resp = await this.api.post(`${PATIENT_URL}/${patientId}/facilities`, {
+  async setPatientFacilities(patientId: string, facilityIds: string[]): Promise<Facility[]> {
+    const resp = await this.api.post(`${PATIENT_URL}/${patientId}/facility`, {
       facilityIds,
     });
     if (!resp.data) throw new Error(NO_DATA_MESSAGE);
-    return resp.data;
+    return resp.data.facilities;
   }
 
   /**
@@ -472,10 +470,10 @@ export class MetriportMedicalApi {
    * @param patientId The ID of the patient whose facilities are to be returned.
    * @returns Array of facilities associated with the patient.
    */
-  async getPatientFacilities(patientId: string): Promise<{ facilities: Facility[] }> {
-    const resp = await this.api.get(`${PATIENT_URL}/${patientId}/facilities`);
+  async getPatientFacilities(patientId: string): Promise<Facility[]> {
+    const resp = await this.api.get(`${PATIENT_URL}/${patientId}/facility`);
     if (!resp.data) throw new Error(NO_DATA_MESSAGE);
-    return resp.data;
+    return resp.data.facilities;
   }
 
   // TODO #870 remove this

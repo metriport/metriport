@@ -17,10 +17,14 @@ export class TriggerAndQueryDocRefsRemote extends TriggerAndQueryDocRefs {
   protected override async triggerDocQuery(
     cxId: string,
     patientId: string,
+    facilityId: string,
     triggerWHNotifs: boolean
   ): Promise<void> {
     const payload = triggerWHNotifs ? {} : { metadata: disableWHMetadata };
-    await this.api.post(`/internal/docs/query?cxId=${cxId}&patientId=${patientId}`, payload);
+    await this.api.post(
+      `/internal/docs/query?cxId=${cxId}&patientId=${patientId}&facilityId=${facilityId}`,
+      payload
+    );
   }
 
   protected override async getDocQueryStatus(

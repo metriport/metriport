@@ -49,13 +49,3 @@ export function getFacilityIdOrFail(patient: Patient, facilityId?: string): stri
   }
   return chosenFacility;
 }
-
-/**
- * Utility function to validate that a facility ID is associated with a patient or that the
- * patient only has one facility if none is provided.
- * Throws if not valid.
- */
-export function validateOptionalFacilityId(patient: Patient, facilityId?: string): true {
-  getFacilityIdOrFail(patient, facilityId);
-  return true;
-}

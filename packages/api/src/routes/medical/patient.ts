@@ -25,7 +25,7 @@ import { getConsolidatedWebhook } from "../../command/medical/patient/get-consol
 import { getPatientFacilityMatches } from "../../command/medical/patient/get-patient-facility-matches";
 import { getHieOptOut, setHieOptOut } from "../../command/medical/patient/update-hie-opt-out";
 import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
-import { assignPatientFacilities } from "../../command/medical/patient/assign-patient-facilities";
+import { setPatientFacilities } from "../../command/medical/patient/set-patient-facilities";
 import { getPatientFacilities } from "../../command/medical/patient/get-patient-facilities";
 import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
 import { countResources } from "../../external/fhir/patient/count-resources";
@@ -45,7 +45,7 @@ import {
   patientUpdateSchema,
   schemaUpdateToPatientData,
 } from "./schemas/patient";
-import { assignPatientFacilitiesSchema } from "./schemas/patient-facilities";
+import { setPatientFacilitiesSchema } from "./schemas/patient-facilities";
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
 
 const router = Router();
@@ -538,23 +538,24 @@ router.get(
 );
 
 /** ---------------------------------------------------------------------------
- * POST /patient/:id/facilities
+ * POST /patient/:id/facility
  *
- * Assigns a patient to multiple facilities.
+ * Sets the facilities associated with a patient. This operation overrides any existing
+ * facility associations and replaces them with the provided list.
  *
  * @param req.cxId The customer ID.
- * @param req.param.id The ID of the patient to assign facilities to.
- * @param req.body The facility IDs to assign to the patient.
+ * @param req.param.id The ID of the patient to set facilities for.
+ * @param req.body The facility IDs to set for the patient.
  * @return The updated patient.
  */
 router.post(
-  "/facilities",
+  "/facility",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const { cxId, id: patientId } = getPatientInfoOrFail(req);
-    const payload = assignPatientFacilitiesSchema.parse(req.body);
+    const payload = setPatientFacilitiesSchema.parse(req.body);
 
-    await assignPatientFacilities({
+    await setPatientFacilities({
       cxId,
       patientId,
       facilityIds: payload.facilityIds,
@@ -573,7 +574,7 @@ router.post(
 );
 
 /** ---------------------------------------------------------------------------
- * GET /patient/:id/facilities
+ * GET /patient/:id/facility
  *
  * Gets all facilities associated with a patient.
  *
@@ -582,7 +583,7 @@ router.post(
  * @return Array of facilities associated with the patient.
  */
 router.get(
-  "/facilities",
+  "/facility",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const { cxId, id: patientId } = getPatientInfoOrFail(req);
