@@ -1,6 +1,7 @@
 import { USState } from "@metriport/shared";
 import { Patient } from "../../domain/patient";
 import { Hl7v2Subscription } from "../../domain/patient-settings";
+import { HieIANATimezone } from "../../external/hl7-notification/hie-timezone";
 
 export type SftpConfig = {
   host: string;
@@ -46,8 +47,9 @@ export type HiePatientRosterMapping = {
 
 export type HieConfig = {
   name: string;
-  identifierInMshSegment?: string;
-  timezone?: string;
+  gatewayPublicIp: string;
+  internalCidrBlock: string;
+  timezone: HieIANATimezone;
   states: USState[];
   subscriptions: Hl7v2Subscription[];
   cron: string;

@@ -2,7 +2,6 @@ import * as dotenv from "dotenv";
 dotenv.config();
 
 import { Hl7Message } from "@medplum/core";
-import { getSendingApplication } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/msh";
 import {
   createUnparseableHl7MessageErrorMessageFileKey,
   createUnparseableHl7MessageFileKey,
@@ -11,22 +10,19 @@ import {
 } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
 import { utcifyHl7Message } from "@metriport/core/external/hl7-notification/datetime";
 import { Logger } from "@metriport/core/util/log";
-import { buildDayjs, ISO_DATE_TIME } from "@metriport/shared/common/date";
-import { Config } from "./config";
-import { asString, bucketName, s3Utils } from "./utils";
 import { errorToString } from "@metriport/shared";
-
-const hieTimezoneDictionary = Config.getHieTimezoneDictionary();
-
+import { buildDayjs, ISO_DATE_TIME } from "@metriport/shared/common/date";
+import { asString, bucketName, s3Utils } from "./utils";
 export interface ParsedHl7Data {
   message: Hl7Message;
   cxId: string;
   patientId: string;
 }
 
-export async function parseHl7Message(rawMessage: Hl7Message): Promise<ParsedHl7Data> {
-  const sendingApplication = getSendingApplication(rawMessage) ?? "Unknown HIE";
-  const hieTimezone = hieTimezoneDictionary[sendingApplication] ?? "UTC";
+export async function parseHl7Message(
+  rawMessage: Hl7Message,
+  hieTimezone: string
+): Promise<ParsedHl7Data> {
   const message = utcifyHl7Message(rawMessage, hieTimezone);
 
   const { cxId, patientId } = getCxIdAndPatientIdOrFail(message);

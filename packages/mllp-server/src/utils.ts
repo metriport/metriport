@@ -8,7 +8,11 @@ import { Base64Scrambler } from "@metriport/core/util/base64-scrambler";
 import { Config } from "@metriport/core/util/config";
 import { Logger } from "@metriport/core/util/log";
 import { unpackUuid } from "@metriport/core/util/pack-uuid";
+import IPCIDR from "ip-cidr";
+
 import * as Sentry from "@sentry/node";
+import { HieTimezoneDictionary } from "@metriport/core/external/hl7-notification/hie-timezone";
+import { MetriportError } from "@metriport/shared/dist/error/metriport-error";
 
 const crypto = new Base64Scrambler(Config.getHl7Base64ScramblerSeed());
 export const s3Utils = new S3Utils(Config.getAWSRegion());
@@ -55,4 +59,44 @@ export function unpackPidField(pid: string | undefined) {
 
 function reformUuid(shortId: string) {
   return unpackUuid(crypto.unscramble(shortId));
+}
+
+const ipv4MappedIpv6Prefix = "::ffff:";
+
+/**
+ * Extract clean IP address from IPv4-mapped IPv6 address
+ * Removes the ::ffff: prefix if present
+ */
+export function getCleanIpAddress(address: string | undefined): string {
+  if (!address) {
+    throw new MetriportError("IP address is undefined", undefined, {
+      context: "mllp-server.getCleanIpAddress",
+    });
+  }
+
+  // Trim to just the IPv4 address if possible
+  if (address.startsWith(ipv4MappedIpv6Prefix)) {
+    return address.substring(ipv4MappedIpv6Prefix.length);
+  }
+
+  return address;
+}
+
+export function lookupHieTzEntryForIp(hieTimezoneDictionary: HieTimezoneDictionary, ip: string) {
+  const cidrToTimezoneRows = Object.entries(hieTimezoneDictionary).map(
+    ([hieName, { cidrBlock, timezone }]) => ({ hieName, cidrBlock, timezone })
+  );
+  const hieRow = cidrToTimezoneRows.find(({ cidrBlock }) => isIpInRange(cidrBlock, ip));
+  if (!hieRow) {
+    throw new MetriportError(`Sender IP not found in any CIDR block`, {
+      cause: undefined,
+      additionalInfo: { context: "mllp-server.lookupHieTzEntryForIp", ip, hieTimezoneDictionary },
+    });
+  }
+  return hieRow;
+}
+
+export function isIpInRange(cidrBlock: string, ip: string): boolean {
+  const cidr = new IPCIDR(cidrBlock);
+  return cidr.contains(ip);
 }
