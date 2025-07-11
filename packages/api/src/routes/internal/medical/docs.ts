@@ -372,7 +372,7 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getFrom("query").orFail("cxId", req);
     const patientId = getFrom("query").orFail("patientId", req);
-    const facilityId = getFrom("query").optional("facilityId", req);
+    const facilityId = getFrom("query").orFail("facilityId", req);
     const requestId = getFrom("query").optional("requestId", req);
     const forceDownload = getFromQueryAsBoolean("forceDownload", req) ?? false;
     const forceQuery = getFromQueryAsBoolean("forceQuery", req) ?? true;
