@@ -260,11 +260,12 @@ async function registerAndLinkPatientInCW({
     );
     capture.error(msg, {
       extra: {
+        cxId: patient.cxId,
         facilityId,
         patientId: patient.id,
         cwReference: cwRef,
         context: createContext,
-        error,
+        error: errorToString(error),
       },
     });
     throw error;
@@ -439,11 +440,12 @@ async function updatePatientAndLinksInCw({
     log(`${msg} ${patient.id}:. Cause: ${errorToString(error)}. CW Reference: ${cwRef}`);
     capture.error(msg, {
       extra: {
+        cxId: patient.cxId,
         facilityId,
         patientId: patient.id,
         cwReference: cwRef,
         context: updateContext,
-        error,
+        error: errorToString(error),
       },
     });
     throw error;
@@ -708,10 +710,12 @@ export async function get(
     );
     capture.error(msg, {
       extra: {
+        cxId: patient.cxId,
         facilityId,
         patientId: patient.id,
         cwReference: cwRef,
         context: getContext,
+        error: errorToString(error),
       },
     });
     throw error;
@@ -748,11 +752,12 @@ export async function remove(patient: Patient, facilityId: string): Promise<void
     );
     capture.error(msg, {
       extra: {
+        cxId: patient.cxId,
         facilityId,
         patientId: patient.id,
         cwReference: cwRef,
         context: deleteContext,
-        error,
+        error: errorToString(error),
       },
     });
     throw error;
