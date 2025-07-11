@@ -16,6 +16,10 @@ dayjs.extend(duration);
  * Script to search a patient's consolidated resources using OpenSearch search.
  *
  * If you want to test the `paginatedSearch` function, use the `paginated-search.ts` script.
+ *
+ * Usage:
+ * - Set the environment variables in the .env file
+ * - Run: `ts-node src/open-search/search-consolidated.ts <search-query>`
  */
 
 const cxId = getEnvVarOrFail("CX_ID");
