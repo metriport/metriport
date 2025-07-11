@@ -36,7 +36,12 @@ describe("Anthropic agent test", () => {
     expect(agent.shouldExecuteTools(response)).toBe(false);
     await expect(agent.executeTools(response)).rejects.toThrow(BadRequestError);
 
-    agent.addUserMessage("Are you sure you are working?");
+    agent.addUserMessage([
+      {
+        type: "text",
+        text: "Are you sure you are working?",
+      },
+    ]);
     const nextResponse = await agent.continueConversation();
     const nextMessage = getAssistantResponseText(nextResponse);
     expect(nextMessage?.toLowerCase()).toContain("yes");

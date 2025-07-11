@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
-import { AnthropicToolConfig } from "../../model/anthropic/tools";
+import { AnthropicToolCall, AnthropicToolConfig } from "../../model/anthropic/tools";
+import { AnthropicToolExecution } from "./types";
 
 export class AnthropicTool<I = unknown, O = unknown> {
   private name: string;
@@ -27,6 +28,10 @@ export class AnthropicTool<I = unknown, O = unknown> {
     this.handler = handler;
   }
 
+  canExecute(input: I): boolean {
+    return this.inputSchema.safeParse(input).success;
+  }
+
   async execute(input: I): Promise<O> {
     const validatedInput = this.inputSchema.parse(input);
     const result = await this.handler(validatedInput);
@@ -46,4 +51,24 @@ export class AnthropicTool<I = unknown, O = unknown> {
       input_schema: zodToJsonSchema(this.inputSchema),
     };
   }
+}
+
+/**
+ * Maps an array of tool calls to an array of tool executions.
+ * @param tools
+ * @param toolCalls
+ * @returns
+ */
+export function buildToolExecutions(
+  tools: AnthropicTool[],
+  toolCalls: AnthropicToolCall[]
+): AnthropicToolExecution[] {
+  const toolExecutions: AnthropicToolExecution[] = [];
+  for (const toolCall of toolCalls) {
+    const tool = tools.find(tool => tool.getName() === toolCall.name);
+    if (tool && tool.canExecute(toolCall.input)) {
+      toolExecutions.push({ tool, toolCall, arg: toolCall.input });
+    }
+  }
+  return toolExecutions;
 }

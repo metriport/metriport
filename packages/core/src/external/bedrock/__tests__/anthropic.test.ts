@@ -31,7 +31,6 @@ describe("Anthropic test", () => {
     const model = new AnthropicModel("claude-sonnet-3.7", "us-east-1");
     const response = await model.invokeModel({
       system: "You are an automated test. Reply with YES to confirm that you are working.",
-      temperature: 0,
       max_tokens: 100,
       messages: [
         {

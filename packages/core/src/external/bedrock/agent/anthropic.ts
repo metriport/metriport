@@ -1,12 +1,22 @@
 import { BadRequestError } from "@metriport/shared";
 import { AnthropicAgentConfig } from "./anthropic/types";
-import { AnthropicTool } from "./anthropic/tool";
+import { AnthropicTool, buildToolExecutions } from "./anthropic/tool";
 import { AnthropicModel } from "../model/anthropic";
 import { AnthropicResponse } from "../model/anthropic/response";
 import { AnthropicUsage, buildInitialUsage, incrementUsage } from "../model/anthropic/usage";
 import { AnthropicModelVersion } from "../model/anthropic/version";
-import { AnthropicAssistantContent, AnthropicMessageThread } from "../model/anthropic/messages";
-import { AnthropicToolCall, AnthropicToolResult } from "../model/anthropic/tools";
+import {
+  AnthropicAssistantContent,
+  AnthropicMessageThread,
+  AnthropicUserContent,
+} from "../model/anthropic/messages";
+import {
+  AnthropicToolResult,
+  buildToolResult,
+  buildToolResultError,
+  getToolCallsFromResponse,
+} from "../model/anthropic/tools";
+import { executeAsynchronously } from "../../../util";
 
 // Default parameters for Claude requests
 const DEFAULT_MAX_TOKENS = 1024;
@@ -33,15 +43,10 @@ export class AnthropicAgent<V extends AnthropicModelVersion> {
    * a conversation with the agent.
    * @param messageText - The text of the user message.
    */
-  addUserMessage(messageText: string): void {
+  addUserMessage(content: AnthropicUserContent): void {
     this.messages.push({
       role: "user",
-      content: [
-        {
-          type: "text",
-          text: messageText,
-        },
-      ],
+      content,
     });
   }
 
@@ -62,7 +67,12 @@ export class AnthropicAgent<V extends AnthropicModelVersion> {
    * @returns
    */
   async startConversation(messageText: string): Promise<AnthropicResponse<V>> {
-    this.addUserMessage(messageText);
+    this.addUserMessage([
+      {
+        type: "text",
+        text: messageText,
+      },
+    ]);
     return this.continueConversation();
   }
 
@@ -106,37 +116,24 @@ export class AnthropicAgent<V extends AnthropicModelVersion> {
    * @returns
    */
   async executeTools(response: AnthropicResponse<V>): Promise<void> {
-    const toolCalls = response.content.filter(
-      ({ type }) => type === "tool_use"
-    ) as AnthropicToolCall[];
+    const toolCalls = getToolCallsFromResponse(response);
     if (!this.tools || response.stop_reason !== "tool_use" || toolCalls.length === 0) {
       throw new BadRequestError("Not a valid tool call response");
     }
 
+    const toolExecutions = buildToolExecutions(this.tools, toolCalls);
     const toolResults: AnthropicToolResult[] = [];
-    for (const toolCall of toolCalls) {
-      const tool = this.tools.find(tool => tool.getName() === toolCall.name);
-      if (!tool) continue;
-
+    await executeAsynchronously(toolExecutions, async ({ tool, toolCall, arg }) => {
       try {
-        const toolResultContent = await tool.execute(toolCall.input);
-        toolResults.push({
-          type: "tool_result",
-          tool_use_id: toolCall.id,
-          content: toolResultContent,
-        });
+        const result = await tool.execute(arg);
+        toolResults.push(buildToolResult(toolCall, result));
       } catch (error) {
-        toolResults.push({
-          type: "tool_result",
-          tool_use_id: toolCall.id,
-          content: {
-            error: error instanceof Error ? error.message : String(error),
-          },
-        });
+        toolResults.push(buildToolResultError(toolCall, error));
       }
-    }
+    });
 
-    this.messages.push({ role: "user", content: toolResults });
+    // Add the tool results to the conversation thread
+    this.addUserMessage(toolResults);
   }
 
   hasTools(): boolean {
