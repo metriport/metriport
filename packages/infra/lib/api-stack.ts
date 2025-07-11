@@ -767,6 +767,7 @@ export class APIStack extends Stack {
     medicalDocumentsBucket.grantReadWrite(documentDownloaderLambda);
     medicalDocumentsBucket.grantRead(fhirConverterLambda);
     medicalDocumentsBucket.grantRead(ehrComputeResourceDiffBundlesLambda);
+    medicalDocumentsBucket.grantRead(ehrWriteBackResourceDiffBundlesLambda);
 
     createDocQueryChecker({
       lambdaLayers,
