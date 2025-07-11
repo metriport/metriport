@@ -264,8 +264,8 @@ var buildCoding = function (code, canBeUnknown = false) {
     display: code.displayName
       ? parseReferenceData(code.displayName)
       : canBeUnknown
-      ? "unknown"
-      : undefined,
+        ? "unknown"
+        : undefined,
     version: code.codeSystemVersion,
     system: getSystemUrl(code.codeSystem, canBeUnknown),
   };
