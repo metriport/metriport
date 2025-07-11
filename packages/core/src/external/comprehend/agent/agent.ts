@@ -2,25 +2,34 @@ import { AnthropicAgent } from "../../bedrock/agent/anthropic";
 import { ComprehendClient } from "../client";
 import { SYSTEM_PROMPT } from "./prompt";
 
-import { ExtractMedicationTool } from "./tool/extract-medication";
-import { ExtractProcedureTool } from "./tool/extract-procedure";
-import { ExtractConditionTool } from "./tool/extract-condition";
+import { buildComprehendMedicationTool } from "./tool/medication";
+import { buildComprehendProcedureTool } from "./tool/procedure";
+import { buildComprehendConditionTool } from "./tool/condition";
 
-export class OrchestratorAgent extends AnthropicAgent<"claude-sonnet-3.7"> {
-  private readonly comprehend: ComprehendClient;
-
+export class ComprehendAgent extends AnthropicAgent<"claude-sonnet-3.7"> {
   constructor(comprehend: ComprehendClient = new ComprehendClient()) {
     super({
       version: "claude-sonnet-3.7",
       region: "us-east-1",
       systemPrompt: SYSTEM_PROMPT,
       tools: [
-        new ExtractMedicationTool(comprehend),
-        new ExtractProcedureTool(comprehend),
-        new ExtractConditionTool(comprehend),
+        buildComprehendMedicationTool(comprehend),
+        buildComprehendProcedureTool(comprehend),
+        buildComprehendConditionTool(comprehend),
       ],
-      maxTokens: 5000,
+      maxTokens: 10000,
     });
-    this.comprehend = comprehend;
+  }
+
+  async extractResources(text: string) {
+    let response = await this.startConversation(text);
+    if (!this.shouldExecuteTools(response)) return [];
+
+    do {
+      await this.executeTools(response);
+      response = await this.continueConversation();
+    } while (this.shouldExecuteTools(response));
+
+    return response.content;
   }
 }
