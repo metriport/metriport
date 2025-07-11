@@ -13,6 +13,7 @@ import {
  * @param cxId - The CX ID of the patient.
  * @param practiceId - The practice id of the EHR patient.
  * @param ehrPatientId - The patient id of the EHR patient.
+ * @param resourceType - The resource type of the bundles to contribute.
  * @param createResourceDiffBundlesJobId - The job id of the create resource diff bundles job from which the bundles were created.
  * @param requestId - The request id of the job. Opional.
  * @returns The job id of the resource diff bundles job.

@@ -175,7 +175,7 @@ function settings(): {
     },
     waitTime: waitTimeContributeResourceDiffBundles,
   };
-  const writeBackResourceDiffBundlesLambdaTimeout = Duration.minutes(12);
+  const writeBackResourceDiffBundlesLambdaTimeout = Duration.minutes(15);
   const writeBackResourceDiffBundles: QueueAndLambdaSettings = {
     name: "EhrWriteBackResourceDiffBundles",
     entry: "ehr/write-back-resource-diff-bundles",
@@ -185,7 +185,7 @@ function settings(): {
     },
     queue: {
       alarmMaxAgeOfOldestMessage: Duration.hours(1),
-      maxMessageCountAlarmThreshold: 15_000,
+      maxMessageCountAlarmThreshold: 5_000,
       maxReceiveCount: 3,
       visibilityTimeout: Duration.seconds(
         writeBackResourceDiffBundlesLambdaTimeout.toSeconds() * 2 + 1
