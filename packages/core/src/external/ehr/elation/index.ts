@@ -1,4 +1,4 @@
-import { Bundle, Condition, Observation, ResourceType } from "@medplum/fhirtypes";
+import { Bundle, Condition, DiagnosticReport, Observation, ResourceType } from "@medplum/fhirtypes";
 import {
   BadRequestError,
   EhrFhirResourceBundle,
@@ -52,6 +52,8 @@ import {
   getConditionSnomedCode,
   getConditionStartDate,
   getConditionStatus,
+  getDiagnosticReportDate,
+  getDiagnosticReportResultStatus,
   getObservationInterpretation,
   getObservationLoincCode,
   getObservationLoincCoding,
@@ -430,6 +432,55 @@ class ElationApi {
       earlyReturn: isAutoWriteBack,
     });
     return problem;
+  }
+
+  async createLabPanel({
+    cxId,
+    elationPracticeId,
+    elationPhysicianId,
+    patientId,
+    diagnostricReport,
+    observations,
+    isAutoWriteBack = false,
+  }: {
+    cxId: string;
+    elationPracticeId: string;
+    elationPhysicianId: string;
+    patientId: string;
+    diagnostricReport: DiagnosticReport;
+    observations: Observation[];
+    isAutoWriteBack?: boolean;
+  }): Promise<CreatedLab | undefined> {
+    const { debug } = out(
+      `Elation createLab - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
+    );
+    const reportsUrl = `/reports/`;
+    const additionalInfo = {
+      cxId,
+      practiceId: this.practiceId,
+      patientId,
+      diagnostricReportId: diagnostricReport.id,
+    };
+    const data = {
+      patient: patientId,
+      practice: elationPracticeId,
+      physician: elationPhysicianId,
+      ...this.formatLabPanel(diagnostricReport, observations, additionalInfo),
+    };
+    const lab = await this.makeRequest<CreatedLab | undefined>({
+      cxId,
+      patientId,
+      s3Path: this.createWriteBackPath("lab", diagnostricReport.id),
+      method: "POST",
+      url: reportsUrl,
+      data,
+      schema: isAutoWriteBack ? z.undefined() : createdLabSchema,
+      additionalInfo,
+      headers: { "Content-Type": "application/json" },
+      debug,
+      earlyReturn: isAutoWriteBack,
+    });
+    return lab;
   }
 
   async createLab({
@@ -928,6 +979,130 @@ class ElationApi {
               },
             },
           ],
+        },
+      ],
+    };
+  }
+
+  private formatLabPanel(
+    diagnostricReport: DiagnosticReport,
+    observations: Observation[],
+    additionalInfo: Record<string, string | undefined>
+  ): ElationLab {
+    const resultStatus = getDiagnosticReportResultStatus(diagnostricReport);
+    if (!resultStatus) {
+      throw new BadRequestError(
+        "No result status found for diagnostic report",
+        undefined,
+        additionalInfo
+      );
+    }
+    const formattedResultStatus = resultStatus.toUpperCase();
+    if (!validLabResultStatuses.includes(formattedResultStatus)) {
+      throw new BadRequestError("Invalid result status", undefined, {
+        ...additionalInfo,
+        resultStatus: formattedResultStatus,
+      });
+    }
+    const reportDate = getDiagnosticReportDate(diagnostricReport);
+    const formattedReportDate = this.formatDateTime(reportDate);
+    if (!formattedReportDate) {
+      throw new BadRequestError(
+        "No report date found for diagnostic report",
+        undefined,
+        additionalInfo
+      );
+    }
+    const formattedChartDate = this.formatDateTime(buildDayjs().toISOString());
+    if (!formattedChartDate) {
+      throw new BadRequestError("No chart date found for observation", undefined, additionalInfo);
+    }
+    const results: ElationLab["grids"][0]["results"] = observations.flatMap(observation => {
+      const loincCoding = getObservationLoincCoding(observation);
+      if (!loincCoding) {
+        throw new BadRequestError(
+          "No LOINC coding found for observation",
+          undefined,
+          additionalInfo
+        );
+      }
+      if (!loincCoding.code) {
+        throw new BadRequestError(
+          "No valid code found for LOINC coding",
+          undefined,
+          additionalInfo
+        );
+      }
+      if (!loincCoding.display) {
+        throw new BadRequestError("No display found for LOINC coding", undefined, additionalInfo);
+      }
+      const unitAndValue = getObservationUnitAndValue(observation);
+      if (!unitAndValue) return [];
+      const [unit, value] = unitAndValue;
+      const referenceRange = buildObservationReferenceRange(observation);
+      if (!referenceRange || (!referenceRange.low && !referenceRange.high)) {
+        return [];
+      }
+      const resultStatus = getObservationResultStatus(observation);
+      if (!resultStatus) {
+        return [];
+      }
+      const formattedResultStatus = resultStatus.toUpperCase();
+      if (!validLabResultStatuses.includes(formattedResultStatus)) {
+        return [];
+      }
+      const observedDate = getObservationObservedDate(observation);
+      const formattedObservedDate = this.formatDateTime(observedDate);
+      if (!formattedObservedDate) {
+        return [];
+      }
+      const interpretation = getObservationInterpretation(observation, value);
+      if (!interpretation) {
+        return [];
+      }
+      const isAbnormal = interpretation === "abnormal";
+      const text = observation.text?.div;
+      return {
+        status: formattedResultStatus,
+        value: value.toString(),
+        text: text ?? loincCoding.display,
+        note: "Added via Metriport App",
+        reference_min: referenceRange.low?.toString(),
+        reference_max: referenceRange.high?.toString(),
+        units: unit.slice(0, maxUnitsCharacters),
+        is_abnormal: isAbnormal ? "1" : "0",
+        abnormal_flag: this.mapInterpretationToAbnormalFlag(interpretation),
+        test: {
+          name: loincCoding.display,
+          code: loincCoding.code,
+          loinc: loincCoding.code,
+        },
+        test_category: {
+          value: loincCoding.display,
+          description: loincCoding.display,
+        },
+      };
+    });
+    if (results.length < 1) {
+      throw new BadRequestError(
+        "No results found for diagnostic report",
+        undefined,
+        additionalInfo
+      );
+    }
+    return {
+      report_type: "Lab",
+      document_date: formattedReportDate,
+      reported_date: formattedReportDate,
+      chart_date: formattedChartDate,
+      grids: [
+        {
+          accession_number: "",
+          resulted_date: formattedReportDate,
+          collected_date: formattedReportDate,
+          status: formattedResultStatus,
+          note: "Added via Metriport App",
+          results,
         },
       ],
     };

@@ -15,6 +15,13 @@ export const writeBackFiltersPerResourceTypeSchema = z.object({
       relativeDateRange: relativeDateRangeSchema.optional(),
     })
     .optional(),
+  labPanel: z
+    .object({
+      loincCodes: z.array(z.string()).optional(),
+      minCountPerCode: z.number().optional(),
+      relativeDateRange: relativeDateRangeSchema.optional(),
+    })
+    .optional(),
   problems: z
     .object({
       chronicityFilter: z.enum(["all", "chronic", "non-chronic"]).optional(),

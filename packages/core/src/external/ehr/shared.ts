@@ -4,6 +4,7 @@ import {
   Bundle,
   Coding,
   Condition,
+  DiagnosticReport,
   Extension,
   Immunization,
   Medication,
@@ -368,6 +369,13 @@ export function isLab(observation: Observation): boolean {
   return isLab !== undefined;
 }
 
+export function isLabPanel(diagnosticReport: DiagnosticReport): boolean {
+  const isLabPanel = diagnosticReport.category?.find(
+    ext => ext.coding?.[0]?.code?.toLowerCase() === "lab"
+  );
+  return isLabPanel !== undefined;
+}
+
 export function isChronicCondition(condition?: Condition): boolean {
   if (!condition) return false;
   const chronicityExtension = condition.extension?.find(
@@ -532,6 +540,36 @@ function normalizeStringInterpretation(interpretation: string): string {
     return "normal";
   } else if (lowerInterp.includes("abnormal")) return "abnormal";
   return interpretation;
+}
+
+export function getDiagnosticReportLoincCoding(
+  diagnosticReport: DiagnosticReport
+): Coding | undefined {
+  const code = diagnosticReport.code;
+  const loincCoding = code?.coding?.find(coding => {
+    const system = fetchCodingCodeOrDisplayOrSystem(coding, "system");
+    return system?.includes(LOINC_CODE);
+  });
+  if (!loincCoding) return undefined;
+  return loincCoding;
+}
+
+export function getDiagnosticReportLoincCode(
+  diagnosticReport: DiagnosticReport
+): string | undefined {
+  const loincCoding = getDiagnosticReportLoincCoding(diagnosticReport);
+  if (!loincCoding) return undefined;
+  return loincCoding.code;
+}
+
+export function getDiagnosticReportResultStatus(
+  diagnosticReport: DiagnosticReport
+): string | undefined {
+  return diagnosticReport.status;
+}
+
+export function getDiagnosticReportDate(diagnosticReport: DiagnosticReport): string | undefined {
+  return diagnosticReport.effectiveDateTime ?? diagnosticReport.effectivePeriod?.start;
 }
 
 export function getObservationLoincCoding(observation: Observation): Coding | undefined {
