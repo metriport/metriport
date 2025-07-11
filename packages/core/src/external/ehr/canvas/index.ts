@@ -701,7 +701,7 @@ class CanvasApi {
       }
     );
     if (createMedicationStatementsErrors.length > 0) {
-      const msg = `Failure while creating some medication statements @ Canvas`;
+      const msg = "Failure while creating some medication statements @ Canvas";
       capture.message(msg, {
         extra: {
           ...additionalInfo,
@@ -926,7 +926,7 @@ class CanvasApi {
       }
     );
     if (createObservationsErrors.length > 0) {
-      const msg = `Failure while creating some vitals observations @ Canvas`;
+      const msg = "Failure while creating some vitals observations @ Canvas";
       capture.message(msg, {
         extra: {
           ...additionalInfo,

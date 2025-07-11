@@ -34,7 +34,9 @@ import axios, { AxiosInstance } from "axios";
 import { z } from "zod";
 import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
-import { createOrReplaceCcda } from "../bundle/command/create-or-replace-ccda";
+import { createOrReplaceDocument } from "../document/command/create-or-replace-document";
+import { DocumentType } from "../document/document-shared";
+import { base64ToString } from "../../../util/base64";
 import {
   ApiConfig,
   convertEhrBundleToValidEhrStrictBundle,
@@ -242,7 +244,7 @@ class ElationApi {
       additionalInfo,
       debug,
     });
-    return atob(document.base64_ccda);
+    return base64ToString(document.base64_ccda);
   }
 
   async updatePatientMetadata({
@@ -348,17 +350,18 @@ class ElationApi {
         resourceType,
       });
     }
-    const payload = await this.getCcdaDocument({
+    const ccda = await this.getCcdaDocument({
       cxId,
       patientId: elationPatientId,
       resourceType,
     });
-    const { s3key, s3BucketName } = await createOrReplaceCcda({
+    const { s3key, s3BucketName } = await createOrReplaceDocument({
       ehr: EhrSources.elation,
       cxId,
       metriportPatientId,
       ehrPatientId: elationPatientId,
-      payload,
+      documentType: DocumentType.CCDA,
+      payload: ccda,
       resourceType,
     });
     let referenceEhrFhirBundle: EhrFhirResourceBundle | undefined;
