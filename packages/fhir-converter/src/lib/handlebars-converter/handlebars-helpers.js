@@ -38,6 +38,12 @@ const PERSONAL_RELATIONSHIP_TYPE_CODE = "2.16.840.1.113883.1.11.19563";
 const decimal_regex = /-?(?:(?:0|[1-9][0-9]*)\.?[0-9]*|\.[0-9]+)(?:[eE][+-]?[0-9]+)?/;
 const DECIMAL_REGEX_STR = decimal_regex.toString().slice(1, -1);
 
+/**
+ * Based on the following template:
+ * - ValueSet/SystemReference.hbs
+ *
+ * @warning - If you are updating this, please also update the ValueSet/SystemReference.hbs template definition.
+ */
 const SYSTEM_URL_MAP = {
   "2.16.840.1.113883.6.1": "http://loinc.org",
   "2.16.840.1.113883.6.96": "http://snomed.info/sct",
@@ -123,14 +129,16 @@ var concatDefinedShared = function (...args) {
 };
 
 /**
- * @warning - If you are updating this, please also update the GeneratePractitionerId.hbs function.
+ * Based on the following template:
+ * - Utils/GeneratePractitionerId.hbs
+ *
+ * @warning - If you are updating this, please also update the GeneratePractitionerId.hbs template definition.
  * Otherwise, the generated practitioner IDs will not match across different CDA sections.
  */
 var generatePractitionerId = function (practitioner) {
   if (!practitioner) return undefined;
 
-  const practitionerIds = Array.isArray(practitioner.id) ? practitioner.id : [practitioner.id];
-  const firstId = practitionerIds[0];
+  const firstId = Array.isArray(practitioner.id) ? practitioner.id[0] : practitioner.id;
 
   if (firstId && firstId.root && firstId.extension) {
     const combined = [firstId.root, "|", firstId.extension].join("");
@@ -151,17 +159,22 @@ var generatePractitionerId = function (practitioner) {
 };
 
 /**
- * @warning - If you are updating this, please also update the GenerateLocationId.hbs function.
+ * Based on the following template:
+ * - Utils/GenerateLocationId.hbs
+ *
+ * @warning - If you are updating this, please also update the GenerateLocationId.hbs template definition.
  * Otherwise, the generated location IDs will not match across different CDA sections.
  */
 var generateLocationId = function (location) {
   if (!location) return undefined;
 
   if (location.location?.addr) {
-    const id = uuidv3(
-      concatDefinedShared(location.location.addr, location.location.name, location.code),
-      uuidv3.URL
+    const combined = concatDefinedShared(
+      location.location.addr,
+      location.location.name,
+      location.code
     );
+    const id = uuidv3(combined, uuidv3.URL);
     return id;
   } else if (location.addr) {
     const id = uuidv3(
@@ -170,7 +183,7 @@ var generateLocationId = function (location) {
     );
     return id;
   } else if (location.playingEntity?.name) {
-    const id = uuidv3(concatDefinedShared(location.playingEntity.name), uuidv3.URL);
+    const id = uuidv3(location.playingEntity.name, uuidv3.URL);
     return id;
   }
 
@@ -226,6 +239,12 @@ var parseReferenceData = function (referenceData) {
   return JSON.stringify(referenceData).slice(1, -1).replace(/ {2,}/g, " ").trim();
 };
 
+/**
+ * Based on the following template:
+ * - ValueSet/SystemReference.hbs
+ *
+ * @warning - If you are updating this, please also update the ValueSet/SystemReference.hbs template definition.
+ */
 var getSystemUrl = function (codeOid, canBeUnknown = false) {
   if (!codeOid) {
     if (canBeUnknown) {
@@ -254,6 +273,12 @@ var getSystemUrl = function (codeOid, canBeUnknown = false) {
   return `http://terminology.hl7.org/CodeSystem/${codeOid.replace(/ /g, "")}`;
 };
 
+/**
+ * Based on the following template:
+ * - DataType/Coding.hbs
+ *
+ * @warning - If you are updating this, please also update the DataType/Coding.hbs template definition.
+ */
 var buildCoding = function (code, canBeUnknown = false) {
   if (!code) {
     return undefined;
@@ -264,13 +289,19 @@ var buildCoding = function (code, canBeUnknown = false) {
     display: code.displayName
       ? parseReferenceData(code.displayName)
       : canBeUnknown
-        ? "unknown"
-        : undefined,
+      ? "unknown"
+      : undefined,
     version: code.codeSystemVersion,
     system: getSystemUrl(code.codeSystem, canBeUnknown),
   };
 };
 
+/**
+ * Based on the following template:
+ * - DataType/CodeableConcept.hbs
+ *
+ * @warning - If you are updating this, please also update the DataType/CodeableConcept.hbs template definition.
+ */
 var buildCodeableConcept = function (code, canBeUnknown = false) {
   if (!code) {
     return undefined;
@@ -286,7 +317,7 @@ var buildCodeableConcept = function (code, canBeUnknown = false) {
   }
 
   const codeableConcept = {
-    text: text ?? undefined,
+    text,
     coding: buildCoding(code, canBeUnknown),
   };
 
@@ -297,6 +328,12 @@ var startDateLteEndDate = function (v1, v2) {
   return new Date(getDateTime(v1)).getTime() <= new Date(getDateTime(v2)).getTime();
 };
 
+/**
+ * Based on the following template:
+ * - DataType/Period.hbs
+ *
+ * @warning - If you are updating this, please also update the DataType/Period.hbs template definition.
+ */
 var buildPeriod = function (period) {
   if (!period) {
     return undefined;
@@ -1534,10 +1571,7 @@ module.exports.external = [
     description:
       "Escapes new line and other special chars when parsing ._ fields and then strips JSON of quotes at start and end",
     func: function (referenceData) {
-      if (referenceData == undefined) {
-        return "";
-      }
-      return JSON.stringify(referenceData).slice(1, -1).replace(/ {2,}/g, " ").trim();
+      return parseReferenceData(referenceData);
     },
   },
   {
@@ -2036,7 +2070,7 @@ module.exports.external = [
     name: "startDateLteEndDate",
     description: "Checks if the start date is less than or equal to the end date.",
     func: function (v1, v2) {
-      return new Date(getDateTime(v1)).getTime() <= new Date(getDateTime(v2)).getTime();
+      return startDateLteEndDate(v1, v2);
     },
   },
 ];
