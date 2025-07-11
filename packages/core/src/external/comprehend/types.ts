@@ -19,6 +19,10 @@ export interface ExtractionFeature {
   confidenceThreshold: number;
 }
 
+export interface ComprehendConfig {
+  confidenceThreshold: number;
+}
+
 export interface ExtractionFeatureConfig {
   toolName: string;
   toolDescription: string;

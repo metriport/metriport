@@ -6,8 +6,10 @@ import { ExtractMedicationTool } from "./tool/extract-medication";
 import { ExtractProcedureTool } from "./tool/extract-procedure";
 import { ExtractConditionTool } from "./tool/extract-condition";
 
-export class ComprehendAgent extends AnthropicAgent<"claude-sonnet-3.7"> {
-  constructor(comprehend: ComprehendClient) {
+export class OrchestratorAgent extends AnthropicAgent<"claude-sonnet-3.7"> {
+  private readonly comprehend: ComprehendClient;
+
+  constructor(comprehend: ComprehendClient = new ComprehendClient()) {
     super({
       version: "claude-sonnet-3.7",
       region: "us-east-1",
@@ -19,5 +21,6 @@ export class ComprehendAgent extends AnthropicAgent<"claude-sonnet-3.7"> {
       ],
       maxTokens: 5000,
     });
+    this.comprehend = comprehend;
   }
 }

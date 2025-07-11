@@ -6,12 +6,12 @@ import {
 } from "@aws-sdk/client-comprehendmedical";
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { Medication, MedicationStatement } from "@medplum/fhirtypes";
-import { ExtractionFeature } from "../types";
+import { ComprehendConfig } from "../types";
 import { isConfidentMatch } from "./shared";
 
 export function buildMedicationResources(
   entities: RxNormEntity[],
-  { confidenceThreshold }: ExtractionFeature
+  { confidenceThreshold }: ComprehendConfig
 ): Array<Medication | MedicationStatement> {
   const resources: Array<Medication | MedicationStatement> = [];
 
