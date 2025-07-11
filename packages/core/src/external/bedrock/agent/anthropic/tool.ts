@@ -27,7 +27,7 @@ export class AnthropicTool<I = unknown, O = unknown> {
     this.handler = handler;
   }
 
-  async safelyExecute(input: I): Promise<O> {
+  async execute(input: I): Promise<O> {
     const validatedInput = this.inputSchema.parse(input);
     const result = await this.handler(validatedInput);
     const validatedResult = this.outputSchema.parse(result);

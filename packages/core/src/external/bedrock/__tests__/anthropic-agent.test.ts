@@ -1,4 +1,5 @@
 import { z } from "zod";
+// import { BadRequestError } from "@metriport/shared";
 import { AnthropicAgent } from "../agent/anthropic";
 import { AnthropicTool } from "../agent/anthropic/tool";
 import { AnthropicMessageThread } from "../model/anthropic/messages";
@@ -31,6 +32,7 @@ describe("Anthropic agent test", () => {
     const firstMessage = getAssistantResponseText(response);
     expect(firstMessage?.toLowerCase()).toContain("yes");
     expect(agent.shouldExecuteTools(response)).toBe(false);
+    expect(() => agent.executeTools(response)).toThrow();
 
     agent.addUserMessage("Are you sure you are working?");
     const nextResponse = await agent.continueConversation();

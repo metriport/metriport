@@ -1,5 +1,6 @@
 import { AnthropicModelVersion } from "./version";
 import { AnthropicAssistantContent, AnthropicMessageText } from "./messages";
+import { AnthropicUsage } from "./usage";
 
 // https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-anthropic-claude-messages-request-response.html
 export interface AnthropicResponse<V extends AnthropicModelVersion> {
@@ -13,12 +14,7 @@ export interface AnthropicResponse<V extends AnthropicModelVersion> {
   content: AnthropicAssistantContent<V>;
   stop_reason: "end_turn" | "tool_use" | "max_tokens";
   stop_sequence?: string | null;
-  usage: {
-    input_tokens: number;
-    output_tokens: number;
-    cache_read_input_tokens: number;
-    cache_creation_input_tokens: number;
-  };
+  usage: AnthropicUsage;
 }
 
 export function getAssistantResponseText<V extends AnthropicModelVersion>(

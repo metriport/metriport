@@ -1,9 +1,11 @@
+import { BadRequestError } from "@metriport/shared";
 import { AnthropicAgentConfig } from "./anthropic/types";
 import { AnthropicTool } from "./anthropic/tool";
 import { AnthropicModel } from "../model/anthropic";
 import { AnthropicResponse } from "../model/anthropic/response";
+import { AnthropicUsage, buildInitialUsage, incrementUsage } from "../model/anthropic/usage";
 import { AnthropicModelVersion } from "../model/anthropic/version";
-import { AnthropicMessageThread } from "../model/anthropic/messages";
+import { AnthropicAssistantContent, AnthropicMessageThread } from "../model/anthropic/messages";
 import { AnthropicToolCall, AnthropicToolResult } from "../model/anthropic/tools";
 
 // Default parameters for Claude requests
@@ -17,12 +19,13 @@ export class AnthropicAgent<V extends AnthropicModelVersion> {
   private model: AnthropicModel<V>;
   private config: AnthropicAgentConfig<V>;
   private messages: AnthropicMessageThread<V> = [];
-  private tools: AnthropicTool[] = [];
+  private tools?: AnthropicTool[] | undefined;
+  private usage: AnthropicUsage = buildInitialUsage();
 
   constructor(config: AnthropicAgentConfig<V>) {
     this.model = new AnthropicModel<V>(config.version, config.region);
     this.config = config;
-    this.tools = config.tools ?? [];
+    this.tools = config.tools;
   }
 
   /**
@@ -39,6 +42,17 @@ export class AnthropicAgent<V extends AnthropicModelVersion> {
           text: messageText,
         },
       ],
+    });
+  }
+
+  /**
+   * Adds an assistant message to the agent's conversation thread.
+   * @param content - The content of the assistant message.
+   */
+  private addAssistantMessage(content: AnthropicAssistantContent<V>): void {
+    this.messages.push({
+      role: "assistant",
+      content,
     });
   }
 
@@ -69,11 +83,9 @@ export class AnthropicAgent<V extends AnthropicModelVersion> {
       temperature: this.config.temperature ?? DEFAULT_TEMPERATURE,
     });
 
-    this.messages.push({
-      role: "assistant",
-      content: response.content,
-    });
-
+    // Update the internal state of the agent with the response
+    this.addAssistantMessage(response.content);
+    incrementUsage(this.usage, response.usage);
     return response;
   }
 
@@ -94,11 +106,12 @@ export class AnthropicAgent<V extends AnthropicModelVersion> {
    * @returns
    */
   async executeTools(response: AnthropicResponse<V>): Promise<void> {
-    if (!this.tools || response.stop_reason !== "tool_use") return;
     const toolCalls = response.content.filter(
       content => content.type === "tool_use"
     ) as AnthropicToolCall[];
-    if (toolCalls.length === 0) return;
+    if (!this.tools || response.stop_reason !== "tool_use" || toolCalls.length === 0) {
+      throw new BadRequestError("Not a valid tool call response");
+    }
 
     const toolResults: AnthropicToolResult[] = [];
     for (const toolCall of toolCalls) {
@@ -106,7 +119,7 @@ export class AnthropicAgent<V extends AnthropicModelVersion> {
       if (!tool) continue;
 
       try {
-        const toolResultContent = await tool.safelyExecute(toolCall.input);
+        const toolResultContent = await tool.execute(toolCall.input);
         toolResults.push({
           type: "tool_result",
           tool_use_id: toolCall.id,

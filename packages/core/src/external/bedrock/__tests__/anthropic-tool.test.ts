@@ -36,7 +36,7 @@ describe("Anthropic tool test", () => {
       },
     });
 
-    const result = await tool.safelyExecute({ name: "hello" });
+    const result = await tool.execute({ name: "hello" });
     expect(result.uppercased).toBe("HELLO");
   });
 
@@ -52,7 +52,7 @@ describe("Anthropic tool test", () => {
       },
     });
 
-    const result = await tool.safelyExecute({ name: "HELLO" });
+    const result = await tool.execute({ name: "HELLO" });
     expect(result).toBe("hello");
   });
 });
