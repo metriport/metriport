@@ -1,24 +1,21 @@
-import { Hl7v2Subscription } from "@metriport/core/domain/patient-settings";
+import { Patient } from "@metriport/core/domain/patient";
 import { capture } from "@metriport/core/util";
 import { out } from "@metriport/core/util/log";
-import { MetriportError, USState, errorToString } from "@metriport/shared";
+import { MetriportError, errorToString } from "@metriport/shared";
 import { FindOptions, Op, Order, Sequelize, WhereOptions } from "sequelize";
 import { PatientModelReadOnly } from "../../../models/medical/patient-readonly";
-import { Patient } from "@metriport/core/domain/patient";
 import { PatientSettingsModel } from "../../../models/patient-settings";
 import { Pagination, getPaginationFilters, getPaginationLimits } from "../../pagination";
 
 export type GetHl7v2SubscribersParams = {
-  states: USState[];
-  subscriptions: Hl7v2Subscription[];
+  hie: string;
   pagination?: Pagination;
 };
 
 function getCommonQueryOptions({
-  states,
-  subscriptions,
+  hie,
   pagination,
-}: Omit<GetHl7v2SubscribersParams, "states"> & { states: string }) {
+}: Omit<GetHl7v2SubscribersParams, "hie"> & { hie: string }) {
   const order: Order = [["id", "DESC"]];
 
   return {
@@ -26,21 +23,20 @@ function getCommonQueryOptions({
       ...(pagination ? getPaginationFilters(pagination) : {}),
       [Op.and]: [
         Sequelize.literal(`
-            EXISTS (
+          EXISTS (
               SELECT 1
-              FROM jsonb_array_elements(data->'address') addr
-              WHERE addr->>'state' = ANY(:states)
-            )
+              FROM patient_settings ps
+              WHERE ps.patient_id = "PatientModelReadOnly"."id"
+              AND ps.subscriptions->'adt' IS NOT NULL
+              AND ps.subscriptions->'adt' ? :hie
+          )
           `),
       ],
     } as WhereOptions,
-    replacements: { states },
+    replacements: { hie },
     include: [
       {
         model: PatientSettingsModel,
-        where: {
-          subscriptions: transformSubscriptionsToObject(subscriptions),
-        },
         attributes: [],
         required: true,
       },
@@ -51,17 +47,15 @@ function getCommonQueryOptions({
 }
 
 export async function getHl7v2Subscribers({
-  states,
-  subscriptions,
+  hie,
   pagination,
 }: GetHl7v2SubscribersParams): Promise<Patient[]> {
   const { log } = out(`Get HL7v2 subscribers`);
-  log(`States: ${states}, pagination params: ${JSON.stringify(pagination)}`);
-  const statesString = combineStatesIntoReplacementObject(states);
+  log(`HIE: ${hie}, pagination params: ${JSON.stringify(pagination)}`);
 
   try {
     const findOptions: FindOptions<PatientModelReadOnly> = {
-      ...getCommonQueryOptions({ states: statesString, subscriptions, pagination }),
+      ...getCommonQueryOptions({ hie, pagination }),
     };
 
     const patients = await PatientModelReadOnly.findAll(findOptions);
@@ -74,19 +68,9 @@ export async function getHl7v2Subscribers({
     capture.error(msg, {
       extra: {
         error,
-        states: states,
+        hie,
       },
     });
-    throw new MetriportError(msg, error, { states: states.toString() });
+    throw new MetriportError(msg, error, { hie });
   }
-}
-
-function combineStatesIntoReplacementObject(states: USState[]): string {
-  return `{${states.join(",")}}`;
-}
-
-function transformSubscriptionsToObject(
-  subscriptions: Hl7v2Subscription[]
-): Record<string, boolean> {
-  return subscriptions.reduce((acc, subscription) => ({ ...acc, [subscription]: true }), {});
 }

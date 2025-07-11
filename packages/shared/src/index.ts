@@ -37,6 +37,7 @@ export * from "./domain/job/job-status";
 export * from "./domain/job/patient-job";
 export * from "./domain/job/types";
 export * from "./domain/organization";
+export * from "./domain/pagination";
 export { BadRequestError } from "./error/bad-request";
 export { AdditionalInfo, MetriportError } from "./error/metriport-error";
 export { NotFoundError } from "./error/not-found";
