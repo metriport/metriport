@@ -79,6 +79,22 @@ const SYSTEM_URL_MAP = {
   "2.16.840.1.113883.5.111": "http://terminology.hl7.org/CodeSystem/v3-RoleCode",
 };
 
+/**
+ * Status codes are taken from the FHIR CarePlan resource
+ * @see https://hl7.org/fhir/R4/valueset-care-plan-activity-status.html
+ */
+const validCarePlanActivityStatusCodes = [
+  "not-started",
+  "scheduled",
+  "in-progress",
+  "on-hold",
+  "completed",
+  "cancelled",
+  "stopped",
+  "unknown",
+  "entered-in-error",
+];
+
 // Some helpers will be referenced in other helpers and declared outside the export below.
 
 var evaluateTemplate = function (templatePath, inObj, returnEmptyObject = false) {
@@ -284,13 +300,16 @@ var buildCoding = function (code, canBeUnknown = false) {
     return undefined;
   }
 
+  let display;
+  if (code.displayName) {
+    display = parseReferenceData(code.displayName);
+  } else if (canBeUnknown) {
+    display = "unknown";
+  }
+
   return {
     code: code.code ? code.code.trim() : canBeUnknown ? "UNK" : undefined,
-    display: code.displayName
-      ? parseReferenceData(code.displayName)
-      : canBeUnknown
-      ? "unknown"
-      : undefined,
+    display,
     version: code.codeSystemVersion,
     system: getSystemUrl(code.codeSystem, canBeUnknown),
   };
@@ -359,6 +378,14 @@ var buildPeriod = function (period) {
   }
 
   return result;
+};
+
+var getCarePlanActivityStatus = function (statusCode) {
+  if (!statusCode) return undefined;
+  if (validCarePlanActivityStatusCodes.includes(statusCode.trim().toLowerCase())) {
+    return statusCode;
+  }
+  return undefined;
 };
 
 // convert the dateString to date string with hyphens
@@ -1819,35 +1846,6 @@ module.exports.external = [
     description: "Builds the activity field for the CarePlan resource",
     func: function (encounter) {
       if (!encounter) return undefined;
-
-      /**
-       * Status codes are taken from the FHIR CarePlan resource
-       * @see https://hl7.org/fhir/R4/valueset-care-plan-activity-status.html
-       */
-      function getCarePlanActivityStatus(statusCode) {
-        switch (statusCode?.trim().toLowerCase()) {
-          case "not-started":
-            return "not-started";
-          case "scheduled":
-            return "scheduled";
-          case "in-progress":
-            return "in-progress";
-          case "on-hold":
-            return "on-hold";
-          case "completed":
-            return "completed";
-          case "cancelled":
-            return "cancelled";
-          case "stopped":
-            return "stopped";
-          case "unknown":
-            return "unknown";
-          case "entered-in-error":
-            return "entered-in-error";
-          default:
-            return "unknown";
-        }
-      }
 
       const activity = [];
 
