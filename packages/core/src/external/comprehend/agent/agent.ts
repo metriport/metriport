@@ -1,3 +1,4 @@
+import { Bundle } from "@medplum/fhirtypes";
 import { AnthropicAgent } from "../../bedrock/agent/anthropic";
 import { ComprehendClient } from "../client";
 import { SYSTEM_PROMPT } from "./prompt";
@@ -7,15 +8,15 @@ import { buildComprehendProcedureTool } from "./tool/procedure";
 import { buildComprehendConditionTool } from "./tool/condition";
 
 export class ComprehendAgent extends AnthropicAgent<"claude-sonnet-3.7"> {
-  constructor(comprehend: ComprehendClient = new ComprehendClient()) {
+  constructor(bundle: Bundle, comprehend: ComprehendClient = new ComprehendClient()) {
     super({
       version: "claude-sonnet-3.7",
       region: "us-east-1",
       systemPrompt: SYSTEM_PROMPT,
       tools: [
-        buildComprehendMedicationTool(comprehend),
-        buildComprehendProcedureTool(comprehend),
-        buildComprehendConditionTool(comprehend),
+        buildComprehendMedicationTool(bundle, comprehend),
+        buildComprehendProcedureTool(bundle, comprehend),
+        buildComprehendConditionTool(bundle, comprehend),
       ],
       maxTokens: 10000,
     });
