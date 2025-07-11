@@ -18,6 +18,6 @@
     // END - From @tsconfig/strictest
     "outDir": "./dist"
   },
-  "include": ["./src"],
+  "include": ["./src", "../shared/src/domain/patient/patient-settings.ts"],
   "exclude": ["dist", "node_modules", "**/__tests__"]
 }
