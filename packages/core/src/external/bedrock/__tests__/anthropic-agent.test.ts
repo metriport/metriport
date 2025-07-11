@@ -13,6 +13,7 @@ describe("Anthropic agent test", () => {
       systemPrompt:
         "You are an automated test. Reply with YES if the user asks if you are working.",
       region: "us-east-1",
+      temperature: 0,
     });
 
     const response = await agent.startConversation("Are you working?");
@@ -26,6 +27,7 @@ describe("Anthropic agent test", () => {
       systemPrompt:
         "You are an automated test. Any time you are asked if you are working, reply with YES.",
       region: "us-east-1",
+      temperature: 0,
     });
 
     const response = await agent.startConversation("Are you working?");
@@ -46,6 +48,7 @@ describe("Anthropic agent test", () => {
       systemPrompt:
         'Parse the sentence provided by the user into the input for the "parseSentence" tool.',
       region: "us-east-1",
+      temperature: 0,
       tools: [
         new AnthropicTool({
           name: "parseSentence",
@@ -84,6 +87,7 @@ describe("Anthropic agent test", () => {
       version: "claude-sonnet-3.7",
       systemPrompt: "You are an automated test that is not executed with the LLM.",
       region: "us-east-1",
+      temperature: 0,
       tools: [
         new AnthropicTool({
           name: "errorProducingTool",

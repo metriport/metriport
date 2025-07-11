@@ -96,6 +96,7 @@ describe("Anthropic test", () => {
 
     const agent = new AnthropicAgent({
       region: "us-east-1",
+      temperature: 0,
       version: "claude-sonnet-3.7",
       systemPrompt: "You are a helpful assistant.",
       tools: [getCapitalTool],
