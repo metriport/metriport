@@ -8,5 +8,5 @@ export async function writeBackCondition(params: WriteBackConditionClientRequest
     practiceId,
     ...(tokenId && { tokenId }),
   });
-  await client.createProblem({ cxId, patientId: ehrPatientId, condition });
+  await client.createProblem({ cxId, patientId: ehrPatientId, condition, isAutoWriteBack: true });
 }

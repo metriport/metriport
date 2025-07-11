@@ -377,11 +377,13 @@ class ElationApi {
     cxId,
     patientId,
     condition,
+    isAutoWriteBack = false,
   }: {
     cxId: string;
     patientId: string;
     condition: Condition;
-  }): Promise<CreatedProblem> {
+    isAutoWriteBack?: boolean;
+  }): Promise<CreatedProblem | undefined> {
     const { debug } = out(
       `Elation createProblem - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
     );
@@ -414,17 +416,18 @@ class ElationApi {
       start_date: this.formatDate(startDate),
       description: condition.code?.text,
     };
-    const problem = await this.makeRequest<CreatedProblem>({
+    const problem = await this.makeRequest<CreatedProblem | undefined>({
       cxId,
       patientId,
       s3Path: this.createWriteBackPath("problem", condition.id),
       method: "POST",
       url: problemUrl,
       data,
-      schema: createdProblemSchema,
+      schema: isAutoWriteBack ? z.undefined() : createdProblemSchema,
       additionalInfo,
       headers: { "Content-Type": "application/json" },
       debug,
+      earlyReturn: isAutoWriteBack,
     });
     return problem;
   }
@@ -435,13 +438,15 @@ class ElationApi {
     elationPhysicianId,
     patientId,
     observation,
+    isAutoWriteBack = false,
   }: {
     cxId: string;
     elationPracticeId: string;
     elationPhysicianId: string;
     patientId: string;
     observation: Observation;
-  }): Promise<CreatedLab> {
+    isAutoWriteBack?: boolean;
+  }): Promise<CreatedLab | undefined> {
     const { debug } = out(
       `Elation createLab - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
     );
@@ -458,17 +463,18 @@ class ElationApi {
       physician: elationPhysicianId,
       ...this.formatLab(observation, additionalInfo),
     };
-    const lab = await this.makeRequest<CreatedLab>({
+    const lab = await this.makeRequest<CreatedLab | undefined>({
       cxId,
       patientId,
       s3Path: this.createWriteBackPath("lab", observation.id),
       method: "POST",
       url: reportsUrl,
       data,
-      schema: createdLabSchema,
+      schema: isAutoWriteBack ? z.undefined() : createdLabSchema,
       additionalInfo,
       headers: { "Content-Type": "application/json" },
       debug,
+      earlyReturn: isAutoWriteBack,
     });
     return lab;
   }
@@ -479,13 +485,15 @@ class ElationApi {
     elationPhysicianId,
     patientId,
     observation,
+    isAutoWriteBack = false,
   }: {
     cxId: string;
     elationPracticeId: string;
     elationPhysicianId: string;
     patientId: string;
     observation: Observation;
-  }): Promise<CreatedVital> {
+    isAutoWriteBack?: boolean;
+  }): Promise<CreatedVital | undefined> {
     const { debug } = out(
       `Elation createVital - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
     );
@@ -502,17 +510,18 @@ class ElationApi {
       physician: elationPhysicianId,
       ...this.formatVital(observation, additionalInfo),
     };
-    const vital = await this.makeRequest<CreatedVital>({
+    const vital = await this.makeRequest<CreatedVital | undefined>({
       cxId,
       patientId,
       s3Path: this.createWriteBackPath("vital", observation.id),
       method: "POST",
       url: vitalsUrl,
       data,
-      schema: createdVitalSchema,
+      schema: isAutoWriteBack ? z.undefined() : createdVitalSchema,
       additionalInfo,
       headers: { "Content-Type": "application/json" },
       debug,
+      earlyReturn: isAutoWriteBack,
     });
     return vital;
   }
@@ -783,6 +792,7 @@ class ElationApi {
     additionalInfo,
     debug,
     emptyResponse = false,
+    earlyReturn = false,
   }: MakeRequestParamsInEhr<T>): Promise<T> {
     return await makeRequest<T>({
       ehr: EhrSources.elation,
@@ -799,6 +809,7 @@ class ElationApi {
       additionalInfo,
       debug,
       emptyResponse,
+      earlyReturn,
     });
   }
 

@@ -114,6 +114,7 @@ export type MakeRequestParams<T> = {
   additionalInfo: AdditionalInfo;
   debug: typeof console.log;
   emptyResponse?: boolean;
+  earlyReturn?: boolean;
 };
 
 export type MakeRequestParamsInEhr<T> = Omit<
@@ -136,6 +137,7 @@ export async function makeRequest<T>({
   additionalInfo,
   debug,
   emptyResponse = false,
+  earlyReturn = false,
 }: MakeRequestParams<T>): Promise<T> {
   const { log } = out(
     `${ehr} makeRequest - cxId ${cxId} patientId ${patientId} method ${method} url ${url}`
@@ -153,6 +155,36 @@ export async function makeRequest<T>({
     url,
     context: `${ehr}.make-request`,
   };
+  const formattedData =
+    method === "GET" ? undefined : isJsonContentType ? data : createDataParams(data ?? {});
+  if (formattedData && responsesBucket) {
+    const filePath = createHivePartitionFilePath({
+      cxId,
+      patientId: patientId ?? "global",
+      date: new Date(),
+    });
+    const key = buildS3Path(ehr, s3Path, `${filePath}/request`);
+    const s3Utils = getS3UtilsInstance();
+    try {
+      await s3Utils.uploadFile({
+        bucket: responsesBucket,
+        key,
+        file: Buffer.from(JSON.stringify({ method, url, data: formattedData }), "utf8"),
+        contentType: "application/json",
+      });
+    } catch (error) {
+      log(`Error saving request to s3 @ ${ehr} - ${method} ${url}. Cause: ${errorToString(error)}`);
+    }
+  }
+  if (earlyReturn) {
+    const outcome = schema.safeParse(undefined);
+    if (!outcome.success) {
+      const msg = `Response not parsed @ ${ehr}`;
+      log(msg);
+      throw new MetriportError(msg, undefined, fullAdditionalInfo);
+    }
+    return outcome.data;
+  }
   let response: AxiosResponse;
   try {
     response = await executeWithRetries(
@@ -160,8 +192,7 @@ export async function makeRequest<T>({
         axiosInstance.request({
           method,
           ...(url !== "" ? { url } : {}),
-          data:
-            method === "GET" ? undefined : isJsonContentType ? data : createDataParams(data ?? {}),
+          data: formattedData,
           headers: {
             ...axiosInstance.defaults.headers.common,
             ...headers,
