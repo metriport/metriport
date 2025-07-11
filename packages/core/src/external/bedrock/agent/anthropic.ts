@@ -16,11 +16,11 @@ const DEFAULT_TEMPERATURE = 0;
  * An agent creates BedrockAgentThread instances to manage conversations, memory, and tool calls with the underlying BedrockClient.
  */
 export class AnthropicAgent<V extends AnthropicModelVersion> {
-  private model: AnthropicModel<V>;
-  private config: AnthropicAgentConfig<V>;
+  private readonly model: AnthropicModel<V>;
+  private readonly config: AnthropicAgentConfig<V>;
+  private readonly tools?: AnthropicTool[] | undefined;
+  private readonly usage: AnthropicUsage = buildInitialUsage();
   private messages: AnthropicMessageThread<V> = [];
-  private tools?: AnthropicTool[] | undefined;
-  private usage: AnthropicUsage = buildInitialUsage();
 
   constructor(config: AnthropicAgentConfig<V>) {
     this.model = new AnthropicModel<V>(config.version, config.region);
@@ -107,7 +107,7 @@ export class AnthropicAgent<V extends AnthropicModelVersion> {
    */
   async executeTools(response: AnthropicResponse<V>): Promise<void> {
     const toolCalls = response.content.filter(
-      content => content.type === "tool_use"
+      ({ type }) => type === "tool_use"
     ) as AnthropicToolCall[];
     if (!this.tools || response.stop_reason !== "tool_use" || toolCalls.length === 0) {
       throw new BadRequestError("Not a valid tool call response");
@@ -137,6 +137,10 @@ export class AnthropicAgent<V extends AnthropicModelVersion> {
     }
 
     this.messages.push({ role: "user", content: toolResults });
+  }
+
+  hasTools(): boolean {
+    return !!this.tools;
   }
 
   /**
