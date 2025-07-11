@@ -14,6 +14,7 @@ import { EnvConfigNonSandbox } from "../../config/env-config";
 import { buildSecrets, secretsToECS } from "../shared/secrets";
 import { MLLP_DEFAULT_PORT } from "./constants";
 import { HieConfig } from "@metriport/core/command/hl7v2-subscriptions/types";
+import { HieTimezoneDictionary } from "@metriport/core/external/hl7-notification/hie-timezone";
 
 interface MllpStackProps extends cdk.StackProps {
   config: EnvConfigNonSandbox;
@@ -46,6 +47,7 @@ const setupNlb = (identifier: string, vpc: ec2.Vpc, nlb: elbv2.NetworkLoadBalanc
   const targetGroup = listener.addTargets(`MllpTargets${identifier}`, {
     port: MLLP_DEFAULT_PORT,
     protocol: elbv2.Protocol.TCP,
+    preserveClientIp: true,
     healthCheck: {
       port: MLLP_DEFAULT_PORT.toString(),
       protocol: elbv2.Protocol.TCP,
@@ -59,15 +61,14 @@ const setupNlb = (identifier: string, vpc: ec2.Vpc, nlb: elbv2.NetworkLoadBalanc
   return targetGroup;
 };
 
-const createHieTimezoneMap = (hieConfigs: Record<string, HieConfig>) => {
+const createHieTimezoneMap = (hieConfigs: Record<string, HieConfig>): HieTimezoneDictionary => {
   return Object.values(hieConfigs).reduce((acc, item) => {
-    const key = item.identifierInMshSegment;
-    const val = item.timezone;
-    if (key && val) {
-      acc[key] = val;
-    }
+    acc[item.name] = {
+      cidrBlock: item.internalCidrBlock,
+      timezone: item.timezone,
+    };
     return acc;
-  }, {} as Record<string, string>);
+  }, {} as HieTimezoneDictionary);
 };
 
 export class MllpStack extends cdk.NestedStack {

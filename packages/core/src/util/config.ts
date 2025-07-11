@@ -107,7 +107,7 @@ export class Config {
   static getHl7NotificationQueueUrl(): string {
     return getEnvVarOrFail("HL7_NOTIFICATION_QUEUE_URL");
   }
-  static getHieTimezoneDictionary(): Record<string, string> {
+  static getHieTimezoneDictionary(): Record<string, unknown> {
     return getEnvVarAsRecordOrFail("HIE_TIMEZONE_DICTIONARY");
   }
 
