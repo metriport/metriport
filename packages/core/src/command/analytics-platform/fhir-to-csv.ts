@@ -18,11 +18,11 @@ export async function startFhirToCsvBatchJob({ cxId, jobId }: { cxId: string; jo
     jobQueueArn: fhirToCsvBatchJobQueueArn,
     jobDefinitionArn: fhirToCsvBatchJobDefinitionArn,
     parameters: {
-      CX_ID: cxId,
-      JOB_ID: jobId,
-      SNOWFLAKE_ACCOUNT: snowflakeCreds.account,
-      SNOWFLAKE_USER: snowflakeCreds.user,
-      SNOWFLAKE_PASSWORD: snowflakeCreds.password,
+      cxId: cxId,
+      jobId: jobId,
+      snowflakeAccount: snowflakeCreds.account,
+      snowflakeUser: snowflakeCreds.user,
+      snowflakePassword: snowflakeCreds.password,
     },
   });
 

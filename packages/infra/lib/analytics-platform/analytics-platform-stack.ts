@@ -188,6 +188,18 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
         SNOWFLAKE_WAREHOUSE: ownProps.config.analyticsPlatform.snowflake.warehouse,
         SNOWFLAKE_INTEGRATION: ownProps.config.analyticsPlatform.snowflake.integrationName,
       },
+      command: [
+        "python",
+        "main.py",
+        "-e",
+        "CX_ID=Ref::cxId",
+        "-e",
+        "SNOWFLAKE_ACCOUNT=Ref::snowflakeAccount",
+        "-e",
+        "SNOWFLAKE_USER=Ref::snowflakeUser",
+        "-e",
+        "SNOWFLAKE_PASSWORD=Ref::snowflakePassword",
+      ],
     });
 
     const job = new batch.EcsJobDefinition(this, "FhirToCsvBatchJob", {
@@ -243,6 +255,18 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
           name: "csv-to-metrics-volume",
           containerPath: "/usr/app/data",
         },
+      ],
+      command: [
+        "python",
+        "main.py",
+        "-e",
+        "CX_ID=Ref::cxId",
+        "-e",
+        "DBT_SNOWFLAKE_CI_ACCOUNT=Ref::snowflakeAccount",
+        "-e",
+        "DBT_SNOWFLAKE_CI_USER=Ref::snowflakeUser",
+        "-e",
+        "DBT_SNOWFLAKE_CI_PASSWORD=Ref::snowflakePassword",
       ],
     });
 

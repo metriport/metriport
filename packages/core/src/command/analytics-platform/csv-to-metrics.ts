@@ -18,11 +18,11 @@ export async function startCsvToMetricsBatchJob({ cxId, jobId }: { cxId: string;
     jobQueueArn: csvToMetricsBatchJobQueueArn,
     jobDefinitionArn: csvToMetricsBatchJobDefinitionArn,
     parameters: {
-      CX_ID: cxId,
-      JOB_ID: jobId,
-      DBT_SNOWFLAKE_CI_ACCOUNT: snowflakeCreds.account,
-      DBT_SNOWFLAKE_CI_USER: snowflakeCreds.user,
-      DBT_SNOWFLAKE_CI_PASSWORD: snowflakeCreds.password,
+      cxId: cxId,
+      jobId: jobId,
+      snowflakeAccount: snowflakeCreds.account,
+      snowflakeUser: snowflakeCreds.user,
+      snowflakePassword: snowflakeCreds.password,
     },
   });
 
