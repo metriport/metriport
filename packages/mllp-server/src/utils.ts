@@ -61,6 +61,8 @@ function reformUuid(shortId: string) {
   return unpackUuid(crypto.unscramble(shortId));
 }
 
+const ipv4MappedIpv6Prefix = "::ffff:";
+
 /**
  * Extract clean IP address from IPv4-mapped IPv6 address
  * Removes the ::ffff: prefix if present
@@ -71,9 +73,10 @@ export function getCleanIpAddress(address: string | undefined): string {
       context: "mllp-server.getCleanIpAddress",
     });
   }
-  // Remove IPv4-mapped IPv6 prefix if present
-  if (address.startsWith("::ffff:")) {
-    return address.substring(7);
+
+  // Trim to just the IPv4 address if possible
+  if (address.startsWith(ipv4MappedIpv6Prefix)) {
+    return address.substring(ipv4MappedIpv6Prefix.length);
   }
 
   return address;
@@ -87,7 +90,7 @@ export function lookupHieTzEntryForIp(hieTimezoneDictionary: HieTimezoneDictiona
   if (!hieRow) {
     throw new MetriportError(`Sender IP not found in any CIDR block`, {
       cause: undefined,
-      additionalInfo: { ip, hieTimezoneDictionary },
+      additionalInfo: { context: "mllp-server.lookupHieTzEntryForIp", ip, hieTimezoneDictionary },
     });
   }
   return hieRow;

@@ -182,7 +182,7 @@ export const config: EnvConfigNonSandbox = {
         name: "YOUR_HIE_NAME",
         cron: "cron(0 0 ? * SAT *)",
         states: [USState.TX],
-        timezone: "America/New_York",
+        timezone: "America/Chicago",
         gatewayPublicIp: "200.1.1.1",
         internalCidrBlock: "10.10.0.0/16",
         subscriptions: ["adt"],
