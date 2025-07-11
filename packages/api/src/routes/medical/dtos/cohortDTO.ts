@@ -1,4 +1,5 @@
 import { Cohort } from "@metriport/core/domain/cohort";
+import { CohortWithCount } from "../../../command/medical/cohort/get-cohort";
 import { toBaseDTO } from "./baseDTO";
 
 export type CohortDTO = {
@@ -27,5 +28,12 @@ export function dtoFromCohort(cohort: Cohort): CohortDTO {
     cxId: cohort.cxId,
     monitoring: cohort.monitoring,
     dateCreated: cohort.createdAt,
+  };
+}
+
+export function dtoWithCount(cohortWithCount: CohortWithCount): CohortWithCountDTO {
+  return {
+    cohort: dtoFromCohort(cohortWithCount.cohort),
+    patientCount: cohortWithCount.count,
   };
 }

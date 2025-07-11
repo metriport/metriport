@@ -4,22 +4,29 @@ import status from "http-status";
 import { createCohort } from "../../command/medical/cohort/create-cohort";
 import { deleteCohort } from "../../command/medical/cohort/delete-cohort";
 import {
-  CohortWithCount,
-  getCohorts,
+  getCohortsWithCount,
   getCohortWithCountOrFail,
 } from "../../command/medical/cohort/get-cohort";
 import { bulkAssignPatientsToCohort } from "../../command/medical/cohort/patient-cohort/bulk-assign";
 import { bulkRemovePatientsFromCohort } from "../../command/medical/cohort/patient-cohort/bulk-remove";
+import {
+  getPatientIdsAssignedToCohort,
+  getPatientIdsAssignedToCohortPaginated,
+} from "../../command/medical/cohort/patient-cohort/get-assigned-ids";
+import { getCountOfPatientsAssignedToCohort } from "../../command/medical/cohort/patient-cohort/get-count";
 import { updateCohort } from "../../command/medical/cohort/update-cohort";
+import { Pagination } from "../../command/pagination";
 import { getETag } from "../../shared/http";
 import { handleParams } from "../helpers/handle-params";
 import { requestLogger } from "../helpers/request-logger";
+import { isPaginated, paginated } from "../pagination";
 import { getUUIDFrom } from "../schemas/uuid";
 import { asyncHandler, getCxIdOrFail, getFromParamsOrFail } from "../util";
 import {
   CohortWithCountDTO,
   CohortWithPatientIdsAndCountDTO,
   dtoFromCohort,
+  dtoWithCount,
 } from "./dtos/cohortDTO";
 import { cohortCreateSchema, cohortUpdateSchema } from "./schemas/cohort";
 import { allOrSelectPatientIdsSchema } from "./schemas/shared";
@@ -115,18 +122,10 @@ router.get(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
-
-    const cohortsWithCounts = await getCohorts({ cxId });
-
-    const buildCohortWithCountDTO = (cohortWithCount: CohortWithCount): CohortWithCountDTO => {
-      return {
-        cohort: dtoFromCohort(cohortWithCount.cohort),
-        patientCount: cohortWithCount.count,
-      };
-    };
+    const cohortsWithCounts = await getCohortsWithCount({ cxId });
 
     return res.status(status.OK).json({
-      cohorts: cohortsWithCounts.map(buildCohortWithCountDTO),
+      cohorts: cohortsWithCounts.map(dtoWithCount),
     });
   })
 );
@@ -149,13 +148,54 @@ router.get(
 
     const cohortDetails = await getCohortWithCountOrFail({ id, cxId });
 
-    const cohortWithPatientIdsAndCountDTO: CohortWithPatientIdsAndCountDTO = {
+    const cohortWithCountDTO: CohortWithCountDTO = {
       cohort: dtoFromCohort(cohortDetails.cohort),
       patientCount: cohortDetails.count,
-      patientIds: cohortDetails.patientIds,
     };
 
-    return res.status(status.OK).json(cohortWithPatientIdsAndCountDTO);
+    return res.status(status.OK).json(cohortWithCountDTO);
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * GET /cohort/:id/patient
+ *
+ * Returns cohort details, count and IDs of the patients assigned to it.
+ *
+ * @param req.param.id The ID of the cohort to get.
+ * @param req.query.fromItem The minimum item to be included in the response, inclusive.
+ * @param req.query.toItem The maximum item to be included in the response, inclusive.
+ * @param req.query.count The number of items to be included in the response.
+ * @returns Cohort details, count and IDs of the patients assigned to it.
+ */
+router.get(
+  "/:id/patient",
+  handleParams,
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getCxIdOrFail(req);
+    const id = getFromParamsOrFail("id", req);
+
+    // TODO 483 remove this (and respected conditional) once pagination is fully rolled out
+    if (!isPaginated(req)) {
+      const patientIds = await getPatientIdsAssignedToCohort({ cohortId: id, cxId });
+      return res.status(status.OK).json({ patientIds });
+    }
+
+    const { meta, items } = await paginated({
+      request: req,
+      additionalQueryParams: {},
+      getItems: (pagination: Pagination) =>
+        getPatientIdsAssignedToCohortPaginated({ cohortId: id, cxId, pagination }),
+      getTotalCount: () => getCountOfPatientsAssignedToCohort({ cohortId: id, cxId }),
+    });
+
+    const patientIds = items.map(item => item.id);
+
+    return res.status(status.OK).json({
+      meta,
+      patientIds,
+    });
   })
 );
 

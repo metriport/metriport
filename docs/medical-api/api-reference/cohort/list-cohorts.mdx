@@ -1,0 +1,56 @@
+---
+title: "List Cohorts"
+description: "Lists all of your Cohorts with patient counts."
+api: "GET /medical/v1/cohort"
+---
+
+## Response
+
+Array of all of the Cohorts created under your Organization with patient counts.
+
+<ResponseField name="cohorts" type="CohortWithCount[]">
+  <Expandable title="CohortWithCount properties">
+    <Snippet file="cohort-with-count-response.mdx" />
+  </Expandable>
+</ResponseField>
+
+<ResponseExample>
+
+```javascript Metriport SDK
+import { MetriportMedicalApi } from "@metriport/api-sdk";
+
+const metriport = new MetriportMedicalApi("YOUR_API_KEY");
+
+const cohorts = await metriport.listCohorts();
+```
+
+</ResponseExample>
+
+```json
+{
+  "cohorts": [
+    {
+      "cohort": {
+        "id": "550e8400-e29b-41d4-a716-446655440000",
+        "name": "High Risk Population",
+        "monitoring": {
+          "adt": true
+        },
+        "dateCreated": "2024-01-15T10:30:00Z"
+      },
+      "patientCount": 3
+    },
+    {
+      "cohort": {
+        "id": "550e8400-e29b-41d4-a716-446655440001",
+        "name": "Diabetes Patients",
+        "monitoring": {
+          "adt": false
+        },
+        "dateCreated": "2024-01-16T14:20:00Z"
+      },
+      "patientCount": 7
+    }
+  ]
+}
+```

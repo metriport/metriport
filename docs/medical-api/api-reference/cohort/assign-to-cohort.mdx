@@ -1,0 +1,58 @@
+---
+title: "Assign Patients to Cohort"
+description: "Bulk assign multiple patients to a Cohort in Metriport."
+api: "POST /medical/v1/cohort/{cohortId}/patient"
+---
+
+## Body
+
+<Snippet file="cohort-assignment.mdx" />
+
+## Response
+
+<Snippet file="cohort-with-patients-response.mdx" />
+
+<ResponseExample>
+
+```javascript Metriport SDK
+import { MetriportMedicalApi } from "@metriport/api-sdk";
+
+const metriport = new MetriportMedicalApi("YOUR_API_KEY");
+
+// Assign specific patients to a cohort
+const cohortDetails =
+  await metriport.assignPatientsToCohort("cohort-id-123", {
+    patientIds: [
+      "patient-id-1",
+      "patient-id-2",
+      "patient-id-3",
+    ],
+  });
+
+// Or assign all patients to a cohort
+const allPatientsCohort =
+  await metriport.assignPatientsToCohort("cohort-id-123", {
+    all: true,
+  });
+```
+
+</ResponseExample>
+
+```json
+{
+  "cohort": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "name": "High Risk Population",
+    "monitoring": {
+      "adt": true
+    },
+    "dateCreated": "2024-01-15T10:30:00Z"
+  },
+  "patientCount": 3,
+  "patientIds": [
+    "patient-id-1",
+    "patient-id-2",
+    "patient-id-3"
+  ]
+}
+```
