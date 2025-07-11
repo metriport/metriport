@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { BaseDomain, BaseDomainCreate } from "./base-domain";
+import { queryMetaSchema } from "@metriport/shared";
 
 export type Subscriptions = {
   adt?: boolean;
@@ -38,3 +39,14 @@ export const hl7v2SubscriptionRequestSchema = z.object({
     return { validSubscriptions: validSubs, invalidSubscriptions: invalidSubs };
   }),
 });
+
+export const hl7v2SubscribersQuerySchema = z
+  .object({
+    hie: z.string(),
+  })
+  .and(queryMetaSchema);
+
+export const hl7v2SubscriptionRequestNewSchema = z.object({
+  subscriptions: z.array(hl7v2SubscriptionSchema),
+});
+export type Hl7v2SubscriptionRequestNew = z.infer<typeof hl7v2SubscriptionRequestNewSchema>;

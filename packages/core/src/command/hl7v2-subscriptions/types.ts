@@ -58,8 +58,7 @@ export type HieConfig = {
 };
 
 export type Hl7v2SubscriberParams = {
-  states?: string | undefined;
-  subscriptions: Hl7v2Subscription[];
+  hie: string;
   count?: number | undefined;
 };
 
