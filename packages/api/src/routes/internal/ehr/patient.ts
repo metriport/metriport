@@ -159,40 +159,6 @@ router.post(
   })
 );
 
-// TODO: Remove this route after the write back bundles job is implemented
-/**
- * POST /internal/ehr/:ehrId/patient/:id/resource/diff/:jobId/contribute
- *
- * Contributes the resource diff bundle.
- *
- * @param req.query.ehrId - The EHR source.
- * @param req.query.cxId - The CX ID of the patient.
- * @param req.params.id - The patient id of the EHR patient.
- * @param req.query.resourceType - The resource type to refresh.
- * @param req.params.jobId - The job ID of the resource diff job.
- * @returns 200 OK
- */
-router.post(
-  "/:id/resource/diff/:jobId/contribute",
-  requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    const ehr = getFromQueryOrFail("ehrId", req);
-    if (!isEhrSource(ehr)) throw new BadRequestError("Invalid EHR", undefined, { ehr });
-    const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const patientId = getFrom("params").orFail("id", req);
-    const resourceType = getFromQueryOrFail("resourceType", req);
-    const jobId = getFrom("params").orFail("jobId", req);
-    await contributeResourceDiffBundle({
-      ehr,
-      cxId,
-      ehrPatientId: patientId,
-      resourceType,
-      jobId,
-    });
-    return res.sendStatus(httpStatus.OK);
-  })
-);
-
 /**
  * POST /internal/ehr/:ehrId/patient/:id/resource/contribute/:jobId/contribute
  *
