@@ -336,6 +336,18 @@ export class Config {
     return getEnvVarOrFail("DISCHARGE_NOTIFICATION_SLACK_URL");
   }
 
+  static getFhirToCsvBatchJobQueueArn(): string | undefined {
+    return getEnvVar("FHIR_TO_CSV_BATCH_JOB_QUEUE_ARN");
+  }
+  static getFhirToCsvBatchJobDefinitionArn(): string | undefined {
+    return getEnvVar("FHIR_TO_CSV_BATCH_JOB_DEFINITION_ARN");
+  }
+  static getCsvToMetricsBatchJobQueueArn(): string | undefined {
+    return getEnvVar("CSV_TO_METRICS_BATCH_JOB_QUEUE_ARN");
+  }
+  static getCsvToMetricsBatchJobDefinitionArn(): string | undefined {
+    return getEnvVar("CSV_TO_METRICS_BATCH_JOB_DEFINITION_ARN");
+  }
   static getSnowflakeCreds(): SnowflakeCreds {
     return snowflakeCredsSchema.parse(getEnvVarAsRecordOrFail("SNOWFLAKE_CREDS"));
   }

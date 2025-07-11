@@ -506,10 +506,17 @@ export class APIStack extends Stack {
     //-------------------------------------------
     // Analytics Platform
     //-------------------------------------------
+    let analyticsPlatformStack: AnalyticsPlatformsNestedStack | undefined = undefined;
     if (!isSandbox(props.config)) {
-      new AnalyticsPlatformsNestedStack(this, "AnalyticsPlatforms", {
-        config: props.config,
-      });
+      analyticsPlatformStack = new AnalyticsPlatformsNestedStack(
+        this,
+        "AnalyticsPlatformsNestedStack",
+        {
+          config: props.config,
+          vpc: this.vpc,
+          medicalDocumentsBucket,
+        }
+      );
     }
 
     //-------------------------------------------
@@ -661,6 +668,7 @@ export class APIStack extends Stack {
       cookieStore,
       surescriptsAssets: surescriptsStack?.getAssets(),
       jobAssets: jobsStack.getAssets(),
+      analyticsPlatformAssets: analyticsPlatformStack?.getAssets(),
     });
     const apiLoadBalancerAddress = apiLoadBalancer.loadBalancerDnsName;
 
@@ -761,6 +769,9 @@ export class APIStack extends Stack {
     medicalDocumentsBucket.grantReadWrite(documentDownloaderLambda);
     medicalDocumentsBucket.grantRead(fhirConverterLambda);
     medicalDocumentsBucket.grantRead(ehrComputeResourceDiffBundlesLambda);
+    if (analyticsPlatformStack) {
+      medicalDocumentsBucket.grantRead(analyticsPlatformStack.fhirToCsvContainer.executionRole);
+    }
 
     createDocQueryChecker({
       lambdaLayers,

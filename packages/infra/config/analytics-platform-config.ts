@@ -4,6 +4,9 @@ export interface AnalyticsPlatformConfig {
     SNOWFLAKE_CREDS: string;
   };
   snowflake: {
+    warehouse: string;
+    role: string;
+    integrationName: string;
     integrationUserArn: string;
     integrationExternalId: string;
   };

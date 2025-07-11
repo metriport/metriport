@@ -1,0 +1,58 @@
+version: 2
+
+models:
+  - name: condition
+    columns:
+      - name: patient_id
+        tests:
+          - relationships:
+              to: ref('patient')
+              field: patient_id
+              config:
+                severity: warn
+  - name: encounter
+    columns:
+      - name: patient_id
+        tests:
+          - relationships:
+              to: ref('patient')
+              field: patient_id
+              config:
+                severity: warn
+  - name: lab_result
+    columns:
+      - name: patient_id
+        tests:
+          - relationships:
+              to: ref('patient')
+              field: patient_id
+              config:
+                severity: warn
+  - name: location
+  - name: medication
+    columns:
+      - name: patient_id
+        tests:
+          - relationships:
+              to: ref('patient')
+              field: patient_id
+              config:
+                severity: warn
+  - name: observation
+    columns:
+      - name: patient_id
+        tests:
+          - relationships:
+              to: ref('patient')
+              field: patient_id
+              config:
+                severity: warn
+  - name: procedure
+    columns:
+      - name: patient_id
+        tests:
+          - relationships:
+              to: ref('patient')
+              field: patient_id
+              config:
+                severity: warn

@@ -57,6 +57,21 @@ jobs:
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
+  analytics-platform:
+    if: contains(github.event.inputs.jobs_to_run, 'analytics-platform') || contains(github.event.inputs.jobs_to_run, 'all')
+    uses: ./.github/workflows/_deploy-analytics-platform.yml
+    with:
+      deploy_env: "staging"
+      ECR_REPO_URI: ${{ vars.ECR_REPO_URI_ANALYTICS_PLATFORM_STAGING }}
+      AWS_REGION: ${{ vars.API_REGION_STAGING }}
+    secrets:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+
   infra-hl7-notification:
     if: contains(github.event.inputs.jobs_to_run, 'infra-hl7-notification') || contains(github.event.inputs.jobs_to_run, 'all')
     uses: ./.github/workflows/_deploy-hl7-notification-cdk.yml
