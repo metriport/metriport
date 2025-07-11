@@ -1134,17 +1134,23 @@ class AthenaHealthApi {
     }
     const allCreatedVitals: CreatedVitalsSuccess[] = [];
     const createVitalsErrors: { error: unknown; vitals: string }[] = [];
-    const createVitalsArgs: VitalsCreateParams[] = vitals.sortedPoints.map(v => {
+    const createVitalsArgs: VitalsCreateParams[] = vitals.sortedPoints.flatMap(v => {
       const vitalsData = this.createVitalsData(v, clinicalElementId, units);
-      return {
-        departmentid: this.stripDepartmentId(departmentId),
-        returnvitalids: true,
-        source: "DEVICEGENERATED",
-        vitals: [vitalsData],
-        THIRDPARTYUSERNAME: undefined,
-        PATIENTFACINGCALL: undefined,
-      };
+      if (vitalsData.length < 1) return [];
+      return [
+        {
+          departmentid: this.stripDepartmentId(departmentId),
+          returnvitalids: true,
+          source: "DEVICEGENERATED",
+          vitals: [vitalsData],
+          THIRDPARTYUSERNAME: undefined,
+          PATIENTFACINGCALL: undefined,
+        },
+      ];
     });
+    if (createVitalsArgs.length < 1) {
+      throw new BadRequestError("No valid vitals data found", undefined, additionalInfo);
+    }
     await executeAsynchronously(
       createVitalsArgs,
       async (params: VitalsCreateParams) => {
