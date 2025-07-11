@@ -10,7 +10,7 @@ export const hieIANATimezoneSchema = z.enum([
 
 export type HieIANATimezone = z.infer<typeof hieIANATimezoneSchema>;
 
-export const hieTimezoneDictionarySchema = z.record(
+export const hieConfigDictionarySchema = z.record(
   z.string(),
   z.object({
     cidrBlock: z.string(), // e.g. "10.0.0.0/16"
@@ -18,8 +18,8 @@ export const hieTimezoneDictionarySchema = z.record(
   })
 );
 
-export type HieTimezoneDictionary = z.infer<typeof hieTimezoneDictionarySchema>;
+export type HieConfigDictionary = z.infer<typeof hieConfigDictionarySchema>;
 
-export function getHieTimezoneDictionary(): HieTimezoneDictionary {
-  return hieTimezoneDictionarySchema.parse(Config.getHieTimezoneDictionary());
+export function getHieConfigDictionary(): HieConfigDictionary {
+  return hieConfigDictionarySchema.parse(Config.getHieConfigDictionary());
 }

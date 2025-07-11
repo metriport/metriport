@@ -10,9 +10,9 @@ import { Logger } from "@metriport/core/util/log";
 import { unpackUuid } from "@metriport/core/util/pack-uuid";
 import IPCIDR from "ip-cidr";
 
-import * as Sentry from "@sentry/node";
-import { HieTimezoneDictionary } from "@metriport/core/external/hl7-notification/hie-timezone";
+import { HieConfigDictionary } from "@metriport/core/external/hl7-notification/hie-config-dictionary";
 import { MetriportError } from "@metriport/shared";
+import * as Sentry from "@sentry/node";
 
 const crypto = new Base64Scrambler(Config.getHl7Base64ScramblerSeed());
 export const s3Utils = new S3Utils(Config.getAWSRegion());
@@ -82,15 +82,15 @@ export function getCleanIpAddress(address: string | undefined): string {
   return address;
 }
 
-export function lookupHieTzEntryForIp(hieTimezoneDictionary: HieTimezoneDictionary, ip: string) {
-  const cidrToTimezoneRows = Object.entries(hieTimezoneDictionary).map(
+export function lookupHieTzEntryForIp(hieConfigDictionary: HieConfigDictionary, ip: string) {
+  const cidrToTimezoneRows = Object.entries(hieConfigDictionary).map(
     ([hieName, { cidrBlock, timezone }]) => ({ hieName, cidrBlock, timezone })
   );
   const hieRow = cidrToTimezoneRows.find(({ cidrBlock }) => isIpInRange(cidrBlock, ip));
   if (!hieRow) {
     throw new MetriportError(`Sender IP not found in any CIDR block`, {
       cause: undefined,
-      additionalInfo: { context: "mllp-server.lookupHieTzEntryForIp", ip, hieTimezoneDictionary },
+      additionalInfo: { context: "mllp-server.lookupHieTzEntryForIp", ip, hieConfigDictionary },
     });
   }
   return hieRow;
