@@ -51,7 +51,6 @@ export class MedicationAgent extends AnthropicAgent<"claude-sonnet-3.7"> {
     }
 
     // TODO: agentic conversation loop to determine accuracy of all medications
-
     return medications;
   }
 }
