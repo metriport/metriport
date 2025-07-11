@@ -22,13 +22,15 @@ export async function startWriteBackBundlesJob({
   cxId,
   practiceId,
   ehrPatientId,
+  resourceType,
   createResourceDiffBundlesJobId,
   requestId,
 }: StartBundlesJobParams & {
+  resourceType: string;
   createResourceDiffBundlesJobId: string;
 }): Promise<string> {
   const jobGroupId = ehrPatientId;
-  const jobType = getWriteBackBundlesJobType(ehr);
+  const jobType = getWriteBackBundlesJobType(ehr, resourceType);
   const runUrl = getWriteBackBundlesRunUrl(ehr);
   const metriportPatientId = await validatePatientAndLatestJobStatus({
     ehr,

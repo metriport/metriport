@@ -22,13 +22,15 @@ export async function startContributeBundlesJob({
   cxId,
   practiceId,
   ehrPatientId,
+  resourceType,
   createResourceDiffBundlesJobId,
   requestId,
 }: StartBundlesJobParams & {
+  resourceType: string;
   createResourceDiffBundlesJobId: string;
 }): Promise<string> {
   const jobGroupId = ehrPatientId;
-  const jobType = getContributeBundlesJobType(ehr);
+  const jobType = getContributeBundlesJobType(ehr, resourceType);
   const runUrl = getContributeBundlesRunUrl(ehr);
   const metriportPatientId = await validatePatientAndLatestJobStatus({
     ehr,
@@ -49,6 +51,7 @@ export async function startContributeBundlesJob({
     paramsOps: {
       practiceId,
       ehrPatientId,
+      resourceType,
       createResourceDiffBundlesJobId,
     },
   });

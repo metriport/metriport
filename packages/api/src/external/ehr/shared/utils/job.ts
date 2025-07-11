@@ -34,12 +34,12 @@ export function getCreateResourceDiffBundlesJobType(ehr: EhrSource) {
   return `${ehr}-create-resource-diff-bundles`;
 }
 
-export function getContributeBundlesJobType(ehr: EhrSource) {
-  return `${ehr}-contribute-bundles`;
+export function getContributeBundlesJobType(ehr: EhrSource, resourceType: string) {
+  return `${ehr}-contribute-bundles-${resourceType}`;
 }
 
-export function getWriteBackBundlesJobType(ehr: EhrSource) {
-  return `${ehr}-write-back-bundles`;
+export function getWriteBackBundlesJobType(ehr: EhrSource, resourceType: string) {
+  return `${ehr}-write-back-bundles-${resourceType}`;
 }
 
 export function getRunJobUrl(ehr: EhrSource, jobType: string) {

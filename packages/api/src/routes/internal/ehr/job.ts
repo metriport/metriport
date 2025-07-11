@@ -59,6 +59,7 @@ router.post(
 const paramsOpsSchemaContributeOrWriteBackBundles = z.object({
   practiceId: z.string(),
   ehrPatientId: z.string(),
+  resourceType: z.string(),
   createResourceDiffBundlesJobId: z.string(),
 });
 
@@ -83,7 +84,7 @@ router.post(
     }
     const { cxId, jobId } = jobRunBodySchema.parse(req.body);
     const job = await initializePatientJob({ cxId, jobId });
-    const { practiceId, ehrPatientId, createResourceDiffBundlesJobId } =
+    const { practiceId, ehrPatientId, resourceType, createResourceDiffBundlesJobId } =
       paramsOpsSchemaContributeOrWriteBackBundles.parse(job.paramsOps);
     await runContributeBundlesJob({
       jobId,
@@ -92,6 +93,7 @@ router.post(
       practiceId,
       metriportPatientId: job.patientId,
       ehrPatientId,
+      resourceType,
       createResourceDiffBundlesJobId,
     });
     return res.sendStatus(httpStatus.OK);
@@ -119,7 +121,7 @@ router.post(
     }
     const { cxId, jobId } = jobRunBodySchema.parse(req.body);
     const job = await initializePatientJob({ cxId, jobId });
-    const { practiceId, ehrPatientId, createResourceDiffBundlesJobId } =
+    const { practiceId, ehrPatientId, resourceType, createResourceDiffBundlesJobId } =
       paramsOpsSchemaContributeOrWriteBackBundles.parse(job.paramsOps);
     await runWriteBackBundlesJob({
       jobId,
@@ -128,6 +130,7 @@ router.post(
       practiceId,
       metriportPatientId: job.patientId,
       ehrPatientId,
+      resourceType,
       createResourceDiffBundlesJobId,
     });
     return res.sendStatus(httpStatus.OK);

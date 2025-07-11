@@ -142,6 +142,7 @@ router.post(
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const patientId = getFrom("params").orFail("id", req);
     const practiceId = getFromQueryOrFail("practiceId", req);
+    const resourceType = getFromQueryOrFail("resourceType", req);
     const createResourceDiffBundlesJobId = getFromQueryOrFail(
       "createResourceDiffBundlesJobId",
       req
@@ -151,6 +152,7 @@ router.post(
       cxId,
       ehrPatientId: patientId,
       practiceId,
+      resourceType,
       createResourceDiffBundlesJobId,
     });
     return res.status(httpStatus.OK).json(jobId);
@@ -245,6 +247,7 @@ router.post(
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const patientId = getFrom("params").orFail("id", req);
     const practiceId = getFromQueryOrFail("practiceId", req);
+    const resourceType = getFromQueryOrFail("resourceType", req);
     const createResourceDiffBundlesJobId = getFromQueryOrFail(
       "createResourceDiffBundlesJobId",
       req
@@ -254,6 +257,7 @@ router.post(
       cxId,
       ehrPatientId: patientId,
       practiceId,
+      resourceType,
       createResourceDiffBundlesJobId,
     });
     return res.status(httpStatus.OK).json(jobId);
