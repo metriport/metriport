@@ -29,7 +29,6 @@ config_folder = os.getenv("CONFIG_FOLDER")
 def transform_and_upload_data(input_bucket: str, output_bucket: str, cx_id: str, config_folder: str):
     response = s3_client.list_objects_v2(Bucket=input_bucket, Prefix=cx_id)
     output_file_path = create_output_path(cx_id, env)
-    output_format = None
 
     objects = response.get("Contents", [])
     if len(objects) < 1:
@@ -51,16 +50,11 @@ def transform_and_upload_data(input_bucket: str, output_bucket: str, cx_id: str,
         local_bundle_file_key_ndjson = local_bundle_file_key.replace(".json", ".ndjson")
         with open(local_bundle_file_key_ndjson, "w") as f:
             ndjson.dump(entries, f)
-        output_format = parseNdjsonBundle.parse(local_bundle_file_key_ndjson, output_file_path, config_folder)
+        parseNdjsonBundle.parseAndAppendToFile(local_bundle_file_key_ndjson, output_file_path, config_folder)
 
     output_files = os.listdir(output_file_path)
     if len(output_files) < 1:
         msg = "No output files found"
-        logging.error(msg)
-        raise ValueError(msg)
-
-    if output_format is None:
-        msg = "No output format found"
         logging.error(msg)
         raise ValueError(msg)
 
@@ -72,7 +66,7 @@ def transform_and_upload_data(input_bucket: str, output_bucket: str, cx_id: str,
         pass
 
     for output_file_name in output_files:
-        table_name = parse_parser_file_name(output_file_name, output_format)
+        table_name = parse_parser_file_name(output_file_name, parseNdjsonBundle.output_format)
         with open(f"{output_file_path}/{output_file_name}", "rb") as f:
             s3_client.upload_fileobj(f, output_bucket, f"{create_upload_path_with_table_name(dwh, cx_id, table_name)}/{output_file_name}")
 

@@ -232,7 +232,7 @@ def parse_one_resource(anchor,paths,jsndict,leng,csvwriter,data,filename,outputF
             return 1
 
 
-def parse(configPath,inputPath=None,outputPath=None,missingPath=None,outputFormat=None,inputFormat=None,writeMode=None):
+def parseAndSave(configPath,inputPath=None,outputPath=None,missingPath=None,outputFormat=None,inputFormat=None,writeMode=None):
     f = open(configPath, "r")
     logging.info('Started parsing "%s"', configPath)
 

@@ -17,7 +17,7 @@ def get_resource_type_from_config(config_file):
 def ensure_folder_exists(folder_path):
     os.makedirs(folder_path, exist_ok=True)
 
-def parse(input_file: str, output_file_path: str, config_folder: str):   
+def parseAndAppendToFile(input_file: str, output_file_path: str, config_folder: str):   
     ensure_folder_exists(output_file_path)
     config_groups = {}
     for config_file in os.listdir(config_folder):
@@ -42,15 +42,13 @@ def parse(input_file: str, output_file_path: str, config_folder: str):
         for config_file in config_files:
             table_name = format_table_name(config_file)
             output_file_name = create_parser_file_name(table_name, output_format)
-            parseFhir.parse(
+            parseFhir.parseAndSave(
                 configPath=os.path.join(config_folder, config_file),
                 inputPath=temp_filtered_input_file,
                 inputFormat='ndjson',
                 outputPath=f'{output_file_path}/{output_file_name}',
                 outputFormat=output_format,
-                writeMode='w'
+                writeMode='append'
             )
         
         os.remove(temp_filtered_input_file)
-
-    return output_format
