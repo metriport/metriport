@@ -12,7 +12,7 @@ import IPCIDR from "ip-cidr";
 
 import * as Sentry from "@sentry/node";
 import { HieTimezoneDictionary } from "@metriport/core/external/hl7-notification/hie-timezone";
-import { MetriportError } from "@metriport/shared/dist/error/metriport-error";
+import { MetriportError } from "@metriport/shared";
 
 const crypto = new Base64Scrambler(Config.getHl7Base64ScramblerSeed());
 export const s3Utils = new S3Utils(Config.getAWSRegion());
