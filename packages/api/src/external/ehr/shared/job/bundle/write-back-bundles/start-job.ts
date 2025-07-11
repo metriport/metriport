@@ -51,6 +51,7 @@ export async function startWriteBackBundlesJob({
     paramsOps: {
       practiceId,
       ehrPatientId,
+      resourceType,
       createResourceDiffBundlesJobId,
     },
   });
