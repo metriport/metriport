@@ -1,55 +1,39 @@
-import {
-  PatientSettings,
-  PatientSettingsCreate,
-  PatientSettingsData,
-} from "@metriport/core/domain/patient-settings";
-import { capture } from "@metriport/core/util";
+import { PatientSettings, PatientSettingsCreate } from "@metriport/core/domain/patient-settings";
 import { out } from "@metriport/core/util/log";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import { BadRequestError, errorToString } from "@metriport/shared";
-import { chunk } from "lodash";
-import { Op } from "sequelize";
-import { PatientModel } from "../../../../models/medical/patient";
+import { BadRequestError } from "@metriport/shared";
 import { PatientSettingsModel } from "../../../../models/patient-settings";
 import { getPatientOrFail } from "../get-patient";
 import { getPatientIds } from "../get-patient-read-only";
+import { processPatientsInBatches } from "./batch-utils";
+import {
+  CustomerProcessingResult,
+  PatientListProcessingResult,
+  PatientSettingsUpsertForCxProps,
+  PatientSettingsUpsertProps,
+  upsertPatientSettings,
+  verifyPatients,
+} from "./common";
 
-type PatientSettingsUpsertResults = {
-  patientsNotFound?: string[];
-  patientsFoundAndUpdated: number;
-  failedCount?: number;
-  failedIds?: string[];
-};
+// Re-export types for backward compatibility
+export type {
+  CustomerProcessingResult,
+  PatientListProcessingResult,
+  PatientSettingsUpsertForCxProps,
+  PatientSettingsUpsertProps,
+} from "./common";
 
-type PatientSettingsUpsertForCxProps = {
-  cxId: string;
-  facilityId?: string;
-  settings: PatientSettingsData;
-};
-
-type PatientSettingsUpsertProps = PatientSettingsUpsertForCxProps & {
-  patientIds: string[];
-};
-
-type BatchProcessingResult = {
-  processedCount: number;
-  failedCount: number;
-  failedIds?: string[];
-};
-
-const BATCH_SIZE = 500;
-
-/**
- * Maximum number of retries for a batch operation
- */
-const MAX_BATCH_RETRIES = 3;
+export {
+  addHieSubscriptionToPatients,
+  removeHieSubscriptionFromPatients,
+} from "./hie-subscriptions";
 
 /**
  * Creates a new patient settings record.
  *
  * @param patientId The patient ID
  * @param cxId The customer ID
- * @param settings Patient settings object, which includes subscriptions
+ * @param subscriptions Patient settings subscriptions
  * @returns The created patient settings record
  */
 export async function createPatientSettings({
@@ -84,7 +68,7 @@ export async function upsertPatientSettingsForPatientList({
   facilityId,
   patientIds,
   settings,
-}: PatientSettingsUpsertProps): Promise<PatientSettingsUpsertResults> {
+}: PatientSettingsUpsertProps): Promise<PatientListProcessingResult> {
   const { log } = out(`upsertPatientSettingsForPatientList - cx ${cxId}`);
 
   const { validPatientIds, invalidPatientIds: patientsNotFound } = await verifyPatients({
@@ -97,56 +81,15 @@ export async function upsertPatientSettingsForPatientList({
     throw new BadRequestError(`No valid patients found`);
   }
 
-  const patientsFoundAndUpdated = await upsertPatientSettings({
-    cxId,
+  await upsertPatientSettings({
     patientIds: validPatientIds,
+    cxId,
     settings,
   });
 
+  const patientsFoundAndUpdated = validPatientIds.length;
   log(`Updated settings for ${patientsFoundAndUpdated} patients`);
-  return { patientsFoundAndUpdated, patientsNotFound };
-}
-
-/**
- * Processes a batch of patient settings upserts with retries
- */
-async function processBatch({
-  patientIds,
-  cxId,
-  settings,
-  log,
-}: {
-  patientIds: string[];
-  cxId: string;
-  settings: PatientSettingsData;
-  log: typeof console.log;
-}): Promise<BatchProcessingResult> {
-  for (let attempt = 1; attempt <= MAX_BATCH_RETRIES; attempt++) {
-    try {
-      const processedCount = await upsertPatientSettings({
-        patientIds,
-        cxId,
-        settings,
-      });
-      return { processedCount, failedCount: 0 };
-    } catch (error) {
-      const isLastAttempt = attempt >= MAX_BATCH_RETRIES;
-
-      if (!isLastAttempt) {
-        log(
-          `Batch operation failed, attempt ${attempt}/${MAX_BATCH_RETRIES}: ${errorToString(error)}`
-        );
-      } else {
-        log(`Batch operation failed, will not try again: ${errorToString(error)}`);
-      }
-    }
-  }
-
-  return {
-    processedCount: 0,
-    failedCount: patientIds.length,
-    failedIds: patientIds,
-  };
+  return { patientsFoundAndUpdated, patientsNotFound: patientsNotFound || [] };
 }
 
 /**
@@ -162,123 +105,22 @@ export async function upsertPatientSettingsForCx({
   cxId,
   facilityId,
   settings,
-}: PatientSettingsUpsertForCxProps): Promise<PatientSettingsUpsertResults> {
-  const { log } = out(`upsertPatientSettingsForCx - cx ${cxId}`);
-
+}: PatientSettingsUpsertForCxProps): Promise<CustomerProcessingResult> {
   const patientIds = await getPatientIds({ cxId, facilityId });
-  if (patientIds.length === 0) {
-    log(`No patients found for cx ${cxId}`);
-    return { patientsFoundAndUpdated: 0 };
-  }
 
-  let processedTotal = 0;
-  let failedTotal = 0;
-  const failedIds: string[] = [];
-
-  const batches = chunk(patientIds, BATCH_SIZE);
-  for (const batchIds of batches) {
-    const {
-      processedCount,
-      failedCount,
-      failedIds: failedBatchIds,
-    } = await processBatch({
-      patientIds: batchIds,
+  async function batchProcessor(batch: string[]): Promise<void> {
+    await upsertPatientSettings({
+      patientIds: batch,
       cxId,
       settings,
-      log,
     });
-
-    processedTotal += processedCount;
-    failedTotal += failedCount;
-    failedIds.push(...(failedBatchIds ?? []));
   }
 
-  log(
-    `Completed processing all patients. ` +
-      `Total: ${processedTotal} successful, ${failedTotal} failed`
-  );
-
-  if (failedTotal > 0) {
-    const msg = `Failed to upsert settings for patients`;
-    log(`${msg} - failed IDs: ${JSON.stringify(failedIds)}`);
-    capture.error(msg, {
-      extra: {
-        cxId,
-        facilityId,
-        failedIds,
-      },
-    });
-    return { patientsFoundAndUpdated: processedTotal, failedCount: failedTotal, failedIds };
-  }
-
-  return { patientsFoundAndUpdated: processedTotal };
-}
-
-async function verifyPatients({
-  patientIds,
-  facilityId,
-  cxId,
-}: {
-  patientIds: string[];
-  facilityId?: string;
-  cxId: string;
-}): Promise<{
-  validPatientIds: string[];
-  invalidPatientIds: string[];
-}> {
-  if (patientIds.length < 1) {
-    return {
-      validPatientIds: [],
-      invalidPatientIds: [],
-    };
-  }
-
-  const patients = await PatientModel.findAll({
-    where: {
-      id: patientIds,
-      cxId,
-      ...(facilityId && {
-        facilityIds: { [Op.contains]: [facilityId] },
-      }),
-    },
-    attributes: ["id"],
-  });
-  const foundPatientIds = new Set(patients.map(p => p.id));
-  const invalidPatientIds = patientIds.filter(id => !foundPatientIds.has(id));
-  return {
-    validPatientIds: Array.from(foundPatientIds),
-    invalidPatientIds,
-  };
-}
-
-async function upsertPatientSettings({
-  patientIds,
-  cxId,
-  settings,
-}: {
-  patientIds: string[];
-  cxId: string;
-  settings: PatientSettingsData;
-}): Promise<number> {
-  const existingSettings = await PatientSettingsModel.findAll({
-    where: { patientId: patientIds, cxId },
-  });
-  const existingSettingsMap = new Map(existingSettings.map(s => [s.patientId, s]));
-
-  const upserts = patientIds.map(patientId => ({
-    id: existingSettingsMap.get(patientId)?.id ?? uuidv7(),
+  return await processPatientsInBatches(patientIds, batchProcessor, {
     cxId,
-    patientId,
-    subscriptions: {
-      ...existingSettingsMap.get(patientId)?.subscriptions,
-      ...settings.subscriptions,
-    },
-  }));
-
-  await PatientSettingsModel.bulkCreate(upserts, {
-    returning: false,
-    updateOnDuplicate: ["subscriptions"],
+    facilityId,
+    operationName: "upsertPatientSettingsForCx",
+    errorMessage: "Failed to upsert settings for patients",
+    throwOnNoPatients: false,
   });
-
-  return upserts.length;
 }

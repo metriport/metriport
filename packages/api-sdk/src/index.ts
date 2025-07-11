@@ -79,4 +79,4 @@ export {
 } from "./medical/models/patient";
 export { PatientDTO } from "./medical/models/patientDTO";
 export { NetworkEntry } from "./medical/models/network-entry";
-export { patientSettingsSchema } from "@metriport/shared/src/domain/patient/patient-settings";
+export { patientSettingsSchema } from "@metriport/shared";
