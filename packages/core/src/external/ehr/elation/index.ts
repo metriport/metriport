@@ -470,7 +470,7 @@ class ElationApi {
     const lab = await this.makeRequest<CreatedLab | undefined>({
       cxId,
       patientId,
-      s3Path: this.createWriteBackPath("lab", diagnostricReport.id),
+      s3Path: this.createWriteBackPath("lab-panel", diagnostricReport.id),
       method: "POST",
       url: reportsUrl,
       data,
@@ -1019,23 +1019,9 @@ class ElationApi {
     }
     const results: ElationLab["grids"][0]["results"] = observations.flatMap(observation => {
       const loincCoding = getObservationLoincCoding(observation);
-      if (!loincCoding) {
-        throw new BadRequestError(
-          "No LOINC coding found for observation",
-          undefined,
-          additionalInfo
-        );
-      }
-      if (!loincCoding.code) {
-        throw new BadRequestError(
-          "No valid code found for LOINC coding",
-          undefined,
-          additionalInfo
-        );
-      }
-      if (!loincCoding.display) {
-        throw new BadRequestError("No display found for LOINC coding", undefined, additionalInfo);
-      }
+      if (!loincCoding) return [];
+      if (!loincCoding.code) return [];
+      if (!loincCoding.display) return [];
       const unitAndValue = getObservationUnitAndValue(observation);
       if (!unitAndValue) return [];
       const [unit, value] = unitAndValue;

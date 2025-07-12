@@ -132,6 +132,7 @@ export class EhrWriteBackResourceDiffBundlesDirect
           ]),
           resourceType,
           jobId,
+          mixedResourceTypes: true,
         });
       } catch (error) {
         out(
@@ -352,8 +353,9 @@ export function shouldWriteBackResource({
     ) as DiagnosticReport[];
     if (skipLabPaneDate(diagnosticReport, writeBackFilters)) return false;
     if (skipLabPanelLoinCode(diagnosticReport, writeBackFilters)) return false;
-    if (skipLabPanelNonTrending(diagnosticReport, diagnosticReports, writeBackFilters))
+    if (skipLabPanelNonTrending(diagnosticReport, diagnosticReports, writeBackFilters)) {
       return false;
+    }
     return true;
   } else if (writeBackResourceType === "vital") {
     if (writeBackFilters.vital?.disabled) return false;
