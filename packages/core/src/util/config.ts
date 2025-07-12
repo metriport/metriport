@@ -222,6 +222,9 @@ export class Config {
   static getEhrContributeDiffBundlesQueueUrl(): string {
     return getEnvVarOrFail("EHR_CONTRIBUTE_RESOURCE_DIFF_BUNDLES_QUEUE_URL");
   }
+  static getEhrWriteBackDiffBundlesQueueUrl(): string {
+    return getEnvVarOrFail("EHR_WRITE_BACK_RESOURCE_DIFF_BUNDLES_QUEUE_URL");
+  }
   static getEhrBundleBucketName(): string {
     return getEnvVarOrFail("EHR_BUNDLE_BUCKET_NAME");
   }

@@ -1,4 +1,4 @@
-import { Bundle, Condition, ResourceType } from "@medplum/fhirtypes";
+import { Bundle, Condition, DiagnosticReport, Observation, ResourceType } from "@medplum/fhirtypes";
 import {
   BadRequestError,
   EhrFhirResourceBundle,
@@ -17,14 +17,21 @@ import {
   bookedAppointmentSchema,
   CcdaDocument,
   ccdaDocumentSchema,
+  CreatedLab,
+  createdLabSchema,
   CreatedProblem,
   createdProblemSchema,
   CreatedSubscription,
   createdSubscriptionSchema,
+  CreatedVital,
+  createdVitalSchema,
   elationClientJwtTokenResponseSchema,
   Metadata,
   Patient,
   patientSchema,
+  Practice,
+  Practices,
+  practicesSchema,
   SubscriptionResource,
   Subscriptions,
   subscriptionsSchema,
@@ -37,6 +44,7 @@ import { out } from "../../../util/log";
 import { createOrReplaceCcda } from "../bundle/command/create-or-replace-ccda";
 import {
   ApiConfig,
+  buildObservationReferenceRange,
   convertEhrBundleToValidEhrStrictBundle,
   createDataParams,
   fetchEhrBundleUsingCache,
@@ -44,6 +52,16 @@ import {
   getConditionSnomedCode,
   getConditionStartDate,
   getConditionStatus,
+  getDiagnosticReportDate,
+  getDiagnosticReportResultStatus,
+  getObservationInterpretation,
+  getObservationLoincCode,
+  getObservationLoincCoding,
+  getObservationObservedDate,
+  getObservationResultStatus,
+  getObservationUnit,
+  getObservationUnitAndValue,
+  getObservationValue,
   makeRequest,
   MakeRequestParamsInEhr,
   paginateWaitTime,
@@ -56,6 +74,7 @@ interface ElationApiConfig extends ApiConfig {
 }
 
 const elationDateFormat = "YYYY-MM-DD";
+const elationDateTimeFormat = "YYYY-MM-DDTHH:mm:ssZ";
 const maxSubscribeAttempts = 3;
 const defaultCountOrLimit = 1000;
 
@@ -73,6 +92,18 @@ problemStatusesMap.set("remission", "Controlled");
 problemStatusesMap.set("resolved", "Resolved");
 problemStatusesMap.set("inactive", "Resolved");
 
+const vitalSignCodesMap = new Map<string, { codeKey: string; units: string }>();
+vitalSignCodesMap.set("8310-5", { codeKey: "temperature", units: "degf" });
+vitalSignCodesMap.set("8867-4", { codeKey: "hr", units: "bpm" });
+vitalSignCodesMap.set("9279-1", { codeKey: "rr", units: "bpm" });
+vitalSignCodesMap.set("2708-6", { codeKey: "oxygen", units: "%" });
+vitalSignCodesMap.set("59408-5", { codeKey: "oxygen", units: "%" });
+vitalSignCodesMap.set("8462-4", { codeKey: "bp", units: "mmHg" });
+vitalSignCodesMap.set("8480-6", { codeKey: "bp", units: "mmHg" });
+vitalSignCodesMap.set("29463-7", { codeKey: "weight", units: "lb_av" });
+vitalSignCodesMap.set("8302-2", { codeKey: "height", units: "in_i" });
+vitalSignCodesMap.set("56086-2", { codeKey: "wc", units: "cm" });
+
 const ccdaSectionMap = new Map<ResourceType, string>();
 ccdaSectionMap.set("AllergyIntolerance", "allergies");
 ccdaSectionMap.set("Condition", "problems");
@@ -83,6 +114,56 @@ ccdaSectionMap.set("MedicationRequest", "medications");
 ccdaSectionMap.set("MedicationStatement", "medications");
 ccdaSectionMap.set("Observation", "vitals");
 ccdaSectionMap.set("Procedure", "procedures");
+
+type ElationLab = {
+  report_type: string;
+  document_date: string;
+  reported_date: string;
+  chart_date: string;
+  grids: {
+    accession_number: string;
+    resulted_date: string;
+    collected_date: string;
+    status: string;
+    note: string;
+    results: {
+      status: string;
+      value: string;
+      text: string;
+      note: string;
+      reference_min: string | undefined;
+      reference_max: string | undefined;
+      units: string;
+      is_abnormal: string;
+      abnormal_flag: string;
+      test: {
+        name: string;
+        code: string;
+        loinc: string;
+      };
+      test_category: {
+        value: string;
+        description: string;
+      };
+    }[];
+  }[];
+};
+
+const validLabResultStatuses = [
+  "CORRECTED",
+  "DELETED",
+  "FINAL",
+  "PENDING",
+  "PRELIMINARY",
+  "RESULTS ENTERED -- NOT VERIFIED",
+  "PARTIAL",
+  "RESULTS STATUS CHANGE TO FINAL. RESULTS DID NOT CHANGE ( DONT TRANSMIT TEST).",
+  "RESULT CANCELED DUE TO NON-PERFORMANCE",
+  "ERROR",
+  "AMENDED",
+];
+
+const maxUnitsCharacters = 20;
 
 export function isSupportedCcdaSectionResource(resourceType: string): boolean {
   return ccdaSectionMap.has(resourceType as ResourceType);
@@ -121,6 +202,11 @@ export function isSupportedElationReferenceResource(
 ): resourceType is SupportedElationReferenceResource {
   return supportedElationReferenceResources.includes(resourceType as ResourceType);
 }
+
+const gToLbs = 0.00220462;
+const kgToLbs = 2.20462;
+const cmToInches = 0.393701;
+const inchesToCm = 2.54;
 
 class ElationApi {
   private axiosInstance: AxiosInstance;
@@ -210,6 +296,21 @@ class ElationApi {
     return patient;
   }
 
+  async getPractices(cxId: string): Promise<Practice[]> {
+    const { debug } = out(`Elation getPractices - cxId ${cxId} practiceId ${this.practiceId}`);
+    const practicesUrl = `/practices/`;
+    const practices = await this.makeRequest<Practices>({
+      cxId,
+      s3Path: "practices",
+      method: "GET",
+      url: practicesUrl,
+      schema: practicesSchema,
+      additionalInfo: { cxId, practiceId: this.practiceId },
+      debug,
+    });
+    return practices.results.filter(practice => practice.status === "active");
+  }
+
   async getCcdaDocument({
     cxId,
     patientId,
@@ -278,16 +379,23 @@ class ElationApi {
     cxId,
     patientId,
     condition,
+    isAutoWriteBack = false,
   }: {
     cxId: string;
     patientId: string;
     condition: Condition;
-  }): Promise<CreatedProblem> {
+    isAutoWriteBack?: boolean;
+  }): Promise<CreatedProblem | undefined> {
     const { debug } = out(
       `Elation createProblem - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
     );
     const problemUrl = `/problems/`;
-    const additionalInfo = { cxId, practiceId: this.practiceId, patientId };
+    const additionalInfo = {
+      cxId,
+      practiceId: this.practiceId,
+      patientId,
+      conditionId: condition.id,
+    };
     const snomedCode = getConditionSnomedCode(condition);
     if (!snomedCode) {
       throw new BadRequestError("No SNOMED code found for condition", undefined, additionalInfo);
@@ -310,19 +418,163 @@ class ElationApi {
       start_date: this.formatDate(startDate),
       description: condition.code?.text,
     };
-    const problem = await this.makeRequest<CreatedProblem>({
+    const problem = await this.makeRequest<CreatedProblem | undefined>({
       cxId,
       patientId,
-      s3Path: "problem",
+      s3Path: this.createWriteBackPath("problem", condition.id),
       method: "POST",
       url: problemUrl,
       data,
-      schema: createdProblemSchema,
+      schema: isAutoWriteBack ? z.undefined() : createdProblemSchema,
       additionalInfo,
       headers: { "Content-Type": "application/json" },
       debug,
+      earlyReturn: isAutoWriteBack,
     });
     return problem;
+  }
+
+  async createLabPanel({
+    cxId,
+    elationPracticeId,
+    elationPhysicianId,
+    patientId,
+    diagnostricReport,
+    observations,
+    isAutoWriteBack = false,
+  }: {
+    cxId: string;
+    elationPracticeId: string;
+    elationPhysicianId: string;
+    patientId: string;
+    diagnostricReport: DiagnosticReport;
+    observations: Observation[];
+    isAutoWriteBack?: boolean;
+  }): Promise<CreatedLab | undefined> {
+    const { debug } = out(
+      `Elation createLab - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
+    );
+    const reportsUrl = `/reports/`;
+    const additionalInfo = {
+      cxId,
+      practiceId: this.practiceId,
+      patientId,
+      diagnostricReportId: diagnostricReport.id,
+    };
+    const data = {
+      patient: patientId,
+      practice: elationPracticeId,
+      physician: elationPhysicianId,
+      ...this.formatLabPanel(diagnostricReport, observations, additionalInfo),
+    };
+    const lab = await this.makeRequest<CreatedLab | undefined>({
+      cxId,
+      patientId,
+      s3Path: this.createWriteBackPath("lab-panel", diagnostricReport.id),
+      method: "POST",
+      url: reportsUrl,
+      data,
+      schema: isAutoWriteBack ? z.undefined() : createdLabSchema,
+      additionalInfo,
+      headers: { "Content-Type": "application/json" },
+      debug,
+      earlyReturn: isAutoWriteBack,
+    });
+    return lab;
+  }
+
+  async createLab({
+    cxId,
+    elationPracticeId,
+    elationPhysicianId,
+    patientId,
+    observation,
+    isAutoWriteBack = false,
+  }: {
+    cxId: string;
+    elationPracticeId: string;
+    elationPhysicianId: string;
+    patientId: string;
+    observation: Observation;
+    isAutoWriteBack?: boolean;
+  }): Promise<CreatedLab | undefined> {
+    const { debug } = out(
+      `Elation createLab - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
+    );
+    const reportsUrl = `/reports/`;
+    const additionalInfo = {
+      cxId,
+      practiceId: this.practiceId,
+      patientId,
+      observationId: observation.id,
+    };
+    const data = {
+      patient: patientId,
+      practice: elationPracticeId,
+      physician: elationPhysicianId,
+      ...this.formatLab(observation, additionalInfo),
+    };
+    const lab = await this.makeRequest<CreatedLab | undefined>({
+      cxId,
+      patientId,
+      s3Path: this.createWriteBackPath("lab", observation.id),
+      method: "POST",
+      url: reportsUrl,
+      data,
+      schema: isAutoWriteBack ? z.undefined() : createdLabSchema,
+      additionalInfo,
+      headers: { "Content-Type": "application/json" },
+      debug,
+      earlyReturn: isAutoWriteBack,
+    });
+    return lab;
+  }
+
+  async createVital({
+    cxId,
+    elationPracticeId,
+    elationPhysicianId,
+    patientId,
+    observation,
+    isAutoWriteBack = false,
+  }: {
+    cxId: string;
+    elationPracticeId: string;
+    elationPhysicianId: string;
+    patientId: string;
+    observation: Observation;
+    isAutoWriteBack?: boolean;
+  }): Promise<CreatedVital | undefined> {
+    const { debug } = out(
+      `Elation createVital - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
+    );
+    const vitalsUrl = `/vitals/`;
+    const additionalInfo = {
+      cxId,
+      practiceId: this.practiceId,
+      patientId,
+      observationId: observation.id,
+    };
+    const data = {
+      patient: patientId,
+      practice: elationPracticeId,
+      physician: elationPhysicianId,
+      ...this.formatVital(observation, additionalInfo),
+    };
+    const vital = await this.makeRequest<CreatedVital | undefined>({
+      cxId,
+      patientId,
+      s3Path: this.createWriteBackPath("vital", observation.id),
+      method: "POST",
+      url: vitalsUrl,
+      data,
+      schema: isAutoWriteBack ? z.undefined() : createdVitalSchema,
+      additionalInfo,
+      headers: { "Content-Type": "application/json" },
+      debug,
+      earlyReturn: isAutoWriteBack,
+    });
+    return vital;
   }
 
   async getBundleByResourceType({
@@ -591,6 +843,7 @@ class ElationApi {
     additionalInfo,
     debug,
     emptyResponse = false,
+    earlyReturn = false,
   }: MakeRequestParamsInEhr<T>): Promise<T> {
     return await makeRequest<T>({
       ehr: EhrSources.elation,
@@ -607,11 +860,334 @@ class ElationApi {
       additionalInfo,
       debug,
       emptyResponse,
+      earlyReturn,
     });
   }
 
   private formatDate(date: string | undefined): string | undefined {
     return formatDate(date, elationDateFormat);
+  }
+
+  private formatDateTime(date: string | undefined): string | undefined {
+    return formatDate(date, elationDateTimeFormat);
+  }
+
+  private createWriteBackPath(resourceType: string, resourceId: string | undefined): string {
+    return `write-back/${resourceType}/${resourceId ?? "unknown"}`;
+  }
+
+  private formatLab(
+    observation: Observation,
+    additionalInfo: Record<string, string | undefined>
+  ): ElationLab {
+    const loincCoding = getObservationLoincCoding(observation);
+    if (!loincCoding) {
+      throw new BadRequestError("No LOINC coding found for observation", undefined, additionalInfo);
+    }
+    if (!loincCoding.code) {
+      throw new BadRequestError("No valid code found for LOINC coding", undefined, additionalInfo);
+    }
+    if (!loincCoding.display) {
+      throw new BadRequestError("No display found for LOINC coding", undefined, additionalInfo);
+    }
+    const unitAndValue = getObservationUnitAndValue(observation);
+    if (!unitAndValue) {
+      throw new BadRequestError(
+        "No unit and value found for observation",
+        undefined,
+        additionalInfo
+      );
+    }
+    const [unit, value] = unitAndValue;
+    const referenceRange = buildObservationReferenceRange(observation);
+    if (!referenceRange || (!referenceRange.low && !referenceRange.high)) {
+      throw new BadRequestError(
+        "No reference range found for observation",
+        undefined,
+        additionalInfo
+      );
+    }
+    const resultStatus = getObservationResultStatus(observation);
+    if (!resultStatus) {
+      throw new BadRequestError(
+        "No result status found for observation",
+        undefined,
+        additionalInfo
+      );
+    }
+    const formattedResultStatus = resultStatus.toUpperCase();
+    if (!validLabResultStatuses.includes(formattedResultStatus)) {
+      throw new BadRequestError("Invalid result status", undefined, {
+        ...additionalInfo,
+        resultStatus: formattedResultStatus,
+      });
+    }
+    const observedDate = getObservationObservedDate(observation);
+    const formattedObservedDate = this.formatDateTime(observedDate);
+    if (!formattedObservedDate) {
+      throw new BadRequestError(
+        "No observed date found for observation",
+        undefined,
+        additionalInfo
+      );
+    }
+    const interpretation = getObservationInterpretation(observation, value);
+    if (!interpretation) {
+      throw new BadRequestError(
+        "No interpretation found for observation",
+        undefined,
+        additionalInfo
+      );
+    }
+    const isAbnormal = interpretation === "abnormal";
+    const formattedChartDate = this.formatDateTime(buildDayjs().toISOString());
+    if (!formattedChartDate) {
+      throw new BadRequestError("No chart date found for observation", undefined, additionalInfo);
+    }
+    const text = observation.text?.div;
+    return {
+      report_type: "Lab",
+      document_date: formattedObservedDate,
+      reported_date: formattedObservedDate,
+      chart_date: formattedChartDate,
+      grids: [
+        {
+          accession_number: "",
+          resulted_date: formattedObservedDate,
+          collected_date: formattedObservedDate,
+          status: formattedResultStatus,
+          note: "Added via Metriport App",
+          results: [
+            {
+              status: formattedResultStatus,
+              value: value.toString(),
+              text: text ?? loincCoding.display,
+              note: "Added via Metriport App",
+              reference_min: referenceRange.low?.toString(),
+              reference_max: referenceRange.high?.toString(),
+              units: unit.slice(0, maxUnitsCharacters),
+              is_abnormal: isAbnormal ? "1" : "0",
+              abnormal_flag: this.mapInterpretationToAbnormalFlag(interpretation),
+              test: {
+                name: loincCoding.display,
+                code: loincCoding.code,
+                loinc: loincCoding.code,
+              },
+              test_category: {
+                value: loincCoding.display,
+                description: loincCoding.display,
+              },
+            },
+          ],
+        },
+      ],
+    };
+  }
+
+  private formatLabPanel(
+    diagnostricReport: DiagnosticReport,
+    observations: Observation[],
+    additionalInfo: Record<string, string | undefined>
+  ): ElationLab {
+    const resultStatus = getDiagnosticReportResultStatus(diagnostricReport);
+    if (!resultStatus) {
+      throw new BadRequestError(
+        "No result status found for diagnostic report",
+        undefined,
+        additionalInfo
+      );
+    }
+    const formattedResultStatus = resultStatus.toUpperCase();
+    if (!validLabResultStatuses.includes(formattedResultStatus)) {
+      throw new BadRequestError("Invalid result status", undefined, {
+        ...additionalInfo,
+        resultStatus: formattedResultStatus,
+      });
+    }
+    const reportDate = getDiagnosticReportDate(diagnostricReport);
+    const formattedReportDate = this.formatDateTime(reportDate);
+    if (!formattedReportDate) {
+      throw new BadRequestError(
+        "No report date found for diagnostic report",
+        undefined,
+        additionalInfo
+      );
+    }
+    const formattedChartDate = this.formatDateTime(buildDayjs().toISOString());
+    if (!formattedChartDate) {
+      throw new BadRequestError("No chart date found for observation", undefined, additionalInfo);
+    }
+    const results: ElationLab["grids"][0]["results"] = observations.flatMap(observation => {
+      const loincCoding = getObservationLoincCoding(observation);
+      if (!loincCoding) return [];
+      if (!loincCoding.code) return [];
+      if (!loincCoding.display) return [];
+      const unitAndValue = getObservationUnitAndValue(observation);
+      if (!unitAndValue) return [];
+      const [unit, value] = unitAndValue;
+      const referenceRange = buildObservationReferenceRange(observation);
+      if (!referenceRange || (!referenceRange.low && !referenceRange.high)) {
+        return [];
+      }
+      const resultStatus = getObservationResultStatus(observation);
+      if (!resultStatus) {
+        return [];
+      }
+      const formattedResultStatus = resultStatus.toUpperCase();
+      if (!validLabResultStatuses.includes(formattedResultStatus)) {
+        return [];
+      }
+      const observedDate = getObservationObservedDate(observation);
+      const formattedObservedDate = this.formatDateTime(observedDate);
+      if (!formattedObservedDate) {
+        return [];
+      }
+      const interpretation = getObservationInterpretation(observation, value);
+      if (!interpretation) {
+        return [];
+      }
+      const isAbnormal = interpretation === "abnormal";
+      const text = observation.text?.div;
+      return {
+        status: formattedResultStatus,
+        value: value.toString(),
+        text: text ?? loincCoding.display,
+        note: "Added via Metriport App",
+        reference_min: referenceRange.low?.toString(),
+        reference_max: referenceRange.high?.toString(),
+        units: unit.slice(0, maxUnitsCharacters),
+        is_abnormal: isAbnormal ? "1" : "0",
+        abnormal_flag: this.mapInterpretationToAbnormalFlag(interpretation),
+        test: {
+          name: loincCoding.display,
+          code: loincCoding.code,
+          loinc: loincCoding.code,
+        },
+        test_category: {
+          value: loincCoding.display,
+          description: loincCoding.display,
+        },
+      };
+    });
+    if (results.length < 1) {
+      throw new BadRequestError(
+        "No results found for diagnostic report",
+        undefined,
+        additionalInfo
+      );
+    }
+    return {
+      report_type: "Lab",
+      document_date: formattedReportDate,
+      reported_date: formattedReportDate,
+      chart_date: formattedChartDate,
+      grids: [
+        {
+          accession_number: "",
+          resulted_date: formattedReportDate,
+          collected_date: formattedReportDate,
+          status: formattedResultStatus,
+          note: "Added via Metriport App",
+          results,
+        },
+      ],
+    };
+  }
+
+  private formatVital(
+    observation: Observation,
+    additionalInfo: Record<string, string | undefined>
+  ): Record<string, { value: string }[]> {
+    const loincCode = getObservationLoincCode(observation);
+    if (!loincCode) {
+      throw new BadRequestError("No LOINC code found for observation", undefined, additionalInfo);
+    }
+    const codeAndUnits = vitalSignCodesMap.get(loincCode);
+    if (!codeAndUnits) {
+      throw new BadRequestError("No valid code found for LOINC coding", undefined, additionalInfo);
+    }
+    const units = getObservationUnit(observation);
+    if (!units) {
+      throw new BadRequestError("No units found for observation", undefined, additionalInfo);
+    }
+    const value = getObservationValue(observation);
+    if (!value) {
+      throw new BadRequestError("No value found for observation", undefined, additionalInfo);
+    }
+    const convertedValue = this.convertValue(loincCode, +value, units);
+    if (!convertedValue) {
+      throw new BadRequestError("No value converted for observation", undefined, additionalInfo);
+    }
+    return {
+      [codeAndUnits.codeKey]: [
+        {
+          value: convertedValue.toString(),
+        },
+      ],
+    };
+  }
+
+  private convertValue(
+    loincCode: string,
+    value: number,
+    units: string
+  ): number | string | undefined {
+    const { units: targetUnit } = vitalSignCodesMap.get(loincCode) ?? {};
+    if (!targetUnit) return undefined;
+    if (units === targetUnit) return value;
+    if (targetUnit === "lb_av") {
+      if (units === "kg" || units === "kilogram" || units === "kilograms")
+        return this.convertKgToLbs(value); // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
+      if (units === "g" || units === "gram" || units === "grams")
+        return this.convertGramsToLbs(value); // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
+      if (units === "lb_av" || units.includes("pound")) return value; // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
+    }
+    if (targetUnit === "in_i") {
+      if (units === "cm" || units === "centimeter") return this.convertCmToInches(value); // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
+      if (units === "in_i" || units.includes("inch")) return value; // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
+    }
+    if (targetUnit === "cm") {
+      if (units === "cm" || units === "centimeter") return value; // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
+      if (units === "in_i" || units.includes("inch")) return this.convertInchesToCm(value); // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
+    }
+    if (targetUnit === "degf") {
+      if (units === "degf" || units === "f" || units.includes("fahrenheit")) return value; // https://hl7.org/fhir/R4/valueset-ucum-bodytemp.html
+      if (units === "cel" || units === "c" || units.includes("celsius"))
+        return this.convertCelciusToFahrenheit(value); // https://hl7.org/fhir/R4/valueset-ucum-bodytemp.html}
+    }
+    throw new BadRequestError("Unknown units", undefined, {
+      units,
+      loincCode,
+      value,
+    });
+  }
+
+  private convertGramsToLbs(value: number): number {
+    return value * gToLbs;
+  }
+
+  private convertKgToLbs(value: number): number {
+    return value * kgToLbs;
+  }
+
+  private convertCmToInches(value: number): number {
+    return value * cmToInches;
+  }
+
+  private convertInchesToCm(value: number): number {
+    return value * inchesToCm;
+  }
+
+  private convertCelciusToFahrenheit(value: number): number {
+    return value * (9 / 5) + 32;
+  }
+
+  private mapInterpretationToAbnormalFlag(interpretation: string): string {
+    if (interpretation === "abnormal") return "Abnormal";
+    if (interpretation === "normal") return "Intermediate result";
+    if (interpretation === "low") return "Below low normal";
+    if (interpretation === "high") return "Above high normal";
+    return "Not Applicable";
   }
 }
 

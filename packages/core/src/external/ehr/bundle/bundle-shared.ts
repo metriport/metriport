@@ -100,6 +100,10 @@ export function createFileKeyResourceDiffDataContribution(
   return `${createBundlePrefix(params)}/ehr-data-contribution.json`;
 }
 
+export function createFileKeyResourceDiffWriteBack(params: CreateBundlePrefixParams): string {
+  return `${createBundlePrefix(params)}/ehr-write-back.json`;
+}
+
 export function getSupportedResourcesByEhr(ehr: EhrSource): string[] {
   if (ehr === EhrSources.canvas) return supportedCanvasResources;
   if (ehr === EhrSources.athena) return supportedAthenaHealthResources;
@@ -124,6 +128,7 @@ export enum BundleType {
   RESOURCE_DIFF_EHR_ONLY = "ResourceDiffEhrOnly",
   RESOURCE_DIFF_METRIPORT_ONLY = "ResourceDiffMetriportOnly",
   RESOURCE_DIFF_DATA_CONTRIBUTION = "ResourceDiffDataContribution",
+  RESOURCE_DIFF_WRITE_BACK = "ResourceDiffWriteBack",
 }
 export function isBundleType(bundleType: string): bundleType is BundleType {
   return Object.values(BundleType).includes(bundleType as BundleType);
@@ -137,7 +142,8 @@ export function isResourceDiffBundleType(bundleType: string): bundleType is Reso
   return (
     bundleType === BundleType.RESOURCE_DIFF_EHR_ONLY ||
     bundleType === BundleType.RESOURCE_DIFF_METRIPORT_ONLY ||
-    bundleType === BundleType.RESOURCE_DIFF_DATA_CONTRIBUTION
+    bundleType === BundleType.RESOURCE_DIFF_DATA_CONTRIBUTION ||
+    bundleType === BundleType.RESOURCE_DIFF_WRITE_BACK
   );
 }
 
@@ -148,6 +154,7 @@ export const createKeyMap: Record<BundleType, (params: CreateBundlePrefixParams)
   [BundleType.RESOURCE_DIFF_EHR_ONLY]: createFileKeyEhrOnly,
   [BundleType.RESOURCE_DIFF_METRIPORT_ONLY]: createFileKeyMetriportOnly,
   [BundleType.RESOURCE_DIFF_DATA_CONTRIBUTION]: createFileKeyResourceDiffDataContribution,
+  [BundleType.RESOURCE_DIFF_WRITE_BACK]: createFileKeyResourceDiffWriteBack,
 };
 
 export type BundleKeyBaseParams = {
