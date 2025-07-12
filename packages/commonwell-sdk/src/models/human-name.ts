@@ -1,5 +1,10 @@
-import { optionalStringPreprocess, zodToLowerCase } from "@metriport/shared/util/zod";
+import { zodToLowerCase } from "@metriport/shared/util/zod";
 import { z } from "zod";
+import {
+  emptyStringToUndefined,
+  emptyStringToUndefinedSchema,
+  literalStringToUndefined,
+} from "../common/zod";
 import { periodSchema } from "./period";
 
 /**
@@ -29,11 +34,18 @@ export const nameUseCodesSchema = z.preprocess(zodToLowerCase, z.nativeEnum(Name
 export const humanNameSchema = z.object({
   given: z.array(z.string()),
   family: z.array(z.string()),
-  prefix: optionalStringPreprocess(z.string().or(z.array(z.string().nullish())).nullish()),
-  suffix: optionalStringPreprocess(z.string().or(z.array(z.string().nullish())).nullish()),
-  use: optionalStringPreprocess(nameUseCodesSchema.nullish()),
+  prefix: z.preprocess(
+    emptyStringToUndefined,
+    z.string().or(z.array(z.string().nullish())).nullish()
+  ),
+  suffix: z.preprocess(
+    emptyStringToUndefined,
+    z.string().or(z.array(z.string().nullish())).nullish()
+  ),
+  use: emptyStringToUndefinedSchema.pipe(
+    z.preprocess(literalStringToUndefined, nameUseCodesSchema.nullish())
+  ),
   period: periodSchema.nullish(),
   text: z.string().nullish(),
 });
-
 export type HumanName = z.infer<typeof humanNameSchema>;

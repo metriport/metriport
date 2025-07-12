@@ -30,7 +30,6 @@
     "tsc": "tsc",
     "build": "tsc -p .",
     "build:cloud": "npm run build",
-    "install-local": "sudo npm i -g",
     "start": "ts-node src/index.ts",
     "typecheck": "tsc --noEmit",
     "lint": "npx eslint . --ext .ts",

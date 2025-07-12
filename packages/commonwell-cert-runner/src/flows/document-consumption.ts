@@ -1,6 +1,6 @@
 import { CommonWell, DocumentReference, DocumentStatus, Patient } from "@metriport/commonwell-sdk";
 import { encodeToCwPatientId } from "@metriport/commonwell-sdk/common/util";
-import { errorToString, sleep } from "@metriport/shared";
+import { errorToString } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import fs from "fs";
 import { uniq } from "lodash";
@@ -8,14 +8,13 @@ import { contentType, extension } from "mime-types";
 import { nanoid } from "nanoid";
 import { makePatient } from "../payloads";
 import { patientTracyCrane } from "../payloads/patient-tracy";
-import { getMetriportPatientIdOrFail, logError } from "../util";
+import { getMetriportPatientIdOrFail, logError, waitSeconds } from "../util";
 
-const outputBaseDir = "./downloads";
 const runTimestamp = buildDayjs().toISOString();
 
 /**
  * Flow to validate the document consumption API (item 10.1 and 10.2 in the spec).
- * @see https://www.commonwellalliance.org/wp-content/uploads/2025/06/Services-Specification-v4.3-Approved-2025.06.03-1.pdf
+ * @see https://www.commonwellalliance.org/specification/
  *
  * Checklist:
  * - You are able to query for external documents on a patient from the Test Patient list.
@@ -30,16 +29,16 @@ const runTimestamp = buildDayjs().toISOString();
 export async function documentConsumption(commonWell: CommonWell, downloadAll = false) {
   const patientIds: string[] = [];
   try {
-    console.log(`>>> 1 Document Consumer`);
+    console.log(`>>> CHA 2 Document Consumption --------------------------------`);
 
-    console.log(`>>> 1.0 Create Patient`);
+    console.log(`>>> 2.0 Create Patient`);
     const patientCreate: Patient = makePatient({
       facilityId: commonWell.oid,
       demographics: patientTracyCrane,
     });
     const resp_1_0 = await commonWell.createOrUpdatePatient(patientCreate);
     console.log(">>> Transaction ID: " + commonWell.lastTransactionId);
-    console.log(">>> 1.0 Response: " + JSON.stringify(resp_1_0, null, 2));
+    console.log(">>> 2.0 Response: " + JSON.stringify(resp_1_0, null, 2));
     const patientId = getMetriportPatientIdOrFail(resp_1_0.Patients[0], "createPatient");
     patientIds.push(patientId);
 
@@ -48,15 +47,14 @@ export async function documentConsumption(commonWell: CommonWell, downloadAll = 
       assignAuthority: commonWell.oid,
     });
 
-    console.log(`>>> Waiting for caches to be updated...`);
-    await sleep(5_000);
-    console.log(`>>> Done waiting`);
+    await waitSeconds(5);
 
     const documents = await queryDocuments(commonWell, encodedPatientId);
     console.log(`>>> Got ${documents.length} documents`);
     for (const doc of documents) {
       const docId = doc.masterIdentifier?.value;
       const isDownloadSuccessful = await retrieveDocument(commonWell, doc);
+      console.log(`>>> Transaction ID: ${commonWell.lastTransactionId}`);
       if (isDownloadSuccessful) {
         console.log(`>>> Download successful for document ${docId}`);
         if (downloadAll) continue;
@@ -114,7 +112,8 @@ export async function queryDocuments(
 
 export async function retrieveDocument(
   commonWell: CommonWell,
-  doc: DocumentReference
+  doc: DocumentReference,
+  outputBaseDir = "./downloads-consumption"
 ): Promise<boolean> {
   const id = doc.masterIdentifier?.value ?? doc.id;
   const docId = id ?? "ID-" + nanoid();

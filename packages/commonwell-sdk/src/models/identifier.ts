@@ -1,5 +1,5 @@
-import { optionalStringPreprocess } from "@metriport/shared/util/zod";
 import { z } from "zod";
+import { emptyStringToUndefinedSchema } from "../common/zod";
 import { periodSchema } from "./period";
 
 // See: https://hl7.org/fhir/R4/valueset-identifier-use.html
@@ -29,8 +29,8 @@ export const regularIdentifierTypeCodesSchema = z.enum([
   "SB", // Social Beneficiary Identifier
   "PLAC", // Placer Identifier
   "FILL", // Filler Identifier
-  "IAL2", // Identify proofing - see 11.1 on https://www.commonwellalliance.org/wp-content/uploads/2025/06/Services-Specification-v4.3-Approved-2025.06.03-1.pdf
-  "IAL3", // Identify proofing - see 11.1 on https://www.commonwellalliance.org/wp-content/uploads/2025/06/Services-Specification-v4.3-Approved-2025.06.03-1.pdf
+  "IAL2", // Identify proofing - see 11.1 on https://www.commonwellalliance.org/specification/
+  "IAL3", // Identify proofing - see 11.1 on https://www.commonwellalliance.org/specification/
 ]);
 const identifierTypeCodesSchema = z.enum([
   ...strongIdentifierTypeCodesSchema.options,
@@ -56,9 +56,9 @@ export const patientIdentifierSchema = z.object({
   value: z.string(),
   /** Assigning Authority ID for the unique Patient ID */
   system: z.string(),
-  use: optionalStringPreprocess(identifierUseCodesSchema.nullish()),
-  type: optionalStringPreprocess(identifierTypeCodesSchema.nullish()),
-  assigner: optionalStringPreprocess(z.string().nullish()),
+  use: emptyStringToUndefinedSchema.pipe(identifierUseCodesSchema.nullish()),
+  type: emptyStringToUndefinedSchema.pipe(identifierTypeCodesSchema.nullish()),
+  assigner: emptyStringToUndefinedSchema,
   period: periodSchema.nullish(),
 });
 export type PatientIdentifier = z.infer<typeof patientIdentifierSchema>;
@@ -68,8 +68,8 @@ export const identifierSchema = z.object({
   value: z.string(),
   /** Assigning Authority ID for the unique Patient ID */
   system: z.string().nullish(),
-  use: optionalStringPreprocess(z.string().nullish()),
-  type: optionalStringPreprocess(z.string().nullish()),
+  use: emptyStringToUndefinedSchema,
+  type: emptyStringToUndefinedSchema,
   assigner: referenceInIdentifierSchema.nullish(),
   period: periodSchema.nullish(),
 });

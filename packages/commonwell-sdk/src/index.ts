@@ -19,6 +19,5 @@ export * from "./models/demographics";
 export * from "./models/document";
 export * from "./models/human-name";
 export * from "./models/identifier";
-export * from "./models/link";
 export * from "./models/organization";
 export * from "./models/patient";
