@@ -140,7 +140,10 @@ export class EhrWriteBackResourceDiffBundlesDirect
           metriportPatientId,
           ehrPatientId,
           bundleType: BundleType.RESOURCE_DIFF_WRITE_BACK,
-          bundle: createBundleFromResourceList(resourcesToWriteBack),
+          bundle: createBundleFromResourceList([
+            ...resourcesToWriteBack,
+            ...Object.values(secondaryResourcesToWriteBackMap).flat(),
+          ]),
           resourceType,
           jobId,
         });
@@ -301,6 +304,9 @@ function getResourcesToWriteBack({
       writeBackFilters,
     });
     if (!shouldWriteBack) continue;
+    if (resource.resourceType === "DiagnosticReport") {
+      if (!resource.result || resource.result.length < 1) continue;
+    }
     resourcesToWriteBack.push(resource);
   }
   return resourcesToWriteBack;
