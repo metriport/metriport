@@ -1,4 +1,4 @@
-import { Condition, Observation, Resource } from "@medplum/fhirtypes";
+import { Condition, DiagnosticReport, Observation, Resource } from "@medplum/fhirtypes";
 import { WriteBackFiltersPerResourceType } from "@metriport/shared/interface/external/ehr/shared";
 import {
   shouldWriteBackResource,
@@ -6,6 +6,9 @@ import {
   skipLabDate,
   skipLabLoinCode,
   skipLabNonTrending,
+  skipLabPanelDate,
+  skipLabPanelLoinCode,
+  skipLabPanelNonTrending,
   skipVitalDate,
   skipVitalLoinCode,
 } from "../ehr-write-back-resource-diff-bundles-direct";
@@ -29,6 +32,20 @@ import {
   labMinCountPerCodeFilterMin1,
   labMinCountPerCodeFilterMin2,
   labMinCountPerCodeFilterUndefined,
+  labPanelDateFilterOn20240101,
+  labPanelDateFilterOn20250101,
+  labPanelDateFilterUndefined,
+  labPanelDateObservationOn20240101,
+  labPanelDateObservationPre20240101,
+  labPanelLoincCodeObservationCode1,
+  labPanelLoincCodeObservationCode2,
+  labPanelLoincCodeObservationCode2Duplicate,
+  labPanelLoincCodesFilterCode1,
+  labPanelLoincCodesFilterCode2,
+  labPanelLoincCodesFilterUndefined,
+  labPanelMinCountPerCodeFilterMin1,
+  labPanelMinCountPerCodeFilterMin2,
+  labPanelMinCountPerCodeFilterUndefined,
   nonChronicCondition,
   unknownChronicityCondition,
   vitalDateFilterPost20240101,
@@ -246,6 +263,169 @@ describe("write-back-resource-diff-bundles-direct", () => {
         if (!shouldSkip) filteredResources.push(resource as Observation);
       }
       compareResources(filteredResources, unfilteredResources as Observation[]);
+    });
+  });
+  describe("skipLabPanelDate", () => {
+    const unfilteredResources = [
+      labPanelDateObservationPre20240101,
+      labPanelDateObservationOn20240101,
+    ];
+
+    it("should keep diagnostic reports after or on 2024-01-01", () => {
+      const filteredResources: DiagnosticReport[] = [];
+      for (const resource of unfilteredResources) {
+        const shouldSkip = skipLabPanelDate(
+          resource as DiagnosticReport,
+          labPanelDateFilterOn20240101 as WriteBackFiltersPerResourceType,
+          fixedDate
+        );
+        if (!shouldSkip) filteredResources.push(resource as DiagnosticReport);
+      }
+      compareResources(filteredResources, [
+        labPanelDateObservationOn20240101,
+      ] as DiagnosticReport[]);
+    });
+    it("should keep no diagnostic reports", () => {
+      const filteredResources: DiagnosticReport[] = [];
+      for (const resource of unfilteredResources) {
+        const shouldSkip = skipLabPanelDate(
+          resource as DiagnosticReport,
+          labPanelDateFilterOn20250101 as WriteBackFiltersPerResourceType,
+          fixedDate
+        );
+        if (!shouldSkip) filteredResources.push(resource as DiagnosticReport);
+      }
+      compareResources(filteredResources, []);
+    });
+    it("should keep both diagnostic reports when relativeRange is not set", () => {
+      const filteredResources: DiagnosticReport[] = [];
+      for (const resource of unfilteredResources) {
+        const shouldSkip = skipLabPanelDate(
+          resource as DiagnosticReport,
+          labPanelDateFilterUndefined as WriteBackFiltersPerResourceType,
+          fixedDate
+        );
+        if (!shouldSkip) filteredResources.push(resource as DiagnosticReport);
+      }
+      compareResources(filteredResources, unfilteredResources as DiagnosticReport[]);
+    });
+  });
+  describe("skipLabPanelLoinCode", () => {
+    const unfilteredResources = [
+      labPanelLoincCodeObservationCode1,
+      labPanelLoincCodeObservationCode2,
+    ];
+
+    it("should keep diagnostic reports with loinc code 1", () => {
+      const filteredResources: DiagnosticReport[] = [];
+      for (const resource of unfilteredResources) {
+        const shouldSkip = skipLabPanelLoinCode(
+          resource as DiagnosticReport,
+          labPanelLoincCodesFilterCode1 as WriteBackFiltersPerResourceType
+        );
+        if (!shouldSkip) filteredResources.push(resource as DiagnosticReport);
+      }
+      compareResources(filteredResources, [
+        labPanelLoincCodeObservationCode1,
+      ] as DiagnosticReport[]);
+    });
+    it("should keep diagnostic reports with loinc code 2", () => {
+      const filteredResources: DiagnosticReport[] = [];
+      for (const resource of unfilteredResources) {
+        const shouldSkip = skipLabPanelLoinCode(
+          resource as DiagnosticReport,
+          labPanelLoincCodesFilterCode2 as WriteBackFiltersPerResourceType
+        );
+        if (!shouldSkip) filteredResources.push(resource as DiagnosticReport);
+      }
+      compareResources(filteredResources, [
+        labPanelLoincCodeObservationCode2,
+      ] as DiagnosticReport[]);
+    });
+    it("should keep both diagnostic reports when loincCodes is not set", () => {
+      const filteredResources: DiagnosticReport[] = [];
+      for (const resource of unfilteredResources) {
+        const shouldSkip = skipLabPanelLoinCode(
+          resource as DiagnosticReport,
+          labPanelLoincCodesFilterUndefined as WriteBackFiltersPerResourceType
+        );
+        if (!shouldSkip) filteredResources.push(resource as DiagnosticReport);
+      }
+      compareResources(filteredResources, unfilteredResources as DiagnosticReport[]);
+    });
+  });
+  describe("skipLabPanelNonTrending", () => {
+    const unfilteredResources = [
+      labPanelLoincCodeObservationCode1,
+      labPanelLoincCodeObservationCode2,
+      labPanelLoincCodeObservationCode2Duplicate,
+    ];
+
+    it("should keep diagnostic report with loinc code 1 when minCountPerCode is 1", () => {
+      const filteredResources: DiagnosticReport[] = [];
+      for (const resource of [labPanelLoincCodeObservationCode1]) {
+        const shouldSkip = skipLabPanelNonTrending(
+          resource as DiagnosticReport,
+          unfilteredResources as DiagnosticReport[],
+          labPanelMinCountPerCodeFilterMin1 as WriteBackFiltersPerResourceType
+        );
+        if (!shouldSkip) filteredResources.push(resource as DiagnosticReport);
+      }
+      compareResources(filteredResources, [
+        labPanelLoincCodeObservationCode1,
+      ] as DiagnosticReport[]);
+    });
+    it("should keep not diagnostic report with loinc code 1 when minCountPerCode is 2", () => {
+      const filteredResources: DiagnosticReport[] = [];
+      for (const resource of [labPanelLoincCodeObservationCode1]) {
+        const shouldSkip = skipLabPanelNonTrending(
+          resource as DiagnosticReport,
+          unfilteredResources as DiagnosticReport[],
+          labPanelMinCountPerCodeFilterMin2 as WriteBackFiltersPerResourceType
+        );
+        if (!shouldSkip) filteredResources.push(resource as DiagnosticReport);
+      }
+      compareResources(filteredResources, []);
+    });
+    it("should keep diagnostic report with loinc code 2 when minCountPerCode is 1", () => {
+      const filteredResources: DiagnosticReport[] = [];
+      for (const resource of [labPanelLoincCodeObservationCode2]) {
+        const shouldSkip = skipLabPanelNonTrending(
+          resource as DiagnosticReport,
+          unfilteredResources as DiagnosticReport[],
+          labPanelMinCountPerCodeFilterMin1 as WriteBackFiltersPerResourceType
+        );
+        if (!shouldSkip) filteredResources.push(resource as DiagnosticReport);
+      }
+      compareResources(filteredResources, [
+        labPanelLoincCodeObservationCode2,
+      ] as DiagnosticReport[]);
+    });
+    it("should keep diagnostic report with loinc code 2 when minCountPerCode is 2", () => {
+      const filteredResources: DiagnosticReport[] = [];
+      for (const resource of [labPanelLoincCodeObservationCode2]) {
+        const shouldSkip = skipLabPanelNonTrending(
+          resource as DiagnosticReport,
+          unfilteredResources as DiagnosticReport[],
+          labPanelMinCountPerCodeFilterMin2 as WriteBackFiltersPerResourceType
+        );
+        if (!shouldSkip) filteredResources.push(resource as DiagnosticReport);
+      }
+      compareResources(filteredResources, [
+        labPanelLoincCodeObservationCode2,
+      ] as DiagnosticReport[]);
+    });
+    it("should keep both all observations when minCountPerCode is undefined", () => {
+      const filteredResources: DiagnosticReport[] = [];
+      for (const resource of unfilteredResources) {
+        const shouldSkip = skipLabPanelNonTrending(
+          resource as DiagnosticReport,
+          unfilteredResources as DiagnosticReport[],
+          labPanelMinCountPerCodeFilterUndefined as WriteBackFiltersPerResourceType
+        );
+        if (!shouldSkip) filteredResources.push(resource as DiagnosticReport);
+      }
+      compareResources(filteredResources, unfilteredResources as DiagnosticReport[]);
     });
   });
   describe("skipVitalDate", () => {

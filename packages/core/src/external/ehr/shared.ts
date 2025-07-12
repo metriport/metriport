@@ -457,6 +457,32 @@ export function getImmunizationCvxCode(immunization: Immunization): string | und
   return cvxCoding.code;
 }
 
+export function getDiagnosticReportLoincCoding(
+  diagnosticReport: DiagnosticReport
+): Coding | undefined {
+  const code = diagnosticReport.code;
+  const loincCoding = code?.coding?.find(coding => {
+    const system = fetchCodingCodeOrDisplayOrSystem(coding, "system");
+    return system?.includes(LOINC_CODE);
+  });
+  if (!loincCoding) return undefined;
+  return loincCoding;
+}
+
+export function getDiagnosticReportLoincCode(
+  diagnosticReport: DiagnosticReport
+): string | undefined {
+  const loincCoding = getDiagnosticReportLoincCoding(diagnosticReport);
+  if (!loincCoding) return undefined;
+  return loincCoding.code;
+}
+
+export function getDiagnosticReportResultStatus(
+  diagnosticReport: DiagnosticReport
+): string | undefined {
+  return diagnosticReport.status;
+}
+
 export function getImmunizationAdministerDate(immunization: Immunization): string | undefined {
   const administeredDate = immunization.occurrenceDateTime;
   if (administeredDate) return administeredDate;
@@ -538,32 +564,6 @@ function normalizeStringInterpretation(interpretation: string): string {
     return "normal";
   } else if (lowerInterp.includes("abnormal")) return "abnormal";
   return interpretation;
-}
-
-export function getDiagnosticReportLoincCoding(
-  diagnosticReport: DiagnosticReport
-): Coding | undefined {
-  const code = diagnosticReport.code;
-  const loincCoding = code?.coding?.find(coding => {
-    const system = fetchCodingCodeOrDisplayOrSystem(coding, "system");
-    return system?.includes(LOINC_CODE);
-  });
-  if (!loincCoding) return undefined;
-  return loincCoding;
-}
-
-export function getDiagnosticReportLoincCode(
-  diagnosticReport: DiagnosticReport
-): string | undefined {
-  const loincCoding = getDiagnosticReportLoincCoding(diagnosticReport);
-  if (!loincCoding) return undefined;
-  return loincCoding.code;
-}
-
-export function getDiagnosticReportResultStatus(
-  diagnosticReport: DiagnosticReport
-): string | undefined {
-  return diagnosticReport.status;
 }
 
 export function getDiagnosticReportDate(diagnosticReport: DiagnosticReport): string | undefined {

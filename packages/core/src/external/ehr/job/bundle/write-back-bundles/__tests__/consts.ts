@@ -43,6 +43,77 @@ export const unknownChronicityCondition = {
   },
 };
 
+export const labPanelDateObservationPre20240101 = {
+  resourceType: "DiagnosticReport",
+  id: "lab-panel1",
+  category: [
+    {
+      coding: [{ code: "laboratory" }],
+    },
+  ],
+  code: {
+    coding: [{ system: "http://loinc.org", code: "718-7" }],
+  },
+  effectiveDateTime: "2023-12-31T00:00:00Z",
+};
+
+export const labPanelDateObservationOn20240101 = {
+  resourceType: "DiagnosticReport",
+  id: "lab-panel2",
+  category: [
+    {
+      coding: [{ code: "laboratory" }],
+    },
+  ],
+  code: {
+    coding: [{ system: "http://loinc.org", code: "718-7" }],
+  },
+  effectiveDateTime: "2024-01-01T00:00:00Z",
+};
+
+export const labPanelLoincCode1 = "1234-5";
+export const labPanelLoincCodeObservationCode1 = {
+  resourceType: "DiagnosticReport",
+  id: "lab-panel3",
+  category: [
+    {
+      coding: [{ code: "laboratory" }],
+    },
+  ],
+  code: {
+    coding: [{ system: "http://loinc.org", code: labPanelLoincCode1 }],
+  },
+  effectiveDateTime: "2024-05-01T00:00:00Z",
+};
+
+export const labPanelLoincCode2 = "1234-6";
+export const labPanelLoincCodeObservationCode2 = {
+  resourceType: "DiagnosticReport",
+  id: "lab-panel4",
+  category: [
+    {
+      coding: [{ code: "laboratory" }],
+    },
+  ],
+  code: {
+    coding: [{ system: "http://loinc.org", code: labPanelLoincCode2 }],
+  },
+  effectiveDateTime: "2024-05-01T00:00:00Z",
+};
+export const labPanelLoincCodeObservationCode2Duplicate = {
+  resourceType: "DiagnosticReport",
+  id: "lab-panel5",
+  category: [
+    {
+      coding: [{ code: "laboratory" }],
+    },
+  ],
+  code: {
+    coding: [{ system: "http://loinc.org", code: labPanelLoincCode2 }],
+  },
+  effectiveDateTime: "2024-05-01T00:00:00Z",
+};
+
 export const labDateObservationPre20240101 = {
   resourceType: "Observation",
   id: "lab1",
@@ -196,6 +267,68 @@ export const chronicityFilterAll = {
 export const chronicityFilterUndefined = {
   problems: {
     chronicityFilter: undefined,
+  },
+};
+
+export const labPanelDateFilterOn20240101 = {
+  labPanel: {
+    relativeDateRange: {
+      years: 1,
+      months: 0,
+      days: 0,
+    },
+  },
+};
+
+export const labPanelDateFilterOn20250101 = {
+  labPanel: {
+    relativeDateRange: {
+      years: 0,
+      months: 0,
+      days: 0,
+    },
+  },
+};
+
+export const labPanelDateFilterUndefined = {
+  labPanel: {
+    relativeDateRange: undefined,
+  },
+};
+
+export const labPanelLoincCodesFilterCode1 = {
+  labPanel: {
+    loincCodes: [labLoincCode1],
+  },
+};
+
+export const labPanelLoincCodesFilterCode2 = {
+  labPanel: {
+    loincCodes: [labLoincCode2],
+  },
+};
+
+export const labPanelLoincCodesFilterUndefined = {
+  labPanel: {
+    loincCodes: undefined,
+  },
+};
+
+export const labPanelMinCountPerCodeFilterMin1 = {
+  labPanel: {
+    minCountPerCode: 1,
+  },
+};
+
+export const labPanelMinCountPerCodeFilterMin2 = {
+  labPanel: {
+    minCountPerCode: 2,
+  },
+};
+
+export const labPanelMinCountPerCodeFilterUndefined = {
+  labPanel: {
+    minCountPerCode: undefined,
   },
 };
 

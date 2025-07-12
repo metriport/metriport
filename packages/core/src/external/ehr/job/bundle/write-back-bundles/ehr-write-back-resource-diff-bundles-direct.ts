@@ -31,7 +31,6 @@ import { ehrCxMappingSecondaryMappingsSchemaMap } from "../../../mappings";
 import {
   getDiagnosticReportDate,
   getDiagnosticReportLoincCode,
-  getDiagnosticReportLoincCoding,
   getObservationLoincCode,
   getObservationObservedDate,
   isChronicCondition,
@@ -349,9 +348,9 @@ export function shouldWriteBackResource({
     if (writeBackFilters.labPanel?.disabled) return false;
     const diagnosticReport = resource as DiagnosticReport;
     const diagnosticReports = resources.filter(
-      r => r.resourceType === "DiagnosticReport"
+      r => r.resourceType === "DiagnosticReport" && isLabPanel(r)
     ) as DiagnosticReport[];
-    if (skipLabPaneDate(diagnosticReport, writeBackFilters)) return false;
+    if (skipLabPanelDate(diagnosticReport, writeBackFilters)) return false;
     if (skipLabPanelLoinCode(diagnosticReport, writeBackFilters)) return false;
     if (skipLabPanelNonTrending(diagnosticReport, diagnosticReports, writeBackFilters)) {
       return false;
@@ -380,7 +379,7 @@ export function skipConditionChronicity(
   return true;
 }
 
-export function skipLabPaneDate(
+export function skipLabPanelDate(
   diagnosticReport: DiagnosticReport,
   writeBackFilters: WriteBackFiltersPerResourceType,
   startDate?: Date
@@ -420,11 +419,9 @@ export function skipLabPanelNonTrending(
 ): boolean {
   const minCountPerCode = writeBackFilters.labPanel?.minCountPerCode;
   if (!minCountPerCode) return false;
-  const loincCode = getDiagnosticReportLoincCoding(diagnosticReport);
+  const loincCode = getDiagnosticReportLoincCode(diagnosticReport);
   if (!loincCode) return false;
-  const count = diagnosticReports.filter(
-    o => getDiagnosticReportLoincCoding(o) === loincCode
-  ).length;
+  const count = diagnosticReports.filter(o => getDiagnosticReportLoincCode(o) === loincCode).length;
   return count < minCountPerCode;
 }
 
