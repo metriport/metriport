@@ -115,10 +115,14 @@ export class EhrWriteBackResourceDiffBundlesDirect
       });
       let secondaryResourcesToWriteBackMap: Record<string, Resource[]> = {};
       if (resourceType === "DiagnosticReport") {
-        const hydratedDiagnosticReports = await hydrateMetriportOnlyDiagnosticReports({
+        const observations = await getMetriportResourcesFromS3({
           cxId,
-          metriportPatientId,
-          metriportOnlyResources: resourcesToWriteBack as DiagnosticReport[],
+          patientId: metriportPatientId,
+          resourceType: "Observation",
+        });
+        const hydratedDiagnosticReports = await hydrateDiagnosticReports({
+          diagnosticReports: resourcesToWriteBack as DiagnosticReport[],
+          observations: observations as Observation[],
         });
         secondaryResourcesToWriteBackMap = hydratedDiagnosticReports.reduce(
           (acc, { diagnosticReport, observations }) => {
@@ -217,25 +221,18 @@ async function getMetriportResourcesFromS3({
   });
 }
 
-async function hydrateMetriportOnlyDiagnosticReports({
-  cxId,
-  metriportPatientId,
-  metriportOnlyResources,
+async function hydrateDiagnosticReports({
+  diagnosticReports,
+  observations,
 }: {
-  cxId: string;
-  metriportPatientId: string;
-  metriportOnlyResources: DiagnosticReport[];
+  diagnosticReports: DiagnosticReport[];
+  observations: Observation[];
 }): Promise<{ diagnosticReport: DiagnosticReport; observations: Observation[] }[]> {
-  const observations = await getMetriportResourcesFromS3({
-    cxId,
-    patientId: metriportPatientId,
-    resourceType: "Observation",
-  });
   const hydratedMetriportOnlyResources: {
     diagnosticReport: DiagnosticReport;
     observations: Observation[];
   }[] = [];
-  for (const diagnosticReport of metriportOnlyResources) {
+  for (const diagnosticReport of diagnosticReports) {
     if (!diagnosticReport.result || diagnosticReport.result.length < 1) {
       hydratedMetriportOnlyResources.push({ diagnosticReport, observations: [] });
       continue;

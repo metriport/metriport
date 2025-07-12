@@ -370,10 +370,8 @@ export function isLab(observation: Observation): boolean {
 }
 
 export function isLabPanel(diagnosticReport: DiagnosticReport): boolean {
-  const isLabPanel = diagnosticReport.category?.find(
-    ext => ext.coding?.[0]?.code?.toLowerCase() === "lab"
-  );
-  return isLabPanel !== undefined;
+  if (!diagnosticReport.result) return false;
+  return true;
 }
 
 export function isChronicCondition(condition?: Condition): boolean {
