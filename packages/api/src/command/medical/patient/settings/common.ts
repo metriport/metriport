@@ -1,8 +1,6 @@
 import { PatientSettingsData } from "@metriport/core/domain/patient-settings";
-import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { Op } from "sequelize";
 import { PatientModel } from "../../../../models/medical/patient";
-import { PatientSettingsModel } from "../../../../models/patient-settings";
 
 export type PatientSettingsUpsertForCxProps = {
   cxId: string;
@@ -68,34 +66,4 @@ export async function verifyPatients({
     validPatientIds: Array.from(foundPatientIds),
     invalidPatientIds,
   };
-}
-
-export async function upsertPatientSettings({
-  patientIds,
-  cxId,
-  settings,
-}: {
-  patientIds: string[];
-  cxId: string;
-  settings: PatientSettingsData;
-}): Promise<void> {
-  const existingSettings = await PatientSettingsModel.findAll({
-    where: { patientId: patientIds, cxId },
-  });
-  const existingSettingsMap = new Map(existingSettings.map(s => [s.patientId, s]));
-
-  const upserts = patientIds.map(patientId => ({
-    id: existingSettingsMap.get(patientId)?.id ?? uuidv7(),
-    cxId,
-    patientId,
-    subscriptions: {
-      ...existingSettingsMap.get(patientId)?.subscriptions,
-      ...settings.subscriptions,
-    },
-  }));
-
-  await PatientSettingsModel.bulkCreate(upserts, {
-    returning: false,
-    updateOnDuplicate: ["subscriptions"],
-  });
 }

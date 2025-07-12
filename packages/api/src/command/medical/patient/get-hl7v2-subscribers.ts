@@ -8,14 +8,14 @@ import { PatientSettingsModel } from "../../../models/patient-settings";
 import { Pagination, getPaginationFilters, getPaginationLimits } from "../../pagination";
 
 export type GetHl7v2SubscribersParams = {
-  hie: string;
+  hieName: string;
   pagination?: Pagination;
 };
 
 function getCommonQueryOptions({
-  hie,
+  hieName,
   pagination,
-}: Omit<GetHl7v2SubscribersParams, "hie"> & { hie: string }) {
+}: Omit<GetHl7v2SubscribersParams, "hieName"> & { hieName: string }) {
   const order: Order = [["id", "DESC"]];
 
   return {
@@ -28,12 +28,12 @@ function getCommonQueryOptions({
               FROM patient_settings ps
               WHERE ps.patient_id = "PatientModelReadOnly"."id"
               AND ps.subscriptions->'adt' IS NOT NULL
-              AND ps.subscriptions->'adt' ? :hie
+              AND ps.subscriptions->'adt' ? :hieName
           )
           `),
       ],
     } as WhereOptions,
-    replacements: { hie },
+    replacements: { hieName },
     include: [
       {
         model: PatientSettingsModel,
@@ -47,15 +47,15 @@ function getCommonQueryOptions({
 }
 
 export async function getHl7v2Subscribers({
-  hie,
+  hieName,
   pagination,
 }: GetHl7v2SubscribersParams): Promise<Patient[]> {
   const { log } = out(`Get HL7v2 subscribers`);
-  log(`HIE: ${hie}, pagination params: ${JSON.stringify(pagination)}`);
+  log(`HIE: ${hieName}, pagination params: ${JSON.stringify(pagination)}`);
 
   try {
     const findOptions: FindOptions<PatientModelReadOnly> = {
-      ...getCommonQueryOptions({ hie, pagination }),
+      ...getCommonQueryOptions({ hieName, pagination }),
     };
 
     const patients = await PatientModelReadOnly.findAll(findOptions);
@@ -68,9 +68,9 @@ export async function getHl7v2Subscribers({
     capture.error(msg, {
       extra: {
         error,
-        hie,
+        hieName,
       },
     });
-    throw new MetriportError(msg, error, { hie });
+    throw new MetriportError(msg, error, { hieName });
   }
 }

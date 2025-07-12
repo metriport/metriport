@@ -1,4 +1,8 @@
-import { PatientSettings, PatientSettingsCreate } from "@metriport/core/domain/patient-settings";
+import {
+  PatientSettings,
+  PatientSettingsCreate,
+  PatientSettingsData,
+} from "@metriport/core/domain/patient-settings";
 import { out } from "@metriport/core/util/log";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { BadRequestError } from "@metriport/shared";
@@ -81,15 +85,27 @@ export async function upsertPatientSettingsForPatientList({
     throw new BadRequestError(`No valid patients found`);
   }
 
-  await upsertPatientSettings({
-    patientIds: validPatientIds,
+  async function batchProcessor(batch: string[]): Promise<void> {
+    await upsertPatientSettings({
+      patientIds: batch,
+      cxId,
+      settings,
+    });
+  }
+
+  await processPatientsInBatches(validPatientIds, batchProcessor, {
     cxId,
-    settings,
+    facilityId,
+    operationName: "upsertPatientSettingsForCx",
+    errorMessage: "Failed to upsert settings for patients",
+    throwOnNoPatients: false,
   });
 
-  const patientsFoundAndUpdated = validPatientIds.length;
-  log(`Updated settings for ${patientsFoundAndUpdated} patients`);
-  return { patientsFoundAndUpdated, patientsNotFound: patientsNotFound || [] };
+  log(`Updated settings for ${validPatientIds.length} patients`);
+  return {
+    patientsFoundAndUpdated: validPatientIds.length,
+    patientsNotFound: patientsNotFound || [],
+  };
 }
 
 /**
@@ -122,5 +138,35 @@ export async function upsertPatientSettingsForCx({
     operationName: "upsertPatientSettingsForCx",
     errorMessage: "Failed to upsert settings for patients",
     throwOnNoPatients: false,
+  });
+}
+
+async function upsertPatientSettings({
+  patientIds,
+  cxId,
+  settings,
+}: {
+  patientIds: string[];
+  cxId: string;
+  settings: PatientSettingsData;
+}): Promise<void> {
+  const existingSettings = await PatientSettingsModel.findAll({
+    where: { patientId: patientIds, cxId },
+  });
+  const existingSettingsMap = new Map(existingSettings.map(s => [s.patientId, s]));
+
+  const upserts = patientIds.map(patientId => ({
+    id: existingSettingsMap.get(patientId)?.id ?? uuidv7(),
+    cxId,
+    patientId,
+    subscriptions: {
+      ...existingSettingsMap.get(patientId)?.subscriptions,
+      ...settings.subscriptions,
+    },
+  }));
+
+  await PatientSettingsModel.bulkCreate(upserts, {
+    returning: false,
+    updateOnDuplicate: ["subscriptions"],
   });
 }

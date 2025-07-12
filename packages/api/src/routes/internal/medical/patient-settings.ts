@@ -69,14 +69,12 @@ router.post(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const facilityId = getUUIDFrom("query", req, "facilityId").optional();
     const { patientIds, hieName } = adtSubscriptionRequestSchema.parse(req.body);
 
     throwOnInvalidHieName(hieName);
 
     const result = await addHieSubscriptionToPatients({
       cxId,
-      facilityId,
       patientIds,
       hieName,
     });
@@ -100,14 +98,12 @@ router.delete(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const facilityId = getUUIDFrom("query", req, "facilityId").optional();
     const { patientIds, hieName } = adtSubscriptionRequestSchema.parse(req.body);
 
     throwOnInvalidHieName(hieName);
 
     const result = await removeHieSubscriptionFromPatients({
       cxId,
-      facilityId,
       patientIds,
       hieName,
     });

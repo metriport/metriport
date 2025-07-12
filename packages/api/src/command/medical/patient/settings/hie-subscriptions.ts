@@ -15,18 +15,15 @@ import { PatientListProcessingResult, verifyPatients } from "./common";
  */
 export async function addHieSubscriptionToPatients({
   cxId,
-  facilityId,
   patientIds,
   hieName,
 }: {
   cxId: string;
-  facilityId?: string;
   patientIds: string[];
   hieName: string;
 }): Promise<PatientListProcessingResult> {
   const { validPatientIds, invalidPatientIds: patientsNotFound } = await verifyPatients({
     cxId,
-    facilityId,
     patientIds,
   });
 
@@ -40,8 +37,7 @@ export async function addHieSubscriptionToPatients({
 
   const result = await processPatientsInBatches(validPatientIds, batchProcessor, {
     cxId,
-    facilityId,
-    operationName: "",
+    operationName: "addHieSubscriptionToPatients",
     errorMessage: "Failed to append ADT subscriptions for patients",
     throwOnNoPatients: true,
   });
@@ -56,25 +52,21 @@ export async function addHieSubscriptionToPatients({
  * Removes an ADT subscription from the patient settings for the given customer and patient IDs.
  *
  * @param cxId The customer ID
- * @param facilityId The facility ID. Optional.
  * @param patientIds The patient IDs to remove ADT subscriptions for.
  * @param hieName The HIE name to unsubscribe from
  * @returns The number of patients updated and the list of patients not found
  */
 export async function removeHieSubscriptionFromPatients({
   cxId,
-  facilityId,
   patientIds,
   hieName,
 }: {
   cxId: string;
-  facilityId?: string;
   patientIds: string[];
   hieName: string;
 }): Promise<PatientListProcessingResult> {
   const { validPatientIds, invalidPatientIds: patientsNotFound } = await verifyPatients({
     cxId,
-    facilityId,
     patientIds,
   });
 
@@ -88,7 +80,6 @@ export async function removeHieSubscriptionFromPatients({
 
   const result = await processPatientsInBatches(validPatientIds, batchProcessor, {
     cxId,
-    facilityId,
     operationName: "removeHieSubscriptionFromPatients",
     errorMessage: "Failed to remove ADT subscriptions for patients",
     throwOnNoPatients: true,
