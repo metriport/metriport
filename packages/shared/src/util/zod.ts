@@ -1,5 +1,4 @@
-import dayjs from "dayjs";
-import { z, ZodString, ZodType } from "zod";
+import { z, ZodString } from "zod";
 import {
   ISO_DATE,
   isValidISODate,
@@ -44,7 +43,9 @@ export function zodToLowerCase(v: unknown): unknown {
 }
 
 export function emptyStringToUndefined(v: string | undefined | null): string | undefined {
-  return v == null || v.length < 1 ? undefined : v;
+  if (v == null) return undefined;
+  if (typeof v === "string" && v.trim().length < 1) return undefined;
+  return v;
 }
 
 /**
@@ -52,26 +53,4 @@ export function emptyStringToUndefined(v: string | undefined | null): string | u
  */
 export function optionalString(zodSchema: ZodString) {
   return zodSchema.or(z.string().optional()).transform(emptyStringToUndefined);
-}
-
-/**
- * Note: this can't be used in PATCH endpoints because it will prevent us from identifying whether
- * the field is to be left untouched (undefined) or to be removed (null).
- */
-export function optionalStringPreprocess<T>(zodSchema: ZodType<T>) {
-  return z.preprocess(arg => {
-    if (typeof arg === "string" && ["", "undefined", "null"].includes(arg.trim())) return undefined;
-    else return arg;
-  }, zodSchema);
-}
-
-export function transformStringUndefined() {
-  return z.literal("undefined").transform(() => undefined);
-}
-
-export function optionalDateToISOString(
-  date: string | Date | undefined | null
-): string | undefined {
-  const preConversion = date && typeof date !== "string" ? dayjs(date).format(ISO_DATE) : date;
-  return preConversion ?? undefined;
 }
