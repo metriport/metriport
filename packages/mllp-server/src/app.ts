@@ -11,13 +11,21 @@ import {
 } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/msh";
 import { createFileKeyHl7Message } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
+import { getHieTimezoneDictionary } from "@metriport/core/external/hl7-notification/hie-timezone";
 import { capture } from "@metriport/core/util";
 import type { Logger } from "@metriport/core/util/log";
 import { out } from "@metriport/core/util/log";
 import { basicToExtendedIso8601 } from "@metriport/shared/common/date";
 import { ParsedHl7Data, parseHl7Message, persistHl7MessageError } from "./parsing";
 import { initSentry } from "./sentry";
-import { asString, bucketName, s3Utils, withErrorHandling } from "./utils";
+import {
+  asString,
+  bucketName,
+  getCleanIpAddress,
+  lookupHieTzEntryForIp,
+  s3Utils,
+  withErrorHandling,
+} from "./utils";
 
 initSentry();
 
@@ -25,15 +33,21 @@ const MLLP_DEFAULT_PORT = 2575;
 
 async function createHl7Server(logger: Logger): Promise<Hl7Server> {
   const { log } = logger;
+  const hieTimezoneDictionary = getHieTimezoneDictionary();
 
   const server = new Hl7Server(connection => {
     connection.addEventListener(
       "message",
       withErrorHandling(connection, logger, async ({ message: rawMessage }) => {
-        let parsedData: ParsedHl7Data;
+        const clientIp = getCleanIpAddress(connection.socket.remoteAddress);
+        const clientPort = connection.socket.remotePort;
+        const { hieName, timezone } = lookupHieTzEntryForIp(hieTimezoneDictionary, clientIp);
 
+        log(`New message from ${hieName} over connection ${clientIp}:${clientPort}`);
+
+        let parsedData: ParsedHl7Data;
         try {
-          parsedData = await parseHl7Message(rawMessage);
+          parsedData = await parseHl7Message(rawMessage, timezone);
         } catch (parseError: unknown) {
           await persistHl7MessageError(rawMessage, parseError, logger);
           throw parseError;
@@ -116,8 +130,14 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
 
 async function main() {
   const logger = out("MLLP Server");
-  const server = await createHl7Server(logger);
-  server.start(MLLP_DEFAULT_PORT);
+  try {
+    const server = await createHl7Server(logger);
+    server.start(MLLP_DEFAULT_PORT);
+  } catch (error) {
+    logger.log("Error starting MLLP server", error);
+    capture.error(error);
+    process.exit(1);
+  }
 }
 
 main();

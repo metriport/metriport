@@ -12,6 +12,7 @@ import {
   getOrCreateMetriportPatientFhir,
 } from "../../shared/utils/fhir";
 import { createEClinicalWorksClient } from "../shared";
+import { getPatientPrimaryFacilityIdOrFail } from "../../../../command/medical/patient/get-patient-facilities";
 
 export type SyncEClinicalWorksPatientIntoMetriportParams = {
   cxId: string;
@@ -63,10 +64,15 @@ export async function syncEClinicalWorksPatientIntoMetriport({
     possibleDemographics,
     externalId: eclinicalworksPatientId,
   });
+  const facilityId = await getPatientPrimaryFacilityIdOrFail({
+    cxId,
+    patientId: metriportPatient.id,
+  });
   if (triggerDq) {
     queryDocumentsAcrossHIEs({
       cxId,
       patientId: metriportPatient.id,
+      facilityId,
     }).catch(processAsyncError(`EClinicalWorks queryDocumentsAcrossHIEs`));
   }
   await findOrCreatePatientMapping({
