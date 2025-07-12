@@ -13,6 +13,7 @@ export const writeBackFiltersPerResourceTypeSchema = z.object({
       loincCodes: z.array(z.string()).optional(),
       minCountPerCode: z.number().optional(),
       relativeDateRange: relativeDateRangeSchema.optional(),
+      disabled: z.boolean().optional(),
     })
     .optional(),
   labPanel: z
@@ -20,18 +21,21 @@ export const writeBackFiltersPerResourceTypeSchema = z.object({
       loincCodes: z.array(z.string()).optional(),
       minCountPerCode: z.number().optional(),
       relativeDateRange: relativeDateRangeSchema.optional(),
+      disabled: z.boolean().optional(),
     })
     .optional(),
   problems: z
     .object({
       chronicityFilter: z.enum(["all", "chronic", "non-chronic"]).optional(),
       relativeDateRange: relativeDateRangeSchema.optional(),
+      disabled: z.boolean().optional(),
     })
     .optional(),
   vital: z
     .object({
       loincCodes: z.array(z.string()).optional(),
       relativeDateRange: relativeDateRangeSchema.optional(),
+      disabled: z.boolean().optional(),
     })
     .optional(),
 });

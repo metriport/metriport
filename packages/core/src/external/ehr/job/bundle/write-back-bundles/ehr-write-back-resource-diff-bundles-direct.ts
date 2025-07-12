@@ -113,26 +113,12 @@ export class EhrWriteBackResourceDiffBundlesDirect
         resources: metriportOnlyResources,
         writeBackFilters,
       });
-      let secondaryResourcesToWriteBackMap: Record<string, Resource[]> = {};
-      if (resourceType === "DiagnosticReport") {
-        const observations = await getMetriportResourcesFromS3({
-          cxId,
-          patientId: metriportPatientId,
-          resourceType: "Observation",
-        });
-        const hydratedDiagnosticReports = await hydrateDiagnosticReports({
-          diagnosticReports: resourcesToWriteBack as DiagnosticReport[],
-          observations: observations as Observation[],
-        });
-        secondaryResourcesToWriteBackMap = hydratedDiagnosticReports.reduce(
-          (acc, { diagnosticReport, observations }) => {
-            if (!diagnosticReport.id) return acc;
-            acc[diagnosticReport.id] = observations;
-            return acc;
-          },
-          {} as Record<string, Resource[]>
-        );
-      }
+      const secondaryResourcesToWriteBackMap = await getSecondaryResourcesToWriteBackMap({
+        cxId,
+        metriportPatientId,
+        resources: resourcesToWriteBack,
+        resourceType,
+      });
       try {
         await createOrReplaceBundle({
           ehr,
@@ -297,6 +283,12 @@ function getResourcesToWriteBack({
   for (const resource of resources) {
     const writeBackResourceType = getWriteBackResourceType(resource);
     if (!writeBackResourceType) continue;
+    if (
+      resource.resourceType === "DiagnosticReport" &&
+      (!resource.result || resource.result.length < 1)
+    ) {
+      continue;
+    }
     const shouldWriteBack = shouldWriteBackResource({
       resource,
       resources,
@@ -304,9 +296,6 @@ function getResourcesToWriteBack({
       writeBackFilters,
     });
     if (!shouldWriteBack) continue;
-    if (resource.resourceType === "DiagnosticReport") {
-      if (!resource.result || resource.result.length < 1) continue;
-    }
     resourcesToWriteBack.push(resource);
   }
   return resourcesToWriteBack;
@@ -341,10 +330,12 @@ export function shouldWriteBackResource({
 }): boolean {
   if (!writeBackFilters) return true;
   if (writeBackResourceType === "condition") {
+    if (writeBackFilters.problems?.disabled) return false;
     const condition = resource as Condition;
     if (skipConditionChronicity(condition, writeBackFilters)) return false;
     return true;
   } else if (writeBackResourceType === "lab") {
+    if (writeBackFilters.lab?.disabled) return false;
     const observation = resource as Observation;
     const labObservations = resources.filter(
       r => r.resourceType === "Observation" && isLab(r)
@@ -354,6 +345,7 @@ export function shouldWriteBackResource({
     if (skipLabNonTrending(observation, labObservations, writeBackFilters)) return false;
     return true;
   } else if (writeBackResourceType === "lab-panel") {
+    if (writeBackFilters.labPanel?.disabled) return false;
     const diagnosticReport = resource as DiagnosticReport;
     const diagnosticReports = resources.filter(
       r => r.resourceType === "DiagnosticReport"
@@ -364,6 +356,7 @@ export function shouldWriteBackResource({
       return false;
     return true;
   } else if (writeBackResourceType === "vital") {
+    if (writeBackFilters.vital?.disabled) return false;
     const observation = resource as Observation;
     if (skipVitalDate(observation, writeBackFilters)) return false;
     if (skipVitalLoinCode(observation, writeBackFilters)) return false;
@@ -510,6 +503,34 @@ export function skipVitalLoinCode(
   const loincCode = getObservationLoincCode(observation);
   if (!loincCode) return false;
   return !loincCodes.includes(loincCode);
+}
+
+async function getSecondaryResourcesToWriteBackMap({
+  cxId,
+  metriportPatientId,
+  resources,
+  resourceType,
+}: {
+  cxId: string;
+  metriportPatientId: string;
+  resources: Resource[];
+  resourceType: string;
+}): Promise<Record<string, Resource[]>> {
+  if (resourceType !== "DiagnosticReport") return {};
+  const observations = await getMetriportResourcesFromS3({
+    cxId,
+    patientId: metriportPatientId,
+    resourceType: "Observation",
+  });
+  const hydratedDiagnosticReports = await hydrateDiagnosticReports({
+    diagnosticReports: resources as DiagnosticReport[],
+    observations: observations as Observation[],
+  });
+  return hydratedDiagnosticReports.reduce((acc, { diagnosticReport, observations }) => {
+    if (!diagnosticReport.id) return acc;
+    acc[diagnosticReport.id] = observations;
+    return acc;
+  }, {} as Record<string, Resource[]>);
 }
 
 async function writeBackResources({
