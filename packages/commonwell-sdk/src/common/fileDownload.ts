@@ -4,7 +4,68 @@ import * as util from "util";
 
 const pipeline = util.promisify(stream.pipeline);
 
-export async function downloadFile({
+export async function downloadFileInMemory({
+  url,
+  client,
+  responseType,
+  headers,
+}: {
+  url: string;
+  client?: AxiosInstance;
+  responseType: "arraybuffer";
+  headers?: {
+    [index: string]: string;
+  };
+}): Promise<Buffer>;
+export async function downloadFileInMemory({
+  url,
+  client,
+  responseType,
+  headers,
+}: {
+  url: string;
+  client?: AxiosInstance;
+  responseType: "text";
+  headers?: {
+    [index: string]: string;
+  };
+}): Promise<string>;
+export async function downloadFileInMemory({
+  url,
+  client,
+  responseType,
+  headers,
+}: {
+  url: string;
+  client?: AxiosInstance;
+  responseType: "json";
+  headers?: {
+    [index: string]: string;
+  };
+  //eslint-disable-next-line @typescript-eslint/no-explicit-any
+}): Promise<any>;
+export async function downloadFileInMemory({
+  url,
+  client,
+  responseType,
+  headers,
+}: {
+  url: string;
+  client?: AxiosInstance;
+  responseType: "arraybuffer" | "json" | "text";
+  headers?: {
+    [index: string]: string;
+  };
+}): Promise<Buffer | string> {
+  const config: AxiosRequestConfig = {
+    ...(headers && { headers }),
+    responseType,
+  };
+  const response = await (client ?? axios).get(url, config);
+  return response.data;
+}
+
+export async function downloadFileAsStream({
   url,
   outputStream,
   client,
