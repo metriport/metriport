@@ -1,5 +1,5 @@
 import { Bundle, DocumentReference as FHIRDocumentReference, Resource } from "@medplum/fhirtypes";
-import { optionalDateToISOString, PaginatedResponse } from "@metriport/shared";
+import { PaginatedResponse } from "@metriport/shared";
 import {
   WebhookRequest,
   WebhookRequestParsingFailure,
@@ -15,6 +15,7 @@ import {
   BASE_ADDRESS_SANDBOX,
   DEFAULT_AXIOS_TIMEOUT_MILLIS,
   JWT_HEADER,
+  optionalDateToISOString,
 } from "../../shared";
 import { getETagHeader } from "../models/common/base-update";
 import { Demographics } from "../models/demographics";
