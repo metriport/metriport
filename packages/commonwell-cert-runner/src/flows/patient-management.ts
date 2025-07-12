@@ -9,7 +9,7 @@ import { getMetriportPatientIdOrFail, logError, makeShortName } from "../util";
 
 /**
  * Flow to validate the patient management API (item 8.3.2 in the spec).
- * @see https://www.commonwellalliance.org/wp-content/uploads/2025/06/Services-Specification-v4.3-Approved-2025.06.03-1.pdf
+ * @see https://www.commonwellalliance.org/specification/
  *
  * Checklist:
  * - Members should create a minimum of 2 patients - 1 new test patient for your organization and

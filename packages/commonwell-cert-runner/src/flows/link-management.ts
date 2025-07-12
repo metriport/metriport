@@ -1,18 +1,17 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { CommonWell } from "@metriport/commonwell-sdk";
 import { encodeToCwPatientId } from "@metriport/commonwell-sdk/common/util";
-import { errorToString, sleep } from "@metriport/shared";
+import { errorToString } from "@metriport/shared";
 import { uniq } from "lodash";
 import { makePatient } from "../payloads";
 import { patientTracyCrane } from "../payloads/patient-tracy";
 import { createProbablePatientSina } from "../payloads/probable-patient-sina";
-import { getMetriportPatientIdOrFail, logError } from "../util";
+import { getMetriportPatientIdOrFail, logError, waitSeconds } from "../util";
 
 /**
  * This flow is used to test the patient link management API.
  *
- * @param commonWell The CommonWell client.
- * @param queryMeta The query metadata.
+ * @param commonWell The CommonWell client configured to the Org that is being tested.
  */
 export async function linkManagement(commonWell: CommonWell) {
   const patientIds: string[] = [];
@@ -208,9 +207,4 @@ export async function linkManagement(commonWell: CommonWell) {
 
 function stringify(value: unknown) {
   return JSON.stringify(value, null, 2);
-}
-
-function waitSeconds(seconds: number) {
-  console.log(`waiting ${seconds} seconds...`);
-  return sleep(seconds * 1_000);
 }

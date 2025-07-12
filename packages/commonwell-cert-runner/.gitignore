@@ -4,4 +4,4 @@ node_modules
 lib
 dist
 *.txt
-downloads
+downloads*

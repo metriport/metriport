@@ -1,556 +1,241 @@
-// #!/usr/bin/env node
-// import {
-//   APIMode,
-//   CommonWell,
-//   isLOLA1,
-//   Organization,
-//   RequestMetadata,
-// } from "@metriport/commonwell-sdk";
-// import axios, { AxiosInstance } from "axios";
-// import * as fs from "fs";
-// import { cloneDeep } from "lodash";
-// import {
-//   dob,
-//   docUrl,
-//   fhirUrl,
-//   firstName,
-//   gender,
-//   lastName,
-//   memberOID,
-//   orgCertificateString,
-//   orgIdSuffix,
-//   orgPrivateKeyString,
-//   zip,
-// } from "./env";
-// import {
-//   makeDocContribOrganization,
-//   makeDocPerson,
-//   makeId,
-//   makePatient,
-// //   orgCertificate,
-// } from "./payloads";
-// import { findOrCreatePatient, findOrCreatePerson } from "./shared-person";
-// import { filterTruthy } from "./util";
+#!/usr/bin/env node
+import { faker } from "@faker-js/faker";
+import {
+  AddressUseCodes,
+  APIMode,
+  CommonWell,
+  CommonWellMember,
+  GenderCodes,
+  NameUseCodes,
+  Patient,
+} from "@metriport/commonwell-sdk";
+import { encodeToCwPatientId } from "@metriport/commonwell-sdk/common/util";
+import { errorToString } from "@metriport/shared";
+import { uniq } from "lodash";
+import {
+  memberCertificateString,
+  memberId,
+  memberName,
+  memberPrivateKeyString,
+  orgCertificateString,
+  orgPrivateKeyString,
+} from "../env";
+import { makeOrganization, makePatient, orgCertificate } from "../payloads";
+import { patientShirleyDouglas } from "../payloads/patient-shirley";
+import { getMetriportPatientIdOrFail, logError } from "../util";
+import { initContributionHttpServer } from "./contribution/contribution-server";
+import { queryDocuments, retrieveDocument } from "./document-consumption";
+import { getOneOrg } from "./org-management";
 
-// const AXIOS_TIMEOUT_MILLIS = 20_000;
+// If empty, a new org will be created.
+const oidOfConsumerOrg = "";
+const outputFolder = "./downloads-contribution";
 
-// // Document Contribution
-// // https://commonwellalliance.sharepoint.com/sites/ServiceAdopter/SitePages/Document-Contribution-(SOAP,-REST).aspx
+/**
+ * This flow is used to test the document contribution API.
+ *
+ * It requires two Organizations:
+ * - the contributor Org (received as parameter), represented by a CommonWell client configured to
+ *   manage said Org's data/patients;
+ * - the consumer Org, with its OID determined by the constant `oidOfConsumerOrg`; if empty, a new
+ *   org will be created.
+ *
+ * The script will create a new patient on each Org, both patients with the same demographics. Then
+ * it'll link the patients, and then query the documents from the consumer Org.
+ *
+ * In order to the contributor Org to answer to CommonWell's CHA broker's requests, this script will
+ * also initialize a HTTP server that will be used to implement that part of the document contribution
+ * flow - see `initContributionHttpServer`.
+ *
+ * Note: it requires a proxy server exposing a public address that's configured in the contributor
+ * Org's settings at CommonWell.
+ *
+ * The flow is:
+ * 1. Create a patient on the contributor Org.
+ * 2. Create a patient on the consumer Org.
+ * 3. Link the patients.
+ * 4. Query the documents from the consumer Org.
+ * 5. CommonWell's CHA broker will reach out to the contributor Org to query documents.
+ * 6. The contributor Org will respond with the list of documents.
+ * 7. The CHA broker will then forward that to the consumer Org (request from step 4).
+ * 8. The consumer Org will retrieve the documents.
+ * 9. The CHA broker will then reach out to the contributor Org to request the document's contents.
+ * 10. The contributor Org will respond with the document's contents.
+ * 11. The CHA broker will then forward that to the consumer Org (request from step 8).
+ * 12. The consumer Org will download the document.
+ *
+ * @param commonWellContributor The CommonWell client configured to the contributor Org.
+ */
+export async function documentContribution(commonWellContributor: CommonWell) {
+  const patientIdsContributorOrg: string[] = [];
+  const patientIdsConsumerOrg: string[] = [];
+  let commonWellConsumer: CommonWell | undefined;
+  try {
+    console.log(`>>> CHA 2 Document Contribution --------------------------------`);
+    await initContributionHttpServer(commonWellContributor);
 
-// export async function documentContribution({
-//   memberManagementApi,
-//   api: apiDefaultOrg,
-//   queryMeta,
-//   org,
-// }: {
-//   memberManagementApi: CommonWell;
-//   api: CommonWell;
-//   queryMeta: RequestMetadata;
-//   org: Organization;
-// }) {
-//   console.log(`>>> E3: Query for documents served by Metriport's FHIR server`);
-//   if (!firstName) {
-//     console.log(`Skipping E3 because no first name provided`);
-//     return;
-//   }
-//   if (!lastName) {
-//     console.log(`Skipping E3 because no last name provided`);
-//     return;
-//   }
-//   if (!zip) {
-//     console.log(`Skipping E3 because no zip provided`);
-//     return;
-//   }
-//   if (!dob) {
-//     console.log(`Skipping E3 because no date of birth provided`);
-//     return;
-//   }
-//   if (!gender) {
-//     console.log(`Skipping E3 because no gender provided`);
-//     return;
-//   }
+    console.log(`>>> CHA 2.1 Create/load the second org`);
+    const commonWellMember = new CommonWellMember({
+      orgCert: memberCertificateString,
+      rsaPrivateKey: memberPrivateKeyString,
+      memberName: memberName,
+      memberId,
+      apiMode: APIMode.integration,
+    });
 
-//   const {
-//     orgAPI: apiNewOrg,
-//     orgName,
-//     orgId,
-//   } = await getOrCreateOrg(memberManagementApi, queryMeta);
+    let orgId: string = oidOfConsumerOrg;
+    if (!orgId || orgId.trim().length < 1) {
+      console.log(`>>> Consumer Org's OID not provided, creating a new one...`);
+      const orgToCreate = makeOrganization();
+      const respCreateOrg = await commonWellMember.createOrg(orgToCreate);
+      console.log(">>> Transaction ID: " + commonWellMember.lastTransactionId);
+      console.log(">>> Response: " + JSON.stringify(respCreateOrg, null, 2));
+      orgId = respCreateOrg.organizationId;
+      console.log(`>>> Add certificate to org`);
+      const respAddCertificateToOrg = await commonWellMember.addCertificateToOrg(
+        orgCertificate,
+        orgId
+      );
+      console.log("Response: " + JSON.stringify(respAddCertificateToOrg, null, 2));
+      console.log(">>> Transaction ID: " + commonWellMember.lastTransactionId);
+    }
 
-//   const person = makeDocPerson({
-//     firstName,
-//     lastName,
-//     zip,
-//     gender,
-//     dob,
-//     facilityId: apiDefaultOrg.oid,
-//   });
+    const org = await getOneOrg(commonWellMember, orgId);
+    const npi = org.npiType2;
+    if (!npi) throw new Error("No NPI found on the second org");
+    commonWellConsumer = new CommonWell({
+      orgCert: orgCertificateString,
+      rsaPrivateKey: orgPrivateKeyString,
+      orgName: org.name,
+      oid: org.organizationId,
+      homeCommunityId: org.homeCommunityId,
+      npi,
+      apiMode: APIMode.integration,
+    });
 
-//   console.log(`Find or create patient and person on main org`);
-//   const { personId, patientId: patientIdMainOrg } = await findOrCreatePerson(
-//     apiDefaultOrg,
-//     queryMeta,
-//     person
-//   );
-//   console.log(`personId: ${personId}`);
-//   console.log(`patientId on main org: ${patientIdMainOrg}`);
+    const demographics = makeNewDemographics();
+    console.log(`>>> 2.0 Demographics: ${JSON.stringify(demographics, null, 2)}`);
 
-//   const newPerson = cloneDeep(person);
-//   newPerson.identifier = makePatient({ facilityId: apiNewOrg.oid }).identifier;
-//   if (newPerson.identifier) {
-//     newPerson.identifier[0].assigner = orgName;
-//     newPerson.identifier[0].label = orgName;
-//   }
-//   const { patientId: patientIdNewOrg } = await findOrCreatePatient(
-//     apiNewOrg,
-//     queryMeta,
-//     newPerson,
-//     personId
-//   );
-//   console.log(`patientId: ${patientIdNewOrg}`);
+    console.log(`>>> CHA 2.2 Create 1st patient on the contributor org`);
+    const patientCreateContributorOrg: Patient = makePatient({
+      facilityId: commonWellContributor.oid,
+      demographics,
+    });
+    // console.log(`>>> >>>> PAYLOAD: ${JSON.stringify(patientCreateContributorOrg, null, 2)}`);
+    const resp_2_1 = await commonWellContributor.createOrUpdatePatient(patientCreateContributorOrg);
+    console.log(">>> Transaction ID: " + commonWellContributor.lastTransactionId);
+    console.log(">>> 2.1 Response: " + JSON.stringify(resp_2_1, null, 2));
+    const firstPatientId = getMetriportPatientIdOrFail(resp_2_1.Patients[0], "createPatient");
+    patientIdsContributorOrg.push(firstPatientId);
+    const firstPatientIdEncoded = encodeToCwPatientId({
+      patientId: firstPatientId,
+      assignAuthority: commonWellContributor.oid,
+    });
 
-//   console.log(`Get patients links`);
-//   const respGetLinks = await apiNewOrg.getNetworkLinks(queryMeta, patientIdNewOrg);
-//   console.log(respGetLinks);
+    console.log(`>>> CHA 2.3 Create 2nd patient on the consumer org`);
+    const patientCreateConsumerOrg: Patient = makePatient({
+      facilityId: commonWellConsumer.oid,
+      demographics,
+    });
+    // console.log(`>>> >>>> PAYLOAD: ${JSON.stringify(patientCreateConsumerOrg, null, 2)}`);
+    const resp_2_2 = await commonWellConsumer.createOrUpdatePatient(patientCreateConsumerOrg);
+    console.log(">>> Transaction ID: " + commonWellConsumer.lastTransactionId);
+    console.log(">>> 2.2 Response: " + JSON.stringify(resp_2_2, null, 2));
+    const secondPatientId = getMetriportPatientIdOrFail(resp_2_2.Patients[0], "createPatient");
+    patientIdsConsumerOrg.push(secondPatientId);
+    const secondPatientIdEncoded = encodeToCwPatientId({
+      patientId: secondPatientId,
+      assignAuthority: commonWellConsumer.oid,
+    });
 
-//   const allLinks = respGetLinks._embedded.networkLink
-//     ? respGetLinks._embedded.networkLink.flatMap(filterTruthy)
-//     : [];
-//   const lola1Links = allLinks.filter(isLOLA1);
-//   console.log(`Found ${allLinks.length} network links, ${lola1Links.length} are LOLA 1`);
-//   for (const link of lola1Links) {
-//     const upgradeURL = link._links?.upgrade?.href;
-//     if (!upgradeURL) {
-//       console.log(`[queryDocuments] missing upgrade URL for link `, link);
-//       continue;
-//     }
-//     const respUpgradeLink = await apiNewOrg.upgradeOrDowngradeNetworkLink(queryMeta, upgradeURL);
-//     console.log(respUpgradeLink);
-//   }
+    await linkPatients(commonWellContributor, firstPatientIdEncoded);
 
-//   console.log(`>>> [E3] Populating test data on FHIR server...`);
-//   const fhirApi = axios.create({
-//     timeout: AXIOS_TIMEOUT_MILLIS,
-//     baseURL: fhirUrl,
-//   });
-//   // TODO: #230 we could split convertPatientIdToSubjectId() in two and reuse the part that splits the CW patientId.
-//   const newPatientId = patientIdNewOrg.split("%5E%5E%5E")[0];
-//   await addOrgToFHIRServer(orgId, orgName, fhirApi);
-//   await addPatientToFHIRServer(newPatientId, fhirApi);
-//   await addDocumentRefAndBinaryToFHIRServer(newPatientId, orgId, orgName, fhirApi);
+    const documents = await queryDocuments(commonWellConsumer, secondPatientIdEncoded);
+    console.log(`>>> Got ${documents.length} documents, downloading...`);
+    for (const doc of documents) {
+      const docId = doc.masterIdentifier?.value;
+      const isDownloadSuccessful = await retrieveDocument(commonWellConsumer, doc, outputFolder);
+      console.log(`>>> Transaction ID: ${commonWellConsumer.lastTransactionId}`);
+      if (isDownloadSuccessful) {
+        console.log(`>>> Download successful for document ${docId}`);
+        continue;
+      }
+      console.log(`>>> Download failed for document ${docId}, trying the next one...`);
+    }
+    console.log(`>>> Done querying and retrieving documents`);
+  } catch (error) {
+    console.log(
+      `Error (txId contributor org ${commonWellContributor.lastTransactionId}, txId consumer org ${
+        commonWellConsumer?.lastTransactionId
+      }): ${errorToString(error)}`
+    );
+    logError(error);
+    throw error;
+  } finally {
+    console.log(`>>> Delete Patients created in this run`);
+    await deletePatients(commonWellContributor, patientIdsContributorOrg);
+    if (commonWellConsumer) {
+      await deletePatients(commonWellConsumer, patientIdsConsumerOrg);
+    }
+  }
+}
 
-//   console.log(`>>> [E3] Querying for docs from the main org...`);
-//   const respDocQuery = await apiDefaultOrg.queryDocuments(queryMeta, patientIdMainOrg);
-//   console.log(respDocQuery);
-//   const documents = respDocQuery.entry ?? [];
-//   for (const doc of documents) {
-//     console.log(`DOCUMENT: ${JSON.stringify(doc, undefined, 2)}`);
+async function deletePatients(commonWell: CommonWell, patientIds: string[]) {
+  const uniquePatientIds = uniq(patientIds);
+  for (const metriportPatientId of uniquePatientIds) {
+    try {
+      const patientId = encodeToCwPatientId({
+        patientId: metriportPatientId,
+        assignAuthority: commonWell.oid,
+      });
+      await commonWell.deletePatient(patientId);
+      console.log(`>>> Patient deleted: ${metriportPatientId}`);
+    } catch (err) {
+      console.log(`>>> Patient NOT deleted: ${metriportPatientId}`);
+      // intentionally ignore it
+    }
+  }
+}
 
-//     // store the query result as well
-//     const queryFileName = `./cw_contribution_${doc.id ?? "ID"}_${makeId()}.response.file`;
-//     fs.writeFileSync(queryFileName, JSON.stringify(doc));
+async function linkPatients(commonWell: CommonWell, patientId: string) {
+  console.log(`>>> Get Probable Links for patient ${patientId}`);
+  const resp_2_2_3 = await commonWell.getProbableLinksById(patientId);
+  console.log(">>> Transaction ID: " + commonWell.lastTransactionId);
+  console.log(`>>> Probable link count: ${resp_2_2_3.Patients?.length}`);
+  // Doing this twice because the first time it returns 0 probable links :/
+  console.log(`>>> (2nd) Get Probable Links for patient ${patientId}`);
+  const resp_2_2_3x = await commonWell.getProbableLinksById(patientId);
+  console.log(">>> Transaction ID: " + commonWell.lastTransactionId);
+  console.log(`>>> (2nd) Probable link count: ${resp_2_2_3x.Patients?.length}`);
 
-//     const fileName = `./cw_contribution_${doc.id ?? "ID"}_${makeId()}.contents.file`;
-//     // the default is UTF-8, avoid changing the encoding if we don't know the file we're downloading
-//     const outputStream = fs.createWriteStream(fileName, { encoding: undefined });
-//     console.log(`File being created at ${process.cwd()}/${fileName}`);
-//     const url = doc.content?.location;
-//     if (url != null) await apiDefaultOrg.retrieveDocument(queryMeta, url, outputStream);
-//   }
-// }
+  let idx = 0;
+  for (const patient of resp_2_2_3x.Patients ?? []) {
+    const urlToLink = patient?.Links?.Link;
+    console.log(`>>> Link Patient ${++idx}, url: ${urlToLink}`);
+    const resp_2_3_1 = await commonWell.linkPatients(urlToLink);
+    console.log(">>> Transaction ID: " + commonWell.lastTransactionId);
+    // console.log(">>> Response: " + JSON.stringify(resp_2_3_1, null, 2));
+    console.log(">>> Response: " + resp_2_3_1.status);
+  }
+}
 
-// async function getOrCreateOrg(
-//   memberManagementApi: CommonWell,
-//   queryMeta: RequestMetadata
-// ): Promise<{ orgAPI: CommonWell; orgName: string; orgId: string }> {
-//   const orgPayload = makeDocContribOrganization(orgIdSuffix);
-//   const orgId = orgPayload.organizationId;
-//   const orgIdWithoutNamespace = orgId.slice("urn:oid:".length);
-//   const orgName = orgPayload.name;
-//   console.log(`Get the doc org - ID ${orgId}, name ${orgName}`);
-//   const respGetOneOrg = await memberManagementApi.getOneOrg(queryMeta, orgId);
-//   console.log(respGetOneOrg);
-//   if (!respGetOneOrg) {
-//     console.log(`Doc org not found, create one`);
-//     const respCreateOrg = await memberManagementApi.createOrg(queryMeta, orgPayload);
-//     console.log(respCreateOrg);
-//     console.log(`Add certificate to doc org`);
-//     const respAddCertificateToOrg = await memberManagementApi.addCertificateToOrg(
-//       queryMeta,
-//       orgCertificate,
-//       orgIdWithoutNamespace
-//     );
-//     console.log(respAddCertificateToOrg);
-//   }
-
-//   const orgAPI = new CommonWell(
-//     orgCertificateString,
-//     orgPrivateKeyString,
-//     orgName, //commonwellSandboxOrgName,
-//     orgIdWithoutNamespace, //commonwellSandboxOID,
-//     APIMode.integration
-//   );
-
-//   return { orgAPI, orgName, orgId: orgIdWithoutNamespace };
-// }
-
-// async function addOrgToFHIRServer(orgId: string, orgName: string, fhirApi: AxiosInstance) {
-//   // TODO: #230 we could create data as a JS structure instead of string - easier for future code enhancements and maintenance.
-//   const data = `{
-//     "resourceType": "Organization",
-//     "id": "${orgId}",
-//     "meta": {
-//         "versionId": "1",
-//         "lastUpdated": "2023-02-04T13:23:38.744+00:00",
-//         "source": "${memberOID}"
-//     },
-//     "identifier": [
-//         {
-//             "system": "urn:ietf:rfc:3986",
-//             "value": "${orgId}"
-//         }
-//     ],
-//     "active": true,
-//     "type": [
-//         {
-//             "coding": [
-//                 {
-//                     "system": "http://terminology.hl7.org/CodeSystem/organization-type",
-//                     "code": "prov",
-//                     "display": "Healthcare Provider"
-//                 }
-//             ],
-//             "text": "Healthcare Provider"
-//         }
-//     ],
-//     "name": "${orgName}",
-//     "telecom": [
-//         {
-//             "system": "phone",
-//             "value": "5088287000"
-//         }
-//     ],
-//     "address": [
-//         {
-//             "line": [
-//                 "88 WASHINGTON STREET"
-//             ],
-//             "city": "TAUNTON",
-//             "state": "MA",
-//             "postalCode": "02780",
-//             "country": "US"
-//         }
-//     ]
-// }`;
-//   await fhirApi.put(`/Organization/${orgId}`, JSON.parse(data));
-// }
-
-// async function addPatientToFHIRServer(patientId: string, fhirApi: AxiosInstance) {
-//   const data = `{
-//     "resourceType": "Patient",
-//     "id": "${patientId}",
-//     "meta": {
-//         "versionId": "6",
-//         "lastUpdated": "2023-02-15T22:27:07.642+00:00",
-//         "source": "${memberOID}"
-//     },
-//     "extension": [
-//         {
-//             "url": "http://hl7.org/fhir/us/core/StructureDefinition/us-core-race",
-//             "extension": [
-//                 {
-//                     "url": "ombCategory",
-//                     "valueCoding": {
-//                         "system": "urn:oid:2.16.840.1.113883.6.238",
-//                         "code": "2106-3",
-//                         "display": "White"
-//                     }
-//                 },
-//                 {
-//                     "url": "text",
-//                     "valueString": "White"
-//                 }
-//             ]
-//         },
-//         {
-//             "url": "http://hl7.org/fhir/us/core/StructureDefinition/us-core-ethnicity",
-//             "extension": [
-//                 {
-//                     "url": "ombCategory",
-//                     "valueCoding": {
-//                         "system": "urn:oid:2.16.840.1.113883.6.238",
-//                         "code": "2186-5",
-//                         "display": "Not Hispanic or Latino"
-//                     }
-//                 },
-//                 {
-//                     "url": "text",
-//                     "valueString": "Not Hispanic or Latino"
-//                 }
-//             ]
-//         },
-//         {
-//             "url": "http://hl7.org/fhir/StructureDefinition/patient-mothersMaidenName",
-//             "valueString": "Deadra347 Borer986"
-//         },
-//         {
-//             "url": "http://hl7.org/fhir/us/core/StructureDefinition/us-core-birthsex",
-//             "valueCode": "M"
-//         },
-//         {
-//             "url": "http://hl7.org/fhir/StructureDefinition/patient-birthPlace",
-//             "valueAddress": {
-//                 "city": "Billerica",
-//                 "state": "Massachusetts",
-//                 "country": "US"
-//             }
-//         },
-//         {
-//             "url": "http://synthetichealth.github.io/synthea/disability-adjusted-life-years",
-//             "valueDecimal": 14.062655945052095
-//         },
-//         {
-//             "url": "http://synthetichealth.github.io/synthea/quality-adjusted-life-years",
-//             "valueDecimal": 58.93734405494791
-//         }
-//     ],
-//     "identifier": [
-//         {
-//             "system": "https://github.com/synthetichealth/synthea",
-//             "value": "2fa15bc7-8866-461a-9000-f739e425860a"
-//         },
-//         {
-//             "type": {
-//                 "coding": [
-//                     {
-//                         "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
-//                         "code": "MR",
-//                         "display": "Medical Record Number"
-//                     }
-//                 ],
-//                 "text": "Medical Record Number"
-//             },
-//             "system": "http://hospital.smarthealthit.org",
-//             "value": "2fa15bc7-8866-461a-9000-f739e425860a"
-//         },
-//         {
-//             "type": {
-//                 "coding": [
-//                     {
-//                         "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
-//                         "code": "SS",
-//                         "display": "Social Security Number"
-//                     }
-//                 ],
-//                 "text": "Social Security Number"
-//             },
-//             "system": "http://hl7.org/fhir/sid/us-ssn",
-//             "value": "999-93-7537"
-//         },
-//         {
-//             "type": {
-//                 "coding": [
-//                     {
-//                         "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
-//                         "code": "DL",
-//                         "display": "Driver's License"
-//                     }
-//                 ],
-//                 "text": "Driver's License"
-//             },
-//             "system": "urn:oid:2.16.840.1.113883.4.3.25",
-//             "value": "S99948707"
-//         },
-//         {
-//             "type": {
-//                 "coding": [
-//                     {
-//                         "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
-//                         "code": "PPN",
-//                         "display": "Passport Number"
-//                     }
-//                 ],
-//                 "text": "Passport Number"
-//             },
-//             "system": "http://standardhealthrecord.org/fhir/StructureDefinition/passportNumber",
-//             "value": "X14078167X"
-//         }
-//     ],
-//     "name": [
-//         {
-//             "use": "official",
-//             "family": "Rockefeller54",
-//             "given": [
-//                 "Jonathan54"
-//             ],
-//             "prefix": [
-//                 "Mr."
-//             ]
-//         }
-//     ],
-//     "telecom": [
-//         {
-//             "system": "phone",
-//             "value": "555-677-3119",
-//             "use": "home"
-//         }
-//     ],
-//     "gender": "male",
-//     "birthDate": "1983-12-22",
-//     "address": [
-//         {
-//             "extension": [
-//                 {
-//                     "url": "http://hl7.org/fhir/StructureDefinition/geolocation",
-//                     "extension": [
-//                         {
-//                             "url": "latitude",
-//                             "valueDecimal": 41.93879298871088
-//                         },
-//                         {
-//                             "url": "longitude",
-//                             "valueDecimal": -71.06682353144593
-//                         }
-//                     ]
-//                 }
-//             ],
-//             "line": [
-//                 "894 Brakus Bypass"
-//             ],
-//             "city": "San Francisco",
-//             "state": "California",
-//             "postalCode": "81547",
-//             "country": "US"
-//         }
-//     ],
-//     "maritalStatus": {
-//         "coding": [
-//             {
-//                 "system": "http://terminology.hl7.org/CodeSystem/v3-MaritalStatus",
-//                 "code": "S",
-//                 "display": "S"
-//             }
-//         ],
-//         "text": "S"
-//     },
-//     "multipleBirthBoolean": false,
-//     "communication": [
-//         {
-//             "language": {
-//                 "coding": [
-//                     {
-//                         "system": "urn:ietf:bcp:47",
-//                         "code": "en-US",
-//                         "display": "English"
-//                     }
-//                 ],
-//                 "text": "English"
-//             }
-//         }
-//     ]
-// }`;
-//   await fhirApi.put(`/Patient/${patientId}`, JSON.parse(data));
-// }
-
-// async function addDocumentRefAndBinaryToFHIRServer(
-//   patientId: string,
-//   orgId: string,
-//   orgName: string,
-//   fhirApi: AxiosInstance
-// ): Promise<{ docRefId: string; binaryId: string }> {
-//   const binaryId = `${orgId}.969696`;
-//   const payload = fs.readFileSync("./data/doc-contrib-payload");
-//   const binaryData = `{
-//     "resourceType": "Binary",
-//     "id": "${binaryId}",
-//     "contentType": "application/xml",
-//     "data": "${payload}"
-// }`;
-//   await fhirApi.put(`/Binary/${binaryId}`, JSON.parse(binaryData));
-
-//   const docRefId = `${orgId}.696969`;
-//   const data = `{
-//     "resourceType": "DocumentReference",
-//     "id": "${docRefId}",
-//     "meta": {
-//         "versionId": "19",
-//         "lastUpdated": "2023-02-24T16:07:16.796+00:00",
-//         "source": "${memberOID}"
-//     },
-//     "contained": [
-//         {
-//             "resourceType": "Organization",
-//             "id": "${orgId}",
-//             "name": "${orgName}"
-//         },
-//         {
-//             "resourceType": "Patient",
-//             "id": "${patientId}"
-//         }
-//     ],
-//     "masterIdentifier": {
-//         "system": "urn:ietf:rfc:3986",
-//         "value": "${docRefId}"
-//     },
-//     "identifier": [
-//         {
-//             "use": "official",
-//             "system": "urn:ietf:rfc:3986",
-//             "value": "${docRefId}"
-//         }
-//     ],
-//     "status": "current",
-//     "type": {
-//         "coding": [
-//             {
-//                 "system": "http://loinc.org/",
-//                 "code": "75622-1",
-//                 "display": "HIV 1 and 2 tests - Meaningful Use set"
-//             }
-//         ]
-//     },
-//     "subject": {
-//         "reference": "Patient/${patientId}",
-//         "type": "Patient"
-//     },
-//     "author": [
-//         {
-//             "reference": "#${orgId}",
-//             "type": "Organization"
-//         }
-//     ],
-//     "description": "Summarization Of Episode Notes - provided by Metriport",
-//     "content": [
-//         {
-//             "attachment": {
-//                 "contentType": "application/xml",
-//                 "url": "${docUrl}/Binary/${binaryId}"
-//             }
-//         }
-//     ],
-//     "context": {
-//         "event": [
-//             {
-//                 "coding": [
-//                     {
-//                         "system": "http://snomed.info/sct",
-//                         "code": "62479008",
-//                         "display": "AIDS"
-//                     }
-//                 ],
-//                 "text": "AIDS"
-//             }
-//         ],
-//         "period": {
-//             "start": "2022-10-05T22:00:00.000Z",
-//             "end": "2022-10-05T23:00:00.000Z"
-//         },
-//         "sourcePatientInfo": {
-//             "reference": "#${patientId}",
-//             "type": "Patient"
-//         }
-//     }
-// }`;
-//   await fhirApi.put(`/DocumentReference/${docRefId}`, JSON.parse(data));
-//   return { docRefId, binaryId };
-// }
-export {};
+function makeNewDemographics() {
+  const demographics = patientShirleyDouglas;
+  demographics.name = [
+    {
+      use: NameUseCodes.official,
+      given: [faker.person.firstName()],
+      family: [faker.person.lastName()],
+    },
+  ];
+  demographics.birthDate = faker.date.birthdate().toISOString().split("T")[0];
+  demographics.gender = GenderCodes.M;
+  demographics.address = [
+    {
+      use: AddressUseCodes.home,
+      postalCode: faker.location.zipCode(),
+      state: faker.location.state(),
+    },
+  ];
+  return demographics;
+}

@@ -112,24 +112,28 @@ export const operationOutcomeResourceType = "OperationOutcome";
 
 export const documentQueryResponseSchema = z.object({
   resourceType: z.literal("Bundle"),
-  entry: z.preprocess(entries => {
-    const result = z.array(z.any()).parse(entries);
-    return result.filter(e => e.resource?.resourceType === documentReferenceResourceType);
-  }, z.array(documentReferenceEntrySchema)),
+  entry: z
+    .preprocess(entries => {
+      const result = z.array(z.any()).parse(entries);
+      return result.filter(e => e.resource?.resourceType === documentReferenceResourceType);
+    }, z.array(documentReferenceEntrySchema))
+    .nullish(),
 });
 
 export type DocumentQueryResponse = z.infer<typeof documentQueryResponseSchema>;
 
 export const documentQueryFullResponseSchema = z.object({
   resourceType: z.literal("Bundle"),
-  entry: z.preprocess(entries => {
-    const result = z.array(z.any()).parse(entries);
-    return result.filter(
-      e =>
-        e.resource?.resourceType === documentReferenceResourceType ||
-        e.resource?.resourceType === operationOutcomeResourceType
-    );
-  }, z.array(documentReferenceEntrySchema.or(operationOutcomeSchema))),
+  entry: z
+    .preprocess(entries => {
+      const result = z.array(z.any()).parse(entries);
+      return result.filter(
+        e =>
+          e.resource?.resourceType === documentReferenceResourceType ||
+          e.resource?.resourceType === operationOutcomeResourceType
+      );
+    }, z.array(documentReferenceEntrySchema.or(operationOutcomeSchema)))
+    .nullish(),
 });
 
 export type DocumentQueryFullResponse = z.infer<typeof documentQueryFullResponseSchema>;

@@ -2,8 +2,8 @@ import { zodToLowerCase } from "@metriport/shared/util/zod";
 import { z } from "zod";
 
 export enum CertificatePurpose {
-  Signing = "Signing",
-  Authentication = "Authentication",
+  Signing = "signing",
+  Authentication = "authentication",
 }
 export const certificatePurposeSchema = z
   .string()

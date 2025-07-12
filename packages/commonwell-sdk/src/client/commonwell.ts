@@ -52,7 +52,7 @@ import {
 
 /**
  * Implementation of the CommonWell API, v4.
- * @see https://www.commonwellalliance.org/wp-content/uploads/2025/06/Services-Specification-v4.3-Approved-2025.06.03-1.pdf
+ * @see https://www.commonwellalliance.org/specification/
  */
 export class CommonWell implements CommonWellAPI {
   static integrationUrl = "https://api.integration.commonwellalliance.lkopera.com";
@@ -60,9 +60,10 @@ export class CommonWell implements CommonWellAPI {
 
   readonly api: AxiosInstance;
   private rsaPrivateKey: string;
-  private orgName: string;
+  private _orgName: string;
   private _oid: string;
   private _npi: string;
+  private _homeCommunityId: string;
   private httpsAgent: Agent;
   private _lastTransactionId: string | undefined;
   private onError500: OnError500Options;
@@ -70,15 +71,6 @@ export class CommonWell implements CommonWellAPI {
   /**
    * Creates a new instance of the CommonWell API client pertaining to an
    * organization to make requests on behalf of.
-   *
-   * @param orgCert         The certificate (public key) for the organization.
-   * @param rsaPrivateKey   An RSA key corresponding to the specified orgCert.
-   * @param orgName         The name of the organization.
-   * @param oid             The OID of the organization.
-   * @param npi             The NPI of the organization.
-   * @param apiMode         The mode the client will be running.
-   * @param options         Optional parameters
-   * @param options.timeout Connection timeout in milliseconds, default 120 seconds.
    */
   constructor({
     orgCert,
@@ -86,15 +78,28 @@ export class CommonWell implements CommonWellAPI {
     orgName,
     oid,
     npi,
+    homeCommunityId,
     apiMode,
     options = {},
   }: {
+    /** The certificate (public key) for the organization. */
     orgCert: string;
+    /** An RSA key corresponding to the specified orgCert. */
     rsaPrivateKey: string;
+    /** The name of the organization that's making the request, the Principal or Delegate. */
     orgName: string;
+    /** The OID of the organization that's making the request, the Principal or Delegate. */
     oid: string;
+    /** The NPI of the organization that's making the request, the Principal or Delegate. */
     npi: string;
+    /**
+     * The Home Community OID assigned to the Organization that is initiating the request,
+     * the implementor.
+     */
+    homeCommunityId: string;
+    /** The mode the client will be running. */
     apiMode: APIMode;
+    /** Optional parameters. */
     options?: CommonWellOptions;
   }) {
     this.rsaPrivateKey = rsaPrivateKey;
@@ -109,9 +114,10 @@ export class CommonWell implements CommonWellAPI {
       this.axiosSuccessfulResponse(this),
       this.axiosErrorResponse(this)
     );
-    this.orgName = orgName;
+    this._orgName = orgName;
     this._oid = oid;
     this._npi = npi;
+    this._homeCommunityId = homeCommunityId;
     this.onError500 = { ...defaultOnError500, ...options.onError500 };
   }
 
@@ -120,6 +126,12 @@ export class CommonWell implements CommonWellAPI {
   }
   get npi() {
     return this._npi;
+  }
+  get orgName() {
+    return this._orgName;
+  }
+  get homeCommunityId() {
+    return this._homeCommunityId;
   }
   /**
    * Returns the transaction ID from the last request.
@@ -160,7 +172,7 @@ export class CommonWell implements CommonWellAPI {
    * @returns The patient collection containing the patient in the first position.
    */
   async createOrUpdatePatient(patient: Patient, options?: BaseOptions): Promise<PatientCollection> {
-    const headers = await this.buildQueryHeaders(options?.meta);
+    const headers = this.buildQueryHeaders(options?.meta);
     const url = buildPatientEndpoint(this.oid);
     const normalizedPatient = normalizePatient(patient);
     const resp = await this.api.post(url, normalizedPatient, { headers });
@@ -209,7 +221,7 @@ export class CommonWell implements CommonWellAPI {
       }
       patientId = idOrParams;
     }
-    const headers = await this.buildQueryHeaders(options?.meta);
+    const headers = this.buildQueryHeaders(options?.meta);
     const url = buildPatientEndpoint(this.oid, patientId);
     const resp = await this.executeWithRetriesOn500IfEnabled(() => this.api.get(url, { headers }));
     const collection = patientCollectionSchema.parse(resp.data);
@@ -230,7 +242,7 @@ export class CommonWell implements CommonWellAPI {
    * @param options.meta Metadata about the request. Defaults to the data used to initialize the client.
    */
   async deletePatient(patientId: string, options?: BaseOptions): Promise<void> {
-    const headers = await this.buildQueryHeaders(options?.meta);
+    const headers = this.buildQueryHeaders(options?.meta);
     const url = buildPatientEndpoint(this.oid, patientId);
     await this.executeWithRetriesOn500IfEnabled(() => this.api.delete(url, { headers }));
   }
@@ -258,7 +270,7 @@ export class CommonWell implements CommonWellAPI {
     },
     options?: BaseOptions
   ): Promise<StatusResponse> {
-    const headers = await this.buildQueryHeaders(options?.meta);
+    const headers = this.buildQueryHeaders(options?.meta);
     const url = buildPatientMergeEndpoint(this.oid, nonSurvivingPatientId);
     const resp = await this.executeWithRetriesOn500IfEnabled(() =>
       this.api.put(
@@ -295,7 +307,7 @@ export class CommonWell implements CommonWellAPI {
     patientId: string,
     options?: BaseOptions
   ): Promise<PatientCollection> {
-    const headers = await this.buildQueryHeaders(options?.meta);
+    const headers = this.buildQueryHeaders(options?.meta);
     const url = buildPatientLinkEndpoint(this.oid, patientId);
     const resp = await this.executeWithRetriesOn500IfEnabled(() => this.api.get(url, { headers }));
     return patientCollectionSchema.parse(resp.data);
@@ -321,7 +333,7 @@ export class CommonWell implements CommonWellAPI {
     patientId: string,
     options?: BaseOptions
   ): Promise<PatientProbableLinkResp> {
-    const headers = await this.buildQueryHeaders(options?.meta);
+    const headers = this.buildQueryHeaders(options?.meta);
     const url = buildProbableLinkEndpoint(this.oid, patientId);
     const resp = await this.executeWithRetriesOn500IfEnabled(() => this.api.get(url, { headers }));
     return patientProbableLinkRespSchema.parse(resp.data);
@@ -363,7 +375,7 @@ export class CommonWell implements CommonWellAPI {
     },
     options?: BaseOptions
   ): Promise<PatientProbableLinkResp> {
-    const headers = await this.buildQueryHeaders(options?.meta);
+    const headers = this.buildQueryHeaders(options?.meta);
     const params = new URLSearchParams();
     params.append("fname", firstName);
     params.append("lname", lastName);
@@ -390,7 +402,7 @@ export class CommonWell implements CommonWellAPI {
    * @param options.meta Metadata about the request. Defaults to the data used to initialize the client.
    */
   async linkPatients(urlToLinkPatients: string, options?: BaseOptions): Promise<StatusResponse> {
-    const headers = await this.buildQueryHeaders(options?.meta);
+    const headers = this.buildQueryHeaders(options?.meta);
     const resp = await this.executeWithRetriesOn500IfEnabled(() =>
       this.api.put(urlToLinkPatients, {}, { headers })
     );
@@ -414,7 +426,7 @@ export class CommonWell implements CommonWellAPI {
     urlToUnlinkPatients: string,
     options?: BaseOptions
   ): Promise<StatusResponse> {
-    const headers = await this.buildQueryHeaders(options?.meta);
+    const headers = this.buildQueryHeaders(options?.meta);
     const resp = await this.executeWithRetriesOn500IfEnabled(() =>
       this.api.put(urlToUnlinkPatients, {}, { headers })
     );
@@ -435,7 +447,7 @@ export class CommonWell implements CommonWellAPI {
     urlToResetPatientLinks: string,
     options?: BaseOptions
   ): Promise<StatusResponse> {
-    const headers = await this.buildQueryHeaders(options?.meta);
+    const headers = this.buildQueryHeaders(options?.meta);
     const resp = await this.executeWithRetriesOn500IfEnabled(() =>
       this.api.put(urlToResetPatientLinks, {}, { headers })
     );
@@ -452,7 +464,7 @@ export class CommonWell implements CommonWellAPI {
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
   ): Promise<any> {
     const { meta, ...params } = options ?? {};
-    const headers = await this.buildQueryHeaders(meta);
+    const headers = this.buildQueryHeaders(meta);
     const actualParams = {
       ...params,
       status: options?.status ?? "current",
@@ -467,6 +479,7 @@ export class CommonWell implements CommonWellAPI {
     const response = await this.executeWithRetriesOn500IfEnabled(() =>
       this.api.get(url, { headers })
     );
+    // console.log(`>>> Response RAW: ${JSON.stringify(response.data, null, 2)}`);
     return response.data;
   }
 
@@ -486,7 +499,7 @@ export class CommonWell implements CommonWellAPI {
   ): Promise<DocumentReference[]> {
     const response = await this.queryDocumentsInternal(patientId, options);
     const entry = documentQueryResponseSchema.parse(response).entry;
-    return entry.flatMap(entry => entry.resource ?? []);
+    return entry?.flatMap(entry => entry.resource ?? []) ?? [];
   }
 
   /**
@@ -523,7 +536,7 @@ export class CommonWell implements CommonWellAPI {
     outputStream: stream.Writable,
     options?: BaseOptions
   ): Promise<RetrieveDocumentResponse> {
-    const headers = await this.buildQueryHeaders(options?.meta);
+    const headers = this.buildQueryHeaders(options?.meta);
     const binary = await this.executeWithRetriesOn500IfEnabled(() =>
       downloadFileInMemory({
         url: inputUrl,
@@ -559,12 +572,11 @@ export class CommonWell implements CommonWellAPI {
   // Private methods
   //--------------------------------------------------------------------------------------------
 
-  // TODO ENG-200 need to add DOA here?
-  private async buildQueryHeaders(
+  private buildQueryHeaders(
     metaParam: OrganizationRequestMetadata | undefined
-  ): Promise<Record<string, string>> {
+  ): Record<string, string> {
     const meta = metaParam ?? this.buildOrganizationQueryMeta();
-    const jwt = await makeJwt({
+    const jwt = makeJwt({
       rsaPrivateKey: this.rsaPrivateKey,
       role: meta.role,
       subjectId: meta.subjectId,
@@ -572,7 +584,7 @@ export class CommonWell implements CommonWellAPI {
       oid: this.oid,
       purposeOfUse: meta.purposeOfUse,
       npi: meta.npi,
-      payloadHash: meta.payloadHash,
+      authGrantorReference: meta.authGrantorReference,
     });
     return { Authorization: `Bearer ${jwt}` };
   }

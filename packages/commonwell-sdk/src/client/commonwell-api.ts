@@ -16,8 +16,22 @@ export type OrganizationRequestMetadata = {
   role: string;
   subjectId: string;
   purposeOfUse: PurposeOfUse;
-  payloadHash?: string;
   npi: string;
+  /**
+   * Required for Delegation of Authority (DOA) requests.
+   *
+   * When sending delegated requests, the delegate organization must include information about the
+   * principal  organization.
+   *
+   * The value MUST be the Directory Entry assigned to the Principal for whom the Delegate is
+   * initiating the request, formatted using the FHIR (Fast Healthcare Interoperability Resources)
+   * Resource (Reference?) format.
+   *
+   * Example: "Organization/urn:oid:2.16.840.1.113883.3.7204.1"
+   *
+   * See https://www.commonwellalliance.org/specification/
+   */
+  authGrantorReference?: string;
 };
 
 export type GetPatientParams = {
@@ -73,7 +87,7 @@ export interface CommonWellAPI {
   // ENG-200: Search patients
   // 10.2.3 Patient Match
   // This allows us to do a patient search that retrieves patient matches.
-  // https://www.commonwellalliance.org/wp-content/uploads/2025/06/Services-Specification-v4.3-Approved-2025.06.03-1.pdf
+  // https://www.commonwellalliance.org/specification/
 
   mergePatients(
     {

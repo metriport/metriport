@@ -2,6 +2,7 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ above all other imports
 import { faker } from "@faker-js/faker";
+import { sleep } from "@metriport/shared";
 import { decodeCwPatientId, getPatientIdTrailingSlash } from "@metriport/commonwell-sdk";
 import { PatientCollectionItem } from "@metriport/commonwell-sdk/models/patient";
 
@@ -62,4 +63,9 @@ export function logError(error: any) {
   if (error.response?.data) {
     console.error(JSON.stringify(error.response.data, null, 2));
   }
+}
+
+export function waitSeconds(seconds: number) {
+  console.log(`waiting ${seconds} seconds...`);
+  return sleep(seconds * 1_000);
 }

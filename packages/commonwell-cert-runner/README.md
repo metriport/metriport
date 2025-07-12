@@ -1,113 +1,254 @@
-# `commonwell-cert-runner`
+# CommonWell Certification Runner
 
-CommonWell Certification Runner by Metriport Inc.
+A comprehensive tool by Metriport Inc. for running through CommonWell Alliance certification test cases and validating your integration with the CommonWell network.
 
-Tool to run through Edge System CommonWell certification test cases.
+## What It Does
 
-## Install
+The CommonWell Certification Runner automates the testing of CommonWell API integration across four main certification areas:
 
-To install the program, execute the following command on your terminal:
+### 1. Organization Management (`org-management.ts`)
 
-`npm i -g @metriport/commonwell-cert-runner`
+- Creates, retrieves, updates, and manages CommonWell organizations
+- Handles certificate management (add, replace, delete certificates)
+- Validates organization CRUD operations
+- Tests member-level organization management APIs
 
-Note: you may have to run the command with `sudo`.
+### 2. Patient Management (`patient-management.ts`)
+
+- Creates and updates patients with test demographics
+- Tests patient merge operations
+- Validates patient deletion workflows
+- Uses predefined test patients (Tracy Crane, Connie Carin)
+- Automatically cleans up test patients after execution
+
+### 3. Link Management (`link-management.ts`)
+
+- Tests patient linking and unlinking operations
+- Validates probable link detection and management
+- Tests link reset functionality
+- Uses demographic matching to find potential patient links
+
+### 4. Document Consumption (`document-consumption.ts`)
+
+- Queries for external documents on test patients
+- Downloads and stores document references and contents
+- Tests document retrieval workflows
+- Supports multiple document statuses (current, superseded, entered-in-error)
+
+### 5. Document Contribution (`document-contribution.ts`)
+
+- Tests document contribution workflows between organizations
+- Creates patients on both contributor and consumer organizations
+- Links patients across organizations
+- Initializes HTTP server for document contribution responses
+- Validates end-to-end document sharing
+- Requires a public URL to respond to the requests from CommonWell (reverse proxy -
+  see `src/flows/document-contribution.ts`).
+
+## Requirements
+
+### Prerequisites
+
+- Node.js 18+
+- npm or yarn package manager
+- CommonWell Alliance membership and credentials
+
+### CommonWell Credentials
+
+You need the following credentials from CommonWell:
+
+**Member Organization (Service Adopter):**
+
+- Member ID and OID
+- Member name
+- RSA private key and certificate for member operations
+
+**Organization (Your Organization):**
+
+- Organization OID
+- Organization name
+- RSA private key and certificate for organization operations
+- Gateway endpoint configuration
+- OAuth 2.0 credentials for document contribution
+
+## Installation
+
+### Global Installation
+
+```bash
+npm install -g @metriport/commonwell-cert-runner
+```
+
+### Local Development
+
+```bash
+git clone <repository>
+cd packages/commonwell-cert-runner
+npm install
+npm run build
+```
+
+## Configuration
+
+Create a `.env` file with the following required variables:
+
+### Member Organization Configuration
+
+```env
+# Member (Service Adopter) credentials
+CW_MEMBER_ID=your-member-id
+CW_MEMBER_OID=1.2.3.4.5.678
+CW_MEMBER_NAME=Your Member Name
+CW_MEMBER_CERTIFICATE="-----BEGIN CERTIFICATE-----
+...
+-----END CERTIFICATE-----"
+CW_MEMBER_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----
+...
+-----END PRIVATE KEY-----"
+```
+
+### Organization Configuration
+
+```env
+# Your organization credentials
+CW_ORG_CERTIFICATE="-----BEGIN CERTIFICATE-----
+...
+-----END CERTIFICATE-----"
+CW_ORG_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----
+...
+-----END PRIVATE KEY-----"
+CW_ORG_GATEWAY_ENDPOINT=https://your-gateway.example.com/fhir
+CW_ORG_GATEWAY_AUTHORIZATION_SERVER_ENDPOINT=https://auth.example.com/oauth/token
+CW_ORG_GATEWAY_AUTHORIZATION_CLIENT_ID=your-client-id
+CW_ORG_GATEWAY_AUTHORIZATION_CLIENT_SECRET=your-client-secret
+
+# Optional: Use existing organization instead of creating new one
+CW_ORG_ID=1.2.3.4.5.678.5.123
+```
 
 ## Usage
 
-For context:
+### Run Complete Certification Suite
 
-- Member: the management organization, or Service Adopter, manages Orgs;
-- Org: the organization that manages Patients, usually a customer of Member;
-- Sandbox: the organization on sandbox for patient management and document contribution
-
-After installation, create a `.env` file defining the following variables:
-
-- `COMMONWELL_ORG_NAME`: the organization that will be making the requests.
-- `COMMONWELL_OID`: the organization ID.
-- `COMMONWELL_SANDBOX_ORG_NAME`: the organization on sandbox for patient management and document contribution
-  - should be configured with your FHIR server and OAuth 2 data on Commonwell management portal
-- `COMMONWELL_SANDBOX_OID`: the ID of the organization above
-- `COMMONWELL_ORG_PRIVATE_KEY`: the RSA256 private key corresponding to the specified organization.
-- `COMMONWELL_ORG_CERTIFICATE`: the public certificate/key corresponding to the private key.
-- `COMMONWELL_MEMBER_OID`: the member ID for organization management
-- `COMMONWELL_MEMBER_PRIVATE_KEY`: the RSA256 private key corresponding to the specified member management organization.
-- `COMMONWELL_MEMBER_CERTIFICATE`: the public certificate/key corresponding to the private key.
-- `DOCUMENT_PATIENT_FIRST_NAME`: the first name of a patient created along with the sandbox that has a document associated
-- `DOCUMENT_PATIENT_LAST_NAME`: their last name
-- `DOCUMENT_PATIENT_DATE_OF_BIRTH`: their date of birth on the format YYYY-MM-DD
-- `DOCUMENT_PATIENT_GENDER`: their gender (M|F)
-- `DOCUMENT_PATIENT_ZIP`: their address zip code
-- `DOCUMENT_CONTRIBUTION_ORGANIZATION_ID`: organization suffix for the document contribution flow (usually in the format
-  "2.dddddd", with 'd' being a digit)
-- `DOCUMENT_CONTRIBUTION_PATIENT_FIRST_NAME`: the first name of the patient to be created on the organization used for the
-  document contribution flow - same for the properties below [optional, defaults to the same name from the document patient
-  above]
-- `DOCUMENT_CONTRIBUTION_PATIENT_LAST_NAME`
-- `DOCUMENT_CONTRIBUTION_PATIENT_DATE_OF_BIRTH`
-- `DOCUMENT_CONTRIBUTION_PATIENT_GENDER`
-- `DOCUMENT_CONTRIBUTION_PATIENT_ZIP`
-- `DOCUMENT_CONTRIBUTION_URL`: the url of the server where the documents are stored
-- `DOCUMENT_CONTRIBUTION_FHIRURL`: the direct url of the FHIR server where the documents are stored, with no authentication required
-- `DOCUMENT_CONTRIBUTION_AUTH_URL`: the url of the server used to authenticate document contribution requests
-- `DOCUMENT_CONTRIBUTION_CLIENT_ID`: the client OAuth ID to authenticate document contribution requests
-- `DOCUMENT_CONTRIBUTION_CLIENT_SECRET`: the client OAuth secret to authenticate document contribution requests
-
-flow - must exist on the sandbox organization
-
-Example file content looks like:
-
-```
-COMMONWELL_ORG_NAME=Metriport
-COMMONWELL_OID=2.16.840.1.113883.3.9621
-COMMONWELL_SANDBOX_ORG_NAME=Metriport-OrgA-1620
-COMMONWELL_SANDBOX_OID=2.16.840.1.113883.3.3330.8889429.1620.1
-COMMONWELL_ORG_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----
-...
------END PRIVATE KEY-----"
-COMMONWELL_ORG_CERTIFICATE="-----BEGIN CERTIFICATE-----
-...
------END CERTIFICATE-----"
-COMMONWELL_MEMBER_OID=1.3.6.1.4.1.18.12.29.2022.945
-COMMONWELL_ORG_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----
-...
------END PRIVATE KEY-----"
-COMMONWELL_ORG_CERTIFICATE="-----BEGIN CERTIFICATE-----
-...
------END CERTIFICATE-----"
-DOCUMENT_PATIENT_FIRST_NAME="Stephen"
-DOCUMENT_PATIENT_LAST_NAME="Pujols1234"
-DOCUMENT_PATIENT_DATE_OF_BIRTH="1955-10-23"
-DOCUMENT_PATIENT_GENDER="M"
-DOCUMENT_PATIENT_ZIP="62732"
-# This is optional, if not set the runner will attempt to create the patient above on the sandbox org
-DOCUMENT_CONTRIBUTION_PATIENT_ID=<patient-id>%5E%5E%5Eurn%3aoid%3a<org-id>
+```bash
+cw-cert-runner
 ```
 
-After the file is created, you can run execute following command on your terminal to run the program:
+## Entry Points
 
-`cw-cert-runner --env-file "/path/to/created/env/file/.env"`
+### Main Entry Point
 
-## Options
+- **File**: `src/index.ts`
+- **Function**: `main()`
+- **Purpose**: Orchestrates the complete certification flow
 
-`--env-file <file-path>`
+### Individual Flow Entry Points
 
-Absolute path to the .env file containing required config.
+If you wan to run individual flows, you can comment out the other flows in `src/index.ts`.
 
-`-V, --version`
+1. **Organization Management**: `src/flows/org-management.ts`
 
-Output the version number.
+   - `orgManagement()`: Complete org management flow
+   - `getOneOrg()`: Retrieve specific organization
+   - `initApiForExistingOrg()`: Initialize API for existing org
 
-`-h, --help`
+2. **Patient Management**: `src/flows/patient-management.ts`
 
-Display help for command.
+   - `patientManagement()`: Complete patient management flow
+
+3. **Link Management**: `src/flows/link-management.ts`
+
+   - `linkManagement()`: Complete link management flow
+
+4. **Document Consumption**: `src/flows/document-consumption.ts`
+
+   - `documentConsumption()`: Complete document consumption flow
+   - `queryDocuments()`: Query documents for a patient
+   - `retrieveDocument()`: Download specific document
+
+5. **Document Contribution**: `src/flows/document-contribution.ts`
+   - `documentContribution()`: Complete document contribution flow
+
+### Single Commands
+
+For targeted testing, use individual commands in `src/single-commands/`:
+
+- `init-contrib-server.ts`: Initialize document contribution server
+- `patient-create.ts`: Create a single patient
+- `patient-get.ts`: Retrieve a patient
+- `patient-delete.ts`: Delete a patient
+- `patient-get-links.ts`: Get patient links
+- `document-parse.ts`: Parse document responses
+
+### Console Output
+
+The runner provides detailed console output including:
+
+- Transaction IDs for each API call
+- Request/response payloads
+- Success/failure status for each operation
+- Patient IDs and document references
+
+### File Output
+
+Documents are downloaded to:
+
+- `./downloads-consumption/`: Document consumption downloads
+- `./downloads-contribution/`: Document contribution downloads
+
+### Error Handling
+
+- Failed flows are logged with transaction IDs
+- Stack traces are preserved for debugging
+- Graceful cleanup of test data
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Certificate Errors**: Ensure certificates are properly formatted with newlines
+2. **OAuth Errors**: Verify client credentials and endpoints
+3. **Patient Not Found**: Check patient demographics match test data
+4. **Document Download Failures**: Verify document URLs are accessible
+
+### Debug Mode
+
+Enable verbose logging by modifying `src/util.ts`:
+
+```typescript
+export function logError(error: any) {
+  console.error(`Error (${error.response?.status}): ${error.message}`);
+  console.error(`Stack: ${error.stack}`);
+  if (error.response?.data) {
+    console.error(JSON.stringify(error.response.data, null, 2));
+  }
+}
+```
 
 ## Development
 
-`npm run build`: builds the package
+### Build Commands
 
-`npm start`: runs the local code pointing to `./.env`
+### Development Mode
 
-(optionally) `npm run install-local`: installs the package globally from the local source
+```bash
+npm install # only has to be run once
+npm run build # run to build
+npm start # runs the code pointing to `./.env`
+```
+
+## License
+
+MIT License - see LICENSE file for details.
+
+## Support
+
+For issues and questions:
+
+- GitHub Issues: https://github.com/metriport/metriport/issues
+- Email: contact@metriport.com
+
+---
 
 ```
             ,▄,

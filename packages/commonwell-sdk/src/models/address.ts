@@ -1,5 +1,6 @@
-import { optionalStringPreprocess, zodToLowerCase } from "@metriport/shared/util/zod";
+import { zodToLowerCase } from "@metriport/shared/util/zod";
 import { z } from "zod";
+import { emptyStringToUndefinedSchema } from "../common/zod";
 import { periodSchema } from "./period";
 
 /**
@@ -25,10 +26,10 @@ export const addressSchema = z.object({
   line: z.array(z.string()).nullish(),
   city: z.string().nullish(),
   state: z.string().nullish(),
-  country: optionalStringPreprocess(z.string().nullish()),
+  country: emptyStringToUndefinedSchema,
   postalCode: z.string(),
-  use: optionalStringPreprocess(addressUseCodesSchema.nullish()),
-  type: optionalStringPreprocess(addressTypeCodesSchema.nullish()),
+  use: emptyStringToUndefinedSchema.pipe(addressUseCodesSchema.nullish()),
+  type: emptyStringToUndefinedSchema.pipe(addressTypeCodesSchema.nullish()),
   period: periodSchema.nullish(),
 });
 

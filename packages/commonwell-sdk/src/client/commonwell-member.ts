@@ -16,7 +16,7 @@ import { BaseOptions, CommonWellMemberAPI, MemberRequestMetadata } from "./commo
 
 /**
  * Implementation of the CommonWell API, v4.
- * @see https://www.commonwellalliance.org/wp-content/uploads/2025/06/Services-Specification-v4.3-Approved-2025.06.03-1.pdf
+ * @see https://www.commonwellalliance.org/specification/
  *
  * For the Organization management API (member API):
  * @see https://commonwellalliance.sharepoint.com/sites/CommonWellServicesPlatform/SitePages/Organization-APIs.aspx
@@ -128,7 +128,7 @@ export class CommonWellMember implements CommonWellMemberAPI {
    */
   async createOrg(organization: Organization, options?: BaseOptions): Promise<Organization> {
     const meta = options?.meta ?? buildBaseQueryMeta(this.memberName);
-    const headers = await this.buildQueryHeaders(meta);
+    const headers = this.buildQueryHeaders(meta);
     const resp = await this.api.post(
       `${CommonWellMember.MEMBER_ENDPOINT}/${this.memberId}/org`,
       organization,
@@ -149,7 +149,7 @@ export class CommonWellMember implements CommonWellMemberAPI {
    */
   async updateOrg(organization: Organization, options?: BaseOptions): Promise<Organization> {
     const meta = options?.meta ?? buildBaseQueryMeta(this.memberName);
-    const headers = await this.buildQueryHeaders(meta);
+    const headers = this.buildQueryHeaders(meta);
     const id = organization.organizationId;
     const resp = await this.api.put(
       `${CommonWellMember.MEMBER_ENDPOINT}/${this.memberId}/org/${id}/`,
@@ -181,7 +181,7 @@ export class CommonWellMember implements CommonWellMemberAPI {
     options?: BaseOptions
   ): Promise<OrganizationList> {
     const meta = options?.meta ?? buildBaseQueryMeta(this.memberName);
-    const headers = await this.buildQueryHeaders(meta);
+    const headers = this.buildQueryHeaders(meta);
     const resp = await this.api.get(`${CommonWellMember.MEMBER_ENDPOINT}/${this.memberId}/org`, {
       headers,
       params: { summary, offset, limit, sort },
@@ -200,7 +200,7 @@ export class CommonWellMember implements CommonWellMemberAPI {
    */
   async getOneOrg(id: string, options?: BaseOptions): Promise<Organization | undefined> {
     const meta = options?.meta ?? buildBaseQueryMeta(this.memberName);
-    const headers = await this.buildQueryHeaders(meta);
+    const headers = this.buildQueryHeaders(meta);
     const resp = await this.api.get(
       `${CommonWellMember.MEMBER_ENDPOINT}/${this.memberId}/org/${id}/`,
       {
@@ -232,7 +232,7 @@ export class CommonWellMember implements CommonWellMemberAPI {
     options?: BaseOptions
   ): Promise<CertificateResp> {
     const meta = options?.meta ?? buildBaseQueryMeta(this.memberName);
-    const headers = await this.buildQueryHeaders(meta);
+    const headers = this.buildQueryHeaders(meta);
     const normalizedCertificates = certificate.Certificates.map(cert => ({
       ...cert,
       ...(cert.thumbprint && { thumbprint: cert.thumbprint.replace(/:/g, "") }),
@@ -267,7 +267,7 @@ export class CommonWellMember implements CommonWellMemberAPI {
     options?: BaseOptions
   ): Promise<CertificateResp> {
     const meta = options?.meta ?? buildBaseQueryMeta(this.memberName);
-    const headers = await this.buildQueryHeaders(meta);
+    const headers = this.buildQueryHeaders(meta);
     const resp = await this.api.put(
       `${CommonWellMember.MEMBER_ENDPOINT}/${this.memberId}/org/${id}/certificate`,
       certificate,
@@ -296,7 +296,7 @@ export class CommonWellMember implements CommonWellMemberAPI {
     options?: BaseOptions
   ): Promise<string> {
     const meta = options?.meta ?? buildBaseQueryMeta(this.memberName);
-    const headers = await this.buildQueryHeaders(meta);
+    const headers = this.buildQueryHeaders(meta);
     const resp = await this.api.delete(
       `${CommonWellMember.MEMBER_ENDPOINT}/${this.memberId}/org/${id}/certificate/${thumbprint}/purpose/${purpose}`,
       {
@@ -324,7 +324,7 @@ export class CommonWellMember implements CommonWellMemberAPI {
     options?: BaseOptions
   ): Promise<CertificateResp> {
     const meta = options?.meta ?? buildBaseQueryMeta(this.memberName);
-    const headers = await this.buildQueryHeaders(meta);
+    const headers = this.buildQueryHeaders(meta);
     const resp = await this.api.get(
       `${CommonWellMember.MEMBER_ENDPOINT}/${this.memberId}/org/${id}/certificate`,
       {
@@ -353,7 +353,7 @@ export class CommonWellMember implements CommonWellMemberAPI {
     options?: BaseOptions
   ): Promise<CertificateResp> {
     const meta = options?.meta ?? buildBaseQueryMeta(this.memberName);
-    const headers = await this.buildQueryHeaders(meta);
+    const headers = this.buildQueryHeaders(meta);
     const resp = await this.api.get(
       `${CommonWellMember.MEMBER_ENDPOINT}/${this.memberId}/org/${id}/certificate/${thumbprint}`,
       {
@@ -382,7 +382,7 @@ export class CommonWellMember implements CommonWellMemberAPI {
     options?: BaseOptions
   ): Promise<CertificateResp> {
     const meta = options?.meta ?? buildBaseQueryMeta(this.memberName);
-    const headers = await this.buildQueryHeaders(meta);
+    const headers = this.buildQueryHeaders(meta);
     const resp = await this.api.get(
       `${CommonWellMember.MEMBER_ENDPOINT}/${this.memberId}/org/${id}/certificate/${thumbprint}/purpose/${purpose}`,
       {
@@ -392,15 +392,14 @@ export class CommonWellMember implements CommonWellMemberAPI {
     return certificateRespSchema.parse(resp.data);
   }
 
-  private async buildQueryHeaders(meta: MemberRequestMetadata): Promise<Record<string, string>> {
-    const jwt = await makeJwt({
+  private buildQueryHeaders(meta: MemberRequestMetadata): Record<string, string> {
+    const jwt = makeJwt({
       rsaPrivateKey: this.rsaPrivateKey,
       role: meta.role,
       subjectId: meta.subjectId,
       orgName: this.memberName,
       oid: this.memberId,
       purposeOfUse: meta.purposeOfUse,
-      payloadHash: meta.payloadHash,
     });
     return { Authorization: `Bearer ${jwt}` };
   }

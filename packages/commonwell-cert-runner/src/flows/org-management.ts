@@ -26,7 +26,7 @@ export type OrgManagementResponse = {
 /**
  * Flow to validate the org management API (item 8.2.2 in the spec).
  *
- * @see https://www.commonwellalliance.org/wp-content/uploads/2025/06/Services-Specification-v4.3-Approved-2025.06.03-1.pdf
+ * @see https://www.commonwellalliance.org/specification/
  */
 export async function orgManagement(): Promise<OrgManagementResponse> {
   const commonWellMember = new CommonWellMember({
@@ -163,6 +163,7 @@ function buildResponse(org: Organization): OrgManagementResponse {
     rsaPrivateKey: orgPrivateKeyString,
     orgName: org.name,
     oid: org.organizationId,
+    homeCommunityId: org.homeCommunityId,
     npi: org.npiType2,
     apiMode: APIMode.integration,
   });

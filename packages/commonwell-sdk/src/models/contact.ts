@@ -1,5 +1,6 @@
-import { optionalStringPreprocess, zodToLowerCase } from "@metriport/shared/util/zod";
+import { zodToLowerCase } from "@metriport/shared/util/zod";
 import { z } from "zod";
+import { emptyStringToUndefinedSchema } from "../common/zod";
 import { periodSchema } from "./period";
 
 /**
@@ -62,8 +63,8 @@ function normalizeContactSystem(system: unknown): unknown {
 // See: https://specification.commonwellalliance.org/services/rest-api-reference (8.4.7 Contact)
 export const contactSchema = z.object({
   value: z.string().nullish(),
-  system: optionalStringPreprocess(contactSystemCodesSchema.nullish()),
-  use: optionalStringPreprocess(contactUseCodesSchema.nullish()),
+  system: emptyStringToUndefinedSchema.pipe(contactSystemCodesSchema.nullish()),
+  use: emptyStringToUndefinedSchema.pipe(contactUseCodesSchema.nullish()),
   period: periodSchema.nullish(),
 });
 export type Contact = z.infer<typeof contactSchema>;
