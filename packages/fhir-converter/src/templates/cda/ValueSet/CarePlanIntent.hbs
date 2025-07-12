@@ -1,0 +1,18 @@
+{{!-- 
+  // The list of possible values for the intent element in a CarePlan resource.
+  // See https://hl7.org/fhir/R4/careplan.html for reference.
+ --}}
+ {{!-- proposal | plan | order | option --}}
+{{#with (toLower code) as |normalizedCode|}}
+	{{#if (eq normalizedCode 'proposal')}}
+		"proposal"
+	{{else if (eq normalizedCode 'plan')}}
+		"plan"
+	{{else if (eq normalizedCode 'order')}}
+		"order"
+	{{else if (eq normalizedCode 'option')}}
+		"option"
+	{{else}}
+		"plan"
+	{{/if}}
+{{/with}}
