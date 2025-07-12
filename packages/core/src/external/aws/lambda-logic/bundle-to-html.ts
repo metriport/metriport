@@ -356,7 +356,7 @@ export function bundleToHtml(fhirBundle: Bundle, brief?: Brief, isLogoEnabled = 
 }
 
 // TODO: Use the version from "@metriport/core/external/fhir/bundle/bundle.ts"
-function extractFhirTypesFromBundle(bundle: Bundle): {
+export function extractFhirTypesFromBundle(bundle: Bundle): {
   diagnosticReports: DiagnosticReport[];
   patient?: Patient | undefined;
   practitioners: Practitioner[];
