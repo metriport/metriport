@@ -4,21 +4,16 @@ import {
   CertificatePurpose,
   Demographics,
   GenderCodes,
-  PatientIdentifier,
   NameUseCodes,
-  Organization,
   OrganizationWithNetworkInfo,
   Patient,
+  PatientIdentifier,
 } from "@metriport/commonwell-sdk";
 import { makeNPI } from "@metriport/shared/common/__tests__/npi";
 import { X509Certificate } from "crypto";
 import dayjs from "dayjs";
 import * as nanoid from "nanoid";
 import {
-  clientId,
-  clientSecret,
-  docAuthUrl,
-  docUrl,
   memberCertificateString,
   memberName,
   memberOID,
@@ -126,15 +121,15 @@ const shortName = "z_" + makeShortName();
 export function makeOrganization(suffixId?: string): OrganizationWithNetworkInfo {
   const orgId = makeOrgId(suffixId);
   return {
-    organizationId: `${orgId}`,
-    homeCommunityId: `${orgId}`,
+    organizationId: orgId,
     name: shortName,
     displayName: shortName,
-    memberName: "Metriport",
+    homeCommunityId: orgId,
+    memberName: memberName,
     type: "Hospital",
     npiType2: makeNPI(),
-    searchRadius: 50,
-    patientIdAssignAuthority: `${orgId}`,
+    searchRadius: 150,
+    patientIdAssignAuthority: orgId,
     isActive: true,
     locations: [
       {
@@ -185,72 +180,6 @@ export function makeOrganization(suffixId?: string): OrganizationWithNetworkInfo
         title: "TechnicalContact",
         email: "technicalContact@dummymail.com",
         phone: "303-555-1212",
-      },
-    ],
-  };
-}
-
-export function makeDocContribOrganization(suffixId?: string): Organization {
-  const orgId = makeOrgId(suffixId);
-  return {
-    organizationId: `${CW_ID_PREFIX}${orgId}`,
-    homeCommunityId: `${CW_ID_PREFIX}${orgId}`,
-    name: `Provider${suffixId}`,
-    displayName: `Provider${suffixId}`,
-    memberName: "Metriport",
-    type: "Hospital",
-    patientIdAssignAuthority: `${CW_ID_PREFIX}${orgId}`,
-    isActive: true,
-    locations: [
-      {
-        address1: "1 Main Street",
-        address2: "PO Box 123",
-        city: "Denver",
-        state: "CO",
-        postalCode: "80001",
-        country: "USA",
-        phone: "303-555-1212",
-        fax: "303-555-1212",
-        email: "here@dummymail.com",
-      },
-    ],
-    searchRadius: 50,
-    technicalContacts: [
-      {
-        name: "Technician",
-        title: "TechnicalContact",
-        email: "technicalContact@dummymail.com",
-        phone: "303-555-1212",
-      },
-    ],
-    gateways: [
-      {
-        serviceType: "R4_Base",
-        gatewayType: "FHIR",
-        endpointLocation: docUrl,
-      },
-    ],
-    securityTokenKeyType: "JWT",
-    authorizationInformation: {
-      authorizationServerEndpoint: docAuthUrl,
-      clientId: clientId,
-      clientSecret: clientSecret,
-      documentReferenceScope: "fhir/document",
-      binaryScope: "fhir/document",
-    },
-    networks: [
-      {
-        type: "CommonWell",
-        purposeOfUse: [
-          {
-            id: "TREATMENT",
-            queryInitiatorOnly: false,
-            queryInitiator: true,
-            queryResponder: true,
-          },
-        ],
-        // TODO ENG-200 address this
-        // doa: [],
       },
     ],
   };
