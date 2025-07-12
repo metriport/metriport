@@ -1,7 +1,7 @@
 import { USState } from "@metriport/shared";
 import { Patient } from "../../domain/patient";
 import { Hl7v2Subscription } from "../../domain/patient-settings";
-import { HieIANATimezone } from "../../external/hl7-notification/hie-timezone";
+import { HieIANATimezone } from "../../external/hl7-notification/hie-config-dictionary";
 
 export type SftpConfig = {
   host: string;
@@ -58,8 +58,7 @@ export type HieConfig = {
 };
 
 export type Hl7v2SubscriberParams = {
-  states?: string | undefined;
-  subscriptions: Hl7v2Subscription[];
+  hie: string;
   count?: number | undefined;
 };
 

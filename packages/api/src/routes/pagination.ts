@@ -14,6 +14,9 @@ import {
 export const defaultItemsPerPage = 50;
 export const maxItemsPerPage = 500;
 
+/**
+ * @deprecated Use queryMetaSchema from shared/src/domain/pagination instead
+ */
 export const queryMetaSchema = z.intersection(
   z.union(
     [
@@ -39,6 +42,9 @@ export const queryMetaSchema = z.intersection(
       .optional(),
   })
 );
+/**
+ * @deprecated Use HttpMeta from shared/src/domain/pagination instead
+ */
 export type HttpMeta = z.infer<typeof queryMetaSchema>;
 
 // TODO 483 remove this once pagination is fully rolled out

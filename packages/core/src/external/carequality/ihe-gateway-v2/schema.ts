@@ -2,6 +2,9 @@ import { z } from "zod";
 
 export const stringOrNumberSchema = z.union([z.string(), z.number()]);
 
+/**
+ * @deprecated Use numericValue from shared/src/common/zod instead
+ */
 export const numericValue = z.preprocess(input => {
   if (typeof input === "string") {
     return parseInt(input);
@@ -9,14 +12,19 @@ export const numericValue = z.preprocess(input => {
   return input;
 }, z.number());
 
-export const schemaOrEmpty = <T extends z.ZodTypeAny>(schema: T) =>
-  z.union([schema, z.literal("")]);
-export const schemaOrArray = <T extends z.ZodTypeAny>(schema: T) =>
-  z.union([schema, z.array(schema)]);
-export const schemaOrArrayOrEmpty = <T extends z.ZodTypeAny>(schema: T) =>
-  z.union([schema, z.array(schema), z.literal("")]);
+export function schemaOrEmpty<T extends z.ZodTypeAny>(schema: T) {
+  return z.union([schema, z.literal("")]);
+}
+export function schemaOrArray<T extends z.ZodTypeAny>(schema: T) {
+  return z.union([schema, z.array(schema)]);
+}
+export function schemaOrArrayOrEmpty<T extends z.ZodTypeAny>(schema: T) {
+  return z.union([schema, z.array(schema), z.literal("")]);
+}
 
-export const schemaOrString = <T extends z.ZodTypeAny>(schema: T) => z.union([schema, z.string()]);
+export function schemaOrString<T extends z.ZodTypeAny>(schema: T) {
+  return z.union([schema, z.string()]);
+}
 
 export const textSchema = z.union([
   stringOrNumberSchema,
