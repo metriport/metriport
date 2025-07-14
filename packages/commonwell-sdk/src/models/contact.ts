@@ -1,4 +1,4 @@
-import { zodToLowerCase } from "@metriport/shared/util/zod";
+import { zodToLowerCase } from "@metriport/shared";
 import { z } from "zod";
 import { emptyStringToUndefinedSchema } from "../common/zod";
 import { periodSchema } from "./period";
@@ -14,7 +14,6 @@ export enum ContactUseCodes {
   old = "old",
   mobile = "mobile",
 }
-// export const contactUseCodesSchema = z.preprocess(zodToLowerCase, z.nativeEnum(ContactUseCodes));
 export const contactUseCodesSchema = z
   .string()
   .transform(zodToLowerCase)

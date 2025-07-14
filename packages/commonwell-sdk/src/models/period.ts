@@ -1,6 +1,6 @@
+import { isoDateSchema, isoDateTimeSchema } from "@metriport/shared";
 import { z } from "zod";
 import { emptyStringToUndefinedSchema } from "../common/zod";
-import { isoDateSchema, isoDateTimeSchema } from "./date";
 
 // A time period defined by a start and end time.
 // See: https://specification.commonwellalliance.org/services/rest-api-reference (8.4.12 Period)

@@ -1,4 +1,4 @@
-import { zodToLowerCase } from "@metriport/shared/util/zod";
+import { zodToLowerCase } from "@metriport/shared";
 import { z } from "zod";
 import { emptyStringToUndefinedSchema } from "../common/zod";
 import { periodSchema } from "./period";
