@@ -1897,7 +1897,7 @@ class AthenaHealthApi {
     }
     if (targetUnits === "kg/m2") {
       if (units === "kg/m2" || units === "kg_m2") {
-        return { clinicalelementid: codeKey, value: +value }; // https://hl7.org/fhir/R4/valueset-ucum-bodybmi.html
+        return { clinicalelementid: codeKey, value }; // https://hl7.org/fhir/R4/valueset-ucum-bodybmi.html
       }
     }
     throw new BadRequestError("Unknown units", undefined, {

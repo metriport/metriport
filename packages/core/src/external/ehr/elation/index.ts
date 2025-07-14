@@ -1163,44 +1163,50 @@ class ElationApi {
     const { units: targetUnit, codeKey } = vitalSignCodesMap.get(loincCode) ?? {};
     if (!targetUnit || !codeKey) return undefined;
     if (units === targetUnit) return { codeKey, value };
+
     if (targetUnit === "lb_av") {
+      const valueNumber = typeof value === "string" ? +value : value;
       if (units === "kg" || units === "kilogram" || units === "kilograms") {
-        return { codeKey, value: this.convertKgToLbs(+value) }; // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
+        return { codeKey, value: this.convertKgToLbs(valueNumber) }; // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
       }
       if (units === "g" || units === "gram" || units === "grams") {
-        return { codeKey, value: this.convertGramsToLbs(+value) }; // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
+        return { codeKey, value: this.convertGramsToLbs(valueNumber) }; // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
       }
       if (units === "lb_av" || units.includes("pound")) {
-        return { codeKey, value: +value }; // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
+        return { codeKey, value: valueNumber }; // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
       }
     }
     if (targetUnit === "in_i") {
+      const valueNumber = typeof value === "string" ? +value : value;
       if (units === "cm" || units === "centimeter") {
-        return { codeKey, value: this.convertCmToInches(+value) }; // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
+        return { codeKey, value: this.convertCmToInches(valueNumber) }; // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
       }
       if (units === "in_i" || units.includes("inch")) {
-        return { codeKey, value: +value }; // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
+        return { codeKey, value: valueNumber }; // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
       }
     }
     if (targetUnit === "cm") {
+      const valueNumber = typeof value === "string" ? +value : value;
       if (units === "cm" || units === "centimeter") {
-        return { codeKey, value: +value }; // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
+        return { codeKey, value: valueNumber }; // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
       }
       if (units === "in_i" || units.includes("inch")) {
-        return { codeKey, value: this.convertInchesToCm(+value) }; // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
+        return { codeKey, value: this.convertInchesToCm(valueNumber) }; // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
       }
     }
     if (targetUnit === "degf") {
+      const valueNumber = typeof value === "string" ? +value : value;
       if (units === "degf" || units === "f" || units.includes("fahrenheit")) {
-        return { codeKey, value: +value }; // https://hl7.org/fhir/R4/valueset-ucum-bodytemp.html
+        return { codeKey, value: valueNumber }; // https://hl7.org/fhir/R4/valueset-ucum-bodytemp.html
       }
       if (units === "cel" || units === "c" || units.includes("celsius")) {
-        return { codeKey, value: this.convertCelciusToFahrenheit(+value) }; // https://hl7.org/fhir/R4/valueset-ucum-bodytemp.html
+        return { codeKey, value: this.convertCelciusToFahrenheit(valueNumber) }; // https://hl7.org/fhir/R4/valueset-ucum-bodytemp.html
       }
     }
     if (targetUnit === "kg/m2") {
+      const valueNumber = typeof value === "string" ? +value : value;
       if (units === "kg/m2" || units === "kg_m2") {
-        return { codeKey, value: +value }; // https://hl7.org/fhir/R4/valueset-ucum-bodybmi.html
+        return { codeKey, value: valueNumber }; // https://hl7.org/fhir/R4/valueset-ucum-bodybmi.html
       }
     }
     throw new BadRequestError("Unknown units", undefined, {
