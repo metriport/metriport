@@ -100,9 +100,15 @@ vitalSignCodesMap.set("2708-6", { codeKey: "oxygen", units: "%" });
 vitalSignCodesMap.set("59408-5", { codeKey: "oxygen", units: "%" });
 vitalSignCodesMap.set("8462-4", { codeKey: "bp", units: "mmHg" });
 vitalSignCodesMap.set("8480-6", { codeKey: "bp", units: "mmHg" });
+vitalSignCodesMap.set("85354-9", { codeKey: "bp", units: "mmHg" });
 vitalSignCodesMap.set("29463-7", { codeKey: "weight", units: "lb_av" });
 vitalSignCodesMap.set("8302-2", { codeKey: "height", units: "in_i" });
 vitalSignCodesMap.set("56086-2", { codeKey: "wc", units: "cm" });
+vitalSignCodesMap.set("39156-5", { codeKey: "bmi", units: "kg/m2" });
+
+const bpGlobalCode = "85354-9";
+const bpSystolicCode = "8480-6";
+const bpDiastolicCode = "8462-4";
 
 const ccdaSectionMap = new Map<ResourceType, string>();
 ccdaSectionMap.set("AllergyIntolerance", "allergies");
@@ -860,10 +866,6 @@ class ElationApi {
     return formatDate(date, elationDateTimeFormat);
   }
 
-  private createWriteBackPath(resourceType: string, resourceId: string | undefined): string {
-    return `write-back/${resourceType}/${resourceId ?? "unknown"}`;
-  }
-
   private formatLab(
     observation: Observation,
     additionalInfo: Record<string, string | undefined>
@@ -1085,14 +1087,13 @@ class ElationApi {
   private formatVital(
     observation: Observation,
     additionalInfo: Record<string, string | undefined>
-  ): Record<string, { value: string }[]> {
+  ):
+    | Record<string, { value: string }[]>
+    | { bmi: number }
+    | { bp: { systolic: string | undefined; diastolic: string | undefined }[] } {
     const loincCode = getObservationLoincCode(observation);
-    if (!loincCode) {
+    if (!loincCode || !vitalSignCodesMap.get(loincCode)) {
       throw new BadRequestError("No LOINC code found for observation", undefined, additionalInfo);
-    }
-    const codeAndUnits = vitalSignCodesMap.get(loincCode);
-    if (!codeAndUnits) {
-      throw new BadRequestError("No valid code found for LOINC coding", undefined, additionalInfo);
     }
     const units = getObservationUnit(observation);
     if (!units) {
@@ -1102,46 +1103,105 @@ class ElationApi {
     if (!value) {
       throw new BadRequestError("No value found for observation", undefined, additionalInfo);
     }
-    const convertedValue = this.convertValue(loincCode, +value, units);
-    if (!convertedValue) {
+    const convertedCodeAndValue = this.convertCodeAndValue(loincCode, value, units);
+    if (!convertedCodeAndValue) {
       throw new BadRequestError("No value converted for observation", undefined, additionalInfo);
     }
+    if (convertedCodeAndValue.codeKey === "bmi") {
+      return { bmi: +convertedCodeAndValue.value };
+    }
+    if (convertedCodeAndValue.codeKey === "bp") {
+      if (loincCode === bpGlobalCode) {
+        const [systolic, diastolic] = convertedCodeAndValue.value
+          .toString()
+          .replace("mmHg", "")
+          .split("/");
+        return {
+          bp: [
+            {
+              systolic: systolic ? systolic.trim() : undefined,
+              diastolic: diastolic ? diastolic.trim() : undefined,
+            },
+          ],
+        };
+      }
+      if (loincCode === bpSystolicCode) {
+        return {
+          bp: [
+            {
+              systolic: convertedCodeAndValue.value.toString(),
+              diastolic: undefined,
+            },
+          ],
+        };
+      }
+      if (loincCode === bpDiastolicCode) {
+        return {
+          bp: [
+            {
+              systolic: undefined,
+              diastolic: convertedCodeAndValue.value.toString(),
+            },
+          ],
+        };
+      }
+    }
     return {
-      [codeAndUnits.codeKey]: [
+      [convertedCodeAndValue.codeKey]: [
         {
-          value: convertedValue.toString(),
+          value: convertedCodeAndValue.value.toString(),
         },
       ],
     };
   }
 
-  private convertValue(
+  private convertCodeAndValue(
     loincCode: string,
-    value: number,
+    value: number | string,
     units: string
-  ): number | string | undefined {
-    const { units: targetUnit } = vitalSignCodesMap.get(loincCode) ?? {};
-    if (!targetUnit) return undefined;
-    if (units === targetUnit) return value;
+  ): { codeKey: string; value: number | string } | undefined {
+    const { units: targetUnit, codeKey } = vitalSignCodesMap.get(loincCode) ?? {};
+    if (!targetUnit || !codeKey) return undefined;
+    if (units === targetUnit) return { codeKey, value };
     if (targetUnit === "lb_av") {
-      if (units === "kg" || units === "kilogram" || units === "kilograms")
-        return this.convertKgToLbs(value); // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
-      if (units === "g" || units === "gram" || units === "grams")
-        return this.convertGramsToLbs(value); // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
-      if (units === "lb_av" || units.includes("pound")) return value; // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
+      if (units === "kg" || units === "kilogram" || units === "kilograms") {
+        return { codeKey, value: this.convertKgToLbs(+value) }; // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
+      }
+      if (units === "g" || units === "gram" || units === "grams") {
+        return { codeKey, value: this.convertGramsToLbs(+value) }; // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
+      }
+      if (units === "lb_av" || units.includes("pound")) {
+        return { codeKey, value: +value }; // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
+      }
     }
     if (targetUnit === "in_i") {
-      if (units === "cm" || units === "centimeter") return this.convertCmToInches(value); // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
-      if (units === "in_i" || units.includes("inch")) return value; // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
+      if (units === "cm" || units === "centimeter") {
+        return { codeKey, value: this.convertCmToInches(+value) }; // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
+      }
+      if (units === "in_i" || units.includes("inch")) {
+        return { codeKey, value: +value }; // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
+      }
     }
     if (targetUnit === "cm") {
-      if (units === "cm" || units === "centimeter") return value; // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
-      if (units === "in_i" || units.includes("inch")) return this.convertInchesToCm(value); // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
+      if (units === "cm" || units === "centimeter") {
+        return { codeKey, value: +value }; // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
+      }
+      if (units === "in_i" || units.includes("inch")) {
+        return { codeKey, value: this.convertInchesToCm(+value) }; // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
+      }
     }
     if (targetUnit === "degf") {
-      if (units === "degf" || units === "f" || units.includes("fahrenheit")) return value; // https://hl7.org/fhir/R4/valueset-ucum-bodytemp.html
-      if (units === "cel" || units === "c" || units.includes("celsius"))
-        return this.convertCelciusToFahrenheit(value); // https://hl7.org/fhir/R4/valueset-ucum-bodytemp.html}
+      if (units === "degf" || units === "f" || units.includes("fahrenheit")) {
+        return { codeKey, value: +value }; // https://hl7.org/fhir/R4/valueset-ucum-bodytemp.html
+      }
+      if (units === "cel" || units === "c" || units.includes("celsius")) {
+        return { codeKey, value: this.convertCelciusToFahrenheit(+value) }; // https://hl7.org/fhir/R4/valueset-ucum-bodytemp.html
+      }
+    }
+    if (targetUnit === "kg/m2") {
+      if (units === "kg/m2" || units === "kg_m2") {
+        return { codeKey, value: +value }; // https://hl7.org/fhir/R4/valueset-ucum-bodybmi.html
+      }
     }
     throw new BadRequestError("Unknown units", undefined, {
       units,
@@ -1176,6 +1236,10 @@ class ElationApi {
     if (interpretation === "low") return "Below low normal";
     if (interpretation === "high") return "Above high normal";
     return "Not Applicable";
+  }
+
+  private createWriteBackPath(resourceType: string, resourceId: string | undefined): string {
+    return `write-back/${resourceType}/${resourceId ?? "unknown"}`;
   }
 }
 

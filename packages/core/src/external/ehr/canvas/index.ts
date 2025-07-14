@@ -149,10 +149,14 @@ vitalSignCodesMap.set("8867-4", "bpm");
 vitalSignCodesMap.set("9279-1", "bpm");
 vitalSignCodesMap.set("2708-6", "%");
 vitalSignCodesMap.set("59408-5", "%");
+vitalSignCodesMap.set("8462-4", "mmHg");
+vitalSignCodesMap.set("8480-6", "mmHg");
 vitalSignCodesMap.set("85354-9", "mmHg");
 vitalSignCodesMap.set("29463-7", "kg");
 vitalSignCodesMap.set("8302-2", "cm");
 vitalSignCodesMap.set("56086-2", "cm");
+
+const bpSubCodes = ["8462-4", "8480-6"];
 
 const medicationStatementStatuses = ["active", "entered-in-error", "stopped"];
 const immunizationStatuses = ["completed", "entered-in-error", "not-done"];
@@ -884,15 +888,19 @@ class CanvasApi {
       error: unknown;
       observation: string;
     }[] = [];
-    const createObservationsArgs: Observation[] = vitals.sortedPoints.map(point => {
+    const createObservationsArgs: Observation[] = vitals.sortedPoints.flatMap(point => {
       const formattedPoint = this.formatVitalDataPoint(observation, point, additionalInfo);
+      if (!formattedPoint) return [];
       formattedPoint.subject = { reference: `Patient/${patientId}` };
       formattedPoint.extension = [
         ...(formattedPoint.extension ?? []),
         this.formatNoteIdExtension(noteId),
       ];
-      return formattedPoint;
+      return [formattedPoint];
     });
+    if (createObservationsArgs.length < 1) {
+      throw new BadRequestError("No valid vitals data found", undefined, additionalInfo);
+    }
     await executeAsynchronously(
       createObservationsArgs,
       async (params: Observation) => {
@@ -1503,7 +1511,7 @@ class CanvasApi {
     observation: Observation,
     dataPoint: DataPoint,
     additionalInfo: Record<string, string | undefined>
-  ): Observation {
+  ): Observation | undefined {
     const formattedObservation: Observation = {
       resourceType: "Observation",
       ...(observation.id ? { id: observation.id } : {}),
@@ -1523,7 +1531,11 @@ class CanvasApi {
     }
     formattedObservation.code = {
       coding: [
-        { code: loincCoding.code, system: "http://loinc.org", display: loincCoding.display },
+        {
+          code: bpSubCodes.includes(loincCoding.code) ? "85354-9" : loincCoding.code,
+          system: "http://loinc.org",
+          display: bpSubCodes.includes(loincCoding.code) ? "Blood pressure" : loincCoding.display,
+        },
       ],
     };
     const units = getObservationUnit(observation);
@@ -1536,26 +1548,54 @@ class CanvasApi {
     }
     formattedObservation.status = resultStatus as ObservationStatus;
     const effectiveDateTime = this.formatDateTime(dataPoint.date);
-    if (!effectiveDateTime) {
-      throw new BadRequestError(
-        "No effective date time found for observation",
-        undefined,
-        additionalInfo
-      );
-    }
+    if (!effectiveDateTime) return undefined;
     formattedObservation.effectiveDateTime = effectiveDateTime;
+    if (dataPoint.bp) {
+      formattedObservation.valueString = `${dataPoint.bp.systolic}/${dataPoint.bp.diastolic} mmHg`;
+      formattedObservation.component = [
+        {
+          code: {
+            coding: [
+              {
+                system: "http://loinc.org",
+                code: "8480-6",
+                display: "Systolic blood pressure",
+              },
+            ],
+          },
+          valueQuantity: {
+            value: dataPoint.bp.systolic,
+            unit: "mmHg",
+            system: "http://unitsofmeasure.org",
+            code: "mm[Hg]",
+          },
+        },
+        {
+          code: {
+            coding: [
+              {
+                system: "http://loinc.org",
+                code: "8462-4",
+                display: "Diastolic blood pressure",
+              },
+            ],
+          },
+          valueQuantity: {
+            value: dataPoint.bp.diastolic,
+            unit: "mmHg",
+            system: "http://unitsofmeasure.org",
+            code: "mm[Hg]",
+          },
+        },
+      ];
+      return formattedObservation;
+    }
     const convertedUnitAndValue = this.convertUnitAndValue(
       loincCoding.code,
       dataPoint.value,
       units
     );
-    if (!convertedUnitAndValue) {
-      throw new BadRequestError(
-        "No unit and value converted for observation",
-        undefined,
-        additionalInfo
-      );
-    }
+    if (!convertedUnitAndValue) return undefined;
     formattedObservation.valueQuantity = {
       value: convertedUnitAndValue.value,
       unit: convertedUnitAndValue.unit,
@@ -1582,29 +1622,37 @@ class CanvasApi {
     loincCode: string,
     value: number,
     units: string
-  ): { value: number; unit: string } | undefined {
+  ): { unit: string; value: number } | undefined {
     const targetUnit = vitalSignCodesMap.get(loincCode);
     if (!targetUnit) return undefined;
     const unitParam = { unit: targetUnit };
     if (units === targetUnit) return { ...unitParam, value };
     if (targetUnit === "kg") {
-      if (units === "kg" || units === "kilogram" || units === "kilograms")
+      if (units === "kg" || units === "kilogram" || units === "kilograms") {
         return { ...unitParam, value }; // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
-      if (units === "g" || units === "gram" || units === "grams")
+      }
+      if (units === "g" || units === "gram" || units === "grams") {
         return { ...unitParam, value: this.convertGramsToKg(value) }; // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
-      if (units === "lb_av" || units.includes("pound"))
+      }
+      if (units === "lb_av" || units.includes("pound")) {
         return { ...unitParam, value: this.convertLbsToKg(value) }; // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
+      }
     }
     if (targetUnit === "cm") {
-      if (units === "cm" || units === "centimeter") return { ...unitParam, value }; // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
-      if (units === "in_i" || units.includes("inch"))
+      if (units === "cm" || units === "centimeter") {
+        return { ...unitParam, value }; // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
+      }
+      if (units === "in_i" || units.includes("inch")) {
         return { ...unitParam, value: this.convertInchesToCm(value) }; // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
+      }
     }
     if (targetUnit === "degf") {
-      if (units === "degf" || units === "f" || units.includes("fahrenheit"))
+      if (units === "degf" || units === "f" || units.includes("fahrenheit")) {
         return { ...unitParam, value }; // https://hl7.org/fhir/R4/valueset-ucum-bodytemp.html
-      if (units === "cel" || units === "c" || units.includes("celsius"))
-        return { ...unitParam, value: this.convertCelciusToFahrenheit(value) }; // https://hl7.org/fhir/R4/valueset-ucum-bodytemp.html}
+      }
+      if (units === "cel" || units === "c" || units.includes("celsius")) {
+        return { ...unitParam, value: this.convertCelciusToFahrenheit(value) }; // https://hl7.org/fhir/R4/valueset-ucum-bodytemp.html
+      }
     }
     throw new BadRequestError("Unknown units", undefined, {
       units,
