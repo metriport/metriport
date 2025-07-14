@@ -127,14 +127,12 @@ export async function linkManagement(commonWell: CommonWell) {
     const resp_2_3_1 = await commonWell.linkPatients(urlToLinkWithPatient1);
     console.log(">>> Transaction ID: " + commonWell.lastTransactionId);
     console.log(">>> 2.3.1 Response: " + stringify(resp_2_3_1));
-    // TODO ENG-200 log the response
 
     if (urlToLinkWithPatient2) {
       console.log(`>>> 2.3.2 Link Patient2`);
       const resp_2_3_2 = await commonWell.linkPatients(urlToLinkWithPatient2);
       console.log(">>> Transaction ID: " + commonWell.lastTransactionId);
       console.log(">>> 2.3.2 Response: " + stringify(resp_2_3_2));
-      // TODO ENG-200 log the response
     }
 
     await waitSeconds(5);
@@ -173,7 +171,6 @@ export async function linkManagement(commonWell: CommonWell) {
     const resp_2_5_1 = await commonWell.resetPatientLinks(urlToResetPatientLinks);
     console.log(">>> Transaction ID: " + commonWell.lastTransactionId);
     console.log(">>> 2.5.1 Response: " + stringify(resp_2_5_1));
-    // TODO ENG-200 log the response
 
     await waitSeconds(5);
     console.log(`>>> 2.5.2 Get Patient Links - ID ${patientWithProbableLinksId}`);
