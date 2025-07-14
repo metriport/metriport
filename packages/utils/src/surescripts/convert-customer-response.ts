@@ -6,6 +6,8 @@ import { Command } from "commander";
 import { SurescriptsConvertPatientResponseHandlerDirect } from "@metriport/core/external/surescripts/command/convert-patient-response/convert-patient-response-direct";
 import { buildCsvPath, getTransmissionsFromCsv } from "./shared";
 import { buildLatestConversionBundleFileName } from "@metriport/core/external/surescripts/file/file-names";
+import { SurescriptsDataMapper } from "@metriport/core/external/surescripts/data-mapper";
+import { executeAsynchronously } from "@metriport/core/util";
 
 const program = new Command();
 
@@ -15,6 +17,7 @@ interface ConvertCustomerResponseOptions {
   csvData?: string;
   start?: string;
   end?: string;
+  recreate?: boolean;
 }
 
 program
@@ -22,6 +25,7 @@ program
   .option("--cx-id <cxId>", "The customer ID")
   .option("--facility-id <facilityId>", "The facility ID")
   .option("--csv-data <csvData>", "The CSV data")
+  .option("--recreate", "Recreate the consolidated bundle")
   .option("--start <start>", "Start at index")
   .option("--end <end>", "end before index")
   .description("Converts a customer response to FHIR bundles")
@@ -33,6 +37,7 @@ program
     csvData,
     start,
     end,
+    recreate,
   }: ConvertCustomerResponseOptions) {
     if (!cxId) throw new Error("Customer ID is required");
     if (!facilityId) throw new Error("Facility ID is required");
@@ -63,6 +68,24 @@ program
       }
     }
     console.log(`Converted ${convertedCount} patients`);
+
+    if (recreate) {
+      console.log(`Recreating consolidated bundles for ${transmissions.length} patients`);
+      const dataMapper = new SurescriptsDataMapper();
+      let recreatedCount = 0;
+      await executeAsynchronously(transmissions, async ({ patientId }) => {
+        try {
+          const result = await dataMapper.recreateConsolidatedBundle(cxId, patientId);
+          console.log(
+            `Recreated consolidated bundle for ${patientId} with request ID ${result.requestId}`
+          );
+          recreatedCount++;
+        } catch (error) {
+          console.error(`Error recreating consolidated bundle for ${patientId}: ${error}`);
+        }
+      });
+      console.log(`Recreated ${recreatedCount} consolidated bundles`);
+    }
   });
 
 export default program;

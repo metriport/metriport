@@ -5,7 +5,7 @@ import {
   IncomingFileRowSchema,
   IncomingFile,
 } from "../schema/shared";
-import { ParsedResponseFile, responseFileSchema } from "../schema/response";
+import { ParsedResponseFile, responseDetailRow, responseFileSchema } from "../schema/response";
 import { ParsedVerificationFile, verificationFileSchema } from "../schema/verification";
 
 interface RawPipeDelimitedFile {
@@ -24,6 +24,32 @@ export function parseResponseFile(message: Buffer): ParsedResponseFile {
   const pipeDelimitedFile = extractRawPipeDelimitedFile(message);
   const parsedFile = extractIncomingFile(pipeDelimitedFile, responseFileSchema);
   return parsedFile;
+}
+
+export function parseResponseFileToCsv(message: Buffer): string {
+  const pipeDelimitedFile = extractRawPipeDelimitedFile(message);
+  const parsedFile = extractIncomingFile(pipeDelimitedFile, responseFileSchema);
+
+  const csv: string[] = [];
+  csv.push(
+    responseDetailRow.map(column => `"${column && column.key ? column.key : ""}"`).join(",")
+  );
+  for (const detail of parsedFile.details) {
+    csv.push(
+      responseDetailRow
+        .map(column => {
+          if (!column || !column.key) return "";
+          const value = detail.data[column.key];
+          if (typeof value === "string") return `"${value}"`;
+          if (typeof value === "number") return value.toString();
+          if (typeof value === "boolean") return value ? "true" : "false";
+          if (typeof value === "object") return JSON.stringify(value);
+          return "";
+        })
+        .join(",")
+    );
+  }
+  return csv.join("\n");
 }
 
 function extractIncomingFile<H extends object, D extends object, F extends object>(
@@ -61,9 +87,9 @@ function extractIncomingData<T extends object>(
 function extractRawPipeDelimitedFile(message: Buffer): RawPipeDelimitedFile {
   const lines = message.toString("ascii").split("\n").filter(nonEmptyLine);
   const table = lines.map(line => line.split("|"));
-  const headerRow = table.shift();
-  const detailRows = table.slice(0, -1);
-  const footerRow = table.pop();
+  const headerRow = table[0];
+  const detailRows = table.slice(1, table.length - 1);
+  const footerRow = table[table.length - 1];
   if (!headerRow) {
     throw new MetriportError("Header is missing", undefined, {
       message: message.toString("ascii"),
