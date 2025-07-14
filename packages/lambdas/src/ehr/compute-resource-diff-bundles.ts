@@ -1,4 +1,4 @@
-import { EhrComputeResourceDiffBundlesDirect } from "@metriport/core/external/ehr/job/create-resource-diff-bundles/steps/compute/ehr-compute-resource-diff-bundles-direct";
+import { EhrComputeResourceDiffBundlesDirect } from "@metriport/core/external/ehr/job/bundle/create-resource-diff-bundles/steps/compute/ehr-compute-resource-diff-bundles-direct";
 import { getEnvAsIntOrFail } from "@metriport/shared";
 import { SQSEvent } from "aws-lambda";
 import { capture } from "../shared/capture";

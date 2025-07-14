@@ -12,7 +12,7 @@ export async function writeConditionToChart({
   elationPatientId: string;
   elationPracticeId: string;
   condition: Condition;
-}): Promise<CreatedProblem> {
+}): Promise<CreatedProblem | undefined> {
   const api = await createElationClient({ cxId, practiceId: elationPracticeId });
   return await api.createProblem({
     cxId,
