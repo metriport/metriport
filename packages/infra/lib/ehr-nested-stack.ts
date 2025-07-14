@@ -579,7 +579,7 @@ export class EhrNestedStack extends NestedStack {
           ? { EHR_RESPONSES_BUCKET_NAME: ownProps.ehrResponsesBucket.bucketName }
           : {}),
       },
-      layers: [lambdaLayers.shared],
+      layers: [lambdaLayers.shared, lambdaLayers.langchain],
       vpc,
       alarmSnsAction: alarmAction,
     });
@@ -640,7 +640,7 @@ export class EhrNestedStack extends NestedStack {
           ? { EHR_RESPONSES_BUCKET_NAME: ownProps.ehrResponsesBucket.bucketName }
           : {}),
       },
-      layers: [lambdaLayers.shared],
+      layers: [lambdaLayers.shared, lambdaLayers.langchain],
       vpc,
       alarmSnsAction: alarmAction,
     });
