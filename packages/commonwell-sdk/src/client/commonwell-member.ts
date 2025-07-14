@@ -23,10 +23,8 @@ import { BaseOptions, CommonWellMemberAPI, MemberRequestMetadata } from "./commo
  */
 export class CommonWellMember implements CommonWellMemberAPI {
   static integrationUrl = "https://api.integration.commonwellalliance.lkopera.com";
-  // TODO ENG-200 change this to the production URL
   static productionUrl = "https://api.commonwellalliance.lkopera.com";
 
-  // TODO ENG-200 REMOVE/REVIEW THESE
   static ORG_ENDPOINT = "/v1/org";
   static MEMBER_ENDPOINT = "/v1/member";
 

@@ -63,7 +63,6 @@ export function encodeToCwPatientId({
   assignAuthority: string;
   assignAuthorityType?: string | undefined;
 }): string {
-  // TODO ENG-200 CAN JUST SKIP TYPE IF NOT PROVIDED?
   return `${patientId}^^^&${assignAuthority}&${assignAuthorityType ?? "ISO"}`;
 }
 
