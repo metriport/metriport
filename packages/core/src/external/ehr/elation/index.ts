@@ -1108,9 +1108,9 @@ class ElationApi {
     if (!value) {
       throw new BadRequestError("No value found for observation", undefined, additionalInfo);
     }
-    const observedDate = getObservationObservedDate(observation);
-    const formattedObservedDate = this.formatDateTime(observedDate);
-    if (!formattedObservedDate) {
+    const chartDate = getObservationObservedDate(observation);
+    const formattedChartDate = this.formatDateTime(chartDate);
+    if (!formattedChartDate) {
       throw new BadRequestError(
         "No observed date found for observation",
         undefined,
@@ -1123,7 +1123,7 @@ class ElationApi {
     }
     if (convertedCodeAndValue.codeKey === "bmi") {
       return {
-        chart_date: formattedObservedDate,
+        chart_date: formattedChartDate,
         data: {
           bmi: +convertedCodeAndValue.value,
         },
@@ -1136,7 +1136,7 @@ class ElationApi {
           .replace("mmHg", "")
           .split("/");
         return {
-          chart_date: formattedObservedDate,
+          chart_date: formattedChartDate,
           data: {
             bp: [
               {
@@ -1148,7 +1148,7 @@ class ElationApi {
         };
       } else if (loincCode === bpSystolicCode) {
         return {
-          chart_date: formattedObservedDate,
+          chart_date: formattedChartDate,
           data: {
             bp: [
               {
@@ -1160,7 +1160,7 @@ class ElationApi {
         };
       } else if (loincCode === bpDiastolicCode) {
         return {
-          chart_date: formattedObservedDate,
+          chart_date: formattedChartDate,
           data: {
             bp: [
               {
@@ -1178,7 +1178,7 @@ class ElationApi {
       }
     }
     return {
-      chart_date: formattedObservedDate,
+      chart_date: formattedChartDate,
       data: {
         [convertedCodeAndValue.codeKey]: [
           {
