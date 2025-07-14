@@ -1,3 +1,4 @@
+import { BadRequestError } from "@metriport/shared";
 import { createPatientJob } from "../../../../../../command/job/patient/create";
 import { getPatientJobByIdOrFail } from "../../../../../../command/job/patient/get";
 import { validatePatientAndLatestJobStatus } from "../../../command/job/validate-patient-and-lastest-job-status";
@@ -40,7 +41,14 @@ export async function startWriteBackBundlesJob({
     jobId: createResourceDiffBundlesJobId,
   });
   if (createResourceDiffBundlesJob.jobType !== getCreateResourceDiffBundlesJobType(ehr)) {
-    throw new Error("Create resource diff bundles job is not a create resource diff bundles job");
+    throw new BadRequestError(
+      "Create resource diff bundles job is not a create resource diff bundles job",
+      undefined,
+      {
+        createResourceDiffBundlesJobId,
+        createResourceDiffBundlesJobType: createResourceDiffBundlesJob.jobType,
+      }
+    );
   }
   const metriportPatientId = await validatePatientAndLatestJobStatus({
     ehr,
