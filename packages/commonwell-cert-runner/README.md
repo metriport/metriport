@@ -211,25 +211,7 @@ Documents are downloaded to:
 3. **Patient Not Found**: Check patient demographics match test data
 4. **Document Download Failures**: Verify document URLs are accessible
 
-### Debug Mode
-
-Enable verbose logging by modifying `src/util.ts`:
-
-```typescript
-export function logError(error: any) {
-  console.error(`Error (${error.response?.status}): ${error.message}`);
-  console.error(`Stack: ${error.stack}`);
-  if (error.response?.data) {
-    console.error(JSON.stringify(error.response.data, null, 2));
-  }
-}
-```
-
 ## Development
-
-### Build Commands
-
-### Development Mode
 
 ```bash
 npm install # only has to be run once
