@@ -1,79 +1,47 @@
 # `commonwell-sdk`
 
-Utility to simplify CommonWell API integration - by Metriport Inc.
-
-REST API Reference: https://specification.commonwellalliance.org/services/rest-api-reference
-
-Based on the version 4.3 of the CommonWell Services Specification:
-
-https://www.commonwellalliance.org/wp-content/uploads/2025/06/Services-Specification-v4.3-Approved-2025.06.03-1.pdf
+SDK to simplify CommonWell API integration - by Metriport Inc.
 
 ## Usage
 
-Make sure the repository is initialized and built, see [README.md](https://github.com/metriport/metriport/blob/develop/README.md) for more details.
+To connect to the CommonWell API, you can use the one of the options below:
 
-Populate the environment variables in the `.env` file.
+- `CommonWellMember` class:
+  - This class is used to connect to the CommonWell API as a member organization.
+  - It is used to create, update, and delete organizations, certificates, and other resources.
+- `CommonWell` class:
+  - This class is used to connect to the CommonWell API as a contributor organization.
+  - It is used to create, update, link, and delete patients, query documents, and other resources.
 
-TODO ENG-200 review this
-TODO ENG-200 review this
-TODO ENG-200 review this
-TODO ENG-200 review this
+### CommonWellMember
 
-```
-# Required Member Configuration
-CW_MEMBER_ID=
-CW_MEMBER_OID=
-CW_MEMBER_NAME=
-CW_MEMBER_CERTIFICATE=
-CW_MEMBER_PRIVATE_KEY=
+```typescript
+import { APIMode, CommonWellMember } from "@metriport/commonwell-sdk";
 
-# Required Organization Configuration
-CW_ORG_CERTIFICATE=
-CW_ORG_PRIVATE_KEY=
-CW_ORG_GATEWAY_ENDPOINT=
-CW_ORG_GATEWAY_AUTHORIZATION_SERVER_ENDPOINT=
-CW_ORG_GATEWAY_AUTHORIZATION_CLIENT_ID=
-CW_ORG_GATEWAY_AUTHORIZATION_CLIENT_SECRET=
-
-# Optional Organization Configuration
-CW_ORG_ID=  # If set, the cert runner will use this org and not try to create a new one
-
-# Sandbox Configuration
-CW_SANDBOX_ORG_OID=
-CW_SANDBOX_ORG_NAME=
-
-# Document Contribution Configuration
-DOCUMENT_CONTRIBUTION_ORGANIZATION_ID=
-DOCUMENT_CONTRIBUTION_PATIENT_FIRST_NAME=
-DOCUMENT_CONTRIBUTION_PATIENT_LAST_NAME=
-DOCUMENT_CONTRIBUTION_PATIENT_DATE_OF_BIRTH=
-DOCUMENT_CONTRIBUTION_PATIENT_GENDER=
-DOCUMENT_CONTRIBUTION_PATIENT_ZIP=
-DOCUMENT_CONTRIBUTION_FHIR_URL=
-DOCUMENT_CONTRIBUTION_URL=
-
-# Document Patient Configuration
-DOCUMENT_PATIENT_FIRST_NAME=
-DOCUMENT_PATIENT_LAST_NAME=
-DOCUMENT_PATIENT_DATE_OF_BIRTH=
-DOCUMENT_PATIENT_GENDER=
-DOCUMENT_PATIENT_ZIP=
-
-# Legacy Authentication (Deprecated)
-DOCUMENT_CONTRIBUTION_AUTH_URL=
-DOCUMENT_CONTRIBUTION_CLIENT_ID=
-DOCUMENT_CONTRIBUTION_CLIENT_SECRET=
+const commonWellMember = new CommonWellMember({
+  orgCert: "<member-certificate-string>",
+  rsaPrivateKey: "<member-private-key-string>",
+  memberName: "<member-name>",
+  memberId: "<member-id>",
+  apiMode: APIMode.integration, // or APIMode.production
+});
 ```
 
-Note `CW_ORG_ID` is optional, if set, the cert runner will use this org and not run the Org cert process, which creates a new one.Ø
+### CommonWell
 
-Then, run the cert runner with the following command:
+```typescript
+import { APIMode, CommonWell } from "@metriport/commonwell-sdk";
 
-```shell
-$ npm start
+const commonWell = new CommonWell({
+  orgCert: "<contributor-certificate-string>",
+  rsaPrivateKey: "<contributor-private-key-string>",
+  orgName: "<contributor-name>",
+  oid: "<contributor-id>",
+  homeCommunityId: "<contributor-home-community-id>",
+  npi: "<contributor-npi>",
+  apiMode: APIMode.integration, // or APIMode.production
+});
 ```
-
-This will run through the CommonWell certification test cases.
 
 ```
             ,▄,
