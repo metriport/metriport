@@ -15,7 +15,8 @@ describe("makeOid", () => {
   it("should generate OID starting from a base OID", () => {
     const baseOid = "1.2.840.113883";
     const oid = makeOid({ startFrom: baseOid, amountOfLevels: 6 });
-    expect(oid).toMatch(new RegExp(`^${baseOid.replace(/\./g, "\\.")}\\.\\d+\\.\\d+$`));
+    // eslint-disable-next-line no-useless-escape
+    expect(oid).toMatch(new RegExp(`^${baseOid.replace(/\./g, ".")}\.\\d+\.\\d+$`));
     expect(oid.split(".")).toHaveLength(6);
   });
 
