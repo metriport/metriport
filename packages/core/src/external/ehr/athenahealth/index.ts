@@ -99,7 +99,6 @@ import {
   patientSearchSchema,
 } from "@metriport/shared/interface/external/ehr/patient";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
-import { getObservationUnits } from "@metriport/shared/medical";
 import axios, { AxiosInstance } from "axios";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -132,6 +131,7 @@ import {
   getObservationObservedDate,
   getObservationReferenceRange,
   getObservationResultStatus,
+  getObservationUnit,
   getObservationUnitAndValue,
   getProcedureCptCode,
   getProcedurePerformedDate,
@@ -174,16 +174,17 @@ const problemStatusesMap = new Map<string, string>();
 problemStatusesMap.set("relapse", "CHRONIC");
 problemStatusesMap.set("recurrence", "CHRONIC");
 
-const vitalSignCodesMapAthena = new Map<string, string>();
-vitalSignCodesMapAthena.set("8310-5", "VITALS.TEMPERATURE");
-vitalSignCodesMapAthena.set("8867-4", "VITALS.HEARTRATE");
-vitalSignCodesMapAthena.set("9279-1", "VITALS.RESPIRATIONRATE");
-vitalSignCodesMapAthena.set("2708-6", "VITALS.INHALEDO2CONCENTRATION");
-vitalSignCodesMapAthena.set("8462-4", "VITALS.BLOODPRESSURE.DIASTOLIC");
-vitalSignCodesMapAthena.set("8480-6", "VITALS.BLOODPRESSURE.SYSTOLIC");
-vitalSignCodesMapAthena.set("29463-7", "VITALS.WEIGHT");
-vitalSignCodesMapAthena.set("8302-2", "VITALS.HEIGHT");
-vitalSignCodesMapAthena.set("39156-5", "VITALS.BMI");
+const vitalSignCodesMap = new Map<string, string>();
+vitalSignCodesMap.set("8310-5", "VITALS.TEMPERATURE");
+vitalSignCodesMap.set("8867-4", "VITALS.HEARTRATE");
+vitalSignCodesMap.set("9279-1", "VITALS.RESPIRATIONRATE");
+vitalSignCodesMap.set("2708-6", "VITALS.INHALEDO2CONCENTRATION");
+vitalSignCodesMap.set("59408-5", "VITALS.INHALEDO2CONCENTRATION");
+vitalSignCodesMap.set("8462-4", "VITALS.BLOODPRESSURE.DIASTOLIC");
+vitalSignCodesMap.set("8480-6", "VITALS.BLOODPRESSURE.SYSTOLIC");
+vitalSignCodesMap.set("29463-7", "VITALS.WEIGHT");
+vitalSignCodesMap.set("8302-2", "VITALS.HEIGHT");
+vitalSignCodesMap.set("39156-5", "VITALS.BMI");
 
 const clinicalElementsThatRequireUnits = ["VITALS.WEIGHT", "VITALS.HEIGHT", "VITALS.TEMPERATURE"];
 
@@ -751,14 +752,15 @@ class AthenaHealthApi {
       throw new BadRequestError("No CPT code found for procedure", undefined, additionalInfo);
     }
     const performedDate = getProcedurePerformedDate(procedure);
-    if (!performedDate) {
+    const formattedPerformedDate = this.formatDate(performedDate);
+    if (!formattedPerformedDate) {
       throw new BadRequestError("No performed date found for procedure", undefined, additionalInfo);
     }
     const procedures = [
       {
         note: "Added via Metriport App",
         procedurecode: cptCode,
-        proceduredate: this.formatDate(performedDate),
+        proceduredate: formattedPerformedDate,
       },
     ];
     const data = {
@@ -843,7 +845,8 @@ class AthenaHealthApi {
       );
     }
     const observedDate = getObservationObservedDate(observation);
-    if (!observedDate) {
+    const formattedObservedDate = this.formatDate(observedDate);
+    if (!formattedObservedDate) {
       throw new BadRequestError(
         "No observed date found for observation",
         undefined,
@@ -866,7 +869,7 @@ class AthenaHealthApi {
     const data = {
       departmentid: this.stripDepartmentId(departmentId),
       analytes,
-      observationdate: this.formatDate(observedDate),
+      observationdate: formattedObservedDate,
       internalnote: loincCoding.display,
       documenttypeid: labResultDocumentId,
       autoclose: "true",
@@ -916,13 +919,17 @@ class AthenaHealthApi {
       patientId,
       departmentId,
     };
+    const formattedDate = this.formatDate(date);
+    if (!formattedDate) {
+      throw new BadRequestError("No date found for clinical document", undefined, additionalInfo);
+    }
     const data = {
       departmentid: this.stripDepartmentId(departmentId),
       documentdata: encounterText,
       documentsubclass: clinicalNoteDocumentSubclass,
       documenttypeid: clinicalNoteDocumentId,
       internalnote: "Note Added via Metriport App",
-      observationdate: this.formatDate(date),
+      observationdate: formattedDate,
       autoclose: "true",
     };
     const createdClinicalDocument = await this.makeRequest<CreatedClinicalDocument>({
@@ -1108,16 +1115,16 @@ class AthenaHealthApi {
     }
     const loincCode = getObservationLoincCode(observation);
     if (!loincCode) {
-      throw new BadRequestError("No code found for observation", undefined, additionalInfo);
+      throw new BadRequestError("No LOINC code found for observation", undefined, additionalInfo);
     }
-    const clinicalElementId = vitalSignCodesMapAthena.get(loincCode);
+    const clinicalElementId = vitalSignCodesMap.get(loincCode);
     if (!clinicalElementId) {
-      throw new BadRequestError("No clinical element id found for observation", undefined, {
+      throw new BadRequestError("No clinical element id found for LOINC code", undefined, {
         ...additionalInfo,
         loincCode,
       });
     }
-    const units = getObservationUnits(observation);
+    const units = getObservationUnit(observation);
     if (!units) {
       throw new BadRequestError("No units found for observation", undefined, {
         ...additionalInfo,
@@ -1127,17 +1134,23 @@ class AthenaHealthApi {
     }
     const allCreatedVitals: CreatedVitalsSuccess[] = [];
     const createVitalsErrors: { error: unknown; vitals: string }[] = [];
-    const createVitalsArgs: VitalsCreateParams[] = vitals.sortedPoints.map(v => {
+    const createVitalsArgs: VitalsCreateParams[] = vitals.sortedPoints.flatMap(v => {
       const vitalsData = this.createVitalsData(v, clinicalElementId, units);
-      return {
-        departmentid: this.stripDepartmentId(departmentId),
-        returnvitalids: true,
-        source: "DEVICEGENERATED",
-        vitals: [vitalsData],
-        THIRDPARTYUSERNAME: undefined,
-        PATIENTFACINGCALL: undefined,
-      };
+      if (vitalsData.length < 1) return [];
+      return [
+        {
+          departmentid: this.stripDepartmentId(departmentId),
+          returnvitalids: true,
+          source: "DEVICEGENERATED",
+          vitals: [vitalsData],
+          THIRDPARTYUSERNAME: undefined,
+          PATIENTFACINGCALL: undefined,
+        },
+      ];
     });
+    if (createVitalsArgs.length < 1) {
+      throw new BadRequestError("No valid vitals data found", undefined, additionalInfo);
+    }
     await executeAsynchronously(
       createVitalsArgs,
       async (params: VitalsCreateParams) => {
@@ -1829,16 +1842,18 @@ class AthenaHealthApi {
     clinicalElementId: string,
     units: string
   ): { [key: string]: string | undefined }[] {
+    const formattedDate = this.formatDate(dataPoint.date);
+    if (!formattedDate) return [];
     if (dataPoint.bp) {
       return [
         {
           clinicalelementid: "VITALS.BLOODPRESSURE.DIASTOLIC",
-          readingtaken: this.formatDate(dataPoint.date),
+          readingtaken: formattedDate,
           value: dataPoint.bp.diastolic.toString(),
         },
         {
           clinicalelementid: "VITALS.BLOODPRESSURE.SYSTOLIC",
-          readingtaken: this.formatDate(dataPoint.date),
+          readingtaken: formattedDate,
           value: dataPoint.bp.systolic.toString(),
         },
       ];
@@ -1846,7 +1861,7 @@ class AthenaHealthApi {
     return [
       {
         clinicalelementid: clinicalElementId,
-        readingtaken: this.formatDate(dataPoint.date),
+        readingtaken: formattedDate,
         value: this.convertValue(clinicalElementId, dataPoint.value, units).toString(),
       },
     ];
