@@ -42,9 +42,6 @@ export async function startContributeBundlesJob({
   if (createResourceDiffBundlesJob.jobType !== getCreateResourceDiffBundlesJobType(ehr)) {
     throw new Error("Create resource diff bundles job is not a create resource diff bundles job");
   }
-  if (createResourceDiffBundlesJob.status !== "completed") {
-    throw new Error("Create resource diff bundles job is not completed");
-  }
   const metriportPatientId = await validatePatientAndLatestJobStatus({
     ehr,
     cxId,

@@ -184,7 +184,7 @@ function settings(): {
       timeout: writeBackResourceDiffBundlesLambdaTimeout,
     },
     queue: {
-      alarmMaxAgeOfOldestMessage: Duration.hours(1),
+      alarmMaxAgeOfOldestMessage: Duration.hours(4),
       maxMessageCountAlarmThreshold: 5_000,
       maxReceiveCount: 3,
       visibilityTimeout: Duration.seconds(
