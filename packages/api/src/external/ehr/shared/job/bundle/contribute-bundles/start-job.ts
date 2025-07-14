@@ -1,9 +1,11 @@
 import { createPatientJob } from "../../../../../../command/job/patient/create";
+import { getPatientJobByIdOrFail } from "../../../../../../command/job/patient/get";
 import { validatePatientAndLatestJobStatus } from "../../../command/job/validate-patient-and-lastest-job-status";
 import {
   StartBundlesJobParams,
   getContributeBundlesJobType,
   getContributeBundlesRunUrl,
+  getCreateResourceDiffBundlesJobType,
 } from "../../../utils/job";
 
 /**
@@ -33,6 +35,16 @@ export async function startContributeBundlesJob({
   const jobGroupId = ehrPatientId;
   const jobType = getContributeBundlesJobType(ehr, resourceType);
   const runUrl = getContributeBundlesRunUrl(ehr);
+  const createResourceDiffBundlesJob = await getPatientJobByIdOrFail({
+    cxId,
+    jobId: createResourceDiffBundlesJobId,
+  });
+  if (createResourceDiffBundlesJob.jobType !== getCreateResourceDiffBundlesJobType(ehr)) {
+    throw new Error("Create resource diff bundles job is not a create resource diff bundles job");
+  }
+  if (createResourceDiffBundlesJob.status !== "completed") {
+    throw new Error("Create resource diff bundles job is not completed");
+  }
   const metriportPatientId = await validatePatientAndLatestJobStatus({
     ehr,
     cxId,

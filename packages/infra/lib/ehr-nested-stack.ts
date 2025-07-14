@@ -329,6 +329,7 @@ export class EhrNestedStack extends NestedStack {
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: props.alarmAction,
+      ehrResponsesBucket: props.ehrResponsesBucket,
       medicalDocumentsBucket: props.medicalDocumentsBucket,
       ehrBundleBucket: this.ehrBundleBucket,
     });
@@ -557,7 +558,7 @@ export class EhrNestedStack extends NestedStack {
       name,
       fifo: true,
       createDLQ: true,
-      lambdaLayers: [lambdaLayers.shared],
+      lambdaLayers: [lambdaLayers.shared, lambdaLayers.langchain],
       envType,
       alarmSnsAction: alarmAction,
     });
@@ -617,7 +618,7 @@ export class EhrNestedStack extends NestedStack {
       name,
       fifo: true,
       createDLQ: true,
-      lambdaLayers: [lambdaLayers.shared],
+      lambdaLayers: [lambdaLayers.shared, lambdaLayers.langchain],
       envType,
       alarmSnsAction: alarmAction,
     });
@@ -659,6 +660,7 @@ export class EhrNestedStack extends NestedStack {
     envType: EnvType;
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
+    ehrResponsesBucket: s3.Bucket | undefined;
     medicalDocumentsBucket: s3.Bucket;
     ehrBundleBucket: s3.Bucket;
   }): { lambda: Lambda; queue: Queue } {
@@ -696,6 +698,9 @@ export class EhrNestedStack extends NestedStack {
         WAIT_TIME_IN_MILLIS: waitTime.toMilliseconds().toString(),
         MAX_ATTEMPTS: queueSettings.maxReceiveCount.toString(),
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+        ...(ownProps.ehrResponsesBucket
+          ? { EHR_RESPONSES_BUCKET_NAME: ownProps.ehrResponsesBucket.bucketName }
+          : {}),
       },
       layers: [lambdaLayers.shared, lambdaLayers.langchain],
       vpc,
@@ -705,6 +710,7 @@ export class EhrNestedStack extends NestedStack {
     lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
 
     // Grant read to medical document bucket set on the api-stack
+    ownProps.ehrResponsesBucket?.grantWrite(lambda);
     ownProps.ehrBundleBucket.grantReadWrite(lambda);
 
     return { lambda, queue };
