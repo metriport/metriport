@@ -79,11 +79,11 @@ export function getBestDateFromCWDocRef(content: DocumentContent): string {
 }
 
 // TODO: Move to external/commonwell
-export const cwToFHIR = (
+export function cwToFHIR(
   docId: string,
   doc: CWDocumentWithMetriportData,
   patient: Pick<Patient, "id">
-): DocumentReferenceWithId => {
+): DocumentReferenceWithId {
   const content = doc.content;
   const baseAttachment = {
     contentType: doc.metriport.fileContentType,
@@ -139,7 +139,7 @@ export const cwToFHIR = (
     extension: [cwExtension],
     context: content.context,
   });
-};
+}
 
 export function getFHIRDocRef(
   patientId: string,
@@ -327,7 +327,7 @@ export function containedPatientToFHIRResource(
       resourceType: "Patient",
       id: chosenResourceId,
       address: convertCWAdressToFHIR(resource.address),
-      gender: convertCWGenderToFHIR(resource.gender?.coding),
+      gender: convertCWGenderToFHIR(resource.gender?.coding as unknown as Gender[]), // TODO ENG-200 - Remove the casting
       identifier: convertCWIdentifierToFHIR(resource.identifier),
       name: convertCWNameToHumanName(resource.name),
     },
@@ -378,7 +378,7 @@ export function containedPractitionerToFHIRResource(
     id: resource.id ?? undefined,
     identifier: convertCWIdentifierToFHIR(resource.identifier),
     name: convertCWNameToHumanName(resource.name),
-    gender: convertCWGenderToFHIR(resource.gender?.coding),
+    gender: convertCWGenderToFHIR(resource.gender?.coding as unknown as Gender[]),
   };
   const role: Resource | undefined =
     resource.organization?.reference && resource.id
@@ -604,7 +604,9 @@ function convertCWAdressToFHIR(address: Contained["address"] | undefined): Addre
  */
 function convertCWGenderToFHIR(genders: Gender[] | null | undefined): PatientFHIR["gender"] {
   if (genders && genders[0]) {
-    switch (genders[0].code) {
+    switch (
+      (genders[0] as unknown as { code: string }).code // TODO ENG-200 - Remove the casting
+    ) {
       case GenderCodes.M:
         return "male";
       case GenderCodes.F:
