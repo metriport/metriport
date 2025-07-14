@@ -1547,9 +1547,9 @@ class CanvasApi {
       throw new BadRequestError("No status found for observation", undefined, additionalInfo);
     }
     formattedObservation.status = resultStatus as ObservationStatus;
-    const effectiveDateTime = this.formatDateTime(dataPoint.date);
-    if (!effectiveDateTime) return undefined;
-    formattedObservation.effectiveDateTime = effectiveDateTime;
+    const formattedEffectiveDate = this.formatDateTime(dataPoint.date);
+    if (!formattedEffectiveDate) return undefined;
+    formattedObservation.effectiveDateTime = formattedEffectiveDate;
     if (dataPoint.bp) {
       formattedObservation.valueString = `${dataPoint.bp.systolic}/${dataPoint.bp.diastolic} mmHg`;
       formattedObservation.component = [

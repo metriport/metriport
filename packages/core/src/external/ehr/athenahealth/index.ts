@@ -183,7 +183,7 @@ vitalSignCodesMap.set("59408-5", { codeKey: "VITALS.INHALEDO2CONCENTRATION", uni
 vitalSignCodesMap.set("8462-4", { codeKey: "VITALS.BLOODPRESSURE.DIASTOLIC", units: "mmHg" });
 vitalSignCodesMap.set("8480-6", { codeKey: "VITALS.BLOODPRESSURE.SYSTOLIC", units: "mmHg" });
 vitalSignCodesMap.set("85354-9", { codeKey: "VITALS.BLOODPRESSURE", units: "mmHg" });
-vitalSignCodesMap.set("29463-7", { codeKey: "VITALS.WEIGHT", units: "kg" });
+vitalSignCodesMap.set("29463-7", { codeKey: "VITALS.WEIGHT", units: "g" });
 vitalSignCodesMap.set("8302-2", { codeKey: "VITALS.HEIGHT", units: "cm" });
 vitalSignCodesMap.set("39156-5", { codeKey: "VITALS.BMI", units: "kg/m2" });
 
@@ -1833,18 +1833,18 @@ class AthenaHealthApi {
     dataPoint: DataPoint,
     units: string
   ): { [key: string]: string }[] | undefined {
-    const readingTaken = this.formatDate(dataPoint.date);
-    if (!readingTaken) return undefined;
+    const formattedReadingTaken = this.formatDate(dataPoint.date);
+    if (!formattedReadingTaken) return undefined;
     if (dataPoint.bp) {
       return [
         {
           clinicalelementid: "VITALS.BLOODPRESSURE.DIASTOLIC",
-          readingtaken: readingTaken,
+          readingtaken: formattedReadingTaken,
           value: dataPoint.bp.diastolic.toString(),
         },
         {
           clinicalelementid: "VITALS.BLOODPRESSURE.SYSTOLIC",
-          readingtaken: readingTaken,
+          readingtaken: formattedReadingTaken,
           value: dataPoint.bp.systolic.toString(),
         },
       ];
@@ -1854,7 +1854,7 @@ class AthenaHealthApi {
     return [
       {
         clinicalelementid: convertedCodeAndValue.clinicalelementid,
-        readingtaken: readingTaken,
+        readingtaken: formattedReadingTaken,
         value: convertedCodeAndValue.value.toString(),
       },
     ];
