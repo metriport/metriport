@@ -1133,7 +1133,7 @@ class ElationApi {
       if (loincCode === bpGlobalCode) {
         const [systolic, diastolic] = convertedCodeAndValue.value
           .toString()
-          .replace("mmHg", "")
+          .replace(" mmHg", "")
           .split("/");
         return {
           chart_date: formattedChartDate,
