@@ -550,11 +550,13 @@ class ElationApi {
       patientId,
       observationId: observation.id,
     };
+    const { chart_date, data: vitalData } = this.formatVital(observation, additionalInfo);
     const data = {
       patient: patientId,
       practice: elationPracticeId,
       physician: elationPhysicianId,
-      ...this.formatVital(observation, additionalInfo),
+      chart_date,
+      ...vitalData,
     };
     const vital = await this.makeRequest<CreatedVital>({
       cxId,
@@ -1088,9 +1090,12 @@ class ElationApi {
     observation: Observation,
     additionalInfo: Record<string, string | undefined>
   ):
-    | Record<string, { value: string }[]>
-    | { bmi: number }
-    | { bp: { systolic: string | undefined; diastolic: string | undefined }[] } {
+    | { chart_date: string; data: { [key: string]: { value: string }[] } }
+    | { chart_date: string; data: { bmi: number } }
+    | {
+        chart_date: string;
+        data: { bp: { systolic: string | undefined; diastolic: string | undefined }[] };
+      } {
     const loincCode = getObservationLoincCode(observation);
     if (!loincCode || !vitalSignCodesMap.get(loincCode)) {
       throw new BadRequestError("No LOINC code found for observation", undefined, additionalInfo);
@@ -1103,12 +1108,26 @@ class ElationApi {
     if (!value) {
       throw new BadRequestError("No value found for observation", undefined, additionalInfo);
     }
+    const observedDate = getObservationObservedDate(observation);
+    const formattedObservedDate = this.formatDateTime(observedDate);
+    if (!formattedObservedDate) {
+      throw new BadRequestError(
+        "No observed date found for observation",
+        undefined,
+        additionalInfo
+      );
+    }
     const convertedCodeAndValue = this.convertCodeAndValue(loincCode, value, units);
     if (!convertedCodeAndValue) {
       throw new BadRequestError("No value converted for observation", undefined, additionalInfo);
     }
     if (convertedCodeAndValue.codeKey === "bmi") {
-      return { bmi: +convertedCodeAndValue.value };
+      return {
+        chart_date: formattedObservedDate,
+        data: {
+          bmi: +convertedCodeAndValue.value,
+        },
+      };
     }
     if (convertedCodeAndValue.codeKey === "bp") {
       if (loincCode === bpGlobalCode) {
@@ -1117,41 +1136,56 @@ class ElationApi {
           .replace("mmHg", "")
           .split("/");
         return {
-          bp: [
-            {
-              systolic: systolic ? systolic.trim() : undefined,
-              diastolic: diastolic ? diastolic.trim() : undefined,
-            },
-          ],
+          chart_date: formattedObservedDate,
+          data: {
+            bp: [
+              {
+                systolic: systolic ? systolic.trim() : undefined,
+                diastolic: diastolic ? diastolic.trim() : undefined,
+              },
+            ],
+          },
         };
-      }
-      if (loincCode === bpSystolicCode) {
+      } else if (loincCode === bpSystolicCode) {
         return {
-          bp: [
-            {
-              systolic: convertedCodeAndValue.value.toString(),
-              diastolic: undefined,
-            },
-          ],
+          chart_date: formattedObservedDate,
+          data: {
+            bp: [
+              {
+                systolic: convertedCodeAndValue.value.toString(),
+                diastolic: undefined,
+              },
+            ],
+          },
         };
-      }
-      if (loincCode === bpDiastolicCode) {
+      } else if (loincCode === bpDiastolicCode) {
         return {
-          bp: [
-            {
-              systolic: undefined,
-              diastolic: convertedCodeAndValue.value.toString(),
-            },
-          ],
+          chart_date: formattedObservedDate,
+          data: {
+            bp: [
+              {
+                systolic: undefined,
+                diastolic: convertedCodeAndValue.value.toString(),
+              },
+            ],
+          },
         };
+      } else {
+        throw new BadRequestError("Unknown LOINC code", undefined, {
+          ...additionalInfo,
+          loincCode,
+        });
       }
     }
     return {
-      [convertedCodeAndValue.codeKey]: [
-        {
-          value: convertedCodeAndValue.value.toString(),
-        },
-      ],
+      chart_date: formattedObservedDate,
+      data: {
+        [convertedCodeAndValue.codeKey]: [
+          {
+            value: convertedCodeAndValue.value.toString(),
+          },
+        ],
+      },
     };
   }
 
