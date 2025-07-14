@@ -5,7 +5,7 @@ import { chunk } from "lodash";
  * Maximum number of retries for a batch operation
  */
 export const MAX_BATCH_RETRIES = 3;
-export const BATCH_SIZE = 500;
+export const BATCH_SIZE = 2000;
 
 export type BatchProcessorFunction = (patientIds: string[]) => Promise<void>;
 export type BatchProcessorConfig = {
