@@ -18,17 +18,17 @@ program
     if (!cxId) throw new Error("CX ID is required");
     if (!facilityId) throw new Error("Facility ID is required");
 
-    const handler = new SurescriptsSendPatientRequestHandlerDirect(
-      new SurescriptsSftpClient({
-        logLevel: "debug",
-      })
-    );
     const dataMapper = new SurescriptsDataMapper();
     const patientIds = await dataMapper.getPatientIdsForFacility({ cxId, facilityId });
     console.log(`Found ${patientIds.length} patients`);
 
     for (const patientId of patientIds) {
       console.log(`Sending request for patient ${patientId}`);
+      const handler = new SurescriptsSendPatientRequestHandlerDirect(
+        new SurescriptsSftpClient({
+          logLevel: "debug",
+        })
+      );
       await handler.sendPatientRequest({ cxId, facilityId, patientId });
     }
   });
