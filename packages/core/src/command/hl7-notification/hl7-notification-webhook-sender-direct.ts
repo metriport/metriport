@@ -1,6 +1,6 @@
 import { Hl7Message } from "@medplum/core";
 import { Bundle, CodeableConcept, Resource } from "@medplum/fhirtypes";
-import { executeWithNetworkRetries } from "@metriport/shared";
+import { errorToString, executeWithNetworkRetries, MetriportError } from "@metriport/shared";
 import { CreateDischargeRequeryParams } from "@metriport/shared/src/domain/patient/patient-monitoring/discharge-requery";
 import axios from "axios";
 import dayjs from "dayjs";
@@ -113,8 +113,8 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
         id: encounterId,
         cxId,
         patientId,
-        class: encounterClass.display,
-        facilityName,
+        class: encounterClass.display ?? "",
+        facilityName: facilityName ?? "",
         admitTime: encounterPeriod?.start,
         dischargeTime: encounterPeriod?.end,
         clinicalInformation,
@@ -188,8 +188,8 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
       id: string;
       cxId: string;
       patientId: string;
-      class: string | undefined;
-      facilityName: string | undefined;
+      class: string;
+      facilityName: string;
       admitTime: string | undefined;
       dischargeTime: string | undefined;
       clinicalInformation: Record<string, unknown>;
@@ -211,12 +211,22 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
     );
 
     log(`PUT /internal/tcm/encounter ${triggerEvent}`);
-    await executeWithNetworkRetries(
-      async () => axios.put(`${this.apiUrl}/internal/tcm/encounter/`, fullPayload),
-      {
-        log,
-      }
-    );
+    try {
+      await executeWithNetworkRetries(
+        async () => axios.put(`${this.apiUrl}/internal/tcm/encounter/`, fullPayload),
+        {
+          log,
+        }
+      );
+    } catch (error) {
+      throw new MetriportError("Failed to persist TCM encounter", undefined, {
+        facilityName: tcmEncounterPayload.facilityName,
+        class: tcmEncounterPayload.class,
+        admitTime: tcmEncounterPayload.admitTime,
+        dischargeTime: tcmEncounterPayload.dischargeTime,
+        error: errorToString(error),
+      });
+    }
   }
 
   private extractClinicalInformation(bundle: Bundle<Resource>): {
