@@ -15,7 +15,6 @@ import {
   PatientListProcessingResult,
   PatientSettingsUpsertForCxProps,
   PatientSettingsUpsertProps,
-  upsertPatientSettings,
   verifyPatients,
 } from "./common";
 
