@@ -93,17 +93,23 @@ export const capture = {
       try {
         return await handler(event, context, callback);
       } catch (error) {
-        console.log(`Error: ${errorToString(error)}`);
         if (error instanceof MetriportError && error.additionalInfo) {
           capture.setExtra(error.additionalInfo);
-        }
-        if (isAxiosError(error)) {
+          console.log(`Error: ${errorToString(error)}`);
+        } else if (isAxiosError(error)) {
           capture.setExtra({
             stack: error.stack,
             method: error.config?.method,
             url: error.config?.url,
             data: error.response?.data,
           });
+          console.log(
+            `Error: ${error.request?.method + " " + error.request?.path + " "}${errorToString(
+              error
+            )}`
+          );
+        } else {
+          console.log(`Error: ${errorToString(error)}`);
         }
         throw error;
       }

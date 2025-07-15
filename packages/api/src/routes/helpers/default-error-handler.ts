@@ -114,7 +114,7 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
   }
   const status = err.statusCode || err.status;
   if (status) {
-    const detail = err.config?.url ? err.config?.url + " " + err.message : err.message;
+    const detail = err.request?.path ? err.request?.path + " " + err.message : err.message;
     return res
       .contentType("json")
       .status(status)
