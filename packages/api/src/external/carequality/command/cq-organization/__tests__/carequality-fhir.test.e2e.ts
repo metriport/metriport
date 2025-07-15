@@ -77,7 +77,7 @@ describe("CarequalityManagementApiFhir", () => {
       phone: faker.phone.number(),
       email: faker.internet.email(),
       role: "Connection",
-      active: false,
+      active: true,
       parentOrgOid: managementOid,
     });
     if (orgFhir.id !== oid) throw new Error("OID mismatch");
@@ -182,15 +182,19 @@ describe("CarequalityManagementApiFhir", () => {
         if (!primaryOrg) throw new Error("primaryOrg is undefined");
         const orgUpdate = cloneDeep(primaryOrg);
         const expectedStatus = !orgUpdate.active;
+        const expectedName = faker.company.name();
         orgUpdate.active = expectedStatus;
+        orgUpdate.name = expectedName;
         const updatedOrg = await api.updateOrganization(orgUpdate);
         expect(updatedOrg).toBeTruthy();
         expect(updatedOrg.id).toEqual(primaryOrg.id);
         expect(updatedOrg.active).toEqual(expectedStatus);
+        expect(updatedOrg.name).toEqual(expectedName);
         const orgFromGet = await api.getOrganization(updatedOrg.id);
         expect(orgFromGet).toBeTruthy();
         expect(updatedOrg.id).toEqual(primaryOrg.id);
         expect(updatedOrg.active).toEqual(expectedStatus);
+        expect(updatedOrg.name).toEqual(expectedName);
       });
 
       it("creates new org when tries to update a non-existent organization", async () => {
@@ -214,14 +218,37 @@ describe("CarequalityManagementApiFhir", () => {
       it.skip("deleteOrganization", () => {});
       return;
     } else {
-      it("soft-deletes the organization", async () => {
+      it("soft-deletes the organization by ID", async () => {
         const oid = getOid();
-        const orgBeforeDelete = await api.getOrganization(oid);
+        let orgBeforeDelete = await api.getOrganization(oid);
         expect(orgBeforeDelete).toBeDefined();
         if (!orgBeforeDelete) throw new Error("programming error");
+        if (!orgBeforeDelete.active) {
+          orgBeforeDelete = await api.updateOrganization({ ...orgBeforeDelete, active: true });
+        }
         expect(orgBeforeDelete.active).toBe(true);
 
         const orgAfterDelete = await api.deleteOrganization(oid);
+        expect(orgAfterDelete).toBeDefined();
+        if (!orgAfterDelete) throw new Error("programming error");
+        expect(orgAfterDelete.active).toBe(false);
+
+        const orgAfterGet = await api.getOrganization(oid);
+        expect(orgAfterGet).toBeDefined();
+        if (!orgAfterGet) throw new Error("programming error");
+        expect(orgAfterGet.active).toBe(false);
+      });
+
+      it("soft-deletes the organization by Org", async () => {
+        const oid = makeUnrelatedOid();
+        const orgCreate = await makeOrganization(oid);
+        console.log(`Registering "unrelated" Org for delete by Org, OID: ${orgCreate.id}`);
+        const orgToDelete = await api.registerOrganization(orgCreate);
+        expect(orgToDelete).toBeTruthy();
+        if (!orgToDelete) throw new Error("programming error");
+        expect(orgToDelete.active).toBe(true);
+
+        const orgAfterDelete = await api.deleteOrganization(orgToDelete);
         expect(orgAfterDelete).toBeDefined();
         if (!orgAfterDelete) throw new Error("programming error");
         expect(orgAfterDelete.active).toBe(false);
