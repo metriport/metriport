@@ -152,12 +152,12 @@ vitalSignCodesMap.set("2708-6", { codeKey: "oxygensaturationarterial", targetUni
 vitalSignCodesMap.set("59408-5", { codeKey: "oxygensaturation", targetUnits: "%" });
 vitalSignCodesMap.set("8462-4", { codeKey: "bloodpressure.diastolic", targetUnits: "mmHg" });
 vitalSignCodesMap.set("8480-6", { codeKey: "bloodpressure.systolic", targetUnits: "mmHg" });
-vitalSignCodesMap.set("85354-9", { codeKey: "bloodpressure", targetUnits: "mmHg" });
 vitalSignCodesMap.set("29463-7", { codeKey: "weight", targetUnits: "kg" });
 vitalSignCodesMap.set("8302-2", { codeKey: "height", targetUnits: "cm" });
 vitalSignCodesMap.set("56086-2", { codeKey: "waistcircumference", targetUnits: "cm" });
 
-const bpSubCodes = ["8462-4", "8480-6"];
+const bpDiastolicCode = "8462-4";
+const bpSystolicCode = "8480-6";
 
 const medicationStatementStatuses = ["active", "entered-in-error", "stopped"];
 const immunizationStatuses = ["completed", "entered-in-error", "not-done"];
@@ -1528,9 +1528,13 @@ class CanvasApi {
     formattedObservation.code = {
       coding: [
         {
-          code: bpSubCodes.includes(loincCoding.code) ? "85354-9" : loincCoding.code,
+          code: [bpDiastolicCode, bpSystolicCode].includes(loincCoding.code)
+            ? "85354-9"
+            : loincCoding.code,
           system: "http://loinc.org",
-          display: bpSubCodes.includes(loincCoding.code) ? "Blood pressure" : loincCoding.display,
+          display: [bpDiastolicCode, bpSystolicCode].includes(loincCoding.code)
+            ? "Blood pressure"
+            : loincCoding.display,
         },
       ],
     };

@@ -183,7 +183,6 @@ vitalSignCodesMap.set("2708-6", { codeKey: "VITALS.INHALEDO2CONCENTRATION", targ
 vitalSignCodesMap.set("59408-5", { codeKey: "VITALS.INHALEDO2CONCENTRATION", targetUnits: "%" });
 vitalSignCodesMap.set("8462-4", { codeKey: "VITALS.BLOODPRESSURE.DIASTOLIC", targetUnits: "mmHg" });
 vitalSignCodesMap.set("8480-6", { codeKey: "VITALS.BLOODPRESSURE.SYSTOLIC", targetUnits: "mmHg" });
-vitalSignCodesMap.set("85354-9", { codeKey: "VITALS.BLOODPRESSURE", targetUnits: "mmHg" });
 vitalSignCodesMap.set("29463-7", { codeKey: "VITALS.WEIGHT", targetUnits: "g" });
 vitalSignCodesMap.set("8302-2", { codeKey: "VITALS.HEIGHT", targetUnits: "cm" });
 vitalSignCodesMap.set("39156-5", { codeKey: "VITALS.BMI", targetUnits: "kg/m2" });

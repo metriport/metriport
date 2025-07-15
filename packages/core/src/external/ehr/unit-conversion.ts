@@ -19,13 +19,8 @@ export function convertCodeAndValue(
   if (!targetUnits || !codeKey) return undefined;
   const baseParams = { units: targetUnits, codeKey };
   const baseValue = typeof value === "string" ? value.trim() : value;
-  if (inputUnits === targetUnits) return { ...baseParams, value: baseValue };
-  if (targetUnits === "mmHg") {
-    if (isMmHg(inputUnits)) {
-      return { ...baseParams, value: baseValue };
-    }
-  }
   const valueNumber = convertValueToNumber(baseValue);
+  if (inputUnits === targetUnits) return { ...baseParams, value: valueNumber };
   if (targetUnits === "kg") {
     // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
     if (isKg(inputUnits)) {
@@ -92,6 +87,11 @@ export function convertCodeAndValue(
   }
   if (targetUnits === "kg/m2") {
     if (isKgPerM2(inputUnits)) {
+      return { ...baseParams, value: valueNumber };
+    }
+  }
+  if (targetUnits === "mmHg") {
+    if (isMmHg(inputUnits)) {
       return { ...baseParams, value: valueNumber };
     }
   }
@@ -186,13 +186,7 @@ function isKgPerM2(units: string): boolean {
 }
 
 function isMmHg(units: string): boolean {
-  return (
-    units === "mmHg" ||
-    units.includes("mmHg") ||
-    units.includes("mm Hg") ||
-    units.includes("millimeter of mercury") ||
-    units.includes("millimeter mercury")
-  );
+  return units === "mmHg" || units === "millimeter of mercury";
 }
 
 function isBpm(units: string): boolean {

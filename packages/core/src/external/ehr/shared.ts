@@ -494,7 +494,6 @@ export function getImmunizationAdministerDate(immunization: Immunization): strin
 }
 
 export function getObservationUnit(observation: Observation): string | undefined {
-  if (observation.valueString?.endsWith("mmHg")) return "mmHg";
   const firstReference = observation.referenceRange?.[0];
   return (
     observation.valueQuantity?.unit?.toString() ??
@@ -511,7 +510,6 @@ export function getObservationValue(observation: Observation): number | string |
   } else if (observation.valueCodeableConcept) {
     value = observation.valueCodeableConcept.text;
   } else if (observation.valueString) {
-    if (observation.valueString.endsWith("mmHg")) return observation.valueString;
     const parsedNumber = parseFloat(observation.valueString);
     value = isNaN(parsedNumber) ? observation.valueString : parsedNumber;
     if (blacklistedValues.includes(value?.toString().toLowerCase().trim())) value = undefined;

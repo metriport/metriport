@@ -100,11 +100,15 @@ vitalSignCodesMap.set("8867-4", { codeKey: "hr", targetUnits: "bpm" });
 vitalSignCodesMap.set("9279-1", { codeKey: "rr", targetUnits: "bpm" });
 vitalSignCodesMap.set("2708-6", { codeKey: "oxygen", targetUnits: "%" });
 vitalSignCodesMap.set("59408-5", { codeKey: "oxygen", targetUnits: "%" });
-vitalSignCodesMap.set("85354-9", { codeKey: "bp", targetUnits: "mmHg" });
+vitalSignCodesMap.set("8462-4", { codeKey: "bp", targetUnits: "mmHg" });
+vitalSignCodesMap.set("8480-6", { codeKey: "bp", targetUnits: "mmHg" });
 vitalSignCodesMap.set("29463-7", { codeKey: "weight", targetUnits: "lb_av" });
 vitalSignCodesMap.set("8302-2", { codeKey: "height", targetUnits: "in_i" });
 vitalSignCodesMap.set("56086-2", { codeKey: "wc", targetUnits: "cm" });
 vitalSignCodesMap.set("39156-5", { codeKey: "bmi", targetUnits: "kg/m2" });
+
+const bpDiastolicCode = "8462-4";
+const bpSystolicCode = "8480-6";
 
 const ccdaSectionMap = new Map<ResourceType, string>();
 ccdaSectionMap.set("AllergyIntolerance", "allergies");
@@ -1086,7 +1090,7 @@ class ElationApi {
     | { chart_date: string; data: { bmi: number } }
     | {
         chart_date: string;
-        data: { bp: { systolic: string | null; diastolic: string | null }[] };
+        data: { bp: { systolic?: string; diastolic?: string }[] };
       } {
     const loincCode = getObservationLoincCode(observation);
     if (!loincCode || !vitalSignCodesMap.get(loincCode)) {
@@ -1113,44 +1117,43 @@ class ElationApi {
     if (!convertedCodeAndValue) {
       throw new BadRequestError("No value converted for observation", undefined, additionalInfo);
     }
+    const baseData = { chart_date: formattedChartDate };
     if (convertedCodeAndValue.codeKey === "bmi") {
       return {
-        chart_date: formattedChartDate,
+        ...baseData,
         data: {
           bmi: +convertedCodeAndValue.value,
         },
       };
     }
     if (convertedCodeAndValue.codeKey === "bp") {
-      if (typeof convertedCodeAndValue.value !== "string") {
-        throw new BadRequestError("Invalid value type for bp observation", undefined, {
-          ...additionalInfo,
-          loincCode,
-          value: convertedCodeAndValue.value,
-        });
+      if (loincCode === bpDiastolicCode) {
+        return {
+          ...baseData,
+          data: {
+            bp: [
+              {
+                diastolic: convertedCodeAndValue.value.toString(),
+              },
+            ],
+          },
+        };
       }
-      const [systolic, diastolic] = convertedCodeAndValue.value.replace(" mmHg", "").split("/");
-      if (!systolic || !diastolic) {
-        throw new BadRequestError("Invalid value for bp observation", undefined, {
-          ...additionalInfo,
-          loincCode,
-          value: convertedCodeAndValue.value,
-        });
+      if (loincCode === bpSystolicCode) {
+        return {
+          ...baseData,
+          data: {
+            bp: [
+              {
+                systolic: convertedCodeAndValue.value.toString(),
+              },
+            ],
+          },
+        };
       }
-      return {
-        chart_date: formattedChartDate,
-        data: {
-          bp: [
-            {
-              systolic,
-              diastolic,
-            },
-          ],
-        },
-      };
     }
     return {
-      chart_date: formattedChartDate,
+      ...baseData,
       data: {
         [convertedCodeAndValue.codeKey]: [
           {
