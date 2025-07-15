@@ -1598,7 +1598,7 @@ class CanvasApi {
     );
     if (!convertedCodeAndValue) return undefined;
     formattedObservation.valueQuantity = {
-      value: +convertedCodeAndValue.value,
+      value: convertedCodeAndValue.value,
       unit: convertedCodeAndValue.units,
     };
     return formattedObservation;
