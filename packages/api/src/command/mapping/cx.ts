@@ -109,7 +109,24 @@ export async function getCxMappingsByCustomer({
   return mappings.map(m => m.dataValues);
 }
 
-async function getCxMappingModelById({
+export async function getCxMappingById({
+  cxId,
+  id,
+}: CxMappingLookupByIdParams): Promise<CxMapping | undefined> {
+  const existing = await getCxMappingModelById({ cxId, id });
+  if (!existing) return undefined;
+  return existing.dataValues;
+}
+
+export async function getCxMappingByIdOrFail({
+  cxId,
+  id,
+}: CxMappingLookupByIdParams): Promise<CxMapping> {
+  const mapping = await getCxMappingModelByIdOrFail({ cxId, id });
+  return mapping.dataValues;
+}
+
+export async function getCxMappingModelById({
   cxId,
   id,
 }: CxMappingLookupByIdParams): Promise<CxMappingModel | undefined> {
@@ -120,7 +137,7 @@ async function getCxMappingModelById({
   return existing;
 }
 
-async function getCxMappingModelByIdOrFail({
+export async function getCxMappingModelByIdOrFail({
   cxId,
   id,
 }: CxMappingLookupByIdParams): Promise<CxMappingModel> {
