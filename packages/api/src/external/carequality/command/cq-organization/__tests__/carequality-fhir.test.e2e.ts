@@ -214,19 +214,27 @@ describe("CarequalityManagementApiFhir", () => {
       it.skip("deleteOrganization", () => {});
       return;
     } else {
-      it("deletes the organization", async () => {
+      it("soft-deletes the organization", async () => {
         const oid = getOid();
         const orgBeforeDelete = await api.getOrganization(oid);
         expect(orgBeforeDelete).toBeDefined();
-        await api.deleteOrganization(oid);
-        const orgAfterDelete = await api.getOrganization(oid);
-        expect(orgAfterDelete).toBeUndefined();
+        if (!orgBeforeDelete) throw new Error("programming error");
+        expect(orgBeforeDelete.active).toBe(true);
+
+        const orgAfterDelete = await api.deleteOrganization(oid);
+        expect(orgAfterDelete).toBeDefined();
+        if (!orgAfterDelete) throw new Error("programming error");
+        expect(orgAfterDelete.active).toBe(false);
+
+        const orgAfterGet = await api.getOrganization(oid);
+        expect(orgAfterGet).toBeDefined();
+        if (!orgAfterGet) throw new Error("programming error");
+        expect(orgAfterGet.active).toBe(false);
       });
 
-      it("does not throw when deleting a non-existent organization", async () => {
+      it("throws when deleting a non-existent organization", async () => {
         const oid = makeOid();
-        await api.deleteOrganization(oid);
-        expect(true).toBeTruthy();
+        await expect(api.deleteOrganization(oid)).rejects.toThrow();
       });
     }
   });
