@@ -13,17 +13,14 @@ import { initEvents } from "./event";
 import { initFeatureFlags } from "./external/feature-flags";
 import initDB from "./models/db";
 import { VERSION_HEADER_NAME } from "./routes/header";
-import {
-  errorHandler,
-  isAxiosError,
-  isMetriportError,
-} from "./routes/helpers/default-error-handler";
+import { errorHandler, isMetriportError } from "./routes/helpers/default-error-handler";
 import { notFoundHandlers } from "./routes/helpers/not-found-handler";
 import mountRoutes from "./routes/index";
 import { initRateLimiter } from "./routes/middlewares/rate-limiting";
 import { initSentry, isSentryEnabled } from "./sentry";
 import { Config } from "./shared/config";
 import { isClientError } from "./shared/http";
+import { isAxiosError } from "axios";
 
 dayjs.extend(duration);
 

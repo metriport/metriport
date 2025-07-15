@@ -5,6 +5,7 @@ import { capture } from "@metriport/core/util";
 import { MetriportError as MetriportErrorFromCore } from "@metriport/core/util/error/metriport-error";
 import { out } from "@metriport/core/util/log";
 import { MetriportError as MetriportErrorFromShared } from "@metriport/shared";
+import { isAxiosError } from "axios";
 import { ErrorRequestHandler } from "express";
 import httpStatus from "http-status";
 import { ZodError } from "zod";
@@ -12,7 +13,6 @@ import MetriportError from "../../errors/metriport-error";
 import { isClientError } from "../../shared/http";
 import { httpResponseBody } from "../util";
 import { isReportClientErrors } from "./report-client-errors";
-import axios, { AxiosError } from "axios";
 
 const { log } = out(`error-handler`);
 
@@ -57,10 +57,6 @@ export function isMetriportError(err: unknown): err is MetriportErrorFromShared 
     err instanceof MetriportErrorFromCore ||
     err instanceof MetriportErrorFromShared
   );
-}
-
-export function isAxiosError(err: unknown): err is AxiosError {
-  return axios.isAxiosError(err);
 }
 
 /**
