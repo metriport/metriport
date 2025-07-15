@@ -6,7 +6,7 @@ import { PatientModel } from "../../../models/medical/patient";
 import { PatientMappingModel } from "../../../models/patient-mapping";
 import { mockStartTransaction } from "../../../models/__tests__/transaction";
 import { CQDirectoryEntryViewModel } from "../../carequality/models/cq-directory-view";
-import { PatientDataCommonwell } from "../../commonwell/patient-shared";
+import { PatientDataCommonwell } from "../../commonwell-v1/patient-shared";
 import { getCqOrgIdsToDenyOnCw } from "../cross-hie-ids";
 import { resetScheduledPatientDiscovery } from "../reset-scheduled-patient-discovery-request";
 import { schedulePatientDiscovery } from "../schedule-patient-discovery";

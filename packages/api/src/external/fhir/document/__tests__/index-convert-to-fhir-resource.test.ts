@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
-import { makeContainedPatient } from "@metriport/commonwell-sdk/models/__tests__/document";
+import { makeContainedPatient } from "@metriport/commonwell-sdk-v1/models/__tests__/document";
 import { v4 as uuidv4 } from "uuid";
 import { convertToFHIRResource } from "../index";
 import { docRefContainedPatientWithOrg } from "./cw-payloads";

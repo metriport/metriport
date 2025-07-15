@@ -20,7 +20,7 @@ import { calculateConversionProgress } from "../../../domain/medical/conversion-
 import { isPatientAssociatedWithFacility } from "../../../domain/medical/patient-facility";
 import { processAsyncError } from "../../../errors";
 import { getDocumentsFromCQ } from "../../../external/carequality/document/query-documents";
-import { queryAndProcessDocuments as getDocumentsFromCW } from "../../../external/commonwell/document/document-query";
+import { queryAndProcessDocuments as getDocumentsFromCW } from "../../../external/commonwell-v1/document/document-query";
 import { getCqOrgIdsToDenyOnCw } from "../../../external/hie/cross-hie-ids";
 import { resetDocQueryProgress } from "../../../external/hie/reset-doc-query-progress";
 import { PatientModel } from "../../../models/medical/patient";

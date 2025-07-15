@@ -22,10 +22,10 @@ import {
   DocumentIdentifier,
   GenderCodes,
   HumanName as CWHumanName,
-} from "@metriport/commonwell-sdk";
-import { Gender } from "@metriport/commonwell-sdk/models/demographics";
+} from "@metriport/commonwell-sdk-v1";
+import { Gender } from "@metriport/commonwell-sdk-v1/models/demographics";
 import { joinName, Patient, splitName } from "@metriport/core/domain/patient";
-import { cwExtension } from "@metriport/core/external/commonwell/extension";
+import { cwExtension } from "@metriport/core/external/commonwell-v1/extension";
 import { toFHIRSubject } from "@metriport/core/external/fhir/patient/conversion";
 import { metriportDataSourceExtension } from "@metriport/core/external/fhir/shared/extensions/metriport";
 import dayjs from "dayjs";
@@ -34,7 +34,7 @@ import { sortBy, uniqBy } from "lodash";
 import MetriportError from "../../../errors/metriport-error";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
-import { CWDocumentWithMetriportData } from "../../commonwell/document/shared";
+import { CWDocumentWithMetriportData } from "../../commonwell-v1/document/shared";
 
 dayjs.extend(isToday);
 
@@ -62,7 +62,7 @@ const authorTypes = Object.values(authorTypesMap);
 // HIEs probably don't have records before the year 1800 :)
 const earliestPossibleYear = 1800;
 
-// TODO move to external/commonwell/document
+// TODO move to external/commonwell-v1/document
 export function getBestDateFromCWDocRef(content: DocumentContent): string {
   const date = dayjs(content.indexed);
   const period = content.context.period;
@@ -78,7 +78,7 @@ export function getBestDateFromCWDocRef(content: DocumentContent): string {
   return date.toISOString();
 }
 
-// TODO: Move to external/commonwell
+// TODO: Move to external/commonwell-v1
 export function cwToFHIR(
   docId: string,
   doc: CWDocumentWithMetriportData,

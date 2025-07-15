@@ -34,7 +34,7 @@ import {
 import { updatePatientImportParams } from "../../../command/medical/patient/patient-import/update-params";
 import { updatePatientImportTracking } from "../../../command/medical/patient/patient-import/update-tracking";
 import { getCQData } from "../../../external/carequality/patient";
-import { getCWData } from "../../../external/commonwell/patient";
+import { getCWData } from "../../../external/commonwell-v1/patient";
 import { requestLogger } from "../../helpers/request-logger";
 import { getUUIDFrom } from "../../schemas/uuid";
 import {

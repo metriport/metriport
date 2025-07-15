@@ -1,4 +1,4 @@
-import { getId, Person } from "@metriport/commonwell-sdk";
+import { getId, Person } from "@metriport/commonwell-sdk-v1";
 import { differenceBy } from "lodash";
 import { joinName } from "@metriport/core/domain/patient";
 import { MedicalDataSource } from "@metriport/core/external/index";

@@ -1,6 +1,6 @@
 import { Organization, Practitioner, Reference, Resource } from "@medplum/fhirtypes";
-import { Document as CWDocument, DocumentContent } from "@metriport/commonwell-sdk";
-import { makeDocument } from "@metriport/commonwell-sdk/models/__tests__/document";
+import { Document as CWDocument, DocumentContent } from "@metriport/commonwell-sdk-v1";
+import { makeDocument } from "@metriport/commonwell-sdk-v1/models/__tests__/document";
 import { v4 as uuidv4 } from "uuid";
 import { convertToFHIRResource, getAuthors } from "../index";
 import { docRefsWithOneAuthorPointingToMultipleContained } from "./cw-payloads";

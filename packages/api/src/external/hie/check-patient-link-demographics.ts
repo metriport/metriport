@@ -1,6 +1,6 @@
 import { Patient } from "@metriport/core/domain/patient";
 import { getCQPatientData } from "../../external/carequality/command/cq-patient-data/get-cq-data";
-import { getCwPatientData } from "../../external/commonwell/command/cw-patient-data/get-cw-data";
+import { getCwPatientData } from "../../external/commonwell-v1/command/cw-patient-data/get-cw-data";
 
 export async function checkLinkDemographicsAcrossHies({
   patient,

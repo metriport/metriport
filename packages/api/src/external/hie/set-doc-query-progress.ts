@@ -11,7 +11,7 @@ import {
   aggregateDocQueryProgress,
 } from "../../command/medical/patient/append-doc-query-progress";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
-import { getCWData } from "../commonwell/patient";
+import { getCWData } from "../commonwell-v1/patient";
 import { getCQData } from "../carequality/patient";
 import { processDocQueryProgressWebhook } from "../../command/medical/document/process-doc-query-webhook";
 
