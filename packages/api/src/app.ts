@@ -13,7 +13,11 @@ import { initEvents } from "./event";
 import { initFeatureFlags } from "./external/feature-flags";
 import initDB from "./models/db";
 import { VERSION_HEADER_NAME } from "./routes/header";
-import { errorHandler, isMetriportError } from "./routes/helpers/default-error-handler";
+import {
+  errorHandler,
+  isAxiosError,
+  isMetriportError,
+} from "./routes/helpers/default-error-handler";
 import { notFoundHandlers } from "./routes/helpers/not-found-handler";
 import mountRoutes from "./routes/index";
 import { initRateLimiter } from "./routes/middlewares/rate-limiting";
@@ -61,6 +65,14 @@ if (isSentryEnabled()) {
         if (isClientError(error)) return false;
         capture.setExtra({
           ...(isMetriportError(error) ? error.additionalInfo : {}),
+          ...(isAxiosError(error)
+            ? {
+                stack: error.stack,
+                method: error.config?.method,
+                url: error.config?.url,
+                data: error.response?.data,
+              }
+            : {}),
           error,
         });
         return true;

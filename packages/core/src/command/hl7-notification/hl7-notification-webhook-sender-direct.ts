@@ -1,6 +1,6 @@
 import { Hl7Message } from "@medplum/core";
 import { Bundle, CodeableConcept, Resource } from "@medplum/fhirtypes";
-import { errorToString, executeWithNetworkRetries, MetriportError } from "@metriport/shared";
+import { executeWithNetworkRetries } from "@metriport/shared";
 import { CreateDischargeRequeryParams } from "@metriport/shared/src/domain/patient/patient-monitoring/discharge-requery";
 import axios from "axios";
 import dayjs from "dayjs";
@@ -211,22 +211,12 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
     );
 
     log(`PUT /internal/tcm/encounter ${triggerEvent}`);
-    try {
-      await executeWithNetworkRetries(
-        async () => axios.put(`${this.apiUrl}/internal/tcm/encounter/`, fullPayload),
-        {
-          log,
-        }
-      );
-    } catch (error) {
-      throw new MetriportError("Failed to persist TCM encounter", undefined, {
-        facilityName: tcmEncounterPayload.facilityName,
-        class: tcmEncounterPayload.class,
-        admitTime: tcmEncounterPayload.admitTime,
-        dischargeTime: tcmEncounterPayload.dischargeTime,
-        error: errorToString(error),
-      });
-    }
+    await executeWithNetworkRetries(
+      async () => axios.put(`${this.apiUrl}/internal/tcm/encounter/`, fullPayload),
+      {
+        log,
+      }
+    );
   }
 
   private extractClinicalInformation(bundle: Bundle<Resource>): {

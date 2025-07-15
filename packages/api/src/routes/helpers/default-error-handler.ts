@@ -1,3 +1,4 @@
+/* eslint-disable @metriport/eslint-rules/no-named-arrow-functions */
 import { OperationOutcomeError } from "@medplum/core";
 import { getDetailFromOutcomeError } from "@metriport/core/external/fhir/shared/index";
 import { capture } from "@metriport/core/util";
@@ -11,6 +12,7 @@ import MetriportError from "../../errors/metriport-error";
 import { isClientError } from "../../shared/http";
 import { httpResponseBody } from "../util";
 import { isReportClientErrors } from "./report-client-errors";
+import axios, { AxiosError } from "axios";
 
 const { log } = out(`error-handler`);
 
@@ -22,7 +24,7 @@ const { log } = out(`error-handler`);
 //    - detail: details about this error occurrence; ie "Could not find organization"
 const defaultResponseBody = httpResponseBody;
 
-const metriportResponseBody = (err: MetriportError): string => {
+export function metriportResponseBody(err: MetriportError): string {
   return JSON.stringify({
     ...httpResponseBody({
       status: err.status,
@@ -32,9 +34,9 @@ const metriportResponseBody = (err: MetriportError): string => {
     }),
     ...(err.additionalInfo && { additionalInfo: err.additionalInfo }),
   });
-};
+}
 
-const zodResponseBody = (err: ZodError): string => {
+export function zodResponseBody(err: ZodError): string {
   const formatted = err.issues.map(i => `${i.message}, on [${i.path}]`);
   return JSON.stringify({
     ...httpResponseBody({
@@ -44,7 +46,7 @@ const zodResponseBody = (err: ZodError): string => {
       name: httpStatus[httpStatus.BAD_REQUEST],
     }),
   });
-};
+}
 
 /**
  * Only here until we move all MetriportError to the same place
@@ -55,6 +57,10 @@ export function isMetriportError(err: unknown): err is MetriportErrorFromShared 
     err instanceof MetriportErrorFromCore ||
     err instanceof MetriportErrorFromShared
   );
+}
+
+export function isAxiosError(err: unknown): err is AxiosError {
+  return axios.isAxiosError(err);
 }
 
 /**
@@ -108,6 +114,7 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
   }
   const status = err.statusCode || err.status;
   if (status) {
+    const detail = err.config?.url ? err.config?.url + " " + err.message : err.message;
     return res
       .contentType("json")
       .status(status)
@@ -115,7 +122,7 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
         ...defaultResponseBody({
           status,
           title: "MetriportError",
-          detail: err.message,
+          detail,
         }),
         name: httpStatus[status],
       });
