@@ -193,7 +193,7 @@ function isMmHg(units: string): boolean {
 }
 
 function isBpm(units: string): boolean {
-  return units === "bpm" || units === "/min" || units === "beats/min";
+  return units === "bpm" || units === "/min" || units === "beats/min" || units === "per minute";
 }
 
 function isPercent(units: string): boolean {
