@@ -569,7 +569,7 @@ class ElationApi {
     };
     const groupedVitals: Record<string, ElationGroupedVital> = observations.reduce(
       (acc, observation) => {
-        const vitalsData = this.formatVital(observation);
+        const vitalsData = this.formatGroupedVital(observation);
         if (!vitalsData) return acc;
         const chartDate = vitalsData.chartDate;
         if (!acc[chartDate]) {
@@ -1152,7 +1152,7 @@ class ElationApi {
     };
   }
 
-  private formatVital(observation: Observation):
+  private formatGroupedVital(observation: Observation):
     | {
         chartDate: string;
         data: ElationGroupedVitalData;

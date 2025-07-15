@@ -8,7 +8,7 @@ import { writeBackLabPanel } from "./lab-panel";
 
 export type WriteBackResourceType = "condition" | "lab" | "lab-panel" | "grouped-vitals";
 
-export type WriteBackConditionRequest = {
+export type WriteBackResourceRequest = {
   ehr: EhrSource;
   tokenId?: string;
   cxId: string;
@@ -19,9 +19,9 @@ export type WriteBackConditionRequest = {
   writeBackResource: WriteBackResourceType;
 };
 
-export type WriteBackConditionClientRequest = Omit<WriteBackConditionRequest, "ehr">;
+export type WriteBackResourceClientRequest = Omit<WriteBackResourceRequest, "ehr">;
 
-export async function writeBackResource({ ...params }: WriteBackConditionRequest): Promise<void> {
+export async function writeBackResource({ ...params }: WriteBackResourceRequest): Promise<void> {
   if (params.writeBackResource === "condition") {
     return await writeBackCondition({ ...params, condition: params.resource as Condition });
   } else if (params.writeBackResource === "lab") {
