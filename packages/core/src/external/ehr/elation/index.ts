@@ -582,7 +582,7 @@ class ElationApi {
             ...vitalsData.data,
           } as ElationGroupedVital;
         } else {
-          acc[chartDate] = { ...acc[chartDate], ...vitalsData.data };
+          acc[chartDate] = { ...acc[chartDate], ...vitalsData.data } as ElationGroupedVital;
         }
         return acc;
       },

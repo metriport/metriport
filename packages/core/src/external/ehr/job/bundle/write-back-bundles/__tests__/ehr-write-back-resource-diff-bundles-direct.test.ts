@@ -582,7 +582,7 @@ describe("write-back-resource-diff-bundles-direct", () => {
         const shouldKeep = shouldWriteBackResource({
           resource: resource as Observation,
           resources: unfilteredResources as Observation[],
-          writeBackResourceType: "vital",
+          writeBackResourceType: "grouped-vitals",
           writeBackFilters: vitalDateFilterUndefined as WriteBackFiltersPerResourceType,
         });
         if (shouldKeep) filteredResources.push(resource as Observation);
@@ -596,7 +596,7 @@ describe("write-back-resource-diff-bundles-direct", () => {
         const shouldKeep = shouldWriteBackResource({
           resource: resource as Observation,
           resources: unfilteredResources as Observation[],
-          writeBackResourceType: "vital",
+          writeBackResourceType: "grouped-vitals",
           writeBackFilters: vitalLoincCodesFilterCode1 as WriteBackFiltersPerResourceType,
         });
         if (shouldKeep) filteredResources.push(resource as Observation);
