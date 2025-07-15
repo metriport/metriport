@@ -28,6 +28,7 @@
 {{!-- @deprecated - Use the generatePractitionerId from the helpers file instead --}}
 {{!-- TODO: Migrate away from using this anywhere in the Converter. --}}
 {{!-- @warning - If you are updating this, please also update the generatePractitionerId function in the handlebars-helpers.js file --}}
+{{!-- TODO ENG-640: Fix the logic. If the external ID isn't present, we should still generate a UUID from the name, addr, and telecom --}}
 {{#with (elementAt (toArray obj.id) 0) as |FirstId|}}
     {{!-- Id composed of root and extension if they both exist, else name addr telecom --}}
     {

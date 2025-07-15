@@ -150,25 +150,29 @@ var concatDefinedShared = function (...args) {
  *
  * @warning - If you are updating this, please also update the GeneratePractitionerId.hbs template definition.
  * Otherwise, the generated practitioner IDs will not match across different CDA sections.
+ *
+ * TODO ENG-640: Fix the logic. If the external ID isn't present, we should still generate a UUID from the name, addr, and telecom
  */
 var generatePractitionerId = function (practitioner) {
   if (!practitioner) return undefined;
 
   const firstId = Array.isArray(practitioner.id) ? practitioner.id[0] : practitioner.id;
 
-  if (firstId && firstId.root && firstId.extension) {
-    const combined = [firstId.root, "|", firstId.extension].join("");
-    const id = uuidv3(combined, uuidv3.URL);
-    return id;
-  } else if (practitioner.assignedPerson?.name) {
-    const combined = [
-      JSON.stringify(practitioner.assignedPerson.name),
-      JSON.stringify(practitioner.addr),
-      JSON.stringify(practitioner.telecom),
-    ].join("");
+  if (firstId) {
+    if (firstId.root && firstId.extension) {
+      const combined = [firstId.root, "|", firstId.extension].join("");
+      const id = uuidv3(combined, uuidv3.URL);
+      return id;
+    } else if (practitioner.assignedPerson?.name) {
+      const combined = [
+        JSON.stringify(practitioner.assignedPerson.name),
+        JSON.stringify(practitioner.addr),
+        JSON.stringify(practitioner.telecom),
+      ].join("");
 
-    const id = uuidv3(combined, uuidv3.URL);
-    return id;
+      const id = uuidv3(combined, uuidv3.URL);
+      return id;
+    }
   }
 
   return undefined;
@@ -182,7 +186,7 @@ var generatePractitionerId = function (practitioner) {
  * Otherwise, the generated location IDs will not match across different CDA sections.
  */
 var generateLocationId = function (location) {
-  if (!location) return undefined;
+  if (!location) return {};
 
   if (location.location?.addr) {
     const combined = concatDefinedShared(
@@ -203,7 +207,7 @@ var generateLocationId = function (location) {
     return id;
   }
 
-  return undefined;
+  return {};
 };
 
 var getSegmentListsInternal = function (msg, ...segmentIds) {
@@ -354,13 +358,14 @@ var startDateLteEndDate = function (v1, v2) {
  * @warning - If you are updating this, please also update the DataType/Period.hbs template definition.
  */
 var buildPeriod = function (period) {
-  if (!period) {
-    return undefined;
-  }
-
   const result = {};
-
-  if (period.low && period.high && startDateLteEndDate(period.low.value, period.high.value)) {
+  if (!period) {
+    result.start = getDateTime(undefined);
+  } else if (
+    period.low &&
+    period.high &&
+    startDateLteEndDate(period.low.value, period.high.value)
+  ) {
     result.start = getDateTime(period.low.value);
     result.end = getDateTime(period.high.value);
   } else if (
@@ -651,9 +656,13 @@ const allValuesInObjAreNullFlavor = obj => {
 };
 
 module.exports.internal = {
-  getDateTime: getDateTime,
-  getDate: getDate,
+  getDateTime,
+  getDate,
   convertDate,
+  startDateLteEndDate,
+  buildPeriod,
+  generatePractitionerId,
+  generateLocationId,
 };
 
 module.exports.external = [
