@@ -20,9 +20,14 @@ export function convertCodeAndValue(
   const baseParams = { units: targetUnits, codeKey };
   const baseValue = typeof value === "string" ? value.trim() : value;
   if (inputUnits === targetUnits) return { ...baseParams, value: baseValue };
+  if (targetUnits === "mmHg") {
+    if (isMmHg(inputUnits)) {
+      return { ...baseParams, value: baseValue };
+    }
+  }
+  const valueNumber = convertValueToNumber(baseValue);
   if (targetUnits === "kg") {
     // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
-    const valueNumber = convertValueToNumber(baseValue);
     if (isKg(inputUnits)) {
       return { ...baseParams, value: valueNumber };
     }
@@ -35,7 +40,6 @@ export function convertCodeAndValue(
   }
   if (targetUnits === "g") {
     // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
-    const valueNumber = convertValueToNumber(baseValue);
     if (isG(inputUnits)) {
       return { ...baseParams, value: valueNumber };
     }
@@ -61,7 +65,6 @@ export function convertCodeAndValue(
   }
   if (targetUnits === "cm") {
     // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
-    const valueNumber = convertValueToNumber(baseValue);
     if (isCm(inputUnits)) {
       return { ...baseParams, value: valueNumber };
     }
@@ -70,7 +73,7 @@ export function convertCodeAndValue(
     }
   }
   if (targetUnits === "in_i") {
-    const valueNumber = convertValueToNumber(baseValue);
+    // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
     if (isIn(inputUnits)) {
       return { ...baseParams, value: valueNumber };
     }
@@ -80,7 +83,6 @@ export function convertCodeAndValue(
   }
   if (targetUnits === "degf") {
     // https://hl7.org/fhir/R4/valueset-ucum-bodytemp.html
-    const valueNumber = convertValueToNumber(baseValue);
     if (isDegf(inputUnits)) {
       return { ...baseParams, value: valueNumber };
     }
@@ -89,14 +91,23 @@ export function convertCodeAndValue(
     }
   }
   if (targetUnits === "kg/m2") {
-    // https://hl7.org/fhir/R4/valueset-ucum-bodybmi.html
-    const valueNumber = convertValueToNumber(baseValue);
     if (isKgPerM2(inputUnits)) {
+      return { ...baseParams, value: valueNumber };
+    }
+  }
+  if (targetUnits === "bpm") {
+    if (isBpm(inputUnits)) {
+      return { ...baseParams, value: valueNumber };
+    }
+  }
+  if (targetUnits === "%") {
+    if (isPercent(inputUnits)) {
       return { ...baseParams, value: valueNumber };
     }
   }
   throw new BadRequestError("Unknown units", undefined, {
     units: inputUnits,
+    targetUnits,
     loincCode,
     value,
   });
@@ -172,4 +183,22 @@ function isCel(units: string): boolean {
 
 function isKgPerM2(units: string): boolean {
   return units === "kg/m2" || units === "kg_m2";
+}
+
+function isMmHg(units: string): boolean {
+  return (
+    units === "mmHg" ||
+    units.includes("mmHg") ||
+    units.includes("mm Hg") ||
+    units.includes("millimeter of mercury") ||
+    units.includes("millimeter mercury")
+  );
+}
+
+function isBpm(units: string): boolean {
+  return units === "bpm" || units === "beats per minute";
+}
+
+function isPercent(units: string): boolean {
+  return units === "%" || units === "percent";
 }

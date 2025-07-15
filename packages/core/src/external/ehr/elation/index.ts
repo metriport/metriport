@@ -41,6 +41,7 @@ import axios, { AxiosInstance } from "axios";
 import { z } from "zod";
 import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
+import { uuidv7 } from "../../../util/uuid-v7";
 import { createOrReplaceCcda } from "../bundle/command/create-or-replace-ccda";
 import {
   ApiConfig,
@@ -99,17 +100,11 @@ vitalSignCodesMap.set("8867-4", { codeKey: "hr", targetUnits: "bpm" });
 vitalSignCodesMap.set("9279-1", { codeKey: "rr", targetUnits: "bpm" });
 vitalSignCodesMap.set("2708-6", { codeKey: "oxygen", targetUnits: "%" });
 vitalSignCodesMap.set("59408-5", { codeKey: "oxygen", targetUnits: "%" });
-vitalSignCodesMap.set("8462-4", { codeKey: "bp", targetUnits: "mmHg" });
-vitalSignCodesMap.set("8480-6", { codeKey: "bp", targetUnits: "mmHg" });
 vitalSignCodesMap.set("85354-9", { codeKey: "bp", targetUnits: "mmHg" });
 vitalSignCodesMap.set("29463-7", { codeKey: "weight", targetUnits: "lb_av" });
 vitalSignCodesMap.set("8302-2", { codeKey: "height", targetUnits: "in_i" });
 vitalSignCodesMap.set("56086-2", { codeKey: "wc", targetUnits: "cm" });
 vitalSignCodesMap.set("39156-5", { codeKey: "bmi", targetUnits: "kg/m2" });
-
-const bpGlobalCode = "85354-9";
-const bpSystolicCode = "8480-6";
-const bpDiastolicCode = "8462-4";
 
 const ccdaSectionMap = new Map<ResourceType, string>();
 ccdaSectionMap.set("AllergyIntolerance", "allergies");
@@ -941,7 +936,7 @@ class ElationApi {
       chart_date: formattedChartDate,
       grids: [
         {
-          accession_number: "",
+          accession_number: uuidv7(),
           resulted_date: formattedObservedDate,
           collected_date: formattedObservedDate,
           status: formattedResultStatus,
@@ -1072,7 +1067,7 @@ class ElationApi {
       chart_date: formattedChartDate,
       grids: [
         {
-          accession_number: "",
+          accession_number: uuidv7(),
           resulted_date: formattedReportDate,
           collected_date: formattedReportDate,
           status: formattedResultStatus,
@@ -1127,56 +1122,32 @@ class ElationApi {
       };
     }
     if (convertedCodeAndValue.codeKey === "bp") {
-      if (loincCode === bpGlobalCode) {
-        if (typeof convertedCodeAndValue.value !== "string") {
-          throw new BadRequestError("Invalid value type for bpobservation", undefined, {
-            ...additionalInfo,
-            loincCode,
-            value: convertedCodeAndValue.value,
-          });
-        }
-        const [systolic, diastolic] = convertedCodeAndValue.value.replace(" mmHg", "").split("/");
-        return {
-          chart_date: formattedChartDate,
-          data: {
-            bp: [
-              {
-                systolic: systolic ? systolic : null,
-                diastolic: diastolic ? diastolic : null,
-              },
-            ],
-          },
-        };
-      } else if (loincCode === bpSystolicCode) {
-        return {
-          chart_date: formattedChartDate,
-          data: {
-            bp: [
-              {
-                systolic: convertedCodeAndValue.value.toString(),
-                diastolic: null,
-              },
-            ],
-          },
-        };
-      } else if (loincCode === bpDiastolicCode) {
-        return {
-          chart_date: formattedChartDate,
-          data: {
-            bp: [
-              {
-                systolic: null,
-                diastolic: convertedCodeAndValue.value.toString(),
-              },
-            ],
-          },
-        };
-      } else {
-        throw new BadRequestError("Unknown LOINC code for bp observation", undefined, {
+      if (typeof convertedCodeAndValue.value !== "string") {
+        throw new BadRequestError("Invalid value type for bp observation", undefined, {
           ...additionalInfo,
           loincCode,
+          value: convertedCodeAndValue.value,
         });
       }
+      const [systolic, diastolic] = convertedCodeAndValue.value.replace(" mmHg", "").split("/");
+      if (!systolic || !diastolic) {
+        throw new BadRequestError("Invalid value for bp observation", undefined, {
+          ...additionalInfo,
+          loincCode,
+          value: convertedCodeAndValue.value,
+        });
+      }
+      return {
+        chart_date: formattedChartDate,
+        data: {
+          bp: [
+            {
+              systolic,
+              diastolic,
+            },
+          ],
+        },
+      };
     }
     return {
       chart_date: formattedChartDate,

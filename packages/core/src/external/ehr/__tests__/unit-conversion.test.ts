@@ -39,9 +39,14 @@ describe("convertCodeAndValue", () => {
       expect(result).toEqual({ units: "g", codeKey: "VITALS.WEIGHT", value: 5000 });
     });
 
-    it("handles string input for value", () => {
+    it("handles string input for non-target value", () => {
       const result = convertCodeAndValue("29463-7", loincCodeMap, "2", "kg");
       expect(result).toEqual({ units: "g", codeKey: "VITALS.WEIGHT", value: 2000 });
+    });
+
+    it("handles string input for target value", () => {
+      const result = convertCodeAndValue("29463-7", loincCodeMap, "2", "g");
+      expect(result).toEqual({ units: "g", codeKey: "VITALS.WEIGHT", value: "2" });
     });
   });
 
@@ -61,9 +66,14 @@ describe("convertCodeAndValue", () => {
       expect(result).toEqual({ units: "kg", codeKey: "VITALS.WEIGHT", value: 5 });
     });
 
-    it("handles string input for value", () => {
+    it("handles string input for non-target value", () => {
       const result = convertCodeAndValue("29463-7-kg", loincCodeMap, "2000", "g");
       expect(result).toEqual({ units: "kg", codeKey: "VITALS.WEIGHT", value: 2 });
+    });
+
+    it("handles string input for target value", () => {
+      const result = convertCodeAndValue("29463-7-kg", loincCodeMap, "2", "kg");
+      expect(result).toEqual({ units: "kg", codeKey: "VITALS.WEIGHT", value: "2" });
     });
   });
 
@@ -83,9 +93,14 @@ describe("convertCodeAndValue", () => {
       expect(result).toEqual({ units: "lb_av", codeKey: "VITALS.WEIGHT", value: 3 });
     });
 
-    it("handles string input for value", () => {
+    it("handles string input for non-target value", () => {
       const result = convertCodeAndValue("29463-7-lb_av", loincCodeMap, "1000", "g");
       expect(result).toEqual({ units: "lb_av", codeKey: "VITALS.WEIGHT", value: 2.20462 });
+    });
+
+    it("handles string input for target value", () => {
+      const result = convertCodeAndValue("29463-7-lb_av", loincCodeMap, "2", "lb_av");
+      expect(result).toEqual({ units: "lb_av", codeKey: "VITALS.WEIGHT", value: "2" });
     });
   });
 
@@ -100,9 +115,14 @@ describe("convertCodeAndValue", () => {
       expect(result).toEqual({ units: "cm", codeKey: "VITALS.HEIGHT", value: 180 });
     });
 
-    it("handles string input for value", () => {
+    it("handles string input for non-target value", () => {
       const result = convertCodeAndValue("8302-2", loincCodeMap, "10", "in_i");
       expect(result).toEqual({ units: "cm", codeKey: "VITALS.HEIGHT", value: 25.399986284007404 });
+    });
+
+    it("handles string input for target value", () => {
+      const result = convertCodeAndValue("8302-2", loincCodeMap, "10", "cm");
+      expect(result).toEqual({ units: "cm", codeKey: "VITALS.HEIGHT", value: "10" });
     });
   });
 
@@ -117,9 +137,14 @@ describe("convertCodeAndValue", () => {
       expect(result).toEqual({ units: "in_i", codeKey: "VITALS.HEIGHT", value: 10 });
     });
 
-    it("handles string input for value", () => {
+    it("handles string input for non-target value", () => {
       const result = convertCodeAndValue("8302-2-in_i", loincCodeMap, "25.4", "cm");
       expect(result).toEqual({ units: "in_i", codeKey: "VITALS.HEIGHT", value: 10.0000054 });
+    });
+
+    it("handles string input for target value", () => {
+      const result = convertCodeAndValue("8302-2-in_i", loincCodeMap, "10", "in_i");
+      expect(result).toEqual({ units: "in_i", codeKey: "VITALS.HEIGHT", value: "10" });
     });
   });
 
@@ -134,9 +159,14 @@ describe("convertCodeAndValue", () => {
       expect(result).toEqual({ units: "degf", codeKey: "VITALS.TEMPERATURE", value: 98.6 });
     });
 
-    it("handles string input for value", () => {
+    it("handles string input for non-target value", () => {
       const result = convertCodeAndValue("8310-5", loincCodeMap, "0", "celsius");
       expect(result).toEqual({ units: "degf", codeKey: "VITALS.TEMPERATURE", value: 32 });
+    });
+
+    it("handles string input for target value", () => {
+      const result = convertCodeAndValue("8310-5", loincCodeMap, "0", "degf");
+      expect(result).toEqual({ units: "degf", codeKey: "VITALS.TEMPERATURE", value: "0" });
     });
   });
 
@@ -151,9 +181,14 @@ describe("convertCodeAndValue", () => {
       expect(result).toEqual({ units: "kg/m2", codeKey: "VITALS.BMI", value: 25 });
     });
 
-    it("handles string input for value", () => {
+    it("handles string input for non-target value", () => {
       const result = convertCodeAndValue("39156-5", loincCodeMap, "25", "kg_m2");
       expect(result).toEqual({ units: "kg/m2", codeKey: "VITALS.BMI", value: 25 });
+    });
+
+    it("handles string input for target value", () => {
+      const result = convertCodeAndValue("39156-5", loincCodeMap, "25", "kg/m2");
+      expect(result).toEqual({ units: "kg/m2", codeKey: "VITALS.BMI", value: "25" });
     });
   });
 
@@ -165,19 +200,62 @@ describe("convertCodeAndValue", () => {
     });
   });
 
-  describe("other units", () => {
+  describe("rate conversions", () => {
     it("returns value unchanged for matching units (bpm)", () => {
       const result = convertCodeAndValue("8867-4", loincCodeMap, 70, "bpm");
       expect(result).toEqual({ units: "bpm", codeKey: "VITALS.HEARTRATE", value: 70 });
     });
 
+    it("returns value unchanged for matching units (beats per minute)", () => {
+      const result = convertCodeAndValue("8867-4", loincCodeMap, 70, "beats per minute");
+      expect(result).toEqual({ units: "bpm", codeKey: "VITALS.HEARTRATE", value: 70 });
+    });
+
+    it("handles string input for non-target units (beats per minute)", () => {
+      const result = convertCodeAndValue("8867-4", loincCodeMap, "70", "beats per minute");
+      expect(result).toEqual({ units: "bpm", codeKey: "VITALS.HEARTRATE", value: 70 });
+    });
+
+    it("handles string input for target units (bpm)", () => {
+      const result = convertCodeAndValue("8867-4", loincCodeMap, "70", "bpm");
+      expect(result).toEqual({ units: "bpm", codeKey: "VITALS.HEARTRATE", value: "70" });
+    });
+  });
+
+  describe("oxygen conversions", () => {
     it("returns value unchanged for matching units (%)", () => {
       const result = convertCodeAndValue("2708-6", loincCodeMap, 95, "%");
       expect(result).toEqual({ units: "%", codeKey: "VITALS.INHALEDO2CONCENTRATION", value: 95 });
     });
 
+    it("returns value unchanged for matching units (percent)", () => {
+      const result = convertCodeAndValue("2708-6", loincCodeMap, 95, "percent");
+      expect(result).toEqual({ units: "%", codeKey: "VITALS.INHALEDO2CONCENTRATION", value: 95 });
+    });
+
+    it("handles string input for non-target units (percent)", () => {
+      const result = convertCodeAndValue("2708-6", loincCodeMap, "95", "percent");
+      expect(result).toEqual({ units: "%", codeKey: "VITALS.INHALEDO2CONCENTRATION", value: 95 });
+    });
+
+    it("handles string input for target units (%)", () => {
+      const result = convertCodeAndValue("2708-6", loincCodeMap, "95", "%");
+      expect(result).toEqual({ units: "%", codeKey: "VITALS.INHALEDO2CONCENTRATION", value: "95" });
+    });
+  });
+
+  describe("blood pressure conversions", () => {
     it("returns value unchanged for matching units (mmHg)", () => {
       const result = convertCodeAndValue("8462-4", loincCodeMap, 120, "mmHg");
+      expect(result).toEqual({
+        units: "mmHg",
+        codeKey: "VITALS.BLOODPRESSURE.DIASTOLIC",
+        value: 120,
+      });
+    });
+
+    it("returns value unchanged for matching units (millimeter of mercury)", () => {
+      const result = convertCodeAndValue("8462-4", loincCodeMap, 120, "millimeter of mercury");
       expect(result).toEqual({
         units: "mmHg",
         codeKey: "VITALS.BLOODPRESSURE.DIASTOLIC",
