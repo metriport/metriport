@@ -37,7 +37,7 @@ const ehrWriteBackGroupedVitalsMap: WriteBackGroupedVitalsFnMap = {
 function getEhrWriteBackGroupedVitalsHandler(ehr: EhrSource): WriteBackGroupedVitalsFn {
   const handler = ehrWriteBackGroupedVitalsMap[ehr];
   if (!handler) {
-    throw new BadRequestError("Could not find handler to write back vital", undefined, {
+    throw new BadRequestError("Could not find handler to write back grouped vitals", undefined, {
       ehr,
     });
   }
