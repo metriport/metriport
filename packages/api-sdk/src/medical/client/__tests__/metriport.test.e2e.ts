@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 import dayjs from "dayjs";
 import { v4 as uuidv4 } from "uuid";
-import { getEnvVar, getEnvVarOrFail, ISO_DATE } from "../../../shared";
+import { getEnvVar, getEnvVarOrFail } from "@metriport/shared";
+import { ISO_DATE } from "@metriport/shared/common/date";
 import { MetriportMedicalApi } from "../metriport";
 
 jest.setTimeout(15000);
