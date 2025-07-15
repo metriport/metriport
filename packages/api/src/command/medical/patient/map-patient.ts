@@ -1,4 +1,3 @@
-import { Patient, PatientData } from "@metriport/core/domain/patient";
 import { BadRequestError, NotFoundError } from "@metriport/shared";
 import { EhrSources } from "@metriport/shared/interface/external/ehr";
 import { CxMapping } from "../../../domain/cx-mapping";
@@ -7,19 +6,28 @@ import { syncHealthiePatientIntoMetriport } from "../../../external/ehr/healthie
 import { getCxMappingByIdOrFail, getCxMappingsByCustomer } from "../../mapping/cx";
 import { getPatientOrFail } from "./get-patient";
 
-type Identifier = Pick<Patient, "cxId" | "externalId"> & { facilityId: string };
-type PatientNoExternalData = Omit<PatientData, "externalData">;
-export type PatientCreateCmd = PatientNoExternalData & Identifier;
+export type MapPatientParams = {
+  cxId: string;
+  patientId: string;
+  cxMappingId?: string;
+};
 
+/**
+ * Maps a metriport patient to a patient in an external system.
+ *
+ * @param cxId The ID of the customer
+ * @param patientId The ID of the patient to map
+ * @param cxMappingId The ID of the mapping to use. Optional. Required if the patient has multiple mappings.
+ * @returns The Metriport patient ID and the mapped system patient ID.
+ * @throws 400 if the patient has no external ID to attempt mapping
+ * @throws 400 if the mapping source is not supported
+ * @throws 404 if no mapping is found
+ */
 export async function mapPatient({
   cxId,
   patientId,
   cxMappingId,
-}: {
-  cxId: string;
-  patientId: string;
-  cxMappingId?: string;
-}): Promise<{ metriportPatientId: string; mappingPatientId: string }> {
+}: MapPatientParams): Promise<{ metriportPatientId: string; mappingPatientId: string }> {
   const patient = await getPatientOrFail({ id: patientId, cxId });
   if (!patient.externalId) {
     throw new BadRequestError("Patient has no external ID to attempt mapping", undefined, {
