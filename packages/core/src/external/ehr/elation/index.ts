@@ -69,7 +69,7 @@ import {
   partitionEhrBundle,
   saveEhrReferenceBundle,
 } from "../shared";
-import { convertCodeAndValue } from "../unit-converion";
+import { convertCodeAndValue } from "../unit-conversion";
 
 interface ElationApiConfig extends ApiConfig {
   environment: ElationEnv;

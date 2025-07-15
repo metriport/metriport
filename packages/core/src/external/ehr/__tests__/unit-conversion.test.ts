@@ -1,4 +1,4 @@
-import { convertCodeAndValue } from "../unit-converion";
+import { convertCodeAndValue } from "../unit-conversion";
 
 const loincCodeMap = new Map<string, { codeKey: string; targetUnits: string }>();
 loincCodeMap.set("8310-5", { codeKey: "VITALS.TEMPERATURE", targetUnits: "degf" });

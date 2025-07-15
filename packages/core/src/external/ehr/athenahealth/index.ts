@@ -143,7 +143,7 @@ import {
   partitionEhrBundle,
   saveEhrReferenceBundle,
 } from "../shared";
-import { convertCodeAndValue } from "../unit-converion";
+import { convertCodeAndValue } from "../unit-conversion";
 
 dayjs.extend(duration);
 
