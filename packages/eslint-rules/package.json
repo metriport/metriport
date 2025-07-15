@@ -1,6 +1,6 @@
 {
   "name": "@metriport/eslint-plugin-eslint-rules",
-  "version": "1.0.3",
+  "version": "1.0.5-alpha.0",
   "description": "Custom ESLint rules for Metriport's monorepo",
   "main": "index.js",
   "keywords": [
