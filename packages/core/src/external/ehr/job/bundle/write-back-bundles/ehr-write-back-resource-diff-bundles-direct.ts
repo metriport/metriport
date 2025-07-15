@@ -586,7 +586,7 @@ async function writeBackResources({
           practiceId,
           ehrPatientId,
           resource,
-          ...(secondaryResources && { secondaryResource: secondaryResources }),
+          ...(secondaryResources && { secondaryResources }),
           writeBackResource: writeBackResourceType,
         });
       } catch (error) {
