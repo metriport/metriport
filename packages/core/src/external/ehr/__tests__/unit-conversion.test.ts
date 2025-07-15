@@ -38,12 +38,12 @@ describe("convertCodeAndValue", () => {
       expect(result).toEqual({ units: "g", codeKey: "VITALS.WEIGHT", value: 5000 });
     });
 
-    it("handles string input for non-target value", () => {
+    it("handles string input for non-target units", () => {
       const result = convertCodeAndValue("29463-7", loincCodeMap, "2", "kg");
       expect(result).toEqual({ units: "g", codeKey: "VITALS.WEIGHT", value: 2000 });
     });
 
-    it("handles string input for target value", () => {
+    it("handles string input for target units", () => {
       const result = convertCodeAndValue("29463-7", loincCodeMap, "2", "g");
       expect(result).toEqual({ units: "g", codeKey: "VITALS.WEIGHT", value: 2 });
     });
@@ -65,12 +65,12 @@ describe("convertCodeAndValue", () => {
       expect(result).toEqual({ units: "kg", codeKey: "VITALS.WEIGHT", value: 5 });
     });
 
-    it("handles string input for non-target value", () => {
+    it("handles string input for non-target units", () => {
       const result = convertCodeAndValue("29463-7-kg", loincCodeMap, "2000", "g");
       expect(result).toEqual({ units: "kg", codeKey: "VITALS.WEIGHT", value: 2 });
     });
 
-    it("handles string input for target value", () => {
+    it("handles string input for target units", () => {
       const result = convertCodeAndValue("29463-7-kg", loincCodeMap, "2", "kg");
       expect(result).toEqual({ units: "kg", codeKey: "VITALS.WEIGHT", value: 2 });
     });
@@ -92,12 +92,12 @@ describe("convertCodeAndValue", () => {
       expect(result).toEqual({ units: "lb_av", codeKey: "VITALS.WEIGHT", value: 3 });
     });
 
-    it("handles string input for non-target value", () => {
+    it("handles string input for non-target units", () => {
       const result = convertCodeAndValue("29463-7-lb_av", loincCodeMap, "1000", "g");
       expect(result).toEqual({ units: "lb_av", codeKey: "VITALS.WEIGHT", value: 2.20462 });
     });
 
-    it("handles string input for target value", () => {
+    it("handles string input for target units", () => {
       const result = convertCodeAndValue("29463-7-lb_av", loincCodeMap, "2", "lb_av");
       expect(result).toEqual({ units: "lb_av", codeKey: "VITALS.WEIGHT", value: 2 });
     });
@@ -114,12 +114,12 @@ describe("convertCodeAndValue", () => {
       expect(result).toEqual({ units: "cm", codeKey: "VITALS.HEIGHT", value: 180 });
     });
 
-    it("handles string input for non-target value", () => {
+    it("handles string input for non-target units", () => {
       const result = convertCodeAndValue("8302-2", loincCodeMap, "10", "in_i");
       expect(result).toEqual({ units: "cm", codeKey: "VITALS.HEIGHT", value: 25.399986284007404 });
     });
 
-    it("handles string input for target value", () => {
+    it("handles string input for target units", () => {
       const result = convertCodeAndValue("8302-2", loincCodeMap, "10", "cm");
       expect(result).toEqual({ units: "cm", codeKey: "VITALS.HEIGHT", value: 10 });
     });
@@ -136,12 +136,12 @@ describe("convertCodeAndValue", () => {
       expect(result).toEqual({ units: "in_i", codeKey: "VITALS.HEIGHT", value: 10 });
     });
 
-    it("handles string input for non-target value", () => {
+    it("handles string input for non-target units", () => {
       const result = convertCodeAndValue("8302-2-in_i", loincCodeMap, "25.4", "cm");
       expect(result).toEqual({ units: "in_i", codeKey: "VITALS.HEIGHT", value: 10.0000054 });
     });
 
-    it("handles string input for target value", () => {
+    it("handles string input for target units", () => {
       const result = convertCodeAndValue("8302-2-in_i", loincCodeMap, "10", "in_i");
       expect(result).toEqual({ units: "in_i", codeKey: "VITALS.HEIGHT", value: 10 });
     });
@@ -158,34 +158,24 @@ describe("convertCodeAndValue", () => {
       expect(result).toEqual({ units: "degf", codeKey: "VITALS.TEMPERATURE", value: 98.6 });
     });
 
-    it("handles string input for non-target value", () => {
+    it("handles string input for non-target units", () => {
       const result = convertCodeAndValue("8310-5", loincCodeMap, "0", "celsius");
       expect(result).toEqual({ units: "degf", codeKey: "VITALS.TEMPERATURE", value: 32 });
     });
 
-    it("handles string input for target value", () => {
+    it("handles string input for target units", () => {
       const result = convertCodeAndValue("8310-5", loincCodeMap, "0", "degf");
       expect(result).toEqual({ units: "degf", codeKey: "VITALS.TEMPERATURE", value: 0 });
     });
   });
 
   describe("BMI conversions", () => {
-    it("returns value unchanged if already in kg_m2", () => {
-      const result = convertCodeAndValue("39156-5", loincCodeMap, 30, "kg_m2");
-      expect(result).toEqual({ units: "kg/m2", codeKey: "VITALS.BMI", value: 30 });
-    });
-
-    it("returns value unchanged if already in kg/m2", () => {
+    it("returns value unchanged for matching units (kg/m2)", () => {
       const result = convertCodeAndValue("39156-5", loincCodeMap, 25, "kg/m2");
       expect(result).toEqual({ units: "kg/m2", codeKey: "VITALS.BMI", value: 25 });
     });
 
-    it("handles string input for non-target value", () => {
-      const result = convertCodeAndValue("39156-5", loincCodeMap, "25", "kg_m2");
-      expect(result).toEqual({ units: "kg/m2", codeKey: "VITALS.BMI", value: 25 });
-    });
-
-    it("handles string input for target value", () => {
+    it("handles string input for target units", () => {
       const result = convertCodeAndValue("39156-5", loincCodeMap, "25", "kg/m2");
       expect(result).toEqual({ units: "kg/m2", codeKey: "VITALS.BMI", value: 25 });
     });
@@ -205,17 +195,17 @@ describe("convertCodeAndValue", () => {
       expect(result).toEqual({ units: "bpm", codeKey: "VITALS.HEARTRATE", value: 70 });
     });
 
-    it("returns value unchanged for matching units (beats per minute)", () => {
-      const result = convertCodeAndValue("8867-4", loincCodeMap, 70, "beats per minute");
+    it("returns value unchanged for matching units (/MIN)", () => {
+      const result = convertCodeAndValue("8867-4", loincCodeMap, 70, "/MIN");
       expect(result).toEqual({ units: "bpm", codeKey: "VITALS.HEARTRATE", value: 70 });
     });
 
-    it("handles string input for non-target units (beats per minute)", () => {
-      const result = convertCodeAndValue("8867-4", loincCodeMap, "70", "beats per minute");
+    it("handles string input for non-target units", () => {
+      const result = convertCodeAndValue("8867-4", loincCodeMap, "70", "/MIN");
       expect(result).toEqual({ units: "bpm", codeKey: "VITALS.HEARTRATE", value: 70 });
     });
 
-    it("handles string input for target units (bpm)", () => {
+    it("handles string input for target units", () => {
       const result = convertCodeAndValue("8867-4", loincCodeMap, "70", "bpm");
       expect(result).toEqual({ units: "bpm", codeKey: "VITALS.HEARTRATE", value: 70 });
     });
@@ -227,17 +217,7 @@ describe("convertCodeAndValue", () => {
       expect(result).toEqual({ units: "%", codeKey: "VITALS.INHALEDO2CONCENTRATION", value: 95 });
     });
 
-    it("returns value unchanged for matching units (percent)", () => {
-      const result = convertCodeAndValue("2708-6", loincCodeMap, 95, "percent");
-      expect(result).toEqual({ units: "%", codeKey: "VITALS.INHALEDO2CONCENTRATION", value: 95 });
-    });
-
-    it("handles string input for non-target units (percent)", () => {
-      const result = convertCodeAndValue("2708-6", loincCodeMap, "95", "percent");
-      expect(result).toEqual({ units: "%", codeKey: "VITALS.INHALEDO2CONCENTRATION", value: 95 });
-    });
-
-    it("handles string input for target units (%)", () => {
+    it("handles string input for target units", () => {
       const result = convertCodeAndValue("2708-6", loincCodeMap, "95", "%");
       expect(result).toEqual({ units: "%", codeKey: "VITALS.INHALEDO2CONCENTRATION", value: 95 });
     });
@@ -262,7 +242,7 @@ describe("convertCodeAndValue", () => {
       });
     });
 
-    it("handles string input for non-target units (millimeter of mercury)", () => {
+    it("handles string input for non-target units", () => {
       const result = convertCodeAndValue("8462-4", loincCodeMap, "120", "millimeter of mercury");
       expect(result).toEqual({
         units: "mmHg",
@@ -271,7 +251,7 @@ describe("convertCodeAndValue", () => {
       });
     });
 
-    it("handles string input for target units (mmHg)", () => {
+    it("handles string input for target units", () => {
       const result = convertCodeAndValue("8462-4", loincCodeMap, "120", "mmHg");
       expect(result).toEqual({
         units: "mmHg",

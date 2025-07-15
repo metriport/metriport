@@ -19,94 +19,95 @@ export function convertCodeAndValue(
   if (!targetUnits || !codeKey) return undefined;
   const baseParams = { units: targetUnits, codeKey };
   const baseValue = typeof value === "string" ? value.trim() : value;
+  const baseInputUnits = inputUnits.trim().toLowerCase();
   const valueNumber = convertValueToNumber(baseValue);
-  if (inputUnits === targetUnits) return { ...baseParams, value: valueNumber };
+  if (baseInputUnits === targetUnits) return { ...baseParams, value: valueNumber };
   if (targetUnits === "kg") {
     // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
-    if (isKg(inputUnits)) {
+    if (isKg(baseInputUnits)) {
       return { ...baseParams, value: valueNumber };
     }
-    if (isG(inputUnits)) {
+    if (isG(baseInputUnits)) {
       return { ...baseParams, value: convertGramsToKg(valueNumber) };
     }
-    if (isLbs(inputUnits)) {
+    if (isLbs(baseInputUnits)) {
       return { ...baseParams, value: convertLbsToKg(valueNumber) };
     }
   }
   if (targetUnits === "g") {
     // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
-    if (isG(inputUnits)) {
+    if (isG(baseInputUnits)) {
       return { ...baseParams, value: valueNumber };
     }
-    if (isKg(inputUnits)) {
+    if (isKg(baseInputUnits)) {
       return { ...baseParams, value: convertKiloGramsToGrams(valueNumber) };
     }
-    if (isLbs(inputUnits)) {
+    if (isLbs(baseInputUnits)) {
       return { ...baseParams, value: convertLbsToGrams(valueNumber) };
     }
   }
   if (targetUnits === "lb_av") {
     // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
     const valueNumber = convertValueToNumber(baseValue);
-    if (isLbs(inputUnits)) {
+    if (isLbs(baseInputUnits)) {
       return { ...baseParams, value: valueNumber };
     }
-    if (isKg(inputUnits)) {
+    if (isKg(baseInputUnits)) {
       return { ...baseParams, value: convertKgToLbs(valueNumber) };
     }
-    if (isG(inputUnits)) {
+    if (isG(baseInputUnits)) {
       return { ...baseParams, value: convertGramsToLbs(valueNumber) };
     }
   }
   if (targetUnits === "cm") {
     // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
-    if (isCm(inputUnits)) {
+    if (isCm(baseInputUnits)) {
       return { ...baseParams, value: valueNumber };
     }
-    if (isIn(inputUnits)) {
+    if (isIn(baseInputUnits)) {
       return { ...baseParams, value: convertInchesToCm(valueNumber) };
     }
   }
   if (targetUnits === "in_i") {
     // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
-    if (isIn(inputUnits)) {
+    if (isIn(baseInputUnits)) {
       return { ...baseParams, value: valueNumber };
     }
-    if (isCm(inputUnits)) {
+    if (isCm(baseInputUnits)) {
       return { ...baseParams, value: convertCmToInches(valueNumber) };
     }
   }
   if (targetUnits === "degf") {
     // https://hl7.org/fhir/R4/valueset-ucum-bodytemp.html
-    if (isDegf(inputUnits)) {
+    if (isDegf(baseInputUnits)) {
       return { ...baseParams, value: valueNumber };
     }
-    if (isCel(inputUnits)) {
+    if (isCel(baseInputUnits)) {
       return { ...baseParams, value: convertCelciusToFahrenheit(valueNumber) };
     }
   }
   if (targetUnits === "kg/m2") {
-    if (isKgPerM2(inputUnits)) {
+    if (isKgPerM2(baseInputUnits)) {
       return { ...baseParams, value: valueNumber };
     }
   }
   if (targetUnits === "mmHg") {
-    if (isMmHg(inputUnits)) {
+    if (isMmHg(baseInputUnits)) {
       return { ...baseParams, value: valueNumber };
     }
   }
   if (targetUnits === "bpm") {
-    if (isBpm(inputUnits)) {
+    if (isBpm(baseInputUnits)) {
       return { ...baseParams, value: valueNumber };
     }
   }
   if (targetUnits === "%") {
-    if (isPercent(inputUnits)) {
+    if (isPercent(baseInputUnits)) {
       return { ...baseParams, value: valueNumber };
     }
   }
   throw new BadRequestError("Unknown units", undefined, {
-    units: inputUnits,
+    units: baseInputUnits,
     targetUnits,
     loincCode,
     value,
@@ -182,17 +183,19 @@ function isCel(units: string): boolean {
 }
 
 function isKgPerM2(units: string): boolean {
-  return units === "kg/m2" || units === "kg_m2";
+  return units === "kg/m2";
 }
 
 function isMmHg(units: string): boolean {
-  return units === "mmHg" || units === "millimeter of mercury";
+  return (
+    units === "mmhg" || units === "millimeter of mercury" || units === "mm hg" || units === "mm[hg]"
+  );
 }
 
 function isBpm(units: string): boolean {
-  return units === "bpm" || units === "beats per minute";
+  return units === "bpm" || units === "/min" || units === "beats/min";
 }
 
 function isPercent(units: string): boolean {
-  return units === "%" || units === "percent";
+  return units === "%";
 }
