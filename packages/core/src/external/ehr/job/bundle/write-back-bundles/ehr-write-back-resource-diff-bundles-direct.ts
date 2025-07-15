@@ -17,6 +17,7 @@ import { WriteBackFiltersPerResourceType } from "@metriport/shared/interface/ext
 import { EhrSource } from "@metriport/shared/interface/external/ehr/source";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
+import { partition } from "lodash";
 import { getConsolidatedFile } from "../../../../../command/consolidated/consolidated-get";
 import { setJobEntryStatus } from "../../../../../command/job/patient/api/set-entry-status";
 import { executeAsynchronously } from "../../../../../util/concurrency";
@@ -26,6 +27,7 @@ import { getSecondaryMappings } from "../../../api/get-secondary-mappings";
 import { BundleType } from "../../../bundle/bundle-shared";
 import { createOrReplaceBundle } from "../../../bundle/command/create-or-replace-bundle";
 import { fetchBundle, FetchBundleParams } from "../../../bundle/command/fetch-bundle";
+import { isWriteBackGroupedVitalsEhr } from "../../../command/write-back/grouped-vitals";
 import { writeBackResource, WriteBackResourceType } from "../../../command/write-back/shared";
 import { ehrCxMappingSecondaryMappingsSchemaMap } from "../../../mappings";
 import {
@@ -109,6 +111,7 @@ export class EhrWriteBackResourceDiffBundlesDirect
       }
       const writeBackFilters = await getWriteBackFilters({ ehr, practiceId });
       const resourcesToWriteBack = getResourcesToWriteBack({
+        ehr,
         resources: metriportOnlyResources,
         writeBackFilters,
       });
@@ -273,15 +276,17 @@ async function getWriteBackFilters({
 }
 
 function getResourcesToWriteBack({
+  ehr,
   resources,
   writeBackFilters,
 }: {
+  ehr: EhrSource;
   resources: Resource[];
   writeBackFilters: WriteBackFiltersPerResourceType | undefined;
 }): Resource[] {
   const resourcesToWriteBack: Resource[] = [];
   for (const resource of resources) {
-    const writeBackResourceType = getWriteBackResourceType(resource);
+    const writeBackResourceType = getWriteBackResourceType(ehr, resource);
     if (!writeBackResourceType) continue;
     if (
       resource.resourceType === "DiagnosticReport" &&
@@ -301,11 +306,15 @@ function getResourcesToWriteBack({
   return resourcesToWriteBack;
 }
 
-function getWriteBackResourceType(resource: Resource): WriteBackResourceType | undefined {
+function getWriteBackResourceType(
+  ehr: EhrSource,
+  resource: Resource
+): WriteBackResourceType | undefined {
   if (resource.resourceType === "Condition") return "condition";
   if (resource.resourceType === "Observation") {
     if (isLab(resource as Observation)) return "lab";
-    if (isVital(resource as Observation)) return "vital";
+    if (isVital(resource as Observation) && isWriteBackGroupedVitalsEhr(ehr))
+      return "grouped-vitals";
     return undefined;
   }
   if (resource.resourceType === "DiagnosticReport") {
@@ -356,7 +365,7 @@ export function shouldWriteBackResource({
       return false;
     }
     return true;
-  } else if (writeBackResourceType === "vital") {
+  } else if (writeBackResourceType === "grouped-vitals") {
     if (writeBackFilters.vital?.disabled) return false;
     const observation = resource as Observation;
     if (skipVitalDate(observation, writeBackFilters)) return false;
@@ -549,12 +558,25 @@ async function writeBackResources({
   resources: Resource[];
   secondaryResourcesMap: Record<string, Resource[]>;
 }): Promise<void> {
-  const writeBackErrors: { error: unknown; resource: Resource }[] = [];
-  await executeAsynchronously(
+  const writeBackErrors: { error: unknown; resource: string }[] = [];
+  const [vitals, rest] = partition(
     resources,
+    r => getWriteBackResourceType(ehr, r) === "grouped-vitals"
+  );
+  await writeBackGroupedVitals({
+    ehr,
+    tokenId,
+    cxId,
+    practiceId,
+    ehrPatientId,
+    vitals,
+    writeBackErrors,
+  });
+  await executeAsynchronously(
+    rest,
     async resource => {
       try {
-        const writeBackResourceType = getWriteBackResourceType(resource);
+        const writeBackResourceType = getWriteBackResourceType(ehr, resource);
         if (!writeBackResourceType) return;
         const secondaryResources = resource.id ? secondaryResourcesMap[resource.id] : undefined;
         await writeBackResource({
@@ -564,14 +586,14 @@ async function writeBackResources({
           practiceId,
           ehrPatientId,
           resource,
-          ...(secondaryResources && { secondaryResources }),
+          ...(secondaryResources && { secondaryResource: secondaryResources }),
           writeBackResource: writeBackResourceType,
         });
       } catch (error) {
         if (error instanceof BadRequestError || error instanceof NotFoundError) return;
         const resourceToString = JSON.stringify(resource);
         log(`Failed to write back resource ${resourceToString}. Cause: ${errorToString(error)}`);
-        writeBackErrors.push({ error, resource });
+        writeBackErrors.push({ error, resource: resourceToString });
       }
     },
     {
@@ -590,5 +612,41 @@ async function writeBackResources({
         context: "create-resource-diff-bundles.write-back.writeBackMetriportOnlyResources",
       },
     });
+  }
+}
+
+async function writeBackGroupedVitals({
+  ehr,
+  tokenId,
+  cxId,
+  practiceId,
+  ehrPatientId,
+  vitals,
+  writeBackErrors,
+}: {
+  ehr: EhrSource;
+  tokenId: string | undefined;
+  cxId: string;
+  practiceId: string;
+  ehrPatientId: string;
+  vitals: Resource[];
+  writeBackErrors: { error: unknown; resource: string }[];
+}): Promise<void> {
+  if (vitals.length < 1) return;
+  try {
+    await writeBackResource({
+      ehr,
+      ...(tokenId && { tokenId }),
+      cxId,
+      practiceId,
+      ehrPatientId,
+      resource: vitals,
+      writeBackResource: "grouped-vitals",
+    });
+  } catch (error) {
+    if (error instanceof BadRequestError || error instanceof NotFoundError) return;
+    const vitalsToString = JSON.stringify(vitals);
+    log(`Failed to write back vitals ${vitalsToString}. Cause: ${errorToString(error)}`);
+    writeBackErrors.push({ error, resource: vitalsToString });
   }
 }

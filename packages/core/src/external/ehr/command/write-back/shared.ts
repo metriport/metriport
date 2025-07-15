@@ -2,11 +2,11 @@ import { Condition, DiagnosticReport, Observation, Resource } from "@medplum/fhi
 import { BadRequestError } from "@metriport/shared";
 import { EhrSource } from "@metriport/shared/interface/external/ehr/source";
 import { writeBackCondition } from "./condition";
+import { writeBackGroupedVitals } from "./grouped-vitals";
 import { writeBackLab } from "./lab";
-import { writeBackVital } from "./vital";
 import { writeBackLabPanel } from "./lab-panel";
 
-export type WriteBackResourceType = "condition" | "lab" | "lab-panel" | "vital";
+export type WriteBackResourceType = "condition" | "lab" | "lab-panel" | "grouped-vitals";
 
 export type WriteBackConditionRequest = {
   ehr: EhrSource;
@@ -14,7 +14,7 @@ export type WriteBackConditionRequest = {
   cxId: string;
   practiceId: string;
   ehrPatientId: string;
-  resource: Resource;
+  resource: Resource | Resource[];
   secondaryResources?: Resource[];
   writeBackResource: WriteBackResourceType;
 };
@@ -32,12 +32,14 @@ export async function writeBackResource({ ...params }: WriteBackConditionRequest
       diagnostricReport: params.resource as DiagnosticReport,
       observations: params.secondaryResources as Observation[],
     });
-  } else if (params.writeBackResource === "vital") {
-    return await writeBackVital({ ...params, observation: params.resource as Observation });
+  } else if (params.writeBackResource === "grouped-vitals") {
+    return await writeBackGroupedVitals({
+      ...params,
+      observations: params.resource as Observation[],
+    });
   }
   throw new BadRequestError("Could not find handler to write back resource", undefined, {
     ehr: params.ehr,
     writeBackResource: params.writeBackResource,
-    resourceType: params.resource.resourceType,
   });
 }

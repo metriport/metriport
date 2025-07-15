@@ -38,9 +38,13 @@ import {
 } from "@metriport/shared/interface/external/ehr/elation/index";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import axios, { AxiosInstance } from "axios";
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
 import { z } from "zod";
+import { executeAsynchronously } from "../../../util/concurrency";
 import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
+import { capture } from "../../../util/notifications";
 import { uuidv7 } from "../../../util/uuid-v7";
 import { createOrReplaceCcda } from "../bundle/command/create-or-replace-ccda";
 import {
@@ -70,6 +74,11 @@ import {
   saveEhrReferenceBundle,
 } from "../shared";
 import { convertCodeAndValue } from "../unit-conversion";
+
+dayjs.extend(duration);
+
+const parallelRequests = 5;
+const maxJitter = dayjs.duration(2, "seconds");
 
 interface ElationApiConfig extends ApiConfig {
   environment: ElationEnv;
@@ -154,6 +163,20 @@ type ElationLab = {
     }[];
   }[];
 };
+
+type ElationGroupedVitalBase = {
+  patient: string;
+  practice: string;
+  physician: string;
+  chart_date: string;
+  document_date: string;
+};
+
+type ElationGroupedVitalData = {
+  [key: string]: number | { systolic?: string; diastolic?: string }[] | { value: string }[];
+};
+
+type ElationGroupedVital = ElationGroupedVitalBase & ElationGroupedVitalData;
 
 const validLabResultStatuses = [
   "CORRECTED",
@@ -522,51 +545,98 @@ class ElationApi {
     return lab;
   }
 
-  async createVital({
+  async createGroupedVitals({
     cxId,
     elationPracticeId,
     elationPhysicianId,
     patientId,
-    observation,
+    observations,
   }: {
     cxId: string;
     elationPracticeId: string;
     elationPhysicianId: string;
     patientId: string;
-    observation: Observation;
-  }): Promise<CreatedVital> {
-    const { debug } = out(
-      `Elation createVital - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
+    observations: Observation[];
+  }): Promise<void> {
+    const { log, debug } = out(
+      `Elation createVitals - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
     );
     const vitalsUrl = `/vitals/`;
     const additionalInfo = {
       cxId,
       practiceId: this.practiceId,
       patientId,
-      observationId: observation.id,
     };
-    const { chart_date, data: vitalData } = this.formatVital(observation, additionalInfo);
-    const data = {
-      patient: patientId,
-      practice: elationPracticeId,
-      physician: elationPhysicianId,
-      chart_date,
-      document_date: chart_date,
-      ...vitalData,
-    };
-    const vital = await this.makeRequest<CreatedVital>({
-      cxId,
-      patientId,
-      s3Path: this.createWriteBackPath("vital", observation.id),
-      method: "POST",
-      url: vitalsUrl,
-      data,
-      schema: createdVitalSchema,
-      additionalInfo,
-      headers: { "Content-Type": "application/json" },
-      debug,
-    });
-    return vital;
+    const groupedVitals: Record<string, ElationGroupedVital> = observations.reduce(
+      (acc, observation) => {
+        const vitalsData = this.formatVital(observation);
+        if (!vitalsData) return acc;
+        const chartDate = vitalsData.chartDate;
+        if (!acc[chartDate]) {
+          acc[chartDate] = {
+            patient: patientId,
+            practice: elationPracticeId,
+            physician: elationPhysicianId,
+            chart_date: chartDate,
+            document_date: chartDate,
+            ...vitalsData.data,
+          } as ElationGroupedVital;
+        } else {
+          acc[chartDate] = { ...acc[chartDate], ...vitalsData.data };
+        }
+        return acc;
+      },
+      {} as Record<string, ElationGroupedVital>
+    );
+    if (Object.keys(groupedVitals).length < 1) {
+      throw new BadRequestError("No grouped vitals to create", undefined, additionalInfo);
+    }
+    const createGroupedVitalsErrors: { error: unknown; vitals: string }[] = [];
+    const createGroupedVitalsArgs = Object.values(groupedVitals);
+    await executeAsynchronously(
+      createGroupedVitalsArgs,
+      async (params: ElationGroupedVital) => {
+        try {
+          await this.makeRequest<CreatedVital>({
+            cxId,
+            patientId,
+            s3Path: this.createWriteBackPath("vital", undefined),
+            method: "POST",
+            url: vitalsUrl,
+            data: params,
+            schema: createdVitalSchema,
+            additionalInfo,
+            headers: { "Content-Type": "application/json" },
+            debug,
+          });
+        } catch (error) {
+          if (error instanceof BadRequestError || error instanceof NotFoundError) return;
+          const vitalsToString = JSON.stringify(params);
+          log(`Failed to create vitals ${vitalsToString}. Cause: ${errorToString(error)}`);
+          createGroupedVitalsErrors.push({
+            error,
+            vitals: JSON.stringify(params),
+          });
+        }
+      },
+      {
+        numberOfParallelExecutions: parallelRequests,
+        maxJitterMillis: maxJitter.asMilliseconds(),
+      }
+    );
+    if (createGroupedVitalsErrors.length > 0) {
+      const msg = `Failure while creating some grouped vitals @ Elation`;
+      capture.message(msg, {
+        extra: {
+          ...additionalInfo,
+          createGroupedVitalsArgsCount: createGroupedVitalsArgs.length,
+          createGroupedVitalsErrorsCount: createGroupedVitalsErrors.length,
+          errors: createGroupedVitalsErrors,
+          context: "elation.create-grouped-vitals",
+        },
+        level: "warning",
+      });
+    }
   }
 
   async getBundleByResourceType({
@@ -1082,42 +1152,24 @@ class ElationApi {
     };
   }
 
-  private formatVital(
-    observation: Observation,
-    additionalInfo: Record<string, string | undefined>
-  ):
-    | { chart_date: string; data: { [key: string]: { value: string }[] } }
-    | { chart_date: string; data: { bmi: number } }
+  private formatVital(observation: Observation):
     | {
-        chart_date: string;
-        data: { bp: { systolic?: string; diastolic?: string }[] };
-      } {
+        chartDate: string;
+        data: ElationGroupedVitalData;
+      }
+    | undefined {
     const loincCode = getObservationLoincCode(observation);
-    if (!loincCode || !vitalSignCodesMap.get(loincCode)) {
-      throw new BadRequestError("No LOINC code found for observation", undefined, additionalInfo);
-    }
+    if (!loincCode || !vitalSignCodesMap.get(loincCode)) return undefined;
     const units = getObservationUnit(observation);
-    if (!units) {
-      throw new BadRequestError("No units found for observation", undefined, additionalInfo);
-    }
+    if (!units) return undefined;
     const value = getObservationValue(observation);
-    if (!value) {
-      throw new BadRequestError("No value found for observation", undefined, additionalInfo);
-    }
+    if (!value) return undefined;
     const chartDate = getObservationObservedDate(observation);
     const formattedChartDate = this.formatDateTime(chartDate);
-    if (!formattedChartDate) {
-      throw new BadRequestError(
-        "No observed date found for observation",
-        undefined,
-        additionalInfo
-      );
-    }
+    if (!formattedChartDate) return undefined;
     const convertedCodeAndValue = convertCodeAndValue(loincCode, vitalSignCodesMap, value, units);
-    if (!convertedCodeAndValue) {
-      throw new BadRequestError("No value converted for observation", undefined, additionalInfo);
-    }
-    const baseData = { chart_date: formattedChartDate };
+    if (!convertedCodeAndValue) return undefined;
+    const baseData = { chartDate: formattedChartDate };
     if (convertedCodeAndValue.codeKey === "bmi") {
       return {
         ...baseData,
