@@ -143,6 +143,7 @@ import {
   partitionEhrBundle,
   saveEhrReferenceBundle,
 } from "../shared";
+import { convertCodeAndValue } from "../unit-conversion";
 
 dayjs.extend(duration);
 
@@ -174,19 +175,18 @@ const problemStatusesMap = new Map<string, string>();
 problemStatusesMap.set("relapse", "CHRONIC");
 problemStatusesMap.set("recurrence", "CHRONIC");
 
-const vitalSignCodesMap = new Map<string, string>();
-vitalSignCodesMap.set("8310-5", "VITALS.TEMPERATURE");
-vitalSignCodesMap.set("8867-4", "VITALS.HEARTRATE");
-vitalSignCodesMap.set("9279-1", "VITALS.RESPIRATIONRATE");
-vitalSignCodesMap.set("2708-6", "VITALS.INHALEDO2CONCENTRATION");
-vitalSignCodesMap.set("59408-5", "VITALS.INHALEDO2CONCENTRATION");
-vitalSignCodesMap.set("8462-4", "VITALS.BLOODPRESSURE.DIASTOLIC");
-vitalSignCodesMap.set("8480-6", "VITALS.BLOODPRESSURE.SYSTOLIC");
-vitalSignCodesMap.set("29463-7", "VITALS.WEIGHT");
-vitalSignCodesMap.set("8302-2", "VITALS.HEIGHT");
-vitalSignCodesMap.set("39156-5", "VITALS.BMI");
-
-const clinicalElementsThatRequireUnits = ["VITALS.WEIGHT", "VITALS.HEIGHT", "VITALS.TEMPERATURE"];
+const vitalSignCodesMap = new Map<string, { codeKey: string; targetUnits: string }>();
+vitalSignCodesMap.set("8310-5", { codeKey: "VITALS.TEMPERATURE", targetUnits: "degf" });
+vitalSignCodesMap.set("8867-4", { codeKey: "VITALS.HEARTRATE", targetUnits: "bpm" });
+vitalSignCodesMap.set("9279-1", { codeKey: "VITALS.RESPIRATIONRATE", targetUnits: "bpm" });
+vitalSignCodesMap.set("2708-6", { codeKey: "VITALS.INHALEDO2CONCENTRATION", targetUnits: "%" });
+vitalSignCodesMap.set("59408-5", { codeKey: "VITALS.INHALEDO2CONCENTRATION", targetUnits: "%" });
+vitalSignCodesMap.set("8462-4", { codeKey: "VITALS.BLOODPRESSURE.DIASTOLIC", targetUnits: "mmHg" });
+vitalSignCodesMap.set("8480-6", { codeKey: "VITALS.BLOODPRESSURE.SYSTOLIC", targetUnits: "mmHg" });
+vitalSignCodesMap.set("29463-7", { codeKey: "VITALS.WEIGHT", targetUnits: "g" });
+vitalSignCodesMap.set("8302-2", { codeKey: "VITALS.HEIGHT", targetUnits: "cm" });
+vitalSignCodesMap.set("56086-2", { codeKey: "VITALS.WAISTCIRCUMFERENCE", targetUnits: "cm" });
+vitalSignCodesMap.set("59574-4", { codeKey: "VITALS.BMI", targetUnits: "%" });
 
 const medicationRequestIntents = ["proposal", "plan", "order", "option"];
 const coverageCount = 50;
@@ -199,10 +199,6 @@ const validObservationResultStatuses = [
   "deleted",
   "unsolicited",
 ];
-
-const lbsToG = 453.592;
-const kgToG = 1000;
-const inchesToCm = 2.54;
 
 export const supportedAthenaHealthResources: ResourceType[] = [
   "AllergyIntolerance",
@@ -1114,29 +1110,21 @@ class AthenaHealthApi {
       });
     }
     const loincCode = getObservationLoincCode(observation);
-    if (!loincCode) {
+    if (!loincCode || !vitalSignCodesMap.get(loincCode)) {
       throw new BadRequestError("No LOINC code found for observation", undefined, additionalInfo);
-    }
-    const clinicalElementId = vitalSignCodesMap.get(loincCode);
-    if (!clinicalElementId) {
-      throw new BadRequestError("No clinical element id found for LOINC code", undefined, {
-        ...additionalInfo,
-        loincCode,
-      });
     }
     const units = getObservationUnit(observation);
     if (!units) {
       throw new BadRequestError("No units found for observation", undefined, {
         ...additionalInfo,
         loincCode,
-        clinicalElementId,
       });
     }
     const allCreatedVitals: CreatedVitalsSuccess[] = [];
     const createVitalsErrors: { error: unknown; vitals: string }[] = [];
     const createVitalsArgs: VitalsCreateParams[] = vitals.sortedPoints.flatMap(v => {
-      const vitalsData = this.createVitalsData(v, clinicalElementId, units);
-      if (vitalsData.length < 1) return [];
+      const vitalsData = this.createVitalsData(loincCode, v, units);
+      if (!vitalsData) return [];
       return [
         {
           departmentid: this.stripDepartmentId(departmentId),
@@ -1838,69 +1826,40 @@ class AthenaHealthApi {
   }
 
   private createVitalsData(
+    loincCode: string,
     dataPoint: DataPoint,
-    clinicalElementId: string,
     units: string
-  ): { [key: string]: string | undefined }[] {
-    const formattedDate = this.formatDate(dataPoint.date);
-    if (!formattedDate) return [];
+  ): { [key: string]: string }[] | undefined {
+    const formattedReadingTaken = this.formatDate(dataPoint.date);
+    if (!formattedReadingTaken) return undefined;
     if (dataPoint.bp) {
       return [
         {
           clinicalelementid: "VITALS.BLOODPRESSURE.DIASTOLIC",
-          readingtaken: formattedDate,
+          readingtaken: formattedReadingTaken,
           value: dataPoint.bp.diastolic.toString(),
         },
         {
           clinicalelementid: "VITALS.BLOODPRESSURE.SYSTOLIC",
-          readingtaken: formattedDate,
+          readingtaken: formattedReadingTaken,
           value: dataPoint.bp.systolic.toString(),
         },
       ];
     }
+    const convertedCodeAndValue = convertCodeAndValue(
+      loincCode,
+      vitalSignCodesMap,
+      dataPoint.value,
+      units
+    );
+    if (!convertedCodeAndValue) return undefined;
     return [
       {
-        clinicalelementid: clinicalElementId,
-        readingtaken: formattedDate,
-        value: this.convertValue(clinicalElementId, dataPoint.value, units).toString(),
+        clinicalelementid: convertedCodeAndValue.codeKey,
+        readingtaken: formattedReadingTaken,
+        value: convertedCodeAndValue.value.toString(),
       },
     ];
-  }
-
-  private convertValue(clinicalElementId: string, value: number, units: string): number {
-    if (!clinicalElementsThatRequireUnits.includes(clinicalElementId)) return value;
-    if (units === "g" || units === "gram" || units === "grams") return value; // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
-    if (units === "cm" || units.includes("centimeter")) return value; // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
-    if (units === "degf" || units === "f" || units.includes("fahrenheit")) return value; // https://hl7.org/fhir/R4/valueset-ucum-bodytemp.html
-    if (units === "lb_av" || units.includes("pound")) return this.convertLbsToGrams(value); // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
-    if (units === "kg" || units === "kilogram" || units === "kilograms") {
-      return this.convertKiloGramsToGrams(value); // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
-    }
-    if (units === "in_i" || units.includes("inch")) return this.convertInchesToCm(value); // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
-    if (units === "cel" || units === "c" || units.includes("celsius")) {
-      return this.convertCelciusToFahrenheit(value); // https://hl7.org/fhir/R4/valueset-ucum-bodytemp.html
-    }
-    throw new BadRequestError("Unknown units", undefined, {
-      units,
-      clinicalElementId,
-      value,
-    });
-  }
-
-  private convertLbsToGrams(value: number): number {
-    return value * lbsToG;
-  }
-
-  private convertKiloGramsToGrams(value: number): number {
-    return value * kgToG;
-  }
-
-  private convertInchesToCm(value: number): number {
-    return value * inchesToCm;
-  }
-
-  private convertCelciusToFahrenheit(value: number): number {
-    return value * (9 / 5) + 32;
   }
 
   private getSearchvaluesFromCoding(

@@ -10,7 +10,7 @@ export type RelativeDateRange = z.infer<typeof relativeDateRangeSchema>;
 export const writeBackFiltersPerResourceTypeSchema = z.object({
   lab: z
     .object({
-      loincCodes: z.array(z.string()).optional(),
+      loincCodes: z.string().array().optional(),
       minCountPerCode: z.number().optional(),
       relativeDateRange: relativeDateRangeSchema.optional(),
       disabled: z.boolean().optional(),
@@ -18,7 +18,7 @@ export const writeBackFiltersPerResourceTypeSchema = z.object({
     .optional(),
   labPanel: z
     .object({
-      loincCodes: z.array(z.string()).optional(),
+      loincCodes: z.string().array().optional(),
       minCountPerCode: z.number().optional(),
       relativeDateRange: relativeDateRangeSchema.optional(),
       disabled: z.boolean().optional(),
@@ -33,7 +33,7 @@ export const writeBackFiltersPerResourceTypeSchema = z.object({
     .optional(),
   vital: z
     .object({
-      loincCodes: z.array(z.string()).optional(),
+      loincCodes: z.string().array().optional(),
       relativeDateRange: relativeDateRangeSchema.optional(),
       disabled: z.boolean().optional(),
     })

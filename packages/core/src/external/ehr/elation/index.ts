@@ -41,6 +41,7 @@ import axios, { AxiosInstance } from "axios";
 import { z } from "zod";
 import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
+import { uuidv7 } from "../../../util/uuid-v7";
 import { createOrReplaceCcda } from "../bundle/command/create-or-replace-ccda";
 import {
   ApiConfig,
@@ -68,6 +69,7 @@ import {
   partitionEhrBundle,
   saveEhrReferenceBundle,
 } from "../shared";
+import { convertCodeAndValue } from "../unit-conversion";
 
 interface ElationApiConfig extends ApiConfig {
   environment: ElationEnv;
@@ -92,17 +94,21 @@ problemStatusesMap.set("remission", "Controlled");
 problemStatusesMap.set("resolved", "Resolved");
 problemStatusesMap.set("inactive", "Resolved");
 
-const vitalSignCodesMap = new Map<string, { codeKey: string; units: string }>();
-vitalSignCodesMap.set("8310-5", { codeKey: "temperature", units: "degf" });
-vitalSignCodesMap.set("8867-4", { codeKey: "hr", units: "bpm" });
-vitalSignCodesMap.set("9279-1", { codeKey: "rr", units: "bpm" });
-vitalSignCodesMap.set("2708-6", { codeKey: "oxygen", units: "%" });
-vitalSignCodesMap.set("59408-5", { codeKey: "oxygen", units: "%" });
-vitalSignCodesMap.set("8462-4", { codeKey: "bp", units: "mmHg" });
-vitalSignCodesMap.set("8480-6", { codeKey: "bp", units: "mmHg" });
-vitalSignCodesMap.set("29463-7", { codeKey: "weight", units: "lb_av" });
-vitalSignCodesMap.set("8302-2", { codeKey: "height", units: "in_i" });
-vitalSignCodesMap.set("56086-2", { codeKey: "wc", units: "cm" });
+const vitalSignCodesMap = new Map<string, { codeKey: string; targetUnits: string }>();
+vitalSignCodesMap.set("8310-5", { codeKey: "temperature", targetUnits: "degf" });
+vitalSignCodesMap.set("8867-4", { codeKey: "hr", targetUnits: "bpm" });
+vitalSignCodesMap.set("9279-1", { codeKey: "rr", targetUnits: "bpm" });
+vitalSignCodesMap.set("2708-6", { codeKey: "oxygen", targetUnits: "%" });
+vitalSignCodesMap.set("59408-5", { codeKey: "oxygen", targetUnits: "%" });
+vitalSignCodesMap.set("8462-4", { codeKey: "bp", targetUnits: "mmHg" });
+vitalSignCodesMap.set("8480-6", { codeKey: "bp", targetUnits: "mmHg" });
+vitalSignCodesMap.set("29463-7", { codeKey: "weight", targetUnits: "lb_av" });
+vitalSignCodesMap.set("8302-2", { codeKey: "height", targetUnits: "in_i" });
+vitalSignCodesMap.set("56086-2", { codeKey: "wc", targetUnits: "cm" });
+vitalSignCodesMap.set("39156-5", { codeKey: "bmi", targetUnits: "kg/m2" });
+
+const bpDiastolicCode = "8462-4";
+const bpSystolicCode = "8480-6";
 
 const ccdaSectionMap = new Map<ResourceType, string>();
 ccdaSectionMap.set("AllergyIntolerance", "allergies");
@@ -202,11 +208,6 @@ export function isSupportedElationReferenceResource(
 ): resourceType is SupportedElationReferenceResource {
   return supportedElationReferenceResources.includes(resourceType as ResourceType);
 }
-
-const gToLbs = 0.00220462;
-const kgToLbs = 2.20462;
-const cmToInches = 0.393701;
-const inchesToCm = 2.54;
 
 class ElationApi {
   private axiosInstance: AxiosInstance;
@@ -379,13 +380,11 @@ class ElationApi {
     cxId,
     patientId,
     condition,
-    isAutoWriteBack = false,
   }: {
     cxId: string;
     patientId: string;
     condition: Condition;
-    isAutoWriteBack?: boolean;
-  }): Promise<CreatedProblem | undefined> {
+  }): Promise<CreatedProblem> {
     const { debug } = out(
       `Elation createProblem - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
     );
@@ -418,18 +417,17 @@ class ElationApi {
       start_date: this.formatDate(startDate),
       description: condition.code?.text,
     };
-    const problem = await this.makeRequest<CreatedProblem | undefined>({
+    const problem = await this.makeRequest<CreatedProblem>({
       cxId,
       patientId,
       s3Path: this.createWriteBackPath("problem", condition.id),
       method: "POST",
       url: problemUrl,
       data,
-      schema: isAutoWriteBack ? z.undefined() : createdProblemSchema,
+      schema: createdProblemSchema,
       additionalInfo,
       headers: { "Content-Type": "application/json" },
       debug,
-      earlyReturn: isAutoWriteBack,
     });
     return problem;
   }
@@ -441,7 +439,6 @@ class ElationApi {
     patientId,
     diagnostricReport,
     observations,
-    isAutoWriteBack = false,
   }: {
     cxId: string;
     elationPracticeId: string;
@@ -449,8 +446,7 @@ class ElationApi {
     patientId: string;
     diagnostricReport: DiagnosticReport;
     observations: Observation[];
-    isAutoWriteBack?: boolean;
-  }): Promise<CreatedLab | undefined> {
+  }): Promise<CreatedLab> {
     const { debug } = out(
       `Elation createLab - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
     );
@@ -467,18 +463,17 @@ class ElationApi {
       physician: elationPhysicianId,
       ...this.formatLabPanel(diagnostricReport, observations, additionalInfo),
     };
-    const lab = await this.makeRequest<CreatedLab | undefined>({
+    const lab = await this.makeRequest<CreatedLab>({
       cxId,
       patientId,
       s3Path: this.createWriteBackPath("lab-panel", diagnostricReport.id),
       method: "POST",
       url: reportsUrl,
       data,
-      schema: isAutoWriteBack ? z.undefined() : createdLabSchema,
+      schema: createdLabSchema,
       additionalInfo,
       headers: { "Content-Type": "application/json" },
       debug,
-      earlyReturn: isAutoWriteBack,
     });
     return lab;
   }
@@ -489,14 +484,12 @@ class ElationApi {
     elationPhysicianId,
     patientId,
     observation,
-    isAutoWriteBack = false,
   }: {
     cxId: string;
     elationPracticeId: string;
     elationPhysicianId: string;
     patientId: string;
     observation: Observation;
-    isAutoWriteBack?: boolean;
   }): Promise<CreatedLab | undefined> {
     const { debug } = out(
       `Elation createLab - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
@@ -514,18 +507,17 @@ class ElationApi {
       physician: elationPhysicianId,
       ...this.formatLab(observation, additionalInfo),
     };
-    const lab = await this.makeRequest<CreatedLab | undefined>({
+    const lab = await this.makeRequest<CreatedLab>({
       cxId,
       patientId,
       s3Path: this.createWriteBackPath("lab", observation.id),
       method: "POST",
       url: reportsUrl,
       data,
-      schema: isAutoWriteBack ? z.undefined() : createdLabSchema,
+      schema: createdLabSchema,
       additionalInfo,
       headers: { "Content-Type": "application/json" },
       debug,
-      earlyReturn: isAutoWriteBack,
     });
     return lab;
   }
@@ -536,15 +528,13 @@ class ElationApi {
     elationPhysicianId,
     patientId,
     observation,
-    isAutoWriteBack = false,
   }: {
     cxId: string;
     elationPracticeId: string;
     elationPhysicianId: string;
     patientId: string;
     observation: Observation;
-    isAutoWriteBack?: boolean;
-  }): Promise<CreatedVital | undefined> {
+  }): Promise<CreatedVital> {
     const { debug } = out(
       `Elation createVital - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
     );
@@ -555,24 +545,26 @@ class ElationApi {
       patientId,
       observationId: observation.id,
     };
+    const { chart_date, data: vitalData } = this.formatVital(observation, additionalInfo);
     const data = {
       patient: patientId,
       practice: elationPracticeId,
       physician: elationPhysicianId,
-      ...this.formatVital(observation, additionalInfo),
+      chart_date,
+      document_date: chart_date,
+      ...vitalData,
     };
-    const vital = await this.makeRequest<CreatedVital | undefined>({
+    const vital = await this.makeRequest<CreatedVital>({
       cxId,
       patientId,
       s3Path: this.createWriteBackPath("vital", observation.id),
       method: "POST",
       url: vitalsUrl,
       data,
-      schema: isAutoWriteBack ? z.undefined() : createdVitalSchema,
+      schema: createdVitalSchema,
       additionalInfo,
       headers: { "Content-Type": "application/json" },
       debug,
-      earlyReturn: isAutoWriteBack,
     });
     return vital;
   }
@@ -872,10 +864,6 @@ class ElationApi {
     return formatDate(date, elationDateTimeFormat);
   }
 
-  private createWriteBackPath(resourceType: string, resourceId: string | undefined): string {
-    return `write-back/${resourceType}/${resourceId ?? "unknown"}`;
-  }
-
   private formatLab(
     observation: Observation,
     additionalInfo: Record<string, string | undefined>
@@ -952,7 +940,7 @@ class ElationApi {
       chart_date: formattedChartDate,
       grids: [
         {
-          accession_number: "",
+          accession_number: uuidv7(),
           resulted_date: formattedObservedDate,
           collected_date: formattedObservedDate,
           status: formattedResultStatus,
@@ -1083,7 +1071,7 @@ class ElationApi {
       chart_date: formattedChartDate,
       grids: [
         {
-          accession_number: "",
+          accession_number: uuidv7(),
           resulted_date: formattedReportDate,
           collected_date: formattedReportDate,
           status: formattedResultStatus,
@@ -1097,14 +1085,16 @@ class ElationApi {
   private formatVital(
     observation: Observation,
     additionalInfo: Record<string, string | undefined>
-  ): Record<string, { value: string }[]> {
+  ):
+    | { chart_date: string; data: { [key: string]: { value: string }[] } }
+    | { chart_date: string; data: { bmi: number } }
+    | {
+        chart_date: string;
+        data: { bp: { systolic?: string; diastolic?: string }[] };
+      } {
     const loincCode = getObservationLoincCode(observation);
-    if (!loincCode) {
+    if (!loincCode || !vitalSignCodesMap.get(loincCode)) {
       throw new BadRequestError("No LOINC code found for observation", undefined, additionalInfo);
-    }
-    const codeAndUnits = vitalSignCodesMap.get(loincCode);
-    if (!codeAndUnits) {
-      throw new BadRequestError("No valid code found for LOINC coding", undefined, additionalInfo);
     }
     const units = getObservationUnit(observation);
     if (!units) {
@@ -1114,72 +1104,64 @@ class ElationApi {
     if (!value) {
       throw new BadRequestError("No value found for observation", undefined, additionalInfo);
     }
-    const convertedValue = this.convertValue(loincCode, +value, units);
-    if (!convertedValue) {
+    const chartDate = getObservationObservedDate(observation);
+    const formattedChartDate = this.formatDateTime(chartDate);
+    if (!formattedChartDate) {
+      throw new BadRequestError(
+        "No observed date found for observation",
+        undefined,
+        additionalInfo
+      );
+    }
+    const convertedCodeAndValue = convertCodeAndValue(loincCode, vitalSignCodesMap, value, units);
+    if (!convertedCodeAndValue) {
       throw new BadRequestError("No value converted for observation", undefined, additionalInfo);
     }
-    return {
-      [codeAndUnits.codeKey]: [
-        {
-          value: convertedValue.toString(),
+    const baseData = { chart_date: formattedChartDate };
+    if (convertedCodeAndValue.codeKey === "bmi") {
+      return {
+        ...baseData,
+        data: {
+          bmi: +convertedCodeAndValue.value,
         },
-      ],
+      };
+    }
+    if (convertedCodeAndValue.codeKey === "bp") {
+      if (loincCode === bpDiastolicCode) {
+        return {
+          ...baseData,
+          data: {
+            bp: [
+              {
+                diastolic: convertedCodeAndValue.value.toString(),
+              },
+            ],
+          },
+        };
+      }
+      if (loincCode === bpSystolicCode) {
+        return {
+          ...baseData,
+          data: {
+            bp: [
+              {
+                systolic: convertedCodeAndValue.value.toString(),
+              },
+            ],
+          },
+        };
+      }
+    }
+    return {
+      ...baseData,
+      data: {
+        [convertedCodeAndValue.codeKey]: [
+          {
+            value: convertedCodeAndValue.value.toString(),
+          },
+        ],
+      },
     };
-  }
-
-  private convertValue(
-    loincCode: string,
-    value: number,
-    units: string
-  ): number | string | undefined {
-    const { units: targetUnit } = vitalSignCodesMap.get(loincCode) ?? {};
-    if (!targetUnit) return undefined;
-    if (units === targetUnit) return value;
-    if (targetUnit === "lb_av") {
-      if (units === "kg" || units === "kilogram" || units === "kilograms")
-        return this.convertKgToLbs(value); // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
-      if (units === "g" || units === "gram" || units === "grams")
-        return this.convertGramsToLbs(value); // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
-      if (units === "lb_av" || units.includes("pound")) return value; // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
-    }
-    if (targetUnit === "in_i") {
-      if (units === "cm" || units === "centimeter") return this.convertCmToInches(value); // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
-      if (units === "in_i" || units.includes("inch")) return value; // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
-    }
-    if (targetUnit === "cm") {
-      if (units === "cm" || units === "centimeter") return value; // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
-      if (units === "in_i" || units.includes("inch")) return this.convertInchesToCm(value); // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
-    }
-    if (targetUnit === "degf") {
-      if (units === "degf" || units === "f" || units.includes("fahrenheit")) return value; // https://hl7.org/fhir/R4/valueset-ucum-bodytemp.html
-      if (units === "cel" || units === "c" || units.includes("celsius"))
-        return this.convertCelciusToFahrenheit(value); // https://hl7.org/fhir/R4/valueset-ucum-bodytemp.html}
-    }
-    throw new BadRequestError("Unknown units", undefined, {
-      units,
-      loincCode,
-      value,
-    });
-  }
-
-  private convertGramsToLbs(value: number): number {
-    return value * gToLbs;
-  }
-
-  private convertKgToLbs(value: number): number {
-    return value * kgToLbs;
-  }
-
-  private convertCmToInches(value: number): number {
-    return value * cmToInches;
-  }
-
-  private convertInchesToCm(value: number): number {
-    return value * inchesToCm;
-  }
-
-  private convertCelciusToFahrenheit(value: number): number {
-    return value * (9 / 5) + 32;
   }
 
   private mapInterpretationToAbnormalFlag(interpretation: string): string {
@@ -1188,6 +1170,10 @@ class ElationApi {
     if (interpretation === "low") return "Below low normal";
     if (interpretation === "high") return "Above high normal";
     return "Not Applicable";
+  }
+
+  private createWriteBackPath(resourceType: string, resourceId: string | undefined): string {
+    return `write-back/${resourceType}/${resourceId ?? "unknown"}`;
   }
 }
 

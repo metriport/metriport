@@ -31,6 +31,5 @@ export async function writeBackVital(params: WriteBackVitalClientRequest): Promi
     elationPhysicianId,
     patientId: ehrPatientId,
     observation,
-    isAutoWriteBack: true,
   });
 }

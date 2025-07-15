@@ -31,6 +31,5 @@ export async function writeBackLab(params: WriteBackLabClientRequest): Promise<v
     elationPhysicianId,
     patientId: ehrPatientId,
     observation,
-    isAutoWriteBack: true,
   });
 }

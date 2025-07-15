@@ -32,6 +32,5 @@ export async function writeBackLabPanel(params: WriteBackLabPanelClientRequest):
     patientId: ehrPatientId,
     diagnostricReport,
     observations,
-    isAutoWriteBack: true,
   });
 }
