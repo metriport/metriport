@@ -14,7 +14,7 @@ export function convertCodeAndValue(
   loincCodeMap: Map<string, { targetUnits: string; codeKey: string }>,
   value: number | string,
   inputUnits: string
-): { units: string; codeKey: string; value: number | string } | undefined {
+): { units: string; codeKey: string; value: number } | undefined {
   const { targetUnits, codeKey } = loincCodeMap.get(loincCode) ?? {};
   if (!targetUnits || !codeKey) return undefined;
   const baseParams = { units: targetUnits, codeKey };
