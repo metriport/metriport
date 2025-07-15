@@ -143,6 +143,7 @@ import {
   partitionEhrBundle,
   saveEhrReferenceBundle,
 } from "../shared";
+import { convertCodeAndValue } from "../unit-converion";
 
 dayjs.extend(duration);
 
@@ -174,18 +175,18 @@ const problemStatusesMap = new Map<string, string>();
 problemStatusesMap.set("relapse", "CHRONIC");
 problemStatusesMap.set("recurrence", "CHRONIC");
 
-const vitalSignCodesMap = new Map<string, { codeKey: string; units: string }>();
-vitalSignCodesMap.set("8310-5", { codeKey: "VITALS.TEMPERATURE", units: "degf" });
-vitalSignCodesMap.set("8867-4", { codeKey: "VITALS.HEARTRATE", units: "bpm" });
-vitalSignCodesMap.set("9279-1", { codeKey: "VITALS.RESPIRATIONRATE", units: "bpm" });
-vitalSignCodesMap.set("2708-6", { codeKey: "VITALS.INHALEDO2CONCENTRATION", units: "%" });
-vitalSignCodesMap.set("59408-5", { codeKey: "VITALS.INHALEDO2CONCENTRATION", units: "%" });
-vitalSignCodesMap.set("8462-4", { codeKey: "VITALS.BLOODPRESSURE.DIASTOLIC", units: "mmHg" });
-vitalSignCodesMap.set("8480-6", { codeKey: "VITALS.BLOODPRESSURE.SYSTOLIC", units: "mmHg" });
-vitalSignCodesMap.set("85354-9", { codeKey: "VITALS.BLOODPRESSURE", units: "mmHg" });
-vitalSignCodesMap.set("29463-7", { codeKey: "VITALS.WEIGHT", units: "g" });
-vitalSignCodesMap.set("8302-2", { codeKey: "VITALS.HEIGHT", units: "cm" });
-vitalSignCodesMap.set("39156-5", { codeKey: "VITALS.BMI", units: "kg/m2" });
+const vitalSignCodesMap = new Map<string, { codeKey: string; targetUnits: string }>();
+vitalSignCodesMap.set("8310-5", { codeKey: "VITALS.TEMPERATURE", targetUnits: "degf" });
+vitalSignCodesMap.set("8867-4", { codeKey: "VITALS.HEARTRATE", targetUnits: "bpm" });
+vitalSignCodesMap.set("9279-1", { codeKey: "VITALS.RESPIRATIONRATE", targetUnits: "bpm" });
+vitalSignCodesMap.set("2708-6", { codeKey: "VITALS.INHALEDO2CONCENTRATION", targetUnits: "%" });
+vitalSignCodesMap.set("59408-5", { codeKey: "VITALS.INHALEDO2CONCENTRATION", targetUnits: "%" });
+vitalSignCodesMap.set("8462-4", { codeKey: "VITALS.BLOODPRESSURE.DIASTOLIC", targetUnits: "mmHg" });
+vitalSignCodesMap.set("8480-6", { codeKey: "VITALS.BLOODPRESSURE.SYSTOLIC", targetUnits: "mmHg" });
+vitalSignCodesMap.set("85354-9", { codeKey: "VITALS.BLOODPRESSURE", targetUnits: "mmHg" });
+vitalSignCodesMap.set("29463-7", { codeKey: "VITALS.WEIGHT", targetUnits: "g" });
+vitalSignCodesMap.set("8302-2", { codeKey: "VITALS.HEIGHT", targetUnits: "cm" });
+vitalSignCodesMap.set("39156-5", { codeKey: "VITALS.BMI", targetUnits: "kg/m2" });
 
 const medicationRequestIntents = ["proposal", "plan", "order", "option"];
 const coverageCount = 50;
@@ -198,10 +199,6 @@ const validObservationResultStatuses = [
   "deleted",
   "unsolicited",
 ];
-
-const lbsToG = 453.592;
-const kgToG = 1000;
-const inchesToCm = 2.54;
 
 export const supportedAthenaHealthResources: ResourceType[] = [
   "AllergyIntolerance",
@@ -1849,78 +1846,20 @@ class AthenaHealthApi {
         },
       ];
     }
-    const convertedCodeAndValue = this.convertCodeAndValue(loincCode, dataPoint.value, units);
+    const convertedCodeAndValue = convertCodeAndValue(
+      loincCode,
+      vitalSignCodesMap,
+      dataPoint.value,
+      units
+    );
     if (!convertedCodeAndValue) return undefined;
     return [
       {
-        clinicalelementid: convertedCodeAndValue.clinicalelementid,
+        clinicalelementid: convertedCodeAndValue.codeKey,
         readingtaken: formattedReadingTaken,
         value: convertedCodeAndValue.value.toString(),
       },
     ];
-  }
-
-  private convertCodeAndValue(
-    loincCode: string,
-    value: number,
-    units: string
-  ): { clinicalelementid: string; value: number } | undefined {
-    const { units: targetUnits, codeKey } = vitalSignCodesMap.get(loincCode) ?? {};
-    if (!targetUnits || !codeKey) return undefined;
-    if (units === targetUnits) return { clinicalelementid: codeKey, value };
-    if (targetUnits === "g") {
-      if (units === "g" || units === "gram" || units === "grams") {
-        return { clinicalelementid: codeKey, value }; // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
-      }
-      if (units === "kg" || units === "kilogram" || units === "kilograms") {
-        return { clinicalelementid: codeKey, value: this.convertKiloGramsToGrams(value) }; // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
-      }
-      if (units === "lb_av" || units.includes("pound")) {
-        return { clinicalelementid: codeKey, value: this.convertLbsToGrams(value) }; // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
-      }
-    }
-    if (targetUnits === "cm") {
-      if (units === "cm" || units.includes("centimeter")) {
-        return { clinicalelementid: codeKey, value }; // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
-      }
-      if (units === "in_i" || units.includes("inch")) {
-        return { clinicalelementid: codeKey, value: this.convertInchesToCm(value) }; // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
-      }
-    }
-    if (targetUnits === "degf") {
-      if (units === "degf" || units === "f" || units.includes("fahrenheit")) {
-        return { clinicalelementid: codeKey, value }; // https://hl7.org/fhir/R4/valueset-ucum-bodytemp.html
-      }
-      if (units === "cel" || units === "c" || units.includes("celsius")) {
-        return { clinicalelementid: codeKey, value: this.convertCelciusToFahrenheit(value) }; // https://hl7.org/fhir/R4/valueset-ucum-bodytemp.html
-      }
-    }
-    if (targetUnits === "kg/m2") {
-      if (units === "kg/m2" || units === "kg_m2") {
-        return { clinicalelementid: codeKey, value }; // https://hl7.org/fhir/R4/valueset-ucum-bodybmi.html
-      }
-    }
-    throw new BadRequestError("Unknown units", undefined, {
-      units,
-      loincCode,
-      value,
-    });
-  }
-
-  private convertLbsToGrams(value: number): number {
-    return value * lbsToG;
-  }
-
-  private convertKiloGramsToGrams(value: number): number {
-    return value * kgToG;
-  }
-
-  private convertInchesToCm(value: number): number {
-    return value * inchesToCm;
-  }
-
-  private convertCelciusToFahrenheit(value: number): number {
-    return value * (9 / 5) + 32;
   }
 
   private getSearchvaluesFromCoding(

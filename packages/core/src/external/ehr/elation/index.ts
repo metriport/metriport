@@ -68,6 +68,7 @@ import {
   partitionEhrBundle,
   saveEhrReferenceBundle,
 } from "../shared";
+import { convertCodeAndValue } from "../unit-converion";
 
 interface ElationApiConfig extends ApiConfig {
   environment: ElationEnv;
@@ -92,19 +93,19 @@ problemStatusesMap.set("remission", "Controlled");
 problemStatusesMap.set("resolved", "Resolved");
 problemStatusesMap.set("inactive", "Resolved");
 
-const vitalSignCodesMap = new Map<string, { codeKey: string; units: string }>();
-vitalSignCodesMap.set("8310-5", { codeKey: "temperature", units: "degf" });
-vitalSignCodesMap.set("8867-4", { codeKey: "hr", units: "bpm" });
-vitalSignCodesMap.set("9279-1", { codeKey: "rr", units: "bpm" });
-vitalSignCodesMap.set("2708-6", { codeKey: "oxygen", units: "%" });
-vitalSignCodesMap.set("59408-5", { codeKey: "oxygen", units: "%" });
-vitalSignCodesMap.set("8462-4", { codeKey: "bp", units: "mmHg" });
-vitalSignCodesMap.set("8480-6", { codeKey: "bp", units: "mmHg" });
-vitalSignCodesMap.set("85354-9", { codeKey: "bp", units: "mmHg" });
-vitalSignCodesMap.set("29463-7", { codeKey: "weight", units: "lb_av" });
-vitalSignCodesMap.set("8302-2", { codeKey: "height", units: "in_i" });
-vitalSignCodesMap.set("56086-2", { codeKey: "wc", units: "cm" });
-vitalSignCodesMap.set("39156-5", { codeKey: "bmi", units: "kg/m2" });
+const vitalSignCodesMap = new Map<string, { codeKey: string; targetUnits: string }>();
+vitalSignCodesMap.set("8310-5", { codeKey: "temperature", targetUnits: "degf" });
+vitalSignCodesMap.set("8867-4", { codeKey: "hr", targetUnits: "bpm" });
+vitalSignCodesMap.set("9279-1", { codeKey: "rr", targetUnits: "bpm" });
+vitalSignCodesMap.set("2708-6", { codeKey: "oxygen", targetUnits: "%" });
+vitalSignCodesMap.set("59408-5", { codeKey: "oxygen", targetUnits: "%" });
+vitalSignCodesMap.set("8462-4", { codeKey: "bp", targetUnits: "mmHg" });
+vitalSignCodesMap.set("8480-6", { codeKey: "bp", targetUnits: "mmHg" });
+vitalSignCodesMap.set("85354-9", { codeKey: "bp", targetUnits: "mmHg" });
+vitalSignCodesMap.set("29463-7", { codeKey: "weight", targetUnits: "lb_av" });
+vitalSignCodesMap.set("8302-2", { codeKey: "height", targetUnits: "in_i" });
+vitalSignCodesMap.set("56086-2", { codeKey: "wc", targetUnits: "cm" });
+vitalSignCodesMap.set("39156-5", { codeKey: "bmi", targetUnits: "kg/m2" });
 
 const bpGlobalCode = "85354-9";
 const bpSystolicCode = "8480-6";
@@ -208,11 +209,6 @@ export function isSupportedElationReferenceResource(
 ): resourceType is SupportedElationReferenceResource {
   return supportedElationReferenceResources.includes(resourceType as ResourceType);
 }
-
-const gToLbs = 0.00220462;
-const kgToLbs = 2.20462;
-const cmToInches = 0.393701;
-const inchesToCm = 2.54;
 
 class ElationApi {
   private axiosInstance: AxiosInstance;
@@ -556,6 +552,7 @@ class ElationApi {
       practice: elationPracticeId,
       physician: elationPhysicianId,
       chart_date,
+      document_date: chart_date,
       ...vitalData,
     };
     const vital = await this.makeRequest<CreatedVital>({
@@ -1094,7 +1091,7 @@ class ElationApi {
     | { chart_date: string; data: { bmi: number } }
     | {
         chart_date: string;
-        data: { bp: { systolic: string | undefined; diastolic: string | undefined }[] };
+        data: { bp: { systolic: string | null; diastolic: string | null }[] };
       } {
     const loincCode = getObservationLoincCode(observation);
     if (!loincCode || !vitalSignCodesMap.get(loincCode)) {
@@ -1117,7 +1114,7 @@ class ElationApi {
         additionalInfo
       );
     }
-    const convertedCodeAndValue = this.convertCodeAndValue(loincCode, value, units);
+    const convertedCodeAndValue = convertCodeAndValue(loincCode, vitalSignCodesMap, value, units);
     if (!convertedCodeAndValue) {
       throw new BadRequestError("No value converted for observation", undefined, additionalInfo);
     }
@@ -1131,17 +1128,21 @@ class ElationApi {
     }
     if (convertedCodeAndValue.codeKey === "bp") {
       if (loincCode === bpGlobalCode) {
-        const [systolic, diastolic] = convertedCodeAndValue.value
-          .toString()
-          .replace(" mmHg", "")
-          .split("/");
+        if (typeof convertedCodeAndValue.value !== "string") {
+          throw new BadRequestError("Invalid value type for bpobservation", undefined, {
+            ...additionalInfo,
+            loincCode,
+            value: convertedCodeAndValue.value,
+          });
+        }
+        const [systolic, diastolic] = convertedCodeAndValue.value.replace(" mmHg", "").split("/");
         return {
           chart_date: formattedChartDate,
           data: {
             bp: [
               {
-                systolic: systolic ? systolic.trim() : undefined,
-                diastolic: diastolic ? diastolic.trim() : undefined,
+                systolic: systolic ? systolic : null,
+                diastolic: diastolic ? diastolic : null,
               },
             ],
           },
@@ -1153,7 +1154,7 @@ class ElationApi {
             bp: [
               {
                 systolic: convertedCodeAndValue.value.toString(),
-                diastolic: undefined,
+                diastolic: null,
               },
             ],
           },
@@ -1164,14 +1165,14 @@ class ElationApi {
           data: {
             bp: [
               {
-                systolic: undefined,
+                systolic: null,
                 diastolic: convertedCodeAndValue.value.toString(),
               },
             ],
           },
         };
       } else {
-        throw new BadRequestError("Unknown LOINC code", undefined, {
+        throw new BadRequestError("Unknown LOINC code for bp observation", undefined, {
           ...additionalInfo,
           loincCode,
         });
@@ -1187,87 +1188,6 @@ class ElationApi {
         ],
       },
     };
-  }
-
-  private convertCodeAndValue(
-    loincCode: string,
-    value: number | string,
-    units: string
-  ): { codeKey: string; value: number | string } | undefined {
-    const { units: targetUnit, codeKey } = vitalSignCodesMap.get(loincCode) ?? {};
-    if (!targetUnit || !codeKey) return undefined;
-    if (units === targetUnit) return { codeKey, value };
-
-    if (targetUnit === "lb_av") {
-      const valueNumber = typeof value === "string" ? +value : value;
-      if (units === "kg" || units === "kilogram" || units === "kilograms") {
-        return { codeKey, value: this.convertKgToLbs(valueNumber) }; // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
-      }
-      if (units === "g" || units === "gram" || units === "grams") {
-        return { codeKey, value: this.convertGramsToLbs(valueNumber) }; // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
-      }
-      if (units === "lb_av" || units.includes("pound")) {
-        return { codeKey, value: valueNumber }; // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
-      }
-    }
-    if (targetUnit === "in_i") {
-      const valueNumber = typeof value === "string" ? +value : value;
-      if (units === "cm" || units === "centimeter") {
-        return { codeKey, value: this.convertCmToInches(valueNumber) }; // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
-      }
-      if (units === "in_i" || units.includes("inch")) {
-        return { codeKey, value: valueNumber }; // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
-      }
-    }
-    if (targetUnit === "cm") {
-      const valueNumber = typeof value === "string" ? +value : value;
-      if (units === "cm" || units === "centimeter") {
-        return { codeKey, value: valueNumber }; // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
-      }
-      if (units === "in_i" || units.includes("inch")) {
-        return { codeKey, value: this.convertInchesToCm(valueNumber) }; // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
-      }
-    }
-    if (targetUnit === "degf") {
-      const valueNumber = typeof value === "string" ? +value : value;
-      if (units === "degf" || units === "f" || units.includes("fahrenheit")) {
-        return { codeKey, value: valueNumber }; // https://hl7.org/fhir/R4/valueset-ucum-bodytemp.html
-      }
-      if (units === "cel" || units === "c" || units.includes("celsius")) {
-        return { codeKey, value: this.convertCelciusToFahrenheit(valueNumber) }; // https://hl7.org/fhir/R4/valueset-ucum-bodytemp.html
-      }
-    }
-    if (targetUnit === "kg/m2") {
-      const valueNumber = typeof value === "string" ? +value : value;
-      if (units === "kg/m2" || units === "kg_m2") {
-        return { codeKey, value: valueNumber }; // https://hl7.org/fhir/R4/valueset-ucum-bodybmi.html
-      }
-    }
-    throw new BadRequestError("Unknown units", undefined, {
-      units,
-      loincCode,
-      value,
-    });
-  }
-
-  private convertGramsToLbs(value: number): number {
-    return value * gToLbs;
-  }
-
-  private convertKgToLbs(value: number): number {
-    return value * kgToLbs;
-  }
-
-  private convertCmToInches(value: number): number {
-    return value * cmToInches;
-  }
-
-  private convertInchesToCm(value: number): number {
-    return value * inchesToCm;
-  }
-
-  private convertCelciusToFahrenheit(value: number): number {
-    return value * (9 / 5) + 32;
   }
 
   private mapInterpretationToAbnormalFlag(interpretation: string): string {

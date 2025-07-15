@@ -80,6 +80,7 @@ import {
   partitionEhrBundle,
   saveEhrReferenceBundle,
 } from "../shared";
+import { convertCodeAndValue } from "../unit-converion";
 
 dayjs.extend(duration);
 
@@ -143,18 +144,18 @@ problemStatusesMap.set("remission", "resolved");
 problemStatusesMap.set("resolved", "resolved");
 problemStatusesMap.set("inactive", "resolved");
 
-const vitalSignCodesMap = new Map<string, string>();
-vitalSignCodesMap.set("8310-5", "degf");
-vitalSignCodesMap.set("8867-4", "bpm");
-vitalSignCodesMap.set("9279-1", "bpm");
-vitalSignCodesMap.set("2708-6", "%");
-vitalSignCodesMap.set("59408-5", "%");
-vitalSignCodesMap.set("8462-4", "mmHg");
-vitalSignCodesMap.set("8480-6", "mmHg");
-vitalSignCodesMap.set("85354-9", "mmHg");
-vitalSignCodesMap.set("29463-7", "kg");
-vitalSignCodesMap.set("8302-2", "cm");
-vitalSignCodesMap.set("56086-2", "cm");
+const vitalSignCodesMap = new Map<string, { codeKey: string; targetUnits: string }>();
+vitalSignCodesMap.set("8310-5", { codeKey: "temperature", targetUnits: "degf" });
+vitalSignCodesMap.set("8867-4", { codeKey: "pulserate", targetUnits: "bpm" });
+vitalSignCodesMap.set("9279-1", { codeKey: "respirationrate", targetUnits: "bpm" });
+vitalSignCodesMap.set("2708-6", { codeKey: "oxygensaturationarterial", targetUnits: "%" });
+vitalSignCodesMap.set("59408-5", { codeKey: "oxygensaturation", targetUnits: "%" });
+vitalSignCodesMap.set("8462-4", { codeKey: "bloodpressure.diastolic", targetUnits: "mmHg" });
+vitalSignCodesMap.set("8480-6", { codeKey: "bloodpressure.systolic", targetUnits: "mmHg" });
+vitalSignCodesMap.set("85354-9", { codeKey: "bloodpressure", targetUnits: "mmHg" });
+vitalSignCodesMap.set("29463-7", { codeKey: "weight", targetUnits: "kg" });
+vitalSignCodesMap.set("8302-2", { codeKey: "height", targetUnits: "cm" });
+vitalSignCodesMap.set("56086-2", { codeKey: "waistcircumference", targetUnits: "cm" });
 
 const bpSubCodes = ["8462-4", "8480-6"];
 
@@ -164,11 +165,6 @@ const allergyIntoleranceClinicalStatuses = ["active", "inactive"];
 const allergyIntoleranceVerificationStatuses = ["confirmed", "entered-in-error"];
 const allergyIntoleranceSeverityCodes = ["mild", "moderate", "severe"];
 const observationResultStatuses = ["final", "unknown", "entered-in-error"];
-
-const lbsToG = 453.592;
-const gToKg = 1 / 1000;
-const inchesToCm = 2.54;
-const lbsToKg = lbsToG * gToKg;
 
 class CanvasApi {
   private axiosInstanceFhirApi: AxiosInstance;
@@ -1590,15 +1586,16 @@ class CanvasApi {
       ];
       return formattedObservation;
     }
-    const convertedUnitAndValue = this.convertUnitAndValue(
+    const convertedCodeAndValue = convertCodeAndValue(
       loincCoding.code,
+      vitalSignCodesMap,
       dataPoint.value,
       units
     );
-    if (!convertedUnitAndValue) return undefined;
+    if (!convertedCodeAndValue) return undefined;
     formattedObservation.valueQuantity = {
-      value: convertedUnitAndValue.value,
-      unit: convertedUnitAndValue.unit,
+      value: +convertedCodeAndValue.value,
+      unit: convertedCodeAndValue.units,
     };
     return formattedObservation;
   }
@@ -1616,65 +1613,6 @@ class CanvasApi {
       url: "http://schemas.canvasmedical.com/fhir/extensions/note-id",
       valueId: noteId,
     };
-  }
-
-  private convertUnitAndValue(
-    loincCode: string,
-    value: number,
-    units: string
-  ): { unit: string; value: number } | undefined {
-    const targetUnit = vitalSignCodesMap.get(loincCode);
-    if (!targetUnit) return undefined;
-    const unitParam = { unit: targetUnit };
-    if (units === targetUnit) return { ...unitParam, value };
-    if (targetUnit === "kg") {
-      if (units === "kg" || units === "kilogram" || units === "kilograms") {
-        return { ...unitParam, value }; // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
-      }
-      if (units === "g" || units === "gram" || units === "grams") {
-        return { ...unitParam, value: this.convertGramsToKg(value) }; // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
-      }
-      if (units === "lb_av" || units.includes("pound")) {
-        return { ...unitParam, value: this.convertLbsToKg(value) }; // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
-      }
-    }
-    if (targetUnit === "cm") {
-      if (units === "cm" || units === "centimeter") {
-        return { ...unitParam, value }; // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
-      }
-      if (units === "in_i" || units.includes("inch")) {
-        return { ...unitParam, value: this.convertInchesToCm(value) }; // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
-      }
-    }
-    if (targetUnit === "degf") {
-      if (units === "degf" || units === "f" || units.includes("fahrenheit")) {
-        return { ...unitParam, value }; // https://hl7.org/fhir/R4/valueset-ucum-bodytemp.html
-      }
-      if (units === "cel" || units === "c" || units.includes("celsius")) {
-        return { ...unitParam, value: this.convertCelciusToFahrenheit(value) }; // https://hl7.org/fhir/R4/valueset-ucum-bodytemp.html
-      }
-    }
-    throw new BadRequestError("Unknown units", undefined, {
-      units,
-      loincCode,
-      value,
-    });
-  }
-
-  private convertGramsToKg(value: number): number {
-    return value * gToKg;
-  }
-
-  private convertLbsToKg(value: number): number {
-    return value * lbsToKg;
-  }
-
-  private convertInchesToCm(value: number): number {
-    return value * inchesToCm;
-  }
-
-  private convertCelciusToFahrenheit(value: number): number {
-    return value * (9 / 5) + 32;
   }
 
   private sortMedicationStatementsNewestFirst(
