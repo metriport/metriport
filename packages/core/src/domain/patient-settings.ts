@@ -24,6 +24,6 @@ export type Hl7v2Subscription = z.infer<typeof hl7v2SubscriptionSchema>;
 
 export const hl7v2SubscribersQuerySchema = z
   .object({
-    hie: z.string(),
+    hieName: z.string(),
   })
   .and(queryMetaSchema);

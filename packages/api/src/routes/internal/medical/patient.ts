@@ -137,15 +137,15 @@ router.get(
   "/hl7v2-subscribers",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    const { hie } = hl7v2SubscribersQuerySchema.parse(req.query);
+    const { hieName } = hl7v2SubscribersQuerySchema.parse(req.query);
 
     const params: GetHl7v2SubscribersParams = {
-      hie,
+      hieName,
     };
 
     const { meta, items } = await paginated({
       request: req,
-      additionalQueryParams: { hie },
+      additionalQueryParams: { hieName },
       getItems: (pagination: Pagination) => {
         return getHl7v2Subscribers({
           ...params,
