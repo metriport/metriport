@@ -114,7 +114,8 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
   }
   const status = err.statusCode || err.status;
   if (status) {
-    const detail = err.request?.path ? err.request?.path + " " + err.message : err.message;
+    const axiosPrefix = isAxiosError(err) ? `${err.request?.method} ${err.request?.path} ` : "";
+    const detail = axiosPrefix + err.message;
     return res
       .contentType("json")
       .status(status)
