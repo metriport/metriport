@@ -327,7 +327,7 @@ export function containedPatientToFHIRResource(
       resourceType: "Patient",
       id: chosenResourceId,
       address: convertCWAdressToFHIR(resource.address),
-      gender: convertCWGenderToFHIR(resource.gender?.coding as unknown as Gender[]), // TODO ENG-200 - Remove the casting
+      gender: convertCWGenderToFHIR(resource.gender?.coding),
       identifier: convertCWIdentifierToFHIR(resource.identifier),
       name: convertCWNameToHumanName(resource.name),
     },
@@ -378,7 +378,7 @@ export function containedPractitionerToFHIRResource(
     id: resource.id ?? undefined,
     identifier: convertCWIdentifierToFHIR(resource.identifier),
     name: convertCWNameToHumanName(resource.name),
-    gender: convertCWGenderToFHIR(resource.gender?.coding as unknown as Gender[]),
+    gender: convertCWGenderToFHIR(resource.gender?.coding),
   };
   const role: Resource | undefined =
     resource.organization?.reference && resource.id
