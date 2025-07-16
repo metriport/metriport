@@ -514,7 +514,6 @@ export function getObservationValue(observation: Observation): number | string |
     value = isNaN(parsedNumber) ? observation.valueString : parsedNumber;
     if (blacklistedValues.includes(value?.toString().toLowerCase().trim())) value = undefined;
   }
-  if (!value) return undefined;
   return value;
 }
 
