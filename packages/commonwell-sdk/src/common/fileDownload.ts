@@ -56,7 +56,8 @@ export async function downloadFileInMemory({
   headers?: {
     [index: string]: string;
   };
-}): Promise<Buffer | string> {
+  //eslint-disable-next-line @typescript-eslint/no-explicit-any
+}): Promise<Buffer | string | any> {
   const config: AxiosRequestConfig = {
     ...(headers && { headers }),
     responseType,

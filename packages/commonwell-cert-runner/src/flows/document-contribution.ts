@@ -43,8 +43,8 @@ const outputFolder = "./downloads-contribution";
  * The script will create a new patient on each Org, both patients with the same demographics. Then
  * it'll link the patients, and then query the documents from the consumer Org.
  *
- * In order to the contributor Org to answer to CommonWell's CHA broker's requests, this script will
- * also initialize a HTTP server that will be used to implement that part of the document contribution
+ * In order for the contributor Org to answer to CommonWell's CHA broker's requests, this script will
+ * also initialize an HTTP server that will be used to implement that part of the document contribution
  * flow - see `initContributionHttpServer`.
  *
  * Note: it requires a proxy server exposing a public address that's configured in the contributor
@@ -54,7 +54,7 @@ const outputFolder = "./downloads-contribution";
  * 1. Create a patient on the contributor Org.
  * 2. Create a patient on the consumer Org.
  * 3. Link the patients.
- * 4. Query the documents from the consumer Org.
+ * 4. Consumer Org queries the documents from the contributor Org.
  * 5. CommonWell's CHA broker will reach out to the contributor Org to query documents.
  * 6. The contributor Org will respond with the list of documents.
  * 7. The CHA broker will then forward that to the consumer Org (request from step 4).

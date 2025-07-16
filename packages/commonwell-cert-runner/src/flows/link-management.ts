@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { CommonWell } from "@metriport/commonwell-sdk";
 import { encodeToCwPatientId } from "@metriport/commonwell-sdk/common/util";
 import { errorToString } from "@metriport/shared";
@@ -149,7 +148,7 @@ export async function linkManagement(commonWell: CommonWell) {
     console.log(">>> Transaction ID: " + commonWell.lastTransactionId);
     console.log(">>> 2.4.1 Response: " + stringify(resp_2_4_1));
 
-    // Don't unlink patient 2 so we can check reset works (it should unlink it automatically)
+    // Don't unlink patient 2 so we can check the reset link works (it should unlink it automatically)
 
     await waitSeconds(5);
     console.log(`>>> 2.4.2 Get Patient Links - ID ${patientWithProbableLinksId}`);

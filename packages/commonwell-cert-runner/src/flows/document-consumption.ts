@@ -24,7 +24,8 @@ const runTimestamp = buildDayjs().toISOString();
  * @param commonWell - CommonWell API client configured with the Organization that "owns" the patient - not the CW member one.
  * @param queryMeta - Request metadata for the CommonWell API client.
  * @param patientId - Patient ID to query documents for.
- * @param downloadAll - If true, download all documents. If false, download only the first successful document.
+ * @param downloadAll - Optional. If true, download all documents. If false, download only the first
+ *                      successful document. Default is false.
  */
 export async function documentConsumption(commonWell: CommonWell, downloadAll = false) {
   const patientIds: string[] = [];
@@ -93,19 +94,13 @@ export async function queryDocuments(
   console.log(`>>> 1.1 Document Query`);
   async function getByStatus(status: DocumentStatus): Promise<DocumentReference[]> {
     console.log(`>>> 1.1.1 Document Query for status: ${status}`);
-    const respDocQuery = await commonWell.queryDocuments(patientId, { status });
+    const documents = await commonWell.queryDocuments(patientId, { status });
     console.log(">>> Transaction ID: " + commonWell.lastTransactionId);
-    console.log(`>>> 1.1.1 Response (status ${status}): ` + JSON.stringify(respDocQuery, null, 2));
-    const documents = respDocQuery;
+    console.log(`>>> 1.1.1 Response (status ${status}): ` + JSON.stringify(documents, null, 2));
     console.log(`>>> 1.1.1 Got ${documents.length} documents for status ${status}`);
     return documents;
   }
-  const documentsCurrent = await getByStatus("current");
-  // const documentsSuperseded = await getByStatus("superseded");
-  const documentsSuperseded: DocumentReference[] = [];
-  // const documentsEnteredInError = await getByStatus("entered-in-error");
-  const documentsEnteredInError: DocumentReference[] = [];
-  const documents = [...documentsCurrent, ...documentsSuperseded, ...documentsEnteredInError];
+  const documents = await getByStatus("current");
   console.log(`>>> 1.1 Got ${documents.length} documents for all statuses`);
   return documents;
 }

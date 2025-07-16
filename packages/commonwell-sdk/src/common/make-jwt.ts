@@ -127,6 +127,9 @@ export function makeJwt({
    */
   authGrantorReference?: string | undefined;
 }): string {
+  if (rsaPrivateKey && hmacSecret) {
+    throw new Error("Only one of rsaPrivateKey or hmacSecret must be set, not both");
+  }
   const secret = rsaPrivateKey ?? hmacSecret;
   if (!secret) {
     throw new Error("Either rsaPrivateKey or hmacSecret must be set");

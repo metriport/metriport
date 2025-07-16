@@ -21,7 +21,7 @@ export type OrganizationRequestMetadata = {
    * Required for Delegation of Authority (DOA) requests.
    *
    * When sending delegated requests, the delegate organization must include information about the
-   * principal  organization.
+   * principal organization.
    *
    * The value MUST be the Directory Entry assigned to the Principal for whom the Delegate is
    * initiating the request, formatted using the FHIR (Fast Healthcare Interoperability Resources)
@@ -29,7 +29,7 @@ export type OrganizationRequestMetadata = {
    *
    * Example: "Organization/urn:oid:2.16.840.1.113883.3.7204.1"
    *
-   * See https://www.commonwellalliance.org/specification/
+   * @see https://www.commonwellalliance.org/specification/
    */
   authGrantorReference?: string;
 };

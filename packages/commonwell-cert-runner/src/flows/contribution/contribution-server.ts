@@ -8,7 +8,7 @@ import {
   buildSearchSetBundle,
 } from "@metriport/core/external/fhir/bundle/bundle";
 import express, { Application, Request, Response } from "express";
-import { memberOID } from "../../env";
+import { contribServerPort, contribServerUrl, memberOID } from "../../env";
 import { makeBinary } from "./binary";
 import { makeDocumentReference } from "./document-reference";
 import { makeToken, verifySignature } from "./token";
@@ -100,11 +100,11 @@ app.get("/oauth/fhir/DocumentReference", async (req: Request, res: Response): Pr
 
   const binaryId = faker.string.uuid();
   const docRef = makeDocumentReference({
-    memberOID: memberOID,
+    memberOID,
     orgId: commonWell.oid,
     orgName: commonWell.orgName,
     patientId,
-    docUrl: `https://marten-funky-deer.ngrok-free.app/oauth/fhir`,
+    docUrl: contribServerUrl,
     binaryId,
   });
   const entry = buildBundleEntry(docRef);
@@ -132,9 +132,9 @@ app.get("/oauth/fhir/Binary/:id", async (req: Request, res: Response): Promise<v
   }
   console.log(`Token verification successful!!!`);
 
-  const docRef = makeBinary();
+  const binary = makeBinary();
 
-  res.status(200).json(docRef);
+  res.status(200).json(binary);
 });
 
 app.use(express.json({ limit: "2mb" }));
@@ -156,7 +156,7 @@ app.all("*", async (req: Request, res: Response): Promise<void> => {
 export async function initContributionHttpServer(commonWellParam: CommonWell) {
   commonWell = commonWellParam;
 
-  const port = 8088;
+  const port = contribServerPort;
   app.listen(port, "0.0.0.0", async () => {
     console.log(`[server]: HTTP server is running on port ${port}`);
   });

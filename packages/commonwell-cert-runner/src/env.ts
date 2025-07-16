@@ -20,3 +20,6 @@ export const orgGatewayAuthorizationClientSecret = getEnvOrFail(
 );
 /** If set, the cert runner will use this org and not try to create a new one. */
 export const existingOrgId = getEnv("CW_ORG_ID");
+
+export const contribServerUrl = getEnvOrFail("CONTRIB_SERVER_URL");
+export const contribServerPort = parseInt(getEnvOrFail("CONTRIB_SERVER_PORT"));

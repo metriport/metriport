@@ -52,13 +52,7 @@ export function verifySignature(req: Request): boolean {
   const token = authHeader.substring(7);
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET, { algorithms: ["HS256"] }) as jwt.JwtPayload;
-
-    if (decoded.exp && Date.now() >= decoded.exp * 1000) {
-      console.log("Token has expired");
-      return false;
-    }
-
+    jwt.verify(token, JWT_SECRET, { algorithms: ["HS256"] }) as jwt.JwtPayload;
     return true;
   } catch (error) {
     console.log("Token verification failed:", error);

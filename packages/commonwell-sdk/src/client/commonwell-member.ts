@@ -13,6 +13,7 @@ import {
 } from "../models/organization";
 import { APIMode, CommonWellOptions, DEFAULT_AXIOS_TIMEOUT_SECONDS } from "./common";
 import { BaseOptions, CommonWellMemberAPI, MemberRequestMetadata } from "./commonwell-member-api";
+import { normalizeCertificate } from "../common/certificate";
 
 /**
  * Implementation of the CommonWell API, v4.
@@ -34,7 +35,6 @@ export class CommonWellMember implements CommonWellMemberAPI {
   private _memberId: string;
   private httpsAgent: Agent;
   private _lastTransactionId: string | undefined;
-  // private onError500: OnError500Options;
 
   /**
    * Creates a new instance of the CommonWell API client pertaining to an
@@ -231,10 +231,7 @@ export class CommonWellMember implements CommonWellMemberAPI {
   ): Promise<CertificateResp> {
     const meta = options?.meta ?? buildBaseQueryMeta(this.memberName);
     const headers = this.buildQueryHeaders(meta);
-    const normalizedCertificates = certificate.Certificates.map(cert => ({
-      ...cert,
-      ...(cert.thumbprint && { thumbprint: cert.thumbprint.replace(/:/g, "") }),
-    }));
+    const normalizedCertificates = certificate.Certificates.map(normalizeCertificate);
     const payload = {
       ...certificate,
       Certificates: normalizedCertificates,
@@ -266,9 +263,14 @@ export class CommonWellMember implements CommonWellMemberAPI {
   ): Promise<CertificateResp> {
     const meta = options?.meta ?? buildBaseQueryMeta(this.memberName);
     const headers = this.buildQueryHeaders(meta);
+    const normalizedCertificates = certificate.Certificates.map(normalizeCertificate);
+    const payload = {
+      ...certificate,
+      Certificates: normalizedCertificates,
+    };
     const resp = await this.api.put(
       `${CommonWellMember.MEMBER_ENDPOINT}/${this.memberId}/org/${id}/certificate`,
-      certificate,
+      payload,
       {
         headers,
       }

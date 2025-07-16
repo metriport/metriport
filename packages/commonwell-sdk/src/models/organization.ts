@@ -40,7 +40,12 @@ const organizationBaseSchema = z.object({
     })
   ),
   /** Gateway search radius in miles. One of: 50, 100, 150 */
-  searchRadius: z.number(),
+  searchRadius: z
+    .number()
+    .refine(val => [50, 100, 150].includes(val), {
+      message: "Search radius must be one of: 50, 100, 150",
+    })
+    .nullish(),
   technicalContacts: z.array(
     z.object({
       name: z.string(),

@@ -4,7 +4,7 @@ A comprehensive tool by Metriport Inc. for running through CommonWell Alliance c
 
 ## What It Does
 
-The CommonWell Certification Runner automates the testing of CommonWell API integration across four main certification areas:
+The CommonWell Certification Runner automates the testing of CommonWell API integration across five main certification areas:
 
 ### 1. Organization Management (`org-management.ts`)
 
@@ -126,6 +126,17 @@ CW_ORG_GATEWAY_AUTHORIZATION_CLIENT_SECRET=your-client-secret
 CW_ORG_ID=1.2.3.4.5.678.5.123
 ```
 
+### Contribution Server Configuration
+
+These configuration variables are used to configure the contribution server. This
+should be a public URL that is accessible from the CommonWell network. See
+item #5. Document Contribution above for more details.
+
+```env
+CONTRIB_SERVER_URL=https://your-contrib-server.example.com/with/path
+CONTRIB_SERVER_PORT=8088
+```
+
 ## Usage
 
 ### Run Complete Certification Suite
@@ -144,7 +155,7 @@ cw-cert-runner
 
 ### Individual Flow Entry Points
 
-If you wan to run individual flows, you can comment out the other flows in `src/index.ts`.
+If you want to run individual flows, you can comment out the other flows in `src/index.ts`.
 
 1. **Organization Management**: `src/flows/org-management.ts`
 

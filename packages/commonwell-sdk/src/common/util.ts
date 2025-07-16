@@ -95,25 +95,3 @@ export function buildBaseQueryMeta(orgName: string): BaseRequestMetadata {
     subjectId: `${orgName} System User`,
   };
 }
-
-/**
- * Extracts code, system, and optional assignAuthType from a CommonWell patient ID
- *
- * @param patientId - The patient ID in format: code^^^&system&assignAuthType
- * @returns Object with code, system, and assignAuthType (optional)
- */
-export function extractCwPatientIdComponents(patientId: string): {
-  code: string | undefined;
-  system: string | undefined;
-  assignAuthType: string | undefined;
-} {
-  const match = patientId.match(CW_PATIENT_ID_REGEX);
-  if (!match) {
-    return { code: undefined, system: undefined, assignAuthType: undefined };
-  }
-  return {
-    code: match[1],
-    system: match[2],
-    assignAuthType: match[3],
-  };
-}
