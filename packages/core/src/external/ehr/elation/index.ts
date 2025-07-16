@@ -19,6 +19,8 @@ import {
   ccdaDocumentSchema,
   CreatedLab,
   createdLabSchema,
+  CreatedNonVisitNote,
+  createdNonVisitNoteSchema,
   CreatedProblem,
   createdProblemSchema,
   CreatedSubscription,
@@ -401,6 +403,46 @@ class ElationApi {
     return patient;
   }
 
+  async createNonVisitNote({
+    cxId,
+    patientId,
+    date,
+  }: {
+    cxId: string;
+    patientId: string;
+    date: string;
+  }): Promise<CreatedNonVisitNote> {
+    const { debug } = out(
+      `Elation createNonVisitNote - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
+    );
+    const patientUrl = `/non_visit_notes/`;
+    const additionalInfo = { cxId, practiceId: this.practiceId, patientId };
+    const data = {
+      bullets: [
+        {
+          text: "Vitals added via Metriport App",
+        },
+      ],
+      patient: patientId,
+      chart_date: this.formatDateTime(date),
+      document_date: this.formatDateTime(date),
+      type: "nonvisit",
+    };
+    const nonVisitNote = await this.makeRequest<CreatedNonVisitNote>({
+      cxId,
+      patientId,
+      s3Path: "non-visit-note",
+      method: "POST",
+      url: patientUrl,
+      data,
+      headers: { "Content-Type": "application/json" },
+      schema: createdNonVisitNoteSchema,
+      additionalInfo,
+      debug,
+    });
+    return nonVisitNote;
+  }
+
   async createProblem({
     cxId,
     patientId,
@@ -594,11 +636,13 @@ class ElationApi {
                 ...newBp[0],
               },
             ];
+            acc[chartDate] = existingVital;
           } else {
             existingVital = {
               ...existingVital,
               ...newVital.data,
             } as ElationGroupedVital;
+            acc[chartDate] = existingVital;
           }
         }
         return acc;
@@ -615,13 +659,21 @@ class ElationApi {
       createGroupedVitalsArgs,
       async (params: ElationGroupedVital) => {
         try {
+          const nonVisitNote = await this.createNonVisitNote({
+            cxId,
+            patientId,
+            date: params.chart_date,
+          });
           const createdVital = await this.makeRequest<CreatedVital>({
             cxId,
             patientId,
             s3Path: this.createWriteBackPath("grouped-vitals", undefined),
             method: "POST",
             url: vitalsUrl,
-            data: params,
+            data: {
+              ...params,
+              non_visit_note: nonVisitNote.id,
+            },
             schema: createdVitalSchema,
             additionalInfo,
             headers: { "Content-Type": "application/json" },
@@ -1027,7 +1079,7 @@ class ElationApi {
       report_type: "Lab",
       document_date: formattedObservedDate,
       reported_date: formattedObservedDate,
-      chart_date: formattedChartDate,
+      chart_date: formattedObservedDate,
       grids: [
         {
           accession_number: uuidv7(),
@@ -1090,10 +1142,6 @@ class ElationApi {
         undefined,
         additionalInfo
       );
-    }
-    const formattedChartDate = this.formatDateTime(buildDayjs().toISOString());
-    if (!formattedChartDate) {
-      throw new BadRequestError("No chart date found for observation", undefined, additionalInfo);
     }
     const results: ElationLab["grids"][0]["results"] = observations.flatMap(observation => {
       const loincCoding = getObservationLoincCoding(observation);
@@ -1158,7 +1206,7 @@ class ElationApi {
       report_type: "Lab",
       document_date: formattedReportDate,
       reported_date: formattedReportDate,
-      chart_date: formattedChartDate,
+      chart_date: formattedReportDate,
       grids: [
         {
           accession_number: uuidv7(),
