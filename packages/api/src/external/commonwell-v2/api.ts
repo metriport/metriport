@@ -7,8 +7,8 @@ import {
   CommonWellMemberAPI,
 } from "@metriport/commonwell-sdk";
 import { MetriportError } from "@metriport/shared";
+import { buildDayjs } from "@metriport/shared/common/date";
 import { X509Certificate } from "crypto";
-import dayjs from "dayjs";
 import { Config } from "../../shared/config";
 import { CommonWellMock } from "./mock/api-mock";
 import { CommonWellMemberMock } from "./mock/member-mock";
@@ -75,8 +75,8 @@ function getCertData() {
   const certificate = Config.getCWOrgCertificate();
   const x509 = new X509Certificate(certificate);
   const thumbprint = x509.fingerprint;
-  const validFrom = dayjs(x509.validFrom).toString();
-  const validTo = dayjs(x509.validTo).toString();
+  const validFrom = buildDayjs(x509.validFrom).toString();
+  const validTo = buildDayjs(x509.validTo).toString();
   return { certificate, validFrom, validTo, thumbprint };
 }
 
