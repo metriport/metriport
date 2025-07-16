@@ -1,117 +1,107 @@
 import {
+  base64ToBuffer,
   defaultOptionsRequestNotAccepted,
   executeWithNetworkRetries,
-  ExecuteWithRetriesOptions,
   MetriportError,
-  PurposeOfUse,
 } from "@metriport/shared";
 import axios, { AxiosInstance, AxiosResponse } from "axios";
 import httpStatus from "http-status";
 import { Agent } from "https";
 import * as stream from "stream";
-import { CommonWellAPI } from "..";
+import { CommonwellError } from "../common/commonwell-error";
+import { downloadFileInMemory } from "../common/fileDownload";
 import { makeJwt } from "../common/make-jwt";
-import { CertificateParam, CertificateResp, certificateRespSchema } from "../models/certificates";
-import { DocumentQueryFullResponse, DocumentQueryResponse } from "../models/document";
-import { Identifier, StrongId } from "../models/identifier";
-import { NetworkLink, networkLinkSchema, PatientLinkProxy } from "../models/link";
 import {
-  Organization,
-  OrganizationList,
-  organizationListSchema,
-  organizationSchema,
-} from "../models/organization";
+  buildBaseQueryMeta,
+  convertPatientIdToSubjectId,
+  encodeToCwPatientId,
+} from "../common/util";
+import { normalizeDatetime } from "../models/date";
+import { fhirGenderToCommonwell } from "../models/demographics";
+import {
+  DocumentQueryFullResponse,
+  documentQueryFullResponseSchema,
+  documentQueryResponseSchema,
+  DocumentReference,
+} from "../models/document";
 import {
   Patient,
-  PatientLinkResp,
-  patientLinkRespSchema,
-  PatientNetworkLinkResp,
-  patientNetworkLinkRespSchema,
-  patientSchema,
-  PatientSearchResp,
-  patientSearchRespSchema,
+  PatientCollection,
+  PatientCollectionItem,
+  patientCollectionSchema,
+  PatientProbableLinkResp,
+  patientProbableLinkRespSchema,
+  StatusResponse,
+  statusResponseSchema,
 } from "../models/patient";
 import {
-  PatientLink,
-  patientLinkSchema,
-  PatientLinkSearchResp,
-  patientLinkSearchRespSchema,
-  Person,
-  personSchema,
-  PersonSearchResp,
-  personSearchRespSchema,
-} from "../models/person";
-import * as document from "./document";
+  APIMode,
+  CommonWellOptions,
+  defaultOnError500,
+  DEFAULT_AXIOS_TIMEOUT_SECONDS,
+  OnError500Options,
+} from "./common";
+import {
+  BaseOptions,
+  CommonWellAPI,
+  DocumentQueryParams,
+  GetPatientParams,
+  OrganizationRequestMetadata,
+  RetrieveDocumentResponse,
+} from "./commonwell-api";
 
-const DEFAULT_AXIOS_TIMEOUT_SECONDS = 120;
-
-const defaultOnError500: OnError500Options = {
-  retry: false,
-  maxAttempts: 1,
-  initialDelay: 0,
-};
-
-export enum APIMode {
-  integration = "integration",
-  production = "production",
-}
-
-export interface RequestMetadata {
-  role: string;
-  subjectId: string;
-  purposeOfUse: PurposeOfUse;
-  npi?: string;
-  payloadHash?: string;
-}
-
-export type OnError500Options = Omit<ExecuteWithRetriesOptions<unknown>, "shouldRetry"> & {
-  retry: boolean;
-};
-
-export interface CommonWellOptions {
-  timeout?: number;
-  onError500?: OnError500Options;
-}
-
+/**
+ * Implementation of the CommonWell API, v4.
+ * @see https://www.commonwellalliance.org/specification/
+ */
 export class CommonWell implements CommonWellAPI {
-  static integrationUrl = "https://integration.rest.api.commonwellalliance.org";
-  static productionUrl = "https://rest.api.commonwellalliance.org";
-
-  // V1
-  static PERSON_ENDPOINT = "/v1/person";
-  static ORG_ENDPOINT = "/v1/org";
-  static PATIENT_ENDPOINT = "/v1/patient";
-  static MEMBER_ENDPOINT = "/v1/member";
-  // V2
-  static DOCUMENT_QUERY_ENDPOINT = "/v2/documentReference";
+  static integrationUrl = "https://api.integration.commonwellalliance.lkopera.com";
+  static productionUrl = "https://api.commonwellalliance.lkopera.com";
 
   readonly api: AxiosInstance;
   private rsaPrivateKey: string;
-  private orgName: string;
+  private _orgName: string;
   private _oid: string;
+  private _npi: string;
+  private _homeCommunityId: string;
   private httpsAgent: Agent;
-  private _lastReferenceHeader: string | undefined;
+  private _lastTransactionId: string | undefined;
   private onError500: OnError500Options;
 
   /**
    * Creates a new instance of the CommonWell API client pertaining to an
    * organization to make requests on behalf of.
-   *
-   * @param orgCert         The certificate (public key) for the organization.
-   * @param rsaPrivateKey   An RSA key corresponding to the specified orgCert.
-   * @param apiMode         The mode the client will be running.
-   * @param apiMode         The mode the client will be running.
-   * @param options         Optional parameters
-   * @param options.timeout Connection timeout in milliseconds, default 120 seconds.
    */
-  constructor(
-    orgCert: string,
-    rsaPrivateKey: string,
-    orgName: string,
-    oid: string,
-    apiMode: APIMode,
-    options: CommonWellOptions = {}
-  ) {
+  constructor({
+    orgCert,
+    rsaPrivateKey,
+    orgName,
+    oid,
+    npi,
+    homeCommunityId,
+    apiMode,
+    options = {},
+  }: {
+    /** The certificate (public key) for the organization. */
+    orgCert: string;
+    /** An RSA key corresponding to the specified orgCert. */
+    rsaPrivateKey: string;
+    /** The name of the organization that's making the request, the Principal or Delegate. */
+    orgName: string;
+    /** The OID of the organization that's making the request, the Principal or Delegate. */
+    oid: string;
+    /** The NPI of the organization that's making the request, the Principal or Delegate. */
+    npi: string;
+    /**
+     * The Home Community OID assigned to the Organization that is initiating the request,
+     * the implementor.
+     */
+    homeCommunityId: string;
+    /** The mode the client will be running. */
+    apiMode: APIMode;
+    /** Optional parameters. */
+    options?: CommonWellOptions;
+  }) {
     this.rsaPrivateKey = rsaPrivateKey;
     this.httpsAgent = new Agent({ cert: orgCert, key: rsaPrivateKey });
     this.api = axios.create({
@@ -124,25 +114,36 @@ export class CommonWell implements CommonWellAPI {
       this.axiosSuccessfulResponse(this),
       this.axiosErrorResponse(this)
     );
-    this.orgName = orgName;
+    this._orgName = orgName;
     this._oid = oid;
+    this._npi = npi;
+    this._homeCommunityId = homeCommunityId;
     this.onError500 = { ...defaultOnError500, ...options.onError500 };
   }
 
   get oid() {
     return this._oid;
   }
+  get npi() {
+    return this._npi;
+  }
+  get orgName() {
+    return this._orgName;
+  }
+  get homeCommunityId() {
+    return this._homeCommunityId;
+  }
   /**
-   * Returns the `CW-Reference` header from the last request.
+   * Returns the transaction ID from the last request.
    */
-  get lastReferenceHeader(): string | undefined {
-    return this._lastReferenceHeader;
+  get lastTransactionId(): string | undefined {
+    return this._lastTransactionId;
   }
 
   // Being extra safe with these bc a failure here fails the actual request
   private postRequest(response: AxiosResponse): void {
-    this._lastReferenceHeader =
-      response && response.headers ? response.headers["cw-reference"] : undefined;
+    this._lastTransactionId =
+      response && response.headers ? response.headers["x-trace-id"] : undefined;
   }
   private axiosSuccessfulResponse(_this: CommonWell) {
     return (response: AxiosResponse): AxiosResponse => {
@@ -158,699 +159,92 @@ export class CommonWell implements CommonWellAPI {
     };
   }
 
-  // TODO: #322 handle errors in API calls as per
-  // https://specification.commonwellalliance.org/services/rest-api-reference (8.6.1 Error)
-  // Note that also sometimes these calls 404 when things aren't found and etc
-
-  //--------------------------------------------------------------------------------------------
-  // Org Management
-  //--------------------------------------------------------------------------------------------
-
-  /**
-   * Create an org.
-   * See: https://commonwellalliance.sharepoint.com/sites/ServiceAdopter/SitePages/Organization-Management-API---Overview-and-Summary.aspx#post-a-new-organization
-   *
-   * @param meta          Metadata about the request.
-   * @param organization  The org to create.
-   * @returns
-   */
-  async createOrg(meta: RequestMetadata, organization: Organization): Promise<Organization> {
-    const headers = await this.buildQueryHeaders(meta);
-    const resp = await this.api.post(
-      `${CommonWell.MEMBER_ENDPOINT}/${this.oid}/org`,
-      organization,
-      {
-        headers,
-      }
-    );
-    return organizationSchema.parse(resp.data);
-  }
-
-  /**
-   * Update an org.
-   * See: https://commonwellalliance.sharepoint.com/sites/ServiceAdopter/SitePages/Organization-Management-API---Overview-and-Summary.aspx#put-new-information-into-an-organization
-   *
-   * @param meta          Metadata about the request.
-   * @param organization  The org to update.
-   * @returns
-   */
-  async updateOrg(
-    meta: RequestMetadata,
-    organization: Organization,
-    id: string
-  ): Promise<Organization> {
-    const headers = await this.buildQueryHeaders(meta);
-    const resp = await this.api.put(
-      `${CommonWell.MEMBER_ENDPOINT}/${this.oid}/org/${id}/`,
-      organization,
-      {
-        headers,
-      }
-    );
-    return organizationSchema.parse(resp.data);
-  }
-
-  /**
-   * Get list of orgs.
-   * See: https://commonwellalliance.sharepoint.com/sites/ServiceAdopter/SitePages/Organization-Management-API---Overview-and-Summary.aspx#get-a-list-of-all-organizations
-   *
-   * @param meta     Metadata about the request.
-   * @param summary  Returns only summary data
-   * @param offset   Sets an offset number from which recorded returns will begin
-   * @param limit    Limits the number of returned records
-   * @param sort     Specifies sort order
-   * @returns
-   */
-  async getAllOrgs(
-    meta: RequestMetadata,
-    summary?: boolean,
-    offset?: number,
-    limit?: number,
-    sort?: string
-  ): Promise<OrganizationList> {
-    const headers = await this.buildQueryHeaders(meta);
-    const resp = await this.api.get(`${CommonWell.MEMBER_ENDPOINT}/${this.oid}/org`, {
-      headers,
-      params: { summary, offset, limit, sort },
-    });
-    return organizationListSchema.parse(resp.data);
-  }
-
-  /**
-   * Get one org.
-   * See: https://commonwellalliance.sharepoint.com/sites/ServiceAdopter/SitePages/Organization-Management-API---Overview-and-Summary.aspx#get-a-single-organization
-   *
-   * @param meta     Metadata about the request.
-   * @param id       The org to be found
-   * @returns
-   */
-  async getOneOrg(meta: RequestMetadata, id: string): Promise<Organization | undefined> {
-    const headers = await this.buildQueryHeaders(meta);
-    const resp = await this.api.get(`${CommonWell.MEMBER_ENDPOINT}/${this.oid}/org/${id}/`, {
-      headers,
-      validateStatus: null, // don't throw on status code > 299
-    });
-    const status = resp.status;
-    if (status === httpStatus.NOT_FOUND) return undefined;
-    if (httpStatus[`${status}_CLASS`] === httpStatus.classes.SUCCESSFUL) {
-      return organizationSchema.parse(resp.data);
-    }
-    throw new MetriportError(`Failed to retrieve Organization`, status);
-  }
-
-  /**
-   * Add certificate to org.
-   * See: https://commonwellalliance.sharepoint.com/sites/ServiceAdopter/SitePages/Organization-Management-API---Overview-and-Summary.aspx#post-new-certificates-to-organizations
-   *
-   * @param meta         Metadata about the request.
-   * @param certificate  The certificate to add to the org
-   * @param id           The org to add a certificate too
-   * @returns
-   */
-  async addCertificateToOrg(
-    meta: RequestMetadata,
-    certificate: CertificateParam,
-    id: string
-  ): Promise<CertificateResp> {
-    const headers = await this.buildQueryHeaders(meta);
-    const resp = await this.api.post(
-      `${CommonWell.MEMBER_ENDPOINT}/${this.oid}/org/${id}/certificate`,
-      certificate,
-      {
-        headers,
-      }
-    );
-    return certificateRespSchema.parse(resp.data);
-  }
-
-  /**
-   * Replace certificate for org.
-   * See: https://commonwellalliance.sharepoint.com/sites/ServiceAdopter/SitePages/Organization-Management-API---Overview-and-Summary.aspx#put-a-list-of-certificates-into-an-organization
-   *
-   * @param meta         Metadata about the request.
-   * @param certificate  The certificate to replace for the org
-   * @param id           The org to replace a certificate for
-   * @returns
-   */
-  async replaceCertificateForOrg(
-    meta: RequestMetadata,
-    certificate: CertificateParam,
-    id: string
-  ): Promise<CertificateResp> {
-    const headers = await this.buildQueryHeaders(meta);
-    const resp = await this.api.put(
-      `${CommonWell.MEMBER_ENDPOINT}/${this.oid}/org/${id}/certificate`,
-      certificate,
-      {
-        headers,
-      }
-    );
-    return certificateRespSchema.parse(resp.data);
-  }
-
-  /**
-   * Delete certificate from org.
-   * See: https://commonwellalliance.sharepoint.com/sites/ServiceAdopter/SitePages/Organization-Management-API---Overview-and-Summary.aspx#delete-certificates-by-thumbprint
-   *
-   * @param meta         Metadata about the request.
-   * @param id           The org to delete a certificate from
-   * @param thumbprint   The thumbprint from the certificate
-   * @param purpose      The purpose from the certificate
-   * @returns
-   */
-  async deleteCertificateFromOrg(
-    meta: RequestMetadata,
-    id: string,
-    thumbprint: string,
-    purpose: string
-  ): Promise<void> {
-    const headers = await this.buildQueryHeaders(meta);
-    await this.api.delete(
-      `${CommonWell.MEMBER_ENDPOINT}/${this.oid}/org/${id}/certificate/${thumbprint}/purpose/${purpose}`,
-      {
-        headers,
-      }
-    );
-    return;
-  }
-
-  /**
-   * Get certificate from org.
-   * See: https://commonwellalliance.sharepoint.com/sites/ServiceAdopter/SitePages/Organization-Management-API---Overview-and-Summary.aspx#get-certificates-for-an-organization
-   *
-   * @param meta         Metadata about the request.
-   * @param certificate  The certificate to add to the org
-   * @param id           The org to get a certificate from
-   * @param thumbprint   The thumbprint from the certificate
-   * @param purpose      The purpose from the certificate
-   * @returns
-   */
-  async getCertificatesFromOrg(
-    meta: RequestMetadata,
-    id: string,
-    thumbprint?: string,
-    purpose?: string
-  ): Promise<CertificateResp> {
-    const headers = await this.buildQueryHeaders(meta);
-    const resp = await this.api.get(
-      `${CommonWell.MEMBER_ENDPOINT}/${this.oid}/org/${id}/certificate`,
-      {
-        headers,
-        params: { thumbprint, purpose },
-      }
-    );
-    return certificateRespSchema.parse(resp.data);
-  }
-
-  /**
-   * Get certificate from org (by thumbprint).
-   * See: https://commonwellalliance.sharepoint.com/sites/ServiceAdopter/SitePages/Organization-Management-API---Overview-and-Summary.aspx#get-certificates-by-thumbprint
-   *
-   * @param meta         Metadata about the request.
-   * @param certificate  The certificate to add to the org
-   * @param id           The org to get a certificate from
-   * @param thumbprint   The thumbprint from the certificate
-   * @param purpose      The purpose from the certificate
-   * @returns
-   */
-  async getCertificatesFromOrgByThumbprint(
-    meta: RequestMetadata,
-    id: string,
-    thumbprint: string,
-    purpose?: string
-  ): Promise<CertificateResp> {
-    const headers = await this.buildQueryHeaders(meta);
-    const resp = await this.api.get(
-      `${CommonWell.MEMBER_ENDPOINT}/${this.oid}/org/${id}/certificate/${thumbprint}`,
-      {
-        headers,
-        params: { purpose },
-      }
-    );
-    return certificateRespSchema.parse(resp.data);
-  }
-
-  /**
-   * Get certificate from org (by thumbprint & purpose).
-   * See: https://commonwellalliance.sharepoint.com/sites/ServiceAdopter/SitePages/Organization-Management-API---Overview-and-Summary.aspx#get-certificates-by-thumbprint-and-purpose
-   *
-   * @param meta         Metadata about the request.
-   * @param certificate  The certificate to add to the org
-   * @param id           The org to get a certificate from
-   * @param thumbprint   The thumbprint from the certificate
-   * @param purpose      The purpose from the certificate
-   * @returns
-   */
-  async getCertificatesFromOrgByThumbprintAndPurpose(
-    meta: RequestMetadata,
-    id: string,
-    thumbprint: string,
-    purpose: string
-  ): Promise<CertificateResp> {
-    const headers = await this.buildQueryHeaders(meta);
-    const resp = await this.api.get(
-      `${CommonWell.MEMBER_ENDPOINT}/${this.oid}/org/${id}/certificate/${thumbprint}/purpose/${purpose}`,
-      {
-        headers,
-      }
-    );
-    return certificateRespSchema.parse(resp.data);
-  }
-
-  //--------------------------------------------------------------------------------------------
-  // Person Management
-  //--------------------------------------------------------------------------------------------
-
-  /**
-   * Enrolls a new person.
-   * See: https://specification.commonwellalliance.org/services/patient-identity-and-linking/protocol-operations#8716-adding-a-new-person
-   *
-   * @param meta    Metadata about the request.
-   * @param person  The person to enroll.
-   * @returns
-   */
-  async enrollPerson(meta: RequestMetadata, person: Person): Promise<Person> {
-    const headers = await this.buildQueryHeaders(meta);
-    const resp = await this.executeWithRetriesOn500(() =>
-      this.api.post(CommonWell.PERSON_ENDPOINT, person, {
-        headers,
-      })
-    );
-    return personSchema.parse(resp.data);
-  }
-
-  /**
-   * Searches for a person based on the specified strong ID.
-   * See: https://specification.commonwellalliance.org/services/patient-identity-and-linking/protocol-operations#8711-search-for-a-person
-   *
-   * @param meta    Metadata about the request.
-   * @param key     The ID's value, for example the driver's license ID.
-   * @param system  The ID's uri to specify type, for example "urn:oid:2.16.840.1.113883.4.3.6" is a CA DL.
-   * @returns
-   */
-  async searchPerson(
-    meta: RequestMetadata,
-    key: string,
-    system: string
-  ): Promise<PersonSearchResp> {
-    const headers = await this.buildQueryHeaders(meta);
-    const resp = await this.executeWithRetriesOn500(() =>
-      this.api.get(CommonWell.PERSON_ENDPOINT, {
-        headers,
-        params: { key, system },
-      })
-    );
-    return personSearchRespSchema.parse(resp.data);
-  }
-
-  /**
-   * Searches for a person based on patient demo.
-   * See: https://specification.commonwellalliance.org/services/patient-identity-and-linking/protocol-operations#8713-find-persons-matching-patient-demographics
-   *
-   * @param meta        Metadata about the request.
-   * @param patientId   The patient ID.
-   * @returns
-   */
-  async searchPersonByPatientDemo(
-    meta: RequestMetadata,
-    patientId: string
-  ): Promise<PersonSearchResp> {
-    const headers = await this.buildQueryHeaders(meta);
-    const resp = await this.executeWithRetriesOn500(() =>
-      this.api.get(`${CommonWell.ORG_ENDPOINT}/${this.oid}/patient/${patientId}/person`, {
-        headers,
-      })
-    );
-    return personSearchRespSchema.parse(resp.data);
-  }
-
-  /**
-   * Gets a person based on person id.
-   * See: https://specification.commonwellalliance.org/services/patient-identity-and-linking/protocol-operations#8713-find-persons-matching-patient-demographics
-   *
-   * @param meta        Metadata about the request.
-   * @param personId   The person ID.
-   * @returns
-   */
-  async getPersonById(meta: RequestMetadata, personId: string): Promise<Person> {
-    const headers = await this.buildQueryHeaders(meta);
-    const resp = await this.executeWithRetriesOn500(() =>
-      this.api.get(`${CommonWell.PERSON_ENDPOINT}/${personId}`, {
-        headers,
-      })
-    );
-    return personSchema.parse(resp.data);
-  }
-
-  /**
-   * Updates a person.
-   * See: https://specification.commonwellalliance.org/services/patient-identity-and-linking/protocol-operations#8741-updating-person-information
-   *
-   * @param meta    Metadata about the request.
-   * @param person  The data to update.
-   * @param id      The person to be updated.
-   * @returns
-   */
-  async updatePerson(meta: RequestMetadata, person: Person, id: string): Promise<Person> {
-    const headers = await this.buildQueryHeaders(meta);
-    const resp = await this.executeWithRetriesOn500(() =>
-      this.api.post(`${CommonWell.PERSON_ENDPOINT}/${id}`, person, {
-        headers,
-      })
-    );
-    return personSchema.parse(resp.data);
-  }
-
-  /**
-   * Matches a person to a patient.
-   * See: https://specification.commonwellalliance.org/services/patient-identity-and-linking/protocol-operations#8732-retrieve-patient-matches
-   *
-   * @param meta    Metadata about the request.
-   * @param id      The person to be matched.
-   * @returns
-   */
-  async patientMatch(meta: RequestMetadata, id: string): Promise<PatientSearchResp> {
-    const headers = await this.buildQueryHeaders(meta);
-    const resp = await this.executeWithRetriesOn500(() =>
-      this.api.get(`${CommonWell.PERSON_ENDPOINT}/${id}/patientMatch`, {
-        headers,
-        params: { orgId: this.oid },
-      })
-    );
-    return patientSearchRespSchema.parse(resp.data);
-  }
-
-  /**
-   * @deprecated use addPatientLink() instead
-   */
-  async patientLink(
-    meta: RequestMetadata,
-    personId: string,
-    patientUri: string,
-    patientStrongId?: StrongId
-  ): Promise<PatientLink> {
-    return this.addPatientLink(meta, personId, patientUri, patientStrongId);
-  }
-
-  /**
-   * Add patient link to person.
-   * See: https://specification.commonwellalliance.org/services/patient-identity-and-linking/protocol-operations#8721
-   *
-   * @param meta              Metadata about the request.
-   * @param personId          The person id to be link to a patient.
-   * @param patientUri        The patient uri to be link to a person.
-   * @param [patientStrongId] The patient's strong ID, if available (optional).
-   * @returns {PatientLink}
-   */
-  async addPatientLink(
-    meta: RequestMetadata,
-    personId: string,
-    patientUri: string,
-    patientStrongId?: StrongId
-  ): Promise<PatientLink> {
-    const headers = await this.buildQueryHeaders(meta);
-    const resp = await this.executeWithRetriesOn500(() =>
-      this.api.post(
-        `${CommonWell.PERSON_ENDPOINT}/${personId}/patientLink`,
-        {
-          patient: patientUri,
-          ...(patientStrongId ? { identifier: patientStrongId } : undefined),
-        },
-        { headers }
-      )
-    );
-    return patientLinkSchema.parse(resp.data);
-  }
-
-  /**
-   * Re-enrolls a person.
-   * See: https://specification.commonwellalliance.org/services/patient-identity-and-linking/protocol-operations#875-person-unenrollment
-   *
-   * @param meta    Metadata about the request.
-   * @param id      The person to be re-enrolled.
-   * @returns       Person with enrollment information
-   */
-  async reenrollPerson(meta: RequestMetadata, id: string): Promise<Person> {
-    const headers = await this.buildQueryHeaders(meta);
-    const resp = await this.executeWithRetriesOn500(() =>
-      this.api.put(`${CommonWell.PERSON_ENDPOINT}/${id}/enroll`, {}, { headers })
-    );
-    return personSchema.parse(resp.data);
-  }
-
-  /**
-   * Unenrolls a person.
-   * See: https://specification.commonwellalliance.org/services/patient-identity-and-linking/protocol-operations#875-person-unenrollment
-   *
-   * @param meta    Metadata about the request.
-   * @param id      The person to be unenrolled.
-   * @returns
-   */
-  async unenrollPerson(meta: RequestMetadata, id: string): Promise<Person> {
-    const headers = await this.buildQueryHeaders(meta);
-    const resp = await this.executeWithRetriesOn500(() =>
-      this.api.put(
-        `${CommonWell.PERSON_ENDPOINT}/${id}/unenroll`,
-        {},
-        {
-          headers,
-        }
-      )
-    );
-    return personSchema.parse(resp.data);
-  }
-
-  /**
-   * Deletes a person.
-   * See: https://specification.commonwellalliance.org/services/patient-identity-and-linking/protocol-operations#8742-deleting-a-person
-   *
-   * @param meta    Metadata about the request.
-   * @param id      The person to be deleted.
-   * @returns
-   */
-  async deletePerson(meta: RequestMetadata, id: string): Promise<void> {
-    const headers = await this.buildQueryHeaders(meta);
-    await this.executeWithRetriesOn500(() =>
-      this.api.delete(`${CommonWell.PERSON_ENDPOINT}/${id}`, { headers })
-    );
-    return;
-  }
-
   //--------------------------------------------------------------------------------------------
   // Patient Management
   //--------------------------------------------------------------------------------------------
 
   /**
    * Register a new patient.
-   * See: https://specification.commonwellalliance.org/services/patient-identity-and-linking/protocol-operations#8762-adding-a-local-patient-record
    *
-   * @param meta    Metadata about the request.
    * @param patient  The patient to register.
-   * @returns
+   * @param options Optional parameters.
+   * @param options.meta Metadata about the request. Defaults to the data used to initialize the client.
+   * @returns The patient collection containing the patient in the first position.
    */
-  async registerPatient(meta: RequestMetadata, patient: Patient): Promise<Patient> {
-    const headers = await this.buildQueryHeaders(meta);
-    const resp = await this.executeWithRetriesOn500(() =>
-      this.api.post(`${CommonWell.ORG_ENDPOINT}/${this.oid}/patient`, patient, {
-        headers,
-      })
-    );
-    return patientSchema.parse(resp.data);
+  async createOrUpdatePatient(patient: Patient, options?: BaseOptions): Promise<PatientCollection> {
+    const headers = this.buildQueryHeaders(options?.meta);
+    const url = buildPatientEndpoint(this.oid);
+    const normalizedPatient = normalizePatient(patient);
+    const resp = await this.api.post(url, normalizedPatient, { headers });
+    return patientCollectionSchema.parse(resp.data);
   }
 
   /**
    * Returns a patient based on its ID.
    *
-   * @param meta    Metadata about the request.
-   * @param id      Patient's ID.
-   * @returns {Promise<Patient>}
+   * @param params The patient ID and optional assign authority and assign authority type.
+   * @param options Optional parameters.
+   * @param options.meta Metadata about the request. Defaults to the data used to initialize the client.
+   * @returns The patient collection containing the patient in the first position.
+   * @throws MetriportError if multiple patients are found for the given ID.
    */
-  async getPatient(meta: RequestMetadata, id: string): Promise<Patient> {
-    const headers = await this.buildQueryHeaders(meta);
-    const suffix = id.endsWith("/") ? "" : "/";
-    const resp = await this.executeWithRetriesOn500(() =>
-      this.api.get(`${CommonWell.ORG_ENDPOINT}/${this.oid}/patient/${id}${suffix}`, { headers })
-    );
-    return patientSchema.parse(resp.data);
-  }
-
+  async getPatient(
+    params: GetPatientParams,
+    options?: BaseOptions
+  ): Promise<PatientCollectionItem | undefined>;
   /**
-   * Searches for a patient based on params.
-   * See: https://specification.commonwellalliance.org/services/patient-identity-and-linking/protocol-operations#8761-search-for-a-patient
+   * Returns a patient based on its ID.
    *
-   * @param meta    Metadata about the request.
-   * @param fname   Patient's first name.
-   * @param lname   Patient's last name.
-   * @param dob     Patient's date of birth.
-   * @param gender  Patient's gender.
-   * @param zip     Patient's zip code.
-   * @returns
+   * @param id      Patient's ID, unencoded.
+   * @param options Optional parameters.
+   * @param options.meta Metadata about the request. Defaults to the data used to initialize the client.
+   * @returns The patient collection containing the patient in the first position.
+   * @throws MetriportError if multiple patients are found for the given ID.
    */
-  async searchPatient(
-    meta: RequestMetadata,
-    fname: string,
-    lname: string,
-    dob: string,
-    gender?: string,
-    zip?: string
-  ): Promise<PatientSearchResp> {
-    const headers = await this.buildQueryHeaders(meta);
-    const resp = await this.executeWithRetriesOn500(() =>
-      this.api.get(`${CommonWell.ORG_ENDPOINT}/${this.oid}/patient`, {
-        headers,
-        params: { fname, lname, dob, gender, zip },
-      })
-    );
-    return patientSearchRespSchema.parse(resp.data);
-  }
-
-  /**
-   * Updates a patient.
-   * See: https://specification.commonwellalliance.org/services/patient-identity-and-linking/protocol-operations#8763-updating-a-local-patient-record
-   *
-   * @param meta     Metadata about the request.
-   * @param patient  The data to update.
-   * @param id       The patient to be updated.
-   * @returns
-   */
-  async updatePatient(meta: RequestMetadata, patient: Patient, id: string): Promise<Patient> {
-    const headers = await this.buildQueryHeaders(meta);
-    const resp = await this.executeWithRetriesOn500(() =>
-      this.api.post(`${CommonWell.ORG_ENDPOINT}/${this.oid}/patient/${id}/`, patient, {
-        headers,
-      })
-    );
-    return patientSchema.parse(resp.data);
-  }
-
-  /**
-   * Merges patients.
-   * See: https://specification.commonwellalliance.org/services/patient-identity-and-linking/protocol-operations#8765-merging-local-patient-records
-   *
-   * @param meta    Metadata about the request.
-   * @param nonSurvivingPatientId  The local Patient Identifier of the non-surviving Patient Record (This patient gets replaced)
-   * @param referencePatientLink   The patient link for the patient that will replace the non surviving patient
-   * @returns
-   */
-  async mergePatients(
-    meta: RequestMetadata,
-    nonSurvivingPatientId: string,
-    referencePatientLink: string
-  ): Promise<void> {
-    const headers = await this.buildQueryHeaders(meta);
-    await this.api.put(
-      `${CommonWell.ORG_ENDPOINT}/${this.oid}/patient/${nonSurvivingPatientId}/merge`,
-      {
-        link: {
-          other: {
-            reference: referencePatientLink,
-          },
-          type: "replace",
-        },
-      },
-      {
-        headers,
+  async getPatient(id: string, options?: BaseOptions): Promise<PatientCollectionItem | undefined>;
+  async getPatient(
+    idOrParams: string | GetPatientParams,
+    options?: BaseOptions
+  ): Promise<PatientCollectionItem | undefined> {
+    let patientId: string;
+    if (typeof idOrParams !== "string") {
+      patientId = idOrParams.id;
+      const { assignAuthority, assignAuthorityType } = idOrParams;
+      patientId = encodeToCwPatientId({
+        patientId,
+        assignAuthority,
+        assignAuthorityType,
+      });
+    } else {
+      if (!idOrParams) {
+        throw new Error("Programming error, 'id' is required when providing separated parametrs");
       }
-    );
-    return;
-  }
-
-  /**
-   * Get Patient's Network Links.
-   * See: https://specification.commonwellalliance.org/services/record-locator-service/protocol-operations-record-locator-service#8771-retrieving-network-links
-   *
-   * @param meta        Metadata about the request.
-   * @param patientId   Patient for which to get the network links.
-   * @returns
-   */
-  async getNetworkLinks(meta: RequestMetadata, patientId: string): Promise<PatientNetworkLinkResp> {
-    const headers = await this.buildQueryHeaders(meta);
-    // Error handling: https://github.com/metriport/metriport-internal/issues/322
-    try {
-      const resp = await this.executeWithRetriesOn500(() =>
-        this.api.get(`${CommonWell.ORG_ENDPOINT}/${this.oid}/patient/${patientId}/networkLink`, {
-          headers,
-        })
-      );
-      return patientNetworkLinkRespSchema.parse(resp.data);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
-      // when there's no NetworkLink, CW's API return 412
-      if (err.response?.status === 412) return { _embedded: { networkLink: [] } };
-      throw err;
+      patientId = idOrParams;
     }
+    const headers = this.buildQueryHeaders(options?.meta);
+    const url = buildPatientEndpoint(this.oid, patientId);
+    const resp = await this.executeWithRetriesOn500IfEnabled(() => this.api.get(url, { headers }));
+    const collection = patientCollectionSchema.parse(resp.data);
+    if (collection.Patients.length > 1) {
+      throw new MetriportError("Multiple patients found for the given ID", undefined, {
+        patientId,
+        count: collection.Patients.length,
+      });
+    }
+    return collection.Patients[0];
   }
 
   /**
    * Deletes a patient.
-   * See: https://specification.commonwellalliance.org/services/patient-identity-and-linking/protocol-operations#8764-deleting-a-local-patient-record
    *
-   * @param meta    Metadata about the request.
-   * @param id      The patient to be updated.
-   * @returns
+   * @param patientId The patient to be deleted.
+   * @param options Optional parameters.
+   * @param options.meta Metadata about the request. Defaults to the data used to initialize the client.
    */
-  async deletePatient(meta: RequestMetadata, id: string): Promise<void> {
-    const headers = await this.buildQueryHeaders(meta);
-    await this.executeWithRetriesOn500(() =>
-      this.api.delete(`${CommonWell.ORG_ENDPOINT}/${this.oid}/patient/${id}/`, {
-        headers,
-      })
-    );
-  }
-
-  //--------------------------------------------------------------------------------------------
-  // Document Management
-  //--------------------------------------------------------------------------------------------
-
-  /**
-   * Queries a patient's Documents.
-   *
-   * @param meta       Metadata about the request.
-   * @param patientId  The patient's ID.
-   * @returns {Promise<DocumentQueryResponse>}
-   * @see {@link https://specification.commonwellalliance.org/services/data-broker/cha-broker-api-reference#104-document-query|Use case}
-   * @see {@link https://specification.commonwellalliance.org/services/data-broker/protocol-operations-data-broker#8781-find-documents|API spec}
-   */
-  async queryDocuments(meta: RequestMetadata, patientId: string): Promise<DocumentQueryResponse> {
-    const headers = await this.buildQueryHeaders(meta);
-    return document.query(this.api, headers, patientId);
-  }
-
-  /**
-   * Queries a patient's Documents - including other possible results.
-   *
-   * @param meta       Metadata about the request.
-   * @param patientId  The patient's ID.
-   * @returns The DocumentReferences of a patient's available documents and/or OperationOutcomes denoting problems with the query.
-   * @see {@link https://specification.commonwellalliance.org/services/data-broker/cha-broker-api-reference#104-document-query|Use case}
-   * @see {@link https://specification.commonwellalliance.org/services/data-broker/protocol-operations-data-broker#8781-find-documents|API spec}
-   */
-  async queryDocumentsFull(
-    meta: RequestMetadata,
-    patientId: string
-  ): Promise<DocumentQueryFullResponse> {
-    const headers = await this.buildQueryHeaders(meta);
-    return this.executeWithRetriesOn500(() => document.queryFull(this.api, headers, patientId));
-  }
-
-  /**
-   * Retrieve a Document and pipe its bytes into the outputStream.
-   *
-   * @param {string} inputUrl - The URL of the file to be downloaded.
-   * @param {fs.WriteStream} outputStream - The stream to receive the downloaded file's bytes.
-   * @returns {Promise<void>}
-   * @see {@link https://specification.commonwellalliance.org/services/data-broker/cha-broker-api-reference#106-document-retrieval|Use case}
-   * @see {@link https://specification.commonwellalliance.org/services/data-broker/protocol-operations-data-broker#8782-retrieve-document|API spec}
-   */
-  async retrieveDocument(
-    meta: RequestMetadata,
-    inputUrl: string,
-    outputStream: stream.Writable
-  ): Promise<void> {
-    const headers = await this.buildQueryHeaders(meta);
-    return this.executeWithRetriesOn500(() =>
-      document.retrieve(this.api, headers, inputUrl, outputStream)
-    );
+  async deletePatient(patientId: string, options?: BaseOptions): Promise<void> {
+    const headers = this.buildQueryHeaders(options?.meta);
+    const url = buildPatientEndpoint(this.oid, patientId);
+    await this.executeWithRetriesOn500IfEnabled(() => this.api.delete(url, { headers }));
   }
 
   //--------------------------------------------------------------------------------------------
@@ -858,180 +252,348 @@ export class CommonWell implements CommonWellAPI {
   //--------------------------------------------------------------------------------------------
 
   /**
-   * Upgrade or downgrade network link.
-   * See: https://specification.commonwellalliance.org/services/record-locator-service/protocol-operations-record-locator-service#8772-upgrading-a-network-link
+   * Merges two patients into one.
    *
-   * @param meta    Metadata about the request.
-   * @param href    The href of network link to be upgraded or downgraded
-   * @param proxy   The proxy for the patient link action.
-   * @returns
+   * @param nonSurvivingPatientId The local Patient ID of the non-surviving Patient Record (This patient gets replaced).
+   * @param survivingPatientId The patient ID of the patient that will replace the non surviving patient
+   * @param options Optional parameters.
+   * @param options.meta Metadata about the request. Defaults to the data used to initialize the client.
+   * @returns The patient merge response.
    */
-  async upgradeOrDowngradeNetworkLink(
-    meta: RequestMetadata,
-    href: string,
-    proxy?: PatientLinkProxy
-  ): Promise<NetworkLink> {
-    const headers = await this.buildQueryHeaders(meta);
-    const resp = await this.executeWithRetriesOn500(() =>
-      this.api.post(
-        href,
+  async mergePatients(
+    {
+      nonSurvivingPatientId,
+      survivingPatientId,
+    }: {
+      nonSurvivingPatientId: string;
+      survivingPatientId: string;
+    },
+    options?: BaseOptions
+  ): Promise<StatusResponse> {
+    const headers = this.buildQueryHeaders(options?.meta);
+    const url = buildPatientMergeEndpoint(this.oid, nonSurvivingPatientId);
+    const resp = await this.executeWithRetriesOn500IfEnabled(() =>
+      this.api.put(
+        url,
         {
-          proxy,
+          link: {
+            other: {
+              reference: `Patient/${survivingPatientId}`,
+            },
+            type: "replaced-by",
+          },
         },
         {
           headers,
         }
       )
     );
-    return networkLinkSchema.parse(resp.data);
+    return statusResponseSchema.parse(resp.data);
   }
 
   /**
-   * Update a patient link.
-   * See: https://specification.commonwellalliance.org/services/patient-identity-and-linking/protocol-operations#8722-updating-a-patient-link
+   * Returns the links the patient has with other patients.
    *
-   * @param meta              Metadata about the request.
-   * @param patientLinkUri    The uri of patient link to be updated
-   * @param patientUri        The uri of patient that belongs to this link
-   * @param identifier        Add identifier information to the patient link
-   * @returns
-   */
-  async updatePatientLink(
-    meta: RequestMetadata,
-    patientLinkUri: string,
-    patientUri?: string,
-    identifier?: Identifier
-  ): Promise<PatientLink> {
-    const headers = await this.buildQueryHeaders(meta);
-    const resp = await this.executeWithRetriesOn500(() =>
-      this.api.post(
-        patientLinkUri,
-        {
-          patient: patientUri,
-          identifier: identifier,
-        },
-        {
-          headers,
-        }
-      )
-    );
-
-    return patientLinkSchema.parse(resp.data);
-  }
-
-  /**
-   * Get a person's links to patients.
-   * See: https://specification.commonwellalliance.org/services/patient-identity-and-linking/protocol-operations#8721
+   * An Edge System can search and request Patient Links by a local patient identifier. The result of the query will
+   * include local and remote patient's links that are autolinked by the rules engine or manually linked.
+   *
+   * The links returned are confirmed links of LOLA 2 or higher.
    *
    * @param meta                Metadata about the request.
-   * @param personId            The person id to be link to a patient.
-   * @param [limitToOrg=true]   Whether to limit the search to the current organization (optional).
+   * @param patientId            The person id to be link to a patient.
    * @returns Response with list of links to Patients
    */
-  async getPatientLinks(
-    meta: RequestMetadata,
-    personId: string,
-    limitToOrg = true
-  ): Promise<PatientLinkSearchResp> {
-    const headers = await this.buildQueryHeaders(meta);
-    const resp = await this.executeWithRetriesOn500(() =>
-      this.api.get(`${CommonWell.PERSON_ENDPOINT}/${personId}/patientLink`, {
-        headers,
-        params: {
-          ...(limitToOrg ? { orgId: this.oid } : undefined),
-        },
-      })
-    );
-    return patientLinkSearchRespSchema.parse(resp.data);
+  async getPatientLinksByPatientId(
+    patientId: string,
+    options?: BaseOptions
+  ): Promise<PatientCollection> {
+    const headers = this.buildQueryHeaders(options?.meta);
+    const url = buildPatientLinkEndpoint(this.oid, patientId);
+    const resp = await this.executeWithRetriesOn500IfEnabled(() => this.api.get(url, { headers }));
+    return patientCollectionSchema.parse(resp.data);
   }
 
   /**
-   * Gets a patient link.
-   * See: https://specification.commonwellalliance.org/services/patient-identity-and-linking/protocol-operations#8723-getting-a-patient-link
+   * Returns the potential links the patient has. Those are links the CommonWell MPI was not
+   * confident enough to confirm (LOLA2+), but could potentially be a match in case some of
+   * the patient's demographics have changed.
    *
-   * @param meta              Metadata about the request.
-   * @param personId          Person that is linked
-   * @param patientId         Patient that is linked
-   * @returns
+   * An Edge System can request probable patient links by a local patient identifier. MPI will identify probable
+   * patients based on MPI match scores that are within a certain threshold range but are not auto matched.
+   * Probable matches are determined by probabilistic algorithms. This will enable Edge Systems to confirm
+   * additional patient matches across other organizations. On confirmation, the patient will be matched to a
+   * person. Probable links need to be manually linked to the local patient before documents can be requested.
+   *
+   * The links returned are LOLA 1.
+   *
+   * @param patientId The ID of the patient to get probable links for.
+   * @returns Response with list of probable (LOLA1) links to other Patients
    */
-  async getPatientLink(
-    meta: RequestMetadata,
-    personId: string,
-    patientId: string
-  ): Promise<PatientLinkResp> {
-    const headers = await this.buildQueryHeaders(meta);
-    const resp = await this.executeWithRetriesOn500(() =>
-      this.api.get(`/v1/person/${personId}/patientLink/${patientId}/`, {
-        headers,
-      })
-    );
-
-    return patientLinkRespSchema.parse(resp.data);
+  async getProbableLinksById(
+    patientId: string,
+    options?: BaseOptions
+  ): Promise<PatientProbableLinkResp> {
+    const headers = this.buildQueryHeaders(options?.meta);
+    const url = buildProbableLinkEndpoint(this.oid, patientId);
+    const resp = await this.executeWithRetriesOn500IfEnabled(() => this.api.get(url, { headers }));
+    return patientProbableLinkRespSchema.parse(resp.data);
   }
 
   /**
-   * Deletes a patient link - the link will be moved to LOLA 0 and cannot be used again.
-   * See: https://specification.commonwellalliance.org/services/patient-identity-and-linking/protocol-operations#8724-deleting-a-patient-link
+   * Returns the potential links for a patient with the provided demographics.
    *
-   * WARNING: This shouldn't be used except under the explicit request of a person.
+   * An Edge System can request probable patient links by a local patient identifier. MPI will identify probable
+   * patients based on MPI match scores that are within a certain threshold range but are not auto matched.
+   * Probable matches are determined by probabilistic algorithms. This will enable Edge Systems to confirm
+   * additional patient matches across other organizations. On confirmation, the patient will be matched to a
+   * person. Probable links need to be manually linked to the local patient before documents can be requested.
    *
-   * @param meta              Metadata about the request.
-   * @param patientLinkUri    The uri of patient link to be deleted
-   * @returns
+   * The links returned are LOLA 1.
+   *
+   * @param firstName The first name of the patient.
+   * @param lastName The last name of the patient.
+   * @param dob The date of birth of the patient.
+   * @param gender The gender of the patient.
+   * @param zip The zip code of the patient.
+   * @param options Optional parameters.
+   * @param options.meta Metadata about the request. Defaults to the data used to initialize the client.
+   * @returns Response with list of probable (LOLA1) links to existing Patients
    */
-  async deletePatientLink(meta: RequestMetadata, patientLinkUri: string): Promise<void> {
-    const headers = await this.buildQueryHeaders(meta);
-    await this.executeWithRetriesOn500(() => this.api.post(patientLinkUri, {}, { headers }));
-    return;
+  async getProbableLinksByDemographics(
+    {
+      firstName,
+      lastName,
+      dob,
+      gender,
+      zip,
+    }: {
+      firstName: string;
+      lastName: string;
+      dob: string;
+      gender: string;
+      zip: string;
+    },
+    options?: BaseOptions
+  ): Promise<PatientProbableLinkResp> {
+    const headers = this.buildQueryHeaders(options?.meta);
+    const params = new URLSearchParams();
+    params.append("fname", firstName);
+    params.append("lname", lastName);
+    params.append("dob", dob);
+    params.append("gender", fhirGenderToCommonwell(gender));
+    params.append("zip", zip);
+    const url = buildProbableLinkEndpoint(this.oid);
+    const resp = await this.executeWithRetriesOn500IfEnabled(() =>
+      this.api.get(url + `?${params.toString()}`, { headers })
+    );
+    return patientProbableLinkRespSchema.parse(resp.data);
   }
 
   /**
-   * Resets a patient link - the link will be moved to LOLA 1 and can be relinked later.
-   * See: https://specification.commonwellalliance.org/services/patient-identity-and-linking/protocol-operations#8725-resetting-a-patient-link
+   * An Edge System reviews the probable matches. An Edge System can link remote patient(s) if these patients are
+   * the same as local patient.
    *
-   * @param meta              Metadata about the request.
-   * @param personId          Person that is linked
-   * @param patientId         Patient that is linked
-   * @returns
+   * Use getPatientLinksByPatientId to get the Link URL.
+   *
+   * Remote patients will be linked with the local patient and now considered as a manual confirmed LOLA 2 link.
+   *
+   * @param urlToLinkPatients The URL to link the patients.
+   * @param options Optional parameters.
+   * @param options.meta Metadata about the request. Defaults to the data used to initialize the client.
    */
-  async resetPatientLink(
-    meta: RequestMetadata,
-    personId: string,
-    patientId: string
-  ): Promise<void> {
-    const headers = await this.buildQueryHeaders(meta);
-
-    await this.executeWithRetriesOn500(() =>
-      this.api.put(
-        `/v1/person/${personId}/patientLink/${patientId}/reset`,
-        {},
-        {
-          headers,
-        }
-      )
+  async linkPatients(urlToLinkPatients: string, options?: BaseOptions): Promise<StatusResponse> {
+    const headers = this.buildQueryHeaders(options?.meta);
+    const resp = await this.executeWithRetriesOn500IfEnabled(() =>
+      this.api.put(urlToLinkPatients, {}, { headers })
     );
+    return statusResponseSchema.parse(resp.data);
+  }
 
-    return;
+  /**
+   * After reviewing remote patient links for their local patient, an Edge System can unlink a remote patient that
+   * does not belong in the Patient collection and remove the existing LOLA2 network link.
+   *
+   * Use getPatientLinksByPatientId to get the Unlink URL.
+   *
+   * Patient Links that are manually unlinked will no longer be autolinked to the same patient in the future by the
+   * matching algorithm.
+   *
+   * @param urlToUnlinkPatients The URL to unlink the patients.
+   * @param options Optional parameters.
+   * @param options.meta Metadata about the request. Defaults to the data used to initialize the client.
+   */
+  async unlinkPatients(
+    urlToUnlinkPatients: string,
+    options?: BaseOptions
+  ): Promise<StatusResponse> {
+    const headers = this.buildQueryHeaders(options?.meta);
+    const resp = await this.executeWithRetriesOn500IfEnabled(() =>
+      this.api.put(urlToUnlinkPatients, {}, { headers })
+    );
+    return statusResponseSchema.parse(resp.data);
+  }
+
+  /**
+   * Edge Systems can perform a “reset” to a Patient which will detach all LOLA 2 links to the specified Patient. This
+   * patient may be linked to the same collection of Patients (Person) again in the future.
+   *
+   * Use getPatientLinksByPatientId to get the ResetLink URL.
+   *
+   * @param urlToResetPatientLinks The URL to reset the patient links.
+   * @param options Optional parameters.
+   * @param options.meta Metadata about the request. Defaults to the data used to initialize the client.
+   */
+  async resetPatientLinks(
+    urlToResetPatientLinks: string,
+    options?: BaseOptions
+  ): Promise<StatusResponse> {
+    const headers = this.buildQueryHeaders(options?.meta);
+    const resp = await this.executeWithRetriesOn500IfEnabled(() =>
+      this.api.put(urlToResetPatientLinks, {}, { headers })
+    );
+    return statusResponseSchema.parse(resp.data);
   }
 
   //--------------------------------------------------------------------------------------------
-  // Private Methods
+  // Document Management
   //--------------------------------------------------------------------------------------------
-  private async buildQueryHeaders(meta: RequestMetadata): Promise<Record<string, string>> {
-    const jwt = await makeJwt(
-      this.rsaPrivateKey,
-      meta.role,
-      meta.subjectId,
-      this.orgName,
-      this.oid,
-      meta.purposeOfUse,
-      meta.npi,
-      meta.payloadHash
+
+  private async queryDocumentsInternal(
+    patientId: string,
+    options?: BaseOptions & DocumentQueryParams
+    //eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ): Promise<any> {
+    const { meta, ...params } = options ?? {};
+    const headers = this.buildQueryHeaders(meta);
+    const actualParams = {
+      ...params,
+      status: options?.status ?? "current",
+    };
+    const subjectId = convertPatientIdToSubjectId(patientId);
+    if (!subjectId) {
+      throw new CommonwellError(`Could not determine subject ID for document query`, undefined, {
+        patientId,
+      });
+    }
+    const url = buildDocumentQueryUrl(subjectId, actualParams);
+    const response = await this.executeWithRetriesOn500IfEnabled(() =>
+      this.api.get(url, { headers })
     );
+    return response.data;
+  }
+
+  /**
+   * Queries a patient's Documents. Returns only documents.
+   *
+   * @param patientId The patient's ID.
+   * @param options Query parameters and query parameters.
+   * @param options.status The status of the document. Defaults to `current`, even if a param is
+   *                      provided without status.
+   * @param options.meta Metadata about the request. Defaults to the data used to initialize the client.
+   * @returns an array of DocumentReference FHIR resources.
+   */
+  async queryDocuments(
+    patientId: string,
+    options?: BaseOptions & DocumentQueryParams
+  ): Promise<DocumentReference[]> {
+    const response = await this.queryDocumentsInternal(patientId, options);
+    const entry = documentQueryResponseSchema.parse(response).entry;
+    return entry?.flatMap(entry => entry.resource ?? []) ?? [];
+  }
+
+  /**
+   * Queries a patient's Documents. Returns documents and errors from the fanout to other gateways.
+   *
+   * @param patientId The patient's ID.
+   * @param options Query parameters and query parameters.
+   * @param options.status The status of the document. Defaults to `current`, even if a param is
+   *                      provided without status.
+   * @param options.meta Metadata about the request. Defaults to the data used to initialize the client.
+   * @returns a Bundle containing DocumentReferences of a patient's available DocumentReferences
+   *          and/or OperationOutcomes denoting problems with the query.
+   */
+  async queryDocumentsFull(
+    patientId: string,
+    options?: BaseOptions & DocumentQueryParams
+  ): Promise<DocumentQueryFullResponse> {
+    const response = await this.queryDocumentsInternal(patientId, options);
+    return documentQueryFullResponseSchema.parse(response);
+  }
+
+  /**
+   * Retrieve a Document and send its bytes to the outputStream.
+   *
+   * @param inputUrl The URL of the file to be downloaded. Obtained from a DocumentReference that
+   *                 was retrieved from a previous call to `queryDocuments`.
+   * @param outputStream The stream to receive the downloaded file's bytes.
+   * @param options Optional parameters.
+   * @param options.meta Metadata about the request. Defaults to the data used to initialize the client.
+   * @returns The content type and size of the downloaded file.
+   */
+  async retrieveDocument(
+    inputUrl: string,
+    outputStream: stream.Writable,
+    options?: BaseOptions
+  ): Promise<RetrieveDocumentResponse> {
+    const headers = this.buildQueryHeaders(options?.meta);
+    const binary = await this.executeWithRetriesOn500IfEnabled(() =>
+      downloadFileInMemory({
+        url: inputUrl,
+        client: this.api,
+        responseType: "json",
+        headers,
+      })
+    );
+    const errorMessage = "Invalid binary contents";
+    if (!("resourceType" in binary)) {
+      throw new CommonwellError(errorMessage, undefined, { reason: "Missing resourceType" });
+    }
+    const resourceType = binary.resourceType;
+    if (typeof resourceType !== "string" || resourceType !== "Binary") {
+      throw new CommonwellError(errorMessage, undefined, { reason: "Invalid resourceType" });
+    }
+    const contentType = binary.contentType;
+    if (!contentType || typeof contentType !== "string") {
+      throw new CommonwellError(errorMessage, undefined, {
+        reason: "Missing or invalid contentType",
+        contentType,
+      });
+    }
+    const data = binary.data;
+    if (!data) throw new CommonwellError(errorMessage, undefined, { reason: "Missing data" });
+    const dataBuffer = base64ToBuffer(data);
+    outputStream.write(dataBuffer);
+    outputStream.end();
+    return { contentType, size: dataBuffer.byteLength };
+  }
+
+  //--------------------------------------------------------------------------------------------
+  // Private methods
+  //--------------------------------------------------------------------------------------------
+
+  private buildQueryHeaders(
+    metaParam: OrganizationRequestMetadata | undefined
+  ): Record<string, string> {
+    const meta = metaParam ?? this.buildOrganizationQueryMeta();
+    const jwt = makeJwt({
+      rsaPrivateKey: this.rsaPrivateKey,
+      role: meta.role,
+      subjectId: meta.subjectId,
+      orgName: this.orgName,
+      oid: this.oid,
+      purposeOfUse: meta.purposeOfUse,
+      npi: meta.npi,
+      authGrantorReference: meta.authGrantorReference,
+    });
     return { Authorization: `Bearer ${jwt}` };
   }
 
-  private async executeWithRetriesOn500<T>(fn: () => Promise<T>): Promise<T> {
+  private buildOrganizationQueryMeta(): OrganizationRequestMetadata {
+    const base = buildBaseQueryMeta(this.orgName);
+    return { ...base, npi: this.npi };
+  }
+
+  private async executeWithRetriesOn500IfEnabled<T>(fn: () => Promise<T>): Promise<T> {
     return this.onError500.retry
       ? executeWithNetworkRetries(fn, {
           ...this.onError500,
@@ -1043,4 +605,45 @@ export class CommonWell implements CommonWellAPI {
         })
       : fn();
   }
+}
+
+function buildOrgEndpoint(orgId: string) {
+  return `/v2/org/${orgId}`;
+}
+
+function buildPatientEndpoint(orgId: string, patientId?: string) {
+  return `${buildOrgEndpoint(orgId)}/Patient${patientId ? `/${patientId}` : ""}`;
+}
+
+function buildPatientLinkEndpoint(orgId: string, patientId: string) {
+  return `${buildOrgEndpoint(orgId)}/PatientLink/${patientId}`;
+}
+
+function buildProbableLinkEndpoint(orgId: string, patientId?: string) {
+  return `${buildOrgEndpoint(orgId)}/ProbableLink${patientId ? `/${patientId}` : ""}`;
+}
+
+function buildPatientMergeEndpoint(orgId: string, nonSurvivingPatientId: string) {
+  return `${buildPatientEndpoint(orgId, nonSurvivingPatientId)}/Merge`;
+}
+
+function buildDocumentQueryUrl(subjectId: string, params: DocumentQueryParams): string {
+  const urlParams = new URLSearchParams();
+  urlParams.append("subject.id", subjectId);
+  if (params.status) urlParams.append("status", params.status);
+  if (params.author?.given) urlParams.append("author.given", params.author.given);
+  if (params.author?.family) urlParams.append("author.family", params.author.family);
+  if (params.period?.start) urlParams.append("period.start", params.period.start);
+  if (params.period?.end) urlParams.append("period.end", params.period.end);
+  if (params.date?.start) urlParams.append("date.start", params.date.start);
+  if (params.date?.end) urlParams.append("date.end", params.date.end);
+  return `/v2/R4/DocumentReference?${urlParams.toString()}`;
+}
+
+function normalizePatient(patient: Patient): Patient {
+  return {
+    ...patient,
+    ...(patient.gender ? { gender: fhirGenderToCommonwell(patient.gender) } : {}),
+    ...(patient.birthDate ? { birthDate: normalizeDatetime(patient.birthDate) } : {}),
+  };
 }
