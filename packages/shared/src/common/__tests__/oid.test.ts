@@ -16,7 +16,8 @@ describe("makeOid", () => {
     const baseOid = "1.2.840.113883";
     const oid = makeOid({ startFrom: baseOid, amountOfLevels: 6 });
     // eslint-disable-next-line no-useless-escape
-    expect(oid).toMatch(new RegExp(`^${baseOid.replace(/\./g, ".")}\.\\d+\.\\d+$`));
+    const regex = `^${baseOid.replace(/\./g, "\\.")}\.\\d+\.\\d+$`;
+    expect(oid).toMatch(new RegExp(regex));
     expect(oid.split(".")).toHaveLength(6);
   });
 
