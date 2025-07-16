@@ -1,4 +1,4 @@
-import { BadRequestError } from "@metriport/shared";
+import { capture } from "../../util/notifications";
 
 const gToLbs = 0.00220462;
 const gToKg = 1 / 1000;
@@ -106,12 +106,17 @@ export function convertCodeAndValue(
       return { ...baseParams, value: valueNumber };
     }
   }
-  throw new BadRequestError("Unknown units", undefined, {
-    units: baseInputUnits,
-    targetUnits,
-    loincCode,
-    value,
+  capture.message("Unknown units", {
+    extra: {
+      units: baseInputUnits,
+      targetUnits,
+      loincCode,
+      value,
+      context: "ehr.unit-conversion",
+    },
+    level: "warning",
   });
+  return undefined;
 }
 
 function convertValueToNumber(value: number | string): number {

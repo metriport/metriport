@@ -19,6 +19,8 @@ import {
   ccdaDocumentSchema,
   CreatedLab,
   createdLabSchema,
+  CreatedNonVisitNote,
+  createdNonVisitNoteSchema,
   CreatedProblem,
   createdProblemSchema,
   CreatedSubscription,
@@ -38,9 +40,13 @@ import {
 } from "@metriport/shared/interface/external/ehr/elation/index";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import axios, { AxiosInstance } from "axios";
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
 import { z } from "zod";
+import { executeAsynchronously } from "../../../util/concurrency";
 import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
+import { capture } from "../../../util/notifications";
 import { uuidv7 } from "../../../util/uuid-v7";
 import { createOrReplaceCcda } from "../bundle/command/create-or-replace-ccda";
 import {
@@ -71,6 +77,11 @@ import {
 } from "../shared";
 import { convertCodeAndValue } from "../unit-conversion";
 
+dayjs.extend(duration);
+
+const parallelRequests = 5;
+const maxJitter = dayjs.duration(2, "seconds");
+
 interface ElationApiConfig extends ApiConfig {
   environment: ElationEnv;
 }
@@ -94,7 +105,9 @@ problemStatusesMap.set("remission", "Controlled");
 problemStatusesMap.set("resolved", "Resolved");
 problemStatusesMap.set("inactive", "Resolved");
 
-const vitalSignCodesMap = new Map<string, { codeKey: string; targetUnits: string }>();
+type CodeKey = "temperature" | "hr" | "rr" | "oxygen" | "bp" | "weight" | "height" | "wc" | "bmi";
+
+const vitalSignCodesMap = new Map<string, { codeKey: CodeKey; targetUnits: string }>();
 vitalSignCodesMap.set("8310-5", { codeKey: "temperature", targetUnits: "degf" });
 vitalSignCodesMap.set("8867-4", { codeKey: "hr", targetUnits: "bpm" });
 vitalSignCodesMap.set("9279-1", { codeKey: "rr", targetUnits: "bpm" });
@@ -154,6 +167,20 @@ type ElationLab = {
     }[];
   }[];
 };
+
+type ElationGroupedVitalBase = {
+  patient: string;
+  practice: string;
+  physician: string;
+  chart_date: string;
+  document_date: string;
+};
+
+type ElationGroupedVitalData = {
+  [key in CodeKey]?: number | { systolic?: string; diastolic?: string }[] | { value: string }[];
+};
+
+type ElationGroupedVital = ElationGroupedVitalBase & ElationGroupedVitalData;
 
 const validLabResultStatuses = [
   "CORRECTED",
@@ -376,6 +403,44 @@ class ElationApi {
     return patient;
   }
 
+  async createNonVisitNote({
+    cxId,
+    patientId,
+    date,
+    note,
+  }: {
+    cxId: string;
+    patientId: string;
+    date: string;
+    note: string;
+  }): Promise<CreatedNonVisitNote> {
+    const { debug } = out(
+      `Elation createNonVisitNote - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
+    );
+    const patientUrl = `/non_visit_notes/`;
+    const additionalInfo = { cxId, practiceId: this.practiceId, patientId };
+    const data = {
+      bullets: [{ text: note }],
+      patient: patientId,
+      chart_date: this.formatDateTime(date),
+      document_date: this.formatDateTime(date),
+      type: "nonvisit",
+    };
+    const nonVisitNote = await this.makeRequest<CreatedNonVisitNote>({
+      cxId,
+      patientId,
+      s3Path: "non-visit-note",
+      method: "POST",
+      url: patientUrl,
+      data,
+      headers: { "Content-Type": "application/json" },
+      schema: createdNonVisitNoteSchema,
+      additionalInfo,
+      debug,
+    });
+    return nonVisitNote;
+  }
+
   async createProblem({
     cxId,
     patientId,
@@ -522,51 +587,127 @@ class ElationApi {
     return lab;
   }
 
-  async createVital({
+  async createGroupedVitals({
     cxId,
     elationPracticeId,
     elationPhysicianId,
     patientId,
-    observation,
+    observations,
   }: {
     cxId: string;
     elationPracticeId: string;
     elationPhysicianId: string;
     patientId: string;
-    observation: Observation;
-  }): Promise<CreatedVital> {
-    const { debug } = out(
-      `Elation createVital - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
+    observations: Observation[];
+  }): Promise<CreatedVital[]> {
+    const { log, debug } = out(
+      `Elation createGroupedVitals - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
     );
     const vitalsUrl = `/vitals/`;
     const additionalInfo = {
       cxId,
       practiceId: this.practiceId,
       patientId,
-      observationId: observation.id,
     };
-    const { chart_date, data: vitalData } = this.formatVital(observation, additionalInfo);
-    const data = {
-      patient: patientId,
-      practice: elationPracticeId,
-      physician: elationPhysicianId,
-      chart_date,
-      document_date: chart_date,
-      ...vitalData,
-    };
-    const vital = await this.makeRequest<CreatedVital>({
-      cxId,
-      patientId,
-      s3Path: this.createWriteBackPath("vital", observation.id),
-      method: "POST",
-      url: vitalsUrl,
-      data,
-      schema: createdVitalSchema,
-      additionalInfo,
-      headers: { "Content-Type": "application/json" },
-      debug,
-    });
-    return vital;
+    const groupedVitals: Record<string, ElationGroupedVital> = observations.reduce(
+      (acc, observation) => {
+        const newVital = this.formatGroupedVital(observation);
+        if (!newVital) return acc;
+        const chartDate = newVital.chartDate;
+        let existingVital = acc[chartDate];
+        if (!existingVital) {
+          acc[chartDate] = {
+            patient: patientId,
+            practice: elationPracticeId,
+            physician: elationPhysicianId,
+            chart_date: this.formatDateTime(chartDate),
+            document_date: this.formatDateTime(chartDate),
+            ...newVital.data,
+          } as ElationGroupedVital;
+        } else {
+          if (existingVital.bp && newVital.data.bp) {
+            const existingBp = existingVital.bp as { systolic?: string; diastolic?: string }[];
+            const newBp = newVital.data.bp as { systolic?: string; diastolic?: string }[];
+            existingVital.bp = [
+              {
+                ...existingBp[0],
+                ...newBp[0],
+              },
+            ];
+            acc[chartDate] = existingVital;
+          } else {
+            existingVital = {
+              ...existingVital,
+              ...newVital.data,
+            } as ElationGroupedVital;
+            acc[chartDate] = existingVital;
+          }
+        }
+        return acc;
+      },
+      {} as Record<string, ElationGroupedVital>
+    );
+    const allCreatedGroupedVitals: CreatedVital[] = [];
+    const createGroupedVitalsErrors: { error: unknown; vitals: string }[] = [];
+    const createGroupedVitalsArgs = Object.values(groupedVitals);
+    if (createGroupedVitalsArgs.length < 1) {
+      throw new BadRequestError("No grouped vitals data found", undefined, additionalInfo);
+    }
+    await executeAsynchronously(
+      createGroupedVitalsArgs,
+      async (params: ElationGroupedVital) => {
+        try {
+          const nonVisitNote = await this.createNonVisitNote({
+            cxId,
+            patientId,
+            date: params.chart_date,
+            note: "Vitals added via Metriport App",
+          });
+          const createdVital = await this.makeRequest<CreatedVital>({
+            cxId,
+            patientId,
+            s3Path: this.createWriteBackPath("grouped-vitals", undefined),
+            method: "POST",
+            url: vitalsUrl,
+            data: {
+              ...params,
+              non_visit_note: nonVisitNote.id,
+            },
+            schema: createdVitalSchema,
+            additionalInfo,
+            headers: { "Content-Type": "application/json" },
+            debug,
+          });
+          allCreatedGroupedVitals.push(createdVital);
+        } catch (error) {
+          if (error instanceof BadRequestError || error instanceof NotFoundError) return;
+          const vitalsToString = JSON.stringify(params);
+          log(`Failed to create vitals ${vitalsToString}. Cause: ${errorToString(error)}`);
+          createGroupedVitalsErrors.push({
+            error,
+            vitals: JSON.stringify(params),
+          });
+        }
+      },
+      {
+        numberOfParallelExecutions: parallelRequests,
+        maxJitterMillis: maxJitter.asMilliseconds(),
+      }
+    );
+    if (createGroupedVitalsErrors.length > 0) {
+      const msg = `Failure while creating some grouped vitals @ Elation`;
+      capture.message(msg, {
+        extra: {
+          ...additionalInfo,
+          createGroupedVitalsArgsCount: createGroupedVitalsArgs.length,
+          createGroupedVitalsErrorsCount: createGroupedVitalsErrors.length,
+          errors: createGroupedVitalsErrors,
+          context: "elation.create-grouped-vitals",
+        },
+        level: "warning",
+      });
+    }
+    return allCreatedGroupedVitals;
   }
 
   async getBundleByResourceType({
@@ -928,16 +1069,12 @@ class ElationApi {
       );
     }
     const isAbnormal = interpretation === "abnormal";
-    const formattedChartDate = this.formatDateTime(buildDayjs().toISOString());
-    if (!formattedChartDate) {
-      throw new BadRequestError("No chart date found for observation", undefined, additionalInfo);
-    }
     const text = observation.text?.div;
     return {
       report_type: "Lab",
       document_date: formattedObservedDate,
       reported_date: formattedObservedDate,
-      chart_date: formattedChartDate,
+      chart_date: formattedObservedDate,
       grids: [
         {
           accession_number: uuidv7(),
@@ -1000,10 +1137,6 @@ class ElationApi {
         undefined,
         additionalInfo
       );
-    }
-    const formattedChartDate = this.formatDateTime(buildDayjs().toISOString());
-    if (!formattedChartDate) {
-      throw new BadRequestError("No chart date found for observation", undefined, additionalInfo);
     }
     const results: ElationLab["grids"][0]["results"] = observations.flatMap(observation => {
       const loincCoding = getObservationLoincCoding(observation);
@@ -1068,7 +1201,7 @@ class ElationApi {
       report_type: "Lab",
       document_date: formattedReportDate,
       reported_date: formattedReportDate,
-      chart_date: formattedChartDate,
+      chart_date: formattedReportDate,
       grids: [
         {
           accession_number: uuidv7(),
@@ -1082,47 +1215,29 @@ class ElationApi {
     };
   }
 
-  private formatVital(
-    observation: Observation,
-    additionalInfo: Record<string, string | undefined>
-  ):
-    | { chart_date: string; data: { [key: string]: { value: string }[] } }
-    | { chart_date: string; data: { bmi: number } }
+  private formatGroupedVital(observation: Observation):
     | {
-        chart_date: string;
-        data: { bp: { systolic?: string; diastolic?: string }[] };
-      } {
+        chartDate: string;
+        data: ElationGroupedVitalData;
+      }
+    | undefined {
     const loincCode = getObservationLoincCode(observation);
-    if (!loincCode || !vitalSignCodesMap.get(loincCode)) {
-      throw new BadRequestError("No LOINC code found for observation", undefined, additionalInfo);
-    }
+    if (!loincCode || !vitalSignCodesMap.get(loincCode)) return undefined;
     const units = getObservationUnit(observation);
-    if (!units) {
-      throw new BadRequestError("No units found for observation", undefined, additionalInfo);
-    }
+    if (!units) return undefined;
     const value = getObservationValue(observation);
-    if (!value) {
-      throw new BadRequestError("No value found for observation", undefined, additionalInfo);
-    }
+    if (!value) return undefined;
     const chartDate = getObservationObservedDate(observation);
-    const formattedChartDate = this.formatDateTime(chartDate);
-    if (!formattedChartDate) {
-      throw new BadRequestError(
-        "No observed date found for observation",
-        undefined,
-        additionalInfo
-      );
-    }
+    const formattedChartDate = this.formatDate(chartDate);
+    if (!formattedChartDate) return undefined;
     const convertedCodeAndValue = convertCodeAndValue(loincCode, vitalSignCodesMap, value, units);
-    if (!convertedCodeAndValue) {
-      throw new BadRequestError("No value converted for observation", undefined, additionalInfo);
-    }
-    const baseData = { chart_date: formattedChartDate };
+    if (!convertedCodeAndValue) return undefined;
+    const baseData = { chartDate: formattedChartDate };
     if (convertedCodeAndValue.codeKey === "bmi") {
       return {
         ...baseData,
         data: {
-          bmi: +convertedCodeAndValue.value,
+          bmi: +convertedCodeAndValue.value.toFixed(2),
         },
       };
     }
@@ -1133,7 +1248,7 @@ class ElationApi {
           data: {
             bp: [
               {
-                diastolic: convertedCodeAndValue.value.toString(),
+                diastolic: convertedCodeAndValue.value.toFixed(2),
               },
             ],
           },
@@ -1145,7 +1260,7 @@ class ElationApi {
           data: {
             bp: [
               {
-                systolic: convertedCodeAndValue.value.toString(),
+                systolic: convertedCodeAndValue.value.toFixed(2),
               },
             ],
           },
@@ -1157,7 +1272,7 @@ class ElationApi {
       data: {
         [convertedCodeAndValue.codeKey]: [
           {
-            value: convertedCodeAndValue.value.toString(),
+            value: convertedCodeAndValue.value.toFixed(2),
           },
         ],
       },
