@@ -211,7 +211,6 @@ export async function makeRequest<T>({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     if (isAxiosError(error)) {
-      console.log("error", JSON.stringify(error.response?.data, null, 2));
       const message = errorToString(error);
       if (responsesBucket) {
         const filePath = createHivePartitionFilePath({
