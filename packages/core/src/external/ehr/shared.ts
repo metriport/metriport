@@ -330,6 +330,26 @@ export function isNotRetriableAxiosError(error: unknown): boolean {
   );
 }
 
+export type CreatePrefixParams = {
+  ehr: EhrSource;
+  cxId: string;
+  metriportPatientId: string;
+  ehrPatientId: string;
+  resourceType: string;
+  jobId?: string | undefined;
+};
+
+export function createPrefix(
+  prefix: string,
+  params: Omit<CreatePrefixParams, "resourceId">
+): string {
+  return `${prefix}/ehr=${params.ehr}/cxid=${params.cxId}/metriportpatientid=${
+    params.metriportPatientId
+  }/ehrpatientid=${params.ehrPatientId}/resourcetype=${params.resourceType}/jobId=${
+    params.jobId ?? "latest"
+  }`;
+}
+
 // TYPES FROM DASHBOARD
 export type MedicationWithRefs = {
   medication: Medication;
@@ -817,7 +837,7 @@ export async function saveEhrReferenceBundle({
   metriportPatientId: string;
   ehrPatientId: string;
   referenceBundle: EhrFhirResourceBundle;
-}) {
+}): Promise<void> {
   const { log } = out(
     `saveReferenceBundle - cxId ${cxId} metriportPatientId ${metriportPatientId} ehrPatientId ${ehrPatientId}`
   );
