@@ -1158,8 +1158,8 @@ class ElationApi {
       const text = observation.text?.div;
       return {
         accession_number: uuidv7(),
-        resulted_date: formattedReportDate,
-        collected_date: formattedReportDate,
+        resulted_date: formattedObservedDate,
+        collected_date: formattedObservedDate,
         status: formattedResultStatus,
         note: "Added via Metriport App",
         results: [
