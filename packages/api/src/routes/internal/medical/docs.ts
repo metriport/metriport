@@ -51,6 +51,7 @@ import {
   getFromQueryAsBoolean,
   getFromQueryOrFail,
 } from "../../util";
+import { getFacilityIdOrFail } from "../../../domain/medical/patient-facility";
 
 const router = Router();
 const upload = multer();
@@ -372,7 +373,7 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getFrom("query").orFail("cxId", req);
     const patientId = getFrom("query").orFail("patientId", req);
-    const facilityId = getFrom("query").orFail("facilityId", req);
+    const facilityIdParam = getFrom("query").optional("facilityId", req);
     const requestId = getFrom("query").optional("requestId", req);
     const forceDownload = getFromQueryAsBoolean("forceDownload", req) ?? false;
     const forceQuery = getFromQueryAsBoolean("forceQuery", req) ?? true;
@@ -380,6 +381,9 @@ router.post(
     const cqManagingOrgName = getFrom("query").optional("cqManagingOrgName", req);
     const triggerConsolidated = getFromQueryAsBoolean("triggerConsolidated", req);
     const cxDocumentRequestMetadata = cxRequestMetadataSchema.parse(req.body);
+
+    const patient = await getPatientOrFail({ cxId, id: patientId });
+    const facilityId = getFacilityIdOrFail(patient, facilityIdParam);
 
     const docQueryProgress = await queryDocumentsAcrossHIEs({
       cxId,
