@@ -2,7 +2,7 @@ import { Config } from "../../util/config";
 import { SftpClient } from "../sftp/client";
 // import { LocalReplica } from "../sftp/replica/local";
 // import { S3Replica } from "../sftp/replica/s3";
-import { buildRequestFileName } from "./file/file-names";
+import { buildRequestFileName, buildResponseFileName } from "./file/file-names";
 import { generateBatchRequestFile, generatePatientRequestFile } from "./file/file-generator";
 import {
   QuestBatchRequestData,
@@ -14,6 +14,7 @@ import {
 import { validateNPI } from "@metriport/shared/common/validate-npi";
 import { MetriportError } from "@metriport/shared";
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
+import { buildDayjs } from "@metriport/shared/common/date";
 
 export class QuestSftpClient extends SftpClient {
   constructor(config: QuestSftpConfig = {}) {
@@ -32,13 +33,13 @@ export class QuestSftpClient extends SftpClient {
   }
 
   async sendBatchRequest(request: QuestBatchRequestData): Promise<QuestJob[]> {
-    const { content, patientIdMapping } = generateBatchRequestFile(request.patients);
+    const { content, patientIdMap } = generateBatchRequestFile(request.patients);
     const populationId = uuidv7();
+    const dateString = buildDayjs().format("YYYYMMDD");
     const batchRequestFileName = buildRequestFileName({
-      cxId: request.cxId,
       populationId,
+      dateString,
     });
-    console.log(patientIdMapping);
     try {
       await this.connect();
       await this.writeToQuest(batchRequestFileName, content);
@@ -46,8 +47,9 @@ export class QuestSftpClient extends SftpClient {
         {
           cxId: request.cxId,
           facilityId: request.facility.id,
-          transmissionId: uuidv7(),
-          populationId: request.facility.id,
+          populationId,
+          patientIdMap,
+          dateString,
         },
       ];
     } finally {
@@ -59,19 +61,22 @@ export class QuestSftpClient extends SftpClient {
     this.validateRequester(request);
 
     const patientId = request.patient.id;
+    const dateString = buildDayjs().format("YYYYMMDD");
     const requestFileName = buildRequestFileName({
-      cxId: request.cxId,
       populationId: patientId,
+      dateString,
     });
-    const { content } = generatePatientRequestFile(request.patient);
+    const { content, patientIdMap } = generatePatientRequestFile(request.patient);
     try {
       await this.connect();
       await this.writeToQuest(requestFileName, content);
+      await this.replica?.writeFile(`to_quest/${requestFileName}`, content);
       return {
         cxId: request.cxId,
         facilityId: request.facility.id,
-        transmissionId: uuidv7(),
         populationId: patientId,
+        patientIdMap,
+        dateString,
       };
     } finally {
       await this.disconnect();
@@ -79,20 +84,43 @@ export class QuestSftpClient extends SftpClient {
   }
 
   async receiveResponse(job: QuestJob) {
-    console.log("receiveResponse", job);
+    const responseFileName = buildResponseFileName({
+      populationId: job.populationId,
+      dateString: job.dateString,
+    });
+
+    if (await this.hasResponseFileInReplica(responseFileName)) {
+      return await this.readResponseFileFromReplica(responseFileName);
+    }
+
+    try {
+      await this.connect();
+      const responseFile = await this.readFromQuest(responseFileName);
+      await this.writeResponseFileToReplica(responseFileName, responseFile);
+      return responseFile;
+    } finally {
+      await this.disconnect();
+    }
   }
 
-  // async receiveResponseFile(fileName: string) {
-  //   const responseFile = await this.replica.readFile(fileName);
-  //   return fromQuestResponseFile(responseFile);
-  // }
+  private async hasResponseFileInReplica(fileName: string) {
+    return await this.replica?.hasFile(`from_quest/${fileName}`);
+  }
+
+  private async readResponseFileFromReplica(fileName: string) {
+    return await this.replica?.readFile(`from_quest/${fileName}`);
+  }
+
+  private async writeResponseFileToReplica(fileName: string, fileContent: Buffer) {
+    await this.replica?.writeFile(`from_quest/${fileName}`, fileContent);
+  }
 
   async writeToQuest(fileName: string, fileContent: Buffer) {
     await this.write(`/OUT/${fileName}`, fileContent);
   }
 
   async readFromQuest(fileName: string) {
-    return await this.read(`/OUT/${fileName}`);
+    return await this.read(`/IN/${fileName}`);
   }
 
   /**

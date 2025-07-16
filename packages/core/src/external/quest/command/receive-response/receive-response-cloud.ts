@@ -22,7 +22,7 @@ export class QuestReceiveResponseHandlerCloud implements QuestReceiveResponseHan
       await this.sqsClient.sendMessageToQueue(this.questReceiveResponseQueueUrl, payload, {
         fifo: true,
         messageDeduplicationId: createUuidFromText(payload),
-        messageGroupId: job.transmissionId,
+        messageGroupId: job.dateString,
       });
     });
   }

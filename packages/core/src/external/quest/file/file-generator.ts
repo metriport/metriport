@@ -40,7 +40,7 @@ const makeGenderDemographics = genderMapperFromDomain<QuestGenderCode>(
 
 interface QuestRequestFile {
   content: Buffer;
-  patientIdMapping: Record<string, string>;
+  patientIdMap: Record<string, string>;
 }
 
 // Builds a 15 character patient ID
@@ -51,7 +51,7 @@ function buildPatientId(): string {
 
 export function generateBatchRequestFile(patients: Patient[]): QuestRequestFile {
   const requestedPatientIds: string[] = [];
-  const patientIdMapping: Record<string, string> = {};
+  const patientIdMap: Record<string, string> = {};
 
   const header = toQuestRequestRow(
     { recordType: "H", generalMnemonic: "METRIP", fileCreationDate: new Date() },
@@ -62,7 +62,7 @@ export function generateBatchRequestFile(patients: Patient[]): QuestRequestFile 
   const details = patients.flatMap(patient => {
     // Build a unique patient ID mapping
     let mappedPatientId = buildPatientId();
-    while (patientIdMapping[mappedPatientId]) {
+    while (patientIdMap[mappedPatientId]) {
       mappedPatientId = buildPatientId();
     }
 
@@ -70,7 +70,7 @@ export function generateBatchRequestFile(patients: Patient[]): QuestRequestFile 
     const row = generatePatientRequestRow(patient, mappedPatientId);
     if (row) {
       requestedPatientIds.push(patient.id);
-      patientIdMapping[patient.id] = mappedPatientId;
+      patientIdMap[patient.id] = mappedPatientId;
       return [row];
     }
     return [];
@@ -84,7 +84,7 @@ export function generateBatchRequestFile(patients: Patient[]): QuestRequestFile 
 
   return {
     content: Buffer.concat([header, ...details, footer]),
-    patientIdMapping,
+    patientIdMap,
   };
 }
 

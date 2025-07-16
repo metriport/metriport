@@ -20,6 +20,7 @@ export interface QuestRequester {
 export interface QuestFileIdentifier {
   populationId: string;
   patientIdMap: Record<string, string>;
+  dateString: string;
 }
 
 export type QuestJob = QuestRequester & QuestFileIdentifier;
