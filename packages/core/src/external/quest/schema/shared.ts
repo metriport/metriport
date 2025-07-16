@@ -42,18 +42,18 @@ export interface OutgoingFileField<T extends object, K extends keyof T = keyof T
  * Fields of incoming files have a defined fromSurescripts function defined
  */
 export interface IncomingFileSchema<H extends object, D extends object, F extends object> {
-  header: IncomingFileRowSchema<H>;
-  detail: IncomingFileRowSchema<D>;
-  footer: IncomingFileRowSchema<F>;
+  header: { row: IncomingFileRowSchema<H>; validator: (data: object) => data is H };
+  detail: { row: IncomingFileRowSchema<D>; validator: (data: object) => data is D };
+  footer: { row: IncomingFileRowSchema<F>; validator: (data: object) => data is F };
 }
 
 /**
  * The incoming file data parsed from the schema
  */
 export interface IncomingFile<H extends object, D extends object, F extends object> {
-  header: H;
-  detail: D[];
-  footer: F;
+  header: IncomingData<H>;
+  detail: IncomingData<D>[];
+  footer: IncomingData<F>;
 }
 
 export interface IncomingData<T extends object> {

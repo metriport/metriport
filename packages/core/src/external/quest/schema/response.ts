@@ -1,5 +1,11 @@
 import { z } from "zod";
-import { fromQuestEnum, fromQuestInteger, fromQuestString, IncomingFileRowSchema } from "./shared";
+import {
+  fromQuestEnum,
+  fromQuestInteger,
+  fromQuestString,
+  IncomingFileRowSchema,
+  IncomingFileSchema,
+} from "./shared";
 import { IncomingFile, fromQuestDate } from "./shared";
 
 export type ResponseFile = IncomingFile<ResponseHeader, ResponseDetail, ResponseFooter>;
@@ -18,6 +24,10 @@ export const responseHeaderRow: IncomingFileRowSchema<ResponseHeader> = [
     fromQuest: fromQuestEnum(["H"]),
   },
 ];
+
+export function isResponseHeader(data: object): data is ResponseHeader {
+  return responseHeaderSchema.safeParse(data).success;
+}
 
 export const responseDetailSchema = z.object({
   dateOfService: z.date(),
@@ -84,6 +94,10 @@ export const responseDetailSchema = z.object({
 });
 
 export type ResponseDetail = z.infer<typeof responseDetailSchema>;
+
+export function isResponseDetail(data: object): data is ResponseDetail {
+  return responseDetailSchema.safeParse(data).success;
+}
 
 export const responseDetailRow: IncomingFileRowSchema<ResponseDetail> = [
   {
@@ -475,3 +489,26 @@ export const responseFooterRow: IncomingFileRowSchema<ResponseFooter> = [
     fromQuest: fromQuestInteger(),
   },
 ];
+
+export function isResponseFooter(data: object): data is ResponseFooter {
+  return responseFooterSchema.safeParse(data).success;
+}
+
+export const responseFileSchema: IncomingFileSchema<
+  ResponseHeader,
+  ResponseDetail,
+  ResponseFooter
+> = {
+  header: {
+    row: responseHeaderRow,
+    validator: isResponseHeader,
+  },
+  detail: {
+    row: responseDetailRow,
+    validator: isResponseDetail,
+  },
+  footer: {
+    row: responseFooterRow,
+    validator: isResponseFooter,
+  },
+};
