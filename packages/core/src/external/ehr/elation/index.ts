@@ -1069,10 +1069,6 @@ class ElationApi {
       );
     }
     const isAbnormal = interpretation === "abnormal";
-    const formattedChartDate = this.formatDateTime(buildDayjs().toISOString());
-    if (!formattedChartDate) {
-      throw new BadRequestError("No chart date found for observation", undefined, additionalInfo);
-    }
     const text = observation.text?.div;
     return {
       report_type: "Lab",
