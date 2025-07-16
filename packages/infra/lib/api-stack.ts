@@ -596,10 +596,13 @@ export class APIStack extends Stack {
       elationLinkPatientLambda,
       healthieLinkPatientQueue,
       healthieLinkPatientLambda,
-      contributeResourceDiffBundlesLambda: ehrContributeResourceDiffBundlesLambda,
-      computeResourceDiffBundlesLambda: ehrComputeResourceDiffBundlesLambda,
       refreshEhrBundlesQueue: ehrRefreshEhrBundlesQueue,
       refreshEhrBundlesLambda: ehrRefreshEhrBundlesLambda,
+      computeResourceDiffBundlesLambda: ehrComputeResourceDiffBundlesLambda,
+      contributeResourceDiffBundlesQueue: ehrContributeResourceDiffBundlesQueue,
+      contributeResourceDiffBundlesLambda: ehrContributeResourceDiffBundlesLambda,
+      writeBackResourceDiffBundlesQueue: ehrWriteBackResourceDiffBundlesQueue,
+      writeBackResourceDiffBundlesLambda: ehrWriteBackResourceDiffBundlesLambda,
       ehrBundleBucket,
     } = new EhrNestedStack(this, "EhrNestedStack", {
       config: props.config,
@@ -647,6 +650,8 @@ export class APIStack extends Stack {
       elationLinkPatientQueue,
       healthieLinkPatientQueue,
       ehrRefreshEhrBundlesQueue,
+      ehrContributeResourceDiffBundlesQueue,
+      ehrWriteBackResourceDiffBundlesQueue,
       ehrGetAppointmentsLambda,
       ehrBundleBucket,
       generalBucket,
@@ -747,9 +752,10 @@ export class APIStack extends Stack {
       ehrSyncPatientLambda,
       elationLinkPatientLambda,
       healthieLinkPatientLambda,
-      ehrContributeResourceDiffBundlesLambda,
-      ehrComputeResourceDiffBundlesLambda,
       ehrRefreshEhrBundlesLambda,
+      ehrComputeResourceDiffBundlesLambda,
+      ehrContributeResourceDiffBundlesLambda,
+      ehrWriteBackResourceDiffBundlesLambda,
       ehrGetAppointmentsLambda,
       fhirConverterLambda,
       conversionResultNotifierLambda,
@@ -769,6 +775,7 @@ export class APIStack extends Stack {
     medicalDocumentsBucket.grantReadWrite(documentDownloaderLambda);
     medicalDocumentsBucket.grantRead(fhirConverterLambda);
     medicalDocumentsBucket.grantRead(ehrComputeResourceDiffBundlesLambda);
+    medicalDocumentsBucket.grantRead(ehrWriteBackResourceDiffBundlesLambda);
     if (analyticsPlatformStack) {
       medicalDocumentsBucket.grantRead(analyticsPlatformStack.fhirToCsvContainer.executionRole);
     }

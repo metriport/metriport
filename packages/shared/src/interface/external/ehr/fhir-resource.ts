@@ -17,13 +17,13 @@ export const ehrFhirResourceSchema = z.intersection(
 );
 export type EhrFhirResource = z.infer<typeof ehrFhirResourceSchema>;
 
-export const ehrFhirResourceWrapperSchema = z.object({
+export const ehrFhirResourceBundleEntrySchema = z.object({
   resource: ehrFhirResourceSchema.optional(),
 });
-export type EhrFhirResourceWrapper = z.infer<typeof ehrFhirResourceWrapperSchema>;
+export type EhrFhirResourceBundleEntry = z.infer<typeof ehrFhirResourceBundleEntrySchema>;
 
 export const ehrFhirResourceBundleSchema = ehrFhirBundleSharedFieldsSchema.extend({
-  entry: ehrFhirResourceWrapperSchema.array().optional(),
+  entry: ehrFhirResourceBundleEntrySchema.array().optional(),
 });
 export type EhrFhirResourceBundle = z.infer<typeof ehrFhirResourceBundleSchema>;
 
@@ -36,13 +36,15 @@ export const ehrStrictFhirResourceSchema = z.intersection(
 );
 export type EhrStrictFhirResource = z.infer<typeof ehrStrictFhirResourceSchema>;
 
-export const ehrStrictFhirResourceWrapperSchema = z.object({
+export const ehrStrictFhirResourceBundleEntrySchema = z.object({
   resource: ehrStrictFhirResourceSchema,
 });
-export type EhrStrictFhirResourceWrapper = z.infer<typeof ehrStrictFhirResourceWrapperSchema>;
+export type EhrStrictFhirResourceBundleEntry = z.infer<
+  typeof ehrStrictFhirResourceBundleEntrySchema
+>;
 
 export const ehrStrictFhirResourceBundleSchema = ehrFhirBundleSharedFieldsSchema.extend({
-  entry: ehrStrictFhirResourceWrapperSchema.array().optional(),
+  entry: ehrStrictFhirResourceBundleEntrySchema.array().optional(),
 });
 export type EhrStrictFhirResourceBundle = z.infer<typeof ehrStrictFhirResourceBundleSchema>;
 

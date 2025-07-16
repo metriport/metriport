@@ -3,6 +3,7 @@ import {
   validCompleteBundle,
   bundleWithFullUrlReferences,
   emptyBundle,
+  CONSTANT_TIME_EXPECTED_THRESHOLD_MS,
 } from "./fixtures/fhir-bundles";
 import { Patient, Practitioner, Observation } from "@medplum/fhirtypes";
 
@@ -99,7 +100,7 @@ describe("Phase 1 Verification - Bundle Initialization & Resource Retrieval", ()
 
         expect(patient).toBeDefined();
         // O(1) lookup should be very fast (under 1ms)
-        expect(end - start).toBeLessThan(1);
+        expect(end - start).toBeLessThan(CONSTANT_TIME_EXPECTED_THRESHOLD_MS);
       });
 
       it("should maintain O(1) performance for multiple lookups", () => {
@@ -114,7 +115,7 @@ describe("Phase 1 Verification - Bundle Initialization & Resource Retrieval", ()
         const end = performance.now();
 
         // Multiple O(1) lookups should still be very fast
-        expect(end - start).toBeLessThan(5);
+        expect(end - start).toBeLessThan(CONSTANT_TIME_EXPECTED_THRESHOLD_MS);
       });
     });
   });

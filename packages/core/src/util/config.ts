@@ -107,7 +107,7 @@ export class Config {
   static getHl7NotificationQueueUrl(): string {
     return getEnvVarOrFail("HL7_NOTIFICATION_QUEUE_URL");
   }
-  static getHieTimezoneDictionary(): Record<string, string> {
+  static getHieTimezoneDictionary(): Record<string, unknown> {
     return getEnvVarAsRecordOrFail("HIE_TIMEZONE_DICTIONARY");
   }
 
@@ -221,6 +221,9 @@ export class Config {
   }
   static getEhrContributeDiffBundlesQueueUrl(): string {
     return getEnvVarOrFail("EHR_CONTRIBUTE_RESOURCE_DIFF_BUNDLES_QUEUE_URL");
+  }
+  static getEhrWriteBackDiffBundlesQueueUrl(): string {
+    return getEnvVarOrFail("EHR_WRITE_BACK_RESOURCE_DIFF_BUNDLES_QUEUE_URL");
   }
   static getEhrBundleBucketName(): string {
     return getEnvVarOrFail("EHR_BUNDLE_BUCKET_NAME");

@@ -3,8 +3,8 @@ import { PaginatedResponse } from "@metriport/shared";
 import {
   WebhookRequest,
   WebhookRequestParsingFailure,
-  WebhookStatusResponse,
   webhookRequestSchema,
+  WebhookStatusResponse,
 } from "@metriport/shared/medical";
 import axios, { AxiosInstance, AxiosStatic, CreateAxiosDefaults } from "axios";
 import crypto from "crypto";
@@ -21,14 +21,14 @@ import { getETagHeader } from "../models/common/base-update";
 import { Demographics } from "../models/demographics";
 import {
   BulkGetDocumentUrlQuery,
+  bulkGetDocumentUrlQuerySchema,
+  documentListSchema,
   DocumentQuery,
+  documentQuerySchema,
   DocumentReference,
   ListDocumentFilters,
   ListDocumentResult,
   UploadDocumentResult,
-  bulkGetDocumentUrlQuerySchema,
-  documentListSchema,
-  documentQuerySchema,
 } from "../models/document";
 import { Facility, FacilityCreate, facilityListSchema, facilitySchema } from "../models/facility";
 import { ConsolidatedCountResponse, ResourceTypeForConsolidation } from "../models/fhir";
@@ -38,11 +38,11 @@ import {
   GetConsolidatedQueryProgressResponse,
   GetSingleConsolidatedQueryProgressResponse,
   MedicalRecordUrlResponse,
+  medicalRecordUrlResponseSchema,
   PatientCreate,
   PatientHieOptOutResponse,
   PatientUpdate,
   StartConsolidatedQueryProgressResponse,
-  medicalRecordUrlResponseSchema,
 } from "../models/patient";
 import { PatientDTO } from "../models/patientDTO";
 import { SettingsResponse } from "../models/settings-response";
@@ -414,7 +414,7 @@ export class MetriportMedicalApi {
    */
   async updatePatient(
     patient: PatientUpdate,
-    facilityId?: string,
+    facilityId: string,
     additionalQueryParams: Record<string, string | number | boolean> = {}
   ): Promise<PatientDTO> {
     type FieldsToOmit = "id";
@@ -446,6 +446,34 @@ export class MetriportMedicalApi {
     });
     if (!resp.data) throw new Error(NO_DATA_MESSAGE);
     return resp.data;
+  }
+
+  /**
+   * Sets the facilities associated with a patient. This operation overrides any existing
+   * facility associations and replaces them with the provided list.
+   *
+   * @param patientId The ID of the patient to set facilities for.
+   * @param facilityIds The array of facility IDs to associate with the patient. This will replace all existing associations.
+   * @returns The updated facilities associated with the patient.
+   */
+  async setPatientFacilities(patientId: string, facilityIds: string[]): Promise<Facility[]> {
+    const resp = await this.api.post(`${PATIENT_URL}/${patientId}/facility`, {
+      facilityIds,
+    });
+    if (!resp.data) throw new Error(NO_DATA_MESSAGE);
+    return resp.data.facilities;
+  }
+
+  /**
+   * Gets all facilities associated with a patient.
+   *
+   * @param patientId The ID of the patient whose facilities are to be returned.
+   * @returns Array of facilities associated with the patient.
+   */
+  async getPatientFacilities(patientId: string): Promise<Facility[]> {
+    const resp = await this.api.get(`${PATIENT_URL}/${patientId}/facility`);
+    if (!resp.data) throw new Error(NO_DATA_MESSAGE);
+    return resp.data.facilities;
   }
 
   // TODO #870 remove this
