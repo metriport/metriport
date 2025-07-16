@@ -561,7 +561,7 @@ class ElationApi {
     observations: Observation[];
   }): Promise<CreatedVital[]> {
     const { log, debug } = out(
-      `Elation createVitals - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
+      `Elation createGroupedVitals - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
     );
     const vitalsUrl = `/vitals/`;
     const additionalInfo = {
