@@ -30,6 +30,7 @@ import { getOrganizationOrFail } from "../../../command/medical/organization/get
 import { appendDocQueryProgress } from "../../../command/medical/patient/append-doc-query-progress";
 import { appendBulkGetDocUrlProgress } from "../../../command/medical/patient/bulk-get-doc-url-progress";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
+import { getPatientPrimaryFacilityIdOrFail } from "../../../command/medical/patient/get-patient-facilities";
 import {
   processCcdRequest,
   processEmptyCcdRequest,
@@ -357,6 +358,7 @@ router.get(
  * @param req.query.cxId - The customer/account's ID.
  * @param req.query.patientId - The customer/account's ID.
  * @param req.query.facilityId - Optional; The facility providing NPI for the document query.
+ *                               Defaults to the primary facility of the patient.
  * @param req.query.requestId - Optional; The request ID for the document query.
  * @param req.body Optional metadata to be sent through webhook. {"disableWHFlag": "true"} can be sent here to disable webhook.
  * @param req.query.forceDownload - Optional; Whether to forceDownload files already downloaded. Defaults to false.
@@ -372,7 +374,7 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getFrom("query").orFail("cxId", req);
     const patientId = getFrom("query").orFail("patientId", req);
-    const facilityId = getFrom("query").orFail("facilityId", req);
+    const facilityIdParam = getFrom("query").optional("facilityId", req);
     const requestId = getFrom("query").optional("requestId", req);
     const forceDownload = getFromQueryAsBoolean("forceDownload", req) ?? false;
     const forceQuery = getFromQueryAsBoolean("forceQuery", req) ?? true;
@@ -380,6 +382,13 @@ router.post(
     const cqManagingOrgName = getFrom("query").optional("cqManagingOrgName", req);
     const triggerConsolidated = getFromQueryAsBoolean("triggerConsolidated", req);
     const cxDocumentRequestMetadata = cxRequestMetadataSchema.parse(req.body);
+
+    const facilityId = facilityIdParam
+      ? facilityIdParam
+      : await getPatientPrimaryFacilityIdOrFail({
+          cxId,
+          patientId,
+        });
 
     const docQueryProgress = await queryDocumentsAcrossHIEs({
       cxId,

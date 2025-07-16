@@ -9,3 +9,4 @@ export * from "./ccda";
 export * from "./vtial";
 export * from "./lab";
 export * from "./practice";
+export * from "./note";

@@ -2,11 +2,13 @@ import { BadRequestError } from "@metriport/shared";
 import { elationSecondaryMappingsSchema } from "@metriport/shared/interface/external/ehr/elation/cx-mapping";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { getSecondaryMappings } from "../../../api/get-secondary-mappings";
-import { WriteBackVitalClientRequest } from "../../../command/write-back/vital";
+import { WriteBackGroupedVitalsClientRequest } from "../../../command/write-back/grouped-vitals";
 import { createElationHealthClient } from "../../shared";
 
-export async function writeBackVital(params: WriteBackVitalClientRequest): Promise<void> {
-  const { cxId, practiceId, ehrPatientId, tokenId, observation } = params;
+export async function writeBackGroupedVitals(
+  params: WriteBackGroupedVitalsClientRequest
+): Promise<void> {
+  const { cxId, practiceId, ehrPatientId, tokenId, observations } = params;
   const secondaryMappings = await getSecondaryMappings({
     ehr: EhrSources.elation,
     practiceId,
@@ -25,12 +27,11 @@ export async function writeBackVital(params: WriteBackVitalClientRequest): Promi
     practiceId,
     ...(tokenId && { tokenId }),
   });
-  await client.createVital({
+  await client.createGroupedVitals({
     cxId,
     elationPracticeId,
     elationPhysicianId,
     patientId: ehrPatientId,
-    observation,
-    isAutoWriteBack: true,
+    observations,
   });
 }

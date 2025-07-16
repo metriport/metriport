@@ -28,7 +28,7 @@ dayjs.extend(duration);
 
 const hydrateEhrOnlyResourceAttempts = 3;
 const parallelRequests = 2;
-const minJitter = dayjs.duration(2, "seconds");
+const minJitter = dayjs.duration(0, "seconds");
 const maxJitter = dayjs.duration(5, "seconds");
 
 export class EhrContributeResourceDiffBundlesDirect

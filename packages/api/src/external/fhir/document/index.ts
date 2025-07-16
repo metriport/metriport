@@ -23,7 +23,7 @@ import {
   GenderCodes,
   HumanName as CWHumanName,
 } from "@metriport/commonwell-sdk";
-import { Gender } from "@metriport/commonwell-sdk/src/models/demographics";
+import { Gender } from "@metriport/commonwell-sdk/models/demographics";
 import { joinName, Patient, splitName } from "@metriport/core/domain/patient";
 import { cwExtension } from "@metriport/core/external/commonwell/extension";
 import { toFHIRSubject } from "@metriport/core/external/fhir/patient/conversion";

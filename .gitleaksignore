@@ -2,3 +2,16 @@ packages/core/src/external/cda/__tests__/examples.ts:aws-access-token:69
 docs/mint.json:generic-api-key:283
 docs/mint.json:generic-api-key:286
 packages/commonwell-cert-runner/README.md:private-key:117
+packages/core/src/external/ehr/athenahealth/index.ts:generic-api-key:181
+packages/core/src/external/ehr/athenahealth/index.ts:generic-api-key:182
+packages/core/src/external/ehr/athenahealth/index.ts:generic-api-key:183
+packages/core/src/external/ehr/athenahealth/index.ts:generic-api-key:199
+packages/core/src/external/ehr/athenahealth/index.ts:generic-api-key:200
+packages/core/src/external/ehr/__tests__/unit-conversion.test.ts:generic-api-key:7
+packages/core/src/external/ehr/__tests__/unit-conversion.test.ts:generic-api-key:8
+packages/core/src/external/ehr/__tests__/unit-conversion.test.ts:generic-api-key:176
+packages/core/src/external/ehr/__tests__/unit-conversion.test.ts:generic-api-key:216
+packages/core/src/external/ehr/__tests__/unit-conversion.test.ts:generic-api-key:221
+packages/core/src/external/ehr/__tests__/unit-conversion.test.ts:generic-api-key:233
+packages/core/src/external/ehr/__tests__/unit-conversion.test.ts:generic-api-key:238
+packages/core/src/external/ehr/__tests__/unit-conversion.test.ts:generic-api-key:242
