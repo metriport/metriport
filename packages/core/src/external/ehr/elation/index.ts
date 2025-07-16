@@ -407,10 +407,12 @@ class ElationApi {
     cxId,
     patientId,
     date,
+    note,
   }: {
     cxId: string;
     patientId: string;
     date: string;
+    note: string;
   }): Promise<CreatedNonVisitNote> {
     const { debug } = out(
       `Elation createNonVisitNote - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
@@ -418,11 +420,7 @@ class ElationApi {
     const patientUrl = `/non_visit_notes/`;
     const additionalInfo = { cxId, practiceId: this.practiceId, patientId };
     const data = {
-      bullets: [
-        {
-          text: "Vitals added via Metriport App",
-        },
-      ],
+      bullets: [{ text: note }],
       patient: patientId,
       chart_date: this.formatDateTime(date),
       document_date: this.formatDateTime(date),
@@ -663,6 +661,7 @@ class ElationApi {
             cxId,
             patientId,
             date: params.chart_date,
+            note: "Vitals added via Metriport App",
           });
           const createdVital = await this.makeRequest<CreatedVital>({
             cxId,
