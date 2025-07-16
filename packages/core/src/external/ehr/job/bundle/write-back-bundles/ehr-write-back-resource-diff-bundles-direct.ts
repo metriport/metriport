@@ -397,7 +397,7 @@ export function skipLabPanelDate(
   const relativeDateRange = writeBackFilters.labPanel?.relativeDateRange;
   if (!relativeDateRange) return false;
   const observationDate = getDiagnosticReportDate(diagnosticReport);
-  if (!observationDate) return false;
+  if (!observationDate) return true;
   let beginDate = startDate ? buildDayjs(startDate) : buildDayjs();
   if (relativeDateRange.days) {
     beginDate = beginDate.subtract(relativeDateRange.days, "day");
@@ -418,7 +418,7 @@ export function skipLabPanelLoinCode(
   const loincCodes = writeBackFilters.labPanel?.loincCodes;
   if (!loincCodes) return false;
   const loincCode = getDiagnosticReportLoincCode(diagnosticReport);
-  if (!loincCode) return false;
+  if (!loincCode) return true;
   return !loincCodes.includes(loincCode);
 }
 
@@ -430,7 +430,7 @@ export function skipLabPanelNonTrending(
   const minCountPerCode = writeBackFilters.labPanel?.minCountPerCode;
   if (!minCountPerCode) return false;
   const loincCode = getDiagnosticReportLoincCode(diagnosticReport);
-  if (!loincCode) return false;
+  if (!loincCode) return true;
   const count = diagnosticReports.filter(o => getDiagnosticReportLoincCode(o) === loincCode).length;
   return count < minCountPerCode;
 }
@@ -443,7 +443,7 @@ export function skipLabDate(
   const relativeDateRange = writeBackFilters.lab?.relativeDateRange;
   if (!relativeDateRange) return false;
   const observationDate = getObservationObservedDate(observation);
-  if (!observationDate) return false;
+  if (!observationDate) return true;
   let beginDate = startDate ? buildDayjs(startDate) : buildDayjs();
   if (relativeDateRange.days) {
     beginDate = beginDate.subtract(relativeDateRange.days, "day");
@@ -464,7 +464,7 @@ export function skipLabLoinCode(
   const loincCodes = writeBackFilters.lab?.loincCodes;
   if (!loincCodes) return false;
   const loincCode = getObservationLoincCode(observation);
-  if (!loincCode) return false;
+  if (!loincCode) return true;
   return !loincCodes.includes(loincCode);
 }
 
@@ -476,7 +476,7 @@ export function skipLabNonTrending(
   const minCountPerCode = writeBackFilters.lab?.minCountPerCode;
   if (!minCountPerCode) return false;
   const loincCode = getObservationLoincCode(observation);
-  if (!loincCode) return false;
+  if (!loincCode) return true;
   const count = labObservations.filter(o => getObservationLoincCode(o) === loincCode).length;
   return count < minCountPerCode;
 }
@@ -489,7 +489,7 @@ export function skipVitalDate(
   const relativeDateRange = writeBackFilters?.vital?.relativeDateRange;
   if (!relativeDateRange) return false;
   const observationDate = getObservationObservedDate(observation);
-  if (!observationDate) return false;
+  if (!observationDate) return true;
   let beginDate = startDate ? buildDayjs(startDate) : buildDayjs();
   if (relativeDateRange.days) {
     beginDate = beginDate.subtract(relativeDateRange.days, "day");
@@ -510,7 +510,7 @@ export function skipVitalLoinCode(
   const loincCodes = writeBackFilters?.vital?.loincCodes;
   if (!loincCodes) return false;
   const loincCode = getObservationLoincCode(observation);
-  if (!loincCode) return false;
+  if (!loincCode) return true;
   return !loincCodes.includes(loincCode);
 }
 
