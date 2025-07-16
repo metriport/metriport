@@ -30,6 +30,7 @@ import { getOrganizationOrFail } from "../../../command/medical/organization/get
 import { appendDocQueryProgress } from "../../../command/medical/patient/append-doc-query-progress";
 import { appendBulkGetDocUrlProgress } from "../../../command/medical/patient/bulk-get-doc-url-progress";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
+import { getPatientPrimaryFacilityIdOrFail } from "../../../command/medical/patient/get-patient-facilities";
 import {
   processCcdRequest,
   processEmptyCcdRequest,
@@ -51,7 +52,6 @@ import {
   getFromQueryAsBoolean,
   getFromQueryOrFail,
 } from "../../util";
-import { getFacilityIdOrFail } from "../../../domain/medical/patient-facility";
 
 const router = Router();
 const upload = multer();
@@ -358,6 +358,7 @@ router.get(
  * @param req.query.cxId - The customer/account's ID.
  * @param req.query.patientId - The customer/account's ID.
  * @param req.query.facilityId - Optional; The facility providing NPI for the document query.
+ *                               Defaults to the primary facility of the patient.
  * @param req.query.requestId - Optional; The request ID for the document query.
  * @param req.body Optional metadata to be sent through webhook. {"disableWHFlag": "true"} can be sent here to disable webhook.
  * @param req.query.forceDownload - Optional; Whether to forceDownload files already downloaded. Defaults to false.
@@ -382,8 +383,12 @@ router.post(
     const triggerConsolidated = getFromQueryAsBoolean("triggerConsolidated", req);
     const cxDocumentRequestMetadata = cxRequestMetadataSchema.parse(req.body);
 
-    const patient = await getPatientOrFail({ cxId, id: patientId });
-    const facilityId = getFacilityIdOrFail(patient, facilityIdParam);
+    const facilityId = facilityIdParam
+      ? facilityIdParam
+      : await getPatientPrimaryFacilityIdOrFail({
+          cxId,
+          patientId,
+        });
 
     const docQueryProgress = await queryDocumentsAcrossHIEs({
       cxId,
