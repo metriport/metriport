@@ -18,8 +18,8 @@ export interface QuestRequester {
 }
 
 export interface QuestFileIdentifier {
-  transmissionId: string;
   populationId: string;
+  patientIdMap: Record<string, string>;
 }
 
 export type QuestJob = QuestRequester & QuestFileIdentifier;
