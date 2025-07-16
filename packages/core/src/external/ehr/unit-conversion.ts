@@ -180,7 +180,7 @@ function isIn(units: string): boolean {
 }
 
 function isDegf(units: string): boolean {
-  return units === "degf" || units === "f" || units.includes("fahrenheit");
+  return units === "degf" || units === "[degf]" || units === "f" || units.includes("fahrenheit");
 }
 
 function isCel(units: string): boolean {

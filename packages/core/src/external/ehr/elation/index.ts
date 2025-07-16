@@ -62,7 +62,6 @@ import {
   getConditionStartDate,
   getConditionStatus,
   getDiagnosticReportDate,
-  getDiagnosticReportResultStatus,
   getObservationInterpretation,
   getObservationLoincCode,
   getObservationLoincCoding,
@@ -1117,21 +1116,6 @@ class ElationApi {
     observations: Observation[],
     additionalInfo: Record<string, string | undefined>
   ): ElationLab {
-    const resultStatus = getDiagnosticReportResultStatus(diagnostricReport);
-    if (!resultStatus) {
-      throw new BadRequestError(
-        "No result status found for diagnostic report",
-        undefined,
-        additionalInfo
-      );
-    }
-    const formattedResultStatus = resultStatus.toUpperCase();
-    if (!validLabResultStatuses.includes(formattedResultStatus)) {
-      throw new BadRequestError("Invalid result status", undefined, {
-        ...additionalInfo,
-        resultStatus: formattedResultStatus,
-      });
-    }
     const reportDate = getDiagnosticReportDate(diagnostricReport);
     const formattedReportDate = this.formatDateTime(reportDate);
     if (!formattedReportDate) {
@@ -1141,7 +1125,7 @@ class ElationApi {
         additionalInfo
       );
     }
-    const results: ElationLab["grids"][0]["results"] = observations.flatMap(observation => {
+    const grids: ElationLab["grids"] = observations.flatMap(observation => {
       const loincCoding = getObservationLoincCoding(observation);
       if (!loincCoding) return [];
       if (!loincCoding.code) return [];
@@ -1173,48 +1157,44 @@ class ElationApi {
       const isAbnormal = interpretation === "abnormal";
       const text = observation.text?.div;
       return {
+        accession_number: uuidv7(),
+        resulted_date: formattedObservedDate,
+        collected_date: formattedObservedDate,
         status: formattedResultStatus,
-        value: value.toString(),
-        text: text ?? loincCoding.display,
         note: "Added via Metriport App",
-        reference_min: referenceRange.low?.toString(),
-        reference_max: referenceRange.high?.toString(),
-        units: unit.slice(0, maxUnitsCharacters),
-        is_abnormal: isAbnormal ? "1" : "0",
-        abnormal_flag: this.mapInterpretationToAbnormalFlag(interpretation),
-        test: {
-          name: loincCoding.display,
-          code: loincCoding.code,
-          loinc: loincCoding.code,
-        },
-        test_category: {
-          value: loincCoding.display,
-          description: loincCoding.display,
-        },
+        results: [
+          {
+            status: formattedResultStatus,
+            value: value.toString(),
+            text: text ?? loincCoding.display,
+            note: "Added via Metriport App",
+            reference_min: referenceRange.low?.toString(),
+            reference_max: referenceRange.high?.toString(),
+            units: unit.slice(0, maxUnitsCharacters),
+            is_abnormal: isAbnormal ? "1" : "0",
+            abnormal_flag: this.mapInterpretationToAbnormalFlag(interpretation),
+            test: {
+              name: loincCoding.display,
+              code: loincCoding.code,
+              loinc: loincCoding.code,
+            },
+            test_category: {
+              value: loincCoding.display,
+              description: loincCoding.display,
+            },
+          },
+        ],
       };
     });
-    if (results.length < 1) {
-      throw new BadRequestError(
-        "No results found for diagnostic report",
-        undefined,
-        additionalInfo
-      );
+    if (grids.length < 1) {
+      throw new BadRequestError("No grids found for diagnostic report", undefined, additionalInfo);
     }
     return {
       report_type: "Lab",
       document_date: formattedReportDate,
       reported_date: formattedReportDate,
       chart_date: formattedReportDate,
-      grids: [
-        {
-          accession_number: uuidv7(),
-          resulted_date: formattedReportDate,
-          collected_date: formattedReportDate,
-          status: formattedResultStatus,
-          note: "Added via Metriport App",
-          results,
-        },
-      ],
+      grids,
     };
   }
 
