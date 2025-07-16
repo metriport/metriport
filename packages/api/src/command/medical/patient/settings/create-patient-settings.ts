@@ -9,9 +9,8 @@ import { BadRequestError } from "@metriport/shared";
 import { PatientSettingsModel } from "../../../../models/patient-settings";
 import { getPatientOrFail } from "../get-patient";
 import { getPatientIds } from "../get-patient-read-only";
-import { processPatientsInBatches } from "../batch-utils";
+import { PatientBatchProcessingResult, processPatientsInBatches } from "../batch-utils";
 import {
-  CustomerProcessingResult,
   PatientListProcessingResult,
   PatientSettingsUpsertForCxProps,
   PatientSettingsUpsertProps,
@@ -20,7 +19,6 @@ import {
 
 // Re-export types for backward compatibility
 export type {
-  CustomerProcessingResult,
   PatientListProcessingResult,
   PatientSettingsUpsertForCxProps,
   PatientSettingsUpsertProps,
@@ -103,7 +101,7 @@ export async function upsertPatientSettingsForPatientList({
   log(`Updated settings for ${validPatientIds.length} patients`);
   return {
     patientsFoundAndUpdated: validPatientIds.length,
-    patientsNotFound: patientsNotFound || [],
+    patientsNotFound,
   };
 }
 
@@ -120,7 +118,7 @@ export async function upsertPatientSettingsForCx({
   cxId,
   facilityId,
   settings,
-}: PatientSettingsUpsertForCxProps): Promise<CustomerProcessingResult> {
+}: PatientSettingsUpsertForCxProps): Promise<PatientBatchProcessingResult> {
   const patientIds = await getPatientIds({ cxId, facilityId });
 
   async function batchProcessor(batch: string[]): Promise<void> {

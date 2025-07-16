@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { numericValue } from "../common/zod";
+import { numericValueSchema } from "../common/zod";
 
 export const defaultItemsPerPage = 50;
 export const maxItemsPerPage = 500;
@@ -19,7 +19,7 @@ export const queryMetaSchema = z.intersection(
     { errorMap: () => ({ message: "Either fromItem or toItem can be provided, but not both" }) }
   ),
   z.object({
-    count: numericValue
+    count: numericValueSchema
       .refine(count => count >= 0, {
         message: `Count has to be greater than or equal to 0`,
       })
@@ -29,7 +29,5 @@ export const queryMetaSchema = z.intersection(
       .optional(),
   })
 );
-/**
- * @deprecated Use shared instead
- */
+
 export type HttpMeta = z.infer<typeof queryMetaSchema>;

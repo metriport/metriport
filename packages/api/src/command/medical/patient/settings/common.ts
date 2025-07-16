@@ -22,15 +22,6 @@ export type PatientListProcessingResult = {
   failedIds?: string[]; // Only present if some failed
 };
 
-/**
- * Result when processing all patients for a customer
- */
-export type CustomerProcessingResult = {
-  patientsFoundAndUpdated: number;
-  failedCount?: number; // Only present if some failed
-  failedIds?: string[]; // Only present if some failed
-};
-
 export async function verifyPatients({
   patientIds,
   facilityId,

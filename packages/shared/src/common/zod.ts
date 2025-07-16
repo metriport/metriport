@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const numericValue = z.preprocess(input => {
+export const numericValueSchema = z.preprocess(input => {
   if (typeof input === "string") {
     return parseInt(input);
   }

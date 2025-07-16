@@ -3,7 +3,7 @@ import { z } from "zod";
 export const stringOrNumberSchema = z.union([z.string(), z.number()]);
 
 /**
- * @deprecated Use numericValue from shared/src/common/zod instead
+ * @deprecated Use numericValueSchema from shared/src/common/zod instead
  */
 export const numericValue = z.preprocess(input => {
   if (typeof input === "string") {

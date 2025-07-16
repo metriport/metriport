@@ -21,7 +21,7 @@ export type BatchProcessorConfig = {
 /**
  * Internal result from batch processing operations
  */
-export type BatchProcessingResult = {
+export type PatientBatchProcessingResult = {
   patientsFoundAndUpdated: number;
   failedCount?: number;
   failedIds?: string[];
@@ -49,7 +49,7 @@ export async function processPatientsInBatches(
   patientIds: string[],
   batchProcessor: BatchProcessorFunction,
   config: BatchProcessorConfig
-): Promise<BatchProcessingResult> {
+): Promise<PatientBatchProcessingResult> {
   const { log } = out(`${config.operationName} - cx ${config.cxId}`);
 
   if (patientIds.length === 0) {

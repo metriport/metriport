@@ -44,7 +44,7 @@ export async function addHieSubscriptionToPatients({
 
   return {
     ...result,
-    patientsNotFound: patientsNotFound || [],
+    patientsNotFound,
   };
 }
 
@@ -87,12 +87,12 @@ export async function removeHieSubscriptionFromPatients({
 
   return {
     ...result,
-    patientsNotFound: patientsNotFound || [],
+    patientsNotFound,
   };
 }
 
 /**
- * Adds a HIE subscription to patient settings if not already present
+ * Adds an HIE subscription to patient settings if not already present
  */
 async function _addHieSubscriptionToPatients({
   patientIds,
@@ -130,25 +130,29 @@ async function _addHieSubscriptionToPatients({
     SET 
         subscriptions = subscriptions || jsonb_build_object('adt', 
             CASE 
-                WHEN subscriptions->'adt' @> to_jsonb($3::text) 
+                WHEN subscriptions->'adt' @> to_jsonb(:hieName::text) 
                 THEN subscriptions->'adt'
-                ELSE COALESCE(subscriptions->'adt', '[]'::jsonb) || to_jsonb($3::text)
+                ELSE COALESCE(subscriptions->'adt', '[]'::jsonb) || to_jsonb(:hieName::text)
             END
         ),
         updated_at = NOW()
-    WHERE cx_id = $1::uuid 
-      AND patient_id = ANY($2::text[])
-      AND NOT (subscriptions->'adt' @> to_jsonb($3::text))
+    WHERE cx_id = :cxId::uuid 
+      AND patient_id = ANY(:patientIds::text[])
+      AND NOT (subscriptions->'adt' @> to_jsonb(:hieName::text))
   `;
 
   await sequelize.query(addSubscriptionQuery, {
-    bind: [cxId, patientIds, hieName],
+    replacements: {
+      cxId,
+      patientIds,
+      hieName,
+    },
     type: QueryTypes.UPDATE,
   });
 }
 
 /**
- * Removes a HIE subscription from patient settings if present
+ * Removes an HIE subscription from patient settings if present
  */
 async function _removeHieSubscriptionsFromPatients({
   patientIds,
@@ -172,17 +176,21 @@ async function _removeHieSubscriptionsFromPatients({
         subscriptions = subscriptions || jsonb_build_object('adt', 
           to_jsonb(array_remove(
               ARRAY(SELECT jsonb_array_elements_text(subscriptions->'adt')), 
-              $3::text
+              :hieName::text
           ))
         ),
         updated_at = NOW()
-    WHERE cx_id = $1::uuid 
-      AND patient_id = ANY($2::text[])
-      AND subscriptions->'adt' @> to_jsonb($3::text)
+    WHERE cx_id = :cxId::uuid 
+      AND patient_id = ANY(:patientIds::text[])
+      AND subscriptions->'adt' @> to_jsonb(:hieName::text)
   `;
 
   await sequelize.query(removeSubscriptionQuery, {
-    bind: [cxId, patientIds, hieName],
+    replacements: {
+      cxId,
+      patientIds,
+      hieName,
+    },
     type: QueryTypes.UPDATE,
   });
 }

@@ -1,20 +1,31 @@
 import { z } from "zod";
 import { Config } from "../../util/config";
 
-export const hieIANATimezoneSchema = z.enum([
+const cidrBlockRegex = /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\/\d{1,2}$/;
+
+export const hieIanaTimezoneSchema = z.enum([
   "America/Los_Angeles",
   "America/Denver",
   "America/Chicago",
   "America/New_York",
 ]);
 
-export type HieIANATimezone = z.infer<typeof hieIANATimezoneSchema>;
+export type HieIanaTimezone = z.infer<typeof hieIanaTimezoneSchema>;
 
+/**
+ * The schema for the HIE config dictionary that passes our integrated HIEs
+ * to OSS services at runtime.
+ *
+ * Search HIE_CONFIG_DICTIONARY to find all the places where this dictionary is
+ * loaded as an environment variable in our infra.
+ */
 export const hieConfigDictionarySchema = z.record(
   z.string(),
   z.object({
-    cidrBlock: z.string(), // e.g. "10.0.0.0/16"
-    timezone: hieIANATimezoneSchema,
+    cidrBlock: z.string().regex(cidrBlockRegex, {
+      message: "Must be a valid CIDR block (e.g., '10.0.0.0/16')",
+    }),
+    timezone: hieIanaTimezoneSchema,
   })
 );
 
