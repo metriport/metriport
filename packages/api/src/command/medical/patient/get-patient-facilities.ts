@@ -1,7 +1,7 @@
+import { MetriportError } from "../../../../../shared/dist";
 import { Facility } from "../../../domain/medical/facility";
-import { getPatientOrFail } from "./get-patient";
 import { getFacilities } from "../facility/get-facility";
-import { BadRequestError } from "../../../../../shared/dist";
+import { getPatientOrFail } from "./get-patient";
 
 export type GetPatientFacilitiesCmd = {
   cxId: string;
@@ -33,9 +33,13 @@ export async function getPatientPrimaryFacilityIdOrFail({
   cxId,
   patientId,
 }: GetPatientFacilitiesCmd): Promise<string> {
-  const facilities = await getPatientFacilities({ cxId, patientId });
-  if (!facilities.length) {
-    throw new BadRequestError("Patient has no facilities");
+  const patient = await getPatientOrFail({ id: patientId, cxId });
+  const facilityIds = patient.facilityIds;
+  if (facilityIds.length < 1) {
+    throw new MetriportError("Patient has no facilities", undefined, {
+      patientId,
+      cxId,
+    });
   }
-  return facilities[0].id;
+  return facilityIds[0];
 }
