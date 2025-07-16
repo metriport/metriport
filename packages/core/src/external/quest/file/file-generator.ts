@@ -26,7 +26,7 @@ import {
   responseFooterSchema,
   responseFooterRow,
 } from "../schema/response";
-import { IncomingFileRowSchema, OutgoingFileRowSchema } from "../schema/shared";
+import { IncomingData, IncomingFileRowSchema, OutgoingFileRowSchema } from "../schema/shared";
 
 const makeGenderDemographics = genderMapperFromDomain<QuestGenderCode>(
   {
@@ -166,7 +166,7 @@ export function fromQuestResponseRow<T extends object>(
   line: string,
   objectSchema: z.ZodObject<z.ZodRawShape>,
   rowSchema: IncomingFileRowSchema<T>
-): T {
+): IncomingData<T> {
   const parsedResult: Partial<T> = {};
   let currentPosition = 0;
   for (let fieldIndex = 0; fieldIndex < rowSchema.length; fieldIndex++) {
@@ -183,7 +183,10 @@ export function fromQuestResponseRow<T extends object>(
   }
   const validation = objectSchema.safeParse(parsedResult);
   if (validation.success) {
-    return parsedResult as T;
+    return {
+      data: parsedResult as T,
+      source: [line],
+    };
   }
   throw new MetriportError("Invalid data", undefined, {
     data: JSON.stringify(parsedResult),
