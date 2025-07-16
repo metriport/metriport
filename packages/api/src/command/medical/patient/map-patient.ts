@@ -43,6 +43,7 @@ export async function mapPatient({
       cxId,
       elationPatientId: patient.externalId,
       elationPracticeId: cxMapping.externalId,
+      inputMetriportPatientId: patientId,
     });
     return { metriportPatientId, mappingPatientId: patient.externalId };
   } else if (cxMapping.source === EhrSources.healthie) {
@@ -50,6 +51,7 @@ export async function mapPatient({
       cxId,
       healthiePatientId: patient.externalId,
       healthiePracticeId: cxMapping.externalId,
+      inputMetriportPatientId: patientId,
     });
     return { metriportPatientId, mappingPatientId: patient.externalId };
   }
