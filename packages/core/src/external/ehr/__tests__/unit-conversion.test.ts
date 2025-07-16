@@ -182,10 +182,9 @@ describe("convertCodeAndValue", () => {
   });
 
   describe("error handling", () => {
-    it("throws BadRequestError for unknown units", () => {
-      expect(() => convertCodeAndValue("29463-7", loincCodeMap, 100, "stone")).toThrowError(
-        "Unknown units"
-      );
+    it("returns undefined for unknown units", () => {
+      const result = convertCodeAndValue("29463-7", loincCodeMap, 100, "stone");
+      expect(result).toBeUndefined();
     });
   });
 
