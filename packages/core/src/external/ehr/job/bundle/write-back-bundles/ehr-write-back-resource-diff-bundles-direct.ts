@@ -644,6 +644,7 @@ async function writeBackGroupedVitals({
       writeBackResource: "grouped-vitals",
     });
   } catch (error) {
+    console.log("error", JSON.stringify(error, null, 2));
     if (error instanceof BadRequestError || error instanceof NotFoundError) return;
     const vitalsToString = JSON.stringify(vitals);
     log(`Failed to write back vitals ${vitalsToString}. Cause: ${errorToString(error)}`);

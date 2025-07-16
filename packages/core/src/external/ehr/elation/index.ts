@@ -577,12 +577,26 @@ class ElationApi {
             patient: patientId,
             practice: elationPracticeId,
             physician: elationPhysicianId,
-            chart_date: chartDate,
-            document_date: chartDate,
+            chart_date: this.formatDateTime(chartDate),
+            document_date: this.formatDateTime(chartDate),
             ...vitalsData.data,
           } as ElationGroupedVital;
         } else {
-          acc[chartDate] = { ...acc[chartDate], ...vitalsData.data } as ElationGroupedVital;
+          if ("bp" in acc[chartDate] && "bp" in vitalsData.data) {
+            const existingBp = acc[chartDate].bp as { systolic?: string; diastolic?: string }[];
+            const newBp = vitalsData.data.bp as { systolic?: string; diastolic?: string }[];
+            acc[chartDate].bp = [
+              {
+                ...existingBp[0],
+                ...newBp[0],
+              },
+            ];
+          } else {
+            acc[chartDate] = {
+              ...acc[chartDate],
+              ...vitalsData.data,
+            } as ElationGroupedVital;
+          }
         }
         return acc;
       },
@@ -600,7 +614,7 @@ class ElationApi {
           await this.makeRequest<CreatedVital>({
             cxId,
             patientId,
-            s3Path: this.createWriteBackPath("vital", undefined),
+            s3Path: this.createWriteBackPath("grouped-vitals", undefined),
             method: "POST",
             url: vitalsUrl,
             data: params,
@@ -1165,7 +1179,7 @@ class ElationApi {
     const value = getObservationValue(observation);
     if (!value) return undefined;
     const chartDate = getObservationObservedDate(observation);
-    const formattedChartDate = this.formatDateTime(chartDate);
+    const formattedChartDate = this.formatDate(chartDate);
     if (!formattedChartDate) return undefined;
     const convertedCodeAndValue = convertCodeAndValue(loincCode, vitalSignCodesMap, value, units);
     if (!convertedCodeAndValue) return undefined;
@@ -1174,7 +1188,7 @@ class ElationApi {
       return {
         ...baseData,
         data: {
-          bmi: +convertedCodeAndValue.value,
+          bmi: +convertedCodeAndValue.value.toFixed(2),
         },
       };
     }
@@ -1185,7 +1199,7 @@ class ElationApi {
           data: {
             bp: [
               {
-                diastolic: convertedCodeAndValue.value.toString(),
+                diastolic: convertedCodeAndValue.value.toFixed(2),
               },
             ],
           },
@@ -1197,7 +1211,7 @@ class ElationApi {
           data: {
             bp: [
               {
-                systolic: convertedCodeAndValue.value.toString(),
+                systolic: convertedCodeAndValue.value.toFixed(2),
               },
             ],
           },
@@ -1209,7 +1223,7 @@ class ElationApi {
       data: {
         [convertedCodeAndValue.codeKey]: [
           {
-            value: convertedCodeAndValue.value.toString(),
+            value: convertedCodeAndValue.value.toFixed(2),
           },
         ],
       },
