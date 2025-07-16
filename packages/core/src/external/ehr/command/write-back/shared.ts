@@ -14,8 +14,8 @@ export type WriteBackResourceRequest = {
   cxId: string;
   practiceId: string;
   ehrPatientId: string;
-  resource: Resource | Resource[];
-  secondaryResources?: Resource[];
+  primaryResourceOrResources: Resource | Resource[];
+  secondaryResourceOrResources?: Resource | Resource[];
   writeBackResource: WriteBackResourceType;
 };
 
@@ -23,19 +23,25 @@ export type WriteBackResourceClientRequest = Omit<WriteBackResourceRequest, "ehr
 
 export async function writeBackResource({ ...params }: WriteBackResourceRequest): Promise<void> {
   if (params.writeBackResource === "condition") {
-    return await writeBackCondition({ ...params, condition: params.resource as Condition });
+    return await writeBackCondition({
+      ...params,
+      condition: params.primaryResourceOrResources as Condition,
+    });
   } else if (params.writeBackResource === "lab") {
-    return await writeBackLab({ ...params, observation: params.resource as Observation });
+    return await writeBackLab({
+      ...params,
+      observation: params.primaryResourceOrResources as Observation,
+    });
   } else if (params.writeBackResource === "lab-panel") {
     return await writeBackLabPanel({
       ...params,
-      diagnostricReport: params.resource as DiagnosticReport,
-      observations: params.secondaryResources as Observation[],
+      diagnostricReport: params.primaryResourceOrResources as DiagnosticReport,
+      observations: params.secondaryResourceOrResources as Observation[],
     });
   } else if (params.writeBackResource === "grouped-vitals") {
     return await writeBackGroupedVitals({
       ...params,
-      observations: params.resource as Observation[],
+      observations: params.primaryResourceOrResources as Observation[],
     });
   }
   throw new BadRequestError("Could not find handler to write back resource", undefined, {

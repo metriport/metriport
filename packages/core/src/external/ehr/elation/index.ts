@@ -103,7 +103,9 @@ problemStatusesMap.set("remission", "Controlled");
 problemStatusesMap.set("resolved", "Resolved");
 problemStatusesMap.set("inactive", "Resolved");
 
-const vitalSignCodesMap = new Map<string, { codeKey: string; targetUnits: string }>();
+type CodeKey = "temperature" | "hr" | "rr" | "oxygen" | "bp" | "weight" | "height" | "wc" | "bmi";
+
+const vitalSignCodesMap = new Map<string, { codeKey: CodeKey; targetUnits: string }>();
 vitalSignCodesMap.set("8310-5", { codeKey: "temperature", targetUnits: "degf" });
 vitalSignCodesMap.set("8867-4", { codeKey: "hr", targetUnits: "bpm" });
 vitalSignCodesMap.set("9279-1", { codeKey: "rr", targetUnits: "bpm" });
@@ -173,7 +175,7 @@ type ElationGroupedVitalBase = {
 };
 
 type ElationGroupedVitalData = {
-  [key: string]: number | { systolic?: string; diastolic?: string }[] | { value: string }[];
+  [key in CodeKey]?: number | { systolic?: string; diastolic?: string }[] | { value: string }[];
 };
 
 type ElationGroupedVital = ElationGroupedVitalBase & ElationGroupedVitalData;
@@ -557,7 +559,7 @@ class ElationApi {
     elationPhysicianId: string;
     patientId: string;
     observations: Observation[];
-  }): Promise<void> {
+  }): Promise<CreatedVital[]> {
     const { log, debug } = out(
       `Elation createVitals - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
     );
@@ -569,32 +571,33 @@ class ElationApi {
     };
     const groupedVitals: Record<string, ElationGroupedVital> = observations.reduce(
       (acc, observation) => {
-        const vitalsData = this.formatGroupedVital(observation);
-        if (!vitalsData) return acc;
-        const chartDate = vitalsData.chartDate;
-        if (!acc[chartDate]) {
+        const newVital = this.formatGroupedVital(observation);
+        if (!newVital) return acc;
+        const chartDate = newVital.chartDate;
+        let existingVital = acc[chartDate];
+        if (!existingVital) {
           acc[chartDate] = {
             patient: patientId,
             practice: elationPracticeId,
             physician: elationPhysicianId,
             chart_date: this.formatDateTime(chartDate),
             document_date: this.formatDateTime(chartDate),
-            ...vitalsData.data,
+            ...newVital.data,
           } as ElationGroupedVital;
         } else {
-          if ("bp" in acc[chartDate] && "bp" in vitalsData.data) {
-            const existingBp = acc[chartDate].bp as { systolic?: string; diastolic?: string }[];
-            const newBp = vitalsData.data.bp as { systolic?: string; diastolic?: string }[];
-            acc[chartDate].bp = [
+          if (existingVital.bp && newVital.data.bp) {
+            const existingBp = existingVital.bp as { systolic?: string; diastolic?: string }[];
+            const newBp = newVital.data.bp as { systolic?: string; diastolic?: string }[];
+            existingVital.bp = [
               {
                 ...existingBp[0],
                 ...newBp[0],
               },
             ];
           } else {
-            acc[chartDate] = {
-              ...acc[chartDate],
-              ...vitalsData.data,
+            existingVital = {
+              ...existingVital,
+              ...newVital.data,
             } as ElationGroupedVital;
           }
         }
@@ -602,16 +605,17 @@ class ElationApi {
       },
       {} as Record<string, ElationGroupedVital>
     );
-    if (Object.keys(groupedVitals).length < 1) {
-      throw new BadRequestError("No grouped vitals to create", undefined, additionalInfo);
-    }
+    const allCreatedGroupedVitals: CreatedVital[] = [];
     const createGroupedVitalsErrors: { error: unknown; vitals: string }[] = [];
     const createGroupedVitalsArgs = Object.values(groupedVitals);
+    if (createGroupedVitalsArgs.length < 1) {
+      throw new BadRequestError("No grouped vitals data found", undefined, additionalInfo);
+    }
     await executeAsynchronously(
       createGroupedVitalsArgs,
       async (params: ElationGroupedVital) => {
         try {
-          await this.makeRequest<CreatedVital>({
+          const createdVital = await this.makeRequest<CreatedVital>({
             cxId,
             patientId,
             s3Path: this.createWriteBackPath("grouped-vitals", undefined),
@@ -623,6 +627,7 @@ class ElationApi {
             headers: { "Content-Type": "application/json" },
             debug,
           });
+          allCreatedGroupedVitals.push(createdVital);
         } catch (error) {
           if (error instanceof BadRequestError || error instanceof NotFoundError) return;
           const vitalsToString = JSON.stringify(params);
@@ -651,6 +656,7 @@ class ElationApi {
         level: "warning",
       });
     }
+    return allCreatedGroupedVitals;
   }
 
   async getBundleByResourceType({

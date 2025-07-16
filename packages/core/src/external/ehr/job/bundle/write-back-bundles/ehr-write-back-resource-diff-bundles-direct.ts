@@ -48,7 +48,7 @@ import {
 dayjs.extend(duration);
 
 const parallelRequests = 2;
-const minJitter = dayjs.duration(2, "seconds");
+const minJitter = dayjs.duration(0, "seconds");
 const maxJitter = dayjs.duration(5, "seconds");
 
 const supportedWriteBackResourceTypes: ResourceType[] = [
@@ -313,8 +313,9 @@ function getWriteBackResourceType(
   if (resource.resourceType === "Condition") return "condition";
   if (resource.resourceType === "Observation") {
     if (isLab(resource as Observation)) return "lab";
-    if (isVital(resource as Observation) && isWriteBackGroupedVitalsEhr(ehr))
+    if (isVital(resource as Observation) && isWriteBackGroupedVitalsEhr(ehr)) {
       return "grouped-vitals";
+    }
     return undefined;
   }
   if (resource.resourceType === "DiagnosticReport") {
@@ -559,7 +560,7 @@ async function writeBackResources({
   secondaryResourcesMap: Record<string, Resource[]>;
 }): Promise<void> {
   const writeBackErrors: { error: unknown; resource: string }[] = [];
-  const [vitals, rest] = partition(
+  const [groupedVitals, rest] = partition(
     resources,
     r => getWriteBackResourceType(ehr, r) === "grouped-vitals"
   );
@@ -569,7 +570,7 @@ async function writeBackResources({
     cxId,
     practiceId,
     ehrPatientId,
-    vitals,
+    vitals: groupedVitals,
     writeBackErrors,
   });
   await executeAsynchronously(
@@ -585,8 +586,8 @@ async function writeBackResources({
           cxId,
           practiceId,
           ehrPatientId,
-          resource,
-          ...(secondaryResources && { secondaryResources }),
+          primaryResourceOrResources: resource,
+          ...(secondaryResources && { secondaryResourceOrResources: secondaryResources }),
           writeBackResource: writeBackResourceType,
         });
       } catch (error) {
@@ -640,13 +641,13 @@ async function writeBackGroupedVitals({
       cxId,
       practiceId,
       ehrPatientId,
-      resource: vitals,
+      primaryResourceOrResources: vitals,
       writeBackResource: "grouped-vitals",
     });
   } catch (error) {
     if (error instanceof BadRequestError || error instanceof NotFoundError) return;
     const vitalsToString = JSON.stringify(vitals);
-    log(`Failed to write back vitals ${vitalsToString}. Cause: ${errorToString(error)}`);
+    log(`Failed to write back grouped vitals ${vitalsToString}. Cause: ${errorToString(error)}`);
     writeBackErrors.push({ error, resource: vitalsToString });
   }
 }
