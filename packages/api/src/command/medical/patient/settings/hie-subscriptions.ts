@@ -1,7 +1,7 @@
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { QueryTypes } from "sequelize";
 import { PatientSettingsModel } from "../../../../models/patient-settings";
-import { processPatientsInBatches } from "./batch-utils";
+import { processPatientsInBatches } from "../batch-utils";
 import { PatientListProcessingResult, verifyPatients } from "./common";
 
 /**

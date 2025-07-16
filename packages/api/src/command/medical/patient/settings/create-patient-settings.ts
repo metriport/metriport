@@ -9,7 +9,7 @@ import { BadRequestError } from "@metriport/shared";
 import { PatientSettingsModel } from "../../../../models/patient-settings";
 import { getPatientOrFail } from "../get-patient";
 import { getPatientIds } from "../get-patient-read-only";
-import { processPatientsInBatches } from "./batch-utils";
+import { processPatientsInBatches } from "../batch-utils";
 import {
   CustomerProcessingResult,
   PatientListProcessingResult,
