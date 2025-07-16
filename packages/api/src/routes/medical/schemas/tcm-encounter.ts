@@ -2,11 +2,13 @@ import { z } from "zod";
 import { queryMetaSchema } from "../../pagination";
 import { buildDayjs } from "@metriport/shared/common/date";
 
+const stringOrNullSchema = z.union([z.string(), z.undefined(), z.null()]);
+
 export const tcmEncounterBaseSchema = z.strictObject({
   patientId: z.string().uuid(),
-  facilityName: z.string(),
+  facilityName: stringOrNullSchema.transform(val => val ?? ""),
   latestEvent: z.enum(["Admitted", "Transferred", "Discharged"] as const),
-  class: z.string(),
+  class: stringOrNullSchema.transform(val => val ?? ""),
   admitTime: z
     .string()
     .datetime()

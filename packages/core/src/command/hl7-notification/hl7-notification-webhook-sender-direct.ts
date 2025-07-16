@@ -113,8 +113,8 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
         id: encounterId,
         cxId,
         patientId,
-        class: encounterClass.display ?? "",
-        facilityName: facilityName ?? "",
+        class: encounterClass.display,
+        facilityName: facilityName,
         admitTime: encounterPeriod?.start,
         dischargeTime: encounterPeriod?.end,
         clinicalInformation,
@@ -188,8 +188,8 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
       id: string;
       cxId: string;
       patientId: string;
-      class: string;
-      facilityName: string;
+      class: string | undefined;
+      facilityName: string | undefined;
       admitTime: string | undefined;
       dischargeTime: string | undefined;
       clinicalInformation: Record<string, unknown>;
