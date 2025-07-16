@@ -1,4 +1,4 @@
-export { APIMode } from "./client/common";
+export { APIMode, CommonWellOptions } from "./client/common";
 export { CommonWell } from "./client/commonwell";
 export { CommonWellAPI, OrganizationRequestMetadata } from "./client/commonwell-api";
 export { CommonWellMember } from "./client/commonwell-member";

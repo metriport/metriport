@@ -2,7 +2,7 @@ import { capture } from "@metriport/core/util/notifications";
 import { getFacilityIdOrFail } from "../../../domain/medical/patient-facility";
 import { processAsyncError } from "../../../errors";
 import cqCommands from "../../../external/carequality";
-import cwCommands from "../../../external/commonwell";
+import cwCommands from "../../../external/commonwell-v1";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
 import { validateVersionForUpdate } from "../../../models/_default";
 import { deleteAllPatientMappings } from "../../mapping/patient";

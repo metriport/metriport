@@ -9,7 +9,7 @@ import { updateFacility } from "../../../command/medical/facility/update-facilit
 import { getOrganizationOrFail } from "../../../command/medical/organization/get-organization";
 import { Facility, FacilityCreate } from "../../../domain/medical/facility";
 import { createOrUpdateFacility as cqCreateOrUpdateFacility } from "../../../external/carequality/command/create-or-update-facility";
-import { createOrUpdateFacilityInCw } from "../../../external/commonwell/command/create-or-update-cw-facility";
+import { createOrUpdateFacilityInCw } from "../../../external/commonwell-v1/command/create-or-update-cw-facility";
 import { requestLogger } from "../../helpers/request-logger";
 import { getUUIDFrom } from "../../schemas/uuid";
 import { asyncHandler, getFromQueryAsBoolean } from "../../util";

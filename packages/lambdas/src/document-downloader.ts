@@ -6,9 +6,9 @@ import {
   organizationQueryMeta,
 } from "@metriport/commonwell-sdk";
 import { addOidPrefix } from "@metriport/core/domain/oid";
-import { DownloadResult } from "@metriport/core/external/commonwell/document/document-downloader";
-import { DocumentDownloaderLambdaRequest } from "@metriport/core/external/commonwell/document/document-downloader-lambda";
-import { DocumentDownloaderLocal } from "@metriport/core/external/commonwell/document/document-downloader-local";
+import { DownloadResult } from "@metriport/core/external/commonwell-v1/document/document-downloader";
+import { DocumentDownloaderLambdaRequest } from "@metriport/core/external/commonwell-v1/document/document-downloader-lambda";
+import { DocumentDownloaderLocal } from "@metriport/core/external/commonwell-v1/document/document-downloader-local";
 import { getEnvType } from "@metriport/core/util/env-var";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";

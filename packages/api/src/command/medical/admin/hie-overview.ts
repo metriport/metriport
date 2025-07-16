@@ -15,7 +15,7 @@ import { QueryTypes } from "sequelize";
 import { getFacilityIdOrFail } from "../../../domain/medical/patient-facility";
 import { CQLink } from "../../../external/carequality/cq-patient-data";
 import { CQPatientDataModel } from "../../../external/carequality/models/cq-patient-data";
-import cwCommands from "../../../external/commonwell";
+import cwCommands from "../../../external/commonwell-v1";
 import { getDB } from "../../../models/db";
 import { PatientModel } from "../../../models/medical/patient";
 import { dtoFromCW, PatientLinksDTO } from "../../../routes/medical/dtos/linkDTO";

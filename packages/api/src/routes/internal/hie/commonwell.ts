@@ -12,14 +12,14 @@ import {
   getOrganizationByOidOrFail,
   getOrganizationOrFail,
 } from "../../../command/medical/organization/get-organization";
-import { getAndUpdateCWOrgAndMetriportOrg } from "../../../external/commonwell/command/create-or-update-cw-organization";
-import { getParsedOrgOrFail } from "../../../external/commonwell/organization";
-import { cwOrgActiveSchema } from "../../../external/commonwell/shared";
+import { getAndUpdateCWOrgAndMetriportOrg } from "../../../external/commonwell-v1/command/create-or-update-cw-organization";
+import { getParsedOrgOrFail } from "../../../external/commonwell-v1/organization";
+import { cwOrgActiveSchema } from "../../../external/commonwell-v1/shared";
 import { handleParams } from "../../helpers/handle-params";
 import { requestLogger } from "../../helpers/request-logger";
 import { getUUIDFrom } from "../../schemas/uuid";
 import { asyncHandler, getFrom, getFromQueryAsBoolean } from "../../util";
-import { runOrScheduleCwPatientDiscovery } from "../../../external/commonwell/command/run-or-schedule-patient-discovery";
+import { runOrScheduleCwPatientDiscovery } from "../../../external/commonwell-v1/command/run-or-schedule-patient-discovery";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 
 const router = Router();

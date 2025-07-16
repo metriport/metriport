@@ -1,11 +1,11 @@
 import { DocumentReferenceContent } from "@medplum/fhirtypes";
-import { Document } from "@metriport/commonwell-sdk";
+import { Document } from "@metriport/commonwell-sdk-v1";
 import { createDocumentFilePath } from "@metriport/core/domain/document/filename";
 import { Patient } from "@metriport/core/domain/patient";
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
-import { DocumentWithMetriportId } from "../../../external/commonwell/document/shared";
+import { DocumentWithMetriportId } from "../../../external/commonwell-v1/document/shared";
 import { Config } from "../../../shared/config";
 
 const s3Utils = new S3Utils(Config.getAWSRegion());

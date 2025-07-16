@@ -5,7 +5,7 @@ import { DocumentReference, DocumentReferenceContent } from "@medplum/fhirtypes"
 import { makeFhirAdminApi, makeFhirApi } from "@metriport/core/external/fhir/api/api-factory";
 import { OpenSearchFileIngestorDirect } from "@metriport/core/external/opensearch/file/file-ingestor-direct";
 import { isMetriportContent } from "@metriport/core/external/fhir/shared/extensions/metriport";
-import { isCommonwellExtension } from "@metriport/core/external/commonwell/extension";
+import { isCommonwellExtension } from "@metriport/core/external/commonwell-v1/extension";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 import { out } from "@metriport/core/util/log";

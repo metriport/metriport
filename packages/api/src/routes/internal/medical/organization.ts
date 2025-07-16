@@ -8,7 +8,7 @@ import { createOrganization } from "../../../command/medical/organization/create
 import { getOrganizationsOrFail } from "../../../command/medical/organization/get-organization";
 import { updateOrganization } from "../../../command/medical/organization/update-organization";
 import { createOrUpdateOrganization as cqCreateOrUpdateOrganization } from "../../../external/carequality/command/create-or-update-organization";
-import { createOrUpdateCWOrganization } from "../../../external/commonwell/command/create-or-update-cw-organization";
+import { createOrUpdateCWOrganization } from "../../../external/commonwell-v1/command/create-or-update-cw-organization";
 import { requestLogger } from "../../helpers/request-logger";
 import { internalDtoFromModel } from "../../medical/dtos/organizationDTO";
 import { organizationInternalDetailsSchema } from "../../medical/schemas/organization";

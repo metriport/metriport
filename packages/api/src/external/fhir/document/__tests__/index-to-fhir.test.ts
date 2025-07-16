@@ -1,13 +1,13 @@
 import { faker } from "@faker-js/faker";
-import { DocumentContent } from "@metriport/commonwell-sdk";
+import { DocumentContent } from "@metriport/commonwell-sdk-v1";
 import {
   makeDocument,
   makeDocumentContent,
-} from "@metriport/commonwell-sdk/models/__tests__/document";
+} from "@metriport/commonwell-sdk-v1/models/__tests__/document";
 import { makePatient } from "@metriport/core/domain/__tests__/patient";
 import dayjs from "dayjs";
 import { v4 as uuidv4 } from "uuid";
-import { CWDocumentWithMetriportData } from "../../../commonwell/document/shared";
+import { CWDocumentWithMetriportData } from "../../../commonwell-v1/document/shared";
 import { makePeriod } from "../../shared/__tests__/date";
 import { cwToFHIR, getBestDateFromCWDocRef } from "../index";
 

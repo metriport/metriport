@@ -1,5 +1,5 @@
 import { faker } from "@faker-js/faker";
-import { Contained, Document } from "@metriport/commonwell-sdk";
+import { Contained, Document } from "@metriport/commonwell-sdk-v1";
 import { v4 as uuidv4 } from "uuid";
 import { makePeriod } from "../../shared/__tests__/date";
 

@@ -37,8 +37,8 @@ import {
 import {
   APIMode,
   CommonWellOptions,
-  defaultOnError500,
   DEFAULT_AXIOS_TIMEOUT_SECONDS,
+  defaultOnError500,
   OnError500Options,
 } from "./common";
 import {
@@ -479,6 +479,7 @@ export class CommonWell implements CommonWellAPI {
     const response = await this.executeWithRetriesOn500IfEnabled(() =>
       this.api.get(url, { headers })
     );
+    // console.log(`>>> Response RAW: ${JSON.stringify(response.data, null, 2)}`);
     return response.data;
   }
 

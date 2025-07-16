@@ -6,7 +6,7 @@ import {
   CQOrgHydrated,
   getOrgs,
   OrgPrio,
-} from "@metriport/core/external/commonwell/cq-bridge/get-orgs";
+} from "@metriport/core/external/commonwell-v1/cq-bridge/get-orgs";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 import { executeWithNetworkRetries } from "@metriport/shared";
