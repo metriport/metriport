@@ -1,6 +1,6 @@
 {
   "name": "mllp-server",
-  "version": "0.3.10",
+  "version": "0.3.14-alpha.0",
   "description": "MLLP server that reads HL7 messages off of a raw tcp connection",
   "main": "app.js",
   "private": true,
@@ -33,7 +33,9 @@
     "@metriport/core": "file:packages/core",
     "@metriport/shared": "file:packages/shared",
     "@sentry/cli": "^2.42.1",
-    "dotenv": "^16.4.5"
+    "dotenv": "^16.4.5",
+    "ip-cidr": "^3.1.0",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@metriport/eslint-rules": "file:packages/eslint-rules",

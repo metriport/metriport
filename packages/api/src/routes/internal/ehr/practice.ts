@@ -5,6 +5,7 @@ import { isEhrSource } from "@metriport/shared/interface/external/ehr/source";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
+import { getSecondaryMappingsOrFail } from "../../../command/mapping/cx";
 import { requestLogger } from "../../helpers/request-logger";
 import { getUUIDFrom } from "../../schemas/uuid";
 import { asyncHandler, getFrom, getFromQueryOrFail } from "../../util";
@@ -38,6 +39,30 @@ router.get(
       practiceId,
     });
     return res.status(httpStatus.OK).json(secrets);
+  })
+);
+
+/**
+ * GET /internal/ehr/:ehrId/practice/:id/secondary-mappings
+ *
+ * Get the secondary mappings for the practice
+ *
+ * @param req.query.ehrId - The EHR source.
+ * @param req.params.id - The practice id of the EHR integration.
+ * @returns The secondary mappings for the practice
+ */
+router.get(
+  "/:id/secondary-mappings",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const ehr = getFromQueryOrFail("ehrId", req);
+    if (!isEhrSource(ehr)) throw new BadRequestError("Invalid EHR", undefined, { ehr });
+    const practiceId = getFrom("params").orFail("id", req);
+    const secondaryMappings = await getSecondaryMappingsOrFail({
+      source: ehr,
+      externalId: practiceId,
+    });
+    return res.status(httpStatus.OK).json({ secondaryMappings });
   })
 );
 

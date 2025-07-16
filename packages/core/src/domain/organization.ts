@@ -1,6 +1,9 @@
 import { BaseDomain, BaseDomainCreate } from "./base-domain";
 import { AddressStrict } from "./location-address";
 
+/**
+ * @deprecated Use shared's version instead.
+ */
 export enum OrganizationBizType {
   healthcareProvider = "healthcare_provider",
   healthcareITVendor = "healthcare_it_vendor",
@@ -18,7 +21,9 @@ export enum OrgType {
   postAcuteCare = "postAcuteCare",
 }
 
-// TODO: Update all instances of OrgType to TreatmentType
+/**
+ * @deprecated Use shared's version instead.
+ */
 export enum TreatmentType {
   acuteCare = "acuteCare",
   ambulatory = "ambulatory",

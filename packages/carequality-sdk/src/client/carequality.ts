@@ -58,9 +58,15 @@ export interface CarequalityManagementApi {
   updateOrganization(org: OrganizationWithId): Promise<OrganizationWithId>;
 
   /**
-   * Removes an organization from the Carequality directory.
+   * Deactivates an organization in the Carequality directory.
    *
    * @param oid the OID of the organization to delete
    */
-  deleteOrganization(oid: string): Promise<void>;
+  deleteOrganization(oid: string): Promise<OrganizationWithId>;
+  /**
+   * Deactivates an organization in the Carequality directory.
+   *
+   * @param org the organization to delete
+   */
+  deleteOrganization(org: OrganizationWithId): Promise<OrganizationWithId>;
 }
