@@ -10,31 +10,23 @@ import { MetriportError } from "@metriport/shared";
 import { X509Certificate } from "crypto";
 import dayjs from "dayjs";
 import { Config } from "../../shared/config";
+import { CommonWellMock } from "./mock/api-mock";
+import { CommonWellMemberMock } from "./mock/member-mock";
 
 const apiMode = Config.isProdEnv() ? APIMode.production : APIMode.integration;
 
 /**
+ * Make an instance of the CommonWell Member API to interact with the CommonWell
+ * acting as a Member. Used to manage Organizations.
  *
  * @param orgName Organization Name
  * @param orgOID Organization OID without 'urn:oid:' namespace
  * @returns CommonWell API
  */
 export function makeCommonWellMemberAPI(orgName: string, orgOID: string): CommonWellMemberAPI {
-  // TODO implement this
-  // TODO implement this
-  // TODO implement this
-  // TODO implement this
-  // if (Config.isSandbox()) {
-  //   return new CommonWellMemberMock(orgName, orgOID);
-  // }
-
-  // const options: CommonWellOptions = {
-  //   onError500: {
-  //     retry: true,
-  //     maxAttempts: 3,
-  //     initialDelay: 1_000,
-  //   },
-  // };
+  if (Config.isSandbox()) {
+    return new CommonWellMemberMock(orgOID);
+  }
 
   const isMemberAPI = orgOID === Config.getCWMemberOID();
   if (!isMemberAPI)
@@ -48,29 +40,25 @@ export function makeCommonWellMemberAPI(orgName: string, orgOID: string): Common
     memberName: orgName,
     memberId: orgOID,
     apiMode,
-    // options,
   });
 }
 
+/**
+ * Make an instance of the CommonWell API to interact with the CommonWell
+ * acting as an Organization. Used to manage Patients and Documents.
+ *
+ * @param orgName Organization Name
+ * @param orgOID Organization OID without 'urn:oid:' namespace
+ * @param npi Organization NPI
+ * @returns CommonWell API
+ */
 export function makeCommonWellAPI(orgName: string, orgOID: string, npi: string): CommonWellAPI {
-  // TODO implement this
-  // TODO implement this
-  // TODO implement this
-  // TODO implement this
-  // if (Config.isSandbox()) {
-  //   return new CommonWellMock(orgName, orgOID);
-  // }
-
-  // const options: CommonWellOptions = {
-  //   onError500: {
-  //     retry: true,
-  //     maxAttempts: 3,
-  //     initialDelay: 1_000,
-  //   },
-  // };
+  if (Config.isSandbox()) {
+    return new CommonWellMock(orgName, orgOID);
+  }
 
   const isMemberAPI = orgOID === Config.getCWMemberOID();
-  if (isMemberAPI) throw new Error("Not a member API");
+  if (isMemberAPI) throw new Error("Cannot use the member OID as an organization OID");
 
   return new CommonWell({
     orgCert: Config.getCWOrgCertificate(),
@@ -80,7 +68,6 @@ export function makeCommonWellAPI(orgName: string, orgOID: string, npi: string):
     homeCommunityId: orgOID,
     npi,
     apiMode,
-    // options,
   });
 }
 
