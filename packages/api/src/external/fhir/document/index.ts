@@ -23,7 +23,7 @@ import {
   GenderCodes,
   HumanName as CWHumanName,
 } from "@metriport/commonwell-sdk";
-import { Gender } from "@metriport/commonwell-sdk/src/models/demographics";
+import { Gender } from "@metriport/commonwell-sdk/models/demographics";
 import { joinName, Patient, splitName } from "@metriport/core/domain/patient";
 import { cwExtension } from "@metriport/core/external/commonwell/extension";
 import { toFHIRSubject } from "@metriport/core/external/fhir/patient/conversion";
@@ -79,11 +79,11 @@ export function getBestDateFromCWDocRef(content: DocumentContent): string {
 }
 
 // TODO: Move to external/commonwell
-export const cwToFHIR = (
+export function cwToFHIR(
   docId: string,
   doc: CWDocumentWithMetriportData,
   patient: Pick<Patient, "id">
-): DocumentReferenceWithId => {
+): DocumentReferenceWithId {
   const content = doc.content;
   const baseAttachment = {
     contentType: doc.metriport.fileContentType,
@@ -139,7 +139,7 @@ export const cwToFHIR = (
     extension: [cwExtension],
     context: content.context,
   });
-};
+}
 
 export function getFHIRDocRef(
   patientId: string,
