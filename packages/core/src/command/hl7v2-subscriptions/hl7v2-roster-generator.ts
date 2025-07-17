@@ -11,7 +11,6 @@ import { stringify } from "csv-stringify/sync";
 import dayjs from "dayjs";
 import _ from "lodash";
 import { getFirstNameAndMiddleInitial, Patient } from "../../domain/patient";
-import { Hl7v2Subscription } from "../../domain/patient-settings";
 import { S3Utils, storeInS3WithRetries } from "../../external/aws/s3";
 import { out } from "../../util";
 import { Config } from "../../util/config";
@@ -44,12 +43,12 @@ export class Hl7v2RosterGenerator {
 
   async execute(config: HieConfig): Promise<string> {
     const { log } = out("Hl7v2RosterGenerator");
-    const { states, subscriptions } = config;
+    const { states } = config;
+    const hieName = config.name;
     const loggingDetails = {
-      hieName: config.name,
+      hieName,
       mapping: config.mapping,
       states,
-      subscriptions,
     };
 
     async function simpleExecuteWithRetries<T>(functionToExecute: () => Promise<T>) {
@@ -62,9 +61,7 @@ export class Hl7v2RosterGenerator {
 
     log(`Running with this config: ${JSON.stringify(loggingDetails)}`);
     log(`Getting all subscribed patients...`);
-    const patients = await simpleExecuteWithRetries(() =>
-      this.getAllSubscribedPatients(states, subscriptions)
-    );
+    const patients = await simpleExecuteWithRetries(() => this.getAllSubscribedPatients(hieName));
     log(`Found ${patients.length} total patients`);
 
     if (patients.length === 0) {
@@ -95,7 +92,7 @@ export class Hl7v2RosterGenerator {
     const rosterCsv = this.generateCsv(rosterRows);
     log("Created CSV");
 
-    const fileName = this.createFileKeyHl7v2Roster(config.name, subscriptions);
+    const fileName = this.createFileKeyHl7v2Roster(hieName);
 
     await storeInS3WithRetries({
       s3Utils: this.s3Utils,
@@ -116,15 +113,11 @@ export class Hl7v2RosterGenerator {
     return rosterCsv;
   }
 
-  private async getAllSubscribedPatients(
-    states: string[],
-    subscriptions: Hl7v2Subscription[]
-  ): Promise<Patient[]> {
+  private async getAllSubscribedPatients(hie: string): Promise<Patient[]> {
     const allSubscribers: Patient[] = [];
     let currentUrl: string | undefined = `${this.apiUrl}/${HL7V2_SUBSCRIBERS_ENDPOINT}`;
     let baseParams: Hl7v2SubscriberParams | undefined = {
-      states: states.join(","),
-      subscriptions,
+      hie,
       count: NUMBER_OF_PATIENTS_PER_PAGE,
     };
 
@@ -155,9 +148,9 @@ export class Hl7v2RosterGenerator {
     return stringify(records, { header: true, quoted: true });
   }
 
-  private createFileKeyHl7v2Roster(hieName: string, subscriptions: Hl7v2Subscription[]): string {
+  private createFileKeyHl7v2Roster(hieName: string): string {
     const todaysDate = buildDayjs(new Date()).toISOString().split("T")[0];
-    return `${todaysDate}/${hieName}/${subscriptions.join("-")}.${CSV_FILE_EXTENSION}`;
+    return `${todaysDate}/${hieName}.${CSV_FILE_EXTENSION}`;
   }
 }
 

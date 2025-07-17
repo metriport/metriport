@@ -37,6 +37,7 @@ import { addDefaultMetricsToTargetGroup } from "../shared/target-group";
 import { isProd, isSandbox } from "../shared/util";
 import { SurescriptsAssets } from "../surescripts/types";
 import { AnalyticsPlatformsAssets } from "../analytics-platform/types";
+import { createHieConfigDictionary } from "../shared/hie-config-dictionary";
 
 interface ApiProps extends StackProps {
   config: EnvConfig;
@@ -408,6 +409,11 @@ export function createAPIService({
             FHIR_TO_CSV_BATCH_JOB_QUEUE_ARN: analyticsPlatformAssets.fhirToCsvQueue.jobQueueArn,
             FHIR_TO_CSV_BATCH_JOB_DEFINITION_ARN:
               analyticsPlatformAssets.fhirToCsvBatchJob.jobDefinitionArn,
+          }),
+          ...(props.config.hl7Notification?.hieConfigs && {
+            HIE_CONFIG_DICTIONARY: JSON.stringify(
+              createHieConfigDictionary(props.config.hl7Notification.hieConfigs)
+            ),
           }),
         },
       },

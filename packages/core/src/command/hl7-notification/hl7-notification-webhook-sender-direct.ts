@@ -114,7 +114,7 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
         cxId,
         patientId,
         class: encounterClass.display,
-        facilityName,
+        facilityName: facilityName,
         admitTime: encounterPeriod?.start,
         dischargeTime: encounterPeriod?.end,
         clinicalInformation,
