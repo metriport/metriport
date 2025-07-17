@@ -65,8 +65,8 @@ export {
   OrganizationCreate,
   organizationCreateSchema,
   organizationSchema,
-  OrgType,
-  orgTypeSchema,
+  TreatmentType,
+  treatmentTypeSchema,
 } from "./medical/models/organization";
 export {
   Patient,

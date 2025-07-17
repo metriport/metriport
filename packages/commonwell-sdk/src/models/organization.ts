@@ -1,5 +1,5 @@
+import { normalizeUsState, TreatmentType } from "@metriport/shared";
 import { z } from "zod";
-// import { linkSchema } from "./link";
 
 const organizationBaseSchema = z.object({
   organizationId: z.string(),
@@ -7,7 +7,10 @@ const organizationBaseSchema = z.object({
   name: z.string(),
   displayName: z.string(),
   memberName: z.string(),
-  type: z.string(),
+  type: z.preprocess((val: unknown) => {
+    if (typeof val !== "string") throw new Error("Invalid treatment type");
+    return val.toLowerCase().trim();
+  }, z.nativeEnum(TreatmentType)),
   npiType1: z.string().nullish(), // Physicians
   npiType2: z.string().nullish(), // Organizations
   patientIdAssignAuthority: z.string(),
@@ -31,7 +34,7 @@ const organizationBaseSchema = z.object({
       address1: z.string(),
       address2: z.string().nullish(),
       city: z.string(),
-      state: z.string(),
+      state: z.preprocess(normalizeUsState, z.string()),
       postalCode: z.string(),
       country: z.string(),
       phone: z.string().nullish(),

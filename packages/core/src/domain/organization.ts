@@ -1,5 +1,6 @@
 import { BaseDomain, BaseDomainCreate } from "./base-domain";
 import { AddressStrict } from "./location-address";
+import { TreatmentType } from "@metriport/shared";
 
 /**
  * @deprecated Use shared's version instead.
@@ -9,34 +10,10 @@ export enum OrganizationBizType {
   healthcareITVendor = "healthcare_it_vendor",
 }
 
-/**
- * @deprecated Should no longer be used. Use TreatmentType instead.
- */
-export enum OrgType {
-  acuteCare = "acuteCare",
-  ambulatory = "ambulatory",
-  hospital = "hospital",
-  labSystems = "labSystems",
-  pharmacy = "pharmacy",
-  postAcuteCare = "postAcuteCare",
-}
-
-/**
- * @deprecated Use shared's version instead.
- */
-export enum TreatmentType {
-  acuteCare = "acuteCare",
-  ambulatory = "ambulatory",
-  hospital = "hospital",
-  labSystems = "labSystems",
-  pharmacy = "pharmacy",
-  postAcuteCare = "postAcuteCare",
-}
-
 export type OrganizationData = {
   name: string;
   shortcode?: string;
-  type: OrgType;
+  type: TreatmentType;
   location: AddressStrict;
 };
 

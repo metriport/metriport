@@ -1,4 +1,4 @@
-import { OrgType } from "@metriport/core/domain/organization";
+import { TreatmentType } from "@metriport/shared";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
@@ -35,7 +35,7 @@ router.post(
           cxId,
           data: {
             name: facilityData.name,
-            type: OrgType.ambulatory,
+            type: TreatmentType.ambulatory,
             location: facilityData.address,
           },
         });
