@@ -171,7 +171,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
         "-e",
         "PATIENT_ID=Ref::patientId",
         "-e",
-        "BUNDLES_TO_APPEND=Ref::bundlesToAppend,Ref::bundlesToAppend",
+        "BUNDLES_TO_APPEND=Ref::bundlesToAppend",
         "-e",
         "API_URL=Ref::apiUrl",
         "-e",

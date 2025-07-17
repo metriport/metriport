@@ -13,13 +13,15 @@ services:
       dockerfile: ./Dockerfile
     volumes:
       - .:/usr/app/data
+      - ~/.aws:/root/.aws
     environment:
       ENV: ${ENV}
       AWS_REGION: ${AWS_REGION}
+      JOB_ID: ${JOB_ID}
       CX_ID: ${CX_ID}
       PATIENT_ID: ${PATIENT_ID}
+      BUNDLES_TO_APPEND: ${BUNDLES_TO_APPEND}
       API_URL: http://host.docker.internal:8080
-      JOB_ID: ${JOB_ID}
       INPUT_S3_BUCKET: ${INPUT_S3_BUCKET}
       OUTPUT_S3_BUCKET: ${OUTPUT_S3_BUCKET}
       SNOWFLAKE_ACCOUNT: ${SNOWFLAKE_ACCOUNT}
@@ -28,7 +30,5 @@ services:
       SNOWFLAKE_ROLE: ${SNOWFLAKE_ROLE}
       SNOWFLAKE_WAREHOUSE: ${SNOWFLAKE_WAREHOUSE}
       SNOWFLAKE_INTEGRATION: ${SNOWFLAKE_INTEGRATION}
-      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
-      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
     networks:
       - metriportNetwork
