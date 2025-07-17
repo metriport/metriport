@@ -8080,6 +8080,9 @@ function createMRHeader(patient: Patient): string {
                 <li>
                   <a href="#vitals">Vitals</a>
                 </li>
+                <li>
+                  <a href="#labs">Laboratory</a>
+                </li>
               </div>
             </ul>
           </td></tr></tbody></table>
@@ -8138,7 +8141,7 @@ function createConditionsSection(conditions: Condition[]): string {
           HCC V28 Conditions
         </th>
       </tr>
-      ${sortedHccConditions.map(condition => createConditionRow(condition, "")).join("")}
+      ${sortedHccConditions.map(condition => createConditionRow(condition)).join("")}
     `;
   }
 
@@ -8150,7 +8153,7 @@ function createConditionsSection(conditions: Condition[]): string {
           Chronic Conditions
         </th>
       </tr>
-      ${sortedChronicConditions.map(condition => createConditionRow(condition, "")).join("")}
+      ${sortedChronicConditions.map(condition => createConditionRow(condition)).join("")}
     `;
   }
 
@@ -8174,7 +8177,7 @@ function createConditionsSection(conditions: Condition[]): string {
   );
 }
 
-function createConditionRow(condition: Condition, cssClass: string): string {
+function createConditionRow(condition: Condition): string {
   const icd10Code = getICD10Code(condition);
   const onsetDate = condition.onsetDateTime
     ? formatDateForDisplay(condition.onsetDateTime)
@@ -8206,10 +8209,13 @@ function createMedicationSection(
     );
   }
 
-  // Filter medications from last 12 months
-  const oneYearAgo = dayjs().subtract(1, "year").format(ISO_DATE);
-  const recentMedications = medicationStatements.filter(statement => {
-    // Check multiple date fields: effectiveDateTime, effectivePeriod.start, effectivePeriod.end
+  // Filter for active medication statements and get the latest ones
+  const activeMedications = medicationStatements.filter(statement => {
+    // Check if the statement is active
+    const isActive = statement.status === "active" || statement.status === "intended";
+
+    // Check if it's from the last 12 months
+    const oneYearAgo = dayjs().subtract(1, "year").format(ISO_DATE);
     const effectiveDate =
       statement.effectiveDateTime ||
       statement.effectivePeriod?.start ||
@@ -8220,16 +8226,16 @@ function createMedicationSection(
       const startDate = statement.effectivePeriod.start;
       const endDate = statement.effectivePeriod.end;
       const mostRecentDate = dayjs(startDate).isAfter(dayjs(endDate)) ? startDate : endDate;
-      return mostRecentDate >= oneYearAgo;
+      return isActive && mostRecentDate >= oneYearAgo;
     }
 
-    return effectiveDate && effectiveDate >= oneYearAgo;
+    return isActive && effectiveDate && effectiveDate >= oneYearAgo;
   });
 
-  if (recentMedications.length === 0) {
+  if (activeMedications.length === 0) {
     return createSection(
       "Medications",
-      `<table><tbody><tr><td>No medications found in the last 12 months</td></tr></tbody></table>`,
+      `<table><tbody><tr><td>No active medications found in the last 12 months</td></tr></tbody></table>`,
       "medications"
     );
   }
@@ -8251,7 +8257,7 @@ function createMedicationSection(
     }
   >();
 
-  recentMedications.forEach(statement => {
+  activeMedications.forEach((statement: MedicationStatement) => {
     const medication = statement.medicationReference?.reference
       ? medicationMap.get(statement.medicationReference.reference.replace("Medication/", ""))
       : undefined;
@@ -8265,22 +8271,16 @@ function createMedicationSection(
 
     const dosage = statement.dosage?.[0]?.text || "Not specified";
 
-    // Get start and end dates
-    let startDate = statement.effectiveDateTime || statement.effectivePeriod?.start;
-    let endDate = statement.effectivePeriod?.end;
-
-    // If we have effectiveDateTime but no period, use it as both start and end
-    if (statement.effectiveDateTime && !statement.effectivePeriod?.start) {
-      startDate = statement.effectiveDateTime;
-      endDate = statement.effectiveDateTime;
-    }
+    // Get start date - prioritize effectivePeriod.start as it represents when medication was started
+    const startDate = statement.effectivePeriod?.start || statement.effectiveDateTime;
 
     const formattedStartDate = startDate ? dayjs(startDate).format("MM/DD/YYYY") : "Unknown";
 
     if (consolidatedMedications.has(medicationName)) {
       // Update with the latest start date if this one is more recent
-      const existing = consolidatedMedications.get(medicationName)!;
+      const existing = consolidatedMedications.get(medicationName);
       if (
+        existing &&
         formattedStartDate !== "Unknown" &&
         (existing.startDate === "Unknown" ||
           dayjs(formattedStartDate).isAfter(dayjs(existing.startDate)))
@@ -8382,7 +8382,8 @@ function createObservationSocialHistorySection(observations: Observation[]): str
 
     if (consolidatedSocialHistory.has(category)) {
       // Update with the latest date if this one is more recent
-      const existing = consolidatedSocialHistory.get(category)!;
+      const existing = consolidatedSocialHistory.get(category);
+      if (!existing) return;
       if (
         formattedDate !== "Unknown" &&
         (existing.date === "Unknown" ||
@@ -8484,59 +8485,125 @@ function createObservationVitalsSection(observations: Observation[]): string {
     if (!vitalsByDate.has(dateKey)) {
       vitalsByDate.set(dateKey, []);
     }
-    vitalsByDate.get(dateKey)!.push(obs);
+    const vitalsForDate = vitalsByDate.get(dateKey);
+    if (vitalsForDate) {
+      vitalsForDate.push(obs);
+    }
   });
 
-  let tableContent = "";
   const sortedDates = Array.from(vitalsByDate.keys()).sort((a, b) => {
     if (a === "Unknown") return 1;
     if (b === "Unknown") return -1;
     return dayjs(b).diff(dayjs(a));
   });
 
+  let tablesContent = "";
+
   sortedDates.forEach(date => {
-    const observationsForDate = vitalsByDate.get(date)!;
+    const observationsForDate = vitalsByDate.get(date);
+    if (!observationsForDate) return;
 
-    tableContent += `
-      <tr>
-        <th colspan="3" style="background-color: #f5f5f5; text-align: left; padding: 10px;">
-          ${date}
-        </th>
-      </tr>
+    const tableRows = observationsForDate
+      .map(obs => {
+        const code = obs.code?.text || obs.code?.coding?.[0]?.display || "Unknown";
+        const value = renderVitalsValue(obs);
+
+        return `
+            <tr>
+              <td style="padding: 8px; border: 1px solid #ddd;">${code}</td>
+              <td style="padding: 8px; border: 1px solid #ddd;">${value}</td>
+            </tr>
+          `;
+      })
+      .join("");
+
+    tablesContent += `
+      <div style="margin-bottom: 30px;">
+        <h4 style="margin-bottom: 10px; color: #333;">
+          Vitals for ${date}
+        </h4>
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+          <thead>
+            <tr style="background-color: #f5f5f5;">
+              <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Vital Sign</th>
+              <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Value</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${tableRows}
+          </tbody>
+        </table>
+      </div>
     `;
-
-    observationsForDate.forEach(obs => {
-      const code = obs.code?.text || obs.code?.coding?.[0]?.display || "Unknown";
-      const value = renderVitalsValue(obs);
-
-      tableContent += `
-        <tr>
-          <td>${code}</td>
-          <td>${value}</td>
-          <td>${obs.status || "Unknown"}</td>
-        </tr>
-      `;
-    });
   });
 
-  return createSection(
-    "Vitals (Last 12 Months)",
-    `
-    <table>
-      <thead>
-        <tr>
-          <th>Vital Sign</th>
-          <th>Value</th>
-          <th>Status</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${tableContent}
-      </tbody>
-    </table>
-    `,
-    "vitals"
-  );
+  return createSection("Vitals (Last 12 Months)", tablesContent, "vitals");
+}
+
+// Helper function to determine if a lab result is abnormal
+function getLabResultStatus(obs: Observation): {
+  status: "normal" | "high" | "low";
+  isAbnormal: boolean;
+} {
+  const value = obs.valueQuantity?.value;
+  const interpretation =
+    obs.interpretation?.[0]?.text?.toLowerCase() ||
+    obs.interpretation?.[0]?.coding?.[0]?.display?.toLowerCase() ||
+    obs.interpretation?.[0]?.coding?.[0]?.code?.toLowerCase();
+
+  // Check explicit interpretation first
+  if (interpretation) {
+    if (
+      interpretation.includes("high") ||
+      interpretation.includes("critical") ||
+      interpretation.includes("positive") ||
+      interpretation.includes("abnormal") ||
+      interpretation.includes("elevated") ||
+      interpretation.includes("increased")
+    ) {
+      return { status: "high", isAbnormal: true };
+    }
+    if (
+      interpretation.includes("low") ||
+      interpretation.includes("decreased") ||
+      interpretation.includes("reduced")
+    ) {
+      return { status: "low", isAbnormal: true };
+    }
+    if (interpretation.includes("normal") || interpretation.includes("negative")) {
+      return { status: "normal", isAbnormal: false };
+    }
+  }
+
+  // Check reference range if we have a numeric value
+  if (typeof value === "number" && obs.referenceRange?.[0]) {
+    const low = obs.referenceRange[0].low?.value;
+    const high = obs.referenceRange[0].high?.value;
+
+    if (low !== undefined && value < low) {
+      return { status: "low", isAbnormal: true };
+    }
+    if (high !== undefined && value > high) {
+      return { status: "high", isAbnormal: true };
+    }
+    if (low !== undefined && high !== undefined && value >= low && value <= high) {
+      return { status: "normal", isAbnormal: false };
+    }
+  }
+
+  return { status: "normal", isAbnormal: false };
+}
+
+// Helper function to get CSS class for styling
+function getLabResultCssClass(status: "normal" | "high" | "low"): string {
+  switch (status) {
+    case "high":
+      return "background-color: #ffebee; color: #c62828;"; // Light red background, dark red text
+    case "low":
+      return "background-color: #e3f2fd; color: #1565c0;"; // Light blue background, dark blue text
+    default:
+      return ""; // No highlighting for normal results
+  }
 }
 
 function createObservationLabsSection(observations: Observation[]): string {
@@ -8580,80 +8647,114 @@ function createObservationLabsSection(observations: Observation[]): string {
     if (!labsByDate.has(dateKey)) {
       labsByDate.set(dateKey, []);
     }
-    labsByDate.get(dateKey)!.push(obs);
+    const labsForDate = labsByDate.get(dateKey);
+    if (labsForDate) {
+      labsForDate.push(obs);
+    }
   });
 
-  let tableContent = "";
-  const sortedDates = Array.from(labsByDate.keys()).sort((a, b) => {
-    if (a === "Unknown") return 1;
-    if (b === "Unknown") return -1;
-    return dayjs(b).diff(dayjs(a));
-  });
+  // Sort dates and limit to latest 4 days
+  const sortedDates = Array.from(labsByDate.keys())
+    .sort((a, b) => {
+      if (a === "Unknown") return 1;
+      if (b === "Unknown") return -1;
+      return dayjs(b).diff(dayjs(a));
+    })
+    .slice(0, 4); // Only show latest 4 days
+
+  let tablesContent = "";
 
   sortedDates.forEach(date => {
-    const observationsForDate = labsByDate.get(date)!;
-    observationsForDate.forEach(obs => {
-      const code = obs.code?.text || obs.code?.coding?.[0]?.display || "Unknown";
-      const value = renderLabsValue(obs);
-      const unit = obs.valueQuantity?.unit || "";
-      const interpretation =
-        obs.interpretation?.[0]?.text || obs.interpretation?.[0]?.coding?.[0]?.display || "";
-      let referenceRange = "";
-      if (obs.referenceRange?.[0]) {
-        if (obs.referenceRange[0].text) {
-          referenceRange = obs.referenceRange[0].text;
-        } else if (obs.referenceRange[0].low && obs.referenceRange[0].high) {
-          referenceRange = `${obs.referenceRange[0].low.value} - ${
-            obs.referenceRange[0].high.value
-          }${obs.referenceRange[0].low.unit ? " " + obs.referenceRange[0].low.unit : ""}`;
-        }
-      }
-      const dateValue = obs.effectiveDateTime || obs.effectivePeriod?.start;
-      const formattedDate = dateValue ? dayjs(dateValue).format("MM/DD/YYYY") : date;
+    const observationsForDate = labsByDate.get(date);
+    if (!observationsForDate) return;
 
-      tableContent += `
+    // Sort observations within each date: abnormal first, then by test name
+    const sortedObservations = observationsForDate.sort((a, b) => {
+      const statusA = getLabResultStatus(a);
+      const statusB = getLabResultStatus(b);
+
+      // If one is abnormal and the other isn't, abnormal goes first
+      if (statusA.isAbnormal && !statusB.isAbnormal) return -1;
+      if (!statusA.isAbnormal && statusB.isAbnormal) return 1;
+
+      // If both are abnormal, sort by severity (high before low)
+      if (statusA.isAbnormal && statusB.isAbnormal) {
+        if (statusA.status === "high" && statusB.status === "low") return -1;
+        if (statusA.status === "low" && statusB.status === "high") return 1;
+      }
+
+      // If same status, sort alphabetically by test name
+      const nameA = a.code?.text || a.code?.coding?.[0]?.display || "Unknown";
+      const nameB = b.code?.text || b.code?.coding?.[0]?.display || "Unknown";
+      return nameA.localeCompare(nameB);
+    });
+
+    const tableRows = sortedObservations
+      .map(obs => {
+        const code = obs.code?.text || obs.code?.coding?.[0]?.display || "Unknown";
+        const value = renderLabsValue(obs);
+        const unit = obs.valueQuantity?.unit || "";
+        const interpretation =
+          obs.interpretation?.[0]?.text || obs.interpretation?.[0]?.coding?.[0]?.display || "";
+        let referenceRange = "";
+        if (obs.referenceRange?.[0]) {
+          if (obs.referenceRange[0].text) {
+            referenceRange = obs.referenceRange[0].text;
+          } else if (obs.referenceRange[0].low && obs.referenceRange[0].high) {
+            referenceRange = `${obs.referenceRange[0].low.value} - ${
+              obs.referenceRange[0].high.value
+            }${obs.referenceRange[0].low.unit ? " " + obs.referenceRange[0].low.unit : ""}`;
+          }
+        }
+
+        const resultStatus = getLabResultStatus(obs);
+        const cssClass = getLabResultCssClass(resultStatus.status);
+
+        return `
         <tr>
-          <td style="width: 20%;">${code}</td>
-          <td style="width: 20%;">${value}${unit ? ` ${unit}` : ""}</td>
-          <td style="width: 20%;">${interpretation}</td>
-          <td style="width: 20%;">${referenceRange}</td>
-          <td style="width: 20%;">${formattedDate}</td>
+          <td style="width: 20%; padding: 8px; border: 1px solid #ddd;">${code}</td>
+          <td style="width: 20%; padding: 8px; border: 1px solid #ddd; ${cssClass}">${value}${
+          unit ? ` ${unit}` : ""
+        }</td>
+          <td style="width: 20%; padding: 8px; border: 1px solid #ddd; ${cssClass}">${interpretation}</td>
+          <td style="width: 20%; padding: 8px; border: 1px solid #ddd;">${referenceRange}</td>
+          <td style="width: 20%; padding: 8px; border: 1px solid #ddd;">${date}</td>
         </tr>
       `;
-    });
+      })
+      .join("");
+
+    tablesContent += `
+      <div style="margin-bottom: 30px;">
+        <h4 style="margin-bottom: 10px; color: #333;">
+          Lab Results for ${date}
+        </h4>
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+          <thead>
+            <tr style="background-color: #f5f5f5;">
+              <th style="width: 20%; padding: 8px; border: 1px solid #ddd; text-align: left;">Observation</th>
+              <th style="width: 20%; padding: 8px; border: 1px solid #ddd; text-align: left;">Value</th>
+              <th style="width: 20%; padding: 8px; border: 1px solid #ddd; text-align: left;">Interpretation</th>
+              <th style="width: 20%; padding: 8px; border: 1px solid #ddd; text-align: left;">Reference Range</th>
+              <th style="width: 20%; padding: 8px; border: 1px solid #ddd; text-align: left;">Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${tableRows}
+          </tbody>
+        </table>
+      </div>
+    `;
   });
 
-  return createSection(
-    "Laboratory Results (Last 12 Months)",
-    `
-    <table>
-      <thead>
-        <tr>
-          <th style="width: 20%;">Observation</th>
-          <th style="width: 20%;">Value</th>
-          <th style="width: 20%;">Interpretation</th>
-          <th style="width: 20%;">Reference Range</th>
-          <th style="width: 20%;">Date</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${tableContent}
-      </tbody>
-    </table>
-    `,
-    "labs"
-  );
+  return createSection("Laboratory Results", tablesContent, "labs");
 }
 
 // Helper functions
 function sortConditionsByDate(conditions: Condition[]): Condition[] {
   return conditions.sort((a, b) => {
-    const getDate = (condition: Condition): string | null => {
-      return condition.onsetDateTime || condition.onsetPeriod?.start || null;
-    };
-
-    const dateA = getDate(a);
-    const dateB = getDate(b);
+    const dateA = a.onsetDateTime || a.onsetPeriod?.start || null;
+    const dateB = b.onsetDateTime || b.onsetPeriod?.start || null;
 
     // If both dates are unknown, maintain original order
     if (!dateA && !dateB) return 0;
@@ -8705,22 +8806,24 @@ function consolidateConditionsByICD10(conditions: Condition[]): Condition[] {
 
   conditions.forEach(condition => {
     const icd10Code = getICD10Code(condition);
-    if (icd10Code) {
-      if (!consolidated.has(icd10Code)) {
-        consolidated.set(icd10Code, condition);
-      } else {
-        // Keep the most recent one
-        const existing = consolidated.get(icd10Code)!;
+    const conditionName = condition.code?.text || condition.code?.coding?.[0]?.display || "Unknown";
+
+    // Use ICD-10 code as key if available, otherwise use condition name
+    const key = icd10Code || conditionName;
+
+    if (!consolidated.has(key)) {
+      consolidated.set(key, condition);
+    } else {
+      // Keep the most recent one
+      const existing = consolidated.get(key);
+      if (existing) {
         const existingDate = existing.onsetDateTime || existing.onsetPeriod?.start;
         const newDate = condition.onsetDateTime || condition.onsetPeriod?.start;
 
         if (newDate && (!existingDate || dayjs(newDate).isAfter(dayjs(existingDate)))) {
-          consolidated.set(icd10Code, condition);
+          consolidated.set(key, condition);
         }
       }
-    } else {
-      // If no ICD-10 code, keep it as is
-      consolidated.set(condition.id || Math.random().toString(), condition);
     }
   });
 
