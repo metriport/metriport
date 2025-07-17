@@ -1,0 +1,34 @@
+{{#if (contains (toString (toJsonString msg)) '2.16.840.1.113883.10.20.22.2.10')}}
+    {{#with (getFirstCdaSectionsByTemplateId msg '2.16.840.1.113883.10.20.22.2.10')}}
+        {{#each (toArray 2_16_840_1_113883_10_20_22_2_10.entry) as |careplanEntry|}}
+            {{#if careplanEntry.encounter}}
+                {{>Resources/CarePlan.hbs encounter=careplanEntry.encounter performer=careplanEntry.encounter.performer.assignedEntity ID=(generateUUID (toJsonString careplanEntry))}},
+                {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
+                    {{>References/CarePlan/subject.hbs ID=(generateUUID (toJsonString careplanEntry)) REF=(concat 'Patient/' patientId.Id)}},
+                {{/with}}
+            
+                {{#if careplanEntry.encounter.author.assignedAuthor.representedOrganization}}
+                    {{#with (evaluate 'Utils/GenerateOrganizationId.hbs' obj=careplanEntry.encounter.author.assignedAuthor.representedOrganization) as |orgId|}}
+                        {{>Resources/Organization.hbs org=careplanEntry.encounter.author.assignedAuthor ID=orgId.Id}},
+                        {{>References/CarePlan/author.hbs ID=(generateUUID (toJsonString careplanEntry)) REF=(concat 'Organization/' orgId.Id)}},
+                    {{/with}}
+                {{/if}}
+
+                {{#if careplanEntry.encounter.performer.assignedEntity}}
+                    {{#with (generatePractitionerId careplanEntry.encounter.performer.assignedEntity) as |practitionerId|}}
+                        {{>Resources/Practitioner.hbs practitioner=careplanEntry.encounter.performer.assignedEntity ID=practitionerId}},
+                        {{!-- Reference to the Practitioner is generated at the time of CarePlan resource generation --}}
+                    {{/with}}
+                {{/if}}
+                
+                {{#if careplanEntry.encounter.participant.participantRole}}
+                    {{#with (generateLocationId careplanEntry.encounter.participant.participantRole) as |locationId|}}
+                        {{>Resources/Location.hbs location=careplanEntry.encounter.participant.participantRole playingEntity=careplanEntry.encounter.participant.participantRole.playingEntity ID=locationId}},
+                        {{!-- Reference to the Location is generated at the time of CarePlan resource generation --}}
+                    {{/with}}
+                {{/if}}
+                
+            {{/if}}
+        {{/each}}
+    {{/with}}
+{{/if}}
