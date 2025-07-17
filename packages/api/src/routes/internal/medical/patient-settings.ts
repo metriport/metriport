@@ -1,19 +1,21 @@
-import { patientSettingsSchema } from "@metriport/api-sdk";
-import { throwOnInvalidHieName } from "@metriport/core/external/hl7-notification/hie-config-dictionary";
-import { adtSubscriptionRequestSchema, patientSettingsRequestSchema } from "@metriport/shared";
+import {
+  parseAdtSubscriptionRequest,
+  parseBulkPatientSettingsRequest,
+  parsePatientSettingsRequest,
+} from "@metriport/core/domain/patient-settings";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
 import {
-  addHieSubscriptionToPatients,
-  removeHieSubscriptionFromPatients,
-} from "../../../command/medical/patient/settings/hie-subscriptions";
-import {
   upsertPatientSettingsForCx,
   upsertPatientSettingsForPatientList,
 } from "../../../command/medical/patient/settings/create-patient-settings";
+import {
+  addHieSubscriptionToPatients,
+  removeHieSubscriptionFromPatients,
+} from "../../../command/medical/patient/settings/hie-subscriptions";
 import { requestLogger } from "../../helpers/request-logger";
 import { getUUIDFrom } from "../../schemas/uuid";
 import { asyncHandler } from "../../util";
@@ -39,9 +41,7 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const facilityId = getUUIDFrom("query", req, "facilityId").optional();
-    const { patientIds, settings } = patientSettingsRequestSchema.parse(req.body);
-
-    settings.subscriptions?.adt?.forEach(throwOnInvalidHieName);
+    const { patientIds, settings } = parsePatientSettingsRequest(req.body);
 
     const result = await upsertPatientSettingsForPatientList({
       cxId,
@@ -69,9 +69,7 @@ router.post(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const { patientIds, hieName } = adtSubscriptionRequestSchema.parse(req.body);
-
-    throwOnInvalidHieName(hieName);
+    const { patientIds, hieName } = parseAdtSubscriptionRequest(req.body);
 
     const result = await addHieSubscriptionToPatients({
       cxId,
@@ -98,9 +96,7 @@ router.delete(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const { patientIds, hieName } = adtSubscriptionRequestSchema.parse(req.body);
-
-    throwOnInvalidHieName(hieName);
+    const { patientIds, hieName } = parseAdtSubscriptionRequest(req.body);
 
     const result = await removeHieSubscriptionFromPatients({
       cxId,
@@ -128,9 +124,7 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const facilityId = getUUIDFrom("query", req, "facilityId").optional();
-    const settings = patientSettingsSchema.parse(req.body);
-
-    settings.subscriptions?.adt?.forEach(throwOnInvalidHieName);
+    const { settings } = parseBulkPatientSettingsRequest(req.body);
 
     const result = await upsertPatientSettingsForCx({
       cxId,
