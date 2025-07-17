@@ -137,7 +137,7 @@ async function _addHieSubscriptionToPatients({
         ),
         updated_at = NOW()
     WHERE cx_id = :cxId::uuid 
-      AND patient_id = ANY(:patientIds::text[])
+      AND patient_id in (:patientIds)
       AND NOT (subscriptions->'adt' @> to_jsonb(:hieName::text))
   `;
 
@@ -181,7 +181,7 @@ async function _removeHieSubscriptionsFromPatients({
         ),
         updated_at = NOW()
     WHERE cx_id = :cxId::uuid 
-      AND patient_id = ANY(:patientIds::text[])
+      AND patient_id in (:patientIds)
       AND subscriptions->'adt' @> to_jsonb(:hieName::text)
   `;
 
