@@ -44,33 +44,46 @@ export const hl7v2SubscribersQuerySchema = z
   .and(queryMetaSchema);
 
 export function parsePatientSettingsRequest(data: unknown): PatientSettingsRequest {
-  if (getHieConfigDictionary()) {
-    const result = patientSettingsRequestSchema.parse(data);
-    result.settings.subscriptions?.adt?.forEach(throwOnInvalidHieName);
-    return result;
+  try {
+    getHieConfigDictionary();
+  } catch (error) {
+    log(
+      "parsePatientSettingsRequest - No HIE config dictionary found, skipping HIE name validation"
+    );
+    return patientSettingsRequestSchema.parse(data);
   }
-  log("parsePatientSettingsRequest - No HIE config dictionary found, skipping HIE name validation");
-  return patientSettingsRequestSchema.parse(data);
+
+  const result = patientSettingsRequestSchema.parse(data);
+  result.settings.subscriptions?.adt?.forEach(throwOnInvalidHieName);
+  return result;
 }
 
 export function parseBulkPatientSettingsRequest(data: unknown): BulkPatientSettingsRequest {
-  if (getHieConfigDictionary()) {
-    const result = bulkPatientSettingsRequestSchema.parse(data);
-    result.settings.subscriptions?.adt?.forEach(throwOnInvalidHieName);
-    return result;
+  try {
+    getHieConfigDictionary();
+  } catch (error) {
+    log(
+      "parseBulkPatientSettingsRequest - No HIE config dictionary found, skipping HIE name validation"
+    );
+    return bulkPatientSettingsRequestSchema.parse(data);
   }
-  log(
-    "parseBulkPatientSettingsRequest - No HIE config dictionary found, skipping HIE name validation"
-  );
-  return bulkPatientSettingsRequestSchema.parse(data);
+
+  const result = bulkPatientSettingsRequestSchema.parse(data);
+  result.settings.subscriptions?.adt?.forEach(throwOnInvalidHieName);
+  return result;
 }
 
 export function parseAdtSubscriptionRequest(data: unknown): AdtSubscriptionRequest {
-  if (getHieConfigDictionary()) {
-    const result = adtSubscriptionRequestSchema.parse(data);
-    throwOnInvalidHieName(result.hieName);
-    return result;
+  try {
+    getHieConfigDictionary();
+  } catch (error) {
+    log(
+      "parseAdtSubscriptionRequest - No HIE config dictionary found, skipping HIE name validation"
+    );
+    return adtSubscriptionRequestSchema.parse(data);
   }
-  log("parseAdtSubscriptionRequest - No HIE config dictionary found, skipping HIE name validation");
-  return adtSubscriptionRequestSchema.parse(data);
+
+  const result = adtSubscriptionRequestSchema.parse(data);
+  throwOnInvalidHieName(result.hieName);
+  return result;
 }
