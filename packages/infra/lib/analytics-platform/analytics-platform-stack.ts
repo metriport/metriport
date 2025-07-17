@@ -54,6 +54,10 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       versioned: true,
     });
 
+    const analyticsPlatformRepository = new ecr.Repository(this, "AnalyticsPlatformRepository", {
+      repositoryName: "metriport/analytics-platform",
+    });
+
     // Snowflake access via S3 Integration https://docs.snowflake.com/en/user-guide/data-load-s3-config-storage-integration
     const snowflakePrefix = "snowflake";
     const s3Policy = new iam.Policy(this, "SnowflakeAnalyticsPlatformS3Policy", {
@@ -91,10 +95,6 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       inlinePolicies: {
         SnowflakeAnalyticsPlatformS3Policy: s3Policy.document,
       },
-    });
-
-    const analyticsPlatformRepository = new ecr.Repository(this, "AnalyticsPlatformRepository", {
-      repositoryName: "metriport/analytics-platform",
     });
 
     const analyticsPlatformComputeEnvironment = new batch.ManagedEc2EcsComputeEnvironment(
