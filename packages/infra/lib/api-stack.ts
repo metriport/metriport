@@ -508,15 +508,11 @@ export class APIStack extends Stack {
     //-------------------------------------------
     let analyticsPlatformStack: AnalyticsPlatformsNestedStack | undefined = undefined;
     if (!isSandbox(props.config)) {
-      analyticsPlatformStack = new AnalyticsPlatformsNestedStack(
-        this,
-        "AnalyticsPlatformsNestedStack",
-        {
-          config: props.config,
-          vpc: this.vpc,
-          medicalDocumentsBucket,
-        }
-      );
+      analyticsPlatformStack = new AnalyticsPlatformsNestedStack(this, "AnalyticsPlatforms", {
+        config: props.config,
+        vpc: this.vpc,
+        medicalDocumentsBucket,
+      });
     }
 
     //-------------------------------------------

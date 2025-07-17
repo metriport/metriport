@@ -47,8 +47,8 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
 
     this.terminationProtection = true;
 
-    const analyticsPlatformBucket = new s3.Bucket(this, "AnalyticsPlatformBucketv1", {
-      bucketName: `${props.config.analyticsPlatform.bucketName}-v1`,
+    const analyticsPlatformBucket = new s3.Bucket(this, "AnalyticsPlatformBucket", {
+      bucketName: props.config.analyticsPlatform.bucketName,
       publicReadAccess: false,
       encryption: s3.BucketEncryption.S3_MANAGED,
       versioned: true,
