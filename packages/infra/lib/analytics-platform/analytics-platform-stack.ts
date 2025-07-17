@@ -18,18 +18,12 @@ type BatchJobSettings = {
 
 interface AnalyticsPlatformsSettings {
   fhirToCsvBatchJob: BatchJobSettings;
-  csvToMetricsBatchJob: BatchJobSettings;
 }
 
 function settings(): AnalyticsPlatformsSettings {
   return {
     fhirToCsvBatchJob: {
       imageName: "fhir-to-csv",
-      memory: cdk.Size.mebibytes(1024),
-      cpu: 512,
-    },
-    csvToMetricsBatchJob: {
-      imageName: "csv-to-metrics",
       memory: cdk.Size.mebibytes(1024),
       cpu: 512,
     },
@@ -46,9 +40,6 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
   readonly fhirToCsvBatchJob: batch.EcsJobDefinition;
   readonly fhirToCsvContainer: batch.EcsEc2ContainerDefinition;
   readonly fhirToCsvQueue: batch.JobQueue;
-  readonly csvToMetricsBatchJob: batch.EcsJobDefinition;
-  readonly csvToMetricsContainer: batch.EcsEc2ContainerDefinition;
-  readonly csvToMetricsQueue: batch.JobQueue;
 
   constructor(scope: Construct, id: string, props: AnalyticsPlatformsNestedStackProps) {
     super(scope, id, props);
@@ -129,21 +120,6 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
     this.fhirToCsvBatchJob = fhirToCsvBatchJob;
     this.fhirToCsvContainer = fhirToCsvContainer;
     this.fhirToCsvQueue = fhirToCsvQueue;
-
-    const {
-      job: csvToMetricsBatchJob,
-      container: csvToMetricsContainer,
-      queue: csvToMetricsQueue,
-    } = this.setupCsvToMetricsBatchJob({
-      config: props.config,
-      envType: props.config.environmentType,
-      analyticsPlatformComputeEnvironment,
-      analyticsPlatformRepository,
-      analyticsPlatformBucket,
-    });
-    this.csvToMetricsBatchJob = csvToMetricsBatchJob;
-    this.csvToMetricsContainer = csvToMetricsContainer;
-    this.csvToMetricsQueue = csvToMetricsQueue;
   }
 
   getAssets(): AnalyticsPlatformsAssets {
@@ -151,9 +127,6 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       fhirToCsvBatchJob: this.fhirToCsvBatchJob,
       fhirToCsvContainer: this.fhirToCsvContainer,
       fhirToCsvQueue: this.fhirToCsvQueue,
-      csvToMetricsBatchJob: this.csvToMetricsBatchJob,
-      csvToMetricsContainer: this.csvToMetricsContainer,
-      csvToMetricsQueue: this.csvToMetricsQueue,
     };
   }
 
@@ -192,7 +165,15 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
         "python",
         "main.py",
         "-e",
+        "JOB_ID=Ref::jobId",
+        "-e",
         "CX_ID=Ref::cxId",
+        "-e",
+        "PATIENT_ID=Ref::patientId",
+        "-e",
+        "BUNDLES_TO_APPEND=Ref::bundlesToAppend,Ref::bundlesToAppend",
+        "-e",
+        "API_URL=Ref::apiUrl",
         "-e",
         "SNOWFLAKE_ACCOUNT=Ref::snowflakeAccount",
         "-e",
@@ -219,73 +200,6 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
 
     // Grant read to medical document bucket set on the api-stack
     ownProps.medicalDocumentsBucket.grantReadWrite(container.executionRole);
-
-    return { job, container, queue };
-  }
-
-  private setupCsvToMetricsBatchJob(ownProps: {
-    config: EnvConfigNonSandbox;
-    envType: EnvType;
-    analyticsPlatformComputeEnvironment: batch.ManagedEc2EcsComputeEnvironment;
-    analyticsPlatformRepository: ecr.Repository;
-    analyticsPlatformBucket: s3.Bucket;
-  }): {
-    job: batch.EcsJobDefinition;
-    container: batch.EcsEc2ContainerDefinition;
-    queue: batch.JobQueue;
-  } {
-    const { analyticsPlatformRepository } = ownProps;
-    const { imageName, memory, cpu } = settings().csvToMetricsBatchJob;
-
-    const container = new batch.EcsEc2ContainerDefinition(this, "FhirToCsvContainerDef", {
-      image: ecs.ContainerImage.fromEcrRepository(
-        analyticsPlatformRepository,
-        `${imageName}-latest`
-      ),
-      memory,
-      cpu,
-      environment: {
-        ENV: ownProps.envType,
-        DBT_TARGET: ownProps.envType === EnvType.production ? "production" : "staging",
-        DBT_SNOWFLAKE_CI_ROLE: ownProps.config.analyticsPlatform.snowflake.role,
-        DBT_SNOWFLAKE_CI_WAREHOUSE: ownProps.config.analyticsPlatform.snowflake.warehouse,
-      },
-      volumes: [
-        {
-          name: "csv-to-metrics-volume",
-          containerPath: "/usr/app/data",
-        },
-      ],
-      command: [
-        "python",
-        "main.py",
-        "-e",
-        "CX_ID=Ref::cxId",
-        "-e",
-        "DBT_SNOWFLAKE_CI_ACCOUNT=Ref::snowflakeAccount",
-        "-e",
-        "DBT_SNOWFLAKE_CI_USER=Ref::snowflakeUser",
-        "-e",
-        "DBT_SNOWFLAKE_CI_PASSWORD=Ref::snowflakePassword",
-      ],
-    });
-
-    const job = new batch.EcsJobDefinition(this, "CsvToMetricsBatchJob", {
-      jobDefinitionName: "CsvToMetricsBatchJob",
-      container,
-    });
-
-    const queue = new batch.JobQueue(this, "CsvToMetricsJobQueue", {
-      computeEnvironments: [
-        {
-          computeEnvironment: ownProps.analyticsPlatformComputeEnvironment,
-          order: 1,
-        },
-      ],
-      priority: 10,
-    });
-
-    ownProps.analyticsPlatformBucket.grantReadWrite(container.executionRole);
 
     return { job, container, queue };
   }

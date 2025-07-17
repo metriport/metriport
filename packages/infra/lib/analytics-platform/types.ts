@@ -4,7 +4,4 @@ export type AnalyticsPlatformsAssets = {
   fhirToCsvBatchJob: EcsJobDefinition;
   fhirToCsvContainer: EcsEc2ContainerDefinition;
   fhirToCsvQueue: JobQueue;
-  csvToMetricsBatchJob: EcsJobDefinition;
-  csvToMetricsContainer: EcsEc2ContainerDefinition;
-  csvToMetricsQueue: JobQueue;
 };

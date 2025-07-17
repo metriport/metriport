@@ -1,7 +1,18 @@
-import { BatchUtils } from "@metriport/core/external/aws/batch";
+import { BatchUtils } from "../../external/aws/batch";
 import { Config } from "../../util/config";
+import { getSnowflakeCreds } from "./config";
 
-export async function startFhirToCsvBatchJob({ cxId, jobId }: { cxId: string; jobId: string }) {
+export async function startFhirToCsvBatchJob({
+  cxId,
+  jobId,
+  patientId,
+  bundlesToAppend,
+}: {
+  cxId: string;
+  jobId: string;
+  patientId?: string;
+  bundlesToAppend?: string;
+}) {
   const fhirToCsvBatchJobQueueArn = Config.getFhirToCsvBatchJobQueueArn();
   const fhirToCsvBatchJobDefinitionArn = Config.getFhirToCsvBatchJobDefinitionArn();
 
@@ -9,7 +20,11 @@ export async function startFhirToCsvBatchJob({ cxId, jobId }: { cxId: string; jo
     throw new Error("Job queue or definition ARN is not set");
   }
 
-  const snowflakeCreds = Config.getSnowflakeCreds();
+  if (bundlesToAppend && !patientId) {
+    throw new Error("Patient ID is required when bundlesToAppend is provided");
+  }
+
+  const snowflakeCreds = getSnowflakeCreds();
 
   const batch = new BatchUtils(Config.getAWSRegion());
 
@@ -18,8 +33,11 @@ export async function startFhirToCsvBatchJob({ cxId, jobId }: { cxId: string; jo
     jobQueueArn: fhirToCsvBatchJobQueueArn,
     jobDefinitionArn: fhirToCsvBatchJobDefinitionArn,
     parameters: {
-      cxId: cxId,
       jobId: jobId,
+      cxId: cxId,
+      patientId: patientId ?? "",
+      bundlesToAppend: bundlesToAppend ?? "",
+      apiUrl: `http://${Config.getApiUrl()}`,
       snowflakeAccount: snowflakeCreds.account,
       snowflakeUser: snowflakeCreds.user,
       snowflakePassword: snowflakeCreds.password,

@@ -408,10 +408,6 @@ export function createAPIService({
             FHIR_TO_CSV_BATCH_JOB_QUEUE_ARN: analyticsPlatformAssets.fhirToCsvQueue.jobQueueArn,
             FHIR_TO_CSV_BATCH_JOB_DEFINITION_ARN:
               analyticsPlatformAssets.fhirToCsvBatchJob.jobDefinitionArn,
-            CSV_TO_METRICS_BATCH_JOB_QUEUE_ARN:
-              analyticsPlatformAssets.csvToMetricsQueue.jobQueueArn,
-            CSV_TO_METRICS_BATCH_JOB_DEFINITION_ARN:
-              analyticsPlatformAssets.csvToMetricsBatchJob.jobDefinitionArn,
           }),
         },
       },
@@ -513,10 +509,6 @@ export function createAPIService({
     analyticsPlatformAssets.fhirToCsvBatchJob.grantSubmitJob(
       fargateService.taskDefinition.taskRole,
       analyticsPlatformAssets.fhirToCsvQueue
-    );
-    analyticsPlatformAssets.csvToMetricsBatchJob.grantSubmitJob(
-      fargateService.taskDefinition.taskRole,
-      analyticsPlatformAssets.csvToMetricsQueue
     );
   }
 

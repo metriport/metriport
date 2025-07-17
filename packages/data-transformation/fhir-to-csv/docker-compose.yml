@@ -17,6 +17,7 @@ services:
       ENV: ${ENV}
       AWS_REGION: ${AWS_REGION}
       CX_ID: ${CX_ID}
+      PATIENT_ID: ${PATIENT_ID}
       API_URL: http://host.docker.internal:8080
       JOB_ID: ${JOB_ID}
       INPUT_S3_BUCKET: ${INPUT_S3_BUCKET}
