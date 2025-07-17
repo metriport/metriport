@@ -27,7 +27,7 @@ api_url = os.getenv("API_URL")
 job_id = os.getenv("JOB_ID")
 cx_id = os.getenv("CX_ID")
 patient_id = os.getenv("PATIENT_ID")
-bundles_to_append = os.getenv("BUNDLES_TO_APPEND")
+input_bundle = os.getenv("BUNDLE")
 
 def transform_and_upload_data(
     input_bucket: str,
@@ -36,14 +36,13 @@ def transform_and_upload_data(
     job_id: str,
     cx_id: str,
     patient_id: str | None,
-    bundles_to_append: str | None,
+    input_bundle: str | None,
 ) -> list[tuple[str, str, str]]:
-    is_single_patient = patient_id is not None
     patient_ids_and_bundle_keys = []
-    if bundles_to_append:
+    if input_bundle:
         if not patient_id:
-            raise ValueError("PATIENT_ID must be set when BUNDLES_TO_APPEND is set")
-        patient_ids_and_bundle_keys = [(patient_id, key.strip()) for key in bundles_to_append.split(",")]
+            raise ValueError("PATIENT_ID must be set when INPUT_BUNDLE is set")
+        patient_ids_and_bundle_keys = [(patient_id, input_bundle.strip())]
     else:
         patient_ids = [patient_id] if patient_id else get_patient_ids(api_url, cx_id)
         patient_ids_and_bundle_keys = [(patient_id, create_consolidated_key(cx_id, patient_id)) for patient_id in patient_ids]
@@ -111,7 +110,7 @@ if __name__ == "__main__":
         job_id,
         cx_id,
         patient_id,
-        bundles_to_append,
+        input_bundle,
     )
 
     if not output_bucket_and_file_keys_and_table_names:
@@ -124,7 +123,7 @@ if __name__ == "__main__":
 
     if patient_id is not None:
         logging.info(f"Appending patient data for {patient_id} to temp tables")
-        rebuild_patient = bundles_to_append is None
+        rebuild_patient = input_bundle is None
         if rebuild_patient:
             logging.info(f"Rebuilding patient data for {patient_id}")
         append_temp_tables(cx_id, patient_id, rebuild_patient)

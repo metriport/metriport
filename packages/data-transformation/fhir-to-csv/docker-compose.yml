@@ -20,7 +20,7 @@ services:
       JOB_ID: ${JOB_ID}
       CX_ID: ${CX_ID}
       PATIENT_ID: ${PATIENT_ID}
-      BUNDLES_TO_APPEND: ${BUNDLES_TO_APPEND}
+      INPUT_BUNDLE: ${INPUT_BUNDLE}
       API_URL: http://host.docker.internal:8080
       INPUT_S3_BUCKET: ${INPUT_S3_BUCKET}
       OUTPUT_S3_BUCKET: ${OUTPUT_S3_BUCKET}

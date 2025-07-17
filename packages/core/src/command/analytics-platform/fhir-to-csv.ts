@@ -7,12 +7,12 @@ export async function startFhirToCsvBatchJob({
   cxId,
   jobId,
   patientId,
-  bundlesToAppend,
+  inputBundle,
 }: {
   cxId: string;
   jobId: string;
   patientId?: string;
-  bundlesToAppend?: string;
+  inputBundle?: string;
 }) {
   const fhirToCsvBatchJobQueueArn = Config.getFhirToCsvBatchJobQueueArn();
   const fhirToCsvBatchJobDefinitionArn = Config.getFhirToCsvBatchJobDefinitionArn();
@@ -21,8 +21,8 @@ export async function startFhirToCsvBatchJob({
     throw new BadRequestError("Job queue or definition ARN is not set");
   }
 
-  if (bundlesToAppend && !patientId) {
-    throw new BadRequestError("Patient ID is required when bundlesToAppend is provided");
+  if (inputBundle && !patientId) {
+    throw new BadRequestError("Patient ID is required when inputBundle is provided");
   }
 
   const snowflakeCreds = getSnowflakeCreds();
@@ -37,7 +37,7 @@ export async function startFhirToCsvBatchJob({
       jobId: jobId,
       cxId: cxId,
       patientId: patientId ?? "",
-      bundlesToAppend: bundlesToAppend ?? "",
+      inputBundle: inputBundle ?? "",
       apiUrl: `http://${Config.getApiUrl()}`,
       snowflakeAccount: snowflakeCreds.account,
       snowflakeUser: snowflakeCreds.user,
