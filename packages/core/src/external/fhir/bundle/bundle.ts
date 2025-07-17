@@ -4,6 +4,7 @@ import {
   Bundle,
   BundleEntry,
   BundleEntryRequest,
+  CarePlan,
   Communication,
   Composition,
   Condition,
@@ -362,6 +363,7 @@ export type ExtractedFhirTypes = {
   communications: Communication[];
   consents: Consent[];
   devices: Device[];
+  carePlans: CarePlan[];
   goals: Goal[];
   serviceRequests: ServiceRequest[];
   documentReferences: DocumentReference[];
@@ -408,6 +410,7 @@ export function extractFhirTypesFromBundle(bundle: Bundle): ExtractedFhirTypes {
   const communications: Communication[] = [];
   const consents: Consent[] = [];
   const devices: Device[] = [];
+  const carePlans: CarePlan[] = [];
   const goals: Goal[] = [];
   const serviceRequests: ServiceRequest[] = [];
   const documentReferences: DocumentReference[] = [];
@@ -485,6 +488,8 @@ export function extractFhirTypesFromBundle(bundle: Bundle): ExtractedFhirTypes {
         consents.push(resource as Consent);
       } else if (resource?.resourceType === "Device") {
         devices.push(resource as Device);
+      } else if (resource?.resourceType === "CarePlan") {
+        carePlans.push(resource as CarePlan);
       } else if (resource?.resourceType === "Goal") {
         goals.push(resource as Goal);
       } else if (resource?.resourceType === "ServiceRequest") {
@@ -525,6 +530,7 @@ export function extractFhirTypesFromBundle(bundle: Bundle): ExtractedFhirTypes {
     communications,
     consents,
     devices,
+    carePlans,
     goals,
     serviceRequests,
     documentReferences,
