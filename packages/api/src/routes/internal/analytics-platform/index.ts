@@ -22,8 +22,8 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const { cxId, jobId } = jobRunBodySchema.parse(req.body);
     const patientId = getFromQuery("patientId", req);
-    const bundlesToAppend = getFromQuery("bundlesToAppend", req);
-    await startFhirToCsvBatchJob({ cxId, jobId, patientId, bundlesToAppend });
+    const inputBundle = getFromQuery("inputBundle", req);
+    await startFhirToCsvBatchJob({ cxId, jobId, patientId, inputBundle });
     return res.sendStatus(httpStatus.OK);
   })
 );
