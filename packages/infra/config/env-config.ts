@@ -286,7 +286,10 @@ type EnvConfigBase = {
   };
   quest?: {
     questHostname: string;
+    questPort: number;
     questUsername: string;
+    questOutgoingDirectoryPath: string;
+    questIncomingDirectoryPath: string;
     secrets: {
       QUEST_SFTP_PASSWORD: string;
     };

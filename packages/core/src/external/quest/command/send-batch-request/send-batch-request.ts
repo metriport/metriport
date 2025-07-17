@@ -1,5 +1,6 @@
-import { QuestBatchRequest } from "../../types";
+import { QuestBatchRequest, QuestJob } from "../../types";
 
 export interface QuestSendBatchRequestHandler {
-  sendBatchRequest(requestData: QuestBatchRequest): Promise<void>;
+  // TODO: ENG-565 - Add Quest patient job scheduler and return void
+  sendBatchRequest(requestData: QuestBatchRequest): Promise<QuestJob>;
 }

@@ -30,16 +30,14 @@ export class QuestSftpClient extends SftpClient {
     });
     this.outgoingDirectory = config.outgoingDirectory ?? Config.getQuestSftpOutgoingDirectory();
     this.incomingDirectory = config.incomingDirectory ?? Config.getQuestSftpIncomingDirectory();
-
     this.initializeS3Replica({
       bucketName: config.replicaBucket ?? Config.getQuestReplicaBucketName(),
       region: config.replicaBucketRegion ?? Config.getAWSRegion(),
     });
   }
 
-  async sendBatchRequest(request: QuestBatchRequestData): Promise<QuestJob[]> {
+  async sendBatchRequest(request: QuestBatchRequestData): Promise<QuestJob> {
     this.validateRequester(request);
-
     const { content, patientIdMap } = generateBatchRequestFile(request.patients);
     const populationId = uuidv7();
     const dateString = buildDayjs().format("YYYYMMDD");
@@ -50,15 +48,13 @@ export class QuestSftpClient extends SftpClient {
     try {
       await this.connect();
       await this.writeToQuest(batchRequestFileName, content);
-      return [
-        {
-          cxId: request.cxId,
-          facilityId: request.facility.id,
-          populationId,
-          patientIdMap,
-          dateString,
-        },
-      ];
+      return {
+        cxId: request.cxId,
+        facilityId: request.facility.id,
+        populationId,
+        patientIdMap,
+        dateString,
+      };
     } finally {
       await this.disconnect();
     }

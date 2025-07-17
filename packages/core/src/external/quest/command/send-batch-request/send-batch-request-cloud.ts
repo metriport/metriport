@@ -3,7 +3,7 @@ import { createUuidFromText } from "@metriport/shared/common/uuid";
 import { Config } from "../../../../util/config";
 import { SQSClient } from "../../../aws/sqs";
 import { QuestSendBatchRequestHandler } from "./send-batch-request";
-import { QuestBatchRequest } from "../../types";
+import { QuestBatchRequest, QuestJob } from "../../types";
 
 export class QuestSendBatchRequestHandlerCloud implements QuestSendBatchRequestHandler {
   private readonly sqsClient: SQSClient;
@@ -16,7 +16,7 @@ export class QuestSendBatchRequestHandlerCloud implements QuestSendBatchRequestH
     this.sqsClient = sqsClient ?? new SQSClient({ region: region ?? Config.getAWSRegion() });
   }
 
-  async sendBatchRequest(requestData: QuestBatchRequest): Promise<void> {
+  async sendBatchRequest(requestData: QuestBatchRequest): Promise<QuestJob> {
     const payload = JSON.stringify(requestData);
     await executeWithNetworkRetries(async () => {
       await this.sqsClient.sendMessageToQueue(this.surescriptsSendBatchRequestQueueUrl, payload, {
@@ -25,5 +25,8 @@ export class QuestSendBatchRequestHandlerCloud implements QuestSendBatchRequestH
         messageGroupId: requestData.cxId,
       });
     });
+
+    // TODO: ENG-565 - Add Quest patient job scheduler
+    return {} as QuestJob;
   }
 }
