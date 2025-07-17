@@ -45,6 +45,16 @@ export class QuestDataMapper {
     return { cxId, facility, patients };
   }
 
+  async getFacilityRequestData({
+    cxId,
+    facilityId,
+  }: QuestRequester): Promise<QuestBatchRequestData> {
+    const facility = await this.getFacilityData(cxId, facilityId);
+    const patientIds = await this.getPatientIdsForFacility({ cxId, facilityId });
+    const patients = await this.getEachPatientById(cxId, patientIds);
+    return { cxId, facility, patients };
+  }
+
   convertBatchRequestToPatientRequests(
     batchRequestData: QuestBatchRequestData
   ): QuestPatientRequestData[] {
