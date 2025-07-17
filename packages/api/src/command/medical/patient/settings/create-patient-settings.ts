@@ -17,18 +17,6 @@ import {
   verifyPatients,
 } from "./common";
 
-// Re-export types for backward compatibility
-export type {
-  PatientListProcessingResult,
-  PatientSettingsUpsertForCxProps,
-  PatientSettingsUpsertProps,
-} from "./common";
-
-export {
-  addHieSubscriptionToPatients,
-  removeHieSubscriptionFromPatients,
-} from "./hie-subscriptions";
-
 /**
  * Creates a new patient settings record.
  *
