@@ -6,10 +6,9 @@ import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { getPatientModelOrFail } from "./get-patient";
 
 export type InitConsolidatedQueryCmd = {
-  consolidatedQueries: ConsolidatedQuery[];
+  consolidatedQuery: ConsolidatedQuery;
   cxConsolidatedRequestMetadata?: unknown;
   documentQueryProgress?: never;
-  patientDiscovery?: never;
 };
 
 export type InitDocumentQueryCmd = {
@@ -18,8 +17,7 @@ export type InitDocumentQueryCmd = {
   > &
     Pick<DocumentQueryProgress, "triggerConsolidated">;
   cxDocumentRequestMetadata?: unknown;
-  consolidatedQueries?: never;
-  patientDiscovery?: never;
+  consolidatedQuery?: never;
 };
 export type QueryInitCmd = InitConsolidatedQueryCmd | InitDocumentQueryCmd;
 
@@ -38,15 +36,37 @@ export async function storeQueryInit({ id, cxId, cmd }: StoreQueryParams): Promi
       transaction,
     });
 
+    if (cmd.consolidatedQuery) {
+      patient.dataValues.data.consolidatedQueries = appendProgressToProcessingQueries(
+        patient.data.consolidatedQueries,
+        cmd.consolidatedQuery
+      );
+    }
+
     return patient.update(
       {
         data: {
           ...patient.dataValues.data,
-          ...cmd,
+          ...(cmd.consolidatedQuery ? undefined : { ...cmd }),
         },
       },
       { transaction }
     );
   });
   return patient.dataValues;
+}
+
+function appendProgressToProcessingQueries(
+  currentConsolidatedQueries: ConsolidatedQuery[] | undefined,
+  progress: ConsolidatedQuery
+): ConsolidatedQuery[] {
+  if (currentConsolidatedQueries) {
+    const queriesInProgress = currentConsolidatedQueries.filter(
+      query => query.status === "processing"
+    );
+
+    return [...queriesInProgress, progress];
+  }
+
+  return [progress];
 }
