@@ -5,6 +5,7 @@ import * as Sentry from "@sentry/serverless";
 import { Extras } from "@sentry/types";
 import { ScopeContext } from "@sentry/types/types/scope";
 import * as AWSLambda from "aws-lambda";
+import { isAxiosError } from "axios";
 
 const sentryDsn = getEnvVar("SENTRY_DSN");
 
@@ -92,9 +93,23 @@ export const capture = {
       try {
         return await handler(event, context, callback);
       } catch (error) {
-        console.log(`Error: ${errorToString(error)}`);
         if (error instanceof MetriportError && error.additionalInfo) {
           capture.setExtra(error.additionalInfo);
+          console.log(`Error: ${errorToString(error)}`);
+        } else if (isAxiosError(error)) {
+          capture.setExtra({
+            stack: error.stack,
+            method: error.config?.method,
+            url: error.config?.url,
+            data: error.response?.data,
+          });
+          console.log(
+            `Error: ${error.request?.method + " " + error.request?.path + " "}${errorToString(
+              error
+            )}`
+          );
+        } else {
+          console.log(`Error: ${errorToString(error)}`);
         }
         throw error;
       }
