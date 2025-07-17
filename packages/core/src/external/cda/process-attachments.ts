@@ -33,7 +33,7 @@ import { OCTET_MIME_TYPE } from "../../util/mime";
 import { sizeInBytes } from "../../util/string";
 import { S3Utils, UploadParams } from "../aws/s3";
 import { cqExtension } from "../carequality/extension";
-import { cwExtension } from "../commonwell-v1/extension";
+import { cwExtension } from "../commonwell/extension";
 import { makeFhirApi } from "../fhir/api/api-factory";
 import { convertCollectionBundleToTransactionBundle } from "../fhir/bundle/convert-to-transaction-bundle";
 import { buildDocIdFhirExtension } from "../fhir/shared/extensions/doc-id-extension";

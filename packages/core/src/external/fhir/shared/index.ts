@@ -28,7 +28,7 @@ import {
   ResourceType as MedplumResourceType,
 } from "@medplum/fhirtypes";
 import { isCarequalityExtension } from "../../carequality/extension";
-import { isCommonwellExtension } from "../../commonwell-v1/extension";
+import { isCommonwellExtension } from "../../commonwell/extension";
 import { DOC_ID_EXTENSION_URL } from "./extensions/doc-id-extension";
 import { isMetriportExtension } from "./extensions/metriport";
 
