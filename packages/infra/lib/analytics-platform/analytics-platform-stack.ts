@@ -94,7 +94,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
     });
 
     const analyticsPlatformRepository = new ecr.Repository(this, "AnalyticsPlatformRepository", {
-      repositoryName: "analytics-platform-repository",
+      repositoryName: "metriport/analytics-platform",
     });
 
     const analyticsPlatformComputeEnvironment = new batch.ManagedEc2EcsComputeEnvironment(
