@@ -70,10 +70,7 @@ export function groupSameCarePlans(carePlans: CarePlan[]): {
         targetResource: carePlan,
         refReplacementMap,
         onPostmerge: (master: CarePlan) => {
-          const dedupedActivity = _.uniqBy(
-            master.activity,
-            "detail.performer.scheduledPeriod.start"
-          );
+          const dedupedActivity = _.uniqBy(master.activity, "detail.scheduledPeriod.start");
           master.activity = dedupedActivity;
           return master;
         },
