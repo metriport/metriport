@@ -42,8 +42,17 @@ export function makeFacilityOid(orgNumber: number, facilityNumber: number) {
   }.${facilityNumber}`;
 }
 
+/**
+ * @deprecated use isInitiatorAndResponder instead
+ */
 export function isOboFacility(facilityType?: FacilityType): boolean {
   return facilityType === FacilityType.initiatorOnly;
+}
+export function isInitiatorAndResponder(facility: Facility): boolean;
+export function isInitiatorAndResponder(facilityType: FacilityType): boolean;
+export function isInitiatorAndResponder(facilityOrType: Facility | FacilityType): boolean {
+  const facilityType = typeof facilityOrType === "string" ? facilityOrType : facilityOrType.cwType;
+  return facilityType === FacilityType.initiatorAndResponder;
 }
 
 export function isNonOboFacility(facilityType?: FacilityType): boolean {

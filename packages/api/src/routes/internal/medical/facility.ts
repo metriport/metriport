@@ -1,3 +1,4 @@
+import { isCommonwellV2EnabledForCx } from "@metriport/core/command/feature-flags/domain-ffs";
 import { isHealthcareItVendor } from "@metriport/core/domain/organization";
 import { Config } from "@metriport/core/util/config";
 import { processAsyncError } from "@metriport/core/util/error/shared";
@@ -10,11 +11,12 @@ import { getOrganizationOrFail } from "../../../command/medical/organization/get
 import { Facility, FacilityCreate } from "../../../domain/medical/facility";
 import { createOrUpdateFacility as cqCreateOrUpdateFacility } from "../../../external/carequality/command/create-or-update-facility";
 import { createOrUpdateFacilityInCw } from "../../../external/commonwell-v1/command/create-or-update-cw-facility";
+import { createOrUpdateCWOrganizationV2 } from "../../../external/commonwell-v2/command/organization/create-or-update-cw-organization";
 import { requestLogger } from "../../helpers/request-logger";
-import { getUUIDFrom } from "../../schemas/uuid";
-import { asyncHandler, getFromQueryAsBoolean } from "../../util";
 import { internalDtoFromModel } from "../../medical/dtos/facilityDTO";
 import { facilityInternalDetailsSchema } from "../../medical/schemas/facility";
+import { getUUIDFrom } from "../../schemas/uuid";
+import { asyncHandler, getFromQueryAsBoolean } from "../../util";
 
 const router = Router();
 
@@ -73,13 +75,26 @@ router.put(
     }
     // COMMONWELL
     if (syncInHie && facility.cwApproved) {
-      createOrUpdateFacilityInCw({
-        cxId,
-        facility,
-        cxOrgName: org.data.name,
-        cxOrgType: org.data.type,
-        cwOboOid: facilityDetails.cwOboOid,
-      }).catch(processAsyncError("cw.internal.facility"));
+      // TODO ENG-554 Remove FF and v1 code
+      if (await isCommonwellV2EnabledForCx(cxId)) {
+        createOrUpdateCWOrganizationV2({
+          cxId,
+          org: {
+            oid: org.oid,
+            data: org.data,
+            active: org.cwActive,
+            isInitiatorAndResponder: true,
+          },
+        }).catch(processAsyncError("cwV2.internal.facility"));
+      } else {
+        createOrUpdateFacilityInCw({
+          cxId,
+          facility,
+          cxOrgName: org.data.name,
+          cxOrgType: org.data.type,
+          cwOboOid: facilityDetails.cwOboOid,
+        }).catch(processAsyncError("cw.internal.facility"));
+      }
     }
     return res.status(httpStatus.OK).json(internalDtoFromModel(facility));
   })
