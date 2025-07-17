@@ -1,4 +1,5 @@
-import cdk, { NestedStack, NestedStackProps } from "aws-cdk-lib";
+import { NestedStack, NestedStackProps } from "aws-cdk-lib";
+import * as cdk from "aws-cdk-lib";
 import * as batch from "aws-cdk-lib/aws-batch";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as ecr from "aws-cdk-lib/aws-ecr";
