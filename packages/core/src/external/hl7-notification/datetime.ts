@@ -20,7 +20,7 @@ const DG1_DIAGNOSIS_DATETIME_INDEX = 5;
 
 export function utcifyHl7Message(message: Hl7Message, timezone: string): Hl7Message {
   /**
-   * TODO: Properly timezoneify the message using getHieTimezone, which requires making response format requests over email
+   * TODO: Properly timezoneify the message using getHieConfig, which requires making response format requests over email
    * Temporary to get NewYorkHie ADTs correct for now.
    **/
   function utcifyComponents(
