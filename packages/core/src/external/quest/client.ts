@@ -17,14 +17,19 @@ import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { buildDayjs } from "@metriport/shared/common/date";
 
 export class QuestSftpClient extends SftpClient {
+  private readonly outgoingDirectory: string;
+  private readonly incomingDirectory: string;
+
   constructor(config: QuestSftpConfig = {}) {
     super({
       ...config,
       host: config.host ?? Config.getQuestSftpHost(),
-      port: 11022,
+      port: config.port ?? Config.getQuestSftpPort(),
       username: config.username ?? Config.getQuestSftpUsername(),
       password: config.password ?? Config.getQuestSftpPassword(),
     });
+    this.outgoingDirectory = config.outgoingDirectory ?? Config.getQuestSftpOutgoingDirectory();
+    this.incomingDirectory = config.incomingDirectory ?? Config.getQuestSftpIncomingDirectory();
 
     this.initializeS3Replica({
       bucketName: config.replicaBucket ?? Config.getQuestReplicaBucketName(),
@@ -33,6 +38,8 @@ export class QuestSftpClient extends SftpClient {
   }
 
   async sendBatchRequest(request: QuestBatchRequestData): Promise<QuestJob[]> {
+    this.validateRequester(request);
+
     const { content, patientIdMap } = generateBatchRequestFile(request.patients);
     const populationId = uuidv7();
     const dateString = buildDayjs().format("YYYYMMDD");
@@ -116,11 +123,11 @@ export class QuestSftpClient extends SftpClient {
   }
 
   async writeToQuest(fileName: string, fileContent: Buffer) {
-    await this.write(`/OUT/${fileName}`, fileContent);
+    await this.write(`${this.outgoingDirectory}/${fileName}`, fileContent);
   }
 
   async readFromQuest(fileName: string) {
-    return await this.read(`/IN/${fileName}`);
+    return await this.read(`${this.incomingDirectory}/${fileName}`);
   }
 
   /**

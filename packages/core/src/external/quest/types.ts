@@ -6,10 +6,13 @@ import { SftpConfig } from "../sftp/types";
 export type QuestGender = "F" | "M" | "U";
 
 export interface QuestSftpConfig extends Partial<SftpConfig> {
+  port?: number;
   local?: boolean;
   localPath?: string;
   replicaBucket?: string;
   replicaBucketRegion?: string;
+  outgoingDirectory?: string;
+  incomingDirectory?: string;
 }
 
 export interface QuestRequester {
