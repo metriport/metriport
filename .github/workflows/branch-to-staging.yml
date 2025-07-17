@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
     inputs:
       jobs_to_run:
-        description: "Select jobs to run (comma-separated, default 'all') - e.g.: api,infra-api-lambdas,mllp-server,infra-hl7-notification,secrets_cdk_stack,location_services_cdk_stack,ihe_stack,redeploy-api-gw,e2e-tests"
+        description: "Select jobs to run (comma-separated, default 'all') - e.g.: api,infra-api-lambdas,mllp-server,infra-hl7-notification,secrets_cdk_stack,location_services_cdk_stack,ihe_stack,redeploy-api-gw,e2e-tests,analytics-platform"
         required: true
         default: "all"
         type: string

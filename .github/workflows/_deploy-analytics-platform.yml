@@ -7,7 +7,7 @@ on:
         description: "sub-directory where this workflow should execute lint and build "
         required: false
         type: string
-        default: "packages/api"
+        default: "packages/data-transformation/fhir-to-csv"
       deploy_env:
         description: "the environment we're deploying to, either 'staging', 'production', or 'sandbox'"
         required: true
@@ -16,7 +16,7 @@ on:
         description: "the name of the script under the scripts/ folder to run"
         required: false
         type: string
-        default: "deploy-api.sh"
+        default: "deploy-analytics-platform.sh"
       ECR_REPO_URI:
         description: "The URI of the ECR repository to push the Docker image to"
         required: true

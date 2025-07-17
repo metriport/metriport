@@ -23,6 +23,3 @@ API_EXTRA_DEPS="packages/api-sdk/package.json \
 
 source ./packages/scripts/generate-tarball.sh data-transformation/fhir-to-csv "$API_EXTRA_DEPS"
 source ./packages/scripts/push-image.sh data-transformation/fhir-to-csv "fhir-to-csv"
-
-source ./packages/scripts/generate-tarball.sh data-transformation/csv-to-metrics "$API_EXTRA_DEPS"
-source ./packages/scripts/push-image.sh data-transformation/csv-to-metrics "csv-to-metrics"
