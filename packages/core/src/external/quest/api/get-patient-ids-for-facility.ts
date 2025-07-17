@@ -20,7 +20,7 @@ export async function getPatientIdsForFacility(
   { cxId, facilityId }: GetPatientIdsForFacilityParams,
   axiosInstance?: AxiosInstance
 ): Promise<string[]> {
-  const { log, debug } = out(`Surescripts getPatientIdsForFacility - cxId ${cxId}`);
+  const { log, debug } = out(`Quest getPatientIdsForFacility - cxId ${cxId}`);
   const api = axiosInstance ?? axios.create({ baseURL: Config.getApiUrl() });
   const queryParams = new URLSearchParams({ cxId, facilityId });
   const getPatientsUrl = `/internal/patient/ids?${queryParams.toString()}`;
@@ -42,7 +42,7 @@ export async function getPatientIdsForFacility(
       cxId,
       facilityId,
       url: getPatientsUrl,
-      context: "surescripts.getPatientIdsForFacility",
+      context: "quest.getPatientIdsForFacility",
     });
   }
 }

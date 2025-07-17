@@ -19,7 +19,7 @@ export async function getCustomerData(
   { cxId }: GetCustomerDataParams,
   axiosInstance?: AxiosInstance
 ): Promise<CustomerData> {
-  const { log, debug } = out(`Surescripts getCustomer - cxId ${cxId}`);
+  const { log, debug } = out(`Quest getCustomer - cxId ${cxId}`);
   const api = axiosInstance ?? axios.create({ baseURL: Config.getApiUrl() });
   const queryParams = new URLSearchParams({ cxId });
   const getCustomerUrl = `/internal/cx-data?${queryParams.toString()}`;
@@ -39,7 +39,7 @@ export async function getCustomerData(
     throw new MetriportError(msg, error, {
       cxId,
       url: getCustomerUrl,
-      context: "surescripts.getCustomer",
+      context: "quest.getCustomer",
     });
   }
 }

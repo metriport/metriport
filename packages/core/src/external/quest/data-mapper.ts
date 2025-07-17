@@ -48,10 +48,12 @@ export class QuestDataMapper {
   async getFacilityRequestData({
     cxId,
     facilityId,
-  }: QuestRequester): Promise<QuestBatchRequestData> {
+    limit,
+  }: QuestRequester & { limit?: number }): Promise<QuestBatchRequestData> {
     const facility = await this.getFacilityData(cxId, facilityId);
     const patientIds = await this.getPatientIdsForFacility({ cxId, facilityId });
-    const patients = await this.getEachPatientById(cxId, patientIds);
+    const patientIdsToFetch = limit ? patientIds.slice(0, limit) : patientIds;
+    const patients = await this.getEachPatientById(cxId, patientIdsToFetch);
     return { cxId, facility, patients };
   }
 

@@ -11,13 +11,14 @@ program
   .option("--cx-id <cx>", "The CX ID of the requester")
   .option("--facility-id <facility>", "The facility ID of the requester")
   .option("--patient-ids <patientIds>", "Specific patient IDs (comma separated) for the request")
+  .option("--limit <limit>", "Limit the number of patients to send")
   .option("--dry-run", "Dry run the request")
   .option("--csv-data <csv>", "The CSV data file to use for patient load")
   .description("Generate a patient load file and place into the outgoing replica directory")
   .showHelpAfterError()
   .version("1.0.0")
   .action(async () => {
-    const { cxId, facilityId, csvData, patientIds, dryRun } = program.opts();
+    const { cxId, facilityId, csvData, patientIds, dryRun, limit } = program.opts();
 
     if (!cxId) throw new Error("CX ID is required");
     if (!facilityId) throw new Error("Facility ID is required");
@@ -28,7 +29,10 @@ program
     } else if (csvData) {
       await sendPatientRequestFromCsv(cxId, facilityId, csvData, dryRun);
     } else {
-      await sendFacilityRequest(cxId, facilityId, dryRun);
+      await sendFacilityRequest(cxId, facilityId, {
+        dryRun,
+        limit: limit ? parseInt(limit) : undefined,
+      });
     }
   });
 
@@ -63,9 +67,13 @@ async function sendPatientRequestFromCsv(
   }
 }
 
-async function sendFacilityRequest(cxId: string, facilityId: string, dryRun: boolean) {
+async function sendFacilityRequest(
+  cxId: string,
+  facilityId: string,
+  { dryRun, limit }: { dryRun: boolean; limit?: number }
+) {
   const dataMapper = new QuestDataMapper();
-  const requestData = await dataMapper.getFacilityRequestData({ cxId, facilityId });
+  const requestData = await dataMapper.getFacilityRequestData({ cxId, facilityId, limit });
   const client = new QuestSftpClient({
     logLevel: "debug",
   });
