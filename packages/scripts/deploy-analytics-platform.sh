@@ -11,5 +11,4 @@ if [[ -z "${ECR_REPO_URI}" ]]; then
   exit 1
 fi
 
-source ./packages/scripts/generate-tarball.sh data-transformation/fhir-to-csv
 source ./packages/scripts/push-image.sh data-transformation/fhir-to-csv fhir-to-csv
