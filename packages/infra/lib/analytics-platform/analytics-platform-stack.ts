@@ -88,9 +88,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
     });
     new iam.Role(this, "SnowflakeIntegrationRole", {
       roleName: `SnowflakeIntegrationRole-${props.config.environmentType}`,
-      assumedBy: new iam.AccountPrincipal(
-        props.config.analyticsPlatform.snowflake.integrationUserArn
-      ),
+      assumedBy: new iam.ArnPrincipal(props.config.analyticsPlatform.snowflake.integrationUserArn),
       externalIds: [props.config.analyticsPlatform.snowflake.integrationExternalId],
       inlinePolicies: {
         SnowflakeAnalyticsPlatformS3Policy: s3Policy.document,
@@ -200,7 +198,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
     });
 
     // Grant read to medical document bucket set on the api-stack
-    ownProps.medicalDocumentsBucket.grantReadWrite(container.executionRole);
+    ownProps.analyticsPlatformBucket.grantReadWrite(container.executionRole);
 
     return { job, container, queue };
   }
