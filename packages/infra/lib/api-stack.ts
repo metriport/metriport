@@ -8,7 +8,6 @@ import {
   aws_wafv2 as wafv2,
 } from "aws-cdk-lib";
 import * as apig from "aws-cdk-lib/aws-apigateway";
-import { IQueue } from "aws-cdk-lib/aws-sqs";
 import { BackupResource } from "aws-cdk-lib/aws-backup";
 import * as cert from "aws-cdk-lib/aws-certificatemanager";
 import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
@@ -29,8 +28,10 @@ import * as s3 from "aws-cdk-lib/aws-s3";
 import * as secret from "aws-cdk-lib/aws-secretsmanager";
 import * as sns from "aws-cdk-lib/aws-sns";
 import { ITopic } from "aws-cdk-lib/aws-sns";
+import { IQueue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { EnvConfig, EnvConfigSandbox } from "../config/env-config";
+import { AnalyticsPlatformsNestedStack } from "./analytics-platform/analytics-platform-stack";
 import { AlarmSlackBot } from "./api-stack/alarm-slack-chatbot";
 import { createScheduledAPIQuotaChecker } from "./api-stack/api-quota-checker";
 import { createAPIService } from "./api-stack/api-service";
@@ -517,6 +518,15 @@ export class APIStack extends Stack {
     });
 
     //-------------------------------------------
+    // Analytics Platform
+    //-------------------------------------------
+    if (!isSandbox(props.config)) {
+      new AnalyticsPlatformsNestedStack(this, "AnalyticsPlatforms", {
+        config: props.config,
+      });
+    }
+
+    //-------------------------------------------
     // Rate Limiting
     //-------------------------------------------
     const { rateLimitTable } = new RateLimitingNestedStack(this, "RateLimitingNestedStack", {
@@ -593,10 +603,13 @@ export class APIStack extends Stack {
       elationLinkPatientLambda,
       healthieLinkPatientQueue,
       healthieLinkPatientLambda,
-      contributeResourceDiffBundlesLambda: ehrContributeResourceDiffBundlesLambda,
-      computeResourceDiffBundlesLambda: ehrComputeResourceDiffBundlesLambda,
       refreshEhrBundlesQueue: ehrRefreshEhrBundlesQueue,
       refreshEhrBundlesLambda: ehrRefreshEhrBundlesLambda,
+      computeResourceDiffBundlesLambda: ehrComputeResourceDiffBundlesLambda,
+      contributeResourceDiffBundlesQueue: ehrContributeResourceDiffBundlesQueue,
+      contributeResourceDiffBundlesLambda: ehrContributeResourceDiffBundlesLambda,
+      writeBackResourceDiffBundlesQueue: ehrWriteBackResourceDiffBundlesQueue,
+      writeBackResourceDiffBundlesLambda: ehrWriteBackResourceDiffBundlesLambda,
       ehrBundleBucket,
     } = new EhrNestedStack(this, "EhrNestedStack", {
       config: props.config,
@@ -644,6 +657,8 @@ export class APIStack extends Stack {
       elationLinkPatientQueue,
       healthieLinkPatientQueue,
       ehrRefreshEhrBundlesQueue,
+      ehrContributeResourceDiffBundlesQueue,
+      ehrWriteBackResourceDiffBundlesQueue,
       ehrGetAppointmentsLambda,
       ehrBundleBucket,
       generalBucket,
@@ -744,9 +759,10 @@ export class APIStack extends Stack {
       ehrSyncPatientLambda,
       elationLinkPatientLambda,
       healthieLinkPatientLambda,
-      ehrContributeResourceDiffBundlesLambda,
-      ehrComputeResourceDiffBundlesLambda,
       ehrRefreshEhrBundlesLambda,
+      ehrComputeResourceDiffBundlesLambda,
+      ehrContributeResourceDiffBundlesLambda,
+      ehrWriteBackResourceDiffBundlesLambda,
       ehrGetAppointmentsLambda,
       fhirConverterLambda,
       conversionResultNotifierLambda,
@@ -767,6 +783,7 @@ export class APIStack extends Stack {
     medicalDocumentsBucket.grantReadWrite(documentDownloaderLambda);
     medicalDocumentsBucket.grantRead(fhirConverterLambda);
     medicalDocumentsBucket.grantRead(ehrComputeResourceDiffBundlesLambda);
+    medicalDocumentsBucket.grantRead(ehrWriteBackResourceDiffBundlesLambda);
 
     createDocQueryChecker({
       lambdaLayers,

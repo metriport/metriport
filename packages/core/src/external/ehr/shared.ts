@@ -4,6 +4,8 @@ import {
   Bundle,
   Coding,
   Condition,
+  DiagnosticReport,
+  Extension,
   Immunization,
   Medication,
   MedicationAdministration,
@@ -56,6 +58,7 @@ import { out } from "../../util/log";
 import { capture } from "../../util/notifications";
 import { uuidv7 } from "../../util/uuid-v7";
 import { S3Utils } from "../aws/s3";
+import { CONDITION_RELATED_URL } from "../fhir/shared/extensions/chronicity-extension";
 import { BundleType } from "./bundle/bundle-shared";
 import { createOrReplaceBundle } from "./bundle/command/create-or-replace-bundle";
 import { FetchBundleParams, fetchBundle } from "./bundle/command/fetch-bundle";
@@ -112,6 +115,7 @@ export type MakeRequestParams<T> = {
   additionalInfo: AdditionalInfo;
   debug: typeof console.log;
   emptyResponse?: boolean;
+  earlyReturn?: boolean;
 };
 
 export type MakeRequestParamsInEhr<T> = Omit<
@@ -134,6 +138,7 @@ export async function makeRequest<T>({
   additionalInfo,
   debug,
   emptyResponse = false,
+  earlyReturn = false,
 }: MakeRequestParams<T>): Promise<T> {
   const { log } = out(
     `${ehr} makeRequest - cxId ${cxId} patientId ${patientId} method ${method} url ${url}`
@@ -151,6 +156,36 @@ export async function makeRequest<T>({
     url,
     context: `${ehr}.make-request`,
   };
+  const formattedData =
+    method === "GET" ? undefined : isJsonContentType ? data : createDataParams(data ?? {});
+  if (formattedData && responsesBucket) {
+    const filePath = createHivePartitionFilePath({
+      cxId,
+      patientId: patientId ?? "global",
+      date: new Date(),
+    });
+    const key = buildS3Path(ehr, s3Path, `${filePath}/request`);
+    const s3Utils = getS3UtilsInstance();
+    try {
+      await s3Utils.uploadFile({
+        bucket: responsesBucket,
+        key,
+        file: Buffer.from(JSON.stringify({ method, url, data: formattedData }), "utf8"),
+        contentType: "application/json",
+      });
+    } catch (error) {
+      log(`Error saving request to s3 @ ${ehr} - ${method} ${url}. Cause: ${errorToString(error)}`);
+    }
+  }
+  if (earlyReturn) {
+    const outcome = schema.safeParse(undefined);
+    if (!outcome.success) {
+      const msg = `Response not parsed @ ${ehr}`;
+      log(msg);
+      throw new MetriportError(msg, undefined, fullAdditionalInfo);
+    }
+    return outcome.data;
+  }
   let response: AxiosResponse;
   try {
     response = await executeWithRetries(
@@ -158,8 +193,7 @@ export async function makeRequest<T>({
         axiosInstance.request({
           method,
           ...(url !== "" ? { url } : {}),
-          data:
-            method === "GET" ? undefined : isJsonContentType ? data : createDataParams(data ?? {}),
+          data: formattedData,
           headers: {
             ...axiosInstance.defaults.headers.common,
             ...headers,
@@ -296,6 +330,26 @@ export function isNotRetriableAxiosError(error: unknown): boolean {
   );
 }
 
+export type CreatePrefixParams = {
+  ehr: EhrSource;
+  cxId: string;
+  metriportPatientId: string;
+  ehrPatientId: string;
+  resourceType: string;
+  jobId?: string | undefined;
+};
+
+export function createPrefix(
+  prefix: string,
+  params: Omit<CreatePrefixParams, "resourceId">
+): string {
+  return `${prefix}/ehr=${params.ehr}/cxid=${params.cxId}/metriportpatientid=${
+    params.metriportPatientId
+  }/ehrpatientid=${params.ehrPatientId}/resourcetype=${params.resourceType}/jobId=${
+    params.jobId ?? "latest"
+  }`;
+}
+
 // TYPES FROM DASHBOARD
 export type MedicationWithRefs = {
   medication: Medication;
@@ -320,6 +374,33 @@ export type DataPoint = {
   unit?: string;
   bp?: BloodPressure | undefined;
 };
+
+export function isVital(observation: Observation): boolean {
+  const isVital = observation.category?.find(
+    ext => ext.coding?.[0]?.code?.toLowerCase() === "vital-signs"
+  );
+  return isVital !== undefined;
+}
+
+export function isLab(observation: Observation): boolean {
+  const isLab = observation.category?.find(
+    ext => ext.coding?.[0]?.code?.toLowerCase() === "laboratory"
+  );
+  return isLab !== undefined;
+}
+
+export function isLabPanel(diagnosticReport: DiagnosticReport): boolean {
+  if (!diagnosticReport.result) return false;
+  return true;
+}
+
+export function isChronicCondition(condition?: Condition): boolean {
+  if (!condition) return false;
+  const chronicityExtension = condition.extension?.find(
+    (e: Extension) => e.url === CONDITION_RELATED_URL
+  );
+  return chronicityExtension?.valueCoding?.code === "C" ? true : false;
+}
 
 export function getMedicationRxnormCoding(medication: Medication): Coding | undefined {
   const code = medication.code;
@@ -396,6 +477,32 @@ export function getImmunizationCvxCode(immunization: Immunization): string | und
   return cvxCoding.code;
 }
 
+export function getDiagnosticReportLoincCoding(
+  diagnosticReport: DiagnosticReport
+): Coding | undefined {
+  const code = diagnosticReport.code;
+  const loincCoding = code?.coding?.find(coding => {
+    const system = fetchCodingCodeOrDisplayOrSystem(coding, "system");
+    return system?.includes(LOINC_CODE);
+  });
+  if (!loincCoding) return undefined;
+  return loincCoding;
+}
+
+export function getDiagnosticReportLoincCode(
+  diagnosticReport: DiagnosticReport
+): string | undefined {
+  const loincCoding = getDiagnosticReportLoincCoding(diagnosticReport);
+  if (!loincCoding) return undefined;
+  return loincCoding.code;
+}
+
+export function getDiagnosticReportResultStatus(
+  diagnosticReport: DiagnosticReport
+): string | undefined {
+  return diagnosticReport.status;
+}
+
 export function getImmunizationAdministerDate(immunization: Immunization): string | undefined {
   const administeredDate = immunization.occurrenceDateTime;
   if (administeredDate) return administeredDate;
@@ -406,7 +513,7 @@ export function getImmunizationAdministerDate(immunization: Immunization): strin
   return parsedDate.toISOString();
 }
 
-function getObservationUnit(observation: Observation): string | undefined {
+export function getObservationUnit(observation: Observation): string | undefined {
   const firstReference = observation.referenceRange?.[0];
   return (
     observation.valueQuantity?.unit?.toString() ??
@@ -416,7 +523,7 @@ function getObservationUnit(observation: Observation): string | undefined {
 }
 
 const blacklistedValues = ["see below", "see text", "see comments", "see note"];
-function getObservationValue(observation: Observation): number | string | undefined {
+export function getObservationValue(observation: Observation): number | string | undefined {
   let value: number | string | undefined;
   if (observation.valueQuantity) {
     value = observation.valueQuantity.value;
@@ -427,7 +534,6 @@ function getObservationValue(observation: Observation): number | string | undefi
     value = isNaN(parsedNumber) ? observation.valueString : parsedNumber;
     if (blacklistedValues.includes(value?.toString().toLowerCase().trim())) value = undefined;
   }
-  if (!value) return undefined;
   return value;
 }
 
@@ -437,7 +543,9 @@ type ReferenceRange = {
   unit: string | undefined;
   text?: string | undefined;
 };
-function buildObservationReferenceRange(observation: Observation): ReferenceRange | undefined {
+export function buildObservationReferenceRange(
+  observation: Observation
+): ReferenceRange | undefined {
   const firstReference = observation.referenceRange?.[0];
   if (!firstReference) return undefined;
   const range: ReferenceRange = {
@@ -475,6 +583,10 @@ function normalizeStringInterpretation(interpretation: string): string {
     return "normal";
   } else if (lowerInterp.includes("abnormal")) return "abnormal";
   return interpretation;
+}
+
+export function getDiagnosticReportDate(diagnosticReport: DiagnosticReport): string | undefined {
+  return diagnosticReport.effectiveDateTime ?? diagnosticReport.effectivePeriod?.start;
 }
 
 export function getObservationLoincCoding(observation: Observation): Coding | undefined {
@@ -515,9 +627,8 @@ export function getObservationReferenceRange(observation: Observation): string |
     return `<= ${range?.high} ${unit}`;
   } else if (range?.text && range?.text !== "unknown") {
     return range?.text;
-  } else {
-    return "-";
   }
+  return undefined;
 }
 
 export function getObservationResultStatus(observation: Observation): string | undefined {
@@ -726,7 +837,7 @@ export async function saveEhrReferenceBundle({
   metriportPatientId: string;
   ehrPatientId: string;
   referenceBundle: EhrFhirResourceBundle;
-}) {
+}): Promise<void> {
   const { log } = out(
     `saveReferenceBundle - cxId ${cxId} metriportPatientId ${metriportPatientId} ehrPatientId ${ehrPatientId}`
   );

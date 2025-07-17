@@ -16,7 +16,7 @@ const triggerWHNotificationsToCx = true;
 
 const ecUpdater = new ECUpdaterLocal();
 
-export const completeEnhancedCoverage = async ({
+export async function completeEnhancedCoverage({
   ecId,
   cxId,
   patientIds,
@@ -26,23 +26,23 @@ export const completeEnhancedCoverage = async ({
   cxId: string;
   patientIds: string[];
   cqLinkStatus: CQLinkStatus;
-}): Promise<void> => {
+}): Promise<void> {
   const { log } = out(`EC completer - cx ${cxId}`);
   log(
     `Completing EC for ${patientIds.length} patients, to status: ${cqLinkStatus}, and triggering doc queries`
   );
 
   // Promise that will be executed for each patient
-  const completeECForPatient = async (patientId: string): Promise<void> => {
+  async function completeECForPatient(patientId: string): Promise<void> {
     const { patient, updated } = await setCQLinkStatus({ cxId, patientId, cqLinkStatus });
     if (!updated) return; // if the status was already set don't do anything else
     if (cqLinkStatus === "linked") await finishEnhancedCoverage(ecId, patient, log);
-  };
+  }
 
   await executeAsynchronously(patientIds, completeECForPatient, {
     numberOfParallelExecutions: PARALLEL_UPDATES,
   });
-};
+}
 
 /**
  * Finish the enhanced coverage for the patient.
@@ -64,6 +64,7 @@ async function finishEnhancedCoverage(
     const { docsFound } = await triggerDocRefs.queryDocsForPatient({
       cxId: patient.cxId,
       patientId: patient.id,
+      facilityId,
       triggerWHNotificationsToCx,
     });
     ecId &&

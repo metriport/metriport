@@ -1,4 +1,5 @@
 import { getEnvVarAsRecordOrFail } from "@metriport/shared/common/env-var";
+import { SnowflakeCreds, snowflakeCredsSchema } from "../external/snowflake/creds";
 import { getEnvVar, getEnvVarOrFail } from "./env-var";
 
 /**
@@ -106,7 +107,7 @@ export class Config {
   static getHl7NotificationQueueUrl(): string {
     return getEnvVarOrFail("HL7_NOTIFICATION_QUEUE_URL");
   }
-  static getHieTimezoneDictionary(): Record<string, string> {
+  static getHieTimezoneDictionary(): Record<string, unknown> {
     return getEnvVarAsRecordOrFail("HIE_TIMEZONE_DICTIONARY");
   }
 
@@ -220,6 +221,9 @@ export class Config {
   }
   static getEhrContributeDiffBundlesQueueUrl(): string {
     return getEnvVarOrFail("EHR_CONTRIBUTE_RESOURCE_DIFF_BUNDLES_QUEUE_URL");
+  }
+  static getEhrWriteBackDiffBundlesQueueUrl(): string {
+    return getEnvVarOrFail("EHR_WRITE_BACK_RESOURCE_DIFF_BUNDLES_QUEUE_URL");
   }
   static getEhrBundleBucketName(): string {
     return getEnvVarOrFail("EHR_BUNDLE_BUCKET_NAME");
@@ -371,5 +375,9 @@ export class Config {
   // ENG-536 remove this once we automatically find the discharge summary
   static getDischargeNotificationSlackUrl(): string {
     return getEnvVarOrFail("DISCHARGE_NOTIFICATION_SLACK_URL");
+  }
+
+  static getSnowflakeCreds(): SnowflakeCreds {
+    return snowflakeCredsSchema.parse(getEnvVarAsRecordOrFail("SNOWFLAKE_CREDS"));
   }
 }

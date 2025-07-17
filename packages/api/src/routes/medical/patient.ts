@@ -25,6 +25,8 @@ import { getConsolidatedWebhook } from "../../command/medical/patient/get-consol
 import { getPatientFacilityMatches } from "../../command/medical/patient/get-patient-facility-matches";
 import { getHieOptOut, setHieOptOut } from "../../command/medical/patient/update-hie-opt-out";
 import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
+import { setPatientFacilities } from "../../command/medical/patient/set-patient-facilities";
+import { getPatientFacilities } from "../../command/medical/patient/get-patient-facilities";
 import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
 import { countResources } from "../../external/fhir/patient/count-resources";
 import { REQUEST_ID_HEADER_NAME } from "../../routes/header";
@@ -36,12 +38,14 @@ import { getPatientInfoOrFail } from "../middlewares/patient-authorization";
 import { checkRateLimit } from "../middlewares/rate-limiting";
 import { asyncHandler, getFrom, getFromQueryAsBoolean } from "../util";
 import { dtoFromModel } from "./dtos/patientDTO";
+import { dtoFromModel as facilityDtoFromModel } from "./dtos/facilityDTO";
 import { bundleSchema, getResourcesQueryParam } from "./schemas/fhir";
 import {
   PatientHieOptOutResponse,
   patientUpdateSchema,
   schemaUpdateToPatientData,
 } from "./schemas/patient";
+import { setPatientFacilitiesSchema } from "./schemas/patient-facilities";
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
 
 const router = Router();
@@ -51,6 +55,8 @@ const router = Router();
  *
  * Updates the patient corresponding to the specified facility at the customer's organization.
  * Note: this is not a PATCH, so requests must include all patient data in the payload.
+ *
+ * TODO ENG-618: FacilityID will be made required in the future
  *
  * @param req.query.facilityId The facility providing NPI for the patient update
  * @return The patient to be updated
@@ -530,6 +536,68 @@ router.get(
     };
 
     return res.status(status.OK).json(respPayload);
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * POST /patient/:id/facility
+ *
+ * Sets the facilities associated with a patient. This operation overrides any existing
+ * facility associations and replaces them with the provided list.
+ *
+ * @param req.cxId The customer ID.
+ * @param req.param.id The ID of the patient to set facilities for.
+ * @param req.body The facility IDs to set for the patient.
+ * @return The updated patient.
+ */
+router.post(
+  "/facility",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const { cxId, id: patientId } = getPatientInfoOrFail(req);
+    const payload = setPatientFacilitiesSchema.parse(req.body);
+
+    await setPatientFacilities({
+      cxId,
+      patientId,
+      facilityIds: payload.facilityIds,
+      ...getETag(req),
+    });
+
+    const facilities = await getPatientFacilities({
+      cxId,
+      patientId,
+    });
+
+    const facilitiesData = facilities.map(facilityDtoFromModel);
+
+    return res.status(status.OK).json({ facilities: facilitiesData });
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * GET /patient/:id/facility
+ *
+ * Gets all facilities associated with a patient.
+ *
+ * @param req.cxId The customer ID.
+ * @param req.param.id The ID of the patient whose facilities are to be returned.
+ * @return Array of facilities associated with the patient.
+ */
+router.get(
+  "/facility",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const { cxId, id: patientId } = getPatientInfoOrFail(req);
+
+    const facilities = await getPatientFacilities({
+      cxId,
+      patientId,
+    });
+
+    const facilitiesData = facilities.map(facilityDtoFromModel);
+
+    return res.status(status.OK).json({ facilities: facilitiesData });
   })
 );
 

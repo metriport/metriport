@@ -1,10 +1,7 @@
-import { BadRequestError } from "@metriport/shared";
 import { createPatientJob } from "../../../../../../command/job/patient/create";
-import { getLatestPatientJob } from "../../../../../../command/job/patient/get";
-import { getPatientMappingOrFail } from "../../../../../../command/mapping/patient";
-import { getPatientOrFail } from "../../../../../../command/medical/patient/get-patient";
+import { validatePatientAndLatestJobStatus } from "../../../command/job/validate-patient-and-lastest-job-status";
 import {
-  StartCreateResourceDiffBundlesJobParams,
+  StartBundlesJobParams,
   getCreateResourceDiffBundlesJobType,
   getCreateResourceDiffBundlesRunUrl,
 } from "../../../utils/job";
@@ -17,7 +14,7 @@ import {
  * @param cxId - The CX ID of the patient.
  * @param practiceId - The practice id of the EHR patient.
  * @param ehrPatientId - The patient id of the EHR patient.
- * @param requestId - The request id of the job. Optional, defaults to a new UUID.
+ * @param requestId - The request id of the job. Opional.
  * @returns The job id of the resource diff bundles job.
  */
 export async function startCreateResourceDiffBundlesJob({
@@ -26,35 +23,18 @@ export async function startCreateResourceDiffBundlesJob({
   practiceId,
   ehrPatientId,
   requestId,
-}: StartCreateResourceDiffBundlesJobParams): Promise<string> {
-  const patientMapping = await getPatientMappingOrFail({
-    cxId,
-    externalId: ehrPatientId,
-    source: ehr,
-  });
-  const metriportPatient = await getPatientOrFail({
-    cxId,
-    id: patientMapping.patientId,
-  });
-  const metriportPatientId = metriportPatient.id;
+}: StartBundlesJobParams): Promise<string> {
+  const jobGroupId = ehrPatientId;
   const jobType = getCreateResourceDiffBundlesJobType(ehr);
   const runUrl = getCreateResourceDiffBundlesRunUrl(ehr);
-  const jobGroupId = ehrPatientId;
-  const runningJob = await getLatestPatientJob({
+  const metriportPatientId = await validatePatientAndLatestJobStatus({
+    ehr,
     cxId,
-    patientId: metriportPatientId,
+    ehrPatientId,
     jobType,
     jobGroupId,
-    status: ["waiting", "processing"],
+    jobStatuses: ["waiting", "processing"],
   });
-  if (runningJob) {
-    throw new BadRequestError("Only one job can be running at a time", undefined, {
-      cxId,
-      metriportPatientId,
-      ehrPatientId,
-      runningJobId: runningJob.id,
-    });
-  }
   const job = await createPatientJob({
     cxId,
     patientId: metriportPatientId,
