@@ -3,9 +3,7 @@ import * as AWS from "aws-sdk";
 import { capture, out } from "../../util";
 import { Config } from "../../util/config";
 
-const region = Config.getAWSRegion();
-
-export function makeBatchClient(): AWS.Batch {
+export function makeBatchClient(region: string): AWS.Batch {
   if (!region) throw new Error("No region set");
   return new AWS.Batch({ region });
 }
@@ -13,8 +11,8 @@ export function makeBatchClient(): AWS.Batch {
 export class BatchUtils {
   public readonly _batch: AWS.Batch;
 
-  constructor(readonly region: string) {
-    this._batch = makeBatchClient();
+  constructor(readonly region: string = Config.getAWSRegion()) {
+    this._batch = makeBatchClient(region);
   }
 
   get batch(): AWS.Batch {
