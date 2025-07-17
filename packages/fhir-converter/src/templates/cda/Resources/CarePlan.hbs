@@ -14,7 +14,7 @@
         {{/if}}
 
         "status":{{>ValueSet/CarePlanStatus.hbs code=encounter.statusCode.code}},
-        "intent":{{>ValueSet/CarePlanIntent.hbs code=encounter.statusCode.intent}},
+        "intent":{{>ValueSet/CarePlanIntent.hbs code="plan"}},
 
         {{#if encounter.code.originalText._}}
             "description": "{{encounter.code.originalText._}}",

@@ -385,12 +385,20 @@ var buildPeriod = function (period) {
   return result;
 };
 
+/**
+ * Returns a valid CarePlan.activity.status value from a status code.
+ *
+ * not-started | scheduled | in-progress | on-hold | completed | cancelled | stopped | unknown | entered-in-error
+ * @param {string} statusCode - The status code to validate.
+ * @returns {string} - Returns the status code if it is valid, otherwise undefined.
+ */
 var getCarePlanActivityStatus = function (statusCode) {
-  if (!statusCode) return undefined;
+  if (!statusCode) return "unknown";
   if (validCarePlanActivityStatusCodes.includes(statusCode.trim().toLowerCase())) {
     return statusCode;
   }
-  return undefined;
+
+  return "unknown";
 };
 
 // convert the dateString to date string with hyphens
