@@ -9,7 +9,7 @@ const organizationBaseSchema = z.object({
   memberName: z.string(),
   type: z.string(),
   npiType1: z.string().nullish(), // Physicians
-  npiType2: z.string().nullish(), // Organization
+  npiType2: z.string().nullish(), // Organizations
   patientIdAssignAuthority: z.string(),
   sendingFacility: z
     .object({
@@ -56,7 +56,7 @@ const organizationBaseSchema = z.object({
   ),
 });
 
-export const organizationSchemaWithNetworkInfo = organizationBaseSchema.extend({
+export const organizationSchema = organizationBaseSchema.extend({
   securityTokenKeyType: z
     .union([z.literal("JWT"), z.literal("BEARER"), z.literal("HOLDER-OF-KEY")])
     .nullish(),
@@ -101,20 +101,6 @@ export const organizationSchemaWithNetworkInfo = organizationBaseSchema.extend({
     })
     .nullish(),
 });
-export type OrganizationWithNetworkInfo = z.infer<typeof organizationSchemaWithNetworkInfo>;
-
-export const organizationSchemaWithoutNetworkInfo = organizationSchemaWithNetworkInfo.omit({
-  securityTokenKeyType: true,
-  networks: true,
-  gateways: true,
-  authorizationInformation: true,
-});
-export type OrganizationWithoutNetworkInfo = z.infer<typeof organizationSchemaWithoutNetworkInfo>;
-
-export const organizationSchema = z.union([
-  organizationSchemaWithNetworkInfo,
-  organizationSchemaWithoutNetworkInfo,
-]);
 export type Organization = z.infer<typeof organizationSchema>;
 
 export const organizationListSchema = z.object({
@@ -125,3 +111,7 @@ export const organizationListSchema = z.object({
 });
 
 export type OrganizationList = z.infer<typeof organizationListSchema>;
+
+export function isOrgInitiatorAndResponder(org: Organization): boolean {
+  return !!org.securityTokenKeyType;
+}

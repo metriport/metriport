@@ -5,7 +5,7 @@ import {
   Demographics,
   GenderCodes,
   NameUseCodes,
-  OrganizationWithNetworkInfo,
+  Organization,
   Patient,
   PatientIdentifier,
 } from "@metriport/commonwell-sdk";
@@ -118,7 +118,7 @@ export function makePatient({
 
 const shortName = "z_" + makeShortName();
 
-export function makeOrganization(suffixId?: string): OrganizationWithNetworkInfo {
+export function makeOrganization(suffixId?: string): Organization {
   const orgId = makeOrgId(suffixId);
   return {
     organizationId: orgId,

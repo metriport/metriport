@@ -2,18 +2,18 @@ import { MetriportError } from "@metriport/shared";
 import axios, { AxiosInstance, AxiosResponse } from "axios";
 import httpStatus from "http-status";
 import { Agent } from "https";
+import { normalizeCertificate } from "../common/certificate";
 import { makeJwt } from "../common/make-jwt";
 import { buildBaseQueryMeta } from "../common/util";
 import { CertificateParam, CertificateResp, certificateRespSchema } from "../models/certificates";
 import {
-  Organization,
   OrganizationList,
   organizationListSchema,
   organizationSchema,
+  Organization,
 } from "../models/organization";
 import { APIMode, CommonWellOptions, DEFAULT_AXIOS_TIMEOUT_SECONDS } from "./common";
 import { BaseOptions, CommonWellMemberAPI, MemberRequestMetadata } from "./commonwell-member-api";
-import { normalizeCertificate } from "../common/certificate";
 
 /**
  * Implementation of the CommonWell API, v4.
