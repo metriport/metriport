@@ -1,3 +1,4 @@
+import { BadRequestError } from "@metriport/shared";
 import { BatchUtils } from "../../external/aws/batch";
 import { Config } from "../../util/config";
 import { getSnowflakeCreds } from "./config";
@@ -17,11 +18,11 @@ export async function startFhirToCsvBatchJob({
   const fhirToCsvBatchJobDefinitionArn = Config.getFhirToCsvBatchJobDefinitionArn();
 
   if (!fhirToCsvBatchJobQueueArn || !fhirToCsvBatchJobDefinitionArn) {
-    throw new Error("Job queue or definition ARN is not set");
+    throw new BadRequestError("Job queue or definition ARN is not set");
   }
 
   if (bundlesToAppend && !patientId) {
-    throw new Error("Patient ID is required when bundlesToAppend is provided");
+    throw new BadRequestError("Patient ID is required when bundlesToAppend is provided");
   }
 
   const snowflakeCreds = getSnowflakeCreds();
