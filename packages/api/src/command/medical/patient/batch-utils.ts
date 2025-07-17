@@ -4,9 +4,8 @@ import { BadRequestError, errorToString } from "@metriport/shared";
 import { chunk } from "lodash";
 
 /**
- * Maximum number of retries for a batch operation
+ * Number of patients to process in a single batch
  */
-export const MAX_BATCH_RETRIES = 3;
 export const BATCH_SIZE = 2000;
 
 export type BatchProcessorFunction = (patientIds: string[]) => Promise<void>;
@@ -31,13 +30,9 @@ export type PatientBatchProcessingResult = {
  * Processes patient operations in small batches with automatic retry.
  *
  * What it does:
- * 1. Splits patient IDs into batches of 500
+ * 1. Splits patient IDs into batches of 2000
  * 2. Processes each batch using the provided function
- * 3. Retries failed batches up to 3 times
- * 4. Tracks which patients succeeded/failed
- *
- * Why batching: Prevents database timeouts and memory issues with large patient lists
- * Why retry: Network/DB issues are often transient and resolve on retry
+ * 3. Tracks which patients succeeded/failed
  *
  * @param patientIds - Array of patient IDs to process
  * @param batchProcessor - Function to process each batch of patient IDs
