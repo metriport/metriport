@@ -48,6 +48,7 @@ export type SyncHealthiePatientIntoMetriportParams = {
   api?: HealthieApi;
   triggerDq?: boolean;
   triggerDqForExistingPatient?: boolean;
+  inputMetriportPatientId?: string;
 };
 
 export async function syncHealthiePatientIntoMetriport({
@@ -57,6 +58,7 @@ export async function syncHealthiePatientIntoMetriport({
   api,
   triggerDq = false,
   triggerDqForExistingPatient = false,
+  inputMetriportPatientId,
 }: SyncHealthiePatientIntoMetriportParams): Promise<string> {
   const existingPatient = await getPatientMapping({
     cxId,
@@ -96,6 +98,7 @@ export async function syncHealthiePatientIntoMetriport({
     practiceId: healthiePracticeId,
     demographics,
     externalId: healthiePatientId,
+    inputMetriportPatientId,
   });
   const metriportPatientId = metriportPatient.id;
   const facilityId = await getPatientPrimaryFacilityIdOrFail({
@@ -148,7 +151,17 @@ async function getOrCreateMetriportPatient({
   practiceId,
   demographics,
   externalId,
-}: Omit<HandleMetriportSyncParams, "source">): Promise<PatientWithIdentifiers> {
+  inputMetriportPatientId,
+}: Omit<HandleMetriportSyncParams, "source"> & {
+  inputMetriportPatientId?: string;
+}): Promise<PatientWithIdentifiers> {
+  if (inputMetriportPatientId) {
+    const metriportPatient = await getPatientOrFail({
+      cxId,
+      id: inputMetriportPatientId,
+    });
+    return metriportPatient;
+  }
   const metriportPatient = await getPatientByDemo({ cxId, demo: demographics });
   if (metriportPatient) return metriportPatient;
   return await handleMetriportSync({
