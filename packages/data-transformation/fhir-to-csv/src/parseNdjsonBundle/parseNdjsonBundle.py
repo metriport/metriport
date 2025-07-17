@@ -25,7 +25,6 @@ def ensure_folder_exists(folder_path):
 
 # METRIPORT CHANGE FROM INLINE TO FUNCTION
 def parse(input_path: str, outputs_folder: str) -> list[str]:
-    output_files = [] # METRIPORT CHANGE TO RETURN LIST OF OUTPUT FILES
     # First, group config files by their base resource type
     config_groups = {}
     for config_file in os.listdir(config_folder):
@@ -35,6 +34,7 @@ def parse(input_path: str, outputs_folder: str) -> list[str]:
                 config_groups[resource_type] = []
             config_groups[resource_type].append(config_file)
 
+    output_files = [] # METRIPORT CHANGE TO RETURN LIST OF OUTPUT FILES
     # Process each resource type separately
     for resource_type, config_files in config_groups.items():
         # First, filter the input file for just this resource type
