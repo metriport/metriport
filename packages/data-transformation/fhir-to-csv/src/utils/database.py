@@ -1,11 +1,16 @@
-from .environment import Environment
 from .file import strip_config_file_name
 
-def format_database_name(cx_id: str, env: Environment):
-    return f"{env.value.upper()}_METRICS_{cx_id.replace('-', '')}"
+def format_database_name(cx_id: str):
+    return f"ANALYTICS_{cx_id.replace('-', '_')}"
 
-def format_table_name(file_name):
-    return strip_config_file_name(file_name).replace('.', '_').lower()
+def format_table_name_from_config_file_name(config_file_name: str):
+    return strip_config_file_name(config_file_name).replace('.', '_').lower()
+
+def format_temp_table_name(table_name: str):
+    return f"temp_{table_name}"
+
+def format_stage_name(file_key: str):
+    return f"{file_key.replace('/', '_').replace('-', '_').replace('.', '_')}_stage"
 
 def get_data_type(column_name, date_types, default_type="varchar"):
     if date_types:
