@@ -70,19 +70,6 @@ jobs:
           echo "Git ref: $(git rev-parse HEAD)"
         shell: bash
 
-      - name: Install dependencies
-        run: npm run install-deps
-        working-directory: "./"
-
-      - name: Build/compile
-        # build from root because of dependencies
-        run: npm run build:cloud
-        working-directory: "./"
-
-      - name: Run Tests
-        run: npm run test
-        working-directory: "./"
-
       - name: Create Sentry release
         uses: getsentry/action-release@v1
         env:
@@ -93,8 +80,8 @@ jobs:
           version: ${{ github.sha }}
           ignore_missing: true
           ignore_empty: true
-          sourcemaps: packages/api/dist
-          projects: api-oss
+          sourcemaps: packages/data-transformation/fhir-to-csv/dist
+          projects: data-transformation-oss
 
       - name: Setup AWS CLI
         run: |
