@@ -62,7 +62,7 @@ def create_temp_tables(cx_id: str):
     with snowflake.connector.connect(**get_snowflake_credentials(), autocommit=False) as snowflake_conn:
         snowflake_conn.cursor().execute(f"CREATE DATABASE IF NOT EXISTS {database_name}")
         snowflake_conn.cursor().execute(f"USE DATABASE {database_name}")
-        snowflake_conn.cursor().execute(f"USE SCHEMA PUBLIC")
+        snowflake_conn.cursor().execute("USE SCHEMA PUBLIC")
         tables = generate_table_names_and_create_temp_table_statements()
         for table_name, create_temp_table_statement in tables:
             snowflake_conn.cursor().execute(f"DROP TABLE IF EXISTS {format_temp_table_name(table_name)}")
@@ -73,7 +73,7 @@ def rename_temp_tables(cx_id: str):
     database_name = format_database_name(cx_id)
     with snowflake.connector.connect(**get_snowflake_credentials(), autocommit=False) as snowflake_conn:
         snowflake_conn.cursor().execute(f"USE DATABASE {database_name}")
-        snowflake_conn.cursor().execute(f"USE SCHEMA PUBLIC")
+        snowflake_conn.cursor().execute("USE SCHEMA PUBLIC")
         tables = generate_table_names_and_create_temp_table_statements()
         for table_name, _ in tables:
             snowflake_conn.cursor().execute(f"DROP TABLE IF EXISTS {table_name}")
@@ -84,7 +84,7 @@ def append_temp_tables(cx_id: str, patient_id: str, rebuild_patient: bool = Fals
     database_name = format_database_name(cx_id)
     with snowflake.connector.connect(**get_snowflake_credentials(), autocommit=False) as snowflake_conn:
         snowflake_conn.cursor().execute(f"USE DATABASE {database_name}")
-        snowflake_conn.cursor().execute(f"USE SCHEMA PUBLIC")
+        snowflake_conn.cursor().execute("USE SCHEMA PUBLIC")
         tables = generate_table_names_and_create_temp_table_statements()
         for table_name, _ in tables:
             if rebuild_patient and table_name == 'condition_code_coding':
@@ -133,7 +133,7 @@ def copy_into_temp_table(cx_id: str, s3_bucket: str, file_key: str, table_name: 
     with snowflake.connector.connect(**get_snowflake_credentials(), autocommit=False) as snowflake_conn:
         try:
             snowflake_conn.cursor().execute(f"USE DATABASE {database_name}")
-            snowflake_conn.cursor().execute(f"USE SCHEMA PUBLIC")
+            snowflake_conn.cursor().execute("USE SCHEMA PUBLIC")
             snowflake_conn.cursor().execute(f"DROP STAGE IF EXISTS {stage_name}")
             snowflake_conn.cursor().execute(f"""
             CREATE STAGE {stage_name}

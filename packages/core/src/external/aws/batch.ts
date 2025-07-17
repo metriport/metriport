@@ -46,7 +46,7 @@ export class BatchUtils {
       log(`${msg} - error: ${errorToString(error)}`);
       capture.message(msg, {
         extra: {
-          error,
+          error: errorToString(error),
           context: "startJob",
           level: "warning",
         },

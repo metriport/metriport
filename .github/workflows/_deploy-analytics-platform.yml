@@ -3,11 +3,6 @@ name: Reusable Deploy workflow for API
 on:
   workflow_call:
     inputs:
-      path:
-        description: "sub-directory where this workflow should execute lint and build "
-        required: false
-        type: string
-        default: "packages/data-transformation"
       deploy_env:
         description: "the environment we're deploying to, either 'staging', 'production', or 'sandbox'"
         required: true

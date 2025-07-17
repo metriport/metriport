@@ -1,4 +1,3 @@
-from threading import local
 import boto3
 import os
 import logging
@@ -69,17 +68,18 @@ def transform_and_upload_data(
                     continue
                 else:
                     raise e
-        bundle = json.load(open(local_bundle_key))
-        entries = bundle["entry"]
-        if entries is None or len(entries) < 1:
-            logging.warning(f"Bundle {bundle_key} has no entries")
-            continue
-        local_ndjson_bundle_key = local_bundle_key.replace(".json", ".ndjson")
-        with open(local_ndjson_bundle_key, "w") as f:
-            ndjson.dump(entries, f)
-        local_path = local_patient_path if is_single_patient else local_cx_path
-        logging.info(f"Parsing bundle {local_ndjson_bundle_key} to {local_path}")
-        local_output_files.extend(parseNdjsonBundle.parse(local_ndjson_bundle_key, local_path))
+        with open(local_bundle_key, "rb") as f:
+            bundle = json.load(f)
+            entries = bundle["entry"]
+            if entries is None or len(entries) < 1:
+                logging.warning(f"Bundle {bundle_key} has no entries")
+                continue
+            local_ndjson_bundle_key = local_bundle_key.replace(".json", ".ndjson")
+            with open(local_ndjson_bundle_key, "w") as f:
+                ndjson.dump(entries, f)
+            local_path = local_patient_path if is_single_patient else local_cx_path
+            logging.info(f"Parsing bundle {local_ndjson_bundle_key} to {local_path}")
+            local_output_files.extend(parseNdjsonBundle.parse(local_ndjson_bundle_key, local_path))
 
     output_bucket_and_file_keys_and_table_names = []
     for file in set(local_output_files):
