@@ -17,7 +17,7 @@
 
             {{#if careplanEntry.encounter.performer.assignedEntity}}
                 {{#with (generatePractitionerId careplanEntry.encounter.performer.assignedEntity) as |practitionerId|}}
-                    {{>Resources/Practitioner.hbs practitioner=careplanEntry.encounter.performer.assignedEntity ID=practitionerId.Id}},
+                    {{>Resources/Practitioner.hbs practitioner=careplanEntry.encounter.performer.assignedEntity ID=practitionerId}},
                     {{!-- Reference to the Practitioner is generated at the time of CarePlan resource generation --}}
                 {{/with}}
             {{/if}}

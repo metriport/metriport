@@ -1866,7 +1866,6 @@ module.exports.external = [
       const performer = encounter.performer?.assignedEntity;
       if (performer) {
         const performerId = generatePractitionerId(performer);
-
         detail.performer = [
           {
             reference: `Practitioner/${performerId}`,
