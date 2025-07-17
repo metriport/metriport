@@ -70,19 +70,6 @@ jobs:
           echo "Git ref: $(git rev-parse HEAD)"
         shell: bash
 
-      - name: Create Sentry release
-        uses: getsentry/action-release@v1
-        env:
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-        with:
-          environment: ${{ inputs.deploy_env }}
-          version: ${{ github.sha }}
-          ignore_missing: true
-          ignore_empty: true
-          sourcemaps: packages/data-transformation/fhir-to-csv/dist
-          projects: data-transformation-oss
-
       - name: Setup AWS CLI
         run: |
           aws configure set aws_access_key_id "${{ secrets.AWS_ACCESS_KEY_ID }}"
