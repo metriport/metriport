@@ -9,9 +9,6 @@
         		{{>DataType/Identifier.hbs id=this}},
             {{/each}}
         ],
-        {{#if encounter.text}}
-            "text": {{>DataType/Narrative.hbs narrative=encounter.text._b64}},
-        {{/if}}
 
         "status":{{>ValueSet/CarePlanStatus.hbs code=encounter.statusCode.code}},
         "intent":{{>ValueSet/CarePlanIntent.hbs code="plan"}},
