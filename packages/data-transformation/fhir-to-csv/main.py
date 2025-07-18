@@ -59,7 +59,7 @@ def transform_and_upload_data(
         with open(local_bundle_key, "wb") as f:
             try:
                 logging.info(f"Downloading bundle {bundle_key} from {input_bucket} to {local_bundle_key}")
-                s3_client.download_file(input_bucket, bundle_key, local_bundle_key)
+                s3_client.download_file(input_bucket, bundle_key, f)
                 logging.info(f"Downloaded bundle {bundle_key} from {input_bucket} to {local_bundle_key}")
             except s3_client.exceptions.ClientError as e:
                 if e.response['Error']['Code'] == '404':
