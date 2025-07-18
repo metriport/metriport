@@ -1,4 +1,11 @@
-import { BundleEntry, Resource, Practitioner, Organization, Patient } from "@medplum/fhirtypes";
+import {
+  BundleEntry,
+  Resource,
+  Practitioner,
+  Organization,
+  Patient,
+  Coverage,
+} from "@medplum/fhirtypes";
 import { IncomingData } from "../schema/shared";
 import { ResponseDetail } from "../schema/response";
 import { getMedication } from "./medication";
@@ -17,21 +24,23 @@ export function getAllBundleEntries({
   const prescriber = getPrescriber(data);
   const pharmacy = getPharmacy(data);
   const condition = getCondition(patient, data);
+  const [insuranceOrganization, coverage] = getCoverageResources(patient, data);
   const medicationResources = getMedicationResources({
     prescriber,
     pharmacy,
     patient,
+    coverage,
     detail: data,
   });
-  const coverageResources = getCoverageResources(patient, data);
 
   return [
     patient,
     prescriber,
     pharmacy,
     condition,
+    insuranceOrganization,
+    coverage,
     ...medicationResources,
-    ...coverageResources,
   ].flatMap(resource => {
     if (!resource) return [];
     return [
@@ -47,16 +56,24 @@ function getMedicationResources({
   prescriber,
   pharmacy,
   patient,
+  coverage,
   detail,
 }: {
   prescriber?: Practitioner | undefined;
   pharmacy?: Organization | undefined;
   patient: Patient;
+  coverage?: Coverage | undefined;
   detail: ResponseDetail;
 }): (Resource | undefined)[] {
   const medication = getMedication(detail);
   if (!medication) return [];
-  const medicationRequest = getMedicationRequest({ prescriber, medication, detail });
+  const medicationRequest = getMedicationRequest({
+    patient,
+    prescriber,
+    medication,
+    coverage,
+    detail,
+  });
   const medicationDispense = getMedicationDispense({
     pharmacy,
     medicationRequest,
@@ -68,7 +85,10 @@ function getMedicationResources({
   return [medication, medicationDispense, medicationRequest];
 }
 
-function getCoverageResources(patient: Patient, data: ResponseDetail): Resource[] {
+function getCoverageResources(
+  patient: Patient,
+  data: ResponseDetail
+): [Organization, Coverage] | [] {
   const insuranceOrganization = getInsuranceOrganization(data);
   if (!insuranceOrganization) return [];
   const coverage = getCoverage(patient, insuranceOrganization, data);

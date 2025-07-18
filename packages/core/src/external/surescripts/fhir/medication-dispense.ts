@@ -34,7 +34,7 @@ export function getMedicationDispense({
   const daysSupply = getDaysSupply(detail);
   const medicationReference = getMedicationReference(medication);
   const performer = getMedicationDispensePerformer(pharmacy);
-  const authorizingPrescription = getAuthorizingPrescription(medicationRequest);
+  const authorizingPrescription = [getMedicationRequestReference(medicationRequest)];
   const quantity = getQuantity(detail);
   const dosageInstruction = getDosageInstruction(detail);
   const subject = getPatientReference(patient);
@@ -49,8 +49,8 @@ export function getMedicationDispense({
     id: uuidv7(),
     subject,
     medicationReference,
+    authorizingPrescription,
     status: "completed",
-    ...(authorizingPrescription ? { authorizingPrescription } : undefined),
     ...(quantity ? { quantity } : undefined),
     ...(whenHandedOver ? { whenHandedOver } : undefined),
     ...(dosageInstruction ? { dosageInstruction } : undefined),
@@ -109,12 +109,6 @@ function getMedicationDispensePerformer(pharmacy?: Organization): MedicationDisp
       actor,
     },
   ];
-}
-
-function getAuthorizingPrescription(
-  medicationRequest: MedicationRequest
-): MedicationDispense["authorizingPrescription"] {
-  return [getMedicationRequestReference(medicationRequest)];
 }
 
 function getDaysSupply(detail: ResponseDetail): MedicationDispense["daysSupply"] | undefined {

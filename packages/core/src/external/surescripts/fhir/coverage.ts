@@ -65,6 +65,12 @@ export function getCoverage(
   };
 }
 
+export function getCoverageReference(coverage: Coverage): Reference<Coverage> {
+  return {
+    reference: `Coverage/${coverage.id}`,
+  };
+}
+
 function getCoverageRelationship(detail: ResponseDetail): Coverage["relationship"] | undefined {
   const sourceOfPayment = getSourceOfPayment(detail);
   if (!sourceOfPayment) return undefined;

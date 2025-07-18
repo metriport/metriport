@@ -1,20 +1,35 @@
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { buildDayjs } from "@metriport/shared/common/date";
-import { Medication, MedicationRequest, Practitioner, Reference } from "@medplum/fhirtypes";
+import {
+  Medication,
+  MedicationRequest,
+  Patient,
+  Practitioner,
+  Reference,
+  Coverage,
+} from "@medplum/fhirtypes";
 import { ResponseDetail } from "../schema/response";
 import { getMedicationReference } from "./medication";
+import { getPatientReference } from "./patient";
+import { getCoverageReference } from "./coverage";
 import { getSurescriptsDataSourceExtension } from "./shared";
 
 export function getMedicationRequest({
+  patient,
   prescriber,
   medication,
+  coverage,
   detail,
 }: {
+  patient: Patient;
   prescriber?: Practitioner | undefined;
   medication: Medication;
+  coverage: Coverage | undefined;
   detail: ResponseDetail;
 }): MedicationRequest {
   const requester = getRequester(prescriber);
+  const subject = getPatientReference(patient);
+  const insurance = coverage ? [getCoverageReference(coverage)] : undefined;
   const dispenseRequest = getDispenseRequest(detail);
   const note = getDispenseNote(detail);
   const substitution = getMedicationRequestSubstitution(detail);
@@ -29,6 +44,8 @@ export function getMedicationRequest({
     id: uuidv7(),
     status: "completed",
     medicationReference,
+    subject,
+    ...(insurance ? { insurance } : undefined),
     ...(requester ? { requester } : undefined),
     ...(note ? { note } : undefined),
     ...(category ? { category } : undefined),
