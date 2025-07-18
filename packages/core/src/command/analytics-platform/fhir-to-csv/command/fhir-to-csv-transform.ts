@@ -26,7 +26,7 @@ export async function startFhirToCsvTransform({
     jobId,
     patientId,
     ...(inputBundle ? { inputBundle } : {}),
-    apiUrl: Config.getApiUrl(),
+    apiUrl: `http://${Config.getApiUrl()}`,
     snowflakeCreds,
   });
   return await executeWithNetworkRetries(async () => {
