@@ -44,7 +44,7 @@ def transform_and_upload_data(
         raise ValueError("No patient and bundle keys found")
 
     local_output_files = []
-    local_cx_path = f"output/{cx_id}"
+    local_cx_path = f"tmp/output/{cx_id}"
     os.makedirs(local_cx_path, exist_ok=True)
     for patient_id, bundle_key in patient_ids_and_bundle_keys:
         local_patient_path = f"{local_cx_path}/{patient_id}"
