@@ -232,7 +232,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       {
         functionName: "fhirToCsvTransformLambda",
         vpc: ownProps.vpc,
-        code: lambda.DockerImageCode.fromImageAsset("../../data-transformation/fhir-to-csv", {
+        code: lambda.DockerImageCode.fromImageAsset("../data-transformation/fhir-to-csv", {
           file: "Dockerfile",
         }),
         timeout: fhirToCsvTransformLambdaSettings.timeout,
