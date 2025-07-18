@@ -406,9 +406,11 @@ export function createAPIService({
               props.config.hl7Notification.dischargeNotificationSlackUrl,
           }),
           ...(analyticsPlatformAssets && {
-            FHIR_TO_CSV_BATCH_JOB_QUEUE_ARN: analyticsPlatformAssets.fhirToCsvQueue.jobQueueArn,
+            FHIR_TO_CSV_QUEUE_URL: analyticsPlatformAssets.fhirToCsvQueue.queueUrl,
             FHIR_TO_CSV_BATCH_JOB_DEFINITION_ARN:
               analyticsPlatformAssets.fhirToCsvBatchJob.jobDefinitionArn,
+            FHIR_TO_CSV_BATCH_JOB_QUEUE_ARN:
+              analyticsPlatformAssets.fhirToCsvBatchJobQueue.jobQueueArn,
           }),
           ...(props.config.hl7Notification?.hieConfigs && {
             HIE_CONFIG_DICTIONARY: JSON.stringify(
@@ -514,7 +516,7 @@ export function createAPIService({
   if (analyticsPlatformAssets) {
     analyticsPlatformAssets.fhirToCsvBatchJob.grantSubmitJob(
       fargateService.taskDefinition.taskRole,
-      analyticsPlatformAssets.fhirToCsvQueue
+      analyticsPlatformAssets.fhirToCsvBatchJobQueue
     );
   }
 
@@ -561,6 +563,14 @@ export function createAPIService({
     queue: ehrWriteBackResourceDiffBundlesQueue,
     resource: fargateService.taskDefinition.taskRole,
   });
+
+  if (analyticsPlatformAssets) {
+    provideAccessToQueue({
+      accessType: "send",
+      queue: analyticsPlatformAssets.fhirToCsvQueue,
+      resource: fargateService.taskDefinition.taskRole,
+    });
+  }
 
   if (dischargeRequeryQueue) {
     provideAccessToQueue({

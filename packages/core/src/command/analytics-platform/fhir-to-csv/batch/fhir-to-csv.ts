@@ -1,7 +1,7 @@
 import { BadRequestError } from "@metriport/shared";
-import { BatchUtils } from "../../external/aws/batch";
-import { Config } from "../../util/config";
-import { getSnowflakeCreds } from "./config";
+import { BatchUtils } from "../../../../external/aws/batch";
+import { Config } from "../../../../util/config";
+import { getSnowflakeCreds } from "../../config";
 
 export async function startFhirToCsvBatchJob({
   cxId,

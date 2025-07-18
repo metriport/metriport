@@ -511,6 +511,7 @@ export class APIStack extends Stack {
       analyticsPlatformStack = new AnalyticsPlatformsNestedStack(this, "AnalyticsPlatforms", {
         config: props.config,
         vpc: this.vpc,
+        lambdaLayers,
         medicalDocumentsBucket,
       });
     }
@@ -773,7 +774,10 @@ export class APIStack extends Stack {
     medicalDocumentsBucket.grantRead(ehrComputeResourceDiffBundlesLambda);
     medicalDocumentsBucket.grantRead(ehrWriteBackResourceDiffBundlesLambda);
     if (analyticsPlatformStack) {
-      medicalDocumentsBucket.grantRead(analyticsPlatformStack.fhirToCsvContainer.executionRole);
+      medicalDocumentsBucket.grantRead(
+        analyticsPlatformStack.fhirToCsvBatchJobContainer.executionRole
+      );
+      medicalDocumentsBucket.grantRead(analyticsPlatformStack.fhirToCsvTransformLambda);
     }
 
     createDocQueryChecker({

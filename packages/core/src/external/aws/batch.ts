@@ -28,10 +28,10 @@ export class BatchUtils {
     jobName: string;
     jobQueueArn: string;
     jobDefinitionArn: string;
-    parameters: Record<string, string>;
+    parameters: AWS.Batch.ParametersMap;
   }) {
     const { log } = out(`startJob`);
-    const input = {
+    const input: AWS.Batch.SubmitJobRequest = {
       jobName,
       jobQueue: jobQueueArn,
       jobDefinition: jobDefinitionArn,

@@ -1,14 +1,24 @@
-import { NestedStack, NestedStackProps } from "aws-cdk-lib";
 import * as cdk from "aws-cdk-lib";
+import { Duration, NestedStack, NestedStackProps } from "aws-cdk-lib";
 import * as batch from "aws-cdk-lib/aws-batch";
+import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as ecr from "aws-cdk-lib/aws-ecr";
 import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as iam from "aws-cdk-lib/aws-iam";
+import * as lambda from "aws-cdk-lib/aws-lambda";
+import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
 import * as s3 from "aws-cdk-lib/aws-s3";
+import * as secret from "aws-cdk-lib/aws-secretsmanager";
+import { Queue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { EnvConfigNonSandbox } from "../../config/env-config";
 import { EnvType } from "../env-type";
+import { createLambda } from "../shared/lambda";
+import { LambdaLayers } from "../shared/lambda-layers";
+import { buildSecret } from "../shared/secrets";
+import { LambdaSettings, QueueAndLambdaSettings } from "../shared/settings";
+import { createQueue } from "../shared/sqs";
 import { AnalyticsPlatformsAssets } from "./types";
 
 type BatchJobSettings = {
@@ -17,35 +27,81 @@ type BatchJobSettings = {
   cpu: number;
 };
 
+type DockerImageLambdaSettings = Omit<LambdaSettings, "entry"> & { imageName: string };
+
 interface AnalyticsPlatformsSettings {
+  fhirToCsv: QueueAndLambdaSettings;
+  fhirToCsvTransform: DockerImageLambdaSettings;
   fhirToCsvBatchJob: BatchJobSettings;
 }
 
 function settings(): AnalyticsPlatformsSettings {
-  return {
-    fhirToCsvBatchJob: {
-      imageName: "fhir-to-csv",
-      memory: cdk.Size.mebibytes(1024),
-      cpu: 512,
+  const fhirToCsvLambdaTimeout = Duration.minutes(2);
+  const fhirToCsv: QueueAndLambdaSettings = {
+    name: "FhirToCsv",
+    entry: "analytics-platform/fhir-to-csv",
+    lambda: {
+      memory: 512,
+      timeout: fhirToCsvLambdaTimeout,
     },
+    queue: {
+      alarmMaxAgeOfOldestMessage: Duration.hours(6),
+      maxMessageCountAlarmThreshold: 5_000,
+      maxReceiveCount: 3,
+      visibilityTimeout: Duration.seconds(fhirToCsvLambdaTimeout.toSeconds() * 2 + 1),
+      createRetryLambda: false,
+    },
+    eventSource: {
+      batchSize: 1,
+      reportBatchItemFailures: true,
+    },
+    waitTime: Duration.seconds(0),
+  };
+  const fhirToCsvTransform: DockerImageLambdaSettings = {
+    name: "FhirToCsvTransform",
+    imageName: "fhir-to-csv",
+    lambda: {
+      memory: 1024,
+      timeout: fhirToCsvLambdaTimeout.minus(Duration.seconds(10)),
+    },
+  };
+  const fhirToCsvBatchJob: BatchJobSettings = {
+    imageName: "fhir-to-csv",
+    memory: cdk.Size.mebibytes(1024),
+    cpu: 512,
+  };
+  return {
+    fhirToCsv,
+    fhirToCsvTransform,
+    fhirToCsvBatchJob,
   };
 }
 
 interface AnalyticsPlatformsNestedStackProps extends NestedStackProps {
   config: EnvConfigNonSandbox;
   vpc: ec2.IVpc;
+  alarmAction?: SnsAction;
+  lambdaLayers: LambdaLayers;
   medicalDocumentsBucket: s3.Bucket;
 }
 
 export class AnalyticsPlatformsNestedStack extends NestedStack {
+  readonly fhirToCsvLambda: lambda.DockerImageFunction;
+  readonly fhirToCsvTransformLambda: lambda.DockerImageFunction;
+  readonly fhirToCsvQueue: Queue;
   readonly fhirToCsvBatchJob: batch.EcsJobDefinition;
-  readonly fhirToCsvContainer: batch.EcsEc2ContainerDefinition;
-  readonly fhirToCsvQueue: batch.JobQueue;
+  readonly fhirToCsvBatchJobContainer: batch.EcsEc2ContainerDefinition;
+  readonly fhirToCsvBatchJobQueue: batch.JobQueue;
 
   constructor(scope: Construct, id: string, props: AnalyticsPlatformsNestedStackProps) {
     super(scope, id, props);
 
     this.terminationProtection = true;
+
+    const snowflakeCreds = buildSecret(
+      this,
+      props.config.analyticsPlatform.secrets.SNOWFLAKE_CREDS
+    );
 
     const analyticsPlatformBucket = new s3.Bucket(this, "AnalyticsPlatformBucket", {
       bucketName: props.config.analyticsPlatform.bucketName,
@@ -104,28 +160,148 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
     );
 
     const {
-      job: fhirToCsvBatchJob,
-      container: fhirToCsvContainer,
+      fhirToCsvLambda,
+      fhirToCsvTransformLambda,
       queue: fhirToCsvQueue,
+    } = this.setupFhirToCsvLambda({
+      config: props.config,
+      envType: props.config.environmentType,
+      awsRegion: props.config.region,
+      lambdaLayers: props.lambdaLayers,
+      vpc: props.vpc,
+      sentryDsn: props.config.sentryDSN,
+      alarmAction: props.alarmAction,
+      analyticsPlatformRepository,
+      analyticsPlatformBucket,
+      medicalDocumentsBucket: props.medicalDocumentsBucket,
+      snowflakeCreds,
+    });
+    this.fhirToCsvLambda = fhirToCsvLambda;
+    this.fhirToCsvTransformLambda = fhirToCsvTransformLambda;
+    this.fhirToCsvQueue = fhirToCsvQueue;
+
+    const {
+      job: fhirToCsvBatchJob,
+      container: fhirToCsvBatchJobContainer,
+      queue: fhirToCsvBatchJobQueue,
     } = this.setupFhirToCsvBatchJob({
       config: props.config,
       envType: props.config.environmentType,
       awsRegion: props.config.region,
       analyticsPlatformComputeEnvironment,
       analyticsPlatformRepository,
-      analyticsPlatformBucket,
+      analyticsPlatformBucket: analyticsPlatformBucket,
       medicalDocumentsBucket: props.medicalDocumentsBucket,
+      snowflakeCreds: snowflakeCreds,
     });
     this.fhirToCsvBatchJob = fhirToCsvBatchJob;
-    this.fhirToCsvContainer = fhirToCsvContainer;
-    this.fhirToCsvQueue = fhirToCsvQueue;
+    this.fhirToCsvBatchJobContainer = fhirToCsvBatchJobContainer;
+    this.fhirToCsvBatchJobQueue = fhirToCsvBatchJobQueue;
   }
 
   getAssets(): AnalyticsPlatformsAssets {
     return {
-      fhirToCsvBatchJob: this.fhirToCsvBatchJob,
-      fhirToCsvContainer: this.fhirToCsvContainer,
+      fhirToCsvLambda: this.fhirToCsvLambda,
+      fhirToCsvTransformLambda: this.fhirToCsvTransformLambda,
       fhirToCsvQueue: this.fhirToCsvQueue,
+      fhirToCsvBatchJob: this.fhirToCsvBatchJob,
+      fhirToCsvBatchJobContainer: this.fhirToCsvBatchJobContainer,
+      fhirToCsvBatchJobQueue: this.fhirToCsvBatchJobQueue,
+    };
+  }
+
+  private setupFhirToCsvLambda(ownProps: {
+    config: EnvConfigNonSandbox;
+    envType: EnvType;
+    awsRegion: string;
+    lambdaLayers: LambdaLayers;
+    vpc: ec2.IVpc;
+    sentryDsn: string | undefined;
+    alarmAction: SnsAction | undefined;
+    analyticsPlatformRepository: ecr.Repository;
+    analyticsPlatformBucket: s3.Bucket;
+    medicalDocumentsBucket: s3.Bucket;
+    snowflakeCreds: secret.ISecret;
+  }): {
+    fhirToCsvLambda: lambda.DockerImageFunction;
+    fhirToCsvTransformLambda: lambda.DockerImageFunction;
+    queue: Queue;
+  } {
+    const { imageName, lambda: fhirToCsvTransformLambdaSettings } = settings().fhirToCsvTransform;
+
+    const fhirToCsvTransformLambda = new lambda.DockerImageFunction(
+      this,
+      "fhirToCsvTransformLambda",
+      {
+        functionName: "fhirToCsvTransformLambda",
+        vpc: ownProps.vpc,
+        code: lambda.DockerImageCode.fromEcr(ownProps.analyticsPlatformRepository, {
+          tag: `${imageName}-latest`,
+        }),
+        timeout: fhirToCsvTransformLambdaSettings.timeout,
+        memorySize: fhirToCsvTransformLambdaSettings.memory,
+        environment: {
+          ENV: ownProps.envType,
+          AWS_REGION: ownProps.awsRegion,
+          INPUT_S3_BUCKET: ownProps.medicalDocumentsBucket.bucketName,
+          OUTPUT_S3_BUCKET: ownProps.analyticsPlatformBucket.bucketName,
+          SNOWFLAKE_ROLE: ownProps.config.analyticsPlatform.snowflake.role,
+          SNOWFLAKE_WAREHOUSE: ownProps.config.analyticsPlatform.snowflake.warehouse,
+          SNOWFLAKE_INTEGRATION: ownProps.config.analyticsPlatform.snowflake.integrationName,
+        },
+      }
+    );
+
+    // Grant read to medical document bucket set on the api-stack
+    ownProps.analyticsPlatformBucket.grantReadWrite(fhirToCsvTransformLambda);
+
+    const { lambdaLayers, vpc, envType, sentryDsn, alarmAction } = ownProps;
+    const {
+      name,
+      entry,
+      lambda: fhirToCsvLambdaSettings,
+      queue: queueSettings,
+      eventSource: eventSourceSettings,
+      waitTime,
+    } = settings().fhirToCsv;
+
+    const queue = createQueue({
+      ...queueSettings,
+      stack: this,
+      name,
+      fifo: true,
+      createDLQ: true,
+      lambdaLayers: [lambdaLayers.shared],
+      envType,
+      alarmSnsAction: alarmAction,
+    });
+
+    const fhirToCsvLambda = createLambda({
+      ...fhirToCsvLambdaSettings,
+      stack: this,
+      name,
+      entry,
+      envType,
+      envVars: {
+        // API_URL set on the api-stack after the OSS API is created
+        WAIT_TIME_IN_MILLIS: waitTime.toMilliseconds().toString(),
+        FHIR_TO_CSV_TRANSFORM_LAMBDA_ARN: fhirToCsvTransformLambda.functionArn,
+        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+      },
+      layers: [lambdaLayers.shared],
+      vpc,
+      alarmSnsAction: alarmAction,
+    });
+
+    fhirToCsvLambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
+    fhirToCsvTransformLambda.grantInvoke(fhirToCsvLambda);
+
+    ownProps.snowflakeCreds.grantRead(fhirToCsvLambda);
+
+    return {
+      fhirToCsvLambda,
+      fhirToCsvTransformLambda,
+      queue,
     };
   }
 
@@ -137,6 +313,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
     analyticsPlatformRepository: ecr.Repository;
     analyticsPlatformBucket: s3.Bucket;
     medicalDocumentsBucket: s3.Bucket;
+    snowflakeCreds: secret.ISecret;
   }): {
     job: batch.EcsJobDefinition;
     container: batch.EcsEc2ContainerDefinition;
@@ -160,6 +337,12 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
         SNOWFLAKE_WAREHOUSE: ownProps.config.analyticsPlatform.snowflake.warehouse,
         SNOWFLAKE_INTEGRATION: ownProps.config.analyticsPlatform.snowflake.integrationName,
       },
+      secrets: {
+        SNOWFLAKE_CREDS: batch.Secret.fromSecretsManager(
+          ownProps.snowflakeCreds,
+          "SNOWFLAKE_CREDS"
+        ),
+      },
       command: [
         "python",
         "main.py",
@@ -173,18 +356,19 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
         "INPUT_BUNDLE=Ref::inputBundle",
         "-e",
         "API_URL=Ref::apiUrl",
-        "-e",
-        "SNOWFLAKE_ACCOUNT=Ref::snowflakeAccount",
-        "-e",
-        "SNOWFLAKE_USER=Ref::snowflakeUser",
-        "-e",
-        "SNOWFLAKE_PASSWORD=Ref::snowflakePassword",
       ],
     });
 
     const job = new batch.EcsJobDefinition(this, "FhirToCsvBatchJob", {
       jobDefinitionName: "FhirToCsvBatchJob",
       container,
+      parameters: {
+        jobId: "default",
+        cxId: "default",
+        patientId: "default",
+        inputBundle: "default",
+        apiUrl: "default",
+      },
     });
 
     const queue = new batch.JobQueue(this, "FhirToCsvJobQueue", {
