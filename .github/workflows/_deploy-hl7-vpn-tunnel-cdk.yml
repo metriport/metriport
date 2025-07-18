@@ -97,7 +97,6 @@ jobs:
 
       - name: Checkout internal feature branch
         uses: actions/checkout@v3
-        if: ${{ inputs.is_branch_to_staging == true }}
         with:
           repository: metriport/metriport-internal
           ref: ${{ env.INTERNAL_BRANCH }}
