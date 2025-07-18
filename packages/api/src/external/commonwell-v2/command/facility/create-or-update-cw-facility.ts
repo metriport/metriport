@@ -18,7 +18,7 @@ export async function createOrUpdateFacilityInCwV2({
   await createOrUpdateCWOrganizationV2({
     cxId,
     org: {
-      oid: facility.oid,
+      oid: facility.cwOboOid ?? facility.oid,
       data: {
         name: orgName,
         type: cxOrgType,
