@@ -22,12 +22,12 @@ export async function startFhirToCsvTransform({
   const snowflakeCreds = getSnowflakeCreds();
   log(`Invoking lambda ${lambdaName}`);
   const payload = JSON.stringify({
-    cxId,
-    jobId,
-    patientId,
-    ...(inputBundle ? { inputBundle } : {}),
-    apiUrl: `http://${Config.getApiUrl()}`,
-    snowflakeCreds,
+    JOB_ID: jobId,
+    CX_ID: cxId,
+    PATIENT_ID: patientId,
+    ...(inputBundle ? { INPUT_BUNDLE: inputBundle } : {}),
+    API_URL: `http://${Config.getApiUrl()}`,
+    SNOWFLAKE_CREDS: snowflakeCreds,
   });
   await executeWithNetworkRetries(async () => {
     const result = await makeLambdaClient(Config.getAWSRegion())

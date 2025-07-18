@@ -21,7 +21,7 @@ import { LambdaSettings, QueueAndLambdaSettings } from "../shared/settings";
 import { createQueue } from "../shared/sqs";
 import { AnalyticsPlatformsAssets } from "./types";
 
-const waitTimeFhirToCsvTransform = Duration.seconds(10); // 6 patients/min
+const waitTimeFhirToCsv = Duration.seconds(0); // No limit
 
 type BatchJobSettings = {
   imageName: string;
@@ -38,7 +38,8 @@ interface AnalyticsPlatformsSettings {
 }
 
 function settings(): AnalyticsPlatformsSettings {
-  const fhirToCsvLambdaTimeout = waitTimeFhirToCsvTransform.plus(Duration.seconds(25));
+  const fhirToCsvTransformLambdaTimeout = Duration.minutes(2);
+  const fhirToCsvLambdaTimeout = fhirToCsvTransformLambdaTimeout.plus(Duration.seconds(10));
   const fhirToCsv: QueueAndLambdaSettings = {
     name: "FhirToCsv",
     entry: "analytics-platform/fhir-to-csv",
@@ -49,21 +50,22 @@ function settings(): AnalyticsPlatformsSettings {
     queue: {
       alarmMaxAgeOfOldestMessage: Duration.hours(6),
       maxMessageCountAlarmThreshold: 5_000,
-      maxReceiveCount: 3,
+      maxReceiveCount: 1,
       visibilityTimeout: Duration.seconds(fhirToCsvLambdaTimeout.toSeconds() * 2 + 1),
       createRetryLambda: false,
     },
     eventSource: {
       batchSize: 1,
       reportBatchItemFailures: true,
+      maxConcurrency: 15,
     },
-    waitTime: Duration.seconds(0),
+    waitTime: waitTimeFhirToCsv,
   };
   const fhirToCsvTransform: DockerImageLambdaSettings = {
     name: "FhirToCsvTransform",
     lambda: {
       memory: 1024,
-      timeout: Duration.minutes(2),
+      timeout: fhirToCsvTransformLambdaTimeout,
     },
   };
   const fhirToCsvBatchJob: BatchJobSettings = {
