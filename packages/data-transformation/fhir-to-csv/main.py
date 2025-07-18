@@ -9,6 +9,7 @@ from src.setupSnowflake.setupSnowflake import (
     rename_job_tables,
     append_job_tables,
     copy_into_job_table,
+    setup_snowflake,
 )
 from src.utils.environment import Environment
 from src.utils.dwh import DWH
@@ -87,6 +88,7 @@ def transform_and_upload_data(
 def handler(event: dict, context: dict):
     print(f"event: {event}")
     print(f"context: {context}")
+    setup_only = event.get("SETUP_ONLY") or os.getenv("SETUP_ONLY")
     api_url = event.get("API_URL") or os.getenv("API_URL")
     job_id = event.get("JOB_ID") or os.getenv("JOB_ID")
     cx_id = event.get("CX_ID") or os.getenv("CX_ID")
@@ -104,6 +106,10 @@ def handler(event: dict, context: dict):
         raise ValueError("JOB_ID is not set")
     if not cx_id:
         raise ValueError("CX_ID is not set") 
+
+    if setup_only:
+        setup_snowflake(job_id, cx_id)
+        exit(0)
 
     output_bucket_and_file_keys_and_table_names = transform_and_upload_data(
         input_bucket,

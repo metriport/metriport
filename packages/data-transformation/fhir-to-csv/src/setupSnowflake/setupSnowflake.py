@@ -44,7 +44,7 @@ def get_snowflake_credentials() -> dict[str, str]:
         "role": snowflake_role
     }
 
-def generate_table_names_and_create_table_statements(job_id: str, date_types=False) -> list[tuple[str, str, str]]:
+def generate_table_names_and_create_table_statements(job_id: str, date_types=False, use_job_table_name=True) -> list[tuple[str, str, str]]:
     table_names_and_create_job_table_statements = []
     for file in os.listdir(config_folder):
         if not file.endswith(".ini"):
@@ -56,12 +56,23 @@ def generate_table_names_and_create_table_statements(job_id: str, date_types=Fal
         if 'Struct' not in config:
             continue
         columns = config['Struct']
-        create_statement = f"CREATE TABLE {job_table_name} (\n"
+        create_statement = f"CREATE TABLE {job_table_name if use_job_table_name else table_name} (\n"
         create_statement += ",\n".join([f"  {col} {get_data_type(col, date_types)}" for col in columns])
         create_statement += "\n)\n"
         table_names_and_create_job_table_statements.append((table_name, job_table_name, create_statement))
 
     return table_names_and_create_job_table_statements
+
+def setup_snowflake(job_id: str, cx_id: str):
+    database_name = format_database_name(cx_id)
+    with snowflake.connector.connect(**get_snowflake_credentials(), autocommit=False) as snowflake_conn:
+        snowflake_conn.cursor().execute(f"CREATE DATABASE IF NOT EXISTS {database_name}")
+        snowflake_conn.cursor().execute(f"USE DATABASE {database_name}")
+        snowflake_conn.cursor().execute("USE SCHEMA PUBLIC")
+        tables = generate_table_names_and_create_table_statements(job_id, use_job_table_name=False)
+        for _, _, create_table_statement in tables:
+            snowflake_conn.cursor().execute(create_table_statement)
+        snowflake_conn.commit()
 
 def create_job_tables(job_id: str, cx_id: str):
     database_name = format_database_name(cx_id)
