@@ -6,8 +6,8 @@ def format_database_name(cx_id: str) -> str:
 def format_table_name_from_config_file_name(config_file_name: str) -> str:
     return strip_config_file_name(config_file_name).replace('.', '_').lower()
 
-def format_temp_table_name(table_name: str) -> str:
-    return f"temp_{table_name}"
+def format_job_table_name(job_id: str, table_name: str) -> str:
+    return f"job_{job_id.replace('-', '_')}_{table_name}"
 
 def format_stage_name(file_key: str) -> str:
     return f"{file_key.replace('/', '_').replace('-', '_').replace('.', '_')}_stage"

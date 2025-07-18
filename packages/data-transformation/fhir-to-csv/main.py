@@ -5,10 +5,10 @@ import json
 import ndjson
 from src.parseNdjsonBundle import parseNdjsonBundle
 from src.setupSnowflake.setupSnowflake import (
-    create_temp_tables,
-    rename_temp_tables,
-    append_temp_tables,
-    copy_into_temp_table,
+    create_job_tables,
+    rename_job_tables,
+    append_job_tables,
+    copy_into_job_table,
 )
 from src.utils.environment import Environment
 from src.utils.dwh import DWH
@@ -27,7 +27,7 @@ api_url = os.getenv("API_URL")
 job_id = os.getenv("JOB_ID")
 cx_id = os.getenv("CX_ID")
 patient_id = os.getenv("PATIENT_ID")
-input_bundle = os.getenv("BUNDLE")
+input_bundle = os.getenv("INPUT_BUNDLE")
 
 def transform_and_upload_data(
     input_bucket: str,
@@ -80,7 +80,7 @@ def transform_and_upload_data(
             local_output_files.extend(parseNdjsonBundle.parse(local_ndjson_bundle_key, local_patient_path))
 
     output_bucket_and_file_keys_and_table_names = []
-    for file in set(local_output_files):
+    for file in local_output_files:
         output_file_key = f"{dwh}/{transform_name}/{cx_id}/{job_id}/{file.replace('/', '_')}"
         table_name = file.split("/")[-1].replace(".csv", "")
         with open(file, "rb") as f:
@@ -117,15 +117,12 @@ if __name__ == "__main__":
         logging.info("No files to upload")
         exit(0)
 
-    create_temp_tables(cx_id)
+    create_job_tables(job_id, cx_id)
     for output_bucket, output_file_key, table_name in output_bucket_and_file_keys_and_table_names:
-        copy_into_temp_table(cx_id, output_bucket, output_file_key, table_name)
+        copy_into_job_table(job_id, cx_id, output_bucket, output_file_key, table_name)
 
     if patient_id is not None:
-        logging.info(f"Appending patient data for {patient_id} to temp tables")
         rebuild_patient = input_bundle is None
-        if rebuild_patient:
-            logging.info(f"Rebuilding patient data for {patient_id}")
-        append_temp_tables(cx_id, patient_id, rebuild_patient)
+        append_job_tables(job_id, cx_id, patient_id, rebuild_patient)
     else:
-        rename_temp_tables(cx_id)
+        rename_job_tables(job_id, cx_id)
