@@ -10,7 +10,6 @@ import {
   PatientIdentifier,
 } from "@metriport/commonwell-sdk";
 import { TreatmentType } from "@metriport/shared";
-import { makeNPI } from "@metriport/shared/common/__tests__/npi";
 import { X509Certificate } from "crypto";
 import dayjs from "dayjs";
 import * as nanoid from "nanoid";
@@ -128,7 +127,6 @@ export function makeOrganization(suffixId?: string): Organization {
     homeCommunityId: orgId,
     memberName: memberName,
     type: TreatmentType.hospital,
-    npiType2: makeNPI(),
     searchRadius: 150,
     patientIdAssignAuthority: orgId,
     isActive: true,

@@ -1,7 +1,7 @@
 import { isInitiatorAndResponder } from "../../../../domain/medical/facility";
 import { FacilityModel } from "../../../../models/medical/facility";
 import { OrganizationModel } from "../../../../models/medical/organization";
-import { create, CwOrgOrFacility, get, getParsedOrgOrFail, update } from "./organization";
+import { create, CwOrgOrFacility, get, getParsedOrgOrFailV2, update } from "./organization";
 
 export async function createOrUpdateCWOrganizationV2({
   cxId,
@@ -35,7 +35,7 @@ export async function getAndUpdateCWOrgAndMetriportOrgV2({
   org: OrganizationModel;
   facility?: FacilityModel;
 }): Promise<void> {
-  const cwOrg = await getParsedOrgOrFail(oid);
+  const cwOrg = await getParsedOrgOrFailV2(oid);
   const initiatorAndResponder = facility ? isInitiatorAndResponder(facility) : true;
   await createOrUpdateCWOrganizationV2({
     cxId,

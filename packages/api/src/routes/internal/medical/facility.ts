@@ -11,7 +11,7 @@ import { getOrganizationOrFail } from "../../../command/medical/organization/get
 import { Facility, FacilityCreate } from "../../../domain/medical/facility";
 import { createOrUpdateFacility as cqCreateOrUpdateFacility } from "../../../external/carequality/command/create-or-update-facility";
 import { createOrUpdateFacilityInCw } from "../../../external/commonwell-v1/command/create-or-update-cw-facility";
-import { createOrUpdateCWOrganizationV2 } from "../../../external/commonwell-v2/command/organization/create-or-update-cw-organization";
+import { createOrUpdateFacilityInCwV2 } from "../../../external/commonwell-v2/command/facility/create-or-update-cw-facility";
 import { requestLogger } from "../../helpers/request-logger";
 import { internalDtoFromModel } from "../../medical/dtos/facilityDTO";
 import { facilityInternalDetailsSchema } from "../../medical/schemas/facility";
@@ -77,14 +77,11 @@ router.put(
     if (syncInHie && facility.cwApproved) {
       // TODO ENG-554 Remove FF and v1 code
       if (await isCommonwellV2EnabledForCx(cxId)) {
-        createOrUpdateCWOrganizationV2({
+        createOrUpdateFacilityInCwV2({
           cxId,
-          org: {
-            oid: org.oid,
-            data: org.data,
-            active: org.cwActive,
-            isInitiatorAndResponder: true,
-          },
+          facility,
+          cxOrgName: org.data.name,
+          cxOrgType: org.data.type,
         }).catch(processAsyncError("cwV2.internal.facility"));
       } else {
         createOrUpdateFacilityInCw({

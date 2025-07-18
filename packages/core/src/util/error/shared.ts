@@ -1,5 +1,6 @@
 import { BadRequestError, NotFoundError } from "@metriport/shared";
 import { inspect } from "node:util";
+import { Config } from "../config";
 import { out } from "../log";
 import { capture } from "../notifications";
 
@@ -55,13 +56,15 @@ export function getErrorMessage(error: unknown) {
 
 export function processAsyncError(
   msg: string,
-  log?: typeof console.log | undefined,
+  log: typeof console.log | undefined = out().log,
   useMsgAsTitle = false
 ) {
-  if (!log) log = out().log;
   return (error: unknown) => {
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    log!(`${msg}: ${getErrorMessage(error)}`);
+    if (Config.isDev()) {
+      log(`${msg}: ${getErrorMessage(error)}`, error);
+    } else {
+      log(`${msg}: ${getErrorMessage(error)}`);
+    }
     if (error instanceof BadRequestError || error instanceof NotFoundError) return;
     capture.error(useMsgAsTitle ? msg : error, { extra: { message: msg, error } });
   };

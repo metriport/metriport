@@ -19,6 +19,7 @@ import { runOrScheduleCwPatientDiscovery } from "../../../external/commonwell-v1
 import { getParsedOrgOrFail } from "../../../external/commonwell-v1/organization";
 import { cwOrgActiveSchema } from "../../../external/commonwell-v1/shared";
 import { getAndUpdateCWOrgAndMetriportOrgV2 } from "../../../external/commonwell-v2/command/organization/create-or-update-cw-organization";
+import { getParsedOrgOrFailV2 } from "../../../external/commonwell-v2/command/organization/organization";
 import { handleParams } from "../../helpers/handle-params";
 import { requestLogger } from "../../helpers/request-logger";
 import { getUUIDFrom } from "../../schemas/uuid";
@@ -46,6 +47,10 @@ router.get(
       await getFacilityByOidOrFail({ cxId, id: facilityId, oid });
     } else {
       await getOrganizationByOidOrFail({ cxId, oid });
+    }
+    if (await isCommonwellV2EnabledForCx(cxId)) {
+      const cwOrg = await getParsedOrgOrFailV2(oid);
+      return res.status(httpStatus.OK).json(cwOrg);
     }
     const cwOrg = await getParsedOrgOrFail(oid);
     return res.status(httpStatus.OK).json(cwOrg);

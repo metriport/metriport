@@ -240,6 +240,9 @@ export class Config {
   static getCWMemberOID(): string {
     return getEnvVarOrFail("CW_MEMBER_OID");
   }
+  static getCWMemberID(): string {
+    return getEnvVarOrFail("CW_MEMBER_ID");
+  }
 
   static getCdaToFhirConversionBucketName(): string {
     return getEnvVarOrFail("CONVERSION_RESULT_BUCKET_NAME");

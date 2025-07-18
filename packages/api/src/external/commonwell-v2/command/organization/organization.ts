@@ -17,6 +17,8 @@ import {
 import { Config } from "../../../../shared/config";
 import { getCertificate, makeCommonWellMemberAPI } from "../../api";
 
+const defaultSearchRadius = 150;
+
 const technicalContact = {
   name: getEnvVarOrFail("CW_TECHNICAL_CONTACT_NAME"),
   title: getEnvVarOrFail("CW_TECHNICAL_CONTACT_TITLE"),
@@ -35,10 +37,11 @@ type CwSdkOrganizationWithOrgId = Omit<CwSdkOrganization, "organizationId"> &
   Required<Pick<CwSdkOrganization, "organizationId">>;
 
 function cwOrgOrFacilityToSdk(org: CwOrgOrFacility): CwSdkOrganizationWithOrgId {
-  const cwId = OID_PREFIX.concat(org.oid);
+  const cwId = org.oid;
   const cwOrg: CwSdkOrganizationWithOrgId = {
     name: org.data.name,
     type: org.data.type,
+    searchRadius: defaultSearchRadius,
     locations: [
       {
         address1: org.data.location.addressLine1,
@@ -57,13 +60,20 @@ function cwOrgOrFacilityToSdk(org: CwOrgOrFacility): CwSdkOrganizationWithOrgId 
     patientIdAssignAuthority: cwId,
     displayName: org.data.name,
     memberName: Config.getCWMemberOrgName(),
-    securityTokenKeyType: "BEARER",
+    securityTokenKeyType: "JWT",
     isActive: org.active,
     technicalContacts: [technicalContact],
     networks: [
       {
         type: "CommonWell",
-        purposeOfUse: [],
+        purposeOfUse: [
+          {
+            id: "TREATMENT",
+            queryInitiatorOnly: !org.isInitiatorAndResponder,
+            queryInitiator: org.isInitiatorAndResponder,
+            queryResponder: org.isInitiatorAndResponder,
+          },
+        ],
       },
     ],
   };
@@ -88,9 +98,9 @@ function cwOrgOrFacilityToSdk(org: CwOrgOrFacility): CwSdkOrganizationWithOrgId 
 
 export async function get(orgOid: string): Promise<CwSdkOrganization | undefined> {
   const { log, debug } = out(`CW.v2 get Org - CW Org OID ${orgOid}`);
-  const cwId = OID_PREFIX.concat(orgOid);
+  const cwId = orgOid;
 
-  const commonWell = makeCommonWellMemberAPI(Config.getCWMemberOrgName(), Config.getCWMemberOID());
+  const commonWell = makeCommonWellMemberAPI();
   try {
     const resp = await commonWell.getOneOrg(cwId);
     debug(`resp getOneOrg: `, JSON.stringify(resp));
@@ -116,7 +126,7 @@ export async function create(cxId: string, org: CwOrgOrFacility): Promise<void> 
   const { log, debug } = out(`CW.v2 create Org - cx ${cxId}, CW Org OID ${org.oid}`);
 
   const sdkOrg = cwOrgOrFacilityToSdk(org);
-  const commonWell = makeCommonWellMemberAPI(Config.getCWMemberOrgName(), Config.getCWMemberOID());
+  const commonWell = makeCommonWellMemberAPI();
   try {
     const respCreate = await commonWell.createOrg(sdkOrg);
     debug(`resp createOrg: `, JSON.stringify(respCreate));
@@ -143,7 +153,7 @@ export async function update(cxId: string, org: CwOrgOrFacility): Promise<void> 
   const { log, debug } = out(`CW.v2 update Org - cx ${cxId}, CW Org OID ${org.oid}`);
 
   const sdkOrg = cwOrgOrFacilityToSdk(org);
-  const commonWell = makeCommonWellMemberAPI(Config.getCWMemberOrgName(), Config.getCWMemberOID());
+  const commonWell = makeCommonWellMemberAPI();
   try {
     const resp = await commonWell.updateOrg(sdkOrg);
     debug(`resp updateOrg: `, JSON.stringify(resp));
@@ -194,7 +204,7 @@ export function parseCWEntry(org: CwSdkOrganization): CwOrgOrFacility {
   };
 }
 
-export async function getParsedOrgOrFail(oid: string): Promise<CwOrgOrFacility> {
+export async function getParsedOrgOrFailV2(oid: string): Promise<CwOrgOrFacility> {
   const resp = await get(oid);
   if (!resp) throw new NotFoundError("Organization not found", undefined, { orgOid: oid });
   return parseCWEntry(resp);

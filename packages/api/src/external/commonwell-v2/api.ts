@@ -6,7 +6,6 @@ import {
   CommonWellMember,
   CommonWellMemberAPI,
 } from "@metriport/commonwell-sdk";
-import { MetriportError } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import { X509Certificate } from "crypto";
 import { Config } from "../../shared/config";
@@ -20,25 +19,22 @@ const apiMode = Config.isProdEnv() ? APIMode.production : APIMode.integration;
  * acting as a Member. Used to manage Organizations.
  *
  * @param orgName Organization Name
- * @param orgOID Organization OID without 'urn:oid:' namespace
+ * @param memberId ID of the CommonWell member (not the OID)
  * @returns CommonWell API
  */
-export function makeCommonWellMemberAPI(orgName: string, orgOID: string): CommonWellMemberAPI {
-  if (Config.isSandbox()) {
-    return new CommonWellMemberMock(orgOID);
-  }
+export function makeCommonWellMemberAPI(): CommonWellMemberAPI {
+  const memberName = Config.getCWMemberOrgName();
+  const memberId = Config.getCWMemberID();
 
-  const isMemberAPI = orgOID === Config.getCWMemberOID();
-  if (!isMemberAPI)
-    throw new MetriportError("Not a member OID", undefined, {
-      orgOID,
-    });
+  if (Config.isSandbox()) {
+    return new CommonWellMemberMock(memberId);
+  }
 
   return new CommonWellMember({
     orgCert: Config.getCWMemberCertificate(),
     rsaPrivateKey: Config.getCWMemberPrivateKey(),
-    memberName: orgName,
-    memberId: orgOID,
+    memberName: memberName,
+    memberId: memberId,
     apiMode,
   });
 }
