@@ -28,6 +28,32 @@
                     {{/with}}
                 {{/if}}
                 
+            {{else if careplanEntry.observation}}
+                {{>Resources/CarePlan.hbs encounter=careplanEntry.observation ID=(generateUUID (toJsonString careplanEntry))}},
+                {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
+                    {{>References/CarePlan/subject.hbs ID=(generateUUID (toJsonString careplanEntry)) REF=(concat 'Patient/' patientId.Id)}},
+                {{/with}}
+            
+                {{#if careplanEntry.observation.author.assignedAuthor.representedOrganization}}
+                    {{#with (evaluate 'Utils/GenerateOrganizationId.hbs' obj=careplanEntry.observation.author.assignedAuthor.representedOrganization) as |orgId|}}
+                        {{>Resources/Organization.hbs org=careplanEntry.observation.author.assignedAuthor ID=orgId.Id}},
+                        {{>References/CarePlan/author.hbs ID=(generateUUID (toJsonString careplanEntry)) REF=(concat 'Organization/' orgId.Id)}},
+                    {{/with}}
+                {{/if}}
+
+                {{#if careplanEntry.observation.performer.assignedEntity}}
+                    {{#with (generatePractitionerId careplanEntry.observation.performer.assignedEntity) as |practitionerId|}}
+                        {{>Resources/Practitioner.hbs practitioner=careplanEntry.observation.performer.assignedEntity ID=practitionerId}},
+                        {{!-- Reference to the Practitioner is generated at the time of CarePlan resource generation --}}
+                    {{/with}}
+                {{/if}}
+                
+                {{#if careplanEntry.observation.participant.participantRole}}
+                    {{#with (generateLocationId careplanEntry.observation.participant.participantRole) as |locationId|}}
+                        {{>Resources/Location.hbs location=careplanEntry.observation.participant.participantRole playingEntity=careplanEntry.observation.participant.participantRole.playingEntity ID=locationId}},
+                        {{!-- Reference to the Location is generated at the time of CarePlan resource generation --}}
+                    {{/with}}
+                {{/if}}
             {{/if}}
         {{/each}}
     {{/with}}
