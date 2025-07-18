@@ -198,6 +198,7 @@ const validLabResultStatuses = [
 ];
 
 const maxUnitsCharacters = 20;
+const maxNameCharacters = 50;
 
 export function isSupportedCcdaSectionResource(resourceType: string): boolean {
   return ccdaSectionMap.has(resourceType as ResourceType);
@@ -1096,13 +1097,13 @@ class ElationApi {
               is_abnormal: isAbnormal ? "1" : "0",
               abnormal_flag: this.mapInterpretationToAbnormalFlag(interpretation),
               test: {
-                name: loincCoding.display,
+                name: loincCoding.display.slice(0, maxNameCharacters),
                 code: loincCoding.code,
                 loinc: loincCoding.code,
               },
               test_category: {
-                value: loincCoding.display,
-                description: loincCoding.display,
+                value: loincCoding.display.slice(0, maxNameCharacters),
+                description: loincCoding.display.slice(0, maxNameCharacters),
               },
             },
           ],
@@ -1174,13 +1175,13 @@ class ElationApi {
             is_abnormal: isAbnormal ? "1" : "0",
             abnormal_flag: this.mapInterpretationToAbnormalFlag(interpretation),
             test: {
-              name: loincCoding.display,
+              name: loincCoding.display.slice(0, maxNameCharacters),
               code: loincCoding.code,
               loinc: loincCoding.code,
             },
             test_category: {
-              value: loincCoding.display,
-              description: loincCoding.display,
+              value: loincCoding.display.slice(0, maxNameCharacters),
+              description: loincCoding.display.slice(0, maxNameCharacters),
             },
           },
         ],
