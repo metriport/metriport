@@ -198,7 +198,7 @@ const validLabResultStatuses = [
 ];
 
 const maxUnitsCharacters = 20;
-const maxNameCharacters = 50;
+const maxTextCharacters = 50;
 
 export function isSupportedCcdaSectionResource(resourceType: string): boolean {
   return ccdaSectionMap.has(resourceType as ResourceType);
@@ -1089,7 +1089,7 @@ class ElationApi {
             {
               status: formattedResultStatus,
               value: value.toString(),
-              text: text ?? loincCoding.display,
+              text: (text ?? loincCoding.display).slice(0, maxTextCharacters),
               note: "Added via Metriport App",
               reference_min: referenceRange.low?.toString(),
               reference_max: referenceRange.high?.toString(),
@@ -1097,13 +1097,13 @@ class ElationApi {
               is_abnormal: isAbnormal ? "1" : "0",
               abnormal_flag: this.mapInterpretationToAbnormalFlag(interpretation),
               test: {
-                name: loincCoding.display.slice(0, maxNameCharacters),
+                name: loincCoding.display.slice(0, maxTextCharacters),
                 code: loincCoding.code,
                 loinc: loincCoding.code,
               },
               test_category: {
-                value: loincCoding.display.slice(0, maxNameCharacters),
-                description: loincCoding.display.slice(0, maxNameCharacters),
+                value: loincCoding.display.slice(0, maxTextCharacters),
+                description: loincCoding.display.slice(0, maxTextCharacters),
               },
             },
           ],
@@ -1167,7 +1167,7 @@ class ElationApi {
           {
             status: formattedResultStatus,
             value: value.toString(),
-            text: text ?? loincCoding.display,
+            text: (text ?? loincCoding.display).slice(0, maxTextCharacters),
             note: "Added via Metriport App",
             reference_min: referenceRange.low?.toString(),
             reference_max: referenceRange.high?.toString(),
@@ -1175,13 +1175,13 @@ class ElationApi {
             is_abnormal: isAbnormal ? "1" : "0",
             abnormal_flag: this.mapInterpretationToAbnormalFlag(interpretation),
             test: {
-              name: loincCoding.display.slice(0, maxNameCharacters),
+              name: loincCoding.display.slice(0, maxTextCharacters),
               code: loincCoding.code,
               loinc: loincCoding.code,
             },
             test_category: {
-              value: loincCoding.display.slice(0, maxNameCharacters),
-              description: loincCoding.display.slice(0, maxNameCharacters),
+              value: loincCoding.display.slice(0, maxTextCharacters),
+              description: loincCoding.display.slice(0, maxTextCharacters),
             },
           },
         ],
