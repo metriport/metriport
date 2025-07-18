@@ -106,12 +106,14 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       props.config.analyticsPlatform.secrets.SNOWFLAKE_CREDS
     );
 
+    /*
     const analyticsPlatformBucket = new s3.Bucket(this, "AnalyticsPlatformBucket", {
       bucketName: props.config.analyticsPlatform.bucketName,
       publicReadAccess: false,
       encryption: s3.BucketEncryption.S3_MANAGED,
       versioned: true,
     });
+    */
 
     const analyticsPlatformRepository = new ecr.Repository(this, "AnalyticsPlatformRepository", {
       repositoryName: "metriport/analytics-platform",
@@ -131,12 +133,12 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
             "s3:DeleteObject",
             "s3:DeleteObjectVersion",
           ],
-          resources: [analyticsPlatformBucket.bucketArn + "/" + snowflakePrefix + "/*"],
+          resources: [props.medicalDocumentsBucket.bucketArn + "/" + snowflakePrefix + "/*"],
         }),
         new iam.PolicyStatement({
           effect: iam.Effect.ALLOW,
           actions: ["s3:ListBucket", "s3:GetBucketLocation"],
-          resources: [analyticsPlatformBucket.bucketArn],
+          resources: [props.medicalDocumentsBucket.bucketArn],
           conditions: {
             StringLike: {
               "s3:prefix": [`${snowflakePrefix}/*`],
@@ -174,7 +176,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       vpc: props.vpc,
       sentryDsn: props.config.sentryDSN,
       alarmAction: props.alarmAction,
-      analyticsPlatformBucket,
+      analyticsPlatformBucket: props.medicalDocumentsBucket,
       medicalDocumentsBucket: props.medicalDocumentsBucket,
     });
     this.fhirToCsvLambda = fhirToCsvLambda;
@@ -191,7 +193,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       awsRegion: props.config.region,
       analyticsPlatformComputeEnvironment,
       analyticsPlatformRepository,
-      analyticsPlatformBucket: analyticsPlatformBucket,
+      analyticsPlatformBucket: props.medicalDocumentsBucket,
       medicalDocumentsBucket: props.medicalDocumentsBucket,
       snowflakeCreds: snowflakeCreds,
     });
