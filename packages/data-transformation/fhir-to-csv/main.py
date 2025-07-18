@@ -21,13 +21,6 @@ env = Environment(os.getenv("ENV") or Environment.DEV)
 dwh = DWH(os.getenv("DWH") or DWH.SNOWFLAKE)
 
 s3_client = boto3.client("s3")
-input_bucket = os.getenv("INPUT_S3_BUCKET")
-output_bucket = os.getenv("OUTPUT_S3_BUCKET")
-api_url = os.getenv("API_URL")
-job_id = os.getenv("JOB_ID")
-cx_id = os.getenv("CX_ID")
-patient_id = os.getenv("PATIENT_ID")
-input_bundle = os.getenv("INPUT_BUNDLE")
 
 def transform_and_upload_data(
     input_bucket: str,
@@ -91,7 +84,16 @@ def transform_and_upload_data(
 
     return output_bucket_and_file_keys_and_table_names
 
-if __name__ == "__main__":
+def handler(event, context):
+    print(event)
+    print(context)
+    api_url = event.get("API_URL")
+    job_id = event.get("JOB_ID")
+    cx_id = event.get("CX_ID")
+    patient_id = event.get("PATIENT_ID")
+    input_bundle = event.get("INPUT_BUNDLE")
+    input_bucket = event.get("INPUT_BUNDLE") or os.getenv("INPUT_S3_BUCKET")
+    output_bucket = os.getenv("OUTPUT_S3_BUCKET")
     if not input_bucket:
         raise ValueError("INPUT_S3_BUCKET is not set")
     if not output_bucket:
