@@ -29,7 +29,7 @@ type BatchJobSettings = {
   cpu: number;
 };
 
-type DockerImageLambdaSettings = Omit<LambdaSettings, "entry"> & { imageName: string };
+type DockerImageLambdaSettings = Omit<LambdaSettings, "entry">;
 
 interface AnalyticsPlatformsSettings {
   fhirToCsv: QueueAndLambdaSettings;
@@ -61,7 +61,6 @@ function settings(): AnalyticsPlatformsSettings {
   };
   const fhirToCsvTransform: DockerImageLambdaSettings = {
     name: "FhirToCsvTransform",
-    imageName: "fhir-to-csv",
     lambda: {
       memory: 1024,
       timeout: Duration.minutes(2),
@@ -173,7 +172,6 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       vpc: props.vpc,
       sentryDsn: props.config.sentryDSN,
       alarmAction: props.alarmAction,
-      analyticsPlatformRepository,
       analyticsPlatformBucket,
       medicalDocumentsBucket: props.medicalDocumentsBucket,
     });
@@ -219,7 +217,6 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
     vpc: ec2.IVpc;
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
-    analyticsPlatformRepository: ecr.Repository;
     analyticsPlatformBucket: s3.Bucket;
     medicalDocumentsBucket: s3.Bucket;
   }): {
@@ -227,7 +224,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
     fhirToCsvTransformLambda: lambda.DockerImageFunction;
     queue: Queue;
   } {
-    const { imageName, lambda: fhirToCsvTransformLambdaSettings } = settings().fhirToCsvTransform;
+    const { lambda: fhirToCsvTransformLambdaSettings } = settings().fhirToCsvTransform;
 
     const fhirToCsvTransformLambda = new lambda.DockerImageFunction(
       this,
@@ -235,8 +232,8 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       {
         functionName: "fhirToCsvTransformLambda",
         vpc: ownProps.vpc,
-        code: lambda.DockerImageCode.fromEcr(ownProps.analyticsPlatformRepository, {
-          tag: `${imageName}-latest`,
+        code: lambda.DockerImageCode.fromImageAsset("../../data-transformation/fhir-to-csv", {
+          file: "Dockerfile",
         }),
         timeout: fhirToCsvTransformLambdaSettings.timeout,
         memorySize: fhirToCsvTransformLambdaSettings.memory,
