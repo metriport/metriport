@@ -1,7 +1,7 @@
 import { getEnv, getEnvOrFail } from "./util";
 
+export const rootOID = getEnvOrFail("ROOT_OID");
 export const memberId = getEnvOrFail("CW_MEMBER_ID");
-export const memberOID = getEnvOrFail("CW_MEMBER_OID");
 export const memberName = getEnvOrFail("CW_MEMBER_NAME");
 export const memberCertificateString = getEnvOrFail("CW_MEMBER_CERTIFICATE");
 export const memberPrivateKeyString = getEnvOrFail("CW_MEMBER_PRIVATE_KEY");

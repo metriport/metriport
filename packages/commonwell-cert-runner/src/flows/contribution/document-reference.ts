@@ -1,14 +1,12 @@
 import { nanoid } from "nanoid";
 
 export function makeDocumentReference({
-  memberOID,
   orgId,
   orgName,
   patientId,
   docUrl,
   binaryId,
 }: {
-  memberOID: string;
   orgId: string;
   orgName: string;
   patientId: string;
@@ -22,7 +20,7 @@ export function makeDocumentReference({
     "meta": {
         "versionId": "19",
         "lastUpdated": "2023-02-24T16:07:16.796+00:00",
-        "source": "${memberOID}"
+        "source": "${orgId.includes("urn:oid:") ? orgId : `urn:oid:${orgId}`}"
     },
     "contained": [
         {

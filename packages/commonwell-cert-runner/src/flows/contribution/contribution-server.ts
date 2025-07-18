@@ -8,7 +8,7 @@ import {
   buildSearchSetBundle,
 } from "@metriport/core/external/fhir/bundle/bundle";
 import express, { Application, Request, Response } from "express";
-import { contribServerPort, contribServerUrl, memberOID } from "../../env";
+import { contribServerPort, contribServerUrl } from "../../env";
 import { makeBinary } from "./binary";
 import { makeDocumentReference } from "./document-reference";
 import { makeToken, verifySignature } from "./token";
@@ -100,7 +100,6 @@ app.get("/oauth/fhir/DocumentReference", async (req: Request, res: Response): Pr
 
   const binaryId = faker.string.uuid();
   const docRef = makeDocumentReference({
-    memberOID,
     orgId: commonWell.oid,
     orgName: commonWell.orgName,
     patientId,

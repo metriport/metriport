@@ -16,12 +16,12 @@ import * as nanoid from "nanoid";
 import {
   memberCertificateString,
   memberName,
-  memberOID,
   orgCertificateString,
   orgGatewayAuthorizationClientId,
   orgGatewayAuthorizationClientSecret,
   orgGatewayAuthorizationServerEndpoint,
   orgGatewayEndpoint,
+  rootOID,
 } from "./env";
 import { getCertificateContent, makeShortName } from "./util";
 
@@ -37,7 +37,7 @@ export function makeId(): string {
 }
 export function makeOrgId(orgId?: string): string {
   const org = orgId ?? makeId();
-  return `${memberOID}.${ORGANIZATION}.${org}`;
+  return `${rootOID}.${ORGANIZATION}.${org}`;
 }
 export function makeFacilityId(orgId?: string): string {
   const facility = makeId();
@@ -169,7 +169,7 @@ export function makeOrganization(suffixId?: string): Organization {
             queryResponder: true,
           },
         ],
-        // TODO ENG-200 address this
+        // TODO ENG-541 address this
         // doa: [],
       },
     ],
