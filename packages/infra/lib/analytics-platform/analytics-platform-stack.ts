@@ -242,7 +242,6 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
         memorySize: fhirToCsvTransformLambdaSettings.memory,
         environment: {
           ENV: ownProps.envType,
-          AWS_REGION: ownProps.awsRegion,
           INPUT_S3_BUCKET: ownProps.medicalDocumentsBucket.bucketName,
           OUTPUT_S3_BUCKET: ownProps.analyticsPlatformBucket.bucketName,
           SNOWFLAKE_ROLE: ownProps.config.analyticsPlatform.snowflake.role,

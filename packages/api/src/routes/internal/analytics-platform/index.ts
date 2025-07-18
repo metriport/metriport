@@ -51,12 +51,7 @@ router.post(
     const jobId = getFromQueryOrFail("jobId", req);
     const patientId = getFromQueryOrFail("patientId", req);
     const inputBundle = getFromQuery("inputBundle", req);
-    await startFhirToCsvTransform({
-      cxId,
-      jobId,
-      patientId,
-      ...(inputBundle ? { inputBundle } : {}),
-    });
+    await startFhirToCsvTransform({ cxId, jobId, patientId, inputBundle });
     return res.sendStatus(httpStatus.OK);
   })
 );

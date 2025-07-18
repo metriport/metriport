@@ -29,7 +29,7 @@ export async function startFhirToCsvTransform({
     apiUrl: `http://${Config.getApiUrl()}`,
     snowflakeCreds,
   });
-  return await executeWithNetworkRetries(async () => {
+  await executeWithNetworkRetries(async () => {
     const result = await makeLambdaClient(Config.getAWSRegion())
       .invoke({
         FunctionName: lambdaName,
