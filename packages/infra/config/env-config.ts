@@ -165,6 +165,7 @@ type EnvConfigBase = {
     envVars: {
       CW_MEMBER_NAME: string;
       CW_MEMBER_OID: string;
+      CW_MEMBER_ID: string;
       CW_GATEWAY_ENDPOINT: string;
       CW_GATEWAY_AUTHORIZATION_SERVER_ENDPOINT: string;
       CW_TECHNICAL_CONTACT_NAME: string;
