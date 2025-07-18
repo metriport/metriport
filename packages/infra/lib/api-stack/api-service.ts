@@ -407,6 +407,8 @@ export function createAPIService({
           }),
           ...(analyticsPlatformAssets && {
             FHIR_TO_CSV_QUEUE_URL: analyticsPlatformAssets.fhirToCsvQueue.queueUrl,
+            FHIR_TO_CSV_TRANSFORM_LAMBDA_NAME:
+              analyticsPlatformAssets.fhirToCsvTransformLambda.functionName,
             FHIR_TO_CSV_BATCH_JOB_DEFINITION_ARN:
               analyticsPlatformAssets.fhirToCsvBatchJob.jobDefinitionArn,
             FHIR_TO_CSV_BATCH_JOB_QUEUE_ARN:
@@ -498,6 +500,9 @@ export function createAPIService({
   fhirToBundleCountLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   ehrGetAppointmentsLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   consolidatedSearchLambda.grantInvoke(fargateService.taskDefinition.taskRole);
+  analyticsPlatformAssets?.fhirToCsvTransformLambda.grantInvoke(
+    fargateService.taskDefinition.taskRole
+  );
   // Access grant for buckets
   patientImportBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   conversionBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
@@ -513,19 +518,19 @@ export function createAPIService({
     );
   }
 
-  if (analyticsPlatformAssets) {
-    analyticsPlatformAssets.fhirToCsvBatchJob.grantSubmitJob(
-      fargateService.taskDefinition.taskRole,
-      analyticsPlatformAssets.fhirToCsvBatchJobQueue
-    );
-  }
-
   if (ehrResponsesBucket) {
     ehrResponsesBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   }
 
   if (fhirToMedicalRecordLambda2) {
     fhirToMedicalRecordLambda2.grantInvoke(fargateService.taskDefinition.taskRole);
+  }
+
+  if (analyticsPlatformAssets) {
+    analyticsPlatformAssets.fhirToCsvBatchJob.grantSubmitJob(
+      fargateService.taskDefinition.taskRole,
+      analyticsPlatformAssets.fhirToCsvBatchJobQueue
+    );
   }
 
   if (cookieStore) {
