@@ -57,8 +57,12 @@ export function makeCommonWellAPI(orgName: string, orgOID: string, npi: string):
     return new CommonWellMock(orgName, orgOID);
   }
 
-  const isMemberAPI = orgOID === Config.getCWMemberOID();
-  if (isMemberAPI) throw new Error("Cannot use the member OID as an organization OID");
+  const isMemberAPI = [Config.getCWMemberOID(), Config.getSystemRootOID()].includes(orgOID);
+  if (isMemberAPI) {
+    throw new MetriportError("Cannot use the member/root OID as an organization OID", undefined, {
+      orgOID,
+    });
+  }
 
   return new CommonWell({
     orgCert: Config.getCWOrgCertificate(),
