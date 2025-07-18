@@ -3,7 +3,7 @@ dotenv.config();
 // keep that ^ above all other imports
 import { APIMode, CommonWell, Organization } from "@metriport/commonwell-sdk";
 import { makeNPI } from "@metriport/shared/common/__tests__/npi";
-import { existingOrgId, memberOID, orgCertificateString, orgPrivateKeyString } from "../env";
+import { existingOrgId, orgCertificateString, orgPrivateKeyString } from "../env";
 import { initContributionHttpServer } from "../flows/contribution/contribution-server";
 
 /**
@@ -23,7 +23,7 @@ export async function main() {
     rsaPrivateKey: orgPrivateKeyString,
     orgName: org.name,
     oid: org.organizationId,
-    homeCommunityId: memberOID,
+    homeCommunityId: org.organizationId,
     npi: org.npiType2,
     apiMode: APIMode.integration,
   });

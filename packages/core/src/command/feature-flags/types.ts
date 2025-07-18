@@ -39,6 +39,7 @@ export const cxBasedFFsSchema = z.object({
   cxsWithDischargeSlackNotificationFeatureFlag: ffStringValuesSchema,
   cxsWithDischargeRequeryFeatureFlag: ffStringValuesSchema,
   cxsWithXmlRedownloadFeatureFlag: ffStringValuesSchema,
+  cxsEnabledForCommonwellV2: ffStringValuesSchema,
 });
 export type CxBasedFFsSchema = z.infer<typeof cxBasedFFsSchema>;
 

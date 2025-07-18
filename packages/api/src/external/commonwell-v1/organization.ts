@@ -1,11 +1,17 @@
 import { Organization as CWSdkOrganization } from "@metriport/commonwell-sdk-v1";
 import { isEnhancedCoverageEnabledForCx } from "@metriport/core/command/feature-flags/domain-ffs";
 import { OID_PREFIX } from "@metriport/core/domain/oid";
-import { Organization, OrgType } from "@metriport/core/domain/organization";
+import { Organization } from "@metriport/core/domain/organization";
 import { getOrgsByPrio } from "@metriport/core/external/commonwell-v1/cq-bridge/get-orgs";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
-import { errorToString, getEnvVarOrFail, NotFoundError, USState } from "@metriport/shared";
+import {
+  errorToString,
+  getEnvVarOrFail,
+  NotFoundError,
+  TreatmentType,
+  USState,
+} from "@metriport/shared";
 import { Config } from "../../shared/config";
 import {
   getCertificate,
@@ -226,7 +232,7 @@ export function parseCWEntry(org: CWSdkOrganization): CWOrganization {
         zip: location.postalCode,
         country: location.country,
       },
-      type: org.type as OrgType,
+      type: org.type as TreatmentType,
     },
     oid: org.organizationId.replace(OID_PREFIX, ""),
     active: org.isActive,

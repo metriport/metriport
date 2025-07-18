@@ -5,23 +5,23 @@ import {
   Demographics,
   GenderCodes,
   NameUseCodes,
-  OrganizationWithNetworkInfo,
+  Organization,
   Patient,
   PatientIdentifier,
 } from "@metriport/commonwell-sdk";
-import { makeNPI } from "@metriport/shared/common/__tests__/npi";
+import { TreatmentType } from "@metriport/shared";
 import { X509Certificate } from "crypto";
 import dayjs from "dayjs";
 import * as nanoid from "nanoid";
 import {
   memberCertificateString,
   memberName,
-  memberOID,
   orgCertificateString,
   orgGatewayAuthorizationClientId,
   orgGatewayAuthorizationClientSecret,
   orgGatewayAuthorizationServerEndpoint,
   orgGatewayEndpoint,
+  rootOID,
 } from "./env";
 import { getCertificateContent, makeShortName } from "./util";
 
@@ -37,7 +37,7 @@ export function makeId(): string {
 }
 export function makeOrgId(orgId?: string): string {
   const org = orgId ?? makeId();
-  return `${memberOID}.${ORGANIZATION}.${org}`;
+  return `${rootOID}.${ORGANIZATION}.${org}`;
 }
 export function makeFacilityId(orgId?: string): string {
   const facility = makeId();
@@ -118,7 +118,7 @@ export function makePatient({
 
 const shortName = "z_" + makeShortName();
 
-export function makeOrganization(suffixId?: string): OrganizationWithNetworkInfo {
+export function makeOrganization(suffixId?: string): Organization {
   const orgId = makeOrgId(suffixId);
   return {
     organizationId: orgId,
@@ -126,8 +126,7 @@ export function makeOrganization(suffixId?: string): OrganizationWithNetworkInfo
     displayName: shortName,
     homeCommunityId: orgId,
     memberName: memberName,
-    type: "Hospital",
-    npiType2: makeNPI(),
+    type: TreatmentType.hospital,
     searchRadius: 150,
     patientIdAssignAuthority: orgId,
     isActive: true,
@@ -170,7 +169,7 @@ export function makeOrganization(suffixId?: string): OrganizationWithNetworkInfo
             queryResponder: true,
           },
         ],
-        // TODO ENG-200 address this
+        // TODO ENG-541 address this
         // doa: [],
       },
     ],

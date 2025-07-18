@@ -20,7 +20,7 @@ import { getCWAccessForPatient } from "../../external/commonwell-v1/admin/shared
 import { errorToString, getEnvVarOrFail } from "@metriport/shared";
 import { DocumentReferenceWithId } from "@metriport/core/external/fhir/document/document-reference";
 import { isOrganization, isPatient } from "@metriport/core/external/fhir/shared/index";
-import { hasCommonwellExtension } from "@metriport/core/external/commonwell-v1/extension";
+import { hasCommonwellExtension } from "@metriport/core/external/commonwell/extension";
 import { hasCarequalityExtension } from "@metriport/core/external/carequality/extension";
 import { getCQPatientData } from "../../external/carequality/command/cq-patient-data/get-cq-data";
 import { getCwPatientData } from "../../external/commonwell-v1/command/cw-patient-data/get-cw-data";

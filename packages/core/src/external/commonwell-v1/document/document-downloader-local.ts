@@ -1,5 +1,8 @@
-import { CommonWellAPI, CommonwellError, organizationQueryMeta } from "@metriport/commonwell-sdk-v1";
-// import { CommonWellAPI as CommonWellAPIv2 } from "@metriport/commonwell-sdk-v1";
+import {
+  CommonWellAPI,
+  CommonwellError,
+  organizationQueryMeta,
+} from "@metriport/commonwell-sdk-v1";
 import {
   executeWithNetworkRetries,
   getNetworkErrorDetails,
@@ -20,13 +23,11 @@ import {
   DocumentDownloaderConfig,
   DownloadResult,
   FileInfo,
-} from "./document-downloader";
+} from "../../commonwell/document/document-downloader";
 
 export type DocumentDownloaderLocalConfig = DocumentDownloaderConfig & {
   commonWell: {
     api: CommonWellAPI;
-    // apiV1: CommonWellAPI;
-    // api: CommonWellAPIv2;
     queryMeta: ReturnType<typeof organizationQueryMeta>;
   };
 };

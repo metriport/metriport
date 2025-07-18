@@ -1,6 +1,7 @@
 import { random } from "lodash";
 import { MetriportError } from "../error/metriport-error";
 import { errorToString } from "../error/shared";
+import { emptyFunction } from "./general";
 import { sleep } from "./sleep";
 
 function defaultShouldRetry<T>(_: T | undefined, error: unknown) {
@@ -14,6 +15,7 @@ export const defaultOptions: Required<ExecuteWithRetriesOptions<unknown>> = {
   backoffMultiplier: 2,
   maxAttempts: 5,
   shouldRetry: defaultShouldRetry,
+  onError: emptyFunction,
   getTimeToWait: defaultGetTimeToWait,
   log: console.log,
 };
@@ -37,6 +39,12 @@ export type ExecuteWithRetriesOptions<T> = {
     error: unknown,
     attempt: number
   ) => boolean | Promise<boolean>;
+  /**
+   * Function to be called when an error occurs. It doesn't change whether shouldRetry is called
+   * or not, nor does it change the result of that function.
+   * It's called before shouldRetry.
+   */
+  onError?: (error: unknown) => void;
   /** Function to determine if the result should be retried. Defaults to always retry. */
   /** Function to determine how long to wait before the next retry. It should not be changed. */
   getTimeToWait?: (params: GetTimeToWaitParams) => number;
@@ -79,6 +87,7 @@ export async function executeWithRetries<T>(
     backoffMultiplier,
     maxAttempts: _maxAttempts,
     shouldRetry,
+    onError,
     getTimeToWait,
     log,
   } = actualOptions;
@@ -98,6 +107,7 @@ export async function executeWithRetries<T>(
       }
       return result;
     } catch (error) {
+      onError?.(error);
       const msg = `[${context}] Error: ${errorToString(error)}`;
       if (attempt >= maxAttempts) {
         log(`${msg}, gave up after ${attempt} attempts.`);

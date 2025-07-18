@@ -1,12 +1,12 @@
 import { faker } from "@faker-js/faker";
 import { Organization as FhirOrg } from "@medplum/fhirtypes";
-import { USState } from "@metriport/shared";
-import { Organization, OrganizationCreate, OrgType } from "@metriport/api-sdk";
+import { Organization, OrganizationCreate } from "@metriport/api-sdk";
 import { Organization as CqOrganization } from "@metriport/carequality-sdk";
 import { Organization as CWOrganization } from "@metriport/commonwell-sdk-v1";
+import { TreatmentType, USState } from "@metriport/shared";
 
 export const createOrg: OrganizationCreate = {
-  type: OrgType.postAcuteCare,
+  type: TreatmentType.postAcuteCare,
   name: faker.word.noun(),
   location: {
     addressLine1: "1234 Market St",
@@ -17,10 +17,10 @@ export const createOrg: OrganizationCreate = {
   },
 };
 
-export const validateLocalOrg = (
+export function validateLocalOrg(
   org: Organization,
   orgToCompare?: OrganizationCreate | Organization
-) => {
+) {
   expect(org).toBeTruthy();
   expect(org.id).toBeTruthy();
   expect(org.location).toBeTruthy();
@@ -43,9 +43,9 @@ export const validateLocalOrg = (
     expect(org.location.zip).toBeTruthy();
     expect(org.location.country).toBeTruthy();
   }
-};
+}
 
-export const validateFhirOrg = (org: FhirOrg, orgToCompare?: OrganizationCreate | Organization) => {
+export function validateFhirOrg(org: FhirOrg, orgToCompare?: OrganizationCreate | Organization) {
   expect(org).toBeTruthy();
   expect(org.resourceType).toBeTruthy();
   expect(org.resourceType).toEqual("Organization");
@@ -68,7 +68,7 @@ export const validateFhirOrg = (org: FhirOrg, orgToCompare?: OrganizationCreate 
     expect(org.address?.[0].postalCode).toBeTruthy();
     expect(org.address?.[0].country).toBeTruthy();
   }
-};
+}
 
 export function validateCwOrg(
   org: CWOrganization | undefined,

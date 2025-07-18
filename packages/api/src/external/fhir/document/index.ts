@@ -25,7 +25,7 @@ import {
 } from "@metriport/commonwell-sdk-v1";
 import { Gender } from "@metriport/commonwell-sdk-v1/models/demographics";
 import { joinName, Patient, splitName } from "@metriport/core/domain/patient";
-import { cwExtension } from "@metriport/core/external/commonwell-v1/extension";
+import { cwExtension } from "@metriport/core/external/commonwell/extension";
 import { toFHIRSubject } from "@metriport/core/external/fhir/patient/conversion";
 import { metriportDataSourceExtension } from "@metriport/core/external/fhir/shared/extensions/metriport";
 import dayjs from "dayjs";

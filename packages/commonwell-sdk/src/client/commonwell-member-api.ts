@@ -1,5 +1,5 @@
 import { CertificateParam, CertificateResp } from "../models/certificates";
-import { Organization, OrganizationList } from "../models/organization";
+import { OrganizationList, Organization } from "../models/organization";
 import { BaseRequestMetadata } from "./common";
 
 export type BaseOptions = {

@@ -115,6 +115,77 @@ describe("retry", () => {
         })
       );
     });
+
+    describe("onError", () => {
+      it("works if onError is not provided", async () => {
+        const error = new Error("test error");
+        fn.mockImplementation(() => {
+          throw error;
+        });
+        await expect(async () =>
+          executeWithRetries(fn, {
+            initialDelay: 1,
+            maxAttempts: 3,
+          })
+        ).rejects.toThrow();
+        for (let i = 0; i < 3; i++) {
+          expect(fn).toHaveBeenNthCalledWith(i + 1, i + 1);
+        }
+      });
+
+      it("calls onError on each error", async () => {
+        const onError = jest.fn();
+        const error = new Error("test error");
+        fn.mockImplementation(() => {
+          throw error;
+        });
+        await expect(async () =>
+          executeWithRetries(fn, {
+            initialDelay: 1,
+            maxAttempts: 3,
+            onError,
+          })
+        ).rejects.toThrow();
+        expect(onError).toHaveBeenCalledTimes(3);
+        for (let i = 0; i < 3; i++) {
+          expect(onError).toHaveBeenNthCalledWith(i + 1, error);
+        }
+      });
+
+      it("does not call onError on success", async () => {
+        const onError = jest.fn();
+        fn.mockImplementationOnce(() => "success");
+        const resp = await executeWithRetries(fn, {
+          initialDelay: 1,
+          maxAttempts: 3,
+          onError,
+        });
+        expect(resp).toEqual("success");
+        expect(onError).not.toHaveBeenCalled();
+      });
+
+      it("calls onError with the correct error object", async () => {
+        const onError = jest.fn();
+        const error1 = new Error("error1");
+        const error2 = new Error("error2");
+        fn.mockImplementationOnce(() => {
+          throw error1;
+        });
+        fn.mockImplementationOnce(() => {
+          throw error2;
+        });
+        await expect(async () =>
+          executeWithRetries(fn, {
+            initialDelay: 1,
+            maxAttempts: 2,
+            onError,
+          })
+        ).rejects.toThrow();
+        expect(onError).toHaveBeenCalledTimes(2);
+        expect(onError).toHaveBeenNthCalledWith(1, error1);
+        expect(onError).toHaveBeenNthCalledWith(2, error2);
+      });
+    });
   });
 
   describe("executeWithRetriesOnResult", () => {

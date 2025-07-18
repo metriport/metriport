@@ -7,13 +7,10 @@ import cohort from "./cohort";
 import facility from "./facility";
 import facilityRoot from "./facility-root";
 import networkEntry from "./network-entry";
-import organization from "./organization";
 import patient from "./patient";
 import patientRoot from "./patient-root";
 
 const routes = Router();
-
-routes.use("/organization", organization);
 
 routes.use("/facility", facilityRoot);
 routes.use("/facility/:id", handleParams, facilityAuthorization("params"), facility);

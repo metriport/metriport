@@ -279,3 +279,11 @@ export async function isXmlRedownloadFeatureFlagEnabledForCx(cxId: string): Prom
   const cxIdsWithXmlRedownloadEnabled = await getCxsWithXmlRedownloadFeatureFlag();
   return cxIdsWithXmlRedownloadEnabled.some(i => i === cxId);
 }
+
+export async function getCxsEnabledForCommonwellV2(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsEnabledForCommonwellV2");
+}
+export async function isCommonwellV2EnabledForCx(cxId: string): Promise<boolean> {
+  const cxIdsWithCommonwellV2Enabled = await getCxsEnabledForCommonwellV2();
+  return cxIdsWithCommonwellV2Enabled.some(i => i === cxId);
+}
