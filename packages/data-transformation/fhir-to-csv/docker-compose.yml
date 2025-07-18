@@ -10,7 +10,7 @@ services:
   fhir-to-csv:
     container_name: fhir-to-csv
     build:
-      dockerfile: ./Dockerfile
+      dockerfile: ./Dockerfile.dev
     volumes:
       - .:/usr/app/data
       - ~/.aws:/root/.aws

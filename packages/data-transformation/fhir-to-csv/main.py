@@ -52,7 +52,7 @@ def transform_and_upload_data(
         with open(local_bundle_key, "wb") as f:
             try:
                 logging.info(f"Downloading bundle {bundle_key} from {input_bucket} to {local_bundle_key}")
-                s3_client.download_file(input_bucket, bundle_key, f)
+                s3_client.download_file(input_bucket, bundle_key, local_bundle_key)
                 logging.info(f"Downloaded bundle {bundle_key} from {input_bucket} to {local_bundle_key}")
             except s3_client.exceptions.ClientError as e:
                 if e.response['Error']['Code'] == '404':
@@ -84,15 +84,15 @@ def transform_and_upload_data(
 
     return output_bucket_and_file_keys_and_table_names
 
-def handler(event, context):
-    print(event)
-    print(context)
-    api_url = event.get("API_URL")
-    job_id = event.get("JOB_ID")
-    cx_id = event.get("CX_ID")
-    patient_id = event.get("PATIENT_ID")
-    input_bundle = event.get("INPUT_BUNDLE")
-    input_bucket = event.get("INPUT_BUNDLE") or os.getenv("INPUT_S3_BUCKET")
+def handler(event: dict, context: dict):
+    print(f"event: {event}")
+    print(f"context: {context}")
+    api_url = event.get("API_URL") or os.getenv("API_URL")
+    job_id = event.get("JOB_ID") or os.getenv("JOB_ID")
+    cx_id = event.get("CX_ID") or os.getenv("CX_ID")
+    patient_id = event.get("PATIENT_ID") or os.getenv("PATIENT_ID")
+    input_bundle = event.get("INPUT_BUNDLE") or os.getenv("INPUT_BUNDLE")
+    input_bucket = event.get("INPUT_S3_BUCKET") or os.getenv("INPUT_S3_BUCKET")
     output_bucket = os.getenv("OUTPUT_S3_BUCKET")
     if not input_bucket:
         raise ValueError("INPUT_S3_BUCKET is not set")
@@ -128,3 +128,6 @@ def handler(event, context):
         append_job_tables(job_id, cx_id, patient_id, rebuild_patient)
     else:
         rename_job_tables(job_id, cx_id)
+
+if __name__ == "__main__":
+    handler({}, {})
