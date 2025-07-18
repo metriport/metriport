@@ -58,7 +58,6 @@
   },
   "dependencies": {
     "@medplum/fhirtypes": "^2.0.32",
-    "@metriport/commonwell-sdk": "^5.9.16",
     "@metriport/shared": "^0.24.5",
     "axios": "^1.8.2",
     "dayjs": "^1.11.7",
