@@ -28,6 +28,7 @@ export type RosterRowData = {
   email: string | undefined;
   address1AddressLine1: string | undefined;
   address1AddressLine2: string | undefined;
+  address1SingleLine: string | undefined;
   address1City: string | undefined;
   address1State: string | undefined;
   address1Zip: string | undefined;
