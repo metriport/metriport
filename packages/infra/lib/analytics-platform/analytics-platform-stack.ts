@@ -21,6 +21,8 @@ import { LambdaSettings, QueueAndLambdaSettings } from "../shared/settings";
 import { createQueue } from "../shared/sqs";
 import { AnalyticsPlatformsAssets } from "./types";
 
+const waitTimeFhirToCsvTransform = Duration.seconds(10); // 6 patients/min
+
 type BatchJobSettings = {
   imageName: string;
   memory: cdk.Size;
@@ -36,7 +38,7 @@ interface AnalyticsPlatformsSettings {
 }
 
 function settings(): AnalyticsPlatformsSettings {
-  const fhirToCsvLambdaTimeout = Duration.minutes(2);
+  const fhirToCsvLambdaTimeout = waitTimeFhirToCsvTransform.plus(Duration.seconds(25));
   const fhirToCsv: QueueAndLambdaSettings = {
     name: "FhirToCsv",
     entry: "analytics-platform/fhir-to-csv",
@@ -62,7 +64,7 @@ function settings(): AnalyticsPlatformsSettings {
     imageName: "fhir-to-csv",
     lambda: {
       memory: 1024,
-      timeout: fhirToCsvLambdaTimeout.minus(Duration.seconds(10)),
+      timeout: Duration.minutes(2),
     },
   };
   const fhirToCsvBatchJob: BatchJobSettings = {
@@ -174,7 +176,6 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       analyticsPlatformRepository,
       analyticsPlatformBucket,
       medicalDocumentsBucket: props.medicalDocumentsBucket,
-      snowflakeCreds,
     });
     this.fhirToCsvLambda = fhirToCsvLambda;
     this.fhirToCsvTransformLambda = fhirToCsvTransformLambda;
@@ -221,7 +222,6 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
     analyticsPlatformRepository: ecr.Repository;
     analyticsPlatformBucket: s3.Bucket;
     medicalDocumentsBucket: s3.Bucket;
-    snowflakeCreds: secret.ISecret;
   }): {
     fhirToCsvLambda: lambda.DockerImageFunction;
     fhirToCsvTransformLambda: lambda.DockerImageFunction;
@@ -294,9 +294,6 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
     });
 
     fhirToCsvLambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
-    fhirToCsvTransformLambda.grantInvoke(fhirToCsvLambda);
-
-    ownProps.snowflakeCreds.grantRead(fhirToCsvLambda);
 
     return {
       fhirToCsvLambda,
