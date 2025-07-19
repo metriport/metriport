@@ -663,6 +663,17 @@ const allValuesInObjAreNullFlavor = obj => {
   return true;
 };
 
+var getSpecifiedEntryRelationship = function (entryRelationshipContainer, targetTypeCode) {
+  const entryRelationshipArray = Array.isArray(entryRelationshipContainer)
+    ? entryRelationshipContainer
+    : [entryRelationshipContainer];
+
+  return entryRelationshipArray?.find(
+    entryRelationship =>
+      entryRelationship?.typeCode && entryRelationship.typeCode === targetTypeCode
+  );
+};
+
 module.exports.internal = {
   getDateTime,
   getDate,
@@ -2085,6 +2096,13 @@ module.exports.external = [
     description: "Checks if the start date is less than or equal to the end date.",
     func: function (v1, v2) {
       return startDateLteEndDate(v1, v2);
+    },
+  },
+  {
+    name: "getSpecifiedEntryRelationship",
+    description: "Returns the specified entry relationship if it exists.",
+    func: function (entryRelationships, targetTypeCode) {
+      return getSpecifiedEntryRelationship(entryRelationships, targetTypeCode);
     },
   },
 ];

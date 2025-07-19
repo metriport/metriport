@@ -27,12 +27,24 @@
                         {{!-- Reference to the Location is generated at the time of CarePlan resource generation --}}
                     {{/with}}
                 {{/if}}
+
+                {{!-- typeCode "REFR" -> priority for the encounter --}}
+                {{#with (getSpecifiedEntryRelationship careplanEntry.encounter.entryRelationship "RSON") as |conditionEntry|}}
+                    {{>Resources/Condition.hbs conditionEntry=conditionEntry.observation ID=(generateUUID (toJsonString conditionEntry.observation))}},
+                    {{>References/CarePlan/addresses.hbs ID=(generateUUID (toJsonString careplanEntry)) REF=(concat 'Condition/' (generateUUID (toJsonString conditionEntry.observation)))}}
+                    {{log "conditionEntry" (generateUUID (toJsonString conditionEntry.observation))}}
+                {{/with}}
                 
             {{else if careplanEntry.observation}}
                 {{>Resources/CarePlan.hbs encounter=careplanEntry.observation ID=(generateUUID (toJsonString careplanEntry))}},
                 {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
                     {{>References/CarePlan/subject.hbs ID=(generateUUID (toJsonString careplanEntry)) REF=(concat 'Patient/' patientId.Id)}},
                 {{/with}}
+            
+
+                {{!-- careplanEntry.observation.value --}}
+                {{!-- careplanEntry.observation.methodCode --}}
+                {{!-- careplanEntry.observation.targetSiteCode --}}
             
                 {{#if careplanEntry.observation.author.assignedAuthor.representedOrganization}}
                     {{#with (evaluate 'Utils/GenerateOrganizationId.hbs' obj=careplanEntry.observation.author.assignedAuthor.representedOrganization) as |orgId|}}
@@ -48,12 +60,46 @@
                     {{/with}}
                 {{/if}}
                 
-                {{#if careplanEntry.observation.participant.participantRole}}
-                    {{#with (generateLocationId careplanEntry.observation.participant.participantRole) as |locationId|}}
-                        {{>Resources/Location.hbs location=careplanEntry.observation.participant.participantRole playingEntity=careplanEntry.observation.participant.participantRole.playingEntity ID=locationId}},
-                        {{!-- Reference to the Location is generated at the time of CarePlan resource generation --}}
+                {{!-- typeCode "REFR" -> priority for the encounter --}}
+                {{#with (getSpecifiedEntryRelationship careplanEntry.observation.entryRelationship "RSON") as |conditionEntry|}}
+                    {{>Resources/Condition.hbs conditionEntry=conditionEntry.observation ID=(generateUUID (toJsonString conditionEntry.observation))}},
+                    {{>References/CarePlan/addresses.hbs ID=(generateUUID (toJsonString careplanEntry)) REF=(concat 'Condition/' (generateUUID (toJsonString conditionEntry.observation)))}}
+                {{/with}}
+                {{!-- typeCode "SUBJ" -> instructions for the encounter --}}
+                {{!-- typeCode "COMP" -> insurance coverage for the encounter --}}
+
+            {{else if careplanEntry.procedure}}
+                {{>Resources/CarePlan.hbs encounter=careplanEntry.procedure ID=(generateUUID (toJsonString careplanEntry))}},
+                {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
+                    {{>References/CarePlan/subject.hbs ID=(generateUUID (toJsonString careplanEntry)) REF=(concat 'Patient/' patientId.Id)}},
+                {{/with}}
+            
+                {{#if careplanEntry.procedure.author.assignedAuthor.representedOrganization}}
+                    {{#with (evaluate 'Utils/GenerateOrganizationId.hbs' obj=careplanEntry.procedure.author.assignedAuthor.representedOrganization) as |orgId|}}
+                        {{>Resources/Organization.hbs org=careplanEntry.procedure.author.assignedAuthor ID=orgId.Id}},
+                        {{>References/CarePlan/author.hbs ID=(generateUUID (toJsonString careplanEntry)) REF=(concat 'Organization/' orgId.Id)}},
                     {{/with}}
                 {{/if}}
+
+
+                {{!-- careplanEntry.observation.methodCode --}}
+                {{!-- careplanEntry.observation.targetSiteCode --}}
+
+                {{#if careplanEntry.procedure.performer.assignedEntity}}
+                    {{#with (generatePractitionerId careplanEntry.procedure.performer.assignedEntity) as |practitionerId|}}
+                        {{>Resources/Practitioner.hbs practitioner=careplanEntry.procedure.performer.assignedEntity ID=practitionerId}},
+                        {{!-- Reference to the Practitioner is generated at the time of CarePlan resource generation --}}
+                    {{/with}}
+                {{/if}}
+
+                {{!-- typeCode "REFR" -> priority for the encounter --}}
+                {{#with (getSpecifiedEntryRelationship careplanEntry.procedure.entryRelationship "RSON") as |conditionEntry|}}
+                    {{>Resources/Condition.hbs conditionEntry=conditionEntry.observation ID=(generateUUID (toJsonString conditionEntry.observation))}},
+                    {{>References/CarePlan/addresses.hbs ID=(generateUUID (toJsonString careplanEntry)) REF=(concat 'Condition/' (generateUUID (toJsonString conditionEntry.observation)))}}
+                {{/with}}
+                {{!-- typeCode "SUBJ" -> instructions for the encounter --}}
+                {{!-- typeCode "COMP" -> insurance coverage for the encounter --}}
+
             {{/if}}
         {{/each}}
     {{/with}}
