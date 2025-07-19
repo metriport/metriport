@@ -1,6 +1,7 @@
 import { BadRequestError } from "@metriport/shared";
 import { BatchUtils } from "../../../../external/aws/batch";
 import { Config } from "../../../../util/config";
+import { out } from "../../../../util/log";
 import { getSnowflakeCreds } from "../../config";
 
 export async function startFhirToCsvBatchJob({
@@ -14,6 +15,8 @@ export async function startFhirToCsvBatchJob({
   patientId?: string;
   inputBundle?: string;
 }) {
+  const { log } = out(`startFhirToCsvBatchJob - cx ${cxId}, pt ${patientId}, job ${jobId}`);
+
   const fhirToCsvBatchJobQueueArn = Config.getFhirToCsvBatchJobQueueArn();
   const fhirToCsvBatchJobDefinitionArn = Config.getFhirToCsvBatchJobDefinitionArn();
 
@@ -45,5 +48,5 @@ export async function startFhirToCsvBatchJob({
     },
   });
 
-  console.log(response);
+  log(`>>> Job started: ${JSON.stringify(response)}`);
 }

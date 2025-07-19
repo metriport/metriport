@@ -29,7 +29,17 @@ export class BatchUtils {
     jobQueueArn: string;
     jobDefinitionArn: string;
     parameters: AWS.Batch.ParametersMap;
-  }) {
+  }): Promise<
+    | {
+        /** The Amazon Resource Name (ARN) for the job. */
+        jobArn?: string;
+        /** The name of the job. */
+        jobName: string;
+        /** The unique identifier for the job. */
+        jobId: string;
+      }
+    | undefined
+  > {
     const { log } = out(`startJob`);
     const input: AWS.Batch.SubmitJobRequest = {
       jobName,
