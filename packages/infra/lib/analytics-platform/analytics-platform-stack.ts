@@ -57,7 +57,7 @@ function settings(): AnalyticsPlatformsSettings {
     eventSource: {
       batchSize: 1,
       reportBatchItemFailures: true,
-      maxConcurrency: 15,
+      maxConcurrency: 5,
     },
     waitTime: waitTimeFhirToCsv,
   };
