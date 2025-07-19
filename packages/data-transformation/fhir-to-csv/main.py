@@ -107,7 +107,7 @@ def handler(event: dict, context: dict):
         raise ValueError("OUTPUT_S3_BUCKET is not set")
     if not snowflake_creds:
         raise ValueError("SNOWFLAKE_CREDS is not set")
-    snowflake_creds = json.loads(snowflake_creds)
+    snowflake_creds = json.loads(snowflake_creds) if isinstance(snowflake_creds, str) else snowflake_creds
 
     output_bucket_and_file_keys_and_table_names = transform_and_upload_data(
         input_bucket,
