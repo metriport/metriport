@@ -126,15 +126,15 @@ export function toBasicOrgAttributes(org: CQDirectoryEntry): CQOrgBasicDetails {
 }
 
 export function filterCQOrgsToSearch(orgs: CQOrgBasicDetails[]): CQOrgBasicDetails[] {
-  const uniqueOrgsById = new Map<string, CQOrgBasicDetails>();
+  const uniqueOrgsByUrlXcpd = new Map<string, CQOrgBasicDetails>();
   for (const org of orgs) {
-    if (org.active && hasValidXcpdLink(org)) {
-      if (!uniqueOrgsById.has(org.id)) {
-        uniqueOrgsById.set(org.id, org);
+    if (org.active && org.urlXCPD && hasValidXcpdLink(org)) {
+      if (!uniqueOrgsByUrlXcpd.has(org.urlXCPD)) {
+        uniqueOrgsByUrlXcpd.set(org.urlXCPD, org);
       }
     }
   }
-  return Array.from(uniqueOrgsById.values());
+  return Array.from(uniqueOrgsByUrlXcpd.values());
 }
 
 /**
