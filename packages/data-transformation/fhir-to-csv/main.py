@@ -85,8 +85,6 @@ def transform_and_upload_data(
     return output_bucket_and_file_keys_and_table_names
 
 def handler(event: dict, context: dict):
-    print(f"event: {event}")
-    print(f"context: {context}")
     api_url = event.get("API_URL") or os.getenv("API_URL")
     job_id = event.get("JOB_ID") or os.getenv("JOB_ID")
     cx_id = event.get("CX_ID") or os.getenv("CX_ID")

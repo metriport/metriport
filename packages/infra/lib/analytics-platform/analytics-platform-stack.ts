@@ -226,13 +226,14 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
     fhirToCsvTransformLambda: lambda.DockerImageFunction;
     queue: Queue;
   } {
-    const { lambda: fhirToCsvTransformLambdaSettings } = settings().fhirToCsvTransform;
+    const { lambda: fhirToCsvTransformLambdaSettings, name: fhirToCsvTransformLambdaName } =
+      settings().fhirToCsvTransform;
 
     const fhirToCsvTransformLambda = new lambda.DockerImageFunction(
       this,
-      "fhirToCsvTransformLambda",
+      "FhirToCsvTransformLambda",
       {
-        functionName: "fhirToCsvTransformLambda",
+        functionName: fhirToCsvTransformLambdaName,
         vpc: ownProps.vpc,
         code: lambda.DockerImageCode.fromImageAsset("../data-transformation/fhir-to-csv", {
           file: "Dockerfile.lambda",
