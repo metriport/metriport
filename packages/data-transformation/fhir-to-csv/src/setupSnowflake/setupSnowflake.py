@@ -18,14 +18,10 @@ snowflake_integration = os.getenv("SNOWFLAKE_INTEGRATION")
 if snowflake_integration is None:
     raise ValueError("SNOWFLAKE_INTEGRATION is not set")
 
-def get_snowflake_credentials() -> dict[str, str]:
-    snowflake_creds = os.getenv("SNOWFLAKE_CREDS")
-    if not snowflake_creds:
-        raise ValueError("SNOWFLAKE_CREDS is not set")
-    snowflake_creds = json.loads(snowflake_creds)
-    snowflake_account = snowflake_creds.get("account")
-    snowflake_user = snowflake_creds.get("user")
-    snowflake_password = snowflake_creds.get("password")
+def get_snowflake_credentials(creds: dict) -> dict[str, str]:
+    snowflake_account = creds.get("account")
+    snowflake_user = creds.get("user")
+    snowflake_password = creds.get("password")
     snowflake_role = os.getenv("SNOWFLAKE_ROLE")
     snowflake_warehouse = os.getenv("SNOWFLAKE_WAREHOUSE")
     if (
@@ -63,9 +59,9 @@ def generate_table_names_and_create_table_statements(job_id: str, date_types=Fal
 
     return table_names_and_create_job_table_statements
 
-def create_job_tables(job_id: str, cx_id: str):
+def create_job_tables(creds: dict, job_id: str, cx_id: str):
     database_name = format_database_name(cx_id)
-    with snowflake.connector.connect(**get_snowflake_credentials(), autocommit=False) as snowflake_conn:
+    with snowflake.connector.connect(**get_snowflake_credentials(creds), autocommit=False) as snowflake_conn:
         snowflake_conn.cursor().execute(f"CREATE DATABASE IF NOT EXISTS {database_name}")
         snowflake_conn.cursor().execute(f"USE DATABASE {database_name}")
         snowflake_conn.cursor().execute("USE SCHEMA PUBLIC")
@@ -75,9 +71,9 @@ def create_job_tables(job_id: str, cx_id: str):
             snowflake_conn.cursor().execute(create_job_table_statement)
         snowflake_conn.commit()
 
-def rename_job_tables(job_id: str, cx_id: str):
+def rename_job_tables(creds: dict, job_id: str, cx_id: str):
     database_name = format_database_name(cx_id)
-    with snowflake.connector.connect(**get_snowflake_credentials(), autocommit=False) as snowflake_conn:
+    with snowflake.connector.connect(**get_snowflake_credentials(creds), autocommit=False) as snowflake_conn:
         snowflake_conn.cursor().execute(f"USE DATABASE {database_name}")
         snowflake_conn.cursor().execute("USE SCHEMA PUBLIC")
         tables = generate_table_names_and_create_table_statements(job_id)
@@ -86,9 +82,9 @@ def rename_job_tables(job_id: str, cx_id: str):
             snowflake_conn.cursor().execute(f"ALTER TABLE {job_table_name} RENAME TO {table_name}")
         snowflake_conn.commit()
 
-def append_job_tables(job_id: str, cx_id: str, patient_id: str, rebuild_patient: bool = False):
+def append_job_tables(creds: dict, job_id: str, cx_id: str, patient_id: str, rebuild_patient: bool = False):
     database_name = format_database_name(cx_id)
-    with snowflake.connector.connect(**get_snowflake_credentials(), autocommit=False) as snowflake_conn:
+    with snowflake.connector.connect(**get_snowflake_credentials(creds), autocommit=False) as snowflake_conn:
         snowflake_conn.cursor().execute(f"USE DATABASE {database_name}")
         snowflake_conn.cursor().execute("USE SCHEMA PUBLIC")
         tables = generate_table_names_and_create_table_statements(job_id)
@@ -103,14 +99,14 @@ def append_job_tables(job_id: str, cx_id: str, patient_id: str, rebuild_patient:
             snowflake_conn.cursor().execute(f"DROP TABLE IF EXISTS {job_table_name}")
         snowflake_conn.commit()
 
-def copy_into_job_table(job_id: str, cx_id: str, s3_bucket: str, file_key: str, table_name: str):
+def copy_into_job_table(creds: dict, job_id: str, cx_id: str, s3_bucket: str, file_key: str, table_name: str):
     database_name = format_database_name(cx_id)
     stage_name = format_stage_name(file_key)
     file_parts = file_key.split('/')
     file_name = file_parts[-1]
     file_path = '/'.join(file_parts[:-1])
     url = f"s3://{s3_bucket}/{file_path}/"
-    with snowflake.connector.connect(**get_snowflake_credentials(), autocommit=False) as snowflake_conn:
+    with snowflake.connector.connect(**get_snowflake_credentials(creds), autocommit=False) as snowflake_conn:
         job_table_name = format_job_table_name(job_id, table_name)
         try:
             snowflake_conn.cursor().execute(f"USE DATABASE {database_name}")

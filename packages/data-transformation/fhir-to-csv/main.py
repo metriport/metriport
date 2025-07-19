@@ -94,16 +94,20 @@ def handler(event: dict, context: dict):
     input_bundle = event.get("INPUT_BUNDLE") or os.getenv("INPUT_BUNDLE")
     input_bucket = event.get("INPUT_S3_BUCKET") or os.getenv("INPUT_S3_BUCKET")
     output_bucket = os.getenv("OUTPUT_S3_BUCKET")
-    if not input_bucket:
-        raise ValueError("INPUT_S3_BUCKET is not set")
-    if not output_bucket:
-        raise ValueError("OUTPUT_S3_BUCKET is not set")
+    snowflake_creds = event.get("SNOWFLAKE_CREDS") or os.getenv("SNOWFLAKE_CREDS")
     if not api_url:
         raise ValueError("API_URL is not set")
     if not job_id:
         raise ValueError("JOB_ID is not set")
     if not cx_id:
         raise ValueError("CX_ID is not set") 
+    if not input_bucket:
+        raise ValueError("INPUT_S3_BUCKET is not set")
+    if not output_bucket:
+        raise ValueError("OUTPUT_S3_BUCKET is not set")
+    if not snowflake_creds:
+        raise ValueError("SNOWFLAKE_CREDS is not set")
+    snowflake_creds = json.loads(snowflake_creds)
 
     output_bucket_and_file_keys_and_table_names = transform_and_upload_data(
         input_bucket,
@@ -119,15 +123,15 @@ def handler(event: dict, context: dict):
         logging.info("No files to upload")
         exit(0)
 
-    create_job_tables(job_id, cx_id)
+    create_job_tables(snowflake_creds, job_id, cx_id)
     for output_bucket, output_file_key, table_name in output_bucket_and_file_keys_and_table_names:
-        copy_into_job_table(job_id, cx_id, output_bucket, output_file_key, table_name)
+        copy_into_job_table(snowflake_creds, job_id, cx_id, output_bucket, output_file_key, table_name)
 
     if patient_id is not None and patient_id != "":
         rebuild_patient = input_bundle is None or input_bundle == ""
-        append_job_tables(job_id, cx_id, patient_id, rebuild_patient)
+        append_job_tables(snowflake_creds, job_id, cx_id, patient_id, rebuild_patient)
     else:
-        rename_job_tables(job_id, cx_id)
+        rename_job_tables(snowflake_creds, job_id, cx_id)
 
 if __name__ == "__main__":
     handler({}, {})
