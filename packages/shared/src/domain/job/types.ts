@@ -1,7 +1,8 @@
 import { z } from "zod";
 
 export type JobParamsCx = Record<string, string | boolean>;
-export type JobParamsOps = Record<string, string | boolean | number>;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type JobParamsOps = Record<string, any>;
 
 const failed = "failed" as const;
 const successful = "successful" as const;

@@ -10,6 +10,10 @@ import { createDischargeRequeryJob } from "../create";
 
 describe("createDischargeRequeryJob", () => {
   const mockDate = new Date("2024-01-01T12:00:00Z");
+  const dischargeData = {
+    encounterEndDate: "2024-01-01T12:00:00Z",
+    type: "findDischargeSummary" as const,
+  };
 
   let createPatientJobMock: jest.SpyInstance;
   let isFeatureFlagEnabledMock: jest.SpyInstance;
@@ -27,7 +31,9 @@ describe("createDischargeRequeryJob", () => {
     cxId = faker.string.uuid();
     patientId = faker.string.uuid();
 
-    mockJob = makePatientJob();
+    mockJob = makePatientJob({
+      paramsOps: { remainingAttempts: defaultRemainingAttempts, dischargeData: [dischargeData] },
+    });
 
     createPatientJobMock = jest
       .spyOn(createJobModule, "createPatientJob")
@@ -53,6 +59,7 @@ describe("createDischargeRequeryJob", () => {
     await createDischargeRequeryJob({
       cxId,
       patientId,
+      dischargeData: [dischargeData],
     });
 
     expect(createPatientJobMock).toHaveBeenCalledWith(
@@ -63,6 +70,7 @@ describe("createDischargeRequeryJob", () => {
         scheduledAt: dayjs(mockDate).add(5, "minutes").toDate(),
         paramsOps: {
           remainingAttempts: defaultRemainingAttempts,
+          dischargeData: [dischargeData],
         },
       })
     );
@@ -74,6 +82,7 @@ describe("createDischargeRequeryJob", () => {
       scheduledAt: dayjs(mockDate).add(30, "minutes").toDate(),
       paramsOps: {
         remainingAttempts: defaultRemainingAttempts - 1,
+        dischargeData: [dischargeData],
       },
     });
 
@@ -82,6 +91,7 @@ describe("createDischargeRequeryJob", () => {
     await createDischargeRequeryJob({
       cxId,
       patientId,
+      dischargeData: [dischargeData],
     });
 
     expect(cancelPatientJobMock).toHaveBeenCalledWith(
@@ -95,6 +105,7 @@ describe("createDischargeRequeryJob", () => {
         scheduledAt: dayjs(mockDate).add(5, "minutes").toDate(),
         paramsOps: {
           remainingAttempts: defaultRemainingAttempts,
+          dischargeData: [dischargeData],
         },
       })
     );
@@ -106,6 +117,7 @@ describe("createDischargeRequeryJob", () => {
       scheduledAt: dayjs(mockDate).add(2, "minutes").toDate(),
       paramsOps: {
         remainingAttempts: defaultRemainingAttempts - 2,
+        dischargeData: [dischargeData],
       },
     });
 
@@ -114,6 +126,7 @@ describe("createDischargeRequeryJob", () => {
     await createDischargeRequeryJob({
       cxId,
       patientId,
+      dischargeData: [dischargeData],
     });
 
     expect(cancelPatientJobMock).toHaveBeenCalledWith(
@@ -127,6 +140,7 @@ describe("createDischargeRequeryJob", () => {
         scheduledAt: dayjs(mockDate).add(2, "minutes").toDate(),
         paramsOps: {
           remainingAttempts: defaultRemainingAttempts,
+          dischargeData: [dischargeData],
         },
       })
     );
