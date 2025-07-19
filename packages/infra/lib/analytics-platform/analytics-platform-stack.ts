@@ -14,7 +14,7 @@ import { Queue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { EnvConfigNonSandbox } from "../../config/env-config";
 import { EnvType } from "../env-type";
-import { createLambda } from "../shared/lambda";
+import { createLambda, addErrorAlarmToLambdaFunc } from "../shared/lambda";
 import { LambdaLayers } from "../shared/lambda-layers";
 import { buildSecret } from "../shared/secrets";
 import { LambdaSettings, QueueAndLambdaSettings } from "../shared/settings";
@@ -249,6 +249,13 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
           SNOWFLAKE_INTEGRATION: ownProps.config.analyticsPlatform.snowflake.integrationName,
         },
       }
+    );
+
+    addErrorAlarmToLambdaFunc(
+      this,
+      fhirToCsvTransformLambda,
+      `${fhirToCsvTransformLambdaName}-GeneralLambdaAlarm`,
+      ownProps.alarmAction
     );
 
     // Grant read to medical document bucket set on the api-stack
