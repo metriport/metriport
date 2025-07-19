@@ -1,5 +1,5 @@
 import { sleep } from "@metriport/shared";
-import { startFhirToCsvTransform } from "../../../api/start-fhir-to-csv-transform";
+import { startFhirToCsvTransformThroughApi } from "../../../api/start-fhir-to-csv-transform";
 import { FhirToCsvHandler, ProcessFhirToCsvRequest } from "./fhir-to-csv";
 
 export class FhirToCsvDirect implements FhirToCsvHandler {
@@ -11,7 +11,7 @@ export class FhirToCsvDirect implements FhirToCsvHandler {
     patientId,
     inputBundle,
   }: ProcessFhirToCsvRequest): Promise<void> {
-    await startFhirToCsvTransform({
+    await startFhirToCsvTransformThroughApi({
       cxId,
       jobId,
       patientId,

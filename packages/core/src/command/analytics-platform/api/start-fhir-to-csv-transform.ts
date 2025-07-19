@@ -18,13 +18,13 @@ export type StartFhirToCsvTransformParams = {
  * @param patientId - The patient ID.
  * @param inputBundle - The input bundle.
  */
-export async function startFhirToCsvTransform({
+export async function startFhirToCsvTransformThroughApi({
   cxId,
   jobId,
   patientId,
   inputBundle,
 }: StartFhirToCsvTransformParams): Promise<void> {
-  const { log } = out(`Fhir to csv transform - cxId ${cxId}`);
+  const { log } = out(`Fhir to csv transform through API - cxId ${cxId}`);
   const api = axios.create({ baseURL: Config.getApiUrl() });
   const queryParams = new URLSearchParams({
     cxId,
