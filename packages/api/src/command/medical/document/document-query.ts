@@ -74,7 +74,19 @@ export async function queryDocumentsAcrossHIEs({
 }): Promise<DocumentQueryProgress> {
   const { log } = out(`queryDocumentsAcrossHIEs - M patient ${patientId}`);
 
-  const patient = await getPatientOrFail({ id: patientId, cxId });
+  const [patient, commonwellEnabled, carequalityEnabled] = await Promise.all([
+    getPatientOrFail({ id: patientId, cxId }),
+    isCommonwellEnabled(),
+    isCarequalityEnabled(),
+  ]);
+
+  const isQueryCarequality = carequalityEnabled || forceCarequality;
+  const isQueryCommonwell = commonwellEnabled || forceCommonwell;
+
+  if (!isQueryCarequality && !isQueryCommonwell) {
+    log("No HIE networks enabled, skipping DQ for Commonwell and Carequality");
+    return createQueryResponse("completed", patient);
+  }
 
   if (patient.hieOptOut) {
     throw new BadRequestError("Patient has opted out from the networks");
@@ -138,8 +150,7 @@ export async function queryDocumentsAcrossHIEs({
    * @see https://metriport.slack.com/archives/C04DMKE9DME/p1745685924702559
    */
   if (!cqManagingOrgName) {
-    const commonwellEnabled = await isCommonwellEnabled();
-    if (commonwellEnabled || forceCommonwell) {
+    if (isQueryCommonwell) {
       getDocumentsFromCW({
         patient: updatedPatient,
         facilityId,
@@ -153,8 +164,7 @@ export async function queryDocumentsAcrossHIEs({
     }
   }
 
-  const carequalityEnabled = await isCarequalityEnabled();
-  if (carequalityEnabled || forceCarequality) {
+  if (isQueryCarequality) {
     getDocumentsFromCQ({
       patient: updatedPatient,
       facilityId,

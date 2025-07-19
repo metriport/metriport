@@ -445,7 +445,7 @@ export function getConditionSnomedCode(condition: Condition): string | undefined
 }
 
 export function getConditionStartDate(condition: Condition): string | undefined {
-  return condition.onsetDateTime ?? condition.onsetPeriod?.start;
+  return condition.onsetDateTime ?? condition.onsetPeriod?.start ?? condition.onsetPeriod?.end;
 }
 
 const qualifierSuffix = "(qualifier value)";
@@ -586,7 +586,11 @@ function normalizeStringInterpretation(interpretation: string): string {
 }
 
 export function getDiagnosticReportDate(diagnosticReport: DiagnosticReport): string | undefined {
-  return diagnosticReport.effectiveDateTime ?? diagnosticReport.effectivePeriod?.start;
+  return (
+    diagnosticReport.effectiveDateTime ??
+    diagnosticReport.effectivePeriod?.start ??
+    diagnosticReport.effectivePeriod?.end
+  );
 }
 
 export function getObservationLoincCoding(observation: Observation): Coding | undefined {
@@ -638,7 +642,11 @@ export function getObservationResultStatus(observation: Observation): string | u
 }
 
 export function getObservationObservedDate(observation: Observation): string | undefined {
-  return observation.effectiveDateTime ?? observation.effectivePeriod?.start;
+  return (
+    observation.effectiveDateTime ??
+    observation.effectivePeriod?.start ??
+    observation.effectivePeriod?.end
+  );
 }
 
 export function getObservationInterpretation(
@@ -708,7 +716,11 @@ export function getAllergyIntoleranceManifestationSnomedCoding(
 export function getAllergyIntoleranceOnsetDate(
   allergyIntolerance: AllergyIntolerance
 ): string | undefined {
-  return allergyIntolerance.onsetDateTime ?? allergyIntolerance.onsetPeriod?.start;
+  return (
+    allergyIntolerance.onsetDateTime ??
+    allergyIntolerance.onsetPeriod?.start ??
+    allergyIntolerance.onsetPeriod?.end
+  );
 }
 
 export function getProcedureCptCoding(procedure: Procedure): Coding | undefined {
@@ -728,7 +740,11 @@ export function getProcedureCptCode(procedure: Procedure): string | undefined {
 }
 
 export function getProcedurePerformedDate(procedure: Procedure): string | undefined {
-  return procedure.performedDateTime ?? procedure.performedPeriod?.start;
+  return (
+    procedure.performedDateTime ??
+    procedure.performedPeriod?.start ??
+    procedure.performedPeriod?.end
+  );
 }
 
 type FetchEhrBundleParams = Omit<FetchBundleParams, "bundleType">;

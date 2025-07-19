@@ -9,7 +9,6 @@ from src.setupSnowflake.setupSnowflake import (
     rename_job_tables,
     append_job_tables,
     copy_into_job_table,
-    setup_snowflake,
 )
 from src.utils.environment import Environment
 from src.utils.dwh import DWH
@@ -33,12 +32,12 @@ def transform_and_upload_data(
     input_bundle: str | None,
 ) -> list[tuple[str, str, str]]:
     patient_ids_and_bundle_keys = []
-    if input_bundle:
-        if not patient_id:
+    if input_bundle is not None and input_bundle != "":
+        if patient_id is None or patient_id == "":
             raise ValueError("PATIENT_ID must be set when INPUT_BUNDLE is set")
         patient_ids_and_bundle_keys = [(patient_id, input_bundle.strip())]
     else:
-        patient_ids = [patient_id] if patient_id else get_patient_ids(api_url, cx_id)
+        patient_ids = [patient_id] if patient_id is not None and patient_id != "" else get_patient_ids(api_url, cx_id)
         patient_ids_and_bundle_keys = [(patient_id, create_consolidated_key(cx_id, patient_id)) for patient_id in patient_ids]
     if len(patient_ids_and_bundle_keys) < 1:
         raise ValueError("No patient and bundle keys found")
@@ -88,7 +87,6 @@ def transform_and_upload_data(
 def handler(event: dict, context: dict):
     print(f"event: {event}")
     print(f"context: {context}")
-    setup_only = event.get("SETUP_ONLY") or os.getenv("SETUP_ONLY")
     api_url = event.get("API_URL") or os.getenv("API_URL")
     job_id = event.get("JOB_ID") or os.getenv("JOB_ID")
     cx_id = event.get("CX_ID") or os.getenv("CX_ID")
@@ -107,10 +105,6 @@ def handler(event: dict, context: dict):
     if not cx_id:
         raise ValueError("CX_ID is not set") 
 
-    if setup_only:
-        setup_snowflake(job_id, cx_id)
-        exit(0)
-
     output_bucket_and_file_keys_and_table_names = transform_and_upload_data(
         input_bucket,
         output_bucket,
@@ -121,7 +115,7 @@ def handler(event: dict, context: dict):
         input_bundle,
     )
 
-    if not output_bucket_and_file_keys_and_table_names:
+    if len(output_bucket_and_file_keys_and_table_names) < 1:
         logging.info("No files to upload")
         exit(0)
 
@@ -129,8 +123,8 @@ def handler(event: dict, context: dict):
     for output_bucket, output_file_key, table_name in output_bucket_and_file_keys_and_table_names:
         copy_into_job_table(job_id, cx_id, output_bucket, output_file_key, table_name)
 
-    if patient_id is not None:
-        rebuild_patient = input_bundle is None
+    if patient_id is not None and patient_id != "":
+        rebuild_patient = input_bundle is None or input_bundle == ""
         append_job_tables(job_id, cx_id, patient_id, rebuild_patient)
     else:
         rename_job_tables(job_id, cx_id)
