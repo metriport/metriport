@@ -41,6 +41,7 @@ import { internalDtoFromModel as facilityInternalDto } from "../medical/dtos/fac
 import { internalDtoFromModel as orgInternalDto } from "../medical/dtos/organizationDTO";
 import { getUUIDFrom } from "../schemas/uuid";
 import { asyncHandler, getFrom, getFromQueryAsBoolean, getFromQueryOrFail } from "../util";
+import analyticsPlatformRoutes from "./analytics-platform";
 import ehr from "./ehr";
 import hieRoutes from "./hie";
 import carequalityRoutes from "./hie/carequality";
@@ -71,6 +72,7 @@ router.use("/feedback", feedbackRoutes);
 router.use("/token", jwtToken);
 router.use("/ehr", ehr);
 router.use("/tcm/encounter", tcmEncounter);
+router.use("/analytics-platform", analyticsPlatformRoutes);
 
 /** ---------------------------------------------------------------------------
  * POST /internal/mapi-access
