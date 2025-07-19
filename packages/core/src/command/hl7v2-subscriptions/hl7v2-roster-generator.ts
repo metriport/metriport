@@ -198,6 +198,9 @@ export function createRosterRowInput(
   const assigningAuthorityIdentifier = METRIPORT_ASSIGNING_AUTHORITY_IDENTIFIER;
   const lineOfBusiness = "COMMERCIAL";
   const emptyString = "";
+  const address1SingleLine =
+    addresses[0]?.addressLine1 +
+    (addresses[0]?.addressLine2 ? " " + addresses[0]?.addressLine2 : "");
   const { firstName, middleInitial } = getFirstNameAndMiddleInitial(data.firstName);
 
   return {
@@ -213,6 +216,7 @@ export function createRosterRowInput(
     genderAtBirth: data.genderAtBirth,
     address1AddressLine1: addresses[0]?.addressLine1,
     address1AddressLine2: addresses[0]?.addressLine2,
+    address1SingleLine,
     address1City: addresses[0]?.city,
     address1State: addresses[0]?.state,
     address1Zip: addresses[0]?.zip,
