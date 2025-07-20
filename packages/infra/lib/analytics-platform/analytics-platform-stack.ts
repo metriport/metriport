@@ -14,7 +14,7 @@ import { Queue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { EnvConfigNonSandbox } from "../../config/env-config";
 import { EnvType } from "../env-type";
-import { createLambda, addErrorAlarmToLambdaFunc } from "../shared/lambda";
+import { addErrorAlarmToLambdaFunc, createLambda } from "../shared/lambda";
 import { LambdaLayers } from "../shared/lambda-layers";
 import { buildSecret } from "../shared/secrets";
 import { LambdaSettings, QueueAndLambdaSettings } from "../shared/settings";
@@ -176,6 +176,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       alarmAction: props.alarmAction,
       analyticsPlatformBucket,
       medicalDocumentsBucket: props.medicalDocumentsBucket,
+      snowflakeCreds: snowflakeCreds,
     });
     this.fhirToCsvLambda = fhirToCsvLambda;
     this.fhirToCsvTransformLambda = fhirToCsvTransformLambda;
@@ -221,6 +222,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
     alarmAction: SnsAction | undefined;
     analyticsPlatformBucket: s3.Bucket;
     medicalDocumentsBucket: s3.Bucket;
+    snowflakeCreds: secret.ISecret;
   }): {
     fhirToCsvLambda: lambda.DockerImageFunction;
     fhirToCsvTransformLambda: lambda.DockerImageFunction;
@@ -261,7 +263,8 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
     // Grant read to medical document bucket set on the api-stack
     ownProps.analyticsPlatformBucket.grantReadWrite(fhirToCsvTransformLambda);
 
-    const { lambdaLayers, vpc, envType, sentryDsn, alarmAction } = ownProps;
+    const { lambdaLayers, vpc, envType, sentryDsn, alarmAction, snowflakeCreds } = ownProps;
+
     const {
       name,
       entry,
@@ -291,7 +294,8 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       envVars: {
         // API_URL set on the api-stack after the OSS API is created
         WAIT_TIME_IN_MILLIS: waitTime.toMilliseconds().toString(),
-        FHIR_TO_CSV_TRANSFORM_LAMBDA_ARN: fhirToCsvTransformLambda.functionArn,
+        FHIR_TO_CSV_TRANSFORM_LAMBDA_NAME: fhirToCsvTransformLambda.functionName,
+        SNOWFLAKE_CREDS_SECRET_NAME: snowflakeCreds.secretName,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared],
@@ -300,9 +304,12 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
     });
 
     fhirToCsvLambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
+    fhirToCsvTransformLambda.grantInvoke(fhirToCsvLambda);
+    snowflakeCreds.grantRead(fhirToCsvLambda);
 
     return {
       fhirToCsvLambda,
+      // TODO remove this and update API, removing env var, secret, and endpoint
       fhirToCsvTransformLambda,
       queue,
     };
