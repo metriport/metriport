@@ -1,11 +1,11 @@
 import {
   Aspects,
+  aws_wafv2 as wafv2,
   CfnOutput,
   Duration,
   RemovalPolicy,
   Stack,
   StackProps,
-  aws_wafv2 as wafv2,
 } from "aws-cdk-lib";
 import * as apig from "aws-cdk-lib/aws-apigateway";
 import { BackupResource } from "aws-cdk-lib/aws-backup";
@@ -513,6 +513,7 @@ export class APIStack extends Stack {
         vpc: this.vpc,
         lambdaLayers,
         medicalDocumentsBucket,
+        secrets,
       });
     }
 
