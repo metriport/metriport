@@ -513,7 +513,6 @@ export class APIStack extends Stack {
         vpc: this.vpc,
         lambdaLayers,
         medicalDocumentsBucket,
-        secrets,
       });
     }
 
