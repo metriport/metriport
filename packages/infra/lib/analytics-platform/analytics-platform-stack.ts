@@ -291,13 +291,15 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       envVars: {
         // API_URL set on the api-stack after the OSS API is created
         WAIT_TIME_IN_MILLIS: waitTime.toMilliseconds().toString(),
-        FHIR_TO_CSV_TRANSFORM_LAMBDA_ARN: fhirToCsvTransformLambda.functionArn,
+        FHIR_TO_CSV_TRANSFORM_LAMBDA_NAME: fhirToCsvTransformLambda.functionName,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared],
       vpc,
       alarmSnsAction: alarmAction,
     });
+
+    fhirToCsvTransformLambda.grantInvoke(fhirToCsvLambda);
 
     fhirToCsvLambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
 

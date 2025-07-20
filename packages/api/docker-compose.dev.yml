@@ -25,15 +25,15 @@ services:
         condition: service_healthy
     environment:
       - DB_CREDS={"password":"admin","dbname":"db","engine":"postgres","port":5432,"host":"postgres","username":"admin"}
-      - NODE_ENV=development
-      - ENV_TYPE=dev
-      - TOKEN_TABLE_NAME=token
+      - NODE_ENV=${NODE_ENV}
+      - ENV_TYPE=${ENV_TYPE}
+      - TOKEN_TABLE_NAME=${TOKEN_TABLE_NAME}
       - DYNAMODB_ENDPOINT=http://dynamodb:8000
       - FHIR_SERVER_URL=http://host.docker.internal:8888
       - FHIR_CONVERTER_SERVER_URL=http://host.docker.internal:8777
-      - MEDICAL_DOCUMENTS_BUCKET_NAME=medical-documents-staging
-      - MEDICAL_DOCUMENTS_UPLOADS_BUCKET_NAME=metriport-medical-document-uploads-staging
-      - LOCAL_ACCOUNT_CXID=cdb678ab-07e3-42c5-93f5-5541cf1f15a8
+      - MEDICAL_DOCUMENTS_BUCKET_NAME=${MEDICAL_DOCUMENTS_BUCKET_NAME}
+      - MEDICAL_DOCUMENTS_UPLOADS_BUCKET_NAME=${MEDICAL_DOCUMENTS_UPLOADS_BUCKET_NAME}
+      - LOCAL_ACCOUNT_CXID=${LOCAL_ACCOUNT_CXID}
     networks:
       - metriportNetwork
     ports:
