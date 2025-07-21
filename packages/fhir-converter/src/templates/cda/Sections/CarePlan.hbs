@@ -32,7 +32,6 @@
                 {{#with (getSpecifiedEntryRelationship careplanEntry.encounter.entryRelationship "RSON") as |conditionEntry|}}
                     {{>Resources/Condition.hbs conditionEntry=conditionEntry.observation ID=(generateUUID (toJsonString conditionEntry.observation))}},
                     {{>References/CarePlan/addresses.hbs ID=(generateUUID (toJsonString careplanEntry)) REF=(concat 'Condition/' (generateUUID (toJsonString conditionEntry.observation)))}}
-                    {{log "conditionEntry" (generateUUID (toJsonString conditionEntry.observation))}}
                 {{/with}}
                 
             {{else if careplanEntry.observation}}
