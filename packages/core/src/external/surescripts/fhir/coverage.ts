@@ -9,7 +9,6 @@ import { getPatientReference } from "./patient";
 import { getSurescriptsDataSourceExtension } from "./shared";
 import {
   NCPDP_PROVIDER_ID_SYSTEM,
-  PLAN_NETWORK_BIN_SYSTEM,
   PLAN_NETWORK_PCN_SYSTEM,
   SOURCE_OF_PAYMENT_TYPOLOGY_SYSTEM,
 } from "./constants";
@@ -96,12 +95,14 @@ function getCoverageIdentifiers(detail: ResponseDetail): Identifier[] {
   if (detail.planNetworkPCN) {
     identifiers.push({
       system: PLAN_NETWORK_PCN_SYSTEM,
+      type: { id: "PCN" },
       value: detail.planNetworkPCN,
     });
   }
   if (detail.planNetworkBIN) {
     identifiers.push({
-      system: PLAN_NETWORK_BIN_SYSTEM,
+      system: PLAN_NETWORK_PCN_SYSTEM,
+      type: { id: "BIN" },
       value: detail.planNetworkBIN?.toString() ?? "",
     });
   }
