@@ -79,6 +79,28 @@ export interface BrokenReference {
 }
 
 /**
+ * Bundle diff result interface
+ */
+export interface BundleDiffResult {
+  /** Resources that exist in both bundles */
+  common: FhirBundleSdk;
+  /** Resources that exist only in the base bundle (this bundle) */
+  baseOnly: FhirBundleSdk;
+  /** Resources that exist only in the parameter bundle */
+  parameterOnly: FhirBundleSdk;
+}
+
+function getResourceIdentifier(entry: BundleEntry): string | undefined {
+  if (entry.resource?.id) {
+    return entry.resource.id;
+  }
+  if (entry.fullUrl) {
+    return entry.fullUrl;
+  }
+  return undefined;
+}
+
+/**
  * FHIR Bundle SDK for parsing, querying, and manipulating FHIR bundles with reference resolution
  */
 export class FhirBundleSdk {
@@ -304,6 +326,10 @@ export class FhirBundleSdk {
 
   toObject(): Bundle {
     return this.bundle;
+  }
+
+  toString() {
+    return this.toObject();
   }
 
   /**
@@ -839,5 +865,72 @@ export class FhirBundleSdk {
     const resultBundle = this.createExportBundle(combinedEntries);
 
     return await FhirBundleSdk.create(resultBundle);
+  }
+
+  /**
+   * Diff this bundle with another FHIR Bundle by comparing resource ids.
+   * Returns three FhirBundleSdk instances: common, baseOnly, parameterOnly.
+   */
+  diff(other: Bundle): Promise<BundleDiffResult>;
+
+  /**
+   * Diff this bundle with another FhirBundleSdk by comparing resource ids.
+   * Returns three FhirBundleSdk instances: common, baseOnly, parameterOnly.
+   */
+  diff(other: FhirBundleSdk): Promise<BundleDiffResult>;
+
+  /**
+   * Diff this bundle with another bundle or FhirBundleSdk by comparing resource ids.
+   * Returns three FhirBundleSdk instances: common, baseOnly, parameterOnly.
+   */
+  async diff(other: Bundle | FhirBundleSdk): Promise<BundleDiffResult> {
+    const baseBundle = this.bundle;
+    const parameterBundle = other instanceof FhirBundleSdk ? other.bundle : other;
+
+    const commonEntries: BundleEntry[] = [];
+    const baseOnlyEntries: BundleEntry[] = [];
+    const parameterOnlyEntries: BundleEntry[] = [];
+
+    // Create maps with resource identifiers (prefer resource.id, fallback to fullUrl)
+    const baseResourceIdentifiers = new Map<string, BundleEntry>();
+    const parameterResourceIdentifiers = new Map<string, BundleEntry>();
+
+    // Populate base bundle identifiers
+    for (const entry of baseBundle?.entry ?? []) {
+      const identifier = getResourceIdentifier(entry);
+      if (identifier) {
+        baseResourceIdentifiers.set(identifier, entry);
+      }
+    }
+
+    // Populate parameter bundle identifiers
+    for (const entry of parameterBundle?.entry ?? []) {
+      const identifier = getResourceIdentifier(entry);
+      if (identifier) {
+        parameterResourceIdentifiers.set(identifier, entry);
+      }
+    }
+
+    // Find common and base-only resources
+    for (const [identifier, entry] of baseResourceIdentifiers.entries()) {
+      if (parameterResourceIdentifiers.has(identifier)) {
+        commonEntries.push(entry);
+      } else {
+        baseOnlyEntries.push(entry);
+      }
+    }
+
+    // Find parameter-only resources
+    for (const [identifier, entry] of parameterResourceIdentifiers.entries()) {
+      if (!baseResourceIdentifiers.has(identifier)) {
+        parameterOnlyEntries.push(entry);
+      }
+    }
+
+    return {
+      common: await FhirBundleSdk.create(this.createExportBundle(commonEntries)),
+      baseOnly: await FhirBundleSdk.create(this.createExportBundle(baseOnlyEntries)),
+      parameterOnly: await FhirBundleSdk.create(this.createExportBundle(parameterOnlyEntries)),
+    };
   }
 }
