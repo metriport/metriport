@@ -19,9 +19,9 @@ export const tcmEncounterBaseSchema = z.strictObject({
     .datetime()
     .transform(val => buildDayjs(val).toDate())
     .nullish(),
-  clinicalInformation: z.record(z.unknown()).nullish().default({}),
-  freetextNote: z.string().nullish(),
-  dischargeSummaryPath: z.string().nullish(),
+  clinicalInformation: z.record(z.unknown()).optional().default({}),
+  freetextNote: z.string().optional(),
+  dischargeSummaryPath: z.string().optional(),
 });
 
 export const tcmEncounterCreateSchema = tcmEncounterBaseSchema.extend({

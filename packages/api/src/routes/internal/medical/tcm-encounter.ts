@@ -42,14 +42,10 @@ router.put(
       return res.status(httpStatus.CREATED).json(encounter);
     } else {
       log(
-        `Invalid payload: ${JSON.stringify(
-          {
-            ...req.body,
-            clinicalInformation: undefined,
-          },
-          null,
-          2
-        )}`
+        `Invalid payload: ${JSON.stringify({
+          ...req.body,
+          clinicalInformation: undefined,
+        })}`
       );
     }
 
