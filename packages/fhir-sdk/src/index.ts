@@ -286,6 +286,26 @@ export class FhirBundleSdk {
     this.buildResourceIndexes();
   }
 
+  get total(): number {
+    if (!this.bundle.entry) {
+      console.error("Bundle property `entry` is undefined");
+      return -1;
+    }
+    return this.bundle.entry.length;
+  }
+
+  get entry(): BundleEntry[] {
+    if (!this.bundle.entry) {
+      console.error("Bundle property `entry` is undefined");
+      return [];
+    }
+    return this.bundle.entry;
+  }
+
+  toObject(): Bundle {
+    return this.bundle;
+  }
+
   /**
    * Create a new FhirBundleSdk instance
    * FR-1.2: Validate bundle resourceType
@@ -805,5 +825,19 @@ export class FhirBundleSdk {
     }
 
     return this.createExportBundle(exportEntries);
+  }
+
+  /**
+   * Concatenate entries from another FhirBundleSdk with this bundle
+   * Returns a new bundle with combined entries while preserving original metadata
+   */
+  async concatEntries(otherSdk: FhirBundleSdk): Promise<FhirBundleSdk> {
+    const currentEntries = this.bundle.entry || [];
+    const otherEntries = otherSdk.bundle.entry || [];
+
+    const combinedEntries = [...currentEntries, ...otherEntries];
+    const resultBundle = this.createExportBundle(combinedEntries);
+
+    return await FhirBundleSdk.create(resultBundle);
   }
 }
