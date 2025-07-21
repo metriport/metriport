@@ -1,3 +1,4 @@
+import { out } from "@metriport/core/util";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
@@ -25,17 +26,31 @@ router.put(
   "/",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
+    const { log } = out("PUT /internal/tcm/encounter");
     // We separately handle upsert and create cases to simplify
     const upsertResult = tcmEncounterUpsertSchema.safeParse(req.body);
     if (upsertResult.success) {
+      log(`Upserting TCM encounter: ${upsertResult.data.id}`);
       const encounter = await upsertTcmEncounter(upsertResult.data);
       return res.status(httpStatus.OK).json(encounter);
     }
 
     const createResult = tcmEncounterCreateSchema.safeParse(req.body);
     if (createResult.success) {
+      log(`Creating TCM encounter: ${createResult.data.id}`);
       const encounter = await createTcmEncounter(createResult.data);
       return res.status(httpStatus.CREATED).json(encounter);
+    } else {
+      log(
+        `Invalid payload: ${JSON.stringify(
+          {
+            ...req.body,
+            clinicalInformation: undefined,
+          },
+          null,
+          2
+        )}`
+      );
     }
 
     return res.status(httpStatus.BAD_REQUEST).json({
