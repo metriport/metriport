@@ -1,4 +1,4 @@
-import { isHieEnabledForVpn } from "@metriport/core/command/hl7v2-subscriptions/types";
+import { doesHieUseVpn } from "@metriport/core/command/hl7v2-subscriptions/types";
 import * as cdk from "aws-cdk-lib";
 import "source-map-support/register";
 import { EnvConfig } from "../config/env-config";
@@ -66,7 +66,7 @@ async function deploy(config: EnvConfig) {
 
     Object.values(config.hl7Notification.hieConfigs).forEach((hieConfig, index) => {
       // We only create VPN stacks for full HieConfig objects (not `VpnlessHieConfig`s)
-      if (!isHieEnabledForVpn(hieConfig)) {
+      if (!doesHieUseVpn(hieConfig)) {
         return;
       }
 

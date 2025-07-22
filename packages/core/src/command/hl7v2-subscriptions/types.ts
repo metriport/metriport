@@ -84,6 +84,6 @@ export type Hl7v2SubscriberApiResponse = {
  * @param config
  * @returns true if config is HieConfig, false if config is VpnlessHieConfig
  */
-export function isHieEnabledForVpn(config: HieConfig | VpnlessHieConfig): config is HieConfig {
+export function doesHieUseVpn(config: HieConfig | VpnlessHieConfig): config is HieConfig {
   return "gatewayPublicIp" in config && "internalCidrBlock" in config;
 }
