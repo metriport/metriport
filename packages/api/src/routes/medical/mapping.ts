@@ -10,14 +10,14 @@ const router = Router();
 /** ---------------------------------------------------------------------------
  * POST /mapping/patient/:id
  *
- * Maps a metriport patient to a patient in an external mapping system.
+ * Maps a Metriport patient to a patient in an external mapping system.
  *
- * @param req.params.id The ID of the patient to map.
- * @param req.query.mappingId The ID of the mapping to use. Optional.
+ * @param req.params.id - The ID of the patient to map.
+ * @param req.query.mappingId - The ID of the mapping to use. Optional.
  * @returns The Metriport patient ID and the mapping patient ID.
- * @throws 400 if the patient has no external ID to attempt mapping
- * @throws 400 if the mapping source is not supported
- * @throws 404 if no mapping is found
+ * @throws 400 if the patient has no external ID to attempt mapping.
+ * @throws 400 if the mapping source is not supported.
+ * @throws 404 if no mapping is found.
  */
 router.post(
   "/patient/:id",

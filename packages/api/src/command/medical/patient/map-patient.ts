@@ -1,5 +1,5 @@
 import { BadRequestError, NotFoundError } from "@metriport/shared";
-import { EhrSources } from "@metriport/shared/interface/external/ehr";
+import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { CxMapping } from "../../../domain/cx-mapping";
 import { syncElationPatientIntoMetriport } from "../../../external/ehr/elation/command/sync-patient";
 import { syncHealthiePatientIntoMetriport } from "../../../external/ehr/healthie/command/sync-patient";
@@ -13,15 +13,15 @@ export type MapPatientParams = {
 };
 
 /**
- * Maps a metriport patient to a patient in an external system.
+ * Maps a Metriport patient to a patient in an external system.
  *
- * @param cxId The ID of the customer
- * @param patientId The ID of the patient to map
- * @param cxMappingId The ID of the mapping to use. Optional. Required if the patient has multiple mappings.
+ * @param cxId - The ID of the customer.
+ * @param patientId - The ID of the patient to map.
+ * @param cxMappingId - The ID of the mapping to use. Optional. Required if the patient has multiple mappings.
  * @returns The Metriport patient ID and the mapped system patient ID.
- * @throws 400 if the patient has no external ID to attempt mapping
- * @throws 400 if the mapping source is not supported
- * @throws 404 if no mapping is found
+ * @throws 400 if the patient has no external ID to attempt mapping.
+ * @throws 400 if the mapping source is not supported.
+ * @throws 404 if no mapping is found.
  */
 export async function mapPatient({
   cxId,
