@@ -1,5 +1,6 @@
 import {
   executeWithNetworkRetries,
+  genderOtherAsUnknown,
   InternalOrganizationDTO,
   internalOrganizationDTOSchema,
   MetriportError,
@@ -214,6 +215,7 @@ export function createRosterRowInput(
     dob,
     dobNoDelimiter,
     genderAtBirth: data.genderAtBirth,
+    genderOtherAsUnknown: genderOtherAsUnknown(data.genderAtBirth),
     address1AddressLine1: addresses[0]?.addressLine1,
     address1AddressLine2: addresses[0]?.addressLine2,
     address1SingleLine,

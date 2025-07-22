@@ -11,6 +11,10 @@ export type GenderAtBirth =
   | typeof otherGender
   | typeof unknownGender;
 
+export function genderOtherAsUnknown(gender: GenderAtBirth): GenderAtBirth {
+  return gender === otherGender ? unknownGender : gender;
+}
+
 export function normalizeGenderSafe(gender: string): GenderAtBirth | undefined {
   const lowerGender = gender.toLowerCase().trim();
   if (lowerGender === "male" || lowerGender === "m") {
