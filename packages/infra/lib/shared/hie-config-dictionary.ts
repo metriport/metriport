@@ -1,6 +1,6 @@
 import {
   HieConfig,
-  isHieConfig,
+  isHieEnabledForVpn,
   VpnlessHieConfig,
 } from "@metriport/core/command/hl7v2-subscriptions/types";
 import { HieConfigDictionary } from "@metriport/core/external/hl7-notification/hie-config-dictionary";
@@ -15,7 +15,7 @@ export const createHieConfigDictionary = (
 ) => {
   return Object.values(hieConfigs).reduce((acc, item) => {
     // Skip VpnlessHieConfig objects - no VPN means no ability to identify messages
-    if (!isHieConfig(item)) {
+    if (!isHieEnabledForVpn(item)) {
       return acc;
     }
     acc[item.name] = {

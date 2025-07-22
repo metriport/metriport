@@ -1,9 +1,12 @@
 import {
   executeWithNetworkRetries,
+  GenderAtBirth,
   genderOtherAsUnknown,
   InternalOrganizationDTO,
   internalOrganizationDTOSchema,
   MetriportError,
+  otherGender,
+  unknownGender,
 } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import { createUuidFromText } from "@metriport/shared/common/uuid";
@@ -179,6 +182,11 @@ type RosterRowKey = keyof RosterRowData;
 function isRosterRowKey(key: string, obj: RosterRowData): key is RosterRowKey {
   return key in obj;
 }
+
+export function genderOtherAsUnknown(gender: GenderAtBirth): GenderAtBirth {
+  return gender === otherGender ? unknownGender : gender;
+}
+
 export function createRosterRowInput(
   p: Patient,
   org: { shortcode?: string | undefined },
