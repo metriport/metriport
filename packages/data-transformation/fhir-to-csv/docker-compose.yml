@@ -12,16 +12,19 @@ services:
     build:
       dockerfile: ./Dockerfile.dev
     volumes:
-      - .:/usr/app/data
+      - ~/Documents/phi/fhir-to-csv/:/tmp/usr/app/data
       - ~/.aws:/root/.aws
     environment:
+      COMPOSE_PROJECT_NAME: fhir-to-csv
+      INDEX: ${INDEX}
+      NUM_BUCKETS: ${NUM_BUCKETS}
       ENV: ${ENV}
       AWS_REGION: ${AWS_REGION}
       JOB_ID: ${JOB_ID}
       CX_ID: ${CX_ID}
       PATIENT_ID: ${PATIENT_ID}
       INPUT_BUNDLE: ${INPUT_BUNDLE}
-      API_URL: http://host.docker.internal:8080
+      API_URL: ${API_URL}
       INPUT_S3_BUCKET: ${INPUT_S3_BUCKET}
       OUTPUT_S3_BUCKET: ${OUTPUT_S3_BUCKET}
       SNOWFLAKE_CREDS: ${SNOWFLAKE_CREDS}

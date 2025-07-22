@@ -14,13 +14,30 @@ from src.utils.environment import Environment
 from src.utils.dwh import DWH
 from src.utils.metriport_api import get_patient_ids
 from src.utils.file import create_consolidated_key
+import uuid
+import hashlib
+
+logging.basicConfig(level=logging.INFO)
 
 transform_name = 'fhir-to-csv'
 
 env = Environment(os.getenv("ENV") or Environment.DEV)
 dwh = DWH(os.getenv("DWH") or DWH.SNOWFLAKE)
+index = int(os.getenv("INDEX") or 0)
+num_buckets = int(os.getenv("NUM_BUCKETS") or 1)
 
 s3_client = boto3.client("s3")
+
+def assign_uuid_to_bucket_hash(uuid_str, num_buckets):
+    """Assigns a UUID to a bucket using hashing and modulo."""
+    uuid_obj = uuid.UUID(uuid_str)
+    # Get the bytes representation of the UUID
+    uuid_bytes = uuid_obj.bytes
+    # Hash the bytes (e.g., using MD5)
+    hashed_value = hashlib.md5(uuid_bytes).hexdigest()
+    # Convert a portion of the hex hash to an integer and apply modulo
+    bucket_index = int(hashed_value[:8], 16) % num_buckets
+    return bucket_index
 
 def transform_and_upload_data(
     input_bucket: str,
@@ -31,21 +48,25 @@ def transform_and_upload_data(
     patient_id: str | None,
     input_bundle: str | None,
 ) -> list[tuple[str, str, str]]:
+    single_patient = patient_id is not None and patient_id != ""
     patient_ids_and_bundle_keys = []
     if input_bundle is not None and input_bundle != "":
         if patient_id is None or patient_id == "":
             raise ValueError("PATIENT_ID must be set when INPUT_BUNDLE is set")
         patient_ids_and_bundle_keys = [(patient_id, input_bundle.strip())]
     else:
-        patient_ids = [patient_id] if patient_id is not None and patient_id != "" else get_patient_ids(api_url, cx_id)
+        patient_ids = [patient_id] if single_patient else get_patient_ids(api_url, cx_id)
         patient_ids_and_bundle_keys = [(patient_id, create_consolidated_key(cx_id, patient_id)) for patient_id in patient_ids]
     if len(patient_ids_and_bundle_keys) < 1:
         raise ValueError("No patient and bundle keys found")
 
     local_output_files = []
-    local_cx_path = f"/tmp/output/{cx_id}"
+    local_cx_path = f"/tmp/usr/app/data/output-{index:02d}/{cx_id}"
     os.makedirs(local_cx_path, exist_ok=True)
     for patient_id, bundle_key in patient_ids_and_bundle_keys:
+        bucket_index = assign_uuid_to_bucket_hash(patient_id, num_buckets)
+        if bucket_index != index:
+            continue
         local_patient_path = f"{local_cx_path}/{patient_id}"
         os.makedirs(local_patient_path, exist_ok=True)
         local_bundle_key = f"{local_patient_path}/bundle_{bundle_key.replace('/', '_')}.json"
@@ -69,8 +90,8 @@ def transform_and_upload_data(
             local_ndjson_bundle_key = local_bundle_key.replace(".json", ".ndjson")
             with open(local_ndjson_bundle_key, "w") as f:
                 ndjson.dump(entries, f)
-            logging.info(f"Parsing bundle {local_ndjson_bundle_key} to {local_patient_path}")
-            local_output_files.extend(parseNdjsonBundle.parse(local_ndjson_bundle_key, local_patient_path))
+            bundle_path = local_cx_path if single_patient else local_patient_path
+            local_output_files.extend(parseNdjsonBundle.parse(local_ndjson_bundle_key, bundle_path))
 
     output_bucket_and_file_keys_and_table_names = []
     for file in local_output_files:
