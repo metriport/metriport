@@ -1,6 +1,6 @@
 import { ConsolidatedQuery } from "@metriport/api-sdk";
 import { DocumentQueryProgress } from "@metriport/core/domain/document-query";
-import { Patient, PatientExternalData } from "@metriport/core/domain/patient";
+import { Patient } from "@metriport/core/domain/patient";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { getPatientModelOrFail } from "./get-patient";
@@ -12,14 +12,11 @@ export type InitConsolidatedQueryCmd = {
   patientDiscovery?: never;
 };
 
-export type InitDocumentQueryProgress = Required<
-  Pick<DocumentQueryProgress, "download" | "requestId" | "startedAt">
-> &
-  Pick<DocumentQueryProgress, "triggerConsolidated">;
-
 export type InitDocumentQueryCmd = {
-  documentQueryProgress: InitDocumentQueryProgress;
-  externalData: PatientExternalData;
+  documentQueryProgress: Required<
+    Pick<DocumentQueryProgress, "download" | "requestId" | "startedAt">
+  > &
+    Pick<DocumentQueryProgress, "triggerConsolidated">;
   cxDocumentRequestMetadata?: unknown;
   consolidatedQueries?: never;
   patientDiscovery?: never;

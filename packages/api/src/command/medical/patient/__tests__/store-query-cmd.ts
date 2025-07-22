@@ -1,5 +1,5 @@
 import { faker } from "@faker-js/faker";
-import { ConsolidatedQuery, MedicalDataSource } from "@metriport/api-sdk";
+import { ConsolidatedQuery } from "@metriport/api-sdk";
 import { DocumentQueryProgress } from "@metriport/core/domain/document-query";
 import { makePatientData } from "@metriport/core/domain/__tests__/patient";
 import * as uuidv7_file from "@metriport/core/util/uuid-v7";
@@ -9,27 +9,19 @@ import { makeProgress } from "../../../../domain/medical/__tests__/document-quer
 import { WebhookRequestCreate } from "../../../../domain/webhook";
 import { makePatientModel } from "../../../../models/medical/__tests__/patient";
 import { WebhookRequest } from "../../../../models/webhook-request";
-import { InitDocumentQueryCmd, StoreQueryParams } from "../query-init";
+import { StoreQueryParams } from "../query-init";
 
 export const requestId = uuidv7_file.uuidv4();
 export const patient = { id: uuidv7_file.uuidv7(), cxId: uuidv7_file.uuidv7() };
-
-export const initialDocumentQueryProgress: Pick<InitDocumentQueryCmd, "documentQueryProgress"> = {
-  documentQueryProgress: {
-    requestId,
-    startedAt: new Date(),
-    download: makeProgress(),
-  },
-};
 
 export const dqParams: StoreQueryParams = {
   id: patient.id,
   cxId: patient.cxId,
   cmd: {
-    ...initialDocumentQueryProgress,
-    externalData: {
-      [MedicalDataSource.COMMONWELL]: initialDocumentQueryProgress,
-      [MedicalDataSource.CAREQUALITY]: initialDocumentQueryProgress,
+    documentQueryProgress: {
+      requestId,
+      startedAt: new Date(),
+      download: makeProgress(),
     },
   },
 };
