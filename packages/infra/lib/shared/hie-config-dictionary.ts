@@ -14,7 +14,6 @@ export const createHieConfigDictionary = (
   hieConfigs: Record<string, HieConfig | VpnlessHieConfig>
 ) => {
   return Object.values(hieConfigs).reduce((acc, item) => {
-    // Skip VpnlessHieConfig objects - no VPN means no ability to identify messages
     if (!isHieEnabledForVpn(item)) {
       return acc;
     }

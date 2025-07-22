@@ -1,7 +1,6 @@
 import {
   executeWithNetworkRetries,
   GenderAtBirth,
-  genderOtherAsUnknown,
   InternalOrganizationDTO,
   internalOrganizationDTOSchema,
   MetriportError,
