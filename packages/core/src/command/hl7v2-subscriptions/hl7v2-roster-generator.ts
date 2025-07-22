@@ -194,6 +194,7 @@ export function createRosterRowInput(
   const rosterGenerationDate = buildDayjs(new Date()).format("YYYY-MM-DD");
   const dob = data.dob;
   const dobNoDelimiter = dob.replace(/[-]/g, "");
+  const dobMonthDayYear = buildDayjs(dob).format("MM/DD/YYYY");
   const cxShortcode = org.shortcode;
   const authorizingParticipantMrn = p.externalId || createUuidFromText(scrambledId);
   const assigningAuthorityIdentifier = METRIPORT_ASSIGNING_AUTHORITY_IDENTIFIER;
@@ -214,6 +215,7 @@ export function createRosterRowInput(
     middleName: middleInitial,
     dob,
     dobNoDelimiter,
+    dobMonthDayYear,
     genderAtBirth: data.genderAtBirth,
     genderOtherAsUnknown: genderOtherAsUnknown(data.genderAtBirth),
     address1AddressLine1: addresses[0]?.addressLine1,
