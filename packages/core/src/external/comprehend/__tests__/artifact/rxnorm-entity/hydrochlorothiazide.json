@@ -1,0 +1,48 @@
+{
+  "Attributes": [
+    {
+      "BeginOffset": 45,
+      "Category": "MEDICATION",
+      "EndOffset": 52,
+      "Id": 2,
+      "RelationshipScore": 0.8534350991249084,
+      "RelationshipType": "DOSAGE",
+      "Score": 0.8435389995574951,
+      "Text": "12.5 mg",
+      "Traits": [],
+      "Type": "DOSAGE"
+    },
+    {
+      "BeginOffset": 53,
+      "Category": "MEDICATION",
+      "EndOffset": 57,
+      "Id": 3,
+      "RelationshipScore": 0.8672217726707458,
+      "RelationshipType": "ROUTE_OR_MODE",
+      "Score": 0.8617406487464905,
+      "Text": "p.o.",
+      "Traits": [],
+      "Type": "ROUTE_OR_MODE"
+    },
+    {
+      "BeginOffset": 58,
+      "Category": "MEDICATION",
+      "EndOffset": 63,
+      "Id": 4,
+      "RelationshipScore": 0.8970123529434204,
+      "RelationshipType": "FREQUENCY",
+      "Score": 0.9201511740684509,
+      "Text": "daily",
+      "Traits": [],
+      "Type": "FREQUENCY"
+    }
+  ],
+  "BeginOffset": 25,
+  "Category": "MEDICATION",
+  "EndOffset": 44,
+  "Id": 1,
+  "Score": 0.8617406487464905,
+  "Text": "hydrochlorothiazide",
+  "Traits": [],
+  "Type": "GENERIC_NAME"
+}

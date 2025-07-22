@@ -1,0 +1,89 @@
+{
+  "Attributes": [
+    {
+      "BeginOffset": 36,
+      "EndOffset": 41,
+      "Id": 2,
+      "RelationshipScore": 0.5068173408508301,
+      "Score": 0.5971075296401978,
+      "Text": "20 mg",
+      "Traits": [],
+      "Type": "DOSAGE"
+    },
+    {
+      "BeginOffset": 58,
+      "EndOffset": 68,
+      "Id": 4,
+      "RelationshipScore": 0.5692254304885864,
+      "Score": 0.7613970637321472,
+      "Text": "every week",
+      "Traits": [],
+      "Type": "FREQUENCY"
+    },
+    {
+      "BeginOffset": 76,
+      "EndOffset": 87,
+      "Id": 5,
+      "RelationshipScore": 0.5068173408508301,
+      "Score": 0.5330596566200256,
+      "Text": "10 mg/liter",
+      "Traits": [],
+      "Type": "RATE"
+    },
+    {
+      "BeginOffset": 88,
+      "EndOffset": 92,
+      "Id": 6,
+      "RelationshipScore": 0.5692254304885864,
+      "Score": 0.5971075296401978,
+      "Text": "drip",
+      "Traits": [],
+      "Type": "FORM"
+    },
+    {
+      "BeginOffset": 115,
+      "EndOffset": 121,
+      "Id": 7,
+      "RelationshipScore": 0.6795811653137207,
+      "Score": 0.821601390838623,
+      "Text": "orally",
+      "Traits": [],
+      "Type": "ROUTE_OR_MODE"
+    }
+  ],
+  "BeginOffset": 19,
+  "Category": "MEDICATION",
+  "EndOffset": 31,
+  "Id": 1,
+  "RxNormConcepts": [
+    {
+      "Code": "248656",
+      "Description": "azithromycin 500 mg oral tablet",
+      "Score": 0.33176302909851074
+    },
+    {
+      "Code": "18631",
+      "Description": "azithromycin",
+      "Score": 0.1533990055322647
+    },
+    {
+      "Code": "308460",
+      "Description": "azithromycin 250 mg oral tablet",
+      "Score": 0.1311304122209549
+    },
+    {
+      "Code": "204844",
+      "Description": "azithromycin 600 mg oral tablet",
+      "Score": 0.1266009360551834
+    },
+    {
+      "Code": "749780",
+      "Description": "{3 (azithromycin 500 mg oral tablet) } pack",
+      "Score": 0.026219021528959274
+    }
+  ],
+  "Score": 0.8617406487464905,
+  "Text": "azithromycin",
+  "Traits": [],
+  "Type": "GENERIC_NAME"
+}

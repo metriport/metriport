@@ -1,0 +1,38 @@
+{
+  "Attributes": [],
+  "BeginOffset": 25,
+  "Category": "MEDICATION",
+  "EndOffset": 31,
+  "Id": 1,
+  "RxNormConcepts": [
+    {
+      "Code": "261456",
+      "Description": "avelox",
+      "Score": 0.9772706627845764
+    },
+    {
+      "Code": "261339",
+      "Description": "moxifloxacin 400 mg oral tablet [avelox]",
+      "Score": 0.277430921792984
+    },
+    {
+      "Code": "1490662",
+      "Description": "aveed",
+      "Score": 0.13293369114398956
+    },
+    {
+      "Code": "860777",
+      "Description": "250 ml moxifloxacin 1.6 mg/ml injection [avelox]",
+      "Score": 0.09462490677833557
+    },
+    {
+      "Code": "1875534",
+      "Description": "avelumab",
+      "Score": 0.07436452060937881
+    }
+  ],
+  "Score": 0.5971075296401978,
+  "Text": "Avelox",
+  "Traits": [],
+  "Type": "BRAND_NAME"
+}

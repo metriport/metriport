@@ -1,0 +1,89 @@
+{
+  "Attributes": [
+    {
+      "BeginOffset": 36,
+      "EndOffset": 41,
+      "Id": 2,
+      "RelationshipScore": 0.7223333120346069,
+      "Score": 0.5971075296401978,
+      "Text": "10 mg",
+      "Traits": [],
+      "Type": "DOSAGE"
+    },
+    {
+      "BeginOffset": 58,
+      "EndOffset": 68,
+      "Id": 4,
+      "RelationshipScore": 0.7814922332763672,
+      "Score": 0.7613970637321472,
+      "Text": "every week",
+      "Traits": [],
+      "Type": "FREQUENCY"
+    },
+    {
+      "BeginOffset": 76,
+      "EndOffset": 87,
+      "Id": 5,
+      "RelationshipScore": 0.6270833611488342,
+      "Score": 0.5330596566200256,
+      "Text": "10 mg/liter",
+      "Traits": [],
+      "Type": "RATE"
+    },
+    {
+      "BeginOffset": 88,
+      "EndOffset": 92,
+      "Id": 6,
+      "RelationshipScore": 0.7552722692489624,
+      "Score": 0.5971075296401978,
+      "Text": "drip",
+      "Traits": [],
+      "Type": "FORM"
+    },
+    {
+      "BeginOffset": 115,
+      "EndOffset": 121,
+      "Id": 7,
+      "RelationshipScore": 0.7814922332763672,
+      "Score": 0.821601390838623,
+      "Text": "orally",
+      "Traits": [],
+      "Type": "ROUTE_OR_MODE"
+    }
+  ],
+  "BeginOffset": 45,
+  "Category": "MEDICATION",
+  "EndOffset": 57,
+  "Id": 3,
+  "RxNormConcepts": [
+    {
+      "Code": "105586",
+      "Description": "methotrexate 10 mg oral tablet",
+      "Score": 0.3021963834762573
+    },
+    {
+      "Code": "6851",
+      "Description": "methotrexate",
+      "Score": 0.19289426505565643
+    },
+    {
+      "Code": "311625",
+      "Description": "methotrexate 1000 mg injection",
+      "Score": 0.057054001837968826
+    },
+    {
+      "Code": "1655959",
+      "Description": "10 ml methotrexate 25 mg/ml injection",
+      "Score": 0.045601051300764084
+    },
+    {
+      "Code": "283510",
+      "Description": "methotrexate 15 mg oral tablet",
+      "Score": 0.018793117254972458
+    }
+  ],
+  "Score": 0.8617406487464905,
+  "Text": "methotrexate",
+  "Traits": [],
+  "Type": "GENERIC_NAME"
+}
