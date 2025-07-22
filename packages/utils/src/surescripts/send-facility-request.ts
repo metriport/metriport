@@ -1,9 +1,9 @@
 import { Command } from "commander";
 import { SurescriptsSftpClient } from "@metriport/core/external/surescripts/client";
 import { SurescriptsDataMapper } from "@metriport/core/external/surescripts/data-mapper";
-import { SurescriptsSendPatientRequestHandlerDirect } from "@metriport/core/external/surescripts/command/send-patient-request/send-patient-request-direct";
 
 import { writeSurescriptsRunsFile } from "./shared";
+import { SurescriptsPatientRequestData } from "@metriport/core/external/surescripts/types";
 const program = new Command();
 
 program
@@ -42,19 +42,26 @@ program
         patientIds = patientIds.slice(startIndex + 1);
       }
 
-      const transmissionRows: Array<[string, string]> = [["transmission_id", "patient_id"]];
+      const requests: SurescriptsPatientRequestData[] = [];
       for (const patientId of patientIds) {
-        console.log(`Sending request for patient ${patientId}`);
-        const handler = new SurescriptsSendPatientRequestHandlerDirect(
-          new SurescriptsSftpClient({
-            logLevel: "debug",
-          })
-        );
-        const transmissionId = await handler.sendPatientRequest({ cxId, facilityId, patientId });
-        if (transmissionId) transmissionRows.push([transmissionId, patientId]);
+        console.log(`Building request for patient ${patientId}`);
+        const requestData = await dataMapper.getPatientRequestData({ cxId, facilityId, patientId });
+        requests.push(requestData);
       }
 
-      const csvContent = transmissionRows.map(row => `"${row[0]}","${row[1]}"`).join("\n");
+      const client = new SurescriptsSftpClient({
+        logLevel: "debug",
+      });
+      console.log("Sending " + requests.length + " requests");
+      const identifiers = await client.sendBatchPatientRequest(requests);
+      console.log("Done writing facility requests");
+      await client.disconnect();
+
+      const csvContent =
+        `"transmission_id","patient_id"\n` +
+        identifiers
+          .map(({ transmissionId, populationId }) => `"${transmissionId}","${populationId}"`)
+          .join("\n");
       writeSurescriptsRunsFile(csvOutput + ".csv", csvContent);
     }
   );
