@@ -124,6 +124,7 @@ export class SurescriptsSftpClient extends SftpClient {
     try {
       await this.connect();
 
+      let totalRequests = 0;
       for (const request of requests) {
         const transmissionId = this.generateTransmissionId().toString("ascii");
         const content = generatePatientRequestFile({
@@ -132,8 +133,13 @@ export class SurescriptsSftpClient extends SftpClient {
           ...request,
         });
         if (!content) continue;
+        this.log(
+          `${totalRequests.toString().padStart(6, " ")} - sending request for ${
+            request.patient.id
+          } (${transmissionId})`
+        );
+        totalRequests++;
 
-        this.log(`Writing request for ${request.patient} (${transmissionId})`);
         const requestFileName = buildRequestFileName(transmissionId);
         await this.writeToSurescripts(requestFileName, content);
         identifiers.push({ transmissionId, populationId: request.patient.id });

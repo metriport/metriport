@@ -50,7 +50,7 @@ program
       }
 
       const client = new SurescriptsSftpClient({
-        logLevel: "debug",
+        logLevel: "info",
       });
       console.log("Sending " + requests.length + " requests");
       const identifiers = await client.sendBatchPatientRequest(requests);
