@@ -199,7 +199,7 @@ export const config: EnvConfigNonSandbox = {
           CITY: "address1City",
           STATE: "address1State",
           ZIP: "address1Zip",
-          FACCODE: "authorizingParticipantFacilityCode",
+          FACCODE: "cxShortcode",
           ASSIGNERID: "assigningAuthorityIdentifier",
         },
       },

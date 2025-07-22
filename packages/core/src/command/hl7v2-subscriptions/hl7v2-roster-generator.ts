@@ -193,7 +193,7 @@ export function createRosterRowInput(
   const rosterGenerationDate = buildDayjs(new Date()).format("YYYY-MM-DD");
   const dob = data.dob;
   const dobNoDelimiter = dob.replace(/[-]/g, "");
-  const authorizingParticipantFacilityCode = org.shortcode;
+  const cxShortcode = org.shortcode;
   const authorizingParticipantMrn = p.externalId || createUuidFromText(scrambledId);
   const assigningAuthorityIdentifier = METRIPORT_ASSIGNING_AUTHORITY_IDENTIFIER;
   const lineOfBusiness = "COMMERCIAL";
@@ -223,7 +223,7 @@ export function createRosterRowInput(
     insuranceId: undefined,
     insuranceCompanyId: undefined,
     insuranceCompanyName: undefined,
-    authorizingParticipantFacilityCode,
+    cxShortcode,
     authorizingParticipantMrn,
     assigningAuthorityIdentifier,
     ssn,
