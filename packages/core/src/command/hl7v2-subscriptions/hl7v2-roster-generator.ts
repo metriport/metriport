@@ -35,6 +35,7 @@ const HL7V2_SUBSCRIBERS_ENDPOINT = `internal/patient/hl7v2-subscribers`;
 const GET_ORGANIZATION_ENDPOINT = `internal/organization`;
 const NUMBER_OF_PATIENTS_PER_PAGE = 500;
 const NUMBER_OF_ATTEMPTS = 3;
+const DEFAULT_ZIP_PLUS_4_EXT = "+0000";
 const BASE_DELAY = dayjs.duration({ seconds: 1 });
 
 export class Hl7v2RosterGenerator {
@@ -199,9 +200,9 @@ export function createRosterRowInput(
   const email = data.contact?.find(c => c.email)?.email;
   const scrambledId = createScrambledId(p.cxId, p.id);
   const rosterGenerationDate = buildDayjs(new Date()).format("YYYY-MM-DD");
-  const dob = data.dob;
-  const dobNoDelimiter = dob.replace(/[-]/g, "");
-  const dobMonthDayYear = buildDayjs(dob).format("MM/DD/YYYY");
+  const dob = data.dob; // 2025-01-31
+  const dobNoDelimiter = dob.replace(/[-]/g, ""); // 20250131
+  const dobMonthDayYear = buildDayjs(dob).format("MM/DD/YYYY"); // 01/31/2025
   const cxShortcode = org.shortcode;
   const authorizingParticipantMrn = p.externalId || createUuidFromText(scrambledId);
   const assigningAuthorityIdentifier = METRIPORT_ASSIGNING_AUTHORITY_IDENTIFIER;
@@ -210,7 +211,14 @@ export function createRosterRowInput(
   const address1SingleLine =
     addresses[0]?.addressLine1 +
     (addresses[0]?.addressLine2 ? " " + addresses[0]?.addressLine2 : "");
+  const address1ZipPlus4 = addresses[0]?.zip + DEFAULT_ZIP_PLUS_4_EXT;
   const { firstName, middleInitial } = getFirstNameAndMiddleInitial(data.firstName);
+  const dateTwoMonthsInFutureNoDelimiter = buildDayjs(new Date())
+    .add(2, "month")
+    .format("YYYYMMDD");
+  const july2025 = new Date(2025, 6, 1);
+  const dateMid2025NoDelimiter = buildDayjs(july2025).format("YYYYMMDD");
+  const patientExternalId = p.externalId;
 
   return {
     id: p.id,
@@ -231,10 +239,12 @@ export function createRosterRowInput(
     address1City: addresses[0]?.city,
     address1State: addresses[0]?.state,
     address1Zip: addresses[0]?.zip,
+    address1ZipPlus4,
     insuranceId: undefined,
     insuranceCompanyId: undefined,
     insuranceCompanyName: undefined,
     cxShortcode,
+    patientExternalId,
     authorizingParticipantMrn,
     assigningAuthorityIdentifier,
     ssn,
@@ -242,6 +252,8 @@ export function createRosterRowInput(
     phone,
     email,
     lineOfBusiness,
+    dateTwoMonthsInFutureNoDelimiter,
+    dateMid2025NoDelimiter,
     emptyString,
   };
 }

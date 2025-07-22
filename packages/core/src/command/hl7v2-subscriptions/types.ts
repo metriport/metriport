@@ -24,6 +24,7 @@ export type RosterRowData = {
   genderAtBirth: string | undefined;
   genderOtherAsUnknown: string | undefined;
   scrambledId: string;
+  patientExternalId: string | undefined;
   ssn: string | undefined;
   driversLicense: string | undefined;
   phone: string | undefined;
@@ -34,6 +35,7 @@ export type RosterRowData = {
   address1City: string | undefined;
   address1State: string | undefined;
   address1Zip: string | undefined;
+  address1ZipPlus4: string | undefined;
   insuranceId: string | undefined;
   insuranceCompanyId: string | undefined;
   insuranceCompanyName: string | undefined;
@@ -41,6 +43,8 @@ export type RosterRowData = {
   authorizingParticipantMrn: string | undefined;
   assigningAuthorityIdentifier: string | undefined;
   lineOfBusiness: string;
+  dateTwoMonthsInFutureNoDelimiter: string;
+  dateMid2025NoDelimiter: string;
   emptyString: string;
 };
 
