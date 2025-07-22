@@ -1,8 +1,11 @@
 import {
   executeWithNetworkRetries,
+  GenderAtBirth,
   InternalOrganizationDTO,
   internalOrganizationDTOSchema,
   MetriportError,
+  otherGender,
+  unknownGender,
 } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import { createUuidFromText } from "@metriport/shared/common/uuid";
@@ -178,6 +181,11 @@ type RosterRowKey = keyof RosterRowData;
 function isRosterRowKey(key: string, obj: RosterRowData): key is RosterRowKey {
   return key in obj;
 }
+
+export function genderOtherAsUnknown(gender: GenderAtBirth): GenderAtBirth {
+  return gender === otherGender ? unknownGender : gender;
+}
+
 export function createRosterRowInput(
   p: Patient,
   org: { shortcode?: string | undefined },
@@ -193,7 +201,8 @@ export function createRosterRowInput(
   const rosterGenerationDate = buildDayjs(new Date()).format("YYYY-MM-DD");
   const dob = data.dob;
   const dobNoDelimiter = dob.replace(/[-]/g, "");
-  const authorizingParticipantFacilityCode = org.shortcode;
+  const dobMonthDayYear = buildDayjs(dob).format("MM/DD/YYYY");
+  const cxShortcode = org.shortcode;
   const authorizingParticipantMrn = p.externalId || createUuidFromText(scrambledId);
   const assigningAuthorityIdentifier = METRIPORT_ASSIGNING_AUTHORITY_IDENTIFIER;
   const lineOfBusiness = "COMMERCIAL";
@@ -213,7 +222,9 @@ export function createRosterRowInput(
     middleName: middleInitial,
     dob,
     dobNoDelimiter,
+    dobMonthDayYear,
     genderAtBirth: data.genderAtBirth,
+    genderOtherAsUnknown: genderOtherAsUnknown(data.genderAtBirth),
     address1AddressLine1: addresses[0]?.addressLine1,
     address1AddressLine2: addresses[0]?.addressLine2,
     address1SingleLine,
@@ -223,7 +234,7 @@ export function createRosterRowInput(
     insuranceId: undefined,
     insuranceCompanyId: undefined,
     insuranceCompanyName: undefined,
-    authorizingParticipantFacilityCode,
+    cxShortcode,
     authorizingParticipantMrn,
     assigningAuthorityIdentifier,
     ssn,

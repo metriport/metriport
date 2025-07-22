@@ -19,8 +19,10 @@ export type RosterRowData = {
   lastName: string;
   dob: string;
   dobNoDelimiter: string;
+  dobMonthDayYear: string;
   middleName: string | undefined;
   genderAtBirth: string | undefined;
+  genderOtherAsUnknown: string | undefined;
   scrambledId: string;
   ssn: string | undefined;
   driversLicense: string | undefined;
@@ -35,7 +37,7 @@ export type RosterRowData = {
   insuranceId: string | undefined;
   insuranceCompanyId: string | undefined;
   insuranceCompanyName: string | undefined;
-  authorizingParticipantFacilityCode: string | undefined;
+  cxShortcode: string | undefined;
   authorizingParticipantMrn: string | undefined;
   assigningAuthorityIdentifier: string | undefined;
   lineOfBusiness: string;
@@ -58,6 +60,8 @@ export type HieConfig = {
   mapping: HiePatientRosterMapping;
 };
 
+export type VpnlessHieConfig = Omit<HieConfig, "gatewayPublicIp" | "internalCidrBlock">;
+
 export type Hl7v2SubscriberParams = {
   hie: string;
   count?: number | undefined;
@@ -74,3 +78,12 @@ export type Hl7v2SubscriberApiResponse = {
     nextPage?: string;
   };
 };
+
+/**
+ * Type guard to check if config is HieConfig (not VpnlessHieConfig)
+ * @param config
+ * @returns true if config is HieConfig, false if config is VpnlessHieConfig
+ */
+export function doesHieUseVpn(config: HieConfig | VpnlessHieConfig): config is HieConfig {
+  return "gatewayPublicIp" in config && "internalCidrBlock" in config;
+}
