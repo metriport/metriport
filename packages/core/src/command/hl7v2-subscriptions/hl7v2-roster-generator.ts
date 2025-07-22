@@ -35,7 +35,7 @@ const HL7V2_SUBSCRIBERS_ENDPOINT = `internal/patient/hl7v2-subscribers`;
 const GET_ORGANIZATION_ENDPOINT = `internal/organization`;
 const NUMBER_OF_PATIENTS_PER_PAGE = 500;
 const NUMBER_OF_ATTEMPTS = 3;
-const DEFAULT_ZIP_PLUS_4_EXT = "+0000";
+const DEFAULT_ZIP_PLUS_4_EXT = "-0000";
 const BASE_DELAY = dayjs.duration({ seconds: 1 });
 
 export class Hl7v2RosterGenerator {
@@ -208,10 +208,11 @@ export function createRosterRowInput(
   const assigningAuthorityIdentifier = METRIPORT_ASSIGNING_AUTHORITY_IDENTIFIER;
   const lineOfBusiness = "COMMERCIAL";
   const emptyString = "";
-  const address1SingleLine =
-    addresses[0]?.addressLine1 +
-    (addresses[0]?.addressLine2 ? " " + addresses[0]?.addressLine2 : "");
-  const address1ZipPlus4 = addresses[0]?.zip + DEFAULT_ZIP_PLUS_4_EXT;
+  const a1 = addresses[0];
+  const address1SingleLine = a1?.addressLine1
+    ? a1.addressLine1 + (a1.addressLine2 ? " " + a1.addressLine2 : "")
+    : undefined;
+  const address1ZipPlus4 = a1?.zip ? a1.zip + DEFAULT_ZIP_PLUS_4_EXT : undefined;
   const { firstName, middleInitial } = getFirstNameAndMiddleInitial(data.firstName);
   const dateTwoMonthsInFutureNoDelimiter = buildDayjs(new Date())
     .add(2, "month")
@@ -233,12 +234,12 @@ export function createRosterRowInput(
     dobMonthDayYear,
     genderAtBirth: data.genderAtBirth,
     genderOtherAsUnknown: genderOtherAsUnknown(data.genderAtBirth),
-    address1AddressLine1: addresses[0]?.addressLine1,
-    address1AddressLine2: addresses[0]?.addressLine2,
+    address1AddressLine1: a1?.addressLine1,
+    address1AddressLine2: a1?.addressLine2,
     address1SingleLine,
-    address1City: addresses[0]?.city,
-    address1State: addresses[0]?.state,
-    address1Zip: addresses[0]?.zip,
+    address1City: a1?.city,
+    address1State: a1?.state,
+    address1Zip: a1?.zip,
     address1ZipPlus4,
     insuranceId: undefined,
     insuranceCompanyId: undefined,
