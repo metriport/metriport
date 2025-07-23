@@ -205,6 +205,6 @@ function isPercent(units: string): boolean {
   return units === "%";
 }
 
-export function convertNumberToIntegerOrDecimalString(value: number): string {
+export function formatNumberAsString(value: number): string {
   return Number.isInteger(value) ? value.toString() : value.toFixed(2);
 }

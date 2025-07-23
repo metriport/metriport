@@ -83,7 +83,7 @@ import {
   partitionEhrBundle,
   saveEhrReferenceBundle,
 } from "../shared";
-import { convertCodeAndValue, convertNumberToIntegerOrDecimalString } from "../unit-conversion";
+import { convertCodeAndValue, formatNumberAsString } from "../unit-conversion";
 
 dayjs.extend(duration);
 
@@ -1254,7 +1254,7 @@ class ElationApi {
       return {
         ...baseData,
         data: {
-          bmi: +convertNumberToIntegerOrDecimalString(convertedCodeAndValue.value),
+          bmi: +formatNumberAsString(convertedCodeAndValue.value),
         },
       };
     }
@@ -1265,7 +1265,7 @@ class ElationApi {
           data: {
             bp: [
               {
-                diastolic: convertNumberToIntegerOrDecimalString(convertedCodeAndValue.value),
+                diastolic: formatNumberAsString(convertedCodeAndValue.value),
               },
             ],
           },
@@ -1277,7 +1277,7 @@ class ElationApi {
           data: {
             bp: [
               {
-                systolic: convertNumberToIntegerOrDecimalString(convertedCodeAndValue.value),
+                systolic: formatNumberAsString(convertedCodeAndValue.value),
               },
             ],
           },
@@ -1289,7 +1289,7 @@ class ElationApi {
       data: {
         [convertedCodeAndValue.codeKey]: [
           {
-            value: convertNumberToIntegerOrDecimalString(convertedCodeAndValue.value),
+            value: formatNumberAsString(convertedCodeAndValue.value),
           },
         ],
       },
