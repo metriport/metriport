@@ -1,8 +1,11 @@
+import fs from "fs";
+import path from "path";
 import { Command } from "commander";
 import { QuestSftpClient } from "@metriport/core/external/quest/client";
 import { QuestDataMapper } from "@metriport/core/external/quest/data-mapper";
 import { QuestSendBatchRequestHandlerDirect } from "@metriport/core/external/quest/command/send-batch-request/send-batch-request-direct";
 import { getPatientsFromCsv } from "./shared";
+import { QuestJob } from "@metriport/core/external/quest/types";
 
 const program = new Command();
 
@@ -23,27 +26,43 @@ program
     if (!cxId) throw new Error("CX ID is required");
     if (!facilityId) throw new Error("Facility ID is required");
 
+    let job: QuestJob | null = null;
+
     if (patientIds) {
       const ids: string[] = patientIds.split(",");
-      await sendPatientRequestFromIds(cxId, facilityId, ids);
+      job = await sendPatientRequestFromIds(cxId, facilityId, ids);
     } else if (csvData) {
-      await sendPatientRequestFromCsv(cxId, facilityId, csvData, dryRun);
+      job = await sendPatientRequestFromCsv(cxId, facilityId, csvData, dryRun);
     } else {
-      await sendFacilityRequest(cxId, facilityId, {
+      job = await sendFacilityRequest(cxId, facilityId, {
         dryRun,
         limit: limit ? parseInt(limit) : undefined,
       });
     }
+
+    if (job) {
+      const questDir = path.join(process.cwd(), "runs", "quest");
+      fs.mkdirSync(questDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(questDir, "master_job.json"),
+        JSON.stringify(job, null, 2),
+        "utf8"
+      );
+    }
   });
 
-async function sendPatientRequestFromIds(cxId: string, facilityId: string, patientIds: string[]) {
+async function sendPatientRequestFromIds(
+  cxId: string,
+  facilityId: string,
+  patientIds: string[]
+): Promise<QuestJob> {
   const handler = new QuestSendBatchRequestHandlerDirect(
     new QuestSftpClient({
       logLevel: "debug",
     })
   );
   const job = await handler.sendBatchRequest({ cxId, facilityId, patientIds });
-  console.log("Job sent", job);
+  return job;
 }
 
 async function sendPatientRequestFromCsv(
@@ -51,7 +70,7 @@ async function sendPatientRequestFromCsv(
   facilityId: string,
   csvData: string,
   dryRun: boolean
-) {
+): Promise<QuestJob | null> {
   const dataMapper = new QuestDataMapper();
   const facility = await dataMapper.getFacilityData(cxId, facilityId);
   const patients = await getPatientsFromCsv(csvData);
@@ -61,9 +80,10 @@ async function sendPatientRequestFromCsv(
   if (dryRun) {
     console.log("Dry run");
     console.log(patients.length, "patients");
+    return null;
   } else {
     const job = await client.sendBatchRequest({ cxId, facility, patients });
-    console.log("Sent job", job);
+    return job;
   }
 }
 
@@ -71,7 +91,7 @@ async function sendFacilityRequest(
   cxId: string,
   facilityId: string,
   { dryRun, limit }: { dryRun: boolean; limit?: number }
-) {
+): Promise<QuestJob | null> {
   const dataMapper = new QuestDataMapper();
   const requestData = await dataMapper.getFacilityRequestData({ cxId, facilityId, limit });
   const client = new QuestSftpClient({
@@ -80,9 +100,10 @@ async function sendFacilityRequest(
   if (dryRun) {
     console.log("Dry run");
     console.log(requestData.patients.length, "patients");
+    return null;
   } else {
     const job = await client.sendBatchRequest(requestData);
-    console.log("Sent job", job);
+    return job;
   }
 }
 
