@@ -62,6 +62,7 @@ export const initialFeatureFlags: FeatureFlagDatastore = {
   cxsWithDischargeRequeryFeatureFlag: { enabled: false, values: [] },
   cxsWithDischargeSlackNotificationFeatureFlag: { enabled: false, values: [] },
   cxsWithXmlRedownloadFeatureFlag: { enabled: false, values: [] },
+  cxsWithNewDqAndConsolidatedInitialState: { enabled: false, values: [] },
 };
 
 /**
@@ -218,7 +219,7 @@ function ddbItemToDbRecord(
     ? typeof featureFlagsRaw === "string"
       ? ffDatastoreSchema.parse(JSON.parse(featureFlagsRaw))
       : featureFlagsRaw
-    : initialFeatureFlags;
+    : getInitialFeatureFlags();
   const baseRecord = featureFlagsRecordSchema.parse({
     ...rest,
     featureFlags: initialFeatureFlags,
@@ -228,6 +229,13 @@ function ddbItemToDbRecord(
     featureFlags,
   };
   return record;
+}
+
+function getInitialFeatureFlags(): FeatureFlagDatastore {
+  const msg = "Using EMPTY feature flags, this should not happen unless in local development";
+  log(msg);
+  capture.message(msg, { level: "warning" });
+  return initialFeatureFlags;
 }
 
 /**

@@ -17,5 +17,6 @@ export function makePatientModel(params?: Partial<PatientModel>): PatientModel {
 export function makePatientModelSafe(params?: Partial<PatientModel>): PatientModel {
   const patient = makePatient(params) as unknown as PatientModel;
   patient.dataValues = patient;
+  patient.update = () => Promise.resolve(patient);
   return patient;
 }
