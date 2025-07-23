@@ -21,12 +21,19 @@ export type HieIanaTimezone = z.infer<typeof hieIanaTimezoneSchema>;
  */
 export const hieConfigDictionarySchema = z.record(
   z.string(),
-  z.object({
-    cidrBlock: z.string().regex(cidrBlockRegex, {
-      message: "Must be a valid CIDR block (e.g., '10.0.0.0/16')",
+  z.union([
+    // Schema for a normal Vpn based HIE config
+    z.object({
+      cidrBlock: z.string().regex(cidrBlockRegex, {
+        message: "Must be a valid CIDR block (e.g., '10.0.0.0/16')",
+      }),
+      timezone: hieIanaTimezoneSchema,
     }),
-    timezone: hieIanaTimezoneSchema,
-  })
+    // Schema for a HIE config that doesn't have a VPN
+    z.object({
+      timezone: hieIanaTimezoneSchema,
+    }),
+  ])
 );
 
 export type HieConfigDictionary = z.infer<typeof hieConfigDictionarySchema>;
