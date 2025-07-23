@@ -15,6 +15,7 @@ program
   .option("--facility-id <facility>", "The facility ID of the requester")
   .option("--patient-ids <patientIds>", "Specific patient IDs (comma separated) for the request")
   .option("--limit <limit>", "Limit the number of patients to send")
+  .option("--roster-id <rosterId>", "Set the general mnemonic used to identify the roster")
   .option("--dry-run", "Dry run the request")
   .option("--csv-data <csv>", "The CSV data file to use for patient load")
   .description("Generate a patient load file and place into the outgoing replica directory")
