@@ -35,6 +35,7 @@ const HL7V2_SUBSCRIBERS_ENDPOINT = `internal/patient/hl7v2-subscribers`;
 const GET_ORGANIZATION_ENDPOINT = `internal/organization`;
 const NUMBER_OF_PATIENTS_PER_PAGE = 500;
 const NUMBER_OF_ATTEMPTS = 3;
+const DEFAULT_ZIP_PLUS_4_EXT = "-0000";
 const BASE_DELAY = dayjs.duration({ seconds: 1 });
 
 export class Hl7v2RosterGenerator {
@@ -186,6 +187,15 @@ export function genderOtherAsUnknown(gender: GenderAtBirth): GenderAtBirth {
   return gender === otherGender ? unknownGender : gender;
 }
 
+export function genderOneTwoAndNine(gender: GenderAtBirth) {
+  return {
+    M: "1",
+    F: "2",
+    O: "9",
+    U: "9",
+  }[gender];
+}
+
 export function createRosterRowInput(
   p: Patient,
   org: { shortcode?: string | undefined },
@@ -199,18 +209,26 @@ export function createRosterRowInput(
   const email = data.contact?.find(c => c.email)?.email;
   const scrambledId = createScrambledId(p.cxId, p.id);
   const rosterGenerationDate = buildDayjs(new Date()).format("YYYY-MM-DD");
-  const dob = data.dob;
-  const dobNoDelimiter = dob.replace(/[-]/g, "");
-  const dobMonthDayYear = buildDayjs(dob).format("MM/DD/YYYY");
+  const dob = data.dob; // 2025-01-31
+  const dobNoDelimiter = dob.replace(/[-]/g, ""); // 20250131
+  const dobMonthDayYear = buildDayjs(dob).format("MM/DD/YYYY"); // 01/31/2025
   const cxShortcode = org.shortcode;
   const authorizingParticipantMrn = p.externalId || createUuidFromText(scrambledId);
   const assigningAuthorityIdentifier = METRIPORT_ASSIGNING_AUTHORITY_IDENTIFIER;
   const lineOfBusiness = "COMMERCIAL";
   const emptyString = "";
-  const address1SingleLine =
-    addresses[0]?.addressLine1 +
-    (addresses[0]?.addressLine2 ? " " + addresses[0]?.addressLine2 : "");
+  const a1 = addresses[0];
+  const address1SingleLine = a1?.addressLine1
+    ? a1.addressLine1 + (a1.addressLine2 ? " " + a1.addressLine2 : "")
+    : undefined;
+  const address1ZipPlus4 = a1?.zip ? a1.zip + DEFAULT_ZIP_PLUS_4_EXT : undefined;
   const { firstName, middleInitial } = getFirstNameAndMiddleInitial(data.firstName);
+  const dateTwoMonthsInFutureNoDelimiter = buildDayjs(new Date())
+    .add(2, "month")
+    .format("YYYYMMDD");
+  const july2025 = new Date(2025, 6, 1);
+  const dateMid2025NoDelimiter = buildDayjs(july2025).format("YYYYMMDD");
+  const patientExternalId = p.externalId;
 
   return {
     id: p.id,
@@ -225,16 +243,19 @@ export function createRosterRowInput(
     dobMonthDayYear,
     genderAtBirth: data.genderAtBirth,
     genderOtherAsUnknown: genderOtherAsUnknown(data.genderAtBirth),
-    address1AddressLine1: addresses[0]?.addressLine1,
-    address1AddressLine2: addresses[0]?.addressLine2,
+    genderOneTwoAndNine: genderOneTwoAndNine(data.genderAtBirth),
+    address1AddressLine1: a1?.addressLine1,
+    address1AddressLine2: a1?.addressLine2,
     address1SingleLine,
-    address1City: addresses[0]?.city,
-    address1State: addresses[0]?.state,
-    address1Zip: addresses[0]?.zip,
+    address1City: a1?.city,
+    address1State: a1?.state,
+    address1Zip: a1?.zip,
+    address1ZipPlus4,
     insuranceId: undefined,
     insuranceCompanyId: undefined,
     insuranceCompanyName: undefined,
     cxShortcode,
+    patientExternalId,
     authorizingParticipantMrn,
     assigningAuthorityIdentifier,
     ssn,
@@ -242,6 +263,8 @@ export function createRosterRowInput(
     phone,
     email,
     lineOfBusiness,
+    dateTwoMonthsInFutureNoDelimiter,
+    dateMid2025NoDelimiter,
     emptyString,
   };
 }
