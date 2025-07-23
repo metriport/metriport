@@ -105,7 +105,7 @@ async function initDB(): Promise<void> {
   const tokenTableName = Config.getTokenTableName();
   const rateLimitTableName = Config.getRateLimitTableName();
   const featureFlagsTableName = ConfigCore.getFeatureFlagsTableName();
-  const logDBOperations = Config.isCloudEnv() ? false : true;
+  const logDBOperations = Config.isCloudEnv() ? false : false;
   const dbPoolSettings = getDbPoolSettings();
 
   docTableNames = {
