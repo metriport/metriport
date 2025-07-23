@@ -3,6 +3,8 @@ import { Patient, PatientExternalData } from "@metriport/core/domain/patient";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { getPatientModelOrFail } from "../patient/get-patient";
+import { MedicalDataSource } from "@metriport/core/external";
+import { out } from "@metriport/core/util/log";
 
 export type DocumentQueryProgressForQueryInit = Required<
   Pick<DocumentQueryProgress, "requestId" | "startedAt">
@@ -14,6 +16,7 @@ export type StoreDocQueryInitialStateParams = {
   cxId: string;
   documentQueryProgress: DocumentQueryProgressForQueryInit;
   cxDocumentRequestMetadata?: unknown;
+  enabledHIEs: MedicalDataSource[];
 };
 
 const initialDownloadProgress: Progress = {
@@ -22,7 +25,8 @@ const initialDownloadProgress: Progress = {
 
 /**
  * Store the document query initial state in the patient model.
- * It will set the download progress to the default value and unset/reset the convert progress.
+ * It will set the download progress to the default value and unset/reset the convert progress,
+ * both on the global level and on the HIE level (for the enabled HIE sources).
  *
  * @see initialDownloadProgress for the initial download progress.
  *
@@ -31,6 +35,7 @@ const initialDownloadProgress: Progress = {
  * @param params.cxId - The cx id of the patient.
  * @param params.documentQueryProgress - The document query progress.
  * @param params.cxDocumentRequestMetadata - The cx document request metadata.
+ * @param params.enabledHIEs - The enabled HIE sources.
  * @returns The updated patient.
  */
 export async function storeDocumentQueryInitialState({
@@ -38,7 +43,11 @@ export async function storeDocumentQueryInitialState({
   cxId,
   documentQueryProgress,
   cxDocumentRequestMetadata,
+  enabledHIEs,
 }: StoreDocQueryInitialStateParams): Promise<Patient> {
+  const { log } = out(`storeDocumentQueryInitialState - patient ${id}, cxId ${cxId}`);
+  log(`Running with enabled HIEs: ${enabledHIEs.join(", ")}`);
+
   const patient = await executeOnDBTx(PatientModel.prototype, async transaction => {
     const patient = await getPatientModelOrFail({
       id,
@@ -56,14 +65,13 @@ export async function storeDocumentQueryInitialState({
 
     const externalDataWithResetDqProgress: PatientExternalData = {
       ...patientData.externalData,
-      COMMONWELL: {
-        ...patientData.externalData?.COMMONWELL,
-        documentQueryProgress: documentQueryProgressInitialState,
-      },
-      CAREQUALITY: {
-        ...patientData.externalData?.CAREQUALITY,
-        documentQueryProgress: documentQueryProgressInitialState,
-      },
+      ...enabledHIEs.reduce((externalData, hie) => {
+        externalData[hie] = {
+          ...patientData.externalData?.[hie],
+          documentQueryProgress: documentQueryProgressInitialState,
+        };
+        return externalData;
+      }, {} as PatientExternalData),
     };
 
     return patient.update(

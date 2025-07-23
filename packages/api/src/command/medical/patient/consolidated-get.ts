@@ -9,6 +9,7 @@ import {
   getConsolidatedPatientData,
   getConsolidatedPatientDataAsync,
 } from "@metriport/core/command/consolidated/consolidated-get";
+import { isNewDqAndConsolidatedInitialStateEnabledForCx } from "@metriport/core/command/feature-flags/domain-ffs";
 import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-summary";
 import { getConsolidatedQueryByRequestId, Patient } from "@metriport/core/domain/patient";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
@@ -33,6 +34,7 @@ import {
   uploadJsonBundleToS3,
 } from "./convert-fhir-bundle";
 import { getPatientOrFail } from "./get-patient";
+import { storeQueryInit } from "./query-init";
 
 dayjs.extend(duration);
 
@@ -111,12 +113,28 @@ export async function startConsolidatedQuery({
     },
   });
 
-  const updatedPatient = await storeConsolidatedQueryInitialState({
-    id: patient.id,
-    cxId: patient.cxId,
-    consolidatedQuery,
-    cxConsolidatedRequestMetadata,
-  });
+  // TODO ENG-701 remove this asap
+  const shouldUseNewDqAndConsolidatedInitialState =
+    await isNewDqAndConsolidatedInitialStateEnabledForCx(patient.cxId);
+
+  const updatedPatient = shouldUseNewDqAndConsolidatedInitialState
+    ? await storeConsolidatedQueryInitialState({
+        id: patient.id,
+        cxId: patient.cxId,
+        consolidatedQuery,
+        cxConsolidatedRequestMetadata,
+      })
+    : await storeQueryInit({
+        id: patient.id,
+        cxId: patient.cxId,
+        cmd: {
+          consolidatedQueries: appendProgressToProcessingQueries(
+            patient.data.consolidatedQueries,
+            consolidatedQuery
+          ),
+          cxConsolidatedRequestMetadata,
+        },
+      });
 
   getConsolidatedPatientDataAsync({
     patient: updatedPatient,
@@ -129,6 +147,25 @@ export async function startConsolidatedQuery({
   }).catch(emptyFunction);
 
   return consolidatedQuery;
+}
+
+/**
+ * TODO ENG-477 remove this asap
+ * @deprecated This is the culprit of ENG-477
+ */
+function appendProgressToProcessingQueries(
+  currentConsolidatedQueries: ConsolidatedQuery[] | undefined,
+  progress: ConsolidatedQuery
+): ConsolidatedQuery[] {
+  if (currentConsolidatedQueries) {
+    const queriesInProgress = currentConsolidatedQueries.filter(
+      query => query.status === "processing"
+    );
+
+    return [...queriesInProgress, progress];
+  }
+
+  return [progress];
 }
 
 export function getCurrentConsolidatedProgress(

@@ -3,6 +3,7 @@ import { DocumentQueryProgress } from "@metriport/core/domain/document-query";
 import { PatientExternalDataEntry } from "@metriport/core/domain/patient";
 import { makeDocumentQueryProgress } from "@metriport/core/domain/__tests__/document-query";
 import { makePatientData } from "@metriport/core/domain/__tests__/patient";
+import { MedicalDataSource } from "@metriport/core/external";
 import { makeProgress } from "../../../../domain/medical/__tests__/document-query";
 import { PatientModel } from "../../../../models/medical/patient";
 import { makePatientModel } from "../../../../models/medical/__tests__/patient";
@@ -18,15 +19,16 @@ let patientModel_update: jest.SpyInstance;
 let patientModel_findOne: jest.SpyInstance;
 jest.mock("../../../../models/medical/patient");
 
-const mockedPatientAllProgresses = makePatientModel({
-  data: makePatientData({
-    documentQueryProgress: makeDocumentQueryProgress(),
-    consolidatedQueries: [makeConsolidatedQueryProgress()],
-  }),
-});
+let mockedPatientAllProgresses: PatientModel;
 
 beforeEach(() => {
   mockStartTransaction();
+  mockedPatientAllProgresses = makePatientModel({
+    data: makePatientData({
+      documentQueryProgress: makeDocumentQueryProgress(),
+      consolidatedQueries: [makeConsolidatedQueryProgress()],
+    }),
+  });
   patientModel_findOne = jest
     .spyOn(PatientModel, "findOne")
     .mockResolvedValue(mockedPatientAllProgresses);
@@ -48,6 +50,7 @@ describe("storeDocumentQueryInitialState", () => {
         requestId: faker.string.uuid(),
         startedAt: new Date(),
       },
+      enabledHIEs: [MedicalDataSource.COMMONWELL, MedicalDataSource.CAREQUALITY],
     };
   }
 
@@ -78,7 +81,6 @@ describe("storeDocumentQueryInitialState", () => {
       ...mockedPatientAllProgresses.dataValues,
       data: {
         ...mockedPatientAllProgresses.dataValues.data,
-        consolidatedQueries: mockedPatientAllProgresses.dataValues.data.consolidatedQueries,
         externalData: {
           COMMONWELL: makePatientExternalData(),
           CAREQUALITY: makePatientExternalData(),
@@ -88,16 +90,8 @@ describe("storeDocumentQueryInitialState", () => {
     patientModel_findOne.mockResolvedValueOnce(originalPatient);
     patientModel_update = jest.spyOn(originalPatient, "update").mockResolvedValue(originalPatient);
 
-    const newDqProgress: DocumentQueryProgressForQueryInit = {
-      requestId: faker.string.uuid(),
-      startedAt: faker.date.recent(),
-      triggerConsolidated: faker.datatype.boolean(),
-    };
-    const newCxDocumentRequestMetadata = {
-      requestId: faker.string.uuid(),
-      startedAt: faker.date.recent(),
-      triggerConsolidated: faker.datatype.boolean(),
-    };
+    const newDqProgress = makeDqProgress();
+    const newCxDocumentRequestMetadata = makeCxDocumentRequestMetadata();
 
     const expectedDocumentQueryProgress: DocumentQueryProgress = {
       download: { status: "processing" },
@@ -112,6 +106,7 @@ describe("storeDocumentQueryInitialState", () => {
       cxId: originalPatient.cxId,
       documentQueryProgress: newDqProgress,
       cxDocumentRequestMetadata: newCxDocumentRequestMetadata,
+      enabledHIEs: [MedicalDataSource.COMMONWELL, MedicalDataSource.CAREQUALITY],
     });
 
     expect(patientModel_update).toHaveBeenCalledWith(
@@ -135,6 +130,86 @@ describe("storeDocumentQueryInitialState", () => {
     );
   });
 
+  it("does not touch CW when only CQ is enabled", async () => {
+    const originalPatient = makePatientModel({
+      ...mockedPatientAllProgresses.dataValues,
+      data: {
+        ...mockedPatientAllProgresses.dataValues.data,
+        consolidatedQueries: mockedPatientAllProgresses.dataValues.data.consolidatedQueries,
+        externalData: {
+          COMMONWELL: makePatientExternalData(),
+          CAREQUALITY: makePatientExternalData(),
+        },
+      },
+    });
+    patientModel_findOne.mockResolvedValueOnce(originalPatient);
+    patientModel_update = jest.spyOn(originalPatient, "update").mockResolvedValue(originalPatient);
+
+    const newDqProgress = makeDqProgress();
+    const newCxDocumentRequestMetadata = makeCxDocumentRequestMetadata();
+
+    await storeDocumentQueryInitialState({
+      id: originalPatient.id,
+      cxId: originalPatient.cxId,
+      documentQueryProgress: newDqProgress,
+      cxDocumentRequestMetadata: newCxDocumentRequestMetadata,
+      enabledHIEs: [MedicalDataSource.CAREQUALITY],
+    });
+
+    expect(patientModel_update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          externalData: expect.objectContaining({
+            COMMONWELL: expect.objectContaining({
+              discoveryParams: originalPatient.data.externalData?.COMMONWELL?.discoveryParams,
+            }),
+          }),
+        }),
+      }),
+      expect.anything()
+    );
+  });
+
+  it("does not touch CQ when only CW is enabled", async () => {
+    const originalPatient = makePatientModel({
+      ...mockedPatientAllProgresses.dataValues,
+      data: {
+        ...mockedPatientAllProgresses.dataValues.data,
+        consolidatedQueries: mockedPatientAllProgresses.dataValues.data.consolidatedQueries,
+        externalData: {
+          COMMONWELL: makePatientExternalData(),
+          CAREQUALITY: makePatientExternalData(),
+        },
+      },
+    });
+    patientModel_findOne.mockResolvedValueOnce(originalPatient);
+    patientModel_update = jest.spyOn(originalPatient, "update").mockResolvedValue(originalPatient);
+
+    const newDqProgress = makeDqProgress();
+    const newCxDocumentRequestMetadata = makeCxDocumentRequestMetadata();
+
+    await storeDocumentQueryInitialState({
+      id: originalPatient.id,
+      cxId: originalPatient.cxId,
+      documentQueryProgress: newDqProgress,
+      cxDocumentRequestMetadata: newCxDocumentRequestMetadata,
+      enabledHIEs: [MedicalDataSource.COMMONWELL],
+    });
+
+    expect(patientModel_update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          externalData: expect.objectContaining({
+            CAREQUALITY: expect.objectContaining({
+              discoveryParams: originalPatient.data.externalData?.CAREQUALITY?.discoveryParams,
+            }),
+          }),
+        }),
+      }),
+      expect.anything()
+    );
+  });
+
   it("does not touch data unrelated to DQ", async () => {
     const originalPatient = makePatientModel({
       ...mockedPatientAllProgresses.dataValues,
@@ -150,22 +225,15 @@ describe("storeDocumentQueryInitialState", () => {
     patientModel_findOne.mockResolvedValueOnce(originalPatient);
     patientModel_update = jest.spyOn(originalPatient, "update").mockResolvedValue(originalPatient);
 
-    const newDqProgress: DocumentQueryProgressForQueryInit = {
-      requestId: faker.string.uuid(),
-      startedAt: faker.date.recent(),
-      triggerConsolidated: faker.datatype.boolean(),
-    };
-    const newCxDocumentRequestMetadata = {
-      requestId: faker.string.uuid(),
-      startedAt: faker.date.recent(),
-      triggerConsolidated: faker.datatype.boolean(),
-    };
+    const newDqProgress = makeDqProgress();
+    const newCxDocumentRequestMetadata = makeCxDocumentRequestMetadata();
 
     await storeDocumentQueryInitialState({
       id: originalPatient.id,
       cxId: originalPatient.cxId,
       documentQueryProgress: newDqProgress,
       cxDocumentRequestMetadata: newCxDocumentRequestMetadata,
+      enabledHIEs: [MedicalDataSource.COMMONWELL, MedicalDataSource.CAREQUALITY],
     });
 
     // PD is untouched
@@ -198,6 +266,22 @@ describe("storeDocumentQueryInitialState", () => {
     );
   });
 });
+
+function makeDqProgress(): DocumentQueryProgressForQueryInit {
+  return {
+    requestId: faker.string.uuid(),
+    startedAt: faker.date.recent(),
+    triggerConsolidated: faker.datatype.boolean(),
+  };
+}
+
+function makeCxDocumentRequestMetadata(): unknown {
+  return {
+    requestId: faker.string.uuid(),
+    startedAt: faker.date.recent(),
+    triggerConsolidated: faker.datatype.boolean(),
+  };
+}
 
 function makePatientExternalData(): PatientExternalDataEntry {
   return {
