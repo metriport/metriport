@@ -204,3 +204,7 @@ function isBpm(units: string): boolean {
 function isPercent(units: string): boolean {
   return units === "%";
 }
+
+export function formatNumberAsString(value: number): string {
+  return Number.isInteger(value) ? value.toString() : value.toFixed(2);
+}
