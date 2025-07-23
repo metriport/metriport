@@ -14,13 +14,11 @@ export const createHieConfigDictionary = (
   hieConfigs: Record<string, HieConfig | VpnlessHieConfig>
 ) => {
   return Object.values(hieConfigs).reduce((acc, item) => {
-    if (!doesHieUseVpn(item)) {
-      return acc;
-    }
     acc[item.name] = {
-      cidrBlock: item.internalCidrBlock,
+      ...(doesHieUseVpn(item) ? { cidrBlock: item.internalCidrBlock } : {}),
       timezone: item.timezone,
     };
+
     return acc;
   }, {} as HieConfigDictionary);
 };
