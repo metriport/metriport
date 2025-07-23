@@ -8,6 +8,7 @@ import {
   unknownGender,
 } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
+import { initTimer } from "@metriport/shared/common/timer";
 import { createUuidFromText } from "@metriport/shared/common/uuid";
 import axios, { AxiosResponse } from "axios";
 import { stringify } from "csv-stringify/sync";
@@ -117,22 +118,28 @@ export class Hl7v2RosterGenerator {
     return rosterCsv;
   }
 
-  private async getAllSubscribedPatients(hie: string): Promise<Patient[]> {
+  private async getAllSubscribedPatients(hieName: string): Promise<Patient[]> {
+    const { log } = out(`getAllSubscribedPatients - hieName ${hieName}`);
     const allSubscribers: Patient[] = [];
     let currentUrl: string | undefined = `${this.apiUrl}/${HL7V2_SUBSCRIBERS_ENDPOINT}`;
     let baseParams: Hl7v2SubscriberParams | undefined = {
-      hie,
+      hieName,
       count: NUMBER_OF_PATIENTS_PER_PAGE,
     };
 
+    let i = 1;
+    const timer = initTimer();
     while (currentUrl) {
+      log(`Getting page ${i} of patients...`);
       const response: AxiosResponse<Hl7v2SubscriberApiResponse> = await axios.get(currentUrl, {
         params: baseParams,
       });
       baseParams = undefined;
       allSubscribers.push(...response.data.patients);
       currentUrl = response.data.meta.nextPage;
+      i += 1;
     }
+    log(`Found ${allSubscribers.length} total patients in ${timer.getElapsedTime()}ms`);
     return allSubscribers;
   }
 
