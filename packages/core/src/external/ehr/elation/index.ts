@@ -1082,7 +1082,9 @@ class ElationApi {
             {
               status: formattedResultStatus,
               value: value.toString(),
-              text: text ?? loincCoding.display,
+              text: text
+                ? this.normalizeLabTitle(text)
+                : this.normalizeLabTitle(loincCoding.display),
               note: "Added via Metriport App",
               reference_min: referenceRange.low?.toString(),
               reference_max: referenceRange.high?.toString(),
@@ -1139,10 +1141,13 @@ class ElationApi {
     return this.normalizeTitle(best?.display) ?? this.normalizeTitle(code?.text);
   }
 
+  private normalizeLabTitle(title: string): string {
+    return title.trim().slice(0, maxNameCharacters);
+  }
+
   private normalizeTitle(title: string | undefined): string | undefined {
     if (!title) return undefined;
-
-    return toTitleCase(title.trim());
+    return toTitleCase(this.normalizeLabTitle(title));
   }
 
   private formatLabPanel(
@@ -1200,7 +1205,7 @@ class ElationApi {
           {
             status: formattedResultStatus,
             value: value.toString(),
-            text: text ?? loincCoding.display,
+            text: text ? this.normalizeLabTitle(text) : this.normalizeLabTitle(loincCoding.display),
             note: "Added via Metriport App",
             reference_min: referenceRange.low?.toString(),
             reference_max: referenceRange.high?.toString(),
