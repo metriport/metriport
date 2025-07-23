@@ -121,7 +121,7 @@ function generatePatientRequestRow(patient: Patient, mappedPatientId: string): B
       subscriberFirstName: patient.firstName,
       subscriberLastName: patient.lastName,
       programType: "HMO",
-      effectiveDate: new Date(),
+      effectiveDate: new Date(Date.now() - 86400000 * 365 * 2),
       expirationDate: "99991231",
     },
     requestDetailSchema,
