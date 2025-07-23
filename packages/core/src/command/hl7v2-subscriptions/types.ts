@@ -23,7 +23,7 @@ export type RosterRowData = {
   middleName: string | undefined;
   genderAtBirth: string | undefined;
   genderOtherAsUnknown: string | undefined;
-  genderEnumerated: string | undefined;
+  genderOneTwoAndNine: string | undefined;
   scrambledId: string;
   patientExternalId: string | undefined;
   ssn: string | undefined;

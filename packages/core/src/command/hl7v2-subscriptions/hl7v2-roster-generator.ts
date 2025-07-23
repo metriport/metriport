@@ -187,7 +187,7 @@ export function genderOtherAsUnknown(gender: GenderAtBirth): GenderAtBirth {
   return gender === otherGender ? unknownGender : gender;
 }
 
-export function genderEnumerated(gender: GenderAtBirth) {
+export function genderOneTwoAndNine(gender: GenderAtBirth) {
   return {
     M: "1",
     F: "2",
@@ -243,7 +243,7 @@ export function createRosterRowInput(
     dobMonthDayYear,
     genderAtBirth: data.genderAtBirth,
     genderOtherAsUnknown: genderOtherAsUnknown(data.genderAtBirth),
-    genderEnumerated: genderEnumerated(data.genderAtBirth),
+    genderOneTwoAndNine: genderOneTwoAndNine(data.genderAtBirth),
     address1AddressLine1: a1?.addressLine1,
     address1AddressLine2: a1?.addressLine2,
     address1SingleLine,
