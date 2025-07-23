@@ -279,3 +279,21 @@ export async function isXmlRedownloadFeatureFlagEnabledForCx(cxId: string): Prom
   const cxIdsWithXmlRedownloadEnabled = await getCxsWithXmlRedownloadFeatureFlag();
   return cxIdsWithXmlRedownloadEnabled.some(i => i === cxId);
 }
+
+/**
+ * TODO ENG-701 Remove this asap
+ * @deprecated
+ */
+export async function getCxsWithNewDqAndConsolidatedInitialState(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithNewDqAndConsolidatedInitialState");
+}
+/**
+ * TODO ENG-701 Remove this asap
+ * @deprecated
+ */
+export async function isNewDqAndConsolidatedInitialStateEnabledForCx(
+  cxId: string
+): Promise<boolean> {
+  const enabledCxs = await getCxsWithNewDqAndConsolidatedInitialState();
+  return enabledCxs.some(i => i === cxId);
+}
