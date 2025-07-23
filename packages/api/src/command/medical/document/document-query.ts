@@ -26,7 +26,7 @@ import { resetDocQueryProgress } from "../../../external/hie/reset-doc-query-pro
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { getPatientOrFail } from "../patient/get-patient";
-import { storeQueryInit } from "../patient/query-init";
+import { storeDocumentQueryInitialState } from "./document-query-init";
 import { areDocumentsProcessing } from "./document-status";
 
 export function isProgressEqual(a?: Progress, b?: Progress): boolean {
@@ -115,18 +115,15 @@ export async function queryDocumentsAcrossHIEs({
 
   const startedAt = new Date();
 
-  const updatedPatient = await storeQueryInit({
+  const updatedPatient = await storeDocumentQueryInitialState({
     id: patient.id,
     cxId: patient.cxId,
-    cmd: {
-      documentQueryProgress: {
-        requestId,
-        startedAt,
-        triggerConsolidated,
-        download: { status: "processing" },
-      },
-      cxDocumentRequestMetadata,
+    documentQueryProgress: {
+      requestId,
+      startedAt,
+      triggerConsolidated,
     },
+    cxDocumentRequestMetadata,
   });
 
   analytics({
