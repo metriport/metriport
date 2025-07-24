@@ -114,6 +114,38 @@ export class SurescriptsSftpClient extends SftpClient {
   }
 
   /**
+   * Send multiple patient requests in a single connection event. Since the latency of a Surescripts
+   * load is dominated by connect/disconnect latency, this allows large rosters to be loaded 10x faster.
+   */
+  async sendBatchPatientRequest(
+    requests: SurescriptsPatientRequestData[]
+  ): Promise<SurescriptsFileIdentifier[]> {
+    const identifiers: SurescriptsFileIdentifier[] = [];
+    try {
+      await this.connect();
+
+      for (const request of requests) {
+        const transmissionId = this.generateTransmissionId().toString("ascii");
+        const content = generatePatientRequestFile({
+          client: this,
+          transmissionId,
+          ...request,
+        });
+        if (!content) continue;
+
+        this.log(`Writing request for ${request.patient} (${transmissionId})`);
+        const requestFileName = buildRequestFileName(transmissionId);
+        await this.writeToSurescripts(requestFileName, content);
+        identifiers.push({ transmissionId, populationId: request.patient.id });
+      }
+
+      return identifiers;
+    } finally {
+      await this.disconnect();
+    }
+  }
+
+  /**
    * Requests can take up to an hour to show up in Surescripts history.
    * @param transmissionId the transmission ID to verify
    * @returns true if the request is present in the Surescripts history, false otherwise

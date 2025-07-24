@@ -1,16 +1,14 @@
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
-import { Coverage, Organization, Identifier, Reference } from "@medplum/fhirtypes";
+import { Coverage, Organization, Identifier, Reference, Patient } from "@medplum/fhirtypes";
 import { ResponseDetail } from "../schema/response";
 import {
   getSourceOfPaymentCode,
   getSourceOfPaymentName,
 } from "@metriport/shared/interface/external/surescripts/payment-code";
-import { SurescriptsContext } from "./types";
 import { getPatientReference } from "./patient";
 import { getSurescriptsDataSourceExtension } from "./shared";
 import {
   NCPDP_PROVIDER_ID_SYSTEM,
-  PLAN_NETWORK_BIN_SYSTEM,
   PLAN_NETWORK_PCN_SYSTEM,
   SOURCE_OF_PAYMENT_TYPOLOGY_SYSTEM,
 } from "./constants";
@@ -41,13 +39,13 @@ function getInsuranceOrganizationReference(organization: Organization): Referenc
 }
 
 export function getCoverage(
-  context: SurescriptsContext,
+  patient: Patient,
   insuranceOrganization: Organization,
   detail: ResponseDetail
 ): Coverage | undefined {
   if (!detail.planCode) return undefined;
   const identifier = getCoverageIdentifiers(detail);
-  const beneficiary = getPatientReference(context.patient);
+  const beneficiary = getPatientReference(patient);
   const relationship = getCoverageRelationship(detail);
   const subscriberId = getCoverageSubscriberId(detail);
   const extension = [getSurescriptsDataSourceExtension()];
@@ -63,6 +61,12 @@ export function getCoverage(
     ...(relationship ? { relationship } : undefined),
     ...(subscriberId ? { subscriberId } : undefined),
     extension,
+  };
+}
+
+export function getCoverageReference(coverage: Coverage): Reference<Coverage> {
+  return {
+    reference: `Coverage/${coverage.id}`,
   };
 }
 
@@ -91,12 +95,14 @@ function getCoverageIdentifiers(detail: ResponseDetail): Identifier[] {
   if (detail.planNetworkPCN) {
     identifiers.push({
       system: PLAN_NETWORK_PCN_SYSTEM,
+      type: { id: "PCN" },
       value: detail.planNetworkPCN,
     });
   }
   if (detail.planNetworkBIN) {
     identifiers.push({
-      system: PLAN_NETWORK_BIN_SYSTEM,
+      system: PLAN_NETWORK_PCN_SYSTEM,
+      type: { id: "BIN" },
       value: detail.planNetworkBIN?.toString() ?? "",
     });
   }
