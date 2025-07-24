@@ -34,12 +34,10 @@ export async function processHl7FhirBundleWebhook({
   const requestId = uuidv7();
   log(`req - ${requestId}, event - ${triggerEvent}`);
 
+  const webhookType = mapTriggerEventToWebhookType(triggerEvent);
+
   try {
-    const [settings, currentPatient] = await Promise.all([
-      getSettingsOrFail({ id: cxId }),
-      getPatientOrFail({ id: patientId, cxId }),
-    ]);
-    const webhookType = mapTriggerEventToWebhookType(triggerEvent);
+    const currentPatient = await getPatientOrFail({ id: patientId, cxId });
 
     const whData = {
       payload: {
@@ -52,6 +50,18 @@ export async function processHl7FhirBundleWebhook({
         dischargeTimestamp,
       },
     };
+
+    if (!(await isHl7NotificationWebhookFeatureFlagEnabledForCx(cxId))) {
+      log(`WH FF disabled. Not sending it...`);
+      await createWebhookRequest({
+        cxId,
+        type: webhookType,
+        payload: whData,
+        requestId,
+        status: "success",
+      });
+      return;
+    }
 
     // ENG-536 remove this once we automatically find the discharge summary
     if (
@@ -82,18 +92,7 @@ export async function processHl7FhirBundleWebhook({
       }
     }
 
-    if (!(await isHl7NotificationWebhookFeatureFlagEnabledForCx(cxId))) {
-      log(`WH FF disabled. Not sending it...`);
-      await createWebhookRequest({
-        cxId,
-        type: webhookType,
-        payload: whData,
-        requestId,
-        status: "success",
-      });
-      return;
-    }
-
+    const settings = await getSettingsOrFail({ id: cxId });
     const webhookRequest = await createWebhookRequest({
       cxId,
       type: webhookType,
