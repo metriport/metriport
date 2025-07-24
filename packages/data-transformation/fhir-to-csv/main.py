@@ -79,9 +79,8 @@ def transform_and_upload_data(
         with open(file, "rb") as f:
             logging.info(f"Uploading file {file} to {output_bucket}/{output_file_key}")
             s3_client.upload_fileobj(f, output_bucket, output_file_key)
-            logging.info(f"Uploaded file {file} to {output_bucket}/{output_file_key}")
         output_bucket_and_file_keys_and_table_names.append((output_bucket, output_file_key, table_name))
-
+    logging.info(f"Done transform_and_upload_data for patient_id {patient_id}")
     return output_bucket_and_file_keys_and_table_names
 
 def handler(event: dict, context: dict):
@@ -118,7 +117,7 @@ def handler(event: dict, context: dict):
     )
 
     if len(output_bucket_and_file_keys_and_table_names) < 1:
-        logging.info("No files to upload")
+        logging.info("No files were uploaded")
         exit(0)
 
     create_job_tables(snowflake_creds, job_id, cx_id)
