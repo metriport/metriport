@@ -165,7 +165,7 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
       durationSeconds: SIGNED_URL_DURATION_SECONDS,
     });
 
-    log(`Sending HL7 notification to API...`);
+    log(`Calling Hl7 notification callback endpoint in API...`);
     await executeWithNetworkRetries(
       async () =>
         await axios.post(internalHl7RouteUrl, undefined, {

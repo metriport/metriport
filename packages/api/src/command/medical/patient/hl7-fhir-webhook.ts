@@ -10,7 +10,7 @@ import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { errorToString, MetriportError } from "@metriport/shared";
 import { Hl7WebhookTypeSchemaType } from "@metriport/shared/medical";
 import { Hl7NotificationWebhookRequest } from "../../../routes/medical/schemas/hl7-notification";
-import { getSettingsOrFail } from "../../settings/getSettings";
+import { getSettings } from "../../settings/getSettings";
 import { processRequest } from "../../webhook/webhook";
 import { createWebhookRequest } from "../../webhook/webhook-request";
 import { getPatientOrFail } from "./get-patient";
@@ -37,7 +37,10 @@ export async function processHl7FhirBundleWebhook({
   const webhookType = mapTriggerEventToWebhookType(triggerEvent);
 
   try {
-    const currentPatient = await getPatientOrFail({ id: patientId, cxId });
+    const [settings, currentPatient] = await Promise.all([
+      getSettings({ id: cxId }),
+      getPatientOrFail({ id: patientId, cxId }),
+    ]);
 
     const whData = {
       payload: {
@@ -51,7 +54,11 @@ export async function processHl7FhirBundleWebhook({
       },
     };
 
-    if (!(await isHl7NotificationWebhookFeatureFlagEnabledForCx(cxId))) {
+    const isHl7NotificationWhFlagEnabled = await isHl7NotificationWebhookFeatureFlagEnabledForCx(
+      cxId
+    );
+
+    if (!settings || !isHl7NotificationWhFlagEnabled) {
       log(`WH FF disabled. Not sending it...`);
       await createWebhookRequest({
         cxId,
@@ -92,7 +99,6 @@ export async function processHl7FhirBundleWebhook({
       }
     }
 
-    const settings = await getSettingsOrFail({ id: cxId });
     const webhookRequest = await createWebhookRequest({
       cxId,
       type: webhookType,
