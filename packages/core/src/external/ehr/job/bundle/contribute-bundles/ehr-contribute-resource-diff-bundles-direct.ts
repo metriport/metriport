@@ -11,7 +11,7 @@ import { executeAsynchronously } from "../../../../../util/concurrency";
 import { log } from "../../../../../util/log";
 import { capture } from "../../../../../util/notifications";
 import { getReferencesFromResources, ReferenceWithIdAndType } from "../../../../fhir/bundle/bundle";
-import { isPatient } from "../../../../fhir/shared";
+import { isCondition, isPatient } from "../../../../fhir/shared";
 import { createPredecessorExtensionRelatedArtifact } from "../../../../fhir/shared/extensions/derived-from";
 import { createExtensionDataSource } from "../../../../fhir/shared/extensions/extension";
 import { contributeBundle } from "../../../api/job/contribute-bundle";
@@ -260,6 +260,7 @@ function prepareEhrOnlyResourcesForContribution(
     if (!oldResourceId) continue;
     dangerouslyAdjustPatientReference(resource, metriportPatientId);
     dangerouslyAdjustExtensions(resource, oldResourceId, ehr);
+    dangeouslyNormalizeResource(resource);
   }
   return preparedEhrOnlyResources;
 }
@@ -279,6 +280,18 @@ function dangerouslyAdjustExtensions(resource: any, predecessorId: string, ehr: 
   const predecessorExtension = createPredecessorExtensionRelatedArtifact(predecessorId);
   const dataSourceExtension = createExtensionDataSource(ehr.toUpperCase());
   resource.extension = [...(resource.extension ?? []), predecessorExtension, dataSourceExtension];
+}
+
+function dangeouslyNormalizeResource(resource: Resource) {
+  if (isCondition(resource)) {
+    if (resource.note) {
+      resource.note.forEach(note => {
+        if (note.text) {
+          note.text = note.text.replace(/\u2003/g, " ").replace(/\u2013/g, "-");
+        }
+      });
+    }
+  }
 }
 
 function replaceResourceId({
