@@ -26,6 +26,7 @@ import {
   Hl7v2SubscriberApiResponse,
   Hl7v2SubscriberParams,
   RosterRowData,
+  VpnlessHieConfig,
 } from "./types";
 import { createScrambledId } from "./utils";
 const region = Config.getAWSRegion();
@@ -46,7 +47,7 @@ export class Hl7v2RosterGenerator {
     this.s3Utils = new S3Utils(region);
   }
 
-  async execute(config: HieConfig): Promise<string> {
+  async execute(config: HieConfig | VpnlessHieConfig): Promise<string> {
     const { log } = out("Hl7v2RosterGenerator");
     const { states } = config;
     const hieName = config.name;
@@ -83,14 +84,23 @@ export class Hl7v2RosterGenerator {
 
     const rosterRowInputs = patients.map(p => {
       const org = orgsByCxId[p.cxId];
-      if (org) {
-        return createRosterRowInput(p, org, states);
+      if (!org) {
+        throw new MetriportError(
+          `Organization ${p.cxId} not found for patient ${p.id}`,
+          undefined,
+          {
+            patientId: p.id,
+            cxId: p.cxId,
+          }
+        );
+      } else if (!org.shortcode) {
+        throw new MetriportError(`Organization ${p.cxId} has no shortcode`, undefined, {
+          patientId: p.id,
+          cxId: p.cxId,
+        });
       }
 
-      throw new MetriportError(`Organization ${p.cxId} not found for patient ${p.id}`, undefined, {
-        patientId: p.id,
-        cxId: p.cxId,
-      });
+      return createRosterRowInput(p, { shortcode: org.shortcode }, states);
     });
 
     const rosterRows = rosterRowInputs.map(input => createRosterRow(input, config.mapping));
@@ -205,7 +215,7 @@ export function genderOneTwoAndNine(gender: GenderAtBirth) {
 
 export function createRosterRowInput(
   p: Patient,
-  org: { shortcode?: string | undefined },
+  org: { shortcode: string },
   states: string[]
 ): RosterRowData {
   const data = p.data;
