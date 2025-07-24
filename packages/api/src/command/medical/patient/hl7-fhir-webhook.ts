@@ -59,7 +59,8 @@ export async function processHl7FhirBundleWebhook({
     );
 
     if (!settings || !isHl7NotificationWhFlagEnabled) {
-      log(`WH FF disabled. Not sending it...`);
+      const msg = !settings ? "Settings not found" : "WH FF disabled";
+      log(`${msg}. Not sending it...`);
       await createWebhookRequest({
         cxId,
         type: webhookType,
