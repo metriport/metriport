@@ -281,19 +281,25 @@ export async function isXmlRedownloadFeatureFlagEnabledForCx(cxId: string): Prom
 }
 
 /**
- * TODO ENG-701 Remove this asap
- * @deprecated
+ * @deprecated TODO ENG-701 Remove this asap
  */
-export async function getCxsWithNewDqAndConsolidatedInitialState(): Promise<string[]> {
-  return getCxsWithFeatureFlagEnabled("cxsWithNewDqAndConsolidatedInitialState");
-}
+// export async function getCxsWithNewDqAndConsolidatedInitialState(): Promise<string[]> {
+//   return getCxsWithFeatureFlagEnabled("cxsWithNewDqAndConsolidatedInitialState");
+// }
 /**
- * TODO ENG-701 Remove this asap
- * @deprecated
+ * Returns true for every customer if the FF is enabled. Last step before removing the FF.
+ * @deprecated TODO ENG-701 Remove this asap
  */
 export async function isNewDqAndConsolidatedInitialStateEnabledForCx(
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   cxId: string
 ): Promise<boolean> {
-  const enabledCxs = await getCxsWithNewDqAndConsolidatedInitialState();
-  return enabledCxs.some(i => i === cxId);
+  try {
+    const featureFlag = await getFeatureFlagValueStringArray(
+      "cxsWithNewDqAndConsolidatedInitialState"
+    );
+    return featureFlag && featureFlag.enabled;
+  } catch (error) {
+    return false;
+  }
 }
