@@ -62,7 +62,7 @@ def transform_and_upload_data(
         with open(local_ndjson_bundle_key, "w") as f:
             ndjson.dump(entries, f)
         logging.info(f"Parsing bundle {local_ndjson_bundle_key} to {local_patient_path}")
-    local_output_files = parseNdjsonBundle.parse(local_ndjson_bundle_key, local_patient_path, patient_id)
+    local_output_files = parseNdjsonBundle.parse(local_ndjson_bundle_key, local_patient_path)
 
     output_bucket_and_file_keys_and_table_names = []
     for file in local_output_files:
