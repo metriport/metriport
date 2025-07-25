@@ -49,7 +49,7 @@ def transform_and_upload_data(
         except s3_client.exceptions.ClientError as e:
             if e.response['Error']['Code'] == '404':
                 logging.warning(f"Bundle {bundle_key} not found in input bucket {input_bucket}")
-                raise ValueError("Bundle not found") 
+                raise ValueError("Bundle not found") from e
             else:
                 raise e
     with open(local_bundle_key, "rb") as f:
@@ -57,7 +57,7 @@ def transform_and_upload_data(
         entries = bundle["entry"]
         if entries is None or len(entries) < 1:
             logging.warning(f"Bundle {bundle_key} has no entries")
-            return
+            return []
         local_ndjson_bundle_key = local_bundle_key.replace(".json", ".ndjson")
         with open(local_ndjson_bundle_key, "w") as f:
             ndjson.dump(entries, f)
