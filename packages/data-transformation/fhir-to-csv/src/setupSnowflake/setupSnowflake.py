@@ -40,14 +40,15 @@ def get_snowflake_credentials(creds: dict) -> dict[str, str]:
         "role": snowflake_role
     }
 
-def generate_table_names_and_create_table_statements(job_id: str, date_types=False) -> list[tuple[str, str, str]]:
+def generate_table_names_and_create_table_statements(patient_id: str, job_id: str, date_types=False) -> list[tuple[str, str, str]]:
     table_names_and_create_job_table_statements = []
+    logging.info('Running generate_table_names_and_create_table_statements for pt "%s", job "%s"', patient_id, job_id)
     for file in os.listdir(config_folder):
         if not file.endswith(".ini"):
             continue
         logging.info('Loading config "%s"', file)
         table_name = format_table_name_from_config_file_name(file)
-        job_table_name = format_job_table_name(job_id, table_name)
+        job_table_name = format_job_table_name(patient_id, job_id, table_name)
         config = configparser.ConfigParser()
         config.read(os.path.join(config_folder, file))
         if 'Struct' not in config:
@@ -59,36 +60,26 @@ def generate_table_names_and_create_table_statements(job_id: str, date_types=Fal
         table_names_and_create_job_table_statements.append((table_name, job_table_name, create_statement))
     return table_names_and_create_job_table_statements
 
-def create_job_tables(creds: dict, job_id: str, cx_id: str):
+def create_job_tables(creds: dict, cx_id: str, patient_id: str, job_id: str):
     database_name = format_database_name(cx_id)
-    logging.info('Running create_job_tables for cx "%s"', cx_id)
+    logging.info('Running create_job_tables for cx "%s", pt "%s", job "%s"', cx_id, patient_id, job_id)
     with snowflake.connector.connect(**get_snowflake_credentials(creds)) as snowflake_conn:
         snowflake_conn.cursor().execute(f"CREATE DATABASE IF NOT EXISTS {database_name}")
         snowflake_conn.cursor().execute(f"USE DATABASE {database_name}")
         snowflake_conn.cursor().execute("USE SCHEMA PUBLIC")
-        tables = generate_table_names_and_create_table_statements(job_id)
+        tables = generate_table_names_and_create_table_statements(patient_id, job_id)
         for _, job_table_name, create_job_table_statement in tables:
             snowflake_conn.cursor().execute(f"DROP TABLE IF EXISTS {job_table_name}")
             snowflake_conn.cursor().execute(create_job_table_statement)
 
-def rename_job_tables(creds: dict, job_id: str, cx_id: str):
-    database_name = format_database_name(cx_id)
-    logging.info('Running rename_job_tables for cx "%s"', cx_id)
-    with snowflake.connector.connect(**get_snowflake_credentials(creds)) as snowflake_conn:
-        snowflake_conn.cursor().execute(f"USE DATABASE {database_name}")
-        snowflake_conn.cursor().execute("USE SCHEMA PUBLIC")
-        tables = generate_table_names_and_create_table_statements(job_id)
-        for table_name, job_table_name, _ in tables:
-            snowflake_conn.cursor().execute(f"DROP TABLE IF EXISTS {table_name}")
-            snowflake_conn.cursor().execute(f"ALTER TABLE {job_table_name} RENAME TO {table_name}")
 
-def append_job_tables(creds: dict, job_id: str, cx_id: str, patient_id: str, rebuild_patient: bool = False):
+def append_job_tables(creds: dict, cx_id: str, patient_id: str, job_id: str, rebuild_patient: bool = False):
     database_name = format_database_name(cx_id)
-    logging.info('Running append_job_tables for cx "%s"', cx_id)
+    logging.info('Running append_job_tables for cx "%s", pt "%s", job "%s"', cx_id, patient_id, job_id)
     with snowflake.connector.connect(**get_snowflake_credentials(creds)) as snowflake_conn:
         snowflake_conn.cursor().execute(f"USE DATABASE {database_name}")
         snowflake_conn.cursor().execute("USE SCHEMA PUBLIC")
-        tables = generate_table_names_and_create_table_statements(job_id)
+        tables = generate_table_names_and_create_table_statements(patient_id, job_id)
         for table_name, job_table_name, _ in tables:
             logging.info('...appending to JOB table "%s"', table_name)
             snowflake_conn.cursor().execute(f"CREATE TABLE IF NOT EXISTS {table_name} LIKE {job_table_name}")
@@ -100,7 +91,7 @@ def append_job_tables(creds: dict, job_id: str, cx_id: str, patient_id: str, reb
             snowflake_conn.cursor().execute(f"INSERT INTO {table_name} SELECT * FROM {job_table_name}")
             snowflake_conn.cursor().execute(f"DROP TABLE IF EXISTS {job_table_name}")
 
-def copy_into_job_table(creds: dict, job_id: str, cx_id: str, s3_bucket: str, file_key: str, table_name: str):
+def copy_into_job_table(creds: dict, cx_id: str, patient_id: str, job_id: str, s3_bucket: str, file_key: str, table_name: str):
     database_name = format_database_name(cx_id)
     logging.info('Running copy_into_job_table for cx "%s", file "%s", table "%s"', cx_id, file_key, table_name)
     stage_name = format_stage_name(file_key)
@@ -110,7 +101,7 @@ def copy_into_job_table(creds: dict, job_id: str, cx_id: str, s3_bucket: str, fi
     url = f"s3://{s3_bucket}/{file_path}/"
     logging.info('...S3 url "%s"', url)
     with snowflake.connector.connect(**get_snowflake_credentials(creds)) as snowflake_conn:
-        job_table_name = format_job_table_name(job_id, table_name)
+        job_table_name = format_job_table_name(patient_id, job_id, table_name)
         try:
             snowflake_conn.cursor().execute(f"USE DATABASE {database_name}")
             snowflake_conn.cursor().execute("USE SCHEMA PUBLIC")

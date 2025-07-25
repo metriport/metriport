@@ -6,8 +6,8 @@ def format_database_name(cx_id: str) -> str:
 def format_table_name_from_config_file_name(config_file_name: str) -> str:
     return strip_config_file_name(config_file_name).replace('.', '_').lower()
 
-def format_job_table_name(job_id: str, table_name: str) -> str:
-    return f"job_{job_id.replace('-', '_')}_{table_name}"
+def format_job_table_name(patient_id: str, job_id: str, table_name: str) -> str:
+    return f"job_{job_id.replace('-', '_')}_pt_{patient_id.replace('-', '_')}_{table_name}"
 
 # e.g.: SNOWFLAKE_FHIR_TO_CSV_585E6A0B_2B22_46A7_9D76_4E7840EB0276_JOBID__TMP_OUTPUT_585E6A0B_2B22_46A7_9D76_4E7840EB0276_0196A0FC_529C_72F3_96C9_203BB47FEA9E_MEDICATIONDISPENSE_CSV_STAGE
 def format_stage_name(file_key: str) -> str:

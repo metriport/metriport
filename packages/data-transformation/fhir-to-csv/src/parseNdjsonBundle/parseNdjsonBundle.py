@@ -24,7 +24,7 @@ def ensure_folder_exists(folder_path):
     os.makedirs(folder_path, exist_ok=True)
 
 # METRIPORT CHANGE FROM INLINE TO FUNCTION
-def parse(input_path: str, outputs_folder: str) -> list[str]:
+def parse(input_path: str, outputs_folder: str, patient_id: str) -> list[str]:
     # First, group config files by their base resource type
     config_groups = {}
     for config_file in os.listdir(config_folder):
@@ -38,7 +38,7 @@ def parse(input_path: str, outputs_folder: str) -> list[str]:
     # Process each resource type separately
     for resource_type, config_files in config_groups.items():
         # First, filter the input file for just this resource type
-        filtered_input = f'{outputs_folder}/temp_{resource_type.lower()}.ndjson'
+        filtered_input = f'{outputs_folder}/temp_{patient_id}_{resource_type.lower()}.ndjson'
         
         ensure_folder_exists(outputs_folder)
         with open(input_path, 'r') as infile, open(filtered_input, 'w') as outfile:
