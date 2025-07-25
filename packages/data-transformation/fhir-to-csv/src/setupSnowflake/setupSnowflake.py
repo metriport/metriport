@@ -134,7 +134,7 @@ def set_patient_status(creds: dict, cx_id: str, patient_id: str, status: str):
         snowflake_conn.cursor().execute(f"USE DATABASE {database_name}")
         snowflake_conn.cursor().execute("USE SCHEMA PUBLIC")
         table_name = format_patient_status_table_name()
-        snowflake_conn.cursor().execute(f"CREATE TABLE IF NOT EXISTS {table_name} (ID VARCHAR(255), STATUS VARCHAR(255))")
+        snowflake_conn.cursor().execute(f"CREATE OR REPLACE HYBRID TABLE {table_name} (ID VARCHAR(255) PRIMARY KEY, STATUS VARCHAR(255))")
         snowflake_conn.cursor().execute(f"DELETE FROM {table_name} WHERE ID = '{patient_id}'")
         snowflake_conn.cursor().execute(f"INSERT INTO {table_name} (ID, STATUS) VALUES ('{patient_id}', '{status}')")
 
