@@ -22,6 +22,11 @@ from src.utils.environment import Environment
 from src.utils.dwh import DWH
 from src.utils.file import create_consolidated_key, create_output_file_prefix
 
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(levelname)s - %(message)s'
+)
+
 transform_name = 'fhir-to-csv'
 
 env = Environment(os.getenv("ENV") or Environment.DEV)

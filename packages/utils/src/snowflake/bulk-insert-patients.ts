@@ -5,7 +5,6 @@ import { SQSClient } from "@metriport/core/external/aws/sqs";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { out } from "@metriport/core/util/log";
 import { errorToString, getEnvVarOrFail, sleep } from "@metriport/shared";
-import { createUuidFromText } from "@metriport/shared/common/uuid";
 import axios from "axios";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -53,13 +52,14 @@ async function main() {
   const patientsToInsert = isAllPatients
     ? await getAllPatientIds({ axios: api, cxId })
     : patientIds;
+  const uniquePatientIds = [...new Set(patientsToInsert)];
 
-  await displayWarningAndConfirmation(patientsToInsert, isAllPatients, orgName, log);
+  await displayWarningAndConfirmation(uniquePatientIds, isAllPatients, orgName, log);
   log(`>>> Running it... jobId: ${jobId}`);
 
   const failedPatientIds: string[] = [];
   await executeAsynchronously(
-    patientsToInsert,
+    uniquePatientIds,
     async patientId => {
       const payload = JSON.stringify({
         jobId,
@@ -69,7 +69,7 @@ async function main() {
       try {
         await sqsClient.sendMessageToQueue(queueUrl, payload, {
           fifo: true,
-          messageDeduplicationId: createUuidFromText(payload),
+          messageDeduplicationId: patientId,
           messageGroupId: patientId,
         });
       } catch (error) {

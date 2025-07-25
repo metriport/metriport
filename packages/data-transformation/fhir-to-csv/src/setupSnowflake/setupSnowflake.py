@@ -10,6 +10,11 @@ from src.utils.database import (
     get_data_type,
 )
 
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(levelname)s - %(message)s'
+)
+
 # Define base paths
 config_folder = 'src/parseFhir/configurations/'
 
