@@ -1,5 +1,5 @@
 import { Logger } from "../../util/log";
-import { buildDayjs, ISO_DATE_TIME } from "@metriport/shared/src/common/date";
+import { buildDayjs, ISO_DATE_TIME } from "@metriport/shared/common/date";
 import { S3Utils } from "../../external/aws/s3";
 import { Config } from "../../util/config";
 import { createUnparseableHl7MessagePhiFileKey } from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
