@@ -9,6 +9,10 @@ export async function convertPatientResponseToFhirBundle(
   cxId: string,
   responseFileContent: Buffer
 ): Promise<SurescriptsConversionBundle | undefined> {
+  if (responseFileContent.toString().startsWith('<?xml version="1.0" encoding="UTF-8"?>')) {
+    console.log("Response file is XML! Skipping conversion.");
+    return undefined;
+  }
   const responseFile = parseResponseFile(responseFileContent);
   const patientIdDetails = buildPatientIdToDetailsMap(responseFile);
   const patientIds = Array.from(patientIdDetails.keys());
