@@ -197,17 +197,3 @@ export function createUnparseableHl7MessageErrorMessageFileKey({
 }) {
   return `parse-failure/${rawTimestamp}_${rawPtIdentifier}_${messageCode}_${triggerEvent}_${nanoid()}_error.txt`;
 }
-
-export function createUnparseableHl7MessagePhiFileKey({
-  rawPtIdentifier,
-  rawTimestamp,
-  messageCode,
-  triggerEvent,
-}: {
-  rawPtIdentifier: string;
-  rawTimestamp: string;
-  messageCode: string;
-  triggerEvent: string;
-}) {
-  return `parse-failure/phi/${rawTimestamp}_${rawPtIdentifier}_${messageCode}_${triggerEvent}_${nanoid()}_phi.txt`;
-}
