@@ -263,7 +263,7 @@ function prepareEhrOnlyResourcesForContribution(
     if (!oldResourceId) continue;
     dangerouslyAdjustPatientReference(resource, metriportPatientId);
     dangerouslyAdjustExtensions(resource, oldResourceId, ehr);
-    dangeouslyNormalizeResource(resource);
+    dangerouslyNormalizeResource(resource);
   }
   return preparedEhrOnlyResources;
 }
@@ -285,7 +285,7 @@ function dangerouslyAdjustExtensions(resource: any, predecessorId: string, ehr: 
   resource.extension = [...(resource.extension ?? []), predecessorExtension, dataSourceExtension];
 }
 
-function dangeouslyNormalizeResource(resource: Resource) {
+function dangerouslyNormalizeResource(resource: Resource) {
   if (isCondition(resource)) {
     if (resource.note) {
       resource.note.forEach(note => {
