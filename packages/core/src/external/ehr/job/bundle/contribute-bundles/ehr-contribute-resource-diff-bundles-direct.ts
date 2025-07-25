@@ -31,6 +31,9 @@ const parallelRequests = 2;
 const minJitter = dayjs.duration(0, "seconds");
 const maxJitter = dayjs.duration(5, "seconds");
 
+const INVISIBLE_WIDE_SPACE = "\u2003";
+const EN_DASH = "\u2013";
+
 export class EhrContributeResourceDiffBundlesDirect
   implements EhrContributeResourceDiffBundlesHandler
 {
@@ -287,7 +290,9 @@ function dangeouslyNormalizeResource(resource: Resource) {
     if (resource.note) {
       resource.note.forEach(note => {
         if (note.text) {
-          note.text = note.text.replace(/\u2003/g, " ").replace(/\u2013/g, "-");
+          note.text = note.text
+            .replace(new RegExp(INVISIBLE_WIDE_SPACE, "g"), " ")
+            .replace(new RegExp(EN_DASH, "g"), "-");
         }
       });
     }
