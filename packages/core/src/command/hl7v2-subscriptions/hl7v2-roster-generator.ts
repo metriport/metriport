@@ -1,8 +1,11 @@
 import {
   executeWithNetworkRetries,
+  GenderAtBirth,
   InternalOrganizationDTO,
   internalOrganizationDTOSchema,
   MetriportError,
+  otherGender,
+  unknownGender,
 } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import { createUuidFromText } from "@metriport/shared/common/uuid";
@@ -11,7 +14,6 @@ import { stringify } from "csv-stringify/sync";
 import dayjs from "dayjs";
 import _ from "lodash";
 import { getFirstNameAndMiddleInitial, Patient } from "../../domain/patient";
-import { Hl7v2Subscription } from "../../domain/patient-settings";
 import { S3Utils, storeInS3WithRetries } from "../../external/aws/s3";
 import { out } from "../../util";
 import { Config } from "../../util/config";
@@ -33,6 +35,7 @@ const HL7V2_SUBSCRIBERS_ENDPOINT = `internal/patient/hl7v2-subscribers`;
 const GET_ORGANIZATION_ENDPOINT = `internal/organization`;
 const NUMBER_OF_PATIENTS_PER_PAGE = 500;
 const NUMBER_OF_ATTEMPTS = 3;
+const DEFAULT_ZIP_PLUS_4_EXT = "-0000";
 const BASE_DELAY = dayjs.duration({ seconds: 1 });
 
 export class Hl7v2RosterGenerator {
@@ -44,12 +47,12 @@ export class Hl7v2RosterGenerator {
 
   async execute(config: HieConfig): Promise<string> {
     const { log } = out("Hl7v2RosterGenerator");
-    const { states, subscriptions } = config;
+    const { states } = config;
+    const hieName = config.name;
     const loggingDetails = {
-      hieName: config.name,
+      hieName,
       mapping: config.mapping,
       states,
-      subscriptions,
     };
 
     async function simpleExecuteWithRetries<T>(functionToExecute: () => Promise<T>) {
@@ -62,9 +65,7 @@ export class Hl7v2RosterGenerator {
 
     log(`Running with this config: ${JSON.stringify(loggingDetails)}`);
     log(`Getting all subscribed patients...`);
-    const patients = await simpleExecuteWithRetries(() =>
-      this.getAllSubscribedPatients(states, subscriptions)
-    );
+    const patients = await simpleExecuteWithRetries(() => this.getAllSubscribedPatients(hieName));
     log(`Found ${patients.length} total patients`);
 
     if (patients.length === 0) {
@@ -95,7 +96,7 @@ export class Hl7v2RosterGenerator {
     const rosterCsv = this.generateCsv(rosterRows);
     log("Created CSV");
 
-    const fileName = this.createFileKeyHl7v2Roster(config.name, subscriptions);
+    const fileName = this.createFileKeyHl7v2Roster(hieName);
 
     await storeInS3WithRetries({
       s3Utils: this.s3Utils,
@@ -116,15 +117,11 @@ export class Hl7v2RosterGenerator {
     return rosterCsv;
   }
 
-  private async getAllSubscribedPatients(
-    states: string[],
-    subscriptions: Hl7v2Subscription[]
-  ): Promise<Patient[]> {
+  private async getAllSubscribedPatients(hie: string): Promise<Patient[]> {
     const allSubscribers: Patient[] = [];
     let currentUrl: string | undefined = `${this.apiUrl}/${HL7V2_SUBSCRIBERS_ENDPOINT}`;
     let baseParams: Hl7v2SubscriberParams | undefined = {
-      states: states.join(","),
-      subscriptions,
+      hie,
       count: NUMBER_OF_PATIENTS_PER_PAGE,
     };
 
@@ -155,9 +152,9 @@ export class Hl7v2RosterGenerator {
     return stringify(records, { header: true, quoted: true });
   }
 
-  private createFileKeyHl7v2Roster(hieName: string, subscriptions: Hl7v2Subscription[]): string {
+  private createFileKeyHl7v2Roster(hieName: string): string {
     const todaysDate = buildDayjs(new Date()).toISOString().split("T")[0];
-    return `${todaysDate}/${hieName}/${subscriptions.join("-")}.${CSV_FILE_EXTENSION}`;
+    return `${todaysDate}/${hieName}.${CSV_FILE_EXTENSION}`;
   }
 }
 
@@ -185,6 +182,20 @@ type RosterRowKey = keyof RosterRowData;
 function isRosterRowKey(key: string, obj: RosterRowData): key is RosterRowKey {
   return key in obj;
 }
+
+export function genderOtherAsUnknown(gender: GenderAtBirth): GenderAtBirth {
+  return gender === otherGender ? unknownGender : gender;
+}
+
+export function genderOneTwoAndNine(gender: GenderAtBirth) {
+  return {
+    M: "1",
+    F: "2",
+    O: "9",
+    U: "9",
+  }[gender];
+}
+
 export function createRosterRowInput(
   p: Patient,
   org: { shortcode?: string | undefined },
@@ -198,14 +209,26 @@ export function createRosterRowInput(
   const email = data.contact?.find(c => c.email)?.email;
   const scrambledId = createScrambledId(p.cxId, p.id);
   const rosterGenerationDate = buildDayjs(new Date()).format("YYYY-MM-DD");
-  const dob = data.dob;
-  const dobNoDelimiter = dob.replace(/[-]/g, "");
-  const authorizingParticipantFacilityCode = org.shortcode;
+  const dob = data.dob; // 2025-01-31
+  const dobNoDelimiter = dob.replace(/[-]/g, ""); // 20250131
+  const dobMonthDayYear = buildDayjs(dob).format("MM/DD/YYYY"); // 01/31/2025
+  const cxShortcode = org.shortcode;
   const authorizingParticipantMrn = p.externalId || createUuidFromText(scrambledId);
   const assigningAuthorityIdentifier = METRIPORT_ASSIGNING_AUTHORITY_IDENTIFIER;
   const lineOfBusiness = "COMMERCIAL";
   const emptyString = "";
+  const a1 = addresses[0];
+  const address1SingleLine = a1?.addressLine1
+    ? a1.addressLine1 + (a1.addressLine2 ? " " + a1.addressLine2 : "")
+    : undefined;
+  const address1ZipPlus4 = a1?.zip ? a1.zip + DEFAULT_ZIP_PLUS_4_EXT : undefined;
   const { firstName, middleInitial } = getFirstNameAndMiddleInitial(data.firstName);
+  const dateTwoMonthsInFutureNoDelimiter = buildDayjs(new Date())
+    .add(2, "month")
+    .format("YYYYMMDD");
+  const july2025 = new Date(2025, 6, 1);
+  const dateMid2025NoDelimiter = buildDayjs(july2025).format("YYYYMMDD");
+  const patientExternalId = p.externalId;
 
   return {
     id: p.id,
@@ -217,16 +240,22 @@ export function createRosterRowInput(
     middleName: middleInitial,
     dob,
     dobNoDelimiter,
+    dobMonthDayYear,
     genderAtBirth: data.genderAtBirth,
-    address1AddressLine1: addresses[0]?.addressLine1,
-    address1AddressLine2: addresses[0]?.addressLine2,
-    address1City: addresses[0]?.city,
-    address1State: addresses[0]?.state,
-    address1Zip: addresses[0]?.zip,
+    genderOtherAsUnknown: genderOtherAsUnknown(data.genderAtBirth),
+    genderOneTwoAndNine: genderOneTwoAndNine(data.genderAtBirth),
+    address1AddressLine1: a1?.addressLine1,
+    address1AddressLine2: a1?.addressLine2,
+    address1SingleLine,
+    address1City: a1?.city,
+    address1State: a1?.state,
+    address1Zip: a1?.zip,
+    address1ZipPlus4,
     insuranceId: undefined,
     insuranceCompanyId: undefined,
     insuranceCompanyName: undefined,
-    authorizingParticipantFacilityCode,
+    cxShortcode,
+    patientExternalId,
     authorizingParticipantMrn,
     assigningAuthorityIdentifier,
     ssn,
@@ -234,6 +263,8 @@ export function createRosterRowInput(
     phone,
     email,
     lineOfBusiness,
+    dateTwoMonthsInFutureNoDelimiter,
+    dateMid2025NoDelimiter,
     emptyString,
   };
 }

@@ -1,0 +1,21 @@
+{{!-- 
+  // The list of possible values for the status element in a CarePlan resource.
+  // See https://hl7.org/fhir/R4/careplan.html for reference.
+ --}}
+{{#with (toLower code) as |normalizedCode|}}
+	{{#if (eq normalizedCode 'draft')}}
+		"draft"
+	{{else if (eq normalizedCode 'active')}}
+		"active"
+	{{else if (eq normalizedCode 'on-hold')}}
+		"on-hold"
+	{{else if (eq normalizedCode 'revoked')}}
+		"revoked"
+	{{else if (eq normalizedCode 'completed')}}
+		"completed"
+	{{else if (eq normalizedCode 'entered-in-error')}}
+		"entered-in-error"
+	{{else}}
+		"unknown"
+	{{/if}}
+{{/with}}

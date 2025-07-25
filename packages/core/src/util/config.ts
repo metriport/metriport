@@ -1,5 +1,4 @@
 import { getEnvVarAsRecordOrFail } from "@metriport/shared/common/env-var";
-import { SnowflakeCreds, snowflakeCredsSchema } from "../external/snowflake/creds";
 import { getEnvVar, getEnvVarOrFail } from "./env-var";
 
 /**
@@ -107,8 +106,8 @@ export class Config {
   static getHl7NotificationQueueUrl(): string {
     return getEnvVarOrFail("HL7_NOTIFICATION_QUEUE_URL");
   }
-  static getHieTimezoneDictionary(): Record<string, unknown> {
-    return getEnvVarAsRecordOrFail("HIE_TIMEZONE_DICTIONARY");
+  static getHieConfigDictionary(): Record<string, unknown> {
+    return getEnvVarAsRecordOrFail("HIE_CONFIG_DICTIONARY");
   }
 
   static getCdaToFhirConversionBucketName(): string | undefined {
@@ -390,7 +389,17 @@ export class Config {
     return getEnvVarOrFail("DISCHARGE_NOTIFICATION_SLACK_URL");
   }
 
-  static getSnowflakeCreds(): SnowflakeCreds {
-    return snowflakeCredsSchema.parse(getEnvVarAsRecordOrFail("SNOWFLAKE_CREDS"));
+  static getFhirToCsvQueueUrl(): string {
+    return getEnvVarOrFail("FHIR_TO_CSV_QUEUE_URL");
+  }
+  static getFhirToCsvTransformLambdaName(): string {
+    return getEnvVarOrFail("FHIR_TO_CSV_TRANSFORM_LAMBDA_NAME");
+  }
+
+  static getFhirToCsvBatchJobQueueArn(): string | undefined {
+    return getEnvVar("FHIR_TO_CSV_BATCH_JOB_QUEUE_ARN");
+  }
+  static getFhirToCsvBatchJobDefinitionArn(): string | undefined {
+    return getEnvVar("FHIR_TO_CSV_BATCH_JOB_DEFINITION_ARN");
   }
 }

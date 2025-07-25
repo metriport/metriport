@@ -1,11 +1,11 @@
 import {
   Aspects,
+  aws_wafv2 as wafv2,
   CfnOutput,
   Duration,
   RemovalPolicy,
   Stack,
   StackProps,
-  aws_wafv2 as wafv2,
 } from "aws-cdk-lib";
 import * as apig from "aws-cdk-lib/aws-apigateway";
 import { BackupResource } from "aws-cdk-lib/aws-backup";
@@ -520,9 +520,13 @@ export class APIStack extends Stack {
     //-------------------------------------------
     // Analytics Platform
     //-------------------------------------------
+    let analyticsPlatformStack: AnalyticsPlatformsNestedStack | undefined = undefined;
     if (!isSandbox(props.config)) {
-      new AnalyticsPlatformsNestedStack(this, "AnalyticsPlatforms", {
+      analyticsPlatformStack = new AnalyticsPlatformsNestedStack(this, "AnalyticsPlatforms", {
         config: props.config,
+        vpc: this.vpc,
+        lambdaLayers,
+        medicalDocumentsBucket,
       });
     }
 
@@ -681,6 +685,7 @@ export class APIStack extends Stack {
       surescriptsAssets: surescriptsStack?.getAssets(),
       questAssets: questStack?.getAssets(),
       jobAssets: jobsStack.getAssets(),
+      analyticsPlatformAssets: analyticsPlatformStack?.getAssets(),
     });
     const apiLoadBalancerAddress = apiLoadBalancer.loadBalancerDnsName;
 
@@ -771,6 +776,7 @@ export class APIStack extends Stack {
       ...(surescriptsStack?.getLambdas() ?? []),
       ...(questStack?.getLambdas() ?? []),
       jobsStack.getAssets().runPatientJobLambda,
+      analyticsPlatformStack?.getAssets().fhirToCsvLambda,
     ];
     const apiUrl = `http://${apiDirectUrl}`;
     lambdasToGetApiUrl.forEach(lambda => lambda?.addEnvironment("API_URL", apiUrl));
@@ -784,6 +790,12 @@ export class APIStack extends Stack {
     medicalDocumentsBucket.grantRead(fhirConverterLambda);
     medicalDocumentsBucket.grantRead(ehrComputeResourceDiffBundlesLambda);
     medicalDocumentsBucket.grantRead(ehrWriteBackResourceDiffBundlesLambda);
+    if (analyticsPlatformStack) {
+      medicalDocumentsBucket.grantRead(
+        analyticsPlatformStack.fhirToCsvBatchJobContainer.executionRole
+      );
+      medicalDocumentsBucket.grantRead(analyticsPlatformStack.fhirToCsvTransformLambda);
+    }
 
     createDocQueryChecker({
       lambdaLayers,

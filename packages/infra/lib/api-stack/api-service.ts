@@ -37,6 +37,8 @@ import { addDefaultMetricsToTargetGroup } from "../shared/target-group";
 import { isProd, isSandbox } from "../shared/util";
 import { SurescriptsAssets } from "../surescripts/types";
 import { QuestAssets } from "../quest/types";
+import { AnalyticsPlatformsAssets } from "../analytics-platform/types";
+import { createHieConfigDictionary } from "../shared/hie-config-dictionary";
 
 interface ApiProps extends StackProps {
   config: EnvConfig;
@@ -140,6 +142,7 @@ export function createAPIService({
   surescriptsAssets,
   questAssets,
   jobAssets,
+  analyticsPlatformAssets,
 }: {
   stack: Construct;
   props: ApiProps;
@@ -190,6 +193,7 @@ export function createAPIService({
   surescriptsAssets: SurescriptsAssets | undefined;
   questAssets: QuestAssets | undefined;
   jobAssets: JobsAssets;
+  analyticsPlatformAssets: AnalyticsPlatformsAssets | undefined;
 }): {
   cluster: ecs.Cluster;
   service: ecs_patterns.ApplicationLoadBalancedFargateService;
@@ -417,6 +421,20 @@ export function createAPIService({
             DISCHARGE_NOTIFICATION_SLACK_URL:
               props.config.hl7Notification.dischargeNotificationSlackUrl,
           }),
+          ...(analyticsPlatformAssets && {
+            FHIR_TO_CSV_QUEUE_URL: analyticsPlatformAssets.fhirToCsvQueue.queueUrl,
+            FHIR_TO_CSV_TRANSFORM_LAMBDA_NAME:
+              analyticsPlatformAssets.fhirToCsvTransformLambda.functionName,
+            FHIR_TO_CSV_BATCH_JOB_DEFINITION_ARN:
+              analyticsPlatformAssets.fhirToCsvBatchJob.jobDefinitionArn,
+            FHIR_TO_CSV_BATCH_JOB_QUEUE_ARN:
+              analyticsPlatformAssets.fhirToCsvBatchJobQueue.jobQueueArn,
+          }),
+          ...(props.config.hl7Notification?.hieConfigs && {
+            HIE_CONFIG_DICTIONARY: JSON.stringify(
+              createHieConfigDictionary(props.config.hl7Notification.hieConfigs)
+            ),
+          }),
         },
       },
       healthCheckGracePeriod: Duration.seconds(60),
@@ -498,6 +516,9 @@ export function createAPIService({
   fhirToBundleCountLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   ehrGetAppointmentsLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   consolidatedSearchLambda.grantInvoke(fargateService.taskDefinition.taskRole);
+  analyticsPlatformAssets?.fhirToCsvTransformLambda.grantInvoke(
+    fargateService.taskDefinition.taskRole
+  );
   // Access grant for buckets
   patientImportBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   conversionBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
@@ -523,6 +544,13 @@ export function createAPIService({
 
   if (fhirToMedicalRecordLambda2) {
     fhirToMedicalRecordLambda2.grantInvoke(fargateService.taskDefinition.taskRole);
+  }
+
+  if (analyticsPlatformAssets) {
+    analyticsPlatformAssets.fhirToCsvBatchJob.grantSubmitJob(
+      fargateService.taskDefinition.taskRole,
+      analyticsPlatformAssets.fhirToCsvBatchJobQueue
+    );
   }
 
   if (cookieStore) {
@@ -560,6 +588,14 @@ export function createAPIService({
     queue: ehrWriteBackResourceDiffBundlesQueue,
     resource: fargateService.taskDefinition.taskRole,
   });
+
+  if (analyticsPlatformAssets) {
+    provideAccessToQueue({
+      accessType: "send",
+      queue: analyticsPlatformAssets.fhirToCsvQueue,
+      resource: fargateService.taskDefinition.taskRole,
+    });
+  }
 
   if (dischargeRequeryQueue) {
     provideAccessToQueue({

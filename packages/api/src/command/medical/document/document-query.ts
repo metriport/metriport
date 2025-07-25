@@ -2,6 +2,7 @@ import { deleteConsolidated } from "@metriport/core/command/consolidated/consoli
 import {
   isCarequalityEnabled,
   isCommonwellEnabled,
+  isNewDqAndConsolidatedInitialStateEnabledForCx,
   isXmlRedownloadFeatureFlagEnabledForCx,
 } from "@metriport/core/command/feature-flags/domain-ffs";
 import {
@@ -27,6 +28,7 @@ import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { getPatientOrFail } from "../patient/get-patient";
 import { storeQueryInit } from "../patient/query-init";
+import { storeDocumentQueryInitialState } from "./document-query-init";
 import { areDocumentsProcessing } from "./document-status";
 
 export function isProgressEqual(a?: Progress, b?: Progress): boolean {
@@ -74,7 +76,26 @@ export async function queryDocumentsAcrossHIEs({
 }): Promise<DocumentQueryProgress> {
   const { log } = out(`queryDocumentsAcrossHIEs - M patient ${patientId}`);
 
-  const patient = await getPatientOrFail({ id: patientId, cxId });
+  const [patient, commonwellEnabled, carequalityEnabled] = await Promise.all([
+    getPatientOrFail({ id: patientId, cxId }),
+    isCommonwellEnabled(),
+    isCarequalityEnabled(),
+  ]);
+
+  const isQueryCarequality = carequalityEnabled || forceCarequality;
+  /**
+   * It's likely safe to remove `cqManagingOrgName` based on the usage of this function.
+   * But because it touches a core flow and we don't have time to review/test it now, leaving as is.
+   * The expected behavior is that we never pass `cqManagingOrgName`, so it should be null/undefined every
+   * time this function is called - otherwise we can miss the opportunity to query CW for docs.
+   * @see https://metriport.slack.com/archives/C04DMKE9DME/p1745685924702559
+   */
+  const isQueryCommonwell = (commonwellEnabled || forceCommonwell) && !cqManagingOrgName;
+
+  if (!isQueryCarequality && !isQueryCommonwell) {
+    log("No HIE networks enabled, skipping DQ for Commonwell and Carequality");
+    return createQueryResponse("completed", patient);
+  }
 
   if (patient.hieOptOut) {
     throw new BadRequestError("Patient has opted out from the networks");
@@ -103,19 +124,37 @@ export async function queryDocumentsAcrossHIEs({
 
   const startedAt = new Date();
 
-  const updatedPatient = await storeQueryInit({
-    id: patient.id,
-    cxId: patient.cxId,
-    cmd: {
-      documentQueryProgress: {
-        requestId,
-        startedAt,
-        triggerConsolidated,
-        download: { status: "processing" },
-      },
-      cxDocumentRequestMetadata,
-    },
-  });
+  const isNewDqAndConsolidatedInitialStateEnabled =
+    await isNewDqAndConsolidatedInitialStateEnabledForCx(cxId);
+
+  const updatedPatient = isNewDqAndConsolidatedInitialStateEnabled
+    ? await storeDocumentQueryInitialState({
+        id: patient.id,
+        cxId: patient.cxId,
+        documentQueryProgress: {
+          requestId,
+          startedAt,
+          triggerConsolidated,
+        },
+        cxDocumentRequestMetadata,
+        enabledHIEs: [
+          ...(isQueryCommonwell ? [MedicalDataSource.COMMONWELL] : []),
+          ...(isQueryCarequality ? [MedicalDataSource.CAREQUALITY] : []),
+        ],
+      })
+    : await storeQueryInit({
+        id: patient.id,
+        cxId: patient.cxId,
+        cmd: {
+          documentQueryProgress: {
+            requestId,
+            startedAt,
+            triggerConsolidated,
+            download: { status: "processing" },
+          },
+          cxDocumentRequestMetadata,
+        },
+      });
 
   analytics({
     event: EventTypes.documentQuery,
@@ -130,31 +169,21 @@ export async function queryDocumentsAcrossHIEs({
 
   const isForceRedownloadEnabled =
     forceDownload ?? (await isXmlRedownloadFeatureFlagEnabledForCx(cxId));
-  /**
-   * This is likely safe to remove based on the usage of this function with the `cqManagingOrgName` param.
-   * But because it touches a core flow and we don't have time to review/test it now, leaving as is.
-   * The expected behavior is that we never pass `cqManagingOrgName`, so it should be null/undefined every
-   * time this function is called - otherwise we can miss the opportunity to query CW for docs.
-   * @see https://metriport.slack.com/archives/C04DMKE9DME/p1745685924702559
-   */
-  if (!cqManagingOrgName) {
-    const commonwellEnabled = await isCommonwellEnabled();
-    if (commonwellEnabled || forceCommonwell) {
-      getDocumentsFromCW({
-        patient: updatedPatient,
-        facilityId,
-        forceDownload: isForceRedownloadEnabled,
-        forceQuery,
-        forcePatientDiscovery,
-        requestId,
-        getOrgIdExcludeList: getCqOrgIdsToDenyOnCw,
-      }).catch(emptyFunction);
-      triggeredDocumentQuery = true;
-    }
+
+  if (isQueryCommonwell) {
+    getDocumentsFromCW({
+      patient: updatedPatient,
+      facilityId,
+      forceDownload: isForceRedownloadEnabled,
+      forceQuery,
+      forcePatientDiscovery,
+      requestId,
+      getOrgIdExcludeList: getCqOrgIdsToDenyOnCw,
+    }).catch(emptyFunction);
+    triggeredDocumentQuery = true;
   }
 
-  const carequalityEnabled = await isCarequalityEnabled();
-  if (carequalityEnabled || forceCarequality) {
+  if (isQueryCarequality) {
     getDocumentsFromCQ({
       patient: updatedPatient,
       facilityId,

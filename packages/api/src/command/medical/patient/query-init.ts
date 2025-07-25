@@ -29,6 +29,10 @@ export type StoreQueryParams = {
   cmd: QueryInitCmd;
 };
 
+/**
+ * TODO ENG-477 remove this asap
+ * @deprecated This is the culprit of ENG-477
+ */
 export async function storeQueryInit({ id, cxId, cmd }: StoreQueryParams): Promise<Patient> {
   const patient = await executeOnDBTx(PatientModel.prototype, async transaction => {
     const patient = await getPatientModelOrFail({

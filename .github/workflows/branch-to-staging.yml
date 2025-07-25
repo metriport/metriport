@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
     inputs:
       jobs_to_run:
-        description: "Select jobs to run (comma-separated, default 'all') - e.g.: api,infra-api-lambdas,mllp-server,infra-hl7-notification,secrets_cdk_stack,location_services_cdk_stack,ihe_stack,redeploy-api-gw,e2e-tests"
+        description: "Select jobs to run (comma-separated, default 'all') - e.g.: api,infra-api-lambdas,mllp-server,infra-hl7-notification,secrets_cdk_stack,location_services_cdk_stack,ihe_stack,redeploy-api-gw,e2e-tests,analytics-platform"
         required: true
         default: "all"
         type: string
@@ -48,6 +48,21 @@ jobs:
       ECR_REPO_URI: ${{ vars.ECR_REPO_URI_MLLP_SERVER_STAGING }}
       ECS_CLUSTER: ${{ vars.ECS_CLUSTER_MLLP_SERVER_STAGING }}
       ECS_SERVICE: ${{ vars.ECS_SERVICE_MLLP_SERVER_STAGING }}
+      AWS_REGION: ${{ vars.API_REGION_STAGING }}
+    secrets:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+
+  analytics-platform:
+    if: contains(github.event.inputs.jobs_to_run, 'analytics-platform') || contains(github.event.inputs.jobs_to_run, 'all')
+    uses: ./.github/workflows/_deploy-analytics-platform.yml
+    with:
+      deploy_env: "staging"
+      ECR_REPO_URI: ${{ vars.ECR_REPO_URI_ANALYTICS_PLATFORM_STAGING }}
       AWS_REGION: ${{ vars.API_REGION_STAGING }}
     secrets:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}

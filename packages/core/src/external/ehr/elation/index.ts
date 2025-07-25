@@ -1,4 +1,11 @@
-import { Bundle, Condition, DiagnosticReport, Observation, ResourceType } from "@medplum/fhirtypes";
+import {
+  Bundle,
+  CodeableConcept,
+  Condition,
+  DiagnosticReport,
+  Observation,
+  ResourceType,
+} from "@medplum/fhirtypes";
 import {
   BadRequestError,
   EhrFhirResourceBundle,
@@ -7,6 +14,7 @@ import {
   MetriportError,
   NotFoundError,
   sleep,
+  toTitleCase,
 } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import {
@@ -44,7 +52,6 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { z } from "zod";
 import { base64ToString } from "../../../util/base64";
-import { executeAsynchronously } from "../../../util/concurrency";
 import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
 import { capture } from "../../../util/notifications";
@@ -76,12 +83,9 @@ import {
   partitionEhrBundle,
   saveEhrReferenceBundle,
 } from "../shared";
-import { convertCodeAndValue } from "../unit-conversion";
+import { convertCodeAndValue, formatNumberAsString } from "../unit-conversion";
 
 dayjs.extend(duration);
-
-const parallelRequests = 5;
-const maxJitter = dayjs.duration(2, "seconds");
 
 interface ElationApiConfig extends ApiConfig {
   environment: ElationEnv;
@@ -198,6 +202,7 @@ const validLabResultStatuses = [
 ];
 
 const maxUnitsCharacters = 20;
+const maxNameCharacters = 50;
 
 export function isSupportedCcdaSectionResource(resourceType: string): boolean {
   return ccdaSectionMap.has(resourceType as ResourceType);
@@ -527,6 +532,7 @@ class ElationApi {
       patient: patientId,
       practice: elationPracticeId,
       physician: elationPhysicianId,
+      custom_title: this.getMostInformativeTitle(diagnostricReport.code),
       ...this.formatLabPanel(diagnostricReport, observations, additionalInfo),
     };
     const lab = await this.makeRequest<CreatedLab>({
@@ -600,7 +606,7 @@ class ElationApi {
     elationPhysicianId: string;
     patientId: string;
     observations: Observation[];
-  }): Promise<CreatedVital[]> {
+  }): Promise<CreatedVital | undefined> {
     const { log, debug } = out(
       `Elation createGroupedVitals - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
     );
@@ -648,67 +654,55 @@ class ElationApi {
       },
       {} as Record<string, ElationGroupedVital>
     );
-    const allCreatedGroupedVitals: CreatedVital[] = [];
-    const createGroupedVitalsErrors: { error: unknown; vitals: string }[] = [];
-    const createGroupedVitalsArgs = Object.values(groupedVitals);
-    if (createGroupedVitalsArgs.length < 1) {
+
+    const mostRecentGroupedVitals = Object.values(groupedVitals).sort((a, b) => {
+      return new Date(b.chart_date).getTime() - new Date(a.chart_date).getTime();
+    })[0];
+
+    if (!mostRecentGroupedVitals) {
       throw new BadRequestError("No grouped vitals data found", undefined, additionalInfo);
     }
-    await executeAsynchronously(
-      createGroupedVitalsArgs,
-      async (params: ElationGroupedVital) => {
-        try {
-          const nonVisitNote = await this.createNonVisitNote({
-            cxId,
-            patientId,
-            date: params.chart_date,
-            note: "Vitals added via Metriport App",
-          });
-          const createdVital = await this.makeRequest<CreatedVital>({
-            cxId,
-            patientId,
-            s3Path: this.createWriteBackPath("grouped-vitals", undefined),
-            method: "POST",
-            url: vitalsUrl,
-            data: {
-              ...params,
-              non_visit_note: nonVisitNote.id,
-            },
-            schema: createdVitalSchema,
-            additionalInfo,
-            headers: { "Content-Type": "application/json" },
-            debug,
-          });
-          allCreatedGroupedVitals.push(createdVital);
-        } catch (error) {
-          if (error instanceof BadRequestError || error instanceof NotFoundError) return;
-          const vitalsToString = JSON.stringify(params);
-          log(`Failed to create vitals ${vitalsToString}. Cause: ${errorToString(error)}`);
-          createGroupedVitalsErrors.push({
-            error,
-            vitals: JSON.stringify(params),
-          });
-        }
-      },
-      {
-        numberOfParallelExecutions: parallelRequests,
-        maxJitterMillis: maxJitter.asMilliseconds(),
-      }
-    );
-    if (createGroupedVitalsErrors.length > 0) {
-      const msg = `Failure while creating some grouped vitals @ Elation`;
+    try {
+      const nonVisitNote = await this.createNonVisitNote({
+        cxId,
+        patientId,
+        date: mostRecentGroupedVitals.chart_date,
+        note: "Vitals added via Metriport App",
+      });
+      const createdVital = await this.makeRequest<CreatedVital>({
+        cxId,
+        patientId,
+        s3Path: this.createWriteBackPath("grouped-vitals", undefined),
+        method: "POST",
+        url: vitalsUrl,
+        data: {
+          ...mostRecentGroupedVitals,
+          non_visit_note: nonVisitNote.id,
+        },
+        schema: createdVitalSchema,
+        additionalInfo,
+        headers: { "Content-Type": "application/json" },
+        debug,
+      });
+
+      return createdVital;
+    } catch (error) {
+      if (error instanceof BadRequestError || error instanceof NotFoundError) return;
+      const msg = `Failure while creating grouped vitals @ Elation`;
+      log(`${msg}. Cause: ${errorToString(error)}`);
       capture.message(msg, {
         extra: {
           ...additionalInfo,
-          createGroupedVitalsArgsCount: createGroupedVitalsArgs.length,
-          createGroupedVitalsErrorsCount: createGroupedVitalsErrors.length,
-          errors: createGroupedVitalsErrors,
+          error,
+          patientId,
+          cxId,
           context: "elation.create-grouped-vitals",
         },
         level: "warning",
       });
     }
-    return allCreatedGroupedVitals;
+
+    return undefined;
   }
 
   async getBundleByResourceType({
@@ -1088,7 +1082,9 @@ class ElationApi {
             {
               status: formattedResultStatus,
               value: value.toString(),
-              text: text ?? loincCoding.display,
+              text: text
+                ? this.normalizeLabTitle(text)
+                : this.normalizeLabTitle(loincCoding.display),
               note: "Added via Metriport App",
               reference_min: referenceRange.low?.toString(),
               reference_max: referenceRange.high?.toString(),
@@ -1096,19 +1092,62 @@ class ElationApi {
               is_abnormal: isAbnormal ? "1" : "0",
               abnormal_flag: this.mapInterpretationToAbnormalFlag(interpretation),
               test: {
-                name: loincCoding.display,
+                name: loincCoding.display.slice(0, maxNameCharacters),
                 code: loincCoding.code,
                 loinc: loincCoding.code,
               },
               test_category: {
-                value: loincCoding.display,
-                description: loincCoding.display,
+                value: loincCoding.display.slice(0, maxNameCharacters),
+                description: loincCoding.display.slice(0, maxNameCharacters),
               },
             },
           ],
         },
       ],
     };
+  }
+
+  private getMostInformativeTitle(code: CodeableConcept | undefined): string | undefined {
+    const coding = code?.coding;
+    if (!coding?.length) return this.normalizeTitle(code?.text);
+
+    const mostRelevantSystem = coding[0]?.system;
+    if (!mostRelevantSystem) return this.normalizeTitle(code?.text);
+
+    const mostRelevantCodings = coding.filter(c => c.system === mostRelevantSystem && c.display);
+    if (mostRelevantCodings.length === 0) return this.normalizeTitle(code?.text);
+
+    const rankedCodings = mostRelevantCodings.flatMap(coding => {
+      if (!coding.display) return [];
+
+      const display = coding.display.toLowerCase().trim();
+
+      let score = 9;
+      if (display.includes("unknown") || display === "unk") {
+        score = 0;
+      } else if (display === "laboratory") {
+        score = 1;
+      } else if (display.includes("specimen") || display.includes("chemistry")) {
+        score = 2;
+      }
+
+      return { display: coding.display, score };
+    });
+
+    const best = rankedCodings.sort((a, b) =>
+      b.score !== a.score ? b.score - a.score : b.display.length - a.display.length
+    )[0];
+
+    return this.normalizeTitle(best?.display) ?? this.normalizeTitle(code?.text);
+  }
+
+  private normalizeLabTitle(title: string): string {
+    return title.trim().slice(0, maxNameCharacters);
+  }
+
+  private normalizeTitle(title: string | undefined): string | undefined {
+    if (!title) return undefined;
+    return toTitleCase(this.normalizeLabTitle(title));
   }
 
   private formatLabPanel(
@@ -1166,7 +1205,7 @@ class ElationApi {
           {
             status: formattedResultStatus,
             value: value.toString(),
-            text: text ?? loincCoding.display,
+            text: text ? this.normalizeLabTitle(text) : this.normalizeLabTitle(loincCoding.display),
             note: "Added via Metriport App",
             reference_min: referenceRange.low?.toString(),
             reference_max: referenceRange.high?.toString(),
@@ -1174,13 +1213,13 @@ class ElationApi {
             is_abnormal: isAbnormal ? "1" : "0",
             abnormal_flag: this.mapInterpretationToAbnormalFlag(interpretation),
             test: {
-              name: loincCoding.display,
+              name: loincCoding.display.slice(0, maxNameCharacters),
               code: loincCoding.code,
               loinc: loincCoding.code,
             },
             test_category: {
-              value: loincCoding.display,
-              description: loincCoding.display,
+              value: loincCoding.display.slice(0, maxNameCharacters),
+              description: loincCoding.display.slice(0, maxNameCharacters),
             },
           },
         ],
@@ -1220,7 +1259,7 @@ class ElationApi {
       return {
         ...baseData,
         data: {
-          bmi: +convertedCodeAndValue.value.toFixed(2),
+          bmi: +formatNumberAsString(convertedCodeAndValue.value),
         },
       };
     }
@@ -1231,7 +1270,7 @@ class ElationApi {
           data: {
             bp: [
               {
-                diastolic: convertedCodeAndValue.value.toFixed(2),
+                diastolic: formatNumberAsString(convertedCodeAndValue.value),
               },
             ],
           },
@@ -1243,7 +1282,7 @@ class ElationApi {
           data: {
             bp: [
               {
-                systolic: convertedCodeAndValue.value.toFixed(2),
+                systolic: formatNumberAsString(convertedCodeAndValue.value),
               },
             ],
           },
@@ -1255,7 +1294,7 @@ class ElationApi {
       data: {
         [convertedCodeAndValue.codeKey]: [
           {
-            value: convertedCodeAndValue.value.toFixed(2),
+            value: formatNumberAsString(convertedCodeAndValue.value),
           },
         ],
       },
