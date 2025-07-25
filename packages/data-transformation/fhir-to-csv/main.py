@@ -3,17 +3,24 @@ import os
 import logging
 import json
 import ndjson
+import snowflake.connector
 from src.parseNdjsonBundle import parseNdjsonBundle
 from src.setupSnowflake.setupSnowflake import (
-    setup_database,
+    generate_table_names_and_create_table_statements,
+    get_snowflake_credentials,
     create_job_tables,
-    append_job_tables,
+    copy_into_resource_table,
     copy_into_job_table,
     set_patient_status,
+    create_stage,
+    drop_stage,
+)
+from src.utils.database import (
+    format_database_name,
 )
 from src.utils.environment import Environment
 from src.utils.dwh import DWH
-from src.utils.file import create_consolidated_key
+from src.utils.file import create_consolidated_key, create_output_file_prefix
 
 transform_name = 'fhir-to-csv'
 
@@ -65,8 +72,9 @@ def transform_and_upload_data(
     local_output_files = parseNdjsonBundle.parse(local_ndjson_bundle_key, local_patient_path)
 
     output_bucket_and_file_keys_and_table_names = []
+    output_file_prefix = create_output_file_prefix(dwh, transform_name, cx_id, patient_id, job_id)
     for file in local_output_files:
-        output_file_key = f"{dwh}/{transform_name}/{cx_id}/{patient_id}/{job_id}/{file.replace('/', '_')}"
+        output_file_key = f"{output_file_prefix}/{file.replace('/', '_')}"
         table_name = file.split("/")[-1].replace(".csv", "")
         with open(file, "rb") as f:
             logging.info(f"Uploading file {file} to {output_bucket}/{output_file_key}")
@@ -113,18 +121,28 @@ def handler(event: dict, context: dict):
         logging.info("No files were uploaded")
         exit(0)
 
+    table_defs = generate_table_names_and_create_table_statements(patient_id, job_id)
+    
     logging.info(f">>> Uploading data into Snowflake - {cx_id}, patient_id {patient_id}, job_id {job_id}")
-    setup_database(snowflake_creds, cx_id)
-    set_patient_status(snowflake_creds, cx_id, patient_id, "processing")
+    with snowflake.connector.connect(**get_snowflake_credentials(snowflake_creds)) as snowflake_conn:
+        database_name = format_database_name(cx_id)
+        snowflake_conn.cursor().execute(f"CREATE DATABASE IF NOT EXISTS {database_name}")
+        snowflake_conn.cursor().execute(f"USE DATABASE {database_name}")
+        snowflake_conn.cursor().execute("USE SCHEMA PUBLIC")
 
-    create_job_tables(snowflake_creds, cx_id, patient_id, job_id)
-    for output_bucket, output_file_key, table_name in output_bucket_and_file_keys_and_table_names:
-        copy_into_job_table(snowflake_creds, cx_id, patient_id, job_id, output_bucket, output_file_key, table_name)
+        set_patient_status(snowflake_conn, cx_id, patient_id, "processing")
 
-    rebuild_patient = input_bundle is None or input_bundle == ""
-    append_job_tables(snowflake_creds, cx_id, patient_id, job_id, rebuild_patient)
+        output_file_prefix = create_output_file_prefix(dwh, transform_name, cx_id, patient_id, job_id)
+        create_stage(snowflake_conn, cx_id, patient_id, job_id, output_bucket, output_file_prefix)
+        create_job_tables(snowflake_conn, cx_id, patient_id, job_id, table_defs)
+        for output_bucket, output_file_key, table_name in output_bucket_and_file_keys_and_table_names:
+            copy_into_job_table(snowflake_conn, cx_id, patient_id, job_id, output_bucket, output_file_key, table_name)
+        drop_stage(snowflake_conn, cx_id, patient_id, job_id)
 
-    set_patient_status(snowflake_creds, cx_id, patient_id, "completed")
+        rebuild_patient = input_bundle is None or input_bundle == ""
+        copy_into_resource_table(snowflake_conn, cx_id, patient_id, job_id, table_defs, rebuild_patient)
+
+        set_patient_status(snowflake_conn, cx_id, patient_id, "completed")
     logging.info(f">>> Done processing {cx_id}, patient_id {patient_id}, job_id {job_id}")
 
 if __name__ == "__main__":
