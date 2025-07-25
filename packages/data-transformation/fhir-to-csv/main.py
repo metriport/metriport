@@ -5,9 +5,11 @@ import json
 import ndjson
 from src.parseNdjsonBundle import parseNdjsonBundle
 from src.setupSnowflake.setupSnowflake import (
+    setup_database,
     create_job_tables,
     append_job_tables,
     copy_into_job_table,
+    set_patient_status,
 )
 from src.utils.environment import Environment
 from src.utils.dwh import DWH
@@ -28,7 +30,6 @@ def transform_and_upload_data(
     job_id: str,
     input_bundle: str | None,
 ) -> list[tuple[str, str, str]]:
-    patient_ids_and_bundle_keys = []
     bundle_key = ""
     if input_bundle is not None and input_bundle != "":
         bundle_key = input_bundle.strip()
@@ -98,6 +99,7 @@ def handler(event: dict, context: dict):
         raise ValueError("SNOWFLAKE_CREDS is not set")
     snowflake_creds = json.loads(snowflake_creds) if isinstance(snowflake_creds, str) else snowflake_creds
 
+    logging.info(f">>> Parsing data and uploading it to S3 for Snowflake - {cx_id}, patient_id {patient_id}, job_id {job_id}")
     output_bucket_and_file_keys_and_table_names = transform_and_upload_data(
         input_bucket,
         output_bucket,
@@ -111,12 +113,19 @@ def handler(event: dict, context: dict):
         logging.info("No files were uploaded")
         exit(0)
 
+    logging.info(f">>> Uploading data into Snowflake - {cx_id}, patient_id {patient_id}, job_id {job_id}")
+    setup_database(snowflake_creds, cx_id)
+    set_patient_status(snowflake_creds, cx_id, patient_id, "processing")
+
     create_job_tables(snowflake_creds, cx_id, patient_id, job_id)
     for output_bucket, output_file_key, table_name in output_bucket_and_file_keys_and_table_names:
         copy_into_job_table(snowflake_creds, cx_id, patient_id, job_id, output_bucket, output_file_key, table_name)
 
     rebuild_patient = input_bundle is None or input_bundle == ""
     append_job_tables(snowflake_creds, cx_id, patient_id, job_id, rebuild_patient)
+
+    set_patient_status(snowflake_creds, cx_id, patient_id, "completed")
+    logging.info(f">>> Done processing {cx_id}, patient_id {patient_id}, job_id {job_id}")
 
 if __name__ == "__main__":
     handler({}, {})

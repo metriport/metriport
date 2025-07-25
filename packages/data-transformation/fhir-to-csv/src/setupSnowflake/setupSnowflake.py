@@ -7,6 +7,7 @@ from src.utils.database import (
     format_database_name,
     format_table_name_from_config_file_name,
     format_job_table_name,
+    format_patient_status_table_name,
     format_stage_name,
     get_data_type,
 )
@@ -47,31 +48,35 @@ def generate_table_names_and_create_table_statements(patient_id: str, job_id: st
         if not file.endswith(".ini"):
             continue
         logging.info('Loading config "%s"', file)
-        table_name = format_table_name_from_config_file_name(file)
-        job_table_name = format_job_table_name(patient_id, job_id, table_name)
+        resource_table_name = format_table_name_from_config_file_name(file)
+        job_table_name = format_job_table_name(patient_id, job_id, resource_table_name)
         config = configparser.ConfigParser()
         config.read(os.path.join(config_folder, file))
         if 'Struct' not in config:
             continue
         columns = config['Struct']
-        create_statement = f"CREATE TABLE {job_table_name} (\n"
-        create_statement += ",\n".join([f"  {col} {get_data_type(col, date_types)}" for col in columns])
-        create_statement += "\n)\n"
-        table_names_and_create_job_table_statements.append((table_name, job_table_name, create_statement))
+        create_job_table_statement = f"CREATE TABLE {job_table_name} (\n"
+        create_job_table_statement += ",\n".join([f"  {col} {get_data_type(col, date_types)}" for col in columns])
+        create_job_table_statement += "\n)\n"
+        table_names_and_create_job_table_statements.append((resource_table_name, job_table_name, create_job_table_statement))
     return table_names_and_create_job_table_statements
+
+def setup_database(creds: dict, cx_id: str):
+    database_name = format_database_name(cx_id)
+    logging.info('Running setup_database for cx "%s"', cx_id)
+    with snowflake.connector.connect(**get_snowflake_credentials(creds)) as snowflake_conn:
+        snowflake_conn.cursor().execute(f"CREATE DATABASE IF NOT EXISTS {database_name}")
 
 def create_job_tables(creds: dict, cx_id: str, patient_id: str, job_id: str):
     database_name = format_database_name(cx_id)
     logging.info('Running create_job_tables for cx "%s", pt "%s", job "%s"', cx_id, patient_id, job_id)
     with snowflake.connector.connect(**get_snowflake_credentials(creds)) as snowflake_conn:
-        snowflake_conn.cursor().execute(f"CREATE DATABASE IF NOT EXISTS {database_name}")
         snowflake_conn.cursor().execute(f"USE DATABASE {database_name}")
         snowflake_conn.cursor().execute("USE SCHEMA PUBLIC")
         tables = generate_table_names_and_create_table_statements(patient_id, job_id)
         for _, job_table_name, create_job_table_statement in tables:
             snowflake_conn.cursor().execute(f"DROP TABLE IF EXISTS {job_table_name}")
             snowflake_conn.cursor().execute(create_job_table_statement)
-
 
 def append_job_tables(creds: dict, cx_id: str, patient_id: str, job_id: str, rebuild_patient: bool = False):
     database_name = format_database_name(cx_id)
@@ -121,3 +126,15 @@ def copy_into_job_table(creds: dict, cx_id: str, patient_id: str, job_id: str, s
         except Exception as e:
             logging.error(f"Error copying data to snowflake from stage {stage_name} to table {job_table_name}. Cause: {e}")
             return
+
+def set_patient_status(creds: dict, cx_id: str, patient_id: str, status: str):
+    database_name = format_database_name(cx_id)
+    logging.info('Running set_patient_status for cx "%s", pt "%s", status "%s"', cx_id, patient_id, status)
+    with snowflake.connector.connect(**get_snowflake_credentials(creds)) as snowflake_conn:
+        snowflake_conn.cursor().execute(f"USE DATABASE {database_name}")
+        snowflake_conn.cursor().execute("USE SCHEMA PUBLIC")
+        table_name = format_patient_status_table_name()
+        snowflake_conn.cursor().execute(f"CREATE TABLE IF NOT EXISTS {table_name} (ID VARCHAR(255), STATUS VARCHAR(255))")
+        snowflake_conn.cursor().execute(f"DELETE FROM {table_name} WHERE ID = '{patient_id}'")
+        snowflake_conn.cursor().execute(f"INSERT INTO {table_name} (ID, STATUS) VALUES ('{patient_id}', '{status}')")
+
