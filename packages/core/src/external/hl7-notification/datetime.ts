@@ -73,6 +73,8 @@ function utcifyHl7Components(
         : buildDayjsTz(component, timezone).format("YYYYMMDDHHmmss");
     } catch (e) {
       const msg = `Error UTCifying component in segment ${segmentName}`;
+      log(`Full segment: ${segment.toString()}`);
+      log(`Component @ ${fieldIndex}, ${componentIndex} has value ${component}`);
       log(`${msg}, error - ${errorToString(e)}`);
       capture.error(msg, {
         extra: {
