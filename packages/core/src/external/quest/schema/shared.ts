@@ -74,6 +74,7 @@ export interface IncomingFileField<
   K extends keyof T,
   O extends FieldOption = FieldOption
 > extends FileField<T, K> {
+  header: string;
   fromQuest: ConvertFieldFromQuest<T, K, O>;
 }
 
