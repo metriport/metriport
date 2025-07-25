@@ -81,7 +81,7 @@ async function main() {
         failedPatientIds.push(patientId);
       }
     },
-    { numberOfParallelExecutions, minJitterMillis: 100, maxJitterMillis: 200 }
+    { numberOfParallelExecutions, minJitterMillis: 10, maxJitterMillis: 200 }
   );
 
   log(``);
