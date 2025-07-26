@@ -1,4 +1,4 @@
-import { Address, ContactPoint, Identifier, Organization } from "@medplum/fhirtypes";
+import { Address, ContactPoint, Identifier, Organization, Reference } from "@medplum/fhirtypes";
 import { ResponseDetail } from "../schema/response";
 
 /**
@@ -17,6 +17,12 @@ export function getOrganization(detail: ResponseDetail): Organization {
     ...(name ? { name } : {}),
     ...(address ? { address } : {}),
     ...(telecom ? { telecom } : {}),
+  };
+}
+
+export function getOrganizationReference(organization: Organization): Reference<Organization> {
+  return {
+    reference: `Organization/${organization.id}`,
   };
 }
 
