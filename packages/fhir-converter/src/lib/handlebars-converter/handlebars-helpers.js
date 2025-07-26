@@ -341,7 +341,7 @@ var buildCodeableConcept = function (code, canBeUnknown = false) {
 
   const codeableConcept = {
     text,
-    coding: buildCoding(code, canBeUnknown),
+    coding: [buildCoding(code, canBeUnknown)],
   };
 
   return codeableConcept;
