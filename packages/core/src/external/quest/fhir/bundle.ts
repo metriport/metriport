@@ -6,6 +6,7 @@ import { getPractitioner } from "./practitioner";
 import { getInsuranceOrganization } from "./organization";
 import { getCoverage } from "./coverage";
 import { getConditions } from "./condition";
+import { getServiceRequest } from "./service-request";
 
 export async function convertIncomingDataToFhirBundle(
   cxId: string,
@@ -23,6 +24,9 @@ export async function convertIncomingDataToFhirBundle(
 function getBundleEntries({ data }: IncomingData<ResponseDetail>): BundleEntry[] {
   const patient = getPatient(data);
   const practitioner = getPractitioner(data);
+  const serviceRequest = getServiceRequest(data, {
+    requestingPractitioner: practitioner,
+  });
   const insuranceOrganization = getInsuranceOrganization(data);
   const coverage = getCoverage(data, {
     insuranceOrganization,
@@ -30,12 +34,12 @@ function getBundleEntries({ data }: IncomingData<ResponseDetail>): BundleEntry[]
   const conditions = getConditions(data, {
     patient,
   });
-
   const resources: Resource[] = [
     patient,
     practitioner,
     coverage,
     insuranceOrganization,
+    serviceRequest,
     ...conditions,
   ];
 

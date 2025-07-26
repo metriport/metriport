@@ -1,5 +1,8 @@
+import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { Condition, Patient } from "@medplum/fhirtypes";
 import { ResponseDetail } from "../schema/response";
+import { ICD_10_URL, ICD_9_URL } from "../../../util/constants";
+import { getPatientReference } from "./patient";
 
 export function getConditions(
   detail: ResponseDetail,
@@ -23,16 +26,12 @@ export function getConditions(
 
 function getCondition(patient: Patient, diagnosisCode?: string): Condition | undefined {
   if (!diagnosisCode) return undefined;
-
-  const [system, code] = diagnosisCode.split("^");
-  if (!system || !code) return undefined;
-  // TODO: fix system and coding, add proper checks for system being "10" or "09"
+  const { system, code } = parseDiagnosisCode(diagnosisCode);
 
   return {
     resourceType: "Condition",
-    subject: {
-      reference: `Patient/${patient.id}`,
-    },
+    id: uuidv7(),
+    subject: getPatientReference(patient),
     code: {
       coding: [
         {
@@ -42,4 +41,19 @@ function getCondition(patient: Patient, diagnosisCode?: string): Condition | und
       ],
     },
   };
+}
+
+function parseDiagnosisCode(diagnosisCode: string): { system: string; code: string } {
+  if (diagnosisCode.startsWith("10^")) {
+    return { system: ICD_10_URL, code: insertPeriod(diagnosisCode.substring(3)) };
+  } else if (diagnosisCode.startsWith("09^")) {
+    return { system: ICD_9_URL, code: insertPeriod(diagnosisCode.substring(3)) };
+  } else if (diagnosisCode.startsWith("9^")) {
+    return { system: ICD_9_URL, code: insertPeriod(diagnosisCode.substring(2)) };
+  }
+  return { system: ICD_10_URL, code: diagnosisCode };
+}
+
+function insertPeriod(icd10Code: string): string {
+  return icd10Code.substring(0, 3) + "." + icd10Code.substring(3);
 }

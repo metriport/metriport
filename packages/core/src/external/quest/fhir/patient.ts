@@ -1,4 +1,11 @@
-import { Patient, HumanName, Identifier, Address, ContactPoint } from "@medplum/fhirtypes";
+import {
+  Patient,
+  HumanName,
+  Identifier,
+  Address,
+  ContactPoint,
+  Reference,
+} from "@medplum/fhirtypes";
 import { ResponseDetail } from "../schema/response";
 
 export function getPatient(detail: ResponseDetail): Patient {
@@ -17,6 +24,12 @@ export function getPatient(detail: ResponseDetail): Patient {
     ...(telecom ? { telecom } : {}),
     ...(gender ? { gender } : {}),
     ...(birthDate ? { birthDate } : {}),
+  };
+}
+
+export function getPatientReference(patient: Patient): Reference<Patient> {
+  return {
+    reference: `Patient/${patient.id}`,
   };
 }
 
