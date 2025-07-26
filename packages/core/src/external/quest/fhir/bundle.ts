@@ -12,8 +12,7 @@ export async function convertIncomingDataToFhirBundle(
   patientId: string,
   details: IncomingData<ResponseDetail>[]
 ): Promise<Bundle> {
-  // console.log(cxId, patientId);
-  // console.log(details);
+  console.log(cxId, patientId);
   const entry = details.flatMap(getBundleEntries);
   return {
     resourceType: "Bundle",

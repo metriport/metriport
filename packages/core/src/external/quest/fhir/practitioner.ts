@@ -1,4 +1,4 @@
-import { HumanName, Identifier, Practitioner } from "@medplum/fhirtypes";
+import { HumanName, Identifier, Practitioner, Reference } from "@medplum/fhirtypes";
 import { ResponseDetail } from "../schema/response";
 
 export function getPractitioner(detail: ResponseDetail): Practitioner {
@@ -9,6 +9,12 @@ export function getPractitioner(detail: ResponseDetail): Practitioner {
     resourceType: "Practitioner",
     ...(name ? { name } : {}),
     ...(identifier ? { identifier } : {}),
+  };
+}
+
+export function getPractitionerReference(practitioner: Practitioner): Reference<Practitioner> {
+  return {
+    reference: `Practitioner/${practitioner.id}`,
   };
 }
 
