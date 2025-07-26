@@ -38,7 +38,7 @@ interface AnalyticsPlatformsSettings {
 }
 
 function settings(): AnalyticsPlatformsSettings {
-  const fhirToCsvTransformLambdaTimeout = Duration.minutes(2);
+  const fhirToCsvTransformLambdaTimeout = Duration.minutes(10);
   const fhirToCsvLambdaTimeout = fhirToCsvTransformLambdaTimeout.plus(Duration.seconds(10));
   const fhirToCsv: QueueAndLambdaSettings = {
     name: "FhirToCsv",

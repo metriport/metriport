@@ -17,7 +17,7 @@ export async function startFhirToCsvTransform({
   patientId,
   inputBundle,
 }: StartFhirToCsvTransformParams): Promise<void> {
-  const { log } = out(`FhirToCsvTransform - cx ${cxId}`);
+  const { log } = out(`FhirToCsvTransform - cx ${cxId} pt ${patientId} job ${jobId}`);
   const lambdaName = Config.getFhirToCsvTransformLambdaName();
   const snowflakeCreds = getSnowflakeCreds();
   log(`Invoking lambda ${lambdaName}`);
