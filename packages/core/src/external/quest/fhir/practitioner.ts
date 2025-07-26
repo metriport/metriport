@@ -1,3 +1,4 @@
+import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { HumanName, Identifier, Practitioner, Reference } from "@medplum/fhirtypes";
 import { ResponseDetail } from "../schema/response";
 
@@ -7,6 +8,7 @@ export function getPractitioner(detail: ResponseDetail): Practitioner {
 
   return {
     resourceType: "Practitioner",
+    id: uuidv7(),
     ...(name ? { name } : {}),
     ...(identifier ? { identifier } : {}),
   };

@@ -1,3 +1,4 @@
+import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { Address, ContactPoint, Identifier, Organization, Reference } from "@medplum/fhirtypes";
 import { ResponseDetail } from "../schema/response";
 
@@ -13,6 +14,7 @@ export function getInsuranceOrganization(detail: ResponseDetail): Organization {
 
   return {
     resourceType: "Organization",
+    id: uuidv7(),
     identifier,
     ...(name ? { name } : {}),
     ...(address ? { address } : {}),

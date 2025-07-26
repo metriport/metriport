@@ -1,3 +1,4 @@
+import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import {
   Patient,
   HumanName,
@@ -18,6 +19,7 @@ export function getPatient(detail: ResponseDetail): Patient {
 
   return {
     resourceType: "Patient",
+    id: uuidv7(),
     ...(name ? { name } : {}),
     ...(identifier ? { identifier } : {}),
     ...(address ? { address } : {}),

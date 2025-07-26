@@ -1,3 +1,4 @@
+import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { Coverage, Identifier, Organization } from "@medplum/fhirtypes";
 import { ResponseDetail } from "../schema/response";
 import { getOrganizationReference } from "./organization";
@@ -13,6 +14,7 @@ export function getCoverage(
 
   return {
     resourceType: "Coverage",
+    id: uuidv7(),
     ...(identifier ? { identifier } : {}),
     ...(payor ? { payor } : {}),
   };

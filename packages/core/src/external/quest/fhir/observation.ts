@@ -10,6 +10,7 @@ import {
 import { ResponseDetail } from "../schema/response";
 import { LOINC_URL, CPT_URL } from "../../../util/constants";
 import { getPatientReference } from "./patient";
+import { HL7_OBSERVATION_INTERPRETATION_SYSTEM, QUEST_LOCAL_RESULT_CODE_SYSTEM } from "./constant";
 
 type ObservationValue = Pick<Observation, "valueQuantity" | "valueString" | "valueCodeableConcept">;
 
@@ -40,7 +41,7 @@ export function getObservation(
 function getObservationIdentifier(detail: ResponseDetail): Identifier[] {
   return [
     {
-      system: "http://questdiagnostics.com/local-result-code",
+      system: QUEST_LOCAL_RESULT_CODE_SYSTEM,
       value: detail.localResultCode,
     },
   ];
@@ -57,7 +58,7 @@ function getObservationCode(detail: ResponseDetail): CodeableConcept {
   }
   if (detail.localResultCode) {
     coding.push({
-      system: "http://questdiagnostics.com/local-result-code",
+      system: QUEST_LOCAL_RESULT_CODE_SYSTEM,
       code: detail.localResultCode,
       ...(text ? { display: text } : {}),
     });
@@ -122,7 +123,7 @@ function getObservationInterpretation(detail: ResponseDetail): CodeableConcept[]
     {
       coding: [
         {
-          system: "http://terminology.hl7.org/CodeSystem/v3-ObservationInterpretation",
+          system: HL7_OBSERVATION_INTERPRETATION_SYSTEM,
           code,
           ...(display ? { display } : {}),
         },
