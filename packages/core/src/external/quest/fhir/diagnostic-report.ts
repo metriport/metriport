@@ -1,3 +1,4 @@
+import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { DiagnosticReport, Identifier, Specimen } from "@medplum/fhirtypes";
 import { ResponseDetail } from "../schema/response";
 
@@ -10,6 +11,7 @@ export function buildDiagnosticReport(
 
   return {
     resourceType: "DiagnosticReport",
+    id: uuidv7(),
     status: "final",
     effectiveDateTime,
     identifier,
