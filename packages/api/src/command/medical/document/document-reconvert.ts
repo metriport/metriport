@@ -186,7 +186,7 @@ async function reConvertByPatient({
 
   const [documents, patient] = await Promise.all([getDocs(), disableWHAndGetPatient()]);
 
-  log(`Starting reconversion for ${patient.id}, who has ${documents.length} documents...`);
+  log(`Starting reconversion for ${documents.length} documents...`);
   await reConvertDocumentsInternal({
     patient,
     documents,
