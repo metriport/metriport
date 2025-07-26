@@ -156,6 +156,13 @@ async function deleteChunk(
     if (issuesFlattened.length > 0) {
       const msg = `Gracefully failed to delete FHIR resources`;
       log(`${msg} - ${JSON.stringify(issuesFlattened)}`);
+      capture.error(msg, {
+        extra: {
+          context: `deleteConsolidated.graceful-fail`,
+          patientId: patientId,
+          issues: issuesFlattened,
+        },
+      });
     }
   } catch (error) {
     const detailMsg =
