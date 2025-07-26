@@ -54,7 +54,7 @@ export const responseDetailSchema = z.object({
   memberNumber: z.string().optional(),
   medicaidId: z.string().optional(),
   medicareId: z.string().optional(),
-  orderingAccountNumber: z.string().optional(),
+  orderingAccountNumber: z.string(),
   orderingAccountName: z.string().optional(),
   orderingAccountAddressLine1: z.string().optional(),
   orderingAccountAddressLine2: z.string().optional(),

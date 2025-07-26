@@ -2,6 +2,8 @@ import fs from "fs";
 import path from "path";
 import { Command } from "commander";
 import { parseResponseFile } from "@metriport/core/external/quest/file/file-parser";
+import { ResponseDetail } from "@metriport/core/external/quest/schema/response";
+import { IncomingData } from "@metriport/core/external/quest/schema/shared";
 
 const command = new Command();
 
@@ -17,33 +19,35 @@ async function runAnalysis({ cxName }: { cxName: string }) {
   if (!cxName) {
     throw new Error("Customer name is required");
   }
+  // Collect statistics about the found patients
+  const foundPatientIds = new Set();
+  const countPatient: Record<string, number> = {};
+
   const cxDir = path.join(QUEST_DIR, cxName);
   const patientIdMap = getQuestPatientMapping(cxDir);
   const patientIds = new Set(Object.keys(patientIdMap));
-  const foundPatientIds = new Set();
-  const countPatient: Record<string, number> = {};
-  const reversePatientIdMap = Object.fromEntries(
-    Object.entries(patientIdMap).map(([k, v]) => [v, k])
-  );
+  const mapToMetriportId = Object.fromEntries(Object.entries(patientIdMap).map(([k, v]) => [v, k]));
   const files = fs.readdirSync(cxDir).filter(file => file.endsWith(".txt"));
-
+  const allDetails: IncomingData<ResponseDetail>[] = [];
+  // Parse the files
   for (const file of files) {
-    console.log("-----" + file + "---------------------------");
+    console.log("Processing " + file);
     const fileContent = fs.readFileSync(path.join(cxDir, file));
-    const details = parseResponseFile(fileContent);
-    console.log("Parsed " + details.length + " rows");
+    const details = parseResponseFile(fileContent, mapToMetriportId);
+    console.log("Received " + details.length + " rows");
+    allDetails.push(...details);
 
+    // Increment patient statistics
     for (const detail of details) {
-      const patientId = detail.patientId;
-      if (patientId && reversePatientIdMap[patientId]) {
-        const metriportId = reversePatientIdMap[patientId];
-        foundPatientIds.add(metriportId);
-        countPatient[metriportId] = (countPatient[metriportId] || 0) + 1;
-      } else {
-        console.log("unknown patient ID: " + patientId);
-      }
+      const patientId = detail.data.patientId;
+      foundPatientIds.add(patientId);
+      countPatient[patientId] = (countPatient[patientId] || 0) + 1;
     }
   }
+
+  console.log("Total rows: " + allDetails.length);
+
+  // Print statistics about the found patients
   console.log("found " + foundPatientIds.size + " patient ids");
   console.log("missing " + (patientIds.size - foundPatientIds.size) + " patient ids");
   console.log(

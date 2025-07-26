@@ -12,7 +12,10 @@ const cellParser = Object.fromEntries(
   ])
 );
 
-export function parseResponseFile(message: Buffer): IncomingData<ResponseDetail>[] {
+export function parseResponseFile(
+  message: Buffer,
+  mapToMetriportId: Record<string, string>
+): IncomingData<ResponseDetail>[] {
   const details: IncomingData<ResponseDetail>[] = [];
   const lines = message
     .toString("ascii")
@@ -45,6 +48,15 @@ export function parseResponseFile(message: Buffer): IncomingData<ResponseDetail>
       );
       const parsed = responseDetailSchema.safeParse(rowObject);
       if (parsed.success) {
+        const metriportId = mapToMetriportId[parsed.data.patientId];
+        if (metriportId) {
+          parsed.data.patientId = metriportId;
+        } else {
+          throw new MetriportError("Unknown patient ID", undefined, {
+            patientId: parsed.data.patientId,
+            name: parsed.data.patientFirstName + " " + parsed.data.patientLastName,
+          });
+        }
         details.push({
           data: parsed.data,
           source: row,
