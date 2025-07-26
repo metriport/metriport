@@ -1,35 +1,8 @@
-import { MetriportError } from "@metriport/shared";
 import { convertIncomingDataToFhirBundle } from "./fhir/bundle";
 import { parseResponseFile } from "./file/file-parser";
-import { ResponseFile, ResponseDetail } from "./schema/response";
+import { ResponseDetail } from "./schema/response";
 import { IncomingData } from "./schema/shared";
 import { QuestConversionBundle } from "./types";
-
-export async function convertPatientResponseToFhirBundle(
-  cxId: string,
-  responseFileContent: Buffer
-): Promise<QuestConversionBundle | undefined> {
-  const responseFile = parseResponseFile(responseFileContent);
-  const patientIdDetails = buildPatientIdToDetailsMap(responseFile);
-  const patientIds = Array.from(patientIdDetails.keys());
-  if (patientIds.length > 1) {
-    throw new MetriportError("Expected exactly one patient in the response file", undefined, {
-      patientIds: Array.from(patientIdDetails.keys()).join(", "),
-    });
-  }
-
-  const patientId = patientIds[0];
-  if (!patientId) return undefined;
-  const details = patientIdDetails.get(patientId);
-  if (!details || details.length < 1) return undefined;
-
-  const bundle = await convertIncomingDataToFhirBundle(cxId, patientId, details);
-  return {
-    cxId,
-    patientId,
-    bundle,
-  };
-}
 
 export async function convertBatchResponseToFhirBundles(
   cxId: string,
@@ -51,10 +24,10 @@ export async function convertBatchResponseToFhirBundles(
 }
 
 function buildPatientIdToDetailsMap(
-  responseFile: ResponseFile
+  details: IncomingData<ResponseDetail>[]
 ): Map<string, IncomingData<ResponseDetail>[]> {
   const patientIdDetails = new Map<string, IncomingData<ResponseDetail>[]>();
-  for (const detail of responseFile.detail) {
+  for (const detail of details) {
     const patientId = detail.data.patientId;
     if (!patientId) continue;
     if (!patientIdDetails.has(patientId)) {
