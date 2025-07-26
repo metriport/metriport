@@ -6,9 +6,10 @@ import { QuestConversionBundle } from "./types";
 
 export async function convertBatchResponseToFhirBundles(
   cxId: string,
+  mapToMetriportId: Record<string, string>,
   responseFileContent: Buffer
 ): Promise<QuestConversionBundle[]> {
-  const responseFile = parseResponseFile(responseFileContent);
+  const responseFile = parseResponseFile(responseFileContent, mapToMetriportId);
   const patientIdDetails = buildPatientIdToDetailsMap(responseFile);
   const conversionBundles: QuestConversionBundle[] = [];
   for (const [patientId, details] of patientIdDetails.entries()) {

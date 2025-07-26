@@ -5,7 +5,7 @@ import { ResponseDetail } from "../schema/response";
  * The organization that ordered the tests.
  * @returns {Organization} FHIR resource
  */
-export function getOrganization(detail: ResponseDetail): Organization {
+export function getInsuranceOrganization(detail: ResponseDetail): Organization {
   const identifier = getOrganizationIdentifier(detail);
   const name = getOrganizationName(detail);
   const address = getOrganizationAddress(detail);
