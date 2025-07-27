@@ -25,13 +25,13 @@ export const handler = capture.wrapHandler(async (event: SQSEvent): Promise<void
   const log = prefixedLog(lambdaName);
   log("Parsing body");
   const parsedBody = parseBody(params.body);
-  const { cxId, messageId, patientIds, dateFrom, dateTo } = parsedBody;
+  const { cxId, messageId, patientId, dateFrom, dateTo } = parsedBody;
   log(`Parsed into: ${JSON.stringify(parsedBody)}`);
 
   capture.setExtra({
     cxId,
     messageId,
-    patientIds,
+    patientId,
     dateFrom,
     dateTo,
     context: "reconversion-kickoff-cloud.execute",
@@ -44,7 +44,7 @@ function parseBody(body: string): ReconversionKickoffParams {
   const schema = z.object({
     messageId: z.string(),
     cxId: z.string().uuid(),
-    patientIds: z.array(z.string().uuid()),
+    patientId: z.string().uuid(),
     dateFrom: z.string(),
     dateTo: z.string().optional(),
   });

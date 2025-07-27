@@ -9,7 +9,7 @@ dayjs.extend(duration);
 export type ReconversionKickoffParams = {
   messageId: string;
   cxId: string;
-  patientIds: string[];
+  patientId: string;
   dateFrom: string;
   dateTo?: string;
 };
@@ -17,18 +17,18 @@ export type ReconversionKickoffParams = {
 export class DocumentReconversionKickoffDirect {
   constructor(private readonly apiUrl: string) {}
 
-  async execute({ messageId, cxId, patientIds, dateFrom, dateTo }: ReconversionKickoffParams) {
+  async execute({ messageId, cxId, patientId, dateFrom, dateTo }: ReconversionKickoffParams) {
     const { log } = out(`reconversion-kickoff-direct - cxId ${cxId}`);
     try {
       const endpointUrl = `${this.apiUrl}/internal/docs/re-convert`;
       const params = new URLSearchParams({
         cxId,
-        patientIds: patientIds.join(","),
+        patientIds: JSON.stringify([patientId]),
         dateFrom,
         ...(dateTo ? { dateTo } : {}),
       });
 
-      log(`messageId ${messageId}, patientIds (${patientIds.length}): ${patientIds.join(",")}`);
+      log(`messageId: ${messageId}, pt: ${patientId}`);
 
       const resp = await axios.post(endpointUrl, undefined, { params });
       log(`API notified. Reconvert request ID - ${JSON.stringify(resp.data.requestId)}`);

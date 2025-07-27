@@ -32,8 +32,6 @@ import { chunk, groupBy } from "lodash";
 const sqsClient = new SQSClient({ region: getEnvVarOrFail("AWS_REGION") });
 const sqsUrl = getEnvVarOrFail("RECONVERSION_KICKOFF_QUEUE_URL");
 
-const PATIENT_CHUNK_SIZE = 10;
-
 /**
  * AWS SQS limit is 3000 messages/second, but we'll be safe and use 2000
  *
@@ -41,10 +39,9 @@ const PATIENT_CHUNK_SIZE = 10;
  */
 const SQS_BATCH_SIZE = 2000;
 
-const fileName =
-  "/Users/ramilgaripov/Desktop/metriport/full_stack/metriport/packages/utils/src/document/localReconversion.json";
-const dateFrom = "2025-07-10";
-const dateTo = "";
+const fileName = "";
+const dateFrom = ""; // YYYY-MM-DD, with optional timestamp, e.g. 2025-07-10 12:00
+const dateTo = ""; // YYYY-MM-DD, with optional timestamp, e.g. 2025-07-11 12:00
 
 /**
  * Loads data from a large JSON file using streaming to avoid memory issues
@@ -85,13 +82,11 @@ async function main() {
 
     const patientIds = Array.from(new Set(cxPatients.map(p => p.patient_id)));
 
-    const patientChunks = chunk(patientIds, PATIENT_CHUNK_SIZE);
-    for (const [i, patients] of patientChunks.entries()) {
-      console.log(`Chunk ${i + 1} of ${patients.length}`);
+    for (const patientId of patientIds) {
       const payloadParams: ReconversionKickoffParams = {
         messageId: uuidv7(),
         cxId,
-        patientIds: patients,
+        patientId,
         dateFrom,
         ...(dateTo && dateTo !== "" ? { dateTo } : {}),
       };
