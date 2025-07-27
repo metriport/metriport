@@ -3,6 +3,7 @@ export type ProcessFhirToCsvRequest = {
   cxId: string;
   patientId: string;
   inputBundle?: string;
+  timeoutInMillis?: number | undefined;
 };
 
 export interface FhirToCsvHandler {

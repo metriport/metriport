@@ -64,8 +64,9 @@ function settings(): AnalyticsPlatformsSettings {
   const fhirToCsvTransform: DockerImageLambdaSettings = {
     name: "FhirToCsvTransform",
     lambda: {
-      memory: 1024,
+      memory: 2048,
       timeout: fhirToCsvTransformLambdaTimeout,
+      ephemeralStorageSize: cdk.Size.gibibytes(2),
     },
   };
   const fhirToCsvBatchJob: BatchJobSettings = {
@@ -242,6 +243,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
         }),
         timeout: fhirToCsvTransformLambdaSettings.timeout,
         memorySize: fhirToCsvTransformLambdaSettings.memory,
+        ephemeralStorageSize: fhirToCsvTransformLambdaSettings.ephemeralStorageSize,
         environment: {
           ENV: ownProps.envType,
           INPUT_S3_BUCKET: ownProps.medicalDocumentsBucket.bucketName,

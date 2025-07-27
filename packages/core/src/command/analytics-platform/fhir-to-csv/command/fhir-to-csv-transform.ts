@@ -9,6 +9,7 @@ export type StartFhirToCsvTransformParams = {
   jobId: string;
   patientId: string;
   inputBundle?: string;
+  timeoutInMillis?: number | undefined;
 };
 
 export async function startFhirToCsvTransform({
@@ -16,6 +17,7 @@ export async function startFhirToCsvTransform({
   jobId,
   patientId,
   inputBundle,
+  timeoutInMillis,
 }: StartFhirToCsvTransformParams): Promise<void> {
   const { log } = out(`FhirToCsvTransform - cx ${cxId} pt ${patientId} job ${jobId}`);
   const lambdaName = Config.getFhirToCsvTransformLambdaName();
@@ -30,7 +32,7 @@ export async function startFhirToCsvTransform({
     SNOWFLAKE_CREDS: snowflakeCreds,
   });
   await executeWithNetworkRetries(async () => {
-    const result = await makeLambdaClient(Config.getAWSRegion())
+    const result = await makeLambdaClient(Config.getAWSRegion(), timeoutInMillis)
       .invoke({
         FunctionName: lambdaName,
         InvocationType: "RequestResponse",
