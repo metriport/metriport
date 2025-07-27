@@ -1,4 +1,4 @@
-import { Duration } from "aws-cdk-lib";
+import { Duration, Size } from "aws-cdk-lib";
 
 export type SettingsRecord = Record<string, QueueAndLambdaSettings>;
 
@@ -10,6 +10,7 @@ export type QueueAndLambdaSettings = {
     /** How long can the lambda run for, max is 900 seconds (15 minutes)  */
     timeout: Duration;
     reservedConcurrentExecutions?: number;
+    ephemeralStorageSize?: Size;
   };
   queue: {
     alarmMaxAgeOfOldestMessage: Duration;
