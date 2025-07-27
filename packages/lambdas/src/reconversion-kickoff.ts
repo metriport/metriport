@@ -1,7 +1,7 @@
 import {
   DocumentReconversionKickoffDirect,
   ReconversionKickoffParams,
-} from "@metriport/core/command/reconversion/reconversion-kickoff";
+} from "@metriport/core/command/reconversion/reconversion-kickoff-direct";
 import { SQSEvent } from "aws-lambda";
 import { z } from "zod";
 import { capture } from "./shared/capture";
