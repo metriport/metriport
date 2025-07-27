@@ -8,6 +8,7 @@ import {
   unknownGender,
 } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
+import { initTimer } from "@metriport/shared/common/timer";
 import { createUuidFromText } from "@metriport/shared/common/uuid";
 import axios, { AxiosResponse } from "axios";
 import { stringify } from "csv-stringify/sync";
@@ -25,6 +26,7 @@ import {
   Hl7v2SubscriberApiResponse,
   Hl7v2SubscriberParams,
   RosterRowData,
+  VpnlessHieConfig,
 } from "./types";
 import { createScrambledId } from "./utils";
 const region = Config.getAWSRegion();
@@ -45,7 +47,7 @@ export class Hl7v2RosterGenerator {
     this.s3Utils = new S3Utils(region);
   }
 
-  async execute(config: HieConfig): Promise<string> {
+  async execute(config: HieConfig | VpnlessHieConfig): Promise<string> {
     const { log } = out("Hl7v2RosterGenerator");
     const { states } = config;
     const hieName = config.name;
@@ -82,14 +84,23 @@ export class Hl7v2RosterGenerator {
 
     const rosterRowInputs = patients.map(p => {
       const org = orgsByCxId[p.cxId];
-      if (org) {
-        return createRosterRowInput(p, org, states);
+      if (!org) {
+        throw new MetriportError(
+          `Organization ${p.cxId} not found for patient ${p.id}`,
+          undefined,
+          {
+            patientId: p.id,
+            cxId: p.cxId,
+          }
+        );
+      } else if (!org.shortcode) {
+        throw new MetriportError(`Organization ${p.cxId} has no shortcode`, undefined, {
+          patientId: p.id,
+          cxId: p.cxId,
+        });
       }
 
-      throw new MetriportError(`Organization ${p.cxId} not found for patient ${p.id}`, undefined, {
-        patientId: p.id,
-        cxId: p.cxId,
-      });
+      return createRosterRowInput(p, { shortcode: org.shortcode }, states);
     });
 
     const rosterRows = rosterRowInputs.map(input => createRosterRow(input, config.mapping));
@@ -117,22 +128,28 @@ export class Hl7v2RosterGenerator {
     return rosterCsv;
   }
 
-  private async getAllSubscribedPatients(hie: string): Promise<Patient[]> {
+  private async getAllSubscribedPatients(hieName: string): Promise<Patient[]> {
+    const { log } = out(`getAllSubscribedPatients - hieName ${hieName}`);
     const allSubscribers: Patient[] = [];
     let currentUrl: string | undefined = `${this.apiUrl}/${HL7V2_SUBSCRIBERS_ENDPOINT}`;
     let baseParams: Hl7v2SubscriberParams | undefined = {
-      hie,
+      hieName,
       count: NUMBER_OF_PATIENTS_PER_PAGE,
     };
 
+    let i = 1;
+    const timer = initTimer();
     while (currentUrl) {
+      log(`Getting page ${i} of patients...`);
       const response: AxiosResponse<Hl7v2SubscriberApiResponse> = await axios.get(currentUrl, {
         params: baseParams,
       });
       baseParams = undefined;
       allSubscribers.push(...response.data.patients);
       currentUrl = response.data.meta.nextPage;
+      i += 1;
     }
+    log(`Found ${allSubscribers.length} total patients in ${timer.getElapsedTime()}ms`);
     return allSubscribers;
   }
 
@@ -198,7 +215,7 @@ export function genderOneTwoAndNine(gender: GenderAtBirth) {
 
 export function createRosterRowInput(
   p: Patient,
-  org: { shortcode?: string | undefined },
+  org: { shortcode: string },
   states: string[]
 ): RosterRowData {
   const data = p.data;
