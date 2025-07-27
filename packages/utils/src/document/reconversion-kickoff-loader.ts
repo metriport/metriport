@@ -29,6 +29,15 @@ import { chunk, groupBy } from "lodash";
  * - ts-node src/document/reconversion-kickoff-loader.ts
  */
 
+/**
+ * This is a unique identifier for the reconversion kickoff job.
+ * It is used to group messages in the SQS queue so that we can process them in order.
+ *
+ * Since we don't want to parallelize this work too much to avoid overloading the API,
+ * all messages will be sent to the same job grouping.
+ */
+const RECONVESION_KICKOFF_JOB = "reconversion-kickoff-job";
+
 const sqsClient = new SQSClient({ region: getEnvVarOrFail("AWS_REGION") });
 const sqsUrl = getEnvVarOrFail("RECONVERSION_KICKOFF_QUEUE_URL");
 
@@ -117,7 +126,7 @@ async function main() {
         await sqsClient.sendMessageToQueue(sqsUrl, payloadString, {
           fifo: true,
           messageDeduplicationId: createUuidFromText(payloadString),
-          messageGroupId: p.cxId,
+          messageGroupId: RECONVESION_KICKOFF_JOB,
         });
 
         return { success: true };
