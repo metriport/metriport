@@ -37,11 +37,10 @@ export const handler = capture.wrapHandler(async (event: SQSEvent): Promise<void
     context: "reconversion-kickoff-cloud.execute",
   });
 
-  const executeParams: ReconversionKickoffParams = { ...parsedBody, apiUrl };
-  await new DocumentReconversionKickoffDirect().execute(executeParams);
+  await new DocumentReconversionKickoffDirect(apiUrl).execute(parsedBody);
 });
 
-const parseBody = (body: string): Omit<ReconversionKickoffParams, "apiUrl"> => {
+function parseBody(body: string): ReconversionKickoffParams {
   const schema = z.object({
     messageId: z.string(),
     cxId: z.string().uuid(),
@@ -51,4 +50,4 @@ const parseBody = (body: string): Omit<ReconversionKickoffParams, "apiUrl"> => {
   });
 
   return schema.parse(JSON.parse(body));
-};
+}

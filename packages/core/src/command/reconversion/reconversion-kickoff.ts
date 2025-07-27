@@ -1,5 +1,5 @@
 import { out } from "@metriport/core/util";
-import { sleep } from "@metriport/shared/common/sleep";
+import { errorToString } from "@metriport/shared/dist/error/shared";
 import axios from "axios";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -12,23 +12,15 @@ export type ReconversionKickoffParams = {
   patientIds: string[];
   dateFrom: string;
   dateTo?: string;
-  apiUrl: string;
 };
 
-const delayTime = dayjs.duration(30, "seconds");
-
 export class DocumentReconversionKickoffDirect {
-  async execute({
-    messageId,
-    cxId,
-    patientIds,
-    dateFrom,
-    dateTo,
-    apiUrl,
-  }: ReconversionKickoffParams) {
+  constructor(private readonly apiUrl: string) {}
+
+  async execute({ messageId, cxId, patientIds, dateFrom, dateTo }: ReconversionKickoffParams) {
     const { log } = out(`reconvert-direct - cxId ${cxId}`);
     try {
-      const endpointUrl = `${apiUrl}/internal/docs/re-convert`;
+      const endpointUrl = `${this.apiUrl}/internal/docs/re-convert`;
       const params = new URLSearchParams({
         cxId,
         patientIds: patientIds.join(","),
@@ -40,11 +32,9 @@ export class DocumentReconversionKickoffDirect {
 
       const resp = await axios.post(endpointUrl, undefined, { params });
       log(`API notified. Reconvert request ID - ${JSON.stringify(resp.data.requestId)}`);
-
-      await sleep(delayTime.asMilliseconds());
     } catch (err) {
       const msg = "Patient docs reconvert kick off failed!";
-      log(`${msg}. Error - ${err}`);
+      log(`${msg}. Error - ${errorToString(err)}`);
       throw err;
     }
   }
