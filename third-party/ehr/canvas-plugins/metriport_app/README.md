@@ -6,8 +6,11 @@
 
 Providers can have the information they need to stay up-to-date with their patients throughout the full care journey.
 
-- Get instant access to comprehensive patient clinical history summaries from a nationwide network of over 120k provider sites and 260M patients
-- Receive a standardized, de-duplicated, and consolidated medical record at the point-of-care
+- View de-duplicated, standardized, and enriched records from a network of over 120k provider sites and 260M patients directly in the chart.
+- Quickly identify data external to your EMR and add it to your patient record.
+- Automatically pull patient data when an appointment is scheduled or when the Metriport app is launched in Canvas.
+- Navigate a consolidated record with AI-generated summaries, searchable views of medicines, labs, notes, vitals, and more.
+
 
 ### Manual Workflow
 
