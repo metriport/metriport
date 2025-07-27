@@ -238,6 +238,10 @@ export class Config {
     return getEnvVarOrFail("WRITE_TO_S3_QUEUE_URL");
   }
 
+  static isSftpActionLambda(): boolean {
+    return getEnvVar("SFTP_ACTION_LAMBDA") != undefined;
+  }
+
   static getSurescriptsHost(): string {
     return getEnvVarOrFail("SURESCRIPTS_SFTP_HOST");
   }
@@ -285,6 +289,53 @@ export class Config {
   }
   static getSurescriptsReceiveResponseQueueUrl(): string {
     return getEnvVarOrFail("SURESCRIPTS_RECEIVE_RESPONSE_QUEUE_URL");
+  }
+
+  static getQuestSftpHost(): string {
+    return getEnvVarOrFail("QUEST_SFTP_HOST");
+  }
+  static getQuestSftpUsername(): string {
+    return getEnvVarOrFail("QUEST_SFTP_USERNAME");
+  }
+  static getQuestSftpPassword(): string {
+    return getEnvVarOrFail("QUEST_SFTP_PASSWORD");
+  }
+  static getQuestSftpPort(): number {
+    const port = Number.parseInt(getEnvVarOrFail("QUEST_SFTP_PORT"));
+    if (isFinite(port)) {
+      return port;
+    }
+    throw new Error("QUEST_SFTP_PORT is not a valid number");
+  }
+  static getQuestSftpOutgoingDirectory(): string {
+    return getEnvVarOrFail("QUEST_OUTGOING_DIRECTORY_PATH");
+  }
+  static getQuestSftpIncomingDirectory(): string {
+    return getEnvVarOrFail("QUEST_INCOMING_DIRECTORY_PATH");
+  }
+  static getQuestSftpActionLambdaName(): string {
+    return getEnvVarOrFail("QUEST_SFTP_ACTION_LAMBDA_NAME");
+  }
+  static getQuestConvertPatientResponseLambdaName(): string {
+    return getEnvVarOrFail("QUEST_CONVERT_PATIENT_RESPONSE_LAMBDA_NAME");
+  }
+  static getQuestConvertBatchResponseLambdaName(): string {
+    return getEnvVarOrFail("QUEST_CONVERT_BATCH_RESPONSE_LAMBDA_NAME");
+  }
+  static getQuestSendPatientRequestQueueUrl(): string {
+    return getEnvVarOrFail("QUEST_SEND_PATIENT_REQUEST_QUEUE_URL");
+  }
+  static getQuestSendBatchRequestQueueUrl(): string {
+    return getEnvVarOrFail("QUEST_SEND_BATCH_REQUEST_QUEUE_URL");
+  }
+  static getQuestReceiveResponseQueueUrl(): string {
+    return getEnvVarOrFail("QUEST_RECEIVE_RESPONSE_QUEUE_URL");
+  }
+  static getQuestReplicaBucketName(): string {
+    return getEnvVarOrFail("QUEST_REPLICA_BUCKET_NAME");
+  }
+  static getLabConversionBucketName(): string {
+    return getEnvVarOrFail("LAB_CONVERSION_BUCKET_NAME");
   }
 
   static getAthenaHealthEnv(): string | undefined {
