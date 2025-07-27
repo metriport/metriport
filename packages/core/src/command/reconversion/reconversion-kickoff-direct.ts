@@ -18,7 +18,7 @@ export class DocumentReconversionKickoffDirect {
   constructor(private readonly apiUrl: string) {}
 
   async execute({ messageId, cxId, patientIds, dateFrom, dateTo }: ReconversionKickoffParams) {
-    const { log } = out(`reconvert-direct - cxId ${cxId}`);
+    const { log } = out(`reconversion-kickoff-direct - cxId ${cxId}`);
     try {
       const endpointUrl = `${this.apiUrl}/internal/docs/re-convert`;
       const params = new URLSearchParams({
