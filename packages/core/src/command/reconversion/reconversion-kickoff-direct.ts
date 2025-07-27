@@ -1,5 +1,5 @@
 import { out } from "../../util/log";
-import { errorToString } from "@metriport/shared/dist/error/shared";
+import { errorToString } from "@metriport/shared";
 import axios from "axios";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
