@@ -15,11 +15,13 @@ BigQuery, and more - enabling you to do population level analytics on your patie
 
 There are two primary ways to perform analytics on your patient population data:
 
-## Option 1: Snowflake Data Warehouse
+## Managed: Snowflake Data Warehouse
 
 Metriport offers direct integration with Snowflake, allowing you to analyze your patient data in a
 powerful, scalable cloud data warehouse. This approach provides:
 
+- **Managed data transformation**: Metriport does the heavy lifting to get your data into an analytics
+  ready data warehouse 🎉
 - **Near Real-time Analytics**: Query your patient data right after it's processed
 - **Scalable Performance**: Leverage Snowflake's elastic compute resources for complex analytics
 - **Secure Data Sharing**: Use Snowflake's `Secure Data Sharing` feature for secure data collaboration
@@ -41,17 +43,16 @@ Snowflake account and share you account identification with us:
      for secure, compliant, and zero-copy data sharing between Metriport and your Snowflake account.
    - Data will be visible through Secure Views, one for each resource type.
 
-## Option 2: TUVA Data Model
+## Manual: Tuva Data Model
 
 To accomplish this, we standardize our data into the [Tuva data model](https://thetuvaproject.com/) - 
 another open source project that focuses on making healthcare data more standardized for analytics.
 
-The TUVA approach provides:
+The Tuva approach provides:
 
-- **Standardized Healthcare Data Model**: Pre-built data models specifically designed for healthcare analytics
 - **Open Source**: Transparent, community-driven data modeling
 - **Healthcare-Specific Metrics**: Built-in calculations for common healthcare KPIs
 - **Multi-Warehouse Support**: Works with Snowflake, BigQuery, Redshift, and other warehouses
 
-To get started with TUVA, check out our 
+To get started with Tuva, check out our 
 [data warehouse connector documentation](https://thetuvaproject.com/connectors/metriport) on the Tuva site.
