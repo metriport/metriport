@@ -25,12 +25,41 @@ import { createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
 import { LambdaLayers } from "./shared/lambda-layers";
 import { createScheduledLambda } from "./shared/lambda-scheduled";
 import { buildSecret, Secrets } from "./shared/secrets";
+import { QueueAndLambdaSettings } from "./shared/settings";
 import { createQueue } from "./shared/sqs";
 import { isSandbox } from "./shared/util";
 
 export const CDA_TO_VIS_TIMEOUT = Duration.minutes(15);
 
 const pollingBuffer = Duration.seconds(30);
+
+const reconversionKickoffWaitTimePerBatch = Duration.seconds(30); // 2 batches/min
+const reconversionKickoffLambdaTimeout = reconversionKickoffWaitTimePerBatch.plus(
+  Duration.seconds(25)
+);
+
+function getReconversionKickoffSettings(): QueueAndLambdaSettings {
+  return {
+    name: "ReconversionKickoff",
+    entry: "reconversion-kickoff",
+    lambda: {
+      memory: 512,
+      timeout: Duration.seconds(10),
+    },
+    queue: {
+      alarmMaxAgeOfOldestMessage: Duration.days(3),
+      maxMessageCountAlarmThreshold: 50_000,
+      maxReceiveCount: 3,
+      visibilityTimeout: Duration.seconds(reconversionKickoffLambdaTimeout.toSeconds() * 2 + 1),
+      createRetryLambda: false,
+    },
+    eventSource: {
+      batchSize: 1,
+      reportBatchItemFailures: true,
+    },
+    waitTime: reconversionKickoffWaitTimePerBatch,
+  };
+}
 
 export type OpenSearchConfigForLambdas = {
   endpoint: string;
@@ -89,6 +118,8 @@ export class LambdasNestedStack extends NestedStack {
   readonly acmCertificateMonitorLambda: Lambda;
   readonly hl7v2RosterUploadLambdas: Lambda[] | undefined;
   readonly conversionResultNotifierLambda: Lambda;
+  readonly reconversionKickoffLambda: Lambda;
+  readonly reconversionKickoffQueue: Queue;
 
   constructor(scope: Construct, id: string, props: LambdasNestedStackProps) {
     super(scope, id, props);
@@ -285,6 +316,17 @@ export class LambdasNestedStack extends NestedStack {
         alarmAction: props.alarmAction,
       });
     }
+
+    const { lambda: reconversionKickoffLambda, queue: reconversionKickoffQueue } =
+      this.setupReconversionKickoff({
+        lambdaLayers: props.lambdaLayers,
+        sentryDsn: props.config.lambdasSentryDSN,
+        vpc: props.vpc,
+        envType: props.config.environmentType,
+        alarmAction: props.alarmAction,
+      });
+    this.reconversionKickoffLambda = reconversionKickoffLambda;
+    this.reconversionKickoffQueue = reconversionKickoffQueue;
   }
 
   private setupCdaToVisualization(ownProps: {
@@ -988,5 +1030,47 @@ export class LambdasNestedStack extends NestedStack {
     }
 
     return rosterUploadLambdas;
+  }
+
+  private setupReconversionKickoff(ownProps: {
+    lambdaLayers: LambdaLayers;
+    sentryDsn: string | undefined;
+    vpc: ec2.IVpc;
+    envType: EnvType;
+    alarmAction: SnsAction | undefined;
+  }): { lambda: Lambda; queue: Queue } {
+    const { lambdaLayers, vpc, envType, sentryDsn, alarmAction } = ownProps;
+    const settings = getReconversionKickoffSettings();
+
+    const queue = createQueue({
+      ...settings.queue,
+      stack: this,
+      name: settings.name,
+      fifo: true,
+      createDLQ: true,
+      lambdaLayers: [lambdaLayers.shared],
+      envType,
+      alarmSnsAction: alarmAction,
+    });
+
+    const lambda = createLambda({
+      ...settings.lambda,
+      stack: this,
+      name: settings.name,
+      entry: settings.entry,
+      envType,
+      envVars: {
+        // API_URL set on the api-stack after the OSS API is created
+        WAIT_TIME_IN_MILLIS: reconversionKickoffWaitTimePerBatch.toMilliseconds().toString(),
+        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+      },
+      layers: [lambdaLayers.shared],
+      vpc,
+      alarmSnsAction: alarmAction,
+    });
+
+    lambda.addEventSource(new SqsEventSource(queue, settings.eventSource));
+
+    return { lambda, queue };
   }
 }
