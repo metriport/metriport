@@ -62,7 +62,7 @@ service:
           type: optional<map<string, string>>
 
       response:
-        type: StartConsolidatedQueryResponse
+        type: PatientConsolidatedDataStatus
         docs: Returns the filters used for this query, in addition to the identifier used by the system to uniquely identify this query (property `requestId`).
       examples:
         - name: Example1
@@ -71,7 +71,7 @@ service:
           query-parameters:
             conversionType: "json"
           response:
-            body: $StartConsolidatedQueryResponse.Example0
+            body: $PatientConsolidatedDataStatus.Example0
 
     getConsolidatedQueryStatus:
       display-name: Get Consolidated Data Query Status
@@ -191,15 +191,6 @@ service:
       response: ConsolidatedCountResponse
 
 types:
-  StartConsolidatedQueryResponse:
-    properties:
-      query: PatientConsolidatedDataStatus
-      message: optional<string>
-    examples:
-      - name: Example0
-        value:
-          query: $PatientConsolidatedDataStatus.Example0
-
   PatientConsolidatedDataStatus:
     properties:
       requestId:
@@ -211,7 +202,7 @@ types:
       dateTo:
         type: optional<string>
       conversionType:
-        type: ConversionTypeFHIR
+        type: optional<ConversionTypeFHIR>
       status:
         type: DocumentQueryStatusFHIR
     examples:
