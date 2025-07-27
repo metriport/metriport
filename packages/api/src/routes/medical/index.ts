@@ -9,6 +9,7 @@ import facilityRoot from "./facility-root";
 import networkEntry from "./network-entry";
 import organization from "./organization";
 import patient from "./patient";
+import mapping from "./mapping";
 import patientRoot from "./patient-root";
 
 const routes = Router();
@@ -26,6 +27,8 @@ routes.use("/patient/:id", handleParams, patientAuthorization("params"), patient
 
 // document routes are also used in EHR Integrations routes
 routes.use("/document", document);
+
+routes.use("/mapping", mapping);
 
 routes.use("/network-entry", networkEntry);
 
