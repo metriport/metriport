@@ -14,6 +14,8 @@ capture.init();
 
 // Automatically set by AWS
 const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
+const waitTimeInMillisRaw = getEnvOrFail("WAIT_TIME_IN_MILLIS");
+const waitTimeInMillis = parseInt(waitTimeInMillisRaw);
 const apiUrl = getEnvOrFail("API_URL");
 
 export const handler = capture.wrapHandler(async (event: SQSEvent): Promise<void> => {
@@ -25,24 +27,22 @@ export const handler = capture.wrapHandler(async (event: SQSEvent): Promise<void
   const log = prefixedLog(lambdaName);
   log("Parsing body");
   const parsedBody = parseBody(params.body);
-  const { cxId, messageId, patientId, dateFrom, dateTo } = parsedBody;
+  const { cxId, patientId, dateFrom, dateTo } = parsedBody;
   log(`Parsed into: ${JSON.stringify(parsedBody)}`);
 
   capture.setExtra({
     cxId,
-    messageId,
     patientId,
     dateFrom,
     dateTo,
     context: "reconversion-kickoff-cloud.execute",
   });
 
-  await new DocumentReconversionKickoffDirect(apiUrl).execute(parsedBody);
+  await new DocumentReconversionKickoffDirect(apiUrl, waitTimeInMillis).execute(parsedBody);
 });
 
 function parseBody(body: string): ReconversionKickoffParams {
   const schema = z.object({
-    messageId: z.string(),
     cxId: z.string().uuid(),
     patientId: z.string().uuid(),
     dateFrom: z.string(),

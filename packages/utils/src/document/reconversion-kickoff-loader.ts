@@ -4,7 +4,6 @@ dotenv.config();
 import { ReconversionKickoffParams } from "@metriport/core/command/reconversion/reconversion-kickoff-direct";
 import { SQSClient } from "@metriport/core/external/aws/sqs";
 import { executeAsynchronously } from "@metriport/core/util";
-import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { getEnvVarOrFail } from "@metriport/shared/common/env-var";
 import { createUuidFromText } from "@metriport/shared/common/uuid";
 import { JSONParser, ParsedElementInfo } from "@streamparser/json";
@@ -80,7 +79,6 @@ async function main() {
 
     const cxPayloads = patientIds.map(patientId => {
       const payloadParams: ReconversionKickoffParams = {
-        messageId: uuidv7(),
         cxId,
         patientId,
         dateFrom,

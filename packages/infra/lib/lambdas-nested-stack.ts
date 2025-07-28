@@ -33,10 +33,8 @@ export const CDA_TO_VIS_TIMEOUT = Duration.minutes(15);
 
 const pollingBuffer = Duration.seconds(30);
 
-const reconversionKickoffWaitTimePerBatch = Duration.seconds(5); // 12 patients/min
-const reconversionKickoffLambdaTimeout = reconversionKickoffWaitTimePerBatch.plus(
-  Duration.seconds(25)
-);
+const reconversionKickoffWaitTime = Duration.seconds(5); // 12 patients/min
+const reconversionKickoffLambdaTimeout = reconversionKickoffWaitTime.plus(Duration.seconds(25));
 
 function getReconversionKickoffSettings(): QueueAndLambdaSettings {
   return {
@@ -57,7 +55,7 @@ function getReconversionKickoffSettings(): QueueAndLambdaSettings {
       batchSize: 1,
       reportBatchItemFailures: true,
     },
-    waitTime: reconversionKickoffWaitTimePerBatch,
+    waitTime: reconversionKickoffWaitTime,
   };
 }
 
@@ -1061,7 +1059,7 @@ export class LambdasNestedStack extends NestedStack {
       envType,
       envVars: {
         // API_URL set on the api-stack after the OSS API is created
-        WAIT_TIME_IN_MILLIS: reconversionKickoffWaitTimePerBatch.toMilliseconds().toString(),
+        WAIT_TIME_IN_MILLIS: reconversionKickoffWaitTime.toMilliseconds().toString(),
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared],
