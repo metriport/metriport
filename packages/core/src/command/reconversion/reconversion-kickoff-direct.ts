@@ -22,7 +22,7 @@ export class DocumentReconversionKickoffDirect {
       const endpointUrl = `${this.apiUrl}/internal/docs/re-convert`;
       const params = new URLSearchParams({
         cxId,
-        patientIds: JSON.stringify([patientId]),
+        patientIds: patientId,
         dateFrom,
         ...(dateTo ? { dateTo } : {}),
       });
