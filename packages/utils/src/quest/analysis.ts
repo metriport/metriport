@@ -1,9 +1,11 @@
 import fs from "fs";
 import path from "path";
 import { Command } from "commander";
+import { Bundle } from "@medplum/fhirtypes";
 import { parseResponseFile } from "@metriport/core/external/quest/file/file-parser";
 import { ResponseDetail } from "@metriport/core/external/quest/schema/response";
 import { IncomingData } from "@metriport/core/external/quest/schema/shared";
+import { convertBatchResponseToFhirBundles } from "@metriport/core/external/quest/fhir-converter";
 
 const command = new Command();
 
@@ -45,7 +47,14 @@ async function runAnalysis({ cxName }: { cxName: string }) {
     }
   }
 
+  const bundles = await convertBatchResponseToFhirBundles(cxName, allDetails);
+
+  for (const bundle of bundles) {
+    writeQuestConversionBundle(cxName, bundle.patientId, bundle.bundle);
+  }
+
   console.log("Total rows: " + allDetails.length);
+  console.log("Total bundles: " + bundles.length);
 
   // Print statistics about the found patients
   console.log("found " + foundPatientIds.size + " patient ids");
@@ -71,4 +80,14 @@ function getQuestPatientMapping(dirPath: string): Record<string, string> {
   const patientIdMap = job.patientIdMap;
   return patientIdMap;
 }
+
+function writeQuestConversionBundle(cxName: string, patientId: string, bundle: Bundle) {
+  const cxDir = path.join(QUEST_DIR, "bundle", cxName);
+  if (!fs.existsSync(cxDir)) {
+    fs.mkdirSync(cxDir, { recursive: true });
+  }
+  const filePath = path.join(cxDir, patientId + ".json");
+  fs.writeFileSync(filePath, JSON.stringify(bundle, null, 2));
+}
+
 export default command;

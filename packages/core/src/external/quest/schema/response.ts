@@ -51,7 +51,7 @@ export const responseDetailSchema = z.object({
   gender: z.string().optional(),
   socialSecurityNumber: z.string().optional(),
   questBillingIdentifier: z.string().optional(),
-  memberNumber: z.string().optional(),
+  questPatientId: z.string().optional(),
   medicaidId: z.string().optional(),
   medicareId: z.string().optional(),
   orderingAccountNumber: z.string(),
@@ -139,7 +139,7 @@ export const responseDetailRow: IncomingFileRowSchema<ResponseDetail> = [
   {
     field: 6,
     length: 30,
-    key: "patientId",
+    key: "questPatientId",
     header: "EXTERNAL_PAT_ID",
     fromQuest: fromQuestString(),
   },
@@ -244,9 +244,9 @@ export const responseDetailRow: IncomingFileRowSchema<ResponseDetail> = [
   {
     field: 21,
     length: 25,
-    key: "memberNumber",
+    key: "patientId",
     header: "POLICY_NUMBER",
-    fromQuest: fromQuestString({ optional: true }),
+    fromQuest: fromQuestString(),
   },
   {
     field: 22,

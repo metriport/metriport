@@ -42,20 +42,26 @@ export function parseResponseFile(
               key,
             });
           }
-          const value = parser(row[index]?.trim() ?? "");
+          const value: unknown = parser(row[index]?.trim() ?? "");
           return [key, value];
         })
       );
       const parsed = responseDetailSchema.safeParse(rowObject);
-      if (parsed.success) {
-        const metriportId = mapToMetriportId[parsed.data.patientId];
+      if (parsed.success && parsed.data.patientId) {
+        let metriportId = mapToMetriportId[parsed.data.patientId.toLowerCase()];
         if (metriportId) {
           parsed.data.patientId = metriportId;
         } else {
-          throw new MetriportError("Unknown patient ID", undefined, {
-            patientId: parsed.data.patientId,
-            name: parsed.data.patientFirstName + " " + parsed.data.patientLastName,
-          });
+          metriportId = mapToMetriportId[parsed.data.patientId.toLowerCase()];
+          if (metriportId) {
+            parsed.data.patientId = metriportId;
+          } else {
+            throw new MetriportError("Unknown patient ID", undefined, {
+              patientId: parsed.data.patientId,
+              questPatientId: parsed.data.questPatientId,
+              name: parsed.data.patientFirstName + " " + parsed.data.patientLastName,
+            });
+          }
         }
         details.push({
           data: parsed.data,

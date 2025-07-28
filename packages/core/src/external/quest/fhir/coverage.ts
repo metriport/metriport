@@ -1,31 +1,26 @@
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
-import { Coverage, Identifier, Organization } from "@medplum/fhirtypes";
+import { Coverage, Organization, Patient } from "@medplum/fhirtypes";
 import { ResponseDetail } from "../schema/response";
+import { getPatientReference } from "./patient";
 import { getOrganizationReference } from "./organization";
 
 export function getCoverage(
   detail: ResponseDetail,
-  { insuranceOrganization }: { insuranceOrganization?: Organization }
-): Coverage {
-  const identifier = getCoverageIdentifier(detail);
+  { patient, insuranceOrganization }: { patient: Patient; insuranceOrganization?: Organization }
+): Coverage | undefined {
+  const beneficiary = getPatientReference(patient);
   const payor = insuranceOrganization
     ? [getOrganizationReference(insuranceOrganization)]
     : undefined;
 
+  if (!beneficiary || !payor) return undefined;
+
+  detail.patientId;
+
   return {
     resourceType: "Coverage",
     id: uuidv7(),
-    ...(identifier ? { identifier } : {}),
+    beneficiary,
     ...(payor ? { payor } : {}),
   };
-}
-
-function getCoverageIdentifier(detail: ResponseDetail): Identifier[] | undefined {
-  if (!detail.patientId) return undefined;
-  return [
-    {
-      system: "https://metriport.com/patient-id",
-      value: detail.patientId,
-    },
-  ];
 }

@@ -1,4 +1,3 @@
-import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import {
   Patient,
   HumanName,
@@ -19,7 +18,7 @@ export function getPatient(detail: ResponseDetail): Patient {
 
   return {
     resourceType: "Patient",
-    id: uuidv7(),
+    id: detail.patientId,
     ...(name ? { name } : {}),
     ...(identifier ? { identifier } : {}),
     ...(address ? { address } : {}),
@@ -77,21 +76,16 @@ function getPatientTelecom(detail: ResponseDetail): ContactPoint[] | undefined {
 }
 
 function getPatientIdentifier(detail: ResponseDetail): Identifier[] | undefined {
-  const identifiers: Identifier[] = [
-    {
-      system: "https://metriport.com/patient-id",
-      value: detail.patientId,
-    },
-  ];
+  const identifiers: Identifier[] = [];
 
-  if (detail.socialSecurityNumber) {
+  if (detail.socialSecurityNumber && !detail.socialSecurityNumber.match(/^0+$/)) {
     identifiers.push({
       system: "http://hl7.org/fhir/sid/us-ssn",
       value: detail.socialSecurityNumber,
     });
   }
 
-  return identifiers;
+  return identifiers.length > 0 ? identifiers : undefined;
 }
 
 function getPatientGender(detail: ResponseDetail): Patient["gender"] | undefined {
