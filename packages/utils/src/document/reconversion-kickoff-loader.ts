@@ -3,12 +3,17 @@ dotenv.config();
 // keep that ^ on top
 import { ReconversionKickoffParams } from "@metriport/core/command/reconversion/reconversion-kickoff-direct";
 import { SQSClient } from "@metriport/core/external/aws/sqs";
-import { getEnvVarOrFail } from "@metriport/core/util";
+import { executeAsynchronously } from "@metriport/core/util";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
+import { getEnvVarOrFail } from "@metriport/shared/common/env-var";
 import { createUuidFromText } from "@metriport/shared/common/uuid";
 import { JSONParser, ParsedElementInfo } from "@streamparser/json";
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
 import fs from "fs";
-import { chunk, groupBy } from "lodash";
+import { groupBy } from "lodash";
+
+dayjs.extend(duration);
 
 /**
  * This script is used to kick off a reconversion for a specific list of patients, and for a specific date range.
@@ -47,29 +52,11 @@ const sqsUrl = getEnvVarOrFail("RECONVERSION_KICKOFF_QUEUE_URL");
  * @see https://aws.amazon.com/sqs/faqs/#topic-3:~:text=What%20is%20the%20throughput%20quota%20for%20an%20Amazon%20SQS%20FIFO%20queue%3F
  */
 const SQS_BATCH_SIZE = 2000;
+const MIN_JITTER_BETWEEN_BATCHES = dayjs.duration(1, "seconds");
 
 const fileName = "";
 const dateFrom = ""; // YYYY-MM-DD, with optional timestamp, e.g. 2025-07-10 12:00
 const dateTo = ""; // YYYY-MM-DD, with optional timestamp, e.g. 2025-07-11 12:00
-
-/**
- * Loads data from a large JSON file using streaming to avoid memory issues
- */
-async function loadDataFromLargeJsonFile(
-  path: string,
-  onValue: (value: ParsedElementInfo.ParsedElementInfo) => void
-): Promise<void> {
-  const parser = new JSONParser({ stringBufferSize: undefined, paths: ["$.*"] });
-  parser.onValue = onValue;
-  await new Promise((resolve, reject) => {
-    const inputStream = fs.createReadStream(path, { encoding: "utf8" });
-    inputStream.on("error", reject);
-    parser.onError = reject;
-    parser.onEnd = () => resolve(undefined);
-    inputStream.on("data", chunk => parser.write(chunk));
-    inputStream.on("end", () => parser.end());
-  });
-}
 
 async function main() {
   const patients: Array<{ patient_id: string; cx_id: string }> = [];
@@ -91,7 +78,7 @@ async function main() {
 
     const patientIds = Array.from(new Set(cxPatients.map(p => p.patient_id)));
 
-    for (const patientId of patientIds) {
+    const cxPayloads = patientIds.map(patientId => {
       const payloadParams: ReconversionKickoffParams = {
         messageId: uuidv7(),
         cxId,
@@ -99,26 +86,25 @@ async function main() {
         dateFrom,
         ...(dateTo && dateTo !== "" ? { dateTo } : {}),
       };
-      payloads.push(payloadParams);
-    }
+      return payloadParams;
+    });
+    payloads.push(...cxPayloads);
   }
 
   console.log(`Total payloads to send: ${payloads.length}`);
 
-  // Chunk payloads into batches to respect SQS rate limits
-  const payloadBatches = chunk(payloads, SQS_BATCH_SIZE);
-  console.log(`Sending in ${payloadBatches.length} batches of max ${SQS_BATCH_SIZE} messages each`);
-
   let totalSent = 0;
   let totalErrors = 0;
+  const failedPayloads: Array<{
+    payload: ReconversionKickoffParams;
+    error: string;
+    itemIndex: number;
+  }> = [];
 
-  for (const [batchIndex, batch] of payloadBatches.entries()) {
-    console.log(
-      `Processing batch ${batchIndex + 1}/${payloadBatches.length} (${batch.length} messages)`
-    );
-
-    const batchPromises = batch.map(async p => {
-      const payloadString = JSON.stringify(p);
+  await executeAsynchronously(
+    payloads,
+    async (payload, itemIndex) => {
+      const payloadString = JSON.stringify(payload);
       try {
         // For debugging - write to file
         // fs.appendFile("sqsMessages.json", payloadString + "\n", "utf8", () => {});
@@ -129,28 +115,42 @@ async function main() {
           messageGroupId: RECONVESION_KICKOFF_JOB,
         });
 
-        return { success: true };
+        totalSent++;
+        if (itemIndex % 1000 === 0) {
+          console.log(`Progress: ${itemIndex + 1}/${payloads.length} messages sent`);
+        }
       } catch (e) {
-        console.error(`Error sending message: ${e}`);
-        return { success: false, error: e };
+        const errorMessage = e instanceof Error ? e.message : String(e);
+        console.error(`Error sending message ${itemIndex + 1}: ${errorMessage}`);
+
+        failedPayloads.push({
+          payload,
+          error: errorMessage,
+          itemIndex,
+        });
+        totalErrors++;
       }
-    });
-
-    const batchResults = await Promise.all(batchPromises);
-
-    const batchSuccesses = batchResults.filter(r => r.success).length;
-    const batchErrors = batchResults.filter(r => !r.success).length;
-
-    totalSent += batchSuccesses;
-    totalErrors += batchErrors;
-
-    console.log(`Batch ${batchIndex + 1} complete: ${batchSuccesses} sent, ${batchErrors} errors`);
-
-    // Add a small delay between batches to be extra safe with rate limits
-    if (batchIndex < payloadBatches.length - 1) {
-      console.log("Waiting 1000ms before next batch...");
-      await new Promise(resolve => setTimeout(resolve, 1_000));
+    },
+    {
+      numberOfParallelExecutions: SQS_BATCH_SIZE,
+      minJitterMillis: MIN_JITTER_BETWEEN_BATCHES.asMilliseconds(),
+      maxJitterMillis: MIN_JITTER_BETWEEN_BATCHES.asMilliseconds() * 1.5,
+      keepExecutingOnError: true,
+      log: console.log,
     }
+  );
+
+  // Save failed payloads to errors.json for later retry
+  if (failedPayloads.length > 0) {
+    const errorsFileName = `reconversion-kickoff-errors.json`;
+    const failedPatients = failedPayloads.map(({ payload }) => ({
+      patient_id: payload.patientId,
+      cx_id: payload.cxId,
+    }));
+
+    fs.writeFileSync(errorsFileName, JSON.stringify(failedPatients, null, 2));
+    console.log(`\nFailed payloads saved to: ${errorsFileName}`);
+    console.log(`You can retry these ${failedPayloads.length} failed messages later.`);
   }
 
   console.log(`\nFinal results:`);
@@ -158,6 +158,25 @@ async function main() {
   console.log(`- Successfully sent: ${totalSent}`);
   console.log(`- Errors: ${totalErrors}`);
   console.log(`- Success rate: ${((totalSent / payloads.length) * 100).toFixed(2)}%`);
+}
+
+/**
+ * Loads data from a large JSON file using streaming to avoid memory issues
+ */
+async function loadDataFromLargeJsonFile(
+  path: string,
+  onValue: (value: ParsedElementInfo.ParsedElementInfo) => void
+): Promise<void> {
+  const parser = new JSONParser({ stringBufferSize: undefined, paths: ["$.*"] });
+  parser.onValue = onValue;
+  await new Promise((resolve, reject) => {
+    const inputStream = fs.createReadStream(path, { encoding: "utf8" });
+    inputStream.on("error", reject);
+    parser.onError = reject;
+    parser.onEnd = () => resolve(undefined);
+    inputStream.on("data", chunk => parser.write(chunk));
+    inputStream.on("end", () => parser.end());
+  });
 }
 
 main();

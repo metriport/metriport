@@ -33,7 +33,7 @@ export const CDA_TO_VIS_TIMEOUT = Duration.minutes(15);
 
 const pollingBuffer = Duration.seconds(30);
 
-const reconversionKickoffWaitTimePerBatch = Duration.seconds(30); // 2 batches/min
+const reconversionKickoffWaitTimePerBatch = Duration.seconds(5); // 12 patients/min
 const reconversionKickoffLambdaTimeout = reconversionKickoffWaitTimePerBatch.plus(
   Duration.seconds(25)
 );
@@ -44,7 +44,7 @@ function getReconversionKickoffSettings(): QueueAndLambdaSettings {
     entry: "reconversion-kickoff",
     lambda: {
       memory: 512,
-      timeout: Duration.seconds(10),
+      timeout: reconversionKickoffLambdaTimeout,
     },
     queue: {
       alarmMaxAgeOfOldestMessage: Duration.days(3),
