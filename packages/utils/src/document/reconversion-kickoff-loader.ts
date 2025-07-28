@@ -11,7 +11,7 @@ import { JSONParser, ParsedElementInfo } from "@streamparser/json";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import fs from "fs";
-import { groupBy } from "lodash";
+import { groupBy, isEmpty } from "lodash";
 
 dayjs.extend(duration);
 
@@ -54,11 +54,19 @@ const sqsUrl = getEnvVarOrFail("RECONVERSION_KICKOFF_QUEUE_URL");
 const SQS_BATCH_SIZE = 2000;
 const MIN_JITTER_BETWEEN_BATCHES = dayjs.duration(1, "seconds");
 
-const fileName = "";
-const dateFrom = ""; // YYYY-MM-DD, with optional timestamp, e.g. 2025-07-10 12:00
+const fileName =
+  "/Users/ramilgaripov/Desktop/metriport/full_stack/metriport/packages/utils/src/document/stagingReconversion.json";
+const dateFrom = "2025-04-01"; // YYYY-MM-DD, with optional timestamp, e.g. 2025-07-10 12:00
 const dateTo = ""; // YYYY-MM-DD, with optional timestamp, e.g. 2025-07-11 12:00
 
 async function main() {
+  if (isEmpty(fileName)) {
+    throw new Error("fileName is required");
+  }
+  if (isEmpty(dateFrom)) {
+    throw new Error("dateFrom is required");
+  }
+
   const patients: Array<{ patient_id: string; cx_id: string }> = [];
 
   console.log("Loading patient data from file...");
@@ -90,7 +98,7 @@ async function main() {
     payloads.push(...cxPayloads);
   }
 
-  console.log(`Total payloads to send: ${payloads.length}`);
+  console.log(`Total unique payloads to send: ${payloads.length}`);
 
   let totalSent = 0;
   let totalErrors = 0;
