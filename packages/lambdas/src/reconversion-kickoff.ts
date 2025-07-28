@@ -1,0 +1,53 @@
+import {
+  DocumentReconversionKickoffDirect,
+  ReconversionKickoffParams,
+} from "@metriport/core/command/reconversion/reconversion-kickoff-direct";
+import { SQSEvent } from "aws-lambda";
+import { z } from "zod";
+import { capture } from "./shared/capture";
+import { getEnvOrFail } from "./shared/env";
+import { prefixedLog } from "./shared/log";
+import { getSingleMessageOrFail } from "./shared/sqs";
+
+// Keep this as early on the file as possible
+capture.init();
+
+// Automatically set by AWS
+const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
+const waitTimeInMillisRaw = getEnvOrFail("WAIT_TIME_IN_MILLIS");
+const waitTimeInMillis = parseInt(waitTimeInMillisRaw);
+const apiUrl = getEnvOrFail("API_URL");
+
+export const handler = capture.wrapHandler(async (event: SQSEvent): Promise<void> => {
+  const params = getSingleMessageOrFail(event.Records, lambdaName);
+  if (!params) {
+    throw new Error("No message found in SQS event");
+  }
+
+  const log = prefixedLog(lambdaName);
+  log("Parsing body");
+  const parsedBody = parseBody(params.body);
+  const { cxId, patientId, dateFrom, dateTo } = parsedBody;
+  log(`Parsed into: ${JSON.stringify(parsedBody)}`);
+
+  capture.setExtra({
+    cxId,
+    patientId,
+    dateFrom,
+    dateTo,
+    context: "reconversion-kickoff-cloud.execute",
+  });
+
+  await new DocumentReconversionKickoffDirect(apiUrl, waitTimeInMillis).execute(parsedBody);
+});
+
+function parseBody(body: string): ReconversionKickoffParams {
+  const schema = z.object({
+    cxId: z.string().uuid(),
+    patientId: z.string().uuid(),
+    dateFrom: z.string(),
+    dateTo: z.string().optional(),
+  });
+
+  return schema.parse(JSON.parse(body));
+}
