@@ -5,11 +5,9 @@ import { SQSClient } from "@metriport/core/external/aws/sqs";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { out } from "@metriport/core/util/log";
 import { errorToString, getEnvVarOrFail, sleep } from "@metriport/shared";
-import { createUuidFromText } from "@metriport/shared/common/uuid";
 import axios from "axios";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import { v4 as uuidv4 } from "uuid";
 import { getAllPatientIds } from "../patient/get-ids";
 import { elapsedTimeAsStr } from "../shared/duration";
 import { getCxData } from "../shared/get-cx-data";
@@ -48,27 +46,30 @@ async function main() {
   log(`>>> Starting...`);
   const { orgName } = await getCxData(cxId, undefined, false);
 
+  const jobId = new Date().toISOString().slice(0, 19).replace(/[:.]/g, "-");
+
   const isAllPatients = patientIds.length < 1;
   const patientsToInsert = isAllPatients
     ? await getAllPatientIds({ axios: api, cxId })
     : patientIds;
+  const uniquePatientIds = [...new Set(patientsToInsert)];
 
-  await displayWarningAndConfirmation(patientsToInsert, isAllPatients, orgName, log);
-  log(`>>> Running it...`);
+  await displayWarningAndConfirmation(uniquePatientIds, isAllPatients, orgName, log);
+  log(`>>> Running it... jobId: ${jobId}`);
 
   const failedPatientIds: string[] = [];
   await executeAsynchronously(
-    patientsToInsert,
+    uniquePatientIds,
     async patientId => {
       const payload = JSON.stringify({
-        jobId: uuidv4(),
+        jobId,
         cxId,
         patientId,
       });
       try {
         await sqsClient.sendMessageToQueue(queueUrl, payload, {
           fifo: true,
-          messageDeduplicationId: createUuidFromText(payload),
+          messageDeduplicationId: patientId,
           messageGroupId: patientId,
         });
       } catch (error) {
@@ -80,7 +81,7 @@ async function main() {
         failedPatientIds.push(patientId);
       }
     },
-    { numberOfParallelExecutions, minJitterMillis: 100, maxJitterMillis: 200 }
+    { numberOfParallelExecutions, minJitterMillis: 10, maxJitterMillis: 200 }
   );
 
   log(``);
@@ -89,7 +90,7 @@ async function main() {
     log(failedPatientIds.join(`\n`));
   }
 
-  log(`>>> ALL Done in ${elapsedTimeAsStr(startedAt)}`);
+  log(`>>> ALL Done in ${elapsedTimeAsStr(startedAt)} - jobId: ${jobId}`);
 }
 
 async function displayWarningAndConfirmation(

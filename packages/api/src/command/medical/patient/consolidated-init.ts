@@ -39,7 +39,7 @@ export async function storeConsolidatedQueryInitialState({
     const patientData = patient.dataValues.data;
 
     const consolidatedQueries = appendQueryToProcessingOnes(
-      patient.data.consolidatedQueries,
+      patientData.consolidatedQueries,
       consolidatedQuery
     );
 

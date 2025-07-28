@@ -427,6 +427,7 @@ export class APIStack extends Stack {
       consolidatedSearchLambda,
       consolidatedIngestionLambda,
       consolidatedIngestionQueue,
+      reconversionKickoffLambda,
     } = new LambdasNestedStack(this, "LambdasNestedStack", {
       config: props.config,
       vpc: this.vpc,
@@ -755,6 +756,7 @@ export class APIStack extends Stack {
       fhirToBundleLambda,
       fhirToBundleCountLambda,
       ...(hl7v2RosterUploadLambdas ?? []),
+      reconversionKickoffLambda,
       hl7NotificationWebhookSenderLambda,
       dischargeRequeryLambda,
       patientImportCreateLambda,
