@@ -14,7 +14,7 @@ export type ReconversionKickoffParams = {
 };
 
 export class DocumentReconversionKickoffDirect {
-  constructor(private readonly apiUrl: string, private readonly waitTimeInMillis: number) {}
+  constructor(private readonly apiUrl: string, private readonly waitTimeInMillis = 0) {}
 
   async execute({ cxId, patientId, dateFrom, dateTo }: ReconversionKickoffParams) {
     const { log } = out(`reconversion-kickoff-direct - cx: ${cxId}, pt: ${patientId}`);

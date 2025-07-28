@@ -5,6 +5,7 @@ import { ReconversionKickoffParams } from "@metriport/core/command/reconversion/
 import { SQSClient } from "@metriport/core/external/aws/sqs";
 import { executeAsynchronously } from "@metriport/core/util";
 import { getEnvVarOrFail } from "@metriport/shared/common/env-var";
+import { errorToString } from "@metriport/shared/common/error";
 import { createUuidFromText } from "@metriport/shared/common/uuid";
 import { JSONParser, ParsedElementInfo } from "@streamparser/json";
 import dayjs from "dayjs";
@@ -118,12 +119,11 @@ async function main() {
           console.log(`Progress: ${itemIndex + 1}/${payloads.length} messages sent`);
         }
       } catch (e) {
-        const errorMessage = e instanceof Error ? e.message : String(e);
-        console.error(`Error sending message ${itemIndex + 1}: ${errorMessage}`);
+        console.error(`Error sending message ${itemIndex + 1}: ${errorToString(e)}`);
 
         failedPayloads.push({
           payload,
-          error: errorMessage,
+          error: errorToString(e),
           itemIndex,
         });
         totalErrors++;
