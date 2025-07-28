@@ -17,7 +17,6 @@ export class FhirToCsvDirect implements FhirToCsvHandler {
       jobId,
       patientId,
       ...(inputBundle ? { inputBundle } : {}),
-      ...(inputBundle ? { inputBundle } : {}),
       timeoutInMillis,
     });
     if (this.waitTimeInMillis > 0) await sleep(this.waitTimeInMillis);
