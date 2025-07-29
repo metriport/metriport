@@ -416,7 +416,7 @@ router.delete(
 );
 
 /**
- * PUT /internal/cx-mapping/:id/update-secondary-mapping
+ * PUT /internal/cx-mapping/:id/secondary-mapping
  *
  * Update secondary mapping in a cx mapping.
  *
@@ -427,7 +427,7 @@ router.delete(
  * @return status 200 with the newly updated CxMapping object.
  */
 router.put(
-  "/cx-mapping/:id/update-secondary-mapping",
+  "/cx-mapping/:id/secondary-mapping",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
