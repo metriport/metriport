@@ -348,7 +348,7 @@ router.post(
 /**
  * POST /internal/cx-mapping/update-secondary-mappings
  *
- * Update secondary mapping in a cx mapping
+ * Update secondary mapping in a cx mapping.
  *
  * @param req.query.cxId - The customer's ID.
  * @param req.query.id - The cx mapping ID.
@@ -367,6 +367,14 @@ router.post(
     const secondaryMappings = secondaryMappingsSchema
       ? secondaryMappingsSchema.parse(req.body)
       : null;
+    if (!secondaryMappings) {
+      throw new BadRequestError(`Invalid secondaryMappings for cx mapping`, undefined, {
+        cxId,
+        id,
+        source,
+        secondaryMappings,
+      });
+    }
     const newCxMapping = await setSecondaryMappingsOnCxMappingById({
       cxId,
       id,
