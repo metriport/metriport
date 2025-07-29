@@ -361,8 +361,6 @@ router.patch(
       throw new BadRequestError(`Invalid source for cx mapping`, undefined, { source });
     }
     const secondaryMappingsSchema = secondaryMappingsSchemaMap[source];
-    console.log(secondaryMappingsSchema);
-    console.log(req.body);
     const secondaryMappings = secondaryMappingsSchema
       ? secondaryMappingsSchema.parse(req.body)
       : null;
@@ -383,7 +381,7 @@ router.patch(
 /**
  * GET /internal/cx-mapping
  *
- * Get cx mappings for customer3
+ * Get cx mappings for customer.
  *
  * @param req.query.cxId - The cutomer's ID.
  * @param req.query.source - Optional mapping source
