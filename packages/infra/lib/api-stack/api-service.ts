@@ -36,6 +36,8 @@ import { provideAccessToQueue } from "../shared/sqs";
 import { addDefaultMetricsToTargetGroup } from "../shared/target-group";
 import { isProd, isSandbox } from "../shared/util";
 import { SurescriptsAssets } from "../surescripts/types";
+import { AnalyticsPlatformsAssets } from "../analytics-platform/types";
+import { createHieConfigDictionary } from "../shared/hie-config-dictionary";
 
 interface ApiProps extends StackProps {
   config: EnvConfig;
@@ -115,6 +117,8 @@ export function createAPIService({
   elationLinkPatientQueue,
   healthieLinkPatientQueue,
   ehrRefreshEhrBundlesQueue,
+  ehrContributeResourceDiffBundlesQueue,
+  ehrWriteBackResourceDiffBundlesQueue,
   ehrGetAppointmentsLambda,
   ehrBundleBucket,
   generalBucket,
@@ -136,6 +140,7 @@ export function createAPIService({
   cookieStore,
   surescriptsAssets,
   jobAssets,
+  analyticsPlatformAssets,
 }: {
   stack: Construct;
   props: ApiProps;
@@ -162,6 +167,8 @@ export function createAPIService({
   elationLinkPatientQueue: IQueue;
   healthieLinkPatientQueue: IQueue;
   ehrRefreshEhrBundlesQueue: IQueue;
+  ehrContributeResourceDiffBundlesQueue: IQueue;
+  ehrWriteBackResourceDiffBundlesQueue: IQueue;
   ehrGetAppointmentsLambda: ILambda;
   ehrBundleBucket: s3.IBucket;
   generalBucket: s3.IBucket;
@@ -183,6 +190,7 @@ export function createAPIService({
   cookieStore: secret.ISecret | undefined;
   surescriptsAssets: SurescriptsAssets | undefined;
   jobAssets: JobsAssets;
+  analyticsPlatformAssets: AnalyticsPlatformsAssets | undefined;
 }): {
   cluster: ecs.Cluster;
   service: ecs_patterns.ApplicationLoadBalancedFargateService;
@@ -310,6 +318,10 @@ export function createAPIService({
           ELATION_LINK_PATIENT_QUEUE_URL: elationLinkPatientQueue.queueUrl,
           HEALTHIE_LINK_PATIENT_QUEUE_URL: healthieLinkPatientQueue.queueUrl,
           EHR_REFRESH_EHR_BUNDLES_QUEUE_URL: ehrRefreshEhrBundlesQueue.queueUrl,
+          EHR_CONTRIBUTE_RESOURCE_DIFF_BUNDLES_QUEUE_URL:
+            ehrContributeResourceDiffBundlesQueue.queueUrl,
+          EHR_WRITE_BACK_RESOURCE_DIFF_BUNDLES_QUEUE_URL:
+            ehrWriteBackResourceDiffBundlesQueue.queueUrl,
           EHR_GET_APPOINTMENTS_LAMBDA_NAME: ehrGetAppointmentsLambda.functionName,
           EHR_BUNDLE_BUCKET_NAME: ehrBundleBucket.bucketName,
           FHIR_TO_BUNDLE_LAMBDA_NAME: fhirToBundleLambda.functionName,
@@ -393,6 +405,20 @@ export function createAPIService({
             DISCHARGE_NOTIFICATION_SLACK_URL:
               props.config.hl7Notification.dischargeNotificationSlackUrl,
           }),
+          ...(analyticsPlatformAssets && {
+            FHIR_TO_CSV_QUEUE_URL: analyticsPlatformAssets.fhirToCsvQueue.queueUrl,
+            FHIR_TO_CSV_TRANSFORM_LAMBDA_NAME:
+              analyticsPlatformAssets.fhirToCsvTransformLambda.functionName,
+            FHIR_TO_CSV_BATCH_JOB_DEFINITION_ARN:
+              analyticsPlatformAssets.fhirToCsvBatchJob.jobDefinitionArn,
+            FHIR_TO_CSV_BATCH_JOB_QUEUE_ARN:
+              analyticsPlatformAssets.fhirToCsvBatchJobQueue.jobQueueArn,
+          }),
+          ...(props.config.hl7Notification?.hieConfigs && {
+            HIE_CONFIG_DICTIONARY: JSON.stringify(
+              createHieConfigDictionary(props.config.hl7Notification.hieConfigs)
+            ),
+          }),
         },
       },
       healthCheckGracePeriod: Duration.seconds(60),
@@ -474,6 +500,9 @@ export function createAPIService({
   fhirToBundleCountLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   ehrGetAppointmentsLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   consolidatedSearchLambda.grantInvoke(fargateService.taskDefinition.taskRole);
+  analyticsPlatformAssets?.fhirToCsvTransformLambda.grantInvoke(
+    fargateService.taskDefinition.taskRole
+  );
   // Access grant for buckets
   patientImportBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   conversionBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
@@ -495,6 +524,13 @@ export function createAPIService({
 
   if (fhirToMedicalRecordLambda2) {
     fhirToMedicalRecordLambda2.grantInvoke(fargateService.taskDefinition.taskRole);
+  }
+
+  if (analyticsPlatformAssets) {
+    analyticsPlatformAssets.fhirToCsvBatchJob.grantSubmitJob(
+      fargateService.taskDefinition.taskRole,
+      analyticsPlatformAssets.fhirToCsvBatchJobQueue
+    );
   }
 
   if (cookieStore) {
@@ -522,6 +558,24 @@ export function createAPIService({
     queue: ehrRefreshEhrBundlesQueue,
     resource: fargateService.taskDefinition.taskRole,
   });
+  provideAccessToQueue({
+    accessType: "send",
+    queue: ehrContributeResourceDiffBundlesQueue,
+    resource: fargateService.taskDefinition.taskRole,
+  });
+  provideAccessToQueue({
+    accessType: "send",
+    queue: ehrWriteBackResourceDiffBundlesQueue,
+    resource: fargateService.taskDefinition.taskRole,
+  });
+
+  if (analyticsPlatformAssets) {
+    provideAccessToQueue({
+      accessType: "send",
+      queue: analyticsPlatformAssets.fhirToCsvQueue,
+      resource: fargateService.taskDefinition.taskRole,
+    });
+  }
 
   if (dischargeRequeryQueue) {
     provideAccessToQueue({

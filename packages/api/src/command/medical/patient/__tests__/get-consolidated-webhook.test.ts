@@ -1,8 +1,6 @@
 import { v4 as uuidv4 } from "uuid";
-import {
-  makeConsolidatedQueryProgress,
-  makeConsolidatedWebhook,
-} from "../__tests__/store-query-cmd";
+import { makeConsolidatedQueryProgress } from "./consolidated-query";
+import { makeConsolidatedWebhook } from "./consolidated-webhook";
 import { getConsolidatedWebhook } from "../get-consolidated-webhook";
 import { WebhookRequest } from "../../../../models/webhook-request";
 

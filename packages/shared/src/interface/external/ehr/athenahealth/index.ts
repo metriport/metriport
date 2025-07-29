@@ -12,3 +12,4 @@ export * from "./vaccine";
 export * from "./clinical-document";
 export * from "./allergy";
 export * from "./surgical-history";
+export * from "./encounter";

@@ -165,13 +165,6 @@ export const config: EnvConfigNonSandbox = {
     secrets: {
       HL7_BASE64_SCRAMBLER_SEED: "your-base64-scrambler-seed",
     },
-    vpnConfigs: [
-      {
-        partnerName: "SampleHIE",
-        partnerGatewayPublicIp: "200.54.1.1",
-        partnerInternalCidrBlock: "10.10.0.0/16",
-      },
-    ],
     mllpServer: {
       sentryDSN: "your-sentry-dsn",
       fargateCpu: 1 * vCPU,
@@ -189,6 +182,9 @@ export const config: EnvConfigNonSandbox = {
         name: "YOUR_HIE_NAME",
         cron: "cron(0 0 ? * SAT *)",
         states: [USState.TX],
+        timezone: "America/Chicago",
+        gatewayPublicIp: "200.1.1.1",
+        internalCidrBlock: "10.10.0.0/16",
         subscriptions: ["adt"],
         mapping: {
           ID: "scrambledId",
@@ -203,7 +199,7 @@ export const config: EnvConfigNonSandbox = {
           CITY: "address1City",
           STATE: "address1State",
           ZIP: "address1Zip",
-          FACCODE: "authorizingParticipantFacilityCode",
+          FACCODE: "cxShortcode",
           ASSIGNERID: "assigningAuthorityIdentifier",
         },
       },
@@ -241,6 +237,9 @@ export const config: EnvConfigNonSandbox = {
       SNOWFLAKE_CREDS: "your-snowflake-creds-as-json",
     },
     snowflake: {
+      warehouse: "test-warehouse",
+      role: "test-role",
+      integrationName: "test-integration",
       integrationUserArn: "arn:aws:iam::000000000000:role/SnowflakeIntegrationRole",
       integrationExternalId: "000000000000",
     },

@@ -11,11 +11,12 @@ import { createCanvasClientWithTokenIdAndEnvironment } from "../../../canvas/sha
 import { createElationClientWithTokenIdAndEnvironment } from "../../../elation/shared";
 
 /**
- * Get the client with token id and environment for the EHRs that support two-legged auth
+ * Get a new client with token id and environment for the EHRs that support two-legged auth
  *
  * @param ehr - The EHR source.
  * @param cxId - The CX ID.
  * @param practiceId - The practice id of the EHR integration.
+ * @returns The client with token id and environment.
  */
 export async function getTwoLeggedClientWithTokenIdAndEnvironment({
   ehr,

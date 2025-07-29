@@ -28,10 +28,10 @@ export function getEnvAsIntOrFail(varName: string): number {
   return int;
 }
 
-export function getEnvVarAsRecordOrFail(varName: string): Record<string, string> {
+export function getEnvVarAsRecordOrFail<T>(varName: string): Record<string, T> {
   const value = getEnvVarOrFail(varName);
   try {
-    return JSON.parse(value) as Record<string, string>;
+    return JSON.parse(value) as Record<string, T>;
   } catch (error) {
     throw new Error(`Failed to parse ${varName} env var`);
   }

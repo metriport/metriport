@@ -24,7 +24,7 @@ export const dischargeRequeryRuntimeDataSchema = z
     downloadCount: z.number().optional(),
     convertCount: z.number().optional(),
   })
-  .optional();
+  .nullish();
 
 export type DischargeRequeryJobRuntimeData = z.infer<typeof dischargeRequeryRuntimeDataSchema>;
 

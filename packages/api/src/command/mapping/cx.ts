@@ -151,6 +151,14 @@ export async function getCxMappingModelByIdOrFail({
   return mapping;
 }
 
+export async function getSecondaryMappingsOrFail({
+  source,
+  externalId,
+}: CxMappingLookUpParams): Promise<CxMappingSecondaryMappings> {
+  const mapping = await getCxMappingOrFail({ source, externalId });
+  return mapping.secondaryMappings;
+}
+
 export async function setExternalIdOnCxMappingById({
   cxId,
   id,

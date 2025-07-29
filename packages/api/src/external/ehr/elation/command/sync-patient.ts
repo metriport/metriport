@@ -28,6 +28,7 @@ import {
   isDqCooldownExpired,
 } from "../../shared/utils/patient";
 import { createAddresses, createContacts, createElationClient, createNames } from "../shared";
+import { getPatientPrimaryFacilityIdOrFail } from "../../../../command/medical/patient/get-patient-facilities";
 
 dayjs.extend(duration);
 
@@ -65,10 +66,15 @@ export async function syncElationPatientIntoMetriport({
       cxId,
       id: existingPatient.patientId,
     });
+    const facilityId = await getPatientPrimaryFacilityIdOrFail({
+      cxId,
+      patientId: metriportPatient.id,
+    });
     if (triggerDqForExistingPatient && isDqCooldownExpired(metriportPatient)) {
       queryDocumentsAcrossHIEs({
         cxId,
         patientId: metriportPatient.id,
+        facilityId,
       }).catch(processAsyncError(`Elation queryDocumentsAcrossHIEs`));
     }
     const metriportPatientId = metriportPatient.id;
@@ -92,10 +98,15 @@ export async function syncElationPatientIntoMetriport({
     inputMetriportPatientId,
   });
   const metriportPatientId = metriportPatient.id;
+  const facilityId = await getPatientPrimaryFacilityIdOrFail({
+    cxId,
+    patientId: metriportPatient.id,
+  });
   if (triggerDq) {
     queryDocumentsAcrossHIEs({
       cxId,
       patientId: metriportPatientId,
+      facilityId,
     }).catch(processAsyncError(`Elation queryDocumentsAcrossHIEs`));
   }
   await Promise.all([

@@ -50,6 +50,7 @@ export function makePatientData(data: Partial<PatientData> = {}): PatientData {
     cxDocumentRequestMetadata: data.cxDocumentRequestMetadata,
     cxConsolidatedRequestMetadata: data.cxConsolidatedRequestMetadata,
     externalData: data.externalData,
+    requestId: data.requestId ?? faker.string.uuid(),
   };
 }
 

@@ -1,4 +1,11 @@
-import { Bundle, Condition, ResourceType } from "@medplum/fhirtypes";
+import {
+  Bundle,
+  CodeableConcept,
+  Condition,
+  DiagnosticReport,
+  Observation,
+  ResourceType,
+} from "@medplum/fhirtypes";
 import {
   BadRequestError,
   EhrFhirResourceBundle,
@@ -7,6 +14,7 @@ import {
   MetriportError,
   NotFoundError,
   sleep,
+  toTitleCase,
 } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import {
@@ -17,26 +25,42 @@ import {
   bookedAppointmentSchema,
   CcdaDocument,
   ccdaDocumentSchema,
+  CreatedLab,
+  createdLabSchema,
+  CreatedNonVisitNote,
+  createdNonVisitNoteSchema,
   CreatedProblem,
   createdProblemSchema,
   CreatedSubscription,
   createdSubscriptionSchema,
+  CreatedVital,
+  createdVitalSchema,
   elationClientJwtTokenResponseSchema,
   Metadata,
   Patient,
   patientSchema,
+  Practice,
+  Practices,
+  practicesSchema,
   SubscriptionResource,
   Subscriptions,
   subscriptionsSchema,
 } from "@metriport/shared/interface/external/ehr/elation/index";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import axios, { AxiosInstance } from "axios";
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
 import { z } from "zod";
+import { base64ToString } from "../../../util/base64";
 import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
-import { createOrReplaceCcda } from "../bundle/command/create-or-replace-ccda";
+import { capture } from "../../../util/notifications";
+import { uuidv7 } from "../../../util/uuid-v7";
+import { createOrReplaceDocument } from "../document/command/create-or-replace-document";
+import { DocumentType } from "../document/document-shared";
 import {
   ApiConfig,
+  buildObservationReferenceRange,
   convertEhrBundleToValidEhrStrictBundle,
   createDataParams,
   fetchEhrBundleUsingCache,
@@ -44,18 +68,31 @@ import {
   getConditionSnomedCode,
   getConditionStartDate,
   getConditionStatus,
+  getDiagnosticReportDate,
+  getObservationInterpretation,
+  getObservationLoincCode,
+  getObservationLoincCoding,
+  getObservationObservedDate,
+  getObservationResultStatus,
+  getObservationUnit,
+  getObservationUnitAndValue,
+  getObservationValue,
   makeRequest,
   MakeRequestParamsInEhr,
   paginateWaitTime,
   partitionEhrBundle,
   saveEhrReferenceBundle,
 } from "../shared";
+import { convertCodeAndValue, formatNumberAsString } from "../unit-conversion";
+
+dayjs.extend(duration);
 
 interface ElationApiConfig extends ApiConfig {
   environment: ElationEnv;
 }
 
 const elationDateFormat = "YYYY-MM-DD";
+const elationDateTimeFormat = "YYYY-MM-DDTHH:mm:ssZ";
 const maxSubscribeAttempts = 3;
 const defaultCountOrLimit = 1000;
 
@@ -73,6 +110,24 @@ problemStatusesMap.set("remission", "Controlled");
 problemStatusesMap.set("resolved", "Resolved");
 problemStatusesMap.set("inactive", "Resolved");
 
+type CodeKey = "temperature" | "hr" | "rr" | "oxygen" | "bp" | "weight" | "height" | "wc" | "bmi";
+
+const vitalSignCodesMap = new Map<string, { codeKey: CodeKey; targetUnits: string }>();
+vitalSignCodesMap.set("8310-5", { codeKey: "temperature", targetUnits: "degf" });
+vitalSignCodesMap.set("8867-4", { codeKey: "hr", targetUnits: "bpm" });
+vitalSignCodesMap.set("9279-1", { codeKey: "rr", targetUnits: "bpm" });
+vitalSignCodesMap.set("2708-6", { codeKey: "oxygen", targetUnits: "%" });
+vitalSignCodesMap.set("59408-5", { codeKey: "oxygen", targetUnits: "%" });
+vitalSignCodesMap.set("8462-4", { codeKey: "bp", targetUnits: "mmHg" });
+vitalSignCodesMap.set("8480-6", { codeKey: "bp", targetUnits: "mmHg" });
+vitalSignCodesMap.set("29463-7", { codeKey: "weight", targetUnits: "lb_av" });
+vitalSignCodesMap.set("8302-2", { codeKey: "height", targetUnits: "in_i" });
+vitalSignCodesMap.set("56086-2", { codeKey: "wc", targetUnits: "cm" });
+vitalSignCodesMap.set("39156-5", { codeKey: "bmi", targetUnits: "kg/m2" });
+
+const bpDiastolicCode = "8462-4";
+const bpSystolicCode = "8480-6";
+
 const ccdaSectionMap = new Map<ResourceType, string>();
 ccdaSectionMap.set("AllergyIntolerance", "allergies");
 ccdaSectionMap.set("Condition", "problems");
@@ -83,6 +138,71 @@ ccdaSectionMap.set("MedicationRequest", "medications");
 ccdaSectionMap.set("MedicationStatement", "medications");
 ccdaSectionMap.set("Observation", "vitals");
 ccdaSectionMap.set("Procedure", "procedures");
+
+type ElationLab = {
+  report_type: string;
+  document_date: string;
+  reported_date: string;
+  chart_date: string;
+  grids: {
+    accession_number: string;
+    resulted_date: string;
+    collected_date: string;
+    status: string;
+    note: string;
+    results: {
+      status: string;
+      value: string;
+      text: string;
+      note: string;
+      reference_min: string | undefined;
+      reference_max: string | undefined;
+      units: string;
+      is_abnormal: string;
+      abnormal_flag: string;
+      test: {
+        name: string;
+        code: string;
+        loinc: string;
+      };
+      test_category: {
+        value: string;
+        description: string;
+      };
+    }[];
+  }[];
+};
+
+type ElationGroupedVitalBase = {
+  patient: string;
+  practice: string;
+  physician: string;
+  chart_date: string;
+  document_date: string;
+};
+
+type ElationGroupedVitalData = {
+  [key in CodeKey]?: number | { systolic?: string; diastolic?: string }[] | { value: string }[];
+};
+
+type ElationGroupedVital = ElationGroupedVitalBase & ElationGroupedVitalData;
+
+const validLabResultStatuses = [
+  "CORRECTED",
+  "DELETED",
+  "FINAL",
+  "PENDING",
+  "PRELIMINARY",
+  "RESULTS ENTERED -- NOT VERIFIED",
+  "PARTIAL",
+  "RESULTS STATUS CHANGE TO FINAL. RESULTS DID NOT CHANGE ( DONT TRANSMIT TEST).",
+  "RESULT CANCELED DUE TO NON-PERFORMANCE",
+  "ERROR",
+  "AMENDED",
+];
+
+const maxUnitsCharacters = 20;
+const maxNameCharacters = 50;
 
 export function isSupportedCcdaSectionResource(resourceType: string): boolean {
   return ccdaSectionMap.has(resourceType as ResourceType);
@@ -210,6 +330,21 @@ class ElationApi {
     return patient;
   }
 
+  async getPractices(cxId: string): Promise<Practice[]> {
+    const { debug } = out(`Elation getPractices - cxId ${cxId} practiceId ${this.practiceId}`);
+    const practicesUrl = `/practices/`;
+    const practices = await this.makeRequest<Practices>({
+      cxId,
+      s3Path: "practices",
+      method: "GET",
+      url: practicesUrl,
+      schema: practicesSchema,
+      additionalInfo: { cxId, practiceId: this.practiceId },
+      debug,
+    });
+    return practices.results.filter(practice => practice.status === "active");
+  }
+
   async getCcdaDocument({
     cxId,
     patientId,
@@ -242,7 +377,7 @@ class ElationApi {
       additionalInfo,
       debug,
     });
-    return atob(document.base64_ccda);
+    return base64ToString(document.base64_ccda);
   }
 
   async updatePatientMetadata({
@@ -274,6 +409,44 @@ class ElationApi {
     return patient;
   }
 
+  async createNonVisitNote({
+    cxId,
+    patientId,
+    date,
+    note,
+  }: {
+    cxId: string;
+    patientId: string;
+    date: string;
+    note: string;
+  }): Promise<CreatedNonVisitNote> {
+    const { debug } = out(
+      `Elation createNonVisitNote - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
+    );
+    const patientUrl = `/non_visit_notes/`;
+    const additionalInfo = { cxId, practiceId: this.practiceId, patientId };
+    const data = {
+      bullets: [{ text: note }],
+      patient: patientId,
+      chart_date: this.formatDateTime(date),
+      document_date: this.formatDateTime(date),
+      type: "nonvisit",
+    };
+    const nonVisitNote = await this.makeRequest<CreatedNonVisitNote>({
+      cxId,
+      patientId,
+      s3Path: "non-visit-note",
+      method: "POST",
+      url: patientUrl,
+      data,
+      headers: { "Content-Type": "application/json" },
+      schema: createdNonVisitNoteSchema,
+      additionalInfo,
+      debug,
+    });
+    return nonVisitNote;
+  }
+
   async createProblem({
     cxId,
     patientId,
@@ -287,7 +460,12 @@ class ElationApi {
       `Elation createProblem - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
     );
     const problemUrl = `/problems/`;
-    const additionalInfo = { cxId, practiceId: this.practiceId, patientId };
+    const additionalInfo = {
+      cxId,
+      practiceId: this.practiceId,
+      patientId,
+      conditionId: condition.id,
+    };
     const snomedCode = getConditionSnomedCode(condition);
     if (!snomedCode) {
       throw new BadRequestError("No SNOMED code found for condition", undefined, additionalInfo);
@@ -313,7 +491,7 @@ class ElationApi {
     const problem = await this.makeRequest<CreatedProblem>({
       cxId,
       patientId,
-      s3Path: "problem",
+      s3Path: this.createWriteBackPath("problem", condition.id),
       method: "POST",
       url: problemUrl,
       data,
@@ -323,6 +501,208 @@ class ElationApi {
       debug,
     });
     return problem;
+  }
+
+  async createLabPanel({
+    cxId,
+    elationPracticeId,
+    elationPhysicianId,
+    patientId,
+    diagnostricReport,
+    observations,
+  }: {
+    cxId: string;
+    elationPracticeId: string;
+    elationPhysicianId: string;
+    patientId: string;
+    diagnostricReport: DiagnosticReport;
+    observations: Observation[];
+  }): Promise<CreatedLab> {
+    const { debug } = out(
+      `Elation createLab - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
+    );
+    const reportsUrl = `/reports/`;
+    const additionalInfo = {
+      cxId,
+      practiceId: this.practiceId,
+      patientId,
+      diagnostricReportId: diagnostricReport.id,
+    };
+    const data = {
+      patient: patientId,
+      practice: elationPracticeId,
+      physician: elationPhysicianId,
+      custom_title: this.getMostInformativeTitle(diagnostricReport.code),
+      ...this.formatLabPanel(diagnostricReport, observations, additionalInfo),
+    };
+    const lab = await this.makeRequest<CreatedLab>({
+      cxId,
+      patientId,
+      s3Path: this.createWriteBackPath("lab-panel", diagnostricReport.id),
+      method: "POST",
+      url: reportsUrl,
+      data,
+      schema: createdLabSchema,
+      additionalInfo,
+      headers: { "Content-Type": "application/json" },
+      debug,
+    });
+    return lab;
+  }
+
+  async createLab({
+    cxId,
+    elationPracticeId,
+    elationPhysicianId,
+    patientId,
+    observation,
+  }: {
+    cxId: string;
+    elationPracticeId: string;
+    elationPhysicianId: string;
+    patientId: string;
+    observation: Observation;
+  }): Promise<CreatedLab | undefined> {
+    const { debug } = out(
+      `Elation createLab - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
+    );
+    const reportsUrl = `/reports/`;
+    const additionalInfo = {
+      cxId,
+      practiceId: this.practiceId,
+      patientId,
+      observationId: observation.id,
+    };
+    const data = {
+      patient: patientId,
+      practice: elationPracticeId,
+      physician: elationPhysicianId,
+      ...this.formatLab(observation, additionalInfo),
+    };
+    const lab = await this.makeRequest<CreatedLab>({
+      cxId,
+      patientId,
+      s3Path: this.createWriteBackPath("lab", observation.id),
+      method: "POST",
+      url: reportsUrl,
+      data,
+      schema: createdLabSchema,
+      additionalInfo,
+      headers: { "Content-Type": "application/json" },
+      debug,
+    });
+    return lab;
+  }
+
+  async createGroupedVitals({
+    cxId,
+    elationPracticeId,
+    elationPhysicianId,
+    patientId,
+    observations,
+  }: {
+    cxId: string;
+    elationPracticeId: string;
+    elationPhysicianId: string;
+    patientId: string;
+    observations: Observation[];
+  }): Promise<CreatedVital | undefined> {
+    const { log, debug } = out(
+      `Elation createGroupedVitals - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
+    );
+    const vitalsUrl = `/vitals/`;
+    const additionalInfo = {
+      cxId,
+      practiceId: this.practiceId,
+      patientId,
+    };
+    const groupedVitals: Record<string, ElationGroupedVital> = observations.reduce(
+      (acc, observation) => {
+        const newVital = this.formatGroupedVital(observation);
+        if (!newVital) return acc;
+        const chartDate = newVital.chartDate;
+        let existingVital = acc[chartDate];
+        if (!existingVital) {
+          acc[chartDate] = {
+            patient: patientId,
+            practice: elationPracticeId,
+            physician: elationPhysicianId,
+            chart_date: this.formatDateTime(chartDate),
+            document_date: this.formatDateTime(chartDate),
+            ...newVital.data,
+          } as ElationGroupedVital;
+        } else {
+          if (existingVital.bp && newVital.data.bp) {
+            const existingBp = existingVital.bp as { systolic?: string; diastolic?: string }[];
+            const newBp = newVital.data.bp as { systolic?: string; diastolic?: string }[];
+            existingVital.bp = [
+              {
+                ...existingBp[0],
+                ...newBp[0],
+              },
+            ];
+            acc[chartDate] = existingVital;
+          } else {
+            existingVital = {
+              ...existingVital,
+              ...newVital.data,
+            } as ElationGroupedVital;
+            acc[chartDate] = existingVital;
+          }
+        }
+        return acc;
+      },
+      {} as Record<string, ElationGroupedVital>
+    );
+
+    const mostRecentGroupedVitals = Object.values(groupedVitals).sort((a, b) => {
+      return new Date(b.chart_date).getTime() - new Date(a.chart_date).getTime();
+    })[0];
+
+    if (!mostRecentGroupedVitals) {
+      throw new BadRequestError("No grouped vitals data found", undefined, additionalInfo);
+    }
+    try {
+      const nonVisitNote = await this.createNonVisitNote({
+        cxId,
+        patientId,
+        date: mostRecentGroupedVitals.chart_date,
+        note: "Vitals added via Metriport App",
+      });
+      const createdVital = await this.makeRequest<CreatedVital>({
+        cxId,
+        patientId,
+        s3Path: this.createWriteBackPath("grouped-vitals", undefined),
+        method: "POST",
+        url: vitalsUrl,
+        data: {
+          ...mostRecentGroupedVitals,
+          non_visit_note: nonVisitNote.id,
+        },
+        schema: createdVitalSchema,
+        additionalInfo,
+        headers: { "Content-Type": "application/json" },
+        debug,
+      });
+
+      return createdVital;
+    } catch (error) {
+      if (error instanceof BadRequestError || error instanceof NotFoundError) return;
+      const msg = `Failure while creating grouped vitals @ Elation`;
+      log(`${msg}. Cause: ${errorToString(error)}`);
+      capture.message(msg, {
+        extra: {
+          ...additionalInfo,
+          error,
+          patientId,
+          cxId,
+          context: "elation.create-grouped-vitals",
+        },
+        level: "warning",
+      });
+    }
+
+    return undefined;
   }
 
   async getBundleByResourceType({
@@ -348,17 +728,18 @@ class ElationApi {
         resourceType,
       });
     }
-    const payload = await this.getCcdaDocument({
+    const ccda = await this.getCcdaDocument({
       cxId,
       patientId: elationPatientId,
       resourceType,
     });
-    const { s3key, s3BucketName } = await createOrReplaceCcda({
+    const { s3key, s3BucketName } = await createOrReplaceDocument({
       ehr: EhrSources.elation,
       cxId,
       metriportPatientId,
       ehrPatientId: elationPatientId,
-      payload,
+      documentType: DocumentType.CCDA,
+      payload: ccda,
       resourceType,
     });
     let referenceEhrFhirBundle: EhrFhirResourceBundle | undefined;
@@ -591,6 +972,7 @@ class ElationApi {
     additionalInfo,
     debug,
     emptyResponse = false,
+    earlyReturn = false,
   }: MakeRequestParamsInEhr<T>): Promise<T> {
     return await makeRequest<T>({
       ehr: EhrSources.elation,
@@ -607,11 +989,328 @@ class ElationApi {
       additionalInfo,
       debug,
       emptyResponse,
+      earlyReturn,
     });
   }
 
   private formatDate(date: string | undefined): string | undefined {
     return formatDate(date, elationDateFormat);
+  }
+
+  private formatDateTime(date: string | undefined): string | undefined {
+    return formatDate(date, elationDateTimeFormat);
+  }
+
+  private formatLab(
+    observation: Observation,
+    additionalInfo: Record<string, string | undefined>
+  ): ElationLab {
+    const loincCoding = getObservationLoincCoding(observation);
+    if (!loincCoding) {
+      throw new BadRequestError("No LOINC coding found for observation", undefined, additionalInfo);
+    }
+    if (!loincCoding.code) {
+      throw new BadRequestError("No valid code found for LOINC coding", undefined, additionalInfo);
+    }
+    if (!loincCoding.display) {
+      throw new BadRequestError("No display found for LOINC coding", undefined, additionalInfo);
+    }
+    const unitAndValue = getObservationUnitAndValue(observation);
+    if (!unitAndValue) {
+      throw new BadRequestError(
+        "No unit and value found for observation",
+        undefined,
+        additionalInfo
+      );
+    }
+    const [unit, value] = unitAndValue;
+    const referenceRange = buildObservationReferenceRange(observation);
+    if (!referenceRange || (!referenceRange.low && !referenceRange.high)) {
+      throw new BadRequestError(
+        "No reference range found for observation",
+        undefined,
+        additionalInfo
+      );
+    }
+    const resultStatus = getObservationResultStatus(observation);
+    if (!resultStatus) {
+      throw new BadRequestError(
+        "No result status found for observation",
+        undefined,
+        additionalInfo
+      );
+    }
+    const formattedResultStatus = resultStatus.toUpperCase();
+    if (!validLabResultStatuses.includes(formattedResultStatus)) {
+      throw new BadRequestError("Invalid result status", undefined, {
+        ...additionalInfo,
+        resultStatus: formattedResultStatus,
+      });
+    }
+    const observedDate = getObservationObservedDate(observation);
+    const formattedObservedDate = this.formatDateTime(observedDate);
+    if (!formattedObservedDate) {
+      throw new BadRequestError(
+        "No observed date found for observation",
+        undefined,
+        additionalInfo
+      );
+    }
+    const interpretation = getObservationInterpretation(observation, value);
+    if (!interpretation) {
+      throw new BadRequestError(
+        "No interpretation found for observation",
+        undefined,
+        additionalInfo
+      );
+    }
+    const isAbnormal = interpretation === "abnormal";
+    const text = observation.text?.div;
+    return {
+      report_type: "Lab",
+      document_date: formattedObservedDate,
+      reported_date: formattedObservedDate,
+      chart_date: formattedObservedDate,
+      grids: [
+        {
+          accession_number: uuidv7(),
+          resulted_date: formattedObservedDate,
+          collected_date: formattedObservedDate,
+          status: formattedResultStatus,
+          note: "Added via Metriport App",
+          results: [
+            {
+              status: formattedResultStatus,
+              value: value.toString(),
+              text: text
+                ? this.normalizeLabTitle(text)
+                : this.normalizeLabTitle(loincCoding.display),
+              note: "Added via Metriport App",
+              reference_min: referenceRange.low?.toString(),
+              reference_max: referenceRange.high?.toString(),
+              units: unit.slice(0, maxUnitsCharacters),
+              is_abnormal: isAbnormal ? "1" : "0",
+              abnormal_flag: this.mapInterpretationToAbnormalFlag(interpretation),
+              test: {
+                name: loincCoding.display.slice(0, maxNameCharacters),
+                code: loincCoding.code,
+                loinc: loincCoding.code,
+              },
+              test_category: {
+                value: loincCoding.display.slice(0, maxNameCharacters),
+                description: loincCoding.display.slice(0, maxNameCharacters),
+              },
+            },
+          ],
+        },
+      ],
+    };
+  }
+
+  private getMostInformativeTitle(code: CodeableConcept | undefined): string | undefined {
+    const coding = code?.coding;
+    if (!coding?.length) return this.normalizeTitle(code?.text);
+
+    const mostRelevantSystem = coding[0]?.system;
+    if (!mostRelevantSystem) return this.normalizeTitle(code?.text);
+
+    const mostRelevantCodings = coding.filter(c => c.system === mostRelevantSystem && c.display);
+    if (mostRelevantCodings.length === 0) return this.normalizeTitle(code?.text);
+
+    const rankedCodings = mostRelevantCodings.flatMap(coding => {
+      if (!coding.display) return [];
+
+      const display = coding.display.toLowerCase().trim();
+
+      let score = 9;
+      if (display.includes("unknown") || display === "unk") {
+        score = 0;
+      } else if (display === "laboratory") {
+        score = 1;
+      } else if (display.includes("specimen") || display.includes("chemistry")) {
+        score = 2;
+      }
+
+      return { display: coding.display, score };
+    });
+
+    const best = rankedCodings.sort((a, b) =>
+      b.score !== a.score ? b.score - a.score : b.display.length - a.display.length
+    )[0];
+
+    return this.normalizeTitle(best?.display) ?? this.normalizeTitle(code?.text);
+  }
+
+  private normalizeLabTitle(title: string): string {
+    return title.trim().slice(0, maxNameCharacters);
+  }
+
+  private normalizeTitle(title: string | undefined): string | undefined {
+    if (!title) return undefined;
+    return toTitleCase(this.normalizeLabTitle(title));
+  }
+
+  private formatLabPanel(
+    diagnostricReport: DiagnosticReport,
+    observations: Observation[],
+    additionalInfo: Record<string, string | undefined>
+  ): ElationLab {
+    const reportDate = getDiagnosticReportDate(diagnostricReport);
+    const formattedReportDate = this.formatDateTime(reportDate);
+    if (!formattedReportDate) {
+      throw new BadRequestError(
+        "No report date found for diagnostic report",
+        undefined,
+        additionalInfo
+      );
+    }
+    const grids: ElationLab["grids"] = observations.flatMap(observation => {
+      const loincCoding = getObservationLoincCoding(observation);
+      if (!loincCoding) return [];
+      if (!loincCoding.code) return [];
+      if (!loincCoding.display) return [];
+      const unitAndValue = getObservationUnitAndValue(observation);
+      if (!unitAndValue) return [];
+      const [unit, value] = unitAndValue;
+      const referenceRange = buildObservationReferenceRange(observation);
+      if (!referenceRange || (!referenceRange.low && !referenceRange.high)) {
+        return [];
+      }
+      const resultStatus = getObservationResultStatus(observation);
+      if (!resultStatus) {
+        return [];
+      }
+      const formattedResultStatus = resultStatus.toUpperCase();
+      if (!validLabResultStatuses.includes(formattedResultStatus)) {
+        return [];
+      }
+      const observedDate = getObservationObservedDate(observation);
+      const formattedObservedDate = this.formatDateTime(observedDate);
+      if (!formattedObservedDate) {
+        return [];
+      }
+      const interpretation = getObservationInterpretation(observation, value);
+      if (!interpretation) {
+        return [];
+      }
+      const isAbnormal = interpretation === "abnormal";
+      const text = observation.text?.div;
+      return {
+        accession_number: uuidv7(),
+        resulted_date: formattedObservedDate,
+        collected_date: formattedObservedDate,
+        status: formattedResultStatus,
+        note: "Added via Metriport App",
+        results: [
+          {
+            status: formattedResultStatus,
+            value: value.toString(),
+            text: text ? this.normalizeLabTitle(text) : this.normalizeLabTitle(loincCoding.display),
+            note: "Added via Metriport App",
+            reference_min: referenceRange.low?.toString(),
+            reference_max: referenceRange.high?.toString(),
+            units: unit.slice(0, maxUnitsCharacters),
+            is_abnormal: isAbnormal ? "1" : "0",
+            abnormal_flag: this.mapInterpretationToAbnormalFlag(interpretation),
+            test: {
+              name: loincCoding.display.slice(0, maxNameCharacters),
+              code: loincCoding.code,
+              loinc: loincCoding.code,
+            },
+            test_category: {
+              value: loincCoding.display.slice(0, maxNameCharacters),
+              description: loincCoding.display.slice(0, maxNameCharacters),
+            },
+          },
+        ],
+      };
+    });
+    if (grids.length < 1) {
+      throw new BadRequestError("No grids found for diagnostic report", undefined, additionalInfo);
+    }
+    return {
+      report_type: "Lab",
+      document_date: formattedReportDate,
+      reported_date: formattedReportDate,
+      chart_date: formattedReportDate,
+      grids,
+    };
+  }
+
+  private formatGroupedVital(observation: Observation):
+    | {
+        chartDate: string;
+        data: ElationGroupedVitalData;
+      }
+    | undefined {
+    const loincCode = getObservationLoincCode(observation);
+    if (!loincCode || !vitalSignCodesMap.get(loincCode)) return undefined;
+    const units = getObservationUnit(observation);
+    if (!units) return undefined;
+    const value = getObservationValue(observation);
+    if (!value) return undefined;
+    const chartDate = getObservationObservedDate(observation);
+    const formattedChartDate = this.formatDate(chartDate);
+    if (!formattedChartDate) return undefined;
+    const convertedCodeAndValue = convertCodeAndValue(loincCode, vitalSignCodesMap, value, units);
+    if (!convertedCodeAndValue) return undefined;
+    const baseData = { chartDate: formattedChartDate };
+    if (convertedCodeAndValue.codeKey === "bmi") {
+      return {
+        ...baseData,
+        data: {
+          bmi: +formatNumberAsString(convertedCodeAndValue.value),
+        },
+      };
+    }
+    if (convertedCodeAndValue.codeKey === "bp") {
+      if (loincCode === bpDiastolicCode) {
+        return {
+          ...baseData,
+          data: {
+            bp: [
+              {
+                diastolic: formatNumberAsString(convertedCodeAndValue.value),
+              },
+            ],
+          },
+        };
+      }
+      if (loincCode === bpSystolicCode) {
+        return {
+          ...baseData,
+          data: {
+            bp: [
+              {
+                systolic: formatNumberAsString(convertedCodeAndValue.value),
+              },
+            ],
+          },
+        };
+      }
+    }
+    return {
+      ...baseData,
+      data: {
+        [convertedCodeAndValue.codeKey]: [
+          {
+            value: formatNumberAsString(convertedCodeAndValue.value),
+          },
+        ],
+      },
+    };
+  }
+
+  private mapInterpretationToAbnormalFlag(interpretation: string): string {
+    if (interpretation === "abnormal") return "Abnormal";
+    if (interpretation === "normal") return "Intermediate result";
+    if (interpretation === "low") return "Below low normal";
+    if (interpretation === "high") return "Above high normal";
+    return "Not Applicable";
+  }
+
+  private createWriteBackPath(resourceType: string, resourceId: string | undefined): string {
+    return `write-back/${resourceType}/${resourceId ?? "unknown"}`;
   }
 }
 

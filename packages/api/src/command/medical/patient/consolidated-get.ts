@@ -5,13 +5,13 @@ import {
   resourcesSearchableByPatient,
   ResourceTypeForConsolidation,
 } from "@metriport/api-sdk";
+import {
+  getConsolidatedPatientData,
+  getConsolidatedPatientDataAsync,
+} from "@metriport/core/command/consolidated/consolidated-get";
 import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-summary";
 import { getConsolidatedQueryByRequestId, Patient } from "@metriport/core/domain/patient";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
-import {
-  getConsolidatedPatientDataAsync,
-  getConsolidatedPatientData,
-} from "@metriport/core/command/consolidated/consolidated-get";
 import { out } from "@metriport/core/util";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { emptyFunction } from "@metriport/shared";
@@ -24,6 +24,7 @@ import { Config } from "../../../shared/config";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
 import { getSignedURL } from "../document/document-download";
+import { storeConsolidatedQueryInitialState } from "./consolidated-init";
 import { processConsolidatedDataWebhook } from "./consolidated-webhook";
 import {
   buildDocRefBundleWithAttachment,
@@ -32,7 +33,6 @@ import {
   uploadJsonBundleToS3,
 } from "./convert-fhir-bundle";
 import { getPatientOrFail } from "./get-patient";
-import { storeQueryInit } from "./query-init";
 
 dayjs.extend(duration);
 
@@ -92,7 +92,7 @@ export async function startConsolidatedQuery({
 
   const startedAt = new Date();
   const requestId = uuidv7();
-  const progress: ConsolidatedQuery = {
+  const consolidatedQuery: ConsolidatedQuery = {
     requestId,
     status: "processing",
     startedAt,
@@ -111,16 +111,11 @@ export async function startConsolidatedQuery({
     },
   });
 
-  const updatedPatient = await storeQueryInit({
+  const updatedPatient = await storeConsolidatedQueryInitialState({
     id: patient.id,
     cxId: patient.cxId,
-    cmd: {
-      consolidatedQueries: appendProgressToProcessingQueries(
-        patient.data.consolidatedQueries,
-        progress
-      ),
-      cxConsolidatedRequestMetadata,
-    },
+    consolidatedQuery,
+    cxConsolidatedRequestMetadata,
   });
 
   getConsolidatedPatientDataAsync({
@@ -133,22 +128,7 @@ export async function startConsolidatedQuery({
     fromDashboard,
   }).catch(emptyFunction);
 
-  return progress;
-}
-
-export function appendProgressToProcessingQueries(
-  currentConsolidatedQueries: ConsolidatedQuery[] | undefined,
-  progress: ConsolidatedQuery
-): ConsolidatedQuery[] {
-  if (currentConsolidatedQueries) {
-    const queriesInProgress = currentConsolidatedQueries.filter(
-      query => query.status === "processing"
-    );
-
-    return [...queriesInProgress, progress];
-  }
-
-  return [progress];
+  return consolidatedQuery;
 }
 
 export function getCurrentConsolidatedProgress(
@@ -261,23 +241,7 @@ export async function getConsolidated({
     const hasResources = bundle.entry && bundle.entry.length > 0;
     const shouldCreateMedicalRecord = conversionType != "json" && hasResources;
 
-    const currentConsolidatedProgress = getConsolidatedQueryByRequestId(patient, requestId);
-    const sendAnalytics = (
-      conversionTypeForAnalytics: string,
-      resourceCount: number | undefined
-    ) => {
-      analytics({
-        distinctId: cxId,
-        event: EventTypes.consolidatedQuery,
-        properties: {
-          patientId: patientId,
-          duration: elapsedTimeFromNow(currentConsolidatedProgress?.startedAt),
-          conversionType: conversionTypeForAnalytics,
-          resourceCount,
-        },
-      });
-    };
-    sendAnalytics("bundle", bundle.entry?.length);
+    sendAnalytics(patient, requestId, "bundle", bundle.entry?.length);
 
     if (shouldCreateMedicalRecord) {
       // If we need to convert to medical record, we also have to update the resulting
@@ -291,7 +255,7 @@ export async function getConsolidated({
         dateTo,
         conversionType,
       });
-      sendAnalytics(conversionType, bundle.entry?.length);
+      sendAnalytics(patient, requestId, conversionType, bundle.entry?.length);
     }
 
     if (conversionType === "json" && hasResources) {
@@ -378,4 +342,23 @@ async function uploadConsolidatedJsonAndReturnUrl({
     const newBundle = buildDocRefBundleWithAttachment(patient.id, signedUrl, "json");
     return { bundle: newBundle, filters };
   }
+}
+
+function sendAnalytics(
+  patient: Patient,
+  requestId: string | undefined,
+  conversionTypeForAnalytics: string,
+  resourceCount: number | undefined
+) {
+  const currentConsolidatedProgress = getConsolidatedQueryByRequestId(patient, requestId);
+  analytics({
+    distinctId: patient.cxId,
+    event: EventTypes.consolidatedQuery,
+    properties: {
+      patientId: patient.id,
+      duration: elapsedTimeFromNow(currentConsolidatedProgress?.startedAt),
+      conversionType: conversionTypeForAnalytics,
+      resourceCount,
+    },
+  });
 }

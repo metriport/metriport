@@ -40,11 +40,17 @@ export class CarequalityManagementApiFhirMock extends CarequalityManagementApiFh
     }
   }
 
-  override async deleteOrganization(oid: string): Promise<void> {
+  override async deleteOrganization(oid: string): Promise<OrganizationWithId>;
+  override async deleteOrganization(org: OrganizationWithId): Promise<OrganizationWithId>;
+  override async deleteOrganization(
+    oidOrOrg: string | OrganizationWithId
+  ): Promise<OrganizationWithId> {
     if (getApiMode() === APIMode.production) {
       throw new Error("deleteOrganization cannot be run in production");
-    } else {
-      return super.deleteOrganization(oid);
     }
+    if (typeof oidOrOrg === "string") {
+      return super.deleteOrganization(oidOrOrg);
+    }
+    return super.deleteOrganization(oidOrOrg);
   }
 }

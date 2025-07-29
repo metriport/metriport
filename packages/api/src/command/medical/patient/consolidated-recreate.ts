@@ -43,8 +43,11 @@ export async function recreateConsolidated({
   }
   try {
     if (conversionType) {
+      log(`Getting consolidated bundle with conversion type ${conversionType} (sync)`);
       await getConsolidated({ patient, conversionType });
+      log(`Consolidated recreated`);
     } else {
+      log(`Building consolidated bundle without conversion (async)`);
       const payload: ConsolidatedSnapshotRequestSync = {
         patient,
         isAsync: false,
@@ -52,9 +55,8 @@ export async function recreateConsolidated({
       };
       const connector = buildConsolidatedSnapshotConnector();
       await connector.execute(payload);
+      log(`Consolidated triggered`);
     }
-
-    log(`Consolidated recreated`);
 
     const ingestor = makeIngestConsolidated();
     ingestor
