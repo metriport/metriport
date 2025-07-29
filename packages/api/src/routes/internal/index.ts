@@ -30,7 +30,11 @@ import {
   revokeMapiAccess,
 } from "../../command/medical/mapi-access";
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
-import { isCxMappingSource, secondaryMappingsSchemaMap } from "../../domain/cx-mapping";
+import {
+  CxMappingSource,
+  isCxMappingSource,
+  secondaryMappingsSchemaMap,
+} from "../../domain/cx-mapping";
 import { isFacilityMappingSource } from "../../domain/facility-mapping";
 import { initCQOrgIncludeList } from "../../external/commonwell/organization";
 import { subscribeToAllWebhooks as subscribeToElationWebhooks } from "../../external/ehr/elation/command/subscribe-to-webhook";
@@ -342,39 +346,33 @@ router.post(
 );
 
 /**
- * PATCH /internal/cx-mapping/update-secondary-mappings
+ * POST /internal/cx-mapping/update-secondary-mappings
  *
  * Update secondary mapping in a cx mapping
  *
- * @param req.query.cxId - The cutomer's ID.
+ * @param req.query.cxId - The customer's ID.
  * @param req.query.id - The cx mapping ID.
- * @param req.query.source - the mapping source
+ * @param req.query.source - the mapping source.
+ *
+ * @return status 200 with the newly updated CxMapping object.
  */
-router.patch(
+router.post(
   "/cx-mapping/update-secondary-mappings",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const id = getFrom("query").orFail("id", req);
     const source = getFromQueryOrFail("source", req);
-    if (!isCxMappingSource(source)) {
-      throw new BadRequestError(`Invalid source for cx mapping`, undefined, { source });
-    }
-    const secondaryMappingsSchema = secondaryMappingsSchemaMap[source];
+    const secondaryMappingsSchema = secondaryMappingsSchemaMap[source as CxMappingSource];
     const secondaryMappings = secondaryMappingsSchema
       ? secondaryMappingsSchema.parse(req.body)
       : null;
-    if (!secondaryMappings) {
-      throw new BadRequestError(`Invalid secondaryMappings for cx mapping`, undefined, {
-        secondaryMappings,
-      });
-    }
-    await setSecondaryMappingsOnCxMappingById({
+    const newCxMapping = await setSecondaryMappingsOnCxMappingById({
       cxId,
       id,
       secondaryMappings,
     });
-    return res.sendStatus(httpStatus.OK);
+    return res.status(httpStatus.OK).json(newCxMapping);
   })
 );
 
