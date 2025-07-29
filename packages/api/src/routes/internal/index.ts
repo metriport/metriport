@@ -341,6 +341,15 @@ router.post(
   })
 );
 
+/**
+ * PATCH /internal/cx-mapping/update-secondary-mappings
+ *
+ * Update secondary mapping in a cx mapping
+ *
+ * @param req.query.cxId - The cutomer's ID.
+ * @param req.query.id - The cx mapping ID.
+ * @param req.query.source - the mapping source
+ */
 router.patch(
   "/cx-mapping/update-secondary-mappings",
   requestLogger,
