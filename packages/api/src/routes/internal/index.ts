@@ -9,6 +9,7 @@ import {
   findOrCreateCxMapping,
   getCxMappingsByCustomer,
   setExternalIdOnCxMappingById,
+  setSecondaryMappingsOnCxMappingById,
 } from "../../command/mapping/cx";
 import {
   deleteFacilityMapping,
@@ -340,10 +341,40 @@ router.post(
   })
 );
 
+router.patch(
+  "/cx-mapping/update-secondary-mappings",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const id = getFrom("query").orFail("id", req);
+    const source = getFromQueryOrFail("source", req);
+    if (!isCxMappingSource(source)) {
+      throw new BadRequestError(`Invalid source for cx mapping`, undefined, { source });
+    }
+    const secondaryMappingsSchema = secondaryMappingsSchemaMap[source];
+    console.log(secondaryMappingsSchema);
+    console.log(req.body);
+    const secondaryMappings = secondaryMappingsSchema
+      ? secondaryMappingsSchema.parse(req.body)
+      : null;
+    if (!secondaryMappings) {
+      throw new BadRequestError(`Invalid secondaryMappings for cx mapping`, undefined, {
+        secondaryMappings,
+      });
+    }
+    await setSecondaryMappingsOnCxMappingById({
+      cxId,
+      id,
+      secondaryMappings,
+    });
+    return res.sendStatus(httpStatus.OK);
+  })
+);
+
 /**
  * GET /internal/cx-mapping
  *
- * Get cx mappings for customer
+ * Get cx mappings for customer3
  *
  * @param req.query.cxId - The cutomer's ID.
  * @param req.query.source - Optional mapping source
