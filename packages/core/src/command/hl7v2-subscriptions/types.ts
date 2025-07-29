@@ -40,7 +40,7 @@ export type RosterRowData = {
   insuranceId: string | undefined;
   insuranceCompanyId: string | undefined;
   insuranceCompanyName: string | undefined;
-  cxShortcode: string | undefined;
+  cxShortcode: string;
   authorizingParticipantMrn: string | undefined;
   assigningAuthorityIdentifier: string | undefined;
   lineOfBusiness: string;
@@ -68,7 +68,7 @@ export type HieConfig = {
 export type VpnlessHieConfig = Omit<HieConfig, "gatewayPublicIp" | "internalCidrBlock">;
 
 export type Hl7v2SubscriberParams = {
-  hie: string;
+  hieName: string;
   count?: number | undefined;
 };
 
