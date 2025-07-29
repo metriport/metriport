@@ -416,12 +416,12 @@ router.delete(
 );
 
 /**
- * PUT /internal/cx-mapping/update-secondary-mapping
+ * PUT /internal/cx-mapping/:id/update-secondary-mapping
  *
  * Update secondary mapping in a cx mapping.
  *
  * @param req.query.cxId - The customer's ID.
- * @param req.query.id - The cx mapping ID.
+ * @param req.parmas.id - The cx mapping ID.
  * @param req.query.source - the mapping source.
  *
  * @return status 200 with the newly updated CxMapping object.
@@ -431,7 +431,7 @@ router.put(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const id = getFrom("query").orFail("id", req);
+    const id = getFrom("params").orFail("id", req);
     const source = getFromQueryOrFail("source", req);
     const secondaryMappingsSchema = secondaryMappingsSchemaMap[source as CxMappingSource];
     const secondaryMappings = secondaryMappingsSchema
@@ -450,7 +450,7 @@ router.put(
       id,
       secondaryMappings,
     });
-    return res.status(httpStatus.OK).json(newCxMapping);
+    return res.status(httpStatus.OK).json({ cxMapping: newCxMapping });
   })
 );
 
