@@ -17,7 +17,7 @@ dayjs.extend(duration);
 const router = Router();
 
 /** ---------------------------------------------------------------------------
- * GET /internal/patient/quest-master-roster
+ * GET /internal/quest/master-roster
  *
  * This is a paginated route.
  * Gets all patients that are enrolled in Quest monitoring.
@@ -55,3 +55,5 @@ router.get(
     return res.status(status.OK).json(response);
   })
 );
+
+export default router;
