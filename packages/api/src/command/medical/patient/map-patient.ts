@@ -2,7 +2,7 @@ import { BadRequestError, NotFoundError } from "@metriport/shared";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { CxMapping } from "../../../domain/cx-mapping";
 import { syncElationPatientIntoMetriport } from "../../../external/ehr/elation/command/sync-patient";
-import { syncHealthiePatientIntoMetriport } from "../../../external/ehr/healthie/command/sync-patient";
+import { linkHealthiePatientToMetriport } from "../../../external/ehr/healthie/command/sync-patient";
 import { getCxMappingByIdOrFail, getCxMappingsByCustomer } from "../../mapping/cx";
 import { getPatientOrFail } from "./get-patient";
 
@@ -47,11 +47,10 @@ export async function mapPatient({
     });
     return { metriportPatientId, mappingPatientId: patient.externalId };
   } else if (cxMapping.source === EhrSources.healthie) {
-    const metriportPatientId = await syncHealthiePatientIntoMetriport({
+    const metriportPatientId = await linkHealthiePatientToMetriport({
       cxId,
       healthiePatientId: patient.externalId,
       healthiePracticeId: cxMapping.externalId,
-      inputMetriportPatientId: patientId,
     });
     return { metriportPatientId, mappingPatientId: patient.externalId };
   }
