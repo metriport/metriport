@@ -310,6 +310,16 @@ export class SurescriptsSftpClient extends SftpClient {
         parsedFileName.populationId === populationId
       );
     });
+    if (replicatedResponses.length > 2) {
+      console.log(
+        "Multiple responses for " +
+          transmissionId +
+          " and " +
+          populationId +
+          ": " +
+          replicatedResponses.join(", ")
+      );
+    }
     const latestReplicatedResponse = replicatedResponses[replicatedResponses.length - 1];
     return latestReplicatedResponse;
   }
