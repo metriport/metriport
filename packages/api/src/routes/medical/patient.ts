@@ -603,9 +603,9 @@ router.get(
 );
 
 /** ---------------------------------------------------------------------------
- * POST /patient/:id/mapping
+ * POST /patient/:id/external/sync
  *
- * Maps a Metriport patient to a patient in an external mapping system.
+ * Maps a Metriport patient to a patient in an external mapping system and synchronizes their data.
  *
  * @param req.params.id - The ID of the patient to map.
  * @param req.query.source - The source of the mapping. Optional.
@@ -616,7 +616,7 @@ router.get(
  * @throws 404 if patient demographics are not matching.
  */
 router.post(
-  "/mapping",
+  "/external/sync",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const { cxId, id: patientId } = getPatientInfoOrFail(req);

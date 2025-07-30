@@ -405,7 +405,7 @@ export class MetriportMedicalApi {
   }
 
   /**
-   * Maps a Metriport patient to a patient in an external mapping system.
+   * Maps a Metriport patient to a patient in an external mapping system and synchronizes their data.
    *
    * @param patientId The ID of the patient to map.
    * @param source The source of the mapping. Optional.
@@ -419,7 +419,7 @@ export class MetriportMedicalApi {
     patientId: string,
     source?: string
   ): Promise<{ metriportPatientId: string; mappingPatientId: string }> {
-    const resp = await this.api.post(`${PATIENT_URL}/${patientId}/mapping`, undefined, {
+    const resp = await this.api.post(`${PATIENT_URL}/${patientId}/external/sync`, undefined, {
       params: { source },
     });
     if (!resp.data) throw new Error(NO_DATA_MESSAGE);
