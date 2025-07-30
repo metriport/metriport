@@ -27,6 +27,7 @@ import {
   getPatientOrFail,
   PatientWithIdentifiers,
 } from "../../../../command/medical/patient/get-patient";
+import { getPatientPrimaryFacilityIdOrFail } from "../../../../command/medical/patient/get-patient-facilities";
 import { Config } from "../../../../shared/config";
 import {
   handleMetriportSync,
@@ -34,7 +35,7 @@ import {
   isDqCooldownExpired,
 } from "../../shared/utils/patient";
 import { createAddresses, createContacts, createHealthieClient, createNames } from "../shared";
-import { getPatientPrimaryFacilityIdOrFail } from "../../../../command/medical/patient/get-patient-facilities";
+import { confirmPatientMatch } from "./confirm-patient-match";
 
 dayjs.extend(duration);
 
@@ -65,6 +66,10 @@ export async function syncHealthiePatientIntoMetriport({
     externalId: healthiePatientId,
     source: EhrSources.healthie,
   });
+  const healthieApi = api ?? (await createHealthieClient({ cxId, practiceId: healthiePracticeId }));
+  const healthiePatient = await healthieApi.getPatient({ cxId, patientId: healthiePatientId });
+  const demographics = createMetriportPatientDemographics(healthiePatient);
+
   if (existingPatient) {
     const metriportPatient = await getPatientOrFail({
       cxId,
@@ -74,6 +79,8 @@ export async function syncHealthiePatientIntoMetriport({
       cxId,
       patientId: metriportPatient.id,
     });
+
+    await confirmPatientMatch({ cxId, patientId: healthiePatientId, demographics });
     if (triggerDqForExistingPatient && isDqCooldownExpired(metriportPatient)) {
       queryDocumentsAcrossHIEs({
         cxId,
@@ -90,9 +97,6 @@ export async function syncHealthiePatientIntoMetriport({
     return metriportPatientId;
   }
 
-  const healthieApi = api ?? (await createHealthieClient({ cxId, practiceId: healthiePracticeId }));
-  const healthiePatient = await healthieApi.getPatient({ cxId, patientId: healthiePatientId });
-  const demographics = createMetriportPatientDemographics(healthiePatient);
   const metriportPatient = await getOrCreateMetriportPatient({
     cxId,
     practiceId: healthiePracticeId,
