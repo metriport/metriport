@@ -96,7 +96,7 @@ describe("CarequalityManagementApiFhir", () => {
         console.log("Deleting primary org");
         await api.deleteOrganization(primaryOrg.id);
       } catch (error) {
-        console.error(`Failed to delete secondary org (${primaryOrg.id})`, error);
+        console.error(`Failed to delete primary org (${primaryOrg.id})`, error);
       }
     }
     if (secondaryOrg) {
