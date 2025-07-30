@@ -61,6 +61,9 @@ export async function syncHealthiePatientIntoMetriport({
   triggerDqForExistingPatient = false,
   inputMetriportPatientId,
 }: SyncHealthiePatientIntoMetriportParams): Promise<string> {
+  const { log } = out(
+    `syncHealthiePatientIntoMetriport - practId: ${healthiePracticeId} ptId: ${healthiePatientId}`
+  );
   const existingMapping = await getPatientMapping({
     cxId,
     externalId: healthiePatientId,
@@ -68,6 +71,7 @@ export async function syncHealthiePatientIntoMetriport({
   });
 
   if (existingMapping) {
+    log("existing mapping found", existingMapping.patientId);
     const metriportPatient = await getPatientOrFail({
       cxId,
       id: existingMapping.patientId,
@@ -82,7 +86,9 @@ export async function syncHealthiePatientIntoMetriport({
         api ?? (await createHealthieClient({ cxId, practiceId: healthiePracticeId }));
       const healthiePatient = await healthieApi.getPatient({ cxId, patientId: healthiePatientId });
       const demographics = createMetriportPatientDemographics(healthiePatient);
+      log("confirming patient match");
       await confirmPatientMatch({ cxId, patientId: inputMetriportPatientId, demographics });
+      log("patient match confirmed successfully");
     }
 
     if (triggerDqForExistingPatient && isDqCooldownExpired(metriportPatient)) {
@@ -101,6 +107,7 @@ export async function syncHealthiePatientIntoMetriport({
     return metriportPatientId;
   }
 
+  log("no existing mapping found");
   const healthieApi = api ?? (await createHealthieClient({ cxId, practiceId: healthiePracticeId }));
   const healthiePatient = await healthieApi.getPatient({ cxId, patientId: healthiePatientId });
   const demographics = createMetriportPatientDemographics(healthiePatient);
@@ -112,6 +119,7 @@ export async function syncHealthiePatientIntoMetriport({
     externalId: healthiePatientId,
     inputMetriportPatientId,
   });
+  log("Metriport patient created/retrieved:", metriportPatient.id);
   const metriportPatientId = metriportPatient.id;
   const facilityId = await getPatientPrimaryFacilityIdOrFail({
     cxId,
