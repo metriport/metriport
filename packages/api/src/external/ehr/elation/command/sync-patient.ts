@@ -21,14 +21,15 @@ import {
   getPatientOrFail,
   PatientWithIdentifiers,
 } from "../../../../command/medical/patient/get-patient";
+import { getPatientPrimaryFacilityIdOrFail } from "../../../../command/medical/patient/get-patient-facilities";
 import { Config } from "../../../../shared/config";
+import { confirmPatientMatch } from "../../shared/command/patient/confirm-patient-match";
 import {
   handleMetriportSync,
   HandleMetriportSyncParams,
   isDqCooldownExpired,
 } from "../../shared/utils/patient";
 import { createAddresses, createContacts, createElationClient, createNames } from "../shared";
-import { getPatientPrimaryFacilityIdOrFail } from "../../../../command/medical/patient/get-patient-facilities";
 
 dayjs.extend(duration);
 
@@ -45,6 +46,7 @@ export type SyncElationPatientIntoMetriportParams = {
   triggerDq?: boolean;
   triggerDqForExistingPatient?: boolean;
   inputMetriportPatientId?: string;
+  patientId?: string;
 };
 
 export async function syncElationPatientIntoMetriport({
@@ -55,17 +57,25 @@ export async function syncElationPatientIntoMetriport({
   triggerDq = false,
   triggerDqForExistingPatient = false,
   inputMetriportPatientId,
+  patientId,
 }: SyncElationPatientIntoMetriportParams): Promise<string> {
   const existingPatient = await getPatientMapping({
     cxId,
     externalId: elationPatientId,
     source: EhrSources.elation,
   });
+  const elationApi = api ?? (await createElationClient({ cxId, practiceId: elationPracticeId }));
+  const elationPatient = await elationApi.getPatient({ cxId, patientId: elationPatientId });
+  const demographics = createMetriportPatientDemographics(elationPatient);
+
   if (existingPatient) {
     const metriportPatient = await getPatientOrFail({
       cxId,
       id: existingPatient.patientId,
     });
+
+    if (patientId) await confirmPatientMatch({ cxId, patientId, demographics });
+
     const facilityId = await getPatientPrimaryFacilityIdOrFail({
       cxId,
       patientId: metriportPatient.id,
@@ -87,9 +97,6 @@ export async function syncElationPatientIntoMetriport({
     return metriportPatientId;
   }
 
-  const elationApi = api ?? (await createElationClient({ cxId, practiceId: elationPracticeId }));
-  const elationPatient = await elationApi.getPatient({ cxId, patientId: elationPatientId });
-  const demographics = createMetriportPatientDemographics(elationPatient);
   const metriportPatient = await getOrCreateMetriportPatient({
     cxId,
     practiceId: elationPracticeId,

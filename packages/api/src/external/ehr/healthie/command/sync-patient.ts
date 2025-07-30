@@ -29,13 +29,13 @@ import {
 } from "../../../../command/medical/patient/get-patient";
 import { getPatientPrimaryFacilityIdOrFail } from "../../../../command/medical/patient/get-patient-facilities";
 import { Config } from "../../../../shared/config";
+import { confirmPatientMatch } from "../../shared/command/patient/confirm-patient-match";
 import {
   handleMetriportSync,
   HandleMetriportSyncParams,
   isDqCooldownExpired,
 } from "../../shared/utils/patient";
 import { createAddresses, createContacts, createHealthieClient, createNames } from "../shared";
-import { confirmPatientMatch } from "./confirm-patient-match";
 
 dayjs.extend(duration);
 
@@ -50,6 +50,7 @@ export type SyncHealthiePatientIntoMetriportParams = {
   triggerDq?: boolean;
   triggerDqForExistingPatient?: boolean;
   inputMetriportPatientId?: string;
+  patientId?: string;
 };
 
 export async function syncHealthiePatientIntoMetriport({
@@ -60,6 +61,7 @@ export async function syncHealthiePatientIntoMetriport({
   triggerDq = false,
   triggerDqForExistingPatient = false,
   inputMetriportPatientId,
+  patientId,
 }: SyncHealthiePatientIntoMetriportParams): Promise<string> {
   const existingPatient = await getPatientMapping({
     cxId,
@@ -80,7 +82,7 @@ export async function syncHealthiePatientIntoMetriport({
       patientId: metriportPatient.id,
     });
 
-    await confirmPatientMatch({ cxId, patientId: healthiePatientId, demographics });
+    if (patientId) await confirmPatientMatch({ cxId, patientId, demographics });
     if (triggerDqForExistingPatient && isDqCooldownExpired(metriportPatient)) {
       queryDocumentsAcrossHIEs({
         cxId,

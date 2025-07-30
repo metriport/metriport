@@ -41,6 +41,7 @@ export async function mapPatient({
   if (cxMapping.source === EhrSources.elation) {
     const metriportPatientId = await syncElationPatientIntoMetriport({
       cxId,
+      patientId,
       elationPatientId: patient.externalId,
       elationPracticeId: cxMapping.externalId,
       inputMetriportPatientId: patientId,
@@ -49,6 +50,7 @@ export async function mapPatient({
   } else if (cxMapping.source === EhrSources.healthie) {
     const metriportPatientId = await syncHealthiePatientIntoMetriport({
       cxId,
+      patientId,
       healthiePatientId: patient.externalId,
       healthiePracticeId: cxMapping.externalId,
       inputMetriportPatientId: patientId,
