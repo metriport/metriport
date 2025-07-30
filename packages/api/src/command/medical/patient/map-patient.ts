@@ -1,8 +1,8 @@
 import { BadRequestError, NotFoundError } from "@metriport/shared";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { CxMapping } from "../../../domain/cx-mapping";
-import { linkElationPatientToMetriport } from "../../../external/ehr/elation/command/sync-patient";
-import { linkHealthiePatientToMetriport } from "../../../external/ehr/healthie/command/sync-patient";
+import { syncElationPatientIntoMetriport } from "../../../external/ehr/elation/command/sync-patient";
+import { syncHealthiePatientIntoMetriport } from "../../../external/ehr/healthie/command/sync-patient";
 import { getCxMappingByIdOrFail, getCxMappingsByCustomer } from "../../mapping/cx";
 import { getPatientOrFail } from "./get-patient";
 
@@ -39,7 +39,7 @@ export async function mapPatient({
     ? await getCxMappingByIdOrFail({ id: cxMappingId, cxId })
     : await getCxMapping(cxId, patientId);
   if (cxMapping.source === EhrSources.elation) {
-    const metriportPatientId = await linkElationPatientToMetriport({
+    const metriportPatientId = await syncElationPatientIntoMetriport({
       cxId,
       elationPatientId: patient.externalId,
       elationPracticeId: cxMapping.externalId,
@@ -47,10 +47,11 @@ export async function mapPatient({
     });
     return { metriportPatientId, mappingPatientId: patient.externalId };
   } else if (cxMapping.source === EhrSources.healthie) {
-    const metriportPatientId = await linkHealthiePatientToMetriport({
+    const metriportPatientId = await syncHealthiePatientIntoMetriport({
       cxId,
       healthiePatientId: patient.externalId,
       healthiePracticeId: cxMapping.externalId,
+      inputMetriportPatientId: patientId,
     });
     return { metriportPatientId, mappingPatientId: patient.externalId };
   }
