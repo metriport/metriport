@@ -1,6 +1,10 @@
 import { handleTimezoneOffset, utcifyHl7Message } from "../datetime";
 import { makeHl7Message } from "./make-hl7-message";
 
+jest.mock("../../../command/hl7-notification/s3", () => ({
+  persistHl7Phi: jest.fn(),
+}));
+
 /**
  * Test fixture to suppress console logs during test execution
  */
