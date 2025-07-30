@@ -14,7 +14,7 @@ import { getConsolidatedQueryByRequestId, Patient } from "@metriport/core/domain
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { out } from "@metriport/core/util";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import { emptyFunction } from "@metriport/shared";
+import { emptyFunction, errorToString } from "@metriport/shared";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { SearchSetBundle } from "@metriport/shared/medical";
 import dayjs from "dayjs";
@@ -268,13 +268,14 @@ export async function getConsolidated({
     return { bundle, filters };
   } catch (error) {
     const msg = "Failed to get consolidated data";
-    log(`${msg}: ${JSON.stringify(filters)}`);
+    const errorStr = errorToString(error);
+    log(`${msg} - filters: ${JSON.stringify(filters)}; error: ${errorStr}`);
     capture.error(msg, {
       extra: {
-        error,
         context: `getConsolidated`,
         patientId: patient.id,
         filters,
+        errorStr,
       },
     });
     throw error;
