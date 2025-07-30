@@ -302,7 +302,7 @@ export class SurescriptsSftpClient extends SftpClient {
       "from_surescripts",
       responseFileNamePrefix
     );
-    return replicatedFilesWithPrefix.find(fileName => {
+    const replicatedResponses = replicatedFilesWithPrefix.filter(fileName => {
       const parsedFileName = parseResponseFileName(fileName);
       return (
         parsedFileName &&
@@ -310,6 +310,8 @@ export class SurescriptsSftpClient extends SftpClient {
         parsedFileName.populationId === populationId
       );
     });
+    const latestReplicatedResponse = replicatedResponses[replicatedResponses.length - 1];
+    return latestReplicatedResponse;
   }
 
   /**
