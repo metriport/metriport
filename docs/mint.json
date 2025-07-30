@@ -83,6 +83,7 @@
             "medical-api/api-reference/patient/create-patient",
             "medical-api/api-reference/patient/get-patient",
             "medical-api/api-reference/patient/get-patient-external-id",
+            "medical-api/api-reference/patient/create-patient-external-sync",
             "medical-api/api-reference/patient/update-patient",
             "medical-api/api-reference/patient/match-patient",
             "medical-api/api-reference/patient/list-patients",
@@ -238,9 +239,7 @@
         {
           "group": "Extensions",
           "icon": "asterisk",
-          "pages": [
-            "medical-api/fhir/extensions/chronicity"
-          ]
+          "pages": ["medical-api/fhir/extensions/chronicity"]
         }
       ]
     },

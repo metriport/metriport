@@ -405,7 +405,7 @@ export class MetriportMedicalApi {
   }
 
   /**
-   * Maps a Metriport patient to a patient in an external mapping system and synchronizes their data.
+   * Maps a Metriport patient to a patient in an external EHR system and synchronizes their data.
    *
    * @param patientId The ID of the patient to map.
    * @param source The source of the mapping. Optional.
@@ -415,7 +415,7 @@ export class MetriportMedicalApi {
    * @throws error if no mapping is found.
    * @throws error if patient demographics are not matching.
    */
-  async mapPatient(
+  async syncPatient(
     patientId: string,
     source?: string
   ): Promise<{ metriportPatientId: string; mappingPatientId: string }> {

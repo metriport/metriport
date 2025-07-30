@@ -1,0 +1,58 @@
+---
+title: "Create Patient External Sync"
+description: "Create a link between Metriport Patient and external system."
+api: "POST /medical/v1/patient/:id/external/sync"
+---
+
+Link the Metriport patient to an external EHR and synchronize their data.
+
+## Query Params
+
+<ParamField query="source" type="string" optional>
+  If included, it must be `elation`, or `healthie`.
+  Otherwise, Metriport will check if there is a single
+  integration that can be inferred.
+</ParamField>
+
+## Path Params
+
+<ParamField path="id" type="string" required>
+  The ID of the Patient to synchronize.
+</ParamField>
+
+## Response
+
+Returns a JSON object with the following properties:
+
+<ResponseField name="metriportPatientId" type="string">
+  The patient's ID in Metriport.
+</ResponseField>
+
+<ResponseField name="mappingPatientId" type="string">
+  The patient's ID in the external system.
+</ResponseField>
+
+<ResponseExample>
+
+```javascript Metriport SDK
+import {
+  MetriportMedicalApi,
+  USState,
+} from "@metriport/api-sdk";
+
+const metriport = new MetriportMedicalApi("YOUR_API_KEY");
+
+const synchronizedIds = await metriport.syncPatient(
+  "018a80c4-292a-7486-a1234-76yuhe23yu14",
+  "healthie"
+);
+```
+
+</ResponseExample>
+
+```json
+{
+  "metriportPatientId": "018a80c4-292a-7486-a1234-76yuhe23yu14",
+  "mappingPatientId": "1234567890"
+}
+```
