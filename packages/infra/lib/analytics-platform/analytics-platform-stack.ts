@@ -17,7 +17,7 @@ import { EnvType } from "../env-type";
 import { addErrorAlarmToLambdaFunc, createLambda } from "../shared/lambda";
 import { LambdaLayers } from "../shared/lambda-layers";
 import { buildSecret } from "../shared/secrets";
-import { LambdaSettings, QueueAndLambdaSettings } from "../shared/settings";
+import { LambdaSettingsWithNameAndEntry, QueueAndLambdaSettings } from "../shared/settings";
 import { createQueue } from "../shared/sqs";
 import { AnalyticsPlatformsAssets } from "./types";
 
@@ -29,7 +29,7 @@ type BatchJobSettings = {
   cpu: number;
 };
 
-type DockerImageLambdaSettings = Omit<LambdaSettings, "entry">;
+type DockerImageLambdaSettings = Omit<LambdaSettingsWithNameAndEntry, "entry">;
 
 interface AnalyticsPlatformsSettings {
   fhirToCsv: QueueAndLambdaSettings;
