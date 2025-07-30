@@ -43,7 +43,6 @@ import {
   getHl7v2Subscribers,
   GetHl7v2SubscribersParams,
 } from "../../../command/medical/patient/get-hl7v2-subscribers";
-import { getQuestRoster } from "../../../command/medical/patient/get-quest-roster";
 import {
   getPatientOrFail,
   getPatients,
@@ -150,46 +149,6 @@ router.get(
       getItems: (pagination: Pagination) => {
         return getHl7v2Subscribers({
           ...params,
-          pagination,
-        });
-      },
-      getTotalCount: () => {
-        // There's no use for calculating the actual number of subscribers for this route
-        return Promise.resolve(-1);
-      },
-      hostUrl: Config.getApiLoadBalancerAddress(),
-    });
-
-    const response: PaginatedResponse<Patient, "patients"> = {
-      meta,
-      patients: items,
-    };
-    return res.status(status.OK).json(response);
-  })
-);
-
-/** ---------------------------------------------------------------------------
- * GET /internal/patient/quest-master-roster
- *
- * This is a paginated route.
- * Gets all patients that are enrolled in Quest monitoring.
- *
- * @param req.query.fromItem The minimum item to be included in the response, inclusive.
- * @param req.query.toItem The maximum item to be included in the response, inclusive.
- * @param req.query.count The number of items to be included in the response.
- * @returns An object containing:
- * - `patients` - List of patients enrolled in Quest monitoring.
- * - `meta` - Pagination information, including how to get to the next page.
- */
-router.get(
-  "/quest-master-roster",
-  requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    const { meta, items } = await paginated({
-      request: req,
-      additionalQueryParams: {},
-      getItems: (pagination: Pagination) => {
-        return getQuestRoster({
           pagination,
         });
       },
