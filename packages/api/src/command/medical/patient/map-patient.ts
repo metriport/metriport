@@ -1,7 +1,7 @@
 import { BadRequestError, NotFoundError } from "@metriport/shared";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { CxMapping } from "../../../domain/cx-mapping";
-import { syncElationPatientIntoMetriport } from "../../../external/ehr/elation/command/sync-patient";
+import { linkElationPatientToMetriport } from "../../../external/ehr/elation/command/sync-patient";
 import { linkHealthiePatientToMetriport } from "../../../external/ehr/healthie/command/sync-patient";
 import { getCxMappingByIdOrFail, getCxMappingsByCustomer } from "../../mapping/cx";
 import { getPatientOrFail } from "./get-patient";
@@ -39,7 +39,7 @@ export async function mapPatient({
     ? await getCxMappingByIdOrFail({ id: cxMappingId, cxId })
     : await getCxMapping(cxId, patientId);
   if (cxMapping.source === EhrSources.elation) {
-    const metriportPatientId = await syncElationPatientIntoMetriport({
+    const metriportPatientId = await linkElationPatientToMetriport({
       cxId,
       elationPatientId: patient.externalId,
       elationPracticeId: cxMapping.externalId,
