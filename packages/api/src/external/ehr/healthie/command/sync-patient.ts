@@ -50,7 +50,6 @@ export type SyncHealthiePatientIntoMetriportParams = {
   triggerDq?: boolean;
   triggerDqForExistingPatient?: boolean;
   inputMetriportPatientId?: string;
-  patientId?: string;
 };
 
 export async function syncHealthiePatientIntoMetriport({
@@ -61,7 +60,6 @@ export async function syncHealthiePatientIntoMetriport({
   triggerDq = false,
   triggerDqForExistingPatient = false,
   inputMetriportPatientId,
-  patientId,
 }: SyncHealthiePatientIntoMetriportParams): Promise<string> {
   const existingPatient = await getPatientMapping({
     cxId,
@@ -82,7 +80,7 @@ export async function syncHealthiePatientIntoMetriport({
       patientId: metriportPatient.id,
     });
 
-    if (patientId) await confirmPatientMatch({ cxId, patientId, demographics });
+    await confirmPatientMatch({ cxId, patientId: metriportPatient.id, demographics });
     if (triggerDqForExistingPatient && isDqCooldownExpired(metriportPatient)) {
       queryDocumentsAcrossHIEs({
         cxId,
@@ -166,6 +164,7 @@ async function getOrCreateMetriportPatient({
       cxId,
       id: inputMetriportPatientId,
     });
+    await confirmPatientMatch({ cxId, patientId: metriportPatient.id, demographics });
     return metriportPatient;
   }
   const metriportPatient = await getPatientByDemo({ cxId, demo: demographics });

@@ -46,7 +46,6 @@ export type SyncElationPatientIntoMetriportParams = {
   triggerDq?: boolean;
   triggerDqForExistingPatient?: boolean;
   inputMetriportPatientId?: string;
-  patientId?: string;
 };
 
 export async function syncElationPatientIntoMetriport({
@@ -57,7 +56,6 @@ export async function syncElationPatientIntoMetriport({
   triggerDq = false,
   triggerDqForExistingPatient = false,
   inputMetriportPatientId,
-  patientId,
 }: SyncElationPatientIntoMetriportParams): Promise<string> {
   const existingPatient = await getPatientMapping({
     cxId,
@@ -74,7 +72,7 @@ export async function syncElationPatientIntoMetriport({
       id: existingPatient.patientId,
     });
 
-    if (patientId) await confirmPatientMatch({ cxId, patientId, demographics });
+    await confirmPatientMatch({ cxId, patientId: metriportPatient.id, demographics });
 
     const facilityId = await getPatientPrimaryFacilityIdOrFail({
       cxId,
@@ -163,6 +161,7 @@ async function getOrCreateMetriportPatient({
       cxId,
       id: inputMetriportPatientId,
     });
+    await confirmPatientMatch({ cxId, patientId: metriportPatient.id, demographics });
     return metriportPatient;
   }
   const metriportPatient = await getPatientByDemo({ cxId, demo: demographics });
