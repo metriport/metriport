@@ -19,7 +19,6 @@ import { convertCDAToFHIR } from "../../../external/fhir-converter/converter";
 import { countResources } from "../../../external/fhir/patient/count-resources";
 import { Config } from "../../../shared/config";
 import { getDocRefMappings } from "../docref-mapping/get-docref-mapping";
-import { deleteConsolidated as deleteConsolidatedOnFHIRServer } from "../patient/consolidated-delete";
 import { getPatientOrFail } from "../patient/get-patient";
 import { setDisableDocumentRequestWHFlag } from "../patient/webhook";
 import { docRefContentToFileFunction, SimplerFile } from "./document-query-storage-info";
@@ -187,15 +186,7 @@ async function reConvertByPatient({
 
   const [documents, patient] = await Promise.all([getDocs(), disableWHAndGetPatient()]);
 
-  log(`Deleting consolidated data...`);
-  const docIds = documents.map(d => d.docRef.id);
-  await deleteConsolidatedOnFHIRServer({
-    patient,
-    resources: resourcesToDelete,
-    docIds,
-    dryRun,
-  });
-
+  log(`Starting reconversion for ${documents.length} documents...`);
   await reConvertDocumentsInternal({
     patient,
     documents,

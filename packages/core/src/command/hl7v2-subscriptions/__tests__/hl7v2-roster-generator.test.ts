@@ -34,7 +34,7 @@ describe("AdtRosterGenerator", () => {
     EMAIL: "email",
     SSN: "ssn",
     "DRIVERS LICENSE": "driversLicense",
-    "AUTHORIZING PARTICIPANT FACILITY CODE": "authorizingParticipantFacilityCode",
+    "AUTHORIZING PARTICIPANT FACILITY CODE": "cxShortcode",
     "ASSIGNING AUTHORITY IDENTIFIER": "assigningAuthorityIdentifier",
   };
 

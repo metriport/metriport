@@ -7,6 +7,7 @@ import {
 } from "../external/fhir/bundle/bundle";
 import { capture } from "../util";
 import { deduplicateAllergyIntolerances } from "./resources/allergy-intolerance";
+import { deduplicateCarePlans } from "./resources/care-plan";
 import { deduplicateCompositions } from "./resources/composition";
 import { deduplicateConditions } from "./resources/condition";
 import { deduplicateCoverages } from "./resources/coverage";
@@ -92,7 +93,7 @@ export function dangerouslyDeduplicateFhir(
   resourceArrays = replaceResourceReferences(
     resourceArrays,
     new Map<string, string>([...practitionersResult.refReplacementMap]),
-    ["diagnosticReports"]
+    ["diagnosticReports", "carePlans"]
   );
 
   const conditionsResult = deduplicateConditions(resourceArrays.conditions);
@@ -136,6 +137,9 @@ export function dangerouslyDeduplicateFhir(
   );
   resourceArrays.familyMemberHistories = famMemHistoriesResult.combinedResources;
 
+  const carePlansResult = deduplicateCarePlans(resourceArrays.carePlans);
+  resourceArrays.carePlans = carePlansResult.combinedResources;
+
   resourceArrays = replaceResourceReferences(resourceArrays, medicationsResult.refReplacementMap, [
     "coverages",
   ]);
@@ -166,6 +170,7 @@ export function dangerouslyDeduplicateFhir(
     ...relatedPersonsResult.danglingReferences,
     ...famMemHistoriesResult.danglingReferences,
     ...coveragesResult.danglingReferences,
+    ...carePlansResult.danglingReferences,
   ]);
 
   // Combine all the remaining replacementMaps into one map
@@ -190,6 +195,7 @@ export function dangerouslyDeduplicateFhir(
     ...relatedPersonsResult.refReplacementMap,
     ...famMemHistoriesResult.refReplacementMap,
     ...coveragesResult.refReplacementMap,
+    ...carePlansResult.refReplacementMap,
   ]);
 
   resourceArrays = replaceResourceReferences(resourceArrays, combinedReplacementMap);
@@ -567,7 +573,11 @@ function replaceResourceReference<T extends Resource>(
     });
   }
 
-  if ("author" in entry && Array.isArray(entry.author) && entry.resourceType === "Composition") {
+  if (
+    "author" in entry &&
+    Array.isArray(entry.author) &&
+    (entry.resourceType === "Composition" || entry.resourceType === "CarePlan")
+  ) {
     entry.author = entry.author.map(author => {
       if (author.reference) {
         const newReference = referenceMap.get(author.reference);
@@ -678,6 +688,22 @@ function replaceResourceReference<T extends Resource>(
       }
       return reason;
     }) as typeof entry.reasonReference;
+  }
+
+  if (entry.resourceType === "CarePlan" && "activity" in entry) {
+    entry.activity = entry.activity?.map(activity => {
+      activity.detail?.performer?.forEach(performer => {
+        if (performer.reference) {
+          const newReference = referenceMap.get(performer.reference);
+          if (newReference) performer.reference = newReference;
+        }
+      });
+      if (activity.detail?.location?.reference) {
+        const newReference = referenceMap.get(activity.detail.location.reference);
+        if (newReference) activity.detail.location.reference = newReference;
+      }
+      return activity;
+    });
   }
 
   if (entry.resourceType === "Composition" && "section" in entry) {

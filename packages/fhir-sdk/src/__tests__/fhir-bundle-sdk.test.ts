@@ -43,7 +43,7 @@ describe("FhirBundleSdk", () => {
 
         expect(patient).toBeDefined();
         expect(patient?.resourceType).toBe("Patient");
-        expect(end - start).toBeLessThan(1);
+        expect(end - start).toBeLessThan(CONSTANT_TIME_EXPECTED_THRESHOLD_MS);
       });
     });
   });
@@ -186,7 +186,7 @@ describe("FhirBundleSdk", () => {
         const end = performance.now();
 
         // O(1) lookup should be very fast
-        expect(end - start).toBeLessThan(1);
+        expect(end - start).toBeLessThan(CONSTANT_TIME_EXPECTED_THRESHOLD_MS);
       });
     });
   });
@@ -516,7 +516,7 @@ describe("FhirBundleSdk", () => {
         sdk.getResourceById("patient-123");
         const end = performance.now();
 
-        expect(end - start).toBeLessThan(1);
+        expect(end - start).toBeLessThan(CONSTANT_TIME_EXPECTED_THRESHOLD_MS);
       });
     });
 
@@ -529,7 +529,7 @@ describe("FhirBundleSdk", () => {
         const end = performance.now();
 
         expect(patients).toHaveLength(2);
-        expect(end - start).toBeLessThan(5); // Should be fast for small bundles
+        expect(end - start).toBeLessThan(CONSTANT_TIME_EXPECTED_THRESHOLD_MS * 2); // Should be fast for small bundles
       });
     });
 

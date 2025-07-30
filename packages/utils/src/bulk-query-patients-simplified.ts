@@ -42,6 +42,10 @@ dayjs.extend(duration);
  * $ ts-node src/bulk-query-patients-simplified.ts
  */
 
+// Set this to use a specific facility ID for all document queries
+// If not set, will use the first facility ID from each patient's facilityIds array
+const preferredFacilityId: string | undefined = undefined;
+
 // add patient IDs here to kick off queries for specific patient IDs
 const patientIds: string[] = [];
 
@@ -97,12 +101,18 @@ async function queryDocsForPatient(
   log: typeof console.log
 ) {
   try {
+    const patient = await metriportAPI.getPatient(patientId);
+
+    if (!patient.facilityIds || patient.facilityIds.length === 0) {
+      log(`Patient ${patientId} has no facilities, skipping...`);
+      return;
+    }
+
+    const facilityId = preferredFacilityId ?? patient.facilityIds[0];
     const docQueryPromise = async () =>
-      triggerDocQuery(cxId, patientId, triggerWHNotificationsToCx);
-    const getPatientPromise = async () => metriportAPI.getPatient(patientId);
+      triggerDocQuery(cxId, patientId, facilityId, triggerWHNotificationsToCx);
 
     if (dryRun) {
-      const patient = await getPatientPromise();
       log(
         `Would be triggering the DQ for patient ${patient.id} ` +
           `${patient.firstName} ${patient.lastName}...`
@@ -210,11 +220,12 @@ function localGetDelay(log: typeof console.log) {
 async function triggerDocQuery(
   cxId: string,
   patientId: string,
+  facilityId: string,
   triggerWHNotifs: boolean
 ): Promise<DocumentQuery | undefined> {
   const payload = triggerWHNotifs ? {} : { metadata: disableWHMetadata };
   const resp = await apiInternal.post(
-    `/internal/docs/query?cxId=${cxId}&patientId=${patientId}`,
+    `/internal/docs/query?cxId=${cxId}&patientId=${patientId}&facilityId=${facilityId}`,
     payload
   );
   return resp.data.documentQueryProgress ?? undefined;

@@ -10,6 +10,7 @@ import {
 } from "../../shared/utils/fhir";
 import { isDqCooldownExpired } from "../../shared/utils/patient";
 import { createCanvasClient } from "../shared";
+import { getPatientPrimaryFacilityIdOrFail } from "../../../../command/medical/patient/get-patient-facilities";
 
 export type SyncCanvasPatientIntoMetriportParams = {
   cxId: string;
@@ -38,10 +39,15 @@ export async function syncCanvasPatientIntoMetriport({
       cxId,
       id: existingPatient.patientId,
     });
+    const facilityId = await getPatientPrimaryFacilityIdOrFail({
+      cxId,
+      patientId: metriportPatient.id,
+    });
     if (triggerDqForExistingPatient && isDqCooldownExpired(metriportPatient)) {
       queryDocumentsAcrossHIEs({
         cxId,
         patientId: metriportPatient.id,
+        facilityId,
       }).catch(processAsyncError(`Canvas queryDocumentsAcrossHIEs`));
     }
     const metriportPatientId = metriportPatient.id;
@@ -58,10 +64,15 @@ export async function syncCanvasPatientIntoMetriport({
     possibleDemographics,
     externalId: canvasPatientId,
   });
+  const facilityId = await getPatientPrimaryFacilityIdOrFail({
+    cxId,
+    patientId: metriportPatient.id,
+  });
   if (triggerDq) {
     queryDocumentsAcrossHIEs({
       cxId,
       patientId: metriportPatient.id,
+      facilityId,
     }).catch(processAsyncError(`Canvas queryDocumentsAcrossHIEs`));
   }
   await findOrCreatePatientMapping({

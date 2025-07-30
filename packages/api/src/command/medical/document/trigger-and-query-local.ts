@@ -13,12 +13,15 @@ export class TriggerAndQueryDocRefsLocal extends TriggerAndQueryDocRefs {
   protected override async triggerDocQuery(
     cxId: string,
     patientId: string,
+    facilityId: string,
     triggerWHNotifs: boolean
   ): Promise<void> {
     const cxDocumentRequestMetadata = triggerWHNotifs ? {} : disableWHMetadata;
+
     await queryDocumentsAcrossHIEs({
       cxId,
       patientId,
+      facilityId,
       forceQuery: true,
       cxDocumentRequestMetadata,
     });

@@ -1,3 +1,4 @@
+import { doesHieUseVpn } from "@metriport/core/command/hl7v2-subscriptions/types";
 import * as cdk from "aws-cdk-lib";
 import "source-map-support/register";
 import { EnvConfig } from "../config/env-config";
@@ -63,12 +64,17 @@ async function deploy(config: EnvConfig) {
       version,
     });
 
-    config.hl7Notification.vpnConfigs.forEach((config, index) => {
-      const vpnStack = new VpnStack(app, `VpnStack-${config.partnerName}`, {
-        vpnConfig: { ...config },
+    Object.values(config.hl7Notification.hieConfigs).forEach((hieConfig, index) => {
+      // We only create VPN stacks for full HieConfig objects (not `VpnlessHieConfig`s)
+      if (!doesHieUseVpn(hieConfig)) {
+        return;
+      }
+
+      const vpnStack = new VpnStack(app, `VpnStack-${hieConfig.name}`, {
+        hieConfig,
         index,
         networkStackId: "NestedNetworkStack",
-        description: `VPN Configuration for routing HL7 messages from ${config.partnerName}`,
+        description: `VPN Configuration for routing HL7 messages from ${hieConfig.name}`,
       });
 
       vpnStack.addDependency(hl7NotificationStack);

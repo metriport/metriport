@@ -3,13 +3,13 @@ import { Fn } from "aws-cdk-lib";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as secret from "aws-cdk-lib/aws-secretsmanager";
 import { Construct } from "constructs";
-import { Hl7NotificationVpnConfig } from "../../config/hl7-notification-config";
 import { MLLP_DEFAULT_PORT } from "./constants";
+import { HieConfig } from "@metriport/core/command/hl7v2-subscriptions/types";
 
 const IPSEC_1 = "ipsec.1";
 
 export interface VpnStackProps extends cdk.NestedStackProps {
-  vpnConfig: Hl7NotificationVpnConfig;
+  hieConfig: HieConfig;
   networkStackId: string;
   index: number;
 }
@@ -22,24 +22,24 @@ export class VpnStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: VpnStackProps) {
     super(scope, id, props);
 
-    const { partnerName, partnerInternalCidrBlock } = props.vpnConfig;
+    const { name: hieName, internalCidrBlock, gatewayPublicIp } = props.hieConfig;
 
     const networkAcl = ec2.NetworkAcl.fromNetworkAclId(
       this,
-      `NetworkAcl-${partnerName}`,
+      `NetworkAcl-${hieName}`,
       Fn.importValue(`${props.networkStackId}-NetworkAclId`)
     );
 
     const vgwId = Fn.importValue(`${props.networkStackId}-VgwId`);
 
-    const customerGateway = new ec2.CfnCustomerGateway(this, `CustomerGateway-${partnerName}`, {
-      ipAddress: props.vpnConfig.partnerGatewayPublicIp,
+    const customerGateway = new ec2.CfnCustomerGateway(this, `CustomerGateway-${hieName}`, {
+      ipAddress: gatewayPublicIp,
       type: IPSEC_1,
       bgpAsn: 65000,
       tags: [
         {
           key: "Name",
-          value: `${partnerName}-cgw`,
+          value: `${hieName}-cgw`,
         },
       ],
     });
@@ -47,7 +47,7 @@ export class VpnStack extends cdk.Stack {
     /**
      * Add new rules to the NACL for the static IPs we're using for this VPN.
      */
-    this.addIngressRules(networkAcl, partnerInternalCidrBlock, [
+    this.addIngressRules(networkAcl, internalCidrBlock, [
       {
         ruleNumber: 120 + props.index * 10,
         traffic: ec2.AclTraffic.tcpPort(MLLP_DEFAULT_PORT),
@@ -62,7 +62,7 @@ export class VpnStack extends cdk.Stack {
       },
     ]);
 
-    this.addEgressRules(networkAcl, partnerInternalCidrBlock, [
+    this.addEgressRules(networkAcl, internalCidrBlock, [
       // Outbound TCP handshake traffic
       {
         ruleNumber: 120 + props.index * 10,
@@ -78,18 +78,18 @@ export class VpnStack extends cdk.Stack {
 
     const presharedKey1 = secret.Secret.fromSecretNameV2(
       this,
-      `PresharedKey1-${partnerName}`,
-      `PresharedKey1-${partnerName}`
+      `PresharedKey1-${hieName}`,
+      `PresharedKey1-${hieName}`
     );
     const presharedKey2 = secret.Secret.fromSecretNameV2(
       this,
-      `PresharedKey2-${partnerName}`,
-      `PresharedKey2-${partnerName}`
+      `PresharedKey2-${hieName}`,
+      `PresharedKey2-${hieName}`
     );
     /**
      * We use 2 tunnels here because state HIEs often have a failover to a backup IP..
      */
-    const vpnConnection = new ec2.CfnVPNConnection(this, `VpnConnection-${partnerName}`, {
+    const vpnConnection = new ec2.CfnVPNConnection(this, `VpnConnection-${hieName}`, {
       type: IPSEC_1,
       vpnGatewayId: vgwId,
       customerGatewayId: customerGateway.ref,
@@ -97,7 +97,7 @@ export class VpnStack extends cdk.Stack {
       tags: [
         {
           key: "Name",
-          value: `${partnerName}-vpn`,
+          value: `${hieName}-vpn`,
         },
       ],
       vpnTunnelOptionsSpecifications: [
@@ -114,20 +114,20 @@ export class VpnStack extends cdk.Stack {
       ],
     });
 
-    new ec2.CfnVPNConnectionRoute(this, `VpnConnectionRoute-${partnerName}`, {
-      destinationCidrBlock: props.vpnConfig.partnerInternalCidrBlock,
+    new ec2.CfnVPNConnectionRoute(this, `VpnConnectionRoute-${hieName}`, {
+      destinationCidrBlock: internalCidrBlock,
       vpnConnectionId: vpnConnection.ref,
     });
 
-    new cdk.CfnOutput(this, `VpnConnectionId-${partnerName}`, {
+    new cdk.CfnOutput(this, `VpnConnectionId-${hieName}`, {
       value: vpnConnection.ref,
-      description: `VPN Connection for ${partnerName}`,
+      description: `VPN Connection for ${hieName}`,
     });
   }
 
   private setNaclRules(
     networkAcl: ec2.INetworkAcl,
-    partnerInternalCidrBlock: string,
+    internalCidrBlock: string,
     direction: ec2.TrafficDirection,
     rules: {
       ruleNumber: number;
@@ -135,7 +135,7 @@ export class VpnStack extends cdk.Stack {
       ruleAction: ec2.Action;
     }[]
   ) {
-    const cidr = ec2.AclCidr.ipv4(partnerInternalCidrBlock);
+    const cidr = ec2.AclCidr.ipv4(internalCidrBlock);
 
     rules.forEach(rule => {
       const ruleName = `${direction === ec2.TrafficDirection.INGRESS ? "Ingress" : "Egress"}Rule${
@@ -153,25 +153,25 @@ export class VpnStack extends cdk.Stack {
 
   private addIngressRules(
     networkAcl: ec2.INetworkAcl,
-    partnerInternalCidrBlock: string,
+    internalCidrBlock: string,
     rules: {
       ruleNumber: number;
       traffic: ec2.AclTraffic;
       ruleAction: ec2.Action;
     }[]
   ) {
-    this.setNaclRules(networkAcl, partnerInternalCidrBlock, ec2.TrafficDirection.INGRESS, rules);
+    this.setNaclRules(networkAcl, internalCidrBlock, ec2.TrafficDirection.INGRESS, rules);
   }
 
   private addEgressRules(
     networkAcl: ec2.INetworkAcl,
-    partnerInternalCidrBlock: string,
+    internalCidrBlock: string,
     rules: {
       ruleNumber: number;
       traffic: ec2.AclTraffic;
       ruleAction: ec2.Action;
     }[]
   ) {
-    this.setNaclRules(networkAcl, partnerInternalCidrBlock, ec2.TrafficDirection.EGRESS, rules);
+    this.setNaclRules(networkAcl, internalCidrBlock, ec2.TrafficDirection.EGRESS, rules);
   }
 }

@@ -41,12 +41,14 @@ dayjs.extend(duration);
 
 // add patient IDs here to kick off queries for specific patient IDs
 const patientIds: string[] = [];
-// In case there are too many IDs - e.g., when we export them from the DB
+// In case there are too many IDs - e.g., when we export them from the DB (make sure to only export the IDs)
 // Single ID per line
 // const patientIds: string[] = fs
 //   .readFileSync("", "utf-8")
 //   .split("\n")
-//   .filter(id => id.trim().length > 0);
+//   .filter(id => id.trim().length > 0)
+//   .map(id => id.replaceAll('"', ""))
+//   .filter(id => id !== "id");
 
 // auth stuff
 const cxId = getEnvVarOrFail("CX_ID");
