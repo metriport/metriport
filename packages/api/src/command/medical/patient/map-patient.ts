@@ -1,9 +1,9 @@
 import { BadRequestError, NotFoundError } from "@metriport/shared";
-import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
+import { EhrSources, validateEhrSource } from "@metriport/shared/interface/external/ehr/source";
 import { CxMapping } from "../../../domain/cx-mapping";
 import { syncElationPatientIntoMetriport } from "../../../external/ehr/elation/command/sync-patient";
 import { syncHealthiePatientIntoMetriport } from "../../../external/ehr/healthie/command/sync-patient";
-import { getCxMappingBySourceOrFail, getCxMappingsByCustomer } from "../../mapping/cx";
+import { getCxMappingsByCustomer } from "../../mapping/cx";
 import { getPatientOrFail } from "./get-patient";
 
 export type MapPatientParams = {
@@ -36,15 +36,20 @@ export async function mapPatient({
       patientId,
     });
   }
-  const cxMapping = source
-    ? await getCxMappingBySourceOrFail({ cxId, source })
-    : await getCxMapping(cxId, patientId);
+  const cxMapping = await getCxMapping({
+    cxId,
+    patientId,
+    source,
+  });
+
   if (cxMapping.source === EhrSources.elation) {
     const metriportPatientId = await syncElationPatientIntoMetriport({
       cxId,
       elationPatientId: patient.externalId,
       elationPracticeId: cxMapping.externalId,
       inputMetriportPatientId: patientId,
+      triggerDqForExistingPatient: true,
+      triggerDq: true,
     });
     return { metriportPatientId, mappingPatientId: patient.externalId };
   } else if (cxMapping.source === EhrSources.healthie) {
@@ -53,6 +58,8 @@ export async function mapPatient({
       healthiePatientId: patient.externalId,
       healthiePracticeId: cxMapping.externalId,
       inputMetriportPatientId: patientId,
+      triggerDqForExistingPatient: true,
+      triggerDq: true,
     });
     return { metriportPatientId, mappingPatientId: patient.externalId };
   }
@@ -63,8 +70,17 @@ export async function mapPatient({
   });
 }
 
-async function getCxMapping(cxId: string, patientId: string): Promise<CxMapping> {
-  const cxMappings = await getCxMappingsByCustomer({ cxId });
+async function getCxMapping({
+  cxId,
+  patientId,
+  source: sourceString,
+}: {
+  cxId: string;
+  patientId: string;
+  source?: string;
+}): Promise<CxMapping> {
+  const source = validateEhrSource(sourceString);
+  const cxMappings = await getCxMappingsByCustomer({ cxId, source });
   const cxMapping = cxMappings[0];
   if (!cxMapping) {
     throw new NotFoundError("No integrationmapping found", undefined, { cxId, patientId });

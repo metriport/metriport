@@ -22,11 +22,12 @@ import {
 import { handleDataContribution } from "../../command/medical/patient/data-contribution/handle-data-contributions";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
 import { getConsolidatedWebhook } from "../../command/medical/patient/get-consolidated-webhook";
+import { getPatientFacilities } from "../../command/medical/patient/get-patient-facilities";
 import { getPatientFacilityMatches } from "../../command/medical/patient/get-patient-facility-matches";
+import { mapPatient } from "../../command/medical/patient/map-patient";
+import { setPatientFacilities } from "../../command/medical/patient/set-patient-facilities";
 import { getHieOptOut, setHieOptOut } from "../../command/medical/patient/update-hie-opt-out";
 import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
-import { setPatientFacilities } from "../../command/medical/patient/set-patient-facilities";
-import { getPatientFacilities } from "../../command/medical/patient/get-patient-facilities";
 import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
 import { countResources } from "../../external/fhir/patient/count-resources";
 import { REQUEST_ID_HEADER_NAME } from "../../routes/header";
@@ -37,8 +38,8 @@ import { requestLogger } from "../helpers/request-logger";
 import { getPatientInfoOrFail } from "../middlewares/patient-authorization";
 import { checkRateLimit } from "../middlewares/rate-limiting";
 import { asyncHandler, getFrom, getFromQueryAsBoolean } from "../util";
-import { dtoFromModel } from "./dtos/patientDTO";
 import { dtoFromModel as facilityDtoFromModel } from "./dtos/facilityDTO";
+import { dtoFromModel } from "./dtos/patientDTO";
 import { bundleSchema, getResourcesQueryParam } from "./schemas/fhir";
 import {
   PatientHieOptOutResponse,
@@ -598,6 +599,36 @@ router.get(
     const facilitiesData = facilities.map(facilityDtoFromModel);
 
     return res.status(status.OK).json({ facilities: facilitiesData });
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * POST /patient/:id/mapping
+ *
+ * Maps a Metriport patient to a patient in an external mapping system.
+ *
+ * @param req.params.id - The ID of the patient to map.
+ * @param req.query.source - The source of the mapping. Optional.
+ * @returns The Metriport patient ID and the mapping patient ID.
+ * @throws 400 if the patient has no external ID to attempt mapping.
+ * @throws 400 if the mapping source is not supported.
+ * @throws 404 if no mapping is found.
+ * @throws 404 if patient demographics are not matching.
+ */
+router.post(
+  "/mapping",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const { cxId, id: patientId } = getPatientInfoOrFail(req);
+    const source = getFrom("query").optional("source", req);
+
+    const { metriportPatientId, mappingPatientId } = await mapPatient({
+      cxId,
+      patientId,
+      source,
+    });
+
+    return res.status(status.OK).json({ metriportPatientId, mappingPatientId });
   })
 );
 

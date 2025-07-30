@@ -405,6 +405,28 @@ export class MetriportMedicalApi {
   }
 
   /**
+   * Maps a Metriport patient to a patient in an external mapping system.
+   *
+   * @param patientId The ID of the patient to map.
+   * @param source The source of the mapping. Optional.
+   * @return The Metriport patient ID and the mapping patient ID.
+   * @throws error if the patient has no external ID to attempt mapping.
+   * @throws error if the mapping source is not supported.
+   * @throws error if no mapping is found.
+   * @throws error if patient demographics are not matching.
+   */
+  async mapPatient(
+    patientId: string,
+    source?: string
+  ): Promise<{ metriportPatientId: string; mappingPatientId: string }> {
+    const resp = await this.api.post(`${PATIENT_URL}/${patientId}/mapping`, undefined, {
+      params: { source },
+    });
+    if (!resp.data) throw new Error(NO_DATA_MESSAGE);
+    return resp.data;
+  }
+
+  /**
    * Updates a patient at Metriport and at HIEs the patient is linked to.
    *
    * @param patient The patient data to be updated.
