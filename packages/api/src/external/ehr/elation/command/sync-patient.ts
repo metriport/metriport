@@ -66,6 +66,7 @@ export async function syncElationPatientIntoMetriport({
     source: EhrSources.elation,
   });
 
+  const elationApi = api ?? (await createElationClient({ cxId, practiceId: elationPracticeId }));
   if (existingMapping) {
     log("existing mapping found", existingMapping.patientId);
     const metriportPatient = await getPatientOrFail({
@@ -74,8 +75,6 @@ export async function syncElationPatientIntoMetriport({
     });
 
     if (inputMetriportPatientId) {
-      const elationApi =
-        api ?? (await createElationClient({ cxId, practiceId: elationPracticeId }));
       const elationPatient = await elationApi.getPatient({ cxId, patientId: elationPatientId });
       const demographics = createMetriportPatientDemographics(elationPatient);
       log("confirming patient match");
@@ -100,12 +99,12 @@ export async function syncElationPatientIntoMetriport({
       elationPracticeId,
       elationPatientId,
       metriportPatientId,
+      elationApi,
     });
     return metriportPatientId;
   }
 
   log("no existing mapping found");
-  const elationApi = api ?? (await createElationClient({ cxId, practiceId: elationPracticeId }));
   const elationPatient = await elationApi.getPatient({ cxId, patientId: elationPatientId });
   const demographics = createMetriportPatientDemographics(elationPatient);
   const metriportPatient = await getOrCreateMetriportPatient({

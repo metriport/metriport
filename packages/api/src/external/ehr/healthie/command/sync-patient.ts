@@ -70,6 +70,7 @@ export async function syncHealthiePatientIntoMetriport({
     source: EhrSources.healthie,
   });
 
+  const healthieApi = api ?? (await createHealthieClient({ cxId, practiceId: healthiePracticeId }));
   if (existingMapping) {
     log("existing mapping found", existingMapping.patientId);
     const metriportPatient = await getPatientOrFail({
@@ -82,8 +83,6 @@ export async function syncHealthiePatientIntoMetriport({
     });
 
     if (inputMetriportPatientId) {
-      const healthieApi =
-        api ?? (await createHealthieClient({ cxId, practiceId: healthiePracticeId }));
       const healthiePatient = await healthieApi.getPatient({ cxId, patientId: healthiePatientId });
       const demographics = createMetriportPatientDemographics(healthiePatient);
       log("confirming patient match");
@@ -103,12 +102,12 @@ export async function syncHealthiePatientIntoMetriport({
       cxId,
       healthiePracticeId,
       healthiePatientId,
+      healthieApi,
     });
     return metriportPatientId;
   }
 
   log("no existing mapping found");
-  const healthieApi = api ?? (await createHealthieClient({ cxId, practiceId: healthiePracticeId }));
   const healthiePatient = await healthieApi.getPatient({ cxId, patientId: healthiePatientId });
   const demographics = createMetriportPatientDemographics(healthiePatient);
 
