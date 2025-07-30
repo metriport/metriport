@@ -38,16 +38,6 @@ export function writeSurescriptsRunsFile(filePath: string, content: string): voi
   fs.writeFileSync(fullFilePath, content, "utf-8");
 }
 
-export function openSurescriptsRunsFile(filePath: string): void {
-  const dir = getSurescriptsDirOrFail();
-  const fullFilePath = path.join(dir, filePath);
-  if (fs.existsSync(fullFilePath)) {
-    execSync(`open ${fullFilePath}`);
-  } else {
-    console.error(`File not found: ${fullFilePath}`);
-  }
-}
-
 export function buildCsvPath(csvPath: string): string {
   if (csvPath.startsWith("/")) {
     return csvPath;

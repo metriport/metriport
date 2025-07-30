@@ -1,7 +1,7 @@
 import { Command } from "commander";
 import { SurescriptsReplica } from "@metriport/core/external/surescripts/replica";
 import { parseResponseFileToCsv } from "@metriport/core/external/surescripts/file/file-parser";
-import { writeSurescriptsRunsFile, openSurescriptsRunsFile } from "./shared";
+import { writeSurescriptsRunsFile } from "./shared";
 
 const program = new Command();
 
@@ -31,7 +31,6 @@ program
     const csvPath = `csv/${patientId}/${transmissionId}.csv`;
     writeSurescriptsRunsFile(csvPath, csv);
     console.log(`CSV written to ${csvPath}`);
-    openSurescriptsRunsFile(csvPath);
   });
 
 export default program;
