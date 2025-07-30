@@ -3,6 +3,8 @@ import {
   adtSubscriptionRequestSchema,
   BulkPatientSettingsRequest,
   bulkPatientSettingsRequestSchema,
+  QuestMonitoringRequest,
+  questMonitoringRequestSchema,
   PatientSettingsRequest,
   patientSettingsRequestSchema,
   queryMetaSchema,
@@ -86,4 +88,8 @@ export function parseAdtSubscriptionRequest(data: unknown): AdtSubscriptionReque
   const result = adtSubscriptionRequestSchema.parse(data);
   throwOnInvalidHieName(result.hieName);
   return result;
+}
+
+export function parseQuestMonitoringRequest(data: unknown): QuestMonitoringRequest {
+  return questMonitoringRequestSchema.parse(data);
 }
