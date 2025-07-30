@@ -13,7 +13,7 @@ const router = Router();
  * Maps a Metriport patient to a patient in an external mapping system.
  *
  * @param req.params.id - The ID of the patient to map.
- * @param req.query.mappingId - The ID of the mapping to use. Optional.
+ * @param req.query.source - The source of the mapping. Optional.
  * @returns The Metriport patient ID and the mapping patient ID.
  * @throws 400 if the patient has no external ID to attempt mapping.
  * @throws 400 if the mapping source is not supported.
@@ -25,12 +25,12 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const patientId = getFromParamsOrFail("id", req);
-    const cxMappingId = getFromQuery("mappingId", req);
+    const source = getFromQuery("source", req);
 
     const { metriportPatientId, mappingPatientId } = await mapPatient({
       cxId,
       patientId,
-      cxMappingId,
+      source,
     });
 
     return res.status(status.OK).json({ metriportPatientId, mappingPatientId });

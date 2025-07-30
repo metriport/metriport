@@ -29,7 +29,7 @@ import {
 } from "../../../../command/medical/patient/get-patient";
 import { getPatientPrimaryFacilityIdOrFail } from "../../../../command/medical/patient/get-patient-facilities";
 import { Config } from "../../../../shared/config";
-import { confirmPatientMatch } from "../../shared/command/patient/confirm-patient-match";
+import { confirmEhrPatientDemographicsMatchMetriport } from "../../shared/command/patient/confirm-patient-match";
 import {
   handleMetriportSync,
   HandleMetriportSyncParams,
@@ -86,7 +86,11 @@ export async function syncHealthiePatientIntoMetriport({
       const healthiePatient = await healthieApi.getPatient({ cxId, patientId: healthiePatientId });
       const demographics = createMetriportPatientDemographics(healthiePatient);
       log("confirming patient match");
-      await confirmPatientMatch({ cxId, patientId: inputMetriportPatientId, demographics });
+      await confirmEhrPatientDemographicsMatchMetriport({
+        cxId,
+        patientId: inputMetriportPatientId,
+        demographics,
+      });
       log("patient match confirmed successfully");
     }
 

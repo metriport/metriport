@@ -3,13 +3,13 @@ import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { CxMapping } from "../../../domain/cx-mapping";
 import { syncElationPatientIntoMetriport } from "../../../external/ehr/elation/command/sync-patient";
 import { syncHealthiePatientIntoMetriport } from "../../../external/ehr/healthie/command/sync-patient";
-import { getCxMappingByIdOrFail, getCxMappingsByCustomer } from "../../mapping/cx";
+import { getCxMappingBySourceOrFail, getCxMappingsByCustomer } from "../../mapping/cx";
 import { getPatientOrFail } from "./get-patient";
 
 export type MapPatientParams = {
   cxId: string;
   patientId: string;
-  cxMappingId?: string;
+  source?: string;
 };
 
 /**
@@ -17,16 +17,17 @@ export type MapPatientParams = {
  *
  * @param cxId - The ID of the customer.
  * @param patientId - The ID of the patient to map.
- * @param cxMappingId - The ID of the mapping to use. Optional. Required if the patient has multiple mappings.
+ * @param source - The source of the mapping. Optional. Required if the organization has multiple mappings.
  * @returns The Metriport patient ID and the mapped system patient ID.
  * @throws 400 if the patient has no external ID to attempt mapping.
  * @throws 400 if the mapping source is not supported.
  * @throws 404 if no mapping is found.
+ * @throws 404 if patient demographics are not matching.
  */
 export async function mapPatient({
   cxId,
   patientId,
-  cxMappingId,
+  source,
 }: MapPatientParams): Promise<{ metriportPatientId: string; mappingPatientId: string }> {
   const patient = await getPatientOrFail({ id: patientId, cxId });
   if (!patient.externalId) {
@@ -35,8 +36,8 @@ export async function mapPatient({
       patientId,
     });
   }
-  const cxMapping = cxMappingId
-    ? await getCxMappingByIdOrFail({ id: cxMappingId, cxId })
+  const cxMapping = source
+    ? await getCxMappingBySourceOrFail({ cxId, source })
     : await getCxMapping(cxId, patientId);
   if (cxMapping.source === EhrSources.elation) {
     const metriportPatientId = await syncElationPatientIntoMetriport({
@@ -58,8 +59,7 @@ export async function mapPatient({
   throw new BadRequestError("Unsupported mapping source", undefined, {
     cxId,
     patientId,
-    cxMappingId,
-    source: cxMapping.source,
+    source,
   });
 }
 

@@ -1,6 +1,7 @@
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import { MetriportError, NotFoundError } from "@metriport/shared";
+import { BadRequestError, MetriportError, NotFoundError } from "@metriport/shared";
 import {
+  isEhrSource,
   removeClientSource,
   removeWebhookSource,
 } from "@metriport/shared/interface/external/ehr/source";
@@ -87,6 +88,26 @@ export async function getCxMappingModelOrFail({
   return mapping;
 }
 
+export async function getCxMappingBySourceOrFail({
+  cxId,
+  source,
+}: {
+  cxId: string;
+  source: string;
+}): Promise<CxMapping> {
+  if (!isEhrSource(source)) {
+    throw new BadRequestError("Invalid source", undefined, { source });
+  }
+
+  const mapping = await CxMappingModel.findOne({
+    where: { cxId, source },
+  });
+  if (!mapping) {
+    throw new NotFoundError("CxMapping not found", undefined, { cxId, source });
+  }
+  return mapping.dataValues;
+}
+
 export async function getCxMappingsBySource({
   source,
 }: {
@@ -116,14 +137,6 @@ export async function getCxMappingById({
   const existing = await getCxMappingModelById({ cxId, id });
   if (!existing) return undefined;
   return existing.dataValues;
-}
-
-export async function getCxMappingByIdOrFail({
-  cxId,
-  id,
-}: CxMappingLookupByIdParams): Promise<CxMapping> {
-  const mapping = await getCxMappingModelByIdOrFail({ cxId, id });
-  return mapping.dataValues;
 }
 
 export async function getCxMappingModelById({

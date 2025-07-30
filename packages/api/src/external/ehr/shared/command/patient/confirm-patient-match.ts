@@ -1,8 +1,8 @@
 import { PatientDemoData } from "@metriport/core/domain/patient";
-import { MetriportError } from "@metriport/shared";
+import { BadRequestError } from "@metriport/shared";
 import { getPatientByDemo } from "../../../../../command/medical/patient/get-patient";
 
-export async function confirmPatientMatch({
+export async function confirmEhrPatientDemographicsMatchMetriport({
   cxId,
   patientId,
   demographics,
@@ -13,7 +13,7 @@ export async function confirmPatientMatch({
 }): Promise<void> {
   const patientExists = await getPatientByDemo({ cxId, demo: demographics });
   if (!patientExists || patientExists.id !== patientId) {
-    throw new MetriportError(
+    throw new BadRequestError(
       "Patient demographics do not match the provided Metriport patient ID",
       undefined,
       {

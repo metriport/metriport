@@ -23,7 +23,7 @@ import {
 } from "../../../../command/medical/patient/get-patient";
 import { getPatientPrimaryFacilityIdOrFail } from "../../../../command/medical/patient/get-patient-facilities";
 import { Config } from "../../../../shared/config";
-import { confirmPatientMatch } from "../../shared/command/patient/confirm-patient-match";
+import { confirmEhrPatientDemographicsMatchMetriport } from "../../shared/command/patient/confirm-patient-match";
 import {
   handleMetriportSync,
   HandleMetriportSyncParams,
@@ -78,7 +78,11 @@ export async function syncElationPatientIntoMetriport({
       const elationPatient = await elationApi.getPatient({ cxId, patientId: elationPatientId });
       const demographics = createMetriportPatientDemographics(elationPatient);
       log("confirming patient match");
-      await confirmPatientMatch({ cxId, patientId: inputMetriportPatientId, demographics });
+      await confirmEhrPatientDemographicsMatchMetriport({
+        cxId,
+        patientId: inputMetriportPatientId,
+        demographics,
+      });
       log("patient match confirmed successfully");
     }
 
@@ -176,7 +180,11 @@ async function getOrCreateMetriportPatient({
       id: inputMetriportPatientId,
     });
     log(`for metriport id: ${inputMetriportPatientId}, confirming patient match`);
-    await confirmPatientMatch({ cxId, patientId: metriportPatient.id, demographics });
+    await confirmEhrPatientDemographicsMatchMetriport({
+      cxId,
+      patientId: metriportPatient.id,
+      demographics,
+    });
     log(`patient match confirmed successfully`);
     return metriportPatient;
   }
