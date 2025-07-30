@@ -7,15 +7,17 @@ import { getInsuranceOrganization } from "./organization";
 import { getCoverage } from "./coverage";
 import { getConditions } from "./condition";
 import { getServiceRequest } from "./service-request";
+import { getObservation } from "./observation";
+import { getDiagnosticReport } from "./diagnostic-report";
 import { dangerouslyDeduplicateFhir } from "../../../fhir-deduplication/deduplicate-fhir";
 import { hydrateFhir } from "../../fhir/hydration/hydrate-fhir";
+import { getSpecimen } from "./specimen";
 
 export async function convertIncomingDataToFhirBundle(
   cxId: string,
   patientId: string,
   details: IncomingData<ResponseDetail>[]
 ): Promise<Bundle> {
-  console.log(cxId, patientId);
   const entry = details.flatMap(getBundleEntries);
   const bundle: Bundle = {
     resourceType: "Bundle",
@@ -29,10 +31,21 @@ export async function convertIncomingDataToFhirBundle(
 function getBundleEntries({ data }: IncomingData<ResponseDetail>): BundleEntry[] {
   const patient = getPatient(data);
   const practitioner = getPractitioner(data);
+  const insuranceOrganization = getInsuranceOrganization(data);
+  const observation = getObservation(data, {
+    patient,
+  });
   const serviceRequest = getServiceRequest(data, {
     requestingPractitioner: practitioner,
   });
-  const insuranceOrganization = getInsuranceOrganization(data);
+  const specimen = getSpecimen(data, {
+    practitioner,
+    serviceRequest,
+  });
+  const diagnosticReport = getDiagnosticReport(data, {
+    patient,
+    specimen,
+  });
   const coverage = getCoverage(data, {
     patient,
     insuranceOrganization,
@@ -43,9 +56,12 @@ function getBundleEntries({ data }: IncomingData<ResponseDetail>): BundleEntry[]
   const resources: Array<Resource | undefined> = [
     patient,
     practitioner,
-    coverage,
     insuranceOrganization,
+    observation,
     serviceRequest,
+    specimen,
+    diagnosticReport,
+    coverage,
     ...conditions,
   ];
 

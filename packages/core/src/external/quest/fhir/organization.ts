@@ -15,7 +15,7 @@ export function getInsuranceOrganization(detail: ResponseDetail): Organization {
   return {
     resourceType: "Organization",
     id: uuidv7(),
-    identifier,
+    ...(identifier ? { identifier } : {}),
     ...(name ? { name } : {}),
     ...(address ? { address } : {}),
     ...(telecom ? { telecom } : {}),
@@ -28,11 +28,12 @@ export function getOrganizationReference(organization: Organization): Reference<
   };
 }
 
-function getOrganizationIdentifier(detail: ResponseDetail): Identifier[] {
+function getOrganizationIdentifier(detail: ResponseDetail): Identifier[] | undefined {
+  if (!detail.physicianNpi) return undefined;
   return [
     {
       system: "http://hl7.org/fhir/sid/us-npi",
-      value: detail.orderingAccountNumber,
+      value: detail.physicianNpi,
     },
   ];
 }

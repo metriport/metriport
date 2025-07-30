@@ -1,13 +1,25 @@
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
-import { DiagnosticReport, Identifier, Specimen } from "@medplum/fhirtypes";
+import {
+  CodeableConcept,
+  Coding,
+  DiagnosticReport,
+  Identifier,
+  Patient,
+  Specimen,
+} from "@medplum/fhirtypes";
 import { ResponseDetail } from "../schema/response";
+import { getPatientReference } from "./patient";
+import { getSpecimenReference } from "./specimen";
 
-export function buildDiagnosticReport(
+export function getDiagnosticReport(
   detail: ResponseDetail,
-  { specimen }: { specimen?: Specimen }
+  { patient, specimen }: { patient: Patient; specimen?: Specimen | undefined }
 ): DiagnosticReport {
   const effectiveDateTime = getEffectiveDateTime(detail);
+  const subject = getPatientReference(patient);
   const identifier = getIdentifier(detail);
+  const specimenReference = specimen ? [getSpecimenReference(specimen)] : undefined;
+  const category = getDiagnosticReportCategory(detail);
 
   return {
     resourceType: "DiagnosticReport",
@@ -15,28 +27,29 @@ export function buildDiagnosticReport(
     status: "final",
     effectiveDateTime,
     identifier,
-    specimen: [
-      {
-        reference: `Specimen/${specimen?.id}`,
-      },
-    ],
-    category: [
-      {
-        coding: [
-          {
-            system: "http://questdiagnostics.com/lpc",
-            code: detail.localProfileCode ?? "",
-            display: detail.profileName ?? "",
-          },
-          {
-            system: "http://questdiagnostics.com/spc",
-            code: detail.standardProfileCode ?? "",
-            display: detail.profileName ?? "",
-          },
-        ],
-      },
-    ],
+    subject,
+    ...(specimenReference ? { specimen: specimenReference } : {}),
+    ...(category.length > 0 ? { category } : {}),
   };
+}
+
+function getDiagnosticReportCategory(detail: ResponseDetail): CodeableConcept[] {
+  const coding: Coding[] = [];
+  if (detail.localProfileCode) {
+    coding.push({
+      system: "http://questdiagnostics.com/lpc",
+      code: detail.localProfileCode,
+      ...(detail.profileName ? { display: detail.profileName } : {}),
+    });
+  }
+  if (detail.standardProfileCode) {
+    coding.push({
+      system: "http://questdiagnostics.com/spc",
+      code: detail.standardProfileCode,
+      ...(detail.profileName ? { display: detail.profileName } : {}),
+    });
+  }
+  return [{ coding }];
 }
 
 function getEffectiveDateTime(detail: ResponseDetail): string {

@@ -1,5 +1,5 @@
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
-import { Practitioner, ServiceRequest, Specimen } from "@medplum/fhirtypes";
+import { Practitioner, Reference, ServiceRequest, Specimen } from "@medplum/fhirtypes";
 import { ResponseDetail } from "../schema/response";
 
 export function getSpecimen(
@@ -22,5 +22,11 @@ export function getSpecimen(
         reference: `ServiceRequest/${serviceRequest.id}`,
       },
     ],
+  };
+}
+
+export function getSpecimenReference(specimen: Specimen): Reference<Specimen> {
+  return {
+    reference: `Specimen/${specimen.id}`,
   };
 }
