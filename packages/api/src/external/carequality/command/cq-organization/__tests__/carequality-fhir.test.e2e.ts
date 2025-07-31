@@ -90,8 +90,14 @@ describe("CarequalityManagementApiFhir", () => {
   let primaryOrg: OrganizationWithId | undefined;
   let secondaryOrg: OrganizationWithId | undefined;
   let unrelatedOidOrg: OrganizationWithId | undefined;
-
   afterAll(async () => {
+    if (primaryOrg) {
+      try {
+        await api.deleteOrganization(primaryOrg.id);
+      } catch (error) {
+        console.error(`Failed to delete primary org (${primaryOrg.id})`, error);
+      }
+    }
     if (secondaryOrg) {
       try {
         await api.deleteOrganization(secondaryOrg.id);
