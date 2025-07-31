@@ -60,7 +60,7 @@ function addHl7SourceExtension(
   bundle: BundleWithEntry<Resource>,
   sourcePath: string
 ): Bundle<Resource> {
-  const ext = buildDocIdFhirExtension(sourcePath);
+  const ext = buildDocIdFhirExtension(sourcePath, "hl7");
   return {
     ...bundle,
     entry: bundle.entry.map(e => {
