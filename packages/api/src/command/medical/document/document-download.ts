@@ -39,12 +39,11 @@ export async function getDocumentDownloadUrl({
   return getSignedURL({ fileName, bucketName });
 }
 
-// eslint-disable-next-line @metriport/eslint-rules/no-named-arrow-functions
-const getConversionUrl = async ({
+async function getConversionUrl({
   fileName,
   conversionType,
   bucketName,
-}: ConvertDocInput): Promise<string> => {
+}: ConvertDocInput): Promise<string> {
   const convertedFileName = fileName.concat(`.${conversionType}`);
   const { exists, bucketName: bucketContainingObj } = await doesObjExist({
     fileName: convertedFileName,
@@ -52,7 +51,7 @@ const getConversionUrl = async ({
 
   if (exists) return getSignedURL({ fileName: convertedFileName, bucketName: bucketContainingObj });
   else return convertDoc({ fileName, conversionType, bucketName });
-};
+}
 
 // eslint-disable-next-line @metriport/eslint-rules/no-named-arrow-functions
 const convertDoc = async ({
@@ -75,15 +74,14 @@ const convertDoc = async ({
 };
 
 /** @deprecated Use S3Utils.getFileInfoFromS3 */
-// eslint-disable-next-line @metriport/eslint-rules/no-named-arrow-functions
-const doesObjExist = async ({
+async function doesObjExist({
   fileName,
 }: {
   fileName: string;
 }): Promise<
   | { exists: true; contentType: string; bucketName?: string }
   | { exists: false; contentType?: never; bucketName?: never }
-> => {
+> {
   if (Config.isSandbox()) {
     try {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -124,7 +122,7 @@ const doesObjExist = async ({
   } catch (error) {
     return { exists: false };
   }
-};
+}
 
 export async function getSignedURL({
   fileName,
