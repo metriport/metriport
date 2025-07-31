@@ -109,7 +109,7 @@ export async function getCxMappingsByCustomer({
   return mappings.map(m => m.dataValues);
 }
 
-export async function getCxMappingModelById({
+async function getCxMappingModelById({
   cxId,
   id,
 }: CxMappingLookupByIdParams): Promise<CxMappingModel | undefined> {
