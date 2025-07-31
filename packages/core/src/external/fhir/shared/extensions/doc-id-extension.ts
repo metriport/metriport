@@ -6,9 +6,10 @@ export const DOC_ID_EXTENSION_URL = `${BASE_EXTENSION_URL}/doc-id-extension.json
 
 export type DocIdExtension = Required<Pick<Extension, "url" | "valueString">>;
 
-export function buildDocIdFhirExtension(docId: string): DocIdExtension {
+export function buildDocIdFhirExtension(docId: string, location?: "hl7"): DocIdExtension {
+  const locationParam = location ? `location=${location}/` : "";
   return {
-    url: DOC_ID_EXTENSION_URL,
+    url: locationParam + DOC_ID_EXTENSION_URL,
     valueString: docId,
   };
 }
@@ -18,5 +19,5 @@ export function findDocIdExtension(extensions: Extension[]): Extension | undefin
 }
 
 export function isDocIdExtension(e: Extension): e is DocIdExtension {
-  return e.url === DOC_ID_EXTENSION_URL;
+  return e.url?.includes(DOC_ID_EXTENSION_URL) ?? false;
 }
