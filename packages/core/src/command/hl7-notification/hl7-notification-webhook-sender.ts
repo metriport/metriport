@@ -4,6 +4,7 @@ export type Hl7Notification = {
   message: string;
   messageReceivedTimestamp: string;
   sourceTimestamp: string;
+  rawDataFileKey: string;
 };
 
 export interface Hl7NotificationWebhookSender {
