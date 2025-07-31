@@ -1,7 +1,5 @@
 import { Config } from "../../util/config";
 import { SftpClient } from "../sftp/client";
-// import { LocalReplica } from "../sftp/replica/local";
-// import { S3Replica } from "../sftp/replica/s3";
 import { buildRequestFileName, buildResponseFileName } from "./file/file-names";
 import { generateBatchRequestFile, generatePatientRequestFile } from "./file/file-generator";
 import {
@@ -11,6 +9,7 @@ import {
   QuestRequesterData,
   QuestSftpConfig,
 } from "./types";
+import { QUEST_DATE_FORMAT } from "./constants";
 import { validateNPI } from "@metriport/shared/common/validate-npi";
 import { MetriportError } from "@metriport/shared";
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
@@ -40,7 +39,7 @@ export class QuestSftpClient extends SftpClient {
     this.validateRequester(request);
     const { content, patientIdMap } = generateBatchRequestFile(request.patients);
     const populationId = uuidv7();
-    const dateString = buildDayjs().format("YYYYMMDD");
+    const dateString = buildDayjs().format(QUEST_DATE_FORMAT);
     const batchRequestFileName = buildRequestFileName({
       populationId,
       dateString,
@@ -64,7 +63,7 @@ export class QuestSftpClient extends SftpClient {
     this.validateRequester(request);
 
     const patientId = request.patient.id;
-    const dateString = buildDayjs().format("YYYYMMDD");
+    const dateString = buildDayjs().format(QUEST_DATE_FORMAT);
     const requestFileName = buildRequestFileName({
       populationId: patientId,
       dateString,

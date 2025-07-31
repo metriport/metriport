@@ -21,6 +21,7 @@ const { log } = out("PatientSettings");
 
 export type Subscriptions = {
   adt?: string[];
+  quest?: boolean;
 };
 
 export type PatientSettingsData = {

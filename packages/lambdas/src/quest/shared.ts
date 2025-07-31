@@ -15,7 +15,7 @@ export async function getQuestSecrets(): Promise<{
   questSftpPassword: string;
 }> {
   const region = Config.getAWSRegion();
-  const [questSftpPassword] = await Promise.all([getSecretValue("QuestSftpPassword", region)]);
+  const questSftpPassword = await getSecretValue("QuestSftpPassword", region);
   if (!questSftpPassword) throw new BadRequestError("Missing quest sftp password");
   return { questSftpPassword };
 }

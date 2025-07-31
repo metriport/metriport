@@ -121,7 +121,7 @@ async function _addQuestSubscriptionToPatients({
         updated_at = NOW()
     WHERE cx_id = :cxId::uuid 
       AND patient_id in (:patientIds)
-      AND NOT (subscriptions->'quest' = true)
+      AND subscriptions->'quest' IS DISTINCT FROM 'true'::jsonb
   `;
 
   await sequelize.query(addSubscriptionQuery, {
