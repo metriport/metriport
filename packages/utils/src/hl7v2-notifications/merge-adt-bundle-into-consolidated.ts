@@ -17,10 +17,11 @@ import { writeFileSync } from "fs";
  *
  * WARNING: this will overwrite the *_deduped.json files!!!
  */
-const ptId = "018eb3e7-a66d-7576-8e44-cd78b8b0ae04";
-const cxId = "5af0e105-9439-4c02-939b-ecf7b230b418";
-const consolidatedBundlePath = `/Users/lucasdellabella/Documents/PHI/dedup/${cxId}_${ptId}_CONSOLIDATED_DATA.json`;
-const adtBundlePath = "/Users/lucasdellabella/Documents/PHI/dedup/encounter.hl7.json";
+const ptId = "";
+const cxId = "";
+const pathToData = "/Users/lucasdellabella/Documents/PHI/dedup";
+const consolidatedBundlePath = `${pathToData}/${cxId}_${ptId}_CONSOLIDATED_DATA.json`;
+const adtBundlePath = `${pathToData}/encounter.hl7.json`;
 
 /**
  * Read FHIR bundles from 'samplesFolderPath' and deduplicates the resources inside those bundles.
@@ -58,8 +59,8 @@ async function main() {
     resultBundle
   );
 
-  console.log("joinedBundleOnly", JSON.stringify(joinedBundleOnly.toString(), null, 2));
-  console.log("resultBundleOnly", JSON.stringify(resultBundleOnly.toString(), null, 2));
+  console.log("joinedBundleOnly", JSON.stringify(joinedBundleOnly.toObject(), null, 2));
+  console.log("resultBundleOnly", JSON.stringify(resultBundleOnly.toObject(), null, 2));
 
   console.log(
     JSON.stringify(
