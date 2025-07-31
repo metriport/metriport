@@ -21,14 +21,15 @@ import {
   getPatientOrFail,
   PatientWithIdentifiers,
 } from "../../../../command/medical/patient/get-patient";
+import { getPatientPrimaryFacilityIdOrFail } from "../../../../command/medical/patient/get-patient-facilities";
 import { Config } from "../../../../shared/config";
+import { confirmEhrPatientDemographicsMatchMetriport } from "../../shared/command/patient/confirm-patient-match";
 import {
   handleMetriportSync,
   HandleMetriportSyncParams,
   isDqCooldownExpired,
 } from "../../shared/utils/patient";
 import { createAddresses, createContacts, createElationClient, createNames } from "../shared";
-import { getPatientPrimaryFacilityIdOrFail } from "../../../../command/medical/patient/get-patient-facilities";
 
 dayjs.extend(duration);
 
@@ -44,6 +45,7 @@ export type SyncElationPatientIntoMetriportParams = {
   api?: ElationApi;
   triggerDq?: boolean;
   triggerDqForExistingPatient?: boolean;
+  inputMetriportPatientId?: string;
 };
 
 export async function syncElationPatientIntoMetriport({
@@ -53,17 +55,37 @@ export async function syncElationPatientIntoMetriport({
   api,
   triggerDq = false,
   triggerDqForExistingPatient = false,
+  inputMetriportPatientId,
 }: SyncElationPatientIntoMetriportParams): Promise<string> {
-  const existingPatient = await getPatientMapping({
+  const { log } = out(
+    `syncElationPatientIntoMetriport - practId: ${elationPracticeId} ptId: ${elationPatientId}`
+  );
+  const existingMapping = await getPatientMapping({
     cxId,
     externalId: elationPatientId,
     source: EhrSources.elation,
   });
-  if (existingPatient) {
+
+  const elationApi = api ?? (await createElationClient({ cxId, practiceId: elationPracticeId }));
+  if (existingMapping) {
+    log("existing mapping found", existingMapping.patientId);
     const metriportPatient = await getPatientOrFail({
       cxId,
-      id: existingPatient.patientId,
+      id: existingMapping.patientId,
     });
+
+    if (inputMetriportPatientId) {
+      const elationPatient = await elationApi.getPatient({ cxId, patientId: elationPatientId });
+      const demographics = createMetriportPatientDemographics(elationPatient);
+      log("confirming patient match");
+      await confirmEhrPatientDemographicsMatchMetriport({
+        cxId,
+        patientId: inputMetriportPatientId,
+        demographics,
+      });
+      log("patient match confirmed successfully");
+    }
+
     const facilityId = await getPatientPrimaryFacilityIdOrFail({
       cxId,
       patientId: metriportPatient.id,
@@ -81,11 +103,12 @@ export async function syncElationPatientIntoMetriport({
       elationPracticeId,
       elationPatientId,
       metriportPatientId,
+      elationApi,
     });
     return metriportPatientId;
   }
 
-  const elationApi = api ?? (await createElationClient({ cxId, practiceId: elationPracticeId }));
+  log("no existing mapping found");
   const elationPatient = await elationApi.getPatient({ cxId, patientId: elationPatientId });
   const demographics = createMetriportPatientDemographics(elationPatient);
   const metriportPatient = await getOrCreateMetriportPatient({
@@ -93,7 +116,9 @@ export async function syncElationPatientIntoMetriport({
     practiceId: elationPracticeId,
     demographics,
     externalId: elationPatientId,
+    inputMetriportPatientId,
   });
+  log("Metriport patient created/retrieved:", metriportPatient.id);
   const metriportPatientId = metriportPatient.id;
   const facilityId = await getPatientPrimaryFacilityIdOrFail({
     cxId,
@@ -144,9 +169,31 @@ async function getOrCreateMetriportPatient({
   practiceId,
   demographics,
   externalId,
-}: Omit<HandleMetriportSyncParams, "source">): Promise<PatientWithIdentifiers> {
+  inputMetriportPatientId,
+}: Omit<HandleMetriportSyncParams, "source"> & {
+  inputMetriportPatientId?: string;
+}): Promise<PatientWithIdentifiers> {
+  const { log } = out(`getOrCreateMetriportPatient - practId: ${practiceId} ptId: ${externalId}`);
+  if (inputMetriportPatientId) {
+    const metriportPatient = await getPatientOrFail({
+      cxId,
+      id: inputMetriportPatientId,
+    });
+    log(`for metriport id: ${inputMetriportPatientId}, confirming patient match`);
+    await confirmEhrPatientDemographicsMatchMetriport({
+      cxId,
+      patientId: metriportPatient.id,
+      demographics,
+    });
+    log(`patient match confirmed successfully`);
+    return metriportPatient;
+  }
   const metriportPatient = await getPatientByDemo({ cxId, demo: demographics });
-  if (metriportPatient) return metriportPatient;
+  if (metriportPatient) {
+    log(`patient found by demo: ${metriportPatient.id}`);
+    return metriportPatient;
+  }
+  log(`no patient found by demo, creating new patient`);
   return await handleMetriportSync({
     cxId,
     source: EhrSources.elation,

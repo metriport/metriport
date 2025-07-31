@@ -87,6 +87,7 @@
             "medical-api/api-reference/patient/match-patient",
             "medical-api/api-reference/patient/list-patients",
             "medical-api/api-reference/patient/delete-patient",
+            "medical-api/api-reference/patient/create-patient-external-sync",
             "medical-api/api-reference/patient/hie-opt-out",
             "medical-api/api-reference/patient/bulk-create-patient"
           ]
@@ -239,9 +240,7 @@
         {
           "group": "Extensions",
           "icon": "asterisk",
-          "pages": [
-            "medical-api/fhir/extensions/chronicity"
-          ]
+          "pages": ["medical-api/fhir/extensions/chronicity"]
         }
       ]
     },
