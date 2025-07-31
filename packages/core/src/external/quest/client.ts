@@ -4,6 +4,7 @@ import { buildRequestFileName, buildResponseFileName } from "./file/file-names";
 import { generateBatchRequestFile, generatePatientRequestFile } from "./file/file-generator";
 import {
   QuestBatchRequestData,
+  QuestConversionBundle,
   QuestJob,
   QuestPatientRequestData,
   QuestRequesterData,
@@ -33,6 +34,14 @@ export class QuestSftpClient extends SftpClient {
       bucketName: config.replicaBucket ?? Config.getQuestReplicaBucketName(),
       region: config.replicaBucketRegion ?? Config.getAWSRegion(),
     });
+  }
+
+  async receiveAllUpdates(): Promise<QuestConversionBundle[]> {
+    return [];
+  }
+
+  async sendRoster(): Promise<{ size: number }> {
+    return { size: 0 };
   }
 
   async sendBatchRequest(request: QuestBatchRequestData): Promise<QuestJob> {
