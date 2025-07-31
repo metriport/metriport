@@ -10,7 +10,7 @@ import { EnvConfig } from "../config/env-config";
 import { EnvType } from "./env-type";
 import { createLambda } from "./shared/lambda";
 import { LambdaLayers } from "./shared/lambda-layers";
-import { QueueAndLambdaSettings, LambdaSettings } from "./shared/settings";
+import { QueueAndLambdaSettings, LambdaSettingsWithNameAndEntry } from "./shared/settings";
 import { createQueue } from "./shared/sqs";
 
 const waitTimePatientSync = Duration.seconds(10); // 6 patients/min
@@ -22,7 +22,7 @@ const waitTimeContributeResourceDiffBundles = Duration.seconds(0); // No limit
 const waitTimeWriteBackResourceDiffBundles = Duration.seconds(0); // No limit
 
 function settings(): {
-  getAppointments: LambdaSettings;
+  getAppointments: LambdaSettingsWithNameAndEntry;
   syncPatient: QueueAndLambdaSettings;
   elationLinkPatient: QueueAndLambdaSettings;
   healthieLinkPatient: QueueAndLambdaSettings;
@@ -32,7 +32,7 @@ function settings(): {
   writeBackResourceDiffBundles: QueueAndLambdaSettings;
 } {
   const getAppointmentsLambdaTimeout = Duration.minutes(15);
-  const getAppointments: LambdaSettings = {
+  const getAppointments: LambdaSettingsWithNameAndEntry = {
     name: "EhrGetAppointments",
     entry: "ehr/get-appointments",
     lambda: {

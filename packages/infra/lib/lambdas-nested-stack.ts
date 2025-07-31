@@ -1,4 +1,4 @@
-import { Duration, NestedStack, NestedStackProps } from "aws-cdk-lib";
+import { Duration, NestedStack, NestedStackProps, Size } from "aws-cdk-lib";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
@@ -365,6 +365,7 @@ export class LambdasNestedStack extends NestedStack {
         lambdaLayers.saxon,
       ],
       memory: 1024,
+      ephemeralStorageSize: Size.gibibytes(1),
       timeout: CDA_TO_VIS_TIMEOUT,
       vpc,
       alarmSnsAction: alarmAction,
@@ -423,6 +424,7 @@ export class LambdasNestedStack extends NestedStack {
       },
       layers: [lambdaLayers.shared],
       memory: 512,
+      ephemeralStorageSize: Size.gibibytes(1),
       timeout: Duration.minutes(5),
       vpc,
     });
@@ -467,6 +469,7 @@ export class LambdasNestedStack extends NestedStack {
       },
       layers: [lambdaLayers.shared],
       memory: 1024, // TODO: 1603 - Monitor to see if more is required
+      ephemeralStorageSize: Size.gibibytes(1),
       timeout: Duration.minutes(5),
       vpc,
     });
@@ -737,6 +740,7 @@ export class LambdasNestedStack extends NestedStack {
       },
       layers: [lambdaLayers.shared, lambdaLayers.langchain],
       memory: 6144,
+      ephemeralStorageSize: Size.gibibytes(2),
       timeout: lambdaTimeout,
       isEnableInsights: true,
       vpc,
@@ -811,6 +815,7 @@ export class LambdasNestedStack extends NestedStack {
       },
       layers: [lambdaLayers.shared, lambdaLayers.langchain],
       memory: lambdaSettings.memory,
+      ephemeralStorageSize: lambdaSettings.ephemeralStorageSize,
       timeout: lambdaSettings.timeout,
       isEnableInsights: true,
       vpc,

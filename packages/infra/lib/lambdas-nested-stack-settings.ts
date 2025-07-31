@@ -1,10 +1,14 @@
-import { Duration } from "aws-cdk-lib";
+import { Duration, Size } from "aws-cdk-lib";
 import * as lambda from "aws-cdk-lib/aws-lambda";
+import { LambdaSettings, QueueAndLambdaSettings } from "./shared/settings";
 
 // Single timeout for both lambdas b/c ingestion needs more time, and currently search might also ingest
 const lambdaTimeout = Duration.minutes(15).minus(Duration.seconds(5));
 
-export function getConsolidatedIngestionConnectorSettings() {
+export function getConsolidatedIngestionConnectorSettings(): Omit<
+  QueueAndLambdaSettings,
+  "lambda" | "entry" | "waitTime"
+> & { lambda: LambdaSettings } {
   return {
     name: "ConsolidatedIngestion",
     queue: {
@@ -19,6 +23,7 @@ export function getConsolidatedIngestionConnectorSettings() {
     lambda: {
       runtime: lambda.Runtime.NODEJS_20_X,
       memory: 4096,
+      ephemeralStorageSize: Size.gibibytes(2),
       timeout: lambdaTimeout,
     },
     eventSource: {
@@ -30,12 +35,13 @@ export function getConsolidatedIngestionConnectorSettings() {
   };
 }
 
-export function getConsolidatedSearchConnectorSettings() {
+export function getConsolidatedSearchConnectorSettings(): { name: string; lambda: LambdaSettings } {
   return {
     name: "ConsolidatedSearch",
     lambda: {
       runtime: lambda.Runtime.NODEJS_20_X,
       memory: 4096,
+      ephemeralStorageSize: Size.gibibytes(2),
       timeout: lambdaTimeout,
     },
   };
