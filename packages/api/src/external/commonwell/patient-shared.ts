@@ -10,8 +10,9 @@ import {
   StrongId,
 } from "@metriport/commonwell-sdk";
 import { PatientExternalDataEntry } from "@metriport/core/domain/patient";
-import { capture } from "@metriport/core/util/notifications";
+import { executeWithRetriesCw } from "@metriport/core/external/commonwell/shared";
 import { out } from "@metriport/core/util/log";
+import { capture } from "@metriport/core/util/notifications";
 import { intersectionBy, minBy } from "lodash";
 import { filterTruthy } from "../../shared/filter-map-utils";
 import { LinkStatus } from "../patient-link";
@@ -71,7 +72,9 @@ export async function findOrCreatePerson({
     }
   } else {
     // Search by demographics
-    const respSearch = await commonWell.searchPersonByPatientDemo(queryMeta, commonwellPatientId);
+    const respSearch = await executeWithRetriesCw(() =>
+      commonWell.searchPersonByPatientDemo(queryMeta, commonwellPatientId)
+    );
     debug(`resp searchPersonByPatientDemo: `, JSON.stringify(respSearch));
     const persons = respSearch._embedded?.person
       ? respSearch._embedded.person
@@ -197,12 +200,14 @@ export async function searchPersonIds({
   const { log, debug } = out(`CW searchPersonIds`);
   const respSearches = await Promise.allSettled(
     strongIds.map(id =>
-      commonWell.searchPerson(queryMeta, id.key, id.system).catch(error => {
-        const msg = `Failure searching person @ CW by personal ID`;
-        log(`${msg}. Cause: ${error}`);
-        capture.message(msg, { extra: { context: `cw.searchPersonIds`, error }, level: "error" });
-        throw error;
-      })
+      executeWithRetriesCw(() => commonWell.searchPerson(queryMeta, id.key, id.system)).catch(
+        error => {
+          const msg = `Failure searching person @ CW by personal ID`;
+          log(`${msg}. Cause: ${error}`);
+          capture.message(msg, { extra: { context: `cw.searchPersons`, error }, level: "error" });
+          throw error;
+        }
+      )
     )
   );
   debug(`resp searchPerson: `, JSON.stringify(respSearches));
@@ -225,12 +230,14 @@ export async function searchPersons({
   const { log } = out(`CW searchPersons`);
   const respSearches = await Promise.allSettled(
     strongIds.map(id =>
-      commonWell.searchPerson(queryMeta, id.key, id.system).catch(error => {
-        const msg = `Failed to search for person with strongId`;
-        log(`${msg}. Cause: ${error}`);
-        capture.message(msg, { extra: { context: `cw.searchPersons`, error }, level: "error" });
-        throw error;
-      })
+      executeWithRetriesCw(() => commonWell.searchPerson(queryMeta, id.key, id.system)).catch(
+        error => {
+          const msg = `Failed to search for person with strongId`;
+          log(`${msg}. Cause: ${error}`);
+          capture.message(msg, { extra: { context: `cw.searchPersons`, error }, level: "error" });
+          throw error;
+        }
+      )
     )
   );
   const fulfilled = respSearches
