@@ -63,6 +63,7 @@ function invokeLambdaLogic() {
         message,
         sourceTimestamp: timestamp,
         messageReceivedTimestamp: new Date().toISOString(),
+        rawDataFileKey: "some-key",
       });
     } catch (err) {
       errors.push({
