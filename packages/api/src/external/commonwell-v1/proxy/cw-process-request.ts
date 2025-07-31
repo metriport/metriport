@@ -68,6 +68,7 @@ export async function processRequest(req: Request): Promise<Bundle<Resource>> {
   ];
 
   await ensureCcdExists({ cxId, patientId, log });
+
   const metadataFileContents = await getMetadataDocumentContents(cxId, patientId);
   const docRefs: DocumentReference[] = [];
   for (const fileContents of metadataFileContents) {

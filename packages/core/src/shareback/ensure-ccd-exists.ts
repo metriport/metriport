@@ -1,14 +1,20 @@
-import { executeWithNetworkRetries } from "@metriport/shared";
+import { executeWithNetworkRetries, sleep } from "@metriport/shared";
 import axios from "axios";
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
+import { CCD_SUFFIX, createUploadFilePath } from "../domain/document/upload";
 import { S3Utils } from "../external/aws/s3";
 import { Config } from "../util/config";
-import { CCD_SUFFIX, createUploadFilePath } from "../domain/document/upload";
+
+dayjs.extend(duration);
 
 const apiUrl = Config.getApiLoadBalancerAddress();
 const region = Config.getAWSRegion();
 const s3Utils = new S3Utils(region);
 const api = axios.create();
 const bucket = Config.getMedicalDocumentsBucketName();
+
+const waitTimeForS3ToCatchUp = dayjs.duration(200, "milliseconds");
 
 export async function ensureCcdExists({
   cxId,
@@ -23,7 +29,9 @@ export async function ensureCcdExists({
   const ccdExists = await s3Utils.fileExists(bucket, destinationKey);
   if (ccdExists) return;
 
-  log("No CCD found. Let's trigger generating one.");
+  log(
+    "No CCD found. Creating an empty one and triggering the generation of the real one in the background..."
+  );
   const queryParams = {
     cxId,
     patientId,
@@ -39,6 +47,10 @@ export async function ensureCcdExists({
     log,
   });
 
-  log("CCD generated. Fetching the document contents");
+  // We do this because we had situations where even though we await on the creation of the empty CCD,
+  // after this function we try to read the metadata file and S3 returned it didn't exist yet.
+  log("CCD generated. Waiting for S3 to catch up...");
+  await sleep(waitTimeForS3ToCatchUp.asMilliseconds());
+
   return;
 }
