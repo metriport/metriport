@@ -408,7 +408,7 @@ export class MetriportMedicalApi {
    * Maps a Metriport patient to a patient in an external EHR system and synchronizes their data.
    *
    * @param patientId The ID of the patient to map.
-   * @param source The source of the mapping. Optional.
+   * @param source The source name that represents the external system/EHR, either healthie or elation. Optional.
    * @return The Metriport patient ID and the mapping patient (external) ID.
    * @throws error if the patient has no external ID to attempt mapping.
    * @throws error if the mapping source is not supported.

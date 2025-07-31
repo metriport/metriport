@@ -28,7 +28,7 @@ export async function forceEhrPatientSync({
   cxId,
   patientId,
   source,
-}: MapPatientParams): Promise<{ metriportPatientId: string; externalId: string }> {
+}: MapPatientParams): Promise<string> {
   const patient = await getPatientOrFail({ id: patientId, cxId });
   if (!patient.externalId) {
     throw new BadRequestError("Patient has no external ID to attempt syncing", undefined, {
@@ -43,7 +43,7 @@ export async function forceEhrPatientSync({
   });
 
   if (cxMapping.source === EhrSources.elation) {
-    const metriportPatientId = await syncElationPatientIntoMetriport({
+    await syncElationPatientIntoMetriport({
       cxId,
       elationPatientId: patient.externalId,
       elationPracticeId: cxMapping.externalId,
@@ -51,9 +51,9 @@ export async function forceEhrPatientSync({
       triggerDqForExistingPatient: true,
       triggerDq: true,
     });
-    return { metriportPatientId, externalId: patient.externalId };
+    return patient.externalId;
   } else if (cxMapping.source === EhrSources.healthie) {
-    const metriportPatientId = await syncHealthiePatientIntoMetriport({
+    await syncHealthiePatientIntoMetriport({
       cxId,
       healthiePatientId: patient.externalId,
       healthiePracticeId: cxMapping.externalId,
@@ -61,7 +61,7 @@ export async function forceEhrPatientSync({
       triggerDqForExistingPatient: true,
       triggerDq: true,
     });
-    return { metriportPatientId, externalId: patient.externalId };
+    return patient.externalId;
   }
   throw new BadRequestError("Unsupported mapping source", undefined, {
     cxId,

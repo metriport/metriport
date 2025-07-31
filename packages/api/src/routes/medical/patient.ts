@@ -614,8 +614,8 @@ router.get(
  * Synchronizes a Metriport patient to a patient in an external system.
  *
  * @param req.params.id - The ID of the patient to map.
- * @param req.query.source - The source of the mapping. Optional.
- * @returns The Metriport patient ID and the mapping patient ID.
+ * @param req.query.source - The source name that represents the external system/EHR, either healthie or elation. Optional.
+ * @returns The Metriport patient ID and the mapping patient (external) ID.
  * @throws 400 if the patient has no external ID to attempt mapping.
  * @throws 400 if the mapping source is not supported.
  * @throws 404 if no mapping is found.
@@ -628,13 +628,13 @@ router.post(
     const { cxId, id: patientId } = getPatientInfoOrFail(req);
     const source = parseEhrSourceOrFail(getFrom("query").optional("source", req));
 
-    const { metriportPatientId, externalId } = await forceEhrPatientSync({
+    const externalId = await forceEhrPatientSync({
       cxId,
       patientId,
       source,
     });
 
-    return res.status(status.OK).json({ patientId: metriportPatientId, externalId });
+    return res.status(status.OK).json({ patientId, externalId });
   })
 );
 
