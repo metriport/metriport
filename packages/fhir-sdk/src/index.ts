@@ -305,13 +305,13 @@ export class FhirBundleSdk {
   private constructor(bundle: Bundle) {
     // FR-1.1, FR-1.4: Initialize bundle and create indexes
     this.bundle = bundle;
+    this.bundle.total = bundle.entry?.length ?? 0;
     this.buildResourceIndexes();
   }
 
   get total(): number {
     if (!this.bundle.entry) {
-      console.error("Bundle property `entry` is undefined");
-      return -1;
+      throw new Error("No valid total - bundle property `entry` is undefined");
     }
     return this.bundle.entry.length;
   }
@@ -754,6 +754,7 @@ export class FhirBundleSdk {
       resourceType: "Bundle",
       type: this.bundle.type || "collection",
       entry: entries,
+      total: entries.length,
     };
 
     // Preserve original bundle metadata (FR-6.4)
@@ -769,9 +770,6 @@ export class FhirBundleSdk {
     if (this.bundle.timestamp) {
       exportBundle.timestamp = this.bundle.timestamp;
     }
-
-    // Update total count (FR-6.4)
-    exportBundle.total = entries.length;
 
     return exportBundle;
   }
