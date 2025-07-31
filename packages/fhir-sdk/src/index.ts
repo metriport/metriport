@@ -328,10 +328,6 @@ export class FhirBundleSdk {
     return this.bundle;
   }
 
-  toString() {
-    return this.toObject();
-  }
-
   /**
    * Create a new FhirBundleSdk instance
    * FR-1.2: Validate bundle resourceType
