@@ -6,6 +6,7 @@ import { documentConsumption } from "./flows/document-consumption";
 import { documentContribution } from "./flows/document-contribution";
 import { linkManagement } from "./flows/link-management";
 import { orgManagement } from "./flows/org-management";
+import { orgManagementInitiatorOnly } from "./flows/org-management-initiator-only";
 import { patientManagement } from "./flows/patient-management";
 import { logError } from "./util";
 
@@ -47,6 +48,7 @@ async function main() {
   try {
     // Run through the CommonWell certification test cases
     const { commonWell } = await orgManagement();
+    await orgManagementInitiatorOnly().catch(() => failedFlows.push("initiatorOnlyOrgManagement"));
     await patientManagement(commonWell).catch(() => failedFlows.push("patientManagement"));
     await linkManagement(commonWell).catch(() => failedFlows.push("linkManagement"));
     await documentConsumption(commonWell).catch(() => failedFlows.push("documentConsumption"));

@@ -7,7 +7,6 @@ import {
   Organization,
 } from "@metriport/commonwell-sdk";
 import { errorToString } from "@metriport/shared";
-import { makeNPI } from "@metriport/shared/common/__tests__/npi";
 import {
   existingOrgId,
   memberCertificateString,
@@ -46,13 +45,16 @@ export async function orgManagement(): Promise<OrgManagementResponse> {
       return buildResponse(org);
     }
 
-    console.log(`>>> Create an org`);
+    console.log(`>>> ---------------------- Initiator and Responder ----------------------`);
+
+    console.log(`>>> Create an initiator and responder org`);
     const orgToCreate = makeOrganization();
     // console.log(`Request payload: ${JSON.stringify(org, null, 2)}`);
     const respCreateOrg = await commonWellMember.createOrg(orgToCreate);
     console.log(">>> Transaction ID: " + commonWellMember.lastTransactionId);
     console.log(">>> Response: " + JSON.stringify(respCreateOrg, null, 2));
     orgId = respCreateOrg.organizationId;
+    if (!orgId) throw new Error("No orgId on response from createOrg");
 
     console.log(`>>> Get one org`);
     const respGetOneOrg = await commonWellMember.getOneOrg(orgId);
@@ -68,8 +70,6 @@ export async function orgManagement(): Promise<OrgManagementResponse> {
 
     console.log(`>>> Update an org`);
     org.locations[0].city = faker.location.city();
-    if (!org.npiType2) org.npiType2 = makeNPI();
-    if (!orgId) throw new Error("No orgId on response from createOrg");
     const respUpdateOrg = await commonWellMember.updateOrg(org);
     console.log(">>> Transaction ID: " + commonWellMember.lastTransactionId);
     console.log(">>> Response: " + JSON.stringify(respUpdateOrg, null, 2));
