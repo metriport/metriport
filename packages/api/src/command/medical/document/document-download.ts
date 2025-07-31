@@ -9,6 +9,7 @@ import { S3Utils } from "@metriport/core/external/aws/s3";
 import { BadRequestError, NotFoundError } from "@metriport/shared";
 import { makeS3Client } from "../../../external/aws/s3";
 import { Config } from "../../../shared/config";
+import { Config as CoreConfig } from "@metriport/core/util/config";
 
 /** @deprecated Use S3Utils instead */
 const s3client = makeS3Client();
@@ -16,13 +17,13 @@ const s3Utils = new S3Utils(Config.getAWSRegion());
 const lambdaClient = makeLambdaClient(Config.getAWSRegion());
 const conversionLambdaName = Config.getConvertDocLambdaName();
 
-export const downloadDocument = async ({
+export async function getDocumentDownloadUrl({
   fileName,
   conversionType,
 }: {
   fileName: string;
   conversionType?: ConversionType;
-}): Promise<string> => {
+}): Promise<string> {
   const { exists, contentType, bucketName } = await doesObjExist({ fileName });
 
   if (!exists) throw new NotFoundError("File does not exist");
@@ -36,8 +37,9 @@ export const downloadDocument = async ({
     return getConversionUrl({ fileName, conversionType, bucketName });
   }
   return getSignedURL({ fileName, bucketName });
-};
+}
 
+// eslint-disable-next-line @metriport/eslint-rules/no-named-arrow-functions
 const getConversionUrl = async ({
   fileName,
   conversionType,
@@ -52,7 +54,8 @@ const getConversionUrl = async ({
   else return convertDoc({ fileName, conversionType, bucketName });
 };
 
-export const convertDoc = async ({
+// eslint-disable-next-line @metriport/eslint-rules/no-named-arrow-functions
+const convertDoc = async ({
   fileName,
   conversionType,
   bucketName,
@@ -72,6 +75,7 @@ export const convertDoc = async ({
 };
 
 /** @deprecated Use S3Utils.getFileInfoFromS3 */
+// eslint-disable-next-line @metriport/eslint-rules/no-named-arrow-functions
 const doesObjExist = async ({
   fileName,
 }: {
@@ -137,4 +141,15 @@ export async function getSignedURL({
       : Config.getMedicalDocumentsBucketName());
 
   return s3Utils.getSignedUrl({ bucketName: bucket, fileName });
+}
+
+export async function getIncomingHl7MessageDownloadUrl({
+  fileName,
+}: {
+  fileName: string;
+}): Promise<string> {
+  return s3Utils.getSignedUrl({
+    bucketName: CoreConfig.getHl7IncomingMessageBucketName(),
+    fileName,
+  });
 }
