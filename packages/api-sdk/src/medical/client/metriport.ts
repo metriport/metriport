@@ -409,7 +409,7 @@ export class MetriportMedicalApi {
    *
    * @param patientId The ID of the patient to map.
    * @param source The source of the mapping. Optional.
-   * @return The Metriport patient ID and the mapping patient ID.
+   * @return The Metriport patient ID and the mapping patient (external) ID.
    * @throws error if the patient has no external ID to attempt mapping.
    * @throws error if the mapping source is not supported.
    * @throws error if no mapping is found.
@@ -418,7 +418,7 @@ export class MetriportMedicalApi {
   async syncPatient(
     patientId: string,
     source?: string
-  ): Promise<{ metriportPatientId: string; mappingPatientId: string }> {
+  ): Promise<{ patientId: string; externalId: string }> {
     const resp = await this.api.post(`${PATIENT_URL}/${patientId}/external/sync`, undefined, {
       params: { source },
     });

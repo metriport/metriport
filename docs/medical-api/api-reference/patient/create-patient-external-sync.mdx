@@ -24,11 +24,11 @@ Link the Metriport patient to an external EHR and synchronize their data.
 
 Returns a JSON object with the following properties:
 
-<ResponseField name="metriportPatientId" type="string">
+<ResponseField name="patientId" type="string">
   The patient's ID in Metriport.
 </ResponseField>
 
-<ResponseField name="mappingPatientId" type="string">
+<ResponseField name="externalId" type="string">
   The patient's ID in the external system.
 </ResponseField>
 
@@ -52,7 +52,7 @@ const synchronizedIds = await metriport.syncPatient(
 
 ```json
 {
-  "metriportPatientId": "018a80c4-292a-7486-a1234-76yuhe23yu14",
-  "mappingPatientId": "1234567890"
+  "patientId": "018a80c4-292a-7486-a1234-76yuhe23yu14",
+  "externalId": "1234567890"
 }
 ```

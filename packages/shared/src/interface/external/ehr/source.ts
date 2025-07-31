@@ -13,7 +13,7 @@ export function isEhrSource(source: string): source is EhrSource {
   return ehrSources.includes(source as EhrSource);
 }
 
-export function validateEhrSource(source: string | undefined): EhrSource | undefined {
+export function parseEhrSourceOrFail(source: string | undefined): EhrSource | undefined {
   if (!source) return undefined;
   if (!isEhrSource(source)) {
     throw new BadRequestError(

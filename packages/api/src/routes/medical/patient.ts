@@ -7,7 +7,13 @@ import { MAXIMUM_UPLOAD_FILE_SIZE } from "@metriport/core/external/aws/lambda-lo
 import { toFHIR } from "@metriport/core/external/fhir/patient/conversion";
 import { out } from "@metriport/core/util/log";
 import { getRequestId } from "@metriport/core/util/request";
-import { BadRequestError, isTrue, NotFoundError, stringToBoolean } from "@metriport/shared";
+import {
+  BadRequestError,
+  isTrue,
+  NotFoundError,
+  parseEhrSourceOrFail,
+  stringToBoolean,
+} from "@metriport/shared";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
@@ -21,10 +27,10 @@ import {
 } from "../../command/medical/patient/create-medical-record";
 import { handleDataContribution } from "../../command/medical/patient/data-contribution/handle-data-contributions";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
+import { forceEhrPatientSync } from "../../command/medical/patient/force-ehr-patient-sync";
 import { getConsolidatedWebhook } from "../../command/medical/patient/get-consolidated-webhook";
 import { getPatientFacilities } from "../../command/medical/patient/get-patient-facilities";
 import { getPatientFacilityMatches } from "../../command/medical/patient/get-patient-facility-matches";
-import { mapPatient } from "../../command/medical/patient/map-patient";
 import { setPatientFacilities } from "../../command/medical/patient/set-patient-facilities";
 import { getHieOptOut, setHieOptOut } from "../../command/medical/patient/update-hie-opt-out";
 import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
@@ -605,7 +611,7 @@ router.get(
 /** ---------------------------------------------------------------------------
  * POST /patient/:id/external/sync
  *
- * Maps a Metriport patient to a patient in an external mapping system and synchronizes their data.
+ * Synchronizes a Metriport patient to a patient in an external system.
  *
  * @param req.params.id - The ID of the patient to map.
  * @param req.query.source - The source of the mapping. Optional.
@@ -620,15 +626,15 @@ router.post(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const { cxId, id: patientId } = getPatientInfoOrFail(req);
-    const source = getFrom("query").optional("source", req);
+    const source = parseEhrSourceOrFail(getFrom("query").optional("source", req));
 
-    const { metriportPatientId, mappingPatientId } = await mapPatient({
+    const { metriportPatientId, externalId } = await forceEhrPatientSync({
       cxId,
       patientId,
       source,
     });
 
-    return res.status(status.OK).json({ metriportPatientId, mappingPatientId });
+    return res.status(status.OK).json({ patientId: metriportPatientId, externalId });
   })
 );
 

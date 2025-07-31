@@ -1,5 +1,5 @@
 import { BadRequestError, NotFoundError } from "@metriport/shared";
-import { EhrSources, validateEhrSource } from "@metriport/shared/interface/external/ehr/source";
+import { EhrSource, EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { CxMapping } from "../../../domain/cx-mapping";
 import { syncElationPatientIntoMetriport } from "../../../external/ehr/elation/command/sync-patient";
 import { syncHealthiePatientIntoMetriport } from "../../../external/ehr/healthie/command/sync-patient";
@@ -9,29 +9,29 @@ import { getPatientOrFail } from "./get-patient";
 export type MapPatientParams = {
   cxId: string;
   patientId: string;
-  source?: string;
+  source?: EhrSource | undefined;
 };
 
 /**
- * Maps a Metriport patient to a patient in an external system.
+ * Synchronizes a Metriport patient to a patient in an external system.
  *
  * @param cxId - The ID of the customer.
  * @param patientId - The ID of the patient to map.
  * @param source - The source of the mapping. Optional. Required if the organization has multiple mappings.
- * @returns The Metriport patient ID and the mapped system patient ID.
+ * @returns The Metriport patient ID and the mapped system (external) patient ID.
  * @throws 400 if the patient has no external ID to attempt mapping.
  * @throws 400 if the mapping source is not supported.
  * @throws 404 if no mapping is found.
  * @throws 404 if patient demographics are not matching.
  */
-export async function mapPatient({
+export async function forceEhrPatientSync({
   cxId,
   patientId,
   source,
-}: MapPatientParams): Promise<{ metriportPatientId: string; mappingPatientId: string }> {
+}: MapPatientParams): Promise<{ metriportPatientId: string; externalId: string }> {
   const patient = await getPatientOrFail({ id: patientId, cxId });
   if (!patient.externalId) {
-    throw new BadRequestError("Patient has no external ID to attempt mapping", undefined, {
+    throw new BadRequestError("Patient has no external ID to attempt syncing", undefined, {
       cxId,
       patientId,
     });
@@ -51,7 +51,7 @@ export async function mapPatient({
       triggerDqForExistingPatient: true,
       triggerDq: true,
     });
-    return { metriportPatientId, mappingPatientId: patient.externalId };
+    return { metriportPatientId, externalId: patient.externalId };
   } else if (cxMapping.source === EhrSources.healthie) {
     const metriportPatientId = await syncHealthiePatientIntoMetriport({
       cxId,
@@ -61,7 +61,7 @@ export async function mapPatient({
       triggerDqForExistingPatient: true,
       triggerDq: true,
     });
-    return { metriportPatientId, mappingPatientId: patient.externalId };
+    return { metriportPatientId, externalId: patient.externalId };
   }
   throw new BadRequestError("Unsupported mapping source", undefined, {
     cxId,
@@ -73,23 +73,22 @@ export async function mapPatient({
 async function getCxMapping({
   cxId,
   patientId,
-  source: sourceString,
+  source,
 }: {
   cxId: string;
   patientId: string;
-  source?: string;
+  source?: EhrSource | undefined;
 }): Promise<CxMapping> {
-  const source = validateEhrSource(sourceString);
   const cxMappings = await getCxMappingsByCustomer({ cxId, source });
   const cxMapping = cxMappings[0];
   if (!cxMapping) {
-    throw new NotFoundError("No integrationmapping found", undefined, { cxId, patientId });
+    throw new NotFoundError("No integration mapping found", undefined, { cxId, patientId, source });
   }
   if (cxMappings.length > 1) {
     throw new BadRequestError(
-      "Multiple integration mappings found. Please specify a mapping ID",
+      "Multiple source integrations found. Please specify a source",
       undefined,
-      { cxId, patientId }
+      { cxId, patientId, source }
     );
   }
   return cxMapping;
