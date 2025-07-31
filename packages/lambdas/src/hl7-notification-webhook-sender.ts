@@ -1,7 +1,6 @@
-import { Hl7Notification } from "@metriport/core/command/hl7-notification/hl7-notification-webhook-sender";
+import { hl7NotificationSenderParamsSchema } from "@metriport/core/command/hl7-notification/hl7-notification-webhook-sender";
 import { Hl7NotificationWebhookSenderDirect } from "@metriport/core/command/hl7-notification/hl7-notification-webhook-sender-direct";
 import { SQSEvent } from "aws-lambda";
-import { z } from "zod";
 import { capture } from "./shared/capture";
 import { getEnvOrFail } from "./shared/env";
 import { prefixedLog } from "./shared/log";
@@ -14,7 +13,6 @@ capture.init();
 const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
 const apiUrl = getEnvOrFail("API_URL");
 
-// TODO move to capture.wrapHandler()
 export const handler = capture.wrapHandler(async (event: SQSEvent): Promise<void> => {
   const params = getSingleMessageOrFail(event.Records, lambdaName);
   if (!params) {
@@ -23,7 +21,7 @@ export const handler = capture.wrapHandler(async (event: SQSEvent): Promise<void
 
   const log = prefixedLog(lambdaName);
   log("Parsing body");
-  const parsedBody = parseBody(params.body);
+  const parsedBody = hl7NotificationSenderParamsSchema.parse(JSON.parse(params.body));
   const { cxId, patientId } = parsedBody;
 
   capture.setExtra({
@@ -34,15 +32,3 @@ export const handler = capture.wrapHandler(async (event: SQSEvent): Promise<void
 
   await new Hl7NotificationWebhookSenderDirect(apiUrl).execute(parsedBody);
 });
-
-const parseBody = (body: string): Hl7Notification => {
-  const schema = z.object({
-    cxId: z.string().uuid(),
-    patientId: z.string().uuid(),
-    message: z.string(),
-    sourceTimestamp: z.string(),
-    messageReceivedTimestamp: z.string(),
-  });
-
-  return schema.parse(JSON.parse(body));
-};
