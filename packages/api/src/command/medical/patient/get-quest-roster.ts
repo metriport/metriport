@@ -23,7 +23,7 @@ function getCommonQueryOptions({ pagination }: GetQuestRosterParams) {
               SELECT 1
               FROM patient_settings ps
               WHERE ps.patient_id = "PatientModelReadOnly"."id"
-              AND ps.subscriptions->'quest' IS NOT NULL
+              AND ps.subscriptions->'quest' = 'true'
           )
           `),
       ],
@@ -52,7 +52,7 @@ export async function getQuestRoster({ pagination }: GetQuestRosterParams): Prom
     const patients = await PatientModelReadOnly.findAll(findOptions);
 
     log(`Done. Found ${patients.length} Quest monitoring patients for this page`);
-    return patients as unknown as Patient[];
+    return patients;
   } catch (error) {
     const msg = `Failed to get Quest monitoring patients`;
     log(`${msg} - err: ${errorToString(error)}`);

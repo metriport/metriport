@@ -15,7 +15,11 @@ export function validateAndLogResponse<T>({
   debug: typeof console.log;
   display?: (data: T) => string;
 }): T {
-  if (!response.data) throw new MetriportError(`No body returned from ${url}`);
+  if (!response.data)
+    throw new MetriportError(`No body returned from internal API`, undefined, {
+      url,
+      status: response.status,
+    });
   const validatedData = schema.parse(response.data);
   debug(`GET ${url}\n`, () =>
     display ? display(validatedData) : JSON.stringify(validatedData, null, 2)
