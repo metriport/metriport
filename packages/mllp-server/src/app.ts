@@ -71,17 +71,7 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
           triggerEvent,
         });
 
-        await buildHl7NotificationWebhookSender().execute({
-          cxId,
-          patientId,
-          message: asString(message),
-          sourceTimestamp: timestamp,
-          messageReceivedTimestamp: new Date().toISOString(),
-        });
-
-        connection.send(message.buildAck());
-
-        const fileKey = createFileKeyHl7Message({
+        const rawDataFileKey = createFileKeyHl7Message({
           cxId,
           patientId,
           timestamp,
@@ -90,10 +80,21 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
           triggerEvent,
         });
 
-        log(`Init S3 upload to bucket ${bucketName} with key ${fileKey}`);
+        await buildHl7NotificationWebhookSender().execute({
+          cxId,
+          patientId,
+          message: asString(message),
+          sourceTimestamp: timestamp,
+          messageReceivedTimestamp: new Date().toISOString(),
+          rawDataFileKey,
+        });
+
+        connection.send(message.buildAck());
+
+        log(`Init S3 upload to bucket ${bucketName} with key ${rawDataFileKey}`);
         s3Utils.uploadFile({
           bucket: bucketName,
-          key: fileKey,
+          key: rawDataFileKey,
           file: Buffer.from(asString(message)),
           contentType: "text/plain",
         });
