@@ -19,6 +19,8 @@ import batchAnalysis from "./batch-analysis";
 import preview from "./preview";
 import findLargest from "./find-largest";
 import bundleVerification from "./bundle-verification";
+import drFirst from "./compare/dr-first";
+import convertDrFirstToCsv from "./compare/convert-dr-first";
 
 const program = new Command();
 program.addCommand(sftpAction);
@@ -37,4 +39,6 @@ program.addCommand(analyzeResponses);
 program.addCommand(preview);
 program.addCommand(findLargest);
 program.addCommand(bundleVerification);
+program.addCommand(drFirst);
+program.addCommand(convertDrFirstToCsv);
 program.parse();
