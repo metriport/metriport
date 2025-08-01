@@ -8,6 +8,7 @@ import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { Medication, MedicationStatement } from "@medplum/fhirtypes";
 import { ComprehendConfig } from "../types";
 import { isConfidentMatch } from "./shared";
+import { RXNORM_URL } from "../../../util/constants";
 
 export function buildMedicationResources(
   entities: RxNormEntity[],
@@ -40,7 +41,7 @@ function buildMedication(entity: RxNormEntity): Medication | undefined {
     code: {
       coding: [
         {
-          system: "http://www.nlm.nih.gov/research/umls/rxnorm",
+          system: RXNORM_URL,
           code: rxNormCode,
           display: entity.Text ?? "",
         },
