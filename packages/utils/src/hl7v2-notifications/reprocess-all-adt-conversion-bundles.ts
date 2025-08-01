@@ -44,8 +44,8 @@ async function reprocessAllAdtConversionBundles() {
           return;
         }
 
-        const reasonCodes = _.uniqBy(e.reasonCode, "coding.code");
         // Find condition codings that are an identical match to the encounter reason codings
+        const reasonCodes = e.reasonCode;
         const badConditions = bundle
           .getConditions()
           .filter(condition =>
