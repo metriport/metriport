@@ -15,24 +15,13 @@ async function reprocessAllAdtConversionBundles() {
   const s3Utils = new S3Utils(Config.getAWSRegion());
 
   // All existing CXs with ADT conversion bundles
-  const prefixes = [
-    "cxId=15ae0cea-e90a-4a49-82e4-42164c74b0aa/",
-    // "cxId=35d40878-d15e-46cd-931c-135f5a5550f2/",
-    // "cxId=4e0fb48c-e2c3-46c5-8713-e4926503fcb7/",
-    // "cxId=5af0e105-9439-4c02-939b-ecf7b230b418/",
-    // "cxId=9bb6740e-a5bc-4c03-b1c5-77441427dd3c/"
-  ];
+  const prefixes: string[] = [];
   const promises = prefixes.map(async prefix => {
     const { log } = out(`${prefix}`);
     const results = await s3Utils.listObjects(bucketName, prefix);
     log(`Found ${results.length} objects for prefix: ${prefix}`);
     let processedCount = 0;
-    const testResults = [
-      {
-        Key: "cxId=0b183560-ec8e-41f4-aaa4-6b467666abe5/ptId=0196ffb3-69c1-7575-9a1d-3216ded4d46a/ADT/d8bd248f-d4b4-3514-98e8-ff925ed42bb2/2025-05-07T03_43_13_716510801_A03.hl7.json",
-      },
-    ];
-    testResults.forEach(async result => {
+    results.forEach(async result => {
       log(`Processing object: ${result.Key}`);
       if (result.Key === undefined) {
         log("Key is undefined - and it shouldn't be");
