@@ -121,7 +121,7 @@ export function getFuzzySettings(query: string | undefined): {
      * - true: uses Damerau–Levenshtein distance (same as above, but transpositions/swaps are
      *   counted as single edits)
      */
-    fuzzy_transpositions: false,
+    fuzzy_transpositions: true,
   };
 }
 
