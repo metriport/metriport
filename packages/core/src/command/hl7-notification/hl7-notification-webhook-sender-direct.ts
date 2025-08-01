@@ -241,13 +241,7 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
                 system: coding.system ?? "",
               })) ?? [],
           });
-        }
-      }
-    }
-
-    if (bundle.entry) {
-      for (const entry of bundle.entry) {
-        if (entry.resource?.resourceType === "Encounter") {
+        } else if (entry.resource?.resourceType === "Encounter") {
           clinicalInformation.encounterReason = entry.resource.reasonCode ?? [];
         }
       }
