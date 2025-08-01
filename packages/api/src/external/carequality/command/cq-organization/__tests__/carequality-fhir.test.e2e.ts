@@ -91,25 +91,29 @@ describe("CarequalityManagementApiFhir", () => {
   let secondaryOrg: OrganizationWithId | undefined;
   let unrelatedOidOrg: OrganizationWithId | undefined;
   afterAll(async () => {
-    if (primaryOrg) {
-      try {
-        await api.deleteOrganization(primaryOrg.id);
-      } catch (error) {
-        console.error(`Failed to delete primary org (${primaryOrg.id})`, error);
+    if (getApiMode() === APIMode.production) {
+      return;
+    } else {
+      if (primaryOrg) {
+        try {
+          await api.deleteOrganization(primaryOrg.id);
+        } catch (error) {
+          console.error(`Failed to delete primary org (${primaryOrg.id})`, error);
+        }
       }
-    }
-    if (secondaryOrg) {
-      try {
-        await api.deleteOrganization(secondaryOrg.id);
-      } catch (error) {
-        console.error(`Failed to delete secondary org (${secondaryOrg.id})`, error);
+      if (secondaryOrg) {
+        try {
+          await api.deleteOrganization(secondaryOrg.id);
+        } catch (error) {
+          console.error(`Failed to delete secondary org (${secondaryOrg.id})`, error);
+        }
       }
-    }
-    if (unrelatedOidOrg) {
-      try {
-        await api.deleteOrganization(unrelatedOidOrg.id);
-      } catch (error) {
-        console.error(`Failed to delete unrelated OID org (${unrelatedOidOrg.id})`, error);
+      if (unrelatedOidOrg) {
+        try {
+          await api.deleteOrganization(unrelatedOidOrg.id);
+        } catch (error) {
+          console.error(`Failed to delete unrelated OID org (${unrelatedOidOrg.id})`, error);
+        }
       }
     }
   });
