@@ -6,11 +6,11 @@ describe("query", () => {
       const fuziness = getFuzziness(undefined);
       expect(fuziness).toBe("AUTO");
     });
-    it("returns 0 when query is less than 3 chars", async () => {
+    it("returns 0 when query is 3 chars or less", async () => {
       const fuziness = getFuzziness("CDA");
       expect(fuziness).toBe("0");
     });
-    it("returns 1 when query is more than 3 chars", async () => {
+    it("returns 1 when query is 4 chars or more", async () => {
       const fuziness = getFuzziness("CDAS");
       expect(fuziness).toBe("1");
     });
