@@ -8,7 +8,10 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus, { OK } from "http-status";
 import { z } from "zod";
-import { downloadDocument } from "../../command/medical/document/document-download";
+import {
+  getDocumentDownloadUrl,
+  getIncomingHl7MessageDownloadUrl,
+} from "../../command/medical/document/document-download";
 import { queryDocumentsAcrossHIEs } from "../../command/medical/document/document-query";
 import { startBulkGetDocumentUrls } from "../../command/medical/document/start-bulk-get-doc-url";
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
@@ -167,8 +170,11 @@ async function getDownloadUrl(req: Request): Promise<string> {
     throw new ForbiddenError(message); // This should be 404
   }
 
-  const url = await downloadDocument({ fileName: fileNameString, conversionType });
-  return url;
+  if (fileNameString.startsWith("location=hl7/")) {
+    return await getIncomingHl7MessageDownloadUrl({ fileName: fileNameString });
+  }
+
+  return await getDocumentDownloadUrl({ fileName: fileNameString, conversionType });
 }
 
 /** ---------------------------------------------------------------------------

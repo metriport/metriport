@@ -6,14 +6,13 @@ import { BundleWithEntry, buildBundleFromResources } from "../../../external/fhi
 import { buildDocIdFhirExtension } from "../../../external/fhir/shared/extensions/doc-id-extension";
 import { capture, out } from "../../../util";
 import { mapEncounterAndRelatedResources } from "./adt/encounter";
-import { getHl7MessageTypeOrFail, getMessageUniqueIdentifier } from "./msh";
-import { createFileKeyHl7Message } from "./shared";
+import { getHl7MessageTypeOrFail } from "./msh";
 
 export type Hl7ToFhirParams = {
   cxId: string;
   patientId: string;
   message: Hl7Message;
-  timestampString: string;
+  rawDataFileKey: string;
 };
 
 /**
@@ -23,23 +22,13 @@ export function convertHl7v2MessageToFhir({
   cxId,
   patientId,
   message,
-  timestampString,
+  rawDataFileKey,
 }: Hl7ToFhirParams): Bundle<Resource> {
   const { log } = out(`hl7v2 to fhir - cx: ${cxId}, pt: ${patientId}`);
   log("Beginning conversion.");
 
   const startedAt = new Date();
-  const { messageCode, triggerEvent } = getHl7MessageTypeOrFail(message);
-  const messageId = getMessageUniqueIdentifier(message);
-
-  const filePath = createFileKeyHl7Message({
-    cxId,
-    patientId,
-    timestamp: timestampString,
-    messageId,
-    messageCode,
-    triggerEvent,
-  });
+  const { messageCode } = getHl7MessageTypeOrFail(message);
 
   if (messageCode === "ADT") {
     const resources = mapEncounterAndRelatedResources(message, patientId);
@@ -47,7 +36,7 @@ export function convertHl7v2MessageToFhir({
     const duration = elapsedTimeFromNow(startedAt);
 
     log(`Conversion completed in ${duration} ms`);
-    return addHl7SourceExtension(bundle, filePath);
+    return addHl7SourceExtension(bundle, rawDataFileKey);
   }
 
   const msg = "HL7 message type isn't supported";
@@ -71,7 +60,7 @@ function addHl7SourceExtension(
   bundle: BundleWithEntry<Resource>,
   sourcePath: string
 ): Bundle<Resource> {
-  const ext = buildDocIdFhirExtension(sourcePath);
+  const ext = buildDocIdFhirExtension(sourcePath, "hl7");
   return {
     ...bundle,
     entry: bundle.entry.map(e => {
