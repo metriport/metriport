@@ -34,6 +34,11 @@ const INTERNAL_PATIENT_ENDPOINT = "internal/patient";
 const DISCHARGE_REQUERY_ENDPOINT = "monitoring/discharge-requery";
 const SIGNED_URL_DURATION_SECONDS = dayjs.duration({ minutes: 10 }).asSeconds();
 
+type ClinicalInformation = {
+  condition: Array<CodeableConcept>;
+  encounterReason: Array<CodeableConcept>;
+};
+
 export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhookSender {
   private readonly context = "hl7-notification-wh-sender";
 
@@ -219,15 +224,16 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
     );
   }
 
-  private extractClinicalInformation(bundle: Bundle<Resource>): {
-    condition: Array<CodeableConcept>;
-  } {
-    const conditions: Array<CodeableConcept> = [];
+  private extractClinicalInformation(bundle: Bundle<Resource>): ClinicalInformation {
+    const clinicalInformation: ClinicalInformation = {
+      condition: [],
+      encounterReason: [],
+    };
 
     if (bundle.entry) {
       for (const entry of bundle.entry) {
         if (entry.resource?.resourceType === "Condition" && entry.resource.code?.coding) {
-          conditions.push({
+          clinicalInformation.condition.push({
             coding:
               entry.resource.code?.coding?.map(coding => ({
                 code: coding.code ?? "",
@@ -239,7 +245,15 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
       }
     }
 
-    return { condition: conditions };
+    if (bundle.entry) {
+      for (const entry of bundle.entry) {
+        if (entry.resource?.resourceType === "Encounter") {
+          clinicalInformation.encounterReason = entry.resource.reasonCode ?? [];
+        }
+      }
+    }
+
+    return clinicalInformation;
   }
 }
 
