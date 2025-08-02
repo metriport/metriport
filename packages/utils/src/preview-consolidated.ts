@@ -49,4 +49,6 @@ program
     await main(cxId, ptId);
   });
 
+program.parse(process.argv);
+
 export default program;
