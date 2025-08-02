@@ -1,5 +1,5 @@
 import { Hl7Message, Hl7Segment } from "@medplum/core";
-import { CodeableConcept, Condition, EncounterDiagnosis } from "@medplum/fhirtypes";
+import { CodeableConcept, Coding, Condition, EncounterDiagnosis } from "@medplum/fhirtypes";
 import { createUuidFromText } from "@metriport/shared/common/uuid";
 import {
   buildConditionReference,
@@ -7,6 +7,7 @@ import {
 } from "../../../../external/fhir/shared/references";
 import { deduplicateConditions } from "../../../../fhir-deduplication/resources/condition";
 import { getCoding } from "./utils";
+import _, { compact } from "lodash";
 
 type ConditionWithId = Condition & {
   id: string;
@@ -17,21 +18,43 @@ type ConditionsAndReferences = {
   refs: EncounterDiagnosis[];
 };
 
-type EncounterReason = {
-  reasonCode: CodeableConcept[];
-  condition: Condition;
-  diagnosis: EncounterDiagnosis[];
-};
-
 type ConditionWithCode = Partial<Condition> & {
   code: CodeableConcept;
 };
+
+function isDisplayOnly(c: Coding) {
+  return c.code === undefined && c.system === undefined;
+}
+
+/**
+ * It's common to receive the encounter reason coding in a DG1 section as well.
+ * This removes the common noisy offenders that are not actual diagnoses.
+ * @param conditions Diagnoses
+ * @param encounterReasonCodings Encounter reason codings
+ * @returns Diagnoses without display only codings that originated from the encounter reason
+ */
+function withoutEncounterReasonCodings(conditions: Condition[], encounterReasonCodings: Coding[]) {
+  const reasonCodings = encounterReasonCodings.filter(isDisplayOnly);
+  return compact(
+    conditions.map(d => {
+      const diagnosisCodings = d.code?.coding;
+      if (diagnosisCodings === undefined) return;
+      const withoutEncounterReason = _.differenceWith(diagnosisCodings, reasonCodings, _.isEqual);
+
+      return { ...d, code: { ...d.code, coding: withoutEncounterReason } };
+    })
+  );
+}
 
 export function getConditionsAndReferences(
   adt: Hl7Message,
   patientId: string
 ): ConditionsAndReferences {
-  const diagnoses = getAllDiagnoses(adt, patientId);
+  let diagnoses = getAllDiagnoses(adt, patientId);
+  const encounterReasonCodings = getEncounterReasonCodings(adt);
+  if (encounterReasonCodings !== undefined) {
+    diagnoses = withoutEncounterReasonCodings(diagnoses, encounterReasonCodings);
+  }
 
   const uniqueConditions = deduplicateConditions(diagnoses, false).combinedResources;
   const conditionReferences = uniqueConditions.map(condition =>
@@ -44,10 +67,7 @@ export function getConditionsAndReferences(
   };
 }
 
-export function getEncounterReason(
-  adt: Hl7Message,
-  patientId: string
-): EncounterReason | undefined {
+export function getEncounterReasonCodings(adt: Hl7Message): Coding[] | undefined {
   const pv2Segment = adt.getSegment("PV2");
   if (!pv2Segment || pv2Segment.fields.length < 1) return undefined;
 
@@ -58,15 +78,7 @@ export function getEncounterReason(
   const coding = [mainCoding, secondaryCoding].flatMap(c => c ?? []);
   if (coding.length < 1) return undefined;
 
-  // TODO 2883: See if we can parse (or infer) onsetDateTime and other fields (so far looks like a no)
-  const condition = buildCondition({ code: { coding } }, patientId);
-  const diagnosisReference = buildConditionReference({ resource: condition });
-
-  return {
-    reasonCode: [{ coding }],
-    condition,
-    diagnosis: [diagnosisReference],
-  };
+  return coding;
 }
 
 export function getAllDiagnoses(adt: Hl7Message, patientId: string): Condition[] {
