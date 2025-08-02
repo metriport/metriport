@@ -68,6 +68,7 @@ export async function processRequest(req: Request): Promise<Bundle<Resource>> {
   ];
 
   await ensureCcdExists({ cxId, patientId, log });
+
   const metadataFileContents = await getMetadataDocumentContents(cxId, patientId);
   const docRefs: DocumentReference[] = [];
   for (const fileContents of metadataFileContents) {
@@ -110,7 +111,7 @@ function getOrgOIDAndPatientId(req: Request): {
   patientId: string;
 } {
   const query = req.query;
-  const executeWithParam = (paramName: string) => {
+  function executeWithParam(paramName: string) {
     const param = query[paramName];
     if (typeof param !== "string") return undefined;
     const patientIdRaw = param?.split("|") ?? [];
@@ -118,7 +119,7 @@ function getOrgOIDAndPatientId(req: Request): {
     const patientId = (patientIdRaw[1] ?? "").replace("urn:oid:", "").replace("urn:uuid:", "");
     if (orgOID?.trim().length && patientId?.trim().length) return { orgOID, patientId };
     return undefined;
-  };
+  }
   for (const param of patientParams) {
     const response = executeWithParam(param);
     if (response) return response;
