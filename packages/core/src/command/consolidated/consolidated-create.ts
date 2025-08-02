@@ -18,6 +18,7 @@ import { getDocuments as getDocumentReferences } from "../../external/fhir/docum
 import { toFHIR as patientToFhir } from "../../external/fhir/patient/conversion";
 import { insertSourceDocumentToAllDocRefMeta } from "../../external/fhir/shared/meta";
 import { getBundleResources as getPharmacyResources } from "../../external/surescripts/command/bundle/get-bundle";
+import { getBundleResources as getLabResources } from "../../external/quest/command/bundle/get-bundle";
 import { capture, executeAsynchronously, out } from "../../util";
 import { Config } from "../../util/config";
 import { processAsyncError } from "../../util/error/shared";
@@ -68,6 +69,7 @@ export async function createConsolidatedFromConversions({
     getConversions({ cxId, patient, sourceBucketName }),
     getDocumentReferences({ cxId, patientId }),
     getPharmacyResources({ cxId, patientId }),
+    getLabResources({ cxId, patientId }),
     isAiBriefFeatureFlagEnabledForCx(cxId),
   ]);
   log(`Got ${conversions.length} resources from conversions`);
