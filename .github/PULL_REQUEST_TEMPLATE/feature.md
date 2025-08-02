@@ -50,6 +50,7 @@ _[Add and remove items below accordingly]_
 - [ ] FFs have been set in Staging, Production, and Sandbox
 - [ ] Happy-path E2E test created checking new FF flow
 - [ ] No dependencies between API and Infra that will cause errors during deployment
+- [ ] FHIR Integration Test ran with validation
 - [ ] _[action n-1]_
 - [ ] _[action n]_
 - [ ] Merge this
