@@ -1,6 +1,8 @@
 export const NPI_URL = "http://hl7.org/fhir/sid/us-npi";
 export const DEA_SCHEDULE_URL = "http://hl7.org/fhir/sid/us-dea";
 export const UNIT_OF_MEASURE_URL = "http://unitsofmeasure.org";
+export const RELATED_ARTIFACT_URL =
+  "http://hl7.org/fhir/StructureDefinition/artifact-relatedArtifact";
 
 export const SOURCE_OF_PAYMENT_TYPOLOGY_SYSTEM = "urn:oid:2.16.840.1.113883.3.221.5";
 

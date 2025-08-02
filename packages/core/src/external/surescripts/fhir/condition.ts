@@ -1,17 +1,13 @@
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
-import { Condition } from "@medplum/fhirtypes";
+import { Condition, Patient } from "@medplum/fhirtypes";
 import { ResponseDetail } from "../schema/response";
-import { SurescriptsContext } from "./types";
 import { getPatientReference } from "./patient";
 import { getSurescriptsDataSourceExtension } from "./shared";
 import { ICD_10_URL } from "../../../util/constants";
 
-export function getCondition(
-  context: SurescriptsContext,
-  detail: ResponseDetail
-): Condition | undefined {
+export function getCondition(patient: Patient, detail: ResponseDetail): Condition | undefined {
   if (!detail.diagnosisICD10Code) return undefined;
-  const subject = getPatientReference(context.patient);
+  const subject = getPatientReference(patient);
 
   return {
     resourceType: "Condition",

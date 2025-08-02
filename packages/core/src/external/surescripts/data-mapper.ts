@@ -7,6 +7,7 @@ import { Config } from "../../util/config";
 import { getCustomerData } from "./api/get-customer";
 import { getPatient } from "./api/get-patient";
 import { getPatientIdsForFacility } from "./api/get-patient-ids-for-facility";
+import { recreateConsolidatedBundle } from "./api/recreate-consolidated";
 import {
   SurescriptsBatchRequest,
   SurescriptsBatchRequestData,
@@ -85,6 +86,13 @@ export class SurescriptsDataMapper {
       }
     );
     return patients;
+  }
+
+  async recreateConsolidatedBundle(
+    cxId: string,
+    patientId: string
+  ): Promise<{ requestId: string }> {
+    return recreateConsolidatedBundle({ cxId, patientId }, this.axiosInstance);
   }
 
   async getCustomerData(cxId: string): Promise<CustomerData> {

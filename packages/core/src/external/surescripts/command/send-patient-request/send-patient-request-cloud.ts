@@ -16,7 +16,7 @@ export class SurescriptsSendPatientRequestCloud implements SurescriptsSendPatien
     this.sqsClient = sqsClient ?? new SQSClient({ region: region ?? Config.getAWSRegion() });
   }
 
-  async sendPatientRequest(requestData: SurescriptsPatientRequest): Promise<void> {
+  async sendPatientRequest(requestData: SurescriptsPatientRequest): Promise<string | undefined> {
     const payload = JSON.stringify(requestData);
     await executeWithNetworkRetries(async () => {
       await this.sqsClient.sendMessageToQueue(this.surescriptsSendPatientRequestQueueUrl, payload, {
@@ -25,5 +25,7 @@ export class SurescriptsSendPatientRequestCloud implements SurescriptsSendPatien
         messageGroupId: requestData.cxId,
       });
     });
+    // TODO: remove for queueing
+    return undefined;
   }
 }
