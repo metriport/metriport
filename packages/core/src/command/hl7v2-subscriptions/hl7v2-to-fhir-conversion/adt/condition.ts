@@ -23,7 +23,7 @@ type ConditionWithCode = Partial<Condition> & {
 };
 
 function isDisplayOnly(c: Coding) {
-  return c.code === undefined && c.system === undefined;
+  return c.display !== undefined && c.code === undefined && c.system === undefined;
 }
 
 /**
