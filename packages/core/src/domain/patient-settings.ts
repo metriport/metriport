@@ -3,6 +3,8 @@ import {
   adtSubscriptionRequestSchema,
   BulkPatientSettingsRequest,
   bulkPatientSettingsRequestSchema,
+  QuestMonitoringRequest,
+  questMonitoringRequestSchema,
   PatientSettingsRequest,
   patientSettingsRequestSchema,
   queryMetaSchema,
@@ -19,6 +21,7 @@ const { log } = out("PatientSettings");
 
 export type Subscriptions = {
   adt?: string[];
+  quest?: boolean;
 };
 
 export type PatientSettingsData = {
@@ -86,4 +89,8 @@ export function parseAdtSubscriptionRequest(data: unknown): AdtSubscriptionReque
   const result = adtSubscriptionRequestSchema.parse(data);
   throwOnInvalidHieName(result.hieName);
   return result;
+}
+
+export function parseQuestMonitoringRequest(data: unknown): QuestMonitoringRequest {
+  return questMonitoringRequestSchema.parse(data);
 }
