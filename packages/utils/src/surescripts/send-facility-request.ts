@@ -1,4 +1,5 @@
 import { Command } from "commander";
+import { out } from "@metriport/core/util/log";
 import { SurescriptsSftpClient } from "@metriport/core/external/surescripts/client";
 import { SurescriptsDataMapper } from "@metriport/core/external/surescripts/data-mapper";
 
@@ -25,9 +26,14 @@ program
       facilityId: string;
       csvOutput: string;
     }) => {
+      const client = new SurescriptsSftpClient({
+        logLevel: "info",
+      });
       const dataMapper = new SurescriptsDataMapper();
+      const { log } = out(`Surescripts sendFacilityRequest - cxId ${cxId}`);
+
       const patientIds = await dataMapper.getPatientIdsForFacility({ cxId, facilityId });
-      console.log(`Found ${patientIds.length} patients`);
+      log(`Found ${patientIds.length} patients`);
 
       const requests: SurescriptsPatientRequestData[] = [];
       await executeAsynchronously(
@@ -45,13 +51,9 @@ program
         }
       );
 
-      const client = new SurescriptsSftpClient({
-        logLevel: "info",
-      });
-      console.log("Sending " + requests.length + " requests");
+      log("Sending " + requests.length + " requests");
       const identifiers = await client.sendBatchPatientRequest(requests);
-      console.log("Done writing facility requests");
-      await client.disconnect();
+      log("Done writing facility requests");
 
       const csvContent =
         `"transmission_id","patient_id"\n` +
