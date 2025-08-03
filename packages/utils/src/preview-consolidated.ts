@@ -10,8 +10,13 @@ async function main(cxId: string, ptId: string) {
   const trimmedCxId = cxId.trim();
   const trimmedPtId = ptId.trim();
   const fileName = `${trimmedCxId}/${trimmedPtId}/${trimmedCxId}_${trimmedPtId}_CONSOLIDATED_DATA.json`;
-  const durationSeconds = getEnvVarOrFail("DURATION_SECONDS");
+  const durationSecondsString = getEnvVarOrFail("DURATION_SECONDS");
   const bucketName = getEnvVarOrFail("MEDICAL_BUCKET_NAME");
+  const durationSeconds = Number(durationSecondsString);
+
+  if (isNaN(durationSeconds)) {
+    throw new MetriportError(`Your DURATION_SECONDS is NaN.`, undefined, { durationSeconds });
+  }
 
   const fileExists = await S3Utils.fileExists(bucketName, fileName);
 
@@ -26,7 +31,7 @@ async function main(cxId: string, ptId: string) {
   const presignedUrl = await S3Utils.getSignedUrl({
     bucketName,
     fileName,
-    durationSeconds: Number(durationSeconds),
+    durationSeconds,
   });
 
   const encoded = encodeURIComponent(presignedUrl);
