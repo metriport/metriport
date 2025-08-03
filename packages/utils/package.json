@@ -38,7 +38,8 @@
     "load-test": "artillery run ./src/terminology/load-test.yml",
     "npi": "ts-node src/facility/make-npi",
     "fhir-demo": "ts-node src/fhir-sdk-demo.ts",
-    "test-typing": "ts-node src/test-typing.ts"
+    "test-typing": "ts-node src/test-typing.ts",
+    "preview": "ts-node src/preview-consolidated.ts"
   },
   "keywords": [],
   "author": "",
