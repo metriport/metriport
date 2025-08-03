@@ -15,6 +15,7 @@ import {
 import { buildDayjs } from "@metriport/shared/common/date";
 import { WriteBackFiltersPerResourceType } from "@metriport/shared/interface/external/ehr/shared";
 import { EhrSource } from "@metriport/shared/interface/external/ehr/source";
+import { isLoincCoding } from "@metriport/shared/medical";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { partition } from "lodash";
@@ -50,6 +51,27 @@ dayjs.extend(duration);
 const parallelRequests = 2;
 const minJitter = dayjs.duration(0, "seconds");
 const maxJitter = dayjs.duration(5, "seconds");
+
+const displayToLoincCodeMap: Record<string, string> = {
+  "comprehensive metabolic panel": "24322-0",
+  "cbc with differential": "57021-8",
+  "basic metabolic panel": "51990-0",
+  "basic metabolic panel (c7)": "51990-0",
+  "glycohemoglobin (a1c)": "4548-4",
+  "hemoglobin & hematocrit": "4548-4",
+  "Lipase [Enzymatic activity/volume] in Serum or Plasma": "24331-1",
+};
+
+// 3016-3		Thyrotropin [Units/volume] in Serum or Plasma
+// 3024-7		Thyroxine (T4) free [Mass/volume] in Serum or Plasma
+// 4548-4		Hemoglobin A1c/Hemoglobin.total in Blood
+// 24322-0		Comprehensive metabolic 1998 panel - Serum or Plasma
+// 24323-8		Comprehensive metabolic 2000 panel - Serum or Plasma
+// 24331-1		Lipid 1996 panel - Serum or Plasma
+// 51990-0		Basic metabolic panel - Blood
+// 57021-8		CBC W Auto Differential panel - Blood
+// 57698-3		Lipid panel with direct LDL - Serum or Plasma
+// 58410-2		CBC panel - Blood by Automated count
 
 const supportedWriteBackResourceTypes: ResourceType[] = [
   "Condition",
@@ -361,8 +383,12 @@ export function shouldWriteBackResource({
       r => r.resourceType === "DiagnosticReport" && isLabPanel(r)
     ) as DiagnosticReport[];
     if (skipLabPanelDate(diagnosticReport, writeBackFilters)) return false;
-    if (skipLabPanelLoinCode(diagnosticReport, writeBackFilters)) return false;
-    if (skipLabPanelNonTrending(diagnosticReport, diagnosticReports, writeBackFilters)) {
+    const normalizedDiagReport = normalizeDiagnosticReportCoding(
+      diagnosticReport,
+      writeBackFilters
+    );
+    if (skipLabPanelLoinCode(normalizedDiagReport, writeBackFilters)) return false;
+    if (skipLabPanelNonTrending(normalizedDiagReport, diagnosticReports, writeBackFilters)) {
       return false;
     }
     return true;
@@ -409,6 +435,57 @@ export function skipLabPanelDate(
     beginDate = beginDate.subtract(relativeDateRange.years, "year");
   }
   return buildDayjs(observationDate).isBefore(beginDate);
+}
+
+function normalizeDiagnosticReportCoding(
+  diagnosticReport: DiagnosticReport,
+  writeBackFilters: WriteBackFiltersPerResourceType
+): DiagnosticReport {
+  const code = diagnosticReport.code;
+  const loincCodeFilters = writeBackFilters.labPanel?.loincCodes;
+  if (!loincCodeFilters) return diagnosticReport;
+
+  for (const coding of code?.coding ?? []) {
+    let checkDisplay = false;
+    const code = coding.code;
+
+    if (isLoincCoding(coding)) {
+      if (!code) {
+        checkDisplay = true;
+      } else if (code.toLowerCase() === "unknown" || code.toLowerCase() === "unk") {
+        checkDisplay = true;
+      } else if (loincCodeFilters.includes(code)) {
+        return diagnosticReport;
+      }
+    } else {
+      checkDisplay = true;
+    }
+
+    if (checkDisplay) {
+      if (coding.display) {
+        const display = coding.display;
+
+        const newLoincCoding = displayToLoincCodeMap[display];
+        if (newLoincCoding) {
+          return {
+            ...diagnosticReport,
+            code: {
+              ...diagnosticReport.code,
+              coding: [
+                // ...(diagnosticReport.code?.coding ?? []),
+                {
+                  code: newLoincCoding,
+                  display,
+                  system: "http://loinc.org",
+                },
+              ],
+            },
+          };
+        }
+      }
+    }
+  }
+  return diagnosticReport;
 }
 
 export function skipLabPanelLoinCode(
