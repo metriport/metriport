@@ -39,7 +39,7 @@
     "npi": "ts-node src/facility/make-npi",
     "fhir-demo": "ts-node src/fhir-sdk-demo.ts",
     "test-typing": "ts-node src/test-typing.ts",
-    "preview": "ts-node src/preview-consolidated.ts"
+    "preview-consolidated": "ts-node src/preview-consolidated.ts"
   },
   "keywords": [],
   "author": "",
