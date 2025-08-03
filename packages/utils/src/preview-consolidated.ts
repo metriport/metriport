@@ -4,6 +4,7 @@ dotenv.config();
 import { getS3UtilsInstance } from "@metriport/core/external/ehr/bundle/bundle-shared";
 import { getEnvVarOrFail, MetriportError } from "../../shared/dist";
 import { Command } from "commander";
+import { openPreviewUrl } from "./surescripts/shared";
 
 async function main(cxId: string, ptId: string) {
   const S3Utils = getS3UtilsInstance();
@@ -34,11 +35,7 @@ async function main(cxId: string, ptId: string) {
     durationSeconds,
   });
 
-  const encoded = encodeURIComponent(presignedUrl);
-
-  const url = `https://preview.metriport.com?url=${encoded}`;
-
-  console.log(`Open this url: ${url}`);
+  openPreviewUrl(presignedUrl);
 }
 
 const program = new Command();
