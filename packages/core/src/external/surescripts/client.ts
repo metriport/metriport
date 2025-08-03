@@ -114,6 +114,44 @@ export class SurescriptsSftpClient extends SftpClient {
   }
 
   /**
+   * Send multiple patient requests in a single connection event. Since the latency of a Surescripts
+   * load is dominated by connect/disconnect latency, this allows large rosters to be loaded 10x faster.
+   */
+  async sendBatchPatientRequest(
+    requests: SurescriptsPatientRequestData[]
+  ): Promise<SurescriptsFileIdentifier[]> {
+    const identifiers: SurescriptsFileIdentifier[] = [];
+    try {
+      await this.connect();
+
+      let totalRequests = 0;
+      for (const request of requests) {
+        const transmissionId = this.generateTransmissionId().toString("ascii");
+        const content = generatePatientRequestFile({
+          client: this,
+          transmissionId,
+          ...request,
+        });
+        if (!content) continue;
+        this.log(
+          `${totalRequests.toString().padStart(6, " ")} - sending request for ${
+            request.patient.id
+          } (${transmissionId})`
+        );
+        totalRequests++;
+
+        const requestFileName = buildRequestFileName(transmissionId);
+        await this.writeToSurescripts(requestFileName, content);
+        identifiers.push({ transmissionId, populationId: request.patient.id });
+      }
+
+      return identifiers;
+    } finally {
+      await this.disconnect();
+    }
+  }
+
+  /**
    * Requests can take up to an hour to show up in Surescripts history.
    * @param transmissionId the transmission ID to verify
    * @returns true if the request is present in the Surescripts history, false otherwise
@@ -264,7 +302,7 @@ export class SurescriptsSftpClient extends SftpClient {
       "from_surescripts",
       responseFileNamePrefix
     );
-    return replicatedFilesWithPrefix.find(fileName => {
+    const replicatedResponses = replicatedFilesWithPrefix.filter(fileName => {
       const parsedFileName = parseResponseFileName(fileName);
       return (
         parsedFileName &&
@@ -272,6 +310,8 @@ export class SurescriptsSftpClient extends SftpClient {
         parsedFileName.populationId === populationId
       );
     });
+    const latestReplicatedResponse = replicatedResponses[replicatedResponses.length - 1];
+    return latestReplicatedResponse;
   }
 
   /**
