@@ -6,7 +6,12 @@ import { getEnvVarOrFail, MetriportError } from "../../shared/dist";
 import { Command } from "commander";
 import { openPreviewUrl } from "./surescripts/shared";
 
-async function main(cxId: string, ptId: string) {
+type PreviewParams = {
+  cxId: string;
+  ptId: string;
+};
+
+async function main({ cxId, ptId }: PreviewParams) {
   const S3Utils = getS3UtilsInstance();
   const trimmedCxId = cxId.trim();
   const trimmedPtId = ptId.trim();
@@ -42,14 +47,12 @@ const program = new Command();
 
 program
   .name("preview-consolidated")
-  .option("--cx-id <cxId>", "The customer ID")
-  .option("--pt-id <ptId>", "The patient ID")
+  .requiredOption("--cx-id <cxId>", "The customer ID")
+  .requiredOption("--pt-id <ptId>", "The patient ID")
   .description("Previews a patients consolidated bundle")
   .showHelpAfterError()
   .version("1.0.0")
-  .action(async function ({ cxId, ptId }) {
-    await main(cxId, ptId);
-  });
+  .action(main);
 
 program.parse(process.argv);
 
