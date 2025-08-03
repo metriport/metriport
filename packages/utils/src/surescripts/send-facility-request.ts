@@ -4,6 +4,7 @@ import { SurescriptsDataMapper } from "@metriport/core/external/surescripts/data
 
 import { writeSurescriptsRunsFile } from "./shared";
 import { SurescriptsPatientRequestData } from "@metriport/core/external/surescripts/types";
+import { executeAsynchronously } from "@metriport/core/util/concurrency";
 const program = new Command();
 
 program
@@ -29,11 +30,20 @@ program
       console.log(`Found ${patientIds.length} patients`);
 
       const requests: SurescriptsPatientRequestData[] = [];
-      for (const patientId of patientIds) {
-        console.log(`Building request for patient ${patientId}`);
-        const requestData = await dataMapper.getPatientRequestData({ cxId, facilityId, patientId });
-        requests.push(requestData);
-      }
+      await executeAsynchronously(
+        patientIds,
+        async patientId => {
+          const requestData = await dataMapper.getPatientRequestData({
+            cxId,
+            facilityId,
+            patientId,
+          });
+          requests.push(requestData);
+        },
+        {
+          numberOfParallelExecutions: 10,
+        }
+      );
 
       const client = new SurescriptsSftpClient({
         logLevel: "info",
