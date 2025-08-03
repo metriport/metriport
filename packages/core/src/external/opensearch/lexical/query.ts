@@ -41,7 +41,7 @@ export function createLexicalSearchQuery({ query, cxId, patientId }: LexicalSear
                       match: {
                         [contentFieldName]: {
                           query: actualQuery,
-                          fuzziness: "AUTO",
+                          ...getFuzzySettings(actualQuery),
                         },
                       },
                     },
@@ -103,4 +103,30 @@ export function createQueryHasData({
       bool: { must: getPatientFilters(cxId, patientId) },
     },
   };
+}
+
+/**
+ * @see https://docs.opensearch.org/latest/query-dsl/full-text/match/#fuzziness
+ */
+export function getFuzzySettings(query: string | undefined): {
+  fuzziness: string;
+  fuzzy_transpositions: boolean;
+} {
+  return {
+    fuzziness: getFuzziness(query),
+    /**
+     * Whether to allow transpositions/character swaps.
+     * - false: uses Levenshtein distance (calculated by counting the number of insertions,
+     *   deletions, and substitutions required to transform one string into the other)
+     * - true: uses Damerau–Levenshtein distance (same as above, but transpositions/swaps are
+     *   counted as single edits)
+     */
+    fuzzy_transpositions: true,
+  };
+}
+
+export function getFuzziness(query: string | undefined) {
+  if (!query) return "AUTO";
+  if (query.length < 4) return "0";
+  return "1";
 }
