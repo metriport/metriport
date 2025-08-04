@@ -15,6 +15,7 @@ import {
 import { buildDayjs } from "@metriport/shared/common/date";
 import { WriteBackFiltersPerResourceType } from "@metriport/shared/interface/external/ehr/shared";
 import { EhrSource } from "@metriport/shared/interface/external/ehr/source";
+import { isLoincCoding } from "@metriport/shared/medical";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { partition } from "lodash";
@@ -50,6 +51,20 @@ dayjs.extend(duration);
 const parallelRequests = 2;
 const minJitter = dayjs.duration(0, "seconds");
 const maxJitter = dayjs.duration(5, "seconds");
+
+const displayToLoincCodeMap: Record<string, string> = {
+  "comprehensive metabolic panel": "24322-0",
+  "cbc with differential": "57021-8",
+  "basic metabolic panel": "51990-0",
+  "basic metabolic panel (c7)": "51990-0",
+  "glycohemoglobin (a1c)": "4548-4",
+  "hemoglobin & hematocrit": "4548-4",
+  "hemoglobin and hematocrit panel - blood": "4548-4",
+  "lipase [enzymatic activity/volume] in serum or plasma": "24331-1",
+  "thyroxine (t4) free [mass/volume] in serum or plasma": "3016-3",
+  "thyroid stimulating hormone (tsh)": "3016-3",
+  "tsh w/ reflex ft4": "3016-3",
+};
 
 const supportedWriteBackResourceTypes: ResourceType[] = [
   "Condition",
@@ -351,18 +366,19 @@ export function shouldWriteBackResource({
       r => r.resourceType === "Observation" && isLab(r)
     ) as Observation[];
     if (skipLabDate(observation, writeBackFilters)) return false;
-    if (skipLabLoinCode(observation, writeBackFilters)) return false;
+    if (skipLabLoincCode(observation, writeBackFilters)) return false;
     if (skipLabNonTrending(observation, labObservations, writeBackFilters)) return false;
     return true;
   } else if (writeBackResourceType === "lab-panel") {
     if (writeBackFilters.labPanel?.disabled) return false;
     const diagnosticReport = resource as DiagnosticReport;
-    const diagnosticReports = resources.filter(
-      r => r.resourceType === "DiagnosticReport" && isLabPanel(r)
-    ) as DiagnosticReport[];
+    const diagnosticReports = resources
+      .filter(r => r.resourceType === "DiagnosticReport" && isLabPanel(r))
+      .map(r => normalizeDiagnosticReportCoding(r as DiagnosticReport)) as DiagnosticReport[];
     if (skipLabPanelDate(diagnosticReport, writeBackFilters)) return false;
-    if (skipLabPanelLoinCode(diagnosticReport, writeBackFilters)) return false;
-    if (skipLabPanelNonTrending(diagnosticReport, diagnosticReports, writeBackFilters)) {
+    const normalizedDiagReport = normalizeDiagnosticReportCoding(diagnosticReport);
+    if (skipLabPanelLoincCode(normalizedDiagReport, writeBackFilters)) return false;
+    if (skipLabPanelNonTrending(normalizedDiagReport, diagnosticReports, writeBackFilters)) {
       return false;
     }
     return true;
@@ -411,7 +427,37 @@ export function skipLabPanelDate(
   return buildDayjs(observationDate).isBefore(beginDate);
 }
 
-export function skipLabPanelLoinCode(
+export function normalizeDiagnosticReportCoding(
+  diagnosticReport: DiagnosticReport
+): DiagnosticReport {
+  const code = diagnosticReport.code;
+
+  let foundLoincCode: string | undefined;
+  const matchingCoding = code?.coding?.find(c => {
+    if (isLoincCoding(c)) return false;
+    const display = c.display?.trim().toLowerCase() ?? "";
+    foundLoincCode = displayToLoincCodeMap[display];
+    return foundLoincCode;
+  });
+
+  if (!matchingCoding?.display || !foundLoincCode) return diagnosticReport;
+
+  const newLoincCoding = {
+    code: foundLoincCode,
+    display: matchingCoding.display,
+    system: "http://loinc.org",
+  };
+
+  return {
+    ...diagnosticReport,
+    code: {
+      ...diagnosticReport.code,
+      coding: [newLoincCoding],
+    },
+  };
+}
+
+export function skipLabPanelLoincCode(
   diagnosticReport: DiagnosticReport,
   writeBackFilters: WriteBackFiltersPerResourceType
 ): boolean {
@@ -457,7 +503,7 @@ export function skipLabDate(
   return buildDayjs(observationDate).isBefore(beginDate);
 }
 
-export function skipLabLoinCode(
+export function skipLabLoincCode(
   observation: Observation,
   writeBackFilters: WriteBackFiltersPerResourceType
 ): boolean {
