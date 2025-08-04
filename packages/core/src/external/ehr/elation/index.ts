@@ -1166,13 +1166,6 @@ class ElationApi {
       );
     }
 
-    const formattedLabPanelStatus = this.mapDiagnosticReportStatusToElation(
-      diagnosticReport.status
-    );
-    if (!formattedLabPanelStatus || !validLabResultStatuses.includes(formattedLabPanelStatus)) {
-      throw new BadRequestError("Invalid diagnostic report status", undefined, additionalInfo);
-    }
-
     const diagReportTitle = this.getMostInformativeTitle(diagnosticReport.code);
     if (!diagReportTitle) {
       throw new BadRequestError("No title found for diagnostic report", undefined, additionalInfo);
@@ -1191,7 +1184,7 @@ class ElationApi {
         return [];
       }
       const resultStatus = getObservationResultStatus(observation);
-      if (!resultStatus) {
+      if (!resultStatus || resultStatus != "final") {
         return [];
       }
       const formattedResultStatus = resultStatus.toUpperCase();
@@ -1235,20 +1228,25 @@ class ElationApi {
       };
     });
 
+    if (observationResults.length < 1) {
+      throw new BadRequestError(
+        "No valid observations found for lab panel",
+        undefined,
+        additionalInfo
+      );
+    }
+
     const grids: ElationLab["grids"] = [
       {
         accession_number: uuidv7(),
         resulted_date: formattedReportDate,
         collected_date: formattedReportDate,
-        status: formattedLabPanelStatus,
+        status: "FINAL",
         note: "Added via Metriport App",
         results: observationResults,
       },
     ];
 
-    if (grids.length < 1) {
-      throw new BadRequestError("No grids found for diagnostic report", undefined, additionalInfo);
-    }
     return {
       report_type: "Lab",
       document_date: formattedReportDate,
@@ -1332,30 +1330,6 @@ class ElationApi {
 
   private createWriteBackPath(resourceType: string, resourceId: string | undefined): string {
     return `write-back/${resourceType}/${resourceId ?? "unknown"}`;
-  }
-
-  /**
-   * Maps the FHIR DiagnosticReport status to the Elation status.
-   *
-   * @see https://hl7.org/fhir/R4/valueset-request-status.html
-   * @see https://docs.elationhealth.com/reference/the-report-object
-   */
-  private diagnosticReportStatusMap = {
-    amended: "AMENDED",
-    corrected: "CORRECTED",
-    cancelled: "DELETED",
-    "entered-in-error": "ERROR",
-    final: "FINAL",
-    partial: "PARTIAL",
-    registered: "PENDING",
-    preliminary: "PRELIMINARY",
-    appended: "AMENDED",
-    unknown: "PARTIAL",
-  };
-
-  private mapDiagnosticReportStatusToElation(status: string | undefined) {
-    if (!status) return undefined;
-    return this.diagnosticReportStatusMap[status as keyof typeof this.diagnosticReportStatusMap];
   }
 }
 

@@ -1,5 +1,4 @@
 import {
-  Coding,
   Condition,
   DiagnosticReport,
   Observation,
@@ -16,7 +15,6 @@ import {
 import { buildDayjs } from "@metriport/shared/common/date";
 import { WriteBackFiltersPerResourceType } from "@metriport/shared/interface/external/ehr/shared";
 import { EhrSource } from "@metriport/shared/interface/external/ehr/source";
-import { isLoincCoding } from "@metriport/shared/medical";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { partition } from "lodash";
@@ -373,9 +371,9 @@ export function shouldWriteBackResource({
   } else if (writeBackResourceType === "lab-panel") {
     if (writeBackFilters.labPanel?.disabled) return false;
     const diagnosticReport = resource as DiagnosticReport;
-    const diagnosticReports = resources.filter(
-      r => r.resourceType === "DiagnosticReport" && isLabPanel(r)
-    ) as DiagnosticReport[];
+    const diagnosticReports = resources
+      .filter(r => r.resourceType === "DiagnosticReport" && isLabPanel(r))
+      .map(r => normalizeDiagnosticReportCoding(r as DiagnosticReport)) as DiagnosticReport[];
     if (skipLabPanelDate(diagnosticReport, writeBackFilters)) return false;
     const normalizedDiagReport = normalizeDiagnosticReportCoding(diagnosticReport);
     if (skipLabPanelLoincCode(normalizedDiagReport, writeBackFilters)) return false;
@@ -433,36 +431,26 @@ export function normalizeDiagnosticReportCoding(
 ): DiagnosticReport {
   const code = diagnosticReport.code;
 
-  const loincCodingMap = new Map<string, Coding>();
-  const nonLoincCodingMap = new Map<string, Coding>();
+  const matchingDisplay = code?.coding?.find(
+    c => displayToLoincCodeMap[c.display?.trim().toLowerCase() ?? ""]
+  )?.display;
 
-  for (const coding of code?.coding ?? []) {
-    const code = coding.code;
-    if (isLoincCoding(coding) && code) {
-      loincCodingMap.set(code, coding);
-    } else {
-      if (code) nonLoincCodingMap.set(code, coding);
+  if (!matchingDisplay) return diagnosticReport;
 
-      const display = coding.display;
-      if (display && typeof display === "string") {
-        const newLoincCode = displayToLoincCodeMap[display.trim().toLowerCase()];
-        if (newLoincCode) {
-          const newLoincCoding = {
-            code: newLoincCode,
-            display,
-            system: "http://loinc.org",
-          };
-          loincCodingMap.set(newLoincCode, newLoincCoding);
-        }
-      }
-    }
-  }
+  const newLoincCode = displayToLoincCodeMap[matchingDisplay.trim().toLowerCase()];
+  if (!newLoincCode) return diagnosticReport;
+
+  const newLoincCoding = {
+    code: newLoincCode,
+    display: matchingDisplay,
+    system: "http://loinc.org",
+  };
 
   return {
     ...diagnosticReport,
     code: {
       ...diagnosticReport.code,
-      coding: [...loincCodingMap.values(), ...nonLoincCodingMap.values()],
+      coding: [newLoincCoding],
     },
   };
 }
