@@ -284,7 +284,7 @@ export function createAPIService({
             USAGE_URL: props.config.usageReportUrl,
           }),
           ...(incomingHl7NotificationBucket && {
-            INCOMING_HL7_NOTIFICATION_BUCKET_NAME: incomingHl7NotificationBucket.bucketName,
+            HL7_INCOMING_MESSAGE_BUCKET_NAME: incomingHl7NotificationBucket.bucketName,
           }),
           CONVERSION_RESULT_BUCKET_NAME: conversionBucket.bucketName,
           ...(props.config.medicalDocumentsBucketName && {
