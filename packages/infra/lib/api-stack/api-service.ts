@@ -173,7 +173,7 @@ export function createAPIService({
   ehrGetAppointmentsLambda: ILambda;
   ehrBundleBucket: s3.IBucket;
   generalBucket: s3.IBucket;
-  incomingHl7NotificationBucket: s3.IBucket;
+  incomingHl7NotificationBucket: s3.IBucket | undefined;
   conversionBucket: s3.IBucket;
   medicalDocumentsUploadBucket: s3.IBucket;
   ehrResponsesBucket: s3.IBucket | undefined;
