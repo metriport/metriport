@@ -19,5 +19,5 @@ export function findDocIdExtension(extensions: Extension[]): Extension | undefin
 }
 
 export function isDocIdExtension(e: Extension): e is DocIdExtension {
-  return e.url?.includes(DOC_ID_EXTENSION_URL) ?? false;
+  return e.url?.endsWith(DOC_ID_EXTENSION_URL) ?? false;
 }
