@@ -5,7 +5,10 @@ import { FhirSearchResult } from "../../../../../external/opensearch/index-based
 import { OpenSearchFhirSearcher } from "../../../../../external/opensearch/lexical/fhir-searcher";
 import { getEntryId as getEntryIdFromOpensearch } from "../../../../../external/opensearch/shared/id";
 import { makeCondition } from "../../../../../fhir-to-cda/cda-templates/components/__tests__/make-condition";
-import { makePractitioner } from "../../../../../fhir-to-cda/cda-templates/components/__tests__/make-encounter";
+import {
+  makeEncounter,
+  makePractitioner,
+} from "../../../../../fhir-to-cda/cda-templates/components/__tests__/make-encounter";
 import { makeOrganization } from "../../../../../fhir-to-cda/cda-templates/components/__tests__/make-organization";
 import { hydrateMissingReferences } from "../search-consolidated";
 import {
@@ -18,6 +21,8 @@ import {
   patientId,
   specializedHydration,
 } from "./search-consolidated-setup";
+import { makeProcedure } from "../../../../../fhir-to-cda/cda-templates/components/__tests__/make-procedure";
+import { makeObservation } from "../../../../../fhir-to-cda/cda-templates/components/__tests__/make-observation";
 
 describe("search-consolidated", () => {
   describe("hydrateMissingReferences", () => {
@@ -184,6 +189,37 @@ describe("search-consolidated", () => {
             patientId,
             ids: expect.arrayContaining(firstLevelReferenceIds),
           });
+        });
+
+        it(`hydrates missing Condition, Procedure, and Observation when resource is Encounter`, async () => {
+          const missingCondition = makeCondition({}, patientId);
+          const missingObservation = makeObservation({}, patientId);
+          const missingProcedure = makeProcedure({
+            subject: makeReference(patient),
+            partOf: [makeReference(missingObservation)],
+          });
+
+          const enc = makeEncounter(
+            {
+              diagnosis: [makeReference(missingProcedure), makeReference(missingCondition)],
+            },
+            {
+              patient: patientId,
+            }
+          );
+
+          const resources = [patient, enc];
+          getByIds_mock.mockResolvedValueOnce([
+            toGetByIdsResultEntry(missingCondition),
+            toGetByIdsResultEntry(missingObservation),
+            toGetByIdsResultEntry(missingProcedure),
+          ]);
+
+          const res = await hydrateMissingReferences({ cxId, patientId, resources });
+
+          expect(res).toEqual(
+            expect.arrayContaining([missingCondition, missingObservation, enc, patient])
+          );
         });
       }
     });
