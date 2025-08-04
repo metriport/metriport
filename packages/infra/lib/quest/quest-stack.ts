@@ -14,8 +14,12 @@ import { LambdaSettingsWithNameAndEntry } from "../shared/settings";
 import { QuestAssets } from "./types";
 
 const sftpActionTimeout = Duration.seconds(30);
-const rosterUploadLambdaTimeout = Duration.seconds(30);
-const responseDownloadLambdaTimeout = Duration.seconds(30);
+// Can take up to 3 minutes to load roster in batches, upload to S3, and send over SFTP
+const rosterUploadLambdaTimeout = Duration.minutes(3);
+// When a response is downloaded, the remote SFTP server deletes it automatically, so this ensures that even a very
+// large response file does not time out (and thus get lost in transit)
+const responseDownloadLambdaTimeout = Duration.minutes(1);
+// After downloading a response file, a separate conversion Lambda is triggered for each patient in the response file
 const conversionLambdaTimeout = Duration.seconds(30);
 
 interface QuestLambdaSettings {
@@ -38,7 +42,7 @@ const questLambdaSettings: QuestLambdaSettings = {
     name: "QuestRosterUpload",
     entry: "quest/roster-upload",
     lambda: {
-      memory: 512,
+      memory: 1024,
       timeout: rosterUploadLambdaTimeout,
     },
   },
