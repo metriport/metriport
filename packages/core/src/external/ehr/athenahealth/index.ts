@@ -489,8 +489,9 @@ class AthenaHealthApi {
       });
     }
     const patientCustomFields = patientsCustomFields[0]?.customfields;
-    if (!patientCustomFields)
+    if (!patientCustomFields) {
       throw new NotFoundError("Patient not found", undefined, additionalInfo);
+    }
     return patientCustomFields;
   }
 

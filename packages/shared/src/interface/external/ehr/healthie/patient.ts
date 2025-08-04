@@ -2,7 +2,7 @@ import { z } from "zod";
 
 const locationSchema = z.object({
   line1: z.string(),
-  line2: z.string(),
+  line2: z.string().nullable(),
   city: z.string(),
   state: z.string(),
   zip: z.string(),
