@@ -1115,11 +1115,9 @@ class ElationApi {
     const mostRelevantSystem = coding[0]?.system;
     if (!mostRelevantSystem) return this.normalizeTitle(code?.text);
 
-    console.log("mostRelevantSystem", mostRelevantSystem);
     const mostRelevantCodings = coding.filter(c => c.system === mostRelevantSystem && c.display);
     if (mostRelevantCodings.length === 0) return this.normalizeTitle(code?.text);
 
-    console.log("mostRelevantCodings", mostRelevantCodings);
     const rankedCodings = mostRelevantCodings.flatMap(coding => {
       if (!coding.display) return [];
 
@@ -1137,7 +1135,6 @@ class ElationApi {
       return { display: coding.display, score };
     });
 
-    console.log("rankedCodings", rankedCodings);
     const best = rankedCodings.sort((a, b) =>
       b.score !== a.score ? b.score - a.score : b.display.length - a.display.length
     )[0];
