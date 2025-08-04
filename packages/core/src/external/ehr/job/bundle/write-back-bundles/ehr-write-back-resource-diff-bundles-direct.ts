@@ -60,19 +60,12 @@ const displayToLoincCodeMap: Record<string, string> = {
   "basic metabolic panel (c7)": "51990-0",
   "glycohemoglobin (a1c)": "4548-4",
   "hemoglobin & hematocrit": "4548-4",
+  "hemoglobin and hematocrit panel - blood": "4548-4",
   "lipase [enzymatic activity/volume] in serum or plasma": "24331-1",
+  "thyroxine (t4) free [mass/volume] in serum or plasma": "3016-3",
+  "thyroid stimulating hormone (tsh)": "3016-3",
+  "tsh w/ reflex ft4": "3016-3",
 };
-
-// 3016-3		Thyrotropin [Units/volume] in Serum or Plasma
-// 3024-7		Thyroxine (T4) free [Mass/volume] in Serum or Plasma
-// 4548-4		Hemoglobin A1c/Hemoglobin.total in Blood
-// 24322-0		Comprehensive metabolic 1998 panel - Serum or Plasma
-// 24323-8		Comprehensive metabolic 2000 panel - Serum or Plasma
-// 24331-1		Lipid 1996 panel - Serum or Plasma
-// 51990-0		Basic metabolic panel - Blood
-// 57021-8		CBC W Auto Differential panel - Blood
-// 57698-3		Lipid panel with direct LDL - Serum or Plasma
-// 58410-2		CBC panel - Blood by Automated count
 
 const supportedWriteBackResourceTypes: ResourceType[] = [
   "Condition",
