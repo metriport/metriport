@@ -1,6 +1,6 @@
 {
   "name": "utils",
-  "version": "1.25.14",
+  "version": "1.25.15",
   "description": "",
   "private": true,
   "scripts": {
@@ -39,7 +39,8 @@
     "load-test": "artillery run ./src/terminology/load-test.yml",
     "npi": "ts-node src/facility/make-npi",
     "fhir-demo": "ts-node src/fhir-sdk-demo.ts",
-    "test-typing": "ts-node src/test-typing.ts"
+    "test-typing": "ts-node src/test-typing.ts",
+    "preview-consolidated": "ts-node src/preview-consolidated.ts"
   },
   "keywords": [],
   "author": "",
@@ -81,6 +82,7 @@
     "@faker-js/faker": "^8.0.2",
     "@medplum/core": "^3.2.33",
     "@medplum/fhirtypes": "^2.2.10",
+    "@metriport/eslint-rules": "file:packages/eslint-rules",
     "@metriport/fhir-sdk": "file:packages/fhir-sdk",
     "@tsconfig/recommended": "^1.0.1",
     "@types/aws-serverless-express": "^3.3.9",

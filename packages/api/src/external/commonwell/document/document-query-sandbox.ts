@@ -39,6 +39,8 @@ const randomDates = [
   "2020-02-19",
 ];
 
+const randomFacilityNames = ["UCSF Medical", "Sutter Health", "Northridge Hospital"];
+
 export async function sandboxGetDocRefsAndUpsert({
   patient,
   requestId,
@@ -333,8 +335,8 @@ function addSandboxFields(docRef: DocumentReferenceWithId): DocumentReferenceWit
 
   docRef.contained?.push({
     resourceType: "Organization",
-    id: "Sandbox example org",
-    name: `Hospital org#${Math.floor(Math.random() * 1000)}`,
+    id: uuidv7(),
+    name: randomFacilityNames[Math.floor(Math.random() * randomFacilityNames.length)],
   });
 
   return docRef;

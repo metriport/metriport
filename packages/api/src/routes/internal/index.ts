@@ -9,6 +9,7 @@ import {
   findOrCreateCxMapping,
   getCxMappingsByCustomer,
   setExternalIdOnCxMappingById,
+  setSecondaryMappingsOnCxMappingById,
 } from "../../command/mapping/cx";
 import {
   deleteFacilityMapping,
@@ -29,7 +30,11 @@ import {
   revokeMapiAccess,
 } from "../../command/medical/mapi-access";
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
-import { isCxMappingSource, secondaryMappingsSchemaMap } from "../../domain/cx-mapping";
+import {
+  CxMappingSource,
+  isCxMappingSource,
+  secondaryMappingsSchemaMap,
+} from "../../domain/cx-mapping";
 import { isFacilityMappingSource } from "../../domain/facility-mapping";
 import { initCQOrgIncludeList } from "../../external/commonwell/organization";
 import { subscribeToAllWebhooks as subscribeToElationWebhooks } from "../../external/ehr/elation/command/subscribe-to-webhook";
@@ -345,7 +350,7 @@ router.post(
 /**
  * GET /internal/cx-mapping
  *
- * Get cx mappings for customer
+ * Get cx mappings for customer.
  *
  * @param req.query.cxId - The cutomer's ID.
  * @param req.query.source - Optional mapping source
@@ -409,6 +414,45 @@ router.delete(
       id,
     });
     return res.sendStatus(httpStatus.NO_CONTENT);
+  })
+);
+
+/**
+ * PUT /internal/cx-mapping/:id/secondary-mapping
+ *
+ * Update secondary mapping in a cx mapping.
+ *
+ * @param req.query.cxId - The customer's ID.
+ * @param req.parmas.id - The cx mapping ID.
+ * @param req.query.source - the mapping source.
+ *
+ * @return status 200 with the newly updated CxMapping object.
+ */
+router.put(
+  "/cx-mapping/:id/secondary-mapping",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const id = getFrom("params").orFail("id", req);
+    const source = getFromQueryOrFail("source", req);
+    const secondaryMappingsSchema = secondaryMappingsSchemaMap[source as CxMappingSource];
+    const secondaryMappings = secondaryMappingsSchema
+      ? secondaryMappingsSchema.parse(req.body)
+      : undefined;
+    if (!secondaryMappings) {
+      throw new BadRequestError(`Invalid secondaryMappings for cx mapping`, undefined, {
+        cxId,
+        id,
+        source,
+        secondaryMappings,
+      });
+    }
+    const newCxMapping = await setSecondaryMappingsOnCxMappingById({
+      cxId,
+      id,
+      secondaryMappings,
+    });
+    return res.status(httpStatus.OK).json({ cxMapping: newCxMapping });
   })
 );
 

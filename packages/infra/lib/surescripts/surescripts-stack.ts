@@ -12,7 +12,7 @@ import { EnvType } from "../env-type";
 import { createLambda } from "../shared/lambda";
 import { LambdaLayers } from "../shared/lambda-layers";
 import { buildSecret } from "../shared/secrets";
-import { LambdaSettings, QueueAndLambdaSettings } from "../shared/settings";
+import { LambdaSettingsWithNameAndEntry, QueueAndLambdaSettings } from "../shared/settings";
 import { createQueue } from "../shared/sqs";
 import { SurescriptsAssets } from "./types";
 
@@ -35,9 +35,9 @@ interface SurescriptsSettings {
 }
 
 interface SurescriptsLambdaSettings {
-  sftpAction: LambdaSettings;
-  convertPatientResponse: LambdaSettings;
-  convertBatchResponse: LambdaSettings;
+  sftpAction: LambdaSettingsWithNameAndEntry;
+  convertPatientResponse: LambdaSettingsWithNameAndEntry;
+  convertBatchResponse: LambdaSettingsWithNameAndEntry;
 }
 
 const settings: SurescriptsSettings = {
