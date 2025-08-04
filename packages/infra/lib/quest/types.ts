@@ -5,7 +5,7 @@ export type QuestAssets = {
   sftpActionLambda: Lambda;
   rosterUploadLambda: Lambda;
   responseDownloadLambda: Lambda;
-  conversionLambda: Lambda;
+  convertResponseLambda: Lambda;
   questReplicaBucket: Bucket;
   labConversionBucket: Bucket;
   questLambdas: {

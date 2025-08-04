@@ -20,13 +20,13 @@ const rosterUploadLambdaTimeout = Duration.minutes(3);
 // large response file does not time out (and thus get lost in transit)
 const responseDownloadLambdaTimeout = Duration.minutes(1);
 // After downloading a response file, a separate conversion Lambda is triggered for each patient in the response file
-const conversionLambdaTimeout = Duration.seconds(30);
+const convertResponseLambdaTimeout = Duration.seconds(30);
 
 interface QuestLambdaSettings {
   sftpAction: LambdaSettingsWithNameAndEntry;
   rosterUpload: LambdaSettingsWithNameAndEntry;
   responseDownload: LambdaSettingsWithNameAndEntry;
-  conversion: LambdaSettingsWithNameAndEntry;
+  convertResponse: LambdaSettingsWithNameAndEntry;
 }
 
 const questLambdaSettings: QuestLambdaSettings = {
@@ -54,12 +54,12 @@ const questLambdaSettings: QuestLambdaSettings = {
       timeout: responseDownloadLambdaTimeout,
     },
   },
-  conversion: {
-    name: "QuestConversion",
-    entry: "quest/conversion",
+  convertResponse: {
+    name: "QuestConvertResponse",
+    entry: "quest/convert-response",
     lambda: {
       memory: 1024,
-      timeout: conversionLambdaTimeout,
+      timeout: convertResponseLambdaTimeout,
     },
   },
 };
@@ -107,7 +107,7 @@ export class QuestNestedStack extends NestedStack {
   private readonly sftpActionLambda: Lambda;
   private readonly rosterUploadLambda: Lambda;
   private readonly responseDownloadLambda: Lambda;
-  private readonly conversionLambda: Lambda;
+  private readonly convertResponseLambda: Lambda;
   private readonly questReplicaBucket: s3.Bucket;
   private readonly labConversionBucket: s3.Bucket;
 
@@ -176,12 +176,12 @@ export class QuestNestedStack extends NestedStack {
     });
     this.responseDownloadLambda = responseDownload.lambda;
 
-    const conversion = this.setupLambda("conversion", {
+    const convertResponse = this.setupLambda("convertResponse", {
       ...commonConfig,
       questReplicaBucket: this.questReplicaBucket,
       labConversionBucket: this.labConversionBucket,
     });
-    this.conversionLambda = conversion.lambda;
+    this.convertResponseLambda = convertResponse.lambda;
 
     const lambdas = this.getLambdas();
     for (const secret of secrets) {
@@ -196,7 +196,7 @@ export class QuestNestedStack extends NestedStack {
       this.sftpActionLambda,
       this.rosterUploadLambda,
       this.responseDownloadLambda,
-      this.conversionLambda,
+      this.convertResponseLambda,
     ];
   }
 
@@ -216,14 +216,14 @@ export class QuestNestedStack extends NestedStack {
           lambda: this.responseDownloadLambda,
         },
         {
-          envVarName: "QUEST_CONVERSION_LAMBDA_NAME",
-          lambda: this.conversionLambda,
+          envVarName: "QUEST_CONVERT_RESPONSE_LAMBDA_NAME",
+          lambda: this.convertResponseLambda,
         },
       ],
       sftpActionLambda: this.sftpActionLambda,
       rosterUploadLambda: this.rosterUploadLambda,
       responseDownloadLambda: this.responseDownloadLambda,
-      conversionLambda: this.conversionLambda,
+      convertResponseLambda: this.convertResponseLambda,
       questReplicaBucket: this.questReplicaBucket,
       labConversionBucket: this.labConversionBucket,
     };
