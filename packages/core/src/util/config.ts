@@ -238,7 +238,7 @@ export class Config {
     return getEnvVarOrFail("WRITE_TO_S3_QUEUE_URL");
   }
 
-  static isSftpActionLambda(): boolean {
+  static getSftpActionLambda(): boolean {
     return getEnvVar("SFTP_ACTION_LAMBDA") != undefined;
   }
 

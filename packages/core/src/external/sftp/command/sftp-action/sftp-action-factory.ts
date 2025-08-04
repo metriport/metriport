@@ -10,7 +10,7 @@ export function sftpActionHandlerBuilder(
 ): () => SftpActionHandler {
   return function () {
     // Lambda has direct execution access since it lives within the VPC for direct SFTP actions
-    if (Config.isSftpActionLambda()) {
+    if (Config.getSftpActionLambda()) {
       return new SftpActionDirect(client);
     }
     return new SftpActionCloud(sftpActionLambdaName);
