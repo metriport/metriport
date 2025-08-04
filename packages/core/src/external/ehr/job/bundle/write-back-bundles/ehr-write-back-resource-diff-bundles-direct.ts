@@ -15,6 +15,7 @@ import {
 import { buildDayjs } from "@metriport/shared/common/date";
 import { WriteBackFiltersPerResourceType } from "@metriport/shared/interface/external/ehr/shared";
 import { EhrSource } from "@metriport/shared/interface/external/ehr/source";
+import { isLoincCoding } from "@metriport/shared/medical";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { partition } from "lodash";
@@ -433,6 +434,7 @@ export function normalizeDiagnosticReportCoding(
 
   let foundLoincCode: string | undefined;
   const matchingCoding = code?.coding?.find(c => {
+    if (isLoincCoding(c)) return false;
     const display = c.display?.trim().toLowerCase() ?? "";
     foundLoincCode = displayToLoincCodeMap[display];
     return foundLoincCode;
