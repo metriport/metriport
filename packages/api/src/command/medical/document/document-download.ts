@@ -17,6 +17,8 @@ const s3Utils = new S3Utils(Config.getAWSRegion());
 const lambdaClient = makeLambdaClient(Config.getAWSRegion());
 const conversionLambdaName = Config.getConvertDocLambdaName();
 
+const hl7DocumentDownloadPrefix = "location=hl7/";
+
 export async function getDocumentDownloadUrl({
   fileName,
   conversionType,
@@ -37,9 +39,9 @@ export async function getDocumentDownloadUrl({
     return getConversionUrl({ fileName, conversionType, bucketName });
   }
 
-  if (fileName.startsWith("location=hl7/")) {
+  if (fileName.startsWith(hl7DocumentDownloadPrefix)) {
     return await getRawHl7MessageSignedUrl({
-      fileName: fileName.replace("location=hl7/", ""),
+      fileName: fileName.replace(hl7DocumentDownloadPrefix, ""),
     });
   }
 
