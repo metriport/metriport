@@ -17,22 +17,16 @@ const s3Utils = new S3Utils(Config.getAWSRegion());
 const lambdaClient = makeLambdaClient(Config.getAWSRegion());
 const conversionLambdaName = Config.getConvertDocLambdaName();
 
-type DocumentDownloadUrlType = ConversionType | "hl7";
-
 export async function getDocumentDownloadUrl({
   fileName,
   conversionType,
 }: {
   fileName: string;
-  conversionType?: DocumentDownloadUrlType;
+  conversionType?: ConversionType;
 }): Promise<string> {
   const { exists, contentType, bucketName } = await doesObjExist({ fileName });
 
   if (!exists) throw new NotFoundError("File does not exist");
-
-  if (conversionType === "hl7") {
-    return getIncomingHl7MessageDownloadUrl({ fileName });
-  }
 
   if (conversionType && contentType !== "application/xml" && contentType !== "text/xml")
     throw new BadRequestError(
@@ -42,6 +36,11 @@ export async function getDocumentDownloadUrl({
   if (conversionType && validConversionTypes.includes(conversionType) && bucketName) {
     return getConversionUrl({ fileName, conversionType, bucketName });
   }
+
+  if (fileName.startsWith("location=hl7/")) {
+    return await getRawHl7MessageSignedUrl({ fileName });
+  }
+
   return getSignedURL({ fileName, bucketName });
 }
 
@@ -152,7 +151,7 @@ export async function getSignedURL({
  * @param fileName - the name of the file in the bucket
  * @returns the download URL for the raw hl7 message
  */
-export async function getIncomingHl7MessageDownloadUrl({
+export async function getRawHl7MessageSignedUrl({
   fileName,
 }: {
   fileName: string;
