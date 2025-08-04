@@ -38,7 +38,9 @@ export async function getDocumentDownloadUrl({
   }
 
   if (fileName.startsWith("location=hl7/")) {
-    return await getRawHl7MessageSignedUrl({ fileName });
+    return await getRawHl7MessageSignedUrl({
+      fileName: fileName.replace("location=hl7/", ""),
+    });
   }
 
   return getSignedURL({ fileName, bucketName });
