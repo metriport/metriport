@@ -7,7 +7,7 @@ export const DOC_ID_EXTENSION_URL = `${BASE_EXTENSION_URL}/doc-id-extension.json
 export type DocIdExtension = Required<Pick<Extension, "url" | "valueString">>;
 
 export function buildDocIdFhirExtension(docId: string, location?: "hl7"): DocIdExtension {
-  const locationParam = location ? `location=${location}/` : "";
+  const locationParam = location ? `location_${location}/` : "";
   return {
     url: DOC_ID_EXTENSION_URL,
     valueString: locationParam + docId,

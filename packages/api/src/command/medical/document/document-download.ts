@@ -17,7 +17,7 @@ const s3Utils = new S3Utils(Config.getAWSRegion());
 const lambdaClient = makeLambdaClient(Config.getAWSRegion());
 const conversionLambdaName = Config.getConvertDocLambdaName();
 
-const hl7DocumentDownloadPrefix = "location=hl7/";
+const hl7DocumentDownloadPrefix = "location_hl7/";
 
 export async function getDocumentDownloadUrl({
   fileName,
