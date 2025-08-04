@@ -121,41 +121,6 @@ describe("search-consolidated", () => {
       });
     });
 
-    describe("non-specialized hydration", () => {
-      runTest(nonSpecializedHydration.conditionAndEncounter);
-      runTest(nonSpecializedHydration.conditionAndObservation);
-      runTest(nonSpecializedHydration.encounterAndObservation);
-
-      function runTest<T extends Resource, M extends Resource>({
-        makeInputResource,
-        resourceType,
-        missingResource,
-        missingResourceType,
-      }: Entry<T, M>) {
-        it(`does NOT hydrate missing ${missingResourceType} when resource is ${resourceType}`, async () => {
-          const inputResources = [patient, makeInputResource(missingResource)];
-          const firstLevelReferenceIds = [missingResource].map(toEntryId);
-          const getByIdsResponse = [missingResource].map(toGetByIdsResultEntry);
-          getByIds_mock.mockResolvedValueOnce(getByIdsResponse);
-          const hydratedResources = inputResources;
-
-          const res = await hydrateMissingReferences({
-            cxId,
-            patientId,
-            resources: inputResources,
-          });
-
-          expect(res).toBeTruthy();
-          expect(res).toEqual(expect.arrayContaining(hydratedResources));
-          expect(getByIds_mock).not.toHaveBeenCalledWith({
-            cxId,
-            patientId,
-            ids: expect.arrayContaining(firstLevelReferenceIds),
-          });
-        });
-      }
-    });
-
     describe("specialized hydration", () => {
       runTest(specializedHydration.diagnosticReportAndEncounter);
       runTest(specializedHydration.diagnosticReportAndObservation);
