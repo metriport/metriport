@@ -3,6 +3,7 @@ import { Condition, Patient } from "@medplum/fhirtypes";
 import { ResponseDetail } from "../schema/response";
 import { ICD_10_URL, ICD_9_URL } from "../../../util/constants";
 import { getPatientReference } from "./patient";
+import { getQuestDataSourceExtension } from "./shared";
 
 export function getConditions(
   detail: ResponseDetail,
@@ -27,6 +28,7 @@ export function getConditions(
 function getCondition(patient: Patient, diagnosisCode?: string): Condition | undefined {
   if (!diagnosisCode) return undefined;
   const { system, code } = parseDiagnosisCode(diagnosisCode);
+  const extension = [getQuestDataSourceExtension()];
 
   return {
     resourceType: "Condition",
@@ -40,6 +42,7 @@ function getCondition(patient: Patient, diagnosisCode?: string): Condition | und
         },
       ],
     },
+    extension,
   };
 }
 

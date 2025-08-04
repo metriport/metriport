@@ -1,6 +1,7 @@
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { Address, ContactPoint, Identifier, Organization, Reference } from "@medplum/fhirtypes";
 import { ResponseDetail } from "../schema/response";
+import { getQuestDataSourceExtension } from "./shared";
 
 /**
  * The organization that ordered the tests.
@@ -11,6 +12,7 @@ export function getInsuranceOrganization(detail: ResponseDetail): Organization {
   const name = getOrganizationName(detail);
   const address = getOrganizationAddress(detail);
   const telecom = getOrganizationTelecom(detail);
+  const extension = [getQuestDataSourceExtension()];
 
   return {
     resourceType: "Organization",
@@ -19,6 +21,7 @@ export function getInsuranceOrganization(detail: ResponseDetail): Organization {
     ...(name ? { name } : {}),
     ...(address ? { address } : {}),
     ...(telecom ? { telecom } : {}),
+    extension,
   };
 }
 

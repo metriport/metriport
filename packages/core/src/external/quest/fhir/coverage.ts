@@ -3,6 +3,7 @@ import { Coverage, Organization, Patient } from "@medplum/fhirtypes";
 import { ResponseDetail } from "../schema/response";
 import { getPatientReference } from "./patient";
 import { getOrganizationReference } from "./organization";
+import { getQuestDataSourceExtension } from "./shared";
 
 export function getCoverage(
   detail: ResponseDetail,
@@ -12,6 +13,7 @@ export function getCoverage(
   const payor = insuranceOrganization
     ? [getOrganizationReference(insuranceOrganization)]
     : undefined;
+  const extension = [getQuestDataSourceExtension()];
 
   if (!beneficiary || !payor) return undefined;
 
@@ -22,5 +24,6 @@ export function getCoverage(
     id: uuidv7(),
     beneficiary,
     ...(payor ? { payor } : {}),
+    extension,
   };
 }

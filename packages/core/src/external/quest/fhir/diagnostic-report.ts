@@ -10,6 +10,7 @@ import {
 import { ResponseDetail } from "../schema/response";
 import { getPatientReference } from "./patient";
 import { getSpecimenReference } from "./specimen";
+import { getQuestDataSourceExtension } from "./shared";
 
 export function getDiagnosticReport(
   detail: ResponseDetail,
@@ -20,7 +21,7 @@ export function getDiagnosticReport(
   const identifier = getIdentifier(detail);
   const specimenReference = specimen ? [getSpecimenReference(specimen)] : undefined;
   const category = getDiagnosticReportCategory(detail);
-
+  const extension = [getQuestDataSourceExtension()];
   return {
     resourceType: "DiagnosticReport",
     id: uuidv7(),
@@ -30,6 +31,7 @@ export function getDiagnosticReport(
     subject,
     ...(specimenReference ? { specimen: specimenReference } : {}),
     ...(category.length > 0 ? { category } : {}),
+    extension,
   };
 }
 

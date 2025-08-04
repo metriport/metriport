@@ -3,11 +3,13 @@ import {
   Coding,
   Identifier,
   Practitioner,
+  Reference,
   ServiceRequest,
 } from "@medplum/fhirtypes";
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { ResponseDetail } from "../schema/response";
 import { getPractitionerReference } from "./practitioner";
+import { getQuestDataSourceExtension } from "./shared";
 
 export function getServiceRequest(
   detail: ResponseDetail,
@@ -16,12 +18,23 @@ export function getServiceRequest(
   const identifier = getServiceRequestIdentifier(detail);
   const requester = getPractitionerReference(requestingPractitioner);
   const code = getServiceRequestCoding(detail);
+  const extension = [getQuestDataSourceExtension()];
+
   return {
     resourceType: "ServiceRequest",
     id: uuidv7(),
     ...(code ? { code } : {}),
     ...(identifier ? { identifier } : {}),
     requester,
+    extension,
+  };
+}
+
+export function getServiceRequestReference(
+  serviceRequest: ServiceRequest
+): Reference<ServiceRequest> {
+  return {
+    reference: `ServiceRequest/${serviceRequest.id}`,
   };
 }
 

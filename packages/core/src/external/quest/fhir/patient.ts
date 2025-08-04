@@ -7,6 +7,7 @@ import {
   Reference,
 } from "@medplum/fhirtypes";
 import { ResponseDetail } from "../schema/response";
+import { getQuestDataSourceExtension } from "./shared";
 
 export function getPatient(detail: ResponseDetail): Patient {
   const name = getPatientName(detail);
@@ -15,6 +16,7 @@ export function getPatient(detail: ResponseDetail): Patient {
   const telecom = getPatientTelecom(detail);
   const gender = getPatientGender(detail);
   const birthDate = getPatientBirthDate(detail);
+  const extension = [getQuestDataSourceExtension()];
 
   return {
     resourceType: "Patient",
@@ -25,6 +27,7 @@ export function getPatient(detail: ResponseDetail): Patient {
     ...(telecom ? { telecom } : {}),
     ...(gender ? { gender } : {}),
     ...(birthDate ? { birthDate } : {}),
+    extension,
   };
 }
 

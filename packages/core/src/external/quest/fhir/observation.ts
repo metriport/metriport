@@ -11,6 +11,7 @@ import { ResponseDetail } from "../schema/response";
 import { LOINC_URL, CPT_URL } from "../../../util/constants";
 import { getPatientReference } from "./patient";
 import { HL7_OBSERVATION_INTERPRETATION_SYSTEM, QUEST_LOCAL_RESULT_CODE_SYSTEM } from "./constant";
+import { getQuestDataSourceExtension } from "./shared";
 
 type ObservationValue = Pick<Observation, "valueQuantity" | "valueString" | "valueCodeableConcept">;
 
@@ -20,21 +21,24 @@ export function getObservation(
 ): Observation {
   const identifier = getObservationIdentifier(detail);
   const code = getObservationCode(detail);
+  const subject = getPatientReference(patient);
   const interpretation = getObservationInterpretation(detail);
   const referenceRange = getObservationReferenceRange(detail);
   const { valueQuantity, valueString } = getObservationValue(detail);
+  const extension = [getQuestDataSourceExtension()];
 
   return {
     resourceType: "Observation",
     id: uuidv7(),
     status: "final",
-    subject: getPatientReference(patient),
+    subject,
     ...(valueQuantity ? { valueQuantity } : {}),
     ...(valueString ? { valueString } : {}),
     ...(referenceRange ? { referenceRange } : {}),
     ...(interpretation ? { interpretation } : {}),
     ...(identifier ? { identifier } : {}),
     ...(code ? { code } : {}),
+    extension,
   };
 }
 
