@@ -1,4 +1,5 @@
 import {
+  Coding,
   Condition,
   DiagnosticReport,
   Observation,
@@ -373,7 +374,7 @@ export function shouldWriteBackResource({
       r => r.resourceType === "Observation" && isLab(r)
     ) as Observation[];
     if (skipLabDate(observation, writeBackFilters)) return false;
-    if (skipLabLoinCode(observation, writeBackFilters)) return false;
+    if (skipLabLoincCode(observation, writeBackFilters)) return false;
     if (skipLabNonTrending(observation, labObservations, writeBackFilters)) return false;
     return true;
   } else if (writeBackResourceType === "lab-panel") {
@@ -383,11 +384,8 @@ export function shouldWriteBackResource({
       r => r.resourceType === "DiagnosticReport" && isLabPanel(r)
     ) as DiagnosticReport[];
     if (skipLabPanelDate(diagnosticReport, writeBackFilters)) return false;
-    const normalizedDiagReport = normalizeDiagnosticReportCoding(
-      diagnosticReport,
-      writeBackFilters
-    );
-    if (skipLabPanelLoinCode(normalizedDiagReport, writeBackFilters)) return false;
+    const normalizedDiagReport = normalizeDiagnosticReportCoding(diagnosticReport);
+    if (skipLabPanelLoincCode(normalizedDiagReport, writeBackFilters)) return false;
     if (skipLabPanelNonTrending(normalizedDiagReport, diagnosticReports, writeBackFilters)) {
       return false;
     }
@@ -437,58 +435,46 @@ export function skipLabPanelDate(
   return buildDayjs(observationDate).isBefore(beginDate);
 }
 
-function normalizeDiagnosticReportCoding(
-  diagnosticReport: DiagnosticReport,
-  writeBackFilters: WriteBackFiltersPerResourceType
+export function normalizeDiagnosticReportCoding(
+  diagnosticReport: DiagnosticReport
 ): DiagnosticReport {
   const code = diagnosticReport.code;
-  const loincCodeFilters = writeBackFilters.labPanel?.loincCodes;
-  if (!loincCodeFilters) return diagnosticReport;
+
+  const loincCodingMap = new Map<string, Coding>();
+  const nonLoincCodingMap = new Map<string, Coding>();
 
   for (const coding of code?.coding ?? []) {
-    let checkDisplay = false;
     const code = coding.code;
-
-    if (isLoincCoding(coding)) {
-      if (!code) {
-        checkDisplay = true;
-      } else if (code.toLowerCase() === "unknown" || code.toLowerCase() === "unk") {
-        checkDisplay = true;
-      } else if (loincCodeFilters.includes(code)) {
-        return diagnosticReport;
-      }
+    if (isLoincCoding(coding) && code) {
+      loincCodingMap.set(code, coding);
     } else {
-      checkDisplay = true;
-    }
+      if (code) nonLoincCodingMap.set(code, coding);
 
-    if (checkDisplay) {
-      if (coding.display) {
-        const display = coding.display;
-
-        const newLoincCoding = displayToLoincCodeMap[display];
-        if (newLoincCoding) {
-          return {
-            ...diagnosticReport,
-            code: {
-              ...diagnosticReport.code,
-              coding: [
-                // ...(diagnosticReport.code?.coding ?? []),
-                {
-                  code: newLoincCoding,
-                  display,
-                  system: "http://loinc.org",
-                },
-              ],
-            },
+      const display = coding.display;
+      if (display && typeof display === "string") {
+        const newLoincCode = displayToLoincCodeMap[display.trim().toLowerCase()];
+        if (newLoincCode) {
+          const newLoincCoding = {
+            code: newLoincCode,
+            display,
+            system: "http://loinc.org",
           };
+          loincCodingMap.set(newLoincCode, newLoincCoding);
         }
       }
     }
   }
-  return diagnosticReport;
+
+  return {
+    ...diagnosticReport,
+    code: {
+      ...diagnosticReport.code,
+      coding: [...loincCodingMap.values(), ...nonLoincCodingMap.values()],
+    },
+  };
 }
 
-export function skipLabPanelLoinCode(
+export function skipLabPanelLoincCode(
   diagnosticReport: DiagnosticReport,
   writeBackFilters: WriteBackFiltersPerResourceType
 ): boolean {
@@ -534,7 +520,7 @@ export function skipLabDate(
   return buildDayjs(observationDate).isBefore(beginDate);
 }
 
-export function skipLabLoinCode(
+export function skipLabLoincCode(
   observation: Observation,
   writeBackFilters: WriteBackFiltersPerResourceType
 ): boolean {
