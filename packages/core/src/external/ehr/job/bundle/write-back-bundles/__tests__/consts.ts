@@ -296,6 +296,35 @@ export const labPanelDateFilterUndefined = {
   },
 };
 
+export const labPanelLoincCodesFilterCode = {
+  labPanel: {
+    loincCodes: ["51990-0"],
+  },
+};
+
+export const labReportOtherCode = "123";
+export const labReportOtherCodeDisplay = "Basic Metabolic Panel";
+export const labReportOtherCodeDisplay2 = "some other lab that we don't care about";
+export const labReportOtherCodeDiagnosticReportCode = {
+  resourceType: "DiagnosticReport",
+  id: "report",
+  category: [
+    {
+      coding: [{ code: "laboratory" }],
+    },
+  ],
+  code: {
+    coding: [
+      {
+        system: "https://some-custom-code-system.org",
+        code: labReportOtherCode,
+        display: labReportOtherCodeDisplay,
+      },
+    ],
+  },
+  effectiveDateTime: "2024-05-01T00:00:00Z",
+};
+
 export const labPanelLoincCodesFilterCode1 = {
   labPanel: {
     loincCodes: [labLoincCode1],
