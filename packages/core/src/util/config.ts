@@ -316,20 +316,14 @@ export class Config {
   static getQuestSftpActionLambdaName(): string {
     return getEnvVarOrFail("QUEST_SFTP_ACTION_LAMBDA_NAME");
   }
-  static getQuestConvertPatientResponseLambdaName(): string {
-    return getEnvVarOrFail("QUEST_CONVERT_PATIENT_RESPONSE_LAMBDA_NAME");
+  static getQuestRosterUploadLambdaName(): string {
+    return getEnvVarOrFail("QUEST_ROSTER_UPLOAD_LAMBDA_NAME");
   }
-  static getQuestConvertBatchResponseLambdaName(): string {
-    return getEnvVarOrFail("QUEST_CONVERT_BATCH_RESPONSE_LAMBDA_NAME");
+  static getQuestResponseDownloadLambdaName(): string {
+    return getEnvVarOrFail("QUEST_RESPONSE_DOWNLOAD_LAMBDA_NAME");
   }
-  static getQuestSendPatientRequestQueueUrl(): string {
-    return getEnvVarOrFail("QUEST_SEND_PATIENT_REQUEST_QUEUE_URL");
-  }
-  static getQuestSendBatchRequestQueueUrl(): string {
-    return getEnvVarOrFail("QUEST_SEND_BATCH_REQUEST_QUEUE_URL");
-  }
-  static getQuestReceiveResponseQueueUrl(): string {
-    return getEnvVarOrFail("QUEST_RECEIVE_RESPONSE_QUEUE_URL");
+  static getQuestConversionLambdaName(): string {
+    return getEnvVarOrFail("QUEST_CONVERSION_LAMBDA_NAME");
   }
   static getQuestReplicaBucketName(): string {
     return getEnvVarOrFail("QUEST_REPLICA_BUCKET_NAME");
