@@ -60,7 +60,7 @@ const displayToLoincCodeMap: Record<string, string> = {
   "basic metabolic panel (c7)": "51990-0",
   "glycohemoglobin (a1c)": "4548-4",
   "hemoglobin & hematocrit": "4548-4",
-  "Lipase [Enzymatic activity/volume] in Serum or Plasma": "24331-1",
+  "lipase [enzymatic activity/volume] in serum or plasma": "24331-1",
 };
 
 // 3016-3		Thyrotropin [Units/volume] in Serum or Plasma
