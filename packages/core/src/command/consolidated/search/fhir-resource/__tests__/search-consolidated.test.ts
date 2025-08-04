@@ -218,7 +218,7 @@ describe("search-consolidated", () => {
           const res = await hydrateMissingReferences({ cxId, patientId, resources });
 
           expect(res).toEqual(
-            expect.arrayContaining([missingCondition, missingObservation, enc, patient])
+            expect.arrayContaining([missingCondition, missingObservation, missingProcedure, enc, patient])
           );
         });
       }
