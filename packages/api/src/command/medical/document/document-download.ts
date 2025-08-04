@@ -26,6 +26,22 @@ export async function getDocumentDownloadUrl({
   fileName: string;
   conversionType?: ConversionType;
 }): Promise<string> {
+  if (fileName.startsWith(hl7DocumentDownloadPrefix)) {
+    return await getRawHl7MessageSignedUrl({
+      fileName: fileName.replace(hl7DocumentDownloadPrefix, ""),
+    });
+  }
+
+  return getMedicalDocumentsDownloadUrl({ fileName, conversionType });
+}
+
+export async function getMedicalDocumentsDownloadUrl({
+  fileName,
+  conversionType,
+}: {
+  fileName: string;
+  conversionType?: ConversionType;
+}): Promise<string> {
   const { exists, contentType, bucketName } = await doesObjExist({ fileName });
 
   if (!exists) throw new NotFoundError("File does not exist");
@@ -37,12 +53,6 @@ export async function getDocumentDownloadUrl({
 
   if (conversionType && validConversionTypes.includes(conversionType) && bucketName) {
     return getConversionUrl({ fileName, conversionType, bucketName });
-  }
-
-  if (fileName.startsWith(hl7DocumentDownloadPrefix)) {
-    return await getRawHl7MessageSignedUrl({
-      fileName: fileName.replace(hl7DocumentDownloadPrefix, ""),
-    });
   }
 
   return getSignedURL({ fileName, bucketName });
