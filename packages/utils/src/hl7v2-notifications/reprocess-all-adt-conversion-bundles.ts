@@ -21,7 +21,7 @@ async function reprocessAllAdtConversionBundles() {
     const results = await s3Utils.listObjects(bucketName, prefix);
     log(`Found ${results.length} objects for prefix: ${prefix}`);
     let processedCount = 0;
-    results.forEach(async result => {
+    const fileProcessingPromises = results.map(async result => {
       log(`Processing object: ${result.Key}`);
       if (result.Key === undefined) {
         log("Key is undefined - and it shouldn't be");
@@ -69,7 +69,7 @@ async function reprocessAllAdtConversionBundles() {
       const goodBundle = bundle.exportSubset(goodResourceIds);
 
       // Overwrite old bundle
-      s3Utils.uploadFile({
+      await s3Utils.uploadFile({
         bucket: bucketName,
         key: result.Key,
         file: Buffer.from(JSON.stringify(goodBundle)),
@@ -78,6 +78,8 @@ async function reprocessAllAdtConversionBundles() {
       processedCount++;
       log(`Processed ${processedCount} objects`);
     });
+
+    await Promise.all(fileProcessingPromises);
   });
 
   await Promise.all(promises);
