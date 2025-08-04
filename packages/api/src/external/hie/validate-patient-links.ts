@@ -1,10 +1,10 @@
+import { isStrictMatchingAlgorithmEnabledForCx } from "@metriport/core/command/feature-flags/domain-ffs";
 import { PatientData } from "@metriport/core/domain/patient";
 import { epicMatchingAlgorithm, strictMatchingAlgorithm } from "@metriport/core/mpi/match-patients";
-import { isStrictMatchingAlgorithmEnabledForCx } from "@metriport/core/command/feature-flags/domain-ffs";
+import { CQLink } from "../carequality/cq-patient-data";
+import { cqLinkToPatientData } from "../carequality/shared";
 import { CwLink } from "../commonwell/cw-patient-data";
 import { cwLinkToPatientData } from "../commonwell/link/shared";
-import { cqLinkToPatientData } from "../carequality/shared";
-import { CQLink } from "../carequality/cq-patient-data";
 
 const SIMILARITY_THRESHOLD = 8.5;
 

@@ -5,6 +5,7 @@ import {
   Person,
 } from "@metriport/commonwell-sdk";
 import { Patient } from "@metriport/core/domain/patient";
+import { executeWithRetriesCw } from "@metriport/core/external/commonwell/shared";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { sleepRandom } from "@metriport/shared";
@@ -117,7 +118,10 @@ export async function findDuplicatedPersonsByPatient(
     const { queryMeta, cwPatientId, cwPersonId: storedPersonId } = cwAccess;
     commonWell = cwAccess.commonWell;
 
-    const respSearch = await commonWell.searchPersonByPatientDemo(queryMeta, cwPatientId);
+    const cwApi: CommonWellAPI = commonWell; // makes the compiler happy inside executeWithRetriesCw
+    const respSearch = await executeWithRetriesCw(() =>
+      cwApi.searchPersonByPatientDemo(queryMeta, cwPatientId)
+    );
 
     const persons = respSearch._embedded?.person
       ? respSearch._embedded.person.flatMap(p => (p && getPersonId(p) ? p : []))
