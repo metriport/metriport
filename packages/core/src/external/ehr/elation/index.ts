@@ -1184,7 +1184,7 @@ class ElationApi {
         return [];
       }
       const resultStatus = getObservationResultStatus(observation);
-      if (!resultStatus || resultStatus != "final") {
+      if (!resultStatus || resultStatus.trim().toLowerCase() != "final") {
         return [];
       }
       const formattedResultStatus = resultStatus.toUpperCase();

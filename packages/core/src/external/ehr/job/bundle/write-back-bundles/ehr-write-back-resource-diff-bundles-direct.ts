@@ -431,18 +431,18 @@ export function normalizeDiagnosticReportCoding(
 ): DiagnosticReport {
   const code = diagnosticReport.code;
 
-  const matchingDisplay = code?.coding?.find(
-    c => displayToLoincCodeMap[c.display?.trim().toLowerCase() ?? ""]
-  )?.display;
+  let foundLoincCode: string | undefined;
+  const matchingCoding = code?.coding?.find(c => {
+    const display = c.display?.trim().toLowerCase() ?? "";
+    foundLoincCode = displayToLoincCodeMap[display];
+    return foundLoincCode;
+  });
 
-  if (!matchingDisplay) return diagnosticReport;
-
-  const newLoincCode = displayToLoincCodeMap[matchingDisplay.trim().toLowerCase()];
-  if (!newLoincCode) return diagnosticReport;
+  if (!matchingCoding?.display || !foundLoincCode) return diagnosticReport;
 
   const newLoincCoding = {
-    code: newLoincCode,
-    display: matchingDisplay,
+    code: foundLoincCode,
+    display: matchingCoding.display,
     system: "http://loinc.org",
   };
 
