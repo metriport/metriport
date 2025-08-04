@@ -47,7 +47,8 @@ export function mergeIntoTargetResource<T extends Resource & { extension?: any[]
   source: T,
   keepExtensions = true
 ) {
-  const extensionRef = createExtensionRelatedArtifact(source.resourceType, source.id);
+  const extensionRef =
+    target.id !== source.id ? [createExtensionRelatedArtifact(source.resourceType, source.id)] : [];
   const originalExtension = "extension" in target ? [...target.extension] : [];
   mutativeDeepMerge(target, source, keepExtensions);
 
@@ -57,9 +58,9 @@ export function mergeIntoTargetResource<T extends Resource & { extension?: any[]
   if (!keepExtensions) {
     delete target.extension;
   } else if ("extension" in target) {
-    target.extension = [...originalExtension, extensionRef];
+    target.extension = [...originalExtension, ...extensionRef];
   } else {
-    target.extension = [extensionRef];
+    target.extension = [...extensionRef];
   }
 }
 
