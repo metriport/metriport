@@ -1232,7 +1232,7 @@ class ElationApi {
           loinc: loincCoding.code,
         },
         test_category: {
-          value: "Zhopa",
+          value: formattedReportDate,
           description: diagReportTitle,
         },
       };
@@ -1337,6 +1337,12 @@ class ElationApi {
     return `write-back/${resourceType}/${resourceId ?? "unknown"}`;
   }
 
+  /**
+   * Maps the FHIR DiagnosticReport status to the Elation status.
+   *
+   * @see https://hl7.org/fhir/R4/valueset-request-status.html
+   * @see https://docs.elationhealth.com/reference/the-report-object
+   */
   private diagnosticReportStatusMap = {
     amended: "AMENDED",
     corrected: "CORRECTED",
@@ -1347,7 +1353,7 @@ class ElationApi {
     registered: "PENDING",
     preliminary: "PRELIMINARY",
     appended: "AMENDED",
-    unknown: "PARTIAL", // TODO: Check if we're ok with this
+    unknown: "PARTIAL",
   };
 
   private mapDiagnosticReportStatusToElation(status: string | undefined) {
