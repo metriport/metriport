@@ -1,7 +1,6 @@
 import {
   parseAdtSubscriptionRequest,
   parseBulkPatientSettingsRequest,
-  parseQuestMonitoringRequest,
   parsePatientSettingsRequest,
 } from "@metriport/core/domain/patient-settings";
 import dayjs from "dayjs";
@@ -17,10 +16,6 @@ import {
   addHieSubscriptionToPatients,
   removeHieSubscriptionFromPatients,
 } from "../../../command/medical/patient/settings/hie-subscriptions";
-import {
-  addQuestSubscriptionToPatients,
-  removeQuestSubscriptionFromPatients,
-} from "../../../command/medical/patient/settings/quest-monitoring";
 import { requestLogger } from "../../helpers/request-logger";
 import { getUUIDFrom } from "../../schemas/uuid";
 import { asyncHandler } from "../../util";
@@ -107,57 +102,6 @@ router.delete(
       cxId,
       patientIds,
       hieName,
-    });
-
-    return res.status(status.OK).json(result);
-  })
-);
-
-/** ---------------------------------------------------------------------------
- * POST /internal/patient/settings/quest
- *
- * Adds a Quest monitoring subscription for a select list of patient IDs.
- *
- * @param req.query.cxId The customer ID.
- * @param req.body The patient settings to apply. Optional, defaults to empty object.
- * @returns 200 with the results of the operation.
- */
-router.post(
-  "/quest",
-  requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const { patientIds } = parseQuestMonitoringRequest(req.body);
-
-    const result = await addQuestSubscriptionToPatients({
-      cxId,
-      patientIds,
-    });
-
-    return res.status(status.OK).json(result);
-  })
-);
-
-/** ---------------------------------------------------------------------------
- * DELETE /internal/patient/settings/quest
- *
- * Removes a Quest monitoring subscription for a select list of patient IDs.
- *
- * @param req.query.cxId The customer ID.
- * @param req.query.facilityId The facility ID. Optional.
- * @param req.body The patient settings to apply. Optional, defaults to empty object.
- * @returns 200 with the results of the operation.
- */
-router.delete(
-  "/quest",
-  requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const { patientIds } = parseQuestMonitoringRequest(req.body);
-
-    const result = await removeQuestSubscriptionFromPatients({
-      cxId,
-      patientIds,
     });
 
     return res.status(status.OK).json(result);
