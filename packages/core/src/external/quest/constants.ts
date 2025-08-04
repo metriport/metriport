@@ -1,1 +1,0 @@
-export const QUEST_DATE_FORMAT = "YYYYMMDD";
