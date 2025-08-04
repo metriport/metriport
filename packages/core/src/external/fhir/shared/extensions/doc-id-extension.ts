@@ -9,8 +9,8 @@ export type DocIdExtension = Required<Pick<Extension, "url" | "valueString">>;
 export function buildDocIdFhirExtension(docId: string, location?: "hl7"): DocIdExtension {
   const locationParam = location ? `location=${location}/` : "";
   return {
-    url: locationParam + DOC_ID_EXTENSION_URL,
-    valueString: docId,
+    url: DOC_ID_EXTENSION_URL,
+    valueString: locationParam + docId,
   };
 }
 

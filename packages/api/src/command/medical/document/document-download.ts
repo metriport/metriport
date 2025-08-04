@@ -1,15 +1,15 @@
 import {
-  ConversionType,
   Input as ConvertDocInput,
   Output as ConvertDocOutput,
+  ConversionType,
   validConversionTypes,
 } from "@metriport/core/domain/conversion/cda-to-html-pdf";
 import { getLambdaResultPayload, makeLambdaClient } from "@metriport/core/external/aws/lambda";
 import { S3Utils } from "@metriport/core/external/aws/s3";
-import { BadRequestError, NotFoundError } from "@metriport/shared";
+import { Config as CoreConfig } from "@metriport/core/util/config";
+import { BadRequestError, MetriportError, NotFoundError } from "@metriport/shared";
 import { makeS3Client } from "../../../external/aws/s3";
 import { Config } from "../../../shared/config";
-import { Config as CoreConfig } from "@metriport/core/util/config";
 
 /** @deprecated Use S3Utils instead */
 const s3client = makeS3Client();
@@ -17,16 +17,22 @@ const s3Utils = new S3Utils(Config.getAWSRegion());
 const lambdaClient = makeLambdaClient(Config.getAWSRegion());
 const conversionLambdaName = Config.getConvertDocLambdaName();
 
+type DocumentDownloadUrlType = ConversionType | "hl7";
+
 export async function getDocumentDownloadUrl({
   fileName,
   conversionType,
 }: {
   fileName: string;
-  conversionType?: ConversionType;
+  conversionType?: DocumentDownloadUrlType;
 }): Promise<string> {
   const { exists, contentType, bucketName } = await doesObjExist({ fileName });
 
   if (!exists) throw new NotFoundError("File does not exist");
+
+  if (conversionType === "hl7") {
+    return getIncomingHl7MessageDownloadUrl({ fileName });
+  }
 
   if (conversionType && contentType !== "application/xml" && contentType !== "text/xml")
     throw new BadRequestError(
@@ -141,11 +147,20 @@ export async function getSignedURL({
   return s3Utils.getSignedUrl({ bucketName: bucket, fileName });
 }
 
+/**
+ * Gets the download URL for the raw hl7 message.
+ * @param fileName - the name of the file in the bucket
+ * @returns the download URL for the raw hl7 message
+ */
 export async function getIncomingHl7MessageDownloadUrl({
   fileName,
 }: {
   fileName: string;
 }): Promise<string> {
+  if (Config.isSandbox()) {
+    throw new MetriportError("Viewing hl7 messages is not supported in sandbox");
+  }
+
   return s3Utils.getSignedUrl({
     bucketName: CoreConfig.getHl7IncomingMessageBucketName(),
     fileName,
