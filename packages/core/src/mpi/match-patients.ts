@@ -233,6 +233,8 @@ export function epicMatchingAlgorithm(
     scores.names = 10;
   } else if (hasMatchingFirstName || hasMatchingLastName) {
     scores.names = 5;
+  } else {
+    return false;
   }
 
   const addressMatch = normalizedPatient1.address?.some(addr1 =>
