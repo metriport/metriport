@@ -422,6 +422,7 @@ export class APIStack extends Stack {
       secrets,
       medicalDocumentsBucket,
       pharmacyBundleBucket: surescriptsStack?.getAssets()?.pharmacyConversionBucket,
+      hl7ConversionBucket,
       sandboxSeedDataBucket,
       alarmAction: slackNotification?.alarmAction,
       bedrock: props.config.bedrock,
