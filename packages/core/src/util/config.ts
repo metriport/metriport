@@ -294,18 +294,18 @@ export class Config {
   static getQuestSftpHost(): string {
     return getEnvVarOrFail("QUEST_SFTP_HOST");
   }
-  static getQuestSftpUsername(): string {
-    return getEnvVarOrFail("QUEST_SFTP_USERNAME");
-  }
-  static getQuestSftpPassword(): string {
-    return getEnvVarOrFail("QUEST_SFTP_PASSWORD");
-  }
   static getQuestSftpPort(): number {
     const port = Number.parseInt(getEnvVarOrFail("QUEST_SFTP_PORT"));
     if (isFinite(port)) {
       return port;
     }
     throw new Error("QUEST_SFTP_PORT is not a valid number");
+  }
+  static getQuestSftpUsername(): string {
+    return getEnvVarOrFail("QUEST_SFTP_USERNAME");
+  }
+  static getQuestSftpPassword(): string {
+    return getEnvVarOrFail("QUEST_SFTP_PASSWORD");
   }
   static getQuestSftpOutgoingDirectory(): string {
     return getEnvVarOrFail("QUEST_OUTGOING_DIRECTORY_PATH");
