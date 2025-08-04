@@ -27,8 +27,3 @@ export const adtSubscriptionRequestSchema = z.object({
   hieName: z.string(),
 });
 export type AdtSubscriptionRequest = z.infer<typeof adtSubscriptionRequestSchema>;
-
-export const questMonitoringRequestSchema = z.object({
-  patientIds: z.array(z.string()),
-});
-export type QuestMonitoringRequest = z.infer<typeof questMonitoringRequestSchema>;
