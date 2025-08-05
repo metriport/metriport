@@ -200,7 +200,7 @@ export async function getAdtSourcedEncounter({
 }
 
 /**
- * Retrieves all ADT-sourced resources for a patient
+ * Retrieves all ADT-sourced resources for a patient. In staging this will always return an empty array.
  *
  * @param cxId Customer ID
  * @param patientId Patient ID
@@ -213,6 +213,11 @@ export async function getAllAdtSourcedResources({
   cxId: string;
   patientId: string;
 }): Promise<BundleEntry[]> {
+  // ADTs are not supported in sandbox
+  if (Config.isSandbox()) {
+    return [];
+  }
+
   const encounterBundles = await getAllAdtSourcedEncounters({ cxId, patientId });
   return encounterBundles.flatMap(bundle => bundle.entry ?? []);
 }
