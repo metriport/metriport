@@ -24,7 +24,10 @@ import {
   getHl7MessageTypeOrFail,
   getMessageUniqueIdentifier,
 } from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion/msh";
-import { Hl7Notification, Hl7NotificationWebhookSender } from "./hl7-notification-webhook-sender";
+import {
+  Hl7NotificationSenderParams,
+  Hl7NotificationWebhookSender,
+} from "./hl7-notification-webhook-sender";
 import { isSupportedTriggerEvent, SupportedTriggerEvent } from "./utils";
 
 export const dischargeEventCode = "A03";
@@ -58,7 +61,7 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
    * @param params - The parameters for the HL7 message.
    * @returns - A promise that resolves when the message is sent to the API.
    */
-  async execute(params: Hl7Notification): Promise<void> {
+  async execute(params: Hl7NotificationSenderParams): Promise<void> {
     const message = Hl7Message.parse(params.message);
     const { cxId, patientId, sourceTimestamp, messageReceivedTimestamp } = params;
     const encounterId = createEncounterId(message, patientId);
@@ -101,7 +104,7 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
       message,
       cxId,
       patientId,
-      timestampString: sourceTimestamp,
+      rawDataFileKey: params.rawDataFileKey,
     });
 
     const newEncounterData = prependPatientToBundle({

@@ -122,6 +122,7 @@ export function createAPIService({
   ehrGetAppointmentsLambda,
   ehrBundleBucket,
   generalBucket,
+  incomingHl7NotificationBucket,
   conversionBucket,
   medicalDocumentsUploadBucket,
   ehrResponsesBucket,
@@ -172,6 +173,7 @@ export function createAPIService({
   ehrGetAppointmentsLambda: ILambda;
   ehrBundleBucket: s3.IBucket;
   generalBucket: s3.IBucket;
+  incomingHl7NotificationBucket: s3.IBucket | undefined;
   conversionBucket: s3.IBucket;
   medicalDocumentsUploadBucket: s3.IBucket;
   ehrResponsesBucket: s3.IBucket | undefined;
@@ -280,6 +282,9 @@ export function createAPIService({
           ...(props.config.sentryDSN ? { SENTRY_DSN: props.config.sentryDSN } : undefined),
           ...(props.config.usageReportUrl && {
             USAGE_URL: props.config.usageReportUrl,
+          }),
+          ...(incomingHl7NotificationBucket && {
+            HL7_INCOMING_MESSAGE_BUCKET_NAME: incomingHl7NotificationBucket.bucketName,
           }),
           CONVERSION_RESULT_BUCKET_NAME: conversionBucket.bucketName,
           ...(props.config.medicalDocumentsBucketName && {
@@ -508,6 +513,8 @@ export function createAPIService({
   conversionBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   medicalDocumentsUploadBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   ehrBundleBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
+
+  incomingHl7NotificationBucket?.grantRead(fargateService.taskDefinition.taskRole);
 
   if (surescriptsAssets) {
     surescriptsAssets.pharmacyConversionBucket.grantReadWrite(

@@ -508,14 +508,14 @@ class ElationApi {
     elationPracticeId,
     elationPhysicianId,
     patientId,
-    diagnostricReport,
+    diagnosticReport,
     observations,
   }: {
     cxId: string;
     elationPracticeId: string;
     elationPhysicianId: string;
     patientId: string;
-    diagnostricReport: DiagnosticReport;
+    diagnosticReport: DiagnosticReport;
     observations: Observation[];
   }): Promise<CreatedLab> {
     const { debug } = out(
@@ -526,19 +526,19 @@ class ElationApi {
       cxId,
       practiceId: this.practiceId,
       patientId,
-      diagnostricReportId: diagnostricReport.id,
+      diagnostricReportId: diagnosticReport.id,
     };
     const data = {
       patient: patientId,
       practice: elationPracticeId,
       physician: elationPhysicianId,
-      custom_title: this.getMostInformativeTitle(diagnostricReport.code),
-      ...this.formatLabPanel(diagnostricReport, observations, additionalInfo),
+      custom_title: this.getMostInformativeTitle(diagnosticReport.code),
+      ...this.formatLabPanel(diagnosticReport, observations, additionalInfo),
     };
     const lab = await this.makeRequest<CreatedLab>({
       cxId,
       patientId,
-      s3Path: this.createWriteBackPath("lab-panel", diagnostricReport.id),
+      s3Path: this.createWriteBackPath("lab-panel", diagnosticReport.id),
       method: "POST",
       url: reportsUrl,
       data,
@@ -1066,6 +1066,9 @@ class ElationApi {
     }
     const isAbnormal = interpretation === "abnormal";
     const text = observation.text?.div;
+    const normalizedText = (
+      text ? this.normalizeLabTitle(text) : this.normalizeLabTitle(loincCoding.display)
+    ).slice(0, maxNameCharacters);
     return {
       report_type: "Lab",
       document_date: formattedObservedDate,
@@ -1082,17 +1085,15 @@ class ElationApi {
             {
               status: formattedResultStatus,
               value: value.toString(),
-              text: text
-                ? this.normalizeLabTitle(text)
-                : this.normalizeLabTitle(loincCoding.display),
-              note: "Added via Metriport App",
-              reference_min: referenceRange.low?.toString(),
-              reference_max: referenceRange.high?.toString(),
+              text: "",
+              note: "",
+              reference_min: referenceRange.low?.toString() ?? "",
+              reference_max: referenceRange.high?.toString() ?? "",
               units: unit.slice(0, maxUnitsCharacters),
               is_abnormal: isAbnormal ? "1" : "0",
               abnormal_flag: this.mapInterpretationToAbnormalFlag(interpretation),
               test: {
-                name: loincCoding.display.slice(0, maxNameCharacters),
+                name: normalizedText,
                 code: loincCoding.code,
                 loinc: loincCoding.code,
               },
@@ -1151,11 +1152,11 @@ class ElationApi {
   }
 
   private formatLabPanel(
-    diagnostricReport: DiagnosticReport,
+    diagnosticReport: DiagnosticReport,
     observations: Observation[],
     additionalInfo: Record<string, string | undefined>
   ): ElationLab {
-    const reportDate = getDiagnosticReportDate(diagnostricReport);
+    const reportDate = getDiagnosticReportDate(diagnosticReport);
     const formattedReportDate = this.formatDateTime(reportDate);
     if (!formattedReportDate) {
       throw new BadRequestError(
@@ -1164,7 +1165,13 @@ class ElationApi {
         additionalInfo
       );
     }
-    const grids: ElationLab["grids"] = observations.flatMap(observation => {
+
+    const diagReportTitle = this.getMostInformativeTitle(diagnosticReport.code);
+    if (!diagReportTitle) {
+      throw new BadRequestError("No title found for diagnostic report", undefined, additionalInfo);
+    }
+
+    const observationResults = observations.flatMap(observation => {
       const loincCoding = getObservationLoincCoding(observation);
       if (!loincCoding) return [];
       if (!loincCoding.code) return [];
@@ -1177,7 +1184,7 @@ class ElationApi {
         return [];
       }
       const resultStatus = getObservationResultStatus(observation);
-      if (!resultStatus) {
+      if (!resultStatus || resultStatus.trim().toLowerCase() != "final") {
         return [];
       }
       const formattedResultStatus = resultStatus.toUpperCase();
@@ -1195,39 +1202,51 @@ class ElationApi {
       }
       const isAbnormal = interpretation === "abnormal";
       const text = observation.text?.div;
+      const normalizedText = (
+        text ? this.normalizeLabTitle(text) : this.normalizeLabTitle(loincCoding.display)
+      ).slice(0, maxNameCharacters);
+
       return {
-        accession_number: uuidv7(),
-        resulted_date: formattedObservedDate,
-        collected_date: formattedObservedDate,
         status: formattedResultStatus,
-        note: "Added via Metriport App",
-        results: [
-          {
-            status: formattedResultStatus,
-            value: value.toString(),
-            text: text ? this.normalizeLabTitle(text) : this.normalizeLabTitle(loincCoding.display),
-            note: "Added via Metriport App",
-            reference_min: referenceRange.low?.toString(),
-            reference_max: referenceRange.high?.toString(),
-            units: unit.slice(0, maxUnitsCharacters),
-            is_abnormal: isAbnormal ? "1" : "0",
-            abnormal_flag: this.mapInterpretationToAbnormalFlag(interpretation),
-            test: {
-              name: loincCoding.display.slice(0, maxNameCharacters),
-              code: loincCoding.code,
-              loinc: loincCoding.code,
-            },
-            test_category: {
-              value: loincCoding.display.slice(0, maxNameCharacters),
-              description: loincCoding.display.slice(0, maxNameCharacters),
-            },
-          },
-        ],
+        value: value.toString(),
+        text: "",
+        note: "",
+        reference_min: referenceRange.low?.toString() ?? "",
+        reference_max: referenceRange.high?.toString() ?? "",
+        units: unit.slice(0, maxUnitsCharacters),
+        is_abnormal: isAbnormal ? "1" : "0",
+        abnormal_flag: this.mapInterpretationToAbnormalFlag(interpretation),
+        test: {
+          name: normalizedText,
+          code: loincCoding.code,
+          loinc: loincCoding.code,
+        },
+        test_category: {
+          value: formattedReportDate,
+          description: diagReportTitle,
+        },
       };
     });
-    if (grids.length < 1) {
-      throw new BadRequestError("No grids found for diagnostic report", undefined, additionalInfo);
+
+    if (observationResults.length < 1) {
+      throw new BadRequestError(
+        "No valid observations found for lab panel",
+        undefined,
+        additionalInfo
+      );
     }
+
+    const grids: ElationLab["grids"] = [
+      {
+        accession_number: uuidv7(),
+        resulted_date: formattedReportDate,
+        collected_date: formattedReportDate,
+        status: "FINAL",
+        note: "Added via Metriport App",
+        results: observationResults,
+      },
+    ];
+
     return {
       report_type: "Lab",
       document_date: formattedReportDate,

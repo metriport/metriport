@@ -35,7 +35,7 @@ export async function writeBackResource({ ...params }: WriteBackResourceRequest)
   } else if (params.writeBackResource === "lab-panel") {
     return await writeBackLabPanel({
       ...params,
-      diagnostricReport: params.primaryResourceOrResources as DiagnosticReport,
+      diagnosticReport: params.primaryResourceOrResources as DiagnosticReport,
       observations: params.secondaryResourceOrResources as Observation[],
     });
   } else if (params.writeBackResource === "grouped-vitals") {

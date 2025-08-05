@@ -1,12 +1,26 @@
-import { Bundle, Resource } from "@medplum/fhirtypes";
+import { Bundle, BundleEntry, Resource } from "@medplum/fhirtypes";
 import { MetriportError } from "@metriport/shared";
+import { compact } from "lodash";
 import { out } from "../../util";
 import { Config } from "../../util/config";
 import { HL7_FILE_EXTENSION, JSON_FILE_EXTENSION } from "../../util/mime";
 import { S3Utils } from "../aws/s3";
 import { mergeBundles } from "./bundle/utils";
+import _ from "lodash";
 
 const s3Utils = new S3Utils(Config.getAWSRegion());
+
+export function createCxIdPtIdPrefix({ cxId, patientId }: { cxId: string; patientId: string }) {
+  return `cxId=${cxId}/ptId=${patientId}`;
+}
+
+export function getEncounterIdFromFileKey(key: string) {
+  const encounterId = key.split("/")[3];
+  if (!encounterId) {
+    throw new MetriportError("Encounter ID not found in file key", undefined, { key });
+  }
+  return encounterId;
+}
 
 export function createPrefixAdtEncounter({
   cxId,
@@ -17,7 +31,7 @@ export function createPrefixAdtEncounter({
   patientId: string;
   encounterId: string;
 }) {
-  return `cxId=${cxId}/ptId=${patientId}/ADT/${encounterId}`;
+  return `${createCxIdPtIdPrefix({ cxId, patientId })}/ADT/${encounterId}`;
 }
 
 /**
@@ -183,6 +197,63 @@ export async function getAdtSourcedEncounter({
   log(`Found ADT encounter in S3 bucket: ${s3BucketName} at key: ${fileKey}`);
 
   return JSON.parse(fileData.toString());
+}
+
+/**
+ * Retrieves all ADT-sourced resources for a patient
+ *
+ * @param cxId Customer ID
+ * @param patientId Patient ID
+ * @returns All resources originated from ADTs for this patient
+ */
+export async function getAllAdtSourcedResources({
+  cxId,
+  patientId,
+}: {
+  cxId: string;
+  patientId: string;
+}): Promise<BundleEntry[]> {
+  const encounterBundles = await getAllAdtSourcedEncounters({ cxId, patientId });
+  return encounterBundles.flatMap(bundle => bundle.entry ?? []);
+}
+
+/**
+ * Retrieves all ADT-sourced encounters for a patient
+ *
+ * @param cxId Customer ID
+ * @param patientId Patient ID
+ * @returns The encounter data as a parsed JSON object
+ */
+export async function getAllAdtSourcedEncounters({
+  cxId,
+  patientId,
+}: {
+  cxId: string;
+  patientId: string;
+}): Promise<Bundle<Resource>[]> {
+  const { log } = out(`getAllAdtSourcedEncounters - cx: ${cxId}, pt: ${patientId}`);
+  const s3BucketName = Config.getHl7ConversionBucketName();
+  function getEncounter(encounterId: string) {
+    return getAdtSourcedEncounter({ cxId, patientId, encounterId });
+  }
+
+  const encounters = await s3Utils.listObjects(
+    s3BucketName,
+    createCxIdPtIdPrefix({ cxId, patientId })
+  );
+
+  const encounterBundles = await Promise.all(
+    _(encounters)
+      .map(encounter => encounter.Key)
+      .compact()
+      .map(getEncounterIdFromFileKey)
+      .uniq()
+      .value()
+      .map(getEncounter)
+  );
+  log(`Found ${compact(encounterBundles).length} encounters`);
+
+  return compact(encounterBundles);
 }
 
 /**
