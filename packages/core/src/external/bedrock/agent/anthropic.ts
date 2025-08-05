@@ -23,7 +23,7 @@ const DEFAULT_MAX_TOKENS = 1024;
 const DEFAULT_TEMPERATURE = 0;
 
 /**
- * An agent creates BedrockAgentThread instances to manage conversations, memory, and tool calls with the underlying BedrockClient.
+ * An agent creates AnthropicAgent instances to manage conversations, memory, and tool calls with the underlying Anthropic model.
  */
 export class AnthropicAgent<V extends AnthropicModelVersion> {
   private readonly model: AnthropicModel<V>;
@@ -63,8 +63,8 @@ export class AnthropicAgent<V extends AnthropicModelVersion> {
 
   /**
    * Starts model invocation with the given user message.
-   * @param messageText
-   * @returns
+   * @param messageText - The text of the user message.
+   * @returns The response from the Anthropic model.
    */
   async startConversation(messageText: string): Promise<AnthropicResponse<V>> {
     this.addUserMessage([
@@ -79,7 +79,7 @@ export class AnthropicAgent<V extends AnthropicModelVersion> {
   /**
    * Performs a single model invocation for this agent's conversation thread, and adds the response
    * content onto the conversation thread.
-   * @returns
+   * @returns The response from the Anthropic model.
    */
   async continueConversation(): Promise<AnthropicResponse<V>> {
     // Invoke the underlying Claude Sonnet model
@@ -101,8 +101,8 @@ export class AnthropicAgent<V extends AnthropicModelVersion> {
 
   /**
    * After continuing a conversation, check the response object to see if the model has invoked any tools.
-   * @param response
-   * @returns
+   * @param response - The response from the model.
+   * @returns True if the model has invoked any tools.
    */
   shouldExecuteTools(response: AnthropicResponse<V>): boolean {
     if (!this.tools || response.stop_reason !== "tool_use") return false;
@@ -112,8 +112,7 @@ export class AnthropicAgent<V extends AnthropicModelVersion> {
   /**
    * If a model response contains tool calls, execute the tools and add the results to as a new user message
    * on the agent's conversation thread.
-   * @param response
-   * @returns
+   * @param response - The response from the model.
    */
   async executeTools(response: AnthropicResponse<V>): Promise<void> {
     const toolCalls = getToolCallsFromResponse(response);
@@ -136,6 +135,9 @@ export class AnthropicAgent<V extends AnthropicModelVersion> {
     this.addUserMessage(toolResults);
   }
 
+  /**
+   * @returns True if the agent has tools configured.
+   */
   hasTools(): boolean {
     return !!this.tools;
   }

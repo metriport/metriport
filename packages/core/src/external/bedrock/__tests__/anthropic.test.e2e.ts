@@ -100,7 +100,6 @@ describe("Anthropic test", () => {
       systemPrompt: "You are a helpful assistant.",
       tools: [getCapitalTool],
     });
-
     const mockToolCall: AnthropicToolCall = {
       type: "tool_use",
       id: "1",
@@ -109,7 +108,6 @@ describe("Anthropic test", () => {
         country: "France",
       },
     };
-
     const mockConversation: AnthropicMessageThread<"claude-sonnet-3.7"> = [
       {
         role: "user",
@@ -120,7 +118,6 @@ describe("Anthropic test", () => {
         content: [mockToolCall],
       },
     ];
-
     agent.setConversation(mockConversation);
 
     const mockResponse: AnthropicResponse<"claude-sonnet-3.7"> = {
@@ -137,7 +134,6 @@ describe("Anthropic test", () => {
         cache_creation_input_tokens: 0,
       },
     };
-
     expect(agent.shouldExecuteTools(mockResponse)).toBe(true);
     await agent.executeTools(mockResponse);
     expect(agent.getConversation()).toEqual([
