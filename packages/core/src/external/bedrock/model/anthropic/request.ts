@@ -44,7 +44,7 @@ export interface AnthropicRequest<V extends AnthropicModelVersion> {
   stop_sequences?: string[];
 
   // Introduced in Claude 3.7
-  thinking?: V extends "3.5"
+  thinking?: V extends "claude-sonnet-3.5"
     ? never
     : {
         type: "enabled";
