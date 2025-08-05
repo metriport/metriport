@@ -14,15 +14,12 @@ export function buildInitialUsage(): AnthropicUsage {
   };
 }
 
-export function incrementUsage(
-  usage: AnthropicUsage,
-  incrementUsage: AnthropicUsage
-): AnthropicUsage {
+export function incrementUsage(usage: AnthropicUsage, increment: AnthropicUsage): AnthropicUsage {
   return {
-    input_tokens: usage.input_tokens + incrementUsage.input_tokens,
-    output_tokens: usage.output_tokens + incrementUsage.output_tokens,
-    cache_read_input_tokens: usage.cache_read_input_tokens + incrementUsage.cache_read_input_tokens,
+    input_tokens: usage.input_tokens + increment.input_tokens,
+    output_tokens: usage.output_tokens + increment.output_tokens,
+    cache_read_input_tokens: usage.cache_read_input_tokens + increment.cache_read_input_tokens,
     cache_creation_input_tokens:
-      usage.cache_creation_input_tokens + incrementUsage.cache_creation_input_tokens,
+      usage.cache_creation_input_tokens + increment.cache_creation_input_tokens,
   };
 }

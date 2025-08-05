@@ -121,7 +121,7 @@ export class AnthropicAgent<V extends AnthropicModelVersion> {
       throw new BadRequestError("Not a valid tool call response");
     }
 
-    const toolExecutions = buildToolExecutions(this.tools, toolCalls);
+    const { toolExecutions, toolErrors } = buildToolExecutions(this.tools, toolCalls);
     const toolResults: AnthropicToolResult[] = [];
     await executeAsynchronously(toolExecutions, async ({ tool, toolCall, arg }) => {
       try {
@@ -131,7 +131,7 @@ export class AnthropicAgent<V extends AnthropicModelVersion> {
         toolResults.push(buildToolResultError(toolCall, error));
       }
     });
-
+    toolResults.push(...toolErrors);
     // Add the tool results to the conversation thread
     this.addUserMessage(toolResults);
   }

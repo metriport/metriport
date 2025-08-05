@@ -1,8 +1,18 @@
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
-import { AnthropicToolCall, AnthropicToolConfig } from "../../model/anthropic/tools";
+import {
+  AnthropicToolCall,
+  AnthropicToolConfig,
+  AnthropicToolResult,
+  buildToolResultError,
+} from "../../model/anthropic/tools";
 import { AnthropicToolExecution } from "./types";
 
+/**
+ * Represents a tool that can be executed by an Anthropic agent.
+ * @param I - The type of the input to the tool.
+ * @param O - The type of the output from the tool.
+ */
 export class AnthropicTool<I = unknown, O = unknown> {
   private name: string;
   private description: string;
@@ -24,7 +34,7 @@ export class AnthropicTool<I = unknown, O = unknown> {
     this.name = name;
     this.description = description;
     this.inputSchema = inputSchema;
-    this.outputSchema = outputSchema ?? z.any();
+    this.outputSchema = outputSchema ?? z.unknown();
     this.handler = handler;
   }
 
@@ -55,20 +65,28 @@ export class AnthropicTool<I = unknown, O = unknown> {
 
 /**
  * Maps an array of tool calls to an array of tool executions.
- * @param tools
- * @param toolCalls
- * @returns
+ * @param tools - The array of tools to map from.
+ * @param toolCalls - The array of tool calls to map to.
+ * @returns The array of tool executions.
  */
 export function buildToolExecutions(
   tools: AnthropicTool[],
   toolCalls: AnthropicToolCall[]
-): AnthropicToolExecution[] {
+): { toolExecutions: AnthropicToolExecution[]; toolErrors: AnthropicToolResult[] } {
   const toolExecutions: AnthropicToolExecution[] = [];
+  const toolErrors: AnthropicToolResult[] = [];
   for (const toolCall of toolCalls) {
     const tool = tools.find(tool => tool.getName() === toolCall.name);
-    if (tool && tool.canExecute(toolCall.input)) {
+    // Invalid tool call ID is a very rare case
+    if (!tool) {
+      continue;
+    } else if (tool.canExecute(toolCall.input)) {
       toolExecutions.push({ tool, toolCall, arg: toolCall.input });
+    } else {
+      toolErrors.push(
+        buildToolResultError(toolCall, new Error(`Tool ${toolCall.name} input is invalid`))
+      );
     }
   }
-  return toolExecutions;
+  return { toolExecutions, toolErrors };
 }

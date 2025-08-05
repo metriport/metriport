@@ -13,8 +13,14 @@ export interface AnthropicAgentConfig<V extends AnthropicModelVersion> {
   temperature?: number;
 }
 
+/**
+ * Represents the execution context of an Anthropic tool
+ */
 export interface AnthropicToolExecution {
+  /** The tool instance being executed */
   tool: AnthropicTool;
+  /** The tool call metadata from the model response */
   toolCall: AnthropicToolCall;
+  /** The parsed input arguments for the tool */
   arg: Record<string, unknown>;
 }

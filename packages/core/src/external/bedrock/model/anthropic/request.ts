@@ -23,7 +23,7 @@ export interface AnthropicRequest<V extends AnthropicModelVersion> {
   // Definitions of tools that the model may use.
   tools?: Array<AnthropicToolConfig>;
 
-  // Specifices how the model should use the provided tools. The model can use a specific tool, any available tool, or decide by itself.
+  // Specifies how the model should use the provided tools. The model can use a specific tool, any available tool, or decide by itself.
   tool_choice?: {
     type: string;
     name: string;

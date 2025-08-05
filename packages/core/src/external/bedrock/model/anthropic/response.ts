@@ -20,11 +20,20 @@ export interface AnthropicResponse<V extends AnthropicModelVersion> {
 export function getAssistantResponseText<V extends AnthropicModelVersion>(
   response: AnthropicResponse<V>
 ): string | undefined {
-  const textContent = response.content.filter(
-    content => content.type === "text"
-  ) as AnthropicMessageText[];
+  const textContent = response.content.filter(isTextContent);
   if (textContent.length === 0) {
     return undefined;
   }
-  return textContent.map(content => content.text).join("\n");
+  return concatenateAllTextContent(textContent);
+}
+
+function isTextContent<V extends AnthropicModelVersion>(
+  content: AnthropicAssistantContent<V>[number]
+): content is AnthropicMessageText {
+  return content.type === "text";
+}
+
+function concatenateAllTextContent(content: AnthropicMessageText[]): string {
+  const lines = content.map(content => content.text);
+  return lines.join("\n");
 }

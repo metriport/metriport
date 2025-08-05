@@ -24,7 +24,7 @@ export interface AnthropicToolCall {
 }
 
 /**
- * Provided to the LLM in a user
+ * Provided to the LLM in a user message to indicate the result of a tool call.
  */
 export interface AnthropicToolResult {
   type: "tool_result";
