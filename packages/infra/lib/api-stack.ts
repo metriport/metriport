@@ -307,6 +307,7 @@ export class APIStack extends Stack {
     });
 
     let hl7ConversionBucket: s3.Bucket | undefined;
+    let incomingHl7NotificationBucket: s3.IBucket | undefined;
     if (!isSandbox(props.config) && props.config.hl7Notification.hl7ConversionBucketName) {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       hl7ConversionBucket = new s3.Bucket(this, "HL7ConversionBucket", {
@@ -315,6 +316,12 @@ export class APIStack extends Stack {
         encryption: s3.BucketEncryption.S3_MANAGED,
         versioned: true,
       });
+
+      incomingHl7NotificationBucket = s3.Bucket.fromBucketName(
+        this,
+        "IncomingHl7NotificationBucket",
+        props.config.hl7Notification.incomingMessageBucketName
+      );
     }
 
     let ehrResponsesBucket: s3.Bucket | undefined;
@@ -422,6 +429,7 @@ export class APIStack extends Stack {
       secrets,
       medicalDocumentsBucket,
       pharmacyBundleBucket: surescriptsStack?.getAssets()?.pharmacyConversionBucket,
+      hl7ConversionBucket,
       sandboxSeedDataBucket,
       alarmAction: slackNotification?.alarmAction,
       bedrock: props.config.bedrock,
@@ -653,6 +661,7 @@ export class APIStack extends Stack {
       ehrGetAppointmentsLambda,
       ehrBundleBucket,
       generalBucket,
+      incomingHl7NotificationBucket,
       conversionBucket: fhirConverterBucket,
       medicalDocumentsUploadBucket,
       ehrResponsesBucket,
