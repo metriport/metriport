@@ -452,7 +452,6 @@ export class SurescriptsNestedStack extends NestedStack {
       envVars: {
         ...envVars,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
-        ...(job === "sftpAction" ? { SFTP_ACTION_LAMBDA: "surescripts" } : {}),
         ...(termServerUrl ? { TERM_SERVER_URL: termServerUrl } : {}),
         SYSTEM_ROOT_OID: systemRootOID,
       },
