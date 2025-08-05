@@ -125,8 +125,8 @@ type EnvConfigBase = {
   medicalDocumentsUploadBucketName: string;
   pharmacyConversionBucketName: string;
   surescriptsReplicaBucketName: string;
-  labConversionBucketName: string;
-  questReplicaBucketName: string;
+  labConversionBucketName?: string;
+  questReplicaBucketName?: string;
   ehrResponsesBucketName?: string;
   ehrBundleBucketName: string;
   iheResponsesBucketName: string;

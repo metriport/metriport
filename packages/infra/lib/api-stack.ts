@@ -396,7 +396,11 @@ export class APIStack extends Stack {
     // Quest
     //-------------------------------------------
     let questStack: QuestNestedStack | undefined = undefined;
-    if (props.config.quest) {
+    if (
+      props.config.quest &&
+      props.config.questReplicaBucketName &&
+      props.config.labConversionBucketName
+    ) {
       questStack = new QuestNestedStack(this, "QuestNestedStack", {
         config: props.config,
         vpc: this.vpc,
