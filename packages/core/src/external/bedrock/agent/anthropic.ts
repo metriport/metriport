@@ -29,7 +29,7 @@ export class AnthropicAgent<V extends AnthropicModelVersion> {
   private readonly model: AnthropicModel<V>;
   private readonly config: AnthropicAgentConfig<V>;
   private readonly tools?: AnthropicTool[] | undefined;
-  private readonly usage: AnthropicUsage = buildInitialUsage();
+  private usage: AnthropicUsage = buildInitialUsage();
   private messages: AnthropicMessageThread<V> = [];
 
   constructor(config: AnthropicAgentConfig<V>) {
@@ -95,7 +95,7 @@ export class AnthropicAgent<V extends AnthropicModelVersion> {
 
     // Update the internal state of the agent with the response
     this.addAssistantMessage(response.content);
-    incrementUsage(this.usage, response.usage);
+    this.usage = incrementUsage(this.usage, response.usage);
     return response;
   }
 
