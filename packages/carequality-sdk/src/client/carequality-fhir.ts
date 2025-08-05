@@ -116,13 +116,6 @@ export class CarequalityManagementApiFhir implements CarequalityManagementApi {
     return this.api.put(url, data, { headers: this.buildHeaders(headers) });
   }
 
-  private async sendDeleteRequest(
-    url: string,
-    headers?: Record<string, string>
-  ): Promise<AxiosResponse> {
-    return this.api.delete(url, { headers: this.buildHeaders(headers) });
-  }
-
   private isNotFoundError(error: AxiosError): boolean {
     if (error.response && [404, 410].includes(error.response?.status)) return true;
     return false;
@@ -186,8 +179,31 @@ export class CarequalityManagementApiFhir implements CarequalityManagementApi {
     return resp.data;
   }
 
-  async deleteOrganization(oid: string): Promise<void> {
-    const url = `${CarequalityManagementApiFhir.ORG_ENDPOINT}/${oid}`;
-    await this.sendDeleteRequest(url);
+  /**
+   * Marks an organization as inactive in the Carequality directory.
+   * The API doesn't support DELETE, so we need to send an update to disable it.
+   * The API doesn't support PATCH operations, so we need to load the Org and then update it.
+   * @param oid the OID of the organization to delete
+   * @returns the organization with the active flag set to false
+   */
+  async deleteOrganization(oid: string): Promise<OrganizationWithId>;
+  /**
+   * Marks an organization as inactive in the Carequality directory.
+   * The API doesn't support DELETE, so we need to send an update to disable it.
+   * The API doesn't support PATCH operations, so issue a PUT instead.
+   * @param org the organization to delete
+   * @returns the organization with the active flag set to false
+   */
+  async deleteOrganization(org: OrganizationWithId): Promise<OrganizationWithId>;
+  async deleteOrganization(oidOrOrg: string | OrganizationWithId): Promise<OrganizationWithId> {
+    if (typeof oidOrOrg === "string") {
+      const org = await this.getOrganization(oidOrOrg);
+      if (!org) throw new Error(`Organization with OID ${oidOrOrg} not found`);
+      org.active = false;
+      return this.updateOrganization(org);
+    }
+    const org: OrganizationWithId = oidOrOrg;
+    org.active = false;
+    return this.updateOrganization(org);
   }
 }

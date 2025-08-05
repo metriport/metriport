@@ -1,4 +1,4 @@
-import { EhrRefreshEhrBundlesDirect } from "@metriport/core/external/ehr/job/create-resource-diff-bundles/steps/refresh/ehr-refresh-ehr-bundles-direct";
+import { EhrRefreshEhrBundlesDirect } from "@metriport/core/external/ehr/job/bundle/create-resource-diff-bundles/steps/refresh/ehr-refresh-ehr-bundles-direct";
 import { getEnvAsIntOrFail } from "@metriport/shared";
 import { SQSEvent } from "aws-lambda";
 import { capture } from "../shared/capture";

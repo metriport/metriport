@@ -26,6 +26,7 @@ import { executeWithRetriesS3, S3Utils } from "@metriport/core/external/aws/s3";
 import { partitionPayload } from "@metriport/core/external/cda/partition-payload";
 import { processAttachments } from "@metriport/core/external/cda/process-attachments";
 import { removeBase64PdfEntries } from "@metriport/core/external/cda/remove-b64";
+import { isConvertibleFromS3 } from "@metriport/core/external/cda/is-convertible";
 import { hydrate } from "@metriport/core/external/fhir/consolidated/hydrate";
 import { normalize } from "@metriport/core/external/fhir/consolidated/normalize";
 import { FHIR_APP_MIME_TYPE, TXT_MIME_TYPE } from "@metriport/core/util/mime";
@@ -145,18 +146,24 @@ export const handler = capture.wrapHandler(async (event: SQSEvent) => {
 
       log(`Getting contents from bucket ${s3BucketName}, key ${s3FileName}`);
       const downloadStart = Date.now();
-      const payloadRaw = await s3Utils.getFileContentsAsString(s3BucketName, s3FileName);
-      if (payloadRaw.includes("nonXMLBody")) {
-        log(
-          `XML document is unstructured CDA with nonXMLBody, skipping... Filename: ${s3FileName}`
-        );
+
+      const isConvertibleResult = await isConvertibleFromS3({
+        bucketName: s3BucketName,
+        fileKey: s3FileName,
+        s3Utils,
+      });
+      if (!isConvertibleResult.isValid) {
+        log(isConvertibleResult.reason);
         await conversionResultHandler.notifyApi(
           { ...lambdaParams, source: medicalDataSource, status: "failed" },
           log
         );
         continue;
       }
-      const { documentContents: payloadNoB64, b64Attachments } = removeBase64PdfEntries(payloadRaw);
+
+      const { documentContents: payloadNoB64, b64Attachments } = removeBase64PdfEntries(
+        isConvertibleResult.contents
+      );
 
       if (b64Attachments && b64Attachments.total > 0) {
         log(`Extracted ${b64Attachments.total} B64 attachments - will process them soon`);

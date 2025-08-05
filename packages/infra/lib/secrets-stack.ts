@@ -98,10 +98,9 @@ export class SecretsStack extends Stack {
         logSecretInfo(this, secret, secretName);
       }
 
-      const vpnTunnelSecretNames = props.config.hl7Notification.vpnConfigs.flatMap(config => [
-        `PresharedKey1-${config.partnerName}`,
-        `PresharedKey2-${config.partnerName}`,
-      ]);
+      const vpnTunnelSecretNames = Object.values(props.config.hl7Notification.hieConfigs).flatMap(
+        config => [`PresharedKey1-${config.name}`, `PresharedKey2-${config.name}`]
+      );
       for (const secretName of vpnTunnelSecretNames) {
         const secret = makeSecret(secretName, {
           generateSecretString: {
@@ -110,6 +109,13 @@ export class SecretsStack extends Stack {
           },
         });
         logSecretInfo(this, secret, secretName);
+      }
+
+      if (props.config.analyticsPlatform) {
+        for (const secretName of Object.values(props.config.analyticsPlatform.secrets)) {
+          const secret = makeSecret(secretName);
+          logSecretInfo(this, secret, secretName);
+        }
       }
     }
   }

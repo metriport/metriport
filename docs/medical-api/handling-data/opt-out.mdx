@@ -1,0 +1,47 @@
+---
+title: "Opting Out of Networks"
+icon: "plug"
+description: "Guide patients through opting out or into data‑sharing networks"
+---
+
+## What does opting-in/out mean?
+
+Opting refers to a patient’s choice about whether their medical data is included in Metriport’s network queries 
+and shared with connected systems—opting in enables data retrieval and consolidation, 
+while opting out stops any new data exchanges until the patient opts back in.
+
+
+## Opt‑Out / Opt‑In a patient via Dashboard
+
+1. **Go to Dashboard → Patients**  
+    <img  
+        className="h-100"  
+        src="/images/home-to-patients.png"  
+        alt="Dashboard view showing the Patients menu"  
+    />  
+2. **Click on a patient** from the list:  
+    <img  
+        className="h-100"  
+        src="/images/dashboard-patients-opt.png"  
+        alt="Patients list with one patient selected"  
+    />  
+3. **Open the actions menu** (⋯) on the far top right of the patient details page.  
+    <img  
+        className="h-100"  
+        src="/images/patient-to-opt.png"  
+        alt="Patient details page with actions menu icon highlighted"  
+    />
+4. Choose **Opt Out of Networks** or **Opt In to Networks** depending on your intent:  
+    <img  
+        className="h-100"  
+        src="/images/opt-out-button.png"  
+        alt="Dropdown showing Opt Out of Networks and Opt In to Networks button"
+    />
+
+<Warning>
+  If you opt a patient out, they will no longer participate in any ongoing network queries or data sharing until you opt them back in.
+</Warning>
+
+## Opt‑Out via API
+
+Update a patient’s network opt‑out status programmatically. For full details, see the [HIE Opt‑Out API reference](/medical-api/api-reference/patient/hie-opt-out).

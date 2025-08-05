@@ -29,6 +29,7 @@ import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../uti
 import { toDTO } from "./dtos/documentDTO";
 import { docConversionTypeSchema, docFileNameSchema } from "./schemas/documents";
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
+import { getPatientPrimaryFacilityIdOrFail } from "../../command/medical/patient/get-patient-facilities";
 
 const router = Router();
 const region = Config.getAWSRegion();
@@ -125,10 +126,15 @@ router.post(
     const forceCommonwell = stringToBoolean(getFrom("query").optional("commonwell", req));
     const forceCarequality = stringToBoolean(getFrom("query").optional("carequality", req));
 
+    // TODO ENG-618: Temporary fix until we make facilityId required in the API
+    const patientFacilityId = facilityId
+      ? facilityId
+      : await getPatientPrimaryFacilityIdOrFail({ cxId, patientId });
+
     const docQueryProgress = await queryDocumentsAcrossHIEs({
       cxId,
       patientId,
-      facilityId,
+      facilityId: patientFacilityId,
       forceDownload: override,
       cxDocumentRequestMetadata: cxDocumentRequestMetadata?.metadata,
       forceCommonwell,
@@ -250,18 +256,18 @@ async function getUploadUrlAndCreateDocRef(req: Request): Promise<UploadDocument
     s3BucketName: medicalDocumentsUploadBucketName,
   });
 
-  const upsertOnFHIRServer = async () => {
+  async function upsertOnFHIRServer() {
     // Make a temporary DocumentReference on the FHIR server.
     console.log("Creating a temporary DocumentReference on the FHIR server with ID:", docRef.id);
     await upsertDocumentToFHIRServer(cxId, docRef);
-  };
+  }
 
-  const getPresignedUrl = async () => {
+  async function getPresignedUrl() {
     return s3Utils.getPresignedUploadUrl({
       bucket: medicalDocumentsUploadBucketName,
       key: s3FileName,
     });
-  };
+  }
 
   const [, url] = await Promise.all([upsertOnFHIRServer(), getPresignedUrl()]);
 

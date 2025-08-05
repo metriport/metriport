@@ -2,6 +2,7 @@ import {
   isDischargeSlackNotificationFeatureFlagEnabledForCx,
   isHl7NotificationWebhookFeatureFlagEnabledForCx,
 } from "@metriport/core/command/feature-flags/domain-ffs";
+import { createConsolidatedDataFileNameWithSuffix } from "@metriport/core/domain/consolidated/filename";
 import { sendToSlack, SlackMessage } from "@metriport/core/external/slack/index";
 import { capture, out } from "@metriport/core/util";
 import { Config } from "@metriport/core/util/config";
@@ -9,7 +10,7 @@ import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { errorToString, MetriportError } from "@metriport/shared";
 import { Hl7WebhookTypeSchemaType } from "@metriport/shared/medical";
 import { Hl7NotificationWebhookRequest } from "../../../routes/medical/schemas/hl7-notification";
-import { getSettingsOrFail } from "../../settings/getSettings";
+import { getSettings } from "../../settings/getSettings";
 import { processRequest } from "../../webhook/webhook";
 import { createWebhookRequest } from "../../webhook/webhook-request";
 import { getPatientOrFail } from "./get-patient";
@@ -33,12 +34,13 @@ export async function processHl7FhirBundleWebhook({
   const requestId = uuidv7();
   log(`req - ${requestId}, event - ${triggerEvent}`);
 
+  const webhookType = mapTriggerEventToWebhookType(triggerEvent);
+
   try {
     const [settings, currentPatient] = await Promise.all([
-      getSettingsOrFail({ id: cxId }),
+      getSettings({ id: cxId }),
       getPatientOrFail({ id: patientId, cxId }),
     ]);
-    const webhookType = mapTriggerEventToWebhookType(triggerEvent);
 
     const whData = {
       payload: {
@@ -52,17 +54,36 @@ export async function processHl7FhirBundleWebhook({
       },
     };
 
+    const isHl7NotificationWhFlagEnabled = await isHl7NotificationWebhookFeatureFlagEnabledForCx(
+      cxId
+    );
+
+    if (!settings || !isHl7NotificationWhFlagEnabled) {
+      const msg = !settings ? "Settings not found" : "WH FF disabled";
+      log(`${msg}. Not sending it...`);
+      await createWebhookRequest({
+        cxId,
+        type: webhookType,
+        payload: whData,
+        requestId,
+        status: "success",
+      });
+      return;
+    }
+
     // ENG-536 remove this once we automatically find the discharge summary
     if (
       triggerEvent === "A03" &&
       (await isDischargeSlackNotificationFeatureFlagEnabledForCx(cxId))
     ) {
+      const consolidatedBundleFilePath = createConsolidatedDataFileNameWithSuffix(cxId, patientId);
       try {
         const messagePayload = {
           cxId,
           patientId,
           admitTimestamp,
           dischargeTimestamp,
+          consolidatedBundleFilePath,
         };
 
         const message: SlackMessage = {
@@ -77,18 +98,6 @@ export async function processHl7FhirBundleWebhook({
       } catch (slackError) {
         log(`Failed to send Slack discharge notification: ${errorToString(slackError)}`);
       }
-    }
-
-    if (!(await isHl7NotificationWebhookFeatureFlagEnabledForCx(cxId))) {
-      log(`WH FF disabled. Not sending it...`);
-      await createWebhookRequest({
-        cxId,
-        type: webhookType,
-        payload: whData,
-        requestId,
-        status: "success",
-      });
-      return;
     }
 
     const webhookRequest = await createWebhookRequest({

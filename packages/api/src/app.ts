@@ -20,6 +20,7 @@ import { initRateLimiter } from "./routes/middlewares/rate-limiting";
 import { initSentry, isSentryEnabled } from "./sentry";
 import { Config } from "./shared/config";
 import { isClientError } from "./shared/http";
+import { isAxiosError } from "axios";
 
 dayjs.extend(duration);
 
@@ -61,6 +62,14 @@ if (isSentryEnabled()) {
         if (isClientError(error)) return false;
         capture.setExtra({
           ...(isMetriportError(error) ? error.additionalInfo : {}),
+          ...(isAxiosError(error)
+            ? {
+                stack: error.stack,
+                method: error.config?.method,
+                url: error.config?.url,
+                data: error.response?.data,
+              }
+            : {}),
           error,
         });
         return true;

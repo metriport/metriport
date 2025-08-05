@@ -1,8 +1,8 @@
-import { EhrContributeResourceDiffBundlesDirect } from "@metriport/core/external/ehr/job/create-resource-diff-bundles/steps/contribute/ehr-contribute-resource-diff-bundles-direct";
+import { EhrContributeResourceDiffBundlesDirect } from "@metriport/core/external/ehr/job/bundle/contribute-bundles/ehr-contribute-resource-diff-bundles-direct";
 import { getEnvAsIntOrFail } from "@metriport/shared";
 import { SQSEvent } from "aws-lambda";
 import { capture } from "../shared/capture";
-import { ehrCreateResourceDiffBundlesSchema } from "../shared/ehr";
+import { ehrContributeResourceDiffBundlesSchema } from "../shared/ehr";
 import { getEnvOrFail } from "../shared/env";
 import { prefixedLog } from "../shared/log";
 import { parseBody } from "../shared/parse-body";
@@ -24,7 +24,7 @@ export const handler = capture.wrapHandler(async (event: SQSEvent) => {
   const message = getSingleMessageOrFail(event.Records, lambdaName);
   if (!message) return;
 
-  const parsedBody = parseBody(ehrCreateResourceDiffBundlesSchema, message.body);
+  const parsedBody = parseBody(ehrContributeResourceDiffBundlesSchema, message.body);
   const { metriportPatientId, ehrPatientId, jobId } = parsedBody;
 
   const log = prefixedLog(

@@ -1,4 +1,4 @@
-import { Duration, NestedStack, NestedStackProps } from "aws-cdk-lib";
+import { Duration, NestedStack, NestedStackProps, Size } from "aws-cdk-lib";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
@@ -25,12 +25,39 @@ import { createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
 import { LambdaLayers } from "./shared/lambda-layers";
 import { createScheduledLambda } from "./shared/lambda-scheduled";
 import { buildSecret, Secrets } from "./shared/secrets";
+import { QueueAndLambdaSettings } from "./shared/settings";
 import { createQueue } from "./shared/sqs";
 import { isSandbox } from "./shared/util";
 
 export const CDA_TO_VIS_TIMEOUT = Duration.minutes(15);
 
 const pollingBuffer = Duration.seconds(30);
+
+const reconversionKickoffWaitTime = Duration.seconds(5); // 12 patients/min
+const reconversionKickoffLambdaTimeout = reconversionKickoffWaitTime.plus(Duration.seconds(25));
+
+function getReconversionKickoffSettings(): QueueAndLambdaSettings {
+  return {
+    name: "ReconversionKickoff",
+    entry: "reconversion-kickoff",
+    lambda: {
+      memory: 512,
+      timeout: reconversionKickoffLambdaTimeout,
+    },
+    queue: {
+      alarmMaxAgeOfOldestMessage: Duration.days(3),
+      maxMessageCountAlarmThreshold: 50_000,
+      maxReceiveCount: 3,
+      visibilityTimeout: Duration.seconds(reconversionKickoffLambdaTimeout.toSeconds() * 2 + 1),
+      createRetryLambda: false,
+    },
+    eventSource: {
+      batchSize: 1,
+      reportBatchItemFailures: true,
+    },
+    waitTime: reconversionKickoffWaitTime,
+  };
+}
 
 export type OpenSearchConfigForLambdas = {
   endpoint: string;
@@ -89,6 +116,8 @@ export class LambdasNestedStack extends NestedStack {
   readonly acmCertificateMonitorLambda: Lambda;
   readonly hl7v2RosterUploadLambdas: Lambda[] | undefined;
   readonly conversionResultNotifierLambda: Lambda;
+  readonly reconversionKickoffLambda: Lambda;
+  readonly reconversionKickoffQueue: Queue;
 
   constructor(scope: Construct, id: string, props: LambdasNestedStackProps) {
     super(scope, id, props);
@@ -285,6 +314,17 @@ export class LambdasNestedStack extends NestedStack {
         alarmAction: props.alarmAction,
       });
     }
+
+    const { lambda: reconversionKickoffLambda, queue: reconversionKickoffQueue } =
+      this.setupReconversionKickoff({
+        lambdaLayers: props.lambdaLayers,
+        sentryDsn: props.config.lambdasSentryDSN,
+        vpc: props.vpc,
+        envType: props.config.environmentType,
+        alarmAction: props.alarmAction,
+      });
+    this.reconversionKickoffLambda = reconversionKickoffLambda;
+    this.reconversionKickoffQueue = reconversionKickoffQueue;
   }
 
   private setupCdaToVisualization(ownProps: {
@@ -325,6 +365,7 @@ export class LambdasNestedStack extends NestedStack {
         lambdaLayers.saxon,
       ],
       memory: 1024,
+      ephemeralStorageSize: Size.gibibytes(1),
       timeout: CDA_TO_VIS_TIMEOUT,
       vpc,
       alarmSnsAction: alarmAction,
@@ -383,6 +424,7 @@ export class LambdasNestedStack extends NestedStack {
       },
       layers: [lambdaLayers.shared],
       memory: 512,
+      ephemeralStorageSize: Size.gibibytes(1),
       timeout: Duration.minutes(5),
       vpc,
     });
@@ -427,6 +469,7 @@ export class LambdasNestedStack extends NestedStack {
       },
       layers: [lambdaLayers.shared],
       memory: 1024, // TODO: 1603 - Monitor to see if more is required
+      ephemeralStorageSize: Size.gibibytes(1),
       timeout: Duration.minutes(5),
       vpc,
     });
@@ -697,6 +740,7 @@ export class LambdasNestedStack extends NestedStack {
       },
       layers: [lambdaLayers.shared, lambdaLayers.langchain],
       memory: 6144,
+      ephemeralStorageSize: Size.gibibytes(2),
       timeout: lambdaTimeout,
       isEnableInsights: true,
       vpc,
@@ -771,6 +815,7 @@ export class LambdasNestedStack extends NestedStack {
       },
       layers: [lambdaLayers.shared, lambdaLayers.langchain],
       memory: lambdaSettings.memory,
+      ephemeralStorageSize: lambdaSettings.ephemeralStorageSize,
       timeout: lambdaSettings.timeout,
       isEnableInsights: true,
       vpc,
@@ -988,5 +1033,47 @@ export class LambdasNestedStack extends NestedStack {
     }
 
     return rosterUploadLambdas;
+  }
+
+  private setupReconversionKickoff(ownProps: {
+    lambdaLayers: LambdaLayers;
+    sentryDsn: string | undefined;
+    vpc: ec2.IVpc;
+    envType: EnvType;
+    alarmAction: SnsAction | undefined;
+  }): { lambda: Lambda; queue: Queue } {
+    const { lambdaLayers, vpc, envType, sentryDsn, alarmAction } = ownProps;
+    const settings = getReconversionKickoffSettings();
+
+    const queue = createQueue({
+      ...settings.queue,
+      stack: this,
+      name: settings.name,
+      fifo: true,
+      createDLQ: true,
+      lambdaLayers: [lambdaLayers.shared],
+      envType,
+      alarmSnsAction: alarmAction,
+    });
+
+    const lambda = createLambda({
+      ...settings.lambda,
+      stack: this,
+      name: settings.name,
+      entry: settings.entry,
+      envType,
+      envVars: {
+        // API_URL set on the api-stack after the OSS API is created
+        WAIT_TIME_IN_MILLIS: reconversionKickoffWaitTime.toMilliseconds().toString(),
+        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+      },
+      layers: [lambdaLayers.shared],
+      vpc,
+      alarmSnsAction: alarmAction,
+    });
+
+    lambda.addEventSource(new SqsEventSource(queue, settings.eventSource));
+
+    return { lambda, queue };
   }
 }

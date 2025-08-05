@@ -27,7 +27,9 @@ import {
   getPatientOrFail,
   PatientWithIdentifiers,
 } from "../../../../command/medical/patient/get-patient";
+import { getPatientPrimaryFacilityIdOrFail } from "../../../../command/medical/patient/get-patient-facilities";
 import { Config } from "../../../../shared/config";
+import { confirmEhrPatientDemographicsMatchMetriport } from "../../shared/command/patient/confirm-patient-match";
 import {
   handleMetriportSync,
   HandleMetriportSyncParams,
@@ -47,6 +49,7 @@ export type SyncHealthiePatientIntoMetriportParams = {
   api?: HealthieApi;
   triggerDq?: boolean;
   triggerDqForExistingPatient?: boolean;
+  inputMetriportPatientId?: string;
 };
 
 export async function syncHealthiePatientIntoMetriport({
@@ -56,21 +59,46 @@ export async function syncHealthiePatientIntoMetriport({
   api,
   triggerDq = false,
   triggerDqForExistingPatient = false,
+  inputMetriportPatientId,
 }: SyncHealthiePatientIntoMetriportParams): Promise<string> {
-  const existingPatient = await getPatientMapping({
+  const { log } = out(
+    `syncHealthiePatientIntoMetriport - practId: ${healthiePracticeId} ptId: ${healthiePatientId}`
+  );
+  const existingMapping = await getPatientMapping({
     cxId,
     externalId: healthiePatientId,
     source: EhrSources.healthie,
   });
-  if (existingPatient) {
+
+  const healthieApi = api ?? (await createHealthieClient({ cxId, practiceId: healthiePracticeId }));
+  if (existingMapping) {
+    log("existing mapping found", existingMapping.patientId);
     const metriportPatient = await getPatientOrFail({
       cxId,
-      id: existingPatient.patientId,
+      id: existingMapping.patientId,
     });
+    const facilityId = await getPatientPrimaryFacilityIdOrFail({
+      cxId,
+      patientId: metriportPatient.id,
+    });
+
+    if (inputMetriportPatientId) {
+      const healthiePatient = await healthieApi.getPatient({ cxId, patientId: healthiePatientId });
+      const demographics = createMetriportPatientDemographics(healthiePatient);
+      log("confirming patient match");
+      await confirmEhrPatientDemographicsMatchMetriport({
+        cxId,
+        patientId: inputMetriportPatientId,
+        demographics,
+      });
+      log("patient match confirmed successfully");
+    }
+
     if (triggerDqForExistingPatient && isDqCooldownExpired(metriportPatient)) {
       queryDocumentsAcrossHIEs({
         cxId,
         patientId: metriportPatient.id,
+        facilityId,
       }).catch(processAsyncError(`Healthie queryDocumentsAcrossHIEs`));
     }
     const metriportPatientId = metriportPatient.id;
@@ -78,24 +106,33 @@ export async function syncHealthiePatientIntoMetriport({
       cxId,
       healthiePracticeId,
       healthiePatientId,
+      healthieApi,
     });
     return metriportPatientId;
   }
 
-  const healthieApi = api ?? (await createHealthieClient({ cxId, practiceId: healthiePracticeId }));
+  log("no existing mapping found");
   const healthiePatient = await healthieApi.getPatient({ cxId, patientId: healthiePatientId });
   const demographics = createMetriportPatientDemographics(healthiePatient);
+
   const metriportPatient = await getOrCreateMetriportPatient({
     cxId,
     practiceId: healthiePracticeId,
     demographics,
     externalId: healthiePatientId,
+    inputMetriportPatientId,
   });
+  log("Metriport patient created/retrieved:", metriportPatient.id);
   const metriportPatientId = metriportPatient.id;
+  const facilityId = await getPatientPrimaryFacilityIdOrFail({
+    cxId,
+    patientId: metriportPatient.id,
+  });
   if (triggerDq) {
     queryDocumentsAcrossHIEs({
       cxId,
       patientId: metriportPatientId,
+      facilityId,
     }).catch(processAsyncError(`Healthie queryDocumentsAcrossHIEs`));
   }
   await Promise.all([
@@ -137,7 +174,17 @@ async function getOrCreateMetriportPatient({
   practiceId,
   demographics,
   externalId,
-}: Omit<HandleMetriportSyncParams, "source">): Promise<PatientWithIdentifiers> {
+  inputMetriportPatientId,
+}: Omit<HandleMetriportSyncParams, "source"> & {
+  inputMetriportPatientId?: string;
+}): Promise<PatientWithIdentifiers> {
+  if (inputMetriportPatientId) {
+    const metriportPatient = await getPatientOrFail({
+      cxId,
+      id: inputMetriportPatientId,
+    });
+    return metriportPatient;
+  }
   const metriportPatient = await getPatientByDemo({ cxId, demo: demographics });
   if (metriportPatient) return metriportPatient;
   return await handleMetriportSync({

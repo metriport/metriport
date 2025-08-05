@@ -1,10 +1,10 @@
 import { BaseDomain } from "@metriport/core/domain/base-domain";
-import { ehrSources } from "@metriport/shared/interface/external/ehr/source";
-import { z } from "zod";
 import {
   EhrCxMappingSecondaryMappings,
   ehrCxMappingSecondaryMappingsSchemaMap,
-} from "../external/ehr/shared/utils/mappings";
+} from "@metriport/core/external/ehr/mappings";
+import { ehrSources } from "@metriport/shared/interface/external/ehr/source";
+import { z } from "zod";
 
 const cxMappingSource = [...ehrSources] as const;
 export type CxMappingSource = (typeof cxMappingSource)[number];
