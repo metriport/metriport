@@ -100,8 +100,8 @@ export class Config {
   static getHl7OutgoingMessageBucketName(): string {
     return getEnvVarOrFail("HL7_OUTGOING_MESSAGE_BUCKET_NAME");
   }
-  static getHl7ConversionBucketName(): string {
-    return getEnvVarOrFail("HL7_CONVERSION_BUCKET_NAME");
+  static getHl7ConversionBucketName(): string | undefined {
+    return getEnvVar("HL7_CONVERSION_BUCKET_NAME");
   }
   static getHl7NotificationQueueUrl(): string {
     return getEnvVarOrFail("HL7_NOTIFICATION_QUEUE_URL");
@@ -238,6 +238,10 @@ export class Config {
     return getEnvVarOrFail("WRITE_TO_S3_QUEUE_URL");
   }
 
+  static getSftpActionLambda(): boolean {
+    return getEnvVar("SFTP_ACTION_LAMBDA") != undefined;
+  }
+
   static getSurescriptsHost(): string {
     return getEnvVarOrFail("SURESCRIPTS_SFTP_HOST");
   }
@@ -285,6 +289,47 @@ export class Config {
   }
   static getSurescriptsReceiveResponseQueueUrl(): string {
     return getEnvVarOrFail("SURESCRIPTS_RECEIVE_RESPONSE_QUEUE_URL");
+  }
+
+  static getQuestSftpHost(): string {
+    return getEnvVarOrFail("QUEST_SFTP_HOST");
+  }
+  static getQuestSftpPort(): number {
+    const port = Number.parseInt(getEnvVarOrFail("QUEST_SFTP_PORT"));
+    if (isFinite(port)) {
+      return port;
+    }
+    throw new Error("QUEST_SFTP_PORT is not a valid number");
+  }
+  static getQuestSftpUsername(): string {
+    return getEnvVarOrFail("QUEST_SFTP_USERNAME");
+  }
+  static getQuestSftpPassword(): string {
+    return getEnvVarOrFail("QUEST_SFTP_PASSWORD");
+  }
+  static getQuestSftpOutgoingDirectory(): string {
+    return getEnvVarOrFail("QUEST_OUTGOING_DIRECTORY_PATH");
+  }
+  static getQuestSftpIncomingDirectory(): string {
+    return getEnvVarOrFail("QUEST_INCOMING_DIRECTORY_PATH");
+  }
+  static getQuestSftpActionLambdaName(): string {
+    return getEnvVarOrFail("QUEST_SFTP_ACTION_LAMBDA_NAME");
+  }
+  static getQuestRosterUploadLambdaName(): string {
+    return getEnvVarOrFail("QUEST_ROSTER_UPLOAD_LAMBDA_NAME");
+  }
+  static getQuestResponseDownloadLambdaName(): string {
+    return getEnvVarOrFail("QUEST_RESPONSE_DOWNLOAD_LAMBDA_NAME");
+  }
+  static getQuestConversionLambdaName(): string {
+    return getEnvVarOrFail("QUEST_CONVERT_RESPONSE_LAMBDA_NAME");
+  }
+  static getQuestReplicaBucketName(): string {
+    return getEnvVarOrFail("QUEST_REPLICA_BUCKET_NAME");
+  }
+  static getLabConversionBucketName(): string {
+    return getEnvVarOrFail("LAB_CONVERSION_BUCKET_NAME");
   }
 
   static getAthenaHealthEnv(): string | undefined {

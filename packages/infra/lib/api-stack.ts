@@ -64,6 +64,7 @@ import { provideAccessToQueue } from "./shared/sqs";
 import { isProd, isSandbox } from "./shared/util";
 import { wafRules } from "./shared/waf-rules";
 import { SurescriptsNestedStack } from "./surescripts/surescripts-stack";
+import { QuestNestedStack } from "./quest/quest-stack";
 
 const FITBIT_LAMBDA_TIMEOUT = Duration.seconds(60);
 
@@ -399,6 +400,23 @@ export class APIStack extends Stack {
     }
 
     //-------------------------------------------
+    // Quest
+    //-------------------------------------------
+    let questStack: QuestNestedStack | undefined = undefined;
+    if (
+      props.config.quest &&
+      props.config.questReplicaBucketName &&
+      props.config.labConversionBucketName
+    ) {
+      questStack = new QuestNestedStack(this, "QuestNestedStack", {
+        config: props.config,
+        vpc: this.vpc,
+        alarmAction: slackNotification?.alarmAction,
+        lambdaLayers,
+      });
+    }
+
+    //-------------------------------------------
     // General lambdas
     //-------------------------------------------
     const {
@@ -679,6 +697,7 @@ export class APIStack extends Stack {
       featureFlagsTable,
       cookieStore,
       surescriptsAssets: surescriptsStack?.getAssets(),
+      questAssets: questStack?.getAssets(),
       jobAssets: jobsStack.getAssets(),
       analyticsPlatformAssets: analyticsPlatformStack?.getAssets(),
     });
@@ -770,6 +789,7 @@ export class APIStack extends Stack {
       consolidatedSearchLambda,
       consolidatedIngestionLambda,
       ...(surescriptsStack?.getLambdas() ?? []),
+      ...(questStack?.getLambdas() ?? []),
       jobsStack.getAssets().runPatientJobLambda,
       analyticsPlatformStack?.getAssets().fhirToCsvLambda,
     ];
