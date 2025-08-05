@@ -56,6 +56,7 @@ import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
 import { capture } from "../../../util/notifications";
 import { uuidv7 } from "../../../util/uuid-v7";
+import { GroupedVitals } from "../command/write-back/grouped-vitals";
 import { createOrReplaceDocument } from "../document/command/create-or-replace-document";
 import { DocumentType } from "../document/document-shared";
 import {
@@ -599,13 +600,13 @@ class ElationApi {
     elationPracticeId,
     elationPhysicianId,
     patientId,
-    observations,
+    groupedVitals,
   }: {
     cxId: string;
     elationPracticeId: string;
     elationPhysicianId: string;
     patientId: string;
-    observations: Observation[];
+    groupedVitals: GroupedVitals;
   }): Promise<CreatedVital | undefined> {
     const { log, debug } = out(
       `Elation createGroupedVitals - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
@@ -616,57 +617,45 @@ class ElationApi {
       practiceId: this.practiceId,
       patientId,
     };
-    const groupedVitals: Record<string, ElationGroupedVital> = observations.reduce(
-      (acc, observation) => {
-        const newVital = this.formatGroupedVital(observation);
-        if (!newVital) return acc;
-        const chartDate = newVital.chartDate;
-        let existingVital = acc[chartDate];
-        if (!existingVital) {
-          acc[chartDate] = {
-            patient: patientId,
-            practice: elationPracticeId,
-            physician: elationPhysicianId,
-            chart_date: this.formatDateTime(chartDate),
-            document_date: this.formatDateTime(chartDate),
-            ...newVital.data,
-          } as ElationGroupedVital;
-        } else {
-          if (existingVital.bp && newVital.data.bp) {
-            const existingBp = existingVital.bp as { systolic?: string; diastolic?: string }[];
-            const newBp = newVital.data.bp as { systolic?: string; diastolic?: string }[];
-            existingVital.bp = [
-              {
-                ...existingBp[0],
-                ...newBp[0],
-              },
-            ];
-            acc[chartDate] = existingVital;
-          } else {
-            existingVital = {
-              ...existingVital,
-              ...newVital.data,
-            } as ElationGroupedVital;
-            acc[chartDate] = existingVital;
-          }
-        }
-        return acc;
-      },
-      {} as Record<string, ElationGroupedVital>
-    );
-
-    const mostRecentGroupedVitals = Object.values(groupedVitals).sort((a, b) => {
-      return new Date(b.chart_date).getTime() - new Date(a.chart_date).getTime();
-    })[0];
-
-    if (!mostRecentGroupedVitals) {
+    const [chartDate, observations] = groupedVitals;
+    const vitals = observations.flatMap(observation => {
+      const formattedVital = this.formatGroupedVital(observation);
+      if (!formattedVital) return [];
+      return formattedVital;
+    });
+    if (vitals.length < 1) {
       throw new BadRequestError("No grouped vitals data found", undefined, additionalInfo);
     }
+    const baseData = {
+      patient: patientId,
+      practice: elationPracticeId,
+      physician: elationPhysicianId,
+      chart_date: this.formatDateTime(chartDate.toISOString()),
+      document_date: this.formatDateTime(chartDate.toISOString()),
+    } as ElationGroupedVital;
+    const data = vitals.reduce((existingVital, newVital) => {
+      if (existingVital.bp && newVital.bp) {
+        const existingBp = existingVital.bp as { systolic?: string; diastolic?: string }[];
+        const newBp = newVital.bp as { systolic?: string; diastolic?: string }[];
+        existingVital.bp = [
+          {
+            ...existingBp[0],
+            ...newBp[0],
+          },
+        ];
+      } else {
+        existingVital = {
+          ...existingVital,
+          ...newVital,
+        } as ElationGroupedVital;
+      }
+      return existingVital;
+    }, baseData);
     try {
       const nonVisitNote = await this.createNonVisitNote({
         cxId,
         patientId,
-        date: mostRecentGroupedVitals.chart_date,
+        date: chartDate.toISOString(),
         note: "Vitals added via Metriport App",
       });
       const createdVital = await this.makeRequest<CreatedVital>({
@@ -676,7 +665,7 @@ class ElationApi {
         method: "POST",
         url: vitalsUrl,
         data: {
-          ...mostRecentGroupedVitals,
+          ...data,
           non_visit_note: nonVisitNote.id,
         },
         schema: createdVitalSchema,
@@ -1256,12 +1245,7 @@ class ElationApi {
     };
   }
 
-  private formatGroupedVital(observation: Observation):
-    | {
-        chartDate: string;
-        data: ElationGroupedVitalData;
-      }
-    | undefined {
+  private formatGroupedVital(observation: Observation): ElationGroupedVitalData | undefined {
     const loincCode = getObservationLoincCode(observation);
     if (!loincCode || !vitalSignCodesMap.get(loincCode)) return undefined;
     const units = getObservationUnit(observation);
@@ -1273,50 +1257,37 @@ class ElationApi {
     if (!formattedChartDate) return undefined;
     const convertedCodeAndValue = convertCodeAndValue(loincCode, vitalSignCodesMap, value, units);
     if (!convertedCodeAndValue) return undefined;
-    const baseData = { chartDate: formattedChartDate };
     if (convertedCodeAndValue.codeKey === "bmi") {
       return {
-        ...baseData,
-        data: {
-          bmi: +formatNumberAsString(convertedCodeAndValue.value),
-        },
+        bmi: +formatNumberAsString(convertedCodeAndValue.value),
       };
     }
     if (convertedCodeAndValue.codeKey === "bp") {
       if (loincCode === bpDiastolicCode) {
         return {
-          ...baseData,
-          data: {
-            bp: [
-              {
-                diastolic: formatNumberAsString(convertedCodeAndValue.value),
-              },
-            ],
-          },
+          bp: [
+            {
+              diastolic: formatNumberAsString(convertedCodeAndValue.value),
+            },
+          ],
         };
       }
       if (loincCode === bpSystolicCode) {
         return {
-          ...baseData,
-          data: {
-            bp: [
-              {
-                systolic: formatNumberAsString(convertedCodeAndValue.value),
-              },
-            ],
-          },
+          bp: [
+            {
+              systolic: formatNumberAsString(convertedCodeAndValue.value),
+            },
+          ],
         };
       }
     }
     return {
-      ...baseData,
-      data: {
-        [convertedCodeAndValue.codeKey]: [
-          {
-            value: formatNumberAsString(convertedCodeAndValue.value),
-          },
-        ],
-      },
+      [convertedCodeAndValue.codeKey]: [
+        {
+          value: formatNumberAsString(convertedCodeAndValue.value),
+        },
+      ],
     };
   }
 

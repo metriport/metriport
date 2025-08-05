@@ -26,6 +26,7 @@ export const writeBackFiltersPerResourceTypeSchema = z.object({
     .optional(),
   problems: z
     .object({
+      latestOnly: z.boolean().optional(),
       chronicityFilter: z.enum(["all", "chronic", "non-chronic"]).optional(),
       relativeDateRange: relativeDateRangeSchema.optional(),
       disabled: z.boolean().optional(),
@@ -34,6 +35,7 @@ export const writeBackFiltersPerResourceTypeSchema = z.object({
   vital: z
     .object({
       loincCodes: z.string().array().optional(),
+      latestOnly: z.boolean().optional(),
       relativeDateRange: relativeDateRangeSchema.optional(),
       disabled: z.boolean().optional(),
     })
