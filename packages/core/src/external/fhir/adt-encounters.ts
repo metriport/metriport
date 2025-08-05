@@ -105,7 +105,6 @@ export function createFileKeyAdtConversion({
  * @param triggerEvent Trigger event
  * @param bundle The FHIR bundle
  * @param s3Utils S3 utils
- * @returns The encounter data as a parsed JSON object
  */
 export async function saveAdtConversionBundle({
   cxId,
