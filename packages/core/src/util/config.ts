@@ -323,7 +323,7 @@ export class Config {
     return getEnvVarOrFail("QUEST_RESPONSE_DOWNLOAD_LAMBDA_NAME");
   }
   static getQuestConversionLambdaName(): string {
-    return getEnvVarOrFail("QUEST_CONVERSION_LAMBDA_NAME");
+    return getEnvVarOrFail("QUEST_CONVERT_RESPONSE_LAMBDA_NAME");
   }
   static getQuestReplicaBucketName(): string {
     return getEnvVarOrFail("QUEST_REPLICA_BUCKET_NAME");
