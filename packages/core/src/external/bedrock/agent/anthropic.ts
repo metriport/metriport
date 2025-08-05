@@ -62,8 +62,9 @@ export class AnthropicAgent<V extends AnthropicModelVersion> {
   }
 
   /**
-   * Starts model invocation with the given user message.
-   * @param messageText - The text of the user message.
+   * Starts model invocation with the given user message. This is a more convenient method and most common pattern for
+   * starting a conversation with an Anthropic model.
+   * @param messageText - The text of the user message - usually, whatever follows the system prompt.
    * @returns The response from the Anthropic model.
    */
   async startConversation(messageText: string): Promise<AnthropicResponse<V>> {
