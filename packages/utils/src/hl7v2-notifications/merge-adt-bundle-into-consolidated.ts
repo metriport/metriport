@@ -19,7 +19,7 @@ import { writeFileSync } from "fs";
  */
 const ptId = "";
 const cxId = "";
-const pathToData = "/Users/lucasdellabella/Documents/PHI/dedup";
+const pathToData = "";
 const consolidatedBundlePath = `${pathToData}/${cxId}_${ptId}_CONSOLIDATED_DATA.json`;
 const adtBundlePath = `${pathToData}/encounter.hl7.json`;
 
