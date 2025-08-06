@@ -152,6 +152,7 @@ export class QuestNestedStack extends NestedStack {
       alarmAction: props.alarmAction,
       quest: props.config.quest,
       systemRootOID: props.config.systemRootOID,
+      termServerUrl: props.config.termServerUrl,
       envVars,
     };
 
@@ -241,6 +242,7 @@ export class QuestNestedStack extends NestedStack {
       systemRootOID: string;
       questReplicaBucket: s3.Bucket;
       labConversionBucket?: s3.Bucket;
+      termServerUrl?: string;
     }
   ) {
     const { name, entry, lambda: lambdaSettings } = questLambdaSettings[job];
@@ -255,6 +257,7 @@ export class QuestNestedStack extends NestedStack {
       systemRootOID,
       questReplicaBucket,
       labConversionBucket,
+      termServerUrl,
     } = props;
 
     const lambda = createLambda({
@@ -267,6 +270,7 @@ export class QuestNestedStack extends NestedStack {
         ...envVars,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
         ...(job === "sftpAction" ? { SFTP_ACTION_LAMBDA: "quest" } : {}),
+        ...(termServerUrl ? { TERM_SERVER_URL: termServerUrl } : {}),
         SYSTEM_ROOT_OID: systemRootOID,
       },
       layers: [lambdaLayers.shared],
