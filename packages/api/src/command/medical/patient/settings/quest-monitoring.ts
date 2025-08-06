@@ -149,15 +149,15 @@ async function _removeQuestSubscriptionsFromPatients({
   }
 
   // Remove Quest monitoring subscription from existing subscriptions (only if it exists)
-  // SQL explanation: Convert JSON array to text array, remove Quest monitoring, convert back to JSON
+  // SQL explanation: Use JSONB - operator to remove the 'quest' key from the subscriptions object
   const removeSubscriptionQuery = `
     UPDATE patient_settings 
     SET 
-        subscriptions = jsonb_remove(subscriptions, '{quest}'),
+        subscriptions = subscriptions - 'quest',
         updated_at = NOW()
     WHERE cx_id = :cxId::uuid 
       AND patient_id in (:patientIds)
-      AND subscriptions->'quest' = true
+      AND subscriptions ? 'quest'
   `;
 
   await sequelize.query(removeSubscriptionQuery, {
