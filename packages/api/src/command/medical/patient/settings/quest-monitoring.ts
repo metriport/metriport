@@ -117,11 +117,14 @@ async function _addQuestSubscriptionToPatients({
   const addSubscriptionQuery = `
     UPDATE patient_settings 
     SET 
-        subscriptions = jsonb_set(subscriptions, '{quest}', 'true'::jsonb, true),
+        subscriptions = CASE 
+            WHEN subscriptions IS NULL OR jsonb_typeof(subscriptions) != 'object' THEN '{"quest": true}'::jsonb
+            ELSE jsonb_set(subscriptions, '{quest}', 'true'::jsonb, true)
+        END,
         updated_at = NOW()
     WHERE cx_id = :cxId::uuid 
       AND patient_id in (:patientIds)
-      AND subscriptions->'quest' IS DISTINCT FROM 'true'::jsonb
+      AND (subscriptions IS NULL OR subscriptions->'quest' IS DISTINCT FROM 'true'::jsonb)
   `;
 
   await sequelize.query(addSubscriptionQuery, {

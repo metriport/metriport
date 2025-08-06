@@ -13,11 +13,10 @@ import { paginated } from "../../pagination";
 import { asyncHandler } from "../../util";
 
 dayjs.extend(duration);
-
 const router = Router();
 
 /** ---------------------------------------------------------------------------
- * GET /internal/quest/master-roster
+ * GET /internal/quest/roster
  *
  * This is a paginated route.
  * Gets all patients that are enrolled in Quest monitoring.
@@ -30,7 +29,7 @@ const router = Router();
  * - `meta` - Pagination information, including how to get to the next page.
  */
 router.get(
-  "/master-roster",
+  "/roster",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const { meta, items } = await paginated({
