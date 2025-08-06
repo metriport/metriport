@@ -173,7 +173,7 @@ async function _removeHieSubscriptionsFromPatients({
   const removeSubscriptionQuery = `
     UPDATE patient_settings 
     SET 
-        subscriptions = subscriptions || jsonb_build_object('adt', 
+        subscriptions = jsonb_set(subscriptions, '{adt}', 
           to_jsonb(array_remove(
               ARRAY(SELECT jsonb_array_elements_text(subscriptions->'adt')), 
               :hieName::text
