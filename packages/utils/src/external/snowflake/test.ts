@@ -4,6 +4,7 @@ dotenv.config();
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { Config } from "@metriport/core/util/config";
+import { sizeInBytes } from "@metriport/core/util/string";
 import { errorToString, getEnvVarOrFail, sleep } from "@metriport/shared";
 import csv from "csv-parser";
 import fs from "fs";
@@ -110,7 +111,8 @@ async function main() {
   console.log(`Resources to insert:`);
   console.log(`- per resource:`);
   for (const resourceType of Object.keys(rowsPerResource) as ResourceType[]) {
-    console.log(`  - ${resourceType}: ${rowsPerResource[resourceType].length}`);
+    const size = sizeInBytes(rowsToString(rowsPerResource[resourceType]));
+    console.log(`  - ${resourceType}: ${rowsPerResource[resourceType].length} rows, ${size} bytes`);
   }
   console.log(`- amount of pts: ${Object.keys(listOfFileContents).length}`);
   console.log(`Max resources per type/pt: ${maxRowsPerFile}`);
@@ -293,7 +295,7 @@ async function sendDataByResource({
   resourceType: ResourceType;
   rows: Row[];
   idx: number;
-}) {
+}): Promise<void> {
   const connection = snowflake.createConnection({
     account,
     token,
@@ -322,9 +324,7 @@ async function sendDataByResource({
     }
 
     // console.log("Inserting data...");
-    const sql = `INSERT INTO ${tableName} VALUES ${rowsToInsert
-      .map(values => `('${values.join("','")}')`)
-      .join(", ")}`;
+    const sql = `INSERT INTO ${tableName} VALUES ${rowsToString(rowsToInsert)}`;
     // console.log(`SQL: ${sql}`);
     fs.writeFileSync(`inserts_${resourceType}_${idx}.sql`, sql);
     await executeAsync(sql);
@@ -389,6 +389,10 @@ async function sendDataByPatient({
     const destroyAsync = promisifyDestroy(connection);
     await destroyAsync();
   }
+}
+
+function rowsToString(rows: Row[]): string {
+  return rows.map(values => `('${values.join("','")}')`).join(", ");
 }
 
 async function getData(): Promise<FileContents> {
