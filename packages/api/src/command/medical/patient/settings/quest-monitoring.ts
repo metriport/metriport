@@ -137,7 +137,7 @@ async function _addQuestSubscriptionToPatients({
 }
 
 /**
- * Removes an HIE subscription from patient settings if present
+ * Removes a Quest monitoring subscription from patient settings if present
  */
 async function _removeQuestSubscriptionsFromPatients({
   patientIds,
