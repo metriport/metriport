@@ -128,7 +128,7 @@ async function _addHieSubscriptionToPatients({
   const addSubscriptionQuery = `
     UPDATE patient_settings 
     SET 
-        subscriptions = subscriptions || jsonb_build_object('adt', 
+        subscriptions = jsonb_set(subscriptions, '{adt}', 
             CASE 
                 WHEN subscriptions->'adt' @> to_jsonb(:hieName::text) 
                 THEN subscriptions->'adt'
