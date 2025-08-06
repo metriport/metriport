@@ -113,7 +113,7 @@ async function _addQuestSubscriptionToPatients({
   );
 
   // Add Quest monitoring subscription to existing subscriptions (only if not already present)
-  // SQL explanation: If Quest monitoring already in array, keep current array, otherwise append Quest monitoring to array
+  // SQL explanation: If Quest monitoring already set to true, stays as true, otherwise set to true
   const addSubscriptionQuery = `
     UPDATE patient_settings 
     SET 
