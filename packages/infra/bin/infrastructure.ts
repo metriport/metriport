@@ -64,18 +64,27 @@ async function deploy(config: EnvConfig) {
       version,
     });
 
+    const cachedCgws: Record<string, string> = {};
+
     Object.values(config.hl7Notification.hieConfigs).forEach((hieConfig, index) => {
       // We only create VPN stacks for full HieConfig objects (not `VpnlessHieConfig`s)
       if (!doesHieUseVpn(hieConfig)) {
         return;
       }
 
+      // If there is already a Customer Gateway ID for this IP, use it
+      const preexistingCgwRef = cachedCgws[hieConfig.gatewayPublicIp];
+
       const vpnStack = new VpnStack(app, `VpnStack-${hieConfig.name}`, {
         hieConfig,
+        existingCgwRef: preexistingCgwRef,
         index,
         networkStackId: "NestedNetworkStack",
         description: `VPN Configuration for routing HL7 messages from ${hieConfig.name}`,
       });
+
+      // Cache the Customer Gateway ID for this IP
+      cachedCgws[hieConfig.gatewayPublicIp] = vpnStack.customerGatewayId;
 
       vpnStack.addDependency(hl7NotificationStack);
     });

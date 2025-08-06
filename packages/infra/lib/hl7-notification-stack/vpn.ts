@@ -10,6 +10,7 @@ const IPSEC_1 = "ipsec.1";
 
 export interface VpnStackProps extends cdk.NestedStackProps {
   hieConfig: HieConfig;
+  existingCgwRef?: string;
   networkStackId: string;
   index: number;
 }
@@ -19,6 +20,8 @@ export interface VpnStackProps extends cdk.NestedStackProps {
  * @see https://docs.aws.amazon.com/vpn/latest/s2svpn/VPC_VPN.html
  */
 export class VpnStack extends cdk.Stack {
+  public readonly customerGatewayId: string;
+
   constructor(scope: Construct, id: string, props: VpnStackProps) {
     super(scope, id, props);
 
@@ -32,17 +35,23 @@ export class VpnStack extends cdk.Stack {
 
     const vgwId = Fn.importValue(`${props.networkStackId}-VgwId`);
 
-    const customerGateway = new ec2.CfnCustomerGateway(this, `CustomerGateway-${hieName}`, {
-      ipAddress: gatewayPublicIp,
-      type: IPSEC_1,
-      bgpAsn: 65000,
-      tags: [
-        {
-          key: "Name",
-          value: `${hieName}-cgw`,
-        },
-      ],
-    });
+    let customerGatewayRef: string;
+    if (props.existingCgwRef) {
+      customerGatewayRef = props.existingCgwRef;
+    } else {
+      const customerGateway = new ec2.CfnCustomerGateway(this, `CustomerGateway-${hieName}`, {
+        ipAddress: gatewayPublicIp,
+        type: IPSEC_1,
+        bgpAsn: 65000,
+        tags: [
+          {
+            key: "Name",
+            value: `${hieName}-cgw`,
+          },
+        ],
+      });
+      customerGatewayRef = customerGateway.ref;
+    }
 
     /**
      * Add new rules to the NACL for the static IPs we're using for this VPN.
@@ -92,7 +101,7 @@ export class VpnStack extends cdk.Stack {
     const vpnConnection = new ec2.CfnVPNConnection(this, `VpnConnection-${hieName}`, {
       type: IPSEC_1,
       vpnGatewayId: vgwId,
-      customerGatewayId: customerGateway.ref,
+      customerGatewayId: customerGatewayRef,
       staticRoutesOnly: true,
       tags: [
         {
@@ -123,6 +132,13 @@ export class VpnStack extends cdk.Stack {
       value: vpnConnection.ref,
       description: `VPN Connection for ${hieName}`,
     });
+
+    const customerGatewayIdOutput = new cdk.CfnOutput(this, `CustomerGatewayId-${hieName}`, {
+      value: customerGatewayRef,
+      description: `Customer Gateway Id for ${hieName}`,
+    });
+
+    this.customerGatewayId = customerGatewayIdOutput.value;
   }
 
   private setNaclRules(

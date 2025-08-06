@@ -47,6 +47,7 @@ export type RosterRowData = {
   dateTwoMonthsInFutureNoDelimiter: string;
   dateMid2025NoDelimiter: string;
   emptyString: string;
+  addText: "ADD";
 };
 
 export type HiePatientRosterMapping = {
