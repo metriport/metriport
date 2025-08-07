@@ -102,11 +102,9 @@ export function translateNpiFacilityToFacilityDetails(
   if (!address) {
     throw new MetriportError("No address in npi facility was found.", undefined, { address });
   }
-
   const isObo = additionalInfo.facilityType === "obo";
 
   const type = isObo ? FacilityType.initiatorOnly : FacilityType.initiatorAndResponder;
-
   const zip = normalizeZipCodeNew(address.postal_code);
 
   const internalFacility: FacilityInternalDetails = {
@@ -126,7 +124,7 @@ export function translateNpiFacilityToFacilityDetails(
       throw new MetriportError(`If type is "obo" must provide cqOboOid and cwOboOid`, undefined, {
         isObo,
         cqOboOid: additionalInfo.cqOboOid,
-        cwOboOid: !additionalInfo.cwOboOid,
+        cwOboOid: additionalInfo.cwOboOid,
       });
     }
     internalFacility.cqOboOid = additionalInfo.cqOboOid;

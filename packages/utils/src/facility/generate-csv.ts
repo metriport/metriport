@@ -62,7 +62,7 @@ async function main({ inputFile, startRow, endRow }: GenerateCsvParams) {
       rowCount++;
       if (rowCount < startRow || rowCount > endRow) return;
 
-      const npi = row["NPI"]?.trim();
+      const npi = row["npi"]?.trim();
       if (!npi) return;
 
       const facilityType: InputRowFacilityImport["facilityType"] =
@@ -77,7 +77,6 @@ async function main({ inputFile, startRow, endRow }: GenerateCsvParams) {
       results.push({ npi, facilityName: faker.company.name(), facilityType, cqOboOid, cwOboOid });
     })
     .on("end", () => {
-      const header = "npi,facilityName,facilityType,cqOboOid,cwOboOid";
       const lines = results.map(r =>
         [
           r.npi,
@@ -87,7 +86,7 @@ async function main({ inputFile, startRow, endRow }: GenerateCsvParams) {
           r.cwOboOid,
         ].join(",")
       );
-      fs.writeFileSync(fullPath, [header, ...lines].join("\n"), "utf-8");
+      fs.writeFileSync(fullPath, [CSV_HEADER, ...lines].join("\n"), "utf-8");
       console.log(`Wrote ${results.length} rows (data rows ${startRow}–${endRow}) → ${fullPath}`);
     })
     .on("error", err => {

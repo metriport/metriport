@@ -1,7 +1,7 @@
 import { validateNPI } from "@metriport/shared/common/validate-npi";
 import { defaultOptionalStringSchema, defaultZipStringSchema } from "@metriport/shared/util";
 import z from "zod";
-import { usStateForAddressSchema } from "../../../api-sdk/dist";
+import { usStateForAddressSchema } from "@metriport/api-sdk";
 
 export enum FacilityType {
   initiatorAndResponder = "initiator_and_responder",

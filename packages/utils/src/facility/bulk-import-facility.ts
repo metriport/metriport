@@ -1,8 +1,7 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
-import { errorToString, getEnvVarOrFail, MetriportError } from "@metriport/shared";
-import { sleep } from "@metriport/shared";
+import { errorToString, getEnvVarOrFail, MetriportError, sleep } from "@metriport/shared";
 import { Command } from "commander";
 import csvParser from "csv-parser";
 import { Readable } from "stream";
@@ -121,6 +120,7 @@ async function main({ cxId, name, timestamp, dryrun }: FacilityImportParams) {
           console.log(message);
           errorMessage = message;
         } else {
+          console.log(err);
           const message = errorToString(err);
           errorMessage = message;
         }
@@ -131,7 +131,10 @@ async function main({ cxId, name, timestamp, dryrun }: FacilityImportParams) {
         await sleep(60);
         parser.resume();
       }
-    })();
+    })().catch(error => {
+      console.error("Unexpected error in row processing:", error);
+      parser.resume();
+    });
     rowPromises.push(p);
   });
 
