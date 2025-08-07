@@ -84,7 +84,7 @@ describe("Anthropic agent test", () => {
     expect(lastMessage?.role).toBe("user");
     const toolResult = lastMessage?.content[0] as AnthropicToolResult;
     expect(toolResult.type).toBe("tool_result");
-    expect(toolResult.content).toEqual({ result: `Praise the ${color} ${animal}` });
+    expect(toolResult.content).toEqual(JSON.stringify({ result: `Praise the ${color} ${animal}` }));
   });
 
   it("should handle multiple tool calls with an error", async () => {

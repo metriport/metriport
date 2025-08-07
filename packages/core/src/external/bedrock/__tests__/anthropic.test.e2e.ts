@@ -140,7 +140,9 @@ describe("Anthropic test", () => {
       ...mockConversation,
       {
         role: "user",
-        content: [{ type: "tool_result", tool_use_id: "1", content: { capital: "Paris" } }],
+        content: [
+          { type: "tool_result", tool_use_id: "1", content: JSON.stringify({ capital: "Paris" }) },
+        ],
       },
     ]);
   });
