@@ -1,7 +1,7 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
-import { getEnvVarOrFail, MetriportError } from "@metriport/shared";
+import { errorToString, getEnvVarOrFail, MetriportError } from "@metriport/shared";
 import { sleep } from "@metriport/shared";
 import { Command } from "commander";
 import csvParser from "csv-parser";
@@ -20,22 +20,22 @@ import { FacilityInternalDetails } from "@metriport/core/domain/npi-facility";
 import path from "path";
 
 /*
- * This script will read NPIs from a csv saved in S3.
+ * This script will read NPIs, Names, Type, CqOboOid, CwOboOid from a csv saved in S3.
  *
- * It outputs the result of processing in the same S3 folder with the name inputted and _result appended.
- * - facility-creates.json: contains the list of facilities that would be created (when run w/ dryrun)
+ * CqOboOid and CwOboOid are both optional if type is 'non-obo'
+ *
+ * It outputs the result of processing in the same S3 folder as well as runs/import-facility/timestamp with the name inputted and _result appended.
+ * - facility-creates.json: is created under runs/import-facility/timestamp it contains the list of facilities that were sent (would have been sent if dryrun) for creation.
  *
  * Format of the .csv file:
  * - first line contains column names
- * - columns can be in any order
- * - minimum columns: firstname,lastname,dob,gender,zip,city,state,address1,address2,phone,email,externalId
- * - it may contain more columns, only those above will be used
+ * - minimum columns: npi,facilityName,facilityType,cqOboOid,cwOboOid
  *
  * Either set the env vars below on the OS or create a .env file in the root folder of this package.
  *
  * Execute this with:
- * $ npm run bulk-insert -- --dryrun
- * $ npm run bulk-insert
+ * $ npm run bulk-import-facility --cx-id <cxId> --timestamp <timestamp> --name <name> --dryrun
+ * $ npm run bulk-import-facility --cx-id <cxId> --timestamp <timestamp> --name <name> --dryrun
  */
 
 interface FacilityImportParams {
@@ -110,19 +110,13 @@ async function main({ cxId, name, timestamp, dryrun }: FacilityImportParams) {
       } catch (err: unknown) {
         success = false;
         if (axios.isAxiosError(err) && err.response?.status === 400) {
+          // This is specifically for "Can't Create a new facility with the same NPI as ..."
           const message = err.response.data?.detail ?? err.response.data?.title ?? err.message;
           console.log(message);
           errorMessage = message;
-        } else if (err instanceof MetriportError) {
-          const message = `Message: ${err.message} Additional Info: ${err.additionalInfo}`;
-          console.log(message);
-          errorMessage = message;
-        } else if (err instanceof Error) {
-          console.log(err.message);
-          errorMessage = err.message;
         } else {
-          console.log(String(err));
-          errorMessage = String(err);
+          const message = errorToString(err);
+          errorMessage = message;
         }
       } finally {
         await writeToCsv(logsFilePath, success, errorMessage, row);
@@ -148,7 +142,6 @@ async function main({ cxId, name, timestamp, dryrun }: FacilityImportParams) {
   }
   await fs.writeFile(payloadCreatesFilePath, JSON.stringify(createdFacilities, null, 2), "utf8");
 
-  console.log(`Wrote payloads to: ${payloadCreatesFilePath}`);
   console.log(
     `############## FINISHED AT: ${new Date().toISOString()}  ${
       isDryRun ? "[DRY RUN]" : ""
@@ -249,7 +242,7 @@ const program = new Command();
 
 program
   .name("bulk-import-facility")
-  .requiredOption("--cx-id <cxId>", "The customer ID.")
+  .requiredOption("--cx-id <cxId>", "The customer ID for the facilities to be created under.")
   .requiredOption(
     "--timestamp <timestamp>",
     `The timestamp (YYYY-MM-DD) of when the file was created.`
@@ -259,7 +252,9 @@ program
     "--dryrun",
     "Writes to a local JSON file all the facilities it would of tried to create. Does not upload to S3 or add Facilities to the DB"
   )
-  .description("Creates facilities based on NPIs and additional data from a a csv stored in S3.")
+  .description(
+    "Creates facilities for the customer inputted based on NPIs, Names, Type, CqOboOid, CwOboOid from a a csv stored in S3."
+  )
   .showHelpAfterError()
   .version("1.0.0")
   .action(main);
