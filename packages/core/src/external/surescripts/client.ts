@@ -4,6 +4,7 @@ import { Config } from "../../util/config";
 import { SftpClient } from "../sftp/client";
 import { SftpFile } from "../sftp/types";
 import { SurescriptsReplica } from "./replica";
+import { isSurescriptsFeatureFlagEnabledForCx } from "../../command/feature-flags/domain-ffs";
 import { generateBatchRequestFile, generatePatientRequestFile } from "./file/file-generator";
 import { IdGenerator, createIdGenerator } from "./id-generator";
 import {
@@ -58,7 +59,7 @@ export class SurescriptsSftpClient extends SftpClient {
   async sendPatientRequest(
     requestData: SurescriptsPatientRequestData
   ): Promise<string | undefined> {
-    this.validateRequester(requestData);
+    await this.validateRequester(requestData);
     const transmissionId = this.generateTransmissionId().toString("ascii");
     const content = generatePatientRequestFile({
       client: this,
@@ -89,7 +90,7 @@ export class SurescriptsSftpClient extends SftpClient {
   async sendBatchRequest(
     requestData: SurescriptsBatchRequestData
   ): Promise<{ transmissionId: string; requestedPatientIds: string[] } | undefined> {
-    this.validateRequester(requestData);
+    await this.validateRequester(requestData);
     const transmissionId = this.generateTransmissionId().toString("ascii");
     const { content, requestedPatientIds } = generateBatchRequestFile({
       client: this,
@@ -318,11 +319,18 @@ export class SurescriptsSftpClient extends SftpClient {
    * @param requester the requester data for Surescripts data
    * @throws an error if the requester's NPI is invalid
    */
-  private validateRequester(requester: SurescriptsRequesterData): void {
+  private async validateRequester(requester: SurescriptsRequesterData): Promise<void> {
     if (!validateNPI(requester.facility.npi)) {
       this.log(`Invalid NPI "${requester.facility.npi}" for CX ID "${requester.cxId}"`);
       throw new MetriportError("Invalid NPI", undefined, {
         npiNumber: requester.facility.npi,
+        cxId: requester.cxId,
+      });
+    }
+    const isSurescriptsEnabled = await isSurescriptsFeatureFlagEnabledForCx(requester.cxId);
+    if (!isSurescriptsEnabled) {
+      this.log(`Surescripts is not enabled for cx "${requester.cxId}"`);
+      throw new MetriportError("Surescripts is not enabled", undefined, {
         cxId: requester.cxId,
       });
     }
