@@ -1,5 +1,5 @@
 import { NotFoundError } from "@metriport/shared";
-import { CustomerData, FacilityData } from "@metriport/shared/domain/customer";
+import { CustomerData, FacilityData, OrganizationData } from "@metriport/shared/domain/customer";
 import { Patient } from "@metriport/shared/domain/patient";
 import axios, { AxiosInstance } from "axios";
 import { executeAsynchronously } from "../../util/concurrency";
@@ -30,9 +30,9 @@ export class SurescriptsDataMapper {
     facilityId,
     patientId,
   }: SurescriptsPatientRequest): Promise<SurescriptsPatientRequestData> {
-    const facility = await this.getFacilityData(cxId, facilityId);
+    const { facility, org } = await this.getFacilityAndOrgData(cxId, facilityId);
     const patient = await this.getPatient(cxId, patientId);
-    return { cxId, facility, patient };
+    return { cxId, facility, org, patient };
   }
 
   async getBatchRequestData({
@@ -40,10 +40,10 @@ export class SurescriptsDataMapper {
     facilityId,
     patientIds,
   }: SurescriptsBatchRequest): Promise<SurescriptsBatchRequestData> {
-    const facility = await this.getFacilityData(cxId, facilityId);
+    const { facility, org } = await this.getFacilityAndOrgData(cxId, facilityId);
     const validPatientIds = await this.validatePatientIdsForFacility(cxId, facilityId, patientIds);
     const patients = await this.getEachPatientById(cxId, validPatientIds);
-    return { cxId, facility, patients };
+    return { cxId, facility, org, patients };
   }
 
   convertBatchRequestToPatientRequests(
@@ -52,6 +52,7 @@ export class SurescriptsDataMapper {
     return batchRequestData.patients.map(patient => ({
       cxId: batchRequestData.cxId,
       facility: batchRequestData.facility,
+      org: batchRequestData.org,
       patient,
     }));
   }
@@ -61,6 +62,16 @@ export class SurescriptsDataMapper {
     const facility = customer.facilities.find(f => f.id === facilityId);
     if (!facility) throw new NotFoundError("Facility not found", undefined, { cxId, facilityId });
     return facility;
+  }
+
+  async getFacilityAndOrgData(
+    cxId: string,
+    facilityId: string
+  ): Promise<{ facility: FacilityData; org: OrganizationData }> {
+    const customer = await this.getCustomerData(cxId);
+    const facility = customer.facilities.find(f => f.id === facilityId);
+    if (!facility) throw new NotFoundError("Facility not found", undefined, { cxId, facilityId });
+    return { facility, org: customer.org };
   }
 
   async validatePatientIdsForFacility(
