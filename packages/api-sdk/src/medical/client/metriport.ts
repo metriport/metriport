@@ -3,8 +3,8 @@ import { PaginatedResponse } from "@metriport/shared";
 import {
   WebhookRequest,
   WebhookRequestParsingFailure,
-  WebhookStatusResponse,
   webhookRequestSchema,
+  WebhookStatusResponse,
 } from "@metriport/shared/medical";
 import axios, { AxiosInstance, AxiosStatic, CreateAxiosDefaults } from "axios";
 import crypto from "crypto";
@@ -21,14 +21,14 @@ import { getETagHeader } from "../models/common/base-update";
 import { Demographics } from "../models/demographics";
 import {
   BulkGetDocumentUrlQuery,
+  bulkGetDocumentUrlQuerySchema,
+  documentListSchema,
   DocumentQuery,
+  documentQuerySchema,
   DocumentReference,
   ListDocumentFilters,
   ListDocumentResult,
   UploadDocumentResult,
-  bulkGetDocumentUrlQuerySchema,
-  documentListSchema,
-  documentQuerySchema,
 } from "../models/document";
 import { Facility, FacilityCreate, facilityListSchema, facilitySchema } from "../models/facility";
 import { ConsolidatedCountResponse, ResourceTypeForConsolidation } from "../models/fhir";
@@ -38,11 +38,11 @@ import {
   GetConsolidatedQueryProgressResponse,
   GetSingleConsolidatedQueryProgressResponse,
   MedicalRecordUrlResponse,
+  medicalRecordUrlResponseSchema,
   PatientCreate,
   PatientHieOptOutResponse,
   PatientUpdate,
   StartConsolidatedQueryProgressResponse,
-  medicalRecordUrlResponseSchema,
 } from "../models/patient";
 import { PatientDTO } from "../models/patientDTO";
 import { SettingsResponse } from "../models/settings-response";
@@ -405,6 +405,28 @@ export class MetriportMedicalApi {
   }
 
   /**
+   * Maps a Metriport patient to a patient in an external EHR system and synchronizes their data.
+   *
+   * @param patientId The ID of the patient to map.
+   * @param source The source name that represents the external system/EHR, either healthie or elation. Optional.
+   * @return The Metriport patient ID and the mapping patient (external) ID.
+   * @throws error if the patient has no external ID to attempt mapping.
+   * @throws error if the mapping source is not supported.
+   * @throws error if no mapping is found.
+   * @throws error if patient demographics are not matching.
+   */
+  async syncPatient(
+    patientId: string,
+    source?: string
+  ): Promise<{ patientId: string; externalId: string }> {
+    const resp = await this.api.post(`${PATIENT_URL}/${patientId}/external/sync`, undefined, {
+      params: { source },
+    });
+    if (!resp.data) throw new Error(NO_DATA_MESSAGE);
+    return resp.data;
+  }
+
+  /**
    * Updates a patient at Metriport and at HIEs the patient is linked to.
    *
    * @param patient The patient data to be updated.
@@ -414,7 +436,7 @@ export class MetriportMedicalApi {
    */
   async updatePatient(
     patient: PatientUpdate,
-    facilityId?: string,
+    facilityId: string,
     additionalQueryParams: Record<string, string | number | boolean> = {}
   ): Promise<PatientDTO> {
     type FieldsToOmit = "id";
@@ -446,6 +468,34 @@ export class MetriportMedicalApi {
     });
     if (!resp.data) throw new Error(NO_DATA_MESSAGE);
     return resp.data;
+  }
+
+  /**
+   * Sets the facilities associated with a patient. This operation overrides any existing
+   * facility associations and replaces them with the provided list.
+   *
+   * @param patientId The ID of the patient to set facilities for.
+   * @param facilityIds The array of facility IDs to associate with the patient. This will replace all existing associations.
+   * @returns The updated facilities associated with the patient.
+   */
+  async setPatientFacilities(patientId: string, facilityIds: string[]): Promise<Facility[]> {
+    const resp = await this.api.post(`${PATIENT_URL}/${patientId}/facility`, {
+      facilityIds,
+    });
+    if (!resp.data) throw new Error(NO_DATA_MESSAGE);
+    return resp.data.facilities;
+  }
+
+  /**
+   * Gets all facilities associated with a patient.
+   *
+   * @param patientId The ID of the patient whose facilities are to be returned.
+   * @returns Array of facilities associated with the patient.
+   */
+  async getPatientFacilities(patientId: string): Promise<Facility[]> {
+    const resp = await this.api.get(`${PATIENT_URL}/${patientId}/facility`);
+    if (!resp.data) throw new Error(NO_DATA_MESSAGE);
+    return resp.data.facilities;
   }
 
   // TODO #870 remove this
@@ -789,7 +839,7 @@ export class MetriportMedicalApi {
   //eslint-disable-next-line @typescript-eslint/no-explicit-any
   async getDocumentUrl(
     fileName: string,
-    conversionType?: "html" | "pdf"
+    conversionType?: "html" | "pdf" | "hl7"
   ): Promise<{ url: string }> {
     const resp = await this.api.get(`${DOCUMENT_URL}/download-url`, {
       params: {

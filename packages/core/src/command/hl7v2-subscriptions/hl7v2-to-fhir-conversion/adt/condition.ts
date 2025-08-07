@@ -1,7 +1,6 @@
 import { Hl7Message, Hl7Segment } from "@medplum/core";
 import { CodeableConcept, Condition, EncounterDiagnosis } from "@medplum/fhirtypes";
 import { createUuidFromText } from "@metriport/shared/common/uuid";
-import _ from "lodash";
 import {
   buildConditionReference,
   buildPatientReference,
@@ -32,11 +31,9 @@ export function getConditionsAndReferences(
   adt: Hl7Message,
   patientId: string
 ): ConditionsAndReferences {
-  const encReason = getEncounterReason(adt, patientId);
   const diagnoses = getAllDiagnoses(adt, patientId);
 
-  const combinedDiagnoses = _.concat(encReason?.condition ?? [], diagnoses);
-  const uniqueConditions = deduplicateConditions(combinedDiagnoses, false).combinedResources;
+  const uniqueConditions = deduplicateConditions(diagnoses, false).combinedResources;
   const conditionReferences = uniqueConditions.map(condition =>
     buildConditionReference({ resource: condition })
   );

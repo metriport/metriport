@@ -100,14 +100,14 @@ export class Config {
   static getHl7OutgoingMessageBucketName(): string {
     return getEnvVarOrFail("HL7_OUTGOING_MESSAGE_BUCKET_NAME");
   }
-  static getHl7ConversionBucketName(): string {
-    return getEnvVarOrFail("HL7_CONVERSION_BUCKET_NAME");
+  static getHl7ConversionBucketName(): string | undefined {
+    return getEnvVar("HL7_CONVERSION_BUCKET_NAME");
   }
   static getHl7NotificationQueueUrl(): string {
     return getEnvVarOrFail("HL7_NOTIFICATION_QUEUE_URL");
   }
-  static getHieTimezoneDictionary(): Record<string, string> {
-    return getEnvVarAsRecordOrFail("HIE_TIMEZONE_DICTIONARY");
+  static getHieConfigDictionary(): Record<string, unknown> {
+    return getEnvVarAsRecordOrFail("HIE_CONFIG_DICTIONARY");
   }
 
   static getCdaToFhirConversionBucketName(): string | undefined {
@@ -221,6 +221,9 @@ export class Config {
   static getEhrContributeDiffBundlesQueueUrl(): string {
     return getEnvVarOrFail("EHR_CONTRIBUTE_RESOURCE_DIFF_BUNDLES_QUEUE_URL");
   }
+  static getEhrWriteBackDiffBundlesQueueUrl(): string {
+    return getEnvVarOrFail("EHR_WRITE_BACK_RESOURCE_DIFF_BUNDLES_QUEUE_URL");
+  }
   static getEhrBundleBucketName(): string {
     return getEnvVarOrFail("EHR_BUNDLE_BUCKET_NAME");
   }
@@ -233,6 +236,10 @@ export class Config {
   }
   static getWriteToS3QueueUrl(): string {
     return getEnvVarOrFail("WRITE_TO_S3_QUEUE_URL");
+  }
+
+  static getSftpActionLambda(): boolean {
+    return getEnvVar("SFTP_ACTION_LAMBDA") != undefined;
   }
 
   static getSurescriptsHost(): string {
@@ -284,6 +291,47 @@ export class Config {
     return getEnvVarOrFail("SURESCRIPTS_RECEIVE_RESPONSE_QUEUE_URL");
   }
 
+  static getQuestSftpHost(): string {
+    return getEnvVarOrFail("QUEST_SFTP_HOST");
+  }
+  static getQuestSftpPort(): number {
+    const port = Number.parseInt(getEnvVarOrFail("QUEST_SFTP_PORT"));
+    if (isFinite(port)) {
+      return port;
+    }
+    throw new Error("QUEST_SFTP_PORT is not a valid number");
+  }
+  static getQuestSftpUsername(): string {
+    return getEnvVarOrFail("QUEST_SFTP_USERNAME");
+  }
+  static getQuestSftpPassword(): string {
+    return getEnvVarOrFail("QUEST_SFTP_PASSWORD");
+  }
+  static getQuestSftpOutgoingDirectory(): string {
+    return getEnvVarOrFail("QUEST_OUTGOING_DIRECTORY_PATH");
+  }
+  static getQuestSftpIncomingDirectory(): string {
+    return getEnvVarOrFail("QUEST_INCOMING_DIRECTORY_PATH");
+  }
+  static getQuestSftpActionLambdaName(): string {
+    return getEnvVarOrFail("QUEST_SFTP_ACTION_LAMBDA_NAME");
+  }
+  static getQuestRosterUploadLambdaName(): string {
+    return getEnvVarOrFail("QUEST_ROSTER_UPLOAD_LAMBDA_NAME");
+  }
+  static getQuestResponseDownloadLambdaName(): string {
+    return getEnvVarOrFail("QUEST_RESPONSE_DOWNLOAD_LAMBDA_NAME");
+  }
+  static getQuestConversionLambdaName(): string {
+    return getEnvVarOrFail("QUEST_CONVERT_RESPONSE_LAMBDA_NAME");
+  }
+  static getQuestReplicaBucketName(): string {
+    return getEnvVarOrFail("QUEST_REPLICA_BUCKET_NAME");
+  }
+  static getLabConversionBucketName(): string {
+    return getEnvVarOrFail("LAB_CONVERSION_BUCKET_NAME");
+  }
+
   static getAthenaHealthEnv(): string | undefined {
     return getEnvVar("EHR_ATHENA_ENVIRONMENT");
   }
@@ -333,5 +381,19 @@ export class Config {
   // ENG-536 remove this once we automatically find the discharge summary
   static getDischargeNotificationSlackUrl(): string {
     return getEnvVarOrFail("DISCHARGE_NOTIFICATION_SLACK_URL");
+  }
+
+  static getFhirToCsvQueueUrl(): string {
+    return getEnvVarOrFail("FHIR_TO_CSV_QUEUE_URL");
+  }
+  static getFhirToCsvTransformLambdaName(): string {
+    return getEnvVarOrFail("FHIR_TO_CSV_TRANSFORM_LAMBDA_NAME");
+  }
+
+  static getFhirToCsvBatchJobQueueArn(): string | undefined {
+    return getEnvVar("FHIR_TO_CSV_BATCH_JOB_QUEUE_ARN");
+  }
+  static getFhirToCsvBatchJobDefinitionArn(): string | undefined {
+    return getEnvVar("FHIR_TO_CSV_BATCH_JOB_DEFINITION_ARN");
   }
 }

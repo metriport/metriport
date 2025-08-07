@@ -94,6 +94,13 @@ export async function executeWithRetries<T>(
           return result;
         }
         log(`[${context}] Retrying... (attempt: ${attempt})`);
+        const timeToWait = getTimeToWait({
+          initialDelay,
+          backoffMultiplier,
+          attempt,
+          maxDelay,
+        });
+        await sleep(timeToWait);
         continue;
       }
       return result;

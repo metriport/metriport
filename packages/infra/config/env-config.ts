@@ -1,5 +1,6 @@
 import { CqDirectorySimplifiedOrg } from "@metriport/shared/interface/external/carequality/directory/simplified-org";
 import { EnvType } from "../lib/env-type";
+import { AnalyticsPlatformConfig } from "./analytics-platform-config";
 import { RDSAlarmThresholds } from "./aws/rds";
 import { Hl7NotificationConfig } from "./hl7-notification-config";
 import { IHEGatewayProps } from "./ihe-gateway-config";
@@ -124,6 +125,8 @@ type EnvConfigBase = {
   medicalDocumentsUploadBucketName: string;
   pharmacyConversionBucketName: string;
   surescriptsReplicaBucketName: string;
+  labConversionBucketName?: string;
+  questReplicaBucketName?: string;
   ehrResponsesBucketName?: string;
   ehrBundleBucketName: string;
   iheResponsesBucketName: string;
@@ -281,6 +284,16 @@ type EnvConfigBase = {
       SURESCRIPTS_SFTP_PRIVATE_KEY: string;
     };
   };
+  quest?: {
+    questHostname: string;
+    questPort: number;
+    questUsername: string;
+    questOutgoingDirectoryPath: string;
+    questIncomingDirectoryPath: string;
+    secrets: {
+      QUEST_SFTP_PASSWORD: string;
+    };
+  };
   jobs: {
     startScheduledPatientJobsScheduleExpression: string;
     startScheduledPatientJobsSchedulerUrl: string;
@@ -299,6 +312,7 @@ export type EnvConfigNonSandbox = EnvConfigBase & {
   engineeringCxId: string;
   hl7Notification: Hl7NotificationConfig;
   fhirConversionBucketName: string;
+  analyticsPlatform: AnalyticsPlatformConfig;
 };
 
 export type EnvConfigSandbox = EnvConfigBase & {

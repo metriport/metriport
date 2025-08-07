@@ -28,6 +28,7 @@ export type DetailedConfig = {
 export type QueryParams = {
   cxId: string;
   patientId: string;
+  facilityId: string;
   triggerWHNotificationsToCx: boolean;
   config?: DetailedConfig;
   log?: typeof console.log;
@@ -37,6 +38,7 @@ export abstract class TriggerAndQueryDocRefs {
   protected abstract triggerDocQuery(
     cxId: string,
     patientId: string,
+    facilityId: string,
     triggerWHNotifs: boolean
   ): Promise<void>;
 
@@ -48,6 +50,7 @@ export abstract class TriggerAndQueryDocRefs {
   public async queryDocsForPatient({
     cxId,
     patientId,
+    facilityId,
     triggerWHNotificationsToCx,
     config = {},
     log = console.log,
@@ -65,12 +68,13 @@ export abstract class TriggerAndQueryDocRefs {
     } = config;
     let docsFound = 0;
 
+    // eslint-disable-next-line @metriport/eslint-rules/no-named-arrow-functions
     const triggerDQAndCheckResults = async ({ triggerWH }: { triggerWH: boolean }) => {
       log(
         `Starting doc query for patient ${patientId}... (triggerWHNotificationsToCx=${triggerWHNotificationsToCx})`
       );
       // can't use the SDK b/c we need to bypass the feature flag that disables doc query for enhanced coverage customers
-      await this.triggerDocQuery(cxId, patientId, triggerWH);
+      await this.triggerDocQuery(cxId, patientId, facilityId, triggerWH);
       // add a bit of jitter to the requests
       await sleep(200 + Math.random() * patientChunkDelayJitterMs);
       // query for some time until we get the results we expect or give up if timedout
@@ -106,7 +110,7 @@ export abstract class TriggerAndQueryDocRefs {
     // If we already got the amount of docs refs we need but need to send WH notif, trigger
     // a new DQ with WH notif set
     if (queryComplete && triggerWHNotificationsToCx) {
-      await this.triggerDocQuery(cxId, patientId, true);
+      await this.triggerDocQuery(cxId, patientId, facilityId, true);
       return {
         docQueryAttempts,
         docsFound,

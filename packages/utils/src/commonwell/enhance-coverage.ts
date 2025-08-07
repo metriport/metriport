@@ -195,9 +195,17 @@ export async function main() {
   await executeAsynchronously(
     patientIds,
     async (patientId: string) => {
+      const patient = await patientLoader.getOneOrFail({ cxId, id: patientId });
+      if (!patient.facilityIds || patient.facilityIds.length === 0) {
+        console.log(`Patient ${patientId} has no facilities, skipping...`);
+        return;
+      }
+      const facilityId = patient.facilityIds[0];
+
       const { docsFound } = await triggerAndQueryDocRefs.queryDocsForPatient({
         cxId: cxId,
         patientId: patientId,
+        facilityId,
         triggerWHNotificationsToCx,
         config: {
           maxDocQueryAttempts,

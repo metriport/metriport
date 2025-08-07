@@ -8,6 +8,10 @@ import { Base64Scrambler } from "@metriport/core/util/base64-scrambler";
 import { Config } from "@metriport/core/util/config";
 import { Logger } from "@metriport/core/util/log";
 import { unpackUuid } from "@metriport/core/util/pack-uuid";
+import IPCIDR from "ip-cidr";
+
+import { HieConfigDictionary } from "@metriport/core/external/hl7-notification/hie-config-dictionary";
+import { MetriportError } from "@metriport/shared";
 import * as Sentry from "@sentry/node";
 
 const crypto = new Base64Scrambler(Config.getHl7Base64ScramblerSeed());
@@ -55,4 +59,54 @@ export function unpackPidField(pid: string | undefined) {
 
 function reformUuid(shortId: string) {
   return unpackUuid(crypto.unscramble(shortId));
+}
+
+const ipv4MappedIpv6Prefix = "::ffff:";
+
+/**
+ * Extract clean IP address from IPv4-mapped IPv6 address
+ * Removes the ::ffff: prefix if present
+ */
+export function getCleanIpAddress(address: string | undefined): string {
+  if (!address) {
+    throw new MetriportError("IP address is undefined", undefined, {
+      context: "mllp-server.getCleanIpAddress",
+    });
+  }
+
+  // Trim to just the IPv4 address if possible
+  if (address.startsWith(ipv4MappedIpv6Prefix)) {
+    return address.substring(ipv4MappedIpv6Prefix.length);
+  }
+
+  return address;
+}
+
+/**
+ * Lookup the HIE config for a provided IP address.
+ * @param hieConfigDictionary The HIE config dictionary.
+ * @param ip The IP address to lookup.
+ * @returns The HIE config for the given IP address.
+ */
+export function lookupHieTzEntryForIp(hieConfigDictionary: HieConfigDictionary, ip: string) {
+  const hieVpnConfigRows = Object.entries(hieConfigDictionary).flatMap(keepOnlyVpnConfigs);
+  const match = hieVpnConfigRows.find(({ cidrBlock }) => isIpInRange(cidrBlock, ip));
+  if (!match) {
+    throw new MetriportError(`Sender IP not found in any CIDR block`, {
+      cause: undefined,
+      additionalInfo: { context: "mllp-server.lookupHieTzEntryForIp", ip, hieConfigDictionary },
+    });
+  }
+  return match;
+}
+
+function isIpInRange(cidrBlock: string, ip: string): boolean {
+  const cidr = new IPCIDR(cidrBlock);
+  return cidr.contains(ip);
+}
+
+function keepOnlyVpnConfigs([hieName, config]: [string, HieConfigDictionary[string]]) {
+  return "cidrBlock" in config
+    ? [{ hieName, cidrBlock: config.cidrBlock, timezone: config.timezone }]
+    : [];
 }

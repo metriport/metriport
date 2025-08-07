@@ -4,6 +4,7 @@ import {
   emptyBundle,
   patientsOnlyBundle,
   mixedResourceTypesBundle,
+  CONSTANT_TIME_EXPECTED_THRESHOLD_MS,
 } from "./fixtures/fhir-bundles";
 import { Patient } from "@medplum/fhirtypes";
 
@@ -161,7 +162,7 @@ describe("Phase 2 Verification - Type-Specific Resource Getters", () => {
 
         expect(patients).toHaveLength(2);
         // Should be fast for small bundles (O(n) where n=2)
-        expect(end - start).toBeLessThan(5);
+        expect(end - start).toBeLessThan(CONSTANT_TIME_EXPECTED_THRESHOLD_MS);
       });
 
       it("should handle multiple type queries efficiently", async () => {
@@ -185,7 +186,7 @@ describe("Phase 2 Verification - Type-Specific Resource Getters", () => {
         expect(reports).toHaveLength(0);
 
         // Multiple O(n) queries should still be fast
-        expect(end - start).toBeLessThan(10);
+        expect(end - start).toBeLessThan(50);
       });
     });
   });

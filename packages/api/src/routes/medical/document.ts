@@ -8,7 +8,7 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus, { OK } from "http-status";
 import { z } from "zod";
-import { downloadDocument } from "../../command/medical/document/document-download";
+import { getDocumentDownloadUrl } from "../../command/medical/document/document-download";
 import { queryDocumentsAcrossHIEs } from "../../command/medical/document/document-query";
 import { startBulkGetDocumentUrls } from "../../command/medical/document/start-bulk-get-doc-url";
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
@@ -29,6 +29,7 @@ import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../uti
 import { toDTO } from "./dtos/documentDTO";
 import { docConversionTypeSchema, docFileNameSchema } from "./schemas/documents";
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
+import { getPatientPrimaryFacilityIdOrFail } from "../../command/medical/patient/get-patient-facilities";
 
 const router = Router();
 const region = Config.getAWSRegion();
@@ -125,10 +126,15 @@ router.post(
     const forceCommonwell = stringToBoolean(getFrom("query").optional("commonwell", req));
     const forceCarequality = stringToBoolean(getFrom("query").optional("carequality", req));
 
+    // TODO ENG-618: Temporary fix until we make facilityId required in the API
+    const patientFacilityId = facilityId
+      ? facilityId
+      : await getPatientPrimaryFacilityIdOrFail({ cxId, patientId });
+
     const docQueryProgress = await queryDocumentsAcrossHIEs({
       cxId,
       patientId,
-      facilityId,
+      facilityId: patientFacilityId,
       forceDownload: override,
       cxDocumentRequestMetadata: cxDocumentRequestMetadata?.metadata,
       forceCommonwell,
@@ -142,6 +148,9 @@ router.post(
 // TODO see https://github.com/metriport/metriport-internal/issues/2422
 /**
  * Handles the logic for download url endpoints.
+ * If conversionType is specified, the document will be converted to a new format,
+ * and a presigned url to download the converted document will be returned.
+ * Otherwise, the a presigned url to download the raw document will be returned.
  *
  * @param req Request object.
  * @returns URL for downloading the document.
@@ -161,8 +170,7 @@ async function getDownloadUrl(req: Request): Promise<string> {
     throw new ForbiddenError(message); // This should be 404
   }
 
-  const url = await downloadDocument({ fileName: fileNameString, conversionType });
-  return url;
+  return await getDocumentDownloadUrl({ fileName: fileNameString, conversionType });
 }
 
 /** ---------------------------------------------------------------------------
@@ -250,18 +258,18 @@ async function getUploadUrlAndCreateDocRef(req: Request): Promise<UploadDocument
     s3BucketName: medicalDocumentsUploadBucketName,
   });
 
-  const upsertOnFHIRServer = async () => {
+  async function upsertOnFHIRServer() {
     // Make a temporary DocumentReference on the FHIR server.
     console.log("Creating a temporary DocumentReference on the FHIR server with ID:", docRef.id);
     await upsertDocumentToFHIRServer(cxId, docRef);
-  };
+  }
 
-  const getPresignedUrl = async () => {
+  async function getPresignedUrl() {
     return s3Utils.getPresignedUploadUrl({
       bucket: medicalDocumentsUploadBucketName,
       key: s3FileName,
     });
-  };
+  }
 
   const [, url] = await Promise.all([upsertOnFHIRServer(), getPresignedUrl()]);
 

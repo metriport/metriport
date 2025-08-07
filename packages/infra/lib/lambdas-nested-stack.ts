@@ -1,4 +1,4 @@
-import { Duration, NestedStack, NestedStackProps } from "aws-cdk-lib";
+import { Duration, NestedStack, NestedStackProps, Size } from "aws-cdk-lib";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
@@ -25,12 +25,39 @@ import { createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
 import { LambdaLayers } from "./shared/lambda-layers";
 import { createScheduledLambda } from "./shared/lambda-scheduled";
 import { buildSecret, Secrets } from "./shared/secrets";
+import { QueueAndLambdaSettings } from "./shared/settings";
 import { createQueue } from "./shared/sqs";
 import { isSandbox } from "./shared/util";
 
 export const CDA_TO_VIS_TIMEOUT = Duration.minutes(15);
 
 const pollingBuffer = Duration.seconds(30);
+
+const reconversionKickoffWaitTime = Duration.seconds(5); // 12 patients/min
+const reconversionKickoffLambdaTimeout = reconversionKickoffWaitTime.plus(Duration.seconds(25));
+
+function getReconversionKickoffSettings(): QueueAndLambdaSettings {
+  return {
+    name: "ReconversionKickoff",
+    entry: "reconversion-kickoff",
+    lambda: {
+      memory: 512,
+      timeout: reconversionKickoffLambdaTimeout,
+    },
+    queue: {
+      alarmMaxAgeOfOldestMessage: Duration.days(3),
+      maxMessageCountAlarmThreshold: 50_000,
+      maxReceiveCount: 3,
+      visibilityTimeout: Duration.seconds(reconversionKickoffLambdaTimeout.toSeconds() * 2 + 1),
+      createRetryLambda: false,
+    },
+    eventSource: {
+      batchSize: 1,
+      reportBatchItemFailures: true,
+    },
+    waitTime: reconversionKickoffWaitTime,
+  };
+}
 
 export type OpenSearchConfigForLambdas = {
   endpoint: string;
@@ -47,6 +74,8 @@ interface LambdasNestedStackProps extends NestedStackProps {
   dbCluster: rds.IDatabaseCluster;
   medicalDocumentsBucket: s3.Bucket;
   pharmacyBundleBucket: s3.Bucket | undefined;
+  labBundleBucket: s3.Bucket | undefined;
+  hl7ConversionBucket: s3.Bucket | undefined;
   sandboxSeedDataBucket: s3.IBucket | undefined;
   alarmAction?: SnsAction;
   featureFlagsTable: dynamodb.Table;
@@ -61,7 +90,9 @@ type GenericConsolidatedLambdaProps = {
   vpc: ec2.IVpc;
   bundleBucket: s3.IBucket;
   pharmacyBundleBucket: s3.IBucket | undefined;
+  labBundleBucket: s3.IBucket | undefined;
   conversionsBucket: s3.IBucket;
+  hl7ConversionBucket: s3.IBucket | undefined;
   envType: EnvType;
   fhirServerUrl: string;
   sentryDsn: string | undefined;
@@ -89,6 +120,8 @@ export class LambdasNestedStack extends NestedStack {
   readonly acmCertificateMonitorLambda: Lambda;
   readonly hl7v2RosterUploadLambdas: Lambda[] | undefined;
   readonly conversionResultNotifierLambda: Lambda;
+  readonly reconversionKickoffLambda: Lambda;
+  readonly reconversionKickoffQueue: Queue;
 
   constructor(scope: Construct, id: string, props: LambdasNestedStackProps) {
     super(scope, id, props);
@@ -199,6 +232,8 @@ export class LambdasNestedStack extends NestedStack {
       bundleBucket: props.medicalDocumentsBucket,
       conversionsBucket: this.fhirConverterConnector.bucket,
       pharmacyBundleBucket: props.pharmacyBundleBucket,
+      labBundleBucket: props.labBundleBucket,
+      hl7ConversionBucket: props.hl7ConversionBucket,
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: props.alarmAction,
@@ -213,6 +248,8 @@ export class LambdasNestedStack extends NestedStack {
       bundleBucket: props.medicalDocumentsBucket,
       conversionsBucket: this.fhirConverterConnector.bucket,
       pharmacyBundleBucket: props.pharmacyBundleBucket,
+      labBundleBucket: props.labBundleBucket,
+      hl7ConversionBucket: props.hl7ConversionBucket,
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: props.alarmAction,
@@ -285,6 +322,17 @@ export class LambdasNestedStack extends NestedStack {
         alarmAction: props.alarmAction,
       });
     }
+
+    const { lambda: reconversionKickoffLambda, queue: reconversionKickoffQueue } =
+      this.setupReconversionKickoff({
+        lambdaLayers: props.lambdaLayers,
+        sentryDsn: props.config.lambdasSentryDSN,
+        vpc: props.vpc,
+        envType: props.config.environmentType,
+        alarmAction: props.alarmAction,
+      });
+    this.reconversionKickoffLambda = reconversionKickoffLambda;
+    this.reconversionKickoffQueue = reconversionKickoffQueue;
   }
 
   private setupCdaToVisualization(ownProps: {
@@ -325,6 +373,7 @@ export class LambdasNestedStack extends NestedStack {
         lambdaLayers.saxon,
       ],
       memory: 1024,
+      ephemeralStorageSize: Size.gibibytes(1),
       timeout: CDA_TO_VIS_TIMEOUT,
       vpc,
       alarmSnsAction: alarmAction,
@@ -383,6 +432,7 @@ export class LambdasNestedStack extends NestedStack {
       },
       layers: [lambdaLayers.shared],
       memory: 512,
+      ephemeralStorageSize: Size.gibibytes(1),
       timeout: Duration.minutes(5),
       vpc,
     });
@@ -427,6 +477,7 @@ export class LambdasNestedStack extends NestedStack {
       },
       layers: [lambdaLayers.shared],
       memory: 1024, // TODO: 1603 - Monitor to see if more is required
+      ephemeralStorageSize: Size.gibibytes(1),
       timeout: Duration.minutes(5),
       vpc,
     });
@@ -661,6 +712,8 @@ export class LambdasNestedStack extends NestedStack {
     bundleBucket,
     conversionsBucket,
     pharmacyBundleBucket,
+    hl7ConversionBucket,
+    labBundleBucket,
     sentryDsn,
     envType,
     alarmAction,
@@ -685,6 +738,12 @@ export class LambdasNestedStack extends NestedStack {
         ...(pharmacyBundleBucket && {
           PHARMACY_CONVERSION_BUCKET_NAME: pharmacyBundleBucket.bucketName,
         }),
+        ...(labBundleBucket && {
+          LAB_CONVERSION_BUCKET_NAME: labBundleBucket.bucketName,
+        }),
+        ...(hl7ConversionBucket && {
+          HL7_CONVERSION_BUCKET_NAME: hl7ConversionBucket.bucketName,
+        }),
         FEATURE_FLAGS_TABLE_NAME: featureFlagsTable.tableName,
         ...(bedrock && {
           // API_URL set on the api-stack after the OSS API is created
@@ -697,6 +756,7 @@ export class LambdasNestedStack extends NestedStack {
       },
       layers: [lambdaLayers.shared, lambdaLayers.langchain],
       memory: 6144,
+      ephemeralStorageSize: Size.gibibytes(2),
       timeout: lambdaTimeout,
       isEnableInsights: true,
       vpc,
@@ -706,6 +766,8 @@ export class LambdasNestedStack extends NestedStack {
     bundleBucket.grantReadWrite(theLambda);
     conversionsBucket.grantRead(theLambda);
     pharmacyBundleBucket?.grantRead(theLambda);
+    labBundleBucket?.grantRead(theLambda);
+    hl7ConversionBucket?.grantRead(theLambda);
 
     featureFlagsTable.grantReadData(theLambda);
 
@@ -771,6 +833,7 @@ export class LambdasNestedStack extends NestedStack {
       },
       layers: [lambdaLayers.shared, lambdaLayers.langchain],
       memory: lambdaSettings.memory,
+      ephemeralStorageSize: lambdaSettings.ephemeralStorageSize,
       timeout: lambdaSettings.timeout,
       isEnableInsights: true,
       vpc,
@@ -988,5 +1051,47 @@ export class LambdasNestedStack extends NestedStack {
     }
 
     return rosterUploadLambdas;
+  }
+
+  private setupReconversionKickoff(ownProps: {
+    lambdaLayers: LambdaLayers;
+    sentryDsn: string | undefined;
+    vpc: ec2.IVpc;
+    envType: EnvType;
+    alarmAction: SnsAction | undefined;
+  }): { lambda: Lambda; queue: Queue } {
+    const { lambdaLayers, vpc, envType, sentryDsn, alarmAction } = ownProps;
+    const settings = getReconversionKickoffSettings();
+
+    const queue = createQueue({
+      ...settings.queue,
+      stack: this,
+      name: settings.name,
+      fifo: true,
+      createDLQ: true,
+      lambdaLayers: [lambdaLayers.shared],
+      envType,
+      alarmSnsAction: alarmAction,
+    });
+
+    const lambda = createLambda({
+      ...settings.lambda,
+      stack: this,
+      name: settings.name,
+      entry: settings.entry,
+      envType,
+      envVars: {
+        // API_URL set on the api-stack after the OSS API is created
+        WAIT_TIME_IN_MILLIS: reconversionKickoffWaitTime.toMilliseconds().toString(),
+        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+      },
+      layers: [lambdaLayers.shared],
+      vpc,
+      alarmSnsAction: alarmAction,
+    });
+
+    lambda.addEventSource(new SqsEventSource(queue, settings.eventSource));
+
+    return { lambda, queue };
   }
 }

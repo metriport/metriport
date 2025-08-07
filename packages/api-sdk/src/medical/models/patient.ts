@@ -2,7 +2,7 @@ import { z } from "zod";
 import { baseUpdateSchema } from "./common/base-update";
 import { demographicsSchema } from "./demographics";
 import { ConsolidatedQuery } from "./fhir";
-import { patientSettingsSchema } from "./patient-settings";
+import { patientSettingsSchema } from "@metriport/shared";
 
 export const patientCreateSchema = demographicsSchema
   .merge(

@@ -1,4 +1,4 @@
-import { Duration, StackProps } from "aws-cdk-lib";
+import { Duration, Size, StackProps } from "aws-cdk-lib";
 import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
 import { Metric } from "aws-cdk-lib/aws-cloudwatch";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
@@ -78,6 +78,8 @@ export interface LambdaProps extends StackProps {
    * @see https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/Lambda-Insights-extension-versions.html
    */
   readonly insightsVersion?: LambdaInsightsVersion | undefined;
+  /** The size of the function’s /tmp. */
+  readonly ephemeralStorageSize?: Size;
 }
 
 export function createLambda(props: LambdaProps): Lambda {
@@ -114,6 +116,7 @@ export function createLambda(props: LambdaProps): Lambda {
     retryAttempts: props.retryAttempts ?? 0,
     maxEventAge: props.maxEventAge ?? undefined,
     architecture: props.architecture ?? Architecture.X86_64,
+    ephemeralStorageSize: props.ephemeralStorageSize ?? undefined,
   });
 
   // Allow the lambda to publish metrics to cloudwatch

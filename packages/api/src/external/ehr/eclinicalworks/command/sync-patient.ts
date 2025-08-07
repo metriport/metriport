@@ -7,10 +7,9 @@ import { getJwtTokenByIdOrFail } from "../../../../command/jwt-token";
 import { findOrCreatePatientMapping, getPatientMapping } from "../../../../command/mapping/patient";
 import { queryDocumentsAcrossHIEs } from "../../../../command/medical/document/document-query";
 import { getPatientOrFail } from "../../../../command/medical/patient/get-patient";
-import {
-  createMetriportPatientDemosFhir,
-  getOrCreateMetriportPatientFhir,
-} from "../../shared/utils/fhir";
+import { getPatientPrimaryFacilityIdOrFail } from "../../../../command/medical/patient/get-patient-facilities";
+import { getOrCreateMetriportPatientFhir } from "../../shared/command/patient/get-or-create-metriport-patient-fhir";
+import { createMetriportPatientDemosFhir } from "../../shared/utils/fhir";
 import { createEClinicalWorksClient } from "../shared";
 
 export type SyncEClinicalWorksPatientIntoMetriportParams = {
@@ -63,10 +62,15 @@ export async function syncEClinicalWorksPatientIntoMetriport({
     possibleDemographics,
     externalId: eclinicalworksPatientId,
   });
+  const facilityId = await getPatientPrimaryFacilityIdOrFail({
+    cxId,
+    patientId: metriportPatient.id,
+  });
   if (triggerDq) {
     queryDocumentsAcrossHIEs({
       cxId,
       patientId: metriportPatient.id,
+      facilityId,
     }).catch(processAsyncError(`EClinicalWorks queryDocumentsAcrossHIEs`));
   }
   await findOrCreatePatientMapping({
