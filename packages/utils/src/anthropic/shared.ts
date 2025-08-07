@@ -18,8 +18,13 @@ export function stopInteractiveOnGoodbye(input: string) {
 export function promptUser(): Promise<string> {
   return new Promise(resolve => {
     process.stdout.write("> ");
-    process.stdin.on("data", data => {
+    function handleInput(data: string) {
+      process.stdin.removeListener("data", handleInput);
       resolve(data.toString().trim());
+    }
+    process.stdin.on("data", handleInput);
+    process.stdin.on("end", () => {
+      process.stdin.removeListener("data", handleInput);
     });
   });
 }
