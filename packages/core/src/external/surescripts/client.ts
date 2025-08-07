@@ -326,6 +326,16 @@ export class SurescriptsSftpClient extends SftpClient {
         cxId: requester.cxId,
       });
     }
+    // TODO: ENG-484 - define a function isHealthcareItVendor or isSurescriptsAllowed
+    if (requester.org.type === "healthcare_it_vendor") {
+      this.log(
+        `Cannot make Surescripts requests for cx "${requester.cxId}" with type "healthcare_it_vendor"`
+      );
+      throw new MetriportError("Invalid Surescripts organization", undefined, {
+        cxId: requester.cxId,
+        orgType: requester.org.type,
+      });
+    }
   }
 
   /**
