@@ -22,6 +22,8 @@ import path from "path";
 /*
  * This script will read NPIs, Names, Type, CqOboOid, CwOboOid from a csv saved in S3.
  *
+ * Run this script from the package root. Not from src/facility/
+ *
  * CqOboOid and CwOboOid are both optional if type is 'non-obo'
  *
  * It outputs the result of processing in the same S3 folder as well as runs/import-facility/timestamp with the name inputted and _result appended.
@@ -34,8 +36,8 @@ import path from "path";
  * Either set the env vars below on the OS or create a .env file in the root folder of this package.
  *
  * Execute this with:
- * $ npm run bulk-import-facility --cx-id <cxId> --timestamp <timestamp> --name <name> --dryrun
- * $ npm run bulk-import-facility --cx-id <cxId> --timestamp <timestamp> --name <name> --dryrun
+ * $ ts-node src/facility/bulk-import-facility --cx-id <cxId> --timestamp <timestamp> --name <name> --dryrun
+ * $ ts-node src/facility/bulk-import-facility --cx-id <cxId> --timestamp <timestamp> --name <name>
  */
 
 interface FacilityImportParams {
@@ -52,9 +54,13 @@ export const InputRowSchema = z.object({
   cqOboOid: z.string().optional(),
   cwOboOid: z.string().optional(),
 });
-export type InputRow = z.infer<typeof InputRowSchema>;
+export type InputRowFacilityImport = z.infer<typeof InputRowSchema>;
 
 const S3Utils = getS3UtilsInstance();
+
+const CSV_HEADER =
+  ["npi", "facilityName", "facilityType", "cqOboOid", "cwOboOid", "success", "reason"].join(",") +
+  "\n";
 
 async function main({ cxId, name, timestamp, dryrun }: FacilityImportParams) {
   await sleep(50); // Give some time to avoid mixing logs w/ Node's
@@ -85,7 +91,7 @@ async function main({ cxId, name, timestamp, dryrun }: FacilityImportParams) {
     isDryRun ? "_dryrun" : ""
   }.json`;
 
-  await createCsv(logsFilePath);
+  await createCsv(logsFilePath, CSV_HEADER);
 
   const createdFacilities: FacilityInternalDetails[] = [];
 
@@ -94,7 +100,7 @@ async function main({ cxId, name, timestamp, dryrun }: FacilityImportParams) {
 
   const rowPromises: Promise<void>[] = [];
 
-  parser.on("data", async (row: InputRow) => {
+  parser.on("data", async (row: InputRowFacilityImport) => {
     parser.pause();
     const p = (async () => {
       try {
@@ -198,21 +204,18 @@ async function uploadToS3(bucket: string, key: string, filePath: string): Promis
   });
 }
 
-async function createCsv(filePath: string): Promise<void> {
+export async function createCsv(filePath: string, csvHeader: string): Promise<void> {
   const dir = path.dirname(filePath);
   await fs.mkdir(dir, { recursive: true });
 
-  const CSV_HEADER =
-    ["npi", "facilityName", "facilityType", "cqOboOid", "cwOboOid", "success", "reason"].join(",") +
-    "\n";
-  await fs.writeFile(filePath, CSV_HEADER, "utf8");
+  await fs.writeFile(filePath, csvHeader, "utf8");
 }
 
 async function writeToCsv(
   filePath: string,
   success: boolean,
   message: string | undefined,
-  originalRow: InputRow
+  originalRow: InputRowFacilityImport
 ): Promise<void> {
   const rec = {
     npi: originalRow.npi,
@@ -259,6 +262,7 @@ program
   .version("1.0.0")
   .action(main);
 
-program.parse(process.argv);
-
+if (require.main === module) {
+  program.parse(process.argv);
+}
 export default program;
