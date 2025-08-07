@@ -127,6 +127,7 @@ export class SurescriptsSftpClient extends SftpClient {
 
       let totalRequests = 0;
       for (const request of requests) {
+        await this.validateRequester(request);
         const transmissionId = this.generateTransmissionId().toString("ascii");
         const content = generatePatientRequestFile({
           client: this,
