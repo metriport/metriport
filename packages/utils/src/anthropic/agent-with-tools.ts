@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { AnthropicAgent } from "@metriport/core/external/anthropic/agent/anthropic";
-import { AnthropicTool } from "@metriport/core/external/anthropic/agent/anthropic/tool";
+import { AnthropicAgent } from "@metriport/core/external/bedrock/agent/anthropic";
+import { AnthropicTool } from "@metriport/core/external/bedrock/agent/anthropic/tool";
 import { logResponse, promptUser, startInteractive } from "./shared";
 
 /**

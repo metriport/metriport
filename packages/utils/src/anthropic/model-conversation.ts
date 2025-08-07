@@ -1,5 +1,5 @@
-import { AnthropicModel } from "@metriport/core/external/anthropic/model/anthropic";
-import { AnthropicMessageThread } from "@metriport/core/external/anthropic/model/anthropic/messages";
+import { AnthropicModel } from "@metriport/core/external/bedrock/model/anthropic";
+import { AnthropicMessageThread } from "@metriport/core/external/bedrock/model/anthropic/messages";
 import { promptUser, startInteractive } from "./shared";
 
 /**

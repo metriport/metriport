@@ -1,4 +1,4 @@
-import { AnthropicAgent } from "@metriport/core/external/anthropic/agent/anthropic";
+import { AnthropicAgent } from "@metriport/core/external/bedrock/agent/anthropic";
 import { logResponse, promptUser, startInteractive } from "./shared";
 
 /**
