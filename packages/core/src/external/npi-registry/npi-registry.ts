@@ -1,9 +1,9 @@
 import {
   MetriportError,
   normalizeCity,
-  normalizeZipCodeNewSafe,
+  normalizeState,
+  normalizeZipCodeNew,
   toTitleCase,
-  USState,
   validateNPI,
 } from "@metriport/shared";
 import axios from "axios";
@@ -106,20 +106,13 @@ export function translateNpiFacilityToFacilityDetails(
 
   const isObo = additionalInfo.facilityType === "obo";
 
-  let type: FacilityType = FacilityType.initiatorAndResponder;
+  const type = isObo ? FacilityType.initiatorOnly : FacilityType.initiatorAndResponder;
 
-  if (isObo) {
-    type = FacilityType.initiatorOnly;
-  }
-
-  const zip = normalizeZipCodeNewSafe(address.postal_code);
-  if (!zip) {
-    throw new MetriportError("No zip in npi facility was found.", undefined, { zip });
-  }
+  const zip = normalizeZipCodeNew(address.postal_code);
 
   const internalFacility: FacilityInternalDetails = {
     city: normalizeCity(address.city),
-    state: USState[address.state as keyof typeof USState],
+    state: normalizeState(address.state),
     nameInMetriport: toTitleCase(additionalInfo.facilityName),
     npi: npiFacility.number,
     cqType: type,
@@ -141,10 +134,4 @@ export function translateNpiFacilityToFacilityDetails(
     internalFacility.cwOboOid = additionalInfo.cwOboOid;
   }
   return internalFacility;
-}
-
-export function getZipFromPostalCode(postalCode: string | undefined): string {
-  if (!postalCode) throw new MetriportError(`No postal code given.`, undefined, { postalCode });
-
-  return postalCode.slice(0, 5);
 }
