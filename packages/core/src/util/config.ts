@@ -37,6 +37,14 @@ export class Config {
     return getEnvVarOrFail("ENV_TYPE");
   }
 
+  static getNpiRegistryUrlOrFail(): string {
+    return getEnvVarOrFail("NPI_REGISTRY_URL");
+  }
+
+  static getNpiRegistryVersionOrFail(): string {
+    return getEnvVarOrFail("NPI_REGISTRY_VERSION");
+  }
+
   static getSlackAlertUrl(): string | undefined {
     return getEnvVar("SLACK_ALERT_URL");
   }
