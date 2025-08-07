@@ -5,22 +5,18 @@ import { processPatientsInBatches } from "../batch-utils";
 import { PatientListProcessingResult, verifyPatients } from "./common";
 
 /**
- * Appends an ADT subscription to the patient settings for the given customer and patient IDs.
+ * Appends a Quest monitoring subscription to the patient settings for the given customer and patient IDs.
  *
- * @param cxId The customer ID
- * @param facilityId The facility ID. Optional.
- * @param patientIds The patient IDs to upsert patient settings for.
- * @param hieName The HIE name to subscribe to
- * @returns The number of patients updated and the list of patients not found
+ * @param cxId - The customer ID
+ * @param patientIds - The patient IDs to add monitoring for.
+ * @returns The number of patients updated and the list of patients not found.
  */
-export async function addHieSubscriptionToPatients({
+export async function addQuestSubscriptionToPatients({
   cxId,
   patientIds,
-  hieName,
 }: {
   cxId: string;
   patientIds: string[];
-  hieName: string;
 }): Promise<PatientListProcessingResult> {
   const { validPatientIds, invalidPatientIds: patientsNotFound } = await verifyPatients({
     cxId,
@@ -28,17 +24,16 @@ export async function addHieSubscriptionToPatients({
   });
 
   async function batchProcessor(batch: string[]): Promise<void> {
-    await _addHieSubscriptionToPatients({
+    await _addQuestSubscriptionToPatients({
       patientIds: batch,
       cxId,
-      hieName,
     });
   }
 
   const result = await processPatientsInBatches(validPatientIds, batchProcessor, {
     cxId,
-    operationName: "addHieSubscriptionToPatients",
-    errorMessage: "Failed to append ADT subscriptions for patients",
+    operationName: "addQuestSubscriptionToPatients",
+    errorMessage: "Failed to append Quest monitoring subscriptions for patients",
     throwOnNoPatients: true,
   });
 
@@ -49,21 +44,18 @@ export async function addHieSubscriptionToPatients({
 }
 
 /**
- * Removes an ADT subscription from the patient settings for the given customer and patient IDs.
+ * Removes a Quest monitoring subscription from the patient settings for the given customer and patient IDs.
  *
  * @param cxId The customer ID
- * @param patientIds The patient IDs to remove ADT subscriptions for.
- * @param hieName The HIE name to unsubscribe from
+ * @param patientIds The patient IDs to remove Quest monitoring subscriptions for.
  * @returns The number of patients updated and the list of patients not found
  */
-export async function removeHieSubscriptionFromPatients({
+export async function removeQuestSubscriptionFromPatients({
   cxId,
   patientIds,
-  hieName,
 }: {
   cxId: string;
   patientIds: string[];
-  hieName: string;
 }): Promise<PatientListProcessingResult> {
   const { validPatientIds, invalidPatientIds: patientsNotFound } = await verifyPatients({
     cxId,
@@ -71,17 +63,16 @@ export async function removeHieSubscriptionFromPatients({
   });
 
   async function batchProcessor(batch: string[]): Promise<void> {
-    await _removeHieSubscriptionsFromPatients({
+    await _removeQuestSubscriptionsFromPatients({
       patientIds: batch,
       cxId,
-      hieName,
     });
   }
 
   const result = await processPatientsInBatches(validPatientIds, batchProcessor, {
     cxId,
-    operationName: "removeHieSubscriptionFromPatients",
-    errorMessage: "Failed to remove ADT subscriptions for patients",
+    operationName: "removeQuestSubscriptionFromPatients",
+    errorMessage: "Failed to remove Quest monitoring subscriptions for patients",
     throwOnNoPatients: true,
   });
 
@@ -92,16 +83,14 @@ export async function removeHieSubscriptionFromPatients({
 }
 
 /**
- * Adds an HIE subscription to patient settings if not already present
+ * Adds a Quest monitoring subscription to patient settings if not already present
  */
-async function _addHieSubscriptionToPatients({
+async function _addQuestSubscriptionToPatients({
   patientIds,
   cxId,
-  hieName,
 }: {
   patientIds: string[];
   cxId: string;
-  hieName: string;
 }): Promise<void> {
   const sequelize = PatientSettingsModel.sequelize;
   if (!sequelize) {
@@ -115,7 +104,7 @@ async function _addHieSubscriptionToPatients({
       cxId,
       patientId,
       subscriptions: {
-        adt: [hieName],
+        quest: true,
       },
     })),
     {
@@ -123,73 +112,61 @@ async function _addHieSubscriptionToPatients({
     }
   );
 
-  // Add HIE name to existing subscriptions (only if not already present)
-  // SQL explanation: If HIE already in array, keep current array, otherwise append HIE to array
+  // Add Quest monitoring subscription to existing subscriptions (only if not already present)
+  // SQL explanation: If Quest monitoring already set to true, stays as true, otherwise set to true
   const addSubscriptionQuery = `
     UPDATE patient_settings 
     SET 
-        subscriptions = jsonb_set(subscriptions, '{adt}', 
-            CASE 
-                WHEN subscriptions->'adt' @> to_jsonb(:hieName::text) 
-                THEN subscriptions->'adt'
-                ELSE COALESCE(subscriptions->'adt', '[]'::jsonb) || to_jsonb(:hieName::text)
-            END
-        ),
+        subscriptions = CASE 
+            WHEN subscriptions IS NULL OR jsonb_typeof(subscriptions) != 'object' THEN '{"quest": true}'::jsonb
+            ELSE jsonb_set(subscriptions, '{quest}', 'true'::jsonb, true)
+        END,
         updated_at = NOW()
     WHERE cx_id = :cxId::uuid 
       AND patient_id in (:patientIds)
-      AND NOT (subscriptions->'adt' @> to_jsonb(:hieName::text))
+      AND (subscriptions IS NULL OR subscriptions->'quest' IS DISTINCT FROM 'true'::jsonb)
   `;
 
   await sequelize.query(addSubscriptionQuery, {
     replacements: {
       cxId,
       patientIds,
-      hieName,
     },
     type: QueryTypes.UPDATE,
   });
 }
 
 /**
- * Removes an HIE subscription from patient settings if present
+ * Removes a Quest monitoring subscription from patient settings if present
  */
-async function _removeHieSubscriptionsFromPatients({
+async function _removeQuestSubscriptionsFromPatients({
   patientIds,
   cxId,
-  hieName,
 }: {
   patientIds: string[];
   cxId: string;
-  hieName: string;
 }): Promise<void> {
   const sequelize = PatientSettingsModel.sequelize;
   if (!sequelize) {
     throw new Error("Sequelize instance not available");
   }
 
-  // Remove HIE name from existing subscriptions (only if it exists)
-  // SQL explanation: Convert JSON array to text array, remove HIE name, convert back to JSON
+  // Remove Quest monitoring subscription from existing subscriptions (only if it exists)
+  // SQL explanation: Use JSONB - operator to remove the 'quest' key from the subscriptions object
   const removeSubscriptionQuery = `
     UPDATE patient_settings 
     SET 
-        subscriptions = jsonb_set(subscriptions, '{adt}', 
-          to_jsonb(array_remove(
-              ARRAY(SELECT jsonb_array_elements_text(subscriptions->'adt')), 
-              :hieName::text
-          ))
-        ),
+        subscriptions = subscriptions - 'quest',
         updated_at = NOW()
     WHERE cx_id = :cxId::uuid 
       AND patient_id in (:patientIds)
-      AND subscriptions->'adt' @> to_jsonb(:hieName::text)
+      AND subscriptions ? 'quest'
   `;
 
   await sequelize.query(removeSubscriptionQuery, {
     replacements: {
       cxId,
       patientIds,
-      hieName,
     },
     type: QueryTypes.UPDATE,
   });
