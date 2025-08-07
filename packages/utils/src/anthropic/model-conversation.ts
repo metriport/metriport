@@ -1,5 +1,6 @@
 import { AnthropicModel } from "@metriport/core/external/bedrock/model/anthropic";
 import { AnthropicMessageThread } from "@metriport/core/external/bedrock/model/anthropic/messages";
+import { promptUser, startInteractive } from "./shared";
 
 /**
  * This is a simple example of using the Bedrock client to have a conversation with a model. You can
@@ -16,13 +17,11 @@ async function main() {
   const messages: AnthropicMessageThread<"claude-sonnet-3.7"> = [];
 
   // Start a REPL until the user enters "bye".
-  process.stdin.setEncoding("utf8");
-
+  startInteractive();
   // eslint-disable-next-line no-constant-condition
   while (true) {
     const input = await promptUser();
     if (input.toLowerCase() === "bye") {
-      process.stdout.write("Goodbye!\n");
       process.exit(0);
     }
 
@@ -39,28 +38,10 @@ async function main() {
     for (const content of response.content) {
       if (content.type === "text") {
         process.stdout.write(content.text);
-      } else if (content.type === "tool_use") {
-        process.stdout.write(`[TOOL CALL] [${content.name}]\n`);
-        process.stdout.write(JSON.stringify(content.input, null, 2));
         process.stdout.write("\n");
-      } else if (content.type === "thinking") {
-        process.stdout.write(`[THINKING]  ${content.text}\n`);
       }
     }
-    process.stdout.write("\n");
   }
-}
-
-/**
- * @returns The user input on stdin
- */
-function promptUser(): Promise<string> {
-  return new Promise(resolve => {
-    process.stdout.write("> ");
-    process.stdin.on("data", data => {
-      resolve(data.toString().trim());
-    });
-  });
 }
 
 main();

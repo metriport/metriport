@@ -50,6 +50,10 @@ export class AnthropicAgent<V extends AnthropicModelVersion> {
     });
   }
 
+  addUserMessageText(text: string): void {
+    this.addUserMessage([{ type: "text", text }]);
+  }
+
   /**
    * Adds an assistant message to the agent's conversation thread.
    * @param content - The content of the assistant message.
@@ -157,5 +161,12 @@ export class AnthropicAgent<V extends AnthropicModelVersion> {
    */
   setConversation(messages: AnthropicMessageThread<V>): void {
     this.messages = [...messages];
+  }
+
+  /**
+   * @returns The usage for this agent.
+   */
+  getUsage(): AnthropicUsage {
+    return this.usage;
   }
 }
