@@ -1,12 +1,12 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
-import fs from "fs";
-import csvParser from "csv-parser";
 import { faker } from "@faker-js/faker";
-import { createCsv, InputRowFacilityImport } from "./bulk-import-facility";
-import { Command } from "commander";
 import { MetriportError } from "@metriport/shared";
+import { Command } from "commander";
+import csvParser from "csv-parser";
+import fs from "fs";
+import { createCsv, InputRowFacilityImport } from "./bulk-import-facility";
 
 /*
  * This script will read NPIs from a csv saved locally.
@@ -67,12 +67,10 @@ async function main({ inputFile, startRow, endRow }: GenerateCsvParams) {
 
       const facilityType: InputRowFacilityImport["facilityType"] =
         Math.random() < 0.5 ? "obo" : "non-obo";
-      let cqOboOid = "",
-        cwOboOid = "";
-      if (facilityType === "obo") {
-        cqOboOid = `2.16.840.1.${getRandomNumber()}`;
-        cwOboOid = `2.16.840.1.${getRandomNumber()}`;
-      }
+      const isObo = facilityType === "obo";
+
+      const cqOboOid = isObo ? `2.16.840.1.${getRandomNumber()}` : "";
+      const cwOboOid = isObo ? `2.16.840.1.${getRandomNumber()}` : "";
 
       results.push({ npi, facilityName: faker.company.name(), facilityType, cqOboOid, cwOboOid });
     })

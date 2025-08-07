@@ -1,22 +1,22 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
-import { errorToString, getEnvVarOrFail, MetriportError, sleep } from "@metriport/shared";
-import { Command } from "commander";
-import csvParser from "csv-parser";
-import { Readable } from "stream";
-import { pipeline } from "stream/promises";
-import axios from "axios";
 import { Facility } from "@metriport/api-sdk";
-import { z } from "zod";
+import { FacilityInternalDetails } from "@metriport/core/domain/npi-facility";
+import { getS3UtilsInstance } from "@metriport/core/external/ehr/bundle/bundle-shared";
 import {
   getFacilityByNpiOrFail,
   translateNpiFacilityToFacilityDetails,
 } from "@metriport/core/external/npi-registry/npi-registry";
-import { getS3UtilsInstance } from "@metriport/core/external/ehr/bundle/bundle-shared";
+import { errorToString, getEnvVarOrFail, MetriportError, sleep } from "@metriport/shared";
+import axios from "axios";
+import { Command } from "commander";
+import csvParser from "csv-parser";
 import fs from "fs/promises";
-import { FacilityInternalDetails } from "@metriport/core/domain/npi-facility";
 import path from "path";
+import { Readable } from "stream";
+import { pipeline } from "stream/promises";
+import { z } from "zod";
 
 /*
  * This script will read NPIs, Names, Type, CqOboOid, CwOboOid from a csv saved in S3.
@@ -132,7 +132,7 @@ async function main({ cxId, name, timestamp, dryrun }: FacilityImportParams) {
         parser.resume();
       }
     })().catch(error => {
-      console.error("Unexpected error in row processing:", error);
+      console.log("Unexpected error in row processing:", error);
       parser.resume();
     });
     rowPromises.push(p);
