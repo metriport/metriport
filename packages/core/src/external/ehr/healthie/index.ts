@@ -378,6 +378,7 @@ class HealthieApi {
         allergy_sensitivities {
           id
           category
+          category_type
           name
           onset_date
           reaction

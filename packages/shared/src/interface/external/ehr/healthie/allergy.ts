@@ -5,8 +5,7 @@ export const allergySchema = z.object({
   category: z.enum(["allergy", "sensitivity", "preference", "intolerance", "ccda"]),
   category_type: z
     .enum(["drug", "food", "environmental", "pet", "latex", "like", "dislike"])
-    .nullable()
-    .optional(),
+    .nullable(),
   name: z.string().nullable(),
   status: z.enum(["active", "inactive", "resolved"]).nullable(),
   onset_date: z.string().nullable(),
