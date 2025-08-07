@@ -45,7 +45,7 @@ export function buildToolResult(
   return {
     type: "tool_result",
     tool_use_id: toolCall.id,
-    content,
+    content: JSON.stringify(content ?? {}),
   };
 }
 
