@@ -1,12 +1,13 @@
 import { z } from "zod";
+import { TreatmentType, OrganizationBizType } from "../domain/organization";
 
 export const orgDataSchema = z.object({
   id: z.string(),
   oid: z.string(),
   cxId: z.string(),
   name: z.string(),
-  type: z.string(),
-  businessType: z.string(),
+  type: z.nativeEnum(TreatmentType),
+  businessType: z.nativeEnum(OrganizationBizType),
 });
 
 export const facilityDataSchema = z.object({
