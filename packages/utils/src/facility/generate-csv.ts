@@ -94,6 +94,7 @@ async function main({ inputFile, startRow, endRow }: GenerateCsvParams) {
       console.error("Error:", err);
       process.exit(1);
     });
+  //TODO: Upload to S3
 }
 
 function getRandomNumber(): number {
@@ -102,6 +103,7 @@ function getRandomNumber(): number {
 
 const program = new Command();
 
+//TODO: add optional result name field
 program
   .name("generate-csv")
   .requiredOption("--input-file <inputfile>", "The path to the input file.")
