@@ -7,7 +7,6 @@ import {
   validateNPI,
 } from "@metriport/shared";
 import axios from "axios";
-import { Config } from "../../util/config";
 import {
   FacilityType,
   NpiRegistryFacility,
@@ -16,8 +15,8 @@ import {
   AdditionalInformationInternalFacility,
 } from "../../domain/npi-facility";
 
-const npiRegistryUrl = Config.getNpiRegistryUrlOrFail();
-const npiRegistryVersion = Config.getNpiRegistryVersionOrFail();
+export const NPI_REGISTRY_URL = "https://npiregistry.cms.hhs.gov/api";
+export const NPI_REGISTRY_VERSION = "2.1";
 
 /**
  * Calls an external endpoint to retrieve facility information based off of the npi.
@@ -33,11 +32,11 @@ export async function getFacilityByNpiOrFail(npi: string): Promise<NpiRegistryFa
     );
   }
   const params = new URLSearchParams({
-    version: npiRegistryVersion,
+    version: NPI_REGISTRY_VERSION,
     number: npi,
   });
 
-  const res = await axios.get<NpiRegistryReturn>(npiRegistryUrl, {
+  const res = await axios.get<NpiRegistryReturn>(NPI_REGISTRY_URL, {
     headers: { "Content-Type": "application/json" },
     params,
   });
@@ -47,8 +46,8 @@ export async function getFacilityByNpiOrFail(npi: string): Promise<NpiRegistryFa
     if (err && err.description && err?.field && err.number) {
       throw new MetriportError(`NPI Registry error: ${err.description}`, undefined, {
         npi,
-        npiRegistryUrl,
-        npiRegistryVersion,
+        NPI_REGISTRY_URL,
+        NPI_REGISTRY_VERSION,
         description: err.description,
         field: err.field,
         errorNumber: err.number,
@@ -57,8 +56,8 @@ export async function getFacilityByNpiOrFail(npi: string): Promise<NpiRegistryFa
     //This should never happen but...
     throw new MetriportError(`NPI Registry error: Unexpected error`, undefined, {
       npi,
-      npiRegistryUrl,
-      npiRegistryVersion,
+      NPI_REGISTRY_URL,
+      NPI_REGISTRY_VERSION,
       description: "Unknown",
       field: "Unknown",
       errorNumber: "Unknown",
@@ -72,7 +71,7 @@ export async function getFacilityByNpiOrFail(npi: string): Promise<NpiRegistryFa
     throw new MetriportError(
       `NPI Registry error. Found no Facilities with NPI: ${npi}`,
       undefined,
-      { npi, npiRegistryUrl, npiRegistryVersion, count }
+      { npi, NPI_REGISTRY_URL, NPI_REGISTRY_VERSION, count }
     );
   }
 
@@ -80,7 +79,7 @@ export async function getFacilityByNpiOrFail(npi: string): Promise<NpiRegistryFa
     throw new MetriportError(
       `NPI Registry error. Unexpected missing results for NPI: ${npi}`,
       undefined,
-      { npi, npiRegistryUrl, npiRegistryVersion }
+      { npi, NPI_REGISTRY_URL, NPI_REGISTRY_VERSION }
     );
   }
 
