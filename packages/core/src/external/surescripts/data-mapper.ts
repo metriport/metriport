@@ -30,8 +30,10 @@ export class SurescriptsDataMapper {
     facilityId,
     patientId,
   }: SurescriptsPatientRequest): Promise<SurescriptsPatientRequestData> {
-    const { facility, org } = await this.getFacilityAndOrgData(cxId, facilityId);
-    const patient = await this.getPatient(cxId, patientId);
+    const [{ facility, org }, patient] = await Promise.all([
+      this.getFacilityAndOrgData(cxId, facilityId),
+      this.getPatient(cxId, patientId),
+    ]);
     return { cxId, facility, org, patient };
   }
 
@@ -40,8 +42,10 @@ export class SurescriptsDataMapper {
     facilityId,
     patientIds,
   }: SurescriptsBatchRequest): Promise<SurescriptsBatchRequestData> {
-    const { facility, org } = await this.getFacilityAndOrgData(cxId, facilityId);
-    const validPatientIds = await this.validatePatientIdsForFacility(cxId, facilityId, patientIds);
+    const [{ facility, org }, validPatientIds] = await Promise.all([
+      this.getFacilityAndOrgData(cxId, facilityId),
+      this.validatePatientIdsForFacility(cxId, facilityId, patientIds),
+    ]);
     const patients = await this.getEachPatientById(cxId, validPatientIds);
     return { cxId, facility, org, patients };
   }
