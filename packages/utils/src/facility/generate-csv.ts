@@ -8,7 +8,7 @@ import { createCsv, InputRowFacilityImport } from "./bulk-import-facility";
 import { Command } from "commander";
 import { MetriportError } from "@metriport/shared";
 
-/*F
+/*
  * This script will read NPIs from a csv saved locally.
  *
  * Run this script from the package root. Not from src/facility/
