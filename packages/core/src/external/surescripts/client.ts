@@ -1,4 +1,4 @@
-import { BadRequestError, MetriportError } from "@metriport/shared";
+import { BadRequestError, MetriportError, OrganizationBizType } from "@metriport/shared";
 import { validateNPI } from "@metriport/shared/common/validate-npi";
 import { Config } from "../../util/config";
 import { SftpClient } from "../sftp/client";
@@ -335,25 +335,23 @@ export class SurescriptsSftpClient extends SftpClient {
         cxId: requester.cxId,
       });
     }
-    if (!this.isSurescriptsAllowedForOrgType(requester.org.type)) {
+    if (!this.isSurescriptsAllowedForOrgType(requester.org.businessType)) {
       this.log(
-        `Cannot make Surescripts requests for cx "${requester.cxId}" with org type "${requester.org.type}"`
+        `Cannot make Surescripts requests for cx "${requester.cxId}" with org type "${requester.org.businessType}"`
       );
       throw new MetriportError("Invalid Surescripts organization type", undefined, {
         cxId: requester.cxId,
         orgType: requester.org.type,
+        businessType: requester.org.businessType,
       });
     }
   }
 
-  private isSurescriptsAllowedForOrgType(orgType: string): boolean {
-    if (orgType === "healthcare_it_vendor") {
-      return false;
-    }
+  private isSurescriptsAllowedForOrgType(orgType: OrganizationBizType): boolean {
     if (orgType === "healthcare_provider") {
       return true;
     }
-    // TODO: Determine the exact organization types that are allowed to make Surescripts requests
+    // Fails for healthcare_it_vendor
     return false;
   }
 
