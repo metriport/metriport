@@ -1,6 +1,7 @@
 import {
   MetriportError,
   normalizeCity,
+  normalizeZipCodeNewSafe,
   toTitleCase,
   USState,
   validateNPI,
@@ -111,6 +112,11 @@ export function translateNpiFacilityToFacilityDetails(
     type = FacilityType.initiatorOnly;
   }
 
+  const zip = normalizeZipCodeNewSafe(address.postal_code);
+  if (!zip) {
+    throw new MetriportError("No zip in npi facility was found.", undefined, { zip });
+  }
+
   const internalFacility: FacilityInternalDetails = {
     city: normalizeCity(address.city),
     state: USState[address.state as keyof typeof USState],
@@ -119,7 +125,7 @@ export function translateNpiFacilityToFacilityDetails(
     cqType: type,
     cwType: type,
     addressLine1: toTitleCase(address.address_1),
-    zip: getZipFromPostalCode(address.postal_code),
+    zip,
     country: "USA",
   };
 
