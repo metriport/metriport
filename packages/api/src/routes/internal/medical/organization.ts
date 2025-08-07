@@ -5,6 +5,7 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { createOrganization } from "../../../command/medical/organization/create-organization";
+import { syncOrganizationToFhir } from "../../../command/medical/organization/sync-organization-to-fhir";
 import { getOrganizationsOrFail } from "../../../command/medical/organization/get-organization";
 import { updateOrganization } from "../../../command/medical/organization/update-organization";
 import { createOrUpdateOrganization as cqCreateOrUpdateOrganization } from "../../../external/carequality/command/create-or-update-organization";
@@ -90,6 +91,23 @@ router.get(
     const orgs = await getOrganizationsOrFail({ cxIds });
 
     return res.status(httpStatus.OK).json(orgs.map(internalDtoFromModel));
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * POST /internal/organization/fhir-sync
+ *
+ * Creates an organization on the FHIR server.
+ */
+router.post(
+  "/fhir-sync",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+
+    const org = await syncOrganizationToFhir({ cxId });
+
+    return res.status(httpStatus.OK).json(internalDtoFromModel(org));
   })
 );
 
