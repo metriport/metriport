@@ -100,8 +100,8 @@ export class Config {
   static getHl7OutgoingMessageBucketName(): string {
     return getEnvVarOrFail("HL7_OUTGOING_MESSAGE_BUCKET_NAME");
   }
-  static getHl7ConversionBucketName(): string {
-    return getEnvVarOrFail("HL7_CONVERSION_BUCKET_NAME");
+  static getHl7ConversionBucketName(): string | undefined {
+    return getEnvVar("HL7_CONVERSION_BUCKET_NAME");
   }
   static getHl7NotificationQueueUrl(): string {
     return getEnvVarOrFail("HL7_NOTIFICATION_QUEUE_URL");

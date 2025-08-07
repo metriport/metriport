@@ -39,7 +39,8 @@ export function createAddresses(patient: HealthiePatient): Address[] {
   const addresses = patient.locations.flatMap(address => {
     const addressLine1 = address.line1.trim();
     if (addressLine1 === "") return [];
-    const addressLine2 = address.line2.trim() !== "" ? address.line2.trim() : undefined;
+    const addressLine2 =
+      address.line2 && address.line2.trim() !== "" ? address.line2.trim() : undefined;
     const city = address.city.trim();
     if (city === "") return [];
     const country = normalizeCountrySafe(address.country) ?? normalizedCountryUsa;
