@@ -106,14 +106,12 @@ async function processDocumentReference({
     );
     const fileInfo = await s3Utils.getFileInfoFromS3(filePath, bucket);
 
-    if (!fileInfo.exists) {
-      await s3Utils.uploadFile({
-        bucket,
-        key: filePath,
-        file: decodedBytes,
-        contentType: mimeType,
-      });
-    }
+    await s3Utils.uploadFile({
+      bucket,
+      key: filePath,
+      file: decodedBytes,
+      contentType: mimeType,
+    });
 
     log(
       `Downloaded a document with mime type: ${mimeType} for patient: ${outboundRequest.patientId} and request: ${outboundRequest.id}`
