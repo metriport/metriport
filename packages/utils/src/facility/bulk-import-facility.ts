@@ -66,7 +66,7 @@ async function main({ cxId, name, timestamp, dryrun }: FacilityImportParams) {
   await sleep(50); // Give some time to avoid mixing logs w/ Node's
 
   const bucket = getEnvVarOrFail("FACILITY_IMPORT_BUCKET");
-  const internalUrl = getEnvVarOrFail("INTERNAL_URL");
+  const internalUrl = getEnvVarOrFail("API_URL");
   const isDryRun = Boolean(dryrun);
 
   console.log(
