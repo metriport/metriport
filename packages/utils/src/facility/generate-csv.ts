@@ -88,7 +88,7 @@ async function main({ inputFile, startRow, endRow }: GenerateCsvParams) {
       console.log(`Wrote ${results.length} rows (data rows ${startRow}–${endRow}) → ${fullPath}`);
     })
     .on("error", err => {
-      console.error("Error:", err);
+      console.log("Error:", err);
       process.exit(1);
     });
   //TODO: Upload to S3
