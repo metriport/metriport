@@ -335,16 +335,26 @@ export class SurescriptsSftpClient extends SftpClient {
         cxId: requester.cxId,
       });
     }
-    // TODO: ENG-484 - define a function isHealthcareItVendor or isSurescriptsAllowed
-    if (requester.org.type === "healthcare_it_vendor") {
+    if (!this.isSurescriptsAllowedForOrgType(requester.org.type)) {
       this.log(
-        `Cannot make Surescripts requests for cx "${requester.cxId}" with type "healthcare_it_vendor"`
+        `Cannot make Surescripts requests for cx "${requester.cxId}" with org type "${requester.org.type}"`
       );
-      throw new MetriportError("Invalid Surescripts organization", undefined, {
+      throw new MetriportError("Invalid Surescripts organization type", undefined, {
         cxId: requester.cxId,
         orgType: requester.org.type,
       });
     }
+  }
+
+  private isSurescriptsAllowedForOrgType(orgType: string): boolean {
+    if (orgType === "healthcare_it_vendor") {
+      return false;
+    }
+    if (orgType === "healthcare_provider") {
+      return true;
+    }
+    // TODO: Determine the exact organization types that are allowed to make Surescripts requests
+    return false;
   }
 
   /**
