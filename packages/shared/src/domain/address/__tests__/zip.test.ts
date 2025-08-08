@@ -61,26 +61,115 @@ describe("zip", () => {
       expect(normalizeZipCodeNewSafe(input)).toBe(expectedOutput);
     });
 
-    it("should return padded first 4 characters when contains dash at position 4", () => {
+    it("should return padded ZIP+4 format when contains dash at position 4", () => {
       const input = "1234-6677";
-      const expectedOutput = "01234";
+      const expectedOutput = "01234-6677";
       expect(normalizeZipCodeNewSafe(input)).toBe(expectedOutput);
     });
 
-    it("should return first 5 characters when zip code length is 10", () => {
+    it("should return full ZIP+4 format when zip code length is 10", () => {
       const input = "12345-6677";
+      const expectedOutput = "12345-6677";
+      expect(normalizeZipCodeNewSafe(input)).toBe(expectedOutput);
+    });
+
+    describe("invalid input handling", () => {
+      const invalidInputTests = [
+        { input: "12345-667a", description: "non-digit characters in ZIP+4 format" },
+        { input: "1234a", description: "non-digit characters in 5-digit format" },
+        { input: "12-34567", description: "invalid dash placement" },
+        { input: "12345-12345", description: "too long plus4 part" },
+      ];
+
+      for (const { input, description } of invalidInputTests) {
+        it(`should return undefined for ${description}`, () => {
+          expect(normalizeZipCodeNewSafe(input)).toBeUndefined();
+        });
+      }
+    });
+
+    it("should handle 9-digit ZIP codes without hyphen by adding hyphen", () => {
+      const input = "123456677";
+      const expectedOutput = "12345-6677";
+      expect(normalizeZipCodeNewSafe(input)).toBe(expectedOutput);
+    });
+
+    it("should handle partial ZIP+4 with 3 digits before dash and full plus4", () => {
+      const input = "123-1234";
+      const expectedOutput = "00123-1234";
+      expect(normalizeZipCodeNewSafe(input)).toBe(expectedOutput);
+    });
+
+    it("should handle ZIP+4 with empty plus4 part", () => {
+      const input = "12345-";
       const expectedOutput = "12345";
       expect(normalizeZipCodeNewSafe(input)).toBe(expectedOutput);
     });
 
-    it("should return undefined if zip contains non-digit and non-dash characters (length 9)", () => {
-      const input = "12345-667a";
-      expect(normalizeZipCodeNewSafe(input)).toBeUndefined();
+    describe("ZIP+4 format handling", () => {
+      const fullPlus4Tests = [
+        {
+          input: "1234-6677",
+          expectedOutput: "01234-6677",
+          description: "short ZIP with full plus4",
+        },
+        {
+          input: "12345-6677",
+          expectedOutput: "12345-6677",
+          description: "standard ZIP with full plus4",
+        },
+        {
+          input: "123-1234",
+          expectedOutput: "00123-1234",
+          description: "very short ZIP with full plus4",
+        },
+      ];
+
+      const partialPlus4Tests = [
+        {
+          input: "12345-1",
+          expectedOutput: "12345",
+          description: "standard ZIP with 1-digit plus4",
+        },
+        {
+          input: "12345-12",
+          expectedOutput: "12345",
+          description: "standard ZIP with 2-digit plus4",
+        },
+        {
+          input: "12345-123",
+          expectedOutput: "12345",
+          description: "standard ZIP with 3-digit plus4",
+        },
+        { input: "1234-1", expectedOutput: "01234", description: "short ZIP with 1-digit plus4" },
+        { input: "1234-12", expectedOutput: "01234", description: "short ZIP with 2-digit plus4" },
+        { input: "1234-123", expectedOutput: "01234", description: "short ZIP with 3-digit plus4" },
+      ];
+
+      for (const { input, expectedOutput, description } of fullPlus4Tests) {
+        it(`should preserve full ZIP+4 format for ${description}`, () => {
+          expect(normalizeZipCodeNewSafe(input)).toBe(expectedOutput);
+        });
+      }
+
+      for (const { input, expectedOutput, description } of partialPlus4Tests) {
+        it(`should return main ZIP only for ${description}`, () => {
+          expect(normalizeZipCodeNewSafe(input)).toBe(expectedOutput);
+        });
+      }
     });
 
-    it("should return undefined if zip contains non-digit and non-dash characters (length 5)", () => {
-      const input = "1234a";
-      expect(normalizeZipCodeNewSafe(input)).toBeUndefined();
+    describe("length handling", () => {
+      const lengthTests = [
+        { input: "1234567890", expectedOutput: "12345", description: "very long ZIP codes" },
+        { input: "123456", expectedOutput: "12345", description: "6-digit ZIP codes" },
+      ];
+
+      for (const { input, expectedOutput, description } of lengthTests) {
+        it(`should truncate ${description} to first 5 digits`, () => {
+          expect(normalizeZipCodeNewSafe(input)).toBe(expectedOutput);
+        });
+      }
     });
 
     describe("examples from the wild", () => {
