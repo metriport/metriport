@@ -716,7 +716,7 @@ async function filterConditions({
 }): Promise<Condition[]> {
   if (conditions.length < 1) return [];
   let filteredConditions = conditions;
-  if (writeBackFilters?.vital?.latestOnly) {
+  if (writeBackFilters?.problems?.latestOnly) {
     const primaryCodeSystem = getEhrWriteBackConditionPrimaryCode(ehr);
     const getCode =
       primaryCodeSystem === SNOMED_CODE ? getConditionSnomedCode : getConditionIcd10Code;
