@@ -30,7 +30,7 @@ import { createOrReplaceBundle } from "../../../bundle/command/create-or-replace
 import { fetchBundle, FetchBundleParams } from "../../../bundle/command/fetch-bundle";
 import { getEhrWriteBackConditionPrimaryCode } from "../../../command/write-back/condition";
 import {
-  GroupedVitals,
+  GroupedVitalsByDate,
   isWriteBackGroupedVitalsEhr,
 } from "../../../command/write-back/grouped-vitals";
 import { writeBackResource, WriteBackResourceType } from "../../../command/write-back/shared";
@@ -749,7 +749,7 @@ async function filterAndGroupObservations({
 }: {
   observations: Observation[];
   writeBackFilters: WriteBackFiltersPerResourceType | undefined;
-}): Promise<GroupedVitals[]> {
+}): Promise<GroupedVitalsByDate[]> {
   if (observations.length < 1) return [];
   let filteredObservations: Observation[] = observations;
   if (writeBackFilters?.vital?.latestOnly) {

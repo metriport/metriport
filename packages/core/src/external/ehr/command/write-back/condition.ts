@@ -56,11 +56,11 @@ export const ehrWriteBackConditionPrimaryCodeMap: Record<EhrSource, CodingSystem
 };
 
 export function getEhrWriteBackConditionPrimaryCode(ehr: EhrSource): CodingSystem {
-  const code = ehrWriteBackConditionPrimaryCodeMap[ehr];
-  if (!code) {
+  const system = ehrWriteBackConditionPrimaryCodeMap[ehr];
+  if (!system) {
     throw new BadRequestError("Could not find code system to write back condition", undefined, {
       ehr,
     });
   }
-  return code;
+  return system;
 }

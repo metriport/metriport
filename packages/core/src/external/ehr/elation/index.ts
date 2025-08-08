@@ -56,7 +56,7 @@ import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
 import { capture } from "../../../util/notifications";
 import { uuidv7 } from "../../../util/uuid-v7";
-import { GroupedVitals } from "../command/write-back/grouped-vitals";
+import { GroupedVitalsByDate } from "../command/write-back/grouped-vitals";
 import { createOrReplaceDocument } from "../document/command/create-or-replace-document";
 import { DocumentType } from "../document/document-shared";
 import {
@@ -606,7 +606,7 @@ class ElationApi {
     elationPracticeId: string;
     elationPhysicianId: string;
     patientId: string;
-    groupedVitals: GroupedVitals;
+    groupedVitals: GroupedVitalsByDate;
   }): Promise<CreatedVital | undefined> {
     const { log, debug } = out(
       `Elation createGroupedVitals - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`

@@ -3,7 +3,7 @@ import { BadRequestError } from "@metriport/shared";
 import { EhrSource, EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { writeBackGroupedVitals as writeBackGroupedVitalsElation } from "../../elation/command/write-back/grouped-vitals";
 
-export type GroupedVitals = [Date, Observation[]];
+export type GroupedVitalsByDate = [Date, Observation[]];
 
 export type WriteBackGroupedVitalsRequest = {
   ehr: EhrSource;
@@ -11,7 +11,7 @@ export type WriteBackGroupedVitalsRequest = {
   cxId: string;
   practiceId: string;
   ehrPatientId: string;
-  groupedVitals: GroupedVitals;
+  groupedVitals: GroupedVitalsByDate;
 };
 
 export type WriteBackGroupedVitalsClientRequest = Omit<WriteBackGroupedVitalsRequest, "ehr">;

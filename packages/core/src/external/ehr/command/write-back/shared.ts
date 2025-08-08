@@ -2,7 +2,7 @@ import { Condition, DiagnosticReport, Observation, Resource } from "@medplum/fhi
 import { BadRequestError } from "@metriport/shared";
 import { EhrSource } from "@metriport/shared/interface/external/ehr/source";
 import { writeBackCondition } from "./condition";
-import { GroupedVitals, writeBackGroupedVitals } from "./grouped-vitals";
+import { GroupedVitalsByDate, writeBackGroupedVitals } from "./grouped-vitals";
 import { writeBackLab } from "./lab";
 import { writeBackLabPanel } from "./lab-panel";
 
@@ -41,7 +41,7 @@ export async function writeBackResource({ ...params }: WriteBackResourceRequest)
   } else if (params.writeBackResource === "grouped-vitals") {
     return await writeBackGroupedVitals({
       ...params,
-      groupedVitals: params.primaryResourceOrResources as GroupedVitals,
+      groupedVitals: params.primaryResourceOrResources as GroupedVitalsByDate,
     });
   }
   throw new BadRequestError("Could not find handler to write back resource", undefined, {
