@@ -24,7 +24,7 @@ export const writeBackFiltersPerResourceTypeSchema = z.object({
       disabled: z.boolean().optional(),
     })
     .optional(),
-  problems: z
+  problem: z
     .object({
       latestOnly: z.boolean().optional(),
       chronicityFilter: z.enum(["all", "chronic", "non-chronic"]).optional(),

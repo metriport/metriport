@@ -311,7 +311,7 @@ function getResourcesToWriteBack({
   const resourcesToWriteBack: Resource[] = [];
   for (const resource of resources) {
     const writeBackResourceType = getWriteBackResourceType(ehr, resource);
-    if (!writeBackResourceType) continue;
+    if (!writeBackResourceType || writeBackResourceType === "lab") continue;
     if (
       resource.resourceType === "DiagnosticReport" &&
       (!resource.result || resource.result.length < 1)
@@ -364,7 +364,7 @@ export function shouldWriteBackResource({
 }): boolean {
   if (!writeBackFilters) return true;
   if (writeBackResourceType === "condition") {
-    if (writeBackFilters.problems?.disabled) return false;
+    if (writeBackFilters.problem?.disabled) return false;
     const condition = resource as Condition;
     if (skipConditionChronicity(condition, writeBackFilters)) return false;
     return true;
@@ -407,7 +407,7 @@ export function skipConditionChronicity(
   condition: Condition,
   writeBackFilters: WriteBackFiltersPerResourceType
 ): boolean {
-  const chronicityFilter = writeBackFilters.problems?.chronicityFilter;
+  const chronicityFilter = writeBackFilters.problem?.chronicityFilter;
   if (!chronicityFilter || chronicityFilter === "all") return false;
   if (isChronicCondition(condition) && chronicityFilter === "chronic") return false;
   if (!isChronicCondition(condition) && chronicityFilter === "non-chronic") return false;
@@ -716,7 +716,7 @@ async function filterConditions({
 }): Promise<Condition[]> {
   if (conditions.length < 1) return [];
   let filteredConditions = conditions;
-  if (writeBackFilters?.problems?.latestOnly) {
+  if (writeBackFilters?.problem?.latestOnly) {
     const primaryCodeSystem = getEhrWriteBackConditionPrimaryCode(ehr);
     const getCode =
       primaryCodeSystem === SNOMED_CODE ? getConditionSnomedCode : getConditionIcd10Code;
