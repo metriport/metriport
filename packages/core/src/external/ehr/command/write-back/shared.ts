@@ -2,7 +2,11 @@ import { Condition, DiagnosticReport, Observation, Resource } from "@medplum/fhi
 import { BadRequestError } from "@metriport/shared";
 import { EhrSource } from "@metriport/shared/interface/external/ehr/source";
 import { writeBackCondition } from "./condition";
-import { GroupedVitalsByDate, writeBackGroupedVitals } from "./grouped-vitals";
+import {
+  GroupedVitalsByDate,
+  isGroupedVitalsByDate,
+  writeBackGroupedVitals,
+} from "./grouped-vitals";
 import { writeBackLab } from "./lab";
 import { writeBackLabPanel } from "./lab-panel";
 
@@ -39,6 +43,12 @@ export async function writeBackResource({ ...params }: WriteBackResourceRequest)
       observations: params.secondaryResourceOrResources as Observation[],
     });
   } else if (params.writeBackResource === "grouped-vitals") {
+    if (!isGroupedVitalsByDate(params.primaryResourceOrResources)) {
+      throw new BadRequestError("Invalid grouped vitals", undefined, {
+        ehr: params.ehr,
+        writeBackResource: params.writeBackResource,
+      });
+    }
     return await writeBackGroupedVitals({
       ...params,
       groupedVitals: params.primaryResourceOrResources as GroupedVitalsByDate,
