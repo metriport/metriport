@@ -13,7 +13,7 @@ export const addressSchema = z.object({
   addressLine2: defaultOptionalStringSchema,
   city: defaultOptionalStringSchema,
   state: usStateForAddressSchema.or(defaultOptionalStringSchema),
-  zip: usZipSchema,
+  zip: usZipSchema.or(defaultOptionalStringSchema),
   country: z.literal("USA").optional().default("USA"), // here for backwards compatibility, we'll ignore this and always default to USA
 });
 

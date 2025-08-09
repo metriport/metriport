@@ -1,5 +1,5 @@
 import {
-  normalizeZipCodeNew,
+  normalizeZipCodeNewSafe,
   USState as USStateShared,
   USTerritory as USTerritoryShared,
 } from "@metriport/shared";
@@ -21,7 +21,14 @@ export const usTerritorySchema = z.preprocess(
   z.nativeEnum(USTerritory)
 );
 
-export const usZipSchema = z.preprocess(
-  val => (typeof val === "string" ? normalizeZipCodeNew(val) : val),
-  z.string()
-);
+export const usZipSchema = z.string().transform((val, ctx) => {
+  const normalized = normalizeZipCodeNewSafe(val);
+  if (!normalized) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Invalid ZIP; expected 5 digits or ZIP+4 (e.g., 12345 or 12345-1234)",
+    });
+    return z.NEVER;
+  }
+  return normalized;
+});
