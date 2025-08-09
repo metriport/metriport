@@ -13,11 +13,13 @@ const DEFAULT_FILTER_DATE = new Date("2020-01-01T00:00:00.000Z");
 export interface TcmEncounterQueryData extends TcmEncounterModel {
   dataValues: TcmEncounterModel["dataValues"] & {
     patient_data: PatientModel["dataValues"]["data"];
+    patient_facility_ids: PatientModel["dataValues"]["facilityIds"];
   };
 }
 
 export type TcmEncounterResult = TcmEncounterModel["dataValues"] & {
   patientData: PatientModel["dataValues"]["data"];
+  patientFacilityIds: PatientModel["dataValues"]["facilityIds"];
 };
 
 export async function getTcmEncounters({
@@ -42,7 +44,7 @@ export async function getTcmEncounters({
    * ⚠️ Always change this query and the count query together.
    */
   const queryString = `
-      SELECT tcm_encounter.*, patient.data as patient_data
+      SELECT tcm_encounter.*, patient.data as patient_data, patient.facility_ids as patient_facility_ids
       FROM ${tcmEncounterTable} tcm_encounter
       INNER JOIN ${patientTable} patient 
       ON tcm_encounter.patient_id = patient.id
@@ -69,8 +71,9 @@ export async function getTcmEncounters({
   })) as TcmEncounterQueryData[];
 
   const encounters = rawEncounters.map(e => ({
-    ...omit(e.dataValues, "patient_data"),
+    ...omit(e.dataValues, ["patient_data", "patient_facility_ids"]),
     patientData: e.dataValues.patient_data,
+    patientFacilityIds: e.dataValues.patient_facility_ids,
   }));
 
   return sortForPagination(encounters, pagination);
