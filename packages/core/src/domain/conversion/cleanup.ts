@@ -6,8 +6,8 @@ const AMPERSAND = "&amp;";
 export function cleanUpPayload(payloadRaw: string): string {
   const payloadNoCdUnk = replaceCdUnkString(payloadRaw);
   const payloadNoAmpersand = replaceAmpersand(payloadNoCdUnk);
-  const payloadNoLessThan = replaceLessThanChar(payloadNoAmpersand);
-  const payloadNoNullFlavor = replaceNullFlavor(payloadNoLessThan);
+  const payloadNoInvalidTagChars = replaceXmlTagChars(payloadNoAmpersand);
+  const payloadNoNullFlavor = replaceNullFlavor(payloadNoInvalidTagChars);
   const payloadCleanedCode = cleanUpTranslationCode(payloadNoNullFlavor);
   return payloadCleanedCode;
 }
@@ -30,14 +30,33 @@ function replaceAmpersand(payloadRaw: string): string {
   return payloadRaw.replace(stringToReplace, replacement);
 }
 
-/**
- * Replacing some instances of `<` where it happens inside the string values of the XML.
- *
- * Not replacing `>X` and `> X` because those might happen naturally, i.e. in lists `<td>1.`, etc.
- */
-export function replaceLessThanChar(payloadRaw: string): string {
-  const lessPattern = /\s<\s|\s*<\s*(?=\d)/g;
-  return payloadRaw.replace(lessPattern, ` ${LESS_THAN} `);
+export function replaceXmlTagChars(doc: string): string {
+  const chars = Array.from(doc);
+
+  let stringState = true;
+  let startTagState = 0;
+  for (let i = 0; i < chars.length; i++) {
+    const c = chars[i];
+
+    if (stringState) {
+      if (c == ">") {
+        chars[i] = "&gt;";
+      } else if (c == "<") {
+        stringState = false;
+        startTagState = i;
+      }
+    }
+    // tag state
+    else {
+      if (c == ">") {
+        stringState = true;
+      } else if (c == "<") {
+        chars[startTagState] = "&lt;";
+        startTagState = i;
+      }
+    }
+  }
+  return chars.join("");
 }
 
 export function cleanUpTranslationCode(payloadRaw: string): string {
