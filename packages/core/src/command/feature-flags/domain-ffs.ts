@@ -279,3 +279,30 @@ export async function isXmlRedownloadFeatureFlagEnabledForCx(cxId: string): Prom
   const cxIdsWithXmlRedownloadEnabled = await getCxsWithXmlRedownloadFeatureFlag();
   return cxIdsWithXmlRedownloadEnabled.some(i => i === cxId);
 }
+
+export async function getCxsWithSurescriptsFeatureFlag(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithSurescriptsFeatureFlag");
+}
+export async function isSurescriptsFeatureFlagEnabledForCx(cxId: string): Promise<boolean> {
+  const cxIdsWithSurescriptsEnabled = await getCxsWithSurescriptsFeatureFlag();
+  return cxIdsWithSurescriptsEnabled.some(i => i === cxId);
+}
+
+export async function getCxsWithSurescriptsNotificationsFeatureFlag(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithSurescriptsNotificationsFeatureFlag");
+}
+export async function isSurescriptsNotificationsFeatureFlagEnabledForCx(
+  cxId: string
+): Promise<boolean> {
+  const cxIdsWithSurescriptsNotificationsEnabled =
+    await getCxsWithSurescriptsNotificationsFeatureFlag();
+  return cxIdsWithSurescriptsNotificationsEnabled.some(i => i === cxId);
+}
+
+export async function getCxsWithQuestFeatureFlag(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithQuestFeatureFlag");
+}
+export async function isQuestFeatureFlagEnabledForCx(cxId: string): Promise<boolean> {
+  const cxIdsWithQuestEnabled = await getCxsWithQuestFeatureFlag();
+  return cxIdsWithQuestEnabled.some(i => i === cxId);
+}

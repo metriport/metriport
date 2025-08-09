@@ -9,6 +9,7 @@ import { createConsolidatedDataFileNameWithSuffix } from "@metriport/core/domain
 import { dangerouslyDeduplicateFhir } from "@metriport/core/fhir-deduplication/deduplicate-fhir";
 import { buildLatestConversionBundleFileName } from "@metriport/core/external/surescripts/file/file-names";
 import { Config } from "@metriport/core/util/config";
+import { SurescriptsFileIdentifier } from "@metriport/core/external/surescripts/types";
 
 const medicalDocsBucketName = getEnvVarOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
 
@@ -36,6 +37,18 @@ export function writeSurescriptsRunsFile(filePath: string, content: string): voi
     fs.mkdirSync(fileDir, { recursive: true });
   }
   fs.writeFileSync(fullFilePath, content, "utf-8");
+}
+
+export function writeSurescriptsIdentifiersFile(
+  fileName: string,
+  identifiers: SurescriptsFileIdentifier[]
+): void {
+  const csvContent =
+    `"transmission_id","patient_id"\n` +
+    identifiers
+      .map(({ transmissionId, populationId }) => `"${transmissionId}","${populationId}"`)
+      .join("\n");
+  writeSurescriptsRunsFile(fileName + ".csv", csvContent);
 }
 
 export function buildCsvPath(csvPath: string): string {
