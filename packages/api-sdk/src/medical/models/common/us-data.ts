@@ -1,5 +1,5 @@
 import {
-  normalizeZipCodeNewSafe,
+  normalizeZipCodeNew,
   USState as USStateShared,
   USTerritory as USTerritoryShared,
 } from "@metriport/shared";
@@ -21,9 +21,7 @@ export const usTerritorySchema = z.preprocess(
   z.nativeEnum(USTerritory)
 );
 
-export const usZipSchema = z.coerce
-  .string()
-  .transform(normalizeZipCodeNewSafe)
-  .refine(zip => zip !== undefined, {
-    message: `Zip must be either 5 digits (e.g., 12345) or 9 digits with hyphen (ZIP+4 format, e.g., 12345-1234)`,
-  });
+export const usZipSchema = z.preprocess(
+  val => (typeof val === "string" ? normalizeZipCodeNew(val) : val),
+  z.string()
+);
