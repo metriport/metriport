@@ -13,6 +13,9 @@ export const addressSchema = z.object({
   country: z.literal("USA").optional().default("USA"), // here for backwards compatibility, we'll ignore this and always default to USA
 });
 
+/**
+ * @deprecated use @metriport/core/src/domain/npi-facility instead
+ */
 export const addressStrictSchema = z.object({
   addressLine1: z.string().min(1),
   addressLine2: defaultOptionalStringSchema,
