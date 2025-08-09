@@ -378,6 +378,7 @@ class HealthieApi {
         allergy_sensitivities {
           id
           category
+          category_type
           name
           onset_date
           reaction
@@ -956,8 +957,9 @@ class HealthieApi {
     patientId: string,
     allergy: Allergy
   ): AllergyIntolerance | undefined {
-    if (!allergy.name || !allergy.status || !allergy.onset_date || !allergy.reaction)
+    if (!allergy.name || !allergy.status || !allergy.onset_date || !allergy.reaction) {
       return undefined;
+    }
     const allergyCategory = allergy.category_type
       ? this.mapAllergyCategory(allergy.category_type)
       : undefined;
@@ -981,6 +983,7 @@ class HealthieApi {
       ...(allergyCategory && allergyCategory !== "other" ? { category: [allergyCategory] } : {}),
       reaction: [
         {
+          substance: { text: allergy.name },
           manifestation: [{ text: allergy.reaction }],
           ...(allergy.severity && allergy.severity !== "unknown"
             ? { severity: allergy.severity }
