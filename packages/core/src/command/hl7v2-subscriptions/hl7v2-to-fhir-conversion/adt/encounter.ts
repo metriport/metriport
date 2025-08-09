@@ -2,7 +2,7 @@ import { Hl7Message } from "@medplum/core";
 import { Coding, Encounter, Resource } from "@medplum/fhirtypes";
 import { buildPatientReference } from "../../../../external/fhir/shared/references";
 import { Hl7MessageType, getHl7MessageTypeOrFail } from "../msh";
-import { getConditionsAndReferences, getEncounterReason } from "./condition";
+import { getConditionsAndReferences, getEncounterReasonCodings } from "./condition";
 import { getLocationFromAdt } from "./location";
 import { DEFAULT_ENCOUNTER_CLASS, adtToFhirEncounterClassMap, isAdtPatientClass } from "./mappings";
 import { getParticipantsFromAdt } from "./practitioner";
@@ -15,7 +15,7 @@ export function mapEncounterAndRelatedResources(adt: Hl7Message, patientId: stri
   const period = getEncounterPeriod(adt);
   const participants = getParticipantsFromAdt(adt);
   const conditionsAndRefs = getConditionsAndReferences(adt, patientId);
-  const encounterReason = getEncounterReason(adt, patientId);
+  const encounterReasonCodings = getEncounterReasonCodings(adt);
   const location = getLocationFromAdt(adt);
 
   const encounter: Encounter = {
@@ -24,7 +24,7 @@ export function mapEncounterAndRelatedResources(adt: Hl7Message, patientId: stri
     status,
     class: encounterClass,
     ...(period ? { period } : undefined),
-    ...(encounterReason ? { reasonCode: encounterReason.reasonCode } : undefined),
+    ...(encounterReasonCodings ? { reasonCode: [{ coding: encounterReasonCodings }] } : undefined),
     ...(conditionsAndRefs.refs.length > 0 ? { diagnosis: conditionsAndRefs.refs } : undefined),
     subject: buildPatientReference(patientId),
     ...(participants ? { participant: participants.references } : undefined),
