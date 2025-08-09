@@ -1,8 +1,15 @@
+import { Encounter } from "@medplum/fhirtypes";
+import { getConsolidatedFile } from "@metriport/core/command/consolidated/consolidated-get";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
+import { findEncounterResources } from "@metriport/core/external/fhir/shared/index";
+import { isDocIdExtension } from "@metriport/core/external/fhir/shared/extensions/doc-id-extension";
+import { sendToSlack, SlackMessage } from "@metriport/core/external/slack/index";
 import { capture } from "@metriport/core/util";
+import { Config } from "@metriport/core/util/config";
 import { out } from "@metriport/core/util/log";
 import { JobEntryStatus } from "@metriport/shared/domain/job/types";
 import {
+  DischargeData,
   dischargeRequeryRuntimeDataSchema,
   parseDischargeRequeryJob,
 } from "@metriport/shared/domain/patient/patient-monitoring/discharge-requery";
@@ -12,6 +19,14 @@ import { failPatientJob } from "../../../../job/patient/status/fail";
 import { updatePatientJobRuntimeData } from "../../../../job/patient/update/update-runtime-data";
 import { getPatientOrFail } from "../../get-patient";
 import { createDischargeRequeryJob, dischargeRequeryJobType } from "./create";
+
+type DischargeAssociationBreakdown = {
+  discharge: DischargeData;
+  status: "processing" | "completed" | "failed";
+  dischargeSummaryFilePath?: string;
+  reason?: string;
+  encounterIds?: string[];
+};
 
 /**
  * Finishes the discharge requery job.
@@ -103,6 +118,12 @@ export async function finishDischargeRequery({
   });
   const dischargeRequeryJob = parseDischargeRequeryJob(job);
 
+  const associationBreakdown = await processDischargeSummaryAssociation(
+    dischargeRequeryJob.paramsOps.dischargeData,
+    cxId,
+    patientId
+  );
+
   const remainingAttempts =
     status === "successful"
       ? dischargeRequeryJob.paramsOps.remainingAttempts - 1
@@ -122,8 +143,11 @@ export async function finishDischargeRequery({
           ...dischargeRequeryJob.runtimeData,
           downloadCount,
           convertCount,
+          metGoals: associationBreakdown.completed,
+          failedGoals: associationBreakdown.failed,
         },
       });
+
       analytics({
         event: EventTypes.dischargeRequery,
         distinctId: cxId,
@@ -138,15 +162,147 @@ export async function finishDischargeRequery({
     }
   }
 
-  if (remainingAttempts > 0) {
+  if (remainingAttempts > 0 && associationBreakdown.processing.length > 0) {
     await createDischargeRequeryJob({
       patientId,
       cxId,
       remainingAttempts,
+      dischargeData: associationBreakdown.processing.map(u => u.discharge),
     });
     log(`Created a new discharge requery job with ${remainingAttempts} remaining attempts`);
     return;
   }
 
-  log(`No remaining attempts, discharge requery is complete.`);
+  log(
+    `Discharge requery is complete - ${
+      remainingAttempts < 1 ? "reached max attempts" : "all goals met"
+    }`
+  );
+}
+
+export async function processDischargeSummaryAssociation(
+  dischargeData: DischargeData[],
+  cxId: string,
+  patientId: string
+): Promise<{
+  processing: DischargeAssociationBreakdown[];
+  completed: DischargeAssociationBreakdown[];
+  failed: DischargeAssociationBreakdown[];
+}> {
+  const { log } = out(`checkGoals - cx ${cxId}, pt ${patientId}`);
+  log(`Checking goals: ${JSON.stringify(dischargeData)}`);
+  capture.setExtra({
+    cxId,
+    patientId,
+  });
+
+  const processing: DischargeAssociationBreakdown[] = [];
+  const completed: DischargeAssociationBreakdown[] = [];
+  const failed: DischargeAssociationBreakdown[] = [];
+
+  const consolidated = await getConsolidatedFile({
+    cxId,
+    patientId,
+  });
+
+  if (!consolidated.bundle) {
+    processing.push(
+      ...dischargeData.map(discharge => ({
+        discharge,
+        status: "processing" as const,
+        reason: "No consolidated file found",
+      }))
+    );
+    return { processing, failed, completed };
+  }
+
+  const encounters = findEncounterResources(consolidated.bundle);
+  await Promise.all(
+    dischargeData.map(async discharge => {
+      const matchingEncounters = getPotentiallyMatchingEncounters(encounters, discharge);
+
+      const result = await processDischargeData(matchingEncounters, discharge, log);
+      switch (result.status) {
+        case "completed":
+          completed.push(result);
+          break;
+        case "processing":
+          processing.push(result);
+          break;
+        case "failed":
+          failed.push(result);
+          break;
+      }
+    })
+  );
+
+  return { processing, failed, completed };
+}
+
+function getPotentiallyMatchingEncounters(encounters: Encounter[], discharge: DischargeData) {
+  return encounters.filter(e => e.period?.end === discharge.encounterEndDate);
+}
+
+export async function processDischargeData(
+  encounters: Encounter[],
+  discharge: DischargeData,
+  log: typeof console.log
+): Promise<DischargeAssociationBreakdown> {
+  const encounterIds = encounters.flatMap(e => e.id ?? []);
+
+  if (encounters.length === 0) {
+    return {
+      discharge,
+      status: "processing",
+      reason: "No matching encounters found",
+    };
+  }
+
+  if (encounters.length > 1) {
+    const msg = "Multiple encounters found for the same date";
+    log(`${msg} for encounters: ${JSON.stringify(encounterIds)}`);
+    const message: SlackMessage = {
+      subject: msg,
+      message: JSON.stringify(encounterIds, null, 2),
+      emoji: ":peepo_hey:",
+    };
+
+    const channelUrl = Config.getDischargeNotificationSlackUrl();
+    await sendToSlack(message, channelUrl);
+
+    return {
+      discharge,
+      status: "failed",
+      reason: "Multiple encounters found for the same date",
+    };
+  }
+
+  const dischargeEncounter = encounters[0];
+  const dischargeSummaryFilePath =
+    dischargeEncounter.meta?.source ??
+    dischargeEncounter.extension?.find(isDocIdExtension)?.valueString;
+
+  if (!dischargeSummaryFilePath) {
+    const msg = "Encounter resource missing source";
+    log(msg);
+    capture.message(msg, {
+      extra: {
+        encounterId: dischargeEncounter.id,
+      },
+      level: "warning",
+    });
+
+    return { discharge, status: "failed", reason: msg };
+  }
+
+  const successReason = dischargeEncounter.hospitalization?.dischargeDisposition
+    ? "Discharge disposition found in encounter"
+    : "Matching encounter datetime";
+
+  return {
+    discharge,
+    status: "completed",
+    dischargeSummaryFilePath,
+    reason: successReason,
+  };
 }
