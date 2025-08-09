@@ -428,6 +428,12 @@ export function getConditionIcd10Coding(condition: Condition): Coding | undefine
   return icdCoding;
 }
 
+export function getConditionIcd10Code(condition: Condition): string | undefined {
+  const icd10Coding = getConditionIcd10Coding(condition);
+  if (!icd10Coding) return undefined;
+  return icd10Coding.code;
+}
+
 export function getConditionSnomedCoding(condition: Condition): Coding | undefined {
   const code = condition.code;
   const snomedCoding = code?.coding?.find(coding => {
