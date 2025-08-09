@@ -1,6 +1,7 @@
 export const xmlTranslationCodeRegex = /(<translation[^>]*\scode=")([^"]*?)(")/g;
 
 export const LESS_THAN = "&lt;";
+export const GREATER_THAN = "&gt;";
 const AMPERSAND = "&amp;";
 
 export function cleanUpPayload(payloadRaw: string): string {
