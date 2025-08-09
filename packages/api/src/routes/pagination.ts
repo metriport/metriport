@@ -12,7 +12,7 @@ import {
 } from "../command/pagination";
 
 export const defaultItemsPerPage = 50;
-export const maxItemsPerPage = 500;
+export const maxItemsPerPage = 5000;
 
 /**
  * @deprecated Use queryMetaSchema from shared/src/domain/pagination instead
