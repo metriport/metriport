@@ -17,7 +17,7 @@ types:
         docs: The 2 letter state acronym, for example `CA`
       zip:
         type: string
-        docs: Zip must be a string consisting of 5 numbers.
+        docs: Zip must be either 5 digits (e.g., 12345) or 9 digits with hyphen (ZIP+4 format, e.g., 12345-1234)
       country:
         type: optional<string>
         docs: Defaults to “USA”

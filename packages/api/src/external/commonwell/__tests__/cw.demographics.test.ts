@@ -58,7 +58,7 @@ describe("CW demographics", () => {
           line: ["400 awesome rd"],
           city: "san francisco",
           state: "ca",
-          zip: "99999",
+          zip: "99999-4040",
           country: "usa",
         },
         {

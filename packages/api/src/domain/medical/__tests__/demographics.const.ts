@@ -23,7 +23,7 @@ export const coreDemographics: LinkDemographics = {
       line: ["777 elm ave"],
       city: "los angeles",
       state: "ca",
-      zip: "12345",
+      zip: "12345-8080",
       country: "usa",
     },
   ].map(address => JSON.stringify(address, Object.keys(address).sort())),

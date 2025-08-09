@@ -5,7 +5,6 @@ import {
   validateDateIsAfter1900,
   validateIsPastOrPresentSafe,
 } from "../common/date";
-import { stripNonNumericChars } from "../common/string";
 
 export const defaultStringSchema = z.string().trim();
 export const defaultOptionalStringSchema = optionalString(defaultStringSchema);
@@ -29,14 +28,6 @@ export const validDateOfBirthStringSchema = pastOrTodayDateStringSchema.refine(
 );
 
 export const defaultNameStringSchema = defaultStringSchema.min(1);
-
-const zipLength = 5;
-export const defaultZipStringSchema = z.coerce
-  .string()
-  .transform(zipStr => stripNonNumericChars(zipStr))
-  .refine(zip => zip.length === zipLength, {
-    message: `Zip must be a string consisting of ${zipLength} numbers`,
-  });
 
 export function zodToLowerCase(v: unknown): unknown {
   return typeof v === "string" ? v.toLowerCase() : v;

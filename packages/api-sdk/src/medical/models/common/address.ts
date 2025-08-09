@@ -1,12 +1,6 @@
-import {
-  defaultOptionalStringSchema,
-  defaultStringSchema,
-  stripNonNumericChars,
-} from "@metriport/shared";
+import { defaultOptionalStringSchema, defaultStringSchema } from "@metriport/shared";
 import { z } from "zod";
-import { usStateSchema, usTerritorySchema } from "./us-data";
-
-const zipLength = 5;
+import { usStateSchema, usTerritorySchema, usZipSchema } from "./us-data";
 
 export const geoCoordinateSchema = z.object({
   lat: z.number(),
@@ -20,12 +14,7 @@ export const addressSchema = z.object({
   addressLine2: defaultOptionalStringSchema,
   city: defaultStringSchema.min(1, { message: "City must be specified." }),
   state: usStateForAddressSchema,
-  zip: z.coerce
-    .string()
-    .transform(zipStr => stripNonNumericChars(zipStr))
-    .refine(zip => zip.length === zipLength, {
-      message: `Zip must be a string consisting of ${zipLength} numbers.`,
-    }),
+  zip: usZipSchema,
   coordinates: geoCoordinateSchema.optional(),
   country: z.literal("USA").optional().default("USA"),
 });
