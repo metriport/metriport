@@ -22,5 +22,8 @@ export const up: Migration = async ({ context: queryInterface }) => {
 export const down: Migration = async ({ context: queryInterface }) => {
   await queryInterface.sequelize.transaction(async transaction => {
     await queryInterface.removeColumn(tableName, columnName, { transaction });
+    await queryInterface.sequelize.query(`DROP TYPE IF EXISTS "enum_${tableName}_${columnName}";`, {
+      transaction,
+    });
   });
 };

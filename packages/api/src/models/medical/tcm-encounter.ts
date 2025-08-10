@@ -16,7 +16,7 @@ export class TcmEncounterModel extends BaseModel<TcmEncounterModel> implements T
   declare clinicalInformation: Record<string, unknown>;
   declare freetextNote: CreationOptional<string>;
   declare dischargeSummaryPath: string | undefined;
-  declare outreachStatus: "Not Started" | "Attempted" | "Completed";
+  declare outreachStatus: CreationOptional<"Not Started" | "Attempted" | "Completed">;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
     TcmEncounterModel.init(
