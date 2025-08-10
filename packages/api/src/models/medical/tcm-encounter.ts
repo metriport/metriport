@@ -16,6 +16,7 @@ export class TcmEncounterModel extends BaseModel<TcmEncounterModel> implements T
   declare clinicalInformation: Record<string, unknown>;
   declare freetextNote: CreationOptional<string>;
   declare dischargeSummaryPath: string | undefined;
+  declare outreachStatus: "Not Started" | "Attempted" | "Completed";
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
     TcmEncounterModel.init(
@@ -65,6 +66,11 @@ export class TcmEncounterModel extends BaseModel<TcmEncounterModel> implements T
         },
         dischargeSummaryPath: {
           type: DataTypes.TEXT,
+        },
+        outreachStatus: {
+          type: DataTypes.ENUM("Not Started", "Attempted", "Completed"),
+          defaultValue: "Not Started",
+          allowNull: false,
         },
       },
       {
