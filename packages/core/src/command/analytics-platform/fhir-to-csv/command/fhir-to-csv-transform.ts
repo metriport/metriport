@@ -12,6 +12,9 @@ export type StartFhirToCsvTransformParams = {
   timeoutInMillis?: number | undefined;
 };
 
+/**
+ * Runs the lambda that converts FHIR data to CSV.
+ */
 export async function startFhirToCsvTransform({
   cxId,
   jobId,

@@ -11,12 +11,12 @@ import fs from "fs";
 import ini from "ini";
 import * as snowflake from "snowflake-sdk";
 import * as stream from "stream";
-import { elapsedTimeAsStr } from "../../shared/duration";
+import { elapsedTimeAsStr } from "../shared/duration";
 
 /**
- * Test script to validate data being sent to Snowflake.
+ * Script to test the approach to send data to Snowflake.
  *
- * It needs relies on the files from the consolidated to CSV transformation
+ * It relies on the files from the consolidated to CSV transformation
  * to be on the configured bucket, with the following structure:
  *
  * ./snowflake/fhir-to-csv/cxId/patientId/jobId/_tmp_fhir-to-csv_output_cxId_patientId_resourceType.csv

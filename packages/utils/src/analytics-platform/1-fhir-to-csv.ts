@@ -15,17 +15,18 @@ import { getCxData } from "../shared/get-cx-data";
 dayjs.extend(duration);
 
 /**
- * This script inserts patients into Snowflake, by sending messages to a SQS queue.
- * The queue is consumed by a Lambda function that generates CSV files and calls a
- * "transform" lambda.
- * That second lambda converts the CSV into a diff CSV file and send it to Snowflake.
+ * This script triggers the conversion of patients' consolidated data from JSON format to CSV.
+ * It sends a message to SQS per patient, consumed by a Lambda function that generates the
+ * CSV file.
  *
  * Usage:
  * - set env vars on .env file
- * - set patientIds array with the patient IDs you want to insert
- * - run `ts-node src/snowflake/bulk-insert-patients.ts`
+ * - set patientIds array with the patient IDs you want to convert - leave empty to run for all
+ *   patients of the customer
+ * - run `ts-node src/analytics-platform/1-fhir-to-csv.ts`
  */
 
+// Leave empty to run for all patients of the customer
 const patientIds: string[] = [];
 
 const cxId = getEnvVarOrFail("CX_ID");
@@ -46,7 +47,7 @@ async function main() {
   log(`>>> Starting...`);
   const { orgName } = await getCxData(cxId, undefined, false);
 
-  const jobId = new Date().toISOString().slice(0, 19).replace(/[:.]/g, "-");
+  const fhirToCsvJobId = new Date().toISOString().slice(0, 19).replace(/[:.]/g, "-");
 
   const isAllPatients = patientIds.length < 1;
   const patientsToInsert = isAllPatients
@@ -55,14 +56,14 @@ async function main() {
   const uniquePatientIds = [...new Set(patientsToInsert)];
 
   await displayWarningAndConfirmation(uniquePatientIds, isAllPatients, orgName, log);
-  log(`>>> Running it... jobId: ${jobId}`);
+  log(`>>> Running it... fhirToCsvJobId: ${fhirToCsvJobId}`);
 
   const failedPatientIds: string[] = [];
   await executeAsynchronously(
     uniquePatientIds,
     async patientId => {
       const payload = JSON.stringify({
-        jobId,
+        jobId: fhirToCsvJobId,
         cxId,
         patientId,
       });
@@ -90,7 +91,8 @@ async function main() {
     log(failedPatientIds.join(`\n`));
   }
 
-  log(`>>> ALL Done in ${elapsedTimeAsStr(startedAt)} - jobId: ${jobId}`);
+  log(`>>> ALL Done in ${elapsedTimeAsStr(startedAt)}`);
+  log(`- fhirToCsvJobId: ${fhirToCsvJobId}`);
 }
 
 async function displayWarningAndConfirmation(
@@ -101,8 +103,8 @@ async function displayWarningAndConfirmation(
 ) {
   const allPatientsMsg = isAllPatients ? ` That's all patients of customer ${cxId}!` : "";
   const msg =
-    `You are about to send ${patientsToInsert.length} patients of ` +
-    `customer ${orgName} (${cxId}) to Snowflake, are you sure?${allPatientsMsg}`;
+    `You are about to convert ${patientsToInsert.length} patients' consolidated/FHIR data ` +
+    `to CSV - customer ${orgName} (${cxId}). Are you sure?${allPatientsMsg}`;
   log(msg);
   log("Cancel this now if you're not sure.");
   await sleep(confirmationTime.asMilliseconds());
