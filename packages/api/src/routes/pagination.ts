@@ -1,5 +1,10 @@
 import { Config } from "@metriport/core/util/config";
-import { createQueryMetaSchema, PaginatedResponse, ResponseMeta } from "@metriport/shared";
+import {
+  createQueryMetaSchema,
+  defaultItemsPerPage,
+  PaginatedResponse,
+  ResponseMeta,
+} from "@metriport/shared";
 import { Request } from "express";
 import {
   getPaginationItems,
@@ -8,8 +13,6 @@ import {
   PaginationItem,
   PaginationToItem,
 } from "../command/pagination";
-
-const defaultItemsPerPage = 50;
 
 // TODO 483 remove this once pagination is fully rolled out
 export function isPaginated(req: Request): boolean {
