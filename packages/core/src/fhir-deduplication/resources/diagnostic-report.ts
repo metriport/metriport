@@ -113,7 +113,10 @@ export function groupSameDiagnosticReports(diagReports: DiagnosticReport[]): {
 
         const { code, display, system } = c;
         const normalizedSystem = system?.toLowerCase().replace("urn:oid:", "").trim();
-        identifiers.push({ key: `${code?.toLowerCase().trim()}|${normalizedSystem}` });
+
+        if (code) {
+          identifiers.push({ key: `${code.toLowerCase().trim()}|${normalizedSystem}` });
+        }
 
         if (display && !isUselessDisplay(display)) {
           identifiers.push({ key: display.toLowerCase().trim() });
@@ -150,9 +153,6 @@ export function groupSameDiagnosticReports(diagReports: DiagnosticReport[]): {
       setterKeys.push(idKey);
       getterKeys.push(idKey);
     }
-
-    console.log("setterKeys", setterKeys);
-    console.log("getterKeys", getterKeys);
 
     if (setterKeys.length > 0) {
       fillL1L2Maps({
