@@ -6,7 +6,6 @@ import {
   Medication as MedicationFhir,
   MedicationStatement,
   Observation,
-  Resource,
   ResourceType,
 } from "@medplum/fhirtypes";
 import {
@@ -20,8 +19,7 @@ import { buildDayjs } from "@metriport/shared/common/date";
 import { createUuidFromText } from "@metriport/shared/common/uuid";
 import { normalizeGenderSafe, unknownGender } from "@metriport/shared/domain/gender";
 import {
-  createBundleFromResourceList,
-  EhrFhirResourceBundle,
+  createStrictBundleFromResourceList,
   EhrStrictFhirResource,
   ehrStrictFhirResourceSchema,
 } from "@metriport/shared/interface/external/ehr/fhir-resource";
@@ -568,9 +566,7 @@ class HealthieApi {
             cxId,
             metriportPatientId,
             ehrPatientId: healthiePatientId,
-            referenceBundle: createBundleFromResourceList(
-              medications as Resource[]
-            ) as EhrFhirResourceBundle,
+            referenceBundle: createStrictBundleFromResourceList(medications),
           });
           return medicationStatements.map(({ medicationStatement }) =>
             ehrStrictFhirResourceSchema.parse(medicationStatement)
