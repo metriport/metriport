@@ -1,6 +1,6 @@
 import { Bundle, BundleEntry, Encounter, Extension, Resource } from "@medplum/fhirtypes";
 import { isAthenaCustomFieldsEnabledForCx } from "@metriport/core/command/feature-flags/domain-ffs";
-import { encounterAppointmentExtensionUrl } from "@metriport/core/external/ehr/athenahealth";
+import { encounterAppointmentExtensionUrl } from "@metriport/core/external/ehr/athenahealth/index";
 import { BundleType } from "@metriport/core/external/ehr/bundle/bundle-shared";
 import {
   fetchBundle,
@@ -10,8 +10,7 @@ import { fetchDocument } from "@metriport/core/external/ehr/document/command/fet
 import { DocumentType } from "@metriport/core/external/ehr/document/document-shared";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import { FhirBundleSdk } from "@metriport/fhir-sdk";
-import { MetriportError } from "@metriport/shared/dist/error/metriport-error";
+import { MetriportError } from "@metriport/shared";
 import { athenaSecondaryMappingsSchema } from "@metriport/shared/interface/external/ehr/athenahealth/cx-mapping";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import axios from "axios";
@@ -119,8 +118,9 @@ async function dangerouslyRemoveEncounterEntriesWithBlacklistedAppointmentType({
   blacklistedAppointmentTypes: string[];
 }): Promise<void> {
   if (!bundle.entry) return;
-  const bundleSdk = await FhirBundleSdk.create(bundle);
-  const encounters = bundleSdk.getEncounters();
+  const encounters: Encounter[] = bundle.entry
+    .filter(entry => entry.resource?.resourceType === "Encounter")
+    .map(entry => entry.resource as Encounter);
   const encountersToRemove = encounters.filter((encounter: Encounter) => {
     if (!encounter.extension) return true;
     const appointmentTypeExtension = encounter.extension.find(

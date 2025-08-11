@@ -1,17 +1,15 @@
+import { DocumentReference } from "@medplum/fhirtypes";
 import { UploadDocumentResult } from "@metriport/api-sdk";
 import { createDocumentFilePath } from "@metriport/core/domain/document/filename";
+import { S3Utils } from "@metriport/core/external/aws/s3";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { composeDocumentReference } from "../../../external/fhir/document/draft-update-document-reference";
 import { upsertDocumentToFHIRServer } from "../../../external/fhir/document/save-document-reference";
 import { Config } from "../../../shared/config";
 import { getOrganizationOrFail } from "../organization/get-organization";
-import {} from "../patient/update-hie-opt-out";
 
 const region = Config.getAWSRegion();
 const s3Utils = new S3Utils(region);
-
-import { DocumentReference } from "@medplum/fhirtypes";
-import { S3Utils } from "@metriport/core/external/aws/s3";
 
 export async function getUploadUrlAndCreateDocRef({
   cxId,
