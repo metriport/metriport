@@ -32,9 +32,6 @@ function getBundleEntries({ data }: IncomingData<ResponseDetail>): BundleEntry[]
   const patient = getPatient(data);
   const practitioner = getPractitioner(data);
   const insuranceOrganization = getInsuranceOrganization(data);
-  const observation = getObservation(data, {
-    patient,
-  });
   const serviceRequest = getServiceRequest(data, {
     patient,
     requestingPractitioner: practitioner,
@@ -42,6 +39,12 @@ function getBundleEntries({ data }: IncomingData<ResponseDetail>): BundleEntry[]
   const specimen = getSpecimen(data, {
     patient,
     practitioner,
+    serviceRequest,
+  });
+  const observation = getObservation(data, {
+    patient,
+    practitioner,
+    specimen,
     serviceRequest,
   });
   const diagnosticReport = getDiagnosticReport(data, {

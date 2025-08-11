@@ -5,7 +5,9 @@ import { Bundle } from "@medplum/fhirtypes";
 import { parseResponseFile } from "@metriport/core/external/quest/file/file-parser";
 import { ResponseDetail } from "@metriport/core/external/quest/schema/response";
 import { IncomingData } from "@metriport/core/external/quest/schema/shared";
+import { saveBundle } from "@metriport/core/external/quest/command/bundle/save-bundle";
 import { convertBatchResponseToFhirBundles } from "@metriport/core/external/quest/fhir-converter";
+import { executeAsynchronously } from "@metriport/core/util/concurrency";
 
 /**
  * This script is used to analyze the Quest data.
@@ -58,9 +60,21 @@ async function runAnalysis({ cxName }: { cxName: string }) {
 
   const bundles = await convertBatchResponseToFhirBundles(cxName, allDetails);
 
-  for (const bundle of bundles) {
-    writeQuestConversionBundle(cxName, bundle.patientId, bundle.bundle);
-  }
+  await executeAsynchronously(
+    bundles,
+    async bundle => {
+      writeQuestConversionBundle(cxName, bundle.patientId, bundle.bundle);
+      await saveBundle({
+        bundle: bundle.bundle,
+        cxId: cxName,
+        patientId: bundle.patientId,
+        dateId: "202508110812",
+      });
+    },
+    {
+      numberOfParallelExecutions: 10,
+    }
+  );
 
   console.log("Total rows: " + allDetails.length);
   console.log("Total bundles: " + bundles.length);

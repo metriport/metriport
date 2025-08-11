@@ -7,24 +7,47 @@ import {
   Patient,
   ObservationReferenceRange,
   Reference,
+  Specimen,
+  Practitioner,
+  ServiceRequest,
+  Annotation,
 } from "@medplum/fhirtypes";
 import { ResponseDetail } from "../schema/response";
 import { LOINC_URL, CPT_URL } from "../../../util/constants";
 import { getPatientReference } from "./patient";
 import { HL7_OBSERVATION_INTERPRETATION_SYSTEM, QUEST_LOCAL_RESULT_CODE_SYSTEM } from "./constant";
 import { getQuestDataSourceExtension } from "./shared";
+import { getSpecimenReference } from "./specimen";
+import { getServiceRequestReference } from "./service-request";
+import { getPractitionerReference } from "./practitioner";
 
 type ObservationValue = Pick<Observation, "valueQuantity" | "valueString" | "valueCodeableConcept">;
 
 export function getObservation(
   detail: ResponseDetail,
-  { patient }: { patient: Patient }
+  {
+    patient,
+    practitioner,
+    specimen,
+    serviceRequest,
+  }: {
+    patient: Patient;
+    practitioner: Practitioner;
+    specimen?: Specimen | undefined;
+    serviceRequest?: ServiceRequest | undefined;
+  }
 ): Observation {
   const identifier = getObservationIdentifier(detail);
   const code = getObservationCode(detail);
+  const category = getObservationCategory();
   const subject = getPatientReference(patient);
+  const performer = practitioner ? [getPractitionerReference(practitioner)] : undefined;
+  const effectiveDateTime = getEffectiveDateTime(detail);
+  const basedOn = serviceRequest ? [getServiceRequestReference(serviceRequest)] : undefined;
+  const specimenReference = specimen ? getSpecimenReference(specimen) : undefined;
   const interpretation = getObservationInterpretation(detail);
   const referenceRange = getObservationReferenceRange(detail);
+  const note = getObservationNote(detail);
   const { valueQuantity, valueString } = getObservationValue(detail);
   const extension = [getQuestDataSourceExtension()];
 
@@ -33,12 +56,18 @@ export function getObservation(
     id: uuidv7(),
     status: "final",
     subject,
+    category,
+    ...(performer ? { performer } : {}),
+    ...(effectiveDateTime ? { effectiveDateTime } : {}),
     ...(valueQuantity ? { valueQuantity } : {}),
     ...(valueString ? { valueString } : {}),
     ...(referenceRange ? { referenceRange } : {}),
     ...(interpretation ? { interpretation } : {}),
     ...(identifier ? { identifier } : {}),
+    ...(basedOn ? { basedOn } : {}),
     ...(code ? { code } : {}),
+    ...(note ? { note } : {}),
+    ...(specimenReference ? { specimen: specimenReference } : {}),
     extension,
   };
 }
@@ -47,6 +76,24 @@ export function getObservationReference(observation: Observation): Reference<Obs
   return {
     reference: `Observation/${observation.id}`,
   };
+}
+
+function getEffectiveDateTime(detail: ResponseDetail): string | undefined {
+  if (!detail.dateOfService) return undefined;
+  return detail.dateOfService.toISOString();
+}
+
+function getObservationCategory(): CodeableConcept[] {
+  return [
+    {
+      coding: [
+        {
+          system: "http://terminology.hl7.org/CodeSystem/observation-category",
+          code: "laboratory",
+        },
+      ],
+    },
+  ];
 }
 
 function getObservationIdentifier(detail: ResponseDetail): Identifier[] {
@@ -107,7 +154,7 @@ function getObservationReferenceRange(
 function getObservationValue(detail: ResponseDetail): ObservationValue {
   const values: ObservationValue = {};
   if (detail.resultValue != null) {
-    if (detail.resultUnits) {
+    if (detail.resultUnits != null) {
       values.valueQuantity = {
         value: parseFloat(detail.resultValue),
         unit: detail.resultUnits,
@@ -139,6 +186,15 @@ function getObservationInterpretation(detail: ResponseDetail): CodeableConcept[]
           ...(display ? { display } : {}),
         },
       ],
+    },
+  ];
+}
+
+function getObservationNote(detail: ResponseDetail): Annotation[] | undefined {
+  if (!detail.resultComments) return undefined;
+  return [
+    {
+      text: detail.resultComments,
     },
   ];
 }

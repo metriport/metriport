@@ -29,11 +29,11 @@ export function buildLatestConversionBundleFileName(cxId: string, patientId: str
 export function buildConversionBundleFileNameForDate({
   cxId,
   patientId,
-  dateString,
+  dateId,
 }: {
   cxId: string;
   patientId: string;
-  dateString: string;
+  dateId: string;
 }) {
-  return `quest/cxId=${cxId}/patientId=${patientId}/date=${dateString}.json`;
+  return `quest/cxId=${cxId}/patientId=${patientId}/date=${dateId}.json`;
 }

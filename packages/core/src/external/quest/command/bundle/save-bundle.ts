@@ -10,37 +10,37 @@ import {
 } from "../../file/file-names";
 
 /**
- * Saves the bundle with Surescripts data to the repository.
+ * Saves a bundle with Quest data to the repository.
  *
  * @param bundle - The bundle to save.
  * @param cxId - The ID of the care experience.
  * @param patientId - The ID of the patient.
- * @param jobId - The ID of the job.
+ * @param dateString - The ID of the job.
  */
 export async function saveBundle({
   bundle,
   cxId,
   patientId,
-  dateString,
+  dateId,
 }: {
   bundle: Bundle;
   cxId: string;
   patientId: string;
-  dateString: string;
+  dateId: string;
 }): Promise<void> {
-  const { log } = out(`quest.saveBundle - cx ${cxId}, pat ${patientId}, date ${dateString}`);
+  const { log } = out(`quest.saveBundle - cx ${cxId}, pat ${patientId}, date ${dateId}`);
   const bucketName = Config.getLabConversionBucketName();
   if (!bucketName) {
     const msg = "No lab conversion bucket name found";
     log(`${msg}, skipping`);
-    capture.error(msg, { extra: { cxId, patientId, dateString } });
+    capture.error(msg, { extra: { cxId, patientId, dateId } });
     return;
   }
   const latestBundleName = buildLatestConversionBundleFileName(cxId, patientId);
   const conversionBundleName = buildConversionBundleFileNameForDate({
     cxId,
     patientId,
-    dateString,
+    dateId,
   });
   const s3Utils = new S3Utils(Config.getAWSRegion());
   const fileContent = Buffer.from(JSON.stringify(bundle));
