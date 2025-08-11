@@ -13,6 +13,7 @@ import {
   isEnhancedCoverageEnabledForCx,
   isStalePatientUpdateEnabledForCx,
 } from "@metriport/core/command/feature-flags/domain-ffs";
+import { createDocumentRenderFilePaths } from "@metriport/core/domain/document/filename";
 import { addOidPrefix } from "@metriport/core/domain/oid";
 import { Patient } from "@metriport/core/domain/patient";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
@@ -579,11 +580,10 @@ async function downloadDocsAndUpsertFHIR({
 
                 if (forceDownload) {
                   // delete file renders (html, pdf)
-                  const renderedHtmlFilePath = `${fileInfo.fileName}.html`;
-                  const renderedPdfFilePath = `${fileInfo.fileName}.pdf`;
+                  const renderFilePaths = createDocumentRenderFilePaths(fileInfo.fileName);
                   await s3Utils.deleteFiles({
                     bucket: fileInfo.fileLocation,
-                    keys: [renderedHtmlFilePath, renderedPdfFilePath],
+                    keys: renderFilePaths,
                   });
                 }
 

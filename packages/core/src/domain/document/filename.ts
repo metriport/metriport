@@ -15,3 +15,14 @@ export function createDocumentFilePath(
 ): string {
   return createFilePath(cxId, patientId, createDocumentFileName(docId, mimeType));
 }
+
+function createDocumentRenderFilePath(filePath: string, renderType: "html" | "pdf"): string {
+  const extension = renderType === "html" ? ".html" : ".pdf";
+  return filePath.concat(extension);
+}
+
+export function createDocumentRenderFilePaths(filePath: string): string[] {
+  return ["html", "pdf"].map(renderType =>
+    createDocumentRenderFilePath(filePath, renderType as "html" | "pdf")
+  );
+}

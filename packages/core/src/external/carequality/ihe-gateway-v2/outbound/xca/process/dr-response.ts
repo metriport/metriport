@@ -7,7 +7,10 @@ import {
 import { errorToString, toArray } from "@metriport/shared";
 import { createXMLParser } from "@metriport/shared/common/xml-parser";
 import dayjs from "dayjs";
-import { createDocumentFilePath } from "../../../../../../domain/document/filename";
+import {
+  createDocumentFilePath,
+  createDocumentRenderFilePaths,
+} from "../../../../../../domain/document/filename";
 import { Config } from "../../../../../../util/config";
 import { MetriportError } from "../../../../../../util/error/metriport-error";
 import { out } from "../../../../../../util/log";
@@ -111,9 +114,9 @@ async function processDocumentReference({
       log(
         `Size mismatch for file ${filePath}. Was - ${fileInfo.size}, now - ${newFileSize}. Deleting rendered files`
       );
-      const renderedHtmlFilePath = `${filePath}.html`;
-      const renderedPdfFilePath = `${filePath}.pdf`;
-      await s3Utils.deleteFiles({ bucket, keys: [renderedHtmlFilePath, renderedPdfFilePath] });
+
+      const renderFilePaths = createDocumentRenderFilePaths(filePath);
+      await s3Utils.deleteFiles({ bucket, keys: renderFilePaths });
     }
 
     await s3Utils.uploadFile({
