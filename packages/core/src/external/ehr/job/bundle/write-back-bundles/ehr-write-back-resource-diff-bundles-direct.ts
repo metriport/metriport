@@ -721,7 +721,7 @@ async function filterConditions({
     const getCode =
       primaryCodeSystem === SNOMED_CODE ? getConditionSnomedCode : getConditionIcd10Code;
     filteredConditions = Object.values(
-      (conditions as Condition[]).reduce<Record<string, Condition>>((acc, condition) => {
+      conditions.reduce<Record<string, Condition>>((acc, condition) => {
         const code = getCode(condition);
         if (!code) return acc;
         const conditionDate = getConditionStartDate(condition);
