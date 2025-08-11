@@ -47,6 +47,7 @@ function getBundleEntries({ data }: IncomingData<ResponseDetail>): BundleEntry[]
   const diagnosticReport = getDiagnosticReport(data, {
     patient,
     specimen,
+    observation,
   });
   const coverage = getCoverage(data, {
     patient,

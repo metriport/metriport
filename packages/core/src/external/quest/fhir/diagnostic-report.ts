@@ -4,21 +4,30 @@ import {
   Coding,
   DiagnosticReport,
   Identifier,
+  Observation,
   Patient,
   Specimen,
 } from "@medplum/fhirtypes";
 import { ResponseDetail } from "../schema/response";
 import { getPatientReference } from "./patient";
 import { getSpecimenReference } from "./specimen";
+import { getServiceRequestCoding } from "./service-request";
 import { getQuestDataSourceExtension } from "./shared";
+import { getObservationReference } from "./observation";
 
 export function getDiagnosticReport(
   detail: ResponseDetail,
-  { patient, specimen }: { patient: Patient; specimen?: Specimen | undefined }
+  {
+    patient,
+    specimen,
+    observation,
+  }: { patient: Patient; specimen?: Specimen | undefined; observation?: Observation | undefined }
 ): DiagnosticReport {
   const effectiveDateTime = getEffectiveDateTime(detail);
+  const code = getServiceRequestCoding(detail);
   const subject = getPatientReference(patient);
   const identifier = getIdentifier(detail);
+  const result = observation ? [getObservationReference(observation)] : undefined;
   const specimenReference = specimen ? [getSpecimenReference(specimen)] : undefined;
   const category = getDiagnosticReportCategory(detail);
   const extension = [getQuestDataSourceExtension()];
@@ -29,6 +38,8 @@ export function getDiagnosticReport(
     effectiveDateTime,
     identifier,
     subject,
+    ...(code ? { code } : {}),
+    ...(result ? { result } : {}),
     ...(specimenReference ? { specimen: specimenReference } : {}),
     ...(category.length > 0 ? { category } : {}),
     extension,

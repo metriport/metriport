@@ -6,6 +6,7 @@ import {
   Observation,
   Patient,
   ObservationReferenceRange,
+  Reference,
 } from "@medplum/fhirtypes";
 import { ResponseDetail } from "../schema/response";
 import { LOINC_URL, CPT_URL } from "../../../util/constants";
@@ -39,6 +40,12 @@ export function getObservation(
     ...(identifier ? { identifier } : {}),
     ...(code ? { code } : {}),
     extension,
+  };
+}
+
+export function getObservationReference(observation: Observation): Reference<Observation> {
+  return {
+    reference: `Observation/${observation.id}`,
   };
 }
 

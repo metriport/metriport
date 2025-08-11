@@ -114,7 +114,7 @@ export function getServiceRequestCategory(): CodeableConcept[] {
   ];
 }
 
-function getServiceRequestCoding(detail: ResponseDetail): CodeableConcept | undefined {
+export function getServiceRequestCoding(detail: ResponseDetail): CodeableConcept | undefined {
   const coding: Coding[] = [];
   const text = detail.orderName ?? detail.profileName;
 
