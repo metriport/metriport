@@ -69,7 +69,7 @@ describe("Pagination", () => {
       });
 
       it("accepts count equal to limit", async () => {
-        const req = { query: { count: "2500" }, baseUrl };
+        const req = { query: { count: "500" }, baseUrl };
         await paginated({
           request: req as any,
           additionalQueryParams: undefined,
@@ -77,7 +77,7 @@ describe("Pagination", () => {
           getTotalCount,
         });
         // One extra since we ask for one more to determine if there is a next page
-        expect(getItems).toHaveBeenNthCalledWith(1, { count: 2501 });
+        expect(getItems).toHaveBeenNthCalledWith(1, { count: 501 });
       });
 
       it("fails if count is lower than 0", async () => {
@@ -93,7 +93,7 @@ describe("Pagination", () => {
       });
 
       it("fails if count is higher than limit", async () => {
-        const req = { query: { count: "2501" }, baseUrl };
+        const req = { query: { count: "501" }, baseUrl };
         await expect(() =>
           paginated({
             request: req as any,
@@ -101,7 +101,7 @@ describe("Pagination", () => {
             getItems,
             getTotalCount,
           })
-        ).rejects.toThrow("Count has to be less than or equal to 2500");
+        ).rejects.toThrow("Count has to be less than or equal to 500");
       });
       it("rejects invalid count parameter", async () => {
         const req = { query: { count: "invalid" }, baseUrl };
@@ -152,9 +152,7 @@ describe("Pagination", () => {
 
     describe("logic", () => {
       it("returns empty array when no items exist", async () => {
-        async function emptyGetItems() {
-          return [];
-        }
+        const emptyGetItems = async () => [];
         const req = { query: {}, baseUrl };
         const result = await paginated({
           request: req as any,
@@ -170,9 +168,7 @@ describe("Pagination", () => {
 
       it("returns single item when only one exists", async () => {
         const id = faker.string.uuid();
-        async function singleItemGetItems() {
-          return [{ id, name: "Item 1" }];
-        }
+        const singleItemGetItems = async () => [{ id, name: "Item 1" }];
         const req = { query: {}, baseUrl };
         const result = await paginated({
           request: req as any,
@@ -327,12 +323,11 @@ describe("Pagination", () => {
       });
 
       it("defaults to 50 items per page", async () => {
-        async function moreItemsThanDefaultCount() {
-          return Array.from({ length: defaultItemsPerPage + 10 }, (_, i) => ({
+        const moreItemsThanDefaultCount = async () =>
+          Array.from({ length: defaultItemsPerPage + 10 }, (_, i) => ({
             id: i.toString(),
             name: `Item ${i}`,
           }));
-        }
         const req = { query: {}, baseUrl };
         const result = await paginated({
           request: req as any,
@@ -345,12 +340,11 @@ describe("Pagination", () => {
       });
 
       it("returns first page when no pagination params provided", async () => {
-        async function hundredPlusItems() {
-          return Array.from({ length: defaultItemsPerPage + 10 }, (_, i) => ({
+        const hundredPlusItems = async () =>
+          Array.from({ length: defaultItemsPerPage + 10 }, (_, i) => ({
             id: (++i).toString(),
             name: `Item ${i}`,
           }));
-        }
         const req = { query: {}, baseUrl };
         const result = await paginated({
           request: req as any,
