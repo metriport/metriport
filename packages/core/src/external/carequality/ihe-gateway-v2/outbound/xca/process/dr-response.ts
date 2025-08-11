@@ -107,7 +107,7 @@ async function processDocumentReference({
     const fileInfo = await s3Utils.getFileInfoFromS3(filePath, bucket);
 
     const newFileSize = decodedBytes.length;
-    if (fileInfo.size && fileInfo.size != newFileSize) {
+    if (fileInfo.size && fileInfo.size !== newFileSize) {
       log(
         `Size mismatch for file ${filePath}. Was - ${fileInfo.size}, now - ${newFileSize}. Deleting rendered files`
       );
