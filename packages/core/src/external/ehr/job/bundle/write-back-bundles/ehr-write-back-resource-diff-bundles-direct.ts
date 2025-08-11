@@ -732,7 +732,7 @@ async function filterConditions({
         } else {
           const currentDate = getConditionStartDate(current);
           if (!currentDate) return acc;
-          if (new Date(conditionDate).getTime() > new Date(currentDate).getTime()) {
+          if (buildDayjs(conditionDate).isAfter(buildDayjs(currentDate))) {
             acc[code] = condition;
           }
         }
@@ -765,7 +765,7 @@ async function filterAndGroupObservations({
         } else {
           const currentDate = getObservationObservedDate(current);
           if (!currentDate) return acc;
-          if (new Date(observationDate).getTime() > new Date(currentDate).getTime()) {
+          if (buildDayjs(observationDate).isAfter(buildDayjs(currentDate))) {
             acc[loincCode] = observation;
           }
         }
