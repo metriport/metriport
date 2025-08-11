@@ -12,7 +12,6 @@ import { Config } from "../../../../../../util/config";
 import { MetriportError } from "../../../../../../util/error/metriport-error";
 import { out } from "../../../../../../util/log";
 import { capture } from "../../../../../../util/notifications";
-import { sizeInBytes } from "../../../../../../util/string";
 import { stripBrackets, stripUrnPrefix } from "../../../../../../util/urn";
 import { S3Utils } from "../../../../../aws/s3";
 import { getCidReference } from "../mtom/cid";
@@ -107,7 +106,7 @@ async function processDocumentReference({
     );
     const fileInfo = await s3Utils.getFileInfoFromS3(filePath, bucket);
 
-    const newFileSize = sizeInBytes(JSON.stringify(decodedBytes));
+    const newFileSize = decodedBytes.length;
     if (fileInfo.size && fileInfo.size != newFileSize) {
       log(
         `Size mismatch for file ${filePath}. Was - ${fileInfo.size}, now - ${newFileSize}. Deleting rendered files`
