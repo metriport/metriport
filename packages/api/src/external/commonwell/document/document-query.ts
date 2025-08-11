@@ -16,6 +16,7 @@ import {
 import { addOidPrefix } from "@metriport/core/domain/oid";
 import { Patient } from "@metriport/core/domain/patient";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
+import { S3Utils } from "@metriport/core/external/aws/s3";
 import { DownloadResult } from "@metriport/core/external/commonwell/document/document-downloader";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { processAsyncError } from "@metriport/core/util/error/shared";
@@ -502,6 +503,7 @@ async function downloadDocsAndUpsertFHIR({
     `CW downloadDocsAndUpsertFHIR - requestId ${requestId}, M patient ${patient.id}`
   );
   forceDownload && log(`override=true, NOT checking whether docs exist`);
+  const s3Utils = new S3Utils(Config.getAWSRegion());
 
   const cxId = patient.cxId;
   const fhirApi = makeFhirApi(patient.cxId);
@@ -605,6 +607,15 @@ async function downloadDocsAndUpsertFHIR({
                 const signedUrl = await getUrl(fileInfo.fileName, fileInfo.fileLocation);
                 const url = new URL(signedUrl);
                 const s3Location = url.origin + url.pathname;
+
+                // delete file renders (html, pdf)
+                const renderedHtmlFilePath = `${fileInfo.fileName}.html`;
+                const renderedPdfFilePath = `${fileInfo.fileName}.pdf`;
+                await s3Utils.deleteFiles({
+                  bucket: fileInfo.fileLocation,
+                  keys: [renderedHtmlFilePath, renderedPdfFilePath],
+                });
+
                 return {
                   bucket: fileInfo.fileLocation,
                   key: fileInfo.fileName,
