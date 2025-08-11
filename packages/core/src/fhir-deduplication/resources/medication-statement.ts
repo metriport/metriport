@@ -68,7 +68,6 @@ export function groupSameMedStatements(medStatements: MedicationStatement[]): {
   for (const medStatement of medStatements) {
     const datetime = getDateFromResource(medStatement, "datetime");
     const medRef = medStatement.medicationReference?.reference;
-    const medCode = medStatement.medicationCodeableConcept;
     const dosage = medStatement.dosage;
     if (medRef && datetime && dosage) {
       const key = JSON.stringify({ medRef, datetime, dosage });
@@ -90,33 +89,6 @@ export function groupSameMedStatements(medStatements: MedicationStatement[]): {
       });
     } else if (medRef) {
       const key = JSON.stringify({ medRef });
-      deduplicateWithinMap({
-        dedupedResourcesMap: medStatementsMap,
-        dedupKey: key,
-        candidateResource: medStatement,
-        refReplacementMap,
-        onPremerge: preprocessStatus,
-      });
-    } else if (medCode && datetime && dosage) {
-      const key = JSON.stringify({ medCode, datetime, dosage });
-      deduplicateWithinMap({
-        dedupedResourcesMap: medStatementsMap,
-        dedupKey: key,
-        candidateResource: medStatement,
-        refReplacementMap,
-        onPremerge: preprocessStatus,
-      });
-    } else if (medCode && datetime) {
-      const key = JSON.stringify({ medCode, datetime });
-      deduplicateWithinMap({
-        dedupedResourcesMap: medStatementsMap,
-        dedupKey: key,
-        candidateResource: medStatement,
-        refReplacementMap,
-        onPremerge: preprocessStatus,
-      });
-    } else if (medCode) {
-      const key = JSON.stringify({ medCode });
       deduplicateWithinMap({
         dedupedResourcesMap: medStatementsMap,
         dedupKey: key,
