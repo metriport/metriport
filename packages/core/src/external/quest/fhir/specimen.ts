@@ -1,16 +1,22 @@
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
-import { Practitioner, Reference, ServiceRequest, Specimen } from "@medplum/fhirtypes";
+import { Patient, Practitioner, Reference, ServiceRequest, Specimen } from "@medplum/fhirtypes";
 import { ResponseDetail } from "../schema/response";
 import { getPractitionerReference } from "./practitioner";
 import { getQuestDataSourceExtension } from "./shared";
 import { getServiceRequestReference } from "./service-request";
+import { getPatientReference } from "./patient";
 
 export function getSpecimen(
   detail: ResponseDetail,
-  { practitioner, serviceRequest }: { practitioner: Practitioner; serviceRequest: ServiceRequest }
+  {
+    patient,
+    practitioner,
+    serviceRequest,
+  }: { patient: Patient; practitioner: Practitioner; serviceRequest: ServiceRequest }
 ): Specimen | undefined {
   if (!detail.dateCollected) return undefined;
   const extension = [getQuestDataSourceExtension()];
+  const subject = getPatientReference(patient);
   const collector = getPractitionerReference(practitioner);
   const request = [getServiceRequestReference(serviceRequest)];
 
@@ -18,6 +24,7 @@ export function getSpecimen(
     resourceType: "Specimen",
     id: uuidv7(),
     status: "available",
+    subject,
     collection: {
       collector,
     },

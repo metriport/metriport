@@ -6,7 +6,7 @@ import { getPractitioner } from "./practitioner";
 import { getInsuranceOrganization } from "./organization";
 import { getCoverage } from "./coverage";
 import { getConditions } from "./condition";
-import { getServiceRequest } from "./service-request";
+import { getServiceRequest, updateServiceRequest } from "./service-request";
 import { getObservation } from "./observation";
 import { getDiagnosticReport } from "./diagnostic-report";
 import { dangerouslyDeduplicateFhir } from "../../../fhir-deduplication/deduplicate-fhir";
@@ -36,9 +36,11 @@ function getBundleEntries({ data }: IncomingData<ResponseDetail>): BundleEntry[]
     patient,
   });
   const serviceRequest = getServiceRequest(data, {
+    patient,
     requestingPractitioner: practitioner,
   });
   const specimen = getSpecimen(data, {
+    patient,
     practitioner,
     serviceRequest,
   });
@@ -52,6 +54,12 @@ function getBundleEntries({ data }: IncomingData<ResponseDetail>): BundleEntry[]
   });
   const conditions = getConditions(data, {
     patient,
+  });
+  // Add references to conditions and specimen if created
+  updateServiceRequest(serviceRequest, {
+    conditions,
+    specimen,
+    coverage,
   });
   const resources: Array<Resource | undefined> = [
     patient,

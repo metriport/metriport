@@ -1,5 +1,5 @@
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
-import { Condition, Patient } from "@medplum/fhirtypes";
+import { Condition, Patient, Reference } from "@medplum/fhirtypes";
 import { ResponseDetail } from "../schema/response";
 import { ICD_10_URL, ICD_9_URL } from "../../../util/constants";
 import { getPatientReference } from "./patient";
@@ -33,6 +33,32 @@ function getCondition(patient: Patient, diagnosisCode?: string): Condition | und
   return {
     resourceType: "Condition",
     id: uuidv7(),
+    clinicalStatus: {
+      coding: [
+        {
+          system: "http://terminology.hl7.org/CodeSystem/condition-clinical",
+          code: "active",
+        },
+      ],
+    },
+    verificationStatus: {
+      coding: [
+        {
+          system: "http://terminology.hl7.org/CodeSystem/condition-ver-status",
+          code: "confirmed",
+        },
+      ],
+    },
+    category: [
+      {
+        coding: [
+          {
+            system: "http://terminology.hl7.org/CodeSystem/condition-category",
+            code: "problem-list-item",
+          },
+        ],
+      },
+    ],
     subject: getPatientReference(patient),
     code: {
       coding: [
@@ -43,6 +69,12 @@ function getCondition(patient: Patient, diagnosisCode?: string): Condition | und
       ],
     },
     extension,
+  };
+}
+
+export function getConditionReference(condition: Condition): Reference<Condition> {
+  return {
+    reference: `Condition/${condition.id}`,
   };
 }
 

@@ -7,6 +7,15 @@ import { ResponseDetail } from "@metriport/core/external/quest/schema/response";
 import { IncomingData } from "@metriport/core/external/quest/schema/shared";
 import { convertBatchResponseToFhirBundles } from "@metriport/core/external/quest/fhir-converter";
 
+/**
+ * This script is used to analyze the Quest data.
+ * It will:
+ * 1. Parse the Quest data
+ * 2. Convert the Quest data to FHIR bundles
+ * 3. Write the FHIR bundles to the Quest directory
+ * 4. Print statistics about the found patients
+ * 5. Print statistics about the FHIR bundles
+ */
 const command = new Command();
 
 const QUEST_DIR = path.join(__dirname, "../..", "runs", "quest");
@@ -82,11 +91,15 @@ function getQuestPatientMapping(dirPath: string): Record<string, string> {
 }
 
 function writeQuestConversionBundle(cxName: string, patientId: string, bundle: Bundle) {
-  const cxDir = path.join(QUEST_DIR, "bundle", cxName);
+  const cxDir = path.join(QUEST_DIR, "quest", cxName);
   if (!fs.existsSync(cxDir)) {
     fs.mkdirSync(cxDir, { recursive: true });
   }
-  const filePath = path.join(cxDir, patientId + ".json");
+  const patientDir = path.join(cxDir, "patientId=" + patientId);
+  if (!fs.existsSync(patientDir)) {
+    fs.mkdirSync(patientDir, { recursive: true });
+  }
+  const filePath = path.join(patientDir, "latest.json");
   fs.writeFileSync(filePath, JSON.stringify(bundle, null, 2));
 }
 
