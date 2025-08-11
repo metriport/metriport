@@ -37,7 +37,23 @@ export const PLAN_CODE_NAME: Record<PlanCode, PlanCodeName> = {
   "06": "Workers' Compensation",
 };
 
-export const PAYMENT_CODES = ["01", "02", "03", "04", "05", "06", "07", "99"] as const;
+export const PAYMENT_CODES = [
+  "01",
+  "1",
+  "02",
+  "2",
+  "03",
+  "3",
+  "04",
+  "4",
+  "05",
+  "5",
+  "06",
+  "6",
+  "07",
+  "7",
+  "99",
+] as const;
 export const PAYMENT_CODE_NAMES = [
   "Private Pay",
   "Medicaid",
@@ -53,11 +69,18 @@ export type PaymentCodeName = (typeof PAYMENT_CODE_NAMES)[number];
 
 export const PAYMENT_CODE_NAME: Record<PaymentCode, PaymentCodeName> = {
   "01": "Private Pay",
+  "1": "Private Pay",
   "02": "Medicaid",
+  "2": "Medicaid",
   "03": "Medicare",
+  "3": "Medicare",
   "04": "Commercial Insurance",
+  "4": "Commercial Insurance",
   "05": "Military Installations and VA",
+  "5": "Military Installations and VA",
   "06": "Workers' Compensation",
+  "6": "Workers' Compensation",
   "07": "Indian Nations",
+  "7": "Indian Nations",
   "99": "Other",
 };

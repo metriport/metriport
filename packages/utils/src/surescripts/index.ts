@@ -19,8 +19,19 @@ import batchAnalysis from "./batch-analysis";
 import preview from "./preview";
 import findLargest from "./find-largest";
 import bundleVerification from "./bundle-verification";
+import reconversion from "./reconversion";
 
+/**
+ * This is the main command registry for the Surescripts CLI. You should add any new
+ * commands to this registry, and ensure that your command has a unique name.
+ */
 const program = new Command();
+
+/**
+ * Test an SFTP connection to Surescripts. Will only work if it is being run from a server
+ * within the VPC corresponding to the environment you are testing (production or staging).
+ * npm run surescripts -- sftp connect
+ */
 program.addCommand(sftpAction);
 program.addCommand(sendPatientRequest);
 program.addCommand(sendBatchRequest);
@@ -37,4 +48,5 @@ program.addCommand(analyzeResponses);
 program.addCommand(preview);
 program.addCommand(findLargest);
 program.addCommand(bundleVerification);
+program.addCommand(reconversion);
 program.parse();
