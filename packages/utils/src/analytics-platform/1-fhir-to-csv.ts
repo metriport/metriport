@@ -1,3 +1,4 @@
+// 1-fhir-to-csv.ts
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
@@ -7,6 +8,7 @@ import { out } from "@metriport/core/util/log";
 import { errorToString, getEnvVarOrFail, sleep } from "@metriport/shared";
 import axios from "axios";
 import dayjs from "dayjs";
+import fs from "fs";
 import duration from "dayjs/plugin/duration";
 import { getAllPatientIds } from "../patient/get-ids";
 import { elapsedTimeAsStr } from "../shared/duration";
@@ -15,24 +17,25 @@ import { getCxData } from "../shared/get-cx-data";
 dayjs.extend(duration);
 
 /**
- * This script inserts patients into Snowflake, by sending messages to a SQS queue.
- * The queue is consumed by a Lambda function that generates CSV files and calls a
- * "transform" lambda.
- * That second lambda converts the CSV into a diff CSV file and send it to Snowflake.
+ * This script triggers the conversion of patients' consolidated data from JSON format to CSV.
+ * It sends a message to SQS per patient, consumed by a Lambda function that generates the
+ * CSV file.
  *
  * Usage:
  * - set env vars on .env file
- * - set patientIds array with the patient IDs you want to insert
- * - run `ts-node src/snowflake/bulk-insert-patients.ts`
+ * - set patientIds array with the patient IDs you want to convert - leave empty to run for all
+ *   patients of the customer
+ * - run `ts-node src/analytics-platform/1-fhir-to-csv.ts`
  */
 
+// Leave empty to run for all patients of the customer
 const patientIds: string[] = [];
 
 const cxId = getEnvVarOrFail("CX_ID");
 const apiUrl = getEnvVarOrFail("API_URL");
 const queueUrl = getEnvVarOrFail("FHIR_TO_CSV_QUEUE_URL");
 
-const numberOfParallelExecutions = 20;
+const numberOfParallelExecutions = 30;
 const confirmationTime = dayjs.duration(10, "seconds");
 
 const sqsClient = new SQSClient({ region: getEnvVarOrFail("AWS_REGION") });
@@ -46,7 +49,7 @@ async function main() {
   log(`>>> Starting...`);
   const { orgName } = await getCxData(cxId, undefined, false);
 
-  const jobId = new Date().toISOString().slice(0, 19).replace(/[:.]/g, "-");
+  const fhirToCsvJobId = new Date().toISOString().slice(0, 19).replace(/[:.]/g, "-");
 
   const isAllPatients = patientIds.length < 1;
   const patientsToInsert = isAllPatients
@@ -55,14 +58,16 @@ async function main() {
   const uniquePatientIds = [...new Set(patientsToInsert)];
 
   await displayWarningAndConfirmation(uniquePatientIds, isAllPatients, orgName, log);
-  log(`>>> Running it... jobId: ${jobId}`);
+  log(`>>> Running it... fhirToCsvJobId: ${fhirToCsvJobId}`);
+
+  let amountOfPatientsProcessed = 0;
 
   const failedPatientIds: string[] = [];
   await executeAsynchronously(
     uniquePatientIds,
     async patientId => {
       const payload = JSON.stringify({
-        jobId,
+        jobId: fhirToCsvJobId,
         cxId,
         patientId,
       });
@@ -72,6 +77,10 @@ async function main() {
           messageDeduplicationId: patientId,
           messageGroupId: patientId,
         });
+        amountOfPatientsProcessed++;
+        if (amountOfPatientsProcessed % 100 === 0) {
+          log(`>>> Sent ${amountOfPatientsProcessed}/${uniquePatientIds.length} patients to queue`);
+        }
       } catch (error) {
         log(
           `Failed to put message on queue for patient ${patientId} - reason: ${errorToString(
@@ -81,16 +90,18 @@ async function main() {
         failedPatientIds.push(patientId);
       }
     },
-    { numberOfParallelExecutions, minJitterMillis: 10, maxJitterMillis: 200 }
+    { numberOfParallelExecutions, minJitterMillis: 10, maxJitterMillis: 100 }
   );
 
   log(``);
   if (failedPatientIds.length > 0) {
-    log(`>>> Failed to send messages for ${failedPatientIds.length} patients:`);
-    log(failedPatientIds.join(`\n`));
+    const outputFile = "1-fhir-to-csv_failed-patient-ids_" + fhirToCsvJobId + ".txt";
+    log(`>>> FAILED to send messages for ${failedPatientIds.length} patients - see ${outputFile}`);
+    fs.writeFileSync(outputFile, failedPatientIds.join("\n"));
   }
 
-  log(`>>> ALL Done in ${elapsedTimeAsStr(startedAt)} - jobId: ${jobId}`);
+  log(`>>> ALL Done (${amountOfPatientsProcessed} patients) in ${elapsedTimeAsStr(startedAt)}`);
+  log(`- fhirToCsvJobId: ${fhirToCsvJobId}`);
 }
 
 async function displayWarningAndConfirmation(
@@ -101,8 +112,8 @@ async function displayWarningAndConfirmation(
 ) {
   const allPatientsMsg = isAllPatients ? ` That's all patients of customer ${cxId}!` : "";
   const msg =
-    `You are about to send ${patientsToInsert.length} patients of ` +
-    `customer ${orgName} (${cxId}) to Snowflake, are you sure?${allPatientsMsg}`;
+    `You are about to trigger the conversion of ${patientsToInsert.length} patients of ` +
+    `customer ${orgName} (${cxId}) from JSON to CSV, are you sure?${allPatientsMsg}`;
   log(msg);
   log("Cancel this now if you're not sure.");
   await sleep(confirmationTime.asMilliseconds());

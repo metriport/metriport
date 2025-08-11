@@ -567,6 +567,36 @@ export class S3Utils {
     } while (continuationToken);
     return allObjects;
   }
+
+  async listFirstLevelSubdirectories({
+    bucket,
+    prefix,
+    delimiter = "/",
+  }: {
+    bucket: string;
+    prefix: string;
+    delimiter?: string | undefined;
+  }): Promise<AWS.S3.CommonPrefixList> {
+    const allObjects: AWS.S3.CommonPrefix[] = [];
+    let continuationToken: string | undefined;
+    do {
+      const res = await executeWithRetriesS3(() =>
+        this._s3
+          .listObjectsV2({
+            Bucket: bucket,
+            Prefix: prefix,
+            ...(delimiter ? { Delimiter: delimiter } : {}),
+            ...(continuationToken ? { ContinuationToken: continuationToken } : {}),
+          })
+          .promise()
+      );
+      if (res.CommonPrefixes) {
+        allObjects.push(...res.CommonPrefixes);
+      }
+      continuationToken = res.NextContinuationToken;
+    } while (continuationToken);
+    return allObjects;
+  }
 }
 
 export function splitS3Location(location: string): { bucketName: string; key: string } | undefined {
