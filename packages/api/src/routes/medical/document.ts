@@ -1,8 +1,5 @@
 import { UploadDocumentResult } from "@metriport/api-sdk";
-import { createDocumentFilePath } from "@metriport/core/domain/document/filename";
-import { S3Utils } from "@metriport/core/external/aws/s3";
 import { searchDocuments } from "@metriport/core/command/consolidated/search/document-reference/search";
-import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { stringToBoolean } from "@metriport/shared";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
@@ -10,15 +7,11 @@ import httpStatus, { OK } from "http-status";
 import { z } from "zod";
 import { getDocumentDownloadUrl } from "../../command/medical/document/document-download";
 import { queryDocumentsAcrossHIEs } from "../../command/medical/document/document-query";
+import { getUploadUrlAndCreateDocRef } from "../../command/medical/document/get-upload-url-and-create-doc-ref";
 import { startBulkGetDocumentUrls } from "../../command/medical/document/start-bulk-get-doc-url";
-import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
 import {} from "../../command/medical/patient/update-hie-opt-out";
 import ForbiddenError from "../../errors/forbidden";
-import {
-  composeDocumentReference,
-  docRefCheck,
-} from "../../external/fhir/document/draft-update-document-reference";
-import { upsertDocumentToFHIRServer } from "../../external/fhir/document/save-document-reference";
+import { docRefCheck } from "../../external/fhir/document/draft-update-document-reference";
 import { Config } from "../../shared/config";
 import { requestLogger } from "../helpers/request-logger";
 import { sanitize } from "../helpers/string";
@@ -32,9 +25,6 @@ import { cxRequestMetadataSchema } from "./schemas/request-metadata";
 import { getPatientPrimaryFacilityIdOrFail } from "../../command/medical/patient/get-patient-facilities";
 
 const router = Router();
-const region = Config.getAWSRegion();
-const s3Utils = new S3Utils(region);
-const medicalDocumentsUploadBucketName = Config.getMedicalDocumentsUploadBucketName();
 
 const getDocSchema = z.object({
   dateFrom: optionalDateSchema,
@@ -75,6 +65,218 @@ router.get(
       dateRange: { from: dateFrom ?? undefined, to: dateTo ?? undefined },
       contentFilter: content ? sanitize(content) : undefined,
     });
+    /*
+    const documents: DocumentReference[] = [
+      {
+        resourceType: "DocumentReference",
+        id: "128",
+        meta: {
+          versionId: "1",
+          lastUpdated: "2024-10-29T23:41:56.028+00:00",
+          source: "#AIGY43ixje9OJGNj",
+        },
+        contained: [
+          {
+            resourceType: "Organization",
+            id: "orgRef10",
+            name: "Hospital org174",
+          },
+        ],
+        extension: [
+          {
+            url: "https://public.metriport.com/fhir/StructureDefinition/data-source.json",
+            valueCoding: {
+              system: "https://public.metriport.com/fhir/StructureDefinition/data-source.json",
+              code: "COMMONWELL",
+            },
+          },
+        ],
+        masterIdentifier: {
+          system: "urn:ietf:rfc:3986",
+          value: "018b26f4-ac85-7465-9dfa-3eb72526ccf8",
+        },
+        identifier: [
+          {
+            use: "official",
+            system: "urn:ietf:rfc:3986",
+            value: "urn:uuid:018b26f4-ac85-7465-9dfa-3eb72526ccf8",
+          },
+        ],
+        status: "current",
+        type: {
+          coding: [
+            {
+              system: "http://loinc.org/",
+              code: "75622-1",
+              display: "Unknown",
+            },
+          ],
+        },
+        subject: {
+          reference: "Patient/0192da90-6f7d-71bd-b40c-7ea4bafc2a43",
+          type: "Patient",
+        },
+        date: "2023-10-13T02:54:11.000Z",
+        content: [
+          {
+            extension: [
+              {
+                url: "https://public.metriport.com/fhir/StructureDefinition/data-source.json",
+                valueCoding: {
+                  system: "https://public.metriport.com/fhir/StructureDefinition/data-source.json",
+                  code: "METRIPORT",
+                },
+              },
+            ],
+            attachment: {
+              contentType: "application/pdf",
+              url: "https://thomas-metriport-test-bucket.s3.us-east-2.amazonaws.com/cdb678ab-07e3-42c5-93f5-5541cf1f15a8/019393d3-7574-74b4-9364-955937a59d51/cdb678ab-07e3-42c5-93f5-5541cf1f15a8_019393d3-7574-74b4-9364-955937a59d51_jane11.pdf",
+              size: 27931,
+              title:
+                "cdb678ab-07e3-42c5-93f5-5541cf1f15a8/019393d3-7574-74b4-9364-955937a59d51/cdb678ab-07e3-42c5-93f5-5541cf1f15a8_019393d3-7574-74b4-9364-955937a59d51_jane11.pdf",
+              creation: "2023-10-12T19:54:11-07:00",
+            },
+            format: {
+              code: "urn:ihe:pcc:xphr:2007",
+            },
+          },
+          {
+            extension: [
+              {
+                url: "https://public.metriport.com/fhir/StructureDefinition/data-source.json",
+                valueCoding: {
+                  system: "https://public.metriport.com/fhir/StructureDefinition/data-source.json",
+                  code: "COMMONWELL",
+                },
+              },
+            ],
+            attachment: {
+              contentType: "application/pdf",
+              url: "https://integration.rest.api.commonwellalliance.org/v2/Binary/H4sIAAAAAAAEAGXLOxLCIBAA0NukY4fll01mHAsrD-ABEj4jBawiFLm9qWzs37s-ucQblzJq7sc9XEarK-ewKkAHZCQgIGoiDRoWpxAsoJSopxZf_Mmd2_Go-T3ief8PnlpPgf0osfYflEi7csmIzZMVs3FWLCFtQsd9VlY57xN9AdILCFWaAAAA0",
+              size: 27931,
+              title:
+                "cdb678ab-07e3-42c5-93f5-5541cf1f15a8/019393d3-7574-74b4-9364-955937a59d51/cdb678ab-07e3-42c5-93f5-5541cf1f15a8_019393d3-7574-74b4-9364-955937a59d51_jane11.pdf",
+              creation: "2023-10-12T19:54:11-07:00",
+            },
+            format: {
+              code: "urn:ihe:pcc:xphr:2007",
+            },
+          },
+        ],
+        context: {
+          event: [
+            {
+              text: "Unknown",
+            },
+          ],
+          period: {
+            start: "2023-10-13T01:54:11Z",
+            end: "2023-10-13T02:54:11Z",
+          },
+        },
+      },
+      {
+        resourceType: "DocumentReference",
+        id: "129",
+        meta: {
+          versionId: "1",
+          lastUpdated: "2024-10-29T23:42:15.098+00:00",
+          source: "#A7vhyH6hiQg2I8cI",
+        },
+        contained: [
+          {
+            resourceType: "Organization",
+            id: "org608",
+            name: "Hospital org608",
+          },
+          {
+            resourceType: "Practitioner",
+            id: "auth301",
+            name: [
+              {
+                family: "Last 301",
+                given: ["First 301"],
+              },
+            ],
+          },
+        ],
+        extension: [
+          {
+            url: "https://public.metriport.com/fhir/StructureDefinition/data-source.json",
+            valueCoding: {
+              system: "https://public.metriport.com/fhir/StructureDefinition/data-source.json",
+              code: "METRIPORT",
+            },
+          },
+        ],
+        masterIdentifier: {
+          system: "urn:ietf:rfc:3986",
+          value: "018b2a0e-7647-7afe-9623-36c9f8e5746d",
+        },
+        identifier: [
+          {
+            use: "official",
+            system: "urn:ietf:rfc:3986",
+            value: "018b2a0e-7647-7afe-9623-36c9f8e5746d",
+          },
+        ],
+        status: "current",
+        type: {
+          coding: [
+            {
+              system: "http://loinc.org/",
+              code: "75622-1",
+            },
+          ],
+        },
+        subject: {
+          reference: "Patient/0192da90-6f7d-71bd-b40c-7ea4bafc2a43",
+          type: "Patient",
+        },
+        date: "2023-10-13T17:21:13.317Z",
+        author: [
+          {
+            reference: "#org608",
+            type: "Organization",
+          },
+        ],
+        content: [
+          {
+            extension: [
+              {
+                url: "https://public.metriport.com/fhir/StructureDefinition/data-source.json",
+                valueCoding: {
+                  system: "https://public.metriport.com/fhir/StructureDefinition/data-source.json",
+                  code: "METRIPORT",
+                },
+              },
+            ],
+            attachment: {
+              contentType: "application/xml",
+              url: "https://api.staging.metriport.com/doc-contribution/commonwell/?fileName=cdb678ab-07e3-42c5-93f5-5541cf1f15a8/019393d3-7574-74b4-9364-955937a59d51/cdb678ab-07e3-42c5-93f5-5541cf1f15a8_019393d3-7574-74b4-9364-955937a59d51_jane1.xml",
+              size: 20099711,
+              title:
+                "cdb678ab-07e3-42c5-93f5-5541cf1f15a8/019393d3-7574-74b4-9364-955937a59d51/cdb678ab-07e3-42c5-93f5-5541cf1f15a8_019393d3-7574-74b4-9364-955937a59d51_jane1.xml",
+              creation: "2023-10-13T17:21:13+00:00",
+            },
+            format: {
+              code: "urn:ihe:pcc:xphr:2007",
+            },
+          },
+        ],
+        context: {
+          period: {
+            start: "2023-10-13T16:21:13.317Z",
+            end: "2023-10-13T17:21:13.317Z",
+          },
+          sourcePatientInfo: {
+            reference: "Patient/0192da90-6f7d-71bd-b40c-7ea4bafc2a43",
+            type: "Patient",
+          },
+        },
+      },
+    ];
+    */
 
     return res.status(OK).json({ documents: output === "dto" ? toDTO(documents) : documents });
   })
@@ -95,8 +297,20 @@ router.get(
   requestLogger,
   patientAuthorization("query"),
   asyncHandler(async (req: Request, res: Response) => {
+    /*
     const { patient } = getPatientInfoOrFail(req);
     return res.status(OK).json(patient.data.documentQueryProgress ?? {});
+    */
+    return res.status(OK).json({
+      download: {
+        status: "completed",
+        successful: 0,
+      },
+      convert: {
+        status: "completed",
+        successful: 0,
+      },
+    });
   })
 );
 
@@ -239,41 +453,15 @@ router.post(
   })
 );
 
-async function getUploadUrlAndCreateDocRef(req: Request): Promise<UploadDocumentResult> {
+async function getUploadUrlAndCreateDocRefShared(req: Request): Promise<UploadDocumentResult> {
   const { cxId, id: patientId } = getPatientInfoOrFail(req);
-  const docRefId = uuidv7();
-  const s3FileName = createDocumentFilePath(cxId, patientId, docRefId);
-  const organization = await getOrganizationOrFail({ cxId });
-
   const docRefDraft = req.body;
   docRefCheck(docRefDraft);
-  // #1075 TODO: Validate FHIR Payloads
-
-  const docRef = composeDocumentReference({
-    inputDocRef: docRefDraft,
-    organization,
+  return getUploadUrlAndCreateDocRef({
+    cxId,
     patientId,
-    docRefId,
-    s3Key: s3FileName,
-    s3BucketName: medicalDocumentsUploadBucketName,
+    inputDocRef: docRefDraft,
   });
-
-  async function upsertOnFHIRServer() {
-    // Make a temporary DocumentReference on the FHIR server.
-    console.log("Creating a temporary DocumentReference on the FHIR server with ID:", docRef.id);
-    await upsertDocumentToFHIRServer(cxId, docRef);
-  }
-
-  async function getPresignedUrl() {
-    return s3Utils.getPresignedUploadUrl({
-      bucket: medicalDocumentsUploadBucketName,
-      key: s3FileName,
-    });
-  }
-
-  const [, url] = await Promise.all([upsertOnFHIRServer(), getPresignedUrl()]);
-
-  return { documentReferenceId: docRefId, uploadUrl: url };
 }
 
 /**
@@ -294,7 +482,7 @@ router.post(
   requestLogger,
   patientAuthorization("query"),
   asyncHandler(async (req: Request, res: Response) => {
-    const resp = await getUploadUrlAndCreateDocRef(req);
+    const resp = await getUploadUrlAndCreateDocRefShared(req);
     const url = resp.uploadUrl;
     return res.status(httpStatus.OK).json(url);
   })
@@ -317,7 +505,7 @@ router.post(
   requestLogger,
   patientAuthorization("query"),
   asyncHandler(async (req: Request, res: Response) => {
-    const resp = await getUploadUrlAndCreateDocRef(req);
+    const resp = await getUploadUrlAndCreateDocRefShared(req);
     return res.status(httpStatus.OK).json(resp);
   })
 );

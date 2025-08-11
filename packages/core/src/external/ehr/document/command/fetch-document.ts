@@ -4,65 +4,58 @@ import {
   executeWithNetworkRetries,
   MetriportError,
 } from "@metriport/shared";
-import { BundleWithLastModified } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { Config } from "../../../../util/config";
 import { out } from "../../../../util/log";
 import {
-  BundleKeyBaseParams,
-  createKeyMap,
+  createKeyAndExtensionMap,
+  DocumentKeyBaseParams,
   getS3UtilsInstance,
-  isResourceDiffBundleType,
-} from "../bundle-shared";
+} from "../document-shared";
 
 dayjs.extend(duration);
 
-export type FetchBundleParams = BundleKeyBaseParams & {
+export type FetchDocumentParams = DocumentKeyBaseParams & {
   getLastModified?: boolean;
 };
 
-const bundleUrlDuration = dayjs.duration(1, "hour");
+const documentUrlDuration = dayjs.duration(1, "hour");
 
 /**
- * Fetches a bundle from S3 for the given bundle type and resource type.
+ * Fetches a document from S3 for the given document type and resource type.
  *
  * @param ehr - The EHR source.
  * @param cxId - The CX ID.
  * @param metriportPatientId - The Metriport ID.
  * @param ehrPatientId - The EHR patient ID.
- * @param bundleType - The bundle type.
- * @param resourceType - The resource type of the bundle.
- * @param jobId - The job ID of the bundle. If not provided, the tag 'latest' will be used.
- * @param resourceId - The resource ID of the bundle.
+ * @param documentType - The document type.
+ * @param resourceType - The resource type of the document.
+ * @param jobId - The job ID of the document. If not provided, the tag 'latest' will be used.
+ * @param resourceId - The resource ID of the document.
  * @param getLastModified - Whether to fetch the last modified date. (optional, defaults to false)
  * @param s3BucketName - The S3 bucket name (optional, defaults to the EHR bundle bucket)
- * @returns The bundle with the last modified date or undefined if the bundle is not found.
+ * @returns The document with the last modified date or undefined if the document is not found.
  */
-export async function fetchBundle({
+export async function fetchDocument({
   ehr,
   cxId,
   metriportPatientId,
   ehrPatientId,
-  bundleType,
+  documentType,
   resourceType,
   jobId,
   resourceId,
   getLastModified = false,
   s3BucketName = Config.getEhrBundleBucketName(),
-}: FetchBundleParams): Promise<BundleWithLastModified | undefined> {
+}: FetchDocumentParams): Promise<{ file: string; lastModified: Date | undefined } | undefined> {
   const { log } = out(`Ehr fetchBundle - ehr ${ehr} cxId ${cxId} ehrPatientId ${ehrPatientId}`);
-  if (isResourceDiffBundleType(bundleType) && !jobId) {
-    throw new BadRequestError(
-      "Job ID must be provided when fetching resource diff bundles",
-      undefined,
-      { metriportPatientId, ehrPatientId, bundleType, jobId }
-    );
-  }
   const s3Utils = getS3UtilsInstance();
-  const createKey = createKeyMap[bundleType];
-  if (!createKey) throw new BadRequestError("Invalid bundle type", undefined, { bundleType });
-  const key = createKey({
+  const createKeyAndExtension = createKeyAndExtensionMap[documentType];
+  if (!createKeyAndExtension) {
+    throw new BadRequestError("Invalid document type", undefined, { documentType });
+  }
+  const key = createKeyAndExtension.key({
     ehr,
     cxId,
     metriportPatientId,
@@ -81,69 +74,64 @@ export async function fetchBundle({
       ]);
     });
     return {
-      bundle: JSON.parse(file),
+      file: file,
       lastModified: fileInfo?.createdAt,
     };
   } catch (error) {
-    const msg = "Failure while fetching bundle @ S3";
+    const msg = "Failure while fetching document @ S3";
     log(`${msg}. Cause: ${errorToString(error)}`);
     throw new MetriportError(msg, error, {
       ehr,
       cxId,
       metriportPatientId,
       ehrPatientId,
-      bundleType,
       resourceType,
       jobId,
       key,
       s3BucketName,
-      context: "ehr.fetchBundle",
+      extension: createKeyAndExtension.extension,
+      context: "ehr.fetchDocument",
     });
   }
 }
 
-export type FetchBundlePreSignedUrlParams = Omit<FetchBundleParams, "getLastModified">;
+export type FetchDocumentPreSignedUrlParams = Omit<FetchDocumentParams, "getLastModified">;
 
 /**
- * Fetches a pre-signed URL for a bundle from S3 for the given bundle type and resource type.
- * If the bundle is not found, it returns undefined.
+ * Fetches a pre-signed URL for a document from S3 for the given document type and resource type.
+ * If the document is not found, it returns undefined.
  *
  * @param ehr - The EHR source.
  * @param cxId - The CX ID.
  * @param metriportPatientId - The Metriport ID.
  * @param ehrPatientId - The EHR patient ID.
- * @param bundleType - The bundle type.
- * @param resourceType - The resource type of the bundle.
- * @param jobId - The job ID of the bundle. If not provided, the tag 'latest' will be used.
- * @param resourceId - The resource ID of the bundle.
+ * @param documentType - The document type.
+ * @param resourceType - The resource type of the document.
+ * @param jobId - The job ID of the document. If not provided, the tag 'latest' will be used.
+ * @param resourceId - The resource ID of the document.
  * @param s3BucketName - The S3 bucket name (optional, defaults to the EHR bundle bucket)
- * @returns The pre-signed URL of the bundle if found, otherwise undefined. Valid for 1 hour.
+ * @returns The pre-signed URL of the document if found, otherwise undefined. Valid for 1 hour.
  */
-export async function fetchBundlePreSignedUrl({
+export async function fetchDocumentPreSignedUrl({
   ehr,
   cxId,
   metriportPatientId,
   ehrPatientId,
-  bundleType,
+  documentType,
   resourceType,
   jobId,
   resourceId,
   s3BucketName = Config.getEhrBundleBucketName(),
-}: FetchBundlePreSignedUrlParams): Promise<string | undefined> {
+}: FetchDocumentPreSignedUrlParams): Promise<string | undefined> {
   const { log } = out(
-    `Ehr fetchBundlePreSignedUrl - ehr ${ehr} cxId ${cxId} ehrPatientId ${ehrPatientId}`
+    `Ehr fetchDocumentPreSignedUrl - ehr ${ehr} cxId ${cxId} ehrPatientId ${ehrPatientId}`
   );
-  if (isResourceDiffBundleType(bundleType) && !jobId) {
-    throw new BadRequestError(
-      "Job ID must be provided when fetching resource diff bundles",
-      undefined,
-      { metriportPatientId, ehrPatientId, bundleType, jobId }
-    );
-  }
   const s3Utils = getS3UtilsInstance();
-  const createKey = createKeyMap[bundleType];
-  if (!createKey) throw new BadRequestError("Invalid bundle type", undefined, { bundleType });
-  const key = createKey({
+  const createKeyAndExtension = createKeyAndExtensionMap[documentType];
+  if (!createKeyAndExtension) {
+    throw new BadRequestError("Invalid document type", undefined, { documentType });
+  }
+  const key = createKeyAndExtension.key({
     ehr,
     cxId,
     metriportPatientId,
@@ -158,22 +146,22 @@ export async function fetchBundlePreSignedUrl({
     return s3Utils.getSignedUrl({
       bucketName: s3BucketName,
       fileName: key,
-      durationSeconds: bundleUrlDuration.asSeconds(),
+      durationSeconds: documentUrlDuration.asSeconds(),
     });
   } catch (error) {
-    const msg = "Failure while fetching bundle pre-signed URL @ Ehr";
+    const msg = "Failure while fetching document pre-signed URL @ Ehr";
     log(`${msg}. Cause: ${errorToString(error)}`);
     throw new MetriportError(msg, error, {
       ehr,
       cxId,
       metriportPatientId,
       ehrPatientId,
-      bundleType,
+      documentType,
       resourceType,
       jobId,
       key,
       s3BucketName,
-      context: "ehr.fetchBundlePreSignedUrl",
+      context: "ehr.fetchDocumentPreSignedUrl",
     });
   }
 }

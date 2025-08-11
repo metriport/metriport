@@ -118,6 +118,7 @@ import { executeAsynchronously } from "../../../util/concurrency";
 import { out } from "../../../util/log";
 import { capture } from "../../../util/notifications";
 import { createOrReplaceDocument } from "../document/command/create-or-replace-document";
+import { fetchDocument } from "../document/command/fetch-document";
 import { DocumentType } from "../document/document-shared";
 import {
   ApiConfig,
@@ -1491,12 +1492,16 @@ class AthenaHealthApi {
     metriportPatientId,
     athenaPatientId,
     resourceType,
+    attachAppointmentType = false,
+    fetchEncounterSummary = false,
     useCachedBundle = true,
   }: {
     cxId: string;
     metriportPatientId: string;
     athenaPatientId: string;
     resourceType: string;
+    attachAppointmentType?: boolean;
+    fetchEncounterSummary?: boolean;
     useCachedBundle?: boolean;
   }): Promise<Bundle> {
     const { debug } = out(
@@ -1555,6 +1560,8 @@ class AthenaHealthApi {
             metriportPatientId,
             athenaPatientId,
             bundle: validBundle,
+            attachAppointmentType,
+            fetchEncounterSummary,
           });
           return validBundle;
         },
@@ -1588,6 +1595,8 @@ class AthenaHealthApi {
     athenaPatientId,
     resourceType,
     resourceId,
+    attachAppointmentType = false,
+    fetchEncounterSummary = false,
     useCachedBundle = true,
   }: {
     cxId: string;
@@ -1595,6 +1604,8 @@ class AthenaHealthApi {
     athenaPatientId: string;
     resourceType: string;
     resourceId: string;
+    attachAppointmentType?: boolean;
+    fetchEncounterSummary?: boolean;
     useCachedBundle?: boolean;
   }): Promise<Bundle> {
     const { debug } = out(
@@ -1648,6 +1659,8 @@ class AthenaHealthApi {
             metriportPatientId,
             athenaPatientId,
             bundle: validBundle,
+            attachAppointmentType,
+            fetchEncounterSummary,
           });
           return validBundle;
         },
@@ -1923,12 +1936,16 @@ class AthenaHealthApi {
     metriportPatientId,
     athenaPatientId,
     bundle,
+    attachAppointmentType = false,
+    fetchEncounterSummary = false,
   }: {
     cxId: string;
     metriportPatientId: string;
     athenaPatientId: string;
     jobId?: string | undefined;
     bundle: EhrStrictFhirResourceBundle;
+    attachAppointmentType?: boolean;
+    fetchEncounterSummary?: boolean;
   }): Promise<void> {
     const { log } = out(
       `AthenaHealth dangerouslyAdjustEncountersInBundle - cxId ${cxId} athenaPatientId ${athenaPatientId}`
@@ -1948,40 +1965,62 @@ class AthenaHealthApi {
         }
         const encounterId = entry.resource.id;
         try {
-          const encounter = await this.getEncounter({
-            cxId,
-            patientId: athenaPatientId,
-            encounterId,
-          });
-          if (encounter.status === athenaClosedStatus) {
-            const encounterSummary = await this.getEncounterSummary({
+          let encounter: Encounter | undefined;
+          if (attachAppointmentType) {
+            const encounter = await this.getEncounter({
               cxId,
               patientId: athenaPatientId,
               encounterId,
             });
-            await createOrReplaceDocument({
-              ehr: EhrSources.athena,
+            const appointment = await this.getAppointment({
               cxId,
-              metriportPatientId,
-              ehrPatientId: athenaPatientId,
-              documentType: DocumentType.HTML,
-              payload: encounterSummary,
-              resourceType: "Encounter",
-              resourceId: encounterId,
+              patientId: athenaPatientId,
+              appointmentId: encounter.appointmentid,
             });
+            entry.resource.extension = [
+              ...(entry.resource.extension ?? []),
+              {
+                url: encounterAppointmentExtensionUrl,
+                valueString: appointment.appointmenttypeid,
+              },
+            ];
           }
-          const appointment = await this.getAppointment({
-            cxId,
-            patientId: athenaPatientId,
-            appointmentId: encounter.appointmentid,
-          });
-          entry.resource.extension = [
-            ...(entry.resource.extension ?? []),
-            {
-              url: encounterAppointmentExtensionUrl,
-              valueString: appointment.appointmenttypeid,
-            },
-          ];
+          if (fetchEncounterSummary) {
+            encounter =
+              encounter ??
+              (await this.getEncounter({
+                cxId,
+                patientId: athenaPatientId,
+                encounterId,
+              }));
+            if (encounter.status === athenaClosedStatus) {
+              const existingEncounterSummary = await fetchDocument({
+                ehr: EhrSources.athena,
+                cxId,
+                metriportPatientId,
+                ehrPatientId: athenaPatientId,
+                documentType: DocumentType.HTML,
+                resourceType: "Encounter",
+                resourceId: encounterId,
+              });
+              if (existingEncounterSummary) return;
+              const encounterSummary = await this.getEncounterSummary({
+                cxId,
+                patientId: athenaPatientId,
+                encounterId,
+              });
+              await createOrReplaceDocument({
+                ehr: EhrSources.athena,
+                cxId,
+                metriportPatientId,
+                ehrPatientId: athenaPatientId,
+                documentType: DocumentType.HTML,
+                payload: encounterSummary,
+                resourceType: "Encounter",
+                resourceId: encounterId,
+              });
+            }
+          }
         } catch (error) {
           if (error instanceof BadRequestError || error instanceof NotFoundError) return;
           log(
