@@ -3,6 +3,7 @@ import {
   Bundle,
   Condition as ConditionFhir,
   Immunization as ImmunizationFhir,
+  Medication as MedicationFhir,
   MedicationStatement,
   Observation,
   ResourceType,
@@ -15,8 +16,10 @@ import {
   toTitleCase,
 } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
+import { createUuidFromText } from "@metriport/shared/common/uuid";
 import { normalizeGenderSafe, unknownGender } from "@metriport/shared/domain/gender";
 import {
+  createStrictBundleFromResourceList,
   EhrStrictFhirResource,
   ehrStrictFhirResourceSchema,
 } from "@metriport/shared/interface/external/ehr/fhir-resource";
@@ -68,6 +71,7 @@ import {
   makeRequest,
   MakeRequestParamsInEhr,
   paginateWaitTime,
+  saveEhrReferenceBundle,
 } from "../shared";
 
 export const supportedHealthieResources: ResourceType[] = [
@@ -276,7 +280,7 @@ class HealthieApi {
   }: {
     cxId: string;
     patientId: string;
-  }): Promise<MedicationStatement[]> {
+  }): Promise<{ medicationStatement: MedicationStatement; medication: MedicationFhir }[]> {
     const { debug } = out(
       `Healthie getMedications - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
     );
@@ -378,6 +382,7 @@ class HealthieApi {
         allergy_sensitivities {
           id
           category
+          category_type
           name
           onset_date
           reaction
@@ -553,7 +558,17 @@ class HealthieApi {
             cxId,
             patientId: healthiePatientId,
           });
-          return medicationStatements.map(medicationStatement =>
+          const medications: EhrStrictFhirResource[] = medicationStatements.map(({ medication }) =>
+            ehrStrictFhirResourceSchema.parse(medication)
+          );
+          await saveEhrReferenceBundle({
+            ehr: EhrSources.healthie,
+            cxId,
+            metriportPatientId,
+            ehrPatientId: healthiePatientId,
+            referenceBundle: createStrictBundleFromResourceList(medications),
+          });
+          return medicationStatements.map(({ medicationStatement }) =>
             ehrStrictFhirResourceSchema.parse(medicationStatement)
           );
         }
@@ -889,22 +904,26 @@ class HealthieApi {
   private convertMedicationToFhir(
     patientId: string,
     medication: Medication
-  ): MedicationStatement | undefined {
+  ):
+    | {
+        medicationStatement: MedicationStatement;
+        medication: MedicationFhir;
+      }
+    | undefined {
     if (!medication.name && !medication.code) return undefined;
     if (!medication.start_date && !medication.end_date) return undefined;
     const isCompleted =
       !medication.active &&
       medication.end_date !== null &&
       buildDayjs(medication.end_date).isBefore(buildDayjs());
-    return {
+    const medicationStatementId = medication.id;
+    const medicationId = createUuidFromText(`medicationstatement_${medicationStatementId}`);
+    const medicationStatementFhir: MedicationStatement = {
       resourceType: "MedicationStatement",
       id: medication.id,
       subject: { reference: `Patient/${patientId}` },
       status: medication.active ? "active" : isCompleted ? "completed" : "stopped",
-      medicationCodeableConcept: {
-        ...(medication.code ? { coding: [{ system: RXNORM_URL, code: medication.code }] } : {}),
-        ...(medication.name ? { text: medication.name } : {}),
-      },
+      medicationReference: { reference: `Medication/${medicationId}` },
       ...(medication.start_date && medication.end_date
         ? {
             effectivePeriod: {
@@ -934,6 +953,15 @@ class HealthieApi {
         : {}),
       ...(medication.comment ? { note: [{ text: medication.comment }] } : {}),
     };
+    const medicationFhir: MedicationFhir = {
+      resourceType: "Medication",
+      id: medicationId,
+      code: {
+        ...(medication.code ? { coding: [{ system: RXNORM_URL, code: medication.code }] } : {}),
+        ...(medication.name ? { text: medication.name } : {}),
+      },
+    };
+    return { medicationStatement: medicationStatementFhir, medication: medicationFhir };
   }
 
   private convertImmunizationToFhir(
@@ -956,8 +984,9 @@ class HealthieApi {
     patientId: string,
     allergy: Allergy
   ): AllergyIntolerance | undefined {
-    if (!allergy.name || !allergy.status || !allergy.onset_date || !allergy.reaction)
+    if (!allergy.name || !allergy.status || !allergy.onset_date || !allergy.reaction) {
       return undefined;
+    }
     const allergyCategory = allergy.category_type
       ? this.mapAllergyCategory(allergy.category_type)
       : undefined;
@@ -981,6 +1010,7 @@ class HealthieApi {
       ...(allergyCategory && allergyCategory !== "other" ? { category: [allergyCategory] } : {}),
       reaction: [
         {
+          substance: { text: allergy.name },
           manifestation: [{ text: allergy.reaction }],
           ...(allergy.severity && allergy.severity !== "unknown"
             ? { severity: allergy.severity }

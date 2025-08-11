@@ -60,6 +60,15 @@ export function createBundleFromResourceList(resourceList: Resource[]): Bundle {
   };
 }
 
+export function createStrictBundleFromResourceList(
+  resourceList: EhrStrictFhirResource[]
+): EhrStrictFhirResourceBundle {
+  return {
+    resourceType: "Bundle",
+    entry: resourceList.map(resource => ({ resource })),
+  };
+}
+
 export function getDefaultBundle(): Bundle {
   return {
     resourceType: "Bundle",
