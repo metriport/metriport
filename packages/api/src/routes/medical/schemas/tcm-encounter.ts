@@ -30,14 +30,14 @@ export const tcmEncounterBaseSchema = z.strictObject({
 export const tcmEncounterCreateSchema = tcmEncounterBaseSchema.extend({
   cxId: z.string().uuid(),
   id: z.string().uuid().optional(),
-  outreachStatus: z.enum(outreachStatuses),
+  outreachStatus: z.enum(outreachStatuses).optional(),
 });
 export type TcmEncounterCreate = z.infer<typeof tcmEncounterCreateSchema>;
 
 export const tcmEncounterUpsertSchema = tcmEncounterBaseSchema.extend({
   id: z.string().uuid(),
   cxId: z.string().uuid(),
-  outreachStatus: z.enum(outreachStatuses),
+  outreachStatus: z.enum(outreachStatuses).optional(),
 });
 export type TcmEncounterUpsert = z.infer<typeof tcmEncounterUpsertSchema>;
 
