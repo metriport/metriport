@@ -1,8 +1,6 @@
-import { numericValue } from "@metriport/core/external/carequality/ihe-gateway-v2/schema";
 import { Config } from "@metriport/core/util/config";
-import { PaginatedResponse, ResponseMeta } from "@metriport/shared";
+import { createQueryMetaSchema, PaginatedResponse, ResponseMeta } from "@metriport/shared";
 import { Request } from "express";
-import { z } from "zod";
 import {
   getPaginationItems,
   Pagination,
@@ -12,49 +10,15 @@ import {
 } from "../command/pagination";
 
 export const defaultItemsPerPage = 50;
-export const maxItemsPerPage = 500;
-
-/**
- * @deprecated Use queryMetaSchema from shared/src/domain/pagination instead
- */
-export const queryMetaSchema = z.intersection(
-  z.union(
-    [
-      z.object({
-        fromItem: z.string().optional(),
-        toItem: z.never().optional(),
-      }),
-      z.object({
-        fromItem: z.never().optional(),
-        toItem: z.string().optional(),
-      }),
-    ],
-    { errorMap: () => ({ message: "Either fromItem or toItem can be provided, but not both" }) }
-  ),
-  z.object({
-    count: numericValue
-      .refine(count => count >= 0, {
-        message: `Count has to be greater than or equal to 0`,
-      })
-      .refine(count => count <= maxItemsPerPage, {
-        message: `Count has to be less than or equal to ${maxItemsPerPage}`,
-      })
-      .optional(),
-  })
-);
-/**
- * @deprecated Use HttpMeta from shared/src/domain/pagination instead
- */
-export type HttpMeta = z.infer<typeof queryMetaSchema>;
 
 // TODO 483 remove this once pagination is fully rolled out
-export function isPaginated(req: Request): boolean {
-  const meta = queryMetaSchema.parse(req.query);
+export function isPaginated(req: Request, maxItemsPerPage = defaultItemsPerPage): boolean {
+  const meta = createQueryMetaSchema(maxItemsPerPage).parse(req.query);
   return Object.keys(meta).length > 0;
 }
 
-export function getRequestMeta(req: Request): Pagination {
-  const parsed = queryMetaSchema.parse(req.query);
+export function getRequestMeta(req: Request, maxItemsPerPage = 500): Pagination {
+  const parsed = createQueryMetaSchema(maxItemsPerPage).parse(req.query);
   return {
     ...parsed,
     ...(parsed.count ? { count: Number(parsed.count) } : { count: defaultItemsPerPage }),
@@ -77,14 +41,16 @@ export async function paginated<T extends { id: string }>({
   getItems,
   getTotalCount,
   hostUrl = Config.getApiUrl(),
+  maxItemsPerPage = 500,
 }: {
   request: Request;
   additionalQueryParams: Record<string, string> | undefined;
   getItems: (pagination: Pagination) => Promise<T[]>;
   getTotalCount: () => Promise<number>;
   hostUrl?: string;
+  maxItemsPerPage?: number;
 }): Promise<PaginatedResponse<T, "items">> {
-  const requestMeta = getRequestMeta(request);
+  const requestMeta = getRequestMeta(request, maxItemsPerPage);
 
   const { prevPageItemId, nextPageItemId, currPageItems, totalCount } = await getPaginationItems(
     requestMeta,
