@@ -1,4 +1,5 @@
 import { isDischargeRequeryFeatureFlagEnabledForCx } from "@metriport/core/command/feature-flags/domain-ffs";
+import { capture } from "@metriport/core/util";
 import { out } from "@metriport/core/util/log";
 import {
   CreateDischargeRequeryParams,
@@ -13,7 +14,6 @@ import {
 } from "@metriport/shared/domain/patient/patient-monitoring/utils";
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import _ from "lodash";
-import { capture } from "../../../../../shared/notifications";
 import { createPatientJob } from "../../../../job/patient/create";
 import { getPatientJobs } from "../../../../job/patient/get";
 import { cancelPatientJob } from "../../../../job/patient/status/cancel";
@@ -40,6 +40,7 @@ export async function createDischargeRequeryJob(
   props: CreateDischargeRequeryParams
 ): Promise<void> {
   const { cxId, patientId, dischargeData } = props;
+  const localDischargeData = [...dischargeData];
   const { log } = out(`createDischargeRequeryJob - cx: ${cxId} pt: ${patientId}`);
 
   if (!(await isDischargeRequeryFeatureFlagEnabledForCx(cxId))) return;
@@ -55,16 +56,16 @@ export async function createDischargeRequeryJob(
     status: "waiting",
   });
 
-  if (existingJobs.length > 0) {
-    if (existingJobs.length > 1) {
-      const msg = `Found multiple waiting discharge-requery jobs`;
-      log(`${msg} - ${existingJobs.length} jobs!`);
-      capture.message(msg, {
-        extra: { patientId, cxId, jobIds: existingJobs.map(j => j.id) },
-        level: "warning",
-      });
-    }
+  if (existingJobs.length > 1) {
+    const msg = `Found multiple waiting discharge-requery jobs`;
+    log(`${msg} - ${existingJobs.length} jobs!`);
+    capture.message(msg, {
+      extra: { patientId, cxId, jobIds: existingJobs.map(j => j.id) },
+      level: "warning",
+    });
+  }
 
+  if (existingJobs.length > 0) {
     for (const existingJob of existingJobs) {
       const existingRequeryJob = parseDischargeRequeryJob(existingJob);
 
@@ -73,7 +74,7 @@ export async function createDischargeRequeryJob(
         remainingAttempts
       );
       scheduledAt = pickEarliestScheduledAt(existingRequeryJob.scheduledAt, scheduledAt);
-      dischargeData.push(...existingRequeryJob.paramsOps.dischargeData);
+      localDischargeData.push(...existingRequeryJob.paramsOps.dischargeData);
 
       log(`cancelling existing job ${existingJob.id}`);
       await cancelPatientJob({
@@ -86,7 +87,7 @@ export async function createDischargeRequeryJob(
 
   const paramsOps: DischargeRequeryParamsOps = {
     remainingAttempts,
-    dischargeData: _.uniqBy(dischargeData, "encounterEndDate"),
+    dischargeData: _.uniqBy(localDischargeData, "encounterEndDate"),
   };
   const newDischargeRequeryJob = await createPatientJob({
     cxId,

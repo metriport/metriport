@@ -1,17 +1,12 @@
 import { faker } from "@faker-js/faker";
 import { Encounter } from "@medplum/fhirtypes";
-import * as slackModule from "@metriport/core/external/slack/index";
-import * as configModule from "@metriport/core/util/config";
-import { DischargeData } from "@metriport/shared/domain/patient/patient-monitoring/discharge-requery";
 import { processDischargeData } from "../finish";
+import * as sharedModule from "../shared";
 
 describe("processDischargeData", () => {
-  const fakeSlackUrl = "https://some-discharge-notification-url";
-  let sendToSlackMock: jest.SpyInstance;
-  let getDischargeNotificationSlackUrlMock: jest.SpyInstance;
-  let mockLog: jest.Mock;
-  let dischargeData: DischargeData;
+  let sendSlackNotificationMock: jest.SpyInstance;
   let mockDate: Date;
+  const cxId = faker.string.uuid();
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -19,17 +14,7 @@ describe("processDischargeData", () => {
     jest.useFakeTimers();
     jest.setSystemTime(mockDate);
 
-    sendToSlackMock = jest.spyOn(slackModule, "sendToSlack");
-    getDischargeNotificationSlackUrlMock = jest.spyOn(
-      configModule.Config,
-      "getDischargeNotificationSlackUrl"
-    );
-
-    mockLog = jest.fn();
-    dischargeData = {
-      encounterEndDate: "2024-01-01T12:00:00Z",
-      type: "findDischargeSummary",
-    };
+    sendSlackNotificationMock = jest.spyOn(sharedModule, "sendNotificationToSlack");
   });
 
   afterEach(() => {
@@ -40,18 +25,96 @@ describe("processDischargeData", () => {
     it("should return processing status with appropriate reason", async () => {
       const encounters: Encounter[] = [];
 
-      const result = await processDischargeData(encounters, dischargeData, mockLog);
+      const result = await processDischargeData(encounters, cxId);
 
-      expect(result).toEqual({
-        discharge: dischargeData,
-        status: "processing",
-        reason: "No matching encounters found",
-      });
+      expect(result).toEqual(
+        expect.objectContaining({
+          status: "processing",
+          reason: "No matching encounters found",
+          dischargeSummaryFilePath: undefined,
+        })
+      );
     });
   });
 
   describe("when multiple encounters are provided", () => {
-    it("should return failed status and send slack notification", async () => {
+    it("should return the discharge disposition encounter and completed status", async () => {
+      const sourceUrl = faker.internet.url();
+      const sourceUrl2 = faker.internet.url();
+      const encounterId1 = faker.string.uuid();
+      const encounterId2 = faker.string.uuid();
+      const encounters: Encounter[] = [
+        makeEncounter({
+          id: encounterId1,
+          meta: {
+            source: sourceUrl,
+          },
+          extension: [],
+          hospitalization: {
+            dischargeDisposition: {
+              coding: [{ code: "home" }],
+            },
+          },
+        }),
+        makeEncounter({
+          id: encounterId2,
+          meta: {
+            source: sourceUrl2,
+          },
+          extension: [],
+        }),
+      ];
+
+      const result = await processDischargeData(encounters, cxId);
+
+      expect(result).toEqual(
+        expect.objectContaining({
+          status: "completed",
+          dischargeSummaryFilePath: sourceUrl,
+          reason: "Found a discharge disposition encounter",
+          encounterId: encounterId1,
+        })
+      );
+    });
+
+    it("should return failed status and send slack notification when multiple encounters have discharge disposition", async () => {
+      const encounterId1 = faker.string.uuid();
+      const encounterId2 = faker.string.uuid();
+      const encounters: Encounter[] = [
+        makeEncounter({
+          id: encounterId1,
+          hospitalization: {
+            dischargeDisposition: {
+              coding: [{ code: "home" }],
+            },
+          },
+        }),
+        makeEncounter({
+          id: encounterId2,
+          hospitalization: {
+            dischargeDisposition: {
+              coding: [{ code: "home" }],
+            },
+          },
+        }),
+      ];
+
+      sendSlackNotificationMock.mockImplementationOnce(() => Promise.resolve());
+      const result = await processDischargeData(encounters, cxId);
+      expect(result).toEqual(
+        expect.objectContaining({
+          status: "failed",
+          reason: "Multiple discharge encounters found for the same date",
+        })
+      );
+
+      expect(sendSlackNotificationMock).toHaveBeenCalledWith(
+        "Multiple discharge encounters found for the same date",
+        [encounterId1, encounterId2]
+      );
+    });
+
+    it("should return failed status and send slack notification with multiple encounters that don't have discharge disposition", async () => {
       const encounterId1 = faker.string.uuid();
       const encounterId2 = faker.string.uuid();
       const encounters: Encounter[] = [
@@ -59,52 +122,47 @@ describe("processDischargeData", () => {
         makeEncounter({ id: encounterId2 }),
       ];
 
-      getDischargeNotificationSlackUrlMock.mockReturnValueOnce(fakeSlackUrl);
-
-      sendToSlackMock.mockImplementationOnce(() => Promise.resolve());
-      const result = await processDischargeData(encounters, dischargeData, mockLog);
-
-      expect(result).toEqual({
-        discharge: dischargeData,
-        status: "failed",
-        reason: "Multiple encounters found for the same date",
-      });
-
-      expect(mockLog).toHaveBeenCalledWith(
-        `Multiple encounters found for the same date for encounters: ${JSON.stringify([
-          encounterId1,
-          encounterId2,
-        ])}`
+      sendSlackNotificationMock.mockImplementationOnce(() => Promise.resolve());
+      const result = await processDischargeData(encounters, cxId);
+      expect(result).toEqual(
+        expect.objectContaining({
+          status: "failed",
+          reason: "Multiple encounters found for the same date",
+        })
       );
 
-      expect(sendToSlackMock).toHaveBeenCalledWith(
-        {
-          subject: "Multiple encounters found for the same date",
-          message: JSON.stringify([encounterId1, encounterId2], null, 2),
-          emoji: ":peepo_hey:",
-        },
-        fakeSlackUrl
+      expect(sendSlackNotificationMock).toHaveBeenCalledWith(
+        "Multiple encounters found for the same date",
+        [encounterId1, encounterId2]
       );
     });
   });
 
   describe("when single encounter is provided", () => {
-    it("should return failed status when encounter has no source", async () => {
+    it("should return completed status with the source url for a discharge disposition encounter", async () => {
+      const sourceUrl = faker.internet.url();
       const encounters: Encounter[] = [
         makeEncounter({
           id: faker.string.uuid(),
-          meta: {},
-          extension: [],
+          meta: {
+            source: sourceUrl,
+          },
+          hospitalization: {
+            dischargeDisposition: {
+              coding: [{ code: "home" }],
+            },
+          },
         }),
       ];
 
-      const result = await processDischargeData(encounters, dischargeData, mockLog);
-
-      expect(result).toEqual({
-        discharge: dischargeData,
-        status: "failed",
-        reason: "Encounter resource missing source",
-      });
+      const result = await processDischargeData(encounters, cxId);
+      expect(result).toEqual(
+        expect.objectContaining({
+          status: "completed",
+          dischargeSummaryFilePath: sourceUrl,
+          reason: "Found a discharge disposition encounter",
+        })
+      );
     });
 
     it("should return completed status with the source url", async () => {
@@ -119,41 +177,14 @@ describe("processDischargeData", () => {
         }),
       ];
 
-      const result = await processDischargeData(encounters, dischargeData, mockLog);
-
-      expect(result).toEqual({
-        discharge: dischargeData,
-        status: "completed",
-        dischargeSummaryFilePath: sourceUrl,
-        reason: "Matching encounter datetime",
-      });
-    });
-
-    it("should return completed status with the source url and discharge disposition", async () => {
-      const sourceUrl = faker.internet.url();
-      const encounters: Encounter[] = [
-        makeEncounter({
-          id: faker.string.uuid(),
-          meta: {
-            source: sourceUrl,
-          },
-          extension: [],
-          hospitalization: {
-            dischargeDisposition: {
-              coding: [{ code: "home" }],
-            },
-          },
-        }),
-      ];
-
-      const result = await processDischargeData(encounters, dischargeData, mockLog);
-
-      expect(result).toEqual({
-        discharge: dischargeData,
-        status: "completed",
-        dischargeSummaryFilePath: sourceUrl,
-        reason: "Discharge disposition found in encounter",
-      });
+      const result = await processDischargeData(encounters, cxId);
+      expect(result).toEqual(
+        expect.objectContaining({
+          status: "completed",
+          dischargeSummaryFilePath: sourceUrl,
+          reason: "Matching encounter datetime",
+        })
+      );
     });
   });
 });
