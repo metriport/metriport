@@ -311,7 +311,7 @@ function getResourcesToWriteBack({
   const resourcesToWriteBack: Resource[] = [];
   for (const resource of resources) {
     const writeBackResourceType = getWriteBackResourceType(ehr, resource);
-    if (!writeBackResourceType || writeBackResourceType === "lab") continue;
+    if (!writeBackResourceType) continue;
     if (
       resource.resourceType === "DiagnosticReport" &&
       (!resource.result || resource.result.length < 1)
