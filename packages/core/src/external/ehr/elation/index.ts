@@ -673,7 +673,6 @@ class ElationApi {
         headers: { "Content-Type": "application/json" },
         debug,
       });
-
       return createdVital;
     } catch (error) {
       if (error instanceof BadRequestError || error instanceof NotFoundError) return;
