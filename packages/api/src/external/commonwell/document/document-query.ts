@@ -570,7 +570,7 @@ async function downloadDocsAndUpsertFHIR({
               // Download from CW and upload to S3
               uploadToS3 = async () => {
                 const initiator = await getCwInitiator({ id: patient.id, cxId }, facilityId);
-                const newFile = triggerDownloadDocument({
+                const newFile = await triggerDownloadDocument({
                   doc,
                   fileInfo,
                   initiator,
@@ -578,7 +578,7 @@ async function downloadDocsAndUpsertFHIR({
                   requestId,
                 });
 
-                if (forceDownload) {
+                if (forceDownload && newFile.size !== fileInfo.fileSize) {
                   // delete file renders (html, pdf)
                   const renderFilePaths = createDocumentRenderFilePaths(fileInfo.fileName);
                   await s3Utils.deleteFiles({
