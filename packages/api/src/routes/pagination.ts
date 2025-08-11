@@ -17,7 +17,7 @@ export function isPaginated(req: Request): boolean {
   return Object.keys(meta).length > 0;
 }
 
-export function getRequestMeta(req: Request, maxItemsPerPage = 500): Pagination {
+export function getRequestMeta(req: Request, maxItemsPerPage: number): Pagination {
   const parsed = createQueryMetaSchema(maxItemsPerPage).parse(req.query);
   return {
     ...parsed,
