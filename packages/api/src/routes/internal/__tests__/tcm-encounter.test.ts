@@ -27,6 +27,7 @@ describe("Create TCM Encounter Command", () => {
         latestEvent: "Admitted" as const,
         class: "Inpatient",
         clinicalInformation: {},
+        outreachStatus: "Not Started" as const,
         ...overrides,
       };
     }
