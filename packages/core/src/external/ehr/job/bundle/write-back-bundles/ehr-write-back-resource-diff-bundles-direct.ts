@@ -790,7 +790,7 @@ async function filterAndGroupObservations({
     {} as Record<string, Observation[]>
   );
   return Object.entries(groupedVitals).map(([chartDate, observations]) => [
-    new Date(chartDate),
+    buildDayjs(chartDate).toDate(),
     observations,
   ]);
 }
