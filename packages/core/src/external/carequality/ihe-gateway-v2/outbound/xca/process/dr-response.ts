@@ -1,31 +1,32 @@
-import dayjs from "dayjs";
 import {
+  DocumentReference,
   OutboundDocumentRetrievalReq,
   OutboundDocumentRetrievalResp,
   XCAGateway,
-  DocumentReference,
 } from "@metriport/ihe-gateway-sdk";
+import { errorToString, toArray } from "@metriport/shared";
+import { createXMLParser } from "@metriport/shared/common/xml-parser";
+import dayjs from "dayjs";
+import { createDocumentFilePath } from "../../../../../../domain/document/filename";
+import { Config } from "../../../../../../util/config";
+import { MetriportError } from "../../../../../../util/error/metriport-error";
+import { out } from "../../../../../../util/log";
+import { capture } from "../../../../../../util/notifications";
+import { sizeInBytes } from "../../../../../../util/string";
+import { stripBrackets, stripUrnPrefix } from "../../../../../../util/urn";
+import { S3Utils } from "../../../../../aws/s3";
+import { getCidReference } from "../mtom/cid";
+import { MtomAttachments, MtomPart } from "../mtom/parser";
+import { DrSamlClientResponse } from "../send/dr-requests";
+import { partialSuccessStatus, successStatus } from "./constants";
 import {
-  handleRegistryErrorResponse,
-  handleHttpErrorResponse,
   handleEmptyResponse,
+  handleHttpErrorResponse,
+  handleRegistryErrorResponse,
   handleSchemaErrorResponse,
 } from "./error";
-import { createXMLParser } from "@metriport/shared/common/xml-parser";
-import { parseFileFromString, parseFileFromBuffer } from "./parse-file-from-string";
-import { stripUrnPrefix, stripBrackets } from "../../../../../../util/urn";
-import { DrSamlClientResponse } from "../send/dr-requests";
-import { MtomAttachments, MtomPart } from "../mtom/parser";
-import { successStatus, partialSuccessStatus } from "./constants";
-import { S3Utils } from "../../../../../aws/s3";
-import { Config } from "../../../../../../util/config";
-import { createDocumentFilePath } from "../../../../../../domain/document/filename";
-import { MetriportError } from "../../../../../../util/error/metriport-error";
-import { getCidReference } from "../mtom/cid";
-import { out } from "../../../../../../util/log";
-import { errorToString, toArray } from "@metriport/shared";
-import { iti39Schema, DocumentResponse } from "./schema";
-import { capture } from "../../../../../../util/notifications";
+import { parseFileFromBuffer, parseFileFromString } from "./parse-file-from-string";
+import { DocumentResponse, iti39Schema } from "./schema";
 
 const { log } = out("DR Processing");
 
@@ -105,6 +106,16 @@ async function processDocumentReference({
       mimeType
     );
     const fileInfo = await s3Utils.getFileInfoFromS3(filePath, bucket);
+
+    const newFileSize = sizeInBytes(JSON.stringify(decodedBytes));
+    if (fileInfo.size && fileInfo.size != newFileSize) {
+      log(
+        `Size mismatch for file ${filePath}. Was - ${fileInfo.size}, now - ${newFileSize}. Deleting rendered files`
+      );
+      const renderedHtmlFilePath = `${filePath}.html`;
+      const renderedPdfFilePath = `${filePath}.pdf`;
+      await s3Utils.deleteFiles({ bucket, keys: [renderedHtmlFilePath, renderedPdfFilePath] });
+    }
 
     await s3Utils.uploadFile({
       bucket,
