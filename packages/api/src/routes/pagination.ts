@@ -9,11 +9,11 @@ import {
   PaginationToItem,
 } from "../command/pagination";
 
-export const defaultItemsPerPage = 50;
+const defaultItemsPerPage = 50;
 
 // TODO 483 remove this once pagination is fully rolled out
-export function isPaginated(req: Request, maxItemsPerPage = defaultItemsPerPage): boolean {
-  const meta = createQueryMetaSchema(maxItemsPerPage).parse(req.query);
+export function isPaginated(req: Request): boolean {
+  const meta = createQueryMetaSchema().parse(req.query);
   return Object.keys(meta).length > 0;
 }
 
