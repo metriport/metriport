@@ -1,7 +1,7 @@
 import { Bundle, BundleEntry } from "@medplum/fhirtypes";
 import { Config } from "../../../../util/config";
 import { out } from "../../../../util/log";
-import { S3Utils } from "../../../aws/s3";
+import { executeWithRetriesS3, S3Utils } from "../../../aws/s3";
 import { buildLatestConversionBundleFileName } from "../../file/file-names";
 
 /**
@@ -31,7 +31,10 @@ export async function getBundle({
     log(`No bundle found`);
     return undefined;
   }
-  const fileContents = await s3Utils.getFileContentsAsString(bucketName, fileName);
+
+  const fileContents = await executeWithRetriesS3(async () =>
+    s3Utils.getFileContentsAsString(bucketName, fileName)
+  );
   const bundle: Bundle = JSON.parse(fileContents);
   log(`Found bundle with ${bundle.entry?.length} entries`);
   return bundle;
