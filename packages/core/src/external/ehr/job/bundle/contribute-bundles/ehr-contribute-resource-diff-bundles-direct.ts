@@ -1,5 +1,5 @@
-import { Patient, Reference, Resource } from "@medplum/fhirtypes";
-import { BadRequestError, errorToString, NotFoundError, sleep } from "@metriport/shared";
+import { Medication, Patient, Reference, Resource } from "@medplum/fhirtypes";
+import { BadRequestError, errorToString, NotFoundError, sleep, uuidv7 } from "@metriport/shared";
 import { createUuidFromText } from "@metriport/shared/common/uuid";
 import { createBundleFromResourceList } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { EhrSource } from "@metriport/shared/interface/external/ehr/source";
@@ -171,6 +171,7 @@ async function hydrateEhrOnlyResources({
   const fetchedResourceIds = new Set([
     ...hydratedEhrOnlyResources.flatMap(resource => resource.id ?? []),
   ]);
+  dangerouslyHydrateMedicationStatement(hydratedEhrOnlyResources);
   for (let i = 0; i < hydrateEhrOnlyResourceAttempts; i++) {
     const { missingReferences } = getReferencesFromResources({
       resourcesToCheckRefs: hydratedEhrOnlyResources,
@@ -227,6 +228,24 @@ async function hydrateEhrOnlyResources({
     }
   }
   return hydratedEhrOnlyResources;
+}
+
+function dangerouslyHydrateMedicationStatement(resources: Resource[]) {
+  for (const resource of resources) {
+    if (resource.resourceType === "MedicationStatement" && resource.medicationCodeableConcept) {
+      const medicationId = uuidv7();
+      const newMedication: Medication = {
+        resourceType: "Medication",
+        id: medicationId,
+        code: resource.medicationCodeableConcept,
+        status: "active",
+      };
+      resource.medicationReference = {
+        reference: `Medication/${medicationId}`,
+      };
+      resources.push(newMedication);
+    }
+  }
 }
 
 function prepareEhrOnlyResourcesForContribution(
