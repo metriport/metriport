@@ -7,7 +7,7 @@ import { patientImportJobStatus } from "./status";
 //   gender: z.string().refine(normalizeGenderSafe, { message: "Invalid gender" }),
 //   firstname: z.string().min(1, { message: "First name must be defined" }),
 //   lastname: z.string().min(1, { message: "Last name must be defined" }),
-//   zip: z.string().refine(normalizeZipCodeNewSafe, { message: "Invalid zip" }),
+//   zip: z.string().refine(normalizeZipCode, { message: "Invalid zip" }),
 //   city: z.string().min(1, { message: "City must be defined" }),
 //   state: z
 //     .string()

@@ -1,76 +1,76 @@
 import { faker } from "@faker-js/faker";
-import { normalizeZipCodeNew, normalizeZipCodeNewSafe } from "../zip";
+import { normalizeZipCodeOrThrow, normalizeZipCode } from "../zip";
 
 function getFiveDigitZip() {
   return faker.number.int({ min: 10000, max: 99999 }).toString();
 }
 
 describe("zip", () => {
-  describe("normalizeZipCodeNew", () => {
+  describe("normalizeZipCodeOrThrow", () => {
     it("returns the result of the normalizeFn param", () => {
       const expectedOutput = getFiveDigitZip();
       const normalizeFn = jest.fn(() => expectedOutput);
-      expect(normalizeZipCodeNew("54321", normalizeFn)).toBe(expectedOutput);
+      expect(normalizeZipCodeOrThrow("54321", normalizeFn)).toBe(expectedOutput);
     });
 
     it("should throw an error if zip is an empty string", () => {
       const normalizeFn = jest.fn(() => undefined);
-      expect(() => normalizeZipCodeNew("54321", normalizeFn)).toThrow();
+      expect(() => normalizeZipCodeOrThrow("54321", normalizeFn)).toThrow();
     });
   });
 
-  describe("safe normalizeZipCodeNewSafe", () => {
+  describe("safe normalizeZipCode", () => {
     it("should return undefined when it gets empty string", () => {
       const input = "";
       const expectedOutput = undefined;
-      expect(normalizeZipCodeNewSafe(input)).toBe(expectedOutput);
+      expect(normalizeZipCode(input)).toBe(expectedOutput);
     });
 
     it("should return undefined when it gets space", () => {
       const input = " ";
       const expectedOutput = undefined;
-      expect(normalizeZipCodeNewSafe(input)).toBe(expectedOutput);
+      expect(normalizeZipCode(input)).toBe(expectedOutput);
     });
 
     it("should handle 5 digits", () => {
       const input = getFiveDigitZip();
       const expectedOutput = input;
-      expect(normalizeZipCodeNewSafe(input)).toBe(expectedOutput);
+      expect(normalizeZipCode(input)).toBe(expectedOutput);
     });
 
     it("should trim input prefix", () => {
       const expectedOutput = getFiveDigitZip();
       const input = " " + expectedOutput;
-      expect(normalizeZipCodeNewSafe(input)).toBe(expectedOutput);
+      expect(normalizeZipCode(input)).toBe(expectedOutput);
     });
 
     it("should trim input suffix", () => {
       const expectedOutput = getFiveDigitZip();
       const input = expectedOutput + " ";
-      expect(normalizeZipCodeNewSafe(input)).toBe(expectedOutput);
+      expect(normalizeZipCode(input)).toBe(expectedOutput);
     });
 
     it("should return undefined for zip codes that are too short", () => {
       const input = "12";
-      expect(normalizeZipCodeNewSafe(input)).toBeUndefined();
+      expect(normalizeZipCode(input)).toBeUndefined();
     });
 
     it("should handle short zip codes", () => {
       const input = "123";
       const expectedOutput = "00123";
-      expect(normalizeZipCodeNewSafe(input)).toBe(expectedOutput);
+      expect(normalizeZipCode(input)).toBe(expectedOutput);
     });
 
     it("should return padded ZIP+4 format when contains dash at position 4", () => {
       const input = "1234-6677";
       const expectedOutput = "01234-6677";
-      expect(normalizeZipCodeNewSafe(input)).toBe(expectedOutput);
+      expect(normalizeZipCode(input)).toBe(expectedOutput);
     });
 
     it("should return full ZIP+4 format when zip code length is 10", () => {
       const input = "12345-6677";
       const expectedOutput = "12345-6677";
-      expect(normalizeZipCodeNewSafe(input)).toBe(expectedOutput);
+      expect(normalizeZipCode(input)).toBe(expectedOutput);
     });
 
     describe("invalid input handling", () => {
@@ -83,7 +83,7 @@ describe("zip", () => {
 
       for (const { input, description } of invalidInputTests) {
         it(`should return undefined for ${description}`, () => {
-          expect(normalizeZipCodeNewSafe(input)).toBeUndefined();
+          expect(normalizeZipCode(input)).toBeUndefined();
         });
       }
     });
@@ -91,22 +91,22 @@ describe("zip", () => {
     it("should handle 9-digit ZIP codes without hyphen by adding hyphen", () => {
       const input = "123456677";
       const expectedOutput = "12345-6677";
-      expect(normalizeZipCodeNewSafe(input)).toBe(expectedOutput);
+      expect(normalizeZipCode(input)).toBe(expectedOutput);
     });
 
     it("should handle partial ZIP+4 with 3 digits before dash and full plus4", () => {
       const input = "123-1234";
       const expectedOutput = "00123-1234";
-      expect(normalizeZipCodeNewSafe(input)).toBe(expectedOutput);
+      expect(normalizeZipCode(input)).toBe(expectedOutput);
     });
 
     it("should handle ZIP+4 with empty plus4 part", () => {
       const input = "12345-";
       const expectedOutput = "12345";
-      expect(normalizeZipCodeNewSafe(input)).toBe(expectedOutput);
+      expect(normalizeZipCode(input)).toBe(expectedOutput);
     });
 
-    describe("ZIP+4 format handling", () => {
+    describe("full ZIP+4 format handling", () => {
       const fullPlus4Tests = [
         {
           input: "1234-6677",
@@ -125,6 +125,14 @@ describe("zip", () => {
         },
       ];
 
+      for (const { input, expectedOutput, description } of fullPlus4Tests) {
+        it(`should preserve full ZIP+4 format for ${description}`, () => {
+          expect(normalizeZipCode(input)).toBe(expectedOutput);
+        });
+      }
+    });
+
+    describe("partial ZIP+4 format handling", () => {
       const partialPlus4Tests = [
         {
           input: "12345-1",
@@ -146,15 +154,9 @@ describe("zip", () => {
         { input: "1234-123", expectedOutput: "01234", description: "short ZIP with 3-digit plus4" },
       ];
 
-      for (const { input, expectedOutput, description } of fullPlus4Tests) {
-        it(`should preserve full ZIP+4 format for ${description}`, () => {
-          expect(normalizeZipCodeNewSafe(input)).toBe(expectedOutput);
-        });
-      }
-
       for (const { input, expectedOutput, description } of partialPlus4Tests) {
         it(`should return main ZIP only for ${description}`, () => {
-          expect(normalizeZipCodeNewSafe(input)).toBe(expectedOutput);
+          expect(normalizeZipCode(input)).toBe(expectedOutput);
         });
       }
     });
@@ -167,7 +169,7 @@ describe("zip", () => {
 
       for (const { input, expectedOutput, description } of lengthTests) {
         it(`should truncate ${description} to first 5 digits`, () => {
-          expect(normalizeZipCodeNewSafe(input)).toBe(expectedOutput);
+          expect(normalizeZipCode(input)).toBe(expectedOutput);
         });
       }
     });
@@ -176,7 +178,7 @@ describe("zip", () => {
       const tests = [{ input: "2468", expectedOutput: "02468" }];
       for (const { input, expectedOutput } of tests) {
         it(`should return ${expectedOutput} when input is ${input}`, () => {
-          expect(normalizeZipCodeNewSafe(input)).toBe(expectedOutput);
+          expect(normalizeZipCode(input)).toBe(expectedOutput);
         });
       }
     });

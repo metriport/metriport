@@ -15,7 +15,7 @@ import {
   normalizeGender,
   normalizePhoneNumber,
   normalizeUSStateForAddress,
-  normalizeZipCodeNew,
+  normalizeZipCodeOrThrow,
   toTitleCase,
   USStateForAddress,
 } from "@metriport/shared";
@@ -412,7 +412,7 @@ export function mapCsvPatientToMetriportPatient(csvPatient: {
 
   let zip: string | undefined = undefined;
   try {
-    zip = normalizeZipCodeNew(csvPatient.zip ?? "");
+    zip = normalizeZipCodeOrThrow(csvPatient.zip ?? "");
     if (!zip) throw new Error(`Missing zip`);
   } catch (error) {
     errors.push({ field: "zip", error: error instanceof Error ? error.message : String(error) });

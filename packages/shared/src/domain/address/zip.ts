@@ -1,14 +1,11 @@
-export function normalizeZipCodeNew(
-  zipCode: string,
-  normalizeFn = normalizeZipCodeNewSafe
-): string {
+export function normalizeZipCodeOrThrow(zipCode: string, normalizeFn = normalizeZipCode): string {
   const zipOrUndefined = normalizeFn(zipCode);
   if (!zipOrUndefined) throw new Error("Invalid Zip.");
   return zipOrUndefined;
 }
 
 // TODO Should prob look into something that indicates ranges of possible values, like https://www.fincen.gov/sites/default/files/shared/us_state_territory_zip_codes.pdf
-export function normalizeZipCodeNewSafe(zipCode: string): string | undefined {
+export function normalizeZipCode(zipCode: string): string | undefined {
   const trimmedZip = zipCode.trim();
 
   if (trimmedZip === "") return undefined;

@@ -3,7 +3,7 @@ import {
   errorToString,
   normalizeCity as normalizeCityFromShared,
   normalizeUSStateForAddressSafe,
-  normalizeZipCodeNewSafe,
+  normalizeZipCode,
   toTitleCase,
   USStateForAddress,
 } from "@metriport/shared";
@@ -131,7 +131,7 @@ export function parseAddress(
 
   let zip: string | undefined = undefined;
   try {
-    zip = normalizeZipCodeNewSafe(csvPatient[zipName] ?? "");
+    zip = normalizeZipCode(csvPatient[zipName] ?? "");
     if (!zip) throw new BadRequestError(`Missing ${zipName}`);
     foundAtLeastOneProperty = true;
   } catch (error) {

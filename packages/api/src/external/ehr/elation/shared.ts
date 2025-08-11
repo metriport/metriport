@@ -10,7 +10,7 @@ import {
   normalizeEmailNewSafe,
   normalizePhoneNumberSafe,
   normalizeUSStateForAddress,
-  normalizeZipCodeNew,
+  normalizeZipCodeOrThrow,
   NotFoundError,
   toTitleCase,
 } from "@metriport/shared";
@@ -52,7 +52,7 @@ export function createAddresses(patient: ElationPatient): Address[] {
   if (!patient.address.state) throw new BadRequestError("Patient has no state");
   const state = normalizeUSStateForAddress(patient.address.state);
   if (!patient.address.zip) throw new BadRequestError("Patient has no zip");
-  const zip = normalizeZipCodeNew(patient.address.zip);
+  const zip = normalizeZipCodeOrThrow(patient.address.zip);
   return [
     {
       addressLine1,

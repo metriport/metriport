@@ -19,7 +19,7 @@ import {
   normalizeEmailNewSafe,
   normalizePhoneNumberSafe,
   normalizeUSStateForAddressSafe,
-  normalizeZipCodeNewSafe,
+  normalizeZipCode,
   normalizeCountrySafe,
   normalizedCountryUsa,
   USState,
@@ -296,7 +296,7 @@ export function normalizeAddress({
         }) ?? [],
     city: city?.trim().toLowerCase() ?? "",
     state: normalizeUSStateForAddressSafe(state ?? "")?.toLowerCase() ?? "",
-    zip: normalizeZipCodeNewSafe(zip ?? "") ?? "",
+    zip: normalizeZipCode(zip ?? "") ?? "",
     country: (normalizeCountrySafe(country ?? "") ?? normalizedCountryUsa).toLowerCase(),
   };
 }

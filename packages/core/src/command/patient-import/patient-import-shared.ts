@@ -97,7 +97,7 @@ export type GenericObject = { [key: string]: string | undefined };
 //         ...(patient.addressline2 ? { addressLine2: toTitleCase(patient.addressline2) } : undefined),
 //         city: toTitleCase(patient.city),
 //         state: normalizeUSStateForAddress(patient.state),
-//         zip: normalizeZipCodeNew(patient.zip),
+//         zip: normalizeZipCodeOrThrow(patient.zip),
 //         country: "USA",
 //       },
 //     ],

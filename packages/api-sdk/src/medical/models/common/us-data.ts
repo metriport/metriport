@@ -1,5 +1,5 @@
 import {
-  normalizeZipCodeNewSafe,
+  normalizeZipCode,
   USState as USStateShared,
   USTerritory as USTerritoryShared,
 } from "@metriport/shared";
@@ -22,7 +22,7 @@ export const usTerritorySchema = z.preprocess(
 );
 
 export const usZipSchema = z.string().transform((val, ctx) => {
-  const normalized = normalizeZipCodeNewSafe(val);
+  const normalized = normalizeZipCode(val);
   if (!normalized) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
