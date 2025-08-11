@@ -1,7 +1,8 @@
 import { z } from "zod";
-import { queryMetaSchema } from "../../pagination";
 import { buildDayjs } from "@metriport/shared/common/date";
+import { createQueryMetaSchema } from "@metriport/shared";
 
+const tcmEncounterMaxPageSize = 2500;
 const stringOrNullSchema = z.union([z.string(), z.undefined(), z.null()]);
 
 export const outreachStatuses = ["Not Started", "Attempted", "Completed"] as const;
@@ -56,7 +57,7 @@ const tcmEncounterQuerySchema = z
   .object({
     after: z.string().datetime().optional(),
   })
-  .and(queryMetaSchema);
+  .and(createQueryMetaSchema(tcmEncounterMaxPageSize));
 
 export const tcmEncounterListQuerySchema = tcmEncounterQuerySchema;
 export type TcmEncounterListQuery = z.infer<typeof tcmEncounterListQuerySchema>;

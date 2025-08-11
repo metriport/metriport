@@ -20,6 +20,7 @@ import {
   matchPatient,
 } from "../../command/medical/patient/get-patient";
 import { createPatientImportJob } from "../../command/medical/patient/patient-import/create";
+import { createSampleTcmEncounters } from "../../command/medical/tcm-encounter/create-sample-tcm-encounter";
 import { Pagination } from "../../command/pagination";
 import { getSandboxPatientLimitForCx } from "../../domain/medical/get-patient-limit";
 import { isPatientMappingSource, PatientMappingSource } from "../../domain/patient-mapping";
@@ -38,7 +39,6 @@ import {
 import { fromCreateResponseToDto, PatientImportDto } from "./dtos/patient-import";
 import { dtoFromModel, PatientDTO } from "./dtos/patientDTO";
 import { schemaCreateToPatientData, schemaDemographicsToPatientData } from "./schemas/patient";
-import { createSampleTcmEncounters } from "../../command/medical/tcm-encounter/create-sample-tcm-encounter";
 
 dayjs.extend(duration);
 
