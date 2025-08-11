@@ -5,11 +5,11 @@ import { executeWithRetriesS3, S3Utils } from "../../../aws/s3";
 import { buildLatestConversionBundleFileName } from "../../file/file-names";
 
 /**
- * Returns the bundle with Surescripts data for a given patient.
+ * Returns the bundle with Quest data for a given patient.
  *
- * @param cxId - The ID of the care experience.
- * @param patientId - The ID of the patient.
- * @returns The bundle with Surescripts data.
+ * @param cxId - UUID of the customer.
+ * @param patientId - UUID of the patient.
+ * @returns The bundle with Quest data, or undefined if no Quest data
  */
 export async function getBundle({
   cxId,
@@ -18,10 +18,10 @@ export async function getBundle({
   cxId: string;
   patientId: string;
 }): Promise<Bundle | undefined> {
-  const { log } = out(`ss.getBundle - cx ${cxId}, pat ${patientId}`);
-  const bucketName = Config.getPharmacyConversionBucketName();
+  const { log } = out(`quest.getBundle - cx ${cxId}, pat ${patientId}`);
+  const bucketName = Config.getLabConversionBucketName();
   if (!bucketName) {
-    log(`No pharmacy conversion bucket name found, skipping`);
+    log(`No lab conversion bucket name found, skipping`);
     return undefined;
   }
   const s3Utils = new S3Utils(Config.getAWSRegion());
@@ -31,6 +31,7 @@ export async function getBundle({
     log(`No bundle found`);
     return undefined;
   }
+
   const fileContents = await executeWithRetriesS3(async () =>
     s3Utils.getFileContentsAsString(bucketName, fileName)
   );
@@ -39,6 +40,10 @@ export async function getBundle({
   return bundle;
 }
 
+/**
+ * Retrieves only the bundle entries from the full Quest conversion bundle for the patient
+ * (all their Quest data deduplicated into one bundle), or an empty array if no data.
+ */
 export async function getBundleResources({
   cxId,
   patientId,
