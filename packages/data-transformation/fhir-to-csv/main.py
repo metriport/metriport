@@ -4,6 +4,7 @@ import shutil
 import json
 import ndjson
 import snowflake.connector
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from src.parseNdjsonBundle import parseNdjsonBundle
 from src.setupSnowflake.setupSnowflake import (
     generate_table_names_and_create_table_statements,
@@ -28,6 +29,14 @@ env = Environment(os.getenv("ENV") or Environment.DEV)
 dwh = DWH(os.getenv("DWH") or DWH.SNOWFLAKE)
 
 s3_client = boto3.client("s3")
+
+def upload_file_to_s3(file: str, output_bucket: str, output_file_key: str) -> tuple[str, str, str]:
+    """Upload a single file to S3 and return the result tuple."""
+    table_name = file.split("/")[-1].replace(".csv", "")
+    with open(file, "rb") as f:
+        print(f"Uploading file {file} to {output_bucket}/{output_file_key}")
+        s3_client.upload_fileobj(f, output_bucket, output_file_key)
+    return (output_bucket, output_file_key, table_name)
 
 def transform_and_upload_data(
     input_bucket: str,
@@ -73,13 +82,22 @@ def transform_and_upload_data(
 
     output_bucket_and_file_keys_and_table_names = []
     output_file_prefix = create_output_file_prefix(dwh, transform_name, cx_id, patient_id, job_id)
-    for file in local_output_files:
-        output_file_key = f"{output_file_prefix}/{file.replace('/', '_')}"
-        table_name = file.split("/")[-1].replace(".csv", "")
-        with open(file, "rb") as f:
-            print(f"Uploading file {file} to {output_bucket}/{output_file_key}")
-            s3_client.upload_fileobj(f, output_bucket, output_file_key)
-        output_bucket_and_file_keys_and_table_names.append((output_bucket, output_file_key, table_name))
+    
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        future_to_file = {}
+        for file in local_output_files:
+            output_file_key = f"{output_file_prefix}/{file.replace('/', '_')}"
+            future = executor.submit(upload_file_to_s3, file, output_bucket, output_file_key)
+            future_to_file[future] = file
+        
+        for future in as_completed(future_to_file):
+            file = future_to_file[future]
+            try:
+                result = future.result()
+                output_bucket_and_file_keys_and_table_names.append(result)
+            except Exception as e:
+                print(f"Error uploading file {file}: {e}")
+                raise e
 
     print(f"Cleaning up local files in {local_cx_path}")
     shutil.rmtree(local_cx_path)
@@ -124,28 +142,29 @@ def handler(event: dict, context: dict):
         print("No files were uploaded")
         exit(0)
 
-    table_defs = generate_table_names_and_create_table_statements(patient_id, job_id)
-    
-    print(f">>> Uploading data into Snowflake - {cx_id}, patient_id {patient_id}, job_id {job_id}")
-    with snowflake.connector.connect(**get_snowflake_credentials(snowflake_creds)) as snowflake_conn:
-        database_name = format_database_name(cx_id)
-        snowflake_conn.cursor().execute(f"CREATE DATABASE IF NOT EXISTS {database_name}")
-        snowflake_conn.cursor().execute(f"USE DATABASE {database_name}")
-        snowflake_conn.cursor().execute("USE SCHEMA PUBLIC")
+    # TODO: ENG-813 Remove this and the functions it is calling
+    # table_defs = generate_table_names_and_create_table_statements(patient_id, job_id)
+    # 
+    # print(f">>> Uploading data into Snowflake - {cx_id}, patient_id {patient_id}, job_id {job_id}")
+    # with snowflake.connector.connect(**get_snowflake_credentials(snowflake_creds)) as snowflake_conn:
+    #     database_name = format_database_name(cx_id)
+    #     snowflake_conn.cursor().execute(f"CREATE DATABASE IF NOT EXISTS {database_name}")
+    #     snowflake_conn.cursor().execute(f"USE DATABASE {database_name}")
+    #     snowflake_conn.cursor().execute("USE SCHEMA PUBLIC")
 
-        set_patient_status(snowflake_conn, cx_id, patient_id, "processing")
+    #     set_patient_status(snowflake_conn, cx_id, patient_id, "processing")
 
-        output_file_prefix = create_output_file_prefix(dwh, transform_name, cx_id, patient_id, job_id)
-        create_stage(snowflake_conn, cx_id, patient_id, job_id, output_bucket, output_file_prefix)
-        create_job_tables(snowflake_conn, cx_id, patient_id, job_id, table_defs)
-        for output_bucket, output_file_key, table_name in output_bucket_and_file_keys_and_table_names:
-            copy_into_job_table(snowflake_conn, cx_id, patient_id, job_id, output_bucket, output_file_key, table_name)
-        drop_stage(snowflake_conn, cx_id, patient_id, job_id)
+    #     output_file_prefix = create_output_file_prefix(dwh, transform_name, cx_id, patient_id, job_id)
+    #     create_stage(snowflake_conn, cx_id, patient_id, job_id, output_bucket, output_file_prefix)
+    #     create_job_tables(snowflake_conn, cx_id, patient_id, job_id, table_defs)
+    #     for output_bucket, output_file_key, table_name in output_bucket_and_file_keys_and_table_names:
+    #         copy_into_job_table(snowflake_conn, cx_id, patient_id, job_id, output_bucket, output_file_key, table_name)
+    #     drop_stage(snowflake_conn, cx_id, patient_id, job_id)
 
-        rebuild_patient = input_bundle is None or input_bundle == ""
-        copy_into_resource_table(snowflake_conn, cx_id, patient_id, job_id, table_defs, rebuild_patient)
+    #     rebuild_patient = input_bundle is None or input_bundle == ""
+    #     copy_into_resource_table(snowflake_conn, cx_id, patient_id, job_id, table_defs, rebuild_patient)
 
-        set_patient_status(snowflake_conn, cx_id, patient_id, "completed")
+    #     set_patient_status(snowflake_conn, cx_id, patient_id, "completed")
     print(f">>> Done processing {cx_id}, patient_id {patient_id}, job_id {job_id}")
 
 if __name__ == "__main__":
