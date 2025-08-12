@@ -52,6 +52,13 @@ export async function startCreateResourceDiffBundlesJobsAcrossEhrs({
         ehrPatientId: patientMapping.externalId,
         requestId,
       }).catch(processAsyncError(`${EhrSources.elation} startCreateResourceDiffBundlesJobAtEhr`));
+    } else if (patientMapping.source === EhrSources.healthie) {
+      startCreateResourceDiffBundlesJobAtEhr({
+        ehr: EhrSources.healthie,
+        cxId,
+        ehrPatientId: patientMapping.externalId,
+        requestId,
+      }).catch(processAsyncError(`${EhrSources.healthie} startCreateResourceDiffBundlesJobAtEhr`));
     }
   }
 }
