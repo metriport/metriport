@@ -85,7 +85,6 @@ export async function contributeResourceDiffBundle({
       });
     }
   }
-  if (ehr === EhrSources.healthie) return;
   await handleDataContribution({
     requestId: uuidv7(),
     patient: metriportPatient,

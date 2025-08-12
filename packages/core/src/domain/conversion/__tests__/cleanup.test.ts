@@ -1,9 +1,10 @@
 import fs from "fs";
 import path from "path";
 import {
+  GREATER_THAN,
   LESS_THAN,
   cleanUpTranslationCode,
-  replaceLessThanChar,
+  replaceXmlTagChars,
   xmlTranslationCodeRegex,
 } from "../cleanup";
 
@@ -31,32 +32,64 @@ describe("cleanUpTranslationCode", () => {
   });
 });
 
-describe("replaceLessThanChar", () => {
+describe("replaceXmlTagChars", () => {
   test("should replace '<' with spaces around it", () => {
-    expect(replaceLessThanChar("A < B")).toBe(`A ${LESS_THAN} B`);
+    expect(replaceXmlTagChars(createTestCase("A < B"))).toBe(createTestCase(`A ${LESS_THAN} B`));
   });
 
   test("should replace '<' before a digit", () => {
-    expect(replaceLessThanChar("A < 5")).toBe(`A ${LESS_THAN} 5`);
+    expect(replaceXmlTagChars(createTestCase("A < 5"))).toBe(createTestCase(`A ${LESS_THAN} 5`));
   });
 
   test("should replace '<' without a space before it", () => {
-    expect(replaceLessThanChar("A<5")).toBe(`A ${LESS_THAN} 5`);
+    expect(replaceXmlTagChars(createTestCase("A<5"))).toBe(createTestCase(`A${LESS_THAN}5`));
   });
 
   test("should replace '<' with a space after it", () => {
-    expect(replaceLessThanChar("A< 5")).toBe(`A ${LESS_THAN} 5`);
-  });
-
-  test("should not replace '<' before a letter", () => {
-    expect(replaceLessThanChar("A<B")).toBe("A<B");
+    expect(replaceXmlTagChars(createTestCase("A< 5"))).toBe(createTestCase(`A${LESS_THAN} 5`));
   });
 
   test("should not change text with no '<'", () => {
-    expect(replaceLessThanChar("No changes needed")).toBe("No changes needed");
+    expect(replaceXmlTagChars(createTestCase("No changes needed"))).toBe(
+      createTestCase("No changes needed")
+    );
   });
 
   test("should not replace '<' if it's part of an HTML tag", () => {
-    expect(replaceLessThanChar("<div>")).toBe("<div>");
+    expect(replaceXmlTagChars(createTestCase("<div>"))).toBe(createTestCase("<div>"));
+  });
+
+  test("should replace '>' with spaces around it", () => {
+    expect(replaceXmlTagChars(createTestCase("A > B"))).toBe(createTestCase(`A ${GREATER_THAN} B`));
+  });
+
+  test("should replace '>' before a digit", () => {
+    expect(replaceXmlTagChars(createTestCase("A > 5"))).toBe(createTestCase(`A ${GREATER_THAN} 5`));
+  });
+
+  test("should replace '>' without a space before it", () => {
+    expect(replaceXmlTagChars(createTestCase("A>5"))).toBe(createTestCase(`A${GREATER_THAN}5`));
+  });
+
+  test("should replace '>' with a space after it", () => {
+    expect(replaceXmlTagChars(createTestCase("A> 5"))).toBe(createTestCase(`A${GREATER_THAN} 5`));
+  });
+
+  test("should not change text with no '>'", () => {
+    expect(replaceXmlTagChars(createTestCase("No changes needed here"))).toBe(
+      createTestCase("No changes needed here")
+    );
+  });
+
+  test("should not replace '>' if it's part of an HTML tag", () => {
+    expect(replaceXmlTagChars(createTestCase("<div>"))).toBe(createTestCase("<div>"));
+  });
+
+  test("expectedly does not handle both '<' and '>' in the same text", () => {
+    expect(replaceXmlTagChars(createTestCase("A < B > C"))).toBe(createTestCase(`A < B > C`));
   });
 });
+
+function createTestCase(str: string): string {
+  return `<ClinicalDocument>${str}</ClinicalDocument>`;
+}

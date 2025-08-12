@@ -70,6 +70,7 @@ router.get(
       getTotalCount: async () => {
         return await getTcmEncountersCount({ cxId, after: query.after });
       },
+      maxItemsPerPage: 2500,
     });
 
     return res.status(httpStatus.OK).json({

@@ -325,11 +325,11 @@ export class Config {
   static getQuestConversionLambdaName(): string {
     return getEnvVarOrFail("QUEST_CONVERT_RESPONSE_LAMBDA_NAME");
   }
-  static getQuestReplicaBucketName(): string {
-    return getEnvVarOrFail("QUEST_REPLICA_BUCKET_NAME");
+  static getQuestReplicaBucketName(): string | undefined {
+    return getEnvVar("QUEST_REPLICA_BUCKET_NAME");
   }
-  static getLabConversionBucketName(): string {
-    return getEnvVarOrFail("LAB_CONVERSION_BUCKET_NAME");
+  static getLabConversionBucketName(): string | undefined {
+    return getEnvVar("LAB_CONVERSION_BUCKET_NAME");
   }
 
   static getAthenaHealthEnv(): string | undefined {

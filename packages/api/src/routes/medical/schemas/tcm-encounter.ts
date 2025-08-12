@@ -1,8 +1,11 @@
 import { z } from "zod";
-import { queryMetaSchema } from "../../pagination";
 import { buildDayjs } from "@metriport/shared/common/date";
+import { createQueryMetaSchema } from "@metriport/shared";
 
+const tcmEncounterMaxPageSize = 2500;
 const stringOrNullSchema = z.union([z.string(), z.undefined(), z.null()]);
+
+export const outreachStatuses = ["Not Started", "Attempted", "Completed"] as const;
 
 export const tcmEncounterBaseSchema = z.strictObject({
   patientId: z.string().uuid(),
@@ -19,6 +22,7 @@ export const tcmEncounterBaseSchema = z.strictObject({
     .datetime()
     .transform(val => buildDayjs(val).toDate())
     .nullish(),
+  outreachStatus: z.enum(outreachStatuses).default("Not Started"),
   clinicalInformation: z.record(z.unknown()).optional().default({}),
   freetextNote: z.string().optional(),
   dischargeSummaryPath: z.string().optional(),
@@ -27,12 +31,14 @@ export const tcmEncounterBaseSchema = z.strictObject({
 export const tcmEncounterCreateSchema = tcmEncounterBaseSchema.extend({
   cxId: z.string().uuid(),
   id: z.string().uuid().optional(),
+  outreachStatus: z.enum(outreachStatuses).optional(),
 });
 export type TcmEncounterCreate = z.infer<typeof tcmEncounterCreateSchema>;
 
 export const tcmEncounterUpsertSchema = tcmEncounterBaseSchema.extend({
   id: z.string().uuid(),
   cxId: z.string().uuid(),
+  outreachStatus: z.enum(outreachStatuses).optional(),
 });
 export type TcmEncounterUpsert = z.infer<typeof tcmEncounterUpsertSchema>;
 
@@ -51,7 +57,7 @@ const tcmEncounterQuerySchema = z
   .object({
     after: z.string().datetime().optional(),
   })
-  .and(queryMetaSchema);
+  .and(createQueryMetaSchema(tcmEncounterMaxPageSize));
 
 export const tcmEncounterListQuerySchema = tcmEncounterQuerySchema;
 export type TcmEncounterListQuery = z.infer<typeof tcmEncounterListQuerySchema>;
