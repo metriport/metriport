@@ -529,7 +529,14 @@ async function downloadDocsAndUpsertFHIR({
   const foundOnStorageButNotOnFHIR = foundOnStorage.filter(
     f => !foundOnFHIR.find(d => d.id === f.docId)
   );
+
   const filesToDownload = notFoundOnStorage.concat(foundOnStorageButNotOnFHIR);
+
+  if (forceDownload) {
+    const alreadyIncluded = filesToDownload.map(f => f.docId);
+    const remainingFoundOnStorage = foundOnStorage.filter(f => !alreadyIncluded.includes(f.docId));
+    filesToDownload.push(...remainingFoundOnStorage);
+  }
 
   const docsToDownload = filesToDownload.flatMap(f => validDocs.find(d => d.id === f.docId) ?? []);
 
@@ -578,7 +585,7 @@ async function downloadDocsAndUpsertFHIR({
                   requestId,
                 });
 
-                if (forceDownload && newFile.size !== fileInfo.fileSize) {
+                if (forceDownload || newFile.size !== fileInfo.fileSize) {
                   // delete file renders (html, pdf)
                   const renderFilePaths = createDocumentRenderFilePaths(fileInfo.fileName);
                   await s3Utils.deleteFiles({
