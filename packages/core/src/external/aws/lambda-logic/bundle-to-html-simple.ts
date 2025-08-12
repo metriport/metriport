@@ -15,7 +15,6 @@ import {
   ISO_DATE,
 } from "./bundle-to-html-shared";
 
-// HCC V28 codes - empty array as requested, to be populated later
 const HCC_V28_CODES: string[] = [
   "A0104",
   "A0105",
