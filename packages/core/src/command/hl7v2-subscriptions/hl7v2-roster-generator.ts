@@ -39,6 +39,8 @@ const NUMBER_OF_PATIENTS_PER_PAGE = 500;
 const NUMBER_OF_ATTEMPTS = 3;
 const DEFAULT_ZIP_PLUS_4_EXT = "-0000";
 const BASE_DELAY = dayjs.duration({ seconds: 1 });
+const FOLDER_DATE_FORMAT = "YYYY-MM-DD";
+const FILE_DATE_FORMAT = "YYYYMMDD";
 
 export class Hl7v2RosterGenerator {
   private readonly s3Utils: S3Utils;
@@ -170,9 +172,9 @@ export class Hl7v2RosterGenerator {
   }
 
   private createFileKeyHl7v2Roster(hieName: string): string {
-    const todaysDate = buildDayjs(new Date());
-    const folderDate = todaysDate.format("YYYY-MM-DD");
-    const fileDate = todaysDate.format("YYYYMMDD");
+    const todaysDate = buildDayjs();
+    const folderDate = todaysDate.format(FOLDER_DATE_FORMAT);
+    const fileDate = todaysDate.format(FILE_DATE_FORMAT);
     const fileName = `Metriport_${hieName}_Patient_Enrollment_${fileDate}`;
     return `${folderDate}/${fileName}.${CSV_FILE_EXTENSION}`;
   }
