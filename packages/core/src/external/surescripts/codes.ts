@@ -67,20 +67,20 @@ export const PAYMENT_CODE_NAMES = [
 export type PaymentCode = (typeof PAYMENT_CODES)[number];
 export type PaymentCodeName = (typeof PAYMENT_CODE_NAMES)[number];
 
-export const PAYMENT_CODE_NAME: Record<PaymentCode, PaymentCodeName> = {
+export function getPaymentCodeName(code: PaymentCode): PaymentCodeName {
+  if (code.length === 1 && code.match(/^[1-7]$/)) {
+    return getPaymentCodeName(("0" + code) as PaymentCode);
+  }
+  return PAYMENT_CODE_NAME[code] ?? "Other";
+}
+
+export const PAYMENT_CODE_NAME: Partial<Record<PaymentCode, PaymentCodeName>> = {
   "01": "Private Pay",
-  "1": "Private Pay",
   "02": "Medicaid",
-  "2": "Medicaid",
   "03": "Medicare",
-  "3": "Medicare",
   "04": "Commercial Insurance",
-  "4": "Commercial Insurance",
   "05": "Military Installations and VA",
-  "5": "Military Installations and VA",
   "06": "Workers' Compensation",
-  "6": "Workers' Compensation",
   "07": "Indian Nations",
-  "7": "Indian Nations",
   "99": "Other",
 };
