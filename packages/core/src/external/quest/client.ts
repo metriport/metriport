@@ -16,10 +16,14 @@ export class QuestSftpClient extends SftpClient {
     });
     this.outgoingDirectory = config.outgoingDirectory ?? Config.getQuestSftpOutgoingDirectory();
     this.incomingDirectory = config.incomingDirectory ?? Config.getQuestSftpIncomingDirectory();
-    this.initializeS3Replica({
-      bucketName: config.replicaBucket ?? Config.getQuestReplicaBucketName(),
-      region: config.replicaBucketRegion ?? Config.getAWSRegion(),
-    });
+
+    const replicaBucketName = config.replicaBucket ?? Config.getQuestReplicaBucketName();
+    if (replicaBucketName) {
+      this.initializeS3Replica({
+        bucketName: replicaBucketName,
+        region: config.replicaBucketRegion ?? Config.getAWSRegion(),
+      });
+    }
   }
 
   async writeToQuest(fileName: string, fileContent: Buffer): Promise<void> {
