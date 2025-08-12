@@ -19,7 +19,7 @@ import batchAnalysis from "./batch-analysis";
 import preview from "./preview";
 import findLargest from "./find-largest";
 import bundleVerification from "./bundle-verification";
-import reconversion from "./reconversion";
+import generateCsv from "./generate-csv";
 
 /**
  * This is the main command registry for the Surescripts CLI. You should add any new
@@ -48,5 +48,5 @@ program.addCommand(analyzeResponses);
 program.addCommand(preview);
 program.addCommand(findLargest);
 program.addCommand(bundleVerification);
-program.addCommand(reconversion);
+program.addCommand(generateCsv);
 program.parse();
