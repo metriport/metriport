@@ -43,6 +43,7 @@ export function getMedicationRequest({
     resourceType: "MedicationRequest",
     id: uuidv7(),
     status: "completed",
+    intent: "order",
     medicationReference,
     subject,
     ...(insurance ? { insurance } : undefined),
