@@ -11,11 +11,18 @@ import { executeAsynchronously } from "@metriport/core/util/concurrency";
 /**
  * Converts all patient responses for a customer transmission to FHIR bundles.
  *
- * This is the main command for converting customer responses to FHIR bundles.
- * It is used to convert all patient responses for a customer transmission to FHIR bundles.
+ * Usage:
+ * npm run surescripts -- convert-customer-response \
+ *  --cx-id "acme-uuid-1234-sadsjksl" \
+ *  --facility-id "facility-uuid-7890-asdkjkds" \
+ *  --csv-data "acme-roster.csv"
  *
- * It can also be used to recreate the consolidated bundle for a patient.
+ * cx-id: The CX ID to perform reconversion.
+ * facility-id: The facility ID to perform reconversion.
+ * csv-data: A CSV file with two columns: "patient_id" and "transmission_id". This file can be automatically generated
+ * using the `generate-csv` command.
  *
+ * @see generate-csv.ts for more details on how to generate a CSV of all patient IDs for batch reconversion.
  */
 const program = new Command();
 
