@@ -9,23 +9,27 @@ import {
   Coverage,
   Identifier,
   CodeableConcept,
+  Organization,
 } from "@medplum/fhirtypes";
 import { ResponseDetail } from "../schema/response";
 import { getMedicationReference } from "./medication";
 import { getPatientReference } from "./patient";
 import { getCoverageReference } from "./coverage";
+import { getPharmacyReference } from "./pharmacy";
 import { getSurescriptsDataSourceExtension } from "./shared";
 import { ICD_10_URL } from "@metriport/shared/medical";
 
 export function getMedicationRequest({
   patient,
   prescriber,
+  pharmacy,
   medication,
   coverage,
   detail,
 }: {
   patient: Patient;
   prescriber?: Practitioner | undefined;
+  pharmacy?: Organization | undefined;
   medication: Medication;
   coverage: Coverage | undefined;
   detail: ResponseDetail;
@@ -42,6 +46,7 @@ export function getMedicationRequest({
   const authoredOn = getAuthoredOn(detail);
   const category = getDispenseCategory();
   const reasonCode = getReasonCode(detail);
+  const performer = pharmacy ? getPharmacyReference(pharmacy) : undefined;
   const extension = [getSurescriptsDataSourceExtension()];
 
   return {
@@ -61,6 +66,7 @@ export function getMedicationRequest({
     ...(dosageInstruction ? { dosageInstruction } : undefined),
     ...(substitution ? { substitution } : undefined),
     ...(reasonCode ? { reasonCode } : undefined),
+    ...(performer ? { performer } : undefined),
     extension,
   };
 }
