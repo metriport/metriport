@@ -1087,18 +1087,18 @@ class HealthieApi {
       },
       ...(condition.first_symptom_date && condition.end_date
         ? {
-            effectivePeriod: {
+            onsetPeriod: {
               start: buildDayjs(condition.first_symptom_date).toISOString(),
               end: buildDayjs(condition.end_date).toISOString(),
             },
           }
         : condition.first_symptom_date
         ? {
-            effectiveDateTime: buildDayjs(condition.first_symptom_date).toISOString(),
+            onsetDateTime: buildDayjs(condition.first_symptom_date).toISOString(),
           }
         : condition.end_date
         ? {
-            effectiveDateTime: buildDayjs(condition.end_date).toISOString(),
+            onsetDateTime: buildDayjs(condition.end_date).toISOString(),
           }
         : {}),
     };
