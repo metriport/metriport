@@ -27,11 +27,6 @@ import generateCsv from "./generate-csv";
  */
 const program = new Command();
 
-/**
- * Test an SFTP connection to Surescripts. Will only work if it is being run from a server
- * within the VPC corresponding to the environment you are testing (production or staging).
- * npm run surescripts -- sftp connect
- */
 program.addCommand(sftpAction);
 program.addCommand(sendPatientRequest);
 program.addCommand(sendBatchRequest);
