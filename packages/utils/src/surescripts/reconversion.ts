@@ -1,6 +1,5 @@
-import fs from "fs";
-import path from "path";
 import { Command } from "commander";
+import { out } from "@metriport/core/util/log";
 import { SurescriptsDataMapper } from "@metriport/core/external/surescripts/data-mapper";
 import { SurescriptsReplica } from "@metriport/core/external/surescripts/replica";
 import { SurescriptsFileIdentifier } from "@metriport/core/external/surescripts/types";
@@ -8,19 +7,41 @@ import { writeSurescriptsRunsFile } from "./shared";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 
 /**
- * Runs the FHIR conversion process locally, for all patients of the given CX IDs
- * that are found in the Surescripts replica output.
+ * For a given customer and facility, generates a CSV with all patients/population IDs that have had a
+ * corresponding Surescripts request. This CSV file can be used with the `convert-customer-response` command
+ * to fully reconvert all patients for a given customer, using the roster as an input. Note that the same patient ID
+ * may appear multiple times in the roster if they have had multiple Surescripts requests.
+ *
+ * Usage:
+ * npm run surescripts -- generate-csv --cx-name <cx-name> --cx-id <cx-id> --facility-id <facility-id>
+ *
+ * cx-name: A pneumonic customer name, used in file naming for the generated CSV roster.
+ * cx-id: The CX ID to gather patient IDs from.
+ * facility-id: The facility ID to limit patient IDs to (required since Surescripts is specific to a facility's NPI number).
+ *
+ * Example:
+ * npm run surescripts -- generate-csv --cx-name "acme" --cx-id "acme-uuid-1234-sadsjksl" --facility-id "facility-uuid-7890-asdkjkds"
+ *
+ * After generating this CSV, you can use the `convert-customer-response` command to fully reconvert all patients for a given customer, using the roster as an input.
+ *
+ * Usage:
+ * npm run surescripts -- convert-customer-response \
+ *  --cx-id "acme-uuid-1234-sadsjksl" \
+ *  --facility-id "facility-uuid-7890-asdkjkds" \
+ *  --csv-data "acme-roster.csv"
+ *
+ * @see convert-customer-response.ts for more details on the convert-customer-response command.
  */
 const program = new Command();
 const replica = new SurescriptsReplica();
 const dataMapper = new SurescriptsDataMapper();
 
 program
-  .name("reconversion")
-  .description("Generate a roster of patients that need to be reconverted")
+  .name("generate-csv")
+  .description("Generate a CSV of patient IDs and their Surescripts transmission IDs")
   .requiredOption("--cx-name <cx-name>", "The customer name used in file naming")
-  .requiredOption("--cx-id <cx-id>", "The CX ID to perform reconversion")
-  .requiredOption("--facility-id <facility-id>", "The facility ID to perform reconversion")
+  .requiredOption("--cx-id <cx-id>", "The CX ID to gather patient IDs from")
+  .requiredOption("--facility-id <facility-id>", "The facility ID to limit patient IDs to")
   .action(main);
 
 async function main({
@@ -32,13 +53,14 @@ async function main({
   facilityId: string;
   cxName: string;
 }) {
+  const { log } = out(`ss.generate-csv - cx ${cxId}, facility ${facilityId}`);
   const [patientIds, responses] = await Promise.all([
     dataMapper.getPatientIdsForFacility({ cxId, facilityId }),
-    getResponseFiles(),
+    replica.listResponseFiles(),
   ]);
   const patientIdSet = new Set(patientIds);
-  console.log("found " + patientIds.length + " patient IDs");
-  console.log("found " + responses.length + " response files");
+  log(`found ${patientIds.length} patient IDs`);
+  log(`found ${responses.length} response files`);
 
   const identifiers: SurescriptsFileIdentifier[] = [];
 
@@ -46,21 +68,15 @@ async function main({
     responses,
     async response => {
       if (patientIdSet.has(response.patientId)) {
-        console.log("processing " + response.patientId);
         const fileContent = await replica.getRawResponseFileByKey(response.key);
         if (!fileContent) {
-          console.log("file not found for " + response.patientId);
+          log(`file not found for ${response.patientId}`);
           return;
         }
-        if (fileContent?.toString().startsWith('<?xml version="1.0" encoding="UTF-8"?>')) {
-          throw new Error("XML file found for " + response.patientId);
-        } else {
-          console.log("found JSON for " + response.patientId);
-          identifiers.push({
-            transmissionId: response.transmissionId,
-            populationId: response.patientId,
-          });
-        }
+        identifiers.push({
+          transmissionId: response.transmissionId,
+          populationId: response.patientId,
+        });
       }
     },
     {
@@ -68,7 +84,7 @@ async function main({
     }
   );
 
-  console.log("found " + identifiers.length + " identifiers");
+  log(`found ${identifiers.length} identifiers`);
 
   writeSurescriptsRunsFile(
     cxName + "-roster.csv",
@@ -77,21 +93,7 @@ async function main({
         .map(identifier => `"${identifier.populationId}","${identifier.transmissionId}"`)
         .join("\n")
   );
-}
-
-async function getResponseFiles(): Promise<
-  { key: string; transmissionId: string; patientId: string }[]
-> {
-  const responseFileCachePath = path.join(
-    process.cwd(),
-    "runs/surescripts/all-response-files.json"
-  );
-  if (fs.existsSync(responseFileCachePath)) {
-    return JSON.parse(fs.readFileSync(responseFileCachePath, "utf8"));
-  }
-  const responses = await replica.listResponseFiles();
-  fs.writeFileSync(responseFileCachePath, JSON.stringify(responses), "utf8");
-  return responses;
+  log(`wrote CSV to ${cxName}-roster.csv`);
 }
 
 export default program;
