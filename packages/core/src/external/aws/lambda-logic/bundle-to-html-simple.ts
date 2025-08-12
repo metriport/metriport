@@ -14,7 +14,6 @@ import {
   formatDateForDisplay,
   ISO_DATE,
 } from "./bundle-to-html-shared";
-import { extractFhirTypesFromBundle } from "./bundle-to-html";
 
 // HCC V28 codes - empty array as requested, to be populated later
 const HCC_V28_CODES: string[] = [
@@ -7841,7 +7840,7 @@ const HCC_V28_CODES: string[] = [
   "Z9912",
 ];
 
-export function bundleToHtmlNewPatient(fhirBundle: Bundle, brief?: Brief): string {
+export function bundleToHtmlSimple(fhirBundle: Bundle, brief?: Brief): string {
   const {
     patient,
     medications,
@@ -7850,7 +7849,7 @@ export function bundleToHtmlNewPatient(fhirBundle: Bundle, brief?: Brief): strin
     observationSocialHistory,
     observationVitals,
     observationLaboratory,
-  } = extractFhirTypesFromBundle(fhirBundle);
+  } = extractFhirTypesFromBundleSimple(fhirBundle);
 
   if (!patient) {
     throw new Error("No patient found in bundle");
@@ -8024,6 +8023,68 @@ export function bundleToHtmlNewPatient(fhirBundle: Bundle, brief?: Brief): strin
   `;
 
   return htmlPage;
+}
+
+function extractFhirTypesFromBundleSimple(bundle: Bundle): {
+  patient?: Patient | undefined;
+  medications: Medication[];
+  medicationStatements: MedicationStatement[];
+  conditions: Condition[];
+  observationSocialHistory: Observation[];
+  observationVitals: Observation[];
+  observationLaboratory: Observation[];
+} {
+  let patient: Patient | undefined;
+  const medications: Medication[] = [];
+  const medicationStatements: MedicationStatement[] = [];
+  const conditions: Condition[] = [];
+  const observationSocialHistory: Observation[] = [];
+  const observationVitals: Observation[] = [];
+  const observationLaboratory: Observation[] = [];
+
+  if (bundle.entry) {
+    for (const entry of bundle.entry) {
+      const resource = entry.resource;
+      if (resource?.resourceType === "Patient") {
+        patient = resource as Patient;
+      } else if (resource?.resourceType === "MedicationStatement") {
+        medicationStatements.push(resource as MedicationStatement);
+      } else if (resource?.resourceType === "Medication") {
+        medications.push(resource as Medication);
+      } else if (resource?.resourceType === "Condition") {
+        conditions.push(resource as Condition);
+      } else if (resource?.resourceType === "Observation") {
+        const observation = resource as Observation;
+        const isVitalSigns = observation.category?.find(
+          ext => ext.coding?.[0]?.code?.toLowerCase() === "vital-signs"
+        );
+        const isSocialHistory = observation.category?.find(
+          ext => ext.coding?.[0]?.code?.toLowerCase() === "social-history"
+        );
+        const isLaboratory = observation.category?.find(
+          category => category.coding?.[0]?.code?.toLowerCase() === "laboratory"
+        );
+
+        if (isVitalSigns) {
+          observationVitals.push(observation);
+        } else if (isLaboratory) {
+          observationLaboratory.push(observation);
+        } else if (isSocialHistory) {
+          observationSocialHistory.push(observation);
+        }
+      }
+    }
+  }
+
+  return {
+    patient,
+    medications,
+    medicationStatements,
+    conditions,
+    observationSocialHistory,
+    observationVitals,
+    observationLaboratory,
+  };
 }
 
 function createMRHeader(patient: Patient): string {

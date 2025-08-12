@@ -24,6 +24,7 @@ export const cxBasedFFsSchema = z.object({
   cxsWithADHDMRFeatureFlag: ffStringValuesSchema,
   cxsWithNoMrLogoFeatureFlag: ffStringValuesSchema,
   cxsWithBmiMrFeatureFlag: ffStringValuesSchema,
+  cxsWithSimpleMrFeatureFlag: ffStringValuesSchema,
   cxsWithDermMrFeatureFlag: ffStringValuesSchema,
   cxsWithAiBriefFeatureFlag: ffStringValuesSchema,
   getCxsWithCdaCustodianFeatureFlag: ffStringValuesSchema,

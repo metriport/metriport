@@ -1,13 +1,13 @@
-import { bundleToHtmlNewPatient } from "@metriport/core/external/aws/lambda-logic/bundle-to-html-new-patient";
+import { bundleToHtml } from "@metriport/core/external/aws/lambda-logic/bundle-to-html";
 import fs from "fs";
 
-const bundleFilePath = "/Users/orta21/Documents/phi/test.json";
+const bundleFilePath = "";
 
 const bundle = fs.readFileSync(bundleFilePath, "utf8");
 const bundleParsed = JSON.parse(bundle);
 
 // FHIR Bundle
-const html = bundleToHtmlNewPatient(bundleParsed, undefined);
+const html = bundleToHtml(bundleParsed, undefined, false);
 
 // Response from FHIR Converter
 // const html = bundleToHtml(bundleParsed.fhirResource, undefined, false);
