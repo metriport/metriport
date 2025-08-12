@@ -18,10 +18,11 @@ export class QuestSftpClient extends SftpClient {
     this.incomingDirectory = config.incomingDirectory ?? Config.getQuestSftpIncomingDirectory();
 
     const replicaBucketName = config.replicaBucket ?? Config.getQuestReplicaBucketName();
+    const replicaBucketRegion = config.replicaBucketRegion ?? Config.getAWSRegion();
     if (replicaBucketName) {
       this.initializeS3Replica({
         bucketName: replicaBucketName,
-        region: config.replicaBucketRegion ?? Config.getAWSRegion(),
+        region: replicaBucketRegion,
       });
     }
   }
