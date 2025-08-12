@@ -171,7 +171,8 @@ export class Hl7v2RosterGenerator {
 
   private createFileKeyHl7v2Roster(hieName: string): string {
     const todaysDate = buildDayjs(new Date()).toISOString().split("T")[0];
-    return `${todaysDate}/${hieName}.${CSV_FILE_EXTENSION}`;
+    const fileName = `Metriport_${hieName}_Patient_Enrollment_${todaysDate}`;
+    return `${todaysDate}/${fileName}.${CSV_FILE_EXTENSION}`;
   }
 }
 
