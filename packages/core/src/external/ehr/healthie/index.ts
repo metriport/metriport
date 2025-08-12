@@ -82,11 +82,21 @@ export const supportedHealthieResources: ResourceType[] = [
   "Observation",
 ];
 
+export const supportedHealthieReferenceResources: ResourceType[] = ["Medication"];
+
 export type SupportedHealthieResource = (typeof supportedHealthieResources)[number];
 export function isSupportedHealthieResource(
   resourceType: string
 ): resourceType is SupportedHealthieResource {
   return supportedHealthieResources.includes(resourceType as ResourceType);
+}
+
+export type SupportedHealthieReferenceResource =
+  (typeof supportedHealthieReferenceResources)[number];
+export function isSupportedHealthieReferenceResource(
+  resourceType: string
+): resourceType is SupportedHealthieReferenceResource {
+  return supportedHealthieReferenceResources.includes(resourceType as ResourceType);
 }
 
 interface HealthieApiConfig
@@ -609,6 +619,42 @@ class HealthieApi {
     return bundle;
   }
 
+  async getResourceBundleByResourceId({
+    cxId,
+    metriportPatientId,
+    healthiePatientId,
+    resourceType,
+    resourceId,
+  }: {
+    cxId: string;
+    metriportPatientId: string;
+    healthiePatientId: string;
+    resourceType: string;
+    resourceId: string;
+  }): Promise<Bundle> {
+    if (
+      !isSupportedHealthieResource(resourceType) &&
+      !isSupportedHealthieReferenceResource(resourceType)
+    ) {
+      throw new BadRequestError("Invalid resource type", undefined, {
+        healthiePatientId,
+        resourceId,
+        resourceType,
+      });
+    }
+    const bundle = await fetchEhrBundleUsingCache({
+      ehr: EhrSources.healthie,
+      cxId,
+      metriportPatientId,
+      ehrPatientId: healthiePatientId,
+      resourceType,
+      resourceId,
+      fetchResourcesFromEhr: () => Promise.resolve([]),
+      useCachedBundle: true,
+    });
+    return bundle;
+  }
+
   async getAppointments({
     cxId,
     startAppointmentDate,
@@ -1041,18 +1087,18 @@ class HealthieApi {
       },
       ...(condition.first_symptom_date && condition.end_date
         ? {
-            effectivePeriod: {
+            onsetPeriod: {
               start: buildDayjs(condition.first_symptom_date).toISOString(),
               end: buildDayjs(condition.end_date).toISOString(),
             },
           }
         : condition.first_symptom_date
         ? {
-            effectiveDateTime: buildDayjs(condition.first_symptom_date).toISOString(),
+            onsetDateTime: buildDayjs(condition.first_symptom_date).toISOString(),
           }
         : condition.end_date
         ? {
-            effectiveDateTime: buildDayjs(condition.end_date).toISOString(),
+            onsetDateTime: buildDayjs(condition.end_date).toISOString(),
           }
         : {}),
     };
