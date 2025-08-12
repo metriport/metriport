@@ -7,12 +7,15 @@ import {
   Practitioner,
   Reference,
   Coverage,
+  Identifier,
+  CodeableConcept,
 } from "@medplum/fhirtypes";
 import { ResponseDetail } from "../schema/response";
 import { getMedicationReference } from "./medication";
 import { getPatientReference } from "./patient";
 import { getCoverageReference } from "./coverage";
 import { getSurescriptsDataSourceExtension } from "./shared";
+import { ICD_10_URL } from "@metriport/shared/medical";
 
 export function getMedicationRequest({
   patient,
@@ -28,6 +31,7 @@ export function getMedicationRequest({
   detail: ResponseDetail;
 }): MedicationRequest {
   const requester = getRequester(prescriber);
+  const identifier = getMedicationRequestIdentifier(detail);
   const subject = getPatientReference(patient);
   const insurance = coverage ? [getCoverageReference(coverage)] : undefined;
   const dispenseRequest = getDispenseRequest(detail);
@@ -37,6 +41,7 @@ export function getMedicationRequest({
   const dosageInstruction = getDosageInstruction(detail);
   const authoredOn = getAuthoredOn(detail);
   const category = getDispenseCategory();
+  const reasonCode = getReasonCode(detail);
   const extension = [getSurescriptsDataSourceExtension()];
 
   return {
@@ -46,6 +51,7 @@ export function getMedicationRequest({
     intent: "order",
     medicationReference,
     subject,
+    ...(identifier ? { identifier } : undefined),
     ...(insurance ? { insurance } : undefined),
     ...(requester ? { requester } : undefined),
     ...(note ? { note } : undefined),
@@ -54,8 +60,30 @@ export function getMedicationRequest({
     ...(dispenseRequest ? { dispenseRequest } : undefined),
     ...(dosageInstruction ? { dosageInstruction } : undefined),
     ...(substitution ? { substitution } : undefined),
+    ...(reasonCode ? { reasonCode } : undefined),
     extension,
   };
+}
+
+function getMedicationRequestIdentifier(detail: ResponseDetail): Identifier[] | undefined {
+  const identifiers: Identifier[] = [];
+  if (detail.rxReferenceNumber) {
+    identifiers.push({
+      system: "http://terminology.hl7.org/CodeSystem/v2-0203",
+      type: {
+        coding: [
+          {
+            system: "http://terminology.hl7.org/CodeSystem/v2-0203",
+            code: "RXN",
+            display: "Rx Number",
+          },
+        ],
+      },
+      value: detail.rxReferenceNumber,
+    });
+  }
+  if (identifiers.length > 0) return identifiers;
+  return undefined;
 }
 
 export function getRequester(
@@ -138,4 +166,18 @@ function getMedicationRequestSubstitution(
     };
   }
   return undefined;
+}
+
+function getReasonCode(detail: ResponseDetail): CodeableConcept[] | undefined {
+  if (!detail.diagnosisICD10Code) return undefined;
+  return [
+    {
+      coding: [
+        {
+          system: ICD_10_URL,
+          code: detail.diagnosisICD10Code,
+        },
+      ],
+    },
+  ];
 }
