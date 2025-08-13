@@ -4,6 +4,7 @@ import { PatientModel } from "../../../models/medical/patient";
 import { TcmEncounterModel } from "../../../models/medical/tcm-encounter";
 import { getPaginationSorting, Pagination, sortForPagination } from "../../pagination";
 import { omit } from "lodash";
+import { cardiacCodes } from "./cardiac-codes";
 
 /**
  * Add a default filter date far in the past to guarantee hitting the compound index
@@ -25,10 +26,20 @@ export type TcmEncounterResult = TcmEncounterModel["dataValues"] & {
 export async function getTcmEncounters({
   cxId,
   after,
+  facilityId,
+  daysLookback,
+  eventType,
+  coding,
+  status,
   pagination,
 }: {
   cxId: string;
   after?: string;
+  facilityId?: string;
+  daysLookback?: string;
+  eventType?: string;
+  coding?: string;
+  status?: string;
   pagination: Pagination;
 }): Promise<TcmEncounterResult[]> {
   const tcmEncounterTable = TcmEncounterModel.tableName;
@@ -40,6 +51,10 @@ export async function getTcmEncounters({
   const { toItem, fromItem } = pagination;
   const [, order] = getPaginationSorting(pagination);
 
+  const dischargedAfter = daysLookback
+    ? buildDayjs().subtract(parseInt(daysLookback), "day").toDate()
+    : undefined;
+
   /**
    * ⚠️ Always change this query and the count query together.
    */
@@ -50,6 +65,22 @@ export async function getTcmEncounters({
       ON tcm_encounter.patient_id = patient.id
       WHERE tcm_encounter.cx_id = :cxId
       AND tcm_encounter.admit_time > :admittedAfter
+      ${daysLookback ? ` AND tcm_encounter.discharge_time > :dischargedAfter` : ""}
+      ${facilityId ? ` AND patient.facility_ids @> ARRAY[:facilityId]::varchar[]` : ""}
+      ${eventType ? ` AND tcm_encounter.latest_event = :eventType` : ""}
+      ${status ? ` AND tcm_encounter.outreach_status = :status` : ""}
+      ${
+        coding
+          ? ` AND exists (
+              select 1 
+              from jsonb_array_elements_text(
+                  jsonb_path_query_array(tcm_encounter.clinical_information, '$.condition[*].coding[*].code')
+              ) as code
+              where code = ANY(ARRAY['${cardiacCodes.join("', '")}'])
+          )`
+          : ""
+      }
+      ${/* PAGINATION */ ""}
       ${toItem ? ` AND tcm_encounter.id >= :toItem` : ""}
       ${fromItem ? ` AND tcm_encounter.id <= :fromItem` : ""}
       ORDER BY tcm_encounter.id ${order}
@@ -65,6 +96,11 @@ export async function getTcmEncounters({
     replacements: {
       cxId,
       ...{ admittedAfter: after ? buildDayjs(after).toISOString() : DEFAULT_FILTER_DATE },
+      ...{ dischargedAfter },
+      ...{ facilityId },
+      ...{ eventType },
+      ...{ coding },
+      ...{ status },
       ...pagination,
     },
     type: QueryTypes.SELECT,
@@ -82,14 +118,29 @@ export async function getTcmEncounters({
 export async function getTcmEncountersCount({
   cxId,
   after,
+  facilityId,
+  daysLookback,
+  eventType,
+  coding,
+  status,
 }: {
   cxId: string;
   after?: string;
+  facilityId?: string;
+  daysLookback?: string;
+  eventType?: string;
+  coding?: string;
+  status?: string;
 }): Promise<number> {
   const tcmEncounterTable = TcmEncounterModel.tableName;
+  const patientTable = PatientModel.tableName;
 
   const sequelize = TcmEncounterModel.sequelize;
   if (!sequelize) throw new Error("Sequelize not found");
+
+  const dischargedAfter = daysLookback
+    ? buildDayjs().subtract(parseInt(daysLookback), "day").toDate()
+    : undefined;
 
   /**
    * ⚠️ Always change this query and the data query together.
@@ -97,14 +148,36 @@ export async function getTcmEncountersCount({
   const queryString = `
     SELECT count(tcm_encounter.id) as count
     FROM ${tcmEncounterTable} tcm_encounter
+    INNER JOIN ${patientTable} patient 
+    ON tcm_encounter.patient_id = patient.id
     WHERE tcm_encounter.cx_id = :cxId
     AND tcm_encounter.admit_time > :admittedAfter
+    ${daysLookback ? ` AND tcm_encounter.discharge_time > :dischargedAfter` : ""}
+    ${facilityId ? ` AND patient.facility_ids @> ARRAY[:facilityId]::varchar[]` : ""}
+    ${eventType ? ` AND tcm_encounter.latest_event = :eventType` : ""}
+    ${status ? ` AND tcm_encounter.outreach_status = :status` : ""}
+    ${
+      coding
+        ? ` AND exists (
+              select 1 
+              from jsonb_array_elements_text(
+                  jsonb_path_query_array(tcm_encounter.clinical_information, '$.condition[*].coding[*].code')
+              ) as code
+              where code = ANY(ARRAY['${cardiacCodes.join("', '")}'])
+          )`
+        : ""
+    }
   `;
 
   const result = await sequelize.query<{ count: number }>(queryString, {
     replacements: {
       cxId,
       ...{ admittedAfter: after ? buildDayjs(after).toDate() : DEFAULT_FILTER_DATE },
+      ...{ dischargedAfter },
+      ...{ facilityId },
+      ...{ eventType },
+      ...{ coding },
+      ...{ status },
     },
     type: QueryTypes.SELECT,
   });
