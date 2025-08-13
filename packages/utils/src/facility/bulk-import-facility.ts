@@ -21,7 +21,7 @@ import path from "path";
 import { z } from "zod";
 
 /*
- * This script will read NPIs, Names, Type, CqOboOid, CwOboOid from a csv saved in S3.
+ * This script will read NPIs, Names, Type, CqOboOid, CwOboOid from a local csv.
  *
  * Run this script from the package root. Not from src/facility/
  *
