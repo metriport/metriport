@@ -148,7 +148,9 @@ export function groupSameDiagnosticReports(diagReports: DiagnosticReport[]): {
       // the report will dedup against ones that might or might not have the date
       getterKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [0]));
       getterKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [1]));
+    }
 
+    if (diagReport.id) {
       const idKey = JSON.stringify({ id: diagReport.id });
       setterKeys.push(idKey);
       getterKeys.push(idKey);
