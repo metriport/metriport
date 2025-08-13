@@ -70,6 +70,7 @@ export enum EventTypes {
   inboundDocumentQuery = "inbound.documentQuery",
   inboundDocumentRetrieval = "inbound.documentRetrieval",
   dischargeRequery = "dischargeRequery",
+  dischargeDataProcessed = "dischargeDataProcessed",
 }
 
 export enum EventErrMessage {
