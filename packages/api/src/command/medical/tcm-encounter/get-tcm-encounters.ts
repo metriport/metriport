@@ -69,17 +69,7 @@ export async function getTcmEncounters({
       ${facilityId ? ` AND patient.facility_ids @> ARRAY[:facilityId]::varchar[]` : ""}
       ${eventType ? ` AND tcm_encounter.latest_event = :eventType` : ""}
       ${status ? ` AND tcm_encounter.outreach_status = :status` : ""}
-      ${
-        coding
-          ? ` AND exists (
-              select 1 
-              from jsonb_array_elements_text(
-                  jsonb_path_query_array(tcm_encounter.clinical_information, '$.condition[*].coding[*].code')
-              ) as code
-              where code = ANY(ARRAY['${cardiacCodes.join("', '")}'])
-          )`
-          : ""
-      }
+      ${coding === "cardiac" ? ` AND tcm_encounter.has_cardiac_code = true` : ""}
       ${/* PAGINATION */ ""}
       ${toItem ? ` AND tcm_encounter.id >= :toItem` : ""}
       ${fromItem ? ` AND tcm_encounter.id <= :fromItem` : ""}
