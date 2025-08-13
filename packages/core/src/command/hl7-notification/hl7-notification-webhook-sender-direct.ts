@@ -210,8 +210,6 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
     const latestEvent = triggerEvent === "A01" ? "Admitted" : "Discharged";
     const fullPayload: TcmEncounterUpsertInput = {
       ...basePayload,
-      facilityName: basePayload.facilityName ?? "",
-      class: basePayload.class ?? "",
       latestEvent,
       ...(admitTime ? { admitTime } : undefined),
       ...(dischargeTime ? { dischargeTime } : undefined),
