@@ -1,5 +1,4 @@
 import { Bundle, BundleEntry, Encounter, Extension, Resource } from "@medplum/fhirtypes";
-import { isAthenaCustomFieldsEnabledForCx } from "@metriport/core/command/feature-flags/domain-ffs";
 import { encounterAppointmentExtensionUrl } from "@metriport/core/external/ehr/athenahealth/index";
 import { BundleType } from "@metriport/core/external/ehr/bundle/bundle-shared";
 import {
@@ -8,7 +7,10 @@ import {
 } from "@metriport/core/external/ehr/bundle/command/fetch-bundle";
 import { fetchDocument } from "@metriport/core/external/ehr/document/command/fetch-document";
 import { DocumentType } from "@metriport/core/external/ehr/document/document-shared";
+import { artifactRelatedArtifactUrl } from "@metriport/core/external/fhir/shared/extensions/derived-from";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
+import { log } from "@metriport/core/util/log";
+import { capture } from "@metriport/core/util/notifications";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { errorToString, MetriportError } from "@metriport/shared";
 import { athenaSecondaryMappingsSchema } from "@metriport/shared/interface/external/ehr/athenahealth/cx-mapping";
@@ -21,9 +23,6 @@ import { handleDataContribution } from "../../../../../command/medical/patient/d
 import { getPatientOrFail } from "../../../../../command/medical/patient/get-patient";
 import { getAthenaPracticeIdFromPatientId } from "../../../athenahealth/shared";
 import { ContributeBundleParams } from "../../utils/bundle/types";
-import { artifactRelatedArtifactUrl } from "@metriport/core/external/fhir/shared/extensions/derived-from";
-import { log } from "@metriport/core/util/log";
-import { capture } from "@metriport/core/util/notifications";
 
 /**
  * Contribute the resource diff bundle
@@ -61,7 +60,7 @@ export async function contributeResourceDiffBundle({
     fetchBundle(fetchParams),
   ]);
   if (!bundle?.bundle.entry || bundle.bundle.entry.length < 1) return;
-  if (await isAthenaCustomFieldsEnabledForCx(cxId)) {
+  if (ehr === EhrSources.athena) {
     const athenaPracticeId = getAthenaPracticeIdFromPatientId(patientMapping.externalId);
     const cxMappingLookupParams = { externalId: athenaPracticeId, source: EhrSources.athena };
     const cxMapping = await getCxMappingOrFail(cxMappingLookupParams);
