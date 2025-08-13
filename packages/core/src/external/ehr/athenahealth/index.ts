@@ -219,7 +219,6 @@ const validObservationResultStatuses = [
 ];
 
 export const supportedAthenaHealthResources: ResourceType[] = [
-  /*
   "AllergyIntolerance",
   "Condition",
   "DiagnosticReport",
@@ -227,7 +226,6 @@ export const supportedAthenaHealthResources: ResourceType[] = [
   "MedicationRequest",
   "Observation",
   "Procedure",
-  */
   "Encounter",
 ];
 
