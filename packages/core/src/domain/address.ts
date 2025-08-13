@@ -1,5 +1,11 @@
-import { USStateForAddress } from "@metriport/shared";
+import {
+  defaultOptionalStringSchema,
+  defaultZipStringSchema,
+  USStateForAddress,
+} from "@metriport/shared";
 import { uniqBy } from "lodash";
+import { usStateForAddressSchema } from "../../../api-sdk/dist";
+import z from "zod";
 
 export type Coordinates = {
   lat: number;
@@ -32,3 +38,12 @@ export function combineAddresses(addressList1: Address[], addressList2: Address[
 
   return uniqBy(combined, a => `${a.addressLine1}-${a.addressLine2}-${a.city}-${a.state}-${a.zip}`);
 }
+
+export const addressStrictSchema = z.object({
+  addressLine1: z.string().min(1),
+  addressLine2: defaultOptionalStringSchema,
+  city: z.string().min(1),
+  state: usStateForAddressSchema,
+  zip: defaultZipStringSchema,
+  country: z.literal("USA").default("USA"),
+});
