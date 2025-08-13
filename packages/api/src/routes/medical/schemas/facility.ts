@@ -18,7 +18,7 @@ export const facilityCreateSchema = z.object({
 export const facilityUpdateSchema = facilityCreateSchema;
 
 /**
- * @deprecated use @metriport/core/src/domain/npi-facility instead
+ * @deprecated use @metriport/core/src/domain/facility instead
  */
 export const facilityInternalDetailsSchema = z
   .object({

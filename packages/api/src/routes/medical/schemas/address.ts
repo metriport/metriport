@@ -14,7 +14,7 @@ export const addressSchema = z.object({
 });
 
 /**
- * @deprecated use @metriport/core/src/domain/npi-facility instead
+ * @deprecated use @metriport/core/src/domain/facility instead
  */
 export const addressStrictSchema = z.object({
   addressLine1: z.string().min(1),

@@ -6,7 +6,7 @@ import { MetriportError } from "@metriport/core/util/error/metriport-error";
 import { Config } from "../../shared/config";
 
 /**
- * @deprecated use @metriport/core/src/domain/npi-facility instead
+ * @deprecated use @metriport/core/src/domain/facility instead
  */
 export enum FacilityType {
   initiatorAndResponder = "initiator_and_responder",

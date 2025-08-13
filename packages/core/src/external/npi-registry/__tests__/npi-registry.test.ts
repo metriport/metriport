@@ -1,11 +1,10 @@
 import { USState } from "@metriport/shared/domain/address/state";
 import {
   AdditionalInformationInternalFacility,
-  FacilityType,
-  FacilityInternalDetails,
   NpiRegistryFacility,
 } from "../../../domain/npi-facility";
-import { getFacilityByNpiOrFail, translateNpiFacilityToFacilityDetails } from "../npi-registry";
+import { FacilityType, FacilityInternalDetails } from "../../../domain/facility";
+import { getFacilityByNpiOrFail, translateNpiFacilityToMetriportFacility } from "../npi-registry";
 import { toTitleCase } from "@metriport/shared/common/title-case";
 
 describe("Npi Registry Validation", () => {
@@ -81,7 +80,7 @@ describe("Npi Registry Validation", () => {
       facilityType: "non-obo",
     };
 
-    const internalNonObo = translateNpiFacilityToFacilityDetails(
+    const internalNonObo = translateNpiFacilityToMetriportFacility(
       validFacility,
       additionalInfoNonObo
     );
@@ -109,7 +108,7 @@ describe("Npi Registry Validation", () => {
       cwOboOid: "1.2.3.4.5.6.7.8.9",
     };
 
-    const internalObo = translateNpiFacilityToFacilityDetails(validFacility, additionalInfoObo);
+    const internalObo = translateNpiFacilityToMetriportFacility(validFacility, additionalInfoObo);
 
     expect(validInternalObo).toEqual(internalObo);
   });

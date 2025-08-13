@@ -8,12 +8,12 @@ import {
 } from "@metriport/shared";
 import axios from "axios";
 import {
-  FacilityType,
+  AdditionalInformationInternalFacility,
   NpiRegistryFacility,
   NpiRegistryReturn,
-  FacilityInternalDetails,
-  AdditionalInformationInternalFacility,
 } from "../../domain/npi-facility";
+
+import { FacilityInternalDetails, FacilityType } from "../../domain/facility";
 
 export const NPI_REGISTRY_URL = "https://npiregistry.cms.hhs.gov/api";
 export const NPI_REGISTRY_VERSION = "2.1";
@@ -42,25 +42,20 @@ export async function getFacilityByNpiOrFail(npi: string): Promise<NpiRegistryFa
   });
 
   if (res.data.Errors && res.data.Errors.length > 0) {
-    const err = res.data.Errors[0];
-    if (err && err.description && err?.field && err.number) {
-      throw new MetriportError(`NPI Registry error: ${err.description}`, undefined, {
-        npi,
-        NPI_REGISTRY_URL,
-        NPI_REGISTRY_VERSION,
-        description: err.description,
-        field: err.field,
-        errorNumber: err.number,
-      });
-    }
-    //This should never happen but...
-    throw new MetriportError(`NPI Registry error: Unexpected error`, undefined, {
+    type NpiRegistryError = { description?: string; field?: string; number?: string | number };
+    const err: NpiRegistryError = res.data.Errors[0] ?? {};
+
+    const description = err.description ?? "Unknown";
+    const field = err.field ?? "Unknown";
+    const errorNumber = err.number ?? "Unknown";
+
+    throw new MetriportError(`NPI Registry error: ${description}`, undefined, {
       npi,
       NPI_REGISTRY_URL,
       NPI_REGISTRY_VERSION,
-      description: "Unknown",
-      field: "Unknown",
-      errorNumber: "Unknown",
+      description,
+      field,
+      errorNumber,
     });
   }
 
@@ -73,9 +68,7 @@ export async function getFacilityByNpiOrFail(npi: string): Promise<NpiRegistryFa
       undefined,
       { npi, NPI_REGISTRY_URL, NPI_REGISTRY_VERSION, count }
     );
-  }
-
-  if (!res.data.results || !res.data.results[0]) {
+  } else if (!res.data.results || !res.data.results[0]) {
     throw new MetriportError(
       `NPI Registry error. Unexpected missing results for NPI: ${npi}`,
       undefined,
@@ -91,10 +84,10 @@ export async function getFacilityByNpiOrFail(npi: string): Promise<NpiRegistryFa
 /**
  * Translates a NpiRegistryFacility to FacilityInternalDetails
  * @param npiFacility the NpiRegistryFacility you want to be translated
- * @param additionalInfo extra information such as the name, OBO, cqOboOid, cwOboOid
+ * @param additionalInfo extra required information to translate the name, if it is OBO, and the cqOboOid + cwOboOid
  * @returns the translated FacilityInternalDetails
  */
-export function translateNpiFacilityToFacilityDetails(
+export function translateNpiFacilityToMetriportFacility(
   npiFacility: NpiRegistryFacility,
   additionalInfo: AdditionalInformationInternalFacility
 ): FacilityInternalDetails {

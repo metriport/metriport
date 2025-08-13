@@ -2,11 +2,11 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
 import { Facility } from "@metriport/api-sdk";
-import { FacilityInternalDetails } from "@metriport/core/domain/npi-facility";
+import { FacilityInternalDetails } from "@metriport/core/domain/facility";
 import { getS3UtilsInstance } from "@metriport/core/external/ehr/bundle/bundle-shared";
 import {
   getFacilityByNpiOrFail,
-  translateNpiFacilityToFacilityDetails,
+  translateNpiFacilityToMetriportFacility,
 } from "@metriport/core/external/npi-registry/npi-registry";
 import { errorToString, getEnvVarOrFail, MetriportError, sleep } from "@metriport/shared";
 import axios from "axios";
@@ -39,6 +39,10 @@ import { z } from "zod";
  * $ ts-node src/facility/bulk-import-facility --cx-id <cxId> --timestamp <timestamp> --name <name>
  */
 
+const bucket = getEnvVarOrFail("FACILITY_IMPORT_BUCKET");
+
+const internalUrl = getEnvVarOrFail("API_URL");
+
 interface FacilityImportParams {
   cxId: string;
   name: string;
@@ -63,9 +67,6 @@ const CSV_HEADER =
 
 async function main({ cxId, name, timestamp, dryrun }: FacilityImportParams) {
   await sleep(50); // Give some time to avoid mixing logs w/ Node's
-
-  const bucket = getEnvVarOrFail("FACILITY_IMPORT_BUCKET");
-  const internalUrl = getEnvVarOrFail("API_URL");
   const isDryRun = Boolean(dryrun);
 
   console.log(
@@ -105,14 +106,15 @@ async function main({ cxId, name, timestamp, dryrun }: FacilityImportParams) {
       try {
         const npiFacility = await getFacilityByNpiOrFail(row.npi);
 
-        const ourFacility = translateNpiFacilityToFacilityDetails(npiFacility, row);
+        const metriportFacility = translateNpiFacilityToMetriportFacility(npiFacility, row);
 
         if (!isDryRun) {
-          await createFacility(ourFacility, internalUrl, cxId);
+          await createFacility(metriportFacility, cxId);
         }
-        createdFacilities.push(ourFacility);
+        createdFacilities.push(metriportFacility);
         console.log(`Successfully created facility with npi: ${row.npi}`);
-      } catch (err: unknown) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } catch (err: any) {
         success = false;
         if (axios.isAxiosError(err) && err.response?.status === 400) {
           // This is specifically for "Can't Create a new facility with the same NPI as ..."
@@ -126,8 +128,6 @@ async function main({ cxId, name, timestamp, dryrun }: FacilityImportParams) {
         }
       } finally {
         await writeToCsv(logsFilePath, success, errorMessage, row);
-        success = true;
-        errorMessage = undefined;
         await sleep(60);
         parser.resume();
       }
@@ -183,7 +183,6 @@ async function readFileFromS3(
 
 async function createFacility(
   createPayload: FacilityInternalDetails,
-  internalUrl: string,
   cxId: string
 ): Promise<Facility> {
   const url = `${internalUrl}/internal/facility`;

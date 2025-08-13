@@ -1,46 +1,6 @@
-import { validateNPI } from "@metriport/shared/common/validate-npi";
-import { defaultOptionalStringSchema, defaultZipStringSchema } from "@metriport/shared/util";
 import z from "zod";
-import { usStateForAddressSchema } from "@metriport/api-sdk";
 
-export enum FacilityType {
-  initiatorAndResponder = "initiator_and_responder",
-  initiatorOnly = "initiator_only",
-}
-
-export const addressStrictSchema = z.object({
-  addressLine1: z.string().min(1),
-  addressLine2: defaultOptionalStringSchema,
-  city: z.string().min(1),
-  state: usStateForAddressSchema,
-  zip: defaultZipStringSchema,
-  country: z.literal("USA").default("USA"),
-});
-
-export const facilityInternalDetailsSchema = z
-  .object({
-    id: z.string().optional(),
-    nameInMetriport: z.string().min(1),
-    npi: z
-      .string()
-      .length(10)
-      .refine(npi => validateNPI(npi), { message: "NPI is not valid" }),
-    tin: defaultOptionalStringSchema,
-    // CQ
-    cqApproved: z.boolean().optional(),
-    cqType: z.nativeEnum(FacilityType),
-    cqActive: z.boolean().optional(),
-    cqOboOid: z.string().optional(),
-    // CW
-    cwApproved: z.boolean().optional(),
-    cwType: z.nativeEnum(FacilityType),
-    cwActive: z.boolean().optional(),
-    cwOboOid: z.string().optional(),
-  })
-  .merge(addressStrictSchema);
-export type FacilityInternalDetails = z.infer<typeof facilityInternalDetailsSchema>;
-
-export const NpiAddressSchema = z.object({
+export const npiAddressSchema = z.object({
   country_code: z.string(),
   address_1: z.string(),
   city: z.string(),
@@ -48,17 +8,17 @@ export const NpiAddressSchema = z.object({
   postal_code: z.string(),
   telephone_number: z.string(),
 });
-export type NpiAddress = z.infer<typeof NpiAddressSchema>;
+export type NpiAddress = z.infer<typeof npiAddressSchema>;
 
-export const NpiRegistryFacilitySchema = z.object({
+export const npiRegistryFacilitySchema = z.object({
   number: z.string(),
-  addresses: z.array(NpiAddressSchema),
+  addresses: z.array(npiAddressSchema),
 });
-export type NpiRegistryFacility = z.infer<typeof NpiRegistryFacilitySchema>;
+export type NpiRegistryFacility = z.infer<typeof npiRegistryFacilitySchema>;
 
-export const NpiRegistryReturnSchema = z.object({
+export const npiRegistryReturnSchema = z.object({
   result_count: z.string().optional(),
-  results: z.array(NpiRegistryFacilitySchema).optional(),
+  results: z.array(npiRegistryFacilitySchema).optional(),
   Errors: z
     .array(
       z.object({
@@ -69,14 +29,14 @@ export const NpiRegistryReturnSchema = z.object({
     )
     .optional(),
 });
-export type NpiRegistryReturn = z.infer<typeof NpiRegistryReturnSchema>;
+export type NpiRegistryReturn = z.infer<typeof npiRegistryReturnSchema>;
 
-export const AdditionalInformationInternalFacilitySchema = z.object({
+export const additionalInformationInternalFacilitySchema = z.object({
   facilityName: z.string(),
   facilityType: z.enum(["obo", "non-obo"]),
   cqOboOid: z.string().optional(),
   cwOboOid: z.string().optional(),
 });
 export type AdditionalInformationInternalFacility = z.infer<
-  typeof AdditionalInformationInternalFacilitySchema
+  typeof additionalInformationInternalFacilitySchema
 >;
