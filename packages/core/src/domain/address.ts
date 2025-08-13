@@ -4,8 +4,8 @@ import {
   USStateForAddress,
 } from "@metriport/shared";
 import { uniqBy } from "lodash";
-import { usStateForAddressSchema } from "../../../api-sdk/dist";
-import z from "zod";
+import { usStateForAddressSchema } from "@metriport/api-sdk";
+import { z } from "zod";
 
 export type Coordinates = {
   lat: number;
