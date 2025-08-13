@@ -1,22 +1,25 @@
 import { Bundle, BundleEntry, Encounter, Extension, Resource } from "@medplum/fhirtypes";
 import { encounterAppointmentExtensionUrl } from "@metriport/core/external/ehr/athenahealth/index";
 import { BundleType } from "@metriport/core/external/ehr/bundle/bundle-shared";
+import { createOrReplaceBundle } from "@metriport/core/external/ehr/bundle/command/create-or-replace-bundle";
 import {
   fetchBundle,
   FetchBundleParams,
 } from "@metriport/core/external/ehr/bundle/command/fetch-bundle";
-import { fetchDocument } from "@metriport/core/external/ehr/document/command/fetch-document";
 import { createOrReplaceDocument } from "@metriport/core/external/ehr/document/command/create-or-replace-document";
+import { fetchDocument } from "@metriport/core/external/ehr/document/command/fetch-document";
 import { DocumentType } from "@metriport/core/external/ehr/document/document-shared";
 import { artifactRelatedArtifactUrl } from "@metriport/core/external/fhir/shared/extensions/derived-from";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
-import { log } from "@metriport/core/util/log";
+import { log, out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { errorToString, MetriportError } from "@metriport/shared";
 import { athenaSecondaryMappingsSchema } from "@metriport/shared/interface/external/ehr/athenahealth/cx-mapping";
+import { createBundleFromResourceList } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import axios from "axios";
+import { partition } from "lodash";
 import { getCxMappingOrFail } from "../../../../../command/mapping/cx";
 import { getPatientMappingOrFail } from "../../../../../command/mapping/patient";
 import { getUploadUrlAndCreateDocRef } from "../../../../../command/medical/document/get-upload-url-and-create-doc-ref";
@@ -76,6 +79,12 @@ export async function contributeResourceDiffBundle({
     const secondaryMappings = athenaSecondaryMappingsSchema.parse(cxMapping.secondaryMappings);
     if (secondaryMappings.contributionEncounterAppointmentTypesBlacklist) {
       dangerouslyRemoveEncounterEntriesWithBlacklistedAppointmentType({
+        ehr,
+        cxId,
+        metriportPatientId,
+        ehrPatientId,
+        resourceType,
+        jobId,
         bundle: bundle.bundle,
         blacklistedAppointmentTypes:
           secondaryMappings.contributionEncounterAppointmentTypesBlacklist,
@@ -84,10 +93,10 @@ export async function contributeResourceDiffBundle({
     if (secondaryMappings.contributionEncounterSummariesEnabled && resourceType === "Encounter") {
       await uploadEncounterSummaries({
         ehr,
-        bundle: bundle.bundle,
         cxId,
         metriportPatientId,
         ehrPatientId,
+        bundle: bundle.bundle,
       });
     }
   }
@@ -116,9 +125,21 @@ export async function contributeResourceDiffBundle({
  * @param params.blacklistedAppointmentTypes - The list of appointment types to exclude.
  */
 async function dangerouslyRemoveEncounterEntriesWithBlacklistedAppointmentType({
+  ehr,
+  cxId,
+  metriportPatientId,
+  ehrPatientId,
+  resourceType,
+  jobId,
   bundle,
   blacklistedAppointmentTypes,
 }: {
+  ehr: EhrSources;
+  cxId: string;
+  metriportPatientId: string;
+  ehrPatientId: string;
+  resourceType: string;
+  jobId: string;
   bundle: Bundle;
   blacklistedAppointmentTypes: string[];
 }): Promise<void> {
@@ -135,23 +156,49 @@ async function dangerouslyRemoveEncounterEntriesWithBlacklistedAppointmentType({
     return blacklistedAppointmentTypes.includes(appointmentTypeExtension.valueString as string);
   });
   const encounterReferences = encountersToRemove.map(encounter => `Encounter/${encounter.id}`);
-  const resourcesToRemove = new Set<string>();
+  const resourceIdsToRemove = new Set<string>();
   for (const encounter of encountersToRemove) {
     if (!encounter.id) continue;
-    resourcesToRemove.add(encounter.id);
+    resourceIdsToRemove.add(encounter.id);
   }
   for (const entry of bundle.entry) {
     if (!entry.resource) continue;
     if (!entry.resource.id) continue;
     if (doesResourceReferToEncounter(entry.resource, encounterReferences)) {
-      resourcesToRemove.add(entry.resource.id);
+      resourceIdsToRemove.add(entry.resource.id);
     }
   }
-  bundle.entry = bundle.entry.filter((entry: BundleEntry<Resource>) => {
-    if (!entry.resource) return true;
-    if (!entry.resource.id) return true;
-    return !resourcesToRemove.has(entry.resource.id);
-  });
+  const [resourcesToRemove, resourcesToKeep] = partition(
+    bundle.entry,
+    (entry: BundleEntry<Resource>) => {
+      if (!entry.resource) return true;
+      if (!entry.resource.id) return true;
+      return resourceIdsToRemove.has(entry.resource.id);
+    }
+  );
+  try {
+    await createOrReplaceBundle({
+      ehr,
+      cxId,
+      ehrPatientId,
+      metriportPatientId,
+      bundleType: BundleType.RESOURCE_DIFF_DATA_CONTRIBUTION_REMOVED,
+      bundle: createBundleFromResourceList(
+        resourcesToRemove.flatMap(entry => {
+          if (!entry.resource) return [];
+          return [entry.resource];
+        })
+      ),
+      resourceType,
+      jobId,
+      mixedResourceTypes: true,
+    });
+  } catch (error) {
+    out(
+      `dangerouslyRemoveEncounterEntriesWithBlacklistedAppointmentType - metriportPatientId ${metriportPatientId} ehrPatientId ${ehrPatientId} resourceType ${resourceType}`
+    ).log(`Error creating resource diff removed bundle. Cause: ${errorToString(error)}`);
+  }
+  bundle.entry = resourcesToKeep;
 }
 
 /**
@@ -189,16 +236,16 @@ function doesResourceReferToEncounter(resource: Resource, encounterReferences: s
  */
 async function uploadEncounterSummaries({
   ehr,
-  bundle,
   cxId,
   metriportPatientId,
   ehrPatientId,
+  bundle,
 }: {
   ehr: EhrSources;
-  bundle: Bundle;
   cxId: string;
   metriportPatientId: string;
   ehrPatientId: string;
+  bundle: Bundle;
 }): Promise<void> {
   if (!bundle.entry) return;
   const encounterSummaries: { encounter: Encounter; summary: string }[] = [];
