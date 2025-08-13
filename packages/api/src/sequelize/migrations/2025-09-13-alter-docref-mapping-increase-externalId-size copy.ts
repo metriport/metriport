@@ -21,6 +21,6 @@ export const up: Migration = async ({ context: queryInterface }) => {
 
 export const down: Migration = () => {
   // No rollback for column size increase due to large data volume
-  // Rolling back would require table rewrite which is risky with 10+ GB of data
+  // Rolling back would require table rewrite which is risky with large amounts of data
   return Promise.resolve();
 };
