@@ -1,7 +1,7 @@
 import { Hl7Message } from "@medplum/core";
 import { Bundle, CodeableConcept, Resource } from "@medplum/fhirtypes";
 import { executeWithNetworkRetries } from "@metriport/shared";
-import { CreateDischargeRequeryParams } from "@metriport/shared/src/domain/patient/patient-monitoring/discharge-requery";
+import { CreateDischargeRequeryParams } from "@metriport/shared/domain/patient/patient-monitoring/discharge-requery";
 import axios from "axios";
 import dayjs from "dayjs";
 import { S3Utils } from "../../external/aws/s3";
@@ -29,7 +29,8 @@ import {
   Hl7NotificationWebhookSender,
 } from "./hl7-notification-webhook-sender";
 import { isSupportedTriggerEvent, SupportedTriggerEvent } from "./utils";
-import { TcmEncounterUpsert } from "@metriport/shared/src/domain/tcm-encounter";
+import { TcmEncounterUpsert } from "@metriport/shared/domain/tcm-encounter";
+import { buildDayjs } from "@metriport/shared/common/date";
 
 export const dischargeEventCode = "A03";
 
@@ -213,8 +214,8 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
       facilityName: basePayload.facilityName ?? "",
       class: basePayload.class ?? "",
       latestEvent,
-      ...(admitTime ? { admitTime: new Date(admitTime) } : undefined),
-      ...(dischargeTime ? { dischargeTime: new Date(dischargeTime) } : undefined),
+      ...(admitTime ? { admitTime: buildDayjs(admitTime).toDate() } : undefined),
+      ...(dischargeTime ? { dischargeTime: buildDayjs(dischargeTime).toDate() } : undefined),
     };
 
     const { log } = out(
