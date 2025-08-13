@@ -58,7 +58,7 @@ describe("Npi Registry Validation", () => {
     await expect(getFacilityByNpiOrFail(notValidLuhnNpi)).rejects.toThrow(invalidMsg);
 
     await expect(getFacilityByNpiOrFail(nonExistentFacilityNpi)).rejects.toThrow(
-      `NPI Registry error. Found no Facilities with NPI: ${nonExistentFacilityNpi}`
+      `NPI Registry error. No facilities found.`
     );
   });
 
