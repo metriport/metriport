@@ -114,7 +114,7 @@ export function groupSameDiagnosticReports(diagReports: DiagnosticReport[]): {
         const { code, display, system } = c;
         const normalizedSystem = system?.toLowerCase().replace("urn:oid:", "").trim();
 
-        if (code) {
+        if (code && normalizedSystem) {
           identifiers.push({ key: `${code.toLowerCase().trim()}|${normalizedSystem}` });
         }
 
