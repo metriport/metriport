@@ -61,3 +61,5 @@ const tcmEncounterQuerySchema = z
 
 export const tcmEncounterListQuerySchema = tcmEncounterQuerySchema;
 export type TcmEncounterListQuery = z.infer<typeof tcmEncounterListQuerySchema>;
+
+export type TcmEncounterUpsertInput = z.input<typeof tcmEncounterUpsertSchema>;
