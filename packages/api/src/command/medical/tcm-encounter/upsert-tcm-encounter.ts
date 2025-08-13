@@ -1,4 +1,4 @@
-import { TcmEncounterModel } from "@metriport/shared/domain/tcm-encounter";
+import { TcmEncounterModel } from "../../../models/medical/tcm-encounter";
 import { TcmEncounterUpsert } from "@metriport/shared/domain/tcm-encounter";
 
 export async function upsertTcmEncounter(params: TcmEncounterUpsert): Promise<TcmEncounterModel> {
