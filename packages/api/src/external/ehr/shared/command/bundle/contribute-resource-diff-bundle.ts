@@ -167,6 +167,11 @@ function doesResourceReferToEncounter(resource: Resource, encounterReferences: s
     if (!encounter || !encounter.reference) return false;
     return encounterReferences.includes(encounter.reference);
   }
+  if ("context" in resource) {
+    const context = resource.context;
+    if (!context || !("reference" in context) || !context.reference) return false;
+    return encounterReferences.includes(context.reference);
+  }
   return false;
 }
 
@@ -220,7 +225,7 @@ async function uploadEncounterSummaries({
         const { uploadUrl } = await getUploadUrlAndCreateDocRef({
           cxId,
           patientId: metriportPatientId,
-          inputDocRef: {
+          docRefDraft: {
             resourceType: "DocumentReference",
             status: "current",
             docStatus: "final",

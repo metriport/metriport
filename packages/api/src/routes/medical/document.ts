@@ -236,7 +236,7 @@ async function getUploadUrlAndCreateDocRefShared(req: Request): Promise<UploadDo
   return getUploadUrlAndCreateDocRef({
     cxId,
     patientId,
-    inputDocRef: docRefDraft,
+    docRefDraft,
   });
 }
 

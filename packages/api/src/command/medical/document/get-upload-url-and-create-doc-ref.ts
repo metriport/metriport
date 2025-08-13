@@ -14,23 +14,24 @@ const s3Utils = new S3Utils(region);
 export async function getUploadUrlAndCreateDocRef({
   cxId,
   patientId,
-  inputDocRef,
+  docRefDraft,
 }: {
   cxId: string;
   patientId: string;
-  inputDocRef: DocumentReference;
+  docRefDraft: DocumentReference;
 }): Promise<UploadDocumentResult> {
+  const medicalDocumentsUploadBucketName = Config.getMedicalDocumentsUploadBucketName();
   const docRefId = uuidv7();
   const s3FileName = createDocumentFilePath(cxId, patientId, docRefId);
   const organization = await getOrganizationOrFail({ cxId });
 
   const docRef = composeDocumentReference({
-    inputDocRef,
+    inputDocRef: docRefDraft,
     organization,
     patientId,
     docRefId,
     s3Key: s3FileName,
-    s3BucketName: Config.getMedicalDocumentsUploadBucketName(),
+    s3BucketName: medicalDocumentsUploadBucketName,
   });
 
   async function upsertOnFHIRServer() {
@@ -41,7 +42,7 @@ export async function getUploadUrlAndCreateDocRef({
 
   async function getPresignedUrl() {
     return s3Utils.getPresignedUploadUrl({
-      bucket: Config.getMedicalDocumentsUploadBucketName(),
+      bucket: medicalDocumentsUploadBucketName,
       key: s3FileName,
     });
   }
