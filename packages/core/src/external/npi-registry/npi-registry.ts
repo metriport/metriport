@@ -49,7 +49,7 @@ export async function getFacilityByNpiOrFail(npi: string): Promise<NpiRegistryFa
     const field = err.field ?? "Unknown";
     const errorNumber = err.number ?? "Unknown";
 
-    throw new MetriportError(`NPI Registry error: ${description}`, undefined, {
+    throw new MetriportError(`NPI Registry error.`, undefined, {
       npi,
       NPI_REGISTRY_URL,
       NPI_REGISTRY_VERSION,
@@ -63,17 +63,18 @@ export async function getFacilityByNpiOrFail(npi: string): Promise<NpiRegistryFa
     ? parseInt(res.data.result_count, 10)
     : res.data.results?.length;
   if (!count || count < 1) {
-    throw new MetriportError(
-      `NPI Registry error. Found no Facilities with NPI: ${npi}`,
-      undefined,
-      { npi, NPI_REGISTRY_URL, NPI_REGISTRY_VERSION, count }
-    );
+    throw new MetriportError("NPI Registry error. No facilities found.", undefined, {
+      npi,
+      NPI_REGISTRY_URL,
+      NPI_REGISTRY_VERSION,
+      count,
+    });
   } else if (!res.data.results || !res.data.results[0]) {
-    throw new MetriportError(
-      `NPI Registry error. Unexpected missing results for NPI: ${npi}`,
-      undefined,
-      { npi, NPI_REGISTRY_URL, NPI_REGISTRY_VERSION }
-    );
+    throw new MetriportError("NPI Registry error. Missing results.", undefined, {
+      npi,
+      NPI_REGISTRY_URL,
+      NPI_REGISTRY_VERSION,
+    });
   }
 
   const npiFacility = res.data.results[0];
@@ -93,7 +94,9 @@ export function translateNpiFacilityToMetriportFacility(
 ): FacilityInternalDetails {
   const address = npiFacility.addresses[0];
   if (!address) {
-    throw new MetriportError("No address in npi facility was found.", undefined, { address });
+    throw new MetriportError("NPI Registry facility has no address.", undefined, {
+      npiFacilityNumber: npiFacility?.number,
+    });
   }
   const isObo = additionalInfo.facilityType === "obo";
 
