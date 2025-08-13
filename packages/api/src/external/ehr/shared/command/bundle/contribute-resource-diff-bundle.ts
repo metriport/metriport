@@ -6,6 +6,7 @@ import {
   FetchBundleParams,
 } from "@metriport/core/external/ehr/bundle/command/fetch-bundle";
 import { fetchDocument } from "@metriport/core/external/ehr/document/command/fetch-document";
+import { createOrReplaceDocument } from "@metriport/core/external/ehr/document/command/create-or-replace-document";
 import { DocumentType } from "@metriport/core/external/ehr/document/document-shared";
 import { artifactRelatedArtifactUrl } from "@metriport/core/external/fhir/shared/extensions/derived-from";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
@@ -23,6 +24,8 @@ import { handleDataContribution } from "../../../../../command/medical/patient/d
 import { getPatientOrFail } from "../../../../../command/medical/patient/get-patient";
 import { getAthenaPracticeIdFromPatientId } from "../../../athenahealth/shared";
 import { ContributeBundleParams } from "../../utils/bundle/types";
+
+const uploadJobId = "upload";
 
 /**
  * Contribute the resource diff bundle
@@ -78,7 +81,7 @@ export async function contributeResourceDiffBundle({
           secondaryMappings.contributionEncounterAppointmentTypesBlacklist,
       });
     }
-    if (secondaryMappings.contributionEncounterSummariesEnabled) {
+    if (secondaryMappings.contributionEncounterSummariesEnabled && resourceType === "Encounter") {
       await uploadEncounterSummaries({
         ehr,
         bundle: bundle.bundle,
@@ -204,6 +207,17 @@ async function uploadEncounterSummaries({
     if (!entry.resource?.id || entry.resource?.resourceType !== "Encounter") continue;
     const predecessor = getPredecessorExtensionValue(entry.resource);
     if (!predecessor) continue;
+    const uploadedSummary = await fetchDocument({
+      ehr,
+      cxId,
+      metriportPatientId,
+      ehrPatientId,
+      documentType: DocumentType.HTML,
+      resourceType: "Encounter",
+      resourceId: predecessor,
+      jobId: uploadJobId,
+    });
+    if (uploadedSummary) continue;
     const summary = await fetchDocument({
       ehr,
       cxId,
@@ -253,7 +267,21 @@ async function uploadEncounterSummaries({
         await axios.put(uploadUrl, encounterSummary.summary, {
           headers: {
             "Content-Length": Buffer.byteLength(encounterSummary.summary),
+            "Content-Type": "text/html",
           },
+        });
+        const predecessor = getPredecessorExtensionValue(encounterSummary.encounter);
+        if (!predecessor) return;
+        await createOrReplaceDocument({
+          ehr,
+          cxId,
+          metriportPatientId,
+          ehrPatientId,
+          documentType: DocumentType.HTML,
+          resourceType: "Encounter",
+          resourceId: predecessor,
+          payload: encounterSummary.summary,
+          jobId: uploadJobId,
         });
       } catch (error) {
         if (!encounterSummary.encounter.id) return;
