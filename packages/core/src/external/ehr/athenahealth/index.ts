@@ -219,6 +219,7 @@ const validObservationResultStatuses = [
 ];
 
 export const supportedAthenaHealthResources: ResourceType[] = [
+  /*
   "AllergyIntolerance",
   "Condition",
   "DiagnosticReport",
@@ -226,6 +227,7 @@ export const supportedAthenaHealthResources: ResourceType[] = [
   "MedicationRequest",
   "Observation",
   "Procedure",
+  */
   "Encounter",
 ];
 
@@ -1967,7 +1969,7 @@ class AthenaHealthApi {
         try {
           let encounter: Encounter | undefined;
           if (attachAppointmentType) {
-            const encounter = await this.getEncounter({
+            encounter = await this.getEncounter({
               cxId,
               patientId: athenaPatientId,
               encounterId,

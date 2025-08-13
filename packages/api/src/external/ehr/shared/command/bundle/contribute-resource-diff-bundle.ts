@@ -10,7 +10,7 @@ import { fetchDocument } from "@metriport/core/external/ehr/document/command/fet
 import { DocumentType } from "@metriport/core/external/ehr/document/document-shared";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import { MetriportError } from "@metriport/shared";
+import { errorToString, MetriportError } from "@metriport/shared";
 import { athenaSecondaryMappingsSchema } from "@metriport/shared/interface/external/ehr/athenahealth/cx-mapping";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import axios from "axios";
@@ -21,6 +21,9 @@ import { handleDataContribution } from "../../../../../command/medical/patient/d
 import { getPatientOrFail } from "../../../../../command/medical/patient/get-patient";
 import { getAthenaPracticeIdFromPatientId } from "../../../athenahealth/shared";
 import { ContributeBundleParams } from "../../utils/bundle/types";
+import { artifactRelatedArtifactUrl } from "@metriport/core/external/fhir/shared/extensions/derived-from";
+import { log } from "@metriport/core/util/log";
+import { capture } from "@metriport/core/util/notifications";
 
 /**
  * Contribute the resource diff bundle
@@ -78,6 +81,7 @@ export async function contributeResourceDiffBundle({
     }
     if (secondaryMappings.contributionEncounterSummariesEnabled) {
       await uploadEncounterSummaries({
+        ehr,
         bundle: bundle.bundle,
         cxId,
         metriportPatientId,
@@ -177,11 +181,13 @@ function doesResourceReferToEncounter(resource: Resource, encounterReferences: s
  * @param ehrPatientId - The EHR patient ID.
  */
 async function uploadEncounterSummaries({
+  ehr,
   bundle,
   cxId,
   metriportPatientId,
   ehrPatientId,
 }: {
+  ehr: EhrSources;
   bundle: Bundle;
   cxId: string;
   metriportPatientId: string;
@@ -192,58 +198,99 @@ async function uploadEncounterSummaries({
   for (const entry of bundle.entry) {
     if (!entry.resource) continue;
     if (!entry.resource?.id || entry.resource?.resourceType !== "Encounter") continue;
+    const predecessor = getPredecessorExtensionValue(entry.resource);
+    if (!predecessor) continue;
     const summary = await fetchDocument({
-      ehr: EhrSources.athena,
+      ehr,
       cxId,
       metriportPatientId,
       ehrPatientId,
       documentType: DocumentType.HTML,
       resourceType: "Encounter",
-      resourceId: entry.resource.id,
+      resourceId: predecessor,
     });
     if (!summary) continue;
     encounterSummaries.push({ encounter: entry.resource, summary: summary.file });
   }
+  const uploadEncounterErrors: { encounterId: string; error: unknown }[] = [];
   await executeAsynchronously(
     encounterSummaries,
     async encounterSummary => {
-      const { uploadUrl } = await getUploadUrlAndCreateDocRef({
-        cxId,
-        patientId: metriportPatientId,
-        inputDocRef: {
-          resourceType: "DocumentReference",
-          status: "current",
-          docStatus: "final",
-          description: "Encounter summary",
-          type: {
-            text: "Summarization of encounter note Narrative",
-            coding: [
-              {
-                code: "67781-5",
-                system: "http://loinc.org",
-                display: "Summarization of encounter note Narrative",
+      try {
+        const { uploadUrl } = await getUploadUrlAndCreateDocRef({
+          cxId,
+          patientId: metriportPatientId,
+          inputDocRef: {
+            resourceType: "DocumentReference",
+            status: "current",
+            docStatus: "final",
+            description: "Encounter summary",
+            type: {
+              text: "Summarization of encounter note Narrative",
+              coding: [
+                {
+                  code: "67781-5",
+                  system: "http://loinc.org",
+                  display: "Summarization of encounter note Narrative",
+                },
+              ],
+            },
+            context: {
+              period: {
+                start: encounterSummary.encounter.period?.start,
+                end: encounterSummary.encounter.period?.end,
               },
-            ],
-          },
-          context: {
-            period: {
-              start: encounterSummary.encounter.period?.start,
-              end: encounterSummary.encounter.period?.end,
-            },
-            facilityType: {
-              text: encounterSummary.encounter.location?.[0]?.location?.display,
+              facilityType: {
+                text: encounterSummary.encounter.location?.[0]?.location?.display,
+              },
             },
           },
-        },
-      });
-      axios.post(uploadUrl, encounterSummary.summary, {
-        headers: {
-          "Content-Type": "text/html",
-        },
-      });
+        });
+        await axios.put(uploadUrl, encounterSummary.summary, {
+          headers: {
+            "Content-Length": Buffer.byteLength(encounterSummary.summary),
+          },
+        });
+      } catch (error) {
+        if (!encounterSummary.encounter.id) return;
+        log(
+          `Failed to upload encounter summary ${
+            encounterSummary.encounter.id
+          }. Cause: ${errorToString(error)}`
+        );
+        uploadEncounterErrors.push({ error, encounterId: encounterSummary.encounter.id });
+      }
     },
     {
       numberOfParallelExecutions: 1,
     }
   );
+  if (uploadEncounterErrors.length > 0) {
+    const msg = `Failure while uploading some encounter summaries @ ${ehr}`;
+    capture.message(msg, {
+      extra: {
+        uploadEncounterSummariesArgsCount: encounterSummaries.length,
+        uploadEncounterSummariesErrorsCount: uploadEncounterErrors.length,
+        errors: uploadEncounterErrors,
+        context: `${ehr}.upload-encounter-summaries`,
+      },
+      level: "warning",
+    });
+  }
+}
+
+/**
+ * Returns the value of the predecessor extension from an Encounter resource.
+ *
+ * @param encounter - The FHIR Encounter resource.
+ * @returns The value of the predecessor extension, or undefined if not present.
+ */
+function getPredecessorExtensionValue(encounter: Encounter): string | undefined {
+  const extension = encounter.extension;
+  if (!extension) return undefined;
+  const predecessorExtension = extension.find(
+    ext =>
+      ext.url === artifactRelatedArtifactUrl && ext.valueRelatedArtifact?.type === "predecessor"
+  );
+  return predecessorExtension?.valueRelatedArtifact?.display;
 }
