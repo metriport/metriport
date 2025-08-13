@@ -11,7 +11,10 @@ import { paginated } from "../pagination";
 import { validateUUID } from "../schemas/uuid";
 import { asyncHandler, getCxIdOrFail, getFromParamsOrFail } from "../util";
 import { dtoFromTcmEncounter } from "./dtos/tcm-encounter-dto";
-import { tcmEncounterListQuerySchema, tcmEncounterUpdateSchema } from "./schemas/tcm-encounter";
+import {
+  tcmEncounterListQuerySchema,
+  tcmEncounterUpdateSchema,
+} from "@metriport/shared/domain/tcm-encounter";
 
 const router = Router();
 

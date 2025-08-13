@@ -29,6 +29,7 @@ import {
   Hl7NotificationWebhookSender,
 } from "./hl7-notification-webhook-sender";
 import { isSupportedTriggerEvent, SupportedTriggerEvent } from "./utils";
+import { TcmEncounterUpsert } from "@metriport/shared/src/domain/tcm-encounter";
 
 export const dischargeEventCode = "A03";
 
@@ -207,11 +208,13 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
     const { admitTime, dischargeTime, ...basePayload } = tcmEncounterPayload;
     const encounterId = basePayload.id;
     const latestEvent = triggerEvent === "A01" ? "Admitted" : "Discharged";
-    const fullPayload = {
+    const fullPayload: TcmEncounterUpsert = {
       ...basePayload,
+      facilityName: basePayload.facilityName ?? "",
+      class: basePayload.class ?? "",
       latestEvent,
-      ...(admitTime ? { admitTime } : undefined),
-      ...(dischargeTime ? { dischargeTime } : undefined),
+      ...(admitTime ? { admitTime: new Date(admitTime) } : undefined),
+      ...(dischargeTime ? { dischargeTime: new Date(dischargeTime) } : undefined),
     };
 
     const { log } = out(
