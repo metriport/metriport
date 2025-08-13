@@ -1,6 +1,6 @@
-import { buildDayjs } from "@metriport/shared/common/date";
-import { createQueryMetaSchema } from "@metriport/shared/domain/pagination";
-import z from "zod";
+import { buildDayjs } from "../common/date";
+import { createQueryMetaSchema } from "./pagination";
+import { z } from "zod";
 
 const tcmEncounterMaxPageSize = 2500;
 const stringOrNullSchema = z.union([z.string(), z.undefined(), z.null()]);

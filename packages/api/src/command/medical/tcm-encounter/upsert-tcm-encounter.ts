@@ -1,5 +1,5 @@
-import { TcmEncounterModel } from "../../../models/medical/tcm-encounter";
-import { TcmEncounterUpsert } from "../../../routes/medical/schemas/tcm-encounter";
+import { TcmEncounterModel } from "@metriport/shared/domain/tcm-encounter";
+import { TcmEncounterUpsert } from "@metriport/shared/domain/tcm-encounter";
 
 export async function upsertTcmEncounter(params: TcmEncounterUpsert): Promise<TcmEncounterModel> {
   const [encounter, wasCreated] = await TcmEncounterModel.findOrCreate({
