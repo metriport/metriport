@@ -13,6 +13,7 @@ import duration from "dayjs/plugin/duration";
 import { getAllPatientIds } from "../patient/get-ids";
 import { elapsedTimeAsStr } from "../shared/duration";
 import { getCxData } from "../shared/get-cx-data";
+import { buildDayjs } from "@metriport/shared/common/date";
 
 dayjs.extend(duration);
 
@@ -31,14 +32,17 @@ dayjs.extend(duration);
 // Leave empty to run for all patients of the customer
 const patientIds: string[] = [];
 
-const cxId = getEnvVarOrFail("CX_ID");
-const apiUrl = getEnvVarOrFail("API_URL");
-const queueUrl = getEnvVarOrFail("FHIR_TO_CSV_QUEUE_URL");
-
 const numberOfParallelExecutions = 30;
 const confirmationTime = dayjs.duration(10, "seconds");
 
-const sqsClient = new SQSClient({ region: getEnvVarOrFail("AWS_REGION") });
+const fhirToCsvJobId = "F2C_" + buildDayjs().toISOString().slice(0, 19).replace(/[:.]/g, "-");
+
+const cxId = getEnvVarOrFail("CX_ID");
+const apiUrl = getEnvVarOrFail("API_URL");
+const queueUrl = getEnvVarOrFail("FHIR_TO_CSV_QUEUE_URL");
+const region = getEnvVarOrFail("AWS_REGION");
+
+const sqsClient = new SQSClient({ region });
 const api = axios.create({ baseURL: apiUrl });
 
 async function main() {
@@ -46,10 +50,8 @@ async function main() {
   const { log } = out("");
 
   const startedAt = Date.now();
-  log(`>>> Starting...`);
+  log(`>>> Starting at ${buildDayjs().toISOString()}...`);
   const { orgName } = await getCxData(cxId, undefined, false);
-
-  const fhirToCsvJobId = new Date().toISOString().slice(0, 19).replace(/[:.]/g, "-");
 
   const isAllPatients = patientIds.length < 1;
   const patientsToInsert = isAllPatients

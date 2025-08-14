@@ -2,7 +2,7 @@ import { executeWithRetriesS3, S3Utils } from "@metriport/core/external/aws/s3";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { out } from "@metriport/core/util/log";
 import { BadRequestError, errorToString, uuidv4 } from "@metriport/shared";
-import { groupBy, partition } from "lodash";
+import { groupBy, partition, uniqBy } from "lodash";
 import { createGzip } from "zlib";
 
 /**
@@ -11,6 +11,11 @@ import { createGzip } from "zlib";
  */
 
 export const MB_IN_BYTES = 1024 * 1024;
+
+// Too much can result in continuous rate limit errors from S3 (we try up to 5 times)
+const numberOfParallelListObjectsFromS3 = 20;
+// Too much can result in an OOM error at the lambda
+const numberOfParallelMergeFileGroups = 5;
 
 export type GroupAndMergeCSVsParams = {
   sourceBucket: string;
@@ -63,7 +68,7 @@ export async function groupAndMergeCSVs({
   patientIds,
   targetGroupSizeMB,
   region,
-}: GroupAndMergeCSVsParams) {
+}: GroupAndMergeCSVsParams): Promise<MergeResult[]> {
   const grouper = new CSVGrouper({
     sourceBucket,
     sourcePrefix,
@@ -76,11 +81,10 @@ export async function groupAndMergeCSVs({
     region,
   });
 
-  await grouper.groupAndMergeCSVs();
+  return await grouper.groupAndMergeCSVs();
 }
 
 export class CSVGrouper {
-  private readonly s3Utils: S3Utils;
   private readonly sourceBucket: string;
   private readonly sourcePrefix: string;
   private readonly destinationBucket: string;
@@ -89,8 +93,8 @@ export class CSVGrouper {
   private readonly mergeCsvJobId: string;
   private readonly patientIds: string[];
   private readonly targetGroupSizeMB: number;
-  private readonly region: string;
   private readonly trainId: string;
+  private readonly region: string;
 
   constructor({
     sourceBucket,
@@ -103,7 +107,6 @@ export class CSVGrouper {
     targetGroupSizeMB,
     region,
   }: GroupAndMergeCSVsParams) {
-    this.s3Utils = new S3Utils(region);
     this.sourceBucket = sourceBucket;
     this.sourcePrefix = sourcePrefix;
     this.destinationBucket = destinationBucket;
@@ -111,9 +114,9 @@ export class CSVGrouper {
     this.jsonToCsvJobId = jsonToCsvJobId;
     this.mergeCsvJobId = mergeCsvJobId;
     this.patientIds = patientIds;
-    this.region = region;
     this.targetGroupSizeMB = targetGroupSizeMB;
     this.trainId = uuidv4();
+    this.region = region;
   }
 
   get targetGroupSizeBytes(): number {
@@ -123,79 +126,90 @@ export class CSVGrouper {
   /**
    * Main function to group and merge CSV files by type
    */
-  async groupAndMergeCSVs() {
-    const { log } = out("groupAndMergeCSVs");
+  async groupAndMergeCSVs(): Promise<MergeResult[]> {
+    const { log } = out(`mergeId: ${this.mergeCsvJobId}, trainId: ${this.trainId}`);
     log(
-      `Starting CSV grouping process for bucket: ${this.sourceBucket}, jsonToCsvJobId: ${this.jsonToCsvJobId}, mergeCsvJobId: ${this.mergeCsvJobId}`
+      `Starting CSV merge for ${this.patientIds.length} patients - bucket: ${this.sourceBucket}, ` +
+        `jsonToCsvJobId: ${this.jsonToCsvJobId}, numberOfParallelMergeFileGroups: ${numberOfParallelMergeFileGroups}, ` +
+        `numberOfParallelListObjectsFromS3: ${numberOfParallelListObjectsFromS3}`
     );
+    // Store the input params to help debugging issues
+    await this.storeInputParams();
 
-    const allFiles = await this.listAllFiles();
-    log(`Found ${allFiles.length} total files`);
+    let allFiles: FileInfo[] | undefined = await this.listAllFiles(log);
 
     const filesToProcess = allFiles.filter(file => {
       if (file.size < 1) return false;
       if (file.key.endsWith("/")) return false;
       return true;
     });
+    allFiles = undefined;
 
     const fileGroups = this.groupFilesByTypeAndSize(filesToProcess);
-    log(
-      `Created these groups:\n${fileGroups
-        .map(group => {
-          return `.... ${group.groupId}: files: ${group.files.length} (${
-            // TODO ENG-743 import from shared
-            // formatNumber(group.totalSize / MB_IN_BYTES)
-            Math.floor((group.totalSize / MB_IN_BYTES) * 100) / 100
-          } MB)`;
-        })
-        .join("\n")}`
-    );
-    const mergeResults = await this.mergeFileGroups(fileGroups);
-    log(`Completed merging ${mergeResults.length} groups`);
+    const s3Utils = new S3Utils(this.region);
+    const mergeInfoPrefix = this.buildMergeInfoPrefix();
+    await s3Utils.uploadFile({
+      bucket: this.destinationBucket,
+      key: `${mergeInfoPrefix}/${this.trainId}_groups.json`,
+      file: Buffer.from(JSON.stringify(fileGroups, null, 2)),
+    });
+
+    const mergeResults = await this.mergeFileGroups(fileGroups, log);
+
+    return mergeResults;
+  }
+
+  private async storeInputParams(): Promise<void> {
+    const params = {
+      numberOfParallelMergeFileGroups,
+      numberOfParallelListObjectsFromS3,
+      jsonToCsvJobId: this.jsonToCsvJobId,
+      mergeCsvJobId: this.mergeCsvJobId,
+      sourceBucket: this.sourceBucket,
+      sourcePrefix: this.sourcePrefix,
+      destinationBucket: this.destinationBucket,
+      destinationPrefix: this.destinationPrefix,
+      patientIds: this.patientIds,
+    };
+    const s3Utils = new S3Utils(this.region);
+    const mergeInfoPrefix = this.buildMergeInfoPrefix();
+    await s3Utils.uploadFile({
+      bucket: this.destinationBucket,
+      key: `${mergeInfoPrefix}/${this.trainId}_params.json`,
+      file: Buffer.from(JSON.stringify(params, null, 2)),
+    });
   }
 
   /**
    * Lists all files in the source bucket
    */
-  private async listAllFiles(): Promise<FileInfo[]> {
-    const { log } = out("listAllFiles");
+  private async listAllFiles(log: typeof console.log): Promise<FileInfo[]> {
     const files: FileInfo[] = [];
-
-    const s3Utils = new S3Utils(this.region);
+    const startedAt = Date.now();
+    log(`Listing files...`);
 
     // Going through each patient (concurrently) instead of listing all files in in the customer's
     // because listing all files of all patients in one go was very slow.
-    const startedAt = Date.now();
     const rawFileList: AWS.S3.ObjectList = [];
     await executeAsynchronously(
       this.patientIds,
       async ptId => {
-        // old
-        // snowflake/fhir-to-csv/15ae0cea-e90a-4a49-82e4-42164c74b0aa/01981325-f688-70bc-9cb8-79c4b405755d/2025-08-08T02-18-56/_tmp_fhir-to-csv_output_15ae0cea-e90a-4a49-82e4-42164c74b0aa_01981325-f688-70bc-9cb8-79c4b405755d_condition.csv
-        // new as of 2025-08-11
-        // snowflake/fhir-to-csv/15ae0cea-e90a-4a49-82e4-42164c74b0aa/2025-08-08T02-18-56/01981325-f688-70bc-9cb8-79c4b405755d/_tmp_fhir-to-csv_output_15ae0cea-e90a-4a49-82e4-42164c74b0aa_01981325-f688-70bc-9cb8-79c4b405755d_condition.csv
+        const s3Utils = new S3Utils(this.region);
         const prefixToSearch = `${this.sourcePrefix}/${this.jsonToCsvJobId}/${ptId}`;
         const patientFiles = await s3Utils.listObjects(this.sourceBucket, prefixToSearch);
         rawFileList.push(...patientFiles);
       },
       {
-        numberOfParallelExecutions: 20,
+        numberOfParallelExecutions: numberOfParallelListObjectsFromS3,
         minJitterMillis: 10,
         maxJitterMillis: 50,
       }
     );
-    const finishedAt = Date.now();
-    log(`Listed ${rawFileList.length} raw files in ${finishedAt - startedAt}ms`);
 
     files.push(
       ...rawFileList.flatMap(obj => {
         if (obj.Key && obj.Key.includes(this.jsonToCsvJobId)) {
-          // old
-          // snowflake/fhir-to-csv/15ae0cea-e90a-4a49-82e4-42164c74b0aa/01981325-f688-70bc-9cb8-79c4b405755d/2025-08-08T02-18-56/_tmp_fhir-to-csv_output_15ae0cea-e90a-4a49-82e4-42164c74b0aa_01981325-f688-70bc-9cb8-79c4b405755d_condition.csv
-          // new as of 2025-08-11
-          // snowflake/fhir-to-csv/15ae0cea-e90a-4a49-82e4-42164c74b0aa/2025-08-08T02-18-56/01981325-f688-70bc-9cb8-79c4b405755d/_tmp_fhir-to-csv_output_15ae0cea-e90a-4a49-82e4-42164c74b0aa_01981325-f688-70bc-9cb8-79c4b405755d_condition.csv
-          const tableName =
-            obj.Key.split("/")[5]?.split("_").slice(6).join("_").split(".")[0] || "";
+          const tableName = parseTableNameFromKey(obj.Key);
           return {
             key: obj.Key,
             size: obj.Size ?? 0,
@@ -206,24 +220,26 @@ export class CSVGrouper {
       })
     );
 
-    log(`Returning info for ${files.length} files from bucket ${this.sourceBucket}`);
-    return files;
+    const uniqueFiles = uniqBy(files, file => file.key);
+    const finishedAt = Date.now();
+    log(
+      `Returning ${uniqueFiles.length} files (${files.length} pre-uniq) - took ${
+        finishedAt - startedAt
+      }ms`
+    );
+    return uniqueFiles;
   }
 
   /**
    * Groups files by type and size into evenly balanced chunks.
    */
   private groupFilesByTypeAndSize(files: FileInfo[]): FileGroup[] {
-    const { log } = out("groupFilesByTypeAndSize");
-
     const grouped = groupBy(files, file => file.tableName);
 
     const fileGroups: FileGroup[] = [];
 
     // For each file type, create evenly balanced groups
     for (const [tableName, typeFiles] of Object.entries(grouped)) {
-      // log(`Processing ${typeFiles.length} files of table: ${tableName}`);
-
       const [filesLargerThanTargetGroupSize, filesSmallerThanTargetGroupSize] = partition(
         typeFiles,
         file => file.size > this.targetGroupSizeBytes
@@ -246,14 +262,6 @@ export class CSVGrouper {
       // Calculate total size and optimal number of groups
       const totalSize = sortedFiles.reduce((sum, file) => sum + file.size, 0);
       const optimalGroupCount = Math.max(1, Math.ceil(totalSize / this.targetGroupSizeBytes));
-      // const targetGroupSize = totalSize / optimalGroupCount;
-      // log(
-      //   `Total size: ${(totalSize / MB_IN_BYTES).toFixed(
-      //     2
-      //   )} MB, Target groups: ${optimalGroupCount}, Target group size: ${(
-      //     targetGroupSize / MB_IN_BYTES
-      //   ).toFixed(2)} MB`
-      // );
 
       // Use a greedy approach with multiple passes to balance groups
       const groups: FileInfo[][] = Array.from({ length: optimalGroupCount }, () => []);
@@ -299,65 +307,123 @@ export class CSVGrouper {
       }
     }
 
-    log(`Created ${fileGroups.length} file groups`);
     return fileGroups;
   }
 
   /**
-   * Merges files in each group. Run them in sequence to avoid running out of memory (optimizing
-   * for output bundle size - larger files).
+   * Merges each groups' files into their respective compressed CSV files.
    */
-  private async mergeFileGroups(fileGroups: FileGroup[]): Promise<MergeResult[]> {
-    const { log } = out("mergeFileGroups");
+  private async mergeFileGroups(
+    fileGroups: FileGroup[],
+    log: typeof console.log
+  ): Promise<MergeResult[]> {
     const results: MergeResult[] = [];
+    const startedAt = Date.now();
+
+    log(`Merging ${fileGroups.length} file groups`);
 
     let idx = 0;
-    for (const fileGroup of fileGroups) {
-      try {
-        const result = await this.mergeFileGroup(fileGroup);
-        results[idx++] = result;
-      } catch (error) {
-        log(`Error merging group ${fileGroup.groupId}: ${errorToString(error)}`);
-        throw error;
+    const errors: { fileGroup: FileGroup; error: string }[] = [];
+    await executeAsynchronously(
+      fileGroups,
+      async (fileGroup: FileGroup) => {
+        try {
+          const result = await executeWithRetriesS3(() => this.mergeFileGroup(fileGroup, log));
+          results[idx++] = result;
+        } catch (error) {
+          log(`Error merging group ${fileGroup.groupId}: ${errorToString(error)}`);
+          errors.push({ fileGroup, error: errorToString(error) });
+          throw error;
+        }
+      },
+      {
+        numberOfParallelExecutions: numberOfParallelMergeFileGroups,
+        minJitterMillis: 50,
+        maxJitterMillis: 200,
       }
+    );
+    if (errors.length > 0) {
+      log(
+        `Errors merging ${errors.length} groups: ${errors
+          .map(e => `${e.fileGroup.tableName}/${e.fileGroup.groupId}`)
+          .join(", ")}`
+      );
+      throw new Error(`Errors merging groups`);
     }
+    log(`Completed merging ${results.length} groups - took ${Date.now() - startedAt}ms`);
+
     return results.filter(Boolean);
   }
 
   /**
-   * Merges a single group of files
+   * Merges a single group of files into a single compressed CSV file
    */
-  private async mergeFileGroup(fileGroup: FileGroup): Promise<MergeResult> {
-    const { log } = out("mergeFileGroup");
+  private async mergeFileGroup(
+    fileGroup: FileGroup,
+    log: typeof console.log
+  ): Promise<MergeResult> {
     const { files, groupId, tableName } = fileGroup;
 
+    const s3Utils = new S3Utils(this.region);
     const outputKey = this.buildOutputKey(fileGroup);
 
-    const chunks: Buffer[] = [];
+    log(`Merging ${files.length} files for ${tableName}, groupId ${groupId}`);
 
-    await executeAsynchronously(files, async file => {
-      let fileContent = await executeWithRetriesS3(() =>
-        this.s3Utils.getFileContentsAsString(this.sourceBucket, file.key)
-      );
-      chunks.push(Buffer.from(fileContent));
-      fileContent = "";
+    // Create a streaming gzip compressor
+    const gzip = createGzip();
+    const compressedChunks: Buffer[] = [];
+
+    // Set up gzip event handlers
+    gzip.on("data", (chunk: Buffer) => compressedChunks.push(chunk));
+
+    // Process files sequentially to avoid memory issues
+    let amountOfFilesProcessed = 0;
+    for (const file of files) {
+      // Get S3 read stream and pipe directly to gzip
+      const s3ReadStream = s3Utils.s3
+        .getObject({
+          Bucket: this.sourceBucket,
+          Key: file.key,
+        })
+        .createReadStream();
+
+      // Pipe S3 stream directly to gzip without loading into memory
+      s3ReadStream.pipe(gzip, { end: false });
+
+      // Wait for this file's stream to complete before processing the next
+      await new Promise<void>((resolve, reject) => {
+        s3ReadStream.on("end", () => resolve());
+        s3ReadStream.on("error", reject);
+      });
+
+      amountOfFilesProcessed++;
+      if (amountOfFilesProcessed % 50 === 0) {
+        log(`Processed ${amountOfFilesProcessed} files, tableName ${tableName}`);
+      }
+    }
+    log(`Processed ${amountOfFilesProcessed} files, tableName ${tableName}`);
+
+    // End the gzip stream and wait for completion
+    gzip.end();
+    // Wait for gzip to finish processing all data
+    await new Promise<void>((resolve, reject) => {
+      gzip.on("end", () => resolve());
+      gzip.on("error", reject);
     });
 
-    let combinedContent: Buffer | undefined = Buffer.concat(chunks);
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const gzippedContent = await this.compressBuffer(combinedContent!);
+    const gzippedContent = Buffer.concat(compressedChunks);
     const totalSize = gzippedContent.length;
-    combinedContent = undefined;
+    compressedChunks.length = 0;
 
-    await this.s3Utils.uploadFile({
+    log(`Compressed, uploading to S3...`);
+    await s3Utils.uploadFile({
       bucket: this.destinationBucket,
       key: outputKey,
       file: gzippedContent,
       contentType: "application/gzip",
     });
 
-    log(`Successfully merged group ${groupId} to ${outputKey}`);
-
+    log(`Successfully merged ${tableName}, groupId ${groupId}, to ${outputKey}`);
     return {
       tableName: tableName,
       groupId,
@@ -367,36 +433,28 @@ export class CSVGrouper {
     };
   }
 
+  private buildMergePrefix(): string {
+    return `${this.destinationPrefix}/run=${this.mergeCsvJobId}`;
+  }
+  private buildMergeInfoPrefix(): string {
+    return `${this.buildMergePrefix()}/_info`;
+  }
   private buildOutputKey(fileGroup: FileGroup): string {
-    return `${this.destinationPrefix}/run=${this.mergeCsvJobId}/${fileGroup.tableName}/train=${this.trainId}/${fileGroup.groupId}.csv.gz`;
+    const mergePrefix = this.buildMergePrefix();
+    return `${mergePrefix}/${fileGroup.tableName}/train=${this.trainId}/${fileGroup.groupId}.csv.gz`;
   }
+}
 
-  /**
-   * TODO ENG-743 MOVE THIS TO CORE
-   * TODO ENG-743 MOVE THIS TO CORE
-   * TODO ENG-743 MOVE THIS TO CORE
-   *
-   * Helper method to compress a buffer using gzip
-   */
-  private async compressBuffer(buffer: Buffer): Promise<Buffer> {
-    return new Promise((resolve, reject) => {
-      const gzip = createGzip();
-      const chunks: Buffer[] = [];
-
-      gzip.on("data", (chunk: Buffer) => chunks.push(chunk));
-      gzip.on("end", () => resolve(Buffer.concat(chunks)));
-      gzip.on("error", reject);
-
-      gzip.write(buffer);
-      gzip.end();
-    });
-  }
+function parseTableNameFromKey(key: string): string {
+  // e.g.: snowflake/fhir-to-csv/cx-id/2025-08-08T02-18-56/patient-id/_tmp_fhir-to-csv_output_cx-id_patient-id_condition.csv
+  const tableName = key.split("/")[5]?.split("_").slice(6).join("_").split(".")[0] || "";
+  return tableName;
 }
 
 /**
  * Lambda handler entry point for AWS Lambda
  */
-export async function handler(params: GroupAndMergeCSVsParams) {
+export async function handler(params: GroupAndMergeCSVsParams): Promise<MergeResult[]> {
   const {
     sourceBucket,
     sourcePrefix,
@@ -423,28 +481,7 @@ export async function handler(params: GroupAndMergeCSVsParams) {
     throw new BadRequestError(`Missing required parameters`);
   }
 
-  await groupAndMergeCSVs(params);
-}
+  const results = await groupAndMergeCSVs(params);
 
-// metriport-analytics-platform-production/snowflake/fhir-to-csv/15ae0cea-e90a-4a49-82e4-42164c74b0aa/01981325-f688-70bc-9cb8-79c4b405755d/2025-08-08T02-18-56
-// groupAndMergeCSVs({
-//   sourceBucket: "metriport-analytics-platform-production",
-//   sourcePrefix: "snowflake/fhir-to-csv/15ae0cea-e90a-4a49-82e4-42164c74b0aa",
-//   destinationBucket: "metriport-analytics-platform-production",
-//   destinationPrefix: "snowflake/merged/15ae0cea-e90a-4a49-82e4-42164c74b0aa",
-//   jobId: "2025-08-08T02-23-29",
-//   region: "us-west-1",
-//   patientIds: [
-//     "01981484-89cf-79ca-8a30-fecaa88d9bb7",
-//     "01981a23-495b-7339-b678-2e3363b48a60",
-//     "019814ef-b8e6-781c-98e6-338dee77a01d",
-//     "01981a24-fd9d-76cb-8608-8c4e0721087a",
-//     "01981ab7-f842-7177-bd31-07ded77ff616",
-//     "01981b4d-973e-7516-969b-a152a884a2da",
-//     "01981b5c-1f75-71d2-9550-8e8e3cc6789c",
-//     "01981b7e-a005-7957-b60a-067a8c6c0689",
-//     "01981bba-03d1-785a-a9f5-6644481e0ab7",
-//     "01981b94-afa7-7507-b844-9b2f148d2e83",
-//     "01981ab1-5a28-79d7-9f39-5a997951bb6c",
-//   ],
-// });
+  return results;
+}

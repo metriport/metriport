@@ -52,7 +52,7 @@
     "@aws-sdk/client-cloudwatch-logs": "^3.800.1",
     "@aws-sdk/client-cognito-identity-provider": "^3.800.0",
     "@aws-sdk/client-healthlake": "^3.800.0",
-    "@langchain/core": "^0.3.19",
+    "@aws-sdk/client-lambda": "^3.865.0",
     "@metriport/api-sdk": "file:packages/api-sdk",
     "@metriport/commonwell-sdk": "5.9.11",
     "@metriport/core": "file:packages/core",
@@ -76,7 +76,8 @@
     "mime-types": "^2.1.35",
     "playwright": "^1.39.0",
     "readline-sync": "^1.4.10",
-    "sequelize": "^6.31.0"
+    "sequelize": "^6.31.0",
+    "snowflake-sdk": "^2.2.0"
   },
   "devDependencies": {
     "@faker-js/faker": "^8.0.2",

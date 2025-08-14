@@ -1,17 +1,19 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
-import { getLambdaResultPayload, makeLambdaClient } from "@metriport/core/external/aws/lambda";
+import { InvokeCommand } from "@aws-sdk/client-lambda";
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { out } from "@metriport/core/util/log";
 import { errorToString, getEnvVarOrFail, sleep } from "@metriport/shared";
+import { buildDayjs } from "@metriport/shared/common/date";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import fs from "fs";
 import { chunk } from "lodash";
 import { elapsedTimeAsStr } from "../shared/duration";
 import { getCxData } from "../shared/get-cx-data";
+import { getLambdaResultPayloadV3, makeLambdaClientV3 } from "@metriport/core/external/aws/lambda";
 
 dayjs.extend(duration);
 
@@ -27,73 +29,78 @@ dayjs.extend(duration);
  * - set env vars on .env file
  * - set patientIds array with the patient IDs you want to insert (or leave empty to
  *   run for all patients of the selected FhirToCsv job)
- * - run `ts-node src/analytics-platform/2-merge-csvs.ts` <fhirToCsvJobId>
+ * - run `ts-node src/analytics-platform/2-merge-csvs.ts <fhirToCsvJobId>`
  */
 
 // Leave empty to run for all patients of the selected FhirToCsv job
-const patientIds: string[] = [
-  // "01981631-4ef0-7db5-b665-aeb60a2f3f39",
-  // "0198193d-3631-787d-aa8e-463b9d15edfd",
-];
+const patientIds: string[] = [];
 
-// The job that converted the FHIR data to CSV
 const fhirToCsvJobId = process.argv[2];
 
 // TODO ENG-743 Create through infra
 const lambdaName = "tmpCsvMerger";
-const patientsPerChunk = 5_000; // important so we don't get an OOM error at the lambda
-/** Size of each resulting CSV file, uncompressed. */
-const targetGroupSizeMB = 3_000;
 
-const numberOfParallelExecutions = 2; // don't increase this too much, as the lambdas already fanout 20x request to S3
+// Too much can result in an OOM error at the lambda
+// Too little can result in too small, too many compressed files
+const maxPatientCountPerLambda = 1_200;
+
+/** Size of each resulting CSV file, uncompressed. */
+const maxUncompressedSizePerFileInMB = 800;
+
+const numberOfParallelLambdaInvocations = 20; // don't increase this too much, as the lambdas already fanout 20x request to S3
+
+const mergeCsvJobId = "MRG_" + buildDayjs().toISOString().slice(0, 19).replace(/[:.]/g, "-");
+
 const lambdaTimeout = dayjs.duration(15, "minutes");
-const confirmationTime = dayjs.duration(10, "seconds");
+const confirmationTime = dayjs.duration(1, "seconds");
 
 const cxId = getEnvVarOrFail("CX_ID");
 const region = getEnvVarOrFail("AWS_REGION");
 const bucketName = getEnvVarOrFail("ANALYTICS_BUCKET_NAME");
-
 const s3Utils = new S3Utils(region);
-
-// This single run, that triggers many lambdas
-const mergeCsvJobId = new Date().toISOString().slice(0, 19).replace(/[:.]/g, "-");
 
 // TODO ENG-743 Type this from core when the code is moved there
 const defaultPayload = {
   sourceBucket: bucketName,
-  // TODO UPDATE THIS
   sourcePrefix: "snowflake/fhir-to-csv/" + cxId,
-  // sourcePrefix: "snowflake/fhir-to-csv_pre-2025-08-11/" + cxId,
   destinationBucket: bucketName,
   destinationPrefix: "snowflake/merged/" + cxId,
   jsonToCsvJobId: fhirToCsvJobId,
   mergeCsvJobId,
-  targetGroupSizeMB,
+  targetGroupSizeMB: maxUncompressedSizePerFileInMB,
   region,
 };
 
-const lambdaClient = makeLambdaClient(region, lambdaTimeout.asMilliseconds());
+const lambdaClient = makeLambdaClientV3(region, lambdaTimeout.asMilliseconds());
+
+const globalIds: string[] = [];
 
 async function main() {
   await sleep(100);
   const { log } = out("");
 
   const startedAt = Date.now();
-  log(`>>> Starting at ${new Date().toISOString()}...`);
+  log(`>>> Starting at ${buildDayjs().toISOString()}...`);
   const { orgName } = await getCxData(cxId, undefined, false);
 
   const isAllPatients = patientIds.length < 1;
+  if (isAllPatients) {
+    log(
+      `>>> Getting patient IDs from FhirToCsv job ${fhirToCsvJobId} from S3 (this can take a while)...`
+    );
+  }
   const patientsToMerge = isAllPatients
     ? await getPatientIdsFromFhirToCsvJob({ fhirToCsvJobId })
     : patientIds;
   const uniquePatientIds = [...new Set(patientsToMerge)];
-
-  const patientIdChunks = chunk(uniquePatientIds, patientsPerChunk);
+  const patientIdChunks = chunk(uniquePatientIds, maxPatientCountPerLambda);
 
   await displayWarningAndConfirmation(uniquePatientIds, isAllPatients, orgName, log);
   log(
     `>>> Running it for ${uniquePatientIds.length} patients (${patientIdChunks.length} chunks of ` +
-      `${patientsPerChunk} patients each)... mergeCsvJobId: ${mergeCsvJobId}, fhirToCsvJobId: ${fhirToCsvJobId}`
+      `${maxPatientCountPerLambda} patients each)...\n- mergeCsvJobId: ${mergeCsvJobId}\n- fhirToCsvJobId: ${fhirToCsvJobId}` +
+      `\n- maxPatientCountPerLambda: ${maxPatientCountPerLambda}\n- numberOfParallelLambdaInvocations: ${numberOfParallelLambdaInvocations}` +
+      `\n- maxUncompressedSizePerFileInMB: ${maxUncompressedSizePerFileInMB}`
   );
 
   const failedPatientIds: string[][] = [];
@@ -101,16 +108,24 @@ async function main() {
 
   await executeAsynchronously(
     patientIdChunks,
-    async patientIds => {
-      const payload = { ...defaultPayload, patientIds };
+    async ptIdsOfThisRun => {
+      const runTimestamp = buildDayjs().toISOString();
+      const payload = { ...defaultPayload, patientIds: ptIdsOfThisRun };
+
+      // TODO Revert this, for debugging purposes only
+      if (globalIds.some(id => ptIdsOfThisRun.includes(id))) {
+        log(`>>>>>>>>>>>>>>> These IDs have been processed before: ${ptIdsOfThisRun.join(", ")}`);
+        return;
+      }
+      globalIds.push(...ptIdsOfThisRun);
+
       try {
-        const lambdaResult = await lambdaClient
-          .invoke({
-            FunctionName: lambdaName,
-            InvocationType: "RequestResponse",
-            Payload: JSON.stringify(payload),
-          })
-          .promise();
+        const invokeCommand = new InvokeCommand({
+          FunctionName: lambdaName,
+          Payload: JSON.stringify(payload),
+          InvocationType: "RequestResponse",
+        });
+        const lambdaResult = await lambdaClient.send(invokeCommand);
 
         if (lambdaResult.StatusCode !== 200) {
           throw new Error("Lambda invocation failed");
@@ -118,27 +133,30 @@ async function main() {
         if (!lambdaResult.Payload) {
           throw new Error("Payload is undefined");
         }
-        amountOfPatientsProcessed += patientIds.length;
-        if (amountOfPatientsProcessed % 100 === 0) {
-          log(`>>> Processed ${amountOfPatientsProcessed}/${uniquePatientIds.length} patients`);
-        }
-        getLambdaResultPayload({ result: lambdaResult, lambdaName });
+        getLambdaResultPayloadV3({ result: lambdaResult, lambdaName });
+        amountOfPatientsProcessed += ptIdsOfThisRun.length;
+        log(`>>> Processed ${amountOfPatientsProcessed}/${uniquePatientIds.length} patients`);
       } catch (error) {
         log(
-          `Failed invoking lambda for ${patientIds.length} patients - reason: ${errorToString(
-            error
-          )}`
+          `${runTimestamp} - Failed invoking lambda for ${ptIdsOfThisRun.length} patients - ` +
+            `reason: ${errorToString(error)}`
         );
-        failedPatientIds.push(patientIds);
+        const outputFile = `2-merge-csvs_failed-patient-ids_${mergeCsvJobId}_${runTimestamp}.txt`;
+        fs.writeFileSync(outputFile, ptIdsOfThisRun.join("\n"));
+        failedPatientIds.push(ptIdsOfThisRun);
       }
     },
-    { numberOfParallelExecutions, minJitterMillis: 100, maxJitterMillis: 300 }
+    {
+      numberOfParallelExecutions: numberOfParallelLambdaInvocations,
+      minJitterMillis: 100,
+      maxJitterMillis: 300,
+    }
   );
 
   log(``);
   if (failedPatientIds.length > 0) {
     const flatPatientIds = failedPatientIds.flat();
-    const outputFile = "2-merge-csvs_failed-patient-ids_" + mergeCsvJobId + ".txt";
+    const outputFile = `2-merge-csvs_failed-patient-ids_${mergeCsvJobId}_ALL.txt`;
     log(`>>> FAILED to invoke lambda for ${flatPatientIds.length} patients - see ${outputFile}`);
     fs.writeFileSync(outputFile, flatPatientIds.join("\n"));
   }
