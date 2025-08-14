@@ -17,7 +17,7 @@ const router = Router();
  * @returns 200 OK
  */
 router.post(
-  "/setup",
+  "/",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const parentName = getFromQueryOrFail("parentName", req);

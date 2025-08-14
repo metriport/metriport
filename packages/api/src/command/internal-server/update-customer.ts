@@ -12,7 +12,7 @@ export async function updateCustomerBillingToPointToParent({
 }: Props): Promise<void> {
   const url = Config.getCxBillingUrl();
   if (!url) throw new Error("CX_BILLING_URL not configured");
-  const urlWithParams = `${url}?cxId=${childCxId}&parentName=${parentName}`;
+  const urlWithParams = `${url}/${parentName}?cxId=${childCxId}`;
 
   const internalServerApi = new InternalServerApi();
   await internalServerApi.makeRequest("PUT", urlWithParams);
