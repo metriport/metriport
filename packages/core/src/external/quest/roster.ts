@@ -1,23 +1,21 @@
-import { Config } from "../../util/config";
 import axios from "axios";
+import { Config } from "../../util/config";
+import { Patient } from "@metriport/shared/domain/patient";
 import { questRosterResponseSchema } from "./types";
-import { generateRosterFile } from "./file/file-generator";
+import { buildRosterFile } from "./file/file-generator";
 import { out } from "../../util";
 
-export async function generateQuestRoster() {
+export async function generateQuestRoster(): Promise<Buffer> {
   const { log } = out("QuestRoster");
-  const internalApi = axios.create({
-    baseURL: Config.getApiUrl(),
-  });
-  const internalRosterRoute = "/internal/quest/roster";
-
-  const response = await internalApi.get(internalRosterRoute);
-  try {
+  let currentUrl: string | undefined = `${Config.getApiUrl()}/internal/quest/roster`;
+  const enrolledPatients: Patient[] = [];
+  do {
+    const response = await axios.get(currentUrl);
     const rosterPage = questRosterResponseSchema.parse(response.data);
-    const rosterFile = generateRosterFile(rosterPage.patients);
-    log("Generated roster file");
-    console.log(rosterFile.content.toString("utf-8"));
-  } catch (error) {
-    console.error(JSON.stringify(error, null, 2));
-  }
+    enrolledPatients.push(...rosterPage.patients);
+    currentUrl = rosterPage.meta.nextPage;
+  } while (currentUrl);
+  const rosterFile = buildRosterFile(enrolledPatients);
+  log(`Generated roster file with ${enrolledPatients.length} patients`);
+  return rosterFile;
 }

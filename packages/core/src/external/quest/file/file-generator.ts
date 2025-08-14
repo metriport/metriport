@@ -1,4 +1,3 @@
-import crypto from "crypto";
 import { z } from "zod";
 import { Patient } from "@metriport/shared/domain/patient";
 import { MetriportError } from "@metriport/shared";
@@ -16,57 +15,38 @@ import {
 } from "../schema/request";
 import { OutgoingFileRowSchema } from "../schema/shared";
 
-interface QuestRequestFile {
-  content: Buffer;
-  patientIdMap: Record<string, string>;
-}
-
-// Builds a 15 character patient ID
-function createPatientId(): string {
-  const randomSixteenChars = crypto.randomBytes(8).toString("hex");
-  return randomSixteenChars.substring(0, 15);
-}
-
-export function generateRosterFile(patients: Patient[]): QuestRequestFile {
+export function buildRosterFile(patients: Patient[]): Buffer {
   const requestedPatientIds: string[] = [];
-  const patientIdMap: Record<string, string> = {};
 
-  const header = toQuestRequestRow(
+  const header = buildQuestRequestRow(
     { recordType: "H", generalMnemonic: "METRIP", fileCreationDate: new Date() },
     requestHeaderSchema,
     requestHeaderRow
   );
 
   const details = patients.flatMap(patient => {
-    // Build a unique patient ID mapping
-    let mappedPatientId = createPatientId();
-    while (patientIdMap[mappedPatientId]) {
-      mappedPatientId = createPatientId();
-    }
-
     // Generate the request row for this patient
-    const row = generatePatientRequestRow(patient, mappedPatientId);
+    const row = buildPatientRow(patient);
     if (row) {
       requestedPatientIds.push(patient.id);
-      patientIdMap[patient.id] = mappedPatientId;
       return [row];
     }
     return [];
   });
 
-  const footer = toQuestRequestRow(
+  const footer = buildQuestRequestRow(
     { recordType: "T", totalRecords: requestedPatientIds.length },
     requestFooterSchema,
     requestFooterRow
   );
 
-  return {
-    content: Buffer.concat([header, ...details, footer]),
-    patientIdMap,
-  };
+  return Buffer.concat([header, ...details, footer]);
 }
 
-function generatePatientRequestRow(patient: Patient, mappedPatientId: string): Buffer | undefined {
+function buildPatientRow(patient: Patient): Buffer | undefined {
+  if (!patient.externalId) {
+    return undefined;
+  }
   const { firstName, lastName, middleName } = makeNameDemographics(patient);
   const middleInitial = middleName.substring(0, 1);
 
@@ -76,12 +56,12 @@ function generatePatientRequestRow(patient: Patient, mappedPatientId: string): B
   if (!address || !address.addressLine1 || !address.city || !address.state || !address.zip)
     return undefined;
 
-  return toQuestRequestRow(
+  return buildQuestRequestRow(
     {
       recordType: "E",
       relationshipCode: RelationshipToSubscriber.Self,
       relationshipToSubscriber: RelationshipToSubscriber.Self,
-      patientId: mappedPatientId,
+      patientId: patient.externalId,
       firstName,
       middleInitial,
       lastName,
@@ -103,7 +83,7 @@ function generatePatientRequestRow(patient: Patient, mappedPatientId: string): B
   );
 }
 
-export function toQuestRequestRow<T extends object>(
+export function buildQuestRequestRow<T extends object>(
   row: T,
   objectSchema: z.ZodObject<z.ZodRawShape>,
   rowSchema: OutgoingFileRowSchema<T>
