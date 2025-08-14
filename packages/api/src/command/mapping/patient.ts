@@ -103,3 +103,15 @@ export function getSourceMapForPatient({
   }, {} as PatientSourceIdentifierMap);
   return Object.keys(sourceMap).length > 0 ? sourceMap : undefined;
 }
+
+export async function getPatientMappingsForSource({
+  cxId,
+  patientId,
+  source,
+}: Omit<PatientMappingParams, "externalId">): Promise<PatientMapping[]> {
+  const mappings = await PatientMappingModel.findAll({
+    where: { cxId, patientId, source },
+    order: [["createdAt", "ASC"]],
+  });
+  return mappings.map(m => m.dataValues);
+}
