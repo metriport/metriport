@@ -2,6 +2,7 @@ import { MetriportError } from "@metriport/shared";
 import { Config } from "../../util/config";
 import { SftpClient } from "../sftp/client";
 import { generateQuestRoster } from "./roster";
+import { buildRosterFileName } from "./file/file-names";
 import { QuestSftpConfig } from "./types";
 
 export class QuestSftpClient extends SftpClient {
@@ -31,9 +32,10 @@ export class QuestSftpClient extends SftpClient {
 
   async generateAndUploadRoster(): Promise<void> {
     const rosterFile = await generateQuestRoster();
+    const rosterFileName = buildRosterFileName();
     try {
       await this.connect();
-      await this.writeToQuest("METRIPORT_20250825.txt", rosterFile);
+      await this.writeToQuest(rosterFileName, rosterFile);
     } catch (error) {
       throw new MetriportError(`Failed to upload Quest roster`, error, {
         context: "QuestSftpClient",
