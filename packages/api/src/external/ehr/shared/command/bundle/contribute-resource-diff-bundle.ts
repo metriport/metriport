@@ -120,7 +120,12 @@ export async function contributeResourceDiffBundle({
  * appointment types present in the blacklist. It also removes any resources referenced by
  * those Encounters.
  *
- * @param params - The parameters for the function.
+ * @param ehr - The EHR source.
+ * @param cxId - The CX ID of the patient.
+ * @param metriportPatientId - The Metriport patient ID.
+ * @param ehrPatientId - The patient id of the EHR patient.
+ * @param resourceType - The resource type.
+ * @param jobId - The job ID.
  * @param params.bundle - The FHIR Bundle to mutate.
  * @param params.blacklistedAppointmentTypes - The list of appointment types to exclude.
  */
@@ -143,24 +148,26 @@ async function dangerouslyRemoveEncounterEntriesWithBlacklistedAppointmentType({
   bundle: Bundle;
   blacklistedAppointmentTypes: string[];
 }): Promise<void> {
-  if (!bundle.entry) return;
+  if (!bundle.entry || bundle.entry.length < 1) return;
   const encounters: Encounter[] = bundle.entry
     .filter(entry => entry.resource?.resourceType === "Encounter")
     .map(entry => entry.resource as Encounter);
+  if (encounters.length < 1) return;
   const encountersToRemove = encounters.filter((encounter: Encounter) => {
-    if (!encounter.extension) return true;
+    if (!encounter.extension || encounter.extension.length < 1) return true;
     const appointmentTypeExtension = encounter.extension.find(
       (ext: Extension) => ext.url === encounterAppointmentExtensionUrl
     );
     if (!appointmentTypeExtension) return true;
-    return blacklistedAppointmentTypes.includes(appointmentTypeExtension.valueString as string);
+    if (!appointmentTypeExtension.valueString) return true;
+    return blacklistedAppointmentTypes.includes(appointmentTypeExtension.valueString);
   });
-  const encounterReferences = encountersToRemove.map(encounter => `Encounter/${encounter.id}`);
   const resourceIdsToRemove = new Set<string>();
   for (const encounter of encountersToRemove) {
     if (!encounter.id) continue;
     resourceIdsToRemove.add(encounter.id);
   }
+  const encounterReferences = encountersToRemove.map(encounter => `Encounter/${encounter.id}`);
   for (const entry of bundle.entry) {
     if (!entry.resource) continue;
     if (!entry.resource.id) continue;
@@ -202,13 +209,14 @@ async function dangerouslyRemoveEncounterEntriesWithBlacklistedAppointmentType({
 }
 
 /**
- * Returns a set of resource IDs referenced by the given FHIR resource.
+ * Determines if the given FHIR resource contains a reference to any of the specified encounter references.
  *
- * This function traverses the resource object and collects all values of properties named "reference"
- * that are strings in the format "ResourceType/id", extracting the "id" part.
+ * This checks for a reference to an encounter in the resource's `encounter` or `context` property,
+ * and returns true if any such reference matches one in the provided list.
  *
- * @param resource - The FHIR resource from which to extract referenced IDs.
- * @returns A set containing the referenced resource IDs.
+ * @param resource - The FHIR resource to inspect for encounter references.
+ * @param encounterReferences - An array of encounter reference strings (e.g., "Encounter/123").
+ * @returns True if the resource refers to any encounter in the list; otherwise, false.
  */
 function doesResourceReferToEncounter(resource: Resource, encounterReferences: string[]): boolean {
   if ("encounter" in resource) {
@@ -225,14 +233,15 @@ function doesResourceReferToEncounter(resource: Resource, encounterReferences: s
 }
 
 /**
- * Uploads encounter summaries to the FHIR server.
+ * Uploads encounter summaries.
  *
  * This function fetches encounter summaries for each encounter in the bundle and uploads them to the FHIR server.
  *
- * @param bundle - The FHIR bundle containing the encounters.
+ * @param ehr - The EHR source.
  * @param cxId - The CX ID of the patient.
  * @param metriportPatientId - The Metriport patient ID.
- * @param ehrPatientId - The EHR patient ID.
+ * @param ehrPatientId - The patient id of the EHR patient.
+ * @param bundle - The FHIR bundle containing the encounters.
  */
 async function uploadEncounterSummaries({
   ehr,
@@ -248,10 +257,11 @@ async function uploadEncounterSummaries({
   bundle: Bundle;
 }): Promise<void> {
   if (!bundle.entry) return;
-  const encounterSummaries: { encounter: Encounter; summary: string }[] = [];
+  const encounterSummariesToUpload: { encounter: Encounter; summary: string }[] = [];
   for (const entry of bundle.entry) {
-    if (!entry.resource) continue;
-    if (!entry.resource?.id || entry.resource?.resourceType !== "Encounter") continue;
+    if (!entry.resource || !entry.resource?.id || entry.resource?.resourceType !== "Encounter") {
+      continue;
+    }
     const predecessor = getPredecessorExtensionValue(entry.resource);
     if (!predecessor) continue;
     const uploadedSummary = await fetchDocument({
@@ -275,11 +285,12 @@ async function uploadEncounterSummaries({
       resourceId: predecessor,
     });
     if (!summary) continue;
-    encounterSummaries.push({ encounter: entry.resource, summary: summary.file });
+    encounterSummariesToUpload.push({ encounter: entry.resource, summary: summary.file });
   }
-  const uploadEncounterErrors: { encounterId: string; error: unknown }[] = [];
+  if (encounterSummariesToUpload.length < 1) return;
+  const uploadEncounterSummaryErrors: { encounterId: string; error: unknown }[] = [];
   await executeAsynchronously(
-    encounterSummaries,
+    encounterSummariesToUpload,
     async encounterSummary => {
       try {
         const { uploadUrl } = await getUploadUrlAndCreateDocRef({
@@ -337,20 +348,20 @@ async function uploadEncounterSummaries({
             encounterSummary.encounter.id
           }. Cause: ${errorToString(error)}`
         );
-        uploadEncounterErrors.push({ error, encounterId: encounterSummary.encounter.id });
+        uploadEncounterSummaryErrors.push({ error, encounterId: encounterSummary.encounter.id });
       }
     },
     {
       numberOfParallelExecutions: 1,
     }
   );
-  if (uploadEncounterErrors.length > 0) {
+  if (uploadEncounterSummaryErrors.length > 0) {
     const msg = `Failure while uploading some encounter summaries @ ${ehr}`;
     capture.message(msg, {
       extra: {
-        uploadEncounterSummariesArgsCount: encounterSummaries.length,
-        uploadEncounterSummariesErrorsCount: uploadEncounterErrors.length,
-        errors: uploadEncounterErrors,
+        uploadEncounterSummariesArgsCount: encounterSummariesToUpload.length,
+        uploadEncounterSummariesErrorsCount: uploadEncounterSummaryErrors.length,
+        errors: uploadEncounterSummaryErrors,
         context: `${ehr}.upload-encounter-summaries`,
       },
       level: "warning",
@@ -366,7 +377,7 @@ async function uploadEncounterSummaries({
  */
 function getPredecessorExtensionValue(encounter: Encounter): string | undefined {
   const extension = encounter.extension;
-  if (!extension) return undefined;
+  if (!extension || extension.length < 1) return undefined;
   const predecessorExtension = extension.find(
     ext =>
       ext.url === artifactRelatedArtifactUrl && ext.valueRelatedArtifact?.type === "predecessor"

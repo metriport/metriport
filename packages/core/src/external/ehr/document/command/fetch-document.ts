@@ -49,7 +49,7 @@ export async function fetchDocument({
   getLastModified = false,
   s3BucketName = Config.getEhrBundleBucketName(),
 }: FetchDocumentParams): Promise<{ file: string; lastModified: Date | undefined } | undefined> {
-  const { log } = out(`Ehr fetchBundle - ehr ${ehr} cxId ${cxId} ehrPatientId ${ehrPatientId}`);
+  const { log } = out(`Ehr fetchDocument - ehr ${ehr} cxId ${cxId} ehrPatientId ${ehrPatientId}`);
   const s3Utils = getS3UtilsInstance();
   const createKeyAndExtension = createKeyAndExtensionMap[documentType];
   if (!createKeyAndExtension) {
@@ -85,6 +85,7 @@ export async function fetchDocument({
       cxId,
       metriportPatientId,
       ehrPatientId,
+      documentType,
       resourceType,
       jobId,
       key,
