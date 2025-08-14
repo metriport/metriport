@@ -37,7 +37,7 @@ beforeEach(() => {
   jest.spyOn(getPatient, "getPatientOrFail").mockResolvedValue(patientModel);
   jest.spyOn(webhookRequest, "createWebhookRequest").mockResolvedValue(webhookModel);
   jest.spyOn(webhook, "processRequest").mockImplementation();
-  jest.spyOn(reportUsageCmd, "reportUsage");
+  jest.spyOn(reportUsageCmd, "reportUsage").mockImplementation(() => undefined);
   jest.spyOn(finishPatient, "finishSinglePatientImport").mockImplementation();
 });
 
