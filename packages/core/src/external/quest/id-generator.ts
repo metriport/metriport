@@ -1,3 +1,4 @@
+import crypto from "crypto";
 const MAX_EXTERNAL_ID_LENGTH = 15;
 const LEXICON = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
@@ -6,8 +7,10 @@ const LEXICON = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
  * an ID for each person on Earth, there is a 1 in 361 trillion chance of a collision.
  */
 export function buildQuestExternalId(): string {
-  return Array.from(
-    { length: MAX_EXTERNAL_ID_LENGTH },
-    () => LEXICON[Math.floor(Math.random() * LEXICON.length)]
-  ).join("");
+  const idCharacter = new Array(15);
+  for (let i = 0; i < MAX_EXTERNAL_ID_LENGTH; i++) {
+    const randomIndex = crypto.randomInt(LEXICON.length);
+    idCharacter[i] = LEXICON[randomIndex];
+  }
+  return idCharacter.join("");
 }
