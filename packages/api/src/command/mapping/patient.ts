@@ -116,11 +116,11 @@ export function getSourceMapForPatient({
 export async function getFirstPatientMappingForSource({
   patientId,
   source,
-}: Omit<PatientMappingParams, "cxId" | "externalId">): Promise<PatientMapping[]> {
+}: Omit<PatientMappingParams, "cxId" | "externalId">): Promise<PatientMapping | undefined> {
   const mappings = await PatientMappingModel.findAll({
     where: { patientId, source },
     order: [["createdAt", "ASC"]],
     limit: 1,
   });
-  return mappings.map(m => m.dataValues);
+  return mappings.length > 0 ? mappings[0].dataValues : undefined;
 }

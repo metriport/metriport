@@ -58,19 +58,7 @@ export async function getQuestRoster({ pagination }: GetQuestRosterParams): Prom
     log(`Done. Found ${patients.length} Quest monitoring patients for this page`);
 
     for (const patient of patients) {
-      const mapping = await getFirstPatientMappingForSource({
-        patientId: patient.id,
-        source: questSource,
-      });
-      if (!mapping) {
-        const created = await createPatientMapping({
-          cxId: patient.cxId,
-          patientId: patient.id,
-          externalId: patient.id,
-          source: questSource,
-        });
-        log(`Created Quest mapping for patient ${patient.id} - ${created.id}`);
-      }
+      patient.externalId = await getQuestExternalId(patient, log);
     }
 
     return patients;
@@ -84,4 +72,25 @@ export async function getQuestRoster({ pagination }: GetQuestRosterParams): Prom
     });
     throw new MetriportError(msg, error);
   }
+}
+
+async function getQuestExternalId(
+  patient: Patient,
+  log: ReturnType<typeof out>["log"]
+): Promise<string> {
+  const mapping = await getFirstPatientMappingForSource({
+    patientId: patient.id,
+    source: questSource,
+  });
+  if (!mapping) {
+    const created = await createPatientMapping({
+      cxId: patient.cxId,
+      patientId: patient.id,
+      externalId: patient.id,
+      source: questSource,
+    });
+    log(`Created Quest mapping for patient ${patient.id} - ${created.id}`);
+    return created.externalId;
+  }
+  return mapping.externalId;
 }
