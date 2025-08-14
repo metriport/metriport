@@ -11,12 +11,12 @@ export async function generateQuestRoster(): Promise<Buffer> {
   const { log } = out("QuestRoster");
   let currentUrl: string | undefined = `${Config.getApiUrl()}/${QUEST_ROSTER_ROUTE}`;
   const enrolledPatients: Patient[] = [];
-  do {
+  while (currentUrl) {
     const response = await axios.get(currentUrl);
     const rosterPage = questRosterResponseSchema.parse(response.data);
     enrolledPatients.push(...rosterPage.patients);
     currentUrl = rosterPage.meta.nextPage;
-  } while (currentUrl);
+  }
   const rosterFile = buildRosterFile(enrolledPatients);
   log(`Generated roster file with ${enrolledPatients.length} patients`);
   return rosterFile;
