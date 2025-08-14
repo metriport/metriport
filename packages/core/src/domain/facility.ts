@@ -1,25 +1,13 @@
-import { validateNPI } from "@metriport/commonwell-sdk";
-import { defaultOptionalStringSchema } from "@metriport/shared";
-import { z } from "zod";
-import { FacilityType } from "../../../domain/medical/facility";
+import { validateNPI } from "@metriport/shared/common/validate-npi";
+import { defaultOptionalStringSchema } from "@metriport/shared/util";
+import z from "zod";
 import { addressStrictSchema } from "./address";
 
-export const facilityCreateSchema = z.object({
-  name: z.string().min(1),
-  npi: z
-    .string()
-    .length(10)
-    .refine(npi => validateNPI(npi), { message: "NPI is not valid" }),
-  tin: defaultOptionalStringSchema,
-  active: z.boolean().optional().nullable(),
-  address: addressStrictSchema,
-});
+export enum FacilityType {
+  initiatorAndResponder = "initiator_and_responder",
+  initiatorOnly = "initiator_only",
+}
 
-export const facilityUpdateSchema = facilityCreateSchema;
-
-/**
- * @deprecated use @metriport/core/src/domain/facility instead
- */
 export const facilityInternalDetailsSchema = z
   .object({
     id: z.string().optional(),
@@ -41,3 +29,4 @@ export const facilityInternalDetailsSchema = z
     cwOboOid: z.string().optional(),
   })
   .merge(addressStrictSchema);
+export type FacilityInternalDetails = z.infer<typeof facilityInternalDetailsSchema>;

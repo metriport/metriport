@@ -1,6 +1,7 @@
 import { Condition } from "@medplum/fhirtypes";
 import { BadRequestError } from "@metriport/shared";
 import { EhrSource, EhrSources } from "@metriport/shared/interface/external/ehr/source";
+import { ICD_10_CODE, SNOMED_CODE } from "@metriport/shared/medical/fhir/constants";
 import { writeBackCondition as writeBackConditionElation } from "../../elation/command/write-back/condition";
 
 export type WriteBackConditionRequest = {
@@ -42,4 +43,24 @@ function getEhrWriteBackConditionHandler(ehr: EhrSource): WriteBackConditionFn {
     });
   }
   return handler;
+}
+
+type CodingSystem = typeof SNOMED_CODE | typeof ICD_10_CODE;
+
+export const ehrWriteBackConditionPrimaryCodeMap: Record<EhrSource, CodingSystem | undefined> = {
+  [EhrSources.elation]: SNOMED_CODE,
+  [EhrSources.athena]: SNOMED_CODE,
+  [EhrSources.canvas]: ICD_10_CODE,
+  [EhrSources.healthie]: ICD_10_CODE,
+  [EhrSources.eclinicalworks]: undefined,
+};
+
+export function getEhrWriteBackConditionPrimaryCode(ehr: EhrSource): CodingSystem {
+  const system = ehrWriteBackConditionPrimaryCodeMap[ehr];
+  if (!system) {
+    throw new BadRequestError("Could not find code system to write back condition", undefined, {
+      ehr,
+    });
+  }
+  return system;
 }
