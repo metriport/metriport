@@ -161,7 +161,7 @@ export async function fetchBundlePreSignedUrl({
       durationSeconds: bundleUrlDuration.asSeconds(),
     });
   } catch (error) {
-    const msg = "Failure while fetching bundle pre-signed URL @ Ehr";
+    const msg = "Failure while fetching bundle pre-signed URL @ S3";
     log(`${msg}. Cause: ${errorToString(error)}`);
     throw new MetriportError(msg, error, {
       ehr,

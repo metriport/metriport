@@ -78,7 +78,7 @@ export async function contributeResourceDiffBundle({
     }
     const secondaryMappings = athenaSecondaryMappingsSchema.parse(cxMapping.secondaryMappings);
     if (secondaryMappings.contributionEncounterAppointmentTypesBlacklist) {
-      dangerouslyRemoveEncounterEntriesWithBlacklistedAppointmentType({
+      await dangerouslyRemoveEncounterEntriesWithBlacklistedAppointmentType({
         ehr,
         cxId,
         metriportPatientId,
@@ -158,8 +158,7 @@ async function dangerouslyRemoveEncounterEntriesWithBlacklistedAppointmentType({
     const appointmentTypeExtension = encounter.extension.find(
       (ext: Extension) => ext.url === encounterAppointmentExtensionUrl
     );
-    if (!appointmentTypeExtension) return true;
-    if (!appointmentTypeExtension.valueString) return true;
+    if (!appointmentTypeExtension || !appointmentTypeExtension.valueString) return true;
     return blacklistedAppointmentTypes.includes(appointmentTypeExtension.valueString);
   });
   const resourceIdsToRemove = new Set<string>();
@@ -169,8 +168,7 @@ async function dangerouslyRemoveEncounterEntriesWithBlacklistedAppointmentType({
   }
   const encounterReferences = encountersToRemove.map(encounter => `Encounter/${encounter.id}`);
   for (const entry of bundle.entry) {
-    if (!entry.resource) continue;
-    if (!entry.resource.id) continue;
+    if (!entry.resource || !entry.resource.id) continue;
     if (doesResourceReferToEncounter(entry.resource, encounterReferences)) {
       resourceIdsToRemove.add(entry.resource.id);
     }
@@ -178,11 +176,11 @@ async function dangerouslyRemoveEncounterEntriesWithBlacklistedAppointmentType({
   const [resourcesToRemove, resourcesToKeep] = partition(
     bundle.entry,
     (entry: BundleEntry<Resource>) => {
-      if (!entry.resource) return true;
-      if (!entry.resource.id) return true;
+      if (!entry.resource || !entry.resource.id) return false;
       return resourceIdsToRemove.has(entry.resource.id);
     }
   );
+  bundle.entry = resourcesToKeep;
   try {
     await createOrReplaceBundle({
       ehr,
@@ -205,7 +203,6 @@ async function dangerouslyRemoveEncounterEntriesWithBlacklistedAppointmentType({
       `dangerouslyRemoveEncounterEntriesWithBlacklistedAppointmentType - metriportPatientId ${metriportPatientId} ehrPatientId ${ehrPatientId} resourceType ${resourceType}`
     ).log(`Error creating resource diff removed bundle. Cause: ${errorToString(error)}`);
   }
-  bundle.entry = resourcesToKeep;
 }
 
 /**
@@ -319,6 +316,7 @@ async function uploadEncounterSummaries({
               facilityType: {
                 text: encounterSummary.encounter.location?.[0]?.location?.display,
               },
+              encounter: [{ reference: `Encounter/${encounterSummary.encounter.id}` }],
             },
           },
         });

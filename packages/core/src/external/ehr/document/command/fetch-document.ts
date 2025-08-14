@@ -150,7 +150,7 @@ export async function fetchDocumentPreSignedUrl({
       durationSeconds: documentUrlDuration.asSeconds(),
     });
   } catch (error) {
-    const msg = "Failure while fetching document pre-signed URL @ Ehr";
+    const msg = "Failure while fetching document pre-signed URL @ S3";
     log(`${msg}. Cause: ${errorToString(error)}`);
     throw new MetriportError(msg, error, {
       ehr,
@@ -162,6 +162,7 @@ export async function fetchDocumentPreSignedUrl({
       jobId,
       key,
       s3BucketName,
+      extension: createKeyAndExtension.extension,
       context: "ehr.fetchDocumentPreSignedUrl",
     });
   }
