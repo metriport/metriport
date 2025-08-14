@@ -4,7 +4,7 @@ import { out } from "@metriport/core/util/log";
 import { MetriportError, errorToString } from "@metriport/shared";
 import { questSource } from "@metriport/shared/interface/external/quest/source";
 import { buildQuestExternalId } from "@metriport/core/external/quest/id-generator";
-import { FindOptions, Op, Order, Sequelize, UniqueConstraintError, WhereOptions } from "sequelize";
+import { FindOptions, Op, Order, Sequelize, WhereOptions } from "sequelize";
 import {
   findFirstPatientMappingForSource,
   createPatientMapping,
@@ -88,34 +88,13 @@ async function findOrCreateQuestExternalId(
     return mapping.externalId;
   }
 
-  // There is an extremely small chance of an ID collision, since the external ID
-  // is limited to 15 characters. This allows up to one additional retry if the
-  // uniqueness constraint on the external ID column is violated.
-  let retryWithDifferentExternalId = false;
-
-  do {
-    const externalId = buildQuestExternalId();
-    try {
-      const created = await createPatientMapping({
-        cxId: patient.cxId,
-        patientId: patient.id,
-        externalId,
-        source: questSource,
-      });
-      log(`Created Quest mapping: ${patient.id} <-> ${created.externalId}`);
-      return created.externalId;
-    } catch (error) {
-      // If the uniqueness constraint is violated, allow one additional retry.
-      if (error instanceof UniqueConstraintError && !retryWithDifferentExternalId) {
-        retryWithDifferentExternalId = true;
-      } else {
-        throw error;
-      }
-    }
-  } while (retryWithDifferentExternalId);
-
-  // After the second retry, throw an error.
-  throw new MetriportError("Failed to create Quest mapping for patient", undefined, {
+  const externalId = buildQuestExternalId();
+  const created = await createPatientMapping({
+    cxId: patient.cxId,
     patientId: patient.id,
+    externalId,
+    source: questSource,
   });
+  log(`Created Quest mapping: ${patient.id} <-> ${created.externalId}`);
+  return created.externalId;
 }
