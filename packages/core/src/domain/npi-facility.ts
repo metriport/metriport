@@ -19,7 +19,7 @@ export type NpiRegistryFacility = z.infer<typeof npiRegistryFacilitySchema>;
 export const npiRegistryReturnSchema = z.object({
   result_count: z.string().optional(),
   results: z.array(npiRegistryFacilitySchema).optional(),
-  Errors: z
+  errors: z
     .array(
       z.object({
         description: z.string(),
