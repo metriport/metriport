@@ -112,7 +112,7 @@ def handler(event: dict, context: dict):
     input_bundle = event.get("INPUT_BUNDLE") or os.getenv("INPUT_BUNDLE")
     input_bucket = event.get("INPUT_S3_BUCKET") or os.getenv("INPUT_S3_BUCKET")
     output_bucket = os.getenv("OUTPUT_S3_BUCKET")
-    snowflake_creds = event.get("SNOWFLAKE_CREDS") or os.getenv("SNOWFLAKE_CREDS")
+    # snowflake_creds = event.get("SNOWFLAKE_CREDS") or os.getenv("SNOWFLAKE_CREDS")
     if not cx_id:
         raise ValueError("CX_ID is not set") 
     if not patient_id:
@@ -124,9 +124,9 @@ def handler(event: dict, context: dict):
         raise ValueError("INPUT_S3_BUCKET is not set")
     if not output_bucket:
         raise ValueError("OUTPUT_S3_BUCKET is not set")
-    if not snowflake_creds:
-        raise ValueError("SNOWFLAKE_CREDS is not set")
-    snowflake_creds = json.loads(snowflake_creds) if isinstance(snowflake_creds, str) else snowflake_creds
+    # if not snowflake_creds:
+    #     raise ValueError("SNOWFLAKE_CREDS is not set")
+    # snowflake_creds = json.loads(snowflake_creds) if isinstance(snowflake_creds, str) else snowflake_creds
 
     print(f">>> Parsing data and uploading it to S3 for Snowflake - {cx_id}, patient_id {patient_id}, job_id {job_id}")
     output_bucket_and_file_keys_and_table_names = transform_and_upload_data(
