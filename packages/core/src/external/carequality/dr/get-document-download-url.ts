@@ -1,13 +1,15 @@
-import { InboundDocumentRetrievalReq, DocumentReference } from "@metriport/ihe-gateway-sdk";
+import { DocumentReference, InboundDocumentRetrievalReq } from "@metriport/ihe-gateway-sdk";
+import { createUploadFilePath } from "../../../domain/document/upload";
+import { parseFileName } from "../../../domain/filename";
+import { Config } from "../../../util/config";
+import { S3Utils } from "../../aws/s3";
+import { XDSRegistryError } from "../error";
 import {
+  extractDocumentUniqueId,
   METRIPORT_HOME_COMMUNITY_ID,
   METRIPORT_REPOSITORY_UNIQUE_ID,
   validateBasePayload,
-  extractDocumentUniqueId,
 } from "../shared";
-import { S3Utils } from "../../aws/s3";
-import { Config } from "../../../util/config";
-import { XDSRegistryError } from "../error";
 
 const region = Config.getAWSRegion();
 const medicalDocumentsBucketName = Config.getMedicalDocumentsBucketName();
@@ -42,11 +44,16 @@ async function retrieveDocumentReferences(
 ): Promise<DocumentReference[]> {
   const s3Utils = new S3Utils(region);
   const documentReferencesPromises = documentIds.map(async (id, index) => {
-    const { size, contentType } = await s3Utils.getFileInfoFromS3(id, medicalDocumentsBucketName);
+    const docFilePath = rebuildUploadsFilePath(id);
+
+    const { size, contentType } = await s3Utils.getFileInfoFromS3(
+      docFilePath,
+      medicalDocumentsBucketName
+    );
     const uniqueId = uniqueIds[index];
     if (!uniqueId) {
       const message = `Failed to retrieve uniqueId for document`;
-      console.log(`${message}: ${id}`);
+      console.log(`${message}: ${docFilePath}`);
       throw new XDSRegistryError("Failed to retrieve Document");
     }
     return {
@@ -55,7 +62,7 @@ async function retrieveDocumentReferences(
       docUniqueId: uniqueId,
       contentType: contentType,
       size: size,
-      urn: id,
+      urn: docFilePath,
     };
   });
   const documentReferences = await Promise.allSettled(documentReferencesPromises);
@@ -63,4 +70,13 @@ async function retrieveDocumentReferences(
     p.status === "fulfilled" ? p.value : []
   );
   return successfulDocRefs;
+}
+
+function rebuildUploadsFilePath(id: string): string {
+  if (id.includes("/")) return id;
+
+  const fileNameParts = parseFileName(id);
+  if (!fileNameParts) return id;
+
+  return createUploadFilePath(fileNameParts.cxId, fileNameParts.patientId, fileNameParts.fileId);
 }
