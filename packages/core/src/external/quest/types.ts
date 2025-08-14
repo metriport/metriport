@@ -1,5 +1,6 @@
 import { SftpConfig } from "../sftp/types";
 import { z } from "zod";
+import { patientSchema } from "@metriport/shared/domain/patient";
 
 export interface QuestSftpConfig extends Partial<SftpConfig> {
   port?: number;
@@ -11,32 +12,8 @@ export interface QuestSftpConfig extends Partial<SftpConfig> {
   incomingDirectory?: string;
 }
 
-export const questPatientSchema = z.object({
-  id: z.string(),
-  cxId: z.string(),
-  facilityIds: z.array(z.string()),
-  data: z.object({
-    firstName: z.string(),
-    lastName: z.string(),
-    dob: z.string(),
-    genderAtBirth: z.enum(["M", "F", "O", "U"]),
-    address: z.array(
-      z.object({
-        addressLine1: z.string(),
-        addressLine2: z.string().optional(),
-        city: z.string(),
-        state: z.string(),
-        zip: z.string(),
-        country: z.string().optional(),
-      })
-    ),
-  }),
-});
-
-export type QuestPatient = z.infer<typeof questPatientSchema>;
-
 export const questRosterResponseSchema = z.object({
-  patients: z.array(questPatientSchema),
+  patients: z.array(patientSchema),
   meta: z.object({
     itemsInTotal: z.number(),
     itemsOnPage: z.number(),
