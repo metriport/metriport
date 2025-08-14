@@ -33,7 +33,10 @@ import status from "http-status";
 import stringify from "json-stringify-safe";
 import { chunk } from "lodash";
 import { z } from "zod";
-import { createPatientMapping } from "../../../command/mapping/patient";
+import {
+  createPatientMapping,
+  findFirstPatientMappingForSource,
+} from "../../../command/mapping/patient";
 import { resetExternalDataSource } from "../../../command/medical/admin/reset-external-data";
 import { getFacilityOrFail } from "../../../command/medical/facility/get-facility";
 import {
@@ -303,8 +306,9 @@ router.delete(
  *
  * @param req.params.patientId Patient ID to link to a person.
  * @param req.query.cxId The customer ID.
- * @param req.query.externalId The existing external Quest ID to map the patient to.
+ * @param req.body.externalId The existing external Quest ID to map the patient to.
  * @returns 201 upon success.
+ * @returns 208 if the patient already has a Quest mapping.
  */
 router.post(
   "/:patientId/quest-mapping",
@@ -316,6 +320,13 @@ router.post(
     const questMapping = questMappingRequestSchema.parse(req.body);
 
     await getPatientOrFail({ cxId, id: patientId });
+    const existingMapping = await findFirstPatientMappingForSource({
+      patientId,
+      source: questSource,
+    });
+    if (existingMapping) {
+      return res.sendStatus(status.ALREADY_REPORTED);
+    }
     await createPatientMapping({
       cxId,
       patientId,
