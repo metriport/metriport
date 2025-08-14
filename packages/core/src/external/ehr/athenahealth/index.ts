@@ -1,10 +1,8 @@
 import {
   AllergyIntolerance,
   Bundle,
-  BundleEntry,
   Coding,
   Condition,
-  Encounter as EncounterFhir,
   Immunization,
   Observation,
   Procedure,
@@ -1969,49 +1967,21 @@ class AthenaHealthApi {
         try {
           let encounter: Encounter | undefined;
           if (attachAppointmentType) {
-            const existingEncounter = await this.getResourceBundleByResourceId({
+            encounter = await this.getEncounter({
               cxId,
-              metriportPatientId,
-              athenaPatientId,
-              resourceType: "Encounter",
-              resourceId: encounterId,
-              attachAppointmentType: false,
-              fetchEncounterSummary: false,
-              useCachedBundle: true,
+              patientId: athenaPatientId,
+              encounterId,
             });
-            let appointmentTypeId: string | undefined;
-            const encounterEntry = existingEncounter.entry?.[0] as
-              | BundleEntry<EncounterFhir>
-              | undefined;
-            if (
-              encounterEntry?.resource?.extension &&
-              Array.isArray(encounterEntry.resource.extension)
-            ) {
-              const appointmentTypeExtension = encounterEntry.resource?.extension?.find(
-                ext =>
-                  ext.url === encounterAppointmentExtensionUrl &&
-                  typeof ext.valueString === "string"
-              );
-              appointmentTypeId = appointmentTypeExtension?.valueString;
-            }
-            if (!appointmentTypeId) {
-              encounter = await this.getEncounter({
-                cxId,
-                patientId: athenaPatientId,
-                encounterId,
-              });
-              const appointment = await this.getAppointment({
-                cxId,
-                patientId: athenaPatientId,
-                appointmentId: encounter.appointmentid,
-              });
-              appointmentTypeId = appointment.appointmenttypeid;
-            }
+            const appointment = await this.getAppointment({
+              cxId,
+              patientId: athenaPatientId,
+              appointmentId: encounter.appointmentid,
+            });
             entry.resource.extension = [
               ...(entry.resource.extension ?? []),
               {
                 url: encounterAppointmentExtensionUrl,
-                valueString: appointmentTypeId,
+                valueString: appointment.appointmenttypeid,
               },
             ];
           }
