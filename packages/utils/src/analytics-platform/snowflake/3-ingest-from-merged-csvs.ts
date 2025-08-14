@@ -9,6 +9,8 @@ import {
   promisifyExecute,
 } from "@metriport/core/external/snowflake/commands";
 import { getEnvVarOrFail, sleep } from "@metriport/shared";
+import { buildDayjs } from "@metriport/shared/common/date";
+import * as AWS from "aws-sdk";
 import fs from "fs";
 import ini from "ini";
 import * as snowflake from "snowflake-sdk";
@@ -56,6 +58,9 @@ const database = getEnvVarOrFail("SNOWFLAKE_DB");
 const schema = getEnvVarOrFail("SNOWFLAKE_SCHEMA");
 const warehouse = getEnvVarOrFail("SNOWFLAKE_WH");
 
+const prefixName = `snowflake/merged/${cxId}/run=${mergeCsvJobId}`;
+const prefixUrl = `s3://${bucketName}/${prefixName}`;
+
 snowflake.configure({
   ocspFailOpen: false,
   logLevel: "WARN",
@@ -68,7 +73,7 @@ snowflake.configure({
 async function main() {
   await sleep(50); // Give some time to avoid mixing logs w/ Node's
   const startedAt = Date.now();
-  console.log(`############## Started at ${new Date(startedAt).toISOString()} ##############`);
+  console.log(`############## Started at ${buildDayjs().toISOString()} ##############`);
 
   const columnDefs = readConfigs();
 
@@ -88,11 +93,8 @@ async function initializeTables(columnDefs: Record<string, string>) {
     clientSessionKeepAlive: true,
   });
   try {
-    const prefixName = `snowflake/merged/${cxId}/run=${mergeCsvJobId}`;
-    const prefixUrl = `s3://${bucketName}/${prefixName}`;
-
     const files = await s3Utils.listObjects(bucketName, prefixName);
-    // console.log(`Found ${files.length} files in ${prefixUrl}`);
+    console.log(`Found ${files.length} files in ${prefixUrl}`);
 
     // console.log(">>> Connecting to Snowflake...");
     const connectAsync = promisifyConnect(connection);
@@ -113,38 +115,66 @@ async function initializeTables(columnDefs: Record<string, string>) {
     );
 
     for (const [resourceType, tableName] of Object.entries(tableNames)) {
-      if (!files.some(file => file.Key?.includes(resourceType))) {
-        console.log(`>>> No files found for ${resourceType} - skipping`);
-        continue;
-      }
-
-      const columnsDef = columnDefs[resourceType];
-      // fs.writeFileSync(`columnsDef_${resourceType}.txt`, columnsDef);
-
-      const createTableCmd = `CREATE TABLE IF NOT EXISTS ${tableName} (${columnsDef})`;
-      await executeAsync(createTableCmd);
-
-      const createStageCmd =
-        `CREATE STAGE IF NOT EXISTS ${tableName} STORAGE_INTEGRATION = ANALYTICS_BUCKET ` +
-        `URL = '${prefixUrl}/${resourceType}'`;
-      // console.log(`Create stage cmd: ${createStageCmd}`);
-      await executeAsync(createStageCmd);
-
-      console.log(`>>> Copying ${resourceType}...`);
-      const startedAt = Date.now();
-      const copyCmd = `COPY INTO ${tableName} FROM @${tableName} FILE_FORMAT = gzip_csv_format ON_ERROR = SKIP_FILE`;
-      // console.log(`Copy cmd: ${copyCmd}`);
-      await executeAsync(copyCmd);
-      console.log(`... Copied ${resourceType} in ${elapsedTimeAsStr(startedAt)}`);
-
-      const dropStageCmd = `DROP STAGE ${tableName};`;
-      await executeAsync(dropStageCmd);
+      await processResourceType({
+        resourceType,
+        tableName,
+        columnDefs,
+        files,
+        executeAsync,
+      });
     }
+
     return { tableNames };
   } finally {
     const destroyAsync = promisifyDestroy(connection);
     await destroyAsync();
   }
+}
+
+async function processResourceType({
+  resourceType,
+  tableName,
+  columnDefs,
+  files,
+  executeAsync,
+}: {
+  resourceType: string;
+  tableName: string;
+  columnDefs: Record<string, string>;
+  files: AWS.S3.ObjectList;
+  executeAsync: (sqlText: string) => Promise<{
+    statement: snowflake.RowStatement;
+    rows: any[] | undefined; // eslint-disable-line @typescript-eslint/no-explicit-any
+  }>;
+}) {
+  if (!files.some(file => file.Key?.includes(resourceType))) {
+    console.log(`>>> No files found for ${resourceType} - skipping`);
+    return;
+  }
+
+  const columnsDef = columnDefs[resourceType];
+  // fs.writeFileSync(`columnsDef_${resourceType}.txt`, columnsDef);
+
+  // Do not use IF NOT EXISTS here, we want to make sure we're not duplicating data
+  const createTableCmd = `CREATE TABLE ${tableName} (${columnsDef})`;
+  await executeAsync(createTableCmd);
+
+  // Need the trailing slash to avoid more than one folder from shared prefixes (e.g., condition and condition_code_coding)
+  const createStageCmd =
+    `CREATE STAGE IF NOT EXISTS ${tableName} STORAGE_INTEGRATION = ANALYTICS_BUCKET ` +
+    `URL = '${prefixUrl}/${resourceType}/'`;
+  // console.log(`Create stage cmd: ${createStageCmd}`);
+  await executeAsync(createStageCmd);
+
+  console.log(`>>> Copying ${resourceType}...`);
+  const startedAt = Date.now();
+  const copyCmd = `COPY INTO ${tableName} FROM @${tableName} FILE_FORMAT = gzip_csv_format ON_ERROR = ABORT_STATEMENT`;
+  // console.log(`Copy cmd: ${copyCmd}`);
+  await executeAsync(copyCmd);
+  console.log(`... Copied into ${resourceType} in ${elapsedTimeAsStr(startedAt)}`);
+
+  const dropStageCmd = `DROP STAGE ${tableName};`;
+  await executeAsync(dropStageCmd);
 }
 
 function createTableName(resourceType: string): string {
