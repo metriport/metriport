@@ -9,7 +9,7 @@ import { makeSettingModel } from "../../../../models/__tests__/settings";
 import { mockStartTransaction } from "../../../../models/__tests__/transaction";
 import { DocumentReferenceDTO } from "../../../../routes/medical/dtos/documentDTO";
 import * as getSettings from "../../../settings/getSettings";
-import * as reportUsageCmd from "../../../usage/report-usage";
+import * as reportUsageCmd from "../../../internal-server/report-usage";
 import * as webhook from "../../../webhook/webhook";
 import * as webhookRequest from "../../../webhook/webhook-request";
 import * as getPatient from "../../patient/get-patient";

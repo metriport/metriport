@@ -115,6 +115,7 @@ type EnvConfigBase = {
     };
   };
   usageReportUrl?: string;
+  cxBillingUrl?: string;
   fhirServerUrl: string;
   termServerUrl?: string;
   fhirServerQueueUrl?: string;
