@@ -91,8 +91,7 @@ export function buildQuestRequestRow<T extends object>(
   const parsed = objectSchema.safeParse(row);
   if (!parsed.success) {
     throw new MetriportError("Invalid data", undefined, {
-      data: JSON.stringify(row),
-      errors: JSON.stringify(parsed.error.issues),
+      errors: JSON.stringify(parsed.error.issues, null, 2),
     });
   }
   const fields = rowSchema.map(field => field.toQuest(row, field.length));
