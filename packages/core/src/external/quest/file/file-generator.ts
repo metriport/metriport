@@ -1,6 +1,6 @@
 import crypto from "crypto";
 import { z } from "zod";
-import { QuestPatient } from "../types";
+import { Patient } from "@metriport/shared/domain/patient";
 import { MetriportError } from "@metriport/shared";
 import {
   genderMapperFromDomain,
@@ -19,7 +19,7 @@ import {
 } from "../schema/request";
 import { OutgoingFileRowSchema } from "../schema/shared";
 
-const makeGenderDemographics = genderMapperFromDomain<QuestGenderCode>(
+const createGenderDemographics = genderMapperFromDomain<QuestGenderCode>(
   {
     F: "F",
     M: "M",
@@ -35,12 +35,12 @@ interface QuestRequestFile {
 }
 
 // Builds a 15 character patient ID
-function buildPatientId(): string {
+function createPatientId(): string {
   const randomSixteenChars = crypto.randomBytes(8).toString("hex");
   return randomSixteenChars.substring(0, 15);
 }
 
-export function generateRosterFile(patients: QuestPatient[]): QuestRequestFile {
+export function generateRosterFile(patients: Patient[]): QuestRequestFile {
   const requestedPatientIds: string[] = [];
   const patientIdMap: Record<string, string> = {};
 
@@ -52,9 +52,9 @@ export function generateRosterFile(patients: QuestPatient[]): QuestRequestFile {
 
   const details = patients.flatMap(patient => {
     // Build a unique patient ID mapping
-    let mappedPatientId = buildPatientId();
+    let mappedPatientId = createPatientId();
     while (patientIdMap[mappedPatientId]) {
-      mappedPatientId = buildPatientId();
+      mappedPatientId = createPatientId();
     }
 
     // Generate the request row for this patient
@@ -79,16 +79,13 @@ export function generateRosterFile(patients: QuestPatient[]): QuestRequestFile {
   };
 }
 
-function generatePatientRequestRow(
-  patient: QuestPatient,
-  mappedPatientId: string
-): Buffer | undefined {
-  const { firstName, lastName, middleName } = makeNameDemographics(patient.data);
+function generatePatientRequestRow(patient: Patient, mappedPatientId: string): Buffer | undefined {
+  const { firstName, lastName, middleName } = makeNameDemographics(patient);
   const middleInitial = middleName.substring(0, 1);
 
-  const gender = makeGenderDemographics(patient.data.genderAtBirth);
-  const dateOfBirth = patient.data.dob.replace(/-/g, "");
-  const address = patient.data.address[0];
+  const gender = createGenderDemographics(patient.genderAtBirth);
+  const dateOfBirth = patient.dob.replace(/-/g, "");
+  const address = patient.address[0];
   if (!address || !address.addressLine1 || !address.city || !address.state || !address.zip)
     return undefined;
 
