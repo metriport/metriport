@@ -1,5 +1,5 @@
 import { Patient } from "@metriport/core/domain/patient";
-import { capture } from "@metriport/core/util";
+import { capture, executeAsynchronously } from "@metriport/core/util";
 import { out } from "@metriport/core/util/log";
 import { MetriportError, errorToString } from "@metriport/shared";
 import { questSource } from "@metriport/shared/interface/external/quest/source";
@@ -58,9 +58,15 @@ export async function getQuestRoster({ pagination }: GetQuestRosterParams): Prom
     const patients = await PatientModelReadOnly.findAll(findOptions);
     log(`Done. Found ${patients.length} Quest monitoring patients for this page`);
 
-    for (const patient of patients) {
-      patient.externalId = await findOrCreateQuestExternalId(patient, log);
-    }
+    await executeAsynchronously(
+      patients,
+      async patient => {
+        patient.externalId = await findOrCreateQuestExternalId(patient, log);
+      },
+      {
+        numberOfParallelExecutions: 10,
+      }
+    );
 
     return patients;
   } catch (error) {
