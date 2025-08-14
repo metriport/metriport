@@ -11,7 +11,7 @@ import {
   normalizeEmailNewSafe,
   normalizePhoneNumberSafe,
   normalizeUSStateForAddressSafe,
-  normalizeZipCodeNewSafe,
+  normalizeZipCode,
   NotFoundError,
   toTitleCase,
 } from "@metriport/shared";
@@ -46,7 +46,7 @@ export function createAddresses(patient: HealthiePatient): Address[] {
     const country = normalizeCountrySafe(address.country) ?? normalizedCountryUsa;
     const state = normalizeUSStateForAddressSafe(address.state);
     if (!state) return [];
-    const zip = normalizeZipCodeNewSafe(address.zip);
+    const zip = normalizeZipCode(address.zip);
     if (!zip) return [];
     return {
       addressLine1,

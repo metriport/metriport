@@ -6,7 +6,7 @@ import {
   MetriportError,
   isValidUrl,
   normalizeUSStateForAddressSafe,
-  normalizeZipCodeNewSafe,
+  normalizeZipCode,
 } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import stringify from "json-stringify-safe";
@@ -65,7 +65,7 @@ export async function parseCQOrganization(
     addressLine,
     city,
     state: state ? normalizeUSStateForAddressSafe(state) : undefined,
-    zip: postalCode ? normalizeZipCodeNewSafe(postalCode) : undefined,
+    zip: postalCode ? normalizeZipCode(postalCode) : undefined,
     rootOrganization: rootOrgName,
     managingOrganizationId: parentOrgOid,
     active,

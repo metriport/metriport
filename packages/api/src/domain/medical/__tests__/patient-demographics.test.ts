@@ -75,7 +75,7 @@ describe("normalization", () => {
         line: ["1 Mordhaus St Rd Ave Dr", "Apt 1A", "2"],
         city: "Mordhaus",
         state: "NY",
-        zip: "66666-1234",
+        zip: "66666-12",
         country: "USAA",
       },
       {
@@ -113,6 +113,36 @@ describe("normalization", () => {
       const result = stringifyAddress(expectedAddress);
       expect(result).toBe(JSON.stringify(expectedAddress, Object.keys(expectedAddress).sort()));
     });
+
+    const expectedZipPlus4Address = {
+      line: ["1 mordhaus st rd ave dr", "apt 1a", "2"],
+      city: "mordhaus",
+      state: "ny",
+      zip: "66666-1234",
+      country: "usa",
+    };
+    const zipPlus4AddressesToCheck = [
+      {
+        line: ["1 Mordhaus St Rd Ave Dr", "Apt 1A", "2"],
+        city: "Mordhaus",
+        state: "NY",
+        zip: "66666-1234",
+        country: "USA",
+      },
+      {
+        line: ["1 Mordhaus St Rd Ave Dr", "Apt 1A", "2"],
+        city: "Mordhaus",
+        state: "NY",
+        zip: " 666661234 ",
+        country: "USA",
+      },
+    ];
+    for (const address of zipPlus4AddressesToCheck) {
+      it(`zip+4 address: ${JSON.stringify(address)}`, async () => {
+        const result = normalizeAddress(address);
+        expect(result).toMatchObject(expectedZipPlus4Address);
+      });
+    }
   });
 
   describe("normalizeAndStringifyDriversLicense", () => {
