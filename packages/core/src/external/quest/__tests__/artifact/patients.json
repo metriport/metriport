@@ -1,0 +1,42 @@
+[
+  {
+    "id": "9307ef42-43fa-469f-8848-b6447228a509",
+    "firstName": "John",
+    "lastName": "Smith",
+    "dob": "1990-01-01",
+    "genderAtBirth": "M",
+    "address": [
+      {
+        "addressLine1": "123 Main St",
+        "city": "Anytown",
+        "state": "CA",
+        "zip": "12345"
+      }
+    ],
+    "facilityIds": [
+      "f0f632a0-d8d6-4fb7-8723-5343929728af"
+    ],
+    "dateCreated": "2025-08-14T21:50:05.175Z",
+    "externalId": "OEIW4ZOLH3NYLB7"
+  },
+  {
+    "id": "224b61f7-75cd-47e2-a7d7-e666f8a180b8",
+    "firstName": "Jane",
+    "lastName": "Doe",
+    "dob": "1982-05-15",
+    "genderAtBirth": "F",
+    "address": [
+      {
+        "addressLine1": "789 Main St",
+        "city": "Anytown",
+        "state": "CA",
+        "zip": "12345"
+      }
+    ],
+    "facilityIds": [
+      "f0f632a0-d8d6-4fb7-8723-5343929728af"
+    ],
+    "dateCreated": "2025-08-14T21:50:14.462Z",
+    "externalId": "TYVM7WWDHNE5X8B"
+  }
+]
