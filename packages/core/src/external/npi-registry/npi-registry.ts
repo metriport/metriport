@@ -41,9 +41,9 @@ export async function getFacilityByNpiOrFail(npi: string): Promise<NpiRegistryFa
     params,
   });
 
-  if (res.data.Errors && res.data.Errors.length > 0) {
+  if (res.data.errors && res.data.errors.length > 0) {
     type NpiRegistryError = { description?: string; field?: string; number?: string | number };
-    const err: NpiRegistryError = res.data.Errors[0] ?? {};
+    const err: NpiRegistryError = res.data.errors[0] ?? {};
 
     const description = err.description ?? "Unknown";
     const field = err.field ?? "Unknown";
