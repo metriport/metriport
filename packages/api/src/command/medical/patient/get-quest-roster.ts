@@ -6,7 +6,7 @@ import { questSource } from "@metriport/shared/interface/external/quest/source";
 import { buildQuestExternalId } from "@metriport/core/external/quest/id-generator";
 import { FindOptions, Op, Order, Sequelize, UniqueConstraintError, WhereOptions } from "sequelize";
 import {
-  getFirstPatientMappingForSource,
+  findFirstPatientMappingForSource,
   createPatientMapping,
 } from "../../../command/mapping/patient";
 import { PatientModelReadOnly } from "../../../models/medical/patient-readonly";
@@ -59,7 +59,7 @@ export async function getQuestRoster({ pagination }: GetQuestRosterParams): Prom
     log(`Done. Found ${patients.length} Quest monitoring patients for this page`);
 
     for (const patient of patients) {
-      patient.externalId = await getOrCreateQuestExternalId(patient, log);
+      patient.externalId = await findOrCreateQuestExternalId(patient, log);
     }
 
     return patients;
@@ -75,11 +75,11 @@ export async function getQuestRoster({ pagination }: GetQuestRosterParams): Prom
   }
 }
 
-async function getOrCreateQuestExternalId(
+async function findOrCreateQuestExternalId(
   patient: Patient,
   log: ReturnType<typeof out>["log"]
 ): Promise<string> {
-  const mapping = await getFirstPatientMappingForSource({
+  const mapping = await findFirstPatientMappingForSource({
     patientId: patient.id,
     source: questSource,
   });
@@ -115,7 +115,7 @@ async function getOrCreateQuestExternalId(
   } while (retryWithDifferentExternalId);
 
   // After the second retry, throw an error.
-  throw new MetriportError("Failed to retrieve Quest mapping for patient", undefined, {
+  throw new MetriportError("Failed to create Quest mapping for patient", undefined, {
     patientId: patient.id,
   });
 }

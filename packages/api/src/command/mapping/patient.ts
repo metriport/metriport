@@ -113,7 +113,7 @@ export function getSourceMapForPatient({
   return Object.keys(sourceMap).length > 0 ? sourceMap : undefined;
 }
 
-export async function getFirstPatientMappingForSource({
+export async function findFirstPatientMappingForSource({
   patientId,
   source,
 }: Omit<PatientMappingParams, "cxId" | "externalId">): Promise<PatientMapping | undefined> {
