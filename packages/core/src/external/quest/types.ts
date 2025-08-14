@@ -19,7 +19,7 @@ export const questPatientSchema = z.object({
     firstName: z.string(),
     lastName: z.string(),
     dob: z.string(),
-    genderAtBirth: z.string(),
+    genderAtBirth: z.enum(["M", "F", "O", "U"]),
     address: z.array(
       z.object({
         addressLine1: z.string(),

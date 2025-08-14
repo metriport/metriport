@@ -1,6 +1,6 @@
 import crypto from "crypto";
 import { z } from "zod";
-import { Patient } from "@metriport/shared/domain/patient";
+import { QuestPatient } from "../types";
 import { MetriportError } from "@metriport/shared";
 import {
   genderMapperFromDomain,
@@ -40,7 +40,7 @@ function buildPatientId(): string {
   return randomSixteenChars.substring(0, 15);
 }
 
-export function generateRosterFile(patients: Patient[]): QuestRequestFile {
+export function generateRosterFile(patients: QuestPatient[]): QuestRequestFile {
   const requestedPatientIds: string[] = [];
   const patientIdMap: Record<string, string> = {};
 
@@ -79,13 +79,16 @@ export function generateRosterFile(patients: Patient[]): QuestRequestFile {
   };
 }
 
-function generatePatientRequestRow(patient: Patient, mappedPatientId: string): Buffer | undefined {
-  const { firstName, lastName, middleName } = makeNameDemographics(patient);
+function generatePatientRequestRow(
+  patient: QuestPatient,
+  mappedPatientId: string
+): Buffer | undefined {
+  const { firstName, lastName, middleName } = makeNameDemographics(patient.data);
   const middleInitial = middleName.substring(0, 1);
 
-  const gender = makeGenderDemographics(patient.genderAtBirth);
-  const dateOfBirth = patient.dob.replace(/-/g, "");
-  const address = patient.address[0];
+  const gender = makeGenderDemographics(patient.data.genderAtBirth);
+  const dateOfBirth = patient.data.dob.replace(/-/g, "");
+  const address = patient.data.address[0];
   if (!address || !address.addressLine1 || !address.city || !address.state || !address.zip)
     return undefined;
 
@@ -105,8 +108,8 @@ function generatePatientRequestRow(patient: Patient, mappedPatientId: string): B
       city: address.city,
       state: address.state,
       zipCode: address.zip,
-      subscriberFirstName: patient.firstName,
-      subscriberLastName: patient.lastName,
+      subscriberFirstName: firstName,
+      subscriberLastName: lastName,
       programType: "HMO",
       effectiveDate: new Date(Date.now() - 86400000 * 365 * 2),
       expirationDate: "99991231",
