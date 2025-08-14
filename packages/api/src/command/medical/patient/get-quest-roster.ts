@@ -2,7 +2,12 @@ import { Patient } from "@metriport/core/domain/patient";
 import { capture } from "@metriport/core/util";
 import { out } from "@metriport/core/util/log";
 import { MetriportError, errorToString } from "@metriport/shared";
+import { questSource } from "@metriport/shared/interface/external/quest/source";
 import { FindOptions, Op, Order, Sequelize, WhereOptions } from "sequelize";
+import {
+  getFirstPatientMappingForSource,
+  createPatientMapping,
+} from "../../../command/mapping/patient";
 import { PatientModelReadOnly } from "../../../models/medical/patient-readonly";
 import { PatientSettingsModel } from "../../../models/patient-settings";
 import { Pagination, getPaginationFilters, getPaginationLimits } from "../../pagination";
@@ -51,6 +56,22 @@ export async function getQuestRoster({ pagination }: GetQuestRosterParams): Prom
 
     const patients = await PatientModelReadOnly.findAll(findOptions);
     log(`Done. Found ${patients.length} Quest monitoring patients for this page`);
+
+    for (const patient of patients) {
+      const mapping = await getFirstPatientMappingForSource({
+        patientId: patient.id,
+        source: questSource,
+      });
+      if (!mapping) {
+        const created = await createPatientMapping({
+          cxId: patient.cxId,
+          patientId: patient.id,
+          externalId: patient.id,
+          source: questSource,
+        });
+        log(`Created Quest mapping for patient ${patient.id} - ${created.id}`);
+      }
+    }
 
     return patients;
   } catch (error) {

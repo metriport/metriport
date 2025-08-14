@@ -114,12 +114,11 @@ export function getSourceMapForPatient({
 }
 
 export async function getFirstPatientMappingForSource({
-  cxId,
   patientId,
   source,
-}: Omit<PatientMappingParams, "externalId">): Promise<PatientMapping[]> {
+}: Omit<PatientMappingParams, "cxId" | "externalId">): Promise<PatientMapping[]> {
   const mappings = await PatientMappingModel.findAll({
-    where: { cxId, patientId, source },
+    where: { patientId, source },
     order: [["createdAt", "ASC"]],
     limit: 1,
   });
