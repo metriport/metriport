@@ -34,3 +34,11 @@ export function createQueryMetaSchema(maxItems: number = maxItemsPerPage) {
 
 const queryMetaSchema = createQueryMetaSchema();
 export type HttpMeta = z.infer<typeof queryMetaSchema>;
+
+export const paginationMetaSchema = z.object({
+  itemsInTotal: z.number(),
+  itemsOnPage: z.number(),
+  nextPage: z.string().optional(),
+  prevPage: z.string().optional(),
+});
+export type PaginationMeta = z.infer<typeof paginationMetaSchema>;
