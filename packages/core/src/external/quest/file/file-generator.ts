@@ -2,13 +2,10 @@ import crypto from "crypto";
 import { z } from "zod";
 import { Patient } from "@metriport/shared/domain/patient";
 import { MetriportError } from "@metriport/shared";
-import {
-  genderMapperFromDomain,
-  makeNameDemographics,
-} from "@metriport/shared/common/demographics";
+import { makeNameDemographics } from "@metriport/shared/common/demographics";
+import { makeGenderDemographics } from "../codes";
 
 import { RelationshipToSubscriber } from "../codes";
-import { QuestGenderCode } from "../codes";
 import {
   requestHeaderRow,
   requestHeaderSchema,
@@ -18,16 +15,6 @@ import {
   requestFooterRow,
 } from "../schema/request";
 import { OutgoingFileRowSchema } from "../schema/shared";
-
-const createGenderDemographics = genderMapperFromDomain<QuestGenderCode>(
-  {
-    F: "F",
-    M: "M",
-    O: "U",
-    U: "U",
-  },
-  "U"
-);
 
 interface QuestRequestFile {
   content: Buffer;
@@ -83,7 +70,7 @@ function generatePatientRequestRow(patient: Patient, mappedPatientId: string): B
   const { firstName, lastName, middleName } = makeNameDemographics(patient);
   const middleInitial = middleName.substring(0, 1);
 
-  const gender = createGenderDemographics(patient.genderAtBirth);
+  const gender = makeGenderDemographics(patient.genderAtBirth);
   const dateOfBirth = patient.dob.replace(/-/g, "");
   const address = patient.address[0];
   if (!address || !address.addressLine1 || !address.city || !address.state || !address.zip)

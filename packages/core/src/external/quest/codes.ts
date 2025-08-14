@@ -1,5 +1,21 @@
+import { genderMapperFromDomain } from "@metriport/shared/common/demographics";
+
+// A Quest-assigned identifier for the patient roster
+export const generalMnemonic = "METRIP";
+
+// Quest does not support "O" (other), so we map it to "U" (unknown)
 export const QuestGenderCodes = ["M", "F", "U"] as const;
 export type QuestGenderCode = (typeof QuestGenderCodes)[number];
+
+export const makeGenderDemographics = genderMapperFromDomain<QuestGenderCode>(
+  {
+    F: "F",
+    M: "M",
+    O: "U",
+    U: "U",
+  },
+  "U"
+);
 
 export enum RelationshipToSubscriber {
   Self = "01",
