@@ -5,9 +5,11 @@ import { questRosterResponseSchema } from "./types";
 import { buildRosterFile } from "./file/file-generator";
 import { out } from "../../util";
 
+const QUEST_ROSTER_ROUTE = "/internal/quest/roster";
+
 export async function generateQuestRoster(): Promise<Buffer> {
   const { log } = out("QuestRoster");
-  let currentUrl: string | undefined = `${Config.getApiUrl()}/internal/quest/roster`;
+  let currentUrl: string | undefined = `${Config.getApiUrl()}/${QUEST_ROSTER_ROUTE}`;
   const enrolledPatients: Patient[] = [];
   do {
     const response = await axios.get(currentUrl);
