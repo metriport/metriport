@@ -17,6 +17,8 @@ export const questRosterResponseSchema = z.object({
   meta: z.object({
     itemsInTotal: z.number(),
     itemsOnPage: z.number(),
+    nextPage: z.string().optional(),
+    prevPage: z.string().optional(),
   }),
 });
 
