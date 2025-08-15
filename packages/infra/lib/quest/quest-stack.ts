@@ -230,6 +230,10 @@ export class QuestNestedStack extends NestedStack {
     ];
   }
 
+  getQueues(): Queue[] {
+    return [this.questFhirConverterQueue];
+  }
+
   getAssets(): QuestAssets {
     return {
       questLambdas: [
