@@ -34,8 +34,7 @@ export const requestHeaderRow: OutgoingFileRowSchema<RequestHeader> = [
     field: 3,
     length: 8,
     key: "fileCreationDate",
-    // TODO: confirm with Quest whether this should be local or UTC date
-    toQuest: toQuestDate("fileCreationDate", { useUtc: false }),
+    toQuest: toQuestDate("fileCreationDate", { useUtc: true }),
   },
   {
     field: 4,
