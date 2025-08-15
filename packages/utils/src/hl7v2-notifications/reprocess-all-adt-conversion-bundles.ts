@@ -2,6 +2,7 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
+
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { Config } from "@metriport/core/util/config";
 import { FhirBundleSdk } from "@metriport/fhir-sdk";
@@ -9,15 +10,32 @@ import { parseFhirBundle } from "@metriport/shared/medical/fhir/bundle";
 import _ from "lodash";
 import { out } from "@metriport/core/util/log";
 
+/**
+ * Reprocesses ADT conversion bundles stored in S3 to remove duplicate conditions.
+ *
+ * This script pulls down every conversion bundle from s3, and removes any conditions that have identical codings to encounter reason codes.
+ * It then uploads the cleaned bundles back to s3.
+ *
+ * Steps:
+ * 1. Ensure your .env file has the required AWS and bucket configuration (HL7_CONVERSION_BUCKET_NAME)
+ * 2. Update the prefixes array on line 18 with the customer IDs to process
+ * 3. Run the script:
+ *    npx ts-node src/hl7v2-notifications/reprocess-all-adt-conversion-bundles.ts
+ *
+ * Usage:
+ * Run with: ts-node src/hl7v2-notifications/reprocess-all-adt-conversion-bundles.ts
+ *
+ * Note: This script modifies data in S3. Ensure you have backups if needed.
+ */
+
 const bucketName = Config.getHl7ConversionBucketName();
+
+const prefixes: string[] = [];
 
 async function reprocessAllAdtConversionBundles() {
   const s3Utils = new S3Utils(Config.getAWSRegion());
-
-  // All existing CXs with ADT conversion bundles
-  const prefixes: string[] = [];
   const promises = prefixes.map(async prefix => {
-    const { log } = out(`${prefix}`);
+    const { log } = out(prefix);
     const results = await s3Utils.listObjects(bucketName, prefix);
     log(`Found ${results.length} objects for prefix: ${prefix}`);
     let processedCount = 0;
