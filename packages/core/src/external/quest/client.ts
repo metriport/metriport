@@ -1,5 +1,7 @@
+import { MetriportError } from "@metriport/shared";
 import { Config } from "../../util/config";
 import { SftpClient } from "../sftp/client";
+import { generateQuestRoster } from "./roster";
 import { QuestSftpConfig } from "./types";
 
 export class QuestSftpClient extends SftpClient {
@@ -24,6 +26,20 @@ export class QuestSftpClient extends SftpClient {
         bucketName: replicaBucketName,
         region: replicaBucketRegion,
       });
+    }
+  }
+
+  async generateAndUploadRoster(): Promise<void> {
+    const { rosterFileName, rosterContent } = await generateQuestRoster();
+    try {
+      await this.connect();
+      await this.writeToQuest(rosterFileName, rosterContent);
+    } catch (error) {
+      throw new MetriportError(`Failed to upload Quest roster`, error, {
+        context: "QuestSftpClient",
+      });
+    } finally {
+      await this.disconnect();
     }
   }
 
