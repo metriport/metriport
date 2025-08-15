@@ -3,7 +3,7 @@ import { out } from "@metriport/core/util/log";
 import { SurescriptsSftpClient } from "@metriport/core/external/surescripts/client";
 import { SurescriptsDataMapper } from "@metriport/core/external/surescripts/data-mapper";
 
-import { writeSurescriptsRunsFile } from "./shared";
+import { writeSurescriptsIdentifiersFile } from "./shared";
 import { SurescriptsPatientRequestData } from "@metriport/core/external/surescripts/types";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 
@@ -73,13 +73,8 @@ program
       log("Sending " + requests.length + " requests");
       const identifiers = await client.sendBatchPatientRequest(requests);
       log("Done writing facility requests");
-
-      const csvContent =
-        `"transmission_id","patient_id"\n` +
-        identifiers
-          .map(({ transmissionId, populationId }) => `"${transmissionId}","${populationId}"`)
-          .join("\n");
-      writeSurescriptsRunsFile(csvOutput + ".csv", csvContent);
+      writeSurescriptsIdentifiersFile(csvOutput, identifiers);
+      log(`Wrote ${identifiers.length} identifiers to ${csvOutput}.csv`);
     }
   );
 

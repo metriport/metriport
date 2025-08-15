@@ -62,6 +62,9 @@ export const initialFeatureFlags: FeatureFlagDatastore = {
   cxsWithDischargeRequeryFeatureFlag: { enabled: false, values: [] },
   cxsWithDischargeSlackNotificationFeatureFlag: { enabled: false, values: [] },
   cxsWithXmlRedownloadFeatureFlag: { enabled: false, values: [] },
+  cxsWithSurescriptsFeatureFlag: { enabled: false, values: [] },
+  cxsWithSurescriptsNotificationsFeatureFlag: { enabled: false, values: [] },
+  cxsWithQuestFeatureFlag: { enabled: false, values: [] },
 };
 
 /**
