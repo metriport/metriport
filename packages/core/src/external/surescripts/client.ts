@@ -1,9 +1,10 @@
-import { BadRequestError, MetriportError } from "@metriport/shared";
+import { BadRequestError, MetriportError, OrganizationBizType } from "@metriport/shared";
 import { validateNPI } from "@metriport/shared/common/validate-npi";
 import { Config } from "../../util/config";
 import { SftpClient } from "../sftp/client";
 import { SftpFile } from "../sftp/types";
 import { SurescriptsReplica } from "./replica";
+import { isSurescriptsFeatureFlagEnabledForCx } from "../../command/feature-flags/domain-ffs";
 import { generateBatchRequestFile, generatePatientRequestFile } from "./file/file-generator";
 import { IdGenerator, createIdGenerator } from "./id-generator";
 import {
@@ -58,7 +59,7 @@ export class SurescriptsSftpClient extends SftpClient {
   async sendPatientRequest(
     requestData: SurescriptsPatientRequestData
   ): Promise<string | undefined> {
-    this.validateRequester(requestData);
+    await this.validateRequester(requestData);
     const transmissionId = this.generateTransmissionId().toString("ascii");
     const content = generatePatientRequestFile({
       client: this,
@@ -89,7 +90,7 @@ export class SurescriptsSftpClient extends SftpClient {
   async sendBatchRequest(
     requestData: SurescriptsBatchRequestData
   ): Promise<{ transmissionId: string; requestedPatientIds: string[] } | undefined> {
-    this.validateRequester(requestData);
+    await this.validateRequester(requestData);
     const transmissionId = this.generateTransmissionId().toString("ascii");
     const { content, requestedPatientIds } = generateBatchRequestFile({
       client: this,
@@ -108,6 +109,45 @@ export class SurescriptsSftpClient extends SftpClient {
       await this.connect();
       await this.writeToSurescripts(requestFileName, content);
       return { transmissionId, requestedPatientIds };
+    } finally {
+      await this.disconnect();
+    }
+  }
+
+  /**
+   * Send multiple patient requests in a single connection event. Since the latency of a Surescripts
+   * load is dominated by connect/disconnect latency, this allows large rosters to be loaded 10x faster.
+   */
+  async sendBatchPatientRequest(
+    requests: SurescriptsPatientRequestData[]
+  ): Promise<SurescriptsFileIdentifier[]> {
+    const identifiers: SurescriptsFileIdentifier[] = [];
+    try {
+      await this.connect();
+
+      let totalRequests = 0;
+      for (const request of requests) {
+        await this.validateRequester(request);
+        const transmissionId = this.generateTransmissionId().toString("ascii");
+        const content = generatePatientRequestFile({
+          client: this,
+          transmissionId,
+          ...request,
+        });
+        if (!content) continue;
+        this.log(
+          `${totalRequests.toString().padStart(6, " ")} - sending request for ${
+            request.patient.id
+          } (${transmissionId})`
+        );
+        totalRequests++;
+
+        const requestFileName = buildRequestFileName(transmissionId);
+        await this.writeToSurescripts(requestFileName, content);
+        identifiers.push({ transmissionId, populationId: request.patient.id });
+      }
+
+      return identifiers;
     } finally {
       await this.disconnect();
     }
@@ -264,7 +304,7 @@ export class SurescriptsSftpClient extends SftpClient {
       "from_surescripts",
       responseFileNamePrefix
     );
-    return replicatedFilesWithPrefix.find(fileName => {
+    const replicatedResponses = replicatedFilesWithPrefix.filter(fileName => {
       const parsedFileName = parseResponseFileName(fileName);
       return (
         parsedFileName &&
@@ -272,13 +312,15 @@ export class SurescriptsSftpClient extends SftpClient {
         parsedFileName.populationId === populationId
       );
     });
+    const latestReplicatedResponse = replicatedResponses[replicatedResponses.length - 1];
+    return latestReplicatedResponse;
   }
 
   /**
    * @param requester the requester data for Surescripts data
    * @throws an error if the requester's NPI is invalid
    */
-  private validateRequester(requester: SurescriptsRequesterData): void {
+  private async validateRequester(requester: SurescriptsRequesterData): Promise<void> {
     if (!validateNPI(requester.facility.npi)) {
       this.log(`Invalid NPI "${requester.facility.npi}" for CX ID "${requester.cxId}"`);
       throw new MetriportError("Invalid NPI", undefined, {
@@ -286,6 +328,31 @@ export class SurescriptsSftpClient extends SftpClient {
         cxId: requester.cxId,
       });
     }
+    const isSurescriptsEnabled = await isSurescriptsFeatureFlagEnabledForCx(requester.cxId);
+    if (!isSurescriptsEnabled) {
+      this.log(`Surescripts is not enabled for cx "${requester.cxId}"`);
+      throw new MetriportError("Surescripts is not enabled", undefined, {
+        cxId: requester.cxId,
+      });
+    }
+    if (!this.isSurescriptsAllowedForOrgType(requester.org.businessType)) {
+      this.log(
+        `Cannot make Surescripts requests for cx "${requester.cxId}" with org type "${requester.org.businessType}"`
+      );
+      throw new MetriportError("Invalid Surescripts organization type", undefined, {
+        cxId: requester.cxId,
+        orgType: requester.org.type,
+        businessType: requester.org.businessType,
+      });
+    }
+  }
+
+  private isSurescriptsAllowedForOrgType(orgType: OrganizationBizType): boolean {
+    if (orgType === "healthcare_provider") {
+      return true;
+    }
+    // Fails for healthcare_it_vendor
+    return false;
   }
 
   /**

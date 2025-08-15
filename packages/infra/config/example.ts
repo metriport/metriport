@@ -200,7 +200,7 @@ export const config: EnvConfigNonSandbox = {
           CITY: "address1City",
           STATE: "address1State",
           ZIP: "address1Zip",
-          FACCODE: "authorizingParticipantFacilityCode",
+          FACCODE: "cxShortcode",
           ASSIGNERID: "assigningAuthorityIdentifier",
         },
       },
@@ -238,6 +238,9 @@ export const config: EnvConfigNonSandbox = {
       SNOWFLAKE_CREDS: "your-snowflake-creds-as-json",
     },
     snowflake: {
+      warehouse: "test-warehouse",
+      role: "test-role",
+      integrationName: "test-integration",
       integrationUserArn: "arn:aws:iam::000000000000:role/SnowflakeIntegrationRole",
       integrationExternalId: "000000000000",
     },

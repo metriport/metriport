@@ -10,10 +10,49 @@ description: "Transform your data for analytics and pipe it into warehouses like
   height="450px"
 ></iframe>
 
-Metriport provides tools to transform your data for analytics and pipe it into warehouses like Snowflake, Redshift, BigQuery,
-and more - enabling you to do population level analytics on your patient data.
+Metriport provides tools to transform your data for analytics and pipe it into warehouses like Snowflake, Redshift,
+BigQuery, and more - enabling you to do population level analytics on your patient data.
 
-To accomplish this, we standardize our data into the [Tuva data model](https://thetuvaproject.com/) - another open source
-project that focuses on making healthcare data more standardized for analytics.
+There are two primary ways to perform analytics on your patient population data: Managed and Manual.
 
-To get started, check out our [data warehouse connector documentation](https://thetuvaproject.com/connectors/metriport) on the Tuva site.
+## Managed: Snowflake Data Warehouse
+
+Metriport offers direct integration with Snowflake, allowing you to analyze your patient data in a
+powerful, scalable cloud data warehouse. This approach provides:
+
+- **Managed data transformation**: Metriport does the heavy lifting to get your data into an analytics
+  ready data warehouse 🎉
+- **Near Real-time Analytics**: Query your patient data right after it's processed
+- **Scalable Performance**: Leverage Snowflake's elastic compute resources for complex analytics
+- **Secure Data Sharing**: Use Snowflake's `Secure Data Sharing` feature for secure data collaboration
+
+### Setting Up Snowflake Integration
+
+1. **Create a Snowflake Account**: Sign up for a 
+<a href="https://docs.snowflake.com/en/user-guide/intro-editions" target="_blank">Business Critical Edition</a>
+Snowflake account and share your account identification with us:
+   - View account details:
+      <img src="/images/data-transform-snowflake-accdetails.png" />
+   - Copy these fields and share them with your Metriport account manager:
+      - Organization Name
+      - Account Name
+      - Account Locator
+
+2. **Access the data**: Metriport will share your patients' medical data with your Snowflake instance:
+   - It uses Snowflake's <a href="https://docs.snowflake.com/en/user-guide/data-sharing-intro" target="_blank">Secure Data Sharing</a>
+     for secure, compliant, and zero-copy data sharing between Metriport and your Snowflake account.
+   - Data will be visible through Secure Views, one for each resource type.
+
+## Manual: Tuva Data Model
+
+To accomplish this, we standardize our data into the [Tuva data model](https://thetuvaproject.com/) - 
+another open source project that focuses on making healthcare data more standardized for analytics.
+
+The Tuva approach provides:
+
+- **Open Source**: Transparent, community-driven data modeling
+- **Healthcare-Specific Metrics**: Built-in calculations for common healthcare KPIs
+- **Multi-Warehouse Support**: Works with Snowflake, BigQuery, Redshift, and other warehouses
+
+To get started with Tuva, check out our 
+[data warehouse connector documentation](https://thetuvaproject.com/connectors/metriport) on the Tuva site.

@@ -1,13 +1,14 @@
 import { Condition, DiagnosticReport, Observation, Resource } from "@medplum/fhirtypes";
 import { WriteBackFiltersPerResourceType } from "@metriport/shared/interface/external/ehr/shared";
 import {
+  normalizeDiagnosticReportCoding,
   shouldWriteBackResource,
   skipConditionChronicity,
   skipLabDate,
-  skipLabLoinCode,
+  skipLabLoincCode,
   skipLabNonTrending,
   skipLabPanelDate,
-  skipLabPanelLoinCode,
+  skipLabPanelLoincCode,
   skipLabPanelNonTrending,
   skipVitalDate,
   skipVitalLoinCode,
@@ -40,12 +41,15 @@ import {
   labPanelLoincCodeObservationCode1,
   labPanelLoincCodeObservationCode2,
   labPanelLoincCodeObservationCode2Duplicate,
+  labPanelLoincCodesFilterCode,
   labPanelLoincCodesFilterCode1,
   labPanelLoincCodesFilterCode2,
   labPanelLoincCodesFilterUndefined,
   labPanelMinCountPerCodeFilterMin1,
   labPanelMinCountPerCodeFilterMin2,
   labPanelMinCountPerCodeFilterUndefined,
+  labReportOtherCodeDiagnosticReportCode,
+  labReportOtherCodeDisplay2,
   nonChronicCondition,
   unknownChronicityCondition,
   vitalDateFilterPost20240101,
@@ -160,13 +164,13 @@ describe("write-back-resource-diff-bundles-direct", () => {
       compareResources(filteredResources, unfilteredResources as Observation[]);
     });
   });
-  describe("skipLabLoinCode", () => {
+  describe("skipLabLoincCode", () => {
     const unfilteredResources = [labLoincCodeObservationCode1, labLoincCodeObservationCode2];
 
     it("should keep observations with loinc code 1", () => {
       const filteredResources: Observation[] = [];
       for (const resource of unfilteredResources) {
-        const shouldSkip = skipLabLoinCode(
+        const shouldSkip = skipLabLoincCode(
           resource as Observation,
           labLoincCodesFilterCode1 as WriteBackFiltersPerResourceType
         );
@@ -177,7 +181,7 @@ describe("write-back-resource-diff-bundles-direct", () => {
     it("should keep observations with loinc code 2", () => {
       const filteredResources: Observation[] = [];
       for (const resource of unfilteredResources) {
-        const shouldSkip = skipLabLoinCode(
+        const shouldSkip = skipLabLoincCode(
           resource as Observation,
           labLoincCodesFilterCode2 as WriteBackFiltersPerResourceType
         );
@@ -188,7 +192,7 @@ describe("write-back-resource-diff-bundles-direct", () => {
     it("should keep both observations when loincCodes is not set", () => {
       const filteredResources: Observation[] = [];
       for (const resource of unfilteredResources) {
-        const shouldSkip = skipLabLoinCode(
+        const shouldSkip = skipLabLoincCode(
           resource as Observation,
           labLoincCodesFilterUndefined as WriteBackFiltersPerResourceType
         );
@@ -310,7 +314,55 @@ describe("write-back-resource-diff-bundles-direct", () => {
       compareResources(filteredResources, unfilteredResources as DiagnosticReport[]);
     });
   });
-  describe("skipLabPanelLoinCode", () => {
+
+  describe("keep fitting code display, if matches loinc", () => {
+    it("should keep observations with a display that matches a loinc code", () => {
+      const unfilteredResources: DiagnosticReport[] = [
+        labReportOtherCodeDiagnosticReportCode as DiagnosticReport,
+      ];
+      const filteredResources: DiagnosticReport[] = [];
+      for (const resource of unfilteredResources) {
+        const normalizedResource = normalizeDiagnosticReportCoding(resource);
+        const shouldSkip = skipLabPanelLoincCode(
+          normalizedResource as DiagnosticReport,
+          labPanelLoincCodesFilterCode as WriteBackFiltersPerResourceType
+        );
+        if (!shouldSkip) filteredResources.push(normalizedResource as DiagnosticReport);
+      }
+      compareResources(filteredResources, [
+        labReportOtherCodeDiagnosticReportCode,
+      ] as DiagnosticReport[]);
+    });
+
+    it("should remove observations with a display that doesn't match a loinc code", () => {
+      const labOtherCodeDiagnosticReportCode2 = {
+        ...labReportOtherCodeDiagnosticReportCode,
+        code: {
+          coding: [
+            {
+              ...labReportOtherCodeDiagnosticReportCode.code.coding[0],
+              display: labReportOtherCodeDisplay2,
+            },
+          ],
+        },
+      };
+
+      const unfilteredResources: DiagnosticReport[] = [
+        labOtherCodeDiagnosticReportCode2 as DiagnosticReport,
+      ];
+      const filteredResources: DiagnosticReport[] = [];
+      for (const resource of unfilteredResources) {
+        const normalizedResource = normalizeDiagnosticReportCoding(resource);
+        const shouldSkip = skipLabPanelLoincCode(
+          normalizedResource as DiagnosticReport,
+          labPanelLoincCodesFilterCode as WriteBackFiltersPerResourceType
+        );
+        if (!shouldSkip) filteredResources.push(normalizedResource as DiagnosticReport);
+      }
+      compareResources(filteredResources, [] as DiagnosticReport[]);
+    });
+  });
+  describe("skipLabPanelLoincCode", () => {
     const unfilteredResources = [
       labPanelLoincCodeObservationCode1,
       labPanelLoincCodeObservationCode2,
@@ -319,7 +371,7 @@ describe("write-back-resource-diff-bundles-direct", () => {
     it("should keep diagnostic reports with loinc code 1", () => {
       const filteredResources: DiagnosticReport[] = [];
       for (const resource of unfilteredResources) {
-        const shouldSkip = skipLabPanelLoinCode(
+        const shouldSkip = skipLabPanelLoincCode(
           resource as DiagnosticReport,
           labPanelLoincCodesFilterCode1 as WriteBackFiltersPerResourceType
         );
@@ -332,7 +384,7 @@ describe("write-back-resource-diff-bundles-direct", () => {
     it("should keep diagnostic reports with loinc code 2", () => {
       const filteredResources: DiagnosticReport[] = [];
       for (const resource of unfilteredResources) {
-        const shouldSkip = skipLabPanelLoinCode(
+        const shouldSkip = skipLabPanelLoincCode(
           resource as DiagnosticReport,
           labPanelLoincCodesFilterCode2 as WriteBackFiltersPerResourceType
         );
@@ -345,7 +397,7 @@ describe("write-back-resource-diff-bundles-direct", () => {
     it("should keep both diagnostic reports when loincCodes is not set", () => {
       const filteredResources: DiagnosticReport[] = [];
       for (const resource of unfilteredResources) {
-        const shouldSkip = skipLabPanelLoinCode(
+        const shouldSkip = skipLabPanelLoincCode(
           resource as DiagnosticReport,
           labPanelLoincCodesFilterUndefined as WriteBackFiltersPerResourceType
         );

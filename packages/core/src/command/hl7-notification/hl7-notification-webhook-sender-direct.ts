@@ -1,7 +1,8 @@
 import { Hl7Message } from "@medplum/core";
 import { Bundle, CodeableConcept, Resource } from "@medplum/fhirtypes";
 import { executeWithNetworkRetries } from "@metriport/shared";
-import { CreateDischargeRequeryParams } from "@metriport/shared/src/domain/patient/patient-monitoring/discharge-requery";
+import { CreateDischargeRequeryParams } from "@metriport/shared/domain/patient/patient-monitoring/discharge-requery";
+import { TcmEncounterUpsertInput } from "@metriport/shared/domain/tcm-encounter";
 import axios from "axios";
 import dayjs from "dayjs";
 import { S3Utils } from "../../external/aws/s3";
@@ -24,7 +25,10 @@ import {
   getHl7MessageTypeOrFail,
   getMessageUniqueIdentifier,
 } from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion/msh";
-import { Hl7Notification, Hl7NotificationWebhookSender } from "./hl7-notification-webhook-sender";
+import {
+  Hl7NotificationSenderParams,
+  Hl7NotificationWebhookSender,
+} from "./hl7-notification-webhook-sender";
 import { isSupportedTriggerEvent, SupportedTriggerEvent } from "./utils";
 
 export const dischargeEventCode = "A03";
@@ -33,6 +37,11 @@ const INTERNAL_HL7_ENDPOINT = `notification`;
 const INTERNAL_PATIENT_ENDPOINT = "internal/patient";
 const DISCHARGE_REQUERY_ENDPOINT = "monitoring/discharge-requery";
 const SIGNED_URL_DURATION_SECONDS = dayjs.duration({ minutes: 10 }).asSeconds();
+
+type ClinicalInformation = {
+  condition: Array<CodeableConcept>;
+  encounterReason: Array<CodeableConcept>;
+};
 
 export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhookSender {
   private readonly context = "hl7-notification-wh-sender";
@@ -53,7 +62,7 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
    * @param params - The parameters for the HL7 message.
    * @returns - A promise that resolves when the message is sent to the API.
    */
-  async execute(params: Hl7Notification): Promise<void> {
+  async execute(params: Hl7NotificationSenderParams): Promise<void> {
     const message = Hl7Message.parse(params.message);
     const { cxId, patientId, sourceTimestamp, messageReceivedTimestamp } = params;
     const encounterId = createEncounterId(message, patientId);
@@ -96,7 +105,7 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
       message,
       cxId,
       patientId,
-      timestampString: sourceTimestamp,
+      rawDataFileKey: params.rawDataFileKey,
     });
 
     const newEncounterData = prependPatientToBundle({
@@ -114,7 +123,7 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
         cxId,
         patientId,
         class: encounterClass.display,
-        facilityName,
+        facilityName: facilityName,
         admitTime: encounterPeriod?.start,
         dischargeTime: encounterPeriod?.end,
         clinicalInformation,
@@ -165,7 +174,7 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
       durationSeconds: SIGNED_URL_DURATION_SECONDS,
     });
 
-    log(`Sending HL7 notification to API...`);
+    log(`Calling Hl7 notification callback endpoint in API...`);
     await executeWithNetworkRetries(
       async () =>
         await axios.post(internalHl7RouteUrl, undefined, {
@@ -199,7 +208,7 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
     const { admitTime, dischargeTime, ...basePayload } = tcmEncounterPayload;
     const encounterId = basePayload.id;
     const latestEvent = triggerEvent === "A01" ? "Admitted" : "Discharged";
-    const fullPayload = {
+    const fullPayload: TcmEncounterUpsertInput = {
       ...basePayload,
       latestEvent,
       ...(admitTime ? { admitTime } : undefined),
@@ -219,15 +228,16 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
     );
   }
 
-  private extractClinicalInformation(bundle: Bundle<Resource>): {
-    condition: Array<CodeableConcept>;
-  } {
-    const conditions: Array<CodeableConcept> = [];
+  private extractClinicalInformation(bundle: Bundle<Resource>): ClinicalInformation {
+    const clinicalInformation: ClinicalInformation = {
+      condition: [],
+      encounterReason: [],
+    };
 
     if (bundle.entry) {
       for (const entry of bundle.entry) {
         if (entry.resource?.resourceType === "Condition" && entry.resource.code?.coding) {
-          conditions.push({
+          clinicalInformation.condition.push({
             coding:
               entry.resource.code?.coding?.map(coding => ({
                 code: coding.code ?? "",
@@ -235,11 +245,13 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
                 system: coding.system ?? "",
               })) ?? [],
           });
+        } else if (entry.resource?.resourceType === "Encounter") {
+          clinicalInformation.encounterReason = entry.resource.reasonCode ?? [];
         }
       }
     }
 
-    return { condition: conditions };
+    return clinicalInformation;
   }
 }
 

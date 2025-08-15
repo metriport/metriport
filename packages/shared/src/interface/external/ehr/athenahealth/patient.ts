@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const patientCustomFieldSchema = z.object({
   customfieldid: z.string(),
-  customfieldvalue: z.string(),
+  customfieldvalue: z.string().optional(),
   optionid: z.string().optional(),
 });
 export type PatientCustomField = z.infer<typeof patientCustomFieldSchema>;

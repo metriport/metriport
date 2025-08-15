@@ -180,7 +180,7 @@ function isIn(units: string): boolean {
 }
 
 function isDegf(units: string): boolean {
-  return units === "degf" || units === "f" || units.includes("fahrenheit");
+  return units === "degf" || units === "[degf]" || units === "f" || units.includes("fahrenheit");
 }
 
 function isCel(units: string): boolean {
@@ -198,9 +198,19 @@ function isMmHg(units: string): boolean {
 }
 
 function isBpm(units: string): boolean {
-  return units === "bpm" || units === "/min" || units === "beats/min" || units === "per minute";
+  return (
+    units === "bpm" ||
+    units === "/min" ||
+    units === "beats/min" ||
+    units === "per minute" ||
+    units === "br/min"
+  );
 }
 
 function isPercent(units: string): boolean {
   return units === "%";
+}
+
+export function formatNumberAsString(value: number): string {
+  return Number.isInteger(value) ? value.toString() : value.toFixed(2);
 }

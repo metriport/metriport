@@ -8,7 +8,7 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus, { OK } from "http-status";
 import { z } from "zod";
-import { downloadDocument } from "../../command/medical/document/document-download";
+import { getDocumentDownloadUrl } from "../../command/medical/document/document-download";
 import { queryDocumentsAcrossHIEs } from "../../command/medical/document/document-query";
 import { startBulkGetDocumentUrls } from "../../command/medical/document/start-bulk-get-doc-url";
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
@@ -148,6 +148,9 @@ router.post(
 // TODO see https://github.com/metriport/metriport-internal/issues/2422
 /**
  * Handles the logic for download url endpoints.
+ * If conversionType is specified, the document will be converted to a new format,
+ * and a presigned url to download the converted document will be returned.
+ * Otherwise, the a presigned url to download the raw document will be returned.
  *
  * @param req Request object.
  * @returns URL for downloading the document.
@@ -167,8 +170,7 @@ async function getDownloadUrl(req: Request): Promise<string> {
     throw new ForbiddenError(message); // This should be 404
   }
 
-  const url = await downloadDocument({ fileName: fileNameString, conversionType });
-  return url;
+  return await getDocumentDownloadUrl({ fileName: fileNameString, conversionType });
 }
 
 /** ---------------------------------------------------------------------------

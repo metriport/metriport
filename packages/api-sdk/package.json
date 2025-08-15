@@ -76,6 +76,5 @@
     "ts-essentials": "^9.3.1",
     "ts-jest": "29.1.1",
     "typescript": "^4.9.5"
-  },
-  "gitHead": "98570bd9fa0651ba364d76092c52f9618f94a80b"
+  }
 }
