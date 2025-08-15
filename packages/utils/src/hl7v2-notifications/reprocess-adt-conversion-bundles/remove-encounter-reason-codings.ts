@@ -28,7 +28,7 @@ import { out } from "@metriport/core/util/log";
  * Note: This script modifies data in S3. Ensure you have backups if needed.
  */
 
-const bucketName = Config.getHl7ConversionBucketName();
+const bucketName: string = Config.getHl7ConversionBucketName();
 
 const prefixes: string[] = [];
 
