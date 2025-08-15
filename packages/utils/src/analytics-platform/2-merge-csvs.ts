@@ -2,6 +2,7 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
 import { InvokeCommand } from "@aws-sdk/client-lambda";
+import { getLambdaResultPayloadV3, makeLambdaClientV3 } from "@metriport/core/external/aws/lambda";
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { out } from "@metriport/core/util/log";
@@ -13,7 +14,6 @@ import fs from "fs";
 import { chunk } from "lodash";
 import { elapsedTimeAsStr } from "../shared/duration";
 import { getCxData } from "../shared/get-cx-data";
-import { getLambdaResultPayloadV3, makeLambdaClientV3 } from "@metriport/core/external/aws/lambda";
 
 dayjs.extend(duration);
 

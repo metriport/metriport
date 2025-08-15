@@ -1,27 +1,7 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-import { FileInfo } from "@metriport/core/external/commonwell/document/document-downloader";
-import { CSVGrouper } from "../merge-csvs";
+import { FileInfo, groupFilesByTypeAndSize } from "../merge-csvs";
 
-// Mock console.log for testing
-const mockLog = jest.fn();
-
-describe("CSVGrouper.groupFilesByTypeAndSize", () => {
-  let grouper: CSVGrouper;
-
-  beforeEach(() => {
-    grouper = new CSVGrouper({
-      sourceBucket: "test-bucket",
-      sourcePrefix: "test-prefix",
-      destinationBucket: "test-dest-bucket",
-      destinationPrefix: "test-dest-prefix",
-      jsonToCsvJobId: "test-job-id",
-      mergeCsvJobId: "test-merge-id",
-      patientIds: ["patient1", "patient2", "patient3"],
-      targetGroupSizeMB: 100, // 100MB target
-      region: "us-east-1",
-    });
-  });
-
+describe("groupFilesByTypeAndSize", () => {
   describe("file uniqueness constraints", () => {
     it("should ensure each file appears in exactly one group", () => {
       const files = [
@@ -32,7 +12,7 @@ describe("CSVGrouper.groupFilesByTypeAndSize", () => {
         { key: "path/patient2/patient.csv", size: 35 * 1024 * 1024, tableName: "patient" },
       ];
 
-      const groups = grouper["groupFilesByTypeAndSize"](files, mockLog);
+      const groups = groupFilesByTypeAndSize(files, 100); // 100MB target
 
       // Check that all files are present in exactly one group
       const allFilesInGroups = groups.flatMap(group => group.files);
@@ -52,7 +32,7 @@ describe("CSVGrouper.groupFilesByTypeAndSize", () => {
         { key: "path/patient3/condition.csv", size: 40 * 1024 * 1024, tableName: "condition" },
       ];
 
-      const groups = grouper["groupFilesByTypeAndSize"](files, mockLog);
+      const groups = groupFilesByTypeAndSize(files, 100); // 100MB target
 
       // Check that no file appears in multiple groups
       const allFileKeys = groups.flatMap(group => group.files.map(f => f.key));
@@ -70,7 +50,7 @@ describe("CSVGrouper.groupFilesByTypeAndSize", () => {
         { key: "path/patient2/patient.csv", size: 35 * 1024 * 1024, tableName: "patient" },
       ];
 
-      const groups = grouper["groupFilesByTypeAndSize"](files, mockLog);
+      const groups = groupFilesByTypeAndSize(files, 100); // 100MB target
 
       const conditionGroups = groups.filter(g => g.tableName === "condition");
       const patientGroups = groups.filter(g => g.tableName === "patient");
@@ -99,7 +79,7 @@ describe("CSVGrouper.groupFilesByTypeAndSize", () => {
         { key: "path/patient2/invalid.csv", size: 60 * 1024 * 1024, tableName: "" },
       ];
 
-      const groups = grouper["groupFilesByTypeAndSize"](files, mockLog);
+      const groups = groupFilesByTypeAndSize(files, 100); // 100MB target
 
       // Files with empty table names should be grouped separately
       const emptyTableGroups = groups.filter(g => g.tableName === "");
@@ -115,7 +95,7 @@ describe("CSVGrouper.groupFilesByTypeAndSize", () => {
         { key: "path/patient2/condition.csv", size: 50 * 1024 * 1024, tableName: "condition" },
       ];
 
-      const groups = grouper["groupFilesByTypeAndSize"](files, mockLog);
+      const groups = groupFilesByTypeAndSize(files, 100); // 100MB target
 
       expect(groups.length).toBe(2);
       // Large file should get its own group
@@ -134,7 +114,7 @@ describe("CSVGrouper.groupFilesByTypeAndSize", () => {
         { key: "path/patient3/condition.csv", size: 50 * 1024 * 1024, tableName: "condition" },
       ];
 
-      const groups = grouper["groupFilesByTypeAndSize"](files, mockLog);
+      const groups = groupFilesByTypeAndSize(files, 100); // 100MB target
 
       // Each large file should get its own group
       const largeFileGroups = groups.filter(
@@ -157,7 +137,7 @@ describe("CSVGrouper.groupFilesByTypeAndSize", () => {
         { key: "path/patient4/condition.csv", size: 20 * 1024 * 1024, tableName: "condition" },
       ];
 
-      const groups = grouper["groupFilesByTypeAndSize"](files, mockLog);
+      const groups = groupFilesByTypeAndSize(files, 100); // 100MB target
 
       // Should create multiple groups for better distribution
       expect(groups.length).toBeGreaterThan(1);
@@ -175,7 +155,7 @@ describe("CSVGrouper.groupFilesByTypeAndSize", () => {
         { key: "path/patient4/condition.csv", size: 35 * 1024 * 1024, tableName: "condition" },
       ];
 
-      const groups = grouper["groupFilesByTypeAndSize"](files, mockLog);
+      const groups = groupFilesByTypeAndSize(files, 100); // 100MB target
 
       // Check that groups are reasonably balanced
       const groupSizes = groups.map(g => g.totalSize);
@@ -190,7 +170,7 @@ describe("CSVGrouper.groupFilesByTypeAndSize", () => {
   describe("edge cases", () => {
     it("should handle empty file list", () => {
       const files: FileInfo[] = [];
-      const groups = grouper["groupFilesByTypeAndSize"](files, mockLog);
+      const groups = groupFilesByTypeAndSize(files, 100); // 100MB target
       expect(groups).toHaveLength(0);
     });
 
@@ -201,7 +181,7 @@ describe("CSVGrouper.groupFilesByTypeAndSize", () => {
       const expectedKey = files[0]?.key;
       if (!expectedKey) throw new Error("Programming error: expectedKey is undefined");
 
-      const groups = grouper["groupFilesByTypeAndSize"](files, mockLog);
+      const groups = groupFilesByTypeAndSize(files, 100); // 100MB target
       expect(groups).toHaveLength(1);
       expect(groups[0]?.files).toHaveLength(1);
       expect(groups[0]?.files[0]?.key).toBe(expectedKey);
@@ -213,7 +193,7 @@ describe("CSVGrouper.groupFilesByTypeAndSize", () => {
         { key: "path/patient2/condition.csv", size: 50 * 1024 * 1024, tableName: "condition" },
       ];
 
-      const groups = grouper["groupFilesByTypeAndSize"](files, mockLog);
+      const groups = groupFilesByTypeAndSize(files, 100); // 100MB target
 
       // Zero-size files should still be processed
       const allFiles = groups.flatMap(g => g.files);
@@ -221,25 +201,12 @@ describe("CSVGrouper.groupFilesByTypeAndSize", () => {
     });
 
     it("should handle very large target group size", () => {
-      // Create a grouper with very large target size
-      const largeGrouper = new CSVGrouper({
-        sourceBucket: "test-bucket",
-        sourcePrefix: "test-prefix",
-        destinationBucket: "test-dest-bucket",
-        destinationPrefix: "test-dest-prefix",
-        jsonToCsvJobId: "test-job-id",
-        mergeCsvJobId: "test-merge-id",
-        patientIds: ["patient1", "patient2"],
-        targetGroupSizeMB: 1000, // 1GB target
-        region: "us-east-1",
-      });
-
       const files = [
         { key: "path/patient1/condition.csv", size: 50 * 1024 * 1024, tableName: "condition" },
         { key: "path/patient2/condition.csv", size: 60 * 1024 * 1024, tableName: "condition" },
       ];
 
-      const groups = largeGrouper["groupFilesByTypeAndSize"](files, mockLog);
+      const groups = groupFilesByTypeAndSize(files, 1000); // 1GB target
 
       // All files should be in one group since they're much smaller than target
       expect(groups).toHaveLength(1);
@@ -255,7 +222,7 @@ describe("CSVGrouper.groupFilesByTypeAndSize", () => {
         { key: "path/patient1/patient.csv", size: 30 * 1024 * 1024, tableName: "patient" },
       ];
 
-      const groups = grouper["groupFilesByTypeAndSize"](files, mockLog);
+      const groups = groupFilesByTypeAndSize(files, 100); // 100MB target
 
       const groupIds = groups.map(g => g.groupId);
       const uniqueGroupIds = new Set(groupIds);
@@ -269,7 +236,7 @@ describe("CSVGrouper.groupFilesByTypeAndSize", () => {
         { key: "path/patient2/condition.csv", size: 60 * 1024 * 1024, tableName: "condition" },
       ];
 
-      const groups = grouper["groupFilesByTypeAndSize"](files, mockLog);
+      const groups = groupFilesByTypeAndSize(files, 100); // 100MB target
 
       groups.forEach(group => {
         expect(group.groupId).toMatch(/^condition_\d+$/);
@@ -286,7 +253,7 @@ describe("CSVGrouper.groupFilesByTypeAndSize", () => {
         { key: "path/patient3/condition.csv", size: 50 * 1024 * 1024, tableName: "condition" },
       ];
 
-      const groups = grouper["groupFilesByTypeAndSize"](files, mockLog);
+      const groups = groupFilesByTypeAndSize(files, 100); // 100MB target
 
       groups.forEach(group => {
         const expectedTotalSize = group.files.reduce((sum, file) => sum + file.size, 0);
@@ -302,7 +269,7 @@ describe("CSVGrouper.groupFilesByTypeAndSize", () => {
         { key: "path/patient3/condition.csv", size: 40 * 1024 * 1024, tableName: "condition" },
       ];
 
-      const groups = grouper["groupFilesByTypeAndSize"](files, mockLog);
+      const groups = groupFilesByTypeAndSize(files, 100); // 100MB target
 
       // Large file group should have correct total size
       const largeFileGroup = groups.find(g => g.files.some(f => f.size === largeFileSize));
