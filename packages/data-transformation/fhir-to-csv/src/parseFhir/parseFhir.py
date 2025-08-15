@@ -94,7 +94,6 @@ def is_integer(n):
 def getJsonValue(lnjsn, ln,filename = ""):
     retVal = ""
     for x in ln.split("."):
-        x = int(x) if is_integer(x) else x
         if is_integer(x):
             if isinstance(lnjsn, list) and int(x) < len(lnjsn):
                 lnjsn = lnjsn[int(x)]
