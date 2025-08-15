@@ -61,12 +61,15 @@ export async function getQuestRoster({ pagination }: GetQuestRosterParams): Prom
     log(`Done. Found ${patients.length} Quest monitoring patients for this page`);
 
     const patientsWithQuestId: Patient[] = [];
+    const patientsWithError: Patient[] = [];
     await executeAsynchronously(
       patients,
       async patient => {
         const externalId = await findOrCreateQuestExternalId(patient, log);
         if (externalId) {
           patientsWithQuestId.push({ ...patient, externalId });
+        } else {
+          patientsWithError.push(patient);
         }
       },
       {
@@ -74,6 +77,9 @@ export async function getQuestRoster({ pagination }: GetQuestRosterParams): Prom
       }
     );
 
+    log(
+      `Generated Quest roster with ${patientsWithQuestId.length} patients and ${patientsWithError.length} errors`
+    );
     return patientsWithQuestId;
   } catch (error) {
     const msg = `Failed to get Quest monitoring patients`;
