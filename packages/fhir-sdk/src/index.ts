@@ -730,16 +730,16 @@ export class FhirBundleSdk {
    * Create a new bundle entry from an existing entry, preserving fullUrl
    */
   private createBundleEntry(originalEntry: BundleEntry, resource: Resource): BundleEntry {
-    const newEntry: BundleEntry = {
-      resource: resource,
-    };
-
-    // Preserve original fullUrl if it exists (FR-6.6)
     if (originalEntry.fullUrl) {
-      newEntry.fullUrl = originalEntry.fullUrl;
+      return {
+        fullUrl: originalEntry.fullUrl,
+        resource: resource,
+      };
     }
 
-    return newEntry;
+    return {
+      resource: resource,
+    };
   }
 
   /**
@@ -749,8 +749,8 @@ export class FhirBundleSdk {
     const exportBundle: Bundle = {
       resourceType: "Bundle",
       type: this.bundle.type || "collection",
-      entry: entries,
       total: entries.length,
+      entry: entries,
     };
 
     // Preserve original bundle metadata (FR-6.4)
