@@ -293,7 +293,6 @@ def parse(configPath,inputPath=None,outputPath=None,missingPath=None,outputForma
                 result_count = 0
                 try:
                     jsndict = json.loads(jsntxt)
-                    print(jsndict)
                     result_count = parse_one_resource(anchor, paths, jsndict, leng, csvwriter,data,inputPath,outputFormat)
                     if missingPath:
                         compare_and_write_new_paths(jsndict,inputFile,anchor,config,missingPath)
