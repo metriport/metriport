@@ -29,7 +29,7 @@ type SimpleFile = {
   docId: string;
 } & SimplerFile;
 
-export function getDocToFileFunction(patient: Pick<Patient, "cxId" | "id">) {
+function getDocToFileFunction(patient: Pick<Patient, "cxId" | "id">) {
   // TODO convert the input from CW Document to a Metriport shape
   return async (doc: Document): Promise<SimpleFile> => {
     const fileName = createDocumentFilePath(

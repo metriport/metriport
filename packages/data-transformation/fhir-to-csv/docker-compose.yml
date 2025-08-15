@@ -1,0 +1,32 @@
+version: "3.8"
+
+name: fhir-to-csv
+
+networks:
+  metriportNetwork:
+    name: metriportNetwork
+    driver: bridge
+services:
+  fhir-to-csv:
+    container_name: fhir-to-csv
+    build:
+      dockerfile: ./Dockerfile.dev
+    volumes:
+      - .:/usr/app/data
+      - ~/.aws:/root/.aws
+    environment:
+      ENV: ${ENV}
+      AWS_REGION: ${AWS_REGION}
+      JOB_ID: ${JOB_ID}
+      CX_ID: ${CX_ID}
+      PATIENT_ID: ${PATIENT_ID}
+      INPUT_BUNDLE: ${INPUT_BUNDLE}
+      API_URL: http://host.docker.internal:8080
+      INPUT_S3_BUCKET: ${INPUT_S3_BUCKET}
+      OUTPUT_S3_BUCKET: ${OUTPUT_S3_BUCKET}
+      SNOWFLAKE_CREDS: ${SNOWFLAKE_CREDS}
+      SNOWFLAKE_ROLE: ${SNOWFLAKE_ROLE}
+      SNOWFLAKE_WAREHOUSE: ${SNOWFLAKE_WAREHOUSE}
+      SNOWFLAKE_INTEGRATION: ${SNOWFLAKE_INTEGRATION}
+    networks:
+      - metriportNetwork

@@ -604,9 +604,7 @@ function convertCWAdressToFHIR(address: Contained["address"] | undefined): Addre
  */
 function convertCWGenderToFHIR(genders: Gender[] | null | undefined): PatientFHIR["gender"] {
   if (genders && genders[0]) {
-    switch (
-      (genders[0] as unknown as { code: string }).code // TODO ENG-200 - Remove the casting
-    ) {
+    switch (genders[0].code) {
       case GenderCodes.M:
         return "male";
       case GenderCodes.F:

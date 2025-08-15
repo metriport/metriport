@@ -4,6 +4,7 @@ import { buildDayjs, buildDayjsTz } from "@metriport/shared/common/date";
 import { flow } from "lodash";
 import { capture, out } from "../../util";
 import { getOptionalValueFromMessage } from "../../command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
+import { persistHl7Phi } from "../../command/hl7-notification/s3";
 
 const MSH_DATETIME_OF_MESSAGE_INDEX = 7;
 const EVN_RECORDED_DATETIME_INDEX = 2;
@@ -20,7 +21,7 @@ const DG1_DIAGNOSIS_DATETIME_INDEX = 5;
 
 export function utcifyHl7Message(message: Hl7Message, timezone: string): Hl7Message {
   /**
-   * TODO: Properly timezoneify the message using getHieTimezone, which requires making response format requests over email
+   * TODO: Properly timezoneify the message using getHieConfig, which requires making response format requests over email
    * Temporary to get NewYorkHie ADTs correct for now.
    **/
   function utcifyComponents(
@@ -72,6 +73,18 @@ function utcifyHl7Components(
         ? component
         : buildDayjsTz(component, timezone).format("YYYYMMDDHHmmss");
     } catch (e) {
+      const logMessage = `Full segment: ${segment.toString()}
+      \nField @ ${fieldIndex} has value ${segment.getField(fieldIndex)?.toString()}
+      \nField @ ${fieldIndex - 1} has value ${segment.getField(fieldIndex - 1)?.toString()}
+      \nField @ ${fieldIndex + 1} has value ${segment.getField(fieldIndex + 1)?.toString()}
+      \nFull message: ${message.segments.map(s => s.toString()).join("\n")}`;
+
+      persistHl7Phi({
+        patientId: getOptionalValueFromMessage(message, "PID", 3, 1) ?? "unknown-patient",
+        stringMessage: logMessage,
+        logger: out("utcifyHl7Components"),
+      });
+
       const msg = `Error UTCifying component in segment ${segmentName}`;
       log(`${msg}, error - ${errorToString(e)}`);
       capture.error(msg, {

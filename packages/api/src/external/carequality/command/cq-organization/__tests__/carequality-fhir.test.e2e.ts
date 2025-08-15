@@ -87,10 +87,8 @@ describe("CarequalityManagementApiFhir", () => {
     };
   }
 
-  let primaryOrg: OrganizationWithId | undefined;
   let secondaryOrg: OrganizationWithId | undefined;
   let unrelatedOidOrg: OrganizationWithId | undefined;
-
   afterAll(async () => {
     if (secondaryOrg) {
       try {
@@ -116,9 +114,14 @@ describe("CarequalityManagementApiFhir", () => {
       it("registers a new organization", async () => {
         const orgCreate = await makeOrganization();
         console.log(`Registering primary Org, OID: ${orgCreate.id}`);
-        primaryOrg = await api.registerOrganization(orgCreate);
+        const primaryOrg = await api.registerOrganization(orgCreate);
         expect(primaryOrg).toBeTruthy();
         expect(primaryOrg.id).toBeTruthy();
+
+        const orgAfterDelete = await api.deleteOrganization(primaryOrg);
+        expect(orgAfterDelete).toBeDefined();
+        if (!orgAfterDelete) throw new Error("programming error");
+        expect(orgAfterDelete.active).toBe(false);
       });
 
       it("registers a new org when OID is not under managing org", async () => {
@@ -136,7 +139,7 @@ describe("CarequalityManagementApiFhir", () => {
   describe("getOrganization", () => {
     it("gets a single organization", async () => {
       const oid = getOid();
-      primaryOrg = await api.getOrganization(oid);
+      const primaryOrg = await api.getOrganization(oid);
       expect(primaryOrg).toBeTruthy();
       expect(primaryOrg?.id).toEqual(oid);
     });
@@ -178,6 +181,8 @@ describe("CarequalityManagementApiFhir", () => {
       return;
     } else {
       it("updates the organization", async () => {
+        const oid = getOid();
+        const primaryOrg = await api.getOrganization(oid);
         expect(primaryOrg).toBeTruthy();
         if (!primaryOrg) throw new Error("primaryOrg is undefined");
         const orgUpdate = cloneDeep(primaryOrg);
@@ -198,6 +203,8 @@ describe("CarequalityManagementApiFhir", () => {
       });
 
       it("creates new org when tries to update a non-existent organization", async () => {
+        const oid = getOid();
+        const primaryOrg = await api.getOrganization(oid);
         expect(primaryOrg).toBeTruthy();
         if (!primaryOrg) throw new Error("primaryOrg is undefined");
         const orgUpdate = cloneDeep(primaryOrg);

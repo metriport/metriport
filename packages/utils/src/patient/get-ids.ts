@@ -19,7 +19,10 @@ export async function getPatientIds(
   return { patientIds: allPatientIds, isAllPatients: true };
 }
 
-export async function getAllPatientIds({ axios, cxId }: GetPatientIdsCmd): Promise<string[]> {
+export async function getAllPatientIds({
+  axios,
+  cxId,
+}: Omit<GetPatientIdsCmd, "patientIds">): Promise<string[]> {
   const resp = await axios.get(`${apiUrl}/internal/patient/ids?cxId=${cxId}`);
   const patientIds = resp.data.patientIds;
   return (Array.isArray(patientIds) ? patientIds : []) as string[];
