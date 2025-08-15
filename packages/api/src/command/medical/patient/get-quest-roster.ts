@@ -67,8 +67,8 @@ export async function getQuestRoster({ pagination }: GetQuestRosterParams): Prom
       patients,
       async patient => {
         try {
-          const externalId = await findOrCreateQuestExternalId(patient, log);
-          patientsWithQuestId.push({ ...patient, externalId });
+          patient.externalId = await findOrCreateQuestExternalId(patient, log);
+          patientsWithQuestId.push(patient);
         } catch (error) {
           patientsWithError.push(patient);
         }
