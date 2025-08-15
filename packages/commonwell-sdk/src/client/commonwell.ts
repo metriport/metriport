@@ -434,7 +434,6 @@ export class CommonWell extends CommonWellBase implements CommonWellAPI {
     const response = await this.executeWithRetriesOn500IfEnabled(() =>
       this.api.get(url, { headers })
     );
-    // console.log(`>>> Response RAW: ${JSON.stringify(response.data, null, 2)}`);
     return response.data;
   }
 
