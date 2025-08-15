@@ -5,10 +5,10 @@ dotenv.config();
 
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { Config } from "@metriport/core/util/config";
+import { out } from "@metriport/core/util/log";
 import { FhirBundleSdk } from "@metriport/fhir-sdk";
 import { parseFhirBundle } from "@metriport/shared/medical/fhir/bundle";
 import _ from "lodash";
-import { out } from "@metriport/core/util/log";
 
 /**
  * Removes encounter reason codings from ADT conversion bundles stored in S3.
@@ -28,11 +28,17 @@ import { out } from "@metriport/core/util/log";
  * Note: This script modifies data in S3. Ensure you have backups if needed.
  */
 
-const bucketName: string = Config.getHl7ConversionBucketName();
+const bucketName = Config.getHl7ConversionBucketName();
 
 const prefixes: string[] = [];
 
 async function main() {
+  if (bucketName === undefined) {
+    throw new Error(
+      "Failed to find environment variable from `Config.getHl7ConversionBucketName()`"
+    );
+  }
+
   const s3Utils = new S3Utils(Config.getAWSRegion());
   const promises = prefixes.map(async prefix => {
     const { log } = out(prefix);
