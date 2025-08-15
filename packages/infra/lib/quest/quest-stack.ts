@@ -250,14 +250,15 @@ export class QuestNestedStack extends NestedStack {
           lambda: this.responseDownloadLambda,
         },
         {
-          envVarName: "QUEST_CONVERT_RESPONSE_LAMBDA_NAME",
-          lambda: this.convertResponseLambda,
+          envVarName: "QUEST_FHIR_CONVERTER_LAMBDA_NAME",
+          lambda: this.questFhirConverterLambda,
         },
       ],
       sftpActionLambda: this.sftpActionLambda,
       rosterUploadLambda: this.rosterUploadLambda,
       responseDownloadLambda: this.responseDownloadLambda,
-      convertResponseLambda: this.convertResponseLambda,
+      questFhirConverterLambda: this.questFhirConverterLambda,
+      questFhirConverterQueue: this.questFhirConverterQueue,
       questReplicaBucket: this.questReplicaBucket,
       labConversionBucket: this.labConversionBucket,
     };
