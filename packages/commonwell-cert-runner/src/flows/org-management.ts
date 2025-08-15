@@ -8,7 +8,7 @@ import {
 } from "@metriport/commonwell-sdk";
 import { errorToString } from "@metriport/shared";
 import {
-  existingOrgId,
+  existingOrgOid,
   memberCertificateString,
   memberId,
   memberName,
@@ -39,7 +39,7 @@ export async function orgManagement(): Promise<OrgManagementResponse> {
   // TODO ENG-200 gotta set Gateway > FHIR and Auth server's info
 
   try {
-    let orgId: string | undefined = existingOrgId;
+    let orgId: string | undefined = existingOrgOid;
     if (orgId) {
       const org = await getOneOrg(commonWellMember, orgId);
       return buildResponse(org);
@@ -183,7 +183,7 @@ export async function getOneOrg(
 }
 
 export async function initApiForExistingOrg(): Promise<OrgManagementResponse> {
-  const orgId = existingOrgId;
+  const orgId = existingOrgOid;
   if (!orgId) {
     throw new Error("No existing orgId found in env, this is required");
   }
