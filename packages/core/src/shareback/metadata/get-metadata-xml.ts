@@ -1,9 +1,8 @@
-import { UPLOADS_FOLDER } from "../../domain/document/upload";
-import { createFolderName } from "../../domain/filename";
-import { S3Utils, executeWithRetriesS3 } from "../../external/aws/s3";
+import { executeWithRetriesS3, S3Utils } from "../../external/aws/s3";
 import { XDSRegistryError } from "../../external/carequality/error";
 import { Config } from "../../util/config";
 import { capture } from "../../util/notifications";
+import { createSharebackFolderName } from "../file";
 
 const region = Config.getAWSRegion();
 const s3Utils = new S3Utils(region);
@@ -28,12 +27,11 @@ async function retrieveXmlContentsFromMetadataFilesOnS3(
   patientId: string,
   bucketName: string
 ): Promise<string[]> {
-  const folderName = createFolderName(cxId, patientId);
-  const Prefix = `${folderName}/${UPLOADS_FOLDER}/`;
+  const prefix = createSharebackFolderName({ cxId, patientId });
 
   const params = {
     Bucket: bucketName,
-    Prefix,
+    Prefix: prefix,
   };
 
   const data = await executeWithRetriesS3(() => s3Utils._s3.listObjectsV2(params).promise());
