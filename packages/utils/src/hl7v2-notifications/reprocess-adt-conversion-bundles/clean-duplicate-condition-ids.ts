@@ -29,7 +29,7 @@ import { reprocessAdtConversionBundles } from "./common";
 const prefixes: string[] = [];
 
 async function main() {
-  await reprocessAdtConversionBundles(prefixes, cleanDuplicateConditionIds);
+  await reprocessAdtConversionBundles(prefixes, cleanDuplicateConditionIds, false);
 }
 
 async function cleanDuplicateConditionIds(
