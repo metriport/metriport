@@ -52,8 +52,6 @@ def parse(input_path: str, outputs_folder: str) -> list[str]:
 
         # Now process each config file for this resource type using the filtered input
         for config_file in config_files:
-            if (config_file != 'config_Patient.ini'):
-                continue
             output_name = config_file.replace('config_', '').replace('.ini', '').lower()
             output_file_path = f'{outputs_folder}/{output_name}.{output_format}' # METRIPORT CHANGE TO RETURN LIST OF OUTPUT FILES
             output_files.append(output_file_path) # METRIPORT CHANGE TO RETURN LIST OF OUTPUT FILES
