@@ -2,15 +2,18 @@ import { Duration, NestedStack, NestedStackProps } from "aws-cdk-lib";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
+import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as secret from "aws-cdk-lib/aws-secretsmanager";
+import { Queue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { EnvConfig } from "../../config/env-config";
 import { EnvType } from "../env-type";
 import { createLambda } from "../shared/lambda";
 import { LambdaLayers } from "../shared/lambda-layers";
 import { buildSecret } from "../shared/secrets";
-import { LambdaSettingsWithNameAndEntry } from "../shared/settings";
+import { LambdaSettingsWithNameAndEntry, QueueAndLambdaSettings } from "../shared/settings";
+import { createQueue } from "../shared/sqs";
 import { QuestAssets } from "./types";
 
 const sftpActionTimeout = Duration.seconds(30);
@@ -21,6 +24,8 @@ const rosterUploadLambdaTimeout = Duration.minutes(3);
 const responseDownloadLambdaTimeout = Duration.minutes(1);
 // After downloading a response file, a separate conversion Lambda is triggered for each patient in the response file
 const convertResponseLambdaTimeout = Duration.seconds(30);
+const alarmMaxAgeOfOldestMessage = Duration.hours(1);
+const questFhirConverterMaxConcurrency = 10;
 
 interface QuestLambdaSettings {
   sftpAction: LambdaSettingsWithNameAndEntry;
@@ -62,6 +67,28 @@ const questLambdaSettings: QuestLambdaSettings = {
       timeout: convertResponseLambdaTimeout,
     },
   },
+};
+
+const questFhirConverterSettings: QueueAndLambdaSettings = {
+  name: "QuestFhirConverter",
+  entry: "quest/fhir-converter",
+  lambda: {
+    memory: 1024,
+    timeout: convertResponseLambdaTimeout,
+  },
+  queue: {
+    alarmMaxAgeOfOldestMessage,
+    maxMessageCountAlarmThreshold: 15_000,
+    maxReceiveCount: 3,
+    visibilityTimeout: Duration.seconds(convertResponseLambdaTimeout.toSeconds() * 2 + 1),
+    createRetryLambda: false,
+  },
+  eventSource: {
+    batchSize: 1,
+    reportBatchItemFailures: true,
+    maxConcurrency: questFhirConverterMaxConcurrency,
+  },
+  waitTime: Duration.seconds(0),
 };
 
 function questEnvironmentVariablesAndSecrets({
@@ -107,7 +134,8 @@ export class QuestNestedStack extends NestedStack {
   private readonly sftpActionLambda: Lambda;
   private readonly rosterUploadLambda: Lambda;
   private readonly responseDownloadLambda: Lambda;
-  private readonly convertResponseLambda: Lambda;
+  private readonly questFhirConverterLambda: Lambda;
+  private readonly questFhirConverterQueue: Queue;
   private readonly questReplicaBucket: s3.Bucket;
   private readonly labConversionBucket: s3.Bucket;
 
@@ -177,12 +205,13 @@ export class QuestNestedStack extends NestedStack {
     });
     this.responseDownloadLambda = responseDownload.lambda;
 
-    const convertResponse = this.setupLambda("convertResponse", {
+    const questFhirConverter = this.setupLambdaAndQueue(questFhirConverterSettings, {
       ...commonConfig,
       questReplicaBucket: this.questReplicaBucket,
       labConversionBucket: this.labConversionBucket,
     });
-    this.convertResponseLambda = convertResponse.lambda;
+    this.questFhirConverterLambda = questFhirConverter.lambda;
+    this.questFhirConverterQueue = questFhirConverter.queue;
 
     const lambdas = this.getLambdas();
     for (const secret of secrets) {
@@ -197,7 +226,7 @@ export class QuestNestedStack extends NestedStack {
       this.sftpActionLambda,
       this.rosterUploadLambda,
       this.responseDownloadLambda,
-      this.convertResponseLambda,
+      this.questFhirConverterLambda,
     ];
   }
 
@@ -282,5 +311,75 @@ export class QuestNestedStack extends NestedStack {
     labConversionBucket?.grantReadWrite(lambda);
 
     return { lambda };
+  }
+
+  private setupLambdaAndQueue(
+    {
+      name,
+      entry,
+      lambda: lambdaSettings,
+      queue: queueSettings,
+      eventSource: eventSourceSettings,
+    }: QueueAndLambdaSettings,
+    props: {
+      lambdaLayers: LambdaLayers;
+      vpc: ec2.IVpc;
+      envType: EnvType;
+      envVars: Record<string, string>;
+      sentryDsn: string | undefined;
+      alarmAction: SnsAction | undefined;
+      systemRootOID: string;
+      questReplicaBucket: s3.Bucket;
+      labConversionBucket?: s3.Bucket;
+      termServerUrl?: string;
+    }
+  ): { lambda: Lambda; queue: Queue } {
+    const {
+      lambdaLayers,
+      vpc,
+      envType,
+      envVars,
+      sentryDsn,
+      alarmAction,
+      systemRootOID,
+      questReplicaBucket,
+      labConversionBucket,
+      termServerUrl,
+    } = props;
+
+    const queue = createQueue({
+      ...queueSettings,
+      stack: this,
+      name,
+      fifo: true,
+      createDLQ: true,
+      lambdaLayers: [lambdaLayers.shared],
+      envType,
+      alarmSnsAction: alarmAction,
+    });
+
+    const lambda = createLambda({
+      ...lambdaSettings,
+      stack: this,
+      name,
+      entry,
+      envType,
+      envVars: {
+        ...envVars,
+        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+        ...(termServerUrl ? { TERM_SERVER_URL: termServerUrl } : {}),
+        SYSTEM_ROOT_OID: systemRootOID,
+      },
+      layers: [lambdaLayers.shared],
+      vpc,
+      alarmSnsAction: alarmAction,
+    });
+
+    questReplicaBucket.grantReadWrite(lambda);
+    labConversionBucket?.grantReadWrite(lambda);
+
+    lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
+
+    return { lambda, queue };
   }
 }
