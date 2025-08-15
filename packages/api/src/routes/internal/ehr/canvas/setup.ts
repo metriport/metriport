@@ -33,8 +33,7 @@ function getDefaultExpiration(): number {
  * @param req.query.facilityId - The facility ID
  * @param req.query.externalId - The external ID
  * @param req.query.state - The state of the facility
- * @param req.body - The JWT token data
- * @returns 200 OK
+ * @returns 200 OK with the dash and webhook tokens
  */
 router.post(
   "/",
