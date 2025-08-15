@@ -50,6 +50,7 @@
     "fast-xml-parser": "^4.4.1",
     "formidable": "^3.5.1",
     "http-status": "~1.7.0",
+    "ini": "^5.0.0",
     "jaro-winkler": "^0.2.8",
     "jsdom": "^26.1.0",
     "json-stringify-safe": "^5.0.1",

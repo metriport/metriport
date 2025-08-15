@@ -102,7 +102,11 @@ async function main() {
     fs.writeFileSync(outputFile, failedPatientIds.join("\n"));
   }
 
-  log(`>>> ALL Done (${amountOfPatientsProcessed} patients) in ${elapsedTimeAsStr(startedAt)}`);
+  log(
+    `>>> ALL sent to queue (${amountOfPatientsProcessed} patients) in ${elapsedTimeAsStr(
+      startedAt
+    )}`
+  );
   log(`- fhirToCsvJobId: ${fhirToCsvJobId}`);
 }
 

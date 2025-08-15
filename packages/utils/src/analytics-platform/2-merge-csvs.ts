@@ -1,17 +1,18 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
-import { InvokeCommand } from "@aws-sdk/client-lambda";
-import { getLambdaResultPayloadV3, makeLambdaClientV3 } from "@metriport/core/external/aws/lambda";
 import { S3Utils } from "@metriport/core/external/aws/s3";
+import { SQSClient } from "@metriport/core/external/aws/sqs";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { out } from "@metriport/core/util/log";
 import { errorToString, getEnvVarOrFail, sleep } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
+import { createUuidFromText } from "@metriport/shared/common/uuid";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import fs from "fs";
 import { chunk } from "lodash";
+import { GroupAndMergeCSVsParamsLambda } from "../../../lambdas/src/analytics-platform/merge-csvs";
 import { elapsedTimeAsStr } from "../shared/duration";
 import { getCxData } from "../shared/get-cx-data";
 
@@ -37,9 +38,6 @@ const patientIds: string[] = [];
 
 const fhirToCsvJobId = process.argv[2];
 
-// TODO ENG-743 Create through infra
-const lambdaName = "tmpCsvMerger";
-
 // Too much can result in an OOM error at the lambda
 // Too little can result in too small, too many compressed files
 const maxPatientCountPerLambda = 1_200;
@@ -47,33 +45,27 @@ const maxPatientCountPerLambda = 1_200;
 /** Size of each resulting CSV file, uncompressed. */
 const maxUncompressedSizePerFileInMB = 800;
 
-const numberOfParallelLambdaInvocations = 20; // don't increase this too much, as the lambdas already fanout 20x request to S3
-
 const mergeCsvJobId = "MRG_" + buildDayjs().toISOString().slice(0, 19).replace(/[:.]/g, "-");
 
-const lambdaTimeout = dayjs.duration(15, "minutes");
 const confirmationTime = dayjs.duration(1, "seconds");
+const messageGroupId = "merge-csvs";
+const numberOfParallelPutSqsOperations = 20;
 
 const cxId = getEnvVarOrFail("CX_ID");
-const region = getEnvVarOrFail("AWS_REGION");
+const queueUrl = getEnvVarOrFail("ANALYTICS_MERGE_CSVS_QUEUE_URL");
 const bucketName = getEnvVarOrFail("ANALYTICS_BUCKET_NAME");
+const region = getEnvVarOrFail("AWS_REGION");
 const s3Utils = new S3Utils(region);
 
-// TODO ENG-743 Type this from core when the code is moved there
-const defaultPayload = {
-  sourceBucket: bucketName,
+const defaultPayload: Omit<GroupAndMergeCSVsParamsLambda, "patientIds"> = {
   sourcePrefix: "snowflake/fhir-to-csv/" + cxId,
-  destinationBucket: bucketName,
   destinationPrefix: "snowflake/merged/" + cxId,
   jsonToCsvJobId: fhirToCsvJobId,
   mergeCsvJobId,
   targetGroupSizeMB: maxUncompressedSizePerFileInMB,
-  region,
 };
 
-const lambdaClient = makeLambdaClientV3(region, lambdaTimeout.asMilliseconds());
-
-const globalIds: string[] = [];
+const sqsClient = new SQSClient({ region });
 
 async function main() {
   await sleep(100);
@@ -99,7 +91,7 @@ async function main() {
   log(
     `>>> Running it for ${uniquePatientIds.length} patients (${patientIdChunks.length} chunks of ` +
       `${maxPatientCountPerLambda} patients each)...\n- mergeCsvJobId: ${mergeCsvJobId}\n- fhirToCsvJobId: ${fhirToCsvJobId}` +
-      `\n- maxPatientCountPerLambda: ${maxPatientCountPerLambda}\n- numberOfParallelLambdaInvocations: ${numberOfParallelLambdaInvocations}` +
+      `\n- maxPatientCountPerLambda: ${maxPatientCountPerLambda}\n- numberOfParallelLambdaInvocations: ${numberOfParallelPutSqsOperations}` +
       `\n- maxUncompressedSizePerFileInMB: ${maxUncompressedSizePerFileInMB}`
   );
 
@@ -108,34 +100,25 @@ async function main() {
 
   await executeAsynchronously(
     patientIdChunks,
-    async ptIdsOfThisRun => {
+    async (ptIdsOfThisRun: string[], index: number) => {
       const runTimestamp = buildDayjs().toISOString();
-      const payload = { ...defaultPayload, patientIds: ptIdsOfThisRun };
-
-      // TODO Revert this, for debugging purposes only
-      if (globalIds.some(id => ptIdsOfThisRun.includes(id))) {
-        log(`>>>>>>>>>>>>>>> These IDs have been processed before: ${ptIdsOfThisRun.join(", ")}`);
-        return;
-      }
-      globalIds.push(...ptIdsOfThisRun);
 
       try {
-        const invokeCommand = new InvokeCommand({
-          FunctionName: lambdaName,
-          Payload: JSON.stringify(payload),
-          InvocationType: "RequestResponse",
+        const payload: GroupAndMergeCSVsParamsLambda = {
+          ...defaultPayload,
+          patientIds: ptIdsOfThisRun,
+        };
+        const payloadString = JSON.stringify(payload);
+        await sqsClient.sendMessageToQueue(queueUrl, payloadString, {
+          fifo: true,
+          messageDeduplicationId: createUuidFromText(ptIdsOfThisRun.join(",")),
+          messageGroupId,
         });
-        const lambdaResult = await lambdaClient.send(invokeCommand);
 
-        if (lambdaResult.StatusCode !== 200) {
-          throw new Error("Lambda invocation failed");
-        }
-        if (!lambdaResult.Payload) {
-          throw new Error("Payload is undefined");
-        }
-        getLambdaResultPayloadV3({ result: lambdaResult, lambdaName });
         amountOfPatientsProcessed += ptIdsOfThisRun.length;
-        log(`>>> Processed ${amountOfPatientsProcessed}/${uniquePatientIds.length} patients`);
+        log(
+          `>>> Put ${index} messages on queue (${amountOfPatientsProcessed}/${uniquePatientIds.length} patients)`
+        );
       } catch (error) {
         log(
           `${runTimestamp} - Failed invoking lambda for ${ptIdsOfThisRun.length} patients - ` +
@@ -147,9 +130,9 @@ async function main() {
       }
     },
     {
-      numberOfParallelExecutions: numberOfParallelLambdaInvocations,
-      minJitterMillis: 100,
-      maxJitterMillis: 300,
+      numberOfParallelExecutions: numberOfParallelPutSqsOperations,
+      minJitterMillis: 20,
+      maxJitterMillis: 100,
     }
   );
 
@@ -161,7 +144,7 @@ async function main() {
     fs.writeFileSync(outputFile, flatPatientIds.join("\n"));
   }
 
-  log(`>>> ALL Done in ${elapsedTimeAsStr(startedAt)}`);
+  log(`>>> ALL sent to queue in ${elapsedTimeAsStr(startedAt)}`);
   log(`- fhirToCsvJobId: ${fhirToCsvJobId}`);
   log(`- mergeCsvJobId: ${mergeCsvJobId}`);
 }
