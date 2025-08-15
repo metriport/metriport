@@ -1,5 +1,5 @@
 import { CommonWell, DocumentReference, DocumentStatus, Patient } from "@metriport/commonwell-sdk";
-import { encodeToCwPatientId } from "@metriport/commonwell-sdk/common/util";
+import { encodeCwPatientId } from "@metriport/commonwell-sdk/common/util";
 import { errorToString } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import fs from "fs";
@@ -40,15 +40,15 @@ export async function documentConsumption(commonWell: CommonWell, downloadAll = 
     const resp_1_0 = await commonWell.createOrUpdatePatient(patientCreate);
     console.log(">>> Transaction ID: " + commonWell.lastTransactionId);
     console.log(">>> 2.0 Response: " + JSON.stringify(resp_1_0, null, 2));
-    const patientId = getMetriportPatientIdOrFail(resp_1_0.Patients[0], "createPatient");
+    const patientId = getMetriportPatientIdOrFail(resp_1_0, "createPatient");
     patientIds.push(patientId);
 
-    const encodedPatientId = encodeToCwPatientId({
+    const encodedPatientId = encodeCwPatientId({
       patientId,
       assignAuthority: commonWell.oid,
     });
 
-    await waitSeconds(5);
+    await waitSeconds(15);
 
     const documents = await queryDocuments(commonWell, encodedPatientId);
     console.log(`>>> Got ${documents.length} documents`);
@@ -73,7 +73,7 @@ export async function documentConsumption(commonWell: CommonWell, downloadAll = 
     const uniquePatientIds = uniq(patientIds);
     for (const metriportPatientId of uniquePatientIds) {
       try {
-        const patientId = encodeToCwPatientId({
+        const patientId = encodeCwPatientId({
           patientId: metriportPatientId,
           assignAuthority: commonWell.oid,
         });

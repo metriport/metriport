@@ -2,8 +2,8 @@ import {
   Demographics,
   DocumentReference,
   Patient,
-  PatientCollectionItem,
-  PatientProbableLinkItem,
+  PatientResponseItem,
+  PatientProbableLink,
 } from "@metriport/commonwell-sdk";
 import { AddressUseCodes } from "@metriport/commonwell-sdk/models/address";
 import { GenderCodes } from "@metriport/commonwell-sdk/models/demographics";
@@ -56,7 +56,7 @@ export function createPatientCollectionItem(
   localOrgName: string,
   patientId: string,
   demographics?: Partial<Demographics>
-): PatientCollectionItem {
+): PatientResponseItem {
   return {
     Patient: createPatient(localOrgOID, localOrgName, patientId, demographics),
     Links: {
@@ -72,7 +72,7 @@ export function createProbablePatient(
   localOrgName: string,
   patientId: string,
   demographics?: Partial<Demographics>
-): PatientProbableLinkItem {
+): PatientProbableLink {
   return {
     Patient: createPatient(localOrgOID, localOrgName, patientId, demographics),
     Links: {

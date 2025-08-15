@@ -22,14 +22,15 @@ import { capture } from "@metriport/core/util/notifications";
 import { uniqBy } from "lodash";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { filterTruthy } from "../../../shared/filter-map-utils";
-import { makeCommonWellAPI } from "../api";
-import { getCWData } from "../patient";
-import { getCwStrongIdsFromPatient } from "../patient-conversion";
 import {
   updateCommonwellIdsAndStatus,
   updatePatientDiscoveryStatus,
-} from "../patient-external-data";
-import { PatientDataCommonwell, searchPersons } from "../patient-shared";
+} from "../../commonwell/patient/patient-external-data";
+import { PatientDataCommonwell } from "../../commonwell/patient/patient-shared";
+import { makeCommonWellAPI } from "../api";
+import { getCWData } from "../patient";
+import { getCwStrongIdsFromPatient } from "../patient-conversion";
+import { searchPersons } from "../patient-shared";
 import { getCwInitiator } from "../shared";
 import { commonwellPersonLinks } from "./shared";
 

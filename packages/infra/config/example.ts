@@ -117,6 +117,7 @@ export const config: EnvConfigNonSandbox = {
   commonwell: {
     envVars: {
       CW_MEMBER_NAME: "Test Org",
+      CW_MEMBER_ID: "123",
       CW_MEMBER_OID: "1.2.3.1.4.1.11.12.29.2022.123",
       CW_GATEWAY_ENDPOINT: "https://api.myhealthapp.com/oauth/fhir",
       CW_GATEWAY_AUTHORIZATION_SERVER_ENDPOINT:

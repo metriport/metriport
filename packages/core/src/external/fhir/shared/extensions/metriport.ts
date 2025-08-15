@@ -4,7 +4,7 @@ import { METRIPORT } from "../../../../util/constants";
 import { out } from "../../../../util/log";
 import { capture } from "../../../../util/notifications";
 import { isCarequalityContent } from "../../../carequality/extension";
-import { isCommonwellContent } from "../../../commonwell-v1/extension";
+import { isCommonwellContent } from "../../../commonwell/extension";
 import { dataSourceExtensionDefaults } from "./extension";
 
 // URL is required: https://www.hl7.org/fhir/R4/extensibility.html#Extension.url

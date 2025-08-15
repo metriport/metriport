@@ -1,23 +1,19 @@
 import {
-  Telecom as IheTelecom,
   Address as IheAddress,
+  InboundPatientDiscoveryReq,
   PersonalIdentifier as IheIdentifier,
+  Telecom as IheTelecom,
 } from "@metriport/ihe-gateway-sdk";
-import { InboundPatientDiscoveryReq } from "@metriport/ihe-gateway-sdk";
-import { getStateEnum } from "../../../domain/geographic-locations";
 import { Address } from "../../../domain/address";
 import { Contact } from "../../../domain/contact";
-import {
-  PatientData,
-  PersonalIdentifier,
-  createDriversLicensePersonalIdentifier,
-} from "../../../domain/patient";
+import { getStateEnum } from "../../../domain/geographic-locations";
+import { createDriversLicensePersonalIdentifier, PatientData } from "../../../domain/patient";
 import { mapFhirToMetriportGender } from "../../fhir/patient/conversion";
 import { isContactType } from "../../fhir/patient/shared";
 import {
-  XDSRegistryError,
   LivingSubjectAdministrativeGenderRequestedError,
   PatientAddressRequestedError,
+  XDSRegistryError,
 } from "../error";
 import { STATE_MAPPINGS } from "../shared";
 
@@ -80,21 +76,17 @@ export function validateFHIRAndExtractPatient(payload: InboundPatientDiscoveryRe
     return contact;
   });
 
-  const personalIdentifiers = (patient.identifier ?? [])
-    .map((identifier: IheIdentifier) => {
-      const system = identifier.system;
-      const value = identifier.value;
-      if (system && value && STATE_MAPPINGS[system]) {
-        const state = STATE_MAPPINGS[system];
-        if (state) {
-          return createDriversLicensePersonalIdentifier(value, state);
-        }
+  const personalIdentifiers = (patient.identifier ?? []).flatMap((identifier: IheIdentifier) => {
+    const system = identifier.system;
+    const value = identifier.value;
+    if (system && value && STATE_MAPPINGS[system]) {
+      const state = STATE_MAPPINGS[system];
+      if (state) {
+        return createDriversLicensePersonalIdentifier(value, state);
       }
-      return undefined;
-    })
-    .filter(
-      (item: PersonalIdentifier | undefined): item is PersonalIdentifier => item != undefined
-    );
+    }
+    return [];
+  });
 
   const convertedPatient: PatientData = {
     firstName: firstName,

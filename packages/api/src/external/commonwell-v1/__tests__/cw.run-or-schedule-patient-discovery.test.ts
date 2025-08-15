@@ -11,7 +11,7 @@ import { mockStartTransaction } from "../../../models/__tests__/transaction";
 import { CQDirectoryEntryViewModel } from "../../carequality/models/cq-directory-view";
 import { getCqOrgIdsToDenyOnCw } from "../../hie/cross-hie-ids";
 import * as schedulePatientDiscovery from "../../hie/schedule-patient-discovery";
-import { runOrScheduleCwPatientDiscovery } from "../command/run-or-schedule-patient-discovery";
+import { runOrScheduleCwPatientDiscovery } from "../../commonwell/patient/run-or-schedule-patient-discovery";
 import * as cwPatient from "../patient";
 
 let patientModel_findOne: jest.SpyInstance;

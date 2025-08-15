@@ -1,6 +1,7 @@
-import { CommonWell } from "@metriport/commonwell-sdk";
-import { encodeToCwPatientId } from "@metriport/commonwell-sdk/common/util";
+import { CommonWell, PatientProbableLink } from "@metriport/commonwell-sdk";
+import { encodeCwPatientId } from "@metriport/commonwell-sdk/common/util";
 import { errorToString } from "@metriport/shared";
+import fs from "fs";
 import { uniq } from "lodash";
 import { makePatient } from "../payloads";
 import { patientTracyCrane } from "../payloads/patient-tracy";
@@ -29,21 +30,26 @@ export async function linkManagement(commonWell: CommonWell) {
     });
     const resp_2_1_1 = await commonWell.createOrUpdatePatient(createPatientWithLinks);
     console.log(">>> Transaction ID: " + commonWell.lastTransactionId);
-    const patientWithLinks = resp_2_1_1.Patients[0];
-    if (!patientWithLinks) throw new Error("Did not get a patient from the response");
-    const patientWithLinksId = getMetriportPatientIdOrFail(patientWithLinks, "patientWithLinks");
+    const patientLinks = resp_2_1_1;
+    if (!patientLinks) throw new Error("Did not get links from the response");
+    const patientWithLinksId = getMetriportPatientIdOrFail(patientLinks, "patientWithLinks");
     patientIds.push(patientWithLinksId);
-    const patientWithLinksIdEncoded = encodeToCwPatientId({
+    const patientWithLinksIdEncoded = encodeCwPatientId({
       patientId: patientWithLinksId,
       assignAuthority: commonWell.oid,
     });
 
-    await waitSeconds(5);
+    await waitSeconds(15);
 
     console.log(`>>> 2.1.2 Get Patient Links - ID ${patientWithLinksId}`);
     const resp_2_1_2 = await commonWell.getPatientLinksByPatientId(patientWithLinksIdEncoded);
     console.log(">>> Transaction ID: " + commonWell.lastTransactionId);
     console.log(`>>> 2.1.2 Response (${resp_2_1_2.Patients?.length}): ` + stringify(resp_2_1_2));
+
+    console.log(`>>> 2.1.2' Get Patient Links - ID ${patientWithLinksId}`);
+    const resp_2_1_2x = await commonWell.getPatientLinksByPatientId(patientWithLinksIdEncoded);
+    console.log(">>> Transaction ID: " + commonWell.lastTransactionId);
+    console.log(`>>> 2.1.2' Response (${resp_2_1_2x.Patients?.length}): ` + stringify(resp_2_1_2x));
 
     console.log(`>>> 2.2 Get Probable Links --------------------------------`);
 
@@ -55,11 +61,11 @@ export async function linkManagement(commonWell: CommonWell) {
     const resp_2_2_1 = await commonWell.createOrUpdatePatient(createPatientWithProbableLinks);
     console.log(">>> Transaction ID: " + commonWell.lastTransactionId);
     const patientWithProbableLinksId = getMetriportPatientIdOrFail(
-      resp_2_2_1.Patients[0],
+      resp_2_2_1,
       "patientWithProbableLinks"
     );
     patientIds.push(patientWithProbableLinksId);
-    const patientWithProbableLinksIdEnconded = encodeToCwPatientId({
+    const patientWithProbableLinksIdEnconded = encodeCwPatientId({
       patientId: patientWithProbableLinksId,
       assignAuthority: commonWell.oid,
     });
@@ -71,7 +77,7 @@ export async function linkManagement(commonWell: CommonWell) {
     if (!patientWithProbableLinks) throw new Error("Did not get a patient from the response");
     console.log(">>> 2.2.1 URLs to manage links: " + stringify(patientWithProbableLinks?.Links));
 
-    await waitSeconds(5);
+    await waitSeconds(15);
 
     console.log(`>>> 2.2.2 Get Patient Links for ID ${patientWithProbableLinksId}`);
     const resp_2_2_2 = await commonWell.getPatientLinksByPatientId(
@@ -83,28 +89,39 @@ export async function linkManagement(commonWell: CommonWell) {
     );
     console.log(`>>> 2.2.2' Response (${resp_2_2_2x.Patients?.length}): ` + stringify(resp_2_2_2x));
 
-    console.log(`>>> 2.2.3 Get Probable Links for patient ${patientWithProbableLinksId}`);
-    const resp_2_2_3 = await commonWell.getProbableLinksById(patientWithProbableLinksIdEnconded);
-    console.log(">>> Transaction ID: " + commonWell.lastTransactionId);
-    console.log(`>>> 2.2.3 Probable link count: ${resp_2_2_3.Patients?.length}`);
-    // Doing this twice because the first time it returns 0 probable links :/
-    console.log(`>>> 2.2.3' Get Probable Links for patient ${patientWithProbableLinksId}`);
-    const resp_2_2_3x = await commonWell.getProbableLinksById(patientWithProbableLinksIdEnconded);
-    console.log(">>> Transaction ID: " + commonWell.lastTransactionId);
-    console.log(`>>> 2.2.3' Probable link count: ${resp_2_2_3x.Patients?.length}`);
-    // console.log(`>>> 2.2.3' Response (${resp_2_2_3x.Patients?.length}): ` + stringify(resp_2_2_3x));
+    // console.log(`>>> 2.2.3 Get Probable Links for patient ${patientWithProbableLinksId}`);
+    // const resp_2_2_3 = await commonWell.getProbableLinksById(patientWithProbableLinksIdEnconded);
+    // console.log(">>> Transaction ID: " + commonWell.lastTransactionId);
+    // console.log(`>>> 2.2.3 Probable link count: ${resp_2_2_3.Patients?.length}`);
+    // // Doing this twice because the first time it returns 0 probable links :/
+    // console.log(`>>> 2.2.3' Get Probable Links for patient ${patientWithProbableLinksId}`);
+    // const resp_2_2_3x = await commonWell.getProbableLinksById(patientWithProbableLinksIdEnconded);
+    // console.log(">>> Transaction ID: " + commonWell.lastTransactionId);
+    // console.log(`>>> 2.2.3' Probable link count: ${resp_2_2_3x.Patients?.length}`);
+    // // console.log(`>>> 2.2.3' Response (${resp_2_2_3x.Patients?.length}): ` + stringify(resp_2_2_3x));
 
-    const probablePatient1 = resp_2_2_3x.Patients?.[0];
-    const probablePatient2 = resp_2_2_3x.Patients?.[1];
-    const urlToLinkWithPatient1 = probablePatient1?.Links?.Link;
-    const urlToUnlinkWithPatient1 = probablePatient1?.Links?.Unlink;
-    const urlToLinkWithPatient2 = probablePatient2?.Links?.Link;
-    const urlToUnlinkWithPatient2 = probablePatient2?.Links?.Unlink;
-    console.log(`>>> URL to link with patient 1: ${urlToLinkWithPatient1}`);
-    console.log(`>>> URL to unlink with patient 1: ${urlToUnlinkWithPatient1}`);
-    console.log(`>>> URL to link with patient 2: ${urlToLinkWithPatient2}`);
-    console.log(`>>> URL to unlink with patient 2: ${urlToUnlinkWithPatient2}`);
-    if (!urlToLinkWithPatient1) throw new Error(`>>> The patient has no probable link to use`);
+    const probableLinks = await getProbableLinks(commonWell, patientWithProbableLinksId);
+    console.log(`>>> 2.2.1 Probable links 1: ${probableLinks.length}`);
+    fs.writeFileSync("probable-links-1.json", JSON.stringify(probableLinks, null, 2));
+    if (probableLinks.length === 0) throw new Error("No probable links found");
+    const probableLink = probableLinks[0];
+    const urlToLinkWithPatient = probableLink?.Links?.Link;
+    const urlToUnlinkWithPatient = probableLink?.Links?.Unlink;
+    console.log(`>>> URL to link with patient 1: ${urlToLinkWithPatient}`);
+    console.log(`>>> URL to unlink with patient 1: ${urlToUnlinkWithPatient}`);
+    if (!urlToLinkWithPatient) throw new Error(`>>> The patient has no probable link to use`);
+
+    // const probablePatient1 = resp_2_2_3x.Patients?.[0];
+    // const probablePatient2 = resp_2_2_3x.Patients?.[1];
+    // const urlToLinkWithPatient1 = probablePatient1?.Links?.Link;
+    // const urlToUnlinkWithPatient1 = probablePatient1?.Links?.Unlink;
+    // const urlToLinkWithPatient2 = probablePatient2?.Links?.Link;
+    // const urlToUnlinkWithPatient2 = probablePatient2?.Links?.Unlink;
+    // console.log(`>>> URL to link with patient 1: ${urlToLinkWithPatient1}`);
+    // console.log(`>>> URL to unlink with patient 1: ${urlToUnlinkWithPatient1}`);
+    // console.log(`>>> URL to link with patient 2: ${urlToLinkWithPatient2}`);
+    // console.log(`>>> URL to unlink with patient 2: ${urlToUnlinkWithPatient2}`);
+    // if (!urlToLinkWithPatient1) throw new Error(`>>> The patient has no probable link to use`);
 
     // Disabled because this variation of the probable endpoint does not return the Link/Reset props of Links
     // console.log(
@@ -123,18 +140,29 @@ export async function linkManagement(commonWell: CommonWell) {
     console.log(`>>> 2.3 Link Patient --------------------------------`);
 
     console.log(`>>> 2.3.1 Link Patient1`);
-    const resp_2_3_1 = await commonWell.linkPatients(urlToLinkWithPatient1);
+    const resp_2_3_1 = await commonWell.linkPatients(urlToLinkWithPatient);
     console.log(">>> Transaction ID: " + commonWell.lastTransactionId);
     console.log(">>> 2.3.1 Response: " + stringify(resp_2_3_1));
 
-    if (urlToLinkWithPatient2) {
-      console.log(`>>> 2.3.2 Link Patient2`);
-      const resp_2_3_2 = await commonWell.linkPatients(urlToLinkWithPatient2);
-      console.log(">>> Transaction ID: " + commonWell.lastTransactionId);
-      console.log(">>> 2.3.2 Response: " + stringify(resp_2_3_2));
-    }
+    // if (urlToLinkWithPatient2) {
+    //   console.log(`>>> 2.3.2 Link Patient2`);
+    //   const resp_2_3_2 = await commonWell.linkPatients(urlToLinkWithPatient2);
+    //   console.log(">>> Transaction ID: " + commonWell.lastTransactionId);
+    //   console.log(">>> 2.3.2 Response: " + stringify(resp_2_3_2));
+    // }
 
     await waitSeconds(5);
+
+    const probableLinks2 = await getProbableLinks(commonWell, patientWithProbableLinksId);
+    console.log(`>>> 2.2.1 Probable links 2: ${probableLinks2.length}`);
+    fs.writeFileSync("probable-links-2.json", JSON.stringify(probableLinks2, null, 2));
+    if (probableLinks2.length === 0) throw new Error("No probable links found");
+    const probableLink2 = probableLinks2[0];
+    const urlToLinkWithPatient2 = probableLink2?.Links?.Link;
+    const urlToUnlinkWithPatient2 = probableLink2?.Links?.Unlink;
+    console.log(`>>> URL to link with patient 2: ${urlToLinkWithPatient2}`);
+    console.log(`>>> URL to unlink with patient 2: ${urlToUnlinkWithPatient2}`);
+
     console.log(`>>> 2.3.3 Get Patient Links for ID ${patientWithProbableLinksId}`);
     const resp_2_3_3 = await commonWell.getPatientLinksByPatientId(
       patientWithProbableLinksIdEnconded
@@ -144,7 +172,7 @@ export async function linkManagement(commonWell: CommonWell) {
     console.log(`>>> 2.4 Unlink Patient --------------------------------`);
 
     console.log(`>>> 2.4.1 Unlink Patient1`);
-    const resp_2_4_1 = await commonWell.unlinkPatients(urlToUnlinkWithPatient1);
+    const resp_2_4_1 = await commonWell.unlinkPatients(urlToUnlinkWithPatient);
     console.log(">>> Transaction ID: " + commonWell.lastTransactionId);
     console.log(">>> 2.4.1 Response: " + stringify(resp_2_4_1));
 
@@ -187,7 +215,7 @@ export async function linkManagement(commonWell: CommonWell) {
     const uniquePatientIds = uniq(patientIds);
     for (const metriportPatientId of uniquePatientIds) {
       try {
-        const patientId = encodeToCwPatientId({
+        const patientId = encodeCwPatientId({
           patientId: metriportPatientId,
           assignAuthority: commonWell.oid,
         });
@@ -199,6 +227,28 @@ export async function linkManagement(commonWell: CommonWell) {
       }
     }
   }
+}
+
+async function getProbableLinks(
+  commonWell: CommonWell,
+  patientId: string
+): Promise<PatientProbableLink[]> {
+  const patientIdEnconded = encodeCwPatientId({
+    patientId,
+    assignAuthority: commonWell.oid,
+  });
+  console.log(`>>> 2.2.3 Get Probable Links for patient ${patientId}`);
+  const resp_2_2_3 = await commonWell.getProbableLinksById(patientIdEnconded);
+  console.log(">>> Transaction ID: " + commonWell.lastTransactionId);
+  console.log(`>>> 2.2.3 Probable link count: ${resp_2_2_3.Patients?.length}`);
+
+  // Doing this twice because the first time it returns 0 probable links :/
+  console.log(`>>> 2.2.3' Get Probable Links for patient ${patientId}`);
+  const resp_2_2_3x = await commonWell.getProbableLinksById(patientIdEnconded);
+  console.log(">>> Transaction ID: " + commonWell.lastTransactionId);
+  console.log(`>>> 2.2.3' Probable link count: ${resp_2_2_3x.Patients?.length}`);
+
+  return resp_2_2_3x.Patients;
 }
 
 function stringify(value: unknown) {

@@ -146,6 +146,7 @@ export class LambdasNestedStack extends NestedStack {
       cwOrgPrivateKey: props.config.cwSecretNames.CW_ORG_PRIVATE_KEY,
       bucketName: props.medicalDocumentsBucket.bucketName,
       envType: props.config.environmentType,
+      featureFlagsTable: props.featureFlagsTable,
       sentryDsn: props.config.lambdasSentryDSN,
     });
 
@@ -401,6 +402,7 @@ export class LambdasNestedStack extends NestedStack {
     cwOrgPrivateKey: string;
     bucketName: string | undefined;
     envType: EnvType;
+    featureFlagsTable: dynamodb.Table;
     sentryDsn: string | undefined;
   }): Lambda {
     const {
@@ -411,6 +413,7 @@ export class LambdasNestedStack extends NestedStack {
       cwOrgPrivateKey,
       bucketName,
       envType,
+      featureFlagsTable,
       sentryDsn,
     } = ownProps;
 
@@ -428,6 +431,7 @@ export class LambdasNestedStack extends NestedStack {
         ...(bucketName && {
           MEDICAL_DOCUMENTS_BUCKET_NAME: bucketName,
         }),
+        FEATURE_FLAGS_TABLE_NAME: featureFlagsTable.tableName,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared],
@@ -449,6 +453,8 @@ export class LambdasNestedStack extends NestedStack {
       throw new Error(`${cwOrgPrivateKeyKey} is not defined in config`);
     }
     secrets[cwOrgPrivateKeyKey].grantRead(documentDownloaderLambda);
+
+    featureFlagsTable.grantReadData(documentDownloaderLambda);
 
     return documentDownloaderLambda;
   }

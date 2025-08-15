@@ -96,8 +96,8 @@ Create a `.env` file with the following required variables:
 
 ```env
 # Member (Service Adopter) credentials
+ROOT_OID=1.2.3.4.5.678
 CW_MEMBER_ID=your-member-id
-CW_MEMBER_OID=1.2.3.4.5.678
 CW_MEMBER_NAME=Your Member Name
 CW_MEMBER_CERTIFICATE="-----BEGIN CERTIFICATE-----
 ...

@@ -9,7 +9,10 @@ import { periodSchema } from "./period";
  */
 export enum AddressUseCodes {
   home = "home",
+  work = "work",
+  temp = "temp",
   old = "old",
+  billing = "billing",
 }
 export const addressUseCodesSchema = z.preprocess(zodToLowerCase, z.nativeEnum(AddressUseCodes));
 

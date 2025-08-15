@@ -1,7 +1,7 @@
 import { organizationQueryMeta } from "@metriport/commonwell-sdk-v1";
 import { addOidPrefix } from "@metriport/core/domain/oid";
-import { DocumentDownloader } from "@metriport/core/external/commonwell-v1/document/document-downloader";
-import { DocumentDownloaderLambda } from "@metriport/core/external/commonwell-v1/document/document-downloader-lambda";
+import { DocumentDownloader } from "@metriport/core/external/commonwell/document/document-downloader";
+import { DocumentDownloaderLambda } from "@metriport/core/external/commonwell/document/document-downloader-lambda";
 import { DocumentDownloaderLocal } from "@metriport/core/external/commonwell-v1/document/document-downloader-local";
 import { HieInitiator } from "../../hie/get-hie-initiator";
 import { Config } from "../../../shared/config";

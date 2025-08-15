@@ -10,7 +10,7 @@ import { makeCommonWellAPI } from "../api";
 import {
   updateCommonwellIdsAndStatus,
   updatePatientDiscoveryStatus,
-} from "../patient-external-data";
+} from "../../commonwell/patient/patient-external-data";
 import { getCwInitiator } from "../shared";
 import { autoUpgradeNetworkLinks, getPatientsNetworkLinks, patientWithCWData } from "./shared";
 

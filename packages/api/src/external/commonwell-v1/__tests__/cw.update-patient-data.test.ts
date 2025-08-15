@@ -3,7 +3,7 @@ import { CwPatientDataModel } from "../models/cw-patient-data";
 import { LinkDemographicsHistory } from "@metriport/core/domain/patient-demographics";
 import { makeCwDataLink, makeLinksHistory, makeCwPatientData } from "./cw-patient-data";
 import { mockStartTransaction } from "../../../models/__tests__/transaction";
-import { CwLink } from "../cw-patient-data";
+import { CwLink } from "../../commonwell/patient/cw-patient-data/shared";
 import { createOrUpdateCwPatientData } from "../command/cw-patient-data/create-cw-data";
 
 let cqPatientModel_findOne: jest.SpyInstance;

@@ -1,4 +1,5 @@
-import { Organization, OrgType, OrganizationBizType } from "@metriport/core/domain/organization";
+import { Organization } from "@metriport/core/domain/organization";
+import { OrganizationBizType, TreatmentType } from "@metriport/shared";
 import { BaseDTO, toBaseDTO } from "./baseDTO";
 import { AddressStrictDTO } from "./location-address-dto";
 
@@ -6,7 +7,7 @@ export type OrganizationDTO = BaseDTO & {
   oid: string;
   name: string;
   shortcode: string | undefined;
-  type: OrgType;
+  type: TreatmentType;
   location: AddressStrictDTO;
 };
 

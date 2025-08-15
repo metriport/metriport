@@ -1,7 +1,11 @@
 import { getEnvVarOrFail } from "../../../../util/env-var";
 import { MetriportError } from "../../../../util/error/metriport-error";
-import { Document, DownloadResult, FileInfo } from "../document-downloader";
-import { DocumentDownloaderLambda } from "../document-downloader-lambda";
+import {
+  Document,
+  DownloadResult,
+  FileInfo,
+} from "../../../commonwell/document/document-downloader";
+import { DocumentDownloaderLambda } from "../../../commonwell/document/document-downloader-lambda";
 
 class DocumentDownloaderLambdaForTest extends DocumentDownloaderLambda {
   override download({

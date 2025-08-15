@@ -1,5 +1,4 @@
 import { DocumentReferenceContent } from "@medplum/fhirtypes";
-import { Document } from "@metriport/commonwell-sdk-v1";
 import { createDocumentFilePath } from "@metriport/core/domain/document/filename";
 import { Patient } from "@metriport/core/domain/patient";
 import { S3Utils } from "@metriport/core/external/aws/s3";
@@ -31,18 +30,19 @@ type SimpleFile = {
 
 function getDocToFileFunction(patient: Pick<Patient, "cxId" | "id">) {
   // TODO convert the input from CW Document to a Metriport shape
-  return async (doc: Document): Promise<SimpleFile> => {
-    const fileName = createDocumentFilePath(
-      patient.cxId,
-      patient.id,
-      doc.id,
-      doc.content?.mimeType
-    );
+  return async ({
+    id,
+    contentType,
+  }: {
+    id: string;
+    contentType: string | undefined;
+  }): Promise<SimpleFile> => {
+    const fileName = createDocumentFilePath(patient.cxId, patient.id, id, contentType);
     return {
-      docId: doc.id,
+      docId: id,
       fileName,
       fileLocation: s3BucketName,
-      fileContentType: doc.content?.mimeType,
+      fileContentType: contentType,
     };
   };
 }

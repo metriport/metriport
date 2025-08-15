@@ -4,7 +4,7 @@ import { PatientModel } from "../../../models/medical/patient";
 import { PatientMappingModel } from "../../../models/patient-mapping";
 import { mockStartTransaction } from "../../../models/__tests__/transaction";
 import { LinkStatus } from "../../patient-link";
-import { updatePatientDiscoveryStatus } from "../patient-external-data";
+import { updatePatientDiscoveryStatus } from "../../commonwell/patient/patient-external-data";
 
 let patientModel_findOne: jest.SpyInstance;
 let patientModel_update: jest.SpyInstance;
