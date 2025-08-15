@@ -147,7 +147,6 @@ MISSING FHIR R4 CONDITION FIELDS NOT MAPPED IN CONFIGURATION:
 Reference: https://hl7.org/fhir/R4/condition.html'
 
 // - verificationStatus: The verification status to support the clinical status of the allergy or intolerance 
-//   (unconfirmed | confirmed | refuted | entered-in-error)
 // - severity: A subjective assessment of the severity of the condition as evaluated by the clinician
 // - bodySite: Anatomical location, if relevant
 // - encounter: Encounter during which this condition was first asserted

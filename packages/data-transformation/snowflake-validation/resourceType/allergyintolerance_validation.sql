@@ -183,12 +183,10 @@ UNION ALL (
 MISSING FHIR R4 ALLERGYINTOLERANCE FIELDS NOT MAPPED IN CONFIGURATION:
 Reference: https://hl7.org/fhir/R4/allergyintolerance.html
 
-// - verificationStatus: The verification status to support the clinical status of the allergy or intolerance 
-//   (unconfirmed | confirmed | refuted | entered-in-error)
+// - verificationStatus: The verification status to support the clinical status of the allergy or intolerance
 // - type: Identification of the underlying physiological mechanism (allergy | intolerance)
 // - category: Category of the identified substance (food | medication | environment | biologic)
-// - criticality: Estimate of the potential clinical harm if the patient is re-exposed to the substance 
-//   (low | high | unable-to-assess)
+// - criticality: Estimate of the potential clinical harm if the patient is re-exposed to the substance
 // - code: Code that identifies the specific substance or allergen (distinct from reaction.substance)
 // - encounter: The encounter when the allergy or intolerance was asserted
 // - recordedDate: The date when the allergy or intolerance was first recorded
