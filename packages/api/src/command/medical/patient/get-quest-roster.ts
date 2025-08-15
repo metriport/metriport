@@ -18,6 +18,7 @@ export type GetQuestRosterParams = {
 };
 
 const MAX_ATTEMPTS_TO_CREATE_EXTERNAL_ID = 2;
+const EXTERNAL_ID_LOOKUP_CONCURRENCY = 10;
 
 function getCommonQueryOptions({ pagination }: GetQuestRosterParams) {
   const order: Order = [["id", "DESC"]];
@@ -73,7 +74,7 @@ export async function getQuestRoster({ pagination }: GetQuestRosterParams): Prom
         }
       },
       {
-        numberOfParallelExecutions: 10,
+        numberOfParallelExecutions: EXTERNAL_ID_LOOKUP_CONCURRENCY,
       }
     );
 
