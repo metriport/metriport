@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-import { FileInfo, groupFilesByTypeAndSize } from "../merge-csvs";
+import { FileInfo, groupFilesByTypeAndSize } from "../index";
 
 describe("groupFilesByTypeAndSize", () => {
   describe("file uniqueness constraints", () => {
