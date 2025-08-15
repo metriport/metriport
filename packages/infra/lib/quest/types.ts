@@ -14,4 +14,8 @@ export type QuestAssets = {
     envVarName: string;
     lambda: Lambda;
   }[];
+  questQueues: {
+    envVarName: string;
+    queue: Queue;
+  }[];
 };
