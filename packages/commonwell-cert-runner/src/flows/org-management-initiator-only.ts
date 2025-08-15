@@ -2,7 +2,7 @@ import { faker } from "@faker-js/faker";
 import { APIMode, CommonWell, CommonWellMember } from "@metriport/commonwell-sdk";
 import { errorToString } from "@metriport/shared";
 import {
-  existingInitiatorOnlyOrgId,
+  existingInitiatorOnlyOrgOid,
   memberCertificateString,
   memberId,
   memberName,
@@ -58,7 +58,8 @@ export async function orgManagementInitiatorOnly(): Promise<void> {
     errors.push(error);
   }
   try {
-    const orgId = existingInitiatorOnlyOrgId;
+    const orgId = existingInitiatorOnlyOrgOid;
+    // TODO can try to create one if not provided - was failing before b/c of the cache issue on CW's end
     if (!orgId) throw new Error("No org ID to run initiator only org update flow");
 
     console.log(`>>> Get one org`);
@@ -68,14 +69,17 @@ export async function orgManagementInitiatorOnly(): Promise<void> {
     if (!respGetInitiatorOnly) throw new Error("No org on response from getOneOrg");
     const initiatorOnlyOrg = respGetInitiatorOnly;
 
-    if (initiatorOnlyOrg.securityTokenKeyType) {
+    if ("securityTokenKeyType" in initiatorOnlyOrg && initiatorOnlyOrg.securityTokenKeyType) {
       console.log(`HEADS UP: Security token key type is not null`);
+      delete initiatorOnlyOrg.securityTokenKeyType;
     }
-    if (initiatorOnlyOrg.authorizationInformation) {
+    if (
+      "authorizationInformation" in initiatorOnlyOrg &&
+      initiatorOnlyOrg.authorizationInformation
+    ) {
       console.log(`HEADS UP: Authorization information is not null`);
+      delete initiatorOnlyOrg.authorizationInformation;
     }
-    initiatorOnlyOrg.authorizationInformation = null;
-    initiatorOnlyOrg.securityTokenKeyType = null;
 
     console.log(`>>> Update the org`);
     initiatorOnlyOrg.locations[0].city = faker.location.city();

@@ -8,7 +8,7 @@ import { contentType, extension } from "mime-types";
 import { nanoid } from "nanoid";
 import { makePatient } from "../payloads";
 import { patientTracyCrane } from "../payloads/patient-tracy";
-import { getMetriportPatientIdOrFail, logError, waitSeconds } from "../util";
+import { getMetriportPatientIdOrFail, logError } from "../util";
 
 const runTimestamp = buildDayjs().toISOString();
 
@@ -48,7 +48,7 @@ export async function documentConsumption(commonWell: CommonWell, downloadAll = 
       assignAuthority: commonWell.oid,
     });
 
-    await waitSeconds(5);
+    // await waitSeconds(5);
 
     const documents = await queryDocuments(commonWell, encodedPatientId);
     console.log(`>>> Got ${documents.length} documents`);
