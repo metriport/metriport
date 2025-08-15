@@ -1068,12 +1068,7 @@ export class LambdasNestedStack extends NestedStack {
       stack: this,
       name: settings.name,
       fifo: true,
-      // TODO revert this
-      // TODO revert this
-      // TODO revert this
-      // TODO revert this
-      // createDLQ: true,
-      createDLQ: false,
+      createDLQ: true,
       lambdaLayers: [lambdaLayers.shared],
       envType,
       alarmSnsAction: alarmAction,
