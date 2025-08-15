@@ -2,6 +2,7 @@
 import dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
+import { buildMergeCsvsJobPrefix } from "@metriport/core/command/analytics-platform/merge-csvs/file-name";
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import {
   promisifyConnect,
@@ -69,7 +70,7 @@ const database = getEnvVarOrFail("SNOWFLAKE_DB");
 const schema = getEnvVarOrFail("SNOWFLAKE_SCHEMA");
 const warehouse = getEnvVarOrFail("SNOWFLAKE_WH");
 
-const prefixName = `snowflake/merged/${cxId}/run=${mergeCsvJobId}`;
+const prefixName = buildMergeCsvsJobPrefix({ cxId, jobId: mergeCsvJobId });
 const prefixUrl = `s3://${bucketName}/${prefixName}`;
 
 snowflake.configure({

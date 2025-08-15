@@ -74,6 +74,7 @@ async function main() {
         patientId,
       });
       try {
+        // TODO Should be using FhirToCsvCloud?
         await sqsClient.sendMessageToQueue(queueUrl, payload, {
           fifo: true,
           messageDeduplicationId: patientId,

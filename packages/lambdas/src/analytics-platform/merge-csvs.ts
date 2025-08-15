@@ -2,7 +2,7 @@ import {
   groupAndMergeCSVs,
   GroupAndMergeCSVsParams,
 } from "@metriport/core/command/analytics-platform/merge-csvs/index";
-import { BadRequestError, getEnvVarOrFail } from "@metriport/shared";
+import { getEnvVarOrFail } from "@metriport/shared";
 import { SQSEvent } from "aws-lambda";
 import { z } from "zod";
 import { capture } from "../shared/capture";
@@ -27,25 +27,13 @@ export const handler = capture.wrapHandler(async (event: SQSEvent) => {
   if (!message) return;
   const parsedBody = parseBody(inputSchema, message.body);
   capture.setExtra(parsedBody);
-  const {
-    sourcePrefix,
-    destinationPrefix,
-    jsonToCsvJobId,
-    mergeCsvJobId,
-    patientIds,
-    targetGroupSizeMB,
-  } = parsedBody;
-  const log = prefixedLog(`mergeCsvJobId ${mergeCsvJobId}, jsonToCsvJobId ${jsonToCsvJobId}`);
+  const { cxId, fhirToCsvJobId, mergeCsvJobId, patientIds, targetGroupSizeMB } = parsedBody;
+  const log = prefixedLog(`mergeCsvJobId ${mergeCsvJobId}`);
   log(`Running with params:: ${JSON.stringify(parsedBody)}`);
 
-  if (destinationPrefix === sourcePrefix) {
-    throw new BadRequestError(`Destination prefix cannot be the same as source prefix`);
-  }
-
   const results = await groupAndMergeCSVs({
-    sourcePrefix,
-    destinationPrefix,
-    jsonToCsvJobId,
+    cxId,
+    fhirToCsvJobId,
     mergeCsvJobId,
     patientIds,
     targetGroupSizeMB,
@@ -58,9 +46,8 @@ export const handler = capture.wrapHandler(async (event: SQSEvent) => {
 });
 
 export const inputSchema = z.object({
-  sourcePrefix: z.string(),
-  destinationPrefix: z.string(),
-  jsonToCsvJobId: z.string(),
+  cxId: z.string(),
+  fhirToCsvJobId: z.string(),
   mergeCsvJobId: z.string(),
   patientIds: z.array(z.string()),
   targetGroupSizeMB: z.number(),
