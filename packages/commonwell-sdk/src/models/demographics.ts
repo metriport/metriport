@@ -45,7 +45,6 @@ export const demographicsSchema = z.object({
   address: z.array(addressSchema).min(1),
   telecom: z.array(contactSchema).nullish(),
 });
-
 export type Demographics = z.infer<typeof demographicsSchema>;
 
 export function fhirGenderToCommonwell(gender: Gender): string {
