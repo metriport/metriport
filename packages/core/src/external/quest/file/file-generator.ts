@@ -16,15 +16,23 @@ import {
 import { OutgoingFileRowSchema } from "../schema/shared";
 
 export function buildRosterFile(patients: Patient[]): Buffer {
-  const requestedPatientIds: string[] = [];
+  const header = buildRosterHeader();
+  const { body, requestedPatientIds } = buildRosterTable(patients);
+  const footer = buildRosterFooter(requestedPatientIds);
+  return Buffer.concat([header, body, footer]);
+}
 
-  const header = buildQuestRequestRow(
+function buildRosterHeader(): Buffer {
+  return buildQuestRequestRow(
     { recordType: "H", generalMnemonic: "METRIP", fileCreationDate: new Date() },
     requestHeaderSchema,
     requestHeaderRow
   );
+}
 
-  const details = patients.flatMap(patient => {
+function buildRosterTable(patients: Patient[]): { body: Buffer; requestedPatientIds: string[] } {
+  const requestedPatientIds: string[] = [];
+  const rows = patients.flatMap(patient => {
     // Generate the request row for this patient
     const row = buildPatientRow(patient);
     if (row) {
@@ -33,14 +41,8 @@ export function buildRosterFile(patients: Patient[]): Buffer {
     }
     return [];
   });
-
-  const footer = buildQuestRequestRow(
-    { recordType: "T", totalRecords: requestedPatientIds.length },
-    requestFooterSchema,
-    requestFooterRow
-  );
-
-  return Buffer.concat([header, ...details, footer]);
+  const body = Buffer.concat(rows);
+  return { body, requestedPatientIds };
 }
 
 function buildPatientRow(patient: Patient): Buffer | undefined {
@@ -80,6 +82,14 @@ function buildPatientRow(patient: Patient): Buffer | undefined {
     },
     requestDetailSchema,
     requestDetailRow
+  );
+}
+
+function buildRosterFooter(requestedPatientIds: string[]): Buffer {
+  return buildQuestRequestRow(
+    { recordType: "T", totalRecords: requestedPatientIds.length },
+    requestFooterSchema,
+    requestFooterRow
   );
 }
 
