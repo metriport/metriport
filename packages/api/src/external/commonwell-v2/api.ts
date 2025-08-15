@@ -16,7 +16,7 @@ import { CommonWellMemberMock } from "./mock/member-mock";
 const apiMode = Config.isProdEnv() ? APIMode.production : APIMode.integration;
 
 /**
- * Make an instance of the CommonWell Member API to interact with the CommonWell
+ * Make an instance of the CommonWell Member API to interact with CommonWell
  * acting as a Member. Used to manage Organizations.
  *
  * @param orgName Organization Name
@@ -44,7 +44,7 @@ export function makeCommonWellMemberAPI(orgName: string, orgOID: string): Common
 }
 
 /**
- * Make an instance of the CommonWell API to interact with the CommonWell
+ * Make an instance of the CommonWell API to interact with CommonWell
  * acting as an Organization. Used to manage Patients and Documents.
  *
  * @param orgName Organization Name
