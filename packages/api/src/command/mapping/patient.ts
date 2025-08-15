@@ -117,10 +117,10 @@ export async function findFirstPatientMappingForSource({
   patientId,
   source,
 }: Omit<PatientMappingParams, "cxId" | "externalId">): Promise<PatientMapping | undefined> {
-  const mappings = await PatientMappingModel.findAll({
+  const mappings = await PatientMappingModel.findOne({
     where: { patientId, source },
     order: [["createdAt", "ASC"]],
     limit: 1,
   });
-  return mappings.length > 0 ? mappings[0].dataValues : undefined;
+  return mappings?.dataValues;
 }
