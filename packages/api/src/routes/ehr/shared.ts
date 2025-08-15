@@ -76,6 +76,10 @@ export const validPatientPaths: PathDetails[] = [
     pathRegex: new RegExp(`^/medical-record-status$`),
     pathParamKey: "id",
   },
+  {
+    pathRegex: new RegExp(`^/facility-matches$`),
+    pathParamKey: "id",
+  },
 ];
 
 export const validedDocumentPaths: PathDetails[] = [

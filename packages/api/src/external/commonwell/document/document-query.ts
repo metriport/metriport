@@ -13,9 +13,11 @@ import {
   isEnhancedCoverageEnabledForCx,
   isStalePatientUpdateEnabledForCx,
 } from "@metriport/core/command/feature-flags/domain-ffs";
+import { createDocumentRenderFilePaths } from "@metriport/core/domain/document/filename";
 import { addOidPrefix } from "@metriport/core/domain/oid";
 import { Patient } from "@metriport/core/domain/patient";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
+import { S3Utils } from "@metriport/core/external/aws/s3";
 import { DownloadResult } from "@metriport/core/external/commonwell/document/document-downloader";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { processAsyncError } from "@metriport/core/util/error/shared";
@@ -27,7 +29,6 @@ import httpStatus from "http-status";
 import { chunk, partition } from "lodash";
 import { removeDocRefMapping } from "../../../command/medical/docref-mapping/remove-docref-mapping";
 import {
-  getDocToFileFunction,
   getS3Info,
   getUrl,
   S3Info,
@@ -427,20 +428,6 @@ function isValidDoc(doc: DocumentWithMetriportId): doc is DocumentWithLocation {
   return true;
 }
 
-function convertToNonExistingS3Info(
-  patient: Patient
-): (doc: DocumentWithMetriportId) => Promise<S3Info> {
-  return async (doc: DocumentWithMetriportId): Promise<S3Info> => {
-    const docToFile = getDocToFileFunction(patient);
-    const simpleFile = await docToFile(doc);
-    return {
-      ...simpleFile,
-      fileExists: false,
-      fileSize: undefined,
-    };
-  };
-}
-
 function addMetriportDocRefId({
   cxId,
   patientId,
@@ -502,6 +489,7 @@ async function downloadDocsAndUpsertFHIR({
     `CW downloadDocsAndUpsertFHIR - requestId ${requestId}, M patient ${patient.id}`
   );
   forceDownload && log(`override=true, NOT checking whether docs exist`);
+  const s3Utils = new S3Utils(Config.getAWSRegion());
 
   const cxId = patient.cxId;
   const fhirApi = makeFhirApi(patient.cxId);
@@ -523,13 +511,6 @@ async function downloadDocsAndUpsertFHIR({
   const validDocs = docsWithMetriportId.filter(isValidDoc);
   log(`I have ${validDocs.length} valid docs to process`);
 
-  // Get File info from S3 (or from memory, if override = true)
-  async function getFilesWithStorageInfo() {
-    return forceDownload
-      ? await Promise.all(validDocs.map(convertToNonExistingS3Info(patient)))
-      : await getS3Info(validDocs, patient);
-  }
-
   // Get all DocumentReferences for this patient + File info from S3
   const [foundOnFHIR, filesWithStorageInfo] = await Promise.all([
     ignoreDocRefOnFHIRServer
@@ -537,7 +518,7 @@ async function downloadDocsAndUpsertFHIR({
       : getAllPages(() =>
           fhirApi.searchResourcePages("DocumentReference", `patient=${patient.id}`)
         ),
-    getFilesWithStorageInfo(),
+    getS3Info(validDocs, patient),
   ]);
 
   const [foundOnStorage, notFoundOnStorage] = partition(
@@ -548,7 +529,14 @@ async function downloadDocsAndUpsertFHIR({
   const foundOnStorageButNotOnFHIR = foundOnStorage.filter(
     f => !foundOnFHIR.find(d => d.id === f.docId)
   );
+
   const filesToDownload = notFoundOnStorage.concat(foundOnStorageButNotOnFHIR);
+
+  if (forceDownload) {
+    const alreadyIncluded = filesToDownload.map(f => f.docId);
+    const remainingFoundOnStorage = foundOnStorage.filter(f => !alreadyIncluded.includes(f.docId));
+    filesToDownload.push(...remainingFoundOnStorage);
+  }
 
   const docsToDownload = filesToDownload.flatMap(f => validDocs.find(d => d.id === f.docId) ?? []);
 
@@ -585,17 +573,26 @@ async function downloadDocsAndUpsertFHIR({
             // add some randomness to avoid overloading the servers
             await jitterSingleDownload();
 
-            if (!fileInfo.fileExists) {
+            if (!fileInfo.fileExists || forceDownload) {
               // Download from CW and upload to S3
               uploadToS3 = async () => {
                 const initiator = await getCwInitiator({ id: patient.id, cxId }, facilityId);
-                const newFile = triggerDownloadDocument({
+                const newFile = await triggerDownloadDocument({
                   doc,
                   fileInfo,
                   initiator,
                   cxId,
                   requestId,
                 });
+
+                if (forceDownload || newFile.size !== fileInfo.fileSize) {
+                  // delete file renders (html, pdf)
+                  const renderFilePaths = createDocumentRenderFilePaths(fileInfo.fileName);
+                  await s3Utils.deleteFiles({
+                    bucket: fileInfo.fileLocation,
+                    keys: renderFilePaths,
+                  });
+                }
 
                 return newFile;
               };
@@ -605,6 +602,7 @@ async function downloadDocsAndUpsertFHIR({
                 const signedUrl = await getUrl(fileInfo.fileName, fileInfo.fileLocation);
                 const url = new URL(signedUrl);
                 const s3Location = url.origin + url.pathname;
+
                 return {
                   bucket: fileInfo.fileLocation,
                   key: fileInfo.fileName,
