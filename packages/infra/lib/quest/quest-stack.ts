@@ -184,26 +184,23 @@ export class QuestNestedStack extends NestedStack {
       envVars,
     };
 
-    const sftpAction = this.setupLambda("sftpAction", {
+    this.sftpActionLambda = this.setupLambda("sftpAction", {
       ...commonConfig,
       questReplicaBucket: this.questReplicaBucket,
       labConversionBucket: this.labConversionBucket,
     });
-    this.sftpActionLambda = sftpAction.lambda;
 
-    const rosterUpload = this.setupLambda("rosterUpload", {
+    this.rosterUploadLambda = this.setupLambda("rosterUpload", {
       ...commonConfig,
       questReplicaBucket: this.questReplicaBucket,
       labConversionBucket: this.labConversionBucket,
     });
-    this.rosterUploadLambda = rosterUpload.lambda;
 
-    const responseDownload = this.setupLambda("responseDownload", {
+    this.responseDownloadLambda = this.setupLambda("responseDownload", {
       ...commonConfig,
       questReplicaBucket: this.questReplicaBucket,
       labConversionBucket: this.labConversionBucket,
     });
-    this.responseDownloadLambda = responseDownload.lambda;
 
     const questFhirConverter = this.setupLambdaAndQueue(questFhirConverterSettings, {
       ...commonConfig,
@@ -284,7 +281,7 @@ export class QuestNestedStack extends NestedStack {
       labConversionBucket?: s3.Bucket;
       termServerUrl?: string;
     }
-  ) {
+  ): Lambda {
     const { name, entry, lambda: lambdaSettings } = questLambdaSettings[job];
 
     const {
@@ -321,7 +318,7 @@ export class QuestNestedStack extends NestedStack {
     questReplicaBucket.grantReadWrite(lambda);
     labConversionBucket?.grantReadWrite(lambda);
 
-    return { lambda };
+    return lambda;
   }
 
   private setupLambdaAndQueue(
