@@ -1,3 +1,3 @@
 export interface QuestFhirConverterCommand {
-  convertQuestResponseToFhir(): Promise<void>;
+  convertQuestResponseToFhirBundles(dateId: string): Promise<void>;
 }
