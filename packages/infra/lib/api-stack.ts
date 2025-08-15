@@ -1,11 +1,11 @@
 import {
   Aspects,
+  aws_wafv2 as wafv2,
   CfnOutput,
   Duration,
   RemovalPolicy,
   Stack,
   StackProps,
-  aws_wafv2 as wafv2,
 } from "aws-cdk-lib";
 import * as apig from "aws-cdk-lib/aws-apigateway";
 import { BackupResource } from "aws-cdk-lib/aws-backup";
@@ -64,6 +64,7 @@ import { provideAccessToQueue } from "./shared/sqs";
 import { isProd, isSandbox } from "./shared/util";
 import { wafRules } from "./shared/waf-rules";
 import { SurescriptsNestedStack } from "./surescripts/surescripts-stack";
+import { QuestNestedStack } from "./quest/quest-stack";
 
 const FITBIT_LAMBDA_TIMEOUT = Duration.seconds(60);
 
@@ -307,6 +308,7 @@ export class APIStack extends Stack {
     });
 
     let hl7ConversionBucket: s3.Bucket | undefined;
+    let incomingHl7NotificationBucket: s3.IBucket | undefined;
     if (!isSandbox(props.config) && props.config.hl7Notification.hl7ConversionBucketName) {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       hl7ConversionBucket = new s3.Bucket(this, "HL7ConversionBucket", {
@@ -315,6 +317,12 @@ export class APIStack extends Stack {
         encryption: s3.BucketEncryption.S3_MANAGED,
         versioned: true,
       });
+
+      incomingHl7NotificationBucket = s3.Bucket.fromBucketName(
+        this,
+        "IncomingHl7NotificationBucket",
+        props.config.hl7Notification.incomingMessageBucketName
+      );
     }
 
     let ehrResponsesBucket: s3.Bucket | undefined;
@@ -392,6 +400,23 @@ export class APIStack extends Stack {
     }
 
     //-------------------------------------------
+    // Quest
+    //-------------------------------------------
+    let questStack: QuestNestedStack | undefined = undefined;
+    if (
+      props.config.quest &&
+      props.config.questReplicaBucketName &&
+      props.config.labConversionBucketName
+    ) {
+      questStack = new QuestNestedStack(this, "QuestNestedStack", {
+        config: props.config,
+        vpc: this.vpc,
+        alarmAction: slackNotification?.alarmAction,
+        lambdaLayers,
+      });
+    }
+
+    //-------------------------------------------
     // General lambdas
     //-------------------------------------------
     const {
@@ -413,6 +438,7 @@ export class APIStack extends Stack {
       consolidatedSearchLambda,
       consolidatedIngestionLambda,
       consolidatedIngestionQueue,
+      reconversionKickoffLambda,
     } = new LambdasNestedStack(this, "LambdasNestedStack", {
       config: props.config,
       vpc: this.vpc,
@@ -421,6 +447,8 @@ export class APIStack extends Stack {
       secrets,
       medicalDocumentsBucket,
       pharmacyBundleBucket: surescriptsStack?.getAssets()?.pharmacyConversionBucket,
+      labBundleBucket: questStack?.getAssets()?.labConversionBucket,
+      hl7ConversionBucket,
       sandboxSeedDataBucket,
       alarmAction: slackNotification?.alarmAction,
       bedrock: props.config.bedrock,
@@ -506,9 +534,13 @@ export class APIStack extends Stack {
     //-------------------------------------------
     // Analytics Platform
     //-------------------------------------------
+    let analyticsPlatformStack: AnalyticsPlatformsNestedStack | undefined = undefined;
     if (!isSandbox(props.config)) {
-      new AnalyticsPlatformsNestedStack(this, "AnalyticsPlatforms", {
+      analyticsPlatformStack = new AnalyticsPlatformsNestedStack(this, "AnalyticsPlatforms", {
         config: props.config,
+        vpc: this.vpc,
+        lambdaLayers,
+        medicalDocumentsBucket,
       });
     }
 
@@ -648,6 +680,7 @@ export class APIStack extends Stack {
       ehrGetAppointmentsLambda,
       ehrBundleBucket,
       generalBucket,
+      incomingHl7NotificationBucket,
       conversionBucket: fhirConverterBucket,
       medicalDocumentsUploadBucket,
       ehrResponsesBucket,
@@ -665,7 +698,9 @@ export class APIStack extends Stack {
       featureFlagsTable,
       cookieStore,
       surescriptsAssets: surescriptsStack?.getAssets(),
+      questAssets: questStack?.getAssets(),
       jobAssets: jobsStack.getAssets(),
+      analyticsPlatformAssets: analyticsPlatformStack?.getAssets(),
     });
     const apiLoadBalancerAddress = apiLoadBalancer.loadBalancerDnsName;
 
@@ -735,6 +770,7 @@ export class APIStack extends Stack {
       fhirToBundleLambda,
       fhirToBundleCountLambda,
       ...(hl7v2RosterUploadLambdas ?? []),
+      reconversionKickoffLambda,
       hl7NotificationWebhookSenderLambda,
       dischargeRequeryLambda,
       patientImportCreateLambda,
@@ -754,7 +790,9 @@ export class APIStack extends Stack {
       consolidatedSearchLambda,
       consolidatedIngestionLambda,
       ...(surescriptsStack?.getLambdas() ?? []),
+      ...(questStack?.getLambdas() ?? []),
       jobsStack.getAssets().runPatientJobLambda,
+      analyticsPlatformStack?.getAssets().fhirToCsvLambda,
     ];
     const apiUrl = `http://${apiDirectUrl}`;
     lambdasToGetApiUrl.forEach(lambda => lambda?.addEnvironment("API_URL", apiUrl));
@@ -768,6 +806,12 @@ export class APIStack extends Stack {
     medicalDocumentsBucket.grantRead(fhirConverterLambda);
     medicalDocumentsBucket.grantRead(ehrComputeResourceDiffBundlesLambda);
     medicalDocumentsBucket.grantRead(ehrWriteBackResourceDiffBundlesLambda);
+    if (analyticsPlatformStack) {
+      medicalDocumentsBucket.grantRead(
+        analyticsPlatformStack.fhirToCsvBatchJobContainer.executionRole
+      );
+      medicalDocumentsBucket.grantRead(analyticsPlatformStack.fhirToCsvTransformLambda);
+    }
 
     createDocQueryChecker({
       lambdaLayers,

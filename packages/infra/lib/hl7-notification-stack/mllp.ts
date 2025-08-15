@@ -13,8 +13,7 @@ import { Construct } from "constructs";
 import { EnvConfigNonSandbox } from "../../config/env-config";
 import { buildSecrets, secretsToECS } from "../shared/secrets";
 import { MLLP_DEFAULT_PORT } from "./constants";
-import { HieConfig } from "@metriport/core/command/hl7v2-subscriptions/types";
-import { HieTimezoneDictionary } from "@metriport/core/external/hl7-notification/hie-timezone";
+import { createHieConfigDictionary } from "../shared/hie-config-dictionary";
 
 interface MllpStackProps extends cdk.StackProps {
   config: EnvConfigNonSandbox;
@@ -59,16 +58,6 @@ const setupNlb = (identifier: string, vpc: ec2.Vpc, nlb: elbv2.NetworkLoadBalanc
   });
 
   return targetGroup;
-};
-
-const createHieTimezoneMap = (hieConfigs: Record<string, HieConfig>): HieTimezoneDictionary => {
-  return Object.values(hieConfigs).reduce((acc, item) => {
-    acc[item.name] = {
-      cidrBlock: item.internalCidrBlock,
-      timezone: item.timezone,
-    };
-    return acc;
-  }, {} as HieTimezoneDictionary);
 };
 
 export class MllpStack extends cdk.NestedStack {
@@ -163,7 +152,7 @@ export class MllpStack extends cdk.NestedStack {
         MLLP_PORT: MLLP_DEFAULT_PORT.toString(),
         HL7_INCOMING_MESSAGE_BUCKET_NAME: incomingHl7NotificationBucket.bucketName,
         HL7_NOTIFICATION_QUEUE_URL: notificationWebhookSenderQueue.url,
-        HIE_TIMEZONE_DICTIONARY: JSON.stringify(createHieTimezoneMap(hieConfigs)),
+        HIE_CONFIG_DICTIONARY: JSON.stringify(createHieConfigDictionary(hieConfigs)),
         ...(sentryDSN ? { SENTRY_DSN: sentryDSN } : {}),
         ...(props.version ? { RELEASE_SHA: props.version } : undefined),
       },

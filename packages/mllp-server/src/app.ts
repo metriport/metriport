@@ -11,7 +11,7 @@ import {
 } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/msh";
 import { createFileKeyHl7Message } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
-import { getHieTimezoneDictionary } from "@metriport/core/external/hl7-notification/hie-timezone";
+import { getHieConfigDictionary } from "@metriport/core/external/hl7-notification/hie-config-dictionary";
 import { capture } from "@metriport/core/util";
 import type { Logger } from "@metriport/core/util/log";
 import { out } from "@metriport/core/util/log";
@@ -33,7 +33,7 @@ const MLLP_DEFAULT_PORT = 2575;
 
 async function createHl7Server(logger: Logger): Promise<Hl7Server> {
   const { log } = logger;
-  const hieTimezoneDictionary = getHieTimezoneDictionary();
+  const hieConfigDictionary = getHieConfigDictionary();
 
   const server = new Hl7Server(connection => {
     connection.addEventListener(
@@ -41,7 +41,7 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
       withErrorHandling(connection, logger, async ({ message: rawMessage }) => {
         const clientIp = getCleanIpAddress(connection.socket.remoteAddress);
         const clientPort = connection.socket.remotePort;
-        const { hieName, timezone } = lookupHieTzEntryForIp(hieTimezoneDictionary, clientIp);
+        const { hieName, timezone } = lookupHieTzEntryForIp(hieConfigDictionary, clientIp);
 
         log(`New message from ${hieName} over connection ${clientIp}:${clientPort}`);
 
@@ -71,17 +71,7 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
           triggerEvent,
         });
 
-        await buildHl7NotificationWebhookSender().execute({
-          cxId,
-          patientId,
-          message: asString(message),
-          sourceTimestamp: timestamp,
-          messageReceivedTimestamp: new Date().toISOString(),
-        });
-
-        connection.send(message.buildAck());
-
-        const fileKey = createFileKeyHl7Message({
+        const rawDataFileKey = createFileKeyHl7Message({
           cxId,
           patientId,
           timestamp,
@@ -90,10 +80,21 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
           triggerEvent,
         });
 
-        log(`Init S3 upload to bucket ${bucketName} with key ${fileKey}`);
+        await buildHl7NotificationWebhookSender().execute({
+          cxId,
+          patientId,
+          message: asString(message),
+          sourceTimestamp: timestamp,
+          messageReceivedTimestamp: new Date().toISOString(),
+          rawDataFileKey,
+        });
+
+        connection.send(message.buildAck());
+
+        log(`Init S3 upload to bucket ${bucketName} with key ${rawDataFileKey}`);
         s3Utils.uploadFile({
           bucket: bucketName,
-          key: fileKey,
+          key: rawDataFileKey,
           file: Buffer.from(asString(message)),
           contentType: "text/plain",
         });

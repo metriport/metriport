@@ -1,4 +1,4 @@
-import { HieConfig } from "@metriport/core/command/hl7v2-subscriptions/types";
+import { HieConfig, VpnlessHieConfig } from "@metriport/core/command/hl7v2-subscriptions/types";
 
 export interface Hl7NotificationConfig {
   secrets: {
@@ -24,7 +24,7 @@ export interface Hl7NotificationConfig {
   hl7v2RosterUploadLambda: {
     bucketName: string;
   };
-  hieConfigs: Record<string, HieConfig>;
+  hieConfigs: Record<string, HieConfig | VpnlessHieConfig>;
   // ENG-536 remove this once we automatically find the discharge summary
   dischargeNotificationSlackUrl: string;
 }

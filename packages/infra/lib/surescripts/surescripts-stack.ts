@@ -12,7 +12,7 @@ import { EnvType } from "../env-type";
 import { createLambda } from "../shared/lambda";
 import { LambdaLayers } from "../shared/lambda-layers";
 import { buildSecret } from "../shared/secrets";
-import { LambdaSettings, QueueAndLambdaSettings } from "../shared/settings";
+import { LambdaSettingsWithNameAndEntry, QueueAndLambdaSettings } from "../shared/settings";
 import { createQueue } from "../shared/sqs";
 import { SurescriptsAssets } from "./types";
 
@@ -35,9 +35,9 @@ interface SurescriptsSettings {
 }
 
 interface SurescriptsLambdaSettings {
-  sftpAction: LambdaSettings;
-  convertPatientResponse: LambdaSettings;
-  convertBatchResponse: LambdaSettings;
+  sftpAction: LambdaSettingsWithNameAndEntry;
+  convertPatientResponse: LambdaSettingsWithNameAndEntry;
+  convertBatchResponse: LambdaSettingsWithNameAndEntry;
 }
 
 const settings: SurescriptsSettings = {
@@ -452,6 +452,7 @@ export class SurescriptsNestedStack extends NestedStack {
       envVars: {
         ...envVars,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+        ...(job === "sftpAction" ? { SFTP_ACTION_LAMBDA: "surescripts" } : {}),
         ...(termServerUrl ? { TERM_SERVER_URL: termServerUrl } : {}),
         SYSTEM_ROOT_OID: systemRootOID,
       },

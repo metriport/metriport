@@ -1,6 +1,6 @@
 {
   "name": "utils",
-  "version": "1.25.15-alpha.0",
+  "version": "1.25.17",
   "description": "",
   "private": true,
   "scripts": {
@@ -25,6 +25,7 @@
     "get-consolidated": "ts-node src/customer-requests/get-consolidated",
     "download-docs": "ts-node src/customer-requests/download-docs",
     "surescripts": "ts-node src/surescripts/index.ts",
+    "quest": "ts-node src/quest/index.ts",
     "mock-ihe-gateway": "ts-node src/saml/mock-ihe-gateway",
     "integration-test-and-compare-total-resource-counts": "bash src/fhir-converter/scripts/run_integration_and_compare.sh",
     "compare-total-resource-counts": "bash src/fhir-converter/scripts/compare_total_resource_counts.sh",
@@ -38,7 +39,8 @@
     "load-test": "artillery run ./src/terminology/load-test.yml",
     "npi": "ts-node src/facility/make-npi",
     "fhir-demo": "ts-node src/fhir-sdk-demo.ts",
-    "test-typing": "ts-node src/test-typing.ts"
+    "test-typing": "ts-node src/test-typing.ts",
+    "preview-consolidated": "ts-node src/preview-consolidated.ts"
   },
   "keywords": [],
   "author": "",
@@ -81,6 +83,7 @@
     "@faker-js/faker": "^8.0.2",
     "@medplum/core": "^3.2.33",
     "@medplum/fhirtypes": "^2.2.10",
+    "@metriport/eslint-rules": "file:packages/eslint-rules",
     "@metriport/fhir-sdk": "file:packages/fhir-sdk",
     "@tsconfig/recommended": "^1.0.1",
     "@types/aws-serverless-express": "^3.3.9",

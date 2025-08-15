@@ -1,3 +1,5 @@
+import { MetriportError } from "../../error/metriport-error";
+
 function isValidZipCode(zipCode: string): boolean {
   if (!zipCode) return false;
   if (zipCode.length === 0) return false;
@@ -18,7 +20,7 @@ export function normalizeZipCodeNew(
   normalizeFn = normalizeZipCodeNewSafe
 ): string {
   const zipOrUndefined = normalizeFn(zipCode);
-  if (!zipOrUndefined) throw new Error("Invalid Zip.");
+  if (!zipOrUndefined) throw new MetriportError("Invalid Zip.", undefined, { zipCode });
   return zipOrUndefined;
 }
 

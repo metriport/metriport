@@ -6,14 +6,6 @@ import { getIdFromReference } from "@metriport/core/external/fhir/shared/referen
 import { getEnvVarOrFail, sleep } from "@metriport/shared";
 import axios from "axios";
 
-const apiKey = getEnvVarOrFail("API_KEY");
-const apiUrl = getEnvVarOrFail("API_URL");
-const cxId = getEnvVarOrFail("CX_ID");
-
-const metriportAPI = new MetriportMedicalApi(apiKey, {
-  baseAddress: apiUrl,
-});
-
 /**
  * This script allows you to remove DocumentReferences for a list of patients for a CX.
  *
@@ -22,6 +14,14 @@ const metriportAPI = new MetriportMedicalApi(apiKey, {
  *  - Configure the filters to define which DocRefs you want deleted
  *  - Run the script with ts-node src/fhir-server/remove-docrefs.ts from the `package/utils` directory
  */
+
+const apiKey = getEnvVarOrFail("API_KEY");
+const apiUrl = getEnvVarOrFail("API_URL");
+const cxId = getEnvVarOrFail("CX_ID");
+
+const metriportAPI = new MetriportMedicalApi(apiKey, {
+  baseAddress: apiUrl,
+});
 
 const patientIds: string[] = []; // Add patient IDs here
 

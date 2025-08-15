@@ -21,9 +21,9 @@ export interface ParsedHl7Data {
 
 export async function parseHl7Message(
   rawMessage: Hl7Message,
-  hieTimezone: string
+  hieConfig: string
 ): Promise<ParsedHl7Data> {
-  const message = utcifyHl7Message(rawMessage, hieTimezone);
+  const message = utcifyHl7Message(rawMessage, hieConfig);
 
   const { cxId, patientId } = getCxIdAndPatientIdOrFail(message);
 

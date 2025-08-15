@@ -22,19 +22,12 @@ import {
 } from "../../../../command/jwt-token";
 import { findOrCreatePatientMapping, getPatientMapping } from "../../../../command/mapping/patient";
 import { queryDocumentsAcrossHIEs } from "../../../../command/medical/document/document-query";
-import {
-  getPatientByDemo,
-  getPatientOrFail,
-  PatientWithIdentifiers,
-} from "../../../../command/medical/patient/get-patient";
-import { Config } from "../../../../shared/config";
-import {
-  handleMetriportSync,
-  HandleMetriportSyncParams,
-  isDqCooldownExpired,
-} from "../../shared/utils/patient";
-import { createAddresses, createContacts, createHealthieClient, createNames } from "../shared";
+import { getPatientOrFail } from "../../../../command/medical/patient/get-patient";
 import { getPatientPrimaryFacilityIdOrFail } from "../../../../command/medical/patient/get-patient-facilities";
+import { Config } from "../../../../shared/config";
+import { getOrCreateMetriportPatient } from "../../shared/command/patient/get-or-create-metriport-patient";
+import { isDqCooldownExpired } from "../../shared/utils/patient";
+import { createAddresses, createContacts, createHealthieClient, createNames } from "../shared";
 
 dayjs.extend(duration);
 
@@ -48,6 +41,7 @@ export type SyncHealthiePatientIntoMetriportParams = {
   api?: HealthieApi;
   triggerDq?: boolean;
   triggerDqForExistingPatient?: boolean;
+  inputMetriportPatientId?: string;
 };
 
 export async function syncHealthiePatientIntoMetriport({
@@ -57,46 +51,58 @@ export async function syncHealthiePatientIntoMetriport({
   api,
   triggerDq = false,
   triggerDqForExistingPatient = false,
+  inputMetriportPatientId,
 }: SyncHealthiePatientIntoMetriportParams): Promise<string> {
-  const existingPatient = await getPatientMapping({
+  const { log } = out(
+    `syncHealthiePatientIntoMetriport - practId: ${healthiePracticeId} ptId: ${healthiePatientId}`
+  );
+  const existingMapping = await getPatientMapping({
     cxId,
     externalId: healthiePatientId,
     source: EhrSources.healthie,
   });
-  if (existingPatient) {
+
+  const healthieApi = api ?? (await createHealthieClient({ cxId, practiceId: healthiePracticeId }));
+  if (existingMapping) {
+    log("existing mapping found", existingMapping.patientId);
     const metriportPatient = await getPatientOrFail({
       cxId,
-      id: existingPatient.patientId,
+      id: existingMapping.patientId,
     });
-    const facilityId = await getPatientPrimaryFacilityIdOrFail({
-      cxId,
-      patientId: metriportPatient.id,
-    });
+    const metriportPatientId = metriportPatient.id;
     if (triggerDqForExistingPatient && isDqCooldownExpired(metriportPatient)) {
+      const facilityId = await getPatientPrimaryFacilityIdOrFail({
+        cxId,
+        patientId: metriportPatientId,
+      });
       queryDocumentsAcrossHIEs({
         cxId,
-        patientId: metriportPatient.id,
+        patientId: metriportPatientId,
         facilityId,
       }).catch(processAsyncError(`Healthie queryDocumentsAcrossHIEs`));
     }
-    const metriportPatientId = metriportPatient.id;
     await updateHealthiePatientQuickNotes({
       cxId,
       healthiePracticeId,
       healthiePatientId,
+      healthieApi,
     });
     return metriportPatientId;
   }
 
-  const healthieApi = api ?? (await createHealthieClient({ cxId, practiceId: healthiePracticeId }));
+  log("no existing mapping found");
   const healthiePatient = await healthieApi.getPatient({ cxId, patientId: healthiePatientId });
   const demographics = createMetriportPatientDemographics(healthiePatient);
+
   const metriportPatient = await getOrCreateMetriportPatient({
+    source: EhrSources.healthie,
     cxId,
     practiceId: healthiePracticeId,
     demographics,
     externalId: healthiePatientId,
+    inputMetriportPatientId,
   });
+  log("Metriport patient created/retrieved:", metriportPatient.id);
   const metriportPatientId = metriportPatient.id;
   const facilityId = await getPatientPrimaryFacilityIdOrFail({
     cxId,
@@ -141,23 +147,6 @@ function createMetriportPatientDemographics(patient: HealthiePatient): PatientDe
     address: addressArray,
     contact: contactArray,
   };
-}
-
-async function getOrCreateMetriportPatient({
-  cxId,
-  practiceId,
-  demographics,
-  externalId,
-}: Omit<HandleMetriportSyncParams, "source">): Promise<PatientWithIdentifiers> {
-  const metriportPatient = await getPatientByDemo({ cxId, demo: demographics });
-  if (metriportPatient) return metriportPatient;
-  return await handleMetriportSync({
-    cxId,
-    source: EhrSources.healthie,
-    practiceId,
-    demographics,
-    externalId,
-  });
 }
 
 async function createHealthiePatientLink({

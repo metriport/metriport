@@ -247,25 +247,25 @@ export const vitalLoincCodeObservationCode2 = {
  * Sample write-back filters for each filter type.
  */
 export const chronicityFilterChronic = {
-  problems: {
+  problem: {
     chronicityFilter: "chronic",
   },
 };
 
 export const chronicityFilterNonChronic = {
-  problems: {
+  problem: {
     chronicityFilter: "non-chronic",
   },
 };
 
 export const chronicityFilterAll = {
-  problems: {
+  problem: {
     chronicityFilter: "all",
   },
 };
 
 export const chronicityFilterUndefined = {
-  problems: {
+  problem: {
     chronicityFilter: undefined,
   },
 };
@@ -294,6 +294,35 @@ export const labPanelDateFilterUndefined = {
   labPanel: {
     relativeDateRange: undefined,
   },
+};
+
+export const labPanelLoincCodesFilterCode = {
+  labPanel: {
+    loincCodes: ["51990-0"],
+  },
+};
+
+export const labReportOtherCode = "123";
+export const labReportOtherCodeDisplay = "Basic Metabolic Panel";
+export const labReportOtherCodeDisplay2 = "some other lab that we don't care about";
+export const labReportOtherCodeDiagnosticReportCode = {
+  resourceType: "DiagnosticReport",
+  id: "report",
+  category: [
+    {
+      coding: [{ code: "laboratory" }],
+    },
+  ],
+  code: {
+    coding: [
+      {
+        system: "https://some-custom-code-system.org",
+        code: labReportOtherCode,
+        display: labReportOtherCodeDisplay,
+      },
+    ],
+  },
+  effectiveDateTime: "2024-05-01T00:00:00Z",
 };
 
 export const labPanelLoincCodesFilterCode1 = {

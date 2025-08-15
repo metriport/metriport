@@ -4,6 +4,7 @@ import { EhrSource, EhrSources } from "@metriport/shared/interface/external/ehr/
 import { getResourceBundleByResourceId as getAthenaResourceBundleByResourceId } from "../athenahealth/command/get-resource-bundle-by-resource-id";
 import { getResourceBundleByResourceId as getCanvasResourceBundleByResourceId } from "../canvas/command/get-resource-bundle-by-resource-id";
 import { getResourceBundleByResourceId as getElationResourceBundleByResourceId } from "../elation/command/get-resource-bundle-by-resource-id";
+import { getResourceBundleByResourceId as getHealthieResourceBundleByResourceId } from "../healthie/command/get-resource-bundle-by-resource-id";
 
 export type GetResourceBundleByResourceIdRequest = {
   ehr: EhrSource;
@@ -43,7 +44,7 @@ const ehrGetResourceBundleByResourceIdMap: GetResourceBundleByResourceIdMethodsM
   [EhrSources.canvas]: getCanvasResourceBundleByResourceId,
   [EhrSources.athena]: getAthenaResourceBundleByResourceId,
   [EhrSources.elation]: getElationResourceBundleByResourceId,
-  [EhrSources.healthie]: undefined,
+  [EhrSources.healthie]: getHealthieResourceBundleByResourceId,
   [EhrSources.eclinicalworks]: undefined,
 };
 

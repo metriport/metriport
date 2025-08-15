@@ -36,6 +36,9 @@ import { provideAccessToQueue } from "../shared/sqs";
 import { addDefaultMetricsToTargetGroup } from "../shared/target-group";
 import { isProd, isSandbox } from "../shared/util";
 import { SurescriptsAssets } from "../surescripts/types";
+import { QuestAssets } from "../quest/types";
+import { AnalyticsPlatformsAssets } from "../analytics-platform/types";
+import { createHieConfigDictionary } from "../shared/hie-config-dictionary";
 
 interface ApiProps extends StackProps {
   config: EnvConfig;
@@ -120,6 +123,7 @@ export function createAPIService({
   ehrGetAppointmentsLambda,
   ehrBundleBucket,
   generalBucket,
+  incomingHl7NotificationBucket,
   conversionBucket,
   medicalDocumentsUploadBucket,
   ehrResponsesBucket,
@@ -137,7 +141,9 @@ export function createAPIService({
   featureFlagsTable,
   cookieStore,
   surescriptsAssets,
+  questAssets,
   jobAssets,
+  analyticsPlatformAssets,
 }: {
   stack: Construct;
   props: ApiProps;
@@ -169,6 +175,7 @@ export function createAPIService({
   ehrGetAppointmentsLambda: ILambda;
   ehrBundleBucket: s3.IBucket;
   generalBucket: s3.IBucket;
+  incomingHl7NotificationBucket: s3.IBucket | undefined;
   conversionBucket: s3.IBucket;
   medicalDocumentsUploadBucket: s3.IBucket;
   ehrResponsesBucket: s3.IBucket | undefined;
@@ -186,7 +193,9 @@ export function createAPIService({
   featureFlagsTable: dynamodb.Table;
   cookieStore: secret.ISecret | undefined;
   surescriptsAssets: SurescriptsAssets | undefined;
+  questAssets: QuestAssets | undefined;
   jobAssets: JobsAssets;
+  analyticsPlatformAssets: AnalyticsPlatformsAssets | undefined;
 }): {
   cluster: ecs.Cluster;
   service: ecs_patterns.ApplicationLoadBalancedFargateService;
@@ -276,6 +285,9 @@ export function createAPIService({
           ...(props.config.sentryDSN ? { SENTRY_DSN: props.config.sentryDSN } : undefined),
           ...(props.config.usageReportUrl && {
             USAGE_URL: props.config.usageReportUrl,
+          }),
+          ...(incomingHl7NotificationBucket && {
+            HL7_INCOMING_MESSAGE_BUCKET_NAME: incomingHl7NotificationBucket.bucketName,
           }),
           CONVERSION_RESULT_BUCKET_NAME: conversionBucket.bucketName,
           ...(props.config.medicalDocumentsBucketName && {
@@ -396,10 +408,34 @@ export function createAPIService({
               ])
             ),
           }),
+          ...(questAssets && {
+            LAB_CONVERSION_BUCKET_NAME: questAssets.labConversionBucket.bucketName,
+            QUEST_REPLICA_BUCKET_NAME: questAssets.questReplicaBucket.bucketName,
+            ...Object.fromEntries(
+              questAssets.questLambdas.map(({ envVarName, lambda }) => [
+                envVarName,
+                lambda.functionName,
+              ])
+            ),
+          }),
           RUN_PATIENT_JOB_QUEUE_URL: jobAssets.runPatientJobQueue.queueUrl,
           ...(props.config.hl7Notification?.dischargeNotificationSlackUrl && {
             DISCHARGE_NOTIFICATION_SLACK_URL:
               props.config.hl7Notification.dischargeNotificationSlackUrl,
+          }),
+          ...(analyticsPlatformAssets && {
+            FHIR_TO_CSV_QUEUE_URL: analyticsPlatformAssets.fhirToCsvQueue.queueUrl,
+            FHIR_TO_CSV_TRANSFORM_LAMBDA_NAME:
+              analyticsPlatformAssets.fhirToCsvTransformLambda.functionName,
+            FHIR_TO_CSV_BATCH_JOB_DEFINITION_ARN:
+              analyticsPlatformAssets.fhirToCsvBatchJob.jobDefinitionArn,
+            FHIR_TO_CSV_BATCH_JOB_QUEUE_ARN:
+              analyticsPlatformAssets.fhirToCsvBatchJobQueue.jobQueueArn,
+          }),
+          ...(props.config.hl7Notification?.hieConfigs && {
+            HIE_CONFIG_DICTIONARY: JSON.stringify(
+              createHieConfigDictionary(props.config.hl7Notification.hieConfigs)
+            ),
           }),
         },
       },
@@ -482,11 +518,16 @@ export function createAPIService({
   fhirToBundleCountLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   ehrGetAppointmentsLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   consolidatedSearchLambda.grantInvoke(fargateService.taskDefinition.taskRole);
+  analyticsPlatformAssets?.fhirToCsvTransformLambda.grantInvoke(
+    fargateService.taskDefinition.taskRole
+  );
   // Access grant for buckets
   patientImportBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   conversionBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   medicalDocumentsUploadBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   ehrBundleBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
+
+  incomingHl7NotificationBucket?.grantRead(fargateService.taskDefinition.taskRole);
 
   if (surescriptsAssets) {
     surescriptsAssets.pharmacyConversionBucket.grantReadWrite(
@@ -496,6 +537,10 @@ export function createAPIService({
       fargateService.taskDefinition.taskRole
     );
   }
+  if (questAssets) {
+    questAssets.labConversionBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
+    questAssets.questReplicaBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
+  }
 
   if (ehrResponsesBucket) {
     ehrResponsesBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
@@ -503,6 +548,13 @@ export function createAPIService({
 
   if (fhirToMedicalRecordLambda2) {
     fhirToMedicalRecordLambda2.grantInvoke(fargateService.taskDefinition.taskRole);
+  }
+
+  if (analyticsPlatformAssets) {
+    analyticsPlatformAssets.fhirToCsvBatchJob.grantSubmitJob(
+      fargateService.taskDefinition.taskRole,
+      analyticsPlatformAssets.fhirToCsvBatchJobQueue
+    );
   }
 
   if (cookieStore) {
@@ -540,6 +592,14 @@ export function createAPIService({
     queue: ehrWriteBackResourceDiffBundlesQueue,
     resource: fargateService.taskDefinition.taskRole,
   });
+
+  if (analyticsPlatformAssets) {
+    provideAccessToQueue({
+      accessType: "send",
+      queue: analyticsPlatformAssets.fhirToCsvQueue,
+      resource: fargateService.taskDefinition.taskRole,
+    });
+  }
 
   if (dischargeRequeryQueue) {
     provideAccessToQueue({

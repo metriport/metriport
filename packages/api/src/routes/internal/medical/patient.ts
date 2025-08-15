@@ -6,10 +6,7 @@ import {
 } from "@metriport/core/command/feature-flags/domain-ffs";
 import { consolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { Patient } from "@metriport/core/domain/patient";
-import {
-  hl7v2SubscriptionRequestSchema,
-  validHl7v2Subscriptions,
-} from "@metriport/core/domain/patient-settings";
+import { hl7v2SubscribersQuerySchema } from "@metriport/core/domain/patient-settings";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { Config } from "@metriport/core/util/config";
 import { processAsyncError } from "@metriport/core/util/error/shared";
@@ -19,11 +16,14 @@ import {
   errorToString,
   internalSendConsolidatedSchema,
   MetriportError,
-  normalizeState,
   PaginatedResponse,
   sleep,
   stringToBoolean,
 } from "@metriport/shared";
+import {
+  questSource,
+  questMappingRequestSchema,
+} from "@metriport/shared/interface/external/quest/source";
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -33,6 +33,10 @@ import status from "http-status";
 import stringify from "json-stringify-safe";
 import { chunk } from "lodash";
 import { z } from "zod";
+import {
+  createPatientMapping,
+  findFirstPatientMappingForSource,
+} from "../../../command/mapping/patient";
 import { resetExternalDataSource } from "../../../command/medical/admin/reset-external-data";
 import { getFacilityOrFail } from "../../../command/medical/facility/get-facility";
 import {
@@ -105,8 +109,8 @@ import {
 import patientConsolidatedRoutes from "./patient-consolidated";
 import patientImportRoutes from "./patient-import";
 import patientJobRoutes from "./patient-job";
-import patientSettingsRoutes from "./patient-settings";
 import patientMonitoringRoutes from "./patient-monitoring";
+import patientSettingsRoutes from "./patient-settings";
 
 dayjs.extend(duration);
 
@@ -128,7 +132,7 @@ const patientLoader = new PatientLoaderLocal();
  * This is a paginated route.
  * Gets all patients that have the specified HL7v2 subscriptions enabled for the given states.
  *
- * @param req.query.states List of US state codes to filter by.
+ * @param req.query.hie The HIE to filter by.
  * @param req.query.subscriptions List of HL7v2 subscriptions to filter by. Currently, only supports "adt".
  * @param req.query.fromItem The minimum item to be included in the response, inclusive.
  * @param req.query.toItem The maximum item to be included in the response, inclusive.
@@ -141,31 +145,15 @@ router.get(
   "/hl7v2-subscribers",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    const stateInputs = getFromQueryAsArrayOrFail("states", req);
-    const states = stateInputs.map(state => normalizeState(state));
-
-    const subscriptions = getFromQueryAsArrayOrFail("subscriptions", req);
-
-    const { validSubscriptions, invalidSubscriptions } = hl7v2SubscriptionRequestSchema.parse({
-      subscriptions,
-    }).subscriptions;
-
-    if (invalidSubscriptions.length > 0) {
-      throw new BadRequestError(
-        `Invalid subscription options provided. Valid options are: ${validHl7v2Subscriptions.join(
-          ", "
-        )}`
-      );
-    }
+    const { hieName } = hl7v2SubscribersQuerySchema.parse(req.query);
 
     const params: GetHl7v2SubscribersParams = {
-      states,
-      subscriptions: validSubscriptions,
+      hieName,
     };
 
     const { meta, items } = await paginated({
       request: req,
-      additionalQueryParams: { states: states.join(","), subscriptions: subscriptions.join(",") },
+      additionalQueryParams: { hieName },
       getItems: (pagination: Pagination) => {
         return getHl7v2Subscribers({
           ...params,
@@ -308,6 +296,44 @@ router.delete(
     await deletePatient(patientDeleteCmd);
 
     return res.sendStatus(status.NO_CONTENT);
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * POST /internal/patient/:patientId/quest-mapping
+ *
+ * Sets the patient's mapping to an existing external Quest ID.
+ *
+ * @param req.params.patientId Patient ID to link to a person.
+ * @param req.query.cxId The customer ID.
+ * @param req.body.externalId The existing external Quest ID to map the patient to.
+ * @returns 201 upon success.
+ * @returns 208 if the patient already has a Quest mapping.
+ */
+router.post(
+  "/:patientId/quest-mapping",
+  handleParams,
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const patientId = getFromParamsOrFail("patientId", req);
+    const questMapping = questMappingRequestSchema.parse(req.body);
+
+    await getPatientOrFail({ cxId, id: patientId });
+    const existingMapping = await findFirstPatientMappingForSource({
+      patientId,
+      source: questSource,
+    });
+    if (existingMapping) {
+      return res.sendStatus(status.ALREADY_REPORTED);
+    }
+    await createPatientMapping({
+      cxId,
+      patientId,
+      externalId: questMapping.externalId,
+      source: questSource,
+    });
+    return res.sendStatus(status.CREATED);
   })
 );
 

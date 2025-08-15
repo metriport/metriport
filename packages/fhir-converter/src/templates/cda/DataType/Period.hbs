@@ -24,6 +24,7 @@
   //     CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.  
   // -------------------------------------------------------------------------------------------------
 --}}
+{{!-- @warning - If you are updating this, please also update the buildPeriod function in the handlebars-helpers.js file. --}}
 {
     {{#if (and (and period.low period.high) (startDateLteEndDate period.low.value period.high.value) )}}
         "start":"{{formatAsDateTime period.low.value}}",
