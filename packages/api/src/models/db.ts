@@ -14,7 +14,7 @@ import { CQPatientDataModel } from "../external/carequality/models/cq-patient-da
 import { OutboundDocumentQueryRespModel } from "../external/carequality/models/outbound-document-query-resp";
 import { OutboundDocumentRetrievalRespModel } from "../external/carequality/models/outbound-document-retrieval-resp";
 import { OutboundPatientDiscoveryRespModel } from "../external/carequality/models/outbound-patient-discovery-resp";
-import { CwPatientDataModel } from "../external/commonwell/models/cw-patient-data";
+import { CwPatientDataModel } from "../external/commonwell-v1/models/cw-patient-data";
 import { HIEDirectoryEntryViewModel } from "../external/hie/models/hie-directory-view";
 import { FacilityModel } from "../models/medical/facility";
 import { OrganizationModel } from "../models/medical/organization";

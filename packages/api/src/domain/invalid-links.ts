@@ -1,6 +1,6 @@
 import { BaseDomain, BaseDomainCreate } from "@metriport/core/domain/base-domain";
 import { CQLink } from "../external/carequality/cq-patient-data";
-import { CwLink } from "../external/commonwell/cw-patient-data";
+import { CwLink } from "../external/commonwell-v1/cw-patient-data";
 
 export type InvalidLinksData = {
   carequality?: CQLink[];
