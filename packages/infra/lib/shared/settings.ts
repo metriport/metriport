@@ -18,7 +18,7 @@ export type QueueAndLambdaSettings = {
   entry: string;
   // TODO Unify w/ LambdaSettings
   lambda: {
-    memory: 512 | 1024 | 2048 | 4096;
+    memory: 512 | 1024 | 2048 | 4096 | 6144 | 8192 | 10240;
     /** How long can the lambda run for, max is 900 seconds (15 minutes)  */
     timeout: Duration;
     reservedConcurrentExecutions?: number;

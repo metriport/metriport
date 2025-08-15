@@ -389,11 +389,4 @@ export class Config {
   static getFhirToCsvTransformLambdaName(): string {
     return getEnvVarOrFail("FHIR_TO_CSV_TRANSFORM_LAMBDA_NAME");
   }
-
-  static getFhirToCsvBatchJobQueueArn(): string | undefined {
-    return getEnvVar("FHIR_TO_CSV_BATCH_JOB_QUEUE_ARN");
-  }
-  static getFhirToCsvBatchJobDefinitionArn(): string | undefined {
-    return getEnvVar("FHIR_TO_CSV_BATCH_JOB_DEFINITION_ARN");
-  }
 }
