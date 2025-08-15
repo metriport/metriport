@@ -30,7 +30,7 @@ router.get(
   })
 );
 
-const createJwtSchema = z.object({
+export const createcCanvasJwtSchema = z.object({
   exp: z.number(),
   data: canvasDashJwtTokenDataSchema,
 });
@@ -43,7 +43,7 @@ router.post(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const token = getAuthorizationToken(req);
-    const data = createJwtSchema.parse(req.body);
+    const data = createcCanvasJwtSchema.parse(req.body);
     await saveJwtToken({
       token,
       source: canvasDashSource,
@@ -69,7 +69,7 @@ router.get(
   })
 );
 
-const createWebhookJwtSchema = z.object({
+export const createcCanvasWebhookJwtSchema = z.object({
   exp: z.number(),
   data: canvasWebhookJwtTokenDataSchema,
 });
@@ -82,7 +82,7 @@ router.post(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const token = getAuthorizationToken(req);
-    const data = createWebhookJwtSchema.parse(req.body);
+    const data = createcCanvasWebhookJwtSchema.parse(req.body);
     await saveJwtToken({
       token,
       source: canvasWebhookSource,
