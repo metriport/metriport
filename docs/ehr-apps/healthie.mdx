@@ -1,0 +1,30 @@
+---
+title: "Healthie"
+---
+
+Metriport's Healthie app streamlines access to comprehensive patient health records by adding a convenient link directly in the patient's Quick Notes within Healthie EHR. When clicked, this button opens a new tab taking you directly to the patient's complete medical history in the Metriport dashboard.
+
+## Getting Started
+
+To enable the Metriport Healthie app in your practices, contact our team at support@metriport.com. We'll work with you to:
+
+1. Set up the app in your Healthie instance
+2. Configure the button placement in your patient Charts
+3. Enable single sign-on between Healthie and Metriport
+
+Once configured, the Metriport button will be available within your Healthie EHR workflow, allowing quick access to comprehensive patient records.
+
+## How it Works
+
+The Healthie app automatically checks for patients with scheduled appointments in the next two weeks every 15 minutes. For each patient found:
+
+1. A new patient record is created in Metriport
+2. A Document Query is initiated to gather available health data
+3. A link to the Metriport dashboard is added to their Healthie patient profile, allowing direct access to their comprehensive medical history
+
+<Warning>
+  To successfully create patients in Metriport, the
+  patient's demographics in Healthie must include both an
+  address and zip code. Patients missing this information
+  will not be synchronized.
+</Warning>
