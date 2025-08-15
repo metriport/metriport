@@ -94,7 +94,14 @@ def is_integer(n):
 def getJsonValue(lnjsn, ln,filename = ""):
     retVal = ""
     for x in ln.split("."):
-        if x.startswith("ArrJoin:"):
+        x = int(x) if is_integer(x) else x
+        if is_integer(x):
+            if isinstance(lnjsn, list) and int(x) < len(lnjsn):
+                lnjsn = lnjsn[int(x)]
+            else:
+                lnjsn = ""
+                break
+        elif x.startswith("ArrJoin:"):
             x = x[8:]
             if x in lnjsn:
                 tempVal = ' '.join([str(item) for item in lnjsn[x]])
@@ -163,12 +170,6 @@ def getJsonValue(lnjsn, ln,filename = ""):
                 return None
         elif x in lnjsn and not isinstance(lnjsn,str):
             lnjsn = lnjsn[x]
-        elif is_integer(x):
-            if isinstance(lnjsn, list) and int(x) < len(lnjsn):
-                lnjsn = lnjsn[int(x)]
-            else:
-                lnjsn = ""
-                break
         else:
             return None
     return lnjsn
@@ -292,6 +293,7 @@ def parse(configPath,inputPath=None,outputPath=None,missingPath=None,outputForma
                 result_count = 0
                 try:
                     jsndict = json.loads(jsntxt)
+                    print(jsndict)
                     result_count = parse_one_resource(anchor, paths, jsndict, leng, csvwriter,data,inputPath,outputFormat)
                     if missingPath:
                         compare_and_write_new_paths(jsndict,inputFile,anchor,config,missingPath)
