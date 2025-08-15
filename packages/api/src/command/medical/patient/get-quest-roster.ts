@@ -36,7 +36,7 @@ function getCommonQueryOptions({ pagination }: GetQuestRosterParams) {
           )
           `),
       ],
-    } as WhereOptions,
+    } satisfies WhereOptions,
     include: [
       {
         model: PatientSettingsModel,
@@ -58,14 +58,15 @@ export async function getQuestRoster({ pagination }: GetQuestRosterParams): Prom
       ...getCommonQueryOptions({ pagination }),
     };
 
-    const patients = await PatientModelReadOnly.findAll(findOptions);
-    log(`Done. Found ${patients.length} Quest monitoring patients for this page`);
+    const patientResults = await PatientModelReadOnly.findAll(findOptions);
+    log(`Done. Found ${patientResults.length} Quest monitoring patients for this page`);
 
     const patientsWithQuestId: Patient[] = [];
     const patientsWithError: Patient[] = [];
     await executeAsynchronously(
-      patients,
-      async patient => {
+      patientResults,
+      async patientResult => {
+        const patient = patientResult.dataValues;
         try {
           patient.externalId = await findOrCreateQuestExternalId(patient, log);
           patientsWithQuestId.push(patient);
