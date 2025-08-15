@@ -17,6 +17,8 @@ export type GetQuestRosterParams = {
   pagination?: Pagination;
 };
 
+const MAX_ATTEMPTS_TO_CREATE_EXTERNAL_ID = 2;
+
 function getCommonQueryOptions({ pagination }: GetQuestRosterParams) {
   const order: Order = [["id", "DESC"]];
 
@@ -107,7 +109,7 @@ async function findOrCreateQuestExternalId(
     return created.externalId;
   } catch (error) {
     // Handles the very improbable case where there is an ID collision
-    if (error instanceof UniqueConstraintError && attempt < 2) {
+    if (error instanceof UniqueConstraintError && attempt < MAX_ATTEMPTS_TO_CREATE_EXTERNAL_ID) {
       return findOrCreateQuestExternalId(patient, log, attempt + 1);
     }
     throw error;
