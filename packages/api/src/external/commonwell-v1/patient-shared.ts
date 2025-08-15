@@ -17,24 +17,24 @@ import { filterTruthy } from "../../shared/filter-map-utils";
 import { LinkStatus } from "../patient-link";
 import { makePersonForPatient } from "./patient-conversion";
 
-export const cqLinkStatus = ["unlinked", "processing", "linked"] as const;
-/**
- * Status of the patient's link to CareQuality.
- */
-export type CQLinkStatus = (typeof cqLinkStatus)[number];
+// export const cqLinkStatus = ["unlinked", "processing", "linked"] as const;
+// /**
+//  * Status of the patient's link to CareQuality.
+//  */
+// export type CQLinkStatus = (typeof cqLinkStatus)[number];
 
-export class PatientDataCommonwell extends PatientExternalDataEntry {
-  constructor(
-    public patientId: string,
-    public personId?: string | undefined,
-    public status?: LinkStatus | undefined,
-    public cqLinkStatus?: CQLinkStatus,
-    public scheduledDocQueryRequestId?: string | undefined,
-    public scheduledDocQueryRequestTriggerConsolidated?: boolean | undefined
-  ) {
-    super();
-  }
-}
+// export class PatientDataCommonwell extends PatientExternalDataEntry {
+//   constructor(
+//     public patientId: string,
+//     public personId?: string | undefined,
+//     public status?: LinkStatus | undefined,
+//     public cqLinkStatus?: CQLinkStatus,
+//     public scheduledDocQueryRequestId?: string | undefined,
+//     public scheduledDocQueryRequestTriggerConsolidated?: boolean | undefined
+//   ) {
+//     super();
+//   }
+// }
 
 export type FindOrCreatePersonResponse = { personId: string; person: CommonwellPerson } | undefined;
 

@@ -2,7 +2,7 @@ import { capture } from "@metriport/core/util/notifications";
 import { getFacilityIdOrFail } from "../../../domain/medical/patient-facility";
 import { processAsyncError } from "../../../errors";
 import cqCommands from "../../../external/carequality";
-import cwCommands from "../../../external/commonwell-v1";
+import cwCommands from "../../../external/commonwell";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
 import { validateVersionForUpdate } from "../../../models/_default";
 import { deleteAllPatientMappings } from "../../mapping/patient";
@@ -20,7 +20,7 @@ export type DeleteOptions = {
   allEnvs?: boolean;
 };
 
-export const deletePatient = async (patientDelete: PatientDeleteCmd): Promise<void> => {
+export async function deletePatient(patientDelete: PatientDeleteCmd): Promise<void> {
   const { id, cxId, facilityId: facilityIdParam, eTag } = patientDelete;
 
   const patient = await getPatientModelOrFail({ id, cxId });
@@ -32,6 +32,7 @@ export const deletePatient = async (patientDelete: PatientDeleteCmd): Promise<vo
   try {
     // These need to run before the Patient is deleted (need patient data from the DB)
     await Promise.all([
+      // TODO ENG-513 update it
       cwCommands.patient.remove(patient, facilityId).catch(err => {
         if (err.response?.status === 404) {
           console.log(`Patient not found @ CW when deleting ${patient.id} , continuing...`);
@@ -56,4 +57,4 @@ export const deletePatient = async (patientDelete: PatientDeleteCmd): Promise<vo
     });
     throw error;
   }
-};
+}

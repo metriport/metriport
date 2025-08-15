@@ -15,7 +15,7 @@ import {
 } from "../../../command/medical/organization/get-organization";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { getAndUpdateCWOrgAndMetriportOrg } from "../../../external/commonwell-v1/command/create-or-update-cw-organization";
-import { runOrScheduleCwPatientDiscovery } from "../../../external/commonwell-v1/command/run-or-schedule-patient-discovery";
+import { runOrScheduleCwPatientDiscovery } from "../../../external/commonwell/patient/run-or-schedule-patient-discovery";
 import { getParsedOrgOrFail } from "../../../external/commonwell-v1/organization";
 import { cwOrgActiveSchema } from "../../../external/commonwell-v1/shared";
 import { getAndUpdateCWOrgAndMetriportOrgV2 } from "../../../external/commonwell-v2/command/organization/create-or-update-cw-organization";

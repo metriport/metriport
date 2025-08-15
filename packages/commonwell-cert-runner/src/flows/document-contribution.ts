@@ -9,8 +9,9 @@ import {
   NameUseCodes,
   Patient,
 } from "@metriport/commonwell-sdk";
-import { encodeToCwPatientId } from "@metriport/commonwell-sdk/common/util";
+import { encodeCwPatientId } from "@metriport/commonwell-sdk/common/util";
 import { errorToString } from "@metriport/shared";
+import { makeNPI } from "@metriport/shared/common/__tests__/npi";
 import { uniq } from "lodash";
 import {
   memberCertificateString,
@@ -28,7 +29,7 @@ import { queryDocuments, retrieveDocument } from "./document-consumption";
 import { getOneOrg } from "./org-management";
 
 // If empty, a new org will be created.
-const oidOfConsumerOrg = "";
+const oidOfConsumerOrg = "2.16.840.1.113883.3.9621.5.111131";
 const outputFolder = "./downloads-contribution";
 
 /**
@@ -101,15 +102,13 @@ export async function documentContribution(commonWellContributor: CommonWell) {
     }
 
     const org = await getOneOrg(commonWellMember, orgId);
-    const npi = org.npiType2;
-    if (!npi) throw new Error("No NPI found on the second org");
     commonWellConsumer = new CommonWell({
       orgCert: orgCertificateString,
       rsaPrivateKey: orgPrivateKeyString,
       orgName: org.name,
       oid: org.organizationId,
       homeCommunityId: org.homeCommunityId,
-      npi,
+      npi: makeNPI(),
       apiMode: APIMode.integration,
     });
 
@@ -125,9 +124,9 @@ export async function documentContribution(commonWellContributor: CommonWell) {
     const resp_2_1 = await commonWellContributor.createOrUpdatePatient(patientCreateContributorOrg);
     console.log(">>> Transaction ID: " + commonWellContributor.lastTransactionId);
     console.log(">>> 2.1 Response: " + JSON.stringify(resp_2_1, null, 2));
-    const firstPatientId = getMetriportPatientIdOrFail(resp_2_1.Patients[0], "createPatient");
+    const firstPatientId = getMetriportPatientIdOrFail(resp_2_1, "createPatient");
     patientIdsContributorOrg.push(firstPatientId);
-    const firstPatientIdEncoded = encodeToCwPatientId({
+    const firstPatientIdEncoded = encodeCwPatientId({
       patientId: firstPatientId,
       assignAuthority: commonWellContributor.oid,
     });
@@ -141,9 +140,9 @@ export async function documentContribution(commonWellContributor: CommonWell) {
     const resp_2_2 = await commonWellConsumer.createOrUpdatePatient(patientCreateConsumerOrg);
     console.log(">>> Transaction ID: " + commonWellConsumer.lastTransactionId);
     console.log(">>> 2.2 Response: " + JSON.stringify(resp_2_2, null, 2));
-    const secondPatientId = getMetriportPatientIdOrFail(resp_2_2.Patients[0], "createPatient");
+    const secondPatientId = getMetriportPatientIdOrFail(resp_2_2, "createPatient");
     patientIdsConsumerOrg.push(secondPatientId);
-    const secondPatientIdEncoded = encodeToCwPatientId({
+    const secondPatientIdEncoded = encodeCwPatientId({
       patientId: secondPatientId,
       assignAuthority: commonWellConsumer.oid,
     });
@@ -151,6 +150,9 @@ export async function documentContribution(commonWellContributor: CommonWell) {
     await linkPatients(commonWellContributor, firstPatientIdEncoded);
 
     const documents = await queryDocuments(commonWellConsumer, secondPatientIdEncoded);
+    if (documents.length < 1) {
+      throw new Error("No documents found, was expecting at least one");
+    }
     console.log(`>>> Got ${documents.length} documents, downloading...`);
     for (const doc of documents) {
       const docId = doc.masterIdentifier?.value;
@@ -184,7 +186,7 @@ async function deletePatients(commonWell: CommonWell, patientIds: string[]) {
   const uniquePatientIds = uniq(patientIds);
   for (const metriportPatientId of uniquePatientIds) {
     try {
-      const patientId = encodeToCwPatientId({
+      const patientId = encodeCwPatientId({
         patientId: metriportPatientId,
         assignAuthority: commonWell.oid,
       });

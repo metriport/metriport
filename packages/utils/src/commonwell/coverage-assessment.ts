@@ -8,6 +8,7 @@ import {
   OperationOutcome,
   RequestMetadata,
 } from "@metriport/commonwell-sdk";
+// TODO ENG-513 what about Coverage Assessment?
 import { PurposeOfUse } from "@metriport/shared";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 import * as fs from "fs";

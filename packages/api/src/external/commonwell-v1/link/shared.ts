@@ -5,24 +5,24 @@ import {
   isLOLA3,
   NetworkLink,
   Person,
-  RequestMetadata,
+  RequestMetadata
 } from "@metriport/commonwell-sdk-v1";
-import { CwLink } from "../cw-patient-data";
-import { errorToString } from "@metriport/core/util/error/shared";
-import { USStateForAddress } from "@metriport/shared/dist/domain/address";
 import {
-  Patient,
+  GenderAtBirth, Patient,
   PatientData,
   PatientExternalData,
-  PatientExternalDataEntry,
-  GenderAtBirth,
+  PatientExternalDataEntry
 } from "@metriport/core/domain/patient";
 import { MedicalDataSource } from "@metriport/core/external/index";
-import { buildDayjs, ISO_DATE } from "@metriport/shared/common/date";
+import { errorToString } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
+import { buildDayjs, ISO_DATE } from "@metriport/shared/common/date";
+import { USStateForAddress } from "@metriport/shared/dist/domain/address";
 import { filterTruthy } from "../../../shared/filter-map-utils";
-import { PatientDataCommonwell } from "../patient-shared";
+import { CwLink } from "../cw-patient-data";
+import { PatientDataCommonwell } from "../../commonwell/patient/patient-shared";
+
 const urnOidRegex = /^urn:oid:/;
 
 export const commonwellPersonLinks = (persons: Person[]): Person[] => {

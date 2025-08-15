@@ -15,7 +15,7 @@ import { makeSearchServiceRemover } from "@metriport/core/external/opensearch/fi
 import { capture } from "@metriport/core/util";
 import { createOrUpdateInvalidLinks } from "../medical/invalid-links/create-invalid-links";
 import { updateCQPatientData } from "../../external/carequality/command/cq-patient-data/update-cq-data";
-import { updateCwPatientData } from "../../external/commonwell-v1/command/cw-patient-data/update-cw-data";
+import { updateCwPatientData } from "../../external/commonwell/patient/cw-patient-data/update-cw-data";
 import { getCWAccessForPatient } from "../../external/commonwell-v1/admin/shared";
 import { errorToString, getEnvVarOrFail } from "@metriport/shared";
 import { DocumentReferenceWithId } from "@metriport/core/external/fhir/document/document-reference";
@@ -23,10 +23,10 @@ import { isOrganization, isPatient } from "@metriport/core/external/fhir/shared/
 import { hasCommonwellExtension } from "@metriport/core/external/commonwell/extension";
 import { hasCarequalityExtension } from "@metriport/core/external/carequality/extension";
 import { getCQPatientData } from "../../external/carequality/command/cq-patient-data/get-cq-data";
-import { getCwPatientData } from "../../external/commonwell-v1/command/cw-patient-data/get-cw-data";
+import { getCwPatientData } from "../../external/commonwell/patient/cw-patient-data/get-cw-data";
 import { CQData } from "../../external/carequality/cq-patient-data";
-import { CwData } from "../../external/commonwell-v1/cw-patient-data";
-import { CwLink } from "../../external/commonwell-v1/cw-patient-data";
+import { CwData } from "../../external/commonwell/patient/cw-patient-data/shared";
+import { CwLink } from "../../external/commonwell/patient/cw-patient-data/shared";
 import { CQLink } from "../../external/carequality/cq-patient-data";
 import { Config } from "../../shared/config";
 import { makeFhirApi } from "../../external/fhir/api/api-factory";

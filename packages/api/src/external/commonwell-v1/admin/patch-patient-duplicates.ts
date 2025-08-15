@@ -8,7 +8,7 @@ import { validateCwLinksBelongToPatient } from "../../hie/validate-patient-links
 import {
   updateCommonwellIdsAndStatus,
   updatePatientDiscoveryStatus,
-} from "../patient-external-data";
+} from "../../commonwell/patient/patient-external-data";
 import { isEnrolledBy } from "../person-shared";
 import { getCWAccessForPatient } from "./shared";
 

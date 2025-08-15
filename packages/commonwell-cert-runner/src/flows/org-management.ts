@@ -7,6 +7,7 @@ import {
   Organization,
 } from "@metriport/commonwell-sdk";
 import { errorToString } from "@metriport/shared";
+import { makeNPI } from "@metriport/shared/common/__tests__/npi";
 import {
   existingOrgId,
   memberCertificateString,
@@ -164,7 +165,7 @@ function buildResponse(org: Organization): OrgManagementResponse {
     orgName: org.name,
     oid: org.organizationId,
     homeCommunityId: org.homeCommunityId,
-    npi: org.npiType2,
+    npi: org.npiType2 ?? makeNPI(),
     apiMode: APIMode.integration,
   });
   return { commonWell };

@@ -3,6 +3,6 @@
   "compilerOptions": {
     "noUncheckedIndexedAccess": true,
   },
-  "include": ["./**/*"],
+  "include": ["./**/*", "../commonwell/patient/patient-external-data.ts", "../commonwell/patient/cw-patient-data/shared.ts", "../commonwell/index.ts", "../commonwell/patient/patient-updater-commonwell.ts", "../commonwell-v2/command/directory/org-directory.ts", "../commonwell/patient/run-or-schedule-patient-discovery.ts"],
   "exclude": ["./**/*.test.ts"],
 }

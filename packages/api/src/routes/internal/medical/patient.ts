@@ -68,7 +68,7 @@ import {
 import { Pagination } from "../../../command/pagination";
 import { getFacilityIdOrFail } from "../../../domain/medical/patient-facility";
 import { PatientUpdaterCarequality } from "../../../external/carequality/patient-updater-carequality";
-import cwCommands from "../../../external/commonwell-v1";
+import cwCommands from "../../../external/commonwell";
 import { findDuplicatedPersons } from "../../../external/commonwell-v1/admin/find-patient-duplicates";
 import { patchDuplicatedPersonsForPatient } from "../../../external/commonwell-v1/admin/patch-patient-duplicates";
 import { recreatePatientsAtCW } from "../../../external/commonwell-v1/admin/recreate-patients-at-hies";
@@ -77,7 +77,7 @@ import { initEnhancedCoverage } from "../../../external/commonwell-v1/cq-bridge/
 import { setCQLinkStatuses } from "../../../external/commonwell-v1/cq-bridge/cq-link-status";
 import { ECUpdaterLocal } from "../../../external/commonwell-v1/cq-bridge/ec-updater-local";
 import { cqLinkStatus } from "../../../external/commonwell-v1/patient-shared";
-import { PatientUpdaterCommonWell } from "../../../external/commonwell-v1/patient-updater-commonwell";
+import { PatientUpdaterCommonWell } from "../../../external/commonwell/patient/patient-updater-commonwell";
 import { getCqOrgIdsToDenyOnCw } from "../../../external/hie/cross-hie-ids";
 import { runOrSchedulePatientDiscoveryAcrossHies } from "../../../external/hie/run-or-schedule-patient-discovery";
 import { PatientLoaderLocal } from "../../../models/helpers/patient-loader-local";
@@ -363,6 +363,7 @@ router.post(
     const facilityId = getFacilityIdOrFail(patient, facilityIdParam);
 
     if (linkSource === MedicalDataSource.COMMONWELL) {
+      // TODO ENG-513 update it
       await cwCommands.link.create(
         linkCreate.entityId,
         patientId,
@@ -400,6 +401,7 @@ router.delete(
     const facilityId = getFacilityIdOrFail(patient, facilityIdParam);
 
     if (linkSource === MedicalDataSource.COMMONWELL) {
+      // TODO ENG-513 update it
       await cwCommands.link.reset(patientId, cxId, facilityId);
     }
 

@@ -24,6 +24,7 @@ export const patientLinksSchema = z.object({
   Delete: localLinkSchema.nullish(),
   ProbableLink: localLinkSchema.nullish(),
 });
+export type PatientLinks = z.infer<typeof patientLinksSchema>;
 
 // The Patient resource represents a natural patient independent of a specific healthcare context.
 // See: https://specification.commonwellalliance.org/services/rest-api-reference (8.6.4 Patient)
@@ -31,43 +32,83 @@ export const patientSchema = demographicsSchema.merge(
   z.object({
     active: z.boolean().nullish(),
     managingOrganization: managingOrganizationSchema.nullish(),
-    link: z.array(patientLinksSchema).nullish(),
+    /**
+     * Links to a Patient or RelatedPerson resource that concerns the same actual individual.
+     * The patient resource containing this link is the non-surviving patient.
+     * Disabled because couldn't validatte this in pre-production.
+     */
+    // link: z.array(patientLinksSchema).nullish(),
     disclosure: z.array(facilitySchema).nullish(),
   })
 );
 export type Patient = z.infer<typeof patientSchema>;
 
-export const patientCollectionItemSchema = z.object({
-  Patient: patientSchema.nullish(),
-  Links: patientLinksSchema.nullish(),
-});
-export type PatientCollectionItem = z.infer<typeof patientCollectionItemSchema>;
-
-export const patientCollectionSchema = z.object({
-  Patients: z.array(patientCollectionItemSchema),
-  status: statusSchema.nullish(),
-});
-export type PatientCollection = z.infer<typeof patientCollectionSchema>;
+// ================================ GENERIC STATUS ================================
 
 export const statusResponseSchema = z.object({
   status: statusSchema.nullish(),
 });
 export type StatusResponse = z.infer<typeof statusResponseSchema>;
 
-export const patientProbableLinksSchema = z.object({
+// ================================ PATIENT RESPONSE ================================
+
+export const patientResponseItemSchema = z.object({
+  Patient: patientSchema.nullish(),
+  Links: patientLinksSchema,
+});
+export type PatientResponseItem = z.infer<typeof patientResponseItemSchema>;
+
+export const patientResponseSchema = z.object({
+  Patients: z.array(patientResponseItemSchema),
+  status: statusSchema.nullish(),
+});
+export type PatientResponse = z.infer<typeof patientResponseSchema>;
+
+// ================================ CREATE/UPDATE PATIENT ================================
+
+export type PatientCreateOrUpdateResp = {
+  Links: PatientLinks;
+  status: z.infer<typeof statusSchema> | undefined;
+};
+
+// ================================ GET EXISTING LINKS ================================
+
+export const linksForPatientExistingLinksSchema = z.object({
+  Self: localLinkSchema,
+  Unlink: localLinkSchema,
+});
+export type LinksForPatientGetLinks = z.infer<typeof linksForPatientExistingLinksSchema>;
+
+export const patientExistingLinksItemSchema = z.object({
+  // Patient: patientSchema.nullish(),
+  Patient: patientSchema,
+  Links: linksForPatientExistingLinksSchema,
+});
+export type PatientExistingLink = z.infer<typeof patientExistingLinksItemSchema>;
+
+export const patientExistingLinksSchema = z.object({
+  Patients: z.array(patientExistingLinksItemSchema),
+  status: statusSchema.nullish(),
+});
+export type PatientExistingLinks = z.infer<typeof patientExistingLinksSchema>;
+
+// ================================ GET PROBABLE LINKS ================================
+
+export const linksForPatientProbableLinksSchema = z.object({
   Self: localLinkSchema,
   Link: localLinkSchema,
   Unlink: localLinkSchema,
 });
 
-export const patientProbableLinkItemRespSchema = z.object({
-  Patient: patientSchema.nullish(),
-  Links: patientProbableLinksSchema,
+export const patientProbableLinksItemRespSchema = z.object({
+  // Patient: patientSchema.nullish(),
+  Patient: patientSchema,
+  Links: linksForPatientProbableLinksSchema,
 });
-export type PatientProbableLinkItem = z.infer<typeof patientProbableLinkItemRespSchema>;
+export type PatientProbableLink = z.infer<typeof patientProbableLinksItemRespSchema>;
 
-export const patientProbableLinkRespSchema = z.object({
-  Patients: z.array(patientProbableLinkItemRespSchema),
+export const patientProbableLinksRespSchema = z.object({
+  Patients: z.array(patientProbableLinksItemRespSchema),
   status: statusSchema.nullish(),
 });
-export type PatientProbableLinkResp = z.infer<typeof patientProbableLinkRespSchema>;
+export type PatientProbableLinks = z.infer<typeof patientProbableLinksRespSchema>;
