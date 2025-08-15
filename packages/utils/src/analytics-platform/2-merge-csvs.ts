@@ -1,6 +1,10 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
+import {
+  buildFhirToCsvJobPrefix,
+  parsePatientIdFromFhirToCsvPatientPrefix,
+} from "@metriport/core/command/analytics-platform/fhir-to-csv/file-name";
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { SQSClient } from "@metriport/core/external/aws/sqs";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
@@ -37,6 +41,10 @@ dayjs.extend(duration);
 const patientIds: string[] = [];
 
 const fhirToCsvJobId = process.argv[2];
+if (!fhirToCsvJobId) {
+  console.log("Usage: ts-node src/analytics-platform/2-merge-csvs.ts <fhirToCsvJobId>");
+  throw new Error("fhirToCsvJobId is required");
+}
 
 // Too much can result in an OOM error at the lambda
 // Too little can result in too small, too many compressed files
@@ -58,9 +66,8 @@ const region = getEnvVarOrFail("AWS_REGION");
 const s3Utils = new S3Utils(region);
 
 const defaultPayload: Omit<GroupAndMergeCSVsParamsLambda, "patientIds"> = {
-  sourcePrefix: "snowflake/fhir-to-csv/" + cxId,
-  destinationPrefix: "snowflake/merged/" + cxId,
-  jsonToCsvJobId: fhirToCsvJobId,
+  cxId,
+  fhirToCsvJobId,
   mergeCsvJobId,
   targetGroupSizeMB: maxUncompressedSizePerFileInMB,
 };
@@ -154,15 +161,14 @@ async function getPatientIdsFromFhirToCsvJob({
 }: {
   fhirToCsvJobId: string;
 }): Promise<string[]> {
-  const basePrefix = `${defaultPayload.sourcePrefix}/${fhirToCsvJobId}/`;
+  const basePrefix = buildFhirToCsvJobPrefix({ cxId, jobId: fhirToCsvJobId });
   const files = await s3Utils.listFirstLevelSubdirectories({
     bucket: bucketName,
     prefix: basePrefix,
   });
-  const patientIds = files.flatMap(file => {
-    const item = file.Prefix?.endsWith("/") ? file.Prefix.slice(0, -1) : file.Prefix;
-    return item?.split("/").pop() ?? [];
-  });
+  const patientIds = files.flatMap(file =>
+    file.Prefix ? parsePatientIdFromFhirToCsvPatientPrefix(file.Prefix) : []
+  );
   return patientIds;
 }
 

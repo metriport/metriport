@@ -2,6 +2,7 @@
 import dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
+import { buildMergeCsvsJobPrefix } from "@metriport/core/command/analytics-platform/merge-csvs/file-name";
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import {
   promisifyConnect,
@@ -46,6 +47,12 @@ import { elapsedTimeAsStr } from "../../shared/duration";
  */
 
 const mergeCsvJobId = process.argv[2];
+if (!mergeCsvJobId) {
+  console.log(
+    "Usage: ts-node src/analytics-platform/snowflake/3-ingest-from-merged-csvs.ts <mergeCsvJobId>"
+  );
+  throw new Error("mergeCsvJobId is required");
+}
 
 const cxId = getEnvVarOrFail("CX_ID");
 const bucketName = getEnvVarOrFail("ANALYTICS_BUCKET_NAME");
@@ -58,7 +65,7 @@ const database = getEnvVarOrFail("SNOWFLAKE_DB");
 const schema = getEnvVarOrFail("SNOWFLAKE_SCHEMA");
 const warehouse = getEnvVarOrFail("SNOWFLAKE_WH");
 
-const prefixName = `snowflake/merged/${cxId}/run=${mergeCsvJobId}`;
+const prefixName = buildMergeCsvsJobPrefix({ cxId, jobId: mergeCsvJobId });
 const prefixUrl = `s3://${bucketName}/${prefixName}`;
 
 snowflake.configure({
@@ -77,12 +84,12 @@ async function main() {
 
   const columnDefs = readConfigs();
 
-  await initializeTables(columnDefs);
+  await ingestIntoSnowflake(columnDefs);
 
   console.log(`>>>>>>> Done after ${elapsedTimeAsStr(startedAt)}`);
 }
 
-async function initializeTables(columnDefs: Record<string, string>) {
+async function ingestIntoSnowflake(columnDefs: Record<string, string>) {
   const connection = snowflake.createConnection({
     account,
     token,
@@ -105,7 +112,6 @@ async function initializeTables(columnDefs: Record<string, string>) {
     // await executeAsync(`USE DATABASE ${database}`);
     // await executeAsync(`USE SCHEMA ${schema}`);
 
-    console.log("Creating tables if not exist...");
     const tableNames: Record<string, string> = Object.keys(columnDefs).reduce(
       (acc, resourceType) => {
         acc[resourceType] = createTableName(resourceType);
@@ -115,7 +121,7 @@ async function initializeTables(columnDefs: Record<string, string>) {
     );
 
     for (const [resourceType, tableName] of Object.entries(tableNames)) {
-      await processResourceType({
+      await processTable({
         resourceType,
         tableName,
         columnDefs,
@@ -131,7 +137,7 @@ async function initializeTables(columnDefs: Record<string, string>) {
   }
 }
 
-async function processResourceType({
+async function processTable({
   resourceType,
   tableName,
   columnDefs,
@@ -157,6 +163,7 @@ async function processResourceType({
 
   // Do not use IF NOT EXISTS here, we want to make sure we're not duplicating data
   const createTableCmd = `CREATE TABLE ${tableName} (${columnsDef})`;
+  // console.log(`Create table cmd: ${createTableCmd}`);
   await executeAsync(createTableCmd);
 
   // Need the trailing slash to avoid more than one folder from shared prefixes (e.g., condition and condition_code_coding)
@@ -198,6 +205,7 @@ function readIniFile(path: string): string[] {
   return Object.keys(structSection);
 }
 
+// TODO ENG-858 Configs won't be available at runtime in the lambda like this, will need a diff approach
 function readConfigs(): Record<string, string> {
   const iniFolder = `../data-transformation/fhir-to-csv/src/parseFhir/configurations`;
   const files = fs.readdirSync(iniFolder);
