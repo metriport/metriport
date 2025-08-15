@@ -61,7 +61,7 @@ async function storeRosterInS3(
 
   await storeInS3WithRetries({
     s3Utils: s3Utils,
-    payload: rosterContent.toString("ascii"),
+    payload: rosterContent.toString(),
     bucketName: replicaBucketName,
     fileName: `roster/${rosterFileName}`,
     contentType: "text/plain",
