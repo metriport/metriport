@@ -2,6 +2,7 @@ import { z } from "zod";
 
 export const patientSchema = z.object({
   id: z.string(),
+  externalId: z.string().optional(),
   facilityIds: z.array(z.string()),
   firstName: z.string(),
   lastName: z.string(),
@@ -19,7 +20,6 @@ export const patientSchema = z.object({
   ),
   phoneNumber: z.string().optional(),
 });
-
 export type Patient = z.infer<typeof patientSchema>;
 
 export const patientIdsSchema = z.object({

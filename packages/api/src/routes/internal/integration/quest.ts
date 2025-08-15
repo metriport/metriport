@@ -1,4 +1,3 @@
-import { Patient } from "@metriport/core/domain/patient";
 import { Config } from "@metriport/core/util/config";
 import { PaginatedResponse } from "@metriport/shared";
 import dayjs from "dayjs";
@@ -8,6 +7,7 @@ import Router from "express-promise-router";
 import status from "http-status";
 import { getQuestRoster } from "../../../command/medical/patient/get-quest-roster";
 import { Pagination } from "../../../command/pagination";
+import { dtoFromModel, PatientDTO } from "../../medical/dtos/patientDTO";
 import { requestLogger } from "../../helpers/request-logger";
 import { paginated } from "../../pagination";
 import { asyncHandler } from "../../util";
@@ -47,9 +47,9 @@ router.get(
       hostUrl: Config.getApiLoadBalancerAddress(),
     });
 
-    const response: PaginatedResponse<Patient, "patients"> = {
+    const response: PaginatedResponse<PatientDTO, "patients"> = {
       meta,
-      patients: items,
+      patients: items.map(item => dtoFromModel(item)),
     };
     return res.status(status.OK).json(response);
   })
