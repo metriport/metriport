@@ -1,8 +1,11 @@
 import { Hl7Message } from "@medplum/core";
 import { Coding, Encounter, Resource } from "@medplum/fhirtypes";
-import { buildPatientReference } from "../../../../external/fhir/shared/references";
+import {
+  buildConditionReference,
+  buildPatientReference,
+} from "../../../../external/fhir/shared/references";
 import { Hl7MessageType, getHl7MessageTypeOrFail } from "../msh";
-import { getConditionsAndReferences, getEncounterReason } from "./condition";
+import { getConditions, getEncounterReason } from "./condition";
 import { getLocationFromAdt } from "./location";
 import { DEFAULT_ENCOUNTER_CLASS, adtToFhirEncounterClassMap, isAdtPatientClass } from "./mappings";
 import { getParticipantsFromAdt } from "./practitioner";
@@ -10,22 +13,26 @@ import { createEncounterId, getEncounterPeriod, getPatientClassCode } from "./ut
 
 export function mapEncounterAndRelatedResources(adt: Hl7Message, patientId: string): Resource[] {
   const msgType = getHl7MessageTypeOrFail(adt);
+  const encounterId = createEncounterId(adt, patientId);
+  const encounterReason = getEncounterReason({ adt, patientId, encounterId });
   const status = getPatientStatus(msgType);
   const encounterClass = getEncounterClass(adt);
   const period = getEncounterPeriod(adt);
   const participants = getParticipantsFromAdt(adt);
-  const conditionsAndRefs = getConditionsAndReferences(adt, patientId);
-  const encounterReason = getEncounterReason(adt, patientId);
+  const conditions = getConditions({ adt, patientId, encounterId });
+  const conditionReferences = conditions.map(condition =>
+    buildConditionReference({ resource: condition })
+  );
   const location = getLocationFromAdt(adt);
 
   const encounter: Encounter = {
-    id: createEncounterId(adt, patientId),
+    id: encounterId,
     resourceType: "Encounter",
     status,
     class: encounterClass,
     ...(period ? { period } : undefined),
     ...(encounterReason ? { reasonCode: encounterReason.reasonCode } : undefined),
-    ...(conditionsAndRefs.refs.length > 0 ? { diagnosis: conditionsAndRefs.refs } : undefined),
+    ...(conditionReferences.length > 0 ? { diagnosis: conditionReferences } : undefined),
     subject: buildPatientReference(patientId),
     ...(participants ? { participant: participants.references } : undefined),
     ...(location ? { location: [location.locationReference] } : undefined),
@@ -33,7 +40,7 @@ export function mapEncounterAndRelatedResources(adt: Hl7Message, patientId: stri
 
   return [
     encounter,
-    ...conditionsAndRefs.conditions,
+    ...conditions,
     ...(participants?.practitioners ?? []),
     ...(location ? [location.location] : []),
   ];
