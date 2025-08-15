@@ -65,10 +65,10 @@ export async function getQuestRoster({ pagination }: GetQuestRosterParams): Prom
     await executeAsynchronously(
       patients,
       async patient => {
-        const externalId = await findOrCreateQuestExternalId(patient, log);
-        if (externalId) {
+        try {
+          const externalId = await findOrCreateQuestExternalId(patient, log);
           patientsWithQuestId.push({ ...patient, externalId });
-        } else {
+        } catch (error) {
           patientsWithError.push(patient);
         }
       },
