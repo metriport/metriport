@@ -1,6 +1,7 @@
 import { Observation } from "@medplum/fhirtypes";
 import { BadRequestError } from "@metriport/shared";
 import { EhrSource, EhrSources } from "@metriport/shared/interface/external/ehr/source";
+import { writeBackGroupedVitals as writeBackGroupedVitalsAthena } from "../../athenahealth/command/write-back/grouped-vitals";
 import { writeBackGroupedVitals as writeBackGroupedVitalsElation } from "../../elation/command/write-back/grouped-vitals";
 
 export type GroupedVitalsByDate = [Date, Observation[]];
@@ -30,7 +31,7 @@ type WriteBackGroupedVitalsFnMap = Record<EhrSource, WriteBackGroupedVitalsFn | 
 
 const ehrWriteBackGroupedVitalsMap: WriteBackGroupedVitalsFnMap = {
   [EhrSources.canvas]: undefined,
-  [EhrSources.athena]: undefined,
+  [EhrSources.athena]: writeBackGroupedVitalsAthena,
   [EhrSources.elation]: writeBackGroupedVitalsElation,
   [EhrSources.healthie]: undefined,
   [EhrSources.eclinicalworks]: undefined,
@@ -46,7 +47,7 @@ function getEhrWriteBackGroupedVitalsHandler(ehr: EhrSource): WriteBackGroupedVi
   return handler;
 }
 
-export const writeBackGroupedVitalsEhrs = [EhrSources.elation];
+export const writeBackGroupedVitalsEhrs = [EhrSources.athena, EhrSources.elation];
 export function isWriteBackGroupedVitalsEhr(ehr: EhrSource): boolean {
   return writeBackGroupedVitalsEhrs.includes(ehr);
 }
