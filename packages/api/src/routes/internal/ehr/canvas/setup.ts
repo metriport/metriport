@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
-import z from "zod";
+import { nanoid } from "nanoid";
 import { updateCustomerBillingToPointToParent } from "../../../../command/internal-server/update-customer";
 import { findOrCreateFacilityMapping } from "../../../../command/mapping/facility";
 import { requestLogger } from "../../../helpers/request-logger";
@@ -13,20 +13,17 @@ import {
   canvasDashSource,
   canvasWebhookSource,
 } from "@metriport/shared/interface/external/ehr/canvas/jwt-token";
-import ForbiddenError from "../../../../errors/forbidden";
 
 const router = Router();
 
-const setupCanvasSchema = z.object({
-  dashToken: z.object({
-    token: z.string(),
-    exp: z.number(),
-  }),
-  webhookToken: z.object({
-    token: z.string(),
-    exp: z.number(),
-  }),
-});
+function generateToken(): string {
+  return nanoid(30);
+}
+
+// Calculate expiration (2 years from now in milliseconds)
+function getDefaultExpiration(): number {
+  return Date.now() + 2 * 365 * 24 * 60 * 60 * 1000;
+}
 
 /**
  * POST /internal/ehr/canvas/setup
@@ -48,11 +45,6 @@ router.post(
     const externalId = getFromQueryOrFail("externalId", req);
     const state = getFromQuery("state", req);
 
-    const token = setupCanvasSchema.parse(req.body).dashToken;
-    const webhookToken = setupCanvasSchema.parse(req.body).webhookToken;
-
-    if (token.token === "" || webhookToken.token === "") throw new ForbiddenError();
-
     await updateCustomerBillingToPointToParent({ parentName: canvasDashSource, childCxId });
 
     const externalIdWithState = state ? `${externalId}-${state}` : externalId;
@@ -71,20 +63,23 @@ router.post(
       secondaryMappings: null,
     });
 
+    const dashToken = generateToken();
+    const webhookToken = generateToken();
+
     await Promise.all([
       saveJwtToken({
-        token: token.token,
+        token: dashToken,
         source: canvasDashSource,
-        exp: token.exp,
+        exp: getDefaultExpiration(),
         data: {
           source: canvasDashSource,
           practiceId: externalId,
         },
       }),
       saveJwtToken({
-        token: webhookToken.token,
+        token: webhookToken,
         source: canvasWebhookSource,
-        exp: webhookToken.exp,
+        exp: getDefaultExpiration(),
         data: {
           cxId: childCxId,
           source: canvasWebhookSource,
@@ -93,7 +88,7 @@ router.post(
       }),
     ]);
 
-    return res.sendStatus(httpStatus.OK);
+    return res.status(httpStatus.OK).json({ dashToken, webhookToken });
   })
 );
 
