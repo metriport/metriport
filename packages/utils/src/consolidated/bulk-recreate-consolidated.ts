@@ -10,7 +10,7 @@ import { Command } from "commander";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import fs from "fs";
-import { getDelayTime } from "../shared/duration";
+import { elapsedTimeAsStr, getDelayTime } from "../shared/duration";
 import { initFile } from "../shared/file";
 import { buildGetDirPathInside, initRunsFolder } from "../shared/folder";
 import { getCxData } from "../shared/get-cx-data";
@@ -21,6 +21,10 @@ dayjs.extend(duration);
 /**
  * This script triggers the recreation of consolidated data for multiple patients.
  * It makes parallel requests to the API to recreate consolidated data for each patient.
+ *
+ * IMPORTANT: while the endpoint doesn't seem to do much work with shared resources (mostly S3 and
+ * lambda), when consolidated get re-created we re-ingest the patient's data into OpenSearch (OS).
+ * Be mindful about that, so we likely don't want to get the delay/sleep under 1 second.
  *
  * Update the `patientIds` array with the list of Patient IDs you want to recreate consolidated data for.
  * Alternatively, you can provide a file with patient IDs, one per line.
@@ -51,8 +55,8 @@ const apiUrl = getEnvVarOrFail("API_URL");
 const api = axios.create({ baseURL: apiUrl });
 
 // query stuff
-const minimumDelayTime = dayjs.duration(10, "milliseconds");
-const defaultDelayTime = dayjs.duration(100, "milliseconds");
+const minimumDelayTime = dayjs.duration(500, "milliseconds");
+const defaultDelayTime = dayjs.duration(2, "seconds");
 const confirmationTime = dayjs.duration(10, "seconds");
 
 const numberOfParallelExecutions = 30;
@@ -121,8 +125,11 @@ async function main() {
   } else {
     log(`>>> No patient with errors!`);
   }
-  const ellapsed = Date.now() - startedAt;
-  log(`>>> Done recreating consolidated for all ${patientIds.length} patients in ${ellapsed} ms`);
+  log(
+    `>>> Done recreating consolidated for all ${patientIds.length} patients in ${elapsedTimeAsStr(
+      startedAt
+    )}`
+  );
   process.exit(0);
 }
 
