@@ -2,7 +2,6 @@ import { executeWithNetworkRetries } from "@metriport/shared";
 import { getLambdaResultPayload, makeLambdaClient } from "../../../../external/aws/lambda";
 import { Config } from "../../../../util/config";
 import { out } from "../../../../util/log";
-// import { getSnowflakeCreds } from "../../config";
 
 export type StartFhirToCsvTransformParams = {
   cxId: string;
