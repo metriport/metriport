@@ -268,6 +268,9 @@ async function main() {
     } else if (result.hasEncounters) {
       fs.appendFileSync(withEncountersFileName, csvRow);
     } else {
+      if (result.emptyBundles > 0) {
+        fs.appendFileSync(withEmptyBundlesFileName, csvRow);
+      }
       fs.appendFileSync(withoutEncountersFileName, csvRow);
     }
   }
