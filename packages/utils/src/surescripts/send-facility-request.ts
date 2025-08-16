@@ -8,16 +8,22 @@ import { SurescriptsPatientRequestData } from "@metriport/core/external/surescri
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 
 /**
- * This script is used to send a request to Surescripts to retrieve all patients for a particular customer and facility.
- * It must be run from within the corresponding VPC (staging or production), otherwise you will generate a valid request
- * file but it will not be received by Surescripts since only a very specific IP set is whitelisted for requests. See 1PW.
+ * Sends a request to Surescripts for all patients of the facility. Uses the client's
+ * batching method to send all patients in a single SFTP connection, which is what originally
+ * created the need for this command (to upload large rosters quickly).
  *
  * Usage:
- * npm run surescripts -- facility-request --cx-id <cx-id> --facility-id <facility-id> --csv-output <csv-output>
+ * npm run surescripts -- facility-request \
+ *  --cx-id <cx-id> \
+ * --facility-id <facility-id> \
+ * --csv-output <csv-output>
  *
- * The CSV output file will contain the transmission IDs and patient IDs for the requests that were sent. This output
- * file is required for running the corresponding script to retrieve the responses from Surescripts, which can vary in
- * duration based on their processing periods.
+ * cx-id: The CX ID of the requester
+ * facility-id: The facility ID of the requester
+ * csv-output: The file to write a CSV containing transmission IDs and patient IDs
+ *
+ * Note: The headers of the CSV file are "transmission_id","patient_id", which are used in scripts
+ * like `convert-customer-responses` to convert the responses from Surescripts into FHIR resources.
  */
 const program = new Command();
 

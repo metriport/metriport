@@ -18,3 +18,8 @@ export const DEA_SCHEDULE_SYSTEM =
 export const US_LICENSE_SYSTEM = "https://public.metriport.com/fhir/sid/us-license";
 export const MEDICATION_DISPENSE_FILL_NUMBER_EXTENSION =
   "http://hl7.org/fhir/StructureDefinition/medicationdispense-fillNumber";
+
+export const CONDITION_CLINICAL_STATUS_SYSTEM =
+  "http://terminology.hl7.org/CodeSystem/condition-clinical";
+export const CONDITION_VERIFICATION_STATUS_SYSTEM =
+  "http://terminology.hl7.org/CodeSystem/condition-ver-status";

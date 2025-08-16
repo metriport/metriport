@@ -70,6 +70,7 @@ function getMedicationResources({
   const medicationRequest = getMedicationRequest({
     patient,
     prescriber,
+    pharmacy,
     medication,
     coverage,
     detail,

@@ -43,4 +43,30 @@ export class SurescriptsReplica extends S3Replica {
     const fileContent = await this.readFile(responseFile);
     return decompressGzip(fileContent);
   }
+
+  async getRawResponseFileByKey(key: string): Promise<Buffer | undefined> {
+    const fileContent = await this.readFile(key);
+    return decompressGzip(fileContent);
+  }
+
+  async listResponseFiles(): Promise<
+    Array<{ key: string; transmissionId: string; patientId: string }>
+  > {
+    const prefix = "from_surescripts/";
+    const responseFiles = await this.listFileNames(prefix);
+    const startIndex = prefix.length;
+    return responseFiles
+      .filter(key => {
+        return key.charAt(startIndex + 10) === "_" && key.charAt(startIndex + 47) === "_";
+      })
+      .map(key => {
+        const transmissionId = key.substring(startIndex, startIndex + 10);
+        const patientId = key.substring(startIndex + 11, startIndex + 47);
+        return {
+          key,
+          transmissionId,
+          patientId,
+        };
+      });
+  }
 }

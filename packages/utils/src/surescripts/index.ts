@@ -19,8 +19,14 @@ import batchAnalysis from "./batch-analysis";
 import preview from "./preview";
 import findLargest from "./find-largest";
 import bundleVerification from "./bundle-verification";
+import generateCsv from "./generate-csv";
 
+/**
+ * This is the main command registry for the Surescripts CLI. You should add any new
+ * commands to this registry, and ensure that your command has a unique name.
+ */
 const program = new Command();
+
 program.addCommand(sftpAction);
 program.addCommand(sendPatientRequest);
 program.addCommand(sendBatchRequest);
@@ -37,4 +43,5 @@ program.addCommand(analyzeResponses);
 program.addCommand(preview);
 program.addCommand(findLargest);
 program.addCommand(bundleVerification);
+program.addCommand(generateCsv);
 program.parse();
