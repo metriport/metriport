@@ -11,7 +11,7 @@ import { DEFAULT_ENCOUNTER_CLASS, adtToFhirEncounterClassMap, isAdtPatientClass 
 import { getParticipantsFromAdt } from "./practitioner";
 import { createEncounterId, getEncounterPeriod, getPatientClassCode } from "./utils";
 
-export function mapEncounterAndRelatedResources(adt: Hl7Message, patientId: string): Resource[] {
+export function convertAdtToFhirResources(adt: Hl7Message, patientId: string): Resource[] {
   const msgType = getHl7MessageTypeOrFail(adt);
   const encounterId = createEncounterId(adt, patientId);
   const encounterReason = getEncounterReason({ adt, patientId, encounterId });
