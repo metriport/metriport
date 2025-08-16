@@ -16,10 +16,16 @@ const bucketName = Config.getHl7ConversionBucketName();
  *
  * @param prefixes - The prefixes of the bundles to re-process.
  * @param handler - The handler function that will be called to transform each bundle.
+ * @param readOnly - Whether to only read the bundles from S3 and not write them back.
  */
 export async function reprocessAdtConversionBundles(
   prefixes: string[],
-  handler: (bundle: FhirBundleSdk, log: (message: string) => void) => Promise<FhirBundleSdk>
+  handler: (
+    bundle: FhirBundleSdk,
+    log: (message: string) => void,
+    context: { cxId: string; ptId: string }
+  ) => Promise<FhirBundleSdk | undefined>,
+  dryRun = true
 ) {
   if (bucketName === undefined) {
     throw new Error(
@@ -28,17 +34,20 @@ export async function reprocessAdtConversionBundles(
   }
 
   const s3Utils = new S3Utils(Config.getAWSRegion());
+
+  console.log(`Running in ${dryRun ? "dryRun" : "⚠️ write"} mode`);
   const promises = prefixes.map(async prefix => {
     const { log } = out(prefix);
     const results = await s3Utils.listObjects(bucketName, prefix);
     log(`Found ${results.length} objects for prefix: ${prefix}`);
     let processedCount = 0;
     const fileProcessingPromises = results.map(async result => {
-      log(`Processing object: ${result.Key}`);
+      const [cxId, ptId] = prefix.replace("cxId=", "").replace("ptId=", "").split("/");
       if (result.Key === undefined) {
         log("Key is undefined - and it shouldn't be");
         return;
       }
+
       const fileBuffer = await s3Utils.downloadFile({ bucket: bucketName, key: result.Key });
       const rawBuffer = fileBuffer.toString();
       const bundleObject = parseFhirBundle(rawBuffer);
@@ -48,17 +57,21 @@ export async function reprocessAdtConversionBundles(
       }
 
       const bundle = await FhirBundleSdk.create(bundleObject);
-      const cleanedBundle = await handler(bundle, log);
+      const cleanedBundle = await handler(bundle, out(`${result.Key}`).log, { cxId, ptId });
 
       // Overwrite old bundle
-      await s3Utils.uploadFile({
-        bucket: bucketName,
-        key: result.Key,
-        file: Buffer.from(JSON.stringify(cleanedBundle.toObject())),
-        contentType: "application/json",
-      });
+      if (!dryRun && cleanedBundle) {
+        await s3Utils.uploadFile({
+          bucket: bucketName,
+          key: result.Key,
+          file: Buffer.from(JSON.stringify(cleanedBundle.toObject())),
+          contentType: "application/json",
+        });
+      }
       processedCount++;
-      log(`Processed ${processedCount} objects`);
+      if (processedCount % 100 === 0) {
+        log(`Processed ${processedCount} objects`);
+      }
     });
 
     await Promise.all(fileProcessingPromises);
