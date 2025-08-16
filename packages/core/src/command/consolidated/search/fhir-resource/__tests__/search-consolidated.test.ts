@@ -9,7 +9,9 @@ import {
   makeEncounter,
   makePractitioner,
 } from "../../../../../fhir-to-cda/cda-templates/components/__tests__/make-encounter";
+import { makeObservation } from "../../../../../fhir-to-cda/cda-templates/components/__tests__/make-observation";
 import { makeOrganization } from "../../../../../fhir-to-cda/cda-templates/components/__tests__/make-organization";
+import { makeProcedure } from "../../../../../fhir-to-cda/cda-templates/components/__tests__/make-procedure";
 import { hydrateMissingReferences } from "../search-consolidated";
 import {
   cxId,
@@ -21,8 +23,6 @@ import {
   patientId,
   specializedHydration,
 } from "./search-consolidated-setup";
-import { makeProcedure } from "../../../../../fhir-to-cda/cda-templates/components/__tests__/make-procedure";
-import { makeObservation } from "../../../../../fhir-to-cda/cda-templates/components/__tests__/make-observation";
 
 describe("search-consolidated", () => {
   describe("hydrateMissingReferences", () => {
@@ -183,7 +183,13 @@ describe("search-consolidated", () => {
           const res = await hydrateMissingReferences({ cxId, patientId, resources });
 
           expect(res).toEqual(
-            expect.arrayContaining([missingCondition, missingObservation, missingProcedure, enc, patient])
+            expect.arrayContaining([
+              missingCondition,
+              missingObservation,
+              missingProcedure,
+              enc,
+              patient,
+            ])
           );
         });
       }

@@ -1,7 +1,7 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
-import { getOrgs } from "@metriport/core/external/commonwell/cq-bridge/get-orgs";
+import { getOrgs } from "@metriport/core/external/commonwell-v1/cq-bridge/get-orgs";
 import fs from "fs";
 import { orderBy } from "lodash";
 import originalPayloadFromCW from "./cq-org-list-original.json";

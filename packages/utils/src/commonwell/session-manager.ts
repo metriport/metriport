@@ -9,7 +9,7 @@ import { CookieManagerOnSecrets } from "@metriport/core/domain/auth/cookie-manag
 import {
   SessionManagement,
   SessionManagementConfig,
-} from "@metriport/core/external/commonwell/management/session";
+} from "@metriport/core/external/commonwell-v1/management/session";
 import { getEnvVar, getEnvVarOrFail } from "@metriport/core/util/env-var";
 import * as readline from "readline-sync";
 // disables AWS SDK maintainance notif
@@ -17,7 +17,7 @@ require("aws-sdk/lib/maintenance_mode_message").suppress = true; // eslint-disab
 
 // Leaving this separated from the rest as we might need to switch browsers if it fails to get the cookie
 // import { chromium as runtime } from "playwright";
-import { makeApi } from "@metriport/core/external/commonwell/management/api-factory";
+import { makeApi } from "@metriport/core/external/commonwell-v1/management/api-factory";
 import { firefox as runtime } from "playwright";
 
 /**

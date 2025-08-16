@@ -1,5 +1,5 @@
 import { S3Utils } from "@metriport/core/external/aws/s3";
-import { docContributionFileParam } from "@metriport/core/external/commonwell/document/document-contribution";
+import { docContributionFileParam } from "@metriport/core/external/commonwell-v1/document/document-contribution";
 import { errorToString } from "@metriport/shared";
 import * as Sentry from "@sentry/serverless";
 import * as lambda from "aws-lambda";

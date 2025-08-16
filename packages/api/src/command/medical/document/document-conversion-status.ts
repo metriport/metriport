@@ -10,7 +10,7 @@ import { out } from "@metriport/core/util/log";
 import { MetriportError } from "@metriport/shared";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { getCQData } from "../../../external/carequality/patient";
-import { getCWData } from "../../../external/commonwell/patient";
+import { getCWData } from "../../../external/commonwell-v1/patient";
 import { tallyDocQueryProgress } from "../../../external/hie/tally-doc-query-progress";
 import { recreateConsolidated } from "../patient/consolidated-recreate";
 

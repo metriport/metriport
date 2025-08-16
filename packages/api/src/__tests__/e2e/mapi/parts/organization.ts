@@ -3,7 +3,7 @@ import { Organization as FhirOrg } from "@medplum/fhirtypes";
 import { USState } from "@metriport/shared";
 import { Organization, OrganizationCreate, OrgType } from "@metriport/api-sdk";
 import { Organization as CqOrganization } from "@metriport/carequality-sdk";
-import { Organization as CWOrganization } from "@metriport/commonwell-sdk";
+import { Organization as CWOrganization } from "@metriport/commonwell-sdk-v1";
 
 export const createOrg: OrganizationCreate = {
   type: OrgType.postAcuteCare,
