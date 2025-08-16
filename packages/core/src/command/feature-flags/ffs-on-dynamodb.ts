@@ -43,6 +43,7 @@ export const initialFeatureFlags: FeatureFlagDatastore = {
   cxsWithADHDMRFeatureFlag: { enabled: false, values: [] },
   cxsWithNoMrLogoFeatureFlag: { enabled: false, values: [] },
   cxsWithBmiMrFeatureFlag: { enabled: false, values: [] },
+  cxsWithSimpleMrFeatureFlag: { enabled: false, values: [] },
   cxsWithDermMrFeatureFlag: { enabled: false, values: [] },
   cxsWithAiBriefFeatureFlag: { enabled: false, values: [] },
   getCxsWithCdaCustodianFeatureFlag: { enabled: false, values: [] },

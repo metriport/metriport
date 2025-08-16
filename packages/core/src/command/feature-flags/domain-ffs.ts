@@ -225,6 +225,14 @@ export async function isBmiFeatureFlagEnabledForCx(cxId: string): Promise<boolea
   return cxIdsWithBmiEnabled.some(i => i === cxId);
 }
 
+export async function getCxsWithSimpleFeatureFlag(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithSimpleMrFeatureFlag");
+}
+export async function isSimpleFeatureFlagEnabledForCx(cxId: string): Promise<boolean> {
+  const cxIdsWithSimpleEnabled = await getCxsWithSimpleFeatureFlag();
+  return cxIdsWithSimpleEnabled.some(i => i === cxId);
+}
+
 export async function getCxsWithDermFeatureFlag(): Promise<string[]> {
   return getCxsWithFeatureFlagEnabled("cxsWithDermMrFeatureFlag");
 }
