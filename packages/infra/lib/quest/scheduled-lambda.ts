@@ -19,9 +19,10 @@ export interface ScheduledLambdaConfig extends ScheduledLambdaProps {
   name: string;
   scheduleExpression: string[];
   url: string;
-  lambdaTimeout: Duration;
-  httpTimeout: Duration;
 }
+
+const lambdaTimeout = Duration.seconds(60);
+const httpTimeout = Duration.seconds(50);
 
 function configForResponseDownload(props: ScheduledLambdaProps): ScheduledLambdaConfig {
   return {
@@ -34,8 +35,6 @@ function configForResponseDownload(props: ScheduledLambdaProps): ScheduledLambda
      */
     scheduleExpression: ["0 12 * * *"], // Every day at 12:00pm UTC (5:00am PST)
     url: `http://${props.apiAddress}/internal/quest/download-response`,
-    lambdaTimeout: Duration.seconds(60),
-    httpTimeout: Duration.seconds(50),
   };
 }
 
@@ -50,8 +49,6 @@ function configForRosterUpload(props: ScheduledLambdaProps): ScheduledLambdaConf
      */
     scheduleExpression: ["0 12 * * *"], // Every day at 12:00pm UTC (5:00am PST)
     url: `http://${props.apiAddress}/internal/quest/upload-roster`,
-    lambdaTimeout: Duration.seconds(60), // How long can the lambda run for, max is 900 seconds (15 minutes)
-    httpTimeout: Duration.seconds(50),
   };
 }
 
@@ -65,8 +62,7 @@ export function createRosterUploadScheduledLambda(props: ScheduledLambdaProps): 
 
 function createQuestScheduledLambda(props: ScheduledLambdaConfig): IFunction {
   const config = getConfig();
-  const { stack, lambdaLayers, vpc, name, lambdaTimeout, scheduleExpression, url, httpTimeout } =
-    props;
+  const { stack, lambdaLayers, vpc, name, scheduleExpression, url } = props;
 
   const lambda = createScheduledLambda({
     stack,
