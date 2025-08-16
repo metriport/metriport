@@ -6,6 +6,7 @@ import { Config } from "../../util/config";
 import { HL7_FILE_EXTENSION, JSON_FILE_EXTENSION } from "../../util/mime";
 import { S3Utils } from "../aws/s3";
 import { dedupeAdtEncounters, mergeBundles } from "./bundle/utils";
+import { validateFhirEntries } from "./validation/json-validator";
 
 const s3Utils = new S3Utils(Config.getAWSRegion());
 
@@ -326,7 +327,9 @@ export function mergeAdtBundles(params: {
     bundleType: "collection",
   });
 
-  return dedupeAdtEncounters(mergedBundle);
+  const dedupedBundle = dedupeAdtEncounters(mergedBundle);
+  validateFhirEntries(dedupedBundle);
+  return dedupedBundle;
 }
 
 export async function putAdtSourcedEncounter({

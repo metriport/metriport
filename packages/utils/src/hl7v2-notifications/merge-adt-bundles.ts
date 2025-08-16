@@ -2,11 +2,10 @@ import * as dotenv from "dotenv";
 dotenv.config();
 
 // keep that ^ on top
-import { getFileContents, makeDir } from "@metriport/core/util/fs";
-import dayjs from "dayjs";
-
 import { mergeAdtBundles } from "@metriport/core/external/fhir/adt-encounters";
+import { getFileContents, makeDir } from "@metriport/core/util/fs";
 import { FhirBundleSdk } from "@metriport/fhir-sdk";
+import { buildDayJs } from "@metriport/shared/util/dayjs";
 import { writeFileSync } from "fs";
 
 /**
@@ -17,7 +16,7 @@ import { writeFileSync } from "fs";
  */
 const ptId = "";
 const cxId = "";
-const pathToData = "";
+const pathToData = "/Users/lucasdellabella/Documents/PHI";
 const adtBundle1Path = `${pathToData}/admit.hl7.json`;
 const adtBundle2Path = `${pathToData}/discharge.hl7.json`;
 
@@ -31,7 +30,7 @@ const adtBundle2Path = `${pathToData}/discharge.hl7.json`;
  * WARNING: it will override the *_deduped.json files from the source folder!!!
  */
 async function main() {
-  const timestamp = dayjs().toISOString();
+  const timestamp = buildDayJs().toISOString();
   const logsFolderName = `runs/merge-adt-bundles/${timestamp}`;
 
   makeDir(logsFolderName);
