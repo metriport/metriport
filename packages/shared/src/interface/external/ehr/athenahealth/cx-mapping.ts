@@ -7,6 +7,8 @@ export const athenaSecondaryMappingsSchema = z
     webhookAppointmentDisabled: z.boolean().optional(),
     backgroundAppointmentsDisabled: z.boolean().optional(),
     appointmentTypesFilter: z.string().array().optional(),
+    contributionEncounterAppointmentTypesBlacklist: z.string().array().optional(),
+    contributionEncounterSummariesEnabled: z.boolean().optional(),
   })
   .merge(writeBackFiltersSchema);
 export type AthenaSecondaryMappings = z.infer<typeof athenaSecondaryMappingsSchema>;

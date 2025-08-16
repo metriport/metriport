@@ -50,8 +50,9 @@ export async function createOrReplaceDocument({
   );
   const s3Utils = getS3UtilsInstance();
   const createKeyAndExtension = createKeyAndExtensionMap[documentType];
-  if (!createKeyAndExtension)
+  if (!createKeyAndExtension) {
     throw new BadRequestError("Invalid document type", undefined, { documentType });
+  }
   const key = createKeyAndExtension.key({
     ehr,
     cxId,
