@@ -55,4 +55,42 @@ router.get(
   })
 );
 
+/** ---------------------------------------------------------------------------
+ * POST /internal/quest/upload-roster
+ *
+ * Uploads the latest patient roster to Quest Diagnostics. This route is triggered by a scheduled Lambda
+ * function, and can also be manually triggered by an internal user to upload the latest roster.
+ *
+ * @see packages/infra/lib/quest/quest-stack.ts
+ * @returns 200 OK
+ */
+router.post(
+  "/upload-roster",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    // TODO: ENG-823 - call the command "upload-roster" from the Quest client to trigger a Lambda
+    return res.status(status.OK);
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * POST /internal/quest/download-response
+ *
+ * Downloads all available update files from Quest Diagnostics. This route is triggered by a scheduled Lambda
+ * function to coincide with the daily updates, and can also be manually triggered by an internal user to download
+ * all new responses. The download handler will automatically trigger the next steps of the data pipeline, which
+ * convert the downloaded responses into FHIR bundles that are placed in the lab conversion bucket.
+ *
+ * @see packages/infra/lib/quest/quest-stack.ts
+ * @returns 200 OK
+ */
+router.post(
+  "/download-response",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    // TODO: ENG-823 - call the command "download-response" from the Quest client to trigger a Lambda
+    return res.status(status.OK);
+  })
+);
+
 export default router;
