@@ -1,4 +1,4 @@
-import { MetriportError } from "@metriport/shared";
+import { BadRequestError, MetriportError } from "@metriport/shared";
 import { Config } from "../../util/config";
 import { SftpClient } from "../sftp/client";
 import { generateQuestRoster } from "./roster";
@@ -43,11 +43,35 @@ export class QuestSftpClient extends SftpClient {
     }
   }
 
+  async downloadAllResponses(): Promise<string[]> {
+    if (!this.replica) {
+      throw new BadRequestError("Cannot download responses without a configured replica");
+    }
+    try {
+      await this.connect();
+      const fileNames = await this.listResponseFileNamesFromQuest();
+      for (const fileName of fileNames) {
+        await this.readFromQuest(fileName);
+      }
+      return fileNames;
+    } catch (error) {
+      throw new MetriportError(`Failed to download Quest responses`, error, {
+        context: "QuestSftpClient",
+      });
+    } finally {
+      await this.disconnect();
+    }
+  }
+
   async writeToQuest(fileName: string, fileContent: Buffer): Promise<void> {
     await this.write(`${this.outgoingDirectory}/${fileName}`, fileContent);
   }
 
   async readFromQuest(fileName: string): Promise<Buffer> {
     return await this.read(`${this.incomingDirectory}/${fileName}`);
+  }
+
+  async listResponseFileNamesFromQuest(): Promise<string[]> {
+    return await this.list(this.incomingDirectory);
   }
 }
