@@ -5,21 +5,21 @@ export function buildRosterFileName() {
   return `METRIPORT_${dateId}.txt`;
 }
 
-export function buildPatientConversionPrefix({
+export function buildPatientLabConversionPrefix({
   cxId,
   patientId,
 }: {
   cxId: string;
   patientId: string;
 }) {
-  return `quest/cxId=${cxId}/patientId=${patientId}`;
+  return `quest/cxId=${cxId}/patientId=${patientId}/date=`;
 }
 
-export function buildLatestConversionBundleFileName(cxId: string, patientId: string) {
+export function buildLatestConversionFileName(cxId: string, patientId: string) {
   return `quest/cxId=${cxId}/patientId=${patientId}/latest.json`;
 }
 
-export function buildConversionBundleFileNameForDate({
+export function buildLabConversionFileNameForDate({
   cxId,
   patientId,
   dateId,

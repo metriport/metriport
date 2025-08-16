@@ -3,8 +3,8 @@ import { out, LogFunction } from "../../../../util";
 import { Config } from "../../../../util/config";
 import { S3Utils } from "../../../aws/s3";
 import {
-  buildPatientConversionPrefix,
-  buildLatestConversionBundleFileName,
+  buildPatientLabConversionPrefix,
+  buildLatestConversionFileName,
 } from "../../file/file-names";
 
 export async function buildConsolidatedLabBundle({
@@ -27,7 +27,7 @@ export async function buildConsolidatedLabBundle({
     log("No consolidated bundle found");
     return undefined;
   }
-  const latestBundleName = buildLatestConversionBundleFileName(cxId, patientId);
+  const latestBundleName = buildLatestConversionFileName(cxId, patientId);
   const fileContent = Buffer.from(JSON.stringify(latestBundle));
   await s3.uploadFile({ bucket: labBucketName, key: latestBundleName, file: fileContent });
   log(`Saved latest lab conversion bundle ${latestBundleName} to ${labBucketName}`);
@@ -49,7 +49,7 @@ async function getAllResponseBundles({
 }): Promise<Bundle[]> {
   const files = await s3.listObjects(
     labBucketName,
-    buildPatientConversionPrefix({ cxId, patientId })
+    buildPatientLabConversionPrefix({ cxId, patientId })
   );
   if (files.length === 0) {
     log("No conversion bundles found");

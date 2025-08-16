@@ -4,7 +4,7 @@ import { Config } from "../../../../util/config";
 import { out } from "../../../../util/log";
 import { capture } from "../../../../util/notifications";
 import { S3Utils } from "../../../aws/s3";
-import { buildConversionBundleFileNameForDate } from "../../file/file-names";
+import { buildLabConversionFileNameForDate } from "../../file/file-names";
 
 /**
  * Saves a bundle with Quest data to the repository.
@@ -33,7 +33,7 @@ export async function saveBundle({
     capture.error(msg, { extra: { cxId, patientId, dateId } });
     return;
   }
-  const conversionBundleName = buildConversionBundleFileNameForDate({
+  const conversionBundleName = buildLabConversionFileNameForDate({
     cxId,
     patientId,
     dateId,
