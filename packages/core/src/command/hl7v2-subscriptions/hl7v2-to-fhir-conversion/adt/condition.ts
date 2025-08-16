@@ -1,6 +1,6 @@
 import { Hl7Message, Hl7Segment } from "@medplum/core";
 import { CodeableConcept, Condition, EncounterDiagnosis } from "@medplum/fhirtypes";
-import { createUuidFromText } from "@metriport/shared/common/uuid";
+import { uuidv4 } from "@metriport/shared/util";
 import {
   buildConditionReference,
   buildPatientReference,
@@ -89,7 +89,7 @@ export function buildCondition(params: ConditionWithCode, patientId: string): Co
   const { id, code, ...rest } = params;
 
   return {
-    id: id ?? createUuidFromText(JSON.stringify(code)),
+    id: id ?? uuidv4(),
     resourceType: "Condition",
     code,
     subject: buildPatientReference(patientId),
