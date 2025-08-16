@@ -1,12 +1,11 @@
 import { Bundle, BundleEntry, Resource } from "@medplum/fhirtypes";
 import { MetriportError } from "@metriport/shared";
-import { compact } from "lodash";
+import _, { compact } from "lodash";
 import { out } from "../../util";
 import { Config } from "../../util/config";
 import { HL7_FILE_EXTENSION, JSON_FILE_EXTENSION } from "../../util/mime";
 import { S3Utils } from "../aws/s3";
-import { mergeBundles } from "./bundle/utils";
-import _ from "lodash";
+import { dedupeAdtEncounters, mergeBundles } from "./bundle/utils";
 
 const s3Utils = new S3Utils(Config.getAWSRegion());
 
@@ -301,12 +300,11 @@ export async function mergeBundleIntoAdtSourcedEncounter({
 
   const currentEncounter = !existingEncounterData
     ? newEncounterData
-    : mergeBundles({
+    : mergeAdtBundles({
         cxId,
         patientId,
         existing: existingEncounterData,
         current: newEncounterData,
-        bundleType: "collection",
       });
 
   return await putAdtSourcedEncounter({
@@ -315,6 +313,20 @@ export async function mergeBundleIntoAdtSourcedEncounter({
     encounterId,
     bundle: currentEncounter,
   });
+}
+
+export function mergeAdtBundles(params: {
+  cxId: string;
+  patientId: string;
+  existing: Bundle<Resource>;
+  current: Bundle<Resource>;
+}): Bundle<Resource> {
+  const mergedBundle = mergeBundles({
+    ...params,
+    bundleType: "collection",
+  });
+
+  return dedupeAdtEncounters(mergedBundle);
 }
 
 export async function putAdtSourcedEncounter({

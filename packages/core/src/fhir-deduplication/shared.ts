@@ -355,6 +355,38 @@ export function pickMostDescriptiveStatus<T extends string>(
   return status;
 }
 
+const classRanking = {
+  ACUTE: 1,
+  IMP: 2,
+  NONAC: 3,
+  EMER: 4,
+  OBSENC: 5,
+  SS: 6,
+  AMB: 7,
+  HH: 8,
+  FIELD: 9,
+  VR: 10,
+} as const;
+
+type ClassRankingKey = keyof typeof classRanking;
+
+export function pickMostSevereClass(
+  class1: Coding | undefined,
+  class2: Coding | undefined
+): Coding | undefined {
+  if (class1 && class2 && class1.code && class2.code) {
+    const code1 = class1.code as ClassRankingKey;
+    const code2 = class2.code as ClassRankingKey;
+    return classRanking[code1] < classRanking[code2] ? class1 : class2;
+  } else if (class1 && class1.code) {
+    return class1;
+  } else if (class2 && class2.code) {
+    return class2;
+  }
+
+  return undefined;
+}
+
 export function hasBlacklistedText(concept: CodeableConcept | undefined): boolean {
   const knownCodings = concept?.coding?.filter(c => !isUnknownCoding(c));
   return (
@@ -504,6 +536,17 @@ export function assignMostDescriptiveStatus<T extends Resource & { status?: stri
   const status = pickMostDescriptiveStatus(statusRanking, existing.status, target.status);
   existing.status = status;
   target.status = status;
+}
+
+export function assignMostSevereClass<T extends Resource & { class?: Coding }>(
+  existing: T,
+  target: T
+) {
+  const severeClass = pickMostSevereClass(existing.class, target.class);
+  if (!severeClass) return;
+
+  existing.class = severeClass;
+  target.class = severeClass;
 }
 
 /**

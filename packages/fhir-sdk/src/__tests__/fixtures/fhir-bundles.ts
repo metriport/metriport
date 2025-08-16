@@ -313,16 +313,6 @@ export const invalidBundleWrongType: any = {
 };
 
 /**
- * Invalid bundle - wrong type
- */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const invalidBundleWrongBundleType: any = {
-  resourceType: "Bundle",
-  id: "invalid-bundle-type",
-  type: "searchset", // Should be collection
-};
-
-/**
  * Bundle for export testing with mixed resource types
  */
 export const mixedResourceTypesBundle: Bundle = {
