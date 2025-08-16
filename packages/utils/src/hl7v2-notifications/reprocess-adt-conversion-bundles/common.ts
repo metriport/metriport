@@ -20,8 +20,12 @@ const bucketName = Config.getHl7ConversionBucketName();
  */
 export async function reprocessAdtConversionBundles(
   prefixes: string[],
-  handler: (bundle: FhirBundleSdk, log: (message: string) => void) => Promise<FhirBundleSdk>,
-  readOnly = true
+  handler: (
+    bundle: FhirBundleSdk,
+    log: (message: string) => void,
+    context: { cxId: string; ptId: string }
+  ) => Promise<FhirBundleSdk | undefined>,
+  dryRun = true
 ) {
   if (bucketName === undefined) {
     throw new Error(
@@ -31,13 +35,14 @@ export async function reprocessAdtConversionBundles(
 
   const s3Utils = new S3Utils(Config.getAWSRegion());
 
-  console.log(`Running in ${readOnly ? "readOnly" : "⚠️ readWrite"} mode`);
+  console.log(`Running in ${dryRun ? "dryRun" : "⚠️ write"} mode`);
   const promises = prefixes.map(async prefix => {
     const { log } = out(prefix);
     const results = await s3Utils.listObjects(bucketName, prefix);
     log(`Found ${results.length} objects for prefix: ${prefix}`);
     let processedCount = 0;
     const fileProcessingPromises = results.map(async result => {
+      const [cxId, ptId] = prefix.replace("cxId=", "").replace("ptId=", "").split("/");
       if (result.Key === undefined) {
         log("Key is undefined - and it shouldn't be");
         return;
@@ -52,10 +57,10 @@ export async function reprocessAdtConversionBundles(
       }
 
       const bundle = await FhirBundleSdk.create(bundleObject);
-      const cleanedBundle = await handler(bundle, out(`${result.Key}`).log);
+      const cleanedBundle = await handler(bundle, out(`${result.Key}`).log, { cxId, ptId });
 
       // Overwrite old bundle
-      if (!readOnly) {
+      if (!dryRun && cleanedBundle) {
         await s3Utils.uploadFile({
           bucket: bucketName,
           key: result.Key,
