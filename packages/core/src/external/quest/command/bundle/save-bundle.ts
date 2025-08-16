@@ -4,10 +4,7 @@ import { Config } from "../../../../util/config";
 import { out } from "../../../../util/log";
 import { capture } from "../../../../util/notifications";
 import { S3Utils } from "../../../aws/s3";
-import {
-  buildConversionBundleFileNameForDate,
-  buildLatestConversionBundleFileName,
-} from "../../file/file-names";
+import { buildConversionBundleFileNameForDate } from "../../file/file-names";
 
 /**
  * Saves a bundle with Quest data to the repository.
@@ -36,7 +33,6 @@ export async function saveBundle({
     capture.error(msg, { extra: { cxId, patientId, dateId } });
     return;
   }
-  const latestBundleName = buildLatestConversionBundleFileName(cxId, patientId);
   const conversionBundleName = buildConversionBundleFileNameForDate({
     cxId,
     patientId,
@@ -44,13 +40,8 @@ export async function saveBundle({
   });
   const s3Utils = new S3Utils(Config.getAWSRegion());
   const fileContent = Buffer.from(JSON.stringify(bundle));
-  await Promise.all([
-    executeWithNetworkRetries(() =>
-      s3Utils.uploadFile({ bucket: bucketName, key: latestBundleName, file: fileContent })
-    ),
-    executeWithNetworkRetries(() =>
-      s3Utils.uploadFile({ bucket: bucketName, key: conversionBundleName, file: fileContent })
-    ),
-  ]);
-  log(`Saved bundle ${latestBundleName} and ${conversionBundleName} to ${bucketName}`);
+  await executeWithNetworkRetries(() =>
+    s3Utils.uploadFile({ bucket: bucketName, key: conversionBundleName, file: fileContent })
+  );
+  log(`Saved bundle ${conversionBundleName} to ${bucketName}`);
 }
