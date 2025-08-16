@@ -132,6 +132,8 @@ interface QuestNestedStackProps extends NestedStackProps {
 }
 
 export class QuestNestedStack extends NestedStack {
+  private readonly scheduledUploadRosterLambda: Lambda;
+  private readonly scheduledDownloadResponseLambda: Lambda;
   private readonly sftpActionLambda: Lambda;
   private readonly rosterUploadLambda: Lambda;
   private readonly responseDownloadLambda: Lambda;
@@ -185,11 +187,18 @@ export class QuestNestedStack extends NestedStack {
       envVars,
     };
 
-    this.setupScheduledLambda({
+    this.scheduledDownloadResponseLambda = this.setupScheduledLambda({
       ...commonConfig,
-      scheduleExpression: "cron(0 12 * * ? *)",
-      url: "/internal/quest/download",
+      scheduleExpression: "cron(0 12 * * *)",
+      url: "/internal/quest/download-response",
       name: "QuestScheduledDownloadResponse",
+    });
+
+    this.scheduledUploadRosterLambda = this.setupScheduledLambda({
+      ...commonConfig,
+      scheduleExpression: "cron(0 12 * * *)",
+      url: "/internal/quest/upload-roster",
+      name: "QuestScheduledUploadRoster",
     });
 
     this.sftpActionLambda = this.setupLambda("sftpAction", {
@@ -232,6 +241,8 @@ export class QuestNestedStack extends NestedStack {
       this.rosterUploadLambda,
       this.responseDownloadLambda,
       this.questFhirConverterLambda,
+      this.scheduledDownloadResponseLambda,
+      this.scheduledUploadRosterLambda,
     ];
   }
 
