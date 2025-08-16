@@ -11,7 +11,6 @@ import { EnvConfig } from "../../config/env-config";
 import { EnvType } from "../env-type";
 import { createLambda } from "../shared/lambda";
 import { LambdaLayers } from "../shared/lambda-layers";
-import { createScheduledLambda } from "../shared/lambda-scheduled";
 import { buildSecret } from "../shared/secrets";
 import { LambdaSettingsWithNameAndEntry, QueueAndLambdaSettings } from "../shared/settings";
 import { createQueue } from "../shared/sqs";
@@ -132,8 +131,6 @@ interface QuestNestedStackProps extends NestedStackProps {
 }
 
 export class QuestNestedStack extends NestedStack {
-  private readonly scheduledUploadRosterLambda: Lambda;
-  private readonly scheduledDownloadResponseLambda: Lambda;
   private readonly sftpActionLambda: Lambda;
   private readonly rosterUploadLambda: Lambda;
   private readonly responseDownloadLambda: Lambda;
@@ -187,20 +184,6 @@ export class QuestNestedStack extends NestedStack {
       envVars,
     };
 
-    this.scheduledDownloadResponseLambda = this.setupScheduledLambda({
-      ...commonConfig,
-      scheduleExpression: "cron(0 12 * * *)",
-      url: "/internal/quest/download-response",
-      name: "QuestScheduledDownloadResponse",
-    });
-
-    this.scheduledUploadRosterLambda = this.setupScheduledLambda({
-      ...commonConfig,
-      scheduleExpression: "cron(0 12 * * *)",
-      url: "/internal/quest/upload-roster",
-      name: "QuestScheduledUploadRoster",
-    });
-
     this.sftpActionLambda = this.setupLambda("sftpAction", {
       ...commonConfig,
       questReplicaBucket: this.questReplicaBucket,
@@ -241,8 +224,6 @@ export class QuestNestedStack extends NestedStack {
       this.rosterUploadLambda,
       this.responseDownloadLambda,
       this.questFhirConverterLambda,
-      this.scheduledDownloadResponseLambda,
-      this.scheduledUploadRosterLambda,
     ];
   }
 
@@ -284,34 +265,6 @@ export class QuestNestedStack extends NestedStack {
       questReplicaBucket: this.questReplicaBucket,
       labConversionBucket: this.labConversionBucket,
     };
-  }
-
-  private setupScheduledLambda(props: {
-    name: string;
-    scheduleExpression: string;
-    url: string;
-    lambdaLayers: LambdaLayers;
-    vpc: ec2.IVpc;
-    envType: EnvType;
-    envVars: Record<string, string>;
-    alarmAction: SnsAction | undefined;
-  }) {
-    const { name, scheduleExpression, url, lambdaLayers, vpc, envType, envVars, alarmAction } =
-      props;
-
-    const lambda = createScheduledLambda({
-      stack: this,
-      layers: [lambdaLayers.shared],
-      name,
-      url,
-      scheduleExpression,
-      vpc,
-      alarmSnsAction: alarmAction,
-      envType,
-      envVars,
-    });
-
-    return lambda;
   }
 
   private setupLambda<T extends keyof QuestLambdaSettings>(
