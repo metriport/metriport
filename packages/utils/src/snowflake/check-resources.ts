@@ -35,8 +35,12 @@ const patientIds: string[] = [];
 
 const numberOfParallelExecutions = 10;
 
-const csvHeader = "patientId,hasEncounters,encounterResources,totalResources,emptyBundles,error\n";
+const csvHeader = "patientId,hasTargetResource,targetResources,totalResources,emptyBundles,error\n";
 const getOutputFileName = buildGetDirPathInside(`snowflake/encounter-check`);
+
+const supportedResourceTypes = ["Encounter", "Condition"];
+type SupportedResourceType = (typeof supportedResourceTypes)[number];
+const targetResourceType: SupportedResourceType = "Condition";
 
 const program = new Command();
 program
@@ -47,8 +51,8 @@ program
 
 interface PatientEncounterResult {
   patientId: string;
-  hasEncounters: boolean;
-  encounterResources: number;
+  hasTargetResource: boolean;
+  targetResources: number;
   totalResources: number;
   emptyBundles: number;
   error?: string;
@@ -74,8 +78,8 @@ async function checkPatientEncounters({
     if (!fileExists) {
       return {
         patientId,
-        hasEncounters: false,
-        encounterResources: 0,
+        hasTargetResource: false,
+        targetResources: 0,
         totalResources: 0,
         emptyBundles: 0,
         error: "No consolidated data file found",
@@ -89,7 +93,12 @@ async function checkPatientEncounters({
     const bundle = JSON.parse(fileContent.toString());
 
     const sdk = await FhirBundleSdk.create(bundle);
-    const encounters = sdk.getEncounters();
+    let targetResources = [];
+    if (targetResourceType === "Encounter") {
+      targetResources = sdk.getEncounters();
+    } else if (targetResourceType === "Condition") {
+      targetResources = sdk.getConditions();
+    }
     const patients = sdk.getPatients();
 
     const totalResources = bundle.entry?.length ?? 0;
@@ -97,16 +106,16 @@ async function checkPatientEncounters({
 
     return {
       patientId,
-      hasEncounters: encounters.length > 0,
-      encounterResources: encounters.length,
+      hasTargetResource: targetResources.length > 0,
+      targetResources: targetResources.length,
       totalResources,
       emptyBundles: isEmptyBundle ? 1 : 0,
     };
   } catch (error) {
     return {
       patientId,
-      hasEncounters: false,
-      encounterResources: 0,
+      hasTargetResource: false,
+      targetResources: 0,
       totalResources: 0,
       emptyBundles: 0,
       error: error instanceof Error ? error.message : "Unknown error",
@@ -132,8 +141,8 @@ async function checkPatientConversionEncounters({
     if (!objects || objects.length === 0) {
       return {
         patientId,
-        hasEncounters: false,
-        encounterResources: 0,
+        hasTargetResource: false,
+        targetResources: 0,
         totalResources: 0,
         emptyBundles: 0,
         error: "No conversion files found",
@@ -145,15 +154,15 @@ async function checkPatientConversionEncounters({
     if (conversionObjects.length === 0) {
       return {
         patientId,
-        hasEncounters: false,
-        encounterResources: 0,
+        hasTargetResource: false,
+        targetResources: 0,
         totalResources: 0,
         emptyBundles: 0,
         error: "No conversion .xml.json files found",
       };
     }
 
-    let totalEncounters = 0;
+    let totalTargetResources = 0;
     let totalResources = 0;
     let emptyBundles = 0;
 
@@ -171,13 +180,18 @@ async function checkPatientConversionEncounters({
         bundle.type = "collection";
 
         const sdk = await FhirBundleSdk.create(bundle);
-        const encounters = sdk.getEncounters();
+        let targetResources = [];
+        if (targetResourceType === "Encounter") {
+          targetResources = sdk.getEncounters();
+        } else if (targetResourceType === "Condition") {
+          targetResources = sdk.getConditions();
+        }
         const patients = sdk.getPatients();
 
         const bundleTotalResources = bundle.entry?.length ?? 0;
         const isEmptyBundle = bundleTotalResources === 1 && patients.length === 1;
 
-        totalEncounters += encounters.length;
+        totalTargetResources += targetResources.length;
         totalResources += bundleTotalResources;
         if (isEmptyBundle) emptyBundles += 1;
       } catch (error) {
@@ -187,16 +201,16 @@ async function checkPatientConversionEncounters({
 
     return {
       patientId,
-      hasEncounters: totalEncounters > 0,
-      encounterResources: totalEncounters,
+      hasTargetResource: totalTargetResources > 0,
+      targetResources: totalTargetResources,
       totalResources,
       emptyBundles,
     };
   } catch (error) {
     return {
       patientId,
-      hasEncounters: false,
-      encounterResources: 0,
+      hasTargetResource: false,
+      targetResources: 0,
       totalResources: 0,
       emptyBundles: 0,
       error: error instanceof Error ? error.message : "Unknown error",
@@ -214,7 +228,9 @@ async function main() {
 
   const startedAt = Date.now();
   const bundleType = isConversionMode ? "conversion" : "consolidated";
-  log(`>>> Starting encounter check for ${patientIds.length} patients in ${bundleType} bundles...`);
+  log(
+    `>>> Starting target resource check for ${patientIds.length} patients in ${bundleType} bundles...`
+  );
 
   const { orgName } = await getCxData(cxId, undefined, false);
 
@@ -222,8 +238,10 @@ async function main() {
   const results: PatientEncounterResult[] = [];
 
   const outputFileName = getOutputFileName(orgName) + ".csv";
-  const withEncountersFileName = getOutputFileName(orgName) + "_with_encounters.csv";
-  const withoutEncountersFileName = getOutputFileName(orgName) + "_without_encounters.csv";
+  const withEncountersFileName =
+    getOutputFileName(orgName) + `_with_${targetResourceType.toLowerCase()}s.csv`;
+  const withoutEncountersFileName =
+    getOutputFileName(orgName) + `_without_${targetResourceType.toLowerCase()}s.csv`;
   const withEmptyBundlesFileName = getOutputFileName(orgName) + "_with_empty_bundles.csv";
   const failedFileName = getOutputFileName(orgName) + "_failed.csv";
 
@@ -258,14 +276,14 @@ async function main() {
   );
 
   for (const result of results) {
-    const csvRow = `${result.patientId},${result.hasEncounters},${result.encounterResources},${
+    const csvRow = `${result.patientId},${result.hasTargetResource},${result.targetResources},${
       result.totalResources
     },${result.emptyBundles},${result.error || ""}\n`;
     fs.appendFileSync(outputFileName, csvRow);
 
     if (result.error) {
       fs.appendFileSync(failedFileName, csvRow);
-    } else if (result.hasEncounters) {
+    } else if (result.hasTargetResource) {
       fs.appendFileSync(withEncountersFileName, csvRow);
     } else {
       if (result.emptyBundles > 0) {
@@ -275,29 +293,31 @@ async function main() {
     }
   }
 
-  const patientsWithEncounters = results.filter(r => r.hasEncounters);
-  const patientsWithoutEncounters = results.filter(r => !r.hasEncounters && !r.error);
+  const patientsWithEncounters = results.filter(r => r.hasTargetResource);
+  const patientsWithoutEncounters = results.filter(r => !r.hasTargetResource && !r.error);
   const patientsWithEmptyBundles = results.filter(r => r.emptyBundles > 0 && !r.error);
   const totalResources = results.reduce((acc, r) => acc + r.totalResources, 0);
   const failed = results.filter(r => r.error);
 
   log(`\n=== RESULTS ===`);
   log(`Total patients processed: ${results.length}`);
-  log(`Patients with encounters: ${patientsWithEncounters.length}`);
-  log(`Patients without encounters: ${patientsWithoutEncounters.length}`);
+  log(`Patients with ${targetResourceType} resources: ${patientsWithEncounters.length}`);
+  log(`Patients without ${targetResourceType} resources: ${patientsWithoutEncounters.length}`);
   log(`Patients with empty bundles: ${patientsWithEmptyBundles.length}`);
   log(`Total resources: ${totalResources}`);
   log(`Failed: ${failed.length}`);
 
   log(`\n=== OUTPUT FILES ===`);
   log(`All results: ${outputFileName}`);
-  log(`Patients with encounters: ${withEncountersFileName}`);
-  log(`Patients without encounters: ${withoutEncountersFileName}`);
+  log(`Patients with ${targetResourceType} resources: ${withEncountersFileName}`);
+  log(`Patients without ${targetResourceType} resources: ${withoutEncountersFileName}`);
   log(`Patients with empty bundles: ${withEmptyBundlesFileName}`);
   log(`Failed patients: ${failedFileName}`);
 
   const elapsed = Date.now() - startedAt;
-  log(`>>> Done checking encounters for all ${results.length} patients in ${elapsed} ms`);
+  log(
+    `>>> Done checking ${targetResourceType} resources for all ${results.length} patients in ${elapsed} ms`
+  );
 }
 
 main().catch(error => {
