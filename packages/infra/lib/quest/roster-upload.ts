@@ -1,6 +1,7 @@
 import { Duration } from "aws-cdk-lib";
 import { IVpc } from "aws-cdk-lib/aws-ec2";
 import { IFunction } from "aws-cdk-lib/aws-lambda";
+import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import { Construct } from "constructs";
 import { getConfig } from "../shared/config";
 import { LambdaLayers } from "../shared/lambda-layers";
@@ -9,6 +10,7 @@ import { createScheduledLambda } from "../shared/lambda-scheduled";
 export type RosterUploadProps = {
   stack: Construct;
   lambdaLayers: LambdaLayers;
+  alarmSnsAction?: SnsAction | undefined;
   vpc: IVpc;
   apiAddress: string;
 };
@@ -29,7 +31,7 @@ function getSettings(props: RosterUploadProps) {
   };
 }
 
-export function createScheduledRosterUpload(props: RosterUploadProps): IFunction {
+export function createQuestScheduledRosterUpload(props: RosterUploadProps): IFunction {
   const config = getConfig();
   const { stack, lambdaLayers, vpc, name, lambdaTimeout, scheduleExpression, url, httpTimeout } =
     getSettings(props);

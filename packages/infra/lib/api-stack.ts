@@ -65,6 +65,7 @@ import { isProd, isSandbox } from "./shared/util";
 import { wafRules } from "./shared/waf-rules";
 import { SurescriptsNestedStack } from "./surescripts/surescripts-stack";
 import { QuestNestedStack } from "./quest/quest-stack";
+import { createQuestScheduledRosterUpload } from "./quest/roster-upload";
 
 const FITBIT_LAMBDA_TIMEOUT = Duration.seconds(60);
 
@@ -830,6 +831,14 @@ export class APIStack extends Stack {
     });
 
     createJobsScheduler({
+      lambdaLayers,
+      stack: this,
+      vpc: this.vpc,
+      apiAddress: apiDirectUrl,
+      alarmSnsAction: slackNotification?.alarmAction,
+    });
+
+    createQuestScheduledRosterUpload({
       lambdaLayers,
       stack: this,
       vpc: this.vpc,
