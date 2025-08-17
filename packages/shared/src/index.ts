@@ -8,6 +8,7 @@ export { emptyFunction } from "./common/general";
 export { metriportOrganization } from "./common/metriport-organization";
 export { isValidUrl } from "./common/net";
 export { normalizeOid } from "./common/normalize-oid";
+export { makeOid } from "./common/__tests__/oid";
 export { PurposeOfUse } from "./common/purpose-of-use";
 export * from "./common/retry";
 export { sleep, sleepRandom } from "./common/sleep";
