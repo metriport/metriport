@@ -3,7 +3,7 @@ import { Patient } from "@metriport/shared/domain/patient";
 import { FacilityData, OrganizationData } from "@metriport/shared/domain/customer";
 import { SftpConfig } from "../sftp/types";
 
-export type SurescriptsGender = "M" | "F" | "N" | "U";
+export type SurescriptsGender = "M" | "F" | "U";
 
 export enum SurescriptsEnvironment {
   Production = "P",
