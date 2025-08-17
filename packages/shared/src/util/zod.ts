@@ -1,22 +1,56 @@
-import { validDateOfBirthStringSchema as validDateOfBirthStringSchemaFromExternal } from "../external/zod/date";
+import { z, ZodString } from "zod";
 import {
-  defaultNameStringSchema as defaultNameStringSchemaFromExternal,
-  defaultOptionalStringSchema as defaultOptionalStringSchemaFromExternal,
-  defaultStringSchema as defaultStringSchemaFromExternal,
-} from "../external/zod/string";
-import { defaultZipStringSchema as defaultZipStringSchemaFromExternal } from "../external/zod/zip";
+  ISO_DATE,
+  isValidISODate,
+  validateDateIsAfter1900,
+  validateIsPastOrPresentSafe,
+} from "../common/date";
+import { stripNonNumericChars } from "../common/string";
 
-/** @deprecated Use defaultStringSchema from @metriport/shared/external/zod/string.ts instead */
-export const defaultStringSchema = defaultStringSchemaFromExternal;
+export const defaultStringSchema = z.string().trim();
+export const defaultOptionalStringSchema = optionalString(defaultStringSchema);
 
-/** @deprecated Use defaultOptionalStringSchema from @metriport/shared/external/zod/string.ts instead */
-export const defaultOptionalStringSchema = defaultOptionalStringSchemaFromExternal;
+export const defaultDateStringSchema = defaultStringSchema.refine(isValidISODate, {
+  message: `Date must be a valid ISO 8601 date formatted ${ISO_DATE}. Example: 2023-03-15`,
+});
 
-/** @deprecated Use validDateOfBirthStringSchema from @metriport/shared/external/zod/date.ts instead */
-export const validDateOfBirthStringSchema = validDateOfBirthStringSchemaFromExternal;
+export const pastOrTodayDateStringSchema = defaultDateStringSchema.refine(
+  validateIsPastOrPresentSafe,
+  {
+    message: `Date can't be in the future`,
+  }
+);
 
-/** @deprecated Use defaultNameStringSchema from @metriport/shared/external/zod/string.ts instead */
-export const defaultNameStringSchema = defaultNameStringSchemaFromExternal;
+export const validDateOfBirthStringSchema = pastOrTodayDateStringSchema.refine(
+  validateDateIsAfter1900,
+  {
+    message: `Date can't be before 1900`,
+  }
+);
 
-/** @deprecated Use defaultZipStringSchema from @metriport/shared/external/zod/zip.ts instead */
-export const defaultZipStringSchema = defaultZipStringSchemaFromExternal;
+export const defaultNameStringSchema = defaultStringSchema.min(1);
+
+const zipLength = 5;
+export const defaultZipStringSchema = z.coerce
+  .string()
+  .transform(zipStr => stripNonNumericChars(zipStr))
+  .refine(zip => zip.length === zipLength, {
+    message: `Zip must be a string consisting of ${zipLength} numbers`,
+  });
+
+export function zodToLowerCase(v: unknown): unknown {
+  return typeof v === "string" ? v.toLowerCase() : v;
+}
+
+export function emptyStringToUndefined(v: string | undefined | null): string | undefined {
+  if (v == null) return undefined;
+  if (typeof v === "string" && v.trim().length < 1) return undefined;
+  return v;
+}
+
+/**
+ * Prefer to use defaultOptionalStringSchema instead.
+ */
+export function optionalString(zodSchema: ZodString) {
+  return zodSchema.or(z.string().optional()).transform(emptyStringToUndefined);
+}
