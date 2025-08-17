@@ -1,12 +1,12 @@
-import { isoDateSchema, isoDateTimeSchema } from "@metriport/shared";
 import { z } from "zod";
-import { emptyStringToUndefinedSchema } from "../common/zod";
+import { isoDateSchema } from "./iso-date";
+import { isoDateTimeSchema } from "./iso-datetime";
 
 // A time period defined by a start and end time.
 // See: https://specification.commonwellalliance.org/services/rest-api-reference (8.4.12 Period)
 export const periodSchema = z.object({
-  start: emptyStringToUndefinedSchema.pipe(isoDateTimeSchema.or(isoDateSchema).nullish()),
-  end: emptyStringToUndefinedSchema.pipe(isoDateTimeSchema.or(isoDateSchema).nullish()),
+  start: isoDateTimeSchema.or(isoDateSchema).optional(),
+  end: isoDateTimeSchema.or(isoDateSchema).optional(),
 });
 
 export type Period = z.infer<typeof periodSchema>;

@@ -1,16 +1,9 @@
-import { zodToLowerCase } from "@metriport/shared";
 import { z } from "zod";
-import {
-  emptyStringToUndefined,
-  emptyStringToUndefinedSchema,
-  literalStringToUndefined,
-} from "../common/zod";
 import { periodSchema } from "./period";
 
-/**
- * The value set definition for use of a human name.
- * @see https://hl7.org/fhir/R4/valueset-name-use.html
- */
+// The value set definition for use of a human name. This value set defines its own
+// terms in the system http://hl7.org/fhir/R4/valueset-name-use.html.
+// See https://specification.commonwellalliance.org/appendix/terminology-bindings#c9-name-use-codes
 export enum NameUseCodes {
   usual = "usual",
   official = "official",
@@ -19,8 +12,9 @@ export enum NameUseCodes {
   anonymous = "anonymous",
   old = "old",
   maiden = "maiden",
+  unspecified = "unspecified",
 }
-export const nameUseCodesSchema = z.preprocess(zodToLowerCase, z.nativeEnum(NameUseCodes));
+export const nameUseCodesSchema = z.enum(Object.keys(NameUseCodes) as [string, ...string[]]);
 
 // A name of a Person with text, parts and usage information.
 // Names may be changed or repudiated. People may have different names in different contexts.
@@ -32,20 +26,13 @@ export const nameUseCodesSchema = z.preprocess(zodToLowerCase, z.nativeEnum(Name
 //
 // See: https://specification.commonwellalliance.org/services/rest-api-reference (8.4.10 HumanName)
 export const humanNameSchema = z.object({
-  given: z.array(z.string()),
+  use: nameUseCodesSchema.optional().nullable(),
+  text: z.string().optional().nullable(),
   family: z.array(z.string()),
-  prefix: z.preprocess(
-    emptyStringToUndefined,
-    z.string().or(z.array(z.string().nullish())).nullish()
-  ),
-  suffix: z.preprocess(
-    emptyStringToUndefined,
-    z.string().or(z.array(z.string().nullish())).nullish()
-  ),
-  use: emptyStringToUndefinedSchema.pipe(
-    z.preprocess(literalStringToUndefined, nameUseCodesSchema.nullish())
-  ),
-  period: periodSchema.nullish(),
-  text: z.string().nullish(),
+  given: z.array(z.string()).optional(),
+  prefix: z.string().or(z.array(z.string())).optional().nullable(),
+  suffix: z.string().or(z.array(z.string())).optional().nullable(),
+  period: periodSchema.optional().nullable(),
 });
+
 export type HumanName = z.infer<typeof humanNameSchema>;
