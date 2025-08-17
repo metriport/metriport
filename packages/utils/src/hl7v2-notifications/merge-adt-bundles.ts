@@ -5,7 +5,7 @@ dotenv.config();
 import { mergeAdtBundles } from "@metriport/core/external/fhir/adt-encounters";
 import { getFileContents, makeDir } from "@metriport/core/util/fs";
 import { FhirBundleSdk } from "@metriport/fhir-sdk";
-import { buildDayJs } from "@metriport/shared/util/dayjs";
+import { buildDayjs } from "@metriport/shared/common/date";
 import { writeFileSync } from "fs";
 
 /**
@@ -30,7 +30,7 @@ const adtBundle2Path = `${pathToData}/discharge.hl7.json`;
  * WARNING: it will override the *_deduped.json files from the source folder!!!
  */
 async function main() {
-  const timestamp = buildDayJs().toISOString();
+  const timestamp = buildDayjs().toISOString();
   const logsFolderName = `runs/merge-adt-bundles/${timestamp}`;
 
   makeDir(logsFolderName);

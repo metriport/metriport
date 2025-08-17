@@ -546,9 +546,11 @@ export function assignMostDescriptiveStatus<T extends Resource & { status?: stri
 }
 
 export function assignMostSevereClass(existing: Encounter, target: Encounter): void {
-  if (isActCoding(existing.class) || isActCoding(target.class)) {
+  if (!isActCoding(existing.class) || !isActCoding(target.class)) {
     return;
   }
+
+  // TODO: Instead create a getter on encounter that properly sets the type of the class without using a type assertion
   const existingClass = existing.class as EncounterClassCoding;
   const targetClass = target.class as EncounterClassCoding;
 
