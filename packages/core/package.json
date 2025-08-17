@@ -117,6 +117,7 @@
     "@metriport/commonwell-sdk-v1": "npm:@metriport/commonwell-sdk@^5.9.11",
     "@metriport/ihe-gateway-sdk": "file:packages/ihe-gateway-sdk",
     "@metriport/shared": "file:packages/shared",
+    "@metriport/fhir-sdk": "file:packages/fhir-sdk",
     "@opensearch-project/opensearch": "^2.3.1",
     "@sentry/node": "^7.120.3",
     "@sentry/tracing": "^7.120.3",

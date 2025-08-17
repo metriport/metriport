@@ -2,13 +2,10 @@ import * as dotenv from "dotenv";
 dotenv.config();
 
 // keep that ^ on top
-import { dangerouslyDeduplicateFhir } from "@metriport/core/fhir-deduplication/deduplicate-fhir";
+import { mergeAdtBundles } from "@metriport/core/external/fhir/adt-encounters";
 import { getFileContents, makeDir } from "@metriport/core/util/fs";
-import { elapsedTimeFromNow } from "@metriport/shared/common/date";
-import dayjs from "dayjs";
-
 import { FhirBundleSdk } from "@metriport/fhir-sdk";
-import { cloneDeep } from "lodash";
+import { buildDayjs } from "@metriport/shared/common/date";
 import { writeFileSync } from "fs";
 
 /**
@@ -19,7 +16,7 @@ import { writeFileSync } from "fs";
  */
 const ptId = "";
 const cxId = "";
-const pathToData = "/Users/lucasdellabella/Documents/PHI";
+const pathToData = "";
 const adtBundle1Path = `${pathToData}/admit.hl7.json`;
 const adtBundle2Path = `${pathToData}/discharge.hl7.json`;
 
@@ -33,7 +30,7 @@ const adtBundle2Path = `${pathToData}/discharge.hl7.json`;
  * WARNING: it will override the *_deduped.json files from the source folder!!!
  */
 async function main() {
-  const timestamp = dayjs().toISOString();
+  const timestamp = buildDayjs().toISOString();
   const logsFolderName = `runs/merge-adt-bundles/${timestamp}`;
 
   makeDir(logsFolderName);
@@ -44,26 +41,12 @@ async function main() {
   const adtBundle1 = await FhirBundleSdk.create(JSON.parse(getFileContents(adtBundle1Path)));
   const adtBundle2 = await FhirBundleSdk.create(JSON.parse(getFileContents(adtBundle2Path)));
 
-  const joinedBundle = await adtBundle1.concatEntries(adtBundle2);
-
-  const initialSize = joinedBundle.total;
-
-  const resultBundle = cloneDeep(joinedBundle.toObject());
-  dangerouslyDeduplicateFhir(resultBundle, cxId, ptId);
-
-  const { baseOnly: joinedBundleOnly, parameterOnly: resultBundleOnly } = await joinedBundle.diff(
-    resultBundle
-  );
-
-  console.log("joinedBundleOnly", JSON.stringify(joinedBundleOnly.toObject(), null, 2));
-  console.log("resultBundleOnly", JSON.stringify(resultBundleOnly.toObject(), null, 2));
-  console.log("all entries", JSON.stringify(joinedBundle.entry, null, 2));
-
-  console.log(
-    `Went from ${initialSize} to ${resultBundle.entry?.length} resources in ${elapsedTimeFromNow(
-      startedAt
-    )} ms.`
-  );
+  const resultBundle = mergeAdtBundles({
+    cxId,
+    patientId: ptId,
+    existing: adtBundle1.toObject(),
+    current: adtBundle2.toObject(),
+  });
 
   const lastSlash = adtBundle1Path.lastIndexOf("/");
   const fileName = adtBundle1Path.slice(lastSlash + 1).split(".json")[0];
