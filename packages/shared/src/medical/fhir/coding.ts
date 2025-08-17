@@ -1,5 +1,5 @@
 import { Coding } from "@medplum/fhirtypes";
-import { LOINC_CODE, LOINC_OID } from "./constants";
+import { HL7_ACT_URL, LOINC_CODE, LOINC_OID } from "./constants";
 
 export function isLoinc(system: string | undefined): boolean {
   if (
@@ -16,4 +16,8 @@ export function isLoincCoding(coding: Coding | undefined): boolean {
     return true;
   }
   return false;
+}
+
+export function isActCoding(coding: Coding | undefined): boolean {
+  return coding?.system?.toLowerCase().trim().includes(HL7_ACT_URL.toLowerCase()) ?? false;
 }
