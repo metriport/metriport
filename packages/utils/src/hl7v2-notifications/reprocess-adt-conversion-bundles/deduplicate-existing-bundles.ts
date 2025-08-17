@@ -26,7 +26,7 @@ import { reprocessAdtConversionBundles } from "./common";
  * Note: This script modifies data in S3. Ensure you have backups if needed.
  */
 
-const prefixes: string[] = ["cxId=9bb6740e-a5bc-4c03-b1c5-77441427dd3c/"];
+const prefixes: string[] = [];
 
 async function main() {
   await reprocessAdtConversionBundles(prefixes, deduplicateExistingBundles, true);

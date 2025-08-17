@@ -16,7 +16,7 @@ import { writeFileSync } from "fs";
  */
 const ptId = "";
 const cxId = "";
-const pathToData = "/Users/lucasdellabella/Documents/PHI";
+const pathToData = "";
 const adtBundle1Path = `${pathToData}/admit.hl7.json`;
 const adtBundle2Path = `${pathToData}/discharge.hl7.json`;
 
