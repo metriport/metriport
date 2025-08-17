@@ -7,6 +7,7 @@ import { groupSameEncountersDateOnly } from "../../../fhir-deduplication/resourc
 import { normalizeFhir } from "../normalization/normalize-fhir";
 import { buildBundle, buildBundleEntry, RequiredBundleType } from "./bundle";
 import _ from "lodash";
+import { isEncounter } from "../shared";
 
 export function mergeBundles({
   cxId,
@@ -39,7 +40,7 @@ export function mergeBundles({
 export function dedupeAdtEncounters(existing: Bundle<Resource>): Bundle<Resource> {
   const [encounters, nonEncounters] = _(existing.entry)
     .map("resource")
-    .partition(entry => entry?.resourceType === "Encounter")
+    .partition(isEncounter)
     .value();
 
   const { encountersMap: dedupedEncountersMap } = groupSameEncountersDateOnly(encounters);
