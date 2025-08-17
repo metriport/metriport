@@ -17,11 +17,11 @@ import { createQueue } from "../shared/sqs";
 import { QuestAssets } from "./types";
 
 const sftpActionTimeout = Duration.seconds(30);
-// Can take up to 3 minutes to load roster in batches, upload to S3, and send over SFTP
-const rosterUploadLambdaTimeout = Duration.minutes(3);
+// This function is only called once a day, and may take a long time to paginate over all patients and upload them over SFTP.
+const rosterUploadLambdaTimeout = Duration.minutes(5);
 // When a response is downloaded, the remote SFTP server deletes it automatically, so this ensures that even a very
-// large response file does not time out (and thus get lost in transit)
-const responseDownloadLambdaTimeout = Duration.minutes(1);
+// large response file or slow connection does not result in a time out (and thus get lost in transit).
+const responseDownloadLambdaTimeout = Duration.minutes(5);
 // After downloading a response file, a separate conversion Lambda is triggered for each patient in the response file
 const convertResponseLambdaTimeout = Duration.seconds(30);
 const alarmMaxAgeOfOldestMessage = Duration.hours(1);
