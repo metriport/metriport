@@ -84,7 +84,7 @@ export const responseDetailSchema = z.object({
   patientLastName: z.string(),
   patientFirstName: z.string(),
   patientDOB: z.date(),
-  patientGender: z.enum(["M", "F", "N", "U"]),
+  patientGender: z.enum(["M", "F", "U"]),
   patientZipCode: z.string(),
   startDate: z.date(),
   endDate: z.date(),
@@ -225,7 +225,7 @@ export const responseDetailRow: IncomingFileRowSchema<ResponseDetail> = [
   {
     field: 12,
     key: "patientGender",
-    fromSurescripts: fromSurescriptsEnum(["M", "F", "N", "U"]),
+    fromSurescripts: fromSurescriptsEnum(["M", "F", "U"]),
   },
   {
     field: 13,
