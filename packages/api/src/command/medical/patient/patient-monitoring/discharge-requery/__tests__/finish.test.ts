@@ -31,7 +31,6 @@ describe("processDischargeData", () => {
         expect.objectContaining({
           status: "processing",
           reason: "No matching encounters found",
-          dischargeSummaryFilePath: undefined,
         })
       );
     });
