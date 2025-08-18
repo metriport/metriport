@@ -2,8 +2,8 @@ import { S3Utils } from "../../aws/s3";
 import { SftpReplica } from "../types";
 
 export class S3Replica implements SftpReplica {
-  private readonly s3: S3Utils;
-  private readonly bucketName: string;
+  protected readonly s3: S3Utils;
+  protected readonly bucketName: string;
 
   constructor({ bucketName, region }: { bucketName: string; region: string }) {
     this.s3 = new S3Utils(region);

@@ -145,7 +145,7 @@ export const patientLoadDetailSchema = z.object({
     .min(8)
     .max(10)
     .regex(/^\d{4}-?\d{2}-?\d{2}$/),
-  genderAtBirth: z.enum(["M", "F", "N", "U"]), // n - non-binary, u - unknown
+  genderAtBirth: z.enum(["M", "F", "U"]), // u - unknown
   npiNumber: z.string(),
   endMonitoringDate: z.date().optional(),
   primaryPhone: z.string().optional(),
@@ -269,7 +269,7 @@ export const patientLoadDetailOrder: OutgoingFileRowSchema<PatientLoadDetail> = 
   {
     field: 15,
     key: "genderAtBirth",
-    toSurescripts: toSurescriptsEnum("genderAtBirth", ["M", "F", "N", "U"]),
+    toSurescripts: toSurescriptsEnum("genderAtBirth", ["M", "F", "U"]),
   },
   {
     field: 16,
