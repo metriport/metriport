@@ -4,10 +4,7 @@ import { CodeableConcept, Condition, Patient } from "@medplum/fhirtypes";
 import { ResponseDetail } from "../schema/response";
 import { getPatientReference } from "./patient";
 import { getSurescriptsDataSourceExtension } from "./shared";
-import {
-  CONDITION_CLINICAL_STATUS_SYSTEM,
-  CONDITION_VERIFICATION_STATUS_SYSTEM,
-} from "./constants";
+import { CONDITION_CLINICAL_STATUS_URL, CONDITION_VERIFICATION_STATUS_URL } from "./constants";
 
 export function getCondition(patient: Patient, detail: ResponseDetail): Condition | undefined {
   const subject = getPatientReference(patient);
@@ -44,7 +41,7 @@ function getClinicalStatus(detail: ResponseDetail): Condition["clinicalStatus"] 
     return {
       coding: [
         {
-          system: CONDITION_CLINICAL_STATUS_SYSTEM,
+          system: CONDITION_CLINICAL_STATUS_URL,
           code: "active",
         },
       ],
@@ -58,7 +55,7 @@ function getVerificationStatus(detail: ResponseDetail): Condition["verificationS
     return {
       coding: [
         {
-          system: CONDITION_VERIFICATION_STATUS_SYSTEM,
+          system: CONDITION_VERIFICATION_STATUS_URL,
           code: "confirmed",
         },
       ],

@@ -18,6 +18,7 @@ import { getCoverageReference } from "./coverage";
 import { getPharmacyReference } from "./pharmacy";
 import { getSurescriptsDataSourceExtension } from "./shared";
 import { ICD_10_URL } from "@metriport/shared/medical";
+import { HL7_CODE_SYSTEM_URL } from "./constants";
 
 export function getMedicationRequest({
   patient,
@@ -75,11 +76,11 @@ function getMedicationRequestIdentifier(detail: ResponseDetail): Identifier[] | 
   const identifiers: Identifier[] = [];
   if (detail.rxReferenceNumber) {
     identifiers.push({
-      system: "http://terminology.hl7.org/CodeSystem/v2-0203",
+      system: HL7_CODE_SYSTEM_URL,
       type: {
         coding: [
           {
-            system: "http://terminology.hl7.org/CodeSystem/v2-0203",
+            system: HL7_CODE_SYSTEM_URL,
             code: "RXN",
             display: "Rx Number",
           },
