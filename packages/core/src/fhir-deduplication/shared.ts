@@ -535,7 +535,7 @@ export function fetchCodeableConceptText(concept: CodeableConcept): string | und
   }
 }
 
-export function assignMostDescriptiveStatus<T extends Resource & { status?: string }>(
+export function dangerouslyAssignMostDescriptiveStatus<T extends Resource & { status?: string }>(
   statusRanking: Record<string, number>,
   existing: T,
   target: T
@@ -545,7 +545,7 @@ export function assignMostDescriptiveStatus<T extends Resource & { status?: stri
   target.status = status;
 }
 
-export function assignMostSevereClass(existing: Encounter, target: Encounter): void {
+export function dangerouslyAssignMostSevereClass(existing: Encounter, target: Encounter): void {
   if (!isActCoding(existing.class) || !isActCoding(target.class)) {
     return;
   }
