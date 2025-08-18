@@ -224,7 +224,7 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
   ): Promise<void> {
     if (triggerEvent !== dischargeEventCode) return;
 
-    const goals: DischargeData[] = encounterPeriod?.end
+    const dischargeData: DischargeData[] = encounterPeriod?.end
       ? [{ type: "findDischargeSummary", encounterEndDate: encounterPeriod.end }]
       : [];
 
@@ -233,7 +233,11 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
 
     await executeWithNetworkRetries(
       async () =>
-        axios.post(createDischargeRequeryJobRouteUrl, { goals }, { params: { cxId, patientId } }),
+        axios.post(
+          createDischargeRequeryJobRouteUrl,
+          { dischargeData },
+          { params: { cxId, patientId } }
+        ),
       {
         log,
       }
