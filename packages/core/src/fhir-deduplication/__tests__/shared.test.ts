@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { deepMerge, pickMostSevereClass } from "../shared";
+import { Encounter } from "@medplum/fhirtypes";
+import { deepMerge, pickMostSevereClass, dangerouslyAssignMostSevereClass } from "../shared";
 
 describe("deepMerge", () => {
   it("keeps the target 'display' value when source is 'unknown'", () => {
@@ -73,5 +74,103 @@ describe("pickMostSevereClass", () => {
     const class2 = {} as any;
     const result = pickMostSevereClass(class1, class2);
     expect(result).toBeUndefined();
+  });
+});
+
+describe("dangerouslyAssignMostSevereClass", () => {
+  const HL7_ACT_URL = "http://terminology.hl7.org/CodeSystem/v3-ActCode";
+
+  it("assigns the most severe class to both encounters when both have valid ActCoding", () => {
+    const existing: Encounter = {
+      resourceType: "Encounter",
+      status: "finished",
+      class: {
+        system: HL7_ACT_URL,
+        code: "AMB", // Ambulatory - less severe
+        display: "Ambulatory",
+      },
+    };
+
+    const target: Encounter = {
+      resourceType: "Encounter",
+      status: "finished",
+      class: {
+        system: HL7_ACT_URL,
+        code: "ACUTE", // Acute - more severe
+        display: "Acute",
+      },
+    };
+
+    dangerouslyAssignMostSevereClass(existing, target);
+
+    // Both should now have the more severe "ACUTE" class
+    expect(existing.class?.code).toBe("ACUTE");
+    expect(existing.class?.display).toBe("Acute");
+    expect(target.class?.code).toBe("ACUTE");
+    expect(target.class?.display).toBe("Acute");
+  });
+
+  it("does not modify encounters when one has invalid ActCoding system", () => {
+    const existing: Encounter = {
+      resourceType: "Encounter",
+      status: "finished",
+      class: {
+        system: "http://invalid-system.org", // Invalid system
+        code: "AMB",
+        display: "Ambulatory",
+      },
+    };
+
+    const target: Encounter = {
+      resourceType: "Encounter",
+      status: "finished",
+      class: {
+        system: HL7_ACT_URL,
+        code: "ACUTE",
+        display: "Acute",
+      },
+    };
+
+    const originalExistingCode = existing.class?.code;
+    const originalTargetCode = target.class?.code;
+
+    dangerouslyAssignMostSevereClass(existing, target);
+
+    // Both should remain unchanged
+    expect(existing.class?.code).toBe(originalExistingCode);
+    expect(target.class?.code).toBe(originalTargetCode);
+  });
+
+  it("does not modify encounters when most severe class has no code", () => {
+    const existing: Encounter = {
+      resourceType: "Encounter",
+      status: "finished",
+      class: {
+        system: HL7_ACT_URL,
+        // No code property - this will make pickMostSevereClass return undefined
+        display: "Some display",
+      },
+    };
+
+    const target: Encounter = {
+      resourceType: "Encounter",
+      status: "finished",
+      class: {
+        system: HL7_ACT_URL,
+        // No code property - this will make pickMostSevereClass return undefined
+        display: "Another display",
+      },
+    };
+
+    const originalExistingDisplay = existing.class?.display;
+    const originalTargetDisplay = target.class?.display;
+
+    dangerouslyAssignMostSevereClass(existing, target);
+
+    // Both should remain unchanged since pickMostSevereClass returns undefined
+    expect(existing.class?.display).toBe(originalExistingDisplay);
+    expect(target.class?.display).toBe(originalTargetDisplay);
+    expect(existing.class?.code).toBeUndefined();
+    expect(target.class?.code).toBeUndefined();
   });
 });
