@@ -22,11 +22,14 @@ export async function getBundleByResourceType(
     practiceId,
     ...(tokenId && { tokenId }),
   });
-  const mappings = await getSecondaryMappings({
-    ehr: EhrSources.athena,
-    practiceId,
-    schema: athenaSecondaryMappingsSchema,
-  });
+  const mappings =
+    resourceType === "Encounter"
+      ? await getSecondaryMappings({
+          ehr: EhrSources.athena,
+          practiceId,
+          schema: athenaSecondaryMappingsSchema,
+        })
+      : undefined;
   const bundle = await client.getBundleByResourceType({
     cxId,
     metriportPatientId,
