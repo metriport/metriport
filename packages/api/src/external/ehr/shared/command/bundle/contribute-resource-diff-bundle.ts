@@ -1,5 +1,5 @@
-import { Bundle, BundleEntry, Encounter, Extension, Resource } from "@medplum/fhirtypes";
-import { encounterAppointmentExtensionUrl } from "@metriport/core/external/ehr/athenahealth/index";
+import { Bundle, BundleEntry, Encounter, Resource } from "@medplum/fhirtypes";
+import { getEncounterAppointmentTypeIdExtension } from "@metriport/core/external/ehr/athenahealth/index";
 import { BundleType } from "@metriport/core/external/ehr/bundle/bundle-shared";
 import { createOrReplaceBundle } from "@metriport/core/external/ehr/bundle/command/create-or-replace-bundle";
 import {
@@ -10,6 +10,7 @@ import { createOrReplaceDocument } from "@metriport/core/external/ehr/document/c
 import { fetchDocument } from "@metriport/core/external/ehr/document/command/fetch-document";
 import { DocumentType } from "@metriport/core/external/ehr/document/document-shared";
 import { artifactRelatedArtifactUrl } from "@metriport/core/external/fhir/shared/extensions/derived-from";
+import { buildResourceReference } from "@metriport/core/external/fhir/shared/index";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { log, out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
@@ -153,34 +154,99 @@ async function dangerouslyRemoveEncounterEntriesWithBlacklistedAppointmentType({
     .filter(entry => entry.resource?.resourceType === "Encounter")
     .map(entry => entry.resource as Encounter);
   if (encounters.length < 1) return;
-  const encountersToRemove = encounters.filter((encounter: Encounter) => {
-    if (!encounter.extension || encounter.extension.length < 1) return true;
-    const appointmentTypeExtension = encounter.extension.find(
-      (ext: Extension) => ext.url === encounterAppointmentExtensionUrl
-    );
-    if (!appointmentTypeExtension || !appointmentTypeExtension.valueString) return true;
-    return blacklistedAppointmentTypes.includes(appointmentTypeExtension.valueString);
-  });
-  const resourceIdsToRemove = new Set<string>();
-  for (const encounter of encountersToRemove) {
-    if (!encounter.id) continue;
-    resourceIdsToRemove.add(encounter.id);
-  }
-  const encounterReferences = encountersToRemove.map(encounter => `Encounter/${encounter.id}`);
+  const encountersToRemoveReferences: string[] = [];
+  const encountersToRemoveIds = encounters
+    .filter((encounter: Encounter) => {
+      const appointmentTypeExtension = getEncounterAppointmentTypeIdExtension(encounter);
+      if (!appointmentTypeExtension || !appointmentTypeExtension.valueString) return true;
+      return blacklistedAppointmentTypes.includes(appointmentTypeExtension.valueString);
+    })
+    .flatMap(encounter => {
+      if (!encounter.id) return [];
+      encountersToRemoveReferences.push(buildResourceReference(encounter));
+      return [encounter.id];
+    });
+  const setOfResourceIdsToRemove = new Set<string>(encountersToRemoveIds);
   for (const entry of bundle.entry) {
     if (!entry.resource || !entry.resource.id) continue;
-    if (doesResourceReferToEncounter(entry.resource, encounterReferences)) {
-      resourceIdsToRemove.add(entry.resource.id);
+    if (doesResourceReferenceEncounter(entry.resource, encountersToRemoveReferences)) {
+      setOfResourceIdsToRemove.add(entry.resource.id);
     }
   }
   const [resourcesToRemove, resourcesToKeep] = partition(
     bundle.entry,
     (entry: BundleEntry<Resource>) => {
       if (!entry.resource || !entry.resource.id) return false;
-      return resourceIdsToRemove.has(entry.resource.id);
+      return setOfResourceIdsToRemove.has(entry.resource.id);
     }
   );
   bundle.entry = resourcesToKeep;
+  await createResourceDiffRemovedBundle({
+    ehr,
+    cxId,
+    metriportPatientId,
+    ehrPatientId,
+    resourceType,
+    jobId,
+    resourcesToRemove,
+  });
+}
+
+/**
+ * Determines if the given FHIR resource contains a reference to any of the specified encounter references.
+ *
+ * This checks for a reference to an encounter in the resource's `encounter` or `context` property,
+ * and returns true if any such reference matches one in the provided list.
+ *
+ * @param resource - The FHIR resource to inspect for encounter references.
+ * @param encounterReferences - An array of encounter reference strings (e.g., "Encounter/123").
+ * @returns True if the resource refers to any encounter in the list; otherwise, false.
+ */
+function doesResourceReferenceEncounter(
+  resource: Resource,
+  encounterReferences: string[]
+): boolean {
+  if ("encounter" in resource) {
+    const encounter = resource.encounter;
+    if (!encounter || !encounter.reference) return false;
+    return encounterReferences.includes(encounter.reference);
+  }
+  if ("context" in resource) {
+    const context = resource.context;
+    if (!context || !("reference" in context) || !context.reference) return false;
+    return encounterReferences.includes(context.reference);
+  }
+  return false;
+}
+
+/**
+ * Creates a resource diff removed bundle. This is for auditing purposes only.
+ *
+ * @param ehr - The EHR source.
+ * @param cxId - The CX ID of the patient.
+ * @param metriportPatientId - The Metriport patient ID.
+ * @param ehrPatientId - The patient id of the EHR patient.
+ * @param resourceType - The resource type.
+ * @param jobId - The job ID.
+ * @param resourcesToRemove - The resources to remove.
+ */
+async function createResourceDiffRemovedBundle({
+  ehr,
+  cxId,
+  metriportPatientId,
+  ehrPatientId,
+  resourceType,
+  jobId,
+  resourcesToRemove,
+}: {
+  ehr: EhrSources;
+  cxId: string;
+  metriportPatientId: string;
+  ehrPatientId: string;
+  resourceType: string;
+  jobId: string;
+  resourcesToRemove: BundleEntry<Resource>[];
+}): Promise<void> {
   try {
     await createOrReplaceBundle({
       ehr,
@@ -203,30 +269,6 @@ async function dangerouslyRemoveEncounterEntriesWithBlacklistedAppointmentType({
       `dangerouslyRemoveEncounterEntriesWithBlacklistedAppointmentType - metriportPatientId ${metriportPatientId} ehrPatientId ${ehrPatientId} resourceType ${resourceType}`
     ).log(`Error creating resource diff removed bundle. Cause: ${errorToString(error)}`);
   }
-}
-
-/**
- * Determines if the given FHIR resource contains a reference to any of the specified encounter references.
- *
- * This checks for a reference to an encounter in the resource's `encounter` or `context` property,
- * and returns true if any such reference matches one in the provided list.
- *
- * @param resource - The FHIR resource to inspect for encounter references.
- * @param encounterReferences - An array of encounter reference strings (e.g., "Encounter/123").
- * @returns True if the resource refers to any encounter in the list; otherwise, false.
- */
-function doesResourceReferToEncounter(resource: Resource, encounterReferences: string[]): boolean {
-  if ("encounter" in resource) {
-    const encounter = resource.encounter;
-    if (!encounter || !encounter.reference) return false;
-    return encounterReferences.includes(encounter.reference);
-  }
-  if ("context" in resource) {
-    const context = resource.context;
-    if (!context || !("reference" in context) || !context.reference) return false;
-    return encounterReferences.includes(context.reference);
-  }
-  return false;
 }
 
 /**

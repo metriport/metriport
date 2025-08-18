@@ -2,6 +2,7 @@ import { DocumentReference } from "@medplum/fhirtypes";
 import { UploadDocumentResult } from "@metriport/api-sdk";
 import { createDocumentFilePath } from "@metriport/core/domain/document/filename";
 import { S3Utils } from "@metriport/core/external/aws/s3";
+import { out } from "@metriport/core/util/log";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { composeDocumentReference } from "../../../external/fhir/document/draft-update-document-reference";
 import { upsertDocumentToFHIRServer } from "../../../external/fhir/document/save-document-reference";
@@ -15,13 +16,16 @@ export async function getUploadUrlAndCreateDocRef({
   cxId,
   patientId,
   docRefDraft,
+  docRefId: docRefIdParam,
 }: {
   cxId: string;
   patientId: string;
   docRefDraft: DocumentReference;
+  docRefId?: string;
 }): Promise<UploadDocumentResult> {
+  const { log } = out(`getUploadUrlAndCreateDocRef - patient ${patientId}`);
   const medicalDocumentsUploadBucketName = Config.getMedicalDocumentsUploadBucketName();
-  const docRefId = uuidv7();
+  const docRefId = docRefIdParam ?? uuidv7();
   const s3FileName = createDocumentFilePath(cxId, patientId, docRefId);
   const organization = await getOrganizationOrFail({ cxId });
 
@@ -36,7 +40,7 @@ export async function getUploadUrlAndCreateDocRef({
 
   async function upsertOnFHIRServer() {
     // Make a temporary DocumentReference on the FHIR server.
-    console.log("Creating a temporary DocumentReference on the FHIR server with ID:", docRef.id);
+    log(`Creating a temporary DocumentReference on the FHIR server with ID: ${docRef.id}`);
     await upsertDocumentToFHIRServer(cxId, docRef);
   }
 

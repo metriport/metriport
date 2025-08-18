@@ -3,6 +3,8 @@ import {
   Bundle,
   Coding,
   Condition,
+  Encounter as EncounterFhir,
+  Extension,
   Immunization,
   Observation,
   Procedure,
@@ -167,8 +169,15 @@ interface AthenaHealthApiConfig extends ApiConfig {
   environment: AthenaEnv;
 }
 
-export const encounterAppointmentExtensionUrl =
+const encounterAppointmentExtensionUrl =
   "http://hl7.org/fhir/StructureDefinition/encounter-appointment-type-id";
+
+export function getEncounterAppointmentTypeIdExtension(
+  encounter: EncounterFhir
+): Extension | undefined {
+  if (!encounter.extension || encounter.extension.length < 1) return undefined;
+  return encounter.extension.find((ext: Extension) => ext.url === encounterAppointmentExtensionUrl);
+}
 
 const athenaPracticePrefix = "Practice";
 const athenaPatientPrefix = "E";
