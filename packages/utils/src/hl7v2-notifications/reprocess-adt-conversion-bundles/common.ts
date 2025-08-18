@@ -9,7 +9,10 @@ import { out } from "@metriport/core/util/log";
 import { FhirBundleSdk } from "@metriport/fhir-sdk";
 import { parseFhirBundle } from "@metriport/shared/medical/fhir/bundle";
 import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
 import { sleep } from "@metriport/shared/common/sleep";
+
+dayjs.extend(duration);
 
 const bucketName = Config.getHl7ConversionBucketName();
 

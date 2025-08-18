@@ -396,6 +396,12 @@ export function pickMostSevereClass(
   class2: EncounterClassCoding | undefined
 ): EncounterClassCoding | undefined {
   if (class1 && class2) {
+    if (
+      classRank(class1) === Number.POSITIVE_INFINITY &&
+      classRank(class2) === Number.POSITIVE_INFINITY
+    ) {
+      return undefined;
+    }
     return classRank(class1) <= classRank(class2) ? class1 : class2;
   } else if (class1 && class1.code) {
     return class1;
