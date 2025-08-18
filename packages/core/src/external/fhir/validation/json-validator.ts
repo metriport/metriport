@@ -18,23 +18,13 @@ const bundleEntrySchema = z.array(
   })
 );
 
-/**
- * @deprecated Use @metriport/core/external/fhir/validation/json-validator.ts instead
- */
 export const bundleSchema = z.object({
   resourceType: z.enum(["Bundle"]),
   type: typeSchema,
   entry: bundleEntrySchema,
 });
 
-/**
- * @deprecated Use @metriport/core/external/fhir/validation/json-validator.ts instead
- */
 export type BundleEntry = z.infer<typeof bundleEntrySchema>;
-
-/**
- * @deprecated Use @metriport/core/external/fhir/validation/json-validator.ts instead
- */
 export type ValidBundle = z.infer<typeof bundleSchema>;
 
 /**
@@ -44,9 +34,6 @@ const ajv = new Ajv({ strict: false });
 ajv.addMetaSchema(metaSchema);
 const validate = ajv.compile(schema);
 
-/**
- * @deprecated Use @metriport/core/external/fhir/validation/json-validator.ts instead
- */
 export function validateFhirEntries(bundle: Bundle): ValidBundle {
   if (bundle.type !== "collection") throw new BadRequestError("Bundle must be a collection");
   if (!bundle.entry) throw new BadRequestError("Bundle must have entries");

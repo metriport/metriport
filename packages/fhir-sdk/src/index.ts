@@ -329,19 +329,21 @@ export class FhirBundleSdk {
   }
 
   /**
-   * Create a new FhirBundleSdk instance
+   * Create a new FhirBundleSdk instance (async for backwards compatibility)
    * FR-1.2: Validate bundle resourceType
-   * FR-1.3: Validate bundle type
    */
   static async create(bundle: Bundle): Promise<FhirBundleSdk> {
+    return FhirBundleSdk.createSync(bundle);
+  }
+
+  /**
+   * Create a new FhirBundleSdk instance synchronously
+   * FR-1.2: Validate bundle resourceType
+   */
+  static createSync(bundle: Bundle): FhirBundleSdk {
     // FR-1.2: Validate bundle resourceType
     if (bundle.resourceType !== "Bundle") {
       throw new Error("Invalid bundle: resourceType must be 'Bundle'");
-    }
-
-    // FR-1.3: Validate bundle type
-    if (bundle.type !== "collection") {
-      throw new Error("Invalid bundle: type must be 'collection'");
     }
 
     return new FhirBundleSdk(bundle);
@@ -730,16 +732,16 @@ export class FhirBundleSdk {
    * Create a new bundle entry from an existing entry, preserving fullUrl
    */
   private createBundleEntry(originalEntry: BundleEntry, resource: Resource): BundleEntry {
-    const newEntry: BundleEntry = {
-      resource: resource,
-    };
-
-    // Preserve original fullUrl if it exists (FR-6.6)
     if (originalEntry.fullUrl) {
-      newEntry.fullUrl = originalEntry.fullUrl;
+      return {
+        fullUrl: originalEntry.fullUrl,
+        resource: resource,
+      };
     }
 
-    return newEntry;
+    return {
+      resource: resource,
+    };
   }
 
   /**
@@ -749,8 +751,8 @@ export class FhirBundleSdk {
     const exportBundle: Bundle = {
       resourceType: "Bundle",
       type: this.bundle.type || "collection",
-      entry: entries,
       total: entries.length,
+      entry: entries,
     };
 
     // Preserve original bundle metadata (FR-6.4)

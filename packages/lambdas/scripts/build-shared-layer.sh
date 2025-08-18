@@ -18,6 +18,7 @@ main() {
    rsync -a --exclude *.ts --exclude *.d.ts --exclude *.ts.map --exclude *.js.map --exclude __tests__ --exclude *.md --exclude LICENSE node_modules ./layers/shared/nodejs/
 
    addPackageToLayer "shared"
+   addPackageToLayer "fhir-sdk"
    addPackageToLayer "core"
    addPackageToLayer "ihe-gateway-sdk"
 
