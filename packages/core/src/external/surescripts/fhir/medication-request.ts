@@ -18,7 +18,7 @@ import { getCoverageReference } from "./coverage";
 import { getPharmacyReference } from "./pharmacy";
 import { getSurescriptsDataSourceExtension } from "./shared";
 import { ICD_10_URL } from "@metriport/shared/medical";
-import { HL7_CODE_SYSTEM_URL } from "./constants";
+import { HL7_CODE_SYSTEM_URL, MEDICATION_REQUEST_CATEGORY_URL } from "./constants";
 
 export function getMedicationRequest({
   patient,
@@ -126,7 +126,7 @@ function getDispenseCategory(): MedicationRequest["category"] {
     {
       coding: [
         {
-          system: "http://terminology.hl7.org/CodeSystem/medicationrequest-category",
+          system: MEDICATION_REQUEST_CATEGORY_URL,
           code: "outpatient",
         },
       ],
@@ -158,7 +158,7 @@ function getDispenseNote(detail: ResponseDetail): MedicationRequest["note"] | un
     },
   ];
 }
-// Field 36 of the FFM specification
+
 function getMedicationRequestSubstitution(
   detail: ResponseDetail
 ): MedicationRequest["substitution"] | undefined {

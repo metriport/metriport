@@ -24,3 +24,5 @@ export const CONDITION_CLINICAL_STATUS_URL =
 export const CONDITION_VERIFICATION_STATUS_URL =
   "http://terminology.hl7.org/CodeSystem/condition-ver-status";
 export const HL7_CODE_SYSTEM_URL = "http://terminology.hl7.org/CodeSystem/v2-0203";
+export const MEDICATION_REQUEST_CATEGORY_URL =
+  "http://terminology.hl7.org/CodeSystem/medicationrequest-category";
