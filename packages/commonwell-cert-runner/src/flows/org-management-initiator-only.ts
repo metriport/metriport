@@ -48,9 +48,7 @@ export async function orgManagementInitiatorOnly(): Promise<void> {
     initiatorOnlyOrg.locations[0].city = faker.location.city();
     // console.log("Updated payload: " + JSON.stringify(initiatorOnlyOrg, null, 2));
 
-    if ("securityTokenKeyType" in initiatorOnlyOrg) {
-      initiatorOnlyOrg.securityTokenKeyType = "";
-    }
+    initiatorOnlyOrg.securityTokenKeyType = "";
     if ("authorizationInformation" in initiatorOnlyOrg) {
       delete initiatorOnlyOrg.authorizationInformation;
     }
