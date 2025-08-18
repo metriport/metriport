@@ -1,5 +1,6 @@
 import { out } from "../../util";
 import { HieConfig } from "./types";
+import { SftpClient } from "../../external/sftp/client";
 
 // import { errorToString, executeWithNetworkRetries } from "@metriport/shared";
 // import dayjs from "dayjs";
@@ -14,6 +15,14 @@ import { HieConfig } from "./types";
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function uploadThroughSftp(config: HieConfig, file: string): Promise<void> {
   const { log } = out("[STUB] - Hl7v2RosterUploader");
+
+  if (!config.sftpConfig) {
+    throw new Error("Sftp config is required");
+  }
+
+  const client = new SftpClient(config.sftpConfig);
+  await client.connect();
+
   // const { states, subscriptions } = config;
   // const loggingDetails = {
   //   hieName: config.name,
