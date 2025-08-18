@@ -20,6 +20,10 @@ import {
   sleep,
   stringToBoolean,
 } from "@metriport/shared";
+import {
+  questSource,
+  questMappingRequestSchema,
+} from "@metriport/shared/interface/external/quest/source";
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -29,6 +33,10 @@ import status from "http-status";
 import stringify from "json-stringify-safe";
 import { chunk } from "lodash";
 import { z } from "zod";
+import {
+  createPatientMapping,
+  findFirstPatientMappingForSource,
+} from "../../../command/mapping/patient";
 import { resetExternalDataSource } from "../../../command/medical/admin/reset-external-data";
 import { getFacilityOrFail } from "../../../command/medical/facility/get-facility";
 import {
@@ -288,6 +296,44 @@ router.delete(
     await deletePatient(patientDeleteCmd);
 
     return res.sendStatus(status.NO_CONTENT);
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * POST /internal/patient/:patientId/quest-mapping
+ *
+ * Sets the patient's mapping to an existing external Quest ID.
+ *
+ * @param req.params.patientId Patient ID to link to a person.
+ * @param req.query.cxId The customer ID.
+ * @param req.body.externalId The existing external Quest ID to map the patient to.
+ * @returns 201 upon success.
+ * @returns 208 if the patient already has a Quest mapping.
+ */
+router.post(
+  "/:patientId/quest-mapping",
+  handleParams,
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const patientId = getFromParamsOrFail("patientId", req);
+    const questMapping = questMappingRequestSchema.parse(req.body);
+
+    await getPatientOrFail({ cxId, id: patientId });
+    const existingMapping = await findFirstPatientMappingForSource({
+      patientId,
+      source: questSource,
+    });
+    if (existingMapping) {
+      return res.sendStatus(status.ALREADY_REPORTED);
+    }
+    await createPatientMapping({
+      cxId,
+      patientId,
+      externalId: questMapping.externalId,
+      source: questSource,
+    });
+    return res.sendStatus(status.CREATED);
   })
 );
 

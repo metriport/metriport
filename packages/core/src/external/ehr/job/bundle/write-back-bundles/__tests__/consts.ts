@@ -247,25 +247,25 @@ export const vitalLoincCodeObservationCode2 = {
  * Sample write-back filters for each filter type.
  */
 export const chronicityFilterChronic = {
-  problems: {
+  problem: {
     chronicityFilter: "chronic",
   },
 };
 
 export const chronicityFilterNonChronic = {
-  problems: {
+  problem: {
     chronicityFilter: "non-chronic",
   },
 };
 
 export const chronicityFilterAll = {
-  problems: {
+  problem: {
     chronicityFilter: "all",
   },
 };
 
 export const chronicityFilterUndefined = {
-  problems: {
+  problem: {
     chronicityFilter: undefined,
   },
 };

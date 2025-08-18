@@ -3,13 +3,15 @@ import { BadRequestError } from "@metriport/shared";
 import { EhrSource, EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { writeBackGroupedVitals as writeBackGroupedVitalsElation } from "../../elation/command/write-back/grouped-vitals";
 
+export type GroupedVitalsByDate = [Date, Observation[]];
+
 export type WriteBackGroupedVitalsRequest = {
   ehr: EhrSource;
   tokenId?: string;
   cxId: string;
   practiceId: string;
   ehrPatientId: string;
-  observations: Observation[];
+  groupedVitals: GroupedVitalsByDate;
 };
 
 export type WriteBackGroupedVitalsClientRequest = Omit<WriteBackGroupedVitalsRequest, "ehr">;
@@ -47,4 +49,8 @@ function getEhrWriteBackGroupedVitalsHandler(ehr: EhrSource): WriteBackGroupedVi
 export const writeBackGroupedVitalsEhrs = [EhrSources.elation];
 export function isWriteBackGroupedVitalsEhr(ehr: EhrSource): boolean {
   return writeBackGroupedVitalsEhrs.includes(ehr);
+}
+
+export function isGroupedVitalsByDate(val: unknown): val is GroupedVitalsByDate {
+  return Array.isArray(val) && val.length === 2 && val[0] instanceof Date && Array.isArray(val[1]);
 }

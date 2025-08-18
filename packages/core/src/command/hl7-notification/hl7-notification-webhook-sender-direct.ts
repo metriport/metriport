@@ -2,6 +2,7 @@ import { Hl7Message } from "@medplum/core";
 import { Bundle, CodeableConcept, Period, Resource } from "@medplum/fhirtypes";
 import { executeWithNetworkRetries } from "@metriport/shared";
 import { DischargeData } from "@metriport/shared/domain/patient/patient-monitoring/discharge-requery";
+import { TcmEncounterUpsertInput } from "@metriport/shared/domain/tcm-encounter";
 import axios from "axios";
 import dayjs from "dayjs";
 import { S3Utils } from "../../external/aws/s3";
@@ -194,7 +195,7 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
     const { admitTime, dischargeTime, ...basePayload } = tcmEncounterPayload;
     const encounterId = basePayload.id;
     const latestEvent = triggerEvent === "A01" ? "Admitted" : "Discharged";
-    const fullPayload = {
+    const fullPayload: TcmEncounterUpsertInput = {
       ...basePayload,
       latestEvent,
       ...(admitTime ? { admitTime } : undefined),

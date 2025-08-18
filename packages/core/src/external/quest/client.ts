@@ -1,5 +1,7 @@
+import { MetriportError } from "@metriport/shared";
 import { Config } from "../../util/config";
 import { SftpClient } from "../sftp/client";
+import { generateQuestRoster } from "./roster";
 import { QuestSftpConfig } from "./types";
 
 export class QuestSftpClient extends SftpClient {
@@ -16,10 +18,29 @@ export class QuestSftpClient extends SftpClient {
     });
     this.outgoingDirectory = config.outgoingDirectory ?? Config.getQuestSftpOutgoingDirectory();
     this.incomingDirectory = config.incomingDirectory ?? Config.getQuestSftpIncomingDirectory();
-    this.initializeS3Replica({
-      bucketName: config.replicaBucket ?? Config.getQuestReplicaBucketName(),
-      region: config.replicaBucketRegion ?? Config.getAWSRegion(),
-    });
+
+    const replicaBucketName = config.replicaBucket ?? Config.getQuestReplicaBucketName();
+    const replicaBucketRegion = config.replicaBucketRegion ?? Config.getAWSRegion();
+    if (replicaBucketName) {
+      this.initializeS3Replica({
+        bucketName: replicaBucketName,
+        region: replicaBucketRegion,
+      });
+    }
+  }
+
+  async generateAndUploadRoster(): Promise<void> {
+    const { rosterFileName, rosterContent } = await generateQuestRoster();
+    try {
+      await this.connect();
+      await this.writeToQuest(rosterFileName, rosterContent);
+    } catch (error) {
+      throw new MetriportError(`Failed to upload Quest roster`, error, {
+        context: "QuestSftpClient",
+      });
+    } finally {
+      await this.disconnect();
+    }
   }
 
   async writeToQuest(fileName: string, fileContent: Buffer): Promise<void> {
