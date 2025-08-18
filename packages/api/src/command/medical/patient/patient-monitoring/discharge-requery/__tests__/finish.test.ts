@@ -1,6 +1,6 @@
 import { faker } from "@faker-js/faker";
 import { Encounter } from "@medplum/fhirtypes";
-import { processDischargeData } from "../finish";
+import { findMatchingEncounterOrNotifyOfFailure } from "../finish";
 import * as sharedModule from "../shared";
 
 describe("processDischargeData", () => {
@@ -25,7 +25,7 @@ describe("processDischargeData", () => {
     it("should return processing status with appropriate reason", async () => {
       const encounters: Encounter[] = [];
 
-      const result = await processDischargeData(encounters, cxId);
+      const result = await findMatchingEncounterOrNotifyOfFailure(encounters, cxId);
 
       expect(result).toEqual(
         expect.objectContaining({
@@ -65,7 +65,7 @@ describe("processDischargeData", () => {
         }),
       ];
 
-      const result = await processDischargeData(encounters, cxId);
+      const result = await findMatchingEncounterOrNotifyOfFailure(encounters, cxId);
 
       expect(result).toEqual(
         expect.objectContaining({
@@ -100,7 +100,7 @@ describe("processDischargeData", () => {
       ];
 
       sendSlackNotificationMock.mockImplementationOnce(() => Promise.resolve());
-      const result = await processDischargeData(encounters, cxId);
+      const result = await findMatchingEncounterOrNotifyOfFailure(encounters, cxId);
       expect(result).toEqual(
         expect.objectContaining({
           status: "failed",
@@ -123,7 +123,7 @@ describe("processDischargeData", () => {
       ];
 
       sendSlackNotificationMock.mockImplementationOnce(() => Promise.resolve());
-      const result = await processDischargeData(encounters, cxId);
+      const result = await findMatchingEncounterOrNotifyOfFailure(encounters, cxId);
       expect(result).toEqual(
         expect.objectContaining({
           status: "failed",
@@ -155,7 +155,7 @@ describe("processDischargeData", () => {
         }),
       ];
 
-      const result = await processDischargeData(encounters, cxId);
+      const result = await findMatchingEncounterOrNotifyOfFailure(encounters, cxId);
       expect(result).toEqual(
         expect.objectContaining({
           status: "completed",
@@ -177,7 +177,7 @@ describe("processDischargeData", () => {
         }),
       ];
 
-      const result = await processDischargeData(encounters, cxId);
+      const result = await findMatchingEncounterOrNotifyOfFailure(encounters, cxId);
       expect(result).toEqual(
         expect.objectContaining({
           status: "completed",

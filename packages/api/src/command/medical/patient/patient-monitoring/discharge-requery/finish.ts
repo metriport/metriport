@@ -213,7 +213,7 @@ async function processDischargeSummaryAssociation(
   const matchingResults = await Promise.all(
     dischargeData.map(async discharge => {
       const matchingEncounters = getPotentiallyMatchingEncounters(encounters, discharge);
-      const matchingResult = await processDischargeData(matchingEncounters, cxId);
+      const matchingResult = await findMatchingEncounterOrNotifyOfFailure(matchingEncounters, cxId);
 
       return {
         ...matchingResult,
@@ -235,7 +235,7 @@ function getPotentiallyMatchingEncounters(encounters: Encounter[], discharge: Di
   return encounters.filter(e => e.period?.end === discharge.encounterEndDate);
 }
 
-export async function processDischargeData(
+export async function findMatchingEncounterOrNotifyOfFailure(
   encounters: Encounter[],
   cxId: string
 ): Promise<Omit<DischargeAssociationBreakdown, "discharge">> {
@@ -268,8 +268,6 @@ export async function processDischargeData(
   return {
     status,
     reason,
-    dischargeSummaryFilePath: undefined,
-    encounterId: undefined,
   };
 }
 

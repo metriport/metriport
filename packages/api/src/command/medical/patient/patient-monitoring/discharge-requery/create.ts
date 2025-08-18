@@ -9,7 +9,7 @@ import {
 import {
   calculateScheduledAt,
   defaultRemainingAttempts,
-  pickEarliestScheduledAt,
+  earliest,
   pickLargestRemainingAttempts,
 } from "@metriport/shared/domain/patient/patient-monitoring/utils";
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
@@ -65,24 +65,22 @@ export async function createDischargeRequeryJob(
     });
   }
 
-  if (existingJobs.length > 0) {
-    for (const existingJob of existingJobs) {
-      const existingRequeryJob = parseDischargeRequeryJob(existingJob);
+  for (const existingJob of existingJobs) {
+    const existingRequeryJob = parseDischargeRequeryJob(existingJob);
 
-      remainingAttempts = pickLargestRemainingAttempts(
-        existingRequeryJob.paramsOps.remainingAttempts,
-        remainingAttempts
-      );
-      scheduledAt = pickEarliestScheduledAt(existingRequeryJob.scheduledAt, scheduledAt);
-      localDischargeData.push(...existingRequeryJob.paramsOps.dischargeData);
+    remainingAttempts = pickLargestRemainingAttempts(
+      existingRequeryJob.paramsOps.remainingAttempts,
+      remainingAttempts
+    );
+    scheduledAt = earliest(existingRequeryJob.scheduledAt, scheduledAt);
+    localDischargeData.push(...existingRequeryJob.paramsOps.dischargeData);
 
-      log(`cancelling existing job ${existingJob.id}`);
-      await cancelPatientJob({
-        cxId,
-        jobId: existingJob.id,
-        reason: "Deduplicated into a new job",
-      });
-    }
+    log(`cancelling existing job ${existingJob.id}`);
+    await cancelPatientJob({
+      cxId,
+      jobId: existingJob.id,
+      reason: "Deduplicated into a new job",
+    });
   }
 
   const paramsOps: DischargeRequeryParamsOps = {
