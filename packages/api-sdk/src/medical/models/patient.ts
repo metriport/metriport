@@ -4,7 +4,13 @@ import { demographicsSchema } from "./demographics";
 import { ConsolidatedQuery } from "./fhir";
 import { patientSettingsSchema } from "@metriport/shared";
 
+const genderAtBirthCreateSchema = z.enum(["F", "M", "O", "U", "A"]);
+
 export const patientCreateSchema = demographicsSchema
+  .omit({ genderAtBirth: true })
+  .extend({
+    genderAtBirth: genderAtBirthCreateSchema,
+  })
   .merge(
     z.object({
       externalId: z.string().optional(),

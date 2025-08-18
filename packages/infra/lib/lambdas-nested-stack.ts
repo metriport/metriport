@@ -28,6 +28,9 @@ import { buildSecret, Secrets } from "./shared/secrets";
 import { QueueAndLambdaSettings } from "./shared/settings";
 import { createQueue } from "./shared/sqs";
 import { isSandbox } from "./shared/util";
+import * as path from "path";
+import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
+import * as actions from "aws-cdk-lib/aws-cloudwatch-actions";
 
 export const CDA_TO_VIS_TIMEOUT = Duration.minutes(15);
 
@@ -122,6 +125,7 @@ export class LambdasNestedStack extends NestedStack {
   readonly conversionResultNotifierLambda: Lambda;
   readonly reconversionKickoffLambda: Lambda;
   readonly reconversionKickoffQueue: Queue;
+  readonly genderizeLambda: lambda.DockerImageFunction;
 
   constructor(scope: Construct, id: string, props: LambdasNestedStackProps) {
     super(scope, id, props);
@@ -333,6 +337,13 @@ export class LambdasNestedStack extends NestedStack {
       });
     this.reconversionKickoffLambda = reconversionKickoffLambda;
     this.reconversionKickoffQueue = reconversionKickoffQueue;
+
+    this.genderizeLambda = this.setupGenderizeLambda({
+      vpc: props.vpc,
+      envType: props.config.environmentType,
+      sentryDsn: props.config.lambdasSentryDSN,
+      alarmAction: props.alarmAction,
+    });
   }
 
   private setupCdaToVisualization(ownProps: {
@@ -1052,6 +1063,52 @@ export class LambdasNestedStack extends NestedStack {
 
     return rosterUploadLambdas;
   }
+  private setupGenderizeLambda(ownProps: {
+  vpc: ec2.IVpc;
+  envType: EnvType;
+  sentryDsn?: string;
+  alarmAction?: actions.SnsAction;
+}): lambda.DockerImageFunction {
+  const { vpc, envType, sentryDsn, alarmAction } = ownProps;
+
+  // Build the Docker image from your repo root (adjust path if needed)
+  const fn = new lambda.DockerImageFunction(this, "GenderizeLambda", {
+    functionName: `Genderize-${envType}`,
+    code: lambda.DockerImageCode.fromImageAsset(
+      path.join(__dirname, "..", ".."),   // repo root
+      { file: "Dockerfile.lambda" }       // your dockerfile
+    ),
+    architecture: lambda.Architecture.X86_64, // or ARM_64 if your image supports it
+    memorySize: 3008,
+    timeout: Duration.seconds(15),
+    vpc,
+    environment: {
+      ENV_TYPE: envType,
+      // add any others you need:
+      // MODEL_NAME: "imranali291/genderize",
+      ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+    },
+  });
+
+  // ---- Alarms (after function creation) ----
+  if (alarmAction) {
+    // errors >= 1 in 1 minute
+    new cloudwatch.Alarm(this, "GenderizeErrors", {
+      metric: fn.metricErrors({ period: Duration.minutes(1), statistic: "sum" }),
+      threshold: 1,
+      evaluationPeriods: 1,
+    }).addAlarmAction(alarmAction);
+
+    // optional p95 duration alarm
+    new cloudwatch.Alarm(this, "GenderizeP95", {
+      metric: fn.metricDuration({ period: Duration.minutes(5), statistic: "p95" }),
+      threshold: 1500, // ms
+      evaluationPeriods: 1,
+    }).addAlarmAction(alarmAction);
+  }
+
+  return fn;
+}
 
   private setupReconversionKickoff(ownProps: {
     lambdaLayers: LambdaLayers;

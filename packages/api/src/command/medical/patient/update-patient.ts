@@ -40,8 +40,8 @@ export async function updatePatient({
   emit?: boolean;
 }): Promise<PatientWithIdentifiers> {
   const { cxId, facilityId } = patientUpdate;
-
-  // validate facility exists and cx has access to it
+  
+  // validate facility exists and cx has access to it 
   await getFacilityOrFail({ cxId, id: facilityId });
 
   const patient = await updatePatientWithoutHIEs(patientUpdate, emit);
@@ -49,7 +49,7 @@ export async function updatePatient({
   const fhirPatient = toFHIR(patient);
   await upsertPatientToFHIRServer(patientUpdate.cxId, fhirPatient);
 
-  runOrSchedulePatientDiscoveryAcrossHies({
+  runOrSchedulePatientDiscoveryAcrossHies({ 
     patient,
     facilityId,
     rerunPdOnNewDemographics,

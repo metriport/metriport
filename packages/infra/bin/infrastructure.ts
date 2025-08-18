@@ -12,6 +12,7 @@ import { LocationServicesStack } from "../lib/location-services-stack";
 import { SecretsStack } from "../lib/secrets-stack";
 import { initConfig } from "../lib/shared/config";
 import { getEnvVar, isSandbox } from "../lib/shared/util";
+import { GenderizeStack } from "../lib/genderize-stack";
 
 const app = new cdk.App();
 
@@ -27,6 +28,13 @@ async function deploy(config: EnvConfig) {
     region: config.region,
   };
   const version = getEnvVar("METRIPORT_VERSION");
+    const only = (app.node.tryGetContext("only") as string | undefined)?.toLowerCase();
+  if (only === "genderize") {
+    new GenderizeStack(app, "GenderizeStack", { env, config }); 
+    app.synth();
+    return;
+  }
+
 
   //---------------------------------------------------------------------------------
   // 1. Deploy the secrets stack to initialize all secrets.
@@ -53,7 +61,6 @@ async function deploy(config: EnvConfig) {
   // 4. Deploy the API stack once all secrets are defined.
   //---------------------------------------------------------------------------------
   new APIStack(app, config.stackName, { env, config, version });
-
   //---------------------------------------------------------------------------------
   // 5. Deploy the HL7 Notification Webhook Sender stack.
   //---------------------------------------------------------------------------------

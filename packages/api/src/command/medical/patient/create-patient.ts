@@ -18,20 +18,39 @@ import { addCoordinatesToAddresses } from "./add-coordinates";
 import { attachPatientIdentifiers, getPatientByDemo, PatientWithIdentifiers } from "./get-patient";
 import { createPatientSettings } from "./settings/create-patient-settings";
 import { sanitize, validate } from "./shared";
+import { GenderAtBirth } from "@metriport/shared/domain/gender";
+import { makeLambdaClient } from "@metriport/core/external/aws/lambda";
+import { Config } from "../../../shared/config";
 
 type Identifier = Pick<Patient, "cxId" | "externalId"> & { facilityId: string };
 type PatientNoExternalData = Omit<PatientData, "externalData">;
 export type PatientCreateCmd = PatientNoExternalData & Identifier;
 
+async function getGender(name: string): GenderAtBirth {
+  const lambdaClient = makeLambdaClient(Config.getAWSRegion());
+  
+  const result = await lambdaClient
+    .invoke({
+      FunctionName: genderizeLambdaName,
+      InvocationType: "RequestResponse",
+      Payload: JSON.stringify(name),
+    })
+    .promise();
+
+  return result;
+}
+
 export async function createPatient({
   patient,
+  cxId,
+  facilityId,
   runPd = true,
   rerunPdOnNewDemographics,
   forceCommonwell,
   forceCarequality,
   settings,
 }: {
-  patient: PatientCreateCmd;
+  patient: PatientCreateProps;
   runPd?: boolean;
   rerunPdOnNewDemographics?: boolean;
   forceCommonwell?: boolean;
@@ -40,6 +59,10 @@ export async function createPatient({
 }): Promise<PatientWithIdentifiers> {
   const { cxId, facilityId, externalId } = patient;
   const { log } = out(`createPatient.${cxId}`);
+
+  if (patient.genderAtBirth === "A") {
+    patient.genderAtBirth = getGender(patient.firstName);
+  }
 
   const sanitized = sanitize(patient);
   validate(sanitized);

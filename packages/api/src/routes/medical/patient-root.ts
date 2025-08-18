@@ -78,15 +78,12 @@ router.post(
         });
       }
     }
-
-    const patientCreate: PatientCreateCmd = {
-      ...schemaCreateToPatientData(patientCreateProps),
-      cxId,
-      facilityId,
-    };
-
+    
+    const fsa = 2;
     const patient = await createPatient({
-      patient: patientCreate,
+      patient: patientCreateProps,
+      cxId,
+      ptId,
       rerunPdOnNewDemographics,
       forceCommonwell,
       forceCarequality,
