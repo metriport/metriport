@@ -16,7 +16,7 @@ export async function getUploadUrlAndCreateDocRef({
   cxId,
   patientId,
   docRefDraft,
-  docRefId: docRefIdParam,
+  docRefId = uuidv7(),
 }: {
   cxId: string;
   patientId: string;
@@ -25,7 +25,6 @@ export async function getUploadUrlAndCreateDocRef({
 }): Promise<UploadDocumentResult> {
   const { log } = out(`getUploadUrlAndCreateDocRef - patient ${patientId}`);
   const medicalDocumentsUploadBucketName = Config.getMedicalDocumentsUploadBucketName();
-  const docRefId = docRefIdParam ?? uuidv7();
   const s3FileName = createDocumentFilePath(cxId, patientId, docRefId);
   const organization = await getOrganizationOrFail({ cxId });
 
