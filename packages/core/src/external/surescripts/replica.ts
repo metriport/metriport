@@ -3,6 +3,7 @@ import { S3Replica } from "../sftp/replica/s3";
 import { SurescriptsFileIdentifier, SurescriptsSftpConfig } from "./types";
 import { buildRequestFileName, buildResponseFileNamePrefix } from "./file/file-names";
 import { decompressGzip } from "../sftp/compression";
+import { INCOMING_NAME } from "./constants";
 
 export class SurescriptsReplica extends S3Replica {
   constructor(config: Pick<SurescriptsSftpConfig, "replicaBucket" | "replicaBucketRegion"> = {}) {
@@ -15,7 +16,7 @@ export class SurescriptsReplica extends S3Replica {
   async getRawVerificationFile(transmissionId: string): Promise<Buffer | undefined> {
     const requestFileName = buildRequestFileName(transmissionId);
     const verificationFileNames = await this.listFileNamesWithPrefix(
-      "from_surescripts",
+      INCOMING_NAME,
       requestFileName
     );
     const verificationFile = verificationFileNames[0];
@@ -35,7 +36,7 @@ export class SurescriptsReplica extends S3Replica {
     populationId,
   }: SurescriptsFileIdentifier): Promise<Buffer | undefined> {
     const prefix = buildResponseFileNamePrefix(transmissionId, populationId);
-    const responseFileNames = await this.listFileNamesWithPrefix("from_surescripts", prefix);
+    const responseFileNames = await this.listFileNamesWithPrefix(INCOMING_NAME, prefix);
     const responseFile = responseFileNames[0];
     if (!responseFile) {
       return undefined;
@@ -52,9 +53,8 @@ export class SurescriptsReplica extends S3Replica {
   async listResponseFiles(): Promise<
     Array<{ key: string; transmissionId: string; patientId: string }>
   > {
-    const prefix = "from_surescripts/";
-    const responseFiles = await this.listFileNames(prefix);
-    const startIndex = prefix.length;
+    const responseFiles = await this.listFileNames(INCOMING_NAME);
+    const startIndex = INCOMING_NAME.length + 1;
     return responseFiles
       .filter(key => {
         return key.charAt(startIndex + 10) === "_" && key.charAt(startIndex + 47) === "_";
