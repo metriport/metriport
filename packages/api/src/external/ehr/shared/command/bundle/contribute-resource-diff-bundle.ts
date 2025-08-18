@@ -5,6 +5,10 @@ import {
   FetchBundleParams,
 } from "@metriport/core/external/ehr/bundle/command/fetch-bundle";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
+import { MetriportError } from "@metriport/shared/dist/error/metriport-error";
+import { healthieSecondaryMappingsSchema } from "@metriport/shared/interface/external/ehr/healthie/cx-mapping";
+import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
+import { getCxMappingsByCustomer } from "../../../../../command/mapping/cx";
 import { getPatientMappingOrFail } from "../../../../../command/mapping/patient";
 import { handleDataContribution } from "../../../../../command/medical/patient/data-contribution/handle-data-contributions";
 import { getPatientOrFail } from "../../../../../command/medical/patient/get-patient";
@@ -26,6 +30,30 @@ export async function contributeResourceDiffBundle({
   resourceType,
   jobId,
 }: ContributeBundleParams): Promise<void> {
+  if (ehr === EhrSources.healthie) {
+    const cxMappings = await getCxMappingsByCustomer({ cxId, source: EhrSources.healthie });
+    const cxMapping = cxMappings[0];
+    if (!cxMapping) {
+      throw new MetriportError("Healthie cx mapping not found", undefined, {
+        cxId,
+        source: EhrSources.healthie,
+      });
+    }
+    if (cxMappings.length > 1) {
+      throw new MetriportError("Multiple Healthie cx mappings found", undefined, {
+        cxId,
+        source: EhrSources.healthie,
+      });
+    }
+    if (!cxMapping.secondaryMappings) {
+      throw new MetriportError("Healthie secondary mappings not found", undefined, {
+        externalId: cxMapping.externalId,
+        source: EhrSources.healthie,
+      });
+    }
+    const secondaryMappings = healthieSecondaryMappingsSchema.parse(cxMapping.secondaryMappings);
+    if (secondaryMappings.contributionDisabled) return;
+  }
   const patientMapping = await getPatientMappingOrFail({
     cxId,
     externalId: ehrPatientId,
