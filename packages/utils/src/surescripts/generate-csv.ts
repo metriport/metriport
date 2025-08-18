@@ -79,7 +79,9 @@ async function main({
     }
   );
 
+  // Make identifier ordering deterministic, so the CSV can be easily diffed against a future execution.
   log(`found ${identifiers.length} identifiers`);
+  identifiers.sort((a, b) => a.transmissionId.localeCompare(b.transmissionId));
 
   writeSurescriptsRunsFile(
     cxName + "-roster.csv",
