@@ -379,20 +379,29 @@ const classRanking = [
 type EncounterClassCode = (typeof classRanking)[number];
 type EncounterClassCoding = Coding & { code?: EncounterClassCode };
 
+/**
+ * Returns the rank of the class code in the classRanking array.
+ * The lower the rank, the more severe the class.
+ * @param c - The class coding to rank.
+ * @returns The rank of the class code in the classRanking array.
+ */
+function classRank(c: EncounterClassCoding | undefined) {
+  if (!c?.code) return Number.POSITIVE_INFINITY;
+  const idx = classRanking.indexOf(c.code.toUpperCase() as EncounterClassCode);
+  return idx === -1 ? Number.POSITIVE_INFINITY : idx;
+}
+
 export function pickMostSevereClass(
   class1: EncounterClassCoding | undefined,
   class2: EncounterClassCoding | undefined
 ): EncounterClassCoding | undefined {
-  if (class1 && class2 && class1.code && class2.code) {
-    const class1Rank = classRanking.indexOf(class1.code.toUpperCase() as EncounterClassCode);
-    const class2Rank = classRanking.indexOf(class2.code.toUpperCase() as EncounterClassCode);
-    return class1Rank < class2Rank ? class1 : class2;
+  if (class1 && class2) {
+    return classRank(class1) <= classRank(class2) ? class1 : class2;
   } else if (class1 && class1.code) {
     return class1;
   } else if (class2 && class2.code) {
     return class2;
   }
-
   return undefined;
 }
 
