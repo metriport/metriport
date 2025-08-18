@@ -26,7 +26,7 @@ import { reprocessAdtConversionBundles } from "./common";
  * Note: This script modifies data in S3. Ensure you have backups if needed.
  */
 
-const prefixes: string[] = [""];
+const prefixes: string[] = [];
 const dryRun = false;
 
 async function main() {
