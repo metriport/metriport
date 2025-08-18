@@ -1,4 +1,7 @@
 import { SftpConfig } from "../sftp/types";
+import { z } from "zod";
+import { patientSchema } from "@metriport/shared/domain/patient";
+import { paginationMetaSchema } from "@metriport/shared/domain/pagination";
 
 export interface QuestSftpConfig extends Partial<SftpConfig> {
   port?: number;
@@ -9,3 +12,10 @@ export interface QuestSftpConfig extends Partial<SftpConfig> {
   outgoingDirectory?: string;
   incomingDirectory?: string;
 }
+
+export const questRosterResponseSchema = z.object({
+  patients: z.array(patientSchema),
+  meta: paginationMetaSchema,
+});
+
+export type QuestRosterResponse = z.infer<typeof questRosterResponseSchema>;

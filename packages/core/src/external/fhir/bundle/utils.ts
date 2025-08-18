@@ -1,9 +1,13 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
-import { dangerouslyDeduplicateFhir } from "../../../fhir-deduplication/deduplicate-fhir";
-import { normalizeFhir } from "../normalization/normalize-fhir";
-import { buildBundle, RequiredBundleType } from "./bundle";
+import { FhirBundleSdk } from "@metriport/fhir-sdk";
 import { MetriportError } from "@metriport/shared";
 import { cloneDeep } from "lodash";
+import { dangerouslyDeduplicateFhir } from "../../../fhir-deduplication/deduplicate-fhir";
+import { groupSameEncountersDateOnly } from "../../../fhir-deduplication/resources/encounter";
+import { normalizeFhir } from "../normalization/normalize-fhir";
+import { buildBundle, buildBundleEntry, RequiredBundleType } from "./bundle";
+import _ from "lodash";
+import { isEncounter } from "../shared";
 
 export function mergeBundles({
   cxId,
@@ -31,4 +35,21 @@ export function mergeBundles({
   });
   dangerouslyDeduplicateFhir(newBundle, cxId, patientId);
   return normalizeFhir(newBundle);
+}
+
+export function dedupeAdtEncounters(existing: Bundle<Resource>): Bundle<Resource> {
+  const [encounters, nonEncounters] = _(existing.entry)
+    .map("resource")
+    .partition(isEncounter)
+    .value();
+
+  const { encountersMap: dedupedEncountersMap } = groupSameEncountersDateOnly(encounters);
+
+  const encounterBundleEntries = [...dedupedEncountersMap.values()].map(buildBundleEntry);
+  const nonEncounterBundleEntries = _(nonEncounters).compact().map(buildBundleEntry).value();
+
+  const newBundle = FhirBundleSdk.createSync(existing).toObject();
+  newBundle.entry = [...encounterBundleEntries, ...nonEncounterBundleEntries];
+
+  return newBundle;
 }

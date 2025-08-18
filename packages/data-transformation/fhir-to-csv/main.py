@@ -83,7 +83,7 @@ def transform_and_upload_data(
     output_bucket_and_file_keys_and_table_names = []
     output_file_prefix = create_output_file_prefix(dwh, transform_name, cx_id, patient_id, job_id)
     
-    with ThreadPoolExecutor(max_workers=10) as executor:
+    with ThreadPoolExecutor(max_workers=3) as executor:
         future_to_file = {}
         for file in local_output_files:
             output_file_key = f"{output_file_prefix}/{file.replace('/', '_')}"

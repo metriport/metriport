@@ -23,6 +23,15 @@ export async function findOrCreatePatientMapping({
 }: PatientMappingParams): Promise<PatientMapping> {
   const existing = await getPatientMapping({ cxId, externalId, source });
   if (existing) return existing;
+  return createPatientMapping({ cxId, patientId, externalId, source });
+}
+
+export async function createPatientMapping({
+  cxId,
+  patientId,
+  externalId,
+  source,
+}: PatientMappingParams): Promise<PatientMapping> {
   const created = await PatientMappingModel.create({
     id: uuidv7(),
     cxId,
@@ -107,4 +116,16 @@ export function getSourceMapForPatient({
     return acc;
   }, {} as PatientSourceIdentifierMap);
   return Object.keys(sourceMap).length > 0 ? sourceMap : undefined;
+}
+
+export async function findFirstPatientMappingForSource({
+  patientId,
+  source,
+}: Omit<PatientMappingParams, "cxId" | "externalId">): Promise<PatientMapping | undefined> {
+  const mappings = await PatientMappingModel.findOne({
+    where: { patientId, source },
+    order: [["createdAt", "ASC"]],
+    limit: 1,
+  });
+  return mappings?.dataValues;
 }

@@ -5,7 +5,7 @@ import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { BundleWithEntry, buildBundleFromResources } from "../../../external/fhir/bundle/bundle";
 import { buildDocIdFhirExtension } from "../../../external/fhir/shared/extensions/doc-id-extension";
 import { capture, out } from "../../../util";
-import { mapEncounterAndRelatedResources } from "./adt/encounter";
+import { convertAdtToFhirResources } from "./adt/encounter";
 import { getHl7MessageTypeOrFail } from "./msh";
 
 export type Hl7ToFhirParams = {
@@ -31,7 +31,7 @@ export function convertHl7v2MessageToFhir({
   const { messageCode } = getHl7MessageTypeOrFail(message);
 
   if (messageCode === "ADT") {
-    const resources = mapEncounterAndRelatedResources(message, patientId);
+    const resources = convertAdtToFhirResources(message, patientId);
     const bundle = buildBundleFromResources({ type: "collection", resources });
     const duration = elapsedTimeFromNow(startedAt);
 

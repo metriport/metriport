@@ -1,4 +1,11 @@
-import { CodeableConcept, Coding, Identifier, Period, Resource } from "@medplum/fhirtypes";
+import {
+  CodeableConcept,
+  Coding,
+  Encounter,
+  Identifier,
+  Period,
+  Resource,
+} from "@medplum/fhirtypes";
 import { errorToString } from "@metriport/shared";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
@@ -6,6 +13,7 @@ import _, { cloneDeep } from "lodash";
 import { createExtensionRelatedArtifact } from "../external/fhir/shared/extensions/derived-from";
 import { capture, out } from "../util";
 import { uuidv7 } from "../util/uuid-v7";
+import { isActCoding } from "@metriport/shared/medical/fhir/coding";
 
 dayjs.extend(utc);
 
@@ -355,11 +363,42 @@ export function pickMostDescriptiveStatus<T extends string>(
   return status;
 }
 
+const classRanking = [
+  "ACUTE",
+  "IMP",
+  "NONAC",
+  "EMER",
+  "OBSENC",
+  "SS",
+  "AMB",
+  "HH",
+  "FIELD",
+  "VR",
+] as const;
+
+type EncounterClassCode = (typeof classRanking)[number];
+type EncounterClassCoding = Coding & { code?: EncounterClassCode };
+
+export function pickMostSevereClass(
+  class1: EncounterClassCoding | undefined,
+  class2: EncounterClassCoding | undefined
+): EncounterClassCoding | undefined {
+  if (class1 && class2 && class1.code && class2.code) {
+    const class1Rank = classRanking.indexOf(class1.code.toUpperCase() as EncounterClassCode);
+    const class2Rank = classRanking.indexOf(class2.code.toUpperCase() as EncounterClassCode);
+    return class1Rank < class2Rank ? class1 : class2;
+  } else if (class1 && class1.code) {
+    return class1;
+  } else if (class2 && class2.code) {
+    return class2;
+  }
+
+  return undefined;
+}
+
 export function hasBlacklistedText(concept: CodeableConcept | undefined): boolean {
   const knownCodings = concept?.coding?.filter(c => !isUnknownCoding(c));
-  return (
-    concept?.text?.toLowerCase().includes(NO_KNOWN_SUBSTRING) ?? !knownCodings?.length ?? false
-  );
+  return concept?.text?.toLowerCase().includes(NO_KNOWN_SUBSTRING) ?? !knownCodings?.length;
 }
 
 export function createRef<T extends Resource>(res: T): string {
@@ -504,6 +543,27 @@ export function assignMostDescriptiveStatus<T extends Resource & { status?: stri
   const status = pickMostDescriptiveStatus(statusRanking, existing.status, target.status);
   existing.status = status;
   target.status = status;
+}
+
+export function assignMostSevereClass(existing: Encounter, target: Encounter): void {
+  if (!isActCoding(existing.class) || !isActCoding(target.class)) {
+    return;
+  }
+
+  // TODO: Instead create a getter on encounter that properly sets the type of the class without using a type assertion
+  const existingClass = existing.class as EncounterClassCoding;
+  const targetClass = target.class as EncounterClassCoding;
+
+  const severeClass = pickMostSevereClass(existingClass, targetClass);
+  if (!severeClass || !severeClass.code) return;
+
+  existingClass.code = severeClass.code;
+  targetClass.code = severeClass.code;
+
+  if (severeClass.display) {
+    existingClass.display = severeClass.display;
+    targetClass.display = severeClass.display;
+  }
 }
 
 /**
