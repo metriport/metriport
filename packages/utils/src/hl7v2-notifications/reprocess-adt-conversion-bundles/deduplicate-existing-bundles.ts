@@ -9,19 +9,19 @@ import { FhirBundleSdk } from "@metriport/fhir-sdk";
 import { reprocessAdtConversionBundles } from "./common";
 
 /**
- * Removes encounter reason codings from ADT conversion bundles stored in S3.
+ * Deduplicates resources within existing ADT conversion bundles stored in S3.
  *
- * This script pulls down every conversion bundle from s3, and removes any conditions that have identical codings to encounter reason codes.
- * It then uploads the cleaned bundles back to s3.
+ * This script pulls down every conversion bundle from S3, deduplicates the resources within each bundle
+ * using the mergeAdtBundles function (by merging with an empty bundle), and uploads the cleaned bundles back to S3.
  *
  * Steps:
  * 1. Ensure your .env file has the required AWS and bucket configuration (HL7_CONVERSION_BUCKET_NAME)
- * 2. Update the prefixes array on line 18 with the customer IDs to process
+ * 2. Update the prefixes array on line 29 with the customer IDs to process
  * 3. Run the script:
- *    npx ts-node src/hl7v2-notifications/reprocess-adt-conversion-bundles/remove-encounter-reason-codings.ts
+ *    npx ts-node src/hl7v2-notifications/reprocess-adt-conversion-bundles/deduplicate-existing-bundles.ts
  *
  * Usage:
- * Run with: npx ts-node src/hl7v2-notifications/reprocess-adt-conversion-bundles/remove-encounter-reason-codings.ts
+ * Run with: npx ts-node src/hl7v2-notifications/reprocess-adt-conversion-bundles/deduplicate-existing-bundles.ts
  *
  * Note: This script modifies data in S3. Ensure you have backups if needed.
  */

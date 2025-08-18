@@ -4,14 +4,13 @@ dotenv.config();
 // keep that ^ on top
 
 import { FhirBundleSdk } from "@metriport/fhir-sdk";
-import _ from "lodash";
 import { reprocessAdtConversionBundles } from "./common";
 
 /**
- * Finds duplicate resource IDs within ADT conversion bundles stored in S3.
+ * Finds ADT conversion bundles that don't contain any encounter resources.
  *
- * This script pulls down every conversion bundle from S3 and checks for duplicate resource IDs within each bundle.
- * It logs when duplicates are found but does not modify the bundles.
+ * This script pulls down every conversion bundle from S3 and checks if the bundle contains encounter resources.
+ * It prints a dot (.) for each bundle that doesn't have any encounters but does not modify the bundles.
  *
  * Steps:
  * 1. Ensure your .env file has the required AWS and bucket configuration (HL7_CONVERSION_BUCKET_NAME)
@@ -27,35 +26,21 @@ import { reprocessAdtConversionBundles } from "./common";
 
 // You can use an empty string to run on all bundles
 const prefixes: string[] = [];
+const dryRun = true;
 
 async function main() {
-  await reprocessAdtConversionBundles(prefixes, cleanDuplicateConditionIds, true);
+  await reprocessAdtConversionBundles(prefixes, findAdtsWithoutEncounterResource, dryRun);
 }
 
-async function cleanDuplicateConditionIds(
-  bundle: FhirBundleSdk,
-  log: (message: string) => void
+async function findAdtsWithoutEncounterResource(
+  bundle: FhirBundleSdk
+  // log: (message: string) => void
 ): Promise<FhirBundleSdk> {
-  const observationIds = _(bundle.getConditions())
-    .map(e => e.id)
-    .compact()
-    .value();
+  const encounters = bundle.getEncounters();
 
-  const observationDuplicates = _.uniq(observationIds).length !== observationIds.length;
-
-  if (observationDuplicates) {
-    log("Condition duplicates found");
-  }
-
-  const encounterIds = _(bundle.getEncounters())
-    .map(e => e.id)
-    .compact()
-    .value();
-
-  const encounterDuplicates = _.uniq(encounterIds).length !== encounterIds.length;
-
-  if (encounterDuplicates) {
-    log("Encounter duplicates found");
+  if (encounters.length === 0) {
+    process.stdout.write(".");
+    return bundle;
   }
 
   return bundle;
