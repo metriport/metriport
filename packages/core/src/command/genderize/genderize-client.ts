@@ -8,7 +8,7 @@ export interface GenderResult {
   score: number;
 }
 
-interface CogResponse {
+export interface GenderizeResponse {
   output: GenderResult;
 }
 
@@ -27,7 +27,7 @@ export async function classify(name: string): Promise<GenderResult> {
   let lastErr: any;
   for (let i = 0; i < ATTEMPTS; i++) {
     try{
-      const { data } = await client.post<CogResponse>("/predictions", {
+      const { data } = await client.post<GenderizeResponse>("/predictions", {
         input: { name },
       });
 

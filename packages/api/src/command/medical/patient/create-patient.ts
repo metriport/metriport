@@ -19,16 +19,23 @@ import { attachPatientIdentifiers, getPatientByDemo, PatientWithIdentifiers } fr
 import { createPatientSettings } from "./settings/create-patient-settings";
 import { sanitize, validate } from "./shared";
 import { GenderAtBirth } from "@metriport/shared/domain/gender";
-import { makeLambdaClient } from "@metriport/core/external/aws/lambda";
+import { getLambdaResultPayload, makeLambdaClient } from "@metriport/core/external/aws/lambda";
 import { Config } from "../../../shared/config";
+import { PatientCreate as PatientCreateType } from "@metriport/api-sdk";
+import { schemaCreateToPatientData } from "../../../routes/medical/schemas/patient";
+import { GenderizeResponse } from '@metriport/core/command/genderize/genderize-client';
+
+const genderizeLambdaName = Config.getGenderizeLambdaName();
 
 type Identifier = Pick<Patient, "cxId" | "externalId"> & { facilityId: string };
 type PatientNoExternalData = Omit<PatientData, "externalData">;
 export type PatientCreateCmd = PatientNoExternalData & Identifier;
 
 async function getGender(name: string): GenderAtBirth {
+  if (!genderizeLambdaName) throw new Error("Genderize Lambda Name is undefined");
+
   const lambdaClient = makeLambdaClient(Config.getAWSRegion());
-  
+
   const result = await lambdaClient
     .invoke({
       FunctionName: genderizeLambdaName,
@@ -37,7 +44,9 @@ async function getGender(name: string): GenderAtBirth {
     })
     .promise();
 
-  return result;
+  const resultPayload = getLambdaResultPayload({ result, lambdaName: genderizeLambdaName });
+  const parsedResult = JSON.parse(resultPayload) as GenderizeResponse;
+  return parsedResult.url;
 }
 
 export async function createPatient({
@@ -50,21 +59,29 @@ export async function createPatient({
   forceCarequality,
   settings,
 }: {
-  patient: PatientCreateProps;
+  patient: PatientCreateType;
+  cxId: string;
+  facilityId: string;
   runPd?: boolean;
   rerunPdOnNewDemographics?: boolean;
   forceCommonwell?: boolean;
   forceCarequality?: boolean;
   settings?: PatientSettingsData;
 }): Promise<PatientWithIdentifiers> {
-  const { cxId, facilityId, externalId } = patient;
+  const { externalId } = patient;
   const { log } = out(`createPatient.${cxId}`);
 
   if (patient.genderAtBirth === "A") {
     patient.genderAtBirth = getGender(patient.firstName);
   }
 
-  const sanitized = sanitize(patient);
+  const patientCMD: PatientCreateCmd = {
+    ...schemaCreateToPatientData(patient),
+    cxId,
+    facilityId,
+  };
+
+  const sanitized = sanitize(patientCMD);
   validate(sanitized);
   const { firstName, lastName, dob, genderAtBirth, personalIdentifiers, address, contact } =
     sanitized;

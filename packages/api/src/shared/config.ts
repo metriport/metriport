@@ -265,6 +265,10 @@ export class Config {
     return getEnvVar("CONVERT_DOC_LAMBDA_NAME");
   }
 
+  static getGenderizeLambdaName(): string | undefined{
+    return getEnvVar("GENDERIZE_LAMBDA_NAME");
+  }
+
   static getFhirToCdaConverterLambdaName(): string | undefined {
     return getEnvVar("FHIR_TO_CDA_CONVERTER_LAMBDA_NAME");
   }

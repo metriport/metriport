@@ -11,7 +11,7 @@ import duration from "dayjs/plugin/duration";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
-import { createPatient, PatientCreateCmd } from "../../command/medical/patient/create-patient";
+import { createPatient } from "../../command/medical/patient/create-patient";
 import {
   getPatientByExternalId,
   getPatientOrFail,
@@ -38,7 +38,8 @@ import {
 } from "../util";
 import { fromCreateResponseToDto, PatientImportDto } from "./dtos/patient-import";
 import { dtoFromModel, PatientDTO } from "./dtos/patientDTO";
-import { schemaCreateToPatientData, schemaDemographicsToPatientData } from "./schemas/patient";
+import { schemaDemographicsToPatientData } from "./schemas/patient";
+
 
 dayjs.extend(duration);
 
@@ -78,12 +79,11 @@ router.post(
         });
       }
     }
-    
-    const fsa = 2;
+
     const patient = await createPatient({
       patient: patientCreateProps,
       cxId,
-      ptId,
+      facilityId,
       rerunPdOnNewDemographics,
       forceCommonwell,
       forceCarequality,
