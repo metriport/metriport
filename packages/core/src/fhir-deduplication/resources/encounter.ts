@@ -126,7 +126,7 @@ export function groupSameEncounters(encounters: Encounter[]): {
   };
 }
 
-export function groupSameEncountersDateOnly(encounters: Encounter[]): {
+export function groupSameEncountersDatetimeOnly(encounters: Encounter[]): {
   encountersMap: Map<string, Encounter>;
   refReplacementMap: Map<string, string>;
   danglingReferences: Set<string>;

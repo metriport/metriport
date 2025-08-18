@@ -3,7 +3,7 @@ import { FhirBundleSdk } from "@metriport/fhir-sdk";
 import { MetriportError } from "@metriport/shared";
 import _, { cloneDeep } from "lodash";
 import { dangerouslyDeduplicateFhir } from "../../../fhir-deduplication/deduplicate-fhir";
-import { groupSameEncountersDateOnly } from "../../../fhir-deduplication/resources/encounter";
+import { groupSameEncountersDatetimeOnly } from "../../../fhir-deduplication/resources/encounter";
 import { normalizeFhir } from "../normalization/normalize-fhir";
 import { isEncounter } from "../shared";
 import { buildBundle, buildBundleEntry, RequiredBundleType } from "./bundle";
@@ -41,7 +41,7 @@ export function mergeBundles({
  * our core deduplication logic. This is only used for ADT encounters.
  *
  * ⚠️ NOTE: This function relies on the assumption that all resource ids in the bundle
- * are stable, because we do not use the refReplacementMap from `groupSameEncountersDateOnly`.
+ * are stable, because we do not use the refReplacementMap from `groupSameEncountersDatetimeOnly`.
  * If resource ids are not stable, and there are references pointing to an encounter, the
  * references will not be updated and will be left broken.
  */
@@ -51,7 +51,7 @@ export function dedupeAdtEncounters(existing: Bundle<Resource>): Bundle<Resource
     .partition(isEncounter)
     .value();
 
-  const { encountersMap: dedupedEncountersMap } = groupSameEncountersDateOnly(encounters);
+  const { encountersMap: dedupedEncountersMap } = groupSameEncountersDatetimeOnly(encounters);
 
   const encounterBundleEntries = [...dedupedEncountersMap.values()].map(buildBundleEntry);
   const nonEncounterBundleEntries = _(nonEncounters).compact().map(buildBundleEntry).value();
