@@ -16,12 +16,22 @@ import { SftpClient } from "../../external/sftp/client";
 export async function uploadThroughSftp(config: HieConfig, file: string): Promise<void> {
   const { log } = out("[STUB] - Hl7v2RosterUploader");
 
-  if (!config.sftpConfig) {
+  if (!config.sftpConfig || !config.remotePath) {
     throw new Error("Sftp config is required");
   }
 
   const client = new SftpClient(config.sftpConfig);
-  await client.connect();
+
+  try {
+    await client.connect();
+    await client.write(config.remotePath, Buffer.from(file, "utf-8"));
+  } catch (error) {
+    log(`[SFTP] SFTP failed! ${error}`);
+    throw error;
+  } finally {
+    await client.disconnect();
+    log(`[SFTP] Connection cleaned up.`);
+  }
 
   // const { states, subscriptions } = config;
   // const loggingDetails = {
