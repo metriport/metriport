@@ -87,6 +87,7 @@ program
       },
       {
         numberOfParallelExecutions: 10,
+        keepExecutingOnError: true,
       }
     );
     console.log(
@@ -114,6 +115,7 @@ program
         },
         {
           numberOfParallelExecutions: 10,
+          keepExecutingOnError: true,
         }
       );
       console.log(`Recreated ${recreatedCount} consolidated bundles`);
