@@ -44,6 +44,8 @@ export function mergeBundles({
  * are stable, because we do not use the refReplacementMap from `groupSameEncountersDatetimeOnly`.
  * If resource ids are not stable, and there are references pointing to an encounter, the
  * references will not be updated and will be left broken.
+ *
+ * TODO: Fix this ^, ticket at ENG-876
  */
 export function dedupeAdtEncounters(existing: Bundle<Resource>): Bundle<Resource> {
   const [encounters, nonEncounters] = _(existing.entry)
