@@ -1,0 +1,13 @@
+{
+  "name": "genderize-offline",
+  "packageManager": "yarn@4.9.2",
+  "type": "module",
+  "dependencies": {
+    "@xenova/transformers": "^2.17.2",
+    "csv-parse": "^6.1.0",
+    "fs": "^0.0.1-security",
+    "aws-lambda-ric": "^3.0.0",
+    "axios": "^1.7.2",
+    "zod": "^3.23.8"
+  }
+}

@@ -1,0 +1,50 @@
+# syntax=docker/dockerfile:1
+
+# ---- Stage 1: build Python env on the official Lambda Python image ----
+FROM public.ecr.aws/lambda/python:3.11 AS py
+WORKDIR /opt/model
+
+# Python deps (no torch)
+COPY requirements.txt .
+RUN pip3.11 install --no-cache-dir -r requirements.txt
+
+# Model / server code
+COPY . .
+
+# ---- Stage 2: Node 20 Lambda runtime, bring the working Python along ----
+FROM public.ecr.aws/lambda/nodejs:20
+
+# Bring over the Python runtime + site-packages and CA certs
+COPY --from=py /var/lang /var/lang
+COPY --from=py /etc/pki /etc/pki
+
+# (Only) libffi for ctypes, from py stage (do NOT bring libstdc++)
+RUN mkdir -p /usr/lib64 /lib64
+RUN --mount=from=py,src=/usr/lib64,target=/fromusr,ro \
+    sh -lc 'cp -v /fromusr/libffi.so.* /usr/lib64/ 2>/dev/null || true'
+RUN --mount=from=py,src=/lib64,target=/fromlib,ro \
+    sh -lc 'cp -v /fromlib/libffi.so.* /lib64/ 2>/dev/null || true'
+
+# Ensure Python is on PATH and shared libs are found
+ENV PATH="/var/lang/bin:${PATH}"
+ENV LD_LIBRARY_PATH="/var/lang/lib:/usr/lib64:/lib64:${LD_LIBRARY_PATH}"
+
+# Bring the model code (predictor + models + serve.py)
+COPY --from=py /opt/model /opt/model
+
+# Node handler + deps
+WORKDIR /var/task
+COPY lambda/package.json .
+RUN npm install --omit=dev
+COPY lambda/handler.js .
+
+# Entrypoint wrapper (starts shim, waits, then execs Lambda)
+COPY entry.sh /entry.sh
+RUN chmod +x /entry.sh
+
+# Defaults for the local HTTP server
+ENV COG_HOST=127.0.0.1
+ENV COG_PORT=5000
+
+ENTRYPOINT ["/entry.sh"]
+CMD ["lambda/handler.handler"]
