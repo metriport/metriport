@@ -68,11 +68,6 @@ async function main({
     responses,
     async response => {
       if (patientIdSet.has(response.patientId)) {
-        const fileContent = await replica.getRawResponseFileByKey(response.key);
-        if (!fileContent) {
-          log(`file not found for ${response.patientId}`);
-          return;
-        }
         identifiers.push({
           transmissionId: response.transmissionId,
           populationId: response.patientId,
