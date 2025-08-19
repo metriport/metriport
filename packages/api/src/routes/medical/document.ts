@@ -1,8 +1,5 @@
 import { UploadDocumentResult } from "@metriport/api-sdk";
-import { createDocumentFilePath } from "@metriport/core/domain/document/filename";
-import { S3Utils } from "@metriport/core/external/aws/s3";
 import { searchDocuments } from "@metriport/core/command/consolidated/search/document-reference/search";
-import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { stringToBoolean } from "@metriport/shared";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
@@ -10,15 +7,11 @@ import httpStatus, { OK } from "http-status";
 import { z } from "zod";
 import { getDocumentDownloadUrl } from "../../command/medical/document/document-download";
 import { queryDocumentsAcrossHIEs } from "../../command/medical/document/document-query";
+import { getUploadUrlAndCreateDocRef } from "../../command/medical/document/get-upload-url-and-create-doc-ref";
 import { startBulkGetDocumentUrls } from "../../command/medical/document/start-bulk-get-doc-url";
-import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
 import {} from "../../command/medical/patient/update-hie-opt-out";
 import ForbiddenError from "../../errors/forbidden";
-import {
-  composeDocumentReference,
-  docRefCheck,
-} from "../../external/fhir/document/draft-update-document-reference";
-import { upsertDocumentToFHIRServer } from "../../external/fhir/document/save-document-reference";
+import { docRefCheck } from "../../external/fhir/document/draft-update-document-reference";
 import { Config } from "../../shared/config";
 import { requestLogger } from "../helpers/request-logger";
 import { sanitize } from "../helpers/string";
@@ -32,9 +25,6 @@ import { cxRequestMetadataSchema } from "./schemas/request-metadata";
 import { getPatientPrimaryFacilityIdOrFail } from "../../command/medical/patient/get-patient-facilities";
 
 const router = Router();
-const region = Config.getAWSRegion();
-const s3Utils = new S3Utils(region);
-const medicalDocumentsUploadBucketName = Config.getMedicalDocumentsUploadBucketName();
 
 const getDocSchema = z.object({
   dateFrom: optionalDateSchema,
@@ -239,41 +229,15 @@ router.post(
   })
 );
 
-async function getUploadUrlAndCreateDocRef(req: Request): Promise<UploadDocumentResult> {
+async function getUploadUrlAndCreateDocRefShared(req: Request): Promise<UploadDocumentResult> {
   const { cxId, id: patientId } = getPatientInfoOrFail(req);
-  const docRefId = uuidv7();
-  const s3FileName = createDocumentFilePath(cxId, patientId, docRefId);
-  const organization = await getOrganizationOrFail({ cxId });
-
   const docRefDraft = req.body;
   docRefCheck(docRefDraft);
-  // #1075 TODO: Validate FHIR Payloads
-
-  const docRef = composeDocumentReference({
-    inputDocRef: docRefDraft,
-    organization,
+  return getUploadUrlAndCreateDocRef({
+    cxId,
     patientId,
-    docRefId,
-    s3Key: s3FileName,
-    s3BucketName: medicalDocumentsUploadBucketName,
+    docRefDraft,
   });
-
-  async function upsertOnFHIRServer() {
-    // Make a temporary DocumentReference on the FHIR server.
-    console.log("Creating a temporary DocumentReference on the FHIR server with ID:", docRef.id);
-    await upsertDocumentToFHIRServer(cxId, docRef);
-  }
-
-  async function getPresignedUrl() {
-    return s3Utils.getPresignedUploadUrl({
-      bucket: medicalDocumentsUploadBucketName,
-      key: s3FileName,
-    });
-  }
-
-  const [, url] = await Promise.all([upsertOnFHIRServer(), getPresignedUrl()]);
-
-  return { documentReferenceId: docRefId, uploadUrl: url };
 }
 
 /**
@@ -294,7 +258,7 @@ router.post(
   requestLogger,
   patientAuthorization("query"),
   asyncHandler(async (req: Request, res: Response) => {
-    const resp = await getUploadUrlAndCreateDocRef(req);
+    const resp = await getUploadUrlAndCreateDocRefShared(req);
     const url = resp.uploadUrl;
     return res.status(httpStatus.OK).json(url);
   })
@@ -317,7 +281,7 @@ router.post(
   requestLogger,
   patientAuthorization("query"),
   asyncHandler(async (req: Request, res: Response) => {
-    const resp = await getUploadUrlAndCreateDocRef(req);
+    const resp = await getUploadUrlAndCreateDocRefShared(req);
     return res.status(httpStatus.OK).json(resp);
   })
 );

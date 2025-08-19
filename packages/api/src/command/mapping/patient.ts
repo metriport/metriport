@@ -94,7 +94,12 @@ export async function deleteAllPatientMappings({
   });
 }
 
-export const defaultSources = [EhrSources.athena, EhrSources.canvas, EhrSources.elation];
+export const defaultSources = [
+  EhrSources.athena,
+  EhrSources.canvas,
+  EhrSources.elation,
+  EhrSources.healthie,
+];
 
 export function getSourceMapForPatient({
   mappings,
