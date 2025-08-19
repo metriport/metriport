@@ -1564,14 +1564,16 @@ class AthenaHealthApi {
             resourceType,
             athenaPatientId
           );
-          await client.dangerouslyAdjustEncountersInBundle({
-            cxId,
-            metriportPatientId,
-            athenaPatientId,
-            bundle: validBundle,
-            attachAppointmentType,
-            fetchEncounterSummary,
-          });
+          if (resourceType === "Encounter") {
+            await client.dangerouslyAdjustEncountersInBundle({
+              cxId,
+              metriportPatientId,
+              athenaPatientId,
+              bundle: validBundle,
+              attachAppointmentType,
+              fetchEncounterSummary,
+            });
+          }
           return validBundle;
         },
         url: resourceTypeUrl,
@@ -1663,14 +1665,16 @@ class AthenaHealthApi {
             resourceType,
             athenaPatientId
           );
-          await client.dangerouslyAdjustEncountersInBundle({
-            cxId,
-            metriportPatientId,
-            athenaPatientId,
-            bundle: validBundle,
-            attachAppointmentType,
-            fetchEncounterSummary,
-          });
+          if (resourceType === "Encounter") {
+            await client.dangerouslyAdjustEncountersInBundle({
+              cxId,
+              metriportPatientId,
+              athenaPatientId,
+              bundle: validBundle,
+              attachAppointmentType,
+              fetchEncounterSummary,
+            });
+          }
           return validBundle;
         },
         url: resourceTypeUrl,
@@ -1969,7 +1973,7 @@ class AthenaHealthApi {
     await executeAsynchronously(
       bundle.entry,
       async (entry: EhrStrictFhirResourceBundleEntry) => {
-        if (!entry.resource || entry.resource.resourceType !== "Encounter" || !entry.resource.id) {
+        if (!entry.resource || !entry.resource.id || entry.resource.resourceType !== "Encounter") {
           return;
         }
         const encounterId = entry.resource.id;

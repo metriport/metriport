@@ -74,7 +74,7 @@ export async function fetchDocument({
       ]);
     });
     return {
-      file: file,
+      file,
       lastModified: fileInfo?.createdAt,
     };
   } catch (error) {

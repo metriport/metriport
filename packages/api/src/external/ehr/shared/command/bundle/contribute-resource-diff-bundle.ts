@@ -181,7 +181,7 @@ async function dangerouslyRemoveEncounterEntriesWithBlacklistedAppointmentType({
     }
   );
   bundle.entry = resourcesToKeep;
-  await createResourceDiffRemovedBundle({
+  await createContributionRemovedBundle({
     ehr,
     cxId,
     metriportPatientId,
@@ -220,7 +220,7 @@ function doesResourceReferenceEncounter(
 }
 
 /**
- * Creates a resource diff removed bundle. This is for auditing purposes only.
+ * Creates a contribution removed bundle. This is for auditing purposes only.
  *
  * @param ehr - The EHR source.
  * @param cxId - The CX ID of the patient.
@@ -230,7 +230,7 @@ function doesResourceReferenceEncounter(
  * @param jobId - The job ID.
  * @param resourcesToRemove - The resources to remove.
  */
-async function createResourceDiffRemovedBundle({
+async function createContributionRemovedBundle({
   ehr,
   cxId,
   metriportPatientId,
@@ -266,8 +266,8 @@ async function createResourceDiffRemovedBundle({
     });
   } catch (error) {
     out(
-      `dangerouslyRemoveEncounterEntriesWithBlacklistedAppointmentType - metriportPatientId ${metriportPatientId} ehrPatientId ${ehrPatientId} resourceType ${resourceType}`
-    ).log(`Error creating resource diff removed bundle. Cause: ${errorToString(error)}`);
+      `createContributionRemovedBundle - metriportPatientId ${metriportPatientId} ehrPatientId ${ehrPatientId} resourceType ${resourceType}`
+    ).log(`Error creating contribution removed bundle. Cause: ${errorToString(error)}`);
   }
 }
 
@@ -295,10 +295,10 @@ async function uploadEncounterSummaries({
   ehrPatientId: string;
   bundle: Bundle;
 }): Promise<void> {
-  if (!bundle.entry) return;
+  if (!bundle.entry || bundle.entry.length < 1) return;
   const encounterSummariesToUpload: { encounter: Encounter; summary: string }[] = [];
   for (const entry of bundle.entry) {
-    if (!entry.resource || !entry.resource?.id || entry.resource?.resourceType !== "Encounter") {
+    if (!entry.resource || !entry.resource.id || entry.resource.resourceType !== "Encounter") {
       continue;
     }
     const predecessor = getPredecessorExtensionValue(entry.resource);
@@ -327,7 +327,7 @@ async function uploadEncounterSummaries({
     encounterSummariesToUpload.push({ encounter: entry.resource, summary: summary.file });
   }
   if (encounterSummariesToUpload.length < 1) return;
-  const uploadEncounterSummaryErrors: { encounterId: string; error: unknown }[] = [];
+  const uploadEncounterSummariesErrors: { encounterId: string; error: unknown }[] = [];
   await executeAsynchronously(
     encounterSummariesToUpload,
     async encounterSummary => {
@@ -376,9 +376,9 @@ async function uploadEncounterSummaries({
           metriportPatientId,
           ehrPatientId,
           documentType: DocumentType.HTML,
+          payload: encounterSummary.summary,
           resourceType: "Encounter",
           resourceId: predecessor,
-          payload: encounterSummary.summary,
           jobId: uploadJobId,
         });
       } catch (error) {
@@ -388,20 +388,20 @@ async function uploadEncounterSummaries({
             encounterSummary.encounter.id
           }. Cause: ${errorToString(error)}`
         );
-        uploadEncounterSummaryErrors.push({ error, encounterId: encounterSummary.encounter.id });
+        uploadEncounterSummariesErrors.push({ error, encounterId: encounterSummary.encounter.id });
       }
     },
     {
       numberOfParallelExecutions: 1,
     }
   );
-  if (uploadEncounterSummaryErrors.length > 0) {
+  if (uploadEncounterSummariesErrors.length > 0) {
     const msg = `Failure while uploading some encounter summaries @ ${ehr}`;
     capture.message(msg, {
       extra: {
         uploadEncounterSummariesArgsCount: encounterSummariesToUpload.length,
-        uploadEncounterSummariesErrorsCount: uploadEncounterSummaryErrors.length,
-        errors: uploadEncounterSummaryErrors,
+        uploadEncounterSummariesErrorsCount: uploadEncounterSummariesErrors.length,
+        errors: uploadEncounterSummariesErrors,
         context: `${ehr}.upload-encounter-summaries`,
       },
       level: "warning",
