@@ -3,6 +3,8 @@ import { AnthropicModelVersion, getAnthropicModelId } from "./anthropic/version"
 import { AnthropicRequest } from "./anthropic/request";
 import { AnthropicResponse } from "./anthropic/response";
 
+const ANTHROPIC_BEDROCK_VERSION = "bedrock-2023-05-31";
+
 export class AnthropicModel<V extends AnthropicModelVersion> extends BedrockClient<
   AnthropicRequest<V>,
   AnthropicResponse<V>
@@ -19,8 +21,8 @@ export class AnthropicModel<V extends AnthropicModelVersion> extends BedrockClie
 
   override async invokeModel(input: AnthropicRequest<V>): Promise<AnthropicResponse<V>> {
     return super.invokeModel({
-      anthropic_version: "bedrock-2023-05-31",
       ...input,
+      anthropic_version: ANTHROPIC_BEDROCK_VERSION,
     });
   }
 }
