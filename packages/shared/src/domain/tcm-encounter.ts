@@ -23,7 +23,11 @@ export const tcmEncounterBaseSchema = z.strictObject({
     .transform(val => buildDayjs(val).toDate())
     .nullish(),
   outreachStatus: z.enum(outreachStatuses).default("Not Started"),
-  lastOutreachDate: z.string().datetime().nullish(),
+  lastOutreachDate: z
+    .string()
+    .datetime()
+    .transform(val => buildDayjs(val).toDate())
+    .nullish(),
   clinicalInformation: z.record(z.unknown()).optional().default({}),
   freetextNote: z.string().optional(),
   dischargeSummaryPath: z.string().optional(),
@@ -40,7 +44,6 @@ export const tcmEncounterUpsertSchema = tcmEncounterBaseSchema.extend({
   id: z.string().uuid(),
   cxId: z.string().uuid(),
   outreachStatus: z.enum(outreachStatuses).optional(),
-  lastOutreachDate: z.string().datetime().nullish(),
 });
 export type TcmEncounterUpsert = z.infer<typeof tcmEncounterUpsertSchema>;
 
