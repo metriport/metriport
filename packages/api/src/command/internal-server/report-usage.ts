@@ -1,8 +1,8 @@
+import { InternalServerApi } from "@metriport/core/external/internal-server/client";
 import stringify from "json-stringify-safe";
 import { Product } from "../../domain/product";
 import { Config } from "../../shared/config";
 import { capture } from "../../shared/notifications";
-import { InternalServerApi } from "@metriport/core/external/internal-server/client";
 
 export type ReportUsageCommand = {
   cxId: string;

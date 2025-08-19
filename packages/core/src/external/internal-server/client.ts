@@ -1,3 +1,4 @@
+import { MetriportError } from "@metriport/shared";
 import axios, { AxiosInstance, AxiosRequestConfig } from "axios";
 import { Config } from "../../util/config";
 
@@ -8,8 +9,12 @@ export class InternalServerApi {
   protected readonly client: AxiosInstance;
 
   constructor() {
+    const baseURL = Config.getInternalServerUrl();
+    if (!baseURL) {
+      throw new MetriportError("INTERNAL_SERVER_BASE_URL not configured");
+    }
     this.client = axios.create({
-      baseURL: Config.getInternalServerUrl(),
+      baseURL,
       timeout: 20_000,
     });
   }

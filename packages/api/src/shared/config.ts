@@ -188,10 +188,6 @@ export class Config {
     return getEnvVarOrFail("WITHINGS_CLIENT_SECRET");
   }
 
-  static getInternalServerUrl(): string {
-    return getEnvVarOrFail("INTERNAL_SERVER_BASE_URL");
-  }
-
   static getUsageUrl(): string | undefined {
     return getEnvVar("USAGE_URL");
   }

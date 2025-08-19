@@ -397,7 +397,7 @@ export class Config {
     return getEnvVar("FHIR_TO_CSV_BATCH_JOB_DEFINITION_ARN");
   }
 
-  static getInternalServerUrl(): string {
-    return getEnvVarOrFail("INTERNAL_SERVER_BASE_URL");
+  static getInternalServerUrl(): string | undefined {
+    return getEnvVar("INTERNAL_SERVER_BASE_URL");
   }
 }
