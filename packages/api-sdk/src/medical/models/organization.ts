@@ -1,21 +1,14 @@
+import { TreatmentType } from "@metriport/shared";
 import { z } from "zod";
 import { addressSchema } from "./common/address";
 import { baseUpdateSchema } from "./common/base-update";
 
-export enum OrgType {
-  acuteCare = "acuteCare",
-  ambulatory = "ambulatory",
-  hospital = "hospital",
-  labSystems = "labSystems",
-  pharmacy = "pharmacy",
-  postAcuteCare = "postAcuteCare",
-}
-
-export const orgTypeSchema = z.nativeEnum(OrgType);
+export const treatmentTypeSchema = z.nativeEnum(TreatmentType);
+export { TreatmentType } from "@metriport/shared";
 
 export const organizationCreateSchema = z.object({
   name: z.string(),
-  type: orgTypeSchema,
+  type: treatmentTypeSchema,
   location: addressSchema,
 });
 export type OrganizationCreate = z.infer<typeof organizationCreateSchema>;

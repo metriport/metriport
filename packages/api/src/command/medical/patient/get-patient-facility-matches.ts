@@ -1,14 +1,14 @@
-import { USState } from "@metriport/shared";
 import { Address } from "@metriport/core/domain/address";
 import { LinkDemographics } from "@metriport/core/domain/patient-demographics";
+import { USState } from "@metriport/shared";
 import { CQLink } from "../../../external/carequality/cq-patient-data";
-import { CwLink } from "../../../external/commonwell-v1/cw-patient-data";
-import { CQPatientDataModel } from "../../../external/carequality/models/cq-patient-data";
-import { CwPatientDataModel } from "../../../external/commonwell-v1/models/cw-patient-data";
 import { CQDirectoryEntryViewModel } from "../../../external/carequality/models/cq-directory-view";
-import { orgDirectory } from "../../../external/commonwell-v1/org-directory";
+import { CQPatientDataModel } from "../../../external/carequality/models/cq-patient-data";
 import { patientResourceToNormalizedLinkDemographics as cqPatientResourceToNormalizedLinkDemographics } from "../../../external/carequality/patient-demographics";
 import { patientNetworkLinkToNormalizedLinkDemographics as cwPatientResourceToNormalizedLinkDemographics } from "../../../external/commonwell-v1/patient-demographics";
+import { orgDirectory } from "../../../external/commonwell-v2/command/directory/org-directory";
+import { CwPatientDataModel } from "../../../external/commonwell/models/cw-patient-data";
+import { CwLink } from "../../../external/commonwell/patient/cw-patient-data/shared";
 
 type PatientFacilityMatch = {
   name?: string;

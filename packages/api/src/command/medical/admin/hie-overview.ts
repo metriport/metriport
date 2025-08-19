@@ -15,7 +15,7 @@ import { QueryTypes } from "sequelize";
 import { getFacilityIdOrFail } from "../../../domain/medical/patient-facility";
 import { CQLink } from "../../../external/carequality/cq-patient-data";
 import { CQPatientDataModel } from "../../../external/carequality/models/cq-patient-data";
-import cwCommands from "../../../external/commonwell-v1";
+import cwCommands from "../../../external/commonwell";
 import { getDB } from "../../../models/db";
 import { PatientModel } from "../../../models/medical/patient";
 import { dtoFromCW, PatientLinksDTO } from "../../../routes/medical/dtos/linkDTO";
@@ -272,6 +272,7 @@ async function getCwData(
   }
   const facilityId = getFacilityIdOrFail(patient, facilityIdParam);
 
+  // TODO ENG-513 update it
   const cwPersonLinks = await cwCommands.link.get(patient.id, patient.cxId, facilityId);
   const cwConvertedLinks = dtoFromCW({
     cwPotentialPersons: cwPersonLinks.potentialLinks,

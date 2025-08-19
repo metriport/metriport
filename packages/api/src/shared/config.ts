@@ -237,8 +237,12 @@ export class Config {
   static getCWMemberOrgName(): string {
     return getEnvVarOrFail("CW_MEMBER_NAME");
   }
+  /** @deprecated TODO ENG-554 Remove this - CW v1 only */
   static getCWMemberOID(): string {
     return getEnvVarOrFail("CW_MEMBER_OID");
+  }
+  static getCWMemberID(): string {
+    return getEnvVarOrFail("CW_MEMBER_ID");
   }
 
   static getCdaToFhirConversionBucketName(): string {

@@ -1,7 +1,7 @@
-import { OrgType } from "@metriport/core/domain/organization";
+import { TreatmentType } from "@metriport/shared";
 import { Facility, isOboFacility } from "../../../domain/medical/facility";
-import { createOrUpdateCWOrganization } from "./create-or-update-cw-organization";
 import { buildCwOrgNameForFacility } from "../shared";
+import { createOrUpdateCWOrganization } from "./create-or-update-cw-organization";
 
 export async function createOrUpdateFacilityInCw({
   cxId,
@@ -13,7 +13,7 @@ export async function createOrUpdateFacilityInCw({
   cxId: string;
   facility: Facility;
   cxOrgName: string;
-  cxOrgType: OrgType;
+  cxOrgType: TreatmentType;
   cwOboOid: string | undefined;
 }): Promise<void> {
   const orgName = buildCwOrgNameForFacility({

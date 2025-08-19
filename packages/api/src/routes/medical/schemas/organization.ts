@@ -1,8 +1,8 @@
+import { OrganizationBizType, TreatmentType } from "@metriport/shared";
 import { z } from "zod";
-import { OrgType, OrganizationBizType } from "@metriport/core/domain/organization";
 import { addressStrictSchema } from "./address";
 
-export const orgTypeSchema = z.nativeEnum(OrgType);
+export const orgTypeSchema = z.nativeEnum(TreatmentType);
 
 export const organizationBizTypeSchema = z.nativeEnum(OrganizationBizType);
 

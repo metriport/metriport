@@ -5,10 +5,17 @@ import {
   Patient as FHIRPatient,
   Reference,
 } from "@medplum/fhirtypes";
+import { USStateForAddress } from "@metriport/shared";
 import { Address } from "../../../domain/address";
 import { Contact } from "../../../domain/contact";
-import { driversLicenseURIs, identifierSytemByType } from "../../../domain/oid";
-import { GenderAtBirth as MetriportGender, Patient, splitName } from "../../../domain/patient";
+import { driversLicenseURIs, identifierSytemByType, OID_PREFIX } from "../../../domain/oid";
+import {
+  createDriversLicensePersonalIdentifier,
+  DriversLicense,
+  GenderAtBirth as MetriportGender,
+  Patient,
+  splitName,
+} from "../../../domain/patient";
 import { isContactType } from "./shared";
 
 export type FhirGender = NonNullable<FHIRPatient["gender"]>;
@@ -41,8 +48,8 @@ export function mapFhirToMetriportGender(gender: FhirGender | undefined): Metrip
   return gender ? fhirGenderToMetriportGender[gender] : "U";
 }
 
-export function mapStringMetriportGenderToFhir(k: string): FhirGender {
-  return mapMetriportGenderToFhirGender(k as MetriportGender);
+export function mapStringMetriportGenderToFhir(k: string | undefined): FhirGender {
+  return mapMetriportGenderToFhirGender(k as MetriportGender | undefined);
 }
 
 export function mapPatientDataToResource(patient: PatientIdAndData) {
@@ -104,10 +111,27 @@ export function toFHIR(patient: PatientIdAndData): FHIRPatient {
 export function getFhirIdentifersFromPatient(patient: PatientIdAndData): Identifier[] {
   return (patient.data.personalIdentifiers ?? []).map(id => {
     if (id.type === "driversLicense") {
-      return { value: id.value, system: driversLicenseURIs[id.state] };
+      return driversLicenseToFhirIdentifier(id);
     }
     return { value: id.value, system: identifierSytemByType[id.type] };
   });
+}
+
+export function driversLicenseToFhirIdentifier(id: DriversLicense): Identifier {
+  return { value: id.value, system: driversLicenseURIs[id.state] };
+}
+export function fhirIdentifierToDriversLicense(
+  id: Pick<Identifier, "system" | "value">
+): DriversLicense | undefined {
+  const system = id.system;
+  const value = id.value;
+  const state = Object.entries(driversLicenseURIs).find(
+    ([key, value]) => value === system || value.split(OID_PREFIX)[1] === system
+  )?.[0];
+  if (system && value && state) {
+    return createDriversLicensePersonalIdentifier(value, state as USStateForAddress);
+  }
+  return undefined;
 }
 
 /**

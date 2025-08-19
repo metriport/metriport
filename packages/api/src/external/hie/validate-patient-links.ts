@@ -1,10 +1,8 @@
+import { isStrictMatchingAlgorithmEnabledForCx } from "@metriport/core/command/feature-flags/domain-ffs";
 import { PatientData } from "@metriport/core/domain/patient";
 import { epicMatchingAlgorithm, strictMatchingAlgorithm } from "@metriport/core/mpi/match-patients";
-import { isStrictMatchingAlgorithmEnabledForCx } from "@metriport/core/command/feature-flags/domain-ffs";
-import { CwLink } from "../commonwell-v1/cw-patient-data";
-import { cwLinkToPatientData } from "../commonwell-v1/link/shared";
-import { cqLinkToPatientData } from "../carequality/shared";
 import { CQLink } from "../carequality/cq-patient-data";
+import { cqLinkToPatientData } from "../carequality/shared";
 
 const SIMILARITY_THRESHOLD = 8.5;
 
@@ -33,16 +31,18 @@ export async function validateCqLinksBelongToPatient(
   return { validNetworkLinks, invalidLinks };
 }
 
-export async function validateCwLinksBelongToPatient(
+export async function validateCwLinksBelongToPatient<T>(
   cxId: string,
-  cwLinks: CwLink[],
-  patientData: PatientData
-): Promise<{ validNetworkLinks: CwLink[]; invalidLinks: CwLink[] }> {
-  const validNetworkLinks: CwLink[] = [];
-  const invalidLinks: CwLink[] = [];
+  cwLinks: T[],
+  patientData: PatientData,
+  convertToPatientData: (cwLink: T) => PatientData
+): Promise<{ validNetworkLinks: T[]; invalidLinks: T[] }> {
+  const validNetworkLinks: T[] = [];
+  const invalidLinks: T[] = [];
 
   for (const cwLink of cwLinks) {
-    const linkPatientData = cwLinkToPatientData(cwLink);
+    // const linkPatientData = cwLinkToPatientData(cwLink);
+    const linkPatientData = convertToPatientData(cwLink);
 
     const isPatientMatch = await validateLinkBelongsToPatient(cxId, linkPatientData, patientData);
 
