@@ -21,7 +21,9 @@ export interface AnthropicAssistantMessage<V extends AnthropicModelVersion> {
 }
 
 export type AnthropicAssistantContent<V extends AnthropicModelVersion> = Array<
-  AnthropicMessageText | AnthropicToolCall | (V extends "3.5" ? never : AnthropicThinking)
+  | AnthropicMessageText
+  | AnthropicToolCall
+  | (V extends "claude-sonnet-3.5" ? never : AnthropicThinking)
 >;
 
 /** A text message to/from the LLM. */
