@@ -2,7 +2,7 @@ import { USState } from "@metriport/api-sdk/medical/models/common/us-data";
 import * as featureFlags from "@metriport/core/command/feature-flags/domain-ffs";
 import { PatientData } from "@metriport/core/domain/patient";
 import { CQLink } from "../../carequality/cq-patient-data";
-import { CwLink } from "../../commonwell/cw-patient-data";
+import { CwLink } from "../../commonwell-v1/cw-patient-data";
 import {
   validateCqLinksBelongToPatient,
   validateCwLinksBelongToPatient,

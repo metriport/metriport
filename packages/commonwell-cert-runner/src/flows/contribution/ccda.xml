@@ -1,0 +1,967 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ClinicalDocument xmlns="urn:hl7-org:v3" xmlns:sdtc="urn:hl7-org:sdtc" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:hl7-org:v3 http://xreg2.nist.gov:8080/hitspValidation/schema/cdar2c32/infrastructure/cda/C32_CDA.xsd">
+  <realmCode code="US"/>
+  <typeId root="2.16.840.1.113883.1.3" extension="POCD_HD000040"/>
+  <templateId root="2.16.840.1.113883.10.20.22.1.1" extension="2015-08-01"/>
+  <templateId root="2.16.840.1.113883.10.20.22.1.2" extension="2015-08-01"/>
+  <id root="2.16.840.1.113883.19.5" extension="506c7cb5-5087-a85b-bd14-fd55b42f03a6" assigningAuthorityName="https://github.com/synthetichealth/synthea"/>
+  <code code="34133-9" displayName="Summarization of episode note" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC"/>
+  <title>C-CDA R2.1 Patient Record: Vance413 Dickinson688</title>
+  <effectiveTime value="20230612143958"/>
+  <confidentialityCode code="N"/>
+  <languageCode code="en-US"/>
+  <recordTarget>
+    <patientRole>
+      <id root="2.16.840.1.113883.19.5" extension="506c7cb5-5087-a85b-bd14-fd55b42f03a6" assigningAuthorityName="https://github.com/synthetichealth/synthea"/>
+      <addr use="HP">
+        <streetAddressLine>403 Morar Viaduct Suite 7</streetAddressLine>
+        <city>Longmeadow</city>
+        <state>Massachusetts</state>
+        <postalCode>01106</postalCode>
+      </addr>
+      <telecom nullFlavor="NI"/>
+      <patient>
+        <name>
+          <given>Vance413</given>
+          <family>Dickinson688</family>
+        </name>
+        <administrativeGenderCode code="M" codeSystem="2.16.840.1.113883.5.1" codeSystemName="HL7 AdministrativeGender"/>
+        <birthTime value="19170723133958"/>
+        <raceCode code="2106-3" displayName="white" codeSystemName="CDC Race and Ethnicity" codeSystem="2.16.840.1.113883.6.238"/>
+        <ethnicGroupCode code="2186-5" displayName="non-hispanic" codeSystemName="CDC Race and Ethnicity" codeSystem="2.16.840.1.113883.6.238"/>
+        <languageCommunication>
+          <languageCode code="en-US"/>
+        </languageCommunication>
+      </patient>
+    </patientRole>
+  </recordTarget>
+  <author>
+    <time value="20230612143958"/>
+    <assignedAuthor>
+      <id nullFlavor="NA"/>
+      <addr nullFlavor="NA" />
+      <telecom nullFlavor="NA" />
+      <assignedAuthoringDevice>
+        <manufacturerModelName>https://github.com/synthetichealth/synthea</manufacturerModelName>
+        <softwareName>https://github.com/synthetichealth/synthea</softwareName>
+      </assignedAuthoringDevice>
+      <representedOrganization>
+        <id nullFlavor="NA"/>
+        <name>JEWISH FAMILY SERVICE OF WESTERN MASSACHUSETTS INC.</name>
+        <telecom nullFlavor="NA"/>
+        <addr>
+          <streetAddressLine>15 LENOX ST.</streetAddressLine>
+          <city>SPRINGFIELD</city>
+          <state>MA</state>
+          <postalCode>011083122</postalCode>
+        </addr>
+      </representedOrganization>
+    </assignedAuthor>
+  </author>
+  <custodian>
+    <assignedCustodian>
+      <representedCustodianOrganization>
+        <id nullFlavor="NA"/>
+        <name>JEWISH FAMILY SERVICE OF WESTERN MASSACHUSETTS INC.</name>
+        <telecom nullFlavor="NA"/>
+        <addr>
+          <streetAddressLine>15 LENOX ST.</streetAddressLine>
+          <city>SPRINGFIELD</city>
+          <state>MA</state>
+          <postalCode>011083122</postalCode>
+        </addr>
+      </representedCustodianOrganization>
+    </assignedCustodian>
+  </custodian>
+  <documentationOf>
+    <serviceEvent classCode="PCPR">
+      <effectiveTime>
+        <low value="19170723133958"/>
+        <high value="20230612143958"/>
+      </effectiveTime>
+    </serviceEvent>
+  </documentationOf>
+  <component>
+    <structuredBody>
+<component>
+  <!-- Allergies: patient has no allergies -->
+  <section nullFlavor="NI">
+    <templateId root="2.16.840.1.113883.10.20.22.2.6.1" extension="2015-08-01"/>
+    <code code="48765-2" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Allergy List"/>
+    <title>Allergies</title>                
+    <text>There are no current allergies at the time of this document's creation.</text>
+  </section>
+</component><component>
+  <!--Medications-->
+  <section>
+	<templateId root="2.16.840.1.113883.10.20.22.2.1.1" extension="2014-06-09"/>
+    <code code="10160-0" displayName="History of medication use" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC"/>
+    <title>Medications</title>
+<text>
+  <table border="1" width="100%">
+    <thead>
+      <tr>
+        <th>Start</th>
+        <th>Stop</th>
+        <th>Description</th>
+        <th>Code</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>1953-03-11T16:54:39-08:00</td>
+          <td>1960-05-23T14:39:58-07:00</td>
+          <td ID="medications-desc-1">lisinopril 10 MG Oral Tablet</td>
+          <td ID="medications-code-1">http://www.nlm.nih.gov/research/umls/rxnorm 314076</td>
+        </tr>
+        <tr>
+          <td>1960-05-23T14:39:58-07:00</td>
+          <td>1975-05-26T14:39:58-07:00</td>
+          <td ID="medications-desc-2">lisinopril 10 MG Oral Tablet</td>
+          <td ID="medications-code-2">http://www.nlm.nih.gov/research/umls/rxnorm 314076</td>
+        </tr>
+        <tr>
+          <td>1975-05-26T14:39:58-07:00</td>
+          <td>1980-11-03T13:39:58-08:00</td>
+          <td ID="medications-desc-3">lisinopril 10 MG Oral Tablet</td>
+          <td ID="medications-code-3">http://www.nlm.nih.gov/research/umls/rxnorm 314076</td>
+        </tr>
+        <tr>
+          <td>1980-11-03T13:39:58-08:00</td>
+          <td>2007-01-22T13:39:58-08:00</td>
+          <td ID="medications-desc-4">lisinopril 10 MG Oral Tablet</td>
+          <td ID="medications-code-4">http://www.nlm.nih.gov/research/umls/rxnorm 314076</td>
+        </tr>
+        <tr>
+          <td>2007-01-22T13:39:58-08:00</td>
+          <td>2007-02-19T13:39:58-08:00</td>
+          <td ID="medications-desc-5">lisinopril 10 MG Oral Tablet</td>
+          <td ID="medications-code-5">http://www.nlm.nih.gov/research/umls/rxnorm 314076</td>
+        </tr>
+        <tr>
+          <td>2007-02-19T13:39:58-08:00</td>
+          <td></td>
+          <td ID="medications-desc-6">lisinopril 10 MG Oral Tablet</td>
+          <td ID="medications-code-6">http://www.nlm.nih.gov/research/umls/rxnorm 314076</td>
+        </tr>
+    </tbody>
+  </table>
+</text>
+    <entry>
+      <!--CCD Medication activity - Required-->
+      <substanceAdministration classCode="SBADM" moodCode="EVN">
+        <templateId root="2.16.840.1.113883.10.20.22.4.16"/>
+        <templateId root="2.16.840.1.113883.10.20.22.4.16" extension="2014-06-09"/>
+        <id root="03a44fcd-a756-e460-3c70-747748fadfc9"/>
+        <statusCode code="completed"/>
+        <effectiveTime xsi:type="IVL_TS">
+          <low value="19530311165439"/>
+          <high value="19600523143958"/>
+        </effectiveTime>
+        <doseQuantity value="1"/>
+        <consumable>
+          <!--CCD Product - Required-->
+          <manufacturedProduct classCode="MANU">
+            <templateId root="2.16.840.1.113883.10.20.22.4.23"/>
+            <templateId root="2.16.840.1.113883.10.20.22.4.23" extension="2014-06-09"/>
+            <manufacturedMaterial>
+        <code  code="314076" codeSystem="2.16.840.1.113883.6.88" displayName="lisinopril 10 MG Oral Tablet">
+          <originalText><reference value="#medications-desc-1"/></originalText>
+        </code>
+              <name>lisinopril 10 MG Oral Tablet</name>
+            </manufacturedMaterial>
+          </manufacturedProduct>
+        </consumable>
+      </substanceAdministration>
+    </entry>
+    <entry>
+      <!--CCD Medication activity - Required-->
+      <substanceAdministration classCode="SBADM" moodCode="EVN">
+        <templateId root="2.16.840.1.113883.10.20.22.4.16"/>
+        <templateId root="2.16.840.1.113883.10.20.22.4.16" extension="2014-06-09"/>
+        <id root="7199950d-1dfb-ebf4-1fcb-c368fa493c4a"/>
+        <statusCode code="completed"/>
+        <effectiveTime xsi:type="IVL_TS">
+          <low value="19600523143958"/>
+          <high value="19750526143958"/>
+        </effectiveTime>
+        <doseQuantity value="1"/>
+        <consumable>
+          <!--CCD Product - Required-->
+          <manufacturedProduct classCode="MANU">
+            <templateId root="2.16.840.1.113883.10.20.22.4.23"/>
+            <templateId root="2.16.840.1.113883.10.20.22.4.23" extension="2014-06-09"/>
+            <manufacturedMaterial>
+        <code  code="314076" codeSystem="2.16.840.1.113883.6.88" displayName="lisinopril 10 MG Oral Tablet">
+          <originalText><reference value="#medications-desc-2"/></originalText>
+        </code>
+              <name>lisinopril 10 MG Oral Tablet</name>
+            </manufacturedMaterial>
+          </manufacturedProduct>
+        </consumable>
+      </substanceAdministration>
+    </entry>
+    <entry>
+      <!--CCD Medication activity - Required-->
+      <substanceAdministration classCode="SBADM" moodCode="EVN">
+        <templateId root="2.16.840.1.113883.10.20.22.4.16"/>
+        <templateId root="2.16.840.1.113883.10.20.22.4.16" extension="2014-06-09"/>
+        <id root="89a42555-da4f-9bec-e5eb-0904db355011"/>
+        <statusCode code="completed"/>
+        <effectiveTime xsi:type="IVL_TS">
+          <low value="19750526143958"/>
+          <high value="19801103133958"/>
+        </effectiveTime>
+        <doseQuantity value="1"/>
+        <consumable>
+          <!--CCD Product - Required-->
+          <manufacturedProduct classCode="MANU">
+            <templateId root="2.16.840.1.113883.10.20.22.4.23"/>
+            <templateId root="2.16.840.1.113883.10.20.22.4.23" extension="2014-06-09"/>
+            <manufacturedMaterial>
+        <code  code="314076" codeSystem="2.16.840.1.113883.6.88" displayName="lisinopril 10 MG Oral Tablet">
+          <originalText><reference value="#medications-desc-3"/></originalText>
+        </code>
+              <name>lisinopril 10 MG Oral Tablet</name>
+            </manufacturedMaterial>
+          </manufacturedProduct>
+        </consumable>
+      </substanceAdministration>
+    </entry>
+    <entry>
+      <!--CCD Medication activity - Required-->
+      <substanceAdministration classCode="SBADM" moodCode="EVN">
+        <templateId root="2.16.840.1.113883.10.20.22.4.16"/>
+        <templateId root="2.16.840.1.113883.10.20.22.4.16" extension="2014-06-09"/>
+        <id root="904fd643-6129-8b17-f0fc-fb902eb6d7cc"/>
+        <statusCode code="completed"/>
+        <effectiveTime xsi:type="IVL_TS">
+          <low value="19801103133958"/>
+          <high value="20070122133958"/>
+        </effectiveTime>
+        <doseQuantity value="1"/>
+        <consumable>
+          <!--CCD Product - Required-->
+          <manufacturedProduct classCode="MANU">
+            <templateId root="2.16.840.1.113883.10.20.22.4.23"/>
+            <templateId root="2.16.840.1.113883.10.20.22.4.23" extension="2014-06-09"/>
+            <manufacturedMaterial>
+        <code  code="314076" codeSystem="2.16.840.1.113883.6.88" displayName="lisinopril 10 MG Oral Tablet">
+          <originalText><reference value="#medications-desc-4"/></originalText>
+        </code>
+              <name>lisinopril 10 MG Oral Tablet</name>
+            </manufacturedMaterial>
+          </manufacturedProduct>
+        </consumable>
+      </substanceAdministration>
+    </entry>
+    <entry>
+      <!--CCD Medication activity - Required-->
+      <substanceAdministration classCode="SBADM" moodCode="EVN">
+        <templateId root="2.16.840.1.113883.10.20.22.4.16"/>
+        <templateId root="2.16.840.1.113883.10.20.22.4.16" extension="2014-06-09"/>
+        <id root="30548853-bd34-741a-3780-4ee1e6e53874"/>
+        <statusCode code="completed"/>
+        <effectiveTime xsi:type="IVL_TS">
+          <low value="20070122133958"/>
+          <high value="20070219133958"/>
+        </effectiveTime>
+        <doseQuantity value="1"/>
+        <consumable>
+          <!--CCD Product - Required-->
+          <manufacturedProduct classCode="MANU">
+            <templateId root="2.16.840.1.113883.10.20.22.4.23"/>
+            <templateId root="2.16.840.1.113883.10.20.22.4.23" extension="2014-06-09"/>
+            <manufacturedMaterial>
+        <code  code="314076" codeSystem="2.16.840.1.113883.6.88" displayName="lisinopril 10 MG Oral Tablet">
+          <originalText><reference value="#medications-desc-5"/></originalText>
+        </code>
+              <name>lisinopril 10 MG Oral Tablet</name>
+            </manufacturedMaterial>
+          </manufacturedProduct>
+        </consumable>
+      </substanceAdministration>
+    </entry>
+    <entry>
+      <!--CCD Medication activity - Required-->
+      <substanceAdministration classCode="SBADM" moodCode="EVN">
+        <templateId root="2.16.840.1.113883.10.20.22.4.16"/>
+        <templateId root="2.16.840.1.113883.10.20.22.4.16" extension="2014-06-09"/>
+        <id root="99ba8444-15c3-d30e-68d2-133648f6ed40"/>
+        <statusCode code="completed"/>
+        <effectiveTime xsi:type="IVL_TS">
+          <low value="20070219133958"/>
+          <high nullFlavor="UNK"/>
+        </effectiveTime>
+        <doseQuantity value="1"/>
+        <consumable>
+          <!--CCD Product - Required-->
+          <manufacturedProduct classCode="MANU">
+            <templateId root="2.16.840.1.113883.10.20.22.4.23"/>
+            <templateId root="2.16.840.1.113883.10.20.22.4.23" extension="2014-06-09"/>
+            <manufacturedMaterial>
+        <code  code="314076" codeSystem="2.16.840.1.113883.6.88" displayName="lisinopril 10 MG Oral Tablet">
+          <originalText><reference value="#medications-desc-6"/></originalText>
+        </code>
+              <name>lisinopril 10 MG Oral Tablet</name>
+            </manufacturedMaterial>
+          </manufacturedProduct>
+        </consumable>
+      </substanceAdministration>
+    </entry>
+  </section>
+</component>
+<component>
+  <!-- Diagnostic Results: patient has no results -->
+  <section nullFlavor="NI">
+    <templateId root="2.16.840.1.113883.10.20.22.2.3.1" extension="2015-08-01"/>
+    <code code="30954-2" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Results"/>
+    <title>Diagnostic Results</title>
+    <text>There are no current results at the time of this document's creation.</text>
+  </section>
+</component><component>
+  <!--Problems-->
+  <section>
+    <templateId root="2.16.840.1.113883.10.20.22.2.5.1" extension="2015-08-01"/>
+    <!--Problems section template-->
+    <code code="11450-4" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Problem list"/>
+    <title>Problems</title>
+<text>
+  <table border="1" width="100%">
+    <thead>
+      <tr>
+        <th>Start</th>
+        <th>Stop</th>
+        <th>Description</th>
+        <th>Code</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>1953-03-09T14:11:33-08:00</td>
+          <td></td>
+          <td ID="conditions-desc-1">Received certificate of high school equivalency (finding)</td>
+          <td ID="conditions-code-1">http://snomed.info/sct 5251000175109</td>
+        </tr>
+        <tr>
+          <td>1953-03-09T14:11:33-08:00</td>
+          <td>1975-05-19T15:34:43-07:00</td>
+          <td ID="conditions-desc-2">Stress (finding)</td>
+          <td ID="conditions-code-2">http://snomed.info/sct 73595000</td>
+        </tr>
+        <tr>
+          <td>1960-05-16T15:32:02-07:00</td>
+          <td></td>
+          <td ID="conditions-desc-3">Has a criminal record (finding)</td>
+          <td ID="conditions-code-3">http://snomed.info/sct 266948004</td>
+        </tr>
+        <tr>
+          <td>1975-05-26T14:39:58-07:00</td>
+          <td></td>
+          <td ID="conditions-desc-4">Prediabetes</td>
+          <td ID="conditions-code-4">http://snomed.info/sct 15777000</td>
+        </tr>
+        <tr>
+          <td>1980-11-03T13:39:58-08:00</td>
+          <td></td>
+          <td ID="conditions-desc-5">Metabolic syndrome X (disorder)</td>
+          <td ID="conditions-code-5">http://snomed.info/sct 237602007</td>
+        </tr>
+        <tr>
+          <td>1980-11-03T13:39:58-08:00</td>
+          <td></td>
+          <td ID="conditions-desc-6">Body mass index 30+ - obesity (finding)</td>
+          <td ID="conditions-code-6">http://snomed.info/sct 162864005</td>
+        </tr>
+        <tr>
+          <td>1999-08-16T14:39:58-07:00</td>
+          <td></td>
+          <td ID="conditions-desc-7">Transition from acute care to home-health care (finding)</td>
+          <td ID="conditions-code-7">http://snomed.info/sct 1871000124103</td>
+        </tr>
+        <tr>
+          <td>2007-01-15T14:27:58-08:00</td>
+          <td></td>
+          <td ID="conditions-desc-8">Stress (finding)</td>
+          <td ID="conditions-code-8">http://snomed.info/sct 73595000</td>
+        </tr>
+    </tbody>
+  </table>
+</text>
+    <entry typeCode="DRIV">
+      <act classCode="ACT" moodCode="EVN">
+        <templateId root="2.16.840.1.113883.10.20.22.4.3"/>
+        <templateId root="2.16.840.1.113883.10.20.22.4.3" extension="2015-08-01"/>
+        <!-- Problem act template -->
+        <id root="a6756602-fe54-d0eb-696d-73fa73c956fb"/>
+        <code nullFlavor="NA"/>
+        <statusCode code="active"/>
+        <effectiveTime>
+          <low value="19530309141133"/>
+          
+        </effectiveTime>
+        <entryRelationship typeCode="SUBJ" inversionInd="false">
+          <observation classCode="OBS" moodCode="EVN">
+            <templateId root="2.16.840.1.113883.10.20.22.4.4"/>
+            <templateId root="2.16.840.1.113883.10.20.22.4.4" extension="2015-08-01"/>
+            <!--Problem observation template - NOT episode template-->
+            <id root="4b5c7fb1-b51d-92d6-7b75-a6db8b95c6fd"/>
+            <code code="64572001" displayName="Condition" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED-CT">
+              <translation code="75323-6" displayName="Condition" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC"/>
+            </code>
+            <text>
+              <reference value="#conditions-desc-1"/>
+            </text>
+            <statusCode code="completed"/>
+            <effectiveTime>
+              <low value="19530309141133"/>
+              
+            </effectiveTime>
+            <priorityCode code="8319008" codeSystem="2.16.840.1.113883.6.96" displayName="Principal diagnosis" />
+        <value xsi:type="CD" code="5251000175109" codeSystem="2.16.840.1.113883.6.96" displayName="Received certificate of high school equivalency (finding)">
+          <originalText><reference value="#conditions-desc-1"/></originalText>
+        </value>
+          </observation>
+        </entryRelationship>
+      </act>
+    </entry>
+    <entry typeCode="DRIV">
+      <act classCode="ACT" moodCode="EVN">
+        <templateId root="2.16.840.1.113883.10.20.22.4.3"/>
+        <templateId root="2.16.840.1.113883.10.20.22.4.3" extension="2015-08-01"/>
+        <!-- Problem act template -->
+        <id root="2dc99c97-cdf3-6372-b937-9ee3c8f25c1f"/>
+        <code nullFlavor="NA"/>
+        <statusCode code="completed"/>
+        <effectiveTime>
+          <low value="19530309141133"/>
+          <high value="19750519153443"/>
+        </effectiveTime>
+        <entryRelationship typeCode="SUBJ" inversionInd="false">
+          <observation classCode="OBS" moodCode="EVN">
+            <templateId root="2.16.840.1.113883.10.20.22.4.4"/>
+            <templateId root="2.16.840.1.113883.10.20.22.4.4" extension="2015-08-01"/>
+            <!--Problem observation template - NOT episode template-->
+            <id root="3c7d563f-d635-f779-298e-886b1f80f6c4"/>
+            <code code="64572001" displayName="Condition" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED-CT">
+              <translation code="75323-6" displayName="Condition" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC"/>
+            </code>
+            <text>
+              <reference value="#conditions-desc-2"/>
+            </text>
+            <statusCode code="completed"/>
+            <effectiveTime>
+              <low value="19530309141133"/>
+              <high value="19750519153443"/>
+            </effectiveTime>
+            <priorityCode code="8319008" codeSystem="2.16.840.1.113883.6.96" displayName="Principal diagnosis" />
+        <value xsi:type="CD" code="73595000" codeSystem="2.16.840.1.113883.6.96" displayName="Stress (finding)">
+          <originalText><reference value="#conditions-desc-2"/></originalText>
+        </value>
+          </observation>
+        </entryRelationship>
+      </act>
+    </entry>
+    <entry typeCode="DRIV">
+      <act classCode="ACT" moodCode="EVN">
+        <templateId root="2.16.840.1.113883.10.20.22.4.3"/>
+        <templateId root="2.16.840.1.113883.10.20.22.4.3" extension="2015-08-01"/>
+        <!-- Problem act template -->
+        <id root="37d417aa-bccc-3f8b-b365-a0ae2ac6710b"/>
+        <code nullFlavor="NA"/>
+        <statusCode code="active"/>
+        <effectiveTime>
+          <low value="19600516153202"/>
+          
+        </effectiveTime>
+        <entryRelationship typeCode="SUBJ" inversionInd="false">
+          <observation classCode="OBS" moodCode="EVN">
+            <templateId root="2.16.840.1.113883.10.20.22.4.4"/>
+            <templateId root="2.16.840.1.113883.10.20.22.4.4" extension="2015-08-01"/>
+            <!--Problem observation template - NOT episode template-->
+            <id root="97bdb337-e83e-63f4-e7c7-6331e1692f81"/>
+            <code code="64572001" displayName="Condition" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED-CT">
+              <translation code="75323-6" displayName="Condition" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC"/>
+            </code>
+            <text>
+              <reference value="#conditions-desc-3"/>
+            </text>
+            <statusCode code="completed"/>
+            <effectiveTime>
+              <low value="19600516153202"/>
+              
+            </effectiveTime>
+            <priorityCode code="8319008" codeSystem="2.16.840.1.113883.6.96" displayName="Principal diagnosis" />
+        <value xsi:type="CD" code="266948004" codeSystem="2.16.840.1.113883.6.96" displayName="Has a criminal record (finding)">
+          <originalText><reference value="#conditions-desc-3"/></originalText>
+        </value>
+          </observation>
+        </entryRelationship>
+      </act>
+    </entry>
+    <entry typeCode="DRIV">
+      <act classCode="ACT" moodCode="EVN">
+        <templateId root="2.16.840.1.113883.10.20.22.4.3"/>
+        <templateId root="2.16.840.1.113883.10.20.22.4.3" extension="2015-08-01"/>
+        <!-- Problem act template -->
+        <id root="b5ac8076-b2da-0b8b-799c-5309e567bc71"/>
+        <code nullFlavor="NA"/>
+        <statusCode code="active"/>
+        <effectiveTime>
+          <low value="19750526143958"/>
+          
+        </effectiveTime>
+        <entryRelationship typeCode="SUBJ" inversionInd="false">
+          <observation classCode="OBS" moodCode="EVN">
+            <templateId root="2.16.840.1.113883.10.20.22.4.4"/>
+            <templateId root="2.16.840.1.113883.10.20.22.4.4" extension="2015-08-01"/>
+            <!--Problem observation template - NOT episode template-->
+            <id root="392beb53-1630-2649-b9b3-bd9807f8f0a9"/>
+            <code code="64572001" displayName="Condition" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED-CT">
+              <translation code="75323-6" displayName="Condition" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC"/>
+            </code>
+            <text>
+              <reference value="#conditions-desc-4"/>
+            </text>
+            <statusCode code="completed"/>
+            <effectiveTime>
+              <low value="19750526143958"/>
+              
+            </effectiveTime>
+            <priorityCode code="8319008" codeSystem="2.16.840.1.113883.6.96" displayName="Principal diagnosis" />
+        <value xsi:type="CD" code="15777000" codeSystem="2.16.840.1.113883.6.96" displayName="Prediabetes">
+          <originalText><reference value="#conditions-desc-4"/></originalText>
+        </value>
+          </observation>
+        </entryRelationship>
+      </act>
+    </entry>
+    <entry typeCode="DRIV">
+      <act classCode="ACT" moodCode="EVN">
+        <templateId root="2.16.840.1.113883.10.20.22.4.3"/>
+        <templateId root="2.16.840.1.113883.10.20.22.4.3" extension="2015-08-01"/>
+        <!-- Problem act template -->
+        <id root="6d7fa592-5ed4-5ccd-169e-0a6fa9cd1616"/>
+        <code nullFlavor="NA"/>
+        <statusCode code="active"/>
+        <effectiveTime>
+          <low value="19801103133958"/>
+          
+        </effectiveTime>
+        <entryRelationship typeCode="SUBJ" inversionInd="false">
+          <observation classCode="OBS" moodCode="EVN">
+            <templateId root="2.16.840.1.113883.10.20.22.4.4"/>
+            <templateId root="2.16.840.1.113883.10.20.22.4.4" extension="2015-08-01"/>
+            <!--Problem observation template - NOT episode template-->
+            <id root="e959a83c-434d-a9d5-d8ce-4ca4835573dc"/>
+            <code code="64572001" displayName="Condition" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED-CT">
+              <translation code="75323-6" displayName="Condition" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC"/>
+            </code>
+            <text>
+              <reference value="#conditions-desc-5"/>
+            </text>
+            <statusCode code="completed"/>
+            <effectiveTime>
+              <low value="19801103133958"/>
+              
+            </effectiveTime>
+            <priorityCode code="8319008" codeSystem="2.16.840.1.113883.6.96" displayName="Principal diagnosis" />
+        <value xsi:type="CD" code="237602007" codeSystem="2.16.840.1.113883.6.96" displayName="Metabolic syndrome X (disorder)">
+          <originalText><reference value="#conditions-desc-5"/></originalText>
+        </value>
+          </observation>
+        </entryRelationship>
+      </act>
+    </entry>
+    <entry typeCode="DRIV">
+      <act classCode="ACT" moodCode="EVN">
+        <templateId root="2.16.840.1.113883.10.20.22.4.3"/>
+        <templateId root="2.16.840.1.113883.10.20.22.4.3" extension="2015-08-01"/>
+        <!-- Problem act template -->
+        <id root="f4806067-da90-46a9-34fa-11607209d9f7"/>
+        <code nullFlavor="NA"/>
+        <statusCode code="active"/>
+        <effectiveTime>
+          <low value="19801103133958"/>
+          
+        </effectiveTime>
+        <entryRelationship typeCode="SUBJ" inversionInd="false">
+          <observation classCode="OBS" moodCode="EVN">
+            <templateId root="2.16.840.1.113883.10.20.22.4.4"/>
+            <templateId root="2.16.840.1.113883.10.20.22.4.4" extension="2015-08-01"/>
+            <!--Problem observation template - NOT episode template-->
+            <id root="71f5003f-4d8d-46f9-95b0-b4d7948a3f24"/>
+            <code code="64572001" displayName="Condition" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED-CT">
+              <translation code="75323-6" displayName="Condition" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC"/>
+            </code>
+            <text>
+              <reference value="#conditions-desc-6"/>
+            </text>
+            <statusCode code="completed"/>
+            <effectiveTime>
+              <low value="19801103133958"/>
+              
+            </effectiveTime>
+            <priorityCode code="8319008" codeSystem="2.16.840.1.113883.6.96" displayName="Principal diagnosis" />
+        <value xsi:type="CD" code="162864005" codeSystem="2.16.840.1.113883.6.96" displayName="Body mass index 30+ - obesity (finding)">
+          <originalText><reference value="#conditions-desc-6"/></originalText>
+        </value>
+          </observation>
+        </entryRelationship>
+      </act>
+    </entry>
+    <entry typeCode="DRIV">
+      <act classCode="ACT" moodCode="EVN">
+        <templateId root="2.16.840.1.113883.10.20.22.4.3"/>
+        <templateId root="2.16.840.1.113883.10.20.22.4.3" extension="2015-08-01"/>
+        <!-- Problem act template -->
+        <id root="b45be6d0-fe74-40cf-7559-321a41548de4"/>
+        <code nullFlavor="NA"/>
+        <statusCode code="active"/>
+        <effectiveTime>
+          <low value="19990816143958"/>
+          
+        </effectiveTime>
+        <entryRelationship typeCode="SUBJ" inversionInd="false">
+          <observation classCode="OBS" moodCode="EVN">
+            <templateId root="2.16.840.1.113883.10.20.22.4.4"/>
+            <templateId root="2.16.840.1.113883.10.20.22.4.4" extension="2015-08-01"/>
+            <!--Problem observation template - NOT episode template-->
+            <id root="8aaed53f-05ee-e8fc-adc6-043586a5177f"/>
+            <code code="64572001" displayName="Condition" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED-CT">
+              <translation code="75323-6" displayName="Condition" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC"/>
+            </code>
+            <text>
+              <reference value="#conditions-desc-7"/>
+            </text>
+            <statusCode code="completed"/>
+            <effectiveTime>
+              <low value="19990816143958"/>
+              
+            </effectiveTime>
+            <priorityCode code="8319008" codeSystem="2.16.840.1.113883.6.96" displayName="Principal diagnosis" />
+        <value xsi:type="CD" code="1871000124103" codeSystem="2.16.840.1.113883.6.96" displayName="Transition from acute care to home-health care (finding)">
+          <originalText><reference value="#conditions-desc-7"/></originalText>
+        </value>
+          </observation>
+        </entryRelationship>
+      </act>
+    </entry>
+    <entry typeCode="DRIV">
+      <act classCode="ACT" moodCode="EVN">
+        <templateId root="2.16.840.1.113883.10.20.22.4.3"/>
+        <templateId root="2.16.840.1.113883.10.20.22.4.3" extension="2015-08-01"/>
+        <!-- Problem act template -->
+        <id root="49a5ffd8-72dd-a1e9-71ce-b6b44c6cc25d"/>
+        <code nullFlavor="NA"/>
+        <statusCode code="active"/>
+        <effectiveTime>
+          <low value="20070115142758"/>
+          
+        </effectiveTime>
+        <entryRelationship typeCode="SUBJ" inversionInd="false">
+          <observation classCode="OBS" moodCode="EVN">
+            <templateId root="2.16.840.1.113883.10.20.22.4.4"/>
+            <templateId root="2.16.840.1.113883.10.20.22.4.4" extension="2015-08-01"/>
+            <!--Problem observation template - NOT episode template-->
+            <id root="cfb3aeec-f5eb-ae30-7ee2-39a66340179a"/>
+            <code code="64572001" displayName="Condition" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED-CT">
+              <translation code="75323-6" displayName="Condition" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC"/>
+            </code>
+            <text>
+              <reference value="#conditions-desc-8"/>
+            </text>
+            <statusCode code="completed"/>
+            <effectiveTime>
+              <low value="20070115142758"/>
+              
+            </effectiveTime>
+            <priorityCode code="8319008" codeSystem="2.16.840.1.113883.6.96" displayName="Principal diagnosis" />
+        <value xsi:type="CD" code="73595000" codeSystem="2.16.840.1.113883.6.96" displayName="Stress (finding)">
+          <originalText><reference value="#conditions-desc-8"/></originalText>
+        </value>
+          </observation>
+        </entryRelationship>
+      </act>
+    </entry>
+  </section>
+</component>
+<component>
+  <!-- Procedures: patient has no procedures -->
+  <section nullFlavor="NI">
+    <templateId root="2.16.840.1.113883.10.20.22.2.7.1" extension="2014-06-09"/>
+    <code code="47519-4" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Procedures"/>
+    <title>Procedures</title>
+    <text>There are no current procedures at the time of this document's creation.</text>
+  </section>
+</component><component>
+  <!--Encounters-->
+  <section>
+    <templateId root="2.16.840.1.113883.10.20.22.2.22" extension="2015-08-01"/> <!-- CCDA Template id -->
+    <!--Encounters section template-->
+    <code code="46240-8" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="History of encounters"/>
+    <title>Encounters</title>
+<text>
+  <table border="1" width="100%">
+    <thead>
+      <tr>
+        <th>Start</th>
+        <th>Stop</th>
+        <th>Description</th>
+        <th>Code</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>1953-03-16T13:39:58-08:00</td>
+          <td>1953-03-16T13:54:58-08:00</td>
+          <td ID="encounters-desc-1">Urgent care clinic (environment)</td>
+          <td ID="encounters-code-1">http://snomed.info/sct 702927004</td>
+        </tr>
+        <tr>
+          <td>1960-05-23T14:39:58-07:00</td>
+          <td>1960-05-23T14:54:58-07:00</td>
+          <td ID="encounters-desc-2">Urgent care clinic (environment)</td>
+          <td ID="encounters-code-2">http://snomed.info/sct 702927004</td>
+        </tr>
+        <tr>
+          <td>1975-05-26T14:39:58-07:00</td>
+          <td>1975-05-26T14:54:58-07:00</td>
+          <td ID="encounters-desc-3">Urgent care clinic (environment)</td>
+          <td ID="encounters-code-3">http://snomed.info/sct 702927004</td>
+        </tr>
+        <tr>
+          <td>1980-11-03T13:39:58-08:00</td>
+          <td>1980-11-03T14:21:47-08:00</td>
+          <td ID="encounters-desc-4">Urgent care clinic (environment)</td>
+          <td ID="encounters-code-4">http://snomed.info/sct 702927004</td>
+        </tr>
+        <tr>
+          <td>1999-08-16T14:39:58-07:00</td>
+          <td>1999-08-16T14:54:58-07:00</td>
+          <td ID="encounters-desc-5">Patient encounter procedure (procedure)</td>
+          <td ID="encounters-code-5">http://snomed.info/sct 308335008</td>
+        </tr>
+        <tr>
+          <td>2007-01-22T13:39:58-08:00</td>
+          <td>2007-01-22T13:54:58-08:00</td>
+          <td ID="encounters-desc-6">Urgent care clinic (environment)</td>
+          <td ID="encounters-code-6">http://snomed.info/sct 702927004</td>
+        </tr>
+        <tr>
+          <td>2007-02-19T13:39:58-08:00</td>
+          <td>2007-02-19T13:54:58-08:00</td>
+          <td ID="encounters-desc-7">Urgent care clinic (environment)</td>
+          <td ID="encounters-code-7">http://snomed.info/sct 702927004</td>
+        </tr>
+    </tbody>
+  </table>
+</text>
+    <entry typeCode="DRIV">
+      <encounter classCode="ENC" moodCode="EVN">
+		    <templateId root="2.16.840.1.113883.10.20.22.4.49"/>
+        <!-- Encounter activity template -->
+        <id root="e38142b2-adcd-aa32-a3ff-6f6dcfaf6c99"/>
+        <code  code="702927004" codeSystem="2.16.840.1.113883.6.96" displayName="Urgent care clinic (environment)">
+          <originalText><reference value="#encounters-desc-1"/></originalText>
+        </code>
+        <text>
+          <reference value="#encounters-desc-1"/>
+        </text>
+        <effectiveTime>
+          <low value="19530316133958"/>
+          <high value="19530316135458"/>
+        </effectiveTime>
+      </encounter>
+    </entry>
+    <entry typeCode="DRIV">
+      <encounter classCode="ENC" moodCode="EVN">
+		    <templateId root="2.16.840.1.113883.10.20.22.4.49"/>
+        <!-- Encounter activity template -->
+        <id root="d8fc11cb-04bd-7e04-1a2d-3d1cee37bf6b"/>
+        <code  code="702927004" codeSystem="2.16.840.1.113883.6.96" displayName="Urgent care clinic (environment)">
+          <originalText><reference value="#encounters-desc-2"/></originalText>
+        </code>
+        <text>
+          <reference value="#encounters-desc-2"/>
+        </text>
+        <effectiveTime>
+          <low value="19600523143958"/>
+          <high value="19600523145458"/>
+        </effectiveTime>
+      </encounter>
+    </entry>
+    <entry typeCode="DRIV">
+      <encounter classCode="ENC" moodCode="EVN">
+		    <templateId root="2.16.840.1.113883.10.20.22.4.49"/>
+        <!-- Encounter activity template -->
+        <id root="bb8280b7-b067-5d95-2311-9f2194c99c36"/>
+        <code  code="702927004" codeSystem="2.16.840.1.113883.6.96" displayName="Urgent care clinic (environment)">
+          <originalText><reference value="#encounters-desc-3"/></originalText>
+        </code>
+        <text>
+          <reference value="#encounters-desc-3"/>
+        </text>
+        <effectiveTime>
+          <low value="19750526143958"/>
+          <high value="19750526145458"/>
+        </effectiveTime>
+      </encounter>
+    </entry>
+    <entry typeCode="DRIV">
+      <encounter classCode="ENC" moodCode="EVN">
+		    <templateId root="2.16.840.1.113883.10.20.22.4.49"/>
+        <!-- Encounter activity template -->
+        <id root="33054932-e891-17d8-228a-bba29974a583"/>
+        <code  code="702927004" codeSystem="2.16.840.1.113883.6.96" displayName="Urgent care clinic (environment)">
+          <originalText><reference value="#encounters-desc-4"/></originalText>
+        </code>
+        <text>
+          <reference value="#encounters-desc-4"/>
+        </text>
+        <effectiveTime>
+          <low value="19801103133958"/>
+          <high value="19801103142147"/>
+        </effectiveTime>
+      </encounter>
+    </entry>
+    <entry typeCode="DRIV">
+      <encounter classCode="ENC" moodCode="EVN">
+		    <templateId root="2.16.840.1.113883.10.20.22.4.49"/>
+        <!-- Encounter activity template -->
+        <id root="4d3ec6b2-21d2-4179-ec7f-d34801851512"/>
+        <code  code="308335008" codeSystem="2.16.840.1.113883.6.96" displayName="Patient encounter procedure (procedure)">
+          <originalText><reference value="#encounters-desc-5"/></originalText>
+        </code>
+        <text>
+          <reference value="#encounters-desc-5"/>
+        </text>
+        <effectiveTime>
+          <low value="19990816143958"/>
+          <high value="19990816145458"/>
+        </effectiveTime>
+      </encounter>
+    </entry>
+    <entry typeCode="DRIV">
+      <encounter classCode="ENC" moodCode="EVN">
+		    <templateId root="2.16.840.1.113883.10.20.22.4.49"/>
+        <!-- Encounter activity template -->
+        <id root="833ff1ac-29c7-7eb0-c8d9-9e7621555f53"/>
+        <code  code="702927004" codeSystem="2.16.840.1.113883.6.96" displayName="Urgent care clinic (environment)">
+          <originalText><reference value="#encounters-desc-6"/></originalText>
+        </code>
+        <text>
+          <reference value="#encounters-desc-6"/>
+        </text>
+        <effectiveTime>
+          <low value="20070122133958"/>
+          <high value="20070122135458"/>
+        </effectiveTime>
+      </encounter>
+    </entry>
+    <entry typeCode="DRIV">
+      <encounter classCode="ENC" moodCode="EVN">
+		    <templateId root="2.16.840.1.113883.10.20.22.4.49"/>
+        <!-- Encounter activity template -->
+        <id root="009a0eff-3813-8d4a-d902-9a3208ba5e45"/>
+        <code  code="702927004" codeSystem="2.16.840.1.113883.6.96" displayName="Urgent care clinic (environment)">
+          <originalText><reference value="#encounters-desc-7"/></originalText>
+        </code>
+        <text>
+          <reference value="#encounters-desc-7"/>
+        </text>
+        <effectiveTime>
+          <low value="20070219133958"/>
+          <high value="20070219135458"/>
+        </effectiveTime>
+      </encounter>
+    </entry>
+  </section>
+</component>
+<component>
+  <!--Vital Signs: Patient has no current vital signs -->
+  <section nullFlavor="NI">
+    <templateId root="2.16.840.1.113883.10.20.22.2.4.1" extension="2015-08-01"/>
+    <!--Vital Signs section template-->
+    <code code="8716-3" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Vital signs"/>
+    <title>Vital Signs</title>
+    <text>There are no current vital signs at the time of this document's creation.</text>
+  </section>
+</component><component>
+  <!--Plan of Care-->
+  <section>
+    <templateId root="2.16.840.1.113883.10.20.22.2.10"/>
+    <templateId root="2.16.840.1.113883.10.20.22.2.10" extension="2014-06-09"/>
+    <!--Plan of Care section template-->
+    <code code="18776-5" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Treatment plan"/>
+    <title>Plan of Care</title>
+<text>
+  <table border="1" width="100%">
+    <thead>
+      <tr>
+        <th>Start</th>
+        <th>Stop</th>
+        <th>Description</th>
+        <th>Code</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>1975-05-26T14:39:58-07:00</td>
+          <td></td>
+          <td ID="careplans-desc-1">Diabetes self management plan</td>
+          <td ID="careplans-code-1">http://snomed.info/sct 698360004</td>
+        </tr>
+    </tbody>
+  </table>
+</text>
+  </section>
+</component>
+<component>
+  <!--Social History - CCDA-->
+  <section>
+    <templateId root="2.16.840.1.113883.10.20.22.2.17" extension="2015-08-01"/>
+    <templateId root="2.16.840.1.113883.10.20.22.2.17"/>
+    <!-- Social history section template -->
+    <code code="29762-2" codeSystem="2.16.840.1.113883.6.1"/>
+    <title>Social History</title>
+    <text>There is no current social history except smoking status.</text>
+    <entry typeCode="DRIV">
+      <observation classCode="OBS" moodCode="EVN">
+        <templateId root="2.16.840.1.113883.10.20.22.4.78"/>
+        <templateId root="2.16.840.1.113883.10.20.22.4.78" extension="2014-06-09"/>
+        <!-- Smoking Status Meaningful Use template -->
+        <id root="a130ec3f-b910-9b00-4103-d75e4d6cd965"/>
+        <code code="72166-2" codeSystem="2.16.840.1.113883.6.1" displayName="Tobacco smoking status NHIS" />
+        <statusCode code="completed"/>
+        <effectiveTime value="20230403143958"/>
+        <value xsi:type="CD" code="266919005" displayName="Never smoked tobacco (finding)" codeSystem="2.16.840.1.113883.6.96"/>
+          <author>
+            <time value="20230612143958"/>
+            <assignedAuthor>
+              <id nullFlavor="NA"/>
+              <addr nullFlavor="NA" />
+              <telecom nullFlavor="NA" />
+              <assignedAuthoringDevice>
+                <manufacturerModelName>https://github.com/synthetichealth/synthea</manufacturerModelName>
+                <softwareName>https://github.com/synthetichealth/synthea</softwareName>
+              </assignedAuthoringDevice>
+              <representedOrganization>
+                <id nullFlavor="NA"/>
+                <name>JEWISH FAMILY SERVICE OF WESTERN MASSACHUSETTS INC.</name>
+                <telecom nullFlavor="NA"/>
+                <addr>
+                  <streetAddressLine>15 LENOX ST.</streetAddressLine>
+                  <city>SPRINGFIELD</city>
+                  <state>MA</state>
+                  <postalCode>011083122</postalCode>
+                </addr>
+              </representedOrganization>
+            </assignedAuthor>
+          </author>
+      </observation>
+    </entry>
+  </section>
+</component>    </structuredBody>
+  </component>
+</ClinicalDocument>
