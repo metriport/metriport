@@ -44,7 +44,6 @@ export { AdditionalInfo, MetriportError } from "./error/metriport-error";
 export { NotFoundError } from "./error/not-found";
 export { errorToString } from "./error/shared";
 export { TooManyRequestsError } from "./error/too-many-requests";
-export * from "./external";
 export * from "./interface";
 export * as medical from "./medical";
 export * from "./net/error";

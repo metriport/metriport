@@ -1,51 +1,45 @@
 import { z } from "zod";
-// import { linkSchema } from "./link";
+import { linkSchema } from "./link";
 
-const organizationBaseSchema = z.object({
+export const organizationSchema = z.object({
   organizationId: z.string(),
   homeCommunityId: z.string(),
   name: z.string(),
   displayName: z.string(),
   memberName: z.string(),
   type: z.string(),
-  npiType1: z.string().nullish(), // Physicians
-  npiType2: z.string().nullish(), // Organization
   patientIdAssignAuthority: z.string(),
+  securityTokenKeyType: z.string(),
   sendingFacility: z
     .object({
-      namespaceId: z.string().nullish(),
-      universalId: z.string().nullish(),
-      universalIdType: z.string().nullish(),
+      namespaceId: z.string().optional().nullable(),
+      universalId: z.string().optional().nullable(),
+      universalIdType: z.string().optional().nullable(),
     })
-    .nullish(),
+    .optional()
+    .nullable(),
   sendingApplication: z
     .object({
-      namespaceId: z.string().nullish(),
-      universalId: z.string().nullish(),
-      universalIdType: z.string().nullish(),
+      namespaceId: z.string().optional().nullable(),
+      universalId: z.string().optional().nullable(),
+      universalIdType: z.string().optional().nullable(),
     })
-    .nullish(),
+    .optional()
+    .nullable(),
   isActive: z.boolean(),
   locations: z.array(
     z.object({
       address1: z.string(),
-      address2: z.string().nullish(),
+      address2: z.string().optional().nullable(),
       city: z.string(),
       state: z.string(),
       postalCode: z.string(),
       country: z.string(),
-      phone: z.string().nullish(),
-      fax: z.string().nullish(),
-      email: z.string().nullish(),
+      phone: z.string().optional().nullable(),
+      fax: z.string().optional().nullable(),
+      email: z.string().optional().nullable(),
     })
   ),
-  /** Gateway search radius in miles. One of: 50, 100, 150 */
-  searchRadius: z
-    .number()
-    .refine(val => [50, 100, 150].includes(val), {
-      message: "Search radius must be one of: 50, 100, 150",
-    })
-    .nullish(),
   technicalContacts: z.array(
     z.object({
       name: z.string(),
@@ -54,67 +48,37 @@ const organizationBaseSchema = z.object({
       phone: z.string(),
     })
   ),
-});
-
-export const organizationSchemaWithNetworkInfo = organizationBaseSchema.extend({
-  securityTokenKeyType: z
-    .union([z.literal("JWT"), z.literal("BEARER"), z.literal("HOLDER-OF-KEY")])
-    .nullish(),
-  networks: z.array(
-    z.object({
-      type: z.string(),
-      purposeOfUse: z.array(
-        z.object({
-          id: z.string(),
-          queryInitiatorOnly: z.boolean(),
-          queryInitiator: z.boolean(),
-          queryResponder: z.boolean(),
-        })
-      ),
-      includes: z.array(z.string()).nullish(), // List of OIDs to always include in document query
-      excludes: z.array(z.string()).nullish(), // List of OIDs to always exclude from document query
-      doa: z.array(z.string()).nullish(), // OIDs this org has authority delegated from
-    })
-  ),
   gateways: z
     .array(
       z.object({
-        serviceType: z.union([
-          z.literal("R4_Base"),
-          z.literal("XCA-ITI-38"),
-          z.literal("XCA-ITI-39"),
-        ]),
-        gatewayType: z.union([z.literal("FHIR"), z.literal("XCA")]),
-        isAsync: z.boolean().nullish(),
-        gatewayTimeout: z.number().nullish(),
-        endpointLocation: z.string().nullish(),
+        serviceType: z.string(),
+        gatewayType: z.string(),
+        isAsync: z.boolean().optional(),
+        gatewayTimeout: z.number().optional(),
+        endpointLocation: z.string().optional(),
       })
     )
-    .nullish(),
+    .optional()
+    .nullable(),
   authorizationInformation: z
     .object({
-      authorizationServerEndpoint: z.string().nullish(),
-      clientId: z.string().nullish(),
-      clientSecret: z.string().nullish(),
-      documentReferenceScope: z.string().nullish(),
-      binaryScope: z.string().nullish(),
+      authorizationServerEndpoint: z.string(),
+      clientId: z.string(),
+      clientSecret: z.string(),
+      documentReferenceScope: z.string(),
+      binaryScope: z.string(),
     })
-    .nullish(),
+    .optional()
+    .nullable(),
+  _links: z
+    .object({
+      self: linkSchema.optional().nullable(),
+      certificate: linkSchema.optional().nullable(),
+    })
+    .optional()
+    .nullable(),
 });
-export type OrganizationWithNetworkInfo = z.infer<typeof organizationSchemaWithNetworkInfo>;
 
-export const organizationSchemaWithoutNetworkInfo = organizationSchemaWithNetworkInfo.omit({
-  securityTokenKeyType: true,
-  networks: true,
-  gateways: true,
-  authorizationInformation: true,
-});
-export type OrganizationWithoutNetworkInfo = z.infer<typeof organizationSchemaWithoutNetworkInfo>;
-
-export const organizationSchema = z.union([
-  organizationSchemaWithNetworkInfo,
-  organizationSchemaWithoutNetworkInfo,
-]);
 export type Organization = z.infer<typeof organizationSchema>;
 
 export const organizationListSchema = z.object({
@@ -122,6 +86,7 @@ export const organizationListSchema = z.object({
   from: z.number(),
   to: z.number(),
   organizations: z.array(organizationSchema),
+  _links: linkSchema,
 });
 
 export type OrganizationList = z.infer<typeof organizationListSchema>;

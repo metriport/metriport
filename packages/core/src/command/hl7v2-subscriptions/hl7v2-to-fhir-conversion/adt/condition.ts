@@ -12,11 +12,6 @@ type ConditionWithId = Condition & {
   id: string;
 };
 
-type ConditionsAndReferences = {
-  conditions: Condition[];
-  refs: EncounterDiagnosis[];
-};
-
 type EncounterReason = {
   reasonCode: CodeableConcept[];
   condition: Condition;
@@ -27,27 +22,33 @@ type ConditionWithCode = Partial<Condition> & {
   code: CodeableConcept;
 };
 
-export function getConditionsAndReferences(
-  adt: Hl7Message,
-  patientId: string
-): ConditionsAndReferences {
-  const diagnoses = getAllDiagnoses(adt, patientId);
-
-  const uniqueConditions = deduplicateConditions(diagnoses, false).combinedResources;
-  const conditionReferences = uniqueConditions.map(condition =>
-    buildConditionReference({ resource: condition })
+export function getConditions({
+  adt,
+  patientId,
+  encounterId,
+}: {
+  adt: Hl7Message;
+  patientId: string;
+  encounterId: string;
+}): Condition[] {
+  const dg1Segments = adt.getAllSegments("DG1");
+  const conditions = dg1Segments.flatMap(
+    dg1 => getConditionFromDg1Segment(dg1, patientId, encounterId) ?? []
   );
 
-  return {
-    conditions: uniqueConditions,
-    refs: conditionReferences,
-  };
+  const uniqueConditions = deduplicateConditions(conditions, false).combinedResources;
+  return uniqueConditions;
 }
 
-export function getEncounterReason(
-  adt: Hl7Message,
-  patientId: string
-): EncounterReason | undefined {
+export function getEncounterReason({
+  adt,
+  patientId,
+  encounterId,
+}: {
+  adt: Hl7Message;
+  patientId: string;
+  encounterId: string;
+}): EncounterReason | undefined {
   const pv2Segment = adt.getSegment("PV2");
   if (!pv2Segment || pv2Segment.fields.length < 1) return undefined;
 
@@ -59,7 +60,7 @@ export function getEncounterReason(
   if (coding.length < 1) return undefined;
 
   // TODO 2883: See if we can parse (or infer) onsetDateTime and other fields (so far looks like a no)
-  const condition = buildCondition({ code: { coding } }, patientId);
+  const condition = buildCondition({ params: { code: { coding } }, patientId, encounterId });
   const diagnosisReference = buildConditionReference({ resource: condition });
 
   return {
@@ -69,12 +70,11 @@ export function getEncounterReason(
   };
 }
 
-export function getAllDiagnoses(adt: Hl7Message, patientId: string): Condition[] {
-  const dg1Segments = adt.getAllSegments("DG1");
-  return dg1Segments.flatMap(dg1 => getDiagnosisFromDg1Segment(dg1, patientId) ?? []);
-}
-
-function getDiagnosisFromDg1Segment(dg1: Hl7Segment, patientId: string): Condition | undefined {
+function getConditionFromDg1Segment(
+  dg1: Hl7Segment,
+  patientId: string,
+  encounterId: string
+): Condition | undefined {
   const diagnosisCodingField = dg1.getField(3);
   const mainCoding = getCoding(diagnosisCodingField, 0);
   const secondaryCoding = getCoding(diagnosisCodingField, 1);
@@ -82,14 +82,22 @@ function getDiagnosisFromDg1Segment(dg1: Hl7Segment, patientId: string): Conditi
   const coding = [mainCoding, secondaryCoding].flatMap(c => c ?? []);
   if (coding.length < 1) return;
 
-  return buildCondition({ code: { coding } }, patientId);
+  return buildCondition({ params: { code: { coding } }, patientId, encounterId });
 }
 
-export function buildCondition(params: ConditionWithCode, patientId: string): ConditionWithId {
+export function buildCondition({
+  params,
+  patientId,
+  encounterId,
+}: {
+  params: ConditionWithCode;
+  patientId: string;
+  encounterId: string;
+}): ConditionWithId {
   const { id, code, ...rest } = params;
 
   return {
-    id: id ?? createUuidFromText(JSON.stringify(code)),
+    id: id ?? createUuidFromText(`${encounterId}-${JSON.stringify(code)}`),
     resourceType: "Condition",
     code,
     subject: buildPatientReference(patientId),

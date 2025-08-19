@@ -521,8 +521,8 @@ function removeDuplicateReferences<T extends Resource>(entry: T): T {
 /**
  * Finds and updates references to the deduplicated resources
  */
-function replaceResourceReferences(
-  resourceArrays: ExtractedFhirTypes,
+export function replaceResourceReferences(
+  resourceArrays: Partial<ExtractedFhirTypes>,
   refReplacementMap: Map<string, string>,
   resourceType?: string[]
 ): ExtractedFhirTypes {

@@ -329,19 +329,21 @@ export class FhirBundleSdk {
   }
 
   /**
-   * Create a new FhirBundleSdk instance
+   * Create a new FhirBundleSdk instance (async for backwards compatibility)
    * FR-1.2: Validate bundle resourceType
-   * FR-1.3: Validate bundle type
    */
   static async create(bundle: Bundle): Promise<FhirBundleSdk> {
+    return FhirBundleSdk.createSync(bundle);
+  }
+
+  /**
+   * Create a new FhirBundleSdk instance synchronously
+   * FR-1.2: Validate bundle resourceType
+   */
+  static createSync(bundle: Bundle): FhirBundleSdk {
     // FR-1.2: Validate bundle resourceType
     if (bundle.resourceType !== "Bundle") {
       throw new Error("Invalid bundle: resourceType must be 'Bundle'");
-    }
-
-    // FR-1.3: Validate bundle type
-    if (bundle.type !== "collection") {
-      throw new Error("Invalid bundle: type must be 'collection'");
     }
 
     return new FhirBundleSdk(bundle);
