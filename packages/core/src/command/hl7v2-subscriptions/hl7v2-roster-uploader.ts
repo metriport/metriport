@@ -4,9 +4,12 @@ import { SftpClient } from "../../external/sftp/client";
 import { executeWithRetries } from "@metriport/shared/common/retry";
 import { SftpConfig } from "../../external/sftp/types";
 import { createFileHl7v2Roster } from "./hl7v2-roster-generator";
+import { getSecretValueOrFail } from "../../external/aws/secret-manager";
+import { getEnvVarOrFail } from "@metriport/shared/common/env-var";
 
 const NUMBER_OF_ATTEMPTS = 3;
 const BASE_DELAY = 1000;
+const AWS_REGION = getEnvVarOrFail("AWS_REGION");
 
 // TODO: ENG-24 - uncomment and implement when SFTP upload becomes part of the flow
 
@@ -48,7 +51,16 @@ async function sendViaSftp(
   if (!config || !remoteFolderPath) {
     throw new Error("Sftp config is required");
   }
-  const client = new SftpClient(config);
+
+  const secretName = config.password;
+  const password = await getSecretValueOrFail(secretName, AWS_REGION);
+
+  const client = new SftpClient({
+    host: config.host,
+    port: config.port,
+    username: config.username,
+    password,
+  });
 
   await client.connect();
 
