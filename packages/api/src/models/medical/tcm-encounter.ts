@@ -19,7 +19,7 @@ export class TcmEncounterModel extends BaseModel<TcmEncounterModel> implements T
   declare outreachStatus: CreationOptional<"Not Started" | "Attempted" | "Completed">;
 
   // This is a stored generated column, its derived from clinical_information.
-  declare readonly hasCardiacCode: boolean;
+  declare readonly hasCardiacCode: CreationOptional<boolean>;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
     TcmEncounterModel.init(
