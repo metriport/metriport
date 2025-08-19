@@ -203,7 +203,9 @@ function isBpm(units: string): boolean {
     units === "/min" ||
     units === "beats/min" ||
     units === "per minute" ||
-    units === "br/min"
+    units === "br/min" ||
+    units === "breaths/min" ||
+    units === "breaths per minute"
   );
 }
 
