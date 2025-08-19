@@ -56,6 +56,8 @@ const organizationBaseSchema = z.object({
   ),
 });
 
+export type OrganizationBase = z.infer<typeof organizationBaseSchema>;
+
 export const organizationSchemaWithNetworkInfo = organizationBaseSchema.extend({
   securityTokenKeyType: z
     .union([z.literal("JWT"), z.literal("BEARER"), z.literal("HOLDER-OF-KEY")])
@@ -104,7 +106,6 @@ export const organizationSchemaWithNetworkInfo = organizationBaseSchema.extend({
 export type OrganizationWithNetworkInfo = z.infer<typeof organizationSchemaWithNetworkInfo>;
 
 export const organizationSchemaWithoutNetworkInfo = organizationSchemaWithNetworkInfo.omit({
-  securityTokenKeyType: true,
   networks: true,
   gateways: true,
   authorizationInformation: true,
@@ -125,3 +126,7 @@ export const organizationListSchema = z.object({
 });
 
 export type OrganizationList = z.infer<typeof organizationListSchema>;
+
+export function isOrgInitiatorAndResponder(org: Organization): boolean {
+  return !!org.securityTokenKeyType;
+}
