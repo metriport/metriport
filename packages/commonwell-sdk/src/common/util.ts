@@ -1,62 +1,25 @@
-import { Demographics } from "../models/demographics";
-import { StrongId } from "../models/identifier";
-import { Organization } from "../models/organization";
-import { Patient } from "../models/patient";
-import { Person, PersonSearchResp } from "../models/person";
 import { PurposeOfUse } from "@metriport/shared";
-import { RequestMetadata } from "../client/commonwell";
+import { BaseRequestMetadata } from "../client/common";
+import { StrongId } from "../models/identifier";
+import { Patient, PatientCollectionItem } from "../models/patient";
 
 /**
- * Returns the ID of a person.
- * @deprecated Use {@link getPersonId} instead.
+ * Regex pattern to extract code, system, and optional assignAuthType from CommonWell patient ID
+ * Matches: code^^^&system&assignAuthType
+ * Where assignAuthType is optional
  */
-export function getId(object: Person | undefined): string | undefined {
-  return getPersonId(object);
-}
+export const CW_PATIENT_ID_REGEX = /^(.+)\^\^\^&([^&]+)(?:&(.+))?$/i;
 
-/**
- * Returns the ID of a person.
- */
-export function getPersonId(object: Person | undefined): string | undefined {
-  if (!object) return undefined;
-  const url = object._links?.self?.href;
-  return getPersonIdFromUrl(url);
-}
-
-/**
- * Returns the ID of a person from its URL.
- *
- * @param personUrl - The person's URL as returned from `Person._links.self.href`
- */
-export function getPersonIdFromUrl(personUrl: string | undefined | null): string | undefined {
-  if (!personUrl) return undefined;
-  return personUrl.substring(personUrl.lastIndexOf("/") + 1);
-}
-
-export function getPersonIdFromSearchByPatientDemo(object: PersonSearchResp): string | undefined {
-  if (!object._embedded || !object._embedded.person) return undefined;
-  const embeddedPersons = object._embedded.person.filter(p => p.enrolled);
-  if (embeddedPersons.length < 1) return undefined;
-  if (embeddedPersons.length > 1) {
-    console.log(`Found more than one person, using the first one: `, object);
-  }
-  const person = embeddedPersons[0];
-  return person && getId(person);
-}
-
-export function getIdTrailingSlash(object: Patient | Organization): string | undefined {
-  const url = object._links?.self?.href;
+export function getPatientIdTrailingSlash(object: PatientCollectionItem): string | undefined {
+  const url = object.Links?.Self;
   if (!url) return undefined;
-  const removeTrailingSlash = url.substring(0, url.length - 1);
+  const isLastCharSlash = url.endsWith("/");
+  const removeTrailingSlash = isLastCharSlash ? url.substring(0, url.length - 1) : url;
   return removeTrailingSlash.substring(removeTrailingSlash.lastIndexOf("/") + 1);
 }
 
 export function getPatientStrongIds(object: Patient): StrongId[] | undefined {
   return object.identifier ?? undefined;
-}
-
-function buildPatiendIdToDocQuery(code: string, system: string): string {
-  return `${system}|${code}`;
 }
 
 /**
@@ -69,43 +32,66 @@ function buildPatiendIdToDocQuery(code: string, system: string): string {
  * @see {@link https://specification.commonwellalliance.org/services/data-broker/protocol-operations-data-broker#8781-find-documents|API spec}
  */
 export function convertPatientIdToSubjectId(patientId: string): string | undefined {
-  const value = decodeURIComponent(decodeURI(patientId));
-  const regex = /(.+)\^\^\^(.+)/i;
-  const match = value.match(regex);
-  const code = match && match[1];
-  const system = match && match[2];
-  return code && system ? buildPatiendIdToDocQuery(code, system) : undefined;
+  const { value, assignAuthority } = decodeCwPatientId(patientId);
+  return value && assignAuthority
+    ? encodeToDocumentExchange({
+        patientId: value,
+        assignAuthority,
+      })
+    : undefined;
+}
+
+export function decodeCwPatientId(patientId: string): {
+  value: string | undefined;
+  assignAuthority: string | undefined;
+  assignAuthorityType: string | undefined;
+} {
+  const decoded = decodeURIComponent(decodeURI(patientId));
+  const match = decoded.match(CW_PATIENT_ID_REGEX) ?? undefined;
+  const value = match && match[1];
+  const assignAuthority = match && match[2];
+  const assignAuthorityType = match && match[3];
+  return { value, assignAuthority, assignAuthorityType };
+}
+
+export function encodeToCwPatientId({
+  patientId,
+  assignAuthority,
+  assignAuthorityType,
+}: {
+  patientId: string;
+  assignAuthority: string;
+  assignAuthorityType?: string | undefined;
+}): string {
+  return `${patientId}^^^&${assignAuthority}&${assignAuthorityType ?? "ISO"}`;
 }
 
 /**
- * Return the demographics for the results of a person search or a list of persons.
+ * Converts the patient ID into subject ID, to be used during document query.
  *
- * @param personRelated structure containing person data, either an array of Person or a PersonSearchResp
+ * @param patientId - The patient's ID.
+ * @param assignAuthority - The assign authority of the patient.
+ * @returns The subject ID as defined by the specification: [system]|[code] where 'system'
+ * is the OID of the organization and 'code' is the first part of the patient ID.
  */
-export function getDemographics(personRelated: Person[] | PersonSearchResp): Demographics[] {
-  if (personRelated instanceof Array) {
-    return personRelated.map(p => p.details);
-  }
-  return personRelated._embedded.person.map(p => p.details);
+export function encodeToDocumentExchange({
+  patientId,
+  assignAuthority,
+}: {
+  patientId: string;
+  assignAuthority: string;
+}): string {
+  return `${assignAuthority}|${patientId}`;
 }
 
-export function organizationQueryMeta(
-  orgName: string,
-  meta: Omit<RequestMetadata, "npi" | "role" | "purposeOfUse" | "subjectId"> &
-    Required<Pick<RequestMetadata, "npi">> &
-    Partial<Pick<RequestMetadata, "role" | "purposeOfUse">>
-): RequestMetadata {
-  const base = baseQueryMeta(orgName);
+export function encodeId(id: string): string {
+  return encodeURIComponent(id);
+}
+
+export function buildBaseQueryMeta(orgName: string): BaseRequestMetadata {
   return {
-    subjectId: base.subjectId,
-    role: meta.role ?? base.role,
-    purposeOfUse: meta.purposeOfUse ?? base.purposeOfUse,
-    npi: meta.npi,
+    purposeOfUse: PurposeOfUse.TREATMENT,
+    role: "ict",
+    subjectId: `${orgName} System User`,
   };
 }
-
-export const baseQueryMeta = (orgName: string) => ({
-  purposeOfUse: PurposeOfUse.TREATMENT,
-  role: "ict",
-  subjectId: `${orgName} System User`,
-});

@@ -1,5 +1,5 @@
 import { validateNPI } from "@metriport/shared/common/validate-npi";
-import { defaultOptionalStringSchema } from "@metriport/shared/util";
+import { defaultOptionalStringSchema } from "@metriport/shared";
 import z from "zod";
 import { addressStrictSchema } from "./address";
 
