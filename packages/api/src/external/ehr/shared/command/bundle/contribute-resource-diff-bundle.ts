@@ -5,7 +5,7 @@ import {
   FetchBundleParams,
 } from "@metriport/core/external/ehr/bundle/command/fetch-bundle";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import { MetriportError } from "@metriport/shared/dist/error/metriport-error";
+import { MetriportError } from "@metriport/shared";
 import { healthieSecondaryMappingsSchema } from "@metriport/shared/interface/external/ehr/healthie/cx-mapping";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { getCxMappingsByCustomer } from "../../../../../command/mapping/cx";
