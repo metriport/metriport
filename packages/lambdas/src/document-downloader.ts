@@ -4,7 +4,7 @@ import {
   CommonWell,
   CommonWellAPI,
   organizationQueryMeta,
-} from "@metriport/commonwell-sdk";
+} from "@metriport/commonwell-sdk-v1";
 import { addOidPrefix } from "@metriport/core/domain/oid";
 import { DownloadResult } from "@metriport/core/external/commonwell-v1/document/document-downloader";
 import { DocumentDownloaderLambdaRequest } from "@metriport/core/external/commonwell-v1/document/document-downloader-lambda";
