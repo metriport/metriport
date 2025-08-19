@@ -1,92 +1,65 @@
 import { out } from "../../util";
-import { HieConfig } from "./types";
+import { HieConfig, VpnlessHieConfig } from "./types";
 import { SftpClient } from "../../external/sftp/client";
+import { executeWithRetries } from "@metriport/shared/common/retry";
+import { SftpConfig } from "../../external/sftp/types";
+import { createFileHl7v2Roster } from "./hl7v2-roster-generator";
 
-// import { errorToString, executeWithNetworkRetries } from "@metriport/shared";
-// import dayjs from "dayjs";
-// import { capture, out } from "../../util";
-// import { HieConfig, SftpConfig } from "./types";
-// import Client from "ssh2-sftp-client";
-
-// const NUMBER_OF_ATTEMPTS = 3;
-// const BASE_DELAY = dayjs.duration({ seconds: 1 });
+const NUMBER_OF_ATTEMPTS = 3;
+const BASE_DELAY = 1000;
 
 // TODO: ENG-24 - uncomment and implement when SFTP upload becomes part of the flow
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export async function uploadThroughSftp(config: HieConfig, file: string): Promise<void> {
+
+export async function uploadThroughSftp(
+  config: HieConfig | VpnlessHieConfig,
+  file: string
+): Promise<void> {
   const { log } = out("[STUB] - Hl7v2RosterUploader");
 
-  if (!config.sftpConfig || !config.remotePath) {
-    throw new Error("Sftp config is required");
-  }
+  const loggingDetails = {
+    hieName: config.name,
+    sftpConfig: config.sftpConfig,
+    remotePath: config.remotePath,
+  };
+  log(`Running with this config: ${JSON.stringify(loggingDetails)}`);
 
-  const client = new SftpClient(config.sftpConfig);
+  const hieName = config.name;
 
-  try {
-    await client.connect();
-    await client.write(config.remotePath, Buffer.from(file, "utf-8"));
-  } catch (error) {
-    log(`[SFTP] SFTP failed! ${error}`);
-    throw error;
-  } finally {
-    await client.disconnect();
-    log(`[SFTP] Connection cleaned up.`);
-  }
+  const remoteFileName = createFileHl7v2Roster(hieName);
 
-  // const { states, subscriptions } = config;
-  // const loggingDetails = {
-  //   hieName: config.name,
-  //   schema: config.schema,
-  //   states,
-  //   subscriptions,
-  // };
-  // log(`Running with this config: ${JSON.stringify(loggingDetails)}`);
-  // const sftpConfig = config.sftpConfig;
-  // if (sftpConfig) {
-  //     await executeWithNetworkRetries(async () => sendViaSftp(sftpConfig, file, log), {
-  //       maxAttempts: NUMBER_OF_ATTEMPTS,
-  //       initialDelay: BASE_DELAY.asMilliseconds(),
-  //       log,
-  //     });
-  // }
-
+  await executeWithRetries(
+    () => sendViaSftp(config.sftpConfig, file, config.remotePath, remoteFileName),
+    {
+      maxAttempts: NUMBER_OF_ATTEMPTS,
+      log,
+      maxDelay: BASE_DELAY,
+    }
+  );
   log("Done");
   return;
 }
 
-// async function sendViaSftp(
-//   config: SftpConfig,
-//   rosterCsv: string,
-//   log: typeof console.log
-// ): Promise<void> {
-//   const sftp = new Client();
+async function sendViaSftp(
+  config: SftpConfig | undefined,
+  file: string,
+  remoteFolderPath: string | undefined,
+  remoteFileName: string
+) {
+  if (!config || !remoteFolderPath) {
+    throw new Error("Sftp config is required");
+  }
+  const client = new SftpClient(config);
 
-//   try {
-//     log(`[SFTP] Uploading roster to ${config.host}:${config.port}${config.remotePath}`);
+  await client.connect();
 
-//     await sftp.connect({
-//       host: config.host,
-//       port: config.port,
-//       username: config.username,
-//       password: config.password,
-//     });
-//     log(`[SFTP] Successfully established connection :)`);
+  const folderExists = await client.exists(remoteFolderPath);
+  if (!folderExists) {
+    throw new Error("Folder does not exist.");
+  }
 
-//     const dirPath = config.remotePath.substring(0, config.remotePath.lastIndexOf("/"));
-//     if (dirPath) {
-//       await sftp.mkdir(dirPath, true);
-//       log(`[SFTP] Successfully created/verified directory structure`);
-//     }
+  const fullPath = `${remoteFolderPath}/${remoteFileName}`;
 
-//     await sftp.put(Buffer.from(rosterCsv), config.remotePath);
-//     log("[SFTP] Upload successful!");
+  await client.write(fullPath, Buffer.from(file, "utf-8"));
 
-//     return;
-//   } catch (error) {
-//     log(`[SFTP] SFTP failed! ${errorToString(error)}`);
-//     throw error;
-//   } finally {
-//     await sftp.end();
-//     log(`[SFTP] Connection cleaned up.`);
-//   }
-// }
+  await client.disconnect();
+}

@@ -29,6 +29,7 @@ import {
   VpnlessHieConfig,
 } from "./types";
 import { createScrambledId } from "./utils";
+import { uploadThroughSftp } from "./hl7v2-roster-uploader";
 const region = Config.getAWSRegion();
 
 type RosterRow = Record<string, string>;
@@ -109,7 +110,7 @@ export class Hl7v2RosterGenerator {
     const rosterCsv = this.generateCsv(rosterRows);
     log("Created CSV");
 
-    const fileName = this.createFileKeyHl7v2Roster(hieName);
+    const fileName = createFileKeyHl7v2Roster(hieName);
 
     await storeInS3WithRetries({
       s3Utils: this.s3Utils,
@@ -127,6 +128,9 @@ export class Hl7v2RosterGenerator {
     });
 
     log(`Saved in S3: ${this.bucketName}/${fileName}`);
+
+    await uploadThroughSftp(config, rosterCsv);
+
     return rosterCsv;
   }
 
@@ -170,14 +174,19 @@ export class Hl7v2RosterGenerator {
     if (records.length === 0) return "";
     return stringify(records, { header: true, quoted: true });
   }
+}
 
-  private createFileKeyHl7v2Roster(hieName: string): string {
-    const todaysDate = buildDayjs();
-    const folderDate = todaysDate.format(FOLDER_DATE_FORMAT);
-    const fileDate = todaysDate.format(FILE_DATE_FORMAT);
-    const fileName = `Metriport_${hieName}_Patient_Enrollment_${fileDate}`;
-    return `${folderDate}/${fileName}.${CSV_FILE_EXTENSION}`;
-  }
+export function createFileKeyHl7v2Roster(hieName: string): string {
+  const todaysDate = buildDayjs();
+  const folderDate = todaysDate.format(FOLDER_DATE_FORMAT);
+  const fileName = createFileHl7v2Roster(hieName);
+  return `${folderDate}/${fileName}`;
+}
+
+export function createFileHl7v2Roster(hieName: string): string {
+  const todaysDate = buildDayjs();
+  const fileDate = todaysDate.format(FILE_DATE_FORMAT);
+  return `Metriport_${hieName}_Patient_Enrollment_${fileDate}.${CSV_FILE_EXTENSION}`;
 }
 
 export function createRosterRow(
