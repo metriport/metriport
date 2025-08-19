@@ -1,5 +1,5 @@
 export const docContributionFileParam = "fileName";
 
 export function getDocContributionURL(apiURL: string): string {
-  return `${apiURL}/doc-contribution/commonwell/`;
+  return `${apiURL}/doc-contribution/commonwell-v1/`;
 }
