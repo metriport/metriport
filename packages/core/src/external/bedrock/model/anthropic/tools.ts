@@ -42,11 +42,19 @@ export function buildToolResult(
   toolCall: AnthropicToolCall,
   content: unknown
 ): AnthropicToolResult {
-  return {
+  const result: AnthropicToolResult = {
     type: "tool_result",
     tool_use_id: toolCall.id,
-    content: JSON.stringify(content ?? {}),
   };
+  if (content == null) {
+    return result;
+  } else if (typeof content === "string") {
+    result.content = content;
+  } else {
+    result.content = JSON.stringify(content);
+  }
+
+  return result;
 }
 
 export function buildToolResultError(
