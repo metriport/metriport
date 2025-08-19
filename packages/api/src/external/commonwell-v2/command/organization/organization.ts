@@ -1,6 +1,8 @@
 import {
   isOrgInitiatorAndResponder,
   Organization as CwSdkOrganization,
+  OrganizationWithNetworkInfo,
+  OrganizationBase,
 } from "@metriport/commonwell-sdk";
 import { OID_PREFIX } from "@metriport/core/domain/oid";
 import { OrganizationData } from "@metriport/core/domain/organization";
@@ -34,9 +36,15 @@ export type CwOrgOrFacility = {
 type CwSdkOrganizationWithOrgId = Omit<CwSdkOrganization, "organizationId"> &
   Required<Pick<CwSdkOrganization, "organizationId">>;
 
-function cwOrgOrFacilityToSdk(org: CwOrgOrFacility): CwSdkOrganizationWithOrgId {
+type CwSdkOrganizationWithNetworkInfo = Omit<OrganizationWithNetworkInfo, "organizationId"> &
+  Required<Pick<OrganizationWithNetworkInfo, "organizationId">>;
+
+function cwOrgOrFacilityToSdk(
+  org: CwOrgOrFacility
+): CwSdkOrganizationWithOrgId | CwSdkOrganizationWithNetworkInfo {
   const cwId = OID_PREFIX.concat(org.oid);
-  const cwOrg: CwSdkOrganizationWithOrgId = {
+
+  const cwOrgBase: OrganizationBase = {
     name: org.data.name,
     type: org.data.type,
     locations: [
@@ -57,32 +65,44 @@ function cwOrgOrFacilityToSdk(org: CwOrgOrFacility): CwSdkOrganizationWithOrgId 
     patientIdAssignAuthority: cwId,
     displayName: org.data.name,
     memberName: Config.getCWMemberOrgName(),
+    isActive: org.active,
+    technicalContacts: [technicalContact],
+  };
+
+  if (org.isInitiatorAndResponder) {
+    const cwOrg: CwSdkOrganizationWithNetworkInfo = {
+      ...cwOrgBase,
+      securityTokenKeyType: "BEARER",
+      networks: [
+        {
+          type: "CommonWell",
+          purposeOfUse: [],
+        },
+      ],
+      authorizationInformation: {
+        authorizationServerEndpoint: Config.getGatewayAuthorizationServerEndpoint(),
+        clientId: Config.getGatewayAuthorizationClientId(),
+        clientSecret: Config.getGatewayAuthorizationClientSecret(),
+        documentReferenceScope: "fhir/document",
+        binaryScope: "fhir/document",
+      },
+      gateways: [
+        {
+          serviceType: "R4_Base",
+          gatewayType: "FHIR",
+          endpointLocation: Config.getGatewayEndpoint(),
+        },
+      ],
+    };
+    return cwOrg;
+  }
+
+  const cwOrg: CwSdkOrganizationWithOrgId = {
+    ...cwOrgBase,
     securityTokenKeyType: "BEARER",
     isActive: org.active,
     technicalContacts: [technicalContact],
-    networks: [
-      {
-        type: "CommonWell",
-        purposeOfUse: [],
-      },
-    ],
   };
-  if (org.isInitiatorAndResponder) {
-    cwOrg.authorizationInformation = {
-      authorizationServerEndpoint: Config.getGatewayAuthorizationServerEndpoint(),
-      clientId: Config.getGatewayAuthorizationClientId(),
-      clientSecret: Config.getGatewayAuthorizationClientSecret(),
-      documentReferenceScope: "fhir/document",
-      binaryScope: "fhir/document",
-    };
-    cwOrg.gateways = [
-      {
-        serviceType: "R4_Base",
-        gatewayType: "FHIR",
-        endpointLocation: Config.getGatewayEndpoint(),
-      },
-    ];
-  }
   return cwOrg;
 }
 
