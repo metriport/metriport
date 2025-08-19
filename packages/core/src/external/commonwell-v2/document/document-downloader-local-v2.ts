@@ -1,8 +1,4 @@
-import {
-  CommonWellAPI,
-  CommonwellError,
-  organizationQueryMeta,
-} from "@metriport/commonwell-sdk-v1";
+import { CommonWellAPI, CommonwellError } from "@metriport/commonwell-sdk";
 import {
   executeWithNetworkRetries,
   getNetworkErrorDetails,
@@ -28,21 +24,18 @@ import {
 export type DocumentDownloaderLocalConfig = DocumentDownloaderConfig & {
   commonWell: {
     api: CommonWellAPI;
-    queryMeta: ReturnType<typeof organizationQueryMeta>;
   };
 };
 
-export class DocumentDownloaderLocal extends DocumentDownloader {
+export class DocumentDownloaderLocalV2 extends DocumentDownloader {
   readonly s3client: AWS.S3;
   readonly s3Utils: S3Utils;
   readonly cwApi: CommonWellAPI;
-  readonly cwQueryMeta: ReturnType<typeof organizationQueryMeta>;
 
   constructor(config: DocumentDownloaderLocalConfig) {
     super(config);
     this.s3client = makeS3Client(config.region);
     this.cwApi = config.commonWell.api;
-    this.cwQueryMeta = config.commonWell.queryMeta;
     this.s3Utils = new S3Utils(config.region);
   }
 
@@ -62,10 +55,7 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
     const onEnd = () => {
       log("Finished downloading document");
     };
-    let downloadResult = await executeWithNetworkRetries(
-      () => this.downloadFromCommonwellIntoS3(document, fileInfo, onData, onEnd),
-      { retryOnTimeout: true, initialDelay: 500, maxAttempts: 5 }
-    );
+    let downloadResult = await this.downloadFromCommonwellIntoS3(document, fileInfo, onData, onEnd);
 
     // Check if the detected file type is in the accepted content types and update it if not
     downloadResult = await this.checkAndUpdateMimeType({
@@ -233,11 +223,17 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
     contentType: string | undefined;
   }> {
     const { log } = out("downloadFromCommonwellIntoS3");
-    const { writeStream, promise } = this.getUploadStreamToS3(
-      fileInfo.name,
-      fileInfo.location,
-      document.mimeType
-    );
+
+    let writeStream: stream.Writable;
+    let downloadIntoS3: Promise<AWS.S3.ManagedUpload.SendData>;
+
+    const self = this; // eslint-disable-line @typescript-eslint/no-this-alias
+    function setOrResetStream() {
+      return self.getUploadStreamToS3(fileInfo.name, fileInfo.location, document.mimeType);
+    }
+    const resp = setOrResetStream();
+    writeStream = resp.writeStream;
+    downloadIntoS3 = resp.promise;
 
     onDataFn && writeStream.on("data", onDataFn);
     onEndFn && writeStream.on("end", onEndFn);
@@ -245,9 +241,14 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
     await this.downloadDocumentFromCW({
       location: document.location,
       stream: writeStream,
+      resetStream: () => {
+        const resp = setOrResetStream();
+        writeStream = resp.writeStream;
+        downloadIntoS3 = resp.promise;
+      },
     });
 
-    const uploadResult = await promise;
+    const uploadResult = await downloadIntoS3;
 
     log(`Uploaded ${document.id}, ${document.mimeType}, to ${uploadResult.Location}`);
 
@@ -290,19 +291,28 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
   protected async downloadDocumentFromCW({
     location,
     stream,
+    resetStream,
   }: {
     location: string;
     stream: stream.Writable;
+    resetStream: () => void;
   }): Promise<void> {
     try {
       await executeWithNetworkRetries(
-        () => this.cwApi.retrieveDocument(this.cwQueryMeta, location, stream),
-        { retryOnTimeout: true, maxAttempts: 5, initialDelay: 500 }
+        () => {
+          return this.cwApi.retrieveDocument(location, stream);
+        },
+        {
+          retryOnTimeout: true,
+          maxAttempts: 5,
+          initialDelay: 500,
+          onError: () => resetStream(),
+        }
       );
     } catch (error) {
       const { code, status } = getNetworkErrorDetails(error);
       const additionalInfo = {
-        cwReferenceHeader: this.cwApi.lastReferenceHeader,
+        cwReferenceHeader: this.cwApi.lastTransactionId,
         documentLocation: location,
         code,
         status,
