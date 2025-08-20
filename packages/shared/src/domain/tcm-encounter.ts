@@ -27,8 +27,7 @@ export const tcmEncounterBaseSchema = z.strictObject({
     .string()
     .datetime()
     .transform(val => buildDayjs(val).toDate())
-    .nullish()
-    .transform(val => (val === null ? undefined : val)),
+    .nullish(),
   clinicalInformation: z.record(z.unknown()).optional().default({}),
   freetextNote: z.string().optional(),
   dischargeSummaryPath: z.string().optional(),
