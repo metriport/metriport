@@ -1,3 +1,3 @@
-export interface RosterUploadCommand {
+export interface QuestUploadRosterHandler {
   generateAndUploadLatestQuestRoster(): Promise<void>;
 }
