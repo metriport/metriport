@@ -1,14 +1,15 @@
-import { ResponseDownloadCommand } from "./response-download";
 import { QuestSftpClient } from "../../client";
 import { QuestFhirConverterCommand } from "../fhir-converter/fhir-converter";
+import { DownloadResponseCommandHandler } from "./download-response";
 
-export class ResponseDownloadDirect implements ResponseDownloadCommand {
-  constructor(private readonly next: QuestFhirConverterCommand) {}
+export class DownloadResponseHandlerDirect implements DownloadResponseCommandHandler {
+  constructor(
+    private readonly client = new QuestSftpClient(),
+    private readonly next: QuestFhirConverterCommand
+  ) {}
 
   async downloadAllQuestResponses(): Promise<void> {
-    console.log("Downloading all Quest responses");
-    const client = new QuestSftpClient();
-    const responseFileNames = await client.downloadAllResponses();
+    const responseFileNames = await this.client.downloadAllResponses();
 
     // Trigger the next step of the data pipeline for each downloaded response file
     for (const responseFileName of responseFileNames) {

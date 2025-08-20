@@ -19,3 +19,8 @@ export const questRosterResponseSchema = z.object({
 });
 
 export type QuestRosterResponse = z.infer<typeof questRosterResponseSchema>;
+
+export interface QuestDailyUpdateFile {
+  fileName: string;
+  fileContent: Buffer;
+}

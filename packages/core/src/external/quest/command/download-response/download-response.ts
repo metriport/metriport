@@ -1,3 +1,3 @@
-export interface ResponseDownloadCommand {
+export interface DownloadResponseCommandHandler {
   downloadAllQuestResponses(): Promise<void>;
 }

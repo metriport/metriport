@@ -2,7 +2,7 @@ import { BadRequestError, MetriportError } from "@metriport/shared";
 import { Config } from "../../util/config";
 import { SftpClient } from "../sftp/client";
 import { generateQuestRoster } from "./roster";
-import { QuestSftpConfig } from "./types";
+import { QuestSftpConfig, QuestDailyUpdateFile } from "./types";
 
 export class QuestSftpClient extends SftpClient {
   private readonly outgoingDirectory: string;
@@ -43,17 +43,25 @@ export class QuestSftpClient extends SftpClient {
     }
   }
 
-  async downloadAllResponses(): Promise<string[]> {
+  async downloadAllDailyUpdates(): Promise<QuestDailyUpdateFile[]> {
     if (!this.replica) {
-      throw new BadRequestError("Cannot download responses without a configured replica");
+      throw new BadRequestError("Cannot download daily updates without a configured replica");
     }
+    const replicaFileNames = await this.replica.listFileNames(this.incomingDirectory);
+    const alreadyDownloadedFileNames = new Set(replicaFileNames);
+    const dailyUpdates: QuestDailyUpdateFile[] = [];
+
     try {
       await this.connect();
       const fileNames = await this.listResponseFileNamesFromQuest();
+      this.log(`Found ${fileNames.length} daily updates in Quest SFTP directory`);
+
       for (const fileName of fileNames) {
-        await this.readFromQuest(fileName);
+        if (alreadyDownloadedFileNames.has(fileName)) continue;
+        const fileContent = await this.readFromQuest(fileName);
+        dailyUpdates.push({ fileName, fileContent });
       }
-      return fileNames;
+      return dailyUpdates;
     } catch (error) {
       throw new MetriportError(`Failed to download Quest responses`, error, {
         context: "QuestSftpClient",
@@ -63,10 +71,18 @@ export class QuestSftpClient extends SftpClient {
     }
   }
 
+  /**
+   * Writes a new roster file to the Quest outgoing directory. This will also keep a copy of the file
+   * in the S3 replica bucket.
+   */
   async writeToQuest(fileName: string, fileContent: Buffer): Promise<void> {
     await this.write(`${this.outgoingDirectory}/${fileName}`, fileContent);
   }
 
+  /**
+   * Reads a file from the Quest SFTP directory. This will automatically write a copy of the file
+   * to the S3 replica bucket.
+   */
   async readFromQuest(fileName: string): Promise<Buffer> {
     return await this.read(`${this.incomingDirectory}/${fileName}`);
   }
