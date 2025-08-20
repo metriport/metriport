@@ -77,7 +77,7 @@ export class TcmEncounterModel extends BaseModel<TcmEncounterModel> implements T
         },
         hasCardiacCode: {
           type: DataTypes.BOOLEAN,
-          allowNull: false,
+          allowNull: true,
         },
       },
       {
