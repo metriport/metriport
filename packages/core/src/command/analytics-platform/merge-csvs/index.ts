@@ -204,7 +204,9 @@ async function listAllFiles({
         jobId: fhirToCsvJobId,
         patientId,
       });
-      const patientFiles = await s3Utils.listObjects(sourceBucket, prefixToSearch);
+      const patientFiles = await s3Utils.listObjects(sourceBucket, prefixToSearch, {
+        maxAttempts: 10,
+      });
       rawFileList.push(...patientFiles);
     },
     {
@@ -345,7 +347,9 @@ async function mergeFileGroups(
     fileGroups,
     async (fileGroup: FileGroup) => {
       try {
-        const result = await executeWithRetriesS3(() => mergeFileGroup(fileGroup, params, log));
+        const result = await executeWithRetriesS3(() => mergeFileGroup(fileGroup, params, log), {
+          maxAttempts: 10,
+        });
         results[idx++] = result;
       } catch (error) {
         log(`Error merging group ${fileGroup.groupId}: ${errorToString(error)}`);
