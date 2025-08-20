@@ -32,10 +32,14 @@ export interface SftpConfig {
   port: number;
   username: string;
   password: string;
-  passwordSecretName?: string;
   privateKey?: string;
   logLevel?: "info" | "debug" | "none"; // default "none"
 }
+
+export type HieSftpConfig = Omit<SftpConfig, "password" | "privateKey"> & {
+  passwordSecretName: string;
+  remotePath: string;
+};
 
 export interface SftpFile {
   fileName: string;

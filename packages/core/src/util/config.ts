@@ -396,4 +396,8 @@ export class Config {
   static getFhirToCsvBatchJobDefinitionArn(): string | undefined {
     return getEnvVar("FHIR_TO_CSV_BATCH_JOB_DEFINITION_ARN");
   }
+
+  static getSftpPasswordOrFail(): string {
+    return getEnvVarOrFail("SFTP_PASSWORD");
+  }
 }

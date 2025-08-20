@@ -4,7 +4,6 @@ import { Construct } from "constructs";
 import { EnvConfig } from "../config/env-config";
 import { isSandbox } from "../lib/shared/util";
 import { PROBLEMATIC_IPSEC_CHARACTERS } from "./hl7-notification-stack/constants";
-import { MetriportError } from "@metriport/shared/dist/error/metriport-error";
 
 interface SecretStackProps extends StackProps {
   config: EnvConfig;
@@ -119,22 +118,12 @@ export class SecretsStack extends Stack {
         logSecretInfo(this, secret, secretName);
       }
 
-      const sftpSecretNames = Object.values(props.config.hl7Notification.hieConfigs).map(
-        c => c.sftpConfig?.passwordSecretName
+      const sftpSecretNames = Object.values(props.config.hl7Notification.hieConfigs).flatMap(c =>
+        c.sftpConfig ? [c.sftpConfig.passwordSecretName] : []
       );
 
       for (const secretName of sftpSecretNames) {
-        if (!secretName) {
-          throw new MetriportError("No sftp password secret name for hie", undefined, {
-            secretName,
-          });
-        }
-        const secret = makeSecret(secretName, {
-          generateSecretString: {
-            excludePunctuation: true,
-            excludeCharacters: PROBLEMATIC_IPSEC_CHARACTERS,
-          },
-        });
+        const secret = makeSecret(secretName);
         logSecretInfo(this, secret, secretName);
       }
 

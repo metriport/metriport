@@ -1024,6 +1024,8 @@ export class LambdasNestedStack extends NestedStack {
       const hieConfigs = config.hl7Notification.hieConfigs;
 
       Object.entries(hieConfigs).forEach(([hieName, hieConfig]) => {
+        const passwordSecretName = hieConfig.sftpConfig.passwordSecretName;
+
         const lambda = createScheduledLambda({
           stack: this,
           name: `Hl7v2RosterUpload-${hieName}`,
@@ -1035,6 +1037,7 @@ export class LambdasNestedStack extends NestedStack {
             HL7V2_ROSTER_BUCKET_NAME: hl7v2RosterBucket.bucketName,
             API_URL: config.loadBalancerDnsName,
             HL7_BASE64_SCRAMBLER_SEED: scramblerSeedSecretName,
+            SFTP_PASSWORD: passwordSecretName,
             ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
           },
           layers: [lambdaLayers.shared],

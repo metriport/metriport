@@ -1,80 +1,59 @@
 import { out } from "../../util";
 import { HieConfig, VpnlessHieConfig } from "./types";
 import { SftpClient } from "../../external/sftp/client";
-import { executeWithRetries } from "@metriport/shared/common/retry";
-import { SftpConfig } from "../../external/sftp/types";
+import { HieSftpConfig } from "../../external/sftp/types";
 import { createFileNameHl7v2Roster } from "./hl7v2-roster-generator";
-import { getSecretValueOrFail } from "../../external/aws/secret-manager";
-import { MetriportError } from "@metriport/shared";
-import { Config } from "../../util/config";
+import { simpleExecuteWithRetriesAsDuration } from "@metriport/shared";
 import { initTimer } from "@metriport/shared/common/timer";
 import dayjs from "dayjs";
+import { Config } from "../../util/config";
 
 const NUMBER_OF_ATTEMPTS = 3;
 const BASE_DELAY = dayjs.duration({ seconds: 1 });
 
-export async function uploadThroughSftp(
+export async function uploadToRemoteSftp(
   config: HieConfig | VpnlessHieConfig,
   file: string
 ): Promise<void> {
-  const { log } = out("[STUB] - Hl7v2RosterUploader");
+  const { log } = out("Hl7v2RosterUploader");
   log(`Starting SFTP upload for config: ${config.name}`);
   const uploadTimer = initTimer();
 
+  const sftpConfig = config.sftpConfig;
+
   const loggingDetails = {
     hieName: config.name,
-    host: config.sftpConfig?.host,
-    port: config.sftpConfig?.port,
-    username: config.sftpConfig?.username,
-    remotePath: config.remotePath,
+    host: sftpConfig.host,
+    port: sftpConfig.port,
+    username: sftpConfig.username,
+    remotePath: sftpConfig.remotePath,
   };
   log(`Running with this config: ${JSON.stringify(loggingDetails)}`);
 
   const hieName = config.name;
 
   const remoteFileName = createFileNameHl7v2Roster(hieName);
-  const sftpConfig = config.sftpConfig;
-  const remotePath = config.remotePath;
-  if (!sftpConfig) {
-    throw new MetriportError("Sftp config is required!", undefined, { sftpConfig });
-  }
 
-  if (!remotePath) {
-    throw new MetriportError("Sftp remotePath is required!", undefined, { remotePath });
-  }
-
-  await executeWithRetries(() => sendViaSftp(sftpConfig, file, remotePath, remoteFileName), {
-    maxAttempts: NUMBER_OF_ATTEMPTS,
-    log,
-    initialDelay: BASE_DELAY.milliseconds(),
-  });
+  await simpleExecuteWithRetriesAsDuration(
+    () => sendViaSftp(sftpConfig, file, remoteFileName),
+    NUMBER_OF_ATTEMPTS,
+    BASE_DELAY,
+    log
+  );
   log(`SFTP upload completed in ${uploadTimer.getElapsedTime()}ms`);
 }
 
-async function sendViaSftp(
-  config: SftpConfig,
-  file: string,
-  remoteFolderPath: string,
-  remoteFileName: string
-) {
-  if (!config.passwordSecretName) {
-    throw new MetriportError("Sftp password secret name is required!", undefined, {
-      secretName: config.passwordSecretName,
-    });
-  }
-  const secretName = config.passwordSecretName;
-
-  const region = Config.getAWSRegion();
-
-  const password = await getSecretValueOrFail(secretName, region);
+async function sendViaSftp(sftpConfig: HieSftpConfig, file: string, remoteFileName: string) {
+  const remoteFolderPath = sftpConfig.remotePath;
+  const password = Config.getSftpPasswordOrFail();
 
   const client = new SftpClient({
-    ...config,
+    ...sftpConfig,
     password,
   });
 
-  await client.connect();
   try {
+    await client.connect();
     const folderExists = await client.exists(remoteFolderPath);
     if (!folderExists) {
       throw new Error("Folder does not exist.");

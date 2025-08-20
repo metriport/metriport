@@ -1,10 +1,10 @@
 import {
-  executeWithNetworkRetries,
   GenderAtBirth,
   InternalOrganizationDTO,
   internalOrganizationDTOSchema,
   MetriportError,
   otherGender,
+  simpleExecuteWithRetriesAsDuration,
   unknownGender,
 } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
@@ -29,7 +29,7 @@ import {
   VpnlessHieConfig,
 } from "./types";
 import { createScrambledId } from "./utils";
-import { uploadThroughSftp } from "./hl7v2-roster-uploader";
+import { uploadToRemoteSftp } from "./hl7v2-roster-uploader";
 const region = Config.getAWSRegion();
 
 type RosterRow = Record<string, string>;
@@ -60,17 +60,14 @@ export class Hl7v2RosterGenerator {
       states,
     };
 
-    async function simpleExecuteWithRetries<T>(functionToExecute: () => Promise<T>) {
-      return await executeWithNetworkRetries(functionToExecute, {
-        maxAttempts: NUMBER_OF_ATTEMPTS,
-        initialDelay: BASE_DELAY.asMilliseconds(),
-        log,
-      });
-    }
-
     log(`Running with this config: ${JSON.stringify(loggingDetails)}`);
     log(`Getting all subscribed patients...`);
-    const patients = await simpleExecuteWithRetries(() => this.getAllSubscribedPatients(hieName));
+    const patients = await simpleExecuteWithRetriesAsDuration(
+      () => this.getAllSubscribedPatients(hieName),
+      NUMBER_OF_ATTEMPTS,
+      BASE_DELAY,
+      log
+    );
     log(`Found ${patients.length} total patients`);
 
     if (patients.length === 0) {
@@ -82,7 +79,12 @@ export class Hl7v2RosterGenerator {
     const cxIds = new Set(patients.map(p => p.cxId));
 
     log(`Getting all organizations for patients...`);
-    const orgs = await simpleExecuteWithRetries(() => this.getOrganizations([...cxIds]));
+    const orgs = await simpleExecuteWithRetriesAsDuration(
+      () => this.getOrganizations([...cxIds]),
+      NUMBER_OF_ATTEMPTS,
+      BASE_DELAY,
+      log
+    );
     const orgsByCxId = _.keyBy(orgs, "cxId");
 
     const rosterRowInputs = patients.map(p => {
@@ -129,7 +131,7 @@ export class Hl7v2RosterGenerator {
 
     log(`Saved in S3: ${this.bucketName}/${fileName}`);
 
-    await uploadThroughSftp(config, rosterCsv);
+    await uploadToRemoteSftp(config, rosterCsv);
 
     return rosterCsv;
   }
