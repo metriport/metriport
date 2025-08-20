@@ -35,7 +35,7 @@ export function createAttachmentUploadFilePath({
 }
 
 export function rebuildUploadsFilePath(id: string): string {
-  if (id.includes(UPLOADS_FOLDER)) return id;
+  if (id.includes(`/${UPLOADS_FOLDER}/`)) return id;
 
   const idWithoutLeadingSlash = id.startsWith("/") ? id.slice(1) : id;
   const fileNameParts = parseFileName(idWithoutLeadingSlash);
