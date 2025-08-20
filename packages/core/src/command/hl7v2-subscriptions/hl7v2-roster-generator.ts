@@ -129,11 +129,7 @@ export class Hl7v2RosterGenerator {
 
     log(`Saved in S3: ${this.bucketName}/${fileName}`);
 
-    const uploadTimer = initTimer();
-
-    log(`Starting SFTP upload for config: ${config.name}`);
     await uploadThroughSftp(config, rosterCsv);
-    log(`SFTP upload completed in ${uploadTimer.getElapsedTime()}ms`);
 
     return rosterCsv;
   }
@@ -183,11 +179,11 @@ export class Hl7v2RosterGenerator {
 export function createFileKeyHl7v2Roster(hieName: string): string {
   const todaysDate = buildDayjs();
   const folderDate = todaysDate.format(FOLDER_DATE_FORMAT);
-  const fileName = createFileHl7v2Roster(hieName);
+  const fileName = createFileNameHl7v2Roster(hieName);
   return `${folderDate}/${fileName}`;
 }
 
-export function createFileHl7v2Roster(hieName: string): string {
+export function createFileNameHl7v2Roster(hieName: string): string {
   const todaysDate = buildDayjs();
   const fileDate = todaysDate.format(FILE_DATE_FORMAT);
   return `Metriport_${hieName}_Patient_Enrollment_${fileDate}.${CSV_FILE_EXTENSION}`;
