@@ -3,6 +3,7 @@ import { Config } from "../../util/config";
 import { SftpClient } from "../sftp/client";
 import { generateQuestRoster } from "./roster";
 import { QuestSftpConfig, QuestResponseFile } from "./types";
+import { QuestReplica } from "./replica";
 
 export class QuestSftpClient extends SftpClient {
   private readonly outgoingDirectory: string;
@@ -19,14 +20,7 @@ export class QuestSftpClient extends SftpClient {
     this.outgoingDirectory = config.outgoingDirectory ?? Config.getQuestSftpOutgoingDirectory();
     this.incomingDirectory = config.incomingDirectory ?? Config.getQuestSftpIncomingDirectory();
 
-    const replicaBucketName = config.replicaBucket ?? Config.getQuestReplicaBucketName();
-    const replicaBucketRegion = config.replicaBucketRegion ?? Config.getAWSRegion();
-    if (replicaBucketName) {
-      this.initializeS3Replica({
-        bucketName: replicaBucketName,
-        region: replicaBucketRegion,
-      });
-    }
+    this.setReplica(new QuestReplica(config));
   }
 
   async generateAndUploadRoster(): Promise<void> {
