@@ -18,6 +18,9 @@ export class TcmEncounterModel extends BaseModel<TcmEncounterModel> implements T
   declare dischargeSummaryPath: string | undefined;
   declare outreachStatus: CreationOptional<"Not Started" | "Attempted" | "Completed">;
 
+  // This is a stored generated column, its derived from clinical_information.
+  declare readonly hasCardiacCode: CreationOptional<boolean>;
+
   static setup: ModelSetup = (sequelize: Sequelize) => {
     TcmEncounterModel.init(
       {
@@ -70,6 +73,10 @@ export class TcmEncounterModel extends BaseModel<TcmEncounterModel> implements T
         outreachStatus: {
           type: DataTypes.ENUM("Not Started", "Attempted", "Completed"),
           defaultValue: "Not Started",
+          allowNull: false,
+        },
+        hasCardiacCode: {
+          type: DataTypes.BOOLEAN,
           allowNull: false,
         },
       },
