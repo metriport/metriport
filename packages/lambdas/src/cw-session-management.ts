@@ -2,11 +2,11 @@ import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
 import { CodeChallengeFromSecretManager } from "@metriport/core/domain/auth/code-challenge/code-challenge-on-secrets";
 import { CookieManagerOnSecrets } from "@metriport/core/domain/auth/cookie-management/cookie-manager-on-secrets";
 import { makeS3Client } from "@metriport/core/external/aws/s3";
-import { CommonWellManagementAPIImpl } from "@metriport/core/external/commonwell/management/api-impl";
+import { CommonWellManagementAPIImpl } from "@metriport/core/external/commonwell-v1/management/api-impl";
 import {
   SessionManagement,
   SessionManagementConfig,
-} from "@metriport/core/external/commonwell/management/session";
+} from "@metriport/core/external/commonwell-v1/management/session";
 import { base64ToBuffer } from "@metriport/core/util/base64";
 import { AdditionalInfo, MetriportError } from "@metriport/core/util/error/metriport-error";
 import * as Sentry from "@sentry/serverless";
