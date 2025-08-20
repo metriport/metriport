@@ -123,8 +123,8 @@ interface QuestNestedStackProps extends NestedStackProps {
 
 export class QuestNestedStack extends NestedStack {
   private readonly sftpActionLambda: Lambda;
-  private readonly rosterUploadLambda: Lambda;
-  private readonly responseDownloadLambda: Lambda;
+  private readonly uploadRosterLambda: Lambda;
+  private readonly downloadResponseLambda: Lambda;
   private readonly questFhirConverterLambda: Lambda;
   private readonly questFhirConverterQueue: Queue;
   private readonly questReplicaBucket: s3.Bucket;
@@ -182,13 +182,13 @@ export class QuestNestedStack extends NestedStack {
       labConversionBucket: this.labConversionBucket,
     });
 
-    this.rosterUploadLambda = this.setupLambda("rosterUpload", {
+    this.uploadRosterLambda = this.setupLambda("rosterUpload", {
       ...commonConfig,
       questReplicaBucket: this.questReplicaBucket,
       labConversionBucket: this.labConversionBucket,
     });
 
-    this.responseDownloadLambda = this.setupLambda("responseDownload", {
+    this.downloadResponseLambda = this.setupLambda("responseDownload", {
       ...commonConfig,
       questReplicaBucket: this.questReplicaBucket,
       labConversionBucket: this.labConversionBucket,
@@ -206,8 +206,8 @@ export class QuestNestedStack extends NestedStack {
   getLambdas(): Lambda[] {
     return [
       this.sftpActionLambda,
-      this.rosterUploadLambda,
-      this.responseDownloadLambda,
+      this.uploadRosterLambda,
+      this.downloadResponseLambda,
       this.questFhirConverterLambda,
     ];
   }
@@ -225,11 +225,11 @@ export class QuestNestedStack extends NestedStack {
         },
         {
           envVarName: "QUEST_UPLOAD_ROSTER_LAMBDA_NAME",
-          lambda: this.rosterUploadLambda,
+          lambda: this.uploadRosterLambda,
         },
         {
           envVarName: "QUEST_DOWNLOAD_RESPONSE_LAMBDA_NAME",
-          lambda: this.responseDownloadLambda,
+          lambda: this.downloadResponseLambda,
         },
         {
           envVarName: "QUEST_FHIR_CONVERTER_LAMBDA_NAME",
@@ -243,8 +243,8 @@ export class QuestNestedStack extends NestedStack {
         },
       ],
       sftpActionLambda: this.sftpActionLambda,
-      rosterUploadLambda: this.rosterUploadLambda,
-      responseDownloadLambda: this.responseDownloadLambda,
+      rosterUploadLambda: this.uploadRosterLambda,
+      responseDownloadLambda: this.downloadResponseLambda,
       questFhirConverterLambda: this.questFhirConverterLambda,
       questFhirConverterQueue: this.questFhirConverterQueue,
       questReplicaBucket: this.questReplicaBucket,
