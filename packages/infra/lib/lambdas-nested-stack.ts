@@ -27,7 +27,8 @@ import { createScheduledLambda } from "./shared/lambda-scheduled";
 import { buildSecret, Secrets } from "./shared/secrets";
 import { QueueAndLambdaSettings } from "./shared/settings";
 import { createQueue } from "./shared/sqs";
-import { isSandbox } from "./shared/util";
+import { isSandbox, isStaging } from "./shared/util";
+import { getHiePasswordSecretName } from "./secrets-stack";
 
 export const CDA_TO_VIS_TIMEOUT = Duration.minutes(15);
 
@@ -1024,7 +1025,8 @@ export class LambdasNestedStack extends NestedStack {
       const hieConfigs = config.hl7Notification.hieConfigs;
 
       Object.entries(hieConfigs).forEach(([hieName, hieConfig]) => {
-        const passwordSecretName = hieConfig.sftpConfig.passwordSecretName;
+        const isStag = isStaging(config);
+        const passwordSecretName = getHiePasswordSecretName(hieName, isStag);
 
         const lambda = createScheduledLambda({
           stack: this,

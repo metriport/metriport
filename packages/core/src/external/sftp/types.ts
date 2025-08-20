@@ -37,7 +37,6 @@ export interface SftpConfig {
 }
 
 export type HieSftpConfig = Omit<SftpConfig, "password" | "privateKey"> & {
-  passwordSecretName: string;
   remotePath: string;
 };
 

@@ -2,7 +2,7 @@ import { CfnOutput, Stack, StackProps } from "aws-cdk-lib";
 import * as secret from "aws-cdk-lib/aws-secretsmanager";
 import { Construct } from "constructs";
 import { EnvConfig } from "../config/env-config";
-import { isSandbox } from "../lib/shared/util";
+import { isSandbox, isStaging } from "../lib/shared/util";
 import { PROBLEMATIC_IPSEC_CHARACTERS } from "./hl7-notification-stack/constants";
 
 interface SecretStackProps extends StackProps {
@@ -118,11 +118,13 @@ export class SecretsStack extends Stack {
         logSecretInfo(this, secret, secretName);
       }
 
-      const sftpSecretNames = Object.values(props.config.hl7Notification.hieConfigs).flatMap(c =>
-        c.sftpConfig ? [c.sftpConfig.passwordSecretName] : []
+      const hieNames = Object.values(props.config.hl7Notification.hieConfigs).flatMap(c =>
+        c.sftpConfig ? [c.name] : []
       );
 
-      for (const secretName of sftpSecretNames) {
+      for (const hieName of hieNames) {
+        const isStag = isStaging(props.config);
+        const secretName = getHiePasswordSecretName(hieName, isStag);
         const secret = makeSecret(secretName);
         logSecretInfo(this, secret, secretName);
       }
@@ -135,4 +137,8 @@ export class SecretsStack extends Stack {
       }
     }
   }
+}
+
+export function getHiePasswordSecretName(hieName: string, isStaging: boolean): string {
+  return isStaging ? `SftpPassword-Staging-${hieName}` : `SftpPassword-${hieName}`;
 }

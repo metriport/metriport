@@ -8,7 +8,7 @@ import {
 } from "../common/retry";
 import { NetworkError, networkTimeoutErrors } from "./error";
 import { isMetriportError } from "../error/metriport-error";
-import plugin from "dayjs/plugin/duration";
+import type { Duration } from "dayjs/plugin/duration";
 
 export const tooManyRequestsStatus = 429;
 const tooManyRequestsMultiplier = 3;
@@ -138,7 +138,7 @@ export async function executeWithNetworkRetries<T>(
 export async function simpleExecuteWithRetriesAsDuration<T>(
   functionToExecute: () => Promise<T>,
   maxAttempts: number,
-  initialDelay: plugin.Duration,
+  initialDelay: Duration,
   log: typeof console.log
 ) {
   return await executeWithNetworkRetries(functionToExecute, {

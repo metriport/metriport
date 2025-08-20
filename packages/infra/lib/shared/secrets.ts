@@ -2,8 +2,9 @@ import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as secret from "aws-cdk-lib/aws-secretsmanager";
 import { Construct } from "constructs";
 import { EnvConfig } from "../../config/env-config";
-import { isSandbox } from "./util";
+import { isSandbox, isStaging } from "./util";
 import { HieConfig, VpnlessHieConfig } from "@metriport/core/command/hl7v2-subscriptions/types";
+import { getHiePasswordSecretName } from "../secrets-stack";
 
 export type Secrets = { [key: string]: secret.ISecret };
 
@@ -45,18 +46,23 @@ export function getSecrets(scope: Construct, config: EnvConfig): Secrets {
       : undefined),
     ...(!isSandbox(config) ? buildSecrets(scope, config.analyticsPlatform.secrets) : undefined),
     ...(!isSandbox(config)
-      ? buildSecrets(scope, collectHiePasswordSecretNames(config.hl7Notification.hieConfigs))
+      ? buildSecrets(
+          scope,
+          collectHiePasswordSecretNames(config.hl7Notification.hieConfigs, config)
+        )
       : undefined),
   };
   return secrets;
 }
 
 function collectHiePasswordSecretNames(
-  hies: Record<string, HieConfig | VpnlessHieConfig>
+  hies: Record<string, HieConfig | VpnlessHieConfig>,
+  config: EnvConfig
 ): Record<string, string> {
   const out: Record<string, string> = {};
-  for (const config of Object.values(hies)) {
-    const secretName = config?.sftpConfig?.passwordSecretName;
+  for (const hieConfig of Object.values(hies)) {
+    const isStag = isStaging(config);
+    const secretName = getHiePasswordSecretName(hieConfig.name, isStag);
     if (secretName) {
       out[secretName] = secretName;
     }

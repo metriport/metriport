@@ -55,7 +55,6 @@ export type HieConfig = {
   subscriptions: Hl7v2Subscription[];
   cron: string;
   sftpConfig: HieSftpConfig;
-  remotePath?: string;
   mapping: HiePatientRosterMapping;
 };
 
