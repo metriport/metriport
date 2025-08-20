@@ -239,11 +239,11 @@ export class QuestNestedStack extends NestedStack {
           lambda: this.sftpActionLambda,
         },
         {
-          envVarName: "QUEST_ROSTER_UPLOAD_LAMBDA_NAME",
+          envVarName: "QUEST_UPLOAD_ROSTER_LAMBDA_NAME",
           lambda: this.rosterUploadLambda,
         },
         {
-          envVarName: "QUEST_RESPONSE_DOWNLOAD_LAMBDA_NAME",
+          envVarName: "QUEST_DOWNLOAD_RESPONSE_LAMBDA_NAME",
           lambda: this.responseDownloadLambda,
         },
         {
