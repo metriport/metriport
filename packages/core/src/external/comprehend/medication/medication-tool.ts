@@ -43,7 +43,6 @@ export function buildComprehendMedicationTool(
 
 export class MedicationAgent extends AnthropicAgent<"claude-sonnet-3.7"> {
   private readonly comprehend: ComprehendClient;
-  private readonly currentRxNormCodes: string[];
 
   constructor(bundle: FhirBundleSdk, comprehend: ComprehendClient = new ComprehendClient()) {
     super({
@@ -52,7 +51,6 @@ export class MedicationAgent extends AnthropicAgent<"claude-sonnet-3.7"> {
       systemPrompt: `You are an agent that receives unstructured text containing medication information, along with FHIR resources that were extracted from the bundle.`,
     });
     this.comprehend = comprehend;
-    this.currentRxNormCodes = bundle.getAllMedicationRxNormCodes();
   }
 
   async extractMedications(text: string): Promise<ExtractedMedication[]> {
