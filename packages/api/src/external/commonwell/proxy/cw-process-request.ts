@@ -1,4 +1,5 @@
 import { Bundle, BundleEntry, DocumentReference, Resource, ResourceType } from "@medplum/fhirtypes";
+import { rebuildUploadsFilePath } from "@metriport/core/domain/filename";
 import {
   docContributionFileParam,
   getDocContributionURL,
@@ -180,7 +181,9 @@ function adjustAttachmentURLs(docRefs: DocumentReference[]): DocumentReference[]
           ...content,
           attachment: {
             ...content.attachment,
-            url: content.attachment?.url ? replaceAttachmentURL(content.attachment.url) : undefined,
+            url: content.attachment?.url
+              ? replaceAttachmentURL(rebuildUploadsFilePath(content.attachment.url))
+              : undefined,
           },
         };
       }),
