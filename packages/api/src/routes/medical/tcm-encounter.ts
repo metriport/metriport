@@ -66,6 +66,9 @@ router.get(
       ...(query.eventType ? { eventType: query.eventType } : {}),
       ...(query.coding ? { coding: query.coding } : {}),
       ...(query.status ? { status: query.status } : {}),
+      ...(query.admitTimeSort ? { admitTimeSort: query.admitTimeSort } : {}),
+      ...(query.dischargeTimeSort ? { dischargeTimeSort: query.dischargeTimeSort } : {}),
+      ...(query.lastOutreachDateSort ? { lastOutreachDateSort: query.lastOutreachDateSort } : {}),
     };
 
     const result = await paginated({

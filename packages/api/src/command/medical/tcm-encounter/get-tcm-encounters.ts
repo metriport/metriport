@@ -4,6 +4,7 @@ import { QueryTypes } from "sequelize";
 import { PatientModel } from "../../../models/medical/patient";
 import { TcmEncounterModel } from "../../../models/medical/tcm-encounter";
 import { getPaginationSorting, Pagination, sortForPagination } from "../../pagination";
+import _ from "lodash";
 
 /**
  * Add a default filter date far in the past to guarantee hitting the compound index
@@ -30,6 +31,9 @@ export async function getTcmEncounters({
   eventType,
   coding,
   status,
+  admitTimeSort,
+  dischargeTimeSort,
+  lastOutreachDateSort,
   pagination,
 }: {
   cxId: string;
@@ -39,6 +43,9 @@ export async function getTcmEncounters({
   eventType?: string;
   coding?: string;
   status?: string;
+  admitTimeSort?: string;
+  dischargeTimeSort?: string;
+  lastOutreachDateSort?: string;
   pagination: Pagination;
 }): Promise<TcmEncounterResult[]> {
   const tcmEncounterTable = TcmEncounterModel.tableName;
@@ -48,11 +55,23 @@ export async function getTcmEncounters({
   if (!sequelize) throw new Error("Sequelize not found");
 
   const { toItem, fromItem } = pagination;
-  const [, order] = getPaginationSorting(pagination);
+  const [, baseSortOrder] = getPaginationSorting(pagination);
 
   const dischargedAfter = daysLookback
     ? buildDayjs().subtract(parseInt(daysLookback), "day").toDate()
     : undefined;
+
+  const isSortingByColumn = admitTimeSort || dischargeTimeSort || lastOutreachDateSort;
+  const [orderColumn, orderDirection] = _([
+    admitTimeSort ? [`tcm_encounter.admit_time`, admitTimeSort.toUpperCase()] : null,
+    dischargeTimeSort ? [`tcm_encounter.discharge_time`, dischargeTimeSort.toUpperCase()] : null,
+    lastOutreachDateSort
+      ? [`tcm_encounter.last_outreach_date`, lastOutreachDateSort.toUpperCase()]
+      : null,
+  ])
+    .compact()
+    .first() ?? ["tcm_encounter.id", "ASC"];
+  const columnSortClause = isSortingByColumn ? `${orderColumn} ${orderDirection},` : "";
 
   /**
    * ⚠️ Always change this query and the count query together.
@@ -76,7 +95,7 @@ export async function getTcmEncounters({
       ${/* PAGINATION */ ""}
       ${toItem ? ` AND tcm_encounter.id >= :toItem` : ""}
       ${fromItem ? ` AND tcm_encounter.id <= :fromItem` : ""}
-      ORDER BY tcm_encounter.id ${order}
+      ORDER BY ${columnSortClause} tcm_encounter.id ${baseSortOrder}
       LIMIT :count
     `;
 
