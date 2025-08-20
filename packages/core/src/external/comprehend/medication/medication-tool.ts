@@ -1,9 +1,15 @@
-import { Bundle } from "@medplum/fhirtypes";
+import { FhirBundleSdk } from "@metriport/fhir-sdk";
 // import { RXNORM_URL } from "@metriport/shared/medical";
 import { AnthropicAgent } from "../../bedrock/agent/anthropic";
 import { AnthropicTool } from "../../bedrock/agent/anthropic/tool";
 import { ComprehendClient } from "../client";
-import { ExtractTextRequest, extractTextRequestSchema } from "./types";
+import {
+  ExtractedMedication,
+  ExtractTextRequest,
+  extractTextRequestSchema,
+  ExtractTextResponse,
+  extractTextResponseSchema,
+} from "../types";
 
 /**
  * The comprehendMedications tool passes a chunk of unstructured text to a specialized agent that focuses on extracting accurate
@@ -15,9 +21,9 @@ import { ExtractTextRequest, extractTextRequestSchema } from "./types";
  * @returns
  */
 export function buildComprehendMedicationTool(
-  bundle: Bundle,
+  bundle: FhirBundleSdk,
   client: ComprehendClient = new ComprehendClient()
-) {
+): AnthropicTool<ExtractTextRequest, ExtractTextResponse> {
   const medicationAgent = new MedicationAgent(bundle, client);
 
   async function medicationToolHandler(input: ExtractTextRequest) {
@@ -30,24 +36,26 @@ export function buildComprehendMedicationTool(
     description:
       "An agent that extracts structured FHIR medication resources from the provided unstructured medical text.",
     inputSchema: extractTextRequestSchema,
+    outputSchema: extractTextResponseSchema,
     handler: medicationToolHandler,
   });
 }
 
 export class MedicationAgent extends AnthropicAgent<"claude-sonnet-3.7"> {
   private readonly comprehend: ComprehendClient;
+  private readonly currentRxNormCodes: string[];
 
-  constructor(bundle: Bundle, comprehend: ComprehendClient = new ComprehendClient()) {
+  constructor(bundle: FhirBundleSdk, comprehend: ComprehendClient = new ComprehendClient()) {
     super({
       version: "claude-sonnet-3.7",
       region: "us-east-1",
       systemPrompt: `You are an agent that receives unstructured text containing medication information, along with FHIR resources that were extracted from the bundle.`,
     });
     this.comprehend = comprehend;
-    // this.currentRxNormCodes = getCurrentMedicationCodes(bundle);
+    this.currentRxNormCodes = bundle.getAllMedicationRxNormCodes();
   }
 
-  async extractMedications(text: string) {
+  async extractMedications(text: string): Promise<ExtractedMedication[]> {
     const rxNormOutput = await this.comprehend.inferRxNorm(text);
     if (!rxNormOutput.Entities) return [];
 
