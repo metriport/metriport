@@ -1,4 +1,5 @@
 import { InvokeCommandOutput, LambdaClient as LambdaClientV3 } from "@aws-sdk/client-lambda";
+import { NodeHttpHandlerOptions } from "@aws-sdk/node-http-handler";
 import { BadRequestError, MetriportError, NotFoundError } from "@metriport/shared";
 import * as AWS from "aws-sdk";
 import { PromiseResult } from "aws-sdk/lib/request";
@@ -25,9 +26,15 @@ export function makeLambdaClient(region: string, timeoutInMillis?: number): Lamb
  * Note: callers are responsible for handling the error, usually by calling `getLambdaResultPayloadV3()`.
  */
 export function makeLambdaClientV3(region: string, timeoutInMillis?: number): LambdaClientV3 {
+  const requestHandler: NodeHttpHandlerOptions | object = timeoutInMillis
+    ? {
+        connectionTimeout: timeoutInMillis,
+        requestTimeout: timeoutInMillis,
+      }
+    : {};
   const lambdaClient = new LambdaClientV3({
     region,
-    ...(timeoutInMillis ? { httpOptions: { timeout: timeoutInMillis } } : {}),
+    requestHandler,
   });
   return lambdaClient;
 }
@@ -51,6 +58,13 @@ export function defaultLambdaInvocationResponseHandler(params: {
 export function logResultToString(logResult: string | undefined): string | undefined {
   if (!logResult) return logResult;
   return base64ToString(logResult);
+}
+
+export function resultV3ToString(result: Required<InvokeCommandOutput["Payload"]>): string;
+export function resultV3ToString(result: undefined): undefined;
+export function resultV3ToString(result: InvokeCommandOutput["Payload"]): string | undefined {
+  if (!result) return undefined;
+  return Buffer.from(result).toString();
 }
 
 /**
@@ -97,7 +111,7 @@ export function getLambdaError(
 export function getLambdaErrorV3(result: InvokeCommandOutput): LambdaError | undefined {
   if (!result.Payload) return undefined;
   if (!isLambdaErrorV3(result)) return undefined;
-  const response = JSON.parse(result.Payload.toString());
+  const response = JSON.parse(resultV3ToString(result.Payload));
   return {
     errorType: response.errorType,
     errorMessage: response.errorMessage,
@@ -246,5 +260,5 @@ export function getLambdaResultPayloadV3({
     }
     throw new MetriportError(msg, undefined, { lambdaName, errorDetails });
   }
-  return result.Payload.toString();
+  return resultV3ToString(result.Payload);
 }

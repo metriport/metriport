@@ -109,6 +109,7 @@
     "@aws-sdk/client-lambda": "^3.865.0",
     "@aws-sdk/client-s3": "^3.800.0",
     "@aws-sdk/credential-provider-node": "^3.800.0",
+    "@aws-sdk/node-http-handler": "^3.374.0",
     "@aws-sdk/s3-request-presigner": "^3.800.0",
     "@faker-js/faker": "^8.0.2",
     "@langchain/core": "0.3.19",

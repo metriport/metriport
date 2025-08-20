@@ -247,10 +247,10 @@ async function main() {
     const args = process.argv.slice(2);
 
     if (args.length === 0) {
-      console.log("Usage: ts-node check-duplicate-keys-simple.ts <folder-path>");
-      console.log("Example: ts-node check-duplicate-keys-simple.ts /path/to/your/folder");
+      console.log("Usage: ts-node check-merge-groups.ts <folder-path>");
+      console.log("Example: ts-node check-merge-groups.ts /path/to/your/folder");
       console.log("\nOr use current directory:");
-      console.log("ts-node check-duplicate-keys-simple.ts .");
+      console.log("ts-node check-merge-groups.ts .");
       process.exit(1);
     }
 
