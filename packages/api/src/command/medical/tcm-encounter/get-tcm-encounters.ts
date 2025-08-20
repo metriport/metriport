@@ -1,10 +1,9 @@
 import { buildDayjs } from "@metriport/shared/common/date";
+import { omit } from "lodash";
 import { QueryTypes } from "sequelize";
 import { PatientModel } from "../../../models/medical/patient";
 import { TcmEncounterModel } from "../../../models/medical/tcm-encounter";
 import { getPaginationSorting, Pagination, sortForPagination } from "../../pagination";
-import { omit } from "lodash";
-import { cardiacCodes } from "./cardiac-codes";
 
 /**
  * Add a default filter date far in the past to guarantee hitting the compound index
@@ -69,17 +68,7 @@ export async function getTcmEncounters({
       ${facilityId ? ` AND patient.facility_ids @> ARRAY[:facilityId]::varchar[]` : ""}
       ${eventType ? ` AND tcm_encounter.latest_event = :eventType` : ""}
       ${status ? ` AND tcm_encounter.outreach_status = :status` : ""}
-      ${
-        coding
-          ? ` AND exists (
-              select 1 
-              from jsonb_array_elements_text(
-                  jsonb_path_query_array(tcm_encounter.clinical_information, '$.condition[*].coding[*].code')
-              ) as code
-              where code = ANY(ARRAY['${cardiacCodes.join("', '")}'])
-          )`
-          : ""
-      }
+      ${coding === "cardiac" ? ` AND tcm_encounter.has_cardiac_code = true` : ""}
       ${/* PAGINATION */ ""}
       ${toItem ? ` AND tcm_encounter.id >= :toItem` : ""}
       ${fromItem ? ` AND tcm_encounter.id <= :fromItem` : ""}
@@ -156,17 +145,7 @@ export async function getTcmEncountersCount({
     ${facilityId ? ` AND patient.facility_ids @> ARRAY[:facilityId]::varchar[]` : ""}
     ${eventType ? ` AND tcm_encounter.latest_event = :eventType` : ""}
     ${status ? ` AND tcm_encounter.outreach_status = :status` : ""}
-    ${
-      coding
-        ? ` AND exists (
-              select 1 
-              from jsonb_array_elements_text(
-                  jsonb_path_query_array(tcm_encounter.clinical_information, '$.condition[*].coding[*].code')
-              ) as code
-              where code = ANY(ARRAY['${cardiacCodes.join("', '")}'])
-          )`
-        : ""
-    }
+    ${coding === "cardiac" ? ` AND tcm_encounter.has_cardiac_code = true` : ""}
   `;
 
   const result = await sequelize.query<{ count: number }>(queryString, {

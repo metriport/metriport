@@ -27,9 +27,10 @@ import { reprocessAdtConversionBundles } from "./common";
  */
 
 const prefixes: string[] = [];
+const dryRun = true;
 
 async function main() {
-  await reprocessAdtConversionBundles(prefixes, cleanDuplicateConditionIds, false);
+  await reprocessAdtConversionBundles(prefixes, cleanDuplicateConditionIds, dryRun);
 }
 
 async function cleanDuplicateConditionIds(

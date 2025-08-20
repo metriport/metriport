@@ -1,7 +1,7 @@
 import { MedicationStatement } from "@medplum/fhirtypes";
 import {
   DeduplicationResult,
-  assignMostDescriptiveStatus,
+  dangerouslyAssignMostDescriptiveStatus,
   combineResources,
   createRef,
   deduplicateWithinMap,
@@ -33,7 +33,7 @@ export const statusRanking: Record<MedicationStatementStatus, number> = {
 };
 
 function preprocessStatus(existing: MedicationStatement, target: MedicationStatement) {
-  return assignMostDescriptiveStatus(statusRanking, existing, target);
+  return dangerouslyAssignMostDescriptiveStatus(statusRanking, existing, target);
 }
 
 export function deduplicateMedStatements(
