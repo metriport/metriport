@@ -29,6 +29,13 @@ export async function uploadThroughSftp(
   const hieName = config.name;
 
   const remoteFileName = createFileHl7v2Roster(hieName);
+  if (!config) {
+    throw new MetriportError("Sftp config is required!", undefined, { config });
+  }
+
+  if (!remotePath) {
+    throw new MetriportError("Sftp remotePath is required!", undefined, { remotePath });
+  }
 
   await executeWithRetries(
     () => sendViaSftp(config.sftpConfig, file, config.remotePath, remoteFileName),
@@ -43,16 +50,18 @@ export async function uploadThroughSftp(
 }
 
 async function sendViaSftp(
-  config: SftpConfig | undefined,
+  config: SftpConfig,
   file: string,
-  remoteFolderPath: string | undefined,
+  remoteFolderPath: string,
   remoteFileName: string
 ) {
-  if (!config || !remoteFolderPath) {
-    throw new Error("Sftp config is required");
+  if (!config.passwordSecretName) {
+    throw new MetriportError("Sftp password secret name is required!", undefined, {
+      config,
+      secretName: config.passwordSecretName,
+    });
   }
-
-  const secretName = config.password;
+  const secretName = config.passwordSecretName;
   const password = await getSecretValueOrFail(secretName, AWS_REGION);
 
   const client = new SftpClient({

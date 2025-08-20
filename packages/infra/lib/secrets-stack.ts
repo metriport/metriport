@@ -120,7 +120,7 @@ export class SecretsStack extends Stack {
       }
 
       const sftpSecretNames = Object.values(props.config.hl7Notification.hieConfigs).map(
-        c => c.sftpConfig?.password
+        c => c.sftpConfig?.passwordSecretName
       );
 
       for (const secretName of sftpSecretNames) {

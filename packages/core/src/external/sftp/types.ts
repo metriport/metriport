@@ -32,6 +32,7 @@ export interface SftpConfig {
   port: number;
   username: string;
   password: string;
+  passwordSecretName?: string;
   privateKey?: string;
   logLevel?: "info" | "debug" | "none"; // default "none"
 }

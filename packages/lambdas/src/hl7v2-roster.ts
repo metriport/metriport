@@ -26,9 +26,16 @@ export const handler = capture.wrapHandler(async (config: HieConfig): Promise<vo
 
   if (rosterCsv) {
     const uploadTimer = initTimer();
-    log(`Starting SFTP upload for config: ${config.name}`);
-    await uploadThroughSftp(config, rosterCsv);
-    log(`SFTP upload completed in ${uploadTimer.getElapsedTime()}ms`);
+    try {
+      log(`Starting SFTP upload for config: ${config.name}`);
+      await uploadThroughSftp(config, rosterCsv);
+      log(`SFTP upload successful`);
+      //eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (err: any) {
+      log(`SFTP upload failed with error: ${err}`);
+    } finally {
+      log(`SFTP upload completed in ${uploadTimer.getElapsedTime()}ms`);
+    }
   }
 
   log(`Done. Total duration: ${timer.getElapsedTime()}ms`);
