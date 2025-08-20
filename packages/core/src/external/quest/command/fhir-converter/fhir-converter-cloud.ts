@@ -16,13 +16,16 @@ export class QuestFhirConverterCommandCloud implements QuestFhirConverterCommand
     this.sqsClient = sqsClient ?? new SQSClient({ region: region ?? Config.getAWSRegion() });
   }
 
-  async convertSourceDocumentToFhirBundle(request: QuestFhirConversionRequest): Promise<void> {
-    const payload = JSON.stringify(request);
+  async convertSourceDocumentToFhirBundle({
+    patientId,
+    sourceDocumentName,
+  }: QuestFhirConversionRequest): Promise<void> {
+    const payload = JSON.stringify({ patientId, sourceDocumentName });
     await executeWithNetworkRetries(async () => {
       await this.sqsClient.sendMessageToQueue(this.questFhirConverterQueueUrl, payload, {
         fifo: true,
         messageDeduplicationId: createUuidFromText(payload),
-        messageGroupId: request.patientId,
+        messageGroupId: patientId,
       });
     });
   }

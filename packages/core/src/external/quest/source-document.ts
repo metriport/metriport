@@ -6,7 +6,10 @@ import { IncomingData } from "./schema/shared";
 type IncomingRow = IncomingData<ResponseDetail>;
 type PatientToIncomingRowMap = Map<string, IncomingRow[]>;
 
-export function generateSourceDocuments(
+/**
+ * Split a Quest response file into separate source documents for each patient.
+ */
+export function splitResponseFileIntoSourceDocuments(
   responseFile: QuestResponseFile
 ): QuestPatientResponseFile[] {
   const rows = parseResponseFile(responseFile.fileContent);

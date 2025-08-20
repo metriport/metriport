@@ -1,11 +1,11 @@
 import { MetriportError } from "@metriport/shared";
-import { executeAsynchronously } from "@metriport/core/util/concurrency";
+import { executeAsynchronously } from "../../../../util/concurrency";
 import { QuestSftpClient } from "../../client";
 import { QuestReplica } from "../../replica";
 import { QuestPatientResponseFile } from "../../types";
 import { QuestFhirConverterCommand } from "../fhir-converter/fhir-converter";
 import { DownloadResponseCommandHandler } from "./download-response";
-import { generateSourceDocuments } from "../../source-document";
+import { splitResponseFileIntoSourceDocuments } from "../../source-document";
 import { QuestFhirConverterCommandDirect } from "../fhir-converter/fhir-converter-direct";
 
 const numberOfParallelExecutions = 10;
@@ -23,10 +23,12 @@ export class DownloadResponseHandlerDirect implements DownloadResponseCommandHan
     // Generate source documents for each response file that was downloaded.
     const allSourceDocuments: QuestPatientResponseFile[] = [];
     for (const responseFile of responseFiles) {
-      const sourceDocuments = generateSourceDocuments(responseFile);
+      const sourceDocuments = splitResponseFileIntoSourceDocuments(responseFile);
       allSourceDocuments.push(...sourceDocuments);
     }
 
+    // Upload all source documents to S3 in parallel, and trigger the next stage of the data
+    // pipeline with each source document.
     await executeAsynchronously(
       allSourceDocuments,
       async sourceDocument => {
@@ -43,6 +45,9 @@ export class DownloadResponseHandlerDirect implements DownloadResponseCommandHan
     );
   }
 
+  /**
+   * This handler requires the Quest client to be correctly configured with a QuestReplica instance.
+   */
   private getQuestReplica(): QuestReplica {
     const replica = this.client.getReplica();
     if (!replica || !(replica instanceof QuestReplica)) {
