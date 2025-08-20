@@ -96,6 +96,7 @@
     "@typescript-eslint/parser": "^5.50.0",
     "eslint": "^8.33.0",
     "eslint-config-prettier": "^8.6.0",
+    "form-data": ">=4.0.4",
     "jsondiffpatch": "^0.6.0",
     "prettier": "^2.8.3",
     "saxon-js": "^2.5.0",
