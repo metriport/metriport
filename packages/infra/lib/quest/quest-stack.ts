@@ -31,7 +31,6 @@ interface QuestLambdaSettings {
   sftpAction: LambdaSettingsWithNameAndEntry;
   rosterUpload: LambdaSettingsWithNameAndEntry;
   responseDownload: LambdaSettingsWithNameAndEntry;
-  convertResponse: LambdaSettingsWithNameAndEntry;
 }
 
 const questLambdaSettings: QuestLambdaSettings = {
@@ -44,27 +43,19 @@ const questLambdaSettings: QuestLambdaSettings = {
     },
   },
   rosterUpload: {
-    name: "QuestRosterUpload",
-    entry: "quest/roster-upload",
+    name: "QuestUploadRoster",
+    entry: "quest/upload-roster",
     lambda: {
       memory: 1024,
       timeout: rosterUploadLambdaTimeout,
     },
   },
   responseDownload: {
-    name: "QuestResponseDownload",
-    entry: "quest/response-download",
+    name: "QuestDownloadResponse",
+    entry: "quest/download-response",
     lambda: {
       memory: 1024,
       timeout: responseDownloadLambdaTimeout,
-    },
-  },
-  convertResponse: {
-    name: "QuestConvertResponse",
-    entry: "quest/convert-response",
-    lambda: {
-      memory: 1024,
-      timeout: convertResponseLambdaTimeout,
     },
   },
 };
@@ -182,6 +173,7 @@ export class QuestNestedStack extends NestedStack {
       systemRootOID: props.config.systemRootOID,
       termServerUrl: props.config.termServerUrl,
       envVars,
+      secrets,
     };
 
     this.sftpActionLambda = this.setupLambda("sftpAction", {
@@ -209,13 +201,6 @@ export class QuestNestedStack extends NestedStack {
     });
     this.questFhirConverterLambda = questFhirConverter.lambda;
     this.questFhirConverterQueue = questFhirConverter.queue;
-
-    const lambdas = this.getLambdas();
-    for (const secret of secrets) {
-      for (const lambda of lambdas) {
-        secret.grantRead(lambda);
-      }
-    }
   }
 
   getLambdas(): Lambda[] {
@@ -280,6 +265,7 @@ export class QuestNestedStack extends NestedStack {
       questReplicaBucket: s3.Bucket;
       labConversionBucket?: s3.Bucket;
       termServerUrl?: string;
+      secrets: secret.ISecret[];
     }
   ): Lambda {
     const { name, entry, lambda: lambdaSettings } = questLambdaSettings[job];
@@ -295,6 +281,7 @@ export class QuestNestedStack extends NestedStack {
       questReplicaBucket,
       labConversionBucket,
       termServerUrl,
+      secrets,
     } = props;
 
     const lambda = createLambda({
@@ -317,6 +304,10 @@ export class QuestNestedStack extends NestedStack {
 
     questReplicaBucket.grantReadWrite(lambda);
     labConversionBucket?.grantReadWrite(lambda);
+
+    for (const secret of secrets) {
+      secret.grantRead(lambda);
+    }
 
     return lambda;
   }
