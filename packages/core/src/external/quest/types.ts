@@ -24,3 +24,14 @@ export interface QuestResponseFile {
   fileName: string;
   fileContent: Buffer;
 }
+
+export interface QuestPatientResponseFile extends QuestResponseFile {
+  patientId: string;
+}
+
+export const questFhirConversionRequestSchema = z.object({
+  patientId: z.string(),
+  sourceDocumentName: z.string(),
+});
+
+export type QuestFhirConversionRequest = z.infer<typeof questFhirConversionRequestSchema>;

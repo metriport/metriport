@@ -2,7 +2,7 @@ import { MetriportError } from "@metriport/shared";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { QuestSftpClient } from "../../client";
 import { QuestReplica } from "../../replica";
-import { QuestResponseFile } from "../../types";
+import { QuestPatientResponseFile } from "../../types";
 import { QuestFhirConverterCommand } from "../fhir-converter/fhir-converter";
 import { DownloadResponseCommandHandler } from "./download-response";
 import { generateSourceDocuments } from "../../source-document";
@@ -21,7 +21,7 @@ export class DownloadResponseHandlerDirect implements DownloadResponseCommandHan
     const responseFiles = await this.client.downloadAllResponses();
 
     // Generate source documents for each response file that was downloaded.
-    const allSourceDocuments: QuestResponseFile[] = [];
+    const allSourceDocuments: QuestPatientResponseFile[] = [];
     for (const responseFile of responseFiles) {
       const sourceDocuments = generateSourceDocuments(responseFile);
       allSourceDocuments.push(...sourceDocuments);
@@ -31,7 +31,10 @@ export class DownloadResponseHandlerDirect implements DownloadResponseCommandHan
       allSourceDocuments,
       async sourceDocument => {
         await replica.uploadSourceDocument(sourceDocument);
-        await this.next.convertQuestResponseToFhirBundles(sourceDocument.fileName);
+        await this.next.convertSourceDocumentToFhirBundle({
+          patientId: sourceDocument.patientId,
+          sourceDocumentName: sourceDocument.fileName,
+        });
       },
       {
         numberOfParallelExecutions,

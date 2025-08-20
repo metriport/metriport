@@ -1,16 +1,19 @@
-import { QuestResponseFile } from "./types";
+import { QuestResponseFile, QuestPatientResponseFile } from "./types";
 import { parseResponseFile } from "./file/file-parser";
 import { ResponseDetail } from "./schema/response";
 import { IncomingData } from "./schema/shared";
 
 type IncomingRow = IncomingData<ResponseDetail>;
+type PatientToIncomingRowMap = Map<string, IncomingRow[]>;
 
-export function generateSourceDocuments(responseFile: QuestResponseFile): QuestResponseFile[] {
+export function generateSourceDocuments(
+  responseFile: QuestResponseFile
+): QuestPatientResponseFile[] {
   const rows = parseResponseFile(responseFile.fileContent);
   const rowsGroupedByPatientId = groupRowsByPatientId(rows);
 
   // Create source documents for each patient
-  const sourceDocuments: QuestResponseFile[] = [];
+  const sourceDocuments: QuestPatientResponseFile[] = [];
   for (const [patientId, patientRows] of rowsGroupedByPatientId.entries()) {
     const sourceDocument = createSourceDocument({ patientId, patientRows, responseFile });
     sourceDocuments.push(sourceDocument);
@@ -18,8 +21,8 @@ export function generateSourceDocuments(responseFile: QuestResponseFile): QuestR
   return sourceDocuments;
 }
 
-function groupRowsByPatientId(rows: IncomingRow[]): Map<string, IncomingRow[]> {
-  const patientRow: Map<string, IncomingRow[]> = new Map();
+function groupRowsByPatientId(rows: IncomingRow[]): PatientToIncomingRowMap {
+  const patientRow: PatientToIncomingRowMap = new Map();
   for (const row of rows) {
     const patientId = row.data.patientId;
     if (patientRow.has(patientId)) {
@@ -39,9 +42,9 @@ function createSourceDocument({
   patientId: string;
   patientRows: IncomingRow[];
   responseFile: QuestResponseFile;
-}): QuestResponseFile {
+}): QuestPatientResponseFile {
   const fileName = `${patientId}/${responseFile.fileName}.json`;
   const fileContentAsString = patientRows.map(row => row.source).join("\n");
   const fileContent = Buffer.from(fileContentAsString, "ascii");
-  return { fileName, fileContent };
+  return { fileName, fileContent, patientId };
 }

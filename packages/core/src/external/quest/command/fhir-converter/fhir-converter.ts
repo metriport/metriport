@@ -1,3 +1,5 @@
+import { QuestFhirConversionRequest } from "../../types";
+
 export interface QuestFhirConverterCommand {
-  convertQuestResponseToFhirBundles(responseFileName: string): Promise<void>;
+  convertSourceDocumentToFhirBundle(request: QuestFhirConversionRequest): Promise<void>;
 }
