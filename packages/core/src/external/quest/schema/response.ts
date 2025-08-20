@@ -36,7 +36,10 @@ export const responseDetailSchema = z.object({
   requisitionNumber: z.string().optional(),
   labCode: z.string(),
   dateCollected: z.date().optional(),
-  patientId: z.string(),
+  patientId: z
+    .string()
+    .length(15)
+    .regex(/^[A-Z0-9]{15}$/),
   patientFirstName: z.string().optional(),
   patientMiddleName: z.string().optional(),
   patientLastName: z.string().optional(),
