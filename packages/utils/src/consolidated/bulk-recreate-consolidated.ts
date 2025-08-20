@@ -5,6 +5,7 @@ import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { getFileContents } from "@metriport/core/util/fs";
 import { out } from "@metriport/core/util/log";
 import { errorToString, getEnvVarOrFail, sleep } from "@metriport/shared";
+import { buildDayjs } from "@metriport/shared/common/date";
 import axios from "axios";
 import { Command } from "commander";
 import dayjs from "dayjs";
@@ -76,13 +77,22 @@ async function main() {
   initRunsFolder();
   program.parse();
   const { log } = out("");
+  log(`############# Starting at ${buildDayjs().toISOString()}`);
 
   if (fileName) {
     if (patientIds.length > 0) {
       log(`>>> Patient IDs provided (${patientIds.length}), skipping file ${fileName}`);
     } else {
       const fileContents = getFileContents(fileName);
-      patientIds.push(...fileContents.split("\n"));
+      const rows = fileContents.split("\n");
+      if (rows.length < 1) {
+        log(`>>> Empty file ${fileName}`);
+        return;
+      }
+      const patientIdsRaw = rows[0].toLowerCase().includes("id") ? rows.slice(1) : rows;
+      patientIds.push(
+        ...patientIdsRaw.map(row => row.replaceAll('"', "").replaceAll("'", "").trim())
+      );
       log(`>>> Found ${patientIds.length} patient IDs in ${fileName}`);
     }
   }
@@ -126,9 +136,9 @@ async function main() {
     log(`>>> No patient with errors!`);
   }
   log(
-    `>>> Done recreating consolidated for all ${patientIds.length} patients in ${elapsedTimeAsStr(
-      startedAt
-    )}`
+    `############# Done recreating consolidated for all ${
+      patientIds.length
+    } patients in ${elapsedTimeAsStr(startedAt)}`
   );
   process.exit(0);
 }
