@@ -1,4 +1,4 @@
-import { BadRequestError, MetriportError } from "@metriport/shared";
+import { MetriportError } from "@metriport/shared";
 import { Config } from "../../util/config";
 import { SftpClient } from "../sftp/client";
 import { generateQuestRoster } from "./roster";
@@ -20,9 +20,16 @@ export class QuestSftpClient extends SftpClient {
     this.outgoingDirectory = config.outgoingDirectory ?? Config.getQuestSftpOutgoingDirectory();
     this.incomingDirectory = config.incomingDirectory ?? Config.getQuestSftpIncomingDirectory();
 
-    this.setReplica(new QuestReplica(config));
+    const replicaBucketName = config.replicaBucket ?? Config.getQuestReplicaBucketName();
+    if (replicaBucketName) {
+      this.setReplica(new QuestReplica(config));
+    }
   }
 
+  /**
+   * Generates a new roster file and uploads it to the Quest SFTP server. If this client is configured
+   * with a replica, it will also upload the roster file to the S3 replica bucket.
+   */
   async generateAndUploadRoster(): Promise<void> {
     const { rosterFileName, rosterContent } = await generateQuestRoster();
     try {
@@ -37,19 +44,20 @@ export class QuestSftpClient extends SftpClient {
     }
   }
 
+  /**
+   * Downloads all Quest responses from the Quest SFTP server. If this client is configured with a
+   * replica, it will only download files that have not already been downloaded to S3.
+   */
   async downloadAllResponses(): Promise<QuestResponseFile[]> {
-    if (!this.replica) {
-      throw new BadRequestError("Cannot download daily updates without a configured replica");
-    }
-    const replicaFileNames = await this.replica.listFileNames(this.incomingDirectory);
-    const alreadyDownloadedFileNames = new Set(replicaFileNames);
-    const responseFiles: QuestResponseFile[] = [];
+    const responseFileNamesInReplica = await this.listResponseFileNamesFromReplica();
+    const alreadyDownloadedFileNames = new Set(responseFileNamesInReplica);
 
     try {
       await this.connect();
       const fileNames = await this.listResponseFileNamesFromQuest();
-      this.log(`Found ${fileNames.length} daily updates in Quest SFTP directory`);
+      this.log(`Found ${fileNames.length} file updates in Quest SFTP directory`);
 
+      const responseFiles: QuestResponseFile[] = [];
       for (const fileName of fileNames) {
         if (alreadyDownloadedFileNames.has(fileName)) continue;
         const fileContent = await this.readFromQuest(fileName);
@@ -63,6 +71,16 @@ export class QuestSftpClient extends SftpClient {
     } finally {
       await this.disconnect();
     }
+  }
+
+  /**
+   * Lists all response file names from the Quest replica.
+   */
+  private async listResponseFileNamesFromReplica(): Promise<string[]> {
+    if (!this.replica) {
+      return [];
+    }
+    return await this.replica.listFileNames(this.incomingDirectory);
   }
 
   /**

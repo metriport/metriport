@@ -7,6 +7,7 @@ import Router from "express-promise-router";
 import status from "http-status";
 import { getQuestRoster } from "../../../command/medical/patient/get-quest-roster";
 import { QuestUploadRosterHandlerCloud } from "@metriport/core/external/quest/command/upload-roster/upload-roster-cloud";
+import { QuestDownloadResponseHandlerCloud } from "@metriport/core/external/quest/command/download-response/download-response-cloud";
 import { Pagination } from "../../../command/pagination";
 import { dtoFromModel, PatientDTO } from "../../medical/dtos/patientDTO";
 import { requestLogger } from "../../helpers/request-logger";
@@ -91,8 +92,9 @@ router.post(
 router.post(
   "/download-response",
   requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    // TODO: ENG-823 - call the command "download-response" from the Quest client to trigger a Lambda
+  asyncHandler(async (_: Request, res: Response) => {
+    const handler = new QuestDownloadResponseHandlerCloud();
+    await handler.downloadAllQuestResponses();
     return res.status(status.OK);
   })
 );
