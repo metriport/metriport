@@ -6,6 +6,7 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
 import { getQuestRoster } from "../../../command/medical/patient/get-quest-roster";
+import { QuestUploadRosterHandlerCloud } from "@metriport/core/external/quest/command/upload-roster/upload-roster-cloud";
 import { Pagination } from "../../../command/pagination";
 import { dtoFromModel, PatientDTO } from "../../medical/dtos/patientDTO";
 import { requestLogger } from "../../helpers/request-logger";
@@ -59,7 +60,9 @@ router.get(
  * POST /internal/quest/upload-roster
  *
  * Uploads the latest patient roster to Quest Diagnostics. This route is triggered by a scheduled Lambda
- * function, and can also be manually triggered by an internal user to upload the latest roster.
+ * function, and can also be manually triggered by an internal user to upload the latest roster. It *always*
+ * triggers the QuestUploadRoster handler, since any roster uploads to Quest must originate from a whitelisted
+ * VPC IP address.
  *
  * @see packages/infra/lib/quest/quest-stack.ts
  * @returns 200 OK
@@ -67,8 +70,9 @@ router.get(
 router.post(
   "/upload-roster",
   requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    // TODO: ENG-823 - call the command "upload-roster" from the Quest client to trigger a Lambda
+  asyncHandler(async (_: Request, res: Response) => {
+    const handler = new QuestUploadRosterHandlerCloud();
+    await handler.generateAndUploadLatestQuestRoster();
     return res.status(status.OK);
   })
 );
