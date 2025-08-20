@@ -1,0 +1,578 @@
+import { z } from "zod";
+import {
+  fromQuestEnum,
+  fromQuestInteger,
+  fromQuestString,
+  IncomingFileRowSchema,
+  IncomingFileSchema,
+} from "./shared";
+import { IncomingFile, fromQuestDate } from "./shared";
+
+export type ResponseFile = IncomingFile<ResponseHeader, ResponseDetail, ResponseFooter>;
+
+export const responseHeaderSchema = z.object({
+  recordType: z.enum(["H"]),
+});
+
+export type ResponseHeader = z.infer<typeof responseHeaderSchema>;
+
+export const responseHeaderRow: IncomingFileRowSchema<ResponseHeader> = [
+  {
+    field: 1,
+    length: 1,
+    key: "recordType",
+    header: "RECORD_TYPE",
+    fromQuest: fromQuestEnum(["H"]),
+  },
+];
+
+export function isResponseHeader(data: object): data is ResponseHeader {
+  return responseHeaderSchema.safeParse(data).success;
+}
+
+export const responseDetailSchema = z.object({
+  dateOfService: z.date(),
+  accessionNumber: z.string(),
+  requisitionNumber: z.string().optional(),
+  labCode: z.string(),
+  dateCollected: z.date().optional(),
+  patientId: z.string(),
+  patientFirstName: z.string().optional(),
+  patientMiddleName: z.string().optional(),
+  patientLastName: z.string().optional(),
+  addressLine1: z.string().optional(),
+  addressLine2: z.string().optional(),
+  city: z.string().optional(),
+  state: z.string().optional(),
+  zipCode: z.string().optional(),
+  phoneNumber: z.string().optional(),
+  dateOfBirth: z.string().optional(),
+  patientAge: z.string().optional(),
+  gender: z.string().optional(),
+  socialSecurityNumber: z.string().optional(),
+  questBillingIdentifier: z.string().optional(),
+  questPatientId: z.string().optional(),
+  medicaidId: z.string().optional(),
+  medicareId: z.string().optional(),
+  orderingAccountNumber: z.string(),
+  orderingAccountName: z.string().optional(),
+  orderingAccountAddressLine1: z.string().optional(),
+  orderingAccountAddressLine2: z.string().optional(),
+  orderingAccountCity: z.string().optional(),
+  orderingAccountState: z.string().optional(),
+  orderingAccountZipCode: z.string().optional(),
+  orderingAccountPhoneNumber: z.string().optional(),
+  physicianName: z.string().optional(),
+  physicianUpin: z.string().optional(),
+  physicianNpi: z.string().optional(),
+  diagnosisCode1: z.string().optional(),
+  diagnosisCode2: z.string().optional(),
+  diagnosisCode3: z.string().optional(),
+  diagnosisCode4: z.string().optional(),
+  diagnosisCode5: z.string().optional(),
+  diagnosisCode6: z.string().optional(),
+  diagnosisCode7: z.string().optional(),
+  diagnosisCode8: z.string().optional(),
+  diagnosisCode9: z.string().optional(),
+  diagnosisCode10: z.string().optional(),
+  localProfileCode: z.string().optional(),
+  standardProfileCode: z.string().optional(),
+  profileName: z.string().optional(),
+  localOrderCode: z.string(),
+  standardOrderCode: z.string().optional(),
+  orderName: z.string().optional(),
+  loincCode: z.string().optional(),
+  localResultCode: z.string(),
+  resultName: z.string().optional(),
+  resultValue: z.string().optional(),
+  resultUnits: z.string().optional(),
+  referenceRangeLow: z.string().optional(),
+  referenceRangeHigh: z.string().optional(),
+  referenceRangeAlpha: z.string().optional(),
+  abnormalFlag: z.string().optional(),
+  cptCode: z.string().optional(),
+  resultComments: z.string().optional(),
+});
+
+export type ResponseDetail = z.infer<typeof responseDetailSchema>;
+
+export function isResponseDetail(data: object): data is ResponseDetail {
+  return responseDetailSchema.safeParse(data).success;
+}
+
+export const responseDetailRow: IncomingFileRowSchema<ResponseDetail> = [
+  {
+    field: 1,
+    length: 8,
+    key: "dateOfService",
+    header: "DOS",
+    fromQuest: fromQuestDate(),
+  },
+  {
+    field: 2,
+    length: 16,
+    key: "accessionNumber",
+    header: "ACCESSION_NUMBER",
+    fromQuest: fromQuestString(),
+  },
+  {
+    field: 3,
+    length: 16,
+    key: "requisitionNumber",
+    header: "REQUISITION_NUMBER",
+    fromQuest: fromQuestString({ optional: true }),
+  },
+  {
+    field: 4,
+    length: 4,
+    key: "labCode",
+    header: "LAB_CODE",
+    fromQuest: fromQuestString(),
+  },
+  {
+    field: 5,
+    length: 8,
+    key: "dateCollected",
+    header: "DATE_OF_COLLECTION",
+    fromQuest: fromQuestDate({ optional: true }),
+  },
+  {
+    field: 6,
+    length: 30,
+    key: "questPatientId",
+    header: "EXTERNAL_PAT_ID",
+    fromQuest: fromQuestString(),
+  },
+  {
+    field: 7,
+    length: 20,
+    key: "patientFirstName",
+    header: "PAT_FIRST_NAME",
+    fromQuest: fromQuestString({ optional: true }),
+  },
+  {
+    field: 8,
+    length: 20,
+    key: "patientMiddleName",
+    header: "PAT_MIDDLE_NAME",
+    fromQuest: fromQuestString({ optional: true }),
+  },
+  {
+    field: 9,
+    length: 25,
+    key: "patientLastName",
+    header: "PAT_LAST_NAME",
+    fromQuest: fromQuestString({ optional: true }),
+  },
+  {
+    field: 10,
+    length: 30,
+    key: "addressLine1",
+    header: "PAT_ADDRESS_1",
+    fromQuest: fromQuestString({ optional: true }),
+  },
+  {
+    field: 11,
+    length: 30,
+    key: "addressLine2",
+    header: "PAT_ADDRESS_2",
+    fromQuest: fromQuestString({ optional: true }),
+  },
+  {
+    field: 12,
+    length: 25,
+    key: "city",
+    header: "PAT_CITY",
+    fromQuest: fromQuestString({ optional: true }),
+  },
+  {
+    field: 13,
+    length: 2,
+    key: "state",
+    header: "PAT_STATE",
+    fromQuest: fromQuestString({ optional: true }),
+  },
+  {
+    field: 14,
+    length: 10,
+    key: "zipCode",
+    header: "PAT_ZIP",
+    fromQuest: fromQuestString({ optional: true }),
+  },
+  {
+    field: 15,
+    length: 20,
+    key: "phoneNumber",
+    header: "PAT_PHONE",
+    fromQuest: fromQuestString({ optional: true }),
+  },
+  {
+    field: 16,
+    length: 8,
+    key: "dateOfBirth",
+    header: "DATE_OF_BIRTH",
+    fromQuest: fromQuestString({ optional: true }),
+  },
+  {
+    field: 17,
+    length: 3,
+    key: "patientAge",
+    header: "AGE",
+    fromQuest: fromQuestString({ optional: true }),
+  },
+  {
+    field: 18,
+    length: 1,
+    key: "gender",
+    header: "GENDER",
+    fromQuest: fromQuestString({ optional: true }),
+  },
+  {
+    field: 19,
+    length: 10,
+    key: "socialSecurityNumber",
+    header: "SOCIAL_SECURITY_NUMBER",
+    fromQuest: fromQuestString({ optional: true }),
+  },
+  {
+    field: 20,
+    length: 10,
+    key: "questBillingIdentifier",
+    header: "BILL_CODE",
+    fromQuest: fromQuestString({ optional: true }),
+  },
+  {
+    field: 21,
+    length: 25,
+    key: "patientId",
+    header: "POLICY_NUMBER",
+    fromQuest: fromQuestString(),
+  },
+  {
+    field: 22,
+    length: 15,
+    key: "medicaidId",
+    header: "MEDICAID_NO",
+    fromQuest: fromQuestString({ optional: true }),
+  },
+  {
+    field: 23,
+    length: 15,
+    key: "medicareId",
+    header: "MEDICARE_NO",
+    fromQuest: fromQuestString({ optional: true }),
+  },
+  {
+    field: 24,
+    length: 18,
+    key: "orderingAccountNumber",
+    header: "ACCT_NUMBER",
+    fromQuest: fromQuestString(),
+  },
+  {
+    field: 25,
+    length: 60,
+    key: "orderingAccountName",
+    header: "ACCT_NAME",
+    fromQuest: fromQuestString({ optional: true }),
+  },
+  {
+    field: 26,
+    length: 40,
+    key: "orderingAccountAddressLine1",
+    header: "ACCT_ADDRESS_1",
+    fromQuest: fromQuestString({ optional: true }),
+  },
+  {
+    field: 27,
+    length: 40,
+    key: "orderingAccountAddressLine2",
+    header: "ACCT_ADDRESS_2",
+    fromQuest: fromQuestString({ optional: true }),
+  },
+  {
+    field: 28,
+    length: 25,
+    key: "orderingAccountCity",
+    header: "ACCT_CITY",
+    fromQuest: fromQuestString({ optional: true }),
+  },
+  {
+    field: 29,
+    length: 2,
+    key: "orderingAccountState",
+    header: "ACCT_STATE",
+    fromQuest: fromQuestString({ optional: true }),
+  },
+  {
+    field: 30,
+    length: 10,
+    key: "orderingAccountZipCode",
+    header: "ACCT_ZIP",
+    fromQuest: fromQuestString({ optional: true }),
+  },
+  {
+    field: 31,
+    length: 20,
+    key: "orderingAccountPhoneNumber",
+    header: "ACCT_PHONE",
+    fromQuest: fromQuestString({ optional: true }),
+  },
+  {
+    field: 32,
+    length: 30,
+    key: "physicianName",
+    header: "PHY_NAME",
+    fromQuest: fromQuestString({ optional: true }),
+  },
+  {
+    field: 33,
+    length: 6,
+    key: "physicianUpin",
+    header: "UPIN",
+    fromQuest: fromQuestString({ optional: true }),
+  },
+  {
+    field: 34,
+    length: 10,
+    key: "physicianNpi",
+    header: "NPI",
+    fromQuest: fromQuestString({ optional: true }),
+  },
+  {
+    field: 35,
+    length: 12,
+    key: "diagnosisCode1",
+    header: "DIAG_CODE1",
+    fromQuest: fromQuestString({ optional: true }),
+  },
+  {
+    field: 36,
+    length: 12,
+    key: "diagnosisCode2",
+    header: "DIAG_CODE2",
+    fromQuest: fromQuestString({ optional: true }),
+  },
+  {
+    field: 37,
+    length: 12,
+    key: "diagnosisCode3",
+    header: "DIAG_CODE3",
+    fromQuest: fromQuestString({ optional: true }),
+  },
+  {
+    field: 38,
+    length: 12,
+    key: "diagnosisCode4",
+    header: "DIAG_CODE4",
+    fromQuest: fromQuestString({ optional: true }),
+  },
+  {
+    field: 39,
+    length: 12,
+    key: "diagnosisCode5",
+    header: "DIAG_CODE5",
+    fromQuest: fromQuestString({ optional: true }),
+  },
+  {
+    field: 40,
+    length: 12,
+    key: "diagnosisCode6",
+    header: "DIAG_CODE6",
+    fromQuest: fromQuestString({ optional: true }),
+  },
+  {
+    field: 41,
+    length: 12,
+    key: "diagnosisCode7",
+    header: "DIAG_CODE7",
+    fromQuest: fromQuestString({ optional: true }),
+  },
+  {
+    field: 42,
+    length: 12,
+    key: "diagnosisCode8",
+    header: "DIAG_CODE8",
+    fromQuest: fromQuestString({ optional: true }),
+  },
+  {
+    field: 43,
+    length: 12,
+    key: "diagnosisCode9",
+    header: "DIAG_CODE9",
+    fromQuest: fromQuestString({ optional: true }),
+  },
+  {
+    field: 44,
+    length: 12,
+    key: "diagnosisCode10",
+    header: "DIAG_CODE10",
+    fromQuest: fromQuestString({ optional: true }),
+  },
+  {
+    field: 45,
+    length: 18,
+    key: "localProfileCode",
+    header: "LOCAL_PROFILE_CODE",
+    fromQuest: fromQuestString({ optional: true }),
+  },
+  {
+    field: 46,
+    length: 18,
+    key: "standardProfileCode",
+    header: "STANDARD_PROFILE_CODE",
+    fromQuest: fromQuestString({ optional: true }),
+  },
+  {
+    field: 47,
+    length: 60,
+    key: "profileName",
+    header: "PROFILE_NAME",
+    fromQuest: fromQuestString({ optional: true }),
+  },
+  {
+    field: 48,
+    length: 18,
+    key: "localOrderCode",
+    header: "LOCAL_ORDER_CODE",
+    fromQuest: fromQuestString(),
+  },
+  {
+    field: 49,
+    length: 18,
+    key: "standardOrderCode",
+    header: "STANDARD_ORDER_CODE",
+    fromQuest: fromQuestString({ optional: true }),
+  },
+  {
+    field: 50,
+    length: 60,
+    key: "orderName",
+    header: "ORDER_NAME",
+    fromQuest: fromQuestString({ optional: true }),
+  },
+  {
+    field: 51,
+    length: 10,
+    key: "loincCode",
+    header: "LOINC_CODE",
+    fromQuest: fromQuestString({ optional: true }),
+  },
+  {
+    field: 52,
+    length: 18,
+    key: "localResultCode",
+    header: "LOCAL_RESULT_CODE",
+    fromQuest: fromQuestString(),
+  },
+  {
+    field: 53,
+    length: 60,
+    key: "resultName",
+    header: "RESULT_NAME",
+    fromQuest: fromQuestString({ optional: true }),
+  },
+  {
+    field: 54,
+    length: 225,
+    key: "resultValue",
+    header: "RESULT_VALUE_A",
+    fromQuest: fromQuestString({ optional: true }),
+  },
+  {
+    field: 55,
+    length: 20,
+    key: "resultUnits",
+    header: "UNITS",
+    fromQuest: fromQuestString({ optional: true }),
+  },
+  {
+    field: 56,
+    length: 13,
+    key: "referenceRangeLow",
+    header: "REF_RANG_LOW",
+    fromQuest: fromQuestString({ optional: true }),
+  },
+  {
+    field: 57,
+    length: 13,
+    key: "referenceRangeHigh",
+    header: "REF_RANGE_HIGH",
+    fromQuest: fromQuestString({ optional: true }),
+  },
+  {
+    field: 58,
+    length: 20,
+    key: "referenceRangeAlpha",
+    header: "REF_RANGE_ALPHA",
+    fromQuest: fromQuestString({ optional: true }),
+  },
+  {
+    field: 59,
+    length: 2,
+    key: "abnormalFlag",
+    header: "DERIVED_ABNORMAL_FLAG",
+    fromQuest: fromQuestString({ optional: true }),
+  },
+  {
+    field: 60,
+    length: 5,
+    key: "cptCode",
+    header: "CPT_CODE",
+    fromQuest: fromQuestString({ optional: true }),
+  },
+  {
+    field: 61,
+    length: 500,
+    key: "resultComments",
+    header: "COMM_TEXT",
+    fromQuest: fromQuestString({ optional: true }),
+  },
+];
+
+export const responseFooterSchema = z.object({
+  recordType: z.enum(["T"]),
+  totalRecords: z.number(),
+});
+
+export type ResponseFooter = z.infer<typeof responseFooterSchema>;
+
+export const responseFooterRow: IncomingFileRowSchema<ResponseFooter> = [
+  {
+    field: 1,
+    length: 1,
+    key: "recordType",
+    header: "RECORD_TYPE",
+    fromQuest: fromQuestEnum(["T"]),
+  },
+  {
+    field: 2,
+    length: 10,
+    key: "totalRecords",
+    header: "TOTAL_RECORDS",
+    fromQuest: fromQuestInteger(),
+  },
+];
+
+export function isResponseFooter(data: object): data is ResponseFooter {
+  return responseFooterSchema.safeParse(data).success;
+}
+
+export const responseFileSchema: IncomingFileSchema<
+  ResponseHeader,
+  ResponseDetail,
+  ResponseFooter
+> = {
+  header: {
+    row: responseHeaderRow,
+    validator: isResponseHeader,
+  },
+  detail: {
+    row: responseDetailRow,
+    validator: isResponseDetail,
+  },
+  footer: {
+    row: responseFooterRow,
+    validator: isResponseFooter,
+  },
+};
