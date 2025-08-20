@@ -1,14 +1,14 @@
 import { getLambdaResultPayload, makeLambdaClient } from "../../../aws/lambda";
 import { Config } from "../../../../util/config";
-import { QuestUploadRosterHandler } from "./upload-roster";
+import { DownloadResponseCommandHandler } from "./download-response";
 
-export class QuestUploadRosterHandlerCloud implements QuestUploadRosterHandler {
+export class QuestDownloadResponseHandlerCloud implements DownloadResponseCommandHandler {
   constructor(
     private readonly lambdaClient = makeLambdaClient(Config.getAWSRegion()),
     private readonly lambdaName: string = Config.getQuestUploadRosterLambdaName()
   ) {}
 
-  async generateAndUploadLatestQuestRoster(): Promise<void> {
+  async downloadAllQuestResponses(): Promise<void> {
     const result = await this.lambdaClient
       .invoke({
         FunctionName: this.lambdaName,

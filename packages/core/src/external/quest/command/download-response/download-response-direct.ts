@@ -1,18 +1,19 @@
 import { MetriportError } from "@metriport/shared";
+import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { QuestSftpClient } from "../../client";
 import { QuestReplica } from "../../replica";
+import { QuestResponseFile } from "../../types";
 import { QuestFhirConverterCommand } from "../fhir-converter/fhir-converter";
 import { DownloadResponseCommandHandler } from "./download-response";
 import { generateSourceDocuments } from "../../source-document";
-import { QuestResponseFile } from "../../types";
-import { executeAsynchronously } from "@metriport/core/util/concurrency";
+import { QuestFhirConverterCommandDirect } from "../fhir-converter/fhir-converter-direct";
 
 const numberOfParallelExecutions = 10;
 
 export class DownloadResponseHandlerDirect implements DownloadResponseCommandHandler {
   constructor(
     private readonly client = new QuestSftpClient(),
-    private readonly next: QuestFhirConverterCommand
+    private readonly next: QuestFhirConverterCommand = new QuestFhirConverterCommandDirect()
   ) {}
 
   async downloadAllQuestResponses(): Promise<void> {
