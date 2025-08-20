@@ -9,11 +9,11 @@ export class DownloadResponseHandlerDirect implements DownloadResponseCommandHan
   ) {}
 
   async downloadAllQuestResponses(): Promise<void> {
-    const responseFileNames = await this.client.downloadAllResponses();
+    const responseFiles = await this.client.downloadAllResponses();
 
     // Trigger the next step of the data pipeline for each downloaded response file
-    for (const responseFileName of responseFileNames) {
-      await this.next.convertQuestResponseToFhirBundles(responseFileName);
+    for (const responseFile of responseFiles) {
+      await this.next.convertQuestResponseToFhirBundles(responseFile.fileName);
     }
   }
 }
