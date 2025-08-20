@@ -90,8 +90,8 @@ function fillEmptyByteLength(byteLength: number) {
 }
 
 function fillByteLength(value: string, byteLength: number) {
-  if (value.length > byteLength) value = value.substring(0, byteLength);
-  return value.padEnd(byteLength, " ");
+  const truncatedValue = value.length > byteLength ? value.substring(0, byteLength) : value;
+  return truncatedValue.padEnd(byteLength, " ");
 }
 
 export function toQuestEnum<T extends object>(
