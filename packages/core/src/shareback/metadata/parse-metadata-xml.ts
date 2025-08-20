@@ -105,16 +105,29 @@ export async function parseExtrinsicObjectXmlToDocumentReference({
   });
 
   extrinsicObject.ExternalIdentifier.forEach(identifier => {
-    const stringValue = base64ToString(identifier.$.value);
-    const filePath = rebuildUploadsFilePath(stringValue);
-
     switch (identifier.$.identificationScheme) {
       case XDSDocumentEntryUniqueId:
-        docRefContent.attachment = {
-          ...docRefContent.attachment,
-          url: `https://${Config.getMedicalDocumentsBucketName()}.s3.${Config.getAWSRegion()}.amazonaws.com/${filePath}`,
-          title: filePath,
-        };
+        {
+          const raw = identifier.$.value;
+          let decoded = raw;
+          try {
+            decoded = base64ToString(raw);
+          } catch {
+            // non-base64 input; keep raw to avoid hard-fail
+          }
+          const filePath = rebuildUploadsFilePath(decoded);
+          // S3 object keys should not start with '/', and should be URL-encoded
+          const s3Key = filePath.replace(/^\/+/, "");
+          const url = `https://${Config.getMedicalDocumentsBucketName()}.s3.${Config.getAWSRegion()}.amazonaws.com/${encodeURI(
+            s3Key
+          )}`;
+          const title = s3Key.split("/").pop() ?? s3Key;
+          docRefContent.attachment = {
+            ...docRefContent.attachment,
+            url,
+            title,
+          };
+        }
         break;
     }
   });
