@@ -2,7 +2,7 @@ import { InternalServerApi } from "@metriport/core/external/internal-server/clie
 import { MetriportError } from "@metriport/shared";
 import { Config } from "../../shared/config";
 
-export type Props = {
+export type UpdateCustomerBillingProps = {
   childCxId: string;
   parentName: string;
 };
@@ -10,7 +10,7 @@ export type Props = {
 export async function updateCustomerBillingToPointToParent({
   parentName,
   childCxId,
-}: Props): Promise<void> {
+}: UpdateCustomerBillingProps): Promise<void> {
   const url = Config.getCxBillingUrl();
   if (!url) throw new MetriportError("CX_BILLING_URL not configured");
 
