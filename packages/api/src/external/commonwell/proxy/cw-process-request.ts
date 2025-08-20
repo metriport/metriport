@@ -1,5 +1,5 @@
 import { Bundle, BundleEntry, DocumentReference, Resource, ResourceType } from "@medplum/fhirtypes";
-import { rebuildUploadsFilePath } from "@metriport/core/domain/filename";
+import { rebuildUploadsFilePath } from "@metriport/core/domain/document/upload";
 import {
   docContributionFileParam,
   getDocContributionURL,
@@ -192,9 +192,14 @@ function adjustAttachmentURLs(docRefs: DocumentReference[]): DocumentReference[]
 }
 
 function replaceAttachmentURL(url: string): string {
-  const theURL = new URL(url);
+  let pathname: string;
+  try {
+    pathname = new URL(url).pathname;
+  } catch {
+    pathname = url.startsWith("/") ? url : `/${url}`;
+  }
   const params = new URLSearchParams();
-  params.append(docContributionFileParam, theURL.pathname);
+  params.append(docContributionFileParam, pathname);
   return `${docContributionURL}?${params.toString()}`;
 }
 

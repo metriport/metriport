@@ -1,5 +1,3 @@
-import { createUploadFilePath } from "./document/upload";
-
 export function createFileName(cxId: string, patientId: string, fileId: string): string {
   return `${cxId}_${patientId}_${fileId}`;
 }
@@ -63,13 +61,4 @@ export function parseFilePath(filePath: string): ParsedFileName | undefined {
     if (fileName) return parseFileName(fileName);
   }
   return undefined;
-}
-
-export function rebuildUploadsFilePath(id: string): string {
-  if (id.includes("/")) return id;
-
-  const fileNameParts = parseFileName(id);
-  if (!fileNameParts) return id;
-
-  return createUploadFilePath(fileNameParts.cxId, fileNameParts.patientId, fileNameParts.fileId);
 }
