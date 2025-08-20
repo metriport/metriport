@@ -6,6 +6,7 @@ import { SftpConfig } from "../../external/sftp/types";
 import { createFileHl7v2Roster } from "./hl7v2-roster-generator";
 import { getSecretValueOrFail } from "../../external/aws/secret-manager";
 import { getEnvVarOrFail } from "@metriport/shared/common/env-var";
+import { MetriportError } from "@metriport/shared";
 
 const NUMBER_OF_ATTEMPTS = 3;
 const BASE_DELAY = 1000;
@@ -29,22 +30,21 @@ export async function uploadThroughSftp(
   const hieName = config.name;
 
   const remoteFileName = createFileHl7v2Roster(hieName);
-  if (!config) {
-    throw new MetriportError("Sftp config is required!", undefined, { config });
+  const sftpConfig = config.sftpConfig;
+  const remotePath = config.remotePath;
+  if (!sftpConfig) {
+    throw new MetriportError("Sftp config is required!", undefined, { sftpConfig });
   }
 
   if (!remotePath) {
     throw new MetriportError("Sftp remotePath is required!", undefined, { remotePath });
   }
 
-  await executeWithRetries(
-    () => sendViaSftp(config.sftpConfig, file, config.remotePath, remoteFileName),
-    {
-      maxAttempts: NUMBER_OF_ATTEMPTS,
-      log,
-      maxDelay: BASE_DELAY,
-    }
-  );
+  await executeWithRetries(() => sendViaSftp(sftpConfig, file, remotePath, remoteFileName), {
+    maxAttempts: NUMBER_OF_ATTEMPTS,
+    log,
+    maxDelay: BASE_DELAY,
+  });
   log("Done");
   return;
 }
@@ -57,7 +57,6 @@ async function sendViaSftp(
 ) {
   if (!config.passwordSecretName) {
     throw new MetriportError("Sftp password secret name is required!", undefined, {
-      config,
       secretName: config.passwordSecretName,
     });
   }
