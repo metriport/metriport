@@ -35,7 +35,7 @@ export async function uploadToRemoteSftp(
   const remoteFileName = createFileNameHl7v2Roster(hieName);
 
   await simpleExecuteWithRetriesAsDuration(
-    () => sendViaSftp(sftpConfig, file, remoteFileName),
+    () => sendViaSftp(sftpConfig, file, remoteFileName, log),
     NUMBER_OF_ATTEMPTS,
     BASE_DELAY,
     log
@@ -43,10 +43,16 @@ export async function uploadToRemoteSftp(
   log(`SFTP upload completed in ${uploadTimer.getElapsedTime()}ms`);
 }
 
-async function sendViaSftp(sftpConfig: HieSftpConfig, file: string, remoteFileName: string) {
+async function sendViaSftp(
+  sftpConfig: HieSftpConfig,
+  file: string,
+  remoteFileName: string,
+  log: typeof console.log
+) {
   const remoteFolderPath = sftpConfig.remotePath;
   const password = Config.getSftpPasswordOrFail();
-
+  log(`The sftp config I got is: ${sftpConfig}`);
+  log(`The password I got is: ${password}`);
   const client = new SftpClient({
     ...sftpConfig,
     password,
@@ -60,7 +66,7 @@ async function sendViaSftp(sftpConfig: HieSftpConfig, file: string, remoteFileNa
     }
 
     const fullPath = `${remoteFolderPath}/${remoteFileName}`;
-
+    Ç;
     await client.write(fullPath, Buffer.from(file, "utf-8"));
   } finally {
     await client.disconnect();

@@ -1027,6 +1027,7 @@ export class LambdasNestedStack extends NestedStack {
       Object.entries(hieConfigs).forEach(([hieName, hieConfig]) => {
         const isStag = isStaging(config);
         const passwordSecretName = getHiePasswordSecretName(hieName, isStag);
+        console.log(`RADMIR THIS IS FOR YOU :) ${hieName}: ${passwordSecretName}`);
 
         const lambda = createScheduledLambda({
           stack: this,
