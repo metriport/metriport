@@ -27,7 +27,7 @@ import {
   RiskAssessment,
   ServiceRequest,
 } from "@medplum/fhirtypes";
-
+import { RXNORM_URL } from "@metriport/shared/medical";
 import { Smart, getReferenceField, isReferenceMethod } from "./types/smart-resources";
 
 export { Smart } from "./types/smart-resources";
@@ -727,6 +727,34 @@ export class FhirBundleSdk {
   getRelatedPersons!: () => Smart<RelatedPerson>[];
   getRiskAssessments!: () => Smart<RiskAssessment>[];
   getServiceRequests!: () => Smart<ServiceRequest>[];
+
+  /**
+   * Get all codes for a particular resource type
+   */
+  getAllMedicationRxNormCodes(): string[] {
+    return this.getAllCodesForResourceType("Medication", RXNORM_URL);
+  }
+
+  /**
+   * Generic helper method to retrieve all codes for a particular resource type
+   */
+  private getAllCodesForResourceType(
+    resourceType: "Medication" | "Procedure",
+    codeSystemUrl: string
+  ): string[] {
+    const resources = this.getResourcesByType(resourceType) as Array<Medication | Procedure>;
+    const codeSet = new Set<string>();
+    for (const resource of resources) {
+      if (resource.code?.coding) {
+        for (const coding of resource.code.coding) {
+          if (coding.system === codeSystemUrl && coding.code) {
+            codeSet.add(coding.code);
+          }
+        }
+      }
+    }
+    return Array.from(codeSet);
+  }
 
   /**
    * Create a new bundle entry from an existing entry, preserving fullUrl
