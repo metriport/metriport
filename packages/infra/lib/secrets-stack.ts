@@ -118,9 +118,9 @@ export class SecretsStack extends Stack {
         logSecretInfo(this, secret, secretName);
       }
 
-      const hieNames = Object.values(props.config.hl7Notification.hieConfigs).flatMap(c =>
-        c.sftpConfig ? [c.name] : []
-      );
+      const hieNames = Object.values(props.config.hl7Notification.hieConfigs).flatMap(c => [
+        c.name,
+      ]);
 
       for (const hieName of hieNames) {
         const isStag = isStaging(props.config);
@@ -140,5 +140,5 @@ export class SecretsStack extends Stack {
 }
 
 export function getHiePasswordSecretName(hieName: string, isStaging: boolean): string {
-  return isStaging ? `SftpPassword-Staging-${hieName}` : `SftpPassword-${hieName}`;
+  return isStaging ? `SFTPPASSWORD_STAGING_${hieName}` : `SFTP_PASSWORD_${hieName}`;
 }
