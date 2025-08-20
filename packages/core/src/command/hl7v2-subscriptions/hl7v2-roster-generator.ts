@@ -129,7 +129,17 @@ export class Hl7v2RosterGenerator {
 
     log(`Saved in S3: ${this.bucketName}/${fileName}`);
 
-    await uploadThroughSftp(config, rosterCsv);
+    const uploadTimer = initTimer();
+    try {
+      log(`Starting SFTP upload for config: ${config.name}`);
+      await uploadThroughSftp(config, rosterCsv);
+      log(`SFTP upload successful`);
+      //eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (err: any) {
+      log(`SFTP upload failed with error: ${err}`);
+    } finally {
+      log(`SFTP upload completed in ${uploadTimer.getElapsedTime()}ms`);
+    }
 
     return rosterCsv;
   }
