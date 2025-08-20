@@ -50,7 +50,7 @@ export function parseResponseFile(message: Buffer): IncomingData<ResponseDetail>
       if (parsed.success) {
         details.push({
           data: parsed.data,
-          source: row,
+          source: line,
         });
       } else {
         throw new MetriportError("Invalid row in Quest daily update file", undefined, {

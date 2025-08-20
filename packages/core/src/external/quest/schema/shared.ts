@@ -58,7 +58,7 @@ export interface IncomingFile<H extends object, D extends object, F extends obje
 
 export interface IncomingData<T extends object> {
   data: T;
-  source: string[];
+  source: string;
 }
 
 export type IncomingFileRowSchema<T extends object> = {
