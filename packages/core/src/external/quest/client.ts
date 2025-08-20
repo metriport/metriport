@@ -2,7 +2,7 @@ import { BadRequestError, MetriportError } from "@metriport/shared";
 import { Config } from "../../util/config";
 import { SftpClient } from "../sftp/client";
 import { generateQuestRoster } from "./roster";
-import { QuestSftpConfig, QuestDailyUpdateFile } from "./types";
+import { QuestSftpConfig, QuestResponseFile } from "./types";
 
 export class QuestSftpClient extends SftpClient {
   private readonly outgoingDirectory: string;
@@ -43,13 +43,13 @@ export class QuestSftpClient extends SftpClient {
     }
   }
 
-  async downloadAllDailyUpdates(): Promise<QuestDailyUpdateFile[]> {
+  async downloadAllResponses(): Promise<QuestResponseFile[]> {
     if (!this.replica) {
       throw new BadRequestError("Cannot download daily updates without a configured replica");
     }
     const replicaFileNames = await this.replica.listFileNames(this.incomingDirectory);
     const alreadyDownloadedFileNames = new Set(replicaFileNames);
-    const dailyUpdates: QuestDailyUpdateFile[] = [];
+    const responseFiles: QuestResponseFile[] = [];
 
     try {
       await this.connect();
@@ -59,9 +59,9 @@ export class QuestSftpClient extends SftpClient {
       for (const fileName of fileNames) {
         if (alreadyDownloadedFileNames.has(fileName)) continue;
         const fileContent = await this.readFromQuest(fileName);
-        dailyUpdates.push({ fileName, fileContent });
+        responseFiles.push({ fileName, fileContent });
       }
-      return dailyUpdates;
+      return responseFiles;
     } catch (error) {
       throw new MetriportError(`Failed to download Quest responses`, error, {
         context: "QuestSftpClient",
