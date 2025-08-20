@@ -105,16 +105,15 @@ export async function parseExtrinsicObjectXmlToDocumentReference({
   });
 
   extrinsicObject.ExternalIdentifier.forEach(identifier => {
-    const value = rebuildUploadsFilePath(identifier.$.value);
+    const stringValue = base64ToString(identifier.$.value);
+    const filePath = rebuildUploadsFilePath(stringValue);
 
     switch (identifier.$.identificationScheme) {
       case XDSDocumentEntryUniqueId:
         docRefContent.attachment = {
           ...docRefContent.attachment,
-          url: `https://${Config.getMedicalDocumentsBucketName()}.s3.${Config.getAWSRegion()}.amazonaws.com/${base64ToString(
-            value
-          )}`,
-          title: base64ToString(value),
+          url: `https://${Config.getMedicalDocumentsBucketName()}.s3.${Config.getAWSRegion()}.amazonaws.com/${filePath}`,
+          title: filePath,
         };
         break;
     }
