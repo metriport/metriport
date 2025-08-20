@@ -9,7 +9,7 @@ import {
 } from "../../util/constants";
 import {
   DeduplicationResult,
-  assignMostDescriptiveStatus,
+  dangerouslyAssignMostDescriptiveStatus,
   combineResources,
   createKeysFromObjectArray,
   createKeysFromObjectArrayAndBits,
@@ -46,7 +46,7 @@ export const statusRanking: Record<ProcedureStatus, number> = {
 };
 
 function preprocessStatus(existing: Procedure, target: Procedure) {
-  return assignMostDescriptiveStatus(statusRanking, existing, target);
+  return dangerouslyAssignMostDescriptiveStatus(statusRanking, existing, target);
 }
 
 export function deduplicateProcedures(procedures: Procedure[]): DeduplicationResult<Procedure> {

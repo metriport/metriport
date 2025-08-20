@@ -2,7 +2,7 @@ import { DiagnosticReport } from "@medplum/fhirtypes";
 import { createUuidFromText } from "@metriport/shared/common/uuid";
 import {
   DeduplicationResult,
-  assignMostDescriptiveStatus,
+  dangerouslyAssignMostDescriptiveStatus,
   combineResources,
   createKeysFromObjectArray,
   createKeysFromObjectArrayAndBits,
@@ -41,7 +41,7 @@ const statusRanking: Record<DiagnosticReportStatus, number> = {
 };
 
 function preprocessStatus(existing: DiagnosticReport, target: DiagnosticReport) {
-  return assignMostDescriptiveStatus(statusRanking, existing, target);
+  return dangerouslyAssignMostDescriptiveStatus(statusRanking, existing, target);
 }
 
 export function deduplicateDiagReports(

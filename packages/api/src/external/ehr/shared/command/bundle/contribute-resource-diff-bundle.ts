@@ -18,10 +18,11 @@ import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { errorToString, MetriportError } from "@metriport/shared";
 import { athenaSecondaryMappingsSchema } from "@metriport/shared/interface/external/ehr/athenahealth/cx-mapping";
 import { createBundleFromResourceList } from "@metriport/shared/interface/external/ehr/fhir-resource";
+import { healthieSecondaryMappingsSchema } from "@metriport/shared/interface/external/ehr/healthie/cx-mapping";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import axios from "axios";
 import { partition } from "lodash";
-import { getCxMappingOrFail } from "../../../../../command/mapping/cx";
+import { getCxMappingOrFail, getCxMappingsByCustomer } from "../../../../../command/mapping/cx";
 import { getPatientMappingOrFail } from "../../../../../command/mapping/patient";
 import { getUploadUrlAndCreateDocRef } from "../../../../../command/medical/document/get-upload-url-and-create-doc-ref";
 import { handleDataContribution } from "../../../../../command/medical/patient/data-contribution/handle-data-contributions";
@@ -47,6 +48,30 @@ export async function contributeResourceDiffBundle({
   resourceType,
   jobId,
 }: ContributeBundleParams): Promise<void> {
+  if (ehr === EhrSources.healthie) {
+    const cxMappings = await getCxMappingsByCustomer({ cxId, source: EhrSources.healthie });
+    const cxMapping = cxMappings[0];
+    if (!cxMapping) {
+      throw new MetriportError("Healthie cx mapping not found", undefined, {
+        cxId,
+        source: EhrSources.healthie,
+      });
+    }
+    if (cxMappings.length > 1) {
+      throw new MetriportError("Multiple Healthie cx mappings found", undefined, {
+        cxId,
+        source: EhrSources.healthie,
+      });
+    }
+    if (!cxMapping.secondaryMappings) {
+      throw new MetriportError("Healthie secondary mappings not found", undefined, {
+        externalId: cxMapping.externalId,
+        source: EhrSources.healthie,
+      });
+    }
+    const secondaryMappings = healthieSecondaryMappingsSchema.parse(cxMapping.secondaryMappings);
+    if (secondaryMappings.contributionDisabled) return;
+  }
   const patientMapping = await getPatientMappingOrFail({
     cxId,
     externalId: ehrPatientId,
