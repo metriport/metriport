@@ -25,6 +25,13 @@ function isValidISODateOptional(date: string | undefined | null): boolean {
 
 export type ValidateDobFn = (date: string) => boolean;
 
+/**
+ * Validates if a date is a valid date of birth.
+ *
+ * @param date The date to validate
+ * @param options just for testing purposes, so we can pass mock functions
+ * @returns true if the date is valid, false otherwise
+ */
 export function validateDateOfBirth(
   date: string,
   options?: {

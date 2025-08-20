@@ -3,3 +3,6 @@
 node_modules
 lib
 dist
+*.txt
+downloads-consumption/
+downloads-contribution/
