@@ -13,8 +13,7 @@ run the tool if the substring is not found in the original text. Do not pass the
 concise possible substring of text to the extraction tools, but don't leave out any important details.`;
 
 export class ComprehendAgent extends AnthropicAgent<"claude-sonnet-3.7"> {
-  private readonly bundle: Bundle;
-  private readonly fhirSdk: FhirBundleSdk;
+  private readonly bundle: FhirBundleSdk;
 
   constructor(bundle: Bundle, comprehend: ComprehendClient = new ComprehendClient()) {
     super({
@@ -23,9 +22,8 @@ export class ComprehendAgent extends AnthropicAgent<"claude-sonnet-3.7"> {
       systemPrompt: COMPREHEND_SYSTEM_PROMPT,
       maxTokens: 10000,
     });
-    this.bundle = bundle;
-    this.fhirSdk = FhirBundleSdk.createSync(bundle);
-    this.addExtractionTool(buildComprehendMedicationTool(this.fhirSdk, comprehend));
+    this.bundle = FhirBundleSdk.createSync(bundle);
+    this.addExtractionTool(buildComprehendMedicationTool(this.bundle, comprehend));
   }
 
   private addExtractionTool(tool: AnthropicTool<ExtractTextRequest, ExtractTextResponse>): void {
