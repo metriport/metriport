@@ -206,7 +206,6 @@ export const config: EnvConfigNonSandbox = {
           host: "your-sftp-host",
           port: 22,
           username: "your-sftp-username",
-          passwordSecretName: "SftpPassword-HieName",
           remotePath: "your-directory-path",
         },
       },
