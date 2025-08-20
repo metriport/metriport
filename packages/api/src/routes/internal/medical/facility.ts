@@ -1,4 +1,5 @@
 import { isCommonwellV2EnabledForCx } from "@metriport/core/command/feature-flags/domain-ffs";
+import { FacilityType } from "@metriport/core/domain/facility";
 import { isHealthcareItVendor } from "@metriport/core/domain/organization";
 import { Config } from "@metriport/core/util/config";
 import { processAsyncError } from "@metriport/core/util/error/shared";
@@ -80,10 +81,15 @@ router.put(
         createOrUpdateCWOrganizationV2({
           cxId,
           org: {
-            oid: org.oid,
-            data: org.data,
-            active: org.cwActive,
-            isInitiatorAndResponder: true,
+            oid: facility.cwOboOid ?? facility.oid,
+            data: {
+              // TODO: Not sure this is correct
+              name: facility.data.name,
+              type: org.data.type,
+              location: facility.data.address,
+            },
+            active: facility.cwActive,
+            isInitiatorAndResponder: facility.cwType === FacilityType.initiatorAndResponder,
           },
         }).catch(processAsyncError("cwV2.internal.facility"));
       } else {
