@@ -54,14 +54,13 @@ const organizationBaseSchema = z.object({
       phone: z.string(),
     })
   ),
+  isLegacyBridgeEnabled: z.boolean().nullish(),
 });
 
 export type OrganizationBase = z.infer<typeof organizationBaseSchema>;
 
 export const organizationSchemaWithNetworkInfo = organizationBaseSchema.extend({
-  securityTokenKeyType: z
-    .union([z.literal("JWT"), z.literal("BEARER"), z.literal("HOLDER-OF-KEY")])
-    .nullish(),
+  securityTokenKeyType: z.string().nullish(),
   networks: z.array(
     z.object({
       type: z.string(),
@@ -106,8 +105,6 @@ export const organizationSchemaWithNetworkInfo = organizationBaseSchema.extend({
 export type OrganizationWithNetworkInfo = z.infer<typeof organizationSchemaWithNetworkInfo>;
 
 export const organizationSchemaWithoutNetworkInfo = organizationSchemaWithNetworkInfo.omit({
-  networks: true,
-  gateways: true,
   authorizationInformation: true,
 });
 export type OrganizationWithoutNetworkInfo = z.infer<typeof organizationSchemaWithoutNetworkInfo>;
