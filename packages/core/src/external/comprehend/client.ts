@@ -6,35 +6,62 @@ import {
   InferRxNormCommandOutput,
 } from "@aws-sdk/client-comprehendmedical";
 import { Config } from "../../util/config";
+import { out, LogFunction } from "../../util/log";
+
+type LogLevel = "debug" | "info" | "none";
 
 export class ComprehendClient {
   private comprehend: ComprehendMedicalClient;
+  private readonly log: LogFunction;
+  private readonly debug: LogFunction;
 
-  constructor({ region = Config.getComprehendRegion() }: { region?: string } = {}) {
+  constructor({
+    region = Config.getComprehendRegion(),
+    logLevel = "info",
+  }: { region?: string; logLevel?: LogLevel } = {}) {
     this.comprehend = new ComprehendMedicalClient({
       region,
     });
+    const { log, debug } = buildLogger(logLevel);
+    this.log = log;
+    this.debug = debug;
   }
 
   async detectEntities(text: string): Promise<DetectEntitiesV2CommandOutput> {
-    console.debug("Detecting entities", text);
+    this.debug("Detecting entities", text);
     const startTime = Date.now();
     const command = new DetectEntitiesV2Command({
       Text: text,
     });
     const response = await this.comprehend.send(command);
-    console.log(`Completed entity detection in ${Date.now() - startTime}ms`);
+    this.log(`Completed entity detection in ${Date.now() - startTime}ms`);
     return response;
   }
 
   async inferRxNorm(text: string): Promise<InferRxNormCommandOutput> {
-    console.debug("Inferring RxNorm codes", text);
+    this.debug("Inferring RxNorm codes", text);
     const command = new InferRxNormCommand({
       Text: text,
     });
     const startTime = Date.now();
     const response = await this.comprehend.send(command);
-    console.log(`Completed RxNorm inference in ${Date.now() - startTime}ms`);
+    this.log(`Completed RxNorm inference in ${Date.now() - startTime}ms`);
     return response;
   }
+}
+
+function buildLogger(logLevel: LogLevel): ReturnType<typeof out> {
+  if (logLevel === "none") {
+    return {
+      log: () => {}, //eslint-disable-line @typescript-eslint/no-empty-function
+      debug: () => {}, //eslint-disable-line @typescript-eslint/no-empty-function
+    };
+  }
+  if (logLevel === "info") {
+    return {
+      debug: () => {}, //eslint-disable-line @typescript-eslint/no-empty-function
+      log: out("comprehend").log,
+    };
+  }
+  return out("comprehend");
 }
