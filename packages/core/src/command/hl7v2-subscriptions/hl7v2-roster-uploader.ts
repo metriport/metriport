@@ -8,9 +8,10 @@ import { getSecretValueOrFail } from "../../external/aws/secret-manager";
 import { MetriportError } from "@metriport/shared";
 import { Config } from "../../util/config";
 import { initTimer } from "@metriport/shared/common/timer";
+import dayjs from "dayjs";
 
 const NUMBER_OF_ATTEMPTS = 3;
-const BASE_DELAY = 1000;
+const BASE_DELAY = dayjs.duration({ seconds: 1 });
 
 export async function uploadThroughSftp(
   config: HieConfig | VpnlessHieConfig,
@@ -45,7 +46,7 @@ export async function uploadThroughSftp(
   await executeWithRetries(() => sendViaSftp(sftpConfig, file, remotePath, remoteFileName), {
     maxAttempts: NUMBER_OF_ATTEMPTS,
     log,
-    initialDelay: BASE_DELAY,
+    initialDelay: BASE_DELAY.milliseconds(),
   });
   log(`SFTP upload completed in ${uploadTimer.getElapsedTime()}ms`);
 }
