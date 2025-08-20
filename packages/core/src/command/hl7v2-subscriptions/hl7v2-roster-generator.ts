@@ -29,6 +29,7 @@ import {
   VpnlessHieConfig,
 } from "./types";
 import { createScrambledId } from "./utils";
+import { analytics, EventTypes } from "../../external/analytics/posthog";
 const region = Config.getAWSRegion();
 
 type RosterRow = Record<string, string>;
@@ -110,23 +111,48 @@ export class Hl7v2RosterGenerator {
     log("Created CSV");
 
     const fileName = this.createFileKeyHl7v2Roster(hieName);
+    let failedStage: "s3" | "sftp" | undefined;
 
-    await storeInS3WithRetries({
-      s3Utils: this.s3Utils,
-      payload: rosterCsv,
-      bucketName: this.bucketName,
-      fileName,
-      contentType: CSV_MIME_TYPE,
-      log,
-      errorConfig: {
-        errorMessage: "Error uploading patient roster CSV",
-        context: "Hl7v2RosterGenerator",
-        captureParams: loggingDetails,
-        shouldCapture: true,
-      },
-    });
-
+    try {
+      await storeInS3WithRetries({
+        s3Utils: this.s3Utils,
+        payload: rosterCsv,
+        bucketName: this.bucketName,
+        fileName,
+        contentType: CSV_MIME_TYPE,
+        log,
+        errorConfig: {
+          errorMessage: "Error uploading patient roster CSV",
+          context: "Hl7v2RosterGenerator",
+          captureParams: loggingDetails,
+          shouldCapture: true,
+        },
+      });
+    } catch (e) {
+      failedStage = failedStage ?? "s3";
+      log(`Roster upload failed at ${failedStage}`, e);
+    }
     log(`Saved in S3: ${this.bucketName}/${fileName}`);
+
+    const rosterSize = rosterRows.length;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let ph: any;
+    try {
+      console.log(EventTypes.rosterUploadSummary, " ", hieName, " ", rosterSize);
+      ph = analytics({
+        event: EventTypes.rosterUploadSummary,
+        distinctId: `cx:${hieName}`,
+        properties: {
+          stateHie: hieName,
+          rosterSize: failedStage ? 0 : rosterSize,
+          ...(failedStage ? { failedStage } : { status: "ok" }),
+        },
+      });
+      await ph?.flush?.();
+    } finally {
+      ph?.shutdown?.();
+    }
+
     return rosterCsv;
   }
 
