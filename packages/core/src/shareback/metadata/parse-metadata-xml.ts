@@ -1,14 +1,15 @@
 import { Coding, DocumentReference, DocumentReferenceContent } from "@medplum/fhirtypes";
 import { parseStringPromise } from "xml2js";
+import { rebuildUploadsFilePath } from "../../domain/document/upload";
 import { metriportDataSourceExtension } from "../../external/fhir/shared/extensions/metriport";
 import { base64ToString } from "../../util/base64";
+import { Config } from "../../util/config";
 import {
   XDSDocumentEntryClassCode,
   XDSDocumentEntryHealthcareFacilityTypeCode,
   XDSDocumentEntryPracticeSettingCode,
   XDSDocumentEntryUniqueId,
 } from "./constants";
-import { Config } from "../../util/config";
 
 interface ExtrinsicObjectXMLData {
   ExtrinsicObject: {
@@ -104,7 +105,7 @@ export async function parseExtrinsicObjectXmlToDocumentReference({
   });
 
   extrinsicObject.ExternalIdentifier.forEach(identifier => {
-    const value = identifier.$.value;
+    const value = rebuildUploadsFilePath(identifier.$.value);
 
     switch (identifier.$.identificationScheme) {
       case XDSDocumentEntryUniqueId:
