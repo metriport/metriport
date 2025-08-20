@@ -1,4 +1,5 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
+import { FhirBundleSdk } from "@metriport/fhir-sdk";
 import { AnthropicAgent } from "../bedrock/agent/anthropic";
 import { ComprehendClient } from "./client";
 import { buildComprehendMedicationTool } from "./medication/medication-tool";
@@ -10,6 +11,9 @@ run the tool if the substring is not found in the original text. Do not pass the
 concise possible substring of text to the extraction tools, but don't leave out any important details.`;
 
 export class ComprehendAgent extends AnthropicAgent<"claude-sonnet-3.7"> {
+  private readonly bundle: Bundle;
+  private readonly fhirSdk: FhirBundleSdk;
+
   constructor(bundle: Bundle, comprehend: ComprehendClient = new ComprehendClient()) {
     super({
       version: "claude-sonnet-3.7",
@@ -18,6 +22,8 @@ export class ComprehendAgent extends AnthropicAgent<"claude-sonnet-3.7"> {
       tools: [buildComprehendMedicationTool(bundle, comprehend)],
       maxTokens: 10000,
     });
+    this.bundle = bundle;
+    this.fhirSdk = FhirBundleSdk.createSync(bundle);
   }
 
   async extractResources(text: string): Promise<Resource[]> {
