@@ -66,7 +66,7 @@ async function sendViaSftp(
     }
 
     const fullPath = `${remoteFolderPath}/${remoteFileName}`;
-    Ç;
+
     await client.write(fullPath, Buffer.from(file, "utf-8"));
   } finally {
     await client.disconnect();
