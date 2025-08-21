@@ -1,5 +1,6 @@
 import { getEnvVarAsRecordOrFail } from "@metriport/shared/common/env-var";
 import { getEnvVar, getEnvVarOrFail } from "./env-var";
+import { ROSTER_UPLOAD_SFTP_PASSWORD } from "@metriport/shared/domain/tcm-encounter";
 
 /**
  * Shared configs, still defining how to work with this. For now:
@@ -398,6 +399,6 @@ export class Config {
   }
 
   static getRosterUploadSftpPasswordArn(): string {
-    return getEnvVarOrFail("ROSTER_UPLOAD_SFTP_PASSWORD_ARN");
+    return getEnvVarOrFail(`${ROSTER_UPLOAD_SFTP_PASSWORD}_ARN`);
   }
 }

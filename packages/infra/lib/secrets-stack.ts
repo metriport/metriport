@@ -138,5 +138,5 @@ export class SecretsStack extends Stack {
 }
 
 export function getHieSftpPasswordSecretName(hieName: string): string {
-  return `SftpPassword-${hieName}`;
+  return `RosterUploadSftpPassword-${hieName}`;
 }
