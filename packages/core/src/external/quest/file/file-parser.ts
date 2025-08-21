@@ -59,7 +59,7 @@ export function parseResponseFile(message: Buffer): IncomingData<ResponseDetail>
       }
     } else {
       throw new MetriportError("Invalid row length in Quest daily update file", undefined, {
-        rowLength: line.length,
+        rowLength: row.length,
         expectedLength: headerRow.length,
       });
     }

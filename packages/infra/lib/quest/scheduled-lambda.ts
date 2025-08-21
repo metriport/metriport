@@ -1,6 +1,7 @@
 import { Duration } from "aws-cdk-lib";
 import { IVpc } from "aws-cdk-lib/aws-ec2";
 import { IFunction } from "aws-cdk-lib/aws-lambda";
+import { Schedule } from "aws-cdk-lib/aws-events";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import { Construct } from "constructs";
 import { getConfig } from "../shared/config";
@@ -33,7 +34,16 @@ function configForResponseDownload(props: ScheduledLambdaProps): ScheduledLambda
      * @see: https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-cron-expressions.html
      * @see: https://docs.aws.amazon.com/lambda/latest/dg/services-cloudwatchevents-expressions.html
      */
-    scheduleExpression: ["0 12 * * *"], // Every day at 12:00pm UTC (5:00am PST)
+    scheduleExpression: [
+      Schedule.cron({
+        minute: "0",
+        hour: "12",
+        day: "*",
+        month: "*",
+        year: "*",
+        weekDay: "?",
+      }).expressionString, // Every day at 12:00pm UTC (5:00am PST)
+    ],
     url: `http://${props.apiAddress}/internal/quest/download-response`,
   };
 }
@@ -47,7 +57,16 @@ function configForRosterUpload(props: ScheduledLambdaProps): ScheduledLambdaConf
      * @see: https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-cron-expressions.html
      * @see: https://docs.aws.amazon.com/lambda/latest/dg/services-cloudwatchevents-expressions.html
      */
-    scheduleExpression: ["0 12 * * *"], // Every day at 12:00pm UTC (5:00am PST)
+    scheduleExpression: [
+      Schedule.cron({
+        minute: "0",
+        hour: "12",
+        day: "*",
+        month: "*",
+        year: "*",
+        weekDay: "1",
+      }).expressionString, // Every Monday at 12:00pm UTC (5:00am PST)
+    ],
     url: `http://${props.apiAddress}/internal/quest/upload-roster`,
   };
 }
