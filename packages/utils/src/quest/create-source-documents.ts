@@ -18,5 +18,10 @@ command.action(async () => {
 
   const handler = new QuestCreateSourceDocumentsHandlerDirect();
   const sourceDocuments = await handler.createSourceDocuments(responseFiles);
-  console.log(sourceDocuments);
+  console.log(`Created ${sourceDocuments.length} source documents`);
+
+  const patientIds = new Set(sourceDocuments.map(({ patientId }) => patientId));
+  console.log(`Found ${patientIds.size} unique patients`);
 });
+
+export default command;

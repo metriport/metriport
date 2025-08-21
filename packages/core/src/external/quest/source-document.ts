@@ -5,6 +5,7 @@ import { out } from "../../util/log";
 import { ResponseDetail } from "./schema/response";
 import { IncomingData } from "./schema/shared";
 import { QuestReplica } from "./replica";
+import { buildSourceDocumentFileName, parseResponseFileName } from "./file/file-names";
 
 type IncomingRow = IncomingData<ResponseDetail>;
 type PatientToIncomingRowMap = Map<string, IncomingRow[]>;
@@ -101,7 +102,8 @@ function createSourceDocument({
   patientRows: IncomingRow[];
   responseFile: QuestResponseFile;
 }): QuestPatientResponseFile {
-  const fileName = `${patientId}/${responseFile.fileName}.json`;
+  const { intervalId } = parseResponseFileName(responseFile.fileName);
+  const fileName = buildSourceDocumentFileName({ patientId, intervalId });
   const fileContentAsString = patientRows.map(row => row.source).join("\n");
   const fileContent = Buffer.from(fileContentAsString, "ascii");
   return { fileName, fileContent, patientId };

@@ -1,8 +1,42 @@
+import { MetriportError } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
+
+const RESPONSE_FILE_PREFIX = "Metriport_";
+const RESPONSE_FILE_EXTENSION = ".txt";
 
 export function buildRosterFileName() {
   const dateId = buildDayjs().format("YYYYMMDD");
   return `METRIPORT_${dateId}.txt`;
+}
+
+/**
+ * Parses a file name of the format "Metriport_YYYYM1D1M2D2.txt" and returns an interval ID.
+ * E.g. 202501010102 is the interval from Jan 1st to Jan 2nd, 2025
+ */
+export function parseResponseFileName(fileName: string): { intervalId: string } {
+  if (!fileName.startsWith(RESPONSE_FILE_PREFIX) || !fileName.endsWith(RESPONSE_FILE_EXTENSION)) {
+    throw new MetriportError("Invalid file name", undefined, {
+      context: "quest.file.file-names",
+      fileName,
+    });
+  }
+  const intervalId = fileName.substring(
+    RESPONSE_FILE_PREFIX.length,
+    fileName.length - RESPONSE_FILE_EXTENSION.length
+  );
+  return {
+    intervalId,
+  };
+}
+
+export function buildSourceDocumentFileName({
+  patientId,
+  intervalId,
+}: {
+  patientId: string;
+  intervalId: string;
+}) {
+  return `ptId=${patientId}/intervalId=${intervalId}.tsv`;
 }
 
 export function buildPatientLabConversionPrefix({
