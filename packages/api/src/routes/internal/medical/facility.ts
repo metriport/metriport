@@ -1,5 +1,4 @@
 import { isCommonwellV2EnabledForCx } from "@metriport/core/command/feature-flags/domain-ffs";
-import { FacilityType } from "@metriport/core/domain/facility";
 import { isHealthcareItVendor } from "@metriport/core/domain/organization";
 import { Config } from "@metriport/core/util/config";
 import { processAsyncError } from "@metriport/core/util/error/shared";
@@ -9,7 +8,11 @@ import httpStatus from "http-status";
 import { createFacility } from "../../../command/medical/facility/create-facility";
 import { updateFacility } from "../../../command/medical/facility/update-facility";
 import { getOrganizationOrFail } from "../../../command/medical/organization/get-organization";
-import { Facility, FacilityCreate } from "../../../domain/medical/facility";
+import {
+  Facility,
+  FacilityCreate,
+  isInitiatorAndResponder,
+} from "../../../domain/medical/facility";
 import { createOrUpdateFacility as cqCreateOrUpdateFacility } from "../../../external/carequality/command/create-or-update-facility";
 import { createOrUpdateFacilityInCw } from "../../../external/commonwell-v1/command/create-or-update-cw-facility";
 import { createOrUpdateCWOrganizationV2 } from "../../../external/commonwell-v2/command/organization/create-or-update-cw-organization";
@@ -89,7 +92,7 @@ router.put(
               location: facility.data.address,
             },
             active: facility.cwActive,
-            isInitiatorAndResponder: facility.cwType === FacilityType.initiatorAndResponder,
+            isInitiatorAndResponder: isInitiatorAndResponder(facility.cwType),
           },
         }).catch(processAsyncError("cwV2.internal.facility"));
       } else {
