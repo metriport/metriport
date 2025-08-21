@@ -1,4 +1,4 @@
-import { executeWithNetworkRetries, sleep } from "@metriport/shared";
+import { executeWithNetworkRetries } from "@metriport/shared";
 import axios from "axios";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -13,8 +13,6 @@ const region = Config.getAWSRegion();
 const s3Utils = new S3Utils(region);
 const api = axios.create();
 const bucket = Config.getMedicalDocumentsBucketName();
-
-const waitTimeForS3ToCatchUp = dayjs.duration(200, "milliseconds");
 
 export async function ensureCcdExists({
   cxId,
@@ -47,10 +45,7 @@ export async function ensureCcdExists({
     log,
   });
 
-  // We do this because we had situations where even though we await on the creation of the empty CCD,
-  // after this function we try to read the metadata file and S3 returned it didn't exist yet.
-  log("CCD generated. Waiting for S3 to catch up...");
-  await sleep(waitTimeForS3ToCatchUp.asMilliseconds());
+  log("CCD generated.");
 
   return;
 }
