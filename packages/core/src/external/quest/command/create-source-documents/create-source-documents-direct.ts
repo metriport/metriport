@@ -3,12 +3,12 @@ import {
   splitAllResponseFilesIntoSourceDocuments,
   uploadSourceDocuments,
 } from "../../source-document";
-import { CreateSourceDocumentsHandler } from "./create-source-documents";
+import { QuestCreateSourceDocumentsHandler } from "./create-source-documents";
 import { QuestFhirConverterCommand } from "../fhir-converter/fhir-converter";
 import { QuestFhirConverterCommandDirect } from "../fhir-converter/fhir-converter-direct";
 import { QuestReplica } from "../../replica";
 
-export class CreateSourceDocumentsHandlerDirect implements CreateSourceDocumentsHandler {
+export class QuestCreateSourceDocumentsHandlerDirect implements QuestCreateSourceDocumentsHandler {
   constructor(
     private readonly replica: QuestReplica = new QuestReplica(),
     private readonly next: QuestFhirConverterCommand = new QuestFhirConverterCommandDirect()

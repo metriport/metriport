@@ -2,14 +2,14 @@ import { MetriportError } from "@metriport/shared";
 import { QuestSftpClient } from "../../client";
 import { QuestReplica } from "../../replica";
 import { DownloadResponseCommandHandler } from "./download-response";
-import { CreateSourceDocumentsHandler } from "../create-source-documents/create-source-documents";
-import { CreateSourceDocumentsHandlerDirect } from "../create-source-documents/create-source-documents-direct";
+import { QuestCreateSourceDocumentsHandler } from "../create-source-documents/create-source-documents";
+import { QuestCreateSourceDocumentsHandlerDirect } from "../create-source-documents/create-source-documents-direct";
 
 export class DownloadResponseHandlerDirect implements DownloadResponseCommandHandler {
-  private readonly next: CreateSourceDocumentsHandler;
+  private readonly next: QuestCreateSourceDocumentsHandler;
 
   constructor(private readonly client = new QuestSftpClient()) {
-    this.next = new CreateSourceDocumentsHandlerDirect(this.getQuestReplica());
+    this.next = new QuestCreateSourceDocumentsHandlerDirect(this.getQuestReplica());
   }
 
   async downloadAllQuestResponses(): Promise<void> {

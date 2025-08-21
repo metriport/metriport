@@ -15,6 +15,19 @@ export class QuestReplica extends S3Replica {
     }
   }
 
+  async listAllResponseFiles(): Promise<QuestResponseFile[]> {
+    const fileNames = await this.listFileNames(Config.getQuestSftpIncomingDirectory());
+    const responseFiles: QuestResponseFile[] = [];
+    for (const fileName of fileNames) {
+      const fileContent = await this.readFile(fileName);
+      responseFiles.push({
+        fileName,
+        fileContent,
+      });
+    }
+    return responseFiles;
+  }
+
   async uploadSourceDocument(sourceDocument: QuestResponseFile): Promise<void> {
     await this.writeFile(`source_document/${sourceDocument.fileName}`, sourceDocument.fileContent);
   }
