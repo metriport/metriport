@@ -4,13 +4,19 @@ import { Config } from "../../util/config";
 import { S3Replica } from "../sftp/replica/s3";
 import { QuestResponseFile, QuestSftpConfig } from "./types";
 
-// In the replica bucket, this is a directory where split documents are stored.
+// S3 constants for response files and source documents
+const RESPONSE_FILE_PREFIX = "/Metriport_";
 const SOURCE_DOCUMENT_DIRECTORY = "source_document";
 
 export class QuestReplica extends S3Replica {
-  private readonly incomingDirectoryName: string;
+  private readonly incomingResponseFilePrefix: string;
 
-  constructor(config: Pick<QuestSftpConfig, "replicaBucket" | "replicaBucketRegion"> = {}) {
+  constructor(
+    config: Pick<
+      QuestSftpConfig,
+      "replicaBucket" | "replicaBucketRegion" | "incomingDirectory"
+    > = {}
+  ) {
     super({
       bucketName: config.replicaBucket ?? Config.getQuestReplicaBucketName() ?? "",
       region: config.replicaBucketRegion ?? Config.getAWSRegion(),
@@ -20,12 +26,12 @@ export class QuestReplica extends S3Replica {
       throw new MetriportError("Quest replica bucket name is not set");
     }
 
-    // Replace leading slash for S3 directory name
-    this.incomingDirectoryName = this.getReplicaPath(Config.getQuestSftpIncomingDirectory());
+    const incomingDirectory = config.incomingDirectory ?? Config.getQuestSftpIncomingDirectory();
+    this.incomingResponseFilePrefix = this.getReplicaPath(incomingDirectory) + RESPONSE_FILE_PREFIX;
   }
 
   async listAllResponseFiles(): Promise<QuestResponseFile[]> {
-    const responseFilePaths = await this.listFileNames(this.incomingDirectoryName);
+    const responseFilePaths = await this.listFileNames(this.incomingResponseFilePrefix);
     const responseFiles: QuestResponseFile[] = [];
     for (const responseFilePath of responseFilePaths) {
       const fileName = path.basename(responseFilePath);

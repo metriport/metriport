@@ -3,7 +3,7 @@ import { buildDayjs } from "@metriport/shared/common/date";
 
 const RESPONSE_FILE_PREFIX = "Metriport_";
 const RESPONSE_FILE_EXTENSION = ".txt";
-const DATE_ID_REGEX = /^(\d{8}|\d{12})$/;
+const DATE_ID_REGEX = /^\d{12}$/;
 
 export function buildRosterFileName() {
   const dateId = buildDayjs().format("YYYYMMDD");

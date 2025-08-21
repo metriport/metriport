@@ -1,5 +1,11 @@
 import { MetriportError } from "@metriport/shared";
-import { buildRosterFileName, parseResponseFileName } from "../file/file-names";
+import {
+  buildRosterFileName,
+  parseResponseFileName,
+  buildPatientLabConversionPrefix,
+  buildLatestConversionFileName,
+  buildLabConversionFileNameForDate,
+} from "../file/file-names";
 
 describe("parseResponseFileName", () => {
   beforeEach(() => {
@@ -15,11 +21,7 @@ describe("parseResponseFileName", () => {
     expect(buildRosterFileName()).toBe("Metriport_roster_20250101.txt");
   });
 
-  it("parses an 8-digit date", () => {
-    expect(parseResponseFileName("Metriport_20250101.txt")).toEqual({ dateId: "20250101" });
-  });
-
-  it("parses a 12-digit date interval", () => {
+  it("parses a correct date interval", () => {
     expect(parseResponseFileName("Metriport_202501010201.txt")).toEqual({
       dateId: "202501010201",
     });
@@ -44,5 +46,39 @@ describe("parseResponseFileName", () => {
 
   it("throws on extra characters", () => {
     expect(() => parseResponseFileName("XMetriport_20250101.txtY")).toThrow(MetriportError);
+  });
+
+  it("builds a patient lab conversion prefix", () => {
+    expect(
+      buildPatientLabConversionPrefix({
+        cxId: "eaa16107-a05e-4090-838e-a7f51d7921c1",
+        patientId: "171a1b08-c27d-442a-9251-0905a29d0c49",
+      })
+    ).toBe(
+      `quest/cxId=eaa16107-a05e-4090-838e-a7f51d7921c1/patientId=171a1b08-c27d-442a-9251-0905a29d0c49/dateId=`
+    );
+  });
+
+  it("builds a latest conversion file name", () => {
+    expect(
+      buildLatestConversionFileName(
+        "eaa16107-a05e-4090-838e-a7f51d7921c1",
+        "171a1b08-c27d-442a-9251-0905a29d0c49"
+      )
+    ).toBe(
+      "quest/cxId=eaa16107-a05e-4090-838e-a7f51d7921c1/patientId=171a1b08-c27d-442a-9251-0905a29d0c49/latest.json"
+    );
+  });
+
+  it("builds a lab conversion file name for date", () => {
+    expect(
+      buildLabConversionFileNameForDate({
+        cxId: "eaa16107-a05e-4090-838e-a7f51d7921c1",
+        patientId: "171a1b08-c27d-442a-9251-0905a29d0c49",
+        dateId: "202501010201",
+      })
+    ).toBe(
+      "quest/cxId=eaa16107-a05e-4090-838e-a7f51d7921c1/patientId=171a1b08-c27d-442a-9251-0905a29d0c49/dateId=202501010201/conversion.json"
+    );
   });
 });
