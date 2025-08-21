@@ -6,6 +6,7 @@ import { ResponseDetail } from "./schema/response";
 import { IncomingData } from "./schema/shared";
 import { QuestReplica } from "./replica";
 import { buildSourceDocumentFileName, parseResponseFileName } from "./file/file-names";
+import { SOURCE_DOCUMENT_HEADER } from "./file/constants";
 
 type IncomingRow = IncomingData<ResponseDetail>;
 type PatientToIncomingRowMap = Map<string, IncomingRow[]>;
@@ -105,6 +106,6 @@ function createSourceDocument({
   const { dateId } = parseResponseFileName(responseFile.fileName);
   const fileName = buildSourceDocumentFileName({ patientId, dateId });
   const fileContentAsString = patientRows.map(row => row.source).join("\n");
-  const fileContent = Buffer.from(fileContentAsString, "ascii");
+  const fileContent = Buffer.from(SOURCE_DOCUMENT_HEADER + fileContentAsString, "ascii");
   return { fileName, fileContent, patientId };
 }

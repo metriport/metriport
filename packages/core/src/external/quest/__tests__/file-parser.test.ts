@@ -2,8 +2,8 @@ import { parseResponseFile } from "../file/file-parser";
 import { getArtifact } from "./shared";
 
 describe("File parser", () => {
-  it("should parse a response file", () => {
-    const file = getArtifact("response.txt");
+  it("should parse a response file with a single row", () => {
+    const file = getArtifact("response/single-patient.txt");
     const result = parseResponseFile(file);
     expect(result.length).toBe(1);
 
