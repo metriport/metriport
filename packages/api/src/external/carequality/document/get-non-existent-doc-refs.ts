@@ -37,18 +37,21 @@ export async function getNonExistentDocRefs(
 
   if (!forceDownload) return docsToDownload;
 
-  const { log } = out(`CQ getNonExistentDocRefs - patient ${patientId}`);
-  log(
-    `Force redownload is enabled for CX. There's currently ${docsToDownload.length} documents to download`
-  );
+  const { log } = out(`CQ getNonExistentDocRefs, cx: ${cxId}, pt: ${patientId}`);
+  log(`There's currently ${docsToDownload.length} documents to download`);
+
   const eligibleDocsForRedownload = existingDocRefs.filter(
     d => isMimeTypeXML(d.contentType ?? "") && isEligibleForRedownload(d.creation)
   );
-  log(`Found ${eligibleDocsForRedownload.length} XMLs that we're gonna redownload.`);
+  log(`Found ${eligibleDocsForRedownload.length} XMLs that we're gonna redownload`);
 
   const docsToDownloadWithRedownload = docsToDownload.concat(eligibleDocsForRedownload);
   const docsToDownloadUniq = uniqBy(docsToDownloadWithRedownload, d => d.metriportId);
-  log(`Including redownload, there's now ${docsToDownloadUniq.length} documents to download`);
+  log(
+    `Including redownload, there's now ${
+      docsToDownloadUniq.length
+    } documents to download: ${docsToDownloadUniq.map(d => d.metriportId).join(", ")}`
+  );
 
   return docsToDownloadUniq;
 }

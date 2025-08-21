@@ -56,6 +56,7 @@ import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
 import { capture } from "../../../util/notifications";
 import { uuidv7 } from "../../../util/uuid-v7";
+import { GroupedVitalsByDate } from "../command/write-back/grouped-vitals";
 import { createOrReplaceDocument } from "../document/command/create-or-replace-document";
 import { DocumentType } from "../document/document-shared";
 import {
@@ -508,14 +509,14 @@ class ElationApi {
     elationPracticeId,
     elationPhysicianId,
     patientId,
-    diagnostricReport,
+    diagnosticReport,
     observations,
   }: {
     cxId: string;
     elationPracticeId: string;
     elationPhysicianId: string;
     patientId: string;
-    diagnostricReport: DiagnosticReport;
+    diagnosticReport: DiagnosticReport;
     observations: Observation[];
   }): Promise<CreatedLab> {
     const { debug } = out(
@@ -526,19 +527,19 @@ class ElationApi {
       cxId,
       practiceId: this.practiceId,
       patientId,
-      diagnostricReportId: diagnostricReport.id,
+      diagnostricReportId: diagnosticReport.id,
     };
     const data = {
       patient: patientId,
       practice: elationPracticeId,
       physician: elationPhysicianId,
-      custom_title: this.getMostInformativeTitle(diagnostricReport.code),
-      ...this.formatLabPanel(diagnostricReport, observations, additionalInfo),
+      custom_title: this.getMostInformativeTitle(diagnosticReport.code),
+      ...this.formatLabPanel(diagnosticReport, observations, additionalInfo),
     };
     const lab = await this.makeRequest<CreatedLab>({
       cxId,
       patientId,
-      s3Path: this.createWriteBackPath("lab-panel", diagnostricReport.id),
+      s3Path: this.createWriteBackPath("lab-panel", diagnosticReport.id),
       method: "POST",
       url: reportsUrl,
       data,
@@ -599,13 +600,13 @@ class ElationApi {
     elationPracticeId,
     elationPhysicianId,
     patientId,
-    observations,
+    groupedVitals,
   }: {
     cxId: string;
     elationPracticeId: string;
     elationPhysicianId: string;
     patientId: string;
-    observations: Observation[];
+    groupedVitals: GroupedVitalsByDate;
   }): Promise<CreatedVital | undefined> {
     const { log, debug } = out(
       `Elation createGroupedVitals - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
@@ -616,57 +617,45 @@ class ElationApi {
       practiceId: this.practiceId,
       patientId,
     };
-    const groupedVitals: Record<string, ElationGroupedVital> = observations.reduce(
-      (acc, observation) => {
-        const newVital = this.formatGroupedVital(observation);
-        if (!newVital) return acc;
-        const chartDate = newVital.chartDate;
-        let existingVital = acc[chartDate];
-        if (!existingVital) {
-          acc[chartDate] = {
-            patient: patientId,
-            practice: elationPracticeId,
-            physician: elationPhysicianId,
-            chart_date: this.formatDateTime(chartDate),
-            document_date: this.formatDateTime(chartDate),
-            ...newVital.data,
-          } as ElationGroupedVital;
-        } else {
-          if (existingVital.bp && newVital.data.bp) {
-            const existingBp = existingVital.bp as { systolic?: string; diastolic?: string }[];
-            const newBp = newVital.data.bp as { systolic?: string; diastolic?: string }[];
-            existingVital.bp = [
-              {
-                ...existingBp[0],
-                ...newBp[0],
-              },
-            ];
-            acc[chartDate] = existingVital;
-          } else {
-            existingVital = {
-              ...existingVital,
-              ...newVital.data,
-            } as ElationGroupedVital;
-            acc[chartDate] = existingVital;
-          }
-        }
-        return acc;
-      },
-      {} as Record<string, ElationGroupedVital>
-    );
-
-    const mostRecentGroupedVitals = Object.values(groupedVitals).sort((a, b) => {
-      return new Date(b.chart_date).getTime() - new Date(a.chart_date).getTime();
-    })[0];
-
-    if (!mostRecentGroupedVitals) {
+    const [chartDate, observations] = groupedVitals;
+    const vitals = observations.flatMap(observation => {
+      const formattedVital = this.formatGroupedVital(observation);
+      if (!formattedVital) return [];
+      return formattedVital;
+    });
+    if (vitals.length < 1) {
       throw new BadRequestError("No grouped vitals data found", undefined, additionalInfo);
     }
+    const baseData = {
+      patient: patientId,
+      practice: elationPracticeId,
+      physician: elationPhysicianId,
+      chart_date: this.formatDateTime(chartDate.toISOString()),
+      document_date: this.formatDateTime(chartDate.toISOString()),
+    } as ElationGroupedVital;
+    const data = vitals.reduce((existingVital, newVital) => {
+      if (existingVital.bp && newVital.bp) {
+        const existingBp = existingVital.bp as { systolic?: string; diastolic?: string }[];
+        const newBp = newVital.bp as { systolic?: string; diastolic?: string }[];
+        existingVital.bp = [
+          {
+            ...existingBp[0],
+            ...newBp[0],
+          },
+        ];
+      } else {
+        existingVital = {
+          ...existingVital,
+          ...newVital,
+        } as ElationGroupedVital;
+      }
+      return existingVital;
+    }, baseData);
     try {
       const nonVisitNote = await this.createNonVisitNote({
         cxId,
         patientId,
-        date: mostRecentGroupedVitals.chart_date,
+        date: chartDate.toISOString(),
         note: "Vitals added via Metriport App",
       });
       const createdVital = await this.makeRequest<CreatedVital>({
@@ -676,7 +665,7 @@ class ElationApi {
         method: "POST",
         url: vitalsUrl,
         data: {
-          ...mostRecentGroupedVitals,
+          ...data,
           non_visit_note: nonVisitNote.id,
         },
         schema: createdVitalSchema,
@@ -684,7 +673,6 @@ class ElationApi {
         headers: { "Content-Type": "application/json" },
         debug,
       });
-
       return createdVital;
     } catch (error) {
       if (error instanceof BadRequestError || error instanceof NotFoundError) return;
@@ -1066,6 +1054,9 @@ class ElationApi {
     }
     const isAbnormal = interpretation === "abnormal";
     const text = observation.text?.div;
+    const normalizedText = (
+      text ? this.normalizeLabTitle(text) : this.normalizeLabTitle(loincCoding.display)
+    ).slice(0, maxNameCharacters);
     return {
       report_type: "Lab",
       document_date: formattedObservedDate,
@@ -1082,17 +1073,15 @@ class ElationApi {
             {
               status: formattedResultStatus,
               value: value.toString(),
-              text: text
-                ? this.normalizeLabTitle(text)
-                : this.normalizeLabTitle(loincCoding.display),
-              note: "Added via Metriport App",
-              reference_min: referenceRange.low?.toString(),
-              reference_max: referenceRange.high?.toString(),
+              text: "",
+              note: "",
+              reference_min: referenceRange.low?.toString() ?? "",
+              reference_max: referenceRange.high?.toString() ?? "",
               units: unit.slice(0, maxUnitsCharacters),
               is_abnormal: isAbnormal ? "1" : "0",
               abnormal_flag: this.mapInterpretationToAbnormalFlag(interpretation),
               test: {
-                name: loincCoding.display.slice(0, maxNameCharacters),
+                name: normalizedText,
                 code: loincCoding.code,
                 loinc: loincCoding.code,
               },
@@ -1151,11 +1140,11 @@ class ElationApi {
   }
 
   private formatLabPanel(
-    diagnostricReport: DiagnosticReport,
+    diagnosticReport: DiagnosticReport,
     observations: Observation[],
     additionalInfo: Record<string, string | undefined>
   ): ElationLab {
-    const reportDate = getDiagnosticReportDate(diagnostricReport);
+    const reportDate = getDiagnosticReportDate(diagnosticReport);
     const formattedReportDate = this.formatDateTime(reportDate);
     if (!formattedReportDate) {
       throw new BadRequestError(
@@ -1164,7 +1153,13 @@ class ElationApi {
         additionalInfo
       );
     }
-    const grids: ElationLab["grids"] = observations.flatMap(observation => {
+
+    const diagReportTitle = this.getMostInformativeTitle(diagnosticReport.code);
+    if (!diagReportTitle) {
+      throw new BadRequestError("No title found for diagnostic report", undefined, additionalInfo);
+    }
+
+    const observationResults = observations.flatMap(observation => {
       const loincCoding = getObservationLoincCoding(observation);
       if (!loincCoding) return [];
       if (!loincCoding.code) return [];
@@ -1177,7 +1172,7 @@ class ElationApi {
         return [];
       }
       const resultStatus = getObservationResultStatus(observation);
-      if (!resultStatus) {
+      if (!resultStatus || resultStatus.trim().toLowerCase() != "final") {
         return [];
       }
       const formattedResultStatus = resultStatus.toUpperCase();
@@ -1195,39 +1190,51 @@ class ElationApi {
       }
       const isAbnormal = interpretation === "abnormal";
       const text = observation.text?.div;
+      const normalizedText = (
+        text ? this.normalizeLabTitle(text) : this.normalizeLabTitle(loincCoding.display)
+      ).slice(0, maxNameCharacters);
+
       return {
-        accession_number: uuidv7(),
-        resulted_date: formattedObservedDate,
-        collected_date: formattedObservedDate,
         status: formattedResultStatus,
-        note: "Added via Metriport App",
-        results: [
-          {
-            status: formattedResultStatus,
-            value: value.toString(),
-            text: text ? this.normalizeLabTitle(text) : this.normalizeLabTitle(loincCoding.display),
-            note: "Added via Metriport App",
-            reference_min: referenceRange.low?.toString(),
-            reference_max: referenceRange.high?.toString(),
-            units: unit.slice(0, maxUnitsCharacters),
-            is_abnormal: isAbnormal ? "1" : "0",
-            abnormal_flag: this.mapInterpretationToAbnormalFlag(interpretation),
-            test: {
-              name: loincCoding.display.slice(0, maxNameCharacters),
-              code: loincCoding.code,
-              loinc: loincCoding.code,
-            },
-            test_category: {
-              value: loincCoding.display.slice(0, maxNameCharacters),
-              description: loincCoding.display.slice(0, maxNameCharacters),
-            },
-          },
-        ],
+        value: value.toString(),
+        text: "",
+        note: "",
+        reference_min: referenceRange.low?.toString() ?? "",
+        reference_max: referenceRange.high?.toString() ?? "",
+        units: unit.slice(0, maxUnitsCharacters),
+        is_abnormal: isAbnormal ? "1" : "0",
+        abnormal_flag: this.mapInterpretationToAbnormalFlag(interpretation),
+        test: {
+          name: normalizedText,
+          code: loincCoding.code,
+          loinc: loincCoding.code,
+        },
+        test_category: {
+          value: formattedReportDate,
+          description: diagReportTitle,
+        },
       };
     });
-    if (grids.length < 1) {
-      throw new BadRequestError("No grids found for diagnostic report", undefined, additionalInfo);
+
+    if (observationResults.length < 1) {
+      throw new BadRequestError(
+        "No valid observations found for lab panel",
+        undefined,
+        additionalInfo
+      );
     }
+
+    const grids: ElationLab["grids"] = [
+      {
+        accession_number: uuidv7(),
+        resulted_date: formattedReportDate,
+        collected_date: formattedReportDate,
+        status: "FINAL",
+        note: "Added via Metriport App",
+        results: observationResults,
+      },
+    ];
+
     return {
       report_type: "Lab",
       document_date: formattedReportDate,
@@ -1237,12 +1244,7 @@ class ElationApi {
     };
   }
 
-  private formatGroupedVital(observation: Observation):
-    | {
-        chartDate: string;
-        data: ElationGroupedVitalData;
-      }
-    | undefined {
+  private formatGroupedVital(observation: Observation): ElationGroupedVitalData | undefined {
     const loincCode = getObservationLoincCode(observation);
     if (!loincCode || !vitalSignCodesMap.get(loincCode)) return undefined;
     const units = getObservationUnit(observation);
@@ -1254,50 +1256,37 @@ class ElationApi {
     if (!formattedChartDate) return undefined;
     const convertedCodeAndValue = convertCodeAndValue(loincCode, vitalSignCodesMap, value, units);
     if (!convertedCodeAndValue) return undefined;
-    const baseData = { chartDate: formattedChartDate };
     if (convertedCodeAndValue.codeKey === "bmi") {
       return {
-        ...baseData,
-        data: {
-          bmi: +formatNumberAsString(convertedCodeAndValue.value),
-        },
+        bmi: +formatNumberAsString(convertedCodeAndValue.value),
       };
     }
     if (convertedCodeAndValue.codeKey === "bp") {
       if (loincCode === bpDiastolicCode) {
         return {
-          ...baseData,
-          data: {
-            bp: [
-              {
-                diastolic: formatNumberAsString(convertedCodeAndValue.value),
-              },
-            ],
-          },
+          bp: [
+            {
+              diastolic: formatNumberAsString(convertedCodeAndValue.value),
+            },
+          ],
         };
       }
       if (loincCode === bpSystolicCode) {
         return {
-          ...baseData,
-          data: {
-            bp: [
-              {
-                systolic: formatNumberAsString(convertedCodeAndValue.value),
-              },
-            ],
-          },
+          bp: [
+            {
+              systolic: formatNumberAsString(convertedCodeAndValue.value),
+            },
+          ],
         };
       }
     }
     return {
-      ...baseData,
-      data: {
-        [convertedCodeAndValue.codeKey]: [
-          {
-            value: formatNumberAsString(convertedCodeAndValue.value),
-          },
-        ],
-      },
+      [convertedCodeAndValue.codeKey]: [
+        {
+          value: formatNumberAsString(convertedCodeAndValue.value),
+        },
+      ],
     };
   }
 

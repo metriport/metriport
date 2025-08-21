@@ -4,6 +4,37 @@ import { SurescriptsSftpClient } from "@metriport/core/external/surescripts/clie
 import { SftpActionDirect } from "@metriport/core/external/sftp/command/sftp-action/sftp-action-direct";
 import { SftpAction } from "@metriport/core/external/sftp/command/sftp-action/sftp-action";
 
+/**
+ * Test an SFTP connection to Surescripts. Will only work if it is being run from a server
+ * within the VPC corresponding to the environment you are testing (production or staging).
+ *
+ * Usage:
+ * npm run surescripts -- sftp connect
+ *
+ * You can list all files on the remote SFTP server with:
+ *
+ * npm run surescripts -- sftp list /path/to/directory
+ *
+ * You can read a file from the remote SFTP server with:
+ *
+ * npm run surescripts -- sftp read /path/to/file
+ *
+ * You can write a file to the remote SFTP server with:
+ *
+ * npm run surescripts -- sftp write /path/to/local/file /path/to/remote/file
+ *
+ * Note that you can also write with GZIP compression enabled using the `--compress` flag.
+ *
+ * You can sync a directory in the SFTP server to an S3 bucket if the associated S3 client has
+ * been initialized with `initializeS3Replica`.
+ * @see @metriport/core/external/sftp/replica.ts for more details.
+ *
+ * npm run surescripts -- sftp sync /path/to/remote/directory
+ *
+ * You can check if a file exists in the SFTP server with:
+ *
+ * npm run surescripts -- sftp exists /path/to/remote/file
+ */
 const sftpAction = new Command();
 
 async function executeSftpAction<A extends SftpAction>(action: A) {

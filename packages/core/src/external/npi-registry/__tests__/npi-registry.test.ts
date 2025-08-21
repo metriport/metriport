@@ -1,0 +1,115 @@
+import { USState } from "@metriport/shared/domain/address/state";
+import {
+  AdditionalInformationInternalFacility,
+  NpiRegistryFacility,
+} from "../../../domain/npi-facility";
+import { FacilityType, FacilityInternalDetails } from "../../../domain/facility";
+import { getFacilityByNpiOrFail, translateNpiFacilityToMetriportFacility } from "../npi-registry";
+import { toTitleCase } from "@metriport/shared/common/title-case";
+
+describe("Npi Registry Validation", () => {
+  const validFacility: NpiRegistryFacility = {
+    number: "1407380272",
+    addresses: [
+      {
+        country_code: "US",
+        address_1: "17020 AURORA AVE N UNIT C44",
+        city: "SHORELINE",
+        state: "WA",
+        postal_code: "981335352",
+        telephone_number: "425-354-7560",
+      },
+      {
+        country_code: "US",
+        address_1: "1959 NE PACIFIC ST",
+        city: "SEATTLE",
+        state: "WA",
+        postal_code: "981951802",
+        telephone_number: "206-543-2100",
+      },
+    ],
+  };
+
+  it("successfully returns valid facility", async () => {
+    const npi = "1407380272";
+    const npiFacility = await getFacilityByNpiOrFail(npi);
+
+    expect(npiFacility).toMatchObject({
+      number: validFacility.number,
+      addresses: validFacility.addresses,
+    });
+  });
+
+  it("successfully fails on invalid npi", async () => {
+    const tooShortNpi = "140738";
+    const tooLongNpi = "14073802722415";
+    const notValidLuhnNpi = "1000000000";
+    const nonExistentFacilityNpi = "2893252884";
+
+    const invalidMsg =
+      "NPI is invalid. Make sure the npi is exactly 10 digits and is valid under standard mod 10 Luhn algorithm.";
+
+    expect.assertions(4);
+
+    await expect(getFacilityByNpiOrFail(tooShortNpi)).rejects.toThrow(invalidMsg);
+
+    await expect(getFacilityByNpiOrFail(tooLongNpi)).rejects.toThrow(invalidMsg);
+
+    await expect(getFacilityByNpiOrFail(notValidLuhnNpi)).rejects.toThrow(invalidMsg);
+
+    await expect(getFacilityByNpiOrFail(nonExistentFacilityNpi)).rejects.toThrow(
+      `NPI Registry error. No facilities found.`
+    );
+  });
+
+  it("successfully translates npi registry facility to our internal create facility mapping", () => {
+    const validInternalNonObo: FacilityInternalDetails = {
+      city: "Shoreline",
+      state: USState.WA,
+      nameInMetriport: "Test Name",
+      npi: "1407380272",
+      cqType: FacilityType.initiatorAndResponder,
+      cwType: FacilityType.initiatorAndResponder,
+      addressLine1: toTitleCase("17020 AURORA AVE N UNIT C44"),
+      zip: "98133",
+      country: "USA",
+    };
+
+    const additionalInfoNonObo: AdditionalInformationInternalFacility = {
+      facilityName: "Test Name",
+      facilityType: "non-obo",
+    };
+
+    const internalNonObo = translateNpiFacilityToMetriportFacility(
+      validFacility,
+      additionalInfoNonObo
+    );
+
+    expect(validInternalNonObo).toEqual(internalNonObo);
+
+    const validInternalObo: FacilityInternalDetails = {
+      city: "Shoreline",
+      state: USState.WA,
+      nameInMetriport: "Test Name",
+      npi: "1407380272",
+      cqType: FacilityType.initiatorOnly,
+      cwType: FacilityType.initiatorOnly,
+      addressLine1: toTitleCase("17020 AURORA AVE N UNIT C44"),
+      zip: "98133",
+      country: "USA",
+      cqOboOid: "1.2.3.4.5.6.7.8.9",
+      cwOboOid: "1.2.3.4.5.6.7.8.9",
+    };
+
+    const additionalInfoObo: AdditionalInformationInternalFacility = {
+      facilityName: "Test Name",
+      facilityType: "obo",
+      cqOboOid: "1.2.3.4.5.6.7.8.9",
+      cwOboOid: "1.2.3.4.5.6.7.8.9",
+    };
+
+    const internalObo = translateNpiFacilityToMetriportFacility(validFacility, additionalInfoObo);
+
+    expect(validInternalObo).toEqual(internalObo);
+  });
+});

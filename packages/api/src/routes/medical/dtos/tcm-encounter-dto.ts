@@ -5,6 +5,7 @@ export type TcmEncounterDTO = Omit<TcmEncounterResult, "patientData"> & {
   patientDateOfBirth: string;
   patientPhoneNumbers: string[];
   patientStates: string[];
+  patientFacilityIds: string[];
 };
 
 export function dtoFromTcmEncounter(queryResult: TcmEncounterResult): TcmEncounterDTO {
@@ -18,5 +19,6 @@ export function dtoFromTcmEncounter(queryResult: TcmEncounterResult): TcmEncount
       patientData.contact?.flatMap(contact => (contact.phone ? [contact.phone] : [])) ?? [],
     patientStates:
       patientData.address?.flatMap(address => (address.state ? [address.state] : [])) ?? [],
+    patientFacilityIds: encounterData.patientFacilityIds ?? [],
   };
 }

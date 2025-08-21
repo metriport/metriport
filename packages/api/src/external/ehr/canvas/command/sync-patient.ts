@@ -4,13 +4,11 @@ import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { findOrCreatePatientMapping, getPatientMapping } from "../../../../command/mapping/patient";
 import { queryDocumentsAcrossHIEs } from "../../../../command/medical/document/document-query";
 import { getPatientOrFail } from "../../../../command/medical/patient/get-patient";
-import {
-  createMetriportPatientDemosFhir,
-  getOrCreateMetriportPatientFhir,
-} from "../../shared/utils/fhir";
+import { getPatientPrimaryFacilityIdOrFail } from "../../../../command/medical/patient/get-patient-facilities";
+import { getOrCreateMetriportPatientFhir } from "../../shared/command/patient/get-or-create-metriport-patient-fhir";
+import { createMetriportPatientDemosFhir } from "../../shared/utils/fhir";
 import { isDqCooldownExpired } from "../../shared/utils/patient";
 import { createCanvasClient } from "../shared";
-import { getPatientPrimaryFacilityIdOrFail } from "../../../../command/medical/patient/get-patient-facilities";
 
 export type SyncCanvasPatientIntoMetriportParams = {
   cxId: string;

@@ -4,7 +4,6 @@ dotenv.config();
 // keep that ^ on top
 import { Hl7Message } from "@medplum/core";
 import { convertHl7v2MessageToFhir } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/index";
-import { getOrCreateMessageDatetime } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/msh";
 import { getCxIdAndPatientIdOrFail } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
 import { getFileNames } from "@metriport/core/util/fs";
 import { errorToString } from "@metriport/shared";
@@ -55,7 +54,6 @@ async function convertAdtToFhir() {
 
     chunks.forEach((msg, index) => {
       const hl7Message = Hl7Message.parse(msg);
-      const timestamp = getOrCreateMessageDatetime(hl7Message);
 
       try {
         const { cxId, patientId } = getCxIdAndPatientIdOrFail(hl7Message);
@@ -63,7 +61,7 @@ async function convertAdtToFhir() {
           message: hl7Message,
           cxId,
           patientId,
-          timestampString: timestamp,
+          rawDataFileKey: fileName,
         });
 
         if (!fs.existsSync(outputFolder)) {

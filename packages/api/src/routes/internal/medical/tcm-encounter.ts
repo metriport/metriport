@@ -8,7 +8,7 @@ import { requestLogger } from "../../helpers/request-logger";
 import {
   tcmEncounterCreateSchema,
   tcmEncounterUpsertSchema,
-} from "../../medical/schemas/tcm-encounter";
+} from "@metriport/shared/domain/tcm-encounter";
 import { asyncHandler } from "../../util";
 
 const router = Router();

@@ -1,35 +1,36 @@
 import { Patient } from "@metriport/core/domain/patient";
-import { out } from "@metriport/core/util/log";
-import { MedicalDataSource } from "@metriport/core/external/index";
-import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { OutboundPatientDiscoveryRespParam } from "@metriport/core/external/carequality/ihe-gateway/outbound-result-poller-direct";
+import { MedicalDataSource } from "@metriport/core/external/index";
+import { processAsyncError } from "@metriport/core/util/error/shared";
+import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { OutboundPatientDiscoveryResp } from "@metriport/ihe-gateway-sdk";
+import { MetriportError } from "@metriport/shared";
+import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { errorToString } from "@metriport/shared/common/error";
-import { processAsyncError } from "@metriport/core/util/error/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import { createOrUpdateCQPatientData } from "./command/cq-patient-data/create-cq-data";
-import { updateCQPatientData } from "./command/cq-patient-data/update-cq-data";
-import { CQLink } from "./cq-patient-data";
-import { updatePatientDiscoveryStatus } from "./command/update-patient-discovery-status";
+import { createOrUpdateInvalidLinks } from "../../command/medical/invalid-links/create-invalid-links";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { getNewDemographics } from "../../domain/medical/patient-demographics";
-import { getDocumentsFromCQ } from "./document/query-documents";
-import { setDocQueryProgress } from "../hie/set-doc-query-progress";
-import { resetScheduledPatientDiscovery } from "../hie/reset-scheduled-patient-discovery-request";
-import { updatePatientLinkDemographics } from "../hie/update-patient-link-demographics";
+import { getOutboundPatientDiscoverySuccessFailureCount } from "../hie/carequality-analytics";
 import { checkLinkDemographicsAcrossHies } from "../hie/check-patient-link-demographics";
 import { resetPatientScheduledDocQueryRequestId } from "../hie/reset-scheduled-doc-query-request-id";
-import { getCQData, discover } from "./patient";
+import { resetScheduledPatientDiscovery } from "../hie/reset-scheduled-patient-discovery-request";
+import { setDocQueryProgress } from "../hie/set-doc-query-progress";
+import { updatePatientLinkDemographics } from "../hie/update-patient-link-demographics";
+import { validateCqLinksBelongToPatient } from "../hie/validate-patient-links";
+import { createOrUpdateCQPatientData } from "./command/cq-patient-data/create-cq-data";
+import { updateCQPatientData } from "./command/cq-patient-data/update-cq-data";
+import { updatePatientDiscoveryStatus } from "./command/update-patient-discovery-status";
+import { CQLink } from "./cq-patient-data";
+import { getDocumentsFromCQ } from "./document/query-documents";
+import { discover, getCQData } from "./patient";
 import {
   getPatientResources,
   patientResourceToNormalizedLinkDemographics,
 } from "./patient-demographics";
-import { getOutboundPatientDiscoverySuccessFailureCount } from "../hie/carequality-analytics";
-import { validateCqLinksBelongToPatient } from "../hie/validate-patient-links";
-import { createOrUpdateInvalidLinks } from "../../command/medical/invalid-links/create-invalid-links";
 
 dayjs.extend(duration);
 
@@ -49,19 +50,6 @@ export async function processOutboundPatientDiscoveryResps({
 
   try {
     const patient = await getPatientOrFail({ id: patientId, cxId });
-    // ANALYTICS BUG This prevents analytics from firing for valid cases of no results
-    // TODO Internal 1848 (fix)
-    if (results.length === 0) {
-      log(`No patient discovery results found.`);
-      const startedNewPd = await runNexPdIfScheduled({
-        patient,
-        requestId,
-      });
-      if (startedNewPd) return;
-      await updatePatientDiscoveryStatus({ patient: patientIds, status: "completed" });
-      await queryDocsIfScheduled({ patientIds });
-    }
-
     log(`Starting to handle patient discovery results`);
     const { validNetworkLinks, invalidLinks } = await validateAndCreateCqLinks(patient, results);
 
@@ -69,7 +57,10 @@ export async function processOutboundPatientDiscoveryResps({
     if (!discoveryParams) {
       const msg = `Failed to find discovery params @ CQ`;
       log(`${msg}. Patient ID: ${patient.id}.`);
-      throw new Error(msg);
+      throw new MetriportError(msg, undefined, {
+        requestId,
+        patientId: patient.id,
+      });
     }
 
     if (discoveryParams.rerunPdOnNewDemographics) {

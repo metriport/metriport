@@ -1,12 +1,13 @@
 import {
-  ConversionType,
   Input as ConvertDocInput,
   Output as ConvertDocOutput,
+  ConversionType,
   validConversionTypes,
 } from "@metriport/core/domain/conversion/cda-to-html-pdf";
 import { getLambdaResultPayload, makeLambdaClient } from "@metriport/core/external/aws/lambda";
 import { S3Utils } from "@metriport/core/external/aws/s3";
-import { BadRequestError, NotFoundError } from "@metriport/shared";
+import { Config as CoreConfig } from "@metriport/core/util/config";
+import { BadRequestError, MetriportError, NotFoundError } from "@metriport/shared";
 import { makeS3Client } from "../../../external/aws/s3";
 import { Config } from "../../../shared/config";
 
@@ -16,13 +17,31 @@ const s3Utils = new S3Utils(Config.getAWSRegion());
 const lambdaClient = makeLambdaClient(Config.getAWSRegion());
 const conversionLambdaName = Config.getConvertDocLambdaName();
 
-export const downloadDocument = async ({
+const hl7DocumentDownloadPrefix = "location_hl7/";
+
+export async function getDocumentDownloadUrl({
   fileName,
   conversionType,
 }: {
   fileName: string;
   conversionType?: ConversionType;
-}): Promise<string> => {
+}): Promise<string> {
+  if (fileName.startsWith(hl7DocumentDownloadPrefix)) {
+    return await getRawHl7MessageSignedUrl({
+      fileName: fileName.replace(hl7DocumentDownloadPrefix, ""),
+    });
+  }
+
+  return getMedicalDocumentsDownloadUrl({ fileName, conversionType });
+}
+
+export async function getMedicalDocumentsDownloadUrl({
+  fileName,
+  conversionType,
+}: {
+  fileName: string;
+  conversionType?: ConversionType;
+}): Promise<string> {
   const { exists, contentType, bucketName } = await doesObjExist({ fileName });
 
   if (!exists) throw new NotFoundError("File does not exist");
@@ -35,14 +54,15 @@ export const downloadDocument = async ({
   if (conversionType && validConversionTypes.includes(conversionType) && bucketName) {
     return getConversionUrl({ fileName, conversionType, bucketName });
   }
-  return getSignedURL({ fileName, bucketName });
-};
 
-const getConversionUrl = async ({
+  return getSignedURL({ fileName, bucketName });
+}
+
+async function getConversionUrl({
   fileName,
   conversionType,
   bucketName,
-}: ConvertDocInput): Promise<string> => {
+}: ConvertDocInput): Promise<string> {
   const convertedFileName = fileName.concat(`.${conversionType}`);
   const { exists, bucketName: bucketContainingObj } = await doesObjExist({
     fileName: convertedFileName,
@@ -50,9 +70,10 @@ const getConversionUrl = async ({
 
   if (exists) return getSignedURL({ fileName: convertedFileName, bucketName: bucketContainingObj });
   else return convertDoc({ fileName, conversionType, bucketName });
-};
+}
 
-export const convertDoc = async ({
+// eslint-disable-next-line @metriport/eslint-rules/no-named-arrow-functions
+const convertDoc = async ({
   fileName,
   conversionType,
   bucketName,
@@ -72,14 +93,14 @@ export const convertDoc = async ({
 };
 
 /** @deprecated Use S3Utils.getFileInfoFromS3 */
-const doesObjExist = async ({
+async function doesObjExist({
   fileName,
 }: {
   fileName: string;
 }): Promise<
   | { exists: true; contentType: string; bucketName?: string }
   | { exists: false; contentType?: never; bucketName?: never }
-> => {
+> {
   if (Config.isSandbox()) {
     try {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -120,7 +141,7 @@ const doesObjExist = async ({
   } catch (error) {
     return { exists: false };
   }
-};
+}
 
 export async function getSignedURL({
   fileName,
@@ -137,4 +158,24 @@ export async function getSignedURL({
       : Config.getMedicalDocumentsBucketName());
 
   return s3Utils.getSignedUrl({ bucketName: bucket, fileName });
+}
+
+/**
+ * Gets the download URL for the raw hl7 message.
+ * @param fileName - the name of the file in the bucket
+ * @returns the download URL for the raw hl7 message
+ */
+export async function getRawHl7MessageSignedUrl({
+  fileName,
+}: {
+  fileName: string;
+}): Promise<string> {
+  if (Config.isSandbox()) {
+    throw new MetriportError("Viewing hl7 messages is not supported in sandbox");
+  }
+
+  return s3Utils.getSignedUrl({
+    bucketName: CoreConfig.getHl7IncomingMessageBucketName(),
+    fileName,
+  });
 }

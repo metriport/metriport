@@ -74,6 +74,8 @@ interface LambdasNestedStackProps extends NestedStackProps {
   dbCluster: rds.IDatabaseCluster;
   medicalDocumentsBucket: s3.Bucket;
   pharmacyBundleBucket: s3.Bucket | undefined;
+  labBundleBucket: s3.Bucket | undefined;
+  hl7ConversionBucket: s3.Bucket | undefined;
   sandboxSeedDataBucket: s3.IBucket | undefined;
   alarmAction?: SnsAction;
   featureFlagsTable: dynamodb.Table;
@@ -88,7 +90,9 @@ type GenericConsolidatedLambdaProps = {
   vpc: ec2.IVpc;
   bundleBucket: s3.IBucket;
   pharmacyBundleBucket: s3.IBucket | undefined;
+  labBundleBucket: s3.IBucket | undefined;
   conversionsBucket: s3.IBucket;
+  hl7ConversionBucket: s3.IBucket | undefined;
   envType: EnvType;
   fhirServerUrl: string;
   sentryDsn: string | undefined;
@@ -228,6 +232,8 @@ export class LambdasNestedStack extends NestedStack {
       bundleBucket: props.medicalDocumentsBucket,
       conversionsBucket: this.fhirConverterConnector.bucket,
       pharmacyBundleBucket: props.pharmacyBundleBucket,
+      labBundleBucket: props.labBundleBucket,
+      hl7ConversionBucket: props.hl7ConversionBucket,
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: props.alarmAction,
@@ -242,6 +248,8 @@ export class LambdasNestedStack extends NestedStack {
       bundleBucket: props.medicalDocumentsBucket,
       conversionsBucket: this.fhirConverterConnector.bucket,
       pharmacyBundleBucket: props.pharmacyBundleBucket,
+      labBundleBucket: props.labBundleBucket,
+      hl7ConversionBucket: props.hl7ConversionBucket,
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: props.alarmAction,
@@ -704,6 +712,8 @@ export class LambdasNestedStack extends NestedStack {
     bundleBucket,
     conversionsBucket,
     pharmacyBundleBucket,
+    hl7ConversionBucket,
+    labBundleBucket,
     sentryDsn,
     envType,
     alarmAction,
@@ -728,6 +738,12 @@ export class LambdasNestedStack extends NestedStack {
         ...(pharmacyBundleBucket && {
           PHARMACY_CONVERSION_BUCKET_NAME: pharmacyBundleBucket.bucketName,
         }),
+        ...(labBundleBucket && {
+          LAB_CONVERSION_BUCKET_NAME: labBundleBucket.bucketName,
+        }),
+        ...(hl7ConversionBucket && {
+          HL7_CONVERSION_BUCKET_NAME: hl7ConversionBucket.bucketName,
+        }),
         FEATURE_FLAGS_TABLE_NAME: featureFlagsTable.tableName,
         ...(bedrock && {
           // API_URL set on the api-stack after the OSS API is created
@@ -750,6 +766,8 @@ export class LambdasNestedStack extends NestedStack {
     bundleBucket.grantReadWrite(theLambda);
     conversionsBucket.grantRead(theLambda);
     pharmacyBundleBucket?.grantRead(theLambda);
+    labBundleBucket?.grantRead(theLambda);
+    hl7ConversionBucket?.grantRead(theLambda);
 
     featureFlagsTable.grantReadData(theLambda);
 

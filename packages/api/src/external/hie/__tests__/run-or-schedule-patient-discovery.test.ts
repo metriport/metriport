@@ -2,8 +2,8 @@
 import { makePatient } from "@metriport/core/domain/__tests__/patient";
 import * as cqRunSchedule from "../../../external/carequality/command/run-or-schedule-patient-discovery";
 import * as cqPatient from "../../../external/carequality/patient";
-import * as cwRunOrSchedule from "../../../external/commonwell/command/run-or-schedule-patient-discovery";
-import * as cwPatient from "../../../external/commonwell/patient";
+import * as cwRunOrSchedule from "../../../external/commonwell-v1/command/run-or-schedule-patient-discovery";
+import * as cwPatient from "../../../external/commonwell-v1/patient";
 import { PatientModel } from "../../../models/medical/patient";
 import { PatientMappingModel } from "../../../models/patient-mapping";
 import { mockStartTransaction } from "../../../models/__tests__/transaction";

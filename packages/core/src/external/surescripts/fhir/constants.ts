@@ -1,6 +1,8 @@
 export const NPI_URL = "http://hl7.org/fhir/sid/us-npi";
 export const DEA_SCHEDULE_URL = "http://hl7.org/fhir/sid/us-dea";
 export const UNIT_OF_MEASURE_URL = "http://unitsofmeasure.org";
+export const RELATED_ARTIFACT_URL =
+  "http://hl7.org/fhir/StructureDefinition/artifact-relatedArtifact";
 
 export const SOURCE_OF_PAYMENT_TYPOLOGY_SYSTEM = "urn:oid:2.16.840.1.113883.3.221.5";
 
@@ -16,3 +18,11 @@ export const DEA_SCHEDULE_SYSTEM =
 export const US_LICENSE_SYSTEM = "https://public.metriport.com/fhir/sid/us-license";
 export const MEDICATION_DISPENSE_FILL_NUMBER_EXTENSION =
   "http://hl7.org/fhir/StructureDefinition/medicationdispense-fillNumber";
+
+export const CONDITION_CLINICAL_STATUS_URL =
+  "http://terminology.hl7.org/CodeSystem/condition-clinical";
+export const CONDITION_VERIFICATION_STATUS_URL =
+  "http://terminology.hl7.org/CodeSystem/condition-ver-status";
+export const HL7_CODE_SYSTEM_URL = "http://terminology.hl7.org/CodeSystem/v2-0203";
+export const MEDICATION_REQUEST_CATEGORY_URL =
+  "http://terminology.hl7.org/CodeSystem/medicationrequest-category";

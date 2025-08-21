@@ -1,8 +1,8 @@
-import { PaginatedResponse } from "@metriport/shared";
+import { createQueryMetaSchema, PaginatedResponse } from "@metriport/shared";
 import { Request, Response } from "express";
-import { z } from "zod";
 import Router from "express-promise-router";
 import status from "http-status";
+import { z } from "zod";
 
 import { Pagination } from "../../command/pagination";
 import {
@@ -10,7 +10,7 @@ import {
   getHieDirectoryEntriesByFilterCount,
 } from "../../external/hie/command/get-hie-directory-entries";
 import { requestLogger } from "../helpers/request-logger";
-import { paginated, queryMetaSchema } from "../pagination";
+import { paginated } from "../pagination";
 import { asyncHandler } from "../util";
 import { dtoFromHieDirectoryEntry, NetworkEntryDTO } from "./dtos/network-entry-dto";
 
@@ -18,7 +18,7 @@ export const networkEntryGetSchema = z
   .object({
     filter: z.string().optional(),
   })
-  .and(queryMetaSchema);
+  .and(createQueryMetaSchema());
 
 const router = Router();
 

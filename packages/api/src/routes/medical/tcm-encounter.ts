@@ -11,7 +11,10 @@ import { paginated } from "../pagination";
 import { validateUUID } from "../schemas/uuid";
 import { asyncHandler, getCxIdOrFail, getFromParamsOrFail } from "../util";
 import { dtoFromTcmEncounter } from "./dtos/tcm-encounter-dto";
-import { tcmEncounterListQuerySchema, tcmEncounterUpdateSchema } from "./schemas/tcm-encounter";
+import {
+  tcmEncounterListQuerySchema,
+  tcmEncounterUpdateSchema,
+} from "@metriport/shared/domain/tcm-encounter";
 
 const router = Router();
 
@@ -55,21 +58,34 @@ router.get(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
-    const query = tcmEncounterListQuerySchema.parse(req.query);
+    const { after, ...query } = tcmEncounterListQuerySchema.parse(req.query);
+    const additionalQueryParams = {
+      ...(query.facilityId ? { facilityId: query.facilityId } : {}),
+      ...(query.daysLookback ? { daysLookback: query.daysLookback } : {}),
+      ...(query.eventType ? { eventType: query.eventType } : {}),
+      ...(query.coding ? { coding: query.coding } : {}),
+      ...(query.status ? { status: query.status } : {}),
+    };
 
     const result = await paginated({
       request: req,
-      additionalQueryParams: undefined,
+      additionalQueryParams,
       getItems: async pagination => {
         return await getTcmEncounters({
           cxId,
-          after: query.after,
+          after,
+          ...additionalQueryParams,
           pagination,
         });
       },
       getTotalCount: async () => {
-        return await getTcmEncountersCount({ cxId, after: query.after });
+        return await getTcmEncountersCount({
+          cxId,
+          after,
+          ...additionalQueryParams,
+        });
       },
+      maxItemsPerPage: 2500,
     });
 
     return res.status(httpStatus.OK).json({

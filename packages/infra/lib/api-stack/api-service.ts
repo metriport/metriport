@@ -36,6 +36,7 @@ import { provideAccessToQueue } from "../shared/sqs";
 import { addDefaultMetricsToTargetGroup } from "../shared/target-group";
 import { isProd, isSandbox } from "../shared/util";
 import { SurescriptsAssets } from "../surescripts/types";
+import { QuestAssets } from "../quest/types";
 import { AnalyticsPlatformsAssets } from "../analytics-platform/types";
 import { createHieConfigDictionary } from "../shared/hie-config-dictionary";
 
@@ -122,6 +123,7 @@ export function createAPIService({
   ehrGetAppointmentsLambda,
   ehrBundleBucket,
   generalBucket,
+  incomingHl7NotificationBucket,
   conversionBucket,
   medicalDocumentsUploadBucket,
   ehrResponsesBucket,
@@ -139,6 +141,7 @@ export function createAPIService({
   featureFlagsTable,
   cookieStore,
   surescriptsAssets,
+  questAssets,
   jobAssets,
   analyticsPlatformAssets,
 }: {
@@ -172,6 +175,7 @@ export function createAPIService({
   ehrGetAppointmentsLambda: ILambda;
   ehrBundleBucket: s3.IBucket;
   generalBucket: s3.IBucket;
+  incomingHl7NotificationBucket: s3.IBucket | undefined;
   conversionBucket: s3.IBucket;
   medicalDocumentsUploadBucket: s3.IBucket;
   ehrResponsesBucket: s3.IBucket | undefined;
@@ -189,6 +193,7 @@ export function createAPIService({
   featureFlagsTable: dynamodb.Table;
   cookieStore: secret.ISecret | undefined;
   surescriptsAssets: SurescriptsAssets | undefined;
+  questAssets: QuestAssets | undefined;
   jobAssets: JobsAssets;
   analyticsPlatformAssets: AnalyticsPlatformsAssets | undefined;
 }): {
@@ -280,6 +285,9 @@ export function createAPIService({
           ...(props.config.sentryDSN ? { SENTRY_DSN: props.config.sentryDSN } : undefined),
           ...(props.config.usageReportUrl && {
             USAGE_URL: props.config.usageReportUrl,
+          }),
+          ...(incomingHl7NotificationBucket && {
+            HL7_INCOMING_MESSAGE_BUCKET_NAME: incomingHl7NotificationBucket.bucketName,
           }),
           CONVERSION_RESULT_BUCKET_NAME: conversionBucket.bucketName,
           ...(props.config.medicalDocumentsBucketName && {
@@ -400,6 +408,16 @@ export function createAPIService({
               ])
             ),
           }),
+          ...(questAssets && {
+            LAB_CONVERSION_BUCKET_NAME: questAssets.labConversionBucket.bucketName,
+            QUEST_REPLICA_BUCKET_NAME: questAssets.questReplicaBucket.bucketName,
+            ...Object.fromEntries(
+              questAssets.questLambdas.map(({ envVarName, lambda }) => [
+                envVarName,
+                lambda.functionName,
+              ])
+            ),
+          }),
           RUN_PATIENT_JOB_QUEUE_URL: jobAssets.runPatientJobQueue.queueUrl,
           ...(props.config.hl7Notification?.dischargeNotificationSlackUrl && {
             DISCHARGE_NOTIFICATION_SLACK_URL:
@@ -509,6 +527,8 @@ export function createAPIService({
   medicalDocumentsUploadBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   ehrBundleBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
 
+  incomingHl7NotificationBucket?.grantRead(fargateService.taskDefinition.taskRole);
+
   if (surescriptsAssets) {
     surescriptsAssets.pharmacyConversionBucket.grantReadWrite(
       fargateService.taskDefinition.taskRole
@@ -516,6 +536,10 @@ export function createAPIService({
     surescriptsAssets.surescriptsReplicaBucket.grantReadWrite(
       fargateService.taskDefinition.taskRole
     );
+  }
+  if (questAssets) {
+    questAssets.labConversionBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
+    questAssets.questReplicaBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   }
 
   if (ehrResponsesBucket) {

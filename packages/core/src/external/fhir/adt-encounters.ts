@@ -1,12 +1,26 @@
-import { Bundle, Resource } from "@medplum/fhirtypes";
+import { Bundle, BundleEntry, Resource } from "@medplum/fhirtypes";
 import { MetriportError } from "@metriport/shared";
+import _, { compact } from "lodash";
 import { out } from "../../util";
 import { Config } from "../../util/config";
 import { HL7_FILE_EXTENSION, JSON_FILE_EXTENSION } from "../../util/mime";
 import { S3Utils } from "../aws/s3";
-import { mergeBundles } from "./bundle/utils";
+import { dedupeAdtEncounters, mergeBundles } from "./bundle/utils";
+import { validateFhirEntries } from "./validation/json-validator";
 
 const s3Utils = new S3Utils(Config.getAWSRegion());
+
+export function createCxIdPtIdPrefix({ cxId, patientId }: { cxId: string; patientId: string }) {
+  return `cxId=${cxId}/ptId=${patientId}`;
+}
+
+export function getEncounterIdFromFileKey(key: string) {
+  const encounterId = key.split("/")[3];
+  if (!encounterId) {
+    throw new MetriportError("Encounter ID not found in file key", undefined, { key });
+  }
+  return encounterId;
+}
 
 export function createPrefixAdtEncounter({
   cxId,
@@ -17,7 +31,7 @@ export function createPrefixAdtEncounter({
   patientId: string;
   encounterId: string;
 }) {
-  return `cxId=${cxId}/ptId=${patientId}/ADT/${encounterId}`;
+  return `${createCxIdPtIdPrefix({ cxId, patientId })}/ADT/${encounterId}`;
 }
 
 /**
@@ -91,7 +105,6 @@ export function createFileKeyAdtConversion({
  * @param triggerEvent Trigger event
  * @param bundle The FHIR bundle
  * @param s3Utils S3 utils
- * @returns The encounter data as a parsed JSON object
  */
 export async function saveAdtConversionBundle({
   cxId,
@@ -119,6 +132,12 @@ export async function saveAdtConversionBundle({
     `saveAdtConversionBundle - cx: ${cxId}, pt: ${patientId}, enc: ${encounterId}`
   );
   const s3BucketName = Config.getHl7ConversionBucketName();
+  if (!s3BucketName) {
+    log(
+      `ADTs are not supported in this environment, no HL7 conversion bucket name found, skipping`
+    );
+    return;
+  }
 
   const newMessageBundleFileKey = createFileKeyAdtConversion({
     cxId,
@@ -133,13 +152,11 @@ export async function saveAdtConversionBundle({
   log(
     `Uploading conversion result to S3 bucket: ${s3BucketName}. Filepath: ${newMessageBundleFileKey}`
   );
-  const result = await s3Utils.uploadFile({
+  await s3Utils.uploadFile({
     bucket: s3BucketName,
     key: newMessageBundleFileKey,
     file: Buffer.from(JSON.stringify(bundle)),
   });
-
-  return result;
 }
 
 /**
@@ -163,6 +180,12 @@ export async function getAdtSourcedEncounter({
     `getAdtSourcedEncounter - cx: ${cxId}, pt: ${patientId}, enc: ${encounterId}`
   );
   const s3BucketName = Config.getHl7ConversionBucketName();
+  if (!s3BucketName) {
+    log(
+      `ADTs are not supported in this environment, no HL7 conversion bucket name found, skipping`
+    );
+    return undefined;
+  }
 
   const fileKey = createFileKeyAdtSourcedEncounter({
     cxId,
@@ -183,6 +206,70 @@ export async function getAdtSourcedEncounter({
   log(`Found ADT encounter in S3 bucket: ${s3BucketName} at key: ${fileKey}`);
 
   return JSON.parse(fileData.toString());
+}
+
+/**
+ * Retrieves all ADT-sourced resources for a patient. In staging this will always return an empty array.
+ *
+ * @param cxId Customer ID
+ * @param patientId Patient ID
+ * @returns All resources originated from ADTs for this patient
+ */
+export async function getAllAdtSourcedResources({
+  cxId,
+  patientId,
+}: {
+  cxId: string;
+  patientId: string;
+}): Promise<BundleEntry[]> {
+  const encounterBundles = await getAllAdtSourcedEncounters({ cxId, patientId });
+  return encounterBundles.flatMap(bundle => bundle.entry ?? []);
+}
+
+/**
+ * Retrieves all ADT-sourced encounters for a patient
+ *
+ * @param cxId Customer ID
+ * @param patientId Patient ID
+ * @returns The encounter data as a parsed JSON object
+ */
+export async function getAllAdtSourcedEncounters({
+  cxId,
+  patientId,
+}: {
+  cxId: string;
+  patientId: string;
+}): Promise<Bundle<Resource>[]> {
+  const { log } = out(`getAllAdtSourcedEncounters - cx: ${cxId}, pt: ${patientId}`);
+  const s3BucketName = Config.getHl7ConversionBucketName();
+  if (!s3BucketName) {
+    log(
+      `ADTs are not supported in this environment, no HL7 conversion bucket name found, skipping`
+    );
+    return [];
+  }
+
+  function getEncounter(encounterId: string) {
+    return getAdtSourcedEncounter({ cxId, patientId, encounterId });
+  }
+
+  const encounters = await s3Utils.listObjects(
+    s3BucketName,
+    createCxIdPtIdPrefix({ cxId, patientId })
+  );
+
+  const encounterBundles = await Promise.all(
+    _(encounters)
+      .map(encounter => encounter.Key)
+      .compact()
+      .map(getEncounterIdFromFileKey)
+      .uniq()
+      .value()
+      .map(getEncounter)
+  );
+  log(`Found ${compact(encounterBundles).length} encounters`);
+
+  return compact(encounterBundles);
 }
 
 /**
@@ -214,12 +301,11 @@ export async function mergeBundleIntoAdtSourcedEncounter({
 
   const currentEncounter = !existingEncounterData
     ? newEncounterData
-    : mergeBundles({
+    : mergeAdtBundles({
         cxId,
         patientId,
         existing: existingEncounterData,
         current: newEncounterData,
-        bundleType: "collection",
       });
 
   return await putAdtSourcedEncounter({
@@ -228,6 +314,22 @@ export async function mergeBundleIntoAdtSourcedEncounter({
     encounterId,
     bundle: currentEncounter,
   });
+}
+
+export function mergeAdtBundles(params: {
+  cxId: string;
+  patientId: string;
+  existing: Bundle<Resource>;
+  current: Bundle<Resource>;
+}): Bundle<Resource> {
+  const mergedBundle = mergeBundles({
+    ...params,
+    bundleType: "collection",
+  });
+
+  const dedupedBundle = dedupeAdtEncounters(mergedBundle);
+  validateFhirEntries(dedupedBundle);
+  return dedupedBundle;
 }
 
 export async function putAdtSourcedEncounter({
@@ -249,6 +351,15 @@ export async function putAdtSourcedEncounter({
     `putAdtSourcedEncounter - cx: ${cxId}, pt: ${patientId}, enc: ${encounterId}`
   );
   const s3BucketName = Config.getHl7ConversionBucketName();
+  if (!s3BucketName) {
+    throw new MetriportError(
+      "ADTs are not supported in this environment, no HL7 conversion bucket name found",
+      undefined,
+      {
+        cxId,
+      }
+    );
+  }
 
   const fileKey = createFileKeyAdtSourcedEncounter({
     cxId,

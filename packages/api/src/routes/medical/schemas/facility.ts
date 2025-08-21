@@ -1,4 +1,4 @@
-import { validateNPI } from "@metriport/commonwell-sdk";
+import { validateNPI } from "@metriport/commonwell-sdk-v1";
 import { defaultOptionalStringSchema } from "@metriport/shared";
 import { z } from "zod";
 import { FacilityType } from "../../../domain/medical/facility";
@@ -17,6 +17,9 @@ export const facilityCreateSchema = z.object({
 
 export const facilityUpdateSchema = facilityCreateSchema;
 
+/**
+ * @deprecated use @metriport/core/src/domain/facility instead
+ */
 export const facilityInternalDetailsSchema = z
   .object({
     id: z.string().optional(),

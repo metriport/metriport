@@ -2,7 +2,7 @@ import { Patient } from "@metriport/core/domain/patient";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { discover } from "../carequality/patient";
-import { create } from "../commonwell/patient";
+import { create } from "../commonwell-v1/patient";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 
 export async function runInitialPatientDiscoveryAcrossHies({

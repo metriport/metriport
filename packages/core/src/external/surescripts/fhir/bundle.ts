@@ -1,14 +1,12 @@
 import { Bundle, Medication } from "@medplum/fhirtypes";
+import { NDC_URL } from "@metriport/shared/medical";
 import { buildBundle } from "../../fhir/bundle/bundle";
 import { ResponseDetail } from "../schema/response";
 import { IncomingData } from "../schema/shared";
-import { initializeContext } from "./shared";
 import { getAllBundleEntries } from "./bundle-entry";
-
 import { dangerouslyDeduplicateFhir } from "../../../fhir-deduplication/deduplicate-fhir";
 import { hydrateFhir } from "../../fhir/hydration/hydrate-fhir";
 import { crosswalkNdcToRxNorm } from "../../term-server";
-import { NDC_URL } from "../../../util/constants";
 
 export async function convertIncomingDataToFhirBundle(
   cxId: string,
@@ -16,9 +14,8 @@ export async function convertIncomingDataToFhirBundle(
   details: IncomingData<ResponseDetail>[]
 ): Promise<Bundle> {
   const bundle = buildBundle({ type: "collection", entries: [] });
-  const context = initializeContext(patientId);
   for (const detail of details) {
-    const entries = getAllBundleEntries(context, detail);
+    const entries = getAllBundleEntries(detail);
     bundle.entry?.push(...entries);
   }
   dangerouslyDeduplicateFhir(bundle, cxId, patientId);

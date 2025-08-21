@@ -405,6 +405,28 @@ export class MetriportMedicalApi {
   }
 
   /**
+   * Maps a Metriport patient to a patient in an external EHR system and synchronizes their data.
+   *
+   * @param patientId The ID of the patient to map.
+   * @param source The source name that represents the external system/EHR, either healthie or elation. Optional.
+   * @return The Metriport patient ID and the mapping patient (external) ID.
+   * @throws error if the patient has no external ID to attempt mapping.
+   * @throws error if the mapping source is not supported.
+   * @throws error if no mapping is found.
+   * @throws error if patient demographics are not matching.
+   */
+  async syncPatient(
+    patientId: string,
+    source?: string
+  ): Promise<{ patientId: string; externalId: string }> {
+    const resp = await this.api.post(`${PATIENT_URL}/${patientId}/external/sync`, undefined, {
+      params: { source },
+    });
+    if (!resp.data) throw new Error(NO_DATA_MESSAGE);
+    return resp.data;
+  }
+
+  /**
    * Updates a patient at Metriport and at HIEs the patient is linked to.
    *
    * @param patient The patient data to be updated.
@@ -817,7 +839,7 @@ export class MetriportMedicalApi {
   //eslint-disable-next-line @typescript-eslint/no-explicit-any
   async getDocumentUrl(
     fileName: string,
-    conversionType?: "html" | "pdf"
+    conversionType?: "html" | "pdf" | "hl7"
   ): Promise<{ url: string }> {
     const resp = await this.api.get(`${DOCUMENT_URL}/download-url`, {
       params: {

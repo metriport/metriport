@@ -9,7 +9,7 @@ export type WriteBackLabPanelRequest = {
   cxId: string;
   practiceId: string;
   ehrPatientId: string;
-  diagnostricReport: DiagnosticReport;
+  diagnosticReport: DiagnosticReport;
   observations: Observation[];
 };
 

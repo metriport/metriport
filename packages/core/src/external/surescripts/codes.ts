@@ -37,7 +37,23 @@ export const PLAN_CODE_NAME: Record<PlanCode, PlanCodeName> = {
   "06": "Workers' Compensation",
 };
 
-export const PAYMENT_CODES = ["01", "02", "03", "04", "05", "06", "07", "99"] as const;
+export const PAYMENT_CODES = [
+  "01",
+  "1",
+  "02",
+  "2",
+  "03",
+  "3",
+  "04",
+  "4",
+  "05",
+  "5",
+  "06",
+  "6",
+  "07",
+  "7",
+  "99",
+] as const;
 export const PAYMENT_CODE_NAMES = [
   "Private Pay",
   "Medicaid",
@@ -51,7 +67,14 @@ export const PAYMENT_CODE_NAMES = [
 export type PaymentCode = (typeof PAYMENT_CODES)[number];
 export type PaymentCodeName = (typeof PAYMENT_CODE_NAMES)[number];
 
-export const PAYMENT_CODE_NAME: Record<PaymentCode, PaymentCodeName> = {
+export function getPaymentCodeName(code: PaymentCode): PaymentCodeName {
+  if (code.length === 1 && code.match(/^[1-7]$/)) {
+    return getPaymentCodeName(("0" + code) as PaymentCode);
+  }
+  return PAYMENT_CODE_NAME[code] ?? "Other";
+}
+
+export const PAYMENT_CODE_NAME: Partial<Record<PaymentCode, PaymentCodeName>> = {
   "01": "Private Pay",
   "02": "Medicaid",
   "03": "Medicare",

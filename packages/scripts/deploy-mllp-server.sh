@@ -25,6 +25,8 @@ MLLP_SERVER_EXTRA_DEPS="packages/api-sdk/package.json \
   packages/commonwell-sdk/dist \
   packages/carequality-sdk/package.json \
   packages/carequality-sdk/dist \
+  packages/fhir-sdk/package.json \
+  packages/fhir-sdk/dist \
   packages/ihe-gateway-sdk/package.json \
   packages/ihe-gateway-sdk/dist"
 

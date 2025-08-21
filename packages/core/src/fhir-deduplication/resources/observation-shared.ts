@@ -11,7 +11,7 @@ import {
   isUnknownCoding,
   fetchCodingCodeOrDisplayOrSystem,
   fetchCodeableConceptText,
-  assignMostDescriptiveStatus,
+  dangerouslyAssignMostDescriptiveStatus,
 } from "../shared";
 
 export const observationStatus = [
@@ -39,7 +39,7 @@ export const statusRanking: Record<ObservationStatus, number> = {
 };
 
 export function preprocessStatus(existing: Observation, target: Observation) {
-  return assignMostDescriptiveStatus(statusRanking, existing, target);
+  return dangerouslyAssignMostDescriptiveStatus(statusRanking, existing, target);
 }
 
 export function extractCodes(concept: CodeableConcept | undefined): {

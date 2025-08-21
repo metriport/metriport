@@ -5,13 +5,11 @@ import { BadRequestError } from "@metriport/shared";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { findOrCreatePatientMapping, getPatientMapping } from "../../../../command/mapping/patient";
 import { queryDocumentsAcrossHIEs } from "../../../../command/medical/document/document-query";
-import { getPatientPrimaryFacilityIdOrFail } from "../../../../command/medical/patient/get-patient-facilities";
 import { getPatientOrFail } from "../../../../command/medical/patient/get-patient";
+import { getPatientPrimaryFacilityIdOrFail } from "../../../../command/medical/patient/get-patient-facilities";
 import { Config } from "../../../../shared/config";
-import {
-  createMetriportPatientDemosFhir,
-  getOrCreateMetriportPatientFhir,
-} from "../../shared/utils/fhir";
+import { getOrCreateMetriportPatientFhir } from "../../shared/command/patient/get-or-create-metriport-patient-fhir";
+import { createMetriportPatientDemosFhir } from "../../shared/utils/fhir";
 import { isDqCooldownExpired } from "../../shared/utils/patient";
 import { createAthenaClient } from "../shared";
 

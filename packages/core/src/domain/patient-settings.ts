@@ -3,9 +3,11 @@ import {
   adtSubscriptionRequestSchema,
   BulkPatientSettingsRequest,
   bulkPatientSettingsRequestSchema,
+  createQueryMetaSchema,
   PatientSettingsRequest,
   patientSettingsRequestSchema,
-  queryMetaSchema,
+  QuestMonitoringRequest,
+  questMonitoringRequestSchema,
 } from "@metriport/shared";
 import { z } from "zod";
 import {
@@ -19,6 +21,7 @@ const { log } = out("PatientSettings");
 
 export type Subscriptions = {
   adt?: string[];
+  quest?: boolean;
 };
 
 export type PatientSettingsData = {
@@ -41,7 +44,7 @@ export const hl7v2SubscribersQuerySchema = z
   .object({
     hieName: z.string(),
   })
-  .and(queryMetaSchema);
+  .and(createQueryMetaSchema());
 
 export function parsePatientSettingsRequest(data: unknown): PatientSettingsRequest {
   try {
@@ -86,4 +89,8 @@ export function parseAdtSubscriptionRequest(data: unknown): AdtSubscriptionReque
   const result = adtSubscriptionRequestSchema.parse(data);
   throwOnInvalidHieName(result.hieName);
   return result;
+}
+
+export function parseQuestMonitoringRequest(data: unknown): QuestMonitoringRequest {
+  return questMonitoringRequestSchema.parse(data);
 }

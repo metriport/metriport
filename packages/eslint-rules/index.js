@@ -7,6 +7,8 @@ module.exports = {
       plugins: ['@metriport/eslint-rules'],
       rules: {
         '@metriport/eslint-rules/no-named-arrow-functions': 'warn',
+        '@metriport/eslint-rules/require-script-docstring': 'warn',
+        'no-param-reassign': 'warn',
       },
     },
     all: {

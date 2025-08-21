@@ -22,12 +22,12 @@ import { buildResponseFileNamePrefix } from "./file-names";
 // Latest Surescripts specification, but responses may be in 2.2 format
 const surescriptsVersion = "3.0";
 
-type SurescriptsGender = "M" | "F" | "N" | "U";
+type SurescriptsGender = "M" | "F" | "U";
 const makeGenderDemographics = genderMapperFromDomain<SurescriptsGender>(
   {
     M: "M",
     F: "F",
-    O: "N",
+    O: "U",
     U: "U",
   },
   "U"

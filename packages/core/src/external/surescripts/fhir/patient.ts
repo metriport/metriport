@@ -57,8 +57,6 @@ function getPatientGender(detail: ResponseDetail): Patient["gender"] {
       return "female";
     case "U":
       return "unknown";
-    case "N":
-      return "other";
     default:
       return "unknown";
   }

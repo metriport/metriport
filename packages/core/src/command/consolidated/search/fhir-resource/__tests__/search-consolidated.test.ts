@@ -5,8 +5,13 @@ import { FhirSearchResult } from "../../../../../external/opensearch/index-based
 import { OpenSearchFhirSearcher } from "../../../../../external/opensearch/lexical/fhir-searcher";
 import { getEntryId as getEntryIdFromOpensearch } from "../../../../../external/opensearch/shared/id";
 import { makeCondition } from "../../../../../fhir-to-cda/cda-templates/components/__tests__/make-condition";
-import { makePractitioner } from "../../../../../fhir-to-cda/cda-templates/components/__tests__/make-encounter";
+import {
+  makeEncounter,
+  makePractitioner,
+} from "../../../../../fhir-to-cda/cda-templates/components/__tests__/make-encounter";
+import { makeObservation } from "../../../../../fhir-to-cda/cda-templates/components/__tests__/make-observation";
 import { makeOrganization } from "../../../../../fhir-to-cda/cda-templates/components/__tests__/make-organization";
+import { makeProcedure } from "../../../../../fhir-to-cda/cda-templates/components/__tests__/make-procedure";
 import { hydrateMissingReferences } from "../search-consolidated";
 import {
   cxId,
@@ -116,41 +121,6 @@ describe("search-consolidated", () => {
       });
     });
 
-    describe("non-specialized hydration", () => {
-      runTest(nonSpecializedHydration.conditionAndEncounter);
-      runTest(nonSpecializedHydration.conditionAndObservation);
-      runTest(nonSpecializedHydration.encounterAndObservation);
-
-      function runTest<T extends Resource, M extends Resource>({
-        makeInputResource,
-        resourceType,
-        missingResource,
-        missingResourceType,
-      }: Entry<T, M>) {
-        it(`does NOT hydrate missing ${missingResourceType} when resource is ${resourceType}`, async () => {
-          const inputResources = [patient, makeInputResource(missingResource)];
-          const firstLevelReferenceIds = [missingResource].map(toEntryId);
-          const getByIdsResponse = [missingResource].map(toGetByIdsResultEntry);
-          getByIds_mock.mockResolvedValueOnce(getByIdsResponse);
-          const hydratedResources = inputResources;
-
-          const res = await hydrateMissingReferences({
-            cxId,
-            patientId,
-            resources: inputResources,
-          });
-
-          expect(res).toBeTruthy();
-          expect(res).toEqual(expect.arrayContaining(hydratedResources));
-          expect(getByIds_mock).not.toHaveBeenCalledWith({
-            cxId,
-            patientId,
-            ids: expect.arrayContaining(firstLevelReferenceIds),
-          });
-        });
-      }
-    });
-
     describe("specialized hydration", () => {
       runTest(specializedHydration.diagnosticReportAndEncounter);
       runTest(specializedHydration.diagnosticReportAndObservation);
@@ -184,6 +154,43 @@ describe("search-consolidated", () => {
             patientId,
             ids: expect.arrayContaining(firstLevelReferenceIds),
           });
+        });
+
+        it(`hydrates missing Condition, Procedure, and Observation when resource is Encounter`, async () => {
+          const missingCondition = makeCondition({}, patientId);
+          const missingObservation = makeObservation({}, patientId);
+          const missingProcedure = makeProcedure({
+            subject: makeReference(patient),
+            partOf: [makeReference(missingObservation)],
+          });
+
+          const enc = makeEncounter(
+            {
+              diagnosis: [makeReference(missingProcedure), makeReference(missingCondition)],
+            },
+            {
+              patient: patientId,
+            }
+          );
+
+          const resources = [patient, enc];
+          getByIds_mock.mockResolvedValueOnce([
+            toGetByIdsResultEntry(missingCondition),
+            toGetByIdsResultEntry(missingObservation),
+            toGetByIdsResultEntry(missingProcedure),
+          ]);
+
+          const res = await hydrateMissingReferences({ cxId, patientId, resources });
+
+          expect(res).toEqual(
+            expect.arrayContaining([
+              missingCondition,
+              missingObservation,
+              missingProcedure,
+              enc,
+              patient,
+            ])
+          );
         });
       }
     });

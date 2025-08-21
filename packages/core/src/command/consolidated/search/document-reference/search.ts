@@ -1,7 +1,7 @@
 import { DocumentReference } from "@medplum/fhirtypes";
 import { uniqBy } from "lodash";
 import { isCarequalityExtension } from "../../../../external/carequality/extension";
-import { isCommonwellExtension } from "../../../../external/commonwell/extension";
+import { isCommonwellExtension } from "../../../../external/commonwell-v1/extension";
 import { DocumentReferenceWithId } from "../../../../external/fhir/document/document-reference";
 import { getDocuments } from "../../../../external/fhir/document/get-documents";
 import { isMetriportExtension } from "../../../../external/fhir/shared/extensions/metriport";

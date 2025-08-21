@@ -18,6 +18,7 @@ export const healthieSecondaryMappingsSchema = z
     backgroundAppointmentPatientProcessingDisabled: z.boolean().optional(),
     backgroundAppointments48hrEnabled: z.boolean().optional(),
     backgroundAppointment48hrPatientProcessingDisabled: z.boolean().optional(),
+    contributionDisabled: z.boolean().optional(),
   })
   .merge(writeBackFiltersSchema);
 export type HealthieSecondaryMappings = z.infer<typeof healthieSecondaryMappingsSchema>;

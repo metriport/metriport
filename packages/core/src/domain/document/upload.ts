@@ -1,5 +1,5 @@
 import { getFileExtension } from "../../util/mime";
-import { createFileName, createFolderName } from "../filename";
+import { createFileName, createFolderName, parseFileName } from "../filename";
 
 export const UPLOADS_FOLDER = "uploads";
 export const CCD_SUFFIX = "ccd";
@@ -32,4 +32,13 @@ export function createAttachmentUploadFilePath({
   const extension = getFileExtension(mimeType);
   const finalExtension = extension === "" ? ".unknown" : extension;
   return `${filePath}_${attachmentId}${finalExtension}`;
+}
+
+export function rebuildUploadsFilePath(id: string): string {
+  if (id.includes(`/${UPLOADS_FOLDER}/`)) return id;
+
+  const fileNameParts = parseFileName(id);
+  if (!fileNameParts) return id;
+
+  return createUploadFilePath(fileNameParts.cxId, fileNameParts.patientId, fileNameParts.fileId);
 }

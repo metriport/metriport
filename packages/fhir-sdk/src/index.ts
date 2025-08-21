@@ -79,6 +79,28 @@ export interface BrokenReference {
 }
 
 /**
+ * Bundle diff result interface
+ */
+export interface BundleDiffResult {
+  /** Resources that exist in both bundles */
+  common: FhirBundleSdk;
+  /** Resources that exist only in the base bundle (this bundle) */
+  baseOnly: FhirBundleSdk;
+  /** Resources that exist only in the parameter bundle */
+  parameterOnly: FhirBundleSdk;
+}
+
+function getResourceIdentifier(entry: BundleEntry): string | undefined {
+  if (entry.resource?.id) {
+    return entry.resource.id;
+  }
+  if (entry.fullUrl) {
+    return entry.fullUrl;
+  }
+  return undefined;
+}
+
+/**
  * FHIR Bundle SDK for parsing, querying, and manipulating FHIR bundles with reference resolution
  */
 export class FhirBundleSdk {
@@ -283,23 +305,45 @@ export class FhirBundleSdk {
   private constructor(bundle: Bundle) {
     // FR-1.1, FR-1.4: Initialize bundle and create indexes
     this.bundle = bundle;
+    this.bundle.total = bundle.entry?.length ?? 0;
     this.buildResourceIndexes();
   }
 
+  get total(): number {
+    if (!this.bundle.entry) {
+      throw new Error("No valid total - bundle property `entry` is undefined");
+    }
+    return this.bundle.entry.length;
+  }
+
+  get entry(): BundleEntry[] {
+    if (!this.bundle.entry) {
+      console.error("Bundle property `entry` is undefined");
+      return [];
+    }
+    return this.bundle.entry;
+  }
+
+  toObject(): Bundle {
+    return this.bundle;
+  }
+
   /**
-   * Create a new FhirBundleSdk instance
+   * Create a new FhirBundleSdk instance (async for backwards compatibility)
    * FR-1.2: Validate bundle resourceType
-   * FR-1.3: Validate bundle type
    */
   static async create(bundle: Bundle): Promise<FhirBundleSdk> {
+    return FhirBundleSdk.createSync(bundle);
+  }
+
+  /**
+   * Create a new FhirBundleSdk instance synchronously
+   * FR-1.2: Validate bundle resourceType
+   */
+  static createSync(bundle: Bundle): FhirBundleSdk {
     // FR-1.2: Validate bundle resourceType
     if (bundle.resourceType !== "Bundle") {
       throw new Error("Invalid bundle: resourceType must be 'Bundle'");
-    }
-
-    // FR-1.3: Validate bundle type
-    if (bundle.type !== "collection") {
-      throw new Error("Invalid bundle: type must be 'collection'");
     }
 
     return new FhirBundleSdk(bundle);
@@ -688,16 +732,16 @@ export class FhirBundleSdk {
    * Create a new bundle entry from an existing entry, preserving fullUrl
    */
   private createBundleEntry(originalEntry: BundleEntry, resource: Resource): BundleEntry {
-    const newEntry: BundleEntry = {
-      resource: resource,
-    };
-
-    // Preserve original fullUrl if it exists (FR-6.6)
     if (originalEntry.fullUrl) {
-      newEntry.fullUrl = originalEntry.fullUrl;
+      return {
+        fullUrl: originalEntry.fullUrl,
+        resource: resource,
+      };
     }
 
-    return newEntry;
+    return {
+      resource: resource,
+    };
   }
 
   /**
@@ -707,6 +751,7 @@ export class FhirBundleSdk {
     const exportBundle: Bundle = {
       resourceType: "Bundle",
       type: this.bundle.type || "collection",
+      total: entries.length,
       entry: entries,
     };
 
@@ -723,9 +768,6 @@ export class FhirBundleSdk {
     if (this.bundle.timestamp) {
       exportBundle.timestamp = this.bundle.timestamp;
     }
-
-    // Update total count (FR-6.4)
-    exportBundle.total = entries.length;
 
     return exportBundle;
   }
@@ -805,5 +847,86 @@ export class FhirBundleSdk {
     }
 
     return this.createExportBundle(exportEntries);
+  }
+
+  /**
+   * Concatenate entries from another FhirBundleSdk with this bundle
+   * Returns a new bundle with combined entries while preserving original metadata
+   */
+  async concatEntries(otherSdk: FhirBundleSdk): Promise<FhirBundleSdk> {
+    const currentEntries = this.bundle.entry || [];
+    const otherEntries = otherSdk.bundle.entry || [];
+
+    const combinedEntries = [...currentEntries, ...otherEntries];
+    const resultBundle = this.createExportBundle(combinedEntries);
+
+    return await FhirBundleSdk.create(resultBundle);
+  }
+
+  /**
+   * Diff this bundle with another FHIR Bundle by comparing resource ids.
+   * Returns three FhirBundleSdk instances: common, baseOnly, parameterOnly.
+   */
+  diff(other: Bundle): Promise<BundleDiffResult>;
+
+  /**
+   * Diff this bundle with another FhirBundleSdk by comparing resource ids.
+   * Returns three FhirBundleSdk instances: common, baseOnly, parameterOnly.
+   */
+  diff(other: FhirBundleSdk): Promise<BundleDiffResult>;
+
+  /**
+   * Diff this bundle with another bundle or FhirBundleSdk by comparing resource ids.
+   * Returns three FhirBundleSdk instances: common, baseOnly, parameterOnly.
+   */
+  async diff(other: Bundle | FhirBundleSdk): Promise<BundleDiffResult> {
+    const baseBundle = this.bundle;
+    const parameterBundle = other instanceof FhirBundleSdk ? other.bundle : other;
+
+    const commonEntries: BundleEntry[] = [];
+    const baseOnlyEntries: BundleEntry[] = [];
+    const parameterOnlyEntries: BundleEntry[] = [];
+
+    // Create maps with resource identifiers (prefer resource.id, fallback to fullUrl)
+    const baseResourceIdentifiers = new Map<string, BundleEntry>();
+    const parameterResourceIdentifiers = new Map<string, BundleEntry>();
+
+    // Populate base bundle identifiers
+    for (const entry of baseBundle?.entry ?? []) {
+      const identifier = getResourceIdentifier(entry);
+      if (identifier) {
+        baseResourceIdentifiers.set(identifier, entry);
+      }
+    }
+
+    // Populate parameter bundle identifiers
+    for (const entry of parameterBundle?.entry ?? []) {
+      const identifier = getResourceIdentifier(entry);
+      if (identifier) {
+        parameterResourceIdentifiers.set(identifier, entry);
+      }
+    }
+
+    // Find common and base-only resources
+    for (const [identifier, entry] of baseResourceIdentifiers.entries()) {
+      if (parameterResourceIdentifiers.has(identifier)) {
+        commonEntries.push(entry);
+      } else {
+        baseOnlyEntries.push(entry);
+      }
+    }
+
+    // Find parameter-only resources
+    for (const [identifier, entry] of parameterResourceIdentifiers.entries()) {
+      if (!baseResourceIdentifiers.has(identifier)) {
+        parameterOnlyEntries.push(entry);
+      }
+    }
+
+    return {
+      common: await FhirBundleSdk.create(this.createExportBundle(commonEntries)),
+      baseOnly: await FhirBundleSdk.create(this.createExportBundle(baseOnlyEntries)),
+      parameterOnly: await FhirBundleSdk.create(this.createExportBundle(parameterOnlyEntries)),
+    };
   }
 }

@@ -25,6 +25,12 @@ export class BucketsStack extends Stack {
       });
       this.incomingHl7NotificationBucket = createBucket(this, {
         bucketName: props.config.hl7Notification.incomingMessageBucketName,
+        cors: [
+          {
+            allowedOrigins: ["*"],
+            allowedMethods: [s3.HttpMethods.GET],
+          },
+        ],
       });
       this.outgoingHl7NotificationBucket = createBucket(this, {
         bucketName: props.config.hl7Notification.outgoingMessageBucketName,

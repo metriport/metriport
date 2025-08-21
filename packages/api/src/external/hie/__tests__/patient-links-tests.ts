@@ -1,7 +1,7 @@
 import { faker } from "@faker-js/faker";
 import { PatientData } from "@metriport/core/domain/patient";
 import { buildDayjs } from "@metriport/shared/common/date";
-import { CwLink } from "../../commonwell/cw-patient-data";
+import { CwLink } from "../../commonwell-v1/cw-patient-data";
 import { CQLink } from "../../carequality/cq-patient-data";
 
 export const createCwLink = ({

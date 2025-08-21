@@ -7,7 +7,13 @@ import { MAXIMUM_UPLOAD_FILE_SIZE } from "@metriport/core/external/aws/lambda-lo
 import { toFHIR } from "@metriport/core/external/fhir/patient/conversion";
 import { out } from "@metriport/core/util/log";
 import { getRequestId } from "@metriport/core/util/request";
-import { BadRequestError, isTrue, NotFoundError, stringToBoolean } from "@metriport/shared";
+import {
+  BadRequestError,
+  isTrue,
+  NotFoundError,
+  parseEhrSourceOrFail,
+  stringToBoolean,
+} from "@metriport/shared";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
@@ -21,12 +27,13 @@ import {
 } from "../../command/medical/patient/create-medical-record";
 import { handleDataContribution } from "../../command/medical/patient/data-contribution/handle-data-contributions";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
+import { forceEhrPatientSync } from "../../command/medical/patient/force-ehr-patient-sync";
 import { getConsolidatedWebhook } from "../../command/medical/patient/get-consolidated-webhook";
+import { getPatientFacilities } from "../../command/medical/patient/get-patient-facilities";
 import { getPatientFacilityMatches } from "../../command/medical/patient/get-patient-facility-matches";
+import { setPatientFacilities } from "../../command/medical/patient/set-patient-facilities";
 import { getHieOptOut, setHieOptOut } from "../../command/medical/patient/update-hie-opt-out";
 import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
-import { setPatientFacilities } from "../../command/medical/patient/set-patient-facilities";
-import { getPatientFacilities } from "../../command/medical/patient/get-patient-facilities";
 import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
 import { countResources } from "../../external/fhir/patient/count-resources";
 import { REQUEST_ID_HEADER_NAME } from "../../routes/header";
@@ -37,8 +44,8 @@ import { requestLogger } from "../helpers/request-logger";
 import { getPatientInfoOrFail } from "../middlewares/patient-authorization";
 import { checkRateLimit } from "../middlewares/rate-limiting";
 import { asyncHandler, getFrom, getFromQueryAsBoolean } from "../util";
-import { dtoFromModel } from "./dtos/patientDTO";
 import { dtoFromModel as facilityDtoFromModel } from "./dtos/facilityDTO";
+import { dtoFromModel } from "./dtos/patientDTO";
 import { bundleSchema, getResourcesQueryParam } from "./schemas/fhir";
 import {
   PatientHieOptOutResponse,
@@ -598,6 +605,36 @@ router.get(
     const facilitiesData = facilities.map(facilityDtoFromModel);
 
     return res.status(status.OK).json({ facilities: facilitiesData });
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * POST /patient/:id/external/sync
+ *
+ * Synchronizes a Metriport patient to a patient in an external system.
+ *
+ * @param req.params.id - The ID of the patient to map.
+ * @param req.query.source - The source name that represents the external system/EHR, either healthie or elation. Optional.
+ * @returns The Metriport patient ID and the mapping patient (external) ID.
+ * @throws 400 if the patient has no external ID to attempt mapping.
+ * @throws 400 if the mapping source is not supported.
+ * @throws 404 if no mapping is found.
+ * @throws 404 if patient demographics are not matching.
+ */
+router.post(
+  "/external/sync",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const { cxId, id: patientId } = getPatientInfoOrFail(req);
+    const source = parseEhrSourceOrFail(getFrom("query").optional("source", req));
+
+    const externalId = await forceEhrPatientSync({
+      cxId,
+      patientId,
+      source,
+    });
+
+    return res.status(status.OK).json({ patientId, externalId });
   })
 );
 

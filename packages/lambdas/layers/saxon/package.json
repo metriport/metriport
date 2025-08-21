@@ -15,6 +15,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "form-data": ">=4.0.4",
     "saxon-js": "^2.5.0"
   }
 } 

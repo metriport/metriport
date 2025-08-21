@@ -40,6 +40,7 @@
   "workspaces": [
     "packages/eslint-rules",
     "packages/shared",
+    "packages/fhir-sdk",
     "packages/api-sdk",
     "packages/ihe-gateway-sdk",
     "packages/commonwell-sdk",
@@ -51,7 +52,6 @@
     "packages/api",
     "packages/mllp-server",
     "packages/infra",
-    "packages/fhir-sdk",
     "packages/utils"
   ],
   "lint-staged": {
@@ -69,6 +69,7 @@
   },
   "dependencies": {
     "axios": ">=1.8.2",
+    "form-data": ">=4.0.4",
     "sharp": "^0.33.5",
     "semver": ">=5.7.2"
   },

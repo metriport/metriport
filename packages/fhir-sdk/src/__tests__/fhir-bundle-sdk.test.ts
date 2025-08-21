@@ -6,7 +6,6 @@ import {
   emptyBundle,
   patientsOnlyBundle,
   invalidBundleWrongType,
-  invalidBundleWrongBundleType,
   mixedResourceTypesBundle,
   CONSTANT_TIME_EXPECTED_THRESHOLD_MS,
 } from "./fixtures/fhir-bundles";
@@ -23,14 +22,6 @@ describe("FhirBundleSdk", () => {
     describe("FR-1.2: SDK constructor throws error if bundle.resourceType !== 'Bundle'", () => {
       it("should throw error for invalid resourceType", async () => {
         await expect(FhirBundleSdk.create(invalidBundleWrongType)).rejects.toThrow();
-      });
-    });
-
-    describe("FR-1.3: SDK constructor throws error if bundle.type !== 'collection'", () => {
-      it("should throw error for invalid bundle type", async () => {
-        await expect(FhirBundleSdk.create(invalidBundleWrongBundleType)).rejects.toThrow(
-          "Invalid bundle: type must be 'collection'"
-        );
       });
     });
 
