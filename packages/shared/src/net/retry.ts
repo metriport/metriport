@@ -8,7 +8,7 @@ import {
 } from "../common/retry";
 import { NetworkError, networkTimeoutErrors } from "./error";
 import { isMetriportError } from "../error/metriport-error";
-import type { Duration } from "dayjs/plugin/duration";
+import dayjs from "dayjs";
 
 export const tooManyRequestsStatus = 429;
 const tooManyRequestsMultiplier = 3;
@@ -135,11 +135,14 @@ export async function executeWithNetworkRetries<T>(
   });
 }
 
-export async function simpleExecuteWithRetriesAsDuration<T>(
+const DEFAULT_MAX_ATTEMPTS = 3;
+const DEFAULT_INITIAL_DELAY_DURATION = dayjs.duration({ seconds: 1 });
+
+export async function simpleExecuteWithRetries<T>(
   functionToExecute: () => Promise<T>,
-  maxAttempts: number,
-  initialDelay: Duration,
-  log: typeof console.log
+  log: typeof console.log,
+  maxAttempts = DEFAULT_MAX_ATTEMPTS,
+  initialDelay = DEFAULT_INITIAL_DELAY_DURATION
 ) {
   return await executeWithNetworkRetries(functionToExecute, {
     maxAttempts,

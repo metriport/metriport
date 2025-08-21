@@ -3,14 +3,10 @@ import { HieConfig, VpnlessHieConfig } from "./types";
 import { SftpClient } from "../../external/sftp/client";
 import { HieSftpConfig } from "../../external/sftp/types";
 import { createFileNameHl7v2Roster } from "./hl7v2-roster-generator";
-import { simpleExecuteWithRetriesAsDuration } from "@metriport/shared";
+import { simpleExecuteWithRetries } from "@metriport/shared";
 import { initTimer } from "@metriport/shared/common/timer";
-import dayjs from "dayjs";
 import { Config } from "../../util/config";
 import { getSecretValueOrFail } from "../../external/aws/secret-manager";
-
-const NUMBER_OF_ATTEMPTS = 3;
-const BASE_DELAY = dayjs.duration({ seconds: 1 });
 
 export async function uploadToRemoteSftp(
   config: HieConfig | VpnlessHieConfig,
@@ -35,18 +31,13 @@ export async function uploadToRemoteSftp(
 
   const remoteFileName = createFileNameHl7v2Roster(hieName);
 
-  await simpleExecuteWithRetriesAsDuration(
-    () => sendViaSftp(sftpConfig, file, remoteFileName),
-    NUMBER_OF_ATTEMPTS,
-    BASE_DELAY,
-    log
-  );
+  await simpleExecuteWithRetries(() => sendViaSftp(sftpConfig, file, remoteFileName), log);
   log(`SFTP upload completed in ${uploadTimer.getElapsedTime()}ms`);
 }
 
 async function sendViaSftp(sftpConfig: HieSftpConfig, file: string, remoteFileName: string) {
   const remoteFolderPath = sftpConfig.remotePath;
-  const passwordArn = Config.getSftpPasswordArnOrFail();
+  const passwordArn = Config.getRosterUploadSftpPasswordArn();
   const region = Config.getAWSRegion();
 
   const password = await getSecretValueOrFail(passwordArn, region);

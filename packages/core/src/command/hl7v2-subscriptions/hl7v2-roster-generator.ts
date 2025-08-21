@@ -4,7 +4,7 @@ import {
   internalOrganizationDTOSchema,
   MetriportError,
   otherGender,
-  simpleExecuteWithRetriesAsDuration,
+  simpleExecuteWithRetries,
   unknownGender,
 } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
@@ -12,7 +12,6 @@ import { initTimer } from "@metriport/shared/common/timer";
 import { createUuidFromText } from "@metriport/shared/common/uuid";
 import axios, { AxiosResponse } from "axios";
 import { stringify } from "csv-stringify/sync";
-import dayjs from "dayjs";
 import _ from "lodash";
 import { getFirstNameAndMiddleInitial, Patient } from "../../domain/patient";
 import { S3Utils, storeInS3WithRetries } from "../../external/aws/s3";
@@ -37,9 +36,7 @@ type RosterRow = Record<string, string>;
 const HL7V2_SUBSCRIBERS_ENDPOINT = `internal/patient/hl7v2-subscribers`;
 const GET_ORGANIZATION_ENDPOINT = `internal/organization`;
 const NUMBER_OF_PATIENTS_PER_PAGE = 500;
-const NUMBER_OF_ATTEMPTS = 3;
 const DEFAULT_ZIP_PLUS_4_EXT = "-0000";
-const BASE_DELAY = dayjs.duration({ seconds: 1 });
 const FOLDER_DATE_FORMAT = "YYYY-MM-DD";
 const FILE_DATE_FORMAT = "YYYYMMDD";
 
@@ -62,10 +59,8 @@ export class Hl7v2RosterGenerator {
 
     log(`Running with this config: ${JSON.stringify(loggingDetails)}`);
     log(`Getting all subscribed patients...`);
-    const patients = await simpleExecuteWithRetriesAsDuration(
+    const patients = await simpleExecuteWithRetries(
       () => this.getAllSubscribedPatients(hieName),
-      NUMBER_OF_ATTEMPTS,
-      BASE_DELAY,
       log
     );
     log(`Found ${patients.length} total patients`);
@@ -79,12 +74,7 @@ export class Hl7v2RosterGenerator {
     const cxIds = new Set(patients.map(p => p.cxId));
 
     log(`Getting all organizations for patients...`);
-    const orgs = await simpleExecuteWithRetriesAsDuration(
-      () => this.getOrganizations([...cxIds]),
-      NUMBER_OF_ATTEMPTS,
-      BASE_DELAY,
-      log
-    );
+    const orgs = await simpleExecuteWithRetries(() => this.getOrganizations([...cxIds]), log);
     const orgsByCxId = _.keyBy(orgs, "cxId");
 
     const rosterRowInputs = patients.map(p => {
