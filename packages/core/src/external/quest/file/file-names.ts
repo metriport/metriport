@@ -62,5 +62,5 @@ export function buildLabConversionFileNameForDate({
   patientId: string;
   dateId: string;
 }) {
-  return `quest/cxId=${cxId}/patientId=${patientId}/date=${dateId}/conversion.json`;
+  return `quest/cxId=${cxId}/patientId=${patientId}/dateId=${dateId}/conversion.json`;
 }
