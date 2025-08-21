@@ -1,58 +1,20 @@
 import { MetriportError } from "@metriport/shared";
-import { executeAsynchronously } from "../../../../util/concurrency";
-import { out, LogFunction } from "../../../../util/log";
 import { QuestSftpClient } from "../../client";
 import { QuestReplica } from "../../replica";
-import { QuestPatientResponseFile } from "../../types";
-import { QuestFhirConverterCommand } from "../fhir-converter/fhir-converter";
 import { DownloadResponseCommandHandler } from "./download-response";
-import { splitResponseFileIntoSourceDocuments } from "../../source-document";
-import { QuestFhirConverterCommandDirect } from "../fhir-converter/fhir-converter-direct";
-
-const numberOfParallelExecutions = 10;
+import { CreateSourceDocumentsHandler } from "../create-source-documents/create-source-documents";
+import { CreateSourceDocumentsHandlerDirect } from "../create-source-documents/create-source-documents-direct";
 
 export class DownloadResponseHandlerDirect implements DownloadResponseCommandHandler {
-  private readonly log: LogFunction;
-  private readonly debug: LogFunction;
+  private readonly next: CreateSourceDocumentsHandler;
 
-  constructor(
-    private readonly client = new QuestSftpClient(),
-    private readonly next: QuestFhirConverterCommand = new QuestFhirConverterCommandDirect()
-  ) {
-    const { log, debug } = out("quest.command.download-response-direct");
-    this.log = log;
-    this.debug = debug;
+  constructor(private readonly client = new QuestSftpClient()) {
+    this.next = new CreateSourceDocumentsHandlerDirect(this.getQuestReplica());
   }
 
   async downloadAllQuestResponses(): Promise<void> {
-    const replica = this.getQuestReplica();
     const responseFiles = await this.client.downloadAllResponses();
-
-    this.log(`Generating source documents for ${responseFiles.length} response file(s)`);
-    const allSourceDocuments: QuestPatientResponseFile[] = [];
-    for (const responseFile of responseFiles) {
-      const sourceDocuments = splitResponseFileIntoSourceDocuments(responseFile);
-      allSourceDocuments.push(...sourceDocuments);
-    }
-
-    this.log(`Uploading ${allSourceDocuments.length} source documents to Quest replica`);
-    await executeAsynchronously(
-      allSourceDocuments,
-      async sourceDocument => {
-        await replica.uploadSourceDocument(sourceDocument);
-        await this.next.convertSourceDocumentToFhirBundle({
-          patientId: sourceDocument.patientId,
-          sourceDocumentName: sourceDocument.fileName,
-        });
-      },
-      {
-        numberOfParallelExecutions,
-        keepExecutingOnError: true,
-      }
-    );
-    this.log(
-      `Downloaded ${responseFiles.length} response file(s) and uploaded ${allSourceDocuments.length} source documents`
-    );
+    await this.next.createSourceDocuments(responseFiles);
   }
 
   /**
