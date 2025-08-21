@@ -13,8 +13,8 @@ const MAX_PARALLEL_CONVERSION_INVOCATIONS = 10;
 
 export class QuestCreateSourceDocumentsHandlerDirect implements QuestCreateSourceDocumentsHandler {
   constructor(
-    private readonly replica: QuestReplica = new QuestReplica(),
-    private readonly next: QuestFhirConverterCommand = new QuestFhirConverterCommandDirect()
+    private readonly next: QuestFhirConverterCommand = new QuestFhirConverterCommandDirect(),
+    private readonly replica: QuestReplica = new QuestReplica()
   ) {}
 
   async createSourceDocuments(

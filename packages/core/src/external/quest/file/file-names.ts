@@ -46,7 +46,7 @@ export function buildPatientLabConversionPrefix({
   cxId: string;
   patientId: string;
 }) {
-  return `quest/cxId=${cxId}/patientId=${patientId}/date=`;
+  return `quest/cxId=${cxId}/patientId=${patientId}/dateId=`;
 }
 
 export function buildLatestConversionFileName(cxId: string, patientId: string) {
