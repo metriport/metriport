@@ -1,6 +1,6 @@
 import { Duration } from "aws-cdk-lib";
 import { IVpc } from "aws-cdk-lib/aws-ec2";
-import { IFunction } from "aws-cdk-lib/aws-lambda";
+import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
 import { Schedule } from "aws-cdk-lib/aws-events";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import { Construct } from "constructs";
@@ -25,7 +25,7 @@ export interface ScheduledLambdaConfig extends ScheduledLambdaProps {
 const lambdaTimeout = Duration.seconds(60);
 const httpTimeout = Duration.seconds(50);
 
-function configForResponseDownload(props: ScheduledLambdaProps): ScheduledLambdaConfig {
+function createDownloadResponseConfig(props: ScheduledLambdaProps): ScheduledLambdaConfig {
   return {
     ...props,
     name: "QuestScheduledResponseDownload",
@@ -48,7 +48,7 @@ function configForResponseDownload(props: ScheduledLambdaProps): ScheduledLambda
   };
 }
 
-function configForRosterUpload(props: ScheduledLambdaProps): ScheduledLambdaConfig {
+function createUploadRosterConfig(props: ScheduledLambdaProps): ScheduledLambdaConfig {
   return {
     ...props,
     name: "QuestScheduledRosterUpload",
@@ -71,15 +71,15 @@ function configForRosterUpload(props: ScheduledLambdaProps): ScheduledLambdaConf
   };
 }
 
-export function createResponseDownloadScheduledLambda(props: ScheduledLambdaProps): IFunction {
-  return createQuestScheduledLambda(configForResponseDownload(props));
+export function createDownloadResponseScheduledLambda(props: ScheduledLambdaProps): Lambda {
+  return createQuestScheduledLambda(createDownloadResponseConfig(props));
 }
 
-export function createRosterUploadScheduledLambda(props: ScheduledLambdaProps): IFunction {
-  return createQuestScheduledLambda(configForRosterUpload(props));
+export function createUploadRosterScheduledLambda(props: ScheduledLambdaProps): Lambda {
+  return createQuestScheduledLambda(createUploadRosterConfig(props));
 }
 
-function createQuestScheduledLambda(props: ScheduledLambdaConfig): IFunction {
+function createQuestScheduledLambda(props: ScheduledLambdaConfig): Lambda {
   const config = getConfig();
   const { stack, lambdaLayers, vpc, name, scheduleExpression, url } = props;
 
