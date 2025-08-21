@@ -1,6 +1,7 @@
 import dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
+import { ListObjectsCommand } from "@aws-sdk/client-s3";
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { createSharebackFolderName } from "@metriport/core/shareback/file";
 import { getMetadataDocumentContents } from "@metriport/core/shareback/metadata/get-metadata-xml";
@@ -37,13 +38,10 @@ async function main() {
   const prefix = createSharebackFolderName({ cxId, patientId });
   const s3Key = `${prefix}/${cxId}_${patientId}_ccd_metadata.xml`;
   const bucketName = Config.getMedicalDocumentsBucketName();
-  const params = {
-    Bucket: bucketName,
-    Prefix: prefix,
-  };
   console.log("s3Key: ", s3Key);
   console.log("bucketName: ", bucketName);
-  const data = await s3Utils._s3.listObjectsV2(params).promise();
+  const cmd = new ListObjectsCommand({ Bucket: bucketName, Prefix: prefix });
+  const data = await s3Utils._s3Client.send(cmd);
   console.log(`Found ${data.Contents?.length} files:`);
   data.Contents?.forEach(item => {
     console.log(`- ${item.Key}`);
