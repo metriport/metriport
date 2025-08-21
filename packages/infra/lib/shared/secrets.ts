@@ -3,6 +3,8 @@ import * as secret from "aws-cdk-lib/aws-secretsmanager";
 import { Construct } from "constructs";
 import { EnvConfig } from "../../config/env-config";
 import { isSandbox } from "./util";
+import { HieConfig, VpnlessHieConfig } from "@metriport/core/command/hl7v2-subscriptions/types";
+import { getHieSftpPasswordSecretName } from "../secrets-stack";
 
 export type Secrets = { [key: string]: secret.ISecret };
 
@@ -43,8 +45,24 @@ export function getSecrets(scope: Construct, config: EnvConfig): Secrets {
       ? buildSecrets(scope, config.hl7Notification?.secrets)
       : undefined),
     ...(!isSandbox(config) ? buildSecrets(scope, config.analyticsPlatform.secrets) : undefined),
+    ...(!isSandbox(config)
+      ? buildSecrets(scope, collectHiePasswordSecretNames(config.hl7Notification.hieConfigs))
+      : undefined),
   };
   return secrets;
+}
+
+function collectHiePasswordSecretNames(
+  hies: Record<string, HieConfig | VpnlessHieConfig>
+): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const hieConfig of Object.values(hies)) {
+    const secretName = getHieSftpPasswordSecretName(hieConfig.name);
+    if (secretName) {
+      out[secretName] = secretName;
+    }
+  }
+  return out;
 }
 
 export function secretsToECS(secrets: Secrets): Record<string, ecs.Secret> {

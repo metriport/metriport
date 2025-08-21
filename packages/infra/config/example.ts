@@ -202,6 +202,12 @@ export const config: EnvConfigNonSandbox = {
           FACCODE: "cxShortcode",
           ASSIGNERID: "assigningAuthorityIdentifier",
         },
+        sftpConfig: {
+          host: "your-sftp-host",
+          port: 22,
+          username: "your-sftp-username",
+          remotePath: "your-directory-path",
+        },
       },
     },
     dischargeNotificationSlackUrl: "url-to-slack-channel",
