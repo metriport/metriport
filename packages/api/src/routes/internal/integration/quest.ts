@@ -74,7 +74,7 @@ router.post(
   asyncHandler(async (_: Request, res: Response) => {
     const handler = new QuestUploadRosterHandlerCloud();
     await handler.generateAndUploadLatestQuestRoster();
-    return res.status(status.OK);
+    return res.sendStatus(status.OK);
   })
 );
 
@@ -95,7 +95,7 @@ router.post(
   asyncHandler(async (_: Request, res: Response) => {
     const handler = new QuestDownloadResponseHandlerCloud();
     await handler.downloadAllQuestResponses();
-    return res.status(status.OK);
+    return res.sendStatus(status.OK);
   })
 );
 

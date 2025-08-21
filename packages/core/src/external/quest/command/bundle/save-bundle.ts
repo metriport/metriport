@@ -1,5 +1,4 @@
 import { Bundle } from "@medplum/fhirtypes";
-import { executeWithNetworkRetries } from "@metriport/shared";
 import { Config } from "../../../../util/config";
 import { out } from "../../../../util/log";
 import { capture } from "../../../../util/notifications";
@@ -40,8 +39,6 @@ export async function saveBundle({
   });
   const s3Utils = new S3Utils(Config.getAWSRegion());
   const fileContent = Buffer.from(JSON.stringify(bundle));
-  await executeWithNetworkRetries(() =>
-    s3Utils.uploadFile({ bucket: bucketName, key: conversionBundleName, file: fileContent })
-  );
+  await s3Utils.uploadFile({ bucket: bucketName, key: conversionBundleName, file: fileContent });
   log(`Saved bundle ${conversionBundleName} to ${bucketName}`);
 }

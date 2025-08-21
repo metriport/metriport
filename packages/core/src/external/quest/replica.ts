@@ -21,7 +21,7 @@ export class QuestReplica extends S3Replica {
     }
 
     // Replace leading slash for S3 directory name
-    this.incomingDirectoryName = Config.getQuestSftpIncomingDirectory().replace(/^\//, "");
+    this.incomingDirectoryName = this.getReplicaPath(Config.getQuestSftpIncomingDirectory());
   }
 
   async listAllResponseFiles(): Promise<QuestResponseFile[]> {

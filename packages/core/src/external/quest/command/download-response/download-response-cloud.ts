@@ -5,7 +5,7 @@ import { DownloadResponseCommandHandler } from "./download-response";
 export class QuestDownloadResponseHandlerCloud implements DownloadResponseCommandHandler {
   constructor(
     private readonly lambdaClient = makeLambdaClient(Config.getAWSRegion()),
-    private readonly lambdaName: string = Config.getQuestUploadRosterLambdaName()
+    private readonly lambdaName: string = Config.getQuestDownloadResponseLambdaName()
   ) {}
 
   async downloadAllQuestResponses(): Promise<void> {

@@ -102,8 +102,8 @@ function createSourceDocument({
   patientRows: IncomingRow[];
   responseFile: QuestResponseFile;
 }): QuestPatientResponseFile {
-  const { intervalId } = parseResponseFileName(responseFile.fileName);
-  const fileName = buildSourceDocumentFileName({ patientId, intervalId });
+  const { dateId } = parseResponseFileName(responseFile.fileName);
+  const fileName = buildSourceDocumentFileName({ patientId, dateId });
   const fileContentAsString = patientRows.map(row => row.source).join("\n");
   const fileContent = Buffer.from(fileContentAsString, "ascii");
   return { fileName, fileContent, patientId };

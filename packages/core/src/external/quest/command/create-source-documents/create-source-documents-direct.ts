@@ -1,4 +1,5 @@
 import { QuestPatientResponseFile, QuestResponseFile } from "../../types";
+import { executeAsynchronously } from "../../../../util/concurrency";
 import {
   splitAllResponseFilesIntoSourceDocuments,
   uploadSourceDocuments,
@@ -7,6 +8,8 @@ import { QuestCreateSourceDocumentsHandler } from "./create-source-documents";
 import { QuestFhirConverterCommand } from "../fhir-converter/fhir-converter";
 import { QuestFhirConverterCommandDirect } from "../fhir-converter/fhir-converter-direct";
 import { QuestReplica } from "../../replica";
+
+const MAX_PARALLEL_CONVERSION_INVOCATIONS = 10;
 
 export class QuestCreateSourceDocumentsHandlerDirect implements QuestCreateSourceDocumentsHandler {
   constructor(
@@ -20,14 +23,20 @@ export class QuestCreateSourceDocumentsHandlerDirect implements QuestCreateSourc
     const allSourceDocuments = splitAllResponseFilesIntoSourceDocuments(responseFiles);
     await uploadSourceDocuments(this.replica, allSourceDocuments);
 
-    // Trigger the next step of the data pipeline (FHIR conversion) separately
-    // for each source document that was generated.
-    for (const sourceDocument of allSourceDocuments) {
-      await this.next.convertSourceDocumentToFhirBundle({
-        patientId: sourceDocument.patientId,
-        sourceDocumentName: sourceDocument.fileName,
-      });
-    }
+    // Trigger the next step of the data pipeline (FHIR conversion) separately for each source document that was generated.
+    await executeAsynchronously(
+      allSourceDocuments,
+      async sourceDocument => {
+        await this.next.convertSourceDocumentToFhirBundle({
+          patientId: sourceDocument.patientId,
+          sourceDocumentName: sourceDocument.fileName,
+        });
+      },
+      {
+        numberOfParallelExecutions: MAX_PARALLEL_CONVERSION_INVOCATIONS,
+        keepExecutingOnError: true,
+      }
+    );
     return allSourceDocuments;
   }
 }

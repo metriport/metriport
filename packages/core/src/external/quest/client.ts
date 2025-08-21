@@ -82,7 +82,8 @@ export class QuestSftpClient extends SftpClient {
     if (!this.replica) {
       return [];
     }
-    return await this.replica.listFileNames(this.incomingDirectory);
+    const incomingDirectoryReplica = this.replica.getReplicaPath(this.incomingDirectory);
+    return await this.replica.listFileNames(incomingDirectoryReplica);
   }
 
   /**
