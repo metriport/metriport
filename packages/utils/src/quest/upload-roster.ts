@@ -9,8 +9,10 @@ import { QuestUploadRosterHandlerDirect } from "@metriport/core/external/quest/c
  * npm run quest -- upload-roster
  */
 const command = new Command();
+command.name("upload-roster");
+command.description("Upload latest Quest roster to Quest Diagnostics");
 
-command.command("upload-roster").action(async () => {
+command.action(async () => {
   console.log("Uploading latest Quest roster to Quest Diagnostics...");
   const handler = new QuestUploadRosterHandlerDirect();
   await handler.generateAndUploadLatestQuestRoster();
