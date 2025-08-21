@@ -48,8 +48,6 @@ export async function documentConsumption(commonWell: CommonWell, downloadAll = 
       assignAuthority: commonWell.oid,
     });
 
-    // await waitSeconds(5);
-
     const documents = await queryDocuments(commonWell, encodedPatientId);
     console.log(`>>> Got ${documents.length} documents`);
     for (const doc of documents) {
