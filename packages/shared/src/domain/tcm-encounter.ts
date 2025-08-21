@@ -74,3 +74,4 @@ export const tcmEncounterListQuerySchema = tcmEncounterQuerySchema;
 export type TcmEncounterListQuery = z.infer<typeof tcmEncounterListQuerySchema>;
 
 export type TcmEncounterUpsertInput = z.input<typeof tcmEncounterUpsertSchema>;
+export const SLACK_ADT_ROSTER_NOTIFICATION_URL = "SLACK_ADT_ROSTER_NOTIFICATION_URL";

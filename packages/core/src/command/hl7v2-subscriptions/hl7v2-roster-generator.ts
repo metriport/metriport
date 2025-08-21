@@ -1,4 +1,5 @@
 import {
+  errorToString,
   executeWithNetworkRetries,
   GenderAtBirth,
   InternalOrganizationDTO,
@@ -30,6 +31,9 @@ import {
 } from "./types";
 import { createScrambledId } from "./utils";
 import { analytics, EventTypes } from "../../external/analytics/posthog";
+import { PostHog } from "posthog-node";
+import { sendToSlack, SlackMessage } from "../../external/slack";
+import { getSecretValueOrFail } from "../../external/aws/secret-manager";
 const region = Config.getAWSRegion();
 
 type RosterRow = Record<string, string>;
@@ -42,6 +46,14 @@ const DEFAULT_ZIP_PLUS_4_EXT = "-0000";
 const BASE_DELAY = dayjs.duration({ seconds: 1 });
 const FOLDER_DATE_FORMAT = "YYYY-MM-DD";
 const FILE_DATE_FORMAT = "YYYYMMDD";
+
+const S3_FAILED = "S3 upload" as const;
+const SFTP_FAILED = "SFTP upload" as const;
+type FailedStage =
+  | typeof S3_FAILED
+  | typeof SFTP_FAILED
+  | `${typeof S3_FAILED} and ${typeof SFTP_FAILED}`
+  | undefined;
 
 export class Hl7v2RosterGenerator {
   private readonly s3Utils: S3Utils;
@@ -79,6 +91,8 @@ export class Hl7v2RosterGenerator {
       });
     }
 
+    const errors: string[] = [];
+
     const cxIds = new Set(patients.map(p => p.cxId));
 
     log(`Getting all organizations for patients...`);
@@ -111,7 +125,7 @@ export class Hl7v2RosterGenerator {
     log("Created CSV");
 
     const fileName = this.createFileKeyHl7v2Roster(hieName);
-    let failedStage: "s3" | "sftp" | undefined;
+    let failedStage: FailedStage = undefined;
 
     try {
       await storeInS3WithRetries({
@@ -128,32 +142,85 @@ export class Hl7v2RosterGenerator {
           shouldCapture: true,
         },
       });
-    } catch (e) {
-      failedStage = failedStage ?? "s3";
+      //eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (e: any) {
+      failedStage = S3_FAILED;
+      errors.push(errorToString(e));
       log(`Roster upload failed at ${failedStage}`, e);
     }
     log(`Saved in S3: ${this.bucketName}/${fileName}`);
 
     const rosterSize = rosterRows.length;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let ph: any;
+
+    this.logResults(rosterSize, hieName, failedStage, errors, log);
+    return rosterCsv;
+  }
+
+  private async logResults(
+    rosterSize: number,
+    hieName: string,
+    failedStage: FailedStage,
+    errors: string[],
+    log: typeof console.log
+  ): Promise<void> {
     try {
-      console.log(EventTypes.rosterUploadSummary, " ", hieName, " ", rosterSize);
-      ph = analytics({
-        event: EventTypes.rosterUploadSummary,
-        distinctId: `cx:${hieName}`,
-        properties: {
-          stateHie: hieName,
-          rosterSize: failedStage ? 0 : rosterSize,
-          ...(failedStage ? { failedStage } : { status: "ok" }),
-        },
-      });
-      await ph?.flush?.();
-    } finally {
-      ph?.shutdown?.();
+      await this.notifyPostHog(rosterSize, hieName, failedStage);
+      //eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (err: any) {
+      errors.push(err);
+      log("Failed to notify posthog");
     }
 
-    return rosterCsv;
+    try {
+      await this.notifySlack(rosterSize, hieName, failedStage, errors);
+      //eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (err: any) {
+      errors.push(err);
+      log("Failed to notify on slack: ", err);
+    }
+  }
+
+  private async notifyPostHog(rosterSize: number, hieName: string, failedStage: FailedStage) {
+    let posthog: PostHog | undefined;
+    try {
+      posthog =
+        analytics({
+          event: EventTypes.rosterUploadSummary,
+          distinctId: `cx:${hieName}`,
+          properties: {
+            stateHie: hieName,
+            rosterSize: failedStage ? 0 : rosterSize,
+            ...(failedStage ? { failedStage } : { status: "ok" }),
+          },
+        }) || undefined;
+      await posthog?.flush?.();
+    } finally {
+      posthog?.shutdown?.();
+    }
+  }
+
+  private async notifySlack(
+    rosterSize: number,
+    hieName: string,
+    failedStage: FailedStage,
+    errors: string[]
+  ): Promise<void> {
+    const slackUrlArn = Config.getSlackAdtRosterNotificationArn();
+    const slackUrl = await getSecretValueOrFail(slackUrlArn, region);
+
+    const subject = failedStage
+      ? `Tried ADT Roster upload to "${hieName}" with roster size: ${rosterSize}. :warning: FAILED at ${failedStage} :peepo_sad: :warning:`
+      : `ADT Roster uploaded to "${hieName}" with roster size: ${rosterSize} :peepo_wow:`;
+
+    const message = failedStage && errors?.length ? errors.map(e => `• ${e}`).join("\n") : "";
+
+    const slackMessage: SlackMessage = {
+      subject,
+      message,
+      emoji: ":peepo_doctor:",
+    };
+
+    await sendToSlack(slackMessage, slackUrl);
   }
 
   private async getAllSubscribedPatients(hieName: string): Promise<Patient[]> {

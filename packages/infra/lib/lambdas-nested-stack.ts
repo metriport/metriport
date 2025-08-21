@@ -28,6 +28,7 @@ import { buildSecret, Secrets } from "./shared/secrets";
 import { QueueAndLambdaSettings } from "./shared/settings";
 import { createQueue } from "./shared/sqs";
 import { isSandbox } from "./shared/util";
+import { SLACK_ADT_ROSTER_NOTIFICATION_URL } from "@metriport/shared/domain/tcm-encounter";
 
 export const CDA_TO_VIS_TIMEOUT = Duration.minutes(15);
 
@@ -1016,8 +1017,12 @@ export class LambdasNestedStack extends NestedStack {
     const rosterUploadLambdas: Lambda[] = [];
     if (config.hl7Notification?.hieConfigs) {
       const hl7ScramblerSeedSecret = secrets["HL7_BASE64_SCRAMBLER_SEED"];
+      const slackAdtRosterNotificationSecret = secrets[SLACK_ADT_ROSTER_NOTIFICATION_URL];
       if (!hl7ScramblerSeedSecret) {
-        throw new Error(`${hl7ScramblerSeedSecret} is not defined in config`);
+        throw new Error(`HL7_BASE64_SCRAMBLER_SEED is not defined in config`);
+      }
+      if (!slackAdtRosterNotificationSecret) {
+        throw new Error(`${SLACK_ADT_ROSTER_NOTIFICATION_URL} is not defined in config`);
       }
 
       const scramblerSeedSecretName = config.hl7Notification.secrets.HL7_BASE64_SCRAMBLER_SEED;
@@ -1035,6 +1040,7 @@ export class LambdasNestedStack extends NestedStack {
             HL7V2_ROSTER_BUCKET_NAME: hl7v2RosterBucket.bucketName,
             API_URL: config.loadBalancerDnsName,
             HL7_BASE64_SCRAMBLER_SEED: scramblerSeedSecretName,
+            SLACK_ADT_ROSTER_NOTIFICATION_URL_ARN: slackAdtRosterNotificationSecret.secretArn,
             ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
           },
           layers: [lambdaLayers.shared],
@@ -1042,7 +1048,7 @@ export class LambdasNestedStack extends NestedStack {
           vpc,
           alarmSnsAction: alarmAction,
         });
-
+        slackAdtRosterNotificationSecret.grantRead(lambda);
         hl7ScramblerSeedSecret.grantRead(lambda);
         hl7v2RosterBucket.grantReadWrite(lambda);
 

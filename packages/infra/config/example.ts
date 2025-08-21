@@ -164,6 +164,7 @@ export const config: EnvConfigNonSandbox = {
     },
     secrets: {
       HL7_BASE64_SCRAMBLER_SEED: "your-base64-scrambler-seed",
+      SLACK_ADT_ROSTER_NOTIFICATION_URL: "your-slack-url",
     },
     mllpServer: {
       sentryDSN: "your-sentry-dsn",
