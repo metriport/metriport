@@ -1,5 +1,6 @@
 import { Command } from "commander";
 import { QuestUploadRosterHandlerDirect } from "@metriport/core/external/quest/command/upload-roster/upload-roster-direct";
+import { QuestSftpClient } from "@metriport/core/external/quest/client";
 
 /**
  * Uploads the latest roster of patients subscribed to Quest monitoring to Quest Diagnostics over SFTP.
@@ -14,7 +15,8 @@ command.description("Upload latest Quest roster to Quest Diagnostics");
 
 command.action(async () => {
   console.log("Uploading latest Quest roster to Quest Diagnostics...");
-  const handler = new QuestUploadRosterHandlerDirect();
+  const client = new QuestSftpClient({ logLevel: "debug" });
+  const handler = new QuestUploadRosterHandlerDirect(client);
   await handler.generateAndUploadLatestQuestRoster();
   console.log("Upload of Quest roster completed");
 });
