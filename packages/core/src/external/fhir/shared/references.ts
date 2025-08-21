@@ -9,7 +9,7 @@ import {
 } from "@medplum/fhirtypes";
 import { chunk, groupBy } from "lodash";
 import { XOR } from "ts-essentials";
-import { buildEntryReference } from ".";
+import { buildResourceReference } from ".";
 import { executeAsynchronously } from "../../../util/concurrency";
 import { makeFhirApi } from "../api/api-factory";
 
@@ -110,7 +110,7 @@ export function buildEncounterParticipant(input: EncounterParticipantInput): Enc
     return { individual: { reference: `Practitioner/${input.practitionerId}` } };
   }
 
-  return { individual: { reference: buildEntryReference(input.resource) } };
+  return { individual: { reference: buildResourceReference(input.resource) } };
 }
 
 type EncounterLocationInput = XOR<{ locationId: string }, { resource: Resource }>;
@@ -119,7 +119,7 @@ export function buildLocationReference(input: EncounterLocationInput): Encounter
     return { location: { reference: `Location/${input.locationId}` } };
   }
 
-  return { location: { reference: buildEntryReference(input.resource) } };
+  return { location: { reference: buildResourceReference(input.resource) } };
 }
 
 type EncounterDiagnosisInput = XOR<{ conditionId: string }, { resource: Resource }>;
@@ -128,5 +128,5 @@ export function buildConditionReference(input: EncounterDiagnosisInput): Encount
     return { condition: { reference: `Condition/${input.conditionId}` } };
   }
 
-  return { condition: { reference: buildEntryReference(input.resource) } };
+  return { condition: { reference: buildResourceReference(input.resource) } };
 }

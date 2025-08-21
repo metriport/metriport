@@ -1,12 +1,13 @@
 import { Encounter } from "@medplum/fhirtypes";
 import {
   DeduplicationResult,
+  dangerouslyAssignMostDescriptiveStatus,
+  dangerouslyAssignMostSevereClass,
   combineResources,
   createKeysFromObjectArray,
   createRef,
   deduplicateAndTrackResource,
   getDateFromResource,
-  assignMostDescriptiveStatus,
 } from "../shared";
 
 const encounterStatus = [
@@ -36,7 +37,11 @@ export const statusRanking: Record<EncounterStatus, number> = {
 };
 
 function preprocessStatus(existing: Encounter, target: Encounter) {
-  return assignMostDescriptiveStatus(statusRanking, existing, target);
+  return dangerouslyAssignMostDescriptiveStatus(statusRanking, existing, target);
+}
+
+function preprocessClass(existing: Encounter, target: Encounter) {
+  return dangerouslyAssignMostSevereClass(existing, target);
 }
 
 export function deduplicateEncounters(encounters: Encounter[]): DeduplicationResult<Encounter> {
@@ -108,6 +113,55 @@ export function groupSameEncounters(encounters: Encounter[]): {
         incomingResource: encounter,
         refReplacementMap,
         onPremerge: preprocessStatus,
+      });
+    } else {
+      danglingReferences.add(createRef(encounter));
+    }
+  }
+
+  return {
+    encountersMap: dedupedResourcesMap,
+    refReplacementMap,
+    danglingReferences,
+  };
+}
+
+export function groupSameEncountersDatetimeOnly(encounters: Encounter[]): {
+  encountersMap: Map<string, Encounter>;
+  refReplacementMap: Map<string, string>;
+  danglingReferences: Set<string>;
+} {
+  const resourceKeyMap = new Map<string, string>();
+  const dedupedResourcesMap = new Map<string, Encounter>();
+
+  const refReplacementMap = new Map<string, string>();
+  const danglingReferences = new Set<string>();
+
+  for (const encounter of encounters) {
+    const datetime = getDateFromResource(encounter, "datetime");
+
+    const identifierKeys: string[] = [];
+    const matchCandidateKeys: string[] = [];
+
+    if (datetime) {
+      const dateKey = JSON.stringify({ datetime });
+      identifierKeys.push(dateKey);
+      matchCandidateKeys.push(dateKey);
+    }
+
+    if (identifierKeys.length > 0) {
+      deduplicateAndTrackResource({
+        resourceKeyMap,
+        dedupedResourcesMap,
+        identifierKeys,
+        matchCandidateKeys,
+        incomingResource: encounter,
+        refReplacementMap,
+        keepExtensions: true,
+        onPremerge: (existing, target) => {
+          preprocessStatus(existing, target);
+          preprocessClass(existing, target);
+        },
       });
     } else {
       danglingReferences.add(createRef(encounter));

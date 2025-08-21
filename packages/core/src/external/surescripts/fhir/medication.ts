@@ -7,13 +7,13 @@ import {
   MedicationBatch,
   Reference,
 } from "@medplum/fhirtypes";
-import { ResponseDetail } from "../schema/response";
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { getDeaScheduleName } from "@metriport/shared/interface/external/surescripts/dea-schedule";
 import { getNcpdpName } from "@metriport/shared/interface/external/surescripts/ncpdp";
-import { DEA_SCHEDULE_URL, UNIT_OF_MEASURE_URL } from "./constants";
-import { NDC_URL, SNOMED_URL } from "../../../util/constants";
+import { ResponseDetail } from "../schema/response";
 import { getSurescriptsDataSourceExtension } from "./shared";
+import { DEA_SCHEDULE_URL, UNIT_OF_MEASURE_URL } from "./constants";
+import { NDC_URL, SNOMED_URL } from "@metriport/shared/medical";
 
 export function getMedication(detail: ResponseDetail): Medication {
   const code = getMedicationCodeableConcept(detail);
