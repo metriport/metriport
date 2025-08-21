@@ -28,6 +28,7 @@ import { buildSecret, Secrets } from "./shared/secrets";
 import { QueueAndLambdaSettings } from "./shared/settings";
 import { createQueue } from "./shared/sqs";
 import { isSandbox } from "./shared/util";
+import { getHieSftpPasswordSecretName } from "./secrets-stack";
 
 export const CDA_TO_VIS_TIMEOUT = Duration.minutes(15);
 
@@ -1024,6 +1025,12 @@ export class LambdasNestedStack extends NestedStack {
       const hieConfigs = config.hl7Notification.hieConfigs;
 
       Object.entries(hieConfigs).forEach(([hieName, hieConfig]) => {
+        const passwordSecretName = getHieSftpPasswordSecretName(hieName);
+        const passwordSecret = secrets[passwordSecretName];
+        if (!passwordSecret) {
+          throw new Error(`${passwordSecretName} is not defined in config`);
+        }
+
         const lambda = createScheduledLambda({
           stack: this,
           name: `Hl7v2RosterUpload-${hieName}`,
@@ -1035,6 +1042,7 @@ export class LambdasNestedStack extends NestedStack {
             HL7V2_ROSTER_BUCKET_NAME: hl7v2RosterBucket.bucketName,
             API_URL: config.loadBalancerDnsName,
             HL7_BASE64_SCRAMBLER_SEED: scramblerSeedSecretName,
+            ROSTER_UPLOAD_SFTP_PASSWORD_ARN: passwordSecret.secretArn,
             ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
           },
           layers: [lambdaLayers.shared],
@@ -1042,7 +1050,7 @@ export class LambdasNestedStack extends NestedStack {
           vpc,
           alarmSnsAction: alarmAction,
         });
-
+        passwordSecret.grantRead(lambda);
         hl7ScramblerSeedSecret.grantRead(lambda);
         hl7v2RosterBucket.grantReadWrite(lambda);
 

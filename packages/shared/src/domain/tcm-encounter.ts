@@ -74,3 +74,5 @@ export const tcmEncounterListQuerySchema = tcmEncounterQuerySchema;
 export type TcmEncounterListQuery = z.infer<typeof tcmEncounterListQuerySchema>;
 
 export type TcmEncounterUpsertInput = z.input<typeof tcmEncounterUpsertSchema>;
+
+export const ROSTER_UPLOAD_SFTP_PASSWORD = "ROSTER_UPLOAD_SFTP_PASSWORD";
