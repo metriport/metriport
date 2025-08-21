@@ -128,7 +128,6 @@ export async function get(orgOid: string): Promise<CwSdkOrganization | undefined
   }
 }
 
-// TODO: Make sure this works as expected
 export async function getOrFail(orgOid: string): Promise<CwSdkOrganization | undefined> {
   const { log, debug } = out(`CW.v2 get Org or fail - CW Org OID ${orgOid}`);
   const commonWell = makeCommonWellMemberAPI(Config.getCWMemberOrgName(), Config.getCWMemberID());
