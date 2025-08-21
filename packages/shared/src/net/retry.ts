@@ -9,6 +9,8 @@ import {
 import { NetworkError, networkTimeoutErrors } from "./error";
 import { isMetriportError } from "../error/metriport-error";
 import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
+dayjs.extend(duration);
 
 export const tooManyRequestsStatus = 429;
 const tooManyRequestsMultiplier = 3;
