@@ -24,7 +24,7 @@
   //     CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.  
   // -------------------------------------------------------------------------------------------------
 --}}
-{{#if (nullFlavorAwareOr period.low period.high)}}
+{{#if (or (nullFlavorAwareOr period.low period.high) (nullFlavorAwareOr period.value))}}
     {{>DataType/Period.hbs period=period}}
 {{else}}
     {{>DataType/Period.hbs period=@encounterTimePeriod}}
