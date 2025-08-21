@@ -121,8 +121,9 @@ export class SecretsStack extends Stack {
       const hieNames = Object.values(props.config.hl7Notification.hieConfigs).flatMap(c => [
         c.name,
       ]);
-
+      console.log("Uhm what?:", hieNames.length);
       for (const hieName of hieNames) {
+        console.log("Uhm what?", hieName);
         const isStag = isStaging(props.config);
         const secretName = getHiePasswordSecretName(hieName, isStag);
         const secret = makeSecret(secretName);
