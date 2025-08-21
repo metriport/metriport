@@ -3,14 +3,14 @@ dotenv.config();
 // keep that ^ above all other imports
 import { APIMode, CommonWell, Organization } from "@metriport/commonwell-sdk";
 import { makeNPI } from "@metriport/shared/common/__tests__/npi";
-import { existingOrgId, memberOID, orgCertificateString, orgPrivateKeyString } from "../env";
+import { existingOrgOid, orgCertificateString, orgPrivateKeyString } from "../env";
 import { initContributionHttpServer } from "../flows/contribution/contribution-server";
 
 /**
  * Supporting function used to get a patient by ID.
  */
 export async function main() {
-  const organizationId = existingOrgId;
+  const organizationId = existingOrgOid;
   if (!organizationId) throw new Error("Organization ID is required");
   const org: Pick<Organization, "name" | "organizationId" | "npiType2"> = {
     name: "Test Organization",
@@ -23,7 +23,7 @@ export async function main() {
     rsaPrivateKey: orgPrivateKeyString,
     orgName: org.name,
     oid: org.organizationId,
-    homeCommunityId: memberOID,
+    homeCommunityId: org.organizationId,
     npi: org.npiType2,
     apiMode: APIMode.integration,
   });

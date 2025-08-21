@@ -5,7 +5,7 @@ import { uniq } from "lodash";
 import { makePatient } from "../payloads";
 import { patientTracyCrane } from "../payloads/patient-tracy";
 import { createProbablePatientSina } from "../payloads/probable-patient-sina";
-import { getMetriportPatientIdOrFail, logError, waitSeconds } from "../util";
+import { getMetriportPatientIdOrFail, logError } from "../util";
 
 /**
  * This flow is used to test the patient link management API.
@@ -38,8 +38,6 @@ export async function linkManagement(commonWell: CommonWell) {
       assignAuthority: commonWell.oid,
     });
 
-    await waitSeconds(5);
-
     console.log(`>>> 2.1.2 Get Patient Links - ID ${patientWithLinksId}`);
     const resp_2_1_2 = await commonWell.getPatientLinksByPatientId(patientWithLinksIdEncoded);
     console.log(">>> Transaction ID: " + commonWell.lastTransactionId);
@@ -70,8 +68,6 @@ export async function linkManagement(commonWell: CommonWell) {
     console.log(">>> 2.2.1 Get Patient Response: " + stringify(patientWithProbableLinks));
     if (!patientWithProbableLinks) throw new Error("Did not get a patient from the response");
     console.log(">>> 2.2.1 URLs to manage links: " + stringify(patientWithProbableLinks?.Links));
-
-    await waitSeconds(5);
 
     console.log(`>>> 2.2.2 Get Patient Links for ID ${patientWithProbableLinksId}`);
     const resp_2_2_2 = await commonWell.getPatientLinksByPatientId(
@@ -134,7 +130,6 @@ export async function linkManagement(commonWell: CommonWell) {
       console.log(">>> 2.3.2 Response: " + stringify(resp_2_3_2));
     }
 
-    await waitSeconds(5);
     console.log(`>>> 2.3.3 Get Patient Links for ID ${patientWithProbableLinksId}`);
     const resp_2_3_3 = await commonWell.getPatientLinksByPatientId(
       patientWithProbableLinksIdEnconded
@@ -150,7 +145,6 @@ export async function linkManagement(commonWell: CommonWell) {
 
     // Don't unlink patient 2 so we can check the reset link works (it should unlink it automatically)
 
-    await waitSeconds(5);
     console.log(`>>> 2.4.2 Get Patient Links - ID ${patientWithProbableLinksId}`);
     const resp_2_4_2 = await commonWell.getPatientLinksByPatientId(
       patientWithProbableLinksIdEnconded
@@ -170,8 +164,6 @@ export async function linkManagement(commonWell: CommonWell) {
     const resp_2_5_1 = await commonWell.resetPatientLinks(urlToResetPatientLinks);
     console.log(">>> Transaction ID: " + commonWell.lastTransactionId);
     console.log(">>> 2.5.1 Response: " + stringify(resp_2_5_1));
-
-    await waitSeconds(5);
     console.log(`>>> 2.5.2 Get Patient Links - ID ${patientWithProbableLinksId}`);
     const resp_2_5_2 = await commonWell.getPatientLinksByPatientId(
       patientWithProbableLinksIdEnconded

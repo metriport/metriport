@@ -302,7 +302,17 @@ export async function isSurescriptsNotificationsFeatureFlagEnabledForCx(
 export async function getCxsWithQuestFeatureFlag(): Promise<string[]> {
   return getCxsWithFeatureFlagEnabled("cxsWithQuestFeatureFlag");
 }
+
 export async function isQuestFeatureFlagEnabledForCx(cxId: string): Promise<boolean> {
   const cxIdsWithQuestEnabled = await getCxsWithQuestFeatureFlag();
   return cxIdsWithQuestEnabled.some(i => i === cxId);
+}
+
+export async function getCxsEnabledForCommonwellV2(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsEnabledForCommonwellV2");
+}
+
+export async function isCommonwellV2EnabledForCx(cxId: string): Promise<boolean> {
+  const cxIdsWithCommonwellV2Enabled = await getCxsEnabledForCommonwellV2();
+  return cxIdsWithCommonwellV2Enabled.some(i => i === cxId);
 }

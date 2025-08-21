@@ -8,7 +8,7 @@ import {
   buildSearchSetBundle,
 } from "@metriport/core/external/fhir/bundle/bundle";
 import express, { Application, Request, Response } from "express";
-import { contribServerPort, contribServerUrl, memberOID } from "../../env";
+import { contribServerPort, contribServerUrl } from "../../env";
 import { makeBinary } from "./binary";
 import { makeDocumentReference } from "./document-reference";
 import { makeToken, verifySignature } from "./token";
@@ -39,11 +39,11 @@ app.post(
   express.urlencoded({ extended: true }),
   (req: Request, res: Response): void => {
     try {
-      console.log(`\nToken request`);
-      console.log(`>>> Headers: ${JSON.stringify(req.headers, null, 2)}`);
-      console.log(`>>> Path: ${req.path}`);
-      console.log(`>>> Query: ${JSON.stringify(req.query, null, 2)}`);
-      console.log(`>>> Body: ${JSON.stringify(req.body, null, 2)}`);
+      console.log(`[server] \nToken request`);
+      console.log(`[server] >>> Headers: ${JSON.stringify(req.headers, null, 2)}`);
+      console.log(`[server] >>> Path: ${req.path}`);
+      console.log(`[server] >>> Query: ${JSON.stringify(req.query, null, 2)}`);
+      console.log(`[server] >>> Body: ${JSON.stringify(req.body, null, 2)}`);
 
       const accessToken = makeToken(req, commonWell.oid, commonWell.orgName);
 
@@ -53,7 +53,7 @@ app.post(
       };
       res.status(200).json(oauthResponse);
     } catch (error) {
-      console.log("Token generation failed:", error);
+      console.log("[server] Token generation failed:", error);
       res.status(400).json({
         error: "invalid_request",
         error_description: error instanceof Error ? error.message : "Unknown error",
@@ -78,29 +78,28 @@ app.post(
  * "patient": "<org-oid>|<patient-id>",
  */
 app.get("/oauth/fhir/DocumentReference", async (req: Request, res: Response): Promise<void> => {
-  console.log(`\nDocumentReference request`);
-  console.log(`>>> Headers: ${JSON.stringify(req.headers, null, 2)}`);
-  console.log(`>>> Path: ${req.path}`);
-  console.log(`>>> Query: ${JSON.stringify(req.query, null, 2)}`);
-  console.log(`>>> Body: ${JSON.stringify(req.body, null, 2)}`);
+  console.log(`[server] \nDocumentReference request`);
+  console.log(`[server] >>> Headers: ${JSON.stringify(req.headers, null, 2)}`);
+  console.log(`[server] >>> Path: ${req.path}`);
+  console.log(`[server] >>> Query: ${JSON.stringify(req.query, null, 2)}`);
+  console.log(`[server] >>> Body: ${JSON.stringify(req.body, null, 2)}`);
 
   if (!verifySignature(req)) {
-    console.log(`Token verification failed`);
+    console.log(`[server] Token verification failed`);
     res.sendStatus(401);
     return;
   }
-  console.log(`Token verification successful!!!`);
+  console.log(`[server] Token verification successful!!!`);
 
   const patientId = (req.query.patient ?? req.query.subject ?? "").toString();
   if (!patientId) {
-    console.log(`>>> No patient ID found in query`);
+    console.log(`[server] >>> No patient ID found in query`);
     res.status(400).json(buildResponseMessage("No patient ID found in query"));
     return;
   }
 
   const binaryId = faker.string.uuid();
   const docRef = makeDocumentReference({
-    memberOID,
     orgId: commonWell.oid,
     orgName: commonWell.orgName,
     patientId,
@@ -119,18 +118,18 @@ app.get("/oauth/fhir/DocumentReference", async (req: Request, res: Response): Pr
  * that endpoint.
  */
 app.get("/oauth/fhir/Binary/:id", async (req: Request, res: Response): Promise<void> => {
-  console.log(`\nBinary request`);
-  console.log(`>>> Headers: ${JSON.stringify(req.headers, null, 2)}`);
-  console.log(`>>> Path: ${req.path}`);
-  console.log(`>>> Query: ${JSON.stringify(req.query, null, 2)}`);
-  console.log(`>>> Body: ${JSON.stringify(req.body, null, 2)}`);
+  console.log(`[server] \nBinary request`);
+  console.log(`[server] >>> Headers: ${JSON.stringify(req.headers, null, 2)}`);
+  console.log(`[server] >>> Path: ${req.path}`);
+  console.log(`[server] >>> Query: ${JSON.stringify(req.query, null, 2)}`);
+  console.log(`[server] >>> Body: ${JSON.stringify(req.body, null, 2)}`);
 
   if (!verifySignature(req)) {
-    console.log(`Token verification failed`);
+    console.log(`[server] Token verification failed`);
     res.sendStatus(401);
     return;
   }
-  console.log(`Token verification successful!!!`);
+  console.log(`[server] Token verification successful!!!`);
 
   const binary = makeBinary();
 
@@ -140,11 +139,11 @@ app.get("/oauth/fhir/Binary/:id", async (req: Request, res: Response): Promise<v
 app.use(express.json({ limit: "2mb" }));
 
 app.all("*", async (req: Request, res: Response): Promise<void> => {
-  console.log(`\nNOT FOUND`);
-  console.log(`>>> Headers: ${JSON.stringify(req.headers, null, 2)}`);
-  console.log(`>>> Path: ${req.path}`);
-  console.log(`>>> Query: ${JSON.stringify(req.query, null, 2)}`);
-  console.log(`>>> Body: ${JSON.stringify(req.body, null, 2)}`);
+  console.log(`[server] \nNOT FOUND`);
+  console.log(`[server] >>> Headers: ${JSON.stringify(req.headers, null, 2)}`);
+  console.log(`[server] >>> Path: ${req.path}`);
+  console.log(`[server] >>> Query: ${JSON.stringify(req.query, null, 2)}`);
+  console.log(`[server] >>> Body: ${JSON.stringify(req.body, null, 2)}`);
   res.sendStatus(404);
 });
 
@@ -158,7 +157,7 @@ export async function initContributionHttpServer(commonWellParam: CommonWell) {
 
   const port = contribServerPort;
   app.listen(port, "0.0.0.0", async () => {
-    console.log(`[server]: HTTP server is running on port ${port}`);
+    console.log(`[server] HTTP server is running on port ${port}`);
   });
 }
 
