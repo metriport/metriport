@@ -1,13 +1,7 @@
 import { faker } from "@faker-js/faker";
 import { APIMode, CommonWell, CommonWellMember } from "@metriport/commonwell-sdk";
 import { errorToString } from "@metriport/shared";
-import {
-  existingInitiatorOnlyOrgOid,
-  memberCertificateString,
-  memberId,
-  memberName,
-  memberPrivateKeyString,
-} from "../env";
+import { memberCertificateString, memberId, memberName, memberPrivateKeyString } from "../env";
 import { makeOrganization } from "../payloads";
 
 export type OrgManagementResponse = {
@@ -33,56 +27,32 @@ export async function orgManagementInitiatorOnly(): Promise<void> {
   try {
     console.log(`>>> Create an initiator only org`);
     const initiatorOnlyOrgCreate = makeOrganization();
-    initiatorOnlyOrgCreate.securityTokenKeyType = null;
-    initiatorOnlyOrgCreate.authorizationInformation = null;
-    // console.log(`Request payload: ${JSON.stringify(org, null, 2)}`);
+    initiatorOnlyOrgCreate.gateways = [];
+    initiatorOnlyOrgCreate.securityTokenKeyType = "";
+    delete initiatorOnlyOrgCreate.authorizationInformation;
+
+    // console.log(`Request payload: ${JSON.stringify(initiatorOnlyOrgCreate, null, 2)}`);
     const respCreateInitiatorOnly = await commonWellMember.createOrg(initiatorOnlyOrgCreate);
     console.log(">>> Transaction ID: " + commonWellMember.lastTransactionId);
     console.log(">>> Response: " + JSON.stringify(respCreateInitiatorOnly, null, 2));
     const initiatorOnlyOrgId = respCreateInitiatorOnly.organizationId;
 
-    console.log(`>>> Get one org`);
+    console.log(`>>> Get one org: ${initiatorOnlyOrgId}`);
     const respGetInitiatorOnly = await commonWellMember.getOneOrg(initiatorOnlyOrgId);
-    console.log(">>> Transaction ID: " + commonWellMember.lastTransactionId);
+    console.log(">>> Transaction ID:" + commonWellMember.lastTransactionId);
     console.log(">>> Response: " + JSON.stringify(respGetInitiatorOnly, null, 2));
     if (!respGetInitiatorOnly) throw new Error("No org on response from getOneOrg");
     const initiatorOnlyOrg = respGetInitiatorOnly;
 
     console.log(`>>> Update an org`);
     initiatorOnlyOrg.locations[0].city = faker.location.city();
-    const respUpdateInitiatorOnly = await commonWellMember.updateOrg(initiatorOnlyOrg);
-    console.log(">>> Transaction ID: " + commonWellMember.lastTransactionId);
-    console.log(">>> Response: " + JSON.stringify(respUpdateInitiatorOnly, null, 2));
-  } catch (error) {
-    console.log(`Error (txId ${commonWellMember.lastTransactionId}): ${errorToString(error)}`);
-    errors.push(error);
-  }
-  try {
-    const orgId = existingInitiatorOnlyOrgOid;
-    // TODO can try to create one if not provided - was failing before b/c of the cache issue on CW's end
-    if (!orgId) throw new Error("No org ID to run initiator only org update flow");
+    // console.log("Updated payload: " + JSON.stringify(initiatorOnlyOrg, null, 2));
 
-    console.log(`>>> Get one org`);
-    const respGetInitiatorOnly = await commonWellMember.getOneOrg(orgId);
-    console.log(">>> Transaction ID: " + commonWellMember.lastTransactionId);
-    console.log(">>> Response: " + JSON.stringify(respGetInitiatorOnly, null, 2));
-    if (!respGetInitiatorOnly) throw new Error("No org on response from getOneOrg");
-    const initiatorOnlyOrg = respGetInitiatorOnly;
-
-    if ("securityTokenKeyType" in initiatorOnlyOrg && initiatorOnlyOrg.securityTokenKeyType) {
-      console.log(`HEADS UP: Security token key type is not null`);
-      delete initiatorOnlyOrg.securityTokenKeyType;
-    }
-    if (
-      "authorizationInformation" in initiatorOnlyOrg &&
-      initiatorOnlyOrg.authorizationInformation
-    ) {
-      console.log(`HEADS UP: Authorization information is not null`);
+    initiatorOnlyOrg.securityTokenKeyType = "";
+    if ("authorizationInformation" in initiatorOnlyOrg) {
       delete initiatorOnlyOrg.authorizationInformation;
     }
 
-    console.log(`>>> Update the org`);
-    initiatorOnlyOrg.locations[0].city = faker.location.city();
     const respUpdateInitiatorOnly = await commonWellMember.updateOrg(initiatorOnlyOrg);
     console.log(">>> Transaction ID: " + commonWellMember.lastTransactionId);
     console.log(">>> Response: " + JSON.stringify(respUpdateInitiatorOnly, null, 2));
