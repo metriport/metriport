@@ -298,12 +298,12 @@ export function findResourceInBundle(bundle: Bundle, reference: string): Resourc
     return undefined;
   }
   const entry = bundle.entry.find(entry => {
-    const entryReference = entry.resource ? buildEntryReference(entry.resource) : undefined;
+    const entryReference = entry.resource ? buildResourceReference(entry.resource) : undefined;
     return entryReference === reference;
   });
   return entry?.resource;
 }
 
-export function buildEntryReference(resource: Resource): string {
+export function buildResourceReference(resource: Resource): string {
   return `${resource.resourceType}/${resource.id}`;
 }

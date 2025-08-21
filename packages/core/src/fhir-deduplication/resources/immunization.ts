@@ -2,7 +2,7 @@ import { CodeableConcept, Immunization } from "@medplum/fhirtypes";
 import { CVX_CODE, CVX_OID, NDC_CODE, NDC_OID } from "../../util/constants";
 import {
   DeduplicationResult,
-  assignMostDescriptiveStatus,
+  dangerouslyAssignMostDescriptiveStatus,
   combineResources,
   createKeysFromObjectArray,
   createKeysFromObjectArrayAndBits,
@@ -25,7 +25,7 @@ export const statusRanking: Record<ImmunizationStatus, number> = {
 };
 
 function preprocessStatus(existing: Immunization, target: Immunization) {
-  return assignMostDescriptiveStatus(statusRanking, existing, target);
+  return dangerouslyAssignMostDescriptiveStatus(statusRanking, existing, target);
 }
 
 export function deduplicateImmunizations(
