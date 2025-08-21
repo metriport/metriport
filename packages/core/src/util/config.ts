@@ -397,7 +397,7 @@ export class Config {
     return getEnvVar("FHIR_TO_CSV_BATCH_JOB_DEFINITION_ARN");
   }
 
-  static getSftpPasswordOrFail(): string {
+  static getSftpPasswordArnOrFail(): string {
     return getEnvVarOrFail("SFTP_PASSWORD");
   }
 }

@@ -7,6 +7,7 @@ import { simpleExecuteWithRetriesAsDuration } from "@metriport/shared";
 import { initTimer } from "@metriport/shared/common/timer";
 import dayjs from "dayjs";
 import { Config } from "../../util/config";
+import { getSecretValueOrFail } from "../../external/aws/secret-manager";
 
 const NUMBER_OF_ATTEMPTS = 3;
 const BASE_DELAY = dayjs.duration({ seconds: 1 });
@@ -35,7 +36,7 @@ export async function uploadToRemoteSftp(
   const remoteFileName = createFileNameHl7v2Roster(hieName);
 
   await simpleExecuteWithRetriesAsDuration(
-    () => sendViaSftp(sftpConfig, file, remoteFileName, log),
+    () => sendViaSftp(sftpConfig, file, remoteFileName),
     NUMBER_OF_ATTEMPTS,
     BASE_DELAY,
     log
@@ -43,16 +44,13 @@ export async function uploadToRemoteSftp(
   log(`SFTP upload completed in ${uploadTimer.getElapsedTime()}ms`);
 }
 
-async function sendViaSftp(
-  sftpConfig: HieSftpConfig,
-  file: string,
-  remoteFileName: string,
-  log: typeof console.log
-) {
+async function sendViaSftp(sftpConfig: HieSftpConfig, file: string, remoteFileName: string) {
   const remoteFolderPath = sftpConfig.remotePath;
-  const password = Config.getSftpPasswordOrFail();
-  log(`The sftp config I got is: ${sftpConfig}`);
-  log(`The password I got is: ${password}`);
+  const passwordArn = Config.getSftpPasswordArnOrFail();
+  const region = Config.getAWSRegion();
+
+  const password = await getSecretValueOrFail(passwordArn, region);
+
   const client = new SftpClient({
     ...sftpConfig,
     password,
