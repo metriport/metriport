@@ -5,7 +5,6 @@ import { EnvConfig } from "../../config/env-config";
 import { isSandbox } from "./util";
 import { HieConfig, VpnlessHieConfig } from "@metriport/core/command/hl7v2-subscriptions/types";
 import { getHieSftpPasswordSecretName } from "../secrets-stack";
-import { ROSTER_UPLOAD_SFTP_PASSWORD } from "@metriport/shared/domain/tcm-encounter";
 
 export type Secrets = { [key: string]: secret.ISecret };
 
@@ -60,7 +59,7 @@ function collectHiePasswordSecretNames(
   for (const hieConfig of Object.values(hies)) {
     const secretName = getHieSftpPasswordSecretName(hieConfig.name);
     if (secretName) {
-      out[ROSTER_UPLOAD_SFTP_PASSWORD] = secretName;
+      out[secretName] = secretName;
     }
   }
   return out;
