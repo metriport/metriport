@@ -1027,7 +1027,10 @@ export class LambdasNestedStack extends NestedStack {
       Object.entries(hieConfigs).forEach(([hieName, hieConfig]) => {
         const isStag = isStaging(config);
         const passwordSecretName = getHiePasswordSecretName(hieName, isStag);
-        console.log(`RADMIR THIS IS FOR YOU :) ${hieName}: ${passwordSecretName}`);
+        const passwordSecret = secrets[passwordSecretName];
+        if (!passwordSecret) {
+          throw new Error(`${passwordSecret} is not defined in config`);
+        }
 
         const lambda = createScheduledLambda({
           stack: this,
@@ -1040,7 +1043,7 @@ export class LambdasNestedStack extends NestedStack {
             HL7V2_ROSTER_BUCKET_NAME: hl7v2RosterBucket.bucketName,
             API_URL: config.loadBalancerDnsName,
             HL7_BASE64_SCRAMBLER_SEED: scramblerSeedSecretName,
-            SFTP_PASSWORD: passwordSecretName,
+            SFTP_PASSWORD: passwordSecret.secretValue.toString(),
             ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
           },
           layers: [lambdaLayers.shared],
@@ -1048,7 +1051,7 @@ export class LambdasNestedStack extends NestedStack {
           vpc,
           alarmSnsAction: alarmAction,
         });
-
+        passwordSecret.grantRead(lambda);
         hl7ScramblerSeedSecret.grantRead(lambda);
         hl7v2RosterBucket.grantReadWrite(lambda);
 
