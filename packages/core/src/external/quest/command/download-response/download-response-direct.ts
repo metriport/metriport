@@ -1,5 +1,6 @@
 import { MetriportError } from "@metriport/shared";
 import { executeAsynchronously } from "../../../../util/concurrency";
+import { out, LogFunction } from "../../../../util/log";
 import { QuestSftpClient } from "../../client";
 import { QuestReplica } from "../../replica";
 import { QuestPatientResponseFile } from "../../types";
@@ -11,24 +12,30 @@ import { QuestFhirConverterCommandDirect } from "../fhir-converter/fhir-converte
 const numberOfParallelExecutions = 10;
 
 export class DownloadResponseHandlerDirect implements DownloadResponseCommandHandler {
+  private readonly log: LogFunction;
+  private readonly debug: LogFunction;
+
   constructor(
     private readonly client = new QuestSftpClient(),
     private readonly next: QuestFhirConverterCommand = new QuestFhirConverterCommandDirect()
-  ) {}
+  ) {
+    const { log, debug } = out("quest.command.download-response-direct");
+    this.log = log;
+    this.debug = debug;
+  }
 
   async downloadAllQuestResponses(): Promise<void> {
     const replica = this.getQuestReplica();
     const responseFiles = await this.client.downloadAllResponses();
 
-    // Generate source documents for each response file that was downloaded.
+    this.log(`Generating source documents for ${responseFiles.length} response file(s)`);
     const allSourceDocuments: QuestPatientResponseFile[] = [];
     for (const responseFile of responseFiles) {
       const sourceDocuments = splitResponseFileIntoSourceDocuments(responseFile);
       allSourceDocuments.push(...sourceDocuments);
     }
 
-    // Upload all source documents to S3 in parallel, and trigger the next stage of the data
-    // pipeline with each source document.
+    this.log(`Uploading ${allSourceDocuments.length} source documents to Quest replica`);
     await executeAsynchronously(
       allSourceDocuments,
       async sourceDocument => {
@@ -42,6 +49,9 @@ export class DownloadResponseHandlerDirect implements DownloadResponseCommandHan
         numberOfParallelExecutions,
         keepExecutingOnError: true,
       }
+    );
+    this.log(
+      `Downloaded ${responseFiles.length} response file(s) and uploaded ${allSourceDocuments.length} source documents`
     );
   }
 
