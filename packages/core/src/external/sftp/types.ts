@@ -38,6 +38,10 @@ export interface SftpConfig {
 
 export type SftpLogLevel = "info" | "debug" | "none";
 
+export type HieSftpConfig = Omit<SftpConfig, "password" | "privateKey"> & {
+  remotePath: string;
+};
+
 export interface SftpFile {
   fileName: string;
   content: Buffer;
