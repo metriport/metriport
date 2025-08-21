@@ -60,8 +60,10 @@ export class QuestSftpClient extends SftpClient {
       const responseFiles: QuestResponseFile[] = [];
       for (const fileName of fileNames) {
         if (alreadyDownloadedFileNames.has(fileName)) continue;
+        this.log(`Downloading ${fileName}...`);
         const fileContent = await this.readFromQuest(fileName);
         responseFiles.push({ fileName, fileContent });
+        this.log(`Finished downloading ${fileName}`);
       }
       return responseFiles;
     } catch (error) {
