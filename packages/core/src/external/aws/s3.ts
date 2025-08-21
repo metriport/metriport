@@ -245,7 +245,8 @@ export class S3Utils {
         metadata: head.Metadata,
       };
     } catch (err) {
-      return { exists: false };
+      if (isNotFoundError(err)) return { exists: false };
+      throw new MetriportError("Error on getFileInfoFromS3", err, { bucket, key });
     }
   }
 
@@ -614,7 +615,9 @@ export function isNotFoundError(error: any): boolean {
   return (
     error.Code === "NoSuchKey" ||
     error.code === "NoSuchKey" ||
-    error.statusCode === 404 ||
+    error.statusCode === 404 || // v2
+    error?.$metadata?.httpStatusCode === 404 || // v3
+    error.name === "NotFound" || // v3 common name
     error instanceof NotFoundError
   );
 }

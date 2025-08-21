@@ -29,16 +29,12 @@ async function retrieveXmlContentsFromMetadataFilesOnS3(
 ): Promise<string[]> {
   const prefix = createSharebackFolderName({ cxId, patientId });
 
-  const params = {
-    Bucket: bucketName,
-    Prefix: prefix,
-  };
-
-  const data = await executeWithRetriesS3(() => s3Utils._s3.listObjectsV2(params).promise());
+  const data = await executeWithRetriesS3(() => s3Utils.listObjects(bucketName, prefix));
   const documentContents = (
     await Promise.all(
-      data.Contents?.filter(item => item.Key && item.Key.endsWith("_metadata.xml")).map(
-        async item => {
+      data
+        .filter(item => item.Key && item.Key.endsWith("_metadata.xml"))
+        .map(async item => {
           if (item.Key) {
             const params = {
               Bucket: bucketName,
@@ -49,8 +45,7 @@ async function retrieveXmlContentsFromMetadataFilesOnS3(
             return data.Body?.toString();
           }
           return undefined;
-        }
-      ) || []
+        }) || []
     )
   ).filter((item): item is string => Boolean(item));
 
