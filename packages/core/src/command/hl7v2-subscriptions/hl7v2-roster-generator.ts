@@ -34,6 +34,7 @@ import { analytics, EventTypes } from "../../external/analytics/posthog";
 import { PostHog } from "posthog-node";
 import { sendToSlack, SlackMessage } from "../../external/slack";
 import { getSecretValueOrFail } from "../../external/aws/secret-manager";
+import { reportMetric } from "../../external/aws/cloudwatch";
 const region = Config.getAWSRegion();
 
 type RosterRow = Record<string, string>;
@@ -178,6 +179,14 @@ export class Hl7v2RosterGenerator {
       errors.push(err);
       log("Failed to notify on slack: ", err);
     }
+
+    try {
+      await this.notifyCloudWatch(rosterSize, hieName, failedStage);
+      //eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (err: any) {
+      errors.push(err);
+      log("Failed to notify on cloudwatch: ", err);
+    }
   }
 
   private async notifyPostHog(rosterSize: number, hieName: string, failedStage: FailedStage) {
@@ -221,6 +230,28 @@ export class Hl7v2RosterGenerator {
     };
 
     await sendToSlack(slackMessage, slackUrl);
+  }
+
+  private async notifyCloudWatch(
+    rosterSize: number,
+    hieName: string,
+    failedStage: FailedStage
+  ): Promise<void> {
+    const additional = `Hie=${hieName}` + (failedStage ? `;FailedStage=${failedStage}` : "");
+
+    await reportMetric({
+      name: "ADT.RosterUpload.RosterSize",
+      unit: "Count",
+      value: rosterSize,
+      additionalDimension: additional,
+    });
+
+    await reportMetric({
+      name: failedStage ? "ADT.RosterUpload.Failures" : "ADT.RosterUpload.Successes",
+      unit: "Count",
+      value: 1,
+      additionalDimension: additional,
+    });
   }
 
   private async getAllSubscribedPatients(hieName: string): Promise<Patient[]> {
