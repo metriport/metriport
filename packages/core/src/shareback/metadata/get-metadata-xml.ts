@@ -15,7 +15,7 @@ export async function getMetadataDocumentContents(
   const documentContents = await retrieveXmlContentsFromMetadataFilesOnS3(cxId, patientId, bucket);
 
   if (!documentContents.length) {
-    const msg = `Error getting document contents`;
+    const msg = `Missing CCD metadata file for patient`;
     capture.error(msg, { extra: { cxId, patientId } });
     throw new XDSRegistryError("Internal Server Error");
   }
