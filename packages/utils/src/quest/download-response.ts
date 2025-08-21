@@ -1,6 +1,6 @@
 import { Command } from "commander";
 import { DownloadResponseHandlerDirect } from "@metriport/core/external/quest/command/download-response/download-response-direct";
-
+import { QuestSftpClient } from "@metriport/core/external/quest/client";
 /**
  * Downloads all Quest responses from the Quest SFTP server and uploads them to the Quest replica. This currently does not
  * perform the FHIR conversion, and in the subsequent update (ENG-864) this comment will be updated to reflect what this
@@ -14,7 +14,8 @@ command.description("Download Quest responses");
 
 command.action(async () => {
   console.log("Downloading Quest responses...");
-  const handler = new DownloadResponseHandlerDirect();
+  const client = new QuestSftpClient({ logLevel: "debug" });
+  const handler = new DownloadResponseHandlerDirect(client);
   await handler.downloadAllQuestResponses();
   console.log("Quest responses downloaded successfully");
 });
