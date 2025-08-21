@@ -7,11 +7,11 @@ import { cdaDocumentUploaderHandler } from "@metriport/core/shareback/cda-upload
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
+import { errorToString } from "@metriport/shared";
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
 import { Config } from "../../shared/config";
 import { generateCcd } from "./generate-ccd";
 import { generateEmptyCcd } from "./generate-empty-ccd";
-import { errorToString } from "@metriport/shared";
 
 const medicalBucket = Config.getMedicalDocumentsBucketName();
 const awsRegion = Config.getAWSRegion();
@@ -84,7 +84,9 @@ export async function processEmptyCcdRequest(patient: Patient, organization: Fhi
       docId: CCD_SUFFIX,
       docRef,
     });
-    log(`CCD uploaded into ${medicalBucket} with key ${filePath}, metadata ${metadataFilePath}`);
+    log(
+      `Empty CCD uploaded into ${medicalBucket} with key ${filePath}, metadata ${metadataFilePath}`
+    );
   } catch (error) {
     const msg = `Error creating and uploading empty CCD`;
     log(`${msg}: error - ${errorToString(error)}`);

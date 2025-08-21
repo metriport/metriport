@@ -57,8 +57,10 @@ export async function processRequest(req: Request): Promise<Bundle<Resource>> {
 
   debug(`UPDATED resource: ${resource} / count : ${count} / params: ${params.toString()}`);
 
-  const patient = await getPatientOrFail({ id: patientId, cxId });
-  const organization = await getOrganizationOrFail({ cxId });
+  const [patient, organization] = await Promise.all([
+    getPatientOrFail({ id: patientId, cxId }),
+    getOrganizationOrFail({ cxId }),
+  ]);
   const patientResource = patientToFHIR(patient);
   const orgResource = orgToFHIR(organization);
   orgResource.identifier = [
