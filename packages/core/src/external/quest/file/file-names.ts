@@ -35,7 +35,7 @@ export function buildSourceDocumentFileName({
 }: {
   patientId: string;
   dateId: string;
-}) {
+}): string {
   return `ptId=${patientId}/dateId=${dateId}/${patientId}_${dateId}_source.tsv`;
 }
 
@@ -45,11 +45,11 @@ export function buildPatientLabConversionPrefix({
 }: {
   cxId: string;
   patientId: string;
-}) {
+}): string {
   return `quest/cxId=${cxId}/patientId=${patientId}/dateId=`;
 }
 
-export function buildLatestConversionFileName(cxId: string, patientId: string) {
+export function buildLatestConversionFileName(cxId: string, patientId: string): string {
   return `quest/cxId=${cxId}/patientId=${patientId}/latest.json`;
 }
 
@@ -61,6 +61,6 @@ export function buildLabConversionFileNameForDate({
   cxId: string;
   patientId: string;
   dateId: string;
-}) {
+}): string {
   return `quest/cxId=${cxId}/patientId=${patientId}/dateId=${dateId}/conversion.json`;
 }
