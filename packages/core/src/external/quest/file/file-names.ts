@@ -3,10 +3,11 @@ import { buildDayjs } from "@metriport/shared/common/date";
 
 const RESPONSE_FILE_PREFIX = "Metriport_";
 const RESPONSE_FILE_EXTENSION = ".txt";
+const DATE_ID_REGEX = /^(\d{8}|\d{12})$/;
 
 export function buildRosterFileName() {
   const dateId = buildDayjs().format("YYYYMMDD");
-  return `METRIPORT_${dateId}.txt`;
+  return `Metriport_roster_${dateId}.txt`;
 }
 
 /**
@@ -24,6 +25,15 @@ export function parseResponseFileName(fileName: string): { dateId: string } {
     RESPONSE_FILE_PREFIX.length,
     fileName.length - RESPONSE_FILE_EXTENSION.length
   );
+
+  if (!DATE_ID_REGEX.test(dateId)) {
+    throw new MetriportError("Invalid date ID in file name", undefined, {
+      context: "quest.file.file-names",
+      fileName,
+      dateId,
+    });
+  }
+
   return {
     dateId,
   };
