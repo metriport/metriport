@@ -4,6 +4,8 @@ dotenv.config();
 
 import { Command } from "commander";
 import { buildSftpAction } from "../shared/sftp-action";
+import uploadRoster from "./upload-roster";
+import downloadResponse from "./download-response";
 import { QuestSftpClient } from "@metriport/core/external/quest/client";
 
 /**
@@ -16,4 +18,6 @@ const sftpAction = buildSftpAction(
   })
 );
 program.addCommand(sftpAction);
+program.addCommand(uploadRoster);
+program.addCommand(downloadResponse);
 program.parse();
