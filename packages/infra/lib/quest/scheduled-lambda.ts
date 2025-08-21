@@ -61,10 +61,10 @@ function createUploadRosterConfig(props: ScheduledLambdaProps): ScheduledLambdaC
       Schedule.cron({
         minute: "0",
         hour: "12",
-        day: "*",
+        day: "?",
         month: "*",
         year: "*",
-        weekDay: "1",
+        weekDay: "MON",
       }).expressionString, // Every Monday at 12:00pm UTC (5:00am PST)
     ],
     url: `http://${props.apiAddress}/internal/quest/upload-roster`,
