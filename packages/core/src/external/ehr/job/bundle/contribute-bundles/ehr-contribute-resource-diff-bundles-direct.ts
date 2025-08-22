@@ -27,7 +27,7 @@ import {
 dayjs.extend(duration);
 
 const hydrateEhrOnlyResourceAttempts = 3;
-const parallelRequests = 2;
+const parallelRequests = 1;
 const minJitter = dayjs.duration(0, "seconds");
 const maxJitter = dayjs.duration(5, "seconds");
 
