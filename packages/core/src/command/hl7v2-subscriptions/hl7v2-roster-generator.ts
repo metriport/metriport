@@ -143,9 +143,17 @@ export class Hl7v2RosterGenerator {
       log(`Roster upload failed at ${failedStage}`, e);
     }
     log(`Saved in S3: ${this.bucketName}/${fileName}`);
-    await uploadToRemoteSftp(config, rosterCsv);
-    const rosterSize = rosterRows.length;
 
+    try {
+      await uploadToRemoteSftp(config, rosterCsv);
+      //eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (e: any) {
+      failedStage = SFTP_FAILED;
+      errors.push(errorToString(e));
+      log(`Roster upload failed at ${failedStage}`, e);
+    }
+
+    const rosterSize = rosterRows.length;
     this.logResults(rosterSize, hieName, failedStage, errors, log);
 
     return rosterCsv;

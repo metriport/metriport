@@ -398,4 +398,12 @@ export class Config {
   static getFhirToCsvBatchJobDefinitionArn(): string | undefined {
     return getEnvVar("FHIR_TO_CSV_BATCH_JOB_DEFINITION_ARN");
   }
+
+  static getSlackAdtRosterNotificationArn(): string {
+    return getEnvVarOrFail(SLACK_ADT_ROSTER_NOTIFICATION_URL);
+  }
+
+  static getRosterUploadSftpPasswordArn(): string {
+    return getEnvVarOrFail(`${ROSTER_UPLOAD_SFTP_PASSWORD}_ARN`);
+  }
 }
