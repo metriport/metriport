@@ -1,6 +1,7 @@
 import AWS from "aws-sdk";
 import { Config } from "../../util/config";
 import { capture } from "../../util/notifications";
+import { MetriportError } from "@metriport/shared/";
 
 export const METRICS_NAMESPACE = "Metriport";
 
@@ -46,5 +47,10 @@ export function reportMetric(metric: Metric) {
   } catch (err) {
     console.error(`Error reporting metric ${JSON.stringify(metric)}: ${err}`);
     capture.error(err, { extra: { metric, context: "reportMetric" } });
+    throw new MetriportError(`Error reporting metric`, err, {
+      name: metric.name,
+      unit: metric.unit,
+      value: metric.value,
+    });
   }
 }
