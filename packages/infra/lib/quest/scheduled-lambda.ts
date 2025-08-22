@@ -34,7 +34,7 @@ export function createDownloadResponseScheduledLambda(props: ScheduledLambdaProp
      * @see: https://docs.aws.amazon.com/lambda/latest/dg/services-cloudwatchevents-expressions.html
      */
     scheduleExpression: [
-      "0 1 * * * *", // Every day at 6:00pm PST (1:00am UTC)
+      "0 1 * * ? *", // Every day at 6:00pm PST (1:00am UTC)
     ],
     url: `http://${props.apiAddress}/internal/quest/download-response`,
   });
