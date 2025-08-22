@@ -18,6 +18,7 @@ import { contributeBundle } from "../../../api/job/contribute-bundle";
 import { BundleType } from "../../../bundle/bundle-shared";
 import { createOrReplaceBundle } from "../../../bundle/command/create-or-replace-bundle";
 import { fetchBundle, FetchBundleParams } from "../../../bundle/command/fetch-bundle";
+import { getClientTokenInfo } from "../../../command/get-client-token-info";
 import { getResourceBundleByResourceId } from "../../../command/get-resource-bundle-by-resource-id";
 import {
   ContributeResourceDiffBundlesRequest,
@@ -171,6 +172,12 @@ async function hydrateEhrOnlyResources({
   const fetchedResourceIds = new Set([
     ...hydratedEhrOnlyResources.flatMap(resource => resource.id ?? []),
   ]);
+  const sharedClientToken = await getClientTokenInfo({
+    ehr,
+    cxId,
+    practiceId,
+    ...(tokenId && { tokenId }),
+  });
   for (let i = 0; i < hydrateEhrOnlyResourceAttempts; i++) {
     const { missingReferences } = getReferencesFromResources({
       resourcesToCheckRefs: hydratedEhrOnlyResources,
@@ -186,7 +193,7 @@ async function hydrateEhrOnlyResources({
         try {
           const bundle = await getResourceBundleByResourceId({
             ehr,
-            ...(tokenId && { tokenId }),
+            ...(sharedClientToken && { tokenInfo: sharedClientToken }),
             cxId,
             practiceId,
             metriportPatientId,

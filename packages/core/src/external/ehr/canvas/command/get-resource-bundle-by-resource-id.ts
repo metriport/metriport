@@ -7,6 +7,7 @@ export async function getResourceBundleByResourceId(
 ): Promise<Bundle> {
   const {
     tokenId,
+    tokenInfo,
     cxId,
     practiceId,
     metriportPatientId,
@@ -19,6 +20,7 @@ export async function getResourceBundleByResourceId(
     cxId,
     practiceId,
     ...(tokenId && { tokenId }),
+    ...(tokenInfo && { tokenInfo }),
   });
   const bundle = await client.getResourceBundleByResourceId({
     cxId,

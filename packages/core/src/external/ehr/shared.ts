@@ -765,14 +765,22 @@ type FetchEhrBundleParams = Omit<FetchBundleParams, "bundleType">;
 async function fetchEhrBundleIfYoungerThanMaxAge(
   params: Omit<FetchEhrBundleParams, "getLastModified">
 ): Promise<Bundle | undefined> {
+  const { log } = out(`fetchEhrBundleIfYoungerThanMaxAge - ${params.ehr} ${params.ehrPatientId}`);
   const bundle = await fetchBundle({
     ...params,
     bundleType: BundleType.EHR,
     getLastModified: true,
   });
-  if (!bundle || !bundle.lastModified) return undefined;
+  if (!bundle || !bundle.lastModified) {
+    log(`No bundle found or lastModified is undefined`);
+    return undefined;
+  }
   const age = dayjs.duration(buildDayjs().diff(bundle.lastModified));
-  if (age.asMilliseconds() > MAX_AGE.asMilliseconds()) return undefined;
+  if (age.asMilliseconds() > MAX_AGE.asMilliseconds()) {
+    log(`Bundle is older than max age, returning undefined`);
+    return undefined;
+  }
+  log(`Bundle is younger than max age, returning bundle`);
   return bundle.bundle;
 }
 

@@ -1,3 +1,4 @@
+import { JwtTokenInfo } from "@metriport/shared";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import CanvasApi from ".";
 import { getSecrets } from "../api/get-client-key-and-secret";
@@ -8,10 +9,12 @@ export async function createCanvasClient({
   cxId,
   practiceId,
   tokenId,
+  tokenInfo,
 }: {
   cxId: string;
   practiceId: string;
   tokenId?: string;
+  tokenInfo?: JwtTokenInfo;
 }) {
   const secrets = await getSecrets({
     cxId,
@@ -19,7 +22,7 @@ export async function createCanvasClient({
     ehr: EhrSources.canvas,
     schema: getSecretsOauthSchema,
   });
-  const twoLeggedAuthTokenInfo = tokenId ? await getTokenInfo(tokenId) : undefined;
+  const twoLeggedAuthTokenInfo = tokenInfo ?? (tokenId ? await getTokenInfo(tokenId) : undefined);
   return await CanvasApi.create({
     twoLeggedAuthTokenInfo,
     practiceId,

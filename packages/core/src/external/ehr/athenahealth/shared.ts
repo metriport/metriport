@@ -1,4 +1,4 @@
-import { BadRequestError } from "@metriport/shared";
+import { BadRequestError, JwtTokenInfo } from "@metriport/shared";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import AthenaHealthApi, { isAthenaEnv } from ".";
 import { getSecrets } from "../api/get-client-key-and-secret";
@@ -9,10 +9,12 @@ export async function createAthenaHealthClient({
   cxId,
   practiceId,
   tokenId,
+  tokenInfo,
 }: {
   cxId: string;
   practiceId: string;
   tokenId?: string;
+  tokenInfo?: JwtTokenInfo;
 }) {
   const secrets = await getSecrets({
     cxId,
@@ -27,7 +29,7 @@ export async function createAthenaHealthClient({
       environment,
     });
   }
-  const twoLeggedAuthTokenInfo = tokenId ? await getTokenInfo(tokenId) : undefined;
+  const twoLeggedAuthTokenInfo = tokenInfo ?? (tokenId ? await getTokenInfo(tokenId) : undefined);
   return await AthenaHealthApi.create({
     twoLeggedAuthTokenInfo,
     practiceId,
