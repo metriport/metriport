@@ -118,7 +118,7 @@ export class Hl7v2RosterGenerator {
     const rosterCsv = this.generateCsv(rosterRows);
     log("Created CSV");
 
-    const fileName = this.createFileKeyHl7v2Roster(hieName);
+    const fileName = createFileNameHl7v2Roster(hieName);
     let failedStage: FailedStage = undefined;
 
     try {
