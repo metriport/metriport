@@ -1,6 +1,10 @@
 import { z } from "zod";
 import type { AnthropicTool } from "../bedrock/agent/anthropic/tool";
 
+export interface ComprehendConfig {
+  confidenceThreshold: number;
+}
+
 export const extractTextRequestSchema = z.object({
   text: z.string(),
 });
