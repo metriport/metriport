@@ -317,14 +317,17 @@ export class Config {
   static getQuestSftpActionLambdaName(): string {
     return getEnvVarOrFail("QUEST_SFTP_ACTION_LAMBDA_NAME");
   }
-  static getQuestRosterUploadLambdaName(): string {
-    return getEnvVarOrFail("QUEST_ROSTER_UPLOAD_LAMBDA_NAME");
+  static getQuestUploadRosterLambdaName(): string {
+    return getEnvVarOrFail("QUEST_UPLOAD_ROSTER_LAMBDA_NAME");
   }
-  static getQuestResponseDownloadLambdaName(): string {
-    return getEnvVarOrFail("QUEST_RESPONSE_DOWNLOAD_LAMBDA_NAME");
+  static getQuestDownloadResponseLambdaName(): string {
+    return getEnvVarOrFail("QUEST_DOWNLOAD_RESPONSE_LAMBDA_NAME");
   }
-  static getQuestConversionLambdaName(): string {
-    return getEnvVarOrFail("QUEST_CONVERT_RESPONSE_LAMBDA_NAME");
+  static getQuestFhirConverterQueueUrl(): string {
+    return getEnvVarOrFail("QUEST_FHIR_CONVERTER_QUEUE_URL");
+  }
+  static getQuestFhirConverterLambdaName(): string {
+    return getEnvVarOrFail("QUEST_FHIR_CONVERTER_LAMBDA_NAME");
   }
   static getQuestReplicaBucketName(): string | undefined {
     return getEnvVar("QUEST_REPLICA_BUCKET_NAME");
