@@ -1,7 +1,6 @@
 import { Duration } from "aws-cdk-lib";
 import { IVpc } from "aws-cdk-lib/aws-ec2";
 import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
-import { Schedule } from "aws-cdk-lib/aws-events";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import { Construct } from "constructs";
 import { getConfig } from "../shared/config";
@@ -35,13 +34,7 @@ export function createDownloadResponseScheduledLambda(props: ScheduledLambdaProp
      * @see: https://docs.aws.amazon.com/lambda/latest/dg/services-cloudwatchevents-expressions.html
      */
     scheduleExpression: [
-      Schedule.cron({
-        minute: "0",
-        hour: "1",
-        day: "*",
-        month: "*",
-        year: "*",
-      }).expressionString, // Every day at 6:00pm PST (1:00am UTC)
+      "0 1 * * * *", // Every day at 6:00pm PST (1:00am UTC)
     ],
     url: `http://${props.apiAddress}/internal/quest/download-response`,
   });
@@ -57,13 +50,7 @@ export function createUploadRosterScheduledLambda(props: ScheduledLambdaProps): 
      * @see: https://docs.aws.amazon.com/lambda/latest/dg/services-cloudwatchevents-expressions.html
      */
     scheduleExpression: [
-      Schedule.cron({
-        minute: "0",
-        hour: "12",
-        month: "*",
-        year: "*",
-        weekDay: "MON",
-      }).expressionString, // Every Monday at 12:00pm UTC (5:00am PST)
+      "0 12 * * 1 *", // Every Monday at 12:00pm UTC (5:00am PST)
     ],
     url: `http://${props.apiAddress}/internal/quest/upload-roster`,
   });
