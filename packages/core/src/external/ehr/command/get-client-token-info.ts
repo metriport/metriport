@@ -16,20 +16,20 @@ export async function getClientTokenInfo({
   ehr,
   ...params
 }: GetClientTokenInfoRequest & { ehr: EhrSource }): Promise<JwtTokenInfo | undefined> {
-  const handler = getEhrCreateClientHandler(ehr);
+  const handler = getEhrGetClientTokenInfoHandler(ehr);
   const client = await handler({ ...params });
   return client.getTwoLeggedAuthTokenInfo();
 }
 
 export type GetClientTokenInfoClientRequest = Omit<GetClientTokenInfoRequest, "ehr">;
 
-type CreateClientFn = (
+type GetClientFn = (
   params: GetClientTokenInfoClientRequest
 ) => Promise<EhrClientWithClientCredentials>;
 
-type CreateClientFnMap = Record<EhrSource, CreateClientFn | undefined>;
+type GetClientTokenInfoFnMap = Record<EhrSource, GetClientFn | undefined>;
 
-const ehrCreateClientMap: CreateClientFnMap = {
+const ehrGetClientTokenInfoMap: GetClientTokenInfoFnMap = {
   [EhrSources.canvas]: createCanvasClient,
   [EhrSources.athena]: createAthenaHealthClient,
   [EhrSources.elation]: createElationHealthClient,
@@ -37,8 +37,8 @@ const ehrCreateClientMap: CreateClientFnMap = {
   [EhrSources.eclinicalworks]: undefined,
 };
 
-function getEhrCreateClientHandler(ehr: EhrSource): CreateClientFn {
-  const handler = ehrCreateClientMap[ehr];
+function getEhrGetClientTokenInfoHandler(ehr: EhrSource): GetClientFn {
+  const handler = ehrGetClientTokenInfoMap[ehr];
   if (!handler) {
     throw new BadRequestError("Could not find handler to create EHR client", undefined, {
       ehr,
