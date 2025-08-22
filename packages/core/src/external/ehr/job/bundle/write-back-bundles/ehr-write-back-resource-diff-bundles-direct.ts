@@ -142,21 +142,21 @@ export class EhrWriteBackResourceDiffBundlesDirect
         resourcesToWriteBack,
         r => getWriteBackResourceType(ehr, r) === "grouped-vitals"
       );
-      const filteredObservations = await filterObservations({
+      const keptObservations = await filterObservations({
         observations: groupedVitalsObservations as Observation[],
         writeBackFilters,
       });
-      resourcesToWriteBack = [...filteredObservations, ...restNoGroupedVitals];
+      resourcesToWriteBack = [...keptObservations, ...restNoGroupedVitals];
       const [conditions, restNoConditions] = partition(
         resourcesToWriteBack,
         r => getWriteBackResourceType(ehr, r) === "condition"
       );
-      const filteredConditions = await filterConditions({
+      const keptConditions = await filterConditions({
         ehr,
         conditions: conditions as Condition[],
         writeBackFilters,
       });
-      resourcesToWriteBack = [...filteredConditions, ...restNoConditions];
+      resourcesToWriteBack = [...keptConditions, ...restNoConditions];
       const secondaryResourcesToWriteBackMap = await getSecondaryResourcesToWriteBackMap({
         cxId,
         metriportPatientId,
@@ -719,12 +719,12 @@ async function filterConditions({
   writeBackFilters: WriteBackFiltersPerResourceType | undefined;
 }): Promise<Condition[]> {
   if (conditions.length < 1) return [];
-  let filteredConditions: Condition[] = conditions;
+  let keptConditions: Condition[] = conditions;
   if (writeBackFilters?.problem?.latestOnly) {
     const primaryCodeSystem = getEhrWriteBackConditionPrimaryCode(ehr);
     const getCode =
       primaryCodeSystem === SNOMED_CODE ? getConditionSnomedCode : getConditionIcd10Code;
-    filteredConditions = Object.values(
+    keptConditions = Object.values(
       conditions.reduce<Record<string, Condition>>((acc, condition) => {
         const code = getCode(condition);
         if (!code) return acc;
@@ -744,7 +744,7 @@ async function filterConditions({
       }, {})
     );
   }
-  return filteredConditions;
+  return keptConditions;
 }
 
 async function filterObservations({
@@ -755,9 +755,9 @@ async function filterObservations({
   writeBackFilters: WriteBackFiltersPerResourceType | undefined;
 }): Promise<Observation[]> {
   if (observations.length < 1) return [];
-  let filteredObservations: Observation[] = observations;
+  let keptObservations: Observation[] = observations;
   if (writeBackFilters?.vital?.latestOnly) {
-    filteredObservations = Object.values(
+    keptObservations = Object.values(
       observations.reduce<Record<string, Observation>>((acc, observation) => {
         const loincCode = getObservationLoincCode(observation);
         if (!loincCode) return acc;
@@ -777,7 +777,7 @@ async function filterObservations({
       }, {})
     );
   }
-  return filteredObservations;
+  return keptObservations;
 }
 
 async function groupVitals({
