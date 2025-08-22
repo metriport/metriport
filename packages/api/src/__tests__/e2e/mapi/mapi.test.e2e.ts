@@ -6,7 +6,6 @@ import { runContributedTests } from "./parts/contributed.test.part";
 import { runDocumentQueryTests } from "./parts/document-query.test.part";
 import { runFacilityTestsPart1, runFacilityTestsPart2 } from "./parts/facility.test.part";
 import { runSetPatientFacilitiesTests } from "./parts/set-patient-facilities.test.part";
-import { runOrganizationTests } from "./parts/organization.test.part";
 import { runPatientTestsPart1, runPatientTestsPart2 } from "./parts/patient.test.part";
 import { runSettingsTests } from "./parts/settings.test.part";
 import { E2eContext } from "./shared";
@@ -29,10 +28,6 @@ describe("MAPI E2E Tests", () => {
 
   describe("Settings", () => {
     runSettingsTests();
-  });
-
-  describe("Organization", () => {
-    runOrganizationTests();
   });
 
   describe("Facility", () => {

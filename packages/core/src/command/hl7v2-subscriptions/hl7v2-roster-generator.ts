@@ -1,11 +1,11 @@
 import {
   errorToString,
-  executeWithNetworkRetries,
   GenderAtBirth,
   InternalOrganizationDTO,
   internalOrganizationDTOSchema,
   MetriportError,
   otherGender,
+  simpleExecuteWithRetries,
   unknownGender,
 } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
@@ -13,7 +13,6 @@ import { initTimer } from "@metriport/shared/common/timer";
 import { createUuidFromText } from "@metriport/shared/common/uuid";
 import axios, { AxiosResponse } from "axios";
 import { stringify } from "csv-stringify/sync";
-import dayjs from "dayjs";
 import _ from "lodash";
 import { getFirstNameAndMiddleInitial, Patient } from "../../domain/patient";
 import { S3Utils, storeInS3WithRetries } from "../../external/aws/s3";
@@ -35,6 +34,7 @@ import { PostHog } from "posthog-node";
 import { sendToSlack, SlackMessage } from "../../external/slack";
 import { getSecretValueOrFail } from "../../external/aws/secret-manager";
 import { reportMetric } from "../../external/aws/cloudwatch";
+import { uploadToRemoteSftp } from "./hl7v2-roster-uploader";
 const region = Config.getAWSRegion();
 
 type RosterRow = Record<string, string>;
@@ -42,9 +42,7 @@ type RosterRow = Record<string, string>;
 const HL7V2_SUBSCRIBERS_ENDPOINT = `internal/patient/hl7v2-subscribers`;
 const GET_ORGANIZATION_ENDPOINT = `internal/organization`;
 const NUMBER_OF_PATIENTS_PER_PAGE = 500;
-const NUMBER_OF_ATTEMPTS = 3;
 const DEFAULT_ZIP_PLUS_4_EXT = "-0000";
-const BASE_DELAY = dayjs.duration({ seconds: 1 });
 const FOLDER_DATE_FORMAT = "YYYY-MM-DD";
 const FILE_DATE_FORMAT = "YYYYMMDD";
 
@@ -73,17 +71,12 @@ export class Hl7v2RosterGenerator {
       states,
     };
 
-    async function simpleExecuteWithRetries<T>(functionToExecute: () => Promise<T>) {
-      return await executeWithNetworkRetries(functionToExecute, {
-        maxAttempts: NUMBER_OF_ATTEMPTS,
-        initialDelay: BASE_DELAY.asMilliseconds(),
-        log,
-      });
-    }
-
     log(`Running with this config: ${JSON.stringify(loggingDetails)}`);
     log(`Getting all subscribed patients...`);
-    const patients = await simpleExecuteWithRetries(() => this.getAllSubscribedPatients(hieName));
+    const patients = await simpleExecuteWithRetries(
+      () => this.getAllSubscribedPatients(hieName),
+      log
+    );
     log(`Found ${patients.length} total patients`);
 
     if (patients.length === 0) {
@@ -97,7 +90,7 @@ export class Hl7v2RosterGenerator {
     const cxIds = new Set(patients.map(p => p.cxId));
 
     log(`Getting all organizations for patients...`);
-    const orgs = await simpleExecuteWithRetries(() => this.getOrganizations([...cxIds]));
+    const orgs = await simpleExecuteWithRetries(() => this.getOrganizations([...cxIds]), log);
     const orgsByCxId = _.keyBy(orgs, "cxId");
 
     const rosterRowInputs = patients.map(p => {
@@ -150,10 +143,11 @@ export class Hl7v2RosterGenerator {
       log(`Roster upload failed at ${failedStage}`, e);
     }
     log(`Saved in S3: ${this.bucketName}/${fileName}`);
-
+    await uploadToRemoteSftp(config, rosterCsv);
     const rosterSize = rosterRows.length;
 
     this.logResults(rosterSize, hieName, failedStage, errors, log);
+
     return rosterCsv;
   }
 
@@ -294,14 +288,19 @@ export class Hl7v2RosterGenerator {
     if (records.length === 0) return "";
     return stringify(records, { header: true, quoted: true });
   }
+}
 
-  private createFileKeyHl7v2Roster(hieName: string): string {
-    const todaysDate = buildDayjs();
-    const folderDate = todaysDate.format(FOLDER_DATE_FORMAT);
-    const fileDate = todaysDate.format(FILE_DATE_FORMAT);
-    const fileName = `Metriport_${hieName}_Patient_Enrollment_${fileDate}`;
-    return `${folderDate}/${fileName}.${CSV_FILE_EXTENSION}`;
-  }
+export function createFileKeyHl7v2Roster(hieName: string): string {
+  const todaysDate = buildDayjs();
+  const folderDate = todaysDate.format(FOLDER_DATE_FORMAT);
+  const fileName = createFileNameHl7v2Roster(hieName);
+  return `${folderDate}/${fileName}`;
+}
+
+export function createFileNameHl7v2Roster(hieName: string): string {
+  const todaysDate = buildDayjs();
+  const fileDate = todaysDate.format(FILE_DATE_FORMAT);
+  return `Metriport_${hieName}_Patient_Enrollment_${fileDate}.${CSV_FILE_EXTENSION}`;
 }
 
 export function createRosterRow(

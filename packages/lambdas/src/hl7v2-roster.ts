@@ -1,5 +1,4 @@
 import { Hl7v2RosterGenerator } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-roster-generator";
-import { uploadThroughSftp } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-roster-uploader";
 import { HieConfig } from "@metriport/core/command/hl7v2-subscriptions/types";
 import { capture } from "./shared/capture";
 import { getEnvOrFail } from "./shared/env";
@@ -21,15 +20,7 @@ export const handler = capture.wrapHandler(async (config: HieConfig): Promise<vo
   });
 
   log(`Starting roster generation for config: ${config.name}`);
-  const rosterCsv = await new Hl7v2RosterGenerator(apiUrl, bucketName).execute(config);
+  await new Hl7v2RosterGenerator(apiUrl, bucketName).execute(config);
   log(`Roster generation completed in ${timer.getElapsedTime()}ms`);
-
-  if (rosterCsv) {
-    const uploadTimer = initTimer();
-    log(`Starting SFTP upload for config: ${config.name}`);
-    await uploadThroughSftp(config, rosterCsv);
-    log(`SFTP upload completed in ${uploadTimer.getElapsedTime()}ms`);
-  }
-
   log(`Done. Total duration: ${timer.getElapsedTime()}ms`);
 });
