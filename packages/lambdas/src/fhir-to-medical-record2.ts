@@ -3,6 +3,7 @@ import { getAiBriefContentFromBundle } from "@metriport/core/command/ai-brief/sh
 import {
   isADHDFeatureFlagEnabledForCx,
   isBmiFeatureFlagEnabledForCx,
+  isSimpleFeatureFlagEnabledForCx,
   isDermFeatureFlagEnabledForCx,
   isLogoEnabledForCx,
 } from "@metriport/core/command/feature-flags/domain-ffs";
@@ -12,6 +13,7 @@ import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-s
 import { bundleToHtml } from "@metriport/core/external/aws/lambda-logic/bundle-to-html";
 import { bundleToHtmlADHD } from "@metriport/core/external/aws/lambda-logic/bundle-to-html-adhd";
 import { bundleToHtmlBmi } from "@metriport/core/external/aws/lambda-logic/bundle-to-html-bmi";
+import { bundleToHtmlSimple } from "@metriport/core/external/aws/lambda-logic/bundle-to-html-simple";
 import { bundleToHtmlDerm } from "@metriport/core/external/aws/lambda-logic/bundle-to-html-derm";
 import {
   getSignedUrl as coreGetSignedUrl,
@@ -83,11 +85,13 @@ export const handler = capture.wrapHandler(
       isADHDFeatureFlagEnabled,
       isLogoEnabled,
       isBmiFeatureFlagEnabled,
+      isSimpleFeatureFlagEnabled,
       isDermFeatureFlagEnabled,
     ] = await Promise.all([
       isADHDFeatureFlagEnabledForCx(cxId),
       isLogoEnabledForCx(cxId),
       isBmiFeatureFlagEnabledForCx(cxId),
+      isSimpleFeatureFlagEnabledForCx(cxId),
       isDermFeatureFlagEnabledForCx(cxId),
     ]);
 
@@ -106,6 +110,8 @@ export const handler = capture.wrapHandler(
       ? bundleToHtmlADHD(bundle, aiBrief)
       : isBmiFeatureFlagEnabled
       ? bundleToHtmlBmi(bundle, aiBrief)
+      : isSimpleFeatureFlagEnabled
+      ? bundleToHtmlSimple(bundle, aiBrief)
       : isDermFeatureFlagEnabled
       ? bundleToHtmlDerm(bundle, aiBrief)
       : bundleToHtml(bundle, aiBrief, isLogoEnabled);
