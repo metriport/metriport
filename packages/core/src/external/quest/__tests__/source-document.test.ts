@@ -1,4 +1,7 @@
-import { splitResponseFileIntoSourceDocuments } from "../source-document";
+import {
+  splitAllResponseFilesIntoSourceDocuments,
+  splitResponseFileIntoSourceDocuments,
+} from "../source-document";
 import { getArtifact } from "./shared";
 
 describe("Quest source document generator", () => {
@@ -18,5 +21,21 @@ describe("Quest source document generator", () => {
     );
     expect(firstSourceDocument.fileContent.toString()).toBe(responseFile.toString());
     expect(firstSourceDocument.patientId).toBe("0A1B2C3D4E5F6G7");
+  });
+
+  it("should split multiple response files into source documents", () => {
+    const responseFile1 = getArtifact("response/single-patient.txt");
+    const responseFile2 = getArtifact("response/multiple-patients.txt");
+    const sourceDocuments = splitAllResponseFilesIntoSourceDocuments([
+      {
+        fileName: "Metriport_202501010102.txt",
+        fileContent: responseFile1,
+      },
+      {
+        fileName: "Metriport_202501010103.txt",
+        fileContent: responseFile2,
+      },
+    ]);
+    expect(sourceDocuments.length).toBe(3);
   });
 });
