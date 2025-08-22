@@ -399,7 +399,7 @@ export class Config {
     return getEnvVar("FHIR_TO_CSV_BATCH_JOB_DEFINITION_ARN");
   }
 
-  static getSlackAdtRosterNotificationArn(): string {
+  static getSlackAdtRosterNotificationUrl(): string {
     return getEnvVarOrFail(SLACK_ADT_ROSTER_NOTIFICATION_URL);
   }
 

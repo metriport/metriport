@@ -1043,7 +1043,7 @@ export class LambdasNestedStack extends NestedStack {
             HL7V2_ROSTER_BUCKET_NAME: hl7v2RosterBucket.bucketName,
             API_URL: config.loadBalancerDnsName,
             HL7_BASE64_SCRAMBLER_SEED: scramblerSeedSecretName,
-            SLACK_ADT_ROSTER_NOTIFICATION_URL_ARN: slackAdtRosterNotificationUrl,
+            SLACK_ADT_ROSTER_NOTIFICATION_URL: slackAdtRosterNotificationUrl,
             ROSTER_UPLOAD_SFTP_PASSWORD_ARN: passwordSecret.secretArn,
             ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
           },

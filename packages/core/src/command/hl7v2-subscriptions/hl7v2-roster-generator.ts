@@ -32,7 +32,6 @@ import { createScrambledId } from "./utils";
 import { analytics, EventTypes } from "../../external/analytics/posthog";
 import { PostHog } from "posthog-node";
 import { sendToSlack, SlackMessage } from "../../external/slack";
-import { getSecretValueOrFail } from "../../external/aws/secret-manager";
 import { reportMetric } from "../../external/aws/cloudwatch";
 import { uploadToRemoteSftp } from "./hl7v2-roster-uploader";
 const region = Config.getAWSRegion();
@@ -148,7 +147,7 @@ export class Hl7v2RosterGenerator {
       await uploadToRemoteSftp(config, rosterCsv);
       //eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (e: any) {
-      failedStage = SFTP_FAILED;
+      failedStage = failedStage ? "S3 upload and SFTP upload" : SFTP_FAILED;
       errors.push(errorToString(e));
       log(`Roster upload failed at ${failedStage}`, e);
     }
@@ -166,14 +165,15 @@ export class Hl7v2RosterGenerator {
     errors: string[],
     log: typeof console.log
   ): Promise<void> {
+    log("Sending analytics to posthog");
     try {
       await this.notifyPostHog(rosterSize, hieName, failedStage);
       //eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       errors.push(err);
-      log("Failed to notify posthog");
     }
 
+    log("Notifing in slack");
     try {
       await this.notifySlack(rosterSize, hieName, failedStage, errors);
       //eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -182,6 +182,7 @@ export class Hl7v2RosterGenerator {
       log("Failed to notify on slack: ", err);
     }
 
+    log("Sending metrics to cloudwatch");
     try {
       await this.notifyCloudWatch(rosterSize, hieName, failedStage);
       //eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -216,8 +217,7 @@ export class Hl7v2RosterGenerator {
     failedStage: FailedStage,
     errors: string[]
   ): Promise<void> {
-    const slackUrlArn = Config.getSlackAdtRosterNotificationArn();
-    const slackUrl = await getSecretValueOrFail(slackUrlArn, region);
+    const slackUrl = Config.getSlackAdtRosterNotificationUrl();
 
     const subject = failedStage
       ? `Tried ADT Roster upload to "${hieName}" with roster size: ${rosterSize}. :warning: FAILED at ${failedStage} :peepo_sad: :warning:`
