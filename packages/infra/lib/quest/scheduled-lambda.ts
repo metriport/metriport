@@ -25,8 +25,8 @@ export interface ScheduledLambdaConfig extends ScheduledLambdaProps {
 const lambdaTimeout = Duration.seconds(60);
 const httpTimeout = Duration.seconds(50);
 
-function createDownloadResponseConfig(props: ScheduledLambdaProps): ScheduledLambdaConfig {
-  return {
+export function createDownloadResponseScheduledLambda(props: ScheduledLambdaProps): Lambda {
+  return createQuestScheduledLambda({
     ...props,
     name: "QuestScheduledResponseDownload",
     /**
@@ -37,19 +37,18 @@ function createDownloadResponseConfig(props: ScheduledLambdaProps): ScheduledLam
     scheduleExpression: [
       Schedule.cron({
         minute: "0",
-        hour: "12",
+        hour: "1",
         day: "*",
         month: "*",
         year: "*",
-        weekDay: "?",
-      }).expressionString, // Every day at 12:00pm UTC (5:00am PST)
+      }).expressionString, // Every day at 6:00pm PST (1:00am UTC)
     ],
     url: `http://${props.apiAddress}/internal/quest/download-response`,
-  };
+  });
 }
 
-function createUploadRosterConfig(props: ScheduledLambdaProps): ScheduledLambdaConfig {
-  return {
+export function createUploadRosterScheduledLambda(props: ScheduledLambdaProps): Lambda {
+  return createQuestScheduledLambda({
     ...props,
     name: "QuestScheduledRosterUpload",
     /**
@@ -61,22 +60,13 @@ function createUploadRosterConfig(props: ScheduledLambdaProps): ScheduledLambdaC
       Schedule.cron({
         minute: "0",
         hour: "12",
-        day: "?",
         month: "*",
         year: "*",
         weekDay: "MON",
       }).expressionString, // Every Monday at 12:00pm UTC (5:00am PST)
     ],
     url: `http://${props.apiAddress}/internal/quest/upload-roster`,
-  };
-}
-
-export function createDownloadResponseScheduledLambda(props: ScheduledLambdaProps): Lambda {
-  return createQuestScheduledLambda(createDownloadResponseConfig(props));
-}
-
-export function createUploadRosterScheduledLambda(props: ScheduledLambdaProps): Lambda {
-  return createQuestScheduledLambda(createUploadRosterConfig(props));
+  });
 }
 
 function createQuestScheduledLambda(props: ScheduledLambdaConfig): Lambda {
