@@ -119,7 +119,7 @@ jobs:
 
       # TODO: This shouldn't be needed as a dependency, but it is.
       - name: Build fhir converter dependencies
-        run: npm install --only=production --no-fund --no-optional --no-audit
+        run: npm run prep-deploy
         working-directory: "metriport/packages/fhir-converter"
 
       - name: Lambdas build shared layer
