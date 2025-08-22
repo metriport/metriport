@@ -1,7 +1,7 @@
 import AWS from "aws-sdk";
 import { Config } from "../../util/config";
 import { capture } from "../../util/notifications";
-import { MetriportError } from "@metriport/shared/";
+import { MetriportError } from "@metriport/shared";
 
 export const METRICS_NAMESPACE = "Metriport";
 
