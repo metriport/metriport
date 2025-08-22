@@ -1023,8 +1023,7 @@ export class LambdasNestedStack extends NestedStack {
       }
       const scramblerSeedSecretName = config.hl7Notification.secrets.HL7_BASE64_SCRAMBLER_SEED;
       const hieConfigs = config.hl7Notification.hieConfigs;
-      const slackAdtRosterNotificationUrl =
-        config.hl7Notification.secrets.SLACK_ADT_ROSTER_NOTIFICATION_URL;
+      const slackAdtRosterNotificationUrl = config.hl7Notification.slackAdtRosterNotificationUrl;
 
       Object.entries(hieConfigs).forEach(([hieName, hieConfig]) => {
         const passwordSecretName = getHieSftpPasswordSecretName(hieName);

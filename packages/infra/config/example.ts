@@ -154,6 +154,7 @@ export const config: EnvConfigNonSandbox = {
   },
   generalBucketName: "test-bucket",
   hl7Notification: {
+    slackAdtRosterNotificationUrl: "your-slack-webhook-url",
     deprecatedIncomingMessageBucketName: "test-hl7-notification-bucket-name",
     incomingMessageBucketName: "test-incoming-message-bucket-name",
     outgoingMessageBucketName: "test-outgoing-message-bucket-name",
@@ -164,7 +165,6 @@ export const config: EnvConfigNonSandbox = {
     },
     secrets: {
       HL7_BASE64_SCRAMBLER_SEED: "your-base64-scrambler-seed",
-      SLACK_ADT_ROSTER_NOTIFICATION_URL: "your-slack-url",
     },
     mllpServer: {
       sentryDSN: "your-sentry-dsn",

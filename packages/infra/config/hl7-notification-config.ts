@@ -3,8 +3,8 @@ import { HieConfig, VpnlessHieConfig } from "@metriport/core/command/hl7v2-subsc
 export interface Hl7NotificationConfig {
   secrets: {
     HL7_BASE64_SCRAMBLER_SEED: string;
-    SLACK_ADT_ROSTER_NOTIFICATION_URL: string;
   };
+  slackAdtRosterNotificationUrl: string;
   deprecatedIncomingMessageBucketName: string;
   incomingMessageBucketName: string;
   outgoingMessageBucketName: string;
