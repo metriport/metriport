@@ -52,6 +52,9 @@ const patientIds: string[] = [];
 // If you're sure we want to trigger WH notifications to the CX, enable this
 const triggerWHNotificationsToCx = false;
 
+// if true, will force a download of the documents
+const forceDownload = true;
+
 // auth stuff
 const cxId = getEnvVarOrFail("CX_ID");
 const apiKey = getEnvVarOrFail("API_KEY");
@@ -109,8 +112,16 @@ async function queryDocsForPatient(
     }
 
     const facilityId = preferredFacilityId ?? patient.facilityIds[0];
-    const docQueryPromise = async () =>
-      triggerDocQuery(cxId, patientId, facilityId, triggerWHNotificationsToCx);
+    const docQueryPromise = async function () {
+      const docQuery = await triggerDocQuery(
+        cxId,
+        patientId,
+        facilityId,
+        triggerWHNotificationsToCx,
+        forceDownload
+      );
+      return docQuery;
+    };
 
     if (dryRun) {
       log(
@@ -221,13 +232,15 @@ async function triggerDocQuery(
   cxId: string,
   patientId: string,
   facilityId: string,
-  triggerWHNotifs: boolean
+  triggerWHNotifs: boolean,
+  forceDownload: boolean
 ): Promise<DocumentQuery | undefined> {
   const payload = triggerWHNotifs ? {} : { metadata: disableWHMetadata };
-  const resp = await apiInternal.post(
-    `/internal/docs/query?cxId=${cxId}&patientId=${patientId}&facilityId=${facilityId}`,
-    payload
-  );
+  let url = `/internal/docs/query?cxId=${cxId}&patientId=${patientId}&facilityId=${facilityId}`;
+  if (forceDownload) {
+    url += `&forceDownload=true`;
+  }
+  const resp = await apiInternal.post(url, payload);
   return resp.data.documentQueryProgress ?? undefined;
 }
 
