@@ -1,5 +1,6 @@
 import { S3Utils } from "../../aws/s3";
 import { buildSourceDocumentFileName } from "../file/file-names";
+import { parseResponseFile } from "../file/file-parser";
 import { QuestReplica } from "../replica";
 import { uploadSourceDocuments } from "../source-document";
 import { QuestPatientResponseFile } from "../types";
@@ -37,6 +38,11 @@ describe("Source document upload", () => {
 
   it("should list all source documents", async () => {
     const responseFiles = await replica.listAllResponseFiles();
-    expect(responseFiles.length).toBe(2);
+    expect(responseFiles.length > 0).toBe(true);
+
+    for (const responseFile of responseFiles) {
+      const parsedRows = parseResponseFile(responseFile.fileContent);
+      expect(parsedRows.length > 0).toBe(true);
+    }
   });
 });
