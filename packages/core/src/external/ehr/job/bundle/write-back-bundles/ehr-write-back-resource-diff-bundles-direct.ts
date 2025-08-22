@@ -637,7 +637,7 @@ async function writeBackResources({
     resources,
     r => getWriteBackResourceType(ehr, r) === "grouped-vitals"
   );
-  const groupedVitals = await groupVitals({
+  const groupedVitals = await groupVitalsByDate({
     observations: groupedVitalsObservations as Observation[],
   });
   await executeAsynchronously(
@@ -780,7 +780,7 @@ async function filterObservations({
   return keptObservations;
 }
 
-async function groupVitals({
+async function groupVitalsByDate({
   observations,
 }: {
   observations: Observation[];
