@@ -4,6 +4,10 @@ import {
   DetectEntitiesV2CommandOutput,
   InferRxNormCommand,
   InferRxNormCommandOutput,
+  InferICD10CMCommand,
+  InferICD10CMCommandOutput,
+  InferSNOMEDCTCommand,
+  InferSNOMEDCTCommandOutput,
 } from "@aws-sdk/client-comprehendmedical";
 import { Config } from "../../util/config";
 import { out, LogFunction } from "../../util/log";
@@ -46,6 +50,28 @@ export class ComprehendClient {
     const startTime = Date.now();
     const response = await this.comprehend.send(command);
     this.log(`Completed RxNorm inference in ${Date.now() - startTime}ms`);
+    return response;
+  }
+
+  async inferICD10CM(text: string): Promise<InferICD10CMCommandOutput> {
+    this.debug("Inferring ICD-10-CM codes", text);
+    const startTime = Date.now();
+    const command = new InferICD10CMCommand({
+      Text: text,
+    });
+    const response = await this.comprehend.send(command);
+    this.log(`Completed ICD-10-CM inference in ${Date.now() - startTime}ms`);
+    return response;
+  }
+
+  async inferSNOMEDCT(text: string): Promise<InferSNOMEDCTCommandOutput> {
+    this.debug("Inferring SNOMED CT codes", text);
+    const startTime = Date.now();
+    const command = new InferSNOMEDCTCommand({
+      Text: text,
+    });
+    const response = await this.comprehend.send(command);
+    this.log(`Completed SNOMED CT inference in ${Date.now() - startTime}ms`);
     return response;
   }
 }
