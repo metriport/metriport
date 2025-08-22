@@ -1,6 +1,8 @@
 import { z } from "zod";
 import type { AnthropicTool } from "../bedrock/agent/anthropic/tool";
 
+export type ComprehendType = "rxnorm" | "icd10cm" | "snomedct";
+
 export interface ComprehendConfig {
   confidenceThreshold: number;
 }
