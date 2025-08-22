@@ -1045,6 +1045,7 @@ export class LambdasNestedStack extends NestedStack {
             ROSTER_UPLOAD_SFTP_PASSWORD_ARN: passwordSecret.secretArn,
             ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
           },
+          timeout: Duration.minutes(10),
           layers: [lambdaLayers.shared],
           memory: 4096,
           vpc,
