@@ -129,6 +129,7 @@ export async function getStandaloneOrganizations(): Promise<CQDirectoryEntry[]> 
           },
         ],
       },
+      // Don't load orgs managed by CW or SS, we want to hit their RLS only once
       managingOrganizationId: {
         [Op.notIn]: [commonwellOid, surescriptsOid],
       },
