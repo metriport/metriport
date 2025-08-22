@@ -25,7 +25,7 @@ export async function getOrganizationIdsNotManagedBy(
     attributes: ["id"],
     where: {
       [Op.or]: [
-        { rootOrganization: { [Op.is]: undefined } },
+        { rootOrganization: { [Op.is]: null as unknown as undefined } },
         { rootOrganization: { [Op.notIn]: managingOrgNames } },
       ],
     },
@@ -55,7 +55,7 @@ export async function getRecordLocatorServiceOrganizations(): Promise<CQDirector
       ...hasUrlXcpd(),
       [Op.or]: [
         {
-          managingOrganizationId: { [Op.is]: undefined },
+          managingOrganizationId: { [Op.is]: null as unknown as undefined },
         },
         { managingOrganizationId: { [Op.col]: "id" } },
       ],
@@ -84,7 +84,7 @@ export async function getSublinkOrganizations(): Promise<CQDirectoryEntry[]> {
       },
       managingOrganizationId: {
         [Op.or]: [
-          { [Op.is]: undefined },
+          { [Op.is]: null as unknown as undefined },
           {
             [Op.in]: Sequelize.literal(`(
                 SELECT id FROM ${CQDirectoryEntryViewModel.NAME}
