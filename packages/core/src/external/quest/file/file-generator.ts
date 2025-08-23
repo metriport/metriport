@@ -2,9 +2,7 @@ import { z } from "zod";
 import { Patient } from "@metriport/shared/domain/patient";
 import { MetriportError } from "@metriport/shared";
 import { makeNameDemographics } from "@metriport/shared/common/demographics";
-import { makeGenderDemographics } from "../codes";
-
-import { RelationshipToSubscriber } from "../codes";
+import { makeGenderDemographics, RelationshipToSubscriber } from "../codes";
 import {
   requestHeaderRow,
   requestHeaderSchema,

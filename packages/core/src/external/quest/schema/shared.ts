@@ -58,7 +58,7 @@ export interface IncomingFile<H extends object, D extends object, F extends obje
 
 export interface IncomingData<T extends object> {
   data: T;
-  source: string[];
+  source: string;
 }
 
 export type IncomingFileRowSchema<T extends object> = {
@@ -90,8 +90,8 @@ function fillEmptyByteLength(byteLength: number) {
 }
 
 function fillByteLength(value: string, byteLength: number) {
-  if (value.length > byteLength) value = value.substring(0, byteLength);
-  return value.padEnd(byteLength, " ");
+  const truncatedValue = value.length > byteLength ? value.substring(0, byteLength) : value;
+  return truncatedValue.padEnd(byteLength, " ");
 }
 
 export function toQuestEnum<T extends object>(
