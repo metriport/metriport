@@ -1018,7 +1018,7 @@ export class LambdasNestedStack extends NestedStack {
     if (config.hl7Notification?.hieConfigs) {
       const hl7ScramblerSeedSecret = secrets["HL7_BASE64_SCRAMBLER_SEED"];
       if (!hl7ScramblerSeedSecret) {
-        throw new Error(`${hl7ScramblerSeedSecret} is not defined in config`);
+        throw new Error(`hl7ScramblerSeedSecret is not defined in config`);
       }
 
       const hieConfigs = config.hl7Notification.hieConfigs;
