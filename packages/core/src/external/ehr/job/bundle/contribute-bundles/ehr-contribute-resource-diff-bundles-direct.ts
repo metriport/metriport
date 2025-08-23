@@ -1,5 +1,11 @@
 import { Patient, Reference, Resource } from "@medplum/fhirtypes";
-import { BadRequestError, errorToString, NotFoundError, sleep } from "@metriport/shared";
+import {
+  BadRequestError,
+  errorToString,
+  JwtTokenInfo,
+  NotFoundError,
+  sleep,
+} from "@metriport/shared";
 import { createUuidFromText } from "@metriport/shared/common/uuid";
 import { createBundleFromResourceList } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { EhrSource } from "@metriport/shared/interface/external/ehr/source";
@@ -20,6 +26,7 @@ import { createOrReplaceBundle } from "../../../bundle/command/create-or-replace
 import { fetchBundle, FetchBundleParams } from "../../../bundle/command/fetch-bundle";
 import { getClientTokenInfo } from "../../../command/get-client-token-info";
 import { getResourceBundleByResourceId } from "../../../command/get-resource-bundle-by-resource-id";
+import { isEhrSourceWithClientCredentials } from "../../../environment";
 import {
   ContributeResourceDiffBundlesRequest,
   EhrContributeResourceDiffBundlesHandler,
@@ -172,12 +179,15 @@ async function hydrateEhrOnlyResources({
   const fetchedResourceIds = new Set([
     ...hydratedEhrOnlyResources.flatMap(resource => resource.id ?? []),
   ]);
-  const sharedClientToken = await getClientTokenInfo({
-    ehr,
-    cxId,
-    practiceId,
-    ...(tokenId && { tokenId }),
-  });
+  let sharedClientToken: JwtTokenInfo | undefined;
+  if (isEhrSourceWithClientCredentials(ehr)) {
+    sharedClientToken = await getClientTokenInfo({
+      ehr,
+      cxId,
+      practiceId,
+      ...(tokenId && { tokenId }),
+    });
+  }
   for (let i = 0; i < hydrateEhrOnlyResourceAttempts; i++) {
     const { missingReferences } = getReferencesFromResources({
       resourcesToCheckRefs: hydratedEhrOnlyResources,
