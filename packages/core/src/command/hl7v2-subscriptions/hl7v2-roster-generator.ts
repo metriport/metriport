@@ -15,7 +15,6 @@ import { stringify } from "csv-stringify/sync";
 import _ from "lodash";
 import { getFirstNameAndMiddleInitial, Patient } from "../../domain/patient";
 import { S3Utils, storeInS3WithRetries } from "../../external/aws/s3";
-import { getSecretValueOrFail } from "../../external/aws/secret-manager";
 import { out } from "../../util";
 import { Config } from "../../util/config";
 import { CSV_FILE_EXTENSION, CSV_MIME_TYPE } from "../../util/mime";
@@ -57,10 +56,6 @@ export class Hl7v2RosterGenerator {
       mapping: config.mapping,
       states,
     };
-
-    const secretArn = Config.getHl7Base64ScramblerSeedArn();
-    const hl7Base64ScramblerSeed = await getSecretValueOrFail(secretArn, Config.getAWSRegion());
-    process.env["HL7_BASE64_SCRAMBLER_SEED"] = hl7Base64ScramblerSeed;
 
     log(`Running with this config: ${JSON.stringify(loggingDetails)}`);
     log(`Getting all subscribed patients...`);
