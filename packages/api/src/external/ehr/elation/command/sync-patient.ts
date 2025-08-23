@@ -129,7 +129,6 @@ export async function syncElationPatientIntoMetriport({
     ]);
     return metriportPatientId;
   } catch (error) {
-    // Ensure fresh 1-year token link is updated in EHR on failure to avoid full lockout
     await createElationPatientMetadata({ cxId, elationPracticeId, elationPatientId, elationApi });
     throw error;
   }
