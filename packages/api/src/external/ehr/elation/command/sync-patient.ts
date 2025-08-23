@@ -129,7 +129,12 @@ export async function syncElationPatientIntoMetriport({
     ]);
     return metriportPatientId;
   } catch (error) {
-    await createElationPatientMetadata({ cxId, elationPracticeId, elationPatientId, elationApi });
+    await createElationPatientMetadata({
+      cxId,
+      elationPracticeId,
+      elationPatientId,
+      elationApi,
+    }).catch(processAsyncError(`Elation createElationPatientMetadata`));
     throw error;
   }
 }
