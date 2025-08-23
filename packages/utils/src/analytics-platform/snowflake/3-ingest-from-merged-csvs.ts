@@ -11,10 +11,15 @@ import {
 import { getEnvVarOrFail, sleep } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import * as AWS from "aws-sdk";
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
 import fs from "fs";
 import ini from "ini";
 import * as snowflake from "snowflake-sdk";
 import { elapsedTimeAsStr } from "../../shared/duration";
+import { getCxData } from "../../shared/get-cx-data";
+
+dayjs.extend(duration);
 
 /**
  * Script to ingest compressed CSV files into Snowflake.
@@ -46,6 +51,12 @@ import { elapsedTimeAsStr } from "../../shared/duration";
  */
 
 const mergeCsvJobId = process.argv[2];
+if (!mergeCsvJobId) {
+  console.log(
+    "Usage: ts-node src/analytics-platform/snowflake/3-ingest-from-merged-csvs.ts <mergeCsvJobId>"
+  );
+  throw new Error("mergeCsvJobId is required");
+}
 
 const cxId = getEnvVarOrFail("CX_ID");
 const bucketName = getEnvVarOrFail("ANALYTICS_BUCKET_NAME");
@@ -67,6 +78,8 @@ snowflake.configure({
   additionalLogToConsole: false,
 });
 
+const confirmationTime = dayjs.duration(10, "seconds");
+
 // The resource types to be used in the test.
 // type ResourceType = "observation" | "patient" | "condition";
 
@@ -76,13 +89,21 @@ async function main() {
   console.log(`############## Started at ${buildDayjs().toISOString()} ##############`);
 
   const columnDefs = readConfigs();
+  const [{ orgName }, files] = await Promise.all([
+    getCxData(cxId, undefined, false),
+    s3Utils.listObjects(bucketName, prefixName),
+  ]);
+  console.log(`Found ${files.length} files in ${prefixUrl}`);
 
-  await initializeTables(columnDefs);
+  await displayWarningAndConfirmation(files, orgName, database);
+  console.log(`>>> Running it with mergeCsvJobId: ${mergeCsvJobId}`);
+
+  await ingestIntoSnowflake(columnDefs, files);
 
   console.log(`>>>>>>> Done after ${elapsedTimeAsStr(startedAt)}`);
 }
 
-async function initializeTables(columnDefs: Record<string, string>) {
+async function ingestIntoSnowflake(columnDefs: Record<string, string>, files: AWS.S3.ObjectList) {
   const connection = snowflake.createConnection({
     account,
     token,
@@ -93,9 +114,6 @@ async function initializeTables(columnDefs: Record<string, string>) {
     clientSessionKeepAlive: true,
   });
   try {
-    const files = await s3Utils.listObjects(bucketName, prefixName);
-    console.log(`Found ${files.length} files in ${prefixUrl}`);
-
     // console.log(">>> Connecting to Snowflake...");
     const connectAsync = promisifyConnect(connection);
     await connectAsync();
@@ -105,7 +123,7 @@ async function initializeTables(columnDefs: Record<string, string>) {
     // await executeAsync(`USE DATABASE ${database}`);
     // await executeAsync(`USE SCHEMA ${schema}`);
 
-    console.log("Creating tables if not exist...");
+    console.log("Creating tables...");
     const tableNames: Record<string, string> = Object.keys(columnDefs).reduce(
       (acc, resourceType) => {
         acc[resourceType] = createTableName(resourceType);
@@ -113,9 +131,9 @@ async function initializeTables(columnDefs: Record<string, string>) {
       },
       {} as Record<string, string>
     );
-
+    console.log("Ingesting data...");
     for (const [resourceType, tableName] of Object.entries(tableNames)) {
-      await processResourceType({
+      await processTable({
         resourceType,
         tableName,
         columnDefs,
@@ -131,7 +149,7 @@ async function initializeTables(columnDefs: Record<string, string>) {
   }
 }
 
-async function processResourceType({
+async function processTable({
   resourceType,
   tableName,
   columnDefs,
@@ -153,15 +171,15 @@ async function processResourceType({
   }
 
   const columnsDef = columnDefs[resourceType];
-  // fs.writeFileSync(`columnsDef_${resourceType}.txt`, columnsDef);
 
   // Do not use IF NOT EXISTS here, we want to make sure we're not duplicating data
   const createTableCmd = `CREATE TABLE ${tableName} (${columnsDef})`;
+  // console.log(`Create table cmd: ${createTableCmd}`);
   await executeAsync(createTableCmd);
 
   // Need the trailing slash to avoid more than one folder from shared prefixes (e.g., condition and condition_code_coding)
   const createStageCmd =
-    `CREATE STAGE IF NOT EXISTS ${tableName} STORAGE_INTEGRATION = ANALYTICS_BUCKET ` +
+    `CREATE OR REPLACE TEMP STAGE ${tableName} STORAGE_INTEGRATION = ANALYTICS_BUCKET ` +
     `URL = '${prefixUrl}/${resourceType}/'`;
   // console.log(`Create stage cmd: ${createStageCmd}`);
   await executeAsync(createStageCmd);
@@ -198,6 +216,7 @@ function readIniFile(path: string): string[] {
   return Object.keys(structSection);
 }
 
+// TODO ENG-858 Configs won't be available at runtime in the lambda like this, will need a diff approach
 function readConfigs(): Record<string, string> {
   const iniFolder = `../data-transformation/fhir-to-csv/src/parseFhir/configurations`;
   const files = fs.readdirSync(iniFolder);
@@ -214,6 +233,19 @@ function readConfigs(): Record<string, string> {
   }
 
   return columnDefs;
+}
+
+async function displayWarningAndConfirmation(
+  files: AWS.S3.ObjectList,
+  orgName: string,
+  dbName: string
+) {
+  const msg =
+    `You are about to ingest ${files.length} files of ` +
+    `customer ${orgName} (${cxId}) into Snowflake DB ${dbName}, are you sure?`;
+  console.log(msg);
+  console.log("Cancel this now if you're not sure.");
+  await sleep(confirmationTime.asMilliseconds());
 }
 
 main();
