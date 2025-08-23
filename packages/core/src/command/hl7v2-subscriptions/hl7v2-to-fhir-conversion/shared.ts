@@ -34,7 +34,7 @@ const hl7CodingSystemToUrlMap: Record<string, string> = {
 
 const hl7UnknownCodingSystems: Set<string> = new Set(["HRV", "FT"]);
 
-async function decompressUuid(shortId: string) {
+function decompressUuid(shortId: string) {
   return unpackUuid(new Base64Scrambler(Config.getHl7Base64ScramblerSeed()).unscramble(shortId));
 }
 
