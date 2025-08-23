@@ -9,7 +9,6 @@ import { ICD_10_URL, ICD_9_URL, LOINC_URL, SNOMED_URL } from "../../../util/cons
 import { HL7_FILE_EXTENSION } from "../../../util/mime";
 import { packUuid, unpackUuid } from "../../../util/pack-uuid";
 import { getMessageDatetime, getMessageUniqueIdentifier } from "./msh";
-import { getSecretValueOrFail } from "../../../external/aws/secret-manager";
 
 type Hl7FileKeyParams = {
   messageId: string;
@@ -38,15 +37,6 @@ function decompressUuid(shortId: string) {
   return unpackUuid(new Base64Scrambler(Config.getHl7Base64ScramblerSeed()).unscramble(shortId));
 }
 
-// Warning only the lambda should call this method.
-export async function compressUuidByArn(uuid: string) {
-  const seedArn = Config.getHl7Base64ScramblerSeed();
-  console.log("Got seed ARN: ", seedArn);
-  const scramblerSeed = await getSecretValueOrFail(seedArn, Config.getAWSRegion());
-  return new Base64Scrambler(scramblerSeed).scramble(packUuid(uuid));
-}
-
-// Everything but the lambda should call this method.
 export function compressUuid(uuid: string) {
   return new Base64Scrambler(Config.getHl7Base64ScramblerSeed()).scramble(packUuid(uuid));
 }

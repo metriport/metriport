@@ -15,10 +15,12 @@ import { stringify } from "csv-stringify/sync";
 import _ from "lodash";
 import { getFirstNameAndMiddleInitial, Patient } from "../../domain/patient";
 import { S3Utils, storeInS3WithRetries } from "../../external/aws/s3";
+import { getSecretValueOrFail } from "../../external/aws/secret-manager";
 import { out } from "../../util";
 import { Config } from "../../util/config";
 import { CSV_FILE_EXTENSION, CSV_MIME_TYPE } from "../../util/mime";
 import { METRIPORT_ASSIGNING_AUTHORITY_IDENTIFIER } from "./constants";
+import { uploadToRemoteSftp } from "./hl7v2-roster-uploader";
 import {
   HieConfig,
   HiePatientRosterMapping,
@@ -27,8 +29,7 @@ import {
   RosterRowData,
   VpnlessHieConfig,
 } from "./types";
-import { createScrambledIdByArn } from "./utils";
-import { uploadToRemoteSftp } from "./hl7v2-roster-uploader";
+import { createScrambledId } from "./utils";
 const region = Config.getAWSRegion();
 
 type RosterRow = Record<string, string>;
@@ -57,6 +58,10 @@ export class Hl7v2RosterGenerator {
       states,
     };
 
+    const secretArn = Config.getHl7Base64ScramblerSeedArn();
+    const hl7Base64ScramblerSeed = await getSecretValueOrFail(secretArn, Config.getAWSRegion());
+    process.env["HL7_BASE64_SCRAMBLER_SEED"] = hl7Base64ScramblerSeed;
+
     log(`Running with this config: ${JSON.stringify(loggingDetails)}`);
     log(`Getting all subscribed patients...`);
     const patients = await simpleExecuteWithRetries(
@@ -77,25 +82,26 @@ export class Hl7v2RosterGenerator {
     const orgs = await simpleExecuteWithRetries(() => this.getOrganizations([...cxIds]), log);
     const orgsByCxId = _.keyBy(orgs, "cxId");
 
-    const rosterRowInputs = await Promise.all(
-      patients.map(async p => {
-        const org = orgsByCxId[p.cxId];
-        if (!org) {
-          throw new MetriportError(
-            `Organization ${p.cxId} not found for patient ${p.id}`,
-            undefined,
-            { patientId: p.id, cxId: p.cxId }
-          );
-        }
-        if (!org.shortcode) {
-          throw new MetriportError(`Organization ${p.cxId} has no shortcode`, undefined, {
+    const rosterRowInputs = patients.map(p => {
+      const org = orgsByCxId[p.cxId];
+      if (!org) {
+        throw new MetriportError(
+          `Organization ${p.cxId} not found for patient ${p.id}`,
+          undefined,
+          {
             patientId: p.id,
             cxId: p.cxId,
-          });
-        }
-        return createRosterRowInput(p, { shortcode: org.shortcode }, states);
-      })
-    );
+          }
+        );
+      } else if (!org.shortcode) {
+        throw new MetriportError(`Organization ${p.cxId} has no shortcode`, undefined, {
+          patientId: p.id,
+          cxId: p.cxId,
+        });
+      }
+
+      return createRosterRowInput(p, { shortcode: org.shortcode }, states);
+    });
 
     const rosterRows = rosterRowInputs.map(input => createRosterRow(input, config.mapping));
     const rosterCsv = this.generateCsv(rosterRows);
@@ -218,18 +224,18 @@ export function genderOneTwoAndNine(gender: GenderAtBirth) {
   }[gender];
 }
 
-export async function createRosterRowInput(
+export function createRosterRowInput(
   p: Patient,
   org: { shortcode: string },
   states: string[]
-): Promise<RosterRowData> {
+): RosterRowData {
   const data = p.data;
   const addresses = data.address.filter(a => states.includes(a.state));
   const ssn = data.personalIdentifiers?.find(id => id.type === "ssn")?.value;
   const driversLicense = data.personalIdentifiers?.find(id => id.type === "driversLicense")?.value;
   const phone = data.contact?.find(c => c.phone)?.phone;
   const email = data.contact?.find(c => c.email)?.email;
-  const scrambledId = await createScrambledIdByArn(p.cxId, p.id);
+  const scrambledId = createScrambledId(p.cxId, p.id);
   const rosterGenerationDate = buildDayjs(new Date()).format("YYYY-MM-DD");
   const dob = data.dob; // 2025-01-31
   const dobNoDelimiter = dob.replace(/[-]/g, ""); // 20250131
