@@ -13,12 +13,16 @@ import { dangerouslyDeduplicateFhir } from "../../../fhir-deduplication/deduplic
 import { hydrateFhir } from "../../fhir/hydration/hydrate-fhir";
 import { getSpecimen } from "./specimen";
 
-export async function convertIncomingDataToFhirBundle(
-  cxId: string,
-  patientId: string,
-  details: IncomingData<ResponseDetail>[]
-): Promise<Bundle> {
-  const entry = details.flatMap(getBundleEntries);
+export async function convertTabularDataToFhirBundle({
+  cxId,
+  patientId,
+  rows,
+}: {
+  cxId: string;
+  patientId: string;
+  rows: IncomingData<ResponseDetail>[];
+}): Promise<Bundle> {
+  const entry = rows.flatMap(getBundleEntries);
   const bundle: Bundle = {
     resourceType: "Bundle",
     entry,
