@@ -27,7 +27,7 @@ import {
   RosterRowData,
   VpnlessHieConfig,
 } from "./types";
-import { createScrambledId } from "./utils";
+import { createScrambledIdByArn } from "./utils";
 import { uploadToRemoteSftp } from "./hl7v2-roster-uploader";
 const region = Config.getAWSRegion();
 
@@ -77,26 +77,25 @@ export class Hl7v2RosterGenerator {
     const orgs = await simpleExecuteWithRetries(() => this.getOrganizations([...cxIds]), log);
     const orgsByCxId = _.keyBy(orgs, "cxId");
 
-    const rosterRowInputs = patients.map(p => {
-      const org = orgsByCxId[p.cxId];
-      if (!org) {
-        throw new MetriportError(
-          `Organization ${p.cxId} not found for patient ${p.id}`,
-          undefined,
-          {
+    const rosterRowInputs = await Promise.all(
+      patients.map(async p => {
+        const org = orgsByCxId[p.cxId];
+        if (!org) {
+          throw new MetriportError(
+            `Organization ${p.cxId} not found for patient ${p.id}`,
+            undefined,
+            { patientId: p.id, cxId: p.cxId }
+          );
+        }
+        if (!org.shortcode) {
+          throw new MetriportError(`Organization ${p.cxId} has no shortcode`, undefined, {
             patientId: p.id,
             cxId: p.cxId,
-          }
-        );
-      } else if (!org.shortcode) {
-        throw new MetriportError(`Organization ${p.cxId} has no shortcode`, undefined, {
-          patientId: p.id,
-          cxId: p.cxId,
-        });
-      }
-
-      return createRosterRowInput(p, { shortcode: org.shortcode }, states);
-    });
+          });
+        }
+        return createRosterRowInput(p, { shortcode: org.shortcode }, states);
+      })
+    );
 
     const rosterRows = rosterRowInputs.map(input => createRosterRow(input, config.mapping));
     const rosterCsv = this.generateCsv(rosterRows);
@@ -219,18 +218,18 @@ export function genderOneTwoAndNine(gender: GenderAtBirth) {
   }[gender];
 }
 
-export function createRosterRowInput(
+export async function createRosterRowInput(
   p: Patient,
   org: { shortcode: string },
   states: string[]
-): RosterRowData {
+): Promise<RosterRowData> {
   const data = p.data;
   const addresses = data.address.filter(a => states.includes(a.state));
   const ssn = data.personalIdentifiers?.find(id => id.type === "ssn")?.value;
   const driversLicense = data.personalIdentifiers?.find(id => id.type === "driversLicense")?.value;
   const phone = data.contact?.find(c => c.phone)?.phone;
   const email = data.contact?.find(c => c.email)?.email;
-  const scrambledId = createScrambledId(p.cxId, p.id);
+  const scrambledId = await createScrambledIdByArn(p.cxId, p.id);
   const rosterGenerationDate = buildDayjs(new Date()).format("YYYY-MM-DD");
   const dob = data.dob; // 2025-01-31
   const dobNoDelimiter = dob.replace(/[-]/g, ""); // 20250131
