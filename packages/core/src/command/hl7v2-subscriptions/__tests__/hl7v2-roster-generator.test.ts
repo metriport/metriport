@@ -125,7 +125,7 @@ describe("AdtRosterGenerator", () => {
   });
 
   describe("createRosterRow", () => {
-    it("should convert all fields correctly including multiple addresses and identifiers", async () => {
+    it("should convert all fields correctly including multiple addresses and identifiers", () => {
       const patient = makePatient({
         id: patientId,
         cxId,
@@ -148,7 +148,7 @@ describe("AdtRosterGenerator", () => {
         },
       });
 
-      const input = await rosterGeneratorModule.createRosterRowInput(
+      const input = rosterGeneratorModule.createRosterRowInput(
         patient,
         { shortcode: "TESTCODE" },
         states
@@ -176,7 +176,7 @@ describe("AdtRosterGenerator", () => {
       });
     });
 
-    it("should include empty strings for fields present in the schema but not in the patient", async () => {
+    it("should include empty strings for fields present in the schema but not in the patient", () => {
       const patient = makePatient({
         id: patientId,
         cxId,
@@ -191,7 +191,7 @@ describe("AdtRosterGenerator", () => {
       delete patient.data.contact;
       delete patient.data.personalIdentifiers;
 
-      const input = await rosterGeneratorModule.createRosterRowInput(
+      const input = rosterGeneratorModule.createRosterRowInput(
         patient,
         { shortcode: "TEST" },
         states
