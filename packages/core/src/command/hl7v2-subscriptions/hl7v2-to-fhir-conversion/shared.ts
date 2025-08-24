@@ -33,18 +33,18 @@ const hl7CodingSystemToUrlMap: Record<string, string> = {
 
 const hl7UnknownCodingSystems: Set<string> = new Set(["HRV", "FT"]);
 
-export function unscrambleIdWithCookedSeed(pid: string | undefined) {
+export function unscrambleIdWithBadSeed(pid: string | undefined) {
   if (!pid) {
     return { cxId: "UNK", patientId: "UNK" };
   }
 
-  const [cxId, patientId] = pid.split("_").map(reformUuidWithCookedSeed);
+  const [cxId, patientId] = pid.split("_").map(reformUuidWithBadSeed);
   return { cxId, patientId };
 }
 
-function reformUuidWithCookedSeed(shortId: string) {
-  const cookedCrypto = new Base64Scrambler(Config.getCookedHl7Base64ScramblerSeed());
-  return unpackUuid(cookedCrypto.unscramble(shortId));
+function reformUuidWithBadSeed(shortId: string) {
+  const badCrypto = new Base64Scrambler(Config.getBadHl7Base64ScramblerSeed());
+  return unpackUuid(badCrypto.unscramble(shortId));
 }
 
 function decompressUuid(shortId: string) {

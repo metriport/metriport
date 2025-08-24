@@ -31,7 +31,7 @@ import {
 } from "./hl7-notification-webhook-sender";
 import { isSupportedTriggerEvent, SupportedTriggerEvent } from "./utils";
 import { createScrambledId } from "../hl7v2-subscriptions/utils";
-import { unscrambleIdWithCookedSeed } from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
+import { unscrambleIdWithBadSeed } from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
 
 export const dischargeEventCode = "A03";
 
@@ -265,16 +265,16 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
       return await executeWithNetworkRetries(
         async () => (await axios.get(internalGetPatientUrl)).data
       );
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      //eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       if (err instanceof AxiosError && err.status === 404) {
         log(
           "Could not find patient. Going to try scramble and unscramble with the old broken scramble seed."
         );
         const scrambledId = createScrambledId(cxId, ptId);
-        const unscrambledIdWithCookedSeed = unscrambleIdWithCookedSeed(scrambledId);
-        const newCxId = unscrambledIdWithCookedSeed.cxId;
-        const newPtId = unscrambledIdWithCookedSeed.patientId;
+        const unscrambledIdWithBadSeed = unscrambleIdWithBadSeed(scrambledId);
+        const newCxId = unscrambledIdWithBadSeed.cxId;
+        const newPtId = unscrambledIdWithBadSeed.patientId;
         if (!newCxId || !newPtId) {
           throw new MetriportError(
             "Could not get new cxId or ptId with broken scrambler seed.",
@@ -283,7 +283,7 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
           );
         }
 
-        const internalGetPatientUrlWithNewIds = `${this.apiUrl}/${INTERNAL_PATIENT_ENDPOINT}/${newCxId}?cxId=${newPtId}`;
+        const internalGetPatientUrlWithNewIds = `${this.apiUrl}/${INTERNAL_PATIENT_ENDPOINT}/${newPtId}?cxId=${newCxId}`;
         const data = await executeWithNetworkRetries(
           async () => (await axios.get(internalGetPatientUrlWithNewIds)).data
         );
