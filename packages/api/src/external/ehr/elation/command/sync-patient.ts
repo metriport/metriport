@@ -88,6 +88,7 @@ export async function syncElationPatientIntoMetriport({
   }
 
   log("no existing mapping found");
+  let metriportPatientId: string | undefined;
   try {
     const elationPatient = await elationApi.getPatient({ cxId, patientId: elationPatientId });
     const demographics = createMetriportPatientDemographics(elationPatient);
@@ -100,10 +101,10 @@ export async function syncElationPatientIntoMetriport({
       inputMetriportPatientId,
     });
     log("Metriport patient created/retrieved:", metriportPatient.id);
-    const metriportPatientId = metriportPatient.id;
+    metriportPatientId = metriportPatient.id;
     const facilityId = await getPatientPrimaryFacilityIdOrFail({
       cxId,
-      patientId: metriportPatient.id,
+      patientId: metriportPatientId,
     });
     if (triggerDq) {
       queryDocumentsAcrossHIEs({
@@ -134,7 +135,8 @@ export async function syncElationPatientIntoMetriport({
       elationPracticeId,
       elationPatientId,
       elationApi,
-    }).catch(processAsyncError(`Elation createElationPatientMetadata`));
+      metriportPatientId,
+    }).catch(processAsyncError(`Elation createElationPatientMetadata error`));
     throw error;
   }
 }
