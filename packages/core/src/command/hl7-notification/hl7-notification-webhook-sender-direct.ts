@@ -267,7 +267,7 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
       );
       //eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
-      if (err instanceof AxiosError && err.status === 404) {
+      if (err instanceof AxiosError && err.response?.status === 404) {
         log(
           "Could not find patient. Going to try scramble and unscramble with the old broken scramble seed."
         );
