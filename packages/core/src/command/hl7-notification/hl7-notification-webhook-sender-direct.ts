@@ -263,7 +263,8 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
 
     try {
       return await executeWithNetworkRetries(
-        async () => (await axios.get(internalGetPatientUrl)).data
+        async () => (await axios.get(internalGetPatientUrl)).data,
+        { log }
       );
       //eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
@@ -285,11 +286,12 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
 
         const internalGetPatientUrlWithNewIds = `${this.apiUrl}/${INTERNAL_PATIENT_ENDPOINT}/${newPtId}?cxId=${newCxId}`;
         const data = await executeWithNetworkRetries(
-          async () => (await axios.get(internalGetPatientUrlWithNewIds)).data
+          async () => (await axios.get(internalGetPatientUrlWithNewIds)).data,
+          { log }
         );
 
         log(
-          `Found patient using the broken scramble seed. New cxId: ${newCxId}, new ptId: ${ptId}`
+          `Found patient using the broken scramble seed. New cxId: ${newCxId}, new ptId: ${newPtId}`
         );
 
         return data;
