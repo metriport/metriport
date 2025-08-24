@@ -1,5 +1,5 @@
 import * as dotenv from "dotenv";
-dotenv.config({ path: ".env._cw_org_migration" });
+dotenv.config({ path: ".env._cw_org_migration_prod" });
 // keep that ^ on top
 import {
   APIMode,
@@ -41,6 +41,7 @@ dayjs.extend(duration);
  *
  * To run this script:
  * 1. Set the environment variables in the .env._cw_org_migration file
+ * 2. Set the
  * 2. use the `ts-node src/commonwell/org-migration/cw-v2-org-migration` command
  */
 
@@ -61,7 +62,9 @@ const cwTechnicalContactPhone = getEnvVarOrFail("CW_TECHNICAL_CONTACT_PHONE");
 
 // auth stuff
 const cxIds: string[] = [];
-const mode = APIMode.integration;
+const MODE = APIMode.production;
+const IS_ACTIVE_DEFAULT = false;
+
 // query stuff
 const minimumDelayTime = dayjs.duration(3, "seconds");
 const defaultDelayTime = dayjs.duration(1, "seconds");
@@ -85,7 +88,6 @@ async function main() {
   initRunsFolder();
   program.parse();
   const { log } = out("CW v2 Org Migration");
-
   const startedAt = Date.now();
   log(`>>> Starting with ${cxIds.length} org IDs...`);
 
@@ -156,6 +158,24 @@ async function displayWarningAndConfirmation(
     log("Aborting...");
     process.exit(0);
   }
+
+  if (IS_ACTIVE_DEFAULT) {
+    const answer = await rl.question(
+      "You're defaulting to ACTIVE orgs. Type 'active' to proceed: "
+    );
+    if (answer !== "active") {
+      log("Aborting...");
+      process.exit(0);
+    }
+  }
+
+  if (MODE === APIMode.production) {
+    const answer = await rl.question("You're running in PROD mode! Type 'prod' to proceed: ");
+    if (answer !== "prod") {
+      log("Aborting...");
+      process.exit(0);
+    }
+  }
   rl.close();
 }
 
@@ -185,7 +205,7 @@ function buildCwOrganization(org: CwOrgOrFacility): OrganizationWithNetworkInfo 
     patientIdAssignAuthority: org.oid,
     memberName: cwMemberName,
     searchRadius: 150,
-    isActive: true,
+    isActive: org.active ? IS_ACTIVE_DEFAULT : org.active,
     securityTokenKeyType: "JWT",
     gateways: [
       {
@@ -255,7 +275,7 @@ function isInitiatorAndResponder(facilityType: FacilityType): boolean {
 async function create(org: CwOrganizations): Promise<void> {
   const { log, debug } = out(`CW.v2 create Org - CW Org OID ${org.organizationId}`);
 
-  const commonWell = makeCommonWellMemberAPI(mode);
+  const commonWell = makeCommonWellMemberAPI(MODE);
   try {
     const respGet = await commonWell.getOneOrg(org.organizationId);
     if (respGet) {
