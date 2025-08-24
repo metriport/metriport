@@ -1,9 +1,9 @@
 import { Hl7Message } from "@medplum/core";
 import { Bundle, CodeableConcept, Resource } from "@medplum/fhirtypes";
-import { executeWithNetworkRetries } from "@metriport/shared";
+import { executeWithNetworkRetries, MetriportError } from "@metriport/shared";
 import { CreateDischargeRequeryParams } from "@metriport/shared/domain/patient/patient-monitoring/discharge-requery";
 import { TcmEncounterUpsertInput } from "@metriport/shared/domain/tcm-encounter";
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import dayjs from "dayjs";
 import { S3Utils } from "../../external/aws/s3";
 import {
@@ -30,6 +30,8 @@ import {
   Hl7NotificationWebhookSender,
 } from "./hl7-notification-webhook-sender";
 import { isSupportedTriggerEvent, SupportedTriggerEvent } from "./utils";
+import { createScrambledId } from "../hl7v2-subscriptions/utils";
+import { unscrambleIdWithCookedSeed } from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
 
 export const dischargeEventCode = "A03";
 
@@ -92,13 +94,14 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
     });
 
     const internalHl7RouteUrl = `${this.apiUrl}/${INTERNAL_PATIENT_ENDPOINT}/${patientId}/${INTERNAL_HL7_ENDPOINT}`;
-    const internalGetPatientUrl = `${this.apiUrl}/${INTERNAL_PATIENT_ENDPOINT}/${patientId}?cxId=${cxId}`;
     const internalDischargeRequeryRouteUrl = `${this.apiUrl}/${INTERNAL_PATIENT_ENDPOINT}/${DISCHARGE_REQUERY_ENDPOINT}`;
 
-    log(`GET internalGetPatientUrl: ${internalGetPatientUrl}`);
-    const patient = await executeWithNetworkRetries(
-      async () => await axios.get(internalGetPatientUrl)
-    );
+    const patient = await this.fetchPatient(cxId, patientId, log);
+
+    if (!patient) {
+      throw new MetriportError("Did not get a patient.", undefined, { patient });
+    }
+
     const fhirPatient = toFhirPatient({ id: patientId, data: patient.data });
 
     const conversionResult = convertHl7v2MessageToFhir({
@@ -252,6 +255,47 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
     }
 
     return clinicalInformation;
+  }
+
+  async fetchPatient(cxId: string, ptId: string, log: typeof console.log) {
+    const internalGetPatientUrl = `${this.apiUrl}/${INTERNAL_PATIENT_ENDPOINT}/${ptId}?cxId=${cxId}`;
+    log(`GET internalGetPatientUrl: ${internalGetPatientUrl}`);
+
+    try {
+      return await executeWithNetworkRetries(
+        async () => (await axios.get(internalGetPatientUrl)).data
+      );
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (err: any) {
+      if (err instanceof AxiosError && err.status === 404) {
+        log(
+          "Could not find patient. Going to try scramble and unscramble with the old broken scramble seed."
+        );
+        const scrambledId = createScrambledId(cxId, ptId);
+        const unscrambledIdWithCookedSeed = unscrambleIdWithCookedSeed(scrambledId);
+        const newCxId = unscrambledIdWithCookedSeed.cxId;
+        const newPtId = unscrambledIdWithCookedSeed.patientId;
+        if (!newCxId || !newPtId) {
+          throw new MetriportError(
+            "Could not get new cxId or ptId with broken scrambler seed.",
+            err,
+            { newCxId, newPtId }
+          );
+        }
+
+        const internalGetPatientUrlWithNewIds = `${this.apiUrl}/${INTERNAL_PATIENT_ENDPOINT}/${newCxId}?cxId=${newPtId}`;
+        const data = await executeWithNetworkRetries(
+          async () => (await axios.get(internalGetPatientUrlWithNewIds)).data
+        );
+
+        log(
+          `Found patient using the broken scramble seed. New cxId: ${newCxId}, new ptId: ${ptId}`
+        );
+
+        return data;
+      }
+      throw err;
+    }
   }
 }
 

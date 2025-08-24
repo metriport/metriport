@@ -88,6 +88,10 @@ export class Config {
     return getEnvVarOrFail("HL7_BASE64_SCRAMBLER_SEED");
   }
 
+  static getCookedHl7Base64ScramblerSeed(): string {
+    return getEnvVarOrFail("COOKED_HL7_BASE64_SCRAMBLER_SEED");
+  }
+
   static getFHIRServerUrl(): string {
     return getEnvVarOrFail("FHIR_SERVER_URL");
   }

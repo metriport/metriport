@@ -33,6 +33,20 @@ const hl7CodingSystemToUrlMap: Record<string, string> = {
 
 const hl7UnknownCodingSystems: Set<string> = new Set(["HRV", "FT"]);
 
+export function unscrambleIdWithCookedSeed(pid: string | undefined) {
+  if (!pid) {
+    return { cxId: "UNK", patientId: "UNK" };
+  }
+
+  const [cxId, patientId] = pid.split("_").map(reformUuidWithCookedSeed);
+  return { cxId, patientId };
+}
+
+function reformUuidWithCookedSeed(shortId: string) {
+  const cookedCrypto = new Base64Scrambler(Config.getCookedHl7Base64ScramblerSeed());
+  return unpackUuid(cookedCrypto.unscramble(shortId));
+}
+
 function decompressUuid(shortId: string) {
   return unpackUuid(new Base64Scrambler(Config.getHl7Base64ScramblerSeed()).unscramble(shortId));
 }
