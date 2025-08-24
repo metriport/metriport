@@ -139,7 +139,7 @@ export class CommonWellMember implements CommonWellMemberAPI {
     } catch (error) {
       if (error instanceof AxiosError) {
         const data = error.response?.data;
-        throw new MetriportError(data.title, undefined, { extra: data });
+        throw new MetriportError(data.title, undefined, { extra: JSON.stringify(data) });
       }
       throw error;
     }
@@ -165,12 +165,11 @@ export class CommonWellMember implements CommonWellMemberAPI {
           headers,
         }
       );
-
       return organizationSchema.parse(resp.data);
     } catch (error) {
       if (error instanceof AxiosError) {
         const data = error.response?.data;
-        throw new MetriportError(data.title, undefined, { extra: data });
+        throw new MetriportError(data.title, undefined, { extra: JSON.stringify(data) });
       }
       throw error;
     }

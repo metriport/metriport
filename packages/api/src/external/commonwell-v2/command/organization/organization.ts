@@ -1,8 +1,9 @@
 import {
-  isOrgInitiatorAndResponder,
   Organization as CwSdkOrganization,
-  OrganizationWithNetworkInfo,
+  CwTreatmentType,
+  isOrgInitiatorAndResponder,
   OrganizationBase,
+  OrganizationWithNetworkInfo,
 } from "@metriport/commonwell-sdk";
 import { OID_PREFIX } from "@metriport/core/domain/oid";
 import { OrganizationData } from "@metriport/core/domain/organization";
@@ -35,15 +36,6 @@ export type CwOrgOrFacility = {
   isInitiatorAndResponder: boolean;
 };
 
-export enum CwTreatmentType {
-  acuteCare = "acute care",
-  ambulatory = "ambulatory",
-  hospital = "hospital",
-  labSystems = "lab systems",
-  pharmacy = "pharmacy",
-  postAcuteCare = "post acute care",
-}
-
 const TREATMENT_TYPE_TO_CW_MAP: Record<TreatmentType, CwTreatmentType> = {
   [TreatmentType.acuteCare]: CwTreatmentType.acuteCare,
   [TreatmentType.ambulatory]: CwTreatmentType.ambulatory,
@@ -53,7 +45,7 @@ const TREATMENT_TYPE_TO_CW_MAP: Record<TreatmentType, CwTreatmentType> = {
   [TreatmentType.postAcuteCare]: CwTreatmentType.postAcuteCare,
 } as const;
 
-const CW_TO_TREATMENT_TYPE_MAP: Record<CwTreatmentType, TreatmentType> = {
+const CW_TO_TREATMENT_TYPE_MAP: Record<string, TreatmentType> = {
   [CwTreatmentType.acuteCare]: TreatmentType.acuteCare,
   [CwTreatmentType.ambulatory]: TreatmentType.ambulatory,
   [CwTreatmentType.hospital]: TreatmentType.hospital,
@@ -262,7 +254,7 @@ export function parseCWEntry(org: CwSdkOrganization): CwOrgOrFacility {
         zip: location.postalCode,
         country: location.country,
       },
-      type: mapCwTypeToTreatmentType(org.type as CwTreatmentType),
+      type: mapCwTypeToTreatmentType(org.type),
     },
     oid: org.organizationId.replace(OID_PREFIX, ""),
     active: org.isActive,
@@ -286,8 +278,8 @@ export function mapTreatmentTypeToCwType(type: TreatmentType): CwTreatmentType {
   return cwType;
 }
 
-export function mapCwTypeToTreatmentType(type: CwTreatmentType): TreatmentType {
-  const treatmentType = CW_TO_TREATMENT_TYPE_MAP[type];
+export function mapCwTypeToTreatmentType(type: string): TreatmentType {
+  const treatmentType = CW_TO_TREATMENT_TYPE_MAP[type.toLowerCase().trim()];
   if (!treatmentType) {
     const msg = `Invalid CW treatment type: ${type}`;
     capture.error(msg, { extra: { type } });
