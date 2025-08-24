@@ -35,6 +35,33 @@ export type CwOrgOrFacility = {
   isInitiatorAndResponder: boolean;
 };
 
+export enum CwTreatmentType {
+  acuteCare = "acute care",
+  ambulatory = "ambulatory",
+  hospital = "hospital",
+  labSystems = "lab systems",
+  pharmacy = "pharmacy",
+  postAcuteCare = "post acute care",
+}
+
+const TREATMENT_TYPE_TO_CW_MAP: Record<TreatmentType, CwTreatmentType> = {
+  [TreatmentType.acuteCare]: CwTreatmentType.acuteCare,
+  [TreatmentType.ambulatory]: CwTreatmentType.ambulatory,
+  [TreatmentType.hospital]: CwTreatmentType.hospital,
+  [TreatmentType.labSystems]: CwTreatmentType.labSystems,
+  [TreatmentType.pharmacy]: CwTreatmentType.pharmacy,
+  [TreatmentType.postAcuteCare]: CwTreatmentType.postAcuteCare,
+} as const;
+
+const CW_TO_TREATMENT_TYPE_MAP: Record<CwTreatmentType, TreatmentType> = {
+  [CwTreatmentType.acuteCare]: TreatmentType.acuteCare,
+  [CwTreatmentType.ambulatory]: TreatmentType.ambulatory,
+  [CwTreatmentType.hospital]: TreatmentType.hospital,
+  [CwTreatmentType.labSystems]: TreatmentType.labSystems,
+  [CwTreatmentType.pharmacy]: TreatmentType.pharmacy,
+  [CwTreatmentType.postAcuteCare]: TreatmentType.postAcuteCare,
+} as const;
+
 type CwSdkOrganizationWithOrgId = Omit<CwSdkOrganization, "organizationId"> &
   Required<Pick<CwSdkOrganization, "organizationId">>;
 
@@ -46,7 +73,7 @@ function cwOrgOrFacilityToSdk(
 ): CwSdkOrganizationWithOrgId | CwSdkOrganizationWithNetworkInfo {
   const cwOrgBase: OrganizationBase = {
     name: org.data.name,
-    type: org.data.type,
+    type: mapTreatmentTypeToCwType(org.data.type),
     locations: [
       {
         address1: org.data.location.addressLine1,
@@ -234,7 +261,7 @@ export function parseCWEntry(org: CwSdkOrganization): CwOrgOrFacility {
         zip: location.postalCode,
         country: location.country,
       },
-      type: org.type as TreatmentType,
+      type: mapCwTypeToTreatmentType(org.type as CwTreatmentType),
     },
     oid: org.organizationId.replace(OID_PREFIX, ""),
     active: org.isActive,
@@ -246,4 +273,24 @@ export async function getParsedOrgOrFailV2(oid: string): Promise<CwOrgOrFacility
   const resp = await getOrFail(oid);
   if (!resp) throw new NotFoundError("Organization not found", undefined, { orgOid: oid });
   return parseCWEntry(resp);
+}
+
+export function mapTreatmentTypeToCwType(type: TreatmentType): CwTreatmentType {
+  const cwType = TREATMENT_TYPE_TO_CW_MAP[type];
+  if (!cwType) {
+    const msg = `Invalid treatment type: ${type}`;
+    capture.error(msg, { extra: { type } });
+    throw new MetriportError(msg, undefined, { type });
+  }
+  return cwType;
+}
+
+export function mapCwTypeToTreatmentType(type: CwTreatmentType): TreatmentType {
+  const treatmentType = CW_TO_TREATMENT_TYPE_MAP[type];
+  if (!treatmentType) {
+    const msg = `Invalid CW treatment type: ${type}`;
+    capture.error(msg, { extra: { type } });
+    throw new MetriportError(msg, undefined, { type });
+  }
+  return treatmentType;
 }
