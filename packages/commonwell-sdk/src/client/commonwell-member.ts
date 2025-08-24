@@ -1,5 +1,5 @@
 import { MetriportError } from "@metriport/shared";
-import axios, { AxiosInstance, AxiosResponse } from "axios";
+import axios, { AxiosError, AxiosInstance, AxiosResponse } from "axios";
 import httpStatus from "http-status";
 import { Agent } from "https";
 import { makeJwt } from "../common/make-jwt";
@@ -127,14 +127,22 @@ export class CommonWellMember implements CommonWellMemberAPI {
   async createOrg(organization: Organization, options?: BaseOptions): Promise<Organization> {
     const meta = options?.meta ?? buildBaseQueryMeta(this.memberName);
     const headers = this.buildQueryHeaders(meta);
-    const resp = await this.api.post(
-      `${CommonWellMember.MEMBER_ENDPOINT}/${this.memberId}/org`,
-      organization,
-      {
-        headers,
+    try {
+      const resp = await this.api.post(
+        `${CommonWellMember.MEMBER_ENDPOINT}/${this.memberId}/org`,
+        organization,
+        {
+          headers,
+        }
+      );
+      return organizationSchema.parse(resp.data);
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        const data = error.response?.data;
+        throw new MetriportError(data.title, undefined, { extra: JSON.stringify(data) });
       }
-    );
-    return organizationSchema.parse(resp.data);
+      throw error;
+    }
   }
 
   /**
@@ -149,14 +157,22 @@ export class CommonWellMember implements CommonWellMemberAPI {
     const meta = options?.meta ?? buildBaseQueryMeta(this.memberName);
     const headers = this.buildQueryHeaders(meta);
     const id = organization.organizationId;
-    const resp = await this.api.put(
-      `${CommonWellMember.MEMBER_ENDPOINT}/${this.memberId}/org/${id}/`,
-      organization,
-      {
-        headers,
+    try {
+      const resp = await this.api.put(
+        `${CommonWellMember.MEMBER_ENDPOINT}/${this.memberId}/org/${id}/`,
+        organization,
+        {
+          headers,
+        }
+      );
+      return organizationSchema.parse(resp.data);
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        const data = error.response?.data;
+        throw new MetriportError(data.title, undefined, { extra: JSON.stringify(data) });
       }
-    );
-    return organizationSchema.parse(resp.data);
+      throw error;
+    }
   }
 
   /**
