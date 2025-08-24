@@ -59,6 +59,8 @@ export class Hl7v2RosterGenerator {
   constructor(private readonly apiUrl: string, private readonly bucketName: string) {
     this.s3Utils = new S3Utils(region);
   }
+  private readonly slackInternalUrl = "internal/slack";
+  private readonly internalSlackRouteUrl = `${this.apiUrl}/${this.slackInternalUrl}`;
 
   async execute(config: HieConfig | VpnlessHieConfig): Promise<string> {
     const { log } = out("Hl7v2RosterGenerator");
