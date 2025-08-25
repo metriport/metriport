@@ -1024,7 +1024,7 @@ export class LambdasNestedStack extends NestedStack {
       const scramblerSeedSecretName = config.hl7Notification.secrets.HL7_BASE64_SCRAMBLER_SEED;
       const hieConfigs = config.hl7Notification.hieConfigs;
       const slackAdtRosterNotificationUrl = config.hl7Notification.slackAdtRosterNotificationUrl;
-
+      const posthogSecretName = config.analyticsSecretNames.POST_HOG_API_KEY_SECRET;
       Object.entries(hieConfigs).forEach(([hieName, hieConfig]) => {
         const passwordSecretName = getHieSftpPasswordSecretName(hieName);
         const passwordSecret = secrets[passwordSecretName];
@@ -1046,6 +1046,7 @@ export class LambdasNestedStack extends NestedStack {
             SLACK_ADT_ROSTER_NOTIFICATION_URL: slackAdtRosterNotificationUrl,
             ROSTER_UPLOAD_SFTP_PASSWORD_ARN: passwordSecret.secretArn,
             ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+            POST_HOG_API_KEY_SECRET: posthogSecretName,
           },
           layers: [lambdaLayers.shared],
           memory: 4096,

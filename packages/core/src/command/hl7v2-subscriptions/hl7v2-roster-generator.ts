@@ -34,6 +34,7 @@ import { PostHog } from "posthog-node";
 import { SlackMessage } from "../../external/slack";
 import { reportMetric } from "../../external/aws/cloudwatch";
 import { uploadToRemoteSftp } from "./hl7v2-roster-uploader";
+import { getSecretValueOrFail } from "../../external/aws/secret-manager";
 const region = Config.getAWSRegion();
 
 type RosterRow = Record<string, string>;
@@ -175,15 +176,6 @@ export class Hl7v2RosterGenerator {
       errors.push(err);
     }
 
-    log("Notifing in slack");
-    try {
-      await this.notifySlack(rosterSize, hieName, failedStage, errors, log);
-      //eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
-      errors.push(err);
-      log("Failed to notify on slack: ", err);
-    }
-
     log("Sending metrics to cloudwatch");
     try {
       await this.notifyCloudWatch(rosterSize, hieName, failedStage);
@@ -192,21 +184,38 @@ export class Hl7v2RosterGenerator {
       errors.push(err);
       log("Failed to notify on cloudwatch: ", err);
     }
+
+    log("Notifing in slack");
+    try {
+      await this.notifySlack(rosterSize, hieName, failedStage, errors, log);
+      //eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (err: any) {
+      log("Failed to notify on slack: ", err);
+    }
   }
 
   private async notifyPostHog(rosterSize: number, hieName: string, failedStage: FailedStage) {
+    const posthogSecretName = Config.getPostHogApiKey();
+    if (!posthogSecretName) {
+      throw new Error("Failed to get posthog secret name");
+    }
+
+    const posthogSecret = await getSecretValueOrFail(posthogSecretName, region);
     let posthog: PostHog | undefined;
     try {
       posthog =
-        analytics({
-          event: EventTypes.rosterUploadSummary,
-          distinctId: `cx:${hieName}`,
-          properties: {
-            stateHie: hieName,
-            rosterSize: failedStage ? 0 : rosterSize,
-            ...(failedStage ? { failedStage } : { status: "ok" }),
+        analytics(
+          {
+            event: EventTypes.rosterUploadSummary,
+            distinctId: `cx:${hieName}`,
+            properties: {
+              stateHie: hieName,
+              rosterSize: failedStage ? 0 : rosterSize,
+              ...(failedStage ? { failedStage } : { status: "ok" }),
+            },
           },
-        }) || undefined;
+          posthogSecret
+        ) || undefined;
       await posthog?.flush?.();
     } finally {
       posthog?.shutdown?.();
