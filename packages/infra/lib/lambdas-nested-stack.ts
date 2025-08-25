@@ -1026,6 +1026,7 @@ export class LambdasNestedStack extends NestedStack {
       const slackAdtRosterNotificationUrl = config.hl7Notification.slackAdtRosterNotificationUrl;
       const posthogSecretName = config.analyticsSecretNames.POST_HOG_API_KEY_SECRET;
       const posthogSecret = secrets["POST_HOG_API_KEY_SECRET"];
+      console.log("Post hog secret: ", posthogSecret);
       if (!posthogSecret) {
         throw new Error("No posthog secret found.");
       }
