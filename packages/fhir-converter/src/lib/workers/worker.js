@@ -69,16 +69,22 @@ function generateResult(
   template,
   patientId,
   encounterTimePeriod,
-  encompassingEncounterIds
+  encompassingEncounterIds,
+  isDebug
 ) {
-  var result = dataTypeHandler.postProcessResult(
-    template(dataContext, {
-      data: { metriportPatientId: patientId, encounterTimePeriod, encompassingEncounterIds },
-    })
-  );
-  return Object.assign(dataTypeHandler.getConversionResultMetadata(dataContext.msg), {
-    fhirResource: result,
-  });
+  try {
+    var result = dataTypeHandler.postProcessResult(
+      template(dataContext, {
+        data: { metriportPatientId: patientId, encounterTimePeriod, encompassingEncounterIds },
+      })
+    );
+    return Object.assign(dataTypeHandler.getConversionResultMetadata(dataContext.msg), {
+      fhirResource: result,
+    });
+  } catch (err) {
+    if (isDebug) console.log(`[patient ${patientId}] DEBUG Error: `, err);
+    throw err;
+  }
 }
 
 WorkerUtils.workerTaskProcessor(msg => {
@@ -95,6 +101,7 @@ WorkerUtils.workerTaskProcessor(msg => {
             let srcDataType = msg.srcDataType;
             let patientId = msg.patientId;
             let fileName = msg.fileName;
+            const isDebug = msg.isDebug;
 
             console.log(`[patient ${patientId}] Processing file ${fileName} at ${nowIso}`);
 
@@ -173,7 +180,8 @@ WorkerUtils.workerTaskProcessor(msg => {
                           compiledTemplate,
                           patientId,
                           encounterTimePeriod,
-                          encompassingEncounterIds
+                          encompassingEncounterIds,
+                          isDebug
                         ),
                         duration: getDuration(),
                       });
