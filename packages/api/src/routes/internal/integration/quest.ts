@@ -10,6 +10,7 @@ import { QuestUploadRosterHandlerCloud } from "@metriport/core/external/quest/co
 import { QuestDownloadResponseHandlerCloud } from "@metriport/core/external/quest/command/download-response/download-response-cloud";
 import { Pagination } from "../../../command/pagination";
 import { dtoFromModel as dtoFromPatientModel, PatientDTO } from "../../medical/dtos/patientDTO";
+import { dtoFromModel as dtoFromPatientMappingModel } from "../../medical/dtos/patient-mapping";
 import { requestLogger } from "../../helpers/request-logger";
 import { paginated } from "../../pagination";
 import { asyncHandler, getFromParamsOrFail } from "../../util";
@@ -81,25 +82,22 @@ router.post(
 );
 
 /** ---------------------------------------------------------------------------
- * GET /internal/quest/patient/:externalId
+ * GET /internal/quest/patient-mapping/:externalId
  *
  * Returns the patient ID and CX ID for a given external ID associated with a patient uploaded to the Quest roster.
  * @param req.params.externalId A 15 character external ID for the patient, associated with Quest.
- * @returns 200 OK with the patient ID and CX ID for the patient
+ * @returns 200 OK with the Metriport patient ID and CX ID, or 404 if no mapping is found.
  */
 router.get(
-  "/patient/:externalId",
+  "/patient-mapping/:externalId",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const externalId = getFromParamsOrFail("externalId", req);
     const patientMapping = await findPatientWithExternalId({ externalId, source: questSource });
     if (patientMapping) {
-      return res.status(status.OK).json({
-        patientId: patientMapping.patientId,
-        cxId: patientMapping.cxId,
-      });
+      return res.status(status.OK).json(dtoFromPatientMappingModel(patientMapping));
     }
-    return res.sendStatus(status.NOT_FOUND).json({});
+    return res.sendStatus(status.NOT_FOUND);
   })
 );
 
