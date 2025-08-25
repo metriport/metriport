@@ -1,5 +1,5 @@
-import { MetriportError } from "@metriport/shared";
-import axios, { AxiosError, AxiosInstance, AxiosResponse } from "axios";
+import { BadRequestError, MetriportError } from "@metriport/shared";
+import axios, { AxiosInstance, AxiosResponse, isAxiosError } from "axios";
 import httpStatus from "http-status";
 import { Agent } from "https";
 import { normalizeCertificate } from "../common/certificate";
@@ -137,11 +137,7 @@ export class CommonWellMember implements CommonWellMemberAPI {
       );
       return organizationSchema.parse(resp.data);
     } catch (error) {
-      if (error instanceof AxiosError) {
-        const data = error.response?.data;
-        throw new MetriportError(data.title, undefined, { extra: JSON.stringify(data) });
-      }
-      throw error;
+      this.rethrowDescriptiveError(error, "Failed to create CW organization");
     }
   }
 
@@ -167,11 +163,7 @@ export class CommonWellMember implements CommonWellMemberAPI {
       );
       return organizationSchema.parse(resp.data);
     } catch (error) {
-      if (error instanceof AxiosError) {
-        const data = error.response?.data;
-        throw new MetriportError(data.title, undefined, { extra: JSON.stringify(data) });
-      }
-      throw error;
+      this.rethrowDescriptiveError(error, "Failed to update CW organization");
     }
   }
 
@@ -196,11 +188,16 @@ export class CommonWellMember implements CommonWellMemberAPI {
   ): Promise<OrganizationList> {
     const meta = options?.meta ?? buildBaseQueryMeta(this.memberName);
     const headers = this.buildQueryHeaders(meta);
-    const resp = await this.api.get(`${CommonWellMember.MEMBER_ENDPOINT}/${this.memberId}/org`, {
-      headers,
-      params: { summary, offset, limit, sort },
-    });
-    return organizationListSchema.parse(resp.data);
+
+    try {
+      const resp = await this.api.get(`${CommonWellMember.MEMBER_ENDPOINT}/${this.memberId}/org`, {
+        headers,
+        params: { summary, offset, limit, sort },
+      });
+      return organizationListSchema.parse(resp.data);
+    } catch (error) {
+      this.rethrowDescriptiveError(error, "Failed to get CW organization list");
+    }
   }
 
   /**
@@ -215,21 +212,19 @@ export class CommonWellMember implements CommonWellMemberAPI {
   async getOneOrg(id: string, options?: BaseOptions): Promise<Organization | undefined> {
     const meta = options?.meta ?? buildBaseQueryMeta(this.memberName);
     const headers = this.buildQueryHeaders(meta);
-    const resp = await this.api.get(
-      `${CommonWellMember.MEMBER_ENDPOINT}/${this.memberId}/org/${id}/`,
-      {
-        headers,
-        validateStatus: null, // don't throw on status code > 299
-      }
-    );
-    const status = resp.status;
-    if (status === httpStatus.NOT_FOUND) return undefined;
-    if (httpStatus[`${status}_CLASS`] === httpStatus.classes.SUCCESSFUL) {
+
+    try {
+      const resp = await this.api.get(
+        `${CommonWellMember.MEMBER_ENDPOINT}/${this.memberId}/org/${id}/`,
+        {
+          headers,
+          validateStatus: null, // don't throw on status code > 299
+        }
+      );
       return organizationSchema.parse(resp.data);
+    } catch (error) {
+      this.rethrowDescriptiveError(error, "Failed to get CW organization");
     }
-    // TODO ENG-668 Revert to throwing error on non-404 unsuccessful status codes
-    return undefined;
-    // throw new MetriportError(`Failed to retrieve Organization`, status);
   }
 
   /**
@@ -420,5 +415,20 @@ export class CommonWellMember implements CommonWellMemberAPI {
       purposeOfUse: meta.purposeOfUse,
     });
     return { Authorization: `Bearer ${jwt}` };
+  }
+
+  private rethrowDescriptiveError(error: unknown, title: string): never {
+    if (isAxiosError(error)) {
+      if (error.response?.status === httpStatus.BAD_REQUEST) {
+        const data = error.response?.data;
+        throw new BadRequestError(title, undefined, { extra: JSON.stringify(data) });
+      }
+
+      if (error.response?.status === httpStatus.NOT_FOUND) {
+        const data = error.response?.data;
+        throw new MetriportError(title, undefined, { extra: JSON.stringify(data) });
+      }
+    }
+    throw error;
   }
 }
