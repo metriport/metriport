@@ -2,6 +2,7 @@ import { Command } from "commander";
 import { QuestReplica } from "@metriport/core/external/quest/replica";
 import { parseSourceDocumentFileName } from "@metriport/core/external/quest/file/file-names";
 import { QuestFhirConverterCommandDirect } from "@metriport/core/external/quest/command/fhir-converter/fhir-converter-direct";
+import { executeAsynchronously } from "@metriport/core/util/concurrency";
 
 /**
  * Reads all Quest source documents, and separately converts each source document into a FHIR bundle.
@@ -15,14 +16,14 @@ command.action(async () => {
   const sourceDocumentKeys = await replica.listAllSourceDocumentKeys();
 
   const handler = new QuestFhirConverterCommandDirect();
-  for (const sourceDocumentKey of sourceDocumentKeys) {
+  await executeAsynchronously(sourceDocumentKeys, async sourceDocumentKey => {
     const { externalId, dateId } = parseSourceDocumentFileName(sourceDocumentKey);
     await handler.convertSourceDocumentToFhirBundle({
       externalId,
       sourceDocumentKey,
     });
     console.log(`Created FHIR bundle for ${externalId} on ${dateId}`);
-  }
+  });
 });
 
 export default command;
