@@ -242,7 +242,7 @@ export async function makeRequest<T>({
         case 422:
           throw new BadRequestError(message, error, fullAdditionalInfoWithError);
         default:
-          if (isFhirValidationError(error)) {
+          if (method === "GET" && isFhirValidationError(error)) {
             throw new NotFoundError(message, error, fullAdditionalInfoWithError);
           }
           throw new MetriportError(message, error, fullAdditionalInfoWithError);
