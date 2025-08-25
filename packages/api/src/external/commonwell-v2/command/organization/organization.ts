@@ -78,7 +78,6 @@ function cwOrgOrFacilityToSdk(
         country: org.data.location.country,
       },
     ],
-    // NOTE: IN STAGING IF THE ID ALREADY EXISTS IT WILL SAY INVALID ORG WHEN CREATING
     organizationId: org.oid,
     homeCommunityId: org.oid,
     patientIdAssignAuthority: org.oid,
@@ -93,7 +92,7 @@ function cwOrgOrFacilityToSdk(
   if (org.isInitiatorAndResponder) {
     const cwOrg: CwSdkOrganizationWithNetworkInfo = {
       ...cwOrgBase,
-      securityTokenKeyType: "JWT", // CW errors with "should be JWT for the FHIR gateway endpoint" if "BEARER" is used
+      securityTokenKeyType: "JWT",
       networks: [
         {
           type: "CommonWell",

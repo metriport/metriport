@@ -212,18 +212,21 @@ export class CommonWellMember implements CommonWellMemberAPI {
     const meta = options?.meta ?? buildBaseQueryMeta(this.memberName);
     const headers = this.buildQueryHeaders(meta);
 
-    try {
-      const resp = await this.api.get(
-        `${CommonWellMember.MEMBER_ENDPOINT}/${this.memberId}/org/${id}/`,
-        {
-          headers,
-          validateStatus: null, // don't throw on status code > 299
-        }
-      );
+    const resp = await this.api.get(
+      `${CommonWellMember.MEMBER_ENDPOINT}/${this.memberId}/org/${id}/`,
+      {
+        headers,
+        validateStatus: null, // don't throw on status code > 299
+      }
+    );
+    const status = resp.status;
+    if (status === httpStatus.NOT_FOUND) return undefined;
+    if (httpStatus[`${status}_CLASS`] === httpStatus.classes.SUCCESSFUL) {
       return organizationSchema.parse(resp.data);
-    } catch (error) {
-      this.rethrowDescriptiveError(error, "Failed to get CW organization");
     }
+    // TODO ENG-668 Revert to throwing error on non-404 unsuccessful status codes
+    return undefined;
+    // throw new MetriportError(`Failed to retrieve Organization`, status);
   }
 
   /**
