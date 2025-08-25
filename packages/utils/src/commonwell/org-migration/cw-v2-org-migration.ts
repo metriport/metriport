@@ -184,7 +184,7 @@ function localGetDelay(log: typeof console.log) {
 }
 
 function buildCwOrganization(org: CwOrgOrFacility): OrganizationWithNetworkInfo {
-  return {
+  const cwOrgBase = {
     name: org.data.name,
     type: mapTreatmentTypeToCwType(org.data.type),
     locations: [
@@ -200,40 +200,12 @@ function buildCwOrganization(org: CwOrgOrFacility): OrganizationWithNetworkInfo 
       },
     ],
     organizationId: org.oid,
-    displayName: org.data.name,
     homeCommunityId: org.oid,
     patientIdAssignAuthority: org.oid,
+    displayName: org.data.name,
     memberName: cwMemberName,
-    searchRadius: 150,
     isActive: org.active ? IS_ACTIVE_DEFAULT : org.active,
-    securityTokenKeyType: "JWT",
-    gateways: [
-      {
-        serviceType: "R4_Base",
-        gatewayType: "FHIR",
-        endpointLocation: orgGatewayEndpoint,
-      },
-    ],
-    authorizationInformation: {
-      authorizationServerEndpoint: orgGatewayAuthorizationServerEndpoint,
-      clientId: orgGatewayAuthorizationClientId,
-      clientSecret: orgGatewayAuthorizationClientSecret,
-      documentReferenceScope: "fhir/document",
-      binaryScope: "fhir/document",
-    },
-    networks: [
-      {
-        type: "CommonWell",
-        purposeOfUse: [
-          {
-            id: "TREATMENT",
-            queryInitiatorOnly: false,
-            queryInitiator: true,
-            queryResponder: true,
-          },
-        ],
-      },
-    ],
+    searchRadius: 150,
     technicalContacts: [
       {
         name: cwTechnicalContactName,
@@ -242,7 +214,60 @@ function buildCwOrganization(org: CwOrgOrFacility): OrganizationWithNetworkInfo 
         phone: cwTechnicalContactPhone,
       },
     ],
+    isLegacyBridgeEnabled: true,
   };
+
+  if (org.isInitiatorAndResponder) {
+    return {
+      ...cwOrgBase,
+      securityTokenKeyType: "JWT",
+      gateways: [
+        {
+          serviceType: "R4_Base",
+          gatewayType: "FHIR",
+          endpointLocation: orgGatewayEndpoint,
+        },
+      ],
+      authorizationInformation: {
+        authorizationServerEndpoint: orgGatewayAuthorizationServerEndpoint,
+        clientId: orgGatewayAuthorizationClientId,
+        clientSecret: orgGatewayAuthorizationClientSecret,
+        documentReferenceScope: "fhir/document",
+        binaryScope: "fhir/document",
+      },
+      networks: [
+        {
+          type: "CommonWell",
+          purposeOfUse: [
+            {
+              id: "TREATMENT",
+              queryInitiatorOnly: false,
+              queryInitiator: true,
+              queryResponder: true,
+            },
+          ],
+        },
+      ],
+    };
+  } else {
+    return {
+      ...cwOrgBase,
+      gateways: [],
+      networks: [
+        {
+          type: "CommonWell",
+          purposeOfUse: [
+            {
+              id: "TREATMENT",
+              queryInitiatorOnly: !org.isInitiatorAndResponder,
+              queryInitiator: org.isInitiatorAndResponder,
+              queryResponder: org.isInitiatorAndResponder,
+            },
+          ],
+        },
+      ],
+    };
+  }
 }
 
 function createOrUpdateFacilityInCwV2({
