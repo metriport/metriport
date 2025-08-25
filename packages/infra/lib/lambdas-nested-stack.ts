@@ -1025,6 +1025,11 @@ export class LambdasNestedStack extends NestedStack {
       const hieConfigs = config.hl7Notification.hieConfigs;
       const slackAdtRosterNotificationUrl = config.hl7Notification.slackAdtRosterNotificationUrl;
       const posthogSecretName = config.analyticsSecretNames.POST_HOG_API_KEY_SECRET;
+      const posthogSecret = secrets["POST_HOG_API_KEY_SECRET"];
+      if (!posthogSecret) {
+        throw new Error("No posthog secret found.");
+      }
+
       Object.entries(hieConfigs).forEach(([hieName, hieConfig]) => {
         const passwordSecretName = getHieSftpPasswordSecretName(hieName);
         const passwordSecret = secrets[passwordSecretName];
@@ -1053,6 +1058,7 @@ export class LambdasNestedStack extends NestedStack {
           vpc,
           alarmSnsAction: alarmAction,
         });
+        posthogSecret.grantRead(lambda);
         passwordSecret.grantRead(lambda);
         hl7ScramblerSeedSecret.grantRead(lambda);
         hl7v2RosterBucket.grantReadWrite(lambda);
