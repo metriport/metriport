@@ -2,8 +2,6 @@ import { MetriportError } from "@metriport/shared";
 import { Bundle } from "@medplum/fhirtypes";
 import { convertTabularDataToFhirBundle } from "./fhir/bundle";
 import { parseResponseFile } from "./file/file-parser";
-import { findPatientWithExternalId } from "@metriport/api/command/mapping/patient";
-import { questSource } from "@metriport/shared/interface/external/quest/source";
 
 export async function convertSourceDocumentToFhirBundle(
   externalId: string,
@@ -18,11 +16,18 @@ export async function convertSourceDocumentToFhirBundle(
 async function getPatientFromQuestExternalId(
   externalId: string
 ): Promise<{ patientId: string; cxId: string }> {
-  const patientMapping = await findPatientWithExternalId({ externalId, source: questSource });
+  const patientMapping = await findPatientWithExternalId(externalId);
   if (!patientMapping) {
     throw new MetriportError(`Patient mapping not found for external ID`, undefined, {
       externalId,
     });
   }
   return { patientId: patientMapping.patientId, cxId: patientMapping.cxId };
+}
+
+// TODO: implement as http request to internal endpoint
+async function findPatientWithExternalId(
+  externalId: string
+): Promise<{ patientId: string; cxId: string }> {
+  return { patientId: externalId, cxId: externalId };
 }
