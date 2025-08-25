@@ -7,7 +7,7 @@ import {
   CwTreatmentType,
   OrganizationWithNetworkInfo,
 } from "@metriport/commonwell-sdk";
-import { OrganizationData } from "@metriport/core/domain/organization";
+import { OrganizationData, OrgType } from "@metriport/core/domain/organization";
 import { out } from "@metriport/core/util/log";
 import {
   errorToString,
@@ -110,7 +110,11 @@ async function main() {
       cwOrgs.push(
         buildCwOrganization({
           oid: org.oid,
-          data: org,
+          data: {
+            name: org.name,
+            type: org.type as unknown as OrgType, // Won't be needed once the next PR is shipped...
+            location: org.location,
+          },
           active: org.cwActive ?? false,
           isInitiatorAndResponder: true,
         })
@@ -186,7 +190,7 @@ function localGetDelay(log: typeof console.log) {
 function buildCwOrganization(org: CwOrgOrFacility): OrganizationWithNetworkInfo {
   const cwOrgBase = {
     name: org.data.name,
-    type: mapTreatmentTypeToCwType(org.data.type),
+    type: mapTreatmentTypeToCwType(org.data.type as unknown as TreatmentType), // Won't be needed once the next PR is shipped...
     locations: [
       {
         address1: org.data.location.addressLine1,
@@ -285,7 +289,7 @@ function createOrUpdateFacilityInCwV2({
     oid: facility.cwOboOid ?? facility.oid,
     data: {
       name: orgName,
-      type: cxOrgType,
+      type: cxOrgType as unknown as OrgType, // Won't be needed once the next PR is shipped...
       location: facility.address,
     },
     active: facility.cwActive ?? false,
