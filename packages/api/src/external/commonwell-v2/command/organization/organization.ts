@@ -235,6 +235,7 @@ export async function update(cxId: string, org: CwOrgOrFacility): Promise<void> 
     if (error.response?.status === 404) {
       capture.message("Got 404 while updating Org @ CW, creating it", { extra });
       await create(cxId, org);
+      return;
     }
     const msg = `Failure while updating org @ CW`;
     log(`${msg}. Org OID: ${org.oid}. Cause: ${errorToString(error)}. CW Reference: ${cwRef}`);
