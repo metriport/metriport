@@ -82,7 +82,7 @@ function generateResult(
       fhirResource: result,
     });
   } catch (err) {
-    if (isDebug) console.log(`[patient ${patientId}] DEBUG Error: `, err);
+    if (isDebug) console.log(`[patient ${patientId}] DEBUG Error: ${err?.message}`, err?.stack);
     throw err;
   }
 }
