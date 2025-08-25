@@ -1018,10 +1018,9 @@ export class LambdasNestedStack extends NestedStack {
     if (config.hl7Notification?.hieConfigs) {
       const hl7ScramblerSeedSecret = secrets["HL7_BASE64_SCRAMBLER_SEED"];
       if (!hl7ScramblerSeedSecret) {
-        throw new Error(`${hl7ScramblerSeedSecret} is not defined in config`);
+        throw new Error(`hl7ScramblerSeedSecret is not defined in config`);
       }
 
-      const scramblerSeedSecretName = config.hl7Notification.secrets.HL7_BASE64_SCRAMBLER_SEED;
       const hieConfigs = config.hl7Notification.hieConfigs;
 
       Object.entries(hieConfigs).forEach(([hieName, hieConfig]) => {
@@ -1041,7 +1040,7 @@ export class LambdasNestedStack extends NestedStack {
           envVars: {
             HL7V2_ROSTER_BUCKET_NAME: hl7v2RosterBucket.bucketName,
             API_URL: config.loadBalancerDnsName,
-            HL7_BASE64_SCRAMBLER_SEED: scramblerSeedSecretName,
+            HL7_BASE64_SCRAMBLER_SEED_ARN: hl7ScramblerSeedSecret.secretArn,
             ROSTER_UPLOAD_SFTP_PASSWORD_ARN: passwordSecret.secretArn,
             ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
           },
