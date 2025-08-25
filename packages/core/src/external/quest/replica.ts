@@ -50,4 +50,8 @@ export class QuestReplica extends S3Replica {
       sourceDocument.fileContent
     );
   }
+
+  async listAllSourceDocumentKeys(): Promise<string[]> {
+    return await this.listFileNames(`${SOURCE_DOCUMENT_DIRECTORY}/`);
+  }
 }

@@ -1,7 +1,7 @@
 import { BadRequestError } from "@metriport/shared";
 import { S3Utils } from "../aws/s3";
 import { convertTabularDataToFhirBundle } from "./fhir/bundle";
-import { getDateIdFromSourceDocumentFileName } from "./file/file-names";
+import { parseSourceDocumentFileName } from "./file/file-names";
 import { parseResponseFile } from "./file/file-parser";
 import { getPatientMapping } from "./api/patient-mapping";
 import { QuestFhirConversionRequest, QuestFhirConversionResponse } from "./types";
@@ -12,7 +12,7 @@ export async function convertSourceDocumentToFhirBundle({
   sourceDocumentKey,
 }: QuestFhirConversionRequest): Promise<QuestFhirConversionResponse> {
   const { patientId, cxId } = await getPatientMapping({ externalId });
-  const dateId = getDateIdFromSourceDocumentFileName(sourceDocumentKey);
+  const { dateId } = parseSourceDocumentFileName(sourceDocumentKey);
   const sourceDocument = await getSourceDocument(sourceDocumentKey);
   if (!sourceDocument) {
     throw new BadRequestError(`Source document not found for FHIR conversion`, undefined, {

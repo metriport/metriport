@@ -49,8 +49,11 @@ export function buildSourceDocumentFileName({
   return `externalId=${externalId}/dateId=${dateId}/${externalId}_${dateId}_source.tsv`;
 }
 
-export function getDateIdFromSourceDocumentFileName(fileName: string): string {
-  const match = fileName.match(/\/dateId=(\d+)\//);
+export function parseSourceDocumentFileName(fileName: string): {
+  externalId: string;
+  dateId: string;
+} {
+  const match = fileName.match(/\/externalId=([\w\d-]+)\/dateId=(\d+)\//);
 
   if (!match) {
     throw new BadRequestError("Invalid source document file name", undefined, {
@@ -59,16 +62,18 @@ export function getDateIdFromSourceDocumentFileName(fileName: string): string {
     });
   }
 
-  const dateId = match[1];
-  if (!dateId) {
+  const externalId = match[1];
+  const dateId = match[2];
+  if (!externalId || !dateId) {
     throw new BadRequestError("Invalid source document file name", undefined, {
       context: "quest.file.file-names",
       fileName,
+      externalId,
       dateId,
     });
   }
 
-  return dateId;
+  return { externalId, dateId };
 }
 
 export function buildPatientLabConversionPrefix({
