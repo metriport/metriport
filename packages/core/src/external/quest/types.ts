@@ -1,3 +1,4 @@
+import { Bundle } from "@medplum/fhirtypes";
 import { SftpConfig } from "../sftp/types";
 import { z } from "zod";
 import { patientSchema } from "@metriport/shared/domain/patient";
@@ -35,3 +36,10 @@ export const questFhirConversionRequestSchema = z.object({
 });
 
 export type QuestFhirConversionRequest = z.infer<typeof questFhirConversionRequestSchema>;
+
+export interface QuestFhirConversionResponse {
+  bundle: Bundle;
+  cxId: string;
+  patientId: string;
+  dateId: string;
+}

@@ -1,4 +1,4 @@
-import { MetriportError } from "@metriport/shared";
+import { BadRequestError, MetriportError } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 
 const RESPONSE_FILE_PREFIX = "Metriport_";
@@ -47,6 +47,28 @@ export function buildSourceDocumentFileName({
   dateId: string;
 }): string {
   return `ptId=${patientId}/dateId=${dateId}/${patientId}_${dateId}_source.tsv`;
+}
+
+export function getDateIdFromSourceDocumentFileName(fileName: string): string {
+  const match = fileName.match(/\/dateId=(\d+)\//);
+
+  if (!match) {
+    throw new BadRequestError("Invalid source document file name", undefined, {
+      context: "quest.file.file-names",
+      fileName,
+    });
+  }
+
+  const dateId = match[1];
+  if (!dateId) {
+    throw new BadRequestError("Invalid source document file name", undefined, {
+      context: "quest.file.file-names",
+      fileName,
+      dateId,
+    });
+  }
+
+  return dateId;
 }
 
 export function buildPatientLabConversionPrefix({
