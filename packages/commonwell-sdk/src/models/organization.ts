@@ -122,6 +122,15 @@ export const organizationListSchema = z.object({
   organizations: z.array(organizationSchema),
 });
 
+export enum CwTreatmentType {
+  acuteCare = "acute care",
+  ambulatory = "ambulatory",
+  hospital = "hospital",
+  labSystems = "lab systems",
+  pharmacy = "pharmacy",
+  postAcuteCare = "post acute care",
+}
+
 export type OrganizationList = z.infer<typeof organizationListSchema>;
 
 export function isOrgInitiatorAndResponder(org: Organization): boolean {

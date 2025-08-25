@@ -8,7 +8,7 @@ import {
 } from "@metriport/carequality-sdk";
 import { Organization, OrganizationBizType } from "@metriport/core/domain/organization";
 import { out } from "@metriport/core/util/log";
-import { getEnvVarOrFail, sleep, TreatmentType, USStateForAddress } from "@metriport/shared";
+import { getEnvVarOrFail, sleep, USStateForAddress } from "@metriport/shared";
 import axios from "axios";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -79,7 +79,7 @@ export async function main() {
           ...org.location,
           state: org.location.state as USStateForAddress,
         },
-        type: org.type as unknown as TreatmentType,
+        type: org.type,
       },
       oid: org.oid,
       cqActive: org.cqActive ?? false,

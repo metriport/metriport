@@ -1,8 +1,9 @@
 import {
-  isOrgInitiatorAndResponder,
   Organization as CwSdkOrganization,
-  OrganizationWithNetworkInfo,
+  CwTreatmentType,
+  isOrgInitiatorAndResponder,
   OrganizationBase,
+  OrganizationWithNetworkInfo,
 } from "@metriport/commonwell-sdk";
 import { OID_PREFIX } from "@metriport/core/domain/oid";
 import { OrganizationData } from "@metriport/core/domain/organization";
@@ -35,15 +36,6 @@ export type CwOrgOrFacility = {
   isInitiatorAndResponder: boolean;
 };
 
-export enum CwTreatmentType {
-  acuteCare = "acute care",
-  ambulatory = "ambulatory",
-  hospital = "hospital",
-  labSystems = "lab systems",
-  pharmacy = "pharmacy",
-  postAcuteCare = "post acute care",
-}
-
 const TREATMENT_TYPE_TO_CW_MAP: Record<TreatmentType, CwTreatmentType> = {
   [TreatmentType.acuteCare]: CwTreatmentType.acuteCare,
   [TreatmentType.ambulatory]: CwTreatmentType.ambulatory,
@@ -53,7 +45,7 @@ const TREATMENT_TYPE_TO_CW_MAP: Record<TreatmentType, CwTreatmentType> = {
   [TreatmentType.postAcuteCare]: CwTreatmentType.postAcuteCare,
 } as const;
 
-const CW_TO_TREATMENT_TYPE_MAP: Record<CwTreatmentType, TreatmentType> = {
+const CW_TO_TREATMENT_TYPE_MAP: Record<string, TreatmentType> = {
   [CwTreatmentType.acuteCare]: TreatmentType.acuteCare,
   [CwTreatmentType.ambulatory]: TreatmentType.ambulatory,
   [CwTreatmentType.hospital]: TreatmentType.hospital,
@@ -86,7 +78,6 @@ function cwOrgOrFacilityToSdk(
         country: org.data.location.country,
       },
     ],
-    // NOTE: IN STAGING IF THE ID ALREADY EXISTS IT WILL SAY INVALID ORG WHEN CREATING
     organizationId: org.oid,
     homeCommunityId: org.oid,
     patientIdAssignAuthority: org.oid,
@@ -101,7 +92,7 @@ function cwOrgOrFacilityToSdk(
   if (org.isInitiatorAndResponder) {
     const cwOrg: CwSdkOrganizationWithNetworkInfo = {
       ...cwOrgBase,
-      securityTokenKeyType: "JWT", // CW errors with "should be JWT for the FHIR gateway endpoint" if "BEARER" is used
+      securityTokenKeyType: "JWT",
       networks: [
         {
           type: "CommonWell",
@@ -235,6 +226,7 @@ export async function update(cxId: string, org: CwOrgOrFacility): Promise<void> 
     if (error.response?.status === 404) {
       capture.message("Got 404 while updating Org @ CW, creating it", { extra });
       await create(cxId, org);
+      return;
     }
     const msg = `Failure while updating org @ CW`;
     log(`${msg}. Org OID: ${org.oid}. Cause: ${errorToString(error)}. CW Reference: ${cwRef}`);
@@ -261,7 +253,7 @@ export function parseCWEntry(org: CwSdkOrganization): CwOrgOrFacility {
         zip: location.postalCode,
         country: location.country,
       },
-      type: mapCwTypeToTreatmentType(org.type as CwTreatmentType),
+      type: mapCwTypeToTreatmentType(org.type),
     },
     oid: org.organizationId.replace(OID_PREFIX, ""),
     active: org.isActive,
@@ -285,8 +277,8 @@ export function mapTreatmentTypeToCwType(type: TreatmentType): CwTreatmentType {
   return cwType;
 }
 
-export function mapCwTypeToTreatmentType(type: CwTreatmentType): TreatmentType {
-  const treatmentType = CW_TO_TREATMENT_TYPE_MAP[type];
+export function mapCwTypeToTreatmentType(type: string): TreatmentType {
+  const treatmentType = CW_TO_TREATMENT_TYPE_MAP[type.toLowerCase().trim()];
   if (!treatmentType) {
     const msg = `Invalid CW treatment type: ${type}`;
     capture.error(msg, { extra: { type } });

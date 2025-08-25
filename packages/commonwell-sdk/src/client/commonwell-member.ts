@@ -1,5 +1,5 @@
-import { MetriportError } from "@metriport/shared";
-import { AxiosError } from "axios";
+import { BadRequestError, MetriportError } from "@metriport/shared";
+import { isAxiosError } from "axios";
 import httpStatus from "http-status";
 import { normalizeCertificate } from "../common/certificate";
 import { makeJwt } from "../common/make-jwt";
@@ -96,11 +96,7 @@ export class CommonWellMember extends CommonWellBase implements CommonWellMember
       );
       return organizationSchema.parse(resp.data);
     } catch (error) {
-      if (error instanceof AxiosError) {
-        const data = error.response?.data;
-        throw new MetriportError(data.title, undefined, { extra: data });
-      }
-      throw error;
+      this.rethrowDescriptiveError(error, "Failed to create CW organization");
     }
   }
 
@@ -124,14 +120,9 @@ export class CommonWellMember extends CommonWellBase implements CommonWellMember
           headers,
         }
       );
-
       return organizationSchema.parse(resp.data);
     } catch (error) {
-      if (error instanceof AxiosError) {
-        const data = error.response?.data;
-        throw new MetriportError(data.title, undefined, { extra: data });
-      }
-      throw error;
+      this.rethrowDescriptiveError(error, "Failed to update CW organization");
     }
   }
 
@@ -156,11 +147,16 @@ export class CommonWellMember extends CommonWellBase implements CommonWellMember
   ): Promise<OrganizationList> {
     const meta = options?.meta ?? buildBaseQueryMeta(this.memberName);
     const headers = this.buildQueryHeaders(meta);
-    const resp = await this.api.get(`${CommonWellMember.MEMBER_ENDPOINT}/${this.memberId}/org`, {
-      headers,
-      params: { summary, offset, limit, sort },
-    });
-    return organizationListSchema.parse(resp.data);
+
+    try {
+      const resp = await this.api.get(`${CommonWellMember.MEMBER_ENDPOINT}/${this.memberId}/org`, {
+        headers,
+        params: { summary, offset, limit, sort },
+      });
+      return organizationListSchema.parse(resp.data);
+    } catch (error) {
+      this.rethrowDescriptiveError(error, "Failed to get CW organization list");
+    }
   }
 
   /**
@@ -175,6 +171,7 @@ export class CommonWellMember extends CommonWellBase implements CommonWellMember
   async getOneOrg(id: string, options?: BaseOptions): Promise<Organization | undefined> {
     const meta = options?.meta ?? buildBaseQueryMeta(this.memberName);
     const headers = this.buildQueryHeaders(meta);
+
     const resp = await this.api.get(
       `${CommonWellMember.MEMBER_ENDPOINT}/${this.memberId}/org/${id}/`,
       {
@@ -380,5 +377,20 @@ export class CommonWellMember extends CommonWellBase implements CommonWellMember
       purposeOfUse: meta.purposeOfUse,
     });
     return { Authorization: `Bearer ${jwt}` };
+  }
+
+  private rethrowDescriptiveError(error: unknown, title: string): never {
+    if (isAxiosError(error)) {
+      if (error.response?.status === httpStatus.BAD_REQUEST) {
+        const data = error.response?.data;
+        throw new BadRequestError(title, undefined, { extra: JSON.stringify(data) });
+      }
+
+      if (error.response?.status === httpStatus.NOT_FOUND) {
+        const data = error.response?.data;
+        throw new MetriportError(title, undefined, { extra: JSON.stringify(data) });
+      }
+    }
+    throw error;
   }
 }
