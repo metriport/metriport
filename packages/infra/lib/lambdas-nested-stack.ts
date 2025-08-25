@@ -1017,11 +1017,9 @@ export class LambdasNestedStack extends NestedStack {
     const rosterUploadLambdas: Lambda[] = [];
     if (config.hl7Notification?.hieConfigs) {
       const hl7ScramblerSeedSecret = secrets["HL7_BASE64_SCRAMBLER_SEED"];
-
       if (!hl7ScramblerSeedSecret) {
         throw new Error(`HL7_BASE64_SCRAMBLER_SEED is not defined in config`);
       }
-      const scramblerSeedSecretName = config.hl7Notification.secrets.HL7_BASE64_SCRAMBLER_SEED;
       const hieConfigs = config.hl7Notification.hieConfigs;
       const slackAdtRosterNotificationUrl = config.hl7Notification.slackAdtRosterNotificationUrl;
       const posthogSecretName = config.analyticsSecretNames.POST_HOG_API_KEY_SECRET;
