@@ -19,9 +19,8 @@ export async function createCanvasClient({
     ehr: EhrSources.canvas,
     schema: getSecretsOauthSchema,
   });
-  const twoLeggedAuthTokenInfo = tokenInfo ?? undefined;
   return await CanvasApi.create({
-    twoLeggedAuthTokenInfo,
+    twoLeggedAuthTokenInfo: tokenInfo,
     practiceId,
     environment: secrets.environment,
     clientKey: secrets.clientKey,

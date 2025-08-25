@@ -26,9 +26,8 @@ export async function createAthenaHealthClient({
       environment,
     });
   }
-  const twoLeggedAuthTokenInfo = tokenInfo ?? undefined;
   return await AthenaHealthApi.create({
-    twoLeggedAuthTokenInfo,
+    twoLeggedAuthTokenInfo: tokenInfo,
     practiceId,
     environment,
     clientKey: secrets.clientKey,

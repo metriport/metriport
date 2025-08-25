@@ -26,9 +26,8 @@ export async function createElationHealthClient({
       environment,
     });
   }
-  const twoLeggedAuthTokenInfo = tokenInfo ?? undefined;
   return await ElationHealthApi.create({
-    twoLeggedAuthTokenInfo,
+    twoLeggedAuthTokenInfo: tokenInfo,
     practiceId,
     environment,
     clientKey: secrets.clientKey,
