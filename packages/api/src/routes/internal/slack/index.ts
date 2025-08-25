@@ -7,6 +7,13 @@ import { NO_CONTENT } from "http-status";
 
 const router = Router();
 
+/**
+ * POST /internal/slack/
+ *
+ * Sends a slack message using sendToSlack to a specific channel.
+ *
+ * @param req.body - The slack message with the webhook
+ */
 router.post(
   "/",
   requestLogger,
@@ -18,7 +25,6 @@ router.post(
       message: data.message,
       emoji: data.emoji ? data.emoji : undefined,
     };
-
     const webhookUrl = data.webhookUrl;
 
     await sendToSlack(slackMessage, webhookUrl);
@@ -33,8 +39,7 @@ export const slackBodySchema = z.object({
   emoji: z
     .string()
     .regex(/^:[a-z0-9_+.-]+:$/i, "emoji must look like :emoji_name:")
-    .optional()
-    .default(":peepo_doctor:"),
+    .optional(),
   webhookUrl: z
     .string()
     .url("webhookUrl must be a valid URL")

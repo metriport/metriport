@@ -31,7 +31,7 @@ import {
 import { createScrambledId } from "./utils";
 import { analytics, EventTypes } from "../../external/analytics/posthog";
 import { PostHog } from "posthog-node";
-import { sendToSlack, SlackMessage } from "../../external/slack";
+import { SlackMessage } from "../../external/slack";
 import { reportMetric } from "../../external/aws/cloudwatch";
 import { uploadToRemoteSftp } from "./hl7v2-roster-uploader";
 const region = Config.getAWSRegion();
@@ -177,7 +177,7 @@ export class Hl7v2RosterGenerator {
 
     log("Notifing in slack");
     try {
-      await this.notifySlack(rosterSize, hieName, failedStage, errors);
+      await this.notifySlack(rosterSize, hieName, failedStage, errors, log);
       //eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       errors.push(err);
@@ -217,10 +217,9 @@ export class Hl7v2RosterGenerator {
     rosterSize: number,
     hieName: string,
     failedStage: FailedStage,
-    errors: string[]
+    errors: string[],
+    log: typeof console.log
   ): Promise<void> {
-    const slackUrl = Config.getSlackAdtRosterNotificationUrl();
-
     const subject = failedStage
       ? `Tried ADT Roster upload to "${hieName}" with roster size: ${rosterSize}. :warning: FAILED at ${failedStage} :peepo_sad: :warning:`
       : `ADT Roster uploaded to "${hieName}" with roster size: ${rosterSize} :peepo_wow:`;
@@ -233,7 +232,18 @@ export class Hl7v2RosterGenerator {
       emoji: ":peepo_doctor:",
     };
 
-    await sendToSlack(slackMessage, slackUrl);
+    await simpleExecuteWithRetries(() => this.sendMessage(slackMessage), log);
+  }
+
+  async sendMessage(message: SlackMessage): Promise<void> {
+    const slackUrl = Config.getSlackAdtRosterNotificationUrl();
+
+    await axios.post(this.internalSlackRouteUrl, {
+      subject: message.subject,
+      message: message.message,
+      emoji: message.emoji,
+      webhookUrl: slackUrl,
+    });
   }
 
   private async notifyCloudWatch(
