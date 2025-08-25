@@ -9,6 +9,7 @@ import {
   BadRequestError,
   createBundleFromResourceList,
   errorToString,
+  JwtTokenInfo,
   NotFoundError,
   sleep,
 } from "@metriport/shared";
@@ -28,12 +29,14 @@ import { getSecondaryMappings } from "../../../api/get-secondary-mappings";
 import { BundleType } from "../../../bundle/bundle-shared";
 import { createOrReplaceBundle } from "../../../bundle/command/create-or-replace-bundle";
 import { fetchBundle, FetchBundleParams } from "../../../bundle/command/fetch-bundle";
+import { getClientTokenInfo } from "../../../command/get-client-token-info";
 import { getEhrWriteBackConditionPrimaryCode } from "../../../command/write-back/condition";
 import {
   GroupedVitalsByDate,
   isWriteBackGroupedVitalsEhr,
 } from "../../../command/write-back/grouped-vitals";
 import { writeBackResource, WriteBackResourceType } from "../../../command/write-back/shared";
+import { isEhrSourceWithClientCredentials } from "../../../environment";
 import { ehrCxMappingSecondaryMappingsSchemaMap } from "../../../mappings";
 import {
   formatDate,
@@ -94,7 +97,6 @@ export class EhrWriteBackResourceDiffBundlesDirect
   async writeBackResourceDiffBundles(payload: WriteBackResourceDiffBundlesRequest): Promise<void> {
     const {
       ehr,
-      tokenId,
       cxId,
       practiceId,
       metriportPatientId,
@@ -185,7 +187,6 @@ export class EhrWriteBackResourceDiffBundlesDirect
       }
       await writeBackResources({
         ehr,
-        tokenId,
         cxId,
         practiceId,
         ehrPatientId,
@@ -617,7 +618,6 @@ async function getSecondaryResourcesToWriteBackMap({
 
 async function writeBackResources({
   ehr,
-  tokenId,
   cxId,
   practiceId,
   ehrPatientId,
@@ -625,13 +625,20 @@ async function writeBackResources({
   secondaryResourcesMap,
 }: {
   ehr: EhrSource;
-  tokenId: string | undefined;
   cxId: string;
   practiceId: string;
   ehrPatientId: string;
   resources: Resource[];
   secondaryResourcesMap: Record<string, Resource[]>;
 }): Promise<void> {
+  let sharedClientTokenInfo: JwtTokenInfo | undefined;
+  if (isEhrSourceWithClientCredentials(ehr)) {
+    sharedClientTokenInfo = await getClientTokenInfo({
+      ehr,
+      cxId,
+      practiceId,
+    });
+  }
   const writeBackErrors: { error: unknown; resource: string }[] = [];
   const [groupedVitalsObservations, rest] = partition(
     resources,
@@ -646,7 +653,7 @@ async function writeBackResources({
       try {
         await writeBackResource({
           ehr,
-          ...(tokenId && { tokenId }),
+          ...(sharedClientTokenInfo ? { tokenInfo: sharedClientTokenInfo } : {}),
           cxId,
           practiceId,
           ehrPatientId,
@@ -675,7 +682,7 @@ async function writeBackResources({
         const secondaryResources = resource.id ? secondaryResourcesMap[resource.id] : undefined;
         await writeBackResource({
           ehr,
-          ...(tokenId && { tokenId }),
+          ...(sharedClientTokenInfo ? { tokenInfo: sharedClientTokenInfo } : {}),
           cxId,
           practiceId,
           ehrPatientId,

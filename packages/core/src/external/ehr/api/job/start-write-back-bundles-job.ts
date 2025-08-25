@@ -41,7 +41,10 @@ export async function startWriteBackBundlesJob({
     });
     validateAndLogResponse(startWriteBackBundlesJobUrl, response, debug);
   } catch (error) {
-    if (error instanceof AxiosError && error.response?.status === 400) return;
+    if (error instanceof AxiosError && error.response?.status === 400) {
+      log(`400 while starting write back bundles job @ Api. Cause: ${errorToString(error)}`);
+      return;
+    }
     const msg = "Failure while starting write back bundles job @ Api";
     log(`${msg}. Cause: ${errorToString(error)}`);
     throw new MetriportError(msg, error, {

@@ -52,7 +52,6 @@ export class EhrContributeResourceDiffBundlesDirect
   ): Promise<void> {
     const {
       ehr,
-      tokenId,
       cxId,
       practiceId,
       metriportPatientId,
@@ -87,7 +86,6 @@ export class EhrContributeResourceDiffBundlesDirect
       }
       const hydratedEhrOnlyResources = await hydrateEhrOnlyResources({
         ehr,
-        tokenId,
         cxId,
         practiceId,
         metriportPatientId,
@@ -160,7 +158,6 @@ async function getEhrOnlyResourcesFromS3({
 
 async function hydrateEhrOnlyResources({
   ehr,
-  tokenId,
   cxId,
   practiceId,
   metriportPatientId,
@@ -168,7 +165,6 @@ async function hydrateEhrOnlyResources({
   ehrOnlyResources,
 }: {
   ehr: EhrSource;
-  tokenId: string | undefined;
   cxId: string;
   practiceId: string;
   metriportPatientId: string;
@@ -179,13 +175,12 @@ async function hydrateEhrOnlyResources({
   const fetchedResourceIds = new Set([
     ...hydratedEhrOnlyResources.flatMap(resource => resource.id ?? []),
   ]);
-  let sharedClientToken: JwtTokenInfo | undefined;
+  let sharedClientTokenInfo: JwtTokenInfo | undefined;
   if (isEhrSourceWithClientCredentials(ehr)) {
-    sharedClientToken = await getClientTokenInfo({
+    sharedClientTokenInfo = await getClientTokenInfo({
       ehr,
       cxId,
       practiceId,
-      ...(tokenId && { tokenId }),
     });
   }
   for (let i = 0; i < hydrateEhrOnlyResourceAttempts; i++) {
@@ -203,7 +198,7 @@ async function hydrateEhrOnlyResources({
         try {
           const bundle = await getResourceBundleByResourceId({
             ehr,
-            ...(sharedClientToken && { tokenInfo: sharedClientToken }),
+            ...(sharedClientTokenInfo && { tokenInfo: sharedClientTokenInfo }),
             cxId,
             practiceId,
             metriportPatientId,

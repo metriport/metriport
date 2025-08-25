@@ -1,5 +1,5 @@
 import { Condition, DiagnosticReport, Observation, Resource } from "@medplum/fhirtypes";
-import { BadRequestError } from "@metriport/shared";
+import { BadRequestError, JwtTokenInfo } from "@metriport/shared";
 import { EhrSource } from "@metriport/shared/interface/external/ehr/source";
 import { writeBackCondition } from "./condition";
 import {
@@ -14,7 +14,7 @@ export type WriteBackResourceType = "condition" | "lab" | "lab-panel" | "grouped
 
 export type WriteBackResourceRequest = {
   ehr: EhrSource;
-  tokenId?: string;
+  tokenInfo?: JwtTokenInfo;
   cxId: string;
   practiceId: string;
   ehrPatientId: string;

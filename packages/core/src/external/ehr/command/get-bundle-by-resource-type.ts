@@ -8,7 +8,6 @@ import { getBundleByResourceType as getBundleByResourceTypeHealthie } from "../h
 
 export type GetBundleByResourceTypeRequest = {
   ehr: EhrSource;
-  tokenId?: string;
   tokenInfo?: JwtTokenInfo;
   cxId: string;
   practiceId: string;

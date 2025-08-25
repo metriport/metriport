@@ -6,7 +6,6 @@ export async function getResourceBundleByResourceId(
   params: GetResourceBundleByResourceIdClientRequest
 ): Promise<Bundle> {
   const {
-    tokenId,
     tokenInfo,
     cxId,
     practiceId,
@@ -19,8 +18,7 @@ export async function getResourceBundleByResourceId(
   const client = await createCanvasClient({
     cxId,
     practiceId,
-    ...(tokenId && { tokenId }),
-    ...(tokenInfo && { tokenInfo }),
+    ...(tokenInfo ? { tokenInfo } : {}),
   });
   const bundle = await client.getResourceBundleByResourceId({
     cxId,

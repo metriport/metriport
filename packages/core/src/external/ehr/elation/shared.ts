@@ -2,18 +2,15 @@ import { BadRequestError, JwtTokenInfo } from "@metriport/shared";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import ElationHealthApi, { isElationEnv } from ".";
 import { getSecrets } from "../api/get-client-key-and-secret";
-import { getTokenInfo } from "../api/get-token-info";
 import { getSecretsOauthSchema } from "../secrets";
 
 export async function createElationHealthClient({
   cxId,
   practiceId,
-  tokenId,
   tokenInfo,
 }: {
   cxId: string;
   practiceId: string;
-  tokenId?: string;
   tokenInfo?: JwtTokenInfo;
 }) {
   const secrets = await getSecrets({
@@ -29,7 +26,7 @@ export async function createElationHealthClient({
       environment,
     });
   }
-  const twoLeggedAuthTokenInfo = tokenInfo ?? (tokenId ? await getTokenInfo(tokenId) : undefined);
+  const twoLeggedAuthTokenInfo = tokenInfo ?? undefined;
   return await ElationHealthApi.create({
     twoLeggedAuthTokenInfo,
     practiceId,

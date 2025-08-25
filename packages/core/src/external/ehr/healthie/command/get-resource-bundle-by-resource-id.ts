@@ -18,10 +18,7 @@ export async function getResourceBundleByResourceId(
   if (!useCachedBundle) {
     throw new BadRequestError("useCachedBundle false is not supported");
   }
-  const client = await createHealthieClient({
-    cxId,
-    practiceId,
-  });
+  const client = await createHealthieClient({ cxId, practiceId });
   const bundle = await client.getResourceBundleByResourceId({
     cxId,
     metriportPatientId,

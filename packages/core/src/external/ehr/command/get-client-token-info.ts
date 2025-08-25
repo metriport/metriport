@@ -6,18 +6,16 @@ import { createElationHealthClient } from "../elation/shared";
 import { EhrClientWithClientCredentials, EhrSourceWithClientCredentials } from "../environment";
 
 export type GetClientTokenInfoRequest = {
+  ehr: EhrSourceWithClientCredentials;
+  tokenInfo?: JwtTokenInfo;
   cxId: string;
   practiceId: string;
-  tokenId?: string;
-  tokenInfo?: JwtTokenInfo;
 };
 
 export async function getClientTokenInfo({
   ehr,
   ...params
-}: GetClientTokenInfoRequest & { ehr: EhrSourceWithClientCredentials }): Promise<
-  JwtTokenInfo | undefined
-> {
+}: GetClientTokenInfoRequest): Promise<JwtTokenInfo | undefined> {
   const handler = getEhrGetClientTokenInfoHandler(ehr);
   const client = await handler({ ...params });
   return client.getTwoLeggedAuthTokenInfo();
