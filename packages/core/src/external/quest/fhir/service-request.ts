@@ -23,6 +23,8 @@ export function getServiceRequest(
   return {
     resourceType: "ServiceRequest",
     id: uuidv7(),
+    status: "completed",
+    intent: "original-order",
     ...(code ? { code } : {}),
     ...(identifier ? { identifier } : {}),
     requester,

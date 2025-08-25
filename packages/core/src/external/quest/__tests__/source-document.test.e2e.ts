@@ -3,7 +3,7 @@ import { buildSourceDocumentFileName } from "../file/file-names";
 import { parseResponseFile } from "../file/file-parser";
 import { QuestReplica } from "../replica";
 import { uploadSourceDocuments } from "../source-document";
-import { QuestPatientResponseFile } from "../types";
+import { QuestSourceDocument } from "../types";
 import { getArtifact } from "./shared";
 
 describe("Source document upload", () => {
@@ -22,7 +22,7 @@ describe("Source document upload", () => {
       externalId,
       dateId: "202501010102",
     });
-    const sourceDocument: QuestPatientResponseFile = {
+    const sourceDocument: QuestSourceDocument = {
       externalId,
       fileName,
       fileContent,

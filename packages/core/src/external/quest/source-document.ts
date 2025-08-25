@@ -1,7 +1,7 @@
-import { QuestResponseFile, QuestPatientResponseFile } from "./types";
+import { QuestResponseFile, QuestSourceDocument } from "./types";
 import { parseResponseFile } from "./file/file-parser";
 import { executeAsynchronously } from "../../util/concurrency";
-import { out } from "../../util/log";
+import { out, LogFunction } from "../../util/log";
 import { ResponseDetail } from "./schema/response";
 import { IncomingData } from "./schema/shared";
 import { QuestReplica } from "./replica";
@@ -18,7 +18,7 @@ const parallelSourceDocumentUploads = 10;
  */
 export async function uploadSourceDocuments(
   replica: QuestReplica,
-  sourceDocuments: QuestPatientResponseFile[]
+  sourceDocuments: QuestSourceDocument[]
 ) {
   const { log, debug } = out("quest.upload-source-docs");
   log(`Uploading ${sourceDocuments.length} source documents to Quest replica`);
@@ -46,10 +46,10 @@ export async function uploadSourceDocuments(
  */
 export function splitAllResponseFilesIntoSourceDocuments(
   responseFiles: QuestResponseFile[]
-): QuestPatientResponseFile[] {
+): QuestSourceDocument[] {
   const { log } = out("quest.source_docs");
   log(`Generating source documents for ${responseFiles.length} response file(s)`);
-  const allSourceDocuments: QuestPatientResponseFile[] = [];
+  const allSourceDocuments: QuestSourceDocument[] = [];
   for (const responseFile of responseFiles) {
     const sourceDocuments = splitResponseFileIntoSourceDocuments(responseFile);
     allSourceDocuments.push(...sourceDocuments);
@@ -61,13 +61,14 @@ export function splitAllResponseFilesIntoSourceDocuments(
  * Split a Quest response file into separate source documents for each patient.
  */
 export function splitResponseFileIntoSourceDocuments(
-  responseFile: QuestResponseFile
-): QuestPatientResponseFile[] {
+  responseFile: QuestResponseFile,
+  log?: LogFunction
+): QuestSourceDocument[] {
   const rows = parseResponseFile(responseFile.fileContent);
-  const rowsGroupedByExternalId = groupRowsByExternalId(rows);
+  const rowsGroupedByExternalId = groupRowsByExternalId(rows, log);
 
   // Create source documents for each patient
-  const sourceDocuments: QuestPatientResponseFile[] = [];
+  const sourceDocuments: QuestSourceDocument[] = [];
   for (const [externalId, patientRows] of rowsGroupedByExternalId.entries()) {
     const sourceDocument = createSourceDocument({ externalId, patientRows, responseFile });
     sourceDocuments.push(sourceDocument);
@@ -78,10 +79,14 @@ export function splitResponseFileIntoSourceDocuments(
 /**
  * Groups a list of incoming rows by the patient ID column.
  */
-function groupRowsByExternalId(rows: IncomingRow[]): PatientToIncomingRowMap {
+function groupRowsByExternalId(rows: IncomingRow[], log?: LogFunction): PatientToIncomingRowMap {
   const externalIdRow: PatientToIncomingRowMap = new Map();
   for (const row of rows) {
-    const externalId = row.data.patientId;
+    const externalId = row.data.externalId;
+    if (!externalId) {
+      log?.(`Skipping row because it has no external ID`);
+      continue;
+    }
     if (externalIdRow.has(externalId)) {
       externalIdRow.get(externalId)?.push(row);
     } else {
@@ -102,7 +107,7 @@ function createSourceDocument({
   externalId: string;
   patientRows: IncomingRow[];
   responseFile: QuestResponseFile;
-}): QuestPatientResponseFile {
+}): QuestSourceDocument {
   const { dateId } = parseResponseFileName(responseFile.fileName);
   const fileName = buildSourceDocumentFileName({ externalId, dateId });
   const fileContentAsString = patientRows.map(row => row.source).join("\n");

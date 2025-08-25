@@ -26,7 +26,7 @@ export interface QuestResponseFile {
   fileContent: Buffer;
 }
 
-export interface QuestPatientResponseFile extends QuestResponseFile {
+export interface QuestSourceDocument extends QuestResponseFile {
   externalId: string;
 }
 

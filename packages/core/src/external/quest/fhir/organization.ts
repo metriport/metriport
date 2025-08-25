@@ -32,11 +32,11 @@ export function getOrganizationReference(organization: Organization): Reference<
 }
 
 function getOrganizationIdentifier(detail: ResponseDetail): Identifier[] | undefined {
-  if (!detail.physicianNpi) return undefined;
+  if (!detail.orderingAccountNumber) return undefined;
   return [
     {
       system: "http://hl7.org/fhir/sid/us-npi",
-      value: detail.physicianNpi,
+      value: detail.orderingAccountNumber,
     },
   ];
 }

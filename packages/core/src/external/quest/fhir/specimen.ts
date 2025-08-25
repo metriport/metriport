@@ -13,6 +13,7 @@ export function getSpecimen(
   const extension = [getQuestDataSourceExtension()];
   const collector = getPractitionerReference(practitioner);
   const request = [getServiceRequestReference(serviceRequest)];
+  const collectedDateTime = detail.dateCollected.toISOString();
 
   return {
     resourceType: "Specimen",
@@ -20,6 +21,7 @@ export function getSpecimen(
     status: "available",
     collection: {
       collector,
+      collectedDateTime,
     },
     request,
     extension,

@@ -6,6 +6,7 @@ import {
   ContactPoint,
   Reference,
 } from "@medplum/fhirtypes";
+import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { ResponseDetail } from "../schema/response";
 import { getQuestDataSourceExtension } from "./shared";
 
@@ -20,7 +21,7 @@ export function getPatient(detail: ResponseDetail): Patient {
 
   return {
     resourceType: "Patient",
-    id: detail.patientId,
+    id: uuidv7(),
     ...(name ? { name } : {}),
     ...(identifier ? { identifier } : {}),
     ...(address ? { address } : {}),
