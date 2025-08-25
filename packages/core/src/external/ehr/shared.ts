@@ -36,7 +36,7 @@ import {
   ehrStrictFhirResourceSchema,
   fhirOperationOutcomeSchema,
 } from "@metriport/shared/interface/external/ehr/fhir-resource";
-import { EhrSource } from "@metriport/shared/interface/external/ehr/source";
+import { EhrSource, EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { AxiosError, AxiosInstance, AxiosResponse, isAxiosError } from "axios";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -233,7 +233,16 @@ export async function makeRequest<T>({
           );
         }
       }
-      const fullAdditionalInfoWithError = { ...fullAdditionalInfo, error: errorToString(error) };
+      const fullAdditionalInfoWithError = {
+        ...fullAdditionalInfo,
+        error: errorToString(error),
+        headers:
+          ehr === EhrSources.canvas
+            ? error.response?.headers
+              ? JSON.stringify(error.response?.headers)
+              : undefined
+            : undefined,
+      };
       switch (error.response?.status) {
         case 400:
           throw new BadRequestError(message, error, fullAdditionalInfoWithError);
