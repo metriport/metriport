@@ -1,5 +1,5 @@
 import { BadRequestError, MetriportError } from "@metriport/shared";
-import axios, { AxiosInstance, AxiosResponse, isAxiosError } from "axios";
+import axios, { AxiosInstance, AxiosResponse, isAxiosError, AxiosError } from "axios";
 import httpStatus from "http-status";
 import { Agent } from "https";
 import { normalizeCertificate } from "../common/certificate";
@@ -93,7 +93,7 @@ export class CommonWellMember implements CommonWellMemberAPI {
   }
 
   // Being extra safe with these bc a failure here fails the actual request
-  private postRequest(response: AxiosResponse): void {
+  private postRequest(response: AxiosResponse | undefined): void {
     this._lastTransactionId =
       response && response.headers ? response.headers["x-trace-id"] : undefined;
   }
@@ -104,8 +104,7 @@ export class CommonWellMember implements CommonWellMemberAPI {
     };
   }
   private axiosErrorResponse(_this: CommonWellMember) {
-    //eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return (error: any): AxiosResponse => {
+    return (error: AxiosError): never => {
       _this && _this.postRequest(error.response);
       throw error;
     };
