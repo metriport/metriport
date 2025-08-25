@@ -17,13 +17,13 @@ describe("Source document upload", () => {
 
   it("should generate a source document for a single patient", async () => {
     const fileContent = getArtifact("response/single-patient.txt");
-    const patientId = "0A1B2C3D4E5F6G7";
+    const externalId = "0A1B2C3D4E5F6G7";
     const fileName = buildSourceDocumentFileName({
-      patientId,
+      externalId,
       dateId: "202501010102",
     });
     const sourceDocument: QuestPatientResponseFile = {
-      patientId,
+      externalId,
       fileName,
       fileContent,
     };

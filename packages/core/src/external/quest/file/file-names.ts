@@ -40,13 +40,13 @@ export function parseResponseFileName(fileName: string): { dateId: string } {
 }
 
 export function buildSourceDocumentFileName({
-  patientId,
+  externalId,
   dateId,
 }: {
-  patientId: string;
+  externalId: string;
   dateId: string;
 }): string {
-  return `ptId=${patientId}/dateId=${dateId}/${patientId}_${dateId}_source.tsv`;
+  return `externalId=${externalId}/dateId=${dateId}/${externalId}_${dateId}_source.tsv`;
 }
 
 export function getDateIdFromSourceDocumentFileName(fileName: string): string {

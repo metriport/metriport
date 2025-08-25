@@ -64,12 +64,12 @@ export function splitResponseFileIntoSourceDocuments(
   responseFile: QuestResponseFile
 ): QuestPatientResponseFile[] {
   const rows = parseResponseFile(responseFile.fileContent);
-  const rowsGroupedByPatientId = groupRowsByPatientId(rows);
+  const rowsGroupedByExternalId = groupRowsByExternalId(rows);
 
   // Create source documents for each patient
   const sourceDocuments: QuestPatientResponseFile[] = [];
-  for (const [patientId, patientRows] of rowsGroupedByPatientId.entries()) {
-    const sourceDocument = createSourceDocument({ patientId, patientRows, responseFile });
+  for (const [externalId, patientRows] of rowsGroupedByExternalId.entries()) {
+    const sourceDocument = createSourceDocument({ externalId, patientRows, responseFile });
     sourceDocuments.push(sourceDocument);
   }
   return sourceDocuments;
@@ -78,34 +78,34 @@ export function splitResponseFileIntoSourceDocuments(
 /**
  * Groups a list of incoming rows by the patient ID column.
  */
-function groupRowsByPatientId(rows: IncomingRow[]): PatientToIncomingRowMap {
-  const patientRow: PatientToIncomingRowMap = new Map();
+function groupRowsByExternalId(rows: IncomingRow[]): PatientToIncomingRowMap {
+  const externalIdRow: PatientToIncomingRowMap = new Map();
   for (const row of rows) {
-    const patientId = row.data.patientId;
-    if (patientRow.has(patientId)) {
-      patientRow.get(patientId)?.push(row);
+    const externalId = row.data.patientId;
+    if (externalIdRow.has(externalId)) {
+      externalIdRow.get(externalId)?.push(row);
     } else {
-      patientRow.set(patientId, [row]);
+      externalIdRow.set(externalId, [row]);
     }
   }
-  return patientRow;
+  return externalIdRow;
 }
 
 /**
  * Creates a source document from a list of incoming rows.
  */
 function createSourceDocument({
-  patientId,
+  externalId,
   patientRows,
   responseFile,
 }: {
-  patientId: string;
+  externalId: string;
   patientRows: IncomingRow[];
   responseFile: QuestResponseFile;
 }): QuestPatientResponseFile {
   const { dateId } = parseResponseFileName(responseFile.fileName);
-  const fileName = buildSourceDocumentFileName({ patientId, dateId });
+  const fileName = buildSourceDocumentFileName({ externalId, dateId });
   const fileContentAsString = patientRows.map(row => row.source).join("\n");
   const fileContent = Buffer.from(SOURCE_DOCUMENT_HEADER + fileContentAsString, "ascii");
-  return { fileName, fileContent, patientId };
+  return { fileName, fileContent, externalId };
 }

@@ -20,7 +20,7 @@ describe("Quest source document generator", () => {
       "ptId=0A1B2C3D4E5F6G7/dateId=202501010102/0A1B2C3D4E5F6G7_202501010102_source.tsv"
     );
     expect(firstSourceDocument.fileContent.toString()).toBe(responseFile.toString());
-    expect(firstSourceDocument.patientId).toBe("0A1B2C3D4E5F6G7");
+    expect(firstSourceDocument.externalId).toBe("0A1B2C3D4E5F6G7");
   });
 
   it("should split multiple response files into source documents", () => {
