@@ -174,6 +174,7 @@ export class Hl7v2RosterGenerator {
       //eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       errors.push(err);
+      log("Error sending analytics to posthog: ", err);
     }
 
     log("Sending metrics to cloudwatch");
