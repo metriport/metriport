@@ -99,7 +99,7 @@ router.get(
         cxId: patientMapping.cxId,
       });
     }
-    return res.sendStatus(status.NOT_FOUND);
+    return res.sendStatus(status.NOT_FOUND).json({});
   })
 );
 
