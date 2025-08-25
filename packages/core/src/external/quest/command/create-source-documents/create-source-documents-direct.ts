@@ -28,8 +28,8 @@ export class QuestCreateSourceDocumentsHandlerDirect implements QuestCreateSourc
       allSourceDocuments,
       async sourceDocument => {
         await this.next.convertSourceDocumentToFhirBundle({
-          patientId: sourceDocument.patientId,
-          sourceDocumentName: sourceDocument.fileName,
+          externalId: sourceDocument.externalId,
+          sourceDocumentKey: sourceDocument.fileName,
         });
       },
       {

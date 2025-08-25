@@ -26,12 +26,12 @@ export interface QuestResponseFile {
 }
 
 export interface QuestPatientResponseFile extends QuestResponseFile {
-  patientId: string;
+  externalId: string;
 }
 
 export const questFhirConversionRequestSchema = z.object({
-  patientId: z.string(),
-  sourceDocumentName: z.string(),
+  externalId: z.string(),
+  sourceDocumentKey: z.string(),
 });
 
 export type QuestFhirConversionRequest = z.infer<typeof questFhirConversionRequestSchema>;
