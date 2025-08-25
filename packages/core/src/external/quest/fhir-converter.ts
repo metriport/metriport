@@ -1,16 +1,18 @@
 import { BadRequestError } from "@metriport/shared";
+import { Config } from "../../util/config";
+import { out } from "../../util/log";
 import { S3Utils } from "../aws/s3";
 import { convertTabularDataToFhirBundle } from "./fhir/bundle";
 import { parseSourceDocumentFileName } from "./file/file-names";
 import { parseResponseFile } from "./file/file-parser";
 import { getPatientMapping } from "./api/patient-mapping";
 import { QuestFhirConversionRequest, QuestFhirConversionResponse } from "./types";
-import { Config } from "../../util/config";
 
 export async function convertSourceDocumentToFhirBundle({
   externalId,
   sourceDocumentKey,
 }: QuestFhirConversionRequest): Promise<QuestFhirConversionResponse> {
+  const { log } = out(`Quest FHIR converter - externalId ${externalId}`);
   const { patientId, cxId } = await getPatientMapping({ externalId });
   const { dateId } = parseSourceDocumentFileName(sourceDocumentKey);
   const sourceDocument = await getSourceDocument(sourceDocumentKey);
@@ -22,7 +24,7 @@ export async function convertSourceDocumentToFhirBundle({
   }
 
   const rows = parseResponseFile(sourceDocument);
-  const bundle = await convertTabularDataToFhirBundle({ cxId, patientId, rows });
+  const bundle = await convertTabularDataToFhirBundle({ cxId, patientId, rows, log });
   return {
     bundle,
     cxId,
