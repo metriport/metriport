@@ -146,7 +146,7 @@ export class EhrWriteBackResourceDiffBundlesDirect
         r => getWriteBackResourceType(ehr, r) === "grouped-vitals"
       );
       const keptObservations = await filterObservations({
-        observations: groupedVitalsObservations as Observation[],
+        observations: groupedVitalsObservations.filter(isObservation),
         writeBackFilters,
       });
       const resourcesToWriteBackFilteredObservations = [...keptObservations, ...restNoObservations];
@@ -156,7 +156,7 @@ export class EhrWriteBackResourceDiffBundlesDirect
       );
       const keptConditions = await filterConditions({
         ehr,
-        conditions: conditions as Condition[],
+        conditions: conditions.filter(isCondition),
         writeBackFilters,
       });
       const resourcesToWriteBackFilteredConditionsAndObservations = [
@@ -386,35 +386,37 @@ export function shouldWriteBackResource({
   if (!writeBackFilters) return true;
   if (writeBackResourceType === "condition") {
     if (writeBackFilters.problem?.disabled) return false;
-    const condition = resource as Condition;
+    if (!isCondition(resource)) return false;
+    const condition = resource;
     if (skipConditionChronicity(condition, writeBackFilters)) return false;
     return true;
   } else if (writeBackResourceType === "lab") {
     if (writeBackFilters.lab?.disabled) return false;
-    const observation = resource as Observation;
-    const labObservations = resources.filter(
-      r => r.resourceType === "Observation" && isLab(r)
-    ) as Observation[];
+    if (!isObservation(resource)) return false;
+    const observation = resource;
+    const labObservations = resources.filter(r => isObservation(r) && isLab(r)) as Observation[];
     if (skipLabDate(observation, writeBackFilters)) return false;
     if (skipLabLoincCode(observation, writeBackFilters)) return false;
     if (skipLabNonTrending(observation, labObservations, writeBackFilters)) return false;
     return true;
   } else if (writeBackResourceType === "lab-panel") {
     if (writeBackFilters.labPanel?.disabled) return false;
-    const diagnosticReport = resource as DiagnosticReport;
-    const diagnosticReports = resources
-      .filter(r => r.resourceType === "DiagnosticReport" && isLabPanel(r))
-      .map(r => normalizeDiagnosticReportCoding(r as DiagnosticReport)) as DiagnosticReport[];
+    if (!isDiagnosticReport(resource)) return false;
+    const diagnosticReport = resource;
     if (skipLabPanelDate(diagnosticReport, writeBackFilters)) return false;
     const normalizedDiagReport = normalizeDiagnosticReportCoding(diagnosticReport);
+    const normalizedDiagReportS = resources
+      .filter(r => isDiagnosticReport(r) && isLabPanel(r))
+      .map(r => normalizeDiagnosticReportCoding(r as DiagnosticReport)) as DiagnosticReport[];
     if (skipLabPanelLoincCode(normalizedDiagReport, writeBackFilters)) return false;
-    if (skipLabPanelNonTrending(normalizedDiagReport, diagnosticReports, writeBackFilters)) {
+    if (skipLabPanelNonTrending(normalizedDiagReport, normalizedDiagReportS, writeBackFilters)) {
       return false;
     }
     return true;
   } else if (writeBackResourceType === "grouped-vitals") {
     if (writeBackFilters.vital?.disabled) return false;
-    const observation = resource as Observation;
+    if (!isObservation(resource)) return false;
+    const observation = resource;
     if (skipVitalDate(observation, writeBackFilters)) return false;
     if (skipVitalLoinCode(observation, writeBackFilters)) return false;
     return true;
