@@ -30,12 +30,12 @@ export function getDiagnosticReport(
     identifier,
     subject,
     ...(specimenReference ? { specimen: specimenReference } : {}),
-    ...(category.length > 0 ? { category } : {}),
+    ...(category ? { category } : {}),
     extension,
   };
 }
 
-function getDiagnosticReportCategory(detail: ResponseDetail): CodeableConcept[] {
+function getDiagnosticReportCategory(detail: ResponseDetail): CodeableConcept[] | undefined {
   const coding: Coding[] = [];
   if (detail.localProfileCode) {
     coding.push({
@@ -51,7 +51,7 @@ function getDiagnosticReportCategory(detail: ResponseDetail): CodeableConcept[] 
       ...(detail.profileName ? { display: detail.profileName } : {}),
     });
   }
-  return [{ coding }];
+  return coding.length > 0 ? [{ coding }] : undefined;
 }
 
 function getEffectiveDateTime(detail: ResponseDetail): string {

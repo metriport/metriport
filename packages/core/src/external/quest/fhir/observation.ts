@@ -1,4 +1,3 @@
-import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import {
   CodeableConcept,
   Coding,
@@ -7,11 +6,12 @@ import {
   Patient,
   ObservationReferenceRange,
 } from "@medplum/fhirtypes";
+import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { ResponseDetail } from "../schema/response";
-import { LOINC_URL, CPT_URL } from "../../../util/constants";
 import { getPatientReference } from "./patient";
-import { HL7_OBSERVATION_INTERPRETATION_SYSTEM, QUEST_LOCAL_RESULT_CODE_SYSTEM } from "./constant";
 import { getQuestDataSourceExtension } from "./shared";
+import { LOINC_URL, CPT_URL } from "@metriport/shared/medical";
+import { HL7_OBSERVATION_INTERPRETATION_SYSTEM, QUEST_LOCAL_RESULT_CODE_SYSTEM } from "./constant";
 
 type ObservationValue = Pick<Observation, "valueQuantity" | "valueString" | "valueCodeableConcept">;
 
@@ -91,25 +91,26 @@ function getObservationReferenceRange(
   return [
     {
       ...(text ? { text } : {}),
-      ...(low ? { low: { value: low } } : {}),
-      ...(high ? { high: { value: high } } : {}),
+      ...(Number.isFinite(low) ? { low: { value: low } } : {}),
+      ...(Number.isFinite(high) ? { high: { value: high } } : {}),
     },
   ];
 }
 
 function getObservationValue(detail: ResponseDetail): ObservationValue {
-  const values: ObservationValue = {};
+  const observationValue: ObservationValue = {};
   if (detail.resultValue != null) {
-    if (detail.resultUnits) {
-      values.valueQuantity = {
-        value: parseFloat(detail.resultValue),
+    const value = parseFloat(detail.resultValue);
+    if (Number.isFinite(value) && detail.resultUnits) {
+      observationValue.valueQuantity = {
+        value,
         unit: detail.resultUnits,
       };
     } else {
-      values.valueString = detail.resultValue;
+      observationValue.valueString = detail.resultValue;
     }
   }
-  return values;
+  return observationValue;
 }
 
 function getObservationInterpretation(detail: ResponseDetail): CodeableConcept[] | undefined {

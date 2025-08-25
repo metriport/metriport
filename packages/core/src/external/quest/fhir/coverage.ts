@@ -17,11 +17,10 @@ export function getCoverage(
 
   if (!beneficiary || !payor) return undefined;
 
-  detail.patientId;
-
   return {
     resourceType: "Coverage",
     id: uuidv7(),
+    status: "active",
     beneficiary,
     ...(payor ? { payor } : {}),
     extension,

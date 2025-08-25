@@ -58,5 +58,6 @@ function parseDiagnosisCode(diagnosisCode: string): { system: string; code: stri
 }
 
 function insertPeriod(icd10Code: string): string {
+  if (icd10Code.length <= 3) return icd10Code;
   return icd10Code.substring(0, 3) + "." + icd10Code.substring(3);
 }
