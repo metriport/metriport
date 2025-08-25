@@ -1,4 +1,5 @@
 import { Bundle, BundleEntry, Resource } from "@medplum/fhirtypes";
+import { buildBundle } from "../../fhir/bundle/bundle";
 import { IncomingData } from "../schema/shared";
 import { ResponseDetail } from "../schema/response";
 import { getPatient } from "./patient";
@@ -22,11 +23,8 @@ export async function convertTabularDataToFhirBundle({
   patientId: string;
   rows: IncomingData<ResponseDetail>[];
 }): Promise<Bundle> {
-  const entry = rows.flatMap(getBundleEntries);
-  const bundle: Bundle = {
-    resourceType: "Bundle",
-    entry,
-  };
+  const entries = rows.flatMap(getBundleEntries);
+  const bundle = buildBundle({ type: "collection", entries });
   dangerouslyDeduplicateFhir(bundle, cxId, patientId);
   await hydrateFhir(bundle, console.log);
   return bundle;
