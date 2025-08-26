@@ -3,8 +3,10 @@ import * as stream from "stream";
 import { DocumentQueryFullResponse, DocumentReference, DocumentStatus } from "../models/document";
 import {
   Patient,
-  PatientCollection,
-  PatientCollectionItem,
+  PatientResponseItem,
+  PatientCreateOrUpdateResp,
+  PatientExistingLinks,
+  PatientProbableLinks,
   StatusResponse,
 } from "../models/patient";
 
@@ -34,9 +36,20 @@ export type OrganizationRequestMetadata = {
   authGrantorReference?: string;
 };
 
+/**
+ * Type that represents the Patinet's ID in the Edge System in the HL7 CX data type format.
+ * Each property represents part of the HL7 CX data type format:
+ *
+ * IdentifierValue^^^&PatientIdAssignAuthority&PatientIdAssignAuthorityType
+ *
+ * @see Section "8.3.2 Get Patient" of the spec.
+ */
 export type GetPatientParams = {
+  /** The Patient ID of the Edge System without any formatting (not in the HL7 CX data type format). */
   id: string;
+  /** The assignAuthority of the Patient ID. */
   assignAuthority: string;
+  /** The assignAuthorityType of the Patient ID. */
   assignAuthorityType?: string | undefined;
 };
 
@@ -76,13 +89,16 @@ export interface DocumentQueryParams {
 export interface CommonWellAPI {
   get lastTransactionId(): string | undefined;
 
-  createOrUpdatePatient(patient: Patient, options?: BaseOptions): Promise<PatientCollection>;
+  createOrUpdatePatient(
+    patient: Patient,
+    options?: BaseOptions
+  ): Promise<PatientCreateOrUpdateResp>;
 
   getPatient(
     params: GetPatientParams,
     options?: BaseOptions
-  ): Promise<PatientCollectionItem | undefined>;
-  getPatient(id: string, options?: BaseOptions): Promise<PatientCollectionItem | undefined>;
+  ): Promise<PatientResponseItem | undefined>;
+  getPatient(id: string, options?: BaseOptions): Promise<PatientResponseItem | undefined>;
 
   // ENG-200: Search patients
   // 10.2.3 Patient Match
@@ -102,9 +118,12 @@ export interface CommonWellAPI {
 
   deletePatient(id: string, options?: BaseOptions): Promise<void>;
 
-  getPatientLinksByPatientId(patientId: string, options?: BaseOptions): Promise<PatientCollection>;
+  getPatientLinksByPatientId(
+    patientId: string,
+    options?: BaseOptions
+  ): Promise<PatientExistingLinks>;
 
-  getProbableLinksById(patientId: string, options?: BaseOptions): Promise<PatientCollection>;
+  getProbableLinksById(patientId: string, options?: BaseOptions): Promise<PatientProbableLinks>;
   getProbableLinksByDemographics(
     params: {
       firstName: string;
@@ -114,7 +133,7 @@ export interface CommonWellAPI {
       zip: string;
     },
     options?: BaseOptions
-  ): Promise<PatientCollection>;
+  ): Promise<PatientProbableLinks>;
 
   linkPatients(urlToLinkPatients: string, options?: BaseOptions): Promise<StatusResponse>;
   unlinkPatients(urlToUnlinkPatients: string, options?: BaseOptions): Promise<StatusResponse>;
@@ -131,4 +150,6 @@ export interface CommonWellAPI {
     outputStream: stream.Writable,
     options?: BaseOptions
   ): Promise<RetrieveDocumentResponse>;
+
+  rethrowDescriptiveError(error: unknown, title: string): never;
 }
