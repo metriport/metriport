@@ -331,8 +331,8 @@ function headersToKeepString(
   const headers =
     headersToKeep.length > 0 && responseHeaders
       ? headersToKeep.reduce((acc, header) => {
-          const value = responseHeaders[header];
-          if (value) acc[header] = value;
+          const value = responseHeaders.get(header) || responseHeaders.get(header.toLowerCase());
+          if (value) acc[header] = value.toString();
           return acc;
         }, {} as Record<string, string>)
       : undefined;

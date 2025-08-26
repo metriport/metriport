@@ -8,7 +8,7 @@ import { ApiBaseParams, validateAndLogResponse } from "./api-shared";
 
 export type GetSecretsParams = Omit<ApiBaseParams, "departmentId" | "patientId">;
 
-const numberOfCharactersToShow = 5;
+const maskPlaceholder = "********";
 
 /**
  * Sends a request to the API to get the client key and secret (or api key) for a practice.
@@ -49,7 +49,7 @@ export async function getSecrets<T>({
 
 /**
  * Masks sensitive information in an object for clientKey, clientSecret, and apiKey fields,
- * keeping the first 3 characters of the value.
+ * keeping the first third of characters of the value.
  * Only applies masking if the object matches the expected secrets schema.
  */
 function maskKeys(data: unknown): unknown {
@@ -58,16 +58,26 @@ function maskKeys(data: unknown): unknown {
     const { clientKey, clientSecret, ...rest } = oauthResult.data;
     return {
       ...rest,
-      clientKey: `${clientKey.slice(0, numberOfCharactersToShow)}********`,
-      clientSecret: `${clientSecret.slice(0, numberOfCharactersToShow)}********`,
+      clientKey: `${clientKey.slice(0, getNumberOfCharactersToShow(clientKey))}${maskPlaceholder}`,
+      clientSecret: `${clientSecret.slice(
+        0,
+        getNumberOfCharactersToShow(clientSecret)
+      )}${maskPlaceholder}`,
     };
   }
 
   const apiKeyResult = getSecretsApiKeySchema.safeParse(data);
   if (apiKeyResult.success) {
     const { apiKey, ...rest } = apiKeyResult.data;
-    return { ...rest, apiKey: `${apiKey.slice(0, numberOfCharactersToShow)}********` };
+    return {
+      ...rest,
+      apiKey: `${apiKey.slice(0, getNumberOfCharactersToShow(apiKey))}${maskPlaceholder}`,
+    };
   }
 
   return data;
+}
+
+function getNumberOfCharactersToShow(value: string): number {
+  return Math.max(0, Math.floor(value.length / 3));
 }
