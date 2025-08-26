@@ -1037,7 +1037,7 @@ class CanvasApi {
     resourceType: string;
     useCachedBundle?: boolean;
   }): Promise<Bundle> {
-    const { debug } = out(
+    const { log, debug } = out(
       `Canvas getBundleByResourceType - cxId ${cxId} practiceId ${this.practiceId} canvasPatientId ${canvasPatientId}`
     );
     if (!isSupportedCanvasResource(resourceType)) {
@@ -1077,6 +1077,7 @@ class CanvasApi {
             });
           } catch (error) {
             if (error instanceof BadRequestError || error instanceof NotFoundError) {
+              log(`Error while fetching ${resourceType} from EHR: ${errorToString(error)}`);
               return undefined;
             }
             throw error;
@@ -1132,7 +1133,7 @@ class CanvasApi {
     resourceId: string;
     useCachedBundle?: boolean;
   }): Promise<Bundle> {
-    const { debug } = out(
+    const { log, debug } = out(
       `Canvas getResourceBundleByResourceId - cxId ${cxId} practiceId ${this.practiceId} metriportPatientId ${metriportPatientId} canvasPatientId ${canvasPatientId} resourceType ${resourceType}`
     );
     if (
@@ -1174,6 +1175,7 @@ class CanvasApi {
             });
           } catch (error) {
             if (error instanceof BadRequestError || error instanceof NotFoundError) {
+              log(`Error while fetching ${resourceType} from EHR: ${errorToString(error)}`);
               return undefined;
             }
             throw error;
