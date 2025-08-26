@@ -1062,17 +1062,26 @@ class CanvasApi {
     function fetchResourcesFromEhr() {
       return fetchEhrFhirResourcesWithPagination({
         makeRequest: async (url: string) => {
-          const bundle = await client.makeRequest<EhrFhirResourceBundle>({
-            cxId,
-            patientId: canvasPatientId,
-            s3Path: client.createFhirPath(resourceType),
-            method: "GET",
-            url,
-            schema: ehrFhirResourceBundleSchema,
-            additionalInfo,
-            debug,
-            useFhir: true,
-          });
+          let bundle: EhrFhirResourceBundle | undefined;
+          try {
+            bundle = await client.makeRequest<EhrFhirResourceBundle>({
+              cxId,
+              patientId: canvasPatientId,
+              s3Path: client.createFhirPath(resourceType),
+              method: "GET",
+              url,
+              schema: ehrFhirResourceBundleSchema,
+              additionalInfo,
+              debug,
+              useFhir: true,
+            });
+          } catch (error) {
+            if (error instanceof BadRequestError || error instanceof NotFoundError) {
+              return undefined;
+            }
+            throw error;
+          }
+          if (!bundle) return undefined;
           const { targetBundle, referenceBundle } = partitionEhrBundle({
             bundle,
             resourceType,
@@ -1150,17 +1159,26 @@ class CanvasApi {
     function fetchResourcesFromEhr() {
       return fetchEhrFhirResourcesWithPagination({
         makeRequest: async (url: string) => {
-          const bundle = await client.makeRequest<EhrFhirResourceBundle>({
-            cxId,
-            patientId: canvasPatientId,
-            s3Path: client.createFhirPath(resourceType, resourceId),
-            method: "GET",
-            url,
-            schema: ehrFhirResourceBundleSchema,
-            additionalInfo,
-            debug,
-            useFhir: true,
-          });
+          let bundle: EhrFhirResourceBundle | undefined;
+          try {
+            bundle = await client.makeRequest<EhrFhirResourceBundle>({
+              cxId,
+              patientId: canvasPatientId,
+              s3Path: client.createFhirPath(resourceType, resourceId),
+              method: "GET",
+              url,
+              schema: ehrFhirResourceBundleSchema,
+              additionalInfo,
+              debug,
+              useFhir: true,
+            });
+          } catch (error) {
+            if (error instanceof BadRequestError || error instanceof NotFoundError) {
+              return undefined;
+            }
+            throw error;
+          }
+          if (!bundle) return undefined;
           return convertEhrBundleToValidEhrStrictBundle(bundle, resourceType, canvasPatientId);
         },
         url: resourceTypeUrl,

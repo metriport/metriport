@@ -876,13 +876,14 @@ export async function fetchEhrFhirResourcesWithPagination({
   url,
   acc = [],
 }: {
-  makeRequest: (url: string) => Promise<EhrStrictFhirResourceBundle>;
+  makeRequest: (url: string) => Promise<EhrStrictFhirResourceBundle | undefined>;
   url: string | undefined;
   acc?: EhrStrictFhirResource[] | undefined;
 }): Promise<EhrStrictFhirResource[]> {
   if (!url) return acc;
   await sleep(paginateWaitTime.asMilliseconds());
   const fhirResourceBundle = await makeRequest(url);
+  if (!fhirResourceBundle) return acc;
   acc.push(...(fhirResourceBundle.entry ?? []).map(e => e.resource));
   const nextUrl = fhirResourceBundle.link?.find(l => l.relation === "next")?.url;
   return fetchEhrFhirResourcesWithPagination({ makeRequest, url: nextUrl, acc });

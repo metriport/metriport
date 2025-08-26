@@ -65,7 +65,6 @@ function maskKeys(data: unknown): unknown {
       )}${maskPlaceholder}`,
     };
   }
-
   const apiKeyResult = getSecretsApiKeySchema.safeParse(data);
   if (apiKeyResult.success) {
     const { apiKey, ...rest } = apiKeyResult.data;
@@ -74,10 +73,9 @@ function maskKeys(data: unknown): unknown {
       apiKey: `${apiKey.slice(0, getNumberOfCharactersToShow(apiKey))}${maskPlaceholder}`,
     };
   }
-
-  return data;
+  return maskPlaceholder;
 }
 
 function getNumberOfCharactersToShow(value: string): number {
-  return Math.max(0, Math.floor(value.length / 3));
+  return value.length < 7 ? 0 : Math.min(5, Math.floor(value.length / 3));
 }
