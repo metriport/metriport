@@ -117,7 +117,8 @@ check_file_with_filter() {
     local filter="$2"
     
     # Apply the custom jq filter to the file
-    local result=$(jq -e "$filter" "$file" 2>/dev/null)
+    local result
+    result=$(jq -e "$filter" "$file" 2>/dev/null)
     
     if [ "$result" = "true" ]; then
         return 0  # File matches the filter
