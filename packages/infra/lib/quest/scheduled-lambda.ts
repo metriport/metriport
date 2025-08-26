@@ -50,7 +50,7 @@ export function createUploadRosterScheduledLambda(props: ScheduledLambdaProps): 
      * @see: https://docs.aws.amazon.com/lambda/latest/dg/services-cloudwatchevents-expressions.html
      */
     scheduleExpression: [
-      "0 12 * * 1 *", // Every Monday at 12:00pm UTC (5:00am PST)
+      "0 12 ? * 1 *", // Every Monday at 12:00pm UTC (5:00am PST)
     ],
     url: `http://${props.apiAddress}/internal/quest/upload-roster`,
   });

@@ -19,6 +19,7 @@ import { out } from "../../util";
 import { Config } from "../../util/config";
 import { CSV_FILE_EXTENSION, CSV_MIME_TYPE } from "../../util/mime";
 import { METRIPORT_ASSIGNING_AUTHORITY_IDENTIFIER } from "./constants";
+import { uploadToRemoteSftp } from "./hl7v2-roster-uploader";
 import {
   HieConfig,
   HiePatientRosterMapping,
@@ -28,7 +29,6 @@ import {
   VpnlessHieConfig,
 } from "./types";
 import { createScrambledId } from "./utils";
-import { uploadToRemoteSftp } from "./hl7v2-roster-uploader";
 const region = Config.getAWSRegion();
 
 type RosterRow = Record<string, string>;
