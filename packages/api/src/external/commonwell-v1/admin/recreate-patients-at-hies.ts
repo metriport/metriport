@@ -8,7 +8,8 @@ import { groupBy } from "lodash";
 import { PatientModel } from "../../../models/medical/patient";
 import { getCqOrgIdsToDenyOnCw } from "../../hie/cross-hie-ids";
 import { makeCommonWellAPI } from "../api";
-import { create, getCWData } from "../patient";
+import { getCWData } from "../patient";
+import { create } from "../../commonwell/patient/patient";
 import { getCwInitiator } from "../shared";
 
 export type RecreateResultOfPatient = {
@@ -59,7 +60,7 @@ export async function recreatePatientsAtCW(cxId?: string): Promise<RecreateResul
   return res;
 }
 
-export async function recreatePatientAtCW(
+async function recreatePatientAtCW(
   patient: Patient,
   getOrgIdExcludeList: () => Promise<string[]>
 ): Promise<RecreateResultOfPatient | undefined> {
@@ -117,7 +118,7 @@ export async function recreatePatientAtCW(
       return undefined;
     }
 
-    const { commonwellPatientId: newCWPatientId, personId: newPersonId } = cwIds;
+    const { commonwellPatientId: newCWPatientId } = cwIds;
 
     if (originalCWPatientId) {
       const extra = {
@@ -125,26 +126,31 @@ export async function recreatePatientAtCW(
         originalCWPatientId,
         newCWPatientId,
         originalPersonId,
-        newPersonId,
+        // newPersonId,
       };
       if (originalCWPatientId === newCWPatientId) {
         const msg = `Patient created/updated with the same ID`;
         log(msg);
         capture.message(msg, { extra, level: "error" });
-      } else if (!originalPersonId && !newPersonId) {
-        const msg = `Patient had no personId and we could not determine one again`;
-        log(msg);
-        capture.message(msg, { extra, level: "error" });
-      } else if (originalPersonId && !newPersonId) {
-        const msg = `Patient had a personId but we could not determine one while recreating`;
-        log(`${msg} - original person ID: ${originalPersonId}`);
-        capture.message(msg, { extra, level: "error" });
-      } else if (!originalPersonId && newPersonId) {
-        log(`Good news: patient had no personId but we got one now`);
-      } else if (originalPersonId !== newPersonId) {
-        const msg = `Patient original and new person ID do not match while recreating`;
-        log(`${msg} - original person ID: ${originalPersonId}, new person ID: ${newPersonId}`);
-        capture.message(msg, { extra, level: "error" });
+
+        // TODO: SEE IF THESE ARE NEEDED
+        // TODO: SEE IF THESE ARE NEEDED
+        // TODO: SEE IF THESE ARE NEEDED
+
+        // } else if (!originalPersonId && !newPersonId) {
+        //   const msg = `Patient had no personId and we could not determine one again`;
+        //   log(msg);
+        //   capture.message(msg, { extra, level: "error" });
+        // } else if (originalPersonId && !newPersonId) {
+        //   const msg = `Patient had a personId but we could not determine one while recreating`;
+        //   log(`${msg} - original person ID: ${originalPersonId}`);
+        //   capture.message(msg, { extra, level: "error" });
+        // } else if (!originalPersonId && newPersonId) {
+        //   log(`Good news: patient had no personId but we got one now`);
+        // } else if (originalPersonId !== newPersonId) {
+        //   const msg = `Patient original and new person ID do not match while recreating`;
+        //   log(`${msg} - original person ID: ${originalPersonId}, new person ID: ${newPersonId}`);
+        //   capture.message(msg, { extra, level: "error" });
       }
 
       // remove old patient
