@@ -1282,7 +1282,7 @@ class CanvasApi {
       additionalInfo,
       debug,
       emptyResponse,
-      rspHeadersToKeep: [fhirHeader],
+      responseHeadersToKeep: [fhirHeader],
     });
   }
 

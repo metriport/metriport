@@ -122,7 +122,7 @@ export type MakeRequestParams<T> = {
   debug: typeof console.log;
   emptyResponse?: boolean;
   earlyReturn?: boolean;
-  rspHeadersToKeep?: string[];
+  responseHeadersToKeep?: string[];
 };
 
 export type MakeRequestParamsInEhr<T> = Omit<
@@ -146,7 +146,7 @@ export async function makeRequest<T>({
   debug,
   emptyResponse = false,
   earlyReturn = false,
-  rspHeadersToKeep = [],
+  responseHeadersToKeep = [],
 }: MakeRequestParams<T>): Promise<T> {
   const { log } = out(
     `${ehr} makeRequest - cxId ${cxId} patientId ${patientId} method ${method} url ${url}`
@@ -246,7 +246,7 @@ export async function makeRequest<T>({
         error: errorToString(error),
         headers: headersToKeepString(
           error.response?.headers as AxiosResponseHeaders,
-          rspHeadersToKeep
+          responseHeadersToKeep
         ),
       };
       switch (error.response?.status) {
@@ -298,7 +298,7 @@ export async function makeRequest<T>({
             data: response.data,
             headers: headersToKeepString(
               response.headers as AxiosResponseHeaders,
-              rspHeadersToKeep
+              responseHeadersToKeep
             ),
           }),
           "utf8"
