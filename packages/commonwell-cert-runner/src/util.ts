@@ -2,9 +2,9 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ above all other imports
 import { faker } from "@faker-js/faker";
+import { getPatientIdFromCollectionItem } from "@metriport/commonwell-sdk";
+import { PatientResponseItem } from "@metriport/commonwell-sdk/models/patient";
 import { sleep } from "@metriport/shared";
-import { decodeCwPatientId, getPatientIdTrailingSlash } from "@metriport/commonwell-sdk";
-import { PatientCollectionItem } from "@metriport/commonwell-sdk/models/patient";
 
 export function getEnv(name: string): string | undefined {
   return process.env[name];
@@ -43,16 +43,11 @@ export function makeShortName(): string {
 }
 
 export function getMetriportPatientIdOrFail(
-  patient: PatientCollectionItem | undefined | null,
+  patient: PatientResponseItem | undefined | null,
   context: string
 ): string {
   if (!patient) throw new Error("Missing patient");
-  const patientIdRaw = getPatientIdTrailingSlash(patient);
-  if (!patientIdRaw) throw new Error(`No patientId on response from ${context}`);
-  const patientId = decodeCwPatientId(patientIdRaw).value;
-  if (!patientId) {
-    throw new Error(`PatientId could not be decoded from ${patientIdRaw}`);
-  }
+  const patientId = getPatientIdFromCollectionItem(patient);
   console.log(`>>> [${context}] Patient ID: ${patientId}`);
   return patientId;
 }

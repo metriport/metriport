@@ -7,14 +7,14 @@ import { initApiForExistingOrg } from "../flows/org-management";
 const patientId: string = process.argv[2]; // read patient ID from command line argument
 
 /**
- * Utility to get links for a patient by ID.
+ * Utility to get probable links for a patient by ID.
  *
  * Usage:
  * - Set env vars - see README.md for details
  * - Run the command
- *   $ ts-node src/single-commands/patient-get-links.ts <patient-id>
+ *   $ ts-node src/single-commands/patient-get-probable-links.ts <patient-id>
  */
-export async function getPatientLinks() {
+export async function getPatientProbableLinks() {
   if (!patientId || patientId.trim().length < 1) {
     throw new Error("No patientId provided. Add it as an argument to the command");
   }
@@ -25,10 +25,10 @@ export async function getPatientLinks() {
     assignAuthority: commonWell.oid,
   });
 
-  console.log(`Get Patient Links for ${patientId}`);
-  const resp = await commonWell.getPatientLinksByPatientId(encodedPatientId);
+  console.log(`Get Patient Probable Links for ${patientId}`);
+  const resp = await commonWell.getProbableLinksById(encodedPatientId);
   console.log("Transaction ID: " + commonWell.lastTransactionId);
   console.log("Response: " + JSON.stringify(resp, null, 2));
 }
 
-getPatientLinks();
+getPatientProbableLinks();
