@@ -14,8 +14,13 @@ import { createUuidFromText } from "@metriport/shared/common/uuid";
 import axios, { AxiosResponse } from "axios";
 import { stringify } from "csv-stringify/sync";
 import _ from "lodash";
+import { PostHog } from "posthog-node";
 import { getFirstNameAndMiddleInitial, Patient } from "../../domain/patient";
+import { analytics, EventTypes } from "../../external/analytics/posthog";
+import { reportMetric } from "../../external/aws/cloudwatch";
 import { S3Utils, storeInS3WithRetries } from "../../external/aws/s3";
+import { getSecretValueOrFail } from "../../external/aws/secret-manager";
+import { sendToSlack, SlackMessage } from "../../external/slack";
 import { out } from "../../util";
 import { Config } from "../../util/config";
 import { CSV_FILE_EXTENSION, CSV_MIME_TYPE } from "../../util/mime";
@@ -30,12 +35,6 @@ import {
   VpnlessHieConfig,
 } from "./types";
 import { createScrambledId } from "./utils";
-import { analytics, EventTypes } from "../../external/analytics/posthog";
-import { PostHog } from "posthog-node";
-import { SlackMessage } from "../../external/slack";
-import { reportMetric } from "../../external/aws/cloudwatch";
-import { uploadToRemoteSftp } from "./hl7v2-roster-uploader";
-import { getSecretValueOrFail } from "../../external/aws/secret-manager";
 const region = Config.getAWSRegion();
 
 type RosterRow = Record<string, string>;
@@ -189,7 +188,7 @@ export class Hl7v2RosterGenerator {
 
     log("Notifing in slack");
     try {
-      await this.notifySlack(rosterSize, hieName, failedStage, errors, log);
+      await this.notifySlack(rosterSize, hieName, failedStage, errors);
       //eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       log("Failed to notify on slack: ", err);
@@ -228,8 +227,7 @@ export class Hl7v2RosterGenerator {
     rosterSize: number,
     hieName: string,
     failedStage: FailedStage,
-    errors: string[],
-    log: typeof console.log
+    errors: string[]
   ): Promise<void> {
     const subject = failedStage
       ? `Tried ADT Roster upload to "${hieName}" with roster size: ${rosterSize}. :warning: FAILED at ${failedStage} :peepo_sad: :warning:`
@@ -243,18 +241,9 @@ export class Hl7v2RosterGenerator {
       emoji: ":peepo_doctor:",
     };
 
-    await simpleExecuteWithRetries(() => this.sendMessage(slackMessage), log);
-  }
-
-  async sendMessage(message: SlackMessage): Promise<void> {
     const slackUrl = Config.getSlackAdtRosterNotificationUrl();
-
-    await axios.post(this.internalSlackRouteUrl, {
-      subject: message.subject,
-      message: message.message,
-      emoji: message.emoji,
-      webhookUrl: slackUrl,
-    });
+    console.log(slackUrl);
+    await sendToSlack(slackMessage, slackUrl);
   }
 
   private async notifyCloudWatch(
