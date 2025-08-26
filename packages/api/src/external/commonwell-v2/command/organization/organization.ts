@@ -86,7 +86,7 @@ function cwOrgOrFacilityToSdk(
     isActive: org.active,
     searchRadius: defaultSearchRadius,
     technicalContacts: [technicalContact],
-    isLegacyBridgeEnabled: true, // This stays true for now, while the legacy platform is still in use
+    isLegacyBridgeEnabled: true, // TODO: ENG-927 - This stays true for now, while the legacy platform is still in use
   };
 
   if (org.isInitiatorAndResponder) {
@@ -170,8 +170,8 @@ export async function getOrFail(orgOid: string): Promise<CwSdkOrganization | und
       extra: {
         orgOid,
         cwReference: cwRef,
-        context: `cw.org.get`,
-        error,
+        context: `cw.v2.org.get`,
+        error: errorToString(error),
       },
     });
     throw error;
@@ -196,9 +196,9 @@ export async function create(cxId: string, org: CwOrgOrFacility): Promise<void> 
       extra: {
         orgOid: org.oid,
         cwReference: cwRef,
-        context: `cw.org.create`,
+        context: `cw.v2.org.create`,
         commonwellOrg: sdkOrg,
-        error,
+        error: errorToString(error),
       },
     });
     throw error;
@@ -219,9 +219,9 @@ export async function update(cxId: string, org: CwOrgOrFacility): Promise<void> 
     const extra = {
       orgOid: org.oid,
       cwReference: cwRef,
-      context: `cw.org.update`,
+      context: `cw.v2.org.update`,
       commonwellOrg: sdkOrg,
-      error,
+      error: errorToString(error),
     };
     if (error.response?.status === 404) {
       capture.message("Got 404 while updating Org @ CW, creating it", { extra });
@@ -270,7 +270,7 @@ export async function getParsedOrgOrFailV2(oid: string): Promise<CwOrgOrFacility
 export function mapTreatmentTypeToCwType(type: TreatmentType): CwTreatmentType {
   const cwType = TREATMENT_TYPE_TO_CW_MAP[type];
   if (!cwType) {
-    const msg = `Invalid treatment type: ${type}`;
+    const msg = `Invalid treatment type`;
     capture.error(msg, { extra: { type } });
     throw new MetriportError(msg, undefined, { type });
   }
@@ -280,7 +280,7 @@ export function mapTreatmentTypeToCwType(type: TreatmentType): CwTreatmentType {
 export function mapCwTypeToTreatmentType(type: string): TreatmentType {
   const treatmentType = CW_TO_TREATMENT_TYPE_MAP[type.toLowerCase().trim()];
   if (!treatmentType) {
-    const msg = `Invalid CW treatment type: ${type}`;
+    const msg = `Invalid CW treatment type`;
     capture.error(msg, { extra: { type } });
     throw new MetriportError(msg, undefined, { type });
   }
