@@ -32,16 +32,18 @@ export function getCwPatientIdFromCollectionItem(
 }
 
 /**
- * Get the Edge System's patient ID from the Patient Collection Item.
+ * Get the Edge System's patient ID from the Patient Object Response Item.
  * This is the decoded patient ID, NOT in the HL7 CX data type format.
  *
- * @param object - The Patient Collection Item.
+ * @param patientResponseItem - The Patient Object Response Item.
  * @returns The Edge System's patient ID.
  * @see decodeCwPatientId
  * @see Section "8.3.2 Get Patient" of the spec.
  */
-export function getPatientIdFromCollectionItem(object: Pick<PatientResponseItem, "Links">): string {
-  const cwPatientId = getCwPatientIdFromCollectionItem(object);
+export function getPatientIdFromCollectionItem(
+  patientResponseItem: Pick<PatientResponseItem, "Links">
+): string {
+  const cwPatientId = getCwPatientIdFromCollectionItem(patientResponseItem);
   if (!cwPatientId) throw new Error(`Could not get CW patient ID from collection item`);
   const decoded = decodeCwPatientId(cwPatientId);
   const patientId = decoded.value;
