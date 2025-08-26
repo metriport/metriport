@@ -55,7 +55,7 @@ const maxUncompressedSizePerFileInMB = 800;
 
 const mergeCsvJobId = "MRG_" + buildDayjs().toISOString().slice(0, 19).replace(/[:.]/g, "-");
 
-const confirmationTime = dayjs.duration(1, "seconds");
+const confirmationTime = dayjs.duration(10, "seconds");
 const messageGroupId = "merge-csvs";
 const numberOfParallelPutSqsOperations = 20;
 
@@ -124,7 +124,9 @@ async function main() {
 
         amountOfPatientsProcessed += ptIdsOfThisRun.length;
         log(
-          `>>> Put ${index} messages on queue (${amountOfPatientsProcessed}/${uniquePatientIds.length} patients)`
+          `>>> Put message ${index + 1}/${
+            patientIdChunks.length
+          } on queue (${amountOfPatientsProcessed}/${uniquePatientIds.length} patients)`
         );
       } catch (error) {
         log(
@@ -164,7 +166,7 @@ async function getPatientIdsFromFhirToCsvJob({
   const basePrefix = buildFhirToCsvJobPrefix({ cxId, jobId: fhirToCsvJobId });
   const files = await s3Utils.listFirstLevelSubdirectories({
     bucket: bucketName,
-    prefix: basePrefix,
+    prefix: basePrefix + "/",
   });
   const patientIds = files.flatMap(file =>
     file.Prefix ? parsePatientIdFromFhirToCsvPatientPrefix(file.Prefix) : []
