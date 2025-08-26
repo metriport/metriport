@@ -36,7 +36,12 @@ import {
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { Config } from "../../../shared/config";
 import { mapDocRefToMetriport } from "../../../shared/external";
-import { reportMetric } from "@metriport/core/external/aws/cloudwatch";
+import { reportMetric } from "../../aws/cloudwatch";
+import { update } from "../../commonwell/patient/patient";
+import {
+  getPatientWithCWData,
+  PatientWithCWData,
+} from "../../commonwell/patient/patient-external-data";
 import { convertCDAToFHIR, isConvertible } from "../../fhir-converter/converter";
 import { makeFhirApi } from "../../fhir/api/api-factory";
 import { cwToFHIR } from "../../fhir/document";
@@ -53,8 +58,7 @@ import { setDocQueryStartAt } from "../../hie/set-doc-query-start";
 import { tallyDocQueryProgress } from "../../hie/tally-doc-query-progress";
 import { makeCommonWellAPI } from "../api";
 import { groupCWErrors } from "../error-categories";
-import { getCWData, update } from "../patient";
-import { getPatientWithCWData, PatientWithCWData } from "../patient-external-data";
+import { getCWData } from "../patient";
 import { getCwInitiator, validateCWEnabled } from "../shared";
 import { makeDocumentDownloader } from "./document-downloader-factory";
 import { sandboxGetDocRefsAndUpsert } from "./document-query-sandbox";

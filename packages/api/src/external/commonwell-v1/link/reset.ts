@@ -8,7 +8,7 @@ import { addOidPrefix } from "@metriport/core/domain/oid";
 import { out } from "@metriport/core/util/log";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { makeCommonWellAPI } from "../api";
-import { updateCommonwellIdsAndStatus } from "../patient-external-data";
+import { updateCommonwellIdsAndStatus } from "../../commonwell/patient/patient-external-data";
 import { getCwInitiator } from "../shared";
 import { patientWithCWData } from "./shared";
 

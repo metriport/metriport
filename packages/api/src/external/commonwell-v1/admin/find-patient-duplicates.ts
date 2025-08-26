@@ -24,6 +24,10 @@ const CHUNK_DELAY_MIN_PCT = 50; // 1-100% of max delay
 
 const undetermined = "unknown";
 
+// TODO ENG-554 Remove this file entirely once we've migrated to CWv2
+// TODO ENG-554 Remove this file entirely once we've migrated to CWv2
+// TODO ENG-554 Remove this file entirely once we've migrated to CWv2
+
 /**
  * personId might be the actual personId or "falsy" to indicate that the personId is `null | undefined`
  */
@@ -101,7 +105,7 @@ const failed = (reason: string, isMetriport?: true): DuplicatedPersonsOfPatient 
   [reason]: { isMetriport },
 });
 
-export async function findDuplicatedPersonsByPatient(
+async function findDuplicatedPersonsByPatient(
   patient: Patient,
   log: typeof console.log
 ): Promise<DuplicatedPersonsOfPatient | undefined> {
