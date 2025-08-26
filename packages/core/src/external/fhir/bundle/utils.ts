@@ -6,6 +6,7 @@ import { groupSameEncountersDatetimeOnly } from "../../../fhir-deduplication/res
 import { normalizeFhir } from "../normalization/normalize-fhir";
 import { isEncounter } from "../shared";
 import { buildBundle, buildBundleEntry, RequiredBundleType } from "./bundle";
+import { FhirBundleSdk } from "@metriport/fhir-sdk";
 
 export function mergeBundles({
   cxId,
@@ -57,8 +58,8 @@ export function dedupeAdtEncounters(existing: Bundle<Resource>): Bundle<Resource
   const encounterBundleEntries = [...dedupedEncountersMap.values()].map(buildBundleEntry);
   const nonEncounterBundleEntries = _(nonEncounters).compact().map(buildBundleEntry).value();
 
-  //const newBundle = FhirBundleSdk.createSync(existing).toObject();
-  existing.entry = [...encounterBundleEntries, ...nonEncounterBundleEntries];
+  const newBundle = FhirBundleSdk.createSync(existing).toObject();
+  newBundle.entry = [...encounterBundleEntries, ...nonEncounterBundleEntries];
 
-  return existing;
+  return newBundle;
 }
