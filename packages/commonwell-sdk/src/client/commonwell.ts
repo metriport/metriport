@@ -176,7 +176,7 @@ export class CommonWell extends CommonWellBase implements CommonWellAPI {
    * @throws MetriportError if multiple patients are found for the given ID.
    * @see Section "8.3.2 Get Patient" of the spec.
    */
-  async getPatient(id: string, options?: BaseOptions): Promise<PatientResponseItem | undefined>;
+  async getPatient(id: string, options?: BaseOptions): Promise<PatientResponseItem>;
   async getPatient(
     idOrParams: string | GetPatientParams,
     options?: BaseOptions
