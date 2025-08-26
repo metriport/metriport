@@ -12,7 +12,6 @@ import {
 } from "../../external/fhir/adt-encounters";
 import { buildBundleEntry, buildCollectionBundle } from "../../external/fhir/bundle/bundle";
 import { toFHIR as toFhirPatient } from "../../external/fhir/patient/conversion";
-import { createExtensionDataSource } from "../../external/fhir/shared/extensions/extension";
 import { capture, out } from "../../util";
 import { Config } from "../../util/config";
 import { convertHl7v2MessageToFhir } from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion";
@@ -107,6 +106,7 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
       cxId,
       patientId,
       rawDataFileKey: params.rawDataFileKey,
+      hieName: params.hieName,
     });
 
     const newEncounterData = prependPatientToBundle({
@@ -115,7 +115,7 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
     });
     log(`Conversion complete and patient entry added`);
 
-    const clinicalInformation = this.extractClinicalInformation(newEncounterData, params.hieName);
+    const clinicalInformation = this.extractClinicalInformation(newEncounterData);
 
     log(`Writing TCM encounter to DB...`);
     await this.persistTcmEncounter(
@@ -229,10 +229,7 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
     );
   }
 
-  private extractClinicalInformation(
-    bundle: Bundle<Resource>,
-    hieName: string
-  ): ClinicalInformation {
+  private extractClinicalInformation(bundle: Bundle<Resource>): ClinicalInformation {
     const clinicalInformation: ClinicalInformation = {
       condition: [],
       encounterReason: [],
@@ -240,12 +237,6 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
 
     if (bundle.entry) {
       for (const entry of bundle.entry) {
-        if (entry.resource) {
-          const dataSourceExtension = createExtensionDataSource(hieName.toUpperCase());
-          //eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const resource = entry.resource as any;
-          resource.extension = [...(resource.extension ?? []), dataSourceExtension];
-        }
         if (entry.resource?.resourceType === "Condition" && entry.resource.code?.coding) {
           clinicalInformation.condition.push({
             coding:
