@@ -40,8 +40,8 @@ async function deduplicateExistingBundles(
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
     const resource = entry.resource as any;
     resource.extension = [...(resource.extension ?? []), dataSourceExtension];
-    return bundle;
   }
+  return bundle;
 }
 
 main();
