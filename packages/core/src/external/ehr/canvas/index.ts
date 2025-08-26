@@ -1076,7 +1076,7 @@ class CanvasApi {
               useFhir: true,
             });
           } catch (error) {
-            if (error instanceof BadRequestError || error instanceof NotFoundError) {
+            if (error instanceof NotFoundError) {
               log(`Error while fetching ${resourceType} from EHR: ${errorToString(error)}`);
               return undefined;
             }
@@ -1174,7 +1174,7 @@ class CanvasApi {
               useFhir: true,
             });
           } catch (error) {
-            if (error instanceof BadRequestError || error instanceof NotFoundError) {
+            if (error instanceof NotFoundError) {
               log(`Error while fetching ${resourceType} from EHR: ${errorToString(error)}`);
               return undefined;
             }
