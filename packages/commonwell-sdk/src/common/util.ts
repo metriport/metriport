@@ -1,6 +1,6 @@
 import { PurposeOfUse } from "@metriport/shared";
 import { BaseRequestMetadata } from "../client/common";
-import { PatientResponseItem } from "../models/patient";
+import { PatientLinks } from "../models/patient";
 
 export type EncodePatientIdForDocumentExchangeParams = {
   patientId: string;
@@ -15,35 +15,30 @@ export type EncodePatientIdForDocumentExchangeParams = {
 export const CW_PATIENT_ID_REGEX = /^(.+)\^\^\^&([^&]+)(?:&(.+))?$/i;
 
 /**
- * Get the local Patient ID from the Patient Collection Item's Self link.
+ * Get the local Patient ID from the Patient Response Item's Links Self link.
  * This ID is in the HL7 CX data type format, so it includes the system/assigninig authority's system.
  *
- * @param object - The Patient Collection Item.
+ * @param links - The Patient Links.
  * @returns The Patient ID.
  */
-export function getCwPatientIdFromCollectionItem(
-  object: Pick<PatientResponseItem, "Links">
-): string | undefined {
-  const url = object.Links?.Self;
-  if (!url) return undefined;
+export function getCwPatientIdFromLinks(links: PatientLinks): string {
+  const url = links.Self;
   const isLastCharSlash = url.endsWith("/");
   const removeTrailingSlash = isLastCharSlash ? url.substring(0, url.length - 1) : url;
   return removeTrailingSlash.substring(removeTrailingSlash.lastIndexOf("/") + 1);
 }
 
 /**
- * Get the Edge System's patient ID from the Patient Object Response Item.
+ * Get the Edge System's patient ID from the Patient Links.
  * This is the decoded patient ID, NOT in the HL7 CX data type format.
  *
- * @param patientResponseItem - The Patient Object Response Item.
+ * @param links - The Patient Links.
  * @returns The Edge System's patient ID.
  * @see decodeCwPatientId
  * @see Section "8.3.2 Get Patient" of the spec.
  */
-export function getPatientIdFromCollectionItem(
-  patientResponseItem: Pick<PatientResponseItem, "Links">
-): string {
-  const cwPatientId = getCwPatientIdFromCollectionItem(patientResponseItem);
+export function getPatientIdFromLinks(links: PatientLinks): string {
+  const cwPatientId = getCwPatientIdFromLinks(links);
   if (!cwPatientId) throw new Error(`Could not get CW patient ID from collection item`);
   const decoded = decodeCwPatientId(cwPatientId);
   const patientId = decoded.value;

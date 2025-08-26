@@ -10,8 +10,8 @@ export {
   decodeCwPatientId,
   encodeCwPatientId,
   encodePatientIdForDocumentExchange,
-  getCwPatientIdFromCollectionItem,
-  getPatientIdFromCollectionItem,
+  getCwPatientIdFromLinks,
+  getPatientIdFromLinks,
 } from "./common/util";
 export { validateNPI } from "./common/validate-npi";
 export * from "./models/address";
