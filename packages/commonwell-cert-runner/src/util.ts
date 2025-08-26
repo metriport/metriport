@@ -2,7 +2,7 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ above all other imports
 import { faker } from "@faker-js/faker";
-import { getPatientIdFromLinks } from "@metriport/commonwell-sdk";
+import { getCwPatientIdFromLinks } from "@metriport/commonwell-sdk";
 import { PatientResponseItem } from "@metriport/commonwell-sdk/models/patient";
 import { sleep } from "@metriport/shared";
 
@@ -47,7 +47,7 @@ export function getMetriportPatientIdOrFail(
   context: string
 ): string {
   if (!patient) throw new Error("Missing patient");
-  const patientId = getPatientIdFromLinks(patient.Links);
+  const patientId = getCwPatientIdFromLinks(patient.Links);
   console.log(`>>> [${context}] Patient ID: ${patientId}`);
   return patientId;
 }

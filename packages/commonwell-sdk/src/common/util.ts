@@ -20,30 +20,13 @@ export const CW_PATIENT_ID_REGEX = /^(.+)\^\^\^&([^&]+)(?:&(.+))?$/i;
  *
  * @param links - The Patient Links.
  * @returns The Patient ID.
+ * @see Section "8.3.2 Get Patient" of the spec.
  */
 export function getCwPatientIdFromLinks(links: PatientLinks): string {
   const url = links.Self;
   const isLastCharSlash = url.endsWith("/");
   const removeTrailingSlash = isLastCharSlash ? url.substring(0, url.length - 1) : url;
   return removeTrailingSlash.substring(removeTrailingSlash.lastIndexOf("/") + 1);
-}
-
-/**
- * Get the Edge System's patient ID from the Patient Links.
- * This is the decoded patient ID, NOT in the HL7 CX data type format.
- *
- * @param links - The Patient Links.
- * @returns The Edge System's patient ID.
- * @see decodeCwPatientId
- * @see Section "8.3.2 Get Patient" of the spec.
- */
-export function getPatientIdFromLinks(links: PatientLinks): string {
-  const cwPatientId = getCwPatientIdFromLinks(links);
-  if (!cwPatientId) throw new Error(`Could not get CW patient ID from collection item`);
-  const decoded = decodeCwPatientId(cwPatientId);
-  const patientId = decoded.value;
-  if (!patientId) throw new Error(`PatientId could not be decoded from ${cwPatientId}`);
-  return patientId;
 }
 
 /**
