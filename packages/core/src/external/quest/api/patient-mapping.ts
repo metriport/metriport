@@ -1,9 +1,4 @@
-import {
-  errorToString,
-  executeWithNetworkRetries,
-  MetriportError,
-  NotFoundError,
-} from "@metriport/shared";
+import { errorToString, executeWithNetworkRetries, NotFoundError } from "@metriport/shared";
 import { PatientMapping, patientMappingSchema } from "../../../domain/patient-mapping";
 import axios, { AxiosInstance } from "axios";
 import { Config } from "../../../util/config";
@@ -41,7 +36,7 @@ export async function getPatientMapping(
   } catch (error) {
     const msg = "Failure while getting patient mapping @ Api";
     log(`${msg}. Cause: ${errorToString(error)}`);
-    throw new MetriportError(msg, error, {
+    throw new NotFoundError(msg, error, {
       externalId,
       url: getPatientMappingUrl,
       context: "quest.getPatientMapping",

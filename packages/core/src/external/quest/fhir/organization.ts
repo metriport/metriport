@@ -4,7 +4,8 @@ import { ResponseDetail } from "../schema/response";
 import { getQuestDataSourceExtension } from "./shared";
 
 /**
- * The organization that ordered the tests.
+/**
+ * The insurance organization (payor) for the patient's coverage.
  * @returns {Organization} FHIR resource
  */
 export function getInsuranceOrganization(detail: ResponseDetail): Organization {
