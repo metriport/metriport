@@ -37,7 +37,7 @@ export type OrganizationRequestMetadata = {
 };
 
 /**
- * Type that represents the Patinet's ID in the Edge System in the HL7 CX data type format.
+ * Type that represents the Patient's ID in the Edge System in the HL7 CX data type format.
  * Each property represents part of the HL7 CX data type format:
  *
  * IdentifierValue^^^&PatientIdAssignAuthority&PatientIdAssignAuthorityType

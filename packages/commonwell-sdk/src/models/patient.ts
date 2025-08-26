@@ -65,10 +65,11 @@ export type PatientResponse = z.infer<typeof patientResponseSchema>;
 
 // ================================ CREATE/UPDATE PATIENT ================================
 
-export type PatientCreateOrUpdateResp = {
-  Links: PatientLinks;
-  status: z.infer<typeof statusSchema> | undefined;
-};
+export const patientCreateOrUpdateRespSchema = z.object({
+  Links: patientLinksSchema,
+  status: statusSchema.nullish(),
+});
+export type PatientCreateOrUpdateResp = z.infer<typeof patientCreateOrUpdateRespSchema>;
 
 // ================================ GET EXISTING LINKS ================================
 
