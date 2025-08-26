@@ -29,16 +29,15 @@ export async function linkManagement(commonWell: CommonWell) {
     });
     const resp_2_1_1 = await commonWell.createOrUpdatePatient(createPatientWithLinks);
     console.log(">>> Transaction ID: " + commonWell.lastTransactionId);
-    const patientLinks = resp_2_1_1;
-    if (!patientLinks) throw new Error("Did not get links from the response");
-    const patientWithLinksId = getMetriportPatientIdOrFail(patientLinks, "patientWithLinks");
+    const ptCreateResponse = resp_2_1_1;
+    if (!ptCreateResponse) throw new Error("Did not get links from the response");
+    const patientWithLinksId = getMetriportPatientIdOrFail(ptCreateResponse, "patientWithLinks");
     patientIds.push(patientWithLinksId);
     const patientWithLinksIdEncoded = encodeCwPatientId({
       patientId: patientWithLinksId,
       assignAuthority: commonWell.oid,
     });
 
-    console.log("patientWithLinksIdEncoded ISSSS", patientWithLinksIdEncoded);
     console.log(`>>> 2.1.2 Get Patient Links - ID ${patientWithLinksId}`);
     const resp_2_1_2 = await commonWell.getPatientLinksByPatientId(patientWithLinksIdEncoded);
     console.log(">>> Transaction ID: " + commonWell.lastTransactionId);
