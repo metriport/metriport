@@ -1,5 +1,5 @@
 import { InvokeCommandOutput, LambdaClient as LambdaClientV3 } from "@aws-sdk/client-lambda";
-import { NodeHttpHandlerOptions } from "@aws-sdk/node-http-handler";
+import { NodeHttpHandlerOptions } from "@smithy/node-http-handler";
 import { BadRequestError, MetriportError, NotFoundError } from "@metriport/shared";
 import * as AWS from "aws-sdk";
 import { PromiseResult } from "aws-sdk/lib/request";
