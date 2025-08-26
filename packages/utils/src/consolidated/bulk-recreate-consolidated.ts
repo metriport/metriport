@@ -38,7 +38,7 @@ dayjs.extend(duration);
  * ensures we don't overwhelm the system while maintaining good throughput.
  *
  * Execute this with:
- * $ npm run bulk-recreate-consolidated
+ * $ ts-node src/consolidated/bulk-recreate-consolidated.ts
  */
 
 // Add patient IDs here to kick off queries for specific patient IDs
