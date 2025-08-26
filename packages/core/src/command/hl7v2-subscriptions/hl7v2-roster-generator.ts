@@ -136,14 +136,14 @@ export class Hl7v2RosterGenerator {
           shouldCapture: true,
         },
       });
+      log(`Saved in S3: ${this.bucketName}/${fileName}`);
+
       //eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (e: any) {
       failedStage = S3_FAILED;
       errors.push(errorToString(e));
       log(`Roster upload failed at ${failedStage}`, e);
     }
-    log(`Saved in S3: ${this.bucketName}/${fileName}`);
-
     try {
       await uploadToRemoteSftp(config, rosterCsv);
       //eslint-disable-next-line @typescript-eslint/no-explicit-any
