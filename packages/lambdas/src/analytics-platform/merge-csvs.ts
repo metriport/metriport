@@ -26,10 +26,24 @@ export const handler = capture.wrapHandler(async (event: SQSEvent) => {
   const message = getSingleMessageOrFail(event.Records, lambdaName);
   if (!message) return;
   const parsedBody = parseBody(inputSchema, message.body);
-  capture.setExtra(parsedBody);
   const { cxId, fhirToCsvJobId, mergeCsvJobId, patientIds, targetGroupSizeMB } = parsedBody;
+  capture.setExtra({
+    cxId,
+    fhirToCsvJobId,
+    mergeCsvJobId,
+    patientIdsCount: patientIds.length,
+    targetGroupSizeMB,
+  });
   const log = prefixedLog(`mergeCsvJobId ${mergeCsvJobId}`);
-  log(`Running with params:: ${JSON.stringify(parsedBody)}`);
+  log(
+    `Running with params: ${JSON.stringify({
+      cxId,
+      fhirToCsvJobId,
+      mergeCsvJobId,
+      patientIdsCount: patientIds.length,
+      targetGroupSizeMB,
+    })}`
+  );
 
   const results = await groupAndMergeCSVs({
     cxId,

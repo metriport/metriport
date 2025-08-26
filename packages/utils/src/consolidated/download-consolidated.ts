@@ -89,7 +89,7 @@ async function displayWarningAndConfirmation(
   patientCount: number | undefined,
   log: typeof console.log
 ) {
-  const msg = `You are about to recreate consolidated data for ${patientCount} patients of the cx ${cxId}.`;
+  const msg = `You are about to download consolidated bundles for ${patientCount} patients of the cx ${cxId}.`;
   log(msg);
   log("Cancel this now if you're not sure.");
   await sleep(confirmationTime.asMilliseconds());

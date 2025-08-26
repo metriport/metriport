@@ -1,19 +1,32 @@
+import { makeDirIfNeeded } from "@metriport/core/util/fs";
 import * as fs from "fs";
 import * as path from "path";
+import { buildGetDirPathInside, initRunsFolder } from "../../shared/folder";
 
 /**
  * Script to check for duplicate patient IDs across multiple *_params.json files.
  *
  * This script reads all *_params.json files in a directory and identifies
- * patient IDs that appear in more than one file, which could indicate
- * potential issues with data processing or duplicate work.
+ * patient IDs that appear in more than one file OR multiple times within the same file,
+ * which could indicate potential issues with data processing or duplicate work.
+ *
+ * These files are created by the merge-csvs lambda, as part of the job to merge
+ * individual patients' CSV into merged CSV files by resource type/table.
+ * @see storeInputParams in packages/core/src/command/analytics-platform/merge-csvs/index.ts
  *
  * To execute it:
  * - download the params files from S3 into local
  *   > aws s3 sync s3://bucket/prefix/run=merge-id bucket/prefix/run=merge-id --exact-timestamps --exclude "*" --include "*_params.json"
  * - run the script with the local folder as the argument
- *   > ts-node check-duplicate-patient-ids.ts <path-to-merge-id>
+ *   > ts-node src/analytics-platform/util/check-duplicate-patient-ids.ts <path-to-merge-id>
+ *
+ * Output files are stored in the `runs/analytics/` folder:
+ * - `check-dup-patient-ids_<timestamp>.json`: Contains only duplicate patient IDs and summary
+ * - `check-dup-patient-ids_<timestamp>.txt`: Detailed text report with all findings
  */
+
+const outputFileName = buildGetDirPathInside("analytics")("check-dup-patient-ids");
+makeDirIfNeeded(outputFileName);
 
 interface ParamsFile {
   numberOfParallelMergeFileGroups: number;
@@ -31,10 +44,12 @@ interface PatientIdOccurrence {
   patientId: string;
   files: string[];
   count: number;
+  totalOccurrences: number;
+  occurrencesPerFile: { [fileName: string]: number };
 }
 
 class DuplicatePatientIdChecker {
-  private patientIdMap: Map<string, string[]> = new Map();
+  private patientIdMap: Map<string, Map<string, number>> = new Map();
   private duplicatePatientIds: PatientIdOccurrence[] = [];
   private targetFolder: string;
   private totalFilesProcessed = 0;
@@ -82,10 +97,12 @@ class DuplicatePatientIdChecker {
 
       data.patientIds.forEach(patientId => {
         if (!this.patientIdMap.has(patientId)) {
-          this.patientIdMap.set(patientId, []);
+          this.patientIdMap.set(patientId, new Map<string, number>());
         }
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        this.patientIdMap.get(patientId)!.push(fileName);
+        const fileOccurrences = this.patientIdMap.get(patientId)!;
+        const currentCount = fileOccurrences.get(fileName) || 0;
+        fileOccurrences.set(fileName, currentCount + 1);
       });
 
       console.log(`   - Found ${data.patientIds.length} patient IDs`);
@@ -98,12 +115,21 @@ class DuplicatePatientIdChecker {
    * Find duplicate patient IDs
    */
   private findDuplicates(): void {
-    this.patientIdMap.forEach((files, patientId) => {
-      if (files.length > 1) {
+    this.patientIdMap.forEach((fileOccurrences, patientId) => {
+      const files = Array.from(fileOccurrences.keys());
+      const totalOccurrences = Array.from(fileOccurrences.values()).reduce(
+        (sum, count) => sum + count,
+        0
+      );
+
+      // Check if patient ID appears in multiple files OR multiple times in the same file
+      if (files.length > 1 || totalOccurrences > files.length) {
         this.duplicatePatientIds.push({
           patientId,
-          files: [...new Set(files)], // Remove duplicate file references
+          files,
           count: files.length,
+          totalOccurrences,
+          occurrencesPerFile: Object.fromEntries(fileOccurrences),
         });
       }
     });
@@ -126,16 +152,18 @@ class DuplicatePatientIdChecker {
     console.log(`Total patient IDs found: ${this.totalPatientIds}`);
     console.log(`Unique patient IDs: ${totalUniquePatientIds}`);
     console.log(`Patient IDs appearing only once: ${uniquePatientIds}`);
-    console.log(`Patient IDs appearing multiple times: ${duplicateCount}`);
+    console.log(
+      `Patient IDs with duplicates (across files or within same file): ${duplicateCount}`
+    );
     console.log("=".repeat(80));
 
     if (duplicateCount > 0) {
       console.log(
-        `\n❌ Found ${duplicateCount} duplicate patient IDs. Check the detailed report file for more information.`
+        `\n❌ Found ${duplicateCount} patient IDs with duplicates (across files or within same file). Check the detailed report file for more information.`
       );
     } else {
       console.log(
-        "\n✅ No duplicate patient IDs found! All patient IDs are unique across all files."
+        "\n✅ No duplicate patient IDs found! All patient IDs are unique across all files and within each file."
       );
     }
 
@@ -160,7 +188,7 @@ class DuplicatePatientIdChecker {
       `Total patient IDs found: ${this.totalPatientIds}`,
       `Unique patient IDs: ${totalUniquePatientIds}`,
       `Patient IDs appearing only once: ${uniquePatientIds}`,
-      `Patient IDs appearing multiple times: ${duplicateCount}`,
+      `Patient IDs with duplicates (across files or within same file): ${duplicateCount}`,
       `Timestamp: ${new Date().toISOString()}`,
       "=".repeat(80),
       "",
@@ -171,11 +199,15 @@ class DuplicatePatientIdChecker {
       reportContent.push("-".repeat(80));
 
       this.duplicatePatientIds
-        .sort((a, b) => b.count - a.count) // Sort by count descending
+        .sort((a, b) => b.totalOccurrences - a.totalOccurrences) // Sort by total occurrences descending
         .forEach((occurrence, index) => {
           reportContent.push(`${index + 1}. Patient ID: ${occurrence.patientId}`);
-          reportContent.push(`   Count: ${occurrence.count}`);
           reportContent.push(`   Files: ${occurrence.files.join(", ")}`);
+          reportContent.push(`   Total Occurrences: ${occurrence.totalOccurrences}`);
+          reportContent.push(`   Occurrences per file:`);
+          Object.entries(occurrence.occurrencesPerFile).forEach(([fileName, count]) => {
+            reportContent.push(`     - ${fileName}: ${count} time${count > 1 ? "s" : ""}`);
+          });
           reportContent.push("");
         });
     } else {
@@ -184,7 +216,7 @@ class DuplicatePatientIdChecker {
       );
     }
 
-    const outputFile = path.join(this.targetFolder, "duplicate-patient-id-analysis.txt");
+    const outputFile = outputFileName + ".txt";
     fs.writeFileSync(outputFile, reportContent.join("\n"));
     console.log(`📄 Detailed report written to: ${outputFile}`);
   }
@@ -204,14 +236,9 @@ class DuplicatePatientIdChecker {
         timestamp: new Date().toISOString(),
       },
       duplicates: this.duplicatePatientIds,
-      allPatientIds: Array.from(this.patientIdMap.entries()).map(([patientId, files]) => ({
-        patientId,
-        files: [...new Set(files)],
-        count: files.length,
-      })),
     };
 
-    const outputFile = path.join(this.targetFolder, "duplicate-patient-id-analysis.json");
+    const outputFile = outputFileName + ".json";
     fs.writeFileSync(outputFile, JSON.stringify(results, null, 2));
     console.log(`\n📊 Detailed results exported to: ${outputFile}`);
   }
@@ -260,14 +287,16 @@ class DuplicatePatientIdChecker {
 // Run the script
 async function main() {
   try {
-    // Get folder path from command line arguments
+    initRunsFolder();
+
     const args = process.argv.slice(2);
 
     if (args.length === 0) {
-      console.log("Usage: ts-node check-duplicate-patient-ids.ts <folder-path>");
-      console.log("Example: ts-node check-duplicate-patient-ids.ts /path/to/your/folder");
+      console.log(
+        "Usage: ts-node src/analytics-platform/util/check-duplicate-patient-ids.ts <folder-path>"
+      );
       console.log("\nOr use current directory:");
-      console.log("ts-node check-duplicate-patient-ids.ts .");
+      console.log("ts-node src/analytics-platform/util/check-duplicate-patient-ids.ts .");
       process.exit(1);
     }
 
