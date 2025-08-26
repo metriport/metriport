@@ -78,7 +78,11 @@ async function main() {
       log(`>>> Patient IDs provided (${patientIds.length}), skipping file ${fileName}`);
     } else {
       const fileContents = getFileContents(fileName);
-      patientIds.push(...fileContents.split("\n"));
+      const idsFromFile = fileContents
+        .split(/\r?\n/)
+        .map(id => id.trim())
+        .filter(id => id.length > 0);
+      patientIds.push(...idsFromFile);
       log(`>>> Found ${patientIds.length} patient IDs in ${fileName}`);
     }
   }
