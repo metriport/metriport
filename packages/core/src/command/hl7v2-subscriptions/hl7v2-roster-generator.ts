@@ -60,8 +60,6 @@ export class Hl7v2RosterGenerator {
   constructor(private readonly apiUrl: string, private readonly bucketName: string) {
     this.s3Utils = new S3Utils(region);
   }
-  private readonly slackInternalUrl = "internal/slack";
-  private readonly internalSlackRouteUrl = `${this.apiUrl}/${this.slackInternalUrl}`;
 
   async execute(config: HieConfig | VpnlessHieConfig): Promise<string> {
     const { log } = out("Hl7v2RosterGenerator");
@@ -172,26 +170,26 @@ export class Hl7v2RosterGenerator {
     try {
       await this.notifyPostHog(rosterSize, hieName, failedStage);
       //eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
-      errors.push(err);
-      log("Error sending analytics to posthog: ", err);
+    } catch (e: any) {
+      errors.push(errorToString(e));
+      log("Error sending analytics to posthog: ", e);
     }
 
     log("Sending metrics to cloudwatch");
     try {
       await this.notifyCloudWatch(rosterSize, hieName, failedStage);
       //eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
-      errors.push(err);
-      log("Failed to notify on cloudwatch: ", err);
+    } catch (e: any) {
+      errors.push(errorToString(e));
+      log("Failed to notify on cloudwatch: ", e);
     }
 
     log("Notifing in slack");
     try {
       await this.notifySlack(rosterSize, hieName, failedStage, errors);
       //eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
-      log("Failed to notify on slack: ", err);
+    } catch (e: any) {
+      log("Failed to notify on slack: ", e);
     }
   }
 
@@ -240,6 +238,8 @@ export class Hl7v2RosterGenerator {
       message,
       emoji: ":peepo_doctor:",
     };
+
+    console.log(slackMessage);
 
     const slackUrl = Config.getSlackAdtRosterNotificationUrl();
     console.log(slackUrl);
