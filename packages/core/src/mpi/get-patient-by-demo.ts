@@ -3,7 +3,6 @@ import { Patient, PatientData } from "../domain/patient";
 import { log } from "../util/log";
 import {
   jaroWinklerSimilarity,
-  matchingContactDetailsRule,
   matchingPersonalIdentifiersRule,
   matchPatients,
 } from "./match-patients";
@@ -21,7 +20,7 @@ const SIMILARITY_THRESHOLD = 0.96;
  * @param demo - The demographic information of the patient.
  * @returns The matched patient object if found, otherwise undefined.
  */
-export const getPatientByDemo = async ({
+export async function getPatientByDemo({
   cxId,
   demo,
   patientLoader,
@@ -29,7 +28,7 @@ export const getPatientByDemo = async ({
   cxId: string;
   demo: PatientData;
   patientLoader: PatientLoader;
-}): Promise<Patient | undefined> => {
+}): Promise<Patient | undefined> {
   // Normalize the patient demographic data
   const normalizedPatientDemo = normalizePatient(demo);
   if (!normalizedPatientDemo) return undefined;
@@ -51,7 +50,7 @@ export const getPatientByDemo = async ({
   // Match the found patients with the normalized patient using the similarity function
   const matchingPatients = matchPatients(
     jaroWinklerSimilarity,
-    [matchingPersonalIdentifiersRule, matchingContactDetailsRule],
+    [matchingPersonalIdentifiersRule],
     foundPatients.map(patientToPatientMPI),
     normalizedPatientDemo,
     SIMILARITY_THRESHOLD,
@@ -67,4 +66,4 @@ export const getPatientByDemo = async ({
   if (!mpiPatient) return undefined;
 
   return patientLoader.getOneOrFail({ id: mpiPatient.id, cxId });
-};
+}
