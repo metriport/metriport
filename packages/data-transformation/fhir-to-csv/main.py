@@ -6,19 +6,6 @@ import ndjson
 import snowflake.connector
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from src.parseNdjsonBundle import parseNdjsonBundle
-from src.setupSnowflake.setupSnowflake import (
-    generate_table_names_and_create_table_statements,
-    get_snowflake_credentials,
-    create_job_tables,
-    copy_into_resource_table,
-    copy_into_job_table,
-    set_patient_status,
-    create_stage,
-    drop_stage,
-)
-from src.utils.database import (
-    format_database_name,
-)
 from src.utils.environment import Environment
 from src.utils.dwh import DWH
 from src.utils.file import create_consolidated_key, create_output_file_prefix
@@ -112,7 +99,6 @@ def handler(event: dict, context: dict):
     input_bundle = event.get("INPUT_BUNDLE") or os.getenv("INPUT_BUNDLE")
     input_bucket = event.get("INPUT_S3_BUCKET") or os.getenv("INPUT_S3_BUCKET")
     output_bucket = os.getenv("OUTPUT_S3_BUCKET")
-    # snowflake_creds = event.get("SNOWFLAKE_CREDS") or os.getenv("SNOWFLAKE_CREDS")
     if not cx_id:
         raise ValueError("CX_ID is not set") 
     if not patient_id:
@@ -124,9 +110,6 @@ def handler(event: dict, context: dict):
         raise ValueError("INPUT_S3_BUCKET is not set")
     if not output_bucket:
         raise ValueError("OUTPUT_S3_BUCKET is not set")
-    # if not snowflake_creds:
-    #     raise ValueError("SNOWFLAKE_CREDS is not set")
-    # snowflake_creds = json.loads(snowflake_creds) if isinstance(snowflake_creds, str) else snowflake_creds
 
     print(f">>> Parsing data and uploading it to S3 for Snowflake - {cx_id}, patient_id {patient_id}, job_id {job_id}")
     output_bucket_and_file_keys_and_table_names = transform_and_upload_data(
@@ -142,29 +125,6 @@ def handler(event: dict, context: dict):
         print("No files were uploaded")
         exit(0)
 
-    # TODO: ENG-813 Remove this and the functions it is calling
-    # table_defs = generate_table_names_and_create_table_statements(patient_id, job_id)
-    # 
-    # print(f">>> Uploading data into Snowflake - {cx_id}, patient_id {patient_id}, job_id {job_id}")
-    # with snowflake.connector.connect(**get_snowflake_credentials(snowflake_creds)) as snowflake_conn:
-    #     database_name = format_database_name(cx_id)
-    #     snowflake_conn.cursor().execute(f"CREATE DATABASE IF NOT EXISTS {database_name}")
-    #     snowflake_conn.cursor().execute(f"USE DATABASE {database_name}")
-    #     snowflake_conn.cursor().execute("USE SCHEMA PUBLIC")
-
-    #     set_patient_status(snowflake_conn, cx_id, patient_id, "processing")
-
-    #     output_file_prefix = create_output_file_prefix(dwh, transform_name, cx_id, patient_id, job_id)
-    #     create_stage(snowflake_conn, cx_id, patient_id, job_id, output_bucket, output_file_prefix)
-    #     create_job_tables(snowflake_conn, cx_id, patient_id, job_id, table_defs)
-    #     for output_bucket, output_file_key, table_name in output_bucket_and_file_keys_and_table_names:
-    #         copy_into_job_table(snowflake_conn, cx_id, patient_id, job_id, output_bucket, output_file_key, table_name)
-    #     drop_stage(snowflake_conn, cx_id, patient_id, job_id)
-
-    #     rebuild_patient = input_bundle is None or input_bundle == ""
-    #     copy_into_resource_table(snowflake_conn, cx_id, patient_id, job_id, table_defs, rebuild_patient)
-
-    #     set_patient_status(snowflake_conn, cx_id, patient_id, "completed")
     print(f">>> Done processing {cx_id}, patient_id {patient_id}, job_id {job_id}")
 
 if __name__ == "__main__":

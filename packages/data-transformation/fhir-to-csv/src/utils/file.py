@@ -5,6 +5,3 @@ def create_consolidated_key(cx_id: str, patient_id: str) -> str:
 
 def create_output_file_prefix(dwh: str, transform_name: str, cx_id: str, patient_id: str, job_id: str) -> str:
     return f"{dwh}/{transform_name}/cx={cx_id}/f2c={job_id}/pt={patient_id}"
-
-def strip_config_file_name(config_file: str) -> str:
-    return config_file.replace('config_', '').replace('.ini', '').lower()
