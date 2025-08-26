@@ -1,7 +1,6 @@
 import AWS from "aws-sdk";
 import { Config } from "../../util/config";
 import { capture } from "../../util/notifications";
-import { MetriportError } from "@metriport/shared";
 
 export const METRICS_NAMESPACE = "Metriport";
 
@@ -15,7 +14,7 @@ export type Metric = {
   additionalDimension?: string;
 };
 
-export function reportMetric(metric: Metric) {
+export async function reportMetric(metric: Metric) {
   try {
     const metricBase = {
       MetricName: metric.name,
@@ -23,7 +22,7 @@ export function reportMetric(metric: Metric) {
       Unit: metric.unit,
       Value: typeof metric.value === "string" ? parseFloat(metric.value) : metric.value,
     };
-    return cw
+    await cw
       .putMetricData({
         MetricData: [
           {
@@ -47,10 +46,5 @@ export function reportMetric(metric: Metric) {
   } catch (err) {
     console.error(`Error reporting metric ${JSON.stringify(metric)}: ${err}`);
     capture.error(err, { extra: { metric, context: "reportMetric" } });
-    throw new MetriportError(`Error reporting metric`, err, {
-      name: metric.name,
-      unit: metric.unit,
-      value: metric.value,
-    });
   }
 }
