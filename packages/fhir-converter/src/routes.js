@@ -38,6 +38,7 @@ var fileSystemCache = require("./lib/fsCache/cache");
 var ncp = require("ncp").ncp;
 
 module.exports = function (app) {
+  // Set to 1 on local to debug
   const amountOfWorkers = require("os").cpus().length;
   console.log(
     `Creating a pool of ${amountOfWorkers} workers (${require("os").cpus().length} vCPUs)`
@@ -206,6 +207,7 @@ module.exports = function (app) {
     const retInvalidAccess = req.query.invalidAccess == "true";
     const patientId = req.query.patientId;
     const fileName = req.query.fileName;
+    const isDebug = req.query.isDebug == "true";
     const startTime = new Date().getTime();
     console.log(`[patient ${patientId}] Got file ${fileName} at ${new Date().toISOString()}`);
     workerPool
@@ -216,6 +218,7 @@ module.exports = function (app) {
         templateName: req.params.template,
         patientId,
         fileName,
+        isDebug,
       })
       .then(result => {
         const internalDuration = result.duration;
