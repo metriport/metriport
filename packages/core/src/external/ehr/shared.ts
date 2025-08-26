@@ -36,8 +36,14 @@ import {
   ehrStrictFhirResourceSchema,
   fhirOperationOutcomeSchema,
 } from "@metriport/shared/interface/external/ehr/fhir-resource";
-import { EhrSource, EhrSources } from "@metriport/shared/interface/external/ehr/source";
-import { AxiosError, AxiosInstance, AxiosResponse, isAxiosError } from "axios";
+import { EhrSource } from "@metriport/shared/interface/external/ehr/source";
+import {
+  AxiosError,
+  AxiosInstance,
+  AxiosResponse,
+  AxiosResponseHeaders,
+  isAxiosError,
+} from "axios";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { partition, uniqBy } from "lodash";
@@ -116,6 +122,7 @@ export type MakeRequestParams<T> = {
   debug: typeof console.log;
   emptyResponse?: boolean;
   earlyReturn?: boolean;
+  rspHeadersToKeep?: string[];
 };
 
 export type MakeRequestParamsInEhr<T> = Omit<
@@ -139,6 +146,7 @@ export async function makeRequest<T>({
   debug,
   emptyResponse = false,
   earlyReturn = false,
+  rspHeadersToKeep = [],
 }: MakeRequestParams<T>): Promise<T> {
   const { log } = out(
     `${ehr} makeRequest - cxId ${cxId} patientId ${patientId} method ${method} url ${url}`
@@ -236,12 +244,10 @@ export async function makeRequest<T>({
       const fullAdditionalInfoWithError = {
         ...fullAdditionalInfo,
         error: errorToString(error),
-        headers:
-          ehr === EhrSources.canvas
-            ? error.response?.headers
-              ? JSON.stringify(error.response?.headers)
-              : undefined
-            : undefined,
+        headers: headersToKeepString(
+          error.response?.headers as AxiosResponseHeaders,
+          rspHeadersToKeep
+        ),
       };
       switch (error.response?.status) {
         case 400:
@@ -287,7 +293,16 @@ export async function makeRequest<T>({
       await s3Utils.uploadFile({
         bucket: responsesBucket,
         key,
-        file: Buffer.from(JSON.stringify(response.data), "utf8"),
+        file: Buffer.from(
+          JSON.stringify({
+            data: response.data,
+            headers: headersToKeepString(
+              response.headers as AxiosResponseHeaders,
+              rspHeadersToKeep
+            ),
+          }),
+          "utf8"
+        ),
         contentType: "application/json",
       });
     } catch (error) {
@@ -307,6 +322,24 @@ export async function makeRequest<T>({
     });
   }
   return outcome.data;
+}
+
+function headersToKeepString(
+  responseHeaders: AxiosResponseHeaders | undefined,
+  headersToKeep: string[]
+): string | undefined {
+  const headers =
+    headersToKeep.length > 0 && responseHeaders
+      ? headersToKeep.reduce((acc, header) => {
+          const value = responseHeaders[header];
+          if (value) acc[header] = value;
+          return acc;
+        }, {} as Record<string, string>)
+      : undefined;
+  if (!headers || Object.keys(headers).length < 1) return undefined;
+  return Object.entries(headers)
+    .map(([key, value]) => `${key}: ${value}`)
+    .join(", ");
 }
 
 function isFhirValidationError(error: AxiosError): boolean {

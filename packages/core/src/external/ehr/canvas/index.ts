@@ -136,6 +136,8 @@ export function isSupportedCanvasReferenceResource(
   return supportedCanvasReferenceResources.includes(resourceType as ResourceType);
 }
 
+const fhirHeader = "fumage-correlation-id";
+
 const problemStatusesMap = new Map<string, string>();
 problemStatusesMap.set("active", "active");
 problemStatusesMap.set("relapse", "active");
@@ -1262,6 +1264,7 @@ class CanvasApi {
       additionalInfo,
       debug,
       emptyResponse,
+      rspHeadersToKeep: [fhirHeader],
     });
   }
 
