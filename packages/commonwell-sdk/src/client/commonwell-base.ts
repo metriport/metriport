@@ -1,4 +1,11 @@
-import axios, { AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from "axios";
+import { BadRequestError, MetriportError } from "@metriport/shared";
+import axios, {
+  AxiosInstance,
+  AxiosResponse,
+  InternalAxiosRequestConfig,
+  isAxiosError,
+} from "axios";
+import httpStatus from "http-status";
 import { Agent } from "https";
 import { APIMode, CommonWellOptions, DEFAULT_AXIOS_TIMEOUT_SECONDS } from "./common";
 
@@ -105,5 +112,20 @@ export class CommonWellBase {
       if (resp) postRequestHook?.(resp);
       return Promise.reject(error);
     };
+  }
+
+  rethrowDescriptiveError(error: unknown, title: string): never {
+    if (isAxiosError(error)) {
+      if (error.response?.status === httpStatus.BAD_REQUEST) {
+        const data = error.response?.data;
+        throw new BadRequestError(title, undefined, { extra: JSON.stringify(data) });
+      }
+
+      if (error.response?.status === httpStatus.NOT_FOUND) {
+        const data = error.response?.data;
+        throw new MetriportError(title, undefined, { extra: JSON.stringify(data.help) });
+      }
+    }
+    throw error;
   }
 }
