@@ -9,7 +9,7 @@ import {
   promisifyDestroy,
   promisifyExecute,
 } from "@metriport/core/external/snowflake/commands";
-import { getEnvVarOrFail, sleep } from "@metriport/shared";
+import { errorToString, getEnvVarOrFail, sleep } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import * as AWS from "aws-sdk";
 import dayjs from "dayjs";
@@ -145,8 +145,12 @@ async function ingestIntoSnowflake(columnDefs: Record<string, string>, files: AW
 
     return { tableNames };
   } finally {
-    const destroyAsync = promisifyDestroy(connection);
-    await destroyAsync();
+    try {
+      const destroyAsync = promisifyDestroy(connection);
+      await destroyAsync();
+    } catch (error) {
+      console.error("Error destroying connection: ", errorToString(error));
+    }
   }
 }
 
@@ -166,17 +170,17 @@ async function processTable({
     rows: any[] | undefined; // eslint-disable-line @typescript-eslint/no-explicit-any
   }>;
 }) {
-  if (!files.some(file => file.Key?.includes(resourceType))) {
-    console.log(`>>> No files found for ${resourceType} - skipping`);
-    return;
-  }
-
   const columnsDef = columnDefs[resourceType];
 
   // Do not use IF NOT EXISTS here, we want to make sure we're not duplicating data
   const createTableCmd = `CREATE TABLE ${tableName} (${columnsDef})`;
   // console.log(`Create table cmd: ${createTableCmd}`);
   await executeAsync(createTableCmd);
+
+  if (!files.some(file => file.Key?.includes(resourceType))) {
+    console.log(`>>> No files found for ${resourceType} - skipping ingestion`);
+    return;
+  }
 
   // Need the trailing slash to avoid more than one folder from shared prefixes (e.g., condition and condition_code_coding)
   const createStageCmd =
