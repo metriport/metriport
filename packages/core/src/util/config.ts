@@ -340,6 +340,10 @@ export class Config {
     return getEnvVar("LAB_CONVERSION_BUCKET_NAME");
   }
 
+  static getComprehendRegion(): string {
+    return getEnvVar("AWS_COMPREHEND_REGION") ?? Config.getAWSRegion();
+  }
+
   static getAthenaHealthEnv(): string | undefined {
     return getEnvVar("EHR_ATHENA_ENVIRONMENT");
   }

@@ -28,7 +28,7 @@ const DEFAULT_TEMPERATURE = 0;
 export class AnthropicAgent<V extends AnthropicModelVersion> {
   private readonly model: AnthropicModel<V>;
   private readonly config: AnthropicAgentConfig<V>;
-  private readonly tools?: AnthropicTool[] | undefined;
+  private tools?: AnthropicTool[] | undefined;
   private usage: AnthropicUsage = buildInitialUsage();
   private messages: AnthropicMessageThread<V> = [];
 
@@ -36,6 +36,13 @@ export class AnthropicAgent<V extends AnthropicModelVersion> {
     this.model = new AnthropicModel<V>(config.version, config.region);
     this.config = config;
     this.tools = config.tools;
+  }
+
+  addTool<I, O>(tool: AnthropicTool<I, O>): void {
+    if (!this.tools) {
+      this.tools = [];
+    }
+    this.tools.push(tool as AnthropicTool<unknown, unknown>);
   }
 
   /**
