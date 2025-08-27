@@ -8,7 +8,7 @@ import { capture } from "@metriport/core/util/notifications";
 import { errorToString } from "@metriport/shared";
 import z from "zod";
 import { Config } from "../../shared/config";
-import { CwLink } from "../commonwell-v1/cw-patient-data";
+import { CwLink } from "../commonwell/patient/cw-patient-data/shared";
 import { getHieInitiator, HieInitiator, isHieEnabledToQuery } from "../hie/get-hie-initiator";
 
 export async function getCwInitiator(
