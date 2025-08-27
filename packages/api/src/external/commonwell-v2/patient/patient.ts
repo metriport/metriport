@@ -291,6 +291,14 @@ export async function updatePatientAndLinksInCwV2({
       }),
     ]);
 
+    // TODO: ENG-513 MAKE SURE THE LINKS ARE HANDLED CORRECTLY
+    // TODO: ENG-513 MAKE SURE THE LINKS ARE HANDLED CORRECTLY
+    // TODO: ENG-513 MAKE SURE THE LINKS ARE HANDLED CORRECTLY
+    // More specifically, for some reason, drivers license doesn't show up in the links after it is inserted with a patient update.
+    //   - I have not tested matching a patient who got a DL on the initial create tho
+    // Also, it seems like if you use the "Unlink" to remove a patient link, it disappears completely from existing links,
+    // and does not show up in "Probable Links" - seems weird to me.. And lastly, in the case that an existing link is removed,
+    // it doesn't seem to be removed from our patient's CW links data! MAYBE that's intended, but need to discuss
     const { validLinks, invalidLinks } = await tryToImproveLinks({
       commonWell,
       patient,

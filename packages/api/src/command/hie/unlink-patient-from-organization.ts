@@ -1,36 +1,42 @@
-import { getDocuments } from "@metriport/core/external/fhir/document/get-documents";
-import { out } from "@metriport/core/util/log";
-import { MetriportError, executeWithNetworkRetries } from "@metriport/shared";
-import { processAsyncError } from "@metriport/core/util/error/shared";
-import { S3Utils } from "@metriport/core/external/aws/s3";
-import { addOidPrefix } from "@metriport/core/domain/oid";
-import { getMetriportContent } from "@metriport/core/external/fhir/shared/extensions/metriport";
-import { createMRSummaryFileNameWithSuffix } from "@metriport/core/domain/medical-record-summary";
-import { getPatientOrFail } from "../medical/patient/get-patient";
+import { NetworkLink } from "@metriport/commonwell-sdk-v1/models/link";
 import {
-  createConsolidatedSnapshotFileNameWithSuffix,
   createConsolidatedDataFileNameWithSuffix,
+  createConsolidatedSnapshotFileNameWithSuffix,
 } from "@metriport/core/domain/consolidated/filename";
+import { createMRSummaryFileNameWithSuffix } from "@metriport/core/domain/medical-record-summary";
+import { addOidPrefix } from "@metriport/core/domain/oid";
+import { S3Utils } from "@metriport/core/external/aws/s3";
+import { hasCarequalityExtension } from "@metriport/core/external/carequality/extension";
+import { hasCommonwellExtension } from "@metriport/core/external/commonwell/extension";
+import { DocumentReferenceWithId } from "@metriport/core/external/fhir/document/document-reference";
+import { getDocuments } from "@metriport/core/external/fhir/document/get-documents";
+import { getMetriportContent } from "@metriport/core/external/fhir/shared/extensions/metriport";
+import { isOrganization, isPatient } from "@metriport/core/external/fhir/shared/index";
 import { makeSearchServiceRemover } from "@metriport/core/external/opensearch/file/file-search-connector-factory";
 import { capture } from "@metriport/core/util";
-import { createOrUpdateInvalidLinks } from "../medical/invalid-links/create-invalid-links";
-import { updateCQPatientData } from "../../external/carequality/command/cq-patient-data/update-cq-data";
-import { updateCwPatientData } from "../../external/commonwell-v1/command/cw-patient-data/update-cw-data";
-import { getCWAccessForPatient } from "../../external/commonwell-v1/admin/shared";
-import { errorToString, getEnvVarOrFail } from "@metriport/shared";
-import { DocumentReferenceWithId } from "@metriport/core/external/fhir/document/document-reference";
-import { isOrganization, isPatient } from "@metriport/core/external/fhir/shared/index";
-import { hasCommonwellExtension } from "@metriport/core/external/commonwell/extension";
-import { hasCarequalityExtension } from "@metriport/core/external/carequality/extension";
+import { processAsyncError } from "@metriport/core/util/error/shared";
+import { out } from "@metriport/core/util/log";
+import {
+  MetriportError,
+  errorToString,
+  executeWithNetworkRetries,
+  getEnvVarOrFail,
+} from "@metriport/shared";
 import { getCQPatientData } from "../../external/carequality/command/cq-patient-data/get-cq-data";
-import { getCwPatientData } from "../../external/commonwell-v1/command/cw-patient-data/get-cw-data";
-import { CQData } from "../../external/carequality/cq-patient-data";
-import { CwData } from "../../external/commonwell-v1/cw-patient-data";
-import { CwLink } from "../../external/commonwell-v1/cw-patient-data";
-import { CQLink } from "../../external/carequality/cq-patient-data";
-import { Config } from "../../shared/config";
+import { updateCQPatientData } from "../../external/carequality/command/cq-patient-data/update-cq-data";
+import { CQData, CQLink } from "../../external/carequality/cq-patient-data";
+import { getCwPatientData } from "../../external/commonwell/patient/cw-patient-data/get-cw-data";
+import {
+  CwData,
+  CwLink,
+  isCwLinkV1,
+} from "../../external/commonwell/patient/cw-patient-data/shared";
+import { updateCwPatientData } from "../../external/commonwell/patient/cw-patient-data/update-cw-data";
 import { makeFhirApi } from "../../external/fhir/api/api-factory";
-import { NetworkLink } from "@metriport/commonwell-sdk-v1/models/link";
+import { Config } from "../../shared/config";
+import { createOrUpdateInvalidLinks } from "../medical/invalid-links/create-invalid-links";
+import { getPatientOrFail } from "../medical/patient/get-patient";
+import { getCWAccessForPatient } from "../../external/commonwell-v1/admin/shared";
 
 const s3Utils = new S3Utils(Config.getAWSRegion());
 const s3ConversionResultBucketName = getEnvVarOrFail("CONVERSION_RESULT_BUCKET_NAME");
@@ -128,11 +134,20 @@ function findCwLinkWithOid(cwPatientData: CwData | undefined, oid: string): CwLi
   const cwLinks = cwPatientData.links;
 
   for (const cwLink of cwLinks) {
-    const patient = cwLink.patient;
-    if (!patient) continue;
+    if (isCwLinkV1(cwLink)) {
+      const patient = cwLink.patient;
+      if (!patient) continue;
 
-    if (patient.identifier?.some(identifier => identifier.system.includes(addOidPrefix(oid)))) {
-      return cwLink;
+      if (patient.identifier?.some(identifier => identifier.system.includes(oid))) {
+        return cwLink;
+      }
+    } else {
+      const patient = cwLink.Patient;
+      if (!patient) continue;
+
+      if (patient.identifier?.some(identifier => identifier.system.includes(oid))) {
+        return cwLink;
+      }
     }
   }
 
@@ -357,18 +372,35 @@ async function findAndInvalidateLinks(
 
     const downgradeRequests: Promise<NetworkLink>[] = [];
     for (const link of invalidLinks.commonwell) {
-      const downgradeHref = link._links?.downgrade?.href;
-      if (!downgradeHref) continue;
-
-      downgradeRequests.push(
-        executeWithNetworkRetries(
-          () => commonWell.upgradeOrDowngradeNetworkLink(queryMeta, downgradeHref),
-          { retryOnTimeout: true, maxAttempts: 5, initialDelay: 500 }
-        ).catch(error => {
-          processAsyncError("Failed to downgrade link");
-          throw error;
-        })
-      );
+      const retryParams = { retryOnTimeout: true, maxAttempts: 5, initialDelay: 500 };
+      if (isCwLinkV1(link)) {
+        const downgradeHref = link._links?.downgrade?.href;
+        if (!downgradeHref) continue;
+        downgradeRequests.push(
+          executeWithNetworkRetries(
+            () => commonWell.upgradeOrDowngradeNetworkLink(queryMeta, downgradeHref),
+            retryParams
+          ).catch(error => {
+            processAsyncError("Failed to downgrade link");
+            throw error;
+          })
+        );
+      } else {
+        // TODO: NEED TO INVOKE CW v2 METHODS!
+        // TODO: NEED TO INVOKE CW v2 METHODS!
+        // TODO: NEED TO INVOKE CW v2 METHODS!
+        const unlinkHref = link.Links?.Unlink;
+        if (!unlinkHref) continue;
+        downgradeRequests.push(
+          executeWithNetworkRetries(
+            () => commonWell.upgradeOrDowngradeNetworkLink(queryMeta, unlinkHref),
+            retryParams
+          ).catch(error => {
+            processAsyncError("Failed to unlink link");
+            throw error;
+          })
+        );
+      }
     }
 
     await Promise.allSettled([
