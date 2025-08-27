@@ -17,6 +17,7 @@ import {
   MetriportError,
   NotFoundError,
   sleep,
+  executeWithNetworkRetries,
 } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import {
@@ -198,9 +199,11 @@ class CanvasApi {
     const payload = `grant_type=client_credentials&client_id=${this.config.clientKey}&client_secret=${this.config.clientSecret}`;
 
     try {
-      const response = await axios.post(url, payload, {
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      });
+      const response = await executeWithNetworkRetries(() =>
+        axios.post(url, payload, {
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        })
+      );
       if (!response.data) throw new MetriportError("No body returned from token endpoint");
       const tokenData = canvasClientJwtTokenResponseSchema.parse(response.data);
       return {
