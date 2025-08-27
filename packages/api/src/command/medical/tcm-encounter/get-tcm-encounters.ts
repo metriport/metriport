@@ -145,7 +145,11 @@ export async function getTcmEncountersCount({
     ON tcm_encounter.patient_id = patient.id
     WHERE tcm_encounter.cx_id = :cxId
     AND tcm_encounter.admit_time > :admittedAfter
-    ${daysLookback ? ` AND tcm_encounter.discharge_time > :dischargedAfter` : ""}
+    ${
+      daysLookback
+        ? ` AND (tcm_encounter.discharge_time > :dischargedAfter OR tcm_encounter.discharge_time IS NULL)`
+        : ""
+    }
     ${facilityId ? ` AND patient.facility_ids @> ARRAY[:facilityId]::varchar[]` : ""}
     ${eventType ? ` AND tcm_encounter.latest_event = :eventType` : ""}
     ${status ? ` AND tcm_encounter.outreach_status = :status` : ""}
