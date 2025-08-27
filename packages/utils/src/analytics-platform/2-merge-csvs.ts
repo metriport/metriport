@@ -32,8 +32,8 @@ dayjs.extend(duration);
  *
  * Usage:
  * - set env vars on .env file
- * - set patientIds array with the patient IDs you want to insert (or leave empty to
- *   run for all patients of the selected FhirToCsv job)
+ * - leave patientIds empty to run for all patients of the selected FhirToCsv job
+ *   (optionally, set patientIds array with the patient IDs you want to process)
  * - run `ts-node src/analytics-platform/2-merge-csvs.ts <fhirToCsvJobId>`
  */
 
