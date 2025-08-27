@@ -7,8 +7,17 @@ import {
   CensusGeocoderResponse,
   AddressMatch,
 } from "./types";
+import { getStreetFromAddress } from "./utils";
 import { CENSUS_GEOCODER_HEADERS, CENSUS_GEOCODER_ADDRESS_URL } from "./constants";
 
+/**
+ * Geocode an address using the US Census Geocoder, and returns an array of AddressMatch objects.
+ * @param address - The address to geocode.
+ * @param options.benchmark - The Master Address File (MAF) to use for the geocoding:
+ *    "Public_AR_Current" (default), "Public_AR_ACS2024", or "Public_AR_Census2020".
+ *    See https://geocoding.geo.census.gov/geocoder/Geocoding_Services_API.html for more details.
+ * @returns An array of AddressMatch objects.
+ */
 export async function geocodeAddress(
   address: Address,
   { benchmark = "Public_AR_Current" }: CensusGeocoderParams = {}
@@ -34,11 +43,4 @@ export async function geocodeAddress(
       response: JSON.stringify(response.data),
     });
   }
-}
-
-function getStreetFromAddress(address: Address): string {
-  if (address.addressLine2) {
-    return `${address.addressLine1} ${address.addressLine2}`;
-  }
-  return address.addressLine1;
 }
