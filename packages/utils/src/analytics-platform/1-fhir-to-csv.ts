@@ -16,6 +16,7 @@ import fs from "fs";
 import { getAllPatientIds } from "../patient/get-ids";
 import { elapsedTimeAsStr } from "../shared/duration";
 import { getCxData } from "../shared/get-cx-data";
+import { getIdsFromFile } from "../shared/ids";
 
 dayjs.extend(duration);
 
@@ -24,17 +25,26 @@ dayjs.extend(duration);
  * It sends a message to SQS per patient, consumed by a Lambda function that generates the
  * CSV file.
  *
+ * If a file is provided, it will read patient IDs from the file and use them instead of the
+ * patientIds array.
+ *
  * Usage:
  * - set env vars on .env file
  * - set patientIds array with the patient IDs you want to convert - leave empty to run for all
  *   patients of the customer
+ * - optionally, add a file with patient IDs to convert
  * - add --check-consolidated to check if the consolidated data exists in S3
- * - run `ts-node src/analytics-platform/1-fhir-to-csv.ts`
- * - run `ts-node src/analytics-platform/1-fhir-to-csv.ts --check-consolidated`
+ * - run it
+ *   - ts-node src/analytics-platform/1-fhir-to-csv.ts
+ *   - ts-node src/analytics-platform/1-fhir-to-csv.ts <file-with-patient-ids>
+ *   - ts-node src/analytics-platform/1-fhir-to-csv.ts --check-consolidated
  */
 
 // Leave empty to run for all patients of the customer
 const patientIds: string[] = [];
+
+// If provided, will read patient IDs from the file and use them instead of the patientIds array
+const fileName: string | undefined = process.argv[2];
 
 const checkConsolidatedExists = process.argv.includes("--check-consolidated");
 
@@ -59,6 +69,21 @@ async function main() {
 
   const startedAt = Date.now();
   log(`>>> Starting at ${buildDayjs().toISOString()}...`);
+
+  if (fileName) {
+    if (patientIds.length > 0) {
+      log(`>>> Patient IDs provided (${patientIds.length}), skipping file ${fileName}`);
+    } else {
+      const idsFromFile = getIdsFromFile(fileName);
+      if (idsFromFile.length < 1) {
+        log(`>>> Empty file ${fileName}`);
+        return;
+      }
+      patientIds.push(...idsFromFile);
+      log(`>>> Found ${patientIds.length} patient IDs in ${fileName}`);
+    }
+  }
+
   const { orgName } = await getCxData(cxId, undefined, false);
 
   const isAllPatients = patientIds.length < 1;
