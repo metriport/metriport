@@ -184,7 +184,7 @@ export class Hl7v2RosterGenerator {
     const posthogSecret = await getSecretValueOrFail(posthogSecretName, region);
     let posthog: PostHog | undefined;
     let rosterSizeToSend = rosterSize;
-    if (failedStage === S3_FAILED || failedStage === S3_AND_SFTP) {
+    if (failedStage === SFTP_FAILED || failedStage === S3_AND_SFTP) {
       rosterSizeToSend = 0;
     }
     try {
