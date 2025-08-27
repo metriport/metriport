@@ -7,7 +7,7 @@ export async function getResourceBundleByResourceId(
   params: GetResourceBundleByResourceIdClientRequest
 ): Promise<Bundle> {
   const {
-    tokenId,
+    tokenInfo,
     cxId,
     practiceId,
     metriportPatientId,
@@ -22,7 +22,7 @@ export async function getResourceBundleByResourceId(
   const client = await createElationHealthClient({
     cxId,
     practiceId,
-    ...(tokenId && { tokenId }),
+    ...(tokenInfo ? { tokenInfo } : {}),
   });
   const bundle = await client.getResourceBundleByResourceId({
     cxId,

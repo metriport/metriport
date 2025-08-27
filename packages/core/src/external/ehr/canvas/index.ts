@@ -136,6 +136,8 @@ export function isSupportedCanvasReferenceResource(
   return supportedCanvasReferenceResources.includes(resourceType as ResourceType);
 }
 
+const fhirHeader = "fumage-correlation-id";
+
 const problemStatusesMap = new Map<string, string>();
 problemStatusesMap.set("active", "active");
 problemStatusesMap.set("relapse", "active");
@@ -1035,7 +1037,7 @@ class CanvasApi {
     resourceType: string;
     useCachedBundle?: boolean;
   }): Promise<Bundle> {
-    const { debug } = out(
+    const { log, debug } = out(
       `Canvas getBundleByResourceType - cxId ${cxId} practiceId ${this.practiceId} canvasPatientId ${canvasPatientId}`
     );
     if (!isSupportedCanvasResource(resourceType)) {
@@ -1060,17 +1062,27 @@ class CanvasApi {
     function fetchResourcesFromEhr() {
       return fetchEhrFhirResourcesWithPagination({
         makeRequest: async (url: string) => {
-          const bundle = await client.makeRequest<EhrFhirResourceBundle>({
-            cxId,
-            patientId: canvasPatientId,
-            s3Path: client.createFhirPath(resourceType),
-            method: "GET",
-            url,
-            schema: ehrFhirResourceBundleSchema,
-            additionalInfo,
-            debug,
-            useFhir: true,
-          });
+          let bundle: EhrFhirResourceBundle | undefined;
+          try {
+            bundle = await client.makeRequest<EhrFhirResourceBundle>({
+              cxId,
+              patientId: canvasPatientId,
+              s3Path: client.createFhirPath(resourceType),
+              method: "GET",
+              url,
+              schema: ehrFhirResourceBundleSchema,
+              additionalInfo,
+              debug,
+              useFhir: true,
+            });
+          } catch (error) {
+            if (error instanceof NotFoundError) {
+              log(`Error while fetching ${resourceType} from EHR: ${errorToString(error)}`);
+              return undefined;
+            }
+            throw error;
+          }
+          if (!bundle) return undefined;
           const { targetBundle, referenceBundle } = partitionEhrBundle({
             bundle,
             resourceType,
@@ -1121,7 +1133,7 @@ class CanvasApi {
     resourceId: string;
     useCachedBundle?: boolean;
   }): Promise<Bundle> {
-    const { debug } = out(
+    const { log, debug } = out(
       `Canvas getResourceBundleByResourceId - cxId ${cxId} practiceId ${this.practiceId} metriportPatientId ${metriportPatientId} canvasPatientId ${canvasPatientId} resourceType ${resourceType}`
     );
     if (
@@ -1148,17 +1160,27 @@ class CanvasApi {
     function fetchResourcesFromEhr() {
       return fetchEhrFhirResourcesWithPagination({
         makeRequest: async (url: string) => {
-          const bundle = await client.makeRequest<EhrFhirResourceBundle>({
-            cxId,
-            patientId: canvasPatientId,
-            s3Path: client.createFhirPath(resourceType, resourceId),
-            method: "GET",
-            url,
-            schema: ehrFhirResourceBundleSchema,
-            additionalInfo,
-            debug,
-            useFhir: true,
-          });
+          let bundle: EhrFhirResourceBundle | undefined;
+          try {
+            bundle = await client.makeRequest<EhrFhirResourceBundle>({
+              cxId,
+              patientId: canvasPatientId,
+              s3Path: client.createFhirPath(resourceType, resourceId),
+              method: "GET",
+              url,
+              schema: ehrFhirResourceBundleSchema,
+              additionalInfo,
+              debug,
+              useFhir: true,
+            });
+          } catch (error) {
+            if (error instanceof NotFoundError) {
+              log(`Error while fetching ${resourceType} from EHR: ${errorToString(error)}`);
+              return undefined;
+            }
+            throw error;
+          }
+          if (!bundle) return undefined;
           return convertEhrBundleToValidEhrStrictBundle(bundle, resourceType, canvasPatientId);
         },
         url: resourceTypeUrl,
@@ -1262,6 +1284,7 @@ class CanvasApi {
       additionalInfo,
       debug,
       emptyResponse,
+      responseHeadersToKeep: [fhirHeader],
     });
   }
 

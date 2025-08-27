@@ -24,7 +24,6 @@ import {
   parallelPatients,
   parallelPractices,
 } from "../../shared/utils/appointment";
-import { createElationClientWithTokenIdAndEnvironment } from "../shared";
 import {
   CreateOrUpdateElationPatientMetadataParams,
   SyncElationPatientIntoMetriportParams,
@@ -146,10 +145,6 @@ async function getAppointments({
   practiceId,
 }: GetAppointmentsParams): Promise<{ appointments?: Appointment[]; error?: unknown }> {
   const { log } = out(`Elation getAppointments - cxId ${cxId} practiceId ${practiceId}`);
-  const { tokenId } = await createElationClientWithTokenIdAndEnvironment({
-    cxId,
-    practiceId,
-  });
   const { startRange, endRange } = getLookForwardTimeRange({
     lookForward: appointmentsLookForward,
   });
@@ -158,7 +153,6 @@ async function getAppointments({
     const handler = buildEhrGetAppointmentsHandler();
     const appointments = await handler.getAppointments<BookedAppointment>({
       method: AppointmentMethods.elationGetAppointments,
-      tokenId,
       cxId,
       practiceId,
       fromDate: startRange,

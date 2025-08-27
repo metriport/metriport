@@ -19,7 +19,6 @@ import {
   parallelPatients,
   parallelPractices,
 } from "../../shared/utils/appointment";
-import { createCanvasClientWithTokenIdAndEnvironment } from "../shared";
 import { SyncCanvasPatientIntoMetriportParams } from "./sync-patient";
 
 dayjs.extend(duration);
@@ -96,10 +95,6 @@ async function getAppointments({
   practiceId,
 }: GetAppointmentsParams): Promise<{ appointments?: Appointment[]; error?: unknown }> {
   const { log } = out(`Canvas getAppointments - cxId ${cxId} practiceId ${practiceId}`);
-  const { tokenId } = await createCanvasClientWithTokenIdAndEnvironment({
-    cxId,
-    practiceId,
-  });
   const { startRange, endRange } = getLookForwardTimeRange({
     lookForward: appointmentsLookForward,
   });
@@ -108,7 +103,6 @@ async function getAppointments({
     const handler = buildEhrGetAppointmentsHandler();
     const appointments = await handler.getAppointments<SlimBookedAppointment>({
       method: AppointmentMethods.canvasGetAppointments,
-      tokenId,
       cxId,
       practiceId,
       fromDate: startRange,
