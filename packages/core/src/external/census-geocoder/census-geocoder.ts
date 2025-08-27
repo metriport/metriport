@@ -5,13 +5,14 @@ import {
   CensusGeocoderParams,
   censusGeocoderResponseSchema,
   CensusGeocoderResponse,
+  AddressMatch,
 } from "./types";
 import { CENSUS_GEOCODER_ADDRESS_URL } from "./constants";
 
-export async function getNormalizedAddress(
+export async function geocodeAddress(
   address: Address,
   { benchmark = "Public_AR_Current" }: CensusGeocoderParams = {}
-) {
+): Promise<AddressMatch[]> {
   const params = new URLSearchParams({
     street: getStreetFromAddress(address),
     city: address.city,
@@ -21,26 +22,11 @@ export async function getNormalizedAddress(
     format: "json",
   });
   const response = await axios.get<CensusGeocoderResponse>(CENSUS_GEOCODER_ADDRESS_URL, {
+    headers: { "Content-Type": "application/json", "User-Agent": "Metriport/1.0" },
     params,
   });
   const { result } = censusGeocoderResponseSchema.parse(response.data);
-  const firstMatch = result.addressMatches[0];
-  if (!firstMatch) {
-    return address;
-  }
-  const components = firstMatch.addressComponents;
-  return {
-    addressLine1:
-      `${components.preDirection} ${components.streetName} ${components.suffixDirection}`.trim(),
-    addressLine2: `${components.fromAddress} - ${components.toAddress}`.trim(),
-    city: components.city,
-    state: components.state,
-    zip: components.zip,
-    coordinates: {
-      lat: firstMatch.coordinates.y,
-      lon: firstMatch.coordinates.x,
-    },
-  };
+  return result.addressMatches;
 }
 
 function getStreetFromAddress(address: Address): string {
