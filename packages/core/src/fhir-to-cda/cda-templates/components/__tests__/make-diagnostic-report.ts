@@ -57,7 +57,7 @@ export function makeResultExample(): Reference<Observation>[] {
   ];
 }
 
-export function makeResultExmplae2(): Reference<Observation>[] {
+export function makeResultExample2(): Reference<Observation>[] {
   return [
     {
       reference: "Observation/some-obs-ID-2",

@@ -8,7 +8,7 @@ import {
   makePresentedFormExample,
   makePresentedFormExample2,
   makeResultExample,
-  makeResultExmplae2,
+  makeResultExample2,
 } from "../../fhir-to-cda/cda-templates/components/__tests__/make-diagnostic-report";
 import { groupSameDiagnosticReports } from "../resources/diagnostic-report";
 import { dateTime, dateTime2 } from "./examples/condition-examples";
@@ -132,7 +132,7 @@ describe("groupSameDiagnosticReports", () => {
 
   it("does not group lab panel reports if codes are different", () => {
     diagReport.result = makeResultExample();
-    diagReport2.result = makeResultExmplae2();
+    diagReport2.result = makeResultExample2();
 
     diagReport.code = makeA1cConcept();
     diagReport2.code = makeMetabolicPanelConceptLoinc();
@@ -146,7 +146,7 @@ describe("groupSameDiagnosticReports", () => {
 
   it("does not group lab panel reports if codes are different even with effectiveDateTime the same", () => {
     diagReport.result = makeResultExample();
-    diagReport2.result = makeResultExmplae2();
+    diagReport2.result = makeResultExample2();
 
     diagReport.code = makeA1cConcept();
     diagReport2.code = makeMetabolicPanelConceptLoinc();
@@ -163,7 +163,7 @@ describe("groupSameDiagnosticReports", () => {
 
   it("does not group lab panel reports if codes are the same and effectiveDateTime are different", () => {
     diagReport.result = makeResultExample();
-    diagReport2.result = makeResultExmplae2();
+    diagReport2.result = makeResultExample2();
 
     diagReport.code = makeA1cConcept();
     diagReport2.code = makeA1cConcept();
@@ -180,7 +180,7 @@ describe("groupSameDiagnosticReports", () => {
 
   it("does not group lab panel reports if codes are the same and one of the effectiveDateTime is missing", () => {
     diagReport.result = makeResultExample();
-    diagReport2.result = makeResultExmplae2();
+    diagReport2.result = makeResultExample2();
 
     diagReport.code = makeA1cConcept();
     diagReport2.code = makeA1cConcept();
@@ -196,7 +196,7 @@ describe("groupSameDiagnosticReports", () => {
 
   it("does not group lab panel reports if codes are the same and both effectiveDateTime are missing", () => {
     diagReport.result = makeResultExample();
-    diagReport2.result = makeResultExmplae2();
+    diagReport2.result = makeResultExample2();
 
     diagReport.code = makeA1cConcept();
     diagReport2.code = makeA1cConcept();
@@ -210,7 +210,7 @@ describe("groupSameDiagnosticReports", () => {
 
   it("groups lab panel reports with same LOINC codes and datetime", () => {
     diagReport.result = makeResultExample();
-    diagReport2.result = makeResultExmplae2();
+    diagReport2.result = makeResultExample2();
 
     diagReport.code = makeA1cConcept();
     diagReport2.code = makeA1cConcept();
@@ -224,7 +224,7 @@ describe("groupSameDiagnosticReports", () => {
 
   it("groups lab panel reports with same display text even if codes differ", () => {
     diagReport.result = makeResultExample();
-    diagReport2.result = makeResultExmplae2();
+    diagReport2.result = makeResultExample2();
 
     diagReport.code = makeMetabolicPanelConceptLoinc();
     diagReport2.code = makeMetabolicPanelConceptOther();
