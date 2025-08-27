@@ -41,7 +41,9 @@ export function convertHl7v2MessageToFhir({
     log(`Conversion completed in ${duration} ms`);
     const docIdExtension = buildDocIdFhirExtension(rawDataFileKey, "hl7");
     const sourceExtension = createExtensionDataSource(hieName.toUpperCase());
-    return addHl7SourceExtensions(bundle, [docIdExtension, sourceExtension]);
+    let updatedBundle = addHl7SourceExtension(bundle, docIdExtension);
+    updatedBundle = addHl7SourceExtension(bundle, sourceExtension);
+    return updatedBundle;
   }
 
   const msg = "HL7 message type isn't supported";
@@ -61,9 +63,9 @@ export function convertHl7v2MessageToFhir({
   throw new MetriportError(msg, undefined, extraProps);
 }
 
-function addHl7SourceExtensions(
+function addHl7SourceExtension(
   bundle: BundleWithEntry<Resource>,
-  newExtensions: Extension[]
+  newExtension: Extension
 ): Bundle<Resource> {
   return {
     ...bundle,
@@ -76,7 +78,7 @@ function addHl7SourceExtensions(
         ...e,
         resource: {
           ...e.resource,
-          extension: [...existing, ...newExtensions],
+          extension: [...existing, newExtension],
         },
       };
     }),
