@@ -1,9 +1,10 @@
 import { buildFhirToCsvHandler } from "@metriport/core/command/analytics-platform/fhir-to-csv/command/fhir-to-csv/fhir-to-csv-factory";
+import { buildFhirToCsvJobPrefix } from "@metriport/core/command/analytics-platform/fhir-to-csv/file-name";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { requestLogger } from "../../helpers/request-logger";
-import { asyncHandler, getFromQuery, getFromQueryOrFail } from "../../util";
+import { asyncHandler, getFromQueryOrFail } from "../../util";
 
 const router = Router();
 
@@ -14,7 +15,6 @@ const router = Router();
  * @param req.query.cxId - The CX ID.
  * @param req.query.jobId - The job ID.
  * @param req.query.patientId - The patient ID.
- * @param req.query.inputBundle - The input bundle.
  * @returns 200 OK
  */
 router.post(
@@ -24,9 +24,9 @@ router.post(
     const cxId = getFromQueryOrFail("cxId", req);
     const jobId = getFromQueryOrFail("jobId", req);
     const patientId = getFromQueryOrFail("patientId", req);
-    const inputBundle = getFromQuery("inputBundle", req);
     const handler = buildFhirToCsvHandler();
-    await handler.processFhirToCsv({ cxId, jobId, patientId, inputBundle });
+    const outputPrefix = buildFhirToCsvJobPrefix({ cxId, jobId });
+    await handler.processFhirToCsv({ cxId, jobId, patientId, outputPrefix });
     return res.sendStatus(httpStatus.OK);
   })
 );

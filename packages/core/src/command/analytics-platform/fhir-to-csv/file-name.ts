@@ -1,5 +1,7 @@
 import { MetriportError } from "@metriport/shared";
 
+// TODO ENG-954 Build specific versions of these for bulk and incremental ingestion and update the places that call them
+
 export function buildFhirToCsvBasePrefix(cxId: string): string {
   return `snowflake/fhir-to-csv/cx=${cxId}`;
 }
