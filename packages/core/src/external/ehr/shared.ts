@@ -1067,21 +1067,13 @@ export function handleTitleSpecialCases(
   title: string,
   observationPoint: GroupedObservation
 ): string {
-  let updatedTitle = title;
-  if (
-    title.toLowerCase().includes("blood pressure") ||
-    title.toLowerCase().includes("bp sys") ||
-    title.toLowerCase().includes("bp dias")
-  ) {
+  const lower = title.toLowerCase();
+  if (/(blood pressure|bp sys|bp dias|systolic|diastolic)/i.test(title)) {
     observationPoint.grouping = title;
-    updatedTitle = "Blood Pressure";
+    return "Blood Pressure";
   }
-
-  if (title.toLowerCase().includes("bmi")) {
-    updatedTitle = "Body Mass Index (BMI)";
-  }
-
-  return updatedTitle;
+  if (lower.includes("bmi")) return "Body Mass Index (BMI)";
+  return title;
 }
 
 export function handleBloodPressureMapping(obsMap: Map<string, GroupedObservation[]>) {

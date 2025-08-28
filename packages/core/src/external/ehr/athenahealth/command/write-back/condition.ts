@@ -6,7 +6,7 @@ import { WriteBackConditionClientRequest } from "../../../command/write-back/con
 import { createAthenaHealthClient } from "../../shared";
 
 export async function writeBackCondition(params: WriteBackConditionClientRequest): Promise<void> {
-  const { cxId, practiceId, ehrPatientId, tokenId, condition } = params;
+  const { cxId, practiceId, ehrPatientId, tokenInfo, condition } = params;
   const secondaryMappings = await getSecondaryMappings({
     ehr: EhrSources.athena,
     practiceId,
@@ -22,7 +22,7 @@ export async function writeBackCondition(params: WriteBackConditionClientRequest
   const client = await createAthenaHealthClient({
     cxId,
     practiceId,
-    ...(tokenId && { tokenId }),
+    ...(tokenInfo ? { tokenInfo } : {}),
   });
   await client.createProblem({
     cxId,

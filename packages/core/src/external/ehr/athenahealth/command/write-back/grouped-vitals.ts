@@ -11,7 +11,7 @@ import { createAthenaHealthClient } from "../../shared";
 export async function writeBackGroupedVitals(
   params: WriteBackGroupedVitalsClientRequest
 ): Promise<void> {
-  const { cxId, practiceId, ehrPatientId, tokenId, groupedVitals } = params;
+  const { cxId, practiceId, ehrPatientId, tokenInfo, groupedVitals } = params;
 
   if (!isGroupedVitalsByCode(groupedVitals)) {
     throw new BadRequestError("Invalid grouped vitals", undefined, {
@@ -35,7 +35,7 @@ export async function writeBackGroupedVitals(
   const client = await createAthenaHealthClient({
     cxId,
     practiceId,
-    ...(tokenId && { tokenId }),
+    ...(tokenInfo ? { tokenInfo } : {}),
   });
   await client.createVitals({
     cxId,

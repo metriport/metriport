@@ -6,7 +6,7 @@ import { WriteBackLabClientRequest } from "../../../command/write-back/lab";
 import { createAthenaHealthClient } from "../../shared";
 
 export async function writeBackLab(params: WriteBackLabClientRequest): Promise<void> {
-  const { cxId, practiceId, ehrPatientId, tokenId, observation } = params;
+  const { cxId, practiceId, ehrPatientId, tokenInfo, observation } = params;
   const secondaryMappings = await getSecondaryMappings({
     ehr: EhrSources.athena,
     practiceId,
@@ -22,7 +22,7 @@ export async function writeBackLab(params: WriteBackLabClientRequest): Promise<v
   const client = await createAthenaHealthClient({
     cxId,
     practiceId,
-    ...(tokenId && { tokenId }),
+    ...(tokenInfo ? { tokenInfo } : {}),
   });
   await client.createLabResultDocument({
     cxId,
