@@ -8,7 +8,11 @@ import {
   ChronicityExtension,
   findChronicityExtension,
 } from "../../shared/extensions/chronicity-extension";
-import { buildHccExtensions, HccExtension } from "../../shared/extensions/hcc-extension";
+import {
+  buildHccExtensions,
+  HccExtension,
+  findHccExtension,
+} from "../../shared/extensions/hcc-extension";
 
 export function normalizeConditions(conditions: Condition[]): Condition[] {
   return conditions.map(condition => {
@@ -26,17 +30,15 @@ export function normalizeConditions(conditions: Condition[]): Condition[] {
 
         if (chronicity) {
           const existingChronicityExtension = findChronicityExtension(updCondition.extension ?? []);
-          if (existingChronicityExtension) {
-            return;
+          if (!existingChronicityExtension) {
+            chronicityExtension = buildChronicityExtension(chronicity);
           }
-          chronicityExtension = buildChronicityExtension(chronicity);
         }
         if (hccCode) {
-          // const existingHccExtension = findHccExtension(updCondition.extension ?? []);
-          // if (existingHccExtension) {
-          //   return;
-          // }
-          hccExtensions = buildHccExtensions(hccCode);
+          const existingHccExtension = findHccExtension(updCondition.extension ?? []);
+          if (!existingHccExtension) {
+            hccExtensions = buildHccExtensions(hccCode);
+          }
         }
       }
     });

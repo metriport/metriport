@@ -47,3 +47,11 @@ function buildHccExtension({
     },
   };
 }
+
+export function findHccExtension(extensions: Extension[]): Extension | undefined {
+  return extensions.find(isHccExtension);
+}
+
+export function isHccExtension(e: Extension): e is HccExtension {
+  return e.url === HCC_EXTENSION_SYSTEM;
+}
