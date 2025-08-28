@@ -6,7 +6,7 @@ import { WriteBackLabPanelClientRequest } from "../../../command/write-back/lab-
 import { createElationHealthClient } from "../../shared";
 
 export async function writeBackLabPanel(params: WriteBackLabPanelClientRequest): Promise<void> {
-  const { cxId, practiceId, ehrPatientId, tokenId, diagnosticReport, observations } = params;
+  const { tokenInfo, cxId, practiceId, ehrPatientId, diagnosticReport, observations } = params;
   const secondaryMappings = await getSecondaryMappings({
     ehr: EhrSources.elation,
     practiceId,
@@ -23,7 +23,7 @@ export async function writeBackLabPanel(params: WriteBackLabPanelClientRequest):
   const client = await createElationHealthClient({
     cxId,
     practiceId,
-    ...(tokenId && { tokenId }),
+    ...(tokenInfo ? { tokenInfo } : {}),
   });
   await client.createLabPanel({
     cxId,

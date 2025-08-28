@@ -124,7 +124,7 @@ jobs:
         working-directory: "metriport/"
 
       - name: Build fhir converter dependencies
-        run: npm install --only=production --no-fund --no-optional --no-audit
+        run: npm run prep-deploy
         working-directory: "metriport/packages/fhir-converter"
 
       - name: Build lambdas shared layer

@@ -15,6 +15,7 @@ import {
   NotFoundError,
   sleep,
   toTitleCase,
+  executeWithNetworkRetries,
 } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import {
@@ -275,9 +276,11 @@ class ElationApi {
     };
 
     try {
-      const response = await axios.post(url, createDataParams(data), {
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      });
+      const response = await executeWithNetworkRetries(() =>
+        axios.post(url, createDataParams(data), {
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        })
+      );
       if (!response.data) throw new MetriportError("No body returned from token endpoint");
       const tokenData = elationClientJwtTokenResponseSchema.parse(response.data);
       return {
@@ -634,22 +637,23 @@ class ElationApi {
       document_date: this.formatDateTime(chartDate.toISOString()),
     } as ElationGroupedVital;
     const data = vitals.reduce((existingVital, newVital) => {
-      if (existingVital.bp && newVital.bp) {
-        const existingBp = existingVital.bp as { systolic?: string; diastolic?: string }[];
+      let existingVitalNew = existingVital;
+      if (existingVitalNew.bp && newVital.bp) {
+        const existingBp = existingVitalNew.bp as { systolic?: string; diastolic?: string }[];
         const newBp = newVital.bp as { systolic?: string; diastolic?: string }[];
-        existingVital.bp = [
+        existingVitalNew.bp = [
           {
             ...existingBp[0],
             ...newBp[0],
           },
         ];
       } else {
-        existingVital = {
-          ...existingVital,
+        existingVitalNew = {
+          ...existingVitalNew,
           ...newVital,
         } as ElationGroupedVital;
       }
-      return existingVital;
+      return existingVitalNew;
     }, baseData);
     try {
       const nonVisitNote = await this.createNonVisitNote({

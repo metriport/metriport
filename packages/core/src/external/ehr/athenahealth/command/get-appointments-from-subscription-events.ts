@@ -5,17 +5,13 @@ import { createAthenaHealthClient } from "../shared";
 export async function getAppointmentsFromSubscriptionEvents(
   params: GetAppointmentsClientRequest
 ): Promise<BookedAppointment[]> {
-  const { cxId, practiceId, tokenId, fromDate, toDate, departmentIds } = params;
-  const client = await createAthenaHealthClient({
-    cxId,
-    practiceId,
-    ...(tokenId && { tokenId }),
-  });
+  const { cxId, practiceId, fromDate, toDate, departmentIds } = params;
+  const client = await createAthenaHealthClient({ cxId, practiceId });
   const appointments = await client.getAppointmentsFromSubscription({
     cxId,
-    ...(departmentIds && { departmentIds }),
-    ...(fromDate && { startProcessedDate: fromDate }),
-    ...(toDate && { endProcessedDate: toDate }),
+    ...(departmentIds ? { departmentIds } : {}),
+    ...(fromDate ? { startProcessedDate: fromDate } : {}),
+    ...(toDate ? { endProcessedDate: toDate } : {}),
   });
   return appointments;
 }
