@@ -1,7 +1,7 @@
 import {
-  Organization as CwSdkOrganization,
   CwTreatmentType,
   isOrgInitiatorAndResponder,
+  Organization as CwSdkOrganization,
   OrganizationBase,
   OrganizationWithNetworkInfo,
 } from "@metriport/commonwell-sdk";
@@ -141,26 +141,11 @@ function cwOrgOrFacilityToSdk(
 }
 
 export async function get(orgOid: string): Promise<CwSdkOrganization | undefined> {
-  const { log, debug } = out(`CW.v2 get Org - CW Org OID ${orgOid}`);
+  const { log, debug } = out(`CW.v2.org get - CW Org OID ${orgOid}`);
   const commonWell = makeCommonWellMemberAPI();
   try {
     const resp = await commonWell.getOneOrg(orgOid);
     debug(`resp getOneOrg: `, JSON.stringify(resp));
-    return resp;
-  } catch (error) {
-    const msg = `Failure while getting Org @ CW`;
-    const cwRef = commonWell.lastTransactionId;
-    log(`${msg}. Org OID: ${orgOid}. Cause: ${errorToString(error)}. CW Reference: ${cwRef}`);
-    return undefined;
-  }
-}
-
-export async function getOrFail(orgOid: string): Promise<CwSdkOrganization | undefined> {
-  const { log, debug } = out(`CW.v2 get Org or fail - CW Org OID ${orgOid}`);
-  const commonWell = makeCommonWellMemberAPI();
-  try {
-    const resp = await commonWell.getOneOrg(orgOid);
-    debug(`resp getOneOrgOrFail: `, JSON.stringify(resp));
     return resp;
   } catch (error) {
     const msg = `Failure while getting Org @ CW`;
@@ -262,7 +247,7 @@ export function parseCWEntry(org: CwSdkOrganization): CwOrgOrFacility {
 }
 
 export async function getParsedOrgOrFailV2(oid: string): Promise<CwOrgOrFacility> {
-  const resp = await getOrFail(oid);
+  const resp = await get(oid);
   if (!resp) throw new NotFoundError("Organization not found", undefined, { orgOid: oid });
   return parseCWEntry(resp);
 }
