@@ -18,7 +18,11 @@ export type DocumentConversionWebhookType = z.infer<typeof docConversionWebhookT
 export const docBulkDownloadWebhookTypeSchema = z.literal(`medical.document-bulk-download-urls`);
 export type DocumentBulkDownloadWebhookType = z.infer<typeof docBulkDownloadWebhookTypeSchema>;
 
-const hl7NotificationWebhookTypeSchema = z.enum(["patient.admit", "patient.discharge"]);
+const hl7NotificationWebhookTypeSchema = z.enum([
+  "patient.admit",
+  "patient.discharge",
+  "patient.transfer",
+]);
 export type Hl7WebhookTypeSchemaType = z.infer<typeof hl7NotificationWebhookTypeSchema>;
 export const bulkPatientImportWebhookTypeSchema = z.literal(`medical.bulk-patient-create`);
 export type BulkPatientImportWebhookType = z.infer<typeof bulkPatientImportWebhookTypeSchema>;
@@ -173,6 +177,63 @@ export const bulkPatientImportWebhookRequestSchema = z.object({
 });
 export type BulkPatientImportWebhookRequest = z.infer<typeof bulkPatientImportWebhookRequestSchema>;
 
+export const patientAdmitWebhookPayloadSchema = z.object({
+  url: z.string(),
+  patientId: z.string(),
+  externalId: z.string().optional(),
+  additionalIds: z.record(z.string(), z.string().array()).optional(),
+  admitTimestamp: z.string(),
+  whenSourceSent: z.string().optional(),
+});
+export type PatientAdmitPayload = z.infer<typeof patientAdmitWebhookPayloadSchema>;
+
+export const patientTransferWebhookPayloadSchema = z.object({
+  url: z.string(),
+  patientId: z.string(),
+  externalId: z.string().optional(),
+  additionalIds: z.record(z.string(), z.string().array()).optional(),
+  admitTimestamp: z.string(),
+  transfers: z.array(
+    z.object({
+      timestamp: z.string(),
+      sourceLocation: z.object({ name: z.string(), type: z.string() }),
+      destinationLocation: z.object({ name: z.string(), type: z.string() }),
+    })
+  ),
+  whenSourceSent: z.string().optional(),
+});
+
+export type PatientTransferPayload = z.infer<typeof patientTransferWebhookPayloadSchema>;
+
+export const patientDischargeWebhookPayloadSchema = z.object({
+  url: z.string(),
+  patientId: z.string(),
+  externalId: z.string().optional(),
+  additionalIds: z.record(z.string(), z.string().array()).optional(),
+  admitTimestamp: z.string(),
+  dischargeTimestamp: z.string(),
+  whenSourceSent: z.string().optional(),
+});
+export type PatientDischargePayload = z.infer<typeof patientDischargeWebhookPayloadSchema>;
+
+export const patientAdmitWebhookRequestSchema = z.object({
+  meta: baseWebhookMetadataSchema.merge(z.object({ type: z.literal("patient.admit") })),
+  payload: patientAdmitWebhookPayloadSchema,
+});
+export type PatientAdmitWebhookRequest = z.infer<typeof patientAdmitWebhookRequestSchema>;
+
+export const patientTransferWebhookRequestSchema = z.object({
+  meta: baseWebhookMetadataSchema.merge(z.object({ type: z.literal("patient.transfer") })),
+  payload: patientTransferWebhookPayloadSchema,
+});
+export type PatientTransferWebhookRequest = z.infer<typeof patientTransferWebhookRequestSchema>;
+
+export const patientDischargeWebhookRequestSchema = z.object({
+  meta: baseWebhookMetadataSchema.merge(z.object({ type: z.literal("patient.discharge") })),
+  payload: patientDischargeWebhookPayloadSchema,
+});
+export type PatientDischargeWebhookRequest = z.infer<typeof patientDischargeWebhookRequestSchema>;
+
 export const webhookRequestSchema = z.union([
   pingWebhookRequestDataSchema,
   consolidatedWebhookRequestSchema,
@@ -180,6 +241,9 @@ export const webhookRequestSchema = z.union([
   documentConversionWebhookRequestSchema,
   documentBulkDownloadWebhookRequestSchema,
   bulkPatientImportWebhookRequestSchema,
+  patientAdmitWebhookRequestSchema,
+  patientTransferWebhookRequestSchema,
+  patientDischargeWebhookRequestSchema,
 ]);
 export type WebhookRequest = z.infer<typeof webhookRequestSchema>;
 
@@ -235,6 +299,33 @@ export function isBulkPatientImportWebhookRequest(
   whRequest: WebhookRequest
 ): whRequest is BulkPatientImportWebhookRequest {
   if (whRequest.meta.type === "medical.bulk-patient-create") {
+    return true;
+  }
+  return false;
+}
+
+export function isPatientAdmitWebhookRequest(
+  whRequest: WebhookRequest
+): whRequest is PatientAdmitWebhookRequest {
+  if (whRequest.meta.type === "patient.admit") {
+    return true;
+  }
+  return false;
+}
+
+export function isPatientTransferWebhookRequest(
+  whRequest: WebhookRequest
+): whRequest is PatientTransferWebhookRequest {
+  if (whRequest.meta.type === "patient.transfer") {
+    return true;
+  }
+  return false;
+}
+
+export function isPatientDischargeWebhookRequest(
+  whRequest: WebhookRequest
+): whRequest is PatientDischargeWebhookRequest {
+  if (whRequest.meta.type === "patient.discharge") {
     return true;
   }
   return false;
