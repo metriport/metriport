@@ -1,5 +1,5 @@
 import { z } from "zod";
-// import { linkSchema } from "./link";
+import { normalizeStatePreprocess } from "./address";
 
 const organizationBaseSchema = z.object({
   organizationId: z.string(),
@@ -31,7 +31,7 @@ const organizationBaseSchema = z.object({
       address1: z.string(),
       address2: z.string().nullish(),
       city: z.string(),
-      state: z.string(),
+      state: z.preprocess(normalizeStatePreprocess, z.string()),
       postalCode: z.string(),
       country: z.string(),
       phone: z.string().nullish(),
