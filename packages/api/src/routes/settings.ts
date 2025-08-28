@@ -1,4 +1,5 @@
-import { BadRequestError, getEnvVarOrFail } from "@metriport/shared";
+import { Config } from "@metriport/core/util/config";
+import { BadRequestError } from "@metriport/shared";
 import dayjs from "dayjs";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
@@ -255,8 +256,7 @@ router.post(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const id = getCxIdOrFail(req);
-    const envType = getEnvVarOrFail("ENV_TYPE");
-    if (envType === "production") {
+    if (Config.isProduction()) {
       throw new BadRequestError("Webhook sample payload is not available in production");
     }
     const { webhookUrl, webhookKey } = await getSettingsOrFail({ id });
