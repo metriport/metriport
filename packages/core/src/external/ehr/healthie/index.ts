@@ -179,7 +179,7 @@ class HealthieApi {
     const variables = { id: patientId };
     const patientGraphql = await this.makeRequest<PatientGraphql>({
       cxId,
-      patientId: patientId.toString(),
+      patientId,
       s3Path: "patient",
       operationName,
       query,
@@ -215,7 +215,7 @@ class HealthieApi {
     const variables = { id: patientId };
     const patientQuickNotesGraphql = await this.makeRequest<PatientQuickNotesGraphql>({
       cxId,
-      patientId: patientId.toString(),
+      patientId,
       s3Path: "patient-quick-notes",
       operationName,
       query,
@@ -270,7 +270,7 @@ class HealthieApi {
     };
     const patientUpdateQuickNotesGraphql = await this.makeRequest<PatientUpdateQuickNotesGraphql>({
       cxId,
-      patientId: patientId.toString(),
+      patientId,
       s3Path: "patient-update-quick-notes",
       operationName,
       query,
@@ -314,7 +314,7 @@ class HealthieApi {
 
     const medicationsGraphqlResponse = await this.makeRequest<MedicationsGraphql>({
       cxId,
-      patientId: patientId.toString(),
+      patientId,
       s3Path: "medications",
       operationName,
       query,
@@ -358,7 +358,7 @@ class HealthieApi {
 
     const immunizationsGraphqlResponse = await this.makeRequest<ImmunizationsGraphql>({
       cxId,
-      patientId: patientId.toString(),
+      patientId,
       s3Path: "immunizations",
       operationName,
       query,
@@ -405,7 +405,7 @@ class HealthieApi {
 
     const allergiesGraphqlResponse = await this.makeRequest<AllergiesGraphql>({
       cxId,
-      patientId: patientId.toString(),
+      patientId,
       s3Path: "allergies",
       operationName,
       query,
@@ -452,7 +452,7 @@ class HealthieApi {
 
     const conditionsGraphqlResponse = await this.makeRequest<ConditionsGraphql>({
       cxId,
-      patientId: patientId.toString(),
+      patientId,
       s3Path: "conditions",
       operationName,
       query,
@@ -516,7 +516,7 @@ class HealthieApi {
 
     const labOrdersGraphqlResponse = await this.makeRequest<LabOrdersGraphql>({
       cxId,
-      patientId: patientId.toString(),
+      patientId,
       s3Path: "lab_results",
       operationName,
       query,

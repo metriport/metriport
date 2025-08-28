@@ -1,5 +1,5 @@
 import { Bundle } from "@medplum/fhirtypes";
-import { BadRequestError } from "@metriport/shared";
+import { BadRequestError, JwtTokenInfo } from "@metriport/shared";
 import { EhrSource, EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { getResourceBundleByResourceId as getAthenaResourceBundleByResourceId } from "../athenahealth/command/get-resource-bundle-by-resource-id";
 import { getResourceBundleByResourceId as getCanvasResourceBundleByResourceId } from "../canvas/command/get-resource-bundle-by-resource-id";
@@ -8,7 +8,7 @@ import { getResourceBundleByResourceId as getHealthieResourceBundleByResourceId 
 
 export type GetResourceBundleByResourceIdRequest = {
   ehr: EhrSource;
-  tokenId?: string;
+  tokenInfo?: JwtTokenInfo;
   cxId: string;
   practiceId: string;
   metriportPatientId: string;

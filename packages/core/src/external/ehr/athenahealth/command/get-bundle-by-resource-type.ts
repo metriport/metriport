@@ -9,7 +9,7 @@ export async function getBundleByResourceType(
   params: GetBundleByResourceTypeClientRequest
 ): Promise<Bundle> {
   const {
-    tokenId,
+    tokenInfo,
     cxId,
     practiceId,
     metriportPatientId,
@@ -20,7 +20,7 @@ export async function getBundleByResourceType(
   const client = await createAthenaHealthClient({
     cxId,
     practiceId,
-    ...(tokenId && { tokenId }),
+    ...(tokenInfo ? { tokenInfo } : {}),
   });
   const mappings =
     resourceType === "Encounter"
@@ -36,12 +36,16 @@ export async function getBundleByResourceType(
     athenaPatientId: ehrPatientId,
     resourceType,
     useCachedBundle,
-    ...(mappings?.contributionEncounterAppointmentTypesBlacklist && {
-      attachAppointmentType: true,
-    }),
-    ...(mappings?.contributionEncounterSummariesEnabled && {
-      fetchEncounterSummary: true,
-    }),
+    ...(mappings?.contributionEncounterAppointmentTypesBlacklist
+      ? {
+          attachAppointmentType: true,
+        }
+      : {}),
+    ...(mappings?.contributionEncounterSummariesEnabled
+      ? {
+          fetchEncounterSummary: true,
+        }
+      : {}),
   });
   return bundle;
 }
