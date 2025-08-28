@@ -111,11 +111,12 @@ export const operationOutcomeSchema = z.object({
   ),
   text: narrativeSchema.nullish(),
 });
+
 export const operationOutcomeEntrySchema = z.object({
   fullUrl: z.string().optional(),
   resource: operationOutcomeSchema.nullish(),
 });
-export type OperationOutcome = z.infer<typeof operationOutcomeEntrySchema>;
+export type OperationOutcome = z.infer<typeof operationOutcomeSchema>;
 
 export const documentQueryResponseSchema = z.object({
   resourceType: z.literal("Bundle"),
