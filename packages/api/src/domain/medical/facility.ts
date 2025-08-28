@@ -70,7 +70,7 @@ export function isInitiatorOnly(facility: Facility): boolean;
 export function isInitiatorOnly(facilityType: FacilityType): boolean;
 export function isInitiatorOnly(facilityOrType: Facility | FacilityType): boolean {
   const facilityType = typeof facilityOrType === "string" ? facilityOrType : facilityOrType.cwType;
-  return !isInitiatorAndResponder(facilityType);
+  return facilityType === FacilityType.initiatorOnly;
 }
 
 export function isFacilityActiveForHie(facility: Facility, hie: MedicalDataSource): boolean {

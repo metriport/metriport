@@ -122,6 +122,10 @@ export const organizationListSchema = z.object({
   organizations: z.array(organizationSchema),
 });
 
+/**
+ * Keep these in lowercase since the code that uses it to map the CW type to the Metriport type
+ * expects the keys to be lowercase.
+ */
 export enum CwTreatmentType {
   acuteCare = "acute care",
   ambulatory = "ambulatory",

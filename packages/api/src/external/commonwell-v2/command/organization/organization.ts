@@ -194,10 +194,10 @@ export async function create(cxId: string, org: CwOrgOrFacility): Promise<void> 
     log(`${msg}. Org OID: ${org.oid}. Cause: ${errorToString(error)}. CW Reference: ${cwRef}`);
     capture.error(msg, {
       extra: {
+        cxId,
         orgOid: org.oid,
         cwReference: cwRef,
         context: `cw.v2.org.create`,
-        commonwellOrg: sdkOrg,
         error: errorToString(error),
       },
     });
@@ -217,10 +217,10 @@ export async function update(cxId: string, org: CwOrgOrFacility): Promise<void> 
   } catch (error: any) {
     const cwRef = commonWell.lastTransactionId;
     const extra = {
+      cxId,
       orgOid: org.oid,
       cwReference: cwRef,
       context: `cw.v2.org.update`,
-      commonwellOrg: sdkOrg,
       error: errorToString(error),
     };
     if (error.response?.status === 404) {
