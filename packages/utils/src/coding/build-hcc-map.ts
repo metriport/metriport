@@ -9,7 +9,7 @@ command.name("build-hcc-map");
 command.option("--year <year>", "The year of HCC source to use (default 2025)");
 
 const hccFunctionCode = `
-interface HccCode {
+export interface HccCode {
   v24: number[];
   v28: number[];
   display: string;
