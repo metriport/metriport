@@ -1,4 +1,4 @@
-import { BadRequestError } from "@metriport/shared";
+import { BadRequestError, getEnvVarOrFail } from "@metriport/shared";
 import dayjs from "dayjs";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
@@ -255,15 +255,20 @@ router.post(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const id = getCxIdOrFail(req);
-    const settings = await getSettingsOrFail({ id });
-    const { webhookUrl, webhookKey } = settings;
-
+    const envType = getEnvVarOrFail("ENV_TYPE");
+    if (envType === "production") {
+      throw new BadRequestError("Webhook sample payload is not available in production");
+    }
+    const { webhookUrl, webhookKey } = await getSettingsOrFail({ id });
     if (!webhookUrl || !webhookKey) {
-      throw new BadRequestError(`Webhook URL or key not found`);
+      throw new BadRequestError("Webhook URL and key must be configured");
     }
 
-    await sendPayload(req.body, webhookUrl, webhookKey);
-    res.sendStatus(status.OK);
+    // Accept any object; require presence of meta.type
+    const payloadSchema = z.object({ meta: z.object({ type: z.string() }) }).passthrough();
+    const payload = payloadSchema.parse(req.body);
+    const response = await sendPayload(payload, webhookUrl, webhookKey);
+    res.status(status.OK).json(response);
   })
 );
 
