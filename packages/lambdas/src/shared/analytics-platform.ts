@@ -5,4 +5,5 @@ export const fhirToCsvSchema = z.object({
   jobId: z.string(),
   patientId: z.string(),
   inputBundle: z.string().optional(),
+  outputPrefix: z.string(),
 });

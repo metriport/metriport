@@ -9,14 +9,14 @@ export class FhirToCsvDirect implements FhirToCsvHandler {
     cxId,
     jobId,
     patientId,
-    inputBundle,
+    outputPrefix,
     timeoutInMillis,
   }: ProcessFhirToCsvRequest): Promise<void> {
     await startFhirToCsvTransform({
       cxId,
       jobId,
       patientId,
-      ...(inputBundle ? { inputBundle } : {}),
+      outputPrefix,
       timeoutInMillis,
     });
     if (this.waitTimeInMillis > 0) await sleep(this.waitTimeInMillis);

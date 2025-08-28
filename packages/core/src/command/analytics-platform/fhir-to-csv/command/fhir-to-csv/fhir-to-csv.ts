@@ -2,7 +2,7 @@ export type ProcessFhirToCsvRequest = {
   jobId: string;
   cxId: string;
   patientId: string;
-  inputBundle?: string;
+  outputPrefix: string;
   timeoutInMillis?: number | undefined;
 };
 
