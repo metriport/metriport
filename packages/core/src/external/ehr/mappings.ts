@@ -17,17 +17,18 @@ import {
 import { EhrSource, EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { z } from "zod";
 
+export type EhrSourceWithSecondaryMappings = Exclude<EhrSource, "eclinicalworks">;
+
 export type EhrCxMappingSecondaryMappings =
   | AthenaSecondaryMappings
   | CanavsSecondaryMappings
   | ElationSecondaryMappings
   | HealthieSecondaryMappings;
 export const ehrCxMappingSecondaryMappingsSchemaMap: {
-  [key in EhrSource]: z.Schema<EhrCxMappingSecondaryMappings> | undefined;
+  [key in EhrSourceWithSecondaryMappings]: z.Schema<EhrCxMappingSecondaryMappings>;
 } = {
   [EhrSources.athena]: athenaSecondaryMappingsSchema,
   [EhrSources.elation]: elationSecondaryMappingsSchema,
   [EhrSources.canvas]: canvasSecondaryMappingsSchema,
   [EhrSources.healthie]: healthieSecondaryMappingsSchema,
-  [EhrSources.eclinicalworks]: undefined,
 };

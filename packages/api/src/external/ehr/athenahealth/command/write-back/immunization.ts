@@ -1,6 +1,6 @@
 import { Immunization } from "@medplum/fhirtypes";
 import { CreatedVaccinesSuccess } from "@metriport/shared/interface/external/ehr/athenahealth/vaccine";
-import { createAthenaClient } from "../../shared";
+import { createAthenaClient, validateDepartmentId } from "../../shared";
 
 export async function writeImmunizationToChart({
   cxId,
@@ -15,6 +15,7 @@ export async function writeImmunizationToChart({
   athenaDepartmentId: string;
   immunization: Immunization;
 }): Promise<CreatedVaccinesSuccess> {
+  await validateDepartmentId({ cxId, athenaPracticeId, athenaPatientId, athenaDepartmentId });
   const api = await createAthenaClient({ cxId, practiceId: athenaPracticeId });
   return await api.createVaccine({
     cxId,
