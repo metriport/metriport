@@ -293,7 +293,6 @@ export async function sendTestPayload(url: string, key: string, cxId: string): P
   return (
     typeof whResponse === "object" &&
     whResponse !== null &&
-    "pong" in whResponse &&
     typeof (whResponse as Record<string, unknown>).pong === "string" &&
     (whResponse as Record<string, unknown>).pong === ping
   );
