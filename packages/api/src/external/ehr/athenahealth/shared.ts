@@ -65,14 +65,11 @@ export async function validateDepartmentId({
     });
   const departmentIds = parsedSecondaryMappings.departmentIds;
   if (departmentIds.length > 0 && !departmentIds.includes(athenaDepartmentId)) {
-    throw new BadRequestError(
-      "AthenaHealth patient is not in a department that is enabled for syncing",
-      {
-        cxId,
-        athenaPracticeId,
-        athenaPatientId,
-        athenaDepartmentId,
-      }
-    );
+    throw new BadRequestError("AthenaHealth patient is not in a department that is enabled", {
+      cxId,
+      athenaPracticeId,
+      athenaPatientId,
+      athenaDepartmentId,
+    });
   }
 }
