@@ -22,7 +22,7 @@ export interface HccSourceRow {
 }
 
 export async function readHccSource(year: string): Promise<HccSourceRow[]> {
-  const hccSourcePath = path.resolve(process.cwd(), "hcc-source", `${year}.csv`);
+  const hccSourcePath = path.resolve(process.cwd(), "runs/hcc", `${year}.csv`);
   return new Promise((resolve, reject) => {
     const rows: HccSourceRow[] = [];
     fs.createReadStream(hccSourcePath)
@@ -37,4 +37,13 @@ export async function readHccSource(year: string): Promise<HccSourceRow[]> {
         reject(error);
       });
   });
+}
+
+export function writeHccMap(destination: string, generated: string): void {
+  const destinationPath = path.resolve(path.join(process.cwd(), ".."), destination);
+  const destinationDir = path.dirname(destinationPath);
+  if (!fs.existsSync(destinationDir)) {
+    fs.mkdirSync(destinationDir, { recursive: true });
+  }
+  fs.writeFileSync(destinationPath, generated, "utf-8");
 }
