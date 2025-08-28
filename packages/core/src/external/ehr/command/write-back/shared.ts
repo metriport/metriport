@@ -2,7 +2,7 @@ import { Condition, DiagnosticReport, Observation, Resource } from "@medplum/fhi
 import { BadRequestError, JwtTokenInfo } from "@metriport/shared";
 import { EhrSource } from "@metriport/shared/interface/external/ehr/source";
 import { writeBackCondition } from "./condition";
-import { isGroupedVitalsByDate, writeBackGroupedVitals } from "./grouped-vitals";
+import { EhrGroupedVitals, writeBackGroupedVitals } from "./grouped-vitals";
 import { writeBackLab } from "./lab";
 import { writeBackLabPanel } from "./lab-panel";
 
@@ -14,7 +14,7 @@ export type WriteBackResourceRequest = {
   cxId: string;
   practiceId: string;
   ehrPatientId: string;
-  primaryResourceOrResources: Resource | Resource[] | [Date, Resource[]];
+  primaryResourceOrResources: Resource | Resource[] | EhrGroupedVitals;
   secondaryResourceOrResources?: Resource | Resource[];
   writeBackResource: WriteBackResourceType;
 };
@@ -39,15 +39,9 @@ export async function writeBackResource({ ...params }: WriteBackResourceRequest)
       observations: params.secondaryResourceOrResources as Observation[],
     });
   } else if (params.writeBackResource === "grouped-vitals") {
-    if (!isGroupedVitalsByDate(params.primaryResourceOrResources)) {
-      throw new BadRequestError("Invalid grouped vitals", undefined, {
-        ehr: params.ehr,
-        writeBackResource: params.writeBackResource,
-      });
-    }
     return await writeBackGroupedVitals({
       ...params,
-      groupedVitals: params.primaryResourceOrResources,
+      groupedVitals: params.primaryResourceOrResources as EhrGroupedVitals,
     });
   }
   throw new BadRequestError("Could not find handler to write back resource", undefined, {

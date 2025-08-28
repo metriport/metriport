@@ -49,7 +49,11 @@ import duration from "dayjs/plugin/duration";
 import { partition, uniqBy } from "lodash";
 import { z } from "zod";
 import { createHivePartitionFilePath } from "../../domain/filename";
-import { fetchCodingCodeOrDisplayOrSystem } from "../../fhir-deduplication/shared";
+import {
+  fetchCodingCodeOrDisplayOrSystem,
+  UNK_CODE,
+  UNKNOWN_DISPLAY,
+} from "../../fhir-deduplication/shared";
 import { executeAsynchronously } from "../../util/concurrency";
 import { Config } from "../../util/config";
 import {
@@ -403,6 +407,18 @@ export type MedicationWithRefs = {
 export type GroupedVitals = {
   mostRecentObservation: Observation;
   sortedPoints?: DataPoint[];
+  title?: string;
+};
+
+export type GroupedVitalsByDate = [Date, Observation[]];
+
+export type GroupedObservation = {
+  rawVital: Observation;
+  observation: number;
+  date: string;
+  unit?: string;
+  grouping?: string;
+  bp?: BloodPressure;
 };
 
 export type BloodPressure = {
@@ -1032,4 +1048,90 @@ export function convertEhrBundleToValidEhrStrictBundle(
     }
   }
   return strictBundle.data;
+}
+
+export function getValidCode(coding: Coding[] | undefined): Coding[] {
+  if (!coding) return [];
+
+  return coding.filter(coding => {
+    return (
+      coding.code &&
+      coding.code.toLowerCase().trim() !== UNK_CODE.toLowerCase() &&
+      coding.display &&
+      coding.display.toLowerCase().trim() !== UNKNOWN_DISPLAY
+    );
+  });
+}
+
+export function handleTitleSpecialCases(
+  title: string,
+  observationPoint: GroupedObservation
+): string {
+  let updatedTitle = title;
+  if (
+    title.toLowerCase().includes("blood pressure") ||
+    title.toLowerCase().includes("bp sys") ||
+    title.toLowerCase().includes("bp dias")
+  ) {
+    observationPoint.grouping = title;
+    updatedTitle = "Blood Pressure";
+  }
+
+  if (title.toLowerCase().includes("bmi")) {
+    updatedTitle = "Body Mass Index (BMI)";
+  }
+
+  return updatedTitle;
+}
+
+export function handleBloodPressureMapping(obsMap: Map<string, GroupedObservation[]>) {
+  const bloodPressure = obsMap.get("Blood Pressure");
+  if (!bloodPressure) return;
+
+  const groupedBloodPressure: GroupedObservation[] = [];
+
+  const systolicMap = new Map<string, number>();
+  const diastolicMap = new Map<string, number>();
+
+  bloodPressure.forEach(bp => {
+    if (bp.grouping?.toLowerCase().includes("systolic")) {
+      systolicMap.set(bp.date, bp.observation);
+    } else if (bp.grouping?.toLowerCase().includes("diastolic")) {
+      diastolicMap.set(bp.date, bp.observation);
+    }
+  });
+
+  bloodPressure.forEach(bp => {
+    if (bp.grouping?.toLowerCase().includes("systolic")) {
+      const diastolicValue = diastolicMap.get(bp.date);
+      if (diastolicValue !== undefined) {
+        groupedBloodPressure.push({
+          ...bp,
+          bp: {
+            systolic: bp.observation,
+            diastolic: diastolicValue,
+          },
+        });
+      }
+    } else if (bp.grouping?.toLowerCase().includes("diastolic")) {
+      const systolicValue = systolicMap.get(bp.date);
+      if (systolicValue !== undefined) {
+        if (
+          !groupedBloodPressure.some(
+            gbp => gbp.date === bp.date && gbp.bp?.diastolic === bp.observation
+          )
+        ) {
+          groupedBloodPressure.push({
+            ...bp,
+            bp: {
+              systolic: systolicValue,
+              diastolic: bp.observation,
+            },
+          });
+        }
+      }
+    }
+  });
+
+  obsMap.set("Blood Pressure", groupedBloodPressure);
 }
