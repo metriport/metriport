@@ -1,5 +1,5 @@
-import { BadRequestError, MetriportError } from "@metriport/shared";
-import axios, { AxiosInstance, AxiosResponse, isAxiosError, AxiosError } from "axios";
+import { BadRequestError, MetriportError, NotFoundError } from "@metriport/shared";
+import axios, { AxiosError, AxiosInstance, AxiosResponse, isAxiosError } from "axios";
 import httpStatus from "http-status";
 import { Agent } from "https";
 import { normalizeCertificate } from "../common/certificate";
@@ -136,7 +136,7 @@ export class CommonWellMember implements CommonWellMemberAPI {
       );
       return organizationSchema.parse(resp.data);
     } catch (error) {
-      this.rethrowDescriptiveError(error, "Failed to create CW organization");
+      throw this.getDescriptiveError(error, "Failed to create CW organization");
     }
   }
 
@@ -162,7 +162,7 @@ export class CommonWellMember implements CommonWellMemberAPI {
       );
       return organizationSchema.parse(resp.data);
     } catch (error) {
-      this.rethrowDescriptiveError(error, "Failed to update CW organization");
+      throw this.getDescriptiveError(error, "Failed to update CW organization");
     }
   }
 
@@ -195,7 +195,7 @@ export class CommonWellMember implements CommonWellMemberAPI {
       });
       return organizationListSchema.parse(resp.data);
     } catch (error) {
-      this.rethrowDescriptiveError(error, "Failed to get CW organization list");
+      throw this.getDescriptiveError(error, "Failed to get CW organization list");
     }
   }
 
@@ -419,19 +419,20 @@ export class CommonWellMember implements CommonWellMemberAPI {
     return { Authorization: `Bearer ${jwt}` };
   }
 
-  private rethrowDescriptiveError(error: unknown, title: string): never {
+  private getDescriptiveError(error: unknown, title: string): unknown {
     if (isAxiosError(error)) {
       const status = error.response?.status;
       const data = error.response?.data;
       const cwReference = this.lastTransactionId;
 
       if (status === httpStatus.BAD_REQUEST) {
-        throw new BadRequestError(title, error, { status, cwReference, data });
+        return new BadRequestError(title, error, { status, cwReference, data });
       }
       if (status === httpStatus.NOT_FOUND) {
-        throw new MetriportError(title, error, { status, cwReference, data });
+        return new NotFoundError(title, error, { status, cwReference, data });
       }
+      return new MetriportError(title, error, { status, cwReference, data });
     }
-    throw error as never;
+    return error;
   }
 }
