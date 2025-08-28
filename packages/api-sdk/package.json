@@ -1,6 +1,6 @@
 {
   "name": "@metriport/api-sdk",
-  "version": "17.3.1-alpha.0",
+  "version": "18.0.1-alpha.0",
   "description": "Metriport helps you access and manage health and medical data, through a single open source API.",
   "author": "Metriport Inc. <contact@metriport.com>",
   "homepage": "https://metriport.com/",
@@ -58,7 +58,7 @@
   },
   "dependencies": {
     "@medplum/fhirtypes": "^2.0.32",
-    "@metriport/shared": "^0.25.1-alpha.0",
+    "@metriport/shared": "^0.25.2-alpha.0",
     "axios": "^1.8.2",
     "dayjs": "^1.11.7",
     "dotenv": "^16.3.1",
