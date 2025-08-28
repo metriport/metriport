@@ -11,6 +11,7 @@ import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import {
   errorToString,
+  executeWithNetworkRetries,
   getEnvVarOrFail,
   MetriportError,
   NotFoundError,
@@ -144,7 +145,7 @@ export async function get(orgOid: string): Promise<CwSdkOrganization | undefined
   const { log, debug } = out(`CW.v2.org get - CW Org OID ${orgOid}`);
   const commonWell = makeCommonWellMemberAPI();
   try {
-    const resp = await commonWell.getOneOrg(orgOid);
+    const resp = await executeWithNetworkRetries(() => commonWell.getOneOrg(orgOid));
     debug(`resp getOneOrg: `, JSON.stringify(resp));
     return resp;
   } catch (error) {
@@ -169,9 +170,12 @@ export async function create(cxId: string, org: CwOrgOrFacility): Promise<void> 
   const sdkOrg = cwOrgOrFacilityToSdk(org);
   const commonWell = makeCommonWellMemberAPI();
   try {
+    // Don't retry createOrg because it could result in a duplicate org being created
     const respCreate = await commonWell.createOrg(sdkOrg);
     debug(`resp createOrg: `, JSON.stringify(respCreate));
-    const respAddCert = await commonWell.addCertificateToOrg(getCertificate(), org.oid);
+    const respAddCert = await executeWithNetworkRetries(() =>
+      commonWell.addCertificateToOrg(getCertificate(), org.oid)
+    );
     debug(`resp addCertificateToOrg: `, JSON.stringify(respAddCert));
   } catch (error) {
     const msg = `Failure while creating org @ CW`;
@@ -196,10 +200,9 @@ export async function update(cxId: string, org: CwOrgOrFacility): Promise<void> 
   const sdkOrg = cwOrgOrFacilityToSdk(org);
   const commonWell = makeCommonWellMemberAPI();
   try {
-    const resp = await commonWell.updateOrg(sdkOrg);
+    const resp = await executeWithNetworkRetries(() => commonWell.updateOrg(sdkOrg));
     debug(`resp updateOrg: `, JSON.stringify(resp));
-    //eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
+  } catch (error: unknown) {
     const cwRef = commonWell.lastTransactionId;
     const extra = {
       cxId,
@@ -208,7 +211,7 @@ export async function update(cxId: string, org: CwOrgOrFacility): Promise<void> 
       context: `cw.v2.org.update`,
       error: errorToString(error),
     };
-    if (error.response?.status === 404) {
+    if (error instanceof NotFoundError) {
       capture.message("Got 404 while updating Org @ CW, creating it", { extra });
       await create(cxId, org);
       return;
