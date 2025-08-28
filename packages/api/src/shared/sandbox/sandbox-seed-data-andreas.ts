@@ -4,7 +4,7 @@ export const andreasDocRefs: DataEntry[] = [
   {
     s3Info: {
       bucket,
-      key: "AndreasSmith.xml",
+      key: "demo.xml",
     },
     docRef: {
       resourceType: "DocumentReference",
@@ -12,7 +12,7 @@ export const andreasDocRefs: DataEntry[] = [
       content: [
         {
           attachment: {
-            title: "AndreasSmith.xml",
+            title: "demo.xml",
             url: "http://api.metriport.com",
             contentType: "application/xml",
             creation: "2023-06-16",
