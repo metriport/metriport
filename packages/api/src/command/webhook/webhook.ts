@@ -44,7 +44,7 @@ async function missingWHSettings(
   const product = getProductFromWebhookRequest(webhookRequest);
   const msg = `[${product}] Missing webhook config, skipping sending it, WH req ID ${webhookRequest.id}`;
   const loggableKey = webhookKey ? "<defined>" : "<not-defined>";
-  log(msg + ` (url: ${webhookUrl}, key: ${loggableKey}`);
+  log(msg + ` (url: ${webhookUrl}, key: ${loggableKey})`);
   // mark this WH request as failed
   await updateWebhookRequest({
     id: webhookRequest.id,
