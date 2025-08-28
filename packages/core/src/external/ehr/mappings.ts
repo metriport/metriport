@@ -17,13 +17,25 @@ import {
 import { EhrSource, EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { z } from "zod";
 
-export type EhrSourceWithSecondaryMappings = Exclude<EhrSource, "eclinicalworks">;
+export const ehrSourceWithSecondaryMappings = [
+  EhrSources.athena,
+  EhrSources.elation,
+  EhrSources.canvas,
+  EhrSources.healthie,
+] as const;
+export type EhrSourceWithSecondaryMappings = (typeof ehrSourceWithSecondaryMappings)[number];
+export function isEhrSourceWithSecondaryMappings(
+  ehr: string
+): ehr is EhrSourceWithSecondaryMappings {
+  return ehrSourceWithSecondaryMappings.includes(ehr as EhrSourceWithSecondaryMappings);
+}
 
 export type EhrCxMappingSecondaryMappings =
   | AthenaSecondaryMappings
   | CanavsSecondaryMappings
   | ElationSecondaryMappings
   | HealthieSecondaryMappings;
+
 export const ehrCxMappingSecondaryMappingsSchemaMap: {
   [key in EhrSourceWithSecondaryMappings]: z.Schema<EhrCxMappingSecondaryMappings>;
 } = {
@@ -31,4 +43,11 @@ export const ehrCxMappingSecondaryMappingsSchemaMap: {
   [EhrSources.elation]: elationSecondaryMappingsSchema,
   [EhrSources.canvas]: canvasSecondaryMappingsSchema,
   [EhrSources.healthie]: healthieSecondaryMappingsSchema,
+};
+
+export const ehrCxMappingSecondaryMappingsSchemaMapGeneral: {
+  [key in EhrSource]: z.Schema<EhrCxMappingSecondaryMappings> | undefined;
+} = {
+  ...ehrCxMappingSecondaryMappingsSchemaMap,
+  [EhrSources.eclinicalworks]: undefined,
 };

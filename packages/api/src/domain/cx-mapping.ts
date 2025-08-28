@@ -1,9 +1,9 @@
 import { BaseDomain } from "@metriport/core/domain/base-domain";
 import {
   EhrCxMappingSecondaryMappings,
-  ehrCxMappingSecondaryMappingsSchemaMap,
+  ehrCxMappingSecondaryMappingsSchemaMapGeneral,
 } from "@metriport/core/external/ehr/mappings";
-import { EhrSources, ehrSources } from "@metriport/shared/interface/external/ehr/source";
+import { ehrSources } from "@metriport/shared/interface/external/ehr/source";
 import { z } from "zod";
 
 const cxMappingSource = [...ehrSources] as const;
@@ -13,8 +13,7 @@ export function isCxMappingSource(source: string): source is CxMappingSource {
 }
 export type CxMappingSecondaryMappings = EhrCxMappingSecondaryMappings | null;
 export const secondaryMappingsSchemaMap: { [key in CxMappingSource]: z.Schema | undefined } = {
-  ...ehrCxMappingSecondaryMappingsSchemaMap,
-  [EhrSources.eclinicalworks]: undefined,
+  ...ehrCxMappingSecondaryMappingsSchemaMapGeneral,
 };
 
 export type CxMappingPerSource = {
