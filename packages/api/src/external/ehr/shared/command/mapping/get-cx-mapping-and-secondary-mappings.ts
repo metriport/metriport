@@ -2,7 +2,7 @@ import {
   EhrCxMappingSecondaryMappings,
   ehrCxMappingSecondaryMappingsSchemaMap,
   EhrSourceWithSecondaryMappings,
-} from "@metriport/core/src/external/ehr/mappings";
+} from "@metriport/core/external/ehr/mappings";
 import { MetriportError } from "@metriport/shared";
 import { getCxMappingOrFail } from "../../../../../command/mapping/cx";
 import { CxMapping } from "../../../../../domain/cx-mapping";
