@@ -291,14 +291,9 @@ export async function updatePatientAndLinksInCwV2({
       }),
     ]);
 
-    // TODO: ENG-513 MAKE SURE THE LINKS ARE HANDLED CORRECTLY
-    // TODO: ENG-513 MAKE SURE THE LINKS ARE HANDLED CORRECTLY
-    // TODO: ENG-513 MAKE SURE THE LINKS ARE HANDLED CORRECTLY
-    // More specifically, for some reason, drivers license doesn't show up in the links after it is inserted with a patient update.
-    //   - I have not tested matching a patient who got a DL on the initial create tho
-    // Also, it seems like if you use the "Unlink" to remove a patient link, it disappears completely from existing links,
-    // and does not show up in "Probable Links" - seems weird to me.. And lastly, in the case that an existing link is removed,
-    // it doesn't seem to be removed from our patient's CW links data! MAYBE that's intended, but need to discuss
+    // TODO: ENG-955 MAKE SURE THE LINKS ARE HANDLED CORRECTLY
+    // TODO: ENG-955 MAKE SURE THE LINKS ARE HANDLED CORRECTLY
+    // TODO: ENG-955 MAKE SURE THE LINKS ARE HANDLED CORRECTLY
     const { validLinks, invalidLinks } = await tryToImproveLinks({
       commonWell,
       patient,
@@ -518,51 +513,6 @@ async function queryDocsIfScheduled({
     }).catch(processAsyncError("CW queryAndProcessDocuments"));
   }
 }
-
-// export async function get(
-//   patient: Patient,
-//   facilityId: string
-// ): Promise<CommonwellPatient | undefined> {
-//   const { log, debug } = out(`CW.v2 get - M patientId ${patient.id}`);
-//   let commonWell: CommonWellAPI | undefined;
-//   try {
-//     const isCwEnabled = await validateCWEnabled({
-//       patient,
-//       facilityId,
-//       log,
-//       isCwV2Enabled: true,
-//     });
-//     if (!isCwEnabled) return undefined;
-
-//     const commonwellPatientId = await getCommonwellPatientId(patient);
-//     if (!commonwellPatientId) return undefined;
-
-//     const { commonWellAPI } = await setupApiAndCwPatient({ patient, facilityId });
-//     commonWell = commonWellAPI;
-
-//     const respPatient = await commonWell.getPatient(commonwellPatientId);
-//     debug(`resp getPatient: `, JSON.stringify(respPatient));
-
-//     return respPatient?.Patient ?? undefined;
-//   } catch (error) {
-//     const msg = `Failed to get patient @ CW`;
-//     const cwRef = commonWell?.lastTransactionId;
-//     log(
-//       `${msg}. Patient ID: ${patient.id}. Cause: ${errorToString(error)}. CW Reference: ${cwRef}`
-//     );
-//     capture.error(msg, {
-//       extra: {
-//         cxId: patient.cxId,
-//         facilityId,
-//         patientId: patient.id,
-//         cwReference: cwRef,
-//         context: getContext,
-//         error: errorToString(error),
-//       },
-//     });
-//     throw error;
-//   }
-// }
 
 export async function removeInCwV2(patient: Patient, facilityId: string): Promise<void> {
   const { log } = out(`CW.v2 delete - M patientId ${patient.id}`);

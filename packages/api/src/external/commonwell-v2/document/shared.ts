@@ -1,4 +1,4 @@
-import { DocumentReference, Content } from "@metriport/commonwell-sdk";
+import { DocumentReference } from "@metriport/commonwell-sdk";
 import { Patient } from "@metriport/core/domain/patient";
 import { getFileExtension } from "@metriport/core/util/mime";
 import dayjs from "dayjs";
@@ -10,10 +10,11 @@ export const sandboxSleepTime = dayjs.duration({ seconds: 5 });
 
 export type DocumentWithMetriportId = DocumentReference & {
   originalId: string;
+  id: string;
 };
 
 export type DocumentWithLocation = DocumentWithMetriportId & {
-  content: [Content, ...Content[]];
+  location: string;
 };
 
 export type CWDocumentWithMetriportData = DocumentWithMetriportId & {
