@@ -13,6 +13,7 @@ export interface HccCode {
   v24: number[];
   v28: number[];
   display: string;
+  icd10Code: string;
 }
 
 export function getHccForIcd10Code(icd10Code: string): HccCode | undefined {
@@ -21,6 +22,7 @@ export function getHccForIcd10Code(icd10Code: string): HccCode | undefined {
     return undefined;
   }
   return {
+    icd10Code,
     display: hccRow[0],
     v24: hccRow[1],
     v28: hccRow[2],
