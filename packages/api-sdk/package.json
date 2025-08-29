@@ -58,7 +58,7 @@
   },
   "dependencies": {
     "@medplum/fhirtypes": "^2.0.32",
-    "@metriport/shared": "^0.25.2-alpha.1",
+    "@metriport/shared": "^0.26.0",
     "axios": "^1.8.2",
     "dayjs": "^1.11.7",
     "dotenv": "^16.3.1",

@@ -60,7 +60,7 @@
     "url": "https://github.com/metriport/metriport/issues"
   },
   "dependencies": {
-    "@metriport/shared": "^0.25.2-alpha.1",
+    "@metriport/shared": "^0.26.0",
     "axios": "^1.8.2",
     "http-status": "~1.7.0",
     "jsonwebtoken": "^9.0.0",
