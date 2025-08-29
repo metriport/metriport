@@ -8,8 +8,9 @@ export { makeJwt } from "./common/make-jwt";
 export {
   buildBaseQueryMeta,
   decodeCwPatientId,
-  getPatientIdTrailingSlash,
-  getPatientStrongIds,
+  encodeCwPatientId,
+  encodePatientIdForDocumentExchange,
+  getCwPatientIdFromLinks,
 } from "./common/util";
 export { validateNPI } from "./common/validate-npi";
 export * from "./models/address";

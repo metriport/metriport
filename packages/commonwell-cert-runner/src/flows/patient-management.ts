@@ -1,5 +1,5 @@
 import { CommonWell, Patient } from "@metriport/commonwell-sdk";
-import { encodeToCwPatientId } from "@metriport/commonwell-sdk/common/util";
+import { encodeCwPatientId } from "@metriport/commonwell-sdk/common/util";
 import { errorToString } from "@metriport/shared";
 import { cloneDeep, uniq } from "lodash";
 import { makePatient } from "../payloads";
@@ -31,14 +31,14 @@ export async function patientManagement(commonWell: CommonWell) {
     const resp_1_1 = await commonWell.createOrUpdatePatient(firstPatientCreate);
     console.log(">>> Transaction ID: " + commonWell.lastTransactionId);
     console.log(">>> 1.1 Response: " + JSON.stringify(resp_1_1, null, 2));
-    const firstPatientId = getMetriportPatientIdOrFail(resp_1_1.Patients[0], "createPatient");
-    patientIds.push(firstPatientId);
-    const firstPatientIdEncoded = encodeToCwPatientId({
-      patientId: firstPatientId,
+    const patientId = getMetriportPatientIdOrFail(resp_1_1, "createPatient");
+    patientIds.push(patientId);
+    const firstPatientIdEncoded = encodeCwPatientId({
+      patientId: patientId,
       assignAuthority: commonWell.oid,
     });
 
-    console.log(`>>> 1.3 Get Patient - ID ${firstPatientId}`);
+    console.log(`>>> 1.3 Get Patient - ID ${patientId}`);
     const resp_1_3 = await commonWell.getPatient(firstPatientIdEncoded);
     console.log(">>> Transaction ID: " + commonWell.lastTransactionId);
     console.log(">>> 1.3 Response: " + JSON.stringify(resp_1_3, null, 2));
@@ -57,7 +57,7 @@ export async function patientManagement(commonWell: CommonWell) {
     console.log(">>> Transaction ID: " + commonWell.lastTransactionId);
     console.log(">>> 1.2.1 Response: " + JSON.stringify(resp_1_2_1, null, 2));
 
-    console.log(`>>> 1.2.2 Get Patient - ID ${firstPatientId}`);
+    console.log(`>>> 1.2.2 Get Patient - ID ${patientId}`);
     const resp_1_2_2 = await commonWell.getPatient(firstPatientIdEncoded);
     console.log(">>> 1.2.2 Response: " + JSON.stringify(resp_1_2_2, null, 2));
     console.log(">>> Transaction ID: " + commonWell.lastTransactionId);
@@ -75,7 +75,7 @@ export async function patientManagement(commonWell: CommonWell) {
       }
     }
 
-    console.log(`>>> 1.3' Get Patient - ID ${firstPatientId}`);
+    console.log(`>>> 1.3' Get Patient - ID ${patientId}`);
     const resp_1_3x = await commonWell.getPatient(firstPatientIdEncoded);
     console.log(">>> Transaction ID: " + commonWell.lastTransactionId);
     console.log(">>> 1.3' Response: " + JSON.stringify(resp_1_3x, null, 2));
@@ -91,9 +91,9 @@ export async function patientManagement(commonWell: CommonWell) {
     const resp_1_4_1 = await commonWell.createOrUpdatePatient(patientToMerge);
     console.log(">>> Transaction ID: " + commonWell.lastTransactionId);
     console.log(">>> 1.4.1 Response: " + JSON.stringify(resp_1_4_1, null, 2));
-    const patientToMergeId = getMetriportPatientIdOrFail(resp_1_4_1.Patients[0], "patientToMerge");
+    const patientToMergeId = getMetriportPatientIdOrFail(resp_1_4_1, "patientToMerge");
     patientIds.push(patientToMergeId);
-    const patientToMergeIdEncoded = encodeToCwPatientId({
+    const patientToMergeIdEncoded = encodeCwPatientId({
       patientId: patientToMergeId,
       assignAuthority: commonWell.oid,
     });
@@ -142,12 +142,9 @@ export async function patientManagement(commonWell: CommonWell) {
     const resp_1_5_1 = await commonWell.createOrUpdatePatient(patientToDelete);
     console.log(">>> Transaction ID: " + commonWell.lastTransactionId);
     console.log(">>> 1.5.1 Response: " + JSON.stringify(resp_1_5_1, null, 2));
-    const patientToDeleteId = getMetriportPatientIdOrFail(
-      resp_1_5_1.Patients[0],
-      "patientToDelete"
-    );
+    const patientToDeleteId = getMetriportPatientIdOrFail(resp_1_5_1, "patientToDelete");
     patientIds.push(patientToDeleteId);
-    const patientToDeleteIdEncoded = encodeToCwPatientId({
+    const patientToDeleteIdEncoded = encodeCwPatientId({
       patientId: patientToDeleteId,
       assignAuthority: commonWell.oid,
     });
@@ -177,7 +174,7 @@ export async function patientManagement(commonWell: CommonWell) {
     const uniquePatientIds = uniq(patientIds);
     for (const metriportPatientId of uniquePatientIds) {
       try {
-        const patientId = encodeToCwPatientId({
+        const patientId = encodeCwPatientId({
           patientId: metriportPatientId,
           assignAuthority: commonWell.oid,
         });

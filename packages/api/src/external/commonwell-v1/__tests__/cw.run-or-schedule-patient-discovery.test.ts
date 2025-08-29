@@ -1,18 +1,18 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
+import { makePatient, makePatientData } from "@metriport/core/domain/__tests__/patient";
 import {
   DiscoveryParams,
   ScheduledPatientDiscovery,
 } from "@metriport/core/domain/patient-discovery";
-import { makePatient, makePatientData } from "@metriport/core/domain/__tests__/patient";
 import { MedicalDataSource } from "@metriport/core/external/index";
+import { mockStartTransaction } from "../../../models/__tests__/transaction";
 import { PatientModel } from "../../../models/medical/patient";
 import { PatientMappingModel } from "../../../models/patient-mapping";
-import { mockStartTransaction } from "../../../models/__tests__/transaction";
 import { CQDirectoryEntryViewModel } from "../../carequality/models/cq-directory-view";
+import * as cwPatient from "../../commonwell/patient/patient";
+import { runOrScheduleCwPatientDiscovery } from "../../commonwell/patient/run-or-schedule-patient-discovery";
 import { getCqOrgIdsToDenyOnCw } from "../../hie/cross-hie-ids";
 import * as schedulePatientDiscovery from "../../hie/schedule-patient-discovery";
-import { runOrScheduleCwPatientDiscovery } from "../command/run-or-schedule-patient-discovery";
-import * as cwPatient from "../patient";
 
 let patientModel_findOne: jest.SpyInstance;
 let cwUpdate_mock: jest.SpyInstance;

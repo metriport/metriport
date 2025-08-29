@@ -2,7 +2,7 @@ import { capture } from "@metriport/core/util/notifications";
 import { getFacilityIdOrFail } from "../../../domain/medical/patient-facility";
 import { processAsyncError } from "../../../errors";
 import cqCommands from "../../../external/carequality";
-import cwCommands from "../../../external/commonwell-v1";
+import { remove as removeFromCw } from "../../../external/commonwell/patient/patient";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
 import { validateVersionForUpdate } from "../../../models/_default";
 import { deleteAllPatientMappings } from "../../mapping/patient";
@@ -20,7 +20,7 @@ export type DeleteOptions = {
   allEnvs?: boolean;
 };
 
-export const deletePatient = async (patientDelete: PatientDeleteCmd): Promise<void> => {
+export async function deletePatient(patientDelete: PatientDeleteCmd): Promise<void> {
   const { id, cxId, facilityId: facilityIdParam, eTag } = patientDelete;
 
   const patient = await getPatientModelOrFail({ id, cxId });
@@ -32,13 +32,15 @@ export const deletePatient = async (patientDelete: PatientDeleteCmd): Promise<vo
   try {
     // These need to run before the Patient is deleted (need patient data from the DB)
     await Promise.all([
-      cwCommands.patient.remove(patient, facilityId).catch(err => {
-        if (err.response?.status === 404) {
-          console.log(`Patient not found @ CW when deleting ${patient.id} , continuing...`);
-          return;
+      removeFromCw({ patient, facilityId, getOrgIdExcludeList: () => Promise.resolve([]) }).catch(
+        err => {
+          if (err.response?.status === 404) {
+            console.log(`Patient not found @ CW when deleting ${patient.id} , continuing...`);
+            return;
+          }
+          processAsyncError(deleteContext)(err);
         }
-        processAsyncError(deleteContext)(err);
-      }),
+      ),
       fhirApi.deleteResource("Patient", patient.id).catch(processAsyncError(deleteContext)),
       cqCommands.patient.remove(patient).catch(processAsyncError(deleteContext)),
       deleteAllPatientMappings({ cxId, patientId: id }),
@@ -56,4 +58,4 @@ export const deletePatient = async (patientDelete: PatientDeleteCmd): Promise<vo
     });
     throw error;
   }
-};
+}

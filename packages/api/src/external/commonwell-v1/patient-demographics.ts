@@ -9,7 +9,7 @@ import {
   normalizeAddress,
   stringifyAddress,
 } from "../../domain/medical/patient-demographics";
-import { CwLink } from "./cw-patient-data";
+import { CwLink, isCwLinkV1 } from "../commonwell/patient/cw-patient-data/shared";
 
 export function patientNetworkLinkToNormalizedLinkDemographics(
   patientNetworkLink: PatientNetworkLink
@@ -68,6 +68,7 @@ export function patientNetworkLinkToNormalizedLinkDemographics(
 
 export function getPatientNetworkLinks(linkResults: CwLink[]): PatientNetworkLink[] {
   return linkResults.flatMap(lr => {
+    if (!isCwLinkV1(lr)) return [];
     const patientNetworkLink = lr.patient;
     if (!patientNetworkLink) return [];
     return patientNetworkLink;

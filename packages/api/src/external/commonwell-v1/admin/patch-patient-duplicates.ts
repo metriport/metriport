@@ -3,16 +3,22 @@ import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import MetriportError from "../../../errors/metriport-error";
-import { autoUpgradeNetworkLinks, getPatientsNetworkLinks } from "../link/shared";
-import { validateCwLinksBelongToPatient } from "../../hie/validate-patient-links";
 import {
   updateCommonwellIdsAndStatus,
   updatePatientDiscoveryStatus,
-} from "../patient-external-data";
+} from "../../commonwell/patient/patient-external-data";
+import { validateCwLinksBelongToPatient } from "../../hie/validate-patient-links";
+import {
+  autoUpgradeNetworkLinks,
+  cwLinkToPatientData,
+  getPatientsNetworkLinks,
+} from "../link/shared";
 import { isEnrolledBy } from "../person-shared";
 import { getCWAccessForPatient } from "./shared";
 
 /**
+ * TODO ENG-554 Remove entirely once we've migrated to CWv2
+ *
  * IMPORTANT: This is an Admin-only function, it should not be executed outside of internal endpoints.
  *
  * Patch duplicated persons in CommonWell - sibling of find-patient-duplicates.ts
@@ -71,7 +77,8 @@ export async function patchDuplicatedPersonsForPatient(
     const { validNetworkLinks, invalidLinks } = await validateCwLinksBelongToPatient(
       cxId,
       networkLinks,
-      patient.data
+      patient.data,
+      cwLinkToPatientData
     );
 
     // ...and upgrade the network links w/ that person's patients

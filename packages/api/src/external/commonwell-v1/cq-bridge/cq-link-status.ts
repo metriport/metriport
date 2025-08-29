@@ -7,9 +7,8 @@ import { cloneDeep } from "lodash";
 import { getPatientModelOrFail } from "../../../command/medical/patient/get-patient";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
+import { CQLinkStatus, PatientDataCommonwell } from "../../commonwell/patient/patient-shared";
 import { getLinkStatusCQ } from "../patient";
-import { CQLinkStatus } from "../patient-shared";
-import { PatientDataCommonwell } from "../patient-shared";
 
 dayjs.extend(duration);
 const PARALLEL_UPDATES = 10;

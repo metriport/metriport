@@ -5,14 +5,19 @@ import { out } from "@metriport/core/util/log";
 import { reset } from ".";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { capture } from "../../../shared/notifications";
-import { validateCwLinksBelongToPatient } from "../../hie/validate-patient-links";
-import { makeCommonWellAPI } from "../api";
 import {
   updateCommonwellIdsAndStatus,
   updatePatientDiscoveryStatus,
-} from "../patient-external-data";
+} from "../../commonwell/patient/patient-external-data";
+import { validateCwLinksBelongToPatient } from "../../hie/validate-patient-links";
+import { makeCommonWellAPI } from "../api";
 import { getCwInitiator } from "../shared";
-import { autoUpgradeNetworkLinks, getPatientsNetworkLinks, patientWithCWData } from "./shared";
+import {
+  autoUpgradeNetworkLinks,
+  cwLinkToPatientData,
+  getPatientsNetworkLinks,
+  patientWithCWData,
+} from "./shared";
 
 const context = "cw.link.create";
 
@@ -81,7 +86,8 @@ export async function create(
     const { validNetworkLinks, invalidLinks } = await validateCwLinksBelongToPatient(
       cxId,
       networkLinks,
-      patient.data
+      patient.data,
+      cwLinkToPatientData
     );
 
     await autoUpgradeNetworkLinks(

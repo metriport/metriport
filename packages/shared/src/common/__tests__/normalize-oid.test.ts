@@ -1,4 +1,4 @@
-import { normalizeOid } from "../normalize-oid";
+import { normalizeOid, parseOid } from "../normalize-oid";
 
 const shorterValidOid = "1";
 const shorterInvalidOid = "1000";
@@ -9,6 +9,7 @@ const invalidOid = "notAnOid";
 const consecutiveDotsInvalidOid = "1.22.333..444";
 const validOidWithTrailingString = "1.22.333.444SomeJunk";
 const oidWithLeadingAndTrailingJunk = "SomeJunk1.22.333.444SomeJunk";
+const oidAsPartOfUrl = "https://org-address.org/v1/org/1.22.333.444";
 const oidWithLeadingZeros = "1.02.003.0004";
 const emptyString = "";
 const onlyDots = "...";
@@ -56,5 +57,21 @@ describe("normalizeOid", () => {
   it("should handle root code boundary conditions", () => {
     expect(normalizeOid(rootBoundaryZero)).toBe(rootBoundaryZero);
     expect(normalizeOid(rootBoundaryTwo)).toBe(rootBoundaryTwo);
+  });
+});
+
+describe("parseOid", () => {
+  it("should return the same oid if it is already valid", () => {
+    expect(parseOid(validOid)).toBe(validOid);
+    expect(parseOid(shorterValidOid)).toBe(shorterValidOid);
+    expect(parseOid(longerValidOid)).toBe(longerValidOid);
+  });
+
+  it("should return the oid from a url", () => {
+    expect(parseOid(oidAsPartOfUrl)).toBe(validOid);
+  });
+
+  it("should return the oid without leading and trailing junk", () => {
+    expect(parseOid(oidWithLeadingAndTrailingJunk)).toBe(validOid);
   });
 });
