@@ -20,6 +20,7 @@ export async function writeBackGroupedVitals(
     });
   }
 
+  // TODO: rework
   const secondaryMappings = await getSecondaryMappings({
     ehr: EhrSources.athena,
     practiceId,

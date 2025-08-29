@@ -7,6 +7,8 @@ import { createAthenaHealthClient } from "../../shared";
 
 export async function writeBackLab(params: WriteBackLabClientRequest): Promise<void> {
   const { cxId, practiceId, ehrPatientId, tokenInfo, observation } = params;
+
+  // TODO: rework
   const secondaryMappings = await getSecondaryMappings({
     ehr: EhrSources.athena,
     practiceId,

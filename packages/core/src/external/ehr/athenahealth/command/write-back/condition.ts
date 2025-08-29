@@ -7,6 +7,8 @@ import { createAthenaHealthClient } from "../../shared";
 
 export async function writeBackCondition(params: WriteBackConditionClientRequest): Promise<void> {
   const { cxId, practiceId, ehrPatientId, tokenInfo, condition } = params;
+
+  // TODO: rework
   const secondaryMappings = await getSecondaryMappings({
     ehr: EhrSources.athena,
     practiceId,
