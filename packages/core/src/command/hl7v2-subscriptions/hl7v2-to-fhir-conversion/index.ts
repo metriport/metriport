@@ -2,7 +2,7 @@ import { Hl7Message } from "@medplum/core";
 import { Bundle, Extension, Resource } from "@medplum/fhirtypes";
 import { MetriportError } from "@metriport/shared";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
-import { BundleWithEntry, buildBundleFromResources } from "../../../external/fhir/bundle/bundle";
+import { buildBundleFromResources } from "../../../external/fhir/bundle/bundle";
 import { buildDocIdFhirExtension } from "../../../external/fhir/shared/extensions/doc-id-extension";
 import { capture, out } from "../../../util";
 import { convertAdtToFhirResources } from "./adt/encounter";
@@ -63,10 +63,13 @@ export function convertHl7v2MessageToFhir({
   throw new MetriportError(msg, undefined, extraProps);
 }
 
-function appendExtensionToEachResource(
-  bundle: BundleWithEntry<Resource>,
+export function appendExtensionToEachResource(
+  bundle: Bundle<Resource>,
   newExtension: Extension
 ): Bundle<Resource> {
+  if (!bundle.entry) {
+    throw new Error("No entry in bundle");
+  }
   return {
     ...bundle,
     entry: bundle.entry.map(e => {

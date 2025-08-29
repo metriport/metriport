@@ -6,6 +6,7 @@ dotenv.config();
 import { FhirBundleSdk } from "@metriport/fhir-sdk";
 import { reprocessAdtConversionBundles } from "./common";
 import { createExtensionDataSource } from "@metriport/core/external/fhir/shared/extensions/extension";
+import { appendExtensionToEachResource } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/index";
 
 /**
  *
@@ -23,25 +24,24 @@ import { createExtensionDataSource } from "@metriport/core/external/fhir/shared/
  * Note: This script modifies data in S3. Ensure you have backups if needed.
  */
 
-const prefixes: string[] = [];
-const dryRun = true;
-const hieName = "";
+const prefixes: string[] = ["cxId=testing/ptId=testing/"];
+const dryRun = false;
+const hieName = "MyTestHIE";
 
 async function main() {
   console.log(`Adding datasource ${hieName} to resources. Make sure this is correct.`);
-  await reprocessAdtConversionBundles(prefixes, deduplicateExistingBundles, dryRun);
+  await reprocessAdtConversionBundles(prefixes, addSourceExtensionToEachResource, dryRun);
 }
 
-async function deduplicateExistingBundles(
+async function addSourceExtensionToEachResource(
   bundle: FhirBundleSdk
 ): Promise<FhirBundleSdk | undefined> {
-  for (const entry of bundle.entry) {
-    const dataSourceExtension = createExtensionDataSource(hieName.toUpperCase());
-    //eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const resource = entry.resource as any;
-    resource.extension = [...(resource.extension ?? []), dataSourceExtension];
-  }
-  return bundle;
+  const diffBundle = bundle.toObject();
+  const updated = appendExtensionToEachResource(
+    diffBundle,
+    createExtensionDataSource(hieName.toUpperCase())
+  );
+  return FhirBundleSdk.create(updated);
 }
 
 main();
