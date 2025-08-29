@@ -16,6 +16,7 @@ export type Hl7ToFhirParams = {
   rawDataFileKey: string;
   hieName: string;
 };
+type ResourceWithExtension = Resource & { extension?: Extension[] };
 
 /**
  * Converts an HL7v2 message to a FHIR Bundle. Currently only supports ADT messages.
@@ -74,15 +75,17 @@ export function appendExtensionToEachResource(
     ...bundle,
     entry: bundle.entry.map(e => {
       const resource = e.resource;
-      if (!resource || !("extension" in resource)) return e;
+      if (!resource) return e;
 
-      const existing = resource.extension ?? [];
+      const existing: Extension[] = (resource as ResourceWithExtension).extension ?? [];
+      const extension = [...existing, newExtension];
+
       return {
         ...e,
         resource: {
           ...resource,
-          extension: [...existing, newExtension],
-        },
+          extension: extension,
+        } as Resource,
       };
     }),
   };
