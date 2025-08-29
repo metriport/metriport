@@ -26,25 +26,30 @@ To access this data, you just need to create Patients that match some pre-define
 demographics.
 
 <Warning>
-  In Sandbox mode, any Patient you create with a **first name** that matches one of the pre-defined
-  Patients below will be populated with the corresponding test data.
+  In Sandbox mode, any Patient you create with a **first
+  name** that matches one of the pre-defined Patients below
+  will be populated with the corresponding test data.
 </Warning>
 
 <Warning>
-  When querying for consolidated data in sandbox mode using a `conversionType`, if you pass a
-  patient that is not one of the pre-defined Patients below, we will always return a pre-defined
-  file.
+  When querying for consolidated data in sandbox mode using
+  a `conversionType`, if you pass a patient that is not one
+  of the pre-defined Patients below, we will always return a
+  pre-defined file.
 </Warning>
 
 <Tip>
-  You can expect about 6 example documents per Patient, roughtly breaking down to: a C-CDA XML (and
-  the resulting FHIR resources), 3 PDFs, and 2 images.
+  You can expect about 6 example documents per Patient,
+  roughly breaking down to: a C-CDA XML (and the resulting
+  FHIR resources), 3 PDFs, and 2 images.
 </Tip>
 
 The sections below will describe the pre-defined Patient demographics which you can use
 as a base for requests to the [create Patient endpoint](/medical-api/api-reference/patient/create-patient):
 
 ### Jane Smith
+
+Jane Smith has a history of depression and other mental health conditions.
 
 ```json
 {
@@ -54,10 +59,10 @@ as a base for requests to the [create Patient endpoint](/medical-api/api-referen
   "genderAtBirth": "F",
   "address": [
     {
-      "addressLine1": "123 Arsenal St",
-      "city": "Phoenix",
-      "state": "AZ",
-      "zip": "85300",
+      "addressLine1": "123 DustyDepot Ave",
+      "city": "Springfield",
+      "state": "OR",
+      "zip": "00000",
       "country": "USA"
     }
   ]
@@ -65,6 +70,8 @@ as a base for requests to the [create Patient endpoint](/medical-api/api-referen
 ```
 
 ### Chris Smith
+
+Chris Smith has chronic kidney disease (CKD).
 
 ```json
 {
@@ -74,10 +81,10 @@ as a base for requests to the [create Patient endpoint](/medical-api/api-referen
   "genderAtBirth": "M",
   "address": [
     {
-      "addressLine1": "123 Atlantis Rd",
-      "city": "Chicago",
-      "state": "IL",
-      "zip": "12345",
+      "addressLine1": "123 DustyDepot Ave",
+      "city": "Springfield",
+      "state": "OR",
+      "zip": "00000",
       "country": "USA"
     }
   ]
@@ -85,6 +92,8 @@ as a base for requests to the [create Patient endpoint](/medical-api/api-referen
 ```
 
 ### Ollie Brown
+
+Ollie Brown has generalized anxiety disorder (GAD).
 
 ```json
 {
@@ -94,50 +103,54 @@ as a base for requests to the [create Patient endpoint](/medical-api/api-referen
   "genderAtBirth": "M",
   "address": [
     {
-      "addressLine1": "201 Armada St",
-      "city": "Harrisburg",
-      "state": "PA",
-      "zip": "15300",
+      "addressLine1": "123 DustyDepot Ave",
+      "city": "Springfield",
+      "state": "OR",
+      "zip": "00000",
       "country": "USA"
     }
   ]
 }
 ```
 
-### Kyla Fields
+### Kyla Brown
+
+Kyla Brown has chronic hypertension and diabetes.
 
 ```json
 {
   "firstName": "Kyla",
-  "lastName": "Fields",
+  "lastName": "Brown",
   "dob": "1927-05-23",
   "genderAtBirth": "F",
   "address": [
     {
-      "addressLine1": "332 16th St",
-      "city": "Portland",
-      "state": "ME",
-      "zip": "04000",
+      "addressLine1": "123 DustyDepot Ave",
+      "city": "Springfield",
+      "state": "OR",
+      "zip": "00000",
       "country": "USA"
     }
   ]
 }
 ```
 
-### Andreas Sims
+### Andreas Brown
+
+Andreas Brown has type 2 diabetes and kidney disease.
 
 ```json
 {
   "firstName": "Andreas",
-  "lastName": "Sims",
+  "lastName": "Brown",
   "dob": "1952-01-01",
   "genderAtBirth": "M",
   "address": [
     {
-      "addressLine1": "4430 York St",
-      "city": "Jefferson City",
-      "state": "MO",
-      "zip": "64000",
+      "addressLine1": "123 DustyDepot Ave",
+      "city": "Springfield",
+      "state": "OR",
+      "zip": "00000",
       "country": "USA"
     }
   ]
