@@ -7,7 +7,7 @@ import {
   CensusGeocoderResponse,
   AddressMatch,
 } from "./types";
-import { getStreetFromAddress } from "./utils";
+import { getAddressFromMatch, getStreetFromAddress } from "./utils";
 import {
   CENSUS_GEOCODER_HEADERS,
   CENSUS_GEOCODER_ADDRESS_URL,
@@ -49,6 +49,15 @@ export async function geocodeAddress(
   }
 }
 
+export async function sanitizeAddress(address: Address): Promise<Address> {
+  const addressMatches = await geocodeAddress(address);
+  const firstMatch = addressMatches[0];
+  if (!firstMatch) {
+    return address;
+  }
+  return getAddressFromMatch(firstMatch);
+}
+
 export async function geocodeOneLineAddress(address: string): Promise<AddressMatch[]> {
   const params = new URLSearchParams({
     address: address,
@@ -69,4 +78,13 @@ export async function geocodeOneLineAddress(address: string): Promise<AddressMat
       response: JSON.stringify(response.data),
     });
   }
+}
+
+export async function sanitizeOneLineAddress(address: string): Promise<string> {
+  const addressMatches = await geocodeOneLineAddress(address);
+  const firstMatch = addressMatches[0];
+  if (!firstMatch) {
+    return address;
+  }
+  return firstMatch.matchedAddress;
 }
