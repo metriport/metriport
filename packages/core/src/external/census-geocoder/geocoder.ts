@@ -49,7 +49,7 @@ export async function geocodeAddress(
   }
 }
 
-export async function sanitizeAddress(address: Address): Promise<Address> {
+export async function normalizeAddress(address: Address): Promise<Address> {
   const addressMatches = await geocodeAddress(address);
   const firstMatch = addressMatches[0];
   if (!firstMatch) {
@@ -80,7 +80,7 @@ export async function geocodeOneLineAddress(address: string): Promise<AddressMat
   }
 }
 
-export async function sanitizeOneLineAddress(address: string): Promise<string> {
+export async function normalizeOneLineAddress(address: string): Promise<string> {
   const addressMatches = await geocodeOneLineAddress(address);
   const firstMatch = addressMatches[0];
   if (!firstMatch) {
