@@ -150,6 +150,4 @@ export interface CommonWellAPI {
     outputStream: stream.Writable,
     options?: BaseOptions
   ): Promise<RetrieveDocumentResponse>;
-
-  rethrowDescriptiveError(error: unknown, title: string): never;
 }
