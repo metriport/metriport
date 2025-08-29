@@ -1,3 +1,4 @@
+import _ from "lodash";
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { Condition, Patient } from "@medplum/fhirtypes";
 import { ResponseDetail } from "../schema/response";
@@ -9,7 +10,7 @@ export function getConditions(
   detail: ResponseDetail,
   { patient }: { patient: Patient }
 ): Condition[] {
-  const conditions = [
+  const conditions = _([
     getCondition(patient, detail.diagnosisCode1),
     getCondition(patient, detail.diagnosisCode2),
     getCondition(patient, detail.diagnosisCode3),
@@ -20,7 +21,9 @@ export function getConditions(
     getCondition(patient, detail.diagnosisCode8),
     getCondition(patient, detail.diagnosisCode9),
     getCondition(patient, detail.diagnosisCode10),
-  ].filter(Boolean) as Condition[];
+  ])
+    .compact()
+    .value();
 
   return conditions;
 }

@@ -80,16 +80,15 @@ function getPatientTelecom(detail: ResponseDetail): ContactPoint[] | undefined {
 }
 
 function getPatientIdentifier(detail: ResponseDetail): Identifier[] | undefined {
-  const identifiers: Identifier[] = [];
-
-  if (detail.socialSecurityNumber && !detail.socialSecurityNumber.match(/^0+$/)) {
-    identifiers.push({
+  if (!detail.socialSecurityNumber) return undefined;
+  // Common placeholder returned for SSN
+  if (detail.socialSecurityNumber.match(/^0+$/)) return undefined;
+  return [
+    {
       system: "http://hl7.org/fhir/sid/us-ssn",
       value: detail.socialSecurityNumber,
-    });
-  }
-
-  return identifiers.length > 0 ? identifiers : undefined;
+    },
+  ];
 }
 
 function getPatientGender(detail: ResponseDetail): Patient["gender"] | undefined {

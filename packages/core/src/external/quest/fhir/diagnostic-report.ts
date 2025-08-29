@@ -61,13 +61,13 @@ function getEffectiveDateTime(detail: ResponseDetail): string {
 function getIdentifier(detail: ResponseDetail): Identifier[] {
   const identifier: Identifier[] = [
     {
-      system: "quest-accession",
+      system: "https://questdiagnostics.com/identifier/accession",
       value: detail.accessionNumber,
     },
   ];
   if (detail.requisitionNumber) {
     identifier.push({
-      system: "quest-requisition",
+      system: "https://questdiagnostics.com/identifier/requisition",
       value: detail.requisitionNumber,
     });
   }
