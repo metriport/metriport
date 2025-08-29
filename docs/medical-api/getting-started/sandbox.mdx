@@ -26,25 +26,30 @@ To access this data, you just need to create Patients that match some pre-define
 demographics.
 
 <Warning>
-  In Sandbox mode, any Patient you create with a **first name** that matches one of the pre-defined
-  Patients below will be populated with the corresponding test data.
+  In Sandbox mode, any Patient you create with a **first
+  name** that matches one of the pre-defined Patients below
+  will be populated with the corresponding test data.
 </Warning>
 
 <Warning>
-  When querying for consolidated data in sandbox mode using a `conversionType`, if you pass a
-  patient that is not one of the pre-defined Patients below, we will always return a pre-defined
-  file.
+  When querying for consolidated data in sandbox mode using
+  a `conversionType`, if you pass a patient that is not one
+  of the pre-defined Patients below, we will always return a
+  pre-defined file.
 </Warning>
 
 <Tip>
-  You can expect about 6 example documents per Patient, roughtly breaking down to: a C-CDA XML (and
-  the resulting FHIR resources), 3 PDFs, and 2 images.
+  You can expect about 6 example documents per Patient,
+  roughtly breaking down to: a C-CDA XML (and the resulting
+  FHIR resources), 3 PDFs, and 2 images.
 </Tip>
 
 The sections below will describe the pre-defined Patient demographics which you can use
 as a base for requests to the [create Patient endpoint](/medical-api/api-reference/patient/create-patient):
 
 ### Jane Smith
+
+Jane Smith battles with Depression and other mental health problems.
 
 ```json
 {
@@ -54,10 +59,10 @@ as a base for requests to the [create Patient endpoint](/medical-api/api-referen
   "genderAtBirth": "F",
   "address": [
     {
-      "addressLine1": "123 Arsenal St",
-      "city": "Phoenix",
-      "state": "AZ",
-      "zip": "85300",
+      "addressLine1": "123 DustyDepot Ave",
+      "city": "Springfield",
+      "state": "Oregon",
+      "zip": "00000",
       "country": "USA"
     }
   ]
@@ -65,6 +70,8 @@ as a base for requests to the [create Patient endpoint](/medical-api/api-referen
 ```
 
 ### Chris Smith
+
+Chris Smith battles with CKD (Chronic Kidney Disorder)
 
 ```json
 {
@@ -86,6 +93,8 @@ as a base for requests to the [create Patient endpoint](/medical-api/api-referen
 
 ### Ollie Brown
 
+Ollie Brown suffers from general anxiety disorder
+
 ```json
 {
   "firstName": "Ollie",
@@ -106,6 +115,8 @@ as a base for requests to the [create Patient endpoint](/medical-api/api-referen
 
 ### Kyla Fields
 
+Kyla Fields has chronic hypertension.
+
 ```json
 {
   "firstName": "Kyla",
@@ -125,6 +136,8 @@ as a base for requests to the [create Patient endpoint](/medical-api/api-referen
 ```
 
 ### Andreas Sims
+
+Andreas Sims is a diabetic.
 
 ```json
 {
