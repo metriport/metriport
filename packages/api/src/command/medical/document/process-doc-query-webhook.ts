@@ -124,7 +124,7 @@ async function handleConversionWebhook(
       cxId: patient.cxId,
       patientId: patient.id,
       requestId,
-      status: convertIsCompleted ? "successful" : "failed",
+      pipelineStatus: convertIsCompleted ? "successful" : "failed",
     }).catch(emptyFunction);
   }
 }

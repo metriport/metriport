@@ -7,7 +7,7 @@ import {
   backoffThree,
   backoffTwo,
   calculateScheduledAt,
-  pickEarliestScheduledAt,
+  earliest,
   pickLargestRemainingAttempts,
 } from "../utils";
 
@@ -77,7 +77,7 @@ describe("patientMonitoringUtils", () => {
       const date1 = new Date("2024-01-01T12:00:00Z");
       const date2 = new Date("2024-01-01T12:05:00Z");
 
-      const result = pickEarliestScheduledAt(date1, date2);
+      const result = earliest(date1, date2);
       expect(result).toEqual(date1);
     });
   });

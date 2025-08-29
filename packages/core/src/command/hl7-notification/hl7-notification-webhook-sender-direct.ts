@@ -1,7 +1,7 @@
 import { Hl7Message } from "@medplum/core";
-import { Bundle, CodeableConcept, Resource } from "@medplum/fhirtypes";
+import { Bundle, CodeableConcept, Period, Resource } from "@medplum/fhirtypes";
 import { executeWithNetworkRetries } from "@metriport/shared";
-import { CreateDischargeRequeryParams } from "@metriport/shared/domain/patient/patient-monitoring/discharge-requery";
+import { DischargeData } from "@metriport/shared/domain/patient/patient-monitoring/discharge-requery";
 import { TcmEncounterUpsertInput } from "@metriport/shared/domain/tcm-encounter";
 import axios from "axios";
 import dayjs from "dayjs";
@@ -93,7 +93,6 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
 
     const internalHl7RouteUrl = `${this.apiUrl}/${INTERNAL_PATIENT_ENDPOINT}/${patientId}/${INTERNAL_HL7_ENDPOINT}`;
     const internalGetPatientUrl = `${this.apiUrl}/${INTERNAL_PATIENT_ENDPOINT}/${patientId}?cxId=${cxId}`;
-    const internalDischargeRequeryRouteUrl = `${this.apiUrl}/${INTERNAL_PATIENT_ENDPOINT}/${DISCHARGE_REQUERY_ENDPOINT}`;
 
     log(`GET internalGetPatientUrl: ${internalGetPatientUrl}`);
     const patient = await executeWithNetworkRetries(
@@ -153,19 +152,7 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
       }),
     ]);
 
-    log(`Sending Discharge Requery kickoff...`);
-    if (triggerEvent === dischargeEventCode) {
-      const params: CreateDischargeRequeryParams = {
-        cxId,
-        patientId,
-      };
-      await executeWithNetworkRetries(
-        async () =>
-          await axios.post(internalDischargeRequeryRouteUrl, undefined, {
-            params,
-          })
-      );
-    }
+    await this.createDischargeRequeryJob(cxId, patientId, encounterPeriod, triggerEvent, log);
 
     const bundlePresignedUrl = await this.s3Utils.getSignedUrl({
       bucketName: result.bucket,
@@ -226,6 +213,32 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
         log,
       }
     );
+  }
+
+  private async createDischargeRequeryJob(
+    cxId: string,
+    patientId: string,
+    encounterPeriod: Period | undefined,
+    triggerEvent: SupportedTriggerEvent,
+    log: typeof console.log
+  ): Promise<void> {
+    if (triggerEvent !== dischargeEventCode) return;
+
+    const goals: DischargeData[] = encounterPeriod?.end
+      ? [{ type: "findDischargeSummary", encounterEndDate: encounterPeriod.end }]
+      : [];
+
+    log(`Sending Discharge Requery kickoff...`);
+    const createDischargeRequeryJobRouteUrl = `${this.apiUrl}/${INTERNAL_PATIENT_ENDPOINT}/${DISCHARGE_REQUERY_ENDPOINT}`;
+
+    await executeWithNetworkRetries(
+      async () =>
+        axios.post(createDischargeRequeryJobRouteUrl, { goals }, { params: { cxId, patientId } }),
+      {
+        log,
+      }
+    );
+    return;
   }
 
   private extractClinicalInformation(bundle: Bundle<Resource>): ClinicalInformation {
