@@ -65,8 +65,11 @@ export async function validateDepartmentId({
     });
   const departmentIds = parsedSecondaryMappings.departmentIds;
   const strippedPracticeId = athenaPracticeId.replace("a-1.Practice-", "");
-  const strippedDeparmentId = athenaDepartmentId.replace(`a-${strippedPracticeId}.Department-`, "");
-  if (departmentIds.length > 0 && !departmentIds.includes(strippedDeparmentId)) {
+  const strippedDepartmentId = athenaDepartmentId.replace(
+    `a-${strippedPracticeId}.Department-`,
+    ""
+  );
+  if (departmentIds.length > 0 && !departmentIds.includes(strippedDepartmentId)) {
     throw new BadRequestError(
       "AthenaHealth patient is not in a department that is enabled",
       undefined,
