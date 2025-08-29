@@ -105,7 +105,7 @@ export class Hl7v2RosterGenerator {
     const rosterCsv = this.generateCsv(rosterRows);
     log("Created CSV");
 
-    const fileName = createFileNameHl7v2Roster(hieName);
+    const s3Key = createFileKeyHl7v2Roster(hieName);
 
     log("Uploading roster to remote SFTP server");
     await uploadToRemoteSftp(config, rosterCsv);
@@ -115,7 +115,7 @@ export class Hl7v2RosterGenerator {
       s3Utils: this.s3Utils,
       payload: rosterCsv,
       bucketName: this.bucketName,
-      fileName,
+      fileName: s3Key,
       contentType: CSV_MIME_TYPE,
       log,
       errorConfig: {
@@ -125,10 +125,10 @@ export class Hl7v2RosterGenerator {
         shouldCapture: true,
       },
     });
-    log(`Saved in S3: ${this.bucketName}/${fileName}`);
+    log(`Saved in S3: ${this.bucketName}/${s3Key}`);
 
     const rosterSize = rosterRows.length;
-    this.logResults(rosterSize, hieName, log);
+    await this.logResults(rosterSize, hieName, log);
 
     return rosterCsv;
   }
