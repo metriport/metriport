@@ -64,12 +64,18 @@ export async function validateDepartmentId({
       practiceId: athenaPracticeId,
     });
   const departmentIds = parsedSecondaryMappings.departmentIds;
-  if (departmentIds.length > 0 && !departmentIds.includes(athenaDepartmentId)) {
-    throw new BadRequestError("AthenaHealth patient is not in a department that is enabled", {
-      cxId,
-      athenaPracticeId,
-      athenaPatientId,
-      athenaDepartmentId,
-    });
+  const strippedPracticeId = athenaPracticeId.replace("a-1.Practice-", "");
+  const strippedDeparmentId = athenaDepartmentId.replace(`a-${strippedPracticeId}.Department-`, "");
+  if (departmentIds.length > 0 && !departmentIds.includes(strippedDeparmentId)) {
+    throw new BadRequestError(
+      "AthenaHealth patient is not in a department that is enabled",
+      undefined,
+      {
+        cxId,
+        athenaPracticeId,
+        athenaPatientId,
+        athenaDepartmentId,
+      }
+    );
   }
 }
