@@ -1,4 +1,4 @@
-import { errorToString, uuidv4 } from "@metriport/shared";
+import { errorToString, MetriportError, uuidv4 } from "@metriport/shared";
 import { groupBy, partition, uniqBy } from "lodash";
 import { createGzip } from "zlib";
 import { executeWithRetriesS3, S3Utils } from "../../../external/aws/s3";
@@ -85,7 +85,7 @@ export async function groupAndMergeCSVs(params: GroupAndMergeCSVsParams): Promis
   // Store the input params to help debugging
   await storeInputParams({ ...params, mergeCsvRunId });
 
-  const filesToProcess: FileInfo[] | undefined = await listAllFiles({
+  const filesToProcess = await listAllFiles({
     cxId,
     fhirToCsvJobId,
     sourceBucket,
@@ -219,15 +219,13 @@ async function listAllFiles({
 
   files.push(
     ...rawFileList.flatMap(obj => {
-      if (obj.Key) {
-        const size = obj.Size ?? 0;
-        if (size < 1) return [];
-        const key = obj.Key;
-        if (key.endsWith("/")) return [];
-        const tableName = parseTableNameFromFhirToCsvFileKey(key);
-        return { key, size, tableName };
-      }
-      return [];
+      if (!obj.Key) return [];
+      const size = obj.Size ?? 0;
+      if (size < 1) return [];
+      const key = obj.Key;
+      if (key.endsWith("/")) return [];
+      const tableName = parseTableNameFromFhirToCsvFileKey(key);
+      return { key, size, tableName };
     })
   );
 
@@ -250,10 +248,10 @@ export function groupFilesByTypeAndSize(files: FileInfo[], targetGroupSizeMB: nu
 
   const fileGroups: FileGroup[] = [];
 
-  // For each file type, create evenly balanced groups
-  for (const [tableName, typeFiles] of Object.entries(grouped)) {
+  // For each table, create evenly balanced groups of files
+  for (const [tableName, tableFiles] of Object.entries(grouped)) {
     const [filesLargerThanTargetGroupSize, filesSmallerThanTargetGroupSize] = partition(
-      typeFiles,
+      tableFiles,
       file => file.size > targetGroupSizeBytes
     );
 
@@ -342,7 +340,6 @@ async function mergeFileGroups(
 
   log(`Merging ${fileGroups.length} file groups`);
 
-  let idx = 0;
   const errors: { fileGroup: FileGroup; error: string }[] = [];
   await executeAsynchronously(
     fileGroups,
@@ -351,7 +348,7 @@ async function mergeFileGroups(
         const result = await executeWithRetriesS3(() => mergeFileGroup(fileGroup, params, log), {
           maxAttempts: 10,
         });
-        results[idx++] = result;
+        results.push(result);
       } catch (error) {
         log(`Error merging group ${fileGroup.groupId}: ${errorToString(error)}`);
         errors.push({ fileGroup, error: errorToString(error) });
@@ -370,11 +367,11 @@ async function mergeFileGroups(
         .map(e => `${e.fileGroup.tableName}/${e.fileGroup.groupId}`)
         .join(", ")}`
     );
-    throw new Error(`Errors merging groups`);
+    throw new MetriportError(`Errors merging groups`);
   }
   log(`Completed merging ${results.length} groups - took ${Date.now() - startedAt}ms`);
 
-  return results.filter(Boolean);
+  return results;
 }
 
 /**
@@ -402,7 +399,7 @@ async function mergeFileGroup(
 
   // Create a streaming gzip compressor
   const gzip = createGzip();
-  const compressedChunks: Buffer[] = [];
+  let compressedChunks: Buffer[] = [];
 
   // Set up gzip event handlers
   gzip.on("data", (chunk: Buffer) => compressedChunks.push(chunk));
@@ -444,7 +441,7 @@ async function mergeFileGroup(
 
   const gzippedContent = Buffer.concat(compressedChunks);
   const totalSize = gzippedContent.length;
-  compressedChunks.length = 0;
+  compressedChunks = [];
 
   log(`Compressed, uploading to S3...`);
   await s3Utils.uploadFile({

@@ -22,7 +22,7 @@ export function buildFhirToCsvPatientPrefix({
 
 export function parseTableNameFromFhirToCsvFileKey(key: string): string {
   // e.g.: snowflake/fhir-to-csv/cx=cx-id/f2c=2025-08-08T02-18-56/pt=patient-id/_tmp_fhir-to-csv_output_cx-id_patient-id_condition.csv
-  const tableName = key.split("/")[5]?.split("_").slice(6).join("_").split(".")[0];
+  const tableName = key.split("/").pop()?.split("_").slice(6).join("_").split(".")[0];
   if (!tableName) {
     throw new MetriportError(`Failed to parse tableName from fhirToCsvFileKey`, undefined, { key });
   }
