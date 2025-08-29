@@ -7,7 +7,7 @@ import { createCanvasClient } from "../shared";
 export async function getAppointments(
   params: GetAppointmentsClientRequest
 ): Promise<SlimBookedAppointment[]> {
-  const { cxId, practiceId, fromDate, toDate, tokenId } = params;
+  const { cxId, practiceId, fromDate, toDate } = params;
   if (!fromDate || !toDate) {
     throw new BadRequestError("fromDate and toDate are required", undefined, {
       method: "getAppointments",
@@ -18,11 +18,7 @@ export async function getAppointments(
       toDate: toDate?.toISOString(),
     });
   }
-  const client = await createCanvasClient({
-    cxId,
-    practiceId,
-    ...(tokenId && { tokenId }),
-  });
+  const client = await createCanvasClient({ cxId, practiceId });
   const appointments = await client.getAppointments({ cxId, fromDate, toDate });
   return appointments;
 }

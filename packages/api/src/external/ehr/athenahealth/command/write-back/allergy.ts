@@ -1,6 +1,6 @@
 import { AllergyIntolerance } from "@medplum/fhirtypes";
-import { createAthenaClient } from "../../shared";
 import { CreatedAllergySuccess } from "@metriport/shared/interface/external/ehr/athenahealth/allergy";
+import { createAthenaClient, validateDepartmentId } from "../../shared";
 
 export async function writeAllergyToChart({
   cxId,
@@ -15,6 +15,7 @@ export async function writeAllergyToChart({
   athenaDepartmentId: string;
   allergyIntolerance: AllergyIntolerance;
 }): Promise<CreatedAllergySuccess> {
+  await validateDepartmentId({ cxId, athenaPracticeId, athenaPatientId, athenaDepartmentId });
   const api = await createAthenaClient({ cxId, practiceId: athenaPracticeId });
   return await api.createAllergy({
     cxId,

@@ -1,14 +1,11 @@
-import { MetriportError } from "@metriport/shared";
-import { elationSecondaryMappingsSchema } from "@metriport/shared/interface/external/ehr/elation/cx-mapping";
+import { ElationSecondaryMappings } from "@metriport/shared/interface/external/ehr/elation/cx-mapping";
 import {
   CreatedSubscription,
   SubscriptionResource,
 } from "@metriport/shared/interface/external/ehr/elation/subscription";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
-import {
-  getCxMappingOrFail,
-  setSecondaryMappingsOnCxMappingById,
-} from "../../../../command/mapping/cx";
+import { setSecondaryMappingsOnCxMappingById } from "../../../../command/mapping/cx";
+import { getCxMappingAndParsedSecondaryMappings } from "../../shared/command/mapping/get-cx-mapping-and-secondary-mappings";
 import { createElationClient } from "../shared";
 
 export async function subscribeToWebhook({
@@ -20,24 +17,20 @@ export async function subscribeToWebhook({
   elationPracticeId: string;
   resource: SubscriptionResource;
 }): Promise<CreatedSubscription> {
-  const cxMappingLookupParams = { externalId: elationPracticeId, source: EhrSources.elation };
-  const cxMapping = await getCxMappingOrFail(cxMappingLookupParams);
-  if (!cxMapping.secondaryMappings) {
-    throw new MetriportError("Elation secondary mappings not found", undefined, {
-      externalId: elationPracticeId,
-      source: EhrSources.elation,
+  const { parsedSecondaryMappings, cxMapping } =
+    await getCxMappingAndParsedSecondaryMappings<ElationSecondaryMappings>({
+      ehr: EhrSources.elation,
+      practiceId: elationPracticeId,
     });
-  }
-  const secondaryMappings = elationSecondaryMappingsSchema.parse(cxMapping.secondaryMappings);
   const api = await createElationClient({ cxId, practiceId: elationPracticeId });
   const subscription = await api.subscribeToResource({ cxId, resource });
   await setSecondaryMappingsOnCxMappingById({
     cxId,
     id: cxMapping.id,
     secondaryMappings: {
-      ...secondaryMappings,
+      ...parsedSecondaryMappings,
       webhooks: {
-        ...secondaryMappings.webhooks,
+        ...parsedSecondaryMappings.webhooks,
         [subscription.resource]: {
           url: subscription.target,
           signingKey: subscription.signing_pub_key,

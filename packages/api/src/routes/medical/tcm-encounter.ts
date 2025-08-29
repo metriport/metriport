@@ -13,6 +13,7 @@ import { asyncHandler, getCxIdOrFail, getFromParamsOrFail } from "../util";
 import { dtoFromTcmEncounter } from "./dtos/tcm-encounter-dto";
 import {
   tcmEncounterListQuerySchema,
+  tcmEncounterMaxPageSize,
   tcmEncounterUpdateSchema,
 } from "@metriport/shared/domain/tcm-encounter";
 
@@ -85,7 +86,7 @@ router.get(
           ...additionalQueryParams,
         });
       },
-      maxItemsPerPage: 2500,
+      maxItemsPerPage: tcmEncounterMaxPageSize,
     });
 
     return res.status(httpStatus.OK).json({

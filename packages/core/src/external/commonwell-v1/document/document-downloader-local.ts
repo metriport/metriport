@@ -24,13 +24,11 @@ import {
   DocumentDownloaderConfig,
   DownloadResult,
   FileInfo,
-} from "./document-downloader";
+} from "../../commonwell/document/document-downloader";
 
 export type DocumentDownloaderLocalConfig = DocumentDownloaderConfig & {
   commonWell: {
     api: CommonWellAPI;
-    // apiV1: CommonWellAPI;
-    // api: CommonWellAPIv2;
     queryMeta: ReturnType<typeof organizationQueryMeta>;
   };
 };

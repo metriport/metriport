@@ -1,12 +1,12 @@
 import { Condition } from "@medplum/fhirtypes";
-import { BadRequestError } from "@metriport/shared";
+import { BadRequestError, JwtTokenInfo } from "@metriport/shared";
 import { EhrSource, EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { ICD_10_CODE, SNOMED_CODE } from "@metriport/shared/medical/fhir/constants";
 import { writeBackCondition as writeBackConditionElation } from "../../elation/command/write-back/condition";
 
 export type WriteBackConditionRequest = {
   ehr: EhrSource;
-  tokenId?: string;
+  tokenInfo?: JwtTokenInfo;
   cxId: string;
   practiceId: string;
   ehrPatientId: string;

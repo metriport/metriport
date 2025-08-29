@@ -1,9 +1,11 @@
-import { sleep } from "@metriport/shared";
+import { JwtTokenInfo, sleep } from "@metriport/shared";
 import { getDefaultBundle } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { setJobEntryStatus } from "../../../../../../../command/job/patient/api/set-entry-status";
 import { BundleType } from "../../../../../bundle/bundle-shared";
 import { createOrReplaceBundle as createOrReplaceBundleOnS3 } from "../../../../../bundle/command/create-or-replace-bundle";
 import { getBundleByResourceType } from "../../../../../command/get-bundle-by-resource-type";
+import { getClientTokenInfo } from "../../../../../command/get-client-token-info";
+import { isEhrSourceWithClientCredentials } from "../../../../../environment";
 import { buildEhrComputeResourceDiffBundlesHandler } from "../compute/ehr-compute-resource-diff-bundles-factory";
 import { EhrRefreshEhrBundlesHandler, RefreshEhrBundlesRequest } from "./ehr-refresh-ehr-bundles";
 
@@ -15,7 +17,6 @@ export class EhrRefreshEhrBundlesDirect implements EhrRefreshEhrBundlesHandler {
   async refreshEhrBundles(payload: RefreshEhrBundlesRequest): Promise<void> {
     const {
       ehr,
-      tokenId,
       cxId,
       practiceId,
       metriportPatientId,
@@ -32,10 +33,18 @@ export class EhrRefreshEhrBundlesDirect implements EhrRefreshEhrBundlesHandler {
       jobId,
     };
     try {
+      let sharedClientTokenInfo: JwtTokenInfo | undefined;
+      if (isEhrSourceWithClientCredentials(ehr)) {
+        sharedClientTokenInfo = await getClientTokenInfo({
+          ehr,
+          cxId,
+          practiceId,
+        });
+      }
       await Promise.all([
         getBundleByResourceType({
           ehr,
-          ...(tokenId ? { tokenId } : {}),
+          ...(sharedClientTokenInfo ? { tokenInfo: sharedClientTokenInfo } : {}),
           cxId,
           practiceId,
           metriportPatientId,
