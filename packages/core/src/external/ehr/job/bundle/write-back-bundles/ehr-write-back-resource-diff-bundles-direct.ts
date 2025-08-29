@@ -38,7 +38,10 @@ import {
 } from "../../../command/write-back/grouped-vitals";
 import { writeBackResource, WriteBackResourceType } from "../../../command/write-back/shared";
 import { isEhrSourceWithClientCredentials } from "../../../environment";
-import { ehrCxMappingSecondaryMappingsSchemaMap } from "../../../mappings";
+import {
+  ehrCxMappingSecondaryMappingsSchemaMap,
+  isEhrSourceWithSecondaryMappings,
+} from "../../../mappings";
 import {
   formatDate,
   getConditionIcd10Code,
@@ -296,6 +299,7 @@ async function getWriteBackFilters({
   ehr: EhrSource;
   practiceId: string;
 }): Promise<WriteBackFiltersPerResourceType | undefined> {
+  if (!isEhrSourceWithSecondaryMappings(ehr)) return undefined;
   const mappingsSchema = ehrCxMappingSecondaryMappingsSchemaMap[ehr];
   if (!mappingsSchema) {
     throw new BadRequestError("No mappings schema found for EHR", undefined, {
