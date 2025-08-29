@@ -6,13 +6,6 @@ import { HieConfig } from "@metriport/core/command/hl7v2-subscriptions/types";
 import { makeLambdaClient } from "@metriport/core/external/aws/lambda";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 
-const isLocal = true;
-const config: HieConfig = {} as HieConfig;
-
-if (!config.name || !config.mapping) {
-  throw new Error("Remember to set the config object! See the tsdoc for more info.");
-}
-
 /**
  * Triggers generation and upload of HL7v2 subscription roster to S3.
  *
@@ -32,9 +25,22 @@ if (!config.name || !config.mapping) {
  * 2. Set `config` to one of the HieConfig object from `config/staging.ts`
  * 3. Run: `npx ts-node src/hl7v2-notifications/create-hl7v2-patient-roster`
  */
+
+const isLocal = true;
+const config: HieConfig = {} as HieConfig;
+
+if (!config.name || !config.mapping) {
+  throw new Error("Remember to set the config object! See the tsdoc for more info.");
+}
+
 async function main() {
   try {
     const startedAt = Date.now();
+    console.log(
+      `🌲 Environment: ${isLocal ? "local" : "Lambda"}` +
+        `\n🏠 Hie: ${config.name}` +
+        `\n🔄 Starting HL7v2 roster generation...`
+    );
 
     if (isLocal) {
       const apiUrl = getEnvVarOrFail("API_URL");
@@ -43,7 +49,7 @@ async function main() {
       await new Hl7v2RosterGenerator(apiUrl, bucketName).execute(config);
     } else {
       const region = getEnvVarOrFail("AWS_REGION");
-      const lambdaName = getEnvVarOrFail("HL7V2_ROSTER_UPLOAD_LAMBDA_NAME");
+      const lambdaName = `Hl7v2RosterUpload-${config.name}Lambda`;
       const lambdaClient = makeLambdaClient(region);
 
       await lambdaClient

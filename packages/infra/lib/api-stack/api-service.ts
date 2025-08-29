@@ -417,6 +417,9 @@ export function createAPIService({
                 lambda.functionName,
               ])
             ),
+            ...Object.fromEntries(
+              questAssets.questQueues.map(({ envVarName, queue }) => [envVarName, queue.queueUrl])
+            ),
           }),
           RUN_PATIENT_JOB_QUEUE_URL: jobAssets.runPatientJobQueue.queueUrl,
           ...(props.config.hl7Notification?.dischargeNotificationSlackUrl && {
@@ -611,6 +614,16 @@ export function createAPIService({
 
   if (surescriptsAssets) {
     surescriptsAssets.surescriptsQueues.forEach(({ queue }) => {
+      provideAccessToQueue({
+        accessType: "send",
+        queue,
+        resource: fargateService.taskDefinition.taskRole,
+      });
+    });
+  }
+
+  if (questAssets) {
+    questAssets.questQueues.forEach(({ queue }) => {
       provideAccessToQueue({
         accessType: "send",
         queue,

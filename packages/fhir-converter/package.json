@@ -15,6 +15,7 @@
     "start": "node --experimental-worker src/index.js",
     "start-dev": "npm run dev",
     "start-docker-compose": "docker compose -f docker-compose.yml up",
+    "prep-deploy": "npm ci --no-fund",
     "eslint": "eslint src/**/*.js",
     "lint:hbs": "ember-template-lint src/templates/cda > lint-results.txt",
     "full-hbs-lint": "./full-hbs-lint.sh"

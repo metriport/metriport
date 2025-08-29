@@ -28,6 +28,7 @@ import { buildSecret, Secrets } from "./shared/secrets";
 import { QueueAndLambdaSettings } from "./shared/settings";
 import { createQueue } from "./shared/sqs";
 import { isSandbox } from "./shared/util";
+import { getHieSftpPasswordSecretName } from "./secrets-stack";
 
 export const CDA_TO_VIS_TIMEOUT = Duration.minutes(15);
 
@@ -1023,13 +1024,18 @@ export class LambdasNestedStack extends NestedStack {
     if (config.hl7Notification?.hieConfigs) {
       const hl7ScramblerSeedSecret = secrets["HL7_BASE64_SCRAMBLER_SEED"];
       if (!hl7ScramblerSeedSecret) {
-        throw new Error(`${hl7ScramblerSeedSecret} is not defined in config`);
+        throw new Error(`hl7ScramblerSeedSecret is not defined in config`);
       }
 
-      const scramblerSeedSecretName = config.hl7Notification.secrets.HL7_BASE64_SCRAMBLER_SEED;
       const hieConfigs = config.hl7Notification.hieConfigs;
 
       Object.entries(hieConfigs).forEach(([hieName, hieConfig]) => {
+        const passwordSecretName = getHieSftpPasswordSecretName(hieName);
+        const passwordSecret = secrets[passwordSecretName];
+        if (!passwordSecret) {
+          throw new Error(`${passwordSecretName} is not defined in config`);
+        }
+
         const lambda = createScheduledLambda({
           stack: this,
           name: `Hl7v2RosterUpload-${hieName}`,
@@ -1040,15 +1046,17 @@ export class LambdasNestedStack extends NestedStack {
           envVars: {
             HL7V2_ROSTER_BUCKET_NAME: hl7v2RosterBucket.bucketName,
             API_URL: config.loadBalancerDnsName,
-            HL7_BASE64_SCRAMBLER_SEED: scramblerSeedSecretName,
+            HL7_BASE64_SCRAMBLER_SEED_ARN: hl7ScramblerSeedSecret.secretArn,
+            ROSTER_UPLOAD_SFTP_PASSWORD_ARN: passwordSecret.secretArn,
             ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
           },
+          timeout: Duration.minutes(10),
           layers: [lambdaLayers.shared],
           memory: 4096,
           vpc,
           alarmSnsAction: alarmAction,
         });
-
+        passwordSecret.grantRead(lambda);
         hl7ScramblerSeedSecret.grantRead(lambda);
         hl7v2RosterBucket.grantReadWrite(lambda);
 
