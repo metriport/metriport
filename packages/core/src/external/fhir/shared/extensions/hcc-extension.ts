@@ -34,11 +34,11 @@ function buildHccExtension({
   version: "v24" | "v28";
 }): HccExtension {
   return {
-    url: HCC_EXTENSION_SYSTEM,
+    url: HCC_EXTENSION_URL,
     valueCodeableConcept: {
       coding: [
         {
-          system: HCC_EXTENSION_URL,
+          system: HCC_EXTENSION_SYSTEM,
           display,
           version,
           code: hccCode.toString(),
@@ -53,5 +53,5 @@ export function findHccExtension(extensions: Extension[]): Extension | undefined
 }
 
 export function isHccExtension(e: Extension): e is HccExtension {
-  return e.url === HCC_EXTENSION_SYSTEM;
+  return e.url === HCC_EXTENSION_URL;
 }

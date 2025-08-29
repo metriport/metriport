@@ -8,6 +8,7 @@ const command = new Command();
 command.name("build-hcc-map");
 command.option("--year <year>", "The year of HCC source to use (default 2025)");
 
+// The TypeScript code that is prepended to the generated file output.
 const hccFunctionCode = `
 export interface HccCode {
   v24: number[];
@@ -30,15 +31,13 @@ export function getHccForIcd10Code(icd10Code: string): HccCode | undefined {
 }\n\n`;
 
 command.action(async ({ year = "2025" }) => {
-  const hccMap = await readHccSource(year);
-
-  const grouped = groupRowsByCode(hccMap);
-
+  const hccRows = await readHccSource(year);
+  const codeToHccRows = groupRowsByCode(hccRows);
   const generated: string[] = [hccFunctionCode];
 
   // Generate the mapping of ICD-10 codes to HCCs
   generated.push(`export const hccMap: Record<string, [string, number[], number[]]> = {\n`);
-  for (const [code, rows] of Object.entries(grouped)) {
+  for (const [code, rows] of Object.entries(codeToHccRows)) {
     const hccV24 = getAllValidCodes(rows, "hcc_v24");
     const hccV28 = getAllValidCodes(rows, "hcc_v28");
     const description = getFirstValidValue(rows, "description");
