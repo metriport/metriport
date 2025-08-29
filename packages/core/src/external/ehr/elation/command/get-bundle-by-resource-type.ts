@@ -8,7 +8,7 @@ export async function getBundleByResourceType(
   params: GetBundleByResourceTypeClientRequest
 ): Promise<Bundle> {
   const {
-    tokenId,
+    tokenInfo,
     cxId,
     practiceId,
     metriportPatientId,
@@ -19,7 +19,7 @@ export async function getBundleByResourceType(
   const client = await createElationHealthClient({
     cxId,
     practiceId,
-    ...(tokenId && { tokenId }),
+    ...(tokenInfo ? { tokenInfo } : {}),
   });
   const handler = buildConversionFhirHandler();
   const bundle = await client.getBundleByResourceType({

@@ -1,5 +1,5 @@
 import { errorToString, executeWithNetworkRetries, MetriportError } from "@metriport/shared";
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import { Config } from "../../../../util/config";
 import { out } from "../../../../util/log";
 import { ApiBaseParams, validateAndLogResponse } from "../api-shared";
@@ -41,6 +41,10 @@ export async function startWriteBackBundlesJob({
     });
     validateAndLogResponse(startWriteBackBundlesJobUrl, response, debug);
   } catch (error) {
+    if (error instanceof AxiosError && error.response?.status === 400) {
+      log(`400 while starting write back bundles job @ Api. Cause: ${errorToString(error)}`);
+      return;
+    }
     const msg = "Failure while starting write back bundles job @ Api";
     log(`${msg}. Cause: ${errorToString(error)}`);
     throw new MetriportError(msg, error, {

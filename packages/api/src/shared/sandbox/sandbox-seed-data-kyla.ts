@@ -4,7 +4,7 @@ export const kylaDocRefs: DataEntry[] = [
   {
     s3Info: {
       bucket,
-      key: "demo.xml",
+      key: "KylaBrown.xml",
     },
     docRef: {
       resourceType: "DocumentReference",
@@ -12,7 +12,7 @@ export const kylaDocRefs: DataEntry[] = [
       content: [
         {
           attachment: {
-            title: "demo.xml",
+            title: "KylaBrown.xml",
             url: "http://api.metriport.com",
             contentType: "application/xml",
             creation: "2023-06-16",

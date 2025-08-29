@@ -116,15 +116,13 @@ function settings(): {
       alarmMaxAgeOfOldestMessage: Duration.hours(2),
       maxMessageCountAlarmThreshold: 5_000,
       maxReceiveCount: 3,
-      visibilityTimeout: Duration.seconds(
-        computeResourceDiffBundlesLambdaTimeout.toSeconds() * 2 + 1
-      ),
+      visibilityTimeout: Duration.seconds(computeResourceDiffBundlesLambdaTimeout.toSeconds() + 1),
       createRetryLambda: false,
     },
     eventSource: {
       batchSize: 1,
       reportBatchItemFailures: true,
-      maxConcurrency: 4,
+      maxConcurrency: 2,
     },
     waitTime: waitTimeComputeResourceDiff,
   };
@@ -141,13 +139,13 @@ function settings(): {
       alarmMaxAgeOfOldestMessage: Duration.hours(2),
       maxMessageCountAlarmThreshold: 5_000,
       maxReceiveCount: 3,
-      visibilityTimeout: Duration.seconds(refreshEhrBundlesLambdaTimeout.toSeconds() * 2 + 1),
+      visibilityTimeout: Duration.seconds(refreshEhrBundlesLambdaTimeout.toSeconds() + 1),
       createRetryLambda: false,
     },
     eventSource: {
       batchSize: 1,
       reportBatchItemFailures: true,
-      maxConcurrency: 4,
+      maxConcurrency: 2,
     },
     waitTime: waitTimeRefreshBundle,
   };
@@ -162,9 +160,9 @@ function settings(): {
     queue: {
       alarmMaxAgeOfOldestMessage: Duration.hours(4),
       maxMessageCountAlarmThreshold: 5_000,
-      maxReceiveCount: 3,
+      maxReceiveCount: 1,
       visibilityTimeout: Duration.seconds(
-        contributeResourceDiffBundlesLambdaTimeout.toSeconds() * 2 + 1
+        contributeResourceDiffBundlesLambdaTimeout.toSeconds() + 1
       ),
       createRetryLambda: false,
     },
@@ -186,9 +184,9 @@ function settings(): {
     queue: {
       alarmMaxAgeOfOldestMessage: Duration.hours(4),
       maxMessageCountAlarmThreshold: 5_000,
-      maxReceiveCount: 3,
+      maxReceiveCount: 1,
       visibilityTimeout: Duration.seconds(
-        writeBackResourceDiffBundlesLambdaTimeout.toSeconds() * 2 + 1
+        writeBackResourceDiffBundlesLambdaTimeout.toSeconds() + 1
       ),
       createRetryLambda: false,
     },

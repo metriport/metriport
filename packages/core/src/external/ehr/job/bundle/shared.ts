@@ -2,7 +2,6 @@ import { EhrSource, EhrSources } from "@metriport/shared/interface/external/ehr/
 
 export type ResourceDiffBundlesBaseRequest = {
   ehr: EhrSource;
-  tokenId?: string;
   cxId: string;
   practiceId: string;
   metriportPatientId: string;

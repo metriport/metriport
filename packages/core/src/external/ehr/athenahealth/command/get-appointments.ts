@@ -6,7 +6,7 @@ import { createAthenaHealthClient } from "../shared";
 export async function getAppointments(
   params: GetAppointmentsClientRequest
 ): Promise<BookedAppointment[]> {
-  const { cxId, practiceId, fromDate, toDate, tokenId, departmentIds } = params;
+  const { cxId, practiceId, fromDate, toDate, departmentIds } = params;
   if (!fromDate || !toDate) {
     throw new BadRequestError("fromDate and toDate are required", undefined, {
       method: "getAppointments",
@@ -17,14 +17,10 @@ export async function getAppointments(
       toDate: toDate?.toISOString(),
     });
   }
-  const client = await createAthenaHealthClient({
-    cxId,
-    practiceId,
-    ...(tokenId && { tokenId }),
-  });
+  const client = await createAthenaHealthClient({ cxId, practiceId });
   const appointments = await client.getAppointments({
     cxId,
-    ...(departmentIds && { departmentIds }),
+    ...(departmentIds ? { departmentIds } : {}),
     startAppointmentDate: fromDate,
     endAppointmentDate: toDate,
   });
