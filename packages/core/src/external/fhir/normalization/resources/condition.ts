@@ -24,9 +24,9 @@ export function normalizeConditions(conditions: Condition[]): Condition[] {
       if (coding.system !== ICD_10_URL) return;
 
       if (coding.code) {
-        const codeWithoutDot = coding.code.replace(".", "").trim();
-        const chronicity = chronicityMap[codeWithoutDot];
-        const hccCode = getHccForIcd10Code(codeWithoutDot);
+        const normalizedCode = coding.code.replace(".", "").trim().toUpperCase();
+        const chronicity = chronicityMap[normalizedCode];
+        const hccCode = getHccForIcd10Code(normalizedCode);
 
         if (chronicity) {
           const existingChronicityExtension = findChronicityExtension(updCondition.extension ?? []);
