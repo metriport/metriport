@@ -1,9 +1,12 @@
 import {
+  BadRequestError,
   base64ToBuffer,
   defaultOptionsRequestNotAccepted,
   executeWithNetworkRetries,
   MetriportError,
+  NotFoundError,
 } from "@metriport/shared";
+import { isAxiosError } from "axios";
 import httpStatus from "http-status";
 import * as stream from "stream";
 import { CommonwellError } from "../common/commonwell-error";
@@ -290,7 +293,7 @@ export class CommonWell extends CommonWellBase implements CommonWellAPI {
       );
       return patientExistingLinksSchema.parse(resp.data);
     } catch (error) {
-      this.rethrowDescriptiveError(error, "Failed to get patient links by patient id");
+      throw this.getDescriptiveError(error, "Failed to get patient links by patient id");
     }
   }
 
@@ -323,7 +326,7 @@ export class CommonWell extends CommonWellBase implements CommonWellAPI {
       );
       return patientProbableLinksRespSchema.parse(resp.data);
     } catch (error) {
-      this.rethrowDescriptiveError(error, "Failed to get probable links by patient id");
+      throw this.getDescriptiveError(error, "Failed to get probable links by patient id");
     }
   }
 
@@ -592,6 +595,24 @@ export class CommonWell extends CommonWellBase implements CommonWellAPI {
           ],
         })
       : fn();
+  }
+
+  private getDescriptiveError(error: unknown, title: string): unknown {
+    if (isAxiosError(error)) {
+      const status = error.response?.status;
+      const data = error.response?.data;
+      const responseBody = data ? JSON.stringify(data) : undefined;
+      const cwReference = this.lastTransactionId;
+
+      if (status === httpStatus.BAD_REQUEST) {
+        return new BadRequestError(title, error, { status, cwReference, responseBody });
+      }
+      if (status === httpStatus.NOT_FOUND) {
+        return new NotFoundError(title, error, { status, cwReference, responseBody });
+      }
+      return new MetriportError(title, error, { status, cwReference, responseBody });
+    }
+    return error;
   }
 }
 
