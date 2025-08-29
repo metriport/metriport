@@ -232,7 +232,7 @@ export class CommonWellMock implements CommonWellAPI {
     };
   }
 
-  rethrowDescriptiveError(error: unknown): never {
+  getDescriptiveError(error: unknown): never {
     throw error;
   }
 }
