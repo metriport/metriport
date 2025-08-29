@@ -40,7 +40,7 @@ export async function getS3Info(
   const docToFile = getDocToFileFunction(patient);
   const s3Info = await Promise.allSettled(
     documents
-      .map(d => docToFile(d))
+      .map(d => docToFile({ id: d.id, contentType: d.content?.mimeType }))
       .map(async (filePromise: Promise<SimpleFile>): Promise<S3Info> => {
         const file = await filePromise;
         try {
