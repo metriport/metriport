@@ -9,6 +9,7 @@ import {
   BadRequestError,
   createBundleFromResourceList,
   errorToString,
+  JwtTokenInfo,
   NotFoundError,
   sleep,
 } from "@metriport/shared";
@@ -24,16 +25,19 @@ import { setJobEntryStatus } from "../../../../../command/job/patient/api/set-en
 import { executeAsynchronously } from "../../../../../util/concurrency";
 import { log, out } from "../../../../../util/log";
 import { capture } from "../../../../../util/notifications";
+import { isCondition, isDiagnosticReport, isObservation } from "../../../../fhir/shared";
 import { getSecondaryMappings } from "../../../api/get-secondary-mappings";
 import { BundleType } from "../../../bundle/bundle-shared";
 import { createOrReplaceBundle } from "../../../bundle/command/create-or-replace-bundle";
 import { fetchBundle, FetchBundleParams } from "../../../bundle/command/fetch-bundle";
+import { getClientTokenInfo } from "../../../command/get-client-token-info";
 import { getEhrWriteBackConditionPrimaryCode } from "../../../command/write-back/condition";
 import {
   GroupedVitalsByDate,
   isWriteBackGroupedVitalsEhr,
 } from "../../../command/write-back/grouped-vitals";
 import { writeBackResource, WriteBackResourceType } from "../../../command/write-back/shared";
+import { isEhrSourceWithClientCredentials } from "../../../environment";
 import { ehrCxMappingSecondaryMappingsSchemaMap } from "../../../mappings";
 import {
   formatDate,
@@ -94,7 +98,6 @@ export class EhrWriteBackResourceDiffBundlesDirect
   async writeBackResourceDiffBundles(payload: WriteBackResourceDiffBundlesRequest): Promise<void> {
     const {
       ehr,
-      tokenId,
       cxId,
       practiceId,
       metriportPatientId,
@@ -138,10 +141,32 @@ export class EhrWriteBackResourceDiffBundlesDirect
         resources: metriportOnlyResources,
         writeBackFilters,
       });
+      const [groupedVitalsObservations, restNoObservations] = partition(
+        resourcesToWriteBack,
+        r => getWriteBackResourceType(ehr, r) === "grouped-vitals"
+      );
+      const keptObservations = await filterObservations({
+        observations: groupedVitalsObservations.filter(isObservation),
+        writeBackFilters,
+      });
+      const resourcesToWriteBackFilteredObservations = [...keptObservations, ...restNoObservations];
+      const [conditions, restNoConditions] = partition(
+        resourcesToWriteBackFilteredObservations,
+        r => getWriteBackResourceType(ehr, r) === "condition"
+      );
+      const keptConditions = await filterConditions({
+        ehr,
+        conditions: conditions.filter(isCondition),
+        writeBackFilters,
+      });
+      const resourcesToWriteBackFilteredConditionsAndObservations = [
+        ...keptConditions,
+        ...restNoConditions,
+      ];
       const secondaryResourcesToWriteBackMap = await getSecondaryResourcesToWriteBackMap({
         cxId,
         metriportPatientId,
-        resources: resourcesToWriteBack,
+        resources: resourcesToWriteBackFilteredConditionsAndObservations,
         resourceType,
       });
       try {
@@ -152,7 +177,7 @@ export class EhrWriteBackResourceDiffBundlesDirect
           ehrPatientId,
           bundleType: BundleType.RESOURCE_DIFF_WRITE_BACK,
           bundle: createBundleFromResourceList([
-            ...resourcesToWriteBack,
+            ...resourcesToWriteBackFilteredConditionsAndObservations,
             ...Object.values(secondaryResourcesToWriteBackMap).flat(),
           ]),
           resourceType,
@@ -166,13 +191,11 @@ export class EhrWriteBackResourceDiffBundlesDirect
       }
       await writeBackResources({
         ehr,
-        tokenId,
         cxId,
         practiceId,
         ehrPatientId,
-        resources: resourcesToWriteBack,
+        resources: resourcesToWriteBackFilteredConditionsAndObservations,
         secondaryResourcesMap: secondaryResourcesToWriteBackMap,
-        writeBackFilters,
       });
       await setJobEntryStatus({
         ...entryStatusParams,
@@ -334,16 +357,14 @@ function getWriteBackResourceType(
   ehr: EhrSource,
   resource: Resource
 ): WriteBackResourceType | undefined {
-  if (resource.resourceType === "Condition") return "condition";
-  if (resource.resourceType === "Observation") {
-    if (isLab(resource as Observation)) return "lab";
-    if (isVital(resource as Observation) && isWriteBackGroupedVitalsEhr(ehr)) {
-      return "grouped-vitals";
-    }
+  if (isCondition(resource)) return "condition";
+  if (isObservation(resource)) {
+    if (isLab(resource)) return "lab";
+    if (isVital(resource) && isWriteBackGroupedVitalsEhr(ehr)) return "grouped-vitals";
     return undefined;
   }
-  if (resource.resourceType === "DiagnosticReport") {
-    if (isLabPanel(resource as DiagnosticReport)) return "lab-panel";
+  if (isDiagnosticReport(resource)) {
+    if (isLabPanel(resource)) return "lab-panel";
     return undefined;
   }
   throw new BadRequestError("Could not find write back resource type for resource", undefined, {
@@ -365,35 +386,37 @@ export function shouldWriteBackResource({
   if (!writeBackFilters) return true;
   if (writeBackResourceType === "condition") {
     if (writeBackFilters.problem?.disabled) return false;
-    const condition = resource as Condition;
+    if (!isCondition(resource)) return false;
+    const condition = resource;
     if (skipConditionChronicity(condition, writeBackFilters)) return false;
     return true;
   } else if (writeBackResourceType === "lab") {
     if (writeBackFilters.lab?.disabled) return false;
-    const observation = resource as Observation;
-    const labObservations = resources.filter(
-      r => r.resourceType === "Observation" && isLab(r)
-    ) as Observation[];
+    if (!isObservation(resource)) return false;
+    const observation = resource;
+    const labObservations = resources.filter(r => isObservation(r) && isLab(r)) as Observation[];
     if (skipLabDate(observation, writeBackFilters)) return false;
     if (skipLabLoincCode(observation, writeBackFilters)) return false;
     if (skipLabNonTrending(observation, labObservations, writeBackFilters)) return false;
     return true;
   } else if (writeBackResourceType === "lab-panel") {
     if (writeBackFilters.labPanel?.disabled) return false;
-    const diagnosticReport = resource as DiagnosticReport;
-    const diagnosticReports = resources
-      .filter(r => r.resourceType === "DiagnosticReport" && isLabPanel(r))
-      .map(r => normalizeDiagnosticReportCoding(r as DiagnosticReport)) as DiagnosticReport[];
+    if (!isDiagnosticReport(resource)) return false;
+    const diagnosticReport = resource;
     if (skipLabPanelDate(diagnosticReport, writeBackFilters)) return false;
     const normalizedDiagReport = normalizeDiagnosticReportCoding(diagnosticReport);
+    const normalizedDiagReportS = resources
+      .filter(r => isDiagnosticReport(r) && isLabPanel(r))
+      .map(r => normalizeDiagnosticReportCoding(r as DiagnosticReport)) as DiagnosticReport[];
     if (skipLabPanelLoincCode(normalizedDiagReport, writeBackFilters)) return false;
-    if (skipLabPanelNonTrending(normalizedDiagReport, diagnosticReports, writeBackFilters)) {
+    if (skipLabPanelNonTrending(normalizedDiagReport, normalizedDiagReportS, writeBackFilters)) {
       return false;
     }
     return true;
   } else if (writeBackResourceType === "grouped-vitals") {
     if (writeBackFilters.vital?.disabled) return false;
-    const observation = resource as Observation;
+    if (!isObservation(resource)) return false;
+    const observation = resource;
     if (skipVitalDate(observation, writeBackFilters)) return false;
     if (skipVitalLoinCode(observation, writeBackFilters)) return false;
     return true;
@@ -599,39 +622,42 @@ async function getSecondaryResourcesToWriteBackMap({
 
 async function writeBackResources({
   ehr,
-  tokenId,
   cxId,
   practiceId,
   ehrPatientId,
   resources,
   secondaryResourcesMap,
-  writeBackFilters,
 }: {
   ehr: EhrSource;
-  tokenId: string | undefined;
   cxId: string;
   practiceId: string;
   ehrPatientId: string;
   resources: Resource[];
   secondaryResourcesMap: Record<string, Resource[]>;
-  writeBackFilters: WriteBackFiltersPerResourceType | undefined;
 }): Promise<void> {
+  let sharedClientTokenInfo: JwtTokenInfo | undefined;
+  if (isEhrSourceWithClientCredentials(ehr)) {
+    sharedClientTokenInfo = await getClientTokenInfo({
+      ehr,
+      cxId,
+      practiceId,
+    });
+  }
   const writeBackErrors: { error: unknown; resource: string }[] = [];
-  const [groupedVitals, restNoGroupedVitals] = partition(
+  const [groupedVitalsObservations, rest] = partition(
     resources,
     r => getWriteBackResourceType(ehr, r) === "grouped-vitals"
   );
-  const filteredAndGroupedObservations = await filterAndGroupObservations({
-    observations: groupedVitals as Observation[],
-    writeBackFilters,
+  const groupedVitals = await groupVitalsByDate({
+    observations: groupedVitalsObservations as Observation[],
   });
   await executeAsynchronously(
-    filteredAndGroupedObservations,
+    groupedVitals,
     async resource => {
       try {
         await writeBackResource({
           ehr,
-          ...(tokenId && { tokenId }),
+          ...(sharedClientTokenInfo ? { tokenInfo: sharedClientTokenInfo } : {}),
           cxId,
           practiceId,
           ehrPatientId,
@@ -651,17 +677,6 @@ async function writeBackResources({
       minJitterMillis: minJitter.asMilliseconds(),
     }
   );
-  const [conditions, restNoConditionsOrGroupedVitals] = partition(
-    restNoGroupedVitals,
-    r => getWriteBackResourceType(ehr, r) === "condition"
-  );
-  const filteredConditions = await filterConditions({
-    ehr,
-    conditions: conditions as Condition[],
-    writeBackFilters,
-  });
-  const rest = [...filteredConditions, ...restNoConditionsOrGroupedVitals];
-  if (rest.length < 1) return;
   await executeAsynchronously(
     rest,
     async resource => {
@@ -671,7 +686,7 @@ async function writeBackResources({
         const secondaryResources = resource.id ? secondaryResourcesMap[resource.id] : undefined;
         await writeBackResource({
           ehr,
-          ...(tokenId && { tokenId }),
+          ...(sharedClientTokenInfo ? { tokenInfo: sharedClientTokenInfo } : {}),
           cxId,
           practiceId,
           ehrPatientId,
@@ -715,80 +730,83 @@ async function filterConditions({
   writeBackFilters: WriteBackFiltersPerResourceType | undefined;
 }): Promise<Condition[]> {
   if (conditions.length < 1) return [];
-  let filteredConditions = conditions;
-  if (writeBackFilters?.problem?.latestOnly) {
-    const primaryCodeSystem = getEhrWriteBackConditionPrimaryCode(ehr);
-    const getCode =
-      primaryCodeSystem === SNOMED_CODE ? getConditionSnomedCode : getConditionIcd10Code;
-    filteredConditions = Object.values(
-      conditions.reduce<Record<string, Condition>>((acc, condition) => {
-        const code = getCode(condition);
-        if (!code) return acc;
-        const conditionDate = getConditionStartDate(condition);
-        if (!conditionDate) return acc;
-        const current = acc[code];
-        if (!current) {
-          acc[code] = condition;
-        } else {
-          const currentDate = getConditionStartDate(current);
-          if (!currentDate) return acc;
-          if (buildDayjs(conditionDate).isAfter(buildDayjs(currentDate))) {
-            acc[code] = condition;
-          }
-        }
-        return acc;
-      }, {})
-    );
+  if (writeBackFilters?.problem?.latestOnly === undefined || !writeBackFilters.problem.latestOnly) {
+    return conditions;
   }
-  return filteredConditions;
+  const primaryCodeSystem = getEhrWriteBackConditionPrimaryCode(ehr);
+  const getCode =
+    primaryCodeSystem === SNOMED_CODE ? getConditionSnomedCode : getConditionIcd10Code;
+  return Object.values(
+    conditions.reduce<Record<string, Condition>>((acc, condition) => {
+      const code = getCode(condition);
+      if (!code) return acc;
+      const conditionDate = getConditionStartDate(condition);
+      if (!conditionDate) return acc;
+      const current = acc[code];
+      if (!current) {
+        acc[code] = condition;
+      } else {
+        const currentDate = getConditionStartDate(current);
+        if (!currentDate) return acc;
+        if (buildDayjs(conditionDate).isAfter(buildDayjs(currentDate))) {
+          acc[code] = condition;
+        }
+      }
+      return acc;
+    }, {})
+  );
 }
 
-async function filterAndGroupObservations({
+async function filterObservations({
   observations,
   writeBackFilters,
 }: {
   observations: Observation[];
   writeBackFilters: WriteBackFiltersPerResourceType | undefined;
-}): Promise<GroupedVitalsByDate[]> {
+}): Promise<Observation[]> {
   if (observations.length < 1) return [];
-  let filteredObservations: Observation[] = observations;
-  if (writeBackFilters?.vital?.latestOnly) {
-    filteredObservations = Object.values(
-      observations.reduce<Record<string, Observation>>((acc, observation) => {
-        const loincCode = getObservationLoincCode(observation);
-        if (!loincCode) return acc;
-        const observationDate = getObservationObservedDate(observation);
-        if (!observationDate) return acc;
-        const current = acc[loincCode];
-        if (!current) {
-          acc[loincCode] = observation;
-        } else {
-          const currentDate = getObservationObservedDate(current);
-          if (!currentDate) return acc;
-          if (buildDayjs(observationDate).isAfter(buildDayjs(currentDate))) {
-            acc[loincCode] = observation;
-          }
-        }
-        return acc;
-      }, {})
-    );
+  if (writeBackFilters?.vital?.latestOnly === undefined || !writeBackFilters.vital.latestOnly) {
+    return observations;
   }
-  const groupedVitals: Record<string, Observation[]> = filteredObservations.reduce(
-    (acc, observation) => {
-      const chartDate = getObservationObservedDate(observation);
-      if (!chartDate) return acc;
-      const chartDateString = formatDate(chartDate, "YYYY-MM-DD");
-      if (!chartDateString) return acc;
-      const existingVital = acc[chartDateString];
-      if (!existingVital) {
-        acc[chartDateString] = [observation];
+  return Object.values(
+    observations.reduce<Record<string, Observation>>((acc, observation) => {
+      const loincCode = getObservationLoincCode(observation);
+      if (!loincCode) return acc;
+      const observationDate = getObservationObservedDate(observation);
+      if (!observationDate) return acc;
+      const current = acc[loincCode];
+      if (!current) {
+        acc[loincCode] = observation;
       } else {
-        existingVital.push(observation);
+        const currentDate = getObservationObservedDate(current);
+        if (!currentDate) return acc;
+        if (buildDayjs(observationDate).isAfter(buildDayjs(currentDate))) {
+          acc[loincCode] = observation;
+        }
       }
       return acc;
-    },
-    {} as Record<string, Observation[]>
+    }, {})
   );
+}
+
+async function groupVitalsByDate({
+  observations,
+}: {
+  observations: Observation[];
+}): Promise<GroupedVitalsByDate[]> {
+  const groupedVitals: Record<string, Observation[]> = observations.reduce((acc, observation) => {
+    const chartDate = getObservationObservedDate(observation);
+    if (!chartDate) return acc;
+    const chartDateString = formatDate(chartDate, "YYYY-MM-DD");
+    if (!chartDateString) return acc;
+    const existingVital = acc[chartDateString];
+    if (!existingVital) {
+      acc[chartDateString] = [observation];
+    } else {
+      existingVital.push(observation);
+    }
+    return acc;
+  }, {} as Record<string, Observation[]>);
   return Object.entries(groupedVitals).map(([chartDate, observations]) => [
     buildDayjs(chartDate).toDate(),
     observations,

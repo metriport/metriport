@@ -38,7 +38,7 @@ dayjs.extend(duration);
  * ensures we don't overwhelm the system while maintaining good throughput.
  *
  * Execute this with:
- * $ npm run bulk-recreate-consolidated
+ * $ ts-node src/consolidated/bulk-recreate-consolidated.ts
  */
 
 // Add patient IDs here to kick off queries for specific patient IDs
@@ -78,7 +78,11 @@ async function main() {
       log(`>>> Patient IDs provided (${patientIds.length}), skipping file ${fileName}`);
     } else {
       const fileContents = getFileContents(fileName);
-      patientIds.push(...fileContents.split("\n"));
+      const idsFromFile = fileContents
+        .split(/\r?\n/)
+        .map(id => id.trim())
+        .filter(id => id.length > 0);
+      patientIds.push(...idsFromFile);
       log(`>>> Found ${patientIds.length} patient IDs in ${fileName}`);
     }
   }

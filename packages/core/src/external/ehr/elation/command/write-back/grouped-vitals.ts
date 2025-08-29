@@ -8,7 +8,7 @@ import { createElationHealthClient } from "../../shared";
 export async function writeBackGroupedVitals(
   params: WriteBackGroupedVitalsClientRequest
 ): Promise<void> {
-  const { cxId, practiceId, ehrPatientId, tokenId, groupedVitals } = params;
+  const { tokenInfo, cxId, practiceId, ehrPatientId, groupedVitals } = params;
   const secondaryMappings = await getSecondaryMappings({
     ehr: EhrSources.elation,
     practiceId,
@@ -25,7 +25,7 @@ export async function writeBackGroupedVitals(
   const client = await createElationHealthClient({
     cxId,
     practiceId,
-    ...(tokenId && { tokenId }),
+    ...(tokenInfo ? { tokenInfo } : {}),
   });
   await client.createGroupedVitals({
     cxId,

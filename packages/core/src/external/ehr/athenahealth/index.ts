@@ -18,6 +18,7 @@ import {
   NotFoundError,
   sleep,
   toTitleCase,
+  executeWithNetworkRetries,
 } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import {
@@ -302,13 +303,15 @@ class AthenaHealthApi {
     };
 
     try {
-      const response = await axios.post(url, createDataParams(data), {
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        auth: {
-          username: this.config.clientKey,
-          password: this.config.clientSecret,
-        },
-      });
+      const response = await executeWithNetworkRetries(() =>
+        axios.post(url, createDataParams(data), {
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          auth: {
+            username: this.config.clientKey,
+            password: this.config.clientSecret,
+          },
+        })
+      );
       if (!response.data) throw new MetriportError("No body returned from token endpoint");
       const tokenData = athenaClientJwtTokenResponseSchema.parse(response.data);
       return {
