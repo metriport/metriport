@@ -13,9 +13,8 @@ import { createUuidFromText } from "@metriport/shared/common/uuid";
 import axios, { AxiosResponse } from "axios";
 import { stringify } from "csv-stringify/sync";
 import _ from "lodash";
-import { PostHog } from "posthog-node";
 import { getFirstNameAndMiddleInitial, Patient } from "../../domain/patient";
-import { analytics, EventTypes } from "../../external/analytics/posthog";
+import { analyticsAsync, EventTypes } from "../../external/analytics/posthog";
 import { reportMetric } from "../../external/aws/cloudwatch";
 import { S3Utils, storeInS3WithRetries } from "../../external/aws/s3";
 import { getSecretValueOrFail } from "../../external/aws/secret-manager";
@@ -43,11 +42,6 @@ const NUMBER_OF_PATIENTS_PER_PAGE = 500;
 const DEFAULT_ZIP_PLUS_4_EXT = "-0000";
 const FOLDER_DATE_FORMAT = "YYYY-MM-DD";
 const FILE_DATE_FORMAT = "YYYYMMDD";
-
-const S3_FAILED = "S3 upload" as const;
-const SFTP_FAILED = "SFTP upload" as const;
-const S3_AND_SFTP = `${S3_FAILED} and ${SFTP_FAILED}` as const;
-type FailedStage = typeof S3_FAILED | typeof SFTP_FAILED | typeof S3_AND_SFTP | undefined;
 
 export class Hl7v2RosterGenerator {
   private readonly s3Utils: S3Utils;
@@ -112,42 +106,29 @@ export class Hl7v2RosterGenerator {
     log("Created CSV");
 
     const fileName = createFileNameHl7v2Roster(hieName);
-    let failedStage: FailedStage = undefined;
 
-    try {
-      await storeInS3WithRetries({
-        s3Utils: this.s3Utils,
-        payload: rosterCsv,
-        bucketName: this.bucketName,
-        fileName,
-        contentType: CSV_MIME_TYPE,
-        log,
-        errorConfig: {
-          errorMessage: "Error uploading patient roster CSV",
-          context: "Hl7v2RosterGenerator",
-          captureParams: loggingDetails,
-          shouldCapture: true,
-        },
-      });
-      log(`Saved in S3: ${this.bucketName}/${fileName}`);
+    log("Uploading roster to remote SFTP server");
+    await uploadToRemoteSftp(config, rosterCsv);
 
-      //eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (e: any) {
-      failedStage = S3_FAILED;
-      log(`Roster upload failed to write to S3`, e);
-    }
-
-    try {
-      await uploadToRemoteSftp(config, rosterCsv);
-      log(`Upload to remote SFTP was successful`);
-      //eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (e: any) {
-      failedStage = failedStage ? S3_AND_SFTP : SFTP_FAILED;
-      log(`Roster upload failed to send to SFTP`, e);
-    }
+    log(`Uploading roster to S3`);
+    await storeInS3WithRetries({
+      s3Utils: this.s3Utils,
+      payload: rosterCsv,
+      bucketName: this.bucketName,
+      fileName,
+      contentType: CSV_MIME_TYPE,
+      log,
+      errorConfig: {
+        errorMessage: "Error uploading patient roster CSV",
+        context: "Hl7v2RosterGenerator",
+        captureParams: loggingDetails,
+        shouldCapture: true,
+      },
+    });
+    log(`Saved in S3: ${this.bucketName}/${fileName}`);
 
     const rosterSize = rosterRows.length;
-    this.logResults(rosterSize, hieName, failedStage, log);
+    this.logResults(rosterSize, hieName, log);
 
     return rosterCsv;
   }
@@ -155,76 +136,42 @@ export class Hl7v2RosterGenerator {
   private async logResults(
     rosterSize: number,
     hieName: string,
-    failedStage: FailedStage,
     log: typeof console.log
   ): Promise<void> {
     log("Sending analytics to posthog");
-    try {
-      await this.notifyPostHog(rosterSize, hieName, failedStage);
-      //eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (e: any) {
-      log("Error sending analytics to posthog: ", e);
-    }
+    await this.notifyPostHog(rosterSize, hieName);
 
     log("Sending metrics to cloudwatch");
-    try {
-      await this.notifyCloudWatch(rosterSize, hieName, failedStage);
-      //eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (e: any) {
-      log("Failed to notify on cloudwatch: ", e);
-    }
+    await this.notifyCloudWatch(rosterSize, hieName);
   }
 
-  private async notifyPostHog(rosterSize: number, hieName: string, failedStage: FailedStage) {
+  private async notifyPostHog(rosterSize: number, hieName: string) {
     const posthogSecretName = Config.getPostHogApiKey();
     if (!posthogSecretName) {
       throw new Error("Failed to get posthog secret name");
     }
 
     const posthogSecret = await getSecretValueOrFail(posthogSecretName, region);
-    let posthog: PostHog | undefined;
-    let rosterSizeToSend = rosterSize;
-    if (failedStage === SFTP_FAILED || failedStage === S3_AND_SFTP) {
-      rosterSizeToSend = 0;
-    }
-    try {
-      posthog =
-        analytics(
-          {
-            event: EventTypes.rosterUploadSummary,
-            distinctId: `cx:${hieName}`,
-            properties: {
-              stateHie: hieName,
-              rosterSize: rosterSizeToSend,
-              ...(failedStage ? { failedStage } : { status: "ok" }),
-            },
-          },
-          posthogSecret
-        ) || undefined;
-      await posthog?.flush?.();
-    } finally {
-      posthog?.shutdown?.();
-    }
+    await analyticsAsync(
+      {
+        event: EventTypes.rosterUploadSummary,
+        distinctId: `cx:${hieName}`,
+        properties: {
+          stateHie: hieName,
+          rosterSize: rosterSize,
+        },
+      },
+      posthogSecret
+    );
   }
 
-  private async notifyCloudWatch(
-    rosterSize: number,
-    hieName: string,
-    failedStage: FailedStage
-  ): Promise<void> {
-    const additional = `Hie=${hieName}` + (failedStage ? `;FailedStage=${failedStage}` : "");
+  private async notifyCloudWatch(rosterSize: number, hieName: string): Promise<void> {
+    const additional = `Hie=${hieName}`;
 
     await reportMetric({
       name: "ADT.RosterUpload.RosterSize",
       unit: "Count",
       value: rosterSize,
-      additionalDimension: additional,
-    });
-
-    await reportMetric({
-      name: failedStage ? "ADT.RosterUpload.Failures" : "ADT.RosterUpload.Successes",
-      unit: "Count",
-      value: 1,
       additionalDimension: additional,
     });
   }
