@@ -7,7 +7,7 @@ import {
   CwTreatmentType,
   OrganizationWithNetworkInfo,
 } from "@metriport/commonwell-sdk";
-import { OrganizationData, OrgType } from "@metriport/core/domain/organization";
+import { OrganizationData } from "@metriport/core/domain/organization";
 import { out } from "@metriport/core/util/log";
 import {
   errorToString,
@@ -61,7 +61,7 @@ const cwTechnicalContactEmail = getEnvVarOrFail("CW_TECHNICAL_CONTACT_EMAIL");
 const cwTechnicalContactPhone = getEnvVarOrFail("CW_TECHNICAL_CONTACT_PHONE");
 
 // auth stuff
-const cxIds: string[] = [];
+const cxIds: string[] = ["faff1ce2-29e0-4ac6-bb2e-77fdd1ca64fc"];
 const MODE = APIMode.production;
 const IS_ACTIVE_DEFAULT = false;
 
@@ -112,7 +112,7 @@ async function main() {
           oid: org.oid,
           data: {
             name: org.name,
-            type: org.type as unknown as OrgType, // Won't be needed once the next PR is shipped...
+            type: org.type,
             location: org.location,
           },
           active: org.cwActive ?? false,
@@ -190,7 +190,7 @@ function localGetDelay(log: typeof console.log) {
 function buildCwOrganization(org: CwOrgOrFacility): OrganizationWithNetworkInfo {
   const cwOrgBase = {
     name: org.data.name,
-    type: mapTreatmentTypeToCwType(org.data.type as unknown as TreatmentType), // Won't be needed once the next PR is shipped...
+    type: mapTreatmentTypeToCwType(org.data.type),
     locations: [
       {
         address1: org.data.location.addressLine1,
@@ -289,7 +289,7 @@ function createOrUpdateFacilityInCwV2({
     oid: facility.cwOboOid ?? facility.oid,
     data: {
       name: orgName,
-      type: cxOrgType as unknown as OrgType, // Won't be needed once the next PR is shipped...
+      type: cxOrgType,
       location: facility.address,
     },
     active: facility.cwActive ?? false,
