@@ -1021,7 +1021,6 @@ export class LambdasNestedStack extends NestedStack {
         throw new Error(`HL7_BASE64_SCRAMBLER_SEED is not defined in config`);
       }
       const hieConfigs = config.hl7Notification.hieConfigs;
-      const slackAdtRosterNotificationUrl = config.hl7Notification.slackAdtRosterNotificationUrl;
       const posthogSecretName = config.analyticsSecretNames.POST_HOG_API_KEY_SECRET;
       const posthogSecret = secrets["POST_HOG_API_KEY_SECRET"];
 
@@ -1046,7 +1045,6 @@ export class LambdasNestedStack extends NestedStack {
           envVars: {
             HL7V2_ROSTER_BUCKET_NAME: hl7v2RosterBucket.bucketName,
             API_URL: config.loadBalancerDnsName,
-            SLACK_ADT_ROSTER_NOTIFICATION_URL: slackAdtRosterNotificationUrl,
             HL7_BASE64_SCRAMBLER_SEED_ARN: hl7ScramblerSeedSecret.secretArn,
             ROSTER_UPLOAD_SFTP_PASSWORD_ARN: passwordSecret.secretArn,
             ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),

@@ -154,7 +154,6 @@ export const config: EnvConfigNonSandbox = {
   },
   generalBucketName: "test-bucket",
   hl7Notification: {
-    slackAdtRosterNotificationUrl: "your-slack-webhook-url",
     deprecatedIncomingMessageBucketName: "test-hl7-notification-bucket-name",
     incomingMessageBucketName: "test-incoming-message-bucket-name",
     outgoingMessageBucketName: "test-outgoing-message-bucket-name",
