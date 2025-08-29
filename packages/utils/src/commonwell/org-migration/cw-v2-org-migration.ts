@@ -61,7 +61,7 @@ const cwTechnicalContactEmail = getEnvVarOrFail("CW_TECHNICAL_CONTACT_EMAIL");
 const cwTechnicalContactPhone = getEnvVarOrFail("CW_TECHNICAL_CONTACT_PHONE");
 
 // auth stuff
-const cxIds: string[] = ["faff1ce2-29e0-4ac6-bb2e-77fdd1ca64fc"];
+const cxIds: string[] = [];
 const MODE = APIMode.production;
 const IS_ACTIVE_DEFAULT = false;
 
@@ -219,12 +219,12 @@ function buildCwOrganization(org: CwOrgOrFacility): OrganizationWithNetworkInfo 
       },
     ],
     isLegacyBridgeEnabled: true,
+    securityTokenKeyType: "JWT",
   };
 
   if (org.isInitiatorAndResponder) {
     return {
       ...cwOrgBase,
-      securityTokenKeyType: "JWT",
       gateways: [
         {
           serviceType: "R4_Base",
@@ -265,7 +265,7 @@ function buildCwOrganization(org: CwOrgOrFacility): OrganizationWithNetworkInfo 
               id: "TREATMENT",
               queryInitiatorOnly: !org.isInitiatorAndResponder,
               queryInitiator: org.isInitiatorAndResponder,
-              queryResponder: org.isInitiatorAndResponder,
+              queryResponder: false,
             },
           ],
         },
@@ -283,10 +283,10 @@ function createOrUpdateFacilityInCwV2({
   cxOrgName: string;
   cxOrgType: TreatmentType;
 }) {
-  const orgName = `${cxOrgName} - ${facility.name}`;
+  const orgName = `${cxOrgName} - ${facility.name} - OBO - ${facility.oid}`;
 
   return buildCwOrganization({
-    oid: facility.cwOboOid ?? facility.oid,
+    oid: facility.oid,
     data: {
       name: orgName,
       type: cxOrgType,
@@ -313,6 +313,7 @@ async function create(org: CwOrganizations): Promise<void> {
       debug(`resp updateOrg: `, JSON.stringify(respUpdate));
     } else {
       log(`Org does not exist: ${org.organizationId}. Creating...`);
+      // log("REGISTERING THIS: ", JSON.stringify(org));
       const respCreate = await commonWell.createOrg(org);
       debug(`resp createOrg: `, JSON.stringify(respCreate));
     }
