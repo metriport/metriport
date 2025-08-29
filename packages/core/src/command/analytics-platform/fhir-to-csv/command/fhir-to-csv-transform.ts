@@ -7,7 +7,7 @@ export type StartFhirToCsvTransformParams = {
   cxId: string;
   jobId: string;
   patientId: string;
-  inputBundle?: string;
+  outputPrefix: string;
   timeoutInMillis?: number | undefined;
 };
 
@@ -15,7 +15,7 @@ export async function startFhirToCsvTransform({
   cxId,
   jobId,
   patientId,
-  inputBundle,
+  outputPrefix,
   timeoutInMillis,
 }: StartFhirToCsvTransformParams): Promise<void> {
   const { log } = out(`FhirToCsvTransform - cx ${cxId} pt ${patientId} job ${jobId}`);
@@ -25,7 +25,7 @@ export async function startFhirToCsvTransform({
     JOB_ID: jobId,
     CX_ID: cxId,
     PATIENT_ID: patientId,
-    ...(inputBundle ? { INPUT_BUNDLE: inputBundle } : {}),
+    OUTPUT_PREFIX: outputPrefix,
     API_URL: `http://${Config.getApiUrl()}`,
   });
   await executeWithNetworkRetries(async () => {
