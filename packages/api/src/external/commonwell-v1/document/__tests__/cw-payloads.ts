@@ -1,7 +1,7 @@
 import { faker } from "@faker-js/faker";
 import { Contained, Document } from "@metriport/commonwell-sdk-v1";
+import { makePeriod } from "@metriport/core/src/fhir-deduplication/__tests__/examples/condition-examples";
 import { v4 as uuidv4 } from "uuid";
-import { makePeriod } from "../../shared/__tests__/date";
 
 const companyName1 = faker.company.name();
 
