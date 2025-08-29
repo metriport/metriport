@@ -5,6 +5,7 @@ import {
   Observation,
   Patient,
   ObservationReferenceRange,
+  Reference,
 } from "@medplum/fhirtypes";
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { ResponseDetail } from "../schema/response";
@@ -39,6 +40,12 @@ export function getObservation(
     ...(identifier ? { identifier } : {}),
     ...(code ? { code } : {}),
     extension,
+  };
+}
+
+export function getObservationReference(observation: Observation): Reference<Observation> {
+  return {
+    reference: `Observation/${observation.id}`,
   };
 }
 

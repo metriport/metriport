@@ -4,20 +4,37 @@ import {
   Coding,
   DiagnosticReport,
   Identifier,
+  Observation,
   Patient,
+  ServiceRequest,
   Specimen,
 } from "@medplum/fhirtypes";
 import { ResponseDetail } from "../schema/response";
 import { getPatientReference } from "./patient";
 import { getSpecimenReference } from "./specimen";
+import { getServiceRequestReference } from "./service-request";
 import { getQuestDataSourceExtension } from "./shared";
+import { getObservationReference } from "./observation";
 
 export function getDiagnosticReport(
   detail: ResponseDetail,
-  { patient, specimen }: { patient: Patient; specimen?: Specimen | undefined }
+  {
+    patient,
+    specimen,
+    serviceRequest,
+    observation,
+  }: {
+    patient: Patient;
+    specimen?: Specimen | undefined;
+    serviceRequest: ServiceRequest;
+    observation: Observation;
+  }
 ): DiagnosticReport {
   const effectiveDateTime = getEffectiveDateTime(detail);
+  const code = getDiagnosticReportCoding(detail);
+  const basedOn = [getServiceRequestReference(serviceRequest)];
   const subject = getPatientReference(patient);
+  const result = [getObservationReference(observation)];
   const identifier = getIdentifier(detail);
   const specimenReference = specimen ? [getSpecimenReference(specimen)] : undefined;
   const category = getDiagnosticReportCategory(detail);
@@ -27,11 +44,26 @@ export function getDiagnosticReport(
     id: uuidv7(),
     status: "final",
     effectiveDateTime,
+    basedOn,
     identifier,
     subject,
+    result,
+    ...(code ? { code } : {}),
     ...(specimenReference ? { specimen: specimenReference } : {}),
     ...(category ? { category } : {}),
     extension,
+  };
+}
+
+function getDiagnosticReportCoding(detail: ResponseDetail): CodeableConcept | undefined {
+  if (!detail.loincCode) return undefined;
+  return {
+    coding: [
+      {
+        system: "http://loinc.org",
+        code: detail.loincCode,
+      },
+    ],
   };
 }
 
@@ -55,6 +87,9 @@ function getDiagnosticReportCategory(detail: ResponseDetail): CodeableConcept[] 
 }
 
 function getEffectiveDateTime(detail: ResponseDetail): string {
+  if (detail.dateCollected) {
+    return detail.dateCollected.toISOString();
+  }
   return detail.dateOfService.toISOString();
 }
 
