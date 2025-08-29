@@ -41,8 +41,8 @@ export function convertHl7v2MessageToFhir({
     log(`Conversion completed in ${duration} ms`);
     const docIdExtension = buildDocIdFhirExtension(rawDataFileKey, "hl7");
     const sourceExtension = createExtensionDataSource(hieName.toUpperCase());
-    let updatedBundle = addHl7SourceExtension(bundle, docIdExtension);
-    updatedBundle = addHl7SourceExtension(bundle, sourceExtension);
+    let updatedBundle = appendExtensionToEachResource(bundle, docIdExtension);
+    updatedBundle = appendExtensionToEachResource(bundle, sourceExtension);
     return updatedBundle;
   }
 
@@ -63,21 +63,21 @@ export function convertHl7v2MessageToFhir({
   throw new MetriportError(msg, undefined, extraProps);
 }
 
-function addHl7SourceExtension(
+function appendExtensionToEachResource(
   bundle: BundleWithEntry<Resource>,
   newExtension: Extension
 ): Bundle<Resource> {
   return {
     ...bundle,
     entry: bundle.entry.map(e => {
-      if (!e.resource) return e;
-      //eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const resource = e.resource as any;
+      const resource = e.resource;
+      if (!resource || !("extension" in resource)) return e;
+
       const existing = resource.extension ?? [];
       return {
         ...e,
         resource: {
-          ...e.resource,
+          ...resource,
           extension: [...existing, newExtension],
         },
       };
