@@ -43,9 +43,11 @@ export const censusGeocoderResponseSchema = z.object({
   result: z.object({
     input: z.object({
       address: z.union([
+        // One line geocoding input
         z.object({
           address: z.string(),
         }),
+        // Address geocoding input
         z.object({
           zip: z.string(),
           street: z.string(),

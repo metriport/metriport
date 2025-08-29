@@ -1,4 +1,4 @@
-import { geocodeAddress, geocodeOneLineAddress } from "./census-geocoder";
+import { geocodeAddress, geocodeOneLineAddress } from "./geocoder";
 import { USState } from "@metriport/shared";
 
 async function main() {

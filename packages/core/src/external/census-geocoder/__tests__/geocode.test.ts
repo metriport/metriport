@@ -1,5 +1,5 @@
 import { USState } from "@metriport/shared";
-import { geocodeAddress } from "../census-geocoder";
+import { geocodeAddress } from "../geocoder";
 
 describe("US Census Geocoder", () => {
   it("should geocode an address", async () => {
