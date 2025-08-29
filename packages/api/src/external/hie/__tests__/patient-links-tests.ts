@@ -1,17 +1,17 @@
 import { faker } from "@faker-js/faker";
 import { PatientData } from "@metriport/core/domain/patient";
 import { buildDayjs } from "@metriport/shared/common/date";
-import { CwLink } from "../../commonwell/patient/cw-patient-data/shared";
 import { CQLink } from "../../carequality/cq-patient-data";
+import { CwLinkV1 } from "../../commonwell/patient/cw-patient-data/shared";
 
-export const createCwLink = ({
+export function createCwLink({
   firstName,
   lastName,
   dob,
   genderAtBirth,
   address,
   contact,
-}: PatientData): CwLink => {
+}: PatientData): CwLinkV1 {
   return {
     _links: {
       downgrade: {
@@ -61,16 +61,16 @@ export const createCwLink = ({
     },
     assuranceLevel: "2",
   };
-};
+}
 
-export const createCQLink = ({
+export function createCQLink({
   firstName,
   lastName,
   dob,
   genderAtBirth,
   address,
   contact,
-}: PatientData): CQLink => {
+}: PatientData): CQLink {
   return {
     id: faker.string.uuid(),
     oid: "1.2.3.4.5.6.7.8.9.10",
@@ -111,4 +111,4 @@ export const createCQLink = ({
       birthDate: buildDayjs(dob).format("YYYYMMDD"),
     },
   };
-};
+}

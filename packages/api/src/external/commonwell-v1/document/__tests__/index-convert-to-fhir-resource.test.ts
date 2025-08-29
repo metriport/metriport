@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 import { makeContainedPatient } from "@metriport/commonwell-sdk-v1/models/__tests__/document";
 import { v4 as uuidv4 } from "uuid";
-import { convertToFHIRResource } from "../index";
-import { docRefContainedPatientWithOrg } from "./cw-payloads";
+import { convertToFHIRResource } from "../../../commonwell-v1/document/cw-to-fhir";
+import { docRefContainedPatientWithOrg } from "../../../fhir/document/__tests__/cw-payloads";
 
 beforeEach(() => {
   jest.restoreAllMocks();

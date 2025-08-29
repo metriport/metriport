@@ -8,8 +8,8 @@ import { makePatient } from "@metriport/core/domain/__tests__/patient";
 import { buildDayjs } from "@metriport/shared/common/date";
 import { v4 as uuidv4 } from "uuid";
 import { CWDocumentWithMetriportData } from "../../../commonwell-v1/document/shared";
-import { makePeriod } from "../../shared/__tests__/date";
-import { cwToFHIR, getBestDateFromCWDocRef } from "../index";
+import { makePeriod } from "../../../fhir/shared/__tests__/date";
+import { cwToFHIR, getBestDateFromCWDocRef } from "../cw-to-fhir";
 
 beforeEach(() => {
   jest.restoreAllMocks();
