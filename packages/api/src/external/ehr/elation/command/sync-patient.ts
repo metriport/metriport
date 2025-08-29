@@ -88,45 +88,57 @@ export async function syncElationPatientIntoMetriport({
   }
 
   log("no existing mapping found");
-  const elationPatient = await elationApi.getPatient({ cxId, patientId: elationPatientId });
-  const demographics = createMetriportPatientDemographics(elationPatient);
-  const metriportPatient = await getOrCreateMetriportPatient({
-    source: EhrSources.elation,
-    cxId,
-    practiceId: elationPracticeId,
-    demographics,
-    externalId: elationPatientId,
-    inputMetriportPatientId,
-  });
-  log("Metriport patient created/retrieved:", metriportPatient.id);
-  const metriportPatientId = metriportPatient.id;
-  const facilityId = await getPatientPrimaryFacilityIdOrFail({
-    cxId,
-    patientId: metriportPatient.id,
-  });
-  if (triggerDq) {
-    queryDocumentsAcrossHIEs({
-      cxId,
-      patientId: metriportPatientId,
-      facilityId,
-    }).catch(processAsyncError(`Elation queryDocumentsAcrossHIEs`));
-  }
-  await Promise.all([
-    findOrCreatePatientMapping({
-      cxId,
-      patientId: metriportPatientId,
-      externalId: elationPatientId,
+  let metriportPatientId: string | undefined;
+  try {
+    const elationPatient = await elationApi.getPatient({ cxId, patientId: elationPatientId });
+    const demographics = createMetriportPatientDemographics(elationPatient);
+    const metriportPatient = await getOrCreateMetriportPatient({
       source: EhrSources.elation,
-    }),
-    createElationPatientMetadata({
+      cxId,
+      practiceId: elationPracticeId,
+      demographics,
+      externalId: elationPatientId,
+      inputMetriportPatientId,
+    });
+    log("Metriport patient created/retrieved:", metriportPatient.id);
+    metriportPatientId = metriportPatient.id;
+    const facilityId = await getPatientPrimaryFacilityIdOrFail({
+      cxId,
+      patientId: metriportPatientId,
+    });
+    if (triggerDq) {
+      queryDocumentsAcrossHIEs({
+        cxId,
+        patientId: metriportPatientId,
+        facilityId,
+      }).catch(processAsyncError(`Elation queryDocumentsAcrossHIEs`));
+    }
+    await Promise.all([
+      findOrCreatePatientMapping({
+        cxId,
+        patientId: metriportPatientId,
+        externalId: elationPatientId,
+        source: EhrSources.elation,
+      }),
+      createElationPatientMetadata({
+        cxId,
+        elationPracticeId,
+        elationPatientId,
+        metriportPatientId,
+        elationApi,
+      }),
+    ]);
+    return metriportPatientId;
+  } catch (error) {
+    await createElationPatientMetadata({
       cxId,
       elationPracticeId,
       elationPatientId,
-      metriportPatientId,
       elationApi,
-    }),
-  ]);
-  return metriportPatientId;
+      metriportPatientId,
+    }).catch(processAsyncError(`Elation createElationPatientMetadata error`));
+    throw error;
+  }
 }
 
 function createMetriportPatientDemographics(patient: ElationPatient): PatientDemoData {

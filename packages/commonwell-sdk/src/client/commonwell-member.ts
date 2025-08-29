@@ -1,4 +1,4 @@
-import { BadRequestError, MetriportError } from "@metriport/shared";
+import { BadRequestError, MetriportError, NotFoundError } from "@metriport/shared";
 import { isAxiosError } from "axios";
 import httpStatus from "http-status";
 import { normalizeCertificate } from "../common/certificate";
@@ -96,7 +96,7 @@ export class CommonWellMember extends CommonWellBase implements CommonWellMember
       );
       return organizationSchema.parse(resp.data);
     } catch (error) {
-      this.rethrowDescriptiveError(error, "Failed to create CW organization");
+      throw this.getDescriptiveError(error, "Failed to create CW organization");
     }
   }
 
@@ -122,7 +122,7 @@ export class CommonWellMember extends CommonWellBase implements CommonWellMember
       );
       return organizationSchema.parse(resp.data);
     } catch (error) {
-      this.rethrowDescriptiveError(error, "Failed to update CW organization");
+      throw this.getDescriptiveError(error, "Failed to update CW organization");
     }
   }
 
@@ -155,7 +155,7 @@ export class CommonWellMember extends CommonWellBase implements CommonWellMember
       });
       return organizationListSchema.parse(resp.data);
     } catch (error) {
-      this.rethrowDescriptiveError(error, "Failed to get CW organization list");
+      throw this.getDescriptiveError(error, "Failed to get CW organization list");
     }
   }
 
@@ -379,18 +379,21 @@ export class CommonWellMember extends CommonWellBase implements CommonWellMember
     return { Authorization: `Bearer ${jwt}` };
   }
 
-  private rethrowDescriptiveError(error: unknown, title: string): never {
+  private getDescriptiveError(error: unknown, title: string): unknown {
     if (isAxiosError(error)) {
-      if (error.response?.status === httpStatus.BAD_REQUEST) {
-        const data = error.response?.data;
-        throw new BadRequestError(title, undefined, { extra: JSON.stringify(data) });
-      }
+      const status = error.response?.status;
+      const data = error.response?.data;
+      const responseBody = data ? JSON.stringify(data) : undefined;
+      const cwReference = this.lastTransactionId;
 
-      if (error.response?.status === httpStatus.NOT_FOUND) {
-        const data = error.response?.data;
-        throw new MetriportError(title, undefined, { extra: JSON.stringify(data) });
+      if (status === httpStatus.BAD_REQUEST) {
+        return new BadRequestError(title, error, { status, cwReference, responseBody });
       }
+      if (status === httpStatus.NOT_FOUND) {
+        return new NotFoundError(title, error, { status, cwReference, responseBody });
+      }
+      return new MetriportError(title, error, { status, cwReference, responseBody });
     }
-    throw error;
+    return error;
   }
 }

@@ -116,7 +116,7 @@ export async function get(orgOid: string): Promise<CWSdkOrganization | undefined
         cwId,
         cwReference: cwRef,
         context: `cw.org.get`,
-        error,
+        error: errorToString(error),
       },
     });
     throw error;
@@ -130,13 +130,13 @@ export async function create(cxId: string, org: CWOrganization, isObo = false): 
   const commonWell = makeCommonWellAPI(Config.getCWMemberOrgName(), Config.getCWMemberOID());
   try {
     const respCreate = await commonWell.createOrg(metriportQueryMeta, commonwellOrg);
-    debug(`resp createOrg: `, JSON.stringify(respCreate));
+    debug(`resp createOrg: `, () => JSON.stringify(respCreate));
     const respAddCert = await commonWell.addCertificateToOrg(
       metriportQueryMeta,
       getCertificate(),
       org.oid
     );
-    debug(`resp addCertificateToOrg: `, JSON.stringify(respAddCert));
+    debug(`resp addCertificateToOrg: `, () => JSON.stringify(respAddCert));
 
     if (await isEnhancedCoverageEnabledForCx(cxId)) {
       // update the CQ bridge include list
@@ -152,7 +152,7 @@ export async function create(cxId: string, org: CWOrganization, isObo = false): 
         cwReference: cwRef,
         context: `cw.org.create`,
         commonwellOrg,
-        error,
+        error: errorToString(error),
       },
     });
     throw error;
@@ -179,7 +179,7 @@ export async function update(cxId: string, org: CWOrganization, isObo = false): 
       cwReference: cwRef,
       context: `cw.org.update`,
       commonwellOrg,
-      error,
+      error: errorToString(error),
     };
     if (error.response?.status === 404) {
       capture.message("Got 404 while updating Org @ CW, creating it", { extra });
@@ -213,7 +213,7 @@ export async function initCQOrgIncludeList(orgOid: string): Promise<void> {
       extra: {
         orgOid,
         context: `cw.org.initCQOrgIncludeList`,
-        error,
+        error: errorToString(error),
       },
     });
   }

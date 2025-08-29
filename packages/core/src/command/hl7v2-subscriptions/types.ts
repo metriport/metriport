@@ -2,14 +2,7 @@ import { USState } from "@metriport/shared";
 import { Patient } from "../../domain/patient";
 import { Hl7v2Subscription } from "../../domain/patient-settings";
 import { HieIanaTimezone } from "../../external/hl7-notification/hie-config-dictionary";
-
-export type SftpConfig = {
-  host: string;
-  port: number;
-  username: string;
-  password: string;
-  remotePath: string;
-};
+import { HieSftpConfig } from "../../external/sftp/types";
 
 export type RosterRowData = {
   id: string;
@@ -61,7 +54,7 @@ export type HieConfig = {
   states: USState[];
   subscriptions: Hl7v2Subscription[];
   cron: string;
-  sftpConfig?: SftpConfig;
+  sftpConfig: HieSftpConfig;
   mapping: HiePatientRosterMapping;
 };
 

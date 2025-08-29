@@ -1,7 +1,7 @@
 import {
-  Organization as CwSdkOrganization,
   CwTreatmentType,
   isOrgInitiatorAndResponder,
+  Organization as CwSdkOrganization,
   OrganizationBase,
   OrganizationWithNetworkInfo,
 } from "@metriport/commonwell-sdk";
@@ -11,6 +11,7 @@ import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import {
   errorToString,
+  executeWithNetworkRetries,
   getEnvVarOrFail,
   MetriportError,
   NotFoundError,
@@ -86,7 +87,7 @@ function cwOrgOrFacilityToSdk(
     isActive: org.active,
     searchRadius: defaultSearchRadius,
     technicalContacts: [technicalContact],
-    isLegacyBridgeEnabled: true, // This stays true for now, while the legacy platform is still in use
+    isLegacyBridgeEnabled: true, // TODO: ENG-927 - This stays true for now, while the legacy platform is still in use
   };
 
   if (org.isInitiatorAndResponder) {
@@ -141,26 +142,11 @@ function cwOrgOrFacilityToSdk(
 }
 
 export async function get(orgOid: string): Promise<CwSdkOrganization | undefined> {
-  const { log, debug } = out(`CW.v2 get Org - CW Org OID ${orgOid}`);
+  const { log, debug } = out(`CW.v2.org get - CW Org OID ${orgOid}`);
   const commonWell = makeCommonWellMemberAPI();
   try {
-    const resp = await commonWell.getOneOrg(orgOid);
+    const resp = await executeWithNetworkRetries(() => commonWell.getOneOrg(orgOid));
     debug(`resp getOneOrg: `, JSON.stringify(resp));
-    return resp;
-  } catch (error) {
-    const msg = `Failure while getting Org @ CW`;
-    const cwRef = commonWell.lastTransactionId;
-    log(`${msg}. Org OID: ${orgOid}. Cause: ${errorToString(error)}. CW Reference: ${cwRef}`);
-    return undefined;
-  }
-}
-
-export async function getOrFail(orgOid: string): Promise<CwSdkOrganization | undefined> {
-  const { log, debug } = out(`CW.v2 get Org or fail - CW Org OID ${orgOid}`);
-  const commonWell = makeCommonWellMemberAPI();
-  try {
-    const resp = await commonWell.getOneOrg(orgOid);
-    debug(`resp getOneOrgOrFail: `, JSON.stringify(resp));
     return resp;
   } catch (error) {
     const msg = `Failure while getting Org @ CW`;
@@ -170,8 +156,8 @@ export async function getOrFail(orgOid: string): Promise<CwSdkOrganization | und
       extra: {
         orgOid,
         cwReference: cwRef,
-        context: `cw.org.get`,
-        error,
+        context: `cw.v2.org.get`,
+        error: errorToString(error),
       },
     });
     throw error;
@@ -184,9 +170,12 @@ export async function create(cxId: string, org: CwOrgOrFacility): Promise<void> 
   const sdkOrg = cwOrgOrFacilityToSdk(org);
   const commonWell = makeCommonWellMemberAPI();
   try {
+    // Don't retry createOrg because it could result in a duplicate org being created
     const respCreate = await commonWell.createOrg(sdkOrg);
     debug(`resp createOrg: `, JSON.stringify(respCreate));
-    const respAddCert = await commonWell.addCertificateToOrg(getCertificate(), org.oid);
+    const respAddCert = await executeWithNetworkRetries(() =>
+      commonWell.addCertificateToOrg(getCertificate(), org.oid)
+    );
     debug(`resp addCertificateToOrg: `, JSON.stringify(respAddCert));
   } catch (error) {
     const msg = `Failure while creating org @ CW`;
@@ -194,11 +183,11 @@ export async function create(cxId: string, org: CwOrgOrFacility): Promise<void> 
     log(`${msg}. Org OID: ${org.oid}. Cause: ${errorToString(error)}. CW Reference: ${cwRef}`);
     capture.error(msg, {
       extra: {
+        cxId,
         orgOid: org.oid,
         cwReference: cwRef,
-        context: `cw.org.create`,
-        commonwellOrg: sdkOrg,
-        error,
+        context: `cw.v2.org.create`,
+        error: errorToString(error),
       },
     });
     throw error;
@@ -211,19 +200,18 @@ export async function update(cxId: string, org: CwOrgOrFacility): Promise<void> 
   const sdkOrg = cwOrgOrFacilityToSdk(org);
   const commonWell = makeCommonWellMemberAPI();
   try {
-    const resp = await commonWell.updateOrg(sdkOrg);
+    const resp = await executeWithNetworkRetries(() => commonWell.updateOrg(sdkOrg));
     debug(`resp updateOrg: `, JSON.stringify(resp));
-    //eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
+  } catch (error: unknown) {
     const cwRef = commonWell.lastTransactionId;
     const extra = {
+      cxId,
       orgOid: org.oid,
       cwReference: cwRef,
-      context: `cw.org.update`,
-      commonwellOrg: sdkOrg,
-      error,
+      context: `cw.v2.org.update`,
+      error: errorToString(error),
     };
-    if (error.response?.status === 404) {
+    if (error instanceof NotFoundError) {
       capture.message("Got 404 while updating Org @ CW, creating it", { extra });
       await create(cxId, org);
       return;
@@ -262,7 +250,7 @@ export function parseCWEntry(org: CwSdkOrganization): CwOrgOrFacility {
 }
 
 export async function getParsedOrgOrFailV2(oid: string): Promise<CwOrgOrFacility> {
-  const resp = await getOrFail(oid);
+  const resp = await get(oid);
   if (!resp) throw new NotFoundError("Organization not found", undefined, { orgOid: oid });
   return parseCWEntry(resp);
 }
@@ -270,7 +258,7 @@ export async function getParsedOrgOrFailV2(oid: string): Promise<CwOrgOrFacility
 export function mapTreatmentTypeToCwType(type: TreatmentType): CwTreatmentType {
   const cwType = TREATMENT_TYPE_TO_CW_MAP[type];
   if (!cwType) {
-    const msg = `Invalid treatment type: ${type}`;
+    const msg = `Invalid treatment type`;
     capture.error(msg, { extra: { type } });
     throw new MetriportError(msg, undefined, { type });
   }
@@ -280,7 +268,7 @@ export function mapTreatmentTypeToCwType(type: TreatmentType): CwTreatmentType {
 export function mapCwTypeToTreatmentType(type: string): TreatmentType {
   const treatmentType = CW_TO_TREATMENT_TYPE_MAP[type.toLowerCase().trim()];
   if (!treatmentType) {
-    const msg = `Invalid CW treatment type: ${type}`;
+    const msg = `Invalid CW treatment type`;
     capture.error(msg, { extra: { type } });
     throw new MetriportError(msg, undefined, { type });
   }
