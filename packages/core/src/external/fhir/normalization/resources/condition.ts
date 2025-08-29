@@ -1,6 +1,6 @@
 import { Condition } from "@medplum/fhirtypes";
 import { cloneDeep } from "lodash";
-import { ICD_10_URL } from "../../../../util/constants";
+import { ICD_10_URL } from "@metriport/shared/medical";
 import { chronicityMap } from "../../shared/chronicity-map";
 import { getHccForIcd10Code } from "../../shared/hcc-map";
 import {
@@ -24,7 +24,7 @@ export function normalizeConditions(conditions: Condition[]): Condition[] {
       if (coding.system !== ICD_10_URL) return;
 
       if (coding.code) {
-        const codeWithoutDot = coding.code.replace(".", "");
+        const codeWithoutDot = coding.code.replace(".", "").trim();
         const chronicity = chronicityMap[codeWithoutDot];
         const hccCode = getHccForIcd10Code(codeWithoutDot);
 
