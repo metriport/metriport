@@ -9,6 +9,9 @@ import {
   isDocumentConversionWebhookRequest,
   isDocumentDownloadWebhookRequest,
   isPingWebhookRequest,
+  isPatientAdmitWebhookRequest,
+  isPatientTransferWebhookRequest,
+  isPatientDischargeWebhookRequest,
 } from "@metriport/shared/medical";
 import express, { Application, raw, Request, Response } from "express";
 import fs from "fs";
@@ -149,6 +152,39 @@ app.post("/", raw({ type: "*/*" }), async (req: Request, res: Response): Promise
     } else {
       console.log("Failed to process the bulk patient create");
     }
+    processed = true;
+  }
+
+  if (isPatientAdmitWebhookRequest(payload)) {
+    console.log(`Received patient admit webhook`);
+    const admitPayload = payload.payload;
+    // process admit message
+    console.log(
+      `Patient admitted: ${admitPayload.patientId}, externalId: ${admitPayload.externalId}`
+    );
+    console.log(JSON.stringify(admitPayload, undefined, 2));
+    processed = true;
+  }
+
+  if (isPatientTransferWebhookRequest(payload)) {
+    console.log(`Received patient transfer webhook`);
+    const transferPayload = payload.payload;
+    // process transfer message
+    console.log(
+      `Patient transferred: ${transferPayload.patientId}, externalId: ${transferPayload.externalId}`
+    );
+    console.log(JSON.stringify(transferPayload, undefined, 2));
+    processed = true;
+  }
+
+  if (isPatientDischargeWebhookRequest(payload)) {
+    console.log(`Received patient discharge webhook`);
+    const dischargePayload = payload.payload;
+    // process discharge message
+    console.log(
+      `Patient discharged: ${dischargePayload.patientId}, externalId: ${dischargePayload.externalId}`
+    );
+    console.log(JSON.stringify(dischargePayload, undefined, 2));
     processed = true;
   }
 
