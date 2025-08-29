@@ -181,8 +181,8 @@ export function getLambdaResultPayload({
     log(`${msg} - ${errorDetails}`);
     if (failGracefully) return undefined;
 
-    if (lambdaError?.errorType === "BadRequestError" && lambdaError?.errorMessage) {
-      throw new BadRequestError(lambdaError.errorMessage);
+    if (lambdaError?.errorType === "BadRequestError") {
+      throw new BadRequestError(lambdaError.errorMessage ?? "Generic bad request " + msg);
     }
     if (lambdaError?.errorType === "NotFoundError") {
       throw new NotFoundError(msg, undefined, { lambdaName, errorDetails });
@@ -252,8 +252,8 @@ export function getLambdaResultPayloadV3({
     log(`${msg} - ${errorDetails}`);
     if (failGracefully) return undefined;
 
-    if (lambdaError?.errorType === "BadRequestError" && lambdaError?.errorMessage) {
-      throw new BadRequestError(lambdaError.errorMessage);
+    if (lambdaError?.errorType === "BadRequestError") {
+      throw new BadRequestError(lambdaError.errorMessage ?? "Generic bad request " + msg);
     }
     if (lambdaError?.errorType === "NotFoundError") {
       throw new NotFoundError(msg, undefined, { lambdaName, errorDetails });
