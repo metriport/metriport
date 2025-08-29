@@ -9,6 +9,7 @@ import uploadRoster from "./upload-roster";
 import downloadResponse from "./download-response";
 import createSourceDocuments from "./create-source-documents";
 import fhirConvertAll from "./fhir-convert-all";
+import convertToCsv from "./convert-to-csv";
 
 /**
  * This is the main Quest CLI, which registers all Quest utility commands.
@@ -24,4 +25,5 @@ program.addCommand(uploadRoster);
 program.addCommand(downloadResponse);
 program.addCommand(createSourceDocuments);
 program.addCommand(fhirConvertAll);
+program.addCommand(convertToCsv);
 program.parse();
