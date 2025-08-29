@@ -423,15 +423,16 @@ export class CommonWellMember implements CommonWellMemberAPI {
     if (isAxiosError(error)) {
       const status = error.response?.status;
       const data = error.response?.data;
+      const responseBody = data ? JSON.stringify(data) : undefined;
       const cwReference = this.lastTransactionId;
 
       if (status === httpStatus.BAD_REQUEST) {
-        return new BadRequestError(title, error, { status, cwReference, data });
+        return new BadRequestError(title, error, { status, cwReference, responseBody });
       }
       if (status === httpStatus.NOT_FOUND) {
-        return new NotFoundError(title, error, { status, cwReference, data });
+        return new NotFoundError(title, error, { status, cwReference, responseBody });
       }
-      return new MetriportError(title, error, { status, cwReference, data });
+      return new MetriportError(title, error, { status, cwReference, responseBody });
     }
     return error;
   }
