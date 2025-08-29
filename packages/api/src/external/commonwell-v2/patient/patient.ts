@@ -694,8 +694,8 @@ async function autoUpgradeProbableLinks({
   const { log, debug } = out("CW.v2 autoUpgradeProbableLinks");
 
   const orgIdExcludeList = await getOrgIdExcludeList();
-  debug(`validLinks: `, JSON.stringify(validLinks));
-  debug(`invalidLinks: `, JSON.stringify(invalidLinks));
+  debug(`validLinks: `, () => JSON.stringify(validLinks));
+  debug(`invalidLinks: `, () => JSON.stringify(invalidLinks));
 
   const validProbableLinks = validLinks.filter(l => l.type === "probable");
   const validExistingLinks = validLinks.filter(l => l.type === "existing");
