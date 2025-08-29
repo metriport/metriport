@@ -2,7 +2,7 @@ import { Organization, Practitioner, Reference, Resource } from "@medplum/fhirty
 import { Document as CWDocument, DocumentContent } from "@metriport/commonwell-sdk-v1";
 import { makeDocument } from "@metriport/commonwell-sdk-v1/models/__tests__/document";
 import { v4 as uuidv4 } from "uuid";
-import { convertToFHIRResource, getAuthors } from "../index";
+import { convertToFHIRResource, getAuthors } from "../cw-to-fhir";
 import { docRefsWithOneAuthorPointingToMultipleContained } from "./cw-payloads";
 
 let patientId: string;
@@ -20,7 +20,7 @@ beforeEach(() => {
   docMock = makeDocument({ content: { author: cwContained } });
 });
 
-const cwContainedToFHIR = ({ contained, subject }: DocumentContent): Resource[] => {
+function cwContainedToFHIR({ contained, subject }: DocumentContent): Resource[] {
   if (!contained) return [];
   const containedContent: Resource[] = [];
   if (contained?.length) {
@@ -30,7 +30,7 @@ const cwContainedToFHIR = ({ contained, subject }: DocumentContent): Resource[] 
     });
   }
   return containedContent;
-};
+}
 
 describe("getAuthors", () => {
   it("returns multiple authors when multiple contained", async () => {

@@ -109,7 +109,7 @@ export function cwToFHIR(
 }
 
 // TODO move to external/commonwell-v1/document
-function getBestDateFromCWDocRef(content: DocumentContent): string {
+export function getBestDateFromCWDocRef(content: DocumentContent): string {
   const date = dayjs(content.indexed);
   const period = content.context.period;
   // if the timestamp from CW for the indexed date is from today, this usually
@@ -155,7 +155,7 @@ function idToFHIR(id: DocumentIdentifier): Identifier {
  * @param subjectRef The subject reference on the CW payload.
  * @returns FHIR Resource; otherwise sends a notification to Sentry if the resource type is not handled.
  */
-function convertToFHIRResource(
+export function convertToFHIRResource(
   resource: Contained,
   patientId: string,
   subjectRef: string
@@ -373,7 +373,7 @@ function convertCWIdentifierToFHIR(
  * @param contained FHIR-compliant resources built from CW resources.
  * @returns FHIR References to be used as authors to the document reference.
  */
-function getAuthors(
+export function getAuthors(
   content: DocumentContent,
   contained: Resource[],
   docId: string
