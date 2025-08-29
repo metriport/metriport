@@ -42,12 +42,17 @@ export const addressMatchSchema = z.object({
 export const censusGeocoderResponseSchema = z.object({
   result: z.object({
     input: z.object({
-      address: z.object({
-        zip: z.string(),
-        street: z.string(),
-        city: z.string(),
-        state: z.string(),
-      }),
+      address: z.union([
+        z.object({
+          address: z.string(),
+        }),
+        z.object({
+          zip: z.string(),
+          street: z.string(),
+          city: z.string(),
+          state: z.string(),
+        }),
+      ]),
     }),
     addressMatches: z.array(addressMatchSchema),
   }),

@@ -8,7 +8,11 @@ import {
   AddressMatch,
 } from "./types";
 import { getStreetFromAddress } from "./utils";
-import { CENSUS_GEOCODER_HEADERS, CENSUS_GEOCODER_ADDRESS_URL } from "./constants";
+import {
+  CENSUS_GEOCODER_HEADERS,
+  CENSUS_GEOCODER_ADDRESS_URL,
+  CENSUS_GEOCODER_ONE_LINE_ADDRESS_URL,
+} from "./constants";
 
 /**
  * Geocode an address using the US Census Geocoder, and returns an array of AddressMatch objects.
@@ -34,6 +38,28 @@ export async function geocodeAddress(
     headers: CENSUS_GEOCODER_HEADERS,
     params,
   });
+  try {
+    const { result } = censusGeocoderResponseSchema.parse(response.data);
+    return result.addressMatches;
+  } catch (error) {
+    throw new MetriportError("Invalid response from US Census Geocoder", error, {
+      address: JSON.stringify(address),
+      response: JSON.stringify(response.data),
+    });
+  }
+}
+
+export async function geocodeOneLineAddress(address: string): Promise<AddressMatch[]> {
+  const params = new URLSearchParams({
+    address: address,
+    benchmark: "Public_AR_Current",
+    format: "json",
+  });
+  const response = await axios.get<CensusGeocoderResponse>(CENSUS_GEOCODER_ONE_LINE_ADDRESS_URL, {
+    headers: CENSUS_GEOCODER_HEADERS,
+    params,
+  });
+
   try {
     const { result } = censusGeocoderResponseSchema.parse(response.data);
     return result.addressMatches;
