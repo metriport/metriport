@@ -3,6 +3,7 @@ import {
   canvasWebhookSource,
 } from "@metriport/shared/interface/external/ehr/canvas/jwt-token";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
+import dayjs from "dayjs";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
@@ -23,7 +24,7 @@ function generateToken(): string {
 
 // Calculate expiration (2 years from now in milliseconds)
 function getDefaultExpiration(): number {
-  return Date.now() + 2 * 365 * 24 * 60 * 60 * 1000;
+  return dayjs().add(2, "year").valueOf();
 }
 
 /**
@@ -53,25 +54,26 @@ router.post(
     await findOrCreateFacilityMapping({
       cxId: childCxId,
       facilityId: facilityId,
-      externalId: externalId,
+      externalId,
       source: EhrSources.canvas,
     });
 
     await findOrCreateCxMapping({
       cxId: childCxId,
       source: EhrSources.canvas,
-      externalId: externalId,
-      secondaryMappings: null,
+      externalId,
+      secondaryMappings: {},
     });
 
     const dashToken = generateToken();
     const webhookToken = generateToken();
+    const twoYearsFromNow = getDefaultExpiration();
 
     await Promise.all([
       saveJwtToken({
         token: dashToken,
         source: canvasDashSource,
-        exp: getDefaultExpiration(),
+        exp: twoYearsFromNow,
         data: {
           source: canvasDashSource,
           practiceId: externalId,
@@ -80,7 +82,7 @@ router.post(
       saveJwtToken({
         token: webhookToken,
         source: canvasWebhookSource,
-        exp: getDefaultExpiration(),
+        exp: twoYearsFromNow,
         data: {
           cxId: childCxId,
           source: canvasWebhookSource,
