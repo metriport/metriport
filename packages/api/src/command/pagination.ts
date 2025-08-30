@@ -1,18 +1,22 @@
+import { CompositeCursor, createCompositeCursor } from "@metriport/shared/domain/cursor-utils";
+import type { SortItem } from "@metriport/shared/domain/pagination";
 import { FindOptions, Op, OrderItem } from "sequelize";
 import { UnionToIntersection, XOR } from "ts-essentials";
 
 export type Pagination = XOR<PaginationFromItem, PaginationToItem> & {
   /** indicates the number of items to be included in the response */
   count: number;
+  /** optional sort criteria for composite cursor pagination */
+  sort: SortItem[];
 };
 
 export type PaginationFromItem = {
-  /** indicates the minimum item to be included in the response, inclusive */
-  fromItem?: string | undefined;
+  /** indicates the minimum item to be included in the response, inclusive - now supports composite cursors */
+  fromItem?: CompositeCursor | undefined;
 };
 export type PaginationToItem = {
-  /** indicates the maximum item to be included in the response, inclusive */
-  toItem?: string | undefined;
+  /** indicates the maximum item to be included in the response, inclusive - now supports composite cursors */
+  toItem?: CompositeCursor | undefined;
 };
 export type PaginationItem = UnionToIntersection<PaginationFromItem | PaginationToItem>;
 
@@ -41,14 +45,14 @@ export function sortForPagination<T>(items: T[], pagination: Pagination | undefi
   return toItem ? items.reverse() : items;
 }
 
-export async function getPaginationItems<T extends { id: string }>(
+export async function getPaginationItems<T extends Record<string, unknown>>(
   requestMeta: Pagination,
   getItems: (pagination: Pagination) => Promise<T[]>,
   getTotalCount: () => Promise<number>
 ): Promise<{
-  prevPageItemId: string | undefined;
+  prevPageCursor: CompositeCursor | undefined;
   currPageItems: T[];
-  nextPageItemId: string | undefined;
+  nextPageCursor: CompositeCursor | undefined;
   totalCount?: number;
 }> {
   const itemsPerPage = requestMeta.count;
@@ -59,44 +63,52 @@ export async function getPaginationItems<T extends { id: string }>(
     count: itemsPerPage + 1,
   });
   if (itemsWithExtraOne.length < 1) {
-    return { prevPageItemId: undefined, currPageItems: [], nextPageItemId: undefined };
+    return { prevPageCursor: undefined, currPageItems: [], nextPageCursor: undefined };
   }
 
   if (!requestMeta.toItem) {
     // navigating "forward"
 
     // intentionally one over since we asked for one more to determine if there is a next page
-    const nextPageItemId = itemsWithExtraOne[itemsPerPage]?.id;
+    const nextPageCursor = itemsWithExtraOne[itemsPerPage]
+      ? createCompositeCursor(itemsWithExtraOne[itemsPerPage], requestMeta.sort)
+      : undefined;
 
     const currPageItems = itemsWithExtraOne.slice(0, itemsPerPage);
 
     if (!requestMeta.fromItem) {
       // first page, default request without "fromItem"
       const totalCount = await getTotalCount();
-      return { prevPageItemId: undefined, currPageItems, nextPageItemId, totalCount };
+      return { prevPageCursor: undefined, currPageItems, nextPageCursor, totalCount };
     }
 
     // get the immediate item before the first one to determine if there's a previous page
     const itemsPrevious = await getItems({
-      toItem: currPageItems[0]?.id,
+      toItem: createCompositeCursor(currPageItems[0], requestMeta.sort),
+      sort: requestMeta.sort,
       count: 2,
     });
-    const prevPageItemId = itemsPrevious.length === 2 ? itemsPrevious[0]?.id : undefined;
+    const prevPageCursor =
+      itemsPrevious.length === 2
+        ? createCompositeCursor(itemsPrevious[0], requestMeta.sort)
+        : undefined;
 
-    if (!prevPageItemId) {
+    if (!prevPageCursor) {
       // first page, but provided a "fromItem"
       const totalCount = await getTotalCount();
-      return { prevPageItemId, currPageItems, nextPageItemId, totalCount };
+      return { prevPageCursor, currPageItems, nextPageCursor, totalCount };
     }
 
-    return { prevPageItemId, currPageItems, nextPageItemId };
+    return { prevPageCursor, currPageItems, nextPageCursor };
   }
 
   // navigating "backwards"
 
   // intentionally expects one over since we asked for one more to determine if there is a previous page
-  const prevPageItemId =
-    itemsWithExtraOne.length > itemsPerPage ? itemsWithExtraOne[0]?.id : undefined;
+  const prevPageCursor =
+    itemsWithExtraOne.length > itemsPerPage
+      ? createCompositeCursor(itemsWithExtraOne[0], requestMeta.sort)
+      : undefined;
 
   const currPageItems =
     itemsWithExtraOne.length > itemsPerPage
@@ -105,15 +117,67 @@ export async function getPaginationItems<T extends { id: string }>(
 
   // get the immediate item after the last one to determine if there's a next page
   const itemsNext = await getItems({
-    fromItem: currPageItems[currPageItems.length - 1]?.id,
+    fromItem: createCompositeCursor(currPageItems[currPageItems.length - 1], requestMeta.sort),
+    sort: requestMeta.sort,
     count: 2,
   });
-  const nextPageItemId = itemsNext[1]?.id;
+  const nextPageCursor = itemsNext[1]
+    ? createCompositeCursor(itemsNext[1], requestMeta.sort)
+    : undefined;
 
-  if (!prevPageItemId) {
+  if (!prevPageCursor) {
     // first page, navigating backwards
     const totalCount = await getTotalCount();
-    return { prevPageItemId, currPageItems, nextPageItemId, totalCount };
+    return { prevPageCursor, currPageItems, nextPageCursor, totalCount };
   }
-  return { prevPageItemId, currPageItems, nextPageItemId };
+  return { prevPageCursor, currPageItems, nextPageCursor };
+}
+
+/**
+ * Builds composite cursor filters for complex WHERE conditions in multi-column sorting.
+ * This creates the appropriate comparison logic for cursor-based pagination with custom sort orders.
+ */
+export function buildCompositeCursorFilters(
+  cursor: CompositeCursor,
+  sortFields: SortItem[],
+  direction: "forward" | "backward"
+): Record<string, unknown> {
+  // This is a placeholder implementation for TDD
+  // The actual implementation will depend on the ORM being used (Sequelize, etc.)
+  // and will need to create complex WHERE clauses for multi-column comparisons
+
+  if (Object.keys(cursor).length === 0 || sortFields.length === 0) {
+    return {};
+  }
+
+  // For now, return a simple structure that indicates we have filters
+  // The actual implementation would build complex OR/AND conditions
+  return {
+    _compositeCursorFilter: {
+      cursor,
+      sortFields,
+      direction,
+    },
+  };
+}
+
+/**
+ * Gets the appropriate sorting configuration for composite cursor pagination.
+ * Handles multi-column sorting with proper direction reversal for backward pagination.
+ */
+export function getPaginationSortingComposite(pagination: Pagination | undefined): OrderItem[] {
+  const { sort, toItem } = pagination ?? {};
+
+  if (!sort || sort.length === 0) {
+    return [["id", toItem ? "ASC" : "DESC"]];
+  }
+
+  const orderItems: OrderItem[] = sort.map(({ col, order }) => [
+    col,
+    toItem ? (order === "asc" ? "DESC" : "ASC") : order === "asc" ? "ASC" : "DESC",
+  ]);
+
+  // Always include id as final sort to ensure deterministic ordering
+  orderItems.push(["id", toItem ? "ASC" : "DESC"]);
+  return orderItems;
 }

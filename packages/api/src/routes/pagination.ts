@@ -1,5 +1,6 @@
 import { Config } from "@metriport/core/util/config";
 import {
+  CompositeCursor,
   createQueryMetaSchema,
   defaultItemsPerPage,
   PaginatedResponse,
@@ -13,6 +14,7 @@ import {
   PaginationItem,
   PaginationToItem,
 } from "../command/pagination";
+import { encodeCursor } from "@metriport/shared/domain/cursor-utils";
 
 // TODO 483 remove this once pagination is fully rolled out
 export function isPaginated(req: Request): boolean {
@@ -55,30 +57,30 @@ export async function paginated<T extends { id: string }>({
 }): Promise<PaginatedResponse<T, "items">> {
   const requestMeta = getRequestMeta(request, maxItemsPerPage);
 
-  const { prevPageItemId, nextPageItemId, currPageItems, totalCount } = await getPaginationItems(
+  const { prevPageCursor, nextPageCursor, currPageItems, totalCount } = await getPaginationItems(
     requestMeta,
     getItems,
     getTotalCount
   );
 
   const responseMeta: ResponseMeta = {
-    ...(prevPageItemId
+    ...(prevPageCursor
       ? {
           prevPage: getPrevPageUrl(
             request,
-            prevPageItemId,
-            requestMeta.count,
+            prevPageCursor,
+            requestMeta,
             additionalQueryParams,
             hostUrl
           ),
         }
       : {}),
-    ...(nextPageItemId
+    ...(nextPageCursor
       ? {
           nextPage: getNextPageUrl(
             request,
-            nextPageItemId,
-            requestMeta.count,
+            nextPageCursor,
+            requestMeta,
             additionalQueryParams,
             hostUrl
           ),
@@ -92,35 +94,41 @@ export async function paginated<T extends { id: string }>({
 
 function getPrevPageUrl(
   req: Request,
-  prePageToItem: string,
-  count: number,
+  prePageToItem: CompositeCursor,
+  requestMeta: Pagination,
   additionalQueryParams: Record<string, string> | undefined,
   hostUrl: string
 ): string {
   const p: PaginationToItem = { toItem: prePageToItem };
-  return getPaginationUrl(req, p, count, additionalQueryParams, hostUrl);
+  return getPaginationUrl(req, p, requestMeta, additionalQueryParams, hostUrl);
 }
 
 function getNextPageUrl(
   req: Request,
-  nextPageFromItem: string,
-  count: number,
+  nextPageFromItem: CompositeCursor,
+  requestMeta: Pagination,
   additionalQueryParams: Record<string, string> | undefined,
   hostUrl: string
 ): string {
   const p: PaginationFromItem = { fromItem: nextPageFromItem };
-  return getPaginationUrl(req, p, count, additionalQueryParams, hostUrl);
+  return getPaginationUrl(req, p, requestMeta, additionalQueryParams, hostUrl);
 }
 
 function getPaginationUrl(
   req: Request,
   item: PaginationItem,
-  count: number,
+  requestMeta: Pagination,
   additionalQueryParams: Record<string, string> | undefined,
   hostUrl: string
 ): string {
-  const params = new URLSearchParams(item);
-  params.append("count", count.toString());
+  const encodedItem = {
+    ...(item.fromItem ? { fromItem: encodeCursor(item.fromItem) } : {}),
+    ...(item.toItem ? { toItem: encodeCursor(item.toItem) } : {}),
+  };
+
+  const params = new URLSearchParams(encodedItem);
+  params.append("count", requestMeta.count.toString());
+  params.append("sort", requestMeta.sort.map(s => `${s.col}=${s.order}`).join(","));
   if (additionalQueryParams) {
     for (const [key, value] of Object.entries(additionalQueryParams)) {
       params.append(key, value);
