@@ -1018,10 +1018,15 @@ export class LambdasNestedStack extends NestedStack {
     if (config.hl7Notification?.hieConfigs) {
       const hl7ScramblerSeedSecret = secrets["HL7_BASE64_SCRAMBLER_SEED"];
       if (!hl7ScramblerSeedSecret) {
-        throw new Error(`hl7ScramblerSeedSecret is not defined in config`);
+        throw new Error(`HL7_BASE64_SCRAMBLER_SEED is not defined in config`);
       }
-
       const hieConfigs = config.hl7Notification.hieConfigs;
+      const posthogSecretName = config.analyticsSecretNames.POST_HOG_API_KEY_SECRET;
+      const posthogSecret = secrets["POST_HOG_API_KEY_SECRET"];
+
+      if (!posthogSecret) {
+        throw new Error("No posthog secret found.");
+      }
 
       Object.entries(hieConfigs).forEach(([hieName, hieConfig]) => {
         const passwordSecretName = getHieSftpPasswordSecretName(hieName);
@@ -1043,6 +1048,7 @@ export class LambdasNestedStack extends NestedStack {
             HL7_BASE64_SCRAMBLER_SEED_ARN: hl7ScramblerSeedSecret.secretArn,
             ROSTER_UPLOAD_SFTP_PASSWORD_ARN: passwordSecret.secretArn,
             ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+            POST_HOG_API_KEY_SECRET: posthogSecretName,
           },
           timeout: Duration.minutes(10),
           layers: [lambdaLayers.shared],
@@ -1050,6 +1056,7 @@ export class LambdasNestedStack extends NestedStack {
           vpc,
           alarmSnsAction: alarmAction,
         });
+        posthogSecret.grantRead(lambda);
         passwordSecret.grantRead(lambda);
         hl7ScramblerSeedSecret.grantRead(lambda);
         hl7v2RosterBucket.grantReadWrite(lambda);

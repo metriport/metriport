@@ -54,10 +54,16 @@ async function sendViaSftp(sftpConfig: HieSftpConfig, file: string, remoteFileNa
       throw new Error("Folder does not exist.");
     }
 
-    const fullPath = `${remoteFolderPath}/${remoteFileName}`;
+    const fullPath = getFullPath(remoteFolderPath, remoteFileName);
 
     await client.write(fullPath, Buffer.from(file, "utf-8"));
   } finally {
     await client.disconnect();
   }
+}
+
+function getFullPath(folderPath: string, filePath: string): string {
+  const cleanFolder = folderPath.replace(/\/+$/, "");
+  const cleanFile = filePath.replace(/^\/+/, "");
+  return `${cleanFolder}/${cleanFile}`;
 }
