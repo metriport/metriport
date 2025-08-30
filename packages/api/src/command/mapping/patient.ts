@@ -1,12 +1,14 @@
 import { Patient } from "@metriport/core/domain/patient";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import { NotFoundError } from "@metriport/shared";
+import { MetriportError, NotFoundError } from "@metriport/shared";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { Transaction } from "sequelize";
 import {
   PatientMapping,
   PatientMappingPerSource,
+  PatientMappingSecondaryMappings,
   PatientSourceIdentifierMap,
+  patientSecondaryMappingsSchemaMap,
 } from "../../domain/patient-mapping";
 import { parseExternalId } from "../../external/ehr/shared/utils/external-id";
 import { PatientMappingModel } from "../../models/patient-mapping";
@@ -20,10 +22,11 @@ export async function findOrCreatePatientMapping({
   patientId,
   externalId,
   source,
+  secondaryMappings,
 }: PatientMappingParams): Promise<PatientMapping> {
   const existing = await getPatientMapping({ cxId, externalId, source });
   if (existing) return existing;
-  return createPatientMapping({ cxId, patientId, externalId, source });
+  return createPatientMapping({ cxId, patientId, externalId, source, secondaryMappings });
 }
 
 export async function createPatientMapping({
@@ -31,6 +34,7 @@ export async function createPatientMapping({
   patientId,
   externalId,
   source,
+  secondaryMappings,
 }: PatientMappingParams): Promise<PatientMapping> {
   const created = await PatientMappingModel.create({
     id: uuidv7(),
@@ -38,6 +42,7 @@ export async function createPatientMapping({
     patientId,
     externalId,
     source,
+    secondaryMappings,
   });
   return created.dataValues;
 }
@@ -128,4 +133,73 @@ export async function findFirstPatientMappingForSource({
     limit: 1,
   });
   return mappings?.dataValues;
+}
+
+export type PatientMappingLookupByIdParams = Pick<PatientMappingParams, "cxId" | "patientId"> & {
+  id: string;
+};
+
+async function getPatientMappingModelById({
+  cxId,
+  patientId,
+  id,
+}: PatientMappingLookupByIdParams): Promise<PatientMappingModel | undefined> {
+  const existing = await PatientMappingModel.findOne({
+    where: { cxId, patientId, id },
+  });
+  if (!existing) return undefined;
+  return existing;
+}
+
+async function getPatientMappingModelByIdOrFail({
+  cxId,
+  patientId,
+  id,
+}: PatientMappingLookupByIdParams): Promise<PatientMappingModel> {
+  const mapping = await getPatientMappingModelById({
+    cxId,
+    patientId,
+    id,
+  });
+  if (!mapping) {
+    throw new NotFoundError("PatientMapping not found", undefined, { cxId, patientId, id });
+  }
+  return mapping;
+}
+
+/**
+ * Get secondary mappings for a patient mapping or fail.
+ * This is one of the two root commands similar to CX mapping.
+ */
+export async function getSecondaryMappingsOrFail({
+  cxId,
+  externalId,
+  source,
+}: PatientMappingLookUpParams): Promise<PatientMappingSecondaryMappings> {
+  const mapping = await getPatientMappingOrFail({ cxId, externalId, source });
+  return mapping.secondaryMappings;
+}
+
+/**
+ * Set secondary mappings on a patient mapping by ID.
+ * This is the second of the two root commands similar to CX mapping.
+ */
+export async function setSecondaryMappingsOnPatientMappingById({
+  cxId,
+  patientId,
+  id,
+  secondaryMappings,
+}: PatientMappingLookupByIdParams & {
+  secondaryMappings: PatientMappingSecondaryMappings;
+}): Promise<PatientMapping> {
+  const existing = await getPatientMappingModelByIdOrFail({ cxId, patientId, id });
+  const schema = patientSecondaryMappingsSchemaMap[existing.source];
+  if (!schema) {
+    throw new MetriportError("Schema to validate new secondary mappings not found", undefined, {
+      source: existing.source,
+    });
+  }
+  const validatedSecondaryMappings = schema.parse(secondaryMappings);
+  const updated = await existing.update({ secondaryMappings: validatedSecondaryMappings });
+  return updated.dataValues;
 }

@@ -2,13 +2,24 @@ import { BadRequestError } from "@metriport/shared";
 import { elationSecondaryMappingsSchema } from "@metriport/shared/interface/external/ehr/elation/cx-mapping";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { getSecondaryMappings } from "../../../api/get-secondary-mappings";
-import { WriteBackGroupedVitalsClientRequest } from "../../../command/write-back/grouped-vitals";
+import {
+  isGroupedVitalsByDate,
+  WriteBackGroupedVitalsClientRequest,
+} from "../../../command/write-back/grouped-vitals";
 import { createElationHealthClient } from "../../shared";
 
 export async function writeBackGroupedVitals(
   params: WriteBackGroupedVitalsClientRequest
 ): Promise<void> {
   const { tokenInfo, cxId, practiceId, ehrPatientId, groupedVitals } = params;
+
+  if (!isGroupedVitalsByDate(groupedVitals)) {
+    throw new BadRequestError("Invalid grouped vitals", undefined, {
+      ehr: EhrSources.elation,
+      writeBackResource: "grouped-vitals",
+    });
+  }
+
   const secondaryMappings = await getSecondaryMappings({
     ehr: EhrSources.elation,
     practiceId,

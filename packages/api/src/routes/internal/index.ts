@@ -12,6 +12,16 @@ import {
   setSecondaryMappingsOnCxMappingById,
 } from "../../command/mapping/cx";
 import {
+  getSecondaryMappingsOrFail as getPatientSecondaryMappingsOrFail,
+  setSecondaryMappingsOnPatientMappingById,
+} from "../../command/mapping/patient";
+import { getSecondaryMappingsOrFail } from "../../command/mapping/cx";
+import {
+  validateDepartmentId,
+  getAthenaPracticeIdFromPatientId,
+} from "../../external/ehr/athenahealth/shared";
+import { AthenaSecondaryMappings } from "@metriport/shared/interface/external/ehr/athenahealth/cx-mapping";
+import {
   deleteFacilityMapping,
   findOrCreateFacilityMapping,
   getFacilityMappingsByCustomer,
@@ -36,6 +46,11 @@ import {
   secondaryMappingsSchemaMap,
 } from "../../domain/cx-mapping";
 import { isFacilityMappingSource } from "../../domain/facility-mapping";
+import {
+  isPatientMappingSource,
+  patientSecondaryMappingsSchemaMap,
+  PatientMappingSource,
+} from "../../domain/patient-mapping";
 import { initCQOrgIncludeList } from "../../external/commonwell-v1/organization";
 import { subscribeToAllWebhooks as subscribeToElationWebhooks } from "../../external/ehr/elation/command/subscribe-to-webhook";
 import { subscribeToAllWebhooks as subscribeToHealthieWebhooks } from "../../external/ehr/healthie/command/subscribe-to-webhook";
@@ -453,6 +468,133 @@ router.put(
       secondaryMappings,
     });
     return res.status(httpStatus.OK).json({ cxMapping: newCxMapping });
+  })
+);
+
+/**
+ * GET /internal/patient-mapping/secondary-mappings
+ *
+ * Get secondary mappings for a patient mapping. For Athena, if no department ID
+ * is found in patient secondary mappings, gets it from CX secondary mappings.
+ *
+ * @param req.query.cxId - The customer's ID.
+ * @param req.query.externalId - The external patient ID.
+ * @param req.query.source - The mapping source.
+ * @returns The secondary mappings for the patient mapping.
+ */
+router.get(
+  "/patient-mapping/secondary-mappings",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const externalId = getFromQueryOrFail("externalId", req);
+    const source = getFromQueryOrFail("source", req);
+    if (!isPatientMappingSource(source)) {
+      throw new BadRequestError(`Invalid source for patient mapping`, undefined, { source });
+    }
+
+    let secondaryMappings = await getPatientSecondaryMappingsOrFail({
+      cxId,
+      externalId,
+      source,
+    });
+
+    // For Athena, if no department ID found, get from CX secondary mappings
+    if (
+      source === EhrSources.athena &&
+      (!secondaryMappings || !(secondaryMappings as AthenaSecondaryMappings).departmentIds?.length)
+    ) {
+      try {
+        const practiceId = getAthenaPracticeIdFromPatientId(externalId);
+        const cxSecondaryMappings = (await getSecondaryMappingsOrFail({
+          source: EhrSources.athena,
+          externalId: practiceId,
+        })) as AthenaSecondaryMappings;
+        if (cxSecondaryMappings?.departmentIds?.length) {
+          secondaryMappings = {
+            departmentIds: cxSecondaryMappings.departmentIds, // Return all available departments
+          };
+        }
+      } catch (error) {
+        // If we can't get CX mappings, return what we have
+        console.warn("Could not get CX secondary mappings for patient:", error);
+      }
+    }
+
+    return res.status(httpStatus.OK).json({ secondaryMappings });
+  })
+);
+
+/**
+ * POST /internal/patient-mapping/:id/secondary-mappings
+ *
+ * Set secondary mappings in a patient mapping. For Athena, validates
+ * department ID against CX secondary mappings.
+ *
+ * @param req.query.cxId - The customer's ID.
+ * @param req.query.patientId - The patient ID.
+ * @param req.query.externalId - The external patient ID.
+ * @param req.params.id - The patient mapping ID.
+ * @param req.query.source - The mapping source.
+ * @param req.body - The new secondary mappings.
+ * @returns The updated patient mapping.
+ */
+router.post(
+  "/patient-mapping/:id/secondary-mappings",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const patientId = getUUIDFrom("query", req, "patientId").orFail();
+    const externalId = getFromQueryOrFail("externalId", req);
+    const id = getFrom("params").orFail("id", req);
+    const source = getFromQueryOrFail("source", req);
+    if (!isPatientMappingSource(source)) {
+      throw new BadRequestError(`Invalid source for patient mapping`, undefined, { source });
+    }
+    const secondaryMappingsSchema =
+      patientSecondaryMappingsSchemaMap[source as PatientMappingSource];
+    const secondaryMappings = secondaryMappingsSchema
+      ? secondaryMappingsSchema.parse(req.body)
+      : undefined;
+    if (!secondaryMappings) {
+      throw new BadRequestError(`Invalid secondaryMappings for patient mapping`, undefined, {
+        cxId,
+        patientId,
+        id,
+        source,
+        secondaryMappings,
+      });
+    }
+
+    // For Athena, validate all department IDs against CX secondary mappings
+    if (source === EhrSources.athena && secondaryMappings) {
+      const athenaSecondaryMappings = secondaryMappings as AthenaSecondaryMappings;
+      if (athenaSecondaryMappings.departmentIds?.length) {
+        const practiceId = getAthenaPracticeIdFromPatientId(externalId);
+
+        // Validate each department ID
+        for (const departmentId of athenaSecondaryMappings.departmentIds) {
+          const athenaDepartmentId = `a-${practiceId.replace(
+            "a-1.Practice-",
+            ""
+          )}.Department-${departmentId}`;
+          await validateDepartmentId({
+            cxId,
+            athenaPracticeId: practiceId,
+            athenaPatientId: externalId,
+            athenaDepartmentId,
+          });
+        }
+      }
+    }
+
+    const updatedPatientMapping = await setSecondaryMappingsOnPatientMappingById({
+      cxId,
+      patientId,
+      id,
+      secondaryMappings,
+    });
+    return res.status(httpStatus.OK).json({ patientMapping: updatedPatientMapping });
   })
 );
 
