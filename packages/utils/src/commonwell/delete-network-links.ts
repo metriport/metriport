@@ -1,7 +1,7 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // Keep dotenv import and config before everything else
-import { APIMode, CommonWell, getPersonIdFromUrl, Patient } from "@metriport/commonwell-sdk";
+import { APIMode, CommonWell, getPersonIdFromUrl, Patient } from "@metriport/commonwell-sdk-v1";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 import { makeDir } from "@metriport/core/util/fs";
 import { out } from "@metriport/core/util/log";

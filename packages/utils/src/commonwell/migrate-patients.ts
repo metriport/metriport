@@ -4,7 +4,7 @@ dotenv.config();
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 import { out } from "@metriport/core/util/log";
 import { sleep } from "@metriport/shared";
-import { APIMode, CommonWell, organizationQueryMeta } from "@metriport/commonwell-sdk";
+import { APIMode, CommonWell, organizationQueryMeta } from "@metriport/commonwell-sdk-v1";
 import axios from "axios";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
