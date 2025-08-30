@@ -17,6 +17,8 @@ export function makeTcmEncounter(params: Partial<TcmEncounter> = {}): TcmEncount
     dischargeTime: params?.dischargeTime ?? null,
     clinicalInformation: params?.clinicalInformation ?? {},
     freetextNote: params?.freetextNote ?? "",
+    outreachStatus: params?.outreachStatus ?? "Not Started",
+    lastOutreachDate: params?.lastOutreachDate,
     createdAt: params?.createdAt ?? faker.date.recent(),
     updatedAt: params?.updatedAt ?? faker.date.recent(),
     eTag: params?.eTag ?? faker.string.uuid(),

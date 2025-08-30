@@ -13,4 +13,6 @@ export interface TcmEncounter extends BaseDomain {
   clinicalInformation: Record<string, unknown>;
   freetextNote: string;
   dischargeSummaryPath?: string;
+  outreachStatus: "Not Started" | "Attempted" | "Completed";
+  lastOutreachDate?: Date | null;
 }

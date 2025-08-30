@@ -20,12 +20,16 @@ export async function updateTcmEncounter(
     throw new NotFoundError(`TCM encounter not found`, undefined, { id });
   }
 
-  await TcmEncounterModel.update(data, {
-    where: {
-      id,
-      cxId,
-    },
-  });
+  await TcmEncounterModel.update(
+    // Explicitly set lastOutreachDate to null to wipe it
+    { ...data, lastOutreachDate: data.lastOutreachDate ?? null },
+    {
+      where: {
+        id,
+        cxId,
+      },
+    }
+  );
 
   const updatedEncounter = await TcmEncounterModel.findByPk(id);
   if (!updatedEncounter) {
