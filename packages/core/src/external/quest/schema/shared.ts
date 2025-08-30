@@ -1,5 +1,5 @@
 import { MetriportError } from "@metriport/shared";
-import { convertDateToString } from "@metriport/shared/common/date";
+import { buildDayjs, convertDateToString } from "@metriport/shared/common/date";
 
 /**
  * Describes a single field mapping from an object to a column in a space-padded
@@ -208,13 +208,7 @@ export function fromQuestDate<O extends FieldOption>(option: O = {} as O) {
       }
       throw new MetriportError(`Invalid date: ${value}`);
     }
-    const year = parseInt(value.substring(0, 4), 10);
-    const month = parseInt(value.substring(4, 6), 10);
-    const day = parseInt(value.substring(6, 8), 10);
-
-    // Month in JS Date is 0-based, so subtract 1
-    const date = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
-    return date;
+    return buildDayjs(value, "YYYYMMDD").toDate();
   };
 }
 
