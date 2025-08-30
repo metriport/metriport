@@ -67,8 +67,20 @@ const tcmEncounterQuerySchema = z
     eventType: z.enum(["Admitted", "Discharged"] as const).optional(),
     coding: z.enum(["cardiac"]).optional(),
     status: z.enum(outreachStatuses).optional(),
+    admitTimeSort: z.enum(["asc", "desc"]).optional(),
+    dischargeTimeSort: z.enum(["asc", "desc"]).optional(),
+    lastOutreachDateSort: z.enum(["asc", "desc"]).optional(),
   })
-  .and(createQueryMetaSchema(tcmEncounterMaxPageSize));
+  .and(createQueryMetaSchema(tcmEncounterMaxPageSize))
+  .refine(
+    data => {
+      const sortFields = [data.admitTimeSort, data.dischargeTimeSort, data.lastOutreachDateSort];
+      return sortFields.filter(Boolean).length <= 1;
+    },
+    {
+      message: "Only one sort field can be defined at a time",
+    }
+  );
 
 export const tcmEncounterListQuerySchema = tcmEncounterQuerySchema;
 export type TcmEncounterListQuery = z.infer<typeof tcmEncounterListQuerySchema>;
