@@ -2,11 +2,10 @@ import { DiagnosticReport } from "@medplum/fhirtypes";
 import { createUuidFromText } from "@metriport/shared/common/uuid";
 import {
   DeduplicationResult,
-  dangerouslyAssignMostDescriptiveStatus,
   combineResources,
   createKeysFromObjectArray,
-  createKeysFromObjectArrayAndBits,
   createRef,
+  dangerouslyAssignMostDescriptiveStatus,
   fillL1L2Maps,
   getDateFromResource,
   isUnknownCoding,
@@ -92,11 +91,10 @@ export function groupSameDiagnosticReports(diagReports: DiagnosticReport[]): {
     const getterKeys: string[] = [];
     const setterKeys: string[] = [];
 
-    if (isResultPresent) {
-      const resultUuid = createUuidFromText(JSON.stringify(diagReport.result?.sort()));
-      const key = JSON.stringify({ resultUuid });
-      setterKeys.push(key);
-      getterKeys.push(key);
+    if (diagReport.id) {
+      const idKey = JSON.stringify({ id: diagReport.id });
+      setterKeys.push(idKey);
+      getterKeys.push(idKey);
     }
 
     if (isPresentedFormPresent) {
@@ -104,56 +102,39 @@ export function groupSameDiagnosticReports(diagReports: DiagnosticReport[]): {
       const key = JSON.stringify({ presentedFormUuid });
       setterKeys.push(key);
       getterKeys.push(key);
-    }
+    } else if (isResultPresent) {
+      const resultUuid = createUuidFromText(JSON.stringify(diagReport.result?.sort()));
+      const key = JSON.stringify({ resultUuid });
+      setterKeys.push(key);
+      getterKeys.push(key);
 
-    const identifiers: { key: string }[] = [];
-    if (diagReport.code) {
-      diagReport.code.coding?.forEach(c => {
-        if (isUnknownCoding(c)) return;
+      const identifiers: { key: string }[] = [];
+      if (diagReport.code) {
+        diagReport.code.coding?.forEach(c => {
+          if (isUnknownCoding(c)) return;
 
-        const { code, display, system } = c;
-        const normalizedSystem = system?.toLowerCase().replace("urn:oid:", "").trim();
+          const { code, display, system } = c;
+          const normalizedSystem = system?.toLowerCase().replace("urn:oid:", "").trim();
 
-        if (code && normalizedSystem) {
-          identifiers.push({ key: `${code.toLowerCase().trim()}|${normalizedSystem}` });
+          if (code && normalizedSystem) {
+            identifiers.push({ key: `${code.toLowerCase().trim()}|${normalizedSystem}` });
+          }
+
+          if (display && !isUselessDisplay(display)) {
+            identifiers.push({ key: display.toLowerCase().trim() });
+          }
+        });
+
+        const text = diagReport.code.text;
+        if (text && !isUselessDisplay(text)) {
+          identifiers.push({ key: text.toLowerCase().trim() });
         }
-
-        if (display && !isUselessDisplay(display)) {
-          identifiers.push({ key: display.toLowerCase().trim() });
-        }
-      });
-
-      const text = diagReport.code.text;
-      if (text && !isUselessDisplay(text)) {
-        identifiers.push({ key: text.toLowerCase().trim() });
       }
-    }
 
-    if (datetime) {
-      // flagging the report with each unique identifier + date
-      setterKeys.push(...createKeysFromObjectArray({ datetime }, identifiers));
-      // flagging the report with each unique identifier + 1 date bit
-      setterKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [1]));
-
-      // the report will dedup using each unique identifier with the same date
-      getterKeys.push(...createKeysFromObjectArray({ datetime }, identifiers));
-      // the report will dedup against ones that don't have the date
-      getterKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [0]));
-    }
-
-    if (!datetime) {
-      // flagging the report with each unique identifier + 0 date bit
-      setterKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [0]));
-
-      // the report will dedup against ones that might or might not have the date
-      getterKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [0]));
-      getterKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [1]));
-    }
-
-    if (diagReport.id) {
-      const idKey = JSON.stringify({ id: diagReport.id });
-      setterKeys.push(idKey);
-      getterKeys.push(idKey);
+      if (datetime && identifiers.length > 0) {
+        setterKeys.push(...createKeysFromObjectArray({ datetime }, identifiers));
+        getterKeys.push(...createKeysFromObjectArray({ datetime }, identifiers));
+      }
     }
 
     if (setterKeys.length > 0) {

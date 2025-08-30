@@ -1,12 +1,14 @@
 import { faker } from "@faker-js/faker";
 import { DiagnosticReport } from "@medplum/fhirtypes";
 import {
-  a1cPanelConceptLoinc,
+  makeA1cConcept,
   makeDiagnosticReport,
-  metabolicPanelConceptLoinc,
-  metabolicPanelConceptOther,
-  presentedFormExample,
-  resultExample,
+  makeMetabolicPanelConceptLoinc,
+  makeMetabolicPanelConceptOther,
+  makePresentedFormExample,
+  makePresentedFormExample2,
+  makeResultExample,
+  makeResultExample2,
 } from "../../fhir-to-cda/cda-templates/components/__tests__/make-diagnostic-report";
 import { groupSameDiagnosticReports } from "../resources/diagnostic-report";
 import { dateTime, dateTime2 } from "./examples/condition-examples";
@@ -23,84 +25,24 @@ beforeEach(() => {
   diagReport2 = makeDiagnosticReport({ id: diagReportId2 });
 
   delete diagReport.effectiveDateTime;
-  delete diagReport.performer;
   delete diagReport.presentedForm;
   delete diagReport.result;
+  delete diagReport.code;
 
   delete diagReport2.effectiveDateTime;
-  delete diagReport2.performer;
   delete diagReport2.presentedForm;
   delete diagReport2.result;
+  delete diagReport2.code;
 });
 
 describe("groupSameDiagnosticReports", () => {
-  it("groups diagReports with the same result", () => {
-    diagReport.result = resultExample;
-    diagReport2.result = resultExample;
-
-    const { diagReportsMap } = groupSameDiagnosticReports([diagReport, diagReport2]);
-    expect(diagReportsMap.size).toBe(1);
-  });
-
-  it("groups diagReports with the same result even if one is missing date", () => {
-    diagReport.result = resultExample;
-    diagReport2.result = resultExample;
-    diagReport.effectiveDateTime = dateTime.start;
-
-    const { diagReportsMap } = groupSameDiagnosticReports([diagReport, diagReport2]);
-    expect(diagReportsMap.size).toBe(1);
-  });
-
-  it("groups diagReports with the same presentedForm", () => {
-    diagReport.result = resultExample;
-    diagReport2.result = resultExample;
-
-    const { diagReportsMap } = groupSameDiagnosticReports([diagReport, diagReport2]);
-    expect(diagReportsMap.size).toBe(1);
-  });
-
-  it("groups duplicate diagReports even if effectiveDateTime is not present", () => {
-    diagReport.presentedForm = presentedFormExample;
-    diagReport2.presentedForm = presentedFormExample;
-
-    const { diagReportsMap } = groupSameDiagnosticReports([diagReport, diagReport2]);
-    expect(diagReportsMap.size).toBe(1);
-  });
-
-  it("does not group duplicate diagReports if effectiveDateTime are different", () => {
-    diagReport.effectiveDateTime = dateTime.start;
-    diagReport2.effectiveDateTime = dateTime2.start;
-    diagReport.presentedForm = presentedFormExample;
-    diagReport2.result = resultExample;
-
-    const { diagReportsMap } = groupSameDiagnosticReports([diagReport, diagReport2]);
-    expect(diagReportsMap.size).toBe(2);
-
-    const diagReportIds = Array.from(diagReportsMap.values()).map(d => d.id);
-    expect(diagReportIds).toEqual(expect.arrayContaining([diagReport.id, diagReport2.id]));
-  });
-
   it("discards diagReport if result and presented form are not present", () => {
-    diagReport.effectiveDateTime = dateTime.start;
-
     const { diagReportsMap } = groupSameDiagnosticReports([diagReport]);
     expect(diagReportsMap.size).toBe(0);
   });
 
-  it("keeps diagReport if result is present and presentedForm is not - without a date", () => {
-    diagReport.result = resultExample;
-
-    const { diagReportsMap } = groupSameDiagnosticReports([diagReport]);
-    expect(diagReportsMap.size).toBe(1);
-
-    const dedupedDiagReport = diagReportsMap.values().next().value as DiagnosticReport;
-    expect(dedupedDiagReport.result).toBeTruthy();
-    expect(dedupedDiagReport.presentedForm).toBeFalsy();
-  });
-
   it("keeps diagReport if result is present and presentedForm is not", () => {
-    diagReport.effectiveDateTime = dateTime.start;
-    diagReport.result = resultExample;
+    diagReport.result = makeResultExample();
 
     const { diagReportsMap } = groupSameDiagnosticReports([diagReport]);
     expect(diagReportsMap.size).toBe(1);
@@ -111,8 +53,7 @@ describe("groupSameDiagnosticReports", () => {
   });
 
   it("keeps diagReport if presentedForm is present and result is not", () => {
-    diagReport.effectiveDateTime = dateTime.start;
-    diagReport.presentedForm = presentedFormExample;
+    diagReport.presentedForm = makePresentedFormExample();
 
     const { diagReportsMap } = groupSameDiagnosticReports([diagReport]);
     expect(diagReportsMap.size).toBe(1);
@@ -123,10 +64,8 @@ describe("groupSameDiagnosticReports", () => {
   });
 
   it("keeps all codes including non-LOINC ones", () => {
-    diagReport.effectiveDateTime = dateTime.start;
-    diagReport2.effectiveDateTime = dateTime.start;
-    diagReport.presentedForm = presentedFormExample;
-    diagReport2.presentedForm = presentedFormExample;
+    diagReport.presentedForm = makePresentedFormExample();
+    diagReport2.presentedForm = makePresentedFormExample();
 
     diagReport.code = {
       coding: [
@@ -171,73 +110,165 @@ describe("groupSameDiagnosticReports", () => {
     );
   });
 
-  it("groups lab panel reports with same LOINC codes and datetime", () => {
-    diagReport.effectiveDateTime = dateTime.start;
-    diagReport2.effectiveDateTime = dateTime.start;
-
-    diagReport.code = a1cPanelConceptLoinc;
-    diagReport2.code = a1cPanelConceptLoinc;
-
-    diagReport.result = resultExample;
-    diagReport2.presentedForm = presentedFormExample;
+  // LAB PANEL REPORTS
+  it("groups lab panel reports with the same result", () => {
+    diagReport.result = makeResultExample();
+    diagReport2.result = makeResultExample();
 
     const { diagReportsMap } = groupSameDiagnosticReports([diagReport, diagReport2]);
     expect(diagReportsMap.size).toBe(1);
   });
 
-  it("does not group lab panel reports with same identifiers if the dates are different", () => {
+  it("groups lab panel reports with the same result even if codes are different", () => {
+    diagReport.result = makeResultExample();
+    diagReport2.result = makeResultExample();
+
+    diagReport.code = makeA1cConcept();
+    diagReport2.code = makeMetabolicPanelConceptLoinc();
+
+    const { diagReportsMap } = groupSameDiagnosticReports([diagReport, diagReport2]);
+    expect(diagReportsMap.size).toBe(1);
+  });
+
+  it("does not group lab panel reports if codes are different", () => {
+    diagReport.result = makeResultExample();
+    diagReport2.result = makeResultExample2();
+
+    diagReport.code = makeA1cConcept();
+    diagReport2.code = makeMetabolicPanelConceptLoinc();
+
+    const { diagReportsMap } = groupSameDiagnosticReports([diagReport, diagReport2]);
+    expect(diagReportsMap.size).toBe(2);
+
+    const diagReportIds = Array.from(diagReportsMap.values()).map(d => d.id);
+    expect(diagReportIds).toEqual(expect.arrayContaining([diagReport.id, diagReport2.id]));
+  });
+
+  it("does not group lab panel reports if codes are different even with effectiveDateTime the same", () => {
+    diagReport.result = makeResultExample();
+    diagReport2.result = makeResultExample2();
+
+    diagReport.code = makeA1cConcept();
+    diagReport2.code = makeMetabolicPanelConceptLoinc();
+
+    diagReport.effectiveDateTime = dateTime.start;
+    diagReport2.effectiveDateTime = dateTime.start;
+
+    const { diagReportsMap } = groupSameDiagnosticReports([diagReport, diagReport2]);
+    expect(diagReportsMap.size).toBe(2);
+
+    const diagReportIds = Array.from(diagReportsMap.values()).map(d => d.id);
+    expect(diagReportIds).toEqual(expect.arrayContaining([diagReport.id, diagReport2.id]));
+  });
+
+  it("does not group lab panel reports if codes are the same and effectiveDateTime are different", () => {
+    diagReport.result = makeResultExample();
+    diagReport2.result = makeResultExample2();
+
+    diagReport.code = makeA1cConcept();
+    diagReport2.code = makeA1cConcept();
+
     diagReport.effectiveDateTime = dateTime.start;
     diagReport2.effectiveDateTime = dateTime2.start;
 
-    diagReport.code = a1cPanelConceptLoinc;
-    diagReport2.code = a1cPanelConceptLoinc;
+    const { diagReportsMap } = groupSameDiagnosticReports([diagReport, diagReport2]);
+    expect(diagReportsMap.size).toBe(2);
 
-    diagReport.result = resultExample;
-    diagReport2.presentedForm = presentedFormExample;
+    const diagReportIds = Array.from(diagReportsMap.values()).map(d => d.id);
+    expect(diagReportIds).toEqual(expect.arrayContaining([diagReport.id, diagReport2.id]));
+  });
+
+  it("does not group lab panel reports if codes are the same and one of the effectiveDateTime is missing", () => {
+    diagReport.result = makeResultExample();
+    diagReport2.result = makeResultExample2();
+
+    diagReport.code = makeA1cConcept();
+    diagReport2.code = makeA1cConcept();
+
+    diagReport.effectiveDateTime = dateTime.start;
 
     const { diagReportsMap } = groupSameDiagnosticReports([diagReport, diagReport2]);
     expect(diagReportsMap.size).toBe(2);
+
+    const diagReportIds = Array.from(diagReportsMap.values()).map(d => d.id);
+    expect(diagReportIds).toEqual(expect.arrayContaining([diagReport.id, diagReport2.id]));
+  });
+
+  it("does not group lab panel reports if codes are the same and both effectiveDateTime are missing", () => {
+    diagReport.result = makeResultExample();
+    diagReport2.result = makeResultExample2();
+
+    diagReport.code = makeA1cConcept();
+    diagReport2.code = makeA1cConcept();
+
+    const { diagReportsMap } = groupSameDiagnosticReports([diagReport, diagReport2]);
+    expect(diagReportsMap.size).toBe(2);
+
+    const diagReportIds = Array.from(diagReportsMap.values()).map(d => d.id);
+    expect(diagReportIds).toEqual(expect.arrayContaining([diagReport.id, diagReport2.id]));
+  });
+
+  it("groups lab panel reports with same LOINC codes and datetime", () => {
+    diagReport.result = makeResultExample();
+    diagReport2.result = makeResultExample2();
+
+    diagReport.code = makeA1cConcept();
+    diagReport2.code = makeA1cConcept();
+
+    diagReport.effectiveDateTime = dateTime.start;
+    diagReport2.effectiveDateTime = dateTime.start;
+
+    const { diagReportsMap } = groupSameDiagnosticReports([diagReport, diagReport2]);
+    expect(diagReportsMap.size).toBe(1);
   });
 
   it("groups lab panel reports with same display text even if codes differ", () => {
+    diagReport.result = makeResultExample();
+    diagReport2.result = makeResultExample2();
+
+    diagReport.code = makeMetabolicPanelConceptLoinc();
+    diagReport2.code = makeMetabolicPanelConceptOther();
+
     diagReport.effectiveDateTime = dateTime.start;
     diagReport2.effectiveDateTime = dateTime.start;
-
-    diagReport.code = metabolicPanelConceptLoinc;
-    diagReport2.code = metabolicPanelConceptOther;
-
-    diagReport.result = resultExample;
-    diagReport2.presentedForm = presentedFormExample;
 
     const { diagReportsMap } = groupSameDiagnosticReports([diagReport, diagReport2]);
     expect(diagReportsMap.size).toBe(1);
   });
 
-  it("does not group lab panel reports with different LOINC codes even with same datetime", () => {
-    diagReport.effectiveDateTime = dateTime.start;
-    diagReport2.effectiveDateTime = dateTime.start;
+  // NOTES
+  it("groups notes with the same presentedForm", () => {
+    diagReport.presentedForm = makePresentedFormExample();
+    diagReport2.presentedForm = makePresentedFormExample();
 
-    diagReport.code = metabolicPanelConceptLoinc;
-    diagReport2.code = a1cPanelConceptLoinc;
+    const { diagReportsMap } = groupSameDiagnosticReports([diagReport, diagReport2]);
+    expect(diagReportsMap.size).toBe(1);
+  });
 
-    diagReport.result = resultExample;
-    diagReport2.presentedForm = presentedFormExample;
+  it("groups notes with the same presentedForm even if codes are different", () => {
+    diagReport.presentedForm = makePresentedFormExample();
+    diagReport2.presentedForm = makePresentedFormExample();
+
+    // THESE ARE LAB PANEL CODES - USED ONLY FOR UNIT TETSING PURPOSES ON NOTES
+    diagReport.code = makeA1cConcept();
+    diagReport2.code = makeMetabolicPanelConceptLoinc();
+
+    const { diagReportsMap } = groupSameDiagnosticReports([diagReport, diagReport2]);
+    expect(diagReportsMap.size).toBe(1);
+  });
+
+  it("does not group notes with the different presentedForm even if codes are the same", () => {
+    diagReport.presentedForm = makePresentedFormExample();
+    diagReport2.presentedForm = makePresentedFormExample2();
+
+    // THESE ARE LAB PANEL CODES - USED ONLY FOR UNIT TETSING PURPOSES ON NOTES
+    diagReport.code = makeA1cConcept();
+    diagReport2.code = makeA1cConcept();
 
     const { diagReportsMap } = groupSameDiagnosticReports([diagReport, diagReport2]);
     expect(diagReportsMap.size).toBe(2);
-  });
 
-  it("groups lab panel reports with same codes but different datetime using date bit logic", () => {
-    diagReport.effectiveDateTime = dateTime.start;
-    // diagReport2 has no datetime
-
-    diagReport.code = metabolicPanelConceptLoinc;
-    diagReport2.code = metabolicPanelConceptOther;
-
-    diagReport.result = resultExample;
-    diagReport2.presentedForm = presentedFormExample;
-
-    const { diagReportsMap } = groupSameDiagnosticReports([diagReport, diagReport2]);
-    expect(diagReportsMap.size).toBe(1);
+    const diagReportIds = Array.from(diagReportsMap.values()).map(d => d.id);
+    expect(diagReportIds).toEqual(expect.arrayContaining([diagReport.id, diagReport2.id]));
   });
 });
