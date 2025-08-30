@@ -1,6 +1,7 @@
 import {
   CopyObjectCommand,
   DeleteObjectCommand,
+  HeadObjectCommand,
   ListObjectsV2Command,
   PutObjectCommand,
   S3Client,
@@ -202,8 +203,9 @@ export class S3Utils {
   ): Promise<
     | {
         exists: true;
-        size: number /** @deprecated Use `sizeInBytes` instead */;
-        //sizeInBytes: number; // TODO Enable this when testing something that uses this code
+        /** @deprecated Use `sizeInBytes` instead */
+        size: number;
+        sizeInBytes: number; // TODO Enable this when testing something that uses this code
         contentType: string;
         eTag?: string;
         createdAt: Date | undefined;
@@ -212,7 +214,7 @@ export class S3Utils {
     | {
         exists: false;
         size?: never;
-        //sizeInBytes?: never;
+        sizeInBytes?: never;
         contentType?: never;
         eTag?: never;
         createdAt?: never;
@@ -222,28 +224,29 @@ export class S3Utils {
     try {
       const head = await executeWithRetriesS3(
         () =>
-          this.s3
-            .headObject({
+          this._s3Client.send(
+            new HeadObjectCommand({
               Bucket: bucket,
               Key: key,
             })
-            .promise(),
+          ),
         {
           log: emptyFunction,
         }
       );
+      const sizeInBytes = head.ContentLength ?? 0;
       return {
         exists: true,
-        size: head.ContentLength ?? 0,
-        // TODO Enable this when testing something that uses this code
-        // sizeInBytes: head.ContentLength ?? 0,
+        size: sizeInBytes,
+        sizeInBytes,
         contentType: head.ContentType ?? "",
         eTag: head.ETag ?? "",
         createdAt: head.LastModified,
         metadata: head.Metadata,
       };
     } catch (err) {
-      return { exists: false };
+      if (isNotFoundError(err)) return { exists: false };
+      throw new MetriportError("Error on getFileInfoFromS3", err, { bucket, key });
     }
   }
 
@@ -612,7 +615,9 @@ export function isNotFoundError(error: any): boolean {
   return (
     error.Code === "NoSuchKey" ||
     error.code === "NoSuchKey" ||
-    error.statusCode === 404 ||
+    error.statusCode === 404 || // v2
+    error?.$metadata?.httpStatusCode === 404 || // v3
+    error.name === "NotFound" || // v3 common name
     error instanceof NotFoundError
   );
 }
