@@ -18,6 +18,7 @@ import { buildGetDirPathInside, initRunsFolder } from "../shared/folder";
  *   - Each message starts with "MSH|"
  *   - Messages can be separated by newlines
  *   - The file should be placed in the input folder
+ * - Expects an hieName.
  *
  * Output:
  * - Creates a "converted" folder with individual JSON files for each converted message
@@ -30,6 +31,7 @@ import { buildGetDirPathInside, initRunsFolder } from "../shared/folder";
  */
 
 const filePath = "";
+const hieName = "";
 const getDirPath = buildGetDirPathInside("hl7v2-conversion");
 
 async function convertAdtToFhir() {
@@ -62,6 +64,7 @@ async function convertAdtToFhir() {
           cxId,
           patientId,
           rawDataFileKey: fileName,
+          hieName,
         });
 
         if (!fs.existsSync(outputFolder)) {

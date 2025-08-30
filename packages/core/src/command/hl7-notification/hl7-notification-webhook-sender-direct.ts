@@ -106,6 +106,7 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
       cxId,
       patientId,
       rawDataFileKey: params.rawDataFileKey,
+      hieName: params.hieName,
     });
 
     const newEncounterData = prependPatientToBundle({
