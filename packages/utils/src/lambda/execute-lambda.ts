@@ -1,46 +1,40 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
-import { ConversionType, Input } from "@metriport/core/domain/conversion/cda-to-html-pdf";
+import { InvokeCommand, LogType } from "@aws-sdk/client-lambda";
 import {
-  getLambdaResultPayload,
+  getLambdaResultPayloadV3,
   logResultToString,
-  makeLambdaClient,
+  makeLambdaClientV3,
 } from "@metriport/core/external/aws/lambda";
-import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 import { MetriportError } from "@metriport/core/util/error/metriport-error";
+import { getEnvVarOrFail, sleep } from "@metriport/shared";
+import { buildDayjs } from "@metriport/shared/common/date";
+import { elapsedTimeAsStr } from "../shared/duration";
 
 /**
- * Script to execute the CdaToVisualization lambda.
+ * Script to execute a lambda.
  *
- * Update the constants below and run this script to execute the lambda.
+ * Update the lambda name, potentially the request payload, and run this script.
  */
 
-// UPDATE THESE
-const s3Key = ""; // filename
-const conversionType: ConversionType = "pdf";
+const lambdaName = "TesterLambda";
+const payload = {};
 
-// LIKELY DON'T NEED TO UPDATE THESE
-const bucketName = getEnvVarOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
 const region = getEnvVarOrFail("AWS_REGION");
-const lambdaName = "CdaToVisualizationLambda_v2";
-
-const lambdaClient = makeLambdaClient(region);
-
-const payload: Input = {
-  fileName: s3Key,
-  bucketName,
-  conversionType,
-};
+const lambdaClient = makeLambdaClientV3(region);
 
 async function main() {
-  const lambdaResult = await lambdaClient
-    .invoke({
-      FunctionName: lambdaName,
-      InvocationType: "RequestResponse",
-      Payload: JSON.stringify(payload),
-    })
-    .promise();
+  await sleep(50); // Give some time to avoid mixing logs w/ Node's
+  const startedAt = Date.now();
+  console.log(`############## Started at ${buildDayjs().toISOString()} ##############`);
+
+  const command = new InvokeCommand({
+    FunctionName: lambdaName,
+    Payload: JSON.stringify(payload),
+    LogType: LogType.Tail,
+  });
+  const lambdaResult = await lambdaClient.send(command);
 
   if (lambdaResult.StatusCode !== 200) {
     throw new MetriportError("Lambda invocation failed", undefined, {
@@ -57,10 +51,11 @@ async function main() {
       log: logResultToString(lambdaResult.LogResult),
     });
   }
-  const response = getLambdaResultPayload({ result: lambdaResult, lambdaName });
+  const response = getLambdaResultPayloadV3({ result: lambdaResult, lambdaName });
 
-  const url = JSON.parse(response).url;
-  console.log(`URL: '${url}'`);
+  console.log(`Response: ${response}`);
+
+  console.log(`############## Done in ${elapsedTimeAsStr(startedAt)}`);
 }
 
 main();
