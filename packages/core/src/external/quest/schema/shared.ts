@@ -1,5 +1,5 @@
 import { MetriportError } from "@metriport/shared";
-import { convertDateToString } from "@metriport/shared/common/date";
+import { buildDayjs, convertDateToString } from "@metriport/shared/common/date";
 
 /**
  * Describes a single field mapping from an object to a column in a space-padded
@@ -205,16 +205,10 @@ export function fromQuestDate<O extends FieldOption>(option: O = {} as O) {
     if (value.length !== 8) {
       if (option.optional && value.length === 0) {
         return undefined as FieldTypeFromQuest<Date, O>;
-      } else {
-        throw new MetriportError(`Invalid date: ${value}`);
       }
+      throw new MetriportError(`Invalid date: ${value}`);
     }
-    const date = new Date();
-    date.setUTCFullYear(parseInt(value.substring(0, 4), 10));
-    date.setUTCMonth(parseInt(value.substring(4, 6), 10) - 1);
-    date.setUTCDate(parseInt(value.substring(6, 8), 10));
-    date.setUTCHours(0, 0, 0, 0);
-    return date;
+    return buildDayjs(value, "YYYYMMDD").toDate();
   };
 }
 
