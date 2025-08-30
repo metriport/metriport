@@ -2,6 +2,11 @@ import { parseResponseFile } from "../file/file-parser";
 import { getArtifact } from "./shared";
 
 describe("File parser", () => {
+  beforeAll(() => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date("2025-08-22T12:00:00-07:00"));
+  });
+
   it("should parse a response file with a single row", () => {
     const file = getArtifact("response/single-patient.txt");
     const result = parseResponseFile(file);
@@ -16,7 +21,7 @@ describe("File parser", () => {
     expect(firstRow.accessionNumber).toBe("AB123456Z");
     expect(firstRow.requisitionNumber).toBe("1234567");
     expect(firstRow.labCode).toBe("DLS");
-    expect(firstRow.patientId).toBe("0A1B2C3D4E5F6G7");
+    expect(firstRow.externalId).toBe("0A1B2C3D4E5F6G7");
     expect(firstRow.questPatientId).toBe("M1234567");
     expect(firstRow.patientFirstName).toBe("JANE");
     expect(firstRow.patientMiddleName).toBe("F");
@@ -60,7 +65,7 @@ describe("File parser", () => {
     expect(secondRow.accessionNumber).toBe("AB121212Z");
     expect(secondRow.requisitionNumber).toBe("9876543");
     expect(secondRow.labCode).toBe("DLS");
-    expect(secondRow.patientId).toBe("9A8B7C6D5E4F3G2");
+    expect(secondRow.externalId).toBe("9A8B7C6D5E4F3G2");
     expect(secondRow.questPatientId).toBe("M9876543");
     expect(secondRow.patientFirstName).toBe("BOB");
     expect(secondRow.patientMiddleName).toBe("K");

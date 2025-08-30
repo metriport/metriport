@@ -3,7 +3,7 @@ import { buildSourceDocumentFileName } from "../file/file-names";
 import { parseResponseFile } from "../file/file-parser";
 import { QuestReplica } from "../replica";
 import { uploadSourceDocuments } from "../source-document";
-import { QuestPatientResponseFile } from "../types";
+import { QuestSourceDocument } from "../types";
 import { getArtifact } from "./shared";
 
 describe("Source document upload", () => {
@@ -17,13 +17,13 @@ describe("Source document upload", () => {
 
   it("should generate a source document for a single patient", async () => {
     const fileContent = getArtifact("response/single-patient.txt");
-    const patientId = "0A1B2C3D4E5F6G7";
+    const externalId = "0A1B2C3D4E5F6G7";
     const fileName = buildSourceDocumentFileName({
-      patientId,
+      externalId,
       dateId: "202501010102",
     });
-    const sourceDocument: QuestPatientResponseFile = {
-      patientId,
+    const sourceDocument: QuestSourceDocument = {
+      externalId,
       fileName,
       fileContent,
     };
