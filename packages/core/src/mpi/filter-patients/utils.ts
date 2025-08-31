@@ -24,19 +24,16 @@ function calculateSimilarityRatio(str1: string, str2: string): number {
  * This measures how many single-character edits are needed to transform one string into another
  */
 function levenshteinDistance(str1: string, str2: string): number {
-  // Simple implementation using a single array to avoid TypeScript issues
   if (str1.length === 0) return str2.length;
   if (str2.length === 0) return str1.length;
 
   const prev = new Array(str2.length + 1);
   const curr = new Array(str2.length + 1);
 
-  // Initialize previous row
   for (let j = 0; j <= str2.length; j++) {
     prev[j] = j;
   }
 
-  // Fill current row
   for (let i = 1; i <= str1.length; i++) {
     curr[0] = i;
 
@@ -49,7 +46,6 @@ function levenshteinDistance(str1: string, str2: string): number {
       );
     }
 
-    // Copy current row to previous row for next iteration
     for (let j = 0; j <= str2.length; j++) {
       prev[j] = curr[j];
     }

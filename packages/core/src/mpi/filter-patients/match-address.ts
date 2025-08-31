@@ -85,7 +85,6 @@ function normalizeAddressString(str: string): string {
   if (!str) return "";
   let normalized = str.toLowerCase().replace(/\s+/g, " ");
 
-  // Common street suffix abbreviations
   const abbreviations: { [key: string]: string } = {
     dr: "drive",
     st: "street",
@@ -108,7 +107,6 @@ function normalizeAddressString(str: string): string {
     rm: "room",
   };
 
-  // Common directional abbreviations
   const directions: { [key: string]: string } = {
     n: "north",
     s: "south",
@@ -120,13 +118,11 @@ function normalizeAddressString(str: string): string {
     sw: "southwest",
   };
 
-  // Replace abbreviations with full forms
   Object.entries(abbreviations).forEach(([abbr, full]) => {
     const regex = new RegExp(`\\b${abbr}\\b`, "gi");
     normalized = normalized.replace(regex, full);
   });
 
-  // Replace directional abbreviations with full forms
   Object.entries(directions).forEach(([dir, full]) => {
     const regex = new RegExp(`\\b${dir}\\b`, "gi");
     normalized = normalized.replace(regex, full);

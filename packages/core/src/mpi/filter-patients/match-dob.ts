@@ -11,7 +11,6 @@ export function calculateDobScore(
     const dob1Split = splitDob(metriportPatient.dob);
     const dob2Split = splitDob(externalPatient.dob);
 
-    // Check for exact position matches: year vs year, month vs month, day vs day
     let matchingParts = 0;
     if (dob1Split[0] === dob2Split[0]) matchingParts++; // Year
     if (dob1Split[1] === dob2Split[1]) matchingParts++; // Month
