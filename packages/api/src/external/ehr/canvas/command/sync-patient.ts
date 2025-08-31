@@ -78,6 +78,7 @@ export async function syncCanvasPatientIntoMetriport({
     patientId: metriportPatient.id,
     externalId: canvasPatientId,
     source: EhrSources.canvas,
+    secondaryMappings: { practiceId: canvasPracticeId },
   });
   return metriportPatient.id;
 }

@@ -1,26 +1,15 @@
-import { BadRequestError } from "@metriport/shared";
-import { athenaSecondaryMappingsSchema } from "@metriport/shared/interface/external/ehr/athenahealth/cx-mapping";
-import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
-import { getSecondaryMappings } from "../../../api/get-secondary-mappings";
 import { WriteBackLabClientRequest } from "../../../command/write-back/lab";
 import { createAthenaHealthClient } from "../../shared";
+import { getAndCheckAthenaPatientDepartmentId } from "../get-and-check-patient-department-id";
 
 export async function writeBackLab(params: WriteBackLabClientRequest): Promise<void> {
   const { cxId, practiceId, ehrPatientId, tokenInfo, observation } = params;
-
-  // TODO: rework
-  const secondaryMappings = await getSecondaryMappings({
-    ehr: EhrSources.athena,
+  const departmentId = await getAndCheckAthenaPatientDepartmentId({
+    cxId,
     practiceId,
-    schema: athenaSecondaryMappingsSchema,
+    patientId: ehrPatientId,
+    ...(tokenInfo ? { tokenInfo } : {}),
   });
-  const athenaDepartmentId = secondaryMappings.departmentIds[0];
-  if (!athenaDepartmentId) {
-    throw new BadRequestError("Department ID not found", undefined, {
-      ehr: EhrSources.athena,
-      practiceId,
-    });
-  }
   const client = await createAthenaHealthClient({
     cxId,
     practiceId,
@@ -29,7 +18,7 @@ export async function writeBackLab(params: WriteBackLabClientRequest): Promise<v
   await client.createLabResultDocument({
     cxId,
     patientId: ehrPatientId,
-    departmentId: athenaDepartmentId,
+    departmentId,
     observation,
   });
 }

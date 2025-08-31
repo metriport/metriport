@@ -25,10 +25,10 @@ const patientMappingColumnNames: Record<
 export class PatientMappingModel extends BaseModel<PatientMappingModel> implements PatientMapping {
   static NAME = "patient_mapping";
   declare externalId: string;
+  declare secondaryMappings: PatientMappingSecondaryMappings;
   declare cxId: string;
   declare patientId: string;
   declare source: PatientMappingSource;
-  declare secondaryMappings?: PatientMappingSecondaryMappings;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
     PatientMappingModel.init(
@@ -48,7 +48,6 @@ export class PatientMappingModel extends BaseModel<PatientMappingModel> implemen
         },
         secondaryMappings: {
           type: DataTypes.JSONB,
-          allowNull: true,
         },
       },
       {

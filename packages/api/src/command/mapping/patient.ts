@@ -8,14 +8,20 @@ import {
   PatientMappingPerSource,
   PatientMappingSecondaryMappings,
   PatientSourceIdentifierMap,
-  patientSecondaryMappingsSchemaMap,
+  secondaryMappingsSchemaMap,
 } from "../../domain/patient-mapping";
 import { parseExternalId } from "../../external/ehr/shared/utils/external-id";
 import { PatientMappingModel } from "../../models/patient-mapping";
 
 export type PatientMappingParams = PatientMappingPerSource;
 
-export type PatientMappingLookUpParams = Omit<PatientMappingParams, "patientId">;
+export type PatientMappingLookUpParams = Omit<
+  PatientMappingParams,
+  "patientId" | "secondaryMappings"
+>;
+export type PatientMappingLookupByIdParams = Pick<PatientMappingParams, "cxId" | "patientId"> & {
+  id: string;
+};
 
 export async function findOrCreatePatientMapping({
   cxId,
@@ -135,10 +141,6 @@ export async function findFirstPatientMappingForSource({
   return mappings?.dataValues;
 }
 
-export type PatientMappingLookupByIdParams = Pick<PatientMappingParams, "cxId" | "patientId"> & {
-  id: string;
-};
-
 async function getPatientMappingModelById({
   cxId,
   patientId,
@@ -193,7 +195,7 @@ export async function setSecondaryMappingsOnPatientMappingById({
   secondaryMappings: PatientMappingSecondaryMappings;
 }): Promise<PatientMapping> {
   const existing = await getPatientMappingModelByIdOrFail({ cxId, patientId, id });
-  const schema = patientSecondaryMappingsSchemaMap[existing.source];
+  const schema = secondaryMappingsSchemaMap[existing.source];
   if (!schema) {
     throw new MetriportError("Schema to validate new secondary mappings not found", undefined, {
       source: existing.source,

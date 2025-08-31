@@ -48,3 +48,9 @@ export const writeBackFiltersSchema = z.object({
   writeBackFilters: writeBackFiltersPerResourceTypeSchema.optional(),
 });
 export type WriteBackFilters = z.infer<typeof writeBackFiltersSchema>;
+
+// TODO Remove optional practiceId once migrated
+export const patientMappingSecondaryMappingsSchema = z.object({
+  practiceId: z.string().optional(),
+});
+export type PatientMappingSecondaryMappings = z.infer<typeof patientMappingSecondaryMappingsSchema>;

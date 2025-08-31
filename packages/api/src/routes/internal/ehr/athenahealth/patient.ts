@@ -4,6 +4,7 @@ import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { processPatientsFromAppointments } from "../../../../external/ehr/athenahealth/command/process-patients-from-appointments";
 import { syncAthenaPatientIntoMetriport } from "../../../../external/ehr/athenahealth/command/sync-patient";
+import { updateAthenaPatientMappingDepartmentId } from "../../../../external/ehr/athenahealth/command/update-patient-mapping-deparment-id";
 import { LookupModes } from "../../../../external/ehr/athenahealth/shared";
 import { requestLogger } from "../../../helpers/request-logger";
 import { getUUIDFrom } from "../../../schemas/uuid";
@@ -93,6 +94,32 @@ router.post(
       triggerDq,
       triggerDqForExistingPatient: isAppointment,
     }).catch(processAsyncError("AthenaHealth syncAthenaPatientIntoMetriport"));
+    return res.sendStatus(httpStatus.OK);
+  })
+);
+
+/**
+ * POST /internal/ehr/athenahealth/patient/secondary-mappings/department-id
+ *
+ * Updates the department ID in the secondary mappings for an AthenaHealth patient mapping.
+ *
+ * @param req.query.cxId - The ID of the Metriport customer.
+ * @param req.query.patientId - The ID of the AthenaHealth patient.
+ * @param req.query.departmentId - The ID of the AthenaHealth department.
+ * @returns 200 OK if the update is successful.
+ */
+router.post(
+  "/secondary-mappings",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const athenaPatientId = getFromQueryOrFail("patientId", req);
+    const athenaDepartmentId = getFromQueryOrFail("departmentId", req);
+    await updateAthenaPatientMappingDepartmentId({
+      cxId,
+      athenaPatientId,
+      athenaDepartmentId,
+    });
     return res.sendStatus(httpStatus.OK);
   })
 );
