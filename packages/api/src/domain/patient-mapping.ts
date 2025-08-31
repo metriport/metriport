@@ -1,6 +1,11 @@
 import { BaseDomain } from "@metriport/core/domain/base-domain";
+import {
+  EhrCxMappingSecondaryMappings,
+  ehrCxMappingSecondaryMappingsSchemaMapGeneral,
+} from "@metriport/core/external/ehr/mappings";
 import { ehrSources } from "@metriport/shared/interface/external/ehr/source";
 import { questSource } from "@metriport/shared/interface/external/quest/source";
+import { z } from "zod";
 
 export type PatientSourceIdentifierMap = {
   [key in string]: string[];
@@ -12,11 +17,20 @@ export function isPatientMappingSource(source: string): source is PatientMapping
   return patientMappingSource.includes(source as PatientMappingSource);
 }
 
+export type PatientMappingSecondaryMappings = EhrCxMappingSecondaryMappings | null;
+export const patientSecondaryMappingsSchemaMap: {
+  [key in PatientMappingSource]: z.Schema | undefined;
+} = {
+  ...ehrCxMappingSecondaryMappingsSchemaMapGeneral,
+  quest: undefined, // Quest doesn't have secondary mappings
+};
+
 export type PatientMappingPerSource = {
   externalId: string;
   cxId: string;
   patientId: string;
   source: PatientMappingSource;
+  secondaryMappings?: PatientMappingSecondaryMappings;
 };
 
 export interface PatientMapping extends BaseDomain, PatientMappingPerSource {}

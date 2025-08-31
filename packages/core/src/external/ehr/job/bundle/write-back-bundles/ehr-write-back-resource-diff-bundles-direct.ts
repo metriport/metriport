@@ -33,7 +33,7 @@ import { fetchBundle, FetchBundleParams } from "../../../bundle/command/fetch-bu
 import { getClientTokenInfo } from "../../../command/get-client-token-info";
 import { getEhrWriteBackConditionPrimaryCode } from "../../../command/write-back/condition";
 import {
-  GroupedVitalsByDate,
+  getEhrGroupedVitals,
   isWriteBackGroupedVitalsEhr,
 } from "../../../command/write-back/grouped-vitals";
 import { writeBackResource, WriteBackResourceType } from "../../../command/write-back/shared";
@@ -43,7 +43,6 @@ import {
   isEhrSourceWithSecondaryMappings,
 } from "../../../mappings";
 import {
-  formatDate,
   getConditionIcd10Code,
   getConditionSnomedCode,
   getConditionStartDate,
@@ -652,8 +651,9 @@ async function writeBackResources({
     resources,
     r => getWriteBackResourceType(ehr, r) === "grouped-vitals"
   );
-  const groupedVitals = await groupVitalsByDate({
-    observations: groupedVitalsObservations as Observation[],
+  const groupedVitals = getEhrGroupedVitals({
+    ehr,
+    vitals: groupedVitalsObservations as Observation[],
   });
   await executeAsynchronously(
     groupedVitals,
@@ -791,28 +791,4 @@ async function filterObservations({
       return acc;
     }, {})
   );
-}
-
-async function groupVitalsByDate({
-  observations,
-}: {
-  observations: Observation[];
-}): Promise<GroupedVitalsByDate[]> {
-  const groupedVitals: Record<string, Observation[]> = observations.reduce((acc, observation) => {
-    const chartDate = getObservationObservedDate(observation);
-    if (!chartDate) return acc;
-    const chartDateString = formatDate(chartDate, "YYYY-MM-DD");
-    if (!chartDateString) return acc;
-    const existingVital = acc[chartDateString];
-    if (!existingVital) {
-      acc[chartDateString] = [observation];
-    } else {
-      existingVital.push(observation);
-    }
-    return acc;
-  }, {} as Record<string, Observation[]>);
-  return Object.entries(groupedVitals).map(([chartDate, observations]) => [
-    buildDayjs(chartDate).toDate(),
-    observations,
-  ]);
 }
