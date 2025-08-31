@@ -1,0 +1,19 @@
+---
+title: "Lab Result Schema"
+description: "Schema documentation for the Lab Result table in the Tuva data model"
+---
+
+# Lab Result
+
+The lab result table contains information about lab test results, including the LOINC code and description, units, reference range, and result.
+
+**Primary Keys:**
+* lab_result_id
+
+**Foreign Keys:**
+* person_id
+* patient_id
+* encounter_id
+
+| Column | Data Type | Description | Terminology |
+| ------ | --------- | ----------- | ----------- | 

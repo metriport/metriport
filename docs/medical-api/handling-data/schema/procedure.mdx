@@ -1,0 +1,21 @@
+---
+title: "Procedure Schema"
+description: "Schema documentation for the Procedure table in the Tuva data model"
+---
+
+# Procedure
+
+The procedure table contains information on procedures performed on patients, including procedure codes, descriptions, and performance dates.
+
+**Primary Keys:**
+* procedure_id
+
+**Foreign Keys:**
+* person_id
+* patient_id
+* encounter_id
+* practitioner_id
+* location_id
+
+| Column | Data Type | Description | Terminology |
+| ------ | --------- | ----------- | ----------- | 

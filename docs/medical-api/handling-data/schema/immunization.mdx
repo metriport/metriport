@@ -1,0 +1,21 @@
+---
+title: "Immunization Schema"
+description: "Schema documentation for the Immunization table in the Tuva data model"
+---
+
+# Immunization
+
+The immunization table contains information on immunizations administered to patients, including the vaccine code, description, and administration date.
+
+**Primary Key:**
+* immunization_id
+
+**Foreign Keys:**
+* patient_id
+* person_id
+* encounter_id
+* location_id
+* practitioner_id
+
+| Column | Data Type | Description | Terminology |
+| ------ | --------- | ----------- | ----------- | 
