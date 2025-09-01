@@ -7,7 +7,7 @@ import { getPatientReference } from "./patient";
 import { getQuestDataSourceExtension } from "./shared";
 import { getObservationReference } from "./observation";
 import {
-  buildConfirmedConditionVerificationStatus,
+  buildConditionVerificationStatus,
   buildConditionClinicalStatus,
 } from "../../fhir/resources/condition";
 
@@ -47,7 +47,7 @@ function getCondition({
   const subject = getPatientReference(patient);
   const evidence = [getConditionEvidence(observation)];
   const extension = [getQuestDataSourceExtension()];
-  const verificationStatus = buildConfirmedConditionVerificationStatus();
+  const verificationStatus = buildConditionVerificationStatus("confirmed");
   const clinicalStatus = buildConditionClinicalStatus("active");
 
   return {
