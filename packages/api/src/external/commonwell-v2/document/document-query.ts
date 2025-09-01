@@ -31,7 +31,7 @@ import { getUrl, S3Info } from "../../../command/medical/document/document-query
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { Config } from "../../../shared/config";
 import { mapDocRefToMetriport } from "../../../shared/external";
-import { reportMetric } from "../../aws/cloudwatch";
+import { reportMetric } from "@metriport/core/external/aws/cloudwatch";
 import { cwToFHIR } from "../../commonwell-v2/document/cw-to-fhir";
 import { getCWData, update } from "../../commonwell/patient/patient";
 import {
