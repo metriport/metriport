@@ -1,8 +1,8 @@
 import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
 import { APIMode, CommonWell } from "@metriport/commonwell-sdk";
 import {
-  CommonWell as CommonWellV1,
   CommonWellAPI as CommonWellAPIV1,
+  CommonWell as CommonWellV1,
   organizationQueryMeta,
 } from "@metriport/commonwell-sdk-v1";
 import { isCommonwellV2EnabledForCx } from "@metriport/core/command/feature-flags/domain-ffs";
@@ -59,7 +59,6 @@ export const handler = capture.wrapHandler(
       throw new Error(`Config error - CW_ORG_PRIVATE_KEY doesn't exist`);
     }
 
-    // TODO ENG-513 remove this once we're migrated over to v2
     if (!isV2Enabled) {
       // V1
       const commonWell = makeCommonWellAPI(
@@ -86,9 +85,11 @@ export const handler = capture.wrapHandler(
     }
 
     // V2
+
+    console.log("Using CW v2");
     const commonWell = new CommonWell({
-      orgCert: cwOrgCertificateSecret,
-      rsaPrivateKey: cwOrgPrivateKeySecret,
+      orgCert: cwOrgCertificate,
+      rsaPrivateKey: cwOrgPrivateKey,
       orgName,
       oid: orgOid,
       homeCommunityId: orgOid,
