@@ -50,7 +50,8 @@ export class DocumentDownloaderLocalV2 extends DocumentDownloader {
     cxId: string;
   }): Promise<DownloadResult> {
     const { log } = out("S3.download.v2 cxId: " + cxId);
-    let downloadedDocument = "";
+    const downloadedDocumentInitialValue = "";
+    let downloadedDocument = downloadedDocumentInitialValue;
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
     function onData(chunk: any) {
       downloadedDocument += chunk;
@@ -58,7 +59,16 @@ export class DocumentDownloaderLocalV2 extends DocumentDownloader {
     function onEnd() {
       log("Finished downloading document");
     }
-    let downloadResult = await this.downloadFromCommonwellIntoS3(document, fileInfo, onData, onEnd);
+    function onReset() {
+      downloadedDocument = downloadedDocumentInitialValue;
+    }
+    let downloadResult = await this.downloadFromCommonwellIntoS3(
+      document,
+      fileInfo,
+      onData,
+      onEnd,
+      onReset
+    );
 
     // Check if the detected file type is in the accepted content types and update it if not
     downloadResult = await this.checkAndUpdateMimeType({
@@ -216,7 +226,8 @@ export class DocumentDownloaderLocalV2 extends DocumentDownloader {
     fileInfo: FileInfo,
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
     onDataFn?: (chunk: any) => void,
-    onEndFn?: () => void
+    onEndFn?: () => void,
+    onResetFn?: () => void
   ): Promise<{
     key: string;
     bucket: string;
@@ -255,6 +266,7 @@ export class DocumentDownloaderLocalV2 extends DocumentDownloader {
             log(`Failed to cleanup old stream: ${errorToString(error)}`);
           }
         }
+        if (onResetFn) onResetFn();
         const resp = setOrResetStream();
         writeStream = resp.writeStream;
         downloadIntoS3 = resp.promise;
