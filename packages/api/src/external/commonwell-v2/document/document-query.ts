@@ -14,6 +14,7 @@ import {
 } from "@metriport/core/command/feature-flags/domain-ffs";
 import { Patient } from "@metriport/core/domain/patient";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
+import { reportMetric } from "@metriport/core/external/aws/cloudwatch";
 import {
   Document,
   DownloadResult,
@@ -31,8 +32,8 @@ import { getUrl, S3Info } from "../../../command/medical/document/document-query
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { Config } from "../../../shared/config";
 import { mapDocRefToMetriport } from "../../../shared/external";
-import { reportMetric } from "@metriport/core/external/aws/cloudwatch";
 import { cwToFHIR } from "../../commonwell-v2/document/cw-to-fhir";
+import { sandboxGetDocRefsAndUpsert } from "../../commonwell/document/document-query-sandbox";
 import { getCWData, update } from "../../commonwell/patient/patient";
 import {
   getPatientWithCWData,
@@ -55,7 +56,6 @@ import { tallyDocQueryProgress } from "../../hie/tally-doc-query-progress";
 import { makeCommonWellAPI } from "../api";
 import { groupCWErrors } from "../error-categories";
 import { makeDocumentDownloader } from "./document-downloader-factory";
-import { sandboxGetDocRefsAndUpsert } from "./document-query-sandbox";
 import { getDocToFileFunction, getS3Info } from "./document-query-storage-info";
 import {
   CWDocumentWithMetriportData,

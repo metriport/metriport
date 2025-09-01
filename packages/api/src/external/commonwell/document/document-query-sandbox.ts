@@ -10,6 +10,8 @@ import { out } from "@metriport/core/util";
 import { getFileExtension } from "@metriport/core/util/mime";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { emptyFunction, sleep } from "@metriport/shared";
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
 import {
   MAPIWebhookStatus,
   processPatientDocumentRequest,
@@ -23,7 +25,10 @@ import { getSandboxSeedData } from "../../../shared/sandbox/sandbox-seed-data";
 import { ContentMimeType, isConvertible } from "../../fhir-converter/converter";
 import { DocumentReferenceWithId } from "../../fhir/document";
 import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
-import { sandboxSleepTime } from "./shared";
+
+dayjs.extend(duration);
+
+const sandboxSleepTime = dayjs.duration({ seconds: 5 });
 
 const randomDates = [
   "2023-06-15",
@@ -38,6 +43,8 @@ const randomDates = [
   "2023-05-03",
   "2020-02-19",
 ];
+
+const randomFacilityNames = ["UCSF Medical", "Sutter Health", "Northridge Hospital"];
 
 export async function sandboxGetDocRefsAndUpsert({
   patient,
@@ -333,8 +340,8 @@ function addSandboxFields(docRef: DocumentReferenceWithId): DocumentReferenceWit
 
   docRef.contained?.push({
     resourceType: "Organization",
-    id: "Sandbox example org",
-    name: `Hospital org#${Math.floor(Math.random() * 1000)}`,
+    id: uuidv7(),
+    name: randomFacilityNames[Math.floor(Math.random() * randomFacilityNames.length)],
   });
 
   return docRef;
