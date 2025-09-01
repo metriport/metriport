@@ -213,12 +213,11 @@ var generateLocationId = function (location) {
      */
     if (
       typeof location?.playingEntity?.name === "object" &&
-      location?.playingEntity?.name !== null &&
       "_" in location.playingEntity?.name
     ) {
       return uuidv3(location.playingEntity?.name._, uuidv3.URL);
     }
-    const id = uuidv3(name, uuidv3.URL);
+    const id = uuidv3(location.playingEntity?.name, uuidv3.URL);
     return id;
   }
 
