@@ -24,7 +24,7 @@ import { appendExtensionToEachResource } from "@metriport/core/command/hl7v2-sub
  * Note: This script modifies data in S3. Ensure you have backups if needed.
  */
 
-const prefixes: string[] = [""];
+const prefixes: string[] = [];
 const dryRun = true;
 const hieName = "";
 
