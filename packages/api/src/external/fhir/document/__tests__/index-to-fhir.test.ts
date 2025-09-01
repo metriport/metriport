@@ -5,7 +5,7 @@ import {
   makeDocumentContent,
 } from "@metriport/commonwell-sdk-v1/models/__tests__/document";
 import { makePatient } from "@metriport/core/domain/__tests__/patient";
-import dayjs from "dayjs";
+import { buildDayjs } from "@metriport/shared/common/date";
 import { v4 as uuidv4 } from "uuid";
 import { CWDocumentWithMetriportData } from "../../../commonwell-v1/document/shared";
 import { makePeriod } from "../../shared/__tests__/date";
@@ -46,7 +46,7 @@ describe("cwToFHIR", () => {
 
 describe("getBestDateFromCWDocRef", () => {
   it("returns indexed when indexed is not today", async () => {
-    const indexed = dayjs(faker.date.past()).toISOString();
+    const indexed = buildDayjs(faker.date.past()).toISOString();
     const period = makePeriod();
     const content: DocumentContent = makeDocumentContent({
       indexed,
@@ -57,7 +57,7 @@ describe("getBestDateFromCWDocRef", () => {
   });
 
   it("returns start when present and indexed is today", async () => {
-    const indexed = dayjs().toISOString();
+    const indexed = buildDayjs().toISOString();
     const period = makePeriod();
     const content: DocumentContent = makeDocumentContent({
       indexed,
@@ -68,7 +68,7 @@ describe("getBestDateFromCWDocRef", () => {
   });
 
   it("returns end when start not present and indexed is today", async () => {
-    const indexed = dayjs().toISOString();
+    const indexed = buildDayjs().toISOString();
     const period = makePeriod();
     const content: DocumentContent = makeDocumentContent({
       indexed,
@@ -79,7 +79,7 @@ describe("getBestDateFromCWDocRef", () => {
   });
 
   it("returns indexed when no start or end and indexed is today", async () => {
-    const indexed = dayjs().toISOString();
+    const indexed = buildDayjs().toISOString();
     const content: DocumentContent = makeDocumentContent({
       indexed,
       context: { period: undefined },

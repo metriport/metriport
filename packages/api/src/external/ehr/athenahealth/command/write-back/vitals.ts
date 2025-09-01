@@ -1,6 +1,6 @@
 import { GroupedVitals } from "@metriport/core/external/ehr/shared";
 import { CreatedVitalsSuccess } from "@metriport/shared/interface/external/ehr/athenahealth/vitals";
-import { createAthenaClient } from "../../shared";
+import { createAthenaClient, validateDepartmentId } from "../../shared";
 
 export async function writeVitalsToChart({
   cxId,
@@ -15,6 +15,7 @@ export async function writeVitalsToChart({
   athenaDepartmentId: string;
   vitals: GroupedVitals;
 }): Promise<CreatedVitalsSuccess[]> {
+  await validateDepartmentId({ cxId, athenaPracticeId, athenaPatientId, athenaDepartmentId });
   const api = await createAthenaClient({ cxId, practiceId: athenaPracticeId });
   return await api.createVitals({
     cxId,

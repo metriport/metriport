@@ -1,5 +1,5 @@
 import { CreatedClinicalDocumentSuccess } from "@metriport/shared/interface/external/ehr/athenahealth/clinical-document";
-import { createAthenaClient } from "../../shared";
+import { createAthenaClient, validateDepartmentId } from "../../shared";
 
 export async function writeNoteToChart({
   cxId,
@@ -16,6 +16,7 @@ export async function writeNoteToChart({
   encounterText: string;
   date: string;
 }): Promise<CreatedClinicalDocumentSuccess> {
+  await validateDepartmentId({ cxId, athenaPracticeId, athenaPatientId, athenaDepartmentId });
   const api = await createAthenaClient({ cxId, practiceId: athenaPracticeId });
   return await api.createClinicalDocument({
     cxId,

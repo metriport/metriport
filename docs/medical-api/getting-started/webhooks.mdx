@@ -39,6 +39,15 @@ Additionally, your endpoint will need to accept and process different messages w
 
 1. [Patient data messages](#medical-api-messages).
 
+<Tip>
+  **Testing Webhooks**: In sandbox mode, you can test your
+  webhook integration with realistic patient notification
+  events (Patient Admit, Transfer, Discharge) using the
+  dashboard testing tool. Learn more in the [Webhook Testing
+  section](/medical-api/getting-started/sandbox#webhook-testing)
+  of our sandbox documentation.
+</Tip>
+
 ## Authentication
 
 When Metriport sends a webhook message, it includes an `x-metriport-signature` header - this is an

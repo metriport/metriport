@@ -1,8 +1,10 @@
 import { getAthenaEnv } from "@metriport/core/external/ehr/athenahealth/environment";
 import AthenaHealthApi, { AthenaEnv } from "@metriport/core/external/ehr/athenahealth/index";
 import { EhrPerPracticeParams } from "@metriport/core/external/ehr/environment";
-import { MetriportError } from "@metriport/shared";
+import { BadRequestError, EhrSources, MetriportError } from "@metriport/shared";
+import { AthenaSecondaryMappings } from "@metriport/shared/interface/external/ehr/athenahealth/cx-mapping";
 import { athenaClientSource } from "@metriport/shared/interface/external/ehr/athenahealth/jwt-token";
+import { getCxMappingAndParsedSecondaryMappings } from "../shared/command/mapping/get-cx-mapping-and-secondary-mappings";
 import { createEhrClientWithClientCredentials } from "../shared/utils/client";
 
 export async function createAthenaClientWithTokenIdAndEnvironment(
@@ -43,4 +45,40 @@ export function getAthenaPracticeIdFromPatientId(athenaPatientId: string) {
     throw new MetriportError("Invalid patient ID", undefined, { athenaPatientId });
   }
   return `a-1.${patientPrefix.replace("a-", "Practice-")}`;
+}
+
+export async function validateDepartmentId({
+  cxId,
+  athenaPracticeId,
+  athenaPatientId,
+  athenaDepartmentId,
+}: {
+  cxId: string;
+  athenaPracticeId: string;
+  athenaPatientId: string;
+  athenaDepartmentId: string;
+}): Promise<void> {
+  const { parsedSecondaryMappings } =
+    await getCxMappingAndParsedSecondaryMappings<AthenaSecondaryMappings>({
+      ehr: EhrSources.athena,
+      practiceId: athenaPracticeId,
+    });
+  const departmentIds = parsedSecondaryMappings.departmentIds;
+  const strippedPracticeId = athenaPracticeId.replace("a-1.Practice-", "");
+  const strippedDepartmentId = athenaDepartmentId.replace(
+    `a-${strippedPracticeId}.Department-`,
+    ""
+  );
+  if (departmentIds.length > 0 && !departmentIds.includes(strippedDepartmentId)) {
+    throw new BadRequestError(
+      "AthenaHealth patient is not in a department that is enabled",
+      undefined,
+      {
+        cxId,
+        athenaPracticeId,
+        athenaPatientId,
+        athenaDepartmentId,
+      }
+    );
+  }
 }
