@@ -132,8 +132,6 @@ async function ccdaToFhir(ccda, patientId) {
                   ),
                 });
               } catch (convertErr) {
-                console.log("FSAFSA< ", convertErr);
-
                 reject({
                   status: 400,
                   resultMsg: "Error during template evaluation. " + convertErr.toString(),
