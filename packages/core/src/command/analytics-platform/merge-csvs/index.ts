@@ -195,7 +195,7 @@ async function listAllFiles({
 
   // Going through each patient (concurrently) instead of listing all files in in the customer's
   // because listing all files of all patients in one go was very slow.
-  const rawFileList: AWS.S3.ObjectList = [];
+  const rawFileList: { Key?: string; Size?: number }[] = [];
   await executeAsynchronously(
     patientIds,
     async patientId => {
