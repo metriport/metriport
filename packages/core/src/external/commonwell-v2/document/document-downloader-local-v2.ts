@@ -9,11 +9,7 @@ import AWS from "aws-sdk";
 import path from "path";
 import * as stream from "stream";
 import { DOMParser } from "xmldom";
-import {
-  detectFileType,
-  isContentTypeAccepted,
-  maxBytesNeededForDetectFileType,
-} from "../../../util/file-type";
+import { detectFileType, isContentTypeAccepted } from "../../../util/file-type";
 import { out } from "../../../util/log";
 import { isMimeTypeXML } from "../../../util/mime";
 import { makeS3Client, S3Utils } from "../../aws/s3";
@@ -51,13 +47,11 @@ export class DocumentDownloaderLocalV2 extends DocumentDownloader {
     fileInfo: FileInfo;
   }): Promise<DownloadResult> {
     const { log } = out("S3.download.v2");
-    let documentBuffer = Buffer.alloc(0);
+    let contentsBuffer = Buffer.alloc(0);
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
     function onData(chunk: any) {
       const buf = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
-      if (documentBuffer.length < maxBytesNeededForDetectFileType) {
-        documentBuffer = Buffer.concat([documentBuffer, buf]);
-      }
+      contentsBuffer = Buffer.concat([contentsBuffer, buf]);
     }
     function onEnd() {
       log("Finished downloading document");
@@ -68,7 +62,7 @@ export class DocumentDownloaderLocalV2 extends DocumentDownloader {
     downloadResult = await this.checkAndUpdateMimeType({
       document,
       fileInfo,
-      documentBuffer,
+      documentBuffer: contentsBuffer,
       downloadResult,
     });
 
@@ -80,10 +74,10 @@ export class DocumentDownloaderLocalV2 extends DocumentDownloader {
       contentType: downloadResult.contentType,
     };
 
-    if (documentBuffer && isMimeTypeXML(document.mimeType)) {
+    if (contentsBuffer && isMimeTypeXML(downloadResult.contentType)) {
       return this.parseXmlFile({
         ...newlyDownloadedFile,
-        contents: documentBuffer.toString("utf8"),
+        contents: contentsBuffer.toString("utf8"),
         requestedFileInfo: fileInfo,
       });
     }
