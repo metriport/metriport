@@ -6,7 +6,10 @@ import { ICD_10_URL, ICD_9_URL } from "@metriport/shared/medical";
 import { getPatientReference } from "./patient";
 import { getQuestDataSourceExtension } from "./shared";
 import { getObservationReference } from "./observation";
-import { buildConfirmedConditionVerificationStatus } from "../../fhir/resources/condition";
+import {
+  buildConfirmedConditionVerificationStatus,
+  buildConditionClinicalStatus,
+} from "../../fhir/resources/condition";
 
 export function getConditions(
   detail: ResponseDetail,
@@ -45,12 +48,14 @@ function getCondition({
   const evidence = [getConditionEvidence(observation)];
   const extension = [getQuestDataSourceExtension()];
   const verificationStatus = buildConfirmedConditionVerificationStatus();
+  const clinicalStatus = buildConditionClinicalStatus("active");
 
   return {
     resourceType: "Condition",
     id: uuidv7(),
     subject,
     evidence,
+    clinicalStatus,
     verificationStatus,
     code: {
       coding: [
@@ -82,6 +87,8 @@ function parseDiagnosisCode(diagnosisCode: string): { system: string; code: stri
 }
 
 function insertPeriod(icd10Code: string): string {
-  if (icd10Code.length <= 3 || icd10Code.includes(".")) return icd10Code;
+  if (icd10Code.length <= 3 || icd10Code.includes(".")) {
+    return icd10Code;
+  }
   return icd10Code.substring(0, 3) + "." + icd10Code.substring(3);
 }
