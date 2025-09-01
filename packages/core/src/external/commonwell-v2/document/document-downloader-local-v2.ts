@@ -50,17 +50,18 @@ export class DocumentDownloaderLocalV2 extends DocumentDownloader {
     cxId: string;
   }): Promise<DownloadResult> {
     const { log } = out("S3.download.v2 cxId: " + cxId);
-    const downloadedDocumentInitialValue = "";
-    let downloadedDocument = downloadedDocumentInitialValue;
+    const downloadedDocumentInitialValue = Buffer.alloc(0);
+    let downloadedBuffer = downloadedDocumentInitialValue;
+
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
     function onData(chunk: any) {
-      downloadedDocument += chunk;
+      downloadedBuffer = Buffer.concat([downloadedBuffer, chunk]);
     }
     function onEnd() {
       log("Finished downloading document");
     }
     function onReset() {
-      downloadedDocument = downloadedDocumentInitialValue;
+      downloadedBuffer = downloadedDocumentInitialValue;
     }
     let downloadResult = await this.downloadFromCommonwellIntoS3(
       sourceDocument,
@@ -74,7 +75,7 @@ export class DocumentDownloaderLocalV2 extends DocumentDownloader {
     downloadResult = await this.checkAndUpdateMimeType({
       sourceDocument,
       destinationFileInfo,
-      downloadedDocument,
+      downloadedBuffer,
       downloadResult,
     });
 
@@ -86,10 +87,10 @@ export class DocumentDownloaderLocalV2 extends DocumentDownloader {
       contentType: downloadResult.contentType,
     };
 
-    if (downloadedDocument && isMimeTypeXML(downloadResult.contentType)) {
+    if (downloadedBuffer.length > 0 && isMimeTypeXML(downloadResult.contentType)) {
       return this.parseXmlFile({
         ...newlyDownloadedFile,
-        contents: downloadedDocument,
+        contents: downloadedBuffer.toString("utf-8"),
         requestedFileInfo: destinationFileInfo,
       });
     }
@@ -103,12 +104,12 @@ export class DocumentDownloaderLocalV2 extends DocumentDownloader {
   async checkAndUpdateMimeType({
     sourceDocument,
     destinationFileInfo,
-    downloadedDocument,
+    downloadedBuffer,
     downloadResult,
   }: {
     sourceDocument: Document;
     destinationFileInfo: FileInfo;
-    downloadedDocument: string;
+    downloadedBuffer: Buffer;
     downloadResult: DownloadResult;
   }): Promise<DownloadResult> {
     const { log } = out("checkAndUpdateMimeType.v2");
@@ -117,7 +118,7 @@ export class DocumentDownloaderLocalV2 extends DocumentDownloader {
     }
 
     const old_extension = path.extname(destinationFileInfo.name);
-    const { mimeType, fileExtension } = detectFileType(downloadedDocument);
+    const { mimeType, fileExtension } = detectFileType(downloadedBuffer);
 
     // If the file type has not changed
     if (mimeType === sourceDocument.mimeType || old_extension === fileExtension) {
