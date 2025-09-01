@@ -45,10 +45,10 @@ export const internalApi = axios.create({
 async function main() {
   await sleep(50); // Give some time to avoid mixing logs w/ Node's
 
-  if (!patientImportJobId) {
-    console.error("Patient import job ID is required");
+  if (!cxId || !patientImportJobId) {
+    console.error("CX ID and patient import job ID are required");
     console.error(
-      "Usage: ts-node src/patient-import/finalize-processing-job.ts <patientImportJobId>"
+      "Usage: ts-node src/patient-import/finalize-processing-job.ts <cxId> <patientImportJobId>"
     );
     process.exit(1);
   }
