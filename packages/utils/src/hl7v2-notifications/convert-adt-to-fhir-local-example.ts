@@ -9,6 +9,8 @@ import { getFileNames } from "@metriport/core/util/fs";
 import { errorToString } from "@metriport/shared";
 import fs from "fs";
 import { buildGetDirPathInside, initRunsFolder } from "../shared/folder";
+import { makePatient } from "@metriport/core/domain/__tests__/patient";
+import { toFHIR } from "@metriport/core/external/fhir/patient/conversion";
 
 /**
  * Converts HL7v2 ADT messages to FHIR Bundle and saves them to a file.
@@ -19,6 +21,7 @@ import { buildGetDirPathInside, initRunsFolder } from "../shared/folder";
  *   - Messages can be separated by newlines
  *   - The file should be placed in the input folder
  * - Expects an hieName.
+ * - Expects a patient (Defaulted to random dummy data)
  *
  * Output:
  * - Creates a "converted" folder with individual JSON files for each converted message
@@ -30,8 +33,10 @@ import { buildGetDirPathInside, initRunsFolder } from "../shared/folder";
  * 2. Run the script with ts-node src/hl7v2-notifications/convert-adt-to-fhir-local-example.ts
  */
 
-const filePath = "";
-const hieName = "";
+const filePath = "input";
+const hieName = "MyTestHIE";
+const patient = makePatient(); // <------- CHANGE THIS IF NEEDED
+const fhirPatient = toFHIR(patient);
 const getDirPath = buildGetDirPathInside("hl7v2-conversion");
 
 async function convertAdtToFhir() {
@@ -65,7 +70,9 @@ async function convertAdtToFhir() {
           patientId,
           rawDataFileKey: fileName,
           hieName,
+          fhirPatient,
         });
+        console.log(bundle);
 
         if (!fs.existsSync(outputFolder)) {
           fs.mkdirSync(outputFolder, { recursive: true });
