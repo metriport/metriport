@@ -203,7 +203,8 @@ var generateLocationId = function (location) {
     );
     return id;
   } else if (location.playingEntity?.name) {
-    const id = uuidv3(location.playingEntity.name, uuidv3.URL);
+    const name = location.playingEntity?.name._ ? location.playingEntity?.name._ : location.playingEntity?.name;
+    const id = uuidv3(name, uuidv3.URL);
     return id;
   }
 
@@ -1894,6 +1895,7 @@ module.exports.external = [
 
       const participantRole = encounter.participant?.participantRole;
       if (participantRole) {
+        console.log("hi: ", participantRole);
         const participantRoleId = generateLocationId(participantRole);
         detail.location = {
           reference: `Location/${participantRoleId}`,
