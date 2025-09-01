@@ -45,6 +45,7 @@ import {
 import {
   getConditionIcd10Code,
   getConditionSnomedCode,
+  getConditionSnomedCoding,
   getConditionStartDate,
   getDiagnosticReportDate,
   getDiagnosticReportLoincCode,
@@ -392,6 +393,7 @@ export function shouldWriteBackResource({
     if (!isCondition(resource)) return false;
     const condition = resource;
     if (skipConditionChronicity(condition, writeBackFilters)) return false;
+    if (skipConditionStringFilters(condition, writeBackFilters)) return false;
     return true;
   } else if (writeBackResourceType === "lab") {
     if (writeBackFilters.lab?.disabled) return false;
@@ -401,6 +403,7 @@ export function shouldWriteBackResource({
     if (skipLabDate(observation, writeBackFilters)) return false;
     if (skipLabLoincCode(observation, writeBackFilters)) return false;
     if (skipLabNonTrending(observation, labObservations, writeBackFilters)) return false;
+    if (skipLabDateAbsolute(observation, writeBackFilters)) return false;
     return true;
   } else if (writeBackResourceType === "lab-panel") {
     if (writeBackFilters.labPanel?.disabled) return false;
@@ -437,6 +440,21 @@ export function skipConditionChronicity(
   if (!chronicityFilter || chronicityFilter === "all") return false;
   if (isChronicCondition(condition) && chronicityFilter === "chronic") return false;
   if (!isChronicCondition(condition) && chronicityFilter === "non-chronic") return false;
+  return true;
+}
+
+export function skipConditionStringFilters(
+  condition: Condition,
+  writeBackFilters: WriteBackFiltersPerResourceType
+): boolean {
+  const stringFilters = writeBackFilters.problem?.stringFilters;
+  if (!stringFilters) return false;
+  const snomedCoding = getConditionSnomedCoding(condition);
+  if (!snomedCoding || !snomedCoding.display) return true;
+  if (
+    stringFilters.find(filter => snomedCoding.display?.toLowerCase().includes(filter.toLowerCase()))
+  )
+    return false;
   return true;
 }
 
@@ -536,6 +554,17 @@ export function skipLabDate(
     beginDate = beginDate.subtract(relativeDateRange.years, "year");
   }
   return buildDayjs(observationDate).isBefore(beginDate);
+}
+
+export function skipLabDateAbsolute(
+  observation: Observation,
+  writeBackFilters: WriteBackFiltersPerResourceType
+): boolean {
+  const absoluteDate = writeBackFilters.lab?.absoluteDate;
+  if (!absoluteDate) return false;
+  const observationDate = getObservationObservedDate(observation);
+  if (!observationDate) return true;
+  return buildDayjs(observationDate).isBefore(buildDayjs(absoluteDate));
 }
 
 export function skipLabLoincCode(

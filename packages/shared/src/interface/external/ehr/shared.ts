@@ -13,6 +13,7 @@ export const writeBackFiltersPerResourceTypeSchema = z.object({
       loincCodes: z.string().array().optional(),
       minCountPerCode: z.number().optional(),
       relativeDateRange: relativeDateRangeSchema.optional(),
+      absoluteDate: z.string().optional(),
       disabled: z.boolean().optional(),
     })
     .optional(),
@@ -26,6 +27,7 @@ export const writeBackFiltersPerResourceTypeSchema = z.object({
     .optional(),
   problem: z
     .object({
+      stringFilters: z.string().array().optional(),
       latestOnly: z.boolean().optional(),
       chronicityFilter: z.enum(["all", "chronic", "non-chronic"]).optional(),
       relativeDateRange: relativeDateRangeSchema.optional(),
