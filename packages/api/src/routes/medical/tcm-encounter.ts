@@ -86,6 +86,11 @@ router.get(
           ...additionalQueryParams,
         });
       },
+      allowedSortColumns: {
+        id: "tcm_encounter",
+        admitTime: "tcm_encounter",
+        dischargeTime: "tcm_encounter",
+      },
       maxItemsPerPage: tcmEncounterMaxPageSize,
     });
 

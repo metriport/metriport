@@ -28,6 +28,10 @@ const sortItemSchema = z.string().transform((val, ctx) => {
 
 export type SortItem = z.infer<typeof sortItemSchema>;
 
+function isNonEmptyArray<T>(arr: T[]): arr is [T, ...T[]] {
+  return arr.length > 0;
+}
+
 function addIdSortIfNotExists(items: SortItem[]): SortItem[] {
   const hasIdSort = items.some(item => item.col === "id");
   return hasIdSort ? items : [...items, { col: "id", order: "desc" as const }];
@@ -44,6 +48,9 @@ const sortStringSchema = z
     const items = val.split(",").filter(item => item.trim());
     const parsedItems = items.map(item => sortItemSchema.parse(item));
     return addIdSortIfNotExists(parsedItems);
+  })
+  .refine(isNonEmptyArray, {
+    message: "Sort array must have at least one item",
   });
 
 const compositeCursorSchema = z.record(z.string(), z.string());
@@ -89,6 +96,24 @@ export function createQueryMetaSchema(maxItems: number = maxItemsPerPage) {
           .optional(),
       })
     )
+    .transform(data => {
+      // Reorient ordering based on pagination direction
+      const shouldReverseOrder = !!data.toItem;
+      const reorientedSort = data.sort.map(({ col, order }) => ({
+        col,
+        order: shouldReverseOrder
+          ? order === "asc"
+            ? ("desc" as const)
+            : ("asc" as const)
+          : order,
+      }));
+
+      return {
+        ...data,
+        sort: reorientedSort,
+        originalSort: data.sort,
+      };
+    })
     .refine(
       data => {
         const cursor = data.fromItem ?? data.toItem;

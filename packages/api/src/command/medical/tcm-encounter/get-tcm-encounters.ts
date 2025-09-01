@@ -1,9 +1,9 @@
 import { buildDayjs } from "@metriport/shared/common/date";
-import { omit } from "lodash";
+import { omit, snakeCase } from "lodash";
 import { QueryTypes } from "sequelize";
 import { PatientModel } from "../../../models/medical/patient";
 import { TcmEncounterModel } from "../../../models/medical/tcm-encounter";
-import { getPaginationSorting, Pagination, sortForPagination } from "../../pagination";
+import { PaginationWithCursors } from "../../pagination";
 
 /**
  * Add a default filter date far in the past to guarantee hitting the compound index
@@ -22,6 +22,8 @@ export type TcmEncounterResult = TcmEncounterModel["dataValues"] & {
   patientFacilityIds: PatientModel["dataValues"]["facilityIds"];
 };
 
+// Column validation and WHERE clause building is now handled centrally in the paginated() function
+
 export async function getTcmEncounters({
   cxId,
   after,
@@ -39,7 +41,7 @@ export async function getTcmEncounters({
   eventType?: string;
   coding?: string;
   status?: string;
-  pagination: Pagination;
+  pagination: PaginationWithCursors;
 }): Promise<TcmEncounterResult[]> {
   const tcmEncounterTable = TcmEncounterModel.tableName;
   const patientTable = PatientModel.tableName;
@@ -47,12 +49,28 @@ export async function getTcmEncounters({
   const sequelize = TcmEncounterModel.sequelize;
   if (!sequelize) throw new Error("Sequelize not found");
 
-  const { toItem, fromItem } = pagination;
-  const [, order] = getPaginationSorting(pagination);
+  const { fromItemClause = { clause: "", params: {} }, toItemClause = { clause: "", params: {} } } =
+    pagination;
 
   const dischargedAfter = daysLookback
     ? buildDayjs().subtract(parseInt(daysLookback), "day").toDate()
     : undefined;
+
+  function getTableForColumn(column: string): string {
+    // Map camelCase columns to their tables for ORDER BY
+    const columnTableMap: Record<string, string> = {
+      id: "tcm_encounter",
+      admitTime: "tcm_encounter",
+      dischargeTime: "tcm_encounter",
+    };
+    return columnTableMap[column] || "tcm_encounter";
+  }
+
+  function createOrderByClause({ col, order }: { col: string; order: string }) {
+    const table = getTableForColumn(col);
+    const dbCol = snakeCase(col); // Transform camelCase to snake_case for SQL
+    return `${table}.${dbCol} ${order.toUpperCase()}`;
+  }
 
   /**
    * ⚠️ Always change this query and the count query together.
@@ -73,10 +91,10 @@ export async function getTcmEncounters({
       ${eventType ? ` AND tcm_encounter.latest_event = :eventType` : ""}
       ${status ? ` AND tcm_encounter.outreach_status = :status` : ""}
       ${coding === "cardiac" ? ` AND tcm_encounter.has_cardiac_code = true` : ""}
-      ${/* PAGINATION */ ""}
-      ${toItem ? ` AND tcm_encounter.id >= :toItem` : ""}
-      ${fromItem ? ` AND tcm_encounter.id <= :fromItem` : ""}
-      ORDER BY tcm_encounter.id ${order}
+      ${/* COMPOSITE CURSOR PAGINATION */ ""}
+      ${toItemClause.clause}
+      ${fromItemClause.clause}
+      ORDER BY ${pagination.sort.map(createOrderByClause).join(", ")}
       LIMIT :count
     `;
 
@@ -94,7 +112,10 @@ export async function getTcmEncounters({
       ...{ eventType },
       ...{ coding },
       ...{ status },
-      ...pagination,
+      ...{ count: pagination.count },
+      // Include composite cursor parameters
+      ...fromItemClause.params,
+      ...toItemClause.params,
     },
     type: QueryTypes.SELECT,
   })) as TcmEncounterQueryData[];
@@ -105,7 +126,7 @@ export async function getTcmEncounters({
     patientFacilityIds: e.dataValues.patient_facility_ids,
   }));
 
-  return sortForPagination(encounters, pagination);
+  return encounters;
 }
 
 export async function getTcmEncountersCount({

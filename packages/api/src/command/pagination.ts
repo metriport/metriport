@@ -3,11 +3,23 @@ import type { SortItem } from "@metriport/shared/domain/pagination";
 import { FindOptions, Op, OrderItem } from "sequelize";
 import { UnionToIntersection, XOR } from "ts-essentials";
 
+export type CursorWhereClause = {
+  clause: string;
+  params: Record<string, unknown>;
+};
+
 export type Pagination = XOR<PaginationFromItem, PaginationToItem> & {
   /** indicates the number of items to be included in the response */
   count: number;
-  /** optional sort criteria for composite cursor pagination */
+  /** sort criteria for composite cursor pagination (reoriented for database queries) */
   sort: SortItem[];
+  /** original sort criteria as sent by client (for URL generation) */
+  originalSort: SortItem[];
+};
+
+export type PaginationWithCursors = Pagination & {
+  fromItemClause?: CursorWhereClause;
+  toItemClause?: CursorWhereClause;
 };
 
 export type PaginationFromItem = {
@@ -46,8 +58,8 @@ export function sortForPagination<T>(items: T[], pagination: Pagination | undefi
 }
 
 export async function getPaginationItems<T extends Record<string, unknown>>(
-  requestMeta: Pagination,
-  getItems: (pagination: Pagination) => Promise<T[]>,
+  requestMeta: PaginationWithCursors,
+  getItems: (pagination: PaginationWithCursors) => Promise<T[]>,
   getTotalCount: () => Promise<number>
 ): Promise<{
   prevPageCursor: CompositeCursor | undefined;
@@ -86,6 +98,7 @@ export async function getPaginationItems<T extends Record<string, unknown>>(
     const itemsPrevious = await getItems({
       toItem: createCompositeCursor(currPageItems[0], requestMeta.sort),
       sort: requestMeta.sort,
+      originalSort: requestMeta.originalSort,
       count: 2,
     });
     const prevPageCursor =
@@ -119,6 +132,7 @@ export async function getPaginationItems<T extends Record<string, unknown>>(
   const itemsNext = await getItems({
     fromItem: createCompositeCursor(currPageItems[currPageItems.length - 1], requestMeta.sort),
     sort: requestMeta.sort,
+    originalSort: requestMeta.originalSort,
     count: 2,
   });
   const nextPageCursor = itemsNext[1]
@@ -165,19 +179,13 @@ export function buildCompositeCursorFilters(
  * Gets the appropriate sorting configuration for composite cursor pagination.
  * Handles multi-column sorting with proper direction reversal for backward pagination.
  */
-export function getPaginationSortingComposite(pagination: Pagination | undefined): OrderItem[] {
-  const { sort, toItem } = pagination ?? {};
+export function getPaginationSortingComposite(pagination: Pagination) {
+  const { sort, toItem } = pagination;
 
-  if (!sort || sort.length === 0) {
-    return [["id", toItem ? "ASC" : "DESC"]];
-  }
+  const backwards = toItem ?? false;
 
-  const orderItems: OrderItem[] = sort.map(({ col, order }) => [
-    col,
-    toItem ? (order === "asc" ? "DESC" : "ASC") : order === "asc" ? "ASC" : "DESC",
-  ]);
-
-  // Always include id as final sort to ensure deterministic ordering
-  orderItems.push(["id", toItem ? "ASC" : "DESC"]);
+  const orderItems = sort.map(
+    ({ col, order }) => [col, backwards ? (order === "asc" ? "desc" : "asc") : order] as const
+  );
   return orderItems;
 }
