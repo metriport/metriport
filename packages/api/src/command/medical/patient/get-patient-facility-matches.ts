@@ -1,3 +1,4 @@
+import { CwLinkV2 } from "@metriport/commonwell-sdk";
 import { Address } from "@metriport/core/domain/address";
 import { LinkDemographics } from "@metriport/core/domain/patient-demographics";
 import { USState } from "@metriport/shared";
@@ -13,7 +14,6 @@ import { CwPatientDataModel } from "../../../external/commonwell/models/cw-patie
 import {
   CwLink,
   CwLinkV1,
-  CwLinkV2,
   isCwLinkV1,
 } from "../../../external/commonwell/patient/cw-patient-data/shared";
 

@@ -49,12 +49,22 @@ export async function updateInvalidLinksWithinDbTx(
     commonwell: uniqBy(updatedData.commonwell, function (networkLink) {
       if (isCwLinkV1(networkLink)) {
         // example: "https://org-address.org/v1/org/2.16.840.<rest-of-oid>/"
-        const prodiverReference = networkLink.patient?.provider?.reference;
-        return prodiverReference ? parseOid(prodiverReference) : JSON.stringify(networkLink);
+        const providerReference = networkLink.patient?.provider?.reference;
+        if (!providerReference) return JSON.stringify(networkLink);
+        try {
+          return parseOid(providerReference);
+        } catch {
+          return JSON.stringify(networkLink);
+        }
       } else {
         // example: "urn:oid:2.16.840.<rest-of-oid>"
-        const systemReference = networkLink.Patient?.managingOrganization?.identifier[0].system;
-        return systemReference ? parseOid(systemReference) : JSON.stringify(networkLink);
+        const systemReference = networkLink.Patient?.managingOrganization?.identifier?.[0]?.system;
+        if (!systemReference) return JSON.stringify(networkLink);
+        try {
+          return parseOid(systemReference);
+        } catch {
+          return JSON.stringify(networkLink);
+        }
       }
     }),
   };

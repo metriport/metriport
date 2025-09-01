@@ -110,3 +110,5 @@ export const patientProbableLinksRespSchema = z.object({
   status: statusSchema.nullish(),
 });
 export type PatientProbableLinks = z.infer<typeof patientProbableLinksRespSchema>;
+
+export type CwLinkV2 = (PatientProbableLink | PatientExistingLink) & { version: 2 };

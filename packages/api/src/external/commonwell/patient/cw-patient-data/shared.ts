@@ -1,4 +1,4 @@
-import { PatientExistingLink, PatientProbableLink } from "@metriport/commonwell-sdk";
+import { CwLinkV2 } from "@metriport/commonwell-sdk";
 import { BaseDomain, BaseDomainCreate } from "@metriport/core/domain/base-domain";
 import { LinkDemographicsHistory } from "@metriport/core/domain/patient-demographics";
 
@@ -20,8 +20,6 @@ export interface CwPatientDataCreatePartial extends BaseDomainCreate {
 }
 
 export interface CwPatientData extends BaseDomain, CwPatientDataCreate {}
-
-export type CwLinkV2 = (PatientProbableLink | PatientExistingLink) & { version: 2 };
 
 export type CwLinkV1 = LocalNetworkLink & {
   version?: never;
@@ -114,6 +112,7 @@ type LocalNetworkLink = {
             } | null;
           }[]
         | null;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       picture?: any;
     };
     identifier?:
