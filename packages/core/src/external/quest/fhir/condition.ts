@@ -6,7 +6,7 @@ import { ICD_10_URL, ICD_9_URL } from "@metriport/shared/medical";
 import { getPatientReference } from "./patient";
 import { getQuestDataSourceExtension } from "./shared";
 import { getObservationReference } from "./observation";
-import { CONDITION_VERIFICATION_STATUS_URL } from "../../surescripts/fhir/constants";
+import { buildConfirmedConditionVerificationStatus } from "../../fhir/resources/condition";
 
 export function getConditions(
   detail: ResponseDetail,
@@ -44,21 +44,14 @@ function getCondition({
   const subject = getPatientReference(patient);
   const evidence = [getConditionEvidence(observation)];
   const extension = [getQuestDataSourceExtension()];
+  const verificationStatus = buildConfirmedConditionVerificationStatus();
 
   return {
     resourceType: "Condition",
     id: uuidv7(),
     subject,
     evidence,
-    verificationStatus: {
-      coding: [
-        {
-          system: CONDITION_VERIFICATION_STATUS_URL,
-          code: "confirmed",
-          display: "Confirmed",
-        },
-      ],
-    },
+    verificationStatus,
     code: {
       coding: [
         {
