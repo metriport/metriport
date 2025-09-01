@@ -1,5 +1,4 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
-import { FhirBundleSdk } from "@metriport/fhir-sdk";
 import { MetriportError } from "@metriport/shared";
 import _, { cloneDeep } from "lodash";
 import { dangerouslyDeduplicateFhir } from "../../../fhir-deduplication/deduplicate-fhir";
@@ -7,6 +6,7 @@ import { groupSameEncountersDatetimeOnly } from "../../../fhir-deduplication/res
 import { normalizeFhir } from "../normalization/normalize-fhir";
 import { isEncounter } from "../shared";
 import { buildBundle, buildBundleEntry, RequiredBundleType } from "./bundle";
+import { FhirBundleSdk } from "@metriport/fhir-sdk";
 
 export function mergeBundles({
   cxId,

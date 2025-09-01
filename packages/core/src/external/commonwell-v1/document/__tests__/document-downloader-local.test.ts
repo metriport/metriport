@@ -23,7 +23,7 @@ import {
   getCdaWithTwoNonXmlBodyTags,
   getCdaWithTwoTextTagsUnderNonXmlBodyTag,
 } from "../../../cda/__tests__/examples";
-import { FileInfo } from "../document-downloader";
+import { FileInfo } from "../../../commonwell/document/document-downloader";
 import { DocumentDownloaderLocal } from "../document-downloader-local";
 
 describe("document-downloader-local", () => {

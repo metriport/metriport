@@ -123,7 +123,7 @@ CW_ORG_GATEWAY_AUTHORIZATION_CLIENT_ID=your-client-id
 CW_ORG_GATEWAY_AUTHORIZATION_CLIENT_SECRET=your-client-secret
 
 # Optional: Use existing organization instead of creating new one
-CW_ORG_ID=1.2.3.4.5.678.5.123
+CW_ORG_OID=1.2.3.4.5.678.5.123
 ```
 
 ### Contribution Server Configuration

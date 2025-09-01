@@ -1,5 +1,5 @@
 import { z } from "zod";
-// import { linkSchema } from "./link";
+import { normalizeStatePreprocess } from "./address";
 
 const organizationBaseSchema = z.object({
   organizationId: z.string(),
@@ -31,7 +31,7 @@ const organizationBaseSchema = z.object({
       address1: z.string(),
       address2: z.string().nullish(),
       city: z.string(),
-      state: z.string(),
+      state: z.preprocess(normalizeStatePreprocess, z.string()),
       postalCode: z.string(),
       country: z.string(),
       phone: z.string().nullish(),
@@ -54,7 +54,10 @@ const organizationBaseSchema = z.object({
       phone: z.string(),
     })
   ),
+  isLegacyBridgeEnabled: z.boolean().nullish(),
 });
+
+export type OrganizationBase = z.infer<typeof organizationBaseSchema>;
 
 export const organizationSchemaWithNetworkInfo = organizationBaseSchema.extend({
   securityTokenKeyType: z.string().nullish(),
@@ -102,7 +105,6 @@ export const organizationSchemaWithNetworkInfo = organizationBaseSchema.extend({
 export type OrganizationWithNetworkInfo = z.infer<typeof organizationSchemaWithNetworkInfo>;
 
 export const organizationSchemaWithoutNetworkInfo = organizationSchemaWithNetworkInfo.omit({
-  networks: true,
   authorizationInformation: true,
 });
 export type OrganizationWithoutNetworkInfo = z.infer<typeof organizationSchemaWithoutNetworkInfo>;
@@ -120,4 +122,21 @@ export const organizationListSchema = z.object({
   organizations: z.array(organizationSchema),
 });
 
+/**
+ * Keep these in lowercase since the code that uses it to map the CW type to the Metriport type
+ * expects the keys to be lowercase.
+ */
+export enum CwTreatmentType {
+  acuteCare = "acute care",
+  ambulatory = "ambulatory",
+  hospital = "hospital",
+  labSystems = "lab systems",
+  pharmacy = "pharmacy",
+  postAcuteCare = "post acute care",
+}
+
 export type OrganizationList = z.infer<typeof organizationListSchema>;
+
+export function isOrgInitiatorAndResponder(org: Organization): boolean {
+  return !!org.securityTokenKeyType;
+}
