@@ -1895,7 +1895,6 @@ module.exports.external = [
 
       const participantRole = encounter.participant?.participantRole;
       if (participantRole) {
-        console.log("hi: ", participantRole);
         const participantRoleId = generateLocationId(participantRole);
         detail.location = {
           reference: `Location/${participantRoleId}`,
