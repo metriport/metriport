@@ -1,26 +1,28 @@
 import _ from "lodash";
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
-import { Condition, Patient } from "@medplum/fhirtypes";
+import { Condition, ConditionEvidence, Observation, Patient } from "@medplum/fhirtypes";
 import { ResponseDetail } from "../schema/response";
 import { ICD_10_URL, ICD_9_URL } from "@metriport/shared/medical";
 import { getPatientReference } from "./patient";
 import { getQuestDataSourceExtension } from "./shared";
+import { getObservationReference } from "./observation";
+import { CONDITION_VERIFICATION_STATUS_URL } from "../../surescripts/fhir/constants";
 
 export function getConditions(
   detail: ResponseDetail,
-  { patient }: { patient: Patient }
+  { patient, observation }: { patient: Patient; observation: Observation }
 ): Condition[] {
   const conditions = _([
-    getCondition(patient, detail.diagnosisCode1),
-    getCondition(patient, detail.diagnosisCode2),
-    getCondition(patient, detail.diagnosisCode3),
-    getCondition(patient, detail.diagnosisCode4),
-    getCondition(patient, detail.diagnosisCode5),
-    getCondition(patient, detail.diagnosisCode6),
-    getCondition(patient, detail.diagnosisCode7),
-    getCondition(patient, detail.diagnosisCode8),
-    getCondition(patient, detail.diagnosisCode9),
-    getCondition(patient, detail.diagnosisCode10),
+    getCondition({ patient, observation, diagnosisCode: detail.diagnosisCode1 }),
+    getCondition({ patient, observation, diagnosisCode: detail.diagnosisCode2 }),
+    getCondition({ patient, observation, diagnosisCode: detail.diagnosisCode3 }),
+    getCondition({ patient, observation, diagnosisCode: detail.diagnosisCode4 }),
+    getCondition({ patient, observation, diagnosisCode: detail.diagnosisCode5 }),
+    getCondition({ patient, observation, diagnosisCode: detail.diagnosisCode6 }),
+    getCondition({ patient, observation, diagnosisCode: detail.diagnosisCode7 }),
+    getCondition({ patient, observation, diagnosisCode: detail.diagnosisCode8 }),
+    getCondition({ patient, observation, diagnosisCode: detail.diagnosisCode9 }),
+    getCondition({ patient, observation, diagnosisCode: detail.diagnosisCode10 }),
   ])
     .compact()
     .value();
@@ -28,15 +30,35 @@ export function getConditions(
   return conditions;
 }
 
-function getCondition(patient: Patient, diagnosisCode?: string): Condition | undefined {
+function getCondition({
+  patient,
+  observation,
+  diagnosisCode,
+}: {
+  patient: Patient;
+  observation: Observation;
+  diagnosisCode?: string | undefined;
+}): Condition | undefined {
   if (!diagnosisCode) return undefined;
   const { system, code } = parseDiagnosisCode(diagnosisCode);
+  const subject = getPatientReference(patient);
+  const evidence = [getConditionEvidence(observation)];
   const extension = [getQuestDataSourceExtension()];
 
   return {
     resourceType: "Condition",
     id: uuidv7(),
-    subject: getPatientReference(patient),
+    subject,
+    evidence,
+    verificationStatus: {
+      coding: [
+        {
+          system: CONDITION_VERIFICATION_STATUS_URL,
+          code: "confirmed",
+          display: "Confirmed",
+        },
+      ],
+    },
     code: {
       coding: [
         {
@@ -46,6 +68,12 @@ function getCondition(patient: Patient, diagnosisCode?: string): Condition | und
       ],
     },
     extension,
+  };
+}
+
+function getConditionEvidence(observation: Observation): ConditionEvidence {
+  return {
+    detail: [getObservationReference(observation)],
   };
 }
 
