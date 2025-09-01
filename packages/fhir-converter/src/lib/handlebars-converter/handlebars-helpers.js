@@ -211,7 +211,11 @@ var generateLocationId = function (location) {
      *
      * Link to original issue: https://linear.app/metriport/issue/ENG-975/fhir-converter-name-field-not-working
      */
-    if (typeof location?.playingEntity?.name === "object" && "_" in location.playingEntity?.name) {
+    if (
+      typeof location?.playingEntity?.name === "object" &&
+      location?.playingEntity?.name !== null &&
+      "_" in location.playingEntity?.name
+    ) {
       return uuidv3(location.playingEntity?.name._, uuidv3.URL);
     }
     const id = uuidv3(name, uuidv3.URL);
