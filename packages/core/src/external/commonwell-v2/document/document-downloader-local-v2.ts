@@ -42,16 +42,17 @@ export class DocumentDownloaderLocalV2 extends DocumentDownloader {
   override async download({
     document,
     fileInfo,
+    cxId,
   }: {
     document: Document;
     fileInfo: FileInfo;
+    cxId: string;
   }): Promise<DownloadResult> {
-    const { log } = out("S3.download.v2");
-    let contentsBuffer = Buffer.alloc(0);
+    const { log } = out("S3.download.v2 cxId: " + cxId);
+    let downloadedDocument = "";
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
     function onData(chunk: any) {
-      const buf = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
-      contentsBuffer = Buffer.concat([contentsBuffer, buf]);
+      downloadedDocument += chunk;
     }
     function onEnd() {
       log("Finished downloading document");
@@ -62,7 +63,7 @@ export class DocumentDownloaderLocalV2 extends DocumentDownloader {
     downloadResult = await this.checkAndUpdateMimeType({
       document,
       fileInfo,
-      documentBuffer: contentsBuffer,
+      downloadedDocument,
       downloadResult,
     });
 
@@ -74,10 +75,10 @@ export class DocumentDownloaderLocalV2 extends DocumentDownloader {
       contentType: downloadResult.contentType,
     };
 
-    if (contentsBuffer && isMimeTypeXML(downloadResult.contentType)) {
+    if (downloadedDocument && isMimeTypeXML(downloadResult.contentType)) {
       return this.parseXmlFile({
         ...newlyDownloadedFile,
-        contents: contentsBuffer.toString("utf8"),
+        contents: downloadedDocument,
         requestedFileInfo: fileInfo,
       });
     }
@@ -91,12 +92,12 @@ export class DocumentDownloaderLocalV2 extends DocumentDownloader {
   async checkAndUpdateMimeType({
     document,
     fileInfo,
-    documentBuffer,
+    downloadedDocument,
     downloadResult,
   }: {
     document: Document;
     fileInfo: FileInfo;
-    documentBuffer: Buffer;
+    downloadedDocument: string;
     downloadResult: DownloadResult;
   }): Promise<DownloadResult> {
     const { log } = out("checkAndUpdateMimeType.v2");
@@ -105,7 +106,7 @@ export class DocumentDownloaderLocalV2 extends DocumentDownloader {
     }
 
     const old_extension = path.extname(fileInfo.name);
-    const { mimeType, fileExtension } = detectFileType(documentBuffer);
+    const { mimeType, fileExtension } = detectFileType(downloadedDocument);
 
     // If the file type has not changed
     if (mimeType === document.mimeType || old_extension === fileExtension) {
