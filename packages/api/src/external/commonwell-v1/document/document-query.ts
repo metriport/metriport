@@ -17,6 +17,7 @@ import { createDocumentRenderFilePaths } from "@metriport/core/domain/document/f
 import { addOidPrefix } from "@metriport/core/domain/oid";
 import { Patient } from "@metriport/core/domain/patient";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
+import { reportMetric } from "@metriport/core/external/aws/cloudwatch";
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { DownloadResult } from "@metriport/core/external/commonwell/document/document-downloader";
 import { MedicalDataSource } from "@metriport/core/external/index";
@@ -55,6 +56,7 @@ import { makeCommonWellAPI } from "../api";
 import { groupCWErrors } from "../error-categories";
 import { getCWData } from "../patient";
 import { getCwInitiator, validateCWEnabled } from "../shared";
+import { cwToFHIR } from "./cw-to-fhir";
 import { makeDocumentDownloader } from "./document-downloader-factory";
 import { getS3Info } from "./document-query-storage-info";
 import {
