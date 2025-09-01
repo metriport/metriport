@@ -104,7 +104,7 @@ export const handler = capture.wrapHandler(
       commonWell: { api: commonWell },
       capture,
     });
-    const result = await docDownloader.download({ document, fileInfo });
+    const result = await docDownloader.download({ cxId, document, fileInfo });
 
     console.log(`Done - ${JSON.stringify(result)}`);
     return result;
