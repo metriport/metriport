@@ -31,6 +31,7 @@ export async function getTcmEncounters({
   coding,
   status,
   pagination,
+  encounterClass,
   search, // by facility and patient name (can be extended)
 }: {
   cxId: string;
@@ -41,6 +42,7 @@ export async function getTcmEncounters({
   coding?: string;
   status?: string;
   pagination: Pagination;
+  encounterClass?: string;
   search?: string;
 }): Promise<TcmEncounterResult[]> {
   const tcmEncounterTable = TcmEncounterModel.tableName;
@@ -75,6 +77,7 @@ export async function getTcmEncounters({
       ${eventType ? ` AND tcm_encounter.latest_event = :eventType` : ""}
       ${status ? ` AND tcm_encounter.outreach_status = :status` : ""}
       ${coding === "cardiac" ? ` AND tcm_encounter.has_cardiac_code = true` : ""}
+      ${encounterClass ? ` AND tcm_encounter.class = :encounterClass` : ""}
       ${
         search
           ? ` AND (tcm_encounter.facility_name ILIKE :search OR patient.data->>'firstName' ILIKE :search OR patient.data->>'lastName' ILIKE :search)`
@@ -102,6 +105,7 @@ export async function getTcmEncounters({
       ...{ coding },
       ...{ status },
       ...{ search: search ? `%${search}%` : "" },
+      ...{ encounterClass },
       ...pagination,
     },
     type: QueryTypes.SELECT,
@@ -125,6 +129,7 @@ export async function getTcmEncountersCount({
   coding,
   status,
   search,
+  encounterClass,
 }: {
   cxId: string;
   after?: string;
@@ -134,6 +139,7 @@ export async function getTcmEncountersCount({
   coding?: string;
   status?: string;
   search?: string;
+  encounterClass?: string;
 }): Promise<number> {
   const tcmEncounterTable = TcmEncounterModel.tableName;
   const patientTable = PatientModel.tableName;
@@ -181,6 +187,7 @@ export async function getTcmEncountersCount({
       ...{ coding },
       ...{ status },
       ...{ search: search ? `%${search}%` : "" },
+      ...{ encounterClass },
     },
     type: QueryTypes.SELECT,
   });

@@ -68,6 +68,9 @@ const tcmEncounterQuerySchema = z
     coding: z.enum(["cardiac"]).optional(),
     status: z.enum(outreachStatuses).optional(),
     search: z.string().optional(),
+    encounterClass: z
+      .enum(["inpatient encounter", "ambulatory", "emergency", "short stay", "pre-admission"])
+      .optional(),
   })
   .and(createQueryMetaSchema(tcmEncounterMaxPageSize));
 
