@@ -31,6 +31,7 @@ export async function getTcmEncounters({
   coding,
   status,
   pagination,
+  search, // by facility and patient name (can be extended)
 }: {
   cxId: string;
   after?: string;
@@ -40,6 +41,7 @@ export async function getTcmEncounters({
   coding?: string;
   status?: string;
   pagination: Pagination;
+  search?: string;
 }): Promise<TcmEncounterResult[]> {
   const tcmEncounterTable = TcmEncounterModel.tableName;
   const patientTable = PatientModel.tableName;
@@ -73,6 +75,11 @@ export async function getTcmEncounters({
       ${eventType ? ` AND tcm_encounter.latest_event = :eventType` : ""}
       ${status ? ` AND tcm_encounter.outreach_status = :status` : ""}
       ${coding === "cardiac" ? ` AND tcm_encounter.has_cardiac_code = true` : ""}
+      ${
+        search
+          ? ` AND (tcm_encounter.facility_name ILIKE :search OR patient.data->>'firstName' ILIKE :search OR patient.data->>'lastName' ILIKE :search)`
+          : ""
+      }
       ${/* PAGINATION */ ""}
       ${toItem ? ` AND tcm_encounter.id >= :toItem` : ""}
       ${fromItem ? ` AND tcm_encounter.id <= :fromItem` : ""}
@@ -94,6 +101,7 @@ export async function getTcmEncounters({
       ...{ eventType },
       ...{ coding },
       ...{ status },
+      ...{ search: search ? `%${search}%` : "" },
       ...pagination,
     },
     type: QueryTypes.SELECT,
@@ -116,6 +124,7 @@ export async function getTcmEncountersCount({
   eventType,
   coding,
   status,
+  search,
 }: {
   cxId: string;
   after?: string;
@@ -124,6 +133,7 @@ export async function getTcmEncountersCount({
   eventType?: string;
   coding?: string;
   status?: string;
+  search?: string;
 }): Promise<number> {
   const tcmEncounterTable = TcmEncounterModel.tableName;
   const patientTable = PatientModel.tableName;
@@ -154,6 +164,11 @@ export async function getTcmEncountersCount({
     ${eventType ? ` AND tcm_encounter.latest_event = :eventType` : ""}
     ${status ? ` AND tcm_encounter.outreach_status = :status` : ""}
     ${coding === "cardiac" ? ` AND tcm_encounter.has_cardiac_code = true` : ""}
+    ${
+      search
+        ? ` AND (tcm_encounter.facility_name ILIKE :search OR patient.data->>'firstName' ILIKE :search OR patient.data->>'lastName' ILIKE :search)`
+        : ""
+    }
   `;
 
   const result = await sequelize.query<{ count: number }>(queryString, {
@@ -165,6 +180,7 @@ export async function getTcmEncountersCount({
       ...{ eventType },
       ...{ coding },
       ...{ status },
+      ...{ search: search ? `%${search}%` : "" },
     },
     type: QueryTypes.SELECT,
   });

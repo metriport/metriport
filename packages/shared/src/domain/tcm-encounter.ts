@@ -67,6 +67,7 @@ const tcmEncounterQuerySchema = z
     eventType: z.enum(["Admitted", "Discharged"] as const).optional(),
     coding: z.enum(["cardiac"]).optional(),
     status: z.enum(outreachStatuses).optional(),
+    search: z.string().optional(),
   })
   .and(createQueryMetaSchema(tcmEncounterMaxPageSize));
 
