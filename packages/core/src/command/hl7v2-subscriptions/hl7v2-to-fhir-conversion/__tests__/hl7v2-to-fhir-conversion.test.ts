@@ -1,5 +1,5 @@
 import { Hl7Message } from "@medplum/core";
-import { convertHl7v2MessageToFhir, ResourceWithExtension } from "..";
+import { convertHl7v2MessageToFhir } from "..";
 import { Bundle } from "@medplum/fhirtypes";
 import * as configModule from "../../../../util/config";
 
@@ -51,8 +51,12 @@ DG1|5|I10|E03.9^Hypothyroidism, unspecified^I10|Hypothyroidism, unspecified
     }
     for (const entry of bundle.entry) {
       expect(entry.resource).toBeDefined();
-
-      const ext = (entry.resource as ResourceWithExtension).extension;
+      if (!entry.resource || !("extension" in entry.resource)) {
+        throw new Error(
+          "Extension not defined in entry.resource hl7message -> FHIR conversion test"
+        );
+      }
+      const ext = entry.resource.extension;
       expect(ext).toBeDefined();
       expect(ext).toEqual(
         expect.arrayContaining([
