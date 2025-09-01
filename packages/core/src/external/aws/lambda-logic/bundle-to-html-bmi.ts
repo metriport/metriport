@@ -347,12 +347,13 @@ export function bundleToHtmlBmi(fhirBundle: Bundle, brief?: Brief): string {
         <div class="divider"></div>
         <div id="mr-sections">
           ${createWeightComoborbidities(conditions, encounters, practitioners, locations)}
-          ${createRelatedConditions(conditions, encounters)}
+          ${createOtherConditions(conditions, encounters)}
           ${createObesitySection(conditions, encounters)}
           ${createMedicationSection(medications, medicationStatements)}
-          ${createGastricProceduresSection(conditions, procedures, encounters)}
+          ${createProceduresSection(procedures)}
           ${createObservationLaboratorySection(observationLaboratory, diagnosticReports)}
           ${hba1cSection}
+          ${createReportsSection(diagnosticReports, practitioners, locations, encounters)}
         </div>
         <script>
          const ctx = document.getElementById('hba1cChart').getContext('2d');
@@ -590,7 +591,7 @@ function createMRHeader(patient: Patient) {
                   <a href="#Weight-related Comorbidities">Weight-related Comorbidities</a>
                 </li>
                 <li>
-                  <a href="#Other Related Conditions">Other Related Conditions</a>
+                  <a href="#other-conditions">Other Conditions</a>
                 </li>
                 <li>
                   <a href="#Diagnosis of Obesity Date">Diagnosis of Obesity Date</a>
@@ -599,13 +600,16 @@ function createMRHeader(patient: Patient) {
                   <a href="#medications">Medications</a>
                 </li>
                 <li>
-                  <a href="#Surgeries">Surgeries</a>
+                  <a href="#procedures">Procedures</a>
                 </li>
                 <li>
                 <a href="#laboratory">Laboratory</a>
                 </li>
                 <li>
                 <a href="#hba1c-history">HbA1c History</a>
+                </li>
+                <li>
+                  <a href="#reports">Reports</a>
                 </li>
               </div>
             </ul>
@@ -1013,56 +1017,26 @@ function getPractitionerFromRecorderId(
   };
 }
 
-const listOfRelatedCodes = [
-  "R36.9",
-  "G40.909",
-  "H40.9",
-  "F11.10",
-  "F11.20",
-  "F11.90",
-  "C73",
-  "E31.22",
-  "E31.23",
-  "K85.9",
-  "K86.1",
-  "F10.20",
-  "F10.10",
-  "F50.81",
-  "F50.2",
-  "F50.82",
-  "F50.89",
-];
-
-const listOfRelatedNames = [
-  "Glaucoma",
-  "Seizures",
-  "Opioid Abuse, dependence, use",
-  "Medullary Thyroid Cancer",
-  "Multiple endocrine neoplasia",
-  "Acute Pancreatitis, unspecified",
-  "Chronic pancreatitis",
-  "Alcohol dependence, uncomplicated",
-  "Alcohol abuse, uncomplicated",
-  "Binge eating disorder",
-  "Bulimia nervosa",
-  "Avoidant/restrictive food intake disorder",
-  "Other specified eating disorder",
-  "night eating syndrome",
-];
-function createRelatedConditions(conditions: Condition[], encounter: Encounter[]) {
+function createOtherConditions(conditions: Condition[], encounter: Encounter[]) {
   if (!conditions) {
     return "";
   }
 
-  const conditionsOfInterest = conditions.filter(condition => {
+  const weightRelatedConditions = conditions.filter(condition => {
     return (
       condition.code?.coding?.some(
         coding =>
-          matchesCode(coding.code, listOfRelatedCodes) ||
-          matchesDisplay(coding.display, listOfRelatedNames)
-      ) || matchesText(condition.code?.text, listOfRelatedNames)
+          matchesCode(coding.code, listOfConditionCodes) ||
+          matchesDisplay(coding.display, listOfConditionNames)
+      ) || matchesText(condition.code?.text, listOfConditionNames)
     );
   });
+
+  const weightRelatedConditionIds = new Set(weightRelatedConditions.map(c => c.id));
+
+  const conditionsOfInterest = conditions.filter(
+    condition => !weightRelatedConditionIds.has(condition.id)
+  );
 
   const conditionDateDict = getConditionDatesFromEncounters(encounter);
   const removeDuplicate = removeDuplicateConditions(conditionsOfInterest, conditionDateDict);
@@ -1100,7 +1074,7 @@ function createRelatedConditions(conditions: Condition[], encounter: Encounter[]
       <tbody><tr><td>No condition info found</td></tr></tbody>        </table>
       `;
 
-  return createSection("Other Related Conditions", conditionTableContents);
+  return createSection("Other Conditions", conditionTableContents);
 }
 
 const listOfObesityCodes = ["E66.01", "E66.9"];
@@ -1407,128 +1381,23 @@ function createSectionInMedications(
   return medicalTableContents;
 }
 
-const listOfSurgeryCodes = [
-  "LG39287-4",
-  "43847",
-  "43644",
-  "47562",
-  "43846",
-  "43846",
-  "43775",
-  "43770",
-  "43845",
-  "43235",
-  "43270",
-  "43842",
-  "43999",
-  "43843",
-  "0DBA0ZZ",
-  "0D5B0ZZ",
-  "0D5A0ZZ",
-  "0D5S0ZZ",
-  "0D5R0ZZ",
-  "0D5F0ZZ",
-  "0DBD0ZZ",
-  "0FT44ZZ",
-  "0FT40ZZ",
-  "0FC44ZZ",
-  "02703ZZ",
-  "027134Z",
-  "02713ZZ",
-  "027034Z",
-  "02703DZ",
-  "02713DZ",
-  "02C83ZZ",
-  "02C93ZZ",
-  "04V03DZ",
-  "04V03ZZ",
-  "047K3DZ",
-];
-
-const listOfSurgeryNames = [
-  "Gastric Bypass",
-  "Bariatric Surgery",
-  "Cholecystectomy",
-  "Roux-en-Y Gastric Bypass",
-  "RYGB",
-  "Sleeve Gastrectomy",
-  "Adjustable Gastric Banding",
-  "Intragastric Balloon",
-  "Gastric Balloon",
-  "Vertical Banded Gastroplasty",
-  "Endoscopic Sleeve Gastroplasty",
-  "Mini Gastric Bypass",
-  "Gastric Bypass",
-  "Adjustable Gastric Band",
-  "Biliopancreatic Diversion with Duodenal Switch",
-  "Endoscopic Intragastric Balloon Placement",
-  "Revision of Bariatric Surgery",
-  "Gastric bypass, laparoscopic approach",
-  "Gastric bypass, open approach",
-  "Insertion of adjustable gastric band, laparoscopic approach",
-  "Insertion of adjustable gastric band, open approach",
-  "Biliopancreatic diversion (BPD) with duodenal switch, open approach",
-  "Sleeve gastrectomy component of BPD/DS, laparoscopic approach",
-  "Insertion of intragastric balloon, endoscopic approach",
-  "Revision of gastric bypass, laparoscopic approach",
-  "Laparoscopic Cholecystectomy",
-  "Open Cholecystectomy",
-  "Laparoscopic Cholecystectomy with Exploration of Common Bile Duct (if done)",
-  "Dilation of coronary artery",
-  "Extirpation of matter from coronary artery",
-  "Dilation of femoral artery",
-  "Dilation of iliac artery",
-  "Coronary Stenting",
-  "Balloon Angioplasty",
-  "Percutaneous Transluminal Coronary Angioplasty",
-  "Atherectomy or thrombectomy",
-  "Stenting of Peripheral Arteries",
-];
-
-function createGastricProceduresSection(
-  conditions: Condition[],
-  procedures: Procedure[],
-  encounter: Encounter[]
-) {
-  if (!procedures && !conditions) {
+function createProceduresSection(procedures: Procedure[]) {
+  if (!procedures) {
     return "";
   }
 
-  const surgeryConditions = conditions.filter(condition => {
-    return (
-      condition.code?.coding?.some(
-        coding =>
-          matchesCode(coding.code, listOfSurgeryCodes) ||
-          matchesDisplay(coding.display, listOfSurgeryNames)
-      ) || matchesText(condition.code?.text, listOfSurgeryNames)
-    );
-  });
-
-  const conditionDateDict = getConditionDatesFromEncounters(encounter);
-  const noDuplicateConditions = removeDuplicateConditions(surgeryConditions, conditionDateDict);
-
-  const surgeries = procedures.filter(procedure => {
-    return (
-      procedure.code?.coding?.some(
-        coding =>
-          matchesCode(coding.code, listOfSurgeryCodes) ||
-          matchesDisplay(coding.display, listOfSurgeryNames)
-      ) || matchesText(procedure.code?.text, listOfSurgeryNames)
-    );
-  });
-
-  const proceduresSortedByDate = surgeries.sort((a, b) => {
+  const allProcedures = procedures.sort((a, b) => {
     return dayjs(a.performedDateTime).isBefore(dayjs(b.performedDateTime)) ? 1 : -1;
   });
 
-  const removeDuplicate = uniqWith(proceduresSortedByDate, (a, b) => {
+  const removeDuplicate = uniqWith(allProcedures, (a, b) => {
     const aDate = dayjs(a.performedDateTime).format(ISO_DATE);
     const bDate = dayjs(b.performedDateTime).format(ISO_DATE);
     return aDate === bDate && a?.text === b?.text;
   });
 
   const procedureTableContents =
-    removeDuplicate.length > 0 || noDuplicateConditions.length > 0
+    removeDuplicate.length > 0
       ? `
       <table>
 
@@ -1564,28 +1433,15 @@ function createGastricProceduresSection(
           `;
         })
         .join("")}
-
-        ${noDuplicateConditions
-          .map(condition => {
-            return `
-              <tr>
-                <td>${condition.name ?? ""}</td>
-                <td>${condition.code ?? ""}</td>
-                <td>${formatDateForDisplay(condition.firstSeen)}</td>
-                <td>${condition.clinicalStatus ?? ""}</td>
-              </tr>
-            `;
-          })
-          .join("")}
     </tbody>
     </table>
 
   `
       : `        <table>
-      <tbody><tr><td>No surgiers info found</td></tr></tbody>        </table>
+      <tbody><tr><td>No procedures found</td></tr></tbody>        </table>
       `;
 
-  return createSection("Surgeries", procedureTableContents);
+  return createSection("Procedures", procedureTableContents);
 }
 
 function createObservationLaboratorySection(
@@ -1993,4 +1849,280 @@ function getValidCode(coding: Coding[] | undefined): Coding[] {
       coding.display.toLowerCase() !== UNKNOWN_DISPLAY
     );
   });
+}
+
+// LOINC codes for specific report types
+const REPORT_LOINC_CODES = [
+  "72142-3", // Mammography
+  "38261-4", // DEXA/Bone density
+  "11529-5", // Pathology
+  "27898-6", // Cytology
+];
+
+// Text patterns to match in report codes or text
+const REPORT_TEXT_PATTERNS = [
+  "mammogram",
+  "mammo",
+  "breast screening",
+  "dexa",
+  "dxa",
+  "bone density",
+  "pathology",
+  "cytology",
+  "biopsy",
+];
+
+function createReportsSection(
+  diagnosticReports: DiagnosticReport[],
+  practitioners: Practitioner[],
+  locations: Location[],
+  encounters: Encounter[]
+) {
+  if (!diagnosticReports) {
+    return "";
+  }
+
+  const mappedPractitioners = mapResourceToId<Practitioner>(practitioners);
+  const mappedOrganizations = mapResourceToId<Organization>(locations);
+
+  // Helper function to get encounter date from diagnostic report
+  function getEncounterDateFromReport(report: DiagnosticReport): string | undefined {
+    // Handle both single encounter reference and array of encounter references
+    let encounterRef: string | undefined;
+
+    if (Array.isArray(report.encounter)) {
+      encounterRef = report.encounter[0]?.reference;
+    } else if (report.encounter?.reference) {
+      encounterRef = report.encounter.reference;
+    }
+
+    if (!encounterRef) {
+      return undefined;
+    }
+
+    const encounterId = encounterRef.split("/")[1];
+
+    const encounter = encounters.find(enc => enc.id === encounterId);
+
+    if (!encounter) {
+      return undefined;
+    }
+
+    const encounterDate = encounter.period?.start || encounter.period?.end;
+
+    return encounterDate;
+  }
+
+  // Helper function to get all possible dates from DiagnosticReport (FHIR R4)
+  function getDiagnosticReportDate(report: DiagnosticReport): string | undefined {
+    // Check all possible date fields for DiagnosticReport (FHIR R4)
+    const reportDate =
+      report.effectiveDateTime ||
+      report.effectivePeriod?.start ||
+      report.effectivePeriod?.end ||
+      report.issued;
+
+    return reportDate;
+  }
+
+  // Filter reports based on LOINC codes and text patterns
+  const filteredReports = diagnosticReports.filter(report => {
+    // Check LOINC codes
+    const hasMatchingLoincCode = report.code?.coding?.some(coding => {
+      const code = coding.code;
+      if (!code) return false;
+
+      return REPORT_LOINC_CODES.some(loincCode => code === loincCode || code.includes(loincCode));
+    });
+
+    // Check text patterns in code text or display
+    const hasMatchingText =
+      matchesText(report.code?.text, REPORT_TEXT_PATTERNS) ||
+      report.code?.coding?.some(coding => matchesDisplay(coding.display, REPORT_TEXT_PATTERNS));
+
+    return hasMatchingLoincCode || hasMatchingText;
+  });
+
+  if (filteredReports.length === 0) {
+    return createSection(
+      "Reports",
+      `<table><tbody><tr><td>No reports found</td></tr></tbody></table>`
+    );
+  }
+
+  // Sort reports by date (most recent first)
+  const sortedReports = filteredReports.sort((a, b) => {
+    const dateA = getDiagnosticReportDate(a) || getEncounterDateFromReport(a) || "";
+    const dateB = getDiagnosticReportDate(b) || getEncounterDateFromReport(b) || "";
+
+    // Handle cases where dates might be empty
+    if (!dateA && !dateB) return 0;
+    if (!dateA) return 1;
+    if (!dateB) return -1;
+
+    return dayjs(dateB).diff(dayjs(dateA));
+  });
+
+  // Remove duplicates based on date and content
+  const uniqueReports = uniqWith(sortedReports, (a, b) => {
+    const dateA =
+      formatDateForDisplay(getDiagnosticReportDate(a) || getEncounterDateFromReport(a)) || "";
+    const dateB =
+      formatDateForDisplay(getDiagnosticReportDate(b) || getEncounterDateFromReport(b)) || "";
+    const textA = a.code?.text || "";
+    const textB = b.code?.text || "";
+
+    return dateA === dateB && textA === textB;
+  });
+
+  // Filter reports that have actual notes content
+  const reportsWithNotes = uniqueReports.filter(report => {
+    return report.presentedForm?.some(form => {
+      const note = form.data ?? "";
+      return note && note.length > 0;
+    });
+  });
+
+  if (reportsWithNotes.length === 0) {
+    return createSection(
+      "Reports",
+      `<table><tbody><tr><td>No reports with notes found</td></tr></tbody></table>`
+    );
+  }
+
+  const reportContents = reportsWithNotes
+    .map(report => {
+      const reportDate =
+        formatDateForDisplay(
+          getDiagnosticReportDate(report) || getEncounterDateFromReport(report)
+        ) || "Date not available";
+      const reportType = report.code?.text || report.code?.coding?.[0]?.display || "Unknown Report";
+
+      const notes =
+        report.presentedForm?.map(form => {
+          const note = form.data ?? "";
+          const noJunkNote = removeEncodedStrings(note);
+          const decodeNote = Buffer.from(noJunkNote, "base64").toString("utf-8");
+          return cleanUpNote(decodeNote);
+        }) ?? [];
+
+      const practitionerField = createPractitionerField(report, mappedPractitioners) || "";
+      const organizationField = createOrganiztionField(report, mappedOrganizations) || "";
+
+      const fields = [practitionerField, organizationField].filter(
+        field => field.trim().length > 0
+      );
+
+      return `
+        <div id="report">
+          <div class="header">
+            <h3 class="title">${reportType}</h3>
+            <span>Date: ${reportDate}</span>
+          </div>
+          <div>
+            ${fields.length > 0 ? `<div>${fields.join("<br />")}</div>` : ""}
+            ${
+              notes.length > 0
+                ? `<div class="documentation">
+                    <h4>Notes</h4>
+                    <div data-id="${report.id}">
+                      <p style="margin-bottom: 10px; line-height: 25px; white-space: pre-line;">${notes.join(
+                        "<br /><hr/>"
+                      )}</p>
+                    </div>
+                  </div>`
+                : ""
+            }
+          </div>
+        </div>
+      `;
+    })
+    .join("");
+
+  return createSection("Reports", reportContents);
+}
+
+// Helper functions for processing report notes (copied from bundle-to-html.ts)
+const REMOVE_FROM_NOTE = [
+  "xLabel",
+  "5/5",
+  "Â°F",
+  "â¢",
+  "documented in this encounter",
+  "xnoIndent",
+  "Formatting of this note might be different from the original.",
+  "StartCited",
+  "EndCited",
+];
+
+function cleanUpNote(note: string): string {
+  return (
+    note
+      .trim()
+      // Remove RTF control characters and formatting
+      .replace(/\\[a-z]+\d*\s?/g, "") // Remove RTF control words like \rtf1, \ansi, \deflang1033, etc.
+      .replace(/\\[{}]/g, "") // Remove RTF braces
+      .replace(/[{}]/g, "") // Remove any remaining braces
+      .replace(/\\[^a-z\s]/g, "") // Remove RTF escape sequences
+      .replace(/\\[a-z]+\d*\s*/g, "") // Remove remaining RTF control words
+      .replace(/\\[^a-z\s{}]/g, "") // Remove other RTF escape sequences
+      // Remove HTML/XML-like tags
+      .replace(/<[^>]*>/g, "") // Remove any HTML/XML tags
+      .replace(/&[a-zA-Z0-9#]+;/g, "") // Remove HTML entities
+      // Remove specific unwanted text patterns
+      .replace(new RegExp(REMOVE_FROM_NOTE.join("|"), "g"), "")
+      // Remove excessive whitespace and control characters
+      .replace(/[\r\n\t]+/g, " ") // Replace multiple line breaks/tabs with single space
+      .replace(/\s+/g, " ") // Replace multiple spaces with single space
+      .replace(/[^\x20-\x7E\s]/g, "") // Remove non-printable characters except spaces
+      // Clean up paragraph-like structures
+      .replace(/(<paragraph>|<content>)/g, '<p class="p-line">')
+      .replace(/(<paragraph\s?\/>|<content\s?\/>)/g, "<p>&nbsp;</p>")
+      .replace(/(<\/paragraph>|<\/content>)/g, "</p>")
+      .trim()
+  );
+}
+
+function removeEncodedStrings(valueString: string): string {
+  return valueString
+    .replace(/&#x3D;/g, "") // Remove specific encoded equals signs
+    .replace(/&#x[0-9A-Fa-f]+;/g, "") // Remove HTML hex entities
+    .replace(/&#[0-9]+;/g, "") // Remove HTML decimal entities
+    .replace(/\\u[0-9A-Fa-f]{4}/g, "") // Remove Unicode escape sequences
+    .replace(/\\x[0-9A-Fa-f]{2}/g, "") // Remove hex escape sequences
+    .trim();
+}
+
+function createPractitionerField(
+  diagnosticReport: DiagnosticReport,
+  mappedPractitioners: Record<string, Practitioner>
+) {
+  const practitionerRefId = diagnosticReport.performer?.[0]?.reference?.split("/")[1] ?? "";
+  const practitioner = mappedPractitioners[practitionerRefId];
+  const practitionerName =
+    (practitioner?.name?.[0]?.given?.[0] ?? "") + " " + (practitioner?.name?.[0]?.family ?? "");
+  const practitionerTitle =
+    getValidCode(practitioner?.qualification?.[0]?.code?.coding)[0]?.display ?? "";
+
+  const hasName = practitionerName.trim().length > 0;
+  const hasTitle = practitionerTitle.trim().length > 0;
+
+  return `
+  ${hasName || hasTitle ? `<span>By:` : ""}
+  ${hasName ? `<span>${practitionerName}</span>` : ""}
+  ${hasTitle ? `<span>${hasName ? " - " : ""}${practitionerTitle}</span>` : ""}
+  `;
+}
+
+function createOrganiztionField(
+  diagnosticReport: DiagnosticReport,
+  mappedOrganizations: Record<string, Organization>
+) {
+  const organizationRefId = diagnosticReport.performer
+    ?.find(performer => performer.reference?.includes("Organization"))
+    ?.reference?.split("/")[1];
+
+  const organization = mappedOrganizations[organizationRefId ?? ""];
+
+  return organization?.name ? `<p>Facility: ${organization.name}</p>` : "";
 }
