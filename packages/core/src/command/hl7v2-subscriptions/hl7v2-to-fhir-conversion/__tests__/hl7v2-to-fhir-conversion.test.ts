@@ -1,8 +1,7 @@
 import { Hl7Message } from "@medplum/core";
 import { convertHl7v2MessageToFhir, ResourceWithExtension } from "..";
 import { Bundle } from "@medplum/fhirtypes";
-import { getCxIdAndPatientIdOrFail } from "../shared";
-import * as packIdsModule from "../shared";
+import * as configModule from "../../../../util/config";
 
 describe("Hl7v2 to FHIR conversion", () => {
   const hl7Msg = `MSH|^~|HEALTHSHARE|HMHW|METRIPORTPA|METRIPORTPA|20250507034313||ADT^A03|100000^111222333|P|2.5.1
@@ -18,18 +17,14 @@ DG1|4|I10|E78.5^Dyslipidemia^I10|Dyslipidemia
 DG1|5|I10|E03.9^Hypothyroidism, unspecified^I10|Hypothyroidism, unspecified
 `;
   const hl7Message = Hl7Message.parse(hl7Msg);
-  const { cxId, patientId } = getCxIdAndPatientIdOrFail(hl7Message);
+  const cxId = "1000000";
+  const patientId = "1000000";
 
   const DOC_ID_URL = "https://public.metriport.com/fhir/StructureDefinition/doc-id-extension.json";
   const DATA_SOURCE_URL = "https://public.metriport.com/fhir/StructureDefinition/data-source.json";
-  let unpackPidFieldOrFailMock: jest.SpyInstance;
-  let scrambledId: string;
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    unpackPidFieldOrFailMock = jest.spyOn(packIdsModule, "unpackPidFieldOrFail");
-    scrambledId = `${cxId}_${patientId}`;
-    unpackPidFieldOrFailMock.mockReturnValueOnce(scrambledId);
+    jest.spyOn(configModule.Config, "getHl7Base64ScramblerSeed").mockReturnValue("unit-test-seed");
   });
 
   afterAll(() => {
