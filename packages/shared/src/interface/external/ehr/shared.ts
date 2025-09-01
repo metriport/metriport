@@ -22,6 +22,7 @@ export const writeBackFiltersPerResourceTypeSchema = z.object({
       loincCodes: z.string().array().optional(),
       minCountPerCode: z.number().optional(),
       relativeDateRange: relativeDateRangeSchema.optional(),
+      absoluteDate: z.string().optional(),
       disabled: z.boolean().optional(),
     })
     .optional(),

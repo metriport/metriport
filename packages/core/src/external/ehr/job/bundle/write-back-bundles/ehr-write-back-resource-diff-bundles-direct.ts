@@ -401,15 +401,16 @@ export function shouldWriteBackResource({
     const observation = resource;
     const labObservations = resources.filter(r => isObservation(r) && isLab(r)) as Observation[];
     if (skipLabDate(observation, writeBackFilters)) return false;
+    if (skipLabDateAbsolute(observation, writeBackFilters)) return false;
     if (skipLabLoincCode(observation, writeBackFilters)) return false;
     if (skipLabNonTrending(observation, labObservations, writeBackFilters)) return false;
-    if (skipLabDateAbsolute(observation, writeBackFilters)) return false;
     return true;
   } else if (writeBackResourceType === "lab-panel") {
     if (writeBackFilters.labPanel?.disabled) return false;
     if (!isDiagnosticReport(resource)) return false;
     const diagnosticReport = resource;
     if (skipLabPanelDate(diagnosticReport, writeBackFilters)) return false;
+    if (skipLabPanelDateAbsolute(diagnosticReport, writeBackFilters)) return false;
     const normalizedDiagReport = normalizeDiagnosticReportCoding(diagnosticReport);
     const normalizedDiagReportS = resources
       .filter(r => isDiagnosticReport(r) && isLabPanel(r))
@@ -478,6 +479,17 @@ export function skipLabPanelDate(
     beginDate = beginDate.subtract(relativeDateRange.years, "year");
   }
   return buildDayjs(observationDate).isBefore(beginDate);
+}
+
+export function skipLabPanelDateAbsolute(
+  diagnosticReport: DiagnosticReport,
+  writeBackFilters: WriteBackFiltersPerResourceType
+): boolean {
+  const absoluteDate = writeBackFilters.labPanel?.absoluteDate;
+  if (!absoluteDate) return false;
+  const observationDate = getDiagnosticReportDate(diagnosticReport);
+  if (!observationDate) return true;
+  return buildDayjs(observationDate).isBefore(buildDayjs(absoluteDate));
 }
 
 export function normalizeDiagnosticReportCoding(
