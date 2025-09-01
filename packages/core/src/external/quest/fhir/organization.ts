@@ -1,15 +1,12 @@
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
-import { Address, ContactPoint, Identifier, Organization, Reference } from "@medplum/fhirtypes";
+import { Address, ContactPoint, Organization, Reference } from "@medplum/fhirtypes";
 import { ResponseDetail } from "../schema/response";
 import { getQuestDataSourceExtension } from "./shared";
 
 /**
-/**
- * The insurance organization (payor) for the patient's coverage.
- * @returns {Organization} FHIR resource
+ * The organization that ordered the lab tests.
  */
-export function getInsuranceOrganization(detail: ResponseDetail): Organization {
-  const identifier = getOrganizationIdentifier(detail);
+export function getOrganization(detail: ResponseDetail): Organization {
   const name = getOrganizationName(detail);
   const address = getOrganizationAddress(detail);
   const telecom = getOrganizationTelecom(detail);
@@ -18,7 +15,6 @@ export function getInsuranceOrganization(detail: ResponseDetail): Organization {
   return {
     resourceType: "Organization",
     id: uuidv7(),
-    ...(identifier ? { identifier } : {}),
     ...(name ? { name } : {}),
     ...(address ? { address } : {}),
     ...(telecom ? { telecom } : {}),
@@ -30,16 +26,6 @@ export function getOrganizationReference(organization: Organization): Reference<
   return {
     reference: `Organization/${organization.id}`,
   };
-}
-
-function getOrganizationIdentifier(detail: ResponseDetail): Identifier[] | undefined {
-  if (!detail.orderingAccountNumber) return undefined;
-  return [
-    {
-      system: "http://hl7.org/fhir/sid/us-npi",
-      value: detail.orderingAccountNumber,
-    },
-  ];
 }
 
 function getOrganizationName(detail: ResponseDetail): string | undefined {

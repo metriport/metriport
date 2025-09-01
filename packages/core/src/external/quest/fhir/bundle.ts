@@ -5,8 +5,7 @@ import { IncomingData } from "../schema/shared";
 import { ResponseDetail } from "../schema/response";
 import { getPatient } from "./patient";
 import { getPractitioner } from "./practitioner";
-import { getInsuranceOrganization } from "./organization";
-import { getCoverage } from "./coverage";
+import { getOrganization } from "./organization";
 import { getConditions } from "./condition";
 import { getServiceRequest } from "./service-request";
 import { getObservation } from "./observation";
@@ -36,7 +35,7 @@ export async function convertTabularDataToFhirBundle({
 function getBundleEntries({ data }: IncomingData<ResponseDetail>): BundleEntry[] {
   const patient = getPatient(data);
   const practitioner = getPractitioner(data);
-  const insuranceOrganization = getInsuranceOrganization(data);
+  const organization = getOrganization(data);
   const observation = getObservation(data, {
     patient,
   });
@@ -44,6 +43,7 @@ function getBundleEntries({ data }: IncomingData<ResponseDetail>): BundleEntry[]
     requestingPractitioner: practitioner,
   });
   const specimen = getSpecimen(data, {
+    patient,
     practitioner,
     serviceRequest,
   });
@@ -53,22 +53,18 @@ function getBundleEntries({ data }: IncomingData<ResponseDetail>): BundleEntry[]
     observation,
     serviceRequest,
   });
-  const coverage = getCoverage(data, {
-    patient,
-    insuranceOrganization,
-  });
   const conditions = getConditions(data, {
     patient,
+    observation,
   });
   const resources: Array<Resource | undefined> = [
     patient,
     practitioner,
-    insuranceOrganization,
+    organization,
     observation,
     serviceRequest,
     specimen,
     diagnosticReport,
-    coverage,
     ...conditions,
   ];
 
