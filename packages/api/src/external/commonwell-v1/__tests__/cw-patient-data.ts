@@ -115,10 +115,10 @@ export function makeLinksHistory(): LinkDemographicsHistory {
             })
           ),
         ],
-        telephoneNumbers: [faker.phone.number()],
+        telephoneNumbers: [faker.string.numeric(10)],
         emails: [email],
         driversLicenses: [], // TODO
-        ssns: [faker.phone.number()],
+        ssns: [faker.string.numeric(9)],
       },
     ],
   };

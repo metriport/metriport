@@ -32,7 +32,7 @@ import { getUrl, S3Info } from "../../../command/medical/document/document-query
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { Config } from "../../../shared/config";
 import { mapDocRefToMetriport } from "../../../shared/external";
-import { reportMetric } from "../../aws/cloudwatch";
+import { sandboxGetDocRefsAndUpsert } from "../../commonwell/document/document-query-sandbox";
 import { update } from "../../commonwell/patient/patient";
 import {
   getPatientWithCWData,
@@ -56,7 +56,6 @@ import { groupCWErrors } from "../error-categories";
 import { getCWData } from "../patient";
 import { getCwInitiator, validateCWEnabled } from "../shared";
 import { makeDocumentDownloader } from "./document-downloader-factory";
-import { sandboxGetDocRefsAndUpsert } from "./document-query-sandbox";
 import { getS3Info } from "./document-query-storage-info";
 import {
   CWDocumentWithMetriportData,
