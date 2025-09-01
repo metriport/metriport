@@ -1,5 +1,6 @@
 import { CommonWellAPI, CommonwellError } from "@metriport/commonwell-sdk";
 import {
+  errorToString,
   executeWithNetworkRetries,
   getNetworkErrorDetails,
   MetriportError,
@@ -246,6 +247,14 @@ export class DocumentDownloaderLocalV2 extends DocumentDownloader {
       location: document.location,
       getStream: () => writeStream,
       resetStream: () => {
+        if (writeStream && !writeStream.destroyed) {
+          try {
+            writeStream.removeAllListeners();
+            writeStream.destroy();
+          } catch (error) {
+            log(`Failed to cleanup old stream: ${errorToString(error)}`);
+          }
+        }
         const resp = setOrResetStream();
         writeStream = resp.writeStream;
         downloadIntoS3 = resp.promise;
