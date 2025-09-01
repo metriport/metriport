@@ -16,11 +16,11 @@ type UpdateJobAtApiBaseParams = {
   forceStatusUpdate?: boolean | undefined;
 };
 
-export type UpdateJobAtApiParamsThrowOnFailure = UpdateJobAtApiBaseParams & {
-  throwOnFailure?: false;
+export type UpdateJobAtApiParams = UpdateJobAtApiBaseParams & {
+  throwOnFailure?: true | never;
 };
 export type UpdateJobAtApiParamsNoThrowOnFailure = UpdateJobAtApiBaseParams & {
-  throwOnFailure?: true | never;
+  throwOnFailure?: false;
 };
 
 /**
@@ -38,14 +38,12 @@ export type UpdateJobAtApiParamsNoThrowOnFailure = UpdateJobAtApiBaseParams & {
  * @throws MetriportError if the update fails and throwOnFailure is true.
  * @returns undefined if the update fails and throwOnFailure is false.
  */
+export async function updateJobAtApi(params: UpdateJobAtApiParams): Promise<PatientImportJob>;
 export async function updateJobAtApi(
   params: UpdateJobAtApiParamsNoThrowOnFailure
-): Promise<PatientImportJob>;
-export async function updateJobAtApi(
-  params: UpdateJobAtApiParamsThrowOnFailure
 ): Promise<PatientImportJob | undefined>;
 export async function updateJobAtApi(
-  params: UpdateJobAtApiParamsNoThrowOnFailure | UpdateJobAtApiParamsThrowOnFailure
+  params: UpdateJobAtApiParams | UpdateJobAtApiParamsNoThrowOnFailure
 ): Promise<PatientImportJob | undefined> {
   const { cxId, jobId, status, total, failed, forceStatusUpdate } = params;
   const { log } = out(`PatientImport updateJobAtApi - cxId ${cxId} jobId ${jobId}`);
