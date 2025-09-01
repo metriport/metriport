@@ -16,7 +16,7 @@ export type Hl7ToFhirParams = {
   rawDataFileKey: string;
   hieName: string;
 };
-type ResourceWithExtension = Resource & { extension?: Extension[] };
+export type ResourceWithExtension = Resource & { extension?: Extension[] };
 
 /**
  * Converts an HL7v2 message to a FHIR Bundle. Currently only supports ADT messages.
