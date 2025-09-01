@@ -51,10 +51,13 @@ export class DocumentDownloaderLocalV2 extends DocumentDownloader {
     fileInfo: FileInfo;
   }): Promise<DownloadResult> {
     const { log } = out("S3.download.v2");
-    let downloadedDocument = "";
+    let documentBuffer = Buffer.alloc(0);
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
     function onData(chunk: any) {
-      if (downloadedDocument.length <= maxBytesNeededForDetectFileType) downloadedDocument += chunk;
+      const buf = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+      if (documentBuffer.length < maxBytesNeededForDetectFileType) {
+        documentBuffer = Buffer.concat([documentBuffer, buf]);
+      }
     }
     function onEnd() {
       log("Finished downloading document");
@@ -65,7 +68,7 @@ export class DocumentDownloaderLocalV2 extends DocumentDownloader {
     downloadResult = await this.checkAndUpdateMimeType({
       document,
       fileInfo,
-      downloadedDocument,
+      documentBuffer,
       downloadResult,
     });
 
@@ -77,10 +80,10 @@ export class DocumentDownloaderLocalV2 extends DocumentDownloader {
       contentType: downloadResult.contentType,
     };
 
-    if (downloadedDocument && isMimeTypeXML(document.mimeType)) {
+    if (documentBuffer && isMimeTypeXML(document.mimeType)) {
       return this.parseXmlFile({
         ...newlyDownloadedFile,
-        contents: downloadedDocument,
+        contents: documentBuffer.toString("utf8"),
         requestedFileInfo: fileInfo,
       });
     }
@@ -94,12 +97,12 @@ export class DocumentDownloaderLocalV2 extends DocumentDownloader {
   async checkAndUpdateMimeType({
     document,
     fileInfo,
-    downloadedDocument,
+    documentBuffer,
     downloadResult,
   }: {
     document: Document;
     fileInfo: FileInfo;
-    downloadedDocument: string;
+    documentBuffer: Buffer;
     downloadResult: DownloadResult;
   }): Promise<DownloadResult> {
     const { log } = out("checkAndUpdateMimeType.v2");
@@ -108,7 +111,6 @@ export class DocumentDownloaderLocalV2 extends DocumentDownloader {
     }
 
     const old_extension = path.extname(fileInfo.name);
-    const documentBuffer = Buffer.from(downloadedDocument);
     const { mimeType, fileExtension } = detectFileType(documentBuffer);
 
     // If the file type has not changed
@@ -275,12 +277,13 @@ export class DocumentDownloaderLocalV2 extends DocumentDownloader {
   }
 
   private getNewFileName(fileName: string, newExtension: string) {
+    const actualExtension = newExtension.includes(".") ? newExtension : `.${newExtension}`;
     if (!fileName.includes(".")) {
-      return fileName + "." + newExtension;
+      return fileName + actualExtension;
     }
     const fileNameParts = fileName.split(".");
     fileNameParts.pop();
-    return fileNameParts.join(".") + "." + newExtension;
+    return fileNameParts.join(".") + actualExtension;
   }
 
   protected getUploadStreamToS3(s3FileName: string, s3FileLocation: string, contentType?: string) {
