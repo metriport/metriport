@@ -7,6 +7,7 @@ import {
   Reference,
   Organization,
 } from "@medplum/fhirtypes";
+import { getPractitionerRoleCode } from "../../fhir/resources/practitioner-role";
 import { ResponseDetail } from "../schema/response";
 import { getQuestDataSourceExtension } from "./shared";
 import { getOrganizationReference } from "./organization";
@@ -33,12 +34,14 @@ export function getPractitionerRole({
   organization: Organization;
 }): PractitionerRole {
   const extension = [getQuestDataSourceExtension()];
+  const code = [getPractitionerRoleCode("doctor")];
 
   return {
     resourceType: "PractitionerRole",
     id: uuidv7(),
     practitioner: getPractitionerReference(practitioner),
     organization: getOrganizationReference(organization),
+    code,
     extension,
   };
 }
