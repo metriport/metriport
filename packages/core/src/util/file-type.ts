@@ -64,6 +64,8 @@ const ASCII_CARRIAGE_RETURN = 13;
 const ASCII_SPACE = 32;
 const ASCII_TILDE = 126;
 
+export const maxBytesNeededForDetectFileType = 6;
+
 export function isASCIIChar(char: number): boolean {
   return (
     char !== undefined &&
@@ -136,8 +138,7 @@ export function detectFileType(param: Buffer | string): DetectedFileType {
   } else {
     documentBuffer = Buffer.from(param);
   }
-  const maxBytesNeeded = 6;
-  const bytesBuffer = documentBuffer.slice(0, maxBytesNeeded);
+  const bytesBuffer = documentBuffer.slice(0, maxBytesNeededForDetectFileType);
   if (
     (bytesBuffer[0] === TIFF_MAGIC_NUMBER_1 &&
       bytesBuffer[1] === TIFF_MAGIC_NUMBER_2 &&

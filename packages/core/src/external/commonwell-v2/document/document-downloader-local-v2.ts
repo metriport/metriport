@@ -9,7 +9,11 @@ import AWS from "aws-sdk";
 import path from "path";
 import * as stream from "stream";
 import { DOMParser } from "xmldom";
-import { detectFileType, isContentTypeAccepted } from "../../../util/file-type";
+import {
+  detectFileType,
+  isContentTypeAccepted,
+  maxBytesNeededForDetectFileType,
+} from "../../../util/file-type";
 import { out } from "../../../util/log";
 import { isMimeTypeXML } from "../../../util/mime";
 import { makeS3Client, S3Utils } from "../../aws/s3";
@@ -46,15 +50,15 @@ export class DocumentDownloaderLocalV2 extends DocumentDownloader {
     document: Document;
     fileInfo: FileInfo;
   }): Promise<DownloadResult> {
-    const { log } = out("S3.download");
+    const { log } = out("S3.download.v2");
     let downloadedDocument = "";
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const onData = (chunk: any) => {
-      downloadedDocument += chunk;
-    };
-    const onEnd = () => {
+    function onData(chunk: any) {
+      if (downloadedDocument.length <= maxBytesNeededForDetectFileType) downloadedDocument += chunk;
+    }
+    function onEnd() {
       log("Finished downloading document");
-    };
+    }
     let downloadResult = await this.downloadFromCommonwellIntoS3(document, fileInfo, onData, onEnd);
 
     // Check if the detected file type is in the accepted content types and update it if not
@@ -98,7 +102,7 @@ export class DocumentDownloaderLocalV2 extends DocumentDownloader {
     downloadedDocument: string;
     downloadResult: DownloadResult;
   }): Promise<DownloadResult> {
-    const { log } = out("checkAndUpdateMimeType");
+    const { log } = out("checkAndUpdateMimeType.v2");
     if (isContentTypeAccepted(document.mimeType)) {
       return { ...downloadResult };
     }
@@ -142,7 +146,7 @@ export class DocumentDownloaderLocalV2 extends DocumentDownloader {
     requestedFileInfo,
     ...downloadedFile
   }: DownloadResult & { contents: string; requestedFileInfo: FileInfo }): Promise<DownloadResult> {
-    const { log } = out("parseXmlFile");
+    const { log } = out("parseXmlFile.v2");
     const parser = new DOMParser();
     const document = parser.parseFromString(contents, "text/xml");
 
@@ -222,7 +226,7 @@ export class DocumentDownloaderLocalV2 extends DocumentDownloader {
     size: number | undefined;
     contentType: string | undefined;
   }> {
-    const { log } = out("downloadFromCommonwellIntoS3");
+    const { log } = out("downloadFromCommonwellIntoS3.v2");
 
     let writeStream: stream.Writable;
     let downloadIntoS3: Promise<AWS.S3.ManagedUpload.SendData>;
@@ -235,16 +239,20 @@ export class DocumentDownloaderLocalV2 extends DocumentDownloader {
     writeStream = resp.writeStream;
     downloadIntoS3 = resp.promise;
 
-    onDataFn && writeStream.on("data", onDataFn);
-    onEndFn && writeStream.on("end", onEndFn);
+    function attachListeners() {
+      if (onDataFn) writeStream.on("data", onDataFn);
+      if (onEndFn) writeStream.on("finish", onEndFn);
+    }
+    attachListeners();
 
     await this.downloadDocumentFromCW({
       location: document.location,
-      stream: writeStream,
+      getStream: () => writeStream,
       resetStream: () => {
         const resp = setOrResetStream();
         writeStream = resp.writeStream;
         downloadIntoS3 = resp.promise;
+        attachListeners();
       },
     });
 
@@ -267,6 +275,9 @@ export class DocumentDownloaderLocalV2 extends DocumentDownloader {
   }
 
   private getNewFileName(fileName: string, newExtension: string) {
+    if (!fileName.includes(".")) {
+      return fileName + "." + newExtension;
+    }
     const fileNameParts = fileName.split(".");
     fileNameParts.pop();
     return fileNameParts.join(".") + "." + newExtension;
@@ -290,17 +301,17 @@ export class DocumentDownloaderLocalV2 extends DocumentDownloader {
 
   protected async downloadDocumentFromCW({
     location,
-    stream,
+    getStream,
     resetStream,
   }: {
     location: string;
-    stream: stream.Writable;
+    getStream: () => stream.Writable;
     resetStream: () => void;
   }): Promise<void> {
     try {
       await executeWithNetworkRetries(
         () => {
-          return this.cwApi.retrieveDocument(location, stream);
+          return this.cwApi.retrieveDocument(location, getStream());
         },
         {
           retryOnTimeout: true,
@@ -319,7 +330,7 @@ export class DocumentDownloaderLocalV2 extends DocumentDownloader {
       };
       if (error instanceof CommonwellError && error.cause?.response?.status === 404) {
         const msg = "CW - Document not found";
-        const { log } = out("downloadDocumentFromCW");
+        const { log } = out("downloadDocumentFromCW.v2");
         log(`${msg} - ${JSON.stringify(additionalInfo)}`);
         throw new NotFoundError(msg, error, additionalInfo);
       }
