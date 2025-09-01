@@ -24,9 +24,9 @@ import { appendExtensionToEachResource } from "@metriport/core/command/hl7v2-sub
  * Note: This script modifies data in S3. Ensure you have backups if needed.
  */
 
-const prefixes: string[] = ["cxId=testing/ptId=testing/"];
-const dryRun = false;
-const hieName = "MyTestHIE";
+const prefixes: string[] = [""];
+const dryRun = true;
+const hieName = "";
 
 async function main() {
   console.log(`Adding datasource ${hieName} to resources. Make sure this is correct.`);
