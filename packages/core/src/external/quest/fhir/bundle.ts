@@ -4,7 +4,7 @@ import { LogFunction } from "../../../util/log";
 import { IncomingData } from "../schema/shared";
 import { ResponseDetail } from "../schema/response";
 import { getPatient } from "./patient";
-import { getPractitioner } from "./practitioner";
+import { getPractitioner, getPractitionerRole } from "./practitioner";
 import { getOrganization } from "./organization";
 import { getConditions } from "./condition";
 import { getServiceRequest } from "./service-request";
@@ -36,6 +36,10 @@ function getBundleEntries({ data }: IncomingData<ResponseDetail>): BundleEntry[]
   const patient = getPatient(data);
   const practitioner = getPractitioner(data);
   const organization = getOrganization(data);
+  const practitionerRole = getPractitionerRole({
+    practitioner,
+    organization,
+  });
   const observation = getObservation(data, {
     patient,
   });
@@ -60,6 +64,7 @@ function getBundleEntries({ data }: IncomingData<ResponseDetail>): BundleEntry[]
   const resources: Array<Resource | undefined> = [
     patient,
     practitioner,
+    practitionerRole,
     organization,
     observation,
     serviceRequest,

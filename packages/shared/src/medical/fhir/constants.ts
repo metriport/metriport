@@ -38,6 +38,8 @@ export const CONDITION_CLINICAL_STATUS_URL =
 export const CONDITION_VERIFICATION_STATUS_URL =
   "http://terminology.hl7.org/CodeSystem/condition-ver-status";
 
+export const PRACTITIONER_ROLE_URL = "http://terminology.hl7.org/CodeSystem/practitioner-role";
+
 export const EPIC_PARTIAL_URN = "1.2.840.114350.1.13";
 export const HL7_PARTIAL_URN = "2.16.840.1.113883";
 
