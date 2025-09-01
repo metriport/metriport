@@ -16,12 +16,6 @@ export function calculateDobScore(
     if (dob1Split[1] && dob2Split[1] && dob1Split[1] === dob2Split[1]) matchingParts++; // Month
     if (dob1Split[2] && dob2Split[2] && dob1Split[2] === dob2Split[2]) matchingParts++; // Day
 
-    if (matchingParts >= 2) {
-      return 2;
-    } else if (matchingParts === 1) {
-      return 1;
-    }
+    return Math.min(matchingParts, 2);
   }
-
-  return 0;
 }

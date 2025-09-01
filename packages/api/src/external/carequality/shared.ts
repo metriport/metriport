@@ -213,13 +213,11 @@ export function cqLinkToPatientData(cqLink: CQLink): PatientData {
       const value = tel.value ?? "";
 
       const normalizedPhone = normalizePhoneNumberSafe(value);
+      const normalizedEmail = normalizeEmailNewSafe(value);
       if (normalizedPhone) {
         telecom.push({ phone: normalizedPhone });
-      } else {
-        const normalizedEmail = normalizeEmailNewSafe(value);
-        if (normalizedEmail) {
-          telecom.push({ email: normalizedEmail });
-        }
+      } else if (normalizedEmail) {
+        telecom.push({ email: normalizedEmail });
       }
     });
   }

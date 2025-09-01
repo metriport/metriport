@@ -20,9 +20,7 @@ function calculateScore(
     externalPatient.contact?.some(c2 => c1[field] && c2[field] && c1[field] === c2[field])
   );
 
-  if (directMatch) return 2;
-
-  return 0;
+  return directMatch ? 2 : 0;
 }
 
 export function isContactMatch(contact1: Contact, contact2: Contact): boolean {

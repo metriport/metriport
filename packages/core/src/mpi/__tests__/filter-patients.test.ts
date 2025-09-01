@@ -1,9 +1,9 @@
 import { USState } from "@metriport/shared";
-import { linkFilteringAlgorithm } from "../filter-patients/filter-patients";
+import { evaluatePatientMatch } from "../filter-patients/filter-patients";
 import { crossValidateInvalidLinks } from "../filter-patients/cross-validate-links";
 import { PatientData } from "../../domain/patient";
 
-describe("linkFilteringAlgorithm", () => {
+describe("evaluatePatientMatch", () => {
   const basePatient: PatientData = {
     firstName: "John",
     lastName: "Doe",
@@ -48,7 +48,7 @@ describe("linkFilteringAlgorithm", () => {
 
   describe("Basic Matching Scenarios", () => {
     it("should match identical patients", async () => {
-      const result = await linkFilteringAlgorithm(basePatient, basePatient, 8.5);
+      const result = await evaluatePatientMatch(basePatient, basePatient);
 
       expect(result.isMatch).toBe(true);
       expect(result.totalScore).toBeGreaterThan(8.5);
@@ -61,7 +61,7 @@ describe("linkFilteringAlgorithm", () => {
     });
 
     it("should not match completely different patients", async () => {
-      const result = await linkFilteringAlgorithm(basePatient, basePatient2, 8.5);
+      const result = await evaluatePatientMatch(basePatient, basePatient2);
 
       expect(result.isMatch).toBe(false);
       expect(result.totalScore).toBeLessThan(8.5);
@@ -73,7 +73,7 @@ describe("linkFilteringAlgorithm", () => {
 
   describe("Name Matching", () => {
     it("should match exact names", async () => {
-      const result = await linkFilteringAlgorithm(basePatient, basePatient, 8.5);
+      const result = await evaluatePatientMatch(basePatient, basePatient);
 
       expect(result.scores.names).toBe(10);
     });
@@ -81,7 +81,7 @@ describe("linkFilteringAlgorithm", () => {
     it("should match reversed names", async () => {
       const reversedPatient = { ...basePatient, firstName: "Doe", lastName: "John" };
 
-      const result = await linkFilteringAlgorithm(basePatient, reversedPatient, 8.5);
+      const result = await evaluatePatientMatch(basePatient, reversedPatient);
 
       expect(result.scores.names).toBe(10);
     });
@@ -90,7 +90,7 @@ describe("linkFilteringAlgorithm", () => {
       const patient1 = { ...basePatient, firstName: "Mary Jane", lastName: "Smith-Jones" };
       const patient2 = { ...basePatient, firstName: "MaryJane", lastName: "SmithJones" };
 
-      const result = await linkFilteringAlgorithm(patient1, patient2, 8.5);
+      const result = await evaluatePatientMatch(patient1, patient2);
 
       expect(result.scores.names).toBe(10);
     });
@@ -99,7 +99,7 @@ describe("linkFilteringAlgorithm", () => {
       const patient1 = { ...basePatient, firstName: "John", lastName: "Doe" };
       const patient2 = { ...basePatient, firstName: "Jane", lastName: "Smith" };
 
-      const result = await linkFilteringAlgorithm(patient1, patient2, 8.5);
+      const result = await evaluatePatientMatch(patient1, patient2);
 
       expect(result.isMatch).toBe(false);
       expect(result.failedRule).toBe("No Name Match");
@@ -108,7 +108,7 @@ describe("linkFilteringAlgorithm", () => {
 
   describe("DOB Matching", () => {
     it("should match exact DOB", async () => {
-      const result = await linkFilteringAlgorithm(basePatient, basePatient, 8.5);
+      const result = await evaluatePatientMatch(basePatient, basePatient);
 
       expect(result.scores.dob).toBe(8);
     });
@@ -116,7 +116,7 @@ describe("linkFilteringAlgorithm", () => {
     it("should match DOB with 2 overlapping parts", async () => {
       const slightlyDifferentDob = { ...basePatient, dob: "1990-01-15" };
 
-      const result = await linkFilteringAlgorithm(basePatient, slightlyDifferentDob, 8.5);
+      const result = await evaluatePatientMatch(basePatient, slightlyDifferentDob);
 
       expect(result.scores.dob).toBe(2);
     });
@@ -124,7 +124,7 @@ describe("linkFilteringAlgorithm", () => {
     it("should match DOB with 1 overlapping part", async () => {
       const slightlyDifferentDob = { ...basePatient, dob: "1990-02-15" };
 
-      const result = await linkFilteringAlgorithm(basePatient, slightlyDifferentDob, 8.5);
+      const result = await evaluatePatientMatch(basePatient, slightlyDifferentDob);
 
       expect(result.scores.dob).toBe(1);
     });
@@ -132,7 +132,7 @@ describe("linkFilteringAlgorithm", () => {
 
   describe("Gender Matching", () => {
     it("should match same gender", async () => {
-      const result = await linkFilteringAlgorithm(basePatient, basePatient, 8.5);
+      const result = await evaluatePatientMatch(basePatient, basePatient);
 
       expect(result.scores.gender).toBe(1);
     });
@@ -140,7 +140,7 @@ describe("linkFilteringAlgorithm", () => {
     it("should not match different gender", async () => {
       const patientDifferentGender: PatientData = { ...basePatient, genderAtBirth: "F" };
 
-      const result = await linkFilteringAlgorithm(basePatient, patientDifferentGender, 8.5);
+      const result = await evaluatePatientMatch(basePatient, patientDifferentGender);
 
       expect(result.scores.gender).toBe(0);
     });
@@ -148,7 +148,7 @@ describe("linkFilteringAlgorithm", () => {
 
   describe("Address Matching", () => {
     it("should match exact addresses", async () => {
-      const result = await linkFilteringAlgorithm(basePatient, basePatient, 8.5);
+      const result = await evaluatePatientMatch(basePatient, basePatient);
 
       expect(result.scores.address).toBe(2);
     });
@@ -166,7 +166,7 @@ describe("linkFilteringAlgorithm", () => {
         ],
       };
 
-      const result = await linkFilteringAlgorithm(basePatient, patientWithDifferentCity, 8.5);
+      const result = await evaluatePatientMatch(basePatient, patientWithDifferentCity);
 
       expect(result.scores.address).toBe(2);
     });
@@ -184,7 +184,7 @@ describe("linkFilteringAlgorithm", () => {
         ],
       };
 
-      const result = await linkFilteringAlgorithm(basePatient, patientWithStreetAbbreviations, 8.5);
+      const result = await evaluatePatientMatch(basePatient, patientWithStreetAbbreviations);
 
       expect(result.scores.address).toBe(2);
     });
@@ -192,13 +192,13 @@ describe("linkFilteringAlgorithm", () => {
 
   describe("Contact Matching", () => {
     it("should match exact phone numbers", async () => {
-      const result = await linkFilteringAlgorithm(basePatient, basePatient, 8.5);
+      const result = await evaluatePatientMatch(basePatient, basePatient);
 
       expect(result.scores.phone).toBe(2);
     });
 
     it("should match exact email addresses", async () => {
-      const result = await linkFilteringAlgorithm(basePatient, basePatient, 8.5);
+      const result = await evaluatePatientMatch(basePatient, basePatient);
 
       expect(result.scores.email).toBe(2);
     });
@@ -206,7 +206,7 @@ describe("linkFilteringAlgorithm", () => {
     it("should not match different contact information", async () => {
       const patientWithDifferentPhone = { ...basePatient, contact: [{ phone: "555-987-6543" }] };
 
-      const result = await linkFilteringAlgorithm(basePatient, patientWithDifferentPhone, 8.5);
+      const result = await evaluatePatientMatch(basePatient, patientWithDifferentPhone);
 
       expect(result.scores.phone).toBe(0);
     });
@@ -227,11 +227,7 @@ describe("linkFilteringAlgorithm", () => {
         ],
       };
 
-      const result = await linkFilteringAlgorithm(
-        basePatient,
-        patientWithWrongLastNameAndAddress,
-        8.5
-      );
+      const result = await evaluatePatientMatch(basePatient, patientWithWrongLastNameAndAddress);
 
       expect(result.isMatch).toBe(false);
       expect(result.failedRule).toBe("Last Name Wrong + Address Incorrect");
@@ -251,11 +247,7 @@ describe("linkFilteringAlgorithm", () => {
         ],
       };
 
-      const result = await linkFilteringAlgorithm(
-        basePatient,
-        patientWithDifferentDobAndAddress,
-        8.5
-      );
+      const result = await evaluatePatientMatch(basePatient, patientWithDifferentDobAndAddress);
 
       expect(result.isMatch).toBe(false);
       expect(result.failedRule).toBe("DOB 2+ Parts Wrong + Address Not Same");
@@ -276,11 +268,7 @@ describe("linkFilteringAlgorithm", () => {
         contact: [{ phone: "555-987-6543", email: "john.smith@email.com" }],
       };
 
-      const result = await linkFilteringAlgorithm(
-        basePatient,
-        patientWithDifferentDobAndAddress,
-        8.5
-      );
+      const result = await evaluatePatientMatch(basePatient, patientWithDifferentDobAndAddress);
 
       expect(result.isMatch).toBe(false);
       expect(result.failedRule).toBe("DOB 1 Part Wrong + Address Not Perfect + No Contact Match");
@@ -301,11 +289,7 @@ describe("linkFilteringAlgorithm", () => {
         contact: [{ phone: "555-123-4567" }],
       };
 
-      const result = await linkFilteringAlgorithm(
-        basePatient,
-        patientWithDifferentDobAndAddress,
-        8.5
-      );
+      const result = await evaluatePatientMatch(basePatient, patientWithDifferentDobAndAddress);
 
       expect(result.isMatch).toBe(true);
       expect(result.failedRule).toBeUndefined();
@@ -326,11 +310,7 @@ describe("linkFilteringAlgorithm", () => {
         contact: [{ phone: "555-999-8888" }], // Different contact
       };
 
-      const result = await linkFilteringAlgorithm(
-        basePatient,
-        patientWithSameStateButNoContact,
-        8.5
-      );
+      const result = await evaluatePatientMatch(basePatient, patientWithSameStateButNoContact);
 
       expect(result.isMatch).toBe(false);
       expect(result.failedRule).toBe("DOB 1 Part Wrong + Address Not Perfect + No Contact Match");
@@ -342,7 +322,7 @@ describe("linkFilteringAlgorithm", () => {
         dob: "1960-05-15",
       };
 
-      const result = await linkFilteringAlgorithm(basePatient, patientWithDifferentDob, 8.5);
+      const result = await evaluatePatientMatch(basePatient, patientWithDifferentDob);
 
       expect(result.isMatch).toBe(false);
       expect(result.failedRule).toBe("DOB Off By More Than 15 Years + No Parts Match");
@@ -354,7 +334,7 @@ describe("linkFilteringAlgorithm", () => {
         dob: "1960-01-15",
       };
 
-      const result = await linkFilteringAlgorithm(basePatient, patientWithDifferentDob, 8.5);
+      const result = await evaluatePatientMatch(basePatient, patientWithDifferentDob);
 
       expect(result.isMatch).toBe(true);
       expect(result.failedRule).toBeUndefined();
@@ -374,11 +354,7 @@ describe("linkFilteringAlgorithm", () => {
         ],
       };
 
-      const result = await linkFilteringAlgorithm(
-        basePatient,
-        patientWithDifferentDobAndAddress,
-        8.5
-      );
+      const result = await evaluatePatientMatch(basePatient, patientWithDifferentDobAndAddress);
 
       expect(result.isMatch).toBe(false);
       expect(result.failedRule).toBe("DOB Off By More Than 15 Years + No Parts Match");
@@ -391,7 +367,7 @@ describe("linkFilteringAlgorithm", () => {
         lastName: "Smith",
       };
 
-      const result = await linkFilteringAlgorithm(basePatient, patientWithDifferentNames, 8.5);
+      const result = await evaluatePatientMatch(basePatient, patientWithDifferentNames);
 
       expect(result.isMatch).toBe(false);
       expect(result.failedRule).toBe("No Name Match");
@@ -403,11 +379,7 @@ describe("linkFilteringAlgorithm", () => {
         lastName: "Smith", // Wrong last name
       };
 
-      const result = await linkFilteringAlgorithm(
-        basePatient,
-        patientWithWrongLastNameAndAddress,
-        8.5
-      );
+      const result = await evaluatePatientMatch(basePatient, patientWithWrongLastNameAndAddress);
 
       expect(result.isMatch).toBe(true);
       expect(result.failedRule).toBeUndefined();
@@ -428,11 +400,7 @@ describe("linkFilteringAlgorithm", () => {
         ],
       };
 
-      const result = await linkFilteringAlgorithm(
-        basePatient2,
-        patientWithWrongLastNameAndAddress,
-        8.5
-      );
+      const result = await evaluatePatientMatch(basePatient2, patientWithWrongLastNameAndAddress);
 
       expect(result.isMatch).toBe(false);
       expect(result.failedRule).toBe("Last Name Wrong + Address Incorrect");
@@ -453,7 +421,7 @@ describe("linkFilteringAlgorithm", () => {
         contact: [{ phone: "555-999-8888" }], // Different phone
       };
 
-      const result = await linkFilteringAlgorithm(basePatient, patientWithAllMismatches, 8.5);
+      const result = await evaluatePatientMatch(basePatient, patientWithAllMismatches);
 
       expect(result.isMatch).toBe(false);
       expect(result.failedRule).toBe("Name + Address + Contact All Mismatch");
@@ -465,11 +433,7 @@ describe("linkFilteringAlgorithm", () => {
         firstName: "Robert", // Different first name
       };
 
-      const result = await linkFilteringAlgorithm(
-        basePatient,
-        patientWithWrongNameButRightAddress,
-        8.5
-      );
+      const result = await evaluatePatientMatch(basePatient, patientWithWrongNameButRightAddress);
 
       expect(result.isMatch).toBe(true);
       expect(result.failedRule).toBeUndefined();
@@ -489,10 +453,9 @@ describe("linkFilteringAlgorithm", () => {
         ],
       };
 
-      const result = await linkFilteringAlgorithm(
+      const result = await evaluatePatientMatch(
         basePatient,
-        patientWithWrongNameAndAddressButRightContact,
-        8.5
+        patientWithWrongNameAndAddressButRightContact
       );
 
       expect(result.isMatch).toBe(true);
@@ -793,7 +756,7 @@ describe("linkFilteringAlgorithm", () => {
         contact: [],
       };
 
-      const result = await linkFilteringAlgorithm(patient1, patient2, 8.5);
+      const result = await evaluatePatientMatch(patient1, patient2);
 
       expect(result.scores.address).toBe(0);
       expect(result.scores.phone).toBe(0);
@@ -813,7 +776,7 @@ describe("linkFilteringAlgorithm", () => {
         lastName: "doe",
       };
 
-      const result = await linkFilteringAlgorithm(patient1, patient2, 8.5);
+      const result = await evaluatePatientMatch(patient1, patient2);
 
       expect(result.scores.names).toBe(10);
     });
@@ -830,7 +793,7 @@ describe("linkFilteringAlgorithm", () => {
         lastName: "Doe",
       };
 
-      const result = await linkFilteringAlgorithm(patient1, patient2, 8.5);
+      const result = await evaluatePatientMatch(patient1, patient2);
 
       expect(result.scores.names).toBe(10);
     });
@@ -841,7 +804,7 @@ describe("linkFilteringAlgorithm", () => {
       const patient1 = { ...basePatient };
       const patient2 = { ...basePatient };
 
-      const result = await linkFilteringAlgorithm(patient1, patient2, 8.5);
+      const result = await evaluatePatientMatch(patient1, patient2);
 
       expect(result.isMatch).toBe(true);
       expect(result.totalScore).toBeGreaterThanOrEqual(8.5);
@@ -851,7 +814,7 @@ describe("linkFilteringAlgorithm", () => {
       const patient1 = { ...basePatient };
       const patient2 = { ...basePatient2 };
 
-      const result = await linkFilteringAlgorithm(patient1, patient2, 8.5);
+      const result = await evaluatePatientMatch(patient1, patient2);
 
       expect(result.isMatch).toBe(false);
       expect(result.totalScore).toBeLessThan(8.5);
@@ -863,7 +826,7 @@ describe("linkFilteringAlgorithm", () => {
       const patient1 = { ...basePatient };
       const patient2 = { ...basePatient };
 
-      const result = await linkFilteringAlgorithm(patient1, patient2, 8.5);
+      const result = await evaluatePatientMatch(patient1, patient2);
 
       expect(result.scores).toHaveProperty("names");
       expect(result.scores).toHaveProperty("dob");

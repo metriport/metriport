@@ -1,6 +1,7 @@
+import { intersectionWith } from "lodash";
 import { PatientData } from "../../domain/patient";
 import { isContactMatch } from "./match-contact";
-import { isAddressMatch } from "./match-address";
+import { hasAddressMatch } from "./match-address";
 
 export function crossValidateInvalidLinks(
   validLinks: PatientData[],
@@ -10,37 +11,23 @@ export function crossValidateInvalidLinks(
     return [];
   }
 
-  const crossValidatedLinks: PatientData[] = [];
-
-  for (const invalidLink of invalidLinks) {
-    const isValidated = validateLinkThroughValidLinks(invalidLink, validLinks);
-
-    if (isValidated) {
-      crossValidatedLinks.push(invalidLink);
-    }
-  }
-
-  return crossValidatedLinks;
+  return invalidLinks.filter(invalidLink => isLinkValidByAssociation(invalidLink, validLinks));
 }
 
-function validateLinkThroughValidLinks(
-  invalidLink: PatientData,
-  validLinks: PatientData[]
-): boolean {
+function isLinkValidByAssociation(invalidLink: PatientData, validLinks: PatientData[]): boolean {
   for (const validLink of validLinks) {
-    const hasContactMatch = invalidLink.contact?.some(invalidContact =>
-      validLink.contact?.some(validContact => isContactMatch(invalidContact, validContact))
-    );
+    const hasContactMatchByAssociation =
+      invalidLink.contact &&
+      validLink.contact &&
+      intersectionWith(invalidLink.contact, validLink.contact, isContactMatch).length > 0;
 
-    if (hasContactMatch) {
+    if (hasContactMatchByAssociation) {
       return true;
     }
 
-    const hasAddressMatch = invalidLink.address?.some(invalidAddr =>
-      validLink.address?.some(validAddr => isAddressMatch(invalidAddr, validAddr))
-    );
+    const hasAddressMatchByAssociation = hasAddressMatch(invalidLink, validLink);
 
-    if (hasAddressMatch) {
+    if (hasAddressMatchByAssociation) {
       return true;
     }
   }

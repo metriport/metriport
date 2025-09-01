@@ -2,7 +2,7 @@ import { splitName } from "../normalize-patient";
 import { PatientData } from "../../domain/patient";
 import { isFuzzyMatch } from "./utils";
 
-export function calculateNameScore(
+export function calculateFullNameScore(
   metriportPatient: PatientData,
   externalPatient: PatientData
 ): number {

@@ -1,6 +1,7 @@
+import { partition } from "lodash";
 import { normalizePatientInboundMpi } from "../normalize-patient";
 import { PatientData } from "../../domain/patient";
-import { calculateNameScore } from "./match-name";
+import { calculateFullNameScore } from "./match-name";
 import { calculateDobScore } from "./match-dob";
 import { calculateGenderScore } from "./match-gender";
 import { calculateAddressScore } from "./match-address";
@@ -17,39 +18,25 @@ type LinkStatus = {
   failedRule: string | undefined;
 };
 
+export const SIMILARITY_THRESHOLD = 8.5;
+
 export function filterPatientLinks(
   metriportPatient: PatientData,
   patientLinks: PatientData[],
-  threshold: number
+  threshold = SIMILARITY_THRESHOLD
 ): LinkStatus[] {
-  let validLinks: LinkStatus[] = [];
-  let invalidLinks: LinkStatus[] = [];
+  const linkStatuses = patientLinks.map(patientLink => {
+    const algorithmResult = evaluatePatientMatch(metriportPatient, patientLink, threshold);
+    return {
+      patient: patientLink,
+      isMatch: algorithmResult.isMatch,
+      totalScore: algorithmResult.totalScore,
+      scores: algorithmResult.scores,
+      failedRule: algorithmResult.failedRule,
+    };
+  });
 
-  for (const patientLink of patientLinks) {
-    const { isMatch, totalScore, scores, failedRule } = linkFilteringAlgorithm(
-      metriportPatient,
-      patientLink,
-      threshold
-    );
-
-    if (isMatch) {
-      validLinks.push({
-        patient: patientLink,
-        isMatch,
-        totalScore,
-        scores,
-        failedRule,
-      });
-    } else {
-      invalidLinks.push({
-        patient: patientLink,
-        isMatch,
-        totalScore,
-        scores,
-        failedRule,
-      });
-    }
-  }
+  const [validLinks, invalidLinks] = partition(linkStatuses, "isMatch");
 
   const crossValidatedLinks = crossValidateInvalidLinks(
     validLinks.map(link => link.patient),
@@ -64,16 +51,18 @@ export function filterPatientLinks(
       failedRule: undefined,
     }));
 
-  validLinks = [...validLinks, ...crossValidatedLinkStatuses];
-  invalidLinks = invalidLinks.filter(link => !crossValidatedLinks.includes(link.patient));
+  const finalValidLinks = [...validLinks, ...crossValidatedLinkStatuses];
+  const finalInvalidLinks = invalidLinks.filter(
+    link => !crossValidatedLinks.includes(link.patient)
+  );
 
-  return [...validLinks, ...invalidLinks];
+  return [...finalValidLinks, ...finalInvalidLinks];
 }
 
-export function linkFilteringAlgorithm(
+export function evaluatePatientMatch(
   metriportPatient: PatientData,
   externalPatient: PatientData,
-  threshold: number
+  threshold = SIMILARITY_THRESHOLD
 ): {
   isMatch: boolean;
   totalScore: number;
@@ -93,7 +82,7 @@ export function linkFilteringAlgorithm(
     ssn: 0,
   };
 
-  scores.names = calculateNameScore(normalizedMetriportPatient, normalizedExternalPatient);
+  scores.names = calculateFullNameScore(normalizedMetriportPatient, normalizedExternalPatient);
   scores.dob = calculateDobScore(normalizedMetriportPatient, normalizedExternalPatient);
   scores.gender = calculateGenderScore(normalizedMetriportPatient, normalizedExternalPatient);
   scores.address = calculateAddressScore(normalizedMetriportPatient, normalizedExternalPatient);
@@ -111,13 +100,13 @@ export function linkFilteringAlgorithm(
 
   let isMatch = totalScore >= threshold;
 
-  const businessRuleResult = checkBusinessRules(
+  const failedRule = checkBusinessRules(
     normalizedMetriportPatient,
     normalizedExternalPatient,
     scores
   );
-  if (businessRuleResult) {
-    return businessRuleResult;
+  if (failedRule) {
+    return { isMatch: false, totalScore: 0, scores, failedRule };
   }
 
   if (hasSsnData(normalizedMetriportPatient, normalizedExternalPatient)) {
