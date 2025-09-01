@@ -6,10 +6,10 @@ export function calculateSsnScore(
 ): number {
   const ssn1 = metriportPatient.personalIdentifiers
     ?.filter(id => id.type === "ssn")
-    .map(id => id.value);
+    .flatMap(id => id.value || []);
   const ssn2 = externalPatient.personalIdentifiers
     ?.filter(id => id.type === "ssn")
-    .map(id => id.value);
+    .flatMap(id => id.value || []);
 
   if (ssn1?.length && ssn2?.length) {
     const ssnMatch = ssn1.some(s1 => ssn2.includes(s1));

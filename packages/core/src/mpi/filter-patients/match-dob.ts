@@ -12,9 +12,9 @@ export function calculateDobScore(
     const dob2Split = splitDob(externalPatient.dob);
 
     let matchingParts = 0;
-    if (dob1Split[0] === dob2Split[0]) matchingParts++; // Year
-    if (dob1Split[1] === dob2Split[1]) matchingParts++; // Month
-    if (dob1Split[2] === dob2Split[2]) matchingParts++; // Day
+    if (dob1Split[0] && dob2Split[0] && dob1Split[0] === dob2Split[0]) matchingParts++; // Year
+    if (dob1Split[1] && dob2Split[1] && dob1Split[1] === dob2Split[1]) matchingParts++; // Month
+    if (dob1Split[2] && dob2Split[2] && dob1Split[2] === dob2Split[2]) matchingParts++; // Day
 
     if (matchingParts >= 2) {
       return 2;

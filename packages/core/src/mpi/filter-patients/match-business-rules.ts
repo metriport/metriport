@@ -131,8 +131,8 @@ function isDobOffByMoreThan15Years(
   }
 
   try {
-    const dayjs1 = buildDayjs(metriportPatient.dob);
-    const dayjs2 = buildDayjs(externalPatient.dob);
+    const dayjs1 = buildDayjs(metriportPatient.dob, "YYYY-MM-DD", true);
+    const dayjs2 = buildDayjs(externalPatient.dob, "YYYY-MM-DD", true);
 
     // Check if dates are valid
     if (!dayjs1.isValid() || !dayjs2.isValid()) {

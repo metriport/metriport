@@ -273,8 +273,7 @@ describe("linkFilteringAlgorithm", () => {
             zip: "90210",
           },
         ],
-        contact: [{ phone: "555-987-6543" }],
-        email: "john.smith@email.com",
+        contact: [{ phone: "555-987-6543", email: "john.smith@email.com" }],
       };
 
       const result = await linkFilteringAlgorithm(
