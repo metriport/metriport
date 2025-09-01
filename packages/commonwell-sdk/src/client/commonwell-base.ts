@@ -51,11 +51,12 @@ export class CommonWellBase {
           : CommonWellBase.integrationUrl,
       httpsAgent: this.httpsAgent,
     });
-    options.preRequestHook &&
+    if (options.preRequestHook) {
       this.api.interceptors.request.use(this.axiosPreRequest(this, options.preRequestHook));
+    }
     this.api.interceptors.response.use(
-      this.axiosSuccessfulResponse(this),
-      this.axiosErrorResponse(this)
+      this.axiosSuccessfulResponse(this, options.postRequestHook),
+      this.axiosErrorResponse(this, options.postRequestHook)
     );
   }
 
@@ -81,17 +82,28 @@ export class CommonWellBase {
     this._lastTransactionId =
       response && response.headers ? response.headers["x-trace-id"] : undefined;
   }
-  private axiosSuccessfulResponse(_this: CommonWellBase) {
+
+  private axiosSuccessfulResponse(
+    _this: CommonWellBase,
+    postRequestHook?: CommonWellOptions["postRequestHook"]
+  ) {
     return (response: AxiosResponse): AxiosResponse => {
-      _this && _this.postRequest(response);
+      if (_this) _this.postRequest(response);
+      postRequestHook?.(response);
       return response;
     };
   }
-  private axiosErrorResponse(_this: CommonWellBase) {
+
+  private axiosErrorResponse(
+    _this: CommonWellBase,
+    postRequestHook?: CommonWellOptions["postRequestHook"]
+  ) {
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return (error: any): AxiosResponse => {
-      _this && _this.postRequest(error.response);
-      throw error;
+    return (error: any) => {
+      const resp = error?.response as AxiosResponse | undefined;
+      if (_this && resp) _this.postRequest(resp);
+      if (resp) postRequestHook?.(resp);
+      return Promise.reject(error);
     };
   }
 }

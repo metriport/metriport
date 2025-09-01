@@ -1,6 +1,6 @@
 import { MedicationWithRefs } from "@metriport/core/external/ehr/shared";
 import { CreatedMedicationSuccess } from "@metriport/shared/interface/external/ehr/athenahealth/medication";
-import { createAthenaClient } from "../../shared";
+import { createAthenaClient, validateDepartmentId } from "../../shared";
 
 export async function writeMedicationToChart({
   cxId,
@@ -15,6 +15,7 @@ export async function writeMedicationToChart({
   athenaDepartmentId: string;
   medicationWithRefs: MedicationWithRefs;
 }): Promise<CreatedMedicationSuccess[]> {
+  await validateDepartmentId({ cxId, athenaPracticeId, athenaPatientId, athenaDepartmentId });
   const api = await createAthenaClient({ cxId, practiceId: athenaPracticeId });
   return await api.createMedicationWithStatements({
     cxId,

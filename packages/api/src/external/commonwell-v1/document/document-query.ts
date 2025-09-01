@@ -17,6 +17,7 @@ import { createDocumentRenderFilePaths } from "@metriport/core/domain/document/f
 import { addOidPrefix } from "@metriport/core/domain/oid";
 import { Patient } from "@metriport/core/domain/patient";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
+import { reportMetric } from "@metriport/core/external/aws/cloudwatch";
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { DownloadResult } from "@metriport/core/external/commonwell/document/document-downloader";
 import { MedicalDataSource } from "@metriport/core/external/index";
@@ -32,7 +33,6 @@ import { getUrl, S3Info } from "../../../command/medical/document/document-query
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { Config } from "../../../shared/config";
 import { mapDocRefToMetriport } from "../../../shared/external";
-import { reportMetric } from "../../aws/cloudwatch";
 import { update } from "../../commonwell/patient/patient";
 import {
   getPatientWithCWData,
@@ -55,6 +55,7 @@ import { makeCommonWellAPI } from "../api";
 import { groupCWErrors } from "../error-categories";
 import { getCWData } from "../patient";
 import { getCwInitiator, validateCWEnabled } from "../shared";
+import { cwToFHIR } from "./cw-to-fhir";
 import { makeDocumentDownloader } from "./document-downloader-factory";
 import { sandboxGetDocRefsAndUpsert } from "./document-query-sandbox";
 import { getS3Info } from "./document-query-storage-info";
@@ -65,7 +66,6 @@ import {
   getContentTypeOrUnknown,
   getFileName,
 } from "./shared";
-import { cwToFHIR } from "./cw-to-fhir";
 
 const staleLookbackHours = 24;
 

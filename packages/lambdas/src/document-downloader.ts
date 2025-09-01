@@ -94,6 +94,7 @@ export const handler = capture.wrapHandler(
       homeCommunityId: orgOid,
       npi,
       apiMode,
+      options: { timeout: timeout.asMilliseconds() },
     });
 
     const docDownloader = new DocumentDownloaderLocalV2({

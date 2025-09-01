@@ -11,7 +11,7 @@ import { Config } from "../../../../shared/config";
 import { getOrCreateMetriportPatientFhir } from "../../shared/command/patient/get-or-create-metriport-patient-fhir";
 import { createMetriportPatientDemosFhir } from "../../shared/utils/fhir";
 import { isDqCooldownExpired } from "../../shared/utils/patient";
-import { createAthenaClient } from "../shared";
+import { createAthenaClient, validateDepartmentId } from "../shared";
 
 const CUSTOM_FIELD_ID_OPT_IN = Config.isProdEnv() ? "121" : "1269";
 const CUSTOM_FIELD_ID_OPT_OUT = Config.isProdEnv() ? "101" : "1289";
@@ -35,6 +35,7 @@ export async function syncAthenaPatientIntoMetriport({
   triggerDq = false,
   triggerDqForExistingPatient = false,
 }: SyncAthenaPatientIntoMetriportParams): Promise<string> {
+  await validateDepartmentId({ cxId, athenaPracticeId, athenaPatientId, athenaDepartmentId });
   let athenaApi: AthenaHealthApi | undefined;
   if (await isAthenaCustomFieldsEnabledForCx(cxId)) {
     athenaApi = api ?? (await createAthenaClient({ cxId, practiceId: athenaPracticeId }));
