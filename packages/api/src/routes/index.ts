@@ -3,6 +3,7 @@ import activity from "./activity";
 import biometrics from "./biometrics";
 import body from "./body";
 import connect from "./connect";
+import docContribution from "./doc-contribution";
 import ehr from "./ehr";
 import feedback from "./feedback";
 import { reportClientErrors } from "./helpers/report-client-errors";
@@ -47,6 +48,8 @@ export default (app: Application) => {
 
   // routes with session token auth
   app.use("/connect", connect);
+
+  app.use("/doc-contribution", docContribution);
 
   // routes with OAuth based authentication
   app.use("/oauth", reportClientErrors, oauthRoutes);
