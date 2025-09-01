@@ -278,7 +278,7 @@ export async function updatePatientAndLinksInCwV2({
     });
     // TODO ENG-513 I DONT THINK WE NEED TO GET THE ID AGAIN ^
     // TODO ENG-513 I DONT THINK WE NEED THIS WILL EVER BE FALSE???
-    console.log("ID REMAINED THE SAME???", commonwellPatientIdUpd === commonwellPatientId);
+    debug(`ID remained the same: ${commonwellPatientIdUpd === commonwellPatientId}`);
 
     const [existingLinks, probableLinks] = await Promise.all([
       getExistingLinks({
@@ -300,7 +300,7 @@ export async function updatePatientAndLinksInCwV2({
       commonwellPatientId,
       existingLinks,
       probableLinks,
-      context: createContext,
+      context: updateContext,
       getOrgIdExcludeList,
     });
 
@@ -625,7 +625,11 @@ async function updatePatient({
   const respUpdate = await commonWell.createOrUpdatePatient(commonwellPatient);
   debug(`resp updatePatient: `, JSON.stringify(respUpdate));
 
-  return getCwPatientIdFromLinks(respUpdate.Links);
+  const updatedId = getCwPatientIdFromLinks(respUpdate.Links);
+  if (!updatedId) {
+    throw new MetriportError("Could not determine the patient ID from CW after update");
+  }
+  return updatedId;
 }
 
 async function tryToImproveLinks({

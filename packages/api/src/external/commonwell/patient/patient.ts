@@ -187,29 +187,16 @@ export async function update({
   });
 }
 
-export async function remove({
-  patient,
-  facilityId,
-  forceCWUpdate = false,
-}: UpdatePatientCmd): Promise<void> {
-  const { log } = out(`CW remove - M patientId ${patient.id}`);
+export async function remove({ patient, facilityId }: UpdatePatientCmd): Promise<void> {
+  const { log } = out(`CW remove - patientId ${patient.id}`);
 
   const isCwV2Enabled = await isCommonwellV2EnabledForCx(patient.cxId);
-  const isCwEnabled = await validateCWEnabled({
-    patient,
-    facilityId,
-    forceCW: forceCWUpdate,
-    log,
-    isCwV2Enabled,
-  });
-
-  // TODO ENG-554 Remove FF and v1 code
-  if (isCwEnabled) {
-    const isCwV2Enabled = await isCommonwellV2EnabledForCx(patient.cxId);
-    if (!isCwV2Enabled) {
-      await removeInCwV1(patient, facilityId);
-    }
-
-    await removeInCwV2(patient, facilityId);
+  if (!isCwV2Enabled) {
+    await removeInCwV1(patient, facilityId);
+    log(`Removed patient from CW v1`);
+    return;
   }
+
+  await removeInCwV2(patient, facilityId);
+  log(`Removed patient from CW v2`);
 }

@@ -43,3 +43,13 @@ function getSuffix(id: string | undefined): string {
 export function getContentTypeOrUnknown(doc: DocumentReference): string {
   return doc.content?.[0]?.attachment.contentType ?? "unknown";
 }
+
+export function getDocPrintableDetails(
+  doc: DocumentWithLocation
+): Partial<Pick<DocumentWithLocation, "id" | "location" | "content">> {
+  return {
+    id: doc.id,
+    location: doc.location,
+    content: doc.content,
+  };
+}

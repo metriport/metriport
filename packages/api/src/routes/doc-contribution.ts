@@ -10,7 +10,7 @@ const router = Router();
 /** ---------------------------------------------------------------------------------------
  * GET /doc-contribution/commonwell
  *
- * This is a local development route only.
+ * This is a local development route only, and is a copy of the `cw-doc-contribution` lambda.
  *
  * Used to test the document retrieval part of the contribution logic for CommonWell.
  *

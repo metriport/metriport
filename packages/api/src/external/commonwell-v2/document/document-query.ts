@@ -62,6 +62,7 @@ import {
   DocumentWithLocation,
   DocumentWithMetriportId,
   getContentTypeOrUnknown,
+  getDocPrintableDetails,
 } from "./shared";
 
 const staleLookbackHours = 24;
@@ -747,13 +748,14 @@ async function downloadDocsAndUpsertFHIR({
           });
 
           const msg = `Error processing doc from CW`;
-          log(`${msg}: ${error}; doc ${JSON.stringify(doc)}`);
+          const docPrintDetails = getDocPrintableDetails(doc);
+          log(`${msg}: ${error}; doc ${JSON.stringify(docPrintDetails)}`);
           if (!errorReported && !(error instanceof NotFoundError)) {
             capture.error(msg, {
               extra: {
                 context: `cw.downloadDocsAndUpsertFHIR`,
                 patientId: patient.id,
-                document: doc,
+                document: docPrintDetails,
                 requestId,
                 error: errorToString(error),
               },
@@ -818,7 +820,11 @@ async function triggerDownloadDocument({
   };
 
   try {
-    const result = await docDownloader.download({ document, fileInfo: adjustedFileInfo, cxId });
+    const result = await docDownloader.download({
+      sourceDocument: document,
+      destinationFileInfo: adjustedFileInfo,
+      cxId,
+    });
     return {
       ...result,
       isNew: true,
