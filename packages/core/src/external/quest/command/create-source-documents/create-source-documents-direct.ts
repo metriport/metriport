@@ -27,7 +27,7 @@ export class QuestCreateSourceDocumentsHandlerDirect implements QuestCreateSourc
       async sourceDocument => {
         await this.next.convertSourceDocumentToFhirBundle({
           externalId: sourceDocument.externalId,
-          sourceDocumentKey: sourceDocument.fileName,
+          sourceDocumentKey: sourceDocument.sourceDocumentKey,
         });
       },
       {

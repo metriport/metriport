@@ -28,6 +28,7 @@ export interface QuestResponseFile {
 
 export interface QuestSourceDocument extends QuestResponseFile {
   externalId: string;
+  sourceDocumentKey: string;
 }
 
 export const questFhirConversionRequestSchema = z.object({

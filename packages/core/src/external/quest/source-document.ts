@@ -6,6 +6,7 @@ import { ResponseDetail } from "./schema/response";
 import { IncomingData } from "./schema/shared";
 import { QuestReplica } from "./replica";
 import { buildSourceDocumentFileName, parseResponseFileName } from "./file/file-names";
+import { SOURCE_DOCUMENT_DIRECTORY } from "./replica";
 import { SOURCE_DOCUMENT_HEADER } from "./file/constants";
 
 type IncomingRow = IncomingData<ResponseDetail>;
@@ -110,7 +111,8 @@ function createSourceDocument({
 }): QuestSourceDocument {
   const { dateId } = parseResponseFileName(responseFile.fileName);
   const fileName = buildSourceDocumentFileName({ externalId, dateId });
+  const sourceDocumentKey = `${SOURCE_DOCUMENT_DIRECTORY}/${fileName}`;
   const fileContentAsString = patientRows.map(row => row.source).join("\n");
   const fileContent = Buffer.from(SOURCE_DOCUMENT_HEADER + fileContentAsString, "ascii");
-  return { fileName, fileContent, externalId };
+  return { fileName, fileContent, externalId, sourceDocumentKey };
 }
