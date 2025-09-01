@@ -213,6 +213,7 @@ var generateLocationId = function (location) {
      */
     if (
       typeof location?.playingEntity?.name === "object" &&
+      location.playingEntity?.name &&
       "_" in location.playingEntity?.name
     ) {
       return uuidv3(location.playingEntity?.name._, uuidv3.URL);
