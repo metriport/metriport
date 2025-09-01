@@ -1080,6 +1080,20 @@ function createOtherConditions(conditions: Condition[], encounter: Encounter[]) 
 const listOfObesityCodes = ["E66.01", "E66.9"];
 const listOfObesityNames = ["obesity"];
 
+// Common procedures to exclude from the procedure list
+const PROCEDURE_BLACKLIST_CODES = [
+  "17636008", // General Specimen collection SNOMED
+  "96366", // Venipuncture, intravenous infusion CPT
+  "96361", // CPT
+  "62323", // CPT
+  "64484", // CPT
+  "98940", // Chiropractic manipulative treatment (CMT) CPT
+  "93000", // EKG CPT
+  "71046", // Chest X-ray CPT
+  "20610", // Injection to the joint CPT
+  "G8730", // Pain assessment CPT
+];
+
 function createObesitySection(conditions: Condition[], encounter: Encounter[]) {
   if (!conditions) {
     return "";
@@ -1386,7 +1400,17 @@ function createProceduresSection(procedures: Procedure[]) {
     return "";
   }
 
-  const allProcedures = procedures.sort((a, b) => {
+  // Filter out blacklisted procedures
+  const filteredProcedures = procedures.filter(procedure => {
+    const procedureCodes = procedure.code?.coding ?? [];
+    const hasBlacklistedCode = procedureCodes.some(coding => {
+      const code = coding.code;
+      return code && PROCEDURE_BLACKLIST_CODES.includes(code);
+    });
+    return !hasBlacklistedCode;
+  });
+
+  const allProcedures = filteredProcedures.sort((a, b) => {
     return dayjs(a.performedDateTime).isBefore(dayjs(b.performedDateTime)) ? 1 : -1;
   });
 
