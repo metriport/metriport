@@ -122,13 +122,13 @@ export function groupVitalsByCode({
       return;
     }
 
-    const observationUnit = v.valueQuantity?.unit?.replace(/[{()}]/g, "");
     const observationPoint: GroupedObservation = {
       rawVital: v,
       date,
       observation:
         typeof observationValue === "number" ? observationValue : parseInt(observationValue),
-      ...(observationUnit && { unit: observationUnit }),
+      // TODO: Make sure all data points have the same unit
+      unit: v.valueQuantity?.unit?.replace(/[{()}]/g, ""),
     };
 
     title = handleTitleSpecialCases(title, observationPoint);
@@ -157,8 +157,8 @@ export function groupVitalsByCode({
       sortedPoints: sortedPoints.map(p => ({
         value: p.observation,
         date: p.date,
-        ...(p.unit && { unit: p.unit }),
-        ...(p.bp && { bp: p.bp }),
+        unit: p.unit,
+        bp: p.bp,
       })),
     });
   });
