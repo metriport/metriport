@@ -176,7 +176,7 @@ describe("linkFilteringAlgorithm", () => {
         ...basePatient,
         address: [
           {
-            addressLine1: "123 Main St",
+            addressLine1: "123 Main Street",
             city: "New York",
             state: USState.NY,
             zip: "10001",
