@@ -40,6 +40,9 @@ export const CONDITION_VERIFICATION_STATUS_URL =
 
 export const PRACTITIONER_ROLE_URL = "http://terminology.hl7.org/CodeSystem/practitioner-role";
 
+// https://build.fhir.org/valueset-diagnostic-service-sections.html
+export const DIAGNOSTIC_SERVICE_SECTIONS_URL = "http://terminology.hl7.org/CodeSystem/v2-0074";
+
 export const EPIC_PARTIAL_URN = "1.2.840.114350.1.13";
 export const HL7_PARTIAL_URN = "2.16.840.1.113883";
 

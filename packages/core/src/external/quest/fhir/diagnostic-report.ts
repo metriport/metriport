@@ -1,7 +1,6 @@
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import {
   CodeableConcept,
-  Coding,
   DiagnosticReport,
   Identifier,
   Observation,
@@ -9,9 +8,11 @@ import {
   ServiceRequest,
   Specimen,
 } from "@medplum/fhirtypes";
+import { LOINC_URL } from "@metriport/shared/medical";
 import { ResponseDetail } from "../schema/response";
 import { getPatientReference } from "./patient";
 import { getSpecimenReference } from "./specimen";
+import { getDiagnosticReportCategory } from "../../fhir/resources/diagnostic-report";
 import { getServiceRequestReference } from "./service-request";
 import { getQuestDataSourceExtension } from "./shared";
 import { getObservationReference } from "./observation";
@@ -32,18 +33,21 @@ export function getDiagnosticReport(
 ): DiagnosticReport {
   const effectiveDateTime = getEffectiveDateTime(detail);
   const code = getDiagnosticReportCoding(detail);
+  const category = [getDiagnosticReportCategory("LAB")];
   const basedOn = [getServiceRequestReference(serviceRequest)];
   const subject = getPatientReference(patient);
+  const issued = getDiagnosticReportIssued(detail);
   const result = [getObservationReference(observation)];
   const identifier = getIdentifier(detail);
   const specimenReference = specimen ? [getSpecimenReference(specimen)] : undefined;
-  const category = getDiagnosticReportCategory(detail);
   const extension = [getQuestDataSourceExtension()];
+
   return {
     resourceType: "DiagnosticReport",
     id: uuidv7(),
     status: "final",
     effectiveDateTime,
+    issued,
     basedOn,
     identifier,
     subject,
@@ -60,37 +64,11 @@ function getDiagnosticReportCoding(detail: ResponseDetail): CodeableConcept | un
   return {
     coding: [
       {
-        system: "http://loinc.org",
+        system: LOINC_URL,
         code: detail.loincCode,
       },
     ],
   };
-}
-
-function getDiagnosticReportCategory(detail: ResponseDetail): CodeableConcept[] | undefined {
-  const coding: Coding[] = [];
-  if (detail.localProfileCode) {
-    coding.push({
-      system: "http://questdiagnostics.com/lpc",
-      code: detail.localProfileCode,
-      ...(detail.profileName ? { display: detail.profileName } : {}),
-    });
-  }
-  if (detail.standardProfileCode) {
-    coding.push({
-      system: "http://questdiagnostics.com/spc",
-      code: detail.standardProfileCode,
-      ...(detail.profileName ? { display: detail.profileName } : {}),
-    });
-  }
-  return coding.length > 0 ? [{ coding }] : undefined;
-}
-
-function getEffectiveDateTime(detail: ResponseDetail): string {
-  if (detail.dateCollected) {
-    return detail.dateCollected.toISOString();
-  }
-  return detail.dateOfService.toISOString();
 }
 
 function getIdentifier(detail: ResponseDetail): Identifier[] {
@@ -107,4 +85,15 @@ function getIdentifier(detail: ResponseDetail): Identifier[] {
     });
   }
   return identifier;
+}
+
+function getEffectiveDateTime(detail: ResponseDetail): string {
+  if (detail.dateCollected) {
+    return detail.dateCollected.toISOString();
+  }
+  return detail.dateOfService.toISOString();
+}
+
+function getDiagnosticReportIssued({ dateOfService }: ResponseDetail): string {
+  return dateOfService.toISOString();
 }
