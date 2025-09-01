@@ -814,7 +814,11 @@ async function triggerDownloadDocument({
   };
 
   try {
-    const result = await docDownloader.download({ document, fileInfo: adjustedFileInfo, cxId });
+    const result = await docDownloader.download({
+      sourceDocument: document,
+      destinationFileInfo: adjustedFileInfo,
+      cxId,
+    });
     return {
       ...result,
       isNew: true,

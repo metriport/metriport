@@ -41,30 +41,41 @@ export class DocumentDownloaderLocalV2 extends DocumentDownloader {
   }
 
   override async download({
-    document,
-    fileInfo,
+    sourceDocument,
+    destinationFileInfo,
     cxId,
   }: {
-    document: Document;
-    fileInfo: FileInfo;
+    sourceDocument: Document;
+    destinationFileInfo: FileInfo;
     cxId: string;
   }): Promise<DownloadResult> {
     const { log } = out("S3.download.v2 cxId: " + cxId);
-    let downloadedDocument = "";
+    const downloadedDocumentInitialValue = Buffer.alloc(0);
+    let downloadedBuffer = downloadedDocumentInitialValue;
+
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
     function onData(chunk: any) {
-      downloadedDocument += chunk;
+      downloadedBuffer = Buffer.concat([downloadedBuffer, chunk]);
     }
     function onEnd() {
       log("Finished downloading document");
     }
-    let downloadResult = await this.downloadFromCommonwellIntoS3(document, fileInfo, onData, onEnd);
+    function onReset() {
+      downloadedBuffer = downloadedDocumentInitialValue;
+    }
+    let downloadResult = await this.downloadFromCommonwellIntoS3(
+      sourceDocument,
+      destinationFileInfo,
+      onData,
+      onEnd,
+      onReset
+    );
 
     // Check if the detected file type is in the accepted content types and update it if not
     downloadResult = await this.checkAndUpdateMimeType({
-      document,
-      fileInfo,
-      downloadedDocument,
+      sourceDocument,
+      destinationFileInfo,
+      downloadedBuffer,
       downloadResult,
     });
 
@@ -76,11 +87,11 @@ export class DocumentDownloaderLocalV2 extends DocumentDownloader {
       contentType: downloadResult.contentType,
     };
 
-    if (downloadedDocument && isMimeTypeXML(downloadResult.contentType)) {
+    if (downloadedBuffer.length > 0 && isMimeTypeXML(downloadResult.contentType)) {
       return this.parseXmlFile({
         ...newlyDownloadedFile,
-        contents: downloadedDocument,
-        requestedFileInfo: fileInfo,
+        contents: downloadedBuffer.toString("utf-8"),
+        requestedFileInfo: destinationFileInfo,
       });
     }
     return newlyDownloadedFile;
@@ -91,32 +102,32 @@ export class DocumentDownloaderLocalV2 extends DocumentDownloader {
    * and extension in S3 and returns the updated download result.
    */
   async checkAndUpdateMimeType({
-    document,
-    fileInfo,
-    downloadedDocument,
+    sourceDocument,
+    destinationFileInfo,
+    downloadedBuffer,
     downloadResult,
   }: {
-    document: Document;
-    fileInfo: FileInfo;
-    downloadedDocument: string;
+    sourceDocument: Document;
+    destinationFileInfo: FileInfo;
+    downloadedBuffer: Buffer;
     downloadResult: DownloadResult;
   }): Promise<DownloadResult> {
     const { log } = out("checkAndUpdateMimeType.v2");
-    if (isContentTypeAccepted(document.mimeType)) {
+    if (isContentTypeAccepted(sourceDocument.mimeType)) {
       return { ...downloadResult };
     }
 
-    const old_extension = path.extname(fileInfo.name);
-    const { mimeType, fileExtension } = detectFileType(downloadedDocument);
+    const old_extension = path.extname(destinationFileInfo.name);
+    const { mimeType, fileExtension } = detectFileType(downloadedBuffer);
 
     // If the file type has not changed
-    if (mimeType === document.mimeType || old_extension === fileExtension) {
+    if (mimeType === sourceDocument.mimeType || old_extension === fileExtension) {
       return downloadResult;
     }
 
     // If the file type has changed
     log(
-      `Updating content type in S3 ${fileInfo.name} from previous mimeType: ${document.mimeType} to detected mimeType ${mimeType} and ${fileExtension}`
+      `Updating content type in S3 ${destinationFileInfo.name} from previous mimeType: ${sourceDocument.mimeType} to detected mimeType ${mimeType} and ${fileExtension}`
     );
     const newKey = await this.s3Utils.updateContentTypeInS3(
       downloadResult.bucket,
@@ -212,11 +223,12 @@ export class DocumentDownloaderLocalV2 extends DocumentDownloader {
   }
 
   async downloadFromCommonwellIntoS3(
-    document: Document,
-    fileInfo: FileInfo,
+    sourceDocument: Document,
+    destinationFileInfo: FileInfo,
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
     onDataFn?: (chunk: any) => void,
-    onEndFn?: () => void
+    onEndFn?: () => void,
+    onResetFn?: () => void
   ): Promise<{
     key: string;
     bucket: string;
@@ -231,7 +243,11 @@ export class DocumentDownloaderLocalV2 extends DocumentDownloader {
 
     const self = this; // eslint-disable-line @typescript-eslint/no-this-alias
     function setOrResetStream() {
-      return self.getUploadStreamToS3(fileInfo.name, fileInfo.location, document.mimeType);
+      return self.getUploadStreamToS3(
+        destinationFileInfo.name,
+        destinationFileInfo.location,
+        sourceDocument.mimeType
+      );
     }
     const resp = setOrResetStream();
     writeStream = resp.writeStream;
@@ -244,7 +260,7 @@ export class DocumentDownloaderLocalV2 extends DocumentDownloader {
     attachListeners();
 
     await this.downloadDocumentFromCW({
-      location: document.location,
+      location: sourceDocument.location,
       getStream: () => writeStream,
       resetStream: () => {
         if (writeStream && !writeStream.destroyed) {
@@ -255,6 +271,7 @@ export class DocumentDownloaderLocalV2 extends DocumentDownloader {
             log(`Failed to cleanup old stream: ${errorToString(error)}`);
           }
         }
+        if (onResetFn) onResetFn();
         const resp = setOrResetStream();
         writeStream = resp.writeStream;
         downloadIntoS3 = resp.promise;
@@ -264,7 +281,7 @@ export class DocumentDownloaderLocalV2 extends DocumentDownloader {
 
     const uploadResult = await downloadIntoS3;
 
-    log(`Uploaded ${document.id}, ${document.mimeType}, to ${uploadResult.Location}`);
+    log(`Uploaded ${sourceDocument.id}, ${sourceDocument.mimeType}, to ${uploadResult.Location}`);
 
     const { size, contentType } = await this.s3Utils.getFileInfoFromS3(
       uploadResult.Key,
