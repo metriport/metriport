@@ -22,9 +22,12 @@ import {
   executeWithNetworkRetries,
   getEnvVarOrFail,
 } from "@metriport/shared";
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
 import { getCQPatientData } from "../../external/carequality/command/cq-patient-data/get-cq-data";
 import { updateCQPatientData } from "../../external/carequality/command/cq-patient-data/update-cq-data";
 import { CQData, CQLink } from "../../external/carequality/cq-patient-data";
+import { getCWAccessForPatient } from "../../external/commonwell-v1/admin/shared";
 import { getCwPatientData } from "../../external/commonwell/patient/cw-patient-data/get-cw-data";
 import {
   CwData,
@@ -36,11 +39,15 @@ import { makeFhirApi } from "../../external/fhir/api/api-factory";
 import { Config } from "../../shared/config";
 import { createOrUpdateInvalidLinks } from "../medical/invalid-links/create-invalid-links";
 import { getPatientOrFail } from "../medical/patient/get-patient";
-import { getCWAccessForPatient } from "../../external/commonwell-v1/admin/shared";
+
+dayjs.extend(duration);
 
 const s3Utils = new S3Utils(Config.getAWSRegion());
 const s3ConversionResultBucketName = getEnvVarOrFail("CONVERSION_RESULT_BUCKET_NAME");
 const s3MedicalDocumentsBucketName = getEnvVarOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
+
+const MAX_RETRIES = 5;
+const INITIAL_DELAY = dayjs.duration({ milliseconds: 500 });
 
 type UnlinkPatientFromOrganizationParams = {
   cxId: string;
@@ -145,7 +152,12 @@ function findCwLinkWithOid(cwPatientData: CwData | undefined, oid: string): CwLi
       const patient = cwLink.Patient;
       if (!patient) continue;
 
-      if (patient.identifier?.some(identifier => identifier.system.includes(oid))) {
+      if (
+        patient.managingOrganization?.identifier?.some(identifier =>
+          identifier.system.includes(oid)
+        ) ||
+        patient.identifier?.some(identifier => identifier.system.includes(oid))
+      ) {
         return cwLink;
       }
     }
@@ -371,8 +383,13 @@ async function findAndInvalidateLinks(
     const { commonWell, queryMeta } = cwAccess;
 
     const downgradeRequests: Promise<NetworkLink>[] = [];
+    const retryParams = {
+      retryOnTimeout: true,
+      maxAttempts: MAX_RETRIES,
+      initialDelay: INITIAL_DELAY.asMilliseconds(),
+    };
+
     for (const link of invalidLinks.commonwell) {
-      const retryParams = { retryOnTimeout: true, maxAttempts: 5, initialDelay: 500 };
       if (isCwLinkV1(link)) {
         const downgradeHref = link._links?.downgrade?.href;
         if (!downgradeHref) continue;
@@ -391,15 +408,8 @@ async function findAndInvalidateLinks(
         // TODO ENG-934: NEED TO INVOKE CW v2 METHODS!
         const unlinkHref = link.Links?.Unlink;
         if (!unlinkHref) continue;
-        downgradeRequests.push(
-          executeWithNetworkRetries(
-            () => commonWell.upgradeOrDowngradeNetworkLink(queryMeta, unlinkHref),
-            retryParams
-          ).catch(error => {
-            processAsyncError("Failed to unlink link");
-            throw error;
-          })
-        );
+        log(`${dryRunMsg}Skipping CW v2 unlink network call until v2 API is implemented`);
+        continue;
       }
     }
 

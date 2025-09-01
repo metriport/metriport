@@ -1,6 +1,7 @@
 import {
   CommonWellAPI,
   Patient as CommonwellPatient,
+  CwLinkV2,
   getCwPatientIdFromLinks,
   PatientExistingLink,
   PatientExistingLinks,
@@ -33,7 +34,6 @@ import { getNewDemographics } from "../../../domain/medical/patient-demographics
 import { UpdatePatientCmd } from "../../commonwell/patient/command-types";
 import { createOrUpdateCwPatientData } from "../../commonwell/patient/cw-patient-data/create-cw-data";
 import { deleteCwPatientData } from "../../commonwell/patient/cw-patient-data/delete-cw-data";
-import { CwLinkV2 } from "../../commonwell/patient/cw-patient-data/shared";
 import { updateCwPatientData } from "../../commonwell/patient/cw-patient-data/update-cw-data";
 import {
   updateCommonwellIdsAndStatus,
