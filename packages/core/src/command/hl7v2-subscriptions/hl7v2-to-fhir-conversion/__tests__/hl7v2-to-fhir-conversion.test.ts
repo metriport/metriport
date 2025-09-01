@@ -6,7 +6,7 @@ import { getCxIdAndPatientIdOrFail } from "../shared";
 describe("Hl7v2 to FHIR conversion", () => {
   const hl7Msg = `MSH|^~|HEALTHSHARE|HMHW|METRIPORTPA|METRIPORTPA|20250507034313||ADT^A03|100000^111222333|P|2.5.1
 EVN|A03|20250102060000|||||AHHH^SOMEWHERE
-PID|1||cOEe2QLs2M43J1X3ER1bNu==_RWpXFS0oT3+BKiMrFHHvYu==^^METRIPORTPA^MR|123456789^^^ABCDEF^MR|LAST^FIRST^MIDDLE^^^^||22211117|F||C^^L|SOMEWHERE^77777^USA^L^^THOMAS||(666)-666-6666^^||^^L|^^L|^^L|2101206259758|000-00-0000|||^^L||||||||N
+PID|1||cOEe2QLs2M43J1X3ER1bNu==_RWpXFS0oT3+BKiMrFHHvYu==^^METRIPORTPA^MR|123456789^^^ABCDEF^MR|LAST^FIRST^MIDDLE^^^^||1111111|F||C^^L|SOMEWHERE^77777^USA^L^^THOMAS||(666)-666-6666^^||^^L|^^L|^^L|2101206259758|000-00-0000|||^^L||||||||N
 PV1|1|O|^^^^||||10000000^SMITH^JANE^^^^^^^^^^NPI|||||||2|||||10000|||||||||||||||||||||||||20250829024816|20250830024816
 PV2|1|^^L||||||20250502180000||||PRE-ADMISSION TESTING VISIT||||||||||N|SOMEWHERE|||||||||N
 DG1|1|I10|I65.21^Occlusion and stenosis of right carotid artery^I10|Occlusion and stenosis of right carotid |20250101181500
@@ -38,7 +38,7 @@ DG1|5|I10|E03.9^Hypothyroidism, unspecified^I10|Hypothyroidism, unspecified
 
     expect(bundle.entry?.length).toBeGreaterThan(0);
     if (!bundle.entry) {
-      throw new Error("No entries in bundle after hl7message ->FHIR conversion");
+      throw new Error("No entries in bundle after hl7message -> FHIR conversion");
     }
     for (const entry of bundle.entry) {
       expect(entry.resource).toBeDefined();
