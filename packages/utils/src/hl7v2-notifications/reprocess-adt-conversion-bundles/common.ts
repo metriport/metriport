@@ -50,9 +50,12 @@ export async function reprocessAdtConversionBundles(
   const promises = prefixes.map(async prefix => {
     const { log } = out(prefix);
     const results = await s3Utils.listObjects(bucketName, prefix);
-    log(`Found ${results.length} objects for prefix: ${prefix}`);
+    const noFolderResults = results.filter(result => {
+      return result.Size !== 0;
+    });
+    log(`Found ${noFolderResults.length} objects for prefix: ${prefix}`);
     let processedCount = 0;
-    const fileProcessingPromises = results.map(async result => {
+    const fileProcessingPromises = noFolderResults.map(async result => {
       const [cxId, ptId] = prefix.replace("cxId=", "").replace("ptId=", "").split("/");
       if (result.Key === undefined) {
         log("Key is undefined - and it shouldn't be");
