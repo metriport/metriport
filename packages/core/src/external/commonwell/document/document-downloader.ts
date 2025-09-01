@@ -29,12 +29,12 @@ export abstract class DocumentDownloader {
   constructor(readonly config: DocumentDownloaderConfig) {}
 
   abstract download({
-    document,
-    fileInfo,
+    sourceDocument,
+    destinationFileInfo,
     cxId,
   }: {
-    document: Document;
-    fileInfo: FileInfo;
+    sourceDocument: Document;
+    destinationFileInfo: FileInfo;
     cxId: string;
   }): Promise<DownloadResult>;
 }

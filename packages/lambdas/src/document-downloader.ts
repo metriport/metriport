@@ -1,8 +1,8 @@
 import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
 import { APIMode, CommonWell } from "@metriport/commonwell-sdk";
 import {
-  CommonWellAPI as CommonWellAPIV1,
   CommonWell as CommonWellV1,
+  CommonWellAPI as CommonWellAPIV1,
   organizationQueryMeta,
 } from "@metriport/commonwell-sdk-v1";
 import { isCommonwellV2EnabledForCx } from "@metriport/core/command/feature-flags/domain-ffs";
@@ -36,14 +36,16 @@ const apiMode = isProduction() ? APIMode.production : APIMode.integration;
 
 export const handler = capture.wrapHandler(
   async (req: DocumentDownloaderLambdaRequest): Promise<DownloadResult> => {
-    const { orgName, orgOid, npi, cxId, fileInfo, document } = req;
+    const { orgName, orgOid, npi, cxId, destinationFileInfo, sourceDocument } = req;
     capture.setUser({ id: cxId });
     capture.setExtra({ lambdaName, cxId, orgOid });
     console.log(
       `Running with envType: ${getEnvType()}, apiMode: ${apiMode}, region: ${region}, ` +
         `bucketName: ${bucketName}, orgName: ${orgName}, orgOid: ${orgOid}, ` +
-        `npi: ${npi}, cxId: ${cxId}, fileInfo: ${JSON.stringify(fileInfo)}, ` +
-        `document: ${JSON.stringify(document)}`
+        `npi: ${npi}, cxId: ${cxId}, destinationFileInfo: ${JSON.stringify(
+          destinationFileInfo
+        )}, ` +
+        `sourceDocument: ${JSON.stringify(sourceDocument)}`
     );
 
     const [cwOrgCertificate, cwOrgPrivateKey, isV2Enabled] = await Promise.all([
@@ -78,7 +80,10 @@ export const handler = capture.wrapHandler(
         },
         capture,
       });
-      const result = await docDownloader.download({ document, fileInfo });
+      const result = await docDownloader.download({
+        sourceDocument,
+        destinationFileInfo,
+      });
 
       console.log(`Done - ${JSON.stringify(result)}`);
       return result;
@@ -104,7 +109,11 @@ export const handler = capture.wrapHandler(
       commonWell: { api: commonWell },
       capture,
     });
-    const result = await docDownloader.download({ cxId, document, fileInfo });
+    const result = await docDownloader.download({
+      cxId,
+      sourceDocument,
+      destinationFileInfo,
+    });
 
     console.log(`Done - ${JSON.stringify(result)}`);
     return result;
