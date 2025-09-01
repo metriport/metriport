@@ -2,6 +2,7 @@ import { Hl7Message } from "@medplum/core";
 import { convertHl7v2MessageToFhir, ResourceWithExtension } from "..";
 import { Bundle } from "@medplum/fhirtypes";
 import { getCxIdAndPatientIdOrFail } from "../shared";
+import * as packIdsModule from "../../utils";
 
 describe("Hl7v2 to FHIR conversion", () => {
   const hl7Msg = `MSH|^~|HEALTHSHARE|HMHW|METRIPORTPA|METRIPORTPA|20250507034313||ADT^A03|100000^111222333|P|2.5.1
@@ -21,6 +22,19 @@ DG1|5|I10|E03.9^Hypothyroidism, unspecified^I10|Hypothyroidism, unspecified
 
   const DOC_ID_URL = "https://public.metriport.com/fhir/StructureDefinition/doc-id-extension.json";
   const DATA_SOURCE_URL = "https://public.metriport.com/fhir/StructureDefinition/data-source.json";
+  let scrambleIdMock: jest.SpyInstance;
+  let scrambledId: string;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    scrambleIdMock = jest.spyOn(packIdsModule, "createScrambledId");
+    scrambledId = `${cxId}_${patientId}`;
+    scrambleIdMock.mockReturnValueOnce(scrambledId);
+  });
+
+  afterAll(() => {
+    jest.restoreAllMocks();
+  });
 
   it("Converter adds datasource and docId extensions", () => {
     const fileName = "someFileName";
