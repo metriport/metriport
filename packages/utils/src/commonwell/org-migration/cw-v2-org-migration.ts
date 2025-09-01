@@ -62,6 +62,7 @@ const cwTechnicalContactPhone = getEnvVarOrFail("CW_TECHNICAL_CONTACT_PHONE");
 
 // auth stuff
 const cxIds: string[] = [];
+const specificFacilityId = "";
 const MODE = APIMode.production;
 const IS_ACTIVE_DEFAULT = false;
 
@@ -122,6 +123,13 @@ async function main() {
     } else {
       // Facilities
       for (const facility of facilities) {
+        if (specificFacilityId) {
+          console.log("Trying to create/update a specific facility!");
+          if (facility.id !== specificFacilityId) {
+            continue;
+          }
+          console.log("Found the desired facility!");
+        }
         if (facility.cwType === FacilityType.initiatorOnly) {
           cwOrgs.push(
             createOrUpdateFacilityInCwV2({
@@ -219,12 +227,12 @@ function buildCwOrganization(org: CwOrgOrFacility): OrganizationWithNetworkInfo 
       },
     ],
     isLegacyBridgeEnabled: true,
-    securityTokenKeyType: "JWT",
   };
 
   if (org.isInitiatorAndResponder) {
     return {
       ...cwOrgBase,
+      securityTokenKeyType: "JWT",
       gateways: [
         {
           serviceType: "R4_Base",
@@ -256,6 +264,7 @@ function buildCwOrganization(org: CwOrgOrFacility): OrganizationWithNetworkInfo 
   } else {
     return {
       ...cwOrgBase,
+      securityTokenKeyType: "",
       gateways: [],
       networks: [
         {
