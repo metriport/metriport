@@ -1,12 +1,25 @@
-import { Condition, DiagnosticReport, Observation, Resource } from "@medplum/fhirtypes";
+import {
+  Condition,
+  DiagnosticReport,
+  Medication,
+  MedicationStatement,
+  Observation,
+  Resource,
+} from "@medplum/fhirtypes";
 import { BadRequestError, JwtTokenInfo } from "@metriport/shared";
 import { EhrSource } from "@metriport/shared/interface/external/ehr/source";
 import { writeBackCondition } from "./condition";
 import { EhrGroupedVitals, writeBackGroupedVitals } from "./grouped-vitals";
 import { writeBackLab } from "./lab";
 import { writeBackLabPanel } from "./lab-panel";
+import { writeBackMedicationStatement } from "./medication-statement";
 
-export type WriteBackResourceType = "condition" | "lab" | "lab-panel" | "grouped-vitals";
+export type WriteBackResourceType =
+  | "condition"
+  | "lab"
+  | "lab-panel"
+  | "grouped-vitals"
+  | "medication-statement";
 
 export type WriteBackResourceRequest = {
   ehr: EhrSource;
@@ -42,6 +55,12 @@ export async function writeBackResource({ ...params }: WriteBackResourceRequest)
     return await writeBackGroupedVitals({
       ...params,
       groupedVitals: params.primaryResourceOrResources as EhrGroupedVitals,
+    });
+  } else if (params.writeBackResource === "medication-statement") {
+    return await writeBackMedicationStatement({
+      ...params,
+      medication: params.primaryResourceOrResources as Medication,
+      statements: params.secondaryResourceOrResources as MedicationStatement[],
     });
   }
   throw new BadRequestError("Could not find handler to write back resource", undefined, {

@@ -1,6 +1,8 @@
 import {
   Condition,
   DiagnosticReport,
+  Medication,
+  MedicationStatement,
   Observation,
   Resource,
   ResourceType,
@@ -25,17 +27,19 @@ import { setJobEntryStatus } from "../../../../../command/job/patient/api/set-en
 import { executeAsynchronously } from "../../../../../util/concurrency";
 import { log, out } from "../../../../../util/log";
 import { capture } from "../../../../../util/notifications";
-import { isCondition, isDiagnosticReport, isObservation } from "../../../../fhir/shared";
+import {
+  isCondition,
+  isDiagnosticReport,
+  isMedicationStatement,
+  isObservation,
+} from "../../../../fhir/shared";
 import { getSecondaryMappings } from "../../../api/get-secondary-mappings";
 import { BundleType } from "../../../bundle/bundle-shared";
 import { createOrReplaceBundle } from "../../../bundle/command/create-or-replace-bundle";
 import { fetchBundle, FetchBundleParams } from "../../../bundle/command/fetch-bundle";
 import { getClientTokenInfo } from "../../../command/get-client-token-info";
 import { getEhrWriteBackConditionPrimaryCode } from "../../../command/write-back/condition";
-import {
-  getEhrGroupedVitals,
-  isWriteBackGroupedVitalsEhr,
-} from "../../../command/write-back/grouped-vitals";
+import { getEhrGroupedVitals } from "../../../command/write-back/grouped-vitals";
 import { writeBackResource, WriteBackResourceType } from "../../../command/write-back/shared";
 import { isEhrSourceWithClientCredentials } from "../../../environment";
 import {
@@ -49,6 +53,8 @@ import {
   getConditionStartDate,
   getDiagnosticReportDate,
   getDiagnosticReportLoincCode,
+  getMedicationRxnormCode,
+  getMedicationStatementStartDate,
   getObservationLoincCode,
   getObservationObservedDate,
   isChronicCondition,
@@ -85,6 +91,7 @@ const supportedWriteBackResourceTypes: ResourceType[] = [
   "Condition",
   "Observation",
   "DiagnosticReport",
+  "MedicationStatement",
 ];
 export type SupportedWriteBackResourceType = (typeof supportedWriteBackResourceTypes)[number];
 export function isSupportedWriteBackResourceType(
@@ -140,13 +147,12 @@ export class EhrWriteBackResourceDiffBundlesDirect
       }
       const writeBackFilters = await getWriteBackFilters({ ehr, practiceId });
       const resourcesToWriteBack = getResourcesToWriteBack({
-        ehr,
         resources: metriportOnlyResources,
         writeBackFilters,
       });
       const [groupedVitalsObservations, restNoObservations] = partition(
         resourcesToWriteBack,
-        r => getWriteBackResourceType(ehr, r) === "grouped-vitals"
+        r => getWriteBackResourceType(r) === "grouped-vitals"
       );
       const keptObservations = await filterObservations({
         observations: groupedVitalsObservations.filter(isObservation),
@@ -155,7 +161,7 @@ export class EhrWriteBackResourceDiffBundlesDirect
       const resourcesToWriteBackFilteredObservations = [...keptObservations, ...restNoObservations];
       const [conditions, restNoConditions] = partition(
         resourcesToWriteBackFilteredObservations,
-        r => getWriteBackResourceType(ehr, r) === "condition"
+        r => getWriteBackResourceType(r) === "condition"
       );
       const keptConditions = await filterConditions({
         ehr,
@@ -171,6 +177,7 @@ export class EhrWriteBackResourceDiffBundlesDirect
         metriportPatientId,
         resources: resourcesToWriteBackFilteredConditionsAndObservations,
         resourceType,
+        writeBackFilters,
       });
       try {
         await createOrReplaceBundle({
@@ -292,6 +299,34 @@ async function hydrateDiagnosticReports({
   return hydratedMetriportOnlyResources;
 }
 
+async function hydrateMedications({
+  medications,
+  statements,
+}: {
+  medications: Medication[];
+  statements: MedicationStatement[];
+}): Promise<{ medication: Medication; statements: MedicationStatement[] }[]> {
+  const hydratedMetriportOnlyResources: {
+    medication: Medication;
+    statements: MedicationStatement[];
+  }[] = [];
+  for (const medication of medications) {
+    if (!medication.id) {
+      hydratedMetriportOnlyResources.push({ medication, statements: [] });
+      continue;
+    }
+    const hydratedStatements: MedicationStatement[] = [];
+    for (const statement of statements) {
+      if (!statement.medicationReference || !statement.medicationReference.reference) continue;
+      const ref = statement.medicationReference.reference;
+      if (ref !== `Medication/${medication.id}`) continue;
+      hydratedStatements.push(statement);
+    }
+    hydratedMetriportOnlyResources.push({ medication, statements: hydratedStatements });
+  }
+  return hydratedMetriportOnlyResources;
+}
+
 async function getWriteBackFilters({
   ehr,
   practiceId,
@@ -327,17 +362,15 @@ async function getWriteBackFilters({
 }
 
 function getResourcesToWriteBack({
-  ehr,
   resources,
   writeBackFilters,
 }: {
-  ehr: EhrSource;
   resources: Resource[];
   writeBackFilters: WriteBackFiltersPerResourceType | undefined;
 }): Resource[] {
   const resourcesToWriteBack: Resource[] = [];
   for (const resource of resources) {
-    const writeBackResourceType = getWriteBackResourceType(ehr, resource);
+    const writeBackResourceType = getWriteBackResourceType(resource);
     if (!writeBackResourceType) continue;
     if (
       resource.resourceType === "DiagnosticReport" &&
@@ -357,16 +390,14 @@ function getResourcesToWriteBack({
   return resourcesToWriteBack;
 }
 
-function getWriteBackResourceType(
-  ehr: EhrSource,
-  resource: Resource
-): WriteBackResourceType | undefined {
+function getWriteBackResourceType(resource: Resource): WriteBackResourceType | undefined {
   if (isCondition(resource)) return "condition";
   if (isObservation(resource)) {
     if (isLab(resource)) return "lab";
-    if (isVital(resource) && isWriteBackGroupedVitalsEhr(ehr)) return "grouped-vitals";
+    if (isVital(resource)) return "grouped-vitals";
     return undefined;
   }
+  if (isMedicationStatement(resource)) return "medication-statement";
   if (isDiagnosticReport(resource)) {
     if (isLabPanel(resource)) return "lab-panel";
     return undefined;
@@ -426,6 +457,12 @@ export function shouldWriteBackResource({
     const observation = resource;
     if (skipVitalDate(observation, writeBackFilters)) return false;
     if (skipVitalLoinCode(observation, writeBackFilters)) return false;
+    return true;
+  } else if (writeBackResourceType === "medication-statement") {
+    if (writeBackFilters.medication?.disabled) return false;
+    if (!isMedicationStatement(resource)) return false;
+    const medicationStatement = resource;
+    if (skipMedicationStatementDateAbsolute(medicationStatement, writeBackFilters)) return false;
     return true;
   }
   throw new BadRequestError("Could not find write back resource type", undefined, {
@@ -636,32 +673,80 @@ export function skipVitalLoinCode(
   return !loincCodes.includes(loincCode);
 }
 
+export function skipMedicationRxnormCode(
+  medication: Medication,
+  writeBackFilters: WriteBackFiltersPerResourceType
+): boolean {
+  const rxnormCodes = writeBackFilters?.medication?.rxnormCodes;
+  if (!rxnormCodes) return false;
+  const rxnormCode = getMedicationRxnormCode(medication);
+  if (!rxnormCode) return true;
+  return !rxnormCodes.includes(rxnormCode);
+}
+
+export function skipMedicationStatementDateAbsolute(
+  medicationStatement: MedicationStatement,
+  writeBackFilters: WriteBackFiltersPerResourceType
+): boolean {
+  const absoluteDate = writeBackFilters.medication?.absoluteDate;
+  if (!absoluteDate) return false;
+  const startDate = getMedicationStatementStartDate(medicationStatement);
+  if (!startDate) return true;
+  return buildDayjs(startDate).isBefore(buildDayjs(absoluteDate));
+}
+
 async function getSecondaryResourcesToWriteBackMap({
   cxId,
   metriportPatientId,
   resources,
   resourceType,
+  writeBackFilters,
 }: {
   cxId: string;
   metriportPatientId: string;
   resources: Resource[];
   resourceType: string;
+  writeBackFilters: WriteBackFiltersPerResourceType | undefined;
 }): Promise<Record<string, Resource[]>> {
-  if (resourceType !== "DiagnosticReport") return {};
-  const observations = await getMetriportResourcesFromS3({
-    cxId,
-    patientId: metriportPatientId,
-    resourceType: "Observation",
-  });
-  const hydratedDiagnosticReports = await hydrateDiagnosticReports({
-    diagnosticReports: resources as DiagnosticReport[],
-    observations: observations as Observation[],
-  });
-  return hydratedDiagnosticReports.reduce((acc, { diagnosticReport, observations }) => {
-    if (!diagnosticReport.id) return acc;
-    acc[diagnosticReport.id] = observations;
-    return acc;
-  }, {} as Record<string, Resource[]>);
+  if (resourceType !== "DiagnosticReport" && resourceType !== "Medication") return {};
+  if (resourceType === "DiagnosticReport") {
+    const observations = await getMetriportResourcesFromS3({
+      cxId,
+      patientId: metriportPatientId,
+      resourceType: "Observation",
+    });
+    const hydratedDiagnosticReports = await hydrateDiagnosticReports({
+      diagnosticReports: resources as DiagnosticReport[],
+      observations: observations as Observation[],
+    });
+    return hydratedDiagnosticReports.reduce((acc, { diagnosticReport, observations }) => {
+      if (!diagnosticReport.id) return acc;
+      acc[diagnosticReport.id] = observations;
+      return acc;
+    }, {} as Record<string, Resource[]>);
+  } else {
+    const medications = await getMetriportResourcesFromS3({
+      cxId,
+      patientId: metriportPatientId,
+      resourceType: "Mediation",
+    });
+    const filteredMedications = medications.filter(medication => {
+      if (!writeBackFilters) return true;
+      if (skipMedicationRxnormCode(medication as Medication, writeBackFilters)) {
+        return false;
+      }
+      return true;
+    });
+    const hydratedMedications = await hydrateMedications({
+      medications: filteredMedications as Medication[],
+      statements: resources as MedicationStatement[],
+    });
+    return hydratedMedications.reduce((acc, { medication, statements }) => {
+      if (!medication.id) return acc;
+      acc[medication.id] = statements;
+      return acc;
+    }, {} as Record<string, Resource[]>);
+  }
 }
 
 async function writeBackResources({
@@ -690,7 +775,7 @@ async function writeBackResources({
   const writeBackErrors: { error: unknown; resource: string }[] = [];
   const [groupedVitalsObservations, rest] = partition(
     resources,
-    r => getWriteBackResourceType(ehr, r) === "grouped-vitals"
+    r => getWriteBackResourceType(r) === "grouped-vitals"
   );
   const groupedVitals = getEhrGroupedVitals({
     ehr,
@@ -726,7 +811,7 @@ async function writeBackResources({
     rest,
     async resource => {
       try {
-        const writeBackResourceType = getWriteBackResourceType(ehr, resource);
+        const writeBackResourceType = getWriteBackResourceType(resource);
         if (!writeBackResourceType) return;
         const secondaryResources = resource.id ? secondaryResourcesMap[resource.id] : undefined;
         await writeBackResource({

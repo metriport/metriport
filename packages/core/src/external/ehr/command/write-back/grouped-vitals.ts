@@ -58,11 +58,6 @@ function getEhrWriteBackGroupedVitalsHandler(ehr: EhrSource): WriteBackGroupedVi
   return handler;
 }
 
-export const writeBackGroupedVitalsEhrs = [EhrSources.athena, EhrSources.elation];
-export function isWriteBackGroupedVitalsEhr(ehr: EhrSource): boolean {
-  return writeBackGroupedVitalsEhrs.includes(ehr);
-}
-
 export function isGroupedVitalsByDate(val: unknown): val is GroupedVitalsByDate {
   return Array.isArray(val) && val.length === 2 && val[0] instanceof Date && Array.isArray(val[1]);
 }

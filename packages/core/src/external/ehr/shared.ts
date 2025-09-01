@@ -50,9 +50,9 @@ import { partition, uniqBy } from "lodash";
 import { z } from "zod";
 import { createHivePartitionFilePath } from "../../domain/filename";
 import {
-  fetchCodingCodeOrDisplayOrSystem,
-  UNK_CODE,
   UNKNOWN_DISPLAY,
+  UNK_CODE,
+  fetchCodingCodeOrDisplayOrSystem,
 } from "../../fhir-deduplication/shared";
 import { executeAsynchronously } from "../../util/concurrency";
 import { Config } from "../../util/config";
@@ -404,6 +404,18 @@ export type MedicationWithRefs = {
   statement: MedicationStatement[];
 };
 
+export function createMedicationWithRefs(
+  medication: Medication,
+  statement: MedicationStatement[]
+): MedicationWithRefs {
+  return {
+    medication,
+    statement,
+    administration: [],
+    dispense: [],
+  };
+}
+
 export type GroupedVitals = {
   mostRecentObservation: Observation;
   sortedPoints?: DataPoint[];
@@ -555,6 +567,12 @@ export function getMedicationRxnormCoding(medication: Medication): Coding | unde
   });
   if (!rxnormCoding) return undefined;
   return rxnormCoding;
+}
+
+export function getMedicationRxnormCode(medication: Medication): string | undefined {
+  const rxnormCoding = getMedicationRxnormCoding(medication);
+  if (!rxnormCoding) return undefined;
+  return rxnormCoding.code;
 }
 
 export function getMedicationStatementStartDate(

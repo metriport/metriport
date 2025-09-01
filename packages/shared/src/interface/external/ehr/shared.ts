@@ -43,6 +43,13 @@ export const writeBackFiltersPerResourceTypeSchema = z.object({
       disabled: z.boolean().optional(),
     })
     .optional(),
+  medication: z
+    .object({
+      rxnormCodes: z.string().array().optional(),
+      absoluteDate: z.string().optional(),
+      disabled: z.boolean().optional(),
+    })
+    .optional(),
 });
 export type WriteBackFiltersPerResourceType = z.infer<typeof writeBackFiltersPerResourceTypeSchema>;
 

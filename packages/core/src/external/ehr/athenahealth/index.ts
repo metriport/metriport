@@ -235,6 +235,7 @@ export const supportedAthenaHealthResources: ResourceType[] = [
   "DiagnosticReport",
   "Immunization",
   "MedicationRequest",
+  "MedicationStatement",
   "Observation",
   "Procedure",
   "Encounter",
@@ -1554,6 +1555,18 @@ class AthenaHealthApi {
         resourceType,
       });
     }
+    // Not supported by AthenaHealth but required for write back
+    if (resourceType === "MedicationStatement") {
+      return await fetchEhrBundleUsingCache({
+        ehr: EhrSources.athena,
+        cxId,
+        metriportPatientId,
+        ehrPatientId: athenaPatientId,
+        resourceType,
+        fetchResourcesFromEhr: () => Promise.resolve([]),
+        useCachedBundle,
+      });
+    }
     const params = {
       patient: `${this.createPatientId(athenaPatientId)}`,
       "ah-practice": this.createPracticetId(this.practiceId),
@@ -1663,6 +1676,18 @@ class AthenaHealthApi {
         athenaPatientId,
         resourceId,
         resourceType,
+      });
+    }
+    // Not supported by AthenaHealth but required for write back
+    if (resourceType === "MedicationStatement") {
+      return await fetchEhrBundleUsingCache({
+        ehr: EhrSources.athena,
+        cxId,
+        metriportPatientId,
+        ehrPatientId: athenaPatientId,
+        resourceType,
+        fetchResourcesFromEhr: () => Promise.resolve([]),
+        useCachedBundle,
       });
     }
     const params = {
