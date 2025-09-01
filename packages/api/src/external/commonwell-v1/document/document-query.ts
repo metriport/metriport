@@ -66,7 +66,6 @@ import {
   getContentTypeOrUnknown,
   getFileName,
 } from "./shared";
-import { cwToFHIR } from "./cw-to-fhir";
 
 const staleLookbackHours = 24;
 

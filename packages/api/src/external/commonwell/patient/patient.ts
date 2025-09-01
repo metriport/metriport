@@ -142,38 +142,27 @@ export async function update({
     isCwV2Enabled,
   });
 
+  if (!isCwEnabled) return;
+
   const demoAugEnabled = await isDemoAugEnabledForCx(patient.cxId);
   const cxRerunPdOnNewDemographics = demoAugEnabled || rerunPdOnNewDemographics;
 
+  const requestId = inputRequestId ?? uuidv7();
+  const startedAt = new Date();
+  const updatedPatient = await updatePatientDiscoveryStatus({
+    patient,
+    status: "processing",
+    params: {
+      requestId,
+      facilityId,
+      startedAt,
+      rerunPdOnNewDemographics: cxRerunPdOnNewDemographics,
+    },
+  });
+
   // TODO ENG-554 Remove FF and v1 code
-  if (isCwEnabled) {
-    const requestId = inputRequestId ?? uuidv7();
-    const startedAt = new Date();
-    const updatedPatient = await updatePatientDiscoveryStatus({
-      patient,
-      status: "processing",
-      params: {
-        requestId,
-        facilityId,
-        startedAt,
-        rerunPdOnNewDemographics: cxRerunPdOnNewDemographics,
-      },
-    });
-
-    if (!isCwV2Enabled) {
-      await updatePatientAndLinksInCwV1({
-        patient: createAugmentedPatient(updatedPatient),
-        facilityId,
-        getOrgIdExcludeList,
-        rerunPdOnNewDemographics: cxRerunPdOnNewDemographics,
-        requestId,
-        startedAt,
-        debug,
-        update,
-      });
-    }
-
-    await updatePatientAndLinksInCwV2({
+  if (!isCwV2Enabled) {
+    await updatePatientAndLinksInCwV1({
       patient: createAugmentedPatient(updatedPatient),
       facilityId,
       getOrgIdExcludeList,
@@ -183,7 +172,19 @@ export async function update({
       debug,
       update,
     });
+    return;
   }
+
+  await updatePatientAndLinksInCwV2({
+    patient: createAugmentedPatient(updatedPatient),
+    facilityId,
+    getOrgIdExcludeList,
+    rerunPdOnNewDemographics: cxRerunPdOnNewDemographics,
+    requestId,
+    startedAt,
+    debug,
+    update,
+  });
 }
 
 export async function remove({

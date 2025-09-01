@@ -31,7 +31,7 @@ router.get(
       }
 
       try {
-        const s3Utils = new S3Utils("us-east-2");
+        const s3Utils = new S3Utils(Config.getAWSRegion());
 
         const fileName = getFrom("query").orFail("fileName", req);
         if (fileName.trim().length <= 0) {

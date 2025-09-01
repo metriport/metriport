@@ -42,6 +42,7 @@ export async function queryAndProcessDocuments({
       getOrgIdExcludeList,
       triggerConsolidated,
     });
+    return;
   }
 
   await queryAndProcessDocumentsV2({

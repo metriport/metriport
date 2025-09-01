@@ -69,22 +69,23 @@ export function patientToCommonwell({
         use: AddressUseCodes.home,
       };
     }),
-    telecom: patient.data.contact?.flatMap(contact => {
-      const contacts: Contact[] = [];
-      if (contact.email) {
-        contacts.push({
-          system: ContactSystemCodes.email,
-          value: contact.email,
-        });
-      }
-      if (contact.phone) {
-        contacts.push({
-          system: ContactSystemCodes.phone,
-          value: normalizePhoneNumber(contact.phone),
-        });
-      }
-      return contacts;
-    }),
+    telecom:
+      patient.data.contact?.flatMap(contact => {
+        const contacts: Contact[] = [];
+        if (contact.email) {
+          contacts.push({
+            system: ContactSystemCodes.email,
+            value: contact.email,
+          });
+        }
+        if (contact.phone) {
+          contacts.push({
+            system: ContactSystemCodes.phone,
+            value: normalizePhoneNumber(contact.phone),
+          });
+        }
+        return contacts;
+      }) ?? [],
   };
 }
 
@@ -100,7 +101,9 @@ function getCwStrongIdsFromPatient(patient: Patient): PatientIdentifier[] {
       assigner: id.assigner,
     };
     if (id.type === "driversLicense") {
-      return { ...base, value: id.value, type: "DL", system: driversLicenseURIs[id.state] };
+      const dlSystem = id.state ? driversLicenseURIs[id.state] : undefined;
+      if (!dlSystem) return [];
+      return { ...base, value: id.value, type: "DL", system: dlSystem };
     }
     const system = identifierSytemByType[id.type];
     if (!system) return [];

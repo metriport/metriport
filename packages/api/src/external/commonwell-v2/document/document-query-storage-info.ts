@@ -68,10 +68,14 @@ export async function getS3Info(
       })
   );
   if (errors.length > 0) {
-    const msg = `Errors getting info from S3`;
+    const msg = "Errors getting info from S3";
     const extra = { errors, patientId: patient.id };
     log(msg, extra);
-    capture.error(msg, { extra });
+    const cause = new AggregateError(
+      errors.map(e => e.error),
+      msg
+    );
+    capture.error(new Error(msg, { cause }), { extra });
   }
   const successful: S3Info[] = s3Info.flatMap(ref =>
     ref.status === "fulfilled" && ref.value ? ref.value : []

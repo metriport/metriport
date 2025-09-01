@@ -127,5 +127,5 @@ export function getLinkOid(link: CwLink): string | undefined {
     return link.patient?.identifier?.find(identifier => identifier.assigner !== "Commonwell")
       ?.system;
   }
-  return link.Patient?.managingOrganization?.identifier[0]?.system; // TODO: fix this
+  return link.Patient?.managingOrganization?.identifier?.[0]?.system;
 }

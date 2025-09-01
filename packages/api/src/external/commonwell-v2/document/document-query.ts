@@ -426,10 +426,7 @@ function convertToNonExistingS3Info(
   return async (doc: DocumentWithMetriportId): Promise<S3Info> => {
     const simpleFile = getDocToFileFunction(
       patient,
-      // TODO: MAKE SURE THIS IS CORRECt
-      // TODO: MAKE SURE THIS IS CORRECt
-      // TODO: MAKE SURE THIS IS CORRECt
-      doc.id ?? doc.originalId,
+      doc.id,
       doc.content?.[0]?.attachment.contentType ?? undefined
     );
 
