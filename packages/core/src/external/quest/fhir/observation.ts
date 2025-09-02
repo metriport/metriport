@@ -34,6 +34,7 @@ export function getObservation(
   const referenceRange = getObservationReferenceRange(detail);
   const { valueQuantity, valueString } = getObservationValue(detail);
   const extension = [getQuestDataSourceExtension()];
+  const note = getObservationNote(detail);
 
   return {
     resourceType: "Observation",
@@ -47,8 +48,18 @@ export function getObservation(
     ...(interpretation ? { interpretation } : {}),
     ...(identifier ? { identifier } : {}),
     ...(code ? { code } : {}),
+    ...(note ? { note } : {}),
     extension,
   };
+}
+
+function getObservationNote(detail: ResponseDetail): Observation["note"] | undefined {
+  if (!detail.resultComments) return undefined;
+  return [
+    {
+      text: detail.resultComments,
+    },
+  ];
 }
 
 export function getObservationStatus(detail: ResponseDetail): NonNullable<Observation["status"]> {
