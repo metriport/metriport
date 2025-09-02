@@ -36,12 +36,7 @@ export function calculateAddressScore(
 
   const addressLine1Match =
     intersectionWith(metriportPatient.address, externalPatient.address, (addr1, addr2) => {
-      const addr1Normalized = normalizeAddressString(addr1?.addressLine1 || "");
-      const addr2Normalized = normalizeAddressString(addr2?.addressLine1 || "");
-
-      if (addr1Normalized === addr2Normalized) return true;
-
-      return isFuzzyMatch(addr1Normalized, addr2Normalized, 0.7);
+      return hasCoreAddressMatch(addr1, addr2);
     }).length > 0;
 
   if (cityMatch) score += 0.5;
@@ -65,14 +60,44 @@ export function hasAddressMatch(
         const zipMatch = normalizeString(addr1?.zip || "") === normalizeString(addr2?.zip || "");
         const stateMatch =
           normalizeString(addr1?.state || "") === normalizeString(addr2?.state || "");
-        const addressMatch =
-          normalizeAddressString(addr1?.addressLine1 || "") ===
-          normalizeAddressString(addr2?.addressLine1 || "");
+        const addressMatch = hasCoreAddressMatch(addr1, addr2);
 
         return zipMatch && stateMatch && addressMatch;
       })
     ) ?? false
   );
+}
+
+function hasCoreAddressMatch(
+  addr1: { addressLine1?: string; addressLine2?: string },
+  addr2: { addressLine1?: string; addressLine2?: string }
+): boolean {
+  const exactMatch =
+    normalizeAddressString(addr1?.addressLine1 || "") ===
+    normalizeAddressString(addr2?.addressLine1 || "");
+
+  if (exactMatch) return true;
+
+  const coreAddr1 = extractCoreAddress(addr1);
+  const coreAddr2 = extractCoreAddress(addr2);
+
+  if (coreAddr1 === coreAddr2) return true;
+
+  return isFuzzyMatch(coreAddr1, coreAddr2, 0.7);
+}
+
+function extractCoreAddress(address: { addressLine1?: string; addressLine2?: string }): string {
+  const line1 = address?.addressLine1 || "";
+  const line2 = address?.addressLine2 || "";
+
+  const combined = `${line1} ${line2}`.trim();
+
+  const coreAddress = combined
+    .replace(/\s+(apt|apartment|unit|suite|#)\s*#?\s*\d+.*$/gi, "") // Remove apt info from end
+    .replace(/\s+#\s*\d+.*$/gi, "") // Remove standalone # numbers from end
+    .trim();
+
+  return normalizeAddressString(coreAddress);
 }
 
 function normalizeAddressString(str: string): string {

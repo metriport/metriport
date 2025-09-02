@@ -1,6 +1,6 @@
 {
   "name": "@metriport/commonwell-sdk",
-  "version": "6.2.4",
+  "version": "6.2.3",
   "description": "SDK to simplify CommonWell API integration - by Metriport Inc.",
   "author": "Metriport Inc. <contact@metriport.com>",
   "homepage": "https://metriport.com/",
@@ -60,7 +60,7 @@
     "url": "https://github.com/metriport/metriport/issues"
   },
   "dependencies": {
-    "@metriport/shared": "^0.26.2",
+    "@metriport/shared": "^0.26.1",
     "axios": "^1.8.2",
     "http-status": "~1.7.0",
     "jsonwebtoken": "^9.0.0",
