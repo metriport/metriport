@@ -77,4 +77,40 @@ describe("groupSameServiceRequests", () => {
     ]);
     expect(serviceRequestsMap.size).toBe(2);
   });
+
+  it("should join multiple service requests based on multiple matching criteria", () => {
+    // Matches based on requisition identifier
+    const serviceRequest1 = makeServiceRequest({
+      id: faker.string.uuid(),
+      status: "unknown",
+      requisition: { system: "http://example.com", value: "1234567890" },
+    });
+    const serviceRequest2 = makeServiceRequest({
+      id: faker.string.uuid(),
+      status: "unknown",
+      identifier: [{ system: "http://another-example.com", value: "6666666666" }],
+      requisition: { system: "http://example.com", value: "1234567890" },
+    });
+    // Matches based on identifier
+    const serviceRequest3 = makeServiceRequest({
+      id: faker.string.uuid(),
+      status: "unknown",
+      identifier: [{ system: "http://another-example.com", value: "6666666666" }],
+    });
+    // Not duplicate of any other service request
+    const serviceRequest4 = makeServiceRequest({
+      id: faker.string.uuid(),
+      status: "unknown",
+      identifier: [{ system: "http://another-example.com", value: "132412341234" }],
+      requisition: { system: "http://example.com", value: "938982983" },
+    });
+
+    const { serviceRequestsMap } = groupSameServiceRequests([
+      serviceRequest1,
+      serviceRequest2,
+      serviceRequest3,
+      serviceRequest4,
+    ]);
+    expect(serviceRequestsMap.size).toBe(2);
+  });
 });
