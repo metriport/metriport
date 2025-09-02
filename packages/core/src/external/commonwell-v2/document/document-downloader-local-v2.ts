@@ -10,7 +10,7 @@ import AWS from "aws-sdk";
 import path from "path";
 import * as stream from "stream";
 import { DOMParser } from "xmldom";
-import { detectFileType, isContentTypeAccepted } from "../../../util/file-type";
+import { detectFileType } from "../../../util/file-type";
 import { out } from "../../../util/log";
 import { isMimeTypeXML } from "../../../util/mime";
 import { makeS3Client, S3Utils } from "../../aws/s3";
@@ -113,15 +113,12 @@ export class DocumentDownloaderLocalV2 extends DocumentDownloader {
     downloadResult: DownloadResult;
   }): Promise<DownloadResult> {
     const { log } = out("checkAndUpdateMimeType.v2");
-    if (isContentTypeAccepted(sourceDocument.mimeType)) {
-      return { ...downloadResult };
-    }
 
     const old_extension = path.extname(destinationFileInfo.name);
     const { mimeType, fileExtension } = detectFileType(downloadedBuffer);
 
-    // If the file type has not changed
-    if (mimeType === sourceDocument.mimeType || old_extension === fileExtension) {
+    // If the file type/extension has not changed
+    if (mimeType === sourceDocument.mimeType && old_extension === fileExtension) {
       return downloadResult;
     }
 
