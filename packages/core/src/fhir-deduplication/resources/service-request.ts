@@ -13,7 +13,7 @@ export function groupSameServiceRequests(serviceRequests: ServiceRequest[]): {
   const disjointSetUnion = new DisjointSetUnion({
     resourceType: "ServiceRequest",
     resources: serviceRequests,
-    comparators: [sameResourceId, sameResourceIdentifier, sameRequisitionIdentifier],
+    comparators: [sameRequisitionIdentifier, sameResourceIdentifier, sameResourceId],
     merge: mergeServiceRequests,
   });
   const { resourceMap, refReplacementMap, danglingReferences } = disjointSetUnion.deduplicate();

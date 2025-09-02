@@ -47,39 +47,42 @@ export class DisjointSetUnion<R extends Resource> {
   }
 
   /**
-   * Performs deduplication on the given resources using the given set of equality comparators.
+   * Performs deduplication on the given resources using the given set of equality comparators. Comparators that are
+   * more likely to produce equality should be ordered *before* equality comparators that are less likely to produce equality.
+   * For example, for Medication resources, the first comparators should group resources by RxNorm codes.
+   *
    * @param comparators
    */
   deduplicate(): DeduplicationResult<R> {
-    this.compareAndMergeAllGroups();
+    for (const comparator of this.comparators) {
+      this.compareAndMergeGroups(comparator);
+    }
     const groupResources = this.separateResourcesByGroup();
     return this.createResourceMap(groupResources);
   }
 
-  private compareAndMergeAllGroups() {
+  /**
+   * Merge all groups where the comparator returns true for a comparison between two resources of that group.
+   * @param comparator
+   */
+  private compareAndMergeGroups(comparator: Comparator<R>) {
     for (let i = 0; i < this.groupId.length; i++) {
       for (let j = i + 1; j < this.groupId.length; j++) {
         const resourceI = this.resources[i];
         const resourceJ = this.resources[j];
         if (!resourceI || !resourceJ) continue;
-        const equal = this.compareResources(resourceI, resourceJ);
+
+        // Skip if the resources are already
+        const groupOfResourceI = this.findGroup(i);
+        const groupOfResourceJ = this.findGroup(j);
+        if (groupOfResourceI === groupOfResourceJ) continue;
+
+        const equal = comparator(resourceI, resourceJ);
         if (equal) {
           this.unionGroup(i, j);
         }
       }
     }
-  }
-
-  /**
-   * Returns true if the resources are equal, and false otherwise.
-   */
-  private compareResources(resourceI: R, resourceJ: R): boolean {
-    for (const comparator of this.comparators) {
-      if (comparator(resourceI, resourceJ)) {
-        return true;
-      }
-    }
-    return false;
   }
 
   /**

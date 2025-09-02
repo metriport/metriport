@@ -64,7 +64,6 @@ describe("groupSameServiceRequests", () => {
       status: "unknown",
       requisition: { system: "http://example.com", value: "1234567890" },
     });
-
     const serviceRequest3 = makeServiceRequest({
       id: faker.string.uuid(),
       status: "unknown",
