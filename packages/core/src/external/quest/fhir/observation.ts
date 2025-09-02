@@ -8,6 +8,7 @@ import {
   Reference,
 } from "@medplum/fhirtypes";
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
+import { getObservationCategory } from "../../fhir/resources/observation";
 import { ResponseDetail } from "../schema/response";
 import { getPatientReference } from "./patient";
 import { getQuestDataSourceExtension } from "./shared";
@@ -26,6 +27,8 @@ export function getObservation(
 ): Observation {
   const identifier = getObservationIdentifier(detail);
   const code = getObservationCode(detail);
+  const status = getObservationStatus(detail);
+  const category = [getObservationCategory("laboratory")];
   const subject = getPatientReference(patient);
   const interpretation = getObservationInterpretation(detail);
   const referenceRange = getObservationReferenceRange(detail);
@@ -35,8 +38,9 @@ export function getObservation(
   return {
     resourceType: "Observation",
     id: uuidv7(),
-    status: "final",
+    status,
     subject,
+    category,
     ...(valueQuantity ? { valueQuantity } : {}),
     ...(valueString ? { valueString } : {}),
     ...(referenceRange ? { referenceRange } : {}),
@@ -47,7 +51,7 @@ export function getObservation(
   };
 }
 
-export function getObservationStatus(detail: ResponseDetail): Observation["status"] {
+export function getObservationStatus(detail: ResponseDetail): NonNullable<Observation["status"]> {
   if (detail.resultComments?.startsWith(TEST_NOT_PERFORMED_PREFIX)) {
     return "cancelled";
   }

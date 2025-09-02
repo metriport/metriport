@@ -40,6 +40,9 @@ export const CONDITION_VERIFICATION_STATUS_URL =
 
 export const PRACTITIONER_ROLE_URL = "http://terminology.hl7.org/CodeSystem/practitioner-role";
 
+export const OBSERVATION_CATEGORY_URL =
+  "http://terminology.hl7.org/CodeSystem/observation-category";
+
 // https://build.fhir.org/valueset-diagnostic-service-sections.html
 export const DIAGNOSTIC_SERVICE_SECTIONS_URL = "http://terminology.hl7.org/CodeSystem/v2-0074";
 
