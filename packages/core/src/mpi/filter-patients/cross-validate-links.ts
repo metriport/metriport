@@ -2,6 +2,7 @@ import { intersectionWith } from "lodash";
 import { PatientData } from "../../domain/patient";
 import { isContactMatch } from "./match-contact";
 import { hasAddressMatch } from "./match-address";
+import { calculateLastNameScore } from "./match-name";
 
 export function crossValidateInvalidLinks(
   validLinks: PatientData[],
@@ -16,6 +17,12 @@ export function crossValidateInvalidLinks(
 
 function isLinkValidByAssociation(invalidLink: PatientData, validLinks: PatientData[]): boolean {
   for (const validLink of validLinks) {
+    const hasLastNameMatch = calculateLastNameScore(invalidLink, validLink);
+
+    if (hasLastNameMatch) {
+      return true;
+    }
+
     const hasContactMatchByAssociation =
       invalidLink.contact &&
       validLink.contact &&
