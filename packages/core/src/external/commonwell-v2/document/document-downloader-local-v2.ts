@@ -40,11 +40,11 @@ export class DocumentDownloaderLocalV2 extends DocumentDownloader {
   }
 
   override async download({
-    sourceDocument,
-    destinationFileInfo,
+    document,
+    fileInfo,
   }: {
-    sourceDocument: Document;
-    destinationFileInfo: FileInfo;
+    document: Document;
+    fileInfo: FileInfo;
   }): Promise<DownloadResult> {
     const { log } = out("S3.download");
     let downloadedDocument = "";
@@ -55,17 +55,12 @@ export class DocumentDownloaderLocalV2 extends DocumentDownloader {
     function onEnd() {
       log("Finished downloading document");
     }
-    let downloadResult = await this.downloadFromCommonwellIntoS3(
-      sourceDocument,
-      destinationFileInfo,
-      onData,
-      onEnd
-    );
+    let downloadResult = await this.downloadFromCommonwellIntoS3(document, fileInfo, onData, onEnd);
 
     // Check if the detected file type is in the accepted content types and update it if not
     downloadResult = await this.checkAndUpdateMimeType({
-      document: sourceDocument,
-      fileInfo: destinationFileInfo,
+      document: document,
+      fileInfo: fileInfo,
       downloadedDocument,
       downloadResult,
     });
@@ -78,11 +73,11 @@ export class DocumentDownloaderLocalV2 extends DocumentDownloader {
       contentType: downloadResult.contentType,
     };
 
-    if (downloadedDocument && isMimeTypeXML(sourceDocument.mimeType)) {
+    if (downloadedDocument && isMimeTypeXML(newlyDownloadedFile.contentType)) {
       return this.parseXmlFile({
         ...newlyDownloadedFile,
         contents: downloadedDocument,
-        requestedFileInfo: destinationFileInfo,
+        requestedFileInfo: fileInfo,
       });
     }
     return newlyDownloadedFile;
@@ -234,14 +229,14 @@ export class DocumentDownloaderLocalV2 extends DocumentDownloader {
 
     const self = this; // eslint-disable-line @typescript-eslint/no-this-alias
     function setOrResetStream() {
-      return self.getUploadStreamToS3(fileInfo.name, fileInfo.location, document.mimeType);
+      const resp = self.getUploadStreamToS3(fileInfo.name, fileInfo.location, document.mimeType);
+      if (onDataFn) resp.writeStream.on("data", onDataFn);
+      if (onEndFn) resp.writeStream.on("end", onEndFn);
+      return resp;
     }
     const resp = setOrResetStream();
     writeStream = resp.writeStream;
     downloadIntoS3 = resp.promise;
-
-    onDataFn && writeStream.on("data", onDataFn);
-    onEndFn && writeStream.on("end", onEndFn);
 
     await this.downloadDocumentFromCW({
       location: document.location,
