@@ -379,7 +379,7 @@ export class CommonWellMember extends CommonWellBase implements CommonWellMember
     return { Authorization: `Bearer ${jwt}` };
   }
 
-  private getDescriptiveError(error: unknown, title: string): unknown {
+  private getDescriptiveError(error: unknown, title: string): Error {
     if (isAxiosError(error)) {
       const status = error.response?.status;
       const data = error.response?.data;
@@ -394,6 +394,6 @@ export class CommonWellMember extends CommonWellBase implements CommonWellMember
       }
       return new MetriportError(title, error, { status, cwReference, responseBody });
     }
-    return error;
+    return error instanceof Error ? error : new MetriportError(title, error);
   }
 }
