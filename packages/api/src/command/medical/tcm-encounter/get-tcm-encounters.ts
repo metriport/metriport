@@ -3,7 +3,7 @@ import { omit, snakeCase } from "lodash";
 import { QueryTypes } from "sequelize";
 import { PatientModel } from "../../../models/medical/patient";
 import { TcmEncounterModel } from "../../../models/medical/tcm-encounter";
-import { PaginationWithCursors } from "../../pagination";
+import { PaginationWithCursor } from "../../pagination";
 
 /**
  * Add a default filter date far in the past to guarantee hitting the compound index
@@ -41,7 +41,7 @@ export async function getTcmEncounters({
   eventType?: string;
   coding?: string;
   status?: string;
-  pagination: PaginationWithCursors;
+  pagination: PaginationWithCursor;
 }): Promise<TcmEncounterResult[]> {
   const tcmEncounterTable = TcmEncounterModel.tableName;
   const patientTable = PatientModel.tableName;

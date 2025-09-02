@@ -17,7 +17,7 @@ export type Pagination = XOR<PaginationFromItem, PaginationToItem> & {
   originalSort: SortItem[];
 };
 
-export type PaginationWithCursors = Pagination & {
+export type PaginationWithCursor = Pagination & {
   fromItemClause?: CursorWhereClause;
   toItemClause?: CursorWhereClause;
 };
@@ -58,8 +58,8 @@ export function sortForPagination<T>(items: T[], pagination: Pagination | undefi
 }
 
 export async function getPaginationItems<T extends Record<string, unknown>>(
-  requestMeta: PaginationWithCursors,
-  getItems: (pagination: PaginationWithCursors) => Promise<T[]>,
+  requestMeta: PaginationWithCursor,
+  getItems: (pagination: PaginationWithCursor) => Promise<T[]>,
   getTotalCount: () => Promise<number>
 ): Promise<{
   prevPageCursor: CompositeCursor | undefined;
@@ -173,19 +173,4 @@ export function buildCompositeCursorFilters(
       direction,
     },
   };
-}
-
-/**
- * Gets the appropriate sorting configuration for composite cursor pagination.
- * Handles multi-column sorting with proper direction reversal for backward pagination.
- */
-export function getPaginationSortingComposite(pagination: Pagination) {
-  const { sort, toItem } = pagination;
-
-  const backwards = toItem ?? false;
-
-  const orderItems = sort.map(
-    ({ col, order }) => [col, backwards ? (order === "asc" ? "desc" : "asc") : order] as const
-  );
-  return orderItems;
 }

@@ -12,7 +12,7 @@ import {
   PaginationFromItem,
   PaginationItem,
   PaginationToItem,
-  PaginationWithCursors,
+  PaginationWithCursor,
   CursorWhereClause,
 } from "../command/pagination";
 import { encodeCursor, CompositeCursor } from "@metriport/shared/domain/cursor-utils";
@@ -205,7 +205,7 @@ export async function paginated<T extends { id: string }>({
 }: {
   request: Request;
   additionalQueryParams: Record<string, string> | undefined;
-  getItems: (pagination: PaginationWithCursors) => Promise<T[]>;
+  getItems: (pagination: PaginationWithCursor) => Promise<T[]>;
   getTotalCount: () => Promise<number>;
   allowedSortColumns: ColumnValidationConfig;
   hostUrl?: string;
@@ -233,14 +233,14 @@ export async function paginated<T extends { id: string }>({
       )
     : undefined;
 
-  const paginationWithCursors: PaginationWithCursors = {
+  const PaginationWithCursor: PaginationWithCursor = {
     ...validatedMeta,
     fromItemClause,
     toItemClause,
   };
 
   const { prevPageCursor, nextPageCursor, currPageItems, totalCount } = await getPaginationItems(
-    paginationWithCursors,
+    PaginationWithCursor,
     getItems,
     getTotalCount
   );

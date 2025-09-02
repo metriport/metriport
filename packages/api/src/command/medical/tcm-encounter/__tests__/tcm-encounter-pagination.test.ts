@@ -1,7 +1,7 @@
 import { faker } from "@faker-js/faker";
 import { PatientModel } from "../../../../models/medical/patient";
 import { TcmEncounterModel } from "../../../../models/medical/tcm-encounter";
-import { Pagination } from "../../../pagination";
+import { makePaginationWithCursor } from "../../__tests__/fixtures";
 import { getTcmEncounters, getTcmEncountersCount } from "../get-tcm-encounters";
 
 jest.mock("../../../../models/medical/tcm-encounter");
@@ -28,7 +28,7 @@ describe("TCM encounters pagination", () => {
     it("are both called with the same key query pagination and filter clauses", async () => {
       const cxId = faker.string.uuid();
       const afterDate = faker.date.past().toISOString();
-      const pagination: Pagination = { toItem: faker.string.uuid(), count: 10 };
+      const pagination = makePaginationWithCursor();
 
       mockSequelize.query.mockResolvedValueOnce([]);
       await getTcmEncounters({ cxId, pagination, after: afterDate });
