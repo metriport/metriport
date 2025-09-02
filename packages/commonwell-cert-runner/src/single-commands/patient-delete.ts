@@ -4,7 +4,7 @@ dotenv.config();
 import { encodeToCwPatientId } from "@metriport/commonwell-sdk/common/util";
 import { initApiForExistingOrg } from "../flows/org-management";
 
-const patientId: string | undefined = process.argv[2]; // read patient ID from command line argument
+const patientId: string = process.argv[2]; // read patient ID from command line argument
 
 /**
  * Utility to delete a patient from CommonWell.

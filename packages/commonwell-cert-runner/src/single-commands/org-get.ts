@@ -4,7 +4,7 @@ dotenv.config();
 import { APIMode, CommonWellMember } from "@metriport/commonwell-sdk";
 import { memberCertificateString, memberId, memberName, memberPrivateKeyString } from "../env";
 
-const orgOID: string | undefined = process.argv[2]; // read OID from command line argument
+const orgOID: string = process.argv[2]; // read OID from command line argument
 
 /**
  * Utility to get an Organization by OID.
