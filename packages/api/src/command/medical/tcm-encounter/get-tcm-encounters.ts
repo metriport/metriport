@@ -77,7 +77,7 @@ export async function getTcmEncounters({
       ${coding === "cardiac" ? ` AND tcm_encounter.has_cardiac_code = true` : ""}
       ${
         search
-          ? ` AND (tcm_encounter.facility_name ILIKE :search OR patient.data->>'firstName' ILIKE :search OR patient.data->>'lastName' ILIKE :search)`
+          ? ` AND (tcm_encounter.facility_name ILIKE :search OR CONCAT(patient.data->>'firstName', ' ', patient.data->>'lastName') ILIKE :search)`
           : ""
       }
       ${/* PAGINATION */ ""}
@@ -166,7 +166,7 @@ export async function getTcmEncountersCount({
     ${coding === "cardiac" ? ` AND tcm_encounter.has_cardiac_code = true` : ""}
     ${
       search
-        ? ` AND (tcm_encounter.facility_name ILIKE :search OR patient.data->>'firstName' ILIKE :search OR patient.data->>'lastName' ILIKE :search)`
+        ? ` AND (tcm_encounter.facility_name ILIKE :search OR CONCAT(patient.data->>'firstName', ' ', patient.data->>'lastName') ILIKE :search)`
         : ""
     }
   `;
