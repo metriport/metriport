@@ -61,7 +61,6 @@ export class DisjointSetUnion<R extends Resource> {
    * Performs deduplication on the given resources using the given set of hash key generators and equality comparators.
    * To improve performance, comparators that are more likely to produce equality should be ordered *before* equality
    * comparators that are less likely to produce equality.
-   * @param comparators
    */
   deduplicate(): DeduplicationResult<R> {
     // Ensure that duplicate resources are merged by resource ID first.
@@ -100,7 +99,7 @@ export class DisjointSetUnion<R extends Resource> {
 
   /**
    * Deduplicates the resources by the given hash key generator.
-   * @param hashKeyGenerator - The hash key generator to use
+   * @param hashKeyGenerator - Function that generates a hash key from the resource
    */
   private mergeGroupsByHashKey(hashKeyGenerator: HashKeyGenerator<R>) {
     const hashKeyMap: Record<string, number> = {};
@@ -109,7 +108,6 @@ export class DisjointSetUnion<R extends Resource> {
       const resource = this.resources[i];
       if (!resource) continue;
       const groupId = this.findGroup(i);
-      if (groupId === -1) continue;
 
       const hashKey = hashKeyGenerator(resource);
       if (hashKey !== undefined) {
@@ -125,7 +123,7 @@ export class DisjointSetUnion<R extends Resource> {
 
   /**
    * Merge all groups where the comparator returns true for a comparison between two resources of that group.
-   * @param comparator
+   * @param comparator - Function that compares two resources and returns true if they are equal
    */
   private mergeGroupsByComparator(comparator: Comparator<R>) {
     for (let i = 0; i < this.groupId.length; i++) {
