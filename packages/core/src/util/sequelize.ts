@@ -34,8 +34,10 @@ function initDbPoolFromCreds(
   poolOptions: PoolOptions = {
     max: 5,
     min: 1,
-    acquire: 30000,
-    idle: 10000,
+    acquire: 30_000,
+    // Should be greater than CHECK_DB_INTERVAL to avoid connection thrash
+    idle: 15_000,
+    evict: 10_000,
   },
   logging = false
 ) {
