@@ -1,78 +1,12 @@
 ---
-title: "Condition Schema"
-description: "Schema documentation for the Condition table in the Tuva data model"
+title: "Condition"
+description: "Schema documentation for the Condition table in the Metriport data model"
+group: "Schema"
 ---
-
-# Condition
 
 A condition is any sort of symptom, problem, complaint, admitting diagnosis, or billing diagnosis as reported by the patient, a clinician, or as otherwise generated (e.g. by the billing process). Key ancillary data related to condition includes the date it was reported, it's rank (i.e. primary or secondary), and whether or not it was present during admission for an acute inpatient encounter.
 
 Conditions can only be generated during encounters (i.e. every condition must have an encounter_id).
-
-The core.condition table can be populated from claims or clinical data.
-
-## Populating core.condition from claims data
-
-The core.condition table contains all diagnosis codes present in a claims dataset. These diagnosis codes come from the fields diagnosis_code_1, diagnosis_code_2, …, diagnosis_code_25 present in the claims input layer table input_layer.medical_claim. So the core.condition table simply has one row for each of those diagnosis codes. The logic used for populating those conditions into the core.condition table is the following:
-
-1. To every claim_id in input_layer.medical_claim we assign a date that is associated with the diagnosis codes on that claim. These dates will be the recorded_date for all of these conditions when they populate the core.condition table. We assign these dates to each claim_id as follows:
-
-```sql
-select
-  claim_id,
-  coalesce( min(admission_date),
-            min(claim_start_date),
-            min(discharge_date),
-            min(claim_end_date)
-          ) as recorded_date
-from input_layer.medical_claim
-group by claim_id
-```
-
-2. To every claim_id in input_layer.medical_claim we assign 25 conditions as follows:
-
-```sql
-select
-  claim_id,
-  max(diagnosis_code_1) as diagnosis_code_1,
-  max(diagnosis_code_2) as diagnosis_code_2,  
-  max(diagnosis_code_3) as diagnosis_code_3, 
-  max(diagnosis_code_4) as diagnosis_code_4,  
-  max(diagnosis_code_5) as diagnosis_code_5, 
-  max(diagnosis_code_6) as diagnosis_code_6,   
-  max(diagnosis_code_7) as diagnosis_code_7, 
-  max(diagnosis_code_8) as diagnosis_code_8,   
-  max(diagnosis_code_9) as diagnosis_code_9, 
-  max(diagnosis_code_10) as diagnosis_code_10,   
-  max(diagnosis_code_11) as diagnosis_code_11, 
-  max(diagnosis_code_12) as diagnosis_code_12,   
-  max(diagnosis_code_13) as diagnosis_code_13, 
-  max(diagnosis_code_14) as diagnosis_code_14,  
-  max(diagnosis_code_15) as diagnosis_code_15, 
-  max(diagnosis_code_16) as diagnosis_code_16,   
-  max(diagnosis_code_17) as diagnosis_code_17, 
-  max(diagnosis_code_18) as diagnosis_code_18,  
-  max(diagnosis_code_19) as diagnosis_code_19, 
-  max(diagnosis_code_20) as diagnosis_code_20,   
-  max(diagnosis_code_21) as diagnosis_code_21, 
-  max(diagnosis_code_22) as diagnosis_code_22,  
-  max(diagnosis_code_23) as diagnosis_code_23, 
-  max(diagnosis_code_24) as diagnosis_code_24, 
-  max(diagnosis_code_25) as diagnosis_code_25
-from tuva_synthetic.input_layer.medical_claim
-group by claim_id
-```
-
-Note that we the fields `diagnosis_code_1`, `diagnosis_code_2`, … `diagnosis_code_25` in `input_layer.medical_claim` are header level fields that should have the same value for all lines on a claim, but there could be data quality problems in the input layer, so by taking the max value of each diagnosis code for each `claim_id` (as in the query above) we ensure that each claim_id gets exactly 25 diagnosis codes and not more. Some of these diagnosis codes might be `null`, in which case they do not populate the `core.condition table`, but for any non-null value of `diagnosis_code_1` through `diagnosis_code_25` there will be a row in `core.condition` representing that condition.
-
-Keep in mind:
-
-* The number of rows in `core.condition` populated from a claims dataset is at most 25 times the number of distinct `claim_id`s in input_layer.medical_claim. There will be at most 25 distinct diagnosis codes per claim. There could be less because any diagnosis codes that are null in the input layer do not populate `core.condition`.
-* If for a given claim_id two distinct diagnosis codes are the same (for example, `diagnosis_code_1` = `diagnosis_code_2` = R93.1, there will be distinct rows for each of those in `core.condition`, each row having a distinct value of `condition_rank`.
-* All diagnosis codes coming from claims are either ICD-9-CM or ICD-10-CM because the only allowed values for the field `diagnosis_code_type` in `input_layer.medical_claim` are `icd-9-cm` or `icd-10-cm`.
-* If a diagnosis code in the claims input layer has an invalid value (i.e. a value that is not a real ICD-9-CM or ICD-10-CM code, for example `diagnosis_code_1` = 'XXXXX'), a row will still be created in `core.condition` for that diagnosis code. That row in `core.condition` will have a populated value for `source_code` (namely, the invalid diagnosis code, for example source_code = 'XXXXX') but it will have a null value for `normalized_code`.
-
-## Populating core.condition from clinical data
 
 **Primary Keys:**
 * condition_id
@@ -84,4 +18,34 @@ Keep in mind:
 * encounter_id
 
 | Column | Data Type | Description | Terminology |
-| ------ | --------- | ----------- | ----------- | 
+| ------ | --------- | ----------- | ----------- |
+| condition_id | string | Unique identifier for the condition | - |
+| person_id | string | Unique identifier for the person | - |
+| member_id | string | Unique identifier for the member | - |
+| patient_id | string | Unique identifier for the patient | - |
+| encounter_id | string | Unique identifier for the encounter | - |
+| condition_type | string | Type of condition (e.g., problem, symptom, diagnosis) | - |
+| condition_code | string | Standardized code for the condition | ICD-9-CM, ICD-10-CM, SNOMED CT |
+| condition_code_type | string | Type of coding system used | icd-9-cm, icd-10-cm, snomed-ct |
+| condition_code_system | string | Coding system identifier | - |
+| condition_code_version | string | Version of the coding system | - |
+| condition_code_display | string | Human-readable description of the condition | - |
+| condition_rank | integer | Rank/priority of the condition (1 = primary, 2 = secondary, etc.) | - |
+| recorded_date | date | Date when the condition was recorded | - |
+| onset_date | date | Date when the condition began | - |
+| abatement_date | date | Date when the condition resolved | - |
+| clinical_status | string | Clinical status of the condition | active, inactive, resolved |
+| verification_status | string | Verification status of the condition | confirmed, provisional, differential |
+| severity | string | Severity of the condition | mild, moderate, severe |
+| category | string | Category or classification of the condition | - |
+| body_site | string | Anatomical location of the condition | - |
+| laterality | string | Side of the body affected | left, right, bilateral |
+| encounter_class | string | Class of the associated encounter | inpatient, outpatient, emergency |
+| facility_type | string | Type of healthcare facility | hospital, clinic, urgent_care |
+| data_source | string | Source of the condition data | claims, clinical, ehr |
+| source_code | string | Original code from the source system | - |
+| normalized_code | string | Standardized/normalized code | - |
+| source_system | string | System that provided the condition data | - |
+| source_table | string | Table in the source system | - |
+| source_id | string | Identifier from the source system | - |
+| ingestion_date | timestamp | Date when the data was ingested | - |

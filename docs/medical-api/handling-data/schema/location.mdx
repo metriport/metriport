@@ -1,9 +1,8 @@
 ---
-title: "Location Schema"
-description: "Schema documentation for the Location table in the Tuva data model"
+title: "Location"
+description: "Schema documentation for the Location table in the Metriport data model"
+group: "Schema"
 ---
-
-# Location
 
 The location table contains information on practice and facility locations where patients receive medical care.
 
@@ -11,4 +10,31 @@ The location table contains information on practice and facility locations where
 * location_id
 
 | Column | Data Type | Description | Terminology |
-| ------ | --------- | ----------- | ----------- | 
+| ------ | --------- | ----------- | ----------- |
+| location_id | string | Unique identifier for the location | - |
+| organization_id | string | Unique identifier for the organization | - |
+| location_name | string | Name of the location | - |
+| location_type | string | Type of healthcare location | hospital, clinic, urgent_care, office |
+| location_code | string | Standardized location code | - |
+| location_code_type | string | Type of coding system used | - |
+| location_code_system | string | Coding system identifier | - |
+| location_code_version | string | Version of the coding system | - |
+| location_code_display | string | Human-readable description of the location | - |
+| address_line_1 | string | Primary address line | - |
+| address_line_2 | string | Secondary address line | - |
+| city | string | City | - |
+| state | string | State or province | - |
+| zip_code | string | ZIP or postal code | - |
+| country | string | Country | - |
+| phone_number | string | Primary phone number | - |
+| fax_number | string | Fax number | - |
+| email_address | string | Primary email address | - |
+| website_url | string | Website URL | - |
+| active_status | boolean | Whether the location is active | - |
+| data_source | string | Source of the location data | claims, clinical, ehr |
+| source_code | string | Original code from the source system | - |
+| normalized_code | string | Standardized/normalized code | - |
+| source_system | string | System that provided the location data | - |
+| source_table | string | Table in the source system | - |
+| source_id | string | Identifier from the source system | - |
+| ingestion_date | timestamp | Date when the data was ingested | - |

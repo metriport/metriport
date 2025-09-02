@@ -1,9 +1,8 @@
 ---
-title: "Practitioner Schema"
-description: "Schema documentation for the Practitioner table in the Tuva data model"
+title: "Practitioner"
+description: "Schema documentation for the Practitioner table in the Metriport data model"
+group: "Schema"
 ---
-
-# Practitioner
 
 The practitioner table contains information on healthcare providers who deliver care to patients.
 
@@ -14,4 +13,27 @@ The practitioner table contains information on healthcare providers who deliver 
 * location_id
 
 | Column | Data Type | Description | Terminology |
-| ------ | --------- | ----------- | ----------- | 
+| ------ | --------- | ----------- | ----------- |
+| practitioner_id | string | Unique identifier for the practitioner | - |
+| person_id | string | Unique identifier for the person | - |
+| member_id | string | Unique identifier for the member | - |
+| first_name | string | Practitioner's first name | - |
+| last_name | string | Practitioner's last name | - |
+| middle_name | string | Practitioner's middle name | - |
+| npi | string | National Provider Identifier | - |
+| license_number | string | State license number | - |
+| specialty | string | Medical specialty | - |
+| specialty_code | string | Specialty code | - |
+| credential | string | Professional credentials | MD, DO, RN, NP, PA |
+| organization_id | string | Identifier for the organization | - |
+| location_id | string | Identifier for the primary location | - |
+| phone_number | string | Primary phone number | - |
+| email_address | string | Primary email address | - |
+| active_status | boolean | Whether the practitioner is active | - |
+| data_source | string | Source of the practitioner data | claims, clinical, ehr |
+| source_code | string | Original code from the source system | - |
+| normalized_code | string | Standardized/normalized code | - |
+| source_system | string | System that provided the practitioner data | - |
+| source_table | string | Table in the source system | - |
+| source_id | string | Identifier from the source system | - |
+| ingestion_date | timestamp | Date when the data was ingested | - |
