@@ -17,9 +17,6 @@ export async function ingestIntoSearchEngine(
 ): Promise<void> {
   const openSearch = makeSearchServiceIngest();
   if (!openSearch.isIngestible({ contentType: file.contentType, fileName: file.key })) {
-    log(
-      `Skipping ingestion of entry ${entryId} / file ${file.key} into OpenSearch: not ingestible`
-    );
     return;
   }
   try {
