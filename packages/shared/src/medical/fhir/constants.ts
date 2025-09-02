@@ -38,6 +38,8 @@ export const CONDITION_CLINICAL_STATUS_URL =
 export const CONDITION_VERIFICATION_STATUS_URL =
   "http://terminology.hl7.org/CodeSystem/condition-ver-status";
 
+export const PRACTITIONER_UPIN_URL = "http://hl7.org/fhir/sid/us-upin";
+export const PRACTITIONER_NPI_URL = "http://hl7.org/fhir/sid/us-npi";
 export const PRACTITIONER_ROLE_URL = "http://terminology.hl7.org/CodeSystem/practitioner-role";
 
 export const OBSERVATION_CATEGORY_URL =

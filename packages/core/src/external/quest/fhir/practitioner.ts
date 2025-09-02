@@ -1,4 +1,5 @@
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
+import { PRACTITIONER_NPI_URL, PRACTITIONER_UPIN_URL } from "@metriport/shared/medical";
 import {
   HumanName,
   Identifier,
@@ -62,11 +63,21 @@ function getPractitionerName(detail: ResponseDetail): HumanName[] | undefined {
 }
 
 function getPractitionerIdentifier(detail: ResponseDetail): Identifier[] | undefined {
-  if (!detail.physicianUpin) return undefined;
-  return [
-    {
-      system: "http://hl7.org/fhir/sid/us-upin",
+  const identifiers: Identifier[] = [];
+  if (detail.physicianNpi) {
+    identifiers.push({
+      system: PRACTITIONER_NPI_URL,
+      value: detail.physicianNpi,
+    });
+  }
+  if (detail.physicianUpin) {
+    identifiers.push({
+      system: PRACTITIONER_UPIN_URL,
       value: detail.physicianUpin,
-    },
-  ];
+    });
+  }
+  if (identifiers.length > 0) {
+    return identifiers;
+  }
+  return undefined;
 }
