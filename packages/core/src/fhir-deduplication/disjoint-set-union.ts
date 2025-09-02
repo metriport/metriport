@@ -75,7 +75,7 @@ export class DisjointSetUnion<R extends Resource> {
       this.mergeGroupsByComparator(comparator);
     }
     // Finally, group resources in O(n) to generate the final deduplication result.
-    const groupResources = this.separateResourcesByGroup();
+    const groupResources = this.splitResourcesByGroup();
     return this.createResourceMap(groupResources);
   }
 
@@ -149,11 +149,11 @@ export class DisjointSetUnion<R extends Resource> {
   }
 
   /**
-   * Separates the initial resources into groups based on group IDs, where each group ID corresponds
-   * to an array of one or more resources.
+   * Splits the initial resource array into subarrays based on group IDs. All resources in a group array
+   * are considered to be duplicates of each other.
    * @returns A map of group IDs to arrays of resources.
    */
-  private separateResourcesByGroup(): Map<number, R[]> {
+  private splitResourcesByGroup(): Map<number, R[]> {
     const resourcesForGroup: Map<number, R[]> = new Map();
     for (let i = 0; i < this.groupId.length; i++) {
       const groupId = this.findGroup(i);
@@ -203,7 +203,7 @@ export class DisjointSetUnion<R extends Resource> {
    * @param index - The index to get the group ID for
    * @returns The root group ID for the given index, or -1 if the index is invalid
    */
-  findGroup(index: number): number {
+  private findGroup(index: number): number {
     const groupIdAtIndex = this.groupId[index];
     if (groupIdAtIndex === undefined) return -1;
     // If this is a root node with no reference to another index as a parent
@@ -224,7 +224,7 @@ export class DisjointSetUnion<R extends Resource> {
    * @param x - The index of the first resource to join
    * @param y - The index of the second resource to join
    */
-  unionGroup(x: number, y: number) {
+  private unionGroup(x: number, y: number) {
     const parentX = this.findGroup(x);
     const parentY = this.findGroup(y);
     if (parentX !== parentY) {
