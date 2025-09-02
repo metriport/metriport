@@ -24,10 +24,12 @@ import {
 } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
+import { partition } from "lodash";
 import { getCQPatientData } from "../../external/carequality/command/cq-patient-data/get-cq-data";
 import { updateCQPatientData } from "../../external/carequality/command/cq-patient-data/update-cq-data";
 import { CQData, CQLink } from "../../external/carequality/cq-patient-data";
 import { getCWAccessForPatient } from "../../external/commonwell-v1/admin/shared";
+import { getCWAccessForPatient as getCWAccessForPatientV2 } from "../../external/commonwell-v2/admin/shared";
 import { getCwPatientData } from "../../external/commonwell/patient/cw-patient-data/get-cw-data";
 import {
   CwData,
@@ -39,6 +41,7 @@ import { makeFhirApi } from "../../external/fhir/api/api-factory";
 import { Config } from "../../shared/config";
 import { createOrUpdateInvalidLinks } from "../medical/invalid-links/create-invalid-links";
 import { getPatientOrFail } from "../medical/patient/get-patient";
+import { StatusResponse } from "@metriport/commonwell-sdk/models/patient";
 
 dayjs.extend(duration);
 
@@ -363,66 +366,121 @@ async function findAndInvalidateLinks(
   log: typeof console.log
 ): Promise<void> {
   const dryRunMsg = getDryRunPrefix(dryRun);
+
   try {
+    // First, identify and categorize all links to invalidate
     const invalidLinks = {
       carequality: cqLink ? [cqLink] : [],
       commonwell: cwLink ? [cwLink] : [],
     };
 
     if (dryRun) {
-      log(`${dryRunMsg}Would invalidate links:`, invalidLinks);
+      log(`${dryRunMsg}Would invalidate links:`, JSON.stringify(invalidLinks));
       return;
     }
 
-    const patient = await getPatientOrFail({ cxId, id: patientId });
-    const cwAccess = await getCWAccessForPatient(patient);
-    if (cwAccess.error != null)
-      throw new MetriportError("Error invalidating CW link", undefined, {
-        reason: cwAccess.error,
-      });
-    const { commonWell, queryMeta } = cwAccess;
+    // Separate CW v1 and v2 links
+    const [cwV1Links, cwV2Links] = partition(invalidLinks.commonwell, isCwLinkV1);
 
-    const downgradeRequests: Promise<NetworkLink>[] = [];
-    const retryParams = {
-      retryOnTimeout: true,
-      maxAttempts: MAX_RETRIES,
-      initialDelay: INITIAL_DELAY.asMilliseconds(),
-    };
-
-    for (const link of invalidLinks.commonwell) {
-      if (isCwLinkV1(link)) {
-        const downgradeHref = link._links?.downgrade?.href;
-        if (!downgradeHref) continue;
-        downgradeRequests.push(
-          executeWithNetworkRetries(
-            () => commonWell.upgradeOrDowngradeNetworkLink(queryMeta, downgradeHref),
-            retryParams
-          ).catch(error => {
-            processAsyncError("Failed to downgrade link");
-            throw error;
-          })
-        );
-      } else {
-        // TODO ENG-934: NEED TO INVOKE CW v2 METHODS!
-        // TODO ENG-934: NEED TO INVOKE CW v2 METHODS!
-        // TODO ENG-934: NEED TO INVOKE CW v2 METHODS!
-        const unlinkHref = link.Links?.Unlink;
-        if (!unlinkHref) continue;
-        log(`${dryRunMsg}Skipping CW v2 unlink network call until v2 API is implemented`);
-        continue;
-      }
-    }
-
-    await Promise.allSettled([
+    const cwUnlinkkPromises = [];
+    // Only get CW access objects if we have links to process
+    const promises: Promise<unknown>[] = [
       createOrUpdateInvalidLinks({ id: patientId, cxId, invalidLinks }),
       updateCQPatientData({ id: patientId, cxId, cqLinksToInvalidate: invalidLinks.carequality }),
       updateCwPatientData({ id: patientId, cxId, cwLinksToInvalidate: invalidLinks.commonwell }),
-      ...downgradeRequests,
-    ]);
+    ];
+
+    // Add CW v1 downgrade requests if needed
+    if (cwV1Links.length > 0) {
+      const cwV1Promises = await createCwV1DowngradePromises(cxId, patientId, cwV1Links);
+      cwUnlinkkPromises.push(...cwV1Promises);
+    }
+
+    // Add CW v2 unlink requests if needed
+    if (cwV2Links.length > 0) {
+      const cwV2Promises = await createCwV2UnlinkPromises(cxId, patientId, cwV2Links);
+      cwUnlinkkPromises.push(...cwV2Promises);
+    }
+
+    log(`Removing ${cwUnlinkkPromises.length} links`);
+    promises.push(...cwUnlinkkPromises);
+    await Promise.allSettled(promises);
   } catch (error) {
     log(`Error invalidating links: ${errorToString(error)}`);
     throw error;
   }
+}
+
+async function createCwV1DowngradePromises(
+  cxId: string,
+  patientId: string,
+  cwV1Links: CwLink[]
+): Promise<Promise<NetworkLink>[]> {
+  const patient = await getPatientOrFail({ cxId, id: patientId });
+  const cwAccessV1 = await getCWAccessForPatient(patient);
+
+  if (cwAccessV1.error != null) {
+    throw new MetriportError("Error getting CW v1 access", undefined, {
+      reason: cwAccessV1.error,
+    });
+  }
+
+  const { commonWell: commonWellV1, queryMeta } = cwAccessV1;
+  const retryParams = {
+    retryOnTimeout: true,
+    maxAttempts: MAX_RETRIES,
+    initialDelay: INITIAL_DELAY.asMilliseconds(),
+  };
+
+  return cwV1Links
+    .map(link => {
+      if (isCwLinkV1(link)) {
+        return link._links?.downgrade?.href;
+      }
+      return undefined;
+    })
+    .filter((href): href is string => Boolean(href))
+    .map(downgradeHref =>
+      executeWithNetworkRetries(
+        () => commonWellV1.upgradeOrDowngradeNetworkLink(queryMeta, downgradeHref),
+        retryParams
+      ).catch(error => {
+        processAsyncError("Failed to downgrade CW v1 link");
+        throw error;
+      })
+    );
+}
+
+async function createCwV2UnlinkPromises(
+  cxId: string,
+  patientId: string,
+  cwV2Links: CwLink[]
+): Promise<Promise<StatusResponse>[]> {
+  const patient = await getPatientOrFail({ cxId, id: patientId });
+  const cwAccessV2 = await getCWAccessForPatientV2(patient);
+
+  if (cwAccessV2.error != null) {
+    throw new MetriportError("Error getting CW v2 access", undefined, {
+      reason: cwAccessV2.error,
+    });
+  }
+
+  const { commonWell: commonWellV2 } = cwAccessV2;
+
+  return cwV2Links
+    .map(link => {
+      if (!isCwLinkV1(link)) {
+        return link.Links?.Unlink;
+      }
+      return undefined;
+    })
+    .filter((href): href is string => Boolean(href))
+    .map(unlinkHref =>
+      commonWellV2.unlinkPatients(unlinkHref).catch(error => {
+        processAsyncError("Failed to unlink CW v2 link");
+        throw error;
+      })
+    );
 }
 
 async function deleteFromOpenSearch(entryId: string, dryRun = false, log: typeof console.log) {

@@ -1,29 +1,22 @@
-import {
-  CommonWellAPI,
-  organizationQueryMeta,
-  RequestMetadata,
-} from "@metriport/commonwell-sdk-v1";
-import { addOidPrefix } from "@metriport/core/domain/oid";
+import { CommonWellAPI } from "@metriport/commonwell-sdk";
 import { Patient } from "@metriport/core/domain/patient";
+import { getCWData } from "../../commonwell/patient/patient";
+import { getCwInitiator } from "../../commonwell/shared";
 import { makeCommonWellAPI } from "../api";
-import { getCWData } from "../patient";
-import { getCwInitiator } from "../shared";
 
-export type CWAccessV1 =
+export type CWAccessV2 =
   | {
       commonWell: CommonWellAPI;
-      queryMeta: RequestMetadata;
       orgOID: string;
       orgName: string;
       cwPatientId: string;
-      cwPersonId: string | undefined;
       error?: never;
     }
   | {
       error: string;
     };
 
-export async function getCWAccessForPatient(patient: Patient): Promise<CWAccessV1> {
+export async function getCWAccessForPatient(patient: Patient): Promise<CWAccessV2> {
   const facilityId = patient.facilityIds[0];
   if (!facilityId) {
     console.log(`Patient ${patient.id} has no facilityId, skipping...`);
@@ -37,21 +30,17 @@ export async function getCWAccessForPatient(patient: Patient): Promise<CWAccessV
     return { error: "missing-external-data" };
   }
   const cwPatientId = commonwellData.patientId;
-  const cwPersonId = commonwellData.personId;
 
   const initiator = await getCwInitiator(patient, facilityId);
   const initiatorName = initiator.name;
   const initiatorOID = initiator.oid;
   const initiatorNpi = initiator.npi;
 
-  const commonWell = makeCommonWellAPI(initiatorName, addOidPrefix(initiatorOID));
-  const queryMeta = organizationQueryMeta(initiatorName, { npi: initiatorNpi });
+  const commonWell = makeCommonWellAPI(initiatorName, initiatorOID, initiatorNpi);
 
   return {
     commonWell,
-    queryMeta,
     cwPatientId,
-    cwPersonId,
     orgOID: initiatorOID,
     orgName: initiatorName,
   };

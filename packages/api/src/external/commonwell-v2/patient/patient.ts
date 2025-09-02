@@ -284,9 +284,6 @@ export async function updatePatientAndLinksInCwV2({
       }),
     ]);
 
-    // TODO: ENG-955 MAKE SURE THE LINKS ARE HANDLED CORRECTLY
-    // TODO: ENG-955 MAKE SURE THE LINKS ARE HANDLED CORRECTLY
-    // TODO: ENG-955 MAKE SURE THE LINKS ARE HANDLED CORRECTLY
     const { validLinks, invalidLinks } = await tryToImproveLinks({
       commonWell,
       patient,
