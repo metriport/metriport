@@ -54,9 +54,7 @@ export class DisjointSetUnion<R extends Resource> {
    * @param comparators
    */
   deduplicate(): DeduplicationResult<R> {
-    for (const comparator of this.comparators) {
-      this.compareAndMergeGroups(comparator);
-    }
+    this.compareAndMergeGroups();
     const groupResources = this.separateResourcesByGroup();
     return this.createResourceMap(groupResources);
   }
@@ -65,19 +63,14 @@ export class DisjointSetUnion<R extends Resource> {
    * Merge all groups where the comparator returns true for a comparison between two resources of that group.
    * @param comparator
    */
-  private compareAndMergeGroups(comparator: Comparator<R>) {
+  private compareAndMergeGroups() {
     for (let i = 0; i < this.groupId.length; i++) {
       for (let j = i + 1; j < this.groupId.length; j++) {
         const resourceI = this.resources[i];
         const resourceJ = this.resources[j];
         if (!resourceI || !resourceJ) continue;
 
-        // Skip if the resources are already
-        const groupOfResourceI = this.findGroup(i);
-        const groupOfResourceJ = this.findGroup(j);
-        if (groupOfResourceI === groupOfResourceJ) continue;
-
-        const equal = comparator(resourceI, resourceJ);
+        const equal = this.comparators.some(comparator => comparator(resourceI, resourceJ));
         if (equal) {
           this.unionGroup(i, j);
         }
