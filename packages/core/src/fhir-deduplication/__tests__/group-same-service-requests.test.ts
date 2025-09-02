@@ -7,9 +7,11 @@ function makeServiceRequest({
   id,
   status,
   identifier,
+  requisition,
 }: {
   id: string;
   status: ServiceRequestStatusCode;
+  requisition?: Identifier;
   identifier?: Identifier[];
 }): ServiceRequest {
   return {
@@ -17,6 +19,7 @@ function makeServiceRequest({
     id,
     status,
     ...(identifier ? { identifier } : {}),
+    ...(requisition ? { requisition } : {}),
   };
 }
 
@@ -54,18 +57,18 @@ describe("groupSameServiceRequests", () => {
     const serviceRequest1 = makeServiceRequest({
       id: faker.string.uuid(),
       status: "unknown",
-      identifier: [{ system: "http://example.com", value: "1234567890" }],
+      requisition: { system: "http://example.com", value: "1234567890" },
     });
     const serviceRequest2 = makeServiceRequest({
       id: faker.string.uuid(),
       status: "unknown",
-      identifier: [{ system: "http://example.com", value: "1234567890" }],
+      requisition: { system: "http://example.com", value: "1234567890" },
     });
 
     const serviceRequest3 = makeServiceRequest({
       id: faker.string.uuid(),
       status: "unknown",
-      identifier: [{ system: "http://example.com", value: "8239482342" }],
+      requisition: { system: "http://example.com", value: "8239482342" },
     });
 
     const { serviceRequestsMap } = groupSameServiceRequests([
