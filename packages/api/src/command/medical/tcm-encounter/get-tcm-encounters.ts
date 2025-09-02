@@ -1,8 +1,10 @@
 import { buildDayjs } from "@metriport/shared/common/date";
+import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { omit } from "lodash";
 import { QueryTypes } from "sequelize";
 import { PatientModel } from "../../../models/medical/patient";
 import { TcmEncounterModel } from "../../../models/medical/tcm-encounter";
+import { PatientMappingModel } from "../../../models/patient-mapping";
 import { getPaginationSorting, Pagination, sortForPagination } from "../../pagination";
 
 /**
@@ -14,12 +16,15 @@ export interface TcmEncounterQueryData extends TcmEncounterModel {
   dataValues: TcmEncounterModel["dataValues"] & {
     patient_data: PatientModel["dataValues"]["data"];
     patient_facility_ids: PatientModel["dataValues"]["facilityIds"];
+    patient_source: string;
+    patient_external_id: string;
   };
 }
 
 export type TcmEncounterResult = TcmEncounterModel["dataValues"] & {
   patientData: PatientModel["dataValues"]["data"];
   patientFacilityIds: PatientModel["dataValues"]["facilityIds"];
+  externalUrl: string | undefined;
 };
 
 export async function getTcmEncounters({
@@ -47,6 +52,7 @@ export async function getTcmEncounters({
 }): Promise<TcmEncounterResult[]> {
   const tcmEncounterTable = TcmEncounterModel.tableName;
   const patientTable = PatientModel.tableName;
+  const patientMappingTable = PatientMappingModel.tableName;
 
   const sequelize = TcmEncounterModel.sequelize;
   if (!sequelize) throw new Error("Sequelize not found");
@@ -60,12 +66,20 @@ export async function getTcmEncounters({
 
   /**
    * ⚠️ Always change this query and the count query together.
+   * NOTE: patientMappingTable is skipped in the count query because it's not needed. Unless need to measure query performance.
    */
   const queryString = `
-      SELECT tcm_encounter.*, patient.data as patient_data, patient.facility_ids as patient_facility_ids
+      SELECT
+        tcm_encounter.*,
+        patient.data as patient_data,
+        patient.facility_ids as patient_facility_ids,
+        patient_mapping.external_id as patient_external_id,
+        patient_mapping.source as patient_source
       FROM ${tcmEncounterTable} tcm_encounter
       INNER JOIN ${patientTable} patient 
       ON tcm_encounter.patient_id = patient.id
+      LEFT JOIN ${patientMappingTable} patient_mapping
+      ON tcm_encounter.patient_id = patient_mapping.patient_id
       WHERE tcm_encounter.cx_id = :cxId
       AND tcm_encounter.admit_time > :admittedAfter
       ${
@@ -112,9 +126,18 @@ export async function getTcmEncounters({
   })) as TcmEncounterQueryData[];
 
   const encounters = rawEncounters.map(e => ({
-    ...omit(e.dataValues, ["patient_data", "patient_facility_ids"]),
+    ...omit(e.dataValues, [
+      "patient_data",
+      "patient_facility_ids",
+      "patient_source",
+      "patient_external_id",
+    ]),
     patientData: e.dataValues.patient_data,
     patientFacilityIds: e.dataValues.patient_facility_ids,
+    externalUrl: constructExternalUrl(
+      e.dataValues.patient_source,
+      e.dataValues.patient_external_id
+    ),
   }));
 
   return sortForPagination(encounters, pagination);
@@ -194,4 +217,14 @@ export async function getTcmEncountersCount({
   });
 
   return parseInt(result[0].count.toString());
+}
+
+function constructExternalUrl(source: string, externalId: string): string | undefined {
+  switch (source) {
+    case EhrSources.eclinicalworks:
+      // dummy url for now, TODO: get feedback and change to the actual url
+      return `https://eclinicalworks.com/p/form/${externalId}`;
+    default:
+      return undefined;
+  }
 }
