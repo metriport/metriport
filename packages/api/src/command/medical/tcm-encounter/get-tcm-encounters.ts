@@ -170,6 +170,7 @@ export async function getTcmEncountersCount({
     ${eventType ? ` AND tcm_encounter.latest_event = :eventType` : ""}
     ${status ? ` AND tcm_encounter.outreach_status = :status` : ""}
     ${coding === "cardiac" ? ` AND tcm_encounter.has_cardiac_code = true` : ""}
+    ${encounterClass ? ` AND tcm_encounter.class = :encounterClass` : ""}
     ${
       search
         ? ` AND (tcm_encounter.facility_name ILIKE :search OR patient.data->>'firstName' ILIKE :search OR patient.data->>'lastName' ILIKE :search)`
