@@ -1,11 +1,3 @@
-// TODO ENG-513 update it
-// TODO ENG-513 update it
-// TODO ENG-513 update it
-// TODO ENG-513 update it
-// TODO ENG-513 update it
-// TODO ENG-513 update it
-// TODO ENG-513 update it
-// TODO ENG-513 update it
 import * as organization from "../commonwell-v1/command/create-or-update-cw-organization";
 import * as link from "../commonwell-v1/link";
 import * as patientV1 from "../commonwell-v1/patient";
@@ -24,7 +16,7 @@ const cwCommands = {
     getLinkStatusCW: patientV1.getLinkStatusCW,
   },
   link: {
-    create: link.create,
+    create: link.create, // TODO ENG-554 - Remove this route when we migrate to CW v2
     get: link.get,
     reset: link.reset,
     findAllPotentialLinks: link.findAllPotentialLinks,

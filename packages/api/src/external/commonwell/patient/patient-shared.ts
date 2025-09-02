@@ -1,4 +1,3 @@
-// import { Person as CommonwellPerson } from "@metriport/commonwell-sdk-v1";
 import { GenderCodes } from "@metriport/commonwell-sdk";
 import { GenderAtBirth, PatientExternalDataEntry } from "@metriport/core/domain/patient";
 import { LinkStatus } from "../../patient-link";
@@ -25,8 +24,6 @@ export class PatientDataCommonwell extends PatientExternalDataEntry {
     super();
   }
 }
-
-// export type FindOrCreatePersonResponse = { personId: string; person: CommonwellPerson } | undefined;
 
 export function cwGenderToPatientGender(gender: GenderCodes | undefined): GenderAtBirth {
   switch (gender) {

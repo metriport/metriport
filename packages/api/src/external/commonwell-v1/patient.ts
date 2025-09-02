@@ -873,7 +873,7 @@ async function registerPatient({
   const { debug } = out(fnName);
 
   const respPatient = await commonWell.registerPatient(queryMeta, commonwellPatient);
-  debug(`resp registerPatient: `, JSON.stringify(respPatient));
+  debug(`resp registerPatient: `, () => JSON.stringify(respPatient));
 
   const commonwellPatientId = getIdTrailingSlash(respPatient);
   const { log } = out(`${fnName} - CW patientId ${commonwellPatientId}`);

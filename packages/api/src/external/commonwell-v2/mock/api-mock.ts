@@ -231,8 +231,4 @@ export class CommonWellMock implements CommonWellAPI {
       size: 1000,
     };
   }
-
-  getDescriptiveError(error: unknown): never {
-    throw error;
-  }
 }

@@ -3,11 +3,11 @@ import activity from "./activity";
 import biometrics from "./biometrics";
 import body from "./body";
 import connect from "./connect";
-import docContribution from "./doc-contribution";
 import ehr from "./ehr";
 import feedback from "./feedback";
 import { reportClientErrors } from "./helpers/report-client-errors";
 import internal from "./internal";
+import local from "./local";
 import medical from "./medical";
 import medicalDash from "./medical/dash";
 import fhirRouter from "./medical/fhir-r4-proxy";
@@ -27,6 +27,7 @@ export default (app: Application) => {
   // internal only routes, should be disabled at API Gateway
   app.use("/webhook", reportClientErrors, webhook);
   app.use("/internal", internal);
+  app.use("/", local);
 
   // routes with API key auth
   app.use("/settings", processCxId, settings);
@@ -48,8 +49,6 @@ export default (app: Application) => {
 
   // routes with session token auth
   app.use("/connect", connect);
-
-  app.use("/doc-contribution", docContribution);
 
   // routes with OAuth based authentication
   app.use("/oauth", reportClientErrors, oauthRoutes);

@@ -99,11 +99,9 @@ export function checkDemoMatch({
     // TODO
     // Current address zip / city match
     // TODO Mark the first address as current in Dash
-    if (coreDemographics.addresses.length > 0) {
-      const currentPatientAddress = JSON.parse(
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        coreDemographics.addresses[0]!
-      ) as LinkGenericAddress;
+    const firstCoreDemoAddress = coreDemographics.addresses[0];
+    if (firstCoreDemoAddress) {
+      const currentPatientAddress = JSON.parse(firstCoreDemoAddress) as LinkGenericAddress;
       const linkDemograhpicsAddesses = linkDemographics.addresses.map(
         address => JSON.parse(address) as LinkGenericAddress
       );
@@ -342,10 +340,10 @@ export function createAugmentedPatient(patient: Patient): Patient {
     .filter(address => !coreDemographics.addresses.includes(address))
     .flatMap(address => {
       const addressObj: LinkGenericAddress = JSON.parse(address);
-      if (!addressObj.line[0]) return [];
+      const firstAddressLine = addressObj.line[0];
+      if (!firstAddressLine) return [];
       return {
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        addressLine1: addressObj.line[0]!,
+        addressLine1: firstAddressLine,
         addressLine2: addressObj.line[1] ? addressObj.line.slice(1).join(" ") : undefined,
         city: addressObj.city,
         state: addressObj.state as USState,

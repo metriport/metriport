@@ -267,14 +267,11 @@ export async function updatePatientAndLinksInCwV2({
     commonWell = commonWellAPI;
 
     debug(`Updating this Patient: `, () => JSON.stringify(commonwellPatient, null, 2));
-    const commonwellPatientIdUpd = await updatePatient({
+    await updatePatient({
       commonWell,
       commonwellPatient,
       commonwellPatientId,
     });
-    // TODO ENG-513 I DONT THINK WE NEED TO GET THE ID AGAIN ^
-    // TODO ENG-513 I DONT THINK WE NEED THIS WILL EVER BE FALSE???
-    debug(`ID remained the same: ${commonwellPatientIdUpd === commonwellPatientId}`);
 
     const [existingLinks, probableLinks] = await Promise.all([
       getExistingLinks({
@@ -590,7 +587,7 @@ async function registerPatient({
   const { log, debug } = out(fnName);
 
   const respPatient = await commonWell.createOrUpdatePatient(commonwellPatient);
-  debug(`resp registerPatient: `, JSON.stringify(respPatient));
+  debug(`resp registerPatient: `, () => JSON.stringify(respPatient));
   log(`respPatient: `, JSON.stringify(respPatient));
   const commonwellPatientId = getCwPatientIdFromLinks(respPatient.Links);
   if (!commonwellPatientId) {

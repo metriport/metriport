@@ -23,7 +23,7 @@ const router = Router();
  * @returns A redirect to the signed URL for the file.
  */
 router.get(
-  "/commonwell",
+  "/doc-contribution/commonwell",
   asyncHandler(async (req: Request, res: Response) => {
     {
       if (!Config.isDev()) {

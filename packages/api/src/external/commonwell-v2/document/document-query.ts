@@ -226,7 +226,6 @@ export async function queryAndProcessDocuments({
     });
     log(`Got ${cwDocuments.length} documents from CW`);
 
-    // Good above this point
     const fhirDocRefs = await downloadDocsAndUpsertFHIR({
       patient,
       facilityId,
@@ -261,9 +260,6 @@ export async function queryAndProcessDocuments({
 
     await setDocQueryProgress({
       patient: { id: patientParam.id, cxId: patientParam.cxId },
-      // TODO: Added this, not sure if correct!!!
-      // TODO: Added this, not sure if correct!!!
-      // TODO: Added this, not sure if correct!!!
       convertProgress: { status: "failed" },
       downloadProgress: { status: "failed" },
       requestId,
@@ -348,8 +344,8 @@ async function internalGetDocuments({
     const documents: CwDocumentReference[] = docs.flatMap(d => {
       if (d.masterIdentifier?.value && d.content?.[0]?.attachment.url) {
         const docRef: CwDocumentReference = {
-          id: d.masterIdentifier?.value,
           ...d,
+          id: d.masterIdentifier?.value,
         };
         return docRef;
       }

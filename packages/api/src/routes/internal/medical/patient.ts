@@ -340,6 +340,8 @@ router.post(
 /** ---------------------------------------------------------------------------
  * POST /internal/patient/:patientId/link/:source
  *
+ * TODO: ENG-554 - Remove this route when we migrate to CW v2
+ *
  * Creates link to the specified entity.
  *
  * @param req.params.patientId Patient ID to link to a person.
