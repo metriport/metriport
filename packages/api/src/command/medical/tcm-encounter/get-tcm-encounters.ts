@@ -16,15 +16,19 @@ export interface TcmEncounterQueryData extends TcmEncounterModel {
   dataValues: TcmEncounterModel["dataValues"] & {
     patient_data: PatientModel["dataValues"]["data"];
     patient_facility_ids: PatientModel["dataValues"]["facilityIds"];
-    patient_source: string;
-    patient_external_id: string;
+    patient_mappings: Array<{
+      external_id: string;
+      source: string;
+    }>;
   };
 }
+
+type ExternalUrlItem = { url: string; source: string };
 
 export type TcmEncounterResult = TcmEncounterModel["dataValues"] & {
   patientData: PatientModel["dataValues"]["data"];
   patientFacilityIds: PatientModel["dataValues"]["facilityIds"];
-  externalUrl: string | undefined;
+  externalUrls: Array<ExternalUrlItem>;
 };
 
 export async function getTcmEncounters({
@@ -73,8 +77,15 @@ export async function getTcmEncounters({
         tcm_encounter.*,
         patient.data as patient_data,
         patient.facility_ids as patient_facility_ids,
-        patient_mapping.external_id as patient_external_id,
-        patient_mapping.source as patient_source
+        COALESCE(
+          JSON_AGG(
+            JSON_BUILD_OBJECT(
+              'external_id', patient_mapping.external_id,
+              'source', patient_mapping.source
+            )
+          ) FILTER (WHERE patient_mapping.external_id IS NOT NULL),
+          '[]'::json
+        ) as patient_mappings
       FROM ${tcmEncounterTable} tcm_encounter
       INNER JOIN ${patientTable} patient 
       ON tcm_encounter.patient_id = patient.id
@@ -97,6 +108,7 @@ export async function getTcmEncounters({
           ? ` AND (tcm_encounter.facility_name ILIKE :search OR patient.data->>'firstName' ILIKE :search OR patient.data->>'lastName' ILIKE :search)`
           : ""
       }
+      GROUP BY tcm_encounter.id, patient.id, patient.data, patient.facility_ids
       ${/* PAGINATION */ ""}
       ${toItem ? ` AND tcm_encounter.id >= :toItem` : ""}
       ${fromItem ? ` AND tcm_encounter.id <= :fromItem` : ""}
@@ -126,18 +138,15 @@ export async function getTcmEncounters({
   })) as TcmEncounterQueryData[];
 
   const encounters = rawEncounters.map(e => ({
-    ...omit(e.dataValues, [
-      "patient_data",
-      "patient_facility_ids",
-      "patient_source",
-      "patient_external_id",
-    ]),
+    ...omit(e.dataValues, ["patient_data", "patient_facility_ids", "patient_mappings"]),
     patientData: e.dataValues.patient_data,
     patientFacilityIds: e.dataValues.patient_facility_ids,
-    externalUrl: constructExternalUrl(
-      e.dataValues.patient_source,
-      e.dataValues.patient_external_id
-    ),
+    externalUrls: e.dataValues.patient_mappings
+      .map(mapping => ({
+        url: constructExternalUrl(mapping.source, mapping.external_id),
+        source: mapping.source,
+      }))
+      .filter((item): item is ExternalUrlItem => !!item.url && !!item.source),
   }));
 
   return sortForPagination(encounters, pagination);
