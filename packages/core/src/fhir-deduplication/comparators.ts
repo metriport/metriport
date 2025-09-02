@@ -15,11 +15,12 @@ export function sameResourceIdentifier(
   const identifiersOfResourceB = resourceB.identifier;
   if (identifiersOfResourceA === undefined || identifiersOfResourceB === undefined) return false;
   return identifiersOfResourceA.some(identifierOfResourceA => {
-    return identifiersOfResourceB.some(identifierOfResourceB => {
-      return (
-        identifierOfResourceA.system === identifierOfResourceB.system &&
-        identifierOfResourceA.value === identifierOfResourceB.value
-      );
-    });
+    return identifiersOfResourceB.some(identifierOfResourceB =>
+      sameIdentifier(identifierOfResourceA, identifierOfResourceB)
+    );
   });
+}
+
+export function sameIdentifier(identifierA: Identifier, identifierB: Identifier) {
+  return identifierA.system === identifierB.system && identifierA.value === identifierB.value;
 }

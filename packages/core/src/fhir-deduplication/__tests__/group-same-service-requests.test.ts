@@ -35,4 +35,18 @@ describe("groupSameServiceRequests", () => {
     const { serviceRequestsMap } = groupSameServiceRequests([serviceRequest1, serviceRequest2]);
     expect(serviceRequestsMap.size).toBe(1);
   });
+
+  it("correctly groups serviceRequests based on IDs", () => {
+    const serviceRequest1 = makeServiceRequest({
+      id: faker.string.uuid(),
+      status: "unknown",
+    });
+    const serviceRequest2 = makeServiceRequest({
+      id: serviceRequest1.id ?? faker.string.uuid(),
+      status: "unknown",
+    });
+
+    const { serviceRequestsMap } = groupSameServiceRequests([serviceRequest1, serviceRequest2]);
+    expect(serviceRequestsMap.size).toBe(1);
+  });
 });
