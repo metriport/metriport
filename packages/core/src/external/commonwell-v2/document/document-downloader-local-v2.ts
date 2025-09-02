@@ -1,5 +1,6 @@
 import { CommonWellAPI, CommonwellError } from "@metriport/commonwell-sdk";
 import {
+  emptyFunction,
   errorToString,
   executeWithNetworkRetries,
   getNetworkErrorDetails,
@@ -260,6 +261,11 @@ export class DocumentDownloaderLocalV2 extends DocumentDownloader {
       location: sourceDocument.location,
       getStream: () => writeStream,
       resetStream: () => {
+        // Prevent unhandled rejection from the previous upload promise
+        // when the stream was destroyed due to a retry.
+        if (downloadIntoS3 && typeof downloadIntoS3.catch === "function") {
+          downloadIntoS3.catch(() => emptyFunction);
+        }
         if (writeStream && !writeStream.destroyed) {
           try {
             writeStream.removeAllListeners();
