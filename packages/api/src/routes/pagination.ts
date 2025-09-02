@@ -58,7 +58,7 @@ function validateSortColumns(
  * Backward pagination (toItem) generates:
  * (col1 > val1) OR (col1 = val1 AND col2 < val2)
  */
-function buildCompositeCursorWhereClause(
+export function buildCompositeCursorWhereClause(
   cursor: CompositeCursor,
   sortItems: SortItem[],
   direction: "forward" | "backward",
@@ -86,25 +86,74 @@ function buildCompositeCursorWhereClause(
     const equalityConditions = sortItems.slice(0, i).map((sortItem, idx) => {
       const prevTable = allowedColumns[sortItem.col];
       const prevDbCol = snakeCase(sortItem.col); // Transform to snake_case for SQL
-      const paramKey = `cursor_${sortItem.col}_${idx}`;
-      params[paramKey] = cursor[sortItem.col];
-      return `${prevTable}.${prevDbCol} = :${paramKey}`;
+      const prevCursorValue = cursor[sortItem.col];
+
+      if (prevCursorValue === null || prevCursorValue === undefined) {
+        return `${prevTable}.${prevDbCol} IS NULL`;
+      } else {
+        const paramKey = `cursor_${sortItem.col}_${idx}`;
+        params[paramKey] = prevCursorValue;
+        return `${prevTable}.${prevDbCol} = :${paramKey}`;
+      }
     });
 
     // Determine comparison operator based on direction and sort order
+    //
+    // 💡 NOTE: We use >= operators because the cursor we're passing around is the _first value of the next page_!
+    // This means we want to include the row for the cursor itself in the next page.
     let operator: string;
     if (direction === "forward") {
       // Forward: we want records "after" this cursor position
-      operator = order === "asc" ? ">" : "<";
+      operator = order === "asc" ? ">=" : "<=";
     } else {
       // Backward: we want records "before" this cursor position
-      operator = order === "asc" ? "<" : ">";
+      operator = order === "asc" ? "<=" : ">=";
     }
 
     // Build the condition for this level
-    const paramKey = `cursor_${col}_${i}`;
-    params[paramKey] = cursorValue;
-    const comparisonCondition = `${table}.${dbCol} ${operator} :${paramKey}`;
+    let comparisonCondition: string;
+    if (cursorValue === null) {
+      // Handle NULL cursor values based on NULL ordering behavior
+      // In most SQL databases, NULL values come first in ASC order, last in DESC order
+      if (direction === "forward") {
+        // Forward: want records after NULL position
+        comparisonCondition =
+          order === "asc"
+            ? `${table}.${dbCol} IS NOT NULL` // NULL comes first in ASC, so get non-null records
+            : `FALSE`; // NULL comes last in DESC, so no records after
+      } else {
+        // Backward: want records before NULL position
+        comparisonCondition =
+          order === "asc"
+            ? `FALSE` // NULL comes first in ASC, so no records before
+            : `${table}.${dbCol} IS NOT NULL`; // NULL comes last in DESC, so get non-null records
+      }
+    } else {
+      // Handle non-NULL cursor values
+      const paramKey = `cursor_${col}_${i}`;
+      params[paramKey] = cursorValue;
+
+      // When cursor is not null, we may need to include NULL records depending on direction/order
+      const baseComparison = `${table}.${dbCol} ${operator} :${paramKey}`;
+
+      if (direction === "forward") {
+        if (order === "asc") {
+          // Forward ASC: want records > cursor, but NULLs come first so they shouldn't be included
+          comparisonCondition = baseComparison;
+        } else {
+          // Forward DESC: want records < cursor, and may need to include NULLs if they come after cursor
+          comparisonCondition = `(${baseComparison} OR ${table}.${dbCol} IS NULL)`;
+        }
+      } else {
+        if (order === "asc") {
+          // Backward ASC: want records < cursor, and may need to include NULLs if they come before cursor
+          comparisonCondition = `(${baseComparison} OR ${table}.${dbCol} IS NULL)`;
+        } else {
+          // Backward DESC: want records > cursor, but NULLs come last so they shouldn't be included
+          comparisonCondition = baseComparison;
+        }
+      }
+    }
 
     // Combine equality conditions with comparison
     const condition =
@@ -115,7 +164,7 @@ function buildCompositeCursorWhereClause(
     conditions.push(condition);
   }
 
-  const clause = conditions.length > 0 ? `AND (${conditions.join(" OR ")})` : "";
+  const clause = conditions.length > 0 ? `AND (${conditions.join("\n\tOR ")})` : "";
   return { clause, params };
 }
 

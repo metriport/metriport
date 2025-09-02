@@ -53,16 +53,17 @@ const sortStringSchema = z
     message: "Sort array must have at least one item",
   });
 
-const compositeCursorSchema = z.record(z.string(), z.string());
+const compositeCursorSchema = z.record(z.string(), z.string().nullable());
 export type CompositeCursor = z.infer<typeof compositeCursorSchema>;
 
 const cursorSchema = z.string().transform((val, ctx) => {
+  const decoded = decodeCursor(val);
   try {
-    return compositeCursorSchema.parse(decodeCursor(val));
+    return compositeCursorSchema.parse(decoded);
   } catch (error) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: "Invalid cursor: " + val,
+      message: "Invalid cursor contents: " + JSON.stringify(decoded),
     });
     return z.NEVER;
   }
