@@ -1,4 +1,5 @@
 import { ExecuteWithRetriesOptions, PurposeOfUse } from "@metriport/shared";
+import { AxiosResponse, InternalAxiosRequestConfig } from "axios";
 
 export const DEFAULT_AXIOS_TIMEOUT_SECONDS = 120;
 
@@ -22,6 +23,10 @@ export interface CommonWellOptions {
   timeout?: number;
   /** Parameters for handling internal server errors (status code 500). */
   onError500?: OnError500Options;
+  /** Function to run before the request is sent. */
+  preRequestHook?: (request: InternalAxiosRequestConfig) => void;
+  /** Function to run after the request is sent. */
+  postRequestHook?: (response: AxiosResponse) => void;
 }
 
 /**
