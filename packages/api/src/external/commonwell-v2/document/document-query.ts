@@ -76,8 +76,6 @@ const DOC_DOWNLOAD_CHUNK_DELAY_MAX_MS = 10_000; // in milliseconds
 const DOC_DOWNLOAD_CHUNK_DELAY_MIN_PCT = 40; // 1-100% of max delay
 
 type File = DownloadResult & { isNew: boolean };
-type DocumentReferenceWithFileName = CwDocumentReference;
-// type DocumentReferenceWithFileName = CwDocumentReference & { fileName: string };
 
 /**
  * Query CommonWell for DocumentReferences, download and convert documents to FHIR,
@@ -347,9 +345,9 @@ async function internalGetDocuments({
     }
 
     log(`Document query got ${docs.length} documents${docs.length ? ", processing" : ""}...`);
-    const documents: DocumentReferenceWithFileName[] = docs.flatMap(d => {
+    const documents: CwDocumentReference[] = docs.flatMap(d => {
       if (d.masterIdentifier?.value && d.content?.[0]?.attachment.url) {
-        const docRef: DocumentReferenceWithFileName = {
+        const docRef: CwDocumentReference = {
           id: d.masterIdentifier?.value,
           ...d,
         };

@@ -4,7 +4,7 @@ import { uniq } from "lodash";
 import { makePatient } from "../payloads";
 import { patientTracyCrane } from "../payloads/patient-tracy";
 import { createProbablePatientSina } from "../payloads/probable-patient-sina";
-import { getMetriportPatientIdOrFail, logError } from "../util";
+import { getMetriportPatientIdOrFail, logError, waitSeconds } from "../util";
 
 /**
  * This flow is used to test the patient link management API.
@@ -179,6 +179,7 @@ async function getProbableLinks(
   console.log(`>>> 2.2.3 Probable link count: ${resp_2_2_3.Patients?.length}`);
 
   // Doing this twice because the first time it returns 0 probable links :/
+  await waitSeconds(5);
   console.log(`>>> 2.2.3' Get Probable Links for patient ${patientIdEnconded}`);
   const resp_2_2_3x = await commonWell.getProbableLinksById(patientIdEnconded);
   console.log(">>> Transaction ID: " + commonWell.lastTransactionId);

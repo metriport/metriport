@@ -59,19 +59,15 @@ import { NetworkLink } from "./types";
 
 dayjs.extend(duration);
 
-const waitTimeAfterRegisterPatientAndBeforeGetLinks = dayjs.duration(15, "seconds");
+const waitTimeAfterRegisterPatientAndBeforeGetLinks = dayjs.duration(5, "seconds");
 
 const createContext = "cw.patient.create";
 const updateContext = "cw.patient.update";
-// const getContext = "cw.patient.get";
 const deleteContext = "cw.patient.delete";
 
-// TODO decide
-// TODO decide
-// TODO decide
 function getCWData(data: PatientExternalData | undefined): PatientDataCommonwell | undefined {
   if (!data) return undefined;
-  return data[MedicalDataSource.COMMONWELL] as PatientDataCommonwell; // TODO validate the type
+  return data[MedicalDataSource.COMMONWELL] as PatientDataCommonwell;
 }
 
 export async function registerAndLinkPatientInCwV2({
