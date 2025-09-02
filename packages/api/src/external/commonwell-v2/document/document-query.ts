@@ -16,7 +16,7 @@ import { Patient } from "@metriport/core/domain/patient";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { reportMetric } from "@metriport/core/external/aws/cloudwatch";
 import {
-  fileInfo,
+  Document,
   DownloadResult,
 } from "@metriport/core/external/commonwell/document/document-downloader";
 import { MedicalDataSource } from "@metriport/core/external/index";
@@ -803,7 +803,7 @@ async function triggerDownloadDocument({
   requestId: string;
 }): Promise<File> {
   const docDownloader = makeDocumentDownloader(initiator);
-  const document: fileInfo = {
+  const document: Document = {
     id: doc.id,
     mimeType: doc.content?.[0]?.attachment.contentType ?? undefined,
     location: doc.location,
@@ -815,8 +815,8 @@ async function triggerDownloadDocument({
 
   try {
     const result = await docDownloader.download({
-      document: document,
-      destinationFileInfo: adjustedFileInfo,
+      document,
+      fileInfo: adjustedFileInfo,
       cxId,
     });
     return {
