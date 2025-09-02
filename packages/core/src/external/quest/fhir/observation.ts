@@ -12,7 +12,11 @@ import { ResponseDetail } from "../schema/response";
 import { getPatientReference } from "./patient";
 import { getQuestDataSourceExtension } from "./shared";
 import { LOINC_URL, CPT_URL } from "@metriport/shared/medical";
-import { HL7_OBSERVATION_INTERPRETATION_SYSTEM, QUEST_LOCAL_RESULT_CODE_SYSTEM } from "./constant";
+import {
+  HL7_OBSERVATION_INTERPRETATION_SYSTEM,
+  QUEST_LOCAL_RESULT_CODE_SYSTEM,
+  TEST_NOT_PERFORMED_PREFIX,
+} from "./constant";
 
 type ObservationValue = Pick<Observation, "valueQuantity" | "valueString" | "valueCodeableConcept">;
 
@@ -41,6 +45,13 @@ export function getObservation(
     ...(code ? { code } : {}),
     extension,
   };
+}
+
+export function getObservationStatus(detail: ResponseDetail): Observation["status"] {
+  if (detail.resultComments?.startsWith(TEST_NOT_PERFORMED_PREFIX)) {
+    return "cancelled";
+  }
+  return "final";
 }
 
 export function getObservationReference(observation: Observation): Reference<Observation> {
@@ -87,12 +98,14 @@ function getObservationCode(detail: ResponseDetail): CodeableConcept {
   };
 }
 
-function getObservationReferenceRange(
-  detail: ResponseDetail
-): ObservationReferenceRange[] | undefined {
-  const low = parseFloat(detail.referenceRangeLow ?? "");
-  const high = parseFloat(detail.referenceRangeHigh ?? "");
-  const text = detail.referenceRangeAlpha;
+function getObservationReferenceRange({
+  referenceRangeLow,
+  referenceRangeHigh,
+  referenceRangeAlpha,
+}: ResponseDetail): ObservationReferenceRange[] | undefined {
+  const low = parseFloat(referenceRangeLow ?? "");
+  const high = parseFloat(referenceRangeHigh ?? "");
+  const text = referenceRangeAlpha;
   if (!Number.isFinite(low) && !Number.isFinite(high)) return undefined;
 
   return [
