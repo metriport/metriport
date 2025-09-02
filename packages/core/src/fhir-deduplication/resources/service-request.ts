@@ -7,21 +7,15 @@ export function groupSameServiceRequests(serviceRequests: ServiceRequest[]): {
   refReplacementMap: Map<string, string>;
   danglingReferences: Set<string>;
 } {
-  const serviceRequestsMap = new Map<string, ServiceRequest>();
-  const refReplacementMap = new Map<string, string>();
-  const danglingReferences = new Set<string>();
-
   const disjointSets = new DisjointSetUnion({
     resources: serviceRequests,
     comparators: [sameResourceId, sameResourceIdentifier],
     merge: mergeServiceRequests,
   });
-  disjointSets.deduplicate();
-
-  console.log("serviceRequests", serviceRequests);
+  const { resourceMap, refReplacementMap, danglingReferences } = disjointSets.deduplicate();
 
   return {
-    serviceRequestsMap,
+    serviceRequestsMap: resourceMap,
     refReplacementMap,
     danglingReferences,
   };

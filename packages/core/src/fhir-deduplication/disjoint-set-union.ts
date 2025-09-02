@@ -1,14 +1,21 @@
-import { Resource } from "@medplum/fhirtypes";
+import { Resource, ResourceType } from "@medplum/fhirtypes";
 import { Comparator } from "lodash";
 
 // Merges multiple resources into a single resource, and guaranteed to have at least one resource
 export type MergeFunction<R extends Resource> = (resources: R[]) => R;
+
+export type DeduplicationResult<R extends Resource> = {
+  resourceMap: Map<string, R>;
+  refReplacementMap: Map<string, string>;
+  danglingReferences: Set<string>;
+};
 
 /**
  * Disjoint Set Union (DSU) is a data structure that keeps track of a set of elements partitioned into a number of disjoint (non-overlapping) subsets,
  * which are referred to in this implementation as "groups".
  */
 export class DisjointSetUnion<R extends Resource> {
+  private resourceType: ResourceType;
   private resources: R[];
   private comparators: Comparator<R>[];
   private merge: MergeFunction<R>;
@@ -19,14 +26,17 @@ export class DisjointSetUnion<R extends Resource> {
    * @param resources - The FHIR resources to initialize the DSU with
    */
   constructor({
+    resourceType,
     resources,
     comparators,
     merge,
   }: {
+    resourceType: ResourceType;
     resources: R[];
     comparators: Comparator<R>[];
     merge: MergeFunction<R>;
   }) {
+    this.resourceType = resourceType;
     this.resources = resources;
     this.comparators = comparators;
     this.merge = merge;
@@ -40,20 +50,10 @@ export class DisjointSetUnion<R extends Resource> {
    * Performs deduplication on the given resources using the given set of equality comparators.
    * @param comparators
    */
-  deduplicate(): { resourceMap: Map<string, R> } {
+  deduplicate(): DeduplicationResult<R> {
     this.compareAndMergeAllGroups();
     const groupResources = this.separateResourcesByGroup();
-
-    const resourceMap: Map<string, R> = new Map();
-    for (const [, resources] of groupResources.entries()) {
-      if (resources.length === 0) continue;
-      const mergedResource = this.merge(resources);
-      const resourceId = mergedResource.id;
-      if (!resourceId) continue;
-      resourceMap.set(resourceId, mergedResource);
-    }
-
-    return { resourceMap };
+    return this.createResourceMap(groupResources);
   }
 
   private compareAndMergeAllGroups() {
@@ -84,6 +84,31 @@ export class DisjointSetUnion<R extends Resource> {
       }
     }
     return resourcesForGroup;
+  }
+
+  private createResourceMap(groupResources: Map<number, R[]>): DeduplicationResult<R> {
+    const resourceMap: Map<string, R> = new Map();
+    const refReplacementMap: Map<string, string> = new Map();
+    const danglingReferences: Set<string> = new Set();
+
+    for (const [, resourcesInGroup] of groupResources.entries()) {
+      if (resourcesInGroup.length === 0) continue;
+      const mergedResource = this.merge(resourcesInGroup);
+      const mergedResourceId = mergedResource.id;
+      if (!mergedResourceId) continue;
+
+      for (const resource of resourcesInGroup) {
+        const replaceResourceId = resource.id;
+        if (!replaceResourceId) continue;
+        refReplacementMap.set(this.createRef(replaceResourceId), this.createRef(mergedResourceId));
+      }
+      resourceMap.set(mergedResourceId, mergedResource);
+    }
+    return { resourceMap, refReplacementMap, danglingReferences };
+  }
+
+  private createRef(id: string): string {
+    return `${this.resourceType}/${id}`;
   }
 
   /**
