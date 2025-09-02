@@ -1,3 +1,4 @@
+import _ from "lodash";
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { Address, ContactPoint, Organization, Reference } from "@medplum/fhirtypes";
 import { ResponseDetail } from "../schema/response";
@@ -47,9 +48,9 @@ function getOrganizationAddress(detail: ResponseDetail): Address[] | undefined {
       city: detail.orderingAccountCity,
       state: detail.orderingAccountState,
       postalCode: detail.orderingAccountZipCode,
-      line: [detail.orderingAccountAddressLine1, detail.orderingAccountAddressLine2].filter(
-        Boolean
-      ) as string[],
+      line: _([detail.orderingAccountAddressLine1, detail.orderingAccountAddressLine2])
+        .compact()
+        .value(),
     },
   ];
 }
