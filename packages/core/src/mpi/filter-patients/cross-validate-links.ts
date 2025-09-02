@@ -22,10 +22,10 @@ function isLinkValidByAssociation(invalidLink: PatientData, validLinks: PatientD
 
     if (hasLastNameMatch) {
       const hasFirstNameMatch = calculateFirstNameScore(invalidLink, validLink);
-      const hasDobMatch = calculateDobScore(invalidLink, validLink) > 0;
+      const hasExactDobMatch = calculateDobScore(invalidLink, validLink) === 8;
       const hasAddressMatchByAssociation = hasAddressMatch(invalidLink, validLink);
 
-      if (hasFirstNameMatch || hasDobMatch || hasAddressMatchByAssociation) {
+      if (hasFirstNameMatch || hasExactDobMatch || hasAddressMatchByAssociation) {
         return true;
       }
     }
