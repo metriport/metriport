@@ -6,6 +6,7 @@ import {
   organizationQueryMeta,
 } from "@metriport/commonwell-sdk-v1";
 import { isCommonwellV2EnabledForCx } from "@metriport/core/command/feature-flags/domain-ffs";
+import { FeatureFlags } from "@metriport/core/command/feature-flags/ffs-on-dynamodb";
 import { addOidPrefix } from "@metriport/core/domain/oid";
 import { DocumentDownloaderLocal } from "@metriport/core/external/commonwell-v1/document/document-downloader-local";
 import { DocumentDownloaderLocalV2 } from "@metriport/core/external/commonwell-v2/document/document-downloader-local-v2";
@@ -31,8 +32,11 @@ const region = getEnvOrFail("AWS_REGION");
 const bucketName = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
 const cwOrgCertificateSecret = getEnvOrFail("CW_ORG_CERTIFICATE");
 const cwOrgPrivateKeySecret = getEnvOrFail("CW_ORG_PRIVATE_KEY");
+const featureFlagsTableName = getEnvOrFail("FEATURE_FLAGS_TABLE_NAME");
 
 const apiMode = isProduction() ? APIMode.production : APIMode.integration;
+
+FeatureFlags.init(region, featureFlagsTableName);
 
 export const handler = capture.wrapHandler(
   async (req: DocumentDownloaderLambdaRequest): Promise<DownloadResult> => {
