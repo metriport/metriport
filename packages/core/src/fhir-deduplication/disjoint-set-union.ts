@@ -2,7 +2,7 @@ import { Resource, ResourceType } from "@medplum/fhirtypes";
 import { Comparator } from "lodash";
 
 // Merges multiple resources into a single resource, and guaranteed to have at least one resource
-export type MergeFunction<R extends Resource> = (resources: R[]) => R;
+export type MergeFunction<R extends Resource> = (resources: R[]) => R | undefined;
 
 export type DeduplicationResult<R extends Resource> = {
   resourceMap: Map<string, R>;
