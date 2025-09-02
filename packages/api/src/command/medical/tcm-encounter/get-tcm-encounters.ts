@@ -11,6 +11,7 @@ import { getPaginationSorting, Pagination, sortForPagination } from "../../pagin
  * Add a default filter date far in the past to guarantee hitting the compound index
  */
 const DEFAULT_FILTER_DATE = new Date("2020-01-01T00:00:00.000Z");
+const ECLINICALWORKS_PATIENT_URL_BASE = "https://eclinicalworks.com/p/form";
 
 export interface TcmEncounterQueryData extends TcmEncounterModel {
   dataValues: TcmEncounterModel["dataValues"] & {
@@ -108,10 +109,10 @@ export async function getTcmEncounters({
           ? ` AND (tcm_encounter.facility_name ILIKE :search OR patient.data->>'firstName' ILIKE :search OR patient.data->>'lastName' ILIKE :search)`
           : ""
       }
-      GROUP BY tcm_encounter.id, patient.id, patient.data, patient.facility_ids
       ${/* PAGINATION */ ""}
       ${toItem ? ` AND tcm_encounter.id >= :toItem` : ""}
       ${fromItem ? ` AND tcm_encounter.id <= :fromItem` : ""}
+      GROUP BY tcm_encounter.id, patient.id, patient.data, patient.facility_ids
       ORDER BY tcm_encounter.id ${order}
       LIMIT :count
     `;
@@ -137,17 +138,21 @@ export async function getTcmEncounters({
     type: QueryTypes.SELECT,
   })) as TcmEncounterQueryData[];
 
-  const encounters = rawEncounters.map(e => ({
-    ...omit(e.dataValues, ["patient_data", "patient_facility_ids", "patient_mappings"]),
-    patientData: e.dataValues.patient_data,
-    patientFacilityIds: e.dataValues.patient_facility_ids,
-    externalUrls: e.dataValues.patient_mappings
-      .map(mapping => ({
-        url: constructExternalUrl(mapping.source, mapping.external_id),
-        source: mapping.source,
-      }))
-      .filter((item): item is ExternalUrlItem => !!item.url && !!item.source),
-  }));
+  const encounters = rawEncounters.map(e => {
+    const mappings = e.dataValues.patient_mappings ?? [];
+
+    return {
+      ...omit(e.dataValues, ["patient_data", "patient_facility_ids", "patient_mappings"]),
+      patientData: e.dataValues.patient_data,
+      patientFacilityIds: e.dataValues.patient_facility_ids,
+      externalUrls: mappings
+        .map(mapping => ({
+          url: constructExternalUrl(mapping.source, mapping.external_id),
+          source: mapping.source,
+        }))
+        .filter((item): item is ExternalUrlItem => item.url !== undefined),
+    };
+  });
 
   return sortForPagination(encounters, pagination);
 }
@@ -232,7 +237,7 @@ function constructExternalUrl(source: string, externalId: string): string | unde
   switch (source) {
     case EhrSources.eclinicalworks:
       // dummy url for now, TODO: get feedback and change to the actual url
-      return `https://eclinicalworks.com/p/form/${externalId}`;
+      return `${ECLINICALWORKS_PATIENT_URL_BASE}/${encodeURIComponent(externalId)}`;
     default:
       return undefined;
   }
