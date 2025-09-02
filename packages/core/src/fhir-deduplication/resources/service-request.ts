@@ -32,7 +32,7 @@ function mergeServiceRequests(serviceRequests: ServiceRequest[]): ServiceRequest
     throw new MetriportError("merge must always be called with at least one resource");
   }
 
-  for (let i = serviceRequests.length - 2; i >= 0; i--) {
+  for (let i = 0; i < serviceRequests.length - 1; i++) {
     const serviceRequest = serviceRequests[i];
     if (!serviceRequest) continue;
     mergeIntoTargetResource(masterServiceRequest, serviceRequest);
