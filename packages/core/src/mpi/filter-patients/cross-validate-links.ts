@@ -2,7 +2,8 @@ import { intersectionWith } from "lodash";
 import { PatientData } from "../../domain/patient";
 import { isContactMatch } from "./match-contact";
 import { hasAddressMatch } from "./match-address";
-import { calculateLastNameScore } from "./match-name";
+import { calculateLastNameScore, calculateFirstNameScore } from "./match-name";
+import { calculateDobScore } from "./match-dob";
 
 export function crossValidateInvalidLinks(
   validLinks: PatientData[],
@@ -20,7 +21,13 @@ function isLinkValidByAssociation(invalidLink: PatientData, validLinks: PatientD
     const hasLastNameMatch = calculateLastNameScore(invalidLink, validLink);
 
     if (hasLastNameMatch) {
-      return true;
+      const hasFirstNameMatch = calculateFirstNameScore(invalidLink, validLink);
+      const hasDobMatch = calculateDobScore(invalidLink, validLink) > 0;
+      const hasAddressMatchByAssociation = hasAddressMatch(invalidLink, validLink);
+
+      if (hasFirstNameMatch || hasDobMatch || hasAddressMatchByAssociation) {
+        return true;
+      }
     }
 
     const hasContactMatchByAssociation =
