@@ -1,20 +1,35 @@
 import { Resource } from "@medplum/fhirtypes";
 import { Comparator } from "lodash";
 
+// Merges multiple resources into a single resource, and guaranteed to have at least one resource
+export type MergeFunction<R extends Resource> = (resources: R[]) => R;
+
 /**
  * Disjoint Set Union (DSU) is a data structure that keeps track of a set of elements partitioned into a number of disjoint (non-overlapping) subsets,
  * which are referred to in this implementation as "groups".
  */
 export class DisjointSetUnion<R extends Resource> {
   private resources: R[];
+  private comparators: Comparator<R>[];
+  private merge: MergeFunction<R>;
   private groupId: number[];
 
   /**
    * Every resource is initialized with its own index as its group ID.
    * @param resources - The FHIR resources to initialize the DSU with
    */
-  constructor(resources: R[]) {
+  constructor({
+    resources,
+    comparators,
+    merge,
+  }: {
+    resources: R[];
+    comparators: Comparator<R>[];
+    merge: MergeFunction<R>;
+  }) {
     this.resources = resources;
+    this.comparators = comparators;
+    this.merge = merge;
     this.groupId = new Array(resources.length);
     for (let i = 0; i < resources.length; i++) {
       this.groupId[i] = i;
@@ -25,18 +40,50 @@ export class DisjointSetUnion<R extends Resource> {
    * Performs deduplication on the given resources using the given set of equality comparators.
    * @param comparators
    */
-  deduplicate(comparators: Comparator<R>[]) {
+  deduplicate(): { resourceMap: Map<string, R> } {
+    this.compareAndMergeAllGroups();
+    const groupResources = this.separateResourcesByGroup();
+
+    const resourceMap: Map<string, R> = new Map();
+    for (const [, resources] of groupResources.entries()) {
+      if (resources.length === 0) continue;
+      const mergedResource = this.merge(resources);
+      const resourceId = mergedResource.id;
+      if (!resourceId) continue;
+      resourceMap.set(resourceId, mergedResource);
+    }
+
+    return { resourceMap };
+  }
+
+  private compareAndMergeAllGroups() {
     for (let i = 0; i < this.groupId.length; i++) {
       for (let j = i + 1; j < this.groupId.length; j++) {
         const resourceI = this.resources[i];
         const resourceJ = this.resources[j];
         if (!resourceI || !resourceJ) continue;
-        const equal = comparators.some(comparator => comparator(resourceI, resourceJ));
+        const equal = this.comparators.some(comparator => comparator(resourceI, resourceJ));
         if (equal) {
           this.unionGroup(i, j);
         }
       }
     }
+  }
+
+  private separateResourcesByGroup(): Map<number, R[]> {
+    const resourcesForGroup: Map<number, R[]> = new Map();
+    for (let i = 0; i < this.groupId.length; i++) {
+      const groupId = this.findGroup(i);
+      const resource = this.resources[i];
+      if (!resource) continue;
+
+      if (!resourcesForGroup.has(groupId)) {
+        resourcesForGroup.set(groupId, [resource]);
+      } else {
+        resourcesForGroup.get(groupId)?.push(resource);
+      }
+    }
+    return resourcesForGroup;
   }
 
   /**

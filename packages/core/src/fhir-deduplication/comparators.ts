@@ -7,7 +7,7 @@ export function sameResourceId(resourceA: Resource, resourceB: Resource) {
   return idOfResourceA === idOfResourceB;
 }
 
-export function sameResourceIdentifiers(
+export function sameResourceIdentifier(
   resourceA: Resource & { identifier?: Identifier[] },
   resourceB: Resource & { identifier?: Identifier[] }
 ) {
