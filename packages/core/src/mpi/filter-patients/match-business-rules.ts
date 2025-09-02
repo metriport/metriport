@@ -20,9 +20,9 @@ export function checkBusinessRules(
     return "No Name Match";
   }
 
-  // Rule: If last name is wrong and address is incorrect, it's not the same person
+  // Rule: If last name is wrong and address is incorrect and contact is not a match, it's not the same person
   if (isLastNameAndAddressMismatch(metriportPatient, externalPatient, scores)) {
-    return "Last Name Wrong + Address Incorrect";
+    return "Last Name Wrong + Address Incorrect + No Contact Match";
   }
 
   // Rule: If DOB has 2+ parts wrong and address isn't the same, it's probably not the same person
@@ -56,9 +56,16 @@ function isLastNameAndAddressMismatch(
   externalPatient: PatientData,
   scores: {
     address: number;
+    phone: number;
+    email: number;
   }
 ): boolean {
-  return !calculateLastNameScore(metriportPatient, externalPatient) && scores.address < 2;
+  return (
+    calculateLastNameScore(metriportPatient, externalPatient) === 0 &&
+    scores.address < 2 &&
+    scores.phone === 0 &&
+    scores.email === 0
+  );
 }
 
 function isNameAddressAndContactMismatch(scores: {
