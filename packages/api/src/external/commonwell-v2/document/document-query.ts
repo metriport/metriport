@@ -136,6 +136,7 @@ export async function queryAndProcessDocuments({
   if (!isCwEnabled) return interrupt(`CW disabled for cxId ${cxId} patientId ${patientId}`);
 
   try {
+    // TODO: ENG-934 - MINOR UPDATE TO THE LOGIC
     const [initiator] = await Promise.all([
       getCwInitiator(patientParam, facilityId),
       setDocQueryProgress({
@@ -636,7 +637,7 @@ async function downloadDocsAndUpsertFHIR({
               extra: {
                 context: `cw.downloadDocsAndUpsertFHIR.downloadFromCWAndUploadToS3`,
                 patientId: patient.id,
-                documentReference: doc,
+                documentReference: getDocPrintableDetails(doc),
                 requestId,
                 error: errorToString(error),
               },

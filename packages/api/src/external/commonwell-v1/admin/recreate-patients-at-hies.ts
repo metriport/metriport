@@ -133,10 +133,9 @@ async function recreatePatientAtCW(
         log(msg);
         capture.message(msg, { extra, level: "error" });
 
-        // TODO: SEE IF THESE ARE NEEDED
-        // TODO: SEE IF THESE ARE NEEDED
-        // TODO: SEE IF THESE ARE NEEDED
-
+        // TODO: 983 - UPDATE THIS IS NEEDED
+        // TODO: 983 - UPDATE THIS IS NEEDED
+        // TODO: 983 - UPDATE THIS IS NEEDED
         // } else if (!originalPersonId && !newPersonId) {
         //   const msg = `Patient had no personId and we could not determine one again`;
         //   log(msg);
