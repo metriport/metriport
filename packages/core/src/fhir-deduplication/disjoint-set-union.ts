@@ -2,7 +2,7 @@ import { Resource, ResourceType } from "@medplum/fhirtypes";
 import { Comparator } from "lodash";
 
 // Merges multiple resources into a single resource, and guaranteed to have at least one resource
-export type MergeFunction<R extends Resource> = (resources: R[]) => R | undefined;
+export type MergeFunction<R extends Resource> = (resources: R[]) => R;
 
 export type DeduplicationResult<R extends Resource> = {
   resourceMap: Map<string, R>;
@@ -62,7 +62,7 @@ export class DisjointSetUnion<R extends Resource> {
         const resourceI = this.resources[i];
         const resourceJ = this.resources[j];
         if (!resourceI || !resourceJ) continue;
-        const equal = this.comparators.some(comparator => comparator(resourceI, resourceJ));
+        const equal = this.compareResources(resourceI, resourceJ);
         if (equal) {
           this.unionGroup(i, j);
         }
@@ -70,6 +70,23 @@ export class DisjointSetUnion<R extends Resource> {
     }
   }
 
+  /**
+   * Returns true if the resources are equal, and false otherwise.
+   */
+  private compareResources(resourceI: R, resourceJ: R): boolean {
+    for (const comparator of this.comparators) {
+      if (comparator(resourceI, resourceJ)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Separates the initial resources into groups based on group IDs, where each group ID corresponds
+   * to an array of one or more resources.
+   * @returns A map of group IDs to arrays of resources.
+   */
   private separateResourcesByGroup(): Map<number, R[]> {
     const resourcesForGroup: Map<number, R[]> = new Map();
     for (let i = 0; i < this.groupId.length; i++) {
@@ -86,6 +103,10 @@ export class DisjointSetUnion<R extends Resource> {
     return resourcesForGroup;
   }
 
+  /**
+   * Builds the final deduplication result that plugs into the rest of the deduplication algorithm.
+   * @param groupResources - The result of separateResourcesByGroup.
+   */
   private createResourceMap(groupResources: Map<number, R[]>): DeduplicationResult<R> {
     const resourceMap: Map<string, R> = new Map();
     const refReplacementMap: Map<string, string> = new Map();
