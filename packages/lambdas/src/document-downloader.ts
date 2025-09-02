@@ -10,8 +10,15 @@ import { FeatureFlags } from "@metriport/core/command/feature-flags/ffs-on-dynam
 import { addOidPrefix } from "@metriport/core/domain/oid";
 import { DocumentDownloaderLocal } from "@metriport/core/external/commonwell-v1/document/document-downloader-local";
 import { DocumentDownloaderLocalV2 } from "@metriport/core/external/commonwell-v2/document/document-downloader-local-v2";
-import { DownloadResult } from "@metriport/core/external/commonwell/document/document-downloader";
-import { DocumentDownloaderLambdaRequest } from "@metriport/core/external/commonwell/document/document-downloader-lambda";
+import {
+  Document,
+  DownloadResult,
+  FileInfo,
+} from "@metriport/core/external/commonwell/document/document-downloader";
+import {
+  DocumentDownloaderLambdaRequest,
+  DocumentDownloaderLambdaRequestV1,
+} from "@metriport/core/external/commonwell/document/document-downloader-lambda";
 import { getEnvType } from "@metriport/core/util/env-var";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -39,8 +46,23 @@ const apiMode = isProduction() ? APIMode.production : APIMode.integration;
 FeatureFlags.init(region, featureFlagsTableName);
 
 export const handler = capture.wrapHandler(
-  async (req: DocumentDownloaderLambdaRequest): Promise<DownloadResult> => {
-    const { orgName, orgOid, npi, cxId, destinationFileInfo, sourceDocument } = req;
+  async (
+    req: DocumentDownloaderLambdaRequest | DocumentDownloaderLambdaRequestV1
+  ): Promise<DownloadResult> => {
+    // TODO ENG-923 revert to the full deconstruction and remove the 'if' statement
+    const { orgName, orgOid, npi, cxId } = req;
+    // const { orgName, orgOid, npi, cxId, sourceDocument, destinationFileInfo } = req;
+    let sourceDocument: Document;
+    let destinationFileInfo: FileInfo;
+    if ("document" in req) {
+      const { document, fileInfo } = req;
+      sourceDocument = document;
+      destinationFileInfo = fileInfo;
+    } else {
+      const { sourceDocument: document, destinationFileInfo: fileInfo } = req;
+      sourceDocument = document;
+      destinationFileInfo = fileInfo;
+    }
     capture.setUser({ id: cxId });
     capture.setExtra({ lambdaName, cxId, orgOid });
     console.log(
