@@ -46,7 +46,7 @@ describe("cwToFHIR", () => {
 
 describe("getBestDateFromCWDocRef", () => {
   it("returns indexed when indexed is not today", async () => {
-    const indexed = buildDayjs(faker.date.past()).toISOString();
+    const indexed = buildDayjs(faker.date.past()).subtract(2, "day").toISOString();
     const period = makePeriod();
     const content: DocumentContent = makeDocumentContent({
       indexed,
