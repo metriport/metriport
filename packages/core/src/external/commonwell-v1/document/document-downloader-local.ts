@@ -48,30 +48,30 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
   }
 
   override async download({
-    sourceDocument,
-    destinationFileInfo,
+    document,
+    fileInfo,
   }: {
-    sourceDocument: Document;
-    destinationFileInfo: FileInfo;
+    document: Document;
+    fileInfo: FileInfo;
   }): Promise<DownloadResult> {
     const { log } = out("S3.download");
     let downloadedDocument = "";
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
-    function onData(chunk: any) {
+    const onData = (chunk: any) => {
       downloadedDocument += chunk;
-    }
-    function onEnd() {
+    };
+    const onEnd = () => {
       log("Finished downloading document");
-    }
+    };
     let downloadResult = await executeWithNetworkRetries(
-      () => this.downloadFromCommonwellIntoS3(sourceDocument, destinationFileInfo, onData, onEnd),
+      () => this.downloadFromCommonwellIntoS3(document, fileInfo, onData, onEnd),
       { retryOnTimeout: true, initialDelay: 500, maxAttempts: 5 }
     );
 
     // Check if the detected file type is in the accepted content types and update it if not
     downloadResult = await this.checkAndUpdateMimeType({
-      sourceDocument,
-      destinationFileInfo,
+      document,
+      fileInfo,
       downloadedDocument,
       downloadResult,
     });
@@ -84,11 +84,11 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
       contentType: downloadResult.contentType,
     };
 
-    if (downloadedDocument && isMimeTypeXML(sourceDocument.mimeType)) {
+    if (downloadedDocument && isMimeTypeXML(document.mimeType)) {
       return this.parseXmlFile({
         ...newlyDownloadedFile,
         contents: downloadedDocument,
-        requestedFileInfo: destinationFileInfo,
+        requestedFileInfo: fileInfo,
       });
     }
     return newlyDownloadedFile;
@@ -99,33 +99,33 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
    * and extension in S3 and returns the updated download result.
    */
   async checkAndUpdateMimeType({
-    sourceDocument,
-    destinationFileInfo,
+    document,
+    fileInfo,
     downloadedDocument,
     downloadResult,
   }: {
-    sourceDocument: Document;
-    destinationFileInfo: FileInfo;
+    document: Document;
+    fileInfo: FileInfo;
     downloadedDocument: string;
     downloadResult: DownloadResult;
   }): Promise<DownloadResult> {
     const { log } = out("checkAndUpdateMimeType");
-    if (isContentTypeAccepted(sourceDocument.mimeType)) {
+    if (isContentTypeAccepted(document.mimeType)) {
       return { ...downloadResult };
     }
 
-    const old_extension = path.extname(destinationFileInfo.name);
+    const old_extension = path.extname(fileInfo.name);
     const documentBuffer = Buffer.from(downloadedDocument);
     const { mimeType, fileExtension } = detectFileType(documentBuffer);
 
     // If the file type has not changed
-    if (mimeType === sourceDocument.mimeType || old_extension === fileExtension) {
+    if (mimeType === document.mimeType || old_extension === fileExtension) {
       return downloadResult;
     }
 
     // If the file type has changed
     log(
-      `Updating content type in S3 ${destinationFileInfo.name} from previous mimeType: ${sourceDocument.mimeType} to detected mimeType ${mimeType} and ${fileExtension}`
+      `Updating content type in S3 ${fileInfo.name} from previous mimeType: ${document.mimeType} to detected mimeType ${mimeType} and ${fileExtension}`
     );
     const newKey = await this.s3Utils.updateContentTypeInS3(
       downloadResult.bucket,

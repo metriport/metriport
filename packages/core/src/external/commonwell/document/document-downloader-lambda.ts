@@ -15,8 +15,8 @@ export type DocumentDownloaderLambdaRequest = {
   orgName: string;
   orgOid: string;
   npi: string;
-  sourceDocument: Document;
-  destinationFileInfo: FileInfo;
+  document: Document;
+  fileInfo: FileInfo;
   cxId: string;
 };
 
@@ -37,17 +37,17 @@ export class DocumentDownloaderLambda extends DocumentDownloader {
   }
 
   async download({
-    sourceDocument,
-    destinationFileInfo,
+    document,
+    fileInfo,
     cxId,
   }: {
-    sourceDocument: Document;
-    destinationFileInfo: FileInfo;
+    document: Document;
+    fileInfo: FileInfo;
     cxId: string;
   }): Promise<DownloadResult> {
     const payload: DocumentDownloaderLambdaRequest = {
-      sourceDocument,
-      destinationFileInfo,
+      document,
+      fileInfo,
       cxId,
       orgName: this.orgName,
       orgOid: this.orgOid,

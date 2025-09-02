@@ -4,7 +4,9 @@ import {
   executeWithNetworkRetries,
   MetriportError,
 } from "@metriport/shared";
+import axios, { AxiosInstance, AxiosResponse } from "axios";
 import httpStatus from "http-status";
+import { Agent } from "https";
 import * as stream from "stream";
 import { CommonwellError } from "../common/commonwell-error";
 import { downloadFileInMemory } from "../common/fileDownload";
@@ -32,7 +34,13 @@ import {
   StatusResponse,
   statusResponseSchema,
 } from "../models/patient";
-import { APIMode, CommonWellOptions, defaultOnError500, OnError500Options } from "./common";
+import {
+  APIMode,
+  CommonWellOptions,
+  DEFAULT_AXIOS_TIMEOUT_SECONDS,
+  defaultOnError500,
+  OnError500Options,
+} from "./common";
 import {
   BaseOptions,
   CommonWellAPI,
@@ -41,17 +49,23 @@ import {
   OrganizationRequestMetadata,
   RetrieveDocumentResponse,
 } from "./commonwell-api";
-import { CommonWellBase } from "./commonwell-base";
 
 /**
  * Implementation of the CommonWell API, v4.
  * @see https://www.commonwellalliance.org/specification/
  */
-export class CommonWell extends CommonWellBase implements CommonWellAPI {
+export class CommonWell implements CommonWellAPI {
+  static integrationUrl = "https://api.integration.commonwellalliance.lkopera.com";
+  static productionUrl = "https://api.commonwellalliance.lkopera.com";
+
+  readonly api: AxiosInstance;
+  private rsaPrivateKey: string;
   private _orgName: string;
   private _oid: string;
   private _npi: string;
   private _homeCommunityId: string;
+  private httpsAgent: Agent;
+  private _lastTransactionId: string | undefined;
   private onError500: OnError500Options;
 
   /**
@@ -88,12 +102,18 @@ export class CommonWell extends CommonWellBase implements CommonWellAPI {
     /** Optional parameters. */
     options?: CommonWellOptions;
   }) {
-    super({
-      orgCert,
-      rsaPrivateKey,
-      apiMode,
-      options,
+    this.rsaPrivateKey = rsaPrivateKey;
+    this.httpsAgent = new Agent({ cert: orgCert, key: rsaPrivateKey });
+    this.api = axios.create({
+      timeout: options?.timeout ?? DEFAULT_AXIOS_TIMEOUT_SECONDS * 1_000,
+      baseURL:
+        apiMode === APIMode.production ? CommonWell.productionUrl : CommonWell.integrationUrl,
+      httpsAgent: this.httpsAgent,
     });
+    this.api.interceptors.response.use(
+      this.axiosSuccessfulResponse(this),
+      this.axiosErrorResponse(this)
+    );
     this._orgName = orgName;
     this._oid = oid;
     this._npi = npi;
@@ -112,6 +132,31 @@ export class CommonWell extends CommonWellBase implements CommonWellAPI {
   }
   get homeCommunityId() {
     return this._homeCommunityId;
+  }
+  /**
+   * Returns the transaction ID from the last request.
+   */
+  get lastTransactionId(): string | undefined {
+    return this._lastTransactionId;
+  }
+
+  // Being extra safe with these bc a failure here fails the actual request
+  private postRequest(response: AxiosResponse): void {
+    this._lastTransactionId =
+      response && response.headers ? response.headers["x-trace-id"] : undefined;
+  }
+  private axiosSuccessfulResponse(_this: CommonWell) {
+    return (response: AxiosResponse): AxiosResponse => {
+      _this && _this.postRequest(response);
+      return response;
+    };
+  }
+  private axiosErrorResponse(_this: CommonWell) {
+    //eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (error: any): AxiosResponse => {
+      _this && _this.postRequest(error.response);
+      throw error;
+    };
   }
 
   //--------------------------------------------------------------------------------------------
