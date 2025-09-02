@@ -239,7 +239,7 @@ export class CommonWell implements CommonWellAPI {
       });
     } else {
       if (!idOrParams) {
-        throw new Error("Programming error, 'id' is required when providing separated parametrs");
+        throw new Error("Programming error: 'id' is required when providing separate parameters");
       }
       patientId = idOrParams;
     }

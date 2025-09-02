@@ -111,4 +111,5 @@ export const patientProbableLinksRespSchema = z.object({
 });
 export type PatientProbableLinks = z.infer<typeof patientProbableLinksRespSchema>;
 
+// TODO ENG-554 The version is API-specific, so we should move it from here
 export type CwLinkV2 = (PatientProbableLink | PatientExistingLink) & { version: 2 };

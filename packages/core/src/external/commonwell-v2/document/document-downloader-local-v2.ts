@@ -40,11 +40,11 @@ export class DocumentDownloaderLocalV2 extends DocumentDownloader {
   }
 
   override async download({
-    document,
-    fileInfo,
+    sourceDocument,
+    destinationFileInfo,
   }: {
-    document: Document;
-    fileInfo: FileInfo;
+    sourceDocument: Document;
+    destinationFileInfo: FileInfo;
   }): Promise<DownloadResult> {
     const { log } = out("S3.download");
     let downloadedDocument = "";
@@ -55,12 +55,17 @@ export class DocumentDownloaderLocalV2 extends DocumentDownloader {
     function onEnd() {
       log("Finished downloading document");
     }
-    let downloadResult = await this.downloadFromCommonwellIntoS3(document, fileInfo, onData, onEnd);
+    let downloadResult = await this.downloadFromCommonwellIntoS3(
+      sourceDocument,
+      destinationFileInfo,
+      onData,
+      onEnd
+    );
 
     // Check if the detected file type is in the accepted content types and update it if not
     downloadResult = await this.checkAndUpdateMimeType({
-      document,
-      fileInfo,
+      document: sourceDocument,
+      fileInfo: destinationFileInfo,
       downloadedDocument,
       downloadResult,
     });
@@ -73,11 +78,11 @@ export class DocumentDownloaderLocalV2 extends DocumentDownloader {
       contentType: downloadResult.contentType,
     };
 
-    if (downloadedDocument && isMimeTypeXML(document.mimeType)) {
+    if (downloadedDocument && isMimeTypeXML(sourceDocument.mimeType)) {
       return this.parseXmlFile({
         ...newlyDownloadedFile,
         contents: downloadedDocument,
-        requestedFileInfo: fileInfo,
+        requestedFileInfo: destinationFileInfo,
       });
     }
     return newlyDownloadedFile;
