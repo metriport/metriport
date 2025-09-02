@@ -2,6 +2,8 @@ import { Hl7Message } from "@medplum/core";
 import { convertHl7v2MessageToFhir } from "..";
 import { Bundle } from "@medplum/fhirtypes";
 import * as configModule from "../../../../util/config";
+import { toFHIR as toFhirPatient } from "../../../../external/fhir/patient/conversion";
+import { makePatient } from "../../../../domain/__tests__/patient";
 
 describe("Hl7v2 to FHIR conversion", () => {
   const hl7Msg = `MSH|^~|HEALTHSHARE|HMHW|METRIPORTPA|METRIPORTPA|20250507034313||ADT^A03|100000^111222333|P|2.5.1
@@ -36,6 +38,8 @@ DG1|5|I10|E03.9^Hypothyroidism, unspecified^I10|Hypothyroidism, unspecified
     const expectedFileKey = "location_hl7/someFileName";
     const hieName = "TestHIE";
     const expectedCode = hieName.toUpperCase();
+    const patient = makePatient();
+    const fhirPatient = toFhirPatient({ id: "12345", data: patient.data });
 
     const bundle = convertHl7v2MessageToFhir({
       message: hl7Message,
@@ -43,6 +47,7 @@ DG1|5|I10|E03.9^Hypothyroidism, unspecified^I10|Hypothyroidism, unspecified
       patientId,
       rawDataFileKey: fileName,
       hieName,
+      fhirPatient,
     }) as Bundle;
 
     expect(bundle.entry?.length).toBeGreaterThan(0);

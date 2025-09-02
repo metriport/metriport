@@ -1,6 +1,7 @@
 import { BadRequestError, MetriportError, NotFoundError } from "@metriport/shared";
-import { isAxiosError } from "axios";
+import axios, { AxiosError, AxiosInstance, AxiosResponse, isAxiosError } from "axios";
 import httpStatus from "http-status";
+import { Agent } from "https";
 import { normalizeCertificate } from "../common/certificate";
 import { makeJwt } from "../common/make-jwt";
 import { buildBaseQueryMeta } from "../common/util";
@@ -11,8 +12,7 @@ import {
   organizationListSchema,
   organizationSchema,
 } from "../models/organization";
-import { APIMode, CommonWellOptions } from "./common";
-import { CommonWellBase } from "./commonwell-base";
+import { APIMode, CommonWellOptions, DEFAULT_AXIOS_TIMEOUT_SECONDS } from "./common";
 import { BaseOptions, CommonWellMemberAPI, MemberRequestMetadata } from "./commonwell-member-api";
 
 /**
@@ -22,12 +22,19 @@ import { BaseOptions, CommonWellMemberAPI, MemberRequestMetadata } from "./commo
  * For the Organization management API (member API):
  * @see https://commonwellalliance.sharepoint.com/sites/CommonWellServicesPlatform/SitePages/Organization-APIs.aspx
  */
-export class CommonWellMember extends CommonWellBase implements CommonWellMemberAPI {
+export class CommonWellMember implements CommonWellMemberAPI {
+  static integrationUrl = "https://api.integration.commonwellalliance.lkopera.com";
+  static productionUrl = "https://api.commonwellalliance.lkopera.com";
+
   static ORG_ENDPOINT = "/v1/org";
   static MEMBER_ENDPOINT = "/v1/member";
 
+  readonly api: AxiosInstance;
+  private rsaPrivateKey: string;
   private memberName: string;
   private _memberId: string;
+  private httpsAgent: Agent;
+  private _lastTransactionId: string | undefined;
 
   /**
    * Creates a new instance of the CommonWell API client pertaining to an
@@ -56,18 +63,51 @@ export class CommonWellMember extends CommonWellBase implements CommonWellMember
     apiMode: APIMode;
     options?: CommonWellOptions;
   }) {
-    super({
-      orgCert,
-      rsaPrivateKey,
-      apiMode,
-      options,
+    this.rsaPrivateKey = rsaPrivateKey;
+    this.httpsAgent = new Agent({ cert: orgCert, key: rsaPrivateKey });
+    this.api = axios.create({
+      timeout: options?.timeout ?? DEFAULT_AXIOS_TIMEOUT_SECONDS * 1_000,
+      baseURL:
+        apiMode === APIMode.production
+          ? CommonWellMember.productionUrl
+          : CommonWellMember.integrationUrl,
+      httpsAgent: this.httpsAgent,
     });
+    this.api.interceptors.response.use(
+      this.axiosSuccessfulResponse(this),
+      this.axiosErrorResponse(this)
+    );
     this.memberName = memberName;
     this._memberId = memberId;
   }
 
   get memberId() {
     return this._memberId;
+  }
+
+  /**
+   * Returns the transaction ID from the last request.
+   */
+  get lastTransactionId(): string | undefined {
+    return this._lastTransactionId;
+  }
+
+  // Being extra safe with these bc a failure here fails the actual request
+  private postRequest(response: AxiosResponse | undefined): void {
+    this._lastTransactionId =
+      response && response.headers ? response.headers["x-trace-id"] : undefined;
+  }
+  private axiosSuccessfulResponse(_this: CommonWellMember) {
+    return (response: AxiosResponse): AxiosResponse => {
+      _this && _this.postRequest(response);
+      return response;
+    };
+  }
+  private axiosErrorResponse(_this: CommonWellMember) {
+    return (error: AxiosError): never => {
+      _this && _this.postRequest(error.response);
+      throw error;
+    };
   }
 
   // TODO: #322 handle errors in API calls as per
@@ -379,7 +419,7 @@ export class CommonWellMember extends CommonWellBase implements CommonWellMember
     return { Authorization: `Bearer ${jwt}` };
   }
 
-  private getDescriptiveError(error: unknown, title: string): Error {
+  private getDescriptiveError(error: unknown, title: string): unknown {
     if (isAxiosError(error)) {
       const status = error.response?.status;
       const data = error.response?.data;
@@ -394,6 +434,6 @@ export class CommonWellMember extends CommonWellBase implements CommonWellMember
       }
       return new MetriportError(title, error, { status, cwReference, responseBody });
     }
-    return error instanceof Error ? error : new MetriportError(title, error);
+    return error;
   }
 }
