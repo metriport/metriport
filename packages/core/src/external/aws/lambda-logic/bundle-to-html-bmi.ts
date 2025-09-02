@@ -53,6 +53,7 @@ export function bundleToHtmlBmi(fhirBundle: Bundle, brief?: Brief): string {
     medications,
     medicationStatements,
     locations,
+    organizations,
     diagnosticReports,
   } = extractFhirTypesFromBundle(fhirBundle);
 
@@ -353,7 +354,7 @@ export function bundleToHtmlBmi(fhirBundle: Bundle, brief?: Brief): string {
           ${createProceduresSection(procedures)}
           ${createObservationLaboratorySection(observationLaboratory, diagnosticReports)}
           ${hba1cSection}
-          ${createReportsSection(diagnosticReports, practitioners, locations, encounters)}
+          ${createReportsSection(diagnosticReports, practitioners, organizations, encounters)}
         </div>
         <script>
          const ctx = document.getElementById('hba1cChart').getContext('2d');
@@ -1899,7 +1900,7 @@ const REPORT_TEXT_PATTERNS = [
 function createReportsSection(
   diagnosticReports: DiagnosticReport[],
   practitioners: Practitioner[],
-  locations: Location[],
+  organizations: Organization[],
   encounters: Encounter[]
 ) {
   if (!diagnosticReports) {
@@ -1907,7 +1908,7 @@ function createReportsSection(
   }
 
   const mappedPractitioners = mapResourceToId<Practitioner>(practitioners);
-  const mappedOrganizations = mapResourceToId<Organization>(locations);
+  const mappedOrganizations = mapResourceToId<Organization>(organizations);
 
   // Helper function to get encounter date from diagnostic report
   function getEncounterDateFromReport(report: DiagnosticReport): string | undefined {
