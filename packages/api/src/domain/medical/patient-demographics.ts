@@ -326,7 +326,7 @@ export function linkHasNewDemographics({
  *
  * @param patient The Patient @ Metriport.
  * @param links The incoming link demographics from CQ or CW converted from their raw state.
- * @returns the set of link demographics that pass checkDemoMatch and pass linkHasNewDemographics
+ * @returns the set of link demographics that pass linkHasNewDemographics
  */
 export function getNewDemographics(
   patient: Patient,
