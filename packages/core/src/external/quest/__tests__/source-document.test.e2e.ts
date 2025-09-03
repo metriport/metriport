@@ -1,7 +1,7 @@
 import { S3Utils } from "../../aws/s3";
 import { buildSourceDocumentFileName } from "../file/file-names";
 import { parseResponseFile } from "../file/file-parser";
-import { QuestReplica } from "../replica";
+import { QuestReplica, SOURCE_DOCUMENT_DIRECTORY } from "../replica";
 import { uploadSourceDocuments } from "../source-document";
 import { QuestSourceDocument } from "../types";
 import { getArtifact } from "./shared";
@@ -26,13 +26,14 @@ describe("Source document upload", () => {
       externalId,
       fileName,
       fileContent,
+      sourceDocumentKey: `${SOURCE_DOCUMENT_DIRECTORY}/${fileName}`,
     };
 
     await uploadSourceDocuments(replica, [sourceDocument]);
 
     // Separate validation to ensure the source document was written
     const s3Utils = new S3Utils(region);
-    const fileExists = await s3Utils.fileExists(bucketName, "source_document/" + fileName);
+    const fileExists = await s3Utils.fileExists(bucketName, sourceDocument.sourceDocumentKey);
     expect(fileExists).toBe(true);
   });
 
