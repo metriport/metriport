@@ -4,8 +4,8 @@ import { omit } from "lodash";
 import { QueryTypes } from "sequelize";
 import { PatientModel } from "../../../models/medical/patient";
 import { TcmEncounterModel } from "../../../models/medical/tcm-encounter";
+import { PaginationV2WithQueryClauses } from "../../pagination-v2";
 import { PatientMappingModel } from "../../../models/patient-mapping";
-import { getPaginationSorting, Pagination, sortForPagination } from "../../pagination";
 
 /**
  * Add a default filter date far in the past to guarantee hitting the compound index
@@ -32,6 +32,8 @@ export type TcmEncounterResult = TcmEncounterModel["dataValues"] & {
   externalUrls: Array<ExternalUrlItem>;
 };
 
+// Column validation and WHERE clause building is now handled centrally in the paginated() function
+
 export async function getTcmEncounters({
   cxId,
   after,
@@ -51,7 +53,7 @@ export async function getTcmEncounters({
   eventType?: string;
   coding?: string;
   status?: string;
-  pagination: Pagination;
+  pagination: PaginationV2WithQueryClauses;
   encounterClass?: string;
   search?: string;
 }): Promise<TcmEncounterResult[]> {
@@ -62,8 +64,7 @@ export async function getTcmEncounters({
   const sequelize = TcmEncounterModel.sequelize;
   if (!sequelize) throw new Error("Sequelize not found");
 
-  const { toItem, fromItem } = pagination;
-  const [, order] = getPaginationSorting(pagination);
+  const { fromItemClause, toItemClause, orderByClause } = pagination;
 
   const dischargedAfter = daysLookback
     ? buildDayjs().subtract(parseInt(daysLookback), "day").toDate()
@@ -116,11 +117,11 @@ export async function getTcmEncounters({
           ? ` AND (tcm_encounter.facility_name ILIKE :search OR CONCAT(patient.data->>'firstName', ' ', patient.data->>'lastName') ILIKE :search)`
           : ""
       }
-      ${/* PAGINATION */ ""}
-      ${toItem ? ` AND tcm_encounter.id >= :toItem` : ""}
-      ${fromItem ? ` AND tcm_encounter.id <= :fromItem` : ""}
+      ${/* COMPOSITE CURSOR PaginationV2 */ ""}
+      ${toItemClause.clause}
+      ${fromItemClause.clause}
       GROUP BY tcm_encounter.id, patient.id, patient.data, patient.facility_ids
-      ORDER BY tcm_encounter.id ${order}
+      ${orderByClause}
       LIMIT :count
     `;
 
@@ -138,9 +139,12 @@ export async function getTcmEncounters({
       ...{ eventType },
       ...{ coding },
       ...{ status },
+      // Include composite cursor parameters
       ...{ search: search ? `%${search}%` : "" },
       ...{ encounterClass },
-      ...pagination,
+      ...fromItemClause.params,
+      ...toItemClause.params,
+      ...{ count: pagination.count },
     },
     type: QueryTypes.SELECT,
   })) as TcmEncounterQueryData[];
@@ -162,7 +166,8 @@ export async function getTcmEncounters({
     };
   });
 
-  return sortForPagination(encounters, pagination);
+  // return sortForPagination(encounters, pagination);
+  return encounters;
 }
 
 export async function getTcmEncountersCount({

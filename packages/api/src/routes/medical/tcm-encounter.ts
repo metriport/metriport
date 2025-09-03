@@ -7,7 +7,7 @@ import {
 } from "../../command/medical/tcm-encounter/get-tcm-encounters";
 import { updateTcmEncounter } from "../../command/medical/tcm-encounter/update-tcm-encounter";
 import { requestLogger } from "../helpers/request-logger";
-import { paginated } from "../pagination";
+import { paginatedV2 } from "../pagination-v2";
 import { validateUUID } from "../schemas/uuid";
 import { asyncHandler, getCxIdOrFail, getFromParamsOrFail } from "../util";
 import { dtoFromTcmEncounter } from "./dtos/tcm-encounter-dto";
@@ -70,7 +70,10 @@ router.get(
       ...(query.search ? { search: query.search } : {}),
     };
 
-    const result = await paginated({
+    console.log("receiving fromItem cursor: ", query.fromItem);
+    console.log("receiving toItem cursor: ", query.toItem);
+
+    const result = await paginatedV2({
       request: req,
       additionalQueryParams,
       getItems: async pagination => {
@@ -87,6 +90,11 @@ router.get(
           after,
           ...additionalQueryParams,
         });
+      },
+      allowedSortColumns: {
+        id: "tcm_encounter",
+        admitTime: "tcm_encounter",
+        dischargeTime: "tcm_encounter",
       },
       maxItemsPerPage: tcmEncounterMaxPageSize,
     });

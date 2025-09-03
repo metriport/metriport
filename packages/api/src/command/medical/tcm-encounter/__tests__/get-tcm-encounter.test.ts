@@ -4,6 +4,7 @@ import { updateTcmEncounter, UpdateTcmEncounter } from "../update-tcm-encounter"
 import { PatientModel } from "../../../../models/medical/patient";
 import { TcmEncounterModel } from "../../../../models/medical/tcm-encounter";
 import { makeEncounter, makePatient } from "./fixtures";
+import { makePaginationWithCursor } from "../../__tests__/fixtures";
 
 jest.mock("../../../../models/medical/tcm-encounter");
 jest.mock("../../../../models/medical/patient");
@@ -98,7 +99,7 @@ describe("TCM Encounter Commands", () => {
 
       const cmd = {
         cxId: "cx-123",
-        pagination: { count: 10, fromItem: undefined, toItem: undefined },
+        pagination: makePaginationWithCursor(),
       };
 
       const result = await getTcmEncounters(cmd);
@@ -141,7 +142,7 @@ describe("TCM Encounter Commands", () => {
 
       const cmd = {
         cxId: "cx-123",
-        pagination: { count: 1, fromItem: undefined, toItem: undefined },
+        pagination: makePaginationWithCursor(),
       };
 
       const result = await getTcmEncounters(cmd);
@@ -186,7 +187,7 @@ describe("TCM Encounter Commands", () => {
       const cmd = {
         cxId: "cx-123",
         after: afterDate,
-        pagination: { count: 10, fromItem: undefined, toItem: undefined },
+        pagination: makePaginationWithCursor(),
       };
 
       const result = await getTcmEncounters(cmd);
@@ -228,7 +229,7 @@ describe("TCM Encounter Commands", () => {
 
       const cmd = {
         cxId: "cx-123",
-        pagination: { count: 10, fromItem: undefined, toItem: undefined },
+        pagination: makePaginationWithCursor(),
       };
 
       const result = await getTcmEncounters(cmd);
@@ -264,7 +265,7 @@ describe("TCM Encounter Commands", () => {
       mockSequelize.query.mockResolvedValue(mockQueryResult);
       const cmd = {
         cxId: "cx-123",
-        pagination: { count: 10, fromItem: undefined, toItem: undefined },
+        pagination: makePaginationWithCursor(),
       };
       const result = await getTcmEncounters(cmd);
       expect(result[0].outreachLogs).toEqual(outreachLogs);
