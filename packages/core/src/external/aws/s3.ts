@@ -1,4 +1,5 @@
 import {
+  CommonPrefix,
   CopyObjectCommand,
   DeleteObjectCommand,
   ListObjectsV2Command,
@@ -547,21 +548,72 @@ export class S3Utils {
     }
   }
 
-  async listObjects(bucket: string, prefix: string): Promise<AWS.S3.ObjectList> {
+  async listObjects(
+    bucket: string,
+    prefix: string,
+    options: { maxAttempts?: number } = {}
+  ): Promise<AWS.S3.ObjectList> {
     const allObjects: AWS.S3.Object[] = [];
     let continuationToken: string | undefined;
     do {
-      const res = await executeWithRetriesS3(() =>
-        this._s3
-          .listObjectsV2({
-            Bucket: bucket,
-            Prefix: prefix,
-            ...(continuationToken ? { ContinuationToken: continuationToken } : {}),
-          })
-          .promise()
+      const res = await executeWithRetriesS3(
+        () =>
+          this._s3
+            .listObjectsV2({
+              Bucket: bucket,
+              Prefix: prefix,
+              ...(continuationToken ? { ContinuationToken: continuationToken } : {}),
+            })
+            .promise(),
+        options
       );
       if (res.Contents) {
         allObjects.push(...res.Contents);
+      }
+      continuationToken = res.NextContinuationToken;
+    } while (continuationToken);
+    return allObjects;
+  }
+
+  /**
+   * Lists the first level "subdirectories" from an S3 prefix.
+   * Example:
+   * - S3 contents:
+   *   - "one/two/threeA/..."
+   *   - "one/two/threeB/..."
+   *   - "one/two/threeC/..."
+   * - Prefix: "one/two/"
+   * - Returns: ["one/two/threeA/", "one/two/threeB/", "one/two/threeC/"]
+   *
+   * @param bucket - The name of the S3 bucket to list the first level "subdirectories" from.
+   * @param prefix - The prefix to list the first level "subdirectories" from.
+   * @param delimiter - The delimiter to use to list the first level "subdirectories" from.
+   * @returns The first level "subdirectories" from the S3 prefix (full S3 paths).
+   */
+  async listFirstLevelSubdirectories({
+    bucket,
+    prefix,
+    delimiter = "/",
+  }: {
+    bucket: string;
+    prefix: string;
+    delimiter?: string | undefined;
+  }): Promise<CommonPrefix[]> {
+    const allObjects: CommonPrefix[] = [];
+    let continuationToken: string | undefined;
+    do {
+      const res = await executeWithRetriesS3(() =>
+        this._s3Client.send(
+          new ListObjectsV2Command({
+            Bucket: bucket,
+            Prefix: prefix,
+            ...(delimiter ? { Delimiter: delimiter } : {}),
+            ...(continuationToken ? { ContinuationToken: continuationToken } : {}),
+          })
+        )
+      );
+      if (res.CommonPrefixes) {
+        allObjects.push(...res.CommonPrefixes);
       }
       continuationToken = res.NextContinuationToken;
     } while (continuationToken);

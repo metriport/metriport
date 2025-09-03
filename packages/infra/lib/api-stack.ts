@@ -801,8 +801,10 @@ export class APIStack extends Stack {
     const apiUrl = `http://${apiDirectUrl}`;
     lambdasToGetApiUrl.forEach(lambda => lambda?.addEnvironment("API_URL", apiUrl));
 
-    // TODO move this to each place where it's used
-    // Access grant for medical documents bucket
+    /**
+     * @deprecated This should be done on the code where it's used.
+     * @see `setupFhirToCsvLambda()`` in the analytics-platform-stack.ts
+     */
     sandboxSeedDataBucket &&
       sandboxSeedDataBucket.grantReadWrite(apiService.taskDefinition.taskRole);
     medicalDocumentsBucket.grantReadWrite(apiService.taskDefinition.taskRole);
@@ -810,12 +812,6 @@ export class APIStack extends Stack {
     medicalDocumentsBucket.grantRead(fhirConverterLambda);
     medicalDocumentsBucket.grantRead(ehrComputeResourceDiffBundlesLambda);
     medicalDocumentsBucket.grantRead(ehrWriteBackResourceDiffBundlesLambda);
-    if (analyticsPlatformStack) {
-      medicalDocumentsBucket.grantRead(
-        analyticsPlatformStack.fhirToCsvBatchJobContainer.executionRole
-      );
-      medicalDocumentsBucket.grantRead(analyticsPlatformStack.fhirToCsvTransformLambda);
-    }
 
     createDocQueryChecker({
       lambdaLayers,

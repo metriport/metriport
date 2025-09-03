@@ -1,6 +1,6 @@
 {
   "name": "utils",
-  "version": "1.26.0",
+  "version": "1.27.2",
   "description": "",
   "private": true,
   "scripts": {
@@ -52,7 +52,7 @@
     "@aws-sdk/client-cloudwatch-logs": "^3.800.1",
     "@aws-sdk/client-cognito-identity-provider": "^3.800.0",
     "@aws-sdk/client-healthlake": "^3.800.0",
-    "@langchain/core": "^0.3.19",
+    "@aws-sdk/client-lambda": "^3.865.0",
     "@metriport/api-sdk": "file:packages/api-sdk",
     "@metriport/commonwell-sdk": "5.9.11",
     "@metriport/core": "file:packages/core",
@@ -70,13 +70,15 @@
     "express": "^4.19.2",
     "express-promise-router": "^4.1.1",
     "fast-json-stable-stringify": "^2.1.0",
+    "ini": "^5.0.0",
     "jsonschema": "^1.4.1",
     "langchain": "^0.3.6",
     "lodash": "^4.17.21",
     "mime-types": "^2.1.35",
     "playwright": "^1.39.0",
     "readline-sync": "^1.4.10",
-    "sequelize": "^6.31.0"
+    "sequelize": "^6.31.0",
+    "snowflake-sdk": "^2.2.0"
   },
   "devDependencies": {
     "@faker-js/faker": "^8.0.2",
@@ -87,10 +89,12 @@
     "@tsconfig/recommended": "^1.0.1",
     "@types/aws-serverless-express": "^3.3.9",
     "@types/express": "^4.17.14",
+    "@types/ini": "^4.1.1",
     "@types/jest": "29.5.3",
     "@types/lodash": "^4.14.192",
     "@types/node": "^18.11.12",
     "@types/readline-sync": "^1.4.6",
+    "@types/snowflake-sdk": "^1.6.24",
     "@typescript-eslint/eslint-plugin": "^5.50.0",
     "@typescript-eslint/parser": "^5.50.0",
     "eslint": "^8.33.0",

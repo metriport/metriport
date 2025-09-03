@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 import { faker } from "@faker-js/faker";
 import * as uuidv7_file from "@metriport/core/util/uuid-v7";
-import { OrgType } from "@metriport/core/domain/organization";
 import { CommonWell } from "@metriport/commonwell-sdk-v1/client/commonwell";
 import { Organization } from "@metriport/commonwell-sdk-v1/models/organization";
 import { CertificateResp } from "@metriport/commonwell-sdk-v1/models/certificates";
@@ -12,6 +11,7 @@ import { buildCwOrgNameForFacility } from "../shared";
 import * as createOrUpdateCwOrg from "../command/create-or-update-cw-organization";
 import { Config } from "../../../shared/config";
 import * as api from "../api";
+import { TreatmentType } from "@metriport/shared/domain/organization";
 
 let createOrUpdateCqOrganizationMock: jest.SpyInstance;
 
@@ -70,7 +70,7 @@ describe("registerFacility", () => {
     const cxId = uuidv7_file.uuidv4();
 
     const cxOrgName = "Test";
-    const cxOrgType = OrgType.acuteCare;
+    const cxOrgType = TreatmentType.acuteCare;
 
     const orgName = buildCwOrgNameForFacility({
       vendorName: cxOrgName,
@@ -107,7 +107,7 @@ describe("registerFacility", () => {
     const cxId = uuidv7_file.uuidv4();
 
     const cxOrgName = "Test";
-    const cxOrgType = OrgType.acuteCare;
+    const cxOrgType = TreatmentType.acuteCare;
 
     await createOrUpdateFacilityInCw({
       cxId,

@@ -45,12 +45,32 @@ export function makeFacilityOid(orgNumber: number, facilityNumber: number) {
   }.${facilityNumber}`;
 }
 
+/**
+ * @deprecated use isInitiatorOnly instead
+ */
 export function isOboFacility(facilityType?: FacilityType): boolean {
   return facilityType === FacilityType.initiatorOnly;
 }
 
+/**
+ * @deprecated use isInitiatorAndResponder instead
+ */
 export function isNonOboFacility(facilityType?: FacilityType): boolean {
   return facilityType === FacilityType.initiatorAndResponder;
+}
+
+export function isInitiatorAndResponder(facility: Facility): boolean;
+export function isInitiatorAndResponder(facilityType: FacilityType): boolean;
+export function isInitiatorAndResponder(facilityOrType: Facility | FacilityType): boolean {
+  const facilityType = typeof facilityOrType === "string" ? facilityOrType : facilityOrType.cwType;
+  return facilityType === FacilityType.initiatorAndResponder;
+}
+
+export function isInitiatorOnly(facility: Facility): boolean;
+export function isInitiatorOnly(facilityType: FacilityType): boolean;
+export function isInitiatorOnly(facilityOrType: Facility | FacilityType): boolean {
+  const facilityType = typeof facilityOrType === "string" ? facilityOrType : facilityOrType.cwType;
+  return facilityType === FacilityType.initiatorOnly;
 }
 
 export function isFacilityActiveForHie(facility: Facility, hie: MedicalDataSource): boolean {

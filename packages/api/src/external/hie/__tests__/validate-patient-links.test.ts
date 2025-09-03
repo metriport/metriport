@@ -296,7 +296,7 @@ describe("validateLinksBelongToPatient", () => {
     expect(cqInvalidLinks.length).toBe(0);
   });
 
-  it("should return the links as valid when only DOB and address match", async () => {
+  it("should return the links as invalid when only DOB and address match", async () => {
     const patientToMatch: PatientData = {
       ...basePatientData,
       firstName: "Jane",
@@ -318,10 +318,10 @@ describe("validateLinksBelongToPatient", () => {
     const { validNetworkLinks: cqValidNetworkLinks, invalidLinks: cqInvalidLinks } =
       await validateCqLinksBelongToPatient(cxId, cqLinks, basePatientData);
 
-    expect(cwValidNetworkLinks.length).toBe(1);
-    expect(cwInvalidLinks.length).toBe(0);
-    expect(cqValidNetworkLinks.length).toBe(1);
-    expect(cqInvalidLinks.length).toBe(0);
+    expect(cwValidNetworkLinks.length).toBe(0);
+    expect(cwInvalidLinks.length).toBe(1);
+    expect(cqValidNetworkLinks.length).toBe(0);
+    expect(cqInvalidLinks.length).toBe(1);
   });
 
   it("should return the links as valid when only gender and name match", async () => {
@@ -352,10 +352,10 @@ describe("validateLinksBelongToPatient", () => {
     const { validNetworkLinks: cqValidNetworkLinks, invalidLinks: cqInvalidLinks } =
       await validateCqLinksBelongToPatient(cxId, cqLinks, basePatientData);
 
-    expect(cwValidNetworkLinks.length).toBe(1);
-    expect(cwInvalidLinks.length).toBe(0);
-    expect(cqValidNetworkLinks.length).toBe(1);
-    expect(cqInvalidLinks.length).toBe(0);
+    expect(cwValidNetworkLinks.length).toBe(0);
+    expect(cwInvalidLinks.length).toBe(1);
+    expect(cqValidNetworkLinks.length).toBe(0);
+    expect(cqInvalidLinks.length).toBe(1);
   });
 
   it("should return the links as invalid when multiple core fields differ", async () => {

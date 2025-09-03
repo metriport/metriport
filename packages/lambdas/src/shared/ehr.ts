@@ -44,6 +44,7 @@ export const ehrSyncPatientSchema = z.object({
 
 export const ehrCreateResourceDiffBundlesSchema = z.object({
   ehr: z.nativeEnum(EhrSources),
+  // TODO ENG-937: Remove this once we have no messages in the queue with this field
   tokenId: z.string().optional(),
   cxId: z.string(),
   practiceId: z.string(),

@@ -17,8 +17,9 @@ import { createDocumentRenderFilePaths } from "@metriport/core/domain/document/f
 import { addOidPrefix } from "@metriport/core/domain/oid";
 import { Patient } from "@metriport/core/domain/patient";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
+import { reportMetric } from "@metriport/core/external/aws/cloudwatch";
 import { S3Utils } from "@metriport/core/external/aws/s3";
-import { DownloadResult } from "@metriport/core/external/commonwell-v1/document/document-downloader";
+import { DownloadResult } from "@metriport/core/external/commonwell/document/document-downloader";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
@@ -36,7 +37,6 @@ import {
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { Config } from "../../../shared/config";
 import { mapDocRefToMetriport } from "../../../shared/external";
-import { reportMetric } from "../../aws/cloudwatch";
 import { convertCDAToFHIR, isConvertible } from "../../fhir-converter/converter";
 import { makeFhirApi } from "../../fhir/api/api-factory";
 import { cwToFHIR } from "../../fhir/document";
@@ -813,7 +813,11 @@ async function triggerDownloadDocument({
   };
 
   try {
-    const result = await docDownloader.download({ document, fileInfo: adjustedFileInfo, cxId });
+    const result = await docDownloader.download({
+      sourceDocument: document,
+      destinationFileInfo: adjustedFileInfo,
+      cxId,
+    });
     return {
       ...result,
       isNew: true,

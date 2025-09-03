@@ -2,7 +2,7 @@ import { buildDayjs } from "../common/date";
 import { createQueryMetaSchema } from "./pagination";
 import { z } from "zod";
 
-const tcmEncounterMaxPageSize = 2500;
+export const tcmEncounterMaxPageSize = 10000;
 const stringOrNullSchema = z.union([z.string(), z.undefined(), z.null()]);
 
 export const outreachStatuses = ["Not Started", "Attempted", "Completed"] as const;
@@ -63,7 +63,7 @@ const tcmEncounterQuerySchema = z
   .object({
     after: z.string().datetime().optional(),
     facilityId: z.string().uuid().optional(),
-    daysLookback: z.enum(["2", "7", "14", "28"]).optional(),
+    daysLookback: z.enum(["2", "7"]).optional().default("7"),
     eventType: z.enum(["Admitted", "Discharged"] as const).optional(),
     coding: z.enum(["cardiac"]).optional(),
     status: z.enum(outreachStatuses).optional(),
