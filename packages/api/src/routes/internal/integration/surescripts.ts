@@ -45,3 +45,5 @@ router.post(
     return res.sendStatus(status.OK);
   })
 );
+
+export default router;

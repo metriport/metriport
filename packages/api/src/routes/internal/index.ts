@@ -61,6 +61,7 @@ import organizationRoutes from "./medical/organization";
 import patientRoutes from "./medical/patient";
 import tcmEncounter from "./medical/tcm-encounter";
 import questRoutes from "./integration/quest";
+import surecriptsRoutes from "./integration/surescripts";
 
 const router = Router();
 
@@ -80,6 +81,7 @@ router.use("/ehr", ehr);
 router.use("/tcm/encounter", tcmEncounter);
 router.use("/analytics-platform", analyticsPlatformRoutes);
 router.use("/quest", questRoutes);
+router.use("/surescripts", surecriptsRoutes);
 
 /** ---------------------------------------------------------------------------
  * POST /internal/mapi-access
