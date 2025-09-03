@@ -1,5 +1,5 @@
 import { SortItem } from "@metriport/shared/domain/pagination-v2";
-import { CursorWhereClause, PaginationV2WithCursor } from "../../pagination-v2";
+import { CursorWhereClause, PaginationV2Context } from "../../pagination-v2";
 
 export function makePaginationWithCursor(
   {
@@ -15,7 +15,7 @@ export function makePaginationWithCursor(
     sort?: SortItem[];
     originalSort?: SortItem[];
   } = { count: 10 }
-): PaginationV2WithCursor {
+): PaginationV2Context {
   return {
     count,
     ...(fromItem ? { fromItemClause: fromItem } : {}),

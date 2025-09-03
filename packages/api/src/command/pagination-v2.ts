@@ -5,6 +5,7 @@ import {
 } from "@metriport/shared/domain/cursor-utils";
 import type { SortItem } from "@metriport/shared/domain/pagination-v2";
 import { UnionToIntersection, XOR } from "ts-essentials";
+import { buildCompositeCursorWhereClause, ColumnValidationConfig } from "../routes/pagination-v2";
 
 export type CursorWhereClause = {
   clause: string;
@@ -36,14 +37,16 @@ export type PaginationV2WithQueryClauses = {
   count: number;
 };
 
-export type PaginationV2WithCursor = PaginationV2 & {
+export type PaginationV2Context = PaginationV2 & {
   fromItemClause?: CursorWhereClause | undefined;
   toItemClause?: CursorWhereClause | undefined;
+  allowedSortColumns: ColumnValidationConfig;
   orderByClause: string;
+  orderByClauseBackward: string;
 };
 
 export async function getPaginationV2Items<T extends Record<string, unknown>>(
-  requestMeta: PaginationV2WithCursor,
+  context: PaginationV2Context,
   getItems: (paginationV2: PaginationV2WithQueryClauses) => Promise<T[]>,
   getTotalCount: () => Promise<number>
 ): Promise<{
@@ -52,45 +55,52 @@ export async function getPaginationV2Items<T extends Record<string, unknown>>(
   nextPageCursor: CompositeCursor | undefined;
   totalCount?: number;
 }> {
-  const itemsPerPage = requestMeta.count;
+  const itemsPerPage = context.count;
 
   // return the items for the current page + one more to determine if there is a next page
   const itemsWithExtraOne = await getItems({
-    fromItemClause: requestMeta.fromItemClause || { clause: "", params: {} },
-    toItemClause: requestMeta.toItemClause || { clause: "", params: {} },
-    orderByClause: requestMeta.orderByClause,
+    fromItemClause: context.fromItemClause || { clause: "", params: {} },
+    toItemClause: context.toItemClause || { clause: "", params: {} },
+    orderByClause: context.orderByClause,
     count: itemsPerPage + 1,
   });
   if (itemsWithExtraOne.length < 1) {
     return { prevPageCursor: undefined, currPageItems: [], nextPageCursor: undefined };
   }
 
-  if (!requestMeta.toItem) {
+  if (!context.toItem) {
     // navigating "forward"
 
     const currPageItems = itemsWithExtraOne.slice(0, itemsPerPage);
 
     // intentionally one over since we asked for one more to determine if there is a next page
     const nextPageCursor = itemsWithExtraOne[itemsPerPage]
-      ? createCompositeCursor(itemsWithExtraOne[itemsPerPage], requestMeta.sort)
+      ? createCompositeCursor(itemsWithExtraOne[itemsPerPage], context.sort)
       : undefined;
 
-    if (!requestMeta.fromItem) {
+    if (!context.fromItem) {
       // first page, default request without "fromItem"
       const totalCount = await getTotalCount();
       return { prevPageCursor: undefined, currPageItems, nextPageCursor, totalCount };
     }
 
     // get the immediate item before the first one to determine if there's a previous page
+    const firstItemOfCurrentPage = createCompositeCursor(currPageItems[0], context.sort);
+    const toItemClause = buildCompositeCursorWhereClause(
+      firstItemOfCurrentPage,
+      context.sort,
+      "backward",
+      context.allowedSortColumns
+    );
     const itemsPrevious = await getItems({
-      fromItemClause: requestMeta.fromItemClause || { clause: "", params: {} },
-      toItemClause: requestMeta.toItemClause || { clause: "", params: {} },
-      orderByClause: requestMeta.orderByClause,
+      fromItemClause: { clause: "", params: {} },
+      toItemClause,
+      orderByClause: context.orderByClause,
       count: 2,
     });
     const prevPageCursor =
       itemsPrevious.length === 2
-        ? createCompositeCursor(itemsPrevious[0], requestMeta.sort)
+        ? createCompositeCursor(itemsPrevious[1], context.sort)
         : undefined;
 
     if (!prevPageCursor) {
@@ -107,23 +117,32 @@ export async function getPaginationV2Items<T extends Record<string, unknown>>(
   // intentionally expects one over since we asked for one more to determine if there is a previous page
   const prevPageCursor =
     itemsWithExtraOne.length > itemsPerPage
-      ? createCompositeCursor(itemsWithExtraOne[0], requestMeta.sort)
+      ? createCompositeCursor(itemsWithExtraOne[0], context.sort)
       : undefined;
 
   const currPageItems =
     itemsWithExtraOne.length > itemsPerPage
-      ? itemsWithExtraOne.slice(-itemsPerPage)
+      ? itemsWithExtraOne.slice(0, itemsPerPage)
       : itemsWithExtraOne;
 
-  // get the immediate item after the last one to determine if there's a next page
+  // get the last item of the page plus an extra to see if there is another page before it.
+  const lastItemOfCurrentPage = createCompositeCursor(
+    currPageItems[currPageItems.length - 1],
+    context.sort
+  );
   const itemsNext = await getItems({
-    fromItemClause: requestMeta.fromItemClause || { clause: "", params: {} },
-    toItemClause: requestMeta.toItemClause || { clause: "", params: {} },
-    orderByClause: requestMeta.orderByClause,
+    fromItemClause: buildCompositeCursorWhereClause(
+      lastItemOfCurrentPage,
+      context.sort,
+      "forward",
+      context.allowedSortColumns
+    ),
+    toItemClause: { clause: "", params: {} },
+    orderByClause: context.orderByClause,
     count: 2,
   });
   const nextPageCursor = itemsNext[1]
-    ? createCompositeCursor(itemsNext[1], requestMeta.sort)
+    ? createCompositeCursor(itemsNext[1], context.sort)
     : undefined;
 
   if (!prevPageCursor) {

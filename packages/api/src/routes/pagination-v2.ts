@@ -77,6 +77,13 @@ export function buildOrderByClause(
   return `ORDER BY ${orderByClauses.join(", ")}`;
 }
 
+export function flipSortOrder(sortItems: SortItem[]): SortItem[] {
+  return sortItems.map(({ col, order }) => ({
+    col,
+    order: order === "asc" ? "desc" : "asc",
+  }));
+}
+
 export function buildCompositeCursorWhereClause(
   cursor: CompositeCursor | undefined,
   sortItems: SortItem[],
@@ -262,20 +269,29 @@ export async function paginatedV2<T extends { id: string } & Record<string, unkn
     allowedSortColumns
   );
 
-  const orderByClause = buildOrderByClause(validatedMeta.sort, allowedSortColumns);
+  const orderByClauseForward = buildOrderByClause(validatedMeta.sort, allowedSortColumns);
+  const orderByClauseBackward = buildOrderByClause(
+    flipSortOrder(validatedMeta.sort),
+    allowedSortColumns
+  );
 
-  const paginationV2WithQueryClauses = {
+  const paginationV2Context = {
     ...validatedMeta,
+    allowedSortColumns,
     toItemClause: toItem,
     fromItemClause: fromItem,
-    orderByClause,
+    orderByClause: validatedMeta.toItem ? orderByClauseBackward : orderByClauseForward,
+    orderByClauseBackward: orderByClauseBackward,
   };
 
   const { prevPageCursor, nextPageCursor, currPageItems, totalCount } = await getPaginationV2Items(
-    paginationV2WithQueryClauses,
+    paginationV2Context,
     getItems,
     getTotalCount
   );
+
+  console.log("--------------------------------");
+  console.log("prevPageCursor", prevPageCursor);
 
   const responseMeta: ResponseMeta = {
     ...(prevPageCursor

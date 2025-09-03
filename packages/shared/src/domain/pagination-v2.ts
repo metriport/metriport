@@ -97,19 +97,9 @@ export function createQueryMetaSchemaV2(maxItems: number = maxItemsPerPage) {
       const sortWithId = addIdSortIfNotExists(data.sort);
 
       // Reorient ordering based on paginationV2 direction
-      const shouldReverseOrder = !!data.toItem;
-      const reorientedSort = sortWithId.map(({ col, order }) => ({
-        col,
-        order: shouldReverseOrder
-          ? order === "asc"
-            ? ("desc" as const)
-            : ("asc" as const)
-          : order,
-      }));
-
       return {
         ...data,
-        sort: reorientedSort,
+        sort: sortWithId,
         originalSort,
       };
     })
