@@ -1,13 +1,25 @@
-import { CompositeCursor, createCompositeCursor } from "@metriport/shared/domain/cursor-utils";
+import {
+  CompositeCursor,
+  createCompositeCursor,
+  CursorPrimitive,
+} from "@metriport/shared/domain/cursor-utils";
 import type { SortItem } from "@metriport/shared/domain/pagination-v2";
-import { FindOptions, Op, OrderItem } from "sequelize";
 import { UnionToIntersection, XOR } from "ts-essentials";
 
 export type CursorWhereClause = {
   clause: string;
-  params: Record<string, unknown>;
+  params: Record<string, CursorPrimitive>;
 };
 
+export type PaginationV2FromItem = {
+  /** indicates the first item of the page in the response, inclusive */
+  fromItem?: CompositeCursor | undefined;
+};
+export type PaginationV2ToItem = {
+  /** indicates the last item of the page in the response, inclusive */
+  toItem?: CompositeCursor | undefined;
+};
+export type PaginationV2Item = UnionToIntersection<PaginationV2FromItem | PaginationV2ToItem>;
 export type PaginationV2 = XOR<PaginationV2FromItem, PaginationV2ToItem> & {
   /** indicates the number of items to be included in the response */
   count: number;
@@ -17,51 +29,27 @@ export type PaginationV2 = XOR<PaginationV2FromItem, PaginationV2ToItem> & {
   originalSort: SortItem[];
 };
 
+// export type PaginationV2FromItemClause = {
+//   fromItemClause?: CursorWhereClause | undefined;
+// };
+// export type PaginationV2ToItemClause = {
+//   toItemClause?: CursorWhereClause | undefined;
+// };
+export type PaginationV2WithQueryClauses = {
+  fromItemClause?: CursorWhereClause | undefined;
+  toItemClause?: CursorWhereClause | undefined;
+  orderByClause: string;
+  count: number;
+};
 export type PaginationV2WithCursor = PaginationV2 & {
-  fromItemClause?: CursorWhereClause;
-  toItemClause?: CursorWhereClause;
+  fromItemClause?: CursorWhereClause | undefined;
+  toItemClause?: CursorWhereClause | undefined;
+  orderByClause: string;
 };
-
-export type PaginationV2FromItem = {
-  /** indicates the minimum item to be included in the response, inclusive - now supports composite cursors */
-  fromItem?: CompositeCursor | undefined;
-};
-export type PaginationV2ToItem = {
-  /** indicates the maximum item to be included in the response, inclusive - now supports composite cursors */
-  toItem?: CompositeCursor | undefined;
-};
-export type PaginationV2Item = UnionToIntersection<PaginationV2FromItem | PaginationV2ToItem>;
-
-export function getPaginationV2Filters(paginationV2: PaginationV2 | undefined) {
-  const { toItem, fromItem } = paginationV2 ?? {};
-  return {
-    ...(toItem ? { id: { [Op.gte]: toItem } } : undefined),
-    ...(fromItem ? { id: { [Op.lte]: fromItem } } : undefined),
-  };
-}
-
-export function getPaginationV2Limits(
-  paginationV2: PaginationV2 | undefined
-): Pick<FindOptions, "limit"> | undefined {
-  const { count } = paginationV2 ?? {};
-  return count ? { limit: count } : undefined;
-}
-
-export function getPaginationV2Sorting(
-  paginationV2: PaginationV2 | undefined
-): [string, OrderItem] {
-  const { toItem } = paginationV2 ?? {};
-  return ["id", toItem ? "ASC" : "DESC"];
-}
-
-export function sortForPaginationV2<T>(items: T[], paginationV2: PaginationV2 | undefined): T[] {
-  const { toItem } = paginationV2 ?? {};
-  return toItem ? items.reverse() : items;
-}
 
 export async function getPaginationV2Items<T extends Record<string, unknown>>(
   requestMeta: PaginationV2WithCursor,
-  getItems: (paginationV2: PaginationV2WithCursor) => Promise<T[]>,
+  getItems: (paginationV2: PaginationV2WithQueryClauses) => Promise<T[]>,
   getTotalCount: () => Promise<number>
 ): Promise<{
   prevPageCursor: CompositeCursor | undefined;
@@ -98,9 +86,8 @@ export async function getPaginationV2Items<T extends Record<string, unknown>>(
 
     // get the immediate item before the first one to determine if there's a previous page
     const itemsPrevious = await getItems({
-      toItem: createCompositeCursor(currPageItems[0], requestMeta.sort),
-      sort: requestMeta.sort,
-      originalSort: requestMeta.originalSort,
+      toItemClause: requestMeta.toItemClause,
+      orderByClause: requestMeta.orderByClause,
       count: 2,
     });
     const prevPageCursor =
@@ -132,9 +119,8 @@ export async function getPaginationV2Items<T extends Record<string, unknown>>(
 
   // get the immediate item after the last one to determine if there's a next page
   const itemsNext = await getItems({
-    fromItem: createCompositeCursor(currPageItems[currPageItems.length - 1], requestMeta.sort),
-    sort: requestMeta.sort,
-    originalSort: requestMeta.originalSort,
+    fromItemClause: requestMeta.fromItemClause,
+    orderByClause: requestMeta.orderByClause,
     count: 2,
   });
   const nextPageCursor = itemsNext[1]
@@ -147,32 +133,4 @@ export async function getPaginationV2Items<T extends Record<string, unknown>>(
     return { prevPageCursor, currPageItems, nextPageCursor, totalCount };
   }
   return { prevPageCursor, currPageItems, nextPageCursor };
-}
-
-/**
- * Builds composite cursor filters for complex WHERE conditions in multi-column sorting.
- * This creates the appropriate comparison logic for cursor-based paginationV2 with custom sort orders.
- */
-export function buildCompositeCursorFilters(
-  cursor: CompositeCursor,
-  sortFields: SortItem[],
-  direction: "forward" | "backward"
-): Record<string, unknown> {
-  // This is a placeholder implementation for TDD
-  // The actual implementation will depend on the ORM being used (Sequelize, etc.)
-  // and will need to create complex WHERE clauses for multi-column comparisons
-
-  if (Object.keys(cursor).length === 0 || sortFields.length === 0) {
-    return {};
-  }
-
-  // For now, return a simple structure that indicates we have filters
-  // The actual implementation would build complex OR/AND conditions
-  return {
-    _compositeCursorFilter: {
-      cursor,
-      sortFields,
-      direction,
-    },
-  };
 }

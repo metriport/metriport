@@ -1,7 +1,22 @@
+import { MetriportError } from "../error/metriport-error";
 import type { SortItem } from "./pagination-v2";
 
-export type CursorPrimitive = string | number | boolean | null | undefined;
+export type CursorPrimitive = string | number | boolean | Date | null | undefined;
 export type CompositeCursor = Record<string, CursorPrimitive>;
+
+/**
+ * Type guard to check if a value is a valid CursorPrimitive type.
+ */
+function isCursorPrimitive(value: unknown): value is CursorPrimitive {
+  return (
+    typeof value === "string" ||
+    typeof value === "number" ||
+    typeof value === "boolean" ||
+    value instanceof Date ||
+    value === null ||
+    value === undefined
+  );
+}
 
 /**
  * Encodes a cursor object to a base64 string for use in pagination.
@@ -24,14 +39,21 @@ export function decodeCursor(encodedCursor: string): Record<string, CursorPrimit
 /**
  * Creates a composite cursor from an item based on the specified sort fields.
  * Only includes the fields that are part of the sort criteria.
+ * @throws Error if any field value is not a valid CursorPrimitive type
  */
-export function createCompositeCursor<T extends Record<string, CursorPrimitive>>(
+export function createCompositeCursor<T extends Record<string, unknown>>(
   item: T,
   sortFields: SortItem[]
 ): CompositeCursor {
   const cursor: CompositeCursor = {};
   for (const { col } of sortFields) {
-    cursor[col] = item[col];
+    const value = item[col];
+    if (!isCursorPrimitive(value)) {
+      throw new MetriportError(
+        `Invalid cursor value for column '${col}': expected CursorPrimitive (string | number | boolean | Date | null | undefined), got ${typeof value}`
+      );
+    }
+    cursor[col] = value;
   }
   return cursor;
 }

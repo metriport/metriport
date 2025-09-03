@@ -227,16 +227,12 @@ describe("cursor-utils", () => {
         price: faker.number.float(),
         isActive: faker.datatype.boolean(),
         createdAt: faker.date.recent(),
-        tags: ["tag1", "tag2"],
-        metadata: { key: "value" },
       };
       const sortFields: SortItem[] = [
         { col: "count", order: "desc" },
         { col: "price", order: "asc" },
         { col: "isActive", order: "desc" },
         { col: "createdAt", order: "asc" },
-        { col: "tags", order: "asc" },
-        { col: "metadata", order: "asc" },
       ];
 
       const cursor = createCompositeCursor(item, sortFields);
@@ -246,8 +242,6 @@ describe("cursor-utils", () => {
         price: item.price,
         isActive: item.isActive,
         createdAt: item.createdAt,
-        tags: item.tags,
-        metadata: item.metadata,
       });
     });
   });

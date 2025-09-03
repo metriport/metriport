@@ -4,22 +4,22 @@ import { CursorWhereClause, PaginationV2WithCursor } from "../../pagination-v2";
 export function makePaginationWithCursor(
   {
     count,
-    fromItemClause,
-    toItemClause,
+    fromItem,
+    toItem,
     sort,
     originalSort,
   }: {
     count: number;
-    fromItemClause?: CursorWhereClause;
-    toItemClause?: CursorWhereClause;
+    fromItem?: CursorWhereClause;
+    toItem?: CursorWhereClause;
     sort?: SortItem[];
     originalSort?: SortItem[];
   } = { count: 10 }
 ): PaginationV2WithCursor {
   return {
     count,
-    ...(fromItemClause ? { fromItemClause } : {}),
-    ...(toItemClause ? { toItemClause } : {}),
+    ...(fromItem ? { fromItem } : {}),
+    ...(toItem ? { toItem } : {}),
     sort: sort ?? [],
     originalSort: originalSort ?? [],
   };

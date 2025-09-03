@@ -1,5 +1,5 @@
 import { buildDayjs } from "@metriport/shared/common/date";
-import { omit, snakeCase } from "lodash";
+import { omit } from "lodash";
 import { QueryTypes } from "sequelize";
 import { PatientModel } from "../../../models/medical/patient";
 import { TcmEncounterModel } from "../../../models/medical/tcm-encounter";
@@ -49,28 +49,15 @@ export async function getTcmEncounters({
   const sequelize = TcmEncounterModel.sequelize;
   if (!sequelize) throw new Error("Sequelize not found");
 
-  const { fromItemClause = { clause: "", params: {} }, toItemClause = { clause: "", params: {} } } =
-    pagination;
+  const {
+    fromItemClause = { clause: "", params: {} },
+    toItemClause = { clause: "", params: {} },
+    orderByClause,
+  } = pagination;
 
   const dischargedAfter = daysLookback
     ? buildDayjs().subtract(parseInt(daysLookback), "day").toDate()
     : undefined;
-
-  function getTableForColumn(column: string): string {
-    // Map camelCase columns to their tables for ORDER BY
-    const columnTableMap: Record<string, string> = {
-      id: "tcm_encounter",
-      admitTime: "tcm_encounter",
-      dischargeTime: "tcm_encounter",
-    };
-    return columnTableMap[column] || "tcm_encounter";
-  }
-
-  function createOrderByClause({ col, order }: { col: string; order: string }) {
-    const table = getTableForColumn(col);
-    const dbCol = snakeCase(col); // Transform camelCase to snake_case for SQL
-    return `${table}.${dbCol} ${order.toUpperCase()}`;
-  }
 
   /**
    * ⚠️ Always change this query and the count query together.
@@ -94,7 +81,7 @@ export async function getTcmEncounters({
       ${/* COMPOSITE CURSOR PaginationV2 */ ""}
       ${toItemClause.clause}
       ${fromItemClause.clause}
-      ORDER BY ${pagination.sort.map(createOrderByClause).join(", ")}
+      ${orderByClause}
       LIMIT :count
     `;
 
@@ -112,10 +99,10 @@ export async function getTcmEncounters({
       ...{ eventType },
       ...{ coding },
       ...{ status },
-      ...{ count: pagination.count },
       // Include composite cursor parameters
       ...fromItemClause.params,
       ...toItemClause.params,
+      ...{ count: pagination.count },
     },
     type: QueryTypes.SELECT,
   })) as TcmEncounterQueryData[];

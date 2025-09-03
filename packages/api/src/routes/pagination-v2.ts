@@ -2,23 +2,27 @@ import { Config } from "@metriport/core/util/config";
 import {
   createQueryMetaSchemaV2,
   defaultItemsPerPage,
+  MetriportError,
   PaginatedResponse,
   ResponseMeta,
 } from "@metriport/shared";
-import { Request } from "express";
 import {
+  CompositeCursor,
+  CursorPrimitive,
+  encodeCursor,
+} from "@metriport/shared/domain/cursor-utils";
+import { SortItem } from "@metriport/shared/domain/pagination-v2";
+import { Request } from "express";
+import { snakeCase } from "lodash";
+import {
+  CursorWhereClause,
   getPaginationV2Items,
   PaginationV2,
   PaginationV2FromItem,
   PaginationV2Item,
   PaginationV2ToItem,
-  PaginationV2WithCursor,
-  CursorWhereClause,
+  PaginationV2WithQueryClauses,
 } from "../command/pagination-v2";
-import { encodeCursor, CompositeCursor } from "@metriport/shared/domain/cursor-utils";
-import { SortItem } from "@metriport/shared/domain/pagination-v2";
-import { MetriportError } from "@metriport/shared";
-import { snakeCase } from "lodash";
 
 export type ColumnValidationConfig = Record<string, string>;
 
@@ -45,8 +49,6 @@ function validateSortColumns(
   return paginationV2;
 }
 
-// Column name transformation is handled at SQL generation level for simplicity
-
 /**
  * Builds composite cursor WHERE clause for complex multi-column paginationV2.
  *
@@ -58,6 +60,23 @@ function validateSortColumns(
  * Backward paginationV2 (toItem) generates:
  * (col1 > val1) OR (col1 = val1 AND col2 < val2)
  */
+export function buildOrderByClause(
+  sortItems: SortItem[],
+  allowedColumns: ColumnValidationConfig
+): string {
+  if (sortItems.length === 0) {
+    return "";
+  }
+
+  const orderByClauses = sortItems.map(({ col, order }) => {
+    const table = allowedColumns[col]; // Use original camelCase for table lookup
+    const dbCol = snakeCase(col); // Transform camelCase to snake_case for SQL
+    return `${table}.${dbCol} ${order.toUpperCase()}`;
+  });
+
+  return `ORDER BY ${orderByClauses.join(", ")}`;
+}
+
 export function buildCompositeCursorWhereClause(
   cursor: CompositeCursor,
   sortItems: SortItem[],
@@ -69,7 +88,7 @@ export function buildCompositeCursorWhereClause(
   }
 
   const conditions: string[] = [];
-  const params: Record<string, unknown> = {};
+  const params: Record<string, CursorPrimitive> = {};
 
   // Build lexicographic comparison conditions
   for (let i = 0; i < sortItems.length; i++) {
@@ -194,7 +213,7 @@ export function getRequestMeta(req: Request, maxItemsPerPage: number): Paginatio
  * @param maxItemsPerPage - The maximum number of items per page.
  * @returns An object containing the paginationV2 metadata and the current page's items.
  */
-export async function paginatedV2<T extends { id: string }>({
+export async function paginatedV2<T extends { id: string } & Record<string, unknown>>({
   request,
   additionalQueryParams,
   getItems,
@@ -205,7 +224,7 @@ export async function paginatedV2<T extends { id: string }>({
 }: {
   request: Request;
   additionalQueryParams: Record<string, string> | undefined;
-  getItems: (paginationV2: PaginationV2WithCursor) => Promise<T[]>;
+  getItems: (paginationV2: PaginationV2WithQueryClauses) => Promise<T[]>;
   getTotalCount: () => Promise<number>;
   allowedSortColumns: ColumnValidationConfig;
   hostUrl?: string;
@@ -215,7 +234,7 @@ export async function paginatedV2<T extends { id: string }>({
   const validatedMeta = validateSortColumns(requestMeta, allowedSortColumns);
 
   // Build composite cursor WHERE clauses (column name transformation happens inside)
-  const fromItemClause = validatedMeta.fromItem
+  const fromItem = validatedMeta.fromItem
     ? buildCompositeCursorWhereClause(
         validatedMeta.fromItem,
         validatedMeta.sort,
@@ -224,7 +243,7 @@ export async function paginatedV2<T extends { id: string }>({
       )
     : undefined;
 
-  const toItemClause = validatedMeta.toItem
+  const toItem = validatedMeta.toItem
     ? buildCompositeCursorWhereClause(
         validatedMeta.toItem,
         validatedMeta.sort,
@@ -233,14 +252,17 @@ export async function paginatedV2<T extends { id: string }>({
       )
     : undefined;
 
-  const PaginationV2WithCursor: PaginationV2WithCursor = {
+  const orderByClause = buildOrderByClause(validatedMeta.sort, allowedSortColumns);
+
+  const paginationV2WithCursor = {
     ...validatedMeta,
-    fromItemClause,
-    toItemClause,
+    ...(toItem ? { toItemClause: toItem } : {}),
+    ...(fromItem ? { fromItemClause: fromItem } : {}),
+    orderByClause,
   };
 
   const { prevPageCursor, nextPageCursor, currPageItems, totalCount } = await getPaginationV2Items(
-    PaginationV2WithCursor,
+    paginationV2WithCursor,
     getItems,
     getTotalCount
   );
