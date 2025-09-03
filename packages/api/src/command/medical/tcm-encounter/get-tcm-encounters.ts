@@ -120,6 +120,7 @@ export async function getTcmEncounters({
       ${/* COMPOSITE CURSOR PaginationV2 */ ""}
       ${toItemClause.clause}
       ${fromItemClause.clause}
+      GROUP BY tcm_encounter.id, patient.id, patient.data, patient.facility_ids
       ${orderByClause}
       LIMIT :count
     `;
