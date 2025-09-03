@@ -34,6 +34,7 @@ export function makeEncounter(
     admitTime: new Date("2023-01-01"),
     dischargeTime: null,
     clinicalInformation: {},
+    outreachLogs: overrides.outreachLogs ?? [],
     PatientModel: patient,
     get: jest.fn().mockReturnValue(patient),
   };
@@ -44,6 +45,7 @@ export function makeEncounter(
     dataValues: {
       ...baseEncounter,
       ...overrides,
+      outreachLogs: overrides.outreachLogs ?? [],
       PatientModel: patient,
     },
   };
