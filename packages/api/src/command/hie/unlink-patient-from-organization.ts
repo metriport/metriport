@@ -382,28 +382,36 @@ async function findAndInvalidateLinks(
     // Separate CW v1 and v2 links
     const [cwV1Links, cwV2Links] = partition(invalidLinks.commonwell, isCwLinkV1);
 
-    const cwUnlinkkPromises = [];
+    const cwUnlinkPromises = [];
     // Only get CW access objects if we have links to process
     const promises: Promise<unknown>[] = [
       createOrUpdateInvalidLinks({ id: patientId, cxId, invalidLinks }),
-      updateCQPatientData({ id: patientId, cxId, cqLinksToInvalidate: invalidLinks.carequality }),
-      updateCwPatientData({ id: patientId, cxId, cwLinksToInvalidate: invalidLinks.commonwell }),
     ];
+    if (invalidLinks.carequality.length > 0) {
+      promises.push(
+        updateCQPatientData({ id: patientId, cxId, cqLinksToInvalidate: invalidLinks.carequality })
+      );
+    }
+    if (invalidLinks.commonwell.length > 0) {
+      promises.push(
+        updateCwPatientData({ id: patientId, cxId, cwLinksToInvalidate: invalidLinks.commonwell })
+      );
+    }
 
     // Add CW v1 downgrade requests if needed
     if (cwV1Links.length > 0) {
       const cwV1Promises = await createCwV1DowngradePromises(cxId, patientId, cwV1Links);
-      cwUnlinkkPromises.push(...cwV1Promises);
+      cwUnlinkPromises.push(...cwV1Promises);
     }
 
     // Add CW v2 unlink requests if needed
     if (cwV2Links.length > 0) {
       const cwV2Promises = await createCwV2UnlinkPromises(cxId, patientId, cwV2Links);
-      cwUnlinkkPromises.push(...cwV2Promises);
+      cwUnlinkPromises.push(...cwV2Promises);
     }
 
-    log(`Removing ${cwUnlinkkPromises.length} links`);
-    promises.push(...cwUnlinkkPromises);
+    log(`Removing ${cwUnlinkPromises.length} links`);
+    promises.push(...cwUnlinkPromises);
     await Promise.allSettled(promises);
   } catch (error) {
     log(`Error invalidating links: ${errorToString(error)}`);
