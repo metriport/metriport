@@ -66,6 +66,7 @@ router.get(
       ...(query.eventType ? { eventType: query.eventType } : {}),
       ...(query.coding ? { coding: query.coding } : {}),
       ...(query.status ? { status: query.status } : {}),
+      ...(query.encounterClass ? { encounterClass: query.encounterClass } : {}),
       ...(query.search ? { search: query.search } : {}),
     };
 

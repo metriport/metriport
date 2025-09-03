@@ -11,9 +11,11 @@ export async function createSampleTcmEncounters(cxId: string, patientId: string)
     "Westfield Memorial Hospital",
   ];
 
-  // Create 3 TCM encounters with specific dates and events
+  // Create 5 TCM encounters with specific dates and events
   const twentyDaysAgo = buildDayjs().subtract(20, "day");
   const tenDaysAgo = buildDayjs().subtract(10, "day");
+  const fiveDaysAgo = buildDayjs().subtract(5, "day");
+  const threeDaysAgo = buildDayjs().subtract(3, "day");
   const yesterday = buildDayjs().subtract(1, "day");
 
   const encounters = [
@@ -29,6 +31,8 @@ export async function createSampleTcmEncounters(cxId: string, patientId: string)
       dischargeTime: tenDaysAgo.add(35, "hour"),
       clinicalInformation: {},
     },
+    { latestEvent: "Admitted" as const, admitTime: fiveDaysAgo, clinicalInformation: {} },
+    { latestEvent: "Admitted" as const, admitTime: threeDaysAgo, clinicalInformation: {} },
     { latestEvent: "Admitted" as const, admitTime: yesterday, clinicalInformation: {} },
   ];
 
@@ -37,13 +41,14 @@ export async function createSampleTcmEncounters(cxId: string, patientId: string)
       return await createTcmEncounter({
         cxId,
         patientId,
-        class: sample(["Inpatient", "Emergency"]) ?? "",
+        class: sample(["inpatient encounter", "ambulatory", "emergency", "short stay"]) ?? "",
         facilityName: sample(facilityNames) ?? "",
         latestEvent: enc.latestEvent,
         admitTime: enc.admitTime.toDate(),
         dischargeTime: enc.dischargeTime?.toDate(),
         clinicalInformation: enc.clinicalInformation,
         outreachStatus: "Not Started",
+        outreachLogs: [],
         freetextNote: `Sample freetext note for ${enc.latestEvent} encounter`,
       });
     })

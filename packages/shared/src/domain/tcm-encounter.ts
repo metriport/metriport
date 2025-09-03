@@ -29,6 +29,14 @@ export const tcmEncounterBaseSchema = z.strictObject({
     .transform(val => buildDayjs(val).toDate())
     .nullish()
     .transform(val => (val === null ? undefined : val)),
+  outreachLogs: z
+    .array(
+      z.object({
+        status: z.enum(["Attempted", "Completed"] as const),
+        timestamp: z.string().datetime(),
+      })
+    )
+    .default([]),
   clinicalInformation: z.record(z.unknown()).optional().default({}),
   freetextNote: z.string().optional(),
   dischargeSummaryPath: z.string().optional(),
@@ -68,6 +76,9 @@ const tcmEncounterQuerySchema = z
     coding: z.enum(["cardiac"]).optional(),
     status: z.enum(outreachStatuses).optional(),
     search: z.string().optional(),
+    encounterClass: z
+      .enum(["inpatient encounter", "ambulatory", "emergency", "short stay", "pre-admission"])
+      .optional(),
   })
   .and(createQueryMetaSchema(tcmEncounterMaxPageSize));
 
