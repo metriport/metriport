@@ -232,7 +232,6 @@ export function isXMLContentType(bytesBuffer: Buffer): boolean {
     (bytesBuffer[0] === XML_MAGIC_NUMBER_1 &&
       bytesBuffer[1] === XML_MAGIC_NUMBER_13 &&
       bytesBuffer[2] === XML_MAGIC_NUMBER_14 &&
-      bytesBuffer[3] === XML_MAGIC_NUMBER_14 &&
-      bytesBuffer[4] === ASCII_SPACE)
+      bytesBuffer[3] === XML_MAGIC_NUMBER_14)
   );
 }
