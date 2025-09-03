@@ -83,9 +83,21 @@ select
     , coding_system.code
     , coding_system.description
     , cast(obvs.status as {{ dbt.type_string() }} ) as status
-    , cast(coalesce(nullif(obvs.effectiveperiod_start, ''), obvs.effectivedatetime) as date) as observation_date
-    , cast(coalesce(nullif(obvs.effectiveperiod_start, ''), obvs.effectivedatetime) as date) as collection_date
-    , cast(coalesce(nullif(obvs.effectiveperiod_end, ''), obvs.effectivedatetime) as date) as result_date
+    , case 
+        when obvs.effectiveperiod_start != '' and obvs.effectiveperiod_start is not null then cast(obvs.effectiveperiod_start as date)
+        when obvs.effectivedatetime != '' and obvs.effectivedatetime is not null then cast(obvs.effectivedatetime as date)
+        else null
+      end as observation_date
+    , case 
+        when obvs.effectiveperiod_start != '' and obvs.effectiveperiod_start is not null then cast(obvs.effectiveperiod_start as date)
+        when obvs.effectivedatetime != '' and obvs.effectivedatetime is not null then cast(obvs.effectivedatetime as date)
+        else null
+      end as collection_date
+    , case 
+        when obvs.effectiveperiod_end != '' and obvs.effectiveperiod_end is not null then cast(obvs.effectiveperiod_end as date)
+        when obvs.effectivedatetime != '' and obvs.effectivedatetime is not null then cast(obvs.effectivedatetime as date)
+        else null
+      end as result_date
     , cast(coalesce(obvs.valuequantity_value, obvs.valuestring, obvs.valuecodeableconcept_text) as {{ dbt.type_string() }} ) as result
     , cast(obvs.valuequantity_unit as {{ dbt.type_string() }} ) as source_units
     , cast(obvs.referencerange_0_low_value as {{ dbt.type_string() }} ) as source_reference_range_low
@@ -106,4 +118,4 @@ left join {{ref('terminology__loinc')}} loinc
     on coding_system.code_type = 'loinc' and coding_system.code = loinc.loinc
 left join {{ref('terminology__snomed_ct')}} snomed
     on coding_system.code_type = 'snomed_ct' and coding_system.code = snomed.snomed_ct
-where not (obvs.code_text = 'n/a' and obvs.code_coding_0_system is null)
+where not (obvs.code_text = 'n/a' and obvs.code_coding_0_system is null and obvs.effectivedatetime != '' and obvs.effectiveperiod_start != '' and obvs.effectiveperiod_end != '')
