@@ -7,7 +7,7 @@ export { CommonwellError } from "./common/commonwell-error";
 export { makeJwt } from "./common/make-jwt";
 export {
   buildBaseQueryMeta,
-  decodeCwPatientId,
+  decodeCwPatientIdV2,
   encodeCwPatientId,
   encodePatientIdForDocumentExchange,
   getCwPatientIdFromLinks,
