@@ -1,14 +1,16 @@
 import { CodeableConcept } from "@medplum/fhirtypes";
 import { PRACTITIONER_ROLE_URL } from "@metriport/shared/medical";
 
-export type PractionerRoleCode =
-  | "doctor"
-  | "nurse"
-  | "pharmacist"
-  | "researcher"
-  | "teacher"
-  | "ict";
-const practitionerRoleDisplay: Record<PractionerRoleCode, string> = {
+export const PRACTITIONER_ROLE_CODES = [
+  "doctor",
+  "nurse",
+  "pharmacist",
+  "researcher",
+  "teacher",
+  "ict",
+] as const;
+export type PractitionerRoleCode = (typeof PRACTITIONER_ROLE_CODES)[number];
+export const practitionerRoleDisplay: Record<PractitionerRoleCode, string> = {
   doctor: "Doctor",
   nurse: "Nurse",
   pharmacist: "Pharmacist",
@@ -17,7 +19,7 @@ const practitionerRoleDisplay: Record<PractionerRoleCode, string> = {
   ict: "ICT professional",
 };
 
-export function getPractitionerRoleCode(code: PractionerRoleCode): CodeableConcept {
+export function getPractitionerRoleCode(code: PractitionerRoleCode): CodeableConcept {
   return {
     coding: [
       {

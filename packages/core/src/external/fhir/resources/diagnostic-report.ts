@@ -34,53 +34,56 @@ function additionalNoteCleanup(text: string): string {
 }
 
 // https://build.fhir.org/valueset-diagnostic-service-sections.html
-type DiagnosticServiceSectionCode =
-  | "AU"
-  | "BG"
-  | "BLB"
-  | "CG"
-  | "CUS"
-  | "CTH"
-  | "CT"
-  | "CH"
-  | "CP"
-  | "EC"
-  | "EN"
-  | "GE"
-  | "HM"
-  | "IMG"
-  | "ICU"
-  | "IMM"
-  | "LAB"
-  | "MB"
-  | "MCB"
-  | "MYC"
-  | "NMS"
-  | "NMR"
-  | "NRS"
-  | "OUS"
-  | "OT"
-  | "OTH"
-  | "OSL"
-  | "PAR"
-  | "PHR"
-  | "PAT"
-  | "PT"
-  | "PHY"
-  | "PF"
-  | "RAD"
-  | "RX"
-  | "RUS"
-  | "RC"
-  | "RT"
-  | "SR"
-  | "SP"
-  | "TX"
-  | "VUS"
-  | "VR"
-  | "URN"
-  | "XRC";
-const diagnosticServiceSectionsDisplay: Record<DiagnosticServiceSectionCode, string> = {
+export const DIAGNOSTIC_SERVICE_SECTIONS_CODES = [
+  "AU",
+  "BG",
+  "BLB",
+  "CG",
+  "CUS",
+  "CTH",
+  "CT",
+  "CH",
+  "CP",
+  "EC",
+  "EN",
+  "GE",
+  "HM",
+  "IMG",
+  "ICU",
+  "IMM",
+  "LAB",
+  "MB",
+  "MCB",
+  "MYC",
+  "NMS",
+  "NMR",
+  "NRS",
+  "OUS",
+  "OT",
+  "OTH",
+  "OSL",
+  "PAR",
+  "PHR",
+  "PAT",
+  "PT",
+  "PHY",
+  "PF",
+  "RAD",
+  "RX",
+  "RUS",
+  "RC",
+  "RT",
+  "SR",
+  "SP",
+  "TX",
+  "VUS",
+  "VR",
+  "URN",
+  "XRC",
+] as const;
+export type DiagnosticServiceSectionCode = (typeof DIAGNOSTIC_SERVICE_SECTIONS_CODES)[number];
+
+export const diagnosticServiceSectionsDisplay: Record<DiagnosticServiceSectionCode, string> = {
   AU: "Audiology",
   BG: "Blood Gases",
   BLB: "Blood Bank",

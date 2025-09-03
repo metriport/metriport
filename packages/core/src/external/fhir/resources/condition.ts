@@ -11,7 +11,6 @@ export const CONDITION_CLINICAL_STATUS_CODES = [
   "inactive",
   "remission",
   "resolved",
-  "unknown",
 ] as const;
 export type ConditionClinicalStatus = (typeof CONDITION_CLINICAL_STATUS_CODES)[number];
 
@@ -22,7 +21,6 @@ const conditionClinicalStatusDisplay: Record<ConditionClinicalStatus, string> = 
   inactive: "Inactive",
   remission: "Remission",
   resolved: "Resolved",
-  unknown: "Unknown",
 };
 
 /**

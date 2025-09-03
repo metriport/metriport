@@ -1,16 +1,19 @@
 import { CodeableConcept } from "@medplum/fhirtypes";
 import { OBSERVATION_CATEGORY_URL } from "@metriport/shared/medical";
 
-export type ObservationCategoryCode =
-  | "social-history"
-  | "vital-signs"
-  | "imaging"
-  | "laboratory"
-  | "procedure"
-  | "survey"
-  | "exam"
-  | "therapy"
-  | "activity";
+export const OBSERVATION_CATEGORY_CODES = [
+  "social-history",
+  "vital-signs",
+  "imaging",
+  "laboratory",
+  "procedure",
+  "survey",
+  "exam",
+  "therapy",
+  "activity",
+] as const;
+export type ObservationCategoryCode = (typeof OBSERVATION_CATEGORY_CODES)[number];
+
 export const observationCategoryDisplay: Record<ObservationCategoryCode, string> = {
   "social-history": "Social History",
   "vital-signs": "Vital Signs",
