@@ -25,6 +25,14 @@ function normalizeContactUse(use: unknown): unknown {
   switch (use.toLowerCase()) {
     case "cell":
       return "mobile";
+    case "mc":
+      return "mobile";
+    case "hp":
+      return "home";
+    case "h":
+      return "home";
+    case "wp":
+      return "work";
   }
   return use;
 }
