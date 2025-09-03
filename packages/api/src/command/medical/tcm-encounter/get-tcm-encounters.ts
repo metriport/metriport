@@ -104,9 +104,9 @@ export async function getTcmEncounters({
       ${
         status
           ? ` AND (
-        (jsonb_array_length(tcm_encounter.outreach_logs) > 0 AND tcm_encounter.outreach_logs @> '[{"status": "${status}"}]')
-        OR (jsonb_array_length(tcm_encounter.outreach_logs) = 0 AND tcm_encounter.outreach_status = :status)
-      )`
+        (tcm_encounter.outreach_logs @> jsonb_build_array(jsonb_build_object('status', :status)))
+          OR (jsonb_array_length(tcm_encounter.outreach_logs) = 0 AND tcm_encounter.outreach_status = :status)
+        )`
           : ""
       }
       ${coding === "cardiac" ? ` AND tcm_encounter.has_cardiac_code = true` : ""}
@@ -216,7 +216,7 @@ export async function getTcmEncountersCount({
     ${
       status
         ? ` AND (
-        (jsonb_array_length(tcm_encounter.outreach_logs) > 0 AND tcm_encounter.outreach_logs @> '[{"status": "${status}"}]')
+      (tcm_encounter.outreach_logs @> jsonb_build_array(jsonb_build_object('status', :status)))
         OR (jsonb_array_length(tcm_encounter.outreach_logs) = 0 AND tcm_encounter.outreach_status = :status)
       )`
         : ""

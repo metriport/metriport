@@ -48,6 +48,7 @@ export async function createSampleTcmEncounters(cxId: string, patientId: string)
         dischargeTime: enc.dischargeTime?.toDate(),
         clinicalInformation: enc.clinicalInformation,
         outreachStatus: "Not Started",
+        outreachLogs: [],
         freetextNote: `Sample freetext note for ${enc.latestEvent} encounter`,
       });
     })

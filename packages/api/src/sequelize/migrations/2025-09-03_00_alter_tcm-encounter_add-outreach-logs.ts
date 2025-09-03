@@ -1,4 +1,4 @@
-import { Sequelize } from "sequelize";
+import { DataTypes, Sequelize } from "sequelize";
 import type { Migration } from "..";
 
 const tableName = "tcm_encounter";
@@ -10,7 +10,7 @@ export const up: Migration = async ({ context: queryInterface }) => {
       tableName,
       columnName,
       {
-        type: "JSONB",
+        type: DataTypes.JSONB,
         allowNull: false,
         defaultValue: Sequelize.literal(`'[]'::jsonb`),
       },
