@@ -386,17 +386,17 @@ async function findAndInvalidateLinks(
     // Only get CW access objects if we have links to process
     const promises: Promise<unknown>[] = [
       createOrUpdateInvalidLinks({ id: patientId, cxId, invalidLinks }),
-      invalidLinks.carequality.length > 0
-        ? updateCQPatientData({
-            id: patientId,
-            cxId,
-            cqLinksToInvalidate: invalidLinks.carequality,
-          })
-        : Promise.resolve(),
-      invalidLinks.commonwell.length > 0
-        ? updateCwPatientData({ id: patientId, cxId, cwLinksToInvalidate: invalidLinks.commonwell })
-        : Promise.resolve(),
     ];
+    if (invalidLinks.carequality.length > 0) {
+      promises.push(
+        updateCQPatientData({ id: patientId, cxId, cqLinksToInvalidate: invalidLinks.carequality })
+      );
+    }
+    if (invalidLinks.commonwell.length > 0) {
+      promises.push(
+        updateCwPatientData({ id: patientId, cxId, cwLinksToInvalidate: invalidLinks.commonwell })
+      );
+    }
 
     // Add CW v1 downgrade requests if needed
     if (cwV1Links.length > 0) {
