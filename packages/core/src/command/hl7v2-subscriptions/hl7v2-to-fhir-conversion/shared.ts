@@ -69,11 +69,9 @@ export function getRequiredValueFromMessage(
   const segment = getSegmentByNameOrFail(msg, targetSegmentName);
   const value = getOptionalValueFromSegment(segment, fieldIndex, componentIndex);
   if (!value) {
-    const patientIds = getCxIdAndPatientIdOrFail(msg);
     const datetime = getMessageDatetime(msg);
     const messageId = getMessageUniqueIdentifier(msg);
     throw new MetriportError("Missing required value", undefined, {
-      ids: JSON.stringify(patientIds),
       targetSegmentName,
       fieldIndex,
       componentIndex,

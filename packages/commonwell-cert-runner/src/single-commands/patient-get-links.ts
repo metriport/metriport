@@ -1,10 +1,10 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ above all other imports
-import { encodeToCwPatientId } from "@metriport/commonwell-sdk/common/util";
+import { encodeCwPatientId } from "@metriport/commonwell-sdk/common/util";
 import { initApiForExistingOrg } from "../flows/org-management";
 
-const patientId: string = process.argv[2]; // read patient ID from command line argument
+const patientId: string | undefined = process.argv[2]; // read patient ID from command line argument
 
 /**
  * Utility to get links for a patient by ID.
@@ -20,7 +20,7 @@ export async function getPatientLinks() {
   }
   const { commonWell } = await initApiForExistingOrg();
 
-  const encodedPatientId = encodeToCwPatientId({
+  const encodedPatientId = encodeCwPatientId({
     patientId: patientId,
     assignAuthority: commonWell.oid,
   });

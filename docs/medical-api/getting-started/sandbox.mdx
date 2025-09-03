@@ -157,6 +157,33 @@ Andreas Brown has type 2 diabetes and kidney disease.
 }
 ```
 
+## Webhook Testing
+
+In sandbox mode, you can test real-time patient notifications by sending sample payloads through the dashboard.
+
+### Patient Notifications
+
+Test your webhook integration with realistic patient notification events:
+
+- **Patient Admit**: When a patient is admitted to a healthcare facility.
+- **Patient Transfer**: When a patient is moved between departments/units.
+- **Patient Discharge**: When a patient is discharged from a facility.
+
+### How to Test
+
+In your Metriport dashboard, go to the webhook settings and use the "Test events" section. Select from Patient Admit, Patient Transfer, or Patient Discharge, then click "Send Payload" to test your webhook integration.
+
+<img
+  src="/images/test-events.png"
+  alt="Dashboard Webhooks Test events UI showing patient notification types and send button"
+/>
+
+The interface allows you to:
+
+- **Select notification type** from the dropdown (Patient Admit, Patient Transfer, or Patient Discharge)
+- **Preview the sample payload** that will be sent to your webhook
+- **Send the test payload** with one click to verify your webhook handles patient notifications correctly
+
 ## SDK
 
 To connect to the sandbox using the SDK just provide the `options` parameter with `sandbox = true`:

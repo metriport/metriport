@@ -9,6 +9,7 @@ import {
   Patient,
   PatientIdentifier,
 } from "@metriport/commonwell-sdk";
+import { TreatmentType } from "@metriport/shared";
 import { makeNPI } from "@metriport/shared/common/__tests__/npi";
 import { X509Certificate } from "crypto";
 import dayjs from "dayjs";
@@ -82,7 +83,12 @@ export function makeDemographics(): Omit<Demographics, "identifier"> {
         family: [faker.person.lastName()],
       },
     ],
-    gender: faker.helpers.arrayElement([GenderCodes.M, GenderCodes.F]),
+    gender: faker.helpers.arrayElement([
+      GenderCodes.M,
+      GenderCodes.F,
+      GenderCodes.O,
+      GenderCodes.U,
+    ]),
     birthDate: faker.date.birthdate().toISOString().split("T")[0],
     ...(driversLicense ? { identifier: [driversLicense] } : {}),
   };
@@ -126,7 +132,7 @@ export function makeOrganization(suffixId?: string): OrganizationWithNetworkInfo
     displayName: shortName,
     homeCommunityId: orgId,
     memberName: memberName,
-    type: "Hospital",
+    type: TreatmentType.hospital,
     npiType2: makeNPI(),
     searchRadius: 150,
     patientIdAssignAuthority: orgId,

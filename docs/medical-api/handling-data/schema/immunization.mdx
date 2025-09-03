@@ -1,0 +1,51 @@
+---
+title: "Immunization"
+description: "Schema documentation for the Immunization table in the Metriport data model"
+group: "Schema"
+---
+
+The immunization table contains information on immunizations administered to patients, including the vaccine code, description, and administration date.
+
+**Primary Key:**
+* immunization_id
+
+**Foreign Keys:**
+* patient_id
+* person_id
+* encounter_id
+* location_id
+* practitioner_id
+
+| Column | Data Type | Description | Terminology |
+| ------ | --------- | ----------- | ----------- |
+| immunization_id | string | Unique identifier for the immunization | - |
+| person_id | string | Unique identifier for the person | - |
+| member_id | string | Unique identifier for the member | - |
+| patient_id | string | Unique identifier for the patient | - |
+| encounter_id | string | Unique identifier for the encounter | - |
+| location_id | string | Unique identifier for the location | - |
+| practitioner_id | string | Unique identifier for the practitioner | - |
+| immunization_code | string | Standardized immunization code | CVX, SNOMED CT |
+| immunization_code_type | string | Type of coding system used | cvx, snomed-ct |
+| immunization_code_system | string | Coding system identifier | - |
+| immunization_code_version | string | Version of the coding system | - |
+| immunization_code_display | string | Human-readable description of the immunization | - |
+| immunization_name | string | Name of the immunization | - |
+| immunization_date | date | Date when the immunization was administered | - |
+| immunization_status | string | Status of the immunization | completed, entered-in-error, not-done |
+| immunization_lot_number | string | Lot number of the vaccine | - |
+| immunization_expiration_date | date | Expiration date of the vaccine | - |
+| immunization_manufacturer | string | Manufacturer of the vaccine | - |
+| immunization_site | string | Anatomical site of administration | left_arm, right_arm, left_thigh, right_thigh |
+| immunization_route | string | Route of administration | intramuscular, subcutaneous, oral, nasal |
+| immunization_dose_quantity | string | Quantity of the dose administered | - |
+| immunization_dose_unit | string | Unit of measurement for the dose | - |
+| immunization_series | string | Series information for multi-dose vaccines | - |
+| immunization_reason | string | Reason for the immunization | routine, travel, outbreak |
+| data_source | string | Source of the immunization data | claims, clinical, ehr |
+| source_code | string | Original code from the source system | - |
+| normalized_code | string | Standardized/normalized code | - |
+| source_system | string | System that provided the immunization data | - |
+| source_table | string | Table in the source system | - |
+| source_id | string | Identifier from the source system | - |
+| ingestion_date | timestamp | Date when the data was ingested | - |

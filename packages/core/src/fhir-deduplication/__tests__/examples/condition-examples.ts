@@ -28,6 +28,9 @@ export const dateTime2 = {
   start: "2014-02-01T10:00:00.000Z",
 };
 
+/**
+ * @deprecated Use `makePeriod` from `@metriport/core/src/external/fhir/test-helpers/period` instead.
+ */
 export function makePeriod(start?: string | undefined, end?: string | undefined) {
   return {
     start: start ? buildDayjs(start).toISOString() : dateTime.start,

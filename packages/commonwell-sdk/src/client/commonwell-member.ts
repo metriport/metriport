@@ -1,7 +1,7 @@
-import { MetriportError } from "@metriport/shared";
-import axios, { AxiosInstance, AxiosResponse } from "axios";
+import { BadRequestError, MetriportError, NotFoundError } from "@metriport/shared";
+import { isAxiosError } from "axios";
 import httpStatus from "http-status";
-import { Agent } from "https";
+import { normalizeCertificate } from "../common/certificate";
 import { makeJwt } from "../common/make-jwt";
 import { buildBaseQueryMeta } from "../common/util";
 import { CertificateParam, CertificateResp, certificateRespSchema } from "../models/certificates";
@@ -11,9 +11,9 @@ import {
   organizationListSchema,
   organizationSchema,
 } from "../models/organization";
-import { APIMode, CommonWellOptions, DEFAULT_AXIOS_TIMEOUT_SECONDS } from "./common";
+import { APIMode, CommonWellOptions } from "./common";
+import { CommonWellBase } from "./commonwell-base";
 import { BaseOptions, CommonWellMemberAPI, MemberRequestMetadata } from "./commonwell-member-api";
-import { normalizeCertificate } from "../common/certificate";
 
 /**
  * Implementation of the CommonWell API, v4.
@@ -22,19 +22,12 @@ import { normalizeCertificate } from "../common/certificate";
  * For the Organization management API (member API):
  * @see https://commonwellalliance.sharepoint.com/sites/CommonWellServicesPlatform/SitePages/Organization-APIs.aspx
  */
-export class CommonWellMember implements CommonWellMemberAPI {
-  static integrationUrl = "https://api.integration.commonwellalliance.lkopera.com";
-  static productionUrl = "https://api.commonwellalliance.lkopera.com";
-
+export class CommonWellMember extends CommonWellBase implements CommonWellMemberAPI {
   static ORG_ENDPOINT = "/v1/org";
   static MEMBER_ENDPOINT = "/v1/member";
 
-  readonly api: AxiosInstance;
-  private rsaPrivateKey: string;
   private memberName: string;
   private _memberId: string;
-  private httpsAgent: Agent;
-  private _lastTransactionId: string | undefined;
 
   /**
    * Creates a new instance of the CommonWell API client pertaining to an
@@ -63,52 +56,18 @@ export class CommonWellMember implements CommonWellMemberAPI {
     apiMode: APIMode;
     options?: CommonWellOptions;
   }) {
-    this.rsaPrivateKey = rsaPrivateKey;
-    this.httpsAgent = new Agent({ cert: orgCert, key: rsaPrivateKey });
-    this.api = axios.create({
-      timeout: options?.timeout ?? DEFAULT_AXIOS_TIMEOUT_SECONDS * 1_000,
-      baseURL:
-        apiMode === APIMode.production
-          ? CommonWellMember.productionUrl
-          : CommonWellMember.integrationUrl,
-      httpsAgent: this.httpsAgent,
+    super({
+      orgCert,
+      rsaPrivateKey,
+      apiMode,
+      options,
     });
-    this.api.interceptors.response.use(
-      this.axiosSuccessfulResponse(this),
-      this.axiosErrorResponse(this)
-    );
     this.memberName = memberName;
     this._memberId = memberId;
   }
 
   get memberId() {
     return this._memberId;
-  }
-
-  /**
-   * Returns the transaction ID from the last request.
-   */
-  get lastTransactionId(): string | undefined {
-    return this._lastTransactionId;
-  }
-
-  // Being extra safe with these bc a failure here fails the actual request
-  private postRequest(response: AxiosResponse): void {
-    this._lastTransactionId =
-      response && response.headers ? response.headers["x-trace-id"] : undefined;
-  }
-  private axiosSuccessfulResponse(_this: CommonWellMember) {
-    return (response: AxiosResponse): AxiosResponse => {
-      _this && _this.postRequest(response);
-      return response;
-    };
-  }
-  private axiosErrorResponse(_this: CommonWellMember) {
-    //eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return (error: any): AxiosResponse => {
-      _this && _this.postRequest(error.response);
-      throw error;
-    };
   }
 
   // TODO: #322 handle errors in API calls as per
@@ -127,14 +86,18 @@ export class CommonWellMember implements CommonWellMemberAPI {
   async createOrg(organization: Organization, options?: BaseOptions): Promise<Organization> {
     const meta = options?.meta ?? buildBaseQueryMeta(this.memberName);
     const headers = this.buildQueryHeaders(meta);
-    const resp = await this.api.post(
-      `${CommonWellMember.MEMBER_ENDPOINT}/${this.memberId}/org`,
-      organization,
-      {
-        headers,
-      }
-    );
-    return organizationSchema.parse(resp.data);
+    try {
+      const resp = await this.api.post(
+        `${CommonWellMember.MEMBER_ENDPOINT}/${this.memberId}/org`,
+        organization,
+        {
+          headers,
+        }
+      );
+      return organizationSchema.parse(resp.data);
+    } catch (error) {
+      throw this.getDescriptiveError(error, "Failed to create CW organization");
+    }
   }
 
   /**
@@ -149,14 +112,18 @@ export class CommonWellMember implements CommonWellMemberAPI {
     const meta = options?.meta ?? buildBaseQueryMeta(this.memberName);
     const headers = this.buildQueryHeaders(meta);
     const id = organization.organizationId;
-    const resp = await this.api.put(
-      `${CommonWellMember.MEMBER_ENDPOINT}/${this.memberId}/org/${id}/`,
-      organization,
-      {
-        headers,
-      }
-    );
-    return organizationSchema.parse(resp.data);
+    try {
+      const resp = await this.api.put(
+        `${CommonWellMember.MEMBER_ENDPOINT}/${this.memberId}/org/${id}/`,
+        organization,
+        {
+          headers,
+        }
+      );
+      return organizationSchema.parse(resp.data);
+    } catch (error) {
+      throw this.getDescriptiveError(error, "Failed to update CW organization");
+    }
   }
 
   /**
@@ -180,11 +147,16 @@ export class CommonWellMember implements CommonWellMemberAPI {
   ): Promise<OrganizationList> {
     const meta = options?.meta ?? buildBaseQueryMeta(this.memberName);
     const headers = this.buildQueryHeaders(meta);
-    const resp = await this.api.get(`${CommonWellMember.MEMBER_ENDPOINT}/${this.memberId}/org`, {
-      headers,
-      params: { summary, offset, limit, sort },
-    });
-    return organizationListSchema.parse(resp.data);
+
+    try {
+      const resp = await this.api.get(`${CommonWellMember.MEMBER_ENDPOINT}/${this.memberId}/org`, {
+        headers,
+        params: { summary, offset, limit, sort },
+      });
+      return organizationListSchema.parse(resp.data);
+    } catch (error) {
+      throw this.getDescriptiveError(error, "Failed to get CW organization list");
+    }
   }
 
   /**
@@ -199,6 +171,7 @@ export class CommonWellMember implements CommonWellMemberAPI {
   async getOneOrg(id: string, options?: BaseOptions): Promise<Organization | undefined> {
     const meta = options?.meta ?? buildBaseQueryMeta(this.memberName);
     const headers = this.buildQueryHeaders(meta);
+
     const resp = await this.api.get(
       `${CommonWellMember.MEMBER_ENDPOINT}/${this.memberId}/org/${id}/`,
       {
@@ -211,7 +184,9 @@ export class CommonWellMember implements CommonWellMemberAPI {
     if (httpStatus[`${status}_CLASS`] === httpStatus.classes.SUCCESSFUL) {
       return organizationSchema.parse(resp.data);
     }
-    throw new MetriportError(`Failed to retrieve Organization`, status);
+    // TODO ENG-668 Revert to throwing error on non-404 unsuccessful status codes
+    return undefined;
+    // throw new MetriportError(`Failed to retrieve Organization`, status);
   }
 
   /**
@@ -402,5 +377,23 @@ export class CommonWellMember implements CommonWellMemberAPI {
       purposeOfUse: meta.purposeOfUse,
     });
     return { Authorization: `Bearer ${jwt}` };
+  }
+
+  private getDescriptiveError(error: unknown, title: string): Error {
+    if (isAxiosError(error)) {
+      const status = error.response?.status;
+      const data = error.response?.data;
+      const responseBody = data ? JSON.stringify(data) : undefined;
+      const cwReference = this.lastTransactionId;
+
+      if (status === httpStatus.BAD_REQUEST) {
+        return new BadRequestError(title, error, { status, cwReference, responseBody });
+      }
+      if (status === httpStatus.NOT_FOUND) {
+        return new NotFoundError(title, error, { status, cwReference, responseBody });
+      }
+      return new MetriportError(title, error, { status, cwReference, responseBody });
+    }
+    return error instanceof Error ? error : new MetriportError(title, error);
   }
 }
