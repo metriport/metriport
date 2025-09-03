@@ -101,7 +101,14 @@ export async function getTcmEncounters({
       }
       ${facilityId ? ` AND patient.facility_ids @> ARRAY[:facilityId]::varchar[]` : ""}
       ${eventType ? ` AND tcm_encounter.latest_event = :eventType` : ""}
-      ${status ? ` AND tcm_encounter.outreach_status = :status` : ""}
+      ${
+        status
+          ? ` AND (
+        (tcm_encounter.outreach_logs @> jsonb_build_array(jsonb_build_object('status', :status)))
+          OR (jsonb_array_length(tcm_encounter.outreach_logs) = 0 AND tcm_encounter.outreach_status = :status)
+        )`
+          : ""
+      }
       ${coding === "cardiac" ? ` AND tcm_encounter.has_cardiac_code = true` : ""}
       ${encounterClass ? ` AND tcm_encounter.class = :encounterClass` : ""}
       ${
@@ -143,6 +150,7 @@ export async function getTcmEncounters({
 
     return {
       ...omit(e.dataValues, ["patient_data", "patient_facility_ids", "patient_mappings"]),
+      outreachLogs: e.dataValues.outreachLogs ?? [],
       patientData: e.dataValues.patient_data,
       patientFacilityIds: e.dataValues.patient_facility_ids,
       externalUrls: mappings
@@ -205,7 +213,14 @@ export async function getTcmEncountersCount({
     }
     ${facilityId ? ` AND patient.facility_ids @> ARRAY[:facilityId]::varchar[]` : ""}
     ${eventType ? ` AND tcm_encounter.latest_event = :eventType` : ""}
-    ${status ? ` AND tcm_encounter.outreach_status = :status` : ""}
+    ${
+      status
+        ? ` AND (
+      (tcm_encounter.outreach_logs @> jsonb_build_array(jsonb_build_object('status', :status)))
+        OR (jsonb_array_length(tcm_encounter.outreach_logs) = 0 AND tcm_encounter.outreach_status = :status)
+      )`
+        : ""
+    }
     ${coding === "cardiac" ? ` AND tcm_encounter.has_cardiac_code = true` : ""}
     ${encounterClass ? ` AND tcm_encounter.class = :encounterClass` : ""}
     ${

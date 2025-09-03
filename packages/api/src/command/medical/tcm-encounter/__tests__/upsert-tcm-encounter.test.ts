@@ -24,6 +24,7 @@ describe("Upsert TCM Encounter Command", () => {
         class: "inpatient encounter",
         clinicalInformation: {},
         outreachStatus: "Not Started" as const,
+        outreachLogs: [],
         ...overrides,
       };
     }
