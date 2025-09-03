@@ -7,6 +7,7 @@ import {
   ServiceRequest,
 } from "@medplum/fhirtypes";
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
+import { CPT_URL } from "@metriport/shared/medical";
 import { ResponseDetail } from "../schema/response";
 import { getPractitionerReference } from "./practitioner";
 import { getQuestDataSourceExtension } from "./shared";
@@ -54,28 +55,10 @@ function getServiceRequestCoding(detail: ResponseDetail): CodeableConcept | unde
   const coding: Coding[] = [];
   const text = detail.orderName ?? detail.profileName;
 
-  if (detail.localProfileCode) {
+  if (detail.cptCode) {
     coding.push({
-      system: "http://questdiagnostics.com/local-profile-code",
-      code: detail.localProfileCode,
-    });
-  }
-  if (detail.standardProfileCode) {
-    coding.push({
-      system: "http://questdiagnostics.com/standard-profile-code",
-      code: detail.standardProfileCode,
-    });
-  }
-  if (detail.localOrderCode) {
-    coding.push({
-      system: "http://questdiagnostics.com/local-order-code",
-      code: detail.localOrderCode,
-    });
-  }
-  if (detail.standardOrderCode) {
-    coding.push({
-      system: "http://questdiagnostics.com/standard-order-code",
-      code: detail.standardOrderCode,
+      system: CPT_URL,
+      code: detail.cptCode,
     });
   }
 
