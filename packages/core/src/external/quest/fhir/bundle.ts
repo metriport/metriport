@@ -28,10 +28,16 @@ export async function convertTabularDataToFhirBundle({
   const entries = rows.flatMap(getBundleEntries);
   const bundle = buildBundle({ type: "collection", entries });
   dangerouslyDeduplicateFhir(bundle, cxId, patientId);
-  await hydrateFhir(bundle, log);
-  return bundle;
+  const { data: hydratedBundle } = await hydrateFhir(bundle, log);
+  return hydratedBundle;
 }
 
+/**
+ * This function builds the bundle entries for a single row of data in a Quest notification. The resulting FHIR resources are combined by
+ * standard deduplication to generate the final bundle for a particular set of lab results that arrive in multiple rows.
+ * @param data - An object containing a key-value mapping of column headers to column values from a single row of data.
+ * @returns An array of FHIR resources as bundle entries for any data in this row.
+ */
 function getBundleEntries({ data }: IncomingData<ResponseDetail>): BundleEntry[] {
   const patient = getPatient(data);
   const practitioner = getPractitioner(data);

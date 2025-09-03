@@ -15,7 +15,7 @@ export async function convertSourceDocumentToFhirBundle({
   const { log } = out(`Quest FHIR converter - externalId ${externalId}`);
   const { patientId, cxId } = await getPatientMapping({ externalId });
   const { dateId } = parseSourceDocumentFileName(sourceDocumentKey);
-  const sourceDocument = await getSourceDocument(sourceDocumentKey);
+  const sourceDocument = await downloadSourceDocument(sourceDocumentKey);
   if (!sourceDocument) {
     throw new BadRequestError(`Source document not found for FHIR conversion`, undefined, {
       externalId,
@@ -33,7 +33,7 @@ export async function convertSourceDocumentToFhirBundle({
   };
 }
 
-async function getSourceDocument(sourceDocumentKey: string): Promise<Buffer | undefined> {
+async function downloadSourceDocument(sourceDocumentKey: string): Promise<Buffer | undefined> {
   const s3 = new S3Utils(Config.getAWSRegion());
   const bucketName = Config.getQuestReplicaBucketName();
   if (!bucketName) return undefined;
