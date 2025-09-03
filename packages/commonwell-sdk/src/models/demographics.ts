@@ -17,7 +17,13 @@ export enum GenderCodes {
   O = "O",
   U = "U", // Unknown
 }
-export const genderCodesSchema = z.preprocess(coerceGender, z.nativeEnum(GenderCodes));
+
+const preprocessGender = (v: unknown) => (v == null || v === "" ? undefined : coerceGender(v));
+export const genderCodesSchema = z.preprocess(
+  preprocessGender,
+  z.nativeEnum(GenderCodes).optional()
+);
+
 export type Gender = z.infer<typeof genderCodesSchema>;
 
 export const birthDateSchema = isoDateSchema.or(usDateSchema).transform(dateStringToIsoDateString);
