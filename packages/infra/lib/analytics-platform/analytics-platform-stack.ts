@@ -21,26 +21,26 @@ const waitTimeFhirToCsv = Duration.seconds(0); // No limit
 type DockerImageLambdaSettings = Omit<LambdaSettingsWithNameAndEntry, "entry">;
 
 interface AnalyticsPlatformsSettings {
-  fhirToCsv: QueueAndLambdaSettings;
+  fhirToCsvBulk: QueueAndLambdaSettings;
   fhirToCsvTransform: DockerImageLambdaSettings;
   mergeCsvs: QueueAndLambdaSettings;
 }
 
 function settings(): AnalyticsPlatformsSettings {
   const fhirToCsvTransformLambdaTimeout = Duration.minutes(10);
-  const fhirToCsvLambdaTimeout = fhirToCsvTransformLambdaTimeout.plus(Duration.seconds(10));
-  const fhirToCsv: QueueAndLambdaSettings = {
-    name: "FhirToCsv",
-    entry: "analytics-platform/fhir-to-csv",
+  const fhirToCsvBulkLambdaTimeout = fhirToCsvTransformLambdaTimeout.plus(Duration.seconds(10));
+  const fhirToCsvBulk: QueueAndLambdaSettings = {
+    name: "FhirToCsvBulk",
+    entry: "analytics-platform/fhir-to-csv-bulk",
     lambda: {
       memory: 512,
-      timeout: fhirToCsvLambdaTimeout,
+      timeout: fhirToCsvBulkLambdaTimeout,
     },
     queue: {
       alarmMaxAgeOfOldestMessage: Duration.hours(6),
       maxMessageCountAlarmThreshold: 5_000,
       maxReceiveCount: 1,
-      visibilityTimeout: Duration.seconds(fhirToCsvLambdaTimeout.toSeconds() * 2 + 1),
+      visibilityTimeout: Duration.seconds(fhirToCsvBulkLambdaTimeout.toSeconds() * 2 + 1),
       createRetryLambda: false,
     },
     eventSource: {
@@ -81,7 +81,7 @@ function settings(): AnalyticsPlatformsSettings {
     waitTime: waitTimeFhirToCsv,
   };
   return {
-    fhirToCsv,
+    fhirToCsvBulk,
     fhirToCsvTransform,
     mergeCsvs,
   };
@@ -96,8 +96,8 @@ interface AnalyticsPlatformsNestedStackProps extends NestedStackProps {
 }
 
 export class AnalyticsPlatformsNestedStack extends NestedStack {
-  readonly fhirToCsvLambda: lambda.DockerImageFunction;
-  readonly fhirToCsvQueue: Queue;
+  readonly fhirToCsvBulkLambda: lambda.DockerImageFunction;
+  readonly fhirToCsvBulkQueue: Queue;
   readonly mergeCsvsLambda: lambda.DockerImageFunction;
   readonly mergeCsvsQueue: Queue;
 
@@ -156,7 +156,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       },
     });
 
-    const { fhirToCsvLambda, queue: fhirToCsvQueue } = this.setupFhirToCsvLambda({
+    const { fhirToCsvTransformLambda } = this.setupFhirToCsvTransformLambda({
       config: props.config,
       envType: props.config.environmentType,
       awsRegion: props.config.region,
@@ -167,8 +167,22 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       analyticsPlatformBucket,
       medicalDocumentsBucket: props.medicalDocumentsBucket,
     });
-    this.fhirToCsvLambda = fhirToCsvLambda;
-    this.fhirToCsvQueue = fhirToCsvQueue;
+
+    const { lambda: fhirToCsvBulkLambda, queue: fhirToCsvBulkQueue } =
+      this.setupFhirToCsvBulkLambda({
+        config: props.config,
+        envType: props.config.environmentType,
+        awsRegion: props.config.region,
+        lambdaLayers: props.lambdaLayers,
+        vpc: props.vpc,
+        sentryDsn: props.config.sentryDSN,
+        alarmAction: props.alarmAction,
+        analyticsPlatformBucket,
+        medicalDocumentsBucket: props.medicalDocumentsBucket,
+        fhirToCsvTransformLambda,
+      });
+    this.fhirToCsvBulkLambda = fhirToCsvBulkLambda;
+    this.fhirToCsvBulkQueue = fhirToCsvBulkQueue;
 
     const { mergeCsvsLambda, queue: mergeCsvsQueue } = this.setupMergeCsvsLambda({
       config: props.config,
@@ -186,14 +200,14 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
 
   getAssets(): AnalyticsPlatformsAssets {
     return {
-      fhirToCsvLambda: this.fhirToCsvLambda,
-      fhirToCsvQueue: this.fhirToCsvQueue,
+      fhirToCsvBulkLambda: this.fhirToCsvBulkLambda,
+      fhirToCsvBulkQueue: this.fhirToCsvBulkQueue,
       mergeCsvsLambda: this.mergeCsvsLambda,
       mergeCsvsQueue: this.mergeCsvsQueue,
     };
   }
 
-  private setupFhirToCsvLambda(ownProps: {
+  private setupFhirToCsvTransformLambda(ownProps: {
     config: EnvConfigNonSandbox;
     envType: EnvType;
     awsRegion: string;
@@ -204,8 +218,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
     analyticsPlatformBucket: s3.Bucket;
     medicalDocumentsBucket: s3.Bucket;
   }): {
-    fhirToCsvLambda: lambda.DockerImageFunction;
-    queue: Queue;
+    fhirToCsvTransformLambda: lambda.DockerImageFunction;
   } {
     const { lambda: fhirToCsvTransformLambdaSettings, name: fhirToCsvTransformLambdaName } =
       settings().fhirToCsvTransform;
@@ -240,17 +253,37 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
 
     // Grant read to medical document bucket set on the api-stack
     ownProps.analyticsPlatformBucket.grantReadWrite(fhirToCsvTransformLambda);
+    ownProps.medicalDocumentsBucket.grantRead(fhirToCsvTransformLambda);
 
-    const { lambdaLayers, vpc, envType, sentryDsn, alarmAction } = ownProps;
+    return { fhirToCsvTransformLambda };
+  }
+
+  private setupFhirToCsvBulkLambda(ownProps: {
+    config: EnvConfigNonSandbox;
+    envType: EnvType;
+    awsRegion: string;
+    lambdaLayers: LambdaLayers;
+    vpc: ec2.IVpc;
+    sentryDsn: string | undefined;
+    alarmAction: SnsAction | undefined;
+    analyticsPlatformBucket: s3.Bucket;
+    medicalDocumentsBucket: s3.Bucket;
+    fhirToCsvTransformLambda: lambda.Function;
+  }): {
+    lambda: lambda.DockerImageFunction;
+    queue: Queue;
+  } {
+    const { lambdaLayers, vpc, envType, sentryDsn, alarmAction, fhirToCsvTransformLambda } =
+      ownProps;
 
     const {
       name,
       entry,
-      lambda: fhirToCsvLambdaSettings,
+      lambda: lambdaSettings,
       queue: queueSettings,
       eventSource: eventSourceSettings,
       waitTime,
-    } = settings().fhirToCsv;
+    } = settings().fhirToCsvBulk;
 
     const queue = createQueue({
       ...queueSettings,
@@ -263,8 +296,8 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       alarmSnsAction: alarmAction,
     });
 
-    const fhirToCsvLambda = createLambda({
-      ...fhirToCsvLambdaSettings,
+    const lambda = createLambda({
+      ...lambdaSettings,
       stack: this,
       name,
       entry,
@@ -280,11 +313,10 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       alarmSnsAction: alarmAction,
     });
 
-    fhirToCsvLambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
-    fhirToCsvTransformLambda.grantInvoke(fhirToCsvLambda);
-    ownProps.medicalDocumentsBucket.grantRead(fhirToCsvTransformLambda);
+    lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
+    fhirToCsvTransformLambda.grantInvoke(lambda);
 
-    return { fhirToCsvLambda, queue };
+    return { lambda, queue };
   }
 
   private setupMergeCsvsLambda(ownProps: {

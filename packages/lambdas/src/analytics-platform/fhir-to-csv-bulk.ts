@@ -1,4 +1,4 @@
-import { FhirToCsvDirect } from "@metriport/core/command/analytics-platform/fhir-to-csv/command/fhir-to-csv/fhir-to-csv-direct";
+import { FhirToCsvBulkDirect } from "@metriport/core/command/analytics-platform/fhir-to-csv/command/fhir-to-csv-bulk/fhir-to-csv-bulk-direct";
 import { errorToString } from "@metriport/shared";
 import { Context, SQSEvent } from "aws-lambda";
 import { fhirToCsvSchema } from "../shared/analytics-platform";
@@ -26,7 +26,7 @@ export const handler = capture.wrapHandler(async (event: SQSEvent, context: Cont
     const log = prefixedLog(`jobId ${jobId}, cxId ${cxId}, patientId ${patientId}`);
     log(`Parsed: ${JSON.stringify(parsedBody)}`);
 
-    const fhirToCsvHandler = new FhirToCsvDirect();
+    const fhirToCsvHandler = new FhirToCsvBulkDirect();
     await fhirToCsvHandler.processFhirToCsv({
       ...parsedBody,
       timeoutInMillis: context.getRemainingTimeInMillis() - 200,
