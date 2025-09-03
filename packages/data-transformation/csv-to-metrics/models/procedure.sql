@@ -3,7 +3,11 @@ select
 , cast(pat.id as {{ dbt.type_string() }} )                      as patient_id
 , cast(null as {{ dbt.type_string() }} )                        as encounter_id
 , cast(null as {{ dbt.type_string() }} )                        as claim_id
-, cast(pro.performeddatetime  as date)                          as procedure_date
+, case 
+    when pro.performeddatetime != '' and pro.performeddatetime is not null then cast(pro.performeddatetime as date)
+    when pro.performedperiod_start != '' and pro.performedperiod_start is not null then cast(pro.performedperiod_start as date)
+    else null
+  end as procedure_date
 , cast(case code_coding_0_system
         when 'http://www.ama-assn.org/go/cpt' then 'cpt'
         when 'http://loinc.org' then 'loinc'

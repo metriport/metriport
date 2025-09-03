@@ -71,7 +71,9 @@ select
         as {{ dbt.type_string() }} )                                                                    as normalized_code_type
     , cast(coalesce(
             replace(icd10.icd_10_cm,'.',''), 
-            icd9.icd_9_cm, loinc.loinc
+            icd9.icd_9_cm, 
+            loinc.loinc, 
+            snomed.snomed_ct
         )  as {{ dbt.type_string() }} )                                                                 as normalized_code
    , cast(coalesce(
             icd10.long_description, 

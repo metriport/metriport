@@ -15,6 +15,7 @@ sources:
       - name: familymemberhistory
       - name: familymemberhistory_condition
       - name: immunization
+      - name: location
       - name: medication
       - name: medicationadministration
       - name: medicationdispense
