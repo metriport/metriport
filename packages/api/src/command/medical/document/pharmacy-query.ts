@@ -1,6 +1,9 @@
 import { PharmacyQueryProgress } from "@metriport/core/domain/document-query";
 import { out } from "@metriport/core/util/log";
-import { findFirstPatientMappingForSource } from "../../../command/mapping/patient";
+import {
+  findFirstPatientMappingForSource,
+  createPatientMapping,
+} from "../../../command/mapping/patient";
 import { buildSendPatientRequestHandler } from "@metriport/core/external/surescripts/command/send-patient-request/send-patient-request-factory";
 import { surescriptsSource } from "@metriport/shared/interface/external/surescripts/source";
 import { getDateFromId } from "@metriport/core/external/surescripts/id-generator";
@@ -41,6 +44,13 @@ export async function queryDocumentsAcrossPharmacies({
   });
 
   if (requestId) {
+    await createPatientMapping({
+      cxId,
+      patientId,
+      externalId: requestId,
+      source: surescriptsSource,
+    });
+    log("Created Surescripts mapping for " + requestId);
     const startedAt = getDateFromId(requestId);
     return {
       status: "processing",
