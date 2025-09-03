@@ -12,7 +12,7 @@ export type EncodePatientIdForDocumentExchangeParams = {
  * Matches: code^^^&system&assignAuthType
  * Where assignAuthType is optional
  */
-export const CW_PATIENT_ID_REGEX_V2 = /^(.+)\^\^\^&([^&]+)(?:&(.+))?$/i;
+export const CW_PATIENT_ID_REGEX_V2 = /^([^^]+)\^\^\^&([^&]+)(?:&([^&]+))?$/i;
 
 /**
  * Get the local Patient ID from the Patient Response Item's Links Self link.
