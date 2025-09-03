@@ -138,9 +138,12 @@ router.post(
             cxId,
             patientId,
             facilityId: patientFacilityId,
+          }).catch(() => {
+            return undefined;
           })
         : Promise.resolve(undefined),
     ]);
+
     if (pharmacyQueryProgress) {
       docQueryProgress.pharmacy = pharmacyQueryProgress;
     }

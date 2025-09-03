@@ -17,18 +17,33 @@ export async function queryDocumentsAcrossPharmacies({
   cxId: string;
   patientId: string;
   facilityId: string;
-}): Promise<PharmacyQueryProgress> {
-  const { log } = out(`Pharmacies DQ - cxId ${cxId}, patient ${patientId}`);
+}): Promise<PharmacyQueryProgress[]> {
+  const pharmacyQueries: PharmacyQueryProgress[] = [];
 
   const isSurescriptsEnabled = await isSurescriptsFeatureFlagEnabledForCx(cxId);
-  if (!isSurescriptsEnabled) {
-    log("Surescripts is not enabled for CX " + cxId);
-    return {
-      status: "failed",
-    };
+  if (isSurescriptsEnabled) {
+    const surescriptsPharmacyQuery = await queryDocumentsAcrossSurescripts({
+      cxId,
+      patientId,
+      facilityId,
+    });
+    pharmacyQueries.push(surescriptsPharmacyQuery);
   }
 
-  log("Running pharmacies document query");
+  return pharmacyQueries;
+}
+
+async function queryDocumentsAcrossSurescripts({
+  cxId,
+  patientId,
+  facilityId,
+}: {
+  cxId: string;
+  patientId: string;
+  facilityId: string;
+}): Promise<PharmacyQueryProgress> {
+  const { log } = out(`Surescripts DQ - cxId ${cxId}, patient ${patientId}`);
+  log("Running Surescripts document query");
   const surescriptsMapping = await findFirstPatientMappingForSource({
     patientId,
     source: surescriptsSource,
@@ -36,12 +51,9 @@ export async function queryDocumentsAcrossPharmacies({
 
   if (surescriptsMapping) {
     const requestId = surescriptsMapping.externalId;
-    const startedAt = getDateFromId(requestId);
-    return {
-      status: "processing",
-      startedAt,
-      requestId,
-    };
+    log("Already started Surescripts document query with id " + requestId);
+    const progress = createSurescriptsQueryInProgress(requestId);
+    return progress;
   }
 
   const handler = buildSendPatientRequestHandler();
@@ -50,6 +62,7 @@ export async function queryDocumentsAcrossPharmacies({
     facilityId,
     patientId,
   });
+  log("Sent Surescripts request with id " + requestId);
 
   if (requestId) {
     await createPatientMapping({
@@ -59,15 +72,22 @@ export async function queryDocumentsAcrossPharmacies({
       source: surescriptsSource,
     });
     log("Created Surescripts mapping for " + requestId);
-    const startedAt = getDateFromId(requestId);
-    return {
-      status: "processing",
-      startedAt,
-      requestId,
-    };
+    const progress = createSurescriptsQueryInProgress(requestId);
+    return progress;
   } else {
     return {
+      source: surescriptsSource,
       status: "failed",
     };
   }
+}
+
+function createSurescriptsQueryInProgress(requestId: string): PharmacyQueryProgress {
+  const startedAt = getDateFromId(requestId);
+  return {
+    source: surescriptsSource,
+    status: "processing",
+    startedAt,
+    requestId,
+  };
 }

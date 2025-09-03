@@ -19,11 +19,12 @@ export type DocumentQueryProgress = Partial<
     requestId: string;
     startedAt: Date;
     triggerConsolidated: boolean;
-    pharmacy?: PharmacyQueryProgress;
+    pharmacy?: PharmacyQueryProgress[];
   }
 >;
 
 export type PharmacyQueryProgress = {
+  source: "surescripts";
   status: "processing" | "completed" | "failed";
   startedAt?: Date;
   requestId?: string;
