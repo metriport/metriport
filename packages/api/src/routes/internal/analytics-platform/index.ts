@@ -1,5 +1,5 @@
-import { buildFhirToCsvHandler } from "@metriport/core/command/analytics-platform/fhir-to-csv/command/fhir-to-csv/fhir-to-csv-factory";
-import { buildFhirToCsvJobPrefix } from "@metriport/core/command/analytics-platform/fhir-to-csv/file-name";
+import { buildFhirToCsvBulkHandler } from "@metriport/core/command/analytics-platform/fhir-to-csv/command/fhir-to-csv-bulk/fhir-to-csv-bulk-factory";
+import { buildFhirToCsvBulkJobPrefix } from "@metriport/core/command/analytics-platform/fhir-to-csv/file-name";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
@@ -8,6 +8,7 @@ import { asyncHandler, getFromQueryOrFail } from "../../util";
 
 const router = Router();
 
+// TODO ENG-743 repurpose this for incremental ingestion, not bulk
 /**
  * POST /internal/analytics-platform/fhir-to-csv
  *
@@ -24,8 +25,8 @@ router.post(
     const cxId = getFromQueryOrFail("cxId", req);
     const jobId = getFromQueryOrFail("jobId", req);
     const patientId = getFromQueryOrFail("patientId", req);
-    const handler = buildFhirToCsvHandler();
-    const outputPrefix = buildFhirToCsvJobPrefix({ cxId, jobId });
+    const handler = buildFhirToCsvBulkHandler();
+    const outputPrefix = buildFhirToCsvBulkJobPrefix({ cxId, jobId });
     await handler.processFhirToCsv({ cxId, jobId, patientId, outputPrefix });
     return res.sendStatus(httpStatus.OK);
   })

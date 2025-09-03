@@ -5,8 +5,8 @@ import { executeWithRetriesS3, S3Utils } from "../../../external/aws/s3";
 import { executeAsynchronously } from "../../../util/concurrency";
 import { out } from "../../../util/log";
 import {
-  buildFhirToCsvPatientPrefix,
-  parseTableNameFromFhirToCsvFileKey,
+  buildFhirToCsvBulkPatientPrefix,
+  parseTableNameFromFhirToCsvBulkFileKey,
 } from "../fhir-to-csv/file-name";
 import {
   buildMergeCsvsFileGroupKey,
@@ -200,7 +200,7 @@ async function listAllFiles({
     patientIds,
     async patientId => {
       const s3Utils = new S3Utils(region);
-      const prefixToSearch = buildFhirToCsvPatientPrefix({
+      const prefixToSearch = buildFhirToCsvBulkPatientPrefix({
         cxId,
         jobId: fhirToCsvJobId,
         patientId,
@@ -224,7 +224,7 @@ async function listAllFiles({
       if (size < 1) return [];
       const key = obj.Key;
       if (key.endsWith("/")) return [];
-      const tableName = parseTableNameFromFhirToCsvFileKey(key);
+      const tableName = parseTableNameFromFhirToCsvBulkFileKey(key);
       return { key, size, tableName };
     })
   );

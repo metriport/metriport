@@ -2,8 +2,8 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
-import { FhirToCsvCloud } from "@metriport/core/command/analytics-platform/fhir-to-csv/command/fhir-to-csv/fhir-to-csv-cloud";
-import { buildFhirToCsvJobPrefix } from "@metriport/core/command/analytics-platform/fhir-to-csv/file-name";
+import { FhirToCsvBulkCloud } from "@metriport/core/command/analytics-platform/fhir-to-csv/command/fhir-to-csv-bulk/fhir-to-csv-bulk-cloud";
+import { buildFhirToCsvBulkJobPrefix } from "@metriport/core/command/analytics-platform/fhir-to-csv/file-name";
 import { createConsolidatedDataFilePath } from "@metriport/core/domain/consolidated/filename";
 import { executeWithRetriesS3, S3Utils } from "@metriport/core/external/aws/s3";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
@@ -113,7 +113,7 @@ async function main() {
 
   let amountOfPatientsProcessed = 0;
 
-  const fhirToCsvHandler = new FhirToCsvCloud();
+  const fhirToCsvHandler = new FhirToCsvBulkCloud();
 
   const failedPatientIds: string[] = [];
   await executeAsynchronously(
@@ -124,7 +124,7 @@ async function main() {
           jobId: fhirToCsvJobId,
           cxId,
           patientId,
-          outputPrefix: buildFhirToCsvJobPrefix({ cxId, jobId: fhirToCsvJobId }),
+          outputPrefix: buildFhirToCsvBulkJobPrefix({ cxId, jobId: fhirToCsvJobId }),
         });
         amountOfPatientsProcessed++;
         if (amountOfPatientsProcessed % 100 === 0) {

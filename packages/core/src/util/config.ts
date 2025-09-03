@@ -391,8 +391,8 @@ export class Config {
     return getEnvVarOrFail("DISCHARGE_NOTIFICATION_SLACK_URL");
   }
 
-  static getFhirToCsvQueueUrl(): string {
-    return getEnvVarOrFail("FHIR_TO_CSV_QUEUE_URL");
+  static getFhirToCsvBulkQueueUrl(): string {
+    return getEnvVarOrFail("FHIR_TO_CSV_BULK_QUEUE_URL");
   }
   static getFhirToCsvTransformLambdaName(): string {
     return getEnvVarOrFail("FHIR_TO_CSV_TRANSFORM_LAMBDA_NAME");

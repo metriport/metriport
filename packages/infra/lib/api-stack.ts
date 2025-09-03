@@ -796,7 +796,7 @@ export class APIStack extends Stack {
       ...(surescriptsStack?.getLambdas() ?? []),
       ...(questStack?.getLambdas() ?? []),
       jobsStack.getAssets().runPatientJobLambda,
-      analyticsPlatformStack?.getAssets().fhirToCsvLambda,
+      analyticsPlatformStack?.getAssets().fhirToCsvBulkLambda,
     ];
     const apiUrl = `http://${apiDirectUrl}`;
     lambdasToGetApiUrl.forEach(lambda => lambda?.addEnvironment("API_URL", apiUrl));
