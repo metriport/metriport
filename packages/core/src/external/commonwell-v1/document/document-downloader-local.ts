@@ -84,7 +84,7 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
       contentType: downloadResult.contentType,
     };
 
-    if (downloadedDocument && isMimeTypeXML(sourceDocument.mimeType)) {
+    if (downloadedDocument && isMimeTypeXML(newlyDownloadedFile.contentType)) {
       return this.parseXmlFile({
         ...newlyDownloadedFile,
         contents: downloadedDocument,
