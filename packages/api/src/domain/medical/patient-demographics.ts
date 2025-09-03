@@ -99,8 +99,9 @@ export function checkDemoMatch({
     // TODO
     // Current address zip / city match
     // TODO Mark the first address as current in Dash
-    if (coreDemographics.addresses.length > 0) {
-      const currentPatientAddress = JSON.parse(coreDemographics.addresses[0]) as LinkGenericAddress;
+    const firstCoreDemoAddress = coreDemographics.addresses[0];
+    if (firstCoreDemoAddress) {
+      const currentPatientAddress = JSON.parse(firstCoreDemoAddress) as LinkGenericAddress;
       const linkDemograhpicsAddesses = linkDemographics.addresses.map(
         address => JSON.parse(address) as LinkGenericAddress
       );
@@ -337,10 +338,12 @@ export function createAugmentedPatient(patient: Patient): Patient {
   // TODO Is submitting lower case addresses to CQ / CW okay, or do we have to grab the original version?
   const newAddresses: Address[] = consolidatedLinkDemographics.addresses
     .filter(address => !coreDemographics.addresses.includes(address))
-    .map(address => {
+    .flatMap(address => {
       const addressObj: LinkGenericAddress = JSON.parse(address);
+      const firstAddressLine = addressObj.line[0];
+      if (!firstAddressLine) return [];
       return {
-        addressLine1: addressObj.line[0],
+        addressLine1: firstAddressLine,
         addressLine2: addressObj.line[1] ? addressObj.line.slice(1).join(" ") : undefined,
         city: addressObj.city,
         state: addressObj.state as USState,

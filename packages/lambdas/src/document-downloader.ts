@@ -74,11 +74,15 @@ export const handler = capture.wrapHandler(
         `sourceDocument: ${JSON.stringify(sourceDocument)}`
     );
 
-    const [cwOrgCertificate, cwOrgPrivateKey, isV2Enabled] = await Promise.all([
-      getSecret(cwOrgCertificateSecret) as Promise<string>,
-      getSecret(cwOrgPrivateKeySecret) as Promise<string>,
-      isCommonwellV2EnabledForCx(cxId),
-    ]);
+    // TODO REVERT THE CHECK FOR OID
+    const [cwOrgCertificate, cwOrgPrivateKey, isV2EnabledCx, isV2EnabledFacility] =
+      await Promise.all([
+        getSecret(cwOrgCertificateSecret) as Promise<string>,
+        getSecret(cwOrgPrivateKeySecret) as Promise<string>,
+        isCommonwellV2EnabledForCx(cxId),
+        isCommonwellV2EnabledForCx(orgOid),
+      ]);
+    const isV2Enabled = isV2EnabledCx && isV2EnabledFacility;
 
     if (!cwOrgCertificate) {
       throw new Error(`Config error - CW_ORG_CERTIFICATE doesn't exist`);

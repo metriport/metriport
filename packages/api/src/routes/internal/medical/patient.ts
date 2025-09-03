@@ -21,8 +21,8 @@ import {
   stringToBoolean,
 } from "@metriport/shared";
 import {
-  questSource,
   questMappingRequestSchema,
+  questSource,
 } from "@metriport/shared/interface/external/quest/source";
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import dayjs from "dayjs";
@@ -68,7 +68,7 @@ import {
 import { Pagination } from "../../../command/pagination";
 import { getFacilityIdOrFail } from "../../../domain/medical/patient-facility";
 import { PatientUpdaterCarequality } from "../../../external/carequality/patient-updater-carequality";
-import cwCommands from "../../../external/commonwell-v1";
+import cwCommands from "../../../external/commonwell";
 import { findDuplicatedPersons } from "../../../external/commonwell-v1/admin/find-patient-duplicates";
 import { patchDuplicatedPersonsForPatient } from "../../../external/commonwell-v1/admin/patch-patient-duplicates";
 import { recreatePatientsAtCW } from "../../../external/commonwell-v1/admin/recreate-patients-at-hies";
@@ -76,8 +76,8 @@ import { checkStaleEnhancedCoverage } from "../../../external/commonwell-v1/cq-b
 import { initEnhancedCoverage } from "../../../external/commonwell-v1/cq-bridge/coverage-enhancement-init";
 import { setCQLinkStatuses } from "../../../external/commonwell-v1/cq-bridge/cq-link-status";
 import { ECUpdaterLocal } from "../../../external/commonwell-v1/cq-bridge/ec-updater-local";
-import { cqLinkStatus } from "../../../external/commonwell-v1/patient-shared";
-import { PatientUpdaterCommonWell } from "../../../external/commonwell-v1/patient-updater-commonwell";
+import { cqLinkStatus } from "../../../external/commonwell/patient/patient-shared";
+import { PatientUpdaterCommonWell } from "../../../external/commonwell/patient/patient-updater-commonwell";
 import { getCqOrgIdsToDenyOnCw } from "../../../external/hie/cross-hie-ids";
 import { runOrSchedulePatientDiscoveryAcrossHies } from "../../../external/hie/run-or-schedule-patient-discovery";
 import { PatientLoaderLocal } from "../../../models/helpers/patient-loader-local";
@@ -340,6 +340,8 @@ router.post(
 /** ---------------------------------------------------------------------------
  * POST /internal/patient/:patientId/link/:source
  *
+ * TODO: ENG-554 - Remove this route when we migrate to CW v2
+ *
  * Creates link to the specified entity.
  *
  * @param req.params.patientId Patient ID to link to a person.
@@ -408,6 +410,8 @@ router.delete(
 );
 
 /** ---------------------------------------------------------------------------
+ * TODO ENG-554 Remove entirely once we've migrated to CWv2
+ *
  * GET /internal/patient/duplicates
  * *
  * @param req.query.cxId The customer ID (optional, defaults to all customers).
