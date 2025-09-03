@@ -265,7 +265,7 @@ describe("TCM Encounter Commands", () => {
       mockSequelize.query.mockResolvedValue(mockQueryResult);
       const cmd = {
         cxId: "cx-123",
-        pagination: { count: 10, fromItem: undefined, toItem: undefined },
+        pagination: makePaginationWithCursor(),
       };
       const result = await getTcmEncounters(cmd);
       expect(result[0].outreachLogs).toEqual(outreachLogs);
