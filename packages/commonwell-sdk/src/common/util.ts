@@ -12,7 +12,7 @@ export type EncodePatientIdForDocumentExchangeParams = {
  * Matches: code^^^&system&assignAuthType
  * Where assignAuthType is optional
  */
-export const CW_PATIENT_ID_REGEX = /^(.+)\^\^\^&([^&]+)(?:&(.+))?$/i;
+export const CW_PATIENT_ID_REGEX_V2 = /^(.+)\^\^\^&([^&]+)(?:&(.+))?$/i;
 
 /**
  * Get the local Patient ID from the Patient Response Item's Links Self link.
@@ -36,13 +36,13 @@ export function getCwPatientIdFromLinks(links: PatientLinks): string {
  * @returns The decoded patient ID, with the value, assignAuthority, and assignAuthorityType.
  * @see Section "8.3.2 Get Patient" of the spec.
  */
-export function decodeCwPatientId(patientId: string): {
+export function decodeCwPatientIdV2(patientId: string): {
   value: string | undefined;
   assignAuthority: string | undefined;
   assignAuthorityType: string | undefined;
 } {
   const decoded = decodeURIComponent(decodeURI(patientId));
-  const match = decoded.match(CW_PATIENT_ID_REGEX) ?? undefined;
+  const match = decoded.match(CW_PATIENT_ID_REGEX_V2) ?? undefined;
   const value = match && match[1];
   const assignAuthority = match && match[2];
   const assignAuthorityType = match && match[3];
@@ -98,16 +98,33 @@ export function encodePatientIdForDocumentExchange(
   params: EncodePatientIdForDocumentExchangeParams | string
 ): string | undefined {
   if (typeof params === "string") {
-    const { value, assignAuthority } = decodeCwPatientId(params);
-    return value && assignAuthority
-      ? encodePatientIdForDocumentExchange({
-          patientId: value,
-          assignAuthority,
-        })
-      : undefined;
+    const { value, assignAuthority } = decodeCwPatientIdV2(params);
+    if (value && assignAuthority) {
+      return encodePatientIdForDocumentExchange({
+        patientId: value,
+        assignAuthority,
+      });
+    }
+    return convertPatientIdToSubjectIdV1(params);
   }
   const { patientId, assignAuthority } = params;
   return `${assignAuthority}|${patientId}`;
+}
+
+/**
+ * V1 only
+ * Matches: patientId^^^urn:oid:orgOid
+ */
+function convertPatientIdToSubjectIdV1(patientId: string): string | undefined {
+  const value = decodeURIComponent(decodeURI(patientId));
+  const regex = /(.+)\^\^\^(.+)/i;
+  const match = value.match(regex);
+  const code = match && match[1];
+  const system = match && match[2];
+  return code && system ? buildPatiendIdToDocQuery(code, system) : undefined;
+}
+function buildPatiendIdToDocQuery(code: string, system: string): string {
+  return `${system}|${code}`;
 }
 
 export function buildBaseQueryMeta(orgName: string): BaseRequestMetadata {
