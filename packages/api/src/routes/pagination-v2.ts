@@ -20,7 +20,6 @@ import {
   PaginationV2,
   PaginationV2FromItem,
   PaginationV2Item,
-  PaginationV2ToItem,
   PaginationV2WithQueryClauses,
 } from "../command/pagination-v2";
 
@@ -271,24 +270,24 @@ export async function paginatedV2<T extends { id: string } & Record<string, unkn
     orderByClause,
   };
 
-  const { prevPageCursor, nextPageCursor, currPageItems, totalCount } = await getPaginationV2Items(
+  const { nextPageCursor, currPageItems, totalCount } = await getPaginationV2Items(
     paginationV2WithQueryClauses,
     getItems,
     getTotalCount
   );
 
   const responseMeta: ResponseMeta = {
-    ...(prevPageCursor
-      ? {
-          prevPage: getPrevPageUrl(
-            request,
-            prevPageCursor,
-            validatedMeta,
-            additionalQueryParams,
-            hostUrl
-          ),
-        }
-      : {}),
+    // ...(prevPageCursor
+    //   ? {
+    //       prevPage: getPrevPageUrl(
+    //         request,
+    //         prevPageCursor,
+    //         validatedMeta,
+    //         additionalQueryParams,
+    //         hostUrl
+    //       ),
+    //     }
+    //   : {}),
     ...(nextPageCursor
       ? {
           nextPage: getNextPageUrl(
@@ -306,16 +305,16 @@ export async function paginatedV2<T extends { id: string } & Record<string, unkn
   return { meta: responseMeta, items: currPageItems };
 }
 
-function getPrevPageUrl(
-  req: Request,
-  prePageToItem: CompositeCursor,
-  requestMeta: PaginationV2,
-  additionalQueryParams: Record<string, string> | undefined,
-  hostUrl: string
-): string {
-  const p: PaginationV2ToItem = { toItem: prePageToItem };
-  return getPaginationV2Url(req, p, requestMeta, additionalQueryParams, hostUrl);
-}
+// function getPrevPageUrl(
+//   req: Request,
+//   prePageToItem: CompositeCursor,
+//   requestMeta: PaginationV2,
+//   additionalQueryParams: Record<string, string> | undefined,
+//   hostUrl: string
+// ): string {
+//   const p: PaginationV2ToItem = { toItem: prePageToItem };
+//   return getPaginationV2Url(req, p, requestMeta, additionalQueryParams, hostUrl);
+// }
 
 function getNextPageUrl(
   req: Request,
@@ -339,6 +338,14 @@ function getPaginationV2Url(
     ...(item.fromItem ? { fromItem: encodeCursor(item.fromItem) } : {}),
     ...(item.toItem ? { toItem: encodeCursor(item.toItem) } : {}),
   };
+
+  if (item.fromItem) {
+    console.log("generating fromItem cursor: ", item.fromItem);
+  }
+
+  if (item.toItem) {
+    console.log("generating toItem cursor: ", item.toItem);
+  }
 
   const params = new URLSearchParams(encodedItem);
   params.append("count", requestMeta.count.toString());

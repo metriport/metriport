@@ -68,6 +68,9 @@ router.get(
       ...(query.status ? { status: query.status } : {}),
     };
 
+    console.log("receiving fromItem cursor: ", query.fromItem);
+    console.log("receiving toItem cursor: ", query.toItem);
+
     const result = await paginatedV2({
       request: req,
       additionalQueryParams,

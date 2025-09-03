@@ -51,10 +51,6 @@ export async function getTcmEncounters({
 
   const { fromItemClause, toItemClause, orderByClause } = pagination;
 
-  console.log("fromItemClause", fromItemClause);
-  console.log("toItemClause", toItemClause);
-  console.log("orderByClause", orderByClause);
-
   const dischargedAfter = daysLookback
     ? buildDayjs().subtract(parseInt(daysLookback), "day").toDate()
     : undefined;
@@ -113,6 +109,7 @@ export async function getTcmEncounters({
     patientFacilityIds: e.dataValues.patient_facility_ids,
   }));
 
+  // return sortForPagination(encounters, pagination);
   return encounters;
 }
 
