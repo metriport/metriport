@@ -17,7 +17,7 @@ export class TcmEncounterModel extends BaseModel<TcmEncounterModel> implements T
   declare freetextNote: CreationOptional<string>;
   declare dischargeSummaryPath: string | undefined;
   declare outreachStatus: CreationOptional<"Not Started" | "Attempted" | "Completed">;
-  declare lastOutreachDate: CreationOptional<Date>;
+  declare lastOutreachDate: CreationOptional<Date | null>;
 
   // This is a stored generated column, its derived from clinical_information.
   declare readonly hasCardiacCode: CreationOptional<boolean>;
