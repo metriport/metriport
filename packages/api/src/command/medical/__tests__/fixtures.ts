@@ -1,13 +1,11 @@
 import { SortItem } from "@metriport/shared/domain/pagination-v2";
-import { CursorWhereClause, PaginationV2WithCursor } from "../../pagination-v2";
+import { CursorWhereClause, PaginationV2WithQueryClauses } from "../../pagination-v2";
 
 export function makePaginationWithCursor(
   {
     count,
     fromItem,
     toItem,
-    sort,
-    originalSort,
   }: {
     count: number;
     fromItem?: CursorWhereClause;
@@ -15,13 +13,11 @@ export function makePaginationWithCursor(
     sort?: SortItem[];
     originalSort?: SortItem[];
   } = { count: 10 }
-): PaginationV2WithCursor {
+): PaginationV2WithQueryClauses {
   return {
+    ...(fromItem ? { fromItemClause: fromItem } : { fromItemClause: { clause: "", params: {} } }),
+    ...(toItem ? { toItemClause: toItem } : { toItemClause: { clause: "", params: {} } }),
     count,
-    ...(fromItem ? { fromItemClause: fromItem } : {}),
-    ...(toItem ? { toItemClause: toItem } : {}),
     orderByClause: "",
-    sort: sort ?? [],
-    originalSort: originalSort ?? [],
   };
 }

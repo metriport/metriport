@@ -49,8 +49,19 @@ const compositeCursorSchema = z.record(z.string(), z.string().nullable());
 export type CompositeCursor = z.infer<typeof compositeCursorSchema>;
 
 const cursorSchema = z.string().transform((val, ctx) => {
-  const decoded = decodeCursor(val);
+  let decoded;
   try {
+    decoded = decodeCursor(val);
+  } catch (error) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Invalid cursor: unable to decode cursor",
+    });
+    return z.NEVER;
+  }
+
+  try {
+    decoded = decodeCursor(val);
     return compositeCursorSchema.parse(decoded);
   } catch (error) {
     ctx.addIssue({

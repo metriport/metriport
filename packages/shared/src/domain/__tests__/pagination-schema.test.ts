@@ -120,7 +120,7 @@ describe("pagination schema", () => {
         count: 10,
       };
 
-      expect(() => schema.parse(query)).toThrow("Invalid cursor: invalid-base64!!!");
+      expect(() => schema.parse(query)).toThrow("Invalid cursor: unable to decode cursor");
     });
 
     it("rejects valid base64 but invalid JSON cursor", () => {
