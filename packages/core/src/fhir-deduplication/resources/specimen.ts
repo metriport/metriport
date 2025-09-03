@@ -3,13 +3,9 @@ import { Specimen } from "@medplum/fhirtypes";
 import { DisjointSetUnion } from "../disjoint-set-union";
 import { sameResourceIdentifier } from "../comparators";
 import { compareSpecimensByStatus } from "../../external/fhir/resources/specimen";
-import { mergeIntoTargetResource } from "../shared";
+import { DeduplicationResult, mergeIntoTargetResource } from "../shared";
 
-export function groupSameSpecimens(specimens: Specimen[]): {
-  specimensMap: Map<string, Specimen>;
-  refReplacementMap: Map<string, string>;
-  danglingReferences: Set<string>;
-} {
+export function deduplicateSpecimens(specimens: Specimen[]): DeduplicationResult<Specimen> {
   const dsu = new DisjointSetUnion({
     resourceType: "Specimen",
     resources: specimens,
@@ -17,13 +13,8 @@ export function groupSameSpecimens(specimens: Specimen[]): {
     comparators: [sameResourceIdentifier],
     merge: mergeSpecimens,
   });
-  const { resourceMap, refReplacementMap, danglingReferences } = dsu.deduplicate();
 
-  return {
-    specimensMap: resourceMap,
-    refReplacementMap,
-    danglingReferences,
-  };
+  return dsu.deduplicate();
 }
 
 function mergeSpecimens(specimens: Specimen[]): Specimen {

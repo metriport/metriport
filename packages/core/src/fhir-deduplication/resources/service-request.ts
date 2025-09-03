@@ -3,13 +3,11 @@ import { ServiceRequest } from "@medplum/fhirtypes";
 import { DisjointSetUnion } from "../disjoint-set-union";
 import { sameResourceIdentifier } from "../comparators";
 import { compareServiceRequestsByStatus } from "../../external/fhir/resources/service-request";
-import { mergeIntoTargetResource } from "../shared";
+import { mergeIntoTargetResource, DeduplicationResult } from "../shared";
 
-export function groupSameServiceRequests(serviceRequests: ServiceRequest[]): {
-  serviceRequestsMap: Map<string, ServiceRequest>;
-  refReplacementMap: Map<string, string>;
-  danglingReferences: Set<string>;
-} {
+export function deduplicateServiceRequests(
+  serviceRequests: ServiceRequest[]
+): DeduplicationResult<ServiceRequest> {
   const dsu = new DisjointSetUnion({
     resourceType: "ServiceRequest",
     resources: serviceRequests,
@@ -17,13 +15,8 @@ export function groupSameServiceRequests(serviceRequests: ServiceRequest[]): {
     comparators: [sameResourceIdentifier],
     merge: mergeServiceRequests,
   });
-  const { resourceMap, refReplacementMap, danglingReferences } = dsu.deduplicate();
 
-  return {
-    serviceRequestsMap: resourceMap,
-    refReplacementMap,
-    danglingReferences,
-  };
+  return dsu.deduplicate();
 }
 
 function requisitionIdentifierHashKey(serviceRequest: ServiceRequest): string | undefined {

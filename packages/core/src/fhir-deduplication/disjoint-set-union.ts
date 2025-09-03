@@ -1,17 +1,12 @@
 import { Resource, ResourceType } from "@medplum/fhirtypes";
 import { Comparator } from "lodash";
+import { DeduplicationResult } from "./shared";
 
 // Generates a hash key from the resource - undefined keys are ignored.
 export type HashKeyGenerator<R extends Resource> = (resource: R) => string | undefined;
 
 // Merges multiple resources into a single resource, and guaranteed to have at least one resource
 export type MergeFunction<R extends Resource> = (resources: R[]) => R;
-
-export type DeduplicationResult<R extends Resource> = {
-  resourceMap: Map<string, R>;
-  refReplacementMap: Map<string, string>;
-  danglingReferences: Set<string>;
-};
 
 interface DisjointSetUnionParams<R extends Resource> {
   resourceType: ResourceType;
@@ -75,7 +70,7 @@ export class DisjointSetUnion<R extends Resource> {
     }
     // Finally, group resources in O(n) to generate the final deduplication result.
     const groupResources = this.splitResourcesByGroup();
-    return this.createResourceMap(groupResources);
+    return this.createDeduplicationResult(groupResources);
   }
 
   /**
@@ -171,11 +166,11 @@ export class DisjointSetUnion<R extends Resource> {
    * Builds the final deduplication result that plugs into the rest of the deduplication algorithm.
    * @param groupResources - The result of separateResourcesByGroup.
    */
-  private createResourceMap(groupResources: Map<number, R[]>): DeduplicationResult<R> {
-    const resourceMap: Map<string, R> = new Map();
+  private createDeduplicationResult(groupResources: Map<number, R[]>): DeduplicationResult<R> {
     const refReplacementMap: Map<string, string> = new Map();
     const danglingReferences: Set<string> = new Set();
 
+    const combinedResources: R[] = [];
     for (const [, resourcesInGroup] of groupResources.entries()) {
       if (resourcesInGroup.length === 0) continue;
       const mergedResource = this.merge(resourcesInGroup);
@@ -187,9 +182,9 @@ export class DisjointSetUnion<R extends Resource> {
         if (!replaceResourceId) continue;
         refReplacementMap.set(this.createRef(replaceResourceId), this.createRef(mergedResourceId));
       }
-      resourceMap.set(mergedResourceId, mergedResource);
+      combinedResources.push(mergedResource);
     }
-    return { resourceMap, refReplacementMap, danglingReferences };
+    return { combinedResources, refReplacementMap, danglingReferences };
   }
 
   private createRef(id: string): string {
