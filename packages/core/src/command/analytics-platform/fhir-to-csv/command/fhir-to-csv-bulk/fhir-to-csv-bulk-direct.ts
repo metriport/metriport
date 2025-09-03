@@ -1,22 +1,22 @@
 import { sleep } from "@metriport/shared";
 import { startFhirToCsvTransform } from "../fhir-to-csv-transform";
-import { FhirToCsvHandler, ProcessFhirToCsvRequest } from "./fhir-to-csv";
+import { FhirToCsvBulkHandler, ProcessFhirToCsvBulkRequest } from "./fhir-to-csv-bulk";
 
-export class FhirToCsvDirect implements FhirToCsvHandler {
+export class FhirToCsvBulkDirect implements FhirToCsvBulkHandler {
   constructor(private readonly waitTimeInMillis: number = 0) {}
 
   async processFhirToCsv({
     cxId,
     jobId,
     patientId,
-    inputBundle,
+    outputPrefix,
     timeoutInMillis,
-  }: ProcessFhirToCsvRequest): Promise<void> {
+  }: ProcessFhirToCsvBulkRequest): Promise<void> {
     await startFhirToCsvTransform({
       cxId,
       jobId,
       patientId,
-      ...(inputBundle ? { inputBundle } : {}),
+      outputPrefix,
       timeoutInMillis,
     });
     if (this.waitTimeInMillis > 0) await sleep(this.waitTimeInMillis);

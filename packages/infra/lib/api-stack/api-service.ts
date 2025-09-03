@@ -427,7 +427,7 @@ export function createAPIService({
               props.config.hl7Notification.dischargeNotificationSlackUrl,
           }),
           ...(analyticsPlatformAssets && {
-            FHIR_TO_CSV_QUEUE_URL: analyticsPlatformAssets.fhirToCsvQueue.queueUrl,
+            FHIR_TO_CSV_BULK_QUEUE_URL: analyticsPlatformAssets.fhirToCsvBulkQueue.queueUrl,
           }),
           ...(props.config.hl7Notification?.hieConfigs && {
             HIE_CONFIG_DICTIONARY: JSON.stringify(
@@ -583,7 +583,7 @@ export function createAPIService({
   if (analyticsPlatformAssets) {
     provideAccessToQueue({
       accessType: "send",
-      queue: analyticsPlatformAssets.fhirToCsvQueue,
+      queue: analyticsPlatformAssets.fhirToCsvBulkQueue,
       resource: fargateService.taskDefinition.taskRole,
     });
   }

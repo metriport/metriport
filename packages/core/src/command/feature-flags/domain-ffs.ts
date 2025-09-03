@@ -324,3 +324,11 @@ export async function isCommonwellV2EnabledForCx(cxId: string): Promise<boolean>
   const cxIdsWithCommonwellV2Enabled = await getCxsEnabledForCommonwellV2();
   return cxIdsWithCommonwellV2Enabled.some(i => i === cxId);
 }
+
+export async function getCxsEnabledForAnalyticsIncrementalIngestion(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("analyticsIncrementalIngestion");
+}
+export async function isAnalyticsIncrementalIngestionEnabledForCx(cxId: string): Promise<boolean> {
+  const cxIdsWithCommonwellV2Enabled = await getCxsEnabledForAnalyticsIncrementalIngestion();
+  return cxIdsWithCommonwellV2Enabled.some(i => i === cxId);
+}
