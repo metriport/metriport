@@ -193,17 +193,10 @@ export function isContentTypeAccepted(mimeType: string | undefined): boolean {
   const acceptedContentTypes = [
     JSON_APP_MIME_TYPE,
     JSON_TXT_MIME_TYPE,
-    XML_APP_MIME_TYPE,
-    XML_TXT_MIME_TYPE,
-    PDF_MIME_TYPE,
-    TIFF_MIME_TYPE,
-    TIF_MIME_TYPE,
-    PNG_MIME_TYPE,
-    JPEG_MIME_TYPE,
     JPG_MIME_TYPE,
-    BMP_MIME_TYPE,
-    TXT_MIME_TYPE,
     HTML_MIME_TYPE,
+    TIF_MIME_TYPE,
+    XML_TXT_MIME_TYPE,
   ];
 
   return !!mimeType && acceptedContentTypes.includes(mimeType);
