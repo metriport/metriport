@@ -4,14 +4,16 @@ import {
   CONDITION_VERIFICATION_STATUS_URL,
 } from "@metriport/shared/medical";
 
-export type ConditionClinicalStatus =
-  | "active"
-  | "recurrence"
-  | "relapse"
-  | "inactive"
-  | "remission"
-  | "resolved"
-  | "unknown";
+export const CONDITION_CLINICAL_STATUS_CODES = [
+  "active",
+  "recurrence",
+  "relapse",
+  "inactive",
+  "remission",
+  "resolved",
+  "unknown",
+] as const;
+export type ConditionClinicalStatus = (typeof CONDITION_CLINICAL_STATUS_CODES)[number];
 
 const conditionClinicalStatusDisplay: Record<ConditionClinicalStatus, string> = {
   active: "Active",
@@ -39,13 +41,15 @@ export function buildConditionClinicalStatus(status: ConditionClinicalStatus): C
   };
 }
 
-export type ConditionVerificationStatus =
-  | "confirmed"
-  | "unconfirmed"
-  | "provisional"
-  | "differential"
-  | "refuted"
-  | "entered-in-error";
+export const CONDITION_VERIFICATION_STATUS_CODES = [
+  "confirmed",
+  "unconfirmed",
+  "provisional",
+  "differential",
+  "refuted",
+  "entered-in-error",
+] as const;
+export type ConditionVerificationStatus = (typeof CONDITION_VERIFICATION_STATUS_CODES)[number];
 
 export const conditionVerificationStatusDisplay: Record<ConditionVerificationStatus, string> = {
   confirmed: "Confirmed",
