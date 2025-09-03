@@ -1,6 +1,9 @@
 import { PharmacyQueryProgress } from "@metriport/core/domain/document-query";
 import { out } from "@metriport/core/util/log";
-import { uuidv7 } from "@metriport/core/util/uuid-v7";
+import { findFirstPatientMappingForSource } from "../../../command/mapping/patient";
+import { buildSendPatientRequestHandler } from "@metriport/core/external/surescripts/command/send-patient-request/send-patient-request-factory";
+import { surescriptsSource } from "@metriport/shared/interface/external/surescripts/source";
+import { getDateFromId } from "@metriport/core/external/surescripts/id-generator";
 
 export async function queryDocumentsAcrossPharmacies({
   cxId,
@@ -15,9 +18,38 @@ export async function queryDocumentsAcrossPharmacies({
 
   log("Running pharmacies DQ for " + facilityId + " and CX " + cxId);
 
-  return {
-    status: "processing",
-    startedAt: new Date(),
-    requestId: uuidv7(),
-  };
+  const surescriptsMapping = await findFirstPatientMappingForSource({
+    patientId,
+    source: surescriptsSource,
+  });
+
+  if (surescriptsMapping) {
+    const requestId = surescriptsMapping.externalId;
+    const startedAt = getDateFromId(requestId);
+    return {
+      status: "processing",
+      startedAt,
+      requestId,
+    };
+  }
+
+  const handler = buildSendPatientRequestHandler();
+  const requestId = await handler.sendPatientRequest({
+    cxId,
+    facilityId,
+    patientId,
+  });
+
+  if (requestId) {
+    const startedAt = getDateFromId(requestId);
+    return {
+      status: "processing",
+      startedAt,
+      requestId,
+    };
+  } else {
+    return {
+      status: "failed",
+    };
+  }
 }

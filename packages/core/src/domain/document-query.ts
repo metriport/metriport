@@ -25,8 +25,8 @@ export type DocumentQueryProgress = Partial<
 
 export type PharmacyQueryProgress = {
   status: "processing" | "completed" | "failed";
-  startedAt: Date;
-  requestId: string;
+  startedAt?: Date;
+  requestId?: string;
 };
 
 export const convertResult = ["success", "failed"] as const;
