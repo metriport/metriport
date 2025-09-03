@@ -4,40 +4,6 @@ import { emptyStringToUndefinedSchema } from "../common/zod";
 import { periodSchema } from "./period";
 
 /**
- * How to use the contact/address.
- * @see: https://hl7.org/fhir/R4/valueset-contact-point-use.html
- */
-export enum ContactUseCodes {
-  home = "home",
-  work = "work",
-  temp = "temp",
-  old = "old",
-  mobile = "mobile",
-}
-export const contactUseCodesSchema = z
-  .string()
-  .transform(zodToLowerCase)
-  .transform(normalizeContactUse)
-  .pipe(z.nativeEnum(ContactUseCodes));
-
-function normalizeContactUse(use: unknown): unknown {
-  if (typeof use !== "string") return use;
-  switch (use.toLowerCase()) {
-    case "cell":
-      return "mobile";
-    case "mc":
-      return "mobile";
-    case "hp":
-      return "home";
-    case "h":
-      return "home";
-    case "wp":
-      return "work";
-  }
-  return use;
-}
-
-/**
  * Describes the kind of contact.
  * @see: https://hl7.org/fhir/R4/valueset-contact-point-system.html
  */
@@ -71,7 +37,7 @@ function normalizeContactSystem(system: unknown): unknown {
 export const contactSchema = z.object({
   value: z.string().nullish(),
   system: emptyStringToUndefinedSchema.pipe(contactSystemCodesSchema.nullish()),
-  use: emptyStringToUndefinedSchema.pipe(contactUseCodesSchema.nullish()),
+  use: z.string().nullish(),
   period: periodSchema.nullish(),
 });
 export type Contact = z.infer<typeof contactSchema>;
