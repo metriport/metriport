@@ -37,4 +37,14 @@ describe("normalizeConditions", () => {
     );
     expect(versionToHccCode).toEqual({ v24: "85", v28: "227" });
   });
+
+  it("should not add HCC coding to a condition with a non-ICD-10 code", () => {
+    const testCondition = makeCondition({ icd10Code: "invalid" });
+
+    const conditions = normalizeConditions([testCondition]);
+    const result = conditions[0];
+    expect(result).toBeDefined();
+    if (!result) return;
+    expect(result.extension).toBeUndefined();
+  });
 });
