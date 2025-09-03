@@ -1,10 +1,12 @@
 import { makePatient, makePatientData } from "@metriport/core/domain/__tests__/patient";
+import { mockStartTransaction } from "../../../models/__tests__/transaction";
 import { PatientModel } from "../../../models/medical/patient";
 import { PatientMappingModel } from "../../../models/patient-mapping";
-
-import { mockStartTransaction } from "../../../models/__tests__/transaction";
-import { CWParams, updateCommonwellIdsAndStatus } from "../patient-external-data";
-import { PatientDataCommonwell } from "../patient-shared";
+import {
+  CWParams,
+  updateCommonwellIdsAndStatus,
+} from "../../commonwell/patient/patient-external-data";
+import { PatientDataCommonwell } from "../../commonwell/patient/patient-shared";
 
 let patientModel_findOne: jest.SpyInstance;
 let patientModel_update: jest.SpyInstance;

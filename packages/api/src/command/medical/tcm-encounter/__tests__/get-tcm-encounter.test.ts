@@ -245,5 +245,30 @@ describe("TCM Encounter Commands", () => {
         }),
       ]);
     });
+
+    it("returns outreachLogs in the encounter result", async () => {
+      const outreachLogs = [
+        { status: "Attempted", timestamp: "2024-01-01T12:00:00Z" },
+        { status: "Completed", timestamp: "2024-01-02T12:00:00Z" },
+      ];
+      const encounter = makeEncounter({ outreachLogs });
+      const mockQueryResult = [
+        {
+          ...encounter,
+          dataValues: {
+            ...encounter.dataValues,
+            outreachLogs,
+            patient_data: encounter.PatientModel.data,
+          },
+        },
+      ];
+      mockSequelize.query.mockResolvedValue(mockQueryResult);
+      const cmd = {
+        cxId: "cx-123",
+        pagination: { count: 10, fromItem: undefined, toItem: undefined },
+      };
+      const result = await getTcmEncounters(cmd);
+      expect(result[0].outreachLogs).toEqual(outreachLogs);
+    });
   });
 });

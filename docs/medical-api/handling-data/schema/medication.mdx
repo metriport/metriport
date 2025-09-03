@@ -1,0 +1,48 @@
+---
+title: "Medication"
+description: "Schema documentation for the Medication table in the Metriport data model"
+group: "Schema"
+---
+
+The medication table contains information on medications ordered and/or administered during a patient encounter.
+
+**Primary Keys:**
+* medication_id
+
+**Foreign Keys:**
+* person_id
+* patient_id
+* encounter_id
+
+| Column | Data Type | Description | Terminology |
+| ------ | --------- | ----------- | ----------- |
+| medication_id | string | Unique identifier for the medication | - |
+| person_id | string | Unique identifier for the person | - |
+| member_id | string | Unique identifier for the member | - |
+| patient_id | string | Unique identifier for the patient | - |
+| encounter_id | string | Unique identifier for the encounter | - |
+| practitioner_id | string | Unique identifier for the practitioner | - |
+| medication_code | string | Standardized medication code | RxNorm, NDC, SNOMED CT |
+| medication_code_type | string | Type of coding system used | rxnorm, ndc, snomed-ct |
+| medication_code_system | string | Coding system identifier | - |
+| medication_code_version | string | Version of the coding system | - |
+| medication_code_display | string | Human-readable description of the medication | - |
+| medication_name | string | Name of the medication | - |
+| medication_generic_name | string | Generic name of the medication | - |
+| medication_brand_name | string | Brand name of the medication | - |
+| medication_strength | string | Strength of the medication | - |
+| medication_form | string | Form of the medication | tablet, capsule, liquid, injection |
+| medication_route | string | Route of administration | oral, intravenous, intramuscular |
+| medication_frequency | string | Frequency of administration | daily, twice_daily, as_needed |
+| medication_dosage | string | Dosage instructions | - |
+| medication_start_date | date | Date when medication was started | - |
+| medication_end_date | date | Date when medication was discontinued | - |
+| medication_status | string | Status of the medication | active, discontinued, completed |
+| medication_type | string | Type of medication | prescription, over_the_counter, controlled |
+| data_source | string | Source of the medication data | claims, clinical, ehr |
+| source_code | string | Original code from the source system | - |
+| normalized_code | string | Standardized/normalized code | - |
+| source_system | string | System that provided the medication data | - |
+| source_table | string | Table in the source system | - |
+| source_id | string | Identifier from the source system | - |
+| ingestion_date | timestamp | Date when the data was ingested | - |
