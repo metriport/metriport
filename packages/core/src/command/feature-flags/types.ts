@@ -44,6 +44,7 @@ export const cxBasedFFsSchema = z.object({
   cxsWithDischargeRequeryFeatureFlag: ffStringValuesSchema,
   cxsWithXmlRedownloadFeatureFlag: ffStringValuesSchema,
   cxsEnabledForCommonwellV2: ffStringValuesSchema,
+  analyticsIncrementalIngestion: ffStringValuesSchema,
 });
 export type CxBasedFFsSchema = z.infer<typeof cxBasedFFsSchema>;
 
