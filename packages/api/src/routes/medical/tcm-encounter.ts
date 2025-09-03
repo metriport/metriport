@@ -7,7 +7,7 @@ import {
 } from "../../command/medical/tcm-encounter/get-tcm-encounters";
 import { updateTcmEncounter } from "../../command/medical/tcm-encounter/update-tcm-encounter";
 import { requestLogger } from "../helpers/request-logger";
-import { paginated } from "../pagination";
+import { paginatedV2 } from "../pagination-v2";
 import { validateUUID } from "../schemas/uuid";
 import { asyncHandler, getCxIdOrFail, getFromParamsOrFail } from "../util";
 import { dtoFromTcmEncounter } from "./dtos/tcm-encounter-dto";
@@ -68,7 +68,7 @@ router.get(
       ...(query.status ? { status: query.status } : {}),
     };
 
-    const result = await paginated({
+    const result = await paginatedV2({
       request: req,
       additionalQueryParams,
       getItems: async pagination => {

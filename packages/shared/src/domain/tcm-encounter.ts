@@ -1,5 +1,5 @@
 import { buildDayjs } from "../common/date";
-import { createQueryMetaSchema } from "./pagination";
+import { createQueryMetaSchemaV2 } from "./pagination-v2";
 import { z } from "zod";
 
 export const tcmEncounterMaxPageSize = 10000;
@@ -68,7 +68,7 @@ const tcmEncounterQuerySchema = z
     coding: z.enum(["cardiac"]).optional(),
     status: z.enum(outreachStatuses).optional(),
   })
-  .and(createQueryMetaSchema(tcmEncounterMaxPageSize));
+  .and(createQueryMetaSchemaV2(tcmEncounterMaxPageSize));
 
 export const tcmEncounterListQuerySchema = tcmEncounterQuerySchema;
 export type TcmEncounterListQuery = z.infer<typeof tcmEncounterListQuerySchema>;

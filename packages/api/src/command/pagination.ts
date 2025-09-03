@@ -1,34 +1,18 @@
-import { CompositeCursor, createCompositeCursor } from "@metriport/shared/domain/cursor-utils";
-import type { SortItem } from "@metriport/shared/domain/pagination";
 import { FindOptions, Op, OrderItem } from "sequelize";
 import { UnionToIntersection, XOR } from "ts-essentials";
-
-export type CursorWhereClause = {
-  clause: string;
-  params: Record<string, unknown>;
-};
 
 export type Pagination = XOR<PaginationFromItem, PaginationToItem> & {
   /** indicates the number of items to be included in the response */
   count: number;
-  /** sort criteria for composite cursor pagination (reoriented for database queries) */
-  sort: SortItem[];
-  /** original sort criteria as sent by client (for URL generation) */
-  originalSort: SortItem[];
-};
-
-export type PaginationWithCursor = Pagination & {
-  fromItemClause?: CursorWhereClause;
-  toItemClause?: CursorWhereClause;
 };
 
 export type PaginationFromItem = {
-  /** indicates the minimum item to be included in the response, inclusive - now supports composite cursors */
-  fromItem?: CompositeCursor | undefined;
+  /** indicates the minimum item to be included in the response, inclusive */
+  fromItem?: string | undefined;
 };
 export type PaginationToItem = {
-  /** indicates the maximum item to be included in the response, inclusive - now supports composite cursors */
-  toItem?: CompositeCursor | undefined;
+  /** indicates the maximum item to be included in the response, inclusive */
+  toItem?: string | undefined;
 };
 export type PaginationItem = UnionToIntersection<PaginationFromItem | PaginationToItem>;
 
@@ -57,14 +41,14 @@ export function sortForPagination<T>(items: T[], pagination: Pagination | undefi
   return toItem ? items.reverse() : items;
 }
 
-export async function getPaginationItems<T extends Record<string, unknown>>(
-  requestMeta: PaginationWithCursor,
-  getItems: (pagination: PaginationWithCursor) => Promise<T[]>,
+export async function getPaginationItems<T extends { id: string }>(
+  requestMeta: Pagination,
+  getItems: (pagination: Pagination) => Promise<T[]>,
   getTotalCount: () => Promise<number>
 ): Promise<{
-  prevPageCursor: CompositeCursor | undefined;
+  prevPageItemId: string | undefined;
   currPageItems: T[];
-  nextPageCursor: CompositeCursor | undefined;
+  nextPageItemId: string | undefined;
   totalCount?: number;
 }> {
   const itemsPerPage = requestMeta.count;
@@ -75,53 +59,44 @@ export async function getPaginationItems<T extends Record<string, unknown>>(
     count: itemsPerPage + 1,
   });
   if (itemsWithExtraOne.length < 1) {
-    return { prevPageCursor: undefined, currPageItems: [], nextPageCursor: undefined };
+    return { prevPageItemId: undefined, currPageItems: [], nextPageItemId: undefined };
   }
 
   if (!requestMeta.toItem) {
     // navigating "forward"
 
     // intentionally one over since we asked for one more to determine if there is a next page
-    const nextPageCursor = itemsWithExtraOne[itemsPerPage]
-      ? createCompositeCursor(itemsWithExtraOne[itemsPerPage], requestMeta.sort)
-      : undefined;
+    const nextPageItemId = itemsWithExtraOne[itemsPerPage]?.id;
 
     const currPageItems = itemsWithExtraOne.slice(0, itemsPerPage);
 
     if (!requestMeta.fromItem) {
       // first page, default request without "fromItem"
       const totalCount = await getTotalCount();
-      return { prevPageCursor: undefined, currPageItems, nextPageCursor, totalCount };
+      return { prevPageItemId: undefined, currPageItems, nextPageItemId, totalCount };
     }
 
     // get the immediate item before the first one to determine if there's a previous page
     const itemsPrevious = await getItems({
-      toItem: createCompositeCursor(currPageItems[0], requestMeta.sort),
-      sort: requestMeta.sort,
-      originalSort: requestMeta.originalSort,
+      toItem: currPageItems[0]?.id,
       count: 2,
     });
-    const prevPageCursor =
-      itemsPrevious.length === 2
-        ? createCompositeCursor(itemsPrevious[0], requestMeta.sort)
-        : undefined;
+    const prevPageItemId = itemsPrevious.length === 2 ? itemsPrevious[0]?.id : undefined;
 
-    if (!prevPageCursor) {
+    if (!prevPageItemId) {
       // first page, but provided a "fromItem"
       const totalCount = await getTotalCount();
-      return { prevPageCursor, currPageItems, nextPageCursor, totalCount };
+      return { prevPageItemId, currPageItems, nextPageItemId, totalCount };
     }
 
-    return { prevPageCursor, currPageItems, nextPageCursor };
+    return { prevPageItemId, currPageItems, nextPageItemId };
   }
 
   // navigating "backwards"
 
   // intentionally expects one over since we asked for one more to determine if there is a previous page
-  const prevPageCursor =
-    itemsWithExtraOne.length > itemsPerPage
-      ? createCompositeCursor(itemsWithExtraOne[0], requestMeta.sort)
-      : undefined;
+  const prevPageItemId =
+    itemsWithExtraOne.length > itemsPerPage ? itemsWithExtraOne[0]?.id : undefined;
 
   const currPageItems =
     itemsWithExtraOne.length > itemsPerPage
@@ -130,47 +105,15 @@ export async function getPaginationItems<T extends Record<string, unknown>>(
 
   // get the immediate item after the last one to determine if there's a next page
   const itemsNext = await getItems({
-    fromItem: createCompositeCursor(currPageItems[currPageItems.length - 1], requestMeta.sort),
-    sort: requestMeta.sort,
-    originalSort: requestMeta.originalSort,
+    fromItem: currPageItems[currPageItems.length - 1]?.id,
     count: 2,
   });
-  const nextPageCursor = itemsNext[1]
-    ? createCompositeCursor(itemsNext[1], requestMeta.sort)
-    : undefined;
+  const nextPageItemId = itemsNext[1]?.id;
 
-  if (!prevPageCursor) {
+  if (!prevPageItemId) {
     // first page, navigating backwards
     const totalCount = await getTotalCount();
-    return { prevPageCursor, currPageItems, nextPageCursor, totalCount };
+    return { prevPageItemId, currPageItems, nextPageItemId, totalCount };
   }
-  return { prevPageCursor, currPageItems, nextPageCursor };
-}
-
-/**
- * Builds composite cursor filters for complex WHERE conditions in multi-column sorting.
- * This creates the appropriate comparison logic for cursor-based pagination with custom sort orders.
- */
-export function buildCompositeCursorFilters(
-  cursor: CompositeCursor,
-  sortFields: SortItem[],
-  direction: "forward" | "backward"
-): Record<string, unknown> {
-  // This is a placeholder implementation for TDD
-  // The actual implementation will depend on the ORM being used (Sequelize, etc.)
-  // and will need to create complex WHERE clauses for multi-column comparisons
-
-  if (Object.keys(cursor).length === 0 || sortFields.length === 0) {
-    return {};
-  }
-
-  // For now, return a simple structure that indicates we have filters
-  // The actual implementation would build complex OR/AND conditions
-  return {
-    _compositeCursorFilter: {
-      cursor,
-      sortFields,
-      direction,
-    },
-  };
+  return { prevPageItemId, currPageItems, nextPageItemId };
 }

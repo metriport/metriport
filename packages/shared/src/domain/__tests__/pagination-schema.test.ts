@@ -1,13 +1,13 @@
 import { faker } from "@faker-js/faker";
 import { encodeCursor } from "../cursor-utils";
-import { createQueryMetaSchema } from "../pagination";
+import { createQueryMetaSchemaV2 } from "../pagination-v2";
 
 beforeEach(() => {
   jest.restoreAllMocks();
 });
 
 describe("pagination schema", () => {
-  const schema = createQueryMetaSchema();
+  const schema = createQueryMetaSchemaV2();
 
   describe("sort parameter validation", () => {
     it("accepts valid sort string with multiple fields", () => {

@@ -3,7 +3,7 @@ import { omit, snakeCase } from "lodash";
 import { QueryTypes } from "sequelize";
 import { PatientModel } from "../../../models/medical/patient";
 import { TcmEncounterModel } from "../../../models/medical/tcm-encounter";
-import { PaginationWithCursor } from "../../pagination";
+import { PaginationV2WithCursor } from "../../pagination-v2";
 
 /**
  * Add a default filter date far in the past to guarantee hitting the compound index
@@ -41,7 +41,7 @@ export async function getTcmEncounters({
   eventType?: string;
   coding?: string;
   status?: string;
-  pagination: PaginationWithCursor;
+  pagination: PaginationV2WithCursor;
 }): Promise<TcmEncounterResult[]> {
   const tcmEncounterTable = TcmEncounterModel.tableName;
   const patientTable = PatientModel.tableName;
@@ -91,7 +91,7 @@ export async function getTcmEncounters({
       ${eventType ? ` AND tcm_encounter.latest_event = :eventType` : ""}
       ${status ? ` AND tcm_encounter.outreach_status = :status` : ""}
       ${coding === "cardiac" ? ` AND tcm_encounter.has_cardiac_code = true` : ""}
-      ${/* COMPOSITE CURSOR PAGINATION */ ""}
+      ${/* COMPOSITE CURSOR PaginationV2 */ ""}
       ${toItemClause.clause}
       ${fromItemClause.clause}
       ORDER BY ${pagination.sort.map(createOrderByClause).join(", ")}
