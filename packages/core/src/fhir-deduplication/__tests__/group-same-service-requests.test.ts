@@ -1,7 +1,7 @@
 import { faker } from "@faker-js/faker";
 import { Identifier, ServiceRequest } from "@medplum/fhirtypes";
 import { ServiceRequestStatusCode } from "../../external/fhir/resources/service-request";
-import { groupSameServiceRequests } from "../resources/service-request";
+import { deduplicateServiceRequests } from "../resources/service-request";
 
 function makeServiceRequest({
   id,
@@ -35,8 +35,8 @@ describe("groupSameServiceRequests", () => {
       status: "unknown",
       identifier: [{ system: "http://example.com", value: "1234567890" }],
     });
-    const { serviceRequestsMap } = groupSameServiceRequests([serviceRequest1, serviceRequest2]);
-    expect(serviceRequestsMap.size).toBe(1);
+    const { combinedResources } = deduplicateServiceRequests([serviceRequest1, serviceRequest2]);
+    expect(combinedResources.length).toBe(1);
   });
 
   it("correctly groups serviceRequests based on IDs", () => {
@@ -49,8 +49,8 @@ describe("groupSameServiceRequests", () => {
       status: "unknown",
     });
 
-    const { serviceRequestsMap } = groupSameServiceRequests([serviceRequest1, serviceRequest2]);
-    expect(serviceRequestsMap.size).toBe(1);
+    const { combinedResources } = deduplicateServiceRequests([serviceRequest1, serviceRequest2]);
+    expect(combinedResources.length).toBe(1);
   });
 
   it("correctly groups serviceRequests based on requisition identifiers", () => {
@@ -70,12 +70,12 @@ describe("groupSameServiceRequests", () => {
       requisition: { system: "http://example.com", value: "8239482342" },
     });
 
-    const { serviceRequestsMap } = groupSameServiceRequests([
+    const { combinedResources } = deduplicateServiceRequests([
       serviceRequest1,
       serviceRequest2,
       serviceRequest3,
     ]);
-    expect(serviceRequestsMap.size).toBe(2);
+    expect(combinedResources.length).toBe(2);
   });
 
   it("should join multiple service requests based on multiple matching criteria", () => {
@@ -105,12 +105,12 @@ describe("groupSameServiceRequests", () => {
       requisition: { system: "http://example.com", value: "938982983" },
     });
 
-    const { serviceRequestsMap } = groupSameServiceRequests([
+    const { combinedResources } = deduplicateServiceRequests([
       serviceRequest1,
       serviceRequest2,
       serviceRequest3,
       serviceRequest4,
     ]);
-    expect(serviceRequestsMap.size).toBe(2);
+    expect(combinedResources.length).toBe(2);
   });
 });
