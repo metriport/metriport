@@ -1,6 +1,7 @@
-WITH address AS (
-    SELECT *
-    FROM {{ ref('stage__patient_address') }}
+with address as (
+    select *
+    from {{ ref('stage__patient_address') }} x
+    qualify row_number() over (partition by PATIENT_ID order by processed_date ) = 1
 )
 
 select pat.id                                                   as patient_id
