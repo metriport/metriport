@@ -193,10 +193,15 @@ export function isContentTypeAccepted(mimeType: string | undefined): boolean {
   const acceptedContentTypes = [
     JSON_APP_MIME_TYPE,
     JSON_TXT_MIME_TYPE,
-    JPG_MIME_TYPE,
-    HTML_MIME_TYPE,
-    TIF_MIME_TYPE,
     XML_TXT_MIME_TYPE,
+    PDF_MIME_TYPE,
+    TIFF_MIME_TYPE,
+    TIF_MIME_TYPE,
+    PNG_MIME_TYPE,
+    JPEG_MIME_TYPE,
+    JPG_MIME_TYPE,
+    BMP_MIME_TYPE,
+    HTML_MIME_TYPE,
   ];
 
   return !!mimeType && acceptedContentTypes.includes(mimeType);
@@ -222,7 +227,7 @@ export function isXMLContentType(bytesBuffer: Buffer): boolean {
       bytesBuffer[3] === XML_MAGIC_NUMBER_10 &&
       bytesBuffer[4] === XML_MAGIC_NUMBER_11 &&
       bytesBuffer[5] === XML_MAGIC_NUMBER_12) ||
-    (bytesBuffer[0] === XML_MAGIC_NUMBER_1 &&
+    (bytesBuffer[0] === XML_MAGIC_NUMBER_1 && //Checking for [<!--] (XML style comment)
       bytesBuffer[1] === XML_MAGIC_NUMBER_13 &&
       bytesBuffer[2] === XML_MAGIC_NUMBER_14 &&
       bytesBuffer[3] === XML_MAGIC_NUMBER_14)
