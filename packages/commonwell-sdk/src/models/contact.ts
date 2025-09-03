@@ -37,7 +37,7 @@ function normalizeContactSystem(system: unknown): unknown {
 export const contactSchema = z.object({
   value: z.string().nullish(),
   system: emptyStringToUndefinedSchema.pipe(contactSystemCodesSchema.nullish()),
-  use: z.string().nullish(),
+  use: emptyStringToUndefinedSchema.pipe(z.string().nullish()),
   period: periodSchema.nullish(),
 });
 export type Contact = z.infer<typeof contactSchema>;
