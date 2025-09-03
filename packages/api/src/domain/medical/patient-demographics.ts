@@ -1,11 +1,6 @@
 import { Address } from "@metriport/core/domain/address";
 import { Contact } from "@metriport/core/domain/contact";
-import {
-  ConsolidatedLinkDemographics,
-  Patient,
-  PatientData,
-  splitName,
-} from "@metriport/core/domain/patient";
+import { ConsolidatedLinkDemographics, Patient, splitName } from "@metriport/core/domain/patient";
 import {
   LinkDateOfBirth,
   LinkDemographics,
@@ -15,13 +10,10 @@ import {
   LinkGenericName,
 } from "@metriport/core/domain/patient-demographics";
 import { mapMetriportGenderToFhirGender } from "@metriport/core/external/fhir/patient/conversion";
-import { filterPatientLinks } from "@metriport/core/mpi/filter-patients/filter-patients";
 import {
-  BadRequestError,
   normalizeCountrySafe,
   normalizedCountryUsa,
   normalizeEmailNewSafe,
-  normalizeGender,
   normalizePhoneNumberSafe,
   normalizeUSStateForAddressSafe,
   normalizeZipCodeNewSafe,
@@ -30,67 +22,6 @@ import {
 import { normalizeSsn as normalizeSsnFromShared } from "@metriport/shared/domain/patient/ssn";
 import dayjs from "dayjs";
 import { ISO_DATE } from "../../shared/date";
-
-function mapLinkDemographicsToPatientData(linkDemographics: LinkDemographics): PatientData {
-  if (!linkDemographics.dob) {
-    throw new BadRequestError("Link demographics do not have a dob");
-  }
-  if (!linkDemographics.gender) {
-    throw new BadRequestError("Link demographics do not have names");
-  }
-  return {
-    firstName:
-      linkDemographics.names.reduce((acc, name) => {
-        const parsedName = JSON.parse(name);
-        return acc + parsedName.firstName;
-      }, "") ?? "",
-    lastName:
-      linkDemographics.names.reduce((acc, name) => {
-        const parsedName = JSON.parse(name);
-        return acc + parsedName.lastName;
-      }, "") ?? "",
-    genderAtBirth: normalizeGender(linkDemographics.gender ?? "U"),
-    dob: linkDemographics.dob ?? "",
-    address: linkDemographics.addresses.map(address => JSON.parse(address)) ?? [],
-    contact: [
-      ...linkDemographics.telephoneNumbers.map(phone => ({ phone })),
-      ...linkDemographics.emails.map(email => ({ email })),
-    ],
-    personalIdentifiers: linkDemographics.driversLicenses.map(dl => ({
-      type: "driversLicense",
-      value: JSON.parse(dl).value,
-      state: JSON.parse(dl).state,
-    })),
-  };
-}
-
-/**
- * Evaluates whether the input linked demographics are similar enough to the Patient to be considered a usable "match".
- *
- * This function uses a point system for different matching demographics. Each exact or partial match awards a
- * certain number of points, which are added to an overall score. This score must be higher than the given threshold
- * (17 or 18 if SSNs are present) in order for the input linked demograhics to be considered a usable "match".
- *
- * @param coreDemographics The patient core demographics.
- * @param linkDemographics The incoming link demographics from CQ or CW.
- * @returns boolean representing whether or not the link demographics match the patient, and the comparison object if yes.
- */
-export function checkDemoMatch({
-  coreDemographics,
-  linkDemographics,
-}: {
-  coreDemographics: LinkDemographics;
-  linkDemographics: LinkDemographics;
-}): boolean {
-  const coreDemographicsPatientData: PatientData =
-    mapLinkDemographicsToPatientData(coreDemographics);
-  const linkDemographicsPatientData: PatientData =
-    mapLinkDemographicsToPatientData(linkDemographics);
-  const links = filterPatientLinks(coreDemographicsPatientData, [linkDemographicsPatientData]);
-  const matchedLink = links[0];
-  if (!matchedLink) return false;
-  return matchedLink.isMatch;
-}
 
 /**
  * Converts a Patient's demographics into a normalized and stringified core demographics payload.
@@ -391,7 +322,7 @@ export function linkHasNewDemographics({
 }
 
 /**
- * Combines checkDemoMatch and linkHasNewDemographics to return the set of link demographics with usable new data.
+ * Combines linkHasNewDemographics to return the set of link demographics with usable new data.
  *
  * @param patient The Patient @ Metriport.
  * @param links The incoming link demographics from CQ or CW converted from their raw state.
@@ -403,14 +334,12 @@ export function getNewDemographics(
 ): LinkDemographics[] {
   const coreDemographics = patientToNormalizedCoreDemographics(patient);
   const consolidatedLinkDemographics = patient.data.consolidatedLinkDemographics;
-  return links
-    .filter(linkDemographics => checkDemoMatch({ coreDemographics, linkDemographics }))
-    .filter(
-      linkDemographics =>
-        linkHasNewDemographics({
-          coreDemographics,
-          linkDemographics,
-          consolidatedLinkDemographics,
-        }).hasNewDemographics
-    );
+  return links.filter(
+    linkDemographics =>
+      linkHasNewDemographics({
+        coreDemographics,
+        linkDemographics,
+        consolidatedLinkDemographics,
+      }).hasNewDemographics
+  );
 }
