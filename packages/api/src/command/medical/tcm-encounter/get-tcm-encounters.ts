@@ -104,8 +104,8 @@ export async function getTcmEncounters({
       ${
         status
           ? ` AND (
-        (tcm_encounter.outreach_logs @> jsonb_build_array(jsonb_build_object('status', :status)))
-          OR (jsonb_array_length(tcm_encounter.outreach_logs) = 0 AND tcm_encounter.outreach_status = :status)
+        (COALESCE(tcm_encounter.outreach_logs, '[]'::jsonb) @> jsonb_build_array(jsonb_build_object('status', :status)))
+          OR (jsonb_array_length(COALESCE(tcm_encounter.outreach_logs, '[]'::jsonb)) = 0 AND tcm_encounter.outreach_status = :status)
         )`
           : ""
       }
@@ -216,8 +216,8 @@ export async function getTcmEncountersCount({
     ${
       status
         ? ` AND (
-      (tcm_encounter.outreach_logs @> jsonb_build_array(jsonb_build_object('status', :status)))
-        OR (jsonb_array_length(tcm_encounter.outreach_logs) = 0 AND tcm_encounter.outreach_status = :status)
+      (COALESCE(tcm_encounter.outreach_logs, '[]'::jsonb) @> jsonb_build_array(jsonb_build_object('status', :status)))
+        OR (jsonb_array_length(COALESCE(tcm_encounter.outreach_logs, '[]'::jsonb)) = 0 AND tcm_encounter.outreach_status = :status)
       )`
         : ""
     }

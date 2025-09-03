@@ -41,8 +41,9 @@ export async function createSampleTcmEncounters(cxId: string, patientId: string)
       return await createTcmEncounter({
         cxId,
         patientId,
-        class: sample(["inpatient encounter", "ambulatory", "emergency", "short stay"]) ?? "",
-        facilityName: sample(facilityNames) ?? "",
+        class:
+          sample(["inpatient encounter", "ambulatory", "emergency", "short stay"]) ?? "ambulatory",
+        facilityName: sample(facilityNames) ?? facilityNames[0],
         latestEvent: enc.latestEvent,
         admitTime: enc.admitTime.toDate(),
         dischargeTime: enc.dischargeTime?.toDate(),
