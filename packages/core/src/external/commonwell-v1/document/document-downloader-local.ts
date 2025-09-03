@@ -113,7 +113,6 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
     if (isContentTypeAccepted(sourceDocument.mimeType)) {
       return { ...downloadResult };
     }
-
     const old_extension = path.extname(destinationFileInfo.name);
     const documentBuffer = Buffer.from(downloadedDocument);
     const { mimeType, fileExtension } = detectFileType(documentBuffer);
