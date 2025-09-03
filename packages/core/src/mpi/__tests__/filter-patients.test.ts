@@ -188,6 +188,102 @@ describe("evaluatePatientMatch", () => {
 
       expect(result.scores.address).toBe(2);
     });
+
+    it("should match when addressLine2 is inside the other link's addressLine1", async () => {
+      const patientWithAptInLine2 = {
+        ...basePatient,
+        address: [
+          {
+            addressLine1: "123 Main St",
+            addressLine2: "Apt 5B",
+            city: "New York",
+            state: USState.NY,
+            zip: "10001",
+          },
+        ],
+      };
+
+      const patientWithAptInLine1 = {
+        ...basePatient,
+        address: [
+          {
+            addressLine1: "123 Main St Apt 5B",
+            addressLine2: "",
+            city: "New York",
+            state: USState.NY,
+            zip: "10001",
+          },
+        ],
+      };
+
+      const result = await evaluatePatientMatch(patientWithAptInLine2, patientWithAptInLine1);
+
+      expect(result.scores.address).toBe(2);
+    });
+
+    it("should match when both have addressLine2 within addressLine1 but with slightly different apartment info", async () => {
+      const patient1 = {
+        ...basePatient,
+        address: [
+          {
+            addressLine1: "123 Main St",
+            addressLine2: "Apt 5B",
+            city: "New York",
+            state: USState.NY,
+            zip: "10001",
+          },
+        ],
+      };
+
+      const patient2 = {
+        ...basePatient,
+        address: [
+          {
+            addressLine1: "123 Main St Apt 5A",
+            addressLine2: "",
+            city: "New York",
+            state: USState.NY,
+            zip: "10001",
+          },
+        ],
+      };
+
+      const result = await evaluatePatientMatch(patient1, patient2);
+
+      expect(result.scores.address).toBe(2);
+    });
+
+    it("should match when both have apartment info in different formats", async () => {
+      const patient1 = {
+        ...basePatient,
+        address: [
+          {
+            addressLine1: "123 Main St 5B",
+            addressLine2: "",
+            city: "New York",
+            state: USState.NY,
+            zip: "10001",
+          },
+        ],
+      };
+
+      const patient2 = {
+        ...basePatient,
+        address: [
+          {
+            addressLine1: "123 Main St Apt 5B",
+            addressLine2: "",
+            city: "New York",
+            state: USState.NY,
+            zip: "10001",
+          },
+        ],
+      };
+
+      const result = await evaluatePatientMatch(patient1, patient2);
+
+      expect(result.scores.address).toBe(2);
+    });
   });
 
   describe("Contact Matching", () => {
@@ -213,7 +309,7 @@ describe("evaluatePatientMatch", () => {
   });
 
   describe("Business Rules", () => {
-    it("should fail when last name is wrong and address is completely different", async () => {
+    it("should fail when last name is wrong and address is completely different and contact is not a match", async () => {
       const patientWithWrongLastNameAndAddress = {
         ...basePatient,
         lastName: "Smith",
@@ -225,12 +321,18 @@ describe("evaluatePatientMatch", () => {
             zip: "90210",
           },
         ],
+        contact: [
+          {
+            phone: "555-999-8888",
+            email: "different.email@example.com",
+          },
+        ],
       };
 
       const result = await evaluatePatientMatch(basePatient, patientWithWrongLastNameAndAddress);
 
       expect(result.isMatch).toBe(false);
-      expect(result.failedRule).toBe("Last Name Wrong + Address Incorrect");
+      expect(result.failedRule).toBe("Last Name Wrong + Address Incorrect + No Contact Match");
     });
 
     it("should fail when DOB has 2+ parts wrong and address is completely different", async () => {
@@ -385,7 +487,7 @@ describe("evaluatePatientMatch", () => {
       expect(result.failedRule).toBeUndefined();
     });
 
-    it("should fail when female has wrong last name and address", async () => {
+    it("should fail when female has wrong last name and address and contact is not a match", async () => {
       const patientWithWrongLastNameAndAddress = {
         ...basePatient2,
         firstName: "Jane",
@@ -398,12 +500,18 @@ describe("evaluatePatientMatch", () => {
             zip: "60601",
           },
         ],
+        contact: [
+          {
+            phone: "555-777-6666",
+            email: "another.different@example.com",
+          },
+        ],
       };
 
       const result = await evaluatePatientMatch(basePatient2, patientWithWrongLastNameAndAddress);
 
       expect(result.isMatch).toBe(false);
-      expect(result.failedRule).toBe("Last Name Wrong + Address Incorrect");
+      expect(result.failedRule).toBe("Last Name Wrong + Address Incorrect + No Contact Match");
     });
 
     it("should fail when name, address, and contact all don't match", async () => {
@@ -642,7 +750,7 @@ describe("evaluatePatientMatch", () => {
         ...basePatient2,
         firstName: "Jane",
         lastName: "Smith",
-        contact: [{ phone: "555-123-4567", email: "different@email.com" }], // Matches validLink1 phone
+        contact: [{ phone: "555-123-4567", email: "different@email.com" }],
       };
 
       const invalidLink2 = {
@@ -699,14 +807,38 @@ describe("evaluatePatientMatch", () => {
         ...basePatient,
         firstName: "John",
         lastName: "Doe",
-        contact: [{ phone: "555-123-4567" }], // Phone only
+        contact: [{ phone: "555-123-4567" }],
       };
 
       const invalidLink = {
         ...basePatient2,
         firstName: "Jane",
         lastName: "Smith",
-        contact: [{ phone: "555-123-4567", email: "different@email.com" }], // Same phone, different email
+        contact: [{ phone: "555-123-4567", email: "different@email.com" }],
+      };
+
+      const validLinks = [validLink];
+      const invalidLinks = [invalidLink];
+
+      const result = crossValidateInvalidLinks(validLinks, invalidLinks);
+
+      expect(result).toHaveLength(1);
+      expect(result[0]).toEqual(invalidLink);
+    });
+
+    it("should validate through phone number normalization", () => {
+      const validLink = {
+        ...basePatient,
+        firstName: "John",
+        lastName: "Doe",
+        contact: [{ phone: "5551234567" }],
+      };
+
+      const invalidLink = {
+        ...basePatient2,
+        firstName: "Jane",
+        lastName: "Smith",
+        contact: [{ phone: "(555)123-4567" }],
       };
 
       const validLinks = [validLink];
@@ -723,14 +855,14 @@ describe("evaluatePatientMatch", () => {
         ...basePatient,
         firstName: "John",
         lastName: "Doe",
-        contact: [{ email: "john.doe@email.com" }], // Email only
+        contact: [{ email: "john.doe@email.com" }],
       };
 
       const invalidLink = {
         ...basePatient2,
         firstName: "Jane",
         lastName: "Smith",
-        contact: [{ phone: "555-999-9999", email: "john.doe@email.com" }], // Same email, different phone
+        contact: [{ phone: "555-999-9999", email: "john.doe@email.com" }],
       };
 
       const validLinks = [validLink];
@@ -740,6 +872,57 @@ describe("evaluatePatientMatch", () => {
 
       expect(result).toHaveLength(1);
       expect(result[0]).toEqual(invalidLink);
+    });
+
+    it("should validate through last name match with additional field match", () => {
+      const invalidLink = {
+        ...basePatient,
+        firstName: "John",
+        lastName: "Doe",
+        dob: "1990-01-02",
+        contact: [{ phone: "555-999-9999", email: "different@email.com" }],
+        address: [
+          {
+            addressLine1: "999 Different St",
+            city: "Different City",
+            state: USState.TX,
+            zip: "99999",
+          },
+        ],
+      };
+
+      const validLinks = [basePatient];
+      const invalidLinks = [invalidLink];
+
+      const result = crossValidateInvalidLinks(validLinks, invalidLinks);
+
+      expect(result).toHaveLength(1);
+      expect(result[0]).toEqual(invalidLink);
+    });
+
+    it("should not validate through last name match alone without additional field match", () => {
+      const invalidLink = {
+        ...basePatient,
+        firstName: "Jane",
+        lastName: "Doe",
+        dob: "1990-01-02",
+        contact: [{ phone: "555-999-9999", email: "different@email.com" }],
+        address: [
+          {
+            addressLine1: "999 Different St",
+            city: "Different City",
+            state: USState.TX,
+            zip: "99999",
+          },
+        ],
+      };
+
+      const validLinks = [basePatient];
+      const invalidLinks = [invalidLink];
+
+      const result = crossValidateInvalidLinks(validLinks, invalidLinks);
+
+      expect(result).toHaveLength(0);
     });
   });
 
