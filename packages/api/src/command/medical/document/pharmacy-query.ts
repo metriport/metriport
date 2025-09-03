@@ -4,6 +4,7 @@ import {
   findFirstPatientMappingForSource,
   createPatientMapping,
 } from "../../../command/mapping/patient";
+import { isSurescriptsFeatureFlagEnabledForCx } from "@metriport/core/command/feature-flags/domain-ffs";
 import { buildSendPatientRequestHandler } from "@metriport/core/external/surescripts/command/send-patient-request/send-patient-request-factory";
 import { surescriptsSource } from "@metriport/shared/interface/external/surescripts/source";
 import { getDateFromId } from "@metriport/core/external/surescripts/id-generator";
@@ -19,8 +20,15 @@ export async function queryDocumentsAcrossPharmacies({
 }): Promise<PharmacyQueryProgress> {
   const { log } = out(`Pharmacies DQ - cxId ${cxId}, patient ${patientId}`);
 
-  log("Running pharmacies DQ for " + facilityId + " and CX " + cxId);
+  const isSurescriptsEnabled = await isSurescriptsFeatureFlagEnabledForCx(cxId);
+  if (!isSurescriptsEnabled) {
+    log("Surescripts is not enabled for CX " + cxId);
+    return {
+      status: "failed",
+    };
+  }
 
+  log("Running pharmacies document query");
   const surescriptsMapping = await findFirstPatientMappingForSource({
     patientId,
     source: surescriptsSource,
