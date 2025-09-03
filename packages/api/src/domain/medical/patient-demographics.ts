@@ -3,7 +3,7 @@ import { Contact } from "@metriport/core/domain/contact";
 import {
   ConsolidatedLinkDemographics,
   Patient,
-  splitDob,
+  PatientData,
   splitName,
 } from "@metriport/core/domain/patient";
 import {
@@ -15,21 +15,55 @@ import {
   LinkGenericName,
 } from "@metriport/core/domain/patient-demographics";
 import { mapMetriportGenderToFhirGender } from "@metriport/core/external/fhir/patient/conversion";
+import { filterPatientLinks } from "@metriport/core/mpi/filter-patients/filter-patients";
 import {
+  BadRequestError,
+  normalizeCountrySafe,
+  normalizedCountryUsa,
   normalizeEmailNewSafe,
+  normalizeGender,
   normalizePhoneNumberSafe,
   normalizeUSStateForAddressSafe,
   normalizeZipCodeNewSafe,
-  normalizeCountrySafe,
-  normalizedCountryUsa,
   USState,
 } from "@metriport/shared";
 import { normalizeSsn as normalizeSsnFromShared } from "@metriport/shared/domain/patient/ssn";
 import dayjs from "dayjs";
 import { ISO_DATE } from "../../shared/date";
 
-const SCORE_THRESHOLD = 17;
-const SCORE_THRESHOLD_WITH_SSN = 18;
+function mapLinkDemographicsToPatientData(linkDemographics: LinkDemographics): PatientData {
+  if (!linkDemographics.dob) {
+    throw new BadRequestError("Link demographics do not have a dob");
+  }
+  if (!linkDemographics.gender) {
+    throw new BadRequestError("Link demographics do not have names");
+  }
+  return {
+    firstName:
+      linkDemographics.names.reduce((acc, name) => {
+        const parsedName = JSON.parse(name);
+        return acc + parsedName.firstName;
+      }, "") ?? "",
+    lastName:
+      linkDemographics.names.reduce((acc, name) => {
+        const parsedName = JSON.parse(name);
+        return acc + parsedName.lastName;
+      }, "") ?? "",
+    genderAtBirth: normalizeGender(linkDemographics.gender ?? "U"),
+    dob: linkDemographics.dob ?? "",
+    address: linkDemographics.addresses.map(address => JSON.parse(address)) ?? [],
+    contact: [
+      ...linkDemographics.telephoneNumbers.map(phone => ({ phone })),
+      ...linkDemographics.emails.map(email => ({ email })),
+    ],
+    personalIdentifiers: linkDemographics.driversLicenses.map(dl => ({
+      type: "driversLicense",
+      value: JSON.parse(dl).value,
+      state: JSON.parse(dl).state,
+    })),
+  };
+}
+
 /**
  * Evaluates whether the input linked demographics are similar enough to the Patient to be considered a usable "match".
  *
@@ -47,112 +81,15 @@ export function checkDemoMatch({
 }: {
   coreDemographics: LinkDemographics;
   linkDemographics: LinkDemographics;
-}):
-  | { isMatched: true; comparison: LinkDemographicsComparison }
-  | { isMatched: false; comparison: undefined } {
-  const matchedFields: LinkDemographicsComparison = {};
-  let scoreThreshold = SCORE_THRESHOLD;
-  let score = 0;
-  if (coreDemographics.dob && linkDemographics.dob) {
-    if (coreDemographics.dob === linkDemographics.dob) {
-      score += 8;
-      matchedFields.dob = linkDemographics.dob;
-    } else {
-      // DOB approximate match
-      const patientDobSplit = splitDob(coreDemographics.dob);
-      const linkedDobSplit = splitDob(linkDemographics.dob);
-      const overlappingDateParts = linkedDobSplit.filter(dp => patientDobSplit.includes(dp));
-      if (overlappingDateParts.length >= 2) {
-        score += 2;
-        matchedFields.dob = linkDemographics.dob;
-      }
-    }
-  }
-  if (coreDemographics.gender && linkDemographics.gender) {
-    // Gender exact match
-    if (coreDemographics.gender === linkDemographics.gender) {
-      score += 1;
-      matchedFields.gender = linkDemographics.gender;
-    } else {
-      // Gender approximate match
-      // TODO
-    }
-  }
-  // Names exact match
-  const overLapNames = linkDemographics.names.filter(name => coreDemographics.names.includes(name));
-  if (overLapNames.length > 0) {
-    score += 10;
-    matchedFields.names = overLapNames;
-  } else {
-    // Names approximate match
-    // TODO
-  }
-  // Address exact match
-  const overLapAddress = linkDemographics.addresses.filter(a =>
-    coreDemographics.addresses.includes(a)
-  );
-  if (overLapAddress.length > 0) {
-    score += 2;
-    matchedFields.addresses = overLapAddress;
-  } else {
-    // Address approximate match
-    // TODO
-    // Current address zip / city match
-    // TODO Mark the first address as current in Dash
-    const firstCoreDemoAddress = coreDemographics.addresses[0];
-    if (firstCoreDemoAddress) {
-      const currentPatientAddress = JSON.parse(firstCoreDemoAddress) as LinkGenericAddress;
-      const linkDemograhpicsAddesses = linkDemographics.addresses.map(
-        address => JSON.parse(address) as LinkGenericAddress
-      );
-      if (
-        linkDemograhpicsAddesses.map(address => address.city).includes(currentPatientAddress.city)
-      ) {
-        score += 0.5;
-        matchedFields.addresses = overLapAddress;
-      }
-      if (
-        linkDemograhpicsAddesses.map(address => address.zip).includes(currentPatientAddress.zip)
-      ) {
-        score += 0.5;
-        matchedFields.addresses = overLapAddress;
-      }
-    }
-  }
-  // Telephone exact match
-  const overLapTelephone = linkDemographics.telephoneNumbers.filter(tn =>
-    coreDemographics.telephoneNumbers.includes(tn)
-  );
-  if (overLapTelephone.length > 0) {
-    score += 2;
-    matchedFields.telephoneNumbers = overLapTelephone;
-  } else {
-    // Telephone approximate match
-    // TODO
-  }
-  // Email exact match
-  const overLapEmail = linkDemographics.emails.filter(e => coreDemographics.emails.includes(e));
-  if (overLapEmail.length > 0) {
-    score += 2;
-    matchedFields.emails = overLapEmail;
-  } else {
-    // Email approximate match
-    // TODO
-  }
-  if (linkDemographics.ssns.length > 0) scoreThreshold = SCORE_THRESHOLD_WITH_SSN;
-  const overLapSsn = linkDemographics.ssns.filter(ssn => coreDemographics.ssns.includes(ssn));
-  // SSN exact match
-  if (overLapSsn.length > 0) {
-    score += 5;
-    matchedFields.ssns = overLapSsn;
-  } else {
-    // SSN approximate match
-    // TODO
-  }
-  const isMatched = score >= scoreThreshold;
-  return isMatched
-    ? { isMatched, comparison: matchedFields }
-    : { isMatched, comparison: undefined };
+}): boolean {
+  const coreDemographicsPatientData: PatientData =
+    mapLinkDemographicsToPatientData(coreDemographics);
+  const linkDemographicsPatientData: PatientData =
+    mapLinkDemographicsToPatientData(linkDemographics);
+  const links = filterPatientLinks(coreDemographicsPatientData, [linkDemographicsPatientData]);
+  const matchedLink = links[0];
+  if (!matchedLink) return false;
+  return matchedLink.isMatch;
 }
 
 /**
@@ -467,7 +404,7 @@ export function getNewDemographics(
   const coreDemographics = patientToNormalizedCoreDemographics(patient);
   const consolidatedLinkDemographics = patient.data.consolidatedLinkDemographics;
   return links
-    .filter(linkDemographics => checkDemoMatch({ coreDemographics, linkDemographics }).isMatched)
+    .filter(linkDemographics => checkDemoMatch({ coreDemographics, linkDemographics }))
     .filter(
       linkDemographics =>
         linkHasNewDemographics({
