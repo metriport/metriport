@@ -78,12 +78,12 @@ export function buildOrderByClause(
 }
 
 export function buildCompositeCursorWhereClause(
-  cursor: CompositeCursor,
+  cursor: CompositeCursor | undefined,
   sortItems: SortItem[],
   direction: "forward" | "backward",
   allowedColumns: ColumnValidationConfig
 ): CursorWhereClause {
-  if (Object.keys(cursor).length === 0 || sortItems.length === 0) {
+  if (cursor === undefined || Object.keys(cursor).length === 0 || sortItems.length === 0) {
     return { clause: "", params: {} };
   }
 
@@ -118,15 +118,29 @@ export function buildCompositeCursorWhereClause(
 
     // Determine comparison operator based on direction and sort order
     //
-    // 💡 NOTE: We use >= operators because the cursor we're passing around is the _first value of the next page_!
-    // This means we want to include the row for the cursor itself in the next page.
+    // 💡 IMPORTANT: For lexicographic comparison, we use STRICT operators for all levels except the final one.
+    // Only the final level uses inclusive operators to include the cursor row itself.
+    // This prevents matching rows that come BEFORE the cursor based on secondary sort columns.
+    const isLastColumn = i === sortItems.length - 1;
     let operator: string;
     if (direction === "forward") {
       // Forward: we want records "after" this cursor position
-      operator = order === "asc" ? ">=" : "<=";
+      if (isLastColumn) {
+        // Final level: include cursor row
+        operator = order === "asc" ? ">=" : "<=";
+      } else {
+        // Non-final level: strict comparison to avoid rows that come before cursor
+        operator = order === "asc" ? ">" : "<";
+      }
     } else {
       // Backward: we want records "before" this cursor position
-      operator = order === "asc" ? "<=" : ">=";
+      if (isLastColumn) {
+        // Final level: include cursor row
+        operator = order === "asc" ? "<=" : ">=";
+      } else {
+        // Non-final level: strict comparison to avoid rows that come after cursor
+        operator = order === "asc" ? "<" : ">";
+      }
     }
 
     // Build the condition for this level
@@ -234,35 +248,31 @@ export async function paginatedV2<T extends { id: string } & Record<string, unkn
   const validatedMeta = validateSortColumns(requestMeta, allowedSortColumns);
 
   // Build composite cursor WHERE clauses (column name transformation happens inside)
-  const fromItem = validatedMeta.fromItem
-    ? buildCompositeCursorWhereClause(
-        validatedMeta.fromItem,
-        validatedMeta.sort,
-        "forward",
-        allowedSortColumns
-      )
-    : undefined;
+  const fromItem = buildCompositeCursorWhereClause(
+    validatedMeta.fromItem,
+    validatedMeta.sort,
+    "forward",
+    allowedSortColumns
+  );
 
-  const toItem = validatedMeta.toItem
-    ? buildCompositeCursorWhereClause(
-        validatedMeta.toItem,
-        validatedMeta.sort,
-        "backward",
-        allowedSortColumns
-      )
-    : undefined;
+  const toItem = buildCompositeCursorWhereClause(
+    validatedMeta.toItem,
+    validatedMeta.sort,
+    "backward",
+    allowedSortColumns
+  );
 
   const orderByClause = buildOrderByClause(validatedMeta.sort, allowedSortColumns);
 
-  const paginationV2WithCursor = {
+  const paginationV2WithQueryClauses = {
     ...validatedMeta,
-    ...(toItem ? { toItemClause: toItem } : {}),
-    ...(fromItem ? { fromItemClause: fromItem } : {}),
+    toItemClause: toItem,
+    fromItemClause: fromItem,
     orderByClause,
   };
 
   const { prevPageCursor, nextPageCursor, currPageItems, totalCount } = await getPaginationV2Items(
-    paginationV2WithCursor,
+    paginationV2WithQueryClauses,
     getItems,
     getTotalCount
   );
@@ -332,7 +342,9 @@ function getPaginationV2Url(
 
   const params = new URLSearchParams(encodedItem);
   params.append("count", requestMeta.count.toString());
-  params.append("sort", requestMeta.originalSort.map(s => `${s.col}=${s.order}`).join(","));
+  if (requestMeta.originalSort.length > 0) {
+    params.append("sort", requestMeta.originalSort.map(s => `${s.col}=${s.order}`).join(","));
+  }
   if (additionalQueryParams) {
     for (const [key, value] of Object.entries(additionalQueryParams)) {
       params.append(key, value);

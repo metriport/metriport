@@ -3,7 +3,7 @@ import { omit } from "lodash";
 import { QueryTypes } from "sequelize";
 import { PatientModel } from "../../../models/medical/patient";
 import { TcmEncounterModel } from "../../../models/medical/tcm-encounter";
-import { PaginationV2WithCursor } from "../../pagination-v2";
+import { PaginationV2WithQueryClauses } from "../../pagination-v2";
 
 /**
  * Add a default filter date far in the past to guarantee hitting the compound index
@@ -41,7 +41,7 @@ export async function getTcmEncounters({
   eventType?: string;
   coding?: string;
   status?: string;
-  pagination: PaginationV2WithCursor;
+  pagination: PaginationV2WithQueryClauses;
 }): Promise<TcmEncounterResult[]> {
   const tcmEncounterTable = TcmEncounterModel.tableName;
   const patientTable = PatientModel.tableName;
@@ -49,11 +49,11 @@ export async function getTcmEncounters({
   const sequelize = TcmEncounterModel.sequelize;
   if (!sequelize) throw new Error("Sequelize not found");
 
-  const {
-    fromItemClause = { clause: "", params: {} },
-    toItemClause = { clause: "", params: {} },
-    orderByClause,
-  } = pagination;
+  const { fromItemClause, toItemClause, orderByClause } = pagination;
+
+  console.log("fromItemClause", fromItemClause);
+  console.log("toItemClause", toItemClause);
+  console.log("orderByClause", orderByClause);
 
   const dischargedAfter = daysLookback
     ? buildDayjs().subtract(parseInt(daysLookback), "day").toDate()

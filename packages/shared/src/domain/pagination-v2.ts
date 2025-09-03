@@ -28,10 +28,6 @@ const sortItemSchema = z.string().transform((val, ctx) => {
 
 export type SortItem = z.infer<typeof sortItemSchema>;
 
-function isNonEmptyArray<T>(arr: T[]): arr is [T, ...T[]] {
-  return arr.length > 0;
-}
-
 function addIdSortIfNotExists(items: SortItem[]): SortItem[] {
   const hasIdSort = items.some(item => item.col === "id");
   return hasIdSort ? items : [...items, { col: "id", order: "desc" as const }];
@@ -42,15 +38,11 @@ const sortStringSchema = z
   .optional()
   .transform(val => {
     if (!val) {
-      return addIdSortIfNotExists([]);
+      return [];
     }
 
     const items = val.split(",").filter(item => item.trim());
-    const parsedItems = items.map(item => sortItemSchema.parse(item));
-    return addIdSortIfNotExists(parsedItems);
-  })
-  .refine(isNonEmptyArray, {
-    message: "Sort array must have at least one item",
+    return items.map(item => sortItemSchema.parse(item));
   });
 
 const compositeCursorSchema = z.record(z.string(), z.string().nullable());
@@ -98,9 +90,15 @@ export function createQueryMetaSchemaV2(maxItems: number = maxItemsPerPage) {
       })
     )
     .transform(data => {
+      // Store the original user-provided sort (without auto-added ID sort)
+      const originalSort = data.sort;
+
+      // Add ID sort if not already present for the final sort
+      const sortWithId = addIdSortIfNotExists(data.sort);
+
       // Reorient ordering based on paginationV2 direction
       const shouldReverseOrder = !!data.toItem;
-      const reorientedSort = data.sort.map(({ col, order }) => ({
+      const reorientedSort = sortWithId.map(({ col, order }) => ({
         col,
         order: shouldReverseOrder
           ? order === "asc"
@@ -112,7 +110,7 @@ export function createQueryMetaSchemaV2(maxItems: number = maxItemsPerPage) {
       return {
         ...data,
         sort: reorientedSort,
-        originalSort: data.sort,
+        originalSort,
       };
     })
     .refine(

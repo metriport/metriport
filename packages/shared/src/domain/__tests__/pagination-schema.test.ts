@@ -44,6 +44,46 @@ describe("pagination schema", () => {
         "Invalid sort format: name:asc. Expected: column=order"
       );
     });
+
+    it("auto-adds id sort only to final sort, not originalSort", () => {
+      const query = {
+        sort: "name=asc,priority=desc",
+        count: 25,
+      };
+      const result = schema.parse(query);
+
+      // originalSort should contain exactly what user provided (no auto-added ID)
+      expect(result.originalSort).toEqual([
+        { col: "name", order: "asc" },
+        { col: "priority", order: "desc" },
+      ]);
+
+      // sort should contain auto-added ID sort
+      expect(result.sort).toEqual([
+        { col: "name", order: "asc" },
+        { col: "priority", order: "desc" },
+        { col: "id", order: "desc" },
+      ]);
+    });
+
+    it("preserves user-provided id sort in both originalSort and sort", () => {
+      const query = {
+        sort: "name=asc,id=asc",
+        count: 25,
+      };
+      const result = schema.parse(query);
+
+      // Both should contain the user-provided ID sort
+      expect(result.originalSort).toEqual([
+        { col: "name", order: "asc" },
+        { col: "id", order: "asc" },
+      ]);
+
+      expect(result.sort).toEqual([
+        { col: "name", order: "asc" },
+        { col: "id", order: "asc" },
+      ]);
+    });
   });
 
   describe("cursor parameter validation and transformation", () => {
@@ -116,6 +156,11 @@ describe("pagination schema", () => {
           { col: "createdAt", order: "desc" },
           { col: "id", order: "asc" },
         ],
+        originalSort: [
+          { col: "name", order: "asc" },
+          { col: "createdAt", order: "desc" },
+          { col: "id", order: "asc" },
+        ],
         fromItem: cursorData,
         count: 25,
       });
@@ -134,6 +179,11 @@ describe("pagination schema", () => {
       const result = schema.parse(query);
       expect(result).toEqual({
         sort: [
+          { col: "priority", order: "asc" },
+          { col: "name", order: "desc" },
+          { col: "id", order: "desc" },
+        ],
+        originalSort: [
           { col: "priority", order: "desc" },
           { col: "name", order: "asc" },
           { col: "id", order: "asc" },

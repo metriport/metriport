@@ -18,8 +18,9 @@ export function makePaginationWithCursor(
 ): PaginationV2WithCursor {
   return {
     count,
-    ...(fromItem ? { fromItem } : {}),
-    ...(toItem ? { toItem } : {}),
+    ...(fromItem ? { fromItemClause: fromItem } : {}),
+    ...(toItem ? { toItemClause: toItem } : {}),
+    orderByClause: "",
     sort: sort ?? [],
     originalSort: originalSort ?? [],
   };

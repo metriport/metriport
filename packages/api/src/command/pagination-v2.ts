@@ -29,18 +29,13 @@ export type PaginationV2 = XOR<PaginationV2FromItem, PaginationV2ToItem> & {
   originalSort: SortItem[];
 };
 
-// export type PaginationV2FromItemClause = {
-//   fromItemClause?: CursorWhereClause | undefined;
-// };
-// export type PaginationV2ToItemClause = {
-//   toItemClause?: CursorWhereClause | undefined;
-// };
 export type PaginationV2WithQueryClauses = {
-  fromItemClause?: CursorWhereClause | undefined;
-  toItemClause?: CursorWhereClause | undefined;
+  fromItemClause: CursorWhereClause;
+  toItemClause: CursorWhereClause;
   orderByClause: string;
   count: number;
 };
+
 export type PaginationV2WithCursor = PaginationV2 & {
   fromItemClause?: CursorWhereClause | undefined;
   toItemClause?: CursorWhereClause | undefined;
@@ -61,7 +56,9 @@ export async function getPaginationV2Items<T extends Record<string, unknown>>(
 
   // return the items for the current page + one more to determine if there is a next page
   const itemsWithExtraOne = await getItems({
-    ...requestMeta,
+    fromItemClause: requestMeta.fromItemClause || { clause: "", params: {} },
+    toItemClause: requestMeta.toItemClause || { clause: "", params: {} },
+    orderByClause: requestMeta.orderByClause,
     count: itemsPerPage + 1,
   });
   if (itemsWithExtraOne.length < 1) {
@@ -71,12 +68,12 @@ export async function getPaginationV2Items<T extends Record<string, unknown>>(
   if (!requestMeta.toItem) {
     // navigating "forward"
 
+    const currPageItems = itemsWithExtraOne.slice(0, itemsPerPage);
+
     // intentionally one over since we asked for one more to determine if there is a next page
     const nextPageCursor = itemsWithExtraOne[itemsPerPage]
       ? createCompositeCursor(itemsWithExtraOne[itemsPerPage], requestMeta.sort)
       : undefined;
-
-    const currPageItems = itemsWithExtraOne.slice(0, itemsPerPage);
 
     if (!requestMeta.fromItem) {
       // first page, default request without "fromItem"
@@ -86,7 +83,8 @@ export async function getPaginationV2Items<T extends Record<string, unknown>>(
 
     // get the immediate item before the first one to determine if there's a previous page
     const itemsPrevious = await getItems({
-      toItemClause: requestMeta.toItemClause,
+      fromItemClause: requestMeta.fromItemClause || { clause: "", params: {} },
+      toItemClause: requestMeta.toItemClause || { clause: "", params: {} },
       orderByClause: requestMeta.orderByClause,
       count: 2,
     });
@@ -119,7 +117,8 @@ export async function getPaginationV2Items<T extends Record<string, unknown>>(
 
   // get the immediate item after the last one to determine if there's a next page
   const itemsNext = await getItems({
-    fromItemClause: requestMeta.fromItemClause,
+    fromItemClause: requestMeta.fromItemClause || { clause: "", params: {} },
+    toItemClause: requestMeta.toItemClause || { clause: "", params: {} },
     orderByClause: requestMeta.orderByClause,
     count: 2,
   });
