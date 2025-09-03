@@ -7,6 +7,7 @@ import httpStatus, { OK } from "http-status";
 import { z } from "zod";
 import { getDocumentDownloadUrl } from "../../command/medical/document/document-download";
 import { queryDocumentsAcrossHIEs } from "../../command/medical/document/document-query";
+import { queryDocumentsAcrossPharmacies } from "../../command/medical/document/pharmacy-query";
 import { getUploadUrlAndCreateDocRef } from "../../command/medical/document/get-upload-url-and-create-doc-ref";
 import { startBulkGetDocumentUrls } from "../../command/medical/document/start-bulk-get-doc-url";
 import {} from "../../command/medical/patient/update-hie-opt-out";
@@ -113,6 +114,7 @@ router.post(
     const facilityId = getFrom("query").optional("facilityId", req);
     const override = stringToBoolean(getFrom("query").optional("override", req));
     const cxDocumentRequestMetadata = cxRequestMetadataSchema.parse(req.body);
+    const queryPharmacies = stringToBoolean(getFrom("query").optional("pharmacies", req));
     const forceCommonwell = stringToBoolean(getFrom("query").optional("commonwell", req));
     const forceCarequality = stringToBoolean(getFrom("query").optional("carequality", req));
 
@@ -121,15 +123,27 @@ router.post(
       ? facilityId
       : await getPatientPrimaryFacilityIdOrFail({ cxId, patientId });
 
-    const docQueryProgress = await queryDocumentsAcrossHIEs({
-      cxId,
-      patientId,
-      facilityId: patientFacilityId,
-      forceDownload: override,
-      cxDocumentRequestMetadata: cxDocumentRequestMetadata?.metadata,
-      forceCommonwell,
-      forceCarequality,
-    });
+    const [docQueryProgress, pharmacyQueryProgress] = await Promise.all([
+      queryDocumentsAcrossHIEs({
+        cxId,
+        patientId,
+        facilityId: patientFacilityId,
+        forceDownload: override,
+        cxDocumentRequestMetadata: cxDocumentRequestMetadata?.metadata,
+        forceCommonwell,
+        forceCarequality,
+      }),
+      queryPharmacies
+        ? queryDocumentsAcrossPharmacies({
+            cxId,
+            patientId,
+            facilityId: patientFacilityId,
+          })
+        : Promise.resolve(undefined),
+    ]);
+    if (pharmacyQueryProgress) {
+      docQueryProgress.pharmacy = pharmacyQueryProgress;
+    }
 
     return res.status(OK).json(docQueryProgress);
   })
