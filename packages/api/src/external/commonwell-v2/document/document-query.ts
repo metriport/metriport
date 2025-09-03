@@ -114,7 +114,7 @@ export async function queryAndProcessDocuments({
   triggerConsolidated?: boolean;
 }): Promise<void> {
   const { id: patientId, cxId } = patientParam;
-  const { log } = out(`CW queryDocuments: ${requestId} - M patient ${patientId}`);
+  const { log } = out(`CW.v2 queryDocuments: ${requestId} - M patient ${patientId}`);
 
   if (Config.isSandbox()) {
     await sandboxGetDocRefsAndUpsert({ patient: patientParam, requestId });
