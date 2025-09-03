@@ -147,7 +147,7 @@ export async function getTcmEncounters({
       patientFacilityIds: e.dataValues.patient_facility_ids,
       externalUrls: mappings
         .map(mapping => ({
-          url: constructExternalUrl(mapping.source, mapping.external_id),
+          url: constructExternalUrl(mapping.source, mapping.external_id, true),
           source: mapping.source,
         }))
         .filter((item): item is ExternalUrlItem => item.url !== undefined),
@@ -233,7 +233,12 @@ export async function getTcmEncountersCount({
   return parseInt(result[0].count.toString());
 }
 
-function constructExternalUrl(source: string, externalId: string): string | undefined {
+function constructExternalUrl(
+  source: string,
+  externalId: string,
+  isDisabled: boolean
+): string | undefined {
+  if (isDisabled) return undefined; // temporarily disabled while waiting for customer to provide actual URL, agreed to disable for now to unblock deployment
   switch (source) {
     case EhrSources.eclinicalworks:
       // dummy url for now, TODO: get feedback and change to the actual url
