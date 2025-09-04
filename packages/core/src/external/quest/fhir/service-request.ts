@@ -7,6 +7,7 @@ import {
   Reference,
   ServiceRequest,
   Specimen,
+  Location,
 } from "@medplum/fhirtypes";
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { CPT_URL } from "@metriport/shared/medical";
@@ -17,10 +18,15 @@ import { getQuestDataSourceExtension } from "./shared";
 import { getPatientReference } from "./patient";
 import { getServiceRequestCategory } from "../../fhir/resources/service-request";
 import { getSpecimenReference } from "./specimen";
+import { getLocationReference } from "./location";
 
 export function getServiceRequest(
   detail: ResponseDetail,
-  { patient, requestingPractitioner }: { patient: Patient; requestingPractitioner: Practitioner }
+  {
+    patient,
+    requestingPractitioner,
+    location,
+  }: { patient: Patient; requestingPractitioner: Practitioner; location: Location }
 ): ServiceRequest {
   const identifier = getServiceRequestIdentifier(detail);
   const subject = getPatientReference(patient);
@@ -28,6 +34,7 @@ export function getServiceRequest(
   const code = getServiceRequestCoding(detail);
   const category = [getServiceRequestCategory("Laboratory procedure")];
   const extension = [getQuestDataSourceExtension()];
+  const locationReference = [getLocationReference(location)];
 
   return {
     resourceType: "ServiceRequest",
@@ -39,6 +46,7 @@ export function getServiceRequest(
     category,
     ...(identifier ? { identifier } : {}),
     requester,
+    locationReference,
     extension,
   };
 }

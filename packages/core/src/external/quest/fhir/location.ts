@@ -1,5 +1,5 @@
 import _ from "lodash";
-import { Address, ContactPoint, Location } from "@medplum/fhirtypes";
+import { Address, ContactPoint, Location, Reference } from "@medplum/fhirtypes";
 import { ResponseDetail } from "../schema/response";
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { getQuestDataSourceExtension } from "./shared";
@@ -18,6 +18,12 @@ export function getLocation(detail: ResponseDetail): Location {
     ...(address ? { address } : {}),
     ...(telecom ? { telecom } : {}),
     extension,
+  };
+}
+
+export function getLocationReference(location: Location): Reference<Location> {
+  return {
+    reference: `Location/${location.id}`,
   };
 }
 

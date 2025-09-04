@@ -54,6 +54,7 @@ function getBundleEntries({ data }: IncomingData<ResponseDetail>): BundleEntry[]
   const serviceRequest = getServiceRequest(data, {
     patient,
     requestingPractitioner: practitioner,
+    location,
   });
   const specimen = getSpecimen(data, {
     patient,
