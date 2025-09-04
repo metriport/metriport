@@ -1,5 +1,6 @@
 import { Condition, DiagnosticReport, Observation, Resource } from "@medplum/fhirtypes";
 import { WriteBackFiltersPerResourceType } from "@metriport/shared/interface/external/ehr/shared";
+import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import {
   normalizeDiagnosticReportCoding,
   shouldWriteBackResource,
@@ -569,6 +570,7 @@ describe("write-back-resource-diff-bundles-direct", () => {
       const filteredResources: Condition[] = [];
       for (const resource of unfilteredResources) {
         const shouldKeep = shouldWriteBackResource({
+          ehr: EhrSources.athena,
           resource: resource as Condition,
           resources: unfilteredResources as Condition[],
           writeBackResourceType: "condition",
@@ -583,6 +585,7 @@ describe("write-back-resource-diff-bundles-direct", () => {
       const filteredResources: Observation[] = [];
       for (const resource of unfilteredResources) {
         const shouldKeep = shouldWriteBackResource({
+          ehr: EhrSources.athena,
           resource: resource as Observation,
           resources: unfilteredResources as Observation[],
           writeBackResourceType: "lab",
@@ -597,6 +600,7 @@ describe("write-back-resource-diff-bundles-direct", () => {
       const filteredResources: Observation[] = [];
       for (const resource of unfilteredResources) {
         const shouldKeep = shouldWriteBackResource({
+          ehr: EhrSources.athena,
           resource: resource as Observation,
           resources: unfilteredResources as Observation[],
           writeBackResourceType: "lab",
@@ -615,6 +619,7 @@ describe("write-back-resource-diff-bundles-direct", () => {
       const filteredResources: Observation[] = [];
       for (const resource of unfilteredResources) {
         const shouldKeep = shouldWriteBackResource({
+          ehr: EhrSources.athena,
           resource: resource as Observation,
           resources: unfilteredResources as Observation[],
           writeBackResourceType: "lab",
@@ -632,6 +637,7 @@ describe("write-back-resource-diff-bundles-direct", () => {
       const filteredResources: Observation[] = [];
       for (const resource of unfilteredResources) {
         const shouldKeep = shouldWriteBackResource({
+          ehr: EhrSources.athena,
           resource: resource as Observation,
           resources: unfilteredResources as Observation[],
           writeBackResourceType: "grouped-vitals",
@@ -646,6 +652,7 @@ describe("write-back-resource-diff-bundles-direct", () => {
       const filteredResources: Observation[] = [];
       for (const resource of unfilteredResources) {
         const shouldKeep = shouldWriteBackResource({
+          ehr: EhrSources.athena,
           resource: resource as Observation,
           resources: unfilteredResources as Observation[],
           writeBackResourceType: "grouped-vitals",
