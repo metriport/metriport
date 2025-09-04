@@ -1,5 +1,4 @@
 import { Input, Output } from "@metriport/core/domain/conversion/cda-to-html-pdf";
-import { cleanUpPayload } from "@metriport/core/domain/conversion/cleanup";
 import { sanitizeXmlProcessingInstructions } from "@metriport/core/external/cda/remove-b64";
 import { MetriportError } from "@metriport/core/util/error/metriport-error";
 import * as Sentry from "@sentry/serverless";
@@ -45,26 +44,57 @@ export const handler = Sentry.AWSLambda.wrapHandler(
       });
     }
 
-    const document = cleanUpPayload(sanitizeXmlProcessingInstructions(originalDocument));
-
-    if (conversionType === "html") {
-      const url = await convertStoreAndReturnHtmlDocUrl({ fileName, document, bucketName });
-      console.log("html", url);
-      return { url };
+    if (conversionType !== "html" && conversionType !== "pdf") {
+      throw new MetriportError(`Unsupported conversion type`, undefined, {
+        fileName,
+        conversionType,
+      });
     }
 
-    if (conversionType === "pdf") {
-      const url = await convertStoreAndReturnPdfDocUrl({ fileName, document, bucketName });
-      console.log("pdf", url);
-      return { url };
+    try {
+      return await convert({
+        docContents: originalDocument,
+        conversionType,
+        fileName,
+        bucketName,
+      });
+    } catch (error) {
+      console.log(`Error while converting. Will retry with sanitization. Error: ${error}`);
+      return await convert({
+        docContents: originalDocument,
+        conversionType,
+        fileName,
+        bucketName,
+        isSanitize: true,
+      });
     }
-
-    throw new MetriportError(`Unsupported conversion type`, undefined, {
-      fileName,
-      conversionType,
-    });
   }
 );
+
+async function convert({
+  docContents,
+  conversionType,
+  fileName,
+  bucketName,
+  isSanitize = false,
+}: {
+  docContents: string;
+  conversionType: "html" | "pdf";
+  fileName: string;
+  bucketName: string;
+  isSanitize?: boolean;
+}) {
+  const document = isSanitize ? sanitizeXmlProcessingInstructions(docContents) : docContents;
+  if (conversionType === "html") {
+    const url = await convertStoreAndReturnHtmlDocUrl({ fileName, document, bucketName });
+    console.log("html", url);
+    return { url };
+  }
+
+  const url = await convertStoreAndReturnPdfDocUrl({ fileName, document, bucketName });
+  console.log("pdf", url);
+  return { url };
+}
 
 const downloadDocumentFromS3 = async ({
   fileName,
