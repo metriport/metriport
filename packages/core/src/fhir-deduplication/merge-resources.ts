@@ -2,6 +2,11 @@ import { Resource } from "@medplum/fhirtypes";
 import { MetriportError } from "@metriport/shared";
 import { mergeIntoTargetResource } from "./shared";
 
+export type OrderingFunction<R extends Resource> = (resources: R[]) => R[];
+const defaultOrderingFunction = function <R extends Resource>(resources: R[]): R[] {
+  return resources;
+};
+
 export type MergeFunction<R extends Resource> = (resources: R[]) => R;
 export type MergeKeyFunction<R extends Resource, K extends keyof R> = (values: Array<R[K]>) => R[K];
 
@@ -21,18 +26,18 @@ export function buildMergeFunction<R extends Resource>({
   statusPrecedence,
   chooseMasterResource,
 }: MergeConfig<R>): MergeFunction<R> {
-  const orderingFunction = statusPrecedence
-    ? buildStatusOrderingFunction<R>(statusPrecedence)
-    : (resources: R[]) => resources;
+  let orderingFunction: OrderingFunction<R> = defaultOrderingFunction;
+  if (statusPrecedence) {
+    orderingFunction = buildStatusOrderingFunction<R>(statusPrecedence);
+  }
   const masterResourceFunction = chooseMasterResource ? chooseMasterResource : chooseLastResource;
 
   return function (resources: R[]): R {
     const orderedResources = orderingFunction(resources);
     const masterResource = masterResourceFunction(orderedResources);
 
-    for (let i = 1; i < resources.length; i++) {
-      const resource = resources[i];
-      if (!resource || resource === masterResource) continue;
+    for (const resource of orderedResources) {
+      if (resource === masterResource) continue;
       mergeIntoTargetResource(masterResource, resource);
     }
     return masterResource;
