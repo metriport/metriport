@@ -90,6 +90,11 @@ export function appendExtensionToEachResource(
       if (!resource) return e;
 
       const existing: Extension[] = (resource as ResourceWithExtension).extension ?? [];
+
+      if (hasExtension(existing, newExtension)) {
+        return e;
+      }
+
       const extension = [...existing, newExtension];
 
       return {
@@ -101,6 +106,33 @@ export function appendExtensionToEachResource(
       };
     }),
   };
+}
+
+function hasExtension(list: Extension[], target: Extension): boolean {
+  for (let i = 0; i < list.length; i++) {
+    if (extensionsEqual(list[i], target)) return true;
+  }
+  return false;
+}
+
+function extensionsEqual(a: Extension | undefined, b: Extension | undefined): boolean {
+  if (!a || !b) {
+    return a === b;
+  }
+  if (a.url !== b.url) return false;
+  return jsonEqual(extensionValue(a), extensionValue(b));
+}
+
+function extensionValue(extension: Extension): unknown {
+  const record = extension as unknown as Record<string, unknown>;
+  for (const value in record) {
+    if (value.startsWith("value") && value !== "valueElement") return record[value];
+  }
+  return undefined;
+}
+
+function jsonEqual(a: unknown, b: unknown): boolean {
+  return JSON.stringify(a) === JSON.stringify(b);
 }
 
 function prependPatientToBundle({

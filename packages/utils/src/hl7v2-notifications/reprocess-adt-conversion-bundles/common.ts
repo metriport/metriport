@@ -22,6 +22,7 @@ const bucketName = Config.getHl7ConversionBucketName();
  * @param prefixes - The prefixes of the bundles to re-process.
  * @param handler - The handler function that will be called to transform each bundle.
  * @param readOnly - Whether to only read the bundles from S3 and not write them back.
+ * @param isSilent - Whether to console log set to false by default. Only overwite if you have your own dryrun confirmation.
  */
 export async function reprocessAdtConversionBundles(
   prefixes: string[],
@@ -30,7 +31,8 @@ export async function reprocessAdtConversionBundles(
     log: (message: string) => void,
     context: { cxId: string; ptId: string }
   ) => Promise<FhirBundleSdk | undefined>,
-  dryRun = true
+  dryRun = true,
+  isSilent = false
 ) {
   if (bucketName === undefined) {
     throw new Error(
@@ -39,12 +41,13 @@ export async function reprocessAdtConversionBundles(
   }
 
   const s3Utils = new S3Utils(Config.getAWSRegion());
-
-  if (!dryRun) {
-    console.log(`⚠️ Running in write mode`);
-    await displayWarningAndConfirmation(prefixes);
-  } else {
-    console.log(`Running in dryRun mode`);
+  if (!isSilent) {
+    if (!dryRun) {
+      console.log(`⚠️ Running in write mode`);
+      await displayWarningAndConfirmation(prefixes);
+    } else {
+      console.log(`Running in dryRun mode`);
+    }
   }
 
   const promises = prefixes.map(async prefix => {
@@ -53,7 +56,9 @@ export async function reprocessAdtConversionBundles(
     const noFolderResults = results.filter(result => {
       return result.Size !== 0;
     });
-    log(`Found ${noFolderResults.length} objects for prefix: ${prefix}`);
+    if (!isSilent) {
+      log(`Found ${noFolderResults.length} objects for prefix: ${prefix}`);
+    }
     let processedCount = 0;
     const fileProcessingPromises = noFolderResults.map(async result => {
       const [cxId, ptId] = prefix.replace("cxId=", "").replace("ptId=", "").split("/");
@@ -97,7 +102,7 @@ export async function reprocessAdtConversionBundles(
 
 const confirmationTime = dayjs.duration(10, "seconds");
 
-async function displayWarningAndConfirmation(prefixes: string[]) {
+export async function displayWarningAndConfirmation(prefixes: string[]) {
   console.log(``);
   console.log(
     `THIS IS SUPER DESTRUCTIVE!! IT WILL MODIFY ADT CONVERSION BUNDLES IN S3! ONLY CONTINUE IF YOU KNOW WHAT YOU ARE DOING!`
