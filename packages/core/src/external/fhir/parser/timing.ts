@@ -1,4 +1,5 @@
 import { Timing } from "@medplum/fhirtypes";
+import { buildParserExtension } from "./extension";
 
 const wordToFrequency: Record<string, number> = {
   day: 1,
@@ -19,12 +20,15 @@ export function parseTimingFromString(timingString: string): Timing | undefined 
     const frequency = wordToFrequency[secondWord];
     if (!frequency) return undefined;
 
+    const parserExtension = buildParserExtension(timingString);
+
     return {
       repeat: {
         frequency,
         period: 1,
         periodUnit: "d",
       },
+      extension: [parserExtension],
     };
   }
 
