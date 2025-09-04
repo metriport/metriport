@@ -10,7 +10,7 @@ import { Medication, MedicationStatement } from "@medplum/fhirtypes";
 import { ComprehendConfig } from "../types";
 import { parseTimingFromString } from "../../fhir/parser/timing";
 
-export function buildFhirResourcesFromRxNormEntities(
+export function getFhirResourcesFromRxNormEntities(
   entities: RxNormEntity[],
   { confidenceThreshold }: ComprehendConfig
 ): Array<Medication | MedicationStatement> {
@@ -18,11 +18,11 @@ export function buildFhirResourcesFromRxNormEntities(
 
   for (const entity of entities) {
     if (isMedicationEntity(entity) && isConfidentMatch(entity, confidenceThreshold)) {
-      const medication = buildMedication(entity);
+      const medication = getMedication(entity);
       if (medication) resources.push(medication);
       else continue;
 
-      const medicationStatement = buildMedicationStatement(medication, entity);
+      const medicationStatement = getMedicationStatement(medication, entity);
       if (medicationStatement) resources.push(medicationStatement);
     }
   }
@@ -30,7 +30,7 @@ export function buildFhirResourcesFromRxNormEntities(
   return resources;
 }
 
-function buildMedication(entity: RxNormEntity): Medication | undefined {
+function getMedication(entity: RxNormEntity): Medication | undefined {
   const rxNormCode = getRxNormCode(entity);
   if (!rxNormCode) return undefined;
 
@@ -52,7 +52,7 @@ function buildMedication(entity: RxNormEntity): Medication | undefined {
   return medication;
 }
 
-export function buildMedicationStatement(
+export function getMedicationStatement(
   medication: Medication,
   entity: RxNormEntity
 ): MedicationStatement | undefined {
