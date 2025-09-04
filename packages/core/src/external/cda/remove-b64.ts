@@ -151,7 +151,7 @@ function getJsonFromXml(payloadRaw: string): any {
  * For example, sometimes they indicate it as being a text file, rather than XML,
  * which is why we need to sanitize the XML processing instructions.
  */
-function sanitizeXmlProcessingInstructions(xml: string): string {
+export function sanitizeXmlProcessingInstructions(xml: string): string {
   const indexOfDocumentStart = xml.indexOf("<Clinical");
   if (indexOfDocumentStart === -1) {
     throw new BadRequestError("No ClinicalDocument found in XML");
