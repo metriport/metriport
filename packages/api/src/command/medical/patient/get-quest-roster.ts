@@ -103,7 +103,6 @@ async function findOrCreateQuestExternalId(
   const mapping = await findFirstPatientMappingForSource({
     patientId: patient.id,
     source: questSource,
-    secondaryMappings: {},
   });
   if (mapping) {
     log(`Found Quest mapping: ${patient.id} <-> ${mapping.externalId}`);
