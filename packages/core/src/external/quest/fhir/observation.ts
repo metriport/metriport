@@ -1,7 +1,6 @@
 import {
   CodeableConcept,
   Coding,
-  Identifier,
   Observation,
   Patient,
   ObservationReferenceRange,
@@ -12,7 +11,7 @@ import { getObservationCategory } from "../../fhir/resources/observation";
 import { ResponseDetail } from "../schema/response";
 import { getPatientReference } from "./patient";
 import { getQuestDataSourceExtension } from "./shared";
-import { LOINC_URL, CPT_URL } from "@metriport/shared/medical";
+import { LOINC_URL } from "@metriport/shared/medical";
 import {
   HL7_OBSERVATION_INTERPRETATION_SYSTEM,
   QUEST_LOCAL_RESULT_CODE_SYSTEM,
@@ -25,7 +24,6 @@ export function getObservation(
   detail: ResponseDetail,
   { patient }: { patient: Patient }
 ): Observation {
-  const identifier = getObservationIdentifier(detail);
   const code = getObservationCode(detail);
   const status = getObservationStatus(detail);
   const category = [getObservationCategory("laboratory")];
@@ -46,7 +44,6 @@ export function getObservation(
     ...(valueString ? { valueString } : {}),
     ...(referenceRange ? { referenceRange } : {}),
     ...(interpretation ? { interpretation } : {}),
-    ...(identifier ? { identifier } : {}),
     ...(code ? { code } : {}),
     ...(note ? { note } : {}),
     extension,
@@ -75,16 +72,7 @@ export function getObservationReference(observation: Observation): Reference<Obs
   };
 }
 
-function getObservationIdentifier(detail: ResponseDetail): Identifier[] {
-  return [
-    {
-      system: QUEST_LOCAL_RESULT_CODE_SYSTEM,
-      value: detail.localResultCode,
-    },
-  ];
-}
-
-function getObservationCode(detail: ResponseDetail): CodeableConcept {
+function getObservationCode(detail: ResponseDetail): CodeableConcept | undefined {
   const text = detail.resultName;
   const coding: Coding[] = [];
   if (detail.loincCode) {
@@ -97,16 +85,11 @@ function getObservationCode(detail: ResponseDetail): CodeableConcept {
     coding.push({
       system: QUEST_LOCAL_RESULT_CODE_SYSTEM,
       code: detail.localResultCode,
-      ...(text ? { display: text } : {}),
-    });
-  }
-  if (detail.cptCode) {
-    coding.push({
-      system: CPT_URL,
-      code: detail.cptCode,
+      ...(detail.resultName ? { display: detail.resultName } : {}),
     });
   }
 
+  if (coding.length === 0) return undefined;
   return {
     ...(text ? { text } : {}),
     coding,
