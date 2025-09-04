@@ -6,9 +6,10 @@ dotenv.config();
 import { FhirBundleSdk } from "@metriport/fhir-sdk";
 import { displayWarningAndConfirmation, reprocessAdtConversionBundles } from "./common";
 import { createExtensionDataSource } from "@metriport/core/external/fhir/shared/extensions/extension";
-import { appendExtensionToEachResource } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/index";
+import { ResourceWithExtension } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/index";
 import { readFileSync } from "fs";
 import { sleep } from "@metriport/shared/common/sleep";
+import { Bundle, Extension, Resource } from "@medplum/fhirtypes";
 
 /**
  *
@@ -27,8 +28,8 @@ import { sleep } from "@metriport/shared/common/sleep";
  * Note: This script modifies data in S3. Ensure you have backups if needed.
  */
 
-const dryRun = false;
-const inputFile = "csvstuff.csv";
+const dryRun = true;
+const inputFile = "";
 
 async function main() {
   await sleep(50); // Give some time to avoid mixing logs w/ Node
@@ -106,6 +107,71 @@ function splitCSVLine(line: string): string[] {
   }
   out.push(cur);
   return out;
+}
+
+/**
+ * Any changes made to this function make sure to change the one in index.
+ * @metriport/core/src/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/index.ts
+ *
+ * Note the only difference is the if(hasExtension) change
+ */
+function appendExtensionToEachResource(
+  bundle: Bundle<Resource>,
+  newExtension: Extension
+): Bundle<Resource> {
+  if (!bundle.entry) {
+    throw new Error("No entry in bundle");
+  }
+  return {
+    ...bundle,
+    entry: bundle.entry.map(e => {
+      const resource = e.resource;
+      if (!resource) return e;
+
+      const existing: Extension[] = (resource as ResourceWithExtension).extension ?? [];
+
+      if (hasExtension(existing, newExtension)) {
+        return e;
+      }
+
+      const extension = [...existing, newExtension];
+
+      return {
+        ...e,
+        resource: {
+          ...resource,
+          extension: extension,
+        } as Resource,
+      };
+    }),
+  };
+}
+
+function hasExtension(list: Extension[], target: Extension): boolean {
+  for (let i = 0; i < list.length; i++) {
+    if (extensionsEqual(list[i], target)) return true;
+  }
+  return false;
+}
+
+function extensionsEqual(a: Extension | undefined, b: Extension | undefined): boolean {
+  if (!a || !b) {
+    return a === b;
+  }
+  if (a.url !== b.url) return false;
+  return jsonEqual(extensionValue(a), extensionValue(b));
+}
+
+function extensionValue(extension: Extension): unknown {
+  const record = extension as unknown as Record<string, unknown>;
+  for (const value in record) {
+    if (value.startsWith("value") && value !== "valueElement") return record[value];
+  }
+  return undefined;
+}
+
+function jsonEqual(a: unknown, b: unknown): boolean {
+  return JSON.stringify(a) === JSON.stringify(b);
 }
 
 main();

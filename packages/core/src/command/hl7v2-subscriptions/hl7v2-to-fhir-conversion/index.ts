@@ -76,6 +76,11 @@ export function convertHl7v2MessageToFhir({
   throw new MetriportError(msg, undefined, extraProps);
 }
 
+/**
+ * Any changes made to this function make sure to change the one in the backfill script.
+ * @metriport/utils/src/hl7v2-notifications/reprocess-adt-conversion-bundles/backfill-datasource-extension.ts
+ *
+ */
 export function appendExtensionToEachResource(
   bundle: Bundle<Resource>,
   newExtension: Extension
@@ -91,10 +96,6 @@ export function appendExtensionToEachResource(
 
       const existing: Extension[] = (resource as ResourceWithExtension).extension ?? [];
 
-      if (hasExtension(existing, newExtension)) {
-        return e;
-      }
-
       const extension = [...existing, newExtension];
 
       return {
@@ -106,33 +107,6 @@ export function appendExtensionToEachResource(
       };
     }),
   };
-}
-
-function hasExtension(list: Extension[], target: Extension): boolean {
-  for (let i = 0; i < list.length; i++) {
-    if (extensionsEqual(list[i], target)) return true;
-  }
-  return false;
-}
-
-function extensionsEqual(a: Extension | undefined, b: Extension | undefined): boolean {
-  if (!a || !b) {
-    return a === b;
-  }
-  if (a.url !== b.url) return false;
-  return jsonEqual(extensionValue(a), extensionValue(b));
-}
-
-function extensionValue(extension: Extension): unknown {
-  const record = extension as unknown as Record<string, unknown>;
-  for (const value in record) {
-    if (value.startsWith("value") && value !== "valueElement") return record[value];
-  }
-  return undefined;
-}
-
-function jsonEqual(a: unknown, b: unknown): boolean {
-  return JSON.stringify(a) === JSON.stringify(b);
 }
 
 function prependPatientToBundle({
