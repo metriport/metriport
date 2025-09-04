@@ -4,7 +4,7 @@ import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { processPatientsFromAppointments } from "../../../../external/ehr/athenahealth/command/process-patients-from-appointments";
 import { syncAthenaPatientIntoMetriport } from "../../../../external/ehr/athenahealth/command/sync-patient";
-import { updateAthenaPatientMappingDepartmentId } from "../../../../external/ehr/athenahealth/command/update-patient-mapping-deparment-id";
+import { updateAthenaPatientMappingDepartmentId } from "../../../../external/ehr/athenahealth/command/update-patient-mapping-department-id";
 import { LookupModes } from "../../../../external/ehr/athenahealth/shared";
 import { requestLogger } from "../../../helpers/request-logger";
 import { getUUIDFrom } from "../../../schemas/uuid";
