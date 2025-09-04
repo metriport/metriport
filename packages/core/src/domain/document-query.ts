@@ -19,8 +19,16 @@ export type DocumentQueryProgress = Partial<
     requestId: string;
     startedAt: Date;
     triggerConsolidated: boolean;
+    pharmacy?: PharmacyQueryProgress[];
   }
 >;
+
+export type PharmacyQueryProgress = {
+  source: "surescripts";
+  status: "processing" | "completed" | "failed";
+  startedAt?: Date;
+  requestId?: string;
+};
 
 export const convertResult = ["success", "failed"] as const;
 export type ConvertResult = (typeof convertResult)[number];
