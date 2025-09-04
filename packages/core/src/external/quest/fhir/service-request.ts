@@ -2,23 +2,29 @@ import {
   CodeableConcept,
   Coding,
   Identifier,
+  Patient,
   Practitioner,
   Reference,
   ServiceRequest,
 } from "@medplum/fhirtypes";
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { CPT_URL } from "@metriport/shared/medical";
+import { SNOMED_LABORATORY_PROCEDURE_CODE } from "./constant";
 import { ResponseDetail } from "../schema/response";
 import { getPractitionerReference } from "./practitioner";
 import { getQuestDataSourceExtension } from "./shared";
+import { getPatientReference } from "./patient";
+import { getServiceRequestCategory } from "../../fhir/resources/service-request";
 
 export function getServiceRequest(
   detail: ResponseDetail,
-  { requestingPractitioner }: { requestingPractitioner: Practitioner }
+  { patient, requestingPractitioner }: { patient: Patient; requestingPractitioner: Practitioner }
 ): ServiceRequest {
   const identifier = getServiceRequestIdentifier(detail);
+  const subject = getPatientReference(patient);
   const requester = getPractitionerReference(requestingPractitioner);
   const code = getServiceRequestCoding(detail);
+  const category = [getServiceRequestCategory("Laboratory procedure")];
   const extension = [getQuestDataSourceExtension()];
 
   return {
@@ -26,7 +32,9 @@ export function getServiceRequest(
     id: uuidv7(),
     status: "completed",
     intent: "original-order",
+    subject,
     ...(code ? { code } : {}),
+    category,
     ...(identifier ? { identifier } : {}),
     requester,
     extension,
@@ -61,6 +69,8 @@ function getServiceRequestCoding(detail: ResponseDetail): CodeableConcept | unde
       code: detail.cptCode,
     });
   }
+  // Push a standard SNOMED
+  coding.push(SNOMED_LABORATORY_PROCEDURE_CODE);
 
   return {
     ...(text ? { text } : {}),
