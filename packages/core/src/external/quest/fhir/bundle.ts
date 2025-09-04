@@ -6,6 +6,7 @@ import { ResponseDetail } from "../schema/response";
 import { getPatient } from "./patient";
 import { getPractitioner, getPractitionerRole } from "./practitioner";
 import { getOrganization } from "./organization";
+import { getLocation } from "./location";
 import { getConditions } from "./condition";
 import { getServiceRequest } from "./service-request";
 import { getObservation } from "./observation";
@@ -42,6 +43,7 @@ function getBundleEntries({ data }: IncomingData<ResponseDetail>): BundleEntry[]
   const patient = getPatient(data);
   const practitioner = getPractitioner(data);
   const organization = getOrganization(data);
+  const location = getLocation(data);
   const practitionerRole = getPractitionerRole({
     practitioner,
     organization,
@@ -72,6 +74,7 @@ function getBundleEntries({ data }: IncomingData<ResponseDetail>): BundleEntry[]
     practitioner,
     practitionerRole,
     organization,
+    location,
     observation,
     serviceRequest,
     specimen,
