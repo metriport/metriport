@@ -27,16 +27,18 @@ import { sleep } from "@metriport/shared/common/sleep";
  * Note: This script modifies data in S3. Ensure you have backups if needed.
  */
 
-const dryRun = true;
-const inputFile = "";
+const dryRun = false;
+const inputFile = "csvstuff.csv";
 
 async function main() {
-  await sleep(50);
+  await sleep(50); // Give some time to avoid mixing logs w/ Node
   const rows = csvParseAll(inputFile);
   console.log(`Found ${rows.length} patients.`);
   if (!dryRun) {
-    console.log(`THIS WILL UPDATE ALL PATIENTS FOUND IN S3!`);
-    await displayWarningAndConfirmation([""]);
+    console.log("This is about to show a small sample of the files to be updated!");
+    const min = Math.min(10, rows.length);
+    const sample = rows.slice(0, min).map(r => getPrefix(r.cxId, r.ptId));
+    await displayWarningAndConfirmation(sample);
   } else {
     console.log("Proceeding to run in dry run mode.");
   }
@@ -45,7 +47,7 @@ async function main() {
     const hieNames = row.hieNames;
     const prefix = getPrefix(row.cxId, row.ptId);
     const handler = createHandler(hieNames);
-    reprocessAdtConversionBundles([prefix], handler, dryRun, true);
+    await reprocessAdtConversionBundles([prefix], handler, dryRun, true);
   }
 }
 
