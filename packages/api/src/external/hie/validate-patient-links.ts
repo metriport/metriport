@@ -77,7 +77,7 @@ async function validateLinksBelongToPatient(
 
     return { validPatientDataLinks: validNetworkLinks, invalidPatientDataLinks: invalidLinks };
   } else {
-    const linkStatuses = await filterPatientLinks(patientData, allPatientLinks);
+    const linkStatuses = filterPatientLinks(patientData, allPatientLinks);
 
     const validNetworkLinks: PatientData[] = [];
     const invalidLinks: PatientData[] = [];
