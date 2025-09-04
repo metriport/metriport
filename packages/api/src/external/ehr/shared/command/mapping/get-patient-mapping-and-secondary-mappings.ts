@@ -10,20 +10,20 @@ import { PatientMapping } from "../../../../../domain/patient-mapping";
 /**
  * Get the patient mapping and parsed secondary mappings for a given practice ID for all EHRs
  *
- * @param ehr - The EHR source.
  * @param cxId - The ID of the Metriport Customer.
+ * @param ehr - The EHR source.
  * @param ehrPatientId - The practice id of the EHR integration.
  * @returns The patient mapping and parsed secondary mappings for the practice.
  */
 export async function getPatientMappingAndParsedSecondaryMappings<
   T extends EhrPatientMappingSecondaryMappings
 >({
-  ehr,
   cxId,
+  ehr,
   ehrPatientId,
 }: {
-  ehr: EhrSourceWithSecondaryMappings;
   cxId: string;
+  ehr: EhrSourceWithSecondaryMappings;
   ehrPatientId: string;
 }): Promise<{ parsedSecondaryMappings: T; patientMapping: PatientMapping }> {
   const patientMappingLookupParams = { cxId, externalId: ehrPatientId, source: ehr };

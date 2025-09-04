@@ -132,7 +132,9 @@ export function getSourceMapForPatient({
 export async function findFirstPatientMappingForSource({
   patientId,
   source,
-}: Omit<PatientMappingParams, "cxId" | "externalId">): Promise<PatientMapping | undefined> {
+}: Omit<PatientMappingParams, "cxId" | "externalId" | "secondaryMappings">): Promise<
+  PatientMapping | undefined
+> {
   const mappings = await PatientMappingModel.findOne({
     where: { patientId, source },
     order: [["createdAt", "ASC"]],
@@ -169,10 +171,6 @@ async function getPatientMappingModelByIdOrFail({
   return mapping;
 }
 
-/**
- * Get secondary mappings for a patient mapping or fail.
- * This is one of the two root commands similar to CX mapping.
- */
 export async function getSecondaryMappingsOrFail({
   cxId,
   externalId,
@@ -182,10 +180,6 @@ export async function getSecondaryMappingsOrFail({
   return mapping.secondaryMappings;
 }
 
-/**
- * Set secondary mappings on a patient mapping by ID.
- * This is the second of the two root commands similar to CX mapping.
- */
 export async function setSecondaryMappingsOnPatientMappingById({
   cxId,
   patientId,

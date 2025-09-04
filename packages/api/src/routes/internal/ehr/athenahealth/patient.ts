@@ -109,7 +109,7 @@ router.post(
  * @returns 200 OK if the update is successful.
  */
 router.post(
-  "/secondary-mappings",
+  "/secondary-mappings/department-id",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();

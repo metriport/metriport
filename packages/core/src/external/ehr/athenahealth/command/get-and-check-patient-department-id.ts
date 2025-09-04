@@ -38,6 +38,8 @@ export async function getAndCheckAthenaPatientDepartmentId({
       {
         ehr: EhrSources.athena,
         practiceId,
+        patientId,
+        departmentId,
       }
     );
   }

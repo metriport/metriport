@@ -48,6 +48,7 @@ import {
 } from "../../../mappings";
 import {
   getConditionIcd10Code,
+  getConditionIcd10Coding,
   getConditionSnomedCode,
   getConditionSnomedCoding,
   getConditionStartDate,
@@ -147,6 +148,7 @@ export class EhrWriteBackResourceDiffBundlesDirect
       }
       const writeBackFilters = await getWriteBackFilters({ ehr, practiceId });
       const resourcesToWriteBack = getResourcesToWriteBack({
+        ehr,
         resources: metriportOnlyResources,
         writeBackFilters,
       });
@@ -362,9 +364,11 @@ async function getWriteBackFilters({
 }
 
 function getResourcesToWriteBack({
+  ehr,
   resources,
   writeBackFilters,
 }: {
+  ehr: EhrSource;
   resources: Resource[];
   writeBackFilters: WriteBackFiltersPerResourceType | undefined;
 }): Resource[] {
@@ -379,6 +383,7 @@ function getResourcesToWriteBack({
       continue;
     }
     const shouldWriteBack = shouldWriteBackResource({
+      ehr,
       resource,
       resources,
       writeBackResourceType,
@@ -408,11 +413,13 @@ function getWriteBackResourceType(resource: Resource): WriteBackResourceType | u
 }
 
 export function shouldWriteBackResource({
+  ehr,
   resource,
   resources,
   writeBackResourceType,
   writeBackFilters,
 }: {
+  ehr: EhrSource;
   resource: Resource;
   resources: Resource[];
   writeBackResourceType: WriteBackResourceType;
@@ -424,7 +431,7 @@ export function shouldWriteBackResource({
     if (!isCondition(resource)) return false;
     const condition = resource;
     if (skipConditionChronicity(condition, writeBackFilters)) return false;
-    if (skipConditionStringFilters(condition, writeBackFilters)) return false;
+    if (skipConditionStringFilters(ehr, condition, writeBackFilters)) return false;
     return true;
   } else if (writeBackResourceType === "lab") {
     if (writeBackFilters.lab?.disabled) return false;
@@ -482,17 +489,20 @@ export function skipConditionChronicity(
 }
 
 export function skipConditionStringFilters(
+  ehr: EhrSource,
   condition: Condition,
   writeBackFilters: WriteBackFiltersPerResourceType
 ): boolean {
   const stringFilters = writeBackFilters.problem?.stringFilters;
   if (!stringFilters) return false;
-  const snomedCoding = getConditionSnomedCoding(condition);
-  if (!snomedCoding || !snomedCoding.display) return true;
-  if (
-    stringFilters.find(filter => snomedCoding.display?.toLowerCase().includes(filter.toLowerCase()))
-  )
+  const primaryCodeSystem = getEhrWriteBackConditionPrimaryCode(ehr);
+  const getCoding =
+    primaryCodeSystem === SNOMED_CODE ? getConditionSnomedCoding : getConditionIcd10Coding;
+  const coding = getCoding(condition);
+  if (!coding || !coding.display) return true;
+  if (stringFilters.find(filter => coding.display?.toLowerCase().includes(filter.toLowerCase()))) {
     return false;
+  }
   return true;
 }
 
@@ -708,7 +718,7 @@ async function getSecondaryResourcesToWriteBackMap({
   resourceType: string;
   writeBackFilters: WriteBackFiltersPerResourceType | undefined;
 }): Promise<Record<string, Resource[]>> {
-  if (resourceType !== "DiagnosticReport" && resourceType !== "Medication") return {};
+  if (resourceType !== "DiagnosticReport" && resourceType !== "MedicationStatement") return {};
   if (resourceType === "DiagnosticReport") {
     const observations = await getMetriportResourcesFromS3({
       cxId,

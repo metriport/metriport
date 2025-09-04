@@ -1686,6 +1686,7 @@ class AthenaHealthApi {
         metriportPatientId,
         ehrPatientId: athenaPatientId,
         resourceType,
+        resourceId,
         fetchResourcesFromEhr: () => Promise.resolve([]),
         useCachedBundle,
       });
