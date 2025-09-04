@@ -16,7 +16,9 @@ import { sleep } from "@metriport/shared/common/sleep";
  *
  * Steps:
  * 1. Ensure your .env file has the required AWS and bucket configuration (HL7_CONVERSION_BUCKET_NAME)
- * 3. Run the script:
+ * 2. Ensure you have a csv containing exactly "cx_id","patient_id","hies"
+ * 3. Add the local path to that csv
+ * 4. Run the script:
  *    npx ts-node src/hl7v2-notifications/reprocess-adt-conversion-bundles/backfill-datasource-extension.ts
  *
  * Usage:
