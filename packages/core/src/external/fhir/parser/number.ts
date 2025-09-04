@@ -4,28 +4,45 @@ interface NumberParserResult {
 }
 
 export function parseNumber(inputString: string): NumberParserResult {
-  const [token, remainder] = getFirstToken(inputString);
-
-  if (isFirstWordOfNumber(token)) {
-    const result = parseNumberFromWord(token, remainder);
-    if (result != null) {
-      return result;
-    }
+  // First try parsing word numbers like "one hundred and five"
+  const wordResult = parseNumberFromWord(inputString);
+  if (wordResult != null) {
+    return wordResult;
   }
 
-  // If the first part is a numeric value, return it as-is without searching any remaining parts
-  const value = parseNumericValueFromToken(token);
-  if (value != null) {
-    return { value, remainder };
+  // Then try parsing numeric values like "123"
+  const digitResult = parseNumberFromDigits(inputString);
+  if (digitResult != null) {
+    return digitResult;
   }
 
   return { remainder: inputString };
 }
 
-function parseNumberFromWord(token: string, remainder: string): NumberParserResult | undefined {
+/**
+ * Parses a number from digits at the beginning of the input string.
+ */
+function parseNumberFromDigits(inputString: string): NumberParserResult | undefined {
+  const [token, remainder] = getFirstToken(inputString);
+  const value = Number.parseFloat(token);
+  if (Number.isFinite(value)) {
+    return { value, remainder };
+  }
+  return undefined;
+}
+
+/**
+ * Parses any word-based number from the input string
+ */
+function parseNumberFromWord(inputString: string): NumberParserResult | undefined {
+  const [token, remainder] = getFirstToken(inputString);
   const firstWordOfNumber = token.toLowerCase();
   if (!isFirstWordOfNumber(firstWordOfNumber)) {
     return undefined;
+  }
+  const digitNumber = parseWordNumberStartingWithDigit(firstWordOfNumber, remainder);
+  if (digitNumber != null) {
+    return digitNumber;
   }
   const singleNumber = parseSingleNumberFromWord(firstWordOfNumber, remainder);
   if (singleNumber != null) {
@@ -39,11 +56,22 @@ function parseNumberFromWord(token: string, remainder: string): NumberParserResu
   return undefined;
 }
 
+function parseWordNumberStartingWithDigit(
+  token: string,
+  remainder: string
+): NumberParserResult | undefined {
+  const digitNumber = digitNumberName[token];
+  if (digitNumber != null) {
+    return { value: digitNumber, remainder };
+  }
+  return undefined;
+}
+
 function parseSingleNumberFromWord(
   firstWordOfNumber: string,
   remainder: string
 ): NumberParserResult | undefined {
-  const singleNumber = singleNumberName[firstWordOfNumber];
+  const singleNumber = doubleDigitNumberName[firstWordOfNumber];
   if (singleNumber != null) {
     const scaleModifier = parseScaleModifier(remainder);
     if (scaleModifier != null) {
@@ -60,6 +88,12 @@ function parseTenNumberFromWord(
 ): NumberParserResult | undefined {
   const tenNumber = tenNumberName[firstWordOfNumber];
   if (tenNumber != null) {
+    const [nextWord, nextRemainder] = getFirstToken(remainder);
+    const nextSingleNumber = parseSingleNumberFromWord(nextWord, nextRemainder);
+    if (nextSingleNumber != null) {
+      console.log("nextSingleNumber", nextSingleNumber);
+    }
+
     const scaleModifier = parseScaleModifier(remainder);
     if (scaleModifier != null) {
       return { value: tenNumber * scaleModifier, remainder };
@@ -77,13 +111,7 @@ function getFirstToken(inputString: string): [string, string] {
 
 function isFirstWordOfNumber(token: string): boolean {
   const lowercasedToken = token.toLowerCase();
-  return singleNumberName[lowercasedToken] != null || tenNumberName[lowercasedToken] != null;
-}
-
-function parseNumericValueFromToken(token: string): number | undefined {
-  const floatValue = Number.parseFloat(token);
-  if (Number.isFinite(floatValue)) return floatValue;
-  return undefined;
+  return digitNumberName[lowercasedToken] != null || doubleDigitNumberName[lowercasedToken] != null;
 }
 
 function parseScaleModifier(inputString: string): number | undefined {
@@ -93,7 +121,8 @@ function parseScaleModifier(inputString: string): number | undefined {
   return undefined;
 }
 
-const singleNumberName: Record<string, number> = {
+const digitNumberName: Record<string, number> = {
+  zero: 0,
   one: 1,
   two: 2,
   three: 3,
@@ -103,6 +132,9 @@ const singleNumberName: Record<string, number> = {
   seven: 7,
   eight: 8,
   nine: 9,
+};
+
+const doubleDigitNumberName: Record<string, number> = {
   ten: 10,
   eleven: 11,
   twelve: 12,
@@ -113,6 +145,14 @@ const singleNumberName: Record<string, number> = {
   seventeen: 17,
   eighteen: 18,
   nineteen: 19,
+  twenty: 20,
+  thirty: 30,
+  forty: 40,
+  fifty: 50,
+  sixty: 60,
+  seventy: 70,
+  eighty: 80,
+  ninety: 90,
 };
 
 const tenNumberName: Record<string, number> = {
