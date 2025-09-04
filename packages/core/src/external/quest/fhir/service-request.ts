@@ -53,7 +53,7 @@ function getServiceRequestIdentifier(detail: ResponseDetail): Identifier[] | und
 
 function getServiceRequestCoding(detail: ResponseDetail): CodeableConcept | undefined {
   const coding: Coding[] = [];
-  const text = detail.orderName ?? detail.profileName;
+  const text = detail.profileName ?? detail.orderName;
 
   if (detail.cptCode) {
     coding.push({
