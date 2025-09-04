@@ -1,6 +1,5 @@
 import { z } from "zod";
 
-// TODO if you update this, make sure to update core's too (unless it has been removed)
 export enum TreatmentType {
   acuteCare = "acuteCare",
   ambulatory = "ambulatory",

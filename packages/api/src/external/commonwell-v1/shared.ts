@@ -8,7 +8,6 @@ import { capture } from "@metriport/core/util/notifications";
 import { errorToString } from "@metriport/shared";
 import z from "zod";
 import { Config } from "../../shared/config";
-import { CwLink } from "../commonwell-v1/cw-patient-data";
 import { getHieInitiator, HieInitiator, isHieEnabledToQuery } from "../hie/get-hie-initiator";
 
 export async function getCwInitiator(
@@ -116,8 +115,4 @@ export async function validateCWEnabled({
 function isCommonwellEnabledForPatient(patient: Patient): boolean {
   if (patient.data.genderAtBirth === "U") return false;
   return true;
-}
-
-export function getLinkOid(link: CwLink): string | undefined {
-  return link.patient?.identifier?.find(identifier => identifier.assigner !== "Commonwell")?.system;
 }

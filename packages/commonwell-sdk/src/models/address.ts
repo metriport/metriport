@@ -1,4 +1,4 @@
-import { zodToLowerCase } from "@metriport/shared";
+import { normalizeState, zodToLowerCase } from "@metriport/shared";
 import { z } from "zod";
 import { emptyStringToUndefinedSchema } from "../common/zod";
 import { periodSchema } from "./period";
@@ -9,7 +9,10 @@ import { periodSchema } from "./period";
  */
 export enum AddressUseCodes {
   home = "home",
+  work = "work",
+  temp = "temp",
   old = "old",
+  billing = "billing",
 }
 export const addressUseCodesSchema = z.preprocess(zodToLowerCase, z.nativeEnum(AddressUseCodes));
 
@@ -25,12 +28,17 @@ export const addressTypeCodesSchema = z.preprocess(zodToLowerCase, z.nativeEnum(
 export const addressSchema = z.object({
   line: z.array(z.string()).nullish(),
   city: z.string().nullish(),
-  state: z.string().nullish(),
+  state: z.preprocess(normalizeStatePreprocess, z.string().nullish()),
   country: emptyStringToUndefinedSchema,
   postalCode: z.string(),
   use: emptyStringToUndefinedSchema.pipe(addressUseCodesSchema.nullish()),
   type: emptyStringToUndefinedSchema.pipe(addressTypeCodesSchema.nullish()),
   period: periodSchema.nullish(),
 });
-
 export type Address = z.infer<typeof addressSchema>;
+
+export function normalizeStatePreprocess(arg: unknown): unknown {
+  if (typeof arg === "string" && ["", "undefined", "null"].includes(arg.trim())) return undefined;
+  if (typeof arg === "string") return normalizeState(arg);
+  return undefined;
+}

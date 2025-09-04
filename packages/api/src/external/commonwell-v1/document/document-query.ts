@@ -17,8 +17,9 @@ import { createDocumentRenderFilePaths } from "@metriport/core/domain/document/f
 import { addOidPrefix } from "@metriport/core/domain/oid";
 import { Patient } from "@metriport/core/domain/patient";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
+import { reportMetric } from "@metriport/core/external/aws/cloudwatch";
 import { S3Utils } from "@metriport/core/external/aws/s3";
-import { DownloadResult } from "@metriport/core/external/commonwell-v1/document/document-downloader";
+import { DownloadResult } from "@metriport/core/external/commonwell/document/document-downloader";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
@@ -28,18 +29,18 @@ import { buildDayjs, elapsedTimeFromNow } from "@metriport/shared/common/date";
 import httpStatus from "http-status";
 import { chunk, partition } from "lodash";
 import { removeDocRefMapping } from "../../../command/medical/docref-mapping/remove-docref-mapping";
-import {
-  getS3Info,
-  getUrl,
-  S3Info,
-} from "../../../command/medical/document/document-query-storage-info";
+import { getUrl, S3Info } from "../../../command/medical/document/document-query-storage-info";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { Config } from "../../../shared/config";
 import { mapDocRefToMetriport } from "../../../shared/external";
-import { reportMetric } from "../../aws/cloudwatch";
+import { sandboxGetDocRefsAndUpsert } from "../../commonwell/document/document-query-sandbox";
+import { update } from "../../commonwell/patient/patient";
+import {
+  getPatientWithCWData,
+  PatientWithCWData,
+} from "../../commonwell/patient/patient-external-data";
 import { convertCDAToFHIR, isConvertible } from "../../fhir-converter/converter";
 import { makeFhirApi } from "../../fhir/api/api-factory";
-import { cwToFHIR } from "../../fhir/document";
 import { processFhirResponse } from "../../fhir/document/process-fhir-search-response";
 import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
 import { reportFHIRError } from "../../fhir/shared/error-mapping";
@@ -53,11 +54,11 @@ import { setDocQueryStartAt } from "../../hie/set-doc-query-start";
 import { tallyDocQueryProgress } from "../../hie/tally-doc-query-progress";
 import { makeCommonWellAPI } from "../api";
 import { groupCWErrors } from "../error-categories";
-import { getCWData, update } from "../patient";
-import { getPatientWithCWData, PatientWithCWData } from "../patient-external-data";
+import { getCWData } from "../patient";
 import { getCwInitiator, validateCWEnabled } from "../shared";
+import { cwToFHIR } from "./cw-to-fhir";
 import { makeDocumentDownloader } from "./document-downloader-factory";
-import { sandboxGetDocRefsAndUpsert } from "./document-query-sandbox";
+import { getS3Info } from "./document-query-storage-info";
 import {
   CWDocumentWithMetriportData,
   DocumentWithLocation,
@@ -290,7 +291,7 @@ export async function queryAndProcessDocuments({
  *
  * @returns document references with CW format
  */
-export async function internalGetDocuments({
+async function internalGetDocuments({
   patient,
   initiator,
 }: {
@@ -813,7 +814,11 @@ async function triggerDownloadDocument({
   };
 
   try {
-    const result = await docDownloader.download({ document, fileInfo: adjustedFileInfo, cxId });
+    const result = await docDownloader.download({
+      sourceDocument: document,
+      destinationFileInfo: adjustedFileInfo,
+      cxId,
+    });
     return {
       ...result,
       isNew: true,

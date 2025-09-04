@@ -87,6 +87,7 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
           sourceTimestamp: timestamp,
           messageReceivedTimestamp: new Date().toISOString(),
           rawDataFileKey,
+          hieName,
         });
 
         connection.send(message.buildAck());

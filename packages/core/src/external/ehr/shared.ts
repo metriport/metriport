@@ -37,7 +37,13 @@ import {
   fhirOperationOutcomeSchema,
 } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { EhrSource } from "@metriport/shared/interface/external/ehr/source";
-import { AxiosError, AxiosInstance, AxiosResponse, isAxiosError } from "axios";
+import {
+  AxiosError,
+  AxiosInstance,
+  AxiosResponse,
+  AxiosResponseHeaders,
+  isAxiosError,
+} from "axios";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { partition, uniqBy } from "lodash";
@@ -116,6 +122,7 @@ export type MakeRequestParams<T> = {
   debug: typeof console.log;
   emptyResponse?: boolean;
   earlyReturn?: boolean;
+  responseHeadersToKeep?: string[];
 };
 
 export type MakeRequestParamsInEhr<T> = Omit<
@@ -139,6 +146,7 @@ export async function makeRequest<T>({
   debug,
   emptyResponse = false,
   earlyReturn = false,
+  responseHeadersToKeep = [],
 }: MakeRequestParams<T>): Promise<T> {
   const { log } = out(
     `${ehr} makeRequest - cxId ${cxId} patientId ${patientId} method ${method} url ${url}`
@@ -233,7 +241,14 @@ export async function makeRequest<T>({
           );
         }
       }
-      const fullAdditionalInfoWithError = { ...fullAdditionalInfo, error: errorToString(error) };
+      const fullAdditionalInfoWithError = {
+        ...fullAdditionalInfo,
+        error: errorToString(error),
+        headers: headersToKeepString(
+          error.response?.headers as AxiosResponseHeaders,
+          responseHeadersToKeep
+        ),
+      };
       switch (error.response?.status) {
         case 400:
           throw new BadRequestError(message, error, fullAdditionalInfoWithError);
@@ -242,7 +257,7 @@ export async function makeRequest<T>({
         case 422:
           throw new BadRequestError(message, error, fullAdditionalInfoWithError);
         default:
-          if (isFhirValidationError(error)) {
+          if (method === "GET" && isFhirValidationError(error)) {
             throw new NotFoundError(message, error, fullAdditionalInfoWithError);
           }
           throw new MetriportError(message, error, fullAdditionalInfoWithError);
@@ -278,7 +293,16 @@ export async function makeRequest<T>({
       await s3Utils.uploadFile({
         bucket: responsesBucket,
         key,
-        file: Buffer.from(JSON.stringify(response.data), "utf8"),
+        file: Buffer.from(
+          JSON.stringify({
+            data: response.data,
+            headers: headersToKeepString(
+              response.headers as AxiosResponseHeaders,
+              responseHeadersToKeep
+            ),
+          }),
+          "utf8"
+        ),
         contentType: "application/json",
       });
     } catch (error) {
@@ -298,6 +322,24 @@ export async function makeRequest<T>({
     });
   }
   return outcome.data;
+}
+
+function headersToKeepString(
+  responseHeaders: AxiosResponseHeaders | undefined,
+  headersToKeep: string[]
+): string | undefined {
+  const headers =
+    headersToKeep.length > 0 && responseHeaders
+      ? headersToKeep.reduce((acc, header) => {
+          const value = responseHeaders.get(header) || responseHeaders.get(header.toLowerCase());
+          if (value) acc[header] = value.toString();
+          return acc;
+        }, {} as Record<string, string>)
+      : undefined;
+  if (!headers || Object.keys(headers).length < 1) return undefined;
+  return Object.entries(headers)
+    .map(([key, value]) => `${key}: ${value}`)
+    .join(", ");
 }
 
 function isFhirValidationError(error: AxiosError): boolean {
@@ -765,14 +807,22 @@ type FetchEhrBundleParams = Omit<FetchBundleParams, "bundleType">;
 async function fetchEhrBundleIfYoungerThanMaxAge(
   params: Omit<FetchEhrBundleParams, "getLastModified">
 ): Promise<Bundle | undefined> {
+  const { log } = out(`fetchEhrBundleIfYoungerThanMaxAge - ${params.ehr} ${params.ehrPatientId}`);
   const bundle = await fetchBundle({
     ...params,
     bundleType: BundleType.EHR,
     getLastModified: true,
   });
-  if (!bundle || !bundle.lastModified) return undefined;
+  if (!bundle || !bundle.lastModified) {
+    log(`No bundle found or lastModified is undefined`);
+    return undefined;
+  }
   const age = dayjs.duration(buildDayjs().diff(bundle.lastModified));
-  if (age.asMilliseconds() > MAX_AGE.asMilliseconds()) return undefined;
+  if (age.asMilliseconds() > MAX_AGE.asMilliseconds()) {
+    log(`Bundle is older than max age, returning undefined`);
+    return undefined;
+  }
+  log(`Bundle is younger than max age, returning bundle`);
   return bundle.bundle;
 }
 
@@ -826,13 +876,14 @@ export async function fetchEhrFhirResourcesWithPagination({
   url,
   acc = [],
 }: {
-  makeRequest: (url: string) => Promise<EhrStrictFhirResourceBundle>;
+  makeRequest: (url: string) => Promise<EhrStrictFhirResourceBundle | undefined>;
   url: string | undefined;
   acc?: EhrStrictFhirResource[] | undefined;
 }): Promise<EhrStrictFhirResource[]> {
   if (!url) return acc;
   await sleep(paginateWaitTime.asMilliseconds());
   const fhirResourceBundle = await makeRequest(url);
+  if (!fhirResourceBundle) return acc;
   acc.push(...(fhirResourceBundle.entry ?? []).map(e => e.resource));
   const nextUrl = fhirResourceBundle.link?.find(l => l.relation === "next")?.url;
   return fetchEhrFhirResourcesWithPagination({ makeRequest, url: nextUrl, acc });

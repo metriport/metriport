@@ -14,7 +14,10 @@ import axios, { AxiosResponse } from "axios";
 import { stringify } from "csv-stringify/sync";
 import _ from "lodash";
 import { getFirstNameAndMiddleInitial, Patient } from "../../domain/patient";
+import { analyticsAsync, EventTypes } from "../../external/analytics/posthog";
+import { reportMetric } from "../../external/aws/cloudwatch";
 import { S3Utils, storeInS3WithRetries } from "../../external/aws/s3";
+import { getSecretValueOrFail } from "../../external/aws/secret-manager";
 import { out } from "../../util";
 import { Config } from "../../util/config";
 import { CSV_FILE_EXTENSION, CSV_MIME_TYPE } from "../../util/mime";
@@ -102,13 +105,17 @@ export class Hl7v2RosterGenerator {
     const rosterCsv = this.generateCsv(rosterRows);
     log("Created CSV");
 
-    const fileName = createFileKeyHl7v2Roster(hieName);
+    const s3Key = createFileKeyHl7v2Roster(hieName);
 
+    log("Uploading roster to remote SFTP server");
+    await uploadToRemoteSftp(config, rosterCsv);
+
+    log(`Uploading roster to S3`);
     await storeInS3WithRetries({
       s3Utils: this.s3Utils,
       payload: rosterCsv,
       bucketName: this.bucketName,
-      fileName,
+      fileName: s3Key,
       contentType: CSV_MIME_TYPE,
       log,
       errorConfig: {
@@ -118,12 +125,55 @@ export class Hl7v2RosterGenerator {
         shouldCapture: true,
       },
     });
+    log(`Saved in S3: ${this.bucketName}/${s3Key}`);
 
-    log(`Saved in S3: ${this.bucketName}/${fileName}`);
-
-    await uploadToRemoteSftp(config, rosterCsv);
+    const rosterSize = rosterRows.length;
+    await this.logResults(rosterSize, hieName, log);
 
     return rosterCsv;
+  }
+
+  private async logResults(
+    rosterSize: number,
+    hieName: string,
+    log: typeof console.log
+  ): Promise<void> {
+    log("Sending analytics to posthog");
+    await this.notifyPostHog(rosterSize, hieName);
+
+    log("Sending metrics to cloudwatch");
+    await this.notifyCloudWatch(rosterSize, hieName);
+  }
+
+  private async notifyPostHog(rosterSize: number, hieName: string) {
+    const posthogSecretName = Config.getPostHogApiKey();
+    if (!posthogSecretName) {
+      throw new Error("Failed to get posthog secret name");
+    }
+
+    const posthogSecret = await getSecretValueOrFail(posthogSecretName, region);
+    await analyticsAsync(
+      {
+        event: EventTypes.rosterUploadSummary,
+        distinctId: `cx:${hieName}`,
+        properties: {
+          stateHie: hieName,
+          rosterSize: rosterSize,
+        },
+      },
+      posthogSecret
+    );
+  }
+
+  private async notifyCloudWatch(rosterSize: number, hieName: string): Promise<void> {
+    const additional = `Hie=${hieName}`;
+
+    await reportMetric({
+      name: "ADT.RosterUpload.RosterSize",
+      unit: "Count",
+      value: rosterSize,
+      additionalDimension: additional,
+    });
   }
 
   private async getAllSubscribedPatients(hieName: string): Promise<Patient[]> {

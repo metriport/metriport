@@ -1,11 +1,17 @@
 import { Organization as CWSdkOrganization } from "@metriport/commonwell-sdk-v1";
 import { isEnhancedCoverageEnabledForCx } from "@metriport/core/command/feature-flags/domain-ffs";
 import { OID_PREFIX } from "@metriport/core/domain/oid";
-import { Organization, OrgType } from "@metriport/core/domain/organization";
+import { Organization } from "@metriport/core/domain/organization";
 import { getOrgsByPrio } from "@metriport/core/external/commonwell-v1/cq-bridge/get-orgs";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
-import { errorToString, getEnvVarOrFail, NotFoundError, USState } from "@metriport/shared";
+import {
+  errorToString,
+  getEnvVarOrFail,
+  NotFoundError,
+  TreatmentType,
+  USState,
+} from "@metriport/shared";
 import { Config } from "../../shared/config";
 import {
   getCertificate,
@@ -110,7 +116,7 @@ export async function get(orgOid: string): Promise<CWSdkOrganization | undefined
         cwId,
         cwReference: cwRef,
         context: `cw.org.get`,
-        error,
+        error: errorToString(error),
       },
     });
     throw error;
@@ -124,13 +130,13 @@ export async function create(cxId: string, org: CWOrganization, isObo = false): 
   const commonWell = makeCommonWellAPI(Config.getCWMemberOrgName(), Config.getCWMemberOID());
   try {
     const respCreate = await commonWell.createOrg(metriportQueryMeta, commonwellOrg);
-    debug(`resp createOrg: `, JSON.stringify(respCreate));
+    debug(`resp createOrg: `, () => JSON.stringify(respCreate));
     const respAddCert = await commonWell.addCertificateToOrg(
       metriportQueryMeta,
       getCertificate(),
       org.oid
     );
-    debug(`resp addCertificateToOrg: `, JSON.stringify(respAddCert));
+    debug(`resp addCertificateToOrg: `, () => JSON.stringify(respAddCert));
 
     if (await isEnhancedCoverageEnabledForCx(cxId)) {
       // update the CQ bridge include list
@@ -146,7 +152,7 @@ export async function create(cxId: string, org: CWOrganization, isObo = false): 
         cwReference: cwRef,
         context: `cw.org.create`,
         commonwellOrg,
-        error,
+        error: errorToString(error),
       },
     });
     throw error;
@@ -173,7 +179,7 @@ export async function update(cxId: string, org: CWOrganization, isObo = false): 
       cwReference: cwRef,
       context: `cw.org.update`,
       commonwellOrg,
-      error,
+      error: errorToString(error),
     };
     if (error.response?.status === 404) {
       capture.message("Got 404 while updating Org @ CW, creating it", { extra });
@@ -207,7 +213,7 @@ export async function initCQOrgIncludeList(orgOid: string): Promise<void> {
       extra: {
         orgOid,
         context: `cw.org.initCQOrgIncludeList`,
-        error,
+        error: errorToString(error),
       },
     });
   }
@@ -226,7 +232,7 @@ export function parseCWEntry(org: CWSdkOrganization): CWOrganization {
         zip: location.postalCode,
         country: location.country,
       },
-      type: org.type as OrgType,
+      type: org.type as TreatmentType,
     },
     oid: org.organizationId.replace(OID_PREFIX, ""),
     active: org.isActive,

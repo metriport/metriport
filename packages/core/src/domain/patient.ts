@@ -140,8 +140,8 @@ export function createSsnPersonalIdentifier(value: string): PersonalIdentifier {
 export function createDriversLicensePersonalIdentifier(
   value: string,
   state: USStateForAddress
-): PersonalIdentifier {
-  const personalIdentifier: PersonalIdentifier = {
+): DriversLicense {
+  const personalIdentifier: DriversLicense = {
     type: "driversLicense",
     value: value,
     state: state,

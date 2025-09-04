@@ -1,14 +1,12 @@
 import { MetriportError } from "@metriport/shared";
-import { healthieSecondaryMappingsSchema } from "@metriport/shared/interface/external/ehr/healthie/cx-mapping";
+import { HealthieSecondaryMappings } from "@metriport/shared/interface/external/ehr/healthie/cx-mapping";
 import {
   SubscriptionResource,
   SubscriptionWithSignatureSecret,
 } from "@metriport/shared/interface/external/ehr/healthie/subscription";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
-import {
-  getCxMappingOrFail,
-  setSecondaryMappingsOnCxMappingById,
-} from "../../../../command/mapping/cx";
+import { setSecondaryMappingsOnCxMappingById } from "../../../../command/mapping/cx";
+import { getCxMappingAndParsedSecondaryMappings } from "../../shared/command/mapping/get-cx-mapping-and-secondary-mappings";
 import { createHealthieClient } from "../shared";
 
 export async function subscribeToWebhook({
@@ -20,15 +18,11 @@ export async function subscribeToWebhook({
   healthiePracticeId: string;
   resource: SubscriptionResource;
 }): Promise<SubscriptionWithSignatureSecret> {
-  const cxMappingLookupParams = { externalId: healthiePracticeId, source: EhrSources.healthie };
-  const cxMapping = await getCxMappingOrFail(cxMappingLookupParams);
-  if (!cxMapping.secondaryMappings) {
-    throw new MetriportError("Healthie secondary mappings not found", undefined, {
-      externalId: healthiePracticeId,
-      source: EhrSources.healthie,
+  const { parsedSecondaryMappings, cxMapping } =
+    await getCxMappingAndParsedSecondaryMappings<HealthieSecondaryMappings>({
+      ehr: EhrSources.healthie,
+      practiceId: healthiePracticeId,
     });
-  }
-  const secondaryMappings = healthieSecondaryMappingsSchema.parse(cxMapping.secondaryMappings);
   const api = await createHealthieClient({ cxId, practiceId: healthiePracticeId });
   const subscription = await api.subscribeToResource({ cxId, resource });
   const eventType = subscription.webhook_events?.[0]?.event_type;
@@ -44,9 +38,9 @@ export async function subscribeToWebhook({
     cxId,
     id: cxMapping.id,
     secondaryMappings: {
-      ...secondaryMappings,
+      ...parsedSecondaryMappings,
       webhooks: {
-        ...secondaryMappings.webhooks,
+        ...parsedSecondaryMappings.webhooks,
         [eventType]: {
           url,
           secretKey,

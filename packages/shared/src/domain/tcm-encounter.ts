@@ -1,8 +1,8 @@
 import { buildDayjs } from "../common/date";
-import { createQueryMetaSchema } from "./pagination";
+import { createQueryMetaSchemaV2 } from "./pagination-v2";
 import { z } from "zod";
 
-const tcmEncounterMaxPageSize = 2500;
+export const tcmEncounterMaxPageSize = 10000;
 const stringOrNullSchema = z.union([z.string(), z.undefined(), z.null()]);
 
 export const outreachStatuses = ["Not Started", "Attempted", "Completed"] as const;
@@ -29,6 +29,14 @@ export const tcmEncounterBaseSchema = z.strictObject({
     .transform(val => buildDayjs(val).toDate())
     .nullish()
     .transform(val => (val === null ? undefined : val)),
+  outreachLogs: z
+    .array(
+      z.object({
+        status: z.enum(["Attempted", "Completed"] as const),
+        timestamp: z.string().datetime(),
+      })
+    )
+    .default([]),
   clinicalInformation: z.record(z.unknown()).optional().default({}),
   freetextNote: z.string().optional(),
   dischargeSummaryPath: z.string().optional(),
@@ -67,8 +75,12 @@ const tcmEncounterQuerySchema = z
     eventType: z.enum(["Admitted", "Discharged"] as const).optional(),
     coding: z.enum(["cardiac"]).optional(),
     status: z.enum(outreachStatuses).optional(),
+    search: z.string().optional(),
+    encounterClass: z
+      .enum(["inpatient encounter", "ambulatory", "emergency", "short stay", "pre-admission"])
+      .optional(),
   })
-  .and(createQueryMetaSchema(tcmEncounterMaxPageSize));
+  .and(createQueryMetaSchemaV2(tcmEncounterMaxPageSize));
 
 export const tcmEncounterListQuerySchema = tcmEncounterQuerySchema;
 export type TcmEncounterListQuery = z.infer<typeof tcmEncounterListQuerySchema>;
