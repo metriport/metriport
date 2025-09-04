@@ -28,6 +28,8 @@ import { deduplicateOrganizations } from "./resources/organization";
 import { deduplicatePractitioners } from "./resources/practitioner";
 import { deduplicateProcedures } from "./resources/procedure";
 import { deduplicateRelatedPersons } from "./resources/related-person";
+import { deduplicateServiceRequests } from "./resources/service-request";
+import { deduplicateSpecimens } from "./resources/specimen";
 import { createRef } from "./shared";
 
 const medicationRelatedTypes = [
@@ -140,6 +142,12 @@ export function dangerouslyDeduplicateFhir(
   const carePlansResult = deduplicateCarePlans(resourceArrays.carePlans);
   resourceArrays.carePlans = carePlansResult.combinedResources;
 
+  const serviceRequestsResult = deduplicateServiceRequests(resourceArrays.serviceRequests);
+  resourceArrays.serviceRequests = serviceRequestsResult.combinedResources;
+
+  const specimensResult = deduplicateSpecimens(resourceArrays.specimens);
+  resourceArrays.specimens = specimensResult.combinedResources;
+
   resourceArrays = replaceResourceReferences(resourceArrays, medicationsResult.refReplacementMap, [
     "coverages",
   ]);
@@ -171,6 +179,8 @@ export function dangerouslyDeduplicateFhir(
     ...famMemHistoriesResult.danglingReferences,
     ...coveragesResult.danglingReferences,
     ...carePlansResult.danglingReferences,
+    ...serviceRequestsResult.danglingReferences,
+    ...specimensResult.danglingReferences,
   ]);
 
   // Combine all the remaining replacementMaps into one map
@@ -196,6 +206,8 @@ export function dangerouslyDeduplicateFhir(
     ...famMemHistoriesResult.refReplacementMap,
     ...coveragesResult.refReplacementMap,
     ...carePlansResult.refReplacementMap,
+    ...serviceRequestsResult.refReplacementMap,
+    ...specimensResult.refReplacementMap,
   ]);
 
   resourceArrays = replaceResourceReferences(resourceArrays, combinedReplacementMap);
