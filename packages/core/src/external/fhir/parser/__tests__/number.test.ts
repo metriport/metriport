@@ -22,4 +22,28 @@ describe("number parsing", () => {
     expect(value).toEqual(123);
     expect(remainder).toEqual("abc 789");
   });
+
+  it("should parse numbers with words", () => {
+    const { value, remainder } = parseNumber("one two three");
+    expect(value).toEqual(1);
+    expect(remainder).toEqual("two three");
+  });
+
+  it("should parse tens when written as words", () => {
+    const { value, remainder } = parseNumber("twenty three times");
+    expect(value).toEqual(23);
+    expect(remainder).toEqual("times");
+  });
+
+  it("should parse hundreds when written as words", () => {
+    const { value, remainder } = parseNumber("one hundred twenty three places");
+    expect(value).toEqual(123);
+    expect(remainder).toEqual("places");
+  });
+
+  it("should parse thousands when written as words", () => {
+    const { value, remainder } = parseNumber("one thousand and twenty three locations");
+    expect(value).toEqual(1023);
+    expect(remainder).toEqual("locations");
+  });
 });

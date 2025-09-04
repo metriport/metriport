@@ -1,38 +1,99 @@
-export function parseNumber(inputString: string): { value?: number; remainder: string } {
-  const [firstPart, ...remainder] = inputString.trim().split(/\s+/);
-  if (!firstPart) return { remainder: inputString };
+interface NumberParserResult {
+  value?: number;
+  remainder: string;
+}
 
-  const parsedNumber = Number.parseFloat(firstPart);
-  if (Number.isFinite(parsedNumber)) return { value: parsedNumber, remainder: remainder.join(" ") };
+export function parseNumber(inputString: string): NumberParserResult {
+  const [token, remainder] = getFirstToken(inputString);
 
-  const intValue = parseNumberFromWord(firstPart);
-  if (intValue == null) return { remainder: inputString };
-
-  // Check for additional number modifiers and words
-  if (remainder && remainder.length > 0) {
-    while (remainder[0] === "and") {
-      remainder.splice(0, 1);
-    }
-    const { value, remainder: finalRemainder } = parseNumber(remainder.join(" "));
-    // Handles the case of "one thousand", "one hundred and one"
-    if (value != null) {
-      return { value: intValue * value, remainder: finalRemainder };
+  if (isFirstWordOfNumber(token)) {
+    const result = parseNumberFromWord(token, remainder);
+    if (result != null) {
+      return result;
     }
   }
+
+  // If the first part is a numeric value, return it as-is without searching any remaining parts
+  const value = parseNumericValueFromToken(token);
+  if (value != null) {
+    return { value, remainder };
+  }
+
   return { remainder: inputString };
 }
 
-function parseNumberFromWord(word: string): number | undefined {
-  const numberNameValue = numberName[word];
-  if (numberNameValue) return numberNameValue;
-
-  const floatValue = Number.parseFloat(word);
-  if (Number.isFinite(floatValue)) return floatValue;
-
+function parseNumberFromWord(token: string, remainder: string): NumberParserResult | undefined {
+  const firstWordOfNumber = token.toLowerCase();
+  if (!isFirstWordOfNumber(firstWordOfNumber)) {
+    return undefined;
+  }
+  const singleNumber = parseSingleNumberFromWord(firstWordOfNumber, remainder);
+  if (singleNumber != null) {
+    return singleNumber;
+  }
+  const tenNumber = parseTenNumberFromWord(firstWordOfNumber, remainder);
+  if (tenNumber != null) {
+    return tenNumber;
+  }
+  // TODO: add additional cases for parsing numbers from words
   return undefined;
 }
 
-const numberName: Record<string, number> = {
+function parseSingleNumberFromWord(
+  firstWordOfNumber: string,
+  remainder: string
+): NumberParserResult | undefined {
+  const singleNumber = singleNumberName[firstWordOfNumber];
+  if (singleNumber != null) {
+    const scaleModifier = parseScaleModifier(remainder);
+    if (scaleModifier != null) {
+      return { value: singleNumber * scaleModifier, remainder };
+    }
+    return { value: singleNumber, remainder };
+  }
+  return undefined;
+}
+
+function parseTenNumberFromWord(
+  firstWordOfNumber: string,
+  remainder: string
+): NumberParserResult | undefined {
+  const tenNumber = tenNumberName[firstWordOfNumber];
+  if (tenNumber != null) {
+    const scaleModifier = parseScaleModifier(remainder);
+    if (scaleModifier != null) {
+      return { value: tenNumber * scaleModifier, remainder };
+    }
+    return { value: tenNumber, remainder };
+  }
+  return undefined;
+}
+
+function getFirstToken(inputString: string): [string, string] {
+  const firstSpace = inputString.trim().indexOf(" ");
+  if (firstSpace === -1) return [inputString, ""];
+  return [inputString.slice(0, firstSpace).trim(), inputString.slice(firstSpace + 1).trim()];
+}
+
+function isFirstWordOfNumber(token: string): boolean {
+  const lowercasedToken = token.toLowerCase();
+  return singleNumberName[lowercasedToken] != null || tenNumberName[lowercasedToken] != null;
+}
+
+function parseNumericValueFromToken(token: string): number | undefined {
+  const floatValue = Number.parseFloat(token);
+  if (Number.isFinite(floatValue)) return floatValue;
+  return undefined;
+}
+
+function parseScaleModifier(inputString: string): number | undefined {
+  const [token] = getFirstToken(inputString);
+  const scaleModifier = numberScaleName[token];
+  if (scaleModifier) return scaleModifier;
+  return undefined;
+}
+
+const singleNumberName: Record<string, number> = {
   one: 1,
   two: 2,
   three: 3,
@@ -52,6 +113,9 @@ const numberName: Record<string, number> = {
   seventeen: 17,
   eighteen: 18,
   nineteen: 19,
+};
+
+const tenNumberName: Record<string, number> = {
   twenty: 20,
   thirty: 30,
   forty: 40,
@@ -60,8 +124,12 @@ const numberName: Record<string, number> = {
   seventy: 70,
   eighty: 80,
   ninety: 90,
+};
+
+const numberScaleName: Record<string, number> = {
   hundred: 100,
-  "one hundred": 100,
   thousand: 1000,
   million: 1000000,
+  billion: 1000000000,
+  trillion: 1000000000000,
 };
