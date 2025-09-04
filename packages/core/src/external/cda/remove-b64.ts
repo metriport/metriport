@@ -1,4 +1,4 @@
-import { toArray } from "@metriport/shared";
+import { BadRequestError, toArray } from "@metriport/shared";
 import { createXMLParser } from "@metriport/shared/common/xml-parser";
 import { XMLBuilder } from "fast-xml-parser";
 import { cloneDeep } from "lodash";
@@ -11,6 +11,9 @@ import {
 import { detectFileType } from "../../util/file-type";
 import { BINARY_MIME_TYPES, OCTET_MIME_TYPE, TXT_MIME_TYPE } from "../../util/mime";
 import { groupObservations, isConcernActEntry, isObservationOrganizer } from "./shared";
+
+// This is the most straightforward instructions we normally see in CCDAs
+const xmlProcessingInstructions = `<?xml version="1.0" encoding="UTF-8"?>`;
 
 const notesTemplateId = "2.16.840.1.113883.10.20.22.2.65";
 const resultsTemplateId = "2.16.840.1.113883.10.20.22.2.3.1";
@@ -26,12 +29,7 @@ export function removeBase64PdfEntries(payloadRaw: string): {
   documentContents: string;
   b64Attachments: B64Attachments | undefined;
 } {
-  const parser = createXMLParser({
-    ignoreAttributes: false,
-    attributeNamePrefix: "_",
-    removeNSPrefix: true,
-  });
-  const json = parser.parse(payloadRaw);
+  const json = getJsonFromXml(payloadRaw);
 
   const b64Attachments: B64Attachments = {
     acts: [],
@@ -94,14 +92,6 @@ export function removeBase64PdfEntries(payloadRaw: string): {
       }
     });
   }
-
-  if (b64Attachments.total < 1) {
-    return {
-      documentContents: payloadRaw,
-      b64Attachments: undefined,
-    };
-  }
-
   const builder = new XMLBuilder({
     format: false,
     ignoreAttributes: false,
@@ -113,7 +103,7 @@ export function removeBase64PdfEntries(payloadRaw: string): {
 
   return {
     documentContents: xml,
-    b64Attachments,
+    b64Attachments: b64Attachments.total > 0 ? b64Attachments : undefined,
   };
 }
 
@@ -139,4 +129,33 @@ function isTextAttachment(attachment: CdaOriginalText | CdaValueEd | undefined):
   }
 
   return mimeType === TXT_MIME_TYPE;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function getJsonFromXml(payloadRaw: string): any {
+  const parser = createXMLParser({
+    ignoreAttributes: false,
+    attributeNamePrefix: "_",
+    removeNSPrefix: true,
+  });
+
+  try {
+    return parser.parse(payloadRaw);
+  } catch (error) {
+    return parser.parse(sanitizeXmlProcessingInstructions(payloadRaw));
+  }
+}
+
+/**
+ * Sometimes, the XML processing instructions are faulty, resulting in a parse error.
+ * For example, sometimes they indicate it as being a text file, rather than XML,
+ * which is why we need to sanitize the XML processing instructions.
+ */
+function sanitizeXmlProcessingInstructions(xml: string): string {
+  const indexOfDocumentStart = xml.indexOf("<Clinical");
+  if (indexOfDocumentStart === -1) {
+    throw new BadRequestError("No ClinicalDocument found in XML");
+  }
+
+  return xmlProcessingInstructions.concat(xml.substring(indexOfDocumentStart));
 }

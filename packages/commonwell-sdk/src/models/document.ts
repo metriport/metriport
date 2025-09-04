@@ -11,7 +11,9 @@ import { referenceSchema } from "./reference";
 
 // Based on https://www.hl7.org/fhir/R4/documentreference.html
 
-const resourceTypeSchema = z.string().optional();
+// const resourceTypeSchema = z.string().optional();
+export const documentReferenceResourceType = "DocumentReference";
+export const operationOutcomeResourceType = "OperationOutcome";
 
 const codingSchema = z.object({
   system: z.string().optional(),
@@ -55,8 +57,14 @@ const docStatusSchema = z.preprocess(
 );
 export type DocStatus = z.infer<typeof docStatusSchema>;
 
+const narrativeSchema = z.object({
+  status: z.string(),
+  div: z.string(),
+});
+export type Narrative = z.infer<typeof narrativeSchema>;
+
 export const documentReferenceSchema = z.object({
-  resourceType: z.literal("DocumentReference"),
+  resourceType: z.literal(documentReferenceResourceType),
   id: z.string().nullish(),
   masterIdentifier: identifierSchema.nullish(),
   identifier: z.array(identifierSchema).nullish(),
@@ -90,29 +98,25 @@ export const documentReferenceEntrySchema = z.object({
 export type DocumentReferenceEntry = z.infer<typeof documentReferenceEntrySchema>;
 
 export const operationOutcomeSchema = z.object({
-  id: z.string(),
-  content: z.object({
-    resourceType: resourceTypeSchema,
-    issue: z
-      .array(
-        z.object({
-          severity: z.string(),
-          type: z
-            .object({
-              code: z.string(),
-            })
-            .optional()
-            .nullable(),
-          details: z.string(),
-        })
-      )
-      .nullish(),
-  }),
+  id: z.string().nullish(),
+  resourceType: z.literal(operationOutcomeResourceType),
+  issue: z.array(
+    z.object({
+      severity: z.string(),
+      code: z.string(),
+      details: codeableConceptSchema.nullish(),
+      diagnostics: z.string().nullish(),
+      expression: z.array(z.string()).nullish(),
+    })
+  ),
+  text: narrativeSchema.nullish(),
+});
+
+export const operationOutcomeEntrySchema = z.object({
+  fullUrl: z.string().optional(),
+  resource: operationOutcomeSchema.nullish(),
 });
 export type OperationOutcome = z.infer<typeof operationOutcomeSchema>;
-
-export const documentReferenceResourceType = "DocumentReference";
-export const operationOutcomeResourceType = "OperationOutcome";
 
 export const documentQueryResponseSchema = z.object({
   resourceType: z.literal("Bundle"),
@@ -123,7 +127,6 @@ export const documentQueryResponseSchema = z.object({
     }, z.array(documentReferenceEntrySchema))
     .nullish(),
 });
-
 export type DocumentQueryResponse = z.infer<typeof documentQueryResponseSchema>;
 
 export const documentQueryFullResponseSchema = z.object({
@@ -136,8 +139,7 @@ export const documentQueryFullResponseSchema = z.object({
           e.resource?.resourceType === documentReferenceResourceType ||
           e.resource?.resourceType === operationOutcomeResourceType
       );
-    }, z.array(documentReferenceEntrySchema.or(operationOutcomeSchema)))
+    }, z.array(documentReferenceEntrySchema.or(operationOutcomeEntrySchema)))
     .nullish(),
 });
-
 export type DocumentQueryFullResponse = z.infer<typeof documentQueryFullResponseSchema>;

@@ -97,7 +97,14 @@ function cwOrgOrFacilityToSdk(
       networks: [
         {
           type: "CommonWell",
-          purposeOfUse: [],
+          purposeOfUse: [
+            {
+              id: "TREATMENT",
+              queryInitiatorOnly: false,
+              queryInitiator: true,
+              queryResponder: true,
+            },
+          ],
         },
       ],
       authorizationInformation: {
@@ -130,9 +137,9 @@ function cwOrgOrFacilityToSdk(
         purposeOfUse: [
           {
             id: "TREATMENT",
-            queryInitiatorOnly: !org.isInitiatorAndResponder,
-            queryInitiator: org.isInitiatorAndResponder,
-            queryResponder: org.isInitiatorAndResponder,
+            queryInitiatorOnly: true,
+            queryInitiator: false,
+            queryResponder: false,
           },
         ],
       },

@@ -7,6 +7,7 @@ export const hl7NotificationSenderParamsSchema = z.object({
   sourceTimestamp: z.string(),
   messageReceivedTimestamp: z.string(),
   rawDataFileKey: z.string(),
+  hieName: z.string(),
 });
 
 export type Hl7NotificationSenderParams = z.infer<typeof hl7NotificationSenderParamsSchema>;

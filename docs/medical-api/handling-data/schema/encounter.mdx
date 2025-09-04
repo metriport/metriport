@@ -1,0 +1,52 @@
+---
+title: "Encounter"
+description: "Schema documentation for the Encounter table in the Metriport data model"
+group: "Schema"
+---
+
+The encounter table is intended to store information that represents a unique patient interaction with the healthcare system. It's intended to be synonymous with a healthcare visit (e.g. hospital admission, office visit, etc.). All healthcare analytics use cases involving utilization require an encounter concept. Not only is it important to know about each unique encounter a patient has with the healthcare system, but it's also important to know the type of visit (e.g. acute inpatient, ED, office visit, inpatient rehab, etc.), the start and end dates for the visit, the total amount paid for the visit, and other pieces of information about the visit. The encounter table stores all of this important information in a single table.
+
+**Primary Keys:**
+* encounter_id
+
+**Foreign Keys:**
+* person_id
+
+| Column | Data Type | Description | Terminology |
+| ------ | --------- | ----------- | ----------- |
+| encounter_id | string | Unique identifier for the encounter | - |
+| person_id | string | Unique identifier for the person | - |
+| member_id | string | Unique identifier for the member | - |
+| patient_id | string | Unique identifier for the patient | - |
+| encounter_type | string | Type of encounter (e.g., inpatient, outpatient, emergency) | - |
+| encounter_class | string | Classification of the encounter | inpatient, outpatient, emergency, urgent_care |
+| encounter_start_date | date | Start date/time of the encounter | - |
+| encounter_end_date | date | End date/time of the encounter | - |
+| admission_date | date | Date of admission for inpatient encounters | - |
+| discharge_date | date | Date of discharge for inpatient encounters | - |
+| facility_id | string | Identifier for the healthcare facility | - |
+| facility_name | string | Name of the healthcare facility | - |
+| facility_type | string | Type of healthcare facility | hospital, clinic, urgent_care |
+| provider_id | string | Identifier for the primary provider | - |
+| provider_name | string | Name of the primary provider | - |
+| provider_type | string | Type of provider | physician, nurse, specialist |
+| diagnosis_primary | string | Primary diagnosis code | ICD-9-CM, ICD-10-CM |
+| diagnosis_secondary | string | Secondary diagnosis codes | ICD-9-CM, ICD-10-CM |
+| procedure_primary | string | Primary procedure code | CPT, HCPCS, ICD-9-CM, ICD-10-CM |
+| procedure_secondary | string | Secondary procedure codes | CPT, HCPCS, ICD-9-CM, ICD-10-CM |
+| total_charge_amount | decimal | Total amount charged for the encounter | - |
+| total_paid_amount | decimal | Total amount paid for the encounter | - |
+| copay_amount | decimal | Copay amount for the encounter | - |
+| deductible_amount | decimal | Deductible amount for the encounter | - |
+| coinsurance_amount | decimal | Coinsurance amount for the encounter | - |
+| discharge_disposition | string | Discharge disposition | home, skilled_nursing, hospice |
+| length_of_stay | integer | Length of stay in days | - |
+| emergency_indicator | boolean | Whether this was an emergency encounter | - |
+| urgent_indicator | boolean | Whether this was an urgent encounter | - |
+| data_source | string | Source of the encounter data | claims, clinical, ehr |
+| source_code | string | Original code from the source system | - |
+| normalized_code | string | Standardized/normalized code | - |
+| source_system | string | System that provided the encounter data | - |
+| source_table | string | Table in the source system | - |
+| source_id | string | Identifier from the source system | - |
+| ingestion_date | timestamp | Date when the data was ingested | - |
