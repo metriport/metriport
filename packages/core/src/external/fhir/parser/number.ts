@@ -1,24 +1,24 @@
 export function parseNumber(inputString: string): { value?: number; remainder: string } {
-  const [firstPart, ...remainder] = inputString.trim().split(" ");
+  const [firstPart, ...remainder] = inputString.trim().split(/\s+/);
+  if (!firstPart) return { remainder: inputString };
 
-  if (firstPart) {
-    const intValue = parseNumberFromWord(firstPart);
-    if (intValue == null) return { remainder: inputString };
+  const parsedNumber = Number.parseFloat(firstPart);
+  if (Number.isFinite(parsedNumber)) return { value: parsedNumber, remainder: remainder.join(" ") };
 
-    // Check for additional number modifiers and words
-    if (remainder && remainder.length > 0) {
-      while (remainder[0] === "and") {
-        remainder.splice(0, 1);
-      }
-      const { value, remainder: finalRemainder } = parseNumber(remainder.join(" "));
-      // Handles the case of "one thousand", "one hundred and one"
-      if (value != null) {
-        return { value: intValue * value, remainder: finalRemainder };
-      }
-      return { remainder: inputString };
+  const intValue = parseNumberFromWord(firstPart);
+  if (intValue == null) return { remainder: inputString };
+
+  // Check for additional number modifiers and words
+  if (remainder && remainder.length > 0) {
+    while (remainder[0] === "and") {
+      remainder.splice(0, 1);
+    }
+    const { value, remainder: finalRemainder } = parseNumber(remainder.join(" "));
+    // Handles the case of "one thousand", "one hundred and one"
+    if (value != null) {
+      return { value: intValue * value, remainder: finalRemainder };
     }
   }
-
   return { remainder: inputString };
 }
 
