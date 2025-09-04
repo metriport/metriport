@@ -29,19 +29,7 @@ export function removeBase64PdfEntries(payloadRaw: string): {
   documentContents: string;
   b64Attachments: B64Attachments | undefined;
 } {
-  const parser = createXMLParser({
-    ignoreAttributes: false,
-    attributeNamePrefix: "_",
-    removeNSPrefix: true,
-  });
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let json: any;
-  try {
-    json = parser.parse(payloadRaw);
-  } catch (error) {
-    json = parser.parse(sanitizeXmlProcessingInstructions(payloadRaw));
-  }
+  const json = getJsonFromXml(payloadRaw);
 
   const b64Attachments: B64Attachments = {
     acts: [],
@@ -141,6 +129,21 @@ function isTextAttachment(attachment: CdaOriginalText | CdaValueEd | undefined):
   }
 
   return mimeType === TXT_MIME_TYPE;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function getJsonFromXml(payloadRaw: string): any {
+  const parser = createXMLParser({
+    ignoreAttributes: false,
+    attributeNamePrefix: "_",
+    removeNSPrefix: true,
+  });
+
+  try {
+    return parser.parse(payloadRaw);
+  } catch (error) {
+    return parser.parse(sanitizeXmlProcessingInstructions(payloadRaw));
+  }
 }
 
 /**
