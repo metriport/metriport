@@ -466,7 +466,7 @@ export function shouldWriteBackResource({
     if (skipVitalLoinCode(observation, writeBackFilters)) return false;
     return true;
   } else if (writeBackResourceType === "medication-statement") {
-    if (writeBackFilters.medication?.disabled) return false;
+    if (writeBackFilters.medicationstatement?.disabled) return false;
     if (!isMedicationStatement(resource)) return false;
     const medicationStatement = resource;
     if (skipMedicationStatementDateAbsolute(medicationStatement, writeBackFilters)) return false;
@@ -513,8 +513,8 @@ export function skipLabPanelDate(
 ): boolean {
   const relativeDateRange = writeBackFilters.labPanel?.relativeDateRange;
   if (!relativeDateRange) return false;
-  const observationDate = getDiagnosticReportDate(diagnosticReport);
-  if (!observationDate) return true;
+  const reportDate = getDiagnosticReportDate(diagnosticReport);
+  if (!reportDate) return true;
   let beginDate = startDate ? buildDayjs(startDate) : buildDayjs();
   if (relativeDateRange.days) {
     beginDate = beginDate.subtract(relativeDateRange.days, "day");
@@ -525,7 +525,7 @@ export function skipLabPanelDate(
   if (relativeDateRange.years) {
     beginDate = beginDate.subtract(relativeDateRange.years, "year");
   }
-  return buildDayjs(observationDate).isBefore(beginDate);
+  return buildDayjs(reportDate).isBefore(beginDate);
 }
 
 export function skipLabPanelDateAbsolute(
@@ -534,9 +534,9 @@ export function skipLabPanelDateAbsolute(
 ): boolean {
   const absoluteDate = writeBackFilters.labPanel?.absoluteDate;
   if (!absoluteDate) return false;
-  const observationDate = getDiagnosticReportDate(diagnosticReport);
-  if (!observationDate) return true;
-  return buildDayjs(observationDate).isBefore(buildDayjs(absoluteDate));
+  const reportDate = getDiagnosticReportDate(diagnosticReport);
+  if (!reportDate) return true;
+  return buildDayjs(reportDate).isBefore(buildDayjs(absoluteDate));
 }
 
 export function normalizeDiagnosticReportCoding(
@@ -687,7 +687,7 @@ export function skipMedicationRxnormCode(
   medication: Medication,
   writeBackFilters: WriteBackFiltersPerResourceType
 ): boolean {
-  const rxnormCodes = writeBackFilters?.medication?.rxnormCodes;
+  const rxnormCodes = writeBackFilters?.medicationstatement?.rxnormCodes;
   if (!rxnormCodes) return false;
   const rxnormCode = getMedicationRxnormCode(medication);
   if (!rxnormCode) return true;
@@ -698,7 +698,7 @@ export function skipMedicationStatementDateAbsolute(
   medicationStatement: MedicationStatement,
   writeBackFilters: WriteBackFiltersPerResourceType
 ): boolean {
-  const absoluteDate = writeBackFilters.medication?.absoluteDate;
+  const absoluteDate = writeBackFilters.medicationstatement?.absoluteDate;
   if (!absoluteDate) return false;
   const startDate = getMedicationStatementStartDate(medicationStatement);
   if (!startDate) return true;
@@ -738,7 +738,7 @@ async function getSecondaryResourcesToWriteBackMap({
     const medications = await getMetriportResourcesFromS3({
       cxId,
       patientId: metriportPatientId,
-      resourceType: "Mediation",
+      resourceType: "Medication",
     });
     const filteredMedications = medications.filter(medication => {
       if (!writeBackFilters) return true;
@@ -752,8 +752,10 @@ async function getSecondaryResourcesToWriteBackMap({
       statements: resources as MedicationStatement[],
     });
     return hydratedMedications.reduce((acc, { medication, statements }) => {
-      if (!medication.id) return acc;
-      acc[medication.id] = statements;
+      for (const statement of statements) {
+        if (!statement.id) continue;
+        acc[statement.id] = [medication];
+      }
       return acc;
     }, {} as Record<string, Resource[]>);
   }

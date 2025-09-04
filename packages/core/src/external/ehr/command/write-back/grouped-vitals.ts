@@ -66,6 +66,10 @@ export function isGroupedVitalsByCode(val: unknown): val is GroupedVitals {
   return !!val && typeof val === "object" && "mostRecentObservation" in val;
 }
 
+export function isEhrGroupedVitals(val: unknown): val is EhrGroupedVitals {
+  return isGroupedVitalsByDate(val) || isGroupedVitalsByCode(val);
+}
+
 export function groupVitalsByDate({
   observations,
 }: {

@@ -43,7 +43,7 @@ export const writeBackFiltersPerResourceTypeSchema = z.object({
       disabled: z.boolean().optional(),
     })
     .optional(),
-  medication: z
+  medicationstatement: z
     .object({
       rxnormCodes: z.string().array().optional(),
       absoluteDate: z.string().optional(),

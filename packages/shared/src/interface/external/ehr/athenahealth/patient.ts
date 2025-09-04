@@ -8,7 +8,7 @@ export const patientCustomFieldSchema = z.object({
 export type PatientCustomField = z.infer<typeof patientCustomFieldSchema>;
 export const athenaOnePatientSchema = z.object({
   customfields: patientCustomFieldSchema.array(),
-  departmentid: z.string(),
+  primarydepartmentid: z.string(),
 });
 export type AthenaOnePatient = z.infer<typeof athenaOnePatientSchema>;
 export const athenaOnePatientsSchema = athenaOnePatientSchema.array();

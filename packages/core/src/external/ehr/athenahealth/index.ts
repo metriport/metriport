@@ -235,7 +235,7 @@ export const supportedAthenaHealthResources: ResourceType[] = [
   "DiagnosticReport",
   "Immunization",
   "MedicationRequest",
-  "MedicationStatement",
+  "MedicationStatement", // NOT REALLY SUPPORTED
   "Observation",
   "Procedure",
   "Encounter",
@@ -254,7 +254,7 @@ export const supportedAthenaHealthReferenceResources: ResourceType[] = [
 export const scopes = [
   ...supportedAthenaHealthResources,
   ...supportedAthenaHealthReferenceResources,
-];
+].filter(resource => resource !== "MedicationStatement");
 
 export type SupportedAthenaHealthResource = (typeof supportedAthenaHealthResources)[number];
 export function isSupportedAthenaHealthResource(
@@ -445,7 +445,11 @@ class AthenaHealthApi {
     const { debug } = out(
       `AthenaHealth getAthenaOnePatient - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
     );
-    const queryParams = new URLSearchParams(params);
+    const queryParams = new URLSearchParams({
+      showcustomfields: "true",
+      showprivacycustomfields: "true",
+      ...params,
+    });
     const patientsUrl = `/patients/${this.stripPatientId(patientId)}?${queryParams.toString()}`;
     const additionalInfo = { cxId, practiceId: this.practiceId, patientId };
     const athenaOnePatients = await this.makeRequest<AthenaOnePatients>({
@@ -517,11 +521,7 @@ class AthenaHealthApi {
     const athenaOnePatient = await this.getAthenaOnePatient({
       cxId,
       patientId,
-      params: {
-        showcustomfields: "true",
-        showprivacycustomfields: "true",
-        departmentid: this.stripDepartmentId(departmentId),
-      },
+      params: { departmentid: this.stripDepartmentId(departmentId) },
     });
     const patientCustomFields = athenaOnePatient.customfields;
     return patientCustomFields;
@@ -535,7 +535,7 @@ class AthenaHealthApi {
     patientId: string;
   }): Promise<string> {
     const athenaOnePatient = await this.getAthenaOnePatient({ cxId, patientId });
-    const departmentId = athenaOnePatient.departmentid;
+    const departmentId = athenaOnePatient.primarydepartmentid;
     return departmentId;
   }
 
