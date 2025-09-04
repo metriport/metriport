@@ -1,5 +1,6 @@
 import { Input, Output } from "@metriport/core/domain/conversion/cda-to-html-pdf";
 import { cleanUpPayload } from "@metriport/core/domain/conversion/cleanup";
+import { sanitizeXmlProcessingInstructions } from "@metriport/core/external/cda/remove-b64";
 import { MetriportError } from "@metriport/core/util/error/metriport-error";
 import * as Sentry from "@sentry/serverless";
 import chromium from "@sparticuz/chromium";
@@ -44,7 +45,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(
       });
     }
 
-    const document = cleanUpPayload(originalDocument);
+    const document = cleanUpPayload(sanitizeXmlProcessingInstructions(originalDocument));
 
     if (conversionType === "html") {
       const url = await convertStoreAndReturnHtmlDocUrl({ fileName, document, bucketName });
