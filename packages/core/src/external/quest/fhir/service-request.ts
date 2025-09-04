@@ -6,6 +6,7 @@ import {
   Practitioner,
   Reference,
   ServiceRequest,
+  Specimen,
 } from "@medplum/fhirtypes";
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { CPT_URL } from "@metriport/shared/medical";
@@ -15,6 +16,7 @@ import { getPractitionerReference } from "./practitioner";
 import { getQuestDataSourceExtension } from "./shared";
 import { getPatientReference } from "./patient";
 import { getServiceRequestCategory } from "../../fhir/resources/service-request";
+import { getSpecimenReference } from "./specimen";
 
 export function getServiceRequest(
   detail: ResponseDetail,
@@ -39,6 +41,14 @@ export function getServiceRequest(
     requester,
     extension,
   };
+}
+
+export function addSpecimenToServiceRequest(
+  serviceRequest: ServiceRequest,
+  specimen: Specimen
+): ServiceRequest {
+  serviceRequest.specimen = [getSpecimenReference(specimen)];
+  return serviceRequest;
 }
 
 export function getServiceRequestReference(

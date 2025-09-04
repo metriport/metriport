@@ -8,7 +8,7 @@ import { getPractitioner, getPractitionerRole } from "./practitioner";
 import { getOrganization } from "./organization";
 import { getLocation } from "./location";
 import { getConditions } from "./condition";
-import { getServiceRequest } from "./service-request";
+import { addSpecimenToServiceRequest, getServiceRequest } from "./service-request";
 import { getObservation } from "./observation";
 import { getDiagnosticReport } from "./diagnostic-report";
 import { dangerouslyDeduplicateFhir } from "../../../fhir-deduplication/deduplicate-fhir";
@@ -60,6 +60,9 @@ function getBundleEntries({ data }: IncomingData<ResponseDetail>): BundleEntry[]
     practitioner,
     serviceRequest,
   });
+  if (specimen) {
+    addSpecimenToServiceRequest(serviceRequest, specimen);
+  }
   const diagnosticReport = getDiagnosticReport(data, {
     patient,
     specimen,
