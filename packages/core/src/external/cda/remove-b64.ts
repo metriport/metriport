@@ -1,7 +1,6 @@
 import { BadRequestError, toArray } from "@metriport/shared";
 import { createXMLParser } from "@metriport/shared/common/xml-parser";
 import { XMLBuilder } from "fast-xml-parser";
-import fs from "fs";
 import { cloneDeep } from "lodash";
 import {
   CdaOriginalText,
@@ -105,8 +104,6 @@ export function removeBase64PdfEntries(payloadRaw: string): {
       }
     });
   }
-  console.log("b64Attachments", b64Attachments);
-
   const builder = new XMLBuilder({
     format: false,
     ignoreAttributes: false,
@@ -115,8 +112,6 @@ export function removeBase64PdfEntries(payloadRaw: string): {
     suppressBooleanAttributes: false,
   });
   const xml = builder.build(json);
-  console.log("lets save the new shit");
-  fs.writeFileSync("new.xml", xml);
 
   return {
     documentContents: xml,
@@ -148,6 +143,11 @@ function isTextAttachment(attachment: CdaOriginalText | CdaValueEd | undefined):
   return mimeType === TXT_MIME_TYPE;
 }
 
+/**
+ * Sometimes, the XML processing instructions are faulty, resulting in a parse error.
+ * For example, sometimes they indicate it as being a text file, rather than XML,
+ * which is why we need to sanitize the XML processing instructions.
+ */
 function sanitizeXmlProcessingInstructions(xml: string): string {
   const indexOfDocumentStart = xml.indexOf("<Clinical");
   if (indexOfDocumentStart === -1) {
