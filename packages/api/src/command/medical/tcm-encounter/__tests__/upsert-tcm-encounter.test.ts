@@ -21,9 +21,10 @@ describe("Upsert TCM Encounter Command", () => {
         patientId: faker.string.uuid(),
         facilityName: "Some Facility",
         latestEvent: "Admitted" as const,
-        class: "Inpatient",
+        class: "inpatient encounter",
         clinicalInformation: {},
         outreachStatus: "Not Started" as const,
+        outreachLogs: [],
         ...overrides,
       };
     }

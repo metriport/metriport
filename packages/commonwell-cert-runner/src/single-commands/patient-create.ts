@@ -32,7 +32,7 @@ export async function createPatient() {
   const resp = await commonWell.createOrUpdatePatient(patientCreate);
   console.log("Transaction ID: " + commonWell.lastTransactionId);
   console.log("Response: " + JSON.stringify(resp, null, 2));
-  const patientId = getMetriportPatientIdOrFail(resp.Patients[0], "createPatient");
+  const patientId = getMetriportPatientIdOrFail(resp, "createPatient");
   console.log("Patient ID: " + patientId);
 }
 

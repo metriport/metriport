@@ -10,7 +10,7 @@ import {
   stringifyAddress,
 } from "../../../domain/medical/patient-demographics";
 import { ISO_DATE } from "../../../shared/date";
-import { CwData, CwLink, CwPatientData } from "../cw-patient-data";
+import { CwData, CwLink, CwPatientData } from "../../commonwell/patient/cw-patient-data/shared";
 
 export function makeCwDataLink(): CwLink {
   const address = makeAddressStrict();
@@ -115,10 +115,10 @@ export function makeLinksHistory(): LinkDemographicsHistory {
             })
           ),
         ],
-        telephoneNumbers: [faker.phone.number("##########")],
+        telephoneNumbers: [faker.string.numeric(10)],
         emails: [email],
         driversLicenses: [], // TODO
-        ssns: [faker.phone.number("#########")],
+        ssns: [faker.string.numeric(9)],
       },
     ],
   };

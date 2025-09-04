@@ -7,10 +7,7 @@ import {
   Patient as CommonwellPatient,
   RequestMetadata,
 } from "@metriport/commonwell-sdk-v1";
-import {
-  isDemoAugEnabledForCx,
-  isEnhancedCoverageEnabledForCx,
-} from "@metriport/core/command/feature-flags/domain-ffs";
+import { isEnhancedCoverageEnabledForCx } from "@metriport/core/command/feature-flags/domain-ffs";
 import { addOidPrefix } from "@metriport/core/domain/oid";
 import { Patient, PatientExternalData } from "@metriport/core/domain/patient";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
@@ -18,16 +15,21 @@ import { MedicalDataSource } from "@metriport/core/external/index";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
-import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { errorToString } from "@metriport/shared";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { createOrUpdateInvalidLinks } from "../../command/medical/invalid-links/create-invalid-links";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
-import {
-  createAugmentedPatient,
-  getNewDemographics,
-} from "../../domain/medical/patient-demographics";
+import { getNewDemographics } from "../../domain/medical/patient-demographics";
 import MetriportError from "../../errors/metriport-error";
+import { UpdatePatientCmd } from "../commonwell/patient/command-types";
+import { createOrUpdateCwPatientData } from "../commonwell/patient/cw-patient-data/create-cw-data";
+import { deleteCwPatientData } from "../commonwell/patient/cw-patient-data/delete-cw-data";
+import { updateCwPatientData } from "../commonwell/patient/cw-patient-data/update-cw-data";
+import {
+  updateCommonwellIdsAndStatus,
+  updatePatientDiscoveryStatus,
+} from "../commonwell/patient/patient-external-data";
+import { CQLinkStatus, PatientDataCommonwell } from "../commonwell/patient/patient-shared";
 import { checkLinkDemographicsAcrossHies } from "../hie/check-patient-link-demographics";
 import { HieInitiator } from "../hie/get-hie-initiator";
 import { resetPatientScheduledDocQueryRequestId } from "../hie/reset-scheduled-doc-query-request-id";
@@ -37,27 +39,22 @@ import { updatePatientLinkDemographics } from "../hie/update-patient-link-demogr
 import { validateCwLinksBelongToPatient } from "../hie/validate-patient-links";
 import { LinkStatus } from "../patient-link";
 import { makeCommonWellAPI } from "./api";
-import { createOrUpdateCwPatientData } from "./command/cw-patient-data/create-cw-data";
-import { deleteCwPatientData } from "./command/cw-patient-data/delete-cw-data";
-import { updateCwPatientData } from "./command/cw-patient-data/update-cw-data";
 import { CwLink } from "./cw-patient-data";
 import { queryAndProcessDocuments } from "./document/document-query";
-import { autoUpgradeNetworkLinks, getPatientsNetworkLinks } from "./link/shared";
+import {
+  autoUpgradeNetworkLinks,
+  cwLinkToPatientData,
+  getPatientsNetworkLinks,
+} from "./link/shared";
 import { makePersonForPatient, patientToCommonwell } from "./patient-conversion";
 import {
   getPatientNetworkLinks,
   patientNetworkLinkToNormalizedLinkDemographics,
 } from "./patient-demographics";
 import {
-  updateCommonwellIdsAndStatus,
-  updatePatientDiscoveryStatus,
-} from "./patient-external-data";
-import {
-  CQLinkStatus,
   findOrCreatePerson,
   FindOrCreatePersonResponse,
   getMatchingStrongIds,
-  PatientDataCommonwell,
 } from "./patient-shared";
 import { getCwInitiator, validateCWEnabled } from "./shared";
 
@@ -92,63 +89,7 @@ export function getLinkStatusCQ(data: PatientExternalData | undefined): CQLinkSt
   return getCWData(data)?.cqLinkStatus ?? defaultStatus;
 }
 
-export async function create({
-  patient,
-  facilityId,
-  getOrgIdExcludeList,
-  requestId: inputRequestId,
-  forceCWCreate = false,
-  rerunPdOnNewDemographics = false,
-  initiator,
-}: {
-  patient: Patient;
-  facilityId: string;
-  getOrgIdExcludeList: () => Promise<string[]>;
-  requestId?: string;
-  forceCWCreate?: boolean;
-  rerunPdOnNewDemographics?: boolean;
-  initiator?: HieInitiator;
-}): Promise<{ commonwellPatientId: string; personId: string } | void> {
-  const { log, debug } = out(`CW create - M patientId ${patient.id}`);
-
-  const isCwEnabled = await validateCWEnabled({
-    patient,
-    facilityId,
-    forceCW: forceCWCreate,
-    log,
-  });
-
-  const demoAugEnabled = await isDemoAugEnabledForCx(patient.cxId);
-  const cxRerunPdOnNewDemographics = demoAugEnabled || rerunPdOnNewDemographics;
-
-  if (isCwEnabled) {
-    const requestId = inputRequestId ?? uuidv7();
-    const startedAt = new Date();
-    const updatedPatient = await updatePatientDiscoveryStatus({
-      patient,
-      status: "processing",
-      params: {
-        requestId,
-        facilityId,
-        startedAt,
-        rerunPdOnNewDemographics: cxRerunPdOnNewDemographics,
-      },
-    });
-
-    return await registerAndLinkPatientInCW({
-      patient: createAugmentedPatient(updatedPatient),
-      facilityId,
-      getOrgIdExcludeList,
-      rerunPdOnNewDemographics: cxRerunPdOnNewDemographics,
-      requestId,
-      startedAt,
-      debug,
-      initiator,
-    });
-  }
-}
-
-async function registerAndLinkPatientInCW({
+export async function registerAndLinkPatientInCwV1({
   patient,
   facilityId,
   getOrgIdExcludeList,
@@ -157,6 +98,7 @@ async function registerAndLinkPatientInCW({
   startedAt,
   debug,
   initiator,
+  update,
 }: {
   patient: Patient;
   facilityId: string;
@@ -166,6 +108,7 @@ async function registerAndLinkPatientInCW({
   startedAt: Date;
   debug: typeof console.log;
   initiator?: HieInitiator;
+  update: (params: UpdatePatientCmd) => Promise<void>;
 }): Promise<{ commonwellPatientId: string; personId: string } | void> {
   const { log } = out(`registerAndLinkPatientInCW - patientId ${patient.id}`);
   let commonWell: CommonWellAPI | undefined;
@@ -219,6 +162,7 @@ async function registerAndLinkPatientInCW({
         getOrgIdExcludeList,
         requestId,
         cwLinks,
+        update,
       });
       if (startedNewPd) return;
     }
@@ -236,9 +180,10 @@ async function registerAndLinkPatientInCW({
       },
     });
 
-    const startedNewPd = await runNexPdIfScheduled({
+    const startedNewPd = await runNextPdIfScheduled({
       patient,
       requestId,
+      update,
     });
     if (startedNewPd) return;
     await updatePatientDiscoveryStatus({ patient, status: "completed" });
@@ -272,60 +217,7 @@ async function registerAndLinkPatientInCW({
   }
 }
 
-export async function update({
-  patient,
-  facilityId,
-  getOrgIdExcludeList,
-  requestId: inputRequestId,
-  forceCWUpdate = false,
-  rerunPdOnNewDemographics = false,
-}: {
-  patient: Patient;
-  facilityId: string;
-  getOrgIdExcludeList: () => Promise<string[]>;
-  requestId?: string;
-  forceCWUpdate?: boolean;
-  rerunPdOnNewDemographics?: boolean;
-}): Promise<void> {
-  const { log, debug } = out(`CW update - M patientId ${patient.id}`);
-
-  const isCwEnabled = await validateCWEnabled({
-    patient,
-    facilityId,
-    forceCW: forceCWUpdate,
-    log,
-  });
-
-  const demoAugEnabled = await isDemoAugEnabledForCx(patient.cxId);
-  const cxRerunPdOnNewDemographics = demoAugEnabled || rerunPdOnNewDemographics;
-
-  if (isCwEnabled) {
-    const requestId = inputRequestId ?? uuidv7();
-    const startedAt = new Date();
-    const updatedPatient = await updatePatientDiscoveryStatus({
-      patient,
-      status: "processing",
-      params: {
-        requestId,
-        facilityId,
-        startedAt,
-        rerunPdOnNewDemographics: cxRerunPdOnNewDemographics,
-      },
-    });
-
-    await updatePatientAndLinksInCw({
-      patient: createAugmentedPatient(updatedPatient),
-      facilityId,
-      getOrgIdExcludeList,
-      rerunPdOnNewDemographics: cxRerunPdOnNewDemographics,
-      requestId,
-      startedAt,
-      debug,
-    });
-  }
-}
-
-async function updatePatientAndLinksInCw({
+export async function updatePatientAndLinksInCwV1({
   patient,
   facilityId,
   getOrgIdExcludeList,
@@ -333,6 +225,7 @@ async function updatePatientAndLinksInCw({
   requestId,
   startedAt,
   debug,
+  update,
 }: {
   patient: Patient;
   facilityId: string;
@@ -341,6 +234,7 @@ async function updatePatientAndLinksInCw({
   requestId: string;
   startedAt: Date;
   debug: typeof console.log;
+  update: (params: UpdatePatientCmd) => Promise<void>;
 }): Promise<void> {
   const { log } = out(`updatePatientAndLinksInCw - patientId ${patient.id}`);
   let commonWell: CommonWellAPI | undefined;
@@ -348,7 +242,7 @@ async function updatePatientAndLinksInCw({
     const updateData = await setupPatient({ patient });
     if (!updateData) {
       log(`Could not find external data on Patient, creating it @ CW`);
-      await registerAndLinkPatientInCW({
+      await registerAndLinkPatientInCwV1({
         patient,
         facilityId,
         getOrgIdExcludeList,
@@ -356,6 +250,7 @@ async function updatePatientAndLinksInCw({
         requestId,
         startedAt,
         debug,
+        update,
       });
       return;
     }
@@ -402,6 +297,7 @@ async function updatePatientAndLinksInCw({
         getOrgIdExcludeList,
         requestId,
         cwLinks,
+        update,
       });
       if (startedNewPd) return;
     }
@@ -419,9 +315,10 @@ async function updatePatientAndLinksInCw({
       },
     });
 
-    const startedNewPd = await runNexPdIfScheduled({
+    const startedNewPd = await runNextPdIfScheduled({
       patient,
       requestId,
+      update,
     });
     if (startedNewPd) return;
     await updatePatientDiscoveryStatus({ patient, status: "completed" });
@@ -510,7 +407,8 @@ async function validateAndCreateCwLinks(
   const { validNetworkLinks, invalidLinks } = await validateCwLinksBelongToPatient(
     cxId,
     cwLinks,
-    patient.data
+    patient.data,
+    cwLinkToPatientData
   );
 
   if (validNetworkLinks.length > 0) {
@@ -534,12 +432,14 @@ export async function runNextPdOnNewDemographics({
   getOrgIdExcludeList,
   requestId,
   cwLinks,
+  update,
 }: {
   patient: Patient;
   facilityId: string;
   getOrgIdExcludeList: () => Promise<string[]>;
   requestId: string;
   cwLinks: CwLink[];
+  update: (params: UpdatePatientCmd) => Promise<void>;
 }): Promise<boolean> {
   const updatedPatient = await getPatientOrFail(patient);
 
@@ -594,12 +494,14 @@ export async function runNextPdOnNewDemographics({
   return true;
 }
 
-export async function runNexPdIfScheduled({
+async function runNextPdIfScheduled({
   patient,
   requestId,
+  update,
 }: {
   patient: Patient;
   requestId: string;
+  update: (params: UpdatePatientCmd) => Promise<void>;
 }): Promise<boolean> {
   const updatedPatient = await getPatientOrFail(patient);
 
@@ -636,7 +538,7 @@ export async function runNexPdIfScheduled({
   return true;
 }
 
-export async function queryDocsIfScheduled({
+async function queryDocsIfScheduled({
   patientIds,
   getOrgIdExcludeList,
   isFailed = false,
@@ -722,7 +624,7 @@ export async function get(
   }
 }
 
-export async function remove(patient: Patient, facilityId: string): Promise<void> {
+export async function removeInCwV1(patient: Patient, facilityId: string): Promise<void> {
   const { log } = out(`CW delete - M patientId ${patient.id}`);
   let commonWell: CommonWellAPI | undefined;
   try {
@@ -971,7 +873,7 @@ async function registerPatient({
   const { debug } = out(fnName);
 
   const respPatient = await commonWell.registerPatient(queryMeta, commonwellPatient);
-  debug(`resp registerPatient: `, JSON.stringify(respPatient));
+  debug(`resp registerPatient: `, () => JSON.stringify(respPatient));
 
   const commonwellPatientId = getIdTrailingSlash(respPatient);
   const { log } = out(`${fnName} - CW patientId ${commonwellPatientId}`);
@@ -986,6 +888,7 @@ async function registerPatient({
 
   await updateCommonwellIdsAndStatus({ patient, commonwellPatientId });
 
+  // TODO: Understand what this is and whether we need something similar in v2
   const patientRefLink = respPatient._links?.self?.href;
   if (!patientRefLink) {
     const msg = `Could not determine the patient ref link`;
