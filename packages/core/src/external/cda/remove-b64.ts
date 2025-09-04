@@ -1,6 +1,7 @@
-import { toArray } from "@metriport/shared";
+import { BadRequestError, toArray } from "@metriport/shared";
 import { createXMLParser } from "@metriport/shared/common/xml-parser";
 import { XMLBuilder } from "fast-xml-parser";
+import fs from "fs";
 import { cloneDeep } from "lodash";
 import {
   CdaOriginalText,
@@ -104,6 +105,7 @@ export function removeBase64PdfEntries(payloadRaw: string): {
       }
     });
   }
+  console.log("b64Attachments", b64Attachments);
 
   const builder = new XMLBuilder({
     format: false,
@@ -113,6 +115,8 @@ export function removeBase64PdfEntries(payloadRaw: string): {
     suppressBooleanAttributes: false,
   });
   const xml = builder.build(json);
+  console.log("lets save the new shit");
+  fs.writeFileSync("new.xml", xml);
 
   return {
     documentContents: xml,
@@ -147,7 +151,7 @@ function isTextAttachment(attachment: CdaOriginalText | CdaValueEd | undefined):
 function sanitizeXmlProcessingInstructions(xml: string): string {
   const indexOfDocumentStart = xml.indexOf("<Clinical");
   if (indexOfDocumentStart === -1) {
-    throw new Error("No ClinicalDocument found in XML");
+    throw new BadRequestError("No ClinicalDocument found in XML");
   }
 
   return xmlProcessingInstructions.concat(xml.substring(indexOfDocumentStart));
