@@ -372,6 +372,21 @@ export const testFiles = [
   { name: "test-little-endian.tiff", mimeType: "image/tiff", fileExtension: ".tiff" },
   { name: "test-big-endian.tiff", mimeType: "image/tiff", fileExtension: ".tiff" },
   { name: "test-with-declaration.xml", mimeType: "application/xml", fileExtension: ".xml" },
+  {
+    name: "test-with-commented-declaration.xml",
+    mimeType: "application/xml",
+    fileExtension: ".xml",
+  },
+  {
+    name: "test-with-commented-declaration.txt",
+    mimeType: "application/xml",
+    fileExtension: ".xml",
+  },
+  {
+    name: "text-thats-in-xml.xml",
+    mimeType: "text/plain",
+    fileExtension: ".txt",
+  },
   { name: "test-no-declaration.xml", mimeType: "application/xml", fileExtension: ".xml" },
   { name: "test.txt", mimeType: "text/plain", fileExtension: ".txt" },
   { name: "test.jpeg", mimeType: "image/jpeg", fileExtension: ".jpeg" },

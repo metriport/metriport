@@ -1,6 +1,7 @@
 import { Observation } from "@medplum/fhirtypes";
 import { BadRequestError, JwtTokenInfo } from "@metriport/shared";
 import { EhrSource, EhrSources } from "@metriport/shared/interface/external/ehr/source";
+import { writeBackLab as writeBackLabAthena } from "../../athenahealth/command/write-back/lab";
 import { writeBackLab as writeBackLabElation } from "../../elation/command/write-back/lab";
 
 export type WriteBackLabRequest = {
@@ -25,7 +26,7 @@ type WriteBackLabFnMap = Record<EhrSource, WriteBackLabFn | undefined>;
 
 const ehrWriteBackLabMap: WriteBackLabFnMap = {
   [EhrSources.canvas]: undefined,
-  [EhrSources.athena]: undefined,
+  [EhrSources.athena]: writeBackLabAthena,
   [EhrSources.elation]: writeBackLabElation,
   [EhrSources.healthie]: undefined,
   [EhrSources.eclinicalworks]: undefined,

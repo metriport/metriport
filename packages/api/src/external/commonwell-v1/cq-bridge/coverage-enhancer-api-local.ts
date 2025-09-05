@@ -7,7 +7,7 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { capture } from "../../../shared/notifications";
 import { PatientLoaderLocal } from "../../../models/helpers/patient-loader-local";
-import { PatientUpdaterCommonWell } from "../patient-updater-commonwell";
+import { PatientUpdaterCommonWell } from "../../commonwell/patient/patient-updater-commonwell";
 import { completeEnhancedCoverage } from "./coverage-enhancement-complete";
 import { ECUpdaterLocal } from "./ec-updater-local";
 

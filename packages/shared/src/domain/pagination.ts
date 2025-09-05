@@ -1,8 +1,6 @@
 import { z } from "zod";
 import { numericValueSchema } from "../common/zod";
-
-export const defaultItemsPerPage = 50;
-export const maxItemsPerPage = 500;
+import { maxItemsPerPage } from "./pagination-v2";
 
 export function createQueryMetaSchema(maxItems: number = maxItemsPerPage) {
   return z.intersection(

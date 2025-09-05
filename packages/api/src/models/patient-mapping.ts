@@ -1,6 +1,10 @@
 import { MetriportError } from "@metriport/shared";
 import { DataTypes, Sequelize } from "sequelize";
-import { PatientMapping, PatientMappingSource } from "../domain/patient-mapping";
+import {
+  PatientMapping,
+  PatientMappingSource,
+  PatientMappingSecondaryMappings,
+} from "../domain/patient-mapping";
 import { BaseModel, generateETag, ModelSetup } from "./_default";
 
 const patientMappingColumnNames: Record<
@@ -12,6 +16,7 @@ const patientMappingColumnNames: Record<
   cxId: "cx_id",
   patientId: "patient_id",
   source: "source",
+  secondaryMappings: "secondary_mappings",
   createdAt: "created_at",
   updatedAt: "updated_at",
   version: "version",
@@ -20,6 +25,7 @@ const patientMappingColumnNames: Record<
 export class PatientMappingModel extends BaseModel<PatientMappingModel> implements PatientMapping {
   static NAME = "patient_mapping";
   declare externalId: string;
+  declare secondaryMappings: PatientMappingSecondaryMappings;
   declare cxId: string;
   declare patientId: string;
   declare source: PatientMappingSource;
@@ -39,6 +45,9 @@ export class PatientMappingModel extends BaseModel<PatientMappingModel> implemen
         },
         externalId: {
           type: DataTypes.STRING,
+        },
+        secondaryMappings: {
+          type: DataTypes.JSONB,
         },
       },
       {
@@ -61,12 +70,14 @@ export function rawToDomain(raw: Record<string, string>): PatientMapping {
   const version = parseInt(versionRaw);
   if (isNaN(version)) throw new MetriportError("version must be a number");
   const id = raw[patientMappingColumnNames.id];
+  const secondaryMappingsRaw = raw[patientMappingColumnNames.secondaryMappings];
   const obj: PatientMapping = {
     id,
     patientId: raw[patientMappingColumnNames.patientId],
     externalId: raw[patientMappingColumnNames.externalId],
     source: raw[patientMappingColumnNames.source] as PatientMappingSource,
     cxId: raw[patientMappingColumnNames.cxId],
+    secondaryMappings: secondaryMappingsRaw ? JSON.parse(secondaryMappingsRaw) : undefined,
     createdAt: new Date(createdAtRaw),
     updatedAt: new Date(updatedAtRaw),
     eTag: generateETag(id, version),

@@ -1,9 +1,12 @@
 import {
+  BadRequestError,
   base64ToBuffer,
   defaultOptionsRequestNotAccepted,
   executeWithNetworkRetries,
   MetriportError,
+  NotFoundError,
 } from "@metriport/shared";
+import { isAxiosError } from "axios";
 import httpStatus from "http-status";
 import * as stream from "stream";
 import { CommonwellError } from "../common/commonwell-error";
@@ -11,11 +14,11 @@ import { downloadFileInMemory } from "../common/fileDownload";
 import { makeJwt } from "../common/make-jwt";
 import {
   buildBaseQueryMeta,
-  convertPatientIdToSubjectId,
-  encodeToCwPatientId,
+  encodeCwPatientId,
+  encodePatientIdForDocumentExchange,
 } from "../common/util";
 import { normalizeDatetime } from "../models/date";
-import { fhirGenderToCommonwell } from "../models/demographics";
+import { GenderCodes } from "../models/demographics";
 import {
   DocumentQueryFullResponse,
   documentQueryFullResponseSchema,
@@ -24,11 +27,13 @@ import {
 } from "../models/document";
 import {
   Patient,
-  PatientCollection,
-  PatientCollectionItem,
-  patientCollectionSchema,
-  PatientProbableLinkResp,
-  patientProbableLinkRespSchema,
+  PatientCreateOrUpdateResp,
+  PatientExistingLinks,
+  patientExistingLinksSchema,
+  PatientProbableLinks,
+  patientProbableLinksRespSchema,
+  PatientResponseItem,
+  patientResponseSchema,
   StatusResponse,
   statusResponseSchema,
 } from "../models/patient";
@@ -126,12 +131,23 @@ export class CommonWell extends CommonWellBase implements CommonWellAPI {
    * @param options.meta Metadata about the request. Defaults to the data used to initialize the client.
    * @returns The patient collection containing the patient in the first position.
    */
-  async createOrUpdatePatient(patient: Patient, options?: BaseOptions): Promise<PatientCollection> {
+  async createOrUpdatePatient(
+    patient: Patient,
+    options?: BaseOptions
+  ): Promise<PatientCreateOrUpdateResp> {
     const headers = this.buildQueryHeaders(options?.meta);
     const url = buildPatientEndpoint(this.oid);
     const normalizedPatient = normalizePatient(patient);
-    const resp = await this.api.post(url, normalizedPatient, { headers });
-    return patientCollectionSchema.parse(resp.data);
+
+    const resp = await this.executeWithRetriesOn500IfEnabled(() =>
+      this.api.post(url, normalizedPatient, { headers })
+    );
+    const parsed = patientResponseSchema.parse(resp.data);
+    const links = parsed.Patients[0].Links;
+    return {
+      Links: links,
+      status: parsed.status ?? undefined,
+    };
   }
 
   /**
@@ -140,53 +156,60 @@ export class CommonWell extends CommonWellBase implements CommonWellAPI {
    * @param params The patient ID and optional assign authority and assign authority type.
    * @param options Optional parameters.
    * @param options.meta Metadata about the request. Defaults to the data used to initialize the client.
-   * @returns The patient collection containing the patient in the first position.
+   * @returns The patient response item containing the patient in the first position.
    * @throws MetriportError if multiple patients are found for the given ID.
    */
   async getPatient(
     params: GetPatientParams,
     options?: BaseOptions
-  ): Promise<PatientCollectionItem | undefined>;
+  ): Promise<PatientResponseItem | undefined>;
   /**
-   * Returns a patient based on its ID.
+   * Returns a patient based on its ID. From the spec, about the patient ID:
    *
-   * @param id      Patient's ID, unencoded.
+   * The local Patient Identifier. The value is under the control of the local Edge System and
+   * represents the unique identifier for the Patient Record in the local system. The format
+   * for this identifier MUST follow the HL7 CX data type format:
+   *
+   * IdentifierValue^^^&PatientIdAssignAuthority&PatientIdAssignAuthorityType
+   *
+   * @param id      Patient's ID, HL7 CX data type format.
    * @param options Optional parameters.
    * @param options.meta Metadata about the request. Defaults to the data used to initialize the client.
-   * @returns The patient collection containing the patient in the first position.
+   * @returns The patient response item containing the patient in the first position.
    * @throws MetriportError if multiple patients are found for the given ID.
+   * @see Section "8.3.2 Get Patient" of the spec.
    */
-  async getPatient(id: string, options?: BaseOptions): Promise<PatientCollectionItem | undefined>;
+  async getPatient(id: string, options?: BaseOptions): Promise<PatientResponseItem>;
   async getPatient(
     idOrParams: string | GetPatientParams,
     options?: BaseOptions
-  ): Promise<PatientCollectionItem | undefined> {
+  ): Promise<PatientResponseItem> {
     let patientId: string;
     if (typeof idOrParams !== "string") {
       patientId = idOrParams.id;
       const { assignAuthority, assignAuthorityType } = idOrParams;
-      patientId = encodeToCwPatientId({
+      patientId = encodeCwPatientId({
         patientId,
         assignAuthority,
         assignAuthorityType,
       });
     } else {
       if (!idOrParams) {
-        throw new Error("Programming error, 'id' is required when providing separated parametrs");
+        throw new Error("Programming error: 'id' is required when providing separate parameters");
       }
       patientId = idOrParams;
     }
     const headers = this.buildQueryHeaders(options?.meta);
     const url = buildPatientEndpoint(this.oid, patientId);
     const resp = await this.executeWithRetriesOn500IfEnabled(() => this.api.get(url, { headers }));
-    const collection = patientCollectionSchema.parse(resp.data);
-    if (collection.Patients.length > 1) {
+    const parsed = patientResponseSchema.parse(resp.data);
+    if (parsed.Patients.length > 1) {
       throw new MetriportError("Multiple patients found for the given ID", undefined, {
         patientId,
-        count: collection.Patients.length,
+        count: parsed.Patients.length,
       });
     }
-    return collection.Patients[0];
+    return parsed.Patients[0];
   }
 
   /**
@@ -255,17 +278,23 @@ export class CommonWell extends CommonWellBase implements CommonWellAPI {
    * The links returned are confirmed links of LOLA 2 or higher.
    *
    * @param meta                Metadata about the request.
-   * @param patientId            The person id to be link to a patient.
+   * @param patientId           The person id to be link to a patient.
    * @returns Response with list of links to Patients
    */
   async getPatientLinksByPatientId(
     patientId: string,
     options?: BaseOptions
-  ): Promise<PatientCollection> {
+  ): Promise<PatientExistingLinks> {
     const headers = this.buildQueryHeaders(options?.meta);
     const url = buildPatientLinkEndpoint(this.oid, patientId);
-    const resp = await this.executeWithRetriesOn500IfEnabled(() => this.api.get(url, { headers }));
-    return patientCollectionSchema.parse(resp.data);
+    try {
+      const resp = await this.executeWithRetriesOn500IfEnabled(() =>
+        this.api.get(url, { headers })
+      );
+      return patientExistingLinksSchema.parse(resp.data);
+    } catch (error) {
+      throw this.getDescriptiveError(error, "Failed to get patient links by patient id");
+    }
   }
 
   /**
@@ -287,11 +316,18 @@ export class CommonWell extends CommonWellBase implements CommonWellAPI {
   async getProbableLinksById(
     patientId: string,
     options?: BaseOptions
-  ): Promise<PatientProbableLinkResp> {
+  ): Promise<PatientProbableLinks> {
     const headers = this.buildQueryHeaders(options?.meta);
     const url = buildProbableLinkEndpoint(this.oid, patientId);
-    const resp = await this.executeWithRetriesOn500IfEnabled(() => this.api.get(url, { headers }));
-    return patientProbableLinkRespSchema.parse(resp.data);
+
+    try {
+      const resp = await this.executeWithRetriesOn500IfEnabled(() =>
+        this.api.get(url, { headers })
+      );
+      return patientProbableLinksRespSchema.parse(resp.data);
+    } catch (error) {
+      throw this.getDescriptiveError(error, "Failed to get probable links by patient id");
+    }
   }
 
   /**
@@ -325,23 +361,23 @@ export class CommonWell extends CommonWellBase implements CommonWellAPI {
       firstName: string;
       lastName: string;
       dob: string;
-      gender: string;
+      gender: GenderCodes;
       zip: string;
     },
     options?: BaseOptions
-  ): Promise<PatientProbableLinkResp> {
+  ): Promise<PatientProbableLinks> {
     const headers = this.buildQueryHeaders(options?.meta);
     const params = new URLSearchParams();
     params.append("fname", firstName);
     params.append("lname", lastName);
     params.append("dob", dob);
-    params.append("gender", fhirGenderToCommonwell(gender));
+    params.append("gender", gender);
     params.append("zip", zip);
     const url = buildProbableLinkEndpoint(this.oid);
     const resp = await this.executeWithRetriesOn500IfEnabled(() =>
       this.api.get(url + `?${params.toString()}`, { headers })
     );
-    return patientProbableLinkRespSchema.parse(resp.data);
+    return patientProbableLinksRespSchema.parse(resp.data);
   }
 
   /**
@@ -424,7 +460,7 @@ export class CommonWell extends CommonWellBase implements CommonWellAPI {
       ...params,
       status: options?.status ?? "current",
     };
-    const subjectId = convertPatientIdToSubjectId(patientId);
+    const subjectId = encodePatientIdForDocumentExchange(patientId);
     if (!subjectId) {
       throw new CommonwellError(`Could not determine subject ID for document query`, undefined, {
         patientId,
@@ -560,6 +596,24 @@ export class CommonWell extends CommonWellBase implements CommonWellAPI {
         })
       : fn();
   }
+
+  private getDescriptiveError(error: unknown, title: string): unknown {
+    if (isAxiosError(error)) {
+      const status = error.response?.status;
+      const data = error.response?.data;
+      const responseBody = data ? JSON.stringify(data) : undefined;
+      const cwReference = this.lastTransactionId;
+
+      if (status === httpStatus.BAD_REQUEST) {
+        return new BadRequestError(title, error, { status, cwReference, responseBody });
+      }
+      if (status === httpStatus.NOT_FOUND) {
+        return new NotFoundError(title, error, { status, cwReference, responseBody });
+      }
+      return new MetriportError(title, error, { status, cwReference, responseBody });
+    }
+    return error;
+  }
 }
 
 function buildOrgEndpoint(orgId: string) {
@@ -598,7 +652,6 @@ function buildDocumentQueryUrl(subjectId: string, params: DocumentQueryParams): 
 function normalizePatient(patient: Patient): Patient {
   return {
     ...patient,
-    ...(patient.gender ? { gender: fhirGenderToCommonwell(patient.gender) } : {}),
     ...(patient.birthDate ? { birthDate: normalizeDatetime(patient.birthDate) } : {}),
   };
 }
