@@ -30,7 +30,7 @@ export function getServiceRequest(
     patient,
     requestingPractitioner,
     location,
-  }: { patient: Patient; requestingPractitioner: Practitioner; location: Location }
+  }: { patient: Patient; requestingPractitioner: Practitioner; location?: Location | undefined }
 ): ServiceRequest {
   const identifier = getServiceRequestIdentifier(detail);
   const requisition = getServiceRequestRequisition(detail);
@@ -39,7 +39,7 @@ export function getServiceRequest(
   const code = getServiceRequestCoding(detail);
   const category = [getServiceRequestCategory("Laboratory procedure")];
   const extension = [getQuestDataSourceExtension()];
-  const locationReference = [getLocationReference(location)];
+  const locationReference = location ? [getLocationReference(location)] : undefined;
 
   return {
     resourceType: "ServiceRequest",
@@ -48,11 +48,11 @@ export function getServiceRequest(
     intent: "original-order",
     subject,
     category,
+    requester,
     ...(code ? { code } : {}),
     ...(requisition ? { requisition } : {}),
     ...(identifier ? { identifier } : {}),
-    requester,
-    locationReference,
+    ...(locationReference ? { locationReference } : {}),
     extension,
   };
 }

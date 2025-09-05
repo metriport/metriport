@@ -4,11 +4,13 @@ import { ResponseDetail } from "../schema/response";
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { getQuestDataSourceExtension } from "./shared";
 
-export function getLocation(detail: ResponseDetail): Location {
+export function getLocation(detail: ResponseDetail): Location | undefined {
   const name = getLocationName(detail);
   const address = getLocationAddress(detail);
   const telecom = getLocationTelecom(detail);
   const extension = [getQuestDataSourceExtension()];
+
+  if (!name && !address && !telecom) return undefined;
 
   return {
     resourceType: "Location",
