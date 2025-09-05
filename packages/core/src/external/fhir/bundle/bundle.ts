@@ -33,6 +33,7 @@ import {
   Resource,
   ResourceType,
   ServiceRequest,
+  Specimen,
 } from "@medplum/fhirtypes";
 import { filterTruthy } from "@metriport/shared/common/filter-map";
 import {
@@ -366,6 +367,7 @@ export type ExtractedFhirTypes = {
   carePlans: CarePlan[];
   goals: Goal[];
   serviceRequests: ServiceRequest[];
+  specimens: Specimen[];
   documentReferences: DocumentReference[];
 };
 
@@ -413,6 +415,7 @@ export function extractFhirTypesFromBundle(bundle: Bundle): ExtractedFhirTypes {
   const carePlans: CarePlan[] = [];
   const goals: Goal[] = [];
   const serviceRequests: ServiceRequest[] = [];
+  const specimens: Specimen[] = [];
   const documentReferences: DocumentReference[] = [];
 
   if (bundle.entry) {
@@ -494,6 +497,8 @@ export function extractFhirTypesFromBundle(bundle: Bundle): ExtractedFhirTypes {
         goals.push(resource as Goal);
       } else if (resource?.resourceType === "ServiceRequest") {
         serviceRequests.push(resource as ServiceRequest);
+      } else if (resource?.resourceType === "Specimen") {
+        specimens.push(resource as Specimen);
       }
     }
   }
@@ -533,6 +538,7 @@ export function extractFhirTypesFromBundle(bundle: Bundle): ExtractedFhirTypes {
     carePlans,
     goals,
     serviceRequests,
+    specimens,
     documentReferences,
   };
 }
