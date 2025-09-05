@@ -110,15 +110,19 @@ function getOrgOIDAndPatientId(req: Request): {
   patientId: string;
 } {
   const query = req.query;
-  const executeWithParam = (paramName: string) => {
+  function executeWithParam(paramName: string) {
     const param = query[paramName];
     if (typeof param !== "string") return undefined;
     const patientIdRaw = param?.split("|") ?? [];
-    const orgOID = (patientIdRaw[0] ?? "").replace("urn:oid:", "");
-    const patientId = (patientIdRaw[1] ?? "").replace("urn:oid:", "").replace("urn:uuid:", "");
-    if (orgOID?.trim().length && patientId?.trim().length) return { orgOID, patientId };
+    const orgOIDUnknownCase = (patientIdRaw[0] ?? "").replace("urn:oid:", "");
+    const orgOID = orgOIDUnknownCase.toLowerCase();
+    const patientIdUnknownCase = (patientIdRaw[1] ?? "")
+      .replace("urn:oid:", "")
+      .replace("urn:uuid:", "");
+    const patientId = patientIdUnknownCase.toLowerCase();
+    if (orgOID?.trim().length && patientId.trim().length) return { orgOID, patientId };
     return undefined;
-  };
+  }
   for (const param of patientParams) {
     const response = executeWithParam(param);
     if (response) return response;
