@@ -480,8 +480,9 @@ export function handleTitleSpecialCases(
   return updatedTitle;
 }
 
+const BLOOD_PRESSURE_TITLE = "Blood Pressure";
 export function handleBloodPressureMapping(obsMap: Map<string, GroupedObservation[]>) {
-  const bloodPressure = obsMap.get("Blood Pressure");
+  const bloodPressure = obsMap.get(BLOOD_PRESSURE_TITLE);
   if (!bloodPressure) return;
 
   const groupedBloodPressure: GroupedObservation[] = [];

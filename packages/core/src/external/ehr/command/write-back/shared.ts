@@ -53,7 +53,7 @@ export async function writeBackResource({ ...params }: WriteBackResourceRequest)
   }
   if (isEhrGroupedVitals(params.primaryResourceOrResources)) {
     throw new BadRequestError(
-      "Condition write back requires primary resource to be a condition",
+      "Non-grouped vitals write back requires primary resource to be a resource",
       undefined,
       {
         ehr: params.ehr,
@@ -136,7 +136,7 @@ export async function writeBackResource({ ...params }: WriteBackResourceRequest)
       !params.secondaryResourceOrResources.every(isMedication)
     ) {
       throw new BadRequestError(
-        "MedicationStatement write back requires secondary resources",
+        "MedicationStatement write back requires secondary resources be medications",
         undefined,
         {
           ehr: params.ehr,
@@ -147,7 +147,7 @@ export async function writeBackResource({ ...params }: WriteBackResourceRequest)
     const medication = params.secondaryResourceOrResources[0];
     if (!medication) {
       throw new BadRequestError(
-        "MedicationStatement write back requires secondary resources",
+        "MedicationStatement write back requires at least one secondary resource",
         undefined,
         {
           ehr: params.ehr,
