@@ -11,7 +11,11 @@ import {
 } from "@medplum/fhirtypes";
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { CPT_URL } from "@metriport/shared/medical";
-import { SNOMED_LABORATORY_PROCEDURE_CODE } from "./constant";
+import {
+  SNOMED_LABORATORY_PROCEDURE_CODE,
+  QUEST_STANDARD_ORDER_CODE_URL,
+  QUEST_REQUISITION_NUMBER_URL,
+} from "./constant";
 import { ResponseDetail } from "../schema/response";
 import { getPractitionerReference } from "./practitioner";
 import { getQuestDataSourceExtension } from "./shared";
@@ -29,6 +33,7 @@ export function getServiceRequest(
   }: { patient: Patient; requestingPractitioner: Practitioner; location: Location }
 ): ServiceRequest {
   const identifier = getServiceRequestIdentifier(detail);
+  const requisition = getServiceRequestRequisition(detail);
   const subject = getPatientReference(patient);
   const requester = getPractitionerReference(requestingPractitioner);
   const code = getServiceRequestCoding(detail);
@@ -42,8 +47,9 @@ export function getServiceRequest(
     status: "completed",
     intent: "original-order",
     subject,
-    ...(code ? { code } : {}),
     category,
+    ...(code ? { code } : {}),
+    ...(requisition ? { requisition } : {}),
     ...(identifier ? { identifier } : {}),
     requester,
     locationReference,
@@ -71,10 +77,18 @@ function getServiceRequestIdentifier(detail: ResponseDetail): Identifier[] | und
   if (!detail.requisitionNumber) return undefined;
   return [
     {
-      system: "http://questdiagnostics.com/requisition-number",
+      system: QUEST_REQUISITION_NUMBER_URL,
       value: detail.requisitionNumber,
     },
   ];
+}
+
+function getServiceRequestRequisition(detail: ResponseDetail): Identifier | undefined {
+  if (!detail.requisitionNumber) return undefined;
+  return {
+    system: QUEST_REQUISITION_NUMBER_URL,
+    value: detail.requisitionNumber,
+  };
 }
 
 function getServiceRequestCoding(detail: ResponseDetail): CodeableConcept | undefined {
@@ -89,6 +103,13 @@ function getServiceRequestCoding(detail: ResponseDetail): CodeableConcept | unde
   }
   // Push a standard SNOMED
   coding.push(SNOMED_LABORATORY_PROCEDURE_CODE);
+
+  if (detail.standardOrderCode) {
+    coding.push({
+      system: QUEST_STANDARD_ORDER_CODE_URL,
+      code: detail.standardOrderCode,
+    });
+  }
 
   return {
     ...(text ? { text } : {}),
