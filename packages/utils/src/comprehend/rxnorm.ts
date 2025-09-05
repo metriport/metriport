@@ -7,21 +7,9 @@ import { ComprehendClient } from "@metriport/core/external/comprehend/client";
 const command = new Command();
 command.name("rxnorm");
 command.requiredOption("--text <text>", "The text to infer RxNorm codes from");
-command.option(
-  "--confidence-threshold <confidenceThreshold>",
-  "The confidence threshold for selecting RxNorm codes",
-  "0.5"
-);
 command.action(runRxNormInference);
 
-async function runRxNormInference({
-  text,
-  confidenceThreshold,
-}: {
-  text: string;
-  confidenceThreshold: number;
-}) {
-  console.log(text, confidenceThreshold);
+async function runRxNormInference({ text }: { text: string }) {
   const comprehendClient = new ComprehendClient();
   const response = await comprehendClient.inferRxNorm(text);
   console.log(response);
