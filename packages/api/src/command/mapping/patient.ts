@@ -146,7 +146,9 @@ export async function findFirstPatientMappingForSource({
 export async function findPatientWithExternalId({
   externalId,
   source,
-}: Omit<PatientMappingParams, "cxId" | "patientId">): Promise<PatientMapping | undefined> {
+}: Omit<PatientMappingParams, "cxId" | "patientId" | "secondaryMappings">): Promise<
+  PatientMapping | undefined
+> {
   const mappings = await PatientMappingModel.findOne({
     where: { externalId, source },
     order: [["createdAt", "ASC"]],
