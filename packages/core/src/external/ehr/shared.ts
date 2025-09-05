@@ -49,7 +49,11 @@ import duration from "dayjs/plugin/duration";
 import { partition, uniqBy } from "lodash";
 import { z } from "zod";
 import { createHivePartitionFilePath } from "../../domain/filename";
-import { fetchCodingCodeOrDisplayOrSystem } from "../../fhir-deduplication/shared";
+import {
+  UNKNOWN_DISPLAY,
+  UNK_CODE,
+  fetchCodingCodeOrDisplayOrSystem,
+} from "../../fhir-deduplication/shared";
 import { executeAsynchronously } from "../../util/concurrency";
 import { Config } from "../../util/config";
 import {
@@ -400,9 +404,33 @@ export type MedicationWithRefs = {
   statement: MedicationStatement[];
 };
 
+export function createMedicationWithRefs(
+  medication: Medication,
+  statement: MedicationStatement[]
+): MedicationWithRefs {
+  return {
+    medication,
+    statement,
+    administration: [],
+    dispense: [],
+  };
+}
+
 export type GroupedVitals = {
   mostRecentObservation: Observation;
   sortedPoints?: DataPoint[];
+  title?: string;
+};
+
+export type GroupedVitalsByDate = [Date, Observation[]];
+
+export type GroupedObservation = {
+  rawVital: Observation;
+  grouping?: string;
+  observation: number;
+  unit?: string | undefined;
+  date: string;
+  bp?: BloodPressure | undefined;
 };
 
 export type BloodPressure = {
@@ -413,9 +441,97 @@ export type BloodPressure = {
 export type DataPoint = {
   value: number;
   date: string;
-  unit?: string;
+  unit?: string | undefined;
   bp?: BloodPressure | undefined;
 };
+
+// METHODS FROM DASHBOARD
+export function getValidCode(coding: Coding[] | undefined): Coding[] {
+  if (!coding) return [];
+
+  return coding.filter(coding => {
+    return (
+      coding.code &&
+      coding.code.toLowerCase().trim() !== UNK_CODE.toLowerCase() &&
+      coding.display &&
+      coding.display.toLowerCase().trim() !== UNKNOWN_DISPLAY
+    );
+  });
+}
+
+const BLOOD_PRESSURE_TITLE = "Blood Pressure";
+export function handleTitleSpecialCases(
+  title: string,
+  observationPoint: GroupedObservation
+): string {
+  let updatedTitle = title;
+  if (
+    title.toLowerCase().includes("blood pressure") ||
+    title.toLowerCase().includes("bp sys") ||
+    title.toLowerCase().includes("bp dias")
+  ) {
+    observationPoint.grouping = title;
+    updatedTitle = BLOOD_PRESSURE_TITLE;
+  }
+
+  if (title.toLowerCase().includes("bmi")) {
+    updatedTitle = "Body Mass Index (BMI)";
+  }
+
+  return updatedTitle;
+}
+
+export function handleBloodPressureMapping(obsMap: Map<string, GroupedObservation[]>) {
+  const bloodPressure = obsMap.get(BLOOD_PRESSURE_TITLE);
+  if (!bloodPressure) return;
+
+  const groupedBloodPressure: GroupedObservation[] = [];
+
+  const systolicMap = new Map<string, number>();
+  const diastolicMap = new Map<string, number>();
+
+  bloodPressure.forEach(bp => {
+    if (bp.grouping?.toLowerCase().includes("systolic")) {
+      systolicMap.set(bp.date, bp.observation);
+    } else if (bp.grouping?.toLowerCase().includes("diastolic")) {
+      diastolicMap.set(bp.date, bp.observation);
+    }
+  });
+
+  bloodPressure.forEach(bp => {
+    if (bp.grouping?.toLowerCase().includes("systolic")) {
+      const diastolicValue = diastolicMap.get(bp.date);
+      if (diastolicValue !== undefined) {
+        groupedBloodPressure.push({
+          ...bp,
+          bp: {
+            systolic: bp.observation,
+            diastolic: diastolicValue,
+          },
+        });
+      }
+    } else if (bp.grouping?.toLowerCase().includes("diastolic")) {
+      const systolicValue = systolicMap.get(bp.date);
+      if (systolicValue !== undefined) {
+        if (
+          !groupedBloodPressure.some(
+            gbp => gbp.date === bp.date && gbp.bp?.diastolic === bp.observation
+          )
+        ) {
+          groupedBloodPressure.push({
+            ...bp,
+            bp: {
+              systolic: systolicValue,
+              diastolic: bp.observation,
+            },
+          });
+        }
+      }
+    }
+  });
+
+  obsMap.set(BLOOD_PRESSURE_TITLE, groupedBloodPressure);
+}
 
 export function isVital(observation: Observation): boolean {
   const isVital = observation.category?.find(
@@ -452,6 +568,12 @@ export function getMedicationRxnormCoding(medication: Medication): Coding | unde
   });
   if (!rxnormCoding) return undefined;
   return rxnormCoding;
+}
+
+export function getMedicationRxnormCode(medication: Medication): string | undefined {
+  const rxnormCoding = getMedicationRxnormCoding(medication);
+  if (!rxnormCoding) return undefined;
+  return rxnormCoding.code;
 }
 
 export function getMedicationStatementStartDate(

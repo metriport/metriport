@@ -13,12 +13,12 @@ import {
 import {
   BadRequestError,
   errorToString,
+  executeWithNetworkRetries,
   JwtTokenInfo,
   MetriportError,
   NotFoundError,
   sleep,
   toTitleCase,
-  executeWithNetworkRetries,
 } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import {
@@ -41,6 +41,9 @@ import {
   Appointments,
   appointmentsSchema,
   athenaClientJwtTokenResponseSchema,
+  AthenaOnePatient,
+  AthenaOnePatients,
+  athenaOnePatientsSchema,
   BookedAppointment,
   BookedAppointmentListResponse,
   bookedAppointmentListResponseSchema,
@@ -95,8 +98,6 @@ import {
   MedicationReferences,
   medicationReferencesSchema,
   PatientCustomField,
-  PatientsCustomFields,
-  patientsCustomFieldsSchema,
   VitalsCreateParams,
 } from "@metriport/shared/interface/external/ehr/athenahealth/index";
 import {
@@ -234,6 +235,7 @@ export const supportedAthenaHealthResources: ResourceType[] = [
   "DiagnosticReport",
   "Immunization",
   "MedicationRequest",
+  "MedicationStatement", // NOT REALLY SUPPORTED
   "Observation",
   "Procedure",
   "Encounter",
@@ -252,7 +254,7 @@ export const supportedAthenaHealthReferenceResources: ResourceType[] = [
 export const scopes = [
   ...supportedAthenaHealthResources,
   ...supportedAthenaHealthReferenceResources,
-];
+].filter(resource => resource !== "MedicationStatement");
 
 export type SupportedAthenaHealthResource = (typeof supportedAthenaHealthResources)[number];
 export function isSupportedAthenaHealthResource(
@@ -431,6 +433,48 @@ class AthenaHealthApi {
     return patient;
   }
 
+  async getAthenaOnePatient({
+    cxId,
+    patientId,
+    params,
+  }: {
+    cxId: string;
+    patientId: string;
+    params?: { [key: string]: string };
+  }): Promise<AthenaOnePatient> {
+    const { debug } = out(
+      `AthenaHealth getAthenaOnePatient - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
+    );
+    const queryParams = new URLSearchParams({
+      showcustomfields: "true",
+      showprivacycustomfields: "true",
+      ...params,
+    });
+    const patientsUrl = `/patients/${this.stripPatientId(patientId)}?${queryParams.toString()}`;
+    const additionalInfo = { cxId, practiceId: this.practiceId, patientId };
+    const athenaOnePatients = await this.makeRequest<AthenaOnePatients>({
+      cxId,
+      patientId,
+      s3Path: "patients-athena-one",
+      method: "GET",
+      url: patientsUrl,
+      schema: athenaOnePatientsSchema,
+      additionalInfo,
+      debug,
+    });
+    const patient = athenaOnePatients[0];
+    if (!patient) {
+      throw new NotFoundError("AthenaOnePatient not found", undefined, additionalInfo);
+    }
+    if (athenaOnePatients.length > 1) {
+      throw new BadRequestError("Multiple patients found in athena-one patients array", undefined, {
+        ...additionalInfo,
+        athenaOnePatients: athenaOnePatients.map(p => JSON.stringify(p)).join(","),
+      });
+    }
+    return patient;
+  }
+
   async getAllergyForPatient({
     cxId,
     patientId,
@@ -474,38 +518,25 @@ class AthenaHealthApi {
     patientId: string;
     departmentId: string;
   }): Promise<PatientCustomField[]> {
-    const { debug } = out(
-      `AthenaHealth getCustomFieldsForPatient - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
-    );
-    const params = {
-      showprivacycustomfields: "true",
-      showcustomfields: "true",
-      departmentid: this.stripDepartmentId(departmentId),
-    };
-    const queryParams = new URLSearchParams(params);
-    const patientsUrl = `/patients/${this.stripPatientId(patientId)}?${queryParams.toString()}`;
-    const additionalInfo = { cxId, practiceId: this.practiceId, patientId };
-    const patientsCustomFields = await this.makeRequest<PatientsCustomFields>({
+    const athenaOnePatient = await this.getAthenaOnePatient({
       cxId,
       patientId,
-      s3Path: "patients-athena-one",
-      method: "GET",
-      url: patientsUrl,
-      schema: patientsCustomFieldsSchema,
-      additionalInfo,
-      debug,
+      params: { departmentid: this.stripDepartmentId(departmentId) },
     });
-    if (patientsCustomFields.length > 1) {
-      throw new BadRequestError("Multiple patients found in athena-one patients array", undefined, {
-        ...additionalInfo,
-        patientsCustomFields: patientsCustomFields.map(p => JSON.stringify(p)).join(","),
-      });
-    }
-    const patientCustomFields = patientsCustomFields[0]?.customfields;
-    if (!patientCustomFields) {
-      throw new NotFoundError("Patient not found", undefined, additionalInfo);
-    }
+    const patientCustomFields = athenaOnePatient.customfields;
     return patientCustomFields;
+  }
+
+  async getDepartmentIdForPatient({
+    cxId,
+    patientId,
+  }: {
+    cxId: string;
+    patientId: string;
+  }): Promise<string> {
+    const athenaOnePatient = await this.getAthenaOnePatient({ cxId, patientId });
+    const departmentId = athenaOnePatient.primarydepartmentid;
+    return departmentId;
   }
 
   async getEncounter({
@@ -1524,6 +1555,18 @@ class AthenaHealthApi {
         resourceType,
       });
     }
+    // Not supported by AthenaHealth but required for write back
+    if (resourceType === "MedicationStatement") {
+      return await fetchEhrBundleUsingCache({
+        ehr: EhrSources.athena,
+        cxId,
+        metriportPatientId,
+        ehrPatientId: athenaPatientId,
+        resourceType,
+        fetchResourcesFromEhr: () => Promise.resolve([]),
+        useCachedBundle,
+      });
+    }
     const params = {
       patient: `${this.createPatientId(athenaPatientId)}`,
       "ah-practice": this.createPracticetId(this.practiceId),
@@ -1633,6 +1676,19 @@ class AthenaHealthApi {
         athenaPatientId,
         resourceId,
         resourceType,
+      });
+    }
+    // Not supported by AthenaHealth but required for write back
+    if (resourceType === "MedicationStatement") {
+      return await fetchEhrBundleUsingCache({
+        ehr: EhrSources.athena,
+        cxId,
+        metriportPatientId,
+        ehrPatientId: athenaPatientId,
+        resourceType,
+        resourceId,
+        fetchResourcesFromEhr: () => Promise.resolve([]),
+        useCachedBundle,
       });
     }
     const params = {
