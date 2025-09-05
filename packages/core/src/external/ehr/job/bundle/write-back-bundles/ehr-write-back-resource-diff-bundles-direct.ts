@@ -272,13 +272,13 @@ async function getMetriportResourcesFromS3({
   });
 }
 
-async function hydrateDiagnosticReports({
+function groupObservationsByDiagnosticReport({
   diagnosticReports,
   observations,
 }: {
   diagnosticReports: DiagnosticReport[];
   observations: Observation[];
-}): Promise<{ diagnosticReport: DiagnosticReport; observations: Observation[] }[]> {
+}): { diagnosticReport: DiagnosticReport; observations: Observation[] }[] {
   const hydratedMetriportOnlyResources: {
     diagnosticReport: DiagnosticReport;
     observations: Observation[];
@@ -301,13 +301,13 @@ async function hydrateDiagnosticReports({
   return hydratedMetriportOnlyResources;
 }
 
-async function hydrateMedications({
+function groupMedicationStatmentsByMedication({
   medications,
   statements,
 }: {
   medications: Medication[];
   statements: MedicationStatement[];
-}): Promise<{ medication: Medication; statements: MedicationStatement[] }[]> {
+}): { medication: Medication; statements: MedicationStatement[] }[] {
   const hydratedMetriportOnlyResources: {
     medication: Medication;
     statements: MedicationStatement[];
@@ -725,7 +725,7 @@ async function getSecondaryResourcesToWriteBackMap({
       patientId: metriportPatientId,
       resourceType: "Observation",
     });
-    const hydratedDiagnosticReports = await hydrateDiagnosticReports({
+    const hydratedDiagnosticReports = groupObservationsByDiagnosticReport({
       diagnosticReports: resources as DiagnosticReport[],
       observations: observations as Observation[],
     });
@@ -747,7 +747,7 @@ async function getSecondaryResourcesToWriteBackMap({
       }
       return true;
     });
-    const hydratedMedications = await hydrateMedications({
+    const hydratedMedications = groupMedicationStatmentsByMedication({
       medications: filteredMedications as Medication[],
       statements: resources as MedicationStatement[],
     });
