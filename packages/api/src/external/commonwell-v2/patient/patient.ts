@@ -113,11 +113,6 @@ export async function registerAndLinkPatientInCwV2({
       patient,
     });
 
-    const waitTime = waitTimeAfterRegisterPatientAndBeforeGetLinks.asMilliseconds();
-    log(`Waiting ${waitTime}ms before getting links...`);
-    await sleep(waitTime);
-    log(`Done waiting, getting links now...`);
-
     const { validLinks, invalidLinks } = await runPatientLinkingWithRetries({
       commonWell,
       patient,
@@ -619,26 +614,26 @@ async function runPatientLinkingWithRetries({
   validLinks: NetworkLink[];
   invalidLinks: NetworkLink[];
 }> {
+  const { log } = out(`retryPatientLinkingFlow: pt: ${patient.id}`);
   let validLinks: NetworkLink[] = [];
   let invalidLinks: NetworkLink[] = [];
   let attempt = 0;
 
   while (attempt < MAX_ATTEMPTS_PATIENT_LINKING) {
+    const waitTime = waitTimeAfterRegisterPatientAndBeforeGetLinks.asMilliseconds();
+    log(`Attempt ${attempt}/${MAX_ATTEMPTS_PATIENT_LINKING} - waiting ${waitTime}ms...`);
+    await sleep(waitTime);
     attempt++;
-    const { log } = out(
-      `retryPatientLinkingFlow - attempt ${attempt}/${MAX_ATTEMPTS_PATIENT_LINKING} - patientId ${patient.id}`
-    );
 
-    const [existingLinks, probableLinks] = await Promise.all([
-      getExistingLinks({
-        commonWell,
-        commonwellPatientId,
-      }),
-      getProbableLinks({
-        commonWell,
-        commonwellPatientId,
-      }),
-    ]);
+    const existingLinks = await getExistingLinks({
+      commonWell,
+      commonwellPatientId,
+    });
+
+    const probableLinks = await getProbableLinks({
+      commonWell,
+      commonwellPatientId,
+    });
 
     const existingLinksCount = existingLinks?.Patients?.length ?? 0;
     const probableLinksCount = probableLinks?.Patients?.length ?? 0;
@@ -659,14 +654,14 @@ async function runPatientLinkingWithRetries({
     validLinks = result.validLinks;
     invalidLinks = result.invalidLinks;
 
-    if (probableLinksCount === 0) {
+    if (probableLinksCount < 1) {
       log(`No probable links found, stopping retry loop after attempt ${attempt}`);
       break;
     }
+  }
 
-    if (attempt === MAX_ATTEMPTS_PATIENT_LINKING) {
-      log(`Reached maximum retry attempts (${MAX_ATTEMPTS_PATIENT_LINKING}), stopping retry loop`);
-    }
+  if (attempt >= MAX_ATTEMPTS_PATIENT_LINKING) {
+    log(`Reached maximum retry attempts (${MAX_ATTEMPTS_PATIENT_LINKING}), stopping retry loop`);
   }
 
   return { validLinks, invalidLinks };
