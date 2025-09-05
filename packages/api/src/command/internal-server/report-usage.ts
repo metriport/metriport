@@ -1,5 +1,4 @@
 import { InternalServerApi } from "@metriport/core/external/internal-server/client";
-import { Config as CoreConfig } from "@metriport/core/util/config";
 import stringify from "json-stringify-safe";
 import { Product } from "../../domain/product";
 import { Config } from "../../shared/config";
@@ -14,9 +13,7 @@ export type ReportUsageCommand = {
 
 export function reportUsage({ cxId, entityId, product, docQuery }: ReportUsageCommand): void {
   const url = Config.getUsageUrl();
-  const internalServerUrl = CoreConfig.getInternalServerUrl();
-
-  if (!url || !internalServerUrl) return;
+  if (!url) return;
   const payload = { cxId, entityId, apiType: product, docQuery };
   const internalServerApi = new InternalServerApi();
 
