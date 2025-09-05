@@ -119,6 +119,7 @@ export async function syncElationPatientIntoMetriport({
         patientId: metriportPatientId,
         externalId: elationPatientId,
         source: EhrSources.elation,
+        secondaryMappings: { practiceId: elationPracticeId },
       }),
       createElationPatientMetadata({
         cxId,

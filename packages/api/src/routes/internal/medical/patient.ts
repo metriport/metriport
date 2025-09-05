@@ -332,6 +332,7 @@ router.post(
       patientId,
       externalId: questMapping.externalId,
       source: questSource,
+      secondaryMappings: {},
     });
     return res.sendStatus(status.CREATED);
   })
