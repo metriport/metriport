@@ -9,15 +9,15 @@ import { DocumentDownloaderLambda } from "../../../commonwell/document/document-
 
 class DocumentDownloaderLambdaForTest extends DocumentDownloaderLambda {
   override download({
-    document,
-    fileInfo,
+    sourceDocument,
+    destinationFileInfo,
     cxId,
   }: {
-    document: Document;
-    fileInfo: FileInfo;
+    sourceDocument: Document;
+    destinationFileInfo: FileInfo;
     cxId: string;
   }): Promise<DownloadResult> {
-    return super.download({ document, fileInfo, cxId });
+    return super.download({ sourceDocument, destinationFileInfo, cxId });
   }
 }
 
@@ -57,8 +57,8 @@ describe.skip("document-downloader", () => {
 
     await expect(
       docDownloader.download({
-        document,
-        fileInfo: {
+        sourceDocument: document,
+        destinationFileInfo: {
           name: docRef.fileName,
           location: bucketName,
         },

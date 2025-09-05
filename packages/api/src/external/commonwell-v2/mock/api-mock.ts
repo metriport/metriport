@@ -3,10 +3,12 @@ import {
   Demographics,
   DocumentQueryFullResponse,
   DocumentReference,
+  GenderCodes,
   Patient,
-  PatientCollection,
-  PatientCollectionItem,
-  PatientProbableLinkResp,
+  PatientCreateOrUpdateResp,
+  PatientExistingLinks,
+  PatientProbableLinks,
+  PatientResponseItem,
   StatusResponse,
   statusResponseSchema,
 } from "@metriport/commonwell-sdk";
@@ -17,7 +19,7 @@ import {
   GetPatientParams,
   RetrieveDocumentResponse,
 } from "@metriport/commonwell-sdk/client/commonwell-api";
-import { encodeToCwPatientId } from "@metriport/commonwell-sdk/common/util";
+import { encodeCwPatientId } from "@metriport/commonwell-sdk/common/util";
 import { nanoid } from "nanoid";
 import * as stream from "stream";
 import {
@@ -45,11 +47,14 @@ export class CommonWellMock implements CommonWellAPI {
     return undefined;
   }
 
-  async createOrUpdatePatient(patient: Patient, options?: BaseOptions): Promise<PatientCollection> {
+  async createOrUpdatePatient(
+    patient: Patient,
+    options?: BaseOptions
+  ): Promise<PatientCreateOrUpdateResp> {
     const patientId = patient.identifier[0]?.value;
     if (!patientId) throw new Error("Patient ID is required (under identifier[0].value)");
     return {
-      Patients: [createPatientCollectionItem(this.oid, this.orgName, patientId)],
+      Links: createPatientCollectionItem(this.oid, this.orgName, patientId).Links,
       status: {
         message: "Success",
         code: 200,
@@ -60,24 +65,24 @@ export class CommonWellMock implements CommonWellAPI {
   async getPatient(
     params: GetPatientParams,
     options?: BaseOptions
-  ): Promise<PatientCollectionItem | undefined>;
-  async getPatient(id: string, options?: BaseOptions): Promise<PatientCollectionItem | undefined>;
+  ): Promise<PatientResponseItem | undefined>;
+  async getPatient(id: string, options?: BaseOptions): Promise<PatientResponseItem | undefined>;
   async getPatient(
     idOrParams: string | GetPatientParams,
     options?: BaseOptions
-  ): Promise<PatientCollectionItem | undefined> {
+  ): Promise<PatientResponseItem | undefined> {
     let patientId: string;
     if (typeof idOrParams !== "string") {
       patientId = idOrParams.id;
       const { assignAuthority, assignAuthorityType } = idOrParams;
-      patientId = encodeToCwPatientId({
+      patientId = encodeCwPatientId({
         patientId,
         assignAuthority,
         assignAuthorityType,
       });
     } else {
       if (!idOrParams) {
-        throw new Error("Programming error, 'id' is required when providing separated parametrs");
+        throw new Error("Programming error: 'id' is required when providing separate parameters");
       }
       patientId = idOrParams;
     }
@@ -108,11 +113,11 @@ export class CommonWellMock implements CommonWellAPI {
   async getPatientLinksByPatientId(
     patientId: string,
     options?: BaseOptions
-  ): Promise<PatientCollection> {
+  ): Promise<PatientExistingLinks> {
     return {
       Patients: [
-        createPatientCollectionItem(this.oid, this.orgName, patientId),
-        createPatientCollectionItem(this.oid, this.orgName, patientId),
+        createProbablePatient(this.oid, this.orgName, patientId),
+        createProbablePatient(this.oid, this.orgName, patientId),
       ],
       status: {
         message: "Success",
@@ -124,7 +129,7 @@ export class CommonWellMock implements CommonWellAPI {
   async getProbableLinksById(
     patientId: string,
     options?: BaseOptions
-  ): Promise<PatientProbableLinkResp> {
+  ): Promise<PatientProbableLinks> {
     return {
       Patients: [
         createProbablePatient(this.oid, this.orgName, patientId),
@@ -148,11 +153,11 @@ export class CommonWellMock implements CommonWellAPI {
       firstName: string;
       lastName: string;
       dob: string;
-      gender: string;
+      gender: GenderCodes;
       zip: string;
     },
     options?: BaseOptions
-  ): Promise<PatientProbableLinkResp> {
+  ): Promise<PatientProbableLinks> {
     const demographics: Partial<Demographics> = {
       name: [{ given: [firstName], family: [lastName] }],
       birthDate: dob,

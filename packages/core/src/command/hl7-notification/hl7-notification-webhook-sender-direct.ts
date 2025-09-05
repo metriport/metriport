@@ -10,7 +10,6 @@ import {
   mergeBundleIntoAdtSourcedEncounter,
   saveAdtConversionBundle,
 } from "../../external/fhir/adt-encounters";
-import { buildBundleEntry, buildCollectionBundle } from "../../external/fhir/bundle/bundle";
 import { toFHIR as toFhirPatient } from "../../external/fhir/patient/conversion";
 import { capture, out } from "../../util";
 import { Config } from "../../util/config";
@@ -101,17 +100,15 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
     );
     const fhirPatient = toFhirPatient({ id: patientId, data: patient.data });
 
-    const conversionResult = convertHl7v2MessageToFhir({
+    const newEncounterData = convertHl7v2MessageToFhir({
       message,
       cxId,
       patientId,
       rawDataFileKey: params.rawDataFileKey,
-    });
-
-    const newEncounterData = prependPatientToBundle({
-      bundle: conversionResult,
+      hieName: params.hieName,
       fhirPatient,
     });
+
     log(`Conversion complete and patient entry added`);
 
     const clinicalInformation = this.extractClinicalInformation(newEncounterData);
@@ -253,16 +250,4 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
 
     return clinicalInformation;
   }
-}
-
-function prependPatientToBundle({
-  bundle,
-  fhirPatient,
-}: {
-  bundle: Bundle<Resource>;
-  fhirPatient: Resource;
-}): Bundle<Resource> {
-  const fhirPatientEntry = buildBundleEntry(fhirPatient);
-  const combinedEntries = bundle.entry ? [fhirPatientEntry, ...bundle.entry] : [];
-  return buildCollectionBundle(combinedEntries);
 }

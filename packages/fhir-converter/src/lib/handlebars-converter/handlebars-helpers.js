@@ -203,7 +203,19 @@ var generateLocationId = function (location) {
     );
     return id;
   } else if (location.playingEntity?.name) {
-    const id = uuidv3(location.playingEntity.name, uuidv3.URL);
+    /**
+     * In some cases we see playingEntity?.name that looks like name: { _: 'REAL NAME' } which fails conversion.
+     * We're adding this because name is supposed to be a string ('REAL NAME').
+     * This has something to do with wether "addr" is present in playingEntity when it is not we seem to be hitting this error.
+     * The exact cause is unknown.
+     *
+     * Link to original issue: https://linear.app/metriport/issue/ENG-975/fhir-converter-name-field-not-working
+     */
+    const peName = location?.playingEntity?.name;
+    if (peName && typeof peName === "object" && Object.prototype.hasOwnProperty.call(peName, "_")) {
+      return uuidv3(peName._, uuidv3.URL);
+    }
+    const id = uuidv3(peName, uuidv3.URL);
     return id;
   }
 

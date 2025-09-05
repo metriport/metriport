@@ -4,14 +4,17 @@ dotenv.config();
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 import { out } from "@metriport/core/util/log";
 import { sleep } from "@metriport/shared";
+// TODO ENG-964 REPLACE WITH CW V2 LOGIC
+// TODO ENG-964 REPLACE WITH CW V2 LOGIC
+// TODO ENG-964 REPLACE WITH CW V2 LOGIC
 import { APIMode, CommonWell, organizationQueryMeta } from "@metriport/commonwell-sdk-v1";
+import { MedicalDataSource } from "@metriport/core/external/index";
+import { executeWithNetworkRetries } from "@metriport/shared";
 import axios from "axios";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { chunk } from "lodash";
-import { MedicalDataSource } from "@metriport/core/external/index";
 import { getDelayTime } from "../shared/duration";
-import { executeWithNetworkRetries } from "@metriport/shared";
 
 /**
  * This script performs a full patient migration in CommonWell:

@@ -64,26 +64,11 @@ export const patientIdentifierSchema = z.object({
 export type PatientIdentifier = z.infer<typeof patientIdentifierSchema>;
 
 export const identifierSchema = z.object({
-  /** Patient identifier that uniquely identifies the patient in the Edge System */
   value: z.string(),
-  /** Assigning Authority ID for the unique Patient ID */
   system: z.string().nullish(),
-  use: emptyStringToUndefinedSchema,
-  type: emptyStringToUndefinedSchema,
+  use: emptyStringToUndefinedSchema.pipe(identifierUseCodesSchema.nullish()),
+  type: emptyStringToUndefinedSchema.pipe(identifierTypeCodesSchema.nullish()),
   assigner: referenceInIdentifierSchema.nullish(),
   period: periodSchema.nullish(),
 });
 export type Identifier = z.infer<typeof identifierSchema>;
-
-export const strongIdSchema = patientIdentifierSchema
-  .omit({
-    system: true,
-    value: true,
-  })
-  .merge(
-    patientIdentifierSchema.required({
-      system: true,
-      value: true,
-    })
-  );
-export type StrongId = z.infer<typeof strongIdSchema>;

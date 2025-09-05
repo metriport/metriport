@@ -4,6 +4,7 @@ import { z } from "zod";
 export enum CertificatePurpose {
   Signing = "signing",
   Authentication = "authentication",
+  Pix = "pix",
 }
 export const certificatePurposeSchema = z
   .string()

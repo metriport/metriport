@@ -9,7 +9,7 @@ import {
   NameUseCodes,
   Patient,
 } from "@metriport/commonwell-sdk";
-import { encodeToCwPatientId } from "@metriport/commonwell-sdk/common/util";
+import { encodeCwPatientId } from "@metriport/commonwell-sdk/common/util";
 import { errorToString } from "@metriport/shared";
 import { uniq } from "lodash";
 import {
@@ -123,9 +123,9 @@ export async function documentContribution(commonWellContributor: CommonWell) {
     const resp_2_2 = await commonWellContributor.createOrUpdatePatient(patientCreateContributorOrg);
     console.log(">>> Transaction ID: " + commonWellContributor.lastTransactionId);
     console.log(">>> 2.2 Response: " + JSON.stringify(resp_2_2, null, 2));
-    const firstPatientId = getMetriportPatientIdOrFail(resp_2_2.Patients[0], "createPatient");
+    const firstPatientId = getMetriportPatientIdOrFail(resp_2_2, "createPatient");
     patientIdsContributorOrg.push(firstPatientId);
-    const firstPatientIdEncoded = encodeToCwPatientId({
+    const firstPatientIdEncoded = encodeCwPatientId({
       patientId: firstPatientId,
       assignAuthority: commonWellContributor.oid,
     });
@@ -139,9 +139,9 @@ export async function documentContribution(commonWellContributor: CommonWell) {
     const resp_2_3 = await commonWellConsumer.createOrUpdatePatient(patientCreateConsumerOrg);
     console.log(">>> Transaction ID: " + commonWellConsumer.lastTransactionId);
     console.log(">>> 2.3 Response: " + JSON.stringify(resp_2_3, null, 2));
-    const secondPatientId = getMetriportPatientIdOrFail(resp_2_3.Patients[0], "createPatient");
+    const secondPatientId = getMetriportPatientIdOrFail(resp_2_3, "createPatient");
     patientIdsConsumerOrg.push(secondPatientId);
-    const secondPatientIdEncoded = encodeToCwPatientId({
+    const secondPatientIdEncoded = encodeCwPatientId({
       patientId: secondPatientId,
       assignAuthority: commonWellConsumer.oid,
     });
@@ -184,7 +184,7 @@ async function deletePatients(commonWell: CommonWell, patientIds: string[]) {
   const uniquePatientIds = uniq(patientIds);
   for (const metriportPatientId of uniquePatientIds) {
     try {
-      const patientId = encodeToCwPatientId({
+      const patientId = encodeCwPatientId({
         patientId: metriportPatientId,
         assignAuthority: commonWell.oid,
       });

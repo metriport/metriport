@@ -5,6 +5,7 @@ import {
   isOboFacility,
 } from "../../../../domain/medical/facility";
 import { createOrUpdateCWOrganizationV2 } from "../organization/create-or-update-cw-organization";
+import { buildCwOrgNameForFacility } from "../../../commonwell/shared";
 
 export async function createOrUpdateFacilityInCwV2({
   cxId,
@@ -36,19 +37,4 @@ export async function createOrUpdateFacilityInCwV2({
       isInitiatorAndResponder: isInitiatorAndResponder(facility),
     },
   });
-}
-
-function buildCwOrgNameForFacility({
-  vendorName,
-  orgName,
-  oboOid,
-}: {
-  vendorName: string;
-  orgName: string;
-  oboOid: string | undefined;
-}): string {
-  if (oboOid) {
-    return `${vendorName} - ${orgName} -OBO- ${oboOid}`;
-  }
-  return `${vendorName} - ${orgName}`;
 }
