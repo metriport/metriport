@@ -27,6 +27,7 @@ import { errorToString, MetriportError, sleep, USStateForAddress } from "@metrip
 import { buildDayjs, elapsedTimeFromNow, ISO_DATE } from "@metriport/shared/common/date";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
+import httpStatus from "http-status";
 import { partition } from "lodash";
 import { createOrUpdateInvalidLinks } from "../../../command/medical/invalid-links/create-invalid-links";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
@@ -60,6 +61,7 @@ import { NetworkLink } from "./types";
 dayjs.extend(duration);
 
 const waitTimeAfterRegisterPatientAndBeforeGetLinks = dayjs.duration(5, "seconds");
+const MAX_ATTEMPTS_PATIENT_LINKING = 3;
 
 const createContext = "cw.patient.create";
 const updateContext = "cw.patient.update";
@@ -111,28 +113,10 @@ export async function registerAndLinkPatientInCwV2({
       patient,
     });
 
-    const waitTime = waitTimeAfterRegisterPatientAndBeforeGetLinks.asMilliseconds();
-    log(`Waiting ${waitTime}ms before getting links...`);
-    await sleep(waitTime);
-    log(`Done waiting, getting links now...`);
-
-    const [existingLinks, probableLinks] = await Promise.all([
-      getExistingLinks({
-        commonWell,
-        commonwellPatientId,
-      }),
-      getProbableLinks({
-        commonWell,
-        commonwellPatientId,
-      }),
-    ]);
-
-    const { validLinks, invalidLinks } = await tryToImproveLinks({
+    const { validLinks, invalidLinks } = await runPatientLinkingWithRetries({
       commonWell,
       patient,
       commonwellPatientId,
-      existingLinks,
-      probableLinks,
       context: createContext,
       getOrgIdExcludeList,
     });
@@ -273,23 +257,10 @@ export async function updatePatientAndLinksInCwV2({
       commonwellPatientId,
     });
 
-    const [existingLinks, probableLinks] = await Promise.all([
-      getExistingLinks({
-        commonWell,
-        commonwellPatientId,
-      }),
-      getProbableLinks({
-        commonWell,
-        commonwellPatientId,
-      }),
-    ]);
-
-    const { validLinks, invalidLinks } = await tryToImproveLinks({
+    const { validLinks, invalidLinks } = await runPatientLinkingWithRetries({
       commonWell,
       patient,
       commonwellPatientId,
-      existingLinks,
-      probableLinks,
       context: updateContext,
       getOrgIdExcludeList,
     });
@@ -622,6 +593,81 @@ async function updatePatient({
   return updatedId;
 }
 
+/**
+ * Runs the patient linking flow with retries.
+ *
+ * As we upgrade links, the search fans out to find more potential links.
+ */
+async function runPatientLinkingWithRetries({
+  commonWell,
+  patient,
+  commonwellPatientId,
+  context,
+  getOrgIdExcludeList,
+}: {
+  commonWell: CommonWellAPI;
+  patient: Patient;
+  commonwellPatientId: string;
+  context: string;
+  getOrgIdExcludeList: () => Promise<string[]>;
+}): Promise<{
+  validLinks: NetworkLink[];
+  invalidLinks: NetworkLink[];
+}> {
+  const { log } = out(`retryPatientLinkingFlow: pt: ${patient.id}`);
+  let validLinks: NetworkLink[] = [];
+  let invalidLinks: NetworkLink[] = [];
+  let attempt = 0;
+
+  while (attempt < MAX_ATTEMPTS_PATIENT_LINKING) {
+    // CW v2 does not return links immediately after registering a patient yet, so we need to wait.
+    const waitTime = waitTimeAfterRegisterPatientAndBeforeGetLinks.asMilliseconds();
+    log(`Attempt ${attempt}/${MAX_ATTEMPTS_PATIENT_LINKING} - waiting ${waitTime}ms...`);
+    await sleep(waitTime);
+    attempt++;
+
+    const existingLinks = await getExistingLinks({
+      commonWell,
+      commonwellPatientId,
+    });
+    const existingLinksCount = existingLinks?.Patients?.length ?? 0;
+
+    const probableLinks = await getProbableLinks({
+      commonWell,
+      commonwellPatientId,
+    });
+    const probableLinksCount = probableLinks?.Patients?.length ?? 0;
+
+    log(
+      `Found ${existingLinksCount} existing links, and ${probableLinksCount} probable links on attempt ${attempt}`
+    );
+
+    const result = await tryToImproveLinks({
+      commonWell,
+      patient,
+      commonwellPatientId,
+      existingLinks,
+      probableLinks,
+      context,
+      getOrgIdExcludeList,
+    });
+
+    validLinks = result.validLinks;
+    invalidLinks = result.invalidLinks;
+
+    if (probableLinksCount < 1) {
+      log(`No probable links found, stopping retry loop after attempt ${attempt}`);
+      break;
+    }
+  }
+
+  if (attempt >= MAX_ATTEMPTS_PATIENT_LINKING) {
+    log(`Reached maximum retry attempts (${MAX_ATTEMPTS_PATIENT_LINKING}), stopping retry loop`);
+  }
+
+  return { validLinks, invalidLinks };
+}
+
 async function tryToImproveLinks({
   commonWell,
   commonwellPatientId,
@@ -749,6 +795,7 @@ async function autoUpgradeProbableLinks({
     link?: string;
     msg: string;
     txId?: string | undefined;
+    status?: number;
   }[] = [];
   const upgradeRequests: Promise<StatusResponse>[] = [];
   probableToUpgrade.forEach(async link => {
@@ -756,10 +803,16 @@ async function autoUpgradeProbableLinks({
     if (upgradeUrl) {
       upgradeRequests.push(
         commonWell.linkPatients(upgradeUrl).catch(error => {
+          if (error.response?.status === httpStatus.CONFLICT) {
+            return {
+              status: { code: httpStatus.CONFLICT, message: "Link already exists - not an error" },
+            };
+          }
           failedUpgradeRequests.push({
             msg: "Failed to upgrade link",
             url: upgradeUrl,
             txId: commonWell.lastTransactionId,
+            status: error.response?.status,
           });
           throw error;
         })
