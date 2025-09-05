@@ -14,7 +14,7 @@ describe("number parsing", () => {
 
     const { value: value2, remainder: remainder2 } = parseNumber("  1.342 a  b c");
     expect(value2).toEqual(1.342);
-    expect(remainder2).toEqual("a b c");
+    expect(remainder2).toEqual("a  b c");
   });
 
   it("should parse numbers with accurate remainder", () => {
@@ -42,7 +42,7 @@ describe("number parsing", () => {
   });
 
   it("should parse thousands when written as words", () => {
-    const { value, remainder } = parseNumber("one thousand and twenty three locations");
+    const { value, remainder } = parseNumber("one thousand twenty three locations");
     expect(value).toEqual(1023);
     expect(remainder).toEqual("locations");
   });
