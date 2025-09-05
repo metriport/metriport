@@ -3,12 +3,13 @@ dotenv.config({ path: ".env._cw_org_migration_prod" });
 // keep that ^ on top
 import {
   APIMode,
-  Organization as CwOrganizations,
+  CommonWellMember,
+  CwOrganization,
   CwTreatmentType,
   OrganizationWithNetworkInfo,
 } from "@metriport/commonwell-sdk";
 import { OrganizationData } from "@metriport/core/domain/organization";
-import { out } from "@metriport/core/util/log";
+import { log, out } from "@metriport/core/util/log";
 import {
   errorToString,
   getEnvVarOrFail,
@@ -40,9 +41,10 @@ dayjs.extend(duration);
  *
  *
  * To run this script:
- * 1. Set the environment variables in the .env._cw_org_migration file
- * 2. Set the
- * 2. use the `ts-node src/commonwell/org-migration/cw-v2-org-migration` command
+ * 1. Set the environment variables in the .env._cw_org_migration file.
+ * 2. Set the cxIds, MODE, and IS_ACTIVE_DEFAULT.
+ * 3. use the `ts-node src/commonwell/org-migration/cw-v2-org-migration` command.
+ * 4. Enter appropriate commands as requested.
  */
 
 const cwMemberName = getEnvVarOrFail("CW_MEMBER_NAME");
@@ -62,7 +64,6 @@ const cwTechnicalContactPhone = getEnvVarOrFail("CW_TECHNICAL_CONTACT_PHONE");
 
 // auth stuff
 const cxIds: string[] = [];
-const specificFacilityId = "";
 const MODE = APIMode.production;
 const IS_ACTIVE_DEFAULT = false;
 
@@ -96,7 +97,7 @@ async function main() {
   log(`>>> Running it... (delay time is ${localGetDelay(log)} ms)`);
 
   const orgsAndFacilities: Map<string, string> = new Map();
-  const cwOrgs: CwOrganizations[] = [];
+  const cwOrgs: CwOrganization[] = [];
   for (const cxId of cxIds) {
     const cxData = await getCxDataFull(cxId);
     const { org, facilities } = cxData;
@@ -123,13 +124,6 @@ async function main() {
     } else {
       // Facilities
       for (const facility of facilities) {
-        if (specificFacilityId) {
-          console.log("Trying to create/update a specific facility!");
-          if (facility.id !== specificFacilityId) {
-            continue;
-          }
-          console.log("Found the desired facility!");
-        }
         if (facility.cwType === FacilityType.initiatorOnly) {
           cwOrgs.push(
             createOrUpdateFacilityInCwV2({
@@ -272,8 +266,8 @@ function buildCwOrganization(org: CwOrgOrFacility): OrganizationWithNetworkInfo 
           purposeOfUse: [
             {
               id: "TREATMENT",
-              queryInitiatorOnly: !org.isInitiatorAndResponder,
-              queryInitiator: org.isInitiatorAndResponder,
+              queryInitiatorOnly: true,
+              queryInitiator: false,
               queryResponder: false,
             },
           ],
@@ -310,46 +304,28 @@ function isInitiatorAndResponder(facilityType: FacilityType): boolean {
   return facilityType === FacilityType.initiatorAndResponder;
 }
 
-async function create(org: CwOrganizations): Promise<void> {
+async function create(org: CwOrganization): Promise<void> {
   const { log, debug } = out(`CW.v2 create Org - CW Org OID ${org.organizationId}`);
 
   const commonWell = makeCommonWellMemberAPI(MODE);
   try {
     const respGet = await commonWell.getOneOrg(org.organizationId);
-    if (respGet) {
-      log(`Org already exists: ${org.organizationId}. Updating...`);
-      const respUpdate = await commonWell.updateOrg(org);
-      debug(`resp updateOrg: `, JSON.stringify(respUpdate));
-    } else {
+    if (!respGet) {
       log(`Org does not exist: ${org.organizationId}. Creating...`);
       // log("REGISTERING THIS: ", JSON.stringify(org));
       const respCreate = await commonWell.createOrg(org);
       debug(`resp createOrg: `, JSON.stringify(respCreate));
+
+      log("Sleeping before adding cert...");
+      await sleep(5000);
+      await addCertsToOrg(commonWell, org, debug);
+    } else {
+      log(`Org already exists: ${org.organizationId}. Updating...`);
+      const respUpdate = await commonWell.updateOrg(org);
+      debug(`resp updateOrg: `, JSON.stringify(respUpdate));
     }
   } catch (error) {
     const msg = `Failure while creating org @ CW`;
-    const cwRef = commonWell.lastTransactionId;
-    log(
-      `${msg}. Org OID: ${org.organizationId}. Cause: ${errorToString(
-        error
-      )}. CW Reference: ${cwRef}`
-    );
-    errors.push(
-      `${msg}. Org OID: ${org.organizationId}. Cause: ${errorToString(
-        error
-      )}. CW Reference: ${cwRef}`
-    );
-    throw error;
-  }
-
-  log("Sleeping before adding cert...");
-  await sleep(5000);
-
-  try {
-    const respAddCert = await commonWell.addCertificateToOrg(getCertificate(), org.organizationId);
-    debug(`resp addCertificateToOrg: `, JSON.stringify(respAddCert));
-  } catch (error) {
-    const msg = `Failure while adding cert to org @ CW`;
     const cwRef = commonWell.lastTransactionId;
     log(
       `${msg}. Org OID: ${org.organizationId}. Cause: ${errorToString(
@@ -384,4 +360,28 @@ function mapTreatmentTypeToCwType(type: TreatmentType): CwTreatmentType {
   }
 }
 
+async function addCertsToOrg(
+  commonWell: CommonWellMember,
+  org: CwOrganization,
+  debug: typeof console.log
+) {
+  try {
+    const respAddCert = await commonWell.addCertificateToOrg(getCertificate(), org.organizationId);
+    debug(`resp addCertificateToOrg: `, JSON.stringify(respAddCert));
+  } catch (error) {
+    const msg = `Failure while adding cert to org @ CW`;
+    const cwRef = commonWell.lastTransactionId;
+    log(
+      `${msg}. Org OID: ${org.organizationId}. Cause: ${errorToString(
+        error
+      )}. CW Reference: ${cwRef}`
+    );
+    errors.push(
+      `${msg}. Org OID: ${org.organizationId}. Cause: ${errorToString(
+        error
+      )}. CW Reference: ${cwRef}`
+    );
+    throw error;
+  }
+}
 main();
