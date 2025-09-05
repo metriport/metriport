@@ -1,13 +1,13 @@
 import _ from "lodash";
 import { RxNormAttributeType, RxNormEntity } from "@aws-sdk/client-comprehendmedical";
-import { RXNORM_URL } from "@metriport/shared/medical";
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { Medication, MedicationStatement } from "@medplum/fhirtypes";
 import { ComprehendConfig } from "../types";
 import { getAttribute } from "./shared";
+import { buildMedication } from "./medication";
 import { buildDosage } from "./attribute/dosage";
 import { buildDuration } from "./attribute/duration";
-import { isMedicationEntity, getRxNormCode, isConfidentMatch } from "./shared";
+import { isMedicationEntity, isConfidentMatch } from "./shared";
 
 export function getFhirResourcesFromRxNormEntities(
   entities: RxNormEntity[],
@@ -17,7 +17,7 @@ export function getFhirResourcesFromRxNormEntities(
 
   for (const entity of entities) {
     if (isMedicationEntity(entity) && isConfidentMatch(entity, confidenceThreshold)) {
-      const medication = getMedication(entity);
+      const medication = buildMedication(entity);
       if (medication) resources.push(medication);
       else continue;
 
@@ -27,28 +27,6 @@ export function getFhirResourcesFromRxNormEntities(
   }
 
   return resources;
-}
-
-function getMedication(entity: RxNormEntity): Medication | undefined {
-  const rxNormCode = getRxNormCode(entity);
-  if (!rxNormCode) return undefined;
-
-  const medication: Medication = {
-    resourceType: "Medication",
-    id: uuidv7(),
-    code: {
-      coding: [
-        {
-          system: RXNORM_URL,
-          code: rxNormCode,
-          display: entity.Text ?? "",
-        },
-      ],
-    },
-    status: "active",
-  };
-
-  return medication;
 }
 
 export function getMedicationStatement(
