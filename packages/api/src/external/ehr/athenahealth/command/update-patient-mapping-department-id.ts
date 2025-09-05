@@ -24,6 +24,7 @@ export async function updateAthenaPatientMappingDepartmentId({
       cxId,
       ehrPatientId: athenaPatientId,
     });
+  if (parsedSecondaryMappings.departmentId === athenaDepartmentId) return;
   await setSecondaryMappingsOnPatientMappingById({
     cxId,
     patientId: patientMapping.patientId,
