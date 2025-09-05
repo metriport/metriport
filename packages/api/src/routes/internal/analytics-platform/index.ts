@@ -1,5 +1,4 @@
-import { buildFhirToCsvBulkHandler } from "@metriport/core/command/analytics-platform/fhir-to-csv/command/fhir-to-csv-bulk/fhir-to-csv-bulk-factory";
-import { buildFhirToCsvBulkJobPrefix } from "@metriport/core/command/analytics-platform/fhir-to-csv/file-name";
+import { buildFhirToCsvIncrementalHandler } from "@metriport/core/command/analytics-platform/fhir-to-csv/command/fhir-to-csv-incremantal/fhir-to-csv-incremental-factory";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
@@ -8,11 +7,11 @@ import { asyncHandler, getFromQueryOrFail } from "../../util";
 
 const router = Router();
 
-// TODO ENG-743 repurpose this for incremental ingestion, not bulk
 /**
  * POST /internal/analytics-platform/fhir-to-csv
  *
- * Runs the fhir to csv job.
+ * Runs the incremental fhir to csv job, for a single patient.
+ *
  * @param req.query.cxId - The CX ID.
  * @param req.query.jobId - The job ID.
  * @param req.query.patientId - The patient ID.
@@ -25,9 +24,10 @@ router.post(
     const cxId = getFromQueryOrFail("cxId", req);
     const jobId = getFromQueryOrFail("jobId", req);
     const patientId = getFromQueryOrFail("patientId", req);
-    const handler = buildFhirToCsvBulkHandler();
-    const outputPrefix = buildFhirToCsvBulkJobPrefix({ cxId, jobId });
-    await handler.processFhirToCsv({ cxId, jobId, patientId, outputPrefix });
+
+    const handler = buildFhirToCsvIncrementalHandler();
+    await handler.processFhirToCsvIncremental({ cxId, jobId, patientId });
+
     return res.sendStatus(httpStatus.OK);
   })
 );

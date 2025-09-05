@@ -1,7 +1,5 @@
 import { MetriportError } from "@metriport/shared";
 
-// TODO ENG-954 Build specific versions of these for bulk and incremental ingestion and update the places that call them
-
 export function buildFhirToCsvBulkBasePrefix(cxId: string): string {
   return `snowflake/fhir-to-csv/cx=${cxId}`;
 }
@@ -25,6 +23,7 @@ export function buildFhirToCsvBulkPatientPrefix({
   jobId: string;
   patientId: string;
 }): string {
+  // e.g.: snowflake/fhir-to-csv/cx=cx-id/f2c=2025-08-08T02-18-56/pt=patient-id/
   return `${buildFhirToCsvBulkJobPrefix({ cxId, jobId })}/pt=${patientId}`;
 }
 
@@ -45,4 +44,14 @@ export function parsePatientIdFromFhirToCsvBulkPatientPrefix(key: string): strin
     throw new MetriportError(`Failed to parse patientId from fhirToCsvFileKey`, undefined, { key });
   }
   return patientId;
+}
+
+export function buildFhirToCsvIncrementalJobPrefix({
+  cxId,
+  patientId,
+}: {
+  cxId: string;
+  patientId: string;
+}): string {
+  return `snowflake/fhir-to-csv-incremental/cx=${cxId}/pt=${patientId}`;
 }

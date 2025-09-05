@@ -120,7 +120,7 @@ async function main() {
     filtererdPatientIds,
     async patientId => {
       try {
-        await fhirToCsvHandler.processFhirToCsv({
+        await fhirToCsvHandler.processFhirToCsvBulk({
           jobId: fhirToCsvJobId,
           cxId,
           patientId,

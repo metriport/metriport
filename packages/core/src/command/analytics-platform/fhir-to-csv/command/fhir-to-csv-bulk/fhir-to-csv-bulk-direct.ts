@@ -5,7 +5,7 @@ import { FhirToCsvBulkHandler, ProcessFhirToCsvBulkRequest } from "./fhir-to-csv
 export class FhirToCsvBulkDirect implements FhirToCsvBulkHandler {
   constructor(private readonly waitTimeInMillis: number = 0) {}
 
-  async processFhirToCsv({
+  async processFhirToCsvBulk({
     cxId,
     jobId,
     patientId,

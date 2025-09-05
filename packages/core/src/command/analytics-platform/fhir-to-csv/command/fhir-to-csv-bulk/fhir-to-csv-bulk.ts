@@ -7,5 +7,5 @@ export type ProcessFhirToCsvBulkRequest = {
 };
 
 export interface FhirToCsvBulkHandler {
-  processFhirToCsv(request: ProcessFhirToCsvBulkRequest): Promise<void>;
+  processFhirToCsvBulk(request: ProcessFhirToCsvBulkRequest): Promise<void>;
 }

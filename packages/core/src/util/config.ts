@@ -386,6 +386,10 @@ export class Config {
     return getEnvVarOrFail("FHIR_CONVERTER_BUCKET_NAME");
   }
 
+  static getAnalyticsBucketName(): string {
+    return getEnvVarOrFail("ANALYTICS_S3_BUCKET");
+  }
+
   // ENG-536 remove this once we automatically find the discharge summary
   static getDischargeNotificationSlackUrl(): string {
     return getEnvVarOrFail("DISCHARGE_NOTIFICATION_SLACK_URL");
@@ -393,6 +397,9 @@ export class Config {
 
   static getFhirToCsvBulkQueueUrl(): string {
     return getEnvVarOrFail("FHIR_TO_CSV_BULK_QUEUE_URL");
+  }
+  static getFhirToCsvIncrementalQueueUrl(): string {
+    return getEnvVarOrFail("FHIR_TO_CSV_INCREMENTAL_QUEUE_URL");
   }
   static getFhirToCsvTransformLambdaName(): string {
     return getEnvVarOrFail("FHIR_TO_CSV_TRANSFORM_LAMBDA_NAME");

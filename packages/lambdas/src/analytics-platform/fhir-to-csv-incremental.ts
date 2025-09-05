@@ -1,9 +1,9 @@
-import { FhirToCsvBulkDirect } from "@metriport/core/command/analytics-platform/fhir-to-csv/command/fhir-to-csv-bulk/fhir-to-csv-bulk-direct";
-import { errorToString } from "@metriport/shared";
+import { FhirToCsvIncrementalDirect } from "@metriport/core/command/analytics-platform/fhir-to-csv/command/fhir-to-csv-incremantal/fhir-to-csv-incremental-direct";
+import { FeatureFlags } from "@metriport/core/command/feature-flags/ffs-on-dynamodb";
+import { errorToString, getEnvVarOrFail } from "@metriport/shared";
 import { Context, SQSEvent } from "aws-lambda";
 import { z } from "zod";
 import { capture } from "../shared/capture";
-import { getEnvOrFail } from "../shared/env";
 import { prefixedLog } from "../shared/log";
 import { parseBody } from "../shared/parse-body";
 import { getSingleMessageOrFail } from "../shared/sqs";
@@ -12,7 +12,13 @@ import { getSingleMessageOrFail } from "../shared/sqs";
 capture.init();
 
 // Automatically set by AWS
-const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
+const lambdaName = getEnvVarOrFail("AWS_LAMBDA_FUNCTION_NAME");
+const region = getEnvVarOrFail("AWS_REGION");
+// Set by us
+const featureFlagsTableName = getEnvVarOrFail("FEATURE_FLAGS_TABLE_NAME");
+const analyticsBucketName = getEnvVarOrFail("ANALYTICS_S3_BUCKET");
+
+FeatureFlags.init(region, featureFlagsTableName);
 
 export const handler = capture.wrapHandler(async (event: SQSEvent, context: Context) => {
   capture.setExtra({ event, context: lambdaName });
@@ -26,8 +32,8 @@ export const handler = capture.wrapHandler(async (event: SQSEvent, context: Cont
     const log = prefixedLog(`jobId ${jobId}, cxId ${cxId}, patientId ${patientId}`);
     log(`Parsed: ${JSON.stringify(parsedBody)}`);
 
-    const fhirToCsvHandler = new FhirToCsvBulkDirect();
-    await fhirToCsvHandler.processFhirToCsvBulk({
+    const fhirToCsvHandler = new FhirToCsvIncrementalDirect(analyticsBucketName, region);
+    await fhirToCsvHandler.processFhirToCsvIncremental({
       ...parsedBody,
       timeoutInMillis: context.getRemainingTimeInMillis() - 200,
     });
@@ -41,6 +47,4 @@ const fhirToCsvSchema = z.object({
   cxId: z.string(),
   jobId: z.string(),
   patientId: z.string(),
-  inputBundle: z.string().optional(),
-  outputPrefix: z.string(),
 });
