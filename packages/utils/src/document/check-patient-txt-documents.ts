@@ -41,7 +41,7 @@ dayjs.extend(duration);
  */
 
 // Leave empty to run for all patients of the customer
-const patientIds: string[] = ["01990ae9-a7fd-7acb-a373-83f9a72095bf"];
+const patientIds: string[] = [];
 
 // If provided, will read patient IDs from the file and use them instead of the patientIds array
 const fileName: string | undefined = process.argv[2];
