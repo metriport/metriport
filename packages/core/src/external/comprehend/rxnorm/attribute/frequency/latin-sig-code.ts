@@ -20,12 +20,18 @@ export const LATIN_SIG_CODE = [
 const LATIN_SIG_CODE_SET = new Set(LATIN_SIG_CODE);
 export type LatinSigCode = (typeof LATIN_SIG_CODE)[number];
 
-export function isLatinSigCode(text: string): text is LatinSigCode {
-  return LATIN_SIG_CODE_SET.has(text as LatinSigCode);
+export function isLatinSigCode(text: string): boolean {
+  const normalizedText = normalizeSigCode(text);
+  return LATIN_SIG_CODE_SET.has(normalizedText as LatinSigCode);
 }
 
-export function getTimingRepeatForLatinSigCode(latinSigCode: LatinSigCode): TimingRepeat {
-  return latinSigCodeToTimingRepeat[latinSigCode];
+export function getTimingRepeatForLatinSigCode(text: string): TimingRepeat | undefined {
+  const normalizedText = normalizeSigCode(text);
+  return latinSigCodeToTimingRepeat[normalizedText as LatinSigCode];
+}
+
+function normalizeSigCode(text: string): string {
+  return text.toLowerCase().replace(/[^a-z]/g, "");
 }
 
 const latinSigCodeToTimingRepeat: Record<LatinSigCode, TimingRepeat> = {
