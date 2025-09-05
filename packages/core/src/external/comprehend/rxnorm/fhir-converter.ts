@@ -26,11 +26,12 @@ export function getFhirResourcesFromRxNormEntities(
   for (const entity of entities) {
     if (isMedicationEntity(entity) && isConfidentMatch(entity, confidenceThreshold)) {
       const medication = buildMedication(entity);
-      if (medication) resources.push(medication);
-      else continue;
+      if (!medication) continue;
 
       const medicationStatement = buildMedicationStatement(medication, entity);
-      if (medicationStatement) resources.push(medicationStatement);
+      if (medication && medicationStatement) {
+        resources.push(medication, medicationStatement);
+      }
     }
   }
 

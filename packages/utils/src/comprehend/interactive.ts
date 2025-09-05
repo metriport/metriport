@@ -3,7 +3,7 @@ import express from "express";
 import bodyParser from "body-parser";
 import cors from "cors";
 import path from "path";
-import { inferMedications } from "@metriport/core/external/comprehend/rxnorm/infer";
+import { inferMedications } from "@metriport/core/external/comprehend/rxnorm/fhir-converter";
 
 /**
  * Interactive tool to test the Comprehend API.
