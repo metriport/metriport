@@ -1,4 +1,5 @@
 import { HieConfig, VpnlessHieConfig } from "@metriport/core/command/hl7v2-subscriptions/types";
+import { HieSftpConfig } from "@metriport/core/external/sftp/types";
 
 export interface Hl7NotificationConfig {
   secrets: {
@@ -23,6 +24,10 @@ export interface Hl7NotificationConfig {
   };
   hl7v2RosterUploadLambda: {
     bucketName: string;
+  };
+  hl7v2LaHieIngestionLambda: {
+    sftpConfig: HieSftpConfig;
+    passwordName: string;
   };
   hieConfigs: Record<string, HieConfig | VpnlessHieConfig>;
   // ENG-536 remove this once we automatically find the discharge summary
