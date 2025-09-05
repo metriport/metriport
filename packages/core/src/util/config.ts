@@ -436,4 +436,8 @@ export class Config {
   static getLaHieIngestionPassword(): string {
     return getEnvVarOrFail("LAHIE_INGESTION_PASSWORD_ARN");
   }
+
+  static getLaHieIngestionBucket(): string {
+    return getEnvVarOrFail("LAHIE_INGESTION_BUCKET_NAME");
+  }
 }
