@@ -31,7 +31,7 @@ export function getTimingRepeatForLatinSigCode(text: string): TimingRepeat | und
 }
 
 function normalizeSigCode(text: string): string {
-  return text.toLowerCase().replace(/[^a-z]/g, "");
+  return text.toLowerCase().replace(/[^a-z\d]/g, "");
 }
 
 const latinSigCodeToTimingRepeat: Record<LatinSigCode, TimingRepeat> = {
