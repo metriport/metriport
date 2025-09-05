@@ -725,11 +725,11 @@ async function getSecondaryResourcesToWriteBackMap({
       patientId: metriportPatientId,
       resourceType: "Observation",
     });
-    const hydratedDiagnosticReports = groupObservationsByDiagnosticReport({
+    const groupedObservations = groupObservationsByDiagnosticReport({
       diagnosticReports: resources as DiagnosticReport[],
       observations: observations as Observation[],
     });
-    return hydratedDiagnosticReports.reduce((acc, { diagnosticReport, observations }) => {
+    return groupedObservations.reduce((acc, { diagnosticReport, observations }) => {
       if (!diagnosticReport.id) return acc;
       acc[diagnosticReport.id] = observations;
       return acc;
@@ -747,11 +747,11 @@ async function getSecondaryResourcesToWriteBackMap({
       }
       return true;
     });
-    const hydratedMedications = groupMedicationStatmentsByMedication({
+    const groupedMedicationStatements = groupMedicationStatmentsByMedication({
       medications: filteredMedications as Medication[],
       statements: resources as MedicationStatement[],
     });
-    return hydratedMedications.reduce((acc, { medication, statements }) => {
+    return groupedMedicationStatements.reduce((acc, { medication, statements }) => {
       for (const statement of statements) {
         if (!statement.id) continue;
         acc[statement.id] = [medication];
