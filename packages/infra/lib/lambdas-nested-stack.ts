@@ -120,6 +120,7 @@ export class LambdasNestedStack extends NestedStack {
   readonly fhirConverterConnector: FHIRConverterConnector;
   readonly acmCertificateMonitorLambda: Lambda;
   readonly hl7v2RosterUploadLambdas: Lambda[] | undefined;
+  readonly hl7v2LaHieIngestionLambda!: Lambda;
   readonly conversionResultNotifierLambda: Lambda;
   readonly reconversionKickoffLambda: Lambda;
   readonly reconversionKickoffQueue: Queue;
@@ -320,6 +321,14 @@ export class LambdasNestedStack extends NestedStack {
         vpc: props.vpc,
         secrets: props.secrets,
         hl7v2RosterBucket,
+        config: props.config,
+        alarmAction: props.alarmAction,
+      });
+
+      this.hl7v2LaHieIngestionLambda = this.setupHl7v2LaHieIngestionLambda({
+        lambdaLayers: props.lambdaLayers,
+        vpc: props.vpc,
+        secrets: props.secrets,
         config: props.config,
         alarmAction: props.alarmAction,
       });
@@ -1005,6 +1014,43 @@ export class LambdasNestedStack extends NestedStack {
     );
 
     return acmCertificateMonitorLambda;
+  }
+
+  private setupHl7v2LaHieIngestionLambda(ownProps: {
+    lambdaLayers: LambdaLayers;
+    vpc: ec2.IVpc;
+    secrets: Secrets;
+    config: EnvConfig;
+    alarmAction: SnsAction | undefined;
+  }): Lambda {
+    const envType = ownProps.config.environmentType;
+    const lambdaTimeout = Duration.seconds(60);
+    const hl7v2LaHieIngestionLambda = ownProps.config.hl7Notification?.hl7v2LaHieIngestionLambda;
+    if (!hl7v2LaHieIngestionLambda) {
+      throw new Error("hl7v2LaHieIngestionLambda is undefined.");
+    }
+
+    const sftpConfig = hl7v2LaHieIngestionLambda.sftpConfig;
+
+    const lambda = createScheduledLambda({
+      layers: [ownProps.lambdaLayers.shared],
+      vpc: ownProps.vpc,
+      scheduleExpression: "0/15 * * * ? *",
+      timeout: lambdaTimeout,
+      envType,
+      entry: "la-hie-ingestion",
+      envVars: {
+        LAHIE_INGESTION_PORT: sftpConfig.port.toString(),
+        LAHIE_INGESTION_HOST: sftpConfig.host,
+        LAHIE_INGESTION_REMOTE_PATH: sftpConfig.remotePath,
+        LAHIE_INGESTION_USERNAME: sftpConfig.username,
+        LAHIE_INGESTION_PASSWORD_ARN: hl7v2LaHieIngestionLambda.passwordName,
+      },
+      stack: this,
+      name: "LaHie",
+    });
+
+    return lambda;
   }
 
   private setupRosterUploadLambdas(ownProps: {

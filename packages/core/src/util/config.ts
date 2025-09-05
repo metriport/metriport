@@ -1,6 +1,6 @@
 import { getEnvVarAsRecordOrFail } from "@metriport/shared/common/env-var";
-import { ROSTER_UPLOAD_SFTP_PASSWORD } from "@metriport/shared/domain/tcm-encounter";
 import { getEnvVar, getEnvVarOrFail } from "./env-var";
+import { ROSTER_UPLOAD_SFTP_PASSWORD } from "@metriport/shared/domain/tcm-encounter";
 
 /**
  * Shared configs, still defining how to work with this. For now:
@@ -398,8 +398,43 @@ export class Config {
     return getEnvVarOrFail("FHIR_TO_CSV_TRANSFORM_LAMBDA_NAME");
   }
 
+  static getFhirToCsvBatchJobQueueArn(): string | undefined {
+    return getEnvVar("FHIR_TO_CSV_BATCH_JOB_QUEUE_ARN");
+  }
+  static getFhirToCsvBatchJobDefinitionArn(): string | undefined {
+    return getEnvVar("FHIR_TO_CSV_BATCH_JOB_DEFINITION_ARN");
+  }
+
   static getRosterUploadSftpPasswordArn(): string {
     return getEnvVarOrFail(`${ROSTER_UPLOAD_SFTP_PASSWORD}_ARN`);
+  }
+
+  static getLaHieIngestionLambdaName(): string {
+    return getEnvVarOrFail("LAHIE_INGESTION_LAMBDA_NAME");
+  }
+
+  static getLaHieIngestionRemotePath(): string {
+    return getEnvVarOrFail("LAHIE_INGESTION_REMOTE_PATH");
+  }
+
+  static getLaHieIngestionHost(): string {
+    return getEnvVarOrFail("LAHIE_INGESTION_HOST");
+  }
+
+  static getLaHieIngestionUsername(): string {
+    return getEnvVarOrFail("LAHIE_INGESTION_USERNAME");
+  }
+
+  static getLaHieIngestionPort(): number {
+    const port = Number.parseInt(getEnvVarOrFail("LAHIE_INGESTION_PORT"));
+    if (isFinite(port)) {
+      return port;
+    }
+    throw new Error("LaHie ingestion port is not a valid number");
+  }
+
+  static getLaHieIngestionPassword(): string {
+    return getEnvVarOrFail("LAHIE_INGESTION_PASSWORD_ARN");
   }
 
   static getInternalServerUrl(): string {
