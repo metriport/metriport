@@ -437,6 +437,10 @@ export class Config {
     return getEnvVarOrFail("LAHIE_INGESTION_PASSWORD_ARN");
   }
 
+  static getLaHieIngestionBucket(): string {
+    return getEnvVarOrFail("LAHIE_INGESTION_BUCKET_NAME");
+  }
+
   static getInternalServerUrl(): string {
     return getEnvVarOrFail("INTERNAL_SERVER_BASE_URL");
   }

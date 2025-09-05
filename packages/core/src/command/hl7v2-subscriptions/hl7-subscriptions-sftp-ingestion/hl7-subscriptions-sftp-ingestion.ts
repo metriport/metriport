@@ -62,7 +62,7 @@ export class LaHieSftpClient extends SftpClient {
   }
 
   static getLaHieReplica(): ReplicaConfig {
-    const bucketName = "Config.getLaHieIngestionBucket()";
+    const bucketName = Config.getLaHieIngestionBucket();
     return { type: "s3", bucketName };
   }
 
@@ -129,7 +129,6 @@ export async function sendToWebhookSender(identifiedMessages: IdentifiedHl7Messa
       rawDataFileKey: rawDataFileKey,
       hieName: HIE_NAME,
     };
-
     await buildHl7NotificationWebhookSender().execute(Hl7NotificationParams);
   }
 }
