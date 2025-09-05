@@ -1,9 +1,9 @@
 import { S3Utils } from "../../aws/s3";
 import { buildSourceDocumentFileName } from "../file/file-names";
 import { parseResponseFile } from "../file/file-parser";
-import { QuestReplica } from "../replica";
+import { QuestReplica, SOURCE_DOCUMENT_DIRECTORY } from "../replica";
 import { uploadSourceDocuments } from "../source-document";
-import { QuestPatientResponseFile } from "../types";
+import { QuestSourceDocument } from "../types";
 import { getArtifact } from "./shared";
 
 describe("Source document upload", () => {
@@ -17,22 +17,23 @@ describe("Source document upload", () => {
 
   it("should generate a source document for a single patient", async () => {
     const fileContent = getArtifact("response/single-patient.txt");
-    const patientId = "0A1B2C3D4E5F6G7";
+    const externalId = "0A1B2C3D4E5F6G7";
     const fileName = buildSourceDocumentFileName({
-      patientId,
+      externalId,
       dateId: "202501010102",
     });
-    const sourceDocument: QuestPatientResponseFile = {
-      patientId,
+    const sourceDocument: QuestSourceDocument = {
+      externalId,
       fileName,
       fileContent,
+      sourceDocumentKey: `${SOURCE_DOCUMENT_DIRECTORY}/${fileName}`,
     };
 
     await uploadSourceDocuments(replica, [sourceDocument]);
 
     // Separate validation to ensure the source document was written
     const s3Utils = new S3Utils(region);
-    const fileExists = await s3Utils.fileExists(bucketName, "source_document/" + fileName);
+    const fileExists = await s3Utils.fileExists(bucketName, sourceDocument.sourceDocumentKey);
     expect(fileExists).toBe(true);
   });
 

@@ -1,4 +1,4 @@
-import { QuestPatientResponseFile, QuestResponseFile } from "../../types";
+import { QuestSourceDocument, QuestResponseFile } from "../../types";
 import { executeAsynchronously } from "../../../../util/concurrency";
 import {
   splitAllResponseFilesIntoSourceDocuments,
@@ -17,9 +17,7 @@ export class QuestCreateSourceDocumentsHandlerDirect implements QuestCreateSourc
     private readonly replica: QuestReplica = new QuestReplica()
   ) {}
 
-  async createSourceDocuments(
-    responseFiles: QuestResponseFile[]
-  ): Promise<QuestPatientResponseFile[]> {
+  async createSourceDocuments(responseFiles: QuestResponseFile[]): Promise<QuestSourceDocument[]> {
     const allSourceDocuments = splitAllResponseFilesIntoSourceDocuments(responseFiles);
     await uploadSourceDocuments(this.replica, allSourceDocuments);
 
@@ -28,8 +26,8 @@ export class QuestCreateSourceDocumentsHandlerDirect implements QuestCreateSourc
       allSourceDocuments,
       async sourceDocument => {
         await this.next.convertSourceDocumentToFhirBundle({
-          patientId: sourceDocument.patientId,
-          sourceDocumentName: sourceDocument.fileName,
+          externalId: sourceDocument.externalId,
+          sourceDocumentKey: sourceDocument.sourceDocumentKey,
         });
       },
       {

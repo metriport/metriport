@@ -1,5 +1,5 @@
-import { QuestPatientResponseFile, QuestResponseFile } from "../../types";
+import { QuestSourceDocument, QuestResponseFile } from "../../types";
 
 export interface QuestCreateSourceDocumentsHandler {
-  createSourceDocuments(responseFiles: QuestResponseFile[]): Promise<QuestPatientResponseFile[]>;
+  createSourceDocuments(responseFiles: QuestResponseFile[]): Promise<QuestSourceDocument[]>;
 }
