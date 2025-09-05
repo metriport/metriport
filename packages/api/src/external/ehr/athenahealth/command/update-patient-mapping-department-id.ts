@@ -1,3 +1,4 @@
+import { AthenaPatientMappingSecondaryMappings } from "@metriport/shared/interface/external/ehr/athenahealth/patient-mapping";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { setSecondaryMappingsOnPatientMappingById } from "../../../../command/mapping/patient";
 import { getPatientMappingAndParsedSecondaryMappings } from "../../shared/command/mapping/get-patient-mapping-and-secondary-mappings";
@@ -19,7 +20,7 @@ export async function updateAthenaPatientMappingDepartmentId({
   athenaDepartmentId,
 }: UpdateAthenaPatientMappingDepartmentIdParams): Promise<void> {
   const { parsedSecondaryMappings, patientMapping } =
-    await getPatientMappingAndParsedSecondaryMappings({
+    await getPatientMappingAndParsedSecondaryMappings<AthenaPatientMappingSecondaryMappings>({
       ehr: EhrSources.athena,
       cxId,
       ehrPatientId: athenaPatientId,
