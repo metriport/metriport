@@ -620,11 +620,11 @@ async function runPatientLinkingWithRetries({
   let attempt = 0;
 
   while (attempt < MAX_ATTEMPTS_PATIENT_LINKING) {
+    attempt++;
     // CW v2 does not return links immediately after registering a patient yet, so we need to wait.
     const waitTime = waitTimeAfterRegisterPatientAndBeforeGetLinks.asMilliseconds();
     log(`Attempt ${attempt}/${MAX_ATTEMPTS_PATIENT_LINKING} - waiting ${waitTime}ms...`);
     await sleep(waitTime);
-    attempt++;
 
     const existingLinks = await getExistingLinks({
       commonWell,

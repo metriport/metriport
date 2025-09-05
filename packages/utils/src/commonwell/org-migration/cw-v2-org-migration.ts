@@ -4,7 +4,7 @@ dotenv.config({ path: ".env._cw_org_migration_prod" });
 import {
   APIMode,
   CommonWellMember,
-  CwOrganization,
+  Organization,
   CwTreatmentType,
   OrganizationWithNetworkInfo,
 } from "@metriport/commonwell-sdk";
@@ -97,7 +97,7 @@ async function main() {
   log(`>>> Running it... (delay time is ${localGetDelay(log)} ms)`);
 
   const orgsAndFacilities: Map<string, string> = new Map();
-  const cwOrgs: CwOrganization[] = [];
+  const cwOrgs: Organization[] = [];
   for (const cxId of cxIds) {
     const cxData = await getCxDataFull(cxId);
     const { org, facilities } = cxData;
@@ -286,7 +286,7 @@ function createOrUpdateFacilityInCwV2({
   cxOrgName: string;
   cxOrgType: TreatmentType;
 }) {
-  const orgName = `${cxOrgName} - ${facility.name} - OBO - ${facility.oid}`;
+  const orgName = `${facility.name} (${cxOrgName})`;
 
   return buildCwOrganization({
     oid: facility.oid,
@@ -304,7 +304,7 @@ function isInitiatorAndResponder(facilityType: FacilityType): boolean {
   return facilityType === FacilityType.initiatorAndResponder;
 }
 
-async function create(org: CwOrganization): Promise<void> {
+async function create(org: Organization): Promise<void> {
   const { log, debug } = out(`CW.v2 create Org - CW Org OID ${org.organizationId}`);
 
   const commonWell = makeCommonWellMemberAPI(MODE);
@@ -362,7 +362,7 @@ function mapTreatmentTypeToCwType(type: TreatmentType): CwTreatmentType {
 
 async function addCertsToOrg(
   commonWell: CommonWellMember,
-  org: CwOrganization,
+  org: Organization,
   debug: typeof console.log
 ) {
   try {
