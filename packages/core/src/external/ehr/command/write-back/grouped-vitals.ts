@@ -94,6 +94,7 @@ export function groupVitalsByDate({
   ]);
 }
 
+// METHOD FROM DASHBOARD
 export function groupVitalsByCode({
   observations,
 }: {
