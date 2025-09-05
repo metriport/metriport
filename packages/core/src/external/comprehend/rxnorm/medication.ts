@@ -1,5 +1,5 @@
 import { RxNormEntity } from "@aws-sdk/client-comprehendmedical";
-import { Medication, CodeableConcept } from "@medplum/fhirtypes";
+import { Medication, CodeableConcept, Reference } from "@medplum/fhirtypes";
 import { getRxNormCode } from "./shared";
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { RXNORM_URL } from "@metriport/shared/medical";
@@ -16,6 +16,12 @@ export function buildMedication(entity: RxNormEntity): Medication | undefined {
   };
 
   return medication;
+}
+
+export function getMedicationReference(medication: Medication): Reference<Medication> | undefined {
+  return {
+    reference: `Medication/${medication.id}`,
+  };
 }
 
 function buildMedicationCode(entity: RxNormEntity): CodeableConcept | undefined {
