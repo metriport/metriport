@@ -301,7 +301,7 @@ function groupObservationsByDiagnosticReport({
   return hydratedMetriportOnlyResources;
 }
 
-function groupMedicationStatmentsByMedication({
+function groupMedicationStatementsByMedication({
   medications,
   statements,
 }: {
@@ -747,7 +747,7 @@ async function getSecondaryResourcesToWriteBackMap({
       }
       return true;
     });
-    const groupedMedicationStatements = groupMedicationStatmentsByMedication({
+    const groupedMedicationStatements = groupMedicationStatementsByMedication({
       medications: filteredMedications as Medication[],
       statements: resources as MedicationStatement[],
     });

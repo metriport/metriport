@@ -459,6 +459,7 @@ export function getValidCode(coding: Coding[] | undefined): Coding[] {
   });
 }
 
+const BLOOD_PRESSURE_TITLE = "Blood Pressure";
 export function handleTitleSpecialCases(
   title: string,
   observationPoint: GroupedObservation
@@ -470,7 +471,7 @@ export function handleTitleSpecialCases(
     title.toLowerCase().includes("bp dias")
   ) {
     observationPoint.grouping = title;
-    updatedTitle = "Blood Pressure";
+    updatedTitle = BLOOD_PRESSURE_TITLE;
   }
 
   if (title.toLowerCase().includes("bmi")) {
@@ -480,7 +481,6 @@ export function handleTitleSpecialCases(
   return updatedTitle;
 }
 
-const BLOOD_PRESSURE_TITLE = "Blood Pressure";
 export function handleBloodPressureMapping(obsMap: Map<string, GroupedObservation[]>) {
   const bloodPressure = obsMap.get(BLOOD_PRESSURE_TITLE);
   if (!bloodPressure) return;
@@ -530,7 +530,7 @@ export function handleBloodPressureMapping(obsMap: Map<string, GroupedObservatio
     }
   });
 
-  obsMap.set("Blood Pressure", groupedBloodPressure);
+  obsMap.set(BLOOD_PRESSURE_TITLE, groupedBloodPressure);
 }
 
 export function isVital(observation: Observation): boolean {
