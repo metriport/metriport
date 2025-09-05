@@ -1,14 +1,13 @@
-import {
-  RxNormAttributeType,
-  RxNormAttribute,
-  RxNormEntity,
-  RxNormEntityCategory,
-} from "@aws-sdk/client-comprehendmedical";
+import _ from "lodash";
+import { RxNormAttributeType, RxNormEntity } from "@aws-sdk/client-comprehendmedical";
 import { RXNORM_URL } from "@metriport/shared/medical";
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { Medication, MedicationStatement } from "@medplum/fhirtypes";
 import { ComprehendConfig } from "../types";
-import { parseTimingFromString } from "../../fhir/parser/timing";
+import { getAttribute } from "./shared";
+import { buildDosage } from "./attribute/dosage";
+import { buildDuration } from "./attribute/duration";
+import { isMedicationEntity, getRxNormCode, isConfidentMatch } from "./shared";
 
 export function getFhirResourcesFromRxNormEntities(
   entities: RxNormEntity[],
@@ -57,7 +56,10 @@ export function getMedicationStatement(
   entity: RxNormEntity
 ): MedicationStatement | undefined {
   const effectivePeriod = buildEffectivePeriod(entity);
-  const dosage = buildDosage(entity);
+  const medicationDosage = buildDosage(entity);
+  const duration = buildDuration(entity);
+
+  const dosage = _.compact(_.values([medicationDosage, duration]));
 
   return {
     resourceType: "MedicationStatement",
@@ -66,16 +68,9 @@ export function getMedicationStatement(
     medicationReference: {
       reference: `Medication/${medication.id}`,
     },
-    ...(dosage ? { dosage } : undefined),
+    ...(dosage.length > 0 ? { dosage } : undefined),
     ...(effectivePeriod ? { effectivePeriod } : undefined),
   };
-}
-
-function getAttribute(
-  entity: RxNormEntity,
-  type: RxNormAttributeType
-): RxNormAttribute | undefined {
-  return entity.Attributes?.find(attribute => attribute.Type === type);
 }
 
 function buildEffectivePeriod(
@@ -86,49 +81,4 @@ function buildEffectivePeriod(
   if (!durationValue) return undefined;
   // TODO: parse durationValue into a Period
   return undefined;
-}
-
-function buildDosage(entity: RxNormEntity): MedicationStatement["dosage"] | undefined {
-  // -> dosage.text or dosage.doseAndRate.doseQuantity
-  const dosage = getAttribute(entity, RxNormAttributeType.DOSAGE);
-  const frequency = getAttribute(entity, RxNormAttributeType.FREQUENCY);
-  const rate = getAttribute(entity, RxNormAttributeType.RATE);
-
-  if (!frequency && !rate) return undefined;
-  const timing = frequency && frequency.Text ? parseTimingFromString(frequency.Text) : undefined;
-
-  return [
-    {
-      text: dosage?.Text ?? "",
-      doseAndRate: [
-        {
-          rateQuantity: {
-            value: 1,
-            unit: "mg",
-          },
-        },
-      ],
-      ...(timing ? { timing } : undefined),
-    },
-  ];
-}
-
-function getRxNormCode(entity: RxNormEntity): string | undefined {
-  return entity.RxNormConcepts?.[0]?.Code;
-}
-
-// readonly DOSAGE: "DOSAGE";
-//     readonly DURATION: "DURATION";
-//     readonly FORM: "FORM";
-//     readonly FREQUENCY: "FREQUENCY";
-//     readonly RATE: "RATE";
-//     readonly ROUTE_OR_MODE: "ROUTE_OR_MODE";
-//     readonly STRENGTH: "STRENGTH";
-
-function isMedicationEntity(entity: RxNormEntity): boolean {
-  return entity.Category === RxNormEntityCategory.MEDICATION;
-}
-
-function isConfidentMatch(entity: RxNormEntity, confidenceThreshold: number): boolean {
-  return entity.Score != null && entity.Score >= confidenceThreshold;
 }
