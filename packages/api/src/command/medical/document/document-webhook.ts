@@ -10,7 +10,7 @@ import { patientEvents } from "../../../event/medical/patient-event";
 import { DocumentBulkUrlDTO } from "../../../routes/medical/dtos/document-bulk-downloadDTO";
 import { DocumentReferenceDTO } from "../../../routes/medical/dtos/documentDTO";
 import { getSettingsOrFail } from "../../settings/getSettings";
-import { reportUsage as reportUsageCmd } from "../../usage/report-usage";
+import { reportUsage as reportUsageCmd } from "../../internal-server/report-usage";
 import { isWebhookDisabled, processRequest } from "../../webhook/webhook";
 import { createWebhookRequest } from "../../webhook/webhook-request";
 import { updateProgressWebhookSent } from "../patient/append-doc-query-progress";
@@ -45,14 +45,14 @@ type WebhookPatientDataPayloadWithoutMessageId = Omit<WebhookPatientDataPayload,
  * Callers are not notified of issues/errors while processing the request -
  * nothing is thrown. Instead, the error is logged and captured (Sentry).
  */
-export const processPatientDocumentRequest = async (
+export async function processPatientDocumentRequest(
   cxId: string,
   patientId: string,
   whType: MAPIWebhookType,
   status: MAPIWebhookStatus,
   requestId: string | undefined,
   documents?: DocumentReferenceDTO[] | DocumentBulkUrlDTO[]
-): Promise<void> => {
+): Promise<void> {
   const { log } = out(`Document Webhook - cxId: ${cxId}, patientId: ${patientId}`);
   try {
     const [settings, patient] = await Promise.all([
@@ -138,7 +138,7 @@ export const processPatientDocumentRequest = async (
       extra: { patientId, context: `webhook.processPatientDocumentRequest`, err },
     });
   }
-};
+}
 
 function getCxMetadata(whType: MAPIWebhookType, patientData: PatientData): unknown {
   if (whType === "medical.document-download" || whType === "medical.document-conversion") {

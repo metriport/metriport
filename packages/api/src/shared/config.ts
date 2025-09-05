@@ -192,6 +192,10 @@ export class Config {
     return getEnvVar("USAGE_URL");
   }
 
+  static getCxBillingUrl(): string | undefined {
+    return getEnvVar("CX_BILLING_URL");
+  }
+
   static getFHIRServerUrl(): string {
     return getEnvVarOrFail("FHIR_SERVER_URL");
   }
