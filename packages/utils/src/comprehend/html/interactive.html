@@ -20,6 +20,7 @@
                     <label for="inferRxNorm">Infer RxNorm</label>
                 </div>
             </div>
+            <pre id="comprehend" style="margin-top: 20px; padding: 10px; background-color: #f9f9f9; border: 1px solid #ccc; border-radius: 4px;"></pre>
         </div>
         <div style="width: 50%;">
             <pre id="result" style="margin-top: 20px; padding: 10px; background-color: #f9f9f9; border: 1px solid #ccc; border-radius: 4px;"></pre>
@@ -29,6 +30,7 @@
         const analyzeButton = document.getElementById("analyzeButton");
         const text = document.getElementById("text");
         const result = document.getElementById("result");
+        const comprehendResult = document.getElementById("comprehend");
 
         const inferRxNormCheckbox = document.getElementById("inferRxNorm");
         function shouldInferRxNorm() {
@@ -46,8 +48,9 @@
                     inferRxNorm: shouldInferRxNorm(),
                 }),
             });
-            const data = await response.json();
-            result.innerHTML = JSON.stringify(data, null, 2);
+            const { comprehend, fhir } = await response.json();
+            result.innerHTML = JSON.stringify(fhir, null, 2);
+            comprehendResult.innerHTML = JSON.stringify(comprehend, null, 2);
         });
     </script>
 </body>
