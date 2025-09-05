@@ -6,7 +6,7 @@ import { ConnectedUser } from "../../models/connected-user";
 import { ProviderOptions } from "../../shared/constants";
 import { errorToString } from "../../shared/log";
 import { getSettingsOrFail } from "../settings/getSettings";
-import { reportUsage as reportUsageCmd } from "../usage/report-usage";
+import { reportUsage as reportUsageCmd } from "../internal-server/report-usage";
 import { processRequest } from "./webhook";
 import { buildWebhookRequestData, WebhookRequestData } from "./webhook-request";
 
@@ -28,10 +28,10 @@ export type WebhookUserDataPayload = {
   [k in DataType]?: MetriportData[];
 };
 
-export const reportDevicesUsage = (cxId: string, cxUserIds: string[]): void => {
+export function reportDevicesUsage(cxId: string, cxUserIds: string[]): void {
   const product = Product.devices;
   cxUserIds.forEach(cxUserId => reportUsageCmd({ cxId, entityId: cxUserId, product }));
-};
+}
 
 /**
  * Sends an update to the CX about their user subscribing to a provider.
@@ -42,11 +42,11 @@ export const reportDevicesUsage = (cxId: string, cxUserIds: string[]): void => {
  * @param provider        The newly-connected provider
  * @param deviceIds       A list of newly-connected device IDs
  */
-export const sendProviderConnected = async (
+export async function sendProviderConnected(
   connectedUser: ConnectedUser,
   provider: ProviderOptions,
   deviceIds?: string[]
-): Promise<void> => {
+): Promise<void> {
   let webhookRequestData: WebhookRequestData | undefined;
   try {
     const { id: userId, cxId } = connectedUser;
@@ -79,7 +79,7 @@ export const sendProviderConnected = async (
         `error: ${errorToString(error)}`
     );
   }
-};
+}
 
 /**
  * Sends an update to the CX about their user disconnecting from a provider.
@@ -88,10 +88,10 @@ export const sendProviderConnected = async (
  *
  * Executed asynchronously, so it should treat errors w/o expecting it to be done upstream.
  */
-export const sendProviderDisconnected = async (
+export async function sendProviderDisconnected(
   connectedUser: ConnectedUser,
   disconnectedProviders: string[]
-): Promise<void> => {
+): Promise<void> {
   let webhookRequestData: WebhookRequestData | undefined;
   try {
     const { id: userId, cxId } = connectedUser;
@@ -114,7 +114,7 @@ export const sendProviderDisconnected = async (
         `error: ${error}`
     );
   }
-};
+}
 
 /**
  * Gets the list of all connected devices for a user
