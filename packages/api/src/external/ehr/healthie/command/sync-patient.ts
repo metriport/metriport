@@ -122,6 +122,7 @@ export async function syncHealthiePatientIntoMetriport({
         patientId: metriportPatientId,
         externalId: healthiePatientId,
         source: EhrSources.healthie,
+        secondaryMappings: { practiceId: healthiePracticeId },
       }),
       updateHealthiePatientQuickNotes({
         cxId,
