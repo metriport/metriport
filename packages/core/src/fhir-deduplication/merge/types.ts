@@ -8,6 +8,8 @@ export type MergeStrategy<R extends Resource, K extends keyof R> = (
   values: Array<NonNullable<R[K]>>
 ) => R[K];
 
+export type MergeMap<R extends Resource> = { [K in keyof R]: Array<NonNullable<R[K]>> };
+
 export interface MergeConfig<R extends Resource> {
   /**
    * Precedence of resource statuses from highest to lowest.
