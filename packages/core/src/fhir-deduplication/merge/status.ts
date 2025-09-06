@@ -1,11 +1,15 @@
 import { Resource } from "@medplum/fhirtypes";
+import { MergeStatusPrecedence, ResourceStatus } from "./types";
 
 function defaultOrderingFunction<R extends Resource>(resources: R[]): R[] {
   return resources;
 }
 
+/**
+ * Orders resources in ascending order by status precedence.
+ */
 export function buildStatusOrderingFunction<R extends Resource>(
-  statusPrecedence?: string[]
+  statusPrecedence?: MergeStatusPrecedence<R>
 ): (resources: R[]) => R[] {
   if (!statusPrecedence) {
     return defaultOrderingFunction;
@@ -15,9 +19,9 @@ export function buildStatusOrderingFunction<R extends Resource>(
   return function (resources: R[]): R[] {
     return [...resources].sort((a, b) => {
       const aStatus = getStatus(a);
-      if (!aStatus) return -1;
+      if (!aStatus) return -Infinity;
       const bStatus = getStatus(b);
-      if (!bStatus) return 1;
+      if (!bStatus) return Infinity;
 
       const aIndex = statusPrecedenceIndex.get(aStatus);
       const bIndex = statusPrecedenceIndex.get(bStatus);
@@ -29,12 +33,12 @@ export function buildStatusOrderingFunction<R extends Resource>(
   };
 }
 
-export function getStatus(resource: Resource): string | undefined {
+export function getStatus<R extends Resource>(resource: R): ResourceStatus<R> | undefined {
   if (!("status" in resource)) {
     return undefined;
   }
   if (typeof resource.status !== "string") {
     return undefined;
   }
-  return resource.status;
+  return resource.status as ResourceStatus<R>;
 }
