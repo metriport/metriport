@@ -17,11 +17,15 @@
         ],
         "category": [
           {
-            "coding": [{ "system": "http://snomed.info/sct", "code": "282291009" }]
+            "coding": [
+              { "system": "http://snomed.info/sct", "code": "282291009" }
+            ]
           }
         ],
         "code": {
-          "coding": [{ "system": "http://snomed.info/sct", "code": "443253003" }],
+          "coding": [
+            { "system": "http://snomed.info/sct", "code": "443253003" }
+          ],
           "text": "Acute on chronic HFrEF (heart failure with reduced ejection fraction) (CMS/HCC)"
         },
         "subject": {
@@ -60,11 +64,15 @@
         ],
         "category": [
           {
-            "coding": [{ "system": "http://snomed.info/sct", "code": "282291009" }]
+            "coding": [
+              { "system": "http://snomed.info/sct", "code": "282291009" }
+            ]
           }
         ],
         "code": {
-          "coding": [{ "system": "http://snomed.info/sct", "code": "443254009" }],
+          "coding": [
+            { "system": "http://snomed.info/sct", "code": "443254009" }
+          ],
           "text": "Acute systolic congestive heart failure (CMS/HCC)"
         },
         "subject": {
@@ -103,11 +111,15 @@
         ],
         "category": [
           {
-            "coding": [{ "system": "http://snomed.info/sct", "code": "282291009" }]
+            "coding": [
+              { "system": "http://snomed.info/sct", "code": "282291009" }
+            ]
           }
         ],
         "code": {
-          "coding": [{ "system": "http://snomed.info/sct", "code": "190855004" }],
+          "coding": [
+            { "system": "http://snomed.info/sct", "code": "190855004" }
+          ],
           "text": "Hypomagnesemia"
         },
         "subject": {
