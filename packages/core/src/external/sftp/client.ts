@@ -156,7 +156,7 @@ export class SftpClient implements SftpClientImpl {
       content = await decompressGzip(content);
     }
 
-    if (overrideReplica) {
+    if (overrideReplica && this.replica) {
       await this.syncFileToReplica(content, remotePath);
     }
 
@@ -250,7 +250,7 @@ export class SftpClient implements SftpClientImpl {
     const filesSynced: string[] = [];
     for (const sftpFileName of sftpFileNames) {
       if (!existingReplicaFileNames.has(sftpFileName)) {
-        this.log(`File ${sftpFileName} does not exist in replica, syncing...`);
+        console.log(`File ${sftpFileName} does not exist in replica, syncing...`);
         await this.read(`${remotePath}/${sftpFileName}`);
         filesSynced.push(sftpFileName);
       }

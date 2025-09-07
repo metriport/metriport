@@ -5,8 +5,8 @@ import { Hl7SubscriptionLaHieIngestion, LaHieSftpClient } from "./hl7-subscripti
 
 export async function buildLaHieIngestionDirect(): Promise<Hl7SubscriptionLaHieIngestion> {
   if (Config.isDev()) {
-    const sftpClient: LaHieSftpClient = await LaHieSftpClient.create(true);
     const log = console.log;
+    const sftpClient: LaHieSftpClient = await LaHieSftpClient.create(log, true);
     return new Hl7SubscriptionLaHieIngestionDirect(sftpClient, log);
   }
   return new Hl7SubscriptionLaHieIngestionCloud();

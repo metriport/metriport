@@ -11,6 +11,7 @@ export class Hl7SubscriptionLaHieIngestionDirect implements Hl7SubscriptionLaHie
   }
 
   async execute(): Promise<void> {
+    this.log("Beginning ingestion from LaHie");
     const remotePath = Config.getLaHieIngestionRemotePath();
     await this.sftpClient.safeSync(remotePath);
     this.log("Finished");

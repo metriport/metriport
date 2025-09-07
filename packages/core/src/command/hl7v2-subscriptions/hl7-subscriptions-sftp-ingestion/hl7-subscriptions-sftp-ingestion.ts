@@ -1,4 +1,3 @@
-import { errorToString } from "@metriport/shared";
 import { getSecretValueOrFail } from "../../../external/aws/secret-manager";
 import { SftpClient } from "../../../external/sftp/client";
 import { SftpConfig } from "../../../external/sftp/types";
@@ -13,7 +12,6 @@ import { buildDayjs } from "@metriport/shared/common/date";
 import { createFileKeyHl7Message } from "../hl7v2-to-fhir-conversion/shared";
 import { Hl7NotificationSenderParams } from "../../hl7-notification/hl7-notification-webhook-sender";
 import { buildHl7NotificationWebhookSender } from "../../hl7-notification/hl7-notification-webhook-sender-factory";
-// import { getHl7MessageTypeOrFail, getMessageUniqueIdentifier } from "../hl7v2-to-fhir-conversion/msh";
 
 export type ReplicaConfig = { type: "local"; path: string } | { type: "s3"; bucketName: string };
 export const HIE_NAME = "LaHie";
@@ -21,9 +19,15 @@ export const HIE_NAME = "LaHie";
 export class LaHieSftpClient extends SftpClient {
   private static readonly LOCAL_PATH = "/Users/radmirgaripov/Documents/Super";
   private static readonly LOCAL_PASSWORD = Config.getLaHieIngestionPassword();
+  private readonly overridenLog: typeof console.log;
 
-  private constructor(sftpConfig: SftpConfig, replica: ReplicaConfig) {
+  private constructor(
+    sftpConfig: SftpConfig,
+    replica: ReplicaConfig,
+    overridenLog: typeof console.log
+  ) {
     super(sftpConfig);
+    this.overridenLog = overridenLog;
 
     if (replica.type === "local") {
       this.initializeLocalReplica(replica.path);
@@ -33,7 +37,10 @@ export class LaHieSftpClient extends SftpClient {
     }
   }
 
-  static async create(isLocal?: boolean): Promise<LaHieSftpClient> {
+  static async create(
+    overridenLog: typeof console.log,
+    isLocal?: boolean
+  ): Promise<LaHieSftpClient> {
     const host = Config.getLaHieIngestionHost();
     const port = Config.getLaHieIngestionPort();
     const username = Config.getLaHieIngestionUsername();
@@ -47,7 +54,8 @@ export class LaHieSftpClient extends SftpClient {
         username,
         password,
       },
-      replica
+      replica,
+      overridenLog
     );
   }
 
@@ -67,7 +75,7 @@ export class LaHieSftpClient extends SftpClient {
   }
 
   async safeSync(remotePath: string): Promise<string[]> {
-    console.log(`Syncing from remotePath: ${remotePath}`);
+    this.overridenLog(`Syncing from remotePath: ${remotePath}`);
     try {
       await this.connect();
 
@@ -75,9 +83,8 @@ export class LaHieSftpClient extends SftpClient {
       if (!exists) {
         throw new Error("Remote path does not exist");
       }
-      console.log("Syncing from remote path to Replica");
+      this.overridenLog("Syncing from remote path to Replica");
       const fileNames = await this.sync(`${remotePath}/`);
-      console.log(`Successfully got ${fileNames.length} files from remote path.`);
       return fileNames;
     } finally {
       await this.disconnect();
@@ -85,17 +92,24 @@ export class LaHieSftpClient extends SftpClient {
   }
 
   override async syncFileToReplica(content: Buffer, remotePath: string) {
-    console.log("Hello? Syncing");
+    this.overridenLog("Found a file to sync to replica");
     if (this.replica) {
       try {
         const replicaPath = this.replica.getReplicaPath(remotePath);
+        this.overridenLog("Decrypting content");
         const decryptedContent = await this.decryptGpgBinaryWithPrivateKey(content);
+
+        this.overridenLog("Syncing decrypted content to replica");
         await this.replica.writeFile(replicaPath, decryptedContent);
+
+        this.overridenLog("Parsing content from PSV to Hl7");
         const psvToHl7Converter = new PsvToHl7Converter(decryptedContent);
         const identifiedMessages = await psvToHl7Converter.getCxIdPtIdHl7MessageList();
+
+        this.overridenLog("Sending parsed data to webhook sender sqs");
         await sendToWebhookSender(identifiedMessages);
       } catch (error) {
-        console.log(`Error writing file to replica: ${errorToString(error)}`);
+        this.overridenLog(`Error writing file to replica: ${error}`);
       }
     }
   }
