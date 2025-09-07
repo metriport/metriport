@@ -13,7 +13,7 @@ export const handler = capture.wrapHandler(async () => {
   capture.setExtra({ context: lambdaName });
   const log = prefixedLog("LaHie-ingestion");
   log("Starting ingestion of LaHie ADTs");
-  const sftpClient = await LaHieSftpClient.create();
+  const sftpClient = await LaHieSftpClient.create(log);
   const handler = new Hl7SubscriptionLaHieIngestionDirect(sftpClient, log);
   await handler.execute();
   log("Finished ingestion of LaHie");
