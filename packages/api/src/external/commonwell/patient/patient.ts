@@ -19,7 +19,7 @@ import {
 } from "../../commonwell-v2/patient/patient";
 import { HieInitiator } from "../../hie/get-hie-initiator";
 import { LinkStatus } from "../../patient-link";
-import { validateCWEnabled } from "../shared";
+import { isCommonwellEnabledForPatient, validateCWEnabled } from "../shared";
 import { UpdatePatientCmd } from "./command-types";
 import { updatePatientDiscoveryStatus } from "./patient-external-data";
 import { CQLinkStatus, PatientDataCommonwell } from "./patient-shared";
@@ -80,7 +80,6 @@ export async function create({
     facilityId,
     forceCW: forceCWCreate,
     log,
-    isCwV2Enabled,
   });
   if (!isCwEnabled) return;
 
@@ -100,32 +99,39 @@ export async function create({
     },
   });
 
-  // TODO ENG-554 Remove FF and v1 code
-  if (!isCwV2Enabled) {
-    return await registerAndLinkPatientInCwV1({
-      patient: createAugmentedPatient(updatedPatient),
-      facilityId,
-      getOrgIdExcludeList,
-      rerunPdOnNewDemographics: cxRerunPdOnNewDemographics,
-      requestId,
-      startedAt,
-      debug,
-      initiator,
-      update,
-    });
+  const createPromises = [];
+  if (isCommonwellEnabledForPatient(patient)) {
+    createPromises.push(
+      registerAndLinkPatientInCwV1({
+        patient: createAugmentedPatient(updatedPatient),
+        facilityId,
+        getOrgIdExcludeList,
+        rerunPdOnNewDemographics: cxRerunPdOnNewDemographics,
+        requestId,
+        startedAt,
+        debug,
+        initiator,
+        update,
+      })
+    );
+  }
+  if (isCwV2Enabled) {
+    createPromises.push(
+      registerAndLinkPatientInCwV2({
+        patient: createAugmentedPatient(updatedPatient),
+        facilityId,
+        getOrgIdExcludeList,
+        rerunPdOnNewDemographics: cxRerunPdOnNewDemographics,
+        requestId,
+        startedAt,
+        debug,
+        initiator,
+        update,
+      })
+    );
   }
 
-  return await registerAndLinkPatientInCwV2({
-    patient: createAugmentedPatient(updatedPatient),
-    facilityId,
-    getOrgIdExcludeList,
-    rerunPdOnNewDemographics: cxRerunPdOnNewDemographics,
-    requestId,
-    startedAt,
-    debug,
-    initiator,
-    update,
-  });
+  await Promise.all(createPromises);
 }
 
 export async function update({
@@ -149,7 +155,6 @@ export async function update({
     facilityId,
     forceCW: forceCWUpdate,
     log,
-    isCwV2Enabled,
   });
 
   if (!isCwEnabled) return;
@@ -170,47 +175,56 @@ export async function update({
     },
   });
 
-  // TODO ENG-554 Remove FF and v1 code
-  if (!isCwV2Enabled) {
-    await updatePatientAndLinksInCwV1({
-      patient: createAugmentedPatient(updatedPatient),
-      facilityId,
-      getOrgIdExcludeList,
-      rerunPdOnNewDemographics: cxRerunPdOnNewDemographics,
-      requestId,
-      startedAt,
-      debug,
-      update,
-    });
-    return;
+  const updatePromises: Promise<void>[] = [];
+  if (isCommonwellEnabledForPatient(patient)) {
+    updatePromises.push(
+      updatePatientAndLinksInCwV1({
+        patient: createAugmentedPatient(updatedPatient),
+        facilityId,
+        getOrgIdExcludeList,
+        rerunPdOnNewDemographics: cxRerunPdOnNewDemographics,
+        requestId,
+        startedAt,
+        debug,
+        update,
+      })
+    );
   }
 
-  await updatePatientAndLinksInCwV2({
-    patient: createAugmentedPatient(updatedPatient),
-    facilityId,
-    getOrgIdExcludeList,
-    rerunPdOnNewDemographics: cxRerunPdOnNewDemographics,
-    requestId,
-    startedAt,
-    debug,
-    update,
-  });
+  if (isCwV2Enabled) {
+    updatePromises.push(
+      updatePatientAndLinksInCwV2({
+        patient: createAugmentedPatient(updatedPatient),
+        facilityId,
+        getOrgIdExcludeList,
+        rerunPdOnNewDemographics: cxRerunPdOnNewDemographics,
+        requestId,
+        startedAt,
+        debug,
+        update,
+      })
+    );
+  }
+
+  await Promise.all(updatePromises);
 }
 
 export async function remove({ patient, facilityId }: UpdatePatientCmd): Promise<void> {
   const { log } = out(`CW remove - patientId ${patient.id}`);
+  const removePromises: Promise<void>[] = [];
 
   const [isCwV2EnabledCx, isCwV2EnabledFacility] = await Promise.all([
     isCommonwellV2EnabledForCx(patient.cxId),
     isCommonwellV2EnabledForCx(facilityId),
   ]);
   const isCwV2Enabled = isCwV2EnabledCx && isCwV2EnabledFacility;
-  if (!isCwV2Enabled) {
-    await removeInCwV1(patient, facilityId);
-    log(`Removed patient from CW v1`);
-    return;
-  }
 
-  await removeInCwV2(patient, facilityId);
-  log(`Removed patient from CW v2`);
+  if (isCommonwellEnabledForPatient(patient)) {
+    removePromises.push(removeInCwV1(patient, facilityId));
+  }
+  if (isCwV2Enabled) {
+    removePromises.push(removeInCwV2(patient, facilityId));
+  }
+  await Promise.all(removePromises);
+  log(`Removed patient from CW`);
 }

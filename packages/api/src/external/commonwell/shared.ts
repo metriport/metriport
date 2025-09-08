@@ -59,22 +59,14 @@ export async function validateCWEnabled({
   facilityId,
   forceCW = false,
   log = console.log,
-  isCwV2Enabled = false,
 }: {
   patient: Patient;
   facilityId?: string;
   forceCW?: boolean;
   log?: typeof console.log;
-  isCwV2Enabled?: boolean;
 }): Promise<boolean> {
   const { cxId } = patient;
   const isSandbox = Config.isSandbox();
-
-  // TODO ENG-554 Remove this check completely
-  if (!isCwV2Enabled && !isCommonwellEnabledForPatient(patient)) {
-    log(`CW disabled for patient, skipping...`);
-    return false;
-  }
 
   if (forceCW || isSandbox) {
     log(`CW forced, proceeding...`);
@@ -117,7 +109,7 @@ export async function validateCWEnabled({
 }
 
 // TODO ENG-554 Remove this
-function isCommonwellEnabledForPatient(patient: Patient): boolean {
+export function isCommonwellEnabledForPatient(patient: Patient): boolean {
   if (patient.data.genderAtBirth === "U") return false;
   return true;
 }
