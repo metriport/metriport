@@ -397,6 +397,12 @@ function removeDanglingReferences<T extends Resource>(
     );
     if (!entry.attester?.length) delete entry.attester;
   }
+  if ("report" in entry) {
+    entry.report = entry.report?.filter(r => r.reference && !danglingLinks.has(r.reference));
+    console.log(entry.report);
+    if (!entry.report?.length) delete entry.report;
+  }
+
   return entry;
 }
 
@@ -720,6 +726,16 @@ function replaceResourceReference<T extends Resource>(
         });
       }
       return section;
+    });
+  }
+
+  if (entry.resourceType === "Procedure" && "report" in entry) {
+    entry.report = entry.report.map(r => {
+      if (r.reference) {
+        const newRef = referenceMap.get(r.reference);
+        if (newRef) r.reference = newRef;
+      }
+      return r;
     });
   }
 
