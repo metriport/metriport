@@ -1,5 +1,7 @@
 import { Identifier } from "@medplum/fhirtypes";
 
+type SystemIdentifierMap = Record<string, Record<string, Identifier>>;
+
 export function mergeIdentifiers(
   masterIdentifier: Identifier | undefined,
   identifiers: Identifier[]
@@ -10,12 +12,29 @@ export function mergeIdentifiers(
 }
 
 export function mergeIdentifierArrays(
-  masterIdentifiers: Identifier[],
+  masterIdentifiers: Identifier[] | undefined,
   resourceIdentifiers: Identifier[][]
 ): Identifier[] | undefined {
-  const systemIdentifierMap: Record<string, Record<string, Identifier>> = {};
+  const systemIdentifierMap: SystemIdentifierMap = {};
 
-  for (const identifier of masterIdentifiers) {
+  if (masterIdentifiers) {
+    addIdentifiersToSystemIdentifierMap(systemIdentifierMap, masterIdentifiers);
+  }
+
+  resourceIdentifiers.forEach(identifiers => {
+    addIdentifiersToSystemIdentifierMap(systemIdentifierMap, identifiers);
+  });
+
+  return Object.values(systemIdentifierMap).flatMap(identifierMap => {
+    return Object.values(identifierMap);
+  });
+}
+
+function addIdentifiersToSystemIdentifierMap(
+  systemIdentifierMap: SystemIdentifierMap,
+  identifiers: Identifier[]
+): void {
+  for (const identifier of identifiers) {
     if (!identifier.system || !identifier.value) continue;
     let systemMap = systemIdentifierMap[identifier.system];
     if (!systemMap) {
@@ -23,18 +42,4 @@ export function mergeIdentifierArrays(
     }
     systemMap[identifier.value] = identifier;
   }
-
-  for (const identifiers of resourceIdentifiers) {
-    for (const identifier of identifiers) {
-      if (!identifier.system || !identifier.value) continue;
-      let systemMap = systemIdentifierMap[identifier.system];
-      if (!systemMap) {
-        systemMap = systemIdentifierMap[identifier.system] = {};
-      }
-      systemMap[identifier.value] = identifier;
-    }
-  }
-  return Object.entries(systemIdentifierMap).flatMap(([, values]) => {
-    return Object.values(values);
-  });
 }

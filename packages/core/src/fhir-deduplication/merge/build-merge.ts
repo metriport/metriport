@@ -35,7 +35,7 @@ export function buildMergeFunction<R extends Resource>({
     // FHIR specification for this resource type.
     const mergeMap = buildMergeMap<R>(mergeKeys);
     for (const resource of orderedResources) {
-      if (resource === masterResource) continue;
+      if (resource?.id === masterResource?.id) continue;
 
       for (const key of mergeKeys) {
         addToMergeMap(mergeMap, key, resource[key]);
