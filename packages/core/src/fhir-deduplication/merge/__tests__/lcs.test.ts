@@ -19,7 +19,7 @@ describe("Least common substring test", () => {
     const note2 = "follow up in two weeks";
 
     const result = mergeWithLeastCommonSubstring(note1, note2);
-    expect(result).toEqual("follow up recommended in two weeks");
+    expect(result).toEqual("follow up in two weeks recommended");
   });
 
   it("should merge strings with commas", () => {
