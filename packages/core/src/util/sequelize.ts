@@ -12,8 +12,10 @@ export const dbCredsSchema = z.object({
 export type DbCreds = z.infer<typeof dbCredsSchema>;
 
 /**
- * If establishing db connections directly from a lambda, DO NOT use these pool options:
- * read this doc instead -> https://sequelize.org/docs/v6/other-topics/aws-lambda/
+ * TODO(ENG-1011): Stop using these pool options directly from lambda functions.
+ * Instead, use the pool options and follow the guide specified in the sequelize docs.
+ *
+ * https://sequelize.org/docs/v6/other-topics/aws-lambda/
  */
 export const defaultPoolOptions: PoolOptions = {
   max: 5,
