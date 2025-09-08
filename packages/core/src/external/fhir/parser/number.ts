@@ -1,9 +1,10 @@
 interface NumberParserResult {
-  value?: number;
+  value: number;
   remainder: string;
+  scaleModifier?: boolean;
 }
 
-export function parseNumber(inputString: string): NumberParserResult {
+export function parseNumber(inputString: string): NumberParserResult | undefined {
   // First try parsing word numbers like "one hundred and five"
   const wordResult = parseNumberFromWord(inputString);
   if (wordResult != null) {
@@ -16,7 +17,7 @@ export function parseNumber(inputString: string): NumberParserResult {
     return digitResult;
   }
 
-  return { remainder: inputString };
+  return undefined;
 }
 
 /**
@@ -34,31 +35,42 @@ function parseNumberFromDigits(inputString: string): NumberParserResult | undefi
 /**
  * Parses any word-based number from the input string
  */
-function parseNumberFromWord(inputString: string): NumberParserResult | undefined {
+function parseNumberFromWord(
+  inputString: string,
+  shouldParseScaleModifier = true
+): NumberParserResult | undefined {
   const [token, remainder] = getFirstToken(inputString);
   const firstWordOfNumber = token.toLowerCase();
-  if (!isFirstWordOfNumber(firstWordOfNumber)) {
-    return undefined;
-  }
-  // Attempt to parse a single number component like "one", "two hundred", etc.
-  let result: NumberParserResult | undefined = parseSimpleWordNumber(firstWordOfNumber, remainder);
-  if (result === undefined) result = parseSingleNumberFromWord(firstWordOfNumber, remainder);
-  if (result === undefined) result = parseTenNumberFromWord(firstWordOfNumber, remainder);
-  if (!result || result.value == null) return undefined;
 
-  // Attempt to add a subsequent number component to handle cases like "two hundred thirty four"
-  const nextResult = parseNumberFromWord(result.remainder);
-  if (shouldAddResult(result, nextResult)) {
-    result.value += nextResult.value;
-    result.remainder = nextResult.remainder;
-  }
-  return result;
+  if (shouldParseScaleModifier && isScaleModifier(firstWordOfNumber)) {
+    return parseScaleModifier(inputString);
+  } else if (isFirstWordOfNumber(firstWordOfNumber)) {
+    // Attempt to parse a single number component like "one", "two hundred", etc.
+    const result = parseSimpleWordNumber(firstWordOfNumber, remainder);
+    if (!result) return undefined;
+
+    // Attempt to recursively add subsequent smaller number components to handle cases like "two hundred thirty four"
+    let nextResult: NumberParserResult | undefined = undefined;
+    do {
+      nextResult = parseNumberFromWord(result.remainder);
+      if (nextResult && shouldAddResult(result, nextResult)) {
+        result.value += nextResult.value;
+        result.remainder = nextResult.remainder;
+
+        // Handle intermittent scale modifiers like "two hundred thirty four thousand"
+        const scaleModifier = parseScaleModifier(nextResult.remainder);
+        if (scaleModifier != null) {
+          result.value *= scaleModifier.value;
+          result.remainder = scaleModifier.remainder;
+        } else break;
+      } else break;
+    } while (nextResult != null);
+
+    return result;
+  } else return undefined;
 }
 
-function shouldAddResult(
-  result: NumberParserResult,
-  nextResult?: NumberParserResult
-): nextResult is Required<NumberParserResult> {
+function shouldAddResult(result: NumberParserResult, nextResult?: NumberParserResult): boolean {
   if (!nextResult || result.value == null || nextResult.value == null) return false;
   const resultScale = result.value.toString().length;
   const nextResultScale = nextResult.value.toString().length;
@@ -69,74 +81,40 @@ function parseSimpleWordNumber(token: string, remainder: string): NumberParserRe
   const digitNumber = simpleNumberName[token];
   if (digitNumber === undefined) return undefined;
 
-  // Handles cases like "one hundred", "two thousand", etc.
-  const [nextWord, nextRemainder] = getFirstToken(remainder);
-  const scaleModifier = numberScaleName[nextWord];
-  if (scaleModifier) {
-    return { value: digitNumber * scaleModifier, remainder: nextRemainder };
+  // Handles scaled numbers like "one hundred", "two thousand", etc.
+  const scaleModifier = parseScaleModifier(remainder);
+  if (scaleModifier != null) {
+    return { value: digitNumber * scaleModifier.value, remainder: scaleModifier.remainder };
   }
 
   // Otherwise the value is a regular digit like "one"
   return { value: digitNumber, remainder };
 }
 
-function parseScaleModifier(inputString: string): number | undefined {
-  const [token] = getFirstToken(inputString);
-  const scaleModifier = numberScaleName[token];
-  if (scaleModifier) return scaleModifier;
-  return undefined;
-}
-
-function parseSingleNumberFromWord(
-  firstWordOfNumber: string,
-  remainder: string
-): NumberParserResult | undefined {
-  const singleNumber = doubleDigitNumberName[firstWordOfNumber];
-  if (singleNumber != null) {
-    const scaleModifier = parseScaleModifier(remainder);
-    if (scaleModifier != null) {
-      return { value: singleNumber * scaleModifier, remainder };
-    }
-    return { value: singleNumber, remainder };
-  }
-  return undefined;
-}
-
-function parseTenNumberFromWord(
-  firstWordOfNumber: string,
-  remainder: string
-): NumberParserResult | undefined {
-  const tenNumber = tenNumberName[firstWordOfNumber];
-  if (tenNumber != null) {
-    const [nextWord, nextRemainder] = getFirstToken(remainder);
-    const nextSingleNumber = parseSingleNumberFromWord(nextWord, nextRemainder);
-    if (nextSingleNumber != null) {
-      console.log("nextSingleNumber", nextSingleNumber);
-    }
-
-    const scaleModifier = parseScaleModifier(remainder);
-    if (scaleModifier != null) {
-      return { value: tenNumber * scaleModifier, remainder };
-    }
-    return { value: tenNumber, remainder };
-  }
+export function parseScaleModifier(inputString: string): NumberParserResult | undefined {
+  const [token, remainder] = getFirstToken(inputString);
+  const value = numberScaleName[token];
+  if (value != null) return { value, remainder, scaleModifier: true };
   return undefined;
 }
 
 function getFirstToken(inputString: string): [string, string] {
-  const matchFirstPart = inputString.trim().match(/^([a-zA-Z0-9.]+)\b\s*(.*)/);
+  const matchFirstPart = inputString.trim().match(/^-?([a-zA-Z0-9.]+)\b(-?|\s*)(.*)/);
   if (matchFirstPart === null) return [inputString, ""];
   const firstToken = matchFirstPart[1];
-  const remainder = matchFirstPart[2];
+  const remainder = matchFirstPart[3];
   if (firstToken === undefined || remainder === undefined) return [inputString, ""];
   return [firstToken, remainder];
 }
 
 function isFirstWordOfNumber(token: string): boolean {
   const lowercasedToken = token.toLowerCase();
-  return (
-    simpleNumberName[lowercasedToken] != null || doubleDigitNumberName[lowercasedToken] != null
-  );
+  return simpleNumberName[lowercasedToken] != null;
+}
+
+function isScaleModifier(token: string): boolean {
+  const lowercasedToken = token.toLowerCase();
+  return numberScaleName[lowercasedToken] != null;
 }
 
 const simpleNumberName: Record<string, number> = {
@@ -160,20 +138,6 @@ const simpleNumberName: Record<string, number> = {
   seventeen: 17,
   eighteen: 18,
   nineteen: 19,
-};
-
-const doubleDigitNumberName: Record<string, number> = {
-  twenty: 20,
-  thirty: 30,
-  forty: 40,
-  fifty: 50,
-  sixty: 60,
-  seventy: 70,
-  eighty: 80,
-  ninety: 90,
-};
-
-const tenNumberName: Record<string, number> = {
   twenty: 20,
   thirty: 30,
   forty: 40,
