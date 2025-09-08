@@ -21,7 +21,7 @@ export function mergeCodeableConcepts(
     addCodeableConceptToCodingMap(codingMap, codeableConcept);
   }
   mergedCodeableConcept.coding = getCodingArrayFromMap(codingMap);
-  return firstCodeableConcept;
+  return mergedCodeableConcept;
 }
 
 export function mergeCodeableConceptArrays(
@@ -42,9 +42,9 @@ export function mergeCodeableConceptArrays(
   }
 
   // Reduce other codeable concepts into the first codeable concept in the merge array
-  const firstCodeableConcept = mergedCodeableConceptArray[0] ?? { coding: [] };
-  firstCodeableConcept.coding = getCodingArrayFromMap(codingMap);
-  return [firstCodeableConcept, ...mergedCodeableConceptArray.slice(1)];
+  const firstMergedCodeableConcept = mergedCodeableConceptArray[0] ?? { coding: [] };
+  firstMergedCodeableConcept.coding = getCodingArrayFromMap(codingMap);
+  return [firstMergedCodeableConcept, ...mergedCodeableConceptArray.slice(1)];
 }
 
 function addCodeableConceptArrayToCodingMap(
