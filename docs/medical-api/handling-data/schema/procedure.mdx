@@ -1,0 +1,48 @@
+---
+title: "Procedure"
+description: "Schema documentation for the Procedure table in the Metriport data model"
+group: "Schema"
+---
+
+The procedure table contains information on procedures performed on patients, including procedure codes, descriptions, and performance dates.
+
+**Primary Keys:**
+* procedure_id
+
+**Foreign Keys:**
+* person_id
+* patient_id
+* encounter_id
+* practitioner_id
+* location_id
+
+| Column | Data Type | Description | Terminology |
+| ------ | --------- | ----------- | ----------- |
+| procedure_id | string | Unique identifier for the procedure | - |
+| person_id | string | Unique identifier for the person | - |
+| member_id | string | Unique identifier for the member | - |
+| patient_id | string | Unique identifier for the patient | - |
+| encounter_id | string | Unique identifier for the encounter | - |
+| practitioner_id | string | Unique identifier for the practitioner | - |
+| location_id | string | Unique identifier for the location | - |
+| procedure_code | string | Standardized procedure code | CPT, HCPCS, ICD-9-CM, ICD-10-CM |
+| procedure_code_type | string | Type of coding system used | cpt, hcpcs, icd-9-cm, icd-10-cm |
+| procedure_code_system | string | Coding system identifier | - |
+| procedure_code_version | string | Version of the coding system | - |
+| procedure_code_display | string | Human-readable description of the procedure | - |
+| procedure_date | date | Date when the procedure was performed | - |
+| procedure_start_time | timestamp | Start time of the procedure | - |
+| procedure_end_time | timestamp | End time of the procedure | - |
+| procedure_status | string | Status of the procedure | completed, in-progress, cancelled |
+| procedure_type | string | Type of procedure | surgical, diagnostic, therapeutic |
+| body_site | string | Anatomical location of the procedure | - |
+| laterality | string | Side of the body for the procedure | left, right, bilateral |
+| quantity | integer | Quantity of procedures performed | - |
+| unit | string | Unit of measurement for quantity | - |
+| data_source | string | Source of the procedure data | claims, clinical, ehr |
+| source_code | string | Original code from the source system | - |
+| normalized_code | string | Standardized/normalized code | - |
+| source_system | string | System that provided the procedure data | - |
+| source_table | string | Table in the source system | - |
+| source_id | string | Identifier from the source system | - |
+| ingestion_date | timestamp | Date when the data was ingested | - |

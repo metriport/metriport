@@ -111,6 +111,7 @@ export async function syncAthenaPatientIntoMetriport({
     patientId: metriportPatient.id,
     externalId: athenaPatientId,
     source: EhrSources.athena,
+    secondaryMappings: { practiceId: athenaPracticeId },
   });
   return metriportPatient.id;
 }

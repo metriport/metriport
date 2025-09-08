@@ -142,7 +142,28 @@
         "medical-api/handling-data/medical-record-summary",
         "medical-api/handling-data/webhooks",
         "medical-api/handling-data/realtime-patient-notifications",
-        "medical-api/handling-data/data-analytics",
+        {
+          "group": "Data Analytics and Warehousing",
+          "icon": "database",
+          "pages": [
+            "medical-api/handling-data/data-analytics",
+            {
+              "group": "Schema",
+              "pages": [
+                "medical-api/handling-data/schema/condition",
+                "medical-api/handling-data/schema/encounter",
+                "medical-api/handling-data/schema/immunization",
+                "medical-api/handling-data/schema/lab-result",
+                "medical-api/handling-data/schema/location",
+                "medical-api/handling-data/schema/medication",
+                "medical-api/handling-data/schema/observation",
+                "medical-api/handling-data/schema/patient",
+                "medical-api/handling-data/schema/practitioner",
+                "medical-api/handling-data/schema/procedure"
+              ]
+            }
+          ]
+        },
         "medical-api/handling-data/filters",
         "medical-api/handling-data/pagination",
         "medical-api/handling-data/contribution",

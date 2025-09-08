@@ -12,7 +12,9 @@ export type DocumentWithMetriportId = Document & {
   originalId: string;
 };
 
-export type DocumentWithLocation = DocumentWithMetriportId & { content: { location: string } };
+export type DocumentWithLocation = DocumentWithMetriportId & {
+  content: { location: string };
+};
 
 export type CWDocumentWithMetriportData = DocumentWithMetriportId & {
   metriport: {

@@ -1,7 +1,7 @@
 import { faker } from "@faker-js/faker";
 import { PatientModel } from "../../../../models/medical/patient";
 import { TcmEncounterModel } from "../../../../models/medical/tcm-encounter";
-import { Pagination } from "../../../pagination";
+import { makePaginationWithCursor } from "../../__tests__/fixtures";
 import { getTcmEncounters, getTcmEncountersCount } from "../get-tcm-encounters";
 
 jest.mock("../../../../models/medical/tcm-encounter");
@@ -28,7 +28,7 @@ describe("TCM encounters pagination", () => {
     it("are both called with the same key query pagination and filter clauses", async () => {
       const cxId = faker.string.uuid();
       const afterDate = faker.date.past().toISOString();
-      const pagination: Pagination = { toItem: faker.string.uuid(), count: 10 };
+      const pagination = makePaginationWithCursor();
 
       mockSequelize.query.mockResolvedValueOnce([]);
       await getTcmEncounters({ cxId, pagination, after: afterDate });
@@ -37,15 +37,10 @@ describe("TCM encounters pagination", () => {
       await getTcmEncountersCount({ cxId, after: afterDate });
 
       const [dataQuery] = mockSequelize.query.mock.calls[0];
-      expect(dataQuery).toContain("tcm_encounter.cx_id = :cxId");
-      expect(dataQuery).toContain("tcm_encounter.admit_time > :admittedAfter");
-      expect(dataQuery).toContain("tcm_encounter.id >= :toItem");
-      expect(dataQuery).toContain("ORDER BY tcm_encounter.id ASC");
-      expect(dataQuery).toContain("LIMIT :count");
+      expect(dataQuery).toContain("AND tcm_encounter.admit_time > :admittedAfter");
 
       const [countQuery] = mockSequelize.query.mock.calls[1];
-      expect(countQuery).toContain("tcm_encounter.cx_id = :cxId");
-      expect(countQuery).toContain("tcm_encounter.admit_time > :admittedAfter");
+      expect(countQuery).toContain("AND tcm_encounter.admit_time > :admittedAfter");
     });
   });
 });

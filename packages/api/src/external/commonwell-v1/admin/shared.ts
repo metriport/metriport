@@ -9,7 +9,7 @@ import { makeCommonWellAPI } from "../api";
 import { getCWData } from "../patient";
 import { getCwInitiator } from "../shared";
 
-export type CWAccess =
+export type CWAccessV1 =
   | {
       commonWell: CommonWellAPI;
       queryMeta: RequestMetadata;
@@ -23,7 +23,7 @@ export type CWAccess =
       error: string;
     };
 
-export async function getCWAccessForPatient(patient: Patient): Promise<CWAccess> {
+export async function getCWAccessForPatient(patient: Patient): Promise<CWAccessV1> {
   const facilityId = patient.facilityIds[0];
   if (!facilityId) {
     console.log(`Patient ${patient.id} has no facilityId, skipping...`);
