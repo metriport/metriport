@@ -399,7 +399,6 @@ function removeDanglingReferences<T extends Resource>(
   }
   if ("report" in entry) {
     entry.report = entry.report?.filter(r => r.reference && !danglingLinks.has(r.reference));
-    console.log(entry.report);
     if (!entry.report?.length) delete entry.report;
   }
 
