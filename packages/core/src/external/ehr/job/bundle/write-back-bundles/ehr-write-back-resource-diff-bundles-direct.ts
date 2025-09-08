@@ -313,11 +313,16 @@ function groupMedicationStatementsByMedication({
     statements: MedicationStatement[];
   }[] = [];
   for (const medication of medications) {
+    const medicationId = medication.id;
+    if (!medicationId) {
+      groupedResources.push({ medication, statements: [] });
+      continue;
+    }
     const statementsList: MedicationStatement[] = [];
     for (const statement of statements) {
       if (!statement.medicationReference || !statement.medicationReference.reference) continue;
       const ref = statement.medicationReference.reference;
-      if (ref !== `Medication/${medication.id}`) continue;
+      if (ref !== `Medication/${medicationId}`) continue;
       statementsList.push(statement);
     }
     groupedResources.push({ medication, statements: statementsList });
