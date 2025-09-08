@@ -14,7 +14,7 @@ import { findOrCreateFacilityMapping } from "../../../../command/mapping/facilit
 import { saveJwtToken } from "../../../../external/ehr/shared/utils/jwt-token";
 import { requestLogger } from "../../../helpers/request-logger";
 import { getUUIDFrom } from "../../../schemas/uuid";
-import { asyncHandler, getFromQuery, getFromQueryOrFail } from "../../../util";
+import { asyncHandler, getFromQueryAsBoolean, getFromQueryOrFail } from "../../../util";
 
 const router = Router();
 
@@ -22,7 +22,6 @@ function generateToken(): string {
   return nanoid(30);
 }
 
-// Calculate expiration (2 years from now in milliseconds)
 function getDefaultExpiration(): number {
   return dayjs().add(2, "year").valueOf();
 }
@@ -44,7 +43,7 @@ router.post(
     const childCxId = getUUIDFrom("query", req, "childCxId").orFail();
     const facilityId = getUUIDFrom("query", req, "facilityId").orFail();
     const externalId = getFromQueryOrFail("externalId", req);
-    const isTenant = getFromQuery("isTenant", req) !== "false"; // defaults to true
+    const isTenant = getFromQueryAsBoolean("isTenant", req) ?? true;
 
     // Only update billing if this is a tenant of the main Canvas cx
     if (isTenant) {
