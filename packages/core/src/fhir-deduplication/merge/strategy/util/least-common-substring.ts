@@ -1,3 +1,10 @@
+/**
+ * Merges two strings by the least common substrings of words between them. This is a merge strategy
+ * that will avoid duplicating strings if they are
+ * @param a
+ * @param b
+ * @returns
+ */
 export function mergeWithLeastCommonSubstring(a: string, b: string): string {
   const wordsA = tokenizeString(a);
   const wordsB = tokenizeString(b);
@@ -54,13 +61,13 @@ export function mergeWithLeastCommonSubstring(a: string, b: string): string {
     j--;
   }
 
-  return merged.reverse().join(" ");
+  return merged.reverse().join("");
 }
 
 function tokenizeString(str: string): string[] {
   return str
     .trim()
-    .split(/\s+/)
+    .split(/(\s+|\s*,\s*|\s*\.\s*)/)
     .filter(str => str.length > 0);
 }
 

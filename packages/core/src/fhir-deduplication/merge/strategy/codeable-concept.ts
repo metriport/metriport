@@ -1,5 +1,6 @@
 import { CodeableConcept, Coding } from "@medplum/fhirtypes";
 import { cloneDeep } from "lodash";
+import { lastElement } from "./util/array";
 
 // A map of system -> code -> Coding object
 type CodingMap = Record<string, Record<string, Coding>>;
@@ -21,6 +22,38 @@ export function mergeCodeableConcepts(
   }
   mergedCodeableConcept.coding = getCodingArrayFromMap(codingMap);
   return firstCodeableConcept;
+}
+
+export function mergeCodeableConceptArrays(
+  masterCodeableConceptArray: CodeableConcept[] | undefined,
+  codeableConceptArrays: CodeableConcept[][]
+): CodeableConcept[] | undefined {
+  const firstCodeableConceptArray = masterCodeableConceptArray
+    ? masterCodeableConceptArray
+    : lastElement(codeableConceptArrays);
+  if (!firstCodeableConceptArray) return undefined;
+  const mergedCodeableConceptArray = cloneDeep(firstCodeableConceptArray);
+
+  const codingMap: CodingMap = {};
+  addCodeableConceptArrayToCodingMap(codingMap, firstCodeableConceptArray);
+  for (const codeableConceptArray of codeableConceptArrays) {
+    if (codeableConceptArray === firstCodeableConceptArray) continue;
+    addCodeableConceptArrayToCodingMap(codingMap, codeableConceptArray);
+  }
+
+  // Reduce other codeable concepts into the first codeable concept in the merge array
+  const firstCodeableConcept = mergedCodeableConceptArray[0] ?? { coding: [] };
+  firstCodeableConcept.coding = getCodingArrayFromMap(codingMap);
+  return [firstCodeableConcept, ...mergedCodeableConceptArray.slice(1)];
+}
+
+function addCodeableConceptArrayToCodingMap(
+  codingMap: CodingMap,
+  codeableConceptArray: CodeableConcept[]
+): void {
+  for (const codeableConcept of codeableConceptArray) {
+    addCodeableConceptToCodingMap(codingMap, codeableConcept);
+  }
 }
 
 function addCodeableConceptToCodingMap(
