@@ -409,6 +409,11 @@ function removeDanglingReferences<T extends Resource>(
     );
     if (!entry.attester?.length) delete entry.attester;
   }
+  if ("report" in entry) {
+    entry.report = entry.report?.filter(r => r.reference && !danglingLinks.has(r.reference));
+    if (!entry.report?.length) delete entry.report;
+  }
+
   return entry;
 }
 
@@ -523,6 +528,20 @@ function removeDuplicateReferences<T extends Resource>(entry: T): T {
     entry.payor = entry.payor?.filter(payor => {
       if (uniquePayors.has(payor.reference)) return false;
       uniquePayors.add(payor.reference);
+      return true;
+    });
+  }
+
+  if (
+    "report" in entry &&
+    entry.report &&
+    entry.resourceType === "Procedure" &&
+    Array.isArray(entry.report)
+  ) {
+    const uniqueReports = new Set();
+    entry.report = entry.report.filter(r => {
+      if (uniqueReports.has(r.reference)) return false;
+      uniqueReports.add(r.reference);
       return true;
     });
   }
@@ -732,6 +751,16 @@ function replaceResourceReference<T extends Resource>(
         });
       }
       return section;
+    });
+  }
+
+  if (entry.resourceType === "Procedure" && "report" in entry && Array.isArray(entry.report)) {
+    entry.report = entry.report.map(r => {
+      if (r.reference) {
+        const newRef = referenceMap.get(r.reference);
+        if (newRef) r.reference = newRef;
+      }
+      return r;
     });
   }
 
