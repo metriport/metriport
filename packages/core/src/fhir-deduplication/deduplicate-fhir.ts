@@ -521,7 +521,12 @@ function removeDuplicateReferences<T extends Resource>(entry: T): T {
     });
   }
 
-  if ("report" in entry && entry.report && entry.resourceType === "Procedure") {
+  if (
+    "report" in entry &&
+    entry.report &&
+    entry.resourceType === "Procedure" &&
+    Array.isArray(entry.report)
+  ) {
     const uniqueReports = new Set();
     entry.report = entry.report.filter(r => {
       if (uniqueReports.has(r.reference)) return false;
@@ -738,7 +743,7 @@ function replaceResourceReference<T extends Resource>(
     });
   }
 
-  if (entry.resourceType === "Procedure" && "report" in entry) {
+  if (entry.resourceType === "Procedure" && "report" in entry && Array.isArray(entry.report)) {
     entry.report = entry.report.map(r => {
       if (r.reference) {
         const newRef = referenceMap.get(r.reference);
