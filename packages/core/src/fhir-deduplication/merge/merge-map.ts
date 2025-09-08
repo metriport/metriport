@@ -2,23 +2,10 @@ import { Resource } from "@medplum/fhirtypes";
 import { MergeMap, MergeStrategy } from "./types";
 
 /**
- * A "merge map" for a particular resource is a mapping between all keys of the resource (taken from the FHIR specification)
- * and an array of all values for that key that are *not* from the master resource. If a particular merge strategy is not
- * included, the existing values of the master resource will be retained as-is.
- */
-export function buildMergeMap<R extends Resource>(mergeKeys: (keyof R)[]): MergeMap<R> {
-  const emptyMergeMap: Partial<MergeMap<R>> = {};
-  for (const key of mergeKeys) {
-    emptyMergeMap[key] = [];
-  }
-  return emptyMergeMap as MergeMap<R>;
-}
-
-/**
  * Adds the given key-value pair to the merge map.
- * @param mergeMap - the map that was built by `buildMergeMap`
+ * @param mergeMap - the object containing a mapping of key -> array of values
  * @param key - the key to add to the merge map
- * @param value - the value to add to the merge map
+ * @param value - the value to add to the merge map (into the array for the given key)
  */
 export function addToMergeMap<R extends Resource, K extends keyof R>(
   mergeMap: MergeMap<R>,
@@ -26,6 +13,9 @@ export function addToMergeMap<R extends Resource, K extends keyof R>(
   value: R[K]
 ) {
   if (value == null) return;
+  if (mergeMap[key] == null) {
+    mergeMap[key] = [];
+  }
   mergeMap[key]?.push(value);
 }
 
@@ -46,5 +36,6 @@ export function applyMergeStrategy<R extends Resource, K extends keyof R>(
 ): void {
   const masterResourceValue = masterResource[key];
   const mergeValues = mergeMap[key];
+  if (!mergeValues) return;
   masterResource[key] = strategy(masterResourceValue, mergeValues);
 }

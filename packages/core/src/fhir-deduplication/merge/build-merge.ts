@@ -1,9 +1,9 @@
 import { cloneDeep } from "lodash";
 import { Resource } from "@medplum/fhirtypes";
 import { MetriportError } from "@metriport/shared";
-import { MergeConfig, MergeFunction } from "./types";
+import { MergeConfig, MergeFunction, MergeMap } from "./types";
 import { buildStatusOrderingFunction } from "./status";
-import { buildMergeMap, addToMergeMap, applyMergeStrategy } from "./merge-map";
+import { addToMergeMap, applyMergeStrategy } from "./merge-map";
 
 /**
  * Builds a function that merges an array of resources into a single resource. This function was optimized
@@ -33,7 +33,7 @@ export function buildMergeFunction<R extends Resource>({
 
     // For each resource that is not the master resource, build a map of values for each key of the
     // FHIR specification for this resource type.
-    const mergeMap = buildMergeMap<R>(mergeKeys);
+    const mergeMap: MergeMap<R> = {};
     for (const resource of orderedResources) {
       if (resource?.id === masterResource?.id) continue;
 

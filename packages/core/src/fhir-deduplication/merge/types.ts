@@ -8,7 +8,7 @@ export type MergeStrategy<R extends Resource, K extends keyof R> = (
   values: Array<NonNullable<R[K]>>
 ) => R[K];
 
-export type MergeMap<R extends Resource> = { [K in keyof R]: Array<NonNullable<R[K]>> };
+export type MergeMap<R extends Resource> = { [K in keyof R]?: Array<NonNullable<R[K]>> };
 
 export type MergeStatusPrecedence<R extends Resource> = Array<ResourceStatus<R>>;
 export type ResourceStatus<R extends Resource> = R extends { status?: infer S } ? S : never;
