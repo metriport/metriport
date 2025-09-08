@@ -279,26 +279,26 @@ function groupObservationsByDiagnosticReport({
   diagnosticReports: DiagnosticReport[];
   observations: Observation[];
 }): { diagnosticReport: DiagnosticReport; observations: Observation[] }[] {
-  const hydratedMetriportOnlyResources: {
+  const groupedResources: {
     diagnosticReport: DiagnosticReport;
     observations: Observation[];
   }[] = [];
   for (const diagnosticReport of diagnosticReports) {
     if (!diagnosticReport.result || diagnosticReport.result.length < 1) {
-      hydratedMetriportOnlyResources.push({ diagnosticReport, observations: [] });
+      groupedResources.push({ diagnosticReport, observations: [] });
       continue;
     }
-    const hydratedObservations: Observation[] = [];
+    const observationsList: Observation[] = [];
     for (const observationReference of diagnosticReport.result) {
       const observation = observations.find(
         observation => `Observation/${observation.id}` === observationReference.reference
       );
       if (!observation || observation.resourceType !== "Observation") continue;
-      hydratedObservations.push(observation);
+      observationsList.push(observation);
     }
-    hydratedMetriportOnlyResources.push({ diagnosticReport, observations: hydratedObservations });
+    groupedResources.push({ diagnosticReport, observations: observationsList });
   }
-  return hydratedMetriportOnlyResources;
+  return groupedResources;
 }
 
 function groupMedicationStatementsByMedication({
@@ -308,25 +308,21 @@ function groupMedicationStatementsByMedication({
   medications: Medication[];
   statements: MedicationStatement[];
 }): { medication: Medication; statements: MedicationStatement[] }[] {
-  const hydratedMetriportOnlyResources: {
+  const groupedResources: {
     medication: Medication;
     statements: MedicationStatement[];
   }[] = [];
   for (const medication of medications) {
-    if (!medication.id) {
-      hydratedMetriportOnlyResources.push({ medication, statements: [] });
-      continue;
-    }
-    const hydratedStatements: MedicationStatement[] = [];
+    const statementsList: MedicationStatement[] = [];
     for (const statement of statements) {
       if (!statement.medicationReference || !statement.medicationReference.reference) continue;
       const ref = statement.medicationReference.reference;
       if (ref !== `Medication/${medication.id}`) continue;
-      hydratedStatements.push(statement);
+      statementsList.push(statement);
     }
-    hydratedMetriportOnlyResources.push({ medication, statements: hydratedStatements });
+    groupedResources.push({ medication, statements: statementsList });
   }
-  return hydratedMetriportOnlyResources;
+  return groupedResources;
 }
 
 async function getWriteBackFilters({

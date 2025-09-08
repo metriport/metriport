@@ -215,7 +215,7 @@ vitalSignCodesMap.set("8480-6", { codeKey: "VITALS.BLOODPRESSURE.SYSTOLIC", targ
 vitalSignCodesMap.set("29463-7", { codeKey: "VITALS.WEIGHT", targetUnits: "g" });
 vitalSignCodesMap.set("8302-2", { codeKey: "VITALS.HEIGHT", targetUnits: "cm" });
 vitalSignCodesMap.set("56086-2", { codeKey: "VITALS.WAISTCIRCUMFERENCE", targetUnits: "cm" });
-vitalSignCodesMap.set("59574-4", { codeKey: "VITALS.BMI", targetUnits: "%" });
+vitalSignCodesMap.set("39156-5", { codeKey: "VITALS.BMI", targetUnits: "kg/m2" });
 
 const medicationRequestIntents = ["proposal", "plan", "order", "option"];
 const coverageCount = 50;

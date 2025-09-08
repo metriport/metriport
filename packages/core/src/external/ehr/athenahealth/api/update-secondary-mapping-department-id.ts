@@ -15,8 +15,8 @@ export type UpdateAthenaPatientSecondaryMappingDepartmentIdParams = {
  * by calling the internal API route.
  *
  * @param cxId - The CX ID.
- * @param patientId - The patient ID.
- * @param departmentId - The department ID.
+ * @param athenaPatientId - The AthenaHealth patient ID.
+ * @param athenaDepartmentId - The AthenaHealth department ID.
  */
 export async function updateAthenaPatientSecondaryMappingDepartmentId({
   cxId,
