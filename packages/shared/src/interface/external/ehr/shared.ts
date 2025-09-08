@@ -13,6 +13,7 @@ export const writeBackFiltersPerResourceTypeSchema = z.object({
       loincCodes: z.string().array().optional(),
       minCountPerCode: z.number().optional(),
       relativeDateRange: relativeDateRangeSchema.optional(),
+      absoluteDate: z.string().optional(),
       disabled: z.boolean().optional(),
     })
     .optional(),
@@ -21,11 +22,13 @@ export const writeBackFiltersPerResourceTypeSchema = z.object({
       loincCodes: z.string().array().optional(),
       minCountPerCode: z.number().optional(),
       relativeDateRange: relativeDateRangeSchema.optional(),
+      absoluteDate: z.string().optional(),
       disabled: z.boolean().optional(),
     })
     .optional(),
   problem: z
     .object({
+      stringFilters: z.string().array().optional(),
       latestOnly: z.boolean().optional(),
       chronicityFilter: z.enum(["all", "chronic", "non-chronic"]).optional(),
       relativeDateRange: relativeDateRangeSchema.optional(),
@@ -40,6 +43,13 @@ export const writeBackFiltersPerResourceTypeSchema = z.object({
       disabled: z.boolean().optional(),
     })
     .optional(),
+  medicationstatement: z
+    .object({
+      rxnormCodes: z.string().array().optional(),
+      absoluteDate: z.string().optional(),
+      disabled: z.boolean().optional(),
+    })
+    .optional(),
 });
 export type WriteBackFiltersPerResourceType = z.infer<typeof writeBackFiltersPerResourceTypeSchema>;
 
@@ -48,3 +58,9 @@ export const writeBackFiltersSchema = z.object({
   writeBackFilters: writeBackFiltersPerResourceTypeSchema.optional(),
 });
 export type WriteBackFilters = z.infer<typeof writeBackFiltersSchema>;
+
+// TODO Remove optional practiceId once migrated
+export const patientMappingSecondaryMappingsSchema = z.object({
+  practiceId: z.string().optional(),
+});
+export type PatientMappingSecondaryMappings = z.infer<typeof patientMappingSecondaryMappingsSchema>;

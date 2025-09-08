@@ -116,6 +116,7 @@ async function findOrCreateQuestExternalId(
       patientId: patient.id,
       externalId,
       source: questSource,
+      secondaryMappings: {},
     });
     log(`Created Quest mapping: ${patient.id} <-> ${created.externalId}`);
     return created.externalId;
