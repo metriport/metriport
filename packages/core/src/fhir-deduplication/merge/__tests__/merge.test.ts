@@ -14,6 +14,9 @@ describe("Merge test", () => {
       resourceType: "Medication",
       id: "1",
       status: "active",
+      meta: {
+        lastUpdated: "2024-01-01T00:00:00.000Z",
+      },
       code: {
         text: "Medication 1",
         coding: [acetaminophenCode],
@@ -24,6 +27,9 @@ describe("Merge test", () => {
       resourceType: "Medication",
       id: "2",
       status: "inactive",
+      meta: {
+        lastUpdated: "2025-01-02T00:00:00.000Z",
+      },
       code: {
         text: "Medication 2",
         coding: [acetaminophenCode],
