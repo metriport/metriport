@@ -521,6 +521,15 @@ function removeDuplicateReferences<T extends Resource>(entry: T): T {
     });
   }
 
+  if ("report" in entry && entry.report && entry.resourceType === "Procedure") {
+    const uniqueReports = new Set();
+    entry.report = entry.report.filter(r => {
+      if (uniqueReports.has(r.reference)) return false;
+      uniqueReports.add(r.reference);
+      return true;
+    });
+  }
+
   return entry;
 }
 
