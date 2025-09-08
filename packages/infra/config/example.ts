@@ -178,6 +178,15 @@ export const config: EnvConfigNonSandbox = {
     hl7v2RosterUploadLambda: {
       bucketName: "your-roster-bucket",
     },
+    hl7v2LaHieIngestionLambda: {
+      sftpConfig: {
+        host: "your-sftp-host",
+        port: 22,
+        username: "your-sftp-username",
+        remotePath: "your-directory-path",
+      },
+      passwordName: "your-password-name",
+    },
     hieConfigs: {
       YOUR_HIE_NAME: {
         name: "YOUR_HIE_NAME",
