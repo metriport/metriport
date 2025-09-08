@@ -5,6 +5,7 @@ dotenv.config();
 import { Command } from "commander";
 import rxnorm from "./rxnorm";
 import interactive from "./interactive";
+import buildTest from "./build-test";
 
 /**
  * This is the main command registry for the Comprehend CLI. You should add any new
@@ -13,4 +14,5 @@ import interactive from "./interactive";
 const program = new Command();
 program.addCommand(rxnorm);
 program.addCommand(interactive);
+program.addCommand(buildTest);
 program.parse(process.argv);

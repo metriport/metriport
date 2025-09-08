@@ -16,6 +16,9 @@ import { out, LogFunction } from "../../util/log";
 
 type LogLevel = "debug" | "info" | "none";
 
+/**
+ * Client for the AWS Comprehend Medical API.
+ */
 export class ComprehendClient {
   private comprehend: ComprehendMedicalClient;
   private readonly log: LogFunction;
