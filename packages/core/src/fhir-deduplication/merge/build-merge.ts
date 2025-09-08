@@ -2,7 +2,6 @@ import { cloneDeep } from "lodash";
 import { Resource } from "@medplum/fhirtypes";
 import { MetriportError } from "@metriport/shared";
 import { MergeConfig, MergeFunction, MergeMap } from "./types";
-import { buildStatusOrderingFunction } from "./status";
 import { addToMergeMap, applyMergeStrategy } from "./merge-map";
 
 /**
@@ -14,12 +13,8 @@ import { addToMergeMap, applyMergeStrategy } from "./merge-map";
  */
 export function buildMergeFunction<R extends Resource>({
   mergeStrategy,
-  statusPrecedence,
-  chooseMasterResource,
 }: MergeConfig<R>): MergeFunction<R> {
   // Precompute values that are global to all merges for this resource type.
-  const orderingFunction = buildStatusOrderingFunction<R>(statusPrecedence);
-  const masterResourceFunction = chooseMasterResource ? chooseMasterResource : chooseLastResource;
   const mergeKeys = Object.keys(mergeStrategy) as (keyof R)[];
 
   // Returns a closure that merges a resource array according to the configured merge strategy.
@@ -28,8 +23,9 @@ export function buildMergeFunction<R extends Resource>({
       throw new MetriportError("Merge function must be called with at least one resource");
     }
 
-    const orderedResources = orderingFunction(resources);
-    const masterResource = cloneDeep(masterResourceFunction(orderedResources));
+    const orderedResources = orderByLastUpdated(resources);
+    const latestResource = chooseLastResource(orderedResources);
+    const masterResource = cloneDeep(latestResource);
 
     // For each resource that is not the master resource, build a map of values for each key of the
     // FHIR specification for this resource type.
@@ -51,6 +47,16 @@ export function buildMergeFunction<R extends Resource>({
 
     return masterResource;
   };
+}
+
+function orderByLastUpdated<R extends Resource>(resources: R[]): R[] {
+  return [...resources].sort((a, b) => {
+    const aUpdated = a.meta?.lastUpdated;
+    const bUpdated = b.meta?.lastUpdated;
+    if (!aUpdated) return -Infinity;
+    if (!bUpdated) return Infinity;
+    return aUpdated.localeCompare(bUpdated);
+  });
 }
 
 /**
