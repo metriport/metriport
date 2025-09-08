@@ -1,4 +1,5 @@
 import { Identifier } from "@medplum/fhirtypes";
+import { lastElement } from "./util/array";
 
 type SystemIdentifierMap = Record<string, Record<string, Identifier>>;
 
@@ -6,7 +7,7 @@ export function mergeIdentifiers(
   masterIdentifier: Identifier | undefined,
   identifiers: Identifier[]
 ): Identifier | undefined {
-  const firstIdentifier = masterIdentifier ? masterIdentifier : identifiers[0];
+  const firstIdentifier = masterIdentifier ? masterIdentifier : lastElement(identifiers);
   if (!firstIdentifier) return undefined;
   return firstIdentifier;
 }
