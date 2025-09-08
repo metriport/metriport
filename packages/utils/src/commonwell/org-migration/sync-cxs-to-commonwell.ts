@@ -1,14 +1,15 @@
 import * as dotenv from "dotenv";
-dotenv.config({ path: ".env._cw_org_migration_prod" });
+dotenv.config();
 // keep that ^ on top
 import {
   APIMode,
   CommonWellMember,
-  Organization,
   CwTreatmentType,
+  Organization,
   OrganizationWithNetworkInfo,
 } from "@metriport/commonwell-sdk";
 import { OrganizationData } from "@metriport/core/domain/organization";
+import { executeAsynchronously } from "@metriport/core/util";
 import { log, out } from "@metriport/core/util/log";
 import {
   errorToString,
@@ -18,6 +19,7 @@ import {
   sleep,
   TreatmentType,
 } from "@metriport/shared";
+import { AxiosError } from "axios";
 import { Command } from "commander";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -47,6 +49,16 @@ dayjs.extend(duration);
  * 4. Enter appropriate commands as requested.
  */
 
+// auth stuff
+const cxIds: string[] = [];
+const MODE: APIMode = APIMode.integration;
+const IS_ACTIVE_DEFAULT = false;
+
+const numberOfParallelGetCxData = 10;
+// Keep this at 1, it has to be in sequence/controlled
+const numberOfParallelCreatedAtCw = 1;
+const waitBeforeAddingCert = dayjs.duration(5, "seconds");
+
 const cwMemberName = getEnvVarOrFail("CW_MEMBER_NAME");
 const orgGatewayEndpoint = getEnvVarOrFail("CW_GATEWAY_ENDPOINT");
 const orgGatewayAuthorizationServerEndpoint = getEnvVarOrFail(
@@ -62,11 +74,6 @@ const cwTechnicalContactTitle = getEnvVarOrFail("CW_TECHNICAL_CONTACT_TITLE");
 const cwTechnicalContactEmail = getEnvVarOrFail("CW_TECHNICAL_CONTACT_EMAIL");
 const cwTechnicalContactPhone = getEnvVarOrFail("CW_TECHNICAL_CONTACT_PHONE");
 
-// auth stuff
-const cxIds: string[] = [];
-const MODE = APIMode.production;
-const IS_ACTIVE_DEFAULT = false;
-
 // query stuff
 const minimumDelayTime = dayjs.duration(3, "seconds");
 const defaultDelayTime = dayjs.duration(1, "seconds");
@@ -81,7 +88,10 @@ type CwOrgOrFacility = {
 };
 
 const program = new Command();
-program.name("create-orgs-on-v2").description("CLI to create orgs on CW v2").showHelpAfterError();
+program
+  .name("sync-cxs-to-commonwell")
+  .description("CLI to create orgs on CW v2")
+  .showHelpAfterError();
 
 /*****************************************************************************
  *                                MAIN
@@ -96,56 +106,78 @@ async function main() {
   await displayWarningAndConfirmation(cxIds.length, log);
   log(`>>> Running it... (delay time is ${localGetDelay(log)} ms)`);
 
-  const orgsAndFacilities: Map<string, string> = new Map();
-  const cwOrgs: Organization[] = [];
-  for (const cxId of cxIds) {
-    const cxData = await getCxDataFull(cxId);
-    const { org, facilities } = cxData;
-    if (!org) {
-      log(`>>> No org found for cx ${cxId}`);
-      continue;
-    }
-    orgsAndFacilities.set(org.name, facilities.map(f => f.name).join(", "));
+  try {
+    const orgsAndFacilities: Map<string, string> = new Map();
+    const cwOrgs: Organization[] = [];
+    await executeAsynchronously(
+      cxIds,
+      async cxId => {
+        const { orgs, metriportOrgName, metriportFacilityNames } = await getOrgsForCustomer(cxId);
+        cwOrgs.push(...orgs);
+        orgsAndFacilities.set(metriportOrgName, metriportFacilityNames.join(", "));
+      },
+      { numberOfParallelExecutions: numberOfParallelGetCxData }
+    );
 
-    if (org.businessType === OrganizationBizType.healthcareProvider) {
-      console.log(org);
+    console.log(`Got ${orgsAndFacilities.size} orgs`);
+    for (const orgName of orgsAndFacilities.keys()) {
+      console.log(`${orgName} - ${orgsAndFacilities.get(orgName)}`);
+    }
+
+    await executeAsynchronously(cwOrgs, create, {
+      numberOfParallelExecutions: numberOfParallelCreatedAtCw,
+    });
+
+    log(`>>> Done in ${elapsedTimeAsStr(startedAt)} ms`);
+    process.exit(0);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (error: any) {
+    log(`Error: `, error instanceof AxiosError ? error.response : errorToString(error));
+    process.exit(1);
+  }
+}
+
+async function getOrgsForCustomer(
+  cxId: string
+): Promise<{ orgs: Organization[]; metriportOrgName: string; metriportFacilityNames: string[] }> {
+  const cwOrgs: Organization[] = [];
+
+  const { org, facilities } = await getCxDataFull(cxId);
+  if (!org) {
+    log(`>>> No org found for cx ${cxId}`);
+    return { orgs: [], metriportOrgName: "", metriportFacilityNames: [] };
+  }
+
+  if (org.businessType === OrganizationBizType.healthcareProvider) {
+    console.log(org);
+    cwOrgs.push(
+      buildCwOrganization({
+        oid: org.oid,
+        data: {
+          name: org.name,
+          type: org.type,
+          location: org.location,
+        },
+        active: org.cwActive ?? false,
+        isInitiatorAndResponder: true,
+      })
+    );
+  } else {
+    for (const facility of facilities) {
       cwOrgs.push(
-        buildCwOrganization({
-          oid: org.oid,
-          data: {
-            name: org.name,
-            type: org.type,
-            location: org.location,
-          },
-          active: org.cwActive ?? false,
-          isInitiatorAndResponder: true,
+        buildCwFacility({
+          facility,
+          cxOrgName: org.name,
+          cxOrgType: org.type,
         })
       );
-    } else {
-      // Facilities
-      for (const facility of facilities) {
-        if (facility.cwType === FacilityType.initiatorOnly) {
-          cwOrgs.push(
-            createOrUpdateFacilityInCwV2({
-              facility,
-              cxOrgName: org.name,
-              cxOrgType: org.type,
-            })
-          );
-        }
-      }
     }
   }
-
-  console.log(`Got ${orgsAndFacilities.size} orgs`);
-  for (const orgName of orgsAndFacilities.keys()) {
-    console.log(`${orgName} - ${orgsAndFacilities.get(orgName)}`);
-  }
-
-  await Promise.all(cwOrgs.map(create));
-
-  log(`>>> Done in ${elapsedTimeAsStr(startedAt)} ms`);
-  process.exit(0);
+  return {
+    orgs: cwOrgs,
+    metriportOrgName: org.name,
+    metriportFacilityNames: facilities.map(f => f.name),
+  };
 }
 
 async function displayWarningAndConfirmation(
@@ -210,7 +242,7 @@ function buildCwOrganization(org: CwOrgOrFacility): OrganizationWithNetworkInfo 
     patientIdAssignAuthority: org.oid,
     displayName: org.data.name,
     memberName: cwMemberName,
-    isActive: org.active ? IS_ACTIVE_DEFAULT : org.active,
+    isActive: org.active ? IS_ACTIVE_DEFAULT : false,
     searchRadius: 150,
     technicalContacts: [
       {
@@ -277,7 +309,7 @@ function buildCwOrganization(org: CwOrgOrFacility): OrganizationWithNetworkInfo 
   }
 }
 
-function createOrUpdateFacilityInCwV2({
+function buildCwFacility({
   facility,
   cxOrgName,
   cxOrgType,
@@ -312,17 +344,14 @@ async function create(org: Organization): Promise<void> {
     const respGet = await commonWell.getOneOrg(org.organizationId);
     if (!respGet) {
       log(`Org does not exist: ${org.organizationId}. Creating...`);
-      // log("REGISTERING THIS: ", JSON.stringify(org));
-      const respCreate = await commonWell.createOrg(org);
-      debug(`resp createOrg: `, JSON.stringify(respCreate));
+      debug("... payload: ", JSON.stringify(org));
 
       log("Sleeping before adding cert...");
-      await sleep(5000);
+      await sleep(waitBeforeAddingCert.asMilliseconds());
       await addCertsToOrg(commonWell, org, debug);
     } else {
       log(`Org already exists: ${org.organizationId}. Updating...`);
-      const respUpdate = await commonWell.updateOrg(org);
-      debug(`resp updateOrg: `, JSON.stringify(respUpdate));
+      debug("... payload: ", JSON.stringify(org));
     }
   } catch (error) {
     const msg = `Failure while creating org @ CW`;
