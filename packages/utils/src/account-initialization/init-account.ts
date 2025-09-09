@@ -326,10 +326,10 @@ async function createOrganizationForAccount(): Promise<InternalOrganizationDTO> 
     cxId,
     type: orgType,
     data: orgData,
-    cqApproved: false,
-    cqActive: false,
-    cwApproved: false,
-    cwActive: false,
+    cqApproved: defaultCqApproved,
+    cqActive: defaultCqActive,
+    cwApproved: defaultCwApproved,
+    cwActive: defaultCwActive,
   });
 
   log(`Organization created with ID: ${organization.id}, OID: ${organization.oid}`);
