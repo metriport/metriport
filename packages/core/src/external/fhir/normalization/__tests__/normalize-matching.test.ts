@@ -1,7 +1,7 @@
 import { buildDayjs } from "@metriport/shared/common/date";
 import {
   linkProceduresToDiagnosticReports,
-  matchDates,
+  doAnyDatesMatchThroughWindow,
   SIZE_OF_WINDOW,
 } from "../link-procedures-to-reports";
 import { makeProcedure } from "../../../../fhir-to-cda/cda-templates/components/__tests__/make-procedure";
@@ -34,9 +34,9 @@ describe("linkProceduresToDiagnosticReports", () => {
       const notMatchingDate = buildDayjs(baseMs + SIZE_OF_WINDOW * 2).toISOString();
       const barelyNotMatchingDate = buildDayjs(baseMs + (SIZE_OF_WINDOW + 1)).toISOString();
 
-      const shouldMatch = matchDates([DATE_TO_MATCH], [matchingDate]);
-      const shouldNotMatch = matchDates([DATE_TO_MATCH], [notMatchingDate]);
-      const barelyNotMatch = matchDates([DATE_TO_MATCH], [barelyNotMatchingDate]);
+      const shouldMatch = doAnyDatesMatchThroughWindow([DATE_TO_MATCH], [matchingDate]);
+      const shouldNotMatch = doAnyDatesMatchThroughWindow([DATE_TO_MATCH], [notMatchingDate]);
+      const barelyNotMatch = doAnyDatesMatchThroughWindow([DATE_TO_MATCH], [barelyNotMatchingDate]);
 
       expect(shouldMatch).toBe(true);
       expect(shouldNotMatch).toBe(false);
@@ -44,13 +44,13 @@ describe("linkProceduresToDiagnosticReports", () => {
     });
 
     it("should return false when either array is empty", () => {
-      expect(matchDates([], [DATE_TO_MATCH])).toBe(false);
-      expect(matchDates([DATE_TO_MATCH], [])).toBe(false);
-      expect(matchDates([], [])).toBe(false);
+      expect(doAnyDatesMatchThroughWindow([], [DATE_TO_MATCH])).toBe(false);
+      expect(doAnyDatesMatchThroughWindow([DATE_TO_MATCH], [])).toBe(false);
+      expect(doAnyDatesMatchThroughWindow([], [])).toBe(false);
     });
 
     it("should return false when no valid dates are found", () => {
-      expect(matchDates(["invalid-date"], ["another-invalid-date"])).toBe(false);
+      expect(doAnyDatesMatchThroughWindow(["invalid-date"], ["another-invalid-date"])).toBe(false);
     });
 
     it("should handle multiple dates in arrays", () => {
@@ -58,8 +58,12 @@ describe("linkProceduresToDiagnosticReports", () => {
       const matchingDate2 = buildDayjs(baseMs + SIZE_OF_WINDOW / 3).toISOString();
       const notMatchingDate = buildDayjs(baseMs + SIZE_OF_WINDOW * 2).toISOString();
 
-      expect(matchDates([DATE_TO_MATCH], [matchingDate1, notMatchingDate])).toBe(true);
-      expect(matchDates([DATE_TO_MATCH], [notMatchingDate, matchingDate2])).toBe(true);
+      expect(doAnyDatesMatchThroughWindow([DATE_TO_MATCH], [matchingDate1, notMatchingDate])).toBe(
+        true
+      );
+      expect(doAnyDatesMatchThroughWindow([DATE_TO_MATCH], [notMatchingDate, matchingDate2])).toBe(
+        true
+      );
     });
   });
 
@@ -259,7 +263,7 @@ describe("linkProceduresToDiagnosticReports", () => {
       );
     });
 
-    it("should match identifier values with dash separators using head-only matching", () => {
+    it("should match identifier values", () => {
       const matchingDate = buildDayjs(baseMs + SIZE_OF_WINDOW / 2).toISOString();
 
       const procedure = makeProcedure({
@@ -275,7 +279,7 @@ describe("linkProceduresToDiagnosticReports", () => {
       const diagnosticReport = makeDiagnosticReport({
         identifier: [
           {
-            value: `123-789`,
+            value: `123-456`,
             system: "http://example.com/ids",
           },
         ],
@@ -633,6 +637,165 @@ describe("linkProceduresToDiagnosticReports", () => {
       const result = linkProceduresToDiagnosticReports([procedure], [diagnosticReport]);
 
       expect(result.reports).toEqual([diagnosticReport]);
+    });
+
+    it("should comprehensively link multiple procedures to multiple diagnostic reports", () => {
+      const baseTime = buildDayjs(DATE_TO_MATCH);
+      const withinWindow = baseTime.add(1, "hour").toISOString();
+      const outsideWindow = baseTime.add(3, "hours").toISOString();
+
+      // Create procedures
+      const procedure1 = makeProcedure({
+        code: {
+          coding: [
+            {
+              code: "12345",
+              system: "http://www.ama-assn.org/go/cpt",
+            },
+          ],
+        },
+        performedDateTime: DATE_TO_MATCH,
+        identifier: [
+          {
+            value: "PROC001",
+            system: "http://example.com/ids",
+          },
+        ],
+      });
+
+      const procedure2 = makeProcedure({
+        code: {
+          coding: [
+            {
+              code: "67890",
+              system: "http://www.ama-assn.org/go/cpt",
+            },
+          ],
+        },
+        performedDateTime: withinWindow,
+        identifier: [
+          {
+            value: "PROC002",
+            system: "http://example.com/ids",
+          },
+        ],
+      });
+
+      const procedure3 = makeProcedure({
+        code: {
+          coding: [
+            {
+              code: "11111",
+              system: "http://www.ama-assn.org/go/cpt",
+            },
+          ],
+        },
+        performedDateTime: DATE_TO_MATCH,
+        identifier: [
+          {
+            value: "PROC003",
+            system: "http://example.com/ids",
+          },
+        ],
+      });
+
+      // Create diagnostic reports
+      const report1 = makeDiagnosticReport({
+        code: {
+          coding: [
+            {
+              code: "12345",
+              system: "http://www.ama-assn.org/go/cpt",
+            },
+          ],
+        },
+        effectiveDateTime: withinWindow,
+        identifier: [
+          {
+            value: "DR001",
+            system: "http://example.com/ids",
+          },
+        ],
+      });
+
+      const report2 = makeDiagnosticReport({
+        code: {
+          coding: [
+            {
+              code: "67890",
+              system: "http://www.ama-assn.org/go/cpt",
+            },
+          ],
+        },
+        effectiveDateTime: DATE_TO_MATCH,
+        identifier: [
+          {
+            value: "DR002",
+            system: "http://example.com/ids",
+          },
+        ],
+      });
+
+      const report3 = makeDiagnosticReport({
+        code: {
+          coding: [
+            {
+              code: "11111",
+              system: "http://www.ama-assn.org/go/cpt",
+            },
+          ],
+        },
+        effectiveDateTime: outsideWindow,
+        identifier: [
+          {
+            value: "DR003_DIFFERENT", // Different identifier to avoid identifier-based matching
+            system: "http://example.com/ids",
+          },
+        ],
+      });
+
+      const report4 = makeDiagnosticReport({
+        code: {
+          coding: [
+            {
+              code: "99999", // Different code, should not match
+              system: "http://www.ama-assn.org/go/cpt",
+            },
+          ],
+        },
+        effectiveDateTime: withinWindow,
+        identifier: [
+          {
+            value: "DR004",
+            system: "http://example.com/ids",
+          },
+        ],
+      });
+
+      const procedures = [procedure1, procedure2, procedure3];
+      const reports = [report1, report2, report3, report4];
+
+      const result = linkProceduresToDiagnosticReports(procedures, reports);
+
+      // Verify all procedures and reports are returned
+      expect(result.procedures).toHaveLength(3);
+      expect(result.reports).toHaveLength(4);
+
+      // Procedure1 should link to Report1 (same code, dates within window)
+      expect(result.procedures[0]?.report).toBeDefined();
+      expect(result.procedures[0]?.report).toHaveLength(1);
+      expect(result.procedures[0]?.report?.[0]?.reference).toBe(`DiagnosticReport/${report1.id}`);
+
+      // Procedure2 should link to Report2 (same code, dates within window)
+      expect(result.procedures[1]?.report).toBeDefined();
+      expect(result.procedures[1]?.report).toHaveLength(1);
+      expect(result.procedures[1]?.report?.[0]?.reference).toBe(`DiagnosticReport/${report2.id}`);
+
+      // Procedure3 should NOT link to Report3 (same code but dates outside window)
+      expect(result.procedures[2]?.report).toBeUndefined();
+
+      // Report4 should remain unlinked (different code)
+      // This is verified by the fact that no procedure links to it
     });
   });
 });

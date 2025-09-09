@@ -6,9 +6,17 @@ import {
   Reference,
   Resource,
 } from "@medplum/fhirtypes";
+import { buildDayjs } from "@metriport/shared/common/date";
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
+import {
+  getPerformedDateFromResource,
+  getDateFromResource,
+} from "../../../fhir-deduplication/shared";
 
-const HOURS_FOR_WINDOW = 2;
-export const SIZE_OF_WINDOW = HOURS_FOR_WINDOW * 60 * 60 * 1000;
+dayjs.extend(duration);
+
+export const SIZE_OF_WINDOW = dayjs.duration(2, "hours").asMilliseconds();
 
 export function linkProceduresToDiagnosticReports(
   procedures: Procedure[],
@@ -33,7 +41,8 @@ export function linkProceduresToDiagnosticReports(
       if (!hits) continue;
       for (const hit of hits) {
         if (!hit?.id) continue;
-        if (!matchDates(dates, getDate(hit))) {
+        const hitDates = getDateFromDiagnosticReport(hit);
+        if (!doAnyDatesMatchThroughWindow(dates, hitDates)) {
           continue;
         }
         const ref: Reference<DiagnosticReport> = { reference: `DiagnosticReport/${hit.id}` };
@@ -52,8 +61,8 @@ export function linkProceduresToDiagnosticReports(
 }
 
 function getKeysForDiagnosticReport(dr: DiagnosticReport): string[] {
-  const idVals = identifierValueTokens(dr);
-  const codes = codeTokensFromCode(dr.code);
+  const idVals = getIdentifierValueTokens(dr);
+  const codes = getCodeTokensFromCode(dr.code);
 
   const out: string[] = [];
   for (const v of idVals) out.push(`${v}`);
@@ -62,9 +71,10 @@ function getKeysForDiagnosticReport(dr: DiagnosticReport): string[] {
 }
 
 function getKeysAndDatesForProcedure(p: Procedure): { dates: string[]; pKeys: string[] } {
-  const dates = dateCandidatesFromProcedure(p);
-  const idVals = identifierValueTokens(p);
-  const codes = codeTokensFromCode(p.code);
+  const date = getPerformedDateFromResource(p, "datetime");
+  const dates = date ? [date] : [];
+  const idVals = getIdentifierValueTokens(p);
+  const codes = getCodeTokensFromCode(p.code);
 
   const out: string[] = [];
 
@@ -75,68 +85,43 @@ function getKeysAndDatesForProcedure(p: Procedure): { dates: string[]; pKeys: st
   return { dates: dedupedDates, pKeys: dedupedOut };
 }
 
-export function matchDates(a: string[] = [], b: string[] = []): boolean {
+function getDateFromDiagnosticReport(dr: DiagnosticReport): string[] {
+  const dates: string[] = [];
+
+  // Use the shared function for effectiveDateTime and effectivePeriod
+  const dateFromResource = getDateFromResource(dr, "datetime");
+  if (dateFromResource) {
+    dates.push(dateFromResource);
+  }
+
+  // Also check the issued field which is specific to DiagnosticReport
+  if (dr.issued) {
+    dates.push(dr.issued);
+  }
+
+  return [...new Set(dates)];
+}
+
+export function doAnyDatesMatchThroughWindow(a: string[] = [], b: string[] = []): boolean {
   if (a.length === 0 || b.length === 0) return false;
 
-  const aTimes = a
-    .map(a => {
-      return parseDateIntoNumber(a);
-    })
-    .filter((t): t is number => t !== undefined);
+  const aDates = a.map(dateStr => buildDayjs(dateStr)).filter(dayjs => dayjs.isValid());
 
-  const bTimes = b
-    .map(b => {
-      return parseDateIntoNumber(b);
-    })
-    .filter((t): t is number => t !== undefined);
+  const bDates = b.map(dateStr => buildDayjs(dateStr)).filter(dayjs => dayjs.isValid());
 
-  if (aTimes.length === 0 || bTimes.length === 0) return false;
+  if (aDates.length === 0 || bDates.length === 0) return false;
 
-  for (const ta of aTimes) {
-    for (const tb of bTimes) {
-      if (Math.abs(ta - tb) <= SIZE_OF_WINDOW) return true;
+  for (const dateA of aDates) {
+    for (const dateB of bDates) {
+      const diffInMs = Math.abs(dateA.diff(dateB, "milliseconds"));
+      if (diffInMs <= SIZE_OF_WINDOW) return true;
     }
   }
 
   return false;
 }
 
-function parseDateIntoNumber(iso?: string): number | undefined {
-  if (!iso) return undefined;
-  const d = new Date(iso);
-  if (Number.isFinite(d.getTime())) return d.getTime();
-
-  const mFull = iso.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
-  if (mFull) {
-    const dd = new Date(`${mFull[0]}.000Z`);
-    if (Number.isFinite(dd.getTime())) return dd.getTime();
-  }
-  const mDate = iso.match(/^\d{4}-\d{2}-\d{2}/);
-  if (mDate) {
-    const dd = new Date(`${mDate[0]}T00:00:00.000Z`);
-    if (Number.isFinite(dd.getTime())) return dd.getTime();
-  }
-  return undefined;
-}
-
-function getDate(dr: DiagnosticReport): string[] {
-  const raw = [
-    dr.effectiveDateTime,
-    dr.effectivePeriod?.start,
-    dr.effectivePeriod?.end,
-    dr.issued,
-  ].filter(Boolean) as string[];
-  return [...new Set(raw)];
-}
-
-function dateCandidatesFromProcedure(p: Procedure): string[] {
-  const raw = [p.performedDateTime, p.performedPeriod?.start, p.performedPeriod?.end].filter(
-    Boolean
-  ) as string[];
-  return dedupe(raw);
-}
-
-function identifierValueTokens(dr: Resource): string[] {
+function getIdentifierValueTokens(dr: Resource): string[] {
   const BAD = new Set(["UNK", "UNKNOWN", "UNSPECIFIED", "NA", "N/A", "NONE", "NO_CODE"]);
   const out: string[] = [];
   if (!("identifier" in dr)) {
@@ -150,20 +135,18 @@ function identifierValueTokens(dr: Resource): string[] {
     const value = (id.value ?? "").toString().trim();
     if (!value) continue;
 
-    const valueByPipe = splitValueByPipe(value);
+    const valueByPipe = getSplitValueByPipe(value);
     if (!valueByPipe) continue;
 
-    const valueByDash = splitValueByDash(valueByPipe);
-
-    if (BAD.has(valueByDash.toUpperCase())) continue;
-    if (/^(?:urn:|oid:|https?:\/\/)/i.test(valueByDash)) continue;
-    const noTrailingCaret = removeTrailingCaret(valueByDash);
+    if (BAD.has(valueByPipe.toUpperCase())) continue;
+    if (/^(?:urn:|oid:|https?:\/\/)/i.test(valueByPipe)) continue;
+    const noTrailingCaret = removeTrailingCaret(valueByPipe);
     out.push(noTrailingCaret);
   }
   return dedupe(out);
 }
 
-function splitValueByPipe(value: string): string {
+function getSplitValueByPipe(value: string): string {
   if (!value.includes("|")) return value;
   const parts = value
     .split("|")
@@ -172,12 +155,7 @@ function splitValueByPipe(value: string): string {
   return parts[parts.length - 1] ?? "";
 }
 
-function splitValueByDash(value: string): string {
-  const [head = "", tail = ""] = (value ?? "").split("-", 2);
-  return head && tail && /^\d+$/.test(head) && /^\d+$/.test(tail) ? head : value ?? "";
-}
-
-function codeTokensFromCode(code?: CodeableConcept): string[] {
+function getCodeTokensFromCode(code?: CodeableConcept): string[] {
   const BAD = new Set(["UNK", "UNKNOWN", "UNSPECIFIED", "NA", "N/A", "NONE", "NO_CODE"]);
   const codings = (code?.coding ?? []).filter((c): c is Coding => !!c?.code);
 
