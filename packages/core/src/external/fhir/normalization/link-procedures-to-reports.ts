@@ -20,6 +20,9 @@ dayjs.extend(duration);
 
 export const SIZE_OF_WINDOW = dayjs.duration(2, "hours").asMilliseconds();
 
+// Regex patterns for filtering identifier and code values
+const URI_PATTERN = /^(?:urn:|oid:|https?:\/\/)/i; // Matches URIs, OIDs, and HTTP/HTTPS URLs
+
 export function linkProceduresToDiagnosticReports(
   procedures: Procedure[],
   reports: DiagnosticReport[]
@@ -39,7 +42,7 @@ export function linkProceduresToDiagnosticReports(
   for (const proc of procedures) {
     const { dates, pKeys } = getKeysAndDatesForProcedure(proc);
     for (const key of pKeys) {
-      const hits = key ? drMap.get(key) : undefined;
+      const hits = drMap.get(key);
       if (!hits) continue;
       for (const hit of hits) {
         if (!hit?.id) continue;
@@ -132,21 +135,27 @@ function getIdentifierValueTokens(dr: Resource): string[] {
   const identifiers = toArray(dr.identifier);
 
   for (const id of identifiers) {
-    if (!id) continue;
-    const value = (id.value ?? "").toString().trim();
+    const value = id.value?.trim();
     if (!value) continue;
 
     const valueByPipe = getSplitValueByPipe(value);
     if (!valueByPipe) continue;
 
     if (isUselessDisplay(valueByPipe)) continue;
-    if (/^(?:urn:|oid:|https?:\/\/)/i.test(valueByPipe)) continue;
+    if (URI_PATTERN.test(valueByPipe)) continue;
     const noTrailingCaret = removeTrailingCaret(valueByPipe);
     out.push(noTrailingCaret);
   }
   return dedupe(out);
 }
 
+/**
+ * Splits a value by pipe and returns the last part.
+ * This is needed because the Procedures identifier values sometimes are stored as the system and the value separated by a pipe.
+ * But the DiagnosticReport identifier values are not stored as the system and the value separated by a pipe. Resulting in a mismatch.
+ * @param value The value to split by pipe
+ * @returns The last part of the value split by pipe
+ */
 function getSplitValueByPipe(value: string): string {
   if (!value.includes("|")) return value;
   const parts = value
@@ -163,7 +172,7 @@ function getCodeTokensFromCode(code?: CodeableConcept): string[] {
   for (const c of codings) {
     const token = (c.code ?? "").toString().trim();
     if (!token || isUselessDisplay(token)) continue;
-    if (/^(?:urn:|oid:|https?:\/\/)/i.test(token)) continue;
+    if (URI_PATTERN.test(token)) continue;
     out.push(token.toUpperCase());
   }
   return dedupe(out);
@@ -173,9 +182,16 @@ function dedupe<T>(arr: T[]): T[] {
   return [...new Set(arr)];
 }
 
+/**
+ * Removes the trailing caret from a string.
+ * This is needed because the Procedures identifier values sometimes are stored with a caret at the end.
+ * But the DiagnosticReport identifier values are stored without the caret. Resulting in a mismatch.
+ * @param s The string to remove the trailing caret from
+ * @returns The string with the trailing caret removed
+ */
 function removeTrailingCaret(s: string): string {
-  if (s.charAt(s.length - 1) === "^") {
-    return s.slice(0, s.length - 1);
+  if (s.endsWith("^")) {
+    return s.slice(0, -1);
   }
   return s;
 }
