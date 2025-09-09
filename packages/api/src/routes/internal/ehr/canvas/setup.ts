@@ -30,7 +30,7 @@ function getDefaultExpiration(): number {
  * POST /internal/ehr/canvas/setup
  *
  * Setup a new cx in Canvas
- * @param req.query.childCxId - The child customer's ID
+ * @param req.query.cxId - The child customer's ID
  * @param req.query.facilityId - The facility ID
  * @param req.query.externalId - The external ID
  * @param req.query.isTenant - Whether this is a tenant of the main Canvas cx (defaults to true)
@@ -40,25 +40,28 @@ router.post(
   "/",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    const childCxId = getUUIDFrom("query", req, "childCxId").orFail();
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const facilityId = getUUIDFrom("query", req, "facilityId").orFail();
     const externalId = getFromQueryOrFail("externalId", req);
     const isTenant = getFromQueryAsBoolean("isTenant", req) ?? true;
 
     // Only update billing if this is a tenant of the main Canvas cx
     if (isTenant) {
-      await updateCustomerBillingToPointToParent({ parentName: EhrSources.canvas, childCxId });
+      await updateCustomerBillingToPointToParent({
+        parentName: EhrSources.canvas,
+        childCxId: cxId,
+      });
     }
 
     await findOrCreateFacilityMapping({
-      cxId: childCxId,
+      cxId: cxId,
       facilityId: facilityId,
       externalId,
       source: EhrSources.canvas,
     });
 
     await findOrCreateCxMapping({
-      cxId: childCxId,
+      cxId: cxId,
       source: EhrSources.canvas,
       externalId,
       secondaryMappings: {},
@@ -83,7 +86,7 @@ router.post(
         source: canvasWebhookSource,
         exp: twoYearsFromNow,
         data: {
-          cxId: childCxId,
+          cxId: cxId,
           source: canvasWebhookSource,
           practiceId: externalId,
         },
