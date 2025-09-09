@@ -1,63 +1,35 @@
-import * as dotenv from "dotenv";
-dotenv.config();
-// Keep dotenv import and config before everything else
-import { baseUpdateSchema, usStateSchema } from "@metriport/api-sdk";
-import { defaultOptionalStringSchema, OrganizationBizType, TreatmentType } from "@metriport/shared";
-
+import { baseUpdateSchema } from "@metriport/api-sdk";
+import { addressStrictSchema } from "@metriport/core/domain/address";
+import { FacilityType } from "@metriport/core/domain/facility";
 import { z } from "zod";
-
-export function stripNonNumericChars(str: string): string {
-  return str.trim().replace(/\D/g, "");
-}
-
-const zipLength = 5;
-export const defaultZipString = z.coerce
-  .string()
-  .transform(zipStr => stripNonNumericChars(zipStr))
-  .refine(zip => zip.length === zipLength, {
-    message: `Zip must be a string consisting of ${zipLength} numbers`,
-  });
-
-export const addressStrictSchema = z.object({
-  addressLine1: z.string().min(1),
-  addressLine2: defaultOptionalStringSchema,
-  city: z.string().min(1),
-  state: usStateSchema,
-  zip: defaultZipString,
-  country: z.literal("USA").default("USA"),
-});
-
-export const orgBizTypeSchema = z.nativeEnum(OrganizationBizType);
-export const orgTypeSchema = z.nativeEnum(TreatmentType);
-
-export enum FacilityType {
-  initiatorAndResponder = "initiator_and_responder",
-  initiatorOnly = "initiator_only",
-}
+import {
+  organizationBizTypeSchema as apiOrganizationBizTypeSchema,
+  orgTypeSchema as apiOrgTypeSchema,
+} from "../../../../api/src/routes/medical/schemas/organization";
 
 export const organizationMapiBaseSchema = z.object({
   oid: z.string(),
-  type: orgTypeSchema,
+  type: apiOrgTypeSchema,
   name: z.string().min(1),
   location: addressStrictSchema,
 });
 export const organizationBizTypeSchema = z.object({
-  businessType: orgBizTypeSchema,
+  businessType: apiOrganizationBizTypeSchema,
 });
 export const organizationCreateSchema = organizationMapiBaseSchema
   .omit({ oid: true })
   .merge(organizationBizTypeSchema);
 export type OrganizationCreate = z.infer<typeof organizationCreateSchema>;
 
-export const organizationInternalDetailsSchema = organizationBizTypeSchema.merge(
-  z.object({
+export const organizationInternalDetailsSchema = z
+  .object({
     shortcode: z.string().optional(),
     cqApproved: z.boolean().optional().nullable(),
     cqActive: z.boolean().optional().nullable(),
     cwApproved: z.boolean().optional().nullable(),
     cwActive: z.boolean().optional().nullable(),
   })
-);
+  .merge(organizationBizTypeSchema);
 
 export const organizationSchema = baseUpdateSchema
   .merge(organizationMapiBaseSchema)

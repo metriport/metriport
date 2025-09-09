@@ -8,6 +8,7 @@ import {
   Organization,
   OrganizationWithNetworkInfo,
 } from "@metriport/commonwell-sdk";
+import { FacilityType } from "@metriport/core/domain/facility";
 import { OrganizationData } from "@metriport/core/domain/organization";
 import { executeAsynchronously } from "@metriport/core/util";
 import { log, out } from "@metriport/core/util/log";
@@ -29,7 +30,7 @@ import { initRunsFolder } from "../../shared/folder";
 import { getCxDataFull } from "../../shared/get-cx-data";
 import { makeCommonWellMemberAPI } from "./api";
 import { getCertificate } from "./certs";
-import { Facility, FacilityType } from "./cw-v2-org-migration-utils";
+import { Facility } from "./cw-v2-org-migration-utils";
 
 dayjs.extend(duration);
 
