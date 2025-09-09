@@ -536,6 +536,13 @@ class AthenaHealthApi {
   }): Promise<string> {
     const athenaOnePatient = await this.getAthenaOnePatient({ cxId, patientId });
     const departmentId = athenaOnePatient.primarydepartmentid;
+    if (!departmentId) {
+      throw new NotFoundError("Primary department ID not found", undefined, {
+        cxId,
+        practiceId: this.practiceId,
+        patientId,
+      });
+    }
     return departmentId;
   }
 
