@@ -13,6 +13,7 @@ import {
   getPerformedDateFromResource,
   getDateFromResource,
 } from "../../../fhir-deduplication/shared";
+import { toArray } from "@metriport/shared/common/array";
 
 dayjs.extend(duration);
 
@@ -128,7 +129,7 @@ function getIdentifierValueTokens(dr: Resource): string[] {
     return [];
   }
 
-  const identifiers = Array.isArray(dr.identifier) ? dr.identifier : [dr.identifier];
+  const identifiers = toArray(dr.identifier);
 
   for (const id of identifiers) {
     if (!id) continue;
