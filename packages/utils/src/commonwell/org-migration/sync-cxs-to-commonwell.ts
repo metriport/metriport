@@ -113,9 +113,9 @@ async function main() {
       { numberOfParallelExecutions: numberOfParallelGetCxData }
     );
 
-    console.log(`Got ${orgsAndFacilities.size} orgs`);
+    log(`Got ${orgsAndFacilities.size} orgs`);
     for (const orgName of orgsAndFacilities.keys()) {
-      console.log(`${orgName} - ${orgsAndFacilities.get(orgName)}`);
+      log(`${orgName} - ${orgsAndFacilities.get(orgName)}`);
     }
 
     await executeAsynchronously(cwOrgs, create, {
@@ -143,7 +143,6 @@ async function getOrgsForCustomer(
   }
 
   if (org.businessType === OrganizationBizType.healthcareProvider) {
-    console.log(org);
     cwOrgs.push(
       buildCwOrganization({
         oid: org.oid,
