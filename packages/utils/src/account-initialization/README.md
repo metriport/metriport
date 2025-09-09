@@ -19,6 +19,7 @@ This script fully initializes a new account at Metriport by creating an organiza
 
 1. Metriport API server running and accessible
 2. Required dependencies installed (axios, commander, faker-js)
+3. `API_URL` environment variable set to the API base URL (e.g., `http://localhost:8080`)
 
 ## Setup
 
@@ -26,10 +27,10 @@ This script fully initializes a new account at Metriport by creating an organiza
 
    ```bash
    # With auto-generated organization name
-   ts-node src/account-initialization/init-account.ts --org-type healthcare_provider --treatment-type ambulatory --facilities 5
+   ts-node src/account-initialization/init-account.ts --org-type healthcare_provider --facility-count 5
 
    # With custom organization name
-   ts-node src/account-initialization/init-account.ts --org-name "My Organization" --org-type healthcare_provider --treatment-type ambulatory --facilities 5
+   ts-node src/account-initialization/init-account.ts --org-name "My Organization" --org-type healthcare_provider --facility-count 5
    ```
 
 2. **View help for all options**:
@@ -45,6 +46,8 @@ This script fully initializes a new account at Metriport by creating an organiza
 - `healthcare_it_vendor`: Healthcare IT vendor organization
 
 ### Treatment Types
+
+Treatment types are automatically generated randomly from the following options:
 
 - `acuteCare`: Acute care facility
 - `ambulatory`: Ambulatory care facility
@@ -71,12 +74,13 @@ This script fully initializes a new account at Metriport by creating an organiza
 | `--cw-approved`             |       | No       | Set CommonWell approved status (default: false)              |
 | `--cw-active`               |       | No       | Set CommonWell active status (default: false)                |
 | `--cx-id <id>`              |       | No       | Customer ID (auto-generated if not provided)                 |
-| `--api-url <url>`           |       | No       | API base URL (default: http://localhost:8080)                |
 
 **Note**:
 
 - Organization name is auto-generated using Faker.js if not provided (format: "adjective-color-animal", e.g., "bright-blue-tiger")
+- Treatment type is randomly generated from available options
 - All facility data is automatically generated using Faker.js, including names, NPIs, addresses, and facility types
+- API base URL is configured via the `API_URL` environment variable
 
 ## Auto-Generated Data
 
@@ -118,25 +122,25 @@ The script automatically generates realistic facility data using Faker.js:
 1. **Basic usage (with auto-generated org name)**:
 
    ```bash
-   ts-node src/account-initialization/init-account.ts --org-type healthcare_provider --treatment-type ambulatory
+   ts-node src/account-initialization/init-account.ts --org-type healthcare_provider
    ```
 
 2. **Basic usage (with custom org name)**:
 
    ```bash
-   ts-node src/account-initialization/init-account.ts --org-name "Springfield Medical Center" --org-type healthcare_provider --treatment-type ambulatory
+   ts-node src/account-initialization/init-account.ts --org-name "Springfield Medical Center" --org-type healthcare_provider
    ```
 
 3. **With custom facility count and CQ/CW settings**:
 
    ```bash
-   ts-node src/account-initialization/init-account.ts --org-name "Regional Health System" --org-type healthcare_provider --treatment-type hospital --facilities 10 --cq-approved --cw-active
+   ts-node src/account-initialization/init-account.ts --org-name "Regional Health System" --org-type healthcare_provider --facility-count 10 --cq-approved --cw-active
    ```
 
 4. **With custom customer ID**:
 
    ```bash
-   ts-node src/account-initialization/init-account.ts --org-name "Test Organization" --org-type healthcare_it_vendor --treatment-type labSystems --facilities 2 --cx-id "custom-customer-id"
+   ts-node src/account-initialization/init-account.ts --org-name "Test Organization" --org-type healthcare_it_vendor --facility-count 2 --cx-id "custom-customer-id"
    ```
 
 5. **View help**:

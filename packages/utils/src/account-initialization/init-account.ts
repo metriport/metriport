@@ -39,8 +39,8 @@ dayjs.extend(duration);
  * 3. Grant MAPI access to the account
  *
  * Usage:
- * ts-node src/account-initialization/init-account.ts --org-type healthcare_provider --treatment-type ambulatory --facilities 5
- * ts-node src/account-initialization/init-account.ts --org-name "My Organization" --org-type healthcare_provider --treatment-type ambulatory --facilities 5
+ * ts-node src/account-initialization/init-account.ts --org-type healthcare_provider --facility-count 5
+ * ts-node src/account-initialization/init-account.ts --org-name "My Organization" --org-type healthcare_provider --facility-count 5
  *
  * Options:
  * -o, --org-name <name>         Organization name (optional, auto-generated if not provided)
