@@ -19,8 +19,8 @@ import { Command } from "commander";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import fs from "fs";
-import { Sequelize } from "sequelize";
 import path from "path";
+import { Sequelize } from "sequelize";
 import { buildGetDirPathInside } from "../shared/folder";
 
 dayjs.extend(duration);
@@ -77,12 +77,6 @@ type CommonwellPatient = {
 
 const getFolderName = buildGetDirPathInside(`commonwell-export`);
 
-type Params = {
-  organizationId?: string;
-  aaid?: string;
-  outputFile?: string;
-};
-
 const program = new Command();
 program
   .name("build-commonwell-pt-list")
@@ -92,7 +86,8 @@ program
 const sqlDBCreds = getEnvVarOrFail("DB_CREDS");
 const dbCreds = JSON.parse(sqlDBCreds);
 
-const fromDate = "2025-09-06"; // Use `YYYY-MM-DD HH:MM:SS` format
+const outputPath = getOutputFilePath();
+const fromDate = "2025-07-06"; // Use `YYYY-MM-DD HH:MM:SS` format
 const toDate = "2025-09-08"; // Use `YYYY-MM-DD HH:MM:SS` format
 
 async function main() {
@@ -106,7 +101,6 @@ async function main() {
   });
 
   program.parse();
-  const { outputFile } = program.opts<Params>();
 
   console.log(`############## Started at ${new Date(startedAt).toISOString()} ##############`);
 
@@ -161,7 +155,6 @@ async function main() {
 
     // STEP 3: Output to CSV file
     console.log("STEP 3: Writing Commonwell patients to CSV file...");
-    const outputPath = outputFile ?? getOutputFilePath();
     await writeCommonwellPatientsToCSV(commonwellPatients, outputPath);
     console.log(`Successfully wrote ${commonwellPatients.length} patients to ${outputPath}`);
 
