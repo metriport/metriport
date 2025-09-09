@@ -16,10 +16,9 @@ export function buildMedicationStatement({
   entity: RxNormEntity;
   context: ComprehendContext;
 }): MedicationStatement | undefined {
-  const dosage = buildDosage(entity);
   const effectivePeriod = buildEffectivePeriod(entity, context);
-
   const medicationReference = getMedicationReference(medication);
+  const dosage = buildDosage(entity);
 
   return {
     resourceType: "MedicationStatement",

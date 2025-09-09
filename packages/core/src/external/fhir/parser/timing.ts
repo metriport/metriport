@@ -8,7 +8,7 @@ const wordToFrequency: Record<string, number> = {
   year: 365,
 };
 
-export function parseTimingFromString(timingString: string): Timing | undefined {
+export function parseTiming(timingString: string): Timing | undefined {
   const words = timingString.trim().toLowerCase().split(" ");
   if (words.length === 0) return undefined;
 

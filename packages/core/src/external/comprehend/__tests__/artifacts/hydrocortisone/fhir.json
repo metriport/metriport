@@ -1,0 +1,51 @@
+[
+  {
+    "resourceType": "Medication",
+    "id": "01992d43-82ca-7da9-b0df-282b9ca2bf34",
+    "status": "active",
+    "code": {
+      "text": "Hydrocortisone",
+      "coding": [
+        {
+          "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+          "code": "5492",
+          "display": "Hydrocortisone"
+        }
+      ]
+    },
+    "form": {
+      "coding": [
+        {
+          "system": "http://snomed.info/sct",
+          "code": "385099005",
+          "display": "cream"
+        }
+      ]
+    }
+  },
+  {
+    "resourceType": "MedicationStatement",
+    "id": "01992d43-82ca-7da9-b0df-282c3114e3e2",
+    "status": "active",
+    "medicationReference": {
+      "reference": "Medication/01992d43-82ca-7da9-b0df-282b9ca2bf34"
+    },
+    "dosage": [
+      {
+        "text": "2 grams",
+        "doseAndRate": [
+          {
+            "doseQuantity": {
+              "value": 1,
+              "unit": "mg"
+            },
+            "rateQuantity": {
+              "value": 1,
+              "unit": "mg"
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

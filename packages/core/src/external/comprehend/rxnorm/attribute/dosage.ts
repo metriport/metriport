@@ -1,7 +1,7 @@
 import { RxNormEntity, RxNormAttributeType } from "@aws-sdk/client-comprehendmedical";
 import { Dosage } from "@medplum/fhirtypes";
 import { getAttribute } from "../shared";
-import { parseTimingFromString } from "../../../fhir/parser/timing";
+import { parseTiming } from "../../../fhir/parser/timing";
 
 export function buildDosage(entity: RxNormEntity): Dosage | undefined {
   // -> dosage.text or dosage.doseAndRate.doseQuantity
@@ -10,10 +10,11 @@ export function buildDosage(entity: RxNormEntity): Dosage | undefined {
   // const rate = getAttribute(entity, RxNormAttributeType.RATE);
 
   // if (!frequency && !rate) return undefined;
-  const timing = frequency && frequency.Text ? parseTimingFromString(frequency.Text) : undefined;
+  const dosageText = dosage?.Text;
+  const timing = frequency && frequency.Text ? parseTiming(frequency.Text) : undefined;
 
   return {
-    text: dosage?.Text ?? "",
+    ...(dosageText ? { text: dosageText } : undefined),
     doseAndRate: [
       {
         doseQuantity: {

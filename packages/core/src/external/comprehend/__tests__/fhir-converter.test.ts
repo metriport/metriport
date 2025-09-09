@@ -6,7 +6,8 @@ import { buildDayjs } from "@metriport/shared/common/date";
 
 describe("FHIR converter", () => {
   it("should convert dosage frequency to FHIR", async () => {
-    const { response } = getRxNormArtifact("amoxicillin");
+    const artifactId = "hydrocortisone";
+    const { response } = getRxNormArtifact(artifactId);
     const resources = getFhirResourcesFromRxNormEntities(response.Entities ?? [], {
       confidenceThreshold: 0.1,
       context: {
@@ -16,7 +17,7 @@ describe("FHIR converter", () => {
     });
 
     fs.writeFileSync(
-      path.join(__dirname, "artifacts", "amoxicillin/fhir.json"),
+      path.join(__dirname, "artifacts", artifactId, "fhir.json"),
       JSON.stringify(resources, null, 2)
     );
   });
