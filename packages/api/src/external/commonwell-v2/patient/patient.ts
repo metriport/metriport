@@ -83,6 +83,7 @@ export async function registerAndLinkPatientInCwV2({
   debug,
   initiator,
   update,
+  shouldUpdateDb = true,
 }: {
   patient: Patient;
   facilityId: string;
@@ -93,6 +94,7 @@ export async function registerAndLinkPatientInCwV2({
   debug: typeof console.log;
   initiator?: HieInitiator;
   update: (params: UpdatePatientCmd) => Promise<void>;
+  shouldUpdateDb?: boolean;
 }): Promise<{ commonwellPatientId: string } | void> {
   const { log } = out(`registerAndLinkPatientInCW.v2 - patientId ${patient.id}`);
   let commonWell: CommonWellAPI | undefined;
@@ -112,6 +114,7 @@ export async function registerAndLinkPatientInCwV2({
       commonWell,
       commonwellPatient,
       patient,
+      shouldUpdateDb,
     });
 
     const { validLinks, invalidLinks } = await runPatientLinkingWithRetries({
@@ -130,6 +133,7 @@ export async function registerAndLinkPatientInCwV2({
         requestId,
         cwLinks: validLinks,
         update,
+        shouldUpdateDb,
       });
       if (startedNewPd) return;
     }
@@ -153,8 +157,10 @@ export async function registerAndLinkPatientInCwV2({
       update,
     });
     if (startedNewPd) return;
-    await updatePatientDiscoveryStatus({ patient, status: "completed" });
-    await queryDocsIfScheduled({ patientIds: patient, getOrgIdExcludeList });
+    if (shouldUpdateDb) {
+      await updatePatientDiscoveryStatus({ patient, status: "completed" });
+      await queryDocsIfScheduled({ patientIds: patient, getOrgIdExcludeList });
+    }
     debug("Completed.");
     return { commonwellPatientId };
   } catch (error) {
@@ -215,6 +221,7 @@ export async function updatePatientAndLinksInCwV2({
   startedAt,
   debug,
   update,
+  shouldUpdateDb = true,
 }: {
   patient: Patient;
   facilityId: string;
@@ -224,6 +231,7 @@ export async function updatePatientAndLinksInCwV2({
   startedAt: Date;
   debug: typeof console.log;
   update: (params: UpdatePatientCmd) => Promise<void>;
+  shouldUpdateDb?: boolean;
 }): Promise<void> {
   const { log } = out(`updatePatientAndLinksInCw.v2 - patientId ${patient.id}`);
   let commonWell: CommonWellAPI | undefined;
@@ -241,6 +249,7 @@ export async function updatePatientAndLinksInCwV2({
         startedAt,
         debug,
         update,
+        shouldUpdateDb,
       });
       return;
     }
@@ -274,6 +283,7 @@ export async function updatePatientAndLinksInCwV2({
         requestId,
         cwLinks: validLinks,
         update,
+        shouldUpdateDb,
       });
       if (startedNewPd) return;
     }
@@ -297,8 +307,10 @@ export async function updatePatientAndLinksInCwV2({
       update,
     });
     if (startedNewPd) return;
-    await updatePatientDiscoveryStatus({ patient, status: "completed" });
-    await queryDocsIfScheduled({ patientIds: patient, getOrgIdExcludeList });
+    if (shouldUpdateDb) {
+      await updatePatientDiscoveryStatus({ patient, status: "completed" });
+      await queryDocsIfScheduled({ patientIds: patient, getOrgIdExcludeList });
+    }
     debug("Completed.");
   } catch (error) {
     // TODO 1646 Move to a single hit to the DB
@@ -325,13 +337,14 @@ export async function updatePatientAndLinksInCwV2({
   }
 }
 
-export async function runNextPdOnNewDemographics({
+async function runNextPdOnNewDemographics({
   patient,
   facilityId,
   getOrgIdExcludeList,
   requestId,
   cwLinks,
   update,
+  shouldUpdateDb,
 }: {
   patient: Patient;
   facilityId: string;
@@ -339,6 +352,7 @@ export async function runNextPdOnNewDemographics({
   requestId: string;
   cwLinks: NetworkLink[];
   update: (params: UpdatePatientCmd) => Promise<void>;
+  shouldUpdateDb: boolean;
 }): Promise<boolean> {
   const updatedPatient = await getPatientOrFail(patient);
 
@@ -353,7 +367,7 @@ export async function runNextPdOnNewDemographics({
     return false;
   }
 
-  if (foundNewDemographicsHere) {
+  if (foundNewDemographicsHere && shouldUpdateDb) {
     await Promise.all([
       updateCwPatientData({
         id: updatedPatient.id,
@@ -558,10 +572,12 @@ async function registerPatient({
   commonWell,
   commonwellPatient,
   patient,
+  shouldUpdateDb,
 }: {
   commonWell: CommonWellAPI;
   commonwellPatient: CommonwellPatient;
   patient: Patient;
+  shouldUpdateDb: boolean;
 }): Promise<{ commonwellPatientId: string }> {
   const fnName = `CW.v2 registerPatient`;
   const { log, debug } = out(fnName);
@@ -579,7 +595,9 @@ async function registerPatient({
     throw new Error(msg);
   }
 
-  await updateCommonwellIdsAndStatus({ patient, commonwellPatientId });
+  if (shouldUpdateDb) {
+    await updateCommonwellIdsAndStatus({ patient, commonwellPatientId });
+  }
 
   return { commonwellPatientId };
 }
