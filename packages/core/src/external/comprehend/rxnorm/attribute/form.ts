@@ -9,13 +9,13 @@ export function buildForm(entity: RxNormEntity): CodeableConcept | undefined {
   const form = getAttribute(entity, RxNormAttributeType.FORM);
   if (!form) return undefined;
 
-  const text = form.Text;
-  if (!text) return undefined;
+  const display = form.Text;
+  if (!display) return undefined;
 
-  const snomedCode = getMedicationForm(text);
-  if (!snomedCode) return undefined;
+  const code = getMedicationForm(display);
+  if (!code) return undefined;
 
   return {
-    coding: [{ system: SNOMED_URL, code: snomedCode, display: text }],
+    coding: [{ system: SNOMED_URL, code, display }],
   };
 }

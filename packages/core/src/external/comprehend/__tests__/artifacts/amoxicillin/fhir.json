@@ -1,0 +1,92 @@
+[
+  {
+    "resourceType": "Medication",
+    "id": "01992c51-8e15-7a61-8b3b-8ad3955e0d52",
+    "status": "active",
+    "form": {
+      "coding": [
+        {
+          "system": "http://snomed.info/sct",
+          "code": "385024007",
+          "display": "suspension"
+        }
+      ]
+    },
+    "amount": {
+      "numerator": {
+        "value": 250,
+        "unit": "mg",
+        "system": "http://unitsofmeasure.org",
+        "code": "mg"
+      },
+      "denominator": {
+        "value": 5,
+        "unit": "mL",
+        "system": "http://unitsofmeasure.org",
+        "code": "mL"
+      }
+    },
+    "ingredient": [
+      {
+        "itemCodeableConcept": {
+          "coding": [
+            {
+              "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+              "code": "239191",
+              "display": "Amoxicillin"
+            }
+          ]
+        },
+        "isActive": true,
+        "strength": {
+          "numerator": {
+            "value": 250,
+            "unit": "mg",
+            "system": "http://unitsofmeasure.org",
+            "code": "mg"
+          },
+          "denominator": {
+            "value": 5,
+            "unit": "mL",
+            "system": "http://unitsofmeasure.org",
+            "code": "mL"
+          }
+        }
+      }
+    ],
+    "code": {
+      "coding": [
+        {
+          "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+          "code": "239191",
+          "display": "Amoxicillin"
+        }
+      ]
+    }
+  },
+  {
+    "resourceType": "MedicationStatement",
+    "id": "01992c51-8e16-78df-b2e5-1a40f98f6f3e",
+    "status": "active",
+    "medicationReference": {
+      "reference": "Medication/01992c51-8e15-7a61-8b3b-8ad3955e0d52"
+    },
+    "dosage": [
+      {
+        "text": "10 mL",
+        "doseAndRate": [
+          {
+            "doseQuantity": {
+              "value": 1,
+              "unit": "mg"
+            },
+            "rateQuantity": {
+              "value": 1,
+              "unit": "mg"
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

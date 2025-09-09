@@ -1,7 +1,7 @@
 [
   {
     "resourceType": "Medication",
-    "id": "01992c21-cf76-7e91-9900-fbddc33cfd9e",
+    "id": "01992c46-a480-78c2-9b5c-33f3dd65053f",
     "status": "active",
     "code": {
       "coding": [
@@ -15,16 +15,20 @@
   },
   {
     "resourceType": "MedicationStatement",
-    "id": "01992c21-cf77-7edf-a472-a2148a6dea1c",
+    "id": "01992c46-a481-7fbf-a862-5162347f98b5",
     "status": "active",
     "medicationReference": {
-      "reference": "Medication/01992c21-cf76-7e91-9900-fbddc33cfd9e"
+      "reference": "Medication/01992c46-a480-78c2-9b5c-33f3dd65053f"
     },
     "dosage": [
       {
         "text": "500 mg",
         "doseAndRate": [
           {
+            "doseQuantity": {
+              "value": 1,
+              "unit": "mg"
+            },
             "rateQuantity": {
               "value": 1,
               "unit": "mg"
@@ -36,7 +40,7 @@
   },
   {
     "resourceType": "Medication",
-    "id": "01992c21-cf77-7edf-a472-a215421c2d7b",
+    "id": "01992c46-a481-7fbf-a862-51632f1b565d",
     "status": "active",
     "code": {
       "coding": [
@@ -50,16 +54,20 @@
   },
   {
     "resourceType": "MedicationStatement",
-    "id": "01992c21-cf77-7edf-a472-a216fc06e062",
+    "id": "01992c46-a481-7fbf-a862-5164a76e9926",
     "status": "active",
     "medicationReference": {
-      "reference": "Medication/01992c21-cf77-7edf-a472-a215421c2d7b"
+      "reference": "Medication/01992c46-a481-7fbf-a862-51632f1b565d"
     },
     "dosage": [
       {
         "text": "three teaspoons",
         "doseAndRate": [
           {
+            "doseQuantity": {
+              "value": 1,
+              "unit": "mg"
+            },
             "rateQuantity": {
               "value": 1,
               "unit": "mg"
@@ -71,7 +79,7 @@
   },
   {
     "resourceType": "Medication",
-    "id": "01992c21-cf77-7edf-a472-a2178f976d3a",
+    "id": "01992c46-a481-7fbf-a862-51655798a177",
     "status": "active",
     "code": {
       "coding": [
@@ -85,16 +93,20 @@
   },
   {
     "resourceType": "MedicationStatement",
-    "id": "01992c21-cf77-7edf-a472-a218234aaf52",
+    "id": "01992c46-a481-7fbf-a862-5166776ed8f9",
     "status": "active",
     "medicationReference": {
-      "reference": "Medication/01992c21-cf77-7edf-a472-a2178f976d3a"
+      "reference": "Medication/01992c46-a481-7fbf-a862-51655798a177"
     },
     "dosage": [
       {
         "text": "50 mg",
         "doseAndRate": [
           {
+            "doseQuantity": {
+              "value": 1,
+              "unit": "mg"
+            },
             "rateQuantity": {
               "value": 1,
               "unit": "mg"
@@ -106,7 +118,7 @@
   },
   {
     "resourceType": "Medication",
-    "id": "01992c21-cf77-7edf-a472-a21971e54422",
+    "id": "01992c46-a481-7fbf-a862-5167f0a95919",
     "status": "active",
     "code": {
       "coding": [
@@ -120,16 +132,20 @@
   },
   {
     "resourceType": "MedicationStatement",
-    "id": "01992c21-cf77-7edf-a472-a21a037d5249",
+    "id": "01992c46-a481-7fbf-a862-5168513b51da",
     "status": "active",
     "medicationReference": {
-      "reference": "Medication/01992c21-cf77-7edf-a472-a21971e54422"
+      "reference": "Medication/01992c46-a481-7fbf-a862-5167f0a95919"
     },
     "dosage": [
       {
         "text": "0.1 mg",
         "doseAndRate": [
           {
+            "doseQuantity": {
+              "value": 1,
+              "unit": "mg"
+            },
             "rateQuantity": {
               "value": 1,
               "unit": "mg"
@@ -141,7 +157,7 @@
   },
   {
     "resourceType": "Medication",
-    "id": "01992c21-cf77-7edf-a472-a21b7ddfe10f",
+    "id": "01992c46-a481-7fbf-a862-51690152846d",
     "status": "active",
     "code": {
       "coding": [
@@ -155,16 +171,20 @@
   },
   {
     "resourceType": "MedicationStatement",
-    "id": "01992c21-cf77-7edf-a472-a21c0302ac61",
+    "id": "01992c46-a481-7fbf-a862-516ab45ed151",
     "status": "active",
     "medicationReference": {
-      "reference": "Medication/01992c21-cf77-7edf-a472-a21b7ddfe10f"
+      "reference": "Medication/01992c46-a481-7fbf-a862-51690152846d"
     },
     "dosage": [
       {
         "text": "5 mg",
         "doseAndRate": [
           {
+            "doseQuantity": {
+              "value": 1,
+              "unit": "mg"
+            },
             "rateQuantity": {
               "value": 1,
               "unit": "mg"
@@ -176,7 +196,7 @@
   },
   {
     "resourceType": "Medication",
-    "id": "01992c21-cf77-7edf-a472-a21dddb45b9d",
+    "id": "01992c46-a481-7fbf-a862-516ba890df68",
     "status": "active",
     "code": {
       "coding": [
@@ -190,16 +210,20 @@
   },
   {
     "resourceType": "MedicationStatement",
-    "id": "01992c21-cf77-7edf-a472-a21e069ff5dc",
+    "id": "01992c46-a481-7fbf-a862-516ce53eef0c",
     "status": "active",
     "medicationReference": {
-      "reference": "Medication/01992c21-cf77-7edf-a472-a21dddb45b9d"
+      "reference": "Medication/01992c46-a481-7fbf-a862-516ba890df68"
     },
     "dosage": [
       {
         "text": "75/50",
         "doseAndRate": [
           {
+            "doseQuantity": {
+              "value": 1,
+              "unit": "mg"
+            },
             "rateQuantity": {
               "value": 1,
               "unit": "mg"
@@ -211,7 +235,7 @@
   },
   {
     "resourceType": "Medication",
-    "id": "01992c21-cf77-7edf-a472-a21fe7cebe0a",
+    "id": "01992c46-a481-7fbf-a862-516d87417f54",
     "status": "active",
     "code": {
       "coding": [
@@ -225,16 +249,20 @@
   },
   {
     "resourceType": "MedicationStatement",
-    "id": "01992c21-cf77-7edf-a472-a22078d6dde3",
+    "id": "01992c46-a481-7fbf-a862-516e64ad6667",
     "status": "active",
     "medicationReference": {
-      "reference": "Medication/01992c21-cf77-7edf-a472-a21fe7cebe0a"
+      "reference": "Medication/01992c46-a481-7fbf-a862-516d87417f54"
     },
     "dosage": [
       {
         "text": "5/500",
         "doseAndRate": [
           {
+            "doseQuantity": {
+              "value": 1,
+              "unit": "mg"
+            },
             "rateQuantity": {
               "value": 1,
               "unit": "mg"
