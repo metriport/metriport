@@ -484,6 +484,9 @@ function validateInputs() {
       numberOfFacilities,
     });
   }
+  if (!Object.values(FacilityType).includes(facilityType)) {
+    throw new MetriportError("Invalid facility type", undefined, { facilityType });
+  }
 }
 
 function makeShortName(): string {
