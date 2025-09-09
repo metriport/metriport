@@ -92,6 +92,7 @@ export function lookupHieTzEntryForIp(hieConfigDictionary: HieConfigDictionary, 
   const hieVpnConfigRows = Object.entries(hieConfigDictionary).flatMap(keepOnlyVpnConfigs);
   const match = hieVpnConfigRows.find(({ cidrBlock }) => isIpInRange(cidrBlock, ip));
   if (!match) {
+    console.log("[mllp-server.lookupHieTzEntryForIp] Sender IP not found in any CIDR block", ip);
     throw new MetriportError(`Sender IP not found in any CIDR block`, {
       cause: undefined,
       additionalInfo: { context: "mllp-server.lookupHieTzEntryForIp", ip, hieConfigDictionary },
