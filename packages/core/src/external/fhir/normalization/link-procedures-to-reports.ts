@@ -140,7 +140,7 @@ function identifierValueTokens(dr: Resource): string[] {
   const BAD = new Set(["UNK", "UNKNOWN", "UNSPECIFIED", "NA", "N/A", "NONE", "NO_CODE"]);
   const out: string[] = [];
   if (!("identifier" in dr)) {
-    throw new Error("No identifier in this resource");
+    return [];
   }
 
   const identifiers = Array.isArray(dr.identifier) ? dr.identifier : [dr.identifier];

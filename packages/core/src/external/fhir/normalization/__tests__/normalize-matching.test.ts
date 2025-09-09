@@ -259,7 +259,7 @@ describe("linkProceduresToDiagnosticReports", () => {
       );
     });
 
-    it("should handle identifier values with dash separators", () => {
+    it("should match identifier values with dash separators using head-only matching", () => {
       const matchingDate = buildDayjs(baseMs + SIZE_OF_WINDOW / 2).toISOString();
 
       const procedure = makeProcedure({
@@ -275,7 +275,7 @@ describe("linkProceduresToDiagnosticReports", () => {
       const diagnosticReport = makeDiagnosticReport({
         identifier: [
           {
-            value: `123-456`,
+            value: `123-789`,
             system: "http://example.com/ids",
           },
         ],
