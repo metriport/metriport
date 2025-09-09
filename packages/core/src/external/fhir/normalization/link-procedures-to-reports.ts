@@ -12,6 +12,7 @@ import duration from "dayjs/plugin/duration";
 import {
   getPerformedDateFromResource,
   getDateFromResource,
+  isUselessDisplay,
 } from "../../../fhir-deduplication/shared";
 import { toArray } from "@metriport/shared/common/array";
 
@@ -123,7 +124,6 @@ export function doAnyDatesMatchThroughWindow(a: string[] = [], b: string[] = [])
 }
 
 function getIdentifierValueTokens(dr: Resource): string[] {
-  const BAD = new Set(["UNK", "UNKNOWN", "UNSPECIFIED", "NA", "N/A", "NONE", "NO_CODE"]);
   const out: string[] = [];
   if (!("identifier" in dr)) {
     return [];
@@ -139,7 +139,7 @@ function getIdentifierValueTokens(dr: Resource): string[] {
     const valueByPipe = getSplitValueByPipe(value);
     if (!valueByPipe) continue;
 
-    if (BAD.has(valueByPipe.toUpperCase())) continue;
+    if (isUselessDisplay(valueByPipe)) continue;
     if (/^(?:urn:|oid:|https?:\/\/)/i.test(valueByPipe)) continue;
     const noTrailingCaret = removeTrailingCaret(valueByPipe);
     out.push(noTrailingCaret);
@@ -157,15 +157,14 @@ function getSplitValueByPipe(value: string): string {
 }
 
 function getCodeTokensFromCode(code?: CodeableConcept): string[] {
-  const BAD = new Set(["UNK", "UNKNOWN", "UNSPECIFIED", "NA", "N/A", "NONE", "NO_CODE"]);
   const codings = (code?.coding ?? []).filter((c): c is Coding => !!c?.code);
 
   const out: string[] = [];
   for (const c of codings) {
-    const token = (c.code ?? "").toString().trim().toUpperCase();
-    if (!token || BAD.has(token)) continue;
+    const token = (c.code ?? "").toString().trim();
+    if (!token || isUselessDisplay(token)) continue;
     if (/^(?:urn:|oid:|https?:\/\/)/i.test(token)) continue;
-    out.push(token);
+    out.push(token.toUpperCase());
   }
   return dedupe(out);
 }

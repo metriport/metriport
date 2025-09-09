@@ -323,6 +323,38 @@ describe("linkProceduresToDiagnosticReports", () => {
       expect(result.procedures[0]?.report).toBeUndefined();
     });
 
+    it("should filter out all known useless display values", () => {
+      const matchingDate = buildDayjs(baseMs + SIZE_OF_WINDOW / 2).toISOString();
+      const uselessValues = ["unknown", "unk", "no known", "no data available"];
+
+      for (const uselessValue of uselessValues) {
+        const procedure = makeProcedure({
+          identifier: [
+            {
+              value: uselessValue,
+              system: "http://example.com/ids",
+            },
+          ],
+          performedDateTime: DATE_TO_MATCH,
+        });
+
+        const diagnosticReport = makeDiagnosticReport({
+          identifier: [
+            {
+              value: uselessValue,
+              system: "http://example.com/ids",
+            },
+          ],
+          effectiveDateTime: matchingDate,
+        });
+
+        const result = linkProceduresToDiagnosticReports([procedure], [diagnosticReport]);
+
+        expect(result.procedures[0]).toBeDefined();
+        expect(result.procedures[0]?.report).toBeUndefined();
+      }
+    });
+
     it("should filter out identifier values with URIs", () => {
       const matchingDate = buildDayjs(baseMs + SIZE_OF_WINDOW / 2).toISOString();
 
