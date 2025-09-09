@@ -17,6 +17,7 @@ import {
   uuidv7,
 } from "@metriport/shared";
 import { makeNPI } from "@metriport/shared/common/__tests__/npi";
+import { makeOid } from "@metriport/shared/common/__tests__/oid";
 import axios, { AxiosInstance } from "axios";
 import { Command } from "commander";
 import dayjs from "dayjs";
@@ -454,8 +455,8 @@ function generateRandomFacilities(count: number, facilityType: FacilityType): Fa
       cwApproved: defaultCwApproved,
       cwActive: defaultCwActive,
       ...(facilityType === FacilityType.initiatorOnly && {
-        cqOboOid: faker.string.uuid(),
-        cwOboOid: faker.string.uuid(),
+        cqOboOid: makeOid(),
+        cwOboOid: makeOid(),
       }),
     };
 
