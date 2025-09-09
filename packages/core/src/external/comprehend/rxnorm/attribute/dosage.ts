@@ -16,6 +16,10 @@ export function buildDosage(entity: RxNormEntity): Dosage | undefined {
     text: dosage?.Text ?? "",
     doseAndRate: [
       {
+        doseQuantity: {
+          value: 1,
+          unit: "mg",
+        },
         rateQuantity: {
           value: 1,
           unit: "mg",
