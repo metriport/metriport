@@ -1,8 +1,19 @@
 /**
+ * Query the MEDICATION_FORM_MAP for the SNOMED-CT code related to the medication form.
+ */
+export function getMedicationForm(text: string): string | undefined {
+  const queryString = text
+    .toLowerCase()
+    .replace(/[^a-z\-/\s]/g, "")
+    .trim();
+  return MEDICATION_FORM_MAP[queryString];
+}
+
+/**
  * Standard value set for SNOMED-CT codes related to medication forms for FHIR R4.
  * https://hl7.org/fhir/R4/valueset-medication-form-codes.html
  */
-export const MEDICATION_FORM_MAP: Record<string, string> = Object.fromEntries([
+const MEDICATION_FORM_MAP: Record<string, string> = Object.fromEntries([
   ["drug suspension", "7946007"],
   ["drug stick", "11190007"],
   ["lotion", "17519006"],
@@ -23,6 +34,7 @@ export const MEDICATION_FORM_MAP: Record<string, string> = Object.fromEntries([
   ["oral drops emulsion", "385021004"],
   ["oral liquid", "385022006"],
   ["oral solution", "385023001"],
+  ["suspension", "385024007"], // defaults to oral suspension
   ["oral suspension", "385024007"],
   ["oral emulsion", "385025008"],
   ["powder for oral solution", "385026009"],

@@ -3,8 +3,11 @@ import { UNIT_OF_MEASURE_URL } from "@metriport/shared/medical";
 import { parseNumber } from "./number";
 
 export function parseRatio(inputString: string): Ratio | undefined {
-  const [numeratorString, denominatorString] = inputString.split(/(\s*\/\s*|\s+per\s+)/);
+  const [numeratorString, , denominatorString] = inputString.split(/(\s*\/\s*|\s+per\s+)/);
   if (!numeratorString || !denominatorString) return undefined;
+
+  console.log("numeratorString", numeratorString);
+  console.log("denominatorString", denominatorString);
 
   const numerator = parseNumber(numeratorString);
   const denominator = parseNumber(denominatorString);

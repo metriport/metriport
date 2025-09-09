@@ -3,18 +3,20 @@ import { Medication, CodeableConcept, Reference } from "@medplum/fhirtypes";
 import { getRxNormCode } from "./shared";
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { RXNORM_URL } from "@metriport/shared/medical";
-import { buildStrength } from "./attribute/strength";
+import { buildStrength, buildStrengthRatio } from "./attribute/strength";
 
 export function buildMedication(entity: RxNormEntity): Medication | undefined {
   const code = buildMedicationCode(entity);
   if (!code) return undefined;
 
+  const amount = buildStrengthRatio(entity);
   const ingredient = buildStrength(code, entity);
 
   return {
     resourceType: "Medication",
     id: uuidv7(),
     status: "active",
+    ...(amount ? { amount } : undefined),
     ...(ingredient ? { ingredient: [ingredient] } : undefined),
     code,
   };

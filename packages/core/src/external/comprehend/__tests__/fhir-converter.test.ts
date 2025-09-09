@@ -5,12 +5,12 @@ import { getFhirResourcesFromRxNormEntities } from "../rxnorm/fhir-converter";
 
 describe("FHIR converter", () => {
   it("should convert dosage frequency to FHIR", async () => {
-    const { response } = getRxNormArtifact("dosage-frequency");
+    const { response } = getRxNormArtifact("amoxicillin");
     const resources = getFhirResourcesFromRxNormEntities(response.Entities ?? [], {
       confidenceThreshold: 0.1,
     });
     fs.writeFileSync(
-      path.join(__dirname, "artifacts", "dosage-frequency/fhir.json"),
+      path.join(__dirname, "artifacts", "amoxicillin/fhir.json"),
       JSON.stringify(resources, null, 2)
     );
   });
