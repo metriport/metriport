@@ -20,7 +20,7 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import fs from "fs";
 import { Sequelize } from "sequelize";
-import { PatientDataCommonwell } from "../../../api/src/external/commonwell/patient/patient-shared";
+import path from "path";
 import { buildGetDirPathInside } from "../shared/folder";
 
 dayjs.extend(duration);
@@ -87,9 +87,6 @@ const program = new Command();
 program
   .name("build-commonwell-pt-list")
   .description("CLI to export patients from database to Commonwell CSV format.")
-  .option(`--organizationId <orgId>`, "Organization ID for Commonwell")
-  .option(`--aaid <aaid>`, "AAID for Commonwell")
-  .option(`--outputFile <file>`, "Output CSV file path")
   .showHelpAfterError();
 
 const sqlDBCreds = getEnvVarOrFail("DB_CREDS");
@@ -132,10 +129,10 @@ async function main() {
 
     for (const patient of patients) {
       try {
-        const cwData = patient.data.externalData?.[
-          MedicalDataSource.COMMONWELL
-        ] as PatientDataCommonwell;
-        if (!cwData) continue;
+        const cwData = patient.data.externalData?.[MedicalDataSource.COMMONWELL] as {
+          patientId?: string | undefined;
+        };
+        if (!cwData?.patientId) continue;
 
         const cwPatientId = cwData.patientId;
         const cwIds = decodeCwPatientIdV1(cwPatientId);
@@ -241,7 +238,7 @@ async function writeCommonwellPatientsToCSV(
   outputPath: string
 ): Promise<void> {
   // Ensure output directory exists
-  const outputDir = outputPath.substring(0, outputPath.lastIndexOf("/"));
+  const outputDir = path.dirname(outputPath);
   if (!fs.existsSync(outputDir)) {
     fs.mkdirSync(outputDir, { recursive: true });
   }
