@@ -9,8 +9,7 @@ import {
 import { errorToString } from "@metriport/shared";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
-import _, { cloneDeep } from "lodash";
-import { createExtensionRelatedArtifact } from "../external/fhir/shared/extensions/derived-from";
+import _, { cloneDeep, uniqBy } from "lodash";
 import { capture, out } from "../util";
 import { uuidv7 } from "../util/uuid-v7";
 import { isActCoding } from "@metriport/shared/medical/fhir/coding";
@@ -55,8 +54,9 @@ export function mergeIntoTargetResource<T extends Resource & { extension?: any[]
   source: T,
   keepExtensions = true
 ) {
-  const extensionRef = createExtensionRelatedArtifact(source.resourceType, source.id);
-  const originalExtension = "extension" in target ? [...target.extension] : [];
+  // const extensionRef = createExtensionRelatedArtifact(source.resourceType, source.id);
+  const sourceExtension = "extension" in source ? [...source.extension] : [];
+  const targetExtension = "extension" in target ? [...target.extension] : [];
   mutativeDeepMerge(target, source, keepExtensions);
 
   // This part combines resources together and adds the ID references of the duplicates into the master resource
@@ -65,9 +65,9 @@ export function mergeIntoTargetResource<T extends Resource & { extension?: any[]
   if (!keepExtensions) {
     delete target.extension;
   } else if ("extension" in target) {
-    target.extension = [...originalExtension, extensionRef];
+    target.extension = uniqBy([...targetExtension, ...sourceExtension], "valueReference.reference");
   } else {
-    target.extension = [extensionRef];
+    target.extension = [...sourceExtension];
   }
 }
 
