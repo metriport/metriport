@@ -523,7 +523,7 @@ function getCwV2PatientId(patientId: string): string {
   if (!decoded.value || !decoded.assignAuthority) throw new MetriportError("Invalid patient ID");
   return encodeCwPatientId({
     patientId: decoded.value,
-    assignAuthority: decoded.assignAuthority,
+    assignAuthority: decoded.assignAuthority.replace("urn:oid:", ""),
   });
 }
 
