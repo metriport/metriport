@@ -22,22 +22,22 @@ export function linkProceduresToDiagnosticReports(
   procedures: Procedure[],
   reports: DiagnosticReport[]
 ): { procedures: Procedure[]; reports: DiagnosticReport[] } {
-  const drByKey = new Map<string, DiagnosticReport[]>();
+  const drMap = new Map<string, DiagnosticReport[]>();
 
   for (const dr of reports) {
     const keys = getKeysForDiagnosticReport(dr);
     for (const k of keys) {
       if (!k) continue;
-      const prior = drByKey.get(k) ?? [];
+      const prior = drMap.get(k) ?? [];
       prior.push(dr);
-      drByKey.set(k, prior);
+      drMap.set(k, prior);
     }
   }
 
   for (const proc of procedures) {
     const { dates, pKeys } = getKeysAndDatesForProcedure(proc);
     for (const key of pKeys) {
-      const hits = key ? drByKey.get(key) : undefined;
+      const hits = key ? drMap.get(key) : undefined;
       if (!hits) continue;
       for (const hit of hits) {
         if (!hit?.id) continue;
