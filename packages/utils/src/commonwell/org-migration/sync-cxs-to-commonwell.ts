@@ -332,7 +332,6 @@ async function createOrUpdateAtCw(org: Organization): Promise<void> {
     const respGet = await commonWell.getOneOrg(org.organizationId);
     if (!respGet) {
       log(`Org does not exist: ${org.organizationId}. Creating...`);
-      debug("... payload: ", () => JSON.stringify(org));
       const respCreate = await commonWell.createOrg(org);
       debug(`resp createOrg: `, () => JSON.stringify(respCreate));
 
@@ -341,7 +340,6 @@ async function createOrUpdateAtCw(org: Organization): Promise<void> {
       await addCertsToOrg(commonWell, org, debug);
     } else {
       log(`Org already exists: ${org.organizationId}. Updating...`);
-      debug("... payload: ", () => JSON.stringify(org));
       const respUpdate = await commonWell.updateOrg(org);
       debug(`resp updateOrg: `, () => JSON.stringify(respUpdate));
     }
