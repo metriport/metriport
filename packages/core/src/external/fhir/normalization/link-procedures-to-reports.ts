@@ -8,7 +8,7 @@ import {
 } from "@medplum/fhirtypes";
 
 const HOURS_FOR_WINDOW = 2;
-const SIZE_OF_WINDOW = HOURS_FOR_WINDOW * 60 * 60 * 1000;
+export const SIZE_OF_WINDOW = HOURS_FOR_WINDOW * 60 * 60 * 1000;
 
 export function linkProceduresToDiagnosticReports(
   procedures: Procedure[],
@@ -17,7 +17,7 @@ export function linkProceduresToDiagnosticReports(
   const drByKey = new Map<string, DiagnosticReport[]>();
 
   for (const dr of reports) {
-    const keys = keysForDiagnosticReport(dr);
+    const keys = getKeysForDiagnosticReport(dr);
     for (const k of keys) {
       if (!k) continue;
       const prior = drByKey.get(k) ?? [];
@@ -27,7 +27,7 @@ export function linkProceduresToDiagnosticReports(
   }
 
   for (const proc of procedures) {
-    const { dates, pKeys } = keysForProcedure(proc);
+    const { dates, pKeys } = getKeysAndDatesForProcedure(proc);
     for (const key of pKeys) {
       const hits = key ? drByKey.get(key) : undefined;
       if (!hits) continue;
@@ -51,7 +51,31 @@ export function linkProceduresToDiagnosticReports(
   return { procedures, reports };
 }
 
-function matchDates(a: string[] = [], b: string[] = []): boolean {
+function getKeysForDiagnosticReport(dr: DiagnosticReport): string[] {
+  const idVals = identifierValueTokens(dr);
+  const codes = codeTokensFromCode(dr.code);
+
+  const out: string[] = [];
+  for (const v of idVals) out.push(`${v}`);
+  for (const c of codes) out.push(`${c}`);
+  return dedupe(out);
+}
+
+function getKeysAndDatesForProcedure(p: Procedure): { dates: string[]; pKeys: string[] } {
+  const dates = dateCandidatesFromProcedure(p);
+  const idVals = identifierValueTokens(p);
+  const codes = codeTokensFromCode(p.code);
+
+  const out: string[] = [];
+
+  for (const v of idVals) out.push(`${v}`);
+  for (const c of codes) out.push(`${c}`);
+  const dedupedOut = dedupe(out);
+  const dedupedDates = dedupe(dates);
+  return { dates: dedupedDates, pKeys: dedupedOut };
+}
+
+export function matchDates(a: string[] = [], b: string[] = []): boolean {
   if (a.length === 0 || b.length === 0) return false;
 
   const aTimes = a
@@ -103,30 +127,6 @@ function getDate(dr: DiagnosticReport): string[] {
     dr.issued,
   ].filter(Boolean) as string[];
   return [...new Set(raw)];
-}
-
-function keysForDiagnosticReport(dr: DiagnosticReport): string[] {
-  const idVals = identifierValueTokens(dr);
-  const codes = codeTokensFromCode(dr.code);
-
-  const out: string[] = [];
-  for (const v of idVals) out.push(`${v}`);
-  for (const c of codes) out.push(`${c}`);
-  return dedupe(out);
-}
-
-function keysForProcedure(p: Procedure): { dates: string[]; pKeys: string[] } {
-  const dates = dateCandidatesFromProcedure(p);
-  const idVals = identifierValueTokens(p);
-  const codes = codeTokensFromCode(p.code);
-
-  const out: string[] = [];
-
-  for (const v of idVals) out.push(`${v}`);
-  for (const c of codes) out.push(`${c}`);
-  const dedupedOut = dedupe(out);
-  const dedupedDates = dedupe(dates);
-  return { dates: dedupedDates, pKeys: dedupedOut };
 }
 
 function dateCandidatesFromProcedure(p: Procedure): string[] {
