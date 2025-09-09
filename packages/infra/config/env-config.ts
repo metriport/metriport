@@ -114,7 +114,9 @@ type EnvConfigBase = {
       PROPELAUTH_API_KEY: string;
     };
   };
+  internalServerUrl?: string;
   usageReportUrl?: string;
+  cxBillingUrl?: string;
   fhirServerUrl: string;
   termServerUrl?: string;
   fhirServerQueueUrl?: string;
