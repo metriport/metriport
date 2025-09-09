@@ -1,28 +1,32 @@
-import { buildDuration } from "./attribute/duration";
+import { buildEffectivePeriod } from "./attribute/duration";
 import { buildDosage } from "./attribute/dosage";
 import { Medication } from "@medplum/fhirtypes";
 import { RxNormEntity } from "@aws-sdk/client-comprehendmedical";
 import { MedicationStatement } from "@medplum/fhirtypes";
+import { getMedicationReference } from "./medication";
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
-import _ from "lodash";
+import { ComprehendContext } from "../types";
 
-export function buildMedicationStatement(
-  medication: Medication,
-  entity: RxNormEntity
-): MedicationStatement | undefined {
-  const medicationDosage = buildDosage(entity);
-  const duration = buildDuration(entity);
+export function buildMedicationStatement({
+  medication,
+  entity,
+  context,
+}: {
+  medication: Medication;
+  entity: RxNormEntity;
+  context: ComprehendContext;
+}): MedicationStatement | undefined {
+  const dosage = buildDosage(entity);
+  const effectivePeriod = buildEffectivePeriod(entity, context);
 
-  const dosage = _.compact(_.values([medicationDosage, duration]));
+  const medicationReference = getMedicationReference(medication);
 
   return {
     resourceType: "MedicationStatement",
     id: uuidv7(),
     status: "active",
-    medicationReference: {
-      reference: `Medication/${medication.id}`,
-    },
-    ...(dosage.length > 0 ? { dosage } : undefined),
-    ...(duration ? { effectivePeriod: duration } : undefined),
+    medicationReference,
+    ...(dosage ? { dosage: [dosage] } : undefined),
+    ...(effectivePeriod ? { effectivePeriod } : undefined),
   };
 }

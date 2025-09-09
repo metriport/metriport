@@ -25,7 +25,7 @@ export function buildMedication(entity: RxNormEntity): Medication | undefined {
   };
 }
 
-export function getMedicationReference(medication: Medication): Reference<Medication> | undefined {
+export function getMedicationReference(medication: Medication): Reference<Medication> {
   return {
     reference: `Medication/${medication.id}`,
   };
