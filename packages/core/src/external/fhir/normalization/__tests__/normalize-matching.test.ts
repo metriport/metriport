@@ -231,38 +231,6 @@ describe("linkProceduresToDiagnosticReports", () => {
       );
     });
 
-    it("should handle identifier values with pipe separators", () => {
-      const matchingDate = buildDayjs(baseMs + SIZE_OF_WINDOW / 2).toISOString();
-      const sharedIdentifier = "TEST123";
-
-      const procedure = makeProcedure({
-        identifier: [
-          {
-            value: `system1|${sharedIdentifier}`,
-            system: "http://example.com/ids",
-          },
-        ],
-        performedDateTime: DATE_TO_MATCH,
-      });
-
-      const diagnosticReport = makeDiagnosticReport({
-        identifier: [
-          {
-            value: `system2|${sharedIdentifier}`,
-            system: "http://example.com/ids",
-          },
-        ],
-        effectiveDateTime: matchingDate,
-      });
-
-      const result = linkProceduresToDiagnosticReports([procedure], [diagnosticReport]);
-
-      expect(result.procedures[0]?.report).toBeDefined();
-      expect(result.procedures[0]?.report?.[0]?.reference).toBe(
-        `DiagnosticReport/${diagnosticReport.id}`
-      );
-    });
-
     it("should match identifier values", () => {
       const matchingDate = buildDayjs(baseMs + SIZE_OF_WINDOW / 2).toISOString();
 

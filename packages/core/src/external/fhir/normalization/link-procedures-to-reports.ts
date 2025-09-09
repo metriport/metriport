@@ -138,31 +138,12 @@ function getIdentifierValueTokens(dr: Resource): string[] {
     const value = id.value?.trim();
     if (!value) continue;
 
-    const valueByPipe = getSplitValueByPipe(value);
-    if (!valueByPipe) continue;
-
-    if (isUselessDisplay(valueByPipe)) continue;
-    if (URI_PATTERN.test(valueByPipe)) continue;
-    const noTrailingCaret = removeTrailingCaret(valueByPipe);
+    if (isUselessDisplay(value)) continue;
+    if (URI_PATTERN.test(value)) continue;
+    const noTrailingCaret = removeTrailingCaret(value);
     out.push(noTrailingCaret);
   }
   return dedupe(out);
-}
-
-/**
- * Splits a value by pipe and returns the last part.
- * This is needed because the Procedures identifier values sometimes are stored as the system and the value separated by a pipe.
- * But the DiagnosticReport identifier values are not stored as the system and the value separated by a pipe. Resulting in a mismatch.
- * @param value The value to split by pipe
- * @returns The last part of the value split by pipe
- */
-function getSplitValueByPipe(value: string): string {
-  if (!value.includes("|")) return value;
-  const parts = value
-    .split("|")
-    .map(s => s.trim())
-    .filter(Boolean);
-  return parts[parts.length - 1] ?? "";
 }
 
 function getCodeTokensFromCode(code?: CodeableConcept): string[] {
