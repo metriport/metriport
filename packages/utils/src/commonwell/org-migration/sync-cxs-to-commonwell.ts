@@ -24,7 +24,7 @@ import { Command } from "commander";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import readline from "readline/promises";
-import { elapsedTimeAsStr, getDelayTime } from "../../shared/duration";
+import { elapsedTimeAsStr } from "../../shared/duration";
 import { initRunsFolder } from "../../shared/folder";
 import { getCxDataFull } from "../../shared/get-cx-data";
 import { makeCommonWellMemberAPI } from "./api";
@@ -49,14 +49,12 @@ dayjs.extend(duration);
  * 4. Enter appropriate commands as requested.
  */
 
-// auth stuff
 const cxIds: string[] = [];
 const MODE: APIMode = APIMode.integration;
 const IS_ACTIVE_DEFAULT = false;
 
 const numberOfParallelGetCxData = 10;
-// Keep this at 1, it has to be in sequence/controlled
-const numberOfParallelCreatedAtCw = 1;
+const numberOfParallelCreatedAtCw = 10;
 const waitBeforeAddingCert = dayjs.duration(5, "seconds");
 
 const cwMemberName = getEnvVarOrFail("CW_MEMBER_NAME");
@@ -68,15 +66,10 @@ const orgGatewayAuthorizationClientId = getEnvVarOrFail("CW_GATEWAY_AUTHORIZATIO
 const orgGatewayAuthorizationClientSecret = getEnvVarOrFail(
   "CW_GATEWAY_AUTHORIZATION_CLIENT_SECRET"
 );
-
 const cwTechnicalContactName = getEnvVarOrFail("CW_TECHNICAL_CONTACT_NAME");
 const cwTechnicalContactTitle = getEnvVarOrFail("CW_TECHNICAL_CONTACT_TITLE");
 const cwTechnicalContactEmail = getEnvVarOrFail("CW_TECHNICAL_CONTACT_EMAIL");
 const cwTechnicalContactPhone = getEnvVarOrFail("CW_TECHNICAL_CONTACT_PHONE");
-
-// query stuff
-const minimumDelayTime = dayjs.duration(3, "seconds");
-const defaultDelayTime = dayjs.duration(1, "seconds");
 
 const errors: string[] = [];
 
@@ -104,11 +97,11 @@ async function main() {
   log(`>>> Starting with ${cxIds.length} org IDs...`);
 
   await displayWarningAndConfirmation(cxIds.length, log);
-  log(`>>> Running it... (delay time is ${localGetDelay(log)} ms)`);
 
   try {
     const orgsAndFacilities: Map<string, string> = new Map();
     const cwOrgs: Organization[] = [];
+    log(`>>> Getting orgs and facilities...`);
     await executeAsynchronously(
       cxIds,
       async cxId => {
@@ -215,10 +208,6 @@ async function displayWarningAndConfirmation(
     }
   }
   rl.close();
-}
-
-function localGetDelay(log: typeof console.log) {
-  return getDelayTime({ log, minimumDelayTime, defaultDelayTime });
 }
 
 function buildCwOrganization(org: CwOrgOrFacility): OrganizationWithNetworkInfo {
@@ -344,14 +333,18 @@ async function create(org: Organization): Promise<void> {
     const respGet = await commonWell.getOneOrg(org.organizationId);
     if (!respGet) {
       log(`Org does not exist: ${org.organizationId}. Creating...`);
-      debug("... payload: ", JSON.stringify(org));
+      debug("... payload: ", () => JSON.stringify(org));
+      const respCreate = await commonWell.createOrg(org);
+      debug(`resp createOrg: `, () => JSON.stringify(respCreate));
 
-      log("Sleeping before adding cert...");
+      log(`Sleeping ${waitBeforeAddingCert.asSeconds()} seconds before adding cert...`);
       await sleep(waitBeforeAddingCert.asMilliseconds());
       await addCertsToOrg(commonWell, org, debug);
     } else {
       log(`Org already exists: ${org.organizationId}. Updating...`);
-      debug("... payload: ", JSON.stringify(org));
+      debug("... payload: ", () => JSON.stringify(org));
+      const respUpdate = await commonWell.updateOrg(org);
+      debug(`resp updateOrg: `, () => JSON.stringify(respUpdate));
     }
   } catch (error) {
     const msg = `Failure while creating org @ CW`;
