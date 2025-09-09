@@ -109,7 +109,11 @@ async function main() {
         cwOrgs.push(...orgs);
         orgsAndFacilities.set(metriportOrgName, metriportFacilityNames.join(", "));
       },
-      { numberOfParallelExecutions: numberOfParallelGetCxData }
+      {
+        numberOfParallelExecutions: numberOfParallelGetCxData,
+        minJitterMillis: 10,
+        maxJitterMillis: 100,
+      }
     );
 
     log(`Got ${orgsAndFacilities.size} orgs`);
@@ -119,6 +123,8 @@ async function main() {
 
     await executeAsynchronously(cwOrgs, createOrUpdateAtCw, {
       numberOfParallelExecutions: numberOfParallelCreatedAtCw,
+      minJitterMillis: 100,
+      maxJitterMillis: 500,
     });
 
     log(`>>> Done in ${elapsedTimeAsStr(startedAt)} ms`);
