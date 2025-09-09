@@ -10,6 +10,7 @@ import {
   PatientProbableLinks,
   StatusResponse,
 } from "@metriport/commonwell-sdk";
+import { decodeCwPatientIdV1, encodeCwPatientId } from "@metriport/commonwell-sdk/common/util";
 import {
   DriversLicense,
   Patient,
@@ -512,7 +513,18 @@ export async function removeInCwV2(patient: Patient, facilityId: string): Promis
 async function getCommonwellPatientId(patient: Patient): Promise<string | undefined> {
   const commonwellData = getCWData(patient.data.externalData);
   if (!commonwellData) return undefined;
-  return commonwellData.patientId;
+  return getCwV2PatientId(commonwellData.patientId);
+}
+
+function getCwV2PatientId(patientId: string): string {
+  if (!patientId.includes("urn")) return patientId;
+
+  const decoded = decodeCwPatientIdV1(patientId);
+  if (!decoded.value || !decoded.assignAuthority) throw new MetriportError("Invalid patient ID");
+  return encodeCwPatientId({
+    patientId: decoded.value,
+    assignAuthority: decoded.assignAuthority,
+  });
 }
 
 async function setupApiAndCwPatient({
