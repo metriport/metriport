@@ -6,6 +6,7 @@ import { normalizeConditions } from "./resources/condition";
 import { normalizeCoverages } from "./resources/coverage";
 import { filterInvalidEncounters } from "./resources/encounter";
 import { normalizeObservations } from "./resources/observation";
+import { linkProceduresToDiagnosticReports } from "./link-procedures-to-reports";
 
 /**
  * Normalizes a FHIR Bundle by standardizing and cleaning up its resources.
@@ -38,6 +39,14 @@ export function normalizeFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> {
     resourceArrays.locations
   );
   resourceArrays.encounters = validEncounters;
+
+  const { procedures: linkedProcs, reports: linkedDRs } = linkProceduresToDiagnosticReports(
+    resourceArrays.procedures,
+    resourceArrays.diagnosticReports
+  );
+
+  resourceArrays.procedures = linkedProcs;
+  resourceArrays.diagnosticReports = linkedDRs;
 
   normalizedBundle.entry = Object.entries(resourceArrays).flatMap(([, resources]) => {
     const entriesArray = Array.isArray(resources) ? resources : [resources];
