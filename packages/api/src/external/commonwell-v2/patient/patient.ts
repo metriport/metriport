@@ -106,7 +106,9 @@ export async function registerAndLinkPatientInCwV2({
     });
     commonWell = commonWellAPI;
 
-    await updateCommonwellIdsAndStatus({ patient, cqLinkStatus: undefined });
+    if (shouldUpdateDb) {
+      await updateCommonwellIdsAndStatus({ patient, cqLinkStatus: undefined });
+    }
 
     debug(`Registering this Patient: `, () => JSON.stringify(commonwellPatient, null, 2));
 
@@ -123,6 +125,7 @@ export async function registerAndLinkPatientInCwV2({
       commonwellPatientId,
       context: createContext,
       getOrgIdExcludeList,
+      shouldUpdateDb,
     });
 
     if (rerunPdOnNewDemographics) {
@@ -273,6 +276,7 @@ export async function updatePatientAndLinksInCwV2({
       commonwellPatientId,
       context: updateContext,
       getOrgIdExcludeList,
+      shouldUpdateDb,
     });
 
     if (rerunPdOnNewDemographics) {
@@ -634,12 +638,14 @@ async function runPatientLinkingWithRetries({
   commonwellPatientId,
   context,
   getOrgIdExcludeList,
+  shouldUpdateDb,
 }: {
   commonWell: CommonWellAPI;
   patient: Patient;
   commonwellPatientId: string;
   context: string;
   getOrgIdExcludeList: () => Promise<string[]>;
+  shouldUpdateDb: boolean;
 }): Promise<{
   validLinks: NetworkLink[];
   invalidLinks: NetworkLink[];
@@ -680,6 +686,7 @@ async function runPatientLinkingWithRetries({
       probableLinks,
       context,
       getOrgIdExcludeList,
+      shouldUpdateDb,
     });
 
     validLinks = result.validLinks;
@@ -706,6 +713,7 @@ async function tryToImproveLinks({
   context,
   patient,
   getOrgIdExcludeList,
+  shouldUpdateDb,
 }: {
   commonWell: CommonWellAPI;
   commonwellPatientId: string;
@@ -714,6 +722,7 @@ async function tryToImproveLinks({
   context: string;
   patient: Patient;
   getOrgIdExcludeList: () => Promise<string[]>;
+  shouldUpdateDb: boolean;
 }): Promise<{
   validLinks: NetworkLink[];
   invalidLinks: NetworkLink[];
@@ -729,7 +738,12 @@ async function tryToImproveLinks({
   let validLinks: NetworkLink[] = [];
   let invalidLinks: NetworkLink[] = [];
   if (networkLinks && networkLinks.length > 0) {
-    const resp = await validateAndStoreCwLinks(patient, networkLinks, getOrgIdExcludeList);
+    const resp = await validateAndStoreCwLinks(
+      patient,
+      networkLinks,
+      getOrgIdExcludeList,
+      shouldUpdateDb
+    );
     validLinks = resp.validLinks;
     invalidLinks = resp.invalidLinks;
   }
@@ -885,7 +899,8 @@ function isInsideOrgExcludeList(link: NetworkLink, orgIdExcludeList: string[]): 
 async function validateAndStoreCwLinks(
   patient: Patient,
   networkLinks: NetworkLink[],
-  getOrgIdExcludeList: () => Promise<string[]>
+  getOrgIdExcludeList: () => Promise<string[]>,
+  shouldUpdateDb: boolean
 ): Promise<{
   validLinks: NetworkLink[];
   invalidLinks: NetworkLink[];
@@ -908,12 +923,12 @@ async function validateAndStoreCwLinks(
   const finalInvalidLinks = [...validLinksToDowngrade, ...invalidLinks];
 
   const validLinksV2: CwLinkV2[] = finalValidLinks.map(patientCollectionItemToCwLinkV2);
-  if (validLinksV2.length > 0) {
+  if (validLinksV2.length > 0 && shouldUpdateDb) {
     await createOrUpdateCwPatientData({ id, cxId, cwLinks: validLinksV2 });
   }
 
   const invalidLinksV2: CwLinkV2[] = finalInvalidLinks.map(patientCollectionItemToCwLinkV2);
-  if (invalidLinksV2.length > 0) {
+  if (invalidLinksV2.length > 0 && shouldUpdateDb) {
     await createOrUpdateInvalidLinks({
       id,
       cxId,
