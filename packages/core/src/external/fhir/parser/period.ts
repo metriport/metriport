@@ -1,9 +1,9 @@
 import { Period } from "@medplum/fhirtypes";
 import { buildDayjs } from "@metriport/shared/common/date";
-import { ManipulateType } from "dayjs";
+import { ManipulateType as TimeIntervalUnit } from "dayjs";
 import { parseNumber } from "./number";
 
-const MANIPULATE_TYPE_VALUE = new Set<ManipulateType>([
+const TIME_INTERVAL_UNITS = new Set<TimeIntervalUnit>([
   "d",
   "D",
   "M",
@@ -31,13 +31,13 @@ const MANIPULATE_TYPE_VALUE = new Set<ManipulateType>([
 ]);
 
 export function parsePeriodFromString(periodString: string): Period | undefined {
-  const { value, remainder } = parseNumber(periodString);
-  if (value == null) return undefined;
+  const parsed = parseNumber(periodString);
+  if (parsed == null) return undefined;
 
-  const periodUnit = remainder.trim().toLowerCase();
-  if (MANIPULATE_TYPE_VALUE.has(periodUnit as ManipulateType)) {
+  const periodUnit = parsed.remainder.trim().toLowerCase();
+  if (TIME_INTERVAL_UNITS.has(periodUnit as TimeIntervalUnit)) {
     const start = buildDayjs();
-    const end = start.add(value, periodUnit as ManipulateType);
+    const end = start.add(parsed.value, periodUnit as TimeIntervalUnit);
 
     return {
       start: start.toISOString(),
