@@ -30,7 +30,7 @@ function getDefaultExpiration(): number {
  * POST /internal/ehr/canvas/setup
  *
  * Setup a new cx in Canvas
- * @param req.query.cxId - The child customer's ID
+ * @param req.query.cxId - The customer ID
  * @param req.query.facilityId - The facility ID
  * @param req.query.externalId - The external ID
  * @param req.query.isTenant - Whether this is a tenant of the main Canvas cx (defaults to true)
@@ -53,15 +53,10 @@ router.post(
       });
     }
 
-    await findOrCreateFacilityMapping({
-      cxId: cxId,
-      facilityId: facilityId,
-      externalId,
-      source: EhrSources.canvas,
-    });
+    await findOrCreateFacilityMapping({ cxId, facilityId, externalId, source: EhrSources.canvas });
 
     await findOrCreateCxMapping({
-      cxId: cxId,
+      cxId,
       source: EhrSources.canvas,
       externalId,
       secondaryMappings: {},
@@ -86,7 +81,7 @@ router.post(
         source: canvasWebhookSource,
         exp: twoYearsFromNow,
         data: {
-          cxId: cxId,
+          cxId,
           source: canvasWebhookSource,
           practiceId: externalId,
         },
