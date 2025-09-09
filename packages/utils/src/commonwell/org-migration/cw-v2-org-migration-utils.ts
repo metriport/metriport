@@ -2,6 +2,7 @@ import { baseUpdateSchema } from "@metriport/api-sdk";
 import { addressStrictSchema } from "@metriport/core/domain/address";
 import { FacilityType } from "@metriport/core/domain/facility";
 import { z } from "zod";
+import { facilityCreateSchema as apiFacilityCreateSchema } from "../../../../api/src/routes/medical/schemas/facility";
 import {
   organizationBizTypeSchema as apiOrganizationBizTypeSchema,
   orgTypeSchema as apiOrgTypeSchema,
@@ -36,13 +37,8 @@ export const organizationSchema = baseUpdateSchema
   .merge(organizationInternalDetailsSchema);
 export type Organization = z.infer<typeof organizationSchema>;
 
-export const facilityMapiBaseSchema = z.object({
+export const facilityMapiBaseSchema = apiFacilityCreateSchema.extend({
   oid: z.string(),
-  name: z.string().min(1),
-  npi: z.string(),
-  tin: z.string().nullish(),
-  active: z.boolean().optional().nullable(),
-  address: addressStrictSchema,
 });
 export const facilityMapiCreateSchema = facilityMapiBaseSchema.omit({ oid: true });
 export type FacilityMapiCreate = z.infer<typeof facilityMapiCreateSchema>;

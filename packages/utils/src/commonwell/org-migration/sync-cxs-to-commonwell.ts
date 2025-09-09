@@ -4,7 +4,6 @@ dotenv.config();
 import {
   APIMode,
   CommonWellMember,
-  CwTreatmentType,
   Organization,
   OrganizationWithNetworkInfo,
 } from "@metriport/commonwell-sdk";
@@ -15,7 +14,6 @@ import { log, out } from "@metriport/core/util/log";
 import {
   errorToString,
   getEnvVarOrFail,
-  MetriportError,
   OrganizationBizType,
   sleep,
   TreatmentType,
@@ -25,6 +23,7 @@ import { Command } from "commander";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import readline from "readline/promises";
+import { mapTreatmentTypeToCwType } from "../../../../api/src/external/commonwell-v2/command/organization/organization";
 import { elapsedTimeAsStr } from "../../shared/duration";
 import { initRunsFolder } from "../../shared/folder";
 import { getCxDataFull } from "../../shared/get-cx-data";
@@ -118,7 +117,7 @@ async function main() {
       log(`${orgName} - ${orgsAndFacilities.get(orgName)}`);
     }
 
-    await executeAsynchronously(cwOrgs, create, {
+    await executeAsynchronously(cwOrgs, createOrUpdateAtCw, {
       numberOfParallelExecutions: numberOfParallelCreatedAtCw,
     });
 
@@ -325,8 +324,8 @@ function isInitiatorAndResponder(facilityType: FacilityType): boolean {
   return facilityType === FacilityType.initiatorAndResponder;
 }
 
-async function create(org: Organization): Promise<void> {
-  const { log, debug } = out(`CW.v2 create Org - CW Org OID ${org.organizationId}`);
+async function createOrUpdateAtCw(org: Organization): Promise<void> {
+  const { log, debug } = out(`CW.v2 createOrUpdate - CW Org OID ${org.organizationId}`);
 
   const commonWell = makeCommonWellMemberAPI(MODE);
   try {
@@ -360,25 +359,6 @@ async function create(org: Organization): Promise<void> {
       )}. CW Reference: ${cwRef}`
     );
     throw error;
-  }
-}
-
-function mapTreatmentTypeToCwType(type: TreatmentType): CwTreatmentType {
-  switch (type) {
-    case TreatmentType.acuteCare:
-      return CwTreatmentType.acuteCare;
-    case TreatmentType.ambulatory:
-      return CwTreatmentType.ambulatory;
-    case TreatmentType.hospital:
-      return CwTreatmentType.hospital;
-    case TreatmentType.labSystems:
-      return CwTreatmentType.labSystems;
-    case TreatmentType.pharmacy:
-      return CwTreatmentType.pharmacy;
-    case TreatmentType.postAcuteCare:
-      return CwTreatmentType.postAcuteCare;
-    default:
-      throw new MetriportError("Invalid treatment type", undefined, { type });
   }
 }
 
