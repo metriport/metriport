@@ -27,7 +27,7 @@ export function parseNumber(inputString: string): NumberParserResult | undefined
  */
 function parseNumberFromDigits(inputString: string): NumberParserResult | undefined {
   const [token, remainder] = getFirstToken(inputString);
-  const value = Number.parseFloat(token);
+  const value = Number.parseFloat(token.replace(",", ""));
   if (Number.isFinite(value)) {
     return { value, remainder };
   }

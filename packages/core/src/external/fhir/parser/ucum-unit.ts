@@ -8,6 +8,7 @@ export const unitToValidUcumCode: Record<string, string> = {
   U: "U",
   u: "U",
   unit: "U",
+  units: "U",
   "%": "%",
   "/uL": "/uL",
   "[iU]/L": "[iU]/L",
