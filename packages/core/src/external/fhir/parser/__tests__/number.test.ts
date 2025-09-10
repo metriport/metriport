@@ -7,16 +7,29 @@ describe("number parsing", () => {
     expect(parsed?.remainder).toEqual("");
   });
 
+  it("should parse numbers with thousands separators", () => {
+    const parsed = parseNumber("5,000 times");
+    expect(parsed).toEqual({ value: 5000, remainder: " times" });
+  });
+
+  it("should parse floats", () => {
+    const parsed = parseNumber("123.456 L");
+    expect(parsed).toEqual({ value: 123.456, remainder: " L" });
+  });
+
+  it("should parse floats with thousands separators", () => {
+    const parsed = parseNumber("123,456.789 L");
+    expect(parsed).toEqual({ value: 123456.789, remainder: " L" });
+  });
+
   it("should parse numeric zero", () => {
     const parsed = parseNumber("0");
-    expect(parsed?.value).toEqual(0);
-    expect(parsed?.remainder).toEqual("");
+    expect(parsed).toEqual({ value: 0, remainder: "" });
   });
 
   it("should parse the word zero", () => {
     const parsed = parseNumber("zero");
-    expect(parsed?.value).toEqual(0);
-    expect(parsed?.remainder).toEqual("");
+    expect(parsed).toEqual({ value: 0, remainder: "" });
   });
 
   it("should parse numbers below twenty", () => {
@@ -65,46 +78,40 @@ describe("number parsing", () => {
     });
     expect(parseNumber("ten thousand buddhas")).toEqual({ value: 10000, remainder: " buddhas" });
     expect(parseNumber("one hundred twenty three")).toEqual({ value: 123, remainder: "" });
+    // TODO: improve number parsing so these kinds of rare cases also work
     // expect(parseNumber("one hundred twenty three thousand four hundred fifty six")).toEqual({ value: 123456, remainder: "" });
   });
 
   it("should parse numbers and normalize whitespaces", () => {
     const parsed = parseNumber("1.342  ");
-    expect(parsed?.value).toEqual(1.342);
-    expect(parsed?.remainder).toEqual("");
+    expect(parsed).toEqual({ value: 1.342, remainder: "" });
 
     const parsed2 = parseNumber("  1.342 a  b c");
-    expect(parsed2?.value).toEqual(1.342);
-    expect(parsed2?.remainder).toEqual(" a  b c");
+    expect(parsed2).toEqual({ value: 1.342, remainder: " a  b c" });
   });
 
   it("should parse numbers with accurate remainder", () => {
     const parsed = parseNumber("123 abc 789");
-    expect(parsed?.value).toEqual(123);
-    expect(parsed?.remainder).toEqual(" abc 789");
+    expect(parsed).toEqual({ value: 123, remainder: " abc 789" });
   });
 
   it("should parse numbers with words", () => {
     const parsed = parseNumber("one two three");
-    expect(parsed?.value).toEqual(1);
-    expect(parsed?.remainder).toEqual(" two three");
+    expect(parsed).toEqual({ value: 1, remainder: " two three" });
   });
 
   it("should parse tens when written as words", () => {
     const parsed = parseNumber("twenty three times");
-    expect(parsed?.value).toEqual(23);
-    expect(parsed?.remainder).toEqual(" times");
+    expect(parsed).toEqual({ value: 23, remainder: " times" });
   });
 
   it("should parse hundreds when written as words", () => {
     const parsed = parseNumber("one hundred twenty three places");
-    expect(parsed?.value).toEqual(123);
-    expect(parsed?.remainder).toEqual(" places");
+    expect(parsed).toEqual({ value: 123, remainder: " places" });
   });
 
   it("should parse thousands when written as words", () => {
     const parsed = parseNumber("one thousand twenty three locations");
-    expect(parsed?.value).toEqual(1023);
-    expect(parsed?.remainder).toEqual(" locations");
+    expect(parsed).toEqual({ value: 1023, remainder: " locations" });
   });
 });

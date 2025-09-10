@@ -1,4 +1,4 @@
-import { getFirstToken } from "./shared";
+import { getFirstNumericToken, getFirstToken } from "./shared";
 
 interface NumberParserResult {
   value: number;
@@ -26,7 +26,7 @@ export function parseNumber(inputString: string): NumberParserResult | undefined
  * Parses a number from digits at the beginning of the input string.
  */
 function parseNumberFromDigits(inputString: string): NumberParserResult | undefined {
-  const [token, remainder] = getFirstToken(inputString);
+  const [token, remainder] = getFirstNumericToken(inputString);
   const value = Number.parseFloat(token.replace(",", ""));
   if (Number.isFinite(value)) {
     return { value, remainder };
@@ -37,16 +37,11 @@ function parseNumberFromDigits(inputString: string): NumberParserResult | undefi
 /**
  * Parses any word-based number from the input string
  */
-function parseNumberFromWord(
-  inputString: string,
-  shouldParseScaleModifier = true
-): NumberParserResult | undefined {
+function parseNumberFromWord(inputString: string): NumberParserResult | undefined {
   const [token, remainder] = getFirstToken(inputString);
   const firstWordOfNumber = token.toLowerCase();
 
-  if (shouldParseScaleModifier && isScaleModifier(firstWordOfNumber)) {
-    return parseScaleModifier(inputString);
-  } else if (isFirstWordOfNumber(firstWordOfNumber)) {
+  if (isFirstWordOfNumber(firstWordOfNumber)) {
     // Attempt to parse a single number component like "one", "two hundred", etc.
     const result = parseSimpleWordNumber(firstWordOfNumber, remainder);
     if (!result) return undefined;
@@ -85,7 +80,7 @@ function parseSimpleWordNumber(token: string, remainder: string): NumberParserRe
 
   // Handles scaled numbers like "one hundred", "two thousand", etc.
   const scaleModifier = parseScaleModifier(remainder);
-  if (scaleModifier != null) {
+  if (scaleModifier) {
     return { value: digitNumber * scaleModifier.value, remainder: scaleModifier.remainder };
   }
 
@@ -96,16 +91,18 @@ function parseSimpleWordNumber(token: string, remainder: string): NumberParserRe
 export function parseScaleModifier(inputString: string): NumberParserResult | undefined {
   const [token, remainder] = getFirstToken(inputString);
   const value = numberScaleName[token];
-  if (value != null) return { value, remainder, scaleModifier: true };
+  if (value) {
+    return { value, remainder, scaleModifier: true };
+  }
   return undefined;
 }
 
-function isFirstWordOfNumber(token: string): boolean {
+export function isFirstWordOfNumber(token: string): boolean {
   const lowercasedToken = token.toLowerCase();
   return simpleNumberName[lowercasedToken] != null;
 }
 
-function isScaleModifier(token: string): boolean {
+export function isScaleModifier(token: string): boolean {
   const lowercasedToken = token.toLowerCase();
   return numberScaleName[lowercasedToken] != null;
 }
