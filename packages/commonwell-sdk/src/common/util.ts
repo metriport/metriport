@@ -116,13 +116,28 @@ export function encodePatientIdForDocumentExchange(
  * Matches: patientId^^^urn:oid:orgOid
  */
 function convertPatientIdToSubjectIdV1(patientId: string): string | undefined {
-  const value = decodeURIComponent(decodeURI(patientId));
-  const regex = /(.+)\^\^\^(.+)/i;
-  const match = value.match(regex);
-  const code = match && match[1];
-  const system = match && match[2];
-  return code && system ? buildPatiendIdToDocQuery(code, system) : undefined;
+  const { value, assignAuthority } = decodeCwPatientIdV1(patientId);
+  return value && assignAuthority ? buildPatiendIdToDocQuery(value, assignAuthority) : undefined;
 }
+
+/**
+ * Decodes the patient ID into its components.
+ *
+ * @param patientId - The patient's ID in the HL7 CX data type format.
+ * @returns The decoded patient ID, with the value and assignAuthority.
+ */
+export function decodeCwPatientIdV1(patientId: string): {
+  value: string | undefined;
+  assignAuthority: string | undefined;
+} {
+  const decoded = decodeURIComponent(decodeURI(patientId));
+  const regex = /(.+)\^\^\^(.+)/i;
+  const match = decoded.match(regex) ?? undefined;
+  const value = match && match[1];
+  const assignAuthority = match && match[2];
+  return { value, assignAuthority };
+}
+
 function buildPatiendIdToDocQuery(code: string, system: string): string {
   return `${system}|${code}`;
 }
