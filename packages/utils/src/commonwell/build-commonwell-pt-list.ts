@@ -87,7 +87,7 @@ const sqlDBCreds = getEnvVarOrFail("DB_CREDS");
 const dbCreds = JSON.parse(sqlDBCreds);
 
 const outputPath = getOutputFilePath();
-const fromDate = "2025-07-06"; // Use `YYYY-MM-DD HH:MM:SS` format
+const fromDate = "2025-09-06"; // Use `YYYY-MM-DD HH:MM:SS` format
 const toDate = "2025-09-08"; // Use `YYYY-MM-DD HH:MM:SS` format
 
 async function main() {
@@ -129,7 +129,7 @@ async function main() {
         if (!cwData?.patientId) continue;
 
         const cwPatientId = cwData.patientId;
-        if (!cwPatientId.includes("urn:oid:")) continue;
+        if (!cwPatientId.includes("urn")) continue;
         const cwIds = decodeCwPatientIdV1(cwPatientId);
         if (!cwIds.value || !cwIds.assignAuthority) continue;
         const orgOid = cwIds.assignAuthority.replace("urn:oid:", "");
