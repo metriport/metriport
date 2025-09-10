@@ -51,10 +51,24 @@ export async function readHccSource(year: string): Promise<HccSourceRow[]> {
   });
 }
 
+const initialUcumSourceData: UcumSourceRow[] = [
+  {
+    code: "U",
+    name: "unit",
+    definition: "unit",
+    created: "2025-01-01",
+    synonym: "u, unit",
+    kind: "unit",
+    revised: "2025-01-01",
+    concept_id: "",
+    dimension: "",
+  },
+];
+
 export async function readUcumSource(): Promise<UcumSourceRow[]> {
   const ucumSourcePath = path.resolve(process.cwd(), "runs/ucum", `data.tsv`);
   return new Promise((resolve, reject) => {
-    const rows: UcumSourceRow[] = [];
+    const rows: UcumSourceRow[] = initialUcumSourceData;
     fs.createReadStream(ucumSourcePath)
       .pipe(csv({ separator: "\t" }))
       .on("data", function (row) {

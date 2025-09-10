@@ -5,6 +5,9 @@ export function getValidUcumCode(inputString: string): string | undefined {
 }
 
 export const unitToValidUcumCode: Record<string, string> = {
+  U: "U",
+  u: "U",
+  unit: "U",
   "%": "%",
   "/uL": "/uL",
   "[iU]/L": "[iU]/L",
