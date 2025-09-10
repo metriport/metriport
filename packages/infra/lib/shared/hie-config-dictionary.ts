@@ -15,7 +15,7 @@ export const createHieConfigDictionary = (
 ) => {
   return Object.values(hieConfigs).reduce((acc, item) => {
     acc[item.name] = {
-      ...(doesHieUseVpn(item) ? { cidrBlock: item.internalCidrBlock } : {}),
+      ...(doesHieUseVpn(item) ? { cidrBlocks: item.internalCidrBlocks } : {}),
       timezone: item.timezone,
     };
 

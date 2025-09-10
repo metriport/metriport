@@ -135,6 +135,10 @@ async function pollResults({
       context,
       resultsTable,
     });
+  } finally {
+    // close any opened connections during the invocation
+    // this will wait for any in-progress queries to finish before closing the connections
+    await sequelize.connectionManager.close();
   }
 }
 
