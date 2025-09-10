@@ -1,3 +1,5 @@
+import { getFirstToken } from "./shared";
+
 interface NumberParserResult {
   value: number;
   remainder: string;
@@ -96,15 +98,6 @@ export function parseScaleModifier(inputString: string): NumberParserResult | un
   const value = numberScaleName[token];
   if (value != null) return { value, remainder, scaleModifier: true };
   return undefined;
-}
-
-function getFirstToken(inputString: string): [string, string] {
-  const matchFirstPart = inputString.trim().match(/^-?([a-zA-Z0-9.]+)\b(-?|\s*)(.*)/);
-  if (matchFirstPart === null) return [inputString, ""];
-  const firstToken = matchFirstPart[1];
-  const remainder = matchFirstPart[3];
-  if (firstToken === undefined || remainder === undefined) return [inputString, ""];
-  return [firstToken, remainder];
 }
 
 function isFirstWordOfNumber(token: string): boolean {

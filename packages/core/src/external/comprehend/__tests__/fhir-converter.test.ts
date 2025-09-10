@@ -6,7 +6,7 @@ import { buildDayjs } from "@metriport/shared/common/date";
 
 describe("FHIR converter", () => {
   it("should convert dosage frequency to FHIR", async () => {
-    const artifactId = "acetaminophen";
+    const artifactId = "negation-trait";
     const { response } = getRxNormArtifact(artifactId);
     const resources = getFhirResourcesFromRxNormEntities(response.Entities ?? [], {
       confidenceThreshold: 0.1,
