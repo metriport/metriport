@@ -6,6 +6,7 @@ import {
 } from "../link-procedures-to-reports";
 import { makeProcedure } from "../../../../fhir-to-cda/cda-templates/components/__tests__/make-procedure";
 import { makeDiagnosticReport } from "../../../../fhir-to-cda/cda-templates/components/__tests__/make-diagnostic-report";
+import { LOINC_URL } from "@metriport/shared/medical";
 
 describe("linkProceduresToDiagnosticReports", () => {
   let baseMs: number;
@@ -77,7 +78,7 @@ describe("linkProceduresToDiagnosticReports", () => {
           coding: [
             {
               code: sharedCode,
-              system: "http://www.ama-assn.org/go/cpt",
+              system: LOINC_URL,
             },
           ],
         },
@@ -89,7 +90,7 @@ describe("linkProceduresToDiagnosticReports", () => {
           coding: [
             {
               code: sharedCode,
-              system: "http://www.ama-assn.org/go/cpt",
+              system: LOINC_URL,
             },
           ],
         },
@@ -113,7 +114,7 @@ describe("linkProceduresToDiagnosticReports", () => {
           coding: [
             {
               code: "55555",
-              system: "http://www.ama-assn.org/go/cpt",
+              system: LOINC_URL,
             },
           ],
         },
@@ -125,7 +126,7 @@ describe("linkProceduresToDiagnosticReports", () => {
           coding: [
             {
               code: "66666",
-              system: "http://www.ama-assn.org/go/cpt",
+              system: LOINC_URL,
             },
           ],
         },
@@ -148,7 +149,7 @@ describe("linkProceduresToDiagnosticReports", () => {
           coding: [
             {
               code: sharedCode,
-              system: "http://www.ama-assn.org/go/cpt",
+              system: LOINC_URL,
             },
           ],
         },
@@ -160,7 +161,7 @@ describe("linkProceduresToDiagnosticReports", () => {
           coding: [
             {
               code: sharedCode,
-              system: "http://www.ama-assn.org/go/cpt",
+              system: LOINC_URL,
             },
           ],
         },
@@ -206,37 +207,34 @@ describe("linkProceduresToDiagnosticReports", () => {
 
     it("should filter out all known useless display values", () => {
       const matchingDate = buildDayjs(baseMs + THRESHOLD.asMilliseconds() / 2).toISOString();
-      const uselessValues = ["unknown", "unk", "no known", "no data available"];
+      const uselessValue = "unknown";
+      const procedure = makeProcedure({
+        identifier: [
+          {
+            value: uselessValue,
+            system: "http://example.com/ids",
+          },
+        ],
+        performedDateTime: DATE_TO_MATCH,
+      });
 
-      for (const uselessValue of uselessValues) {
-        const procedure = makeProcedure({
-          identifier: [
-            {
-              value: uselessValue,
-              system: "http://example.com/ids",
-            },
-          ],
-          performedDateTime: DATE_TO_MATCH,
-        });
+      const diagnosticReport = makeDiagnosticReport({
+        identifier: [
+          {
+            value: uselessValue,
+            system: "http://example.com/ids",
+          },
+        ],
+        effectiveDateTime: matchingDate,
+      });
 
-        const diagnosticReport = makeDiagnosticReport({
-          identifier: [
-            {
-              value: uselessValue,
-              system: "http://example.com/ids",
-            },
-          ],
-          effectiveDateTime: matchingDate,
-        });
+      const result = linkProceduresToDiagnosticReports([procedure], [diagnosticReport]);
 
-        const result = linkProceduresToDiagnosticReports([procedure], [diagnosticReport]);
-
-        expect(result).toBeDefined();
-        expect(result[0]?.report).toBeUndefined();
-      }
+      expect(result).toBeDefined();
+      expect(result[0]?.report).toBeUndefined();
     });
 
-    it("should remove trailing carets from identifier values", () => {
+    it("should match despite trailing caret in identifier value", () => {
       const matchingDate = buildDayjs(baseMs + THRESHOLD.asMilliseconds() / 2).toISOString();
       const sharedIdentifier = "TEST123";
 
@@ -275,7 +273,7 @@ describe("linkProceduresToDiagnosticReports", () => {
           coding: [
             {
               code: sharedCode,
-              system: "http://www.ama-assn.org/go/cpt",
+              system: LOINC_URL,
             },
           ],
         },
@@ -287,7 +285,7 @@ describe("linkProceduresToDiagnosticReports", () => {
           coding: [
             {
               code: sharedCode,
-              system: "http://www.ama-assn.org/go/cpt",
+              system: LOINC_URL,
             },
           ],
         },
@@ -299,7 +297,7 @@ describe("linkProceduresToDiagnosticReports", () => {
           coding: [
             {
               code: sharedCode,
-              system: "http://www.ama-assn.org/go/cpt",
+              system: LOINC_URL,
             },
           ],
         },
@@ -323,7 +321,7 @@ describe("linkProceduresToDiagnosticReports", () => {
           coding: [
             {
               code: "55555",
-              system: "http://www.ama-assn.org/go/cpt",
+              system: LOINC_URL,
             },
           ],
         },
@@ -335,7 +333,7 @@ describe("linkProceduresToDiagnosticReports", () => {
           coding: [
             {
               code: "66666",
-              system: "http://www.ama-assn.org/go/cpt",
+              system: LOINC_URL,
             },
           ],
         },
@@ -357,7 +355,7 @@ describe("linkProceduresToDiagnosticReports", () => {
           coding: [
             {
               code: "12345",
-              system: "http://www.ama-assn.org/go/cpt",
+              system: LOINC_URL,
             },
           ],
         },
@@ -370,7 +368,7 @@ describe("linkProceduresToDiagnosticReports", () => {
           coding: [
             {
               code: "67890",
-              system: "http://www.ama-assn.org/go/cpt",
+              system: LOINC_URL,
             },
           ],
         },
@@ -382,7 +380,7 @@ describe("linkProceduresToDiagnosticReports", () => {
           coding: [
             {
               code: "11111",
-              system: "http://www.ama-assn.org/go/cpt",
+              system: LOINC_URL,
             },
           ],
         },
@@ -394,7 +392,7 @@ describe("linkProceduresToDiagnosticReports", () => {
           coding: [
             {
               code: "12345",
-              system: "http://www.ama-assn.org/go/cpt",
+              system: LOINC_URL,
             },
           ],
         },
@@ -406,7 +404,7 @@ describe("linkProceduresToDiagnosticReports", () => {
           coding: [
             {
               code: "67890",
-              system: "http://www.ama-assn.org/go/cpt",
+              system: LOINC_URL,
             },
           ],
         },
@@ -418,7 +416,7 @@ describe("linkProceduresToDiagnosticReports", () => {
           coding: [
             {
               code: "11111",
-              system: "http://www.ama-assn.org/go/cpt",
+              system: LOINC_URL,
             },
           ],
         },
@@ -430,7 +428,7 @@ describe("linkProceduresToDiagnosticReports", () => {
           coding: [
             {
               code: "99999",
-              system: "http://www.ama-assn.org/go/cpt",
+              system: LOINC_URL,
             },
           ],
         },

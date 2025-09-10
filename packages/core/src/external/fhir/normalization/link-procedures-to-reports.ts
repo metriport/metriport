@@ -100,7 +100,7 @@ export function doDatesMatch(a: string[] = [], b: string[] = []): boolean {
 
   for (const dateA of aDates) {
     for (const dateB of bDates) {
-      const diffInMs = Math.abs(dateA.diff(dateB, "milliseconds"));
+      const diffInMs = Math.abs(dateA.diff(dateB));
       if (diffInMs <= THRESHOLD.asMilliseconds()) return true;
     }
   }
