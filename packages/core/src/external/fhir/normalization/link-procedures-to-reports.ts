@@ -15,7 +15,7 @@ import {
   isUselessDisplay,
 } from "../../../fhir-deduplication/shared";
 import { toArray } from "@metriport/shared/common/array";
-import { createReference } from "@medplum/core";
+import { createReference, deepClone } from "@medplum/core";
 
 dayjs.extend(duration);
 
@@ -24,10 +24,11 @@ export const SIZE_OF_WINDOW = dayjs.duration(2, "hours").asMilliseconds();
 // Regex patterns for filtering identifier and code values
 const URI_PATTERN = /^(?:urn:|oid:|https?:\/\/)/i; // Matches URIs, OIDs, and HTTP/HTTPS URLs
 
-export function dangerouslyLinkProceduresToDiagnosticReports(
+export function linkProceduresToDiagnosticReports(
   procedures: Procedure[],
   reports: DiagnosticReport[]
-): void {
+): Procedure[] {
+  const clonedProcedures = deepClone(procedures);
   const drMap = new Map<string, DiagnosticReport[]>();
 
   for (const dr of reports) {
@@ -40,7 +41,7 @@ export function dangerouslyLinkProceduresToDiagnosticReports(
     }
   }
 
-  for (const proc of procedures) {
+  for (const proc of clonedProcedures) {
     const { dates, procedureKeys } = getKeysAndDatesForProcedure(proc);
     for (const key of procedureKeys) {
       const drs = drMap.get(key);
@@ -61,6 +62,8 @@ export function dangerouslyLinkProceduresToDiagnosticReports(
       }
     }
   }
+
+  return clonedProcedures;
 }
 
 function getKeysForDiagnosticReport(dr: DiagnosticReport): string[] {
