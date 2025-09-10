@@ -48,8 +48,8 @@ export function linkProceduresToDiagnosticReports(
       if (!drs) continue;
       for (const dr of drs) {
         if (!dr?.id) continue;
-        const hitDates = getDateFromDiagnosticReport(dr);
-        if (!doAnyDatesMatchThroughWindow(dates, hitDates)) {
+        const drDates = getDateFromDiagnosticReport(dr);
+        if (!doAnyDatesMatchThroughWindow(dates, drDates)) {
           continue;
         }
         const ref: Reference<DiagnosticReport> = createReference(dr);
