@@ -1,3 +1,14 @@
+import { getFirstToken } from "./shared";
+
+export function parseUcumUnit(
+  inputString: string
+): { code?: string; remainder: string } | undefined {
+  const [unit, remainder] = getFirstToken(inputString);
+  const validCode = getValidUcumCode(unit);
+  if (!validCode) return undefined;
+  return { code: validCode, remainder };
+}
+
 export function getValidUcumCode(inputString: string): string | undefined {
   const unit = inputString.trim();
   const validCode = unitToValidUcumCode[unit];
