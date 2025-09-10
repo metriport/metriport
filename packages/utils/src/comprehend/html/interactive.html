@@ -19,6 +19,16 @@
                     <input type="checkbox" id="inferRxNorm" checked>
                     <label for="inferRxNorm">Infer RxNorm</label>
                 </div>
+
+                <div style="display: flex; flex-direction: row; gap: 10px;">
+                    <label for="patientId">Patient ID</label>
+                    <input type="text" id="patientId" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">
+                </div>
+
+                <div style="display: flex; flex-direction: row; gap: 10px;">
+                    <label for="dateWritten">Date Written</label>
+                    <input type="date" id="dateWritten" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">
+                </div>
             </div>
             <pre id="comprehend" style="margin-top: 20px; padding: 10px; background-color: #f9f9f9; border: 1px solid #ccc; border-radius: 4px;"></pre>
         </div>
@@ -31,6 +41,8 @@
         const text = document.getElementById("text");
         const result = document.getElementById("result");
         const comprehendResult = document.getElementById("comprehend");
+        const patientId = document.getElementById("patientId");
+        const dateWritten = document.getElementById("dateWritten");
 
         const inferRxNormCheckbox = document.getElementById("inferRxNorm");
         function shouldInferRxNorm() {
@@ -46,6 +58,8 @@
                 body: JSON.stringify({
                     text: text.value,
                     inferRxNorm: shouldInferRxNorm(),
+                    patientId: patientId.value,
+                    dateWritten: dateWritten.value,
                 }),
             });
             const { comprehend, fhir } = await response.json();
