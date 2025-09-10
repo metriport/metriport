@@ -102,7 +102,7 @@ export async function create({
 
   // TODO ENG-554 Remove FF and v1 code
   if (!isCwV2Enabled) {
-    return await registerAndLinkPatientInCwV1({
+    await registerAndLinkPatientInCwV1({
       patient: createAugmentedPatient(updatedPatient),
       facilityId,
       getOrgIdExcludeList,
@@ -113,6 +113,19 @@ export async function create({
       initiator,
       update,
     });
+    await registerAndLinkPatientInCwV2({
+      patient: createAugmentedPatient(updatedPatient),
+      facilityId,
+      getOrgIdExcludeList,
+      rerunPdOnNewDemographics: cxRerunPdOnNewDemographics,
+      requestId,
+      startedAt,
+      debug,
+      initiator,
+      update,
+      shouldUpdateDb: false,
+    });
+    return;
   }
 
   return await registerAndLinkPatientInCwV2({
@@ -181,6 +194,17 @@ export async function update({
       startedAt,
       debug,
       update,
+    });
+    await updatePatientAndLinksInCwV2({
+      patient: createAugmentedPatient(updatedPatient),
+      facilityId,
+      getOrgIdExcludeList,
+      rerunPdOnNewDemographics: cxRerunPdOnNewDemographics,
+      requestId,
+      startedAt,
+      debug,
+      update,
+      shouldUpdateDb: false,
     });
     return;
   }

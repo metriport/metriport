@@ -90,8 +90,11 @@ export function getCleanIpAddress(address: string | undefined): string {
  */
 export function lookupHieTzEntryForIp(hieConfigDictionary: HieConfigDictionary, ip: string) {
   const hieVpnConfigRows = Object.entries(hieConfigDictionary).flatMap(keepOnlyVpnConfigs);
-  const match = hieVpnConfigRows.find(({ cidrBlock }) => isIpInRange(cidrBlock, ip));
+  const match = hieVpnConfigRows.find(({ cidrBlocks }) =>
+    cidrBlocks.some(cidrBlock => isIpInRange(cidrBlock, ip))
+  );
   if (!match) {
+    console.log("[mllp-server.lookupHieTzEntryForIp] Sender IP not found in any CIDR block", ip);
     throw new MetriportError(`Sender IP not found in any CIDR block`, {
       cause: undefined,
       additionalInfo: { context: "mllp-server.lookupHieTzEntryForIp", ip, hieConfigDictionary },
@@ -106,7 +109,7 @@ function isIpInRange(cidrBlock: string, ip: string): boolean {
 }
 
 function keepOnlyVpnConfigs([hieName, config]: [string, HieConfigDictionary[string]]) {
-  return "cidrBlock" in config
-    ? [{ hieName, cidrBlock: config.cidrBlock, timezone: config.timezone }]
+  return "cidrBlocks" in config
+    ? [{ hieName, cidrBlocks: config.cidrBlocks, timezone: config.timezone }]
     : [];
 }
