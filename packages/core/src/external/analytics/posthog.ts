@@ -71,6 +71,7 @@ export enum EventTypes {
   inboundDocumentRetrieval = "inbound.documentRetrieval",
   dischargeRequery = "dischargeRequery",
   rosterUploadSummary = "rosterUploadSummary",
+  rosterUploadPerCustomer = "rosterUploadPerCustomer",
 }
 
 export enum EventErrMessage {
