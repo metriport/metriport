@@ -185,7 +185,7 @@ export const config: EnvConfigNonSandbox = {
         states: [USState.TX],
         timezone: "America/Chicago",
         gatewayPublicIp: "200.1.1.1",
-        internalCidrBlock: "10.10.0.0/16",
+        internalCidrBlocks: ["10.10.0.0/16"],
         subscriptions: ["adt"],
         mapping: {
           ID: "scrambledId",
