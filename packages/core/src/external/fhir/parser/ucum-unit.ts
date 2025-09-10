@@ -1,4 +1,15 @@
+import { UNIT_OF_MEASURE_URL } from "@metriport/shared/medical";
+import { Quantity } from "@medplum/fhirtypes";
 import { getFirstToken } from "./shared";
+
+export function createUcumQuantity(value: number, code: string): Quantity {
+  return {
+    value,
+    unit: code,
+    system: UNIT_OF_MEASURE_URL,
+    code,
+  };
+}
 
 export function parseUcumUnit(
   inputString: string

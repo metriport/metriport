@@ -9,6 +9,19 @@ command.name("build-ucum-map");
 
 // The TypeScript code that is prepended to the generated file output.
 const ucumFunctionCode = `
+import { UNIT_OF_MEASURE_URL } from "@metriport/shared/medical";
+import { Quantity } from "@medplum/fhirtypes";
+import { getFirstToken } from "./shared";
+
+export function createUcumQuantity(value: number, code: string): Quantity {
+  return {
+    value,
+    unit: code,
+    system: UNIT_OF_MEASURE_URL,
+    code,
+  };
+}
+
 export function parseUcumUnit(inputString: string): { code?: string; remainder: string } | undefined {
   const [ unit, remainder ] = getFirstToken(inputString);
   const validCode = getValidUcumCode(unit);
