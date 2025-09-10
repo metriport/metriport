@@ -1,0 +1,81 @@
+[
+  {
+    "resourceType": "Medication",
+    "id": "019930b6-895f-733c-b24e-c8a08a643fb2",
+    "status": "active",
+    "code": {
+      "text": "Acetaminophen",
+      "coding": [
+        {
+          "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+          "code": "198440",
+          "display": "Acetaminophen"
+        }
+      ]
+    },
+    "form": {
+      "coding": [
+        {
+          "system": "http://snomed.info/sct",
+          "code": "385055001",
+          "display": "tablet"
+        }
+      ]
+    },
+    "amount": {
+      "numerator": {
+        "value": 500,
+        "unit": "mg",
+        "system": "http://unitsofmeasure.org",
+        "code": "mg"
+      }
+    },
+    "ingredient": [
+      {
+        "itemCodeableConcept": {
+          "text": "Acetaminophen",
+          "coding": [
+            {
+              "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+              "code": "198440",
+              "display": "Acetaminophen"
+            }
+          ]
+        },
+        "isActive": true,
+        "strength": {
+          "numerator": {
+            "value": 500,
+            "unit": "mg",
+            "system": "http://unitsofmeasure.org",
+            "code": "mg"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "resourceType": "MedicationStatement",
+    "id": "019930b6-8960-7343-a144-fcfd9e6a7eb8",
+    "status": "active",
+    "medicationReference": {
+      "reference": "Medication/019930b6-895f-733c-b24e-c8a08a643fb2"
+    },
+    "dosage": [
+      {
+        "doseAndRate": [
+          {
+            "doseQuantity": {
+              "value": 1,
+              "unit": "mg"
+            },
+            "rateQuantity": {
+              "value": 1,
+              "unit": "mg"
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

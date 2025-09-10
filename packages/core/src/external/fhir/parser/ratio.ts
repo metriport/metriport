@@ -4,10 +4,9 @@ import { parseNumber } from "./number";
 
 export function parseRatio(inputString: string): Ratio | undefined {
   const [numeratorString, , denominatorString] = inputString.split(/(\s*\/\s*|\s+per\s+)/);
-  if (!numeratorString || !denominatorString) return undefined;
-
-  console.log("numeratorString", numeratorString);
-  console.log("denominatorString", denominatorString);
+  if (!numeratorString || !denominatorString) {
+    return parseNumericQuantityAsRatio(inputString);
+  }
 
   const numerator = parseNumber(numeratorString);
   const denominator = parseNumber(denominatorString);
@@ -29,6 +28,26 @@ export function parseRatio(inputString: string): Ratio | undefined {
       unit: denominatorUnit,
       system: UNIT_OF_MEASURE_URL,
       code: denominatorUnit,
+    },
+  };
+}
+
+export function parseNumericQuantityAsRatio(inputString: string): Ratio | undefined {
+  const amount = parseNumber(inputString);
+  if (!amount) return undefined;
+
+  return {
+    numerator: {
+      value: amount.value,
+      unit: amount.remainder.trim(),
+      system: UNIT_OF_MEASURE_URL,
+      code: amount.remainder.trim(),
+    },
+    denominator: {
+      value: 1,
+      unit: "1",
+      system: UNIT_OF_MEASURE_URL,
+      code: "1",
     },
   };
 }
