@@ -129,6 +129,7 @@ async function main() {
         if (!cwData?.patientId) continue;
 
         const cwPatientId = cwData.patientId;
+        if (!cwPatientId.includes("urn:oid:")) continue;
         const cwIds = decodeCwPatientIdV1(cwPatientId);
         if (!cwIds.value || !cwIds.assignAuthority) continue;
         const orgOid = cwIds.assignAuthority.replace("urn:oid:", "");
@@ -185,13 +186,13 @@ function mapPatientToCommonwell(patient: Patient, aaid: string): CommonwellPatie
 
   // Normalize and format data
   const normalizedDob = normalizeDob(patient.data.dob);
+  if (!normalizedDob) throw new Error("Invalid dob");
   const normalizedSex = normalizeGender(patient.data.genderAtBirth);
   const normalizedState = normalizeUSStateForAddress(address.state);
   const normalizedZip = normalizeZipCodeNew(address.zip);
 
   // Extract middle initial from firstName if present
   const { firstName, middleInitial } = getFirstNameAndMiddleInitial(patient.data.firstName);
-  // const middleInitial = nameParts.length > 1 ? nameParts[1].charAt(0).toUpperCase() : undefined;
 
   // Extract phone numbers from contact array
   const homePhone = patient.data.contact?.find(c => c.phone)?.phone;
@@ -274,7 +275,7 @@ async function writeCommonwellPatientsToCSV(
  */
 function getOutputFilePath(): string {
   const timestamp = dayjs().format("YYYY-MM-DD_HH-mm-ss");
-  const folderName = getFolderName("commonwell-export");
+  const folderName = getFolderName();
   return `${folderName}/commonwell-patients-${timestamp}.csv`;
 }
 
