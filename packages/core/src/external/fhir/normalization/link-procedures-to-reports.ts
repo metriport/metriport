@@ -46,7 +46,6 @@ export function linkProceduresToDiagnosticReports(
       const drs = drMap.get(key);
       if (!drs) continue;
       for (const dr of drs) {
-        if (!dr?.id) continue;
         const drDates = getDateFromDiagnosticReport(dr);
         if (!doAnyDatesMatchThroughWindow(dates, drDates)) {
           continue;
