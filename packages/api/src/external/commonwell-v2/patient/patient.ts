@@ -394,6 +394,8 @@ async function runNextPdOnNewDemographics({
         links: newDemographicsHere,
       }),
     ]);
+  }
+  if (shouldUpdateDb) {
     update({
       patient: updatedPatient,
       facilityId,
