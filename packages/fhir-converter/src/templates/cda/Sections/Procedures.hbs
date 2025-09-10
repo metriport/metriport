@@ -47,7 +47,6 @@
                             {{>References/Procedure/performer.actor.hbs ID=(generateUUID (toJsonString procEntry.procedure)) REF=(concat 'Practitioner/' practitionerId.Id)}},
                         {{/with}}
                     {{/if}}
-                    {{!-- TODO: Look into adding report --}}
                 {{/if}}
                 
                 {{#if procEntry.observation}}
@@ -63,7 +62,7 @@
                     
                     {{#if procEntry.observation.author.assignedAuthor}}
                         {{#with (evaluate 'Utils/GeneratePractitionerId.hbs' obj=procEntry.observation.author.assignedAuthor) as |practitionerId|}}
-                                {{>Resources/Practitioner.hbs practitioner=procEntry.procedure.observation.author.assignedAuthor ID=practitionerId.Id}},
+                                {{>Resources/Practitioner.hbs practitioner=procEntry.observation.author.assignedAuthor ID=practitionerId.Id}},
                                 {{>References/Procedure/performer.actor.hbs ID=(generateUUID (toJsonString procEntry.observation)) REF=(concat 'Practitioner/' practitionerId.Id)}},
                         {{/with}}
                     {{/if}}
