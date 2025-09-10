@@ -141,26 +141,26 @@ export async function registerAndLinkPatientInCwV2({
       if (startedNewPd) return;
     }
 
-    analytics({
-      distinctId: patient.cxId,
-      event: EventTypes.patientDiscovery,
-      properties: {
-        hie: MedicalDataSource.COMMONWELL,
-        patientId: patient.id,
-        requestId,
-        pdLinks: validLinks.length,
-        pdLinksInvalid: invalidLinks.length,
-        duration: elapsedTimeFromNow(startedAt),
-      },
-    });
-
-    const startedNewPd = await runNextPdIfScheduled({
-      patient,
-      requestId,
-      update,
-    });
-    if (startedNewPd) return;
     if (shouldUpdateDb) {
+      analytics({
+        distinctId: patient.cxId,
+        event: EventTypes.patientDiscovery,
+        properties: {
+          hie: MedicalDataSource.COMMONWELL,
+          patientId: patient.id,
+          requestId,
+          pdLinks: validLinks.length,
+          pdLinksInvalid: invalidLinks.length,
+          duration: elapsedTimeFromNow(startedAt),
+        },
+      });
+      const startedNewPd = await runNextPdIfScheduled({
+        patient,
+        requestId,
+        update,
+      });
+      if (startedNewPd) return;
+
       await updatePatientDiscoveryStatus({ patient, status: "completed" });
       await queryDocsIfScheduled({ patientIds: patient, getOrgIdExcludeList });
     }
@@ -168,12 +168,14 @@ export async function registerAndLinkPatientInCwV2({
     return { commonwellPatientId };
   } catch (error) {
     // TODO 1646 Move to a single hit to the DB
-    await resetScheduledPatientDiscovery({
-      patient,
-      source: MedicalDataSource.COMMONWELL,
-    });
-    await updatePatientDiscoveryStatus({ patient, status: "failed" });
-    await queryDocsIfScheduled({ patientIds: patient, getOrgIdExcludeList, isFailed: true });
+    if (shouldUpdateDb) {
+      await resetScheduledPatientDiscovery({
+        patient,
+        source: MedicalDataSource.COMMONWELL,
+      });
+      await updatePatientDiscoveryStatus({ patient, status: "failed" });
+      await queryDocsIfScheduled({ patientIds: patient, getOrgIdExcludeList, isFailed: true });
+    }
     const msg = `Failure while creating patient @ CW`;
     const cwRef = commonWell?.lastTransactionId;
     log(
@@ -292,38 +294,42 @@ export async function updatePatientAndLinksInCwV2({
       if (startedNewPd) return;
     }
 
-    analytics({
-      distinctId: patient.cxId,
-      event: EventTypes.patientDiscovery,
-      properties: {
-        hie: MedicalDataSource.COMMONWELL,
-        patientId: patient.id,
-        requestId,
-        pdLinks: validLinks.length,
-        pdLinksInvalid: invalidLinks.length,
-        duration: elapsedTimeFromNow(startedAt),
-      },
-    });
-
-    const startedNewPd = await runNextPdIfScheduled({
-      patient,
-      requestId,
-      update,
-    });
-    if (startedNewPd) return;
     if (shouldUpdateDb) {
+      analytics({
+        distinctId: patient.cxId,
+        event: EventTypes.patientDiscovery,
+        properties: {
+          hie: MedicalDataSource.COMMONWELL,
+          patientId: patient.id,
+          requestId,
+          pdLinks: validLinks.length,
+          pdLinksInvalid: invalidLinks.length,
+          duration: elapsedTimeFromNow(startedAt),
+        },
+      });
+
+      const startedNewPd = await runNextPdIfScheduled({
+        patient,
+        requestId,
+        update,
+      });
+
+      if (startedNewPd) return;
+
       await updatePatientDiscoveryStatus({ patient, status: "completed" });
       await queryDocsIfScheduled({ patientIds: patient, getOrgIdExcludeList });
     }
     debug("Completed.");
   } catch (error) {
-    // TODO 1646 Move to a single hit to the DB
-    await resetScheduledPatientDiscovery({
-      patient,
-      source: MedicalDataSource.COMMONWELL,
-    });
-    await updatePatientDiscoveryStatus({ patient, status: "failed" });
-    await queryDocsIfScheduled({ patientIds: patient, getOrgIdExcludeList, isFailed: true });
+    if (shouldUpdateDb) {
+      // TODO 1646 Move to a single hit to the DB
+      await resetScheduledPatientDiscovery({
+        patient,
+        source: MedicalDataSource.COMMONWELL,
+      });
+      await updatePatientDiscoveryStatus({ patient, status: "failed" });
+      await queryDocsIfScheduled({ patientIds: patient, getOrgIdExcludeList, isFailed: true });
+    }
     const msg = `Failed to update patient @ CW`;
     const cwRef = commonWell?.lastTransactionId;
     log(`${msg} ${patient.id}:. Cause: ${errorToString(error)}. CW Reference: ${cwRef}`);
@@ -388,24 +394,24 @@ async function runNextPdOnNewDemographics({
         links: newDemographicsHere,
       }),
     ]);
+    update({
+      patient: updatedPatient,
+      facilityId,
+      getOrgIdExcludeList,
+      rerunPdOnNewDemographics: false,
+    }).catch(processAsyncError("CW update"));
+    analytics({
+      distinctId: updatedPatient.cxId,
+      event: EventTypes.rerunOnNewDemographics,
+      properties: {
+        hie: MedicalDataSource.COMMONWELL,
+        patientId: updatedPatient.id,
+        requestId,
+        foundNewDemographicsHere,
+        foundNewDemographicsAcrossHies,
+      },
+    });
   }
-  update({
-    patient: updatedPatient,
-    facilityId,
-    getOrgIdExcludeList,
-    rerunPdOnNewDemographics: false,
-  }).catch(processAsyncError("CW update"));
-  analytics({
-    distinctId: updatedPatient.cxId,
-    event: EventTypes.rerunOnNewDemographics,
-    properties: {
-      hie: MedicalDataSource.COMMONWELL,
-      patientId: updatedPatient.id,
-      requestId,
-      foundNewDemographicsHere,
-      foundNewDemographicsAcrossHies,
-    },
-  });
   return true;
 }
 
