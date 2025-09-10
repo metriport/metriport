@@ -1,3 +1,11 @@
+import { Config } from "@metriport/core/util/config";
+
+// Mock Config methods BEFORE importing the module that uses them
+jest.spyOn(Config, "getHl7Base64ScramblerSeed").mockReturnValue("unit-test-seed");
+jest.spyOn(Config, "getAWSRegion").mockReturnValue("unit-test-region");
+jest.spyOn(Config, "getHl7IncomingMessageBucketName").mockReturnValue("unit-test-bucket");
+
+// Import after mocking to ensure mocked values are used during module initialization
 import { MetriportError } from "@metriport/shared";
 import { HieConfigDictionary } from "@metriport/core/external/hl7-notification/hie-config-dictionary";
 import { lookupHieTzEntryForIp } from "../utils";
