@@ -1,13 +1,14 @@
 import { buildDayjs } from "@metriport/shared/common/date";
+import { Procedure } from "@medplum/fhirtypes";
 import {
-  linkProceduresToDiagnosticReports,
+  dangerouslyLinkProceduresToDiagnosticReports,
   doAnyDatesMatchThroughWindow,
   SIZE_OF_WINDOW,
 } from "../link-procedures-to-reports";
 import { makeProcedure } from "../../../../fhir-to-cda/cda-templates/components/__tests__/make-procedure";
 import { makeDiagnosticReport } from "../../../../fhir-to-cda/cda-templates/components/__tests__/make-diagnostic-report";
 
-describe("linkProceduresToDiagnosticReports", () => {
+describe("dangerouslyLinkProceduresToDiagnosticReports", () => {
   const baseMs = Date.now();
   const DATE_TO_MATCH = buildDayjs(baseMs).toISOString();
 
@@ -67,7 +68,7 @@ describe("linkProceduresToDiagnosticReports", () => {
     });
   });
 
-  describe("linkProceduresToDiagnosticReports", () => {
+  describe("dangerouslyLinkProceduresToDiagnosticReports", () => {
     it("should link procedure to diagnostic report when codes match and dates are within window", () => {
       const matchingDate = buildDayjs(baseMs + SIZE_OF_WINDOW / 2).toISOString();
       const sharedCode = "55555";
@@ -108,14 +109,12 @@ describe("linkProceduresToDiagnosticReports", () => {
         ],
       });
 
-      const result = linkProceduresToDiagnosticReports([procedure], [diagnosticReport]);
+      dangerouslyLinkProceduresToDiagnosticReports([procedure], [diagnosticReport]);
 
-      expect(result.procedures[0]).toBeDefined();
-      expect(result.procedures[0]?.report).toBeDefined();
-      expect(result.procedures[0]?.report).toHaveLength(1);
-      expect(result.procedures[0]?.report?.[0]?.reference).toBe(
-        `DiagnosticReport/${diagnosticReport.id}`
-      );
+      expect(procedure).toBeDefined();
+      expect(procedure.report).toBeDefined();
+      expect(procedure.report).toHaveLength(1);
+      expect(procedure.report?.[0]?.reference).toBe(`DiagnosticReport/${diagnosticReport.id}`);
     });
 
     it("should not link when codes don't match", () => {
@@ -157,10 +156,10 @@ describe("linkProceduresToDiagnosticReports", () => {
         ],
       });
 
-      const result = linkProceduresToDiagnosticReports([procedure], [diagnosticReport]);
+      dangerouslyLinkProceduresToDiagnosticReports([procedure], [diagnosticReport]);
 
-      expect(result.procedures[0]).toBeDefined();
-      expect(result.procedures[0]?.report).toBeUndefined();
+      expect(procedure).toBeDefined();
+      expect(procedure.report).toBeUndefined();
     });
 
     it("should not link when dates are outside the window", () => {
@@ -193,10 +192,10 @@ describe("linkProceduresToDiagnosticReports", () => {
         identifier: defaultIdentifier,
       });
 
-      const result = linkProceduresToDiagnosticReports([procedure], [diagnosticReport]);
+      dangerouslyLinkProceduresToDiagnosticReports([procedure], [diagnosticReport]);
 
-      expect(result.procedures[0]).toBeDefined();
-      expect(result.procedures[0]?.report).toBeUndefined();
+      expect(procedure).toBeDefined();
+      expect(procedure.report).toBeUndefined();
     });
 
     it("should link based on identifier values", () => {
@@ -223,12 +222,10 @@ describe("linkProceduresToDiagnosticReports", () => {
         effectiveDateTime: matchingDate,
       });
 
-      const result = linkProceduresToDiagnosticReports([procedure], [diagnosticReport]);
+      dangerouslyLinkProceduresToDiagnosticReports([procedure], [diagnosticReport]);
 
-      expect(result.procedures[0]?.report).toBeDefined();
-      expect(result.procedures[0]?.report?.[0]?.reference).toBe(
-        `DiagnosticReport/${diagnosticReport.id}`
-      );
+      expect(procedure.report).toBeDefined();
+      expect(procedure.report?.[0]?.reference).toBe(`DiagnosticReport/${diagnosticReport.id}`);
     });
 
     it("should match identifier values", () => {
@@ -254,12 +251,10 @@ describe("linkProceduresToDiagnosticReports", () => {
         effectiveDateTime: matchingDate,
       });
 
-      const result = linkProceduresToDiagnosticReports([procedure], [diagnosticReport]);
+      dangerouslyLinkProceduresToDiagnosticReports([procedure], [diagnosticReport]);
 
-      expect(result.procedures[0]?.report).toBeDefined();
-      expect(result.procedures[0]?.report?.[0]?.reference).toBe(
-        `DiagnosticReport/${diagnosticReport.id}`
-      );
+      expect(procedure.report).toBeDefined();
+      expect(procedure.report?.[0]?.reference).toBe(`DiagnosticReport/${diagnosticReport.id}`);
     });
 
     it("should filter out bad identifier values", () => {
@@ -285,10 +280,10 @@ describe("linkProceduresToDiagnosticReports", () => {
         effectiveDateTime: matchingDate,
       });
 
-      const result = linkProceduresToDiagnosticReports([procedure], [diagnosticReport]);
+      dangerouslyLinkProceduresToDiagnosticReports([procedure], [diagnosticReport]);
 
-      expect(result.procedures[0]).toBeDefined();
-      expect(result.procedures[0]?.report).toBeUndefined();
+      expect(procedure).toBeDefined();
+      expect(procedure.report).toBeUndefined();
     });
 
     it("should filter out all known useless display values", () => {
@@ -316,10 +311,10 @@ describe("linkProceduresToDiagnosticReports", () => {
           effectiveDateTime: matchingDate,
         });
 
-        const result = linkProceduresToDiagnosticReports([procedure], [diagnosticReport]);
+        dangerouslyLinkProceduresToDiagnosticReports([procedure], [diagnosticReport]);
 
-        expect(result.procedures[0]).toBeDefined();
-        expect(result.procedures[0]?.report).toBeUndefined();
+        expect(procedure).toBeDefined();
+        expect(procedure.report).toBeUndefined();
       }
     });
 
@@ -346,9 +341,9 @@ describe("linkProceduresToDiagnosticReports", () => {
         effectiveDateTime: matchingDate,
       });
 
-      const result = linkProceduresToDiagnosticReports([procedure], [diagnosticReport]);
+      dangerouslyLinkProceduresToDiagnosticReports([procedure], [diagnosticReport]);
 
-      expect(result.procedures[0]?.report).toBeUndefined();
+      expect(procedure.report).toBeUndefined();
     });
 
     it("should remove trailing carets from identifier values", () => {
@@ -375,15 +370,13 @@ describe("linkProceduresToDiagnosticReports", () => {
         effectiveDateTime: matchingDate,
       });
 
-      const result = linkProceduresToDiagnosticReports([procedure], [diagnosticReport]);
+      dangerouslyLinkProceduresToDiagnosticReports([procedure], [diagnosticReport]);
 
-      expect(result.procedures[0]?.report).toBeDefined();
-      expect(result.procedures[0]?.report?.[0]?.reference).toBe(
-        `DiagnosticReport/${diagnosticReport.id}`
-      );
+      expect(procedure.report).toBeDefined();
+      expect(procedure.report?.[0]?.reference).toBe(`DiagnosticReport/${diagnosticReport.id}`);
     });
 
-    it("should handle multiple matching diagnostic reports and link to the first one", () => {
+    it("should handle multiple matching diagnostic reports and link to all of them", () => {
       const matchingDate = buildDayjs(baseMs + SIZE_OF_WINDOW / 2).toISOString();
       const sharedCode = "55555";
 
@@ -426,17 +419,16 @@ describe("linkProceduresToDiagnosticReports", () => {
         identifier: defaultIdentifier,
       });
 
-      const result = linkProceduresToDiagnosticReports(
+      dangerouslyLinkProceduresToDiagnosticReports(
         [procedure],
         [diagnosticReport1, diagnosticReport2]
       );
 
-      expect(result.procedures[0]?.report).toBeDefined();
-      expect(result.procedures[0]?.report).toHaveLength(1);
-      // Should link to the first matching report
-      expect(result.procedures[0]?.report?.[0]?.reference).toBe(
-        `DiagnosticReport/${diagnosticReport1.id}`
-      );
+      expect(procedure.report).toBeDefined();
+      expect(procedure.report).toHaveLength(2);
+      // Should link to both matching reports
+      expect(procedure.report?.[0]?.reference).toBe(`DiagnosticReport/${diagnosticReport1.id}`);
+      expect(procedure.report?.[1]?.reference).toBe(`DiagnosticReport/${diagnosticReport2.id}`);
     });
 
     it("should not add duplicate references", () => {
@@ -470,14 +462,12 @@ describe("linkProceduresToDiagnosticReports", () => {
         identifier: defaultIdentifier,
       });
 
-      const result = linkProceduresToDiagnosticReports([procedure], [diagnosticReport]);
+      dangerouslyLinkProceduresToDiagnosticReports([procedure], [diagnosticReport]);
 
-      expect(result.procedures[0]?.report).toBeDefined();
-      expect(result.procedures[0]?.report).toHaveLength(2);
-      expect(result.procedures[0]?.report?.[0]?.reference).toBe(`DiagnosticReport/existing-id`);
-      expect(result.procedures[0]?.report?.[1]?.reference).toBe(
-        `DiagnosticReport/${diagnosticReport.id}`
-      );
+      expect(procedure.report).toBeDefined();
+      expect(procedure.report).toHaveLength(2);
+      expect(procedure.report?.[0]?.reference).toBe(`DiagnosticReport/existing-id`);
+      expect(procedure.report?.[1]?.reference).toBe(`DiagnosticReport/${diagnosticReport.id}`);
     });
 
     it("should handle procedures without dates", () => {
@@ -509,9 +499,9 @@ describe("linkProceduresToDiagnosticReports", () => {
         identifier: defaultIdentifier,
       });
 
-      const result = linkProceduresToDiagnosticReports([procedure], [diagnosticReport]);
+      dangerouslyLinkProceduresToDiagnosticReports([procedure], [diagnosticReport]);
 
-      expect(result.procedures[0]?.report).toBeUndefined();
+      expect(procedure.report).toBeUndefined();
     });
 
     it("should handle diagnostic reports without dates", () => {
@@ -543,16 +533,16 @@ describe("linkProceduresToDiagnosticReports", () => {
         identifier: defaultIdentifier,
       });
 
-      const result = linkProceduresToDiagnosticReports([procedure], [diagnosticReport]);
+      dangerouslyLinkProceduresToDiagnosticReports([procedure], [diagnosticReport]);
 
-      expect(result.procedures[0]?.report).toBeUndefined();
+      expect(procedure.report).toBeUndefined();
     });
 
     it("should handle empty arrays", () => {
-      const result = linkProceduresToDiagnosticReports([], []);
+      const procedures: Procedure[] = [];
+      dangerouslyLinkProceduresToDiagnosticReports(procedures, []);
 
-      expect(result.procedures).toEqual([]);
-      expect(result.reports).toEqual([]);
+      expect(procedures).toEqual([]);
     });
 
     it("should handle procedures with no matching reports", () => {
@@ -592,9 +582,9 @@ describe("linkProceduresToDiagnosticReports", () => {
         ],
       });
 
-      const result = linkProceduresToDiagnosticReports([procedure], [diagnosticReport]);
+      dangerouslyLinkProceduresToDiagnosticReports([procedure], [diagnosticReport]);
 
-      expect(result.procedures[0]?.report).toBeUndefined();
+      expect(procedure.report).toBeUndefined();
     });
 
     it("should handle diagnostic reports with no matching procedures", () => {
@@ -634,9 +624,9 @@ describe("linkProceduresToDiagnosticReports", () => {
         ],
       });
 
-      const result = linkProceduresToDiagnosticReports([procedure], [diagnosticReport]);
+      dangerouslyLinkProceduresToDiagnosticReports([procedure], [diagnosticReport]);
 
-      expect(result.reports).toEqual([diagnosticReport]);
+      // Reports are not returned since they're not modified
     });
 
     it("should comprehensively link multiple procedures to multiple diagnostic reports", () => {
@@ -775,24 +765,23 @@ describe("linkProceduresToDiagnosticReports", () => {
       const procedures = [procedure1, procedure2, procedure3];
       const reports = [report1, report2, report3, report4];
 
-      const result = linkProceduresToDiagnosticReports(procedures, reports);
+      dangerouslyLinkProceduresToDiagnosticReports(procedures, reports);
 
-      // Verify all procedures and reports are returned
-      expect(result.procedures).toHaveLength(3);
-      expect(result.reports).toHaveLength(4);
+      // Verify all procedures are still there
+      expect(procedures).toHaveLength(3);
 
       // Procedure1 should link to Report1 (same code, dates within window)
-      expect(result.procedures[0]?.report).toBeDefined();
-      expect(result.procedures[0]?.report).toHaveLength(1);
-      expect(result.procedures[0]?.report?.[0]?.reference).toBe(`DiagnosticReport/${report1.id}`);
+      expect(procedure1.report).toBeDefined();
+      expect(procedure1.report).toHaveLength(1);
+      expect(procedure1.report?.[0]?.reference).toBe(`DiagnosticReport/${report1.id}`);
 
       // Procedure2 should link to Report2 (same code, dates within window)
-      expect(result.procedures[1]?.report).toBeDefined();
-      expect(result.procedures[1]?.report).toHaveLength(1);
-      expect(result.procedures[1]?.report?.[0]?.reference).toBe(`DiagnosticReport/${report2.id}`);
+      expect(procedure2.report).toBeDefined();
+      expect(procedure2.report).toHaveLength(1);
+      expect(procedure2.report?.[0]?.reference).toBe(`DiagnosticReport/${report2.id}`);
 
       // Procedure3 should NOT link to Report3 (same code but dates outside window)
-      expect(result.procedures[2]?.report).toBeUndefined();
+      expect(procedure3.report).toBeUndefined();
 
       // Report4 should remain unlinked (different code)
       // This is verified by the fact that no procedure links to it

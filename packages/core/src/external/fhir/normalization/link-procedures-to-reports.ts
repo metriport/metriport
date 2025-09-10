@@ -15,6 +15,7 @@ import {
   isUselessDisplay,
 } from "../../../fhir-deduplication/shared";
 import { toArray } from "@metriport/shared/common/array";
+import { createReference } from "@medplum/core";
 
 dayjs.extend(duration);
 
@@ -23,10 +24,10 @@ export const SIZE_OF_WINDOW = dayjs.duration(2, "hours").asMilliseconds();
 // Regex patterns for filtering identifier and code values
 const URI_PATTERN = /^(?:urn:|oid:|https?:\/\/)/i; // Matches URIs, OIDs, and HTTP/HTTPS URLs
 
-export function linkProceduresToDiagnosticReports(
+export function dangerouslyLinkProceduresToDiagnosticReports(
   procedures: Procedure[],
   reports: DiagnosticReport[]
-): { procedures: Procedure[]; reports: DiagnosticReport[] } {
+): void {
   const drMap = new Map<string, DiagnosticReport[]>();
 
   for (const dr of reports) {
@@ -40,29 +41,26 @@ export function linkProceduresToDiagnosticReports(
   }
 
   for (const proc of procedures) {
-    const { dates, pKeys } = getKeysAndDatesForProcedure(proc);
-    for (const key of pKeys) {
-      const hits = drMap.get(key);
-      if (!hits) continue;
-      for (const hit of hits) {
-        if (!hit?.id) continue;
-        const hitDates = getDateFromDiagnosticReport(hit);
+    const { dates, procedureKeys } = getKeysAndDatesForProcedure(proc);
+    for (const key of procedureKeys) {
+      const drs = drMap.get(key);
+      if (!drs) continue;
+      for (const dr of drs) {
+        if (!dr?.id) continue;
+        const hitDates = getDateFromDiagnosticReport(dr);
         if (!doAnyDatesMatchThroughWindow(dates, hitDates)) {
           continue;
         }
-        const ref: Reference<DiagnosticReport> = { reference: `DiagnosticReport/${hit.id}` };
+        const ref: Reference<DiagnosticReport> = createReference(dr);
         const existing: Reference<DiagnosticReport>[] = (proc.report ??
           []) as Reference<DiagnosticReport>[];
 
         if (!existing.some(r => r.reference === ref.reference)) {
           proc.report = [...existing, ref];
         }
-        break;
       }
     }
   }
-
-  return { procedures, reports };
 }
 
 function getKeysForDiagnosticReport(dr: DiagnosticReport): string[] {
@@ -75,7 +73,7 @@ function getKeysForDiagnosticReport(dr: DiagnosticReport): string[] {
   return dedupe(out);
 }
 
-function getKeysAndDatesForProcedure(p: Procedure): { dates: string[]; pKeys: string[] } {
+function getKeysAndDatesForProcedure(p: Procedure): { dates: string[]; procedureKeys: string[] } {
   const date = getPerformedDateFromResource(p, "datetime");
   const dates = date ? [date] : [];
   const idVals = getIdentifierValueTokens(p);
@@ -87,19 +85,17 @@ function getKeysAndDatesForProcedure(p: Procedure): { dates: string[]; pKeys: st
   for (const c of codes) out.push(`${c}`);
   const dedupedOut = dedupe(out);
   const dedupedDates = dedupe(dates);
-  return { dates: dedupedDates, pKeys: dedupedOut };
+  return { dates: dedupedDates, procedureKeys: dedupedOut };
 }
 
 function getDateFromDiagnosticReport(dr: DiagnosticReport): string[] {
   const dates: string[] = [];
 
-  // Use the shared function for effectiveDateTime and effectivePeriod
   const dateFromResource = getDateFromResource(dr, "datetime");
   if (dateFromResource) {
     dates.push(dateFromResource);
   }
 
-  // Also check the issued field which is specific to DiagnosticReport
   if (dr.issued) {
     dates.push(dr.issued);
   }
@@ -151,7 +147,7 @@ function getCodeTokensFromCode(code?: CodeableConcept): string[] {
 
   const out: string[] = [];
   for (const c of codings) {
-    const token = (c.code ?? "").toString().trim();
+    const token = c.code?.trim();
     if (!token || isUselessDisplay(token)) continue;
     if (URI_PATTERN.test(token)) continue;
     out.push(token.toUpperCase());
