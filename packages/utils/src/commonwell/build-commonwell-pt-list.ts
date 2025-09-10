@@ -108,7 +108,7 @@ async function main() {
     // STEP 1: Query patients from the database
     console.log("STEP 1: Querying patients from database...");
     const patientResults = await sequelize.query(
-      `SELECT * FROM patient WHERE created_at > :fromDate and created_at < :toDate`,
+      `SELECT * FROM patient WHERE (created_at > :fromDate and created_at < :toDate) or (updated_at > :fromDate and updated_at < :toDate)`,
       {
         replacements: { fromDate, toDate },
       }
