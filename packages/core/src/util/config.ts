@@ -441,6 +441,18 @@ export class Config {
     return getEnvVarOrFail("LAHIE_INGESTION_BUCKET_NAME");
   }
 
+  static getLaHieIngestionLocalPath(): string {
+    return getEnvVarOrFail("LAHIE_INGESTION_LOCAL_PATH");
+  }
+
+  static getLaHieIngestionPrivateKey(): string {
+    return getEnvVarOrFail("LAHIE_INGESTION_PRIVATE_KEY");
+  }
+
+  static getLaHieIngestionPrivateKeyPassphrase(): string {
+    return getEnvVarOrFail("LAHIE_INGESTION_PRIVATE_KEY_PASSPHRASE");
+  }
+
   static getInternalServerUrl(): string {
     return getEnvVarOrFail("INTERNAL_SERVER_BASE_URL");
   }
