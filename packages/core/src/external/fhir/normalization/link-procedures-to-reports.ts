@@ -34,7 +34,6 @@ export function linkProceduresToDiagnosticReports(
   for (const dr of reports) {
     const keys = getKeysForDiagnosticReport(dr);
     for (const k of keys) {
-      if (!k) continue;
       const prior = drMap.get(k) ?? [];
       prior.push(dr);
       drMap.set(k, prior);
