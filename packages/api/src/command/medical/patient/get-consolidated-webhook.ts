@@ -5,6 +5,7 @@ import { WebhookRequest } from "../../../models/webhook-request";
 type ConsolidatedWebhookQuery = {
   requestId: string;
   fileUrl?: string;
+  gzipUrl?: string;
   status?: QueryStatus;
   conversionType?: ConsolidationConversionType;
   message?: string;
@@ -70,8 +71,9 @@ export async function getConsolidatedWebhook({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const webhookPayload: any = webhookData.payload;
 
-  const url =
-    webhookPayload.patients?.[0]?.bundle?.entry?.[0]?.resource?.content?.[0]?.attachment?.url;
+  const content = webhookPayload.patients?.[0]?.bundle?.entry?.[0]?.resource?.content;
+  const url = content?.[0]?.attachment?.url;
+  const gzipUrl = content?.[1]?.attachment?.url; // Second attachment is gzip if present
 
   if (!url) {
     return {
@@ -85,6 +87,7 @@ export async function getConsolidatedWebhook({
     requestId,
     status: consolidatedWebhookQuery.status,
     fileUrl: url,
+    ...(gzipUrl ? { gzipUrl } : {}),
     conversionType: consolidatedWebhookQuery.conversionType,
   };
 }

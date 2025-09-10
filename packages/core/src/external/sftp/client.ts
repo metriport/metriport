@@ -2,7 +2,7 @@ import { MetriportError, BadRequestError, errorToString } from "@metriport/share
 import SshSftpClient from "ssh2-sftp-client";
 import { Writable } from "stream";
 import { out } from "../../util/log";
-import { compressGzip, decompressGzip } from "./compression";
+import { compressGzip, decompressGzip } from "../../util/compression";
 import { LocalReplica } from "./replica/local";
 import { S3Replica } from "./replica/s3";
 import {
@@ -181,6 +181,7 @@ export class SftpClient implements SftpClientImpl {
   ): Promise<void> {
     if (compress) {
       this.debug(`Compressing file with gzip...`);
+      // eslint-disable-next-line no-param-reassign
       content = await compressGzip(content);
     }
 
@@ -281,7 +282,9 @@ export function createWritableBuffer(): { writable: Writable; getBuffer: () => B
     },
   });
 
-  const getBuffer = () => Buffer.concat(chunks);
+  function getBuffer() {
+    return Buffer.concat(chunks);
+  }
   return { writable, getBuffer };
 }
 

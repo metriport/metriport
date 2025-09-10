@@ -10,6 +10,7 @@ import {
   getConsolidatedPatientDataAsync,
 } from "@metriport/core/command/consolidated/consolidated-get";
 import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-summary";
+import { compressGzip } from "@metriport/core/util/compression";
 import { getConsolidatedQueryByRequestId, Patient } from "@metriport/core/domain/patient";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { out } from "@metriport/core/util";
@@ -31,6 +32,7 @@ import {
   emptyMetaProp,
   handleBundleToMedicalRecord,
   uploadJsonBundleToS3,
+  uploadGzipBundleToS3,
 } from "./convert-fhir-bundle";
 import { getPatientOrFail } from "./get-patient";
 
@@ -228,6 +230,7 @@ export async function getConsolidated({
   };
   try {
     if (!bundle) {
+      // eslint-disable-next-line no-param-reassign
       bundle = await getConsolidatedPatientData({
         patient,
         requestId,
@@ -246,6 +249,7 @@ export async function getConsolidated({
     if (shouldCreateMedicalRecord) {
       // If we need to convert to medical record, we also have to update the resulting
       // FHIR bundle to represent that.
+      // eslint-disable-next-line no-param-reassign
       bundle = await handleBundleToMedicalRecord({
         bundle,
         patient,
@@ -319,30 +323,47 @@ async function uploadConsolidatedJsonAndReturnUrl({
   bundle: SearchSetBundle<Resource>;
   filters: Record<string, string | undefined>;
 }> {
-  {
-    const fileName = createMRSummaryFileName(patient.cxId, patient.id, "json");
-    await uploadJsonBundleToS3({
-      bundle,
-      fileName,
-      metadata: {
-        patientId: patient.id,
-        cxId: patient.cxId,
-        resources: filters.resources?.toString() ?? emptyMetaProp,
-        dateFrom: filters.dateFrom ?? emptyMetaProp,
-        dateTo: filters.dateTo ?? emptyMetaProp,
-        conversionType: filters.conversionType ?? emptyMetaProp,
-      },
-    });
+  const fileName = createMRSummaryFileName(patient.cxId, patient.id, "json");
+  const gzipFileName = createMRSummaryFileName(patient.cxId, patient.id, "json") + ".gz";
 
-    // TODO This should use the same function as the one used in handleBundleToMedicalRecord(),
-    // `S3Utils.getSignedUrl()` - prob with the same expiration time for simplicity?
-    const signedUrl = await getSignedURL({
+  const metadata = {
+    patientId: patient.id,
+    cxId: patient.cxId,
+    resources: filters.resources?.toString() ?? emptyMetaProp,
+    dateFrom: filters.dateFrom ?? emptyMetaProp,
+    dateTo: filters.dateTo ?? emptyMetaProp,
+    conversionType: filters.conversionType ?? emptyMetaProp,
+  };
+
+  // Upload regular JSON version
+  await uploadJsonBundleToS3({
+    bundle,
+    fileName,
+    metadata,
+  });
+
+  // Upload gzip version
+  const compressedBundle = await compressBundle(bundle);
+  await uploadGzipBundleToS3({
+    compressedData: compressedBundle,
+    fileName: gzipFileName,
+    metadata,
+  });
+
+  // TODO This should use the same function as the one used in handleBundleToMedicalRecord(),
+  // `S3Utils.getSignedUrl()` - prob with the same expiration time for simplicity?
+  const [signedUrl, gzipSignedUrl] = await Promise.all([
+    getSignedURL({
       bucketName: Config.getMedicalDocumentsBucketName(),
       fileName,
-    });
-    const newBundle = buildDocRefBundleWithAttachment(patient.id, signedUrl, "json");
-    return { bundle: newBundle, filters };
-  }
+    }),
+    getSignedURL({
+      bucketName: Config.getMedicalDocumentsBucketName(),
+      fileName: gzipFileName,
+    }),
+  ]);
+  const newBundle = buildDocRefBundleWithAttachment(patient.id, signedUrl, "json", gzipSignedUrl);
+  return { bundle: newBundle, filters };
 }
 
 function sendAnalytics(
@@ -362,4 +383,13 @@ function sendAnalytics(
       resourceCount,
     },
   });
+}
+
+/**
+ * Compresses a FHIR Bundle for S3 storage
+ */
+export async function compressBundle(bundle: Bundle): Promise<Buffer> {
+  const jsonString = JSON.stringify(bundle);
+  const jsonBuffer = Buffer.from(jsonString, "utf8");
+  return compressGzip(jsonBuffer);
 }

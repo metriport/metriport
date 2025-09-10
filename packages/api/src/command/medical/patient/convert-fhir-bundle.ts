@@ -105,21 +105,34 @@ export async function handleBundleToMedicalRecord({
 export function buildDocRefBundleWithAttachment(
   patientId: string,
   attachmentUrl: string,
-  mimeType: ConsolidationConversionType
+  mimeType: ConsolidationConversionType,
+  gzipUrl?: string
 ): SearchSetBundle<Resource> {
+  const content = [
+    {
+      attachment: {
+        contentType: `application/${mimeType}`,
+        url: attachmentUrl,
+      },
+    },
+  ];
+
+  // Add gzip attachment if provided
+  if (gzipUrl && mimeType === "json") {
+    content.push({
+      attachment: {
+        contentType: "application/gzip",
+        url: gzipUrl,
+      },
+    });
+  }
+
   const docRef: DocumentReference = {
     resourceType: "DocumentReference",
     subject: {
       reference: `Patient/${patientId}`,
     },
-    content: [
-      {
-        attachment: {
-          contentType: `application/${mimeType}`,
-          url: attachmentUrl,
-        },
-      },
-    ],
+    content,
   };
   return buildSearchSetBundle([buildBundleEntry(docRef)]);
 }
@@ -200,6 +213,27 @@ export async function uploadJsonBundleToS3({
       Key: fileName,
       Body: JSON.stringify(bundle),
       ContentType: "application/json",
+      Metadata: metadata,
+    })
+    .promise();
+}
+
+export async function uploadGzipBundleToS3({
+  compressedData,
+  fileName,
+  metadata,
+}: {
+  compressedData: Buffer;
+  fileName: string;
+  metadata: Record<string, string>;
+}) {
+  await s3
+    .putObject({
+      Bucket: Config.getMedicalDocumentsBucketName(),
+      Key: fileName,
+      Body: compressedData,
+      ContentType: "application/gzip",
+      ContentEncoding: "gzip",
       Metadata: metadata,
     })
     .promise();
