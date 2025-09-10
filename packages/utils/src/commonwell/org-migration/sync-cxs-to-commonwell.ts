@@ -52,6 +52,8 @@ dayjs.extend(duration);
 const cxIds: string[] = [];
 const MODE: APIMode = APIMode.integration;
 const IS_ACTIVE_DEFAULT = false;
+const orgIdsToExclude: string[] = [];
+const facilityIdsToExclude: string[] = [];
 
 const numberOfParallelGetCxData = 10;
 const numberOfParallelCreatedAtCw = 10;
@@ -148,20 +150,33 @@ async function getOrgsForCustomer(
   }
 
   if (org.businessType === OrganizationBizType.healthcareProvider) {
-    cwOrgs.push(
-      buildCwOrganization({
-        oid: org.oid,
-        data: {
-          name: org.name,
-          type: org.type,
-          location: org.location,
-        },
-        active: org.cwActive ?? false,
-        isInitiatorAndResponder: true,
-      })
-    );
+    if (!orgIdsToExclude.includes(org.id)) {
+      if (org.cwApproved) {
+        cwOrgs.push(
+          buildCwOrganization({
+            oid: org.oid,
+            data: {
+              name: org.name,
+              type: org.type,
+              location: org.location,
+            },
+            active: org.cwActive ?? false,
+            isInitiatorAndResponder: true,
+          })
+        );
+      }
+    } else {
+      log(`>>> Skipping org ${org.name}...`);
+    }
   } else {
     for (const facility of facilities) {
+      if (!facility.cwApproved) {
+        continue;
+      }
+      if (facilityIdsToExclude.includes(facility.id)) {
+        log(`>>> Skipping facility ${facility.name}...`);
+        continue;
+      }
       cwOrgs.push(
         buildCwFacility({
           facility,
