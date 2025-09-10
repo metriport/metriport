@@ -46,9 +46,8 @@ export async function trackRosterSizePerCustomer(
     }
   }
 
-  // Maybe throw error here?
   if (totalRosterSize !== rosterSize) {
-    log(
+    throw new Error(
       `WARNING: Total roster size sent partitioned by cxs (${totalRosterSize}) does not match the actual roster size sent to the HIE (${rosterSize})!!`
     );
   }
