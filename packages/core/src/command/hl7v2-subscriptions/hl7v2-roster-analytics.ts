@@ -6,13 +6,36 @@ import { Config } from "../../util/config";
 import _ from "lodash";
 import { getSecretValueOrFail } from "../../external/aws/secret-manager";
 
-export async function trackRosterSizePerCustomer(
-  patients: Patient[],
-  hieName: string,
-  orgsByCxId: Record<string, InternalOrganizationDTO>,
-  rosterSize: number,
-  log: typeof console.log
-): Promise<void> {
+export type TrackRosterSizePerCustomerParams = {
+  rosterSize: number;
+  hieName: string;
+  log: typeof console.log;
+  patients: Patient[];
+  orgsByCxId: Record<string, InternalOrganizationDTO>;
+};
+
+type notifyPostHogPerCustomerParams = {
+  cxId: string;
+  cxName: string;
+  rosterSize: number;
+  hieName: string;
+  posthogSecret: string;
+};
+
+type notifyCloudWatchPerCustomerParams = {
+  cxId: string;
+  cxName: string;
+  rosterSize: number;
+  hieName: string;
+};
+
+export async function trackRosterSizePerCustomer({
+  rosterSize,
+  hieName,
+  log,
+  patients,
+  orgsByCxId,
+}: TrackRosterSizePerCustomerParams): Promise<void> {
   log("Tracking roster size per customer per HIE");
 
   const posthogSecretArn = Config.getPostHogApiKey();
@@ -35,10 +58,25 @@ export async function trackRosterSizePerCustomer(
     totalRosterSize += customerPatients.length;
     const customerRosterSize = customerPatients.length;
 
+    const posthogParams: notifyPostHogPerCustomerParams = {
+      cxId,
+      cxName,
+      rosterSize: customerRosterSize,
+      hieName,
+      posthogSecret,
+    };
+
+    const cloudwatchParams: notifyCloudWatchPerCustomerParams = {
+      cxId,
+      cxName,
+      rosterSize: customerRosterSize,
+      hieName,
+    };
+
     try {
       await Promise.all([
-        notifyPostHogPerCustomer(cxId, cxName, customerRosterSize, hieName, posthogSecret),
-        notifyCloudWatchPerCustomer(cxId, cxName, customerRosterSize, hieName),
+        notifyPostHogPerCustomer(posthogParams),
+        notifyCloudWatchPerCustomer(cloudwatchParams),
       ]);
       log(`Sent analytics for customer ${cxId}: ${customerRosterSize} patients in ${hieName}`);
     } catch (error) {
@@ -53,13 +91,13 @@ export async function trackRosterSizePerCustomer(
   }
 }
 
-async function notifyPostHogPerCustomer(
-  cxId: string,
-  cxName: string,
-  rosterSize: number,
-  hieName: string,
-  posthogSecret: string
-): Promise<void> {
+async function notifyPostHogPerCustomer({
+  cxId,
+  cxName,
+  rosterSize,
+  hieName,
+  posthogSecret,
+}: notifyPostHogPerCustomerParams): Promise<void> {
   await analyticsAsync(
     {
       event: EventTypes.rosterUploadPerCustomer,
@@ -75,12 +113,12 @@ async function notifyPostHogPerCustomer(
   );
 }
 
-async function notifyCloudWatchPerCustomer(
-  cxId: string,
-  cxName: string,
-  rosterSize: number,
-  hieName: string
-): Promise<void> {
+async function notifyCloudWatchPerCustomer({
+  cxId,
+  cxName,
+  rosterSize,
+  hieName,
+}: notifyCloudWatchPerCustomerParams): Promise<void> {
   const additional = `Hie=${hieName},Customer=${cxId},CustomerName=${cxName}`;
 
   await reportMetric({

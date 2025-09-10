@@ -20,7 +20,10 @@ import { Config } from "../../util/config";
 import { CSV_FILE_EXTENSION, CSV_MIME_TYPE } from "../../util/mime";
 import { METRIPORT_ASSIGNING_AUTHORITY_IDENTIFIER } from "./constants";
 import { uploadToRemoteSftp } from "./hl7v2-roster-uploader";
-import { trackRosterSizePerCustomer } from "./hl7v2-roster-analytics";
+import {
+  trackRosterSizePerCustomer,
+  TrackRosterSizePerCustomerParams,
+} from "./hl7v2-roster-analytics";
 import {
   HieConfig,
   HiePatientRosterMapping,
@@ -126,7 +129,14 @@ export class Hl7v2RosterGenerator {
     log(`Saved in S3: ${this.bucketName}/${s3Key}`);
 
     const rosterSize = rosterRows.length;
-    await trackRosterSizePerCustomer(patients, hieName, orgsByCxId, rosterSize, log);
+    const trackRosterSizePerCustomerParams: TrackRosterSizePerCustomerParams = {
+      patients,
+      hieName,
+      orgsByCxId,
+      rosterSize,
+      log,
+    };
+    await trackRosterSizePerCustomer(trackRosterSizePerCustomerParams);
 
     return rosterCsv;
   }
