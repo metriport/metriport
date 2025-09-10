@@ -426,7 +426,6 @@ describe("dangerouslyLinkProceduresToDiagnosticReports", () => {
 
       expect(procedure.report).toBeDefined();
       expect(procedure.report).toHaveLength(2);
-      // Should link to both matching reports
       expect(procedure.report?.[0]?.reference).toBe(`DiagnosticReport/${diagnosticReport1.id}`);
       expect(procedure.report?.[1]?.reference).toBe(`DiagnosticReport/${diagnosticReport2.id}`);
     });
@@ -482,7 +481,6 @@ describe("dangerouslyLinkProceduresToDiagnosticReports", () => {
             },
           ],
         },
-        // No performedDateTime
         identifier: defaultIdentifier,
       });
 
@@ -529,7 +527,6 @@ describe("dangerouslyLinkProceduresToDiagnosticReports", () => {
             },
           ],
         },
-        // No effectiveDateTime
         identifier: defaultIdentifier,
       });
 
@@ -625,8 +622,6 @@ describe("dangerouslyLinkProceduresToDiagnosticReports", () => {
       });
 
       dangerouslyLinkProceduresToDiagnosticReports([procedure], [diagnosticReport]);
-
-      // Reports are not returned since they're not modified
     });
 
     it("should comprehensively link multiple procedures to multiple diagnostic reports", () => {
@@ -634,7 +629,6 @@ describe("dangerouslyLinkProceduresToDiagnosticReports", () => {
       const withinWindow = baseTime.add(1, "hour").toISOString();
       const outsideWindow = baseTime.add(3, "hours").toISOString();
 
-      // Create procedures
       const procedure1 = makeProcedure({
         code: {
           coding: [
@@ -689,7 +683,6 @@ describe("dangerouslyLinkProceduresToDiagnosticReports", () => {
         ],
       });
 
-      // Create diagnostic reports
       const report1 = makeDiagnosticReport({
         code: {
           coding: [
@@ -767,24 +760,16 @@ describe("dangerouslyLinkProceduresToDiagnosticReports", () => {
 
       dangerouslyLinkProceduresToDiagnosticReports(procedures, reports);
 
-      // Verify all procedures are still there
       expect(procedures).toHaveLength(3);
 
-      // Procedure1 should link to Report1 (same code, dates within window)
       expect(procedure1.report).toBeDefined();
       expect(procedure1.report).toHaveLength(1);
       expect(procedure1.report?.[0]?.reference).toBe(`DiagnosticReport/${report1.id}`);
 
-      // Procedure2 should link to Report2 (same code, dates within window)
       expect(procedure2.report).toBeDefined();
       expect(procedure2.report).toHaveLength(1);
       expect(procedure2.report?.[0]?.reference).toBe(`DiagnosticReport/${report2.id}`);
-
-      // Procedure3 should NOT link to Report3 (same code but dates outside window)
       expect(procedure3.report).toBeUndefined();
-
-      // Report4 should remain unlinked (different code)
-      // This is verified by the fact that no procedure links to it
     });
   });
 });
