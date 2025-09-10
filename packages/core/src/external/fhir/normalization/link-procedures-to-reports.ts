@@ -1,11 +1,4 @@
-import {
-  CodeableConcept,
-  Coding,
-  DiagnosticReport,
-  Procedure,
-  Reference,
-  Resource,
-} from "@medplum/fhirtypes";
+import { CodeableConcept, Coding, DiagnosticReport, Procedure, Resource } from "@medplum/fhirtypes";
 import { buildDayjs } from "@metriport/shared/common/date";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -15,11 +8,13 @@ import {
   isUselessDisplay,
 } from "../../../fhir-deduplication/shared";
 import { toArray } from "@metriport/shared/common/array";
-import { createReference, deepClone } from "@medplum/core";
+import { deepClone } from "@medplum/core";
+import { buildResourceReference } from "../shared";
 
 dayjs.extend(duration);
 
-export const SIZE_OF_WINDOW = dayjs.duration(2, "hours").asMilliseconds();
+// The Window is the maximum amount of time between a procedure and a diagnostic report that is considered a match. Default is 2 hours.
+export const SIZE_OF_WINDOW = dayjs.duration(2, "hours");
 
 // Regex patterns for filtering identifier and code values
 const URI_PATTERN = /^(?:urn:|oid:|https?:\/\/)/i; // Matches URIs, OIDs, and HTTP/HTTPS URLs
@@ -50,12 +45,10 @@ export function linkProceduresToDiagnosticReports(
         if (!doAnyDatesMatchThroughWindow(dates, drDates)) {
           continue;
         }
-        const ref: Reference<DiagnosticReport> = createReference(dr);
-        const existing: Reference<DiagnosticReport>[] = (proc.report ??
-          []) as Reference<DiagnosticReport>[];
-
-        if (!existing.some(r => r.reference === ref.reference)) {
-          proc.report = [...existing, ref];
+        const ref = buildResourceReference(dr);
+        const existing = proc.report ?? [];
+        if (!existing.some(r => r.reference === ref)) {
+          proc.report = [...existing, { reference: ref }];
         }
       }
     }
@@ -106,17 +99,14 @@ function getDateFromDiagnosticReport(dr: DiagnosticReport): string[] {
 
 export function doAnyDatesMatchThroughWindow(a: string[] = [], b: string[] = []): boolean {
   if (a.length === 0 || b.length === 0) return false;
-
   const aDates = a.map(dateStr => buildDayjs(dateStr)).filter(dayjs => dayjs.isValid());
-
   const bDates = b.map(dateStr => buildDayjs(dateStr)).filter(dayjs => dayjs.isValid());
-
   if (aDates.length === 0 || bDates.length === 0) return false;
 
   for (const dateA of aDates) {
     for (const dateB of bDates) {
       const diffInMs = Math.abs(dateA.diff(dateB, "milliseconds"));
-      if (diffInMs <= SIZE_OF_WINDOW) return true;
+      if (diffInMs <= SIZE_OF_WINDOW.asMilliseconds()) return true;
     }
   }
 
@@ -124,7 +114,7 @@ export function doAnyDatesMatchThroughWindow(a: string[] = [], b: string[] = [])
 }
 
 function getIdentifierValueTokens(dr: Resource): string[] {
-  const out: string[] = [];
+  const ids: string[] = [];
   if (!("identifier" in dr)) {
     return [];
   }
@@ -138,9 +128,9 @@ function getIdentifierValueTokens(dr: Resource): string[] {
     if (isUselessDisplay(value)) continue;
     if (URI_PATTERN.test(value)) continue;
     const noTrailingCaret = removeTrailingCaret(value);
-    out.push(noTrailingCaret);
+    ids.push(noTrailingCaret);
   }
-  return dedupe(out);
+  return dedupe(ids);
 }
 
 function getCodeTokensFromCode(code?: CodeableConcept): string[] {
