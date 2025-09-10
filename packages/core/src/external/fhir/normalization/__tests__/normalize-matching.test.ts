@@ -82,12 +82,6 @@ describe("linkProceduresToDiagnosticReports", () => {
           ],
         },
         performedDateTime: DATE_TO_MATCH,
-        identifier: [
-          {
-            value: "PROC123",
-            system: "http://example.com/ids",
-          },
-        ],
       });
 
       const diagnosticReport = makeDiagnosticReport({
@@ -100,7 +94,6 @@ describe("linkProceduresToDiagnosticReports", () => {
           ],
         },
         effectiveDateTime: matchingDate,
-        identifier: defaultIdentifier,
       });
 
       const result = linkProceduresToDiagnosticReports([procedure], [diagnosticReport]);
@@ -125,12 +118,6 @@ describe("linkProceduresToDiagnosticReports", () => {
           ],
         },
         performedDateTime: DATE_TO_MATCH,
-        identifier: [
-          {
-            value: "PROC123",
-            system: "http://example.com/ids",
-          },
-        ],
       });
 
       const diagnosticReport = makeDiagnosticReport({
@@ -143,7 +130,6 @@ describe("linkProceduresToDiagnosticReports", () => {
           ],
         },
         effectiveDateTime: matchingDate,
-        identifier: defaultIdentifier,
       });
 
       const result = linkProceduresToDiagnosticReports([procedure], [diagnosticReport]);
@@ -167,7 +153,6 @@ describe("linkProceduresToDiagnosticReports", () => {
           ],
         },
         performedDateTime: DATE_TO_MATCH,
-        identifier: defaultIdentifier,
       });
 
       const diagnosticReport = makeDiagnosticReport({
@@ -180,7 +165,6 @@ describe("linkProceduresToDiagnosticReports", () => {
           ],
         },
         effectiveDateTime: notMatchingDate,
-        identifier: defaultIdentifier,
       });
 
       const result = linkProceduresToDiagnosticReports([procedure], [diagnosticReport]);
@@ -218,35 +202,6 @@ describe("linkProceduresToDiagnosticReports", () => {
 
       expect(result[0]?.report).toBeDefined();
       expect(result[0]?.report?.[0]?.reference).toBe(`DiagnosticReport/${diagnosticReport.id}`);
-    });
-
-    it("should filter out bad identifier values", () => {
-      const matchingDate = buildDayjs(baseMs + THRESHOLD.asMilliseconds() / 2).toISOString();
-
-      const procedure = makeProcedure({
-        identifier: [
-          {
-            value: "UNK",
-            system: "http://example.com/ids",
-          },
-        ],
-        performedDateTime: DATE_TO_MATCH,
-      });
-
-      const diagnosticReport = makeDiagnosticReport({
-        identifier: [
-          {
-            value: "UNK",
-            system: "http://example.com/ids",
-          },
-        ],
-        effectiveDateTime: matchingDate,
-      });
-
-      const result = linkProceduresToDiagnosticReports([procedure], [diagnosticReport]);
-
-      expect(result).toBeDefined();
-      expect(result[0]?.report).toBeUndefined();
     });
 
     it("should filter out all known useless display values", () => {
@@ -325,7 +280,6 @@ describe("linkProceduresToDiagnosticReports", () => {
           ],
         },
         performedDateTime: DATE_TO_MATCH,
-        identifier: defaultIdentifier,
       });
 
       const diagnosticReport1 = makeDiagnosticReport({
@@ -338,7 +292,6 @@ describe("linkProceduresToDiagnosticReports", () => {
           ],
         },
         effectiveDateTime: matchingDate,
-        identifier: defaultIdentifier,
       });
 
       const diagnosticReport2 = makeDiagnosticReport({
@@ -351,7 +304,6 @@ describe("linkProceduresToDiagnosticReports", () => {
           ],
         },
         effectiveDateTime: matchingDate,
-        identifier: defaultIdentifier,
       });
 
       const result = linkProceduresToDiagnosticReports(
@@ -376,12 +328,6 @@ describe("linkProceduresToDiagnosticReports", () => {
           ],
         },
         performedDateTime: DATE_TO_MATCH,
-        identifier: [
-          {
-            value: "PROC123",
-            system: "http://example.com/ids",
-          },
-        ],
       });
 
       const diagnosticReport = makeDiagnosticReport({
@@ -394,12 +340,6 @@ describe("linkProceduresToDiagnosticReports", () => {
           ],
         },
         effectiveDateTime: DATE_TO_MATCH,
-        identifier: [
-          {
-            value: "DR123",
-            system: "http://example.com/ids",
-          },
-        ],
       });
 
       const result = linkProceduresToDiagnosticReports([procedure], [diagnosticReport]);
@@ -421,13 +361,8 @@ describe("linkProceduresToDiagnosticReports", () => {
             },
           ],
         },
+        identifier: defaultIdentifier,
         performedDateTime: DATE_TO_MATCH,
-        identifier: [
-          {
-            value: "PROC001",
-            system: "http://example.com/ids",
-          },
-        ],
       });
 
       const procedure2 = makeProcedure({
@@ -440,12 +375,6 @@ describe("linkProceduresToDiagnosticReports", () => {
           ],
         },
         performedDateTime: withinWindow,
-        identifier: [
-          {
-            value: "PROC002",
-            system: "http://example.com/ids",
-          },
-        ],
       });
 
       const procedure3 = makeProcedure({
@@ -458,15 +387,9 @@ describe("linkProceduresToDiagnosticReports", () => {
           ],
         },
         performedDateTime: DATE_TO_MATCH,
-        identifier: [
-          {
-            value: "PROC003",
-            system: "http://example.com/ids",
-          },
-        ],
       });
 
-      const report1 = makeDiagnosticReport({
+      const reportMatchingProcedure1 = makeDiagnosticReport({
         code: {
           coding: [
             {
@@ -476,15 +399,9 @@ describe("linkProceduresToDiagnosticReports", () => {
           ],
         },
         effectiveDateTime: withinWindow,
-        identifier: [
-          {
-            value: "DR001",
-            system: "http://example.com/ids",
-          },
-        ],
       });
 
-      const report2 = makeDiagnosticReport({
+      const reportMatchingProcedure2 = makeDiagnosticReport({
         code: {
           coding: [
             {
@@ -494,15 +411,9 @@ describe("linkProceduresToDiagnosticReports", () => {
           ],
         },
         effectiveDateTime: DATE_TO_MATCH,
-        identifier: [
-          {
-            value: "DR002",
-            system: "http://example.com/ids",
-          },
-        ],
       });
 
-      const report3 = makeDiagnosticReport({
+      const reportNotMatchingAnyProcedureDate = makeDiagnosticReport({
         code: {
           coding: [
             {
@@ -512,15 +423,9 @@ describe("linkProceduresToDiagnosticReports", () => {
           ],
         },
         effectiveDateTime: outsideWindow,
-        identifier: [
-          {
-            value: "DR003_DIFFERENT",
-            system: "http://example.com/ids",
-          },
-        ],
       });
 
-      const report4 = makeDiagnosticReport({
+      const reportNotMatchingAnyProcedureCode = makeDiagnosticReport({
         code: {
           coding: [
             {
@@ -530,28 +435,41 @@ describe("linkProceduresToDiagnosticReports", () => {
           ],
         },
         effectiveDateTime: withinWindow,
-        identifier: [
-          {
-            value: "DR004",
-            system: "http://example.com/ids",
-          },
-        ],
+      });
+
+      const reportMatchingProcedure1ThroughIdentifier = makeDiagnosticReport({
+        effectiveDateTime: withinWindow,
+        identifier: defaultIdentifier,
       });
 
       const procedures = [procedure1, procedure2, procedure3];
-      const reports = [report1, report2, report3, report4];
+      const reports = [
+        reportMatchingProcedure1,
+        reportMatchingProcedure2,
+        reportNotMatchingAnyProcedureDate,
+        reportNotMatchingAnyProcedureCode,
+        reportMatchingProcedure1ThroughIdentifier,
+      ];
 
       const result = linkProceduresToDiagnosticReports(procedures, reports);
 
       expect(result).toHaveLength(3);
 
       expect(result[0]?.report).toBeDefined();
-      expect(result[0]?.report).toHaveLength(1);
-      expect(result[0]?.report?.[0]?.reference).toBe(`DiagnosticReport/${report1.id}`);
+      expect(result[0]?.report).toHaveLength(2);
+
+      const reportReferences = result[0]?.report?.map(r => r.reference) ?? [];
+      expect(reportReferences).toContain(`DiagnosticReport/${reportMatchingProcedure1.id}`);
+      expect(reportReferences).toContain(
+        `DiagnosticReport/${reportMatchingProcedure1ThroughIdentifier.id}`
+      );
 
       expect(result[1]?.report).toBeDefined();
       expect(result[1]?.report).toHaveLength(1);
-      expect(result[1]?.report?.[0]?.reference).toBe(`DiagnosticReport/${report2.id}`);
+      expect(result[1]?.report?.[0]?.reference).toBe(
+        `DiagnosticReport/${reportMatchingProcedure2.id}`
+      );
+
       expect(result[2]?.report).toBeUndefined();
     });
   });
