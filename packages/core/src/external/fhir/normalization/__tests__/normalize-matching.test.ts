@@ -1,8 +1,8 @@
 import { buildDayjs } from "@metriport/shared/common/date";
 import {
   linkProceduresToDiagnosticReports,
-  doAnyDatesMatchThroughWindow,
-  SIZE_OF_WINDOW,
+  doDatesMatch,
+  THRESHOLD,
 } from "../link-procedures-to-reports";
 import { makeProcedure } from "../../../../fhir-to-cda/cda-templates/components/__tests__/make-procedure";
 import { makeDiagnosticReport } from "../../../../fhir-to-cda/cda-templates/components/__tests__/make-diagnostic-report";
@@ -32,17 +32,15 @@ describe("linkProceduresToDiagnosticReports", () => {
 
   describe("matchDates", () => {
     it("should match based off dates", () => {
-      const matchingDate = buildDayjs(baseMs + SIZE_OF_WINDOW.asMilliseconds() / 2).toISOString();
-      const notMatchingDate = buildDayjs(
-        baseMs + SIZE_OF_WINDOW.asMilliseconds() * 2
-      ).toISOString();
+      const matchingDate = buildDayjs(baseMs + THRESHOLD.asMilliseconds() / 2).toISOString();
+      const notMatchingDate = buildDayjs(baseMs + THRESHOLD.asMilliseconds() * 2).toISOString();
       const barelyNotMatchingDate = buildDayjs(
-        baseMs + (SIZE_OF_WINDOW.asMilliseconds() + 1)
+        baseMs + (THRESHOLD.asMilliseconds() + 1)
       ).toISOString();
 
-      const shouldMatch = doAnyDatesMatchThroughWindow([DATE_TO_MATCH], [matchingDate]);
-      const shouldNotMatch = doAnyDatesMatchThroughWindow([DATE_TO_MATCH], [notMatchingDate]);
-      const barelyNotMatch = doAnyDatesMatchThroughWindow([DATE_TO_MATCH], [barelyNotMatchingDate]);
+      const shouldMatch = doDatesMatch([DATE_TO_MATCH], [matchingDate]);
+      const shouldNotMatch = doDatesMatch([DATE_TO_MATCH], [notMatchingDate]);
+      const barelyNotMatch = doDatesMatch([DATE_TO_MATCH], [barelyNotMatchingDate]);
 
       expect(shouldMatch).toBe(true);
       expect(shouldNotMatch).toBe(false);
@@ -50,34 +48,28 @@ describe("linkProceduresToDiagnosticReports", () => {
     });
 
     it("should return false when either array is empty", () => {
-      expect(doAnyDatesMatchThroughWindow([], [DATE_TO_MATCH])).toBe(false);
-      expect(doAnyDatesMatchThroughWindow([DATE_TO_MATCH], [])).toBe(false);
-      expect(doAnyDatesMatchThroughWindow([], [])).toBe(false);
+      expect(doDatesMatch([], [DATE_TO_MATCH])).toBe(false);
+      expect(doDatesMatch([DATE_TO_MATCH], [])).toBe(false);
+      expect(doDatesMatch([], [])).toBe(false);
     });
 
     it("should return false when no valid dates are found", () => {
-      expect(doAnyDatesMatchThroughWindow(["invalid-date"], ["another-invalid-date"])).toBe(false);
+      expect(doDatesMatch(["invalid-date"], ["another-invalid-date"])).toBe(false);
     });
 
     it("should handle multiple dates in arrays", () => {
-      const matchingDate1 = buildDayjs(baseMs + SIZE_OF_WINDOW.asMilliseconds() / 2).toISOString();
-      const matchingDate2 = buildDayjs(baseMs + SIZE_OF_WINDOW.asMilliseconds() / 3).toISOString();
-      const notMatchingDate = buildDayjs(
-        baseMs + SIZE_OF_WINDOW.asMilliseconds() * 2
-      ).toISOString();
+      const matchingDate1 = buildDayjs(baseMs + THRESHOLD.asMilliseconds() / 2).toISOString();
+      const matchingDate2 = buildDayjs(baseMs + THRESHOLD.asMilliseconds() / 3).toISOString();
+      const notMatchingDate = buildDayjs(baseMs + THRESHOLD.asMilliseconds() * 2).toISOString();
 
-      expect(doAnyDatesMatchThroughWindow([DATE_TO_MATCH], [matchingDate1, notMatchingDate])).toBe(
-        true
-      );
-      expect(doAnyDatesMatchThroughWindow([DATE_TO_MATCH], [notMatchingDate, matchingDate2])).toBe(
-        true
-      );
+      expect(doDatesMatch([DATE_TO_MATCH], [matchingDate1, notMatchingDate])).toBe(true);
+      expect(doDatesMatch([DATE_TO_MATCH], [notMatchingDate, matchingDate2])).toBe(true);
     });
   });
 
   describe("linkProceduresToDiagnosticReports", () => {
     it("should link procedure to diagnostic report when codes match and dates are within window", () => {
-      const matchingDate = buildDayjs(baseMs + SIZE_OF_WINDOW.asMilliseconds() / 2).toISOString();
+      const matchingDate = buildDayjs(baseMs + THRESHOLD.asMilliseconds() / 2).toISOString();
       const sharedCode = "55555";
 
       const procedure = makeProcedure({
@@ -108,12 +100,7 @@ describe("linkProceduresToDiagnosticReports", () => {
           ],
         },
         effectiveDateTime: matchingDate,
-        identifier: [
-          {
-            value: "DR123",
-            system: "http://example.com/ids",
-          },
-        ],
+        identifier: defaultIdentifier,
       });
 
       const result = linkProceduresToDiagnosticReports([procedure], [diagnosticReport]);
@@ -126,7 +113,7 @@ describe("linkProceduresToDiagnosticReports", () => {
     });
 
     it("should not link when codes don't match", () => {
-      const matchingDate = buildDayjs(baseMs + SIZE_OF_WINDOW.asMilliseconds() / 2).toISOString();
+      const matchingDate = buildDayjs(baseMs + THRESHOLD.asMilliseconds() / 2).toISOString();
 
       const procedure = makeProcedure({
         code: {
@@ -156,12 +143,7 @@ describe("linkProceduresToDiagnosticReports", () => {
           ],
         },
         effectiveDateTime: matchingDate,
-        identifier: [
-          {
-            value: "DR123",
-            system: "http://example.com/ids",
-          },
-        ],
+        identifier: defaultIdentifier,
       });
 
       const result = linkProceduresToDiagnosticReports([procedure], [diagnosticReport]);
@@ -172,9 +154,7 @@ describe("linkProceduresToDiagnosticReports", () => {
     });
 
     it("should not link when dates are outside the window", () => {
-      const notMatchingDate = buildDayjs(
-        baseMs + SIZE_OF_WINDOW.asMilliseconds() * 2
-      ).toISOString();
+      const notMatchingDate = buildDayjs(baseMs + THRESHOLD.asMilliseconds() * 2).toISOString();
       const sharedCode = "55555";
 
       const procedure = makeProcedure({
@@ -211,7 +191,7 @@ describe("linkProceduresToDiagnosticReports", () => {
     });
 
     it("should link based on identifier values", () => {
-      const matchingDate = buildDayjs(baseMs + SIZE_OF_WINDOW.asMilliseconds() / 2).toISOString();
+      const matchingDate = buildDayjs(baseMs + THRESHOLD.asMilliseconds() / 2).toISOString();
       const sharedIdentifier = "TEST123";
 
       const procedure = makeProcedure({
@@ -241,7 +221,7 @@ describe("linkProceduresToDiagnosticReports", () => {
     });
 
     it("should filter out bad identifier values", () => {
-      const matchingDate = buildDayjs(baseMs + SIZE_OF_WINDOW.asMilliseconds() / 2).toISOString();
+      const matchingDate = buildDayjs(baseMs + THRESHOLD.asMilliseconds() / 2).toISOString();
 
       const procedure = makeProcedure({
         identifier: [
@@ -270,7 +250,7 @@ describe("linkProceduresToDiagnosticReports", () => {
     });
 
     it("should filter out all known useless display values", () => {
-      const matchingDate = buildDayjs(baseMs + SIZE_OF_WINDOW.asMilliseconds() / 2).toISOString();
+      const matchingDate = buildDayjs(baseMs + THRESHOLD.asMilliseconds() / 2).toISOString();
       const uselessValues = ["unknown", "unk", "no known", "no data available"];
 
       for (const uselessValue of uselessValues) {
@@ -301,36 +281,8 @@ describe("linkProceduresToDiagnosticReports", () => {
       }
     });
 
-    it("should filter out identifier values with URIs", () => {
-      const matchingDate = buildDayjs(baseMs + SIZE_OF_WINDOW.asMilliseconds() / 2).toISOString();
-
-      const procedure = makeProcedure({
-        identifier: [
-          {
-            value: "urn:uuid:12345",
-            system: "http://example.com/ids",
-          },
-        ],
-        performedDateTime: DATE_TO_MATCH,
-      });
-
-      const diagnosticReport = makeDiagnosticReport({
-        identifier: [
-          {
-            value: "urn:uuid:12345",
-            system: "http://example.com/ids",
-          },
-        ],
-        effectiveDateTime: matchingDate,
-      });
-
-      const result = linkProceduresToDiagnosticReports([procedure], [diagnosticReport]);
-
-      expect(result[0]?.report).toBeUndefined();
-    });
-
     it("should remove trailing carets from identifier values", () => {
-      const matchingDate = buildDayjs(baseMs + SIZE_OF_WINDOW.asMilliseconds() / 2).toISOString();
+      const matchingDate = buildDayjs(baseMs + THRESHOLD.asMilliseconds() / 2).toISOString();
       const sharedIdentifier = "TEST123";
 
       const procedure = makeProcedure({
@@ -360,7 +312,7 @@ describe("linkProceduresToDiagnosticReports", () => {
     });
 
     it("should handle multiple matching diagnostic reports and link to all of them", () => {
-      const matchingDate = buildDayjs(baseMs + SIZE_OF_WINDOW.asMilliseconds() / 2).toISOString();
+      const matchingDate = buildDayjs(baseMs + THRESHOLD.asMilliseconds() / 2).toISOString();
       const sharedCode = "55555";
 
       const procedure = makeProcedure({

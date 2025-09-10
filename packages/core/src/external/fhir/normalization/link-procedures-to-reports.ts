@@ -13,11 +13,8 @@ import { buildResourceReference } from "../shared";
 
 dayjs.extend(duration);
 
-// The Window is the maximum amount of time between a procedure and a diagnostic report that is considered a match. Default is 2 hours.
-export const SIZE_OF_WINDOW = dayjs.duration(2, "hours");
-
-// Regex patterns for filtering identifier and code values
-const URI_PATTERN = /^(?:urn:|oid:|https?:\/\/)/i; // Matches URIs, OIDs, and HTTP/HTTPS URLs
+// The Threshold is the maximum amount of time between a procedure and a diagnostic report that is considered a match. Default is 2 hours.
+export const THRESHOLD = dayjs.duration(2, "hours");
 
 export function linkProceduresToDiagnosticReports(
   procedures: Procedure[],
@@ -42,7 +39,7 @@ export function linkProceduresToDiagnosticReports(
       if (!drs) continue;
       for (const dr of drs) {
         const drDates = getDateFromDiagnosticReport(dr);
-        if (!doAnyDatesMatchThroughWindow(dates, drDates)) {
+        if (!doDatesMatch(dates, drDates)) {
           continue;
         }
         const ref = buildResourceReference(dr);
@@ -61,10 +58,10 @@ function getKeysForDiagnosticReport(dr: DiagnosticReport): string[] {
   const idVals = getIdentifierValueTokens(dr);
   const codes = getCodeTokensFromCode(dr.code);
 
-  const out: string[] = [];
-  for (const v of idVals) out.push(`${v}`);
-  for (const c of codes) out.push(`${c}`);
-  return dedupe(out);
+  const keys: Set<string> = new Set();
+  for (const v of idVals) keys.add(`${v}`);
+  for (const c of codes) keys.add(`${c}`);
+  return Array.from(keys);
 }
 
 function getKeysAndDatesForProcedure(p: Procedure): { dates: string[]; procedureKeys: string[] } {
@@ -73,31 +70,29 @@ function getKeysAndDatesForProcedure(p: Procedure): { dates: string[]; procedure
   const idVals = getIdentifierValueTokens(p);
   const codes = getCodeTokensFromCode(p.code);
 
-  const out: string[] = [];
+  const keys: Set<string> = new Set();
 
-  for (const v of idVals) out.push(`${v}`);
-  for (const c of codes) out.push(`${c}`);
-  const dedupedOut = dedupe(out);
-  const dedupedDates = dedupe(dates);
-  return { dates: dedupedDates, procedureKeys: dedupedOut };
+  for (const v of idVals) keys.add(`${v}`);
+  for (const c of codes) keys.add(`${c}`);
+  return { dates: dates, procedureKeys: Array.from(keys) };
 }
 
 function getDateFromDiagnosticReport(dr: DiagnosticReport): string[] {
-  const dates: string[] = [];
+  const dates: Set<string> = new Set();
 
   const dateFromResource = getDateFromResource(dr, "datetime");
   if (dateFromResource) {
-    dates.push(dateFromResource);
+    dates.add(dateFromResource);
   }
 
   if (dr.issued) {
-    dates.push(dr.issued);
+    dates.add(dr.issued);
   }
 
-  return [...new Set(dates)];
+  return Array.from(dates);
 }
 
-export function doAnyDatesMatchThroughWindow(a: string[] = [], b: string[] = []): boolean {
+export function doDatesMatch(a: string[] = [], b: string[] = []): boolean {
   if (a.length === 0 || b.length === 0) return false;
   const aDates = a.map(dateStr => buildDayjs(dateStr)).filter(dayjs => dayjs.isValid());
   const bDates = b.map(dateStr => buildDayjs(dateStr)).filter(dayjs => dayjs.isValid());
@@ -106,7 +101,7 @@ export function doAnyDatesMatchThroughWindow(a: string[] = [], b: string[] = [])
   for (const dateA of aDates) {
     for (const dateB of bDates) {
       const diffInMs = Math.abs(dateA.diff(dateB, "milliseconds"));
-      if (diffInMs <= SIZE_OF_WINDOW.asMilliseconds()) return true;
+      if (diffInMs <= THRESHOLD.asMilliseconds()) return true;
     }
   }
 
@@ -114,7 +109,7 @@ export function doAnyDatesMatchThroughWindow(a: string[] = [], b: string[] = [])
 }
 
 function getIdentifierValueTokens(dr: Resource): string[] {
-  const ids: string[] = [];
+  const ids: Set<string> = new Set();
   if (!("identifier" in dr)) {
     return [];
   }
@@ -126,28 +121,22 @@ function getIdentifierValueTokens(dr: Resource): string[] {
     if (!value) continue;
 
     if (isUselessDisplay(value)) continue;
-    if (URI_PATTERN.test(value)) continue;
     const noTrailingCaret = removeTrailingCaret(value);
-    ids.push(noTrailingCaret);
+    ids.add(noTrailingCaret);
   }
-  return dedupe(ids);
+  return Array.from(ids);
 }
 
 function getCodeTokensFromCode(code?: CodeableConcept): string[] {
   const codings = (code?.coding ?? []).filter((c): c is Coding => !!c?.code);
 
-  const out: string[] = [];
+  const codes: Set<string> = new Set();
   for (const c of codings) {
     const token = c.code?.trim();
     if (!token || isUselessDisplay(token)) continue;
-    if (URI_PATTERN.test(token)) continue;
-    out.push(token.toUpperCase());
+    codes.add(token.toUpperCase());
   }
-  return dedupe(out);
-}
-
-function dedupe<T>(arr: T[]): T[] {
-  return [...new Set(arr)];
+  return Array.from(codes);
 }
 
 /**
