@@ -19,6 +19,7 @@ export const docBulkDownloadWebhookTypeSchema = z.literal(`medical.document-bulk
 export type DocumentBulkDownloadWebhookType = z.infer<typeof docBulkDownloadWebhookTypeSchema>;
 
 const hl7NotificationWebhookTypeSchema = z.enum([
+  "patient.registered",
   "patient.admit",
   "patient.discharge",
   "patient.transfer",
