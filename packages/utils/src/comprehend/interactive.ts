@@ -30,12 +30,16 @@ async function runInteractive({ port = 3000 }: { port?: number } = {}) {
 
   app.use(bodyParser.json());
   app.post("/analyze", async (req, res) => {
-    const { text } = req.body;
-    console.log(req.body, text);
+    const { text, patientId, dateWritten } = req.body;
+    console.log(req.body);
     const client = new ComprehendClient();
     const comprehend = await client.inferRxNorm(text);
     const fhir = getFhirResourcesFromRxNormEntities(comprehend.Entities ?? [], {
-      confidenceThreshold: 0.5,
+      confidenceThreshold: 0.1,
+      context: {
+        patientId,
+        dateWritten,
+      },
     });
     res.json({ comprehend, fhir });
   });
