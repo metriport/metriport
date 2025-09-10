@@ -22,7 +22,7 @@ export class VpnStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: VpnStackProps) {
     super(scope, id, props);
 
-    const { name: hieName, internalCidrBlock, gatewayPublicIp } = props.hieConfig;
+    const { name: hieName, internalCidrBlocks, gatewayPublicIp } = props.hieConfig;
 
     const networkAcl = ec2.NetworkAcl.fromNetworkAclId(
       this,
@@ -45,36 +45,47 @@ export class VpnStack extends cdk.Stack {
     });
 
     /**
-     * Add new rules to the NACL for the static IPs we're using for this VPN.
+     * Add new rules to the NACL for each of the static IPs we're using for this VPN.
      */
-    this.addIngressRules(networkAcl, internalCidrBlock, [
-      {
-        ruleNumber: 120 + props.index * 10,
-        traffic: ec2.AclTraffic.tcpPort(MLLP_DEFAULT_PORT),
-        ruleAction: ec2.Action.ALLOW,
-      },
-      // Used to create a point on the NACL to deny all traffic, below which we can
-      // add other allow rules for other services the subnet members need to access
-      {
-        ruleNumber: 1400 + props.index * 10,
-        traffic: ec2.AclTraffic.allTraffic(),
-        ruleAction: ec2.Action.DENY,
-      },
-    ]);
+    internalCidrBlocks.forEach((cidr, internalCidrBlockIndex) => {
+      /**
+       * Each hie's internalCidrBlocks are given some space in the NACL to make it easier
+       * to add/remove CIDR blocks in the future. The internalCidrBlockIndex is an offset used
+       * in cases where we need to permit traffic from multiple cidr blocks for the same HIE.
+       **/
+      const offset = props.index * 10 + internalCidrBlockIndex * 3;
 
-    this.addEgressRules(networkAcl, internalCidrBlock, [
-      // Outbound TCP handshake traffic
-      {
-        ruleNumber: 120 + props.index * 10,
-        traffic: ec2.AclTraffic.tcpPortRange(1024, 65535),
-        ruleAction: ec2.Action.ALLOW,
-      },
-      {
-        ruleNumber: 1400 + props.index * 10,
-        traffic: ec2.AclTraffic.allTraffic(),
-        ruleAction: ec2.Action.DENY,
-      },
-    ]);
+      this.addIngressRules(networkAcl, cidr, [
+        {
+          ruleNumber: 120 + offset,
+          traffic: ec2.AclTraffic.tcpPort(MLLP_DEFAULT_PORT),
+          ruleAction: ec2.Action.ALLOW,
+        },
+        // Used to create a point on the NACL to deny all traffic, below which we can
+        // add other allow rules for other services the subnet members need to access
+        {
+          ruleNumber: 1400 + offset,
+          traffic: ec2.AclTraffic.allTraffic(),
+          ruleAction: ec2.Action.DENY,
+        },
+      ]);
+
+      this.addEgressRules(networkAcl, cidr, [
+        // Outbound TCP handshake traffic
+        {
+          ruleNumber: 120 + offset,
+          traffic: ec2.AclTraffic.tcpPortRange(1024, 65535),
+          ruleAction: ec2.Action.ALLOW,
+        },
+        // Used to create a point on the NACL to deny all traffic, below which we can
+        // add other allow rules for other services the subnet members need to access
+        {
+          ruleNumber: 1400 + offset,
+          traffic: ec2.AclTraffic.allTraffic(),
+          ruleAction: ec2.Action.DENY,
+        },
+      ]);
+    });
 
     const presharedKey1 = secret.Secret.fromSecretNameV2(
       this,
@@ -114,9 +125,15 @@ export class VpnStack extends cdk.Stack {
       ],
     });
 
-    new ec2.CfnVPNConnectionRoute(this, `VpnConnectionRoute-${hieName}`, {
-      destinationCidrBlock: internalCidrBlock,
-      vpnConnectionId: vpnConnection.ref,
+    internalCidrBlocks.forEach((cidr, internalCidrBlockIndex) => {
+      new ec2.CfnVPNConnectionRoute(
+        this,
+        `VpnConnectionRoute-${hieName}-${internalCidrBlockIndex}`,
+        {
+          destinationCidrBlock: cidr,
+          vpnConnectionId: vpnConnection.ref,
+        }
+      );
     });
 
     new cdk.CfnOutput(this, `VpnConnectionId-${hieName}`, {
