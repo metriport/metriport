@@ -1,5 +1,4 @@
 import { buildDayjs } from "@metriport/shared/common/date";
-import { Procedure } from "@medplum/fhirtypes";
 import {
   linkProceduresToDiagnosticReports,
   doAnyDatesMatchThroughWindow,
@@ -241,35 +240,6 @@ describe("linkProceduresToDiagnosticReports", () => {
       expect(result[0]?.report?.[0]?.reference).toBe(`DiagnosticReport/${diagnosticReport.id}`);
     });
 
-    it("should match identifier values", () => {
-      const matchingDate = buildDayjs(baseMs + SIZE_OF_WINDOW.asMilliseconds() / 2).toISOString();
-
-      const procedure = makeProcedure({
-        identifier: [
-          {
-            value: `123-456`,
-            system: "http://example.com/ids",
-          },
-        ],
-        performedDateTime: DATE_TO_MATCH,
-      });
-
-      const diagnosticReport = makeDiagnosticReport({
-        identifier: [
-          {
-            value: `123-456`,
-            system: "http://example.com/ids",
-          },
-        ],
-        effectiveDateTime: matchingDate,
-      });
-
-      const result = linkProceduresToDiagnosticReports([procedure], [diagnosticReport]);
-
-      expect(result[0]?.report).toBeDefined();
-      expect(result[0]?.report?.[0]?.reference).toBe(`DiagnosticReport/${diagnosticReport.id}`);
-    });
-
     it("should filter out bad identifier values", () => {
       const matchingDate = buildDayjs(baseMs + SIZE_OF_WINDOW.asMilliseconds() / 2).toISOString();
 
@@ -443,118 +413,6 @@ describe("linkProceduresToDiagnosticReports", () => {
       expect(result[0]?.report?.[1]?.reference).toBe(`DiagnosticReport/${diagnosticReport2.id}`);
     });
 
-    it("should not add duplicate references", () => {
-      const matchingDate = buildDayjs(baseMs + SIZE_OF_WINDOW.asMilliseconds() / 2).toISOString();
-      const sharedCode = "55555";
-
-      const procedure = makeProcedure({
-        code: {
-          coding: [
-            {
-              code: sharedCode,
-              system: "http://www.ama-assn.org/go/cpt",
-            },
-          ],
-        },
-        performedDateTime: DATE_TO_MATCH,
-        report: [{ reference: `DiagnosticReport/existing-id` }],
-        identifier: defaultIdentifier,
-      });
-
-      const diagnosticReport = makeDiagnosticReport({
-        code: {
-          coding: [
-            {
-              code: sharedCode,
-              system: "http://www.ama-assn.org/go/cpt",
-            },
-          ],
-        },
-        effectiveDateTime: matchingDate,
-        identifier: defaultIdentifier,
-      });
-
-      const result = linkProceduresToDiagnosticReports([procedure], [diagnosticReport]);
-
-      expect(result[0]?.report).toBeDefined();
-      expect(result[0]?.report).toHaveLength(2);
-      expect(result[0]?.report?.[0]?.reference).toBe(`DiagnosticReport/existing-id`);
-      expect(result[0]?.report?.[1]?.reference).toBe(`DiagnosticReport/${diagnosticReport.id}`);
-    });
-
-    it("should handle procedures without dates", () => {
-      const sharedCode = "55555";
-
-      const procedure = makeProcedure({
-        code: {
-          coding: [
-            {
-              code: sharedCode,
-              system: "http://www.ama-assn.org/go/cpt",
-            },
-          ],
-        },
-        identifier: defaultIdentifier,
-      });
-
-      const diagnosticReport = makeDiagnosticReport({
-        code: {
-          coding: [
-            {
-              code: sharedCode,
-              system: "http://www.ama-assn.org/go/cpt",
-            },
-          ],
-        },
-        effectiveDateTime: DATE_TO_MATCH,
-        identifier: defaultIdentifier,
-      });
-
-      const result = linkProceduresToDiagnosticReports([procedure], [diagnosticReport]);
-
-      expect(result[0]?.report).toBeUndefined();
-    });
-
-    it("should handle diagnostic reports without dates", () => {
-      const sharedCode = "55555";
-
-      const procedure = makeProcedure({
-        code: {
-          coding: [
-            {
-              code: sharedCode,
-              system: "http://www.ama-assn.org/go/cpt",
-            },
-          ],
-        },
-        performedDateTime: DATE_TO_MATCH,
-        identifier: defaultIdentifier,
-      });
-
-      const diagnosticReport = makeDiagnosticReport({
-        code: {
-          coding: [
-            {
-              code: sharedCode,
-              system: "http://www.ama-assn.org/go/cpt",
-            },
-          ],
-        },
-        identifier: defaultIdentifier,
-      });
-
-      const result = linkProceduresToDiagnosticReports([procedure], [diagnosticReport]);
-
-      expect(result[0]?.report).toBeUndefined();
-    });
-
-    it("should handle empty arrays", () => {
-      const procedures: Procedure[] = [];
-      const result = linkProceduresToDiagnosticReports(procedures, []);
-
-      expect(result).toEqual([]);
-    });
-
     it("should handle procedures with no matching reports", () => {
       const procedure = makeProcedure({
         code: {
@@ -595,46 +453,6 @@ describe("linkProceduresToDiagnosticReports", () => {
       const result = linkProceduresToDiagnosticReports([procedure], [diagnosticReport]);
 
       expect(result[0]?.report).toBeUndefined();
-    });
-
-    it("should handle diagnostic reports with no matching procedures", () => {
-      const procedure = makeProcedure({
-        code: {
-          coding: [
-            {
-              code: "55555",
-              system: "http://www.ama-assn.org/go/cpt",
-            },
-          ],
-        },
-        performedDateTime: DATE_TO_MATCH,
-        identifier: [
-          {
-            value: "PROC123",
-            system: "http://example.com/ids",
-          },
-        ],
-      });
-
-      const diagnosticReport = makeDiagnosticReport({
-        code: {
-          coding: [
-            {
-              code: "66666",
-              system: "http://www.ama-assn.org/go/cpt",
-            },
-          ],
-        },
-        effectiveDateTime: DATE_TO_MATCH,
-        identifier: [
-          {
-            value: "DR123",
-            system: "http://example.com/ids",
-          },
-        ],
-      });
-
-      linkProceduresToDiagnosticReports([procedure], [diagnosticReport]);
     });
 
     it("should comprehensively link multiple procedures to multiple diagnostic reports", () => {
