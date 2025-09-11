@@ -48,13 +48,17 @@ export type IdentifiedHl7Message = {
 };
 
 export class PsvToHl7Converter {
-  private readonly FIELD_SEPARATOR = "|";
-  private readonly HL7_VERSION = "2.5.1";
+  private static readonly FIELD_SEPARATOR = "|";
+  private static readonly HL7_VERSION = "2.5.1";
+  private static readonly ENCODING_CHARS = "^~\\&";
+  private static readonly SENDING_APP = "HEALTHSHARE";
+  private static readonly DEFAULT_RECEIVING_APP = "METRIPORT";
+  private static readonly PROCESSING_ID = "P";
 
-  private readonly HEADER_ROW =
+  private static readonly HEADER_ROW =
     "FacilityAbbrev|FacilityName|VisitNumber|PatientID|LastName|FirstName|MiddleName|StreetAddress|City|State|ZipCode|PrimaryPhoneNumber|SSN|PatientDateofBirth|Gender|MaritalStatus|AdmitDateTime|ChiefComplaint|DiagnosisCode|DiagnosisText|DiagnosisCodingSystem|AttendingPhysicianName|ReferringPhysicianName|AdmittingPhysicianName|SendingToSystem|MetriplexPatID|DischargeDateTime|EmergencySeverityLevel|PatClass";
 
-  private psvBuffer: Buffer;
+  private readonly psvBuffer: Buffer;
 
   constructor(psvBuffer: Buffer) {
     this.psvBuffer = psvBuffer;
@@ -103,7 +107,7 @@ export class PsvToHl7Converter {
 
   private async getAllRowsAsync(): Promise<Row[]> {
     const text = this.psvBuffer.toString("utf8");
-    const expectedHeader = this.HEADER_ROW.trim();
+    const expectedHeader = PsvToHl7Converter.HEADER_ROW.trim();
     const firstLine = text.split(/\r?\n/, 1)[0]?.trim() ?? "";
     const hasHeader = firstLine === expectedHeader;
 
@@ -111,8 +115,8 @@ export class PsvToHl7Converter {
       parse(
         text,
         {
-          delimiter: `${this.FIELD_SEPARATOR}`,
-          columns: hasHeader ? true : expectedHeader.split(this.FIELD_SEPARATOR),
+          delimiter: PsvToHl7Converter.FIELD_SEPARATOR,
+          columns: hasHeader ? true : expectedHeader.split(PsvToHl7Converter.FIELD_SEPARATOR),
           skip_empty_lines: true,
           bom: true,
           trim: true,
@@ -136,14 +140,12 @@ export class PsvToHl7Converter {
   private buildMessageFromRow(row: Row): string {
     const triggerEvent = this.getTriggerEvent(row);
     const segments = [
-      this.buildMshFromRow(row), //MSH
-      this.buildEvnFromRow(row), //EVN
-      this.buildPidFromRow(row), //PID
-      triggerEvent === SUPPORTED_ADT.ADT_A01 //PV1
-        ? this.buildA01Pv1FromRow(row)
-        : this.buildA03Pv1FromRow(row),
-      this.buildPv2FromRow(row), //PV2
-      this.buildDg1FromRow(row), //Dg1
+      this.buildMshFromRow(row),
+      this.buildEvnFromRow(row),
+      this.buildPidFromRow(row),
+      this.buildPv1FromRow(row, triggerEvent),
+      this.buildPv2FromRow(row),
+      this.buildDg1FromRow(row),
     ].filter(Boolean);
 
     return segments.join("\r");
@@ -154,32 +156,21 @@ export class PsvToHl7Converter {
   ///////////////////////////////////////
 
   private buildMshFromRow(row: Row): string {
-    const enc = "^~\\&";
-    const sendingApp = "HEALTHSHARE";
-    const sendingFacility = row.FacilityAbbrev || "UNKNOWN";
-    const receivingApp = row.SendingToSystem || "METRIPORT";
-    const receivingFacility = receivingApp;
-
     const trigger = this.getTriggerEvent(row);
     const ev = trigger.split("_")[1];
     const msh9 = `ADT^${ev}^ADT_${ev}`;
 
-    const ts = this.getMessageTime(row);
-    const mcid = this.getMessageControlId(row);
-
-    // MSH: 1 Field Sep | 2 Encoding Chars | 3 Sending App | 4 Sending Facility | 5 Receiving App | 6 Receiving Facility | 7 Message Date/Time | 8 Security | 9 Message Type (MSG^TRIGGER[^STRUCT]) | 10 Message Control ID | 11 Processing ID
     const fields: string[] = [];
-
-    fields[0] = enc;
-    fields[1] = this.escapeHl7Text(sendingApp);
-    fields[2] = this.escapeHl7Text(sendingFacility);
-    fields[3] = this.escapeHl7Text(receivingApp);
-    fields[4] = this.escapeHl7Text(receivingFacility);
-    fields[5] = ts;
+    fields[0] = PsvToHl7Converter.ENCODING_CHARS;
+    fields[1] = this.escapeHl7Text(PsvToHl7Converter.SENDING_APP);
+    fields[2] = this.escapeHl7Text(row.FacilityAbbrev || "UNKNOWN");
+    fields[3] = this.escapeHl7Text(row.SendingToSystem || PsvToHl7Converter.DEFAULT_RECEIVING_APP);
+    fields[4] = this.escapeHl7Text(row.SendingToSystem || PsvToHl7Converter.DEFAULT_RECEIVING_APP);
+    fields[5] = this.getMessageTime(row);
     fields[7] = msh9;
-    fields[8] = this.escapeHl7Text(mcid);
-    fields[9] = "P";
-    fields[10] = this.HL7_VERSION;
+    fields[8] = this.escapeHl7Text(this.getMessageControlId(row));
+    fields[9] = PsvToHl7Converter.PROCESSING_ID;
+    fields[10] = PsvToHl7Converter.HL7_VERSION;
 
     return this.joinFields("MSH", fields);
   }
@@ -239,9 +230,9 @@ export class PsvToHl7Converter {
     const pid19Ssn = this.escapeHl7Text(row.SSN);
 
     // PID: 1 Set ID | 2 Patient ID (External ID) | 3 Patient Identifier List (CX~CX...) | 4 Alternate Patient ID | 5 Patient Name (XPN)
-    // | 6 Mother’s Maiden Name (XPN) | 7 Date/Time of Birth (TS) | 8 Sex | 9 Patient Alias (XPN) | 10 Race (CWE) | 11 Patient Address (XAD)
+    // | 6 Mother's Maiden Name (XPN) | 7 Date/Time of Birth (TS) | 8 Sex | 9 Patient Alias (XPN) | 10 Race (CWE) | 11 Patient Address (XAD)
     // | 12 County Code | 13 Phone Number—Home (XTN) | 14 Phone Number—Business (XTN) | 15 Primary Language (CWE) | 16 Marital Status (CWE)
-    // | 17 Religion (CWE) | 18 Patient Account Number (CX) | 19 SSN Number—Patient | 20 Driver’s License Number (DLN) | 21 Mother’s Identifier (CX)
+    // | 17 Religion (CWE) | 18 Patient Account Number (CX) | 19 SSN Number—Patient | 20 Driver's License Number (DLN) | 21 Mother's Identifier (CX)
     // | 22 Ethnic Group (CWE) | 23 Birth Place | 24 Multiple Birth Indicator | 25 Birth Order | 26 Citizenship (CWE) | 27 Veterans Military Status (CWE)
     // | 28 Nationality (CWE) | 29 Patient Death Date and Time (TS) | 30 Patient Death Indicator | 31 Identity Unknown Indicator
     // | 32 Identity Reliability Code | 33 Last Update Date/Time (TS) | 34 Last Update Facility (HD) | 35 Species Code (CWE) | 36 Breed Code (CWE)
@@ -261,35 +252,16 @@ export class PsvToHl7Converter {
     return this.joinFields("PID", fields);
   }
 
-  private buildA01Pv1FromRow(row: Row): string {
+  private buildPv1FromRow(row: Row, triggerEvent: SUPPORTED_ADT): string {
     const fields = this.buildGeneralPv1FromRow(row);
-    const admitTs = (row.AdmitDateTime ?? "").replace(/\D+/g, "").slice(0, 14);
+    const admitTs = this.extractTimestamp(row.AdmitDateTime);
+    const dischargeTs =
+      triggerEvent === SUPPORTED_ADT.ADT_A03 ? this.extractTimestamp(row.DischargeDateTime) : "";
 
-    // Differences for A01:
-    fields[43] = admitTs; // PV1-44 Admit DT
-    fields[44] = ""; // PV1-45 Discharge DT (blank for A01)
-
-    // Trim trailing empties
-    let last = fields.length - 1;
-    while (last >= 0 && (!fields[last] || fields[last] === "")) last--;
-    fields.length = last + 1;
-
-    return this.joinFields("PV1", fields);
-  }
-
-  private buildA03Pv1FromRow(row: Row): string {
-    const fields = this.buildGeneralPv1FromRow(row);
-    const admitTs = (row.AdmitDateTime ?? "").replace(/\D+/g, "").slice(0, 14);
-    const dischargeTs = (row.DischargeDateTime ?? "").replace(/\D+/g, "").slice(0, 14);
-
-    // Differences for A03:
     fields[43] = admitTs; // PV1-44 Admit DT
     fields[44] = dischargeTs; // PV1-45 Discharge DT
 
-    let last = fields.length - 1;
-    while (last >= 0 && (!fields[last] || fields[last] === "")) last--;
-    fields.length = last + 1;
-
+    this.trimTrailingEmpty(fields);
     return this.joinFields("PV1", fields);
   }
 
@@ -369,13 +341,17 @@ export class PsvToHl7Converter {
   ///////////////////////////////////////
 
   private joinFields(name: string, fields: string[]): string {
-    return `${name}${this.FIELD_SEPARATOR}${fields.join(this.FIELD_SEPARATOR)}`;
+    return `${name}${PsvToHl7Converter.FIELD_SEPARATOR}${fields.join(
+      PsvToHl7Converter.FIELD_SEPARATOR
+    )}`;
+  }
+
+  private extractTimestamp(dateTime?: string): string {
+    return (dateTime ?? "").replace(/\D+/g, "").slice(0, 14);
   }
 
   private buildCweSimple(id?: string, text?: string, system?: string): string {
-    const parts = [this.escapeHl7Text(id), this.escapeHl7Text(text), this.escapeHl7Text(system)];
-    this.trimTrailingEmpty(parts);
-    return parts.join("^");
+    return this.joinHl7Fields([id, text, system], "^");
   }
 
   private buildNameXpn(
@@ -383,44 +359,36 @@ export class PsvToHl7Converter {
     middleName: string | undefined,
     lastName: string | undefined
   ): string {
-    const parts = [
-      this.escapeHl7Text((lastName ?? "").trim()),
-      this.escapeHl7Text((firstName ?? "").trim()),
-      this.escapeHl7Text((middleName ?? "").trim()),
-    ];
-
-    this.trimTrailingEmpty(parts);
-
-    return parts.join("^");
+    const parts = [(lastName ?? "").trim(), (firstName ?? "").trim(), (middleName ?? "").trim()];
+    return this.joinHl7Fields(parts, "^");
   }
 
   private buildXcnFromFullName(fullName?: string): string {
     if (!fullName) return "";
 
     const [lastRaw = "", restRaw = ""] = fullName.split(",", 2);
-    const last = this.escapeHl7Text(lastRaw.trim());
+    const last = lastRaw.trim();
 
     const tokens = restRaw.trim().split(/\s+/).filter(Boolean);
-    const first = this.escapeHl7Text((tokens[0] ?? "").trim());
-    const middle = this.escapeHl7Text(tokens.slice(1).join(" ").trim());
+    const first = (tokens[0] ?? "").trim();
+    const middle = tokens.slice(1).join(" ").trim();
 
-    const comps = ["", last, first, middle];
-
-    this.trimTrailingEmpty(comps);
-
-    return comps.join("^");
+    return this.joinHl7Fields(["", last, first, middle], "^");
   }
 
   private buildPlFromFacility(row: Row): string {
-    const facility = this.escapeHl7Text(row.FacilityAbbrev || row.FacilityName);
-    return `^^^${facility}`;
+    const facility = row.FacilityAbbrev || row.FacilityName;
+    return `^^^${this.escapeHl7Text(facility)}`;
   }
 
   private buildVisitNumber(id?: string, assigningAuthority?: string, idType?: string): string {
-    const _id = this.escapeHl7Text(id);
-    const auth = this.escapeHl7Text(assigningAuthority);
-    const typ = this.escapeHl7Text(idType);
-    return `${_id}^^^${auth}^${typ}`;
+    return this.joinHl7Fields([id, "", "", assigningAuthority, idType], "^");
+  }
+
+  private joinHl7Fields(fields: (string | undefined)[], separator: string): string {
+    const escapedFields = fields.map(field => this.escapeHl7Text(field));
+    this.trimTrailingEmpty(escapedFields);
+    return escapedFields.join(separator);
   }
 
   private isEmergency(row: Row): boolean {
@@ -429,8 +397,6 @@ export class PsvToHl7Converter {
     );
   }
 
-  // Format a date of birth into HL7 TS date (YYYYMMDD). Accepts "YYYY-MM-DD",
-  // ISO datetimes, or slashed dates. Falls back to digits-only (YYYYMMDD|YYYYMM|YYYY).
   private formatHl7Dob(dateOfBirth?: string): string {
     if (!dateOfBirth) return "";
 
