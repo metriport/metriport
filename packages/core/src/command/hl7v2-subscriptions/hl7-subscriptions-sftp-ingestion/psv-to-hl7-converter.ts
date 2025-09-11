@@ -494,7 +494,7 @@ export class PsvToHl7Converter {
   }
 
   private getTriggerEvent(row: Row): SUPPORTED_ADT {
-    if (row.AdmitDateTime) {
+    if (row.DischargeDateTime) {
       return SUPPORTED_ADT.ADT_A03;
     } else {
       return SUPPORTED_ADT.ADT_A01;
