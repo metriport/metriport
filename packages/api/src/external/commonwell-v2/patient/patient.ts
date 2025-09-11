@@ -61,7 +61,7 @@ import { NetworkLink } from "./types";
 
 dayjs.extend(duration);
 
-const waitTimeAfterRegisterPatientAndBeforeGetLinks = dayjs.duration(5, "seconds");
+const waitTimeAfterRegisterPatientAndBeforeGetLinks = dayjs.duration(15, "seconds");
 const MAX_ATTEMPTS_PATIENT_LINKING = 3;
 
 const createContext = "cw.patient.create";
