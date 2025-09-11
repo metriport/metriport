@@ -1,4 +1,3 @@
-import { isCommonwellV2EnabledForCx } from "@metriport/core/command/feature-flags/domain-ffs";
 import { isProvider, Organization, OrganizationCreate } from "@metriport/core/domain/organization";
 import { Config } from "@metriport/core/util/config";
 import { processAsyncError } from "@metriport/core/util/error/shared";
@@ -9,7 +8,6 @@ import { createOrganization } from "../../../command/medical/organization/create
 import { getOrganizationsOrFail } from "../../../command/medical/organization/get-organization";
 import { updateOrganization } from "../../../command/medical/organization/update-organization";
 import { createOrUpdateOrganization as cqCreateOrUpdateOrganization } from "../../../external/carequality/command/create-or-update-organization";
-import { createOrUpdateCWOrganization } from "../../../external/commonwell-v1/command/create-or-update-cw-organization";
 import { createOrUpdateCWOrganizationV2 } from "../../../external/commonwell-v2/command/organization/create-or-update-cw-organization";
 import { requestLogger } from "../../helpers/request-logger";
 import { internalDtoFromModel } from "../../medical/dtos/organizationDTO";
@@ -63,30 +61,17 @@ router.put(
     if (syncInHie && org.cqApproved) {
       cqCreateOrUpdateOrganization({ org }).catch(processAsyncError("cq.internal.organization"));
     }
-    // COMMONWELL
     if (syncInHie && org.cwApproved) {
-      // TODO ENG-554 Remove FF and v1 code
-      if (await isCommonwellV2EnabledForCx(cxId)) {
-        createOrUpdateCWOrganizationV2({
-          cxId,
-          org: {
-            oid: org.oid,
-            data: org.data,
-            active: org.cwActive,
-            isInitiatorAndResponder: true,
-          },
-        }).catch(processAsyncError("cwV2.internal.organization"));
-      } else {
-        createOrUpdateCWOrganization({
-          cxId,
-          org: {
-            oid: org.oid,
-            data: org.data,
-            active: org.cwActive,
-          },
-          isObo: false,
-        }).catch(processAsyncError("cw.internal.organization"));
-      }
+      // COMMONWELL
+      createOrUpdateCWOrganizationV2({
+        cxId,
+        org: {
+          oid: org.oid,
+          data: org.data,
+          active: org.cwActive,
+          isInitiatorAndResponder: true,
+        },
+      }).catch(processAsyncError("cwV2.internal.organization"));
     }
     return res.status(httpStatus.OK).json(internalDtoFromModel(org));
   })
