@@ -541,6 +541,7 @@ export class CommonWell extends CommonWellBase implements CommonWellAPI {
         const dataBuffer = base64ToBuffer(binary);
         outputStream.write(dataBuffer);
         outputStream.end();
+        return { contentType: "application/xml", size: dataBuffer.byteLength };
       } catch (error) {
         // Continue with the flow...
       }
