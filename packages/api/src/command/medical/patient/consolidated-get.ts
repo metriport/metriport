@@ -228,10 +228,11 @@ export async function getConsolidated({
     dateTo,
     conversionType,
   };
+  let localBundle = bundle;
+
   try {
-    if (!bundle) {
-      // eslint-disable-next-line no-param-reassign
-      bundle = await getConsolidatedPatientData({
+    if (!localBundle) {
+      localBundle = await getConsolidatedPatientData({
         patient,
         requestId,
         resources,
@@ -239,19 +240,18 @@ export async function getConsolidated({
         dateTo,
       });
     }
-    bundle.entry = filterOutPrelimDocRefs(bundle.entry);
-    bundle.total = bundle.entry?.length ?? 0;
-    const hasResources = bundle.entry && bundle.entry.length > 0;
+    localBundle.entry = filterOutPrelimDocRefs(localBundle.entry);
+    localBundle.total = localBundle.entry?.length ?? 0;
+    const hasResources = localBundle.entry && localBundle.entry.length > 0;
     const shouldCreateMedicalRecord = conversionType != "json" && hasResources;
 
-    sendAnalytics(patient, requestId, "bundle", bundle.entry?.length);
+    sendAnalytics(patient, requestId, "bundle", localBundle.entry?.length);
 
     if (shouldCreateMedicalRecord) {
       // If we need to convert to medical record, we also have to update the resulting
       // FHIR bundle to represent that.
-      // eslint-disable-next-line no-param-reassign
-      bundle = await handleBundleToMedicalRecord({
-        bundle,
+      localBundle = await handleBundleToMedicalRecord({
+        bundle: localBundle,
         patient,
         requestId,
         resources,
@@ -259,17 +259,17 @@ export async function getConsolidated({
         dateTo,
         conversionType,
       });
-      sendAnalytics(patient, requestId, conversionType, bundle.entry?.length);
+      sendAnalytics(patient, requestId, conversionType, localBundle.entry?.length);
     }
 
     if (conversionType === "json" && hasResources) {
       return await uploadConsolidatedJsonAndReturnUrl({
         patient,
-        bundle,
+        bundle: localBundle,
         filters: filtersToString(filters),
       });
     }
-    return { bundle, filters };
+    return { bundle: localBundle, filters };
   } catch (error) {
     const msg = "Failed to get consolidated data";
     const errorStr = errorToString(error);
@@ -325,7 +325,8 @@ async function uploadConsolidatedJsonAndReturnUrl({
 }> {
   const fileName = createMRSummaryFileName(patient.cxId, patient.id, "json");
   const gzipFileName = createMRSummaryFileName(patient.cxId, patient.id, "json") + ".gz";
-
+  const medicalDocumentsBucket = Config.getMedicalDocumentsBucketName();
+  const compressedBundle = await compressBundle(bundle);
   const metadata = {
     patientId: patient.id,
     cxId: patient.cxId,
@@ -335,33 +336,18 @@ async function uploadConsolidatedJsonAndReturnUrl({
     conversionType: filters.conversionType ?? emptyMetaProp,
   };
 
-  // Upload regular JSON version
-  await uploadJsonBundleToS3({
-    bundle,
-    fileName,
-    metadata,
-  });
-
-  // Upload gzip version
-  const compressedBundle = await compressBundle(bundle);
-  await uploadGzipBundleToS3({
-    compressedData: compressedBundle,
-    fileName: gzipFileName,
-    metadata,
-  });
+  await Promise.all([
+    uploadJsonBundleToS3({ bundle, fileName, metadata }),
+    uploadGzipBundleToS3({ compressedData: compressedBundle, fileName: gzipFileName, metadata }),
+  ]);
 
   // TODO This should use the same function as the one used in handleBundleToMedicalRecord(),
   // `S3Utils.getSignedUrl()` - prob with the same expiration time for simplicity?
   const [signedUrl, gzipSignedUrl] = await Promise.all([
-    getSignedURL({
-      bucketName: Config.getMedicalDocumentsBucketName(),
-      fileName,
-    }),
-    getSignedURL({
-      bucketName: Config.getMedicalDocumentsBucketName(),
-      fileName: gzipFileName,
-    }),
+    getSignedURL({ bucketName: medicalDocumentsBucket, fileName }),
+    getSignedURL({ bucketName: medicalDocumentsBucket, fileName: gzipFileName }),
   ]);
+
   const newBundle = buildDocRefBundleWithAttachment(patient.id, signedUrl, "json", gzipSignedUrl);
   return { bundle: newBundle, filters };
 }

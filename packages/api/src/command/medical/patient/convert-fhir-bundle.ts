@@ -42,6 +42,19 @@ const lambdaClient = makeLambdaClient(region, TIMEOUT_CALLING_CONVERTER_LAMBDA.a
 const s3 = makeS3Client(Config.getAWSRegion());
 export const emptyMetaProp = "na";
 
+const REQUESTED_MIME_BY_TYPE: Record<ConsolidationConversionType, string> = {
+  json: "application/json",
+  pdf: "application/pdf",
+  html: "text/html",
+};
+
+export type BundleAttachment = {
+  attachment: {
+    contentType: string;
+    url: string;
+  };
+};
+
 export async function handleBundleToMedicalRecord({
   bundle,
   patient,
@@ -108,10 +121,10 @@ export function buildDocRefBundleWithAttachment(
   mimeType: ConsolidationConversionType,
   gzipUrl?: string
 ): SearchSetBundle<Resource> {
-  const content = [
+  const content: BundleAttachment[] = [
     {
       attachment: {
-        contentType: `application/${mimeType}`,
+        contentType: REQUESTED_MIME_BY_TYPE[mimeType],
         url: attachmentUrl,
       },
     },

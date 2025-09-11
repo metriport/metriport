@@ -5,6 +5,7 @@ import { getConsolidatedWebhook } from "../get-consolidated-webhook";
 import { WebhookRequest } from "../../../../models/webhook-request";
 
 const webhookUrl = "http://example.com";
+const gzipWebhookUrl = "http://example.com.gz";
 
 const successConsolidatedWebhook = {
   patients: [
@@ -17,6 +18,42 @@ const successConsolidatedWebhook = {
                 {
                   attachment: {
                     url: webhookUrl,
+                    contentType: "application/json",
+                  },
+                },
+                {
+                  attachment: {
+                    url: gzipWebhookUrl,
+                    contentType: "application/gzip",
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+};
+
+const reversedOrderWebhook = {
+  patients: [
+    {
+      bundle: {
+        entry: [
+          {
+            resource: {
+              content: [
+                {
+                  attachment: {
+                    url: gzipWebhookUrl,
+                    contentType: "application/gzip",
+                  },
+                },
+                {
+                  attachment: {
+                    url: webhookUrl,
+                    contentType: "application/json",
                   },
                 },
               ],
@@ -66,6 +103,7 @@ describe("getConsolidatedWebhook", () => {
     expect(result).toEqual({
       conversionType: "pdf",
       fileUrl: webhookUrl,
+      gzipUrl: gzipWebhookUrl,
       status: "completed",
       requestId,
     });
@@ -155,6 +193,37 @@ describe("getConsolidatedWebhook", () => {
       requestId,
       status: "failed",
       message: "No URL found for this webhook",
+    });
+  });
+
+  it("it returns correct URLs regardless of attachment order in content array", async () => {
+    const consolidatedQuery = makeConsolidatedQueryProgress({
+      requestId: requestId,
+      status: "completed",
+      startedAt: new Date(),
+      conversionType: "json",
+    });
+
+    const webhook = makeConsolidatedWebhook({
+      cxId,
+      requestId,
+      payload: reversedOrderWebhook,
+    });
+
+    jest.spyOn(WebhookRequest, "findOne").mockResolvedValue(webhook);
+
+    const result = await getConsolidatedWebhook({
+      cxId,
+      requestId,
+      consolidatedQueries: [consolidatedQuery],
+    });
+
+    expect(result).toEqual({
+      conversionType: "json",
+      fileUrl: webhookUrl,
+      gzipUrl: gzipWebhookUrl,
+      status: "completed",
+      requestId,
     });
   });
 });
