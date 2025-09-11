@@ -68,7 +68,7 @@ export const documentReferenceSchema = z.object({
   id: z.string().nullish(),
   masterIdentifier: identifierSchema.nullish(),
   identifier: z.array(identifierSchema).nullish(),
-  status: statusSchema,
+  status: statusSchema.default("current"),
   docStatus: docStatusSchema.nullish(),
   type: codeableConceptSchema.nullish(),
   category: z.array(codeableConceptSchema).nullish(),

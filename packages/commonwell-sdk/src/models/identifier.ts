@@ -56,8 +56,8 @@ export const patientIdentifierSchema = z.object({
   value: z.string(),
   /** Assigning Authority ID for the unique Patient ID */
   system: z.string(),
-  use: emptyStringToUndefinedSchema.pipe(identifierUseCodesSchema.nullish()),
-  type: emptyStringToUndefinedSchema.pipe(identifierTypeCodesSchema.nullish()),
+  use: emptyStringToUndefinedSchema.pipe(z.string().nullish()),
+  type: emptyStringToUndefinedSchema.pipe(z.string().nullish()),
   assigner: emptyStringToUndefinedSchema,
   period: periodSchema.nullish(),
 });
