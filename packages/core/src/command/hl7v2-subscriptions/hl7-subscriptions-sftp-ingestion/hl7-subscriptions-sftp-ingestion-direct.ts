@@ -46,7 +46,7 @@ export class Hl7SubscriptionLaHieIngestionDirect implements Hl7SubscriptionLaHie
 
       this.log(`Converting file to hl7`);
       const psvToHl7Converter = new PsvToHl7Converter(content);
-      const identifiedMessages = await psvToHl7Converter.getCxIdPtIdHl7MessageList();
+      const identifiedMessages = await psvToHl7Converter.getIdentifiedHl7Messages();
 
       this.log(`Sending to webhook sender`);
       await this.sendToWebhookSender(identifiedMessages);

@@ -64,7 +64,7 @@ export class PsvToHl7Converter {
     return this.psvBuffer;
   }
 
-  public async getCxIdPtIdHl7MessageList(): Promise<IdentifiedHl7Message[]> {
+  public async getIdentifiedHl7Messages(): Promise<IdentifiedHl7Message[]> {
     const hl7Messages = await this.getHl7Messages();
     const identifiedMessages: IdentifiedHl7Message[] = [];
 
@@ -143,7 +143,7 @@ export class PsvToHl7Converter {
         ? this.buildA01Pv1FromRow(row)
         : this.buildA03Pv1FromRow(row),
       this.buildPv2FromRow(row), //PV2
-      this.buildDg1FromRow(row, triggerEvent), //Dg1
+      this.buildDg1FromRow(row), //Dg1
     ].filter(Boolean);
 
     return segments.join("\r");
@@ -157,12 +157,12 @@ export class PsvToHl7Converter {
     const enc = "^~\\&";
     const sendingApp = "HEALTHSHARE";
     const sendingFacility = row.FacilityAbbrev || "UNKNOWN";
-    const receivingApp = row.SendingToSystem || "METRIPORTPA";
+    const receivingApp = row.SendingToSystem || "METRIPORT";
     const receivingFacility = receivingApp;
 
-    const trigger = this.getTriggerEvent(row); // "ADT_A03"
-    const ev = trigger.split("_")[1]; // "A03"
-    const msh9 = `ADT^${ev}^ADT_${ev}`; // "ADT^A03^ADT_A03"  (v2.5.1 style)
+    const trigger = this.getTriggerEvent(row);
+    const ev = trigger.split("_")[1];
+    const msh9 = `ADT^${ev}^ADT_${ev}`;
 
     const ts = this.getMessageTime(row);
     const mcid = this.getMessageControlId(row);
@@ -286,7 +286,6 @@ export class PsvToHl7Converter {
     fields[43] = admitTs; // PV1-44 Admit DT
     fields[44] = dischargeTs; // PV1-45 Discharge DT
 
-    // Trim trailing empties
     let last = fields.length - 1;
     while (last >= 0 && (!fields[last] || fields[last] === "")) last--;
     fields.length = last + 1;
@@ -343,12 +342,13 @@ export class PsvToHl7Converter {
     return this.joinFields("PV2", fields);
   }
 
-  private buildDg1FromRow(row: Row, trigger: SUPPORTED_ADT): string {
+  private buildDg1FromRow(row: Row): string {
     // DG1: 1 Set ID | 2 Diagnosis Coding Method (deprecated) | 3 Diagnosis Code - DG1 (CWE) | 4 Diagnosis Description (ST)
     // | 5 Diagnosis Date/Time (TS) | 6 Diagnosis Type (IS) | 7 Major Diagnostic Category (CWE) | 8 DRG Category (CWE) | 9 DRG Approval Indicator (ID)
     // | 10 DRG Grouper Review Code (IS) | 11 Outlier Type (CWE) | 12 Outlier Days (NM) | 13 Outlier Cost (CP) | 14 Grouper Version And Type (ST)
     // | 15 Diagnosis Priority (NM) | 16 Diagnosing Clinician (XCN) | 17 Diagnosis Classification (IS) | 18 Confidential Indicator (ID)
     // | 19 Attestation Date/Time (TS) | 20 Diagnosis Identifier (EI) | 21 Diagnosis Action Code (ID)
+    const trigger = this.getTriggerEvent(row);
     const fields: string[] = [];
     fields[0] = "1";
     fields[2] = this.buildCweSimple(
