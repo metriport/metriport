@@ -38,6 +38,9 @@ program
 const numberOfParallelExecutions = 1;
 const apiUrl = getEnvVarOrFail("API_URL");
 
+const cxExcludeList: string[] = [];
+const cxIncludeList: string[] = [];
+
 type PatientRecord = {
   cx_id: string;
   id: string;
@@ -88,6 +91,15 @@ async function main() {
       const { cx_id, id } = record;
       if (!cx_id || !id) {
         console.warn(`Skipping invalid record: ${JSON.stringify(record)}`);
+        continue;
+      }
+
+      if (cxExcludeList.includes(cx_id)) {
+        console.log(`Skipping pt of customer ${cx_id} because it is in the exclude list`);
+        continue;
+      }
+      if (cxIncludeList.length > 0 && !cxIncludeList.includes(cx_id)) {
+        console.log(`Skipping pt of customer ${cx_id} because it is not in the include list`);
         continue;
       }
 
@@ -181,7 +193,6 @@ async function updatePatientsForCustomer(
         headers: {
           "Content-Type": "application/json",
         },
-        timeout: 30000, // 30 second timeout
       }
     );
 
