@@ -259,8 +259,12 @@ Patients can have a large amount of data, so in order to have access to a Patien
 1. Your app can check the status by calling [get consolidated query status](/medical-api/api-reference/fhir/consolidated-data-query-get) (optional);
 1. When the result is ready, we'll send a webhook message with the results (below).
 
-Note that inside the `Bundle` you'll find a `DocumentReference` resource with the first item in the `content` array containing
-an attachment with a `url` which can be used to download the data.
+Note that inside the `Bundle` you'll find a `DocumentReference` resource with attachments in the `content` array:
+
+- The first attachment contains the main data file (JSON, HTML, or PDF format)
+- For JSON requests, a second attachment with `contentType: "application/gzip"` provides a gzip-compressed version for faster downloads
+
+Each attachment has a `url` which can be used to download the data.
 
 <Info>
   If there was no data available for the Patient, the
@@ -305,6 +309,12 @@ Example payload:
                     "contentType": "application/json",
                     "url": "https://documents.s3.amazonaws.com/abc123-Amz-SignedHeaders=host"
                   }
+                },
+                {
+                  "attachment": {
+                    "contentType": "application/gzip",
+                    "url": "https://documents.s3.amazonaws.com/abc123.gz-Amz-SignedHeaders=host"
+                  }
                 }
               ]
             }
@@ -315,6 +325,28 @@ Example payload:
   ]
 }
 ```
+
+<Tip>
+**Working with Multiple Attachments**
+
+When processing the webhook payload, identify attachments by their `contentType`:
+
+- **Main attachment**: Look for `contentType` matching your requested format (`application/json`, `text/html`, or `application/pdf`)
+- **Gzip attachment**: Look for `contentType: "application/gzip"` (JSON requests only)
+
+Example code:
+
+```javascript
+const content = bundle.entry[0].resource.content;
+const mainAttachment = content.find(
+  c => c.attachment.contentType !== "application/gzip"
+);
+const gzipAttachment = content.find(
+  c => c.attachment.contentType === "application/gzip"
+);
+```
+
+</Tip>
 
 The format follows:
 
@@ -367,8 +399,13 @@ The format follows:
     </ResponseField>
 
     <ResponseField name="bundle" type="Bundle">
-      A FHIR [Bundle](/medical-api/fhir/resources/bundle) containing a `DocumentReference` resource with the first item in the `content` array containing
-      an attachment with a `url` which can be used to download the FHIR JSON payload - the `url` is valid for 3 minutes.
+      A FHIR [Bundle](/medical-api/fhir/resources/bundle) containing a `DocumentReference` resource with attachments in the `content` array.
+      For JSON requests, two attachments are provided:
+      <ul>
+        <li>Main attachment with the requested format (JSON, HTML, or PDF)</li>
+        <li>Gzip-compressed attachment (JSON only) with `contentType: "application/gzip"` for faster downloads</li>
+      </ul>
+      Each attachment has a `url` which is valid for 3 minutes.
     </ResponseField>
 
   </Expandable>
