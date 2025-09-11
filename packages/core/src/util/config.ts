@@ -445,12 +445,12 @@ export class Config {
     return getEnvVarOrFail("LAHIE_INGESTION_LOCAL_PATH");
   }
 
-  static getLaHieIngestionPrivateKey(): string {
-    return getEnvVarOrFail("LAHIE_INGESTION_PRIVATE_KEY");
+  static getLaHieIngestionPrivateKeyArn(): string {
+    return getEnvVarOrFail("LAHIE_INGESTION_PRIVATE_KEY_ARN");
   }
 
-  static getLaHieIngestionPrivateKeyPassphrase(): string {
-    return getEnvVarOrFail("LAHIE_INGESTION_PRIVATE_KEY_PASSPHRASE");
+  static getLaHieIngestionPrivateKeyPassphraseArn(): string {
+    return getEnvVarOrFail("LAHIE_INGESTION_PRIVATE_KEY_PASSPHRASE_ARN");
   }
 
   static getInternalServerUrl(): string {

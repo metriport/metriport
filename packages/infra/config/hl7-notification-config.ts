@@ -4,6 +4,9 @@ import { HieSftpConfig } from "@metriport/core/external/sftp/types";
 export interface Hl7NotificationConfig {
   secrets: {
     HL7_BASE64_SCRAMBLER_SEED: string;
+    HL7_SUBSCRIPTION_INGESTION_PASSPHRASE: string;
+    HL7_SUBSCRIPTION_INGESTION_PRIVATE_KEY: string;
+    HL7_SUBSCRIPTION_INGESTION_PASSWORD: string;
   };
   deprecatedIncomingMessageBucketName: string;
   incomingMessageBucketName: string;
@@ -25,9 +28,9 @@ export interface Hl7NotificationConfig {
   hl7v2RosterUploadLambda: {
     bucketName: string;
   };
-  hl7v2LaHieIngestionLambda: {
+  hl7SubscriptionSftpIngestionLambda: {
     sftpConfig: HieSftpConfig;
-    passwordName: string;
+    bucketName: string;
   };
   hieConfigs: Record<string, HieConfig | VpnlessHieConfig>;
   // ENG-536 remove this once we automatically find the discharge summary

@@ -120,7 +120,7 @@ export class LambdasNestedStack extends NestedStack {
   readonly fhirConverterConnector: FHIRConverterConnector;
   readonly acmCertificateMonitorLambda: Lambda;
   readonly hl7v2RosterUploadLambdas: Lambda[] | undefined;
-  readonly hl7v2LaHieIngestionLambda!: Lambda;
+  readonly hl7SubscriptionSftpIngestionLambda: Lambda | undefined;
   readonly conversionResultNotifierLambda: Lambda;
   readonly reconversionKickoffLambda: Lambda;
   readonly reconversionKickoffQueue: Queue;
@@ -325,7 +325,7 @@ export class LambdasNestedStack extends NestedStack {
         alarmAction: props.alarmAction,
       });
 
-      this.hl7v2LaHieIngestionLambda = this.setupHl7v2LaHieIngestionLambda({
+      this.hl7SubscriptionSftpIngestionLambda = this.setupHl7SubscriptionSftpIngestionLambda({
         lambdaLayers: props.lambdaLayers,
         vpc: props.vpc,
         secrets: props.secrets,
@@ -1016,7 +1016,7 @@ export class LambdasNestedStack extends NestedStack {
     return acmCertificateMonitorLambda;
   }
 
-  private setupHl7v2LaHieIngestionLambda(ownProps: {
+  private setupHl7SubscriptionSftpIngestionLambda(ownProps: {
     lambdaLayers: LambdaLayers;
     vpc: ec2.IVpc;
     secrets: Secrets;
@@ -1025,29 +1025,49 @@ export class LambdasNestedStack extends NestedStack {
   }): Lambda {
     const envType = ownProps.config.environmentType;
     const lambdaTimeout = Duration.seconds(60);
-    const hl7v2LaHieIngestionLambda = ownProps.config.hl7Notification?.hl7v2LaHieIngestionLambda;
-    if (!hl7v2LaHieIngestionLambda) {
-      throw new Error("hl7v2LaHieIngestionLambda is undefined.");
+    const props = ownProps.config.hl7Notification?.hl7SubscriptionSftpIngestionLambda;
+    if (!props) {
+      throw new Error("hl7v2LaHieIngestionLambda is undefined in config.");
     }
 
-    const sftpConfig = hl7v2LaHieIngestionLambda.sftpConfig;
+    const sftpPasswordSecret = ownProps.secrets["HL7_SUBSCRIPTION_INGESTION_PASSWORD"];
+    const privateKeySecret = ownProps.secrets["HL7_SUBSCRIPTION_INGESTION_PRIVATE_KEY"];
+    const passphraseSecret = ownProps.secrets["HL7_SUBSCRIPTION_INGESTION_PASSPHRASE"];
+
+    if (!sftpPasswordSecret) {
+      throw new Error("HL7_SUBSCRIPTION_INGESTION_SFTP_PASSWORD is not defined in config.");
+    }
+
+    if (!privateKeySecret) {
+      throw new Error("HL7_SUBSCRIPTION_INGESTION_PRIVATE_KEY is not defined in config.");
+    }
+
+    if (!passphraseSecret) {
+      throw new Error("HL7_SUBSCRIPTION_INGESTION_PASSPHRASE is not defined in config.");
+    }
+
+    const sftpConfig = props.sftpConfig;
 
     const lambda = createScheduledLambda({
       layers: [ownProps.lambdaLayers.shared],
       vpc: ownProps.vpc,
-      scheduleExpression: "0/15 * * * ? *",
+      scheduleExpression: "0 15 * * ? *",
       timeout: lambdaTimeout,
       envType,
-      entry: "la-hie-ingestion",
+      entry: "hl7-subscriptions-sftp-ingestion",
       envVars: {
         LAHIE_INGESTION_PORT: sftpConfig.port.toString(),
         LAHIE_INGESTION_HOST: sftpConfig.host,
         LAHIE_INGESTION_REMOTE_PATH: sftpConfig.remotePath,
         LAHIE_INGESTION_USERNAME: sftpConfig.username,
-        LAHIE_INGESTION_PASSWORD_ARN: hl7v2LaHieIngestionLambda.passwordName,
+        LAHIE_INGESTION_PASSWORD_ARN: sftpPasswordSecret.secretArn,
+        LAHIE_INGESTION_BUCKET_NAME: props.bucketName,
+        LAHIE_INGESTION_PRIVATE_KEY_ARN: privateKeySecret.secretArn,
+        LAHIE_INGESTION_PRIVATE_KEY_PASSPHRASE: passphraseSecret.secretArn,
       },
       stack: this,
-      name: "LaHie",
+      name: "hl7-subscriptions-sftp-ingestion-LaHie",
+      alarmSnsAction: ownProps.alarmAction,
     });
 
     return lambda;
