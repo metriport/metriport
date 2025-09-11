@@ -4,34 +4,40 @@ dotenv.config();
 import { ReconversionKickoffParams } from "@metriport/core/command/reconversion/reconversion-kickoff-direct";
 import { SQSClient } from "@metriport/core/external/aws/sqs";
 import { executeAsynchronously } from "@metriport/core/util";
+import { out } from "@metriport/core/util/log";
+import { sleep } from "@metriport/shared";
 import { getEnvVarOrFail } from "@metriport/shared/common/env-var";
 import { errorToString } from "@metriport/shared/common/error";
 import { createUuidFromText } from "@metriport/shared/common/uuid";
-import { JSONParser, ParsedElementInfo } from "@streamparser/json";
+import axios from "axios";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import fs from "fs";
-import { groupBy, isEmpty } from "lodash";
+import { isEmpty } from "lodash";
+import { getAllPatientIds } from "../patient/get-ids";
+import { elapsedTimeAsStr } from "../shared/duration";
+import { getCxData } from "../shared/get-cx-data";
+import { getIdsFromLargeFile } from "../shared/ids";
 
 dayjs.extend(duration);
 
 /**
- * This script is used to kick off a reconversion for a specific list of patients, and for a specific date range.
- * It will send a message to the reconversion kickoff queue for each patient chunk (recommended to be 10/chunk).
+ * This script triggers the reconversion of patients' documents for a specific date range.
+ * It sends a message to SQS per patient, consumed by a Lambda function that triggers
+ * the reconversion process.
  *
- * The reconversion kickoff lambda will then pick up the message and ping the API to reconvert patient documents.
+ * If a file is provided, it will read patient IDs from the file and use them instead of the
+ * patientIds array.
  *
- * The input file is generated using the following SQL command:
- * ```
- * SELECT patient_id, cx_id
- * FROM docref_mapping
- * WHERE created_at BETWEEN <dateFrom> AND <dateTo>;
- * ```
- * Once the query is executed, export the results to a JSON file. Then, remove the SQL query from the object, and
- * only leave the array of objects. Indicate the path to the file in the `fileName` variable.
- *
- * To run the script, execute:
- * - ts-node src/document/reconversion-kickoff-loader.ts
+ * Usage:
+ * - set env vars on .env file
+ * - set patientIds array with the patient IDs you want to reconvert - leave empty to run for all
+ *   patients of the customer
+ * - optionally, add a file with patient IDs to reconvert
+ * - set dateFrom and dateTo for the date range
+ * - run it
+ *   - ts-node src/document/reconversion-kickoff-loader.ts
+ *   - ts-node src/document/reconversion-kickoff-loader.ts <file-with-patient-ids>
  */
 
 /**
@@ -53,52 +59,85 @@ const sqsUrl = getEnvVarOrFail("RECONVERSION_KICKOFF_QUEUE_URL");
  */
 const SQS_BATCH_SIZE = 2000;
 const MIN_JITTER_BETWEEN_BATCHES = dayjs.duration(1, "seconds");
+const confirmationTime = dayjs.duration(10, "seconds");
 
-const fileName =
-  "/Users/ramilgaripov/Desktop/metriport/full_stack/metriport/packages/utils/src/document/stagingReconversion.json";
-const dateFrom = "2025-04-01"; // YYYY-MM-DD, with optional timestamp, e.g. 2025-07-10 12:00
+// Leave empty to run for all patients of the customer
+const patientIds: string[] = [];
+
+// If provided, will read patient IDs from the file and use them instead of the patientIds array
+const fileName: string | undefined = process.argv[2];
+
+const dateFrom = "1990-01-01"; // YYYY-MM-DD, with optional timestamp, e.g. 2025-07-10 12:00
 const dateTo = ""; // YYYY-MM-DD, with optional timestamp, e.g. 2025-07-11 12:00
 
+const cxId = getEnvVarOrFail("CX_ID");
+const apiUrl = getEnvVarOrFail("API_URL");
+const api = axios.create({ baseURL: apiUrl });
+
+async function displayWarningAndConfirmation(
+  patientsToInsert: string[],
+  isAllPatients: boolean,
+  orgName: string,
+  log: typeof console.log
+) {
+  const allPatientsMsg = isAllPatients ? ` That's all patients of customer ${cxId}!` : "";
+  const msg =
+    `You are about to trigger reconversion for ${patientsToInsert.length} patients of ` +
+    `customer ${orgName} (${cxId}) from ${dateFrom}${
+      dateTo ? ` to ${dateTo}` : ""
+    }, are you sure?${allPatientsMsg}`;
+  log(msg);
+  log("Cancel this now if you're not sure.");
+  await sleep(confirmationTime.asMilliseconds());
+}
+
 async function main() {
-  if (isEmpty(fileName)) {
-    throw new Error("fileName is required");
-  }
   if (isEmpty(dateFrom)) {
     throw new Error("dateFrom is required");
   }
 
-  const patients: Array<{ patient_id: string; cx_id: string }> = [];
+  await sleep(100);
+  const { log } = out("");
 
-  console.log("Loading patient data from file...");
-  await loadDataFromLargeJsonFile(fileName, ({ value }) => {
-    const patient = value as { patient_id: string; cx_id: string };
-    patients.push(patient);
-  });
+  const startedAt = Date.now();
+  log(`>>> Starting reconversion kickoff at ${dayjs().toISOString()}...`);
 
-  console.log(`Loaded ${patients.length} patients from file`);
-
-  const patientsByCxId = groupBy(patients, "cx_id");
-
-  const payloads: ReconversionKickoffParams[] = [];
-
-  for (const [cxId, cxPatients] of Object.entries(patientsByCxId)) {
-    console.log("cxId", cxId);
-
-    const patientIds = Array.from(new Set(cxPatients.map(p => p.patient_id)));
-
-    const cxPayloads = patientIds.map(patientId => {
-      const payloadParams: ReconversionKickoffParams = {
-        cxId,
-        patientId,
-        dateFrom,
-        ...(dateTo && dateTo !== "" ? { dateTo } : {}),
-      };
-      return payloadParams;
-    });
-    payloads.push(...cxPayloads);
+  if (fileName) {
+    if (patientIds.length > 0) {
+      log(`>>> Patient IDs provided (${patientIds.length}), skipping file ${fileName}`);
+    } else {
+      const idsFromFile = await getIdsFromLargeFile(fileName);
+      if (idsFromFile.length < 1) {
+        log(`>>> Empty file ${fileName}`);
+        return;
+      }
+      patientIds.push(...idsFromFile);
+      log(`>>> Found ${patientIds.length} patient IDs in ${fileName}`);
+    }
   }
 
-  console.log(`Total unique payloads to send: ${payloads.length}`);
+  const { orgName } = await getCxData(cxId, undefined, false);
+
+  const isAllPatients = patientIds.length < 1;
+  const patientsToInsert = isAllPatients
+    ? await getAllPatientIds({ axios: api, cxId })
+    : patientIds;
+  const uniquePatientIds = [...new Set(patientsToInsert)];
+
+  await displayWarningAndConfirmation(uniquePatientIds, isAllPatients, orgName, log);
+  log(`>>> Running it... ${uniquePatientIds.length} patients for customer ${orgName} (${cxId})`);
+
+  const payloads: ReconversionKickoffParams[] = uniquePatientIds.map(patientId => {
+    const payloadParams: ReconversionKickoffParams = {
+      cxId,
+      patientId,
+      dateFrom,
+      ...(dateTo && dateTo !== "" ? { dateTo } : {}),
+    };
+    return payloadParams;
+  });
+
+  log(`>>> Total unique payloads to send: ${payloads.length}`);
 
   let totalSent = 0;
   let totalErrors = 0;
@@ -124,10 +163,10 @@ async function main() {
 
         totalSent++;
         if (itemIndex % 1000 === 0) {
-          console.log(`Progress: ${itemIndex + 1}/${payloads.length} messages sent`);
+          log(`Progress: ${itemIndex + 1}/${payloads.length} messages sent`);
         }
       } catch (e) {
-        console.error(`Error sending message ${itemIndex + 1}: ${errorToString(e)}`);
+        log(`Error sending message ${itemIndex + 1}: ${errorToString(e)}`);
 
         failedPayloads.push({
           payload,
@@ -142,7 +181,7 @@ async function main() {
       minJitterMillis: MIN_JITTER_BETWEEN_BATCHES.asMilliseconds(),
       maxJitterMillis: MIN_JITTER_BETWEEN_BATCHES.asMilliseconds() * 1.5,
       keepExecutingOnError: true,
-      log: console.log,
+      log: log,
     }
   );
 
@@ -155,34 +194,17 @@ async function main() {
     }));
 
     fs.writeFileSync(errorsFileName, JSON.stringify(failedPatients, null, 2));
-    console.log(`\nFailed payloads saved to: ${errorsFileName}`);
-    console.log(`You can retry these ${failedPayloads.length} failed messages later.`);
+    log(`\nFailed payloads saved to: ${errorsFileName}`);
+    log(`You can retry these ${failedPayloads.length} failed messages later.`);
   }
 
-  console.log(`\nFinal results:`);
-  console.log(`- Total messages processed: ${payloads.length}`);
-  console.log(`- Successfully sent: ${totalSent}`);
-  console.log(`- Errors: ${totalErrors}`);
-  console.log(`- Success rate: ${((totalSent / payloads.length) * 100).toFixed(2)}%`);
-}
-
-/**
- * Loads data from a large JSON file using streaming to avoid memory issues
- */
-async function loadDataFromLargeJsonFile(
-  path: string,
-  onValue: (value: ParsedElementInfo.ParsedElementInfo) => void
-): Promise<void> {
-  const parser = new JSONParser({ stringBufferSize: undefined, paths: ["$.*"] });
-  parser.onValue = onValue;
-  await new Promise((resolve, reject) => {
-    const inputStream = fs.createReadStream(path, { encoding: "utf8" });
-    inputStream.on("error", reject);
-    parser.onError = reject;
-    parser.onEnd = () => resolve(undefined);
-    inputStream.on("data", chunk => parser.write(chunk));
-    inputStream.on("end", () => parser.end());
-  });
+  log(``);
+  log(`>>> ALL sent to queue (${totalSent} patients) in ${elapsedTimeAsStr(startedAt)}`);
+  log(`\nFinal results:`);
+  log(`- Total messages processed: ${payloads.length}`);
+  log(`- Successfully sent: ${totalSent}`);
+  log(`- Errors: ${totalErrors}`);
+  log(`- Success rate: ${((totalSent / payloads.length) * 100).toFixed(2)}%`);
 }
 
 main();
