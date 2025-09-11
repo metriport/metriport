@@ -1,4 +1,3 @@
-import { isCommonwellV2EnabledForCx } from "@metriport/core/command/feature-flags/domain-ffs";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { NotFoundError } from "@metriport/shared";
 import { Request, Response } from "express";
@@ -14,8 +13,6 @@ import {
   getOrganizationOrFail,
 } from "../../../command/medical/organization/get-organization";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
-import { getAndUpdateCWOrgAndMetriportOrg } from "../../../external/commonwell-v1/command/create-or-update-cw-organization";
-import { getParsedOrgOrFail } from "../../../external/commonwell-v1/organization";
 import { cwOrgActiveSchema } from "../../../external/commonwell-v1/shared";
 import { getAndUpdateCWOrgAndMetriportOrgV2 } from "../../../external/commonwell-v2/command/organization/create-or-update-cw-organization";
 import { getParsedOrgOrFailV2 } from "../../../external/commonwell-v2/command/organization/organization";
@@ -48,11 +45,7 @@ router.get(
     } else {
       await getOrganizationByOidOrFail({ cxId, oid });
     }
-    if (await isCommonwellV2EnabledForCx(cxId)) {
-      const cwOrg = await getParsedOrgOrFailV2(oid);
-      return res.status(httpStatus.OK).json(cwOrg);
-    }
-    const cwOrg = await getParsedOrgOrFail(oid);
+    const cwOrg = await getParsedOrgOrFailV2(oid);
     return res.status(httpStatus.OK).json(cwOrg);
   })
 );
@@ -76,21 +69,13 @@ router.put(
     if (!org.cwApproved) throw new NotFoundError("CW not approved");
 
     const orgActive = cwOrgActiveSchema.parse(req.body);
-    if (await isCommonwellV2EnabledForCx(cxId)) {
-      await getAndUpdateCWOrgAndMetriportOrgV2({
-        cxId,
-        oid,
-        active: orgActive.active,
-        org,
-      });
-    } else {
-      await getAndUpdateCWOrgAndMetriportOrg({
-        cxId,
-        oid,
-        active: orgActive.active,
-        org,
-      });
-    }
+    await getAndUpdateCWOrgAndMetriportOrgV2({
+      cxId,
+      oid,
+      active: orgActive.active,
+      org,
+    });
+
     return res.sendStatus(httpStatus.OK);
   })
 );
@@ -121,23 +106,14 @@ router.put(
     if (!facility.cwApproved) throw new NotFoundError("CW not approved");
 
     const facilityActive = cwOrgActiveSchema.parse(req.body);
-    if (await isCommonwellV2EnabledForCx(cxId)) {
-      await getAndUpdateCWOrgAndMetriportOrgV2({
-        cxId,
-        oid,
-        active: facilityActive.active,
-        org,
-        facility,
-      });
-    } else {
-      await getAndUpdateCWOrgAndMetriportOrg({
-        cxId,
-        oid,
-        active: facilityActive.active,
-        org,
-        facility,
-      });
-    }
+
+    await getAndUpdateCWOrgAndMetriportOrgV2({
+      cxId,
+      oid,
+      active: facilityActive.active,
+      org,
+      facility,
+    });
     return res.sendStatus(httpStatus.OK);
   })
 );
