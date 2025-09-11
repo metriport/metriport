@@ -7,8 +7,8 @@ import { createAthenaHealthClient } from "../shared";
 export type GetPatientDepartmentIdParams = {
   tokenInfo?: JwtTokenInfo;
   cxId: string;
-  athenaPatientId: string;
-  athenaPracticeId: string;
+  patientId: string;
+  practiceId: string;
 };
 
 /**
@@ -17,29 +17,26 @@ export type GetPatientDepartmentIdParams = {
 export async function getPatientDepartmentId({
   tokenInfo,
   cxId,
-  athenaPatientId,
-  athenaPracticeId,
+  patientId,
+  practiceId,
 }: GetPatientDepartmentIdParams): Promise<string> {
   const existingSecondaryMappings = await getPatientSecondaryMappings({
     ehr: EhrSources.athena,
     cxId,
-    patientId: athenaPatientId,
+    patientId,
     schema: athenaPatientMappingSecondaryMappingsSchema,
   });
   if (existingSecondaryMappings.departmentId) return existingSecondaryMappings.departmentId;
   const client = await createAthenaHealthClient({
     cxId,
-    practiceId: athenaPracticeId,
+    practiceId,
     ...(tokenInfo ? { tokenInfo } : {}),
   });
-  const departmentId = await client.getDepartmentIdForPatient({
-    cxId,
-    patientId: athenaPatientId,
-  });
+  const departmentId = await client.getDepartmentIdForPatient({ cxId, patientId });
   await updateAthenaPatientSecondaryMappingDepartmentId({
     cxId,
-    athenaPatientId,
-    athenaDepartmentId: departmentId,
+    patientId,
+    departmentId,
   });
   return departmentId;
 }

@@ -6,8 +6,8 @@ import { validateAndLogResponse } from "../../api/api-shared";
 
 export type UpdateAthenaPatientSecondaryMappingDepartmentIdParams = {
   cxId: string;
-  athenaPatientId: string;
-  athenaDepartmentId: string;
+  patientId: string;
+  departmentId: string;
 };
 
 /**
@@ -15,22 +15,22 @@ export type UpdateAthenaPatientSecondaryMappingDepartmentIdParams = {
  * by calling the internal API route.
  *
  * @param cxId - The CX ID.
- * @param athenaPatientId - The AthenaHealth patient ID.
- * @param athenaDepartmentId - The AthenaHealth department ID.
+ * @param patientId - The AthenaHealth patient ID.
+ * @param departmentId - The AthenaHealth department ID.
  */
 export async function updateAthenaPatientSecondaryMappingDepartmentId({
   cxId,
-  athenaPatientId,
-  athenaDepartmentId,
+  patientId,
+  departmentId,
 }: UpdateAthenaPatientSecondaryMappingDepartmentIdParams): Promise<void> {
   const { log, debug } = out(
-    `Athena updateAthenaPatientSecondaryMappingDepartmentId - cxId ${cxId} athenaPatientId ${athenaPatientId} athenaDepartmentId ${athenaDepartmentId}`
+    `Athena updateAthenaPatientSecondaryMappingDepartmentId - cxId ${cxId} patientId ${patientId} departmentId ${departmentId}`
   );
   const api = axios.create({ baseURL: Config.getApiUrl() });
   const params = new URLSearchParams({
     cxId,
-    patientId: athenaPatientId,
-    departmentId: athenaDepartmentId,
+    patientId,
+    departmentId,
   });
   const url = `/internal/ehr/athenahealth/patient/secondary-mappings/department-id?${params.toString()}`;
   try {
@@ -43,8 +43,8 @@ export async function updateAthenaPatientSecondaryMappingDepartmentId({
     log(`${msg}. Cause: ${errorToString(error)}`);
     throw new MetriportError(msg, error, {
       cxId,
-      athenaPatientId,
-      athenaDepartmentId,
+      patientId,
+      departmentId,
       url,
       context: `athenahealth.updateAthenaPatientSecondaryMappingDepartmentId`,
     });
