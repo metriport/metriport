@@ -15,6 +15,7 @@ import {
   normalizeZipCodeNew,
   toTitleCase,
 } from "@metriport/shared";
+import { buildDayjs } from "@metriport/shared/common/date";
 import { Command } from "commander";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -27,6 +28,8 @@ dayjs.extend(duration);
 
 /**
  * This script exports patients from the database to Commonwell CSV format between the two given dates.
+ *
+ * Outputs a CSV file on the commonwell-export folder, named like commonwell-patients-<timestamp>.csv
  *
  * Required environment variables:
  *   - DB_CREDS: JSON string with database credentials
@@ -87,8 +90,8 @@ const sqlDBCreds = getEnvVarOrFail("DB_CREDS");
 const dbCreds = JSON.parse(sqlDBCreds);
 
 const outputPath = getOutputFilePath();
-const fromDate = "2025-09-06"; // Use `YYYY-MM-DD HH:MM:SS` format
-const toDate = "2025-09-08"; // Use `YYYY-MM-DD HH:MM:SS` format
+const fromDate = buildDayjs("2025-09-06 23:00:00").toISOString();
+const toDate = buildDayjs("2025-09-10 18:00:000").toISOString();
 
 async function main() {
   await sleep(50); // Give some time to avoid mixing logs w/ Node's
