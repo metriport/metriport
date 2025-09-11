@@ -69,12 +69,7 @@ export async function create({
 }): Promise<{ commonwellPatientId: string } | void> {
   const { log, debug } = out(`CW create - M patientId ${patient.id}`);
 
-  const [isCwV2EnabledCx, isCwV2EnabledFacility] = await Promise.all([
-    isCommonwellV2EnabledForCx(patient.cxId),
-    isCommonwellV2EnabledForCx(facilityId),
-  ]);
-  const isCwV2Enabled = isCwV2EnabledCx && isCwV2EnabledFacility;
-
+  const isCwV2Enabled = await isCommonwellV2EnabledForCx(patient.cxId);
   const isCwEnabled = await validateCWEnabled({
     patient,
     facilityId,
@@ -151,12 +146,7 @@ export async function update({
 }: UpdatePatientCmd): Promise<void> {
   const { log, debug } = out(`CW update - M patientId ${patient.id}`);
 
-  const [isCwV2EnabledCx, isCwV2EnabledFacility] = await Promise.all([
-    isCommonwellV2EnabledForCx(patient.cxId),
-    isCommonwellV2EnabledForCx(facilityId),
-  ]);
-  const isCwV2Enabled = isCwV2EnabledCx && isCwV2EnabledFacility;
-
+  const isCwV2Enabled = await isCommonwellV2EnabledForCx(patient.cxId);
   const isCwEnabled = await validateCWEnabled({
     patient,
     facilityId,
@@ -164,7 +154,6 @@ export async function update({
     log,
     isCwV2Enabled,
   });
-
   if (!isCwEnabled) return;
 
   const demoAugEnabled = await isDemoAugEnabledForCx(patient.cxId);
@@ -224,11 +213,7 @@ export async function update({
 export async function remove({ patient, facilityId }: UpdatePatientCmd): Promise<void> {
   const { log } = out(`CW remove - patientId ${patient.id}`);
 
-  const [isCwV2EnabledCx, isCwV2EnabledFacility] = await Promise.all([
-    isCommonwellV2EnabledForCx(patient.cxId),
-    isCommonwellV2EnabledForCx(facilityId),
-  ]);
-  const isCwV2Enabled = isCwV2EnabledCx && isCwV2EnabledFacility;
+  const isCwV2Enabled = await isCommonwellV2EnabledForCx(patient.cxId);
   if (!isCwV2Enabled) {
     await removeInCwV1(patient, facilityId);
     log(`Removed patient from CW v1`);
