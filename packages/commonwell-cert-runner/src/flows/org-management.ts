@@ -159,7 +159,6 @@ export async function orgManagement(): Promise<OrgManagementResponse> {
 }
 
 function buildResponse(org: Organization): OrgManagementResponse {
-  if (!org.npiType2) throw new Error("Organization is missing NPI Type 2");
   const commonWell = new CommonWell({
     orgCert: orgCertificateString,
     rsaPrivateKey: orgPrivateKeyString,

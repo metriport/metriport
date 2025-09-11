@@ -26,11 +26,7 @@ export async function queryAndProcessDocuments({
   getOrgIdExcludeList: () => Promise<string[]>;
   triggerConsolidated?: boolean;
 }): Promise<void> {
-  const [isCwV2EnabledCx, isCwV2EnabledFacility] = await Promise.all([
-    isCommonwellV2EnabledForCx(patientParam.cxId),
-    isCommonwellV2EnabledForCx(facilityId ?? "NA"),
-  ]);
-  const isCwV2Enabled = isCwV2EnabledCx && isCwV2EnabledFacility;
+  const isCwV2Enabled = await isCommonwellV2EnabledForCx(patientParam.cxId);
 
   // TODO ENG-554 Remove FF and v1 code
   if (!isCwV2Enabled) {
