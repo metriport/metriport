@@ -3,11 +3,9 @@ dotenv.config();
 // keep that ^ on top
 import { ReconversionKickoffParams } from "@metriport/core/command/reconversion/reconversion-kickoff-direct";
 import { SQSClient } from "@metriport/core/external/aws/sqs";
-import { executeAsynchronously } from "@metriport/core/util";
+import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { out } from "@metriport/core/util/log";
-import { sleep } from "@metriport/shared";
-import { getEnvVarOrFail } from "@metriport/shared/common/env-var";
-import { errorToString } from "@metriport/shared/common/error";
+import { errorToString, getEnvVarOrFail, sleep } from "@metriport/shared";
 import { createUuidFromText } from "@metriport/shared/common/uuid";
 import axios from "axios";
 import dayjs from "dayjs";
@@ -40,6 +38,12 @@ dayjs.extend(duration);
  *   - ts-node src/document/reconversion-kickoff-loader.ts <file-with-patient-ids>
  */
 
+// Leave empty to run for all patients of the customer
+const patientIds: string[] = [];
+
+// If provided, will read patient IDs from the file and use them instead of the patientIds array
+const fileName: string | undefined = process.argv[2];
+
 /**
  * This is a unique identifier for the reconversion kickoff job.
  * It is used to group messages in the SQS queue so that we can process them in order.
@@ -49,29 +53,18 @@ dayjs.extend(duration);
  */
 const RECONVESION_KICKOFF_JOB = "reconversion-kickoff-job";
 
-const sqsClient = new SQSClient({ region: getEnvVarOrFail("AWS_REGION") });
-const sqsUrl = getEnvVarOrFail("RECONVERSION_KICKOFF_QUEUE_URL");
-
-/**
- * AWS SQS limit is 3000 messages/second, but we'll be safe and use 2000
- *
- * @see https://aws.amazon.com/sqs/faqs/#topic-3:~:text=What%20is%20the%20throughput%20quota%20for%20an%20Amazon%20SQS%20FIFO%20queue%3F
- */
-const SQS_BATCH_SIZE = 2000;
-const MIN_JITTER_BETWEEN_BATCHES = dayjs.duration(1, "seconds");
+const numberOfParallelExecutions = 10;
 const confirmationTime = dayjs.duration(10, "seconds");
-
-// Leave empty to run for all patients of the customer
-const patientIds: string[] = [];
-
-// If provided, will read patient IDs from the file and use them instead of the patientIds array
-const fileName: string | undefined = process.argv[2];
 
 const dateFrom = "1990-01-01"; // YYYY-MM-DD, with optional timestamp, e.g. 2025-07-10 12:00
 const dateTo = ""; // YYYY-MM-DD, with optional timestamp, e.g. 2025-07-11 12:00
 
 const cxId = getEnvVarOrFail("CX_ID");
 const apiUrl = getEnvVarOrFail("API_URL");
+const queueUrl = getEnvVarOrFail("RECONVERSION_KICKOFF_QUEUE_URL");
+const region = getEnvVarOrFail("AWS_REGION");
+
+const sqsClient = new SQSClient({ region });
 const api = axios.create({ baseURL: apiUrl });
 
 async function displayWarningAndConfirmation(
@@ -155,33 +148,35 @@ async function main() {
         // For debugging - write to file
         // fs.appendFile("sqsMessages.json", payloadString + "\n", "utf8", () => {});
 
-        await sqsClient.sendMessageToQueue(sqsUrl, payloadString, {
+        await sqsClient.sendMessageToQueue(queueUrl, payloadString, {
           fifo: true,
           messageDeduplicationId: createUuidFromText(payloadString),
           messageGroupId: RECONVESION_KICKOFF_JOB,
         });
 
         totalSent++;
-        if (itemIndex % 1000 === 0) {
-          log(`Progress: ${itemIndex + 1}/${payloads.length} messages sent`);
+        if (totalSent % 100 === 0) {
+          log(`Progress: ${totalSent}/${payloads.length} messages sent`);
         }
-      } catch (e) {
-        log(`Error sending message ${itemIndex + 1}: ${errorToString(e)}`);
+      } catch (error) {
+        log(
+          `Failed to put message on queue for patient ${
+            payload.patientId
+          } - reason: ${errorToString(error)}`
+        );
 
         failedPayloads.push({
           payload,
-          error: errorToString(e),
+          error: errorToString(error),
           itemIndex,
         });
         totalErrors++;
       }
     },
     {
-      numberOfParallelExecutions: SQS_BATCH_SIZE,
-      minJitterMillis: MIN_JITTER_BETWEEN_BATCHES.asMilliseconds(),
-      maxJitterMillis: MIN_JITTER_BETWEEN_BATCHES.asMilliseconds() * 1.5,
-      keepExecutingOnError: true,
-      log: log,
+      numberOfParallelExecutions,
+      minJitterMillis: 10,
+      maxJitterMillis: 100,
     }
   );
 
