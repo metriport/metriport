@@ -115,8 +115,8 @@ async function main() {
       },
       {
         numberOfParallelExecutions,
-        minJitterMillis: 100,
-        maxJitterMillis: 500,
+        minJitterMillis: 1_000,
+        maxJitterMillis: 3_000,
       }
     );
 
