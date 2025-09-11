@@ -107,7 +107,7 @@ export class PsvToHl7Converter {
     const firstLine = text.split(/\r?\n/, 1)[0]?.trim() ?? "";
     const hasHeader = firstLine === expectedHeader;
 
-    return new Promise((resolve, reject) => {
+    const rows: Row[] = await new Promise((resolve, reject) => {
       parse(
         text,
         {
@@ -125,6 +125,8 @@ export class PsvToHl7Converter {
         }
       );
     });
+    // Optionally change the MetriplexPatID (cxId and patientId) here for testing.
+    return rows;
   }
 
   // A01 (Admit/Visit): MSH | EVN | PID | PV1 | PV2 (O) | DG1 (O, ~) | NK1 (O, ~) | IN1/IN2/IN3 (O) | OBX/AL1/PR1/ROL/GT1 (O)
