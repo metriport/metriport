@@ -76,7 +76,7 @@ async function main() {
   console.log(`🔄 Starting HL7v2 ingestion in 3 seconds...`); // Give some time for user to cancel just in case.
   await sleep(3000);
   const handler = await buildLaHieIngestion();
-  handler.execute();
+  await handler.execute();
 
   if (deleteFiles) {
     const s3Utils = new S3Utils(awsRegion);
