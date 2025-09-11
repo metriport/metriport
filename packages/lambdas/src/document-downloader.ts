@@ -74,15 +74,11 @@ export const handler = capture.wrapHandler(
         `sourceDocument: ${JSON.stringify(sourceDocument)}`
     );
 
-    // TODO REVERT THE CHECK FOR OID
-    const [cwOrgCertificate, cwOrgPrivateKey, isV2EnabledCx, isV2EnabledFacility] =
-      await Promise.all([
-        getSecret(cwOrgCertificateSecret) as Promise<string>,
-        getSecret(cwOrgPrivateKeySecret) as Promise<string>,
-        isCommonwellV2EnabledForCx(cxId),
-        isCommonwellV2EnabledForCx(orgOid),
-      ]);
-    const isV2Enabled = isV2EnabledCx && isV2EnabledFacility;
+    const [cwOrgCertificate, cwOrgPrivateKey, isV2Enabled] = await Promise.all([
+      getSecret(cwOrgCertificateSecret) as Promise<string>,
+      getSecret(cwOrgPrivateKeySecret) as Promise<string>,
+      isCommonwellV2EnabledForCx(cxId),
+    ]);
 
     if (!cwOrgCertificate) {
       throw new Error(`Config error - CW_ORG_CERTIFICATE doesn't exist`);
@@ -120,8 +116,6 @@ export const handler = capture.wrapHandler(
     }
 
     // V2
-
-    console.log("Using CW v2");
     const commonWell = new CommonWell({
       orgCert: cwOrgCertificate,
       rsaPrivateKey: cwOrgPrivateKey,
