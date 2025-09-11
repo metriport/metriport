@@ -179,22 +179,22 @@ export class SftpClient implements SftpClientImpl {
     content: Buffer,
     { compress = false }: SftpWriteOptions = {}
   ): Promise<void> {
+    let compressedContent = content;
     if (compress) {
       this.debug(`Compressing file with gzip...`);
-      // eslint-disable-next-line no-param-reassign
-      content = await compressGzip(content);
+      compressedContent = await compressGzip(content);
     }
 
     this.log(`Writing file to ${remotePath}`);
     await this.executeWithSshListeners(async function (client) {
-      return client.put(content, remotePath);
+      return client.put(compressedContent, remotePath);
     });
     this.log(`Finished writing file to ${remotePath}`);
 
     if (this.replica) {
       try {
         const replicaPath = this.replica.getReplicaPath(remotePath);
-        await this.replica.writeFile(replicaPath, content);
+        await this.replica.writeFile(replicaPath, compressedContent);
       } catch (error) {
         this.log(`Error writing file to replica: ${errorToString(error)}`);
       }
