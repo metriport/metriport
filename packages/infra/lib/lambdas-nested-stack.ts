@@ -316,6 +316,23 @@ export class LambdasNestedStack extends NestedStack {
         ],
       });
 
+      const hl7SubscriptionSftpIngestionBucket = new s3.Bucket(
+        this,
+        "Hl7SubscriptionSftpIngestionBucket",
+        {
+          bucketName: props.config.hl7Notification.hl7SubscriptionSftpIngestionLambda.bucketName,
+          publicReadAccess: false,
+          encryption: s3.BucketEncryption.S3_MANAGED,
+          versioned: true,
+          cors: [
+            {
+              allowedOrigins: ["*"],
+              allowedMethods: [s3.HttpMethods.PUT, s3.HttpMethods.POST],
+            },
+          ],
+        }
+      );
+
       this.hl7v2RosterUploadLambdas = this.setupRosterUploadLambdas({
         lambdaLayers: props.lambdaLayers,
         vpc: props.vpc,
@@ -331,6 +348,7 @@ export class LambdasNestedStack extends NestedStack {
         secrets: props.secrets,
         config: props.config,
         alarmAction: props.alarmAction,
+        hl7SubscriptionSftpIngestionBucket,
       });
     }
 
@@ -1021,6 +1039,7 @@ export class LambdasNestedStack extends NestedStack {
     vpc: ec2.IVpc;
     secrets: Secrets;
     config: EnvConfig;
+    hl7SubscriptionSftpIngestionBucket: s3.IBucket;
     alarmAction: SnsAction | undefined;
   }): Lambda {
     const envType = ownProps.config.environmentType;
@@ -1061,7 +1080,7 @@ export class LambdasNestedStack extends NestedStack {
         LAHIE_INGESTION_REMOTE_PATH: sftpConfig.remotePath,
         LAHIE_INGESTION_USERNAME: sftpConfig.username,
         LAHIE_INGESTION_PASSWORD_ARN: sftpPasswordSecret.secretArn,
-        LAHIE_INGESTION_BUCKET_NAME: props.bucketName,
+        LAHIE_INGESTION_BUCKET_NAME: ownProps.hl7SubscriptionSftpIngestionBucket.bucketName,
         LAHIE_INGESTION_PRIVATE_KEY_ARN: privateKeySecret.secretArn,
         LAHIE_INGESTION_PRIVATE_KEY_PASSPHRASE: passphraseSecret.secretArn,
       },
@@ -1070,6 +1089,10 @@ export class LambdasNestedStack extends NestedStack {
       alarmSnsAction: ownProps.alarmAction,
     });
 
+    sftpPasswordSecret.grantRead(lambda);
+    privateKeySecret.grantRead(lambda);
+    passphraseSecret.grantRead(lambda);
+    ownProps.hl7SubscriptionSftpIngestionBucket.grantReadWrite(lambda);
     return lambda;
   }
 
