@@ -18,8 +18,8 @@ export async function getAndCheckAthenaPatientDepartmentId({
   const [departmentId, secondaryMappings] = await Promise.all([
     getPatientDepartmentId({
       cxId,
-      athenaPatientId: patientId,
-      athenaPracticeId: practiceId,
+      patientId,
+      practiceId,
       ...(tokenInfo ? { tokenInfo } : {}),
     }),
     getSecondaryMappings({
