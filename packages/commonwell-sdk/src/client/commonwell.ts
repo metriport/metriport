@@ -535,6 +535,17 @@ export class CommonWell extends CommonWellBase implements CommonWellAPI {
         headers,
       })
     );
+
+    if (typeof binary === "string") {
+      try {
+        const dataBuffer = base64ToBuffer(binary);
+        outputStream.write(dataBuffer);
+        outputStream.end();
+      } catch (error) {
+        // Continue with the flow...
+      }
+    }
+
     const errorMessage = "Invalid binary contents";
     if (!("resourceType" in binary)) {
       throw new CommonwellError(errorMessage, undefined, { reason: "Missing resourceType" });
