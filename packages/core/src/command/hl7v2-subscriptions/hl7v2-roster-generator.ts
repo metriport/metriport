@@ -14,15 +14,16 @@ import axios, { AxiosResponse } from "axios";
 import { stringify } from "csv-stringify/sync";
 import _ from "lodash";
 import { getFirstNameAndMiddleInitial, Patient } from "../../domain/patient";
-import { analyticsAsync, EventTypes } from "../../external/analytics/posthog";
-import { reportMetric } from "../../external/aws/cloudwatch";
 import { S3Utils, storeInS3WithRetries } from "../../external/aws/s3";
-import { getSecretValueOrFail } from "../../external/aws/secret-manager";
 import { out } from "../../util";
 import { Config } from "../../util/config";
 import { CSV_FILE_EXTENSION, CSV_MIME_TYPE } from "../../util/mime";
 import { METRIPORT_ASSIGNING_AUTHORITY_IDENTIFIER } from "./constants";
 import { uploadToRemoteSftp } from "./hl7v2-roster-uploader";
+import {
+  trackRosterSizePerCustomer,
+  TrackRosterSizePerCustomerParams,
+} from "./hl7v2-roster-analytics";
 import {
   HieConfig,
   HiePatientRosterMapping,
@@ -128,52 +129,16 @@ export class Hl7v2RosterGenerator {
     log(`Saved in S3: ${this.bucketName}/${s3Key}`);
 
     const rosterSize = rosterRows.length;
-    await this.logResults(rosterSize, hieName, log);
+    const trackRosterSizePerCustomerParams: TrackRosterSizePerCustomerParams = {
+      patients,
+      hieName,
+      orgsByCxId,
+      rosterSize,
+      log,
+    };
+    await trackRosterSizePerCustomer(trackRosterSizePerCustomerParams);
 
     return rosterCsv;
-  }
-
-  private async logResults(
-    rosterSize: number,
-    hieName: string,
-    log: typeof console.log
-  ): Promise<void> {
-    log("Sending analytics to posthog");
-    await this.notifyPostHog(rosterSize, hieName);
-
-    log("Sending metrics to cloudwatch");
-    await this.notifyCloudWatch(rosterSize, hieName);
-  }
-
-  private async notifyPostHog(rosterSize: number, hieName: string) {
-    const posthogSecretName = Config.getPostHogApiKey();
-    if (!posthogSecretName) {
-      throw new Error("Failed to get posthog secret name");
-    }
-
-    const posthogSecret = await getSecretValueOrFail(posthogSecretName, region);
-    await analyticsAsync(
-      {
-        event: EventTypes.rosterUploadSummary,
-        distinctId: `cx:${hieName}`,
-        properties: {
-          stateHie: hieName,
-          rosterSize: rosterSize,
-        },
-      },
-      posthogSecret
-    );
-  }
-
-  private async notifyCloudWatch(rosterSize: number, hieName: string): Promise<void> {
-    const additional = `Hie=${hieName}`;
-
-    await reportMetric({
-      name: "ADT.RosterUpload.RosterSize",
-      unit: "Count",
-      value: rosterSize,
-      additionalDimension: additional,
-    });
   }
 
   private async getAllSubscribedPatients(hieName: string): Promise<Patient[]> {

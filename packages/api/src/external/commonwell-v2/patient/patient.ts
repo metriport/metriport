@@ -61,7 +61,7 @@ import { NetworkLink } from "./types";
 
 dayjs.extend(duration);
 
-const waitTimeAfterRegisterPatientAndBeforeGetLinks = dayjs.duration(5, "seconds");
+const waitTimeAfterRegisterPatientAndBeforeGetLinks = dayjs.duration(15, "seconds");
 const MAX_ATTEMPTS_PATIENT_LINKING = 3;
 
 const createContext = "cw.patient.create";
@@ -658,7 +658,7 @@ async function runPatientLinkingWithRetries({
   validLinks: NetworkLink[];
   invalidLinks: NetworkLink[];
 }> {
-  const { log } = out(`retryPatientLinkingFlow: pt: ${patient.id}`);
+  const { log } = out(`runPatientLinkingWithRetries: pt: ${patient.id}`);
   let validLinks: NetworkLink[] = [];
   let invalidLinks: NetworkLink[] = [];
   let attempt = 0;
@@ -959,7 +959,7 @@ function probableLinkToPatientData(networkLink: NetworkLink): PatientData {
   const genderAtBirth = cwGenderToPatientGender(genderCode ?? undefined);
 
   const address = patient.address.map(addr => ({
-    zip: addr.postalCode,
+    zip: addr.postalCode ?? "",
     city: addr.city ?? "",
     state: addr.state as USStateForAddress,
     country: addr.country ?? "USA",

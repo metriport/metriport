@@ -126,14 +126,16 @@ export class VpnStack extends cdk.Stack {
     });
 
     internalCidrBlocks.forEach((cidr, internalCidrBlockIndex) => {
-      new ec2.CfnVPNConnectionRoute(
-        this,
-        `VpnConnectionRoute-${hieName}-${internalCidrBlockIndex}`,
-        {
-          destinationCidrBlock: cidr,
-          vpnConnectionId: vpnConnection.ref,
-        }
-      );
+      // Don't specify the index on the first item for backwards compatibility
+      const identifier =
+        internalCidrBlockIndex === 0
+          ? `VpnConnectionRoute${hieName}`
+          : `VpnConnectionRoute${hieName}-${internalCidrBlockIndex}`;
+
+      new ec2.CfnVPNConnectionRoute(this, identifier, {
+        destinationCidrBlock: cidr,
+        vpnConnectionId: vpnConnection.ref,
+      });
     });
 
     new cdk.CfnOutput(this, `VpnConnectionId-${hieName}`, {
