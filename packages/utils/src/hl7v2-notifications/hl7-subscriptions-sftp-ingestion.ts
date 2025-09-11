@@ -49,7 +49,7 @@ import { S3Utils } from "@metriport/core/external/aws/s3";
 const port = Config.getLaHieIngestionPort();
 const host = Config.getLaHieIngestionHost();
 const username = Config.getLaHieIngestionUsername();
-const password = Config.getLaHieIngestionPassword();
+const password = Config.getLaHieIngestionPasswordArn(); // should not be an ARN for local execution.
 const remotePath = Config.getLaHieIngestionRemotePath();
 const bucketName = Config.getLaHieIngestionBucket();
 const localPath = Config.getLaHieIngestionLocalPath();

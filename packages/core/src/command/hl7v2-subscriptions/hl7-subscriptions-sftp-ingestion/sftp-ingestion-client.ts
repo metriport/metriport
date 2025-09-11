@@ -7,7 +7,7 @@ import { decryptGpgBinaryWithPrivateKey } from "./hl7-subscriptions-sftp-ingesti
 export type ReplicaConfig = { type: "local"; path: string } | { type: "s3"; bucketName: string };
 
 export class SftpIngestionClient extends SftpClient {
-  private static readonly LOCAL_PASSWORD = Config.getLaHieIngestionPassword();
+  private static readonly LOCAL_PASSWORD = Config.getLaHieIngestionPasswordArn(); // should not be an ARN for local execution.
   private readonly overridenLog: typeof console.log;
 
   private constructor(sftpConfig: SftpConfig, overridenLog: typeof console.log) {
@@ -42,7 +42,7 @@ export class SftpIngestionClient extends SftpClient {
 
   static async getLaHiePassword(): Promise<string> {
     const region = Config.getAWSRegion();
-    const passwordArn = Config.getLaHieIngestionPassword();
+    const passwordArn = Config.getLaHieIngestionPasswordArn();
     return await getSecretValueOrFail(passwordArn, region);
   }
 

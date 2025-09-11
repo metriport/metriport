@@ -433,7 +433,7 @@ export class Config {
     throw new Error("LaHie ingestion port is not a valid number");
   }
 
-  static getLaHieIngestionPassword(): string {
+  static getLaHieIngestionPasswordArn(): string {
     return getEnvVarOrFail("LAHIE_INGESTION_PASSWORD_ARN");
   }
 
