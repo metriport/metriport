@@ -68,7 +68,7 @@ export class SftpIngestionClient extends SftpClient {
     }
   }
 
-  override async syncFileToReplica(content: Buffer, remotePath: string) {
+  override async syncFileToReplica(content: Buffer, remotePath: string): Promise<void> {
     this.overridenLog("Found a file to sync to replica");
     if (this.replica) {
       try {
