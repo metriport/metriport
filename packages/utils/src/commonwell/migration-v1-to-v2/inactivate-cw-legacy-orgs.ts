@@ -7,7 +7,7 @@ import { Organization } from "@metriport/commonwell-sdk-v1/models/organization";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 import { sleep } from "@metriport/core/util/sleep";
-import { errorToString } from "@metriport/shared";
+import { errorToString, MetriportError } from "@metriport/shared";
 import { Command } from "commander";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -184,7 +184,7 @@ async function getAllOrganizations(commonWell: CommonWell): Promise<Organization
       const orgList = await commonWell.getAllOrgs(
         metriportQueryMeta,
         false,
-        offset > 1 ? offset : undefined,
+        offset > 0 ? offset : undefined,
         limit
       );
       const orgs = orgList.organizations || [];
@@ -243,7 +243,7 @@ async function inactivateOrganization(
       org.name
     }), log ref ${commonWell.lastReferenceHeader}: ${errorToString(error)}`;
     log(errorMsg);
-    throw new Error(errorMsg);
+    throw new MetriportError(errorMsg, error);
   }
 }
 

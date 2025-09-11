@@ -3,16 +3,12 @@ dotenv.config();
 // keep that ^ on top
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { sleep } from "@metriport/core/util/sleep";
-import { errorToString, getEnvVarOrFail, uuidv7 } from "@metriport/shared";
+import { errorToString, getEnvVarOrFail, MetriportError, uuidv7 } from "@metriport/shared";
 import axios from "axios";
 import { Command } from "commander";
 import csvParser from "csv-parser";
-import dayjs from "dayjs";
-import duration from "dayjs/plugin/duration";
 import { createReadStream } from "fs";
 import { elapsedTimeAsStr } from "../../shared/duration";
-
-dayjs.extend(duration);
 
 /**
  * This script reads a CSV file with patient data and calls the CommonWell update endpoint
@@ -205,7 +201,7 @@ async function updatePatientsForCustomer(
   } catch (error) {
     const errorMsg = `Failed to update patients for customer ${cxId}: ${errorToString(error)}`;
     log(errorMsg);
-    throw new Error(errorMsg);
+    throw new MetriportError(errorMsg, error);
   }
 }
 
