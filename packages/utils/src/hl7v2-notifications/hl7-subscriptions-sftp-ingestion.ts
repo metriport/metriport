@@ -49,7 +49,8 @@ import { S3Utils } from "@metriport/core/external/aws/s3";
 const port = Config.getLaHieIngestionPort();
 const host = Config.getLaHieIngestionHost();
 const username = Config.getLaHieIngestionUsername();
-const password = Config.getLaHieIngestionPasswordArn(); // should not be an ARN for local execution.
+// Password should not be an ARN for local execution.
+const password = Config.getLaHieIngestionPasswordArn(); //eslint-disable-line @typescript-eslint/no-unused-vars
 const remotePath = Config.getLaHieIngestionRemotePath();
 const bucketName = Config.getLaHieIngestionBucket();
 const localPath = Config.getLaHieIngestionLocalPath();
@@ -69,7 +70,6 @@ async function main() {
   console.log(`SFTP Port: ${port}`);
   console.log(`SFTP Host: ${host}`);
   console.log(`SFTP Username: ${username}`);
-  console.log(`SFTP Password: ${password}`);
   console.log(`SFTP Remote Path: ${remotePath}`);
   console.log(`SFTP Bucket Name: ${bucketName}`);
   console.log(`SFTP Local Path: ${localPath}`);
