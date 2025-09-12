@@ -374,8 +374,7 @@ describe("PsvToHl7Converter", () => {
     expect(pv2Segment.getField(23).toString()).toBe(FACILITY_NAME);
 
     //PV2.24 - Patient Status Code
-    const PATIENT_STATUS_CODE = "^I";
-    expect(pv2Segment.getField(24).toString()).toBe(PATIENT_STATUS_CODE);
+    expect(pv2Segment.getField(24).toString()).toBe(PATIENT_CLASS);
 
     //PV2.40 - Admission Level of Care Code
     const ADMISSION_LEVEL_OF_CARE_CWE = `${EMERGENCY_SEVERITY_LEVEL}^${ESI_TRIAGE_LEVEL}^${ESI_SYSTEM}`;

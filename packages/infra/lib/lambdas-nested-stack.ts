@@ -1046,7 +1046,7 @@ export class LambdasNestedStack extends NestedStack {
     const lambdaTimeout = Duration.seconds(60);
     const props = ownProps.config.hl7Notification?.hl7SubscriptionSftpIngestionLambda;
     if (!props) {
-      throw new Error("hl7v2LaHieIngestionLambda is undefined in config.");
+      throw new Error("hl7SubscriptionSftpIngestionLambda is undefined in config.");
     }
 
     const sftpPasswordSecret = ownProps.secrets["HL7_SUBSCRIPTION_INGESTION_PASSWORD"];
@@ -1054,7 +1054,7 @@ export class LambdasNestedStack extends NestedStack {
     const passphraseSecret = ownProps.secrets["HL7_SUBSCRIPTION_INGESTION_PASSPHRASE"];
 
     if (!sftpPasswordSecret) {
-      throw new Error("HL7_SUBSCRIPTION_INGESTION_SFTP_PASSWORD is not defined in config.");
+      throw new Error("HL7_SUBSCRIPTION_INGESTION_PASSWORD is not defined in config.");
     }
 
     if (!privateKeySecret) {
@@ -1082,7 +1082,7 @@ export class LambdasNestedStack extends NestedStack {
         LAHIE_INGESTION_PASSWORD_ARN: sftpPasswordSecret.secretArn,
         LAHIE_INGESTION_BUCKET_NAME: ownProps.hl7SubscriptionSftpIngestionBucket.bucketName,
         LAHIE_INGESTION_PRIVATE_KEY_ARN: privateKeySecret.secretArn,
-        LAHIE_INGESTION_PRIVATE_KEY_PASSPHRASE: passphraseSecret.secretArn,
+        LAHIE_INGESTION_PRIVATE_KEY_PASSPHRASE_ARN: passphraseSecret.secretArn,
       },
       stack: this,
       name: "hl7-subscriptions-sftp-ingestion-LaHie",
