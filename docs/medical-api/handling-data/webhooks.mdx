@@ -262,9 +262,7 @@ Patients can have a large amount of data, so in order to have access to a Patien
 Note that inside the `Bundle` you'll find a `DocumentReference` resource with attachments in the `content` array:
 
 - The first item contains an attachment with a `url` which can be used to download the data.
-- An additional attachment with `contentType: "application/gzip"` provides a gzip-compressed copy for faster downloads.
-
-Each attachment has a `url` you can use to download the data.
+- If requested `conversionType` is `json`, an additional attachment with `contentType: "application/gzip"` provides a gzip-compressed copy for faster downloads.
 
 <Info>
   If there was no data available for the Patient, the
@@ -325,28 +323,6 @@ Example payload:
   ]
 }
 ```
-
-<Tip>
-**Working with Multiple Attachments**
-
-When processing the webhook payload, identify attachments by their `contentType`:
-
-- **Main attachment**: Look for `contentType` matching your requested format (`application/json`, `text/html`, or `application/pdf`)
-- **Gzip attachment**: Look for `contentType: "application/gzip"` (JSON requests only)
-
-Example code:
-
-```javascript
-const content = bundle.entry[0].resource.content;
-const mainAttachment = content.find(
-  c => c.attachment.contentType !== "application/gzip"
-);
-const gzipAttachment = content.find(
-  c => c.attachment.contentType === "application/gzip"
-);
-```
-
-</Tip>
 
 The format follows:
 
