@@ -22,7 +22,7 @@ import { chunk } from "lodash";
 
 dayjs.extend(duration);
 
-const patientIds: string[] = ["0198131c-04d2-7f8f-8306-d7d1aa46339f"];
+const patientIds: string[] = [];
 const rerunPdOnNewDemographics = true;
 
 const confirmationTime = dayjs.duration(10, "seconds");
