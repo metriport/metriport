@@ -37,7 +37,7 @@ const region = getEnvVarOrFail("AWS_REGION");
 
 const lambdaName = "PatientImportResultLambda";
 
-export const internalApi = axios.create({
+export const ossApi = axios.create({
   baseURL: apiUrl,
   headers: { "Content-Type": "application/json" },
 });
@@ -96,7 +96,7 @@ async function getPatientImportJobOrFail({
   jobId: string;
 }): Promise<PatientImportJob> {
   const params = new URLSearchParams({ cxId });
-  const response = await internalApi.get(`/internal/patient/bulk/${jobId}?${params.toString()}`);
+  const response = await ossApi.get(`/internal/patient/bulk/${jobId}?${params.toString()}`);
   return response.data;
 }
 

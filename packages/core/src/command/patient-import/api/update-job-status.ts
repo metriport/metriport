@@ -7,20 +7,13 @@ import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
 import { withDefaultApiErrorHandling } from "../../shared/api/shared";
 
-type UpdateJobAtApiBaseParams = {
+export type UpdateJobAtApiParams = {
   cxId: string;
   jobId: string;
   status: PatientImportJobStatus;
   total?: number | undefined;
   failed?: number | undefined;
   forceStatusUpdate?: boolean | undefined;
-};
-
-export type UpdateJobAtApiParams = UpdateJobAtApiBaseParams & {
-  throwOnFailure?: true | never;
-};
-export type UpdateJobAtApiParamsNoThrowOnFailure = UpdateJobAtApiBaseParams & {
-  throwOnFailure?: false;
 };
 
 /**
@@ -33,18 +26,10 @@ export type UpdateJobAtApiParamsNoThrowOnFailure = UpdateJobAtApiBaseParams & {
  * @param total - The total number of patients in the job.
  * @param failed - The number of patient entries that failed in the job.
  * @param forceStatusUpdate - Whether to force the status update.
- * @param throwOnFailure - Whether to throw an error if the update fails.
- * @returns the updated job or undefined if the update fails and throwOnFailure is false.
- * @throws MetriportError if the update fails and throwOnFailure is true.
- * @returns undefined if the update fails and throwOnFailure is false.
+ * @returns the updated job.
+ * @throws MetriportError if the update fails.
  */
-export async function updateJobAtApi(params: UpdateJobAtApiParams): Promise<PatientImportJob>;
-export async function updateJobAtApi(
-  params: UpdateJobAtApiParamsNoThrowOnFailure
-): Promise<PatientImportJob | undefined>;
-export async function updateJobAtApi(
-  params: UpdateJobAtApiParams | UpdateJobAtApiParamsNoThrowOnFailure
-): Promise<PatientImportJob | undefined> {
+export async function updateJobAtApi(params: UpdateJobAtApiParams): Promise<PatientImportJob> {
   const { cxId, jobId, status, total, failed, forceStatusUpdate } = params;
   const { log } = out(`PatientImport updateJobAtApi - cxId ${cxId} jobId ${jobId}`);
   const api = axios.create({ baseURL: Config.getApiUrl() });
@@ -70,15 +55,12 @@ export async function updateJobAtApi(
   } catch (error) {
     const msg = `Failure while updating the bulk import job @ PatientImport`;
     log(`${msg}. Cause: ${errorToString(error)}`);
-    if (params.throwOnFailure) {
-      throw new MetriportError(msg, error, {
-        cxId,
-        jobId,
-        url,
-        context: "patient-import.updateJobAtApi",
-      });
-    }
-    return undefined;
+    throw new MetriportError(msg, error, {
+      cxId,
+      jobId,
+      url,
+      context: "patient-import.updateJobAtApi",
+    });
   }
 }
 

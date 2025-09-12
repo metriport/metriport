@@ -44,7 +44,11 @@ export class PatientImportResultLocal implements PatientImportResult {
     } catch (error) {
       const msg = `Failure while processing job result @ PatientImport`;
       log(`${msg}. Cause: ${errorToString(error)}`);
-      await updateJobAtApi({ cxId, jobId, status: "failed", throwOnFailure: false });
+      try {
+        await updateJobAtApi({ cxId, jobId, status: "failed" });
+      } catch (error) {
+        log(`Failed to update job status to failed. Cause: ${errorToString(error)}`);
+      }
       throw error;
     }
   }
