@@ -8,6 +8,7 @@ import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { timed } from "@metriport/shared/util/duration";
 import { LLMChain, MapReduceDocumentsChain, StuffDocumentsChain } from "langchain/chains";
 import { analytics, EventTypes } from "../../external/analytics/posthog";
+import { getAnthropicModelId } from "../../external/bedrock/model/anthropic/version";
 import { BedrockChat } from "../../external/langchain/bedrock";
 import { out } from "../../util";
 import { isPcpVisitAiSummaryFeatureFlagEnabledForCx } from "../feature-flags/domain-ffs";
@@ -63,7 +64,7 @@ export async function summarizeFilteredBundleWithAI(
     };
 
     const llmSummary = new BedrockChat({
-      model: "us.anthropic.claude-3-5-sonnet-20241022-v2:0",
+      model: getAnthropicModelId("claude-sonnet-3.5"),
       temperature: 0,
       region: "us-west-2",
       callbacks: [

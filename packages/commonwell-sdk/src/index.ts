@@ -7,9 +7,10 @@ export { CommonwellError } from "./common/commonwell-error";
 export { makeJwt } from "./common/make-jwt";
 export {
   buildBaseQueryMeta,
-  decodeCwPatientId,
-  getPatientIdTrailingSlash,
-  getPatientStrongIds,
+  decodeCwPatientIdV2,
+  encodeCwPatientId,
+  encodePatientIdForDocumentExchange,
+  getCwPatientIdFromLinks,
 } from "./common/util";
 export { validateNPI } from "./common/validate-npi";
 export * from "./models/address";

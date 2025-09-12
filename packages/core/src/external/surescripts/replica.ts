@@ -2,7 +2,7 @@ import { Config } from "../../util/config";
 import { S3Replica } from "../sftp/replica/s3";
 import { SurescriptsFileIdentifier, SurescriptsSftpConfig } from "./types";
 import { buildRequestFileName, buildResponseFileNamePrefix } from "./file/file-names";
-import { decompressGzip } from "../sftp/compression";
+import { decompressGzip } from "../../util/compression";
 import { INCOMING_NAME } from "./constants";
 
 export class SurescriptsReplica extends S3Replica {

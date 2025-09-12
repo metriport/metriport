@@ -1,40 +1,19 @@
 import {
   CommonWellAPI,
+  Patient as CommonwellPatient,
+  Person as CommonwellPerson,
   getDemographics,
   getPersonId,
   isEnrolled,
   isUnenrolled,
-  Patient as CommonwellPatient,
-  Person as CommonwellPerson,
   RequestMetadata,
   StrongId,
 } from "@metriport/commonwell-sdk-v1";
-import { PatientExternalDataEntry } from "@metriport/core/domain/patient";
-import { capture } from "@metriport/core/util/notifications";
 import { out } from "@metriport/core/util/log";
+import { capture } from "@metriport/core/util/notifications";
 import { intersectionBy, minBy } from "lodash";
 import { filterTruthy } from "../../shared/filter-map-utils";
-import { LinkStatus } from "../patient-link";
 import { makePersonForPatient } from "./patient-conversion";
-
-export const cqLinkStatus = ["unlinked", "processing", "linked"] as const;
-/**
- * Status of the patient's link to CareQuality.
- */
-export type CQLinkStatus = (typeof cqLinkStatus)[number];
-
-export class PatientDataCommonwell extends PatientExternalDataEntry {
-  constructor(
-    public patientId: string,
-    public personId?: string | undefined,
-    public status?: LinkStatus | undefined,
-    public cqLinkStatus?: CQLinkStatus,
-    public scheduledDocQueryRequestId?: string | undefined,
-    public scheduledDocQueryRequestTriggerConsolidated?: boolean | undefined
-  ) {
-    super();
-  }
-}
 
 export type FindOrCreatePersonResponse = { personId: string; person: CommonwellPerson } | undefined;
 

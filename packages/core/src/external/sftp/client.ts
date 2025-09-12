@@ -2,7 +2,7 @@ import { MetriportError, BadRequestError, errorToString } from "@metriport/share
 import SshSftpClient from "ssh2-sftp-client";
 import { Writable } from "stream";
 import { out } from "../../util/log";
-import { compressGzip, decompressGzip } from "./compression";
+import { compressGzip, decompressGzip } from "../../util/compression";
 import { LocalReplica } from "./replica/local";
 import { S3Replica } from "./replica/s3";
 import {
@@ -179,21 +179,22 @@ export class SftpClient implements SftpClientImpl {
     content: Buffer,
     { compress = false }: SftpWriteOptions = {}
   ): Promise<void> {
+    let contentToUse = content;
     if (compress) {
       this.debug(`Compressing file with gzip...`);
-      content = await compressGzip(content);
+      contentToUse = await compressGzip(content);
     }
 
     this.log(`Writing file to ${remotePath}`);
     await this.executeWithSshListeners(async function (client) {
-      return client.put(content, remotePath);
+      return client.put(contentToUse, remotePath);
     });
     this.log(`Finished writing file to ${remotePath}`);
 
     if (this.replica) {
       try {
         const replicaPath = this.replica.getReplicaPath(remotePath);
-        await this.replica.writeFile(replicaPath, content);
+        await this.replica.writeFile(replicaPath, contentToUse);
       } catch (error) {
         this.log(`Error writing file to replica: ${errorToString(error)}`);
       }
@@ -281,7 +282,9 @@ export function createWritableBuffer(): { writable: Writable; getBuffer: () => B
     },
   });
 
-  const getBuffer = () => Buffer.concat(chunks);
+  function getBuffer() {
+    return Buffer.concat(chunks);
+  }
   return { writable, getBuffer };
 }
 

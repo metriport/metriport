@@ -105,20 +105,26 @@ async function getPatientAndCxFromRequest(
   return { cxId, patientId };
 }
 
-function getOrgOIDAndPatientId(req: Request): {
+export function getOrgOIDAndPatientId(req: Request): {
   orgOID: string;
   patientId: string;
 } {
   const query = req.query;
-  const executeWithParam = (paramName: string) => {
+  function executeWithParam(paramName: string) {
     const param = query[paramName];
     if (typeof param !== "string") return undefined;
-    const patientIdRaw = param?.split("|") ?? [];
-    const orgOID = (patientIdRaw[0] ?? "").replace("urn:oid:", "");
-    const patientId = (patientIdRaw[1] ?? "").replace("urn:oid:", "").replace("urn:uuid:", "");
-    if (orgOID?.trim().length && patientId?.trim().length) return { orgOID, patientId };
+    const patientIdRaw = (param ?? "").split("|", 2);
+    const orgOID = (patientIdRaw[0] ?? "")
+      .replace(/urn:oid:/i, "")
+      .toLowerCase()
+      .trim();
+    const patientId = (patientIdRaw[1] ?? "")
+      .replace(/urn:(?:oid|uuid):/i, "")
+      .toLowerCase()
+      .trim();
+    if (orgOID.length > 0 && patientId.length > 0) return { orgOID, patientId };
     return undefined;
-  };
+  }
   for (const param of patientParams) {
     const response = executeWithParam(param);
     if (response) return response;

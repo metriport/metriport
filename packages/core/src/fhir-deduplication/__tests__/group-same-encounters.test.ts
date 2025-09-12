@@ -155,21 +155,21 @@ describe("groupSameEncounters", () => {
     let result = groupSameEncounters([encounter, encounter2]);
     expect(result.encountersMap.size).toBe(1);
     let masterEncounter = result.encountersMap.values().next().value;
-    expect(masterEncounter.status).toBe("finished");
+    expect(masterEncounter?.status).toBe("finished");
 
     encounter.status = "in-progress";
     encounter2.status = "planned";
 
     result = groupSameEncounters([encounter, encounter2]);
     masterEncounter = result.encountersMap.values().next().value;
-    expect(masterEncounter.status).toBe("in-progress");
+    expect(masterEncounter?.status).toBe("in-progress");
 
     encounter.status = "triaged";
     encounter2.status = "unknown";
 
     result = groupSameEncounters([encounter, encounter2]);
     masterEncounter = result.encountersMap.values().next().value;
-    expect(masterEncounter.status).toBe("triaged");
+    expect(masterEncounter?.status).toBe("triaged");
   });
 
   it("does not group encounters when dates are missing", () => {

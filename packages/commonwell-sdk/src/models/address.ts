@@ -9,7 +9,10 @@ import { periodSchema } from "./period";
  */
 export enum AddressUseCodes {
   home = "home",
+  work = "work",
+  temp = "temp",
   old = "old",
+  billing = "billing",
 }
 export const addressUseCodesSchema = z.preprocess(zodToLowerCase, z.nativeEnum(AddressUseCodes));
 
@@ -27,7 +30,7 @@ export const addressSchema = z.object({
   city: z.string().nullish(),
   state: z.preprocess(normalizeStatePreprocess, z.string().nullish()),
   country: emptyStringToUndefinedSchema,
-  postalCode: z.string(),
+  postalCode: emptyStringToUndefinedSchema.pipe(z.string().nullish()),
   use: emptyStringToUndefinedSchema.pipe(addressUseCodesSchema.nullish()),
   type: emptyStringToUndefinedSchema.pipe(addressTypeCodesSchema.nullish()),
   period: periodSchema.nullish(),

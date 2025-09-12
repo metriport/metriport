@@ -1,6 +1,6 @@
 import { getEnvVarAsRecordOrFail } from "@metriport/shared/common/env-var";
-import { getEnvVar, getEnvVarOrFail } from "./env-var";
 import { ROSTER_UPLOAD_SFTP_PASSWORD } from "@metriport/shared/domain/tcm-encounter";
+import { getEnvVar, getEnvVarOrFail } from "./env-var";
 
 /**
  * Shared configs, still defining how to work with this. For now:
@@ -398,14 +398,13 @@ export class Config {
     return getEnvVarOrFail("FHIR_TO_CSV_TRANSFORM_LAMBDA_NAME");
   }
 
-  static getFhirToCsvBatchJobQueueArn(): string | undefined {
-    return getEnvVar("FHIR_TO_CSV_BATCH_JOB_QUEUE_ARN");
-  }
-  static getFhirToCsvBatchJobDefinitionArn(): string | undefined {
-    return getEnvVar("FHIR_TO_CSV_BATCH_JOB_DEFINITION_ARN");
-  }
-
   static getRosterUploadSftpPasswordArn(): string {
     return getEnvVarOrFail(`${ROSTER_UPLOAD_SFTP_PASSWORD}_ARN`);
+  }
+
+  static getInternalServerUrl(): string {
+    // to avoid downtime due to workflow dependencies and environment variables changes, temporary return "".
+    // Alexey Todo: follow up PR to clean up
+    return getEnvVar("INTERNAL_SERVER_BASE_URL") ?? "";
   }
 }

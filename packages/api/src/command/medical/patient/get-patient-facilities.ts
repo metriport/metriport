@@ -35,11 +35,12 @@ export async function getPatientPrimaryFacilityIdOrFail({
 }: GetPatientFacilitiesCmd): Promise<string> {
   const patient = await getPatientOrFail({ id: patientId, cxId });
   const facilityIds = patient.facilityIds;
-  if (facilityIds.length < 1) {
+  const facilityId = facilityIds[0];
+  if (!facilityId) {
     throw new MetriportError("Patient has no facilities", undefined, {
       patientId,
       cxId,
     });
   }
-  return facilityIds[0];
+  return facilityId;
 }

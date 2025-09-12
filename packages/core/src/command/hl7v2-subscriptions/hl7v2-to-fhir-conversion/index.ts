@@ -1,8 +1,12 @@
 import { Hl7Message } from "@medplum/core";
-import { Bundle, Extension, Resource } from "@medplum/fhirtypes";
+import { Bundle, Extension, Patient, Resource } from "@medplum/fhirtypes";
 import { MetriportError } from "@metriport/shared";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
-import { buildBundleFromResources } from "../../../external/fhir/bundle/bundle";
+import {
+  buildBundleEntry,
+  buildBundleFromResources,
+  buildCollectionBundle,
+} from "../../../external/fhir/bundle/bundle";
 import { buildDocIdFhirExtension } from "../../../external/fhir/shared/extensions/doc-id-extension";
 import { capture, out } from "../../../util";
 import { convertAdtToFhirResources } from "./adt/encounter";
@@ -15,8 +19,9 @@ export type Hl7ToFhirParams = {
   message: Hl7Message;
   rawDataFileKey: string;
   hieName: string;
+  fhirPatient: Patient;
 };
-type ResourceWithExtension = Resource & { extension?: Extension[] };
+export type ResourceWithExtension = Resource & { extension?: Extension[] };
 
 /**
  * Converts an HL7v2 message to a FHIR Bundle. Currently only supports ADT messages.
@@ -27,6 +32,7 @@ export function convertHl7v2MessageToFhir({
   message,
   rawDataFileKey,
   hieName,
+  fhirPatient,
 }: Hl7ToFhirParams): Bundle<Resource> {
   const { log } = out(`hl7v2 to fhir - cx: ${cxId}, pt: ${patientId}`);
   log("Beginning conversion.");
@@ -42,8 +48,14 @@ export function convertHl7v2MessageToFhir({
     log(`Conversion completed in ${duration} ms`);
     const docIdExtension = buildDocIdFhirExtension(rawDataFileKey, "hl7");
     const sourceExtension = createExtensionDataSource(hieName.toUpperCase());
-    let updatedBundle = appendExtensionToEachResource(bundle, docIdExtension);
-    updatedBundle = appendExtensionToEachResource(bundle, sourceExtension);
+    const newEncounterData = prependPatientToBundle({
+      bundle: bundle,
+      fhirPatient,
+    });
+    const updatedBundle = appendExtensionToEachResource(
+      appendExtensionToEachResource(newEncounterData, docIdExtension),
+      sourceExtension
+    );
     return updatedBundle;
   }
 
@@ -89,4 +101,16 @@ export function appendExtensionToEachResource(
       };
     }),
   };
+}
+
+function prependPatientToBundle({
+  bundle,
+  fhirPatient,
+}: {
+  bundle: Bundle<Resource>;
+  fhirPatient: Resource;
+}): Bundle<Resource> {
+  const fhirPatientEntry = buildBundleEntry(fhirPatient);
+  const combinedEntries = bundle.entry ? [fhirPatientEntry, ...bundle.entry] : [];
+  return buildCollectionBundle(combinedEntries);
 }

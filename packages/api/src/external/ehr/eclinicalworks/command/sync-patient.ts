@@ -78,6 +78,7 @@ export async function syncEClinicalWorksPatientIntoMetriport({
     patientId: metriportPatient.id,
     externalId: eclinicalworksPatientId,
     source: EhrSources.eclinicalworks,
+    secondaryMappings: { practiceId: eclinicalworksPracticeId },
   });
   return metriportPatient.id;
 }

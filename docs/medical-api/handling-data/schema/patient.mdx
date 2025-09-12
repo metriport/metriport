@@ -1,0 +1,43 @@
+---
+title: "Patient"
+description: "Schema documentation for the Patient table in the Metriport data model"
+group: "Schema"
+---
+
+The patient table contains information on patients, including demographic information such as birth date, gender, race, and ethnicity. This is the core table that contains this information.
+
+**Primary Keys:**
+* person_id
+
+| Column | Data Type | Description | Terminology |
+| ------ | --------- | ----------- | ----------- |
+| person_id | string | Unique identifier for the person | - |
+| member_id | string | Unique identifier for the member | - |
+| patient_id | string | Unique identifier for the patient | - |
+| first_name | string | Patient's first name | - |
+| last_name | string | Patient's last name | - |
+| middle_name | string | Patient's middle name | - |
+| date_of_birth | date | Patient's date of birth | - |
+| gender | string | Patient's gender | male, female, other, unknown |
+| race | string | Patient's race | - |
+| ethnicity | string | Patient's ethnicity | - |
+| marital_status | string | Patient's marital status | single, married, divorced, widowed |
+| address_line_1 | string | Primary address line | - |
+| address_line_2 | string | Secondary address line | - |
+| city | string | City | - |
+| state | string | State or province | - |
+| zip_code | string | ZIP or postal code | - |
+| country | string | Country | - |
+| phone_number | string | Primary phone number | - |
+| email_address | string | Primary email address | - |
+| primary_language | string | Patient's primary language | - |
+| insurance_id | string | Primary insurance identifier | - |
+| insurance_provider | string | Primary insurance provider | - |
+| insurance_group | string | Insurance group number | - |
+| data_source | string | Source of the patient data | claims, clinical, ehr |
+| source_code | string | Original code from the source system | - |
+| normalized_code | string | Standardized/normalized code | - |
+| source_system | string | System that provided the patient data | - |
+| source_table | string | Table in the source system | - |
+| source_id | string | Identifier from the source system | - |
+| ingestion_date | timestamp | Date when the data was ingested | - |

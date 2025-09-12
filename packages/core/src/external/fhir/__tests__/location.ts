@@ -26,7 +26,7 @@ export function makeLocation(param?: {
     telecom: location.telecom ?? [
       {
         system: "phone",
-        value: faker.phone.number("#########"),
+        value: faker.string.numeric(10),
       },
     ],
     address: location.address ?? {

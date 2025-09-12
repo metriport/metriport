@@ -1,4 +1,3 @@
-import { isCommonwellV2EnabledForCx } from "@metriport/core/command/feature-flags/domain-ffs";
 import { isHealthcareItVendor } from "@metriport/core/domain/organization";
 import { Config } from "@metriport/core/util/config";
 import { processAsyncError } from "@metriport/core/util/error/shared";
@@ -10,7 +9,6 @@ import { updateFacility } from "../../../command/medical/facility/update-facilit
 import { getOrganizationOrFail } from "../../../command/medical/organization/get-organization";
 import { Facility, FacilityCreate } from "../../../domain/medical/facility";
 import { createOrUpdateFacility as cqCreateOrUpdateFacility } from "../../../external/carequality/command/create-or-update-facility";
-import { createOrUpdateFacilityInCw } from "../../../external/commonwell-v1/command/create-or-update-cw-facility";
 import { createOrUpdateFacilityInCwV2 } from "../../../external/commonwell-v2/command/facility/create-or-update-cw-facility";
 import { requestLogger } from "../../helpers/request-logger";
 import { internalDtoFromModel } from "../../medical/dtos/facilityDTO";
@@ -75,23 +73,12 @@ router.put(
     }
     // COMMONWELL
     if (syncInHie && facility.cwApproved) {
-      // TODO ENG-554 Remove FF and v1 code
-      if (await isCommonwellV2EnabledForCx(cxId)) {
-        createOrUpdateFacilityInCwV2({
-          cxId,
-          facility,
-          cxOrgName: org.data.name,
-          cxOrgType: org.data.type,
-        }).catch(processAsyncError("cwV2.internal.facility"));
-      } else {
-        createOrUpdateFacilityInCw({
-          cxId,
-          facility,
-          cxOrgName: org.data.name,
-          cxOrgType: org.data.type,
-          cwOboOid: facilityDetails.cwOboOid,
-        }).catch(processAsyncError("cw.internal.facility"));
-      }
+      createOrUpdateFacilityInCwV2({
+        cxId,
+        facility,
+        cxOrgName: org.data.name,
+        cxOrgType: org.data.type,
+      }).catch(processAsyncError("cwV2.internal.facility"));
     }
     return res.status(httpStatus.OK).json(internalDtoFromModel(facility));
   })
