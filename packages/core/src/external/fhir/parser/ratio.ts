@@ -3,7 +3,7 @@ import { parseQuantity } from "./quantity-unit";
 import { getFirstToken } from "./shared";
 import { parseUcumUnit, createUcumQuantity } from "./ucum-unit";
 
-const DIVIDERS = new Set<string>(["/", "per"]);
+const DIVIDERS = new Set<string>(["/", "per", "="]);
 
 export function parseRatio(inputString: string): Ratio | undefined {
   const numerator = parseQuantity(inputString);

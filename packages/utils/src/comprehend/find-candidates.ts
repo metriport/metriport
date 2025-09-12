@@ -20,7 +20,7 @@ command.action(async ({ cxId }: { cxId: string }) => {
     const diagnosticCount = countDiagnosticReports(consolidated);
     const medicationCount = countMedications(consolidated);
 
-    if (medicationCount === 0) continue;
+    if (medicationCount !== 0) continue;
 
     const ratio = diagnosticCount / medicationCount;
     if (ratio >= 10) {
