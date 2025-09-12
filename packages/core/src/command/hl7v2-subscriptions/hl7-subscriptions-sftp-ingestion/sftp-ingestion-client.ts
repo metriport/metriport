@@ -7,7 +7,7 @@ import { decryptGpgBinaryWithPrivateKey } from "./hl7-subscriptions-sftp-ingesti
 export type ReplicaConfig = { type: "local"; path: string } | { type: "s3"; bucketName: string };
 
 export class SftpIngestionClient extends SftpClient {
-  private static readonly LOCAL_PASSWORD = Config.getLaHieIngestionPasswordArn(); // should not be an ARN for local execution.
+  private static readonly LOCAL_PASSWORD = Config.getLaHieIngestionLocalPassword();
   private readonly overridenLog: typeof console.log;
 
   private constructor(sftpConfig: SftpConfig, overridenLog: typeof console.log) {
