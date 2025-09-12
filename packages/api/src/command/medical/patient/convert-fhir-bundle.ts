@@ -48,13 +48,6 @@ const REQUESTED_MIME_BY_TYPE: Record<ConsolidationConversionType, string> = {
   html: "text/html",
 };
 
-export type BundleAttachment = {
-  attachment: {
-    contentType: string;
-    url: string;
-  };
-};
-
 export async function handleBundleToMedicalRecord({
   bundle,
   patient,
@@ -82,7 +75,8 @@ export async function handleBundleToMedicalRecord({
       bucketName,
       fileName,
     });
-    return buildDocRefBundleWithAttachment(patient.id, url, conversionType);
+    const attachments = [{ url, mimeType: conversionType }];
+    return buildDocRefBundleWithAttachment(patient.id, attachments);
   }
 
   const { url, hasContents } = await convertFHIRBundleToMedicalRecord({
@@ -94,7 +88,8 @@ export async function handleBundleToMedicalRecord({
     conversionType,
   });
 
-  const newBundle = buildDocRefBundleWithAttachment(patient.id, url, conversionType);
+  const attachments = [{ url, mimeType: conversionType }];
+  const newBundle = buildDocRefBundleWithAttachment(patient.id, attachments);
   if (!hasContents) {
     log(`No contents in the consolidated data for patient ${patient.id}`);
     newBundle.entry = [];
@@ -115,37 +110,31 @@ export async function handleBundleToMedicalRecord({
   return newBundle;
 }
 
+type LocalAttachment = {
+  url: string;
+  mimeType: ConsolidationConversionType | "gzip";
+};
+
 export function buildDocRefBundleWithAttachment(
   patientId: string,
-  attachmentUrl: string,
-  mimeType: ConsolidationConversionType,
-  gzipUrl?: string
+  attachments: LocalAttachment[]
 ): SearchSetBundle<Resource> {
-  const content: BundleAttachment[] = [
-    {
-      attachment: {
-        contentType: REQUESTED_MIME_BY_TYPE[mimeType],
-        url: attachmentUrl,
-      },
-    },
-  ];
-
-  // Add gzip attachment if provided
-  if (gzipUrl && mimeType === "json") {
-    content.push({
-      attachment: {
-        contentType: "application/gzip",
-        url: gzipUrl,
-      },
-    });
-  }
-
   const docRef: DocumentReference = {
     resourceType: "DocumentReference",
     subject: {
       reference: `Patient/${patientId}`,
     },
-    content,
+    content: attachments.map(attachment => {
+      const isGzip = attachment.mimeType === "gzip";
+      return {
+        attachment: {
+          contentType: isGzip
+            ? "application/gzip"
+            : REQUESTED_MIME_BY_TYPE[attachment.mimeType as ConsolidationConversionType],
+          url: attachment.url,
+        },
+      };
+    }),
   };
   return buildSearchSetBundle([buildBundleEntry(docRef)]);
 }

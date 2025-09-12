@@ -1,7 +1,7 @@
 import { ConsolidatedQuery, ConsolidationConversionType } from "@metriport/api-sdk";
 import { QueryStatus } from "@metriport/core/domain/query-status";
 import { WebhookRequest } from "../../../models/webhook-request";
-import { BundleAttachment } from "./convert-fhir-bundle";
+import { DocumentReferenceContent } from "@medplum/fhirtypes";
 
 type ConsolidatedWebhookQuery = {
   requestId: string;
@@ -72,18 +72,12 @@ export async function getConsolidatedWebhook({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const webhookPayload: any = webhookData.payload;
 
-  const content: BundleAttachment[] =
+  const content: DocumentReferenceContent[] | undefined =
     webhookPayload.patients?.[0]?.bundle?.entry?.[0]?.resource?.content;
 
-  const mainAttachment = content?.find(
-    c => c?.attachment?.contentType && c.attachment.contentType !== "application/gzip"
-  )?.attachment;
-  const gzipAttachment = content?.find(
-    c => c?.attachment?.contentType === "application/gzip"
-  )?.attachment;
-
-  const url = mainAttachment?.url;
-  const gzipUrl = gzipAttachment?.url;
+  const url = content?.[0]?.attachment?.url;
+  const gzipUrl = content?.find(c => c?.attachment?.contentType === "application/gzip")?.attachment
+    ?.url;
 
   if (!url) {
     return {

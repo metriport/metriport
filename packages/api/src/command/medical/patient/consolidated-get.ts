@@ -324,7 +324,7 @@ async function uploadConsolidatedJsonAndReturnUrl({
   filters: Record<string, string | undefined>;
 }> {
   const fileName = createMRSummaryFileName(patient.cxId, patient.id, "json");
-  const gzipFileName = createMRSummaryFileName(patient.cxId, patient.id, "json") + ".gz";
+  const gzipFileName = fileName + ".gz";
   const medicalDocumentsBucket = Config.getMedicalDocumentsBucketName();
   const compressedBundle = await compressBundle(bundle);
   const metadata = {
@@ -341,14 +341,17 @@ async function uploadConsolidatedJsonAndReturnUrl({
     uploadGzipBundleToS3({ compressedData: compressedBundle, fileName: gzipFileName, metadata }),
   ]);
 
-  // TODO This should use the same function as the one used in handleBundleToMedicalRecord(),
-  // `S3Utils.getSignedUrl()` - prob with the same expiration time for simplicity?
   const [signedUrl, gzipSignedUrl] = await Promise.all([
     getSignedURL({ bucketName: medicalDocumentsBucket, fileName }),
     getSignedURL({ bucketName: medicalDocumentsBucket, fileName: gzipFileName }),
   ]);
 
-  const newBundle = buildDocRefBundleWithAttachment(patient.id, signedUrl, "json", gzipSignedUrl);
+  const attachments = [
+    { url: signedUrl, mimeType: "json" as const },
+    { url: gzipSignedUrl, mimeType: "gzip" as const },
+  ];
+
+  const newBundle = buildDocRefBundleWithAttachment(patient.id, attachments);
   return { bundle: newBundle, filters };
 }
 
