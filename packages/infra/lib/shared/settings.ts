@@ -35,6 +35,8 @@ export type QueueAndLambdaSettings = {
     /** We don't care if the message gets reprocessed, so no need to have a huge visibility timeout that makes it harder to move messages to the DLQ */
     visibilityTimeout: Duration;
     createRetryLambda: boolean;
+    /** The time in seconds that the delivery of all messages in the queue is delayed. */
+    deliveryDelay?: Duration;
   };
   eventSource: {
     /** Number of messages the lambda pull from SQS at once  */
@@ -44,7 +46,10 @@ export type QueueAndLambdaSettings = {
     maxConcurrency?: number;
     maxBatchingWindow?: Duration;
   };
-  /** @deprecated Move this to the lambda settings or out of this wrapper type. */
+  /**
+   * @deprecated Move this to the lambda settings or out of this wrapper type and make it optional.
+   * In cases where the lambda waits/sleeps between invocations, this defineds that duration.
+   */
   waitTime: Duration;
 };
 

@@ -1,7 +1,7 @@
-import { FhirToCsvDirect } from "@metriport/core/command/analytics-platform/fhir-to-csv/command/fhir-to-csv/fhir-to-csv-direct";
+import { FhirToCsvBulkDirect } from "@metriport/core/command/analytics-platform/fhir-to-csv/command/fhir-to-csv-bulk/fhir-to-csv-bulk-direct";
 import { errorToString } from "@metriport/shared";
 import { Context, SQSEvent } from "aws-lambda";
-import { fhirToCsvSchema } from "../shared/analytics-platform";
+import { z } from "zod";
 import { capture } from "../shared/capture";
 import { getEnvOrFail } from "../shared/env";
 import { prefixedLog } from "../shared/log";
@@ -26,8 +26,8 @@ export const handler = capture.wrapHandler(async (event: SQSEvent, context: Cont
     const log = prefixedLog(`jobId ${jobId}, cxId ${cxId}, patientId ${patientId}`);
     log(`Parsed: ${JSON.stringify(parsedBody)}`);
 
-    const fhirToCsvHandler = new FhirToCsvDirect();
-    await fhirToCsvHandler.processFhirToCsv({
+    const fhirToCsvHandler = new FhirToCsvBulkDirect();
+    await fhirToCsvHandler.processFhirToCsvBulk({
       ...parsedBody,
       timeoutInMillis: context.getRemainingTimeInMillis() - 200,
     });
@@ -35,4 +35,12 @@ export const handler = capture.wrapHandler(async (event: SQSEvent, context: Cont
     console.error("Re-throwing error ", errorToString(error));
     throw error;
   }
+});
+
+const fhirToCsvSchema = z.object({
+  cxId: z.string(),
+  jobId: z.string(),
+  patientId: z.string(),
+  inputBundle: z.string().optional(),
+  outputPrefix: z.string(),
 });

@@ -1,22 +1,21 @@
 import { executeWithNetworkRetries } from "@metriport/shared";
-import { createUuidFromText } from "@metriport/shared/common/uuid";
 import { SQSClient } from "../../../../../external/aws/sqs";
 import { Config } from "../../../../../util/config";
-import { FhirToCsvHandler, ProcessFhirToCsvRequest } from "./fhir-to-csv";
+import { FhirToCsvBulkHandler, ProcessFhirToCsvBulkRequest } from "./fhir-to-csv-bulk";
 
-export class FhirToCsvCloud implements FhirToCsvHandler {
+export class FhirToCsvBulkCloud implements FhirToCsvBulkHandler {
   constructor(
-    private readonly fhirToCsvQueueUrl: string = Config.getFhirToCsvQueueUrl(),
+    private readonly fhirToCsvQueueUrl: string = Config.getFhirToCsvBulkQueueUrl(),
     private readonly sqsClient: SQSClient = new SQSClient({ region: Config.getAWSRegion() })
   ) {}
 
-  async processFhirToCsv(params: ProcessFhirToCsvRequest): Promise<void> {
+  async processFhirToCsvBulk(params: ProcessFhirToCsvBulkRequest): Promise<void> {
     const { patientId } = params;
     const payload = JSON.stringify(params);
     await executeWithNetworkRetries(async () => {
       await this.sqsClient.sendMessageToQueue(this.fhirToCsvQueueUrl, payload, {
         fifo: true,
-        messageDeduplicationId: createUuidFromText(payload),
+        messageDeduplicationId: patientId,
         messageGroupId: patientId,
       });
     });

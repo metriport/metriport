@@ -7,7 +7,12 @@ export type StartFhirToCsvTransformParams = {
   cxId: string;
   jobId: string;
   patientId: string;
-  inputBundle?: string;
+  outputPrefix: string;
+  /**
+   * How long can it wait for the response from the transform lambda before it fails.
+   * Important so we are able to fail the processing in a lambda before the lambda's process
+   * gets killed - and then we don't handle the error.
+   */
   timeoutInMillis?: number | undefined;
 };
 
@@ -15,7 +20,7 @@ export async function startFhirToCsvTransform({
   cxId,
   jobId,
   patientId,
-  inputBundle,
+  outputPrefix,
   timeoutInMillis,
 }: StartFhirToCsvTransformParams): Promise<void> {
   const { log } = out(`FhirToCsvTransform - cx ${cxId} pt ${patientId} job ${jobId}`);
@@ -25,7 +30,7 @@ export async function startFhirToCsvTransform({
     JOB_ID: jobId,
     CX_ID: cxId,
     PATIENT_ID: patientId,
-    ...(inputBundle ? { INPUT_BUNDLE: inputBundle } : {}),
+    OUTPUT_PREFIX: outputPrefix,
     API_URL: `http://${Config.getApiUrl()}`,
   });
   await executeWithNetworkRetries(async () => {

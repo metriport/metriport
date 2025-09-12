@@ -8,6 +8,7 @@ import { createConsolidatedDataFilePath } from "../../domain/consolidated/filena
 import { createFolderName } from "../../domain/filename";
 import { Patient } from "../../domain/patient";
 import { executeWithRetriesS3, S3Utils } from "../../external/aws/s3";
+import { getAllAdtSourcedResources } from "../../external/fhir/adt-encounters";
 import {
   buildBundleEntry,
   buildCollectionBundle,
@@ -17,17 +18,17 @@ import { dangerouslyDeduplicate } from "../../external/fhir/consolidated/dedupli
 import { getDocuments as getDocumentReferences } from "../../external/fhir/document/get-documents";
 import { toFHIR as patientToFhir } from "../../external/fhir/patient/conversion";
 import { insertSourceDocumentToAllDocRefMeta } from "../../external/fhir/shared/meta";
-import { getBundleResources as getPharmacyResources } from "../../external/surescripts/command/bundle/get-bundle";
 import { getBundleResources as getLabResources } from "../../external/quest/command/bundle/get-bundle";
+import { getBundleResources as getPharmacyResources } from "../../external/surescripts/command/bundle/get-bundle";
 import { capture, executeAsynchronously, out } from "../../util";
 import { Config } from "../../util/config";
 import { processAsyncError } from "../../util/error/shared";
 import { controlDuration } from "../../util/race-control";
 import { AiBriefControls } from "../ai-brief/shared";
+import { ingestPatientIntoAnalyticsPlatform } from "../analytics-platform/incremental-ingestion";
 import { isAiBriefFeatureFlagEnabledForCx } from "../feature-flags/domain-ffs";
 import { getConsolidatedLocation, getConsolidatedSourceLocation } from "./consolidated-shared";
 import { makeIngestConsolidated } from "./search/fhir-resource/ingest-consolidated-factory";
-import { getAllAdtSourcedResources } from "../../external/fhir/adt-encounters";
 
 dayjs.extend(duration);
 
@@ -167,6 +168,10 @@ export async function createConsolidatedFromConversions({
       error
     );
   }
+
+  ingestPatientIntoAnalyticsPlatform({ cxId, patientId }).catch(
+    processAsyncError("createConsolidatedFromConversions.ingestPatientIntoAnalyticsPlatform")
+  );
 
   log(`Done`);
   return bundle;
