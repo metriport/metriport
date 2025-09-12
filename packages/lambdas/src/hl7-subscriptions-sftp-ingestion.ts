@@ -1,7 +1,7 @@
 import { capture } from "./shared/capture";
 import { prefixedLog } from "./shared/log";
 import { getEnvVarOrFail } from "@metriport/shared/common/env-var";
-import { Hl7SubscriptionLaHieIngestionDirect } from "@metriport/core/command/hl7v2-subscriptions/hl7-subscriptions-sftp-ingestion/hl7-notification-sftp-ingestion-direct";
+import { Hl7SubscriptionLaHieIngestionDirect } from "@metriport/core/command/hl7v2-subscriptions/hl7-subscriptions-sftp-ingestion/hl7-subscriptions-sftp-ingestion-direct";
 import { SftpIngestionClient } from "@metriport/core/command/hl7v2-subscriptions/hl7-subscriptions-sftp-ingestion/sftp-ingestion-client";
 
 capture.init();
