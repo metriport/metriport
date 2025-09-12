@@ -263,7 +263,7 @@ export async function getConsolidated({
     }
 
     if (conversionType === "json" && hasResources) {
-      return await uploadConsolidatedJsonAndReturnUrl({
+      return await uploadConsolidatedJsonAndGzipAndReturnUrls({
         patient,
         bundle: localBundle,
         filters: filtersToString(filters),
@@ -311,7 +311,7 @@ export function filterOutPrelimDocRefs(
   });
 }
 
-async function uploadConsolidatedJsonAndReturnUrl({
+async function uploadConsolidatedJsonAndGzipAndReturnUrls({
   patient,
   bundle,
   filters,
