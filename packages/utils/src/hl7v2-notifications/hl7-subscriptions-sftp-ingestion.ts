@@ -71,7 +71,6 @@ async function main() {
   console.log(`SFTP Username: ${username}`);
   console.log(`SFTP Remote Path: ${remotePath}`);
   console.log(`SFTP Bucket Name: ${bucketName}`);
-  console.log(`SFTP Local Path: ${localPath}`);
   console.log(`🔄 Starting HL7v2 ingestion in 3 seconds...`); // Give some time for user to cancel just in case.
   await sleep(3000);
   const handler = await buildLaHieIngestion();
