@@ -261,8 +261,8 @@ Patients can have a large amount of data, so in order to have access to a Patien
 
 Note that inside the `Bundle` you'll find a `DocumentReference` resource with attachments in the `content` array:
 
-- One attachment contains the main data file (JSON, HTML, or PDF).
-- For JSON requests only, an additional attachment with `contentType: "application/gzip"` provides a gzip-compressed copy for faster downloads.
+- The first item contains an attachment with a `url` which can be used to download the data.
+- An additional attachment with `contentType: "application/gzip"` provides a gzip-compressed copy for faster downloads.
 
 Each attachment has a `url` you can use to download the data.
 

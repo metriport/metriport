@@ -36,35 +36,6 @@ const successConsolidatedWebhook = {
   ],
 };
 
-const reversedOrderWebhook = {
-  patients: [
-    {
-      bundle: {
-        entry: [
-          {
-            resource: {
-              content: [
-                {
-                  attachment: {
-                    url: gzipWebhookUrl,
-                    contentType: "application/gzip",
-                  },
-                },
-                {
-                  attachment: {
-                    url: webhookUrl,
-                    contentType: "application/json",
-                  },
-                },
-              ],
-            },
-          },
-        ],
-      },
-    },
-  ],
-};
-
 jest.mock("../../../../models/medical/patient");
 
 beforeAll(() => {
@@ -193,37 +164,6 @@ describe("getConsolidatedWebhook", () => {
       requestId,
       status: "failed",
       message: "No URL found for this webhook",
-    });
-  });
-
-  it("it returns correct URLs regardless of attachment order in content array", async () => {
-    const consolidatedQuery = makeConsolidatedQueryProgress({
-      requestId: requestId,
-      status: "completed",
-      startedAt: new Date(),
-      conversionType: "json",
-    });
-
-    const webhook = makeConsolidatedWebhook({
-      cxId,
-      requestId,
-      payload: reversedOrderWebhook,
-    });
-
-    jest.spyOn(WebhookRequest, "findOne").mockResolvedValue(webhook);
-
-    const result = await getConsolidatedWebhook({
-      cxId,
-      requestId,
-      consolidatedQueries: [consolidatedQuery],
-    });
-
-    expect(result).toEqual({
-      conversionType: "json",
-      fileUrl: webhookUrl,
-      gzipUrl: gzipWebhookUrl,
-      status: "completed",
-      requestId,
     });
   });
 });
