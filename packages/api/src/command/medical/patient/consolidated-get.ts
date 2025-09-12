@@ -28,7 +28,7 @@ import { getSignedURL } from "../document/document-download";
 import { storeConsolidatedQueryInitialState } from "./consolidated-init";
 import { processConsolidatedDataWebhook } from "./consolidated-webhook";
 import {
-  buildDocRefBundleWithAttachment,
+  buildDocRefBundleWithAttachments,
   emptyMetaProp,
   handleBundleToMedicalRecord,
   uploadJsonBundleToS3,
@@ -351,7 +351,7 @@ async function uploadConsolidatedJsonAndReturnUrl({
     { url: gzipSignedUrl, mimeType: "gzip" as const },
   ];
 
-  const newBundle = buildDocRefBundleWithAttachment(patient.id, attachments);
+  const newBundle = buildDocRefBundleWithAttachments(patient.id, attachments);
   return { bundle: newBundle, filters };
 }
 

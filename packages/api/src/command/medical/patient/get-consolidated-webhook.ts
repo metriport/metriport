@@ -75,7 +75,7 @@ export async function getConsolidatedWebhook({
   const content: DocumentReferenceContent[] | undefined =
     webhookPayload.patients?.[0]?.bundle?.entry?.[0]?.resource?.content;
 
-  const url = content?.[0]?.attachment?.url;
+  const url = content?.[0]?.attachment?.url; // keep [0] index for backwards compatibility
   const gzipUrl = content?.find(c => c?.attachment?.contentType === "application/gzip")?.attachment
     ?.url;
 

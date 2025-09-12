@@ -42,7 +42,7 @@ const lambdaClient = makeLambdaClient(region, TIMEOUT_CALLING_CONVERTER_LAMBDA.a
 const s3 = makeS3Client(Config.getAWSRegion());
 export const emptyMetaProp = "na";
 
-const REQUESTED_MIME_BY_TYPE: Record<ConsolidationConversionType, string> = {
+const REQUESTED_MIME_TYPE: Record<ConsolidationConversionType, string> = {
   json: "application/json",
   pdf: "application/pdf",
   html: "text/html",
@@ -76,7 +76,7 @@ export async function handleBundleToMedicalRecord({
       fileName,
     });
     const attachments = [{ url, mimeType: conversionType }];
-    return buildDocRefBundleWithAttachment(patient.id, attachments);
+    return buildDocRefBundleWithAttachments(patient.id, attachments);
   }
 
   const { url, hasContents } = await convertFHIRBundleToMedicalRecord({
@@ -89,7 +89,7 @@ export async function handleBundleToMedicalRecord({
   });
 
   const attachments = [{ url, mimeType: conversionType }];
-  const newBundle = buildDocRefBundleWithAttachment(patient.id, attachments);
+  const newBundle = buildDocRefBundleWithAttachments(patient.id, attachments);
   if (!hasContents) {
     log(`No contents in the consolidated data for patient ${patient.id}`);
     newBundle.entry = [];
@@ -115,7 +115,7 @@ type LocalAttachment = {
   mimeType: ConsolidationConversionType | "gzip";
 };
 
-export function buildDocRefBundleWithAttachment(
+export function buildDocRefBundleWithAttachments(
   patientId: string,
   attachments: LocalAttachment[]
 ): SearchSetBundle<Resource> {
@@ -130,7 +130,7 @@ export function buildDocRefBundleWithAttachment(
         attachment: {
           contentType: isGzip
             ? "application/gzip"
-            : REQUESTED_MIME_BY_TYPE[attachment.mimeType as ConsolidationConversionType],
+            : REQUESTED_MIME_TYPE[attachment.mimeType as ConsolidationConversionType],
           url: attachment.url,
         },
       };
