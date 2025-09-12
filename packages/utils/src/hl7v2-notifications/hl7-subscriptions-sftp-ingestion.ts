@@ -50,10 +50,9 @@ const port = Config.getLaHieIngestionPort();
 const host = Config.getLaHieIngestionHost();
 const username = Config.getLaHieIngestionUsername();
 // Password should not be an ARN for local execution.
-const password = Config.getLaHieIngestionPasswordArn(); //eslint-disable-line @typescript-eslint/no-unused-vars
+const password = Config.getLaHieIngestionLocalPassword(); //eslint-disable-line @typescript-eslint/no-unused-vars
 const remotePath = Config.getLaHieIngestionRemotePath();
 const bucketName = Config.getLaHieIngestionBucket();
-const localPath = Config.getLaHieIngestionLocalPath();
 const awsRegion = Config.getAWSRegion();
 
 // Note these two should point to an actual arn in aws secret manager.

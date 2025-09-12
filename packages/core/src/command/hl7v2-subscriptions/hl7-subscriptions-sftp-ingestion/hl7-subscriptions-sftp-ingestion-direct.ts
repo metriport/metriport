@@ -60,10 +60,11 @@ export class Hl7SubscriptionLaHieIngestionDirect implements Hl7SubscriptionLaHie
       const messageId = getMessageUniqueIdentifier(hl7Message);
       const msgTimestamp = getMessageDatetime(hl7Message);
       const { messageCode, triggerEvent } = getHl7MessageTypeOrFail(hl7Message);
+      const fallbackTimestamp = buildDayjs(Date.now()).toISOString();
       const rawDataFileKey = createFileKeyHl7Message({
         cxId: cxId,
         patientId: ptId,
-        timestamp: msgTimestamp ? msgTimestamp : buildDayjs(Date.now()).toISOString(),
+        timestamp: msgTimestamp ? msgTimestamp : fallbackTimestamp,
         messageId,
         messageCode,
         triggerEvent,
@@ -73,10 +74,8 @@ export class Hl7SubscriptionLaHieIngestionDirect implements Hl7SubscriptionLaHie
         cxId,
         patientId: ptId,
         message: hl7Message.toString(),
-        sourceTimestamp: msgTimestamp ? msgTimestamp : buildDayjs(Date.now()).toISOString(),
-        messageReceivedTimestamp: msgTimestamp
-          ? msgTimestamp
-          : buildDayjs(Date.now()).toISOString(),
+        sourceTimestamp: msgTimestamp ? msgTimestamp : fallbackTimestamp,
+        messageReceivedTimestamp: msgTimestamp ? msgTimestamp : fallbackTimestamp,
         rawDataFileKey: rawDataFileKey,
         hieName: HIE_NAME,
       };
