@@ -5,6 +5,7 @@ import {
   normalizeUsPhoneWithPlusOne,
   phoneLength,
   validDateOfBirthStringSchema,
+  isEmailValid,
 } from "@metriport/shared";
 import { z } from "zod";
 import { addressSchema } from "./common/address";
@@ -56,7 +57,9 @@ export type PersonalIdentifier = z.infer<typeof personalIdentifierSchema>;
 
 export const genderAtBirthSchema = z.enum(["F", "M", "O", "U"]);
 
-export const emailSchema = z.string().email();
+export const emailSchema = z.string().refine(isEmailValid, {
+  message: "Invalid email address",
+});
 
 export const contactSchema = z
   .object({
