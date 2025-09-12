@@ -63,7 +63,7 @@ export function patientToCommonwell({
       if (address.addressLine2) line.push(address.addressLine2);
       return {
         line,
-        postalCode: normalizePostalCode(address.zip),
+        postalCode: address.zip,
         city: address.city,
         state: address.state,
         use: AddressUseCodes.home,
@@ -87,11 +87,6 @@ export function patientToCommonwell({
         return contacts;
       }) ?? [],
   };
-}
-
-function normalizePostalCode(zip: string): string | undefined {
-  if (zip === "00000") return undefined;
-  return zip;
 }
 
 function mapGenderAtBirthToCw(k: GenderAtBirth): GenderCodes | undefined {
