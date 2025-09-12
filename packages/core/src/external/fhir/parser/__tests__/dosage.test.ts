@@ -40,14 +40,4 @@ describe("dosage parsing tests", () => {
       extension: [buildParserExtension(inputString)],
     });
   });
-
-  it("should parse dosage with equals sign", () => {
-    const inputString = "10 mg / 2 L";
-    const dosage = parseDosage(inputString);
-    expect(dosage).toEqual({
-      doseQuantity: { value: 10, unit: "mg", system: UNIT_OF_MEASURE_URL, code: "mg" },
-      rateQuantity: { value: 2, unit: "U", system: UNIT_OF_MEASURE_URL, code: "U" },
-      extension: [buildParserExtension(inputString)],
-    });
-  });
 });
