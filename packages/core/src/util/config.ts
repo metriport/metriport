@@ -452,4 +452,8 @@ export class Config {
   static getInternalServerUrl(): string {
     return getEnvVarOrFail("INTERNAL_SERVER_BASE_URL");
   }
+  
+  static getLaHieIngestionLocalPassword(): string {
+    return getEnvVarOrFail("LAHIE_INGESTION_LOCAL_PASSWORD");
+  }
 }

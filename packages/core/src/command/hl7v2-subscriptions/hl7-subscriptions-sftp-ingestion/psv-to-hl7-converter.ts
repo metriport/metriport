@@ -429,6 +429,7 @@ export class PsvToHl7Converter {
   private escapeHl7Text(input?: string): string {
     if (!input) return "";
     return input
+      .replace(/[\r\n]+/g, " ")
       .replace(/\\/g, "\\E\\")
       .replace(/\|/g, "\\F\\")
       .replace(/\^/g, "\\S\\")
