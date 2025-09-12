@@ -53,7 +53,7 @@ const patientIds: string[] = [];
 const triggerWHNotificationsToCx = false;
 
 // if true, will force a download of the documents
-const forceDownload = true;
+const forceDownload = false;
 
 // auth stuff
 const cxId = getEnvVarOrFail("CX_ID");
