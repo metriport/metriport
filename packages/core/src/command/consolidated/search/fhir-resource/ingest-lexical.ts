@@ -113,7 +113,8 @@ async function getConsolidatedBundle({
       return true;
     },
     initialDelay: 1_000,
-    maxAttempts: 5,
+    maxAttempts: 10,
+    backoffMultiplier: 1.6,
     log,
   });
 
