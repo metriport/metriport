@@ -1,7 +1,9 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
+import { MetriportError } from "@metriport/shared";
 import { cloneDeep } from "lodash";
 import { isPatient } from "../../../external/fhir/shared";
-import { DOC_ID_EXTENSION_URL } from "../../../external/fhir/shared/extensions/doc-id-extension";
+import { createExtensionSourceReference } from "../../../external/fhir/shared/extensions/source-reference-extension";
+import { capture } from "../../../util";
 import { uuidv7 } from "../../../util/uuid-v7";
 
 export type FhirExtension = {
@@ -22,7 +24,8 @@ export type FhirConverterParams = {
  */
 export function replaceIdsForResourcesWithDocExtension(
   fhirBundle: Bundle<Resource>,
-  patientId: string
+  patientId: string,
+  documentExtension: FhirExtension
 ): Bundle<Resource> {
   const updatedBundle = cloneDeep(fhirBundle);
   const stringsToReplace: { old: string; new: string }[] = [];
@@ -37,14 +40,13 @@ export function replaceIdsForResourcesWithDocExtension(
     const resource = bundleEntry.resource;
     // TODO: 2574 - Make sure IDs are replaced for all relevant resources - not just the ones with extensions
     if ("extension" in resource) {
-      const docIdExtension = resource.extension?.find(ext => ext.url === DOC_ID_EXTENSION_URL);
       const idToUse = bundleEntry.resource.id;
       const newId = uuidv7();
       stringsToReplace.push({ old: idToUse, new: newId });
       // replace meta's source and profile
       bundleEntry.resource.meta = {
         lastUpdated: bundleEntry.resource.meta?.lastUpdated ?? new Date().toISOString(),
-        source: docIdExtension?.valueString ?? "",
+        source: documentExtension.valueString ?? "",
       };
     }
   }
@@ -59,8 +61,11 @@ export function replaceIdsForResourcesWithDocExtension(
 
 export function addExtensionToConversion(
   fhirBundle: Bundle<Resource>,
-  extension: FhirExtension
+  documentExtension: FhirExtension
 ): Bundle<Resource> {
+  const docRefId = getDocRefIdFromDocumentExtension(documentExtension);
+  const docRefExtension = createExtensionSourceReference("DocumentReference", docRefId);
+
   const updatedBundle = cloneDeep(fhirBundle);
   if (updatedBundle?.entry?.length) {
     for (const bundleEntry of updatedBundle.entry) {
@@ -68,9 +73,11 @@ export function addExtensionToConversion(
       if (!resource) continue;
       if (!("extension" in resource)) {
         //eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (resource as any).extension = [extension];
+        (resource as any).extension = [docRefExtension];
+        // (resource as any).extension = [documentLocationExtension, docRefExtension];
       } else {
-        resource.extension?.push(extension);
+        resource.extension?.push(docRefExtension);
+        // resource.extension?.push(documentLocationExtension, docRefExtension);
       }
     }
   }
@@ -84,4 +91,24 @@ export function removePatientFromConversion(fhirBundle: Bundle<Resource>): Bundl
 
   updatedBundle.entry = updatedBundle.entry?.filter(entry => !isPatient(entry.resource));
   return updatedBundle;
+}
+
+export function getDocRefIdFromDocumentExtension(
+  documentExtension: FhirExtension,
+  log?: typeof console.log
+): string {
+  const docRefId = documentExtension.valueString.split("_").pop()?.split(".")[0];
+  if (!docRefId) {
+    const msg = `Document extension value string does not contain a docRefId`;
+    log && log(`${msg} - documentExtension: ${JSON.stringify(documentExtension)}`);
+    capture.error(msg, {
+      extra: {
+        documentExtension,
+      },
+    });
+    throw new MetriportError(msg, undefined, {
+      documentExtension: JSON.stringify(documentExtension),
+    });
+  }
+  return docRefId;
 }
