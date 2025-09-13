@@ -1,5 +1,4 @@
 import { errorToString, MetriportError } from "@metriport/shared";
-import { PatientImportJob } from "@metriport/shared/domain/patient/patient-import/types";
 import axios from "axios";
 import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
@@ -22,7 +21,7 @@ export type UpdateRecordFailedAtApiParams = {
  */
 export async function updateRecordFailedAtApi(
   params: UpdateRecordFailedAtApiParams
-): Promise<PatientImportJob> {
+): Promise<void> {
   const { cxId, jobId, rowNumber } = params;
   const { log } = out(
     `PatientImport updateRecordFailedAtApi - cx ${cxId} job ${jobId} row ${rowNumber}`
@@ -32,7 +31,7 @@ export async function updateRecordFailedAtApi(
 
   log(`Updating record failed at API...`);
   try {
-    const res = await withDefaultApiErrorHandling({
+    await withDefaultApiErrorHandling({
       functionToRun: () => api.post(url),
       log,
       messageWhenItFails: `Failure while setting the bulk import record to failed @ PatientImport`,
@@ -44,8 +43,6 @@ export async function updateRecordFailedAtApi(
         context: "patient-import.updateRecordFailedAtApi",
       },
     });
-    // intentionally casting to explicitly show that the response is of type any
-    return res.data as PatientImportJob;
   } catch (error) {
     const msg = `Failure while setting the bulk import record to failed @ PatientImport`;
     log(`${msg}. Cause: ${errorToString(error)}`);
