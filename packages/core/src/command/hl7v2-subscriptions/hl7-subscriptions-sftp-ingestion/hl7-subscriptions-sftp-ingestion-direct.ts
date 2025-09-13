@@ -1,20 +1,16 @@
+import { buildDayjs } from "@metriport/shared/common/date";
+import * as openpgp from "openpgp";
 import { S3Utils } from "../../../external/aws/s3";
 import { getSecretValueOrFail } from "../../../external/aws/secret-manager";
 import { Config } from "../../../util/config";
-import { HIE_NAME, Hl7SubscriptionLaHieIngestion } from "./hl7-subscriptions-sftp-ingestion";
-import { PsvToHl7Converter } from "./psv-to-hl7-converter";
-import * as openpgp from "openpgp";
-import { IdentifiedHl7Message } from "./psv-to-hl7-converter";
-import {
-  getHl7MessageTypeOrFail,
-  getMessageDatetime,
-  getMessageUniqueIdentifier,
-} from "../hl7v2-to-fhir-conversion/msh";
-import { buildDayjs } from "@metriport/shared/common/date";
-import { createFileKeyHl7Message } from "../hl7v2-to-fhir-conversion/shared";
 import { Hl7NotificationSenderParams } from "../../hl7-notification/hl7-notification-webhook-sender";
 import { buildHl7NotificationWebhookSender } from "../../hl7-notification/hl7-notification-webhook-sender-factory";
+import { HIE_NAME, Hl7SubscriptionLaHieIngestion } from "./hl7-subscriptions-sftp-ingestion";
+import { IdentifiedHl7Message, PsvToHl7Converter } from "./psv-to-hl7-converter";
 import { SftpIngestionClient } from "./sftp-ingestion-client";
+import { asString } from "../../hl7-notification/utils";
+
+const TIMEZONE = "America/Chicago";
 
 export class Hl7SubscriptionLaHieIngestionDirect implements Hl7SubscriptionLaHieIngestion {
   private sftpClient: SftpIngestionClient;
@@ -57,26 +53,14 @@ export class Hl7SubscriptionLaHieIngestionDirect implements Hl7SubscriptionLaHie
 
   private async sendToWebhookSender(identifiedMessages: IdentifiedHl7Message[]) {
     for (const { cxId, ptId, hl7Message } of identifiedMessages) {
-      const messageId = getMessageUniqueIdentifier(hl7Message);
-      const msgTimestamp = getMessageDatetime(hl7Message);
-      const { messageCode, triggerEvent } = getHl7MessageTypeOrFail(hl7Message);
-      const fallbackTimestamp = buildDayjs(Date.now()).toISOString();
-      const rawDataFileKey = createFileKeyHl7Message({
-        cxId: cxId,
-        patientId: ptId,
-        timestamp: msgTimestamp ? msgTimestamp : fallbackTimestamp,
-        messageId,
-        messageCode,
-        triggerEvent,
-      });
+      const messageReceivedTimestamp = buildDayjs(Date.now()).toISOString();
 
       const hl7NotificationParams: Hl7NotificationSenderParams = {
         cxId,
         patientId: ptId,
-        message: hl7Message.toString(),
-        sourceTimestamp: msgTimestamp ? msgTimestamp : fallbackTimestamp,
-        messageReceivedTimestamp: msgTimestamp ? msgTimestamp : fallbackTimestamp,
-        rawDataFileKey: rawDataFileKey,
+        message: asString(hl7Message),
+        messageReceivedTimestamp,
+        timezone: TIMEZONE,
         hieName: HIE_NAME,
       };
       await buildHl7NotificationWebhookSender().execute(hl7NotificationParams);

@@ -9,12 +9,13 @@ import {
   getSendingApplication,
 } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/msh";
 import { getCxIdAndPatientIdOrFail } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
+import { getHieConfigDictionary } from "@metriport/core/external/hl7-notification/hie-config-dictionary";
 import { capture } from "@metriport/core/util";
 import type { Logger } from "@metriport/core/util/log";
 import { out } from "@metriport/core/util/log";
-import { initSentry } from "./sentry";
-import { asString, getCleanIpAddress, withErrorHandling } from "./utils";
 import { buildDayjs } from "@metriport/shared/common/date";
+import { initSentry } from "./sentry";
+import { asString, getCleanIpAddress, lookupHieTzEntryForIp, withErrorHandling } from "./utils";
 
 initSentry();
 
@@ -41,6 +42,8 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
         log(
           `cx: ${cxId}, pt: ${patientId} Received ${triggerEvent} message from ${sendingApplication} at ${messageReceivedTimestamp} (messageId: ${messageId})`
         );
+        const hieConfigDictionary = getHieConfigDictionary();
+        const { hieName, timezone } = lookupHieTzEntryForIp(hieConfigDictionary, clientIp);
 
         capture.setExtra({
           cxId,
@@ -54,7 +57,8 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
           patientId,
           message: asString(rawMessage),
           messageReceivedTimestamp,
-          clientIp,
+          hieName,
+          timezone,
         });
 
         connection.send(rawMessage.buildAck());

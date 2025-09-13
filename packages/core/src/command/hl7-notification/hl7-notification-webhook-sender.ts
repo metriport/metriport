@@ -5,7 +5,8 @@ export const hl7NotificationSenderParamsSchema = z.object({
   patientId: z.string().uuid(),
   message: z.string(),
   messageReceivedTimestamp: z.string(),
-  clientIp: z.string(),
+  timezone: z.string(),
+  hieName: z.string(),
 });
 
 export type Hl7NotificationSenderParams = z.infer<typeof hl7NotificationSenderParamsSchema>;
