@@ -1,4 +1,3 @@
-import { zodToLowerCase } from "@metriport/shared";
 import { z } from "zod";
 import { emptyStringToUndefinedSchema } from "../common/zod";
 import { periodSchema } from "./period";
@@ -16,27 +15,13 @@ export enum ContactSystemCodes {
   sms = "sms",
   other = "other",
 }
-export const contactSystemCodesSchema = z
-  .string()
-  .transform(zodToLowerCase)
-  .transform(normalizeContactSystem)
-  .pipe(z.nativeEnum(ContactSystemCodes));
-
-function normalizeContactSystem(system: unknown): unknown {
-  if (typeof system !== "string") return system;
-  switch (system.toLowerCase()) {
-    case "mobile":
-      return "phone";
-  }
-  return system;
-}
 
 // A variety of technology-mediated contact details for a person or organization, including
 // telephone, email, etc.
 // See: https://specification.commonwellalliance.org/services/rest-api-reference (8.4.7 Contact)
 export const contactSchema = z.object({
   value: z.string().nullish(),
-  system: emptyStringToUndefinedSchema.pipe(contactSystemCodesSchema.nullish()),
+  system: emptyStringToUndefinedSchema.pipe(z.string().nullish()),
   use: emptyStringToUndefinedSchema.pipe(z.string().nullish()),
   period: periodSchema.nullish(),
 });
