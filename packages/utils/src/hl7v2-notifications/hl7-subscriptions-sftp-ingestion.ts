@@ -54,6 +54,7 @@ const password = Config.getLaHieIngestionLocalPassword(); //eslint-disable-line 
 const remotePath = Config.getLaHieIngestionRemotePath();
 const bucketName = Config.getLaHieIngestionBucket();
 const awsRegion = Config.getAWSRegion();
+const hl7IncomingMessageBucketName = Config.getHl7IncomingMessageBucketName(); //eslint-disable-line @typescript-eslint/no-unused-vars
 
 // Note these two should point to an actual arn in aws secret manager.
 const privateKeyArn = Config.getLaHieIngestionPrivateKeyArn(); //eslint-disable-line @typescript-eslint/no-unused-vars
