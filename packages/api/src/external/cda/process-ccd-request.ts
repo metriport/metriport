@@ -1,5 +1,5 @@
 import { DocumentReference, Organization as FhirOrganization } from "@medplum/fhirtypes";
-import { CCD_SUFFIX } from "@metriport/core/domain/document/upload";
+import { CCD_SUFFIX } from "@metriport/core/shareback/file";
 import { Organization } from "@metriport/core/domain/organization";
 import { Patient } from "@metriport/core/domain/patient";
 import { toFHIR as toFhirOrganization } from "@metriport/core/external/fhir/organization/conversion";

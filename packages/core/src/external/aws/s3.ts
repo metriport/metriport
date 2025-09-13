@@ -34,6 +34,27 @@ const defaultS3RetriesConfig = {
 };
 const protocolRegex = /^https?:\/\//;
 
+export type FileInfoExists = {
+  exists: true;
+  /** @deprecated Use `sizeInBytes` instead */
+  size: number;
+  sizeInBytes: number; // TODO Enable this when testing something that uses this code
+  contentType: string;
+  eTag?: string;
+  createdAt: Date | undefined;
+  metadata: Record<string, string> | undefined;
+};
+
+export type FileInfoNotExists = {
+  exists: false;
+  size?: never;
+  sizeInBytes?: never;
+  contentType?: never;
+  eTag?: never;
+  createdAt?: never;
+  metadata?: never;
+};
+
 export type GetSignedUrlWithBucketAndKey = {
   bucketName: string;
   fileName: string;
@@ -201,27 +222,7 @@ export class S3Utils {
   async getFileInfoFromS3(
     key: string,
     bucket: string
-  ): Promise<
-    | {
-        exists: true;
-        /** @deprecated Use `sizeInBytes` instead */
-        size: number;
-        sizeInBytes: number; // TODO Enable this when testing something that uses this code
-        contentType: string;
-        eTag?: string;
-        createdAt: Date | undefined;
-        metadata: Record<string, string> | undefined;
-      }
-    | {
-        exists: false;
-        size?: never;
-        sizeInBytes?: never;
-        contentType?: never;
-        eTag?: never;
-        createdAt?: never;
-        metadata?: never;
-      }
-  > {
+  ): Promise<FileInfoExists | FileInfoNotExists> {
     try {
       const head = await executeWithRetriesS3(
         () =>

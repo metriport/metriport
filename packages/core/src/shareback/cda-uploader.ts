@@ -1,6 +1,6 @@
 import { DocumentReference, Organization } from "@medplum/fhirtypes";
 import { errorToString } from "@metriport/shared";
-import { createUploadFilePath, createUploadMetadataFilePath } from "../domain/document/upload";
+import { createUploadFilePath, createUploadMetadataFilePath } from "../shareback/file";
 import { S3Utils } from "../external/aws/s3";
 import { MetriportError } from "../util/error/metriport-error";
 import { out } from "../util/log";

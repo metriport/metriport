@@ -1,6 +1,6 @@
 import { Coding, DocumentReference, DocumentReferenceContent } from "@medplum/fhirtypes";
 import { parseStringPromise } from "xml2js";
-import { rebuildUploadsFilePath } from "../../domain/document/upload";
+import { rebuildUploadsFilePath } from "../../shareback/file";
 import { metriportDataSourceExtension } from "../../external/fhir/shared/extensions/metriport";
 import { base64ToString } from "../../util/base64";
 import { Config } from "../../util/config";

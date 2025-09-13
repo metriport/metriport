@@ -2,7 +2,7 @@ import { executeWithNetworkRetries } from "@metriport/shared";
 import axios from "axios";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import { CCD_SUFFIX, createUploadFilePath } from "../domain/document/upload";
+import { CCD_SUFFIX, createUploadFilePath } from "../shareback/file";
 import { S3Utils } from "../external/aws/s3";
 import { Config } from "../util/config";
 

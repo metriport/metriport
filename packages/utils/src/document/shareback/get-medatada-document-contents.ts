@@ -22,7 +22,7 @@ import { elapsedTimeAsStr } from "../../shared/duration";
  *   - AWS_REGION
  *   - MEDICAL_DOCUMENTS_BUCKET_NAME
  * - Run the script:
- *   - ts-node src/document/shareback/get-medatada-document-contents.ts
+ *   - ts-node src/document/shareback/get-metadata-document-contents.ts
  */
 
 const cxId = getEnvVarOrFail("CX_ID");
