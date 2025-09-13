@@ -1,6 +1,7 @@
 import { errorToString } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
+import { executeWithRetriesS3 } from "../../../../external/aws/s3";
 import { executeAsynchronously } from "../../../../util/concurrency";
 import { out } from "../../../../util/log";
 import { updateJobAtApi } from "../../api/update-job-status";
@@ -28,6 +29,7 @@ export class PatientImportResultLocal implements PatientImportResult {
         cxId,
         jobId,
         patientImportBucket: this.patientImportBucket,
+        log,
       });
       await storeResults({
         cxId,
@@ -42,7 +44,11 @@ export class PatientImportResultLocal implements PatientImportResult {
     } catch (error) {
       const msg = `Failure while processing job result @ PatientImport`;
       log(`${msg}. Cause: ${errorToString(error)}`);
-      await updateJobAtApi({ cxId, jobId, status: "failed" });
+      try {
+        await updateJobAtApi({ cxId, jobId, status: "failed" });
+      } catch (error) {
+        log(`Failed to update job status to failed. Cause: ${errorToString(error)}`);
+      }
       throw error;
     }
   }
@@ -52,17 +58,22 @@ export async function getResultEntries({
   cxId,
   jobId,
   patientImportBucket,
+  log,
 }: {
   cxId: string;
   jobId: string;
   patientImportBucket: string;
+  log: typeof console.log;
 }): Promise<ResultEntry[]> {
+  const startTime = Date.now();
+  log(`Listing patient records...`);
   const patientRecordKeys = await listPatientRecords({
     cxId,
     jobId,
     bucketName: patientImportBucket,
   });
   const records: PatientRecord[] = [];
+  log(`Found ${patientRecordKeys.length} patient records, loading their contents...`);
   await executeAsynchronously(
     patientRecordKeys,
     async key => {
@@ -73,6 +84,7 @@ export async function getResultEntries({
       numberOfParallelExecutions,
     }
   );
+  log(`Done loading ${patientRecordKeys.length} patient records in ${Date.now() - startTime}ms`);
   const resultEntries: ResultEntry[] = records.map(r => {
     return {
       rowNumber: r.rowNumber,
@@ -87,6 +99,8 @@ export async function getResultEntries({
 
 async function loadPatientRecord(key: string, bucketName: string): Promise<PatientRecord> {
   const s3Utils = getS3UtilsInstance();
-  const file = await s3Utils.getFileContentsAsString(bucketName, key);
+  const file = await executeWithRetriesS3(async () =>
+    s3Utils.getFileContentsAsString(bucketName, key)
+  );
   return JSON.parse(file);
 }
