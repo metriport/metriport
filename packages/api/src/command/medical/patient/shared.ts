@@ -28,7 +28,7 @@ export function validate<T extends PatientCreateCmd | PatientUpdateCmd | Patient
 ): boolean {
   // TODO ENG-467 Should we require first/last names?
   if (!patient.address || patient.address.length < 1) return false;
-  patient.personalIdentifiers?.forEach(pid => pid.period && validatePeriod(pid.period));
+  patient.personalIdentifiers?.forEach(pid => pid.period && validatePeriodStartsInPast(pid.period));
   return validateDateOfBirth(patient.dob);
 }
 
@@ -39,7 +39,7 @@ export function validate<T extends PatientCreateCmd | PatientUpdateCmd | Patient
  * @returns true if the period is valid.
  * @throws BadRequestError if the period is invalid.
  */
-function validatePeriod(period: Period): true {
+function validatePeriodStartsInPast(period: Period): true {
   if (period.start && period.end) {
     return validateIsPastOrPresent(period.start) && validateDateRange(period.start, period.end);
   }

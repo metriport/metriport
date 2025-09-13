@@ -5,14 +5,16 @@ import duration from "dayjs/plugin/duration";
 import { out } from "../../../../util/log";
 import { capture } from "../../../../util/notifications";
 import { startDocumentQuery } from "../../../shared/api/start-document-query";
-import { startPatientQuery } from "../../../shared/api/start-patient-query";
+import { startPatientQuery } from "../../shared/api/start-patient-query";
 import { patientImportContext, reasonForCxInternalError } from "../../patient-import-shared";
-import { setPatientOrRecordFailed } from "../../patient-or-record-failed";
+import { setPatientRecordFailed } from "../../patient-or-record-failed";
 import { ProcessPatientQueryRequest } from "./patient-import-query";
 
 dayjs.extend(duration);
 
-const waitTimeBetweenPdAndDq = () => dayjs.duration(randomIntBetween(80, 120), "milliseconds");
+function waitTimeBetweenPdAndDq() {
+  return dayjs.duration(randomIntBetween(80, 120), "milliseconds");
+}
 
 export type ProcessPatientQueryCommandRequest = ProcessPatientQueryRequest & {
   patientImportBucket: string;
@@ -65,7 +67,7 @@ export async function processPatientQuery({
       context: "patient-import-query-local.processPatientQuery",
       error,
     });
-    await setPatientOrRecordFailed({
+    await setPatientRecordFailed({
       cxId,
       jobId,
       rowNumber,

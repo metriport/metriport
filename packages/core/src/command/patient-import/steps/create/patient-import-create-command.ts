@@ -4,7 +4,7 @@ import { out } from "../../../../util/log";
 import { createPatient } from "../../api/create-patient";
 import { createPatientMapping } from "../../api/create-patient-mapping";
 import { reasonForCxInternalError } from "../../patient-import-shared";
-import { setPatientOrRecordFailed } from "../../patient-or-record-failed";
+import { setPatientRecordFailed } from "../../patient-or-record-failed";
 import { updatePatientRecord } from "../../record/create-or-update-patient-record";
 import { PatientImportQuery, ProcessPatientQueryRequest } from "../query/patient-import-query";
 import { buildPatientImportQueryHandler } from "../query/patient-import-query-factory";
@@ -90,7 +90,7 @@ export async function processPatientCreate({
     log(msg);
     let errorToUpdateRecordToFailed: string | undefined = undefined;
     try {
-      await setPatientOrRecordFailed({
+      await setPatientRecordFailed({
         cxId,
         jobId,
         rowNumber,

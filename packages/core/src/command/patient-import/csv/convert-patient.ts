@@ -42,16 +42,17 @@ export function mapCsvPatientToMetriportPatient(
 
   let firstName: string | undefined = undefined;
   try {
-    firstName = normalizeName(csvPatient.firstname ?? csvPatient.firstName, firstNameFieldName);
-    if (!firstName) throw new BadRequestError(`Missing first name`);
+    firstName = normalizeNameOrFail(
+      csvPatient.firstname ?? csvPatient.firstName,
+      firstNameFieldName
+    );
   } catch (error) {
     errors.push({ field: firstNameFieldName, error: errorToString(error) });
   }
 
   let lastName: string | undefined = undefined;
   try {
-    lastName = normalizeName(csvPatient.lastname ?? csvPatient.lastName, lastNameFieldName);
-    if (!lastName) throw new BadRequestError(`Missing last name`);
+    lastName = normalizeNameOrFail(csvPatient.lastname ?? csvPatient.lastName, lastNameFieldName);
   } catch (error) {
     errors.push({ field: lastNameFieldName, error: errorToString(error) });
   }
@@ -116,7 +117,7 @@ export function mapCsvPatientToMetriportPatient(
   return ptCreate;
 }
 
-export function normalizeName(name: string | undefined, propName: string): string {
+export function normalizeNameOrFail(name: string | undefined, propName: string): string {
   const trimmedName = name?.trim();
   if (trimmedName == undefined || trimmedName.length < 1) {
     throw new BadRequestError(`Missing ` + propName);

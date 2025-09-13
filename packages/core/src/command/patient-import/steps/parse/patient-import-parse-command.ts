@@ -7,7 +7,7 @@ import { capture, out } from "../../../../util";
 import { updateJobAtApi } from "../../api/update-job-status";
 import { validateAndParsePatientImportCsvFromS3 } from "../../csv/validate-and-parse-import";
 import { reasonForCxInternalError } from "../../patient-import-shared";
-import { setPatientOrRecordFailed } from "../../patient-or-record-failed";
+import { setPatientRecordFailed } from "../../patient-or-record-failed";
 import { PatientImportCreate, ProcessPatientCreateRequest } from "../create/patient-import-create";
 import { buildPatientImportCreateHandler } from "../create/patient-import-create-factory";
 import { PatientImportResult } from "../result/patient-import-result";
@@ -101,7 +101,7 @@ export async function processJobParse({
               `Cause: ${errorToString(error)}`;
             log(msg);
             errors.push(error);
-            await setPatientOrRecordFailed({
+            await setPatientRecordFailed({
               cxId,
               jobId,
               rowNumber,
