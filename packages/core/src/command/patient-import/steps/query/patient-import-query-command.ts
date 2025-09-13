@@ -5,7 +5,7 @@ import duration from "dayjs/plugin/duration";
 import { out } from "../../../../util/log";
 import { capture } from "../../../../util/notifications";
 import { startDocumentQuery } from "../../../shared/api/start-document-query";
-import { startPatientQuery } from "../../shared/api/start-patient-query";
+import { startPatientQuery } from "../../../shared/api/start-patient-query";
 import { patientImportContext, reasonForCxInternalError } from "../../patient-import-shared";
 import { setPatientRecordFailed } from "../../patient-or-record-failed";
 import { ProcessPatientQueryRequest } from "./patient-import-query";
