@@ -5,7 +5,6 @@ import {
 } from "@metriport/core/command/patient-import/steps/parse/patient-import-parse-command";
 import { out } from "@metriport/core/util/log";
 import { errorToString } from "@metriport/shared";
-import * as Sentry from "@sentry/serverless";
 import { capture } from "./shared/capture";
 import { getEnvOrFail } from "./shared/env";
 
@@ -17,8 +16,7 @@ const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
 // Set by us
 const patientImportBucket = getEnvOrFail("PATIENT_IMPORT_BUCKET_NAME");
 
-// TODO move to capture.wrapHandler()
-export const handler = Sentry.AWSLambda.wrapHandler(
+export const handler = capture.wrapHandler(
   async (params: PatientImportParseRequest): Promise<void> => {
     capture.setExtra({ ...params, context: lambdaName });
     const { cxId, jobId } = params;

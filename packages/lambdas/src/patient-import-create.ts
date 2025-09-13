@@ -4,7 +4,6 @@ import {
   ProcessPatientCreateCommandRequest,
 } from "@metriport/core/command/patient-import/steps/create/patient-import-create-command";
 import { errorToString, MetriportError } from "@metriport/shared";
-import * as Sentry from "@sentry/serverless";
 import { SQSEvent } from "aws-lambda";
 import { capture } from "./shared/capture";
 import { getEnvOrFail } from "./shared/env";
@@ -27,8 +26,7 @@ const patientImportBucket = getEnvOrFail("PATIENT_IMPORT_BUCKET_NAME");
 const waitTimeInMillisRaw = getEnvOrFail("WAIT_TIME_IN_MILLIS");
 const waitTimeInMillis = parseInt(waitTimeInMillisRaw);
 
-// TODO move to capture.wrapHandler()
-export const handler = Sentry.AWSLambda.wrapHandler(async function handler(event: SQSEvent) {
+export const handler = capture.wrapHandler(async function handler(event: SQSEvent) {
   capture.setExtra({ event, context: lambdaName });
   const startedAt = new Date().getTime();
   try {
