@@ -1,15 +1,15 @@
-import {
-  OutboundPatientDiscoveryReq,
-  OutboundDocumentQueryReq,
-  OutboundDocumentRetrievalReq,
-} from "@metriport/ihe-gateway-sdk";
 import { IHEGatewayV2 } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/ihe-gateway-v2";
 import {
-  createSignSendProcessXCPDRequest,
   createSignSendProcessDqRequests,
   createSignSendProcessDrRequests,
+  createSignSendProcessXCPDRequest,
 } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/ihe-gateway-v2-logic";
 import { SamlCertsAndKeys } from "@metriport/core/external/carequality/ihe-gateway-v2/saml/security/types";
+import {
+  OutboundDocumentQueryReq,
+  OutboundDocumentRetrievalReq,
+  OutboundPatientDiscoveryReq,
+} from "@metriport/ihe-gateway-sdk";
 import { Config } from "../../shared/config";
 
 const cqPath = "/internal/carequality";
@@ -37,10 +37,12 @@ export class IHEGatewayV2Direct extends IHEGatewayV2 {
     pdRequestGatewayV2,
     patientId,
     cxId,
+    queryGrantorOid,
   }: {
     pdRequestGatewayV2: OutboundPatientDiscoveryReq;
     patientId: string;
     cxId: string;
+    queryGrantorOid: string | undefined;
   }): Promise<void> {
     await createSignSendProcessXCPDRequest({
       pdResponseUrl: this.pdResponseUrl,
@@ -48,6 +50,7 @@ export class IHEGatewayV2Direct extends IHEGatewayV2 {
       samlCertsAndKeys: this.samlCertsAndKeys,
       patientId,
       cxId,
+      queryGrantorOid,
     });
   }
 
@@ -55,10 +58,12 @@ export class IHEGatewayV2Direct extends IHEGatewayV2 {
     dqRequestsGatewayV2,
     patientId,
     cxId,
+    queryGrantorOid,
   }: {
     dqRequestsGatewayV2: OutboundDocumentQueryReq[];
     patientId: string;
     cxId: string;
+    queryGrantorOid: string | undefined;
   }): Promise<void> {
     await createSignSendProcessDqRequests({
       dqResponseUrl: this.dqResponseUrl,
@@ -66,6 +71,7 @@ export class IHEGatewayV2Direct extends IHEGatewayV2 {
       samlCertsAndKeys: this.samlCertsAndKeys,
       patientId,
       cxId,
+      queryGrantorOid,
     });
   }
 
@@ -73,10 +79,12 @@ export class IHEGatewayV2Direct extends IHEGatewayV2 {
     drRequestsGatewayV2,
     patientId,
     cxId,
+    queryGrantorOid,
   }: {
     drRequestsGatewayV2: OutboundDocumentRetrievalReq[];
     patientId: string;
     cxId: string;
+    queryGrantorOid: string | undefined;
   }): Promise<void> {
     await createSignSendProcessDrRequests({
       drResponseUrl: this.drResponseUrl,
@@ -84,6 +92,7 @@ export class IHEGatewayV2Direct extends IHEGatewayV2 {
       samlCertsAndKeys: this.samlCertsAndKeys,
       patientId,
       cxId,
+      queryGrantorOid,
     });
   }
 }

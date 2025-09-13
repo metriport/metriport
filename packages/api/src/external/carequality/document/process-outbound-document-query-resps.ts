@@ -40,6 +40,7 @@ const parallelUpsertsToFhir = 10;
 export async function processOutboundDocumentQueryResps({
   requestId,
   patientId,
+  queryGrantorOid,
   cxId,
   response,
   forceDownload,
@@ -54,6 +55,7 @@ export async function processOutboundDocumentQueryResps({
 
   try {
     const patient = await getPatientOrFail({ id: patientId, cxId: cxId });
+    // const facility = await getFacilityOrFail({ cxId, id: patient.facilityIds[0] });
     const cqData = getCQData(patient.data.externalData);
     const docQueryStartedAt = cqData?.documentQueryProgress?.startedAt;
     const duration = elapsedTimeFromNow(docQueryStartedAt);
@@ -68,6 +70,7 @@ export async function processOutboundDocumentQueryResps({
       requestId,
       response,
       forceDownload,
+      queryGrantorOid,
     });
 
     const docsToDownload = responsesWithDocsToDownload.flatMap(
@@ -174,6 +177,7 @@ export async function processOutboundDocumentQueryResps({
         requestId,
         patientId,
         cxId,
+        queryGrantorOid,
       });
     }
 
@@ -182,6 +186,7 @@ export async function processOutboundDocumentQueryResps({
       patientId: patientId,
       cxId: cxId,
       numOfGateways: documentRetrievalRequestsV2.length,
+      queryGrantorOid,
     });
   } catch (error) {
     const msg = `Failed to process documents in Carequality.`;

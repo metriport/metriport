@@ -1,20 +1,22 @@
 import { Patient } from "@metriport/core/domain/patient";
-import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { MedicalDataSource } from "@metriport/core/external/index";
-import { schedulePatientDiscovery } from "../../hie/schedule-patient-discovery";
-import { getCQData, discover } from "../patient";
 import { processAsyncError } from "@metriport/core/util/error/shared";
+import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
+import { schedulePatientDiscovery } from "../../hie/schedule-patient-discovery";
+import { discover, getCQData } from "../patient";
 
 export async function runOrScheduleCqPatientDiscovery({
   patient,
   facilityId,
   requestId,
+  queryGrantorOid,
   rerunPdOnNewDemographics,
   forceCarequality,
 }: {
   patient: Patient;
   facilityId: string;
   requestId: string;
+  queryGrantorOid: string | undefined;
   rerunPdOnNewDemographics?: boolean;
   // START TODO #1572 - remove
   forceCarequality?: boolean;
@@ -45,6 +47,7 @@ export async function runOrScheduleCqPatientDiscovery({
       requestId,
       forceEnabled: forceCarequality,
       rerunPdOnNewDemographics,
+      queryGrantorOid,
     }).catch(processAsyncError("CQ discovery"));
   }
 }

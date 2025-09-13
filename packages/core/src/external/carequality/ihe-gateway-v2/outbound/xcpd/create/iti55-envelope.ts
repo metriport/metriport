@@ -1,20 +1,26 @@
-import { XMLBuilder } from "fast-xml-parser";
+import {
+  Address,
+  Name,
+  OutboundPatientDiscoveryReq,
+  PersonalIdentifier,
+  Telecom,
+  XCPDGateway,
+} from "@metriport/ihe-gateway-sdk";
 import dayjs from "dayjs";
-import { Address, Telecom, Name, PersonalIdentifier } from "@metriport/ihe-gateway-sdk";
+import { XMLBuilder } from "fast-xml-parser";
+import { wrapIdInUrnUuid } from "../../../../../../util/urn";
+import {
+  mapFhirToIheGender,
+  METRIPORT_HOME_COMMUNITY_ID_NO_PREFIX,
+  ORGANIZATION_NAME_DEFAULT as metriportOrganization,
+  replyTo,
+} from "../../../../shared";
+import { expiresIn, namespaces } from "../../../constants";
+import { doesGatewayUseSha1, getHomeCommunityId, requiresUrnInSoapBody } from "../../../gateways";
 import { createSecurityHeader } from "../../../saml/security/security-header";
 import { signFullSaml } from "../../../saml/security/sign";
 import { SamlCertsAndKeys } from "../../../saml/security/types";
-import { namespaces, expiresIn } from "../../../constants";
-import {
-  ORGANIZATION_NAME_DEFAULT as metriportOrganization,
-  METRIPORT_HOME_COMMUNITY_ID_NO_PREFIX,
-  replyTo,
-} from "../../../../shared";
-import { OutboundPatientDiscoveryReq, XCPDGateway } from "@metriport/ihe-gateway-sdk";
 import { timestampToSoapBody } from "../../../utils";
-import { wrapIdInUrnUuid } from "../../../../../../util/urn";
-import { requiresUrnInSoapBody, getHomeCommunityId, doesGatewayUseSha1 } from "../../../gateways";
-import { mapFhirToIheGender } from "../../../../shared";
 
 const DATE_DASHES_REGEX = /-/g;
 const action = "urn:hl7-org:v3:PRPA_IN201305UV02:CrossGatewayPatientDiscovery";
@@ -277,9 +283,11 @@ function createSoapBody({
 export function createITI5SoapEnvelope({
   bodyData,
   publicCert,
+  queryGrantorOid,
 }: {
   bodyData: OutboundPatientDiscoveryReq;
   publicCert: string;
+  queryGrantorOid: string | undefined;
 }): string {
   const gateway = bodyData.gateways?.[0];
   if (!gateway) {
@@ -304,6 +312,7 @@ export function createITI5SoapEnvelope({
     homeCommunityId,
     purposeOfUse,
     gatewayOid,
+    queryGrantorOid,
   });
 
   const soapBody = createSoapBody({ bodyData, createdTimestamp });
@@ -349,7 +358,8 @@ export function createITI5SoapEnvelope({
 
 export function createAndSignBulkXCPDRequests(
   bulkBodyData: OutboundPatientDiscoveryReq,
-  samlCertsAndKeys: SamlCertsAndKeys
+  samlCertsAndKeys: SamlCertsAndKeys,
+  queryGrantorOid: string | undefined
 ): SignedXcpdRequest[] {
   const signedRequests: SignedXcpdRequest[] = [];
 
@@ -359,7 +369,11 @@ export function createAndSignBulkXCPDRequests(
       gateways: [gateway],
     };
 
-    const xmlString = createITI5SoapEnvelope({ bodyData, publicCert: samlCertsAndKeys.publicCert });
+    const xmlString = createITI5SoapEnvelope({
+      bodyData,
+      publicCert: samlCertsAndKeys.publicCert,
+      queryGrantorOid,
+    });
     const useSha1 = doesGatewayUseSha1(gateway.oid);
     const signedRequest = signFullSaml({ xmlString, samlCertsAndKeys, useSha1 });
     signedRequests.push({ gateway, signedRequest, outboundRequest: bodyData });

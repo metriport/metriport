@@ -24,9 +24,11 @@ export type SignedDrRequest = {
 export function createITI39SoapEnvelope({
   bodyData,
   publicCert,
+  queryGrantorOid,
 }: {
   bodyData: OutboundDocumentRetrievalReq;
   publicCert: string;
+  queryGrantorOid: string | undefined;
 }): string {
   const messageId = wrapIdInUrnUuid(bodyData.id);
   const toUrl = bodyData.gateway.url;
@@ -54,6 +56,7 @@ export function createITI39SoapEnvelope({
     metriportOrganization,
     homeCommunityId,
     purposeOfUse,
+    queryGrantorOid,
   });
 
   const getDocumentUniqueIdFn = getDocumentUniqueIdFunctionByGateway(bodyData.gateway);
@@ -100,9 +103,14 @@ export function createITI39SoapEnvelope({
 
 export function createAndSignDRRequest(
   bodyData: OutboundDocumentRetrievalReq,
-  samlCertsAndKeys: SamlCertsAndKeys
+  samlCertsAndKeys: SamlCertsAndKeys,
+  queryGrantorOid: string | undefined
 ): string {
-  const xmlString = createITI39SoapEnvelope({ bodyData, publicCert: samlCertsAndKeys.publicCert });
+  const xmlString = createITI39SoapEnvelope({
+    bodyData,
+    publicCert: samlCertsAndKeys.publicCert,
+    queryGrantorOid,
+  });
   const useSha1 = doesGatewayUseSha1(bodyData.gateway.homeCommunityId);
   const fullySignedSaml = signFullSaml({ xmlString, samlCertsAndKeys, useSha1 });
   return fullySignedSaml;
@@ -111,14 +119,16 @@ export function createAndSignDRRequest(
 export function createAndSignBulkDRRequests({
   bulkBodyData,
   samlCertsAndKeys,
+  queryGrantorOid,
 }: {
   bulkBodyData: OutboundDocumentRetrievalReq[];
   samlCertsAndKeys: SamlCertsAndKeys;
+  queryGrantorOid: string | undefined;
 }): SignedDrRequest[] {
   const signedRequests: SignedDrRequest[] = [];
 
   for (const bodyData of bulkBodyData) {
-    const signedRequest = createAndSignDRRequest(bodyData, samlCertsAndKeys);
+    const signedRequest = createAndSignDRRequest(bodyData, samlCertsAndKeys, queryGrantorOid);
     signedRequests.push({
       gateway: bodyData.gateway,
       signedRequest,

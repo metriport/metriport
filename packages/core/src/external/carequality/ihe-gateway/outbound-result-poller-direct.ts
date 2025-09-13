@@ -26,6 +26,7 @@ export type OutboundDocQueryRespParam = {
   cxId: string;
   requestId: string;
   response: OutboundDocumentQueryResp[];
+  queryGrantorOid: string | undefined;
   forceDownload?: boolean | undefined;
 };
 
@@ -97,13 +98,14 @@ export class OutboundResultPollerDirect extends OutboundResultPoller {
       ...params,
       dbCreds: this.dbCreds,
     });
-    const { requestId, patientId, cxId, forceDownload } = params;
+    const { requestId, patientId, cxId, forceDownload, queryGrantorOid } = params;
 
     const payload: OutboundDocQueryRespParam = {
       requestId,
       patientId,
       cxId,
       response,
+      queryGrantorOid,
       forceDownload,
     };
 

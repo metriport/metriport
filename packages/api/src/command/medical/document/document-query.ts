@@ -25,6 +25,7 @@ import { getCqOrgIdsToDenyOnCw } from "../../../external/hie/cross-hie-ids";
 import { resetDocQueryProgress } from "../../../external/hie/reset-doc-query-progress";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
+import { getFacilityOrFail } from "../facility/get-facility";
 import { getPatientOrFail } from "../patient/get-patient";
 import { storeDocumentQueryInitialState } from "./document-query-init";
 import { areDocumentsProcessing } from "./document-status";
@@ -74,8 +75,9 @@ export async function queryDocumentsAcrossHIEs({
 }): Promise<DocumentQueryProgress> {
   const { log } = out(`queryDocumentsAcrossHIEs - M patient ${patientId}`);
 
-  const [patient, commonwellEnabled, carequalityEnabled] = await Promise.all([
+  const [patient, facility, commonwellEnabled, carequalityEnabled] = await Promise.all([
     getPatientOrFail({ id: patientId, cxId }),
+    getFacilityOrFail({ cxId, id: facilityId }),
     isCommonwellEnabled(),
     isCarequalityEnabled(),
   ]);
@@ -172,6 +174,7 @@ export async function queryDocumentsAcrossHIEs({
       requestId,
       cqManagingOrgName,
       forcePatientDiscovery,
+      queryGrantorOid: facility.cqOboOid ?? undefined,
     }).catch(emptyFunction);
     triggeredDocumentQuery = true;
   }

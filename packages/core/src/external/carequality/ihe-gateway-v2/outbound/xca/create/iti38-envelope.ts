@@ -1,13 +1,13 @@
+import { OutboundDocumentQueryReq, XCAGateway } from "@metriport/ihe-gateway-sdk";
 import dayjs from "dayjs";
 import { XMLBuilder } from "fast-xml-parser";
+import { wrapIdInUrnUuid } from "../../../../../../util/urn";
+import { ORGANIZATION_NAME_DEFAULT as metriportOrganization, replyTo } from "../../../../shared";
+import { expiresIn, namespaces } from "../../../constants";
+import { doesGatewayUseSha1, getHomeCommunityId } from "../../../gateways";
 import { createSecurityHeader } from "../../../saml/security/security-header";
 import { signFullSaml } from "../../../saml/security/sign";
 import { SamlCertsAndKeys } from "../../../saml/security/types";
-import { namespaces, expiresIn } from "../../../constants";
-import { ORGANIZATION_NAME_DEFAULT as metriportOrganization, replyTo } from "../../../../shared";
-import { OutboundDocumentQueryReq, XCAGateway } from "@metriport/ihe-gateway-sdk";
-import { wrapIdInUrnUuid } from "../../../../../../util/urn";
-import { getHomeCommunityId, doesGatewayUseSha1 } from "../../../gateways";
 
 const action = "urn:ihe:iti:2007:CrossGatewayQuery";
 const findDocumentId = "14d4debf-8f97-4251-9a74-a90016b0af0d";
@@ -161,9 +161,11 @@ function createSoapBody(bodyData: OutboundDocumentQueryReq): object {
 export function createITI38SoapEnvelope({
   bodyData,
   publicCert,
+  queryGrantorOid,
 }: {
   bodyData: OutboundDocumentQueryReq;
   publicCert: string;
+  queryGrantorOid: string | undefined;
 }): string {
   const messageId = wrapIdInUrnUuid(bodyData.id);
   const toUrl = bodyData.gateway.url;
@@ -184,6 +186,7 @@ export function createITI38SoapEnvelope({
     metriportOrganization,
     homeCommunityId,
     purposeOfUse,
+    queryGrantorOid,
   });
 
   const soapBody = createSoapBody(bodyData);
@@ -231,9 +234,14 @@ export function createITI38SoapEnvelope({
 
 export function createAndSignDQRequest(
   bodyData: OutboundDocumentQueryReq,
-  samlCertsAndKeys: SamlCertsAndKeys
+  samlCertsAndKeys: SamlCertsAndKeys,
+  queryGrantorOid: string | undefined
 ): string {
-  const xmlString = createITI38SoapEnvelope({ bodyData, publicCert: samlCertsAndKeys.publicCert });
+  const xmlString = createITI38SoapEnvelope({
+    bodyData,
+    publicCert: samlCertsAndKeys.publicCert,
+    queryGrantorOid,
+  });
   const useSha1 = doesGatewayUseSha1(bodyData.gateway.homeCommunityId);
   const fullySignedSaml = signFullSaml({ xmlString, samlCertsAndKeys, useSha1 });
   return fullySignedSaml;
@@ -242,14 +250,16 @@ export function createAndSignDQRequest(
 export function createAndSignBulkDQRequests({
   bulkBodyData,
   samlCertsAndKeys,
+  queryGrantorOid,
 }: {
   bulkBodyData: OutboundDocumentQueryReq[];
   samlCertsAndKeys: SamlCertsAndKeys;
+  queryGrantorOid: string | undefined;
 }): SignedDqRequest[] {
   const signedRequests: SignedDqRequest[] = [];
 
   for (const bodyData of bulkBodyData) {
-    const signedRequest = createAndSignDQRequest(bodyData, samlCertsAndKeys);
+    const signedRequest = createAndSignDQRequest(bodyData, samlCertsAndKeys, queryGrantorOid);
     signedRequests.push({ gateway: bodyData.gateway, signedRequest, outboundRequest: bodyData });
   }
 

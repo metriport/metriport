@@ -26,20 +26,20 @@ export class PatientUpdaterCarequality extends PatientUpdater {
     });
 
     // Promise that will be executed for each patient
-    const updatePatient = async (patient: Patient) => {
+    async function updatePatient(patient: Patient) {
       try {
         const facilityId = getFacilityIdOrFail(patient);
-        await getFacilityOrFail({ cxId, id: facilityId });
+        const facility = await getFacilityOrFail({ cxId, id: facilityId });
         // WARNING This could overwrite the status for any currently running PD
         // TODO Internal #1832 (rework)
-        await discover({ patient, facilityId });
+        await discover({ patient, facilityId, queryGrantorOid: facility.cqOboOid ?? undefined });
       } catch (error) {
         failedUpdateCount++;
         const msg = `Failed to update CQ patient`;
         console.log(`${msg}. Patient ID: ${patient.id}. Cause: ${errorToString(error)}`);
         capture.message(msg, { extra: { cxId, patientId: patient.id }, level: "error" });
       }
-    };
+    }
     // Execute the promises in parallel
     await executeAsynchronously(patients, async patient => updatePatient(patient), {
       numberOfParallelExecutions: maxNumberOfParallelRequestsToCQ,

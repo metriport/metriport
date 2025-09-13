@@ -23,6 +23,7 @@ export function createSecurityHeader({
   homeCommunityId,
   purposeOfUse,
   gatewayOid,
+  queryGrantorOid,
 }: {
   publicCert: string;
   createdTimestamp: string;
@@ -33,6 +34,7 @@ export function createSecurityHeader({
   homeCommunityId: string;
   purposeOfUse: string;
   gatewayOid?: string;
+  queryGrantorOid: string | undefined;
 }): object {
   const certPemStripped = stripPemCertificate(publicCert);
   const [modulusB64, exponentB64] = extractPublicKeyInfo(certPemStripped);
@@ -161,6 +163,11 @@ export function createSecurityHeader({
                   "@_displayName": "Treatment",
                 },
               },
+            },
+            queryGrantorOid && {
+              "@_Name": "QueryAuthGrantor",
+              "@_NameFormat": "urn:oasis:names:tc:SAML:2.0:attrname-format:uri",
+              "saml2:AttributeValue": `Organization/${queryGrantorOid}`,
             },
           ],
         },

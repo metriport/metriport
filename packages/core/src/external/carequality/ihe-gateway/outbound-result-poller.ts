@@ -3,6 +3,7 @@ export type PollOutboundResults = {
   patientId: string;
   cxId: string;
   numOfGateways: number;
+  queryGrantorOid: string | undefined;
   maxPollingDuration?: number;
   forceDownload?: boolean;
 };
