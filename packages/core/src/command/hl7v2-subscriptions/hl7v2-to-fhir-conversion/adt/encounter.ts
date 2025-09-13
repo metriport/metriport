@@ -61,6 +61,8 @@ export function getPatientStatus(messageType: Hl7MessageType): NonNullable<Encou
       return "in-progress";
     case "A03":
       return "finished";
+    case "A04":
+      return "registered";
     default:
       return "unknown";
   }

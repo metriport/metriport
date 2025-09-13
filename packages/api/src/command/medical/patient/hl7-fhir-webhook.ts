@@ -14,9 +14,11 @@ import { getSettings } from "../../settings/getSettings";
 import { processRequest } from "../../webhook/webhook";
 import { createWebhookRequest } from "../../webhook/webhook-request";
 import { getPatientOrFail } from "./get-patient";
+import { SupportedTriggerEvent } from "@metriport/core/command/hl7-notification/utils";
 
 const EVENT_TARGET_PATIENT = "patient";
 const EVENT_ADMIT = "admit";
+const EVENT_REGISTERED = "registered";
 const EVENT_DISCHARGE = "discharge";
 
 export async function processHl7FhirBundleWebhook({
@@ -117,10 +119,15 @@ export async function processHl7FhirBundleWebhook({
   log(`Done. Webhook sent..`);
 }
 
-function mapTriggerEventToWebhookType(triggerEvent: string): Hl7WebhookTypeSchemaType {
+function mapTriggerEventToWebhookType(
+  triggerEvent: SupportedTriggerEvent
+): Hl7WebhookTypeSchemaType {
   switch (triggerEvent) {
     case "A01": {
       return `${EVENT_TARGET_PATIENT}.${EVENT_ADMIT}`;
+    }
+    case "A04": {
+      return `${EVENT_TARGET_PATIENT}.${EVENT_REGISTERED}`;
     }
     case "A03": {
       return `${EVENT_TARGET_PATIENT}.${EVENT_DISCHARGE}`;
