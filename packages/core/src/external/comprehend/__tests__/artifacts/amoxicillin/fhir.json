@@ -1,0 +1,104 @@
+[
+  {
+    "resourceType": "Medication",
+    "id": "01992c66-9db3-7a7a-b415-a00a026a35c3",
+    "status": "active",
+    "code": {
+      "text": "Amoxicillin",
+      "coding": [
+        {
+          "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+          "code": "239191",
+          "display": "Amoxicillin"
+        }
+      ]
+    },
+    "form": {
+      "coding": [
+        {
+          "system": "http://snomed.info/sct",
+          "code": "385024007",
+          "display": "suspension"
+        }
+      ]
+    },
+    "amount": {
+      "numerator": {
+        "value": 250,
+        "unit": "mg",
+        "system": "http://unitsofmeasure.org",
+        "code": "mg"
+      },
+      "denominator": {
+        "value": 5,
+        "unit": "mL",
+        "system": "http://unitsofmeasure.org",
+        "code": "mL"
+      }
+    },
+    "ingredient": [
+      {
+        "itemCodeableConcept": {
+          "text": "Amoxicillin",
+          "coding": [
+            {
+              "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+              "code": "239191",
+              "display": "Amoxicillin"
+            }
+          ]
+        },
+        "isActive": true,
+        "strength": {
+          "numerator": {
+            "value": 250,
+            "unit": "mg",
+            "system": "http://unitsofmeasure.org",
+            "code": "mg"
+          },
+          "denominator": {
+            "value": 5,
+            "unit": "mL",
+            "system": "http://unitsofmeasure.org",
+            "code": "mL"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "resourceType": "MedicationStatement",
+    "id": "01992c66-9db4-7c05-869b-b91e1d6cf6bf",
+    "status": "active",
+    "medicationReference": {
+      "reference": "Medication/01992c66-9db3-7a7a-b415-a00a026a35c3"
+    },
+    "dosage": [
+      {
+        "text": "10 mL",
+        "doseAndRate": [
+          {
+            "doseQuantity": {
+              "value": 1,
+              "unit": "mg"
+            },
+            "rateQuantity": {
+              "value": 1,
+              "unit": "mg"
+            }
+          }
+        ]
+      }
+    ],
+    "effectivePeriod": {
+      "extension": [
+        {
+          "url": "https://metriport.com/data-extraction",
+          "valueString": "7 days"
+        }
+      ],
+      "start": "2025-01-01",
+      "end": "2025-01-08"
+    }
+  }
+]

@@ -1,0 +1,167 @@
+[
+  {
+    "resourceType": "Medication",
+    "id": "01993181-1022-7d2e-87f1-b83060c6d6e3",
+    "status": "active",
+    "code": {
+      "text": "Amoxicillin",
+      "coding": [
+        {
+          "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+          "code": "239191",
+          "display": "Amoxicillin"
+        }
+      ]
+    },
+    "form": {
+      "coding": [
+        {
+          "system": "http://snomed.info/sct",
+          "code": "385024007",
+          "display": "suspension"
+        }
+      ]
+    },
+    "amount": {
+      "numerator": {
+        "value": 250,
+        "unit": "mg",
+        "system": "http://unitsofmeasure.org",
+        "code": "mg"
+      },
+      "denominator": {
+        "value": 5,
+        "unit": "mL",
+        "system": "http://unitsofmeasure.org",
+        "code": "mL"
+      }
+    },
+    "ingredient": [
+      {
+        "itemCodeableConcept": {
+          "text": "Amoxicillin",
+          "coding": [
+            {
+              "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+              "code": "239191",
+              "display": "Amoxicillin"
+            }
+          ]
+        },
+        "isActive": true,
+        "strength": {
+          "numerator": {
+            "value": 250,
+            "unit": "mg",
+            "system": "http://unitsofmeasure.org",
+            "code": "mg"
+          },
+          "denominator": {
+            "value": 5,
+            "unit": "mL",
+            "system": "http://unitsofmeasure.org",
+            "code": "mL"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "resourceType": "MedicationStatement",
+    "id": "01993181-1023-72c4-ab20-64f258ff785d",
+    "status": "active",
+    "medicationReference": {
+      "reference": "Medication/01993181-1022-7d2e-87f1-b83060c6d6e3"
+    },
+    "dosage": [
+      {
+        "text": "10 mL",
+        "doseAndRate": [
+          {
+            "doseQuantity": {
+              "value": 10,
+              "unit": "mL",
+              "system": "http://unitsofmeasure.org",
+              "code": "mL"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "resourceType": "Medication",
+    "id": "01993181-1023-72c4-ab20-64f382848447",
+    "status": "active",
+    "code": {
+      "text": "Aspirin",
+      "coding": [
+        {
+          "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+          "code": "243670",
+          "display": "Aspirin"
+        }
+      ]
+    },
+    "form": {
+      "coding": [
+        {
+          "system": "http://snomed.info/sct",
+          "code": "385055001",
+          "display": "tablet"
+        }
+      ]
+    }
+  },
+  {
+    "resourceType": "MedicationStatement",
+    "id": "01993181-1023-72c4-ab20-64f479243ec2",
+    "status": "active",
+    "medicationReference": {
+      "reference": "Medication/01993181-1023-72c4-ab20-64f382848447"
+    },
+    "dosage": [
+      {
+        "text": "81 mg",
+        "doseAndRate": [
+          {
+            "doseQuantity": {
+              "value": 81,
+              "unit": "mg",
+              "system": "http://unitsofmeasure.org",
+              "code": "mg"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "resourceType": "Medication",
+    "id": "01993181-1023-72c4-ab20-64f5a3137ee7",
+    "status": "active",
+    "code": {
+      "text": "Heparin",
+      "coding": [
+        {
+          "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+          "code": "1659263",
+          "display": "Heparin"
+        }
+      ]
+    }
+  },
+  {
+    "resourceType": "MedicationStatement",
+    "id": "01993181-1023-72c4-ab20-64f62c1c6ded",
+    "status": "active",
+    "medicationReference": {
+      "reference": "Medication/01993181-1023-72c4-ab20-64f5a3137ee7"
+    },
+    "dosage": [
+      {
+        "text": "5,000 units"
+      }
+    ]
+  }
+]

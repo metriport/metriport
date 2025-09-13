@@ -1,0 +1,417 @@
+{
+  "inputText": "Hydroxyurea 500 mg daily, Metamucil three teaspoons daily, amitriptyline 50 mg at h.s., Synthroid 0.1 mg daily, Ambien 5 mg at h.s., triamterene/hydrochlorothiazide 75/50 daily, and Lortab 5/500 at h.s. p.r.n.",
+  "response": {
+    "$metadata": {
+      "httpStatusCode": 200,
+      "requestId": "9781f6a7-cfca-4b99-a128-97e114fa8883",
+      "attempts": 1,
+      "totalRetryDelay": 0
+    },
+    "Entities": [
+      {
+        "Attributes": [
+          {
+            "BeginOffset": 12,
+            "EndOffset": 18,
+            "Id": 2,
+            "RelationshipScore": 0.8219892978668213,
+            "Score": 0.821601390838623,
+            "Text": "500 mg",
+            "Traits": [],
+            "Type": "DOSAGE"
+          },
+          {
+            "BeginOffset": 19,
+            "EndOffset": 24,
+            "Id": 3,
+            "RelationshipScore": 0.8813977241516113,
+            "Score": 0.90631103515625,
+            "Text": "daily",
+            "Traits": [],
+            "Type": "FREQUENCY"
+          }
+        ],
+        "BeginOffset": 0,
+        "Category": "MEDICATION",
+        "EndOffset": 11,
+        "Id": 1,
+        "RxNormConcepts": [
+          {
+            "Code": "197797",
+            "Description": "hydroxyurea 500 mg oral capsule",
+            "Score": 0.20290708541870117
+          },
+          {
+            "Code": "1999308",
+            "Description": "hydroxyurea 100 mg oral tablet",
+            "Score": 0.029527470469474792
+          },
+          {
+            "Code": "5552",
+            "Description": "hydroxyurea",
+            "Score": 0.009050404652953148
+          },
+          {
+            "Code": "200344",
+            "Description": "hydroxyurea 400 mg oral capsule",
+            "Score": 0.0073156110011041164
+          },
+          {
+            "Code": "283475",
+            "Description": "hydroxyurea 1000 mg oral tablet",
+            "Score": 0.006638281978666782
+          }
+        ],
+        "Score": 0.7613970637321472,
+        "Text": "Hydroxyurea",
+        "Traits": [],
+        "Type": "GENERIC_NAME"
+      },
+      {
+        "Attributes": [
+          {
+            "BeginOffset": 36,
+            "EndOffset": 51,
+            "Id": 5,
+            "RelationshipScore": 0.7223333120346069,
+            "Score": 0.7172441482543945,
+            "Text": "three teaspoons",
+            "Traits": [],
+            "Type": "DOSAGE"
+          },
+          {
+            "BeginOffset": 52,
+            "EndOffset": 57,
+            "Id": 6,
+            "RelationshipScore": 0.8813977241516113,
+            "Score": 0.90631103515625,
+            "Text": "daily",
+            "Traits": [],
+            "Type": "FREQUENCY"
+          }
+        ],
+        "BeginOffset": 26,
+        "Category": "MEDICATION",
+        "EndOffset": 35,
+        "Id": 4,
+        "RxNormConcepts": [
+          {
+            "Code": "6802",
+            "Description": "metamucil",
+            "Score": 0.0017079447861760855
+          },
+          {
+            "Code": "2277605",
+            "Description": "psyllium 2000 mg oral wafer [metamucil]",
+            "Score": 0.0002469021419528872
+          },
+          {
+            "Code": "992675",
+            "Description": "homatropine methylbromide 0.3 mg/ml / hydrocodone bitartrate 1 mg/ml oral solution [hydromet]",
+            "Score": 0.00010525809193495661
+          },
+          {
+            "Code": "862021",
+            "Description": "24 hr guanfacine 3 mg extended release oral tablet [intuniv]",
+            "Score": 0.0000884296532603912
+          },
+          {
+            "Code": "217612",
+            "Description": "hydrocil",
+            "Score": 0.0000682013196637854
+          }
+        ],
+        "Score": 0.7172441482543945,
+        "Text": "Metamucil",
+        "Traits": [],
+        "Type": "BRAND_NAME"
+      },
+      {
+        "Attributes": [
+          {
+            "BeginOffset": 73,
+            "EndOffset": 78,
+            "Id": 8,
+            "RelationshipScore": 0.8672217726707458,
+            "Score": 0.8617406487464905,
+            "Text": "50 mg",
+            "Traits": [],
+            "Type": "DOSAGE"
+          },
+          {
+            "BeginOffset": 79,
+            "EndOffset": 86,
+            "Id": 9,
+            "RelationshipScore": 0.5692254304885864,
+            "Score": 0.5971075296401978,
+            "Text": "at h.s.",
+            "Traits": [],
+            "Type": "FREQUENCY"
+          }
+        ],
+        "BeginOffset": 59,
+        "Category": "MEDICATION",
+        "EndOffset": 72,
+        "Id": 7,
+        "RxNormConcepts": [
+          {
+            "Code": "856845",
+            "Description": "amitriptyline hydrochloride 50 mg oral tablet",
+            "Score": 0.8727308511734009
+          },
+          {
+            "Code": "704",
+            "Description": "amitriptyline",
+            "Score": 0.06520423293113708
+          },
+          {
+            "Code": "856868",
+            "Description": "amitriptyline hydrochloride 50 mg extended release oral capsule",
+            "Score": 0.04563277214765549
+          },
+          {
+            "Code": "856840",
+            "Description": "amitriptyline hydrochloride 50 mg / perphenazine 4 mg oral tablet",
+            "Score": 0.02556545101106167
+          },
+          {
+            "Code": "856783",
+            "Description": "amitriptyline hydrochloride 10 mg oral tablet",
+            "Score": 0.01915285922586918
+          }
+        ],
+        "Score": 0.821601390838623,
+        "Text": "amitriptyline",
+        "Traits": [],
+        "Type": "GENERIC_NAME"
+      },
+      {
+        "Attributes": [
+          {
+            "BeginOffset": 98,
+            "EndOffset": 104,
+            "Id": 11,
+            "RelationshipScore": 0.8970123529434204,
+            "Score": 0.8921527862548828,
+            "Text": "0.1 mg",
+            "Traits": [],
+            "Type": "DOSAGE"
+          },
+          {
+            "BeginOffset": 105,
+            "EndOffset": 110,
+            "Id": 12,
+            "RelationshipScore": 0.8970123529434204,
+            "Score": 0.90631103515625,
+            "Text": "daily",
+            "Traits": [],
+            "Type": "FREQUENCY"
+          }
+        ],
+        "BeginOffset": 88,
+        "Category": "MEDICATION",
+        "EndOffset": 97,
+        "Id": 10,
+        "RxNormConcepts": [
+          {
+            "Code": "966250",
+            "Description": "levothyroxine sodium 0.1 mg oral tablet [synthroid]",
+            "Score": 0.9581125974655151
+          },
+          {
+            "Code": "224920",
+            "Description": "synthroid",
+            "Score": 0.2340071052312851
+          },
+          {
+            "Code": "966218",
+            "Description": "levothyroxine sodium 0.3 mg oral tablet [synthroid]",
+            "Score": 0.18744854629039764
+          },
+          {
+            "Code": "966251",
+            "Description": "levothyroxine sodium 0.2 mg oral tablet [synthroid]",
+            "Score": 0.09411778301000595
+          },
+          {
+            "Code": "313979",
+            "Description": "fludrocortisone acetate 0.1 mg oral tablet",
+            "Score": 0.051606059074401855
+          }
+        ],
+        "Score": 0.6603351831436157,
+        "Text": "Synthroid",
+        "Traits": [],
+        "Type": "BRAND_NAME"
+      },
+      {
+        "Attributes": [
+          {
+            "BeginOffset": 119,
+            "EndOffset": 123,
+            "Id": 14,
+            "RelationshipScore": 0.8813977241516113,
+            "Score": 0.877546489238739,
+            "Text": "5 mg",
+            "Traits": [],
+            "Type": "DOSAGE"
+          },
+          {
+            "BeginOffset": 124,
+            "EndOffset": 131,
+            "Id": 15,
+            "RelationshipScore": 0.7814922332763672,
+            "Score": 0.7950295805931091,
+            "Text": "at h.s.",
+            "Traits": [],
+            "Type": "FREQUENCY"
+          }
+        ],
+        "BeginOffset": 112,
+        "Category": "MEDICATION",
+        "EndOffset": 118,
+        "Id": 13,
+        "RxNormConcepts": [
+          {
+            "Code": "854878",
+            "Description": "zolpidem tartrate 5 mg oral tablet [ambien]",
+            "Score": 0.31862595677375793
+          },
+          {
+            "Code": "131725",
+            "Description": "ambien",
+            "Score": 0.0014753751456737518
+          },
+          {
+            "Code": "996571",
+            "Description": "memantine hydrochloride 5 mg oral tablet",
+            "Score": 0.00027619817410595715
+          },
+          {
+            "Code": "854875",
+            "Description": "zolpidem tartrate 10 mg oral tablet [ambien]",
+            "Score": 0.00026022069505415857
+          },
+          {
+            "Code": "197361",
+            "Description": "amlodipine 5 mg oral tablet",
+            "Score": 0.00022545891988556832
+          }
+        ],
+        "Score": 0.821601390838623,
+        "Text": "Ambien",
+        "Traits": [],
+        "Type": "BRAND_NAME"
+      },
+      {
+        "Attributes": [
+          {
+            "BeginOffset": 165,
+            "EndOffset": 170,
+            "Id": 17,
+            "RelationshipScore": 0.6270833611488342,
+            "Score": 0.6603351831436157,
+            "Text": "75/50",
+            "Traits": [],
+            "Type": "DOSAGE"
+          },
+          {
+            "BeginOffset": 171,
+            "EndOffset": 176,
+            "Id": 18,
+            "RelationshipScore": 0.8534350991249084,
+            "Score": 0.877546489238739,
+            "Text": "daily",
+            "Traits": [],
+            "Type": "FREQUENCY"
+          }
+        ],
+        "BeginOffset": 133,
+        "Category": "MEDICATION",
+        "EndOffset": 164,
+        "Id": 16,
+        "RxNormConcepts": [
+          {
+            "Code": "310818",
+            "Description": "hydrochlorothiazide 50 mg / triamterene 75 mg oral tablet",
+            "Score": 0.4439026713371277
+          },
+          {
+            "Code": "310812",
+            "Description": "hydrochlorothiazide 25 mg / triamterene 37.5 mg oral tablet",
+            "Score": 0.06347941607236862
+          },
+          {
+            "Code": "314029",
+            "Description": "hydrochlorothiazide 25 mg / triamterene 50 mg oral tablet",
+            "Score": 0.056968431919813156
+          },
+          {
+            "Code": "258337",
+            "Description": "hydrochlorothiazide / triamterene",
+            "Score": 0.0057865167036652565
+          },
+          {
+            "Code": "198316",
+            "Description": "hydrochlorothiazide 25 mg / triamterene 37.5 mg oral capsule",
+            "Score": 0.0055115786381065845
+          }
+        ],
+        "Score": 0.821601390838623,
+        "Text": "triamterene/hydrochlorothiazide",
+        "Traits": [],
+        "Type": "GENERIC_NAME"
+      },
+      {
+        "Attributes": [
+          {
+            "BeginOffset": 189,
+            "EndOffset": 194,
+            "Id": 20,
+            "RelationshipScore": 0.8031880259513855,
+            "Score": 0.7950295805931091,
+            "Text": "5/500",
+            "Traits": [],
+            "Type": "DOSAGE"
+          }
+        ],
+        "BeginOffset": 182,
+        "Category": "MEDICATION",
+        "EndOffset": 188,
+        "Id": 19,
+        "RxNormConcepts": [
+          {
+            "Code": "144254",
+            "Description": "lortab",
+            "Score": 0.02578119933605194
+          },
+          {
+            "Code": "1495474",
+            "Description": "acetaminophen 325 mg / hydrocodone bitartrate 5 mg oral tablet [lortab]",
+            "Score": 0.0037336654495447874
+          },
+          {
+            "Code": "1495476",
+            "Description": "acetaminophen 325 mg / hydrocodone bitartrate 7.5 mg oral tablet [lortab]",
+            "Score": 0.0005208480870351195
+          },
+          {
+            "Code": "866516",
+            "Description": "metoprolol tartrate 50 mg oral tablet [lopressor]",
+            "Score": 0.0003899172879755497
+          },
+          {
+            "Code": "1442445",
+            "Description": "acetaminophen 20 mg/ml / hydrocodone bitartrate 0.667 mg/ml oral solution [lortab]",
+            "Score": 0.0003874461690429598
+          }
+        ],
+        "Score": 0.6603351831436157,
+        "Text": "Lortab",
+        "Traits": [],
+        "Type": "BRAND_NAME"
+      }
+    ],
+    "ModelVersion": "3.1.0.20221107"
+  }
+}

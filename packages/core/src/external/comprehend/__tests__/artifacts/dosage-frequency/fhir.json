@@ -1,0 +1,275 @@
+[
+  {
+    "resourceType": "Medication",
+    "id": "01992c46-a480-78c2-9b5c-33f3dd65053f",
+    "status": "active",
+    "code": {
+      "coding": [
+        {
+          "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+          "code": "197797",
+          "display": "Hydroxyurea"
+        }
+      ]
+    }
+  },
+  {
+    "resourceType": "MedicationStatement",
+    "id": "01992c46-a481-7fbf-a862-5162347f98b5",
+    "status": "active",
+    "medicationReference": {
+      "reference": "Medication/01992c46-a480-78c2-9b5c-33f3dd65053f"
+    },
+    "dosage": [
+      {
+        "text": "500 mg",
+        "doseAndRate": [
+          {
+            "doseQuantity": {
+              "value": 1,
+              "unit": "mg"
+            },
+            "rateQuantity": {
+              "value": 1,
+              "unit": "mg"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "resourceType": "Medication",
+    "id": "01992c46-a481-7fbf-a862-51632f1b565d",
+    "status": "active",
+    "code": {
+      "coding": [
+        {
+          "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+          "code": "6802",
+          "display": "Metamucil"
+        }
+      ]
+    }
+  },
+  {
+    "resourceType": "MedicationStatement",
+    "id": "01992c46-a481-7fbf-a862-5164a76e9926",
+    "status": "active",
+    "medicationReference": {
+      "reference": "Medication/01992c46-a481-7fbf-a862-51632f1b565d"
+    },
+    "dosage": [
+      {
+        "text": "three teaspoons",
+        "doseAndRate": [
+          {
+            "doseQuantity": {
+              "value": 1,
+              "unit": "mg"
+            },
+            "rateQuantity": {
+              "value": 1,
+              "unit": "mg"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "resourceType": "Medication",
+    "id": "01992c46-a481-7fbf-a862-51655798a177",
+    "status": "active",
+    "code": {
+      "coding": [
+        {
+          "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+          "code": "856845",
+          "display": "amitriptyline"
+        }
+      ]
+    }
+  },
+  {
+    "resourceType": "MedicationStatement",
+    "id": "01992c46-a481-7fbf-a862-5166776ed8f9",
+    "status": "active",
+    "medicationReference": {
+      "reference": "Medication/01992c46-a481-7fbf-a862-51655798a177"
+    },
+    "dosage": [
+      {
+        "text": "50 mg",
+        "doseAndRate": [
+          {
+            "doseQuantity": {
+              "value": 1,
+              "unit": "mg"
+            },
+            "rateQuantity": {
+              "value": 1,
+              "unit": "mg"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "resourceType": "Medication",
+    "id": "01992c46-a481-7fbf-a862-5167f0a95919",
+    "status": "active",
+    "code": {
+      "coding": [
+        {
+          "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+          "code": "966250",
+          "display": "Synthroid"
+        }
+      ]
+    }
+  },
+  {
+    "resourceType": "MedicationStatement",
+    "id": "01992c46-a481-7fbf-a862-5168513b51da",
+    "status": "active",
+    "medicationReference": {
+      "reference": "Medication/01992c46-a481-7fbf-a862-5167f0a95919"
+    },
+    "dosage": [
+      {
+        "text": "0.1 mg",
+        "doseAndRate": [
+          {
+            "doseQuantity": {
+              "value": 1,
+              "unit": "mg"
+            },
+            "rateQuantity": {
+              "value": 1,
+              "unit": "mg"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "resourceType": "Medication",
+    "id": "01992c46-a481-7fbf-a862-51690152846d",
+    "status": "active",
+    "code": {
+      "coding": [
+        {
+          "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+          "code": "854878",
+          "display": "Ambien"
+        }
+      ]
+    }
+  },
+  {
+    "resourceType": "MedicationStatement",
+    "id": "01992c46-a481-7fbf-a862-516ab45ed151",
+    "status": "active",
+    "medicationReference": {
+      "reference": "Medication/01992c46-a481-7fbf-a862-51690152846d"
+    },
+    "dosage": [
+      {
+        "text": "5 mg",
+        "doseAndRate": [
+          {
+            "doseQuantity": {
+              "value": 1,
+              "unit": "mg"
+            },
+            "rateQuantity": {
+              "value": 1,
+              "unit": "mg"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "resourceType": "Medication",
+    "id": "01992c46-a481-7fbf-a862-516ba890df68",
+    "status": "active",
+    "code": {
+      "coding": [
+        {
+          "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+          "code": "310818",
+          "display": "triamterene/hydrochlorothiazide"
+        }
+      ]
+    }
+  },
+  {
+    "resourceType": "MedicationStatement",
+    "id": "01992c46-a481-7fbf-a862-516ce53eef0c",
+    "status": "active",
+    "medicationReference": {
+      "reference": "Medication/01992c46-a481-7fbf-a862-516ba890df68"
+    },
+    "dosage": [
+      {
+        "text": "75/50",
+        "doseAndRate": [
+          {
+            "doseQuantity": {
+              "value": 1,
+              "unit": "mg"
+            },
+            "rateQuantity": {
+              "value": 1,
+              "unit": "mg"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "resourceType": "Medication",
+    "id": "01992c46-a481-7fbf-a862-516d87417f54",
+    "status": "active",
+    "code": {
+      "coding": [
+        {
+          "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+          "code": "144254",
+          "display": "Lortab"
+        }
+      ]
+    }
+  },
+  {
+    "resourceType": "MedicationStatement",
+    "id": "01992c46-a481-7fbf-a862-516e64ad6667",
+    "status": "active",
+    "medicationReference": {
+      "reference": "Medication/01992c46-a481-7fbf-a862-516d87417f54"
+    },
+    "dosage": [
+      {
+        "text": "5/500",
+        "doseAndRate": [
+          {
+            "doseQuantity": {
+              "value": 1,
+              "unit": "mg"
+            },
+            "rateQuantity": {
+              "value": 1,
+              "unit": "mg"
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

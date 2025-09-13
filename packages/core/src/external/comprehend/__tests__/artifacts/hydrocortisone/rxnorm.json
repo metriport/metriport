@@ -1,0 +1,83 @@
+{
+  "inputText": "Apply 2 grams of Hydrocortisone cream to affected area twice daily.",
+  "response": {
+    "$metadata": {
+      "httpStatusCode": 200,
+      "requestId": "78555b7f-5009-47d5-b657-d052958aefdf",
+      "attempts": 1,
+      "totalRetryDelay": 0
+    },
+    "Entities": [
+      {
+        "Attributes": [
+          {
+            "BeginOffset": 6,
+            "EndOffset": 13,
+            "Id": 1,
+            "RelationshipScore": 0.6795811653137207,
+            "Score": 0.6603351831436157,
+            "Text": "2 grams",
+            "Traits": [],
+            "Type": "DOSAGE"
+          },
+          {
+            "BeginOffset": 32,
+            "EndOffset": 37,
+            "Id": 3,
+            "RelationshipScore": 0.7814922332763672,
+            "Score": 0.7950295805931091,
+            "Text": "cream",
+            "Traits": [],
+            "Type": "FORM"
+          },
+          {
+            "BeginOffset": 55,
+            "EndOffset": 66,
+            "Id": 5,
+            "RelationshipScore": 0.6270833611488342,
+            "Score": 0.6603351831436157,
+            "Text": "twice daily",
+            "Traits": [],
+            "Type": "FREQUENCY"
+          }
+        ],
+        "BeginOffset": 17,
+        "Category": "MEDICATION",
+        "EndOffset": 31,
+        "Id": 2,
+        "RxNormConcepts": [
+          {
+            "Code": "5492",
+            "Description": "hydrocortisone",
+            "Score": 0.972855269908905
+          },
+          {
+            "Code": "4452",
+            "Description": "fludrocortisone",
+            "Score": 0.2933012843132019
+          },
+          {
+            "Code": "5509",
+            "Description": "hydroquinone",
+            "Score": 0.2489166259765625
+          },
+          {
+            "Code": "1738586",
+            "Description": "hydrocortisone 1000 mg injection",
+            "Score": 0.10010483860969543
+          },
+          {
+            "Code": "238755",
+            "Description": "hydrocortisone 100 mg injection",
+            "Score": 0.09811729192733765
+          }
+        ],
+        "Score": 0.8617406487464905,
+        "Text": "Hydrocortisone",
+        "Traits": [],
+        "Type": "GENERIC_NAME"
+      }
+    ],
+    "ModelVersion": "3.1.0.20221107"
+  }
+}

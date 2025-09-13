@@ -173,6 +173,10 @@ export class Config {
     return getEnvVar("BEDROCK_VERSION");
   }
 
+  static getComprehendRegion(): string {
+    return getEnvVar("COMPREHEND_REGION") ?? Config.getAWSRegion();
+  }
+
   static getAiBriefModelId(): string | undefined {
     return getEnvVar("AI_BRIEF_MODEL_ID");
   }
