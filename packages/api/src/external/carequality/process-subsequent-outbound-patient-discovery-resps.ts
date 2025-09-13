@@ -17,10 +17,12 @@ export async function processPostRespOutboundPatientDiscoveryResps({
   requestId,
   patientId,
   cxId,
+  queryGrantorOid,
 }: {
   patientId: string;
   requestId: string;
   cxId: string;
+  queryGrantorOid: string | undefined;
 }): Promise<void> {
   const baseLogMessage = `CQ PD post - patientId ${patientId}`;
   const { log } = out(`${baseLogMessage}, requestId: ${requestId}`);
@@ -41,6 +43,7 @@ export async function processPostRespOutboundPatientDiscoveryResps({
         patientId: patient.id,
         cxId: patient.cxId,
         numOfGateways: MAX_SAFE_GWS,
+        queryGrantorOid,
       });
     }
   } catch (error) {

@@ -33,6 +33,7 @@ describe("Process Inbound Dr Request", () => {
       const soapEnvelope = createITI39SoapEnvelope({
         bodyData: outboundDrRequest,
         publicCert: TEST_CERT,
+        queryGrantorOid: undefined,
       });
       const signedEnvelope = signTimestamp({ xml: soapEnvelope, privateKey: TEST_KEY });
       const iti39Request = await processInboundDrRequest(signedEnvelope);
@@ -61,6 +62,7 @@ describe("Process Inbound Dr Request", () => {
     const soapEnvelope = createITI39SoapEnvelope({
       bodyData: outboundDrRequest,
       publicCert: TEST_CERT,
+      queryGrantorOid: undefined,
     });
     await expect(processInboundDrRequest(soapEnvelope)).rejects.toThrow(
       "Failed to parse ITI-39 request"

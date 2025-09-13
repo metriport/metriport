@@ -54,7 +54,7 @@ app.post("/xcpd", async (req: Request, res: Response) => {
   }
 
   try {
-    const signedRequests = createAndSignBulkXCPDRequests(req.body, samlCertsAndKeys);
+    const signedRequests = createAndSignBulkXCPDRequests(req.body, samlCertsAndKeys, undefined);
 
     const resultPromises = signedRequests.map(async (signedRequest, index) => {
       return sendProcessXcpdRequest({
@@ -87,6 +87,7 @@ app.post("/xcadq", async (req: Request, res: Response) => {
     const signedRequests = createAndSignBulkDQRequests({
       bulkBodyData: req.body,
       samlCertsAndKeys,
+      queryGrantorOid: undefined,
     });
 
     const resultPromises = signedRequests.map(async (signedRequest, index) => {
@@ -120,6 +121,7 @@ app.post("/xcadr", async (req: Request, res: Response) => {
     const signedRequests = createAndSignBulkDRRequests({
       bulkBodyData: req.body,
       samlCertsAndKeys,
+      queryGrantorOid: undefined,
     });
 
     const resultPromises = signedRequests.map(async (signedRequest, index) => {

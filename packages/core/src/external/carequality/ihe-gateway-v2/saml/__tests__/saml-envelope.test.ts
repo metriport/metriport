@@ -16,6 +16,7 @@ describe("SAML XCPD Envelope Signature Verification", () => {
     const soapEnvelope = createITI5SoapEnvelope({
       bodyData: outboundXcpdRequest,
       publicCert: TEST_CERT,
+      queryGrantorOid: undefined,
     });
     const signedEnvelope = signEnvelope({ xml: soapEnvelope, privateKey: TEST_KEY });
     expect(verifySaml({ xmlString: signedEnvelope, publicCert: TEST_CERT })).toBeTruthy();
@@ -24,6 +25,7 @@ describe("SAML XCPD Envelope Signature Verification", () => {
     const soapEnvelope = createITI5SoapEnvelope({
       bodyData: outboundXcpdRequest,
       publicCert: TEST_CERT,
+      queryGrantorOid: undefined,
     });
     const signedEnvelope = signEnvelope({ xml: soapEnvelope, privateKey: TEST_KEY });
     const modifiedAssertion = signedEnvelope.replace(
@@ -36,6 +38,7 @@ describe("SAML XCPD Envelope Signature Verification", () => {
     const soapEnvelope = createITI5SoapEnvelope({
       bodyData: outboundXcpdRequest,
       publicCert: TEST_CERT,
+      queryGrantorOid: undefined,
     });
     const signedEnvelope = signEnvelope({ xml: soapEnvelope, privateKey: TEST_KEY });
     const modifiedSignature = signedEnvelope.replace(
@@ -48,6 +51,7 @@ describe("SAML XCPD Envelope Signature Verification", () => {
     const soapEnvelope = createITI5SoapEnvelope({
       bodyData: outboundXcpdRequest,
       publicCert: TEST_CERT,
+      queryGrantorOid: undefined,
     });
     const signedEnvelope = signEnvelope({ xml: soapEnvelope, privateKey: TEST_KEY });
     const modifiedDigest = signedEnvelope.replace(
@@ -60,6 +64,7 @@ describe("SAML XCPD Envelope Signature Verification", () => {
     const soapEnvelope = createITI38SoapEnvelope({
       bodyData: outboundDqRequest,
       publicCert: TEST_CERT,
+      queryGrantorOid: undefined,
     });
     const signedEnvelope = signEnvelope({ xml: soapEnvelope, privateKey: TEST_KEY });
     expect(verifySaml({ xmlString: signedEnvelope, publicCert: TEST_CERT })).toBeTruthy();
@@ -68,6 +73,7 @@ describe("SAML XCPD Envelope Signature Verification", () => {
     const soapEnvelope = createITI38SoapEnvelope({
       bodyData: outboundDqRequest,
       publicCert: TEST_CERT,
+      queryGrantorOid: undefined,
     });
     const signedEnvelope = signEnvelope({ xml: soapEnvelope, privateKey: TEST_KEY });
     const modifiedAssertion = signedEnvelope.replace(
@@ -80,6 +86,7 @@ describe("SAML XCPD Envelope Signature Verification", () => {
     const soapEnvelope = createITI38SoapEnvelope({
       bodyData: outboundDqRequest,
       publicCert: TEST_CERT,
+      queryGrantorOid: undefined,
     });
     const signedEnvelope = signEnvelope({ xml: soapEnvelope, privateKey: TEST_KEY });
     const modifiedSignature = signedEnvelope.replace(
@@ -92,6 +99,7 @@ describe("SAML XCPD Envelope Signature Verification", () => {
     const soapEnvelope = createITI38SoapEnvelope({
       bodyData: outboundDqRequest,
       publicCert: TEST_CERT,
+      queryGrantorOid: undefined,
     });
     const signedEnvelope = signEnvelope({ xml: soapEnvelope, privateKey: TEST_KEY });
     const modifiedDigest = signedEnvelope.replace(
@@ -104,6 +112,7 @@ describe("SAML XCPD Envelope Signature Verification", () => {
     const soapEnvelope = createITI39SoapEnvelope({
       bodyData: outboundDrRequest,
       publicCert: TEST_CERT,
+      queryGrantorOid: undefined,
     });
     const signedEnvelope = signEnvelope({ xml: soapEnvelope, privateKey: TEST_KEY });
     expect(verifySaml({ xmlString: signedEnvelope, publicCert: TEST_CERT })).toBeTruthy();
@@ -112,6 +121,7 @@ describe("SAML XCPD Envelope Signature Verification", () => {
     const soapEnvelope = createITI39SoapEnvelope({
       bodyData: outboundDrRequest,
       publicCert: TEST_CERT,
+      queryGrantorOid: undefined,
     });
     const signedEnvelope = signEnvelope({ xml: soapEnvelope, privateKey: TEST_KEY });
     const modifiedAssertion = signedEnvelope.replace(
@@ -124,6 +134,7 @@ describe("SAML XCPD Envelope Signature Verification", () => {
     const soapEnvelope = createITI39SoapEnvelope({
       bodyData: outboundDrRequest,
       publicCert: TEST_CERT,
+      queryGrantorOid: undefined,
     });
     const signedEnvelope = signEnvelope({ xml: soapEnvelope, privateKey: TEST_KEY });
     const modifiedSignature = signedEnvelope.replace(
@@ -136,6 +147,7 @@ describe("SAML XCPD Envelope Signature Verification", () => {
     const soapEnvelope = createITI39SoapEnvelope({
       bodyData: outboundDrRequest,
       publicCert: TEST_CERT,
+      queryGrantorOid: undefined,
     });
     const signedEnvelope = signEnvelope({ xml: soapEnvelope, privateKey: TEST_KEY });
     const modifiedDigest = signedEnvelope.replace(

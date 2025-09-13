@@ -49,7 +49,7 @@ async function main() {
   );
 
   console.log("signing bulk requests...", body.gateways.length);
-  const signedRequests = createAndSignBulkXCPDRequests(body, samlCertsAndKeys);
+  const signedRequests = createAndSignBulkXCPDRequests(body, samlCertsAndKeys, undefined);
 
   const resultPromises = signedRequests.map(async (signedRequest, index) => {
     return sendProcessXcpdRequest({

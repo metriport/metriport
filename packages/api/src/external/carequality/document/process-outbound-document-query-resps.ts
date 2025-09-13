@@ -55,7 +55,6 @@ export async function processOutboundDocumentQueryResps({
 
   try {
     const patient = await getPatientOrFail({ id: patientId, cxId: cxId });
-    // const facility = await getFacilityOrFail({ cxId, id: patient.facilityIds[0] });
     const cqData = getCQData(patient.data.externalData);
     const docQueryStartedAt = cqData?.documentQueryProgress?.startedAt;
     const duration = elapsedTimeFromNow(docQueryStartedAt);

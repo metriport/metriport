@@ -41,6 +41,7 @@ export async function processOutboundPatientDiscoveryResps({
   patientId,
   cxId,
   results,
+  queryGrantorOid,
 }: OutboundPatientDiscoveryRespParam): Promise<void> {
   const baseLogMessage = `CQ PD Processing results - patientId ${patientId}`;
   const { log } = out(`${baseLogMessage}, requestId: ${requestId}`);
@@ -69,6 +70,7 @@ export async function processOutboundPatientDiscoveryResps({
         facilityId: discoveryParams.facilityId,
         requestId,
         cqLinks: validNetworkLinks,
+        queryGrantorOid,
       });
       if (startedNewPd) return;
     }
@@ -76,6 +78,7 @@ export async function processOutboundPatientDiscoveryResps({
     const startedNewPd = await runNexPdIfScheduled({
       patient,
       requestId,
+      queryGrantorOid,
     });
     if (startedNewPd) return;
     await updatePatientDiscoveryStatus({ patient, status: "completed" });
@@ -92,7 +95,7 @@ export async function processOutboundPatientDiscoveryResps({
         ...countStats,
       },
     });
-    await queryDocsIfScheduled({ patientIds: patient });
+    await queryDocsIfScheduled({ patientIds: patient, queryGrantorOid });
     log("Completed.");
   } catch (error) {
     // TODO 1646 Move to a single hit to the DB
@@ -101,7 +104,7 @@ export async function processOutboundPatientDiscoveryResps({
       source: MedicalDataSource.CAREQUALITY,
     });
     await updatePatientDiscoveryStatus({ patient: patientIds, status: "failed" });
-    await queryDocsIfScheduled({ patientIds, isFailed: true });
+    await queryDocsIfScheduled({ patientIds, isFailed: true, queryGrantorOid });
     const msg = `Error on Processing Outbound Patient Discovery Responses`;
     outerLog(`${msg} - ${errorToString(error)}`);
     capture.error(msg, {
@@ -173,11 +176,13 @@ export async function runNextPdOnNewDemographics({
   facilityId,
   requestId,
   cqLinks,
+  queryGrantorOid,
 }: {
   patient: Patient;
   facilityId: string;
   requestId: string;
   cqLinks: CQLink[];
+  queryGrantorOid: string | undefined;
 }): Promise<boolean> {
   const updatedPatient = await getPatientOrFail(patient);
 
@@ -216,6 +221,7 @@ export async function runNextPdOnNewDemographics({
     patient: updatedPatient,
     facilityId,
     rerunPdOnNewDemographics: false,
+    queryGrantorOid,
   }).catch(processAsyncError("CQ discover"));
   analytics({
     distinctId: updatedPatient.cxId,
@@ -234,9 +240,11 @@ export async function runNextPdOnNewDemographics({
 export async function runNexPdIfScheduled({
   patient,
   requestId,
+  queryGrantorOid,
 }: {
   patient: Patient;
   requestId: string;
+  queryGrantorOid: string | undefined;
 }): Promise<boolean> {
   const updatedPatient = await getPatientOrFail(patient);
 
@@ -255,6 +263,7 @@ export async function runNexPdIfScheduled({
     requestId: scheduledPdRequest.requestId,
     forceEnabled: scheduledPdRequest.forceCarequality,
     rerunPdOnNewDemographics: scheduledPdRequest.rerunPdOnNewDemographics,
+    queryGrantorOid,
   }).catch(processAsyncError("CQ discover"));
   analytics({
     distinctId: updatedPatient.cxId,
@@ -272,9 +281,11 @@ export async function runNexPdIfScheduled({
 export async function queryDocsIfScheduled({
   patientIds,
   isFailed = false,
+  queryGrantorOid,
 }: {
   patientIds: Pick<Patient, "id" | "cxId">;
   isFailed?: boolean;
+  queryGrantorOid: string | undefined;
 }): Promise<void> {
   const patient = await getPatientOrFail(patientIds);
 
@@ -303,6 +314,7 @@ export async function queryDocsIfScheduled({
       patient,
       requestId: scheduledDocQueryRequestId,
       triggerConsolidated: scheduledDocQueryRequestTriggerConsolidated,
+      queryGrantorOid,
     }).catch(processAsyncError("CQ getDocumentsFromCQ"));
   }
 }

@@ -13,7 +13,7 @@ const pdResponseUrl = `http://${apiUrl}/internal/carequality/patient-discovery/r
 
 // TODO move to capture.wrapHandler()
 export const handler = Sentry.AWSLambda.wrapHandler(
-  async ({ cxId, patientId, pdRequestGatewayV2 }: PDRequestGatewayV2Params) => {
+  async ({ cxId, patientId, pdRequestGatewayV2, queryGrantorOid }: PDRequestGatewayV2Params) => {
     log(
       `Running with envType: ${getEnvType()}, requestId: ${pdRequestGatewayV2.id}, ` +
         `numOfGateways: ${pdRequestGatewayV2.gateways.length} cxId: ${cxId} patientId: ${patientId}`
@@ -26,6 +26,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(
       samlCertsAndKeys,
       patientId,
       cxId,
+      queryGrantorOid,
     });
   }
 );

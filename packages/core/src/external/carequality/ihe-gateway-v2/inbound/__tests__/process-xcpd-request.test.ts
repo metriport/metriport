@@ -29,6 +29,7 @@ describe("Process Inbound Xcpd Request", () => {
       const soapEnvelope = createITI5SoapEnvelope({
         bodyData: outboundXcpdRequest,
         publicCert: TEST_CERT,
+        queryGrantorOid: undefined,
       });
       const signedEnvelope = signTimestamp({ xml: soapEnvelope, privateKey: TEST_KEY });
 
@@ -52,6 +53,7 @@ describe("Process Inbound Xcpd Request", () => {
     const soapEnvelope = createITI5SoapEnvelope({
       bodyData: outboundXcpdRequest,
       publicCert: TEST_CERT,
+      queryGrantorOid: undefined,
     });
 
     await expect(processInboundXcpdRequest(soapEnvelope)).rejects.toThrow(

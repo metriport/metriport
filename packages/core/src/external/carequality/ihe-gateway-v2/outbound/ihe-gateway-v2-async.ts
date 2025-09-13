@@ -1,8 +1,4 @@
-import {
-  OutboundDocumentQueryReq,
-  OutboundDocumentRetrievalReq,
-  OutboundPatientDiscoveryReq,
-} from "@metriport/ihe-gateway-sdk";
+import { OutboundPatientDiscoveryReq } from "@metriport/ihe-gateway-sdk";
 import { sleep } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -10,7 +6,7 @@ import chunk from "lodash/chunk";
 import { Config } from "../../../../util/config";
 import { processAsyncError } from "../../../../util/error/shared";
 import { defaultLambdaInvocationResponseHandler, makeLambdaClient } from "../../../aws/lambda";
-import { IHEGatewayV2 } from "./ihe-gateway-v2";
+import { IHEGatewayV2, DQRequestGatewayV2Params, DRRequestGatewayV2Params } from "./ihe-gateway-v2";
 
 dayjs.extend(duration);
 
@@ -70,17 +66,8 @@ export class IHEGatewayV2Async extends IHEGatewayV2 {
     }
   }
 
-  async startDocumentQueryGatewayV2({
-    dqRequestsGatewayV2,
-    patientId,
-    cxId,
-    requestId,
-  }: {
-    dqRequestsGatewayV2: OutboundDocumentQueryReq[];
-    patientId: string;
-    cxId: string;
-    requestId: string;
-  }): Promise<void> {
+  async startDocumentQueryGatewayV2(params: DQRequestGatewayV2Params): Promise<void> {
+    const { dqRequestsGatewayV2, patientId, cxId, requestId } = params;
     const lambdaClient = makeLambdaClient(Config.getAWSRegion());
     const requestChunks = chunkRequests(
       dqRequestsGatewayV2,
@@ -107,17 +94,8 @@ export class IHEGatewayV2Async extends IHEGatewayV2 {
     }
   }
 
-  async startDocumentRetrievalGatewayV2({
-    drRequestsGatewayV2,
-    patientId,
-    cxId,
-    requestId,
-  }: {
-    drRequestsGatewayV2: OutboundDocumentRetrievalReq[];
-    patientId: string;
-    cxId: string;
-    requestId: string;
-  }): Promise<void> {
+  async startDocumentRetrievalGatewayV2(params: DRRequestGatewayV2Params): Promise<void> {
+    const { drRequestsGatewayV2, patientId, cxId, requestId } = params;
     const lambdaClient = makeLambdaClient(Config.getAWSRegion());
     const requestChunks = chunkRequests(
       drRequestsGatewayV2,

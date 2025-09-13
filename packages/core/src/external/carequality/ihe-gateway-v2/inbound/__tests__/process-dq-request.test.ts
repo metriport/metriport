@@ -33,6 +33,7 @@ describe("Process Inbound Dq Request", () => {
       const soapEnvelope = createITI38SoapEnvelope({
         bodyData: outboundDqRequest,
         publicCert: TEST_CERT,
+        queryGrantorOid: undefined,
       });
       const signedEnvelope = signTimestamp({ xml: soapEnvelope, privateKey: TEST_KEY });
       const iti38Request = await processInboundDqRequest(signedEnvelope);
@@ -46,6 +47,7 @@ describe("Process Inbound Dq Request", () => {
     const soapEnvelope = createITI38SoapEnvelope({
       bodyData: outboundDqRequest,
       publicCert: TEST_CERT,
+      queryGrantorOid: undefined,
     });
 
     await expect(processInboundDqRequest(soapEnvelope)).rejects.toThrow(

@@ -138,6 +138,7 @@ async function main() {
       dbCreds: sqlDBCreds,
       requestId: docQuery.requestId ?? "",
       numOfGateways: links.length,
+      queryGrantorOid: undefined,
     });
 
     if (documentQueryResults.length === 0) {
@@ -156,6 +157,7 @@ async function main() {
       dbCreds: sqlDBCreds,
       requestId: docQuery.requestId ?? "",
       numOfGateways: successDocQueryResults.length,
+      queryGrantorOid: undefined,
     });
 
     if (documentRetrievalResults.length === 0) {

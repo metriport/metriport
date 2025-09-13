@@ -19,6 +19,7 @@ export type OutboundPatientDiscoveryRespParam = {
   cxId: string;
   requestId: string;
   results: OutboundPatientDiscoveryResp[];
+  queryGrantorOid: string | undefined;
 };
 
 export type OutboundDocQueryRespParam = {
@@ -75,13 +76,14 @@ export class OutboundResultPollerDirect extends OutboundResultPoller {
       ...params,
       dbCreds: this.dbCreds,
     });
-    const { requestId, patientId, cxId } = params;
+    const { requestId, patientId, cxId, queryGrantorOid } = params;
 
     const payload: OutboundPatientDiscoveryRespParam = {
       requestId,
       patientId,
       cxId,
       results,
+      queryGrantorOid,
     };
 
     // TODO not sure if should retry on timeout

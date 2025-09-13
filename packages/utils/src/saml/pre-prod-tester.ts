@@ -392,7 +392,7 @@ async function queryXcpd(
       certChain: getEnvVarOrFail("CQ_ORG_CERTIFICATE_INTERMEDIATE_PRODUCTION"),
     };
 
-    const signedRequests = createAndSignBulkXCPDRequests(xcpdRequest, samlCertsAndKeys);
+    const signedRequests = createAndSignBulkXCPDRequests(xcpdRequest, samlCertsAndKeys, undefined);
 
     const resultPromises = signedRequests.map(async (signedRequest, index) => {
       return sendProcessXcpdRequest({
@@ -423,6 +423,7 @@ async function queryDQ(dqRequest: OutboundDocumentQueryReq): Promise<OutboundDoc
     const xmlResponses = createAndSignBulkDQRequests({
       bulkBodyData: [dqRequest],
       samlCertsAndKeys,
+      queryGrantorOid: undefined,
     });
 
     const response = await sendSignedDqRequest({
@@ -456,6 +457,7 @@ async function queryDR(
     const signedRequests = createAndSignBulkDRRequests({
       bulkBodyData: [drRequest],
       samlCertsAndKeys,
+      queryGrantorOid: undefined,
     });
 
     const resultPromises = signedRequests.map(async (signedRequest, index) => {
