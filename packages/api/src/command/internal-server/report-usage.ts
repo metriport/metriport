@@ -1,10 +1,8 @@
-import Axios from "axios";
+import { InternalServerApi } from "@metriport/core/external/internal-server/client";
 import stringify from "json-stringify-safe";
 import { Product } from "../../domain/product";
 import { Config } from "../../shared/config";
 import { capture } from "../../shared/notifications";
-
-const axios = Axios.create({ timeout: 20_000 });
 
 export type ReportUsageCommand = {
   cxId: string;
@@ -13,14 +11,15 @@ export type ReportUsageCommand = {
   docQuery?: boolean;
 };
 
-export const reportUsage = ({ cxId, entityId, product, docQuery }: ReportUsageCommand): void => {
+export function reportUsage({ cxId, entityId, product, docQuery }: ReportUsageCommand): void {
   const url = Config.getUsageUrl();
   if (!url) return;
   const payload = { cxId, entityId, apiType: product, docQuery };
+  const internalServerApi = new InternalServerApi();
 
   // intentionally asynchronous
-  axios.post(`${url}`, payload).catch(err => {
+  internalServerApi.makeRequest("POST", url, payload).catch(err => {
     console.log(`Failed to report usage (${stringify(payload)}) to server ${url}: `, err.message);
     capture.error(err, { extra: { payload, err } });
   });
-};
+}

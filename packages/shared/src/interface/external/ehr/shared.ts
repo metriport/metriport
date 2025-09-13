@@ -30,6 +30,7 @@ export const writeBackFiltersPerResourceTypeSchema = z.object({
     .object({
       stringFilters: z.string().array().optional(),
       latestOnly: z.boolean().optional(),
+      earliestOnly: z.boolean().optional(),
       chronicityFilter: z.enum(["all", "chronic", "non-chronic"]).optional(),
       relativeDateRange: relativeDateRangeSchema.optional(),
       disabled: z.boolean().optional(),
@@ -43,7 +44,7 @@ export const writeBackFiltersPerResourceTypeSchema = z.object({
       disabled: z.boolean().optional(),
     })
     .optional(),
-  medicationstatement: z
+  medicationStatement: z
     .object({
       rxnormCodes: z.string().array().optional(),
       absoluteDate: z.string().optional(),

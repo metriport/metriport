@@ -405,4 +405,8 @@ export class Config {
   static getRosterUploadSftpPasswordArn(): string {
     return getEnvVarOrFail(`${ROSTER_UPLOAD_SFTP_PASSWORD}_ARN`);
   }
+
+  static getInternalServerUrl(): string {
+    return getEnvVarOrFail("INTERNAL_SERVER_BASE_URL");
+  }
 }

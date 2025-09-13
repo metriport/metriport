@@ -3,8 +3,10 @@ dotenv.config();
 // keep that ^ above all other imports
 import { encodeCwPatientId } from "@metriport/commonwell-sdk/common/util";
 import { initApiForExistingOrg } from "../flows/org-management";
+import { errorToString } from "@metriport/shared";
 
 const patientId: string | undefined = process.argv[2]; // read patient ID from command line argument
+const isDebug: boolean = process.argv[3] === "true"; // read debug flag from command line argument
 
 /**
  * Utility to get links for a patient by ID.
@@ -26,9 +28,16 @@ export async function getPatientLinks() {
   });
 
   console.log(`Get Patient Links for ${patientId}`);
-  const resp = await commonWell.getPatientLinksByPatientId(encodedPatientId);
-  console.log("Transaction ID: " + commonWell.lastTransactionId);
-  console.log("Response: " + JSON.stringify(resp, null, 2));
+  try {
+    const resp = await commonWell.getPatientLinksByPatientId(encodedPatientId);
+    console.log("Transaction ID: " + commonWell.lastTransactionId);
+    console.log("Response: " + JSON.stringify(resp, null, 2));
+  } catch (error) {
+    console.log("Error: " + errorToString(error));
+    console.log("Transaction ID: " + commonWell.lastTransactionId);
+    if (isDebug) throw error;
+    process.exit(1);
+  }
 }
 
 getPatientLinks();
