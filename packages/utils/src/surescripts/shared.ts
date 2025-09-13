@@ -94,7 +94,11 @@ export async function getPatientIdsFromCsv(csvFileName: string): Promise<string[
     fs.createReadStream(csvFilePath)
       .pipe(csv())
       .on("data", function (row) {
-        if (row.patientId != null && typeof row.patientId === "string" && row.length == 36) {
+        if (
+          row.patientId != null &&
+          typeof row.patientId === "string" &&
+          row.patientId.length == 36
+        ) {
           patientIds.push(row.patientId);
         }
       })

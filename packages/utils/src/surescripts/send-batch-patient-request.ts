@@ -82,3 +82,5 @@ program
   );
 
 export default program;
+
+// npm run surescripts -- batch-patient-request --cx-id 23b21d74-0db8-4ad3-a093-d1ee3ba3d026 --facility-id 019056ab-beff-75ec-93d0-a71774473d53 --csv-data
