@@ -71,11 +71,12 @@ export function cwToFHIR(
       system: doc.masterIdentifier?.system ?? undefined,
       value: doc.masterIdentifier?.value ?? docId,
     },
-    identifier: (doc.identifier?.map(id => ({
-      system: id.system ?? undefined,
-      value: id.value,
-      use: id.use ?? undefined,
-    })) ?? []) as Identifier[],
+    identifier:
+      doc.identifier?.map(id => ({
+        system: id.system ?? undefined,
+        value: id.value,
+        use: (id.use as Identifier["use"]) ?? undefined,
+      })) ?? [],
     date,
     status: doc.status,
     type: doc.type ?? undefined,
