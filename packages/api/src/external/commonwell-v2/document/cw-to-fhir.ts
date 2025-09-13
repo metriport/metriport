@@ -1,4 +1,4 @@
-import { DocumentReference, DocumentReferenceContext } from "@medplum/fhirtypes";
+import { DocumentReference, DocumentReferenceContext, Identifier } from "@medplum/fhirtypes";
 import { DocumentReference as CwDocumentReference } from "@metriport/commonwell-sdk";
 import { Patient } from "@metriport/core/domain/patient";
 import { cwExtension } from "@metriport/core/external/commonwell/extension";
@@ -71,12 +71,11 @@ export function cwToFHIR(
       system: doc.masterIdentifier?.system ?? undefined,
       value: doc.masterIdentifier?.value ?? docId,
     },
-    identifier:
-      doc.identifier?.map(id => ({
-        system: id.system ?? undefined,
-        value: id.value,
-        use: id.use ?? undefined,
-      })) ?? [],
+    identifier: (doc.identifier?.map(id => ({
+      system: id.system ?? undefined,
+      value: id.value,
+      use: id.use ?? undefined,
+    })) ?? []) as Identifier[],
     date,
     status: doc.status,
     type: doc.type ?? undefined,
