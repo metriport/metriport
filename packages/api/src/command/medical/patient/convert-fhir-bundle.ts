@@ -42,6 +42,12 @@ const lambdaClient = makeLambdaClient(region, TIMEOUT_CALLING_CONVERTER_LAMBDA.a
 const s3 = makeS3Client(Config.getAWSRegion());
 export const emptyMetaProp = "na";
 
+const REQUESTED_MIME_TYPE: Record<ConsolidationConversionType, string> = {
+  json: "application/json",
+  pdf: "application/pdf",
+  html: "text/html",
+};
+
 export async function handleBundleToMedicalRecord({
   bundle,
   patient,
@@ -69,7 +75,8 @@ export async function handleBundleToMedicalRecord({
       bucketName,
       fileName,
     });
-    return buildDocRefBundleWithAttachment(patient.id, url, conversionType);
+    const attachments = [{ url, mimeType: conversionType }];
+    return buildDocRefBundleWithAttachments(patient.id, attachments);
   }
 
   const { url, hasContents } = await convertFHIRBundleToMedicalRecord({
@@ -81,7 +88,8 @@ export async function handleBundleToMedicalRecord({
     conversionType,
   });
 
-  const newBundle = buildDocRefBundleWithAttachment(patient.id, url, conversionType);
+  const attachments = [{ url, mimeType: conversionType }];
+  const newBundle = buildDocRefBundleWithAttachments(patient.id, attachments);
   if (!hasContents) {
     log(`No contents in the consolidated data for patient ${patient.id}`);
     newBundle.entry = [];
@@ -102,24 +110,31 @@ export async function handleBundleToMedicalRecord({
   return newBundle;
 }
 
-export function buildDocRefBundleWithAttachment(
+type LocalAttachment = {
+  url: string;
+  mimeType: ConsolidationConversionType | "gzip";
+};
+
+export function buildDocRefBundleWithAttachments(
   patientId: string,
-  attachmentUrl: string,
-  mimeType: ConsolidationConversionType
+  attachments: LocalAttachment[]
 ): SearchSetBundle<Resource> {
   const docRef: DocumentReference = {
     resourceType: "DocumentReference",
     subject: {
       reference: `Patient/${patientId}`,
     },
-    content: [
-      {
+    content: attachments.map(attachment => {
+      const isGzip = attachment.mimeType === "gzip";
+      return {
         attachment: {
-          contentType: `application/${mimeType}`,
-          url: attachmentUrl,
+          contentType: isGzip
+            ? "application/gzip"
+            : REQUESTED_MIME_TYPE[attachment.mimeType as ConsolidationConversionType],
+          url: attachment.url,
         },
-      },
-    ],
+      };
+    }),
   };
   return buildSearchSetBundle([buildBundleEntry(docRef)]);
 }
@@ -200,6 +215,27 @@ export async function uploadJsonBundleToS3({
       Key: fileName,
       Body: JSON.stringify(bundle),
       ContentType: "application/json",
+      Metadata: metadata,
+    })
+    .promise();
+}
+
+export async function uploadGzipBundleToS3({
+  compressedData,
+  fileName,
+  metadata,
+}: {
+  compressedData: Buffer;
+  fileName: string;
+  metadata: Record<string, string>;
+}) {
+  await s3
+    .putObject({
+      Bucket: Config.getMedicalDocumentsBucketName(),
+      Key: fileName,
+      Body: compressedData,
+      ContentType: "application/gzip",
+      ContentEncoding: "gzip",
       Metadata: metadata,
     })
     .promise();
