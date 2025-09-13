@@ -52,6 +52,18 @@ export async function processJobParse({
     });
     const [successful, failed] = partition(patients, p => (p.status !== "failed" ? true : false));
 
+    if (successful.length < 1) {
+      log(`No successful patients found, skipping processing and marking job as failed`);
+      await updateJobAtApi({
+        cxId,
+        jobId,
+        status: "failed",
+        total: failed.length,
+        failed: failed.length,
+      });
+      return;
+    }
+
     await updateJobAtApi({
       cxId,
       jobId,
