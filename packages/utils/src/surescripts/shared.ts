@@ -82,6 +82,25 @@ export async function getTransmissionsFromCsv(
   });
 }
 
+export async function getPatientIdsFromCsv(csvData: string): Promise<string[]> {
+  return new Promise((resolve, reject) => {
+    const patientIds: string[] = [];
+    fs.createReadStream(csvData)
+      .pipe(csv())
+      .on("data", function (row) {
+        if (row.patientId != null && typeof row.patientId === "string" && row.length == 36) {
+          patientIds.push(row.patientId);
+        }
+      })
+      .on("end", function () {
+        resolve(patientIds);
+      })
+      .on("error", function (error) {
+        reject(error);
+      });
+  });
+}
+
 export async function getConsolidatedBundle(
   cxId: string,
   patientId: string
