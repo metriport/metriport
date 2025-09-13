@@ -18,12 +18,11 @@ export class Hl7NotificationWebhookSenderCloud implements Hl7NotificationWebhook
   }
 
   async execute(params: Hl7NotificationSenderParams): Promise<void> {
-    const { cxId, patientId, sourceTimestamp } = params;
-    const { log } = out(`${sourceTimestamp} - cx: ${cxId} - pt: ${patientId}`);
+    const { cxId, patientId } = params;
+    const { log } = out(`cx: ${cxId} - pt: ${patientId}`);
     capture.setExtra({
       cxId,
       patientId,
-      sourceTimestamp,
       context: "hl7-notification-webhook-sender-cloud.execute",
     });
 
