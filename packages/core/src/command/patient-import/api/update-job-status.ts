@@ -12,6 +12,11 @@ export type UpdateJobAtApiParams = {
   jobId: string;
   status?: PatientImportJobStatus;
   total?: number | undefined;
+  /**
+   * Only to be set on dry run mode - on regular mode, the successful count is incremented
+   * individually as each patient is created.
+   */
+  successful?: number | undefined;
   failed?: number | undefined;
   forceStatusUpdate?: boolean | undefined;
 };
@@ -24,17 +29,18 @@ export type UpdateJobAtApiParams = {
  * @param jobId - The bulk import job ID.
  * @param status - The new status of the job.
  * @param total - The total number of patients in the job.
+ * @param successful - The number of patient entries that were successful in the job (only to be set on dry run mode).
  * @param failed - The number of patient entries that failed in the job.
  * @param forceStatusUpdate - Whether to force the status update.
  * @returns the updated job.
  * @throws MetriportError if the update fails.
  */
 export async function updateJobAtApi(params: UpdateJobAtApiParams): Promise<PatientImportJob> {
-  const { cxId, jobId, status, total, failed, forceStatusUpdate } = params;
+  const { cxId, jobId, status, total, successful, failed, forceStatusUpdate } = params;
   const { log } = out(`PatientImport updateJobAtApi - cxId ${cxId} jobId ${jobId}`);
   const api = axios.create({ baseURL: Config.getApiUrl() });
   const url = buildUrl(cxId, jobId);
-  const payload: UpdateJobSchema = { status, total, failed, forceStatusUpdate };
+  const payload: UpdateJobSchema = { status, total, successful, failed, forceStatusUpdate };
 
   if (status == undefined && total == undefined && failed == undefined) {
     throw new Error("updateJobAtApi requires at least one of {status,total,failed} to be defined");

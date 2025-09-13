@@ -1,4 +1,4 @@
-import { errorToString, sleep } from "@metriport/shared";
+import { errorToString, MetriportError, sleep } from "@metriport/shared";
 import { isDryRun } from "@metriport/shared/domain/patient/patient-import/types";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -64,6 +64,20 @@ export async function processJobParse({
       return;
     }
 
+    if (dryRun) {
+      log(`dryRun is true, calling result...`);
+      await updateJobAtApi({
+        cxId,
+        jobId,
+        status: "processing",
+        total: successful.length + failed.length,
+        successful: successful.length,
+        failed: failed.length,
+      });
+      await result.processJobResult({ cxId, jobId });
+      return;
+    }
+
     await updateJobAtApi({
       cxId,
       jobId,
@@ -71,12 +85,6 @@ export async function processJobParse({
       total: successful.length + failed.length,
       failed: failed.length,
     });
-
-    if (dryRun) {
-      log(`dryRun is true, calling result...`);
-      await result.processJobResult({ cxId, jobId });
-      return;
-    }
 
     const errors: unknown[] = [];
     const patientChunks = chunk(successful, patientCreateChunkSize);
@@ -101,14 +109,20 @@ export async function processJobParse({
               `Cause: ${errorToString(error)}`;
             log(msg);
             errors.push(error);
-            await setPatientRecordFailed({
-              cxId,
-              jobId,
-              rowNumber,
-              reasonForCx: reasonForCxInternalError,
-              reasonForDev: msg,
-              bucketName: patientImportBucket,
-            });
+            try {
+              await setPatientRecordFailed({
+                cxId,
+                jobId,
+                rowNumber,
+                reasonForCx: reasonForCxInternalError,
+                reasonForDev: msg,
+                bucketName: patientImportBucket,
+              });
+            } catch (error2) {
+              const msg2 = "Failure while setting patient record to failed @ PatientImport";
+              log(`${msg2}. Cause: ${errorToString(error2)}`);
+              errors.push(new MetriportError(msg2, error2, { cxId, jobId, rowNumber }));
+            }
           }
         })
       );
