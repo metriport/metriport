@@ -3,6 +3,8 @@ import dotenv from "dotenv";
 dotenv.config();
 
 import { Command } from "commander";
+import { Config } from "@metriport/core/util/config";
+import { FeatureFlags } from "@metriport/core/command/feature-flags/ffs-on-dynamodb";
 import sftpAction from "./sftp-action";
 import sendPatientRequest from "./send-patient-request";
 import sendBatchRequest from "./send-batch-request";
@@ -27,6 +29,7 @@ import sendBatchPatientRequest from "./send-batch-patient-request";
  * commands to this registry, and ensure that your command has a unique name.
  */
 const program = new Command();
+FeatureFlags.init(Config.getAWSRegion(), Config.getFeatureFlagsTableName());
 
 program.addCommand(sftpAction);
 program.addCommand(sendPatientRequest);
