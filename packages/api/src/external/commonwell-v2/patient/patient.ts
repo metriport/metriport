@@ -243,7 +243,7 @@ export async function updatePatientAndLinksInCwV2({
 
   try {
     const commonwellPatientId = await getCommonwellPatientId(patient);
-    if (!commonwellPatientId) {
+    if (!commonwellPatientId || isIdFromCwV1(commonwellPatientId)) {
       log(`Could not find external data on Patient, creating it @ CW`);
       await registerAndLinkPatientInCwV2({
         patient,
@@ -596,7 +596,6 @@ async function registerPatient({
 
   const respPatient = await commonWell.createOrUpdatePatient(commonwellPatient);
   debug(`resp registerPatient: `, () => JSON.stringify(respPatient));
-  log(`respPatient: `, JSON.stringify(respPatient));
   const commonwellPatientId = getCwPatientIdFromLinks(respPatient.Links);
   if (!commonwellPatientId) {
     const msg = `Could not determine the patient ID from CW`;
@@ -1012,4 +1011,8 @@ function patientCollectionItemToCwLinkV2(networkLink: NetworkLink): CwLinkV2 {
     ...networkLink,
     version: 2,
   };
+}
+
+function isIdFromCwV1(id: string): boolean {
+  return id.includes("urn%3aoid%3a");
 }
