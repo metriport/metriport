@@ -44,12 +44,12 @@ async function convertAdtToFhir() {
   const outputFolder = getDirPath("converted");
   const errorsFolder = getDirPath("errors");
 
+  // Beware of your file system invisibly adding .txt to the end of the file name
   const hl7FileNames = getFileNames({
     folder: filePath,
     recursive: true,
     extension: "hl7",
   });
-  // .filter(n => n.includes("many_diagnoses.hl7"));
 
   const errors: unknown[] = [];
 
@@ -91,10 +91,12 @@ async function convertAdtToFhir() {
     });
   }
 
-  if (!fs.existsSync(errorsFolder)) {
-    fs.mkdirSync(errorsFolder, { recursive: true });
+  if (errors.length > 0) {
+    if (!fs.existsSync(errorsFolder)) {
+      fs.mkdirSync(errorsFolder, { recursive: true });
+    }
+    fs.writeFileSync(`${errorsFolder}/errors.json`, JSON.stringify(errors, null, 2));
   }
-  fs.writeFileSync(`${errorsFolder}/errors.json`, JSON.stringify(errors, null, 2));
 }
 
 convertAdtToFhir();
