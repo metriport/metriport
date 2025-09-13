@@ -1,4 +1,4 @@
-import { updateJobAtApi } from "./api/update-job-status";
+import { updateRecordFailedAtApi } from "./api/update-record-failed";
 import { updatePatientRecord } from "./record/create-or-update-patient-record";
 
 /**
@@ -21,7 +21,7 @@ export async function setPatientRecordFailed({
   reasonForDev: string;
 }) {
   await Promise.all([
-    updateJobAtApi({ cxId, jobId, failed: 1 }),
+    updateRecordFailedAtApi({ cxId, jobId, rowNumber }),
     updatePatientRecord({
       cxId,
       jobId,
