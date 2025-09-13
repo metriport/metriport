@@ -6,13 +6,13 @@ import { CreateDischargeRequeryParams } from "@metriport/shared/domain/patient/p
 import { TcmEncounterUpsertInput } from "@metriport/shared/domain/tcm-encounter";
 import axios from "axios";
 import dayjs from "dayjs";
+import { analytics, EventTypes } from "../../external/analytics/posthog";
 import { S3Utils } from "../../external/aws/s3";
 import {
   mergeBundleIntoAdtSourcedEncounter,
   saveAdtConversionBundle,
 } from "../../external/fhir/adt-encounters";
 import { toFHIR as toFhirPatient } from "../../external/fhir/patient/conversion";
-import { getHieConfigDictionary } from "../../external/hl7-notification/hie-config-dictionary";
 import { capture, out } from "../../util";
 import { Config } from "../../util/config";
 import { convertHl7v2MessageToFhir } from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion";
@@ -27,7 +27,7 @@ import {
   getMessageUniqueIdentifier,
   getOrCreateMessageDatetime,
 } from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion/msh";
-import { lookupHieTzEntryForIp } from "../hl7v2-subscriptions/utils";
+import { createFileKeyHl7Message } from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
 import {
   Hl7NotificationSenderParams,
   Hl7NotificationWebhookSender,
@@ -42,8 +42,6 @@ import {
   s3Utils,
   SupportedTriggerEvent,
 } from "./utils";
-import { analytics, EventTypes } from "../../external/analytics/posthog";
-import { createFileKeyHl7Message } from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
 
 export const dischargeEventCode = "A03";
 
@@ -78,13 +76,11 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
    */
   async execute(params: Hl7NotificationSenderParams): Promise<void> {
     const { log } = out(`${this.context}, cx: ${params.cxId}, pt: ${params.patientId}`);
-    const hieConfigDictionary = getHieConfigDictionary();
-    const { hieName, timezone } = lookupHieTzEntryForIp(hieConfigDictionary, params.clientIp);
 
     const hl7Message = Hl7Message.parse(params.message);
     let parsedData: ParsedHl7Data;
     try {
-      parsedData = await parseHl7Message(hl7Message, timezone);
+      parsedData = await parseHl7Message(hl7Message, params.timezone);
     } catch (parseError: unknown) {
       await persistHl7MessageError(hl7Message, parseError, log);
       throw parseError;
@@ -161,7 +157,7 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
       cxId,
       patientId,
       rawDataFileKey: rawDataFileKey,
-      hieName: hieName,
+      hieName: params.hieName,
       fhirPatient,
     });
 
