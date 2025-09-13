@@ -403,8 +403,6 @@ export class Config {
   }
 
   static getInternalServerUrl(): string {
-    // to avoid downtime due to workflow dependencies and environment variables changes, temporary return "".
-    // Alexey Todo: follow up PR to clean up
-    return getEnvVar("INTERNAL_SERVER_BASE_URL") ?? "";
+    return getEnvVarOrFail("INTERNAL_SERVER_BASE_URL");
   }
 }
