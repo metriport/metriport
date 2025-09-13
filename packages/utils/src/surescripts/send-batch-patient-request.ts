@@ -2,10 +2,7 @@ import { Command } from "commander";
 import { out } from "@metriport/core/util/log";
 import { SurescriptsSftpClient } from "@metriport/core/external/surescripts/client";
 import { SurescriptsDataMapper } from "@metriport/core/external/surescripts/data-mapper";
-
 import { writeSurescriptsIdentifiersFile, getPatientIdsFromCsv } from "./shared";
-import { SurescriptsPatientRequestData } from "@metriport/core/external/surescripts/types";
-import { executeAsynchronously } from "@metriport/core/util/concurrency";
 
 /**
  * Sends a request to Surescripts for all patient IDs in a CSV file. The CSV can have multiple columns,
@@ -57,21 +54,12 @@ program
       const patientIds = await getPatientIdsFromCsv(csvData);
       log(`Found ${patientIds.length} patients`);
 
-      const requests: SurescriptsPatientRequestData[] = [];
-      await executeAsynchronously(
+      const batchRequestData = await dataMapper.getBatchRequestData({
+        cxId,
+        facilityId,
         patientIds,
-        async patientId => {
-          const requestData = await dataMapper.getPatientRequestData({
-            cxId,
-            facilityId,
-            patientId,
-          });
-          requests.push(requestData);
-        },
-        {
-          numberOfParallelExecutions: 10,
-        }
-      );
+      });
+      const requests = dataMapper.convertBatchRequestToPatientRequests(batchRequestData);
 
       log("Sending " + requests.length + " requests");
       const identifiers = await client.sendBatchPatientRequest(requests);
@@ -82,5 +70,3 @@ program
   );
 
 export default program;
-
-// npm run surescripts -- batch-patient-request --cx-id 23b21d74-0db8-4ad3-a093-d1ee3ba3d026 --facility-id 019056ab-beff-75ec-93d0-a71774473d53 --csv-data
