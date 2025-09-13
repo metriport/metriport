@@ -22,6 +22,7 @@ import {
   parseResponseFileName,
   parseVerificationFileName,
 } from "./file/file-names";
+import { FeatureFlags } from "../../command/feature-flags/ffs-on-dynamodb";
 
 export class SurescriptsSftpClient extends SftpClient {
   private generateTransmissionId: IdGenerator;
@@ -328,6 +329,7 @@ export class SurescriptsSftpClient extends SftpClient {
         cxId: requester.cxId,
       });
     }
+    FeatureFlags.init(Config.getAWSRegion(), Config.getFeatureFlagsTableName());
     const isSurescriptsEnabled = await isSurescriptsFeatureFlagEnabledForCx(requester.cxId);
     if (!isSurescriptsEnabled) {
       this.log(`Surescripts is not enabled for cx "${requester.cxId}"`);
