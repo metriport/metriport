@@ -5,9 +5,7 @@ import { PatientImportParseLocal } from "./patient-import-parse-local";
 
 export function buildPatientImportParseHandler(): PatientImportParse {
   if (Config.isDev()) {
-    const patientImportBucket = Config.getPatientImportBucket();
-    return new PatientImportParseLocal(patientImportBucket);
+    return new PatientImportParseLocal();
   }
-  const patientImportLambdaName = Config.getPatientImportParseLambdaName();
-  return new PatientImportParseCloud(patientImportLambdaName);
+  return new PatientImportParseCloud();
 }

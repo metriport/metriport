@@ -346,7 +346,7 @@ export async function hydrateMissingReferences({
     patientId,
     resources: mergedResources,
     idsToExclude: nextIdsToExclude,
-    iteration: ++iteration,
+    iteration: iteration + 1,
   });
 
   return hydratedResources;

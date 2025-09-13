@@ -10,7 +10,7 @@ import { withDefaultApiErrorHandling } from "../../shared/api/shared";
 export type UpdateJobAtApiParams = {
   cxId: string;
   jobId: string;
-  status: PatientImportJobStatus;
+  status?: PatientImportJobStatus;
   total?: number | undefined;
   failed?: number | undefined;
   forceStatusUpdate?: boolean | undefined;
@@ -35,6 +35,10 @@ export async function updateJobAtApi(params: UpdateJobAtApiParams): Promise<Pati
   const api = axios.create({ baseURL: Config.getApiUrl() });
   const url = buildUrl(cxId, jobId);
   const payload: UpdateJobSchema = { status, total, failed, forceStatusUpdate };
+
+  if (status == undefined && total == undefined && failed == undefined) {
+    throw new Error("updateJobAtApi requires at least one of {status,total,failed} to be defined");
+  }
 
   log(`Updating API w/ status ${status}, payload ${JSON.stringify(payload)}`);
   try {

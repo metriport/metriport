@@ -3,12 +3,13 @@ import {
   createFileKeyResults,
 } from "@metriport/core/command/patient-import/patient-import-shared";
 import { buildPatientImportParseHandler } from "@metriport/core/command/patient-import/steps/parse/patient-import-parse-factory";
+import { getResultEntries } from "@metriport/core/command/patient-import/steps/result/patient-import-result-command";
 import { buildPatientImportResult } from "@metriport/core/command/patient-import/steps/result/patient-import-result-factory";
-import { getResultEntries } from "@metriport/core/command/patient-import/steps/result/patient-import-result-local";
 import { S3Utils } from "@metriport/core/external/aws/s3";
-import { capture, out } from "@metriport/core/util";
+import { capture } from "@metriport/core/util";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { Config } from "@metriport/core/util/config";
+import { BadRequestError } from "@metriport/shared";
 import {
   addPatientMappingSchema,
   updateJobSchema,
@@ -49,6 +50,8 @@ import {
 dayjs.extend(duration);
 
 const router = Router();
+
+const maxPatientsOnDebugGetBulk = 100;
 
 /** ---------------------------------------------------------------------------
  * POST /internal/patient/bulk
@@ -222,8 +225,6 @@ router.post(
   })
 );
 
-const detailSchema = z.enum(["info", "debug"]).optional().default("info");
-
 type PatientImportJobWithUrls = PatientImportJob & {
   validEntriesUrl: string;
   invalidEntriesUrl: string;
@@ -275,6 +276,8 @@ router.get(
   })
 );
 
+const detailSchema = z.enum(["info", "debug"]).optional().default("info");
+
 /** ---------------------------------------------------------------------------
  * GET /internal/patient/bulk/:id
  *
@@ -296,13 +299,15 @@ router.get(
 
     const patientImport = await getPatientImportJobOrFail({ cxId, jobId });
 
-    if (patientImport.status === "processing" && detail === "debug") {
-      const details: Record<string, string | number | null>[] = [];
+    if (detail === "debug" && patientImport.total > maxPatientsOnDebugGetBulk) {
+      throw new BadRequestError(`Debug mode is not supported for jobs with many patients`);
+    }
+    if (detail === "debug") {
+      const details: Record<string, string | number | null | undefined>[] = [];
       const resultEntries = await getResultEntries({
         cxId,
         jobId,
         patientImportBucket: Config.getPatientImportBucket(),
-        log: out(`GET /internal/patient/bulk/${jobId}`).log,
       });
       await executeAsynchronously(
         resultEntries,
@@ -315,6 +320,8 @@ router.get(
               patientId: patient.id,
               rowNumber: entry.rowNumber,
               status: entry.status,
+              reasonForCx: entry.reasonForCx,
+              reasonForDev: entry.reasonForDev,
               globalDownloadStatus: patient.data.documentQueryProgress?.download?.status ?? null,
               globalConvertStatus: patient.data.documentQueryProgress?.convert?.status ?? null,
               cqPqStatus: cqData?.discoveryStatus ?? null,
@@ -329,6 +336,8 @@ router.get(
               patientId: null,
               rowNumber: entry.rowNumber,
               status: entry.status,
+              reasonForCx: entry.reasonForCx,
+              reasonForDev: entry.reasonForDev,
             });
           }
         },

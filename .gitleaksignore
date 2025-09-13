@@ -7,6 +7,8 @@ packages/core/src/external/ehr/athenahealth/index.ts:generic-api-key:182
 packages/core/src/external/ehr/athenahealth/index.ts:generic-api-key:183
 packages/core/src/external/ehr/athenahealth/index.ts:generic-api-key:199
 packages/core/src/external/ehr/athenahealth/index.ts:generic-api-key:200
+packages/core/src/external/ehr/athenahealth/index.ts:generic-api-key:211
+packages/core/src/external/ehr/athenahealth/index.ts:generic-api-key:212
 packages/core/src/external/ehr/__tests__/unit-conversion.test.ts:generic-api-key:7
 packages/core/src/external/ehr/__tests__/unit-conversion.test.ts:generic-api-key:8
 packages/core/src/external/ehr/__tests__/unit-conversion.test.ts:generic-api-key:176
