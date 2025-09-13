@@ -1,6 +1,6 @@
 import { Pagination } from "../command/pagination";
 
-const defaultPageSize = 50;
+export const defaultPageSize = 50;
 
 export function paginationSqlExpressions({
   pagination,

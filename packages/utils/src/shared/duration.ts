@@ -13,32 +13,40 @@ export function elapsedTimeAsStr(startedAt: number, finishedAt = Date.now()) {
 }
 
 /**
- * Returns the delay time in milliseconds. Read from the file on each call so we can update it live
- * and adjust the rate at which we query the API while the script is running.
+ * Returns the delay time in milliseconds.
+ *
+ * Read the time IN MILLISECONDS from the file path set in the `delayTimeFileName` parameter.
+ *
+ * The file should contain a single line, with the delay time in milliseconds.
+ *
+ * This is useful to update the delay time in-flight, while scripts are running
+ * (e.g., to adjust the rate at which we query the API while the script is running).
+ *
  * If the file doesn't exist, it will use the default delay time.
  */
 export function getDelayTime({
-  delayTimeFileName = "delay-time-in-seconds.txt",
-  minimumDelayTime = dayjs.duration(3, "seconds"),
-  defaultDelayTime = dayjs.duration(10, "seconds"),
+  delayTimeFileName = "delay-time-in-millis.txt",
+  minimumDelayTime = dayjs.duration(100, "milliseconds"),
+  defaultDelayTime = dayjs.duration(5, "seconds"),
+  maxDelayTime = dayjs.duration(10, "minutes"),
   log = console.log,
 }: {
   delayTimeFileName?: string;
   minimumDelayTime?: Duration;
   defaultDelayTime?: Duration;
+  maxDelayTime?: Duration;
   log?: typeof console.log;
 }): number {
   try {
     const delayTimeRaw = getFileContents(delayTimeFileName);
-    const delayTime = parseInt(delayTimeRaw);
-    if (!isNaN(delayTime)) {
-      if (delayTime < 600) {
-        const delayTimeInMillis = delayTime * 1000;
+    const delayTimeInMillis = parseInt(delayTimeRaw);
+    if (!isNaN(delayTimeInMillis)) {
+      if (delayTimeInMillis < maxDelayTime.asMilliseconds()) {
         return Math.max(delayTimeInMillis, minimumDelayTime.asMilliseconds());
       } else {
         log(
-          `>>> Delay time is greater than 10 minutes (${delayTime} seconds). ` +
-            `Using default delay time (${defaultDelayTime.asSeconds()} seconds).`
+          `>>> Delay time is greater than 10 minutes (${delayTimeInMillis} milliseconds). ` +
+            `Using default delay time (${defaultDelayTime.asMilliseconds()} milliseconds).`
         );
       }
     }

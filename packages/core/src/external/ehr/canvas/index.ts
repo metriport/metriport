@@ -12,13 +12,12 @@ import {
 } from "@medplum/fhirtypes";
 import {
   BadRequestError,
-  EhrFhirResourceBundle,
-  ehrFhirResourceBundleSchema,
   errorToString,
   JwtTokenInfo,
   MetriportError,
   NotFoundError,
   sleep,
+  executeWithNetworkRetries,
 } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import {
@@ -35,13 +34,16 @@ import {
   SlimBookedAppointment,
   slimBookedAppointmentSchema,
 } from "@metriport/shared/interface/external/ehr/canvas/index";
+import {
+  EhrFhirResourceBundle,
+  ehrFhirResourceBundleSchema,
+} from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { Patient, patientSchema } from "@metriport/shared/interface/external/ehr/patient";
 import {
   Practitioner,
   practitionerSchema,
 } from "@metriport/shared/interface/external/ehr/practitioner";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
-import { getObservationUnits } from "@metriport/shared/medical";
 import axios, { AxiosInstance } from "axios";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -50,11 +52,11 @@ import { z } from "zod";
 import { ObservationStatus } from "../../../fhir-deduplication/resources/observation-shared";
 import { fetchCodingCodeOrDisplayOrSystem } from "../../../fhir-deduplication/shared";
 import { executeAsynchronously } from "../../../util/concurrency";
-import { log, out } from "../../../util/log";
+import { out } from "../../../util/log";
 import { capture } from "../../../util/notifications";
 import {
   ApiConfig,
-  convertBundleToValidStrictBundle,
+  convertEhrBundleToValidEhrStrictBundle,
   DataPoint,
   fetchEhrBundleUsingCache,
   fetchEhrFhirResourcesWithPagination,
@@ -70,17 +72,21 @@ import {
   getMedicationStatementStartDate,
   getObservationLoincCoding,
   getObservationResultStatus,
+  getObservationUnit,
   GroupedVitals,
   makeRequest,
   MakeRequestParamsInEhr,
   MedicationWithRefs,
   paginateWaitTime,
+  partitionEhrBundle,
+  saveEhrReferenceBundle,
 } from "../shared";
+import { convertCodeAndValue } from "../unit-conversion";
 
 dayjs.extend(duration);
 
 const parallelRequests = 5;
-const delayBetweenRequestBatches = dayjs.duration(2, "seconds");
+const maxJitter = dayjs.duration(2, "seconds");
 
 interface CanvasApiConfig extends ApiConfig {
   environment: string;
@@ -108,12 +114,30 @@ export const supportedCanvasResources: ResourceType[] = [
   "Observation",
   "Procedure",
 ];
+export const supportedCanvasReferenceResources: ResourceType[] = [
+  "Medication",
+  "Location",
+  "Organization",
+  "Patient",
+  "Practitioner",
+  "Provenance",
+];
+
 export type SupportedCanvasResource = (typeof supportedCanvasResources)[number];
 export function isSupportedCanvasResource(
   resourceType: string
 ): resourceType is SupportedCanvasResource {
-  return supportedCanvasResources.includes(resourceType as SupportedCanvasResource);
+  return supportedCanvasResources.includes(resourceType as ResourceType);
 }
+
+export type SupportedCanvasReferenceResource = (typeof supportedCanvasReferenceResources)[number];
+export function isSupportedCanvasReferenceResource(
+  resourceType: string
+): resourceType is SupportedCanvasReferenceResource {
+  return supportedCanvasReferenceResources.includes(resourceType as ResourceType);
+}
+
+const fhirHeader = "fumage-correlation-id";
 
 const problemStatusesMap = new Map<string, string>();
 problemStatusesMap.set("active", "active");
@@ -123,16 +147,20 @@ problemStatusesMap.set("remission", "resolved");
 problemStatusesMap.set("resolved", "resolved");
 problemStatusesMap.set("inactive", "resolved");
 
-const vitalSignCodesMapCanvas = new Map<string, string>();
-vitalSignCodesMapCanvas.set("85354-9", "mmHg");
-vitalSignCodesMapCanvas.set("29463-7", "kg");
-vitalSignCodesMapCanvas.set("8302-2", "cm");
-vitalSignCodesMapCanvas.set("8867-4", "bpm");
-vitalSignCodesMapCanvas.set("8310-5", "degf");
-vitalSignCodesMapCanvas.set("2708-6", "%");
-vitalSignCodesMapCanvas.set("59408-5", "%");
-vitalSignCodesMapCanvas.set("9279-1", "bpm");
-vitalSignCodesMapCanvas.set("56086-2", "cm");
+const vitalSignCodesMap = new Map<string, { codeKey: string; targetUnits: string }>();
+vitalSignCodesMap.set("8310-5", { codeKey: "temperature", targetUnits: "degf" });
+vitalSignCodesMap.set("8867-4", { codeKey: "pulserate", targetUnits: "bpm" });
+vitalSignCodesMap.set("9279-1", { codeKey: "respirationrate", targetUnits: "bpm" });
+vitalSignCodesMap.set("2708-6", { codeKey: "oxygensaturationarterial", targetUnits: "%" });
+vitalSignCodesMap.set("59408-5", { codeKey: "oxygensaturation", targetUnits: "%" });
+vitalSignCodesMap.set("8462-4", { codeKey: "bloodpressure.diastolic", targetUnits: "mmHg" });
+vitalSignCodesMap.set("8480-6", { codeKey: "bloodpressure.systolic", targetUnits: "mmHg" });
+vitalSignCodesMap.set("29463-7", { codeKey: "weight", targetUnits: "kg" });
+vitalSignCodesMap.set("8302-2", { codeKey: "height", targetUnits: "cm" });
+vitalSignCodesMap.set("56086-2", { codeKey: "waistcircumference", targetUnits: "cm" });
+
+const bpDiastolicCode = "8462-4";
+const bpSystolicCode = "8480-6";
 
 const medicationStatementStatuses = ["active", "entered-in-error", "stopped"];
 const immunizationStatuses = ["completed", "entered-in-error", "not-done"];
@@ -140,11 +168,6 @@ const allergyIntoleranceClinicalStatuses = ["active", "inactive"];
 const allergyIntoleranceVerificationStatuses = ["confirmed", "entered-in-error"];
 const allergyIntoleranceSeverityCodes = ["mild", "moderate", "severe"];
 const observationResultStatuses = ["final", "unknown", "entered-in-error"];
-
-const lbsToG = 453.592;
-const gToKg = 1 / 1000;
-const inchesToCm = 2.54;
-const lbsToKg = lbsToG * gToKg;
 
 class CanvasApi {
   private axiosInstanceFhirApi: AxiosInstance;
@@ -176,9 +199,11 @@ class CanvasApi {
     const payload = `grant_type=client_credentials&client_id=${this.config.clientKey}&client_secret=${this.config.clientSecret}`;
 
     try {
-      const response = await axios.post(url, payload, {
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      });
+      const response = await executeWithNetworkRetries(() =>
+        axios.post(url, payload, {
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        })
+      );
       if (!response.data) throw new MetriportError("No body returned from token endpoint");
       const tokenData = canvasClientJwtTokenResponseSchema.parse(response.data);
       return {
@@ -558,7 +583,7 @@ class CanvasApi {
     await this.makeRequest<undefined>({
       cxId,
       patientId,
-      s3Path: `fhir/condition/${additionalInfo.conditionId ?? "unknown"}`,
+      s3Path: this.createWriteBackPath("condition", additionalInfo.conditionId),
       method: "POST",
       data: { ...formattedCondition },
       url: conditionUrl,
@@ -582,7 +607,7 @@ class CanvasApi {
     practitionerId: string;
     medicationWithRefs: MedicationWithRefs;
   }): Promise<void> {
-    const { debug } = out(
+    const { log, debug } = out(
       `Canvas createMedicationStatements - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} practitionerId ${practitionerId}`
     );
     const medicationStatementUrl = `/MedicationStatement`;
@@ -650,7 +675,7 @@ class CanvasApi {
           await this.makeRequest<undefined>({
             cxId,
             patientId,
-            s3Path: `/medication-statement/${additionalInfo.medicationId}`,
+            s3Path: this.createWriteBackPath("medication-statement", additionalInfo.medicationId),
             method: "POST",
             url: medicationStatementUrl,
             data: { ...params },
@@ -677,11 +702,11 @@ class CanvasApi {
       },
       {
         numberOfParallelExecutions: parallelRequests,
-        delay: delayBetweenRequestBatches.asMilliseconds(),
+        maxJitterMillis: maxJitter.asMilliseconds(),
       }
     );
     if (createMedicationStatementsErrors.length > 0) {
-      const msg = `Failure while creating some medication statements @ Canvas`;
+      const msg = "Failure while creating some medication statements @ Canvas";
       capture.message(msg, {
         extra: {
           ...additionalInfo,
@@ -730,7 +755,7 @@ class CanvasApi {
     await this.makeRequest<undefined>({
       cxId,
       patientId,
-      s3Path: `/immunization/${additionalInfo.immunizationId}`,
+      s3Path: this.createWriteBackPath("immunization", additionalInfo.immunizationId),
       method: "POST",
       data: { ...formattedImmunization },
       url: immunizationUrl,
@@ -811,7 +836,7 @@ class CanvasApi {
     await this.makeRequest<undefined>({
       cxId,
       patientId,
-      s3Path: `/allergy-intolerance/${additionalInfo.allergyIntoleranceId}`,
+      s3Path: this.createWriteBackPath("allergy-intolerance", additionalInfo.allergyIntoleranceId),
       method: "POST",
       url: allergyIntoleranceUrl,
       data: { ...formattedAllergyIntolerance },
@@ -835,7 +860,7 @@ class CanvasApi {
     practitionerId: string;
     vitals: GroupedVitals;
   }): Promise<void> {
-    const { debug } = out(
+    const { log, debug } = out(
       `Canvas createVitals - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} practitionerId ${practitionerId}`
     );
     const observationsUrl = `/Observation`;
@@ -864,15 +889,19 @@ class CanvasApi {
       error: unknown;
       observation: string;
     }[] = [];
-    const createObservationsArgs: Observation[] = vitals.sortedPoints.map(point => {
+    const createObservationsArgs: Observation[] = vitals.sortedPoints.flatMap(point => {
       const formattedPoint = this.formatVitalDataPoint(observation, point, additionalInfo);
+      if (!formattedPoint) return [];
       formattedPoint.subject = { reference: `Patient/${patientId}` };
       formattedPoint.extension = [
         ...(formattedPoint.extension ?? []),
         this.formatNoteIdExtension(noteId),
       ];
-      return formattedPoint;
+      return [formattedPoint];
     });
+    if (createObservationsArgs.length < 1) {
+      throw new BadRequestError("No valid vitals data found", undefined, additionalInfo);
+    }
     await executeAsynchronously(
       createObservationsArgs,
       async (params: Observation) => {
@@ -880,7 +909,7 @@ class CanvasApi {
           await this.makeRequest<undefined>({
             cxId,
             patientId,
-            s3Path: `/observations/${additionalInfo.observationId ?? "unknown"}`,
+            s3Path: this.createWriteBackPath("observations", additionalInfo.observationId),
             method: "POST",
             url: observationsUrl,
             data: { ...params },
@@ -902,11 +931,11 @@ class CanvasApi {
       },
       {
         numberOfParallelExecutions: parallelRequests,
-        delay: delayBetweenRequestBatches.asMilliseconds(),
+        maxJitterMillis: maxJitter.asMilliseconds(),
       }
     );
     if (createObservationsErrors.length > 0) {
-      const msg = `Failure while creating some vitals observations @ Canvas`;
+      const msg = "Failure while creating some vitals observations @ Canvas";
       capture.message(msg, {
         extra: {
           ...additionalInfo,
@@ -943,7 +972,7 @@ class CanvasApi {
     const medicationBundle = await this.makeRequest<EhrFhirResourceBundle>({
       cxId,
       patientId,
-      s3Path: `/medication-reference/${code}`,
+      s3Path: this.createReferencePath("medication-reference", code),
       method: "GET",
       url: medicationUrl,
       schema: ehrFhirResourceBundleSchema,
@@ -982,7 +1011,7 @@ class CanvasApi {
     const allergenBundle = await this.makeRequest<EhrFhirResourceBundle>({
       cxId,
       patientId,
-      s3Path: `/allergen-reference/${code}`,
+      s3Path: this.createReferencePath("allergen-reference", code),
       method: "GET",
       url: allergenUrl,
       schema: ehrFhirResourceBundleSchema,
@@ -1011,7 +1040,7 @@ class CanvasApi {
     resourceType: string;
     useCachedBundle?: boolean;
   }): Promise<Bundle> {
-    const { debug } = out(
+    const { log, debug } = out(
       `Canvas getBundleByResourceType - cxId ${cxId} practiceId ${this.practiceId} canvasPatientId ${canvasPatientId}`
     );
     if (!isSupportedCanvasResource(resourceType)) {
@@ -1031,30 +1060,142 @@ class CanvasApi {
       patientId: canvasPatientId,
       resourceType,
     };
-    const fetchResourcesFromEhr = () =>
-      fetchEhrFhirResourcesWithPagination({
+    let referenceBundleToSave: EhrFhirResourceBundle | undefined;
+    const client = this; // eslint-disable-line @typescript-eslint/no-this-alias
+    function fetchResourcesFromEhr() {
+      return fetchEhrFhirResourcesWithPagination({
         makeRequest: async (url: string) => {
-          const bundle = await this.makeRequest<EhrFhirResourceBundle>({
-            cxId,
-            patientId: canvasPatientId,
-            s3Path: `fhir-resources-${resourceType}`,
-            method: "GET",
-            url,
-            schema: ehrFhirResourceBundleSchema,
-            additionalInfo,
-            debug,
-            useFhir: true,
+          let bundle: EhrFhirResourceBundle | undefined;
+          try {
+            bundle = await client.makeRequest<EhrFhirResourceBundle>({
+              cxId,
+              patientId: canvasPatientId,
+              s3Path: client.createFhirPath(resourceType),
+              method: "GET",
+              url,
+              schema: ehrFhirResourceBundleSchema,
+              additionalInfo,
+              debug,
+              useFhir: true,
+            });
+          } catch (error) {
+            if (error instanceof NotFoundError) {
+              log(`Error while fetching ${resourceType} from EHR: ${errorToString(error)}`);
+              return undefined;
+            }
+            throw error;
+          }
+          if (!bundle) return undefined;
+          const { targetBundle, referenceBundle } = partitionEhrBundle({
+            bundle,
+            resourceType,
           });
-          return convertBundleToValidStrictBundle(bundle, resourceType, canvasPatientId);
+          referenceBundleToSave = referenceBundle;
+          return convertEhrBundleToValidEhrStrictBundle(
+            targetBundle,
+            resourceType,
+            canvasPatientId
+          );
         },
         url: resourceTypeUrl,
       });
+    }
     const bundle = await fetchEhrBundleUsingCache({
       ehr: EhrSources.canvas,
       cxId,
       metriportPatientId,
       ehrPatientId: canvasPatientId,
       resourceType,
+      fetchResourcesFromEhr,
+      useCachedBundle,
+    });
+    if (referenceBundleToSave) {
+      await saveEhrReferenceBundle({
+        ehr: EhrSources.canvas,
+        cxId,
+        metriportPatientId,
+        ehrPatientId: canvasPatientId,
+        referenceBundle: referenceBundleToSave,
+      });
+    }
+    return bundle;
+  }
+
+  async getResourceBundleByResourceId({
+    cxId,
+    metriportPatientId,
+    canvasPatientId,
+    resourceType,
+    resourceId,
+    useCachedBundle = true,
+  }: {
+    cxId: string;
+    metriportPatientId: string;
+    canvasPatientId: string;
+    resourceType: string;
+    resourceId: string;
+    useCachedBundle?: boolean;
+  }): Promise<Bundle> {
+    const { log, debug } = out(
+      `Canvas getResourceBundleByResourceId - cxId ${cxId} practiceId ${this.practiceId} metriportPatientId ${metriportPatientId} canvasPatientId ${canvasPatientId} resourceType ${resourceType}`
+    );
+    if (
+      !isSupportedCanvasResource(resourceType) &&
+      !isSupportedCanvasReferenceResource(resourceType)
+    ) {
+      throw new BadRequestError("Invalid resource type", undefined, {
+        canvasPatientId,
+        resourceId,
+        resourceType,
+      });
+    }
+    const params = { _id: resourceId };
+    const urlParams = new URLSearchParams(params);
+    const resourceTypeUrl = `/${resourceType}?${urlParams.toString()}`;
+    const additionalInfo = {
+      cxId,
+      practiceId: this.practiceId,
+      patientId: canvasPatientId,
+      resourceType,
+      resourceId,
+    };
+    const client = this; // eslint-disable-line @typescript-eslint/no-this-alias
+    function fetchResourcesFromEhr() {
+      return fetchEhrFhirResourcesWithPagination({
+        makeRequest: async (url: string) => {
+          let bundle: EhrFhirResourceBundle | undefined;
+          try {
+            bundle = await client.makeRequest<EhrFhirResourceBundle>({
+              cxId,
+              patientId: canvasPatientId,
+              s3Path: client.createFhirPath(resourceType, resourceId),
+              method: "GET",
+              url,
+              schema: ehrFhirResourceBundleSchema,
+              additionalInfo,
+              debug,
+              useFhir: true,
+            });
+          } catch (error) {
+            if (error instanceof NotFoundError) {
+              log(`Error while fetching ${resourceType} from EHR: ${errorToString(error)}`);
+              return undefined;
+            }
+            throw error;
+          }
+          if (!bundle) return undefined;
+          return convertEhrBundleToValidEhrStrictBundle(bundle, resourceType, canvasPatientId);
+        },
+        url: resourceTypeUrl,
+      });
+    }
+    const bundle = await fetchEhrBundleUsingCache({
+      ehr: EhrSources.canvas,
+      cxId,
+      metriportPatientId,
+      ehrPatientId: canvasPatientId,
+      resourceType,
+      resourceId,
       fetchResourcesFromEhr,
       useCachedBundle,
     });
@@ -1146,6 +1287,7 @@ class CanvasApi {
       additionalInfo,
       debug,
       emptyResponse,
+      responseHeadersToKeep: [fhirHeader],
     });
   }
 
@@ -1391,7 +1533,7 @@ class CanvasApi {
     observation: Observation,
     dataPoint: DataPoint,
     additionalInfo: Record<string, string | undefined>
-  ): Observation {
+  ): Observation | undefined {
     const formattedObservation: Observation = {
       resourceType: "Observation",
       ...(observation.id ? { id: observation.id } : {}),
@@ -1401,9 +1543,9 @@ class CanvasApi {
     };
     const loincCoding = getObservationLoincCoding(observation);
     if (!loincCoding) {
-      throw new BadRequestError("No LOINC code found for observation", undefined, additionalInfo);
+      throw new BadRequestError("No LOINC coding found for observation", undefined, additionalInfo);
     }
-    if (!loincCoding.code || !vitalSignCodesMapCanvas.get(loincCoding.code)) {
+    if (!loincCoding.code || !vitalSignCodesMap.get(loincCoding.code)) {
       throw new BadRequestError("No valid code found for LOINC coding", undefined, additionalInfo);
     }
     if (!loincCoding.display) {
@@ -1411,10 +1553,18 @@ class CanvasApi {
     }
     formattedObservation.code = {
       coding: [
-        { code: loincCoding.code, system: "http://loinc.org", display: loincCoding.display },
+        {
+          code: [bpDiastolicCode, bpSystolicCode].includes(loincCoding.code)
+            ? "85354-9"
+            : loincCoding.code,
+          system: "http://loinc.org",
+          display: [bpDiastolicCode, bpSystolicCode].includes(loincCoding.code)
+            ? "Blood pressure"
+            : loincCoding.display,
+        },
       ],
     };
-    const units = getObservationUnits(observation);
+    const units = getObservationUnit(observation);
     if (!units) {
       throw new BadRequestError("No units found for observation", undefined, additionalInfo);
     }
@@ -1423,26 +1573,59 @@ class CanvasApi {
       throw new BadRequestError("No status found for observation", undefined, additionalInfo);
     }
     formattedObservation.status = resultStatus as ObservationStatus;
-    const effectiveDateTime = this.formatDateTime(dataPoint.date);
-    if (!effectiveDateTime) {
-      throw new BadRequestError(
-        "No effective date time found for observation",
-        undefined,
-        additionalInfo
-      );
+    const formattedEffectiveDate = this.formatDateTime(dataPoint.date);
+    if (!formattedEffectiveDate) return undefined;
+    formattedObservation.effectiveDateTime = formattedEffectiveDate;
+    if (dataPoint.bp) {
+      formattedObservation.valueString = `${dataPoint.bp.systolic}/${dataPoint.bp.diastolic} mmHg`;
+      formattedObservation.component = [
+        {
+          code: {
+            coding: [
+              {
+                system: "http://loinc.org",
+                code: "8480-6",
+                display: "Systolic blood pressure",
+              },
+            ],
+          },
+          valueQuantity: {
+            value: dataPoint.bp.systolic,
+            unit: "mmHg",
+            system: "http://unitsofmeasure.org",
+            code: "mm[Hg]",
+          },
+        },
+        {
+          code: {
+            coding: [
+              {
+                system: "http://loinc.org",
+                code: "8462-4",
+                display: "Diastolic blood pressure",
+              },
+            ],
+          },
+          valueQuantity: {
+            value: dataPoint.bp.diastolic,
+            unit: "mmHg",
+            system: "http://unitsofmeasure.org",
+            code: "mm[Hg]",
+          },
+        },
+      ];
+      return formattedObservation;
     }
-    formattedObservation.effectiveDateTime = effectiveDateTime;
-    const unitAndValue = this.convertUnitAndValue(loincCoding.code, dataPoint.value, units);
-    if (!unitAndValue) {
-      throw new BadRequestError(
-        "No unit and value found for observation",
-        undefined,
-        additionalInfo
-      );
-    }
+    const convertedCodeAndValue = convertCodeAndValue(
+      loincCoding.code,
+      vitalSignCodesMap,
+      dataPoint.value,
+      units
+    );
+    if (!convertedCodeAndValue) return undefined;
     formattedObservation.valueQuantity = {
-      value: unitAndValue.value,
-      unit: unitAndValue.unit,
+      value: convertedCodeAndValue.value,
+      unit: convertedCodeAndValue.units,
     };
     return formattedObservation;
   }
@@ -1460,57 +1643,6 @@ class CanvasApi {
       url: "http://schemas.canvasmedical.com/fhir/extensions/note-id",
       valueId: noteId,
     };
-  }
-
-  private convertUnitAndValue(
-    loincCode: string,
-    value: number,
-    units: string
-  ): { value: number; unit: string } | undefined {
-    const targetUnit = vitalSignCodesMapCanvas.get(loincCode);
-    if (!targetUnit) return undefined;
-    const unitParam = { unit: targetUnit };
-    if (units === targetUnit) return { ...unitParam, value };
-    if (targetUnit === "kg") {
-      if (units === "kg" || units === "kilogram" || units === "kilograms")
-        return { ...unitParam, value }; // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
-      if (units === "g" || units === "gram" || units === "grams")
-        return { ...unitParam, value: this.convertGramsToKg(value) }; // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
-      if (units === "lb_av" || units.includes("pound"))
-        return { ...unitParam, value: this.convertLbsToKg(value) }; // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
-    }
-    if (targetUnit === "cm") {
-      if (units === "cm" || units === "centimeter") return { ...unitParam, value }; // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
-      if (units === "in_i" || units.includes("inch"))
-        return { ...unitParam, value: this.convertInchesToCm(value) }; // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
-    }
-    if (targetUnit === "degf") {
-      if (units === "degf" || units === "f" || units.includes("fahrenheit"))
-        return { ...unitParam, value }; // https://hl7.org/fhir/R4/valueset-ucum-bodytemp.html
-      if (units === "cel" || units === "c" || units.includes("celsius"))
-        return { ...unitParam, value: this.convertCelciusToFahrenheit(value) }; // https://hl7.org/fhir/R4/valueset-ucum-bodytemp.html}
-    }
-    throw new BadRequestError("Unknown units", undefined, {
-      units,
-      loincCode,
-      value,
-    });
-  }
-
-  private convertGramsToKg(value: number): number {
-    return value * gToKg;
-  }
-
-  private convertLbsToKg(value: number): number {
-    return value * lbsToKg;
-  }
-
-  private convertInchesToCm(value: number): number {
-    return value * inchesToCm;
-  }
-
-  private convertCelciusToFahrenheit(value: number): number {
-    return value * (9 / 5) + 32;
   }
 
   private sortMedicationStatementsNewestFirst(
@@ -1536,6 +1668,18 @@ class CanvasApi {
         return aDateUnix - bDateUnix;
       })
       .reverse();
+  }
+
+  private createWriteBackPath(resourceType: string, resourceId: string | undefined): string {
+    return `fhir/${resourceType}/${resourceId ?? "unknown"}`;
+  }
+
+  private createFhirPath(resourceType: string, resourceId?: string): string {
+    return `fhir-resources-${resourceType}${resourceId ? `/resourceId/${resourceId}` : ""}`;
+  }
+
+  private createReferencePath(referenceType: string, referenceId: string): string {
+    return `reference/${referenceType}/${referenceId}`;
   }
 }
 

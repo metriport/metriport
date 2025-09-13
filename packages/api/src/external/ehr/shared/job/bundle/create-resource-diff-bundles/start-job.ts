@@ -1,17 +1,9 @@
-import { getSupportedResourcesByEhr } from "@metriport/core/external/ehr/bundle/bundle-shared";
-import { isEhrSourceWithClientCredentials } from "@metriport/core/external/ehr/environment";
-import { buildEhrRefreshEhrBundlesHandler } from "@metriport/core/external/ehr/job/create-resource-diff-bundles/steps/refresh/ehr-refresh-ehr-bundles-factory";
-import { processAsyncError } from "@metriport/core/util/error/shared";
-import { completePatientJob } from "../../../../../../command/job/patient/complete";
 import { createPatientJob } from "../../../../../../command/job/patient/create";
-import { initializePatientJob } from "../../../../../../command/job/patient/initialize";
-import { updatePatientJobTotal } from "../../../../../../command/job/patient/update-total";
-import { getPatientMappingOrFail } from "../../../../../../command/mapping/patient";
-import { getPatientOrFail } from "../../../../../../command/medical/patient/get-patient";
-import { getTwoLeggedClientWithTokenIdAndEnvironment } from "../../../command/clients/get-two-legged-client";
+import { validatePatientAndLatestJobStatus } from "../../../command/job/validate-patient-and-lastest-job-status";
 import {
-  StartCreateResourceDiffBundlesJobParams,
+  StartBundlesJobParams,
   getCreateResourceDiffBundlesJobType,
+  getCreateResourceDiffBundlesRunUrl,
 } from "../../../utils/job";
 
 /**
@@ -22,7 +14,7 @@ import {
  * @param cxId - The CX ID of the patient.
  * @param practiceId - The practice id of the EHR patient.
  * @param ehrPatientId - The patient id of the EHR patient.
- * @param requestId - The request id of the job. Optional, defaults to a new UUID.
+ * @param requestId - The request id of the job. Opional.
  * @returns The job id of the resource diff bundles job.
  */
 export async function startCreateResourceDiffBundlesJob({
@@ -31,56 +23,30 @@ export async function startCreateResourceDiffBundlesJob({
   practiceId,
   ehrPatientId,
   requestId,
-}: StartCreateResourceDiffBundlesJobParams): Promise<string> {
-  const patientMapping = await getPatientMappingOrFail({
+}: StartBundlesJobParams): Promise<string> {
+  const jobGroupId = ehrPatientId;
+  const jobType = getCreateResourceDiffBundlesJobType(ehr);
+  const runUrl = getCreateResourceDiffBundlesRunUrl(ehr);
+  const metriportPatientId = await validatePatientAndLatestJobStatus({
+    ehr,
     cxId,
-    externalId: ehrPatientId,
-    source: ehr,
+    ehrPatientId,
+    jobType,
+    jobGroupId,
+    jobStatuses: ["waiting", "processing"],
   });
-  const metriportPatient = await getPatientOrFail({
-    cxId,
-    id: patientMapping.patientId,
-  });
-  const metriportPatientId = metriportPatient.id;
   const job = await createPatientJob({
     cxId,
     patientId: metriportPatientId,
-    jobType: getCreateResourceDiffBundlesJobType(ehr),
-    jobGroupId: ehrPatientId,
+    jobType,
+    jobGroupId,
     requestId,
-    limitedToOneRunningJob: true,
-  });
-  const jobId = job.id;
-  await initializePatientJob({ cxId, jobId });
-  const resourceTypes = getSupportedResourcesByEhr(ehr);
-  if (resourceTypes.length < 1) {
-    await completePatientJob({ cxId, jobId });
-    return jobId;
-  }
-  await updatePatientJobTotal({ cxId, jobId, total: resourceTypes.length });
-  const ehrResourceDiffHandler = buildEhrRefreshEhrBundlesHandler();
-  let tokenId: string | undefined;
-  if (isEhrSourceWithClientCredentials(ehr)) {
-    const clientWithTokenIdAndEnvironment = await getTwoLeggedClientWithTokenIdAndEnvironment({
-      ehr,
-      cxId,
+    scheduledAt: undefined,
+    runUrl,
+    paramsOps: {
       practiceId,
-    });
-    tokenId = clientWithTokenIdAndEnvironment.tokenId;
-  }
-  for (const resourceType of resourceTypes) {
-    ehrResourceDiffHandler
-      .refreshEhrBundles({
-        ehr,
-        ...(tokenId ? { tokenId } : {}),
-        cxId,
-        practiceId,
-        metriportPatientId,
-        ehrPatientId,
-        resourceType,
-        jobId,
-      })
-      .catch(processAsyncError(`${ehr} ${resourceType} refreshEhrBundles`));
-  }
-  return jobId;
+      ehrPatientId,
+    },
+  });
+  return job.id;
 }

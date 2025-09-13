@@ -2,7 +2,6 @@ import { ConsolidationConversionType } from "@metriport/api-sdk";
 import { deleteConsolidated } from "@metriport/core/command/consolidated/consolidated-delete";
 import { ConsolidatedSnapshotRequestSync } from "@metriport/core/command/consolidated/get-snapshot";
 import { buildConsolidatedSnapshotConnector } from "@metriport/core/command/consolidated/get-snapshot-factory";
-import { makeIngestConsolidated } from "@metriport/core/command/consolidated/search/fhir-resource/ingest-consolidated-factory";
 import { Patient } from "@metriport/core/domain/patient";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
@@ -43,8 +42,11 @@ export async function recreateConsolidated({
   }
   try {
     if (conversionType) {
+      log(`Getting consolidated bundle with conversion type ${conversionType} (sync)`);
       await getConsolidated({ patient, conversionType });
+      log(`Consolidated recreated`);
     } else {
+      log(`Building consolidated bundle without conversion (async)`);
       const payload: ConsolidatedSnapshotRequestSync = {
         patient,
         isAsync: false,
@@ -52,17 +54,8 @@ export async function recreateConsolidated({
       };
       const connector = buildConsolidatedSnapshotConnector();
       await connector.execute(payload);
+      log(`Consolidated triggered`);
     }
-
-    log(`Consolidated recreated`);
-
-    const ingestor = makeIngestConsolidated();
-    ingestor
-      .ingestConsolidatedIntoSearchEngine({
-        cxId: patient.cxId,
-        patientId: patient.id,
-      })
-      .catch(processAsyncError("Post-DQ ingestConsolidatedIntoSearchEngine"));
 
     if (isDq) {
       startCreateResourceDiffBundlesJobsAcrossEhrs({

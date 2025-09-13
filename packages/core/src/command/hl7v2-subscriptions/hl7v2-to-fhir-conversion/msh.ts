@@ -38,6 +38,10 @@ export function getMessageDatetime(msg: Hl7Message): string | undefined {
   return getOptionalValueFromMessage(msg, "MSH", 7, 1);
 }
 
+export function getSendingApplication(msg: Hl7Message): string | undefined {
+  return getOptionalValueFromMessage(msg, "MSH", 3, 1);
+}
+
 export function getOrCreateMessageDatetime(msg: Hl7Message): string {
   return getMessageDatetime(msg) ?? formatDateToHl7(new Date());
 }

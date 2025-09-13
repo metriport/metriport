@@ -9,6 +9,7 @@ export enum TreatmentType {
   postAcuteCare = "postAcuteCare",
 }
 
+// TODO if you update this, make sure to update core's too (unless it has been removed)
 export enum OrganizationBizType {
   healthcareProvider = "healthcare_provider",
   healthcareITVendor = "healthcare_it_vendor",

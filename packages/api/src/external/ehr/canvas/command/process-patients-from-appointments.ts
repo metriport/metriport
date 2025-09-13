@@ -13,13 +13,12 @@ import { uniqBy } from "lodash";
 import { getCxMappingsBySource } from "../../../../command/mapping/cx";
 import {
   Appointment,
-  delayBetweenPatientBatches,
-  delayBetweenPracticeBatches,
   getLookForwardTimeRange,
+  maxJitterPatientBatches,
+  maxJitterPracticeBatches,
   parallelPatients,
   parallelPractices,
 } from "../../shared/utils/appointment";
-import { createCanvasClientWithTokenIdAndEnvironment } from "../shared";
 import { SyncCanvasPatientIntoMetriportParams } from "./sync-patient";
 
 dayjs.extend(duration);
@@ -56,7 +55,7 @@ export async function processPatientsFromAppointments(): Promise<void> {
     },
     {
       numberOfParallelExecutions: parallelPractices,
-      delay: delayBetweenPracticeBatches.asMilliseconds(),
+      maxJitterMillis: maxJitterPracticeBatches.asMilliseconds(),
     }
   );
 
@@ -87,7 +86,7 @@ export async function processPatientsFromAppointments(): Promise<void> {
 
   await executeAsynchronously(syncPatientsArgs, syncPatient, {
     numberOfParallelExecutions: parallelPatients,
-    delay: delayBetweenPatientBatches.asMilliseconds(),
+    maxJitterMillis: maxJitterPatientBatches.asMilliseconds(),
   });
 }
 
@@ -96,10 +95,6 @@ async function getAppointments({
   practiceId,
 }: GetAppointmentsParams): Promise<{ appointments?: Appointment[]; error?: unknown }> {
   const { log } = out(`Canvas getAppointments - cxId ${cxId} practiceId ${practiceId}`);
-  const { tokenId } = await createCanvasClientWithTokenIdAndEnvironment({
-    cxId,
-    practiceId,
-  });
   const { startRange, endRange } = getLookForwardTimeRange({
     lookForward: appointmentsLookForward,
   });
@@ -108,7 +103,6 @@ async function getAppointments({
     const handler = buildEhrGetAppointmentsHandler();
     const appointments = await handler.getAppointments<SlimBookedAppointment>({
       method: AppointmentMethods.canvasGetAppointments,
-      tokenId,
       cxId,
       practiceId,
       fromDate: startRange,
@@ -138,5 +132,6 @@ async function syncPatient({
     practiceId: canvasPracticeId,
     patientId: canvasPatientId,
     triggerDq: true,
+    isAppointment: true,
   });
 }

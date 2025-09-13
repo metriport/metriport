@@ -1,4 +1,4 @@
-import { Document } from "@metriport/commonwell-sdk";
+import { Document } from "@metriport/commonwell-sdk-v1";
 import { buildDocIdFhirExtension } from "@metriport/core/external/fhir/shared/extensions/doc-id-extension";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { capture, out } from "@metriport/core/util";
@@ -44,7 +44,7 @@ export async function convertCDAToFHIR(params: {
   keepUnusedSegments?: boolean;
   keepInvalidAccess?: boolean;
   requestId: string;
-  source?: MedicalDataSource;
+  source: MedicalDataSource;
 }): Promise<void> {
   const {
     patient: patientParam,

@@ -1,5 +1,5 @@
 import { Resource } from "@medplum/fhirtypes";
-import { MetriportError } from "@metriport/shared";
+import { errorToString, executeWithNetworkRetries, MetriportError } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import { Client } from "@opensearch-project/opensearch";
 import dayjs from "dayjs";
@@ -20,6 +20,8 @@ import { getEntryId } from "./shared/id";
 
 dayjs.extend(duration);
 
+const ERROR_CODES_TO_RETRY = [409, 503];
+const INITIAL_WAIT_TIME_BETWEEN_RETRIES = dayjs.duration({ milliseconds: 200 });
 const DEFAULT_BULK_INGESTION_TIMEOUT = dayjs.duration(2, "minute").asMilliseconds();
 const MAX_BULK_RETRIES = 3;
 
@@ -96,36 +98,44 @@ export class OpenSearchFhirIngestor {
     const indexName = this.indexName;
     const auth = { username: this.username, password: this.password };
     const client = new Client({ node: this.endpoint, auth });
+    try {
+      log(`Ingesting ${resources.length} resources into index ${indexName}...`);
+      const startedAt = Date.now();
 
-    log(`Ingesting ${resources.length} resources into index ${indexName}...`);
-    const startedAt = Date.now();
+      let errorCount = 0;
+      const _onItemError = onItemError ?? buildOnItemError(errors);
+      const mutatingMissingResourceIdsByType: Record<string, string[]> = {};
 
-    let errorCount = 0;
-    const _onItemError = onItemError ?? buildOnItemError(errors);
-    const mutatingMissingResourceIdsByType: Record<string, string[]> = {};
+      const chunks = chunk(resources, bulkChunkSize);
+      for (const resourceChunk of chunks) {
+        const errorCountChunk = await this.ingestBulkInternal({
+          cxId,
+          patientId,
+          resources: resourceChunk,
+          indexName,
+          client,
+          onItemError: _onItemError,
+          mutatingMissingResourceIdsByType,
+        });
+        errorCount += errorCountChunk;
+      }
 
-    const chunks = chunk(resources, bulkChunkSize);
-    for (const resourceChunk of chunks) {
-      const errorCountChunk = await this.ingestBulkInternal({
-        cxId,
-        patientId,
-        resources: resourceChunk,
-        indexName,
-        client,
-        onItemError: _onItemError,
-        mutatingMissingResourceIdsByType,
-      });
-      errorCount += errorCountChunk;
+      const time = Date.now() - startedAt;
+      log(`Ingested ${resources.length} resources in ${time} ms, ${errorCount} errors`);
+      if (Object.keys(mutatingMissingResourceIdsByType).length > 0) {
+        log(
+          `WARNING - Resources not ingested, either missing relevant info or not ingestible:`,
+          () => JSON.stringify(mutatingMissingResourceIdsByType)
+        );
+      }
+      return errors;
+    } finally {
+      try {
+        await client.close();
+      } catch (error) {
+        log(`Error closing OS client: ${errorToString(error)}`);
+      }
     }
-
-    const time = Date.now() - startedAt;
-    log(`Ingested ${resources.length} resources in ${time} ms, ${errorCount} errors`);
-    if (Object.keys(mutatingMissingResourceIdsByType).length > 0) {
-      log(`WARNING - Resources not ingested, either missing relevant info or not ingestible:`, () =>
-        JSON.stringify(mutatingMissingResourceIdsByType)
-      );
-    }
-    return errors;
   }
 
   private async ingestBulkInternal({
@@ -172,10 +182,20 @@ export class OpenSearchFhirIngestor {
     }
 
     const startedAt = Date.now();
-    const response = await client.bulk(
-      { index: indexName, body: bulkRequest },
-      { requestTimeout: DEFAULT_BULK_INGESTION_TIMEOUT, maxRetries: MAX_BULK_RETRIES }
+
+    const response = await executeWithNetworkRetries(
+      async () =>
+        client.bulk(
+          { index: indexName, body: bulkRequest },
+          { requestTimeout: DEFAULT_BULK_INGESTION_TIMEOUT, maxRetries: MAX_BULK_RETRIES }
+        ),
+      {
+        httpStatusCodesToRetry: ERROR_CODES_TO_RETRY,
+        initialDelay: INITIAL_WAIT_TIME_BETWEEN_RETRIES.asMilliseconds(),
+        maxAttempts: 3,
+      }
     );
+
     const time = Date.now() - startedAt;
 
     const errorCount = processErrorsFromBulkResponse(response, operation, onItemError);
@@ -190,16 +210,32 @@ export class OpenSearchFhirIngestor {
     const indexName = this.indexName;
     const auth = { username: this.username, password: this.password };
     const client = new Client({ node: this.endpoint, auth });
+    try {
+      log(`Deleting resources from index ${indexName}...`);
+      const startedAt = Date.now();
 
-    log(`Deleting resources from index ${indexName}...`);
-    const startedAt = Date.now();
-
-    await client.deleteByQuery({
-      index: indexName,
-      body: createDeleteQuery({ cxId, patientId }),
-    });
-    const time = Date.now() - startedAt;
-    log(`Successfully deleted in ${time} milliseconds`);
+      await executeWithNetworkRetries(
+        async () => {
+          await client.deleteByQuery({
+            index: indexName,
+            body: createDeleteQuery({ cxId, patientId }),
+          });
+        },
+        {
+          httpStatusCodesToRetry: ERROR_CODES_TO_RETRY,
+          initialDelay: INITIAL_WAIT_TIME_BETWEEN_RETRIES.asMilliseconds(),
+          maxAttempts: 10,
+        }
+      );
+      const time = Date.now() - startedAt;
+      log(`Successfully deleted in ${time} milliseconds`);
+    } finally {
+      try {
+        await client.close();
+      } catch (error) {
+        log(`Error closing OS client: ${errorToString(error)}`);
+      }
+    }
   }
 }
 

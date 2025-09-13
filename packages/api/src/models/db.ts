@@ -20,6 +20,7 @@ import { FacilityModel } from "../models/medical/facility";
 import { OrganizationModel } from "../models/medical/organization";
 import updateDB from "../sequelize";
 import { Config } from "../shared/config";
+import { ModelSetup } from "./_default";
 import { ConnectedUser } from "./connected-user";
 import { CxMappingModel } from "./cx-mapping";
 import { initDDBDev, initLocalCxAccount } from "./db-dev";
@@ -28,19 +29,21 @@ import { FeedbackModel } from "./feedback";
 import { FeedbackEntryModel } from "./feedback-entry";
 import { InvalidLinksModel } from "./invalid-links";
 import { JwtTokenModel } from "./jwt-token";
+import { CohortModel } from "./medical/cohort";
 import { CoverageEnhancementModel } from "./medical/coverage-enhancement";
 import { DocRefMappingModel } from "./medical/docref-mapping";
 import { MAPIAccess } from "./medical/mapi-access";
 import { PatientModel } from "./medical/patient";
+import { PatientCohortModel } from "./medical/patient-cohort";
 import { PatientImportJobModel } from "./medical/patient-import";
 import { PatientImportMappingModel } from "./medical/patient-import-mapping";
 import { PatientModelReadOnly } from "./medical/patient-readonly";
+import { TcmEncounterModel } from "./medical/tcm-encounter";
+import { PatientJobModel } from "./patient-job";
 import { PatientMappingModel } from "./patient-mapping";
 import { PatientSettingsModel } from "./patient-settings";
 import { Settings } from "./settings";
 import { WebhookRequest } from "./webhook-request";
-import { ModelSetup } from "./_default";
-import { PatientJobModel } from "./patient-job";
 
 // models to setup with sequelize
 const models: ModelSetup[] = [
@@ -71,6 +74,9 @@ const models: ModelSetup[] = [
   JwtTokenModel.setup,
   InvalidLinksModel.setup,
   PatientJobModel.setup,
+  CohortModel.setup,
+  PatientCohortModel.setup,
+  TcmEncounterModel.setup,
 ];
 
 const modelsReadOnly: ModelSetup[] = [PatientModelReadOnly.setup];
@@ -144,6 +150,11 @@ async function initDB(): Promise<void> {
     // Set up model associations
     PatientModelReadOnly.associate({ PatientSettingsModel });
     PatientSettingsModel.associate({ PatientModelReadOnly });
+    CohortModel.associate({ PatientCohortModel });
+    PatientCohortModel.associate({ CohortModel });
+    PatientModel.associate({ PatientCohortModel, TcmEncounterModel });
+    TcmEncounterModel.associate({ PatientModel, OrganizationModel });
+    OrganizationModel.associate({ TcmEncounterModel });
 
     let doc: AWS.DynamoDB.DocumentClient;
     // init dynamo db doc client

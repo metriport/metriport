@@ -30,11 +30,15 @@ export async function ingestPatientConsolidated({
 
   const ingestor = new OpenSearchFhirIngestor(getConfigs());
 
-  log("Getting consolidated and cleaning up the index...");
-  const [bundle] = await Promise.all([
-    timed(() => getConsolidatedBundle({ cxId, patientId }), "getConsolidatedBundle", log),
-    ingestor.delete({ cxId, patientId }),
-  ]);
+  log("Getting consolidated");
+  const bundle = await timed(
+    () => getConsolidatedBundle({ cxId, patientId }),
+    "getConsolidatedBundle",
+    log
+  );
+
+  log("Cleaning up the index...");
+  await ingestor.delete({ cxId, patientId });
 
   const entries = bundle.entry ?? [];
   const resources = entries
@@ -103,13 +107,14 @@ async function getConsolidatedBundle({
 
   const consolidated = await executeWithRetries(() => getConsolidatedFile({ cxId, patientId }), {
     shouldRetry: (res, error: unknown) => {
-      if (!res) return true;
+      if (!res?.bundle) return true;
       if (!error) return false;
       if (!isRetriableError(error)) return false;
       return true;
     },
     initialDelay: 1_000,
-    maxAttempts: 3,
+    maxAttempts: 10,
+    backoffMultiplier: 1.6,
     log,
   });
 

@@ -20,6 +20,7 @@ import {
   matchPatient,
 } from "../../command/medical/patient/get-patient";
 import { createPatientImportJob } from "../../command/medical/patient/patient-import/create";
+import { createSampleTcmEncounters } from "../../command/medical/tcm-encounter/create-sample-tcm-encounter";
 import { Pagination } from "../../command/pagination";
 import { getSandboxPatientLimitForCx } from "../../domain/medical/get-patient-limit";
 import { isPatientMappingSource, PatientMappingSource } from "../../domain/patient-mapping";
@@ -91,6 +92,10 @@ router.post(
       forceCarequality,
       settings,
     });
+
+    if (!Config.isProdEnv()) {
+      await createSampleTcmEncounters(cxId, patient.id);
+    }
 
     return res.status(httpStatus.CREATED).json(dtoFromModel(patient));
   })

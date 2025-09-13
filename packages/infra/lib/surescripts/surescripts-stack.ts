@@ -11,7 +11,8 @@ import { EnvConfig } from "../../config/env-config";
 import { EnvType } from "../env-type";
 import { createLambda } from "../shared/lambda";
 import { LambdaLayers } from "../shared/lambda-layers";
-import { LambdaSettings, QueueAndLambdaSettings } from "../shared/settings";
+import { buildSecret } from "../shared/secrets";
+import { LambdaSettingsWithNameAndEntry, QueueAndLambdaSettings } from "../shared/settings";
 import { createQueue } from "../shared/sqs";
 import { SurescriptsAssets } from "./types";
 
@@ -21,8 +22,9 @@ const sendBatchRequestLambdaTimeout = Duration.minutes(5);
 const verifyRequestInHistoryLambdaTimeout = Duration.seconds(30);
 const receiveVerificationLambdaTimeout = Duration.seconds(30);
 const receiveResponseLambdaTimeout = Duration.seconds(30);
+const convertPatientResponseLambdaTimeout = Duration.seconds(30);
+const convertBatchResponseLambdaTimeout = Duration.minutes(5);
 const alarmMaxAgeOfOldestMessage = Duration.hours(1);
-const apiUrlEnvVarName = "API_URL";
 
 interface SurescriptsSettings {
   sendPatientRequest: QueueAndLambdaSettings;
@@ -32,14 +34,11 @@ interface SurescriptsSettings {
   receiveResponse: QueueAndLambdaSettings;
 }
 
-const sftpActionSettings: LambdaSettings = {
-  name: "SurescriptsSftpAction",
-  entry: "surescripts/sftp-action",
-  lambda: {
-    memory: 1024,
-    timeout: sftpActionTimeout,
-  },
-};
+interface SurescriptsLambdaSettings {
+  sftpAction: LambdaSettingsWithNameAndEntry;
+  convertPatientResponse: LambdaSettingsWithNameAndEntry;
+  convertBatchResponse: LambdaSettingsWithNameAndEntry;
+}
 
 const settings: SurescriptsSettings = {
   sendPatientRequest: {
@@ -99,6 +98,7 @@ const settings: SurescriptsSettings = {
     eventSource: {
       batchSize: 1,
       reportBatchItemFailures: true,
+      maxConcurrency: 100,
     },
     waitTime: Duration.seconds(0),
   },
@@ -106,7 +106,7 @@ const settings: SurescriptsSettings = {
     name: "SurescriptsReceiveVerification",
     entry: "surescripts/receive-verification",
     lambda: {
-      memory: 1024,
+      memory: 512,
       timeout: receiveVerificationLambdaTimeout,
     },
     queue: {
@@ -119,6 +119,7 @@ const settings: SurescriptsSettings = {
     eventSource: {
       batchSize: 1,
       reportBatchItemFailures: true,
+      maxConcurrency: 100,
     },
     waitTime: Duration.seconds(0),
   },
@@ -139,8 +140,36 @@ const settings: SurescriptsSettings = {
     eventSource: {
       batchSize: 1,
       reportBatchItemFailures: true,
+      maxConcurrency: 100,
     },
     waitTime: Duration.seconds(0),
+  },
+};
+
+const surescriptsLambdaSettings: SurescriptsLambdaSettings = {
+  sftpAction: {
+    name: "SurescriptsSftpAction",
+    entry: "surescripts/sftp-action",
+    lambda: {
+      memory: 1024,
+      timeout: sftpActionTimeout,
+    },
+  },
+  convertPatientResponse: {
+    name: "SurescriptsConvertPatientResponse",
+    entry: "surescripts/convert-patient-response",
+    lambda: {
+      memory: 1024,
+      timeout: convertPatientResponseLambdaTimeout,
+    },
+  },
+  convertBatchResponse: {
+    name: "SurescriptsConvertBatchResponse",
+    entry: "surescripts/convert-batch-response",
+    lambda: {
+      memory: 1024,
+      timeout: convertBatchResponseLambdaTimeout,
+    },
   },
 };
 
@@ -189,10 +218,6 @@ function surescriptsEnvironmentVariablesAndSecrets({
   return { envVars, secrets };
 }
 
-function buildSecret(nestedStack: SurescriptsNestedStack, name: string): secret.ISecret {
-  return secret.Secret.fromSecretNameV2(nestedStack, name, name);
-}
-
 interface SurescriptsNestedStackProps extends NestedStackProps {
   config: EnvConfig;
   vpc: ec2.IVpc;
@@ -202,6 +227,8 @@ interface SurescriptsNestedStackProps extends NestedStackProps {
 
 export class SurescriptsNestedStack extends NestedStack {
   private readonly sftpActionLambda: Lambda;
+  private readonly convertPatientResponseLambda: Lambda;
+  private readonly convertBatchResponseLambda: Lambda;
   private readonly sendPatientRequestLambda: Lambda;
   private readonly sendPatientRequestQueue: Queue;
   private readonly sendBatchRequestLambda: Lambda;
@@ -249,14 +276,29 @@ export class SurescriptsNestedStack extends NestedStack {
       alarmAction: props.alarmAction,
       surescripts: props.config.surescripts,
       systemRootOID: props.config.systemRootOID,
+      termServerUrl: props.config.termServerUrl,
       envVars,
     };
 
-    const sftpAction = this.setupLambda(sftpActionSettings, {
+    const sftpAction = this.setupLambda("sftpAction", {
       ...commonConfig,
       surescriptsReplicaBucket: this.surescriptsReplicaBucket,
     });
     this.sftpActionLambda = sftpAction.lambda;
+
+    const convertPatientResponse = this.setupLambda("convertPatientResponse", {
+      ...commonConfig,
+      surescriptsReplicaBucket: this.surescriptsReplicaBucket,
+      pharmacyConversionBucket: this.pharmacyConversionBucket,
+    });
+    this.convertPatientResponseLambda = convertPatientResponse.lambda;
+
+    const convertBatchResponse = this.setupLambda("convertBatchResponse", {
+      ...commonConfig,
+      surescriptsReplicaBucket: this.surescriptsReplicaBucket,
+      pharmacyConversionBucket: this.pharmacyConversionBucket,
+    });
+    this.convertBatchResponseLambda = convertBatchResponse.lambda;
 
     const sendPatientRequest = this.setupLambdaAndQueue("sendPatientRequest", {
       ...commonConfig,
@@ -310,12 +352,27 @@ export class SurescriptsNestedStack extends NestedStack {
       this.verifyRequestInHistoryLambda,
       this.receiveVerificationLambda,
       this.receiveResponseLambda,
+      this.convertPatientResponseLambda,
+      this.convertBatchResponseLambda,
     ];
   }
 
   getAssets(): SurescriptsAssets {
     return {
-      surescriptsLambdas: this.getLambdas(),
+      surescriptsLambdas: [
+        {
+          envVarName: "SURESCRIPTS_SFTP_ACTION_LAMBDA_NAME",
+          lambda: this.sftpActionLambda,
+        },
+        {
+          envVarName: "SURESCRIPTS_CONVERT_PATIENT_RESPONSE_LAMBDA_NAME",
+          lambda: this.convertPatientResponseLambda,
+        },
+        {
+          envVarName: "SURESCRIPTS_CONVERT_BATCH_RESPONSE_LAMBDA_NAME",
+          lambda: this.convertBatchResponseLambda,
+        },
+      ],
       surescriptsQueues: [
         {
           envVarName: "SURESCRIPTS_SEND_PATIENT_REQUEST_QUEUE_URL",
@@ -351,15 +408,13 @@ export class SurescriptsNestedStack extends NestedStack {
       receiveResponseQueue: this.receiveResponseQueue,
       surescriptsReplicaBucket: this.surescriptsReplicaBucket,
       pharmacyConversionBucket: this.pharmacyConversionBucket,
+      convertPatientResponseLambda: this.convertPatientResponseLambda,
+      convertBatchResponseLambda: this.convertBatchResponseLambda,
     };
   }
 
-  setApiUrl(apiUrl: string): void {
-    this.getLambdas().forEach(lambda => lambda.addEnvironment(apiUrlEnvVarName, apiUrl));
-  }
-
-  private setupLambda(
-    settings: LambdaSettings,
+  private setupLambda<T extends keyof SurescriptsLambdaSettings>(
+    job: T,
     props: {
       lambdaLayers: LambdaLayers;
       vpc: ec2.IVpc;
@@ -370,9 +425,10 @@ export class SurescriptsNestedStack extends NestedStack {
       systemRootOID: string;
       surescriptsReplicaBucket: s3.Bucket;
       pharmacyConversionBucket?: s3.Bucket;
+      termServerUrl?: string;
     }
   ) {
-    const { name, entry, lambda: lambdaSettings } = settings;
+    const { name, entry, lambda: lambdaSettings } = surescriptsLambdaSettings[job];
 
     const {
       lambdaLayers,
@@ -383,6 +439,8 @@ export class SurescriptsNestedStack extends NestedStack {
       alarmAction,
       systemRootOID,
       surescriptsReplicaBucket,
+      pharmacyConversionBucket,
+      termServerUrl,
     } = props;
 
     const lambda = createLambda({
@@ -394,6 +452,8 @@ export class SurescriptsNestedStack extends NestedStack {
       envVars: {
         ...envVars,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+        ...(job === "sftpAction" ? { SFTP_ACTION_LAMBDA: "surescripts" } : {}),
+        ...(termServerUrl ? { TERM_SERVER_URL: termServerUrl } : {}),
         SYSTEM_ROOT_OID: systemRootOID,
       },
       layers: [lambdaLayers.shared],
@@ -402,6 +462,7 @@ export class SurescriptsNestedStack extends NestedStack {
     });
 
     surescriptsReplicaBucket.grantReadWrite(lambda);
+    pharmacyConversionBucket?.grantReadWrite(lambda);
 
     return { lambda };
   }
@@ -418,6 +479,7 @@ export class SurescriptsNestedStack extends NestedStack {
       systemRootOID: string;
       surescriptsReplicaBucket: s3.Bucket;
       pharmacyConversionBucket?: s3.Bucket;
+      termServerUrl?: string;
     }
   ): { lambda: Lambda; queue: Queue } {
     const {
@@ -430,6 +492,7 @@ export class SurescriptsNestedStack extends NestedStack {
       systemRootOID,
       surescriptsReplicaBucket,
       pharmacyConversionBucket,
+      termServerUrl,
     } = props;
 
     const {
@@ -460,6 +523,7 @@ export class SurescriptsNestedStack extends NestedStack {
       envVars: {
         ...envVars,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+        ...(termServerUrl ? { TERM_SERVER_URL: termServerUrl } : {}),
         SYSTEM_ROOT_OID: systemRootOID,
       },
       layers: [lambdaLayers.shared],

@@ -1,75 +1,95 @@
-import { PatientData } from "@metriport/core/domain/patient";
-import { epicMatchingAlgorithm, strictMatchingAlgorithm } from "@metriport/core/mpi/match-patients";
 import { isStrictMatchingAlgorithmEnabledForCx } from "@metriport/core/command/feature-flags/domain-ffs";
-import { CwLink } from "../commonwell/cw-patient-data";
-import { cwLinkToPatientData } from "../commonwell/link/shared";
-import { cqLinkToPatientData } from "../carequality/shared";
+import { PatientData } from "@metriport/core/domain/patient";
+import { filterPatientLinks } from "@metriport/core/mpi/filter-patients/filter-patients";
+import { strictMatchingAlgorithm } from "@metriport/core/mpi/match-patients";
 import { CQLink } from "../carequality/cq-patient-data";
+import { cqLinkToPatientData } from "../carequality/shared";
 
-const SIMILARITY_THRESHOLD = 8.5;
-
-// TODO #2641 this is a temporary solution to validate the links belong to the patient
-// we need to create a more robust solution to validate the links belong to the patient
 export async function validateCqLinksBelongToPatient(
   cxId: string,
   cqLinks: CQLink[],
   patientData: PatientData
 ): Promise<{ validNetworkLinks: CQLink[]; invalidLinks: CQLink[] }> {
-  const validNetworkLinks: CQLink[] = [];
-  const invalidLinks: CQLink[] = [];
+  return validateLinksBelongToPatientGeneric<CQLink>(
+    cxId,
+    cqLinks,
+    patientData,
+    cqLinkToPatientData
+  );
+}
 
-  for (const cqLink of cqLinks) {
-    const linkPatientData = cqLinkToPatientData(cqLink);
+export async function validateCwLinksBelongToPatient<T>(
+  cxId: string,
+  cwLinks: T[],
+  patientData: PatientData,
+  convertToPatientData: (cwLink: T) => PatientData
+): Promise<{ validNetworkLinks: T[]; invalidLinks: T[] }> {
+  return validateLinksBelongToPatientGeneric<T>(cxId, cwLinks, patientData, convertToPatientData);
+}
 
-    const isPatientMatch = await validateLinkBelongsToPatient(cxId, linkPatientData, patientData);
+async function validateLinksBelongToPatientGeneric<TLink>(
+  cxId: string,
+  links: TLink[],
+  patientData: PatientData,
+  linkToPatientData: (link: TLink) => PatientData
+): Promise<{ validNetworkLinks: TLink[]; invalidLinks: TLink[] }> {
+  const linkToPatientDataMap = links.map(link => ({
+    link,
+    patientData: linkToPatientData(link),
+  }));
 
-    if (isPatientMatch) {
-      validNetworkLinks.push(cqLink);
-    } else {
-      invalidLinks.push(cqLink);
-    }
-  }
+  const { validPatientDataLinks, invalidPatientDataLinks } = await validateLinksBelongToPatient(
+    cxId,
+    patientData,
+    linkToPatientDataMap.map(item => item.patientData)
+  );
+
+  const validNetworkLinks = linkToPatientDataMap
+    .filter(item => validPatientDataLinks.includes(item.patientData))
+    .map(item => item.link);
+
+  const invalidLinks = linkToPatientDataMap
+    .filter(item => invalidPatientDataLinks.includes(item.patientData))
+    .map(item => item.link);
 
   return { validNetworkLinks, invalidLinks };
 }
 
-export async function validateCwLinksBelongToPatient(
+async function validateLinksBelongToPatient(
   cxId: string,
-  cwLinks: CwLink[],
-  patientData: PatientData
-): Promise<{ validNetworkLinks: CwLink[]; invalidLinks: CwLink[] }> {
-  const validNetworkLinks: CwLink[] = [];
-  const invalidLinks: CwLink[] = [];
-
-  for (const cwLink of cwLinks) {
-    const linkPatientData = cwLinkToPatientData(cwLink);
-
-    const isPatientMatch = await validateLinkBelongsToPatient(cxId, linkPatientData, patientData);
-
-    if (isPatientMatch) {
-      validNetworkLinks.push(cwLink);
-    } else {
-      invalidLinks.push(cwLink);
-    }
-  }
-
-  return { validNetworkLinks, invalidLinks };
-}
-
-const validateLinkBelongsToPatient = async (
-  cxId: string,
-  linkPatientData: PatientData,
-  patientData: PatientData
-): Promise<boolean> => {
+  patientData: PatientData,
+  allPatientLinks: PatientData[]
+): Promise<{ validPatientDataLinks: PatientData[]; invalidPatientDataLinks: PatientData[] }> {
   const isStrictMatchingAlgorithmEnabled = await isStrictMatchingAlgorithmEnabledForCx(cxId);
 
-  let isPatientMatch = false;
-
   if (isStrictMatchingAlgorithmEnabled) {
-    isPatientMatch = strictMatchingAlgorithm(patientData, linkPatientData);
-  } else {
-    isPatientMatch = epicMatchingAlgorithm(patientData, linkPatientData, SIMILARITY_THRESHOLD);
-  }
+    const validNetworkLinks: PatientData[] = [];
+    const invalidLinks: PatientData[] = [];
 
-  return isPatientMatch;
-};
+    for (const linkPatientData of allPatientLinks) {
+      const isPatientMatch = strictMatchingAlgorithm(patientData, linkPatientData);
+      if (isPatientMatch) {
+        validNetworkLinks.push(linkPatientData);
+      } else {
+        invalidLinks.push(linkPatientData);
+      }
+    }
+
+    return { validPatientDataLinks: validNetworkLinks, invalidPatientDataLinks: invalidLinks };
+  } else {
+    const linkStatuses = filterPatientLinks(patientData, allPatientLinks);
+
+    const validNetworkLinks: PatientData[] = [];
+    const invalidLinks: PatientData[] = [];
+
+    for (const linkStatus of linkStatuses) {
+      if (linkStatus.isMatch) {
+        validNetworkLinks.push(linkStatus.patient);
+      } else {
+        invalidLinks.push(linkStatus.patient);
+      }
+    }
+
+    return { validPatientDataLinks: validNetworkLinks, invalidPatientDataLinks: invalidLinks };
+  }
+}

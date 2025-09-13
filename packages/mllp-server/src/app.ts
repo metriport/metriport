@@ -1,60 +1,81 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 
-import { Hl7Message } from "@medplum/core";
 import { Hl7Server } from "@medplum/hl7";
 import { buildHl7NotificationWebhookSender } from "@metriport/core/command/hl7-notification/hl7-notification-webhook-sender-factory";
 import {
   getHl7MessageTypeOrFail,
   getMessageUniqueIdentifier,
   getOrCreateMessageDatetime,
+  getSendingApplication,
 } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/msh";
-import {
-  createFileKeyHl7Message,
-  getCxIdAndPatientIdOrFail,
-} from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
-import { basicToExtendedIso8601 } from "@metriport/shared/common/date";
+import { createFileKeyHl7Message } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
-import { S3Utils } from "@metriport/core/external/aws/s3";
+import { getHieConfigDictionary } from "@metriport/core/external/hl7-notification/hie-config-dictionary";
 import { capture } from "@metriport/core/util";
-import { Config } from "@metriport/core/util/config";
 import type { Logger } from "@metriport/core/util/log";
 import { out } from "@metriport/core/util/log";
+import { basicToExtendedIso8601 } from "@metriport/shared/common/date";
+import { ParsedHl7Data, parseHl7Message, persistHl7MessageError } from "./parsing";
 import { initSentry } from "./sentry";
-import { withErrorHandling } from "./utils";
+import {
+  asString,
+  bucketName,
+  getCleanIpAddress,
+  lookupHieTzEntryForIp,
+  s3Utils,
+  withErrorHandling,
+} from "./utils";
 
 initSentry();
 
 const MLLP_DEFAULT_PORT = 2575;
-const bucketName = Config.getHl7IncomingMessageBucketName();
-const s3Utils = new S3Utils(Config.getAWSRegion());
-
-/**
- * Avoid using message.toString() as its not stringifying every segment
- */
-function asString(message: Hl7Message) {
-  return message.segments.map(s => s.toString()).join("\n");
-}
 
 async function createHl7Server(logger: Logger): Promise<Hl7Server> {
   const { log } = logger;
+  const hieConfigDictionary = getHieConfigDictionary();
 
   const server = new Hl7Server(connection => {
     connection.addEventListener(
       "message",
-      withErrorHandling(async ({ message }) => {
-        const timestamp = basicToExtendedIso8601(getOrCreateMessageDatetime(message));
-        const messageId = getMessageUniqueIdentifier(message);
-        log(
-          `${timestamp}> New Message (id: ${messageId}) from ${connection.socket.remoteAddress}:${connection.socket.remotePort}`
-        );
+      withErrorHandling(connection, logger, async ({ message: rawMessage }) => {
+        const clientIp = getCleanIpAddress(connection.socket.remoteAddress);
+        const clientPort = connection.socket.remotePort;
+        const { hieName, timezone } = lookupHieTzEntryForIp(hieConfigDictionary, clientIp);
 
-        const { cxId, patientId } = getCxIdAndPatientIdOrFail(message);
+        log(`New message from ${hieName} over connection ${clientIp}:${clientPort}`);
+
+        let parsedData: ParsedHl7Data;
+        try {
+          parsedData = await parseHl7Message(rawMessage, timezone);
+        } catch (parseError: unknown) {
+          await persistHl7MessageError(rawMessage, parseError, logger);
+          throw parseError;
+        }
+
+        const { message, cxId, patientId } = parsedData;
+
+        const messageId = getMessageUniqueIdentifier(message);
+        const sendingApplication = getSendingApplication(message) ?? "Unknown HIE";
+        const timestamp = basicToExtendedIso8601(getOrCreateMessageDatetime(message));
         const { messageCode, triggerEvent } = getHl7MessageTypeOrFail(message);
+
+        log(
+          `cx: ${cxId}, pt: ${patientId} Received ${triggerEvent} message from ${sendingApplication} at ${timestamp} (messageId: ${messageId})`
+        );
 
         capture.setExtra({
           cxId,
           patientId,
+          messageCode,
+          triggerEvent,
+        });
+
+        const rawDataFileKey = createFileKeyHl7Message({
+          cxId,
+          patientId,
+          timestamp,
+          messageId,
           messageCode,
           triggerEvent,
         });
@@ -65,21 +86,16 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
           message: asString(message),
           sourceTimestamp: timestamp,
           messageReceivedTimestamp: new Date().toISOString(),
+          rawDataFileKey,
+          hieName,
         });
 
         connection.send(message.buildAck());
 
-        log("Init S3 upload");
+        log(`Init S3 upload to bucket ${bucketName} with key ${rawDataFileKey}`);
         s3Utils.uploadFile({
           bucket: bucketName,
-          key: createFileKeyHl7Message({
-            cxId,
-            patientId,
-            timestamp,
-            messageId,
-            messageCode,
-            triggerEvent,
-          }),
+          key: rawDataFileKey,
           file: Buffer.from(asString(message)),
           contentType: "text/plain",
         });
@@ -95,19 +111,19 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
             platform: "mllp-server",
           },
         });
-      }, logger)
+      })
     );
 
     connection.addEventListener(
       "error",
-      withErrorHandling(error => {
+      withErrorHandling(connection, logger, error => {
         if (error instanceof Error) {
           logger.log("Connection error:", error);
           capture.error(error);
         } else {
           logger.log("Connection terminated by client");
         }
-      }, logger)
+      })
     );
   });
 
@@ -116,8 +132,14 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
 
 async function main() {
   const logger = out("MLLP Server");
-  const server = await createHl7Server(logger);
-  server.start(MLLP_DEFAULT_PORT);
+  try {
+    const server = await createHl7Server(logger);
+    server.start(MLLP_DEFAULT_PORT);
+  } catch (error) {
+    logger.log("Error starting MLLP server", error);
+    capture.error(error);
+    process.exit(1);
+  }
 }
 
 main();

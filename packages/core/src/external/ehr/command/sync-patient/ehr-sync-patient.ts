@@ -7,6 +7,7 @@ export type ProcessSyncPatientRequest = {
   departmentId?: string;
   patientId: string;
   triggerDq: boolean;
+  isAppointment?: boolean;
 };
 
 export interface EhrSyncPatientHandler {

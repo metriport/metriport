@@ -1,8 +1,9 @@
+import { Bundle } from "@medplum/fhirtypes";
 import { Patient } from "@metriport/shared/domain/patient";
-import { FacilityData } from "@metriport/shared/domain/customer";
+import { FacilityData, OrganizationData } from "@metriport/shared/domain/customer";
 import { SftpConfig } from "../sftp/types";
 
-export type SurescriptsGender = "M" | "F" | "N" | "U";
+export type SurescriptsGender = "M" | "F" | "U";
 
 export enum SurescriptsEnvironment {
   Production = "P",
@@ -28,8 +29,11 @@ export interface SurescriptsFileIdentifier {
   populationId: string;
 }
 
+export type SurescriptsJob = SurescriptsRequester & SurescriptsFileIdentifier;
+
 export interface SurescriptsRequesterData {
   cxId: string;
+  org: OrganizationData;
   facility: FacilityData;
 }
 
@@ -47,4 +51,10 @@ export interface SurescriptsBatchRequest extends SurescriptsRequester {
 
 export interface SurescriptsBatchRequestData extends SurescriptsRequesterData {
   patients: Patient[];
+}
+
+export interface SurescriptsConversionBundle {
+  cxId: string;
+  patientId: string;
+  bundle: Bundle;
 }

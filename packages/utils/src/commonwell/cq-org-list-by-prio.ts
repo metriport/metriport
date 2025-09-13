@@ -1,4 +1,4 @@
-import { OrgPrio } from "@metriport/core/external/commonwell/cq-bridge/get-orgs";
+import { OrgPrio } from "@metriport/core/external/commonwell-v1/cq-bridge/get-orgs";
 
 export const priorityOrgs: Record<Exclude<OrgPrio, "low">, string[]> = {
   high: [

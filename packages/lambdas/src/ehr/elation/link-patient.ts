@@ -1,7 +1,6 @@
 import { ProcessLinkPatientRequest } from "@metriport/core/external/ehr/elation/command/link-patient/elation-link-patient";
 import { ElationLinkPatientLocal } from "@metriport/core/external/ehr/elation/command/link-patient/elation-link-patient-local";
-import { MetriportError } from "@metriport/shared";
-import * as Sentry from "@sentry/serverless";
+import { getEnvAsIntOrFail, MetriportError } from "@metriport/shared";
 import { SQSEvent } from "aws-lambda";
 import { capture } from "../../shared/capture";
 import { parseLinkPatient } from "../../shared/ehr";
@@ -15,18 +14,14 @@ capture.init();
 // Automatically set by AWS
 const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
 // Set by us
-const waitTimeInMillisRaw = getEnvOrFail("WAIT_TIME_IN_MILLIS");
-const waitTimeInMillis = parseInt(waitTimeInMillisRaw);
+const waitTimeInMillis = getEnvAsIntOrFail("WAIT_TIME_IN_MILLIS");
 
-// TODO move to capture.wrapHandler()
-export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
+export const handler = capture.wrapHandler(async (event: SQSEvent) => {
   capture.setExtra({ event, context: lambdaName });
 
-  const startedAt = new Date().getTime();
   const message = getSingleMessageOrFail(event.Records, lambdaName);
   if (!message) return;
 
-  console.log(`Running with unparsed body: ${message.body}`);
   const parsedBody = parseBody(message.body);
   const { cxId, practiceId, patientId } = parsedBody;
 
@@ -35,9 +30,6 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
 
   const elationLinkPatientHandler = new ElationLinkPatientLocal(waitTimeInMillis);
   await elationLinkPatientHandler.processLinkPatient(parsedBody);
-
-  const finishedAt = new Date().getTime();
-  log(`Done local duration: ${finishedAt - startedAt}ms`);
 });
 
 function parseBody(body?: unknown): ProcessLinkPatientRequest {

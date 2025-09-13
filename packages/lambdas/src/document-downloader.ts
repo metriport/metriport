@@ -1,14 +1,16 @@
 import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
+import { APIMode, CommonWell } from "@metriport/commonwell-sdk";
+import { FeatureFlags } from "@metriport/core/command/feature-flags/ffs-on-dynamodb";
+import { DocumentDownloaderLocalV2 } from "@metriport/core/external/commonwell-v2/document/document-downloader-local-v2";
 import {
-  APIMode,
-  CommonWell,
-  CommonWellAPI,
-  organizationQueryMeta,
-} from "@metriport/commonwell-sdk";
-import { addOidPrefix } from "@metriport/core/domain/oid";
-import { DownloadResult } from "@metriport/core/external/commonwell/document/document-downloader";
-import { DocumentDownloaderLambdaRequest } from "@metriport/core/external/commonwell/document/document-downloader-lambda";
-import { DocumentDownloaderLocal } from "@metriport/core/external/commonwell/document/document-downloader-local";
+  Document,
+  DownloadResult,
+  FileInfo,
+} from "@metriport/core/external/commonwell/document/document-downloader";
+import {
+  DocumentDownloaderLambdaRequest,
+  DocumentDownloaderLambdaRequestV1,
+} from "@metriport/core/external/commonwell/document/document-downloader-lambda";
 import { getEnvType } from "@metriport/core/util/env-var";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -29,62 +31,77 @@ const region = getEnvOrFail("AWS_REGION");
 const bucketName = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
 const cwOrgCertificateSecret = getEnvOrFail("CW_ORG_CERTIFICATE");
 const cwOrgPrivateKeySecret = getEnvOrFail("CW_ORG_PRIVATE_KEY");
+const featureFlagsTableName = getEnvOrFail("FEATURE_FLAGS_TABLE_NAME");
 
 const apiMode = isProduction() ? APIMode.production : APIMode.integration;
 
+FeatureFlags.init(region, featureFlagsTableName);
+
 export const handler = capture.wrapHandler(
-  async (req: DocumentDownloaderLambdaRequest): Promise<DownloadResult> => {
-    const { orgName, orgOid, npi, cxId, fileInfo, document } = req;
+  async (
+    req: DocumentDownloaderLambdaRequest | DocumentDownloaderLambdaRequestV1
+  ): Promise<DownloadResult> => {
+    // TODO ENG-923 revert to the full deconstruction and remove the 'if' statement
+    const { orgName, orgOid, npi, cxId } = req;
+    // const { orgName, orgOid, npi, cxId, sourceDocument, destinationFileInfo } = req;
+    let sourceDocument: Document;
+    let destinationFileInfo: FileInfo;
+    if ("document" in req) {
+      const { document, fileInfo } = req;
+      sourceDocument = document;
+      destinationFileInfo = fileInfo;
+    } else {
+      const { sourceDocument: document, destinationFileInfo: fileInfo } = req;
+      sourceDocument = document;
+      destinationFileInfo = fileInfo;
+    }
     capture.setUser({ id: cxId });
     capture.setExtra({ lambdaName, cxId, orgOid });
     console.log(
       `Running with envType: ${getEnvType()}, apiMode: ${apiMode}, region: ${region}, ` +
         `bucketName: ${bucketName}, orgName: ${orgName}, orgOid: ${orgOid}, ` +
-        `npi: ${npi}, cxId: ${cxId}, fileInfo: ${JSON.stringify(fileInfo)}, ` +
-        `document: ${JSON.stringify(document)}`
+        `npi: ${npi}, cxId: ${cxId}, destinationFileInfo: ${JSON.stringify(
+          destinationFileInfo
+        )}, ` +
+        `sourceDocument: ${JSON.stringify(sourceDocument)}`
     );
 
-    const cwOrgCertificate: string = (await getSecret(cwOrgCertificateSecret)) as string;
+    const [cwOrgCertificate, cwOrgPrivateKey] = await Promise.all([
+      getSecret(cwOrgCertificateSecret) as Promise<string>,
+      getSecret(cwOrgPrivateKeySecret) as Promise<string>,
+    ]);
+
     if (!cwOrgCertificate) {
       throw new Error(`Config error - CW_ORG_CERTIFICATE doesn't exist`);
     }
-
-    const cwOrgPrivateKey: string = (await getSecret(cwOrgPrivateKeySecret)) as string;
     if (!cwOrgPrivateKey) {
       throw new Error(`Config error - CW_ORG_PRIVATE_KEY doesn't exist`);
     }
 
-    const commonWell = makeCommonWellAPI(
-      cwOrgCertificate,
-      cwOrgPrivateKey,
+    const commonWell = new CommonWell({
+      orgCert: cwOrgCertificate,
+      rsaPrivateKey: cwOrgPrivateKey,
       orgName,
-      addOidPrefix(orgOid)
-    );
-    const queryMeta = organizationQueryMeta(orgName, { npi: npi });
+      oid: orgOid,
+      homeCommunityId: orgOid,
+      npi,
+      apiMode,
+      options: { timeout: timeout.asMilliseconds() },
+    });
 
-    const docDownloader = new DocumentDownloaderLocal({
+    const docDownloader = new DocumentDownloaderLocalV2({
       region,
       bucketName,
-      commonWell: {
-        api: commonWell,
-        queryMeta,
-      },
+      commonWell: { api: commonWell },
       capture,
     });
-    const result = await docDownloader.download({ document, fileInfo });
+    const result = await docDownloader.download({
+      cxId,
+      sourceDocument,
+      destinationFileInfo,
+    });
 
     console.log(`Done - ${JSON.stringify(result)}`);
     return result;
   }
 );
-
-export function makeCommonWellAPI(
-  cwOrgCertificate: string,
-  cwOrgKey: string,
-  orgName: string,
-  orgOID: string
-): CommonWellAPI {
-  return new CommonWell(cwOrgCertificate, cwOrgKey, orgName, orgOID, apiMode, {
-    timeout: timeout.asMilliseconds(),
-  });
-}

@@ -1,3 +1,4 @@
+import { errorToString } from "@metriport/shared";
 import { Client } from "@opensearch-project/opensearch";
 import { contentFieldName, OpenSearchConfigDirectAccess, OpenSearchResponse } from "..";
 import { out } from "../../../util";
@@ -20,49 +21,56 @@ export class OpenSearchFileSearcherDirect implements OpenSearchFileSearcher {
 
     const auth = { username, password };
     const client = new Client({ node: endpoint, auth });
-
-    debug(`Searching on index ${indexName}...`);
-    const actualQuery = cleanupQuery(query);
-    const queryPayload = {
-      size: MAX_DOCS_TO_RETURN,
-      query: {
-        bool: {
-          must: [
-            ...(actualQuery && actualQuery.length > 0
-              ? [
-                  {
-                    // https://docs.opensearch.org/docs/latest/query-dsl/full-text/simple-query-string/
-                    simple_query_string: {
-                      query: actualQuery,
-                      fields: ["content"],
-                      analyze_wildcard: true,
+    try {
+      debug(`Searching on index ${indexName}...`);
+      const actualQuery = cleanupQuery(query);
+      const queryPayload = {
+        size: MAX_DOCS_TO_RETURN,
+        query: {
+          bool: {
+            must: [
+              ...(actualQuery && actualQuery.length > 0
+                ? [
+                    {
+                      // https://docs.opensearch.org/docs/latest/query-dsl/full-text/simple-query-string/
+                      simple_query_string: {
+                        query: actualQuery,
+                        fields: ["content"],
+                        analyze_wildcard: true,
+                      },
                     },
-                  },
-                ]
-              : []),
-            { match: { cxId } },
-            { match: { patientId } },
-          ],
-        },
-      },
-    };
-    const response = (
-      await client.search(
-        {
-          index: indexName,
-          body: queryPayload,
-        },
-        {
-          querystring: {
-            // removes the "content" from the response
-            filter_path: `-hits.hits._source.${contentFieldName}`,
+                  ]
+                : []),
+              { match: { cxId } },
+              { match: { patientId } },
+            ],
           },
-        }
-      )
-    ).body as OpenSearchResponse<SearchResult>;
-    debug(`Successfully searched, response: `, () => JSON.stringify(response));
+        },
+      };
+      const response = (
+        await client.search(
+          {
+            index: indexName,
+            body: queryPayload,
+          },
+          {
+            querystring: {
+              // removes the "content" from the response
+              filter_path: `-hits.hits._source.${contentFieldName}`,
+            },
+          }
+        )
+      ).body as OpenSearchResponse<SearchResult>;
+      debug(`Successfully searched, response: `, () => JSON.stringify(response));
 
-    return this.mapResult(response);
+      return this.mapResult(response);
+    } finally {
+      try {
+        await client.close();
+      } catch (error) {
+        debug(`Error closing OS client: ${errorToString(error)}`);
+      }
+    }
   }
 
   private mapResult(input: OpenSearchResponse<SearchResult>): SearchResult[] {

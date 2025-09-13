@@ -3,7 +3,8 @@ import { SQSEvent } from "aws-lambda";
 import { z } from "zod";
 import { capture } from "../shared/capture";
 import { getEnvOrFail } from "../shared/env";
-import { getSingleMessageOrFail, parseBody } from "../shared/sqs";
+import { parseBody } from "../shared/parse-body";
+import { getSingleMessageOrFail } from "../shared/sqs";
 import { makeSurescriptsClient } from "./shared";
 
 capture.init();
@@ -23,6 +24,8 @@ export const handler = capture.wrapHandler(async (event: SQSEvent) => {
 });
 
 const surescriptsReceiveResponseSchema = z.object({
+  cxId: z.string(),
+  facilityId: z.string(),
   transmissionId: z.string(),
   populationId: z.string(),
 });

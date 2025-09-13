@@ -1,6 +1,7 @@
 import { S3Utils } from "../../external/aws/s3";
 import { Config } from "../../util/config";
 
+export const patientImportContext = "PatientImport";
 const globalPrefix = "patient-import";
 const region = Config.getAWSRegion();
 

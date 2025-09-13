@@ -1,7 +1,7 @@
-import { buildElationLinkPatientHandler } from "@metriport/core/external/ehr/elation/command/link-patient/elation-link-patient-factory";
 import { AppointmentMethods } from "@metriport/core/external/ehr/command/get-appointments/ehr-get-appointments";
 import { buildEhrGetAppointmentsHandler } from "@metriport/core/external/ehr/command/get-appointments/ehr-get-appointments-factory";
 import { buildEhrSyncPatientHandler } from "@metriport/core/external/ehr/command/sync-patient/ehr-sync-patient-factory";
+import { buildElationLinkPatientHandler } from "@metriport/core/external/ehr/elation/command/link-patient/elation-link-patient-factory";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
@@ -18,13 +18,12 @@ import { uniqBy } from "lodash";
 import { getCxMappingsBySource } from "../../../../command/mapping/cx";
 import {
   Appointment,
-  delayBetweenPatientBatches,
-  delayBetweenPracticeBatches,
   getLookForwardTimeRange,
+  maxJitterPatientBatches,
+  maxJitterPracticeBatches,
   parallelPatients,
   parallelPractices,
 } from "../../shared/utils/appointment";
-import { createElationClientWithTokenIdAndEnvironment } from "../shared";
 import {
   CreateOrUpdateElationPatientMetadataParams,
   SyncElationPatientIntoMetriportParams,
@@ -85,7 +84,7 @@ export async function processPatientsFromAppointments(): Promise<void> {
     },
     {
       numberOfParallelExecutions: parallelPractices,
-      delay: delayBetweenPracticeBatches.asMilliseconds(),
+      maxJitterMillis: maxJitterPracticeBatches.asMilliseconds(),
     }
   );
 
@@ -118,7 +117,7 @@ export async function processPatientsFromAppointments(): Promise<void> {
 
   await executeAsynchronously(linkPatientArgs, linkPatient, {
     numberOfParallelExecutions: parallelPatients,
-    delay: delayBetweenPatientBatches.asMilliseconds(),
+    maxJitterMillis: maxJitterPatientBatches.asMilliseconds(),
   });
 
   const syncPatientsArgs: SyncElationPatientIntoMetriportParams[] = linkPatientArgs.flatMap(
@@ -137,7 +136,7 @@ export async function processPatientsFromAppointments(): Promise<void> {
 
   await executeAsynchronously(syncPatientsArgs, syncPatient, {
     numberOfParallelExecutions: parallelPatients,
-    delay: delayBetweenPatientBatches.asMilliseconds(),
+    maxJitterMillis: maxJitterPatientBatches.asMilliseconds(),
   });
 }
 
@@ -146,10 +145,6 @@ async function getAppointments({
   practiceId,
 }: GetAppointmentsParams): Promise<{ appointments?: Appointment[]; error?: unknown }> {
   const { log } = out(`Elation getAppointments - cxId ${cxId} practiceId ${practiceId}`);
-  const { tokenId } = await createElationClientWithTokenIdAndEnvironment({
-    cxId,
-    practiceId,
-  });
   const { startRange, endRange } = getLookForwardTimeRange({
     lookForward: appointmentsLookForward,
   });
@@ -158,7 +153,6 @@ async function getAppointments({
     const handler = buildEhrGetAppointmentsHandler();
     const appointments = await handler.getAppointments<BookedAppointment>({
       method: AppointmentMethods.elationGetAppointments,
-      tokenId,
       cxId,
       practiceId,
       fromDate: startRange,
@@ -201,5 +195,6 @@ async function syncPatient({
     practiceId: elationPracticeId,
     patientId: elationPatientId,
     triggerDq: true,
+    isAppointment: true,
   });
 }

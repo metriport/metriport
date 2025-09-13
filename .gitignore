@@ -38,4 +38,4 @@ runs
 .env*
 
 *.out
-delay-time-in-seconds.txt
+delay-time*.txt

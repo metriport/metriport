@@ -1,0 +1,52 @@
+import { errorToString, executeWithNetworkRetries, MetriportError } from "@metriport/shared";
+import axios from "axios";
+import { Config } from "../../../../util/config";
+import { out } from "../../../../util/log";
+import { validateAndLogResponse } from "../../api/api-shared";
+
+export type UpdateAthenaPatientSecondaryMappingDepartmentIdParams = {
+  cxId: string;
+  patientId: string;
+  departmentId: string;
+};
+
+/**
+ * Updates the department ID in the secondary mappings for an AthenaHealth patient mapping
+ * by calling the internal API route.
+ *
+ * @param cxId - The CX ID.
+ * @param patientId - The AthenaHealth patient ID.
+ * @param departmentId - The AthenaHealth department ID.
+ */
+export async function updateAthenaPatientSecondaryMappingDepartmentId({
+  cxId,
+  patientId,
+  departmentId,
+}: UpdateAthenaPatientSecondaryMappingDepartmentIdParams): Promise<void> {
+  const { log, debug } = out(
+    `Athena updateAthenaPatientSecondaryMappingDepartmentId - cxId ${cxId} patientId ${patientId} departmentId ${departmentId}`
+  );
+  const api = axios.create({ baseURL: Config.getApiUrl() });
+  const params = new URLSearchParams({
+    cxId,
+    patientId,
+    departmentId,
+  });
+  const url = `/internal/ehr/athenahealth/patient/secondary-mappings/department-id?${params.toString()}`;
+  try {
+    const response = await executeWithNetworkRetries(async () => {
+      return api.post(url);
+    });
+    validateAndLogResponse(url, response, debug);
+  } catch (error) {
+    const msg = "Failure while updating AthenaHealth patient secondary mapping department ID @ Api";
+    log(`${msg}. Cause: ${errorToString(error)}`);
+    throw new MetriportError(msg, error, {
+      cxId,
+      patientId,
+      departmentId,
+      url,
+      context: `athenahealth.updateAthenaPatientSecondaryMappingDepartmentId`,
+    });
+  }
+}

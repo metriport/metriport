@@ -19,6 +19,7 @@ export function isEhrSourceWithClientCredentials(
 ): ehr is EhrSourceWithClientCredentials {
   return ehrSourcesWithClientCredentials.includes(ehr as EhrSourceWithClientCredentials);
 }
+
 export type EhrEnvAndClientCredentials<Env extends EhrEnv> = {
   environment: Env;
   clientKey: string;

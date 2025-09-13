@@ -1,8 +1,9 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
+import { MedicalDataSource } from "@metriport/core/external";
 import { Config } from "@metriport/core/util/config";
-import { sleep } from "@metriport/shared";
+import { BadRequestError, sleep } from "@metriport/shared";
 import { v4 as uuidv4 } from "uuid";
 import { convertCDAToFHIR } from "../../../../api/src/external/fhir-converter/converter";
 import { elapsedTimeAsStr } from "../../shared/duration";
@@ -23,6 +24,7 @@ import { elapsedTimeAsStr } from "../../shared/duration";
 
 const cxId = "";
 const patientId = "";
+const sourceParam = ""; // see MedicalDataSource
 const fileNames: string[] = [];
 const bucket = Config.getMedicalDocumentsBucketName();
 
@@ -31,12 +33,18 @@ async function main() {
   const startedAt = Date.now();
   console.log(`############## Started at ${new Date(startedAt).toISOString()} ##############`);
 
+  if (!["COMMONWELL", "CAREQUALITY"].includes(sourceParam)) {
+    throw new BadRequestError("Invalid source");
+  }
+  const source = sourceParam as MedicalDataSource;
+
   console.log(`Converting ${fileNames.length} files...`);
 
   for (const key of fileNames) {
     await convertCDAToFHIR({
       patient: { cxId, id: patientId },
       document: { id: uuidv4() },
+      source,
       s3FileName: key,
       s3BucketName: bucket,
       requestId: uuidv4(),

@@ -10,6 +10,7 @@ import {
   buildBundleEntry,
   getReferencesFromResources,
   ReferenceWithIdAndType,
+  replaceBundleEntries,
 } from "../../external/fhir/bundle/bundle";
 import { out } from "../../util";
 import { createConsolidatedFromConversions } from "./consolidated-create";
@@ -120,11 +121,7 @@ export function addMissingReferences(
   const resourcesToAdd = getResourcesFromBundle(missingReferences, originalBundle);
 
   const newEntries = [...(filteredBundle.entry ?? []), ...resourcesToAdd.map(buildBundleEntry)];
-  const resultBundle = {
-    ...filteredBundle,
-    total: newEntries.length,
-    entry: newEntries,
-  };
+  const resultBundle = replaceBundleEntries(filteredBundle, newEntries);
 
   const { missingReferences: missingRefsFromAddedResources } = getReferencesFromResources({
     resourcesToCheckRefs: resourcesToAdd,
@@ -145,9 +142,13 @@ function getResourcesFromBundle(
   references: ReferenceWithIdAndType[],
   originalBundle: Bundle<Resource>
 ): Resource[] {
+  const bundleResourceIndex = new Map(
+    originalBundle.entry?.map(e => [e.resource?.id, e.resource]) ?? []
+  );
+
   const resourcesToAdd: Resource[] = [];
   for (const missingRef of references) {
-    const resource = originalBundle.entry?.find(e => e.resource?.id === missingRef.id)?.resource;
+    const resource = bundleResourceIndex.get(missingRef.id);
     if (resource) resourcesToAdd.push(resource);
   }
   return resourcesToAdd;

@@ -4,6 +4,8 @@ import {
   Bundle,
   Coding,
   Condition,
+  DiagnosticReport,
+  Extension,
   Immunization,
   Medication,
   MedicationAdministration,
@@ -25,20 +27,34 @@ import {
 } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import {
-  EhrFhirResource,
   EhrFhirResourceBundle,
+  EhrStrictFhirResource,
   EhrStrictFhirResourceBundle,
   createBundleFromResourceList,
+  ehrFhirResourceBundleSchema,
   ehrStrictFhirResourceBundleSchema,
+  ehrStrictFhirResourceSchema,
   fhirOperationOutcomeSchema,
 } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { EhrSource } from "@metriport/shared/interface/external/ehr/source";
-import { AxiosError, AxiosInstance, AxiosResponse, isAxiosError } from "axios";
+import {
+  AxiosError,
+  AxiosInstance,
+  AxiosResponse,
+  AxiosResponseHeaders,
+  isAxiosError,
+} from "axios";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
+import { partition, uniqBy } from "lodash";
 import { z } from "zod";
 import { createHivePartitionFilePath } from "../../domain/filename";
-import { fetchCodingCodeOrDisplayOrSystem } from "../../fhir-deduplication/shared";
+import {
+  UNKNOWN_DISPLAY,
+  UNK_CODE,
+  fetchCodingCodeOrDisplayOrSystem,
+} from "../../fhir-deduplication/shared";
+import { executeAsynchronously } from "../../util/concurrency";
 import { Config } from "../../util/config";
 import {
   CPT_CODE,
@@ -49,8 +65,10 @@ import {
   SNOMED_CODE,
 } from "../../util/constants";
 import { out } from "../../util/log";
+import { capture } from "../../util/notifications";
 import { uuidv7 } from "../../util/uuid-v7";
 import { S3Utils } from "../aws/s3";
+import { CONDITION_RELATED_URL } from "../fhir/shared/extensions/chronicity-extension";
 import { BundleType } from "./bundle/bundle-shared";
 import { createOrReplaceBundle } from "./bundle/command/create-or-replace-bundle";
 import { FetchBundleParams, fetchBundle } from "./bundle/command/fetch-bundle";
@@ -59,15 +77,12 @@ dayjs.extend(duration);
 
 const MAX_AGE = dayjs.duration(24, "hours");
 
-const region = Config.getAWSRegion();
-const responsesBucket = Config.getEhrResponsesBucketName();
-
 export const paginateWaitTime = dayjs.duration(1, "seconds");
 
 const fhirValidationPrefix = "1 validation error for";
 
 function getS3UtilsInstance(): S3Utils {
-  return new S3Utils(region);
+  return new S3Utils(Config.getAWSRegion());
 }
 
 export interface ApiConfig {
@@ -110,6 +125,8 @@ export type MakeRequestParams<T> = {
   additionalInfo: AdditionalInfo;
   debug: typeof console.log;
   emptyResponse?: boolean;
+  earlyReturn?: boolean;
+  responseHeadersToKeep?: string[];
 };
 
 export type MakeRequestParamsInEhr<T> = Omit<
@@ -132,10 +149,13 @@ export async function makeRequest<T>({
   additionalInfo,
   debug,
   emptyResponse = false,
+  earlyReturn = false,
+  responseHeadersToKeep = [],
 }: MakeRequestParams<T>): Promise<T> {
   const { log } = out(
     `${ehr} makeRequest - cxId ${cxId} patientId ${patientId} method ${method} url ${url}`
   );
+  const responsesBucket = Config.getEhrResponsesBucketName();
   const isJsonContentType =
     headers?.["content-type"] === "application/json" ||
     headers?.["Content-Type"] === "application/json";
@@ -148,6 +168,36 @@ export async function makeRequest<T>({
     url,
     context: `${ehr}.make-request`,
   };
+  const formattedData =
+    method === "GET" ? undefined : isJsonContentType ? data : createDataParams(data ?? {});
+  if (formattedData && responsesBucket) {
+    const filePath = createHivePartitionFilePath({
+      cxId,
+      patientId: patientId ?? "global",
+      date: new Date(),
+    });
+    const key = buildS3Path(ehr, s3Path, `${filePath}/request`);
+    const s3Utils = getS3UtilsInstance();
+    try {
+      await s3Utils.uploadFile({
+        bucket: responsesBucket,
+        key,
+        file: Buffer.from(JSON.stringify({ method, url, data: formattedData }), "utf8"),
+        contentType: "application/json",
+      });
+    } catch (error) {
+      log(`Error saving request to s3 @ ${ehr} - ${method} ${url}. Cause: ${errorToString(error)}`);
+    }
+  }
+  if (earlyReturn) {
+    const outcome = schema.safeParse(undefined);
+    if (!outcome.success) {
+      const msg = `Response not parsed @ ${ehr}`;
+      log(msg);
+      throw new MetriportError(msg, undefined, fullAdditionalInfo);
+    }
+    return outcome.data;
+  }
   let response: AxiosResponse;
   try {
     response = await executeWithRetries(
@@ -155,8 +205,7 @@ export async function makeRequest<T>({
         axiosInstance.request({
           method,
           ...(url !== "" ? { url } : {}),
-          data:
-            method === "GET" ? undefined : isJsonContentType ? data : createDataParams(data ?? {}),
+          data: formattedData,
           headers: {
             ...axiosInstance.defaults.headers.common,
             ...headers,
@@ -196,14 +245,23 @@ export async function makeRequest<T>({
           );
         }
       }
-      const fullAdditionalInfoWithError = { ...fullAdditionalInfo, error: errorToString(error) };
+      const fullAdditionalInfoWithError = {
+        ...fullAdditionalInfo,
+        error: errorToString(error),
+        headers: headersToKeepString(
+          error.response?.headers as AxiosResponseHeaders,
+          responseHeadersToKeep
+        ),
+      };
       switch (error.response?.status) {
         case 400:
           throw new BadRequestError(message, error, fullAdditionalInfoWithError);
         case 404:
           throw new NotFoundError(message, error, fullAdditionalInfoWithError);
+        case 422:
+          throw new BadRequestError(message, error, fullAdditionalInfoWithError);
         default:
-          if (isFhirValidationError(error)) {
+          if (method === "GET" && isFhirValidationError(error)) {
             throw new NotFoundError(message, error, fullAdditionalInfoWithError);
           }
           throw new MetriportError(message, error, fullAdditionalInfoWithError);
@@ -239,7 +297,16 @@ export async function makeRequest<T>({
       await s3Utils.uploadFile({
         bucket: responsesBucket,
         key,
-        file: Buffer.from(JSON.stringify(response.data), "utf8"),
+        file: Buffer.from(
+          JSON.stringify({
+            data: response.data,
+            headers: headersToKeepString(
+              response.headers as AxiosResponseHeaders,
+              responseHeadersToKeep
+            ),
+          }),
+          "utf8"
+        ),
         contentType: "application/json",
       });
     } catch (error) {
@@ -259,6 +326,24 @@ export async function makeRequest<T>({
     });
   }
   return outcome.data;
+}
+
+function headersToKeepString(
+  responseHeaders: AxiosResponseHeaders | undefined,
+  headersToKeep: string[]
+): string | undefined {
+  const headers =
+    headersToKeep.length > 0 && responseHeaders
+      ? headersToKeep.reduce((acc, header) => {
+          const value = responseHeaders.get(header) || responseHeaders.get(header.toLowerCase());
+          if (value) acc[header] = value.toString();
+          return acc;
+        }, {} as Record<string, string>)
+      : undefined;
+  if (!headers || Object.keys(headers).length < 1) return undefined;
+  return Object.entries(headers)
+    .map(([key, value]) => `${key}: ${value}`)
+    .join(", ");
 }
 
 function isFhirValidationError(error: AxiosError): boolean {
@@ -291,6 +376,26 @@ export function isNotRetriableAxiosError(error: unknown): boolean {
   );
 }
 
+export type CreatePrefixParams = {
+  ehr: EhrSource;
+  cxId: string;
+  metriportPatientId: string;
+  ehrPatientId: string;
+  resourceType: string;
+  jobId?: string | undefined;
+};
+
+export function createPrefix(
+  prefix: string,
+  params: Omit<CreatePrefixParams, "resourceId">
+): string {
+  return `${prefix}/ehr=${params.ehr}/cxid=${params.cxId}/metriportpatientid=${
+    params.metriportPatientId
+  }/ehrpatientid=${params.ehrPatientId}/resourcetype=${params.resourceType}/jobId=${
+    params.jobId ?? "latest"
+  }`;
+}
+
 // TYPES FROM DASHBOARD
 export type MedicationWithRefs = {
   medication: Medication;
@@ -299,9 +404,33 @@ export type MedicationWithRefs = {
   statement: MedicationStatement[];
 };
 
+export function createMedicationWithRefs(
+  medication: Medication,
+  statement: MedicationStatement[]
+): MedicationWithRefs {
+  return {
+    medication,
+    statement,
+    administration: [],
+    dispense: [],
+  };
+}
+
 export type GroupedVitals = {
   mostRecentObservation: Observation;
   sortedPoints?: DataPoint[];
+  title?: string;
+};
+
+export type GroupedVitalsByDate = [Date, Observation[]];
+
+export type GroupedObservation = {
+  rawVital: Observation;
+  grouping?: string;
+  observation: number;
+  unit?: string | undefined;
+  date: string;
+  bp?: BloodPressure | undefined;
 };
 
 export type BloodPressure = {
@@ -312,9 +441,124 @@ export type BloodPressure = {
 export type DataPoint = {
   value: number;
   date: string;
-  unit?: string;
+  unit?: string | undefined;
   bp?: BloodPressure | undefined;
 };
+
+// METHODS FROM DASHBOARD
+export function getValidCode(coding: Coding[] | undefined): Coding[] {
+  if (!coding) return [];
+
+  return coding.filter(coding => {
+    return (
+      coding.code &&
+      coding.code.toLowerCase().trim() !== UNK_CODE.toLowerCase() &&
+      coding.display &&
+      coding.display.toLowerCase().trim() !== UNKNOWN_DISPLAY
+    );
+  });
+}
+
+const BLOOD_PRESSURE_TITLE = "Blood Pressure";
+export function handleTitleSpecialCases(
+  title: string,
+  observationPoint: GroupedObservation
+): string {
+  let updatedTitle = title;
+  if (
+    title.toLowerCase().includes("blood pressure") ||
+    title.toLowerCase().includes("bp sys") ||
+    title.toLowerCase().includes("bp dias")
+  ) {
+    observationPoint.grouping = title;
+    updatedTitle = BLOOD_PRESSURE_TITLE;
+  }
+
+  if (title.toLowerCase().includes("bmi")) {
+    updatedTitle = "Body Mass Index (BMI)";
+  }
+
+  return updatedTitle;
+}
+
+export function handleBloodPressureMapping(obsMap: Map<string, GroupedObservation[]>) {
+  const bloodPressure = obsMap.get(BLOOD_PRESSURE_TITLE);
+  if (!bloodPressure) return;
+
+  const groupedBloodPressure: GroupedObservation[] = [];
+
+  const systolicMap = new Map<string, number>();
+  const diastolicMap = new Map<string, number>();
+
+  bloodPressure.forEach(bp => {
+    if (bp.grouping?.toLowerCase().includes("systolic")) {
+      systolicMap.set(bp.date, bp.observation);
+    } else if (bp.grouping?.toLowerCase().includes("diastolic")) {
+      diastolicMap.set(bp.date, bp.observation);
+    }
+  });
+
+  bloodPressure.forEach(bp => {
+    if (bp.grouping?.toLowerCase().includes("systolic")) {
+      const diastolicValue = diastolicMap.get(bp.date);
+      if (diastolicValue !== undefined) {
+        groupedBloodPressure.push({
+          ...bp,
+          bp: {
+            systolic: bp.observation,
+            diastolic: diastolicValue,
+          },
+        });
+      }
+    } else if (bp.grouping?.toLowerCase().includes("diastolic")) {
+      const systolicValue = systolicMap.get(bp.date);
+      if (systolicValue !== undefined) {
+        if (
+          !groupedBloodPressure.some(
+            gbp => gbp.date === bp.date && gbp.bp?.diastolic === bp.observation
+          )
+        ) {
+          groupedBloodPressure.push({
+            ...bp,
+            bp: {
+              systolic: systolicValue,
+              diastolic: bp.observation,
+            },
+          });
+        }
+      }
+    }
+  });
+
+  obsMap.set(BLOOD_PRESSURE_TITLE, groupedBloodPressure);
+}
+
+export function isVital(observation: Observation): boolean {
+  const isVital = observation.category?.find(
+    ext => ext.coding?.[0]?.code?.toLowerCase() === "vital-signs"
+  );
+  return isVital !== undefined;
+}
+
+export function isLab(observation: Observation): boolean {
+  const isLab = observation.category?.find(
+    ext => ext.coding?.[0]?.code?.toLowerCase() === "laboratory"
+  );
+  return isLab !== undefined;
+}
+
+export function isLabPanel(diagnosticReport: DiagnosticReport): boolean {
+  if (!diagnosticReport.result) return false;
+  return true;
+}
+
+export function isChronicCondition(condition?: Condition): boolean {
+  if (!condition) return false;
+  const chronicityExtension = condition.extension?.find(
+    (e: Extension) => e.url === CONDITION_RELATED_URL
+  );
+  return chronicityExtension?.valueCoding?.code === "C" ? true : false;
+}
 
 export function getMedicationRxnormCoding(medication: Medication): Coding | undefined {
   const code = medication.code;
@@ -324,6 +568,12 @@ export function getMedicationRxnormCoding(medication: Medication): Coding | unde
   });
   if (!rxnormCoding) return undefined;
   return rxnormCoding;
+}
+
+export function getMedicationRxnormCode(medication: Medication): string | undefined {
+  const rxnormCoding = getMedicationRxnormCoding(medication);
+  if (!rxnormCoding) return undefined;
+  return rxnormCoding.code;
 }
 
 export function getMedicationStatementStartDate(
@@ -340,6 +590,12 @@ export function getConditionIcd10Coding(condition: Condition): Coding | undefine
   });
   if (!icdCoding) return undefined;
   return icdCoding;
+}
+
+export function getConditionIcd10Code(condition: Condition): string | undefined {
+  const icd10Coding = getConditionIcd10Coding(condition);
+  if (!icd10Coding) return undefined;
+  return icd10Coding.code;
 }
 
 export function getConditionSnomedCoding(condition: Condition): Coding | undefined {
@@ -359,7 +615,7 @@ export function getConditionSnomedCode(condition: Condition): string | undefined
 }
 
 export function getConditionStartDate(condition: Condition): string | undefined {
-  return condition.onsetDateTime ?? condition.onsetPeriod?.start;
+  return condition.onsetDateTime ?? condition.onsetPeriod?.start ?? condition.onsetPeriod?.end;
 }
 
 const qualifierSuffix = "(qualifier value)";
@@ -391,6 +647,32 @@ export function getImmunizationCvxCode(immunization: Immunization): string | und
   return cvxCoding.code;
 }
 
+export function getDiagnosticReportLoincCoding(
+  diagnosticReport: DiagnosticReport
+): Coding | undefined {
+  const code = diagnosticReport.code;
+  const loincCoding = code?.coding?.find(coding => {
+    const system = fetchCodingCodeOrDisplayOrSystem(coding, "system");
+    return system?.includes(LOINC_CODE);
+  });
+  if (!loincCoding) return undefined;
+  return loincCoding;
+}
+
+export function getDiagnosticReportLoincCode(
+  diagnosticReport: DiagnosticReport
+): string | undefined {
+  const loincCoding = getDiagnosticReportLoincCoding(diagnosticReport);
+  if (!loincCoding) return undefined;
+  return loincCoding.code;
+}
+
+export function getDiagnosticReportResultStatus(
+  diagnosticReport: DiagnosticReport
+): string | undefined {
+  return diagnosticReport.status;
+}
+
 export function getImmunizationAdministerDate(immunization: Immunization): string | undefined {
   const administeredDate = immunization.occurrenceDateTime;
   if (administeredDate) return administeredDate;
@@ -401,7 +683,7 @@ export function getImmunizationAdministerDate(immunization: Immunization): strin
   return parsedDate.toISOString();
 }
 
-function getObservationUnit(observation: Observation): string | undefined {
+export function getObservationUnit(observation: Observation): string | undefined {
   const firstReference = observation.referenceRange?.[0];
   return (
     observation.valueQuantity?.unit?.toString() ??
@@ -411,7 +693,7 @@ function getObservationUnit(observation: Observation): string | undefined {
 }
 
 const blacklistedValues = ["see below", "see text", "see comments", "see note"];
-function getObservationValue(observation: Observation): number | string | undefined {
+export function getObservationValue(observation: Observation): number | string | undefined {
   let value: number | string | undefined;
   if (observation.valueQuantity) {
     value = observation.valueQuantity.value;
@@ -422,7 +704,6 @@ function getObservationValue(observation: Observation): number | string | undefi
     value = isNaN(parsedNumber) ? observation.valueString : parsedNumber;
     if (blacklistedValues.includes(value?.toString().toLowerCase().trim())) value = undefined;
   }
-  if (!value) return undefined;
   return value;
 }
 
@@ -432,7 +713,9 @@ type ReferenceRange = {
   unit: string | undefined;
   text?: string | undefined;
 };
-function buildObservationReferenceRange(observation: Observation): ReferenceRange | undefined {
+export function buildObservationReferenceRange(
+  observation: Observation
+): ReferenceRange | undefined {
   const firstReference = observation.referenceRange?.[0];
   if (!firstReference) return undefined;
   const range: ReferenceRange = {
@@ -470,6 +753,14 @@ function normalizeStringInterpretation(interpretation: string): string {
     return "normal";
   } else if (lowerInterp.includes("abnormal")) return "abnormal";
   return interpretation;
+}
+
+export function getDiagnosticReportDate(diagnosticReport: DiagnosticReport): string | undefined {
+  return (
+    diagnosticReport.effectiveDateTime ??
+    diagnosticReport.effectivePeriod?.start ??
+    diagnosticReport.effectivePeriod?.end
+  );
 }
 
 export function getObservationLoincCoding(observation: Observation): Coding | undefined {
@@ -510,9 +801,8 @@ export function getObservationReferenceRange(observation: Observation): string |
     return `<= ${range?.high} ${unit}`;
   } else if (range?.text && range?.text !== "unknown") {
     return range?.text;
-  } else {
-    return "-";
   }
+  return undefined;
 }
 
 export function getObservationResultStatus(observation: Observation): string | undefined {
@@ -522,7 +812,11 @@ export function getObservationResultStatus(observation: Observation): string | u
 }
 
 export function getObservationObservedDate(observation: Observation): string | undefined {
-  return observation.effectiveDateTime ?? observation.effectivePeriod?.start;
+  return (
+    observation.effectiveDateTime ??
+    observation.effectivePeriod?.start ??
+    observation.effectivePeriod?.end
+  );
 }
 
 export function getObservationInterpretation(
@@ -592,7 +886,11 @@ export function getAllergyIntoleranceManifestationSnomedCoding(
 export function getAllergyIntoleranceOnsetDate(
   allergyIntolerance: AllergyIntolerance
 ): string | undefined {
-  return allergyIntolerance.onsetDateTime ?? allergyIntolerance.onsetPeriod?.start;
+  return (
+    allergyIntolerance.onsetDateTime ??
+    allergyIntolerance.onsetPeriod?.start ??
+    allergyIntolerance.onsetPeriod?.end
+  );
 }
 
 export function getProcedureCptCoding(procedure: Procedure): Coding | undefined {
@@ -612,29 +910,48 @@ export function getProcedureCptCode(procedure: Procedure): string | undefined {
 }
 
 export function getProcedurePerformedDate(procedure: Procedure): string | undefined {
-  return procedure.performedDateTime ?? procedure.performedPeriod?.start;
+  return (
+    procedure.performedDateTime ??
+    procedure.performedPeriod?.start ??
+    procedure.performedPeriod?.end
+  );
 }
 
 type FetchEhrBundleParams = Omit<FetchBundleParams, "bundleType">;
 
+/**
+ * Fetches EHR bundle for the given resource type if it is younger than the max age,
+ * otherwise returns undefined.
+ *
+ * @param params - The parameters for the fetch bundle.
+ * @returns The bundle if it is younger than the max age, otherwise undefined.
+ */
 async function fetchEhrBundleIfYoungerThanMaxAge(
   params: Omit<FetchEhrBundleParams, "getLastModified">
 ): Promise<Bundle | undefined> {
+  const { log } = out(`fetchEhrBundleIfYoungerThanMaxAge - ${params.ehr} ${params.ehrPatientId}`);
   const bundle = await fetchBundle({
     ...params,
     bundleType: BundleType.EHR,
     getLastModified: true,
   });
-  if (!bundle || !bundle.lastModified) return undefined;
+  if (!bundle || !bundle.lastModified) {
+    log(`No bundle found or lastModified is undefined`);
+    return undefined;
+  }
   const age = dayjs.duration(buildDayjs().diff(bundle.lastModified));
-  if (age.asMilliseconds() > MAX_AGE.asMilliseconds()) return undefined;
+  if (age.asMilliseconds() > MAX_AGE.asMilliseconds()) {
+    log(`Bundle is older than max age, returning undefined`);
+    return undefined;
+  }
+  log(`Bundle is younger than max age, returning bundle`);
   return bundle.bundle;
 }
 
 /**
- * Fetches a bundle from the EHR for the given resource type.
- * Uses cached EHR bundle if available and requested. Refreshes the cache if the bundle
- * is fetched from the EHR.
+ * Fetches EHR bundle for the given resource type.
+ * Uses cached EHR bundle if available and requested.
+ * Refreshes the cache if the bundle is fetched from the EHR.
  *
  * @param ehr - The EHR source.
  * @param cxId - The CX ID.
@@ -650,7 +967,7 @@ export async function fetchEhrBundleUsingCache({
   useCachedBundle = true,
   ...params
 }: FetchEhrBundleParams & {
-  fetchResourcesFromEhr: () => Promise<EhrFhirResource[]>;
+  fetchResourcesFromEhr: () => Promise<EhrStrictFhirResource[]>;
   useCachedBundle?: boolean;
 }): Promise<Bundle> {
   if (useCachedBundle) {
@@ -668,7 +985,7 @@ export async function fetchEhrBundleUsingCache({
 }
 
 /**
- * Fetches FHIR resources from the EHR for the given resource type.
+ * Fetches FHIR resources via a FHIR API and returns them as list.
  * Pagination is handled automatically.
  *
  * @param makeRequest - The function that makes the request to the EHR FHIR endpoint.
@@ -681,19 +998,129 @@ export async function fetchEhrFhirResourcesWithPagination({
   url,
   acc = [],
 }: {
-  makeRequest: (url: string) => Promise<EhrStrictFhirResourceBundle>;
+  makeRequest: (url: string) => Promise<EhrStrictFhirResourceBundle | undefined>;
   url: string | undefined;
-  acc?: EhrFhirResource[] | undefined;
-}): Promise<EhrFhirResource[]> {
+  acc?: EhrStrictFhirResource[] | undefined;
+}): Promise<EhrStrictFhirResource[]> {
   if (!url) return acc;
   await sleep(paginateWaitTime.asMilliseconds());
   const fhirResourceBundle = await makeRequest(url);
+  if (!fhirResourceBundle) return acc;
   acc.push(...(fhirResourceBundle.entry ?? []).map(e => e.resource));
   const nextUrl = fhirResourceBundle.link?.find(l => l.relation === "next")?.url;
   return fetchEhrFhirResourcesWithPagination({ makeRequest, url: nextUrl, acc });
 }
 
-export function convertBundleToValidStrictBundle(
+/**
+ * Saves resources from a reference bundle to the S3 bucket along resource IDs.
+ *
+ * @param ehr - The EHR source.
+ * @param cxId - The CX ID.
+ * @param metriportPatientId - The Metriport ID.
+ * @param ehrPatientId - The EHR patient ID.
+ * @param referenceBundle - The reference bundle to save.
+ */
+export async function saveEhrReferenceBundle({
+  ehr,
+  cxId,
+  metriportPatientId,
+  ehrPatientId,
+  referenceBundle,
+}: {
+  ehr: EhrSource;
+  cxId: string;
+  metriportPatientId: string;
+  ehrPatientId: string;
+  referenceBundle: EhrFhirResourceBundle;
+}): Promise<void> {
+  const { log } = out(
+    `saveReferenceBundle - cxId ${cxId} metriportPatientId ${metriportPatientId} ehrPatientId ${ehrPatientId}`
+  );
+  if (!referenceBundle.entry || referenceBundle.entry.length < 1) return;
+  const resources: EhrStrictFhirResource[] = referenceBundle.entry.flatMap(e => {
+    const resource = e.resource;
+    if (!resource) return [];
+    const parsedResource = ehrStrictFhirResourceSchema.safeParse(resource);
+    if (!parsedResource.success) return [];
+    return parsedResource.data;
+  });
+  const saveReferenceBundleArgs = uniqBy(resources, "id");
+  const saveReferenceBundleErrors: { error: unknown; id: string; type: string }[] = [];
+  await executeAsynchronously(saveReferenceBundleArgs, async (params: EhrStrictFhirResource) => {
+    try {
+      await createOrReplaceBundle({
+        ehr,
+        cxId,
+        metriportPatientId,
+        ehrPatientId,
+        bundleType: BundleType.EHR,
+        bundle: createBundleFromResourceList([params as Resource]),
+        resourceType: params.resourceType,
+        resourceId: params.id,
+      });
+    } catch (error) {
+      log(`Failed to save reference bundle entry ${params.id}. Cause: ${errorToString(error)}`);
+      saveReferenceBundleErrors.push({ error, id: params.id, type: params.resourceType });
+    }
+  });
+  if (saveReferenceBundleErrors.length > 0) {
+    const msg = `Failure while saving some reference bundle entries @ ${ehr}`;
+    capture.message(msg, {
+      extra: {
+        saveReferenceBundleArgsCount: saveReferenceBundleArgs.length,
+        saveReferenceBundleErrorsCount: saveReferenceBundleErrors.length,
+        errors: saveReferenceBundleErrors,
+        context: `${ehr}.save-reference-bundle`,
+      },
+      level: "warning",
+    });
+  }
+}
+
+/**
+ * Partitions an EHR bundle into a target bundle and a reference bundle.
+ * The target bundle contains the resources of the given resource type.
+ * The reference bundle contains the resources of the other resource types.
+ *
+ * @param bundle - The bundle to partition.
+ * @param resourceType - The resource type of the target bundle.
+ * @returns The target bundle and the reference bundle.
+ */
+export function partitionEhrBundle({
+  bundle,
+  resourceType,
+}: {
+  bundle: EhrFhirResourceBundle;
+  resourceType: string;
+}): { targetBundle: EhrFhirResourceBundle; referenceBundle: EhrFhirResourceBundle } {
+  const [targetBundleEntries, referenceBundleEntries] = partition(
+    bundle.entry ?? [],
+    e => e.resource?.resourceType === resourceType
+  );
+  const targetBundle: EhrFhirResourceBundle = ehrFhirResourceBundleSchema.parse({
+    ...bundle,
+    entry: targetBundleEntries,
+  });
+  const referenceBundle: EhrFhirResourceBundle = ehrFhirResourceBundleSchema.parse({
+    ...bundle,
+    entry: referenceBundleEntries,
+  });
+  return { targetBundle, referenceBundle };
+}
+
+/**
+ * Converts a single-resource-type EHR bundle to a strict EHR bundle, where all resources have the
+ * id and resourceType fields. It also checks that the patient and subject references are the same as
+ * the patientId.
+ *
+ * @param bundle - The bundle to convert.
+ * @param resourceType - The resource type of the bundle.
+ * @param patientId - The patient ID of the bundle.
+ * @returns The strict EHR bundle.
+ * @throws BadRequestError if the bundle is invalid, contains multiple resource types, or contains
+ * a resource with a patient or subject reference that is not the same as the patientId.
+ */
+export function convertEhrBundleToValidEhrStrictBundle(
   bundle: EhrFhirResourceBundle,
   resourceType: string,
   patientId?: string

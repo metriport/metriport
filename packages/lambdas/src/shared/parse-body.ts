@@ -1,3 +1,6 @@
+import { MetriportError } from "@metriport/shared";
+import { z } from "zod";
+
 //eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function parseCxId(bodyAsJson: any): string {
   const cxIdRaw = bodyAsJson.cxId;
@@ -35,4 +38,15 @@ export function parseCxIdAndJob(bodyAsJson: any) {
   const cxIdRaw = parseCxId(bodyAsJson);
   const jobIdRaw = parseJobId(bodyAsJson);
   return { cxIdRaw, jobIdRaw };
+}
+
+export function parseBody<T>(schema: z.Schema<T>, body?: unknown): T {
+  if (!body) throw new MetriportError(`Missing message body`);
+
+  const bodyString = typeof body === "string" ? (body as string) : undefined;
+  if (!bodyString) throw new MetriportError(`Invalid body`);
+
+  const bodyAsJson = JSON.parse(bodyString);
+
+  return schema.parse(bodyAsJson);
 }

@@ -322,6 +322,7 @@ export class V7Generator {
 declare const UUIDV7_DENY_WEAK_RNG: boolean;
 
 /** Stores `crypto.getRandomValues()` available in the environment. */
+// eslint-disable-next-line @metriport/eslint-rules/no-named-arrow-functions
 let getRandomValues: <T extends Uint8Array | Uint32Array>(buffer: T) => T = buffer => {
   // fall back on Math.random() unless the flag is set to true
   if (typeof UUIDV7_DENY_WEAK_RNG !== "undefined" && UUIDV7_DENY_WEAK_RNG) {
@@ -365,11 +366,14 @@ let defaultGenerator: V7Generator | undefined;
  * @returns The 8-4-4-4-12 canonical hexadecimal string representation
  * ("xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx").
  */
-export const uuidv7 = (): string => uuidv7obj().toString();
+export function uuidv7(): string {
+  return uuidv7obj().toString();
+}
 
 /** Generates a UUIDv7 object. */
-export const uuidv7obj = (): UUID =>
-  (defaultGenerator || (defaultGenerator = V7Generator.create())).generate();
+export function uuidv7obj(): UUID {
+  return (defaultGenerator || (defaultGenerator = V7Generator.create())).generate();
+}
 
 /**
  * Generates a UUIDv4 string.
@@ -377,15 +381,17 @@ export const uuidv7obj = (): UUID =>
  * @returns The 8-4-4-4-12 canonical hexadecimal string representation
  * ("xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx").
  */
-export const uuidv4 = (): string => uuidv4obj().toString();
+export function uuidv4(): string {
+  return uuidv4obj().toString();
+}
 
 /** Generates a UUIDv4 object. */
-export const uuidv4obj = (): UUID => {
+export function uuidv4obj(): UUID {
   const bytes = getRandomValues(new Uint8Array(16));
   bytes[6] = 0x40 | (bytes[6]! >>> 4);
   bytes[8] = 0x80 | (bytes[8]! >>> 2);
   return UUID.ofInner(bytes);
-};
+}
 
 const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 

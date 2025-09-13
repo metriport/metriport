@@ -20,6 +20,7 @@ import { initRateLimiter } from "./routes/middlewares/rate-limiting";
 import { initSentry, isSentryEnabled } from "./sentry";
 import { Config } from "./shared/config";
 import { isClientError } from "./shared/http";
+import { isAxiosError } from "axios";
 
 dayjs.extend(duration);
 
@@ -43,7 +44,7 @@ app.use((_req, res, next) => {
 mountRoutes(app);
 module.exports = app;
 
-// route used for health checks
+// health check route
 app.get("/", (req: Request, res: Response) => {
   if (req.accepts("application/json")) return res.json({ status: "OK" });
   return res.status(200).send("OK");
@@ -61,6 +62,14 @@ if (isSentryEnabled()) {
         if (isClientError(error)) return false;
         capture.setExtra({
           ...(isMetriportError(error) ? error.additionalInfo : {}),
+          ...(isAxiosError(error)
+            ? {
+                stack: error.stack,
+                method: error.config?.method,
+                url: error.config?.url,
+                data: error.response?.data,
+              }
+            : {}),
           error,
         });
         return true;

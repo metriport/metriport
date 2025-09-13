@@ -2,7 +2,8 @@ import { USState } from "@metriport/api-sdk/medical/models/common/us-data";
 import * as featureFlags from "@metriport/core/command/feature-flags/domain-ffs";
 import { PatientData } from "@metriport/core/domain/patient";
 import { CQLink } from "../../carequality/cq-patient-data";
-import { CwLink } from "../../commonwell/cw-patient-data";
+import { cwLinkToPatientData } from "../../commonwell-v1/link/shared";
+import { CwLinkV1 } from "../../commonwell/patient/cw-patient-data/shared";
 import {
   validateCqLinksBelongToPatient,
   validateCwLinksBelongToPatient,
@@ -34,11 +35,11 @@ describe("validateLinksBelongToPatient", () => {
 
   it("should return the links as valid when patient data exactly matches", async () => {
     const patientToMatch: PatientData = { ...basePatientData };
-    const cwLinks: CwLink[] = [createCwLink(patientToMatch)];
+    const cwLinks: CwLinkV1[] = [createCwLink(patientToMatch)];
     const cqLinks: CQLink[] = [createCQLink(patientToMatch)];
 
     const { validNetworkLinks: cwValidNetworkLinks, invalidLinks: cwInvalidLinks } =
-      await validateCwLinksBelongToPatient(cxId, cwLinks, basePatientData);
+      await validateCwLinksBelongToPatient(cxId, cwLinks, basePatientData, cwLinkToPatientData);
 
     const { validNetworkLinks: cqValidNetworkLinks, invalidLinks: cqInvalidLinks } =
       await validateCqLinksBelongToPatient(cxId, cqLinks, basePatientData);
@@ -51,11 +52,11 @@ describe("validateLinksBelongToPatient", () => {
 
   it("should return the links as valid when contact info matches", async () => {
     const patientToMatch: PatientData = { ...basePatientData };
-    const cwLinks: CwLink[] = [createCwLink(patientToMatch)];
+    const cwLinks: CwLinkV1[] = [createCwLink(patientToMatch)];
     const cqLinks: CQLink[] = [createCQLink(patientToMatch)];
 
     const { validNetworkLinks: cwValidNetworkLinks, invalidLinks: cwInvalidLinks } =
-      await validateCwLinksBelongToPatient(cxId, cwLinks, basePatientData);
+      await validateCwLinksBelongToPatient(cxId, cwLinks, basePatientData, cwLinkToPatientData);
 
     const { validNetworkLinks: cqValidNetworkLinks, invalidLinks: cqInvalidLinks } =
       await validateCqLinksBelongToPatient(cxId, cqLinks, basePatientData);
@@ -68,11 +69,11 @@ describe("validateLinksBelongToPatient", () => {
 
   it("should return the links as valid when first name is different", async () => {
     const patientToMatch: PatientData = { ...basePatientData, firstName: "Jane" };
-    const cwLinks: CwLink[] = [createCwLink(patientToMatch)];
+    const cwLinks: CwLinkV1[] = [createCwLink(patientToMatch)];
     const cqLinks: CQLink[] = [createCQLink(patientToMatch)];
 
     const { validNetworkLinks: cwValidNetworkLinks, invalidLinks: cwInvalidLinks } =
-      await validateCwLinksBelongToPatient(cxId, cwLinks, basePatientData);
+      await validateCwLinksBelongToPatient(cxId, cwLinks, basePatientData, cwLinkToPatientData);
 
     const { validNetworkLinks: cqValidNetworkLinks, invalidLinks: cqInvalidLinks } =
       await validateCqLinksBelongToPatient(cxId, cqLinks, basePatientData);
@@ -85,11 +86,11 @@ describe("validateLinksBelongToPatient", () => {
 
   it("should return the links as valid when last name is different", async () => {
     const patientToMatch: PatientData = { ...basePatientData, lastName: "Smith" };
-    const cwLinks: CwLink[] = [createCwLink(patientToMatch)];
+    const cwLinks: CwLinkV1[] = [createCwLink(patientToMatch)];
     const cqLinks: CQLink[] = [createCQLink(patientToMatch)];
 
     const { validNetworkLinks: cwValidNetworkLinks, invalidLinks: cwInvalidLinks } =
-      await validateCwLinksBelongToPatient(cxId, cwLinks, basePatientData);
+      await validateCwLinksBelongToPatient(cxId, cwLinks, basePatientData, cwLinkToPatientData);
 
     const { validNetworkLinks: cqValidNetworkLinks, invalidLinks: cqInvalidLinks } =
       await validateCqLinksBelongToPatient(cxId, cqLinks, basePatientData);
@@ -112,11 +113,11 @@ describe("validateLinksBelongToPatient", () => {
         },
       ],
     };
-    const cwLinks: CwLink[] = [createCwLink(patientToMatch)];
+    const cwLinks: CwLinkV1[] = [createCwLink(patientToMatch)];
     const cqLinks: CQLink[] = [createCQLink(patientToMatch)];
 
     const { validNetworkLinks: cwValidNetworkLinks, invalidLinks: cwInvalidLinks } =
-      await validateCwLinksBelongToPatient(cxId, cwLinks, basePatientData);
+      await validateCwLinksBelongToPatient(cxId, cwLinks, basePatientData, cwLinkToPatientData);
 
     const { validNetworkLinks: cqValidNetworkLinks, invalidLinks: cqInvalidLinks } =
       await validateCqLinksBelongToPatient(cxId, cqLinks, basePatientData);
@@ -139,11 +140,11 @@ describe("validateLinksBelongToPatient", () => {
         },
       ],
     };
-    const cwLinks: CwLink[] = [createCwLink(patientToMatch)];
+    const cwLinks: CwLinkV1[] = [createCwLink(patientToMatch)];
     const cqLinks: CQLink[] = [createCQLink(patientToMatch)];
 
     const { validNetworkLinks: cwValidNetworkLinks, invalidLinks: cwInvalidLinks } =
-      await validateCwLinksBelongToPatient(cxId, cwLinks, basePatientData);
+      await validateCwLinksBelongToPatient(cxId, cwLinks, basePatientData, cwLinkToPatientData);
 
     const { validNetworkLinks: cqValidNetworkLinks, invalidLinks: cqInvalidLinks } =
       await validateCqLinksBelongToPatient(cxId, cqLinks, basePatientData);
@@ -166,11 +167,11 @@ describe("validateLinksBelongToPatient", () => {
         },
       ],
     };
-    const cwLinks: CwLink[] = [createCwLink(patientToMatch)];
+    const cwLinks: CwLinkV1[] = [createCwLink(patientToMatch)];
     const cqLinks: CQLink[] = [createCQLink(patientToMatch)];
 
     const { validNetworkLinks: cwValidNetworkLinks, invalidLinks: cwInvalidLinks } =
-      await validateCwLinksBelongToPatient(cxId, cwLinks, basePatientData);
+      await validateCwLinksBelongToPatient(cxId, cwLinks, basePatientData, cwLinkToPatientData);
 
     const { validNetworkLinks: cqValidNetworkLinks, invalidLinks: cqInvalidLinks } =
       await validateCqLinksBelongToPatient(cxId, cqLinks, basePatientData);
@@ -199,11 +200,11 @@ describe("validateLinksBelongToPatient", () => {
         },
       ],
     };
-    const cwLinks: CwLink[] = [createCwLink(patientToMatch)];
+    const cwLinks: CwLinkV1[] = [createCwLink(patientToMatch)];
     const cqLinks: CQLink[] = [createCQLink(patientToMatch)];
 
     const { validNetworkLinks: cwValidNetworkLinks, invalidLinks: cwInvalidLinks } =
-      await validateCwLinksBelongToPatient(cxId, cwLinks, basePatientData);
+      await validateCwLinksBelongToPatient(cxId, cwLinks, basePatientData, cwLinkToPatientData);
 
     const { validNetworkLinks: cqValidNetworkLinks, invalidLinks: cqInvalidLinks } =
       await validateCqLinksBelongToPatient(cxId, cqLinks, basePatientData);
@@ -216,11 +217,11 @@ describe("validateLinksBelongToPatient", () => {
 
   it("should return the links as valid with slight DOB variation", async () => {
     const patientToMatch: PatientData = { ...basePatientData, dob: "1990-01-02" };
-    const cwLinks: CwLink[] = [createCwLink(patientToMatch)];
+    const cwLinks: CwLinkV1[] = [createCwLink(patientToMatch)];
     const cqLinks: CQLink[] = [createCQLink(patientToMatch)];
 
     const { validNetworkLinks: cwValidNetworkLinks, invalidLinks: cwInvalidLinks } =
-      await validateCwLinksBelongToPatient(cxId, cwLinks, basePatientData);
+      await validateCwLinksBelongToPatient(cxId, cwLinks, basePatientData, cwLinkToPatientData);
 
     const { validNetworkLinks: cqValidNetworkLinks, invalidLinks: cqInvalidLinks } =
       await validateCqLinksBelongToPatient(cxId, cqLinks, basePatientData);
@@ -236,11 +237,11 @@ describe("validateLinksBelongToPatient", () => {
       ...basePatientData,
       dob: "1990-1-1",
     };
-    const cwLinks: CwLink[] = [createCwLink(patientToMatch)];
+    const cwLinks: CwLinkV1[] = [createCwLink(patientToMatch)];
     const cqLinks: CQLink[] = [createCQLink(patientToMatch)];
 
     const { validNetworkLinks: cwValidNetworkLinks, invalidLinks: cwInvalidLinks } =
-      await validateCwLinksBelongToPatient(cxId, cwLinks, basePatientData);
+      await validateCwLinksBelongToPatient(cxId, cwLinks, basePatientData, cwLinkToPatientData);
 
     const { validNetworkLinks: cqValidNetworkLinks, invalidLinks: cqInvalidLinks } =
       await validateCqLinksBelongToPatient(cxId, cqLinks, basePatientData);
@@ -256,11 +257,11 @@ describe("validateLinksBelongToPatient", () => {
       ...basePatientData,
       dob: "1990-02-01",
     };
-    const cwLinks: CwLink[] = [createCwLink(patientToMatch)];
+    const cwLinks: CwLinkV1[] = [createCwLink(patientToMatch)];
     const cqLinks: CQLink[] = [createCQLink(patientToMatch)];
 
     const { validNetworkLinks: cwValidNetworkLinks, invalidLinks: cwInvalidLinks } =
-      await validateCwLinksBelongToPatient(cxId, cwLinks, basePatientData);
+      await validateCwLinksBelongToPatient(cxId, cwLinks, basePatientData, cwLinkToPatientData);
 
     const { validNetworkLinks: cqValidNetworkLinks, invalidLinks: cqInvalidLinks } =
       await validateCqLinksBelongToPatient(cxId, cqLinks, basePatientData);
@@ -281,11 +282,11 @@ describe("validateLinksBelongToPatient", () => {
         },
       ],
     };
-    const cwLinks: CwLink[] = [createCwLink(patientToMatch)];
+    const cwLinks: CwLinkV1[] = [createCwLink(patientToMatch)];
     const cqLinks: CQLink[] = [createCQLink(patientToMatch)];
 
     const { validNetworkLinks: cwValidNetworkLinks, invalidLinks: cwInvalidLinks } =
-      await validateCwLinksBelongToPatient(cxId, cwLinks, basePatientData);
+      await validateCwLinksBelongToPatient(cxId, cwLinks, basePatientData, cwLinkToPatientData);
 
     const { validNetworkLinks: cqValidNetworkLinks, invalidLinks: cqInvalidLinks } =
       await validateCqLinksBelongToPatient(cxId, cqLinks, basePatientData);
@@ -296,7 +297,7 @@ describe("validateLinksBelongToPatient", () => {
     expect(cqInvalidLinks.length).toBe(0);
   });
 
-  it("should return the links as valid when only DOB and address match", async () => {
+  it("should return the links as invalid when only DOB and address match", async () => {
     const patientToMatch: PatientData = {
       ...basePatientData,
       firstName: "Jane",
@@ -309,19 +310,19 @@ describe("validateLinksBelongToPatient", () => {
         },
       ],
     };
-    const cwLinks: CwLink[] = [createCwLink(patientToMatch)];
+    const cwLinks: CwLinkV1[] = [createCwLink(patientToMatch)];
     const cqLinks: CQLink[] = [createCQLink(patientToMatch)];
 
     const { validNetworkLinks: cwValidNetworkLinks, invalidLinks: cwInvalidLinks } =
-      await validateCwLinksBelongToPatient(cxId, cwLinks, basePatientData);
+      await validateCwLinksBelongToPatient(cxId, cwLinks, basePatientData, cwLinkToPatientData);
 
     const { validNetworkLinks: cqValidNetworkLinks, invalidLinks: cqInvalidLinks } =
       await validateCqLinksBelongToPatient(cxId, cqLinks, basePatientData);
 
-    expect(cwValidNetworkLinks.length).toBe(1);
-    expect(cwInvalidLinks.length).toBe(0);
-    expect(cqValidNetworkLinks.length).toBe(1);
-    expect(cqInvalidLinks.length).toBe(0);
+    expect(cwValidNetworkLinks.length).toBe(0);
+    expect(cwInvalidLinks.length).toBe(1);
+    expect(cqValidNetworkLinks.length).toBe(0);
+    expect(cqInvalidLinks.length).toBe(1);
   });
 
   it("should return the links as valid when only gender and name match", async () => {
@@ -343,19 +344,19 @@ describe("validateLinksBelongToPatient", () => {
         },
       ],
     };
-    const cwLinks: CwLink[] = [createCwLink(patientToMatch)];
+    const cwLinks: CwLinkV1[] = [createCwLink(patientToMatch)];
     const cqLinks: CQLink[] = [createCQLink(patientToMatch)];
 
     const { validNetworkLinks: cwValidNetworkLinks, invalidLinks: cwInvalidLinks } =
-      await validateCwLinksBelongToPatient(cxId, cwLinks, basePatientData);
+      await validateCwLinksBelongToPatient(cxId, cwLinks, basePatientData, cwLinkToPatientData);
 
     const { validNetworkLinks: cqValidNetworkLinks, invalidLinks: cqInvalidLinks } =
       await validateCqLinksBelongToPatient(cxId, cqLinks, basePatientData);
 
-    expect(cwValidNetworkLinks.length).toBe(1);
-    expect(cwInvalidLinks.length).toBe(0);
-    expect(cqValidNetworkLinks.length).toBe(1);
-    expect(cqInvalidLinks.length).toBe(0);
+    expect(cwValidNetworkLinks.length).toBe(0);
+    expect(cwInvalidLinks.length).toBe(1);
+    expect(cqValidNetworkLinks.length).toBe(0);
+    expect(cqInvalidLinks.length).toBe(1);
   });
 
   it("should return the links as invalid when multiple core fields differ", async () => {
@@ -365,11 +366,11 @@ describe("validateLinksBelongToPatient", () => {
       lastName: "Smith",
       dob: "1991-02-03",
     };
-    const cwLinks: CwLink[] = [createCwLink(patientToMatch)];
+    const cwLinks: CwLinkV1[] = [createCwLink(patientToMatch)];
     const cqLinks: CQLink[] = [createCQLink(patientToMatch)];
 
     const { validNetworkLinks: cwValidNetworkLinks, invalidLinks: cwInvalidLinks } =
-      await validateCwLinksBelongToPatient(cxId, cwLinks, basePatientData);
+      await validateCwLinksBelongToPatient(cxId, cwLinks, basePatientData, cwLinkToPatientData);
 
     const { validNetworkLinks: cqValidNetworkLinks, invalidLinks: cqInvalidLinks } =
       await validateCqLinksBelongToPatient(cxId, cqLinks, basePatientData);
@@ -388,11 +389,11 @@ describe("validateLinksBelongToPatient", () => {
       dob: "1995-06-15",
       genderAtBirth: "F",
     };
-    const cwLinks: CwLink[] = [createCwLink(patientToMatch)];
+    const cwLinks: CwLinkV1[] = [createCwLink(patientToMatch)];
     const cqLinks: CQLink[] = [createCQLink(patientToMatch)];
 
     const { validNetworkLinks: cwValidNetworkLinks, invalidLinks: cwInvalidLinks } =
-      await validateCwLinksBelongToPatient(cxId, cwLinks, basePatientData);
+      await validateCwLinksBelongToPatient(cxId, cwLinks, basePatientData, cwLinkToPatientData);
 
     const { validNetworkLinks: cqValidNetworkLinks, invalidLinks: cqInvalidLinks } =
       await validateCqLinksBelongToPatient(cxId, cqLinks, basePatientData);
@@ -423,11 +424,11 @@ describe("validateLinksBelongToPatient", () => {
         },
       ],
     };
-    const cwLinks: CwLink[] = [createCwLink(patientToMatch)];
+    const cwLinks: CwLinkV1[] = [createCwLink(patientToMatch)];
     const cqLinks: CQLink[] = [createCQLink(patientToMatch)];
 
     const { validNetworkLinks: cwValidNetworkLinks, invalidLinks: cwInvalidLinks } =
-      await validateCwLinksBelongToPatient(cxId, cwLinks, basePatientData);
+      await validateCwLinksBelongToPatient(cxId, cwLinks, basePatientData, cwLinkToPatientData);
 
     const { validNetworkLinks: cqValidNetworkLinks, invalidLinks: cqInvalidLinks } =
       await validateCqLinksBelongToPatient(cxId, cqLinks, basePatientData);
@@ -458,11 +459,11 @@ describe("validateLinksBelongToPatient", () => {
         },
       ],
     };
-    const cwLinks: CwLink[] = [createCwLink(patientToMatch)];
+    const cwLinks: CwLinkV1[] = [createCwLink(patientToMatch)];
     const cqLinks: CQLink[] = [createCQLink(patientToMatch)];
 
     const { validNetworkLinks: cwValidNetworkLinks, invalidLinks: cwInvalidLinks } =
-      await validateCwLinksBelongToPatient(cxId, cwLinks, basePatientData);
+      await validateCwLinksBelongToPatient(cxId, cwLinks, basePatientData, cwLinkToPatientData);
 
     const { validNetworkLinks: cqValidNetworkLinks, invalidLinks: cqInvalidLinks } =
       await validateCqLinksBelongToPatient(cxId, cqLinks, basePatientData);
@@ -507,11 +508,11 @@ describe("validateLinksBelongToPatient with strict matching", () => {
 
   it("should return the links as valid when patient data exactly matches", async () => {
     const patientToMatch: PatientData = { ...basePatientData };
-    const cwLinks: CwLink[] = [createCwLink(patientToMatch)];
+    const cwLinks: CwLinkV1[] = [createCwLink(patientToMatch)];
     const cqLinks: CQLink[] = [createCQLink(patientToMatch)];
 
     const { validNetworkLinks: cwValidNetworkLinks, invalidLinks: cwInvalidLinks } =
-      await validateCwLinksBelongToPatient(cxId, cwLinks, basePatientData);
+      await validateCwLinksBelongToPatient(cxId, cwLinks, basePatientData, cwLinkToPatientData);
 
     const { validNetworkLinks: cqValidNetworkLinks, invalidLinks: cqInvalidLinks } =
       await validateCqLinksBelongToPatient(cxId, cqLinks, basePatientData);
@@ -528,11 +529,11 @@ describe("validateLinksBelongToPatient with strict matching", () => {
       firstName: "John,Johnny",
       lastName: "Doe,Smith",
     };
-    const cwLinks: CwLink[] = [createCwLink(patientToMatch)];
+    const cwLinks: CwLinkV1[] = [createCwLink(patientToMatch)];
     const cqLinks: CQLink[] = [createCQLink(patientToMatch)];
 
     const { validNetworkLinks: cwValidNetworkLinks, invalidLinks: cwInvalidLinks } =
-      await validateCwLinksBelongToPatient(cxId, cwLinks, basePatientData);
+      await validateCwLinksBelongToPatient(cxId, cwLinks, basePatientData, cwLinkToPatientData);
 
     const { validNetworkLinks: cqValidNetworkLinks, invalidLinks: cqInvalidLinks } =
       await validateCqLinksBelongToPatient(cxId, cqLinks, basePatientData);
@@ -570,11 +571,11 @@ describe("validateLinksBelongToPatient with strict matching", () => {
       ];
     }
 
-    const cwLinks: CwLink[] = [cwLink];
+    const cwLinks: CwLinkV1[] = [cwLink];
     const cqLinks: CQLink[] = [cqLink];
 
     const { validNetworkLinks: cwValidNetworkLinks, invalidLinks: cwInvalidLinks } =
-      await validateCwLinksBelongToPatient(cxId, cwLinks, basePatientData);
+      await validateCwLinksBelongToPatient(cxId, cwLinks, basePatientData, cwLinkToPatientData);
 
     const { validNetworkLinks: cqValidNetworkLinks, invalidLinks: cqInvalidLinks } =
       await validateCqLinksBelongToPatient(cxId, cqLinks, basePatientData);
@@ -590,11 +591,11 @@ describe("validateLinksBelongToPatient with strict matching", () => {
       ...basePatientData,
       dob: "1990-01-02",
     };
-    const cwLinks: CwLink[] = [createCwLink(patientToMatch)];
+    const cwLinks: CwLinkV1[] = [createCwLink(patientToMatch)];
     const cqLinks: CQLink[] = [createCQLink(patientToMatch)];
 
     const { validNetworkLinks: cwValidNetworkLinks, invalidLinks: cwInvalidLinks } =
-      await validateCwLinksBelongToPatient(cxId, cwLinks, basePatientData);
+      await validateCwLinksBelongToPatient(cxId, cwLinks, basePatientData, cwLinkToPatientData);
 
     const { validNetworkLinks: cqValidNetworkLinks, invalidLinks: cqInvalidLinks } =
       await validateCqLinksBelongToPatient(cxId, cqLinks, basePatientData);
@@ -610,11 +611,11 @@ describe("validateLinksBelongToPatient with strict matching", () => {
       ...basePatientData,
       genderAtBirth: "F",
     };
-    const cwLinks: CwLink[] = [createCwLink(patientToMatch)];
+    const cwLinks: CwLinkV1[] = [createCwLink(patientToMatch)];
     const cqLinks: CQLink[] = [createCQLink(patientToMatch)];
 
     const { validNetworkLinks: cwValidNetworkLinks, invalidLinks: cwInvalidLinks } =
-      await validateCwLinksBelongToPatient(cxId, cwLinks, basePatientData);
+      await validateCwLinksBelongToPatient(cxId, cwLinks, basePatientData, cwLinkToPatientData);
 
     const { validNetworkLinks: cqValidNetworkLinks, invalidLinks: cqInvalidLinks } =
       await validateCqLinksBelongToPatient(cxId, cqLinks, basePatientData);
@@ -630,11 +631,11 @@ describe("validateLinksBelongToPatient with strict matching", () => {
       ...basePatientData,
       firstName: "Jane",
     };
-    const cwLinks: CwLink[] = [createCwLink(patientToMatch)];
+    const cwLinks: CwLinkV1[] = [createCwLink(patientToMatch)];
     const cqLinks: CQLink[] = [createCQLink(patientToMatch)];
 
     const { validNetworkLinks: cwValidNetworkLinks, invalidLinks: cwInvalidLinks } =
-      await validateCwLinksBelongToPatient(cxId, cwLinks, basePatientData);
+      await validateCwLinksBelongToPatient(cxId, cwLinks, basePatientData, cwLinkToPatientData);
 
     const { validNetworkLinks: cqValidNetworkLinks, invalidLinks: cqInvalidLinks } =
       await validateCqLinksBelongToPatient(cxId, cqLinks, basePatientData);

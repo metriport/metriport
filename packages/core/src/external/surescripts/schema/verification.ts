@@ -1,5 +1,6 @@
 import { z } from "zod";
 import {
+  IncomingFile,
   IncomingFileRowSchema,
   fromSurescriptsString,
   fromSurescriptsUUID,
@@ -7,9 +8,16 @@ import {
   fromSurescriptsEnum,
   fromSurescriptsTime,
   fromSurescriptsInteger,
+  IncomingFileSchema,
 } from "./shared";
 
-export const patientVerificationHeaderSchema = z.object({
+export type ParsedVerificationFile = IncomingFile<
+  VerificationHeader,
+  VerificationDetail,
+  VerificationFooter
+>;
+
+export const verificationHeaderSchema = z.object({
   recordType: z.enum(["SHD"]),
   version: z.string(),
   receiverId: z.string().min(3).max(30),
@@ -27,13 +35,13 @@ export const patientVerificationHeaderSchema = z.object({
   loadStatusDescription: z.string().min(1).max(250),
 });
 
-export type PatientVerificationHeader = z.infer<typeof patientVerificationHeaderSchema>;
+export type VerificationHeader = z.infer<typeof verificationHeaderSchema>;
 
-export function isPatientVerificationHeader(data: object): data is PatientVerificationHeader {
-  return patientVerificationHeaderSchema.safeParse(data).success;
+export function isVerificationHeader(data: object): data is VerificationHeader {
+  return verificationHeaderSchema.safeParse(data).success;
 }
 
-export const patientVerificationHeaderOrder: IncomingFileRowSchema<PatientVerificationHeader> = [
+export const verificationHeaderRow: IncomingFileRowSchema<VerificationHeader> = [
   {
     field: 0,
     key: "recordType",
@@ -106,7 +114,7 @@ export const patientVerificationHeaderOrder: IncomingFileRowSchema<PatientVerifi
   },
 ];
 
-export const patientVerificationDetailSchema = z.object({
+export const verificationDetailSchema = z.object({
   recordType: z.enum(["SDT"]),
   recordSequenceNumber: z.number(),
   sourceRecordSequenceNumber: z.number().optional(),
@@ -117,13 +125,13 @@ export const patientVerificationDetailSchema = z.object({
   errorDescription: z.string().optional(),
 });
 
-export type PatientVerificationDetail = z.infer<typeof patientVerificationDetailSchema>;
+export type VerificationDetail = z.infer<typeof verificationDetailSchema>;
 
-export function isPatientVerificationDetail(data: object): data is PatientVerificationDetail {
-  return patientVerificationDetailSchema.safeParse(data).success;
+export function isVerificationDetail(data: object): data is VerificationDetail {
+  return verificationDetailSchema.safeParse(data).success;
 }
 
-export const patientVerificationDetailOrder: IncomingFileRowSchema<PatientVerificationDetail> = [
+export const verificationDetailRow: IncomingFileRowSchema<VerificationDetail> = [
   {
     field: 0,
     key: "recordType",
@@ -166,7 +174,7 @@ export const patientVerificationDetailOrder: IncomingFileRowSchema<PatientVerifi
   },
 ];
 
-export const patientVerificationFooterSchema = z.object({
+export const verificationFooterSchema = z.object({
   recordType: z.enum(["STR"]),
   processedRecords: z.number(),
   errorRecords: z.number().optional(),
@@ -174,13 +182,13 @@ export const patientVerificationFooterSchema = z.object({
   totalErrors: z.number().optional(),
 });
 
-export type PatientVerificationFooter = z.infer<typeof patientVerificationFooterSchema>;
+export type VerificationFooter = z.infer<typeof verificationFooterSchema>;
 
-export function isPatientVerificationFooter(data: object): data is PatientVerificationFooter {
-  return patientVerificationFooterSchema.safeParse(data).success;
+export function isVerificationFooter(data: object): data is VerificationFooter {
+  return verificationFooterSchema.safeParse(data).success;
 }
 
-export const patientVerificationFooterOrder: IncomingFileRowSchema<PatientVerificationFooter> = [
+export const verificationFooterRow: IncomingFileRowSchema<VerificationFooter> = [
   {
     field: 0,
     key: "recordType",
@@ -207,3 +215,22 @@ export const patientVerificationFooterOrder: IncomingFileRowSchema<PatientVerifi
     fromSurescripts: fromSurescriptsInteger({ optional: true }),
   },
 ];
+
+export const verificationFileSchema: IncomingFileSchema<
+  VerificationHeader,
+  VerificationDetail,
+  VerificationFooter
+> = {
+  header: {
+    row: verificationHeaderRow,
+    validator: isVerificationHeader,
+  },
+  detail: {
+    row: verificationDetailRow,
+    validator: isVerificationDetail,
+  },
+  footer: {
+    row: verificationFooterRow,
+    validator: isVerificationFooter,
+  },
+};

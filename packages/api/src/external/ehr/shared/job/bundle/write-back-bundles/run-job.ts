@@ -1,0 +1,33 @@
+import { buildEhrWriteBackResourceDiffBundlesHandler } from "@metriport/core/external/ehr/job/bundle/write-back-bundles/ehr-write-back-resource-diff-bundles-factory";
+import { processAsyncError } from "@metriport/core/util/error/shared";
+import { updatePatientJobTotal } from "../../../../../../command/job/patient/update/update-total";
+import { RunBundlesJobParams } from "../../../utils/job";
+
+export async function runJob({
+  jobId,
+  ehr,
+  cxId,
+  practiceId,
+  metriportPatientId,
+  ehrPatientId,
+  resourceType,
+  createResourceDiffBundlesJobId,
+}: RunBundlesJobParams & {
+  resourceType: string;
+  createResourceDiffBundlesJobId: string;
+}): Promise<void> {
+  await updatePatientJobTotal({ cxId, jobId, total: 1 });
+  const ehrResourceDiffHandler = buildEhrWriteBackResourceDiffBundlesHandler();
+  ehrResourceDiffHandler
+    .writeBackResourceDiffBundles({
+      ehr,
+      cxId,
+      practiceId,
+      metriportPatientId,
+      ehrPatientId,
+      resourceType,
+      jobId,
+      createResourceDiffBundlesJobId,
+    })
+    .catch(processAsyncError(`${ehr} ${resourceType} writeBackResourceDiffBundles`));
+}

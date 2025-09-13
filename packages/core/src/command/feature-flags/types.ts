@@ -24,8 +24,12 @@ export const cxBasedFFsSchema = z.object({
   cxsWithADHDMRFeatureFlag: ffStringValuesSchema,
   cxsWithNoMrLogoFeatureFlag: ffStringValuesSchema,
   cxsWithBmiMrFeatureFlag: ffStringValuesSchema,
+  cxsWithSimpleMrFeatureFlag: ffStringValuesSchema,
   cxsWithDermMrFeatureFlag: ffStringValuesSchema,
   cxsWithAiBriefFeatureFlag: ffStringValuesSchema,
+  cxsWithSurescriptsFeatureFlag: ffStringValuesSchema,
+  cxsWithSurescriptsNotificationsFeatureFlag: ffStringValuesSchema,
+  cxsWithQuestFeatureFlag: ffStringValuesSchema,
   getCxsWithCdaCustodianFeatureFlag: ffStringValuesSchema,
   cxsWithNoWebhookPongFeatureFlag: ffStringValuesSchema,
   cxsWithIncreasedSandboxLimitFeatureFlag: ffStringValuesSchema,
@@ -36,6 +40,9 @@ export const cxBasedFFsSchema = z.object({
   cxsWithAthenaCustomFieldsEnabled: ffStringValuesSchema,
   cxsWithPcpVisitAiSummaryFeatureFlag: ffStringValuesSchema,
   cxsWithHl7NotificationWebhookFeatureFlag: ffStringValuesSchema,
+  cxsWithDischargeSlackNotificationFeatureFlag: ffStringValuesSchema,
+  cxsWithDischargeRequeryFeatureFlag: ffStringValuesSchema,
+  cxsWithXmlRedownloadFeatureFlag: ffStringValuesSchema,
 });
 export type CxBasedFFsSchema = z.infer<typeof cxBasedFFsSchema>;
 

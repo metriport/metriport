@@ -36,15 +36,17 @@ import {
 } from "./shared";
 
 const parallelUpsertsToFhir = 10;
-const resultPoller = makeOutboundResultPoller();
 
 export async function processOutboundDocumentQueryResps({
   requestId,
   patientId,
   cxId,
   response,
+  forceDownload,
 }: OutboundDocQueryRespParam): Promise<void> {
   const { log } = out(`CQ DR - requestId ${requestId}, patient ${patientId}`);
+
+  const resultPoller = makeOutboundResultPoller();
 
   const interrupt = buildInterrupt({ requestId, patientId, cxId, log });
   if (!resultPoller.isDREnabled()) return interrupt(`IHE DR result poller not available`);
@@ -65,6 +67,7 @@ export async function processOutboundDocumentQueryResps({
       patientId,
       requestId,
       response,
+      forceDownload,
     });
 
     const docsToDownload = responsesWithDocsToDownload.flatMap(
@@ -75,7 +78,9 @@ export async function processOutboundDocumentQueryResps({
       isConvertible(doc.contentType || undefined)
     ).length;
 
-    log(`I have ${docsToDownload.length} docs to download (${convertibleDocCount} convertible)`);
+    log(
+      `I have ${docsToDownload.length} docs to download (${convertibleDocCount} convertible (based on the contentType))`
+    );
 
     analytics({
       distinctId: cxId,
@@ -89,6 +94,7 @@ export async function processOutboundDocumentQueryResps({
         docsToDownloadCount: docsToDownload.length,
         convertibleCount: convertibleDocCount,
         successCount,
+        forceDownload,
         failureCount,
         ...contentTypeCounts,
       },
@@ -240,6 +246,7 @@ async function getRespWithDocsToDownload({
   patientId,
   requestId,
   response,
+  forceDownload,
 }: OutboundDocQueryRespParam): Promise<DqRespWithDocRefsWithMetriportId[]> {
   const respWithDocsToDownload: DqRespWithDocRefsWithMetriportId[] = [];
   const seenMetriportIds = new Set<string>();
@@ -268,7 +275,8 @@ async function getRespWithDocsToDownload({
         deduplicatedDocRefsWithMetriportId,
         patientId,
         cxId,
-        fhirDocRefs
+        fhirDocRefs,
+        forceDownload
       );
 
       if (docsToDownload.length === 0) {

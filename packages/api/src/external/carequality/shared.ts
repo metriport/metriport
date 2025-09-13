@@ -8,7 +8,12 @@ import { AddressStrict } from "@metriport/core/domain/location-address";
 import { GenderAtBirth, Patient, PatientData } from "@metriport/core/domain/patient";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { capture } from "@metriport/core/util/notifications";
-import { isEmailValid, isPhoneValid, PurposeOfUse, USStateForAddress } from "@metriport/shared";
+import {
+  PurposeOfUse,
+  USStateForAddress,
+  normalizePhoneNumberSafe,
+  normalizeEmailNewSafe,
+} from "@metriport/shared";
 import { buildDayjs, ISO_DATE } from "@metriport/shared/common/date";
 import { errorToString } from "@metriport/shared/common/error";
 import z from "zod";
@@ -206,10 +211,13 @@ export function cqLinkToPatientData(cqLink: CQLink): PatientData {
   if (patient?.telecom) {
     patient.telecom.forEach(tel => {
       const value = tel.value ?? "";
-      if (isPhoneValid(value)) {
-        telecom.push({ phone: value });
-      } else if (isEmailValid(value)) {
-        telecom.push({ email: value });
+
+      const normalizedPhone = normalizePhoneNumberSafe(value);
+      const normalizedEmail = normalizeEmailNewSafe(value);
+      if (normalizedPhone) {
+        telecom.push({ phone: normalizedPhone });
+      } else if (normalizedEmail) {
+        telecom.push({ email: normalizedEmail });
       }
     });
   }

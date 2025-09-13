@@ -40,22 +40,30 @@ export class OpenSearchFhirSearcher {
     const auth = { username, password };
     const client = new Client({ node: endpoint, auth });
 
-    log(`Searching on index ${indexName}...`);
-    const { isReturnAllResources, searchQuery } = createLexicalSearchQuery({
-      cxId,
-      patientId,
-      query,
-    });
+    try {
+      log(`Searching on index ${indexName}...`);
+      const { isReturnAllResources, searchQuery } = createLexicalSearchQuery({
+        cxId,
+        patientId,
+        query,
+      });
 
-    const response = await paginatedSearch<FhirSearchResult>({
-      client,
-      indexName,
-      searchRequest: searchQuery,
-      mapResults,
-    });
+      const response = await paginatedSearch<FhirSearchResult>({
+        client,
+        indexName,
+        searchRequest: searchQuery,
+        mapResults,
+      });
 
-    log(`Successfully searched, got ${response.count} results`);
-    return { isReturnAllResources, results: response.items };
+      log(`Successfully searched, got ${response.count} results`);
+      return { isReturnAllResources, results: response.items };
+    } finally {
+      try {
+        await client.close();
+      } catch (error) {
+        log(`Error closing OS client: ${errorToString(error)}`);
+      }
+    }
   }
 
   async hasData({ cxId, patientId }: { cxId: string; patientId: string }): Promise<boolean> {
@@ -65,15 +73,23 @@ export class OpenSearchFhirSearcher {
     const auth = { username, password };
     const client = new Client({ node: endpoint, auth });
 
-    log(`Checking if data exists on index ${indexName}...`);
-    const searchRequest = createQueryHasData({ cxId, patientId });
+    try {
+      log(`Checking if data exists on index ${indexName}...`);
+      const searchRequest = createQueryHasData({ cxId, patientId });
 
-    const response = await client.search({ index: indexName, body: searchRequest });
+      const response = await client.search({ index: indexName, body: searchRequest });
 
-    const body = response.body as OpenSearchResponse<FhirSearchResult>;
-    const hasData = body.hits.hits ? body.hits.hits.length > 0 : false;
-    log(`Data exists: ${hasData}`);
-    return hasData;
+      const body = response.body as OpenSearchResponse<FhirSearchResult>;
+      const hasData = body.hits.hits ? body.hits.hits.length > 0 : false;
+      log(`Data exists: ${hasData}`);
+      return hasData;
+    } finally {
+      try {
+        await client.close();
+      } catch (error) {
+        log(`Error closing OS client: ${errorToString(error)}`);
+      }
+    }
   }
 
   async getById(id: string): Promise<FhirSearchResult | undefined>;
@@ -110,6 +126,12 @@ export class OpenSearchFhirSearcher {
       log(`${msg} - ${JSON.stringify(extra)}`);
       capture.error(msg, { extra: { ...extra, context: this.constructor.name } });
       return undefined;
+    } finally {
+      try {
+        await client.close();
+      } catch (error) {
+        log(`Error closing OS client: ${errorToString(error)}`);
+      }
     }
   }
 
@@ -130,21 +152,29 @@ export class OpenSearchFhirSearcher {
     const auth = { username, password };
     const client = new Client({ node: endpoint, auth });
 
-    log(`Searching on index ${indexName}...`);
-    const searchRequest = createSearchByIdsQuery({
-      cxId,
-      patientId,
-      ids,
-    });
+    try {
+      log(`Searching on index ${indexName}...`);
+      const searchRequest = createSearchByIdsQuery({
+        cxId,
+        patientId,
+        ids,
+      });
 
-    const response = await paginatedSearch<FhirSearchResult>({
-      client,
-      indexName,
-      searchRequest,
-      mapResults,
-    });
+      const response = await paginatedSearch<FhirSearchResult>({
+        client,
+        indexName,
+        searchRequest,
+        mapResults,
+      });
 
-    return response.items;
+      return response.items;
+    } finally {
+      try {
+        await client.close();
+      } catch (error) {
+        log(`Error closing OS client: ${errorToString(error)}`);
+      }
+    }
   }
 }
 

@@ -8,11 +8,17 @@ import { createConsolidatedDataFilePath } from "../../domain/consolidated/filena
 import { createFolderName } from "../../domain/filename";
 import { Patient } from "../../domain/patient";
 import { executeWithRetriesS3, S3Utils } from "../../external/aws/s3";
+import {
+  buildBundleEntry,
+  buildCollectionBundle,
+  dangerouslyAddEntriesToBundle,
+} from "../../external/fhir/bundle/bundle";
 import { dangerouslyDeduplicate } from "../../external/fhir/consolidated/deduplicate";
 import { getDocuments as getDocumentReferences } from "../../external/fhir/document/get-documents";
 import { toFHIR as patientToFhir } from "../../external/fhir/patient/conversion";
-import { buildBundleEntry, buildCollectionBundle } from "../../external/fhir/bundle/bundle";
 import { insertSourceDocumentToAllDocRefMeta } from "../../external/fhir/shared/meta";
+import { getBundleResources as getPharmacyResources } from "../../external/surescripts/command/bundle/get-bundle";
+import { getBundleResources as getLabResources } from "../../external/quest/command/bundle/get-bundle";
 import { capture, executeAsynchronously, out } from "../../util";
 import { Config } from "../../util/config";
 import { processAsyncError } from "../../util/error/shared";
@@ -21,6 +27,7 @@ import { AiBriefControls } from "../ai-brief/shared";
 import { isAiBriefFeatureFlagEnabledForCx } from "../feature-flags/domain-ffs";
 import { getConsolidatedLocation, getConsolidatedSourceLocation } from "./consolidated-shared";
 import { makeIngestConsolidated } from "./search/fhir-resource/ingest-consolidated-factory";
+import { getAllAdtSourcedResources } from "../../external/fhir/adt-encounters";
 
 dayjs.extend(duration);
 
@@ -59,19 +66,39 @@ export async function createConsolidatedFromConversions({
   const fhirPatient = patientToFhir(patient);
   const patientEntry = buildBundleEntry(fhirPatient);
 
-  const [conversions, docRefs, isAiBriefFeatureFlagEnabled] = await Promise.all([
+  const [
+    conversions,
+    docRefs,
+    pharmacyResources,
+    labResources,
+    adtSourcedResources,
+    isAiBriefFeatureFlagEnabled,
+  ] = await Promise.all([
     getConversions({ cxId, patient, sourceBucketName }),
     getDocumentReferences({ cxId, patientId }),
+    getPharmacyResources({ cxId, patientId }),
+    getLabResources({ cxId, patientId }),
+    getAllAdtSourcedResources({ cxId, patientId }),
     isAiBriefFeatureFlagEnabledForCx(cxId),
   ]);
-  log(`Got ${conversions.length} resources from conversions`);
+  log(`Got ${conversions.length} resources from cdaConversions`);
 
   const bundle = buildCollectionBundle();
   const docRefsWithUpdatedMeta = insertSourceDocumentToAllDocRefMeta(docRefs);
-  bundle.entry = [...conversions, ...docRefsWithUpdatedMeta.map(buildBundleEntry), patientEntry];
+  bundle.entry = [
+    ...conversions,
+    ...docRefsWithUpdatedMeta.map(buildBundleEntry),
+    ...pharmacyResources,
+    ...labResources,
+    ...adtSourcedResources,
+    patientEntry,
+  ];
   bundle.total = bundle.entry.length;
   log(
-    `Added ${docRefsWithUpdatedMeta.length} docRefs and the Patient, to a total of ${bundle.entry.length} entries`
+    `Added ${docRefsWithUpdatedMeta.length} docRefs, ` +
+      `${pharmacyResources.length} pharmacy resources, ` +
+      `${labResources.length} lab resources, ` +
+      `and the Patient, to a total of ${bundle.entry.length} entries`
   );
   const lengthWithDups = bundle.entry.length;
 
@@ -174,13 +201,13 @@ async function getConversions({
         () => s3Utils.getFileContentsAsString(bucket, key),
         { ...defaultS3RetriesConfig, log }
       );
-      log(`Merging bundle ${key} into the consolidated one`);
+      log(`Merging entries from bundle ${key} into the consolidated one`);
       const singleConversion = parseFhirBundle(contents);
       if (!singleConversion) {
         log(`No valid bundle found in ${bucket}/${key}, skipping`);
         return;
       }
-      merge(singleConversion).into(mergedBundle);
+      dangerouslyAddEntriesToBundle(mergedBundle, singleConversion.entry);
     },
     { numberOfParallelExecutions }
   );
@@ -211,17 +238,4 @@ async function listConversionBundlesFromS3({
     o.Key ? { bucket: sourceBucketName, key: o.Key } : []
   );
   return conversionBundles;
-}
-
-export function merge(inputBundle: Bundle) {
-  return {
-    into: function (destination: Bundle): Bundle {
-      if (!destination.entry) destination.entry = [];
-      for (const entry of inputBundle.entry ?? []) {
-        destination.entry.push(entry);
-      }
-      destination.total = destination.entry.length;
-      return destination;
-    },
-  };
 }

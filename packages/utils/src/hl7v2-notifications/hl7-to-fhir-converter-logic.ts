@@ -45,6 +45,7 @@ const apiUrl = getEnvVarOrFail("API_URL");
 
 const filePath = "";
 const fileName = "";
+const hieName = "";
 
 function invokeLambdaLogic() {
   const hl7Text = fs.readFileSync(`${filePath}/${fileName}`, "utf-8");
@@ -63,6 +64,8 @@ function invokeLambdaLogic() {
         message,
         sourceTimestamp: timestamp,
         messageReceivedTimestamp: new Date().toISOString(),
+        rawDataFileKey: `${cxId}/${patientId}/hl7-to-fhir-converter-script-${timestamp}.hl7`,
+        hieName,
       });
     } catch (err) {
       errors.push({

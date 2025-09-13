@@ -6,12 +6,12 @@ import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { findOrCreatePatientMapping, getPatientMapping } from "../../../../command/mapping/patient";
 import { queryDocumentsAcrossHIEs } from "../../../../command/medical/document/document-query";
 import { getPatientOrFail } from "../../../../command/medical/patient/get-patient";
+import { getPatientPrimaryFacilityIdOrFail } from "../../../../command/medical/patient/get-patient-facilities";
 import { Config } from "../../../../shared/config";
-import {
-  createMetriportPatientDemosFhir,
-  getOrCreateMetriportPatientFhir,
-} from "../../shared/utils/fhir";
-import { createAthenaClient } from "../shared";
+import { getOrCreateMetriportPatientFhir } from "../../shared/command/patient/get-or-create-metriport-patient-fhir";
+import { createMetriportPatientDemosFhir } from "../../shared/utils/fhir";
+import { isDqCooldownExpired } from "../../shared/utils/patient";
+import { createAthenaClient, validateDepartmentId } from "../shared";
 
 const CUSTOM_FIELD_ID_OPT_IN = Config.isProdEnv() ? "121" : "1269";
 const CUSTOM_FIELD_ID_OPT_OUT = Config.isProdEnv() ? "101" : "1289";
@@ -23,6 +23,7 @@ export type SyncAthenaPatientIntoMetriportParams = {
   athenaDepartmentId: string;
   api?: AthenaHealthApi;
   triggerDq?: boolean;
+  triggerDqForExistingPatient?: boolean;
 };
 
 export async function syncAthenaPatientIntoMetriport({
@@ -32,7 +33,9 @@ export async function syncAthenaPatientIntoMetriport({
   athenaDepartmentId,
   api,
   triggerDq = false,
+  triggerDqForExistingPatient = false,
 }: SyncAthenaPatientIntoMetriportParams): Promise<string> {
+  await validateDepartmentId({ cxId, athenaPracticeId, athenaPatientId, athenaDepartmentId });
   let athenaApi: AthenaHealthApi | undefined;
   if (await isAthenaCustomFieldsEnabledForCx(cxId)) {
     athenaApi = api ?? (await createAthenaClient({ cxId, practiceId: athenaPracticeId }));
@@ -62,6 +65,19 @@ export async function syncAthenaPatientIntoMetriport({
       cxId,
       id: existingPatient.patientId,
     });
+
+    const facilityId = await getPatientPrimaryFacilityIdOrFail({
+      cxId,
+      patientId: metriportPatient.id,
+    });
+
+    if (triggerDqForExistingPatient && isDqCooldownExpired(metriportPatient)) {
+      queryDocumentsAcrossHIEs({
+        cxId,
+        patientId: metriportPatient.id,
+        facilityId,
+      }).catch(processAsyncError(`AthenaHealth queryDocumentsAcrossHIEs`));
+    }
     const metriportPatientId = metriportPatient.id;
     return metriportPatientId;
   }
@@ -77,10 +93,17 @@ export async function syncAthenaPatientIntoMetriport({
     possibleDemographics,
     externalId: athenaApi.stripPatientId(athenaPatientId),
   });
+
+  const facilityId = await getPatientPrimaryFacilityIdOrFail({
+    cxId,
+    patientId: metriportPatient.id,
+  });
+
   if (triggerDq) {
     queryDocumentsAcrossHIEs({
       cxId,
       patientId: metriportPatient.id,
+      facilityId,
     }).catch(processAsyncError(`AthenaHealth queryDocumentsAcrossHIEs`));
   }
   await findOrCreatePatientMapping({
@@ -88,6 +111,7 @@ export async function syncAthenaPatientIntoMetriport({
     patientId: metriportPatient.id,
     externalId: athenaPatientId,
     source: EhrSources.athena,
+    secondaryMappings: { practiceId: athenaPracticeId },
   });
   return metriportPatient.id;
 }

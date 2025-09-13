@@ -39,6 +39,9 @@
     {{#if document.componentOf.encompassingEncounter}}
         {{!-- do we want to include this? Kinda a duplicate of more rich data later in encounter section --}}
         {{>Resources/Encounter.hbs encounter=document.componentOf.encompassingEncounter ID=@encompassingEncounterIds.newId}},
+        {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
+            {{>References/Encounter/subject.hbs ID=@encompassingEncounterIds.newId REF=(concat 'Patient/' patientId.Id)}},
+        {{/with}}
         
         {{#if document.componentOf.encompassingEncounter.responsibleParty.assignedEntity}}
             {{#with (evaluate 'Utils/GeneratePractitionerId.hbs' obj=document.componentOf.encompassingEncounter.responsibleParty.assignedEntity) as |practitionerId|}}

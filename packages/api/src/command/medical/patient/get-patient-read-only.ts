@@ -47,19 +47,23 @@ export async function getPatientReadOnlyOrFail({
  *
  * @param cxId - The cx ID
  * @param facilityId - The facility ID (optional, doesn't filter by facility if omitted)
+ * @param ids - The IDs of the patients to get (optional, if omitted, all patients are returned)
  * @returns The IDs of the patients
  */
 export async function getPatientIds({
   facilityId,
   cxId,
+  patientIds,
 }: {
   facilityId?: string;
   cxId: string;
+  patientIds?: string[];
 }): Promise<string[]> {
   const patients = await PatientModelReadOnly.findAll({
     attributes: ["id"],
     where: {
       cxId,
+      ...(patientIds && patientIds.length > 0 ? { id: { [Op.in]: patientIds } } : undefined),
       ...(facilityId
         ? {
             facilityIds: {

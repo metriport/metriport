@@ -17,10 +17,10 @@ import { uniqBy } from "lodash";
 import { getCxMappingsBySource } from "../../../../command/mapping/cx";
 import {
   Appointment,
-  delayBetweenPatientBatches,
-  delayBetweenPracticeBatches,
   getLookBackTimeRange,
   getLookForwardTimeRange,
+  maxJitterPatientBatches,
+  maxJitterPracticeBatches,
   parallelPatients,
   parallelPractices,
 } from "../../shared/utils/appointment";
@@ -103,7 +103,7 @@ export async function processPatientsFromAppointments({ lookupMode }: { lookupMo
     },
     {
       numberOfParallelExecutions: parallelPractices,
-      delay: delayBetweenPracticeBatches.asMilliseconds(),
+      maxJitterMillis: maxJitterPracticeBatches.asMilliseconds(),
     }
   );
 
@@ -136,7 +136,7 @@ export async function processPatientsFromAppointments({ lookupMode }: { lookupMo
 
   await executeAsynchronously(syncPatientsArgs, syncPatient, {
     numberOfParallelExecutions: parallelPatients,
-    delay: delayBetweenPatientBatches.asMilliseconds(),
+    maxJitterMillis: maxJitterPatientBatches.asMilliseconds(),
   });
 }
 
@@ -150,13 +150,12 @@ async function getAppointments({
   const { log } = out(
     `AthenaHealth getAppointments - cxId ${cxId} practiceId ${practiceId} departmentIds ${departmentIds} lookupMode ${lookupMode}`
   );
-  const { tokenId, client } = await createAthenaClientWithTokenIdAndEnvironment({
+  const { client } = await createAthenaClientWithTokenIdAndEnvironment({
     cxId,
     practiceId,
   });
   try {
     let appointments = await getAppointmentsFromApi({
-      tokenId,
       cxId,
       practiceId,
       departmentIds,
@@ -186,12 +185,10 @@ async function getAppointments({
 }
 
 type GetAppointmentsFromApiParams = GetAppointmentsParams & {
-  tokenId: string;
   log: typeof console.log;
 };
 
 async function getAppointmentsFromApi({
-  tokenId,
   cxId,
   practiceId,
   departmentIds,
@@ -200,7 +197,6 @@ async function getAppointmentsFromApi({
 }: GetAppointmentsFromApiParams): Promise<BookedAppointment[]> {
   const handler = buildEhrGetAppointmentsHandler();
   const handlerParams = {
-    tokenId,
     cxId,
     practiceId,
     departmentIds,
@@ -253,5 +249,6 @@ async function syncPatient({
     patientId: athenaPatientId,
     departmentId: athenaDepartmentId,
     triggerDq: true,
+    isAppointment: true,
   });
 }

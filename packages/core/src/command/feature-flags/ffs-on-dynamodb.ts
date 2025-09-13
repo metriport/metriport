@@ -43,6 +43,7 @@ export const initialFeatureFlags: FeatureFlagDatastore = {
   cxsWithADHDMRFeatureFlag: { enabled: false, values: [] },
   cxsWithNoMrLogoFeatureFlag: { enabled: false, values: [] },
   cxsWithBmiMrFeatureFlag: { enabled: false, values: [] },
+  cxsWithSimpleMrFeatureFlag: { enabled: false, values: [] },
   cxsWithDermMrFeatureFlag: { enabled: false, values: [] },
   cxsWithAiBriefFeatureFlag: { enabled: false, values: [] },
   getCxsWithCdaCustodianFeatureFlag: { enabled: false, values: [] },
@@ -59,6 +60,12 @@ export const initialFeatureFlags: FeatureFlagDatastore = {
   carequalityFeatureFlag: { enabled: false },
   cxsWithPcpVisitAiSummaryFeatureFlag: { enabled: false, values: [] },
   cxsWithHl7NotificationWebhookFeatureFlag: { enabled: false, values: [] },
+  cxsWithDischargeRequeryFeatureFlag: { enabled: false, values: [] },
+  cxsWithDischargeSlackNotificationFeatureFlag: { enabled: false, values: [] },
+  cxsWithXmlRedownloadFeatureFlag: { enabled: false, values: [] },
+  cxsWithSurescriptsFeatureFlag: { enabled: false, values: [] },
+  cxsWithSurescriptsNotificationsFeatureFlag: { enabled: false, values: [] },
+  cxsWithQuestFeatureFlag: { enabled: false, values: [] },
 };
 
 /**
@@ -215,7 +222,7 @@ function ddbItemToDbRecord(
     ? typeof featureFlagsRaw === "string"
       ? ffDatastoreSchema.parse(JSON.parse(featureFlagsRaw))
       : featureFlagsRaw
-    : initialFeatureFlags;
+    : getInitialFeatureFlags();
   const baseRecord = featureFlagsRecordSchema.parse({
     ...rest,
     featureFlags: initialFeatureFlags,
@@ -225,6 +232,13 @@ function ddbItemToDbRecord(
     featureFlags,
   };
   return record;
+}
+
+function getInitialFeatureFlags(): FeatureFlagDatastore {
+  const msg = "Using EMPTY feature flags, this should not happen unless in local development";
+  log(msg);
+  capture.message(msg, { level: "warning" });
+  return initialFeatureFlags;
 }
 
 /**

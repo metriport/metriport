@@ -225,6 +225,14 @@ export async function isBmiFeatureFlagEnabledForCx(cxId: string): Promise<boolea
   return cxIdsWithBmiEnabled.some(i => i === cxId);
 }
 
+export async function getCxsWithSimpleFeatureFlag(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithSimpleMrFeatureFlag");
+}
+export async function isSimpleFeatureFlagEnabledForCx(cxId: string): Promise<boolean> {
+  const cxIdsWithSimpleEnabled = await getCxsWithSimpleFeatureFlag();
+  return cxIdsWithSimpleEnabled.some(i => i === cxId);
+}
+
 export async function getCxsWithDermFeatureFlag(): Promise<string[]> {
   return getCxsWithFeatureFlagEnabled("cxsWithDermMrFeatureFlag");
 }
@@ -250,4 +258,60 @@ export async function isHl7NotificationWebhookFeatureFlagEnabledForCx(
   const cxIdsWithHl7NotificationWebhookEnabled =
     await getCxsWithHl7NotificationWebhookFeatureFlag();
   return cxIdsWithHl7NotificationWebhookEnabled.some(i => i === cxId);
+}
+
+// ENG-536 remove this once we automatically find the discharge summary
+export async function getCxsWithDischargeSlackNotificationFeatureFlag(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithDischargeSlackNotificationFeatureFlag");
+}
+export async function isDischargeSlackNotificationFeatureFlagEnabledForCx(
+  cxId: string
+): Promise<boolean> {
+  const cxsWithDischargeSlackNotificationFeatureFlag =
+    await getCxsWithDischargeSlackNotificationFeatureFlag();
+  return cxsWithDischargeSlackNotificationFeatureFlag.some(i => i === cxId);
+}
+
+export async function getCxsWithDischargeRequeryFeatureFlag(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithDischargeRequeryFeatureFlag");
+}
+export async function isDischargeRequeryFeatureFlagEnabledForCx(cxId: string): Promise<boolean> {
+  const cxIdsWithDischargeRequeryEnabled = await getCxsWithDischargeRequeryFeatureFlag();
+  return cxIdsWithDischargeRequeryEnabled.some(i => i === cxId);
+}
+
+export async function getCxsWithXmlRedownloadFeatureFlag(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithXmlRedownloadFeatureFlag");
+}
+export async function isXmlRedownloadFeatureFlagEnabledForCx(cxId: string): Promise<boolean> {
+  const cxIdsWithXmlRedownloadEnabled = await getCxsWithXmlRedownloadFeatureFlag();
+  return cxIdsWithXmlRedownloadEnabled.some(i => i === cxId);
+}
+
+export async function getCxsWithSurescriptsFeatureFlag(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithSurescriptsFeatureFlag");
+}
+export async function isSurescriptsFeatureFlagEnabledForCx(cxId: string): Promise<boolean> {
+  const cxIdsWithSurescriptsEnabled = await getCxsWithSurescriptsFeatureFlag();
+  return cxIdsWithSurescriptsEnabled.some(i => i === cxId);
+}
+
+export async function getCxsWithSurescriptsNotificationsFeatureFlag(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithSurescriptsNotificationsFeatureFlag");
+}
+export async function isSurescriptsNotificationsFeatureFlagEnabledForCx(
+  cxId: string
+): Promise<boolean> {
+  const cxIdsWithSurescriptsNotificationsEnabled =
+    await getCxsWithSurescriptsNotificationsFeatureFlag();
+  return cxIdsWithSurescriptsNotificationsEnabled.some(i => i === cxId);
+}
+
+export async function getCxsWithQuestFeatureFlag(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithQuestFeatureFlag");
+}
+
+export async function isQuestFeatureFlagEnabledForCx(cxId: string): Promise<boolean> {
+  const cxIdsWithQuestEnabled = await getCxsWithQuestFeatureFlag();
+  return cxIdsWithQuestEnabled.some(i => i === cxId);
 }

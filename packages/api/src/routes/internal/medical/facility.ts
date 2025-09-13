@@ -9,12 +9,12 @@ import { updateFacility } from "../../../command/medical/facility/update-facilit
 import { getOrganizationOrFail } from "../../../command/medical/organization/get-organization";
 import { Facility, FacilityCreate } from "../../../domain/medical/facility";
 import { createOrUpdateFacility as cqCreateOrUpdateFacility } from "../../../external/carequality/command/create-or-update-facility";
-import { createOrUpdateFacilityInCw } from "../../../external/commonwell/command/create-or-update-cw-facility";
+import { createOrUpdateFacilityInCwV2 } from "../../../external/commonwell-v2/command/facility/create-or-update-cw-facility";
 import { requestLogger } from "../../helpers/request-logger";
-import { getUUIDFrom } from "../../schemas/uuid";
-import { asyncHandler, getFromQueryAsBoolean } from "../../util";
 import { internalDtoFromModel } from "../../medical/dtos/facilityDTO";
 import { facilityInternalDetailsSchema } from "../../medical/schemas/facility";
+import { getUUIDFrom } from "../../schemas/uuid";
+import { asyncHandler, getFromQueryAsBoolean } from "../../util";
 
 const router = Router();
 
@@ -73,13 +73,12 @@ router.put(
     }
     // COMMONWELL
     if (syncInHie && facility.cwApproved) {
-      createOrUpdateFacilityInCw({
+      createOrUpdateFacilityInCwV2({
         cxId,
         facility,
         cxOrgName: org.data.name,
         cxOrgType: org.data.type,
-        cwOboOid: facilityDetails.cwOboOid,
-      }).catch(processAsyncError("cw.internal.facility"));
+      }).catch(processAsyncError("cwV2.internal.facility"));
     }
     return res.status(httpStatus.OK).json(internalDtoFromModel(facility));
   })

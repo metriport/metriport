@@ -1,13 +1,11 @@
 import { Config } from "../../../../util/config";
 import { EhrSyncPatientHandler } from "./ehr-sync-patient";
 import { EhrSyncPatientCloud } from "./ehr-sync-patient-cloud";
-import { EhrSyncPatientLocal } from "./ehr-sync-patient-local";
+import { EhrSyncPatientDirect } from "./ehr-sync-patient-direct";
 
 export function buildEhrSyncPatientHandler(): EhrSyncPatientHandler {
   if (Config.isDev()) {
-    const waitTimeAtTheEndInMillis = 0;
-    return new EhrSyncPatientLocal(waitTimeAtTheEndInMillis);
+    return new EhrSyncPatientDirect();
   }
-  const ehrSyncPatientQueueUrl = Config.getEhrSyncPatientQueueUrl();
-  return new EhrSyncPatientCloud(ehrSyncPatientQueueUrl);
+  return new EhrSyncPatientCloud();
 }

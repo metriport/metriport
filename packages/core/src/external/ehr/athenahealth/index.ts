@@ -3,6 +3,8 @@ import {
   Bundle,
   Coding,
   Condition,
+  Encounter as EncounterFhir,
+  Extension,
   Immunization,
   Observation,
   Procedure,
@@ -11,6 +13,7 @@ import {
 import {
   BadRequestError,
   errorToString,
+  executeWithNetworkRetries,
   JwtTokenInfo,
   MetriportError,
   NotFoundError,
@@ -31,10 +34,16 @@ import {
   AllergySeverityReference,
   AllergySeverityReferences,
   allergySeverityReferencesSchema,
+  Appointment,
   AppointmentEvent,
   AppointmentEventListResponse,
   appointmentEventListResponseSchema,
+  Appointments,
+  appointmentsSchema,
   athenaClientJwtTokenResponseSchema,
+  AthenaOnePatient,
+  AthenaOnePatients,
+  athenaOnePatientsSchema,
   BookedAppointment,
   BookedAppointmentListResponse,
   bookedAppointmentListResponseSchema,
@@ -77,6 +86,11 @@ import {
   createdVitalsSuccessSchema,
   Departments,
   departmentsSchema,
+  Encounter,
+  Encounters,
+  encountersSchema,
+  EncounterSummary,
+  encounterSummarySchema,
   EventType,
   FeedType,
   MedicationCreateParams,
@@ -84,13 +98,13 @@ import {
   MedicationReferences,
   medicationReferencesSchema,
   PatientCustomField,
-  PatientsCustomFields,
-  patientsCustomFieldsSchema,
   VitalsCreateParams,
 } from "@metriport/shared/interface/external/ehr/athenahealth/index";
 import {
   EhrFhirResourceBundle,
   ehrFhirResourceBundleSchema,
+  EhrStrictFhirResourceBundle,
+  EhrStrictFhirResourceBundleEntry,
 } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import {
   Patient,
@@ -99,7 +113,6 @@ import {
   patientSearchSchema,
 } from "@metriport/shared/interface/external/ehr/patient";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
-import { getObservationUnits } from "@metriport/shared/medical";
 import axios, { AxiosInstance } from "axios";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -108,9 +121,12 @@ import { uniqBy } from "lodash";
 import { executeAsynchronously } from "../../../util/concurrency";
 import { out } from "../../../util/log";
 import { capture } from "../../../util/notifications";
+import { createOrReplaceDocument } from "../document/command/create-or-replace-document";
+import { fetchDocument } from "../document/command/fetch-document";
+import { DocumentType } from "../document/document-shared";
 import {
   ApiConfig,
-  convertBundleToValidStrictBundle,
+  convertEhrBundleToValidEhrStrictBundle,
   createDataParams,
   DataPoint,
   fetchEhrBundleUsingCache,
@@ -132,6 +148,7 @@ import {
   getObservationObservedDate,
   getObservationReferenceRange,
   getObservationResultStatus,
+  getObservationUnit,
   getObservationUnitAndValue,
   getProcedureCptCode,
   getProcedurePerformedDate,
@@ -140,15 +157,28 @@ import {
   MakeRequestParamsInEhr,
   MedicationWithRefs,
   paginateWaitTime,
+  partitionEhrBundle,
+  saveEhrReferenceBundle,
 } from "../shared";
+import { convertCodeAndValue } from "../unit-conversion";
 
 dayjs.extend(duration);
 
 const parallelRequests = 5;
-const delayBetweenRequestBatches = dayjs.duration(2, "seconds");
+const maxJitter = dayjs.duration(2, "seconds");
 
 interface AthenaHealthApiConfig extends ApiConfig {
   environment: AthenaEnv;
+}
+
+const encounterAppointmentExtensionUrl =
+  "http://hl7.org/fhir/StructureDefinition/encounter-appointment-type-id";
+
+export function getEncounterAppointmentTypeIdExtension(
+  encounter: EncounterFhir
+): Extension | undefined {
+  if (!encounter.extension || encounter.extension.length < 1) return undefined;
+  return encounter.extension.find((ext: Extension) => ext.url === encounterAppointmentExtensionUrl);
 }
 
 const athenaPracticePrefix = "Practice";
@@ -168,22 +198,24 @@ export function isAthenaEnv(env: string): env is AthenaEnv {
   return athenaEnv.includes(env as AthenaEnv);
 }
 
+const athenaClosedStatus = "CLOSED";
+
 const problemStatusesMap = new Map<string, string>();
 problemStatusesMap.set("relapse", "CHRONIC");
 problemStatusesMap.set("recurrence", "CHRONIC");
 
-const vitalSignCodesMapAthena = new Map<string, string>();
-vitalSignCodesMapAthena.set("8310-5", "VITALS.TEMPERATURE");
-vitalSignCodesMapAthena.set("8867-4", "VITALS.HEARTRATE");
-vitalSignCodesMapAthena.set("9279-1", "VITALS.RESPIRATIONRATE");
-vitalSignCodesMapAthena.set("2708-6", "VITALS.INHALEDO2CONCENTRATION");
-vitalSignCodesMapAthena.set("8462-4", "VITALS.BLOODPRESSURE.DIASTOLIC");
-vitalSignCodesMapAthena.set("8480-6", "VITALS.BLOODPRESSURE.SYSTOLIC");
-vitalSignCodesMapAthena.set("29463-7", "VITALS.WEIGHT");
-vitalSignCodesMapAthena.set("8302-2", "VITALS.HEIGHT");
-vitalSignCodesMapAthena.set("39156-5", "VITALS.BMI");
-
-const clinicalElementsThatRequireUnits = ["VITALS.WEIGHT", "VITALS.HEIGHT", "VITALS.TEMPERATURE"];
+const vitalSignCodesMap = new Map<string, { codeKey: string; targetUnits: string }>();
+vitalSignCodesMap.set("8310-5", { codeKey: "VITALS.TEMPERATURE", targetUnits: "degf" });
+vitalSignCodesMap.set("8867-4", { codeKey: "VITALS.HEARTRATE", targetUnits: "bpm" });
+vitalSignCodesMap.set("9279-1", { codeKey: "VITALS.RESPIRATIONRATE", targetUnits: "bpm" });
+vitalSignCodesMap.set("2708-6", { codeKey: "VITALS.INHALEDO2CONCENTRATION", targetUnits: "%" });
+vitalSignCodesMap.set("59408-5", { codeKey: "VITALS.INHALEDO2CONCENTRATION", targetUnits: "%" });
+vitalSignCodesMap.set("8462-4", { codeKey: "VITALS.BLOODPRESSURE.DIASTOLIC", targetUnits: "mmHg" });
+vitalSignCodesMap.set("8480-6", { codeKey: "VITALS.BLOODPRESSURE.SYSTOLIC", targetUnits: "mmHg" });
+vitalSignCodesMap.set("29463-7", { codeKey: "VITALS.WEIGHT", targetUnits: "g" });
+vitalSignCodesMap.set("8302-2", { codeKey: "VITALS.HEIGHT", targetUnits: "cm" });
+vitalSignCodesMap.set("56086-2", { codeKey: "VITALS.WAISTCIRCUMFERENCE", targetUnits: "cm" });
+vitalSignCodesMap.set("39156-5", { codeKey: "VITALS.BMI", targetUnits: "kg/m2" });
 
 const medicationRequestIntents = ["proposal", "plan", "order", "option"];
 const coverageCount = 50;
@@ -197,26 +229,23 @@ const validObservationResultStatuses = [
   "unsolicited",
 ];
 
-const lbsToG = 453.592;
-const kgToG = 1000;
-const inchesToCm = 2.54;
-
 export const supportedAthenaHealthResources: ResourceType[] = [
   "AllergyIntolerance",
   "Condition",
   "DiagnosticReport",
   "Immunization",
   "MedicationRequest",
+  "MedicationStatement", // NOT REALLY SUPPORTED
   "Observation",
   "Procedure",
   "Encounter",
 ];
 
+// TODO Eng-514 -- Add support for more resources
 export const supportedAthenaHealthReferenceResources: ResourceType[] = [
-  "Media",
   "Medication",
   "Binary",
-  "RelatedPerson",
+  "Patient",
   "Location",
   "Organization",
   "Practitioner",
@@ -225,13 +254,21 @@ export const supportedAthenaHealthReferenceResources: ResourceType[] = [
 export const scopes = [
   ...supportedAthenaHealthResources,
   ...supportedAthenaHealthReferenceResources,
-];
+].filter(resource => resource !== "MedicationStatement");
 
 export type SupportedAthenaHealthResource = (typeof supportedAthenaHealthResources)[number];
 export function isSupportedAthenaHealthResource(
   resourceType: string
 ): resourceType is SupportedAthenaHealthResource {
   return supportedAthenaHealthResources.includes(resourceType as ResourceType);
+}
+
+export type SupportedAthenaHealthReferenceResource =
+  (typeof supportedAthenaHealthReferenceResources)[number];
+export function isSupportedAthenaHealthReferenceResource(
+  resourceType: string
+): resourceType is SupportedAthenaHealthReferenceResource {
+  return supportedAthenaHealthReferenceResources.includes(resourceType as ResourceType);
 }
 
 class AthenaHealthApi {
@@ -268,13 +305,15 @@ class AthenaHealthApi {
     };
 
     try {
-      const response = await axios.post(url, createDataParams(data), {
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        auth: {
-          username: this.config.clientKey,
-          password: this.config.clientSecret,
-        },
-      });
+      const response = await executeWithNetworkRetries(() =>
+        axios.post(url, createDataParams(data), {
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          auth: {
+            username: this.config.clientKey,
+            password: this.config.clientSecret,
+          },
+        })
+      );
       if (!response.data) throw new MetriportError("No body returned from token endpoint");
       const tokenData = athenaClientJwtTokenResponseSchema.parse(response.data);
       return {
@@ -394,6 +433,48 @@ class AthenaHealthApi {
     return patient;
   }
 
+  async getAthenaOnePatient({
+    cxId,
+    patientId,
+    params,
+  }: {
+    cxId: string;
+    patientId: string;
+    params?: { [key: string]: string };
+  }): Promise<AthenaOnePatient> {
+    const { debug } = out(
+      `AthenaHealth getAthenaOnePatient - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
+    );
+    const queryParams = new URLSearchParams({
+      showcustomfields: "true",
+      showprivacycustomfields: "true",
+      ...params,
+    });
+    const patientsUrl = `/patients/${this.stripPatientId(patientId)}?${queryParams.toString()}`;
+    const additionalInfo = { cxId, practiceId: this.practiceId, patientId };
+    const athenaOnePatients = await this.makeRequest<AthenaOnePatients>({
+      cxId,
+      patientId,
+      s3Path: "patients-athena-one",
+      method: "GET",
+      url: patientsUrl,
+      schema: athenaOnePatientsSchema,
+      additionalInfo,
+      debug,
+    });
+    const patient = athenaOnePatients[0];
+    if (!patient) {
+      throw new NotFoundError("AthenaOnePatient not found", undefined, additionalInfo);
+    }
+    if (athenaOnePatients.length > 1) {
+      throw new BadRequestError("Multiple patients found in athena-one patients array", undefined, {
+        ...additionalInfo,
+        athenaOnePatients: athenaOnePatients.map(p => JSON.stringify(p)).join(","),
+      });
+    }
+    return patient;
+  }
+
   async getAllergyForPatient({
     cxId,
     patientId,
@@ -437,37 +518,93 @@ class AthenaHealthApi {
     patientId: string;
     departmentId: string;
   }): Promise<PatientCustomField[]> {
-    const { debug } = out(
-      `AthenaHealth getCustomFieldsForPatient - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
-    );
-    const params = {
-      showprivacycustomfields: "true",
-      showcustomfields: "true",
-      departmentid: this.stripDepartmentId(departmentId),
-    };
-    const queryParams = new URLSearchParams(params);
-    const patientsUrl = `/patients/${this.stripPatientId(patientId)}?${queryParams.toString()}`;
-    const additionalInfo = { cxId, practiceId: this.practiceId, patientId };
-    const patientsCustomFields = await this.makeRequest<PatientsCustomFields>({
+    const athenaOnePatient = await this.getAthenaOnePatient({
       cxId,
       patientId,
-      s3Path: "patients-athena-one",
+      params: { departmentid: this.stripDepartmentId(departmentId) },
+    });
+    const patientCustomFields = athenaOnePatient.customfields;
+    return patientCustomFields;
+  }
+
+  async getDepartmentIdForPatient({
+    cxId,
+    patientId,
+  }: {
+    cxId: string;
+    patientId: string;
+  }): Promise<string> {
+    const athenaOnePatient = await this.getAthenaOnePatient({ cxId, patientId });
+    const departmentId = athenaOnePatient.primarydepartmentid;
+    if (!departmentId) {
+      throw new NotFoundError("Primary department ID not found", undefined, {
+        cxId,
+        practiceId: this.practiceId,
+        patientId,
+      });
+    }
+    return departmentId;
+  }
+
+  async getEncounter({
+    cxId,
+    patientId,
+    encounterId,
+  }: {
+    cxId: string;
+    patientId: string;
+    encounterId: string;
+  }): Promise<Encounter> {
+    const { debug } = out(
+      `AthenaHealth getEncounter - cxId ${cxId} practiceId ${this.practiceId} encounterId ${encounterId}`
+    );
+    const encounterUrl = `/chart/encounter/${this.stripEncounterId(encounterId)}`;
+    const additionalInfo = { cxId, practiceId: this.practiceId, patientId, encounterId };
+    const encounters = await this.makeRequest<Encounters>({
+      cxId,
+      patientId,
+      s3Path: "encounter",
       method: "GET",
-      url: patientsUrl,
-      schema: patientsCustomFieldsSchema,
+      url: encounterUrl,
+      schema: encountersSchema,
       additionalInfo,
       debug,
     });
-    if (patientsCustomFields.length > 1) {
-      throw new BadRequestError("Multiple patients found in athena-one patients array", undefined, {
-        ...additionalInfo,
-        patientsCustomFields: patientsCustomFields.map(p => JSON.stringify(p)).join(","),
-      });
+    const encounter = encounters[0];
+    if (!encounter) {
+      throw new NotFoundError("Encounter not found", undefined, additionalInfo);
     }
-    const patientCustomFields = patientsCustomFields[0]?.customfields;
-    if (!patientCustomFields)
-      throw new NotFoundError("Patient not found", undefined, additionalInfo);
-    return patientCustomFields;
+    if (encounters.length > 1) {
+      throw new BadRequestError("Multiple encounters found", undefined, additionalInfo);
+    }
+    return encounter;
+  }
+
+  async getEncounterSummary({
+    cxId,
+    patientId,
+    encounterId,
+  }: {
+    cxId: string;
+    patientId: string;
+    encounterId: string;
+  }): Promise<string> {
+    const { debug } = out(
+      `AthenaHealth getEncounterSummary - cxId ${cxId} practiceId ${this.practiceId} encounterId ${encounterId}`
+    );
+    const encounterUrl = `/chart/encounters/${this.stripEncounterId(encounterId)}/summary`;
+    const additionalInfo = { cxId, practiceId: this.practiceId, patientId, encounterId };
+    const encounterSummary = await this.makeRequest<EncounterSummary>({
+      cxId,
+      patientId,
+      s3Path: "encounter-summary",
+      method: "GET",
+      url: encounterUrl,
+      schema: encounterSummarySchema,
+      additionalInfo,
+      debug,
+    });
+    return encounterSummary.summaryhtml;
   }
 
   async createProblem({
@@ -517,7 +654,7 @@ class AthenaHealthApi {
     const createdProblem = await this.makeRequest<CreatedProblem>({
       cxId,
       patientId,
-      s3Path: `chart/problem/${additionalInfo.conditionId ?? "unknown"}`,
+      s3Path: this.createWriteBackPath("problem", additionalInfo.conditionId),
       method: "POST",
       data,
       url: chartProblemUrl,
@@ -609,7 +746,7 @@ class AthenaHealthApi {
           const createdMedication = await this.makeRequest<CreatedMedication>({
             cxId,
             patientId,
-            s3Path: `chart/medication/${additionalInfo.medicationId ?? "unknown"}`,
+            s3Path: this.createWriteBackPath("medication", additionalInfo.medicationId),
             method: "POST",
             data: params,
             url: chartMedicationUrl,
@@ -633,11 +770,11 @@ class AthenaHealthApi {
       },
       {
         numberOfParallelExecutions: parallelRequests,
-        delay: delayBetweenRequestBatches.asMilliseconds(),
+        maxJitterMillis: maxJitter.asMilliseconds(),
       }
     );
     if (createMedicationErrors.length > 0) {
-      const msg = `Failure while creating some medications @ AthenaHealth`;
+      const msg = "Failure while creating some medications @ AthenaHealth";
       capture.message(msg, {
         extra: {
           ...additionalInfo,
@@ -697,7 +834,7 @@ class AthenaHealthApi {
     const createdVaccines = await this.makeRequest<CreatedVaccines>({
       cxId,
       patientId,
-      s3Path: `chart/vaccine/${additionalInfo.immunizationId ?? "unknown"}`,
+      s3Path: this.createWriteBackPath("vaccine", additionalInfo.immunizationId),
       method: "POST",
       data,
       url: chartVaccineUrl,
@@ -741,14 +878,15 @@ class AthenaHealthApi {
       throw new BadRequestError("No CPT code found for procedure", undefined, additionalInfo);
     }
     const performedDate = getProcedurePerformedDate(procedure);
-    if (!performedDate) {
+    const formattedPerformedDate = this.formatDate(performedDate);
+    if (!formattedPerformedDate) {
       throw new BadRequestError("No performed date found for procedure", undefined, additionalInfo);
     }
     const procedures = [
       {
         note: "Added via Metriport App",
         procedurecode: cptCode,
-        proceduredate: this.formatDate(performedDate),
+        proceduredate: formattedPerformedDate,
       },
     ];
     const data = {
@@ -760,7 +898,7 @@ class AthenaHealthApi {
     const createdSurgicalHistory = await this.makeRequest<CreatedSurgicalHistory>({
       cxId,
       patientId,
-      s3Path: `chart/surgicalhistory/${additionalInfo.procedureId ?? "unknown"}`,
+      s3Path: this.createWriteBackPath("surgicalhistory", additionalInfo.procedureId),
       method: "POST",
       data,
       url: chartSurgicalHistoryUrl,
@@ -833,7 +971,8 @@ class AthenaHealthApi {
       );
     }
     const observedDate = getObservationObservedDate(observation);
-    if (!observedDate) {
+    const formattedObservedDate = this.formatDate(observedDate);
+    if (!formattedObservedDate) {
       throw new BadRequestError(
         "No observed date found for observation",
         undefined,
@@ -856,7 +995,7 @@ class AthenaHealthApi {
     const data = {
       departmentid: this.stripDepartmentId(departmentId),
       analytes,
-      observationdate: this.formatDate(observedDate),
+      observationdate: formattedObservedDate,
       internalnote: loincCoding.display,
       documenttypeid: labResultDocumentId,
       autoclose: "true",
@@ -864,7 +1003,7 @@ class AthenaHealthApi {
     const createdLabResult = await this.makeRequest<CreatedLabResult>({
       cxId,
       patientId,
-      s3Path: `chart/labresult/${additionalInfo.observationId ?? "unknown"}`,
+      s3Path: this.createWriteBackPath("labresult", additionalInfo.observationId),
       method: "POST",
       data,
       url: chartLabResultUrl,
@@ -906,19 +1045,23 @@ class AthenaHealthApi {
       patientId,
       departmentId,
     };
+    const formattedDate = this.formatDate(date);
+    if (!formattedDate) {
+      throw new BadRequestError("No date found for clinical document", undefined, additionalInfo);
+    }
     const data = {
       departmentid: this.stripDepartmentId(departmentId),
       documentdata: encounterText,
       documentsubclass: clinicalNoteDocumentSubclass,
       documenttypeid: clinicalNoteDocumentId,
       internalnote: "Note Added via Metriport App",
-      observationdate: this.formatDate(date),
+      observationdate: formattedDate,
       autoclose: "true",
     };
     const createdClinicalDocument = await this.makeRequest<CreatedClinicalDocument>({
       cxId,
       patientId,
-      s3Path: `chart/clinicaldocument`,
+      s3Path: this.createWriteBackPath("clinicaldocument"),
       method: "POST",
       data,
       url: chartEncounterUrl,
@@ -1047,7 +1190,7 @@ class AthenaHealthApi {
     const createdAllergy = await this.makeRequest<CreatedAllergy>({
       cxId,
       patientId,
-      s3Path: `chart/allergy/${additionalInfo.allergyIntoleranceId ?? "unknown"}`,
+      s3Path: this.createWriteBackPath("allergy", additionalInfo.allergyIntoleranceId),
       method: "PUT",
       data,
       url: chartAllergyUrl,
@@ -1097,37 +1240,35 @@ class AthenaHealthApi {
       });
     }
     const loincCode = getObservationLoincCode(observation);
-    if (!loincCode) {
-      throw new BadRequestError("No code found for observation", undefined, additionalInfo);
+    if (!loincCode || !vitalSignCodesMap.get(loincCode)) {
+      throw new BadRequestError("No LOINC code found for observation", undefined, additionalInfo);
     }
-    const clinicalElementId = vitalSignCodesMapAthena.get(loincCode);
-    if (!clinicalElementId) {
-      throw new BadRequestError("No clinical element id found for observation", undefined, {
-        ...additionalInfo,
-        loincCode,
-      });
-    }
-    const units = getObservationUnits(observation);
+    const units = getObservationUnit(observation);
     if (!units) {
       throw new BadRequestError("No units found for observation", undefined, {
         ...additionalInfo,
         loincCode,
-        clinicalElementId,
       });
     }
     const allCreatedVitals: CreatedVitalsSuccess[] = [];
     const createVitalsErrors: { error: unknown; vitals: string }[] = [];
-    const createVitalsArgs: VitalsCreateParams[] = vitals.sortedPoints.map(v => {
-      const vitalsData = this.createVitalsData(v, clinicalElementId, units);
-      return {
-        departmentid: this.stripDepartmentId(departmentId),
-        returnvitalids: true,
-        source: "DEVICEGENERATED",
-        vitals: [vitalsData],
-        THIRDPARTYUSERNAME: undefined,
-        PATIENTFACINGCALL: undefined,
-      };
+    const createVitalsArgs: VitalsCreateParams[] = vitals.sortedPoints.flatMap(v => {
+      const vitalsData = this.createVitalsData(loincCode, v, units);
+      if (!vitalsData) return [];
+      return [
+        {
+          departmentid: this.stripDepartmentId(departmentId),
+          returnvitalids: true,
+          source: "DEVICEGENERATED",
+          vitals: [vitalsData],
+          THIRDPARTYUSERNAME: undefined,
+          PATIENTFACINGCALL: undefined,
+        },
+      ];
     });
+    if (createVitalsArgs.length < 1) {
+      throw new BadRequestError("No valid vitals data found", undefined, additionalInfo);
+    }
     await executeAsynchronously(
       createVitalsArgs,
       async (params: VitalsCreateParams) => {
@@ -1163,11 +1304,11 @@ class AthenaHealthApi {
       },
       {
         numberOfParallelExecutions: parallelRequests,
-        delay: delayBetweenRequestBatches.asMilliseconds(),
+        maxJitterMillis: maxJitter.asMilliseconds(),
       }
     );
     if (createVitalsErrors.length > 0) {
-      const msg = `Failure while creating some vitals @ AthenaHealth`;
+      const msg = "Failure while creating some vitals @ AthenaHealth";
       capture.message(msg, {
         extra: {
           ...additionalInfo,
@@ -1218,7 +1359,7 @@ class AthenaHealthApi {
           const medicationReferences = await this.makeRequest<MedicationReferences>({
             cxId,
             patientId,
-            s3Path: `reference/medications/${searchValue}`,
+            s3Path: this.createReferencePath("medications", searchValue),
             method: "GET",
             url: `${referenceUrl}?searchvalue=${searchValue}`,
             schema: medicationReferencesSchema,
@@ -1238,11 +1379,11 @@ class AthenaHealthApi {
       },
       {
         numberOfParallelExecutions: parallelRequests,
-        delay: delayBetweenRequestBatches.asMilliseconds(),
+        maxJitterMillis: maxJitter.asMilliseconds(),
       }
     );
     if (searchMedicationErrors.length > 0) {
-      const msg = `Failure while searching for some medications @ AthenaHealth`;
+      const msg = "Failure while searching for some medications @ AthenaHealth";
       capture.message(msg, {
         extra: {
           ...additionalInfo,
@@ -1300,7 +1441,7 @@ class AthenaHealthApi {
           const allergenReferences = await this.makeRequest<AllergenReferences>({
             cxId,
             patientId,
-            s3Path: `reference/allergies/${searchValue}`,
+            s3Path: this.createReferencePath("allergies", searchValue),
             method: "GET",
             url: `${referenceUrl}?searchvalue=${searchValue}`,
             schema: allergenReferencesSchema,
@@ -1320,11 +1461,11 @@ class AthenaHealthApi {
       },
       {
         numberOfParallelExecutions: parallelRequests,
-        delay: delayBetweenRequestBatches.asMilliseconds(),
+        maxJitterMillis: maxJitter.asMilliseconds(),
       }
     );
     if (searchAllergenErrors.length > 0) {
-      const msg = `Failure while searching for some allergens @ AthenaHealth`;
+      const msg = "Failure while searching for some allergens @ AthenaHealth";
       capture.message(msg, {
         extra: {
           ...additionalInfo,
@@ -1354,7 +1495,7 @@ class AthenaHealthApi {
     const { debug } = out(
       `AthenaHealth searchForAllergyReactions - cxId ${cxId} practiceId ${this.practiceId}`
     );
-    const referenceUrl = "/reference/allergies/reactions";
+    const referenceUrl = this.createReferencePath("allergies/reactions");
     const additionalInfo = {
       cxId,
       practiceId: this.practiceId,
@@ -1386,7 +1527,7 @@ class AthenaHealthApi {
     };
     const allergySeverityReferences = await this.makeRequest<AllergySeverityReferences>({
       cxId,
-      s3Path: "reference/allergies/severities",
+      s3Path: this.createReferencePath("allergies/severities"),
       method: "GET",
       url: referenceUrl,
       schema: allergySeverityReferencesSchema,
@@ -1401,12 +1542,16 @@ class AthenaHealthApi {
     metriportPatientId,
     athenaPatientId,
     resourceType,
+    attachAppointmentType = false,
+    fetchEncounterSummary = false,
     useCachedBundle = true,
   }: {
     cxId: string;
     metriportPatientId: string;
     athenaPatientId: string;
     resourceType: string;
+    attachAppointmentType?: boolean;
+    fetchEncounterSummary?: boolean;
     useCachedBundle?: boolean;
   }): Promise<Bundle> {
     const { debug } = out(
@@ -1415,6 +1560,18 @@ class AthenaHealthApi {
     if (!isSupportedAthenaHealthResource(resourceType)) {
       throw new BadRequestError("Invalid resource type", undefined, {
         resourceType,
+      });
+    }
+    // Not supported by AthenaHealth but required for write back
+    if (resourceType === "MedicationStatement") {
+      return await fetchEhrBundleUsingCache({
+        ehr: EhrSources.athena,
+        cxId,
+        metriportPatientId,
+        ehrPatientId: athenaPatientId,
+        resourceType,
+        fetchResourcesFromEhr: () => Promise.resolve([]),
+        useCachedBundle,
       });
     }
     const params = {
@@ -1434,13 +1591,15 @@ class AthenaHealthApi {
       patientId: athenaPatientId,
       resourceType,
     };
-    const fetchResourcesFromEhr = () =>
-      fetchEhrFhirResourcesWithPagination({
+    let referenceBundleToSave: EhrFhirResourceBundle | undefined;
+    const client = this; // eslint-disable-line @typescript-eslint/no-this-alias
+    function fetchResourcesFromEhr() {
+      return fetchEhrFhirResourcesWithPagination({
         makeRequest: async (url: string) => {
-          const bundle = await this.makeRequest<EhrFhirResourceBundle>({
+          const bundle = await client.makeRequest<EhrFhirResourceBundle>({
             cxId,
             patientId: athenaPatientId,
-            s3Path: `fhir-resources-${resourceType}`,
+            s3Path: client.createFhirPath(resourceType),
             method: "GET",
             url,
             schema: ehrFhirResourceBundleSchema,
@@ -1448,16 +1607,152 @@ class AthenaHealthApi {
             debug,
             useFhir: true,
           });
-          return convertBundleToValidStrictBundle(bundle, resourceType, athenaPatientId);
+          const { targetBundle, referenceBundle } = partitionEhrBundle({
+            bundle,
+            resourceType,
+          });
+          referenceBundleToSave = referenceBundle;
+          const validBundle = convertEhrBundleToValidEhrStrictBundle(
+            targetBundle,
+            resourceType,
+            athenaPatientId
+          );
+          if (resourceType === "Encounter") {
+            await client.dangerouslyAdjustEncountersInBundle({
+              cxId,
+              metriportPatientId,
+              athenaPatientId,
+              bundle: validBundle,
+              attachAppointmentType,
+              fetchEncounterSummary,
+            });
+          }
+          return validBundle;
         },
         url: resourceTypeUrl,
       });
+    }
     const bundle = await fetchEhrBundleUsingCache({
       ehr: EhrSources.athena,
       cxId,
       metriportPatientId,
       ehrPatientId: athenaPatientId,
       resourceType,
+      fetchResourcesFromEhr,
+      useCachedBundle,
+    });
+    if (referenceBundleToSave) {
+      await saveEhrReferenceBundle({
+        ehr: EhrSources.athena,
+        cxId,
+        metriportPatientId,
+        ehrPatientId: athenaPatientId,
+        referenceBundle: referenceBundleToSave,
+      });
+    }
+    return bundle;
+  }
+
+  async getResourceBundleByResourceId({
+    cxId,
+    metriportPatientId,
+    athenaPatientId,
+    resourceType,
+    resourceId,
+    attachAppointmentType = false,
+    fetchEncounterSummary = false,
+    useCachedBundle = true,
+  }: {
+    cxId: string;
+    metriportPatientId: string;
+    athenaPatientId: string;
+    resourceType: string;
+    resourceId: string;
+    attachAppointmentType?: boolean;
+    fetchEncounterSummary?: boolean;
+    useCachedBundle?: boolean;
+  }): Promise<Bundle> {
+    const { debug } = out(
+      `AthenaHealth getResourceBundleByResourceId - cxId ${cxId} practiceId ${this.practiceId} metriportPatientId ${metriportPatientId} athenaPatientId ${athenaPatientId} resourceType ${resourceType}`
+    );
+    if (
+      !isSupportedAthenaHealthResource(resourceType) &&
+      !isSupportedAthenaHealthReferenceResource(resourceType)
+    ) {
+      throw new BadRequestError("Invalid resource type", undefined, {
+        athenaPatientId,
+        resourceId,
+        resourceType,
+      });
+    }
+    // Not supported by AthenaHealth but required for write back
+    if (resourceType === "MedicationStatement") {
+      return await fetchEhrBundleUsingCache({
+        ehr: EhrSources.athena,
+        cxId,
+        metriportPatientId,
+        ehrPatientId: athenaPatientId,
+        resourceType,
+        resourceId,
+        fetchResourcesFromEhr: () => Promise.resolve([]),
+        useCachedBundle,
+      });
+    }
+    const params = {
+      _id: resourceId,
+      "ah-practice": this.createPracticetId(this.practiceId),
+    };
+    const urlParams = new URLSearchParams(params);
+    const resourceTypeUrl = `/${resourceType}?${urlParams.toString()}`;
+    const additionalInfo = {
+      cxId,
+      practiceId: this.practiceId,
+      patientId: athenaPatientId,
+      resourceType,
+      resourceId,
+    };
+    const client = this; // eslint-disable-line @typescript-eslint/no-this-alias
+    function fetchResourcesFromEhr() {
+      return fetchEhrFhirResourcesWithPagination({
+        makeRequest: async (url: string) => {
+          const bundle = await client.makeRequest<EhrFhirResourceBundle>({
+            cxId,
+            patientId: athenaPatientId,
+            s3Path: client.createFhirPath(resourceType, resourceId),
+            method: "GET",
+            url,
+            schema: ehrFhirResourceBundleSchema,
+            additionalInfo,
+            debug,
+            useFhir: true,
+          });
+          const validBundle = convertEhrBundleToValidEhrStrictBundle(
+            bundle,
+            resourceType,
+            athenaPatientId
+          );
+          if (resourceType === "Encounter") {
+            await client.dangerouslyAdjustEncountersInBundle({
+              cxId,
+              metriportPatientId,
+              athenaPatientId,
+              bundle: validBundle,
+              attachAppointmentType,
+              fetchEncounterSummary,
+            });
+          }
+          return validBundle;
+        },
+        url: resourceTypeUrl,
+      });
+    }
+    const bundle = await fetchEhrBundleUsingCache({
+      ehr: EhrSources.athena,
+      cxId,
+      metriportPatientId,
+      ehrPatientId: athenaPatientId,
+      resourceType,
+      resourceId,
       fetchResourcesFromEhr,
       useCachedBundle,
     });
@@ -1497,6 +1792,40 @@ class AthenaHealthApi {
       throw new MetriportError(`Subscription failed`, undefined, additionalInfo);
     }
     return createdSubscriptionSuccessSchema.parse(createdSubscription);
+  }
+
+  async getAppointment({
+    cxId,
+    patientId,
+    appointmentId,
+  }: {
+    cxId: string;
+    patientId: string;
+    appointmentId: string;
+  }): Promise<Appointment> {
+    const { debug } = out(
+      `AthenaHealth getAppointment - cxId ${cxId} practiceId ${this.practiceId} appointmentId ${appointmentId}`
+    );
+    const appointmentUrl = `/appointments/${appointmentId}`;
+    const additionalInfo = { cxId, practiceId: this.practiceId, patientId, appointmentId };
+    const appointments = await this.makeRequest<Appointments>({
+      cxId,
+      patientId,
+      s3Path: "appointment",
+      method: "GET",
+      url: appointmentUrl,
+      schema: appointmentsSchema,
+      additionalInfo,
+      debug,
+    });
+    const appointment = appointments[0];
+    if (!appointment) {
+      throw new NotFoundError("Appointment not found", undefined, additionalInfo);
+    }
+    if (appointments.length > 1) {
+      throw new BadRequestError("Multiple appointments found", undefined, additionalInfo);
+    }
+    return appointment;
   }
 
   async getAppointments({
@@ -1681,6 +2010,127 @@ class AthenaHealthApi {
     return api.paginateListResponse(api, requester, nextUrl, acc);
   }
 
+  private async dangerouslyAdjustEncountersInBundle({
+    cxId,
+    metriportPatientId,
+    athenaPatientId,
+    bundle,
+    attachAppointmentType = false,
+    fetchEncounterSummary = false,
+  }: {
+    cxId: string;
+    metriportPatientId: string;
+    athenaPatientId: string;
+    jobId?: string | undefined;
+    bundle: EhrStrictFhirResourceBundle;
+    attachAppointmentType?: boolean;
+    fetchEncounterSummary?: boolean;
+  }): Promise<void> {
+    const { log } = out(
+      `AthenaHealth dangerouslyAdjustEncountersInBundle - cxId ${cxId} athenaPatientId ${athenaPatientId}`
+    );
+    if (!bundle.entry || bundle.entry.length < 1) return;
+    const processEncountersErrors: {
+      error: unknown;
+      cxId: string;
+      athenaPatientId: string;
+      encounterId: string;
+    }[] = [];
+    await executeAsynchronously(
+      bundle.entry,
+      async (entry: EhrStrictFhirResourceBundleEntry) => {
+        if (!entry.resource || !entry.resource.id || entry.resource.resourceType !== "Encounter") {
+          return;
+        }
+        const encounterId = entry.resource.id;
+        try {
+          let encounter: Encounter | undefined;
+          if (attachAppointmentType) {
+            encounter = await this.getEncounter({
+              cxId,
+              patientId: athenaPatientId,
+              encounterId,
+            });
+            const appointment = await this.getAppointment({
+              cxId,
+              patientId: athenaPatientId,
+              appointmentId: encounter.appointmentid,
+            });
+            entry.resource.extension = [
+              ...(entry.resource.extension ?? []),
+              {
+                url: encounterAppointmentExtensionUrl,
+                valueString: appointment.appointmenttypeid,
+              },
+            ];
+          }
+          if (fetchEncounterSummary) {
+            encounter =
+              encounter ??
+              (await this.getEncounter({
+                cxId,
+                patientId: athenaPatientId,
+                encounterId,
+              }));
+            if (encounter.status === athenaClosedStatus) {
+              const existingEncounterSummary = await fetchDocument({
+                ehr: EhrSources.athena,
+                cxId,
+                metriportPatientId,
+                ehrPatientId: athenaPatientId,
+                documentType: DocumentType.HTML,
+                resourceType: "Encounter",
+                resourceId: encounterId,
+              });
+              if (existingEncounterSummary) return;
+              const encounterSummary = await this.getEncounterSummary({
+                cxId,
+                patientId: athenaPatientId,
+                encounterId,
+              });
+              await createOrReplaceDocument({
+                ehr: EhrSources.athena,
+                cxId,
+                metriportPatientId,
+                ehrPatientId: athenaPatientId,
+                documentType: DocumentType.HTML,
+                payload: encounterSummary,
+                resourceType: "Encounter",
+                resourceId: encounterId,
+              });
+            }
+          }
+        } catch (error) {
+          if (error instanceof BadRequestError || error instanceof NotFoundError) return;
+          log(
+            `Failed to process encounter with encounterId ${encounterId}. Cause: ${errorToString(
+              error
+            )}`
+          );
+          processEncountersErrors.push({ error, cxId, athenaPatientId, encounterId });
+        }
+      },
+      {
+        numberOfParallelExecutions: parallelRequests,
+        maxJitterMillis: maxJitter.asMilliseconds(),
+      }
+    );
+    if (processEncountersErrors.length > 0) {
+      const msg = "Failure while processing some encounters @ AthenaHealth";
+      capture.message(msg, {
+        extra: {
+          cxId,
+          athenaPatientId,
+          bundleEntryCount: bundle.entry.length,
+          processEncountersErrorsCount: processEncountersErrors.length,
+          errors: processEncountersErrors,
+          context: "athenahealth.dangerously-adjust-encounters-in-bundle",
+        },
+        level: "warning",
+      });
+    }
+  }
+
   private formatDate(date: string | undefined): string | undefined {
     return formatDate(date, athenaDateFormat);
   }
@@ -1719,68 +2169,45 @@ class AthenaHealthApi {
     return `${prefix}${id}`;
   }
 
+  stripEncounterId(id: string) {
+    return id.replace(`a-${this.stripPracticeId(this.practiceId)}.encounter-`, "");
+  }
+
   private createVitalsData(
+    loincCode: string,
     dataPoint: DataPoint,
-    clinicalElementId: string,
     units: string
-  ): { [key: string]: string | undefined }[] {
+  ): { [key: string]: string }[] | undefined {
+    const formattedReadingTaken = this.formatDate(dataPoint.date);
+    if (!formattedReadingTaken) return undefined;
     if (dataPoint.bp) {
       return [
         {
           clinicalelementid: "VITALS.BLOODPRESSURE.DIASTOLIC",
-          readingtaken: this.formatDate(dataPoint.date),
+          readingtaken: formattedReadingTaken,
           value: dataPoint.bp.diastolic.toString(),
         },
         {
           clinicalelementid: "VITALS.BLOODPRESSURE.SYSTOLIC",
-          readingtaken: this.formatDate(dataPoint.date),
+          readingtaken: formattedReadingTaken,
           value: dataPoint.bp.systolic.toString(),
         },
       ];
     }
+    const convertedCodeAndValue = convertCodeAndValue(
+      loincCode,
+      vitalSignCodesMap,
+      dataPoint.value,
+      units
+    );
+    if (!convertedCodeAndValue) return undefined;
     return [
       {
-        clinicalelementid: clinicalElementId,
-        readingtaken: this.formatDate(dataPoint.date),
-        value: this.convertValue(clinicalElementId, dataPoint.value, units).toString(),
+        clinicalelementid: convertedCodeAndValue.codeKey,
+        readingtaken: formattedReadingTaken,
+        value: convertedCodeAndValue.value.toString(),
       },
     ];
-  }
-
-  private convertValue(clinicalElementId: string, value: number, units: string): number {
-    if (!clinicalElementsThatRequireUnits.includes(clinicalElementId)) return value;
-    if (units === "g" || units === "gram" || units === "grams") return value; // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
-    if (units === "cm" || units.includes("centimeter")) return value; // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
-    if (units === "degf" || units === "f" || units.includes("fahrenheit")) return value; // https://hl7.org/fhir/R4/valueset-ucum-bodytemp.html
-    if (units === "lb_av" || units.includes("pound")) return this.convertLbsToGrams(value); // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
-    if (units === "kg" || units === "kilogram" || units === "kilograms") {
-      return this.convertKiloGramsToGrams(value); // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
-    }
-    if (units === "in_i" || units.includes("inch")) return this.convertInchesToCm(value); // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
-    if (units === "cel" || units === "c" || units.includes("celsius")) {
-      return this.convertCelciusToFahrenheit(value); // https://hl7.org/fhir/R4/valueset-ucum-bodytemp.html
-    }
-    throw new BadRequestError("Unknown units", undefined, {
-      units,
-      clinicalElementId,
-      value,
-    });
-  }
-
-  private convertLbsToGrams(value: number): number {
-    return value * lbsToG;
-  }
-
-  private convertKiloGramsToGrams(value: number): number {
-    return value * kgToG;
-  }
-
-  private convertInchesToCm(value: number): number {
-    return value * inchesToCm;
-  }
-
-  private convertCelciusToFahrenheit(value: number): number {
-    return value * (9 / 5) + 32;
   }
 
   private getSearchvaluesFromCoding(
@@ -1826,6 +2253,18 @@ class AthenaHealthApi {
       });
     }
     return mostSimilarOption;
+  }
+
+  private createWriteBackPath(resourceType: string, resourceId?: string | undefined): string {
+    return `chart/${resourceType}/${resourceId ?? "unknown"}`;
+  }
+
+  private createFhirPath(resourceType: string, resourceId?: string): string {
+    return `fhir-resources-${resourceType}${resourceId ? `/resourceId/${resourceId}` : ""}`;
+  }
+
+  private createReferencePath(referenceType: string, referenceId?: string): string {
+    return `reference/${referenceType}/${referenceId}`;
   }
 }
 

@@ -39,6 +39,15 @@ Additionally, your endpoint will need to accept and process different messages w
 
 1. [Patient data messages](#medical-api-messages).
 
+<Tip>
+  **Testing Webhooks**: In sandbox mode, you can test your
+  webhook integration with realistic patient notification
+  events (Patient Admit, Transfer, Discharge) using the
+  dashboard testing tool. Learn more in the [Webhook Testing
+  section](/medical-api/getting-started/sandbox#webhook-testing)
+  of our sandbox documentation.
+</Tip>
+
 ## Authentication
 
 When Metriport sends a webhook message, it includes an `x-metriport-signature` header - this is an
@@ -140,7 +149,7 @@ accept a `POST` request with this body...
 }
 ```
 
-You can check the [webhook mock server available on our repository](https://github.com/metriport/metriport/blob/master/packages/utils/src/mock-webhook.ts)
+You can check the [webhook mock server available on our repository](https://github.com/metriport/metriport/blob/master/samples/typescript-express/src/mock-webhook.ts)
 for a simple implementation of this message.
 
 ### Medical API messages
@@ -191,6 +200,7 @@ The format follows:
       The additional data you passed to the Metriport API when you called the endpoint related to this Webhook message.
       This does not exist in webhooks for [realtime patient notifications](//medical-api/handling-data/realtime-patient-notifications). See more details [here](/medical-api/handling-data/webhooks#passing-metadata).
     </ResponseField>
+
   </Expandable>
 </ResponseField>
 
@@ -201,8 +211,9 @@ to your app. In these cases, Metriport will store the failed requests, and you c
 either the dashboard, or the API.
 
 <Warning>
-  If you do not have the Webhook URL configured, the Metriport will not attempt to deliver Webhook
-  messages for the Medical API - in which case retries are not applicable.
+  If you do not have the Webhook URL configured, Metriport
+  will not attempt to deliver Webhook messages for the
+  Medical API - in which case retries are not applicable.
 </Warning>
 
 ### Retry Using the Dashboard
@@ -210,7 +221,10 @@ either the dashboard, or the API.
 On the [Developers page](https://dash.metriport.com/developers) in the dashboard, you're able to see the count of
 Webhook requests currently processing, and a count of outstanding ones that failed:
 
-<img className="h-100" src="/images/dash-webhook-retry.png" />
+<img
+  className="h-100"
+  src="/images/dash-webhook-retry.png"
+/>
 
 To retry failed requests, simply click the `Retry` button, and those requests will be sent to your app again.
 
@@ -220,6 +234,6 @@ To retry failed requests, simply click the `Retry` button, and those requests wi
 1. Then, use the [Retry Webhook requests endpoint](/medical-api/api-reference/settings/retry-webhook), to kick off the retry.
 
 <Warning>
-  Currently, the Metriport API doesn't implement automatic retries - let us know if this is
-  something you need.
+  Currently, the Metriport API doesn't implement automatic
+  retries - let us know if this is something you need.
 </Warning>

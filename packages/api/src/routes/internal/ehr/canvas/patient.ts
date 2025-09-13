@@ -45,11 +45,13 @@ router.post(
     const canvasPatientId = getFromQueryOrFail("patientId", req);
     const canvasPracticeId = getFromQueryOrFail("practiceId", req);
     const triggerDq = getFromQueryAsBoolean("triggerDq", req);
+    const isAppointment = getFromQueryAsBoolean("isAppointment", req);
     syncCanvasPatientIntoMetriport({
       cxId,
       canvasPracticeId,
       canvasPatientId,
       triggerDq,
+      triggerDqForExistingPatient: isAppointment,
     }).catch(processAsyncError("Canvas syncCanvasPatientIntoMetriport"));
     return res.sendStatus(httpStatus.OK);
   })

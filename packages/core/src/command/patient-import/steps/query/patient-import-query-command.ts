@@ -4,9 +4,9 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { out } from "../../../../util/log";
 import { capture } from "../../../../util/notifications";
-import { startDocumentQuery } from "../../api/start-document-query";
-import { startPatientQuery } from "../../api/start-patient-query";
-import { reasonForCxInternalError } from "../../patient-import-shared";
+import { startDocumentQuery } from "../../../shared/api/start-document-query";
+import { startPatientQuery } from "../../../shared/api/start-patient-query";
+import { patientImportContext, reasonForCxInternalError } from "../../patient-import-shared";
 import { setPatientOrRecordFailed } from "../../patient-or-record-failed";
 import { ProcessPatientQueryRequest } from "./patient-import-query";
 
@@ -40,6 +40,7 @@ export async function processPatientQuery({
       patientId,
       dataPipelineRequestId,
       rerunPdOnNewDemographics,
+      context: patientImportContext,
     });
     await sleep(waitTimeBetweenPdAndDq().asMilliseconds());
     await startDocumentQuery({
@@ -48,6 +49,7 @@ export async function processPatientQuery({
       patientId,
       triggerConsolidated,
       disableWebhooks,
+      context: patientImportContext,
     });
     if (waitTimeAtTheEndInMillis > 0) await sleep(waitTimeAtTheEndInMillis);
   } catch (error) {

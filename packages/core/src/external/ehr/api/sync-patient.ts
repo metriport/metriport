@@ -6,6 +6,7 @@ import { ApiBaseParams, validateAndLogResponse } from "./api-shared";
 
 export type SyncPatientParams = ApiBaseParams & {
   triggerDq: boolean;
+  isAppointment?: boolean;
 };
 
 /**
@@ -25,6 +26,7 @@ export async function syncPatient({
   departmentId,
   patientId,
   triggerDq,
+  isAppointment,
 }: SyncPatientParams): Promise<void> {
   const { log, debug } = out(`Ehr syncPatient - cxId ${cxId}`);
   const api = axios.create({ baseURL: Config.getApiUrl() });
@@ -34,6 +36,7 @@ export async function syncPatient({
     patientId,
     triggerDq: triggerDq.toString(),
     ...(departmentId ? { departmentId } : {}),
+    ...(isAppointment ? { isAppointment: isAppointment.toString() } : {}),
   });
   const syncPatientUrl = `/internal/ehr/${ehr}/patient?${queryParams.toString()}`;
   try {

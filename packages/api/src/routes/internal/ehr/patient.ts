@@ -1,15 +1,18 @@
 import { isResourceDiffBundleType } from "@metriport/core/external/ehr/bundle/bundle-shared";
-import { BadRequestError, isValidJobEntryStatus } from "@metriport/shared";
+import { BadRequestError } from "@metriport/shared";
 import { isEhrSource } from "@metriport/shared/interface/external/ehr/source";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
-import { setPatientJobEntryStatus } from "../../../command/job/patient/set-entry-status";
+import { getSecondaryMappingsOrFail } from "../../../command/mapping/patient";
+import { contributeResourceDiffBundle } from "../../../external/ehr/shared/command/bundle/contribute-resource-diff-bundle";
+import { startContributeBundlesJob } from "../../../external/ehr/shared/job/bundle/contribute-bundles/start-job";
 import {
   getLatestResourceDiffBundlesJobPayload,
   getResourceDiffBundlesJobPayload,
 } from "../../../external/ehr/shared/job/bundle/create-resource-diff-bundles/get-job-payload";
 import { startCreateResourceDiffBundlesJob } from "../../../external/ehr/shared/job/bundle/create-resource-diff-bundles/start-job";
+import { startWriteBackBundlesJob } from "../../../external/ehr/shared/job/bundle/write-back-bundles/start-job";
 import { requestLogger } from "../../helpers/request-logger";
 import { getUUIDFrom } from "../../schemas/uuid";
 import { asyncHandler, getFrom, getFromQueryOrFail } from "../../util";
@@ -120,38 +123,138 @@ router.get(
 );
 
 /**
- * POST /internal/ehr/:ehrId/patient/:id/resource/diff/set-entry-status
+ * POST /internal/ehr/:ehrId/patient/:id/resource/contribute
  *
- * Sets the status of a resource diff job entry.
+ * Starts the contribute bundles job to contribute the resource diff bundles to the EHR.
  *
  * @param req.query.ehrId - The EHR source.
  * @param req.query.cxId - The CX ID of the patient.
  * @param req.params.id - The patient id of the EHR patient.
- * @param req.query.jobId - The job ID.
- * @param req.query.entryStatus - The status of the entry.
- * @returns 200 OK
+ * @param req.query.practiceId - The practice id of the EHR patient.
+ * @param req.query.createResourceDiffBundlesJobId - The job id of the create resource diff bundles job from which the bundles were created.
+ * @returns The job ID of the contribute bundles job
  */
 router.post(
-  "/:id/resource/diff/set-entry-status",
+  "/:id/resource/contribute",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const ehr = getFromQueryOrFail("ehrId", req);
     if (!isEhrSource(ehr)) throw new BadRequestError("Invalid EHR", undefined, { ehr });
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const jobId = getFromQueryOrFail("jobId", req);
-    const entryStatus = getFromQueryOrFail("entryStatus", req);
-    if (!isValidJobEntryStatus(entryStatus)) {
-      throw new BadRequestError("Status must a valid job entry status");
-    }
-    await setPatientJobEntryStatus({
-      jobId,
+    const patientId = getFrom("params").orFail("id", req);
+    const practiceId = getFromQueryOrFail("practiceId", req);
+    const resourceType = getFromQueryOrFail("resourceType", req);
+    const createResourceDiffBundlesJobId = getFromQueryOrFail(
+      "createResourceDiffBundlesJobId",
+      req
+    );
+    const jobId = await startContributeBundlesJob({
+      ehr,
       cxId,
-      entryStatus,
-      onCompleted: async () => {
-        //TODO: Contribute EHR-only bundles
-      },
+      ehrPatientId: patientId,
+      practiceId,
+      resourceType,
+      createResourceDiffBundlesJobId,
+    });
+    return res.status(httpStatus.OK).json(jobId);
+  })
+);
+
+/**
+ * POST /internal/ehr/:ehrId/patient/:id/resource/contribute/:jobId/contribute
+ *
+ * Contributes the resource diff bundle.
+ *
+ * @param req.query.ehrId - The EHR source.
+ * @param req.query.cxId - The CX ID of the patient.
+ * @param req.params.id - The patient id of the EHR patient.
+ * @param req.query.resourceType - The resource type to refresh.
+ * @param req.params.jobId - The job ID of the contribute bundles job.
+ * @returns 200 OK
+ */
+router.post(
+  "/:id/resource/contribute/:jobId/contribute",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const ehr = getFromQueryOrFail("ehrId", req);
+    if (!isEhrSource(ehr)) throw new BadRequestError("Invalid EHR", undefined, { ehr });
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const patientId = getFrom("params").orFail("id", req);
+    const resourceType = getFromQueryOrFail("resourceType", req);
+    const jobId = getFrom("params").orFail("jobId", req);
+    await contributeResourceDiffBundle({
+      ehr,
+      cxId,
+      ehrPatientId: patientId,
+      resourceType,
+      jobId,
     });
     return res.sendStatus(httpStatus.OK);
+  })
+);
+
+/**
+ * POST /internal/ehr/:ehrId/patient/:id/resource/write-back
+ *
+ * Starts the write back bundles job to write the resource diff bundles to the EHR.
+ *
+ * @param req.query.ehrId - The EHR source.
+ * @param req.query.cxId - The CX ID of the patient.
+ * @param req.params.id - The patient id of the EHR patient.
+ * @param req.query.practiceId - The practice id of the EHR patient.
+ * @param req.query.createResourceDiffBundlesJobId - The job id of the create resource diff bundles job from which the bundles were created.
+ * @returns The job ID of the write back bundles job
+ */
+router.post(
+  "/:id/resource/write-back",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const ehr = getFromQueryOrFail("ehrId", req);
+    if (!isEhrSource(ehr)) throw new BadRequestError("Invalid EHR", undefined, { ehr });
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const patientId = getFrom("params").orFail("id", req);
+    const practiceId = getFromQueryOrFail("practiceId", req);
+    const resourceType = getFromQueryOrFail("resourceType", req);
+    const createResourceDiffBundlesJobId = getFromQueryOrFail(
+      "createResourceDiffBundlesJobId",
+      req
+    );
+    const jobId = await startWriteBackBundlesJob({
+      ehr,
+      cxId,
+      ehrPatientId: patientId,
+      practiceId,
+      resourceType,
+      createResourceDiffBundlesJobId,
+    });
+    return res.status(httpStatus.OK).json(jobId);
+  })
+);
+
+/**
+ * GET /internal/ehr/:ehrId/patient/:id/secondary-mappings
+ *
+ * Get the secondary mappings for the practice
+ *
+ * @param req.query.ehrId - The EHR source.
+ * @param req.query.cxId - The CX ID of the patient.
+ * @param req.params.id - The patient id of the EHR patient.
+ * @returns The secondary mappings for the patient
+ */
+router.get(
+  "/:id/secondary-mappings",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const ehr = getFromQueryOrFail("ehrId", req);
+    if (!isEhrSource(ehr)) throw new BadRequestError("Invalid EHR", undefined, { ehr });
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const practiceId = getFrom("params").orFail("id", req);
+    const secondaryMappings = await getSecondaryMappingsOrFail({
+      cxId,
+      source: ehr,
+      externalId: practiceId,
+    });
+    return res.status(httpStatus.OK).json({ secondaryMappings });
   })
 );
 

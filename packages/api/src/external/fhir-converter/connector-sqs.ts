@@ -46,7 +46,7 @@ export class FHIRConverterConnectorSQS implements FHIRConverterConnector {
         patientId,
         jobId: createJobId(requestId, documentId),
         startedAt: dayjs.utc().toISOString(),
-        ...(source && { source }),
+        source,
       },
     });
   }

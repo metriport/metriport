@@ -27,12 +27,11 @@ import { filterCqLinksByManagingOrg } from "./filter-oids-by-managing-org";
 
 const staleLookbackHours = 24;
 
-const resultPoller = makeOutboundResultPoller();
-
 export async function getDocumentsFromCQ({
   requestId,
   facilityId,
   patient,
+  forceDownload,
   cqManagingOrgName,
   forcePatientDiscovery = false,
   triggerConsolidated = false,
@@ -40,6 +39,7 @@ export async function getDocumentsFromCQ({
   requestId: string;
   facilityId?: string;
   patient: Patient;
+  forceDownload?: boolean;
   cqManagingOrgName?: string;
   forcePatientDiscovery?: boolean;
   triggerConsolidated?: boolean;
@@ -56,6 +56,8 @@ export async function getDocumentsFromCQ({
   });
 
   const isCqQueryEnabled = await isFacilityEnabledToQueryCQ(facilityId, { id: patientId, cxId });
+
+  const resultPoller = makeOutboundResultPoller();
 
   if (!resultPoller.isDQEnabled()) return interrupt(`IHE DQ result poller not available`);
   if (!(await isCQDirectEnabledForCx(cxId))) return interrupt(`CQ disabled for cx ${cxId}`);
@@ -175,6 +177,7 @@ export async function getDocumentsFromCQ({
       patientId: patient.id,
       cxId: patient.cxId,
       numOfGateways: documentQueryRequestsV2.length,
+      forceDownload,
     });
   } catch (error) {
     const msg = `Failed to query and process documents - Carequality`;

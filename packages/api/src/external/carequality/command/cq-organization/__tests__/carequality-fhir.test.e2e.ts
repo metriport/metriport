@@ -6,7 +6,7 @@ dotenv.config();
 import { faker } from "@faker-js/faker";
 import { APIMode, CarequalityManagementApi } from "@metriport/carequality-sdk";
 import { OrganizationWithId } from "@metriport/carequality-sdk/client/carequality";
-import { getEnvVar, getEnvVarOrFail } from "@metriport/shared";
+import { getEnvVar, getEnvVarOrFail, normalizeState } from "@metriport/shared";
 import { cloneDeep } from "lodash";
 import { metriportOid } from "../constants";
 import { getOrganizationFhirTemplate } from "../organization-template";
@@ -69,7 +69,7 @@ describe("CarequalityManagementApiFhir", () => {
       name: faker.company.name(),
       addressLine1: faker.location.streetAddress(),
       city: faker.location.city(),
-      state: faker.location.state(),
+      state: normalizeState(faker.location.state()),
       postalCode: faker.location.zipCode(),
       lat: faker.location.latitude().toString(),
       lon: faker.location.longitude().toString(),
@@ -77,7 +77,7 @@ describe("CarequalityManagementApiFhir", () => {
       phone: faker.phone.number(),
       email: faker.internet.email(),
       role: "Connection",
-      active: false,
+      active: true,
       parentOrgOid: managementOid,
     });
     if (orgFhir.id !== oid) throw new Error("OID mismatch");
@@ -87,10 +87,8 @@ describe("CarequalityManagementApiFhir", () => {
     };
   }
 
-  let primaryOrg: OrganizationWithId | undefined;
   let secondaryOrg: OrganizationWithId | undefined;
   let unrelatedOidOrg: OrganizationWithId | undefined;
-
   afterAll(async () => {
     if (secondaryOrg) {
       try {
@@ -116,9 +114,14 @@ describe("CarequalityManagementApiFhir", () => {
       it("registers a new organization", async () => {
         const orgCreate = await makeOrganization();
         console.log(`Registering primary Org, OID: ${orgCreate.id}`);
-        primaryOrg = await api.registerOrganization(orgCreate);
+        const primaryOrg = await api.registerOrganization(orgCreate);
         expect(primaryOrg).toBeTruthy();
         expect(primaryOrg.id).toBeTruthy();
+
+        const orgAfterDelete = await api.deleteOrganization(primaryOrg);
+        expect(orgAfterDelete).toBeDefined();
+        if (!orgAfterDelete) throw new Error("programming error");
+        expect(orgAfterDelete.active).toBe(false);
       });
 
       it("registers a new org when OID is not under managing org", async () => {
@@ -136,7 +139,7 @@ describe("CarequalityManagementApiFhir", () => {
   describe("getOrganization", () => {
     it("gets a single organization", async () => {
       const oid = getOid();
-      primaryOrg = await api.getOrganization(oid);
+      const primaryOrg = await api.getOrganization(oid);
       expect(primaryOrg).toBeTruthy();
       expect(primaryOrg?.id).toEqual(oid);
     });
@@ -178,22 +181,30 @@ describe("CarequalityManagementApiFhir", () => {
       return;
     } else {
       it("updates the organization", async () => {
+        const oid = getOid();
+        const primaryOrg = await api.getOrganization(oid);
         expect(primaryOrg).toBeTruthy();
         if (!primaryOrg) throw new Error("primaryOrg is undefined");
         const orgUpdate = cloneDeep(primaryOrg);
         const expectedStatus = !orgUpdate.active;
+        const expectedName = faker.company.name();
         orgUpdate.active = expectedStatus;
+        orgUpdate.name = expectedName;
         const updatedOrg = await api.updateOrganization(orgUpdate);
         expect(updatedOrg).toBeTruthy();
         expect(updatedOrg.id).toEqual(primaryOrg.id);
         expect(updatedOrg.active).toEqual(expectedStatus);
+        expect(updatedOrg.name).toEqual(expectedName);
         const orgFromGet = await api.getOrganization(updatedOrg.id);
         expect(orgFromGet).toBeTruthy();
         expect(updatedOrg.id).toEqual(primaryOrg.id);
         expect(updatedOrg.active).toEqual(expectedStatus);
+        expect(updatedOrg.name).toEqual(expectedName);
       });
 
       it("creates new org when tries to update a non-existent organization", async () => {
+        const oid = getOid();
+        const primaryOrg = await api.getOrganization(oid);
         expect(primaryOrg).toBeTruthy();
         if (!primaryOrg) throw new Error("primaryOrg is undefined");
         const orgUpdate = cloneDeep(primaryOrg);
@@ -214,19 +225,50 @@ describe("CarequalityManagementApiFhir", () => {
       it.skip("deleteOrganization", () => {});
       return;
     } else {
-      it("deletes the organization", async () => {
+      it("soft-deletes the organization by ID", async () => {
         const oid = getOid();
-        const orgBeforeDelete = await api.getOrganization(oid);
+        let orgBeforeDelete = await api.getOrganization(oid);
         expect(orgBeforeDelete).toBeDefined();
-        await api.deleteOrganization(oid);
-        const orgAfterDelete = await api.getOrganization(oid);
-        expect(orgAfterDelete).toBeUndefined();
+        if (!orgBeforeDelete) throw new Error("programming error");
+        if (!orgBeforeDelete.active) {
+          orgBeforeDelete = await api.updateOrganization({ ...orgBeforeDelete, active: true });
+        }
+        expect(orgBeforeDelete.active).toBe(true);
+
+        const orgAfterDelete = await api.deleteOrganization(oid);
+        expect(orgAfterDelete).toBeDefined();
+        if (!orgAfterDelete) throw new Error("programming error");
+        expect(orgAfterDelete.active).toBe(false);
+
+        const orgAfterGet = await api.getOrganization(oid);
+        expect(orgAfterGet).toBeDefined();
+        if (!orgAfterGet) throw new Error("programming error");
+        expect(orgAfterGet.active).toBe(false);
       });
 
-      it("does not throw when deleting a non-existent organization", async () => {
+      it("soft-deletes the organization by Org", async () => {
+        const oid = makeUnrelatedOid();
+        const orgCreate = await makeOrganization(oid);
+        console.log(`Registering "unrelated" Org for delete by Org, OID: ${orgCreate.id}`);
+        const orgToDelete = await api.registerOrganization(orgCreate);
+        expect(orgToDelete).toBeTruthy();
+        if (!orgToDelete) throw new Error("programming error");
+        expect(orgToDelete.active).toBe(true);
+
+        const orgAfterDelete = await api.deleteOrganization(orgToDelete);
+        expect(orgAfterDelete).toBeDefined();
+        if (!orgAfterDelete) throw new Error("programming error");
+        expect(orgAfterDelete.active).toBe(false);
+
+        const orgAfterGet = await api.getOrganization(oid);
+        expect(orgAfterGet).toBeDefined();
+        if (!orgAfterGet) throw new Error("programming error");
+        expect(orgAfterGet.active).toBe(false);
+      });
+
+      it("throws when deleting a non-existent organization", async () => {
         const oid = makeOid();
-        await api.deleteOrganization(oid);
-        expect(true).toBeTruthy();
+        await expect(api.deleteOrganization(oid)).rejects.toThrow();
       });
     }
   });

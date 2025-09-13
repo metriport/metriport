@@ -9,9 +9,9 @@ export class SurescriptsSendPatientRequestHandlerDirect
 {
   constructor(private readonly client: SurescriptsSftpClient = new SurescriptsSftpClient()) {}
 
-  async sendPatientRequest(request: SurescriptsPatientRequest): Promise<void> {
+  async sendPatientRequest(request: SurescriptsPatientRequest): Promise<string | undefined> {
     const dataMapper = new SurescriptsDataMapper();
     const requestData = await dataMapper.getPatientRequestData(request);
-    await this.client.sendPatientRequest(requestData);
+    return await this.client.sendPatientRequest(requestData);
   }
 }

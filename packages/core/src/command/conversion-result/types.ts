@@ -1,11 +1,12 @@
+import { MedicalDataSource } from "../../external";
+
 export type ConversionResult = {
   cxId: string;
   patientId: string;
   status: "success" | "failed";
   details?: string | undefined;
   jobId?: string | undefined;
-  /** The MedicalDataSource, or HIE name */
-  source?: string;
+  source: MedicalDataSource;
 };
 
 export type ConversionResultWithCount = ConversionResult & {

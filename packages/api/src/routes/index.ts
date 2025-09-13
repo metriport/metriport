@@ -7,7 +7,9 @@ import ehr from "./ehr";
 import feedback from "./feedback";
 import { reportClientErrors } from "./helpers/report-client-errors";
 import internal from "./internal";
+import local from "./local";
 import medical from "./medical";
+import medicalDash from "./medical/dash";
 import fhirRouter from "./medical/fhir-r4-proxy";
 import { checkMAPIAccess, processCxId } from "./middlewares/auth";
 import { reportDeviceUsage } from "./middlewares/usage";
@@ -25,6 +27,7 @@ export default (app: Application) => {
   // internal only routes, should be disabled at API Gateway
   app.use("/webhook", reportClientErrors, webhook);
   app.use("/internal", internal);
+  app.use("/", local);
 
   // routes with API key auth
   app.use("/settings", processCxId, settings);
@@ -38,7 +41,7 @@ export default (app: Application) => {
 
   // medical routes with API key auth - report usage is on individual routes
   app.use("/medical/v1", processCxId, checkMAPIAccess, medical);
-  app.use(`${dash}/medical/v1`, processCxId, checkMAPIAccess, medical);
+  app.use(`${dash}/medical/v1`, processCxId, checkMAPIAccess, medicalDash);
   app.use("/fhir/R4", processCxId, checkMAPIAccess, fhirRouter);
 
   // routes with API key auth - validated on the API Gateway

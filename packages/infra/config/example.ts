@@ -117,6 +117,7 @@ export const config: EnvConfigNonSandbox = {
   commonwell: {
     envVars: {
       CW_MEMBER_NAME: "Test Org",
+      CW_MEMBER_ID: "123",
       CW_MEMBER_OID: "1.2.3.1.4.1.11.12.29.2022.123",
       CW_GATEWAY_ENDPOINT: "https://api.myhealthapp.com/oauth/fhir",
       CW_GATEWAY_AUTHORIZATION_SERVER_ENDPOINT:
@@ -165,14 +166,8 @@ export const config: EnvConfigNonSandbox = {
     secrets: {
       HL7_BASE64_SCRAMBLER_SEED: "your-base64-scrambler-seed",
     },
-    vpnConfigs: [
-      {
-        partnerName: "SampleHIE",
-        partnerGatewayPublicIp: "200.54.1.1",
-        partnerInternalCidrBlock: "10.10.0.0/16",
-      },
-    ],
     mllpServer: {
+      sentryDSN: "your-sentry-dsn",
       fargateCpu: 1 * vCPU,
       fargateMemoryLimitMiB: 2048,
       fargateTaskCountMin: 2,
@@ -188,6 +183,9 @@ export const config: EnvConfigNonSandbox = {
         name: "YOUR_HIE_NAME",
         cron: "cron(0 0 ? * SAT *)",
         states: [USState.TX],
+        timezone: "America/Chicago",
+        gatewayPublicIp: "200.1.1.1",
+        internalCidrBlocks: ["10.10.0.0/16"],
         subscriptions: ["adt"],
         mapping: {
           ID: "scrambledId",
@@ -202,11 +200,18 @@ export const config: EnvConfigNonSandbox = {
           CITY: "address1City",
           STATE: "address1State",
           ZIP: "address1Zip",
-          FACCODE: "authorizingParticipantFacilityCode",
+          FACCODE: "cxShortcode",
           ASSIGNERID: "assigningAuthorityIdentifier",
+        },
+        sftpConfig: {
+          host: "your-sftp-host",
+          port: 22,
+          username: "your-sftp-username",
+          remotePath: "your-directory-path",
         },
       },
     },
+    dischargeNotificationSlackUrl: "url-to-slack-channel",
   },
   acmCertMonitor: {
     scheduleExpressions: ["cw-schedule-expression"],
@@ -221,12 +226,30 @@ export const config: EnvConfigNonSandbox = {
   iheResponsesBucketName: "test-ihe-responses-bucket",
   iheParsedResponsesBucketName: "test-ihe-parsed-responses-bucket",
   iheRequestsBucketName: "test-ihe-requests-bucket",
+  fhirConversionBucketName: "test-fhir-conversion-bucket",
   engineeringCxId: "12345678-1234-1234-1234-123456789012",
   slack: {
     SLACK_ALERT_URL: "url-to-slack-alert",
     SLACK_NOTIFICATION_URL: "url-to-slack-notification",
     workspaceId: "workspace-id",
     alertsChannelId: "alerts-channel-id",
+  },
+  jobs: {
+    startScheduledPatientJobsScheduleExpression: "0/5 * * * ? *",
+    startScheduledPatientJobsSchedulerUrl: "/internal/patient/job/scheduler/start",
+  },
+  analyticsPlatform: {
+    bucketName: "test-bucket",
+    secrets: {
+      SNOWFLAKE_CREDS: "your-snowflake-creds-as-json",
+    },
+    snowflake: {
+      warehouse: "test-warehouse",
+      role: "test-role",
+      integrationName: "test-integration",
+      integrationUserArn: "arn:aws:iam::000000000000:role/SnowflakeIntegrationRole",
+      integrationExternalId: "000000000000",
+    },
   },
 };
 export default config;

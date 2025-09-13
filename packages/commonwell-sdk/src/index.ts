@@ -1,51 +1,24 @@
-export { APIMode, CommonWell, RequestMetadata } from "./client/commonwell";
-export { CommonWellAPI } from "./client/commonwell-api";
+export { APIMode, CommonWellOptions } from "./client/common";
+export { CommonWell } from "./client/commonwell";
+export { CommonWellAPI, OrganizationRequestMetadata } from "./client/commonwell-api";
+export { CommonWellMember } from "./client/commonwell-member";
+export { CommonWellMemberAPI, MemberRequestMetadata } from "./client/commonwell-member-api";
 export { CommonwellError } from "./common/commonwell-error";
-export { downloadFile } from "./common/fileDownload";
 export { makeJwt } from "./common/make-jwt";
 export {
-  baseQueryMeta,
-  getDemographics,
-  getId,
-  getIdTrailingSlash,
-  getPatientStrongIds,
-  getPersonId,
-  getPersonIdFromSearchByPatientDemo,
-  getPersonIdFromUrl,
-  organizationQueryMeta,
+  buildBaseQueryMeta,
+  decodeCwPatientIdV2,
+  encodeCwPatientId,
+  encodePatientIdForDocumentExchange,
+  getCwPatientIdFromLinks,
 } from "./common/util";
 export { validateNPI } from "./common/validate-npi";
-export { Address, AddressUseCodes } from "./models/address";
-export { CertificateParam, CertificatePurpose, CertificateResp } from "./models/certificates";
-export { Contact, ContactSystemCodes, ContactUseCodes } from "./models/contact";
-export { Demographics, GenderCodes } from "./models/demographics";
+export * from "./models/address";
+export * from "./models/certificates";
+export * from "./models/contact";
+export * from "./models/demographics";
 export * from "./models/document";
-export { documentReferenceResourceType, operationOutcomeResourceType } from "./models/document";
-export { EnrollmentSummary } from "./models/enrollment-summary";
-export { HumanName, NameUseCodes } from "./models/human-name";
-export { Identifier, StrongId } from "./models/identifier";
-export {
-  isLOLA1,
-  isLOLA2,
-  isLOLA3,
-  isLOLA4,
-  LOLA,
-  NetworkLink,
-  PatientLinkProxy,
-  PatientNetworkLink,
-} from "./models/link";
-export { Organization, OrganizationList } from "./models/organization";
-export {
-  Patient,
-  PatientLinkResp,
-  PatientNetworkLinkResp,
-  PatientSearchResp,
-} from "./models/patient";
-export {
-  isEnrolled,
-  isUnenrolled,
-  PatientLink,
-  PatientLinkSearchResp,
-  Person,
-  PersonSearchResp,
-} from "./models/person";
+export * from "./models/human-name";
+export * from "./models/identifier";
+export * from "./models/organization";
+export * from "./models/patient";

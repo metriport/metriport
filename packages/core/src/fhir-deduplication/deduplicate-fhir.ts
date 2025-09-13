@@ -7,6 +7,7 @@ import {
 } from "../external/fhir/bundle/bundle";
 import { capture } from "../util";
 import { deduplicateAllergyIntolerances } from "./resources/allergy-intolerance";
+import { deduplicateCarePlans } from "./resources/care-plan";
 import { deduplicateCompositions } from "./resources/composition";
 import { deduplicateConditions } from "./resources/condition";
 import { deduplicateCoverages } from "./resources/coverage";
@@ -20,18 +21,22 @@ import { deduplicateMedications } from "./resources/medication";
 import { deduplicateMedAdmins } from "./resources/medication-administration";
 import { deduplicateMedRequests } from "./resources/medication-request";
 import { deduplicateMedStatements } from "./resources/medication-statement";
+import { deduplicateMedDispenses } from "./resources/medication-dispense";
 import { deduplicateObservations } from "./resources/observation";
 import { deduplicateObservationsSocial } from "./resources/observation-social";
 import { deduplicateOrganizations } from "./resources/organization";
 import { deduplicatePractitioners } from "./resources/practitioner";
 import { deduplicateProcedures } from "./resources/procedure";
 import { deduplicateRelatedPersons } from "./resources/related-person";
+import { deduplicateServiceRequests } from "./resources/service-request";
+import { deduplicateSpecimens } from "./resources/specimen";
 import { createRef } from "./shared";
 
 const medicationRelatedTypes = [
   "MedicationStatement",
   "MedicationAdministration",
   "MedicationRequest",
+  "MedicationDispense",
 ];
 
 /**
@@ -57,6 +62,7 @@ export function dangerouslyDeduplicateFhir(
   use medication references. This is different than all other resources.
   */
   resourceArrays = replaceResourceReferences(resourceArrays, medicationsResult.refReplacementMap, [
+    "medicationDispenses",
     "medicationAdministrations",
     "medicationStatements",
     "medicationRequests",
@@ -72,6 +78,9 @@ export function dangerouslyDeduplicateFhir(
   const medStatementResult = deduplicateMedStatements(resourceArrays.medicationStatements);
   resourceArrays.medicationStatements = medStatementResult.combinedResources;
 
+  const medDispensesResult = deduplicateMedDispenses(resourceArrays.medicationDispenses);
+  resourceArrays.medicationDispenses = medDispensesResult.combinedResources;
+
   resourceArrays.documentReferences = processDocumentReferences(resourceArrays.documentReferences);
 
   const practitionersResult = deduplicatePractitioners(resourceArrays.practitioners);
@@ -86,7 +95,7 @@ export function dangerouslyDeduplicateFhir(
   resourceArrays = replaceResourceReferences(
     resourceArrays,
     new Map<string, string>([...practitionersResult.refReplacementMap]),
-    ["diagnosticReports"]
+    ["diagnosticReports", "carePlans"]
   );
 
   const conditionsResult = deduplicateConditions(resourceArrays.conditions);
@@ -130,6 +139,15 @@ export function dangerouslyDeduplicateFhir(
   );
   resourceArrays.familyMemberHistories = famMemHistoriesResult.combinedResources;
 
+  const carePlansResult = deduplicateCarePlans(resourceArrays.carePlans);
+  resourceArrays.carePlans = carePlansResult.combinedResources;
+
+  const serviceRequestsResult = deduplicateServiceRequests(resourceArrays.serviceRequests);
+  resourceArrays.serviceRequests = serviceRequestsResult.combinedResources;
+
+  const specimensResult = deduplicateSpecimens(resourceArrays.specimens);
+  resourceArrays.specimens = specimensResult.combinedResources;
+
   resourceArrays = replaceResourceReferences(resourceArrays, medicationsResult.refReplacementMap, [
     "coverages",
   ]);
@@ -143,6 +161,7 @@ export function dangerouslyDeduplicateFhir(
     ...medAdminsResult.danglingReferences,
     ...medRequestResult.danglingReferences,
     ...medStatementResult.danglingReferences,
+    ...medDispensesResult.danglingReferences,
     ...practitionersResult.danglingReferences,
     ...conditionsResult.danglingReferences,
     ...allergiesResult.danglingReferences,
@@ -159,6 +178,9 @@ export function dangerouslyDeduplicateFhir(
     ...relatedPersonsResult.danglingReferences,
     ...famMemHistoriesResult.danglingReferences,
     ...coveragesResult.danglingReferences,
+    ...carePlansResult.danglingReferences,
+    ...serviceRequestsResult.danglingReferences,
+    ...specimensResult.danglingReferences,
   ]);
 
   // Combine all the remaining replacementMaps into one map
@@ -166,6 +188,7 @@ export function dangerouslyDeduplicateFhir(
     ...medAdminsResult.refReplacementMap,
     ...medRequestResult.refReplacementMap,
     ...medStatementResult.refReplacementMap,
+    ...medDispensesResult.refReplacementMap,
     ...practitionersResult.refReplacementMap,
     ...conditionsResult.refReplacementMap,
     ...allergiesResult.refReplacementMap,
@@ -182,6 +205,9 @@ export function dangerouslyDeduplicateFhir(
     ...relatedPersonsResult.refReplacementMap,
     ...famMemHistoriesResult.refReplacementMap,
     ...coveragesResult.refReplacementMap,
+    ...carePlansResult.refReplacementMap,
+    ...serviceRequestsResult.refReplacementMap,
+    ...specimensResult.refReplacementMap,
   ]);
 
   resourceArrays = replaceResourceReferences(resourceArrays, combinedReplacementMap);
@@ -383,6 +409,11 @@ function removeDanglingReferences<T extends Resource>(
     );
     if (!entry.attester?.length) delete entry.attester;
   }
+  if ("report" in entry) {
+    entry.report = entry.report?.filter(r => r.reference && !danglingLinks.has(r.reference));
+    if (!entry.report?.length) delete entry.report;
+  }
+
   return entry;
 }
 
@@ -501,14 +532,28 @@ function removeDuplicateReferences<T extends Resource>(entry: T): T {
     });
   }
 
+  if (
+    "report" in entry &&
+    entry.report &&
+    entry.resourceType === "Procedure" &&
+    Array.isArray(entry.report)
+  ) {
+    const uniqueReports = new Set();
+    entry.report = entry.report.filter(r => {
+      if (uniqueReports.has(r.reference)) return false;
+      uniqueReports.add(r.reference);
+      return true;
+    });
+  }
+
   return entry;
 }
 
 /**
  * Finds and updates references to the deduplicated resources
  */
-function replaceResourceReferences(
-  resourceArrays: ExtractedFhirTypes,
+export function replaceResourceReferences(
+  resourceArrays: Partial<ExtractedFhirTypes>,
   refReplacementMap: Map<string, string>,
   resourceType?: string[]
 ): ExtractedFhirTypes {
@@ -559,7 +604,11 @@ function replaceResourceReference<T extends Resource>(
     });
   }
 
-  if ("author" in entry && Array.isArray(entry.author) && entry.resourceType === "Composition") {
+  if (
+    "author" in entry &&
+    Array.isArray(entry.author) &&
+    (entry.resourceType === "Composition" || entry.resourceType === "CarePlan")
+  ) {
     entry.author = entry.author.map(author => {
       if (author.reference) {
         const newReference = referenceMap.get(author.reference);
@@ -642,6 +691,16 @@ function replaceResourceReference<T extends Resource>(
     }
   }
 
+  if ("authorizingPrescription" in entry && Array.isArray(entry.authorizingPrescription)) {
+    entry.authorizingPrescription = entry.authorizingPrescription.map(prescription => {
+      if (prescription.reference) {
+        const newReference = referenceMap.get(prescription.reference);
+        if (newReference) prescription.reference = newReference;
+      }
+      return prescription;
+    });
+  }
+
   if ("recorder" in entry && entry.recorder?.reference) {
     const newReference = referenceMap.get(entry.recorder.reference);
     if (newReference) entry.recorder.reference = newReference;
@@ -662,6 +721,22 @@ function replaceResourceReference<T extends Resource>(
     }) as typeof entry.reasonReference;
   }
 
+  if (entry.resourceType === "CarePlan" && "activity" in entry) {
+    entry.activity = entry.activity?.map(activity => {
+      activity.detail?.performer?.forEach(performer => {
+        if (performer.reference) {
+          const newReference = referenceMap.get(performer.reference);
+          if (newReference) performer.reference = newReference;
+        }
+      });
+      if (activity.detail?.location?.reference) {
+        const newReference = referenceMap.get(activity.detail.location.reference);
+        if (newReference) activity.detail.location.reference = newReference;
+      }
+      return activity;
+    });
+  }
+
   if (entry.resourceType === "Composition" && "section" in entry) {
     entry.section = entry.section.map(section => {
       if (section.entry) {
@@ -676,6 +751,16 @@ function replaceResourceReference<T extends Resource>(
         });
       }
       return section;
+    });
+  }
+
+  if (entry.resourceType === "Procedure" && "report" in entry && Array.isArray(entry.report)) {
+    entry.report = entry.report.map(r => {
+      if (r.reference) {
+        const newRef = referenceMap.get(r.reference);
+        if (newRef) r.reference = newRef;
+      }
+      return r;
     });
   }
 

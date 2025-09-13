@@ -1,13 +1,13 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 import { makePatient } from "@metriport/core/domain/__tests__/patient";
 import { coreDemographics } from "../../../domain/medical/__tests__/demographics.const";
+import { mockStartTransaction } from "../../../models/__tests__/transaction";
 import { PatientModel } from "../../../models/medical/patient";
 import { PatientMappingModel } from "../../../models/patient-mapping";
-import { mockStartTransaction } from "../../../models/__tests__/transaction";
-import { CQPatientDataModel } from "../../carequality/models/cq-patient-data";
 import { makeCqPatientData } from "../../carequality/__tests__/cq-patient-data";
+import { CQPatientDataModel } from "../../carequality/models/cq-patient-data";
+import { makeCwPatientData } from "../../commonwell-v1/__tests__/cw-patient-data";
 import { CwPatientDataModel } from "../../commonwell/models/cw-patient-data";
-import { makeCwPatientData } from "../../commonwell/__tests__/cw-patient-data";
 import { checkLinkDemographicsAcrossHies } from "../check-patient-link-demographics";
 
 let patientModel_findOne: jest.SpyInstance;

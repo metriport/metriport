@@ -1,12 +1,14 @@
 import { Bundle } from "@medplum/fhirtypes";
-import { BadRequestError } from "@metriport/shared";
+import { BadRequestError, JwtTokenInfo } from "@metriport/shared";
 import { EhrSource, EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { getBundleByResourceType as getBundleByResourceTypeAthena } from "../athenahealth/command/get-bundle-by-resource-type";
 import { getBundleByResourceType as getBundleByResourceTypeCanvas } from "../canvas/command/get-bundle-by-resource-type";
+import { getBundleByResourceType as getBundleByResourceTypeElation } from "../elation/command/get-bundle-by-resource-type";
+import { getBundleByResourceType as getBundleByResourceTypeHealthie } from "../healthie/command/get-bundle-by-resource-type";
 
 export type GetBundleByResourceTypeRequest = {
   ehr: EhrSource;
-  tokenId?: string;
+  tokenInfo?: JwtTokenInfo;
   cxId: string;
   practiceId: string;
   metriportPatientId: string;
@@ -32,8 +34,8 @@ type GetBundleByResourceTypeFnMap = Record<EhrSource, GetBundleByResourceTypeFn 
 const ehrGetBundleByResourceTypeMap: GetBundleByResourceTypeFnMap = {
   [EhrSources.canvas]: getBundleByResourceTypeCanvas,
   [EhrSources.athena]: getBundleByResourceTypeAthena,
-  [EhrSources.elation]: undefined,
-  [EhrSources.healthie]: undefined,
+  [EhrSources.elation]: getBundleByResourceTypeElation,
+  [EhrSources.healthie]: getBundleByResourceTypeHealthie,
   [EhrSources.eclinicalworks]: undefined,
 };
 

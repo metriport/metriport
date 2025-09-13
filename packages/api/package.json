@@ -1,6 +1,6 @@
 {
   "name": "api",
-  "version": "1.27.8",
+  "version": "1.29.4",
   "description": "",
   "main": "app.js",
   "private": true,
@@ -32,6 +32,7 @@
     "@metriport/api-sdk": "file:packages/api-sdk",
     "@metriport/carequality-sdk": "file:packages/carequality-sdk",
     "@metriport/commonwell-sdk": "file:packages/commonwell-sdk",
+    "@metriport/commonwell-sdk-v1": "npm:@metriport/commonwell-sdk@^5.9.11",
     "@metriport/core": "file:packages/core",
     "@metriport/ihe-gateway-sdk": "file:packages/ihe-gateway-sdk",
     "@metriport/shared": "file:packages/shared",
@@ -74,6 +75,7 @@
   "devDependencies": {
     "@faker-js/faker": "^8.0.2",
     "@medplum/fhirtypes": "^2.2.10",
+    "@metriport/eslint-rules": "file:packages/eslint-rules",
     "@ngrok/ngrok": "^1.2.0",
     "@tsconfig/node18": "^1.0.1",
     "@types/convert-units": "^2.3.5",

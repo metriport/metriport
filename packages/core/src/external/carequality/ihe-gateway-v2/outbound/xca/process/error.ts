@@ -201,8 +201,7 @@ export function isRetryable(
   outboundResponse: OutboundDocumentRetrievalResp | OutboundDocumentQueryResp | undefined
 ): boolean {
   if (!outboundResponse) return false;
-
-  const isRetryableResponse =
+  return (
     outboundResponse.operationOutcome?.issue.some(
       issue =>
         issue.severity === "error" &&
@@ -211,11 +210,6 @@ export function isRetryable(
         !knownNonRetryableErrors.some(nonRetryableError =>
           issue.details.text?.includes(nonRetryableError)
         )
-    ) ?? false;
-
-  if (isRetryableResponse && "document" in outboundResponse) {
-    log(`Document retrieval response that will be retried: ${JSON.stringify(outboundResponse)}`);
-  }
-
-  return isRetryableResponse;
+    ) ?? false
+  );
 }

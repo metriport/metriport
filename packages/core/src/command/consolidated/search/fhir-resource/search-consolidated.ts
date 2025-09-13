@@ -298,7 +298,12 @@ export async function hydrateMissingReferences({
     }
 
     if (currentResourceType === "Encounter") {
-      const refResourcesToHydrate = ["Location"] as ResourceType[];
+      const refResourcesToHydrate = [
+        "Location",
+        "Condition",
+        "Procedure",
+        "Observation",
+      ] as ResourceType[];
       refResourcesToHydrate.forEach(refResourceType => {
         const missingRefResources = get(missingRefsByType, refResourceType);
         if (missingRefResources && missingRefResources.length > 0) {
@@ -341,7 +346,7 @@ export async function hydrateMissingReferences({
     patientId,
     resources: mergedResources,
     idsToExclude: nextIdsToExclude,
-    iteration: ++iteration,
+    iteration: iteration + 1,
   });
 
   return hydratedResources;

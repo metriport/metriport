@@ -31,7 +31,7 @@ dayjs.extend(duration);
  * want to trigger document queries for, otherwise it will do it for all
  * Patients of the respective customer.
  *
- * This supports updating the delay time in-flight, by editing the delay-time-in-seconds.txt file.
+ * This supports updating the delay time in-flight, by editing the respective file.
  * @see shared/duration.ts for more details
  *
  * Execute this with:
@@ -106,18 +106,26 @@ async function queryDocsForPatient(
       resources: {},
       total: 0,
     };
+    const getPatientPromise = async () => metriportAPI.getPatient(patientId);
+    const patient = await getPatientPromise();
+
+    if (!patient.facilityIds || patient.facilityIds.length === 0) {
+      log(`Patient ${patientId} has no facilities, skipping...`);
+      return;
+    }
+    const facilityId = patient.facilityIds[0]; // Use the first facility
+
     const docQueryPromise = async () =>
       triggerAndQueryDocRefs.queryDocsForPatient({
         cxId,
         patientId,
+        facilityId,
         triggerWHNotificationsToCx,
         config: detailedConfig,
         log,
       });
-    const getPatientPromise = async () => metriportAPI.getPatient(patientId);
 
     if (dryRun) {
-      const patient = await getPatientPromise();
       log(
         `Would be triggering the DQ for patient ${patient.id} ` +
           `${patient.firstName} ${patient.lastName}...`
@@ -125,7 +133,7 @@ async function queryDocsForPatient(
       return;
     }
 
-    const [patient, docQueryResult] = await Promise.all([getPatientPromise(), docQueryPromise()]);
+    const docQueryResult = await docQueryPromise();
     const { queryComplete, docQueryAttempts } = docQueryResult;
 
     if (queryComplete) {

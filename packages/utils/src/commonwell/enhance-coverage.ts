@@ -7,13 +7,13 @@ import { CodeChallenge } from "@metriport/core/domain/auth/code-challenge";
 import { cookieFromString } from "@metriport/core/domain/auth/cookie-management/cookie-manager";
 import { CookieManagerInMemory } from "@metriport/core/domain/auth/cookie-management/cookie-manager-in-memory";
 import { TriggerAndQueryDocRefsRemote } from "@metriport/core/domain/document-query/trigger-and-query-remote";
-import { CoverageEnhancerLocal } from "@metriport/core/external/commonwell/cq-bridge/coverage-enhancer-local";
-import { ECUpdaterAPI } from "@metriport/core/external/commonwell/cq-bridge/ec-updater-api";
-import { makeApi } from "@metriport/core/external/commonwell/management/api-factory";
+import { CoverageEnhancerLocal } from "@metriport/core/external/commonwell-v1/cq-bridge/coverage-enhancer-local";
+import { ECUpdaterAPI } from "@metriport/core/external/commonwell-v1/cq-bridge/ec-updater-api";
+import { makeApi } from "@metriport/core/external/commonwell-v1/management/api-factory";
 import {
   SessionManagement,
   SessionManagementConfig,
-} from "@metriport/core/external/commonwell/management/session";
+} from "@metriport/core/external/commonwell-v1/management/session";
 import { getEnvVar, getEnvVarOrFail } from "@metriport/core/util/env-var";
 import axios from "axios";
 import dayjs from "dayjs";
@@ -195,9 +195,17 @@ export async function main() {
   await executeAsynchronously(
     patientIds,
     async (patientId: string) => {
+      const patient = await patientLoader.getOneOrFail({ cxId, id: patientId });
+      if (!patient.facilityIds || patient.facilityIds.length === 0) {
+        console.log(`Patient ${patientId} has no facilities, skipping...`);
+        return;
+      }
+      const facilityId = patient.facilityIds[0];
+
       const { docsFound } = await triggerAndQueryDocRefs.queryDocsForPatient({
         cxId: cxId,
         patientId: patientId,
+        facilityId,
         triggerWHNotificationsToCx,
         config: {
           maxDocQueryAttempts,

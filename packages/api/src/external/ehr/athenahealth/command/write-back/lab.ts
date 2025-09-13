@@ -1,6 +1,6 @@
 import { Observation } from "@medplum/fhirtypes";
 import { CreatedLabResultSuccess } from "@metriport/shared/interface/external/ehr/athenahealth/lab-result";
-import { createAthenaClient } from "../../shared";
+import { createAthenaClient, validateDepartmentId } from "../../shared";
 
 export async function writeLabToChart({
   cxId,
@@ -15,6 +15,7 @@ export async function writeLabToChart({
   athenaDepartmentId: string;
   observation: Observation;
 }): Promise<CreatedLabResultSuccess> {
+  await validateDepartmentId({ cxId, athenaPracticeId, athenaPatientId, athenaDepartmentId });
   const api = await createAthenaClient({ cxId, practiceId: athenaPracticeId });
   return await api.createLabResultDocument({
     cxId,

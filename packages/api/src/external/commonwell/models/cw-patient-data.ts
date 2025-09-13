@@ -1,5 +1,5 @@
 import { DataTypes, Sequelize } from "sequelize";
-import { CwData, CwPatientData } from "../cw-patient-data";
+import { CwData, CwPatientData } from "../patient/cw-patient-data/shared";
 import { BaseModel, ModelSetup } from "../../../models/_default";
 
 export class CwPatientDataModel extends BaseModel<CwPatientDataModel> implements CwPatientData {

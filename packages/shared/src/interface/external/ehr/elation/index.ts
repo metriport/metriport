@@ -5,3 +5,8 @@ export * from "./problem";
 export * from "./subscription";
 export * from "./cx-mapping";
 export * from "./event";
+export * from "./ccda";
+export * from "./vtial";
+export * from "./lab";
+export * from "./practice";
+export * from "./note";

@@ -13,6 +13,7 @@ import { Construct } from "constructs";
 import { EnvConfigNonSandbox } from "../../config/env-config";
 import { buildSecrets, secretsToECS } from "../shared/secrets";
 import { MLLP_DEFAULT_PORT } from "./constants";
+import { createHieConfigDictionary } from "../shared/hie-config-dictionary";
 
 interface MllpStackProps extends cdk.StackProps {
   config: EnvConfigNonSandbox;
@@ -45,6 +46,7 @@ const setupNlb = (identifier: string, vpc: ec2.Vpc, nlb: elbv2.NetworkLoadBalanc
   const targetGroup = listener.addTargets(`MllpTargets${identifier}`, {
     port: MLLP_DEFAULT_PORT,
     protocol: elbv2.Protocol.TCP,
+    preserveClientIp: true,
     healthCheck: {
       port: MLLP_DEFAULT_PORT.toString(),
       protocol: elbv2.Protocol.TCP,
@@ -63,8 +65,9 @@ export class MllpStack extends cdk.NestedStack {
     super(scope, id, props);
 
     const { vpc, ecrRepo, incomingHl7NotificationBucket, config } = props;
-    const { notificationWebhookSenderQueue } = config.hl7Notification;
+    const { notificationWebhookSenderQueue, hieConfigs } = config.hl7Notification;
     const {
+      sentryDSN,
       fargateCpu,
       fargateMemoryLimitMiB,
       fargateTaskCountMin,
@@ -149,6 +152,8 @@ export class MllpStack extends cdk.NestedStack {
         MLLP_PORT: MLLP_DEFAULT_PORT.toString(),
         HL7_INCOMING_MESSAGE_BUCKET_NAME: incomingHl7NotificationBucket.bucketName,
         HL7_NOTIFICATION_QUEUE_URL: notificationWebhookSenderQueue.url,
+        HIE_CONFIG_DICTIONARY: JSON.stringify(createHieConfigDictionary(hieConfigs)),
+        ...(sentryDSN ? { SENTRY_DSN: sentryDSN } : {}),
         ...(props.version ? { RELEASE_SHA: props.version } : undefined),
       },
       portMappings: [{ containerPort: MLLP_DEFAULT_PORT }],

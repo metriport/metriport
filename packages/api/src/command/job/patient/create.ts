@@ -1,14 +1,19 @@
+import { buildRunJobHandler } from "@metriport/core/command/job/patient/command/run-job/run-job-factory";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { BadRequestError, jobInitialStatus, PatientJob } from "@metriport/shared";
 import { PatientJobModel } from "../../../models/patient-job";
-import { getLatestPatientJob } from "./get";
 
 export type CreatePatientJobParams = Pick<
   PatientJob,
-  "cxId" | "patientId" | "jobType" | "jobGroupId" | "requestId"
-> & {
-  limitedToOneRunningJob?: boolean;
-};
+  | "cxId"
+  | "patientId"
+  | "jobType"
+  | "jobGroupId"
+  | "requestId"
+  | "scheduledAt"
+  | "paramsOps"
+  | "runUrl"
+>;
 
 export async function createPatientJob({
   cxId,
@@ -16,25 +21,18 @@ export async function createPatientJob({
   jobType,
   jobGroupId,
   requestId,
-  limitedToOneRunningJob = false,
+  scheduledAt,
+  paramsOps,
+  runUrl,
 }: CreatePatientJobParams): Promise<PatientJob> {
-  if (limitedToOneRunningJob) {
-    const runningJob = await getLatestPatientJob({
+  if (!runUrl) {
+    throw new BadRequestError("runUrl is required", undefined, {
       cxId,
       patientId,
       jobType,
       jobGroupId,
-      status: ["waiting", "processing"],
+      requestId,
     });
-    if (runningJob) {
-      throw new BadRequestError("Only one job can be running at a time", undefined, {
-        cxId,
-        patientId,
-        jobType,
-        jobGroupId,
-        runningJobId: runningJob.id,
-      });
-    }
   }
   const created = await PatientJobModel.create({
     id: uuidv7(),
@@ -43,10 +41,17 @@ export async function createPatientJob({
     jobType,
     jobGroupId,
     requestId,
+    scheduledAt,
     status: jobInitialStatus,
     total: 0,
     successful: 0,
     failed: 0,
+    paramsOps,
+    runUrl,
   });
+  if (!scheduledAt && created.runUrl) {
+    const handler = buildRunJobHandler();
+    await handler.runJob({ id: created.id, cxId: created.cxId, runUrl: created.runUrl });
+  }
   return created.dataValues;
 }

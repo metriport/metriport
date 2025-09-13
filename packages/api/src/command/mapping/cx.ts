@@ -27,8 +27,8 @@ export type CxMappingLookupByIdParams = Pick<CxMappingParams, "cxId"> & { id: st
 export async function findOrCreateCxMapping({
   cxId,
   externalId,
-  secondaryMappings,
   source,
+  secondaryMappings,
 }: CxMappingParams): Promise<CxMapping> {
   const existing = await getCxMapping({ externalId, source });
   if (existing) return existing;
@@ -132,6 +132,14 @@ async function getCxMappingModelByIdOrFail({
     throw new NotFoundError("CxMapping not found", undefined, { cxId, id });
   }
   return mapping;
+}
+
+export async function getSecondaryMappingsOrFail({
+  source,
+  externalId,
+}: CxMappingLookUpParams): Promise<CxMappingSecondaryMappings> {
+  const mapping = await getCxMappingOrFail({ source, externalId });
+  return mapping.secondaryMappings;
 }
 
 export async function setExternalIdOnCxMappingById({

@@ -14,9 +14,14 @@ export type SurescriptsAssets = {
   receiveVerificationQueue: Queue;
   receiveResponseLambda: Lambda;
   receiveResponseQueue: Queue;
+  convertPatientResponseLambda: Lambda;
+  convertBatchResponseLambda: Lambda;
   surescriptsReplicaBucket: Bucket;
   pharmacyConversionBucket: Bucket;
-  surescriptsLambdas: Lambda[];
+  surescriptsLambdas: {
+    envVarName: string;
+    lambda: Lambda;
+  }[];
   surescriptsQueues: {
     envVarName: string;
     queue: Queue;

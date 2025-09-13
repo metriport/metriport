@@ -30,6 +30,7 @@ import { getOrganizationOrFail } from "../../../command/medical/organization/get
 import { appendDocQueryProgress } from "../../../command/medical/patient/append-doc-query-progress";
 import { appendBulkGetDocUrlProgress } from "../../../command/medical/patient/bulk-get-doc-url-progress";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
+import { getPatientPrimaryFacilityIdOrFail } from "../../../command/medical/patient/get-patient-facilities";
 import {
   processCcdRequest,
   processEmptyCcdRequest,
@@ -142,7 +143,7 @@ router.post(
     const patientId = getFrom("query").orFail("patientId", req);
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const status = getFrom("query").orFail("status", req);
-    const source = getFrom("query").optional("source", req);
+    const source = getFrom("query").orFail("source", req);
     const details = getFrom("query").optional("details", req);
     const jobId = getFrom("query").optional("jobId", req);
     const countRaw = getFrom("query").optional("count", req);
@@ -357,8 +358,10 @@ router.get(
  * @param req.query.cxId - The customer/account's ID.
  * @param req.query.patientId - The customer/account's ID.
  * @param req.query.facilityId - Optional; The facility providing NPI for the document query.
+ *                               Defaults to the primary facility of the patient.
  * @param req.query.requestId - Optional; The request ID for the document query.
  * @param req.body Optional metadata to be sent through webhook. {"disableWHFlag": "true"} can be sent here to disable webhook.
+ * @param req.query.forceDownload - Optional; Whether to forceDownload files already downloaded. Defaults to false.
  * @param req.query.forceQuery - Optional; Whether to force doc query to run. DEFAULTS TRUE.
  * @param req.query.forcePatientDiscovery - Optional; Whether to force patient discovery before document query.
  * @param req.query.cqManagingOrgName - Optional; The CQ managing organization name.
@@ -371,19 +374,28 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getFrom("query").orFail("cxId", req);
     const patientId = getFrom("query").orFail("patientId", req);
-    const facilityId = getFrom("query").optional("facilityId", req);
+    const facilityIdParam = getFrom("query").optional("facilityId", req);
     const requestId = getFrom("query").optional("requestId", req);
+    const forceDownload = getFromQueryAsBoolean("forceDownload", req) ?? false;
     const forceQuery = getFromQueryAsBoolean("forceQuery", req) ?? true;
     const forcePatientDiscovery = getFromQueryAsBoolean("forcePatientDiscovery", req);
     const cqManagingOrgName = getFrom("query").optional("cqManagingOrgName", req);
     const triggerConsolidated = getFromQueryAsBoolean("triggerConsolidated", req);
     const cxDocumentRequestMetadata = cxRequestMetadataSchema.parse(req.body);
 
+    const facilityId = facilityIdParam
+      ? facilityIdParam
+      : await getPatientPrimaryFacilityIdOrFail({
+          cxId,
+          patientId,
+        });
+
     const docQueryProgress = await queryDocumentsAcrossHIEs({
       cxId,
       patientId,
       facilityId,
       requestId,
+      forceDownload,
       forceQuery,
       forcePatientDiscovery,
       cqManagingOrgName,

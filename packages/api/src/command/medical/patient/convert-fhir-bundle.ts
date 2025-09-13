@@ -1,4 +1,4 @@
-import { Bundle, Resource } from "@medplum/fhirtypes";
+import { Bundle, DocumentReference, Resource } from "@medplum/fhirtypes";
 import { ResourceTypeForConsolidation } from "@metriport/api-sdk";
 import {
   ConsolidationConversionType,
@@ -14,6 +14,10 @@ import { getConsolidatedQueryByRequestId, Patient } from "@metriport/core/domain
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { getLambdaResultPayload, makeLambdaClient } from "@metriport/core/external/aws/lambda";
 import { makeS3Client, S3Utils } from "@metriport/core/external/aws/s3";
+import {
+  buildBundleEntry,
+  buildSearchSetBundle,
+} from "@metriport/core/external/fhir/bundle/bundle";
 import { out } from "@metriport/core/util";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { SearchSetBundle } from "@metriport/shared/medical";
@@ -37,6 +41,12 @@ const region = Config.getAWSRegion();
 const lambdaClient = makeLambdaClient(region, TIMEOUT_CALLING_CONVERTER_LAMBDA.asMilliseconds());
 const s3 = makeS3Client(Config.getAWSRegion());
 export const emptyMetaProp = "na";
+
+const REQUESTED_MIME_TYPE: Record<ConsolidationConversionType, string> = {
+  json: "application/json",
+  pdf: "application/pdf",
+  html: "text/html",
+};
 
 export async function handleBundleToMedicalRecord({
   bundle,
@@ -65,7 +75,8 @@ export async function handleBundleToMedicalRecord({
       bucketName,
       fileName,
     });
-    return buildDocRefBundleWithAttachment(patient.id, url, conversionType);
+    const attachments = [{ url, mimeType: conversionType }];
+    return buildDocRefBundleWithAttachments(patient.id, attachments);
   }
 
   const { url, hasContents } = await convertFHIRBundleToMedicalRecord({
@@ -77,7 +88,8 @@ export async function handleBundleToMedicalRecord({
     conversionType,
   });
 
-  const newBundle = buildDocRefBundleWithAttachment(patient.id, url, conversionType);
+  const attachments = [{ url, mimeType: conversionType }];
+  const newBundle = buildDocRefBundleWithAttachments(patient.id, attachments);
   if (!hasContents) {
     log(`No contents in the consolidated data for patient ${patient.id}`);
     newBundle.entry = [];
@@ -98,34 +110,33 @@ export async function handleBundleToMedicalRecord({
   return newBundle;
 }
 
-export function buildDocRefBundleWithAttachment(
+type LocalAttachment = {
+  url: string;
+  mimeType: ConsolidationConversionType | "gzip";
+};
+
+export function buildDocRefBundleWithAttachments(
   patientId: string,
-  attachmentUrl: string,
-  mimeType: ConsolidationConversionType
+  attachments: LocalAttachment[]
 ): SearchSetBundle<Resource> {
-  return {
-    resourceType: "Bundle",
-    total: 1,
-    type: "searchset",
-    entry: [
-      {
-        resource: {
-          resourceType: "DocumentReference",
-          subject: {
-            reference: `Patient/${patientId}`,
-          },
-          content: [
-            {
-              attachment: {
-                contentType: `application/${mimeType}`,
-                url: attachmentUrl,
-              },
-            },
-          ],
+  const docRef: DocumentReference = {
+    resourceType: "DocumentReference",
+    subject: {
+      reference: `Patient/${patientId}`,
+    },
+    content: attachments.map(attachment => {
+      const isGzip = attachment.mimeType === "gzip";
+      return {
+        attachment: {
+          contentType: isGzip
+            ? "application/gzip"
+            : REQUESTED_MIME_TYPE[attachment.mimeType as ConsolidationConversionType],
+          url: attachment.url,
         },
-      },
-    ],
+      };
+    }),
   };
+  return buildSearchSetBundle([buildBundleEntry(docRef)]);
 }
 
 async function convertFHIRBundleToMedicalRecord({
@@ -204,6 +215,27 @@ export async function uploadJsonBundleToS3({
       Key: fileName,
       Body: JSON.stringify(bundle),
       ContentType: "application/json",
+      Metadata: metadata,
+    })
+    .promise();
+}
+
+export async function uploadGzipBundleToS3({
+  compressedData,
+  fileName,
+  metadata,
+}: {
+  compressedData: Buffer;
+  fileName: string;
+  metadata: Record<string, string>;
+}) {
+  await s3
+    .putObject({
+      Bucket: Config.getMedicalDocumentsBucketName(),
+      Key: fileName,
+      Body: compressedData,
+      ContentType: "application/gzip",
+      ContentEncoding: "gzip",
       Metadata: metadata,
     })
     .promise();

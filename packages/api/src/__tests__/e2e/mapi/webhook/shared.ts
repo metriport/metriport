@@ -1,5 +1,5 @@
+import { buildDayjs } from "@metriport/shared/common/date";
 import { WebhookRequest } from "@metriport/shared/medical";
-import dayjs from "dayjs";
 import { validate as validateUuid } from "uuid";
 
 export function checkWebhookRequestMeta(
@@ -17,10 +17,10 @@ export function checkWebhookRequestMeta(
     })
   );
   expect(validateUuid(whRequest.meta.messageId)).toBeTrue();
-  const expectedRefDate = dayjs();
+  const expectedRefDate = buildDayjs();
   const expectedMminDate = expectedRefDate.subtract(1, "minute").toDate();
-  const expectedMaxDate = dayjs().add(1, "minute").toDate();
-  const receivedDate = dayjs(whRequest.meta.when).toDate();
+  const expectedMaxDate = buildDayjs().add(1, "minute").toDate();
+  const receivedDate = buildDayjs(whRequest.meta.when).toDate();
   expect(receivedDate).toBeAfterOrEqualTo(expectedMminDate);
   expect(receivedDate).toBeBeforeOrEqualTo(expectedMaxDate);
   expect(whRequest.meta).not.toEqual(

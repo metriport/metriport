@@ -1,3 +1,4 @@
+import { errorToString } from "@metriport/shared";
 import { Client } from "@opensearch-project/opensearch";
 import { out } from "../../../util";
 import { OpenSearchFileRemover, OpenSearchFileRemoverConfig } from "./file-remover";
@@ -17,8 +18,15 @@ export class OpenSearchFileRemoverDirect implements OpenSearchFileRemover {
 
     const auth = { username, password };
     const client = new Client({ node: endpoint, auth });
-
-    await client.delete({ index: indexName, id: entryId });
-    log(`Successfully deleted ${entryId}`);
+    try {
+      await client.delete({ index: indexName, id: entryId });
+      log(`Successfully deleted ${entryId}`);
+    } finally {
+      try {
+        await client.close();
+      } catch (error) {
+        log(`Error closing OS client: ${errorToString(error)}`);
+      }
+    }
   }
 }

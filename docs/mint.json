@@ -87,6 +87,7 @@
             "medical-api/api-reference/patient/match-patient",
             "medical-api/api-reference/patient/list-patients",
             "medical-api/api-reference/patient/delete-patient",
+            "medical-api/api-reference/patient/create-patient-external-sync",
             "medical-api/api-reference/patient/hie-opt-out",
             "medical-api/api-reference/patient/bulk-create-patient"
           ]
@@ -141,10 +142,32 @@
         "medical-api/handling-data/medical-record-summary",
         "medical-api/handling-data/webhooks",
         "medical-api/handling-data/realtime-patient-notifications",
-        "medical-api/handling-data/data-analytics",
+        {
+          "group": "Data Analytics and Warehousing",
+          "icon": "database",
+          "pages": [
+            "medical-api/handling-data/data-analytics",
+            {
+              "group": "Schema",
+              "pages": [
+                "medical-api/handling-data/schema/condition",
+                "medical-api/handling-data/schema/encounter",
+                "medical-api/handling-data/schema/immunization",
+                "medical-api/handling-data/schema/lab-result",
+                "medical-api/handling-data/schema/location",
+                "medical-api/handling-data/schema/medication",
+                "medical-api/handling-data/schema/observation",
+                "medical-api/handling-data/schema/patient",
+                "medical-api/handling-data/schema/practitioner",
+                "medical-api/handling-data/schema/procedure"
+              ]
+            }
+          ]
+        },
         "medical-api/handling-data/filters",
         "medical-api/handling-data/pagination",
-        "medical-api/handling-data/contribution"
+        "medical-api/handling-data/contribution",
+        "medical-api/handling-data/opt-out"
       ]
     },
     {
@@ -238,9 +261,7 @@
         {
           "group": "Extensions",
           "icon": "asterisk",
-          "pages": [
-            "medical-api/fhir/extensions/chronicity"
-          ]
+          "pages": ["medical-api/fhir/extensions/chronicity"]
         }
       ]
     },
@@ -278,7 +299,7 @@
     },
     {
       "group": "EHR Apps",
-      "pages": ["ehr-apps/overview", "ehr-apps/athena", "ehr-apps/canvas", "ehr-apps/elation"]
+      "pages": ["ehr-apps/overview", "ehr-apps/athena", "ehr-apps/canvas", "ehr-apps/elation", "ehr-apps/healthie", "ehr-apps/salesforce"]
     }
   ],
   "footerSocials": {

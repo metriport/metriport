@@ -1,3 +1,4 @@
+import { errorToString } from "@metriport/shared";
 import { Client } from "@opensearch-project/opensearch";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -121,26 +122,33 @@ export class OpenSearchFileIngestorDirect extends OpenSearchFileIngestor {
     const { indexName } = this.config;
     const auth = { username: this.username, password: this.password };
     const client = new Client({ node: this.endpoint, auth });
+    try {
+      // add a document to the index
+      const document: IndexFields = {
+        cxId,
+        patientId,
+        s3FileName,
+        content,
+      };
 
-    // add a document to the index
-    const document: IndexFields = {
-      cxId,
-      patientId,
-      s3FileName,
-      content,
-    };
-
-    log(`Ingesting file ${s3FileName} into index ${indexName}...`);
-    // upsert
-    const response = await client.update(
-      {
-        index: indexName,
-        id: entryId,
-        body: { doc: document, doc_as_upsert: true },
-      },
-      { requestTimeout: requestTimeout ?? DEFAULT_INGESTION_TIMEOUT }
-    );
-    log(`Successfully ingested it, response: ${JSON.stringify(response.body)}`);
+      log(`Ingesting file ${s3FileName} into index ${indexName}...`);
+      // upsert
+      const response = await client.update(
+        {
+          index: indexName,
+          id: entryId,
+          body: { doc: document, doc_as_upsert: true },
+        },
+        { requestTimeout: requestTimeout ?? DEFAULT_INGESTION_TIMEOUT }
+      );
+      log(`Successfully ingested it, response: ${JSON.stringify(response.body)}`);
+    } finally {
+      try {
+        await client.close();
+      } catch (error) {
+        log(`Error closing OS client: ${errorToString(error)}`);
+      }
+    }
   }
 
   private getLog(defaultLogger: ReturnType<typeof out>): typeof console.log {

@@ -48,11 +48,13 @@ router.post(
     const elationPatientId = getFromQueryOrFail("patientId", req);
     const elationPracticeId = getFromQueryOrFail("practiceId", req);
     const triggerDq = getFromQueryAsBoolean("triggerDq", req);
+    const isAppointment = getFromQueryAsBoolean("isAppointment", req);
     syncElationPatientIntoMetriport({
       cxId,
       elationPracticeId,
       elationPatientId,
       triggerDq,
+      triggerDqForExistingPatient: isAppointment,
     }).catch(processAsyncError("Elation syncElationPatientIntoMetriport"));
     return res.sendStatus(httpStatus.OK);
   })
