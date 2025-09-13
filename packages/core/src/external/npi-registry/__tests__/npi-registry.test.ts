@@ -6,8 +6,17 @@ import {
 import { FacilityType, FacilityInternalDetails } from "../../../domain/facility";
 import { getFacilityByNpiOrFail, translateNpiFacilityToMetriportFacility } from "../npi-registry";
 import { toTitleCase } from "@metriport/shared/common/title-case";
+import axios from "axios";
+jest.mock("axios");
+const mockedAxios = axios as jest.Mocked<typeof axios>;
 
 describe("Npi Registry Validation", () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
   const validFacility: NpiRegistryFacility = {
     number: "1407380272",
     addresses: [
@@ -31,6 +40,10 @@ describe("Npi Registry Validation", () => {
   };
 
   it("successfully returns valid facility", async () => {
+    mockedAxios.get.mockResolvedValueOnce({
+      data: { result_count: "1", results: [validFacility] },
+    } as any); //eslint-disable-line @typescript-eslint/no-explicit-any
+
     const npi = "1407380272";
     const npiFacility = await getFacilityByNpiOrFail(npi);
 
@@ -57,8 +70,12 @@ describe("Npi Registry Validation", () => {
 
     await expect(getFacilityByNpiOrFail(notValidLuhnNpi)).rejects.toThrow(invalidMsg);
 
+    mockedAxios.get.mockResolvedValueOnce({
+      data: { result_count: "0", results: [] },
+    } as any); //eslint-disable-line @typescript-eslint/no-explicit-any
+
     await expect(getFacilityByNpiOrFail(nonExistentFacilityNpi)).rejects.toThrow(
-      `NPI Registry error. No facilities found.`
+      "NPI Registry error. No facilities found."
     );
   });
 
