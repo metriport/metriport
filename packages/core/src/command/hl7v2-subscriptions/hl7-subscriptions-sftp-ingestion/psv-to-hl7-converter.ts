@@ -1,7 +1,6 @@
-import { buildDayjs } from "@metriport/shared/common/date";
+import { Hl7Message } from "@medplum/core";
 import { MetriportError } from "@metriport/shared";
 import { parse } from "csv-parse";
-import { Hl7Message } from "@medplum/core";
 import { getCxIdAndPatientIdOrFail } from "../hl7v2-to-fhir-conversion/shared";
 
 type Row = {
@@ -416,13 +415,9 @@ export class PsvToHl7Converter {
     parts.length = i + 1;
   }
 
-  private hl7Now(): string {
-    return buildDayjs(Date.now()).utc().format("YYYYMMDDHHmmss");
-  }
-
   private getMessageControlId(row: Row): string {
     const base = row.VisitNumber || row.PatientID || row.MetriplexPatID || "NA";
-    const timestamp = this.toHl7Ts(row.AdmitDateTime) || this.hl7Now();
+    const timestamp = this.toHl7Ts(row.AdmitDateTime);
     return `${base}_${timestamp}`;
   }
 
@@ -446,11 +441,7 @@ export class PsvToHl7Converter {
   }
 
   private getMessageTime(row: Row): string {
-    return (
-      this.toHl7Ts(row.AdmitDateTime) ||
-      this.toHl7Ts(row.DischargeDateTime) ||
-      this.toHl7Ts(buildDayjs(Date.now()).toISOString())
-    );
+    return this.toHl7Ts(row.AdmitDateTime) || this.toHl7Ts(row.DischargeDateTime);
   }
 
   private digitsOnly(s?: string): string {
