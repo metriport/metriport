@@ -2,6 +2,20 @@ import { z } from "zod";
 import { emptyStringToUndefinedSchema } from "../common/zod";
 import { periodSchema } from "./period";
 
+/**
+ * Describes the kind of contact.
+ * @see: https://hl7.org/fhir/R4/valueset-contact-point-system.html
+ */
+export enum ContactSystemCodes {
+  phone = "phone",
+  fax = "fax",
+  email = "email",
+  pager = "pager",
+  url = "url",
+  sms = "sms",
+  other = "other",
+}
+
 // A variety of technology-mediated contact details for a person or organization, including
 // telephone, email, etc.
 // See: https://specification.commonwellalliance.org/services/rest-api-reference (8.4.7 Contact)
