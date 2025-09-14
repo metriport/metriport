@@ -2,6 +2,7 @@ import { normalizeZipCodeNewSafe } from "@metriport/shared/domain/address/zip";
 import { normalizePhoneNumberSafe } from "@metriport/shared/domain/contact/phone";
 import { normalizeGenderSafe } from "@metriport/shared/domain/gender";
 import { normalizeSsnSafe } from "@metriport/shared/domain/patient/ssn";
+import { buildDayjs } from "@metriport/shared/common/date";
 import { z } from "zod";
 
 const genderSchema = z
@@ -52,7 +53,16 @@ export const rowSchema = z
     MiddleName: z.string().optional(),
     PrimaryPhoneNumber: phoneSchema,
     SSN: ssnSchema,
-    PatientDateofBirth: z.string().min(1, "Date of birth is required"),
+    PatientDateofBirth: z
+      .string()
+      .min(1, "Date of birth is required")
+      .transform(val => {
+        const parsed = buildDayjs(val);
+        if (!parsed.isValid()) {
+          throw new Error(`Invalid date format: ${val}`);
+        }
+        return parsed.format("YYYYMMDD");
+      }),
     Gender: genderSchema,
     MaritalStatus: MaritalStatusEnum,
     ZipCode: zipSchema,

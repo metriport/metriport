@@ -203,7 +203,7 @@ export class PsvToHl7Converter {
     ].join("~");
 
     const pid5Name = this.buildNameXpn(row.firstName, row.middleName, row.lastName);
-    const pid7Dob = this.formatHl7Dob(row.patientDateofBirth);
+    const pid7Dob = row.patientDateofBirth;
     const pid8Sex = this.escapeHl7Text(row.gender || "U");
     const pid11Addr = [
       this.escapeHl7Text(row.streetAddress),
@@ -389,43 +389,6 @@ export class PsvToHl7Converter {
     );
   }
 
-  private formatHl7Dob(dateOfBirth?: string): string {
-    if (!dateOfBirth) return "";
-
-    const trimmedInput = dateOfBirth.trim();
-
-    const hyphenatedYmdMatch = /^(\d{4})-(\d{2})-(\d{2})/.exec(trimmedInput);
-    if (hyphenatedYmdMatch) {
-      const year = hyphenatedYmdMatch[1] ?? "";
-      const month = hyphenatedYmdMatch[2] ?? "";
-      const day = hyphenatedYmdMatch[3] ?? "";
-      if (year && month && day) return `${year}${month}${day}`;
-    }
-
-    const slashedDateMatch = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(trimmedInput);
-    if (slashedDateMatch) {
-      const firstPart = slashedDateMatch[1] ?? "";
-      const secondPart = slashedDateMatch[2] ?? "";
-      const year = slashedDateMatch[3] ?? "";
-      if (firstPart && secondPart && year) {
-        const firstNumber = parseInt(firstPart, 10);
-        const secondNumber = parseInt(secondPart, 10);
-        const monthNumber = firstNumber > 12 ? secondNumber : firstNumber;
-        const dayNumber = firstNumber > 12 ? firstNumber : secondNumber;
-        const month = String(monthNumber).padStart(2, "0");
-        const day = String(dayNumber).padStart(2, "0");
-        return `${year}${month}${day}`;
-      }
-    }
-
-    const digitsOnly = trimmedInput.replace(/\D+/g, "");
-    if (digitsOnly.length >= 8) return digitsOnly.slice(0, 8);
-    if (digitsOnly.length === 6) return digitsOnly;
-    if (digitsOnly.length === 4) return digitsOnly;
-
-    return "";
-  }
-
   private trimTrailingEmpty(parts: string[]): void {
     let i = parts.length - 1;
     while (i >= 0 && parts[i] === "") i--;
@@ -434,7 +397,9 @@ export class PsvToHl7Converter {
 
   private getMessageControlId(row: Row): string {
     const base = row.visitNumber || row.patientID || row.metriplexPatID || "NA";
-    const timestamp = this.toHl7Ts(row.admitDateTime);
+    const trigger = this.getTriggerEvent(row);
+    const timeStamp = trigger === SUPPORTED_ADT.ADT_A03 ? row.dischargeDateTime : row.admitDateTime;
+    const timestamp = this.toHl7Ts(timeStamp);
     return `${base}_${timestamp}`;
   }
 
