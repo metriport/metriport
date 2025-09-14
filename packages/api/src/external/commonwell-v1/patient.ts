@@ -1,13 +1,12 @@
 import {
   CommonWellAPI,
+  Patient as CommonwellPatient,
   getIdTrailingSlash,
   LOLA,
   NetworkLink,
   organizationQueryMeta,
-  Patient as CommonwellPatient,
   RequestMetadata,
 } from "@metriport/commonwell-sdk-v1";
-import { isEnhancedCoverageEnabledForCx } from "@metriport/core/command/feature-flags/domain-ffs";
 import { addOidPrefix } from "@metriport/core/domain/oid";
 import { Patient, PatientExternalData } from "@metriport/core/domain/patient";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
@@ -29,7 +28,7 @@ import {
   updateCommonwellIdsAndStatus,
   updatePatientDiscoveryStatus,
 } from "../commonwell/patient/patient-external-data";
-import { CQLinkStatus, PatientDataCommonwell } from "../commonwell/patient/patient-shared";
+import { PatientDataCommonwell } from "../commonwell/patient/patient-shared";
 import { checkLinkDemographicsAcrossHies } from "../hie/check-patient-link-demographics";
 import { HieInitiator } from "../hie/get-hie-initiator";
 import { resetPatientScheduledDocQueryRequestId } from "../hie/reset-scheduled-doc-query-request-id";
@@ -79,16 +78,6 @@ export function getLinkStatusCW(data: PatientExternalData | undefined): LinkStat
   return getCWData(data)?.status ?? defaultStatus;
 }
 
-/**
- * Returns the status of linking the Patient with CommonWell's CareQuality bridge. Used for
- * Enhanced Coverage.
- */
-export function getLinkStatusCQ(data: PatientExternalData | undefined): CQLinkStatus {
-  const defaultStatus: CQLinkStatus = "unlinked";
-  if (!data) return defaultStatus;
-  return getCWData(data)?.cqLinkStatus ?? defaultStatus;
-}
-
 export async function registerAndLinkPatientInCwV1({
   patient,
   facilityId,
@@ -122,10 +111,7 @@ export async function registerAndLinkPatientInCwV1({
 
     // Patients of cxs that not go through EC should have theis status undefined so they're not picked up later
     // when we enable it
-    const cqLinkStatus = (await isEnhancedCoverageEnabledForCx(patient.cxId))
-      ? "unlinked"
-      : undefined;
-    await updateCommonwellIdsAndStatus({ patient, cqLinkStatus });
+    await updateCommonwellIdsAndStatus({ patient, cqLinkStatus: undefined });
 
     debug(`Registering this Patient: `, () => JSON.stringify(commonwellPatient, null, 2));
     const { commonwellPatientId, patientRefLink } = await registerPatient({

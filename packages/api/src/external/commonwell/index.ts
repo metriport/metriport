@@ -12,7 +12,6 @@ const cwCommands = {
     get: patientV1.get,
     update: patient.update,
     remove: patient.remove,
-    getLinkStatusCQ: patientV1.getLinkStatusCQ,
     getLinkStatusCW: patientV1.getLinkStatusCW,
   },
   link: {

@@ -9,7 +9,6 @@ import {
 import { ingestIntoSearchEngine } from "@metriport/core/command/consolidated/search/document-reference/ingest";
 import {
   isCQDirectEnabledForCx,
-  isEnhancedCoverageEnabledForCx,
   isStalePatientUpdateEnabledForCx,
 } from "@metriport/core/command/feature-flags/domain-ffs";
 import { Patient } from "@metriport/core/domain/patient";
@@ -195,9 +194,8 @@ export async function queryAndProcessDocuments({
       startedAt,
     });
 
-    const [patient, isECEnabledForThisCx, isCQDirectEnabledForThisCx] = await Promise.all([
+    const [patient, isCQDirectEnabledForThisCx] = await Promise.all([
       getPatientWithCWData(patientParam),
-      isEnhancedCoverageEnabledForCx(cxId),
       isCQDirectEnabledForCx(cxId),
     ]);
 
@@ -211,8 +209,8 @@ export async function queryAndProcessDocuments({
 
     const cwData = patient.data.externalData.COMMONWELL;
 
+    // TODO: ENG-554 - can likely remove this check entirely
     const isWaitingForEnhancedCoverage =
-      isECEnabledForThisCx &&
       cwData.cqLinkStatus && // we're not waiting for EC if the patient was created before cqLinkStatus was introduced
       cwData.cqLinkStatus !== "linked";
 

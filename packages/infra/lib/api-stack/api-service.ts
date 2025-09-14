@@ -139,7 +139,6 @@ export function createAPIService({
   consolidatedSearchLambda,
   consolidatedIngestionQueue,
   featureFlagsTable,
-  cookieStore,
   surescriptsAssets,
   questAssets,
   jobAssets,
@@ -191,7 +190,6 @@ export function createAPIService({
   consolidatedSearchLambda: ILambda;
   consolidatedIngestionQueue: IQueue;
   featureFlagsTable: dynamodb.Table;
-  cookieStore: secret.ISecret | undefined;
   surescriptsAssets: SurescriptsAssets | undefined;
   questAssets: QuestAssets | undefined;
   jobAssets: JobsAssets;
@@ -220,7 +218,6 @@ export function createAPIService({
     ? props.config.connectWidgetUrl
     : `https://${props.config.connectWidget.subdomain}.${props.config.connectWidget.domain}/`;
 
-  const coverageEnhancementConfig = props.config.commonwell.coverageEnhancement;
   const dbReadReplicaEndpointAsString = JSON.stringify({
     host: dbReadReplicaEndpoint.hostname,
     port: dbReadReplicaEndpoint.port,
@@ -376,12 +373,6 @@ export function createAPIService({
             PLACE_INDEX_REGION: props.config.locationService.placeIndexRegion,
           }),
           FEATURE_FLAGS_TABLE_NAME: featureFlagsTable.tableName,
-          ...(coverageEnhancementConfig && {
-            CW_MANAGEMENT_URL: coverageEnhancementConfig.managementUrl,
-          }),
-          ...(cookieStore && {
-            CW_MANAGEMENT_COOKIE_SECRET_ARN: cookieStore.secretArn,
-          }),
           ...(props.config.iheGateway?.trustStoreBucketName && {
             CQ_TRUST_BUNDLE_BUCKET_NAME: props.config.iheGateway.trustStoreBucketName,
           }),
@@ -548,11 +539,6 @@ export function createAPIService({
 
   if (fhirToMedicalRecordLambda2) {
     fhirToMedicalRecordLambda2.grantInvoke(fargateService.taskDefinition.taskRole);
-  }
-
-  if (cookieStore) {
-    cookieStore.grantRead(fargateService.service.taskDefinition.taskRole);
-    cookieStore.grantWrite(fargateService.service.taskDefinition.taskRole);
   }
 
   provideAccessToQueue({

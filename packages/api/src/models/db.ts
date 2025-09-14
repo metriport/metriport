@@ -30,7 +30,6 @@ import { FeedbackEntryModel } from "./feedback-entry";
 import { InvalidLinksModel } from "./invalid-links";
 import { JwtTokenModel } from "./jwt-token";
 import { CohortModel } from "./medical/cohort";
-import { CoverageEnhancementModel } from "./medical/coverage-enhancement";
 import { DocRefMappingModel } from "./medical/docref-mapping";
 import { MAPIAccess } from "./medical/mapi-access";
 import { PatientModel } from "./medical/patient";
@@ -64,7 +63,6 @@ const models: ModelSetup[] = [
   OutboundPatientDiscoveryRespModel.setup,
   OutboundDocumentQueryRespModel.setup,
   OutboundDocumentRetrievalRespModel.setup,
-  CoverageEnhancementModel.setup,
   FeedbackModel.setup,
   FeedbackEntryModel.setup,
   CxMappingModel.setup,

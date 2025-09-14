@@ -37,7 +37,6 @@ import { createScheduledAPIQuotaChecker } from "./api-stack/api-quota-checker";
 import { createAPIService } from "./api-stack/api-service";
 import * as ccdaSearch from "./api-stack/ccda-search-connector";
 import { createCqDirectoryRebuilder } from "./api-stack/cq-directory-rebuilder";
-import * as cwEnhancedCoverageConnector from "./api-stack/cw-enhanced-coverage-connector";
 import { createScheduledDBMaintenance } from "./api-stack/db-maintenance";
 import { createDocQueryChecker } from "./api-stack/doc-query-checker";
 import * as documentUploader from "./api-stack/document-upload";
@@ -602,18 +601,6 @@ export class APIStack extends Stack {
       fhirToMedicalRecordLambda2 = lambdas.fhirToMedicalRecordLambda2;
     }
 
-    const cwEnhancedQueryQueues = cwEnhancedCoverageConnector.setupRequiredInfra({
-      stack: this,
-      vpc: this.vpc,
-      lambdaLayers,
-      envType: props.config.environmentType,
-      secrets,
-      apiAddress: "",
-      bucket: generalBucket,
-      alarmSnsAction: slackNotification?.alarmAction,
-    });
-    const cookieStore = cwEnhancedQueryQueues?.cookieStore;
-
     //-------------------------------------------
     // EHR
     //-------------------------------------------
@@ -700,7 +687,6 @@ export class APIStack extends Stack {
       searchAuth: { userName: searchDomainUserName, secret: searchDomainSecret },
       searchIndexName: ccdaSearchIndexName,
       featureFlagsTable,
-      cookieStore,
       surescriptsAssets: surescriptsStack?.getAssets(),
       questAssets: questStack?.getAssets(),
       jobAssets: jobsStack.getAssets(),
@@ -852,19 +838,6 @@ export class APIStack extends Stack {
       apiAddress: apiDirectUrl,
       alarmSnsAction: slackNotification?.alarmAction,
     });
-
-    cookieStore &&
-      cwEnhancedCoverageConnector.setupLambdas({
-        stack: this,
-        vpc: this.vpc,
-        lambdaLayers,
-        envType: props.config.environmentType,
-        secrets,
-        apiAddress: apiDirectUrl,
-        bucket: generalBucket,
-        alarmSnsAction: slackNotification?.alarmAction,
-        cookieStore,
-      });
 
     //-------------------------------------------
     // API Gateway

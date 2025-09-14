@@ -79,7 +79,7 @@ export async function updateCommonwellIdsAndStatus({
   patient: { id, cxId },
   commonwellPatientId,
   commonwellPersonId,
-  cqLinkStatus,
+  cqLinkStatus, // TODO ENG-554 - See if this can be removed completely
 }: SetCommonwellIdParams): Promise<Patient> {
   const patientFilter = { id, cxId };
   return executeOnDBTx(PatientModel.prototype, async transaction => {

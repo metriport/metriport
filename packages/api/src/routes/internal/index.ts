@@ -1,4 +1,3 @@
-import { isEnhancedCoverageEnabledForCx } from "@metriport/core/command/feature-flags/domain-ffs";
 import { BadRequestError, EhrSources } from "@metriport/shared";
 import { Request, Response, Router } from "express";
 import httpStatus from "http-status";
@@ -36,7 +35,6 @@ import {
   secondaryMappingsSchemaMap,
 } from "../../domain/cx-mapping";
 import { isFacilityMappingSource } from "../../domain/facility-mapping";
-import { initCQOrgIncludeList } from "../../external/commonwell-v1/organization";
 import { subscribeToAllWebhooks as subscribeToElationWebhooks } from "../../external/ehr/elation/command/subscribe-to-webhook";
 import { subscribeToAllWebhooks as subscribeToHealthieWebhooks } from "../../external/ehr/healthie/command/subscribe-to-webhook";
 import { OrganizationModel } from "../../models/medical/organization";
@@ -186,25 +184,6 @@ router.post(
       result[org.cxId] = orgRes;
     }
     return res.json(result);
-  })
-);
-
-/** ---------------------------------------------------------------------------
- * POST /internal/cq-include-list/reset
- *
- * Resets the CQ include list on CW for the given customer.
- */
-router.post(
-  "/cq-include-list/reset",
-  requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    if (!(await isEnhancedCoverageEnabledForCx(cxId))) {
-      throw new BadRequestError("Enhanced Coverage is not enabled for this customer");
-    }
-    const orgOID = (await getOrganizationOrFail({ cxId })).oid;
-    await initCQOrgIncludeList(orgOID);
-    return res.sendStatus(httpStatus.OK);
   })
 );
 
