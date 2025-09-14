@@ -1,10 +1,8 @@
 import { Hl7Message } from "@medplum/core";
 import { MetriportError } from "@metriport/shared";
-import { parse } from "csv-parse";
-import {
-  compressUuid,
-  getCxIdAndPatientIdOrFail,
-} from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
+import csv from "csv-parser";
+import { Readable } from "stream";
+import { getCxIdAndPatientIdOrFail } from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
 
 type Row = {
   FacilityAbbrev: string;
@@ -113,29 +111,32 @@ export class PsvToHl7Converter {
     const firstLine = text.split(/\r?\n/, 1)[0]?.trim() ?? "";
     const hasHeader = firstLine === expectedHeader;
 
-    const rows: Row[] = await new Promise((resolve, reject) => {
-      parse(
-        text,
-        {
-          delimiter: PsvToHl7Converter.FIELD_SEPARATOR,
-          columns: hasHeader ? true : expectedHeader.split(PsvToHl7Converter.FIELD_SEPARATOR),
-          skip_empty_lines: true,
-          bom: true,
-          trim: true,
-          relax_column_count: true,
-        },
-        //eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (err: any, records: Row[]) => {
-          if (err) return reject(err);
-          resolve(records.filter(r => Object.values(r).some(v => String(v ?? "").trim() !== "")));
-        }
-      );
-    });
-    // Optionally change the MetriplexPatID (cxId and patientId) here for testing.
-    rows.forEach(r => {
-      r.MetriplexPatID = `${compressUuid("9f7a6b40-b961-401a-979b-8b17a40e3227")}_${compressUuid(
-        "0198f46a-0c7c-7d7b-bb1e-bdfea043198b"
-      )}`;
+    const rows: Row[] = [];
+    const stream = Readable.from([text]);
+    let rowCount = 0;
+
+    await new Promise<void>((resolve, reject) => {
+      stream
+        .pipe(
+          csv({
+            separator: PsvToHl7Converter.FIELD_SEPARATOR,
+            headers: expectedHeader.split(PsvToHl7Converter.FIELD_SEPARATOR),
+          })
+        )
+        .on("data", (row: Row) => {
+          rowCount++;
+          if (hasHeader && rowCount === 1) {
+            return;
+          }
+          const trimmedRow = Object.fromEntries(
+            Object.entries(row).map(([key, value]) => [key, String(value ?? "").trim()])
+          ) as Row;
+          if (Object.values(trimmedRow).some(v => v !== "")) {
+            rows.push(trimmedRow);
+          }
+        })
+        .on("end", () => resolve())
+        .on("error", err => reject(err));
     });
     return rows;
   }
@@ -299,19 +300,11 @@ export class PsvToHl7Converter {
     const fields: string[] = [];
     fields[0] = "1";
 
-    // For DG1.3, we need to build the CWE field properly for HL7 parsing
-    // The issue is that the HL7 parser expects components to be separated properly
     const diagnosisCwe = this.buildCweForDg1(
       row.DiagnosisCode,
       row.DiagnosisText,
       row.DiagnosisCodingSystem
     );
-    console.log(`[PSV Converter] Building DG1.3 with values:`, {
-      code: row.DiagnosisCode,
-      text: row.DiagnosisText,
-      system: row.DiagnosisCodingSystem,
-      cwe: diagnosisCwe,
-    });
 
     fields[2] = diagnosisCwe;
     fields[3] = this.escapeHl7Text(row.DiagnosisText);
@@ -321,14 +314,7 @@ export class PsvToHl7Converter {
     fields[5] = trigger === SUPPORTED_ADT.ADT_A01 ? "A" : "F";
     fields[14] = "1";
 
-    const dg1Segment = this.joinFields("DG1", fields);
-    console.log(`[PSV Converter] Built DG1 segment:`, dg1Segment);
-    console.log(
-      `[PSV Converter] DG1 field positions:`,
-      fields.map((field, index) => `${index}: "${field}"`)
-    );
-
-    return dg1Segment;
+    return this.joinFields("DG1", fields);
   }
 
   ///////////////////////////////////////
@@ -346,33 +332,15 @@ export class PsvToHl7Converter {
   }
 
   private buildCweSimple(id?: string, text?: string, system?: string): string {
-    // For CWE fields, we need to create proper HL7 components, not a single string with separators
-    // The FHIR converter expects field.getComponent(1), field.getComponent(2), field.getComponent(3)
-    // So we need to create a field with multiple components
-    const components = [id, text, system].map(comp => comp || "");
-    const result = components.join("^");
-    console.log(`[PSV Converter] buildCweSimple input:`, { id, text, system });
-    console.log(`[PSV Converter] buildCweSimple output:`, result);
-    return result;
+    const components = [id, text, system].filter(comp => comp && comp.trim() !== "");
+    return components.join("^");
   }
 
   private buildCweForDg1(id?: string, text?: string, system?: string): string {
-    // For DG1.3, we need to ensure the HL7 parser can properly split the components
-    // The issue might be that the HL7 parser is not recognizing ^ as component separators
-    // Let's try a different approach - maybe we need to use a different separator or format
-
     const code = id || "";
     const display = text || "";
     const codingSystem = system || "";
-
-    // Try using the same approach as buildCweSimple but with better logging
-    const result = this.joinHl7Fields([code, display, codingSystem], "^");
-
-    console.log(`[PSV Converter] buildCweForDg1 input:`, { id, text, system });
-    console.log(`[PSV Converter] buildCweForDg1 output:`, result);
-    console.log(`[PSV Converter] buildCweForDg1 components:`, [code, display, codingSystem]);
-
-    return result;
+    return this.joinHl7Fields([code, display, codingSystem], "^");
   }
 
   private buildNameXpn(

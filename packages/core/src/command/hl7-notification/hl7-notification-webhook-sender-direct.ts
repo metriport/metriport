@@ -110,7 +110,7 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
     });
 
     log(`Init S3 upload to bucket ${bucketName} with key ${rawDataFileKey}`);
-    s3Utils.uploadFile({
+    await s3Utils.uploadFile({
       bucket: bucketName,
       key: rawDataFileKey,
       file: Buffer.from(asString(message)),

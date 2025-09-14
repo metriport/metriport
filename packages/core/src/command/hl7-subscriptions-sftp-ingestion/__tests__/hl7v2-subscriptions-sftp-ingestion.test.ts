@@ -1,5 +1,5 @@
-import { PsvToHl7Converter } from "../hl7-subscriptions-sftp-ingestion/psv-to-hl7-converter";
-import { compressUuid } from "../hl7v2-to-fhir-conversion/shared";
+import { PsvToHl7Converter } from "../psv-to-hl7-converter";
+import { compressUuid } from "../../hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
 import * as configModule from "../../../util/config";
 
 describe("PsvToHl7Converter", () => {
