@@ -1,18 +1,18 @@
 import { buildDayjs } from "@metriport/shared/common/date";
 import * as openpgp from "openpgp";
-import { S3Utils } from "../../../external/aws/s3";
-import { getSecretValueOrFail } from "../../../external/aws/secret-manager";
-import { Config } from "../../../util/config";
-import { Hl7NotificationSenderParams } from "../../hl7-notification/hl7-notification-webhook-sender";
-import { buildHl7NotificationWebhookSender } from "../../hl7-notification/hl7-notification-webhook-sender-factory";
-import { HIE_NAME, Hl7SubscriptionLaHieIngestion } from "./hl7-subscriptions-sftp-ingestion";
+import { S3Utils } from "../../external/aws/s3";
+import { getSecretValueOrFail } from "../../external/aws/secret-manager";
+import { Config } from "../../util/config";
+import { Hl7NotificationSenderParams } from "../hl7-notification/hl7-notification-webhook-sender";
+import { buildHl7NotificationWebhookSender } from "../hl7-notification/hl7-notification-webhook-sender-factory";
+import { HIE_NAME, Hl7SubscriptionLahieIngestion } from "./hl7-subscriptions-sftp-ingestion";
 import { IdentifiedHl7Message, PsvToHl7Converter } from "./psv-to-hl7-converter";
 import { SftpIngestionClient } from "./sftp-ingestion-client";
-import { asString } from "../../hl7-notification/utils";
+import { asString } from "../hl7-notification/utils";
 
 const TIMEZONE = "America/Chicago";
 
-export class Hl7SubscriptionLaHieIngestionDirect implements Hl7SubscriptionLaHieIngestion {
+export class Hl7SubscriptionLahieIngestionDirect implements Hl7SubscriptionLahieIngestion {
   private sftpClient: SftpIngestionClient;
   private log: typeof console.log;
 
@@ -22,10 +22,10 @@ export class Hl7SubscriptionLaHieIngestionDirect implements Hl7SubscriptionLaHie
   }
 
   async execute(): Promise<void> {
-    this.log("Beginning ingestion from LaHie");
-    const remotePath = Config.getLaHieIngestionRemotePath();
+    this.log("Beginning ingestion from Lahie");
+    const remotePath = Config.getLahieIngestionRemotePath();
     const s3Utils = new S3Utils(Config.getAWSRegion());
-    const bucketName = Config.getLaHieIngestionBucket();
+    const bucketName = Config.getLahieIngestionBucket();
 
     const fileNames = await this.sftpClient.safeSync(remotePath);
 
@@ -48,7 +48,7 @@ export class Hl7SubscriptionLaHieIngestionDirect implements Hl7SubscriptionLaHie
       await this.sendToWebhookSender(identifiedMessages);
     }
 
-    this.log("Finished ingestion from LaHie");
+    this.log("Finished ingestion from Lahie");
   }
 
   private async sendToWebhookSender(identifiedMessages: IdentifiedHl7Message[]) {
@@ -78,18 +78,29 @@ export class Hl7SubscriptionLaHieIngestionDirect implements Hl7SubscriptionLaHie
   }
 }
 
+export async function getLahiePrivateKeyAndPassphrase(): Promise<{
+  privateKeyArmored: string;
+  passphrase: string;
+}> {
+  const privateKeyArmoredArn = Config.getLahieIngestionPrivateKeyArn();
+  const passphraseArn = Config.getLahieIngestionPrivateKeyPassphraseArn();
+
+  const privateKeyArmored = await getSecretValueOrFail(privateKeyArmoredArn, Config.getAWSRegion());
+  const passphrase = await getSecretValueOrFail(passphraseArn, Config.getAWSRegion());
+
+  return { privateKeyArmored, passphrase };
+}
+
 /**
  * Decrypts GPG encrypted content using the private key and passphrase. Called within the sftp client before storing the file in S3.
  * @param content GPG encrypted content
  * @returns Decrypted content
  */
-export async function decryptGpgBinaryWithPrivateKey(content: Buffer): Promise<Buffer> {
-  const privateKeyArmoredArn = Config.getLaHieIngestionPrivateKeyArn();
-  const passphraseArn = Config.getLaHieIngestionPrivateKeyPassphraseArn();
-
-  const privateKeyArmored = await getSecretValueOrFail(privateKeyArmoredArn, Config.getAWSRegion());
-  const passphrase = await getSecretValueOrFail(passphraseArn, Config.getAWSRegion());
-
+export async function decryptGpgBinaryWithPrivateKey(
+  content: Buffer,
+  privateKeyArmored: string,
+  passphrase: string
+): Promise<Buffer> {
   const privateKey = await openpgp.readPrivateKey({ armoredKey: privateKeyArmored });
   const decryptionKey = await openpgp.decryptKey({ privateKey, passphrase });
 

@@ -398,54 +398,51 @@ export class Config {
     return getEnvVarOrFail("FHIR_TO_CSV_TRANSFORM_LAMBDA_NAME");
   }
 
-  static getFhirToCsvBatchJobQueueArn(): string | undefined {
-    return getEnvVar("FHIR_TO_CSV_BATCH_JOB_QUEUE_ARN");
-  }
-  static getFhirToCsvBatchJobDefinitionArn(): string | undefined {
-    return getEnvVar("FHIR_TO_CSV_BATCH_JOB_DEFINITION_ARN");
-  }
-
   static getRosterUploadSftpPasswordArn(): string {
     return getEnvVarOrFail(`${ROSTER_UPLOAD_SFTP_PASSWORD}_ARN`);
   }
 
-  static getLaHieIngestionLambdaName(): string {
+  static getLahieIngestionLambdaName(): string {
     return getEnvVarOrFail("LAHIE_INGESTION_LAMBDA_NAME");
   }
 
-  static getLaHieIngestionRemotePath(): string {
+  static getLahieIngestionRemotePath(): string {
     return getEnvVarOrFail("LAHIE_INGESTION_REMOTE_PATH");
   }
 
-  static getLaHieIngestionHost(): string {
+  static getLahieConfig(): Record<string, unknown> {
+    return getEnvVarAsRecordOrFail("LAHIE_CONFIG");
+  }
+
+  static getLahieIngestionHost(): string {
     return getEnvVarOrFail("LAHIE_INGESTION_HOST");
   }
 
-  static getLaHieIngestionUsername(): string {
+  static getLahieIngestionUsername(): string {
     return getEnvVarOrFail("LAHIE_INGESTION_USERNAME");
   }
 
-  static getLaHieIngestionPort(): number {
+  static getLahieIngestionPort(): number {
     const port = Number.parseInt(getEnvVarOrFail("LAHIE_INGESTION_PORT"));
     if (isFinite(port)) {
       return port;
     }
-    throw new Error("LaHie ingestion port is not a valid number");
+    throw new Error("Lahie ingestion port is not a valid number");
   }
 
-  static getLaHieIngestionPasswordArn(): string {
+  static getLahieIngestionPasswordArn(): string {
     return getEnvVarOrFail("LAHIE_INGESTION_PASSWORD_ARN");
   }
 
-  static getLaHieIngestionBucket(): string {
+  static getLahieIngestionBucket(): string {
     return getEnvVarOrFail("LAHIE_INGESTION_BUCKET_NAME");
   }
 
-  static getLaHieIngestionPrivateKeyArn(): string {
+  static getLahieIngestionPrivateKeyArn(): string {
     return getEnvVarOrFail("LAHIE_INGESTION_PRIVATE_KEY_ARN");
   }
 
-  static getLaHieIngestionPrivateKeyPassphraseArn(): string {
+  static getLahieIngestionPrivateKeyPassphraseArn(): string {
     return getEnvVarOrFail("LAHIE_INGESTION_PRIVATE_KEY_PASSPHRASE_ARN");
   }
 
@@ -453,7 +450,7 @@ export class Config {
     return getEnvVarOrFail("INTERNAL_SERVER_BASE_URL");
   }
   
-  static getLaHieIngestionLocalPassword(): string {
+  static getLahieIngestionLocalPassword(): string {
     return getEnvVarOrFail("LAHIE_INGESTION_LOCAL_PASSWORD");
   }
 }

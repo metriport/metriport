@@ -34,12 +34,10 @@ import {
 } from "./hl7-notification-webhook-sender";
 import {
   asString,
-  bucketName,
   isSupportedTriggerEvent,
   ParsedHl7Data,
   parseHl7Message,
   persistHl7MessageError,
-  s3Utils,
   SupportedTriggerEvent,
 } from "./utils";
 
@@ -75,6 +73,8 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
    * @returns - A promise that resolves when the message is sent to the API.
    */
   async execute(params: Hl7NotificationSenderParams): Promise<void> {
+    const s3Utils = new S3Utils(Config.getAWSRegion());
+    const bucketName = Config.getHl7IncomingMessageBucketName();
     const { log } = out(`${this.context}, cx: ${params.cxId}, pt: ${params.patientId}`);
 
     const hl7Message = Hl7Message.parse(params.message);

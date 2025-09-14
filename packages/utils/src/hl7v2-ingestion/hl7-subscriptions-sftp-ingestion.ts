@@ -2,7 +2,7 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
 
-import { buildLaHieIngestion } from "@metriport/core/command/hl7v2-subscriptions/hl7-subscriptions-sftp-ingestion/hl7-subscriptions-sftp-ingestion-factory";
+import { buildLahieIngestion } from "@metriport/core/command/hl7v2-subscriptions/hl7-subscriptions-sftp-ingestion/hl7-subscriptions-sftp-ingestion-factory";
 import { Config } from "@metriport/core/util/config";
 import { sleep } from "@metriport/core/util/sleep";
 import { S3Utils } from "@metriport/core/external/aws/s3";
@@ -36,7 +36,7 @@ import { S3Utils } from "@metriport/core/external/aws/s3";
  * 1. Set the enviornment variables.
  * 2. Have a SFTP server with the file(s) in the remote path.
  * 3. Optionally delete the file(s) from S3 after completetion. (see line 54-55)
- * 4. Run the script using: ts-node src/hl7v2-notifications/hl7-subscriptions-sftp-ingestion.ts
+ * 4. Run the script using: ts-node src/hl7v2-ingestion/hl7-subscriptions-sftp-ingestion.ts
  *
  * Workarounds:
  * - If you want to not use the aws secret manager you must change the logic in the lambda. (remove the getSecretValueOrFail calls)
@@ -46,22 +46,22 @@ import { S3Utils } from "@metriport/core/external/aws/s3";
  */
 
 // May comment all Config.[...] out if you want to use the cloud version.
-const port = Config.getLaHieIngestionPort();
-const host = Config.getLaHieIngestionHost();
-const username = Config.getLaHieIngestionUsername();
+const port = Config.getLahieIngestionPort();
+const host = Config.getLahieIngestionHost();
+const username = Config.getLahieIngestionUsername();
 // Password should not be an ARN for local execution.
-const password = Config.getLaHieIngestionLocalPassword(); //eslint-disable-line @typescript-eslint/no-unused-vars
-const remotePath = Config.getLaHieIngestionRemotePath();
-const bucketName = Config.getLaHieIngestionBucket();
+const password = Config.getLahieIngestionLocalPassword(); //eslint-disable-line @typescript-eslint/no-unused-vars
+const remotePath = Config.getLahieIngestionRemotePath();
+const bucketName = Config.getLahieIngestionBucket();
 const awsRegion = Config.getAWSRegion();
 const hl7IncomingMessageBucketName = Config.getHl7IncomingMessageBucketName(); //eslint-disable-line @typescript-eslint/no-unused-vars
 
 // Note these two should point to an actual arn in aws secret manager.
-const privateKeyArn = Config.getLaHieIngestionPrivateKeyArn(); //eslint-disable-line @typescript-eslint/no-unused-vars
-const privateKeyPassphraseArn = Config.getLaHieIngestionPrivateKeyPassphraseArn(); //eslint-disable-line @typescript-eslint/no-unused-vars
+const privateKeyArn = Config.getLahieIngestionPrivateKeyArn(); //eslint-disable-line @typescript-eslint/no-unused-vars
+const privateKeyPassphraseArn = Config.getLahieIngestionPrivateKeyPassphraseArn(); //eslint-disable-line @typescript-eslint/no-unused-vars
 
-const deleteFiles = true; // Delete files from S3 after completetion
-const fileNames: string[] = ["name.gpg"]; // List of file names to delete from S3 after completetion
+const deleteFiles = false; // Delete files from S3 after completetion
+const fileNames: string[] = [""]; // List of file names to delete from S3 after completetion
 
 async function main() {
   await sleep(50); // Give some time to avoid mixing logs w/ Node's
@@ -74,7 +74,7 @@ async function main() {
   console.log(`SFTP Bucket Name: ${bucketName}`);
   console.log(`🔄 Starting HL7v2 ingestion in 3 seconds...`); // Give some time for user to cancel just in case.
   await sleep(3000);
-  const handler = await buildLaHieIngestion();
+  const handler = await buildLahieIngestion();
   await handler.execute();
 
   if (deleteFiles) {

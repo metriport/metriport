@@ -94,7 +94,11 @@ export function lookupHieTzEntryForIp(hieConfigDictionary: HieConfigDictionary, 
   if (!match) {
     throw new MetriportError(`Sender IP not found in any CIDR block`, {
       cause: undefined,
-      additionalInfo: { context: "mllp-server.lookupHieTzEntryForIp", ip, hieConfigDictionary },
+      additionalInfo: {
+        context: "mllp-server.lookupHieTzEntryForIp",
+        ip,
+        hieConfigDictionary: hieConfigDictionary.toString(),
+      },
     });
   }
   return match;

@@ -1,15 +1,3 @@
-const supportedTypes = ["A01", "A03"] as const;
-
-export type SupportedTriggerEvent = (typeof supportedTypes)[number];
-export function isSupportedTriggerEvent(
-  triggerEvent: string
-): triggerEvent is SupportedTriggerEvent {
-  return supportedTypes.includes(triggerEvent as SupportedTriggerEvent);
-}
-
-import * as dotenv from "dotenv";
-dotenv.config();
-
 import { Hl7Message } from "@medplum/core";
 import {
   createUnparseableHl7MessageErrorMessageFileKey,
@@ -22,10 +10,20 @@ import { errorToString } from "@metriport/shared";
 import { buildDayjs, ISO_DATE_TIME } from "@metriport/shared/common/date";
 import { S3Utils } from "../../external/aws/s3";
 import { Config } from "../../util/config";
+
 export interface ParsedHl7Data {
   message: Hl7Message;
   cxId: string;
   patientId: string;
+}
+
+const supportedTypes = ["A01", "A03"] as const;
+
+export type SupportedTriggerEvent = (typeof supportedTypes)[number];
+export function isSupportedTriggerEvent(
+  triggerEvent: string
+): triggerEvent is SupportedTriggerEvent {
+  return supportedTypes.includes(triggerEvent as SupportedTriggerEvent);
 }
 
 export async function parseHl7Message(
@@ -43,14 +41,14 @@ export async function parseHl7Message(
   };
 }
 
-export const s3Utils = new S3Utils(Config.getAWSRegion());
-export const bucketName = Config.getHl7IncomingMessageBucketName();
-
 export async function persistHl7MessageError(
   rawMessage: Hl7Message,
   parseError: unknown,
   log: typeof console.log
 ) {
+  const s3Utils = new S3Utils(Config.getAWSRegion());
+  const bucketName = Config.getHl7IncomingMessageBucketName();
+
   const keyParams = {
     rawPtIdentifier: getOptionalValueFromMessage(rawMessage, "PID", 3, 1) ?? "unknown-patient",
     rawTimestamp:

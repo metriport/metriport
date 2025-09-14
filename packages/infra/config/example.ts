@@ -165,6 +165,9 @@ export const config: EnvConfigNonSandbox = {
     },
     secrets: {
       HL7_BASE64_SCRAMBLER_SEED: "your-base64-scrambler-seed",
+      LA_HIE_INGESTION_PASSPHRASE: "your-lahie-ingestion-passphrase",
+      LA_HIE_INGESTION_PRIVATE_KEY: "your-lahie-ingestion-private-key",
+      LA_HIE_INGESTION_PASSWORD: "your-lahie-ingestion-password",
     },
     mllpServer: {
       sentryDSN: "your-sentry-dsn",
@@ -178,14 +181,14 @@ export const config: EnvConfigNonSandbox = {
     hl7v2RosterUploadLambda: {
       bucketName: "your-roster-bucket",
     },
-    hl7v2LaHieIngestionLambda: {
+    LahieSftpIngestionLambda: {
       sftpConfig: {
         host: "your-sftp-host",
         port: 22,
         username: "your-sftp-username",
         remotePath: "your-directory-path",
       },
-      passwordName: "your-password-name",
+      bucketName: "your-bucket-name",
     },
     hieConfigs: {
       YOUR_HIE_NAME: {

@@ -45,6 +45,8 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
         const hieConfigDictionary = getHieConfigDictionary();
         const { hieName, timezone } = lookupHieTzEntryForIp(hieConfigDictionary, clientIp);
 
+        connection.send(rawMessage.buildAck());
+
         capture.setExtra({
           cxId,
           patientId,
@@ -60,8 +62,6 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
           hieName,
           timezone,
         });
-
-        connection.send(rawMessage.buildAck());
       })
     );
 

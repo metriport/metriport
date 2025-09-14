@@ -1085,7 +1085,7 @@ export class LambdasNestedStack extends NestedStack {
         LAHIE_INGESTION_PRIVATE_KEY_PASSPHRASE_ARN: passphraseSecret.secretArn,
       },
       stack: this,
-      name: "hl7-subscriptions-sftp-ingestion-LaHie",
+      name: "hl7-subscriptions-sftp-ingestion-Lahie",
       alarmSnsAction: ownProps.alarmAction,
     });
 

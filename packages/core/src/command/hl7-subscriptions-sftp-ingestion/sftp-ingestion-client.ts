@@ -1,13 +1,15 @@
-import { getSecretValueOrFail } from "../../../external/aws/secret-manager";
-import { SftpClient } from "../../../external/sftp/client";
-import { SftpConfig } from "../../../external/sftp/types";
-import { Config } from "../../../util/config";
-import { decryptGpgBinaryWithPrivateKey } from "./hl7-subscriptions-sftp-ingestion-direct";
+import { getSecretValueOrFail } from "../../external/aws/secret-manager";
+import { SftpClient } from "../../external/sftp/client";
+import { SftpConfig } from "../../external/sftp/types";
+import { Config } from "../../util/config";
+import {
+  decryptGpgBinaryWithPrivateKey,
+  getLahiePrivateKeyAndPassphrase,
+} from "./hl7-subscriptions-sftp-ingestion-direct";
 
 export type ReplicaConfig = { type: "local"; path: string } | { type: "s3"; bucketName: string };
 
 export class SftpIngestionClient extends SftpClient {
-  private static readonly LOCAL_PASSWORD = Config.getLaHieIngestionLocalPassword();
   private readonly overridenLog: typeof console.log;
 
   private constructor(sftpConfig: SftpConfig, overridenLog: typeof console.log) {
@@ -15,7 +17,7 @@ export class SftpIngestionClient extends SftpClient {
     this.overridenLog = overridenLog;
 
     const region = Config.getAWSRegion();
-    const bucketName = Config.getLaHieIngestionBucket();
+    const bucketName = Config.getLahieIngestionBucket();
 
     this.initializeS3Replica({ bucketName, region });
   }
@@ -24,10 +26,10 @@ export class SftpIngestionClient extends SftpClient {
     overridenLog: typeof console.log,
     isLocal?: boolean
   ): Promise<SftpIngestionClient> {
-    const host = Config.getLaHieIngestionHost();
-    const port = Config.getLaHieIngestionPort();
-    const username = Config.getLaHieIngestionUsername();
-    const password = isLocal ? this.LOCAL_PASSWORD : await this.getLaHiePassword();
+    const host = Config.getLahieIngestionHost();
+    const port = Config.getLahieIngestionPort();
+    const username = Config.getLahieIngestionUsername();
+    const password = isLocal ? getLocalPassword() : await this.getLahiePassword();
 
     return new SftpIngestionClient(
       {
@@ -40,14 +42,18 @@ export class SftpIngestionClient extends SftpClient {
     );
   }
 
-  static async getLaHiePassword(): Promise<string> {
+  static async getLahiePassword(): Promise<string> {
     const region = Config.getAWSRegion();
-    const passwordArn = Config.getLaHieIngestionPasswordArn();
+    const passwordArn = Config.getLahieIngestionPasswordArn();
     return await getSecretValueOrFail(passwordArn, region);
   }
 
-  static getLaHieReplica(): ReplicaConfig {
-    const bucketName = Config.getLaHieIngestionBucket();
+  static getLocalPassword(): string {
+    return Config.getLahieIngestionLocalPassword();
+  }
+
+  static getLahieReplica(): ReplicaConfig {
+    const bucketName = Config.getLahieIngestionBucket();
     return { type: "s3", bucketName };
   }
 
@@ -74,7 +80,12 @@ export class SftpIngestionClient extends SftpClient {
       try {
         const replicaPath = this.replica.getReplicaPath(remotePath);
         this.overridenLog("Decrypting content");
-        const decryptedContent = await decryptGpgBinaryWithPrivateKey(content);
+        const { privateKeyArmored, passphrase } = await getLahiePrivateKeyAndPassphrase();
+        const decryptedContent = await decryptGpgBinaryWithPrivateKey(
+          content,
+          privateKeyArmored,
+          passphrase
+        );
 
         this.overridenLog("Syncing decrypted content to replica");
         await this.replica.writeFile(replicaPath, decryptedContent);
