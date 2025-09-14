@@ -1,3 +1,4 @@
+import { MetriportError } from "@metriport/shared";
 import { getSecretValueOrFail } from "../../external/aws/secret-manager";
 import { SftpClient } from "../../external/sftp/client";
 import { SftpConfig } from "../../external/sftp/types";
@@ -66,7 +67,7 @@ export class SftpIngestionClient extends SftpClient {
 
       const exists = await this.exists(`${remotePath}/`);
       if (!exists) {
-        throw new Error("Remote path does not exist");
+        throw new MetriportError(`Remote path does not exist`, undefined, { remotePath });
       }
       this.overridenLog("Syncing from remote path to Replica");
       const fileNames = await this.sync(`${remotePath}`);

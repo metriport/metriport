@@ -14,7 +14,7 @@ const ssnSchema = z
   .transform(val => {
     const normalized = normalizeSsnSafe(val);
     if (normalized) {
-      return val;
+      return normalized;
     }
     return undefined;
   })
@@ -45,7 +45,8 @@ export const rowSchema = z
     State: z
       .string()
       .min(2, "State must be at least 2 characters")
-      .max(2, "State should be 2 characters"),
+      .max(2, "State should be 2 characters")
+      .transform(val => val.toUpperCase()),
     AttendingPhysicianName: z.string().min(1, "Attending physician name is required"),
     SendingToSystem: z.string().min(1, "Sending to system is required"),
     MetriplexPatID: z.string().min(1, "Metriplex patient ID is required"),

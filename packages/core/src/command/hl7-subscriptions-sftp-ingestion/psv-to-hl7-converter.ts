@@ -259,7 +259,11 @@ export class PsvToHl7Converter {
     fields[10] = this.isEmergency(row) ? "EMER" : "";
     fields[17] = this.buildXcnFromFullName(row.admittingPhysicianName);
     fields[18] = this.escapeHl7Text(row.patClass);
-    fields[19] = this.buildVisitNumber(row.visitNumber, row.sendingToSystem, "VN");
+    fields[19] = this.buildVisitNumber(
+      row.visitNumber,
+      row.sendingToSystem || PsvToHl7Converter.DEFAULT_RECEIVING_APP,
+      "VN"
+    );
     fields[39] = this.escapeHl7Text(row.facilityAbbrev || row.facilityName);
 
     return fields;
