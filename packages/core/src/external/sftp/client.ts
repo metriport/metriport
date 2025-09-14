@@ -199,12 +199,7 @@ export class SftpClient implements SftpClientImpl {
     this.log(`Finished writing file to ${remotePath}`);
 
     if (this.replica) {
-      try {
-        const replicaPath = this.replica.getReplicaPath(remotePath);
-        await this.replica.writeFile(replicaPath, contentToUse);
-      } catch (error) {
-        this.log(`Error writing file to replica: ${errorToString(error)}`);
-      }
+      await this.syncFileToReplica(content, remotePath);
     }
   }
 

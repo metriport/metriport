@@ -79,21 +79,16 @@ export class SftpIngestionClient extends SftpClient {
   override async syncFileToReplica(content: Buffer, remotePath: string): Promise<void> {
     this.overridenLog("Found a file to sync to replica");
     if (this.replica) {
-      try {
-        const replicaPath = this.replica.getReplicaPath(remotePath);
-        this.overridenLog("Decrypting content");
-        const { privateKeyArmored, passphrase } = await getLahiePrivateKeyAndPassphrase();
-        const decryptedContent = await decryptGpgBinaryWithPrivateKey(
-          content,
-          privateKeyArmored,
-          passphrase
-        );
-
-        this.overridenLog("Syncing decrypted content to replica");
-        await this.replica.writeFile(replicaPath, decryptedContent);
-      } catch (error) {
-        this.overridenLog(`Error writing file to replica: ${error}`);
-      }
+      const replicaPath = this.replica.getReplicaPath(remotePath);
+      this.overridenLog("Decrypting content");
+      const { privateKeyArmored, passphrase } = await getLahiePrivateKeyAndPassphrase();
+      const decryptedContent = await decryptGpgBinaryWithPrivateKey(
+        content,
+        privateKeyArmored,
+        passphrase
+      );
+      this.overridenLog("Syncing decrypted content to replica");
+      await this.replica.writeFile(replicaPath, decryptedContent);
     }
   }
 }
