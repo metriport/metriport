@@ -132,7 +132,6 @@
     "aws-sdk": "^2.1243.0",
     "axios": "^1.8.2",
     "convert-units": "^2.3.4",
-    "csv-parse": "^6.1.0",
     "csv-parser": "^3.2.0",
     "csv-stringify": "^6.5.2",
     "dayjs": "^1.11.9",

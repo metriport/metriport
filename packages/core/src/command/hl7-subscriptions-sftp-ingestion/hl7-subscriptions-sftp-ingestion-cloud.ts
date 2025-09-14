@@ -1,11 +1,11 @@
 import { getLambdaResultPayload, makeLambdaClient } from "../../external/aws/lambda";
 import { Config } from "../../util/config";
-import { Hl7SubscriptionLaHieIngestion } from "./hl7-subscriptions-sftp-ingestion";
+import { Hl7SubscriptionLahieIngestion } from "./hl7-subscriptions-sftp-ingestion";
 
-export class Hl7SubscriptionLaHieIngestionCloud implements Hl7SubscriptionLaHieIngestion {
+export class Hl7SubscriptionLahieIngestionCloud implements Hl7SubscriptionLahieIngestion {
   constructor(
     private readonly lambdaClient = makeLambdaClient(Config.getAWSRegion()),
-    private readonly lambdaName: string = Config.getLaHieIngestionLambdaName()
+    private readonly lambdaName: string = Config.getLahieIngestionLambdaName()
   ) {}
 
   async execute(): Promise<void> {

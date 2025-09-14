@@ -1,20 +1,26 @@
 import { PsvToHl7Converter } from "../psv-to-hl7-converter";
 import { compressUuid } from "../../hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
+import { buildDayjs } from "@metriport/shared/common/date";
 import * as configModule from "../../../util/config";
 
 describe("PsvToHl7Converter", () => {
   beforeAll(() => {
     jest.spyOn(configModule.Config, "getHl7Base64ScramblerSeed").mockReturnValue("unit-test-seed");
+    jest.useFakeTimers();
+    jest.setSystemTime(buildDayjs("2024-01-15T12:00:00-06:00").toDate());
   });
 
   afterAll(() => {
     jest.restoreAllMocks();
+    jest.useRealTimers();
   });
 
   const TEST_CX_ID_1 = "550e8400-e29b-41d4-a716-446655440001";
   const TEST_PT_ID_1 = "550e8400-e29b-41d4-a716-446655440002";
   const TEST_CX_ID_2 = "550e8400-e29b-41d4-a716-446655440003";
   const TEST_PT_ID_2 = "550e8400-e29b-41d4-a716-446655440004";
+
+  const CURRENT_TIME = "20240115180000";
 
   const FACILITY_NAME = "Test Hospital";
   const FACILITY_ABBREV = "HOSP";
@@ -34,8 +40,8 @@ describe("PsvToHl7Converter", () => {
   const PATIENT_ADDRESS_STATE = "CA";
   const PATIENT_ADDRESS_ZIP = "12345";
   const PATIENT_ADDRESS = `${PATIENT_ADDRESS_LINE}^^${PATIENT_ADDRESS_CITY}^${PATIENT_ADDRESS_STATE}^${PATIENT_ADDRESS_ZIP}`;
-  const PATIENT_PHONE = "^PRN^PH^^^^5551234";
-  const PATIENT_MARITAL_STATUS = "S";
+  const PATIENT_PHONE = "^PRN^PH^^^^5551234567";
+  const PATIENT_MARITAL_STATUS = "single";
   const PATIENT_SSN = "123-45-6789";
   const VISIT_NUMBER = "VN123";
   const PATIENT_CLASS = "I";
@@ -54,7 +60,7 @@ describe("PsvToHl7Converter", () => {
   const PATIENT2_METRIPLEX_PAT_ID = "PLACEHOLDER_PATIENT2_METRIPLEX_PAT_ID";
   const PATIENT2_NAME_LAST = "Doe";
   const PATIENT2_NAME_FIRST = "Jane";
-  const PATIENT2_CLASS = "2";
+  const PATIENT2_CLASS = "I";
   const PATIENT2_EMERGENCY_SEVERITY_LEVEL = "2";
   const PATIENT2_ATTENDING_PHYSICIAN = "Dr. Davis, Lisa";
   const PATIENT2_REFERRING_PHYSICIAN = "Dr. Wilson, Mark";
@@ -69,8 +75,8 @@ describe("PsvToHl7Converter", () => {
   const PATIENT2_DIAGNOSIS_CWE = `${PATIENT2_DIAGNOSIS_CODE}^${PATIENT2_DIAGNOSIS_TEXT}^${PATIENT2_DIAGNOSIS_SYSTEM}`;
   const PATIENT2_CHIEF_COMPLAINT = "Fever";
   const psvData = `FacilityAbbrev|FacilityName|VisitNumber|PatientID|LastName|FirstName|MiddleName|StreetAddress|City|State|ZipCode|PrimaryPhoneNumber|SSN|PatientDateofBirth|Gender|MaritalStatus|AdmitDateTime|ChiefComplaint|DiagnosisCode|DiagnosisText|DiagnosisCodingSystem|AttendingPhysicianName|ReferringPhysicianName|AdmittingPhysicianName|SendingToSystem|MetriplexPatID|DischargeDateTime|EmergencySeverityLevel|PatClass
-    ${FACILITY_ABBREV}|${FACILITY_NAME}|${VISIT_NUMBER}|${PATIENT_ID}|${PATIENT_NAME_LAST}|${PATIENT_NAME_FIRST}|${PATIENT_NAME_MIDDLE}|${PATIENT_ADDRESS_LINE}|${PATIENT_ADDRESS_CITY}|${PATIENT_ADDRESS_STATE}|${PATIENT_ADDRESS_ZIP}|555-1234|${PATIENT_SSN}|1990-01-15|${PATIENT_GENDER}|${PATIENT_MARITAL_STATUS}|${ADMIT_DATETIME}|${CHIEF_COMPLAINT}|${DIAGNOSIS_CODE}|${DIAGNOSIS_TEXT}|${DIAGNOSIS_SYSTEM}|${ATTENDING_PHYSICIAN}|${REFERRING_PHYSICIAN}|${ADMITTING_PHYSICIAN}|${FACILITY_RECEIVING_APP}|${METRIPLEX_PAT_ID}||${EMERGENCY_SEVERITY_LEVEL}|${PATIENT_CLASS}
-    ${FACILITY_ABBREV}|${FACILITY_NAME}|${PATIENT2_VISIT_NUMBER}|${PATIENT2_ID}|${PATIENT2_NAME_LAST}|${PATIENT2_NAME_FIRST}||456 Oak Ave|Somewhere|NY|67890|555-5678|987-65-4321|1985-05-20|F|M|${PATIENT2_ADMIT_DATETIME}|${PATIENT2_CHIEF_COMPLAINT}|${PATIENT2_DIAGNOSIS_CODE}|${PATIENT2_DIAGNOSIS_TEXT}|${PATIENT2_DIAGNOSIS_SYSTEM}|${PATIENT2_ATTENDING_PHYSICIAN}|${PATIENT2_REFERRING_PHYSICIAN}|${PATIENT2_ADMITTING_PHYSICIAN}|${FACILITY_RECEIVING_APP}|${PATIENT2_METRIPLEX_PAT_ID}|${PATIENT2_DISCHARGE_DATETIME}|${PATIENT2_EMERGENCY_SEVERITY_LEVEL}|${PATIENT2_CLASS}`;
+    ${FACILITY_ABBREV}|${FACILITY_NAME}|${VISIT_NUMBER}|${PATIENT_ID}|${PATIENT_NAME_LAST}|${PATIENT_NAME_FIRST}|${PATIENT_NAME_MIDDLE}|${PATIENT_ADDRESS_LINE}|${PATIENT_ADDRESS_CITY}|${PATIENT_ADDRESS_STATE}|${PATIENT_ADDRESS_ZIP}|555-123-4567|${PATIENT_SSN}|1990-01-15|${PATIENT_GENDER}|${PATIENT_MARITAL_STATUS}|${ADMIT_DATETIME}|${CHIEF_COMPLAINT}|${DIAGNOSIS_CODE}|${DIAGNOSIS_TEXT}|${DIAGNOSIS_SYSTEM}|${ATTENDING_PHYSICIAN}|${REFERRING_PHYSICIAN}|${ADMITTING_PHYSICIAN}|${FACILITY_RECEIVING_APP}|${METRIPLEX_PAT_ID}||${EMERGENCY_SEVERITY_LEVEL}|${PATIENT_CLASS}
+    ${FACILITY_ABBREV}|${FACILITY_NAME}|${PATIENT2_VISIT_NUMBER}|${PATIENT2_ID}|${PATIENT2_NAME_LAST}|${PATIENT2_NAME_FIRST}||456 Oak Ave|Somewhere|NY|67890|555-567-8901|987-65-4321|1985-05-20|F|married|${PATIENT2_ADMIT_DATETIME}|${PATIENT2_CHIEF_COMPLAINT}|${PATIENT2_DIAGNOSIS_CODE}|${PATIENT2_DIAGNOSIS_TEXT}|${PATIENT2_DIAGNOSIS_SYSTEM}|${PATIENT2_ATTENDING_PHYSICIAN}|${PATIENT2_REFERRING_PHYSICIAN}|${PATIENT2_ADMITTING_PHYSICIAN}|${FACILITY_RECEIVING_APP}|${PATIENT2_METRIPLEX_PAT_ID}|${PATIENT2_DISCHARGE_DATETIME}|${PATIENT2_EMERGENCY_SEVERITY_LEVEL}|${PATIENT2_CLASS}`;
 
   it("should convert the MSH fields correctly", async () => {
     const converter = new PsvToHl7Converter(Buffer.from(psvData, "utf8"));
@@ -108,8 +114,7 @@ describe("PsvToHl7Converter", () => {
     //Skip 6th (recieving facility)
     expect(mshSegment.getField(6).toString()).toBe(FACILITY_RECEIVING_APP);
 
-    //7th part of MSH is the datetime of the message.
-    expect(mshSegment.getField(7).toString()).toBe(ADMIT_DATETIME);
+    expect(mshSegment.getField(7).toString()).toBe(CURRENT_TIME);
 
     //9th part of MSH is the message type.
     const field9 = mshSegment.getField(9);
@@ -154,8 +159,7 @@ describe("PsvToHl7Converter", () => {
     const EVENT_TYPE_CODE_A01 = "A01";
     expect(evnSegment.getField(1).toString()).toBe(EVENT_TYPE_CODE_A01);
 
-    //2nd part of EVN is the recorded datetime.
-    expect(evnSegment.getField(2).toString()).toBe(ADMIT_DATETIME);
+    expect(evnSegment.getField(2).toString()).toBe(CURRENT_TIME);
 
     //6th part of EVN is the event occurred.
     expect(evnSegment.getField(6).toString()).toBe(ADMIT_DATETIME);

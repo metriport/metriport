@@ -29,7 +29,9 @@ export class SftpIngestionClient extends SftpClient {
     const host = Config.getLahieIngestionHost();
     const port = Config.getLahieIngestionPort();
     const username = Config.getLahieIngestionUsername();
-    const password = isLocal ? getLocalPassword() : await this.getLahiePassword();
+    const password = isLocal
+      ? SftpIngestionClient.getLocalPassword()
+      : await this.getLahiePassword();
 
     return new SftpIngestionClient(
       {
