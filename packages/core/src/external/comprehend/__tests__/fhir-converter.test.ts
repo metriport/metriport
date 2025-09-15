@@ -7,12 +7,13 @@ import { buildDayjs } from "@metriport/shared/common/date";
 describe("FHIR converter", () => {
   it("should convert dosage frequency to FHIR", async () => {
     const artifactId = "negation-trait";
-    const { response } = getRxNormArtifact(artifactId);
+    const { inputText, response } = getRxNormArtifact(artifactId);
     const resources = getFhirResourcesFromRxNormEntities(response.Entities ?? [], {
       confidenceThreshold: 0.1,
       context: {
         patientId: "123",
-        dateWritten: buildDayjs("2025-01-01").toISOString(),
+        dateNoteWritten: buildDayjs("2025-01-01").toISOString(),
+        originalText: inputText,
       },
     });
 

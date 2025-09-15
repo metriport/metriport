@@ -1,18 +1,23 @@
 import { RxNormEntity } from "@aws-sdk/client-comprehendmedical";
 import { Medication, CodeableConcept, Reference } from "@medplum/fhirtypes";
-import { getRxNormCode } from "./shared";
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { RXNORM_URL } from "@metriport/shared/medical";
-import { buildStrength, buildStrengthRatio } from "./attribute/strength";
+import { getRxNormCode } from "./shared";
+import { ComprehendContext } from "../types";
+import { buildStrengthRatio } from "./attribute/strength";
 import { buildForm } from "./attribute/form";
+import { buildComprehendExtensionForEntity } from "../extension";
 
-export function buildMedication(entity: RxNormEntity): Medication | undefined {
+export function buildMedication(
+  entity: RxNormEntity,
+  context: ComprehendContext
+): Medication | undefined {
   const code = buildMedicationCode(entity);
   if (!code) return undefined;
 
   const amount = buildStrengthRatio(entity);
-  const ingredient = buildStrength(code, entity);
   const form = buildForm(entity);
+  const extension = [buildComprehendExtensionForEntity(entity, context)];
 
   return {
     resourceType: "Medication",
@@ -21,7 +26,7 @@ export function buildMedication(entity: RxNormEntity): Medication | undefined {
     code,
     ...(form ? { form } : undefined),
     ...(amount ? { amount } : undefined),
-    ...(ingredient ? { ingredient: [ingredient] } : undefined),
+    extension,
   };
 }
 

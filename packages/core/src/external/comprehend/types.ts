@@ -11,13 +11,12 @@ export type ComprehendEntity<T extends ComprehendType> = T extends "rxnorm"
 
 export interface ComprehendConfig {
   confidenceThreshold: number;
-  context: ComprehendContext;
+  patientId?: string;
+  context?: ComprehendContext;
 }
 
-/**
- * Additional context that is required when generating FHIR resources from Comprehend Medical entities.
- */
 export interface ComprehendContext {
-  patientId: string;
-  dateWritten: string;
+  patientId?: string;
+  dateNoteWritten?: string;
+  originalText?: string;
 }

@@ -9,13 +9,18 @@ import { isMedicationEntity, isConfidentMatch } from "./shared";
 
 export async function inferMedications(
   text: string,
-  context: ComprehendContext,
+  externalContext: ComprehendContext,
   {
     comprehendClient = new ComprehendClient(),
     confidenceThreshold = 0.8,
   }: { comprehendClient?: ComprehendClient; confidenceThreshold?: number }
 ): Promise<Array<Medication | MedicationStatement>> {
   const response = await comprehendClient.inferRxNorm(text);
+  const context: ComprehendContext = {
+    ...externalContext,
+    originalText: text,
+  };
+
   return getFhirResourcesFromRxNormEntities(response.Entities ?? [], {
     confidenceThreshold,
     context,
@@ -29,9 +34,9 @@ export function getFhirResourcesFromRxNormEntities(
   const resources: Array<Medication | MedicationStatement | undefined> = [];
 
   for (const entity of entities) {
+    // A Medication is required in order to build a MedicationStatement
     if (isMedicationEntity(entity) && isConfidentMatch(entity, confidenceThreshold)) {
-      // A Medication is required for building a MedicationStatement
-      const medication = buildMedication(entity);
+      const medication = buildMedication(entity, context);
       if (!medication) continue;
 
       const medicationStatement = buildMedicationStatement({ medication, entity, context });

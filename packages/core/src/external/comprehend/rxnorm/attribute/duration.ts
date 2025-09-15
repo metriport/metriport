@@ -6,10 +6,10 @@ import { ComprehendContext } from "../../types";
 
 export function buildEffectivePeriod(
   entity: RxNormEntity,
-  { dateWritten }: ComprehendContext
+  { dateNoteWritten }: ComprehendContext
 ): Period | undefined {
   const duration = getAttribute(entity, RxNormAttributeType.DURATION);
   const durationValue = duration?.Text;
-  if (!durationValue) return undefined;
-  return parsePeriod(durationValue, dateWritten);
+  if (!durationValue || !dateNoteWritten) return undefined;
+  return parsePeriod(durationValue, dateNoteWritten);
 }

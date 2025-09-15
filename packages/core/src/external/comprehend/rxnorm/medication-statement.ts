@@ -6,6 +6,7 @@ import { MedicationStatement } from "@medplum/fhirtypes";
 import { getMedicationReference } from "./medication";
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { ComprehendContext } from "../types";
+import { buildComprehendExtensionForEntity } from "../extension";
 
 export function buildMedicationStatement({
   medication,
@@ -20,6 +21,7 @@ export function buildMedicationStatement({
   const medicationReference = getMedicationReference(medication);
   const dosage = buildDosage(entity);
   const subject = getPatientReference(context);
+  const extension = [buildComprehendExtensionForEntity(entity, context)];
 
   return {
     resourceType: "MedicationStatement",
@@ -29,6 +31,7 @@ export function buildMedicationStatement({
     ...(subject ? { subject } : undefined),
     ...(dosage ? { dosage: [dosage] } : undefined),
     ...(effectivePeriod ? { effectivePeriod } : undefined),
+    extension,
   };
 }
 
