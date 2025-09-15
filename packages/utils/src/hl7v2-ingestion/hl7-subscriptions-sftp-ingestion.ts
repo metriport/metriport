@@ -2,7 +2,7 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
 
-import { buildLahieIngestion } from "@metriport/core/command/hl7v2-subscriptions/hl7-subscriptions-sftp-ingestion/hl7-subscriptions-sftp-ingestion-factory";
+import { buildLahieIngestion } from "@metriport/core/command/hl7-subscriptions-sftp-ingestion/hl7-subscriptions-sftp-ingestion-factory";
 import { Config } from "@metriport/core/util/config";
 import { sleep } from "@metriport/core/util/sleep";
 import { S3Utils } from "@metriport/core/external/aws/s3";

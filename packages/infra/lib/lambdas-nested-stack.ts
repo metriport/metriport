@@ -320,7 +320,7 @@ export class LambdasNestedStack extends NestedStack {
         this,
         "Hl7SubscriptionSftpIngestionBucket",
         {
-          bucketName: props.config.hl7Notification.hl7SubscriptionSftpIngestionLambda.bucketName,
+          bucketName: props.config.hl7Notification.LahieSftpIngestionLambda.bucketName,
           publicReadAccess: false,
           encryption: s3.BucketEncryption.S3_MANAGED,
           versioned: true,
@@ -1044,7 +1044,7 @@ export class LambdasNestedStack extends NestedStack {
   }): Lambda {
     const envType = ownProps.config.environmentType;
     const lambdaTimeout = Duration.seconds(60);
-    const props = ownProps.config.hl7Notification?.hl7SubscriptionSftpIngestionLambda;
+    const props = ownProps.config.hl7Notification?.LahieSftpIngestionLambda;
     if (!props) {
       throw new Error("hl7SubscriptionSftpIngestionLambda is undefined in config.");
     }
