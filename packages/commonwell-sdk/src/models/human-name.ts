@@ -1,10 +1,5 @@
-import { zodToLowerCase } from "@metriport/shared";
 import { z } from "zod";
-import {
-  emptyStringToUndefined,
-  emptyStringToUndefinedSchema,
-  literalStringToUndefined,
-} from "../common/zod";
+import { emptyStringToUndefined, emptyStringToUndefinedSchema } from "../common/zod";
 import { periodSchema } from "./period";
 
 /**
@@ -20,7 +15,6 @@ export enum NameUseCodes {
   old = "old",
   maiden = "maiden",
 }
-export const nameUseCodesSchema = z.preprocess(zodToLowerCase, z.nativeEnum(NameUseCodes));
 
 // A name of a Person with text, parts and usage information.
 // Names may be changed or repudiated. People may have different names in different contexts.
@@ -42,9 +36,7 @@ export const humanNameSchema = z.object({
     emptyStringToUndefined,
     z.string().or(z.array(z.string().nullish())).nullish()
   ),
-  use: emptyStringToUndefinedSchema.pipe(
-    z.preprocess(literalStringToUndefined, nameUseCodesSchema.nullish())
-  ),
+  use: emptyStringToUndefinedSchema.pipe(z.string().nullish()),
   period: periodSchema.nullish(),
   text: z.string().nullish(),
 });
