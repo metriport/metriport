@@ -1,6 +1,6 @@
 import {
   isEmailValid,
-  isPhoneNumberFormat,
+  isEmailAPhoneNumber,
   normalizeEmail,
   normalizeEmailStrict,
   normalizeEmailNewSafe,
@@ -56,21 +56,21 @@ describe("Email Utility Functions", () => {
     });
   });
 
-  describe("isPhoneNumberFormat", () => {
+  describe("isEmailAPhoneNumber", () => {
     it("should return true for phone number format", () => {
-      expect(isPhoneNumberFormat("+1234567890")).toBe(true);
-      expect(isPhoneNumberFormat("+1-234-567-8900")).toBe(true);
-      expect(isPhoneNumberFormat("+1 (234) 567-8900")).toBe(true);
+      expect(isEmailAPhoneNumber("+1234567890")).toBe(true);
+      expect(isEmailAPhoneNumber("+1-234-567-8900")).toBe(true);
+      expect(isEmailAPhoneNumber("+1 (234) 567-8900")).toBe(true);
     });
 
     it("should return false for regular email", () => {
-      expect(isPhoneNumberFormat("test@example.com")).toBe(false);
-      expect(isPhoneNumberFormat("user+tag@example.com")).toBe(false);
+      expect(isEmailAPhoneNumber("test@example.com")).toBe(false);
+      expect(isEmailAPhoneNumber("user+tag@example.com")).toBe(false);
     });
 
     it("should handle whitespace", () => {
-      expect(isPhoneNumberFormat(" +1234567890")).toBe(true);
-      expect(isPhoneNumberFormat(" +1-234-567-8900")).toBe(true);
+      expect(isEmailAPhoneNumber(" +1234567890")).toBe(true);
+      expect(isEmailAPhoneNumber(" +1-234-567-8900")).toBe(true);
     });
   });
 
