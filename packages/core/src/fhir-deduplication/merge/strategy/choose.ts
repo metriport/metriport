@@ -1,4 +1,5 @@
-export function chooseMasterOnly<T>(master: T | undefined): T | undefined {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function chooseMasterOnly<T>(master: T | undefined, _: T[]): T | undefined {
   return master;
 }
 
