@@ -125,7 +125,6 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
         patientId,
         messageCode,
         triggerEvent,
-        platform: "mllp-server",
       },
     });
 
