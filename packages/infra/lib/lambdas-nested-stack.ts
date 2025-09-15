@@ -1049,20 +1049,20 @@ export class LambdasNestedStack extends NestedStack {
       throw new Error("hl7SubscriptionSftpIngestionLambda is undefined in config.");
     }
 
-    const sftpPasswordSecret = ownProps.secrets["HL7_SUBSCRIPTION_INGESTION_PASSWORD"];
-    const privateKeySecret = ownProps.secrets["HL7_SUBSCRIPTION_INGESTION_PRIVATE_KEY"];
-    const passphraseSecret = ownProps.secrets["HL7_SUBSCRIPTION_INGESTION_PASSPHRASE"];
+    const sftpPasswordSecret = ownProps.secrets["LA_HIE_INGESTION_PASSWORD"];
+    const privateKeySecret = ownProps.secrets["LA_HIE_INGESTION_PRIVATE_KEY"];
+    const passphraseSecret = ownProps.secrets["LA_HIE_INGESTION_PASSPHRASE"];
 
     if (!sftpPasswordSecret) {
-      throw new Error("HL7_SUBSCRIPTION_INGESTION_PASSWORD is not defined in config.");
+      throw new Error("LA_HIE_INGESTION_PASSWORD is not defined in config.");
     }
 
     if (!privateKeySecret) {
-      throw new Error("HL7_SUBSCRIPTION_INGESTION_PRIVATE_KEY is not defined in config.");
+      throw new Error("LA_HIE_INGESTION_PRIVATE_KEY is not defined in config.");
     }
 
     if (!passphraseSecret) {
-      throw new Error("HL7_SUBSCRIPTION_INGESTION_PASSPHRASE is not defined in config.");
+      throw new Error("LA_HIE_INGESTION_PASSPHRASE is not defined in config.");
     }
 
     const sftpConfig = props.sftpConfig;
