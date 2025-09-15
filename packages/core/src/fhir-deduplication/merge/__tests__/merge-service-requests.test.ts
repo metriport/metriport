@@ -51,7 +51,7 @@ describe("Merge service requests", () => {
   });
 
   it("should merge service requests with identifiers", () => {
-    const serviceRequest1: ServiceRequest = makeServiceRequest({
+    const firstServiceRequest: ServiceRequest = makeServiceRequest({
       id: "1",
       status: "unknown",
       lastUpdated: "2025-01-01T00:00:00.000Z",
@@ -59,7 +59,7 @@ describe("Merge service requests", () => {
       identifier: [{ system: "http://example.com", value: "1234567890" }],
       source: "service-request-1-source",
     });
-    const serviceRequest2: ServiceRequest = makeServiceRequest({
+    const laterServiceRequest: ServiceRequest = makeServiceRequest({
       id: "2",
       status: "unknown",
       lastUpdated: "2025-01-02T00:00:00.000Z",
@@ -67,7 +67,7 @@ describe("Merge service requests", () => {
       identifier: [{ system: "http://example.com", value: "9876543210" }],
       source: "service-request-2-source",
     });
-    const serviceRequest3: ServiceRequest = makeServiceRequest({
+    const evenLaterServiceRequest: ServiceRequest = makeServiceRequest({
       id: "3",
       status: "unknown",
       lastUpdated: "2025-01-03T00:00:00.000Z",
@@ -75,14 +75,59 @@ describe("Merge service requests", () => {
       identifier: [{ system: "http://example.com", value: "6666666666" }],
       source: "service-request-3-source",
     });
-    const result = mergeServiceRequests([serviceRequest1, serviceRequest2, serviceRequest3]);
-    expect(result).toEqual({
-      ...serviceRequest3,
+
+    const expectedResult: ServiceRequest = {
+      ...evenLaterServiceRequest,
       identifier: [
         { system: "http://example.com", value: "1234567890" },
         { system: "http://example.com", value: "6666666666" },
         { system: "http://example.com", value: "9876543210" },
       ],
+    };
+    // Should be order idempotent
+    const result = mergeServiceRequests([
+      evenLaterServiceRequest,
+      firstServiceRequest,
+      laterServiceRequest,
+    ]);
+    expect(result).toEqual(expectedResult);
+
+    const anotherOrderResult = mergeServiceRequests([
+      firstServiceRequest,
+      laterServiceRequest,
+      evenLaterServiceRequest,
+    ]);
+    expect(anotherOrderResult).toEqual(expectedResult);
+
+    const yetAnotherOrderResult = mergeServiceRequests([
+      laterServiceRequest,
+      evenLaterServiceRequest,
+      firstServiceRequest,
+    ]);
+    expect(yetAnotherOrderResult).toEqual(expectedResult);
+  });
+
+  it("should merge service requests with different requisition identifiers", () => {
+    const firstServiceRequest: ServiceRequest = makeServiceRequest({
+      id: "1",
+      status: "unknown",
+      lastUpdated: "2025-01-01T00:00:00.000Z",
+      identifier: [{ system: "http://example.com", value: "1234567890" }],
+      requisition: { system: "http://example.com", value: "ABC123" },
     });
+
+    const laterServiceRequest: ServiceRequest = makeServiceRequest({
+      id: "2",
+      status: "unknown",
+      lastUpdated: "2025-01-02T00:00:00.000Z",
+      identifier: [{ system: "http://example.com", value: "1234567890" }],
+      requisition: { system: "http://another-example.com", value: "XYZ789" },
+    });
+
+    const result = mergeServiceRequests([firstServiceRequest, laterServiceRequest]);
+    expect(result).toEqual(laterServiceRequest);
+
+    const anotherOrderResult = mergeServiceRequests([laterServiceRequest, firstServiceRequest]);
+    expect(anotherOrderResult).toEqual(laterServiceRequest);
   });
 });
