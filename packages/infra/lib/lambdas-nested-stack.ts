@@ -1,4 +1,4 @@
-import { Duration, NestedStack, NestedStackProps, Size, Stack } from "aws-cdk-lib";
+import { Duration, NestedStack, NestedStackProps, Size } from "aws-cdk-lib";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
@@ -9,17 +9,19 @@ import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
 import * as rds from "aws-cdk-lib/aws-rds";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as secret from "aws-cdk-lib/aws-secretsmanager";
+import { ISecret } from "aws-cdk-lib/aws-secretsmanager";
 import { IQueue, Queue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { EnvConfig } from "../config/env-config";
 import * as fhirConverterConnector from "./api-stack/fhir-converter-connector";
 import { FHIRConverterConnector } from "./api-stack/fhir-converter-connector";
 import { EnvType } from "./env-type";
+import {
+  getConsolidatedIngestionConnectorSettings,
+  getConsolidatedSearchConnectorSettings,
+} from "./lambdas-nested-stack-settings";
 import { getHieSftpPasswordSecretName } from "./secrets-stack";
 import { addBedrockPolicyToLambda } from "./shared/bedrock";
-import ConsolidatedSearchConstruct, {
-  OpenSearchConfigForLambdas,
-} from "./shared/consolidated-search-construct";
 import { createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
 import { LambdaLayers } from "./shared/lambda-layers";
 import { createScheduledLambda } from "./shared/lambda-scheduled";
@@ -57,6 +59,13 @@ function getReconversionKickoffSettings(): QueueAndLambdaSettings {
     waitTime: reconversionKickoffWaitTime,
   };
 }
+
+export type OpenSearchConfigForLambdas = {
+  endpoint: string;
+  auth: { userName: string; secret: ISecret };
+  consolidatedIndexName: string;
+  documentIndexName: string;
+};
 
 interface LambdasNestedStackProps extends NestedStackProps {
   config: EnvConfig;
@@ -213,19 +222,10 @@ export class LambdasNestedStack extends NestedStack {
       alarmSnsAction: props.alarmAction,
     });
 
-    const consolidatedSearchConstruct = this.setupConsolidatedSearchConstruct({
-      stack: this,
-      vpc: props.vpc,
-      featureFlagsTable: props.featureFlagsTable,
-      openSearch: props.openSearch,
-      lambdaLayers: props.lambdaLayers,
-      secrets: props.secrets,
-      medicalDocumentsBucket: props.medicalDocumentsBucket,
-      config: props.config,
+    this.consolidatedIngestionQueue = this.setupConsolidatedIngestionQueue({
+      envType: props.config.environmentType,
+      alarmAction: props.alarmAction,
     });
-    this.consolidatedSearchLambda = consolidatedSearchConstruct.consolidatedSearchLambda;
-    this.consolidatedIngestionLambda = consolidatedSearchConstruct.consolidatedIngestionLambda;
-    this.consolidatedIngestionQueue = consolidatedSearchConstruct.consolidatedIngestionQueue;
 
     this.fhirToBundleLambda = this.setupFhirBundleLambda({
       lambdaLayers: props.lambdaLayers,
@@ -258,6 +258,37 @@ export class LambdasNestedStack extends NestedStack {
       featureFlagsTable: props.featureFlagsTable,
       bedrock: props.config.bedrock,
       consolidatedIngestionQueue: this.consolidatedIngestionQueue,
+    });
+
+    this.consolidatedSearchLambda = this.setupConsolidatedSearchLambda({
+      lambdaLayers: props.lambdaLayers,
+      vpc: props.vpc,
+      envType: props.config.environmentType,
+      fhirServerUrl: props.config.fhirServerUrl,
+      bundleBucket: props.medicalDocumentsBucket,
+      openSearchEndpoint: props.openSearch.endpoint,
+      openSearchAuth: props.openSearch.auth,
+      openSearchConsolidatedIndexName: props.openSearch.consolidatedIndexName,
+      openSearchDocumentsIndexName: props.openSearch.documentIndexName,
+      consolidatedDataIngestionInitialDate:
+        props.config.openSearch.consolidatedDataIngestionInitialDate,
+      featureFlagsTable: props.featureFlagsTable,
+      sentryDsn: props.config.lambdasSentryDSN,
+      alarmAction: props.alarmAction,
+    });
+
+    this.consolidatedIngestionLambda = this.setupConsolidatedIngestionLambda({
+      lambdaLayers: props.lambdaLayers,
+      vpc: props.vpc,
+      envType: props.config.environmentType,
+      bundleBucket: props.medicalDocumentsBucket,
+      openSearchEndpoint: props.openSearch.endpoint,
+      openSearchAuth: props.openSearch.auth,
+      openSearchConsolidatedIndexName: props.openSearch.consolidatedIndexName,
+      openSearchDocumentsIndexName: props.openSearch.documentIndexName,
+      featureFlagsTable: props.featureFlagsTable,
+      sentryDsn: props.config.lambdasSentryDSN,
+      alarmAction: props.alarmAction,
     });
 
     this.acmCertificateMonitorLambda = this.setupAcmCertificateMonitor({
@@ -755,40 +786,154 @@ export class LambdasNestedStack extends NestedStack {
     return theLambda;
   }
 
-  private setupConsolidatedSearchConstruct(ownProps: {
-    stack: Stack;
-    vpc: ec2.IVpc;
-    config: EnvConfig;
+  private setupConsolidatedSearchLambda(ownProps: {
     lambdaLayers: LambdaLayers;
-    secrets: Secrets;
-    medicalDocumentsBucket: s3.Bucket;
+    vpc: ec2.IVpc;
+    envType: EnvType;
+    fhirServerUrl: string;
+    bundleBucket: s3.IBucket;
     featureFlagsTable: dynamodb.Table;
-    openSearch: OpenSearchConfigForLambdas;
-  }): ConsolidatedSearchConstruct {
+    openSearchEndpoint: string;
+    openSearchAuth: { userName: string; secret: ISecret };
+    openSearchDocumentsIndexName: string;
+    openSearchConsolidatedIndexName: string;
+    consolidatedDataIngestionInitialDate: string;
+    sentryDsn: string | undefined;
+    alarmAction: SnsAction | undefined;
+  }): Lambda {
+    const { name, lambda: lambdaSettings } = getConsolidatedSearchConnectorSettings();
+    const lambdaEntry = "consolidated-search";
     const {
-      stack,
-      vpc,
-      config,
       lambdaLayers,
-      secrets,
-      medicalDocumentsBucket,
+      vpc,
+      envType,
+      fhirServerUrl,
+      bundleBucket,
       featureFlagsTable,
-      openSearch,
+      openSearchEndpoint,
+      openSearchAuth,
+      openSearchConsolidatedIndexName,
+      openSearchDocumentsIndexName,
+      consolidatedDataIngestionInitialDate,
+      sentryDsn,
+      alarmAction,
     } = ownProps;
-    const consolidatedSearchConstruct = new ConsolidatedSearchConstruct(
-      stack,
-      "ConsolidatedSearchConstruct",
-      {
-        config,
-        vpc,
-        lambdaLayers,
-        secrets,
-        medicalDocumentsBucket,
-        featureFlagsTable,
-        openSearch,
-      }
+
+    const theLambda = createLambda({
+      stack: this,
+      name,
+      runtime: lambdaSettings.runtime,
+      entry: lambdaEntry,
+      envType,
+      envVars: {
+        // API_URL set on the api-stack after the OSS API is created
+        FHIR_SERVER_URL: fhirServerUrl,
+        MEDICAL_DOCUMENTS_BUCKET_NAME: bundleBucket.bucketName,
+        FEATURE_FLAGS_TABLE_NAME: featureFlagsTable.tableName,
+        SEARCH_ENDPOINT: openSearchEndpoint,
+        SEARCH_USERNAME: openSearchAuth.userName,
+        SEARCH_PASSWORD_SECRET_ARN: openSearchAuth.secret.secretArn,
+        SEARCH_INDEX: openSearchDocumentsIndexName,
+        CONSOLIDATED_SEARCH_INDEX: openSearchConsolidatedIndexName,
+        CONSOLIDATED_INGESTION_INITIAL_DATE: consolidatedDataIngestionInitialDate,
+        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+      },
+      layers: [lambdaLayers.shared, lambdaLayers.langchain],
+      memory: lambdaSettings.memory,
+      timeout: lambdaSettings.timeout,
+      isEnableInsights: true,
+      vpc,
+      alarmSnsAction: alarmAction,
+    });
+
+    bundleBucket.grantReadWrite(theLambda);
+    openSearchAuth.secret.grantRead(theLambda);
+    featureFlagsTable.grantReadData(theLambda);
+
+    return theLambda;
+  }
+
+  private setupConsolidatedIngestionQueue(ownProps: {
+    envType: EnvType;
+    alarmAction: SnsAction | undefined;
+  }): IQueue {
+    const { envType, alarmAction } = ownProps;
+    const settings = getConsolidatedIngestionConnectorSettings();
+    const name = settings.name;
+
+    const theQueue = createQueue({
+      stack: this,
+      name,
+      envType,
+      alarmSnsAction: alarmAction,
+      ...settings.queue,
+    });
+
+    return theQueue;
+  }
+
+  private setupConsolidatedIngestionLambda(ownProps: {
+    lambdaLayers: LambdaLayers;
+    vpc: ec2.IVpc;
+    envType: EnvType;
+    bundleBucket: s3.IBucket;
+    featureFlagsTable: dynamodb.Table;
+    openSearchEndpoint: string;
+    openSearchAuth: { userName: string; secret: ISecret };
+    openSearchDocumentsIndexName: string;
+    openSearchConsolidatedIndexName: string;
+    sentryDsn: string | undefined;
+    alarmAction: SnsAction | undefined;
+  }): Lambda {
+    const settings = getConsolidatedIngestionConnectorSettings();
+    const name = settings.name;
+    const lambdaEntry = "consolidated-ingestion";
+    const {
+      lambdaLayers,
+      vpc,
+      envType,
+      bundleBucket,
+      featureFlagsTable,
+      openSearchEndpoint,
+      openSearchAuth,
+      openSearchConsolidatedIndexName,
+      openSearchDocumentsIndexName,
+      sentryDsn,
+      alarmAction,
+    } = ownProps;
+
+    const theLambda = createLambda({
+      stack: this,
+      name,
+      entry: lambdaEntry,
+      envType,
+      envVars: {
+        // API_URL set on the api-stack after the OSS API is created
+        FEATURE_FLAGS_TABLE_NAME: featureFlagsTable.tableName,
+        MEDICAL_DOCUMENTS_BUCKET_NAME: bundleBucket.bucketName,
+        SEARCH_ENDPOINT: openSearchEndpoint,
+        SEARCH_USERNAME: openSearchAuth.userName,
+        SEARCH_PASSWORD_SECRET_ARN: openSearchAuth.secret.secretArn,
+        SEARCH_INDEX: openSearchDocumentsIndexName,
+        CONSOLIDATED_SEARCH_INDEX: openSearchConsolidatedIndexName,
+        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+      },
+      layers: [lambdaLayers.shared, lambdaLayers.langchain],
+      isEnableInsights: true,
+      vpc,
+      alarmSnsAction: alarmAction,
+      ...settings.lambda,
+    });
+
+    theLambda.addEventSource(
+      new SqsEventSource(this.consolidatedIngestionQueue, settings.eventSource)
     );
-    return consolidatedSearchConstruct;
+
+    bundleBucket.grantReadWrite(theLambda);
+    openSearchAuth.secret.grantRead(theLambda);
+    featureFlagsTable.grantReadData(theLambda);
+
+    return theLambda;
   }
 
   /**
