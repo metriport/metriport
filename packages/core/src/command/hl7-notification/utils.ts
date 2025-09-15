@@ -1,4 +1,4 @@
-const supportedTypes = ["A01", "A03"] as const;
+const supportedTypes = ["A01", "A03", "A04"] as const;
 
 export type SupportedTriggerEvent = (typeof supportedTypes)[number];
 export function isSupportedTriggerEvent(

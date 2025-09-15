@@ -160,7 +160,101 @@ A Patient Admit event is emitted when a patient undergoes the admission process,
       Your first party identifier assigned to this patient, if any. You can call [GET Patient](medical-api/api-reference/patient/get-patient) to check whether a patient has an external id.
     </ResponseField>
 
-    <ResponseField name="whenSourceSent" type="string" required>
+    <ResponseField name="whenSourceSent" type="string">
+      Specifies when this data was initially shared with Metriport.
+    </ResponseField>
+
+    <ResponseField name="additionalIds" type="object" required>
+      An array of objects describing the Documents that can be retrieved for the Patient - will only be present for `document-download` messages.
+
+      <Expandable title="object properties">
+        <ResponseField name="athenahealth" type="string[]">
+          Athena patient ID. If more than one patient in Athena maps to a Metriport patient, they
+          will all be included.
+        </ResponseField>
+
+        <ResponseField name="canvas" type="string[]">
+          Canvas patient ID. If more than one patient in Canvas maps to a Metriport patient, they
+          will all be included.
+        </ResponseField>
+
+        <ResponseField name="elation" type="string[]">
+          Elation Patient ID. If more than one patient in Elation maps to a Metriport patient, they
+          will all be included.
+        </ResponseField>
+
+        <ResponseField name="healthie" type="string[]">
+          Healthie Patient ID. If more than one patient in Healthie maps to a Metriport patient, they
+          will all be included.
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+
+    <ResponseField name="admitTimestamp" type="string">
+      When the patient for this encounter was officially admitted for care.
+    </ResponseField>
+
+  </Expandable>
+</ResponseField>
+
+#### Example payload
+
+```json
+{
+  "meta": {
+    "messageId": "1e82424a-1220-473d-a0d1-6e5fde15159e",
+    "when": "2025-01-30T23:00:01.000Z",
+    "type": "patient.admit"
+  },
+  "payload": {
+    "url": "<presigned-download-url>",
+    "patientId": "metriport-patient-uuid",
+    "externalId": "your-first-party-id",
+    "additionalIds": {
+      "athenahealth": ["99992"]
+    },
+    "admitTimestamp": "2025-01-28T23:00:00.000Z"
+  }
+}
+```
+
+### `patient.registration`
+
+A Patient Registration event signals that the patient has arrived or checked in as a one-time, or recurring outpatient, and is not assigned to a bed. One example might be its use to signal the beginning of a visit to the Emergency Room. Note that some systems refer to these events as outpatient registrations or emergency admissions.
+
+#### Schema
+
+<ResponseField name="meta" required>
+  Metadata about the message.
+
+  <Expandable title="meta properties">
+    <ResponseField name="messageId" type="string" required>
+      A unique identifier for this webhook message. Use this only for debugging purposes.
+    </ResponseField>
+    <ResponseField name="when" type="string" required>
+      An ISO-8601 datetime of when this webhook was sent.
+    </ResponseField>
+    <ResponseField name="type" type="string" required>
+      The type of the patient webhook data message. For an admit, it will be `patient.admit`.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="payload" type="PatientAdmitPayload" required>
+  <Expandable title="payload properties">
+    <ResponseField name="url" type="string" required>
+      The URL to download the FHIR bundle containing the FHIR data representing the comprehensive. It's valid for 10 minutes.
+    </ResponseField>
+
+    <ResponseField name="patientId" type="string" required>
+      The metriport patient id for this patient.
+    </ResponseField>
+
+    <ResponseField name="externalId" type="string" optional>
+      Your first party identifier assigned to this patient, if any. You can call [GET Patient](medical-api/api-reference/patient/get-patient) to check whether a patient has an external id.
+    </ResponseField>
+
+    <ResponseField name="whenSourceSent" type="string">
       Specifies when this data was initially shared with Metriport.
     </ResponseField>
 
@@ -254,7 +348,7 @@ A Patient Transfer event indicates that a patient has been moved from one locati
       Your first party identifier assigned to this patient, if any. You can call [GET Patient](medical-api/api-reference/patient/get-patient) to check whether a patient has an external id.
     </ResponseField>
 
-    <ResponseField name="whenSourceSent" type="string" required>
+    <ResponseField name="whenSourceSent" type="string">
       Specifies when this data was initially shared with Metriport.
     </ResponseField>
 
@@ -372,6 +466,7 @@ A Patient Transfer event indicates that a patient has been moved from one locati
 }
 ```
 
+
 ### `patient.discharge`
 
 A Patient Discharge event indicates the end of a patient's stay in a healthcare facility. The patient now has the status "discharged" and an officially recorded discharge date.
@@ -408,7 +503,7 @@ A Patient Discharge event indicates the end of a patient's stay in a healthcare 
       Your first party identifier assigned to this patient, if any. You can call [GET Patient](medical-api/api-reference/patient/get-patient) to check whether a patient has an external id.
     </ResponseField>
 
-    <ResponseField name="whenSourceSent" type="string" required>
+    <ResponseField name="whenSourceSent" type="string">
       Specifies when this data was initially shared with Metriport.
     </ResponseField>
 
