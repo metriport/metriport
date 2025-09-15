@@ -7,12 +7,14 @@ function makeMedication({
   lastUpdated,
   source,
   code,
+  amount,
   status,
 }: {
   id?: string;
   lastUpdated?: string;
   source?: string;
   code: CodeableConcept;
+  amount?: Medication["amount"];
   status: Medication["status"];
 }): Medication {
   return {
@@ -20,6 +22,7 @@ function makeMedication({
     id,
     ...(lastUpdated ? { meta: { lastUpdated, ...(source ? { source } : {}) } } : {}),
     ...(code ? { code } : {}),
+    ...(amount ? { amount } : {}),
     ...(status ? { status } : {}),
   };
 }
@@ -82,5 +85,38 @@ describe("Merge medications", () => {
 
     const anotherMerged = mergeMedications([secondMedication, firstMedication]);
     expect(anotherMerged).toEqual(firstMedication);
+  });
+
+  it("should merge medications that may or may not have metadata", () => {
+    const mainMedication = makeMedication({
+      id: "1",
+      status: "active",
+      lastUpdated: "2024-01-01T00:00:00.000Z",
+      code: {
+        coding: [{ code: "a", system: "b" }],
+      },
+    });
+
+    const medicationWithoutMeta = makeMedication({
+      id: "2",
+      status: "inactive",
+      code: {
+        coding: [{ code: "a", system: "b" }],
+      },
+      amount: {
+        numerator: {
+          value: 100,
+          unit: "mg",
+          system: "http://unitsofmeasure.org",
+          code: "mg",
+        },
+      },
+    });
+
+    const merged = mergeMedications([mainMedication, medicationWithoutMeta]);
+    expect(merged).toEqual({
+      ...mainMedication,
+      amount: medicationWithoutMeta.amount,
+    });
   });
 });
