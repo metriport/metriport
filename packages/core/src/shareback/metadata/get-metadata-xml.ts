@@ -2,7 +2,7 @@ import { executeWithRetriesS3, S3Utils } from "../../external/aws/s3";
 import { XDSRegistryError } from "../../external/carequality/error";
 import { Config } from "../../util/config";
 import { capture } from "../../util/notifications";
-import { createSharebackFolderName } from "../file";
+import { createSharebackFolderName, METADATA_SUFFIX } from "../file";
 
 const region = Config.getAWSRegion();
 const s3Utils = new S3Utils(region);
@@ -33,7 +33,7 @@ async function retrieveXmlContentsFromMetadataFilesOnS3(
   const documentContents = (
     await Promise.all(
       data
-        .filter(item => item.Key && item.Key.endsWith("_metadata.xml"))
+        .filter(item => item.Key && item.Key.endsWith(METADATA_SUFFIX))
         .map(async item => {
           if (item.Key) {
             const params = {

@@ -5,6 +5,7 @@ import { parseFileName } from "../domain/filename";
 export const UPLOADS_FOLDER = "uploads";
 export const CCD_SUFFIX = "ccd";
 export const FHIR_BUNDLE_SUFFIX = "FHIR_BUNDLE";
+export const METADATA_SUFFIX = "_metadata.xml";
 
 export function createSharebackFolderName({
   cxId,
@@ -30,7 +31,7 @@ export function createUploadMetadataFilePath(
   docName: string
 ): string {
   const uploadFilePath = createUploadFilePath(cxId, patientId, docName);
-  return `${uploadFilePath}_metadata.xml`;
+  return `${uploadFilePath}${METADATA_SUFFIX}`;
 }
 
 export function createAttachmentUploadFilePath({
