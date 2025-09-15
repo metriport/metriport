@@ -6,7 +6,7 @@ import { buildPatientImportParseHandler } from "@metriport/core/command/patient-
 import { buildPatientImportResult } from "@metriport/core/command/patient-import/steps/result/patient-import-result-factory";
 import { getResultEntries } from "@metriport/core/command/patient-import/steps/result/patient-import-result-local";
 import { S3Utils } from "@metriport/core/external/aws/s3";
-import { capture } from "@metriport/core/util";
+import { capture, out } from "@metriport/core/util";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { Config } from "@metriport/core/util/config";
 import {
@@ -302,6 +302,7 @@ router.get(
         cxId,
         jobId,
         patientImportBucket: Config.getPatientImportBucket(),
+        log: out(`GET /internal/patient/bulk/${jobId}`).log,
       });
       await executeAsynchronously(
         resultEntries,
