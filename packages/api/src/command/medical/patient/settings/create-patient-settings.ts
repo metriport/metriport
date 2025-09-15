@@ -7,15 +7,9 @@ import { out } from "@metriport/core/util/log";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { BadRequestError } from "@metriport/shared";
 import { PatientSettingsModel } from "../../../../models/patient-settings";
+import { processPatientsInBatches } from "../batch-utils";
 import { getPatientOrFail } from "../get-patient";
-import { getPatientIds } from "../get-patient-read-only";
-import { PatientBatchProcessingResult, processPatientsInBatches } from "../batch-utils";
-import {
-  PatientListProcessingResult,
-  PatientSettingsUpsertForCxProps,
-  PatientSettingsUpsertProps,
-  verifyPatients,
-} from "./common";
+import { PatientListProcessingResult, PatientSettingsUpsertProps, verifyPatients } from "./common";
 
 /**
  * Creates a new patient settings record.
@@ -91,39 +85,6 @@ export async function upsertPatientSettingsForPatientList({
     patientsFoundAndUpdated: validPatientIds.length,
     patientsNotFound,
   };
-}
-
-/**
- * Upserts patient settings for the given customer with specific patient IDs.
- * Processes patient settings updates in batches to handle large datasets efficiently.
- *
- * @param cxId The customer ID
- * @param facilityId The facility ID. Optional.
- * @param settings Patient settings object, which includes subscriptions
- * @returns The number of patients updated and the list of patients not found
- */
-export async function upsertPatientSettingsForCx({
-  cxId,
-  facilityId,
-  settings,
-}: PatientSettingsUpsertForCxProps): Promise<PatientBatchProcessingResult> {
-  const patientIds = await getPatientIds({ cxId, facilityId });
-
-  async function batchProcessor(batch: string[]): Promise<void> {
-    await upsertPatientSettings({
-      patientIds: batch,
-      cxId,
-      settings,
-    });
-  }
-
-  return await processPatientsInBatches(patientIds, batchProcessor, {
-    cxId,
-    facilityId,
-    operationName: "upsertPatientSettingsForCx",
-    errorMessage: "Failed to upsert settings for patients",
-    throwOnNoPatients: false,
-  });
 }
 
 async function upsertPatientSettings({

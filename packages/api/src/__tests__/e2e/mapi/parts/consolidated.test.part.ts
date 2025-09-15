@@ -36,6 +36,12 @@ dayjs.extend(duration);
 const conversionCheckStatusMaxRetries = 12;
 const conversionCheckStatusWaitTime = dayjs.duration({ seconds: 10 });
 
+const REQUESTED_MIME_TYPE: Record<string, string> = {
+  json: "application/json",
+  pdf: "application/pdf",
+  html: "text/html",
+};
+
 export function runConsolidatedTests(e2e: E2eContext) {
   it("prepares consolidated", async () => {
     await prepareConsolidatedTests(e2e);
@@ -118,6 +124,7 @@ export function runConsolidatedTests(e2e: E2eContext) {
       if (!e2e.patient) throw new Error("Missing patient");
       const whRequest = getConsolidatedWebhookRequest();
       const consolidatedData = whRequest?.patients;
+      const contentType = REQUESTED_MIME_TYPE[format];
       expect(consolidatedData).toBeTruthy();
       if (!consolidatedData) throw new Error("Missing consolidated data");
       expect(consolidatedData.length).toEqual(1);
@@ -135,9 +142,7 @@ export function runConsolidatedTests(e2e: E2eContext) {
               resourceType: "DocumentReference",
               content: expect.arrayContaining([
                 expect.objectContaining({
-                  attachment: expect.objectContaining({
-                    contentType: `application/${format}`,
-                  }),
+                  attachment: expect.objectContaining({ contentType }),
                 }),
               ]),
             }),

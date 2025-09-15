@@ -9,7 +9,7 @@ import { BaseModel, ModelSetup } from "../_default";
 
 /**
  * Used by code that needs to access the raw data from the database.
- * @see finishSinglePatientImport()
+ * @see storePatientEntryStatus()
  */
 export const patientImportRawColumnNames = {
   id: "id",

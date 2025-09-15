@@ -1,5 +1,5 @@
 import { DocumentReference, Organization as FhirOrganization } from "@medplum/fhirtypes";
-import { CCD_SUFFIX } from "@metriport/core/domain/document/upload";
+import { CCD_SUFFIX } from "@metriport/core/shareback/file";
 import { Organization } from "@metriport/core/domain/organization";
 import { Patient } from "@metriport/core/domain/patient";
 import { toFHIR as toFhirOrganization } from "@metriport/core/external/fhir/organization/conversion";
@@ -7,6 +7,7 @@ import { cdaDocumentUploaderHandler } from "@metriport/core/shareback/cda-upload
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
+import { errorToString } from "@metriport/shared";
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
 import { Config } from "../../shared/config";
 import { generateCcd } from "./generate-ccd";
@@ -49,8 +50,7 @@ export async function processCcdRequest({
 
     const ccd = await generateCcd(patient, organization, requestId);
     const docRef = createDocRef(patient.id);
-    log(`CCD generated. Starting the upload...`);
-    await cdaDocumentUploaderHandler({
+    const { filePath, metadataFilePath } = await cdaDocumentUploaderHandler({
       cxId: patient.cxId,
       patientId: patient.id,
       bundle: ccd,
@@ -60,10 +60,10 @@ export async function processCcdRequest({
       docId: CCD_SUFFIX,
       docRef,
     });
-    log(`CCD uploaded into ${medicalBucket}`);
+    log(`CCD uploaded into ${medicalBucket} with key ${filePath}, metadata ${metadataFilePath}`);
   } catch (error) {
     const msg = `Error creating and uploading CCD`;
-    log(`${msg}: error - ${error}`);
+    log(`${msg}: error - ${errorToString(error)}`);
     capture.error(msg, { extra: { error, cxId: patient.cxId, patientId: patient.id } });
     throw error;
   }
@@ -74,8 +74,7 @@ export async function processEmptyCcdRequest(patient: Patient, organization: Fhi
   try {
     const ccd = await generateEmptyCcd(patient);
     const docRef = createDocRef(patient.id);
-    log(`Empty CCD generated. Starting the upload...`);
-    await cdaDocumentUploaderHandler({
+    const { filePath, metadataFilePath } = await cdaDocumentUploaderHandler({
       cxId: patient.cxId,
       patientId: patient.id,
       bundle: ccd,
@@ -85,10 +84,12 @@ export async function processEmptyCcdRequest(patient: Patient, organization: Fhi
       docId: CCD_SUFFIX,
       docRef,
     });
-    log(`CCD uploaded into ${medicalBucket}`);
+    log(
+      `Empty CCD uploaded into ${medicalBucket} with key ${filePath}, metadata ${metadataFilePath}`
+    );
   } catch (error) {
     const msg = `Error creating and uploading empty CCD`;
-    log(`${msg}: error - ${error}`);
+    log(`${msg}: error - ${errorToString(error)}`);
     capture.error(msg, { extra: { error, cxId: patient.cxId, patientId: patient.id } });
     throw error;
   }
