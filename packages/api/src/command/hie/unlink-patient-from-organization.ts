@@ -117,10 +117,9 @@ export async function unlinkPatientFromOrganization({
         findAndRemoveMedicalDocumentFromS3(fileName, dryRun, log),
         findAndRemoveConsolidatedDocumentFromS3(cxId, patientId, dryRun, log),
         deleteFromOpenSearch(document.id, dryRun, log),
+        deleteFhirResource(cxId, document.id, dryRun, log),
       ]);
 
-      // Only delete FHIR resource if all other operations succeeded
-      await deleteFhirResource(cxId, document.id, dryRun, log);
       log(`Successfully processed document ${document.id}`);
     } catch (error) {
       log(`Failed to process document ${document.id}: ${errorToString(error)}`);
@@ -225,6 +224,19 @@ function getDocumentsWithOid(
 
     if (identifier) {
       matchingDocumentRefs.push(document);
+      continue;
+    }
+
+    const masterIdentifier = document.masterIdentifier?.value === oid;
+    const potentialMasterIdentifier =
+      document.masterIdentifier?.value?.includes(oid) && !masterIdentifier;
+
+    if (masterIdentifier) {
+      matchingDocumentRefs.push(document);
+    } else if (potentialMasterIdentifier) {
+      log(
+        `Found potential master identifier ${document.masterIdentifier?.value} for patient ${organization.id}`
+      );
     }
   }
 
