@@ -17,6 +17,8 @@ export interface ComprehendConfig {
 
 export interface ComprehendContext {
   patientId?: string;
+  diagnosticReportId?: string;
+  encounterId?: string;
   dateNoteWritten?: string;
   originalText?: string;
 }

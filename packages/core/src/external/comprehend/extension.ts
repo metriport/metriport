@@ -1,21 +1,34 @@
-import { Extension } from "@medplum/fhirtypes";
+import { DiagnosticReport, Encounter, Extension, Reference } from "@medplum/fhirtypes";
 import { RxNormEntity } from "@aws-sdk/client-comprehendmedical";
 import { DATA_EXTRACTION_URL } from "./constants";
 import { ComprehendContext } from "./types";
 
 export function buildComprehendExtensionForEntity(
   entity: RxNormEntity,
-  { originalText }: ComprehendContext
+  { originalText, diagnosticReportId, encounterId }: ComprehendContext
 ): Extension {
   const textRange = getTextRange(entity);
-  const entityString = textRange
-    ? originalText?.slice(textRange?.start, textRange?.end)
+  const valueString = textRange ? originalText?.slice(textRange?.start, textRange?.end) : undefined;
+
+  const valueReference: Reference<DiagnosticReport | Encounter> | undefined = encounterId
+    ? buildEncounterReference(encounterId)
+    : diagnosticReportId
+    ? buildDiagnosticReportReference(diagnosticReportId)
     : undefined;
 
   return {
     url: DATA_EXTRACTION_URL,
-    ...(entityString ? { valueString: entityString } : undefined),
+    ...(valueString ? { valueString } : undefined),
+    ...(valueReference ? { valueReference } : undefined),
   };
+}
+
+function buildDiagnosticReportReference(diagnosticReportId: string): Reference<DiagnosticReport> {
+  return { reference: `DiagnosticReport/${diagnosticReportId}` };
+}
+
+function buildEncounterReference(encounterId: string): Reference<Encounter> {
+  return { reference: `Encounter/${encounterId}` };
 }
 
 function getTextRange(entity: RxNormEntity): { start: number; end: number } | undefined {
