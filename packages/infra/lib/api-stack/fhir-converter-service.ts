@@ -83,6 +83,7 @@ export function createFHIRConverterService(
       healthCheckGracePeriod: Duration.seconds(60),
       publicLoadBalancer: false,
       idleTimeout: maxExecutionTimeout,
+      minHealthyPercent: 70,
     }
   );
 
