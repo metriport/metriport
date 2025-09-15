@@ -316,22 +316,18 @@ export class LambdasNestedStack extends NestedStack {
         ],
       });
 
-      const hl7SubscriptionSftpIngestionBucket = new s3.Bucket(
-        this,
-        "Hl7SubscriptionSftpIngestionBucket",
-        {
-          bucketName: props.config.hl7Notification.LahieSftpIngestionLambda.bucketName,
-          publicReadAccess: false,
-          encryption: s3.BucketEncryption.S3_MANAGED,
-          versioned: true,
-          cors: [
-            {
-              allowedOrigins: ["*"],
-              allowedMethods: [s3.HttpMethods.PUT, s3.HttpMethods.POST],
-            },
-          ],
-        }
-      );
+      const LahieSftpIngestionLambda = new s3.Bucket(this, "LahieSftpIngestionLambda", {
+        bucketName: props.config.hl7Notification.LahieSftpIngestionLambda.bucketName,
+        publicReadAccess: false,
+        encryption: s3.BucketEncryption.S3_MANAGED,
+        versioned: true,
+        cors: [
+          {
+            allowedOrigins: ["*"],
+            allowedMethods: [s3.HttpMethods.PUT, s3.HttpMethods.POST],
+          },
+        ],
+      });
 
       this.hl7v2RosterUploadLambdas = this.setupRosterUploadLambdas({
         lambdaLayers: props.lambdaLayers,
@@ -342,13 +338,13 @@ export class LambdasNestedStack extends NestedStack {
         alarmAction: props.alarmAction,
       });
 
-      this.hl7SubscriptionSftpIngestionLambda = this.setupHl7SubscriptionSftpIngestionLambda({
+      this.hl7SubscriptionSftpIngestionLambda = this.setupLahieSftpIngestionLambd({
         lambdaLayers: props.lambdaLayers,
         vpc: props.vpc,
         secrets: props.secrets,
         config: props.config,
         alarmAction: props.alarmAction,
-        hl7SubscriptionSftpIngestionBucket,
+        LahieSftpIngestionLambda,
       });
     }
 
@@ -1034,19 +1030,19 @@ export class LambdasNestedStack extends NestedStack {
     return acmCertificateMonitorLambda;
   }
 
-  private setupHl7SubscriptionSftpIngestionLambda(ownProps: {
+  private setupLahieSftpIngestionLambd(ownProps: {
     lambdaLayers: LambdaLayers;
     vpc: ec2.IVpc;
     secrets: Secrets;
     config: EnvConfig;
-    hl7SubscriptionSftpIngestionBucket: s3.IBucket;
+    LahieSftpIngestionLambda: s3.IBucket;
     alarmAction: SnsAction | undefined;
   }): Lambda {
     const envType = ownProps.config.environmentType;
     const lambdaTimeout = Duration.seconds(60);
     const props = ownProps.config.hl7Notification?.LahieSftpIngestionLambda;
     if (!props) {
-      throw new Error("hl7SubscriptionSftpIngestionLambda is undefined in config.");
+      throw new Error("LahieSftpIngestionLambda is undefined in config.");
     }
 
     const sftpPasswordSecret = ownProps.secrets["LA_HIE_INGESTION_PASSWORD"];
@@ -1073,26 +1069,26 @@ export class LambdasNestedStack extends NestedStack {
       scheduleExpression: "0 15 * * ? *",
       timeout: lambdaTimeout,
       envType,
-      entry: "hl7-subscriptions-sftp-ingestion",
+      entry: "hl7-sftp-ingestion",
       envVars: {
         LAHIE_INGESTION_PORT: sftpConfig.port.toString(),
         LAHIE_INGESTION_HOST: sftpConfig.host,
         LAHIE_INGESTION_REMOTE_PATH: sftpConfig.remotePath,
         LAHIE_INGESTION_USERNAME: sftpConfig.username,
         LAHIE_INGESTION_PASSWORD_ARN: sftpPasswordSecret.secretArn,
-        LAHIE_INGESTION_BUCKET_NAME: ownProps.hl7SubscriptionSftpIngestionBucket.bucketName,
+        LAHIE_INGESTION_BUCKET_NAME: ownProps.LahieSftpIngestionLambda.bucketName,
         LAHIE_INGESTION_PRIVATE_KEY_ARN: privateKeySecret.secretArn,
         LAHIE_INGESTION_PRIVATE_KEY_PASSPHRASE_ARN: passphraseSecret.secretArn,
       },
       stack: this,
-      name: "hl7-subscriptions-sftp-ingestion-Lahie",
+      name: "hl7-sftp-ingestion-Lahie-lambda",
       alarmSnsAction: ownProps.alarmAction,
     });
 
     sftpPasswordSecret.grantRead(lambda);
     privateKeySecret.grantRead(lambda);
     passphraseSecret.grantRead(lambda);
-    ownProps.hl7SubscriptionSftpIngestionBucket.grantReadWrite(lambda);
+    ownProps.LahieSftpIngestionLambda.grantReadWrite(lambda);
     return lambda;
   }
 
