@@ -1,7 +1,7 @@
 [
   {
     "resourceType": "Medication",
-    "id": "01994faa-73cf-7aae-986b-acb4163dc127",
+    "id": "01994fb2-6759-7983-ae12-b2e770502c8e",
     "status": "active",
     "code": {
       "text": "Amoxicillin",
@@ -39,16 +39,19 @@
     "extension": [
       {
         "url": "https://metriport.com/data-extraction",
-        "valueString": "Amoxicillin 250 mg/5 mL oral suspension, give 10 mL by mouth three times daily for 7 days as needed"
+        "valueString": "Amoxicillin 250 mg/5 mL oral suspension, give 10 mL by mouth three times daily for 7 days as needed",
+        "valueReference": {
+          "reference": "Encounter/4c566bb0-a70b-4af6-b1d0-e4bf2fa87f0c"
+        }
       }
     ]
   },
   {
     "resourceType": "MedicationStatement",
-    "id": "01994faa-73cf-7aae-986b-acb544299fb3",
+    "id": "01994fb2-675a-7b36-8444-31d0ad6a1406",
     "status": "active",
     "medicationReference": {
-      "reference": "Medication/01994faa-73cf-7aae-986b-acb4163dc127"
+      "reference": "Medication/01994fb2-6759-7983-ae12-b2e770502c8e"
     },
     "subject": {
       "reference": "Patient/123",
@@ -78,13 +81,16 @@
     "extension": [
       {
         "url": "https://metriport.com/data-extraction",
-        "valueString": "Amoxicillin 250 mg/5 mL oral suspension, give 10 mL by mouth three times daily for 7 days as needed"
+        "valueString": "Amoxicillin 250 mg/5 mL oral suspension, give 10 mL by mouth three times daily for 7 days as needed",
+        "valueReference": {
+          "reference": "Encounter/4c566bb0-a70b-4af6-b1d0-e4bf2fa87f0c"
+        }
       }
     ]
   },
   {
     "resourceType": "Medication",
-    "id": "01994faa-73cf-7aae-986b-acb61b5b4b16",
+    "id": "01994fb2-675a-7b36-8444-31d125ec543a",
     "status": "active",
     "code": {
       "text": "Aspirin",
@@ -108,16 +114,19 @@
     "extension": [
       {
         "url": "https://metriport.com/data-extraction",
-        "valueString": "Aspirin 81 mg tablet daily"
+        "valueString": "Aspirin 81 mg tablet daily",
+        "valueReference": {
+          "reference": "Encounter/4c566bb0-a70b-4af6-b1d0-e4bf2fa87f0c"
+        }
       }
     ]
   },
   {
     "resourceType": "MedicationStatement",
-    "id": "01994faa-73d0-7d0e-a81c-fd32e7d8d4dc",
+    "id": "01994fb2-675a-7b36-8444-31d247250de1",
     "status": "active",
     "medicationReference": {
-      "reference": "Medication/01994faa-73cf-7aae-986b-acb61b5b4b16"
+      "reference": "Medication/01994fb2-675a-7b36-8444-31d125ec543a"
     },
     "subject": {
       "reference": "Patient/123",
@@ -147,13 +156,16 @@
     "extension": [
       {
         "url": "https://metriport.com/data-extraction",
-        "valueString": "Aspirin 81 mg tablet daily"
+        "valueString": "Aspirin 81 mg tablet daily",
+        "valueReference": {
+          "reference": "Encounter/4c566bb0-a70b-4af6-b1d0-e4bf2fa87f0c"
+        }
       }
     ]
   },
   {
     "resourceType": "Medication",
-    "id": "01994faa-73d0-7d0e-a81c-fd33504addfc",
+    "id": "01994fb2-675a-7b36-8444-31d33dd2e128",
     "status": "active",
     "code": {
       "text": "Heparin",
@@ -182,16 +194,19 @@
     "extension": [
       {
         "url": "https://metriport.com/data-extraction",
-        "valueString": "Heparin 1000 units/mL injection, 5,000 units subcutaneously in the left thigh every 12 hours at a rate of 1 mL/min, tapering the dose by 1,000 units every 3 days"
+        "valueString": "Heparin 1000 units/mL injection, 5,000 units subcutaneously in the left thigh every 12 hours at a rate of 1 mL/min, tapering the dose by 1,000 units every 3 days",
+        "valueReference": {
+          "reference": "Encounter/4c566bb0-a70b-4af6-b1d0-e4bf2fa87f0c"
+        }
       }
     ]
   },
   {
     "resourceType": "MedicationStatement",
-    "id": "01994faa-73d0-7d0e-a81c-fd344c99a7ff",
+    "id": "01994fb2-675a-7b36-8444-31d45c0e3701",
     "status": "active",
     "medicationReference": {
-      "reference": "Medication/01994faa-73d0-7d0e-a81c-fd33504addfc"
+      "reference": "Medication/01994fb2-675a-7b36-8444-31d33dd2e128"
     },
     "subject": {
       "reference": "Patient/123",
@@ -221,7 +236,10 @@
     "extension": [
       {
         "url": "https://metriport.com/data-extraction",
-        "valueString": "Heparin 1000 units/mL injection, 5,000 units subcutaneously in the left thigh every 12 hours at a rate of 1 mL/min, tapering the dose by 1,000 units every 3 days"
+        "valueString": "Heparin 1000 units/mL injection, 5,000 units subcutaneously in the left thigh every 12 hours at a rate of 1 mL/min, tapering the dose by 1,000 units every 3 days",
+        "valueReference": {
+          "reference": "Encounter/4c566bb0-a70b-4af6-b1d0-e4bf2fa87f0c"
+        }
       }
     ]
   }
