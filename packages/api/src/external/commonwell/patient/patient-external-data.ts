@@ -8,8 +8,8 @@ import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { LinkStatus } from "../../patient-link";
-import { getCWData, getLinkStatusCQ } from "./patient";
-import { CQLinkStatus, PatientDataCommonwell } from "./patient-shared";
+import { getCWData } from "./patient";
+import { PatientDataCommonwell } from "./patient-shared";
 
 dayjs.extend(duration);
 
@@ -58,7 +58,6 @@ export async function getPatientWithCWData(
 export type CWParams = {
   commonwellPatientId?: string;
   commonwellPersonId?: string;
-  cqLinkStatus?: CQLinkStatus;
 };
 
 export type SetCommonwellIdParams = CWParams & {
@@ -79,7 +78,6 @@ export async function updateCommonwellIdsAndStatus({
   patient: { id, cxId },
   commonwellPatientId,
   commonwellPersonId,
-  cqLinkStatus, // TODO ENG-554 - See if this can be removed completely
 }: SetCommonwellIdParams): Promise<Patient> {
   const patientFilter = { id, cxId };
   return executeOnDBTx(PatientModel.prototype, async transaction => {
@@ -89,8 +87,6 @@ export async function updateCommonwellIdsAndStatus({
       transaction,
     });
 
-    const updatedCQLinkStatus = cqLinkStatus ?? getLinkStatusCQ(patient.data.externalData);
-
     const externalData = patient.data.externalData ?? {};
 
     const updateCWExternalData = {
@@ -99,7 +95,6 @@ export async function updateCommonwellIdsAndStatus({
         ...externalData.COMMONWELL,
         ...(commonwellPatientId && { patientId: commonwellPatientId }),
         ...(commonwellPersonId && { personId: commonwellPersonId }),
-        ...(updatedCQLinkStatus && { cqLinkStatus: updatedCQLinkStatus }),
       },
     };
 

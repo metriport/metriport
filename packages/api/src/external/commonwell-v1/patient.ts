@@ -109,10 +109,6 @@ export async function registerAndLinkPatientInCwV1({
     });
     commonWell = commonWellAPI;
 
-    // Patients of cxs that not go through EC should have theis status undefined so they're not picked up later
-    // when we enable it
-    await updateCommonwellIdsAndStatus({ patient, cqLinkStatus: undefined });
-
     debug(`Registering this Patient: `, () => JSON.stringify(commonwellPatient, null, 2));
     const { commonwellPatientId, patientRefLink } = await registerPatient({
       commonWell,

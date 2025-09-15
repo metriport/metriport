@@ -207,14 +207,7 @@ export async function queryAndProcessDocuments({
       });
     }
 
-    const cwData = patient.data.externalData.COMMONWELL;
-
-    // TODO: ENG-554 - can likely remove this check entirely
-    const isWaitingForEnhancedCoverage =
-      cwData.cqLinkStatus && // we're not waiting for EC if the patient was created before cqLinkStatus was introduced
-      cwData.cqLinkStatus !== "linked";
-
-    const isTriggerDQ = forceQuery || !isWaitingForEnhancedCoverage || isCQDirectEnabledForThisCx;
+    const isTriggerDQ = forceQuery || isCQDirectEnabledForThisCx;
 
     if (!isTriggerDQ) return;
 
