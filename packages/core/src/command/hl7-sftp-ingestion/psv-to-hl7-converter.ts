@@ -113,6 +113,7 @@ export class PsvToHl7Converter {
           if (parseResult.success) {
             rows.push(parseResult.data);
           } else {
+            console.log("Parse error:", parseResult.error);
             capture.error(parseResult.error, {
               extra: {
                 facility: trimmedRow.FacilityAbbrev || trimmedRow.FacilityName,
@@ -154,9 +155,9 @@ export class PsvToHl7Converter {
     const fields: string[] = [];
     fields[1] = PsvToHl7Converter.ENCODING_CHARS;
     fields[2] = this.escapeHl7Text(PsvToHl7Converter.SENDING_APP);
-    fields[3] = this.escapeHl7Text(row.facilityName || row.facilityAbbrev);
-    fields[4] = this.escapeHl7Text(row.sendingToSystem || PsvToHl7Converter.DEFAULT_RECEIVING_APP);
-    fields[5] = this.escapeHl7Text(row.sendingToSystem || PsvToHl7Converter.DEFAULT_RECEIVING_APP);
+    fields[3] = this.escapeHl7Text(row.FacilityName || row.FacilityAbbrev);
+    fields[4] = this.escapeHl7Text(row.SendingToSystem || PsvToHl7Converter.DEFAULT_RECEIVING_APP);
+    fields[5] = this.escapeHl7Text(row.SendingToSystem || PsvToHl7Converter.DEFAULT_RECEIVING_APP);
     fields[6] = this.getMessageTime();
     fields[8] = msh9;
     fields[9] = this.escapeHl7Text(this.getMessageControlId(row));
@@ -181,10 +182,10 @@ export class PsvToHl7Converter {
 
     const recordedTs = this.getMessageTime();
     const eventOccurredTs =
-      this.toHl7Ts(trigger === SUPPORTED_ADT.ADT_A03 ? row.dischargeDateTime : row.admitDateTime) ||
+      this.toHl7Ts(trigger === SUPPORTED_ADT.ADT_A03 ? row.DischargeDateTime : row.AdmitDateTime) ||
       recordedTs;
 
-    const eventFacility = this.escapeHl7Text(row.facilityName || row.facilityAbbrev);
+    const eventFacility = this.escapeHl7Text(row.FacilityName || row.FacilityAbbrev);
 
     const fields: string[] = [];
     fields[1] = eventCode;
@@ -195,32 +196,32 @@ export class PsvToHl7Converter {
   }
 
   private buildPidFromRow(row: Row): string {
-    const assigningAuthority = this.escapeHl7Text(row.facilityAbbrev);
+    const assigningAuthority = this.escapeHl7Text(row.FacilityAbbrev);
 
     const pid3PtIdList = [
-      `${this.escapeHl7Text(row.metriplexPatID)}^^^${assigningAuthority}`,
-      `${this.escapeHl7Text(row.patientID)}^^^${assigningAuthority}`,
+      `${this.escapeHl7Text(row.MetriplexPatID)}^^^${assigningAuthority}`,
+      `${this.escapeHl7Text(row.PatientID)}^^^${assigningAuthority}`,
     ].join("~");
 
-    const pid5Name = this.buildNameXpn(row.firstName, row.middleName, row.lastName);
-    const pid7Dob = row.patientDateofBirth;
-    const pid8Sex = this.escapeHl7Text(row.gender || "U");
+    const pid5Name = this.buildNameXpn(row.FirstName, row.MiddleName, row.LastName);
+    const pid7Dob = row.PatientDateofBirth;
+    const pid8Sex = this.escapeHl7Text(row.Gender || "U");
     const pid11Addr = [
-      this.escapeHl7Text(row.streetAddress),
+      this.escapeHl7Text(row.StreetAddress),
       "",
-      this.escapeHl7Text(row.city),
-      this.escapeHl7Text(row.state),
-      this.escapeHl7Text(row.zipCode),
+      this.escapeHl7Text(row.City),
+      this.escapeHl7Text(row.State),
+      this.escapeHl7Text(row.ZipCode),
     ].join("^");
 
-    const phoneDigits = this.digitsOnly(row.primaryPhoneNumber);
+    const phoneDigits = this.digitsOnly(row.PrimaryPhoneNumber);
     const pid13Phone = ["", "PRN", "PH", "", "", "", phoneDigits].join("^");
-    const pid16Marital = this.escapeHl7Text(row.maritalStatus);
-    const pid19Ssn = this.escapeHl7Text(row.ssn);
+    const pid16Marital = this.escapeHl7Text(row.MaritalStatus);
+    const pid19Ssn = this.escapeHl7Text(row.SSN);
 
     const fields: string[] = [];
     fields[1] = "1";
-    fields[2] = this.escapeHl7Text(row.metriplexPatID);
+    fields[2] = this.escapeHl7Text(row.MetriplexPatID);
     fields[3] = pid3PtIdList;
     fields[5] = pid5Name;
     fields[7] = pid7Dob;
@@ -236,9 +237,9 @@ export class PsvToHl7Converter {
   private buildPv1FromRow(row: Row): string {
     const triggerEvent = this.getTriggerEvent(row);
     const fields = this.buildGeneralPv1FromRow(row);
-    const admitTs = this.extractTimestamp(row.admitDateTime);
+    const admitTs = this.extractTimestamp(row.AdmitDateTime);
     const dischargeTs =
-      triggerEvent === SUPPORTED_ADT.ADT_A03 ? this.extractTimestamp(row.dischargeDateTime) : "";
+      triggerEvent === SUPPORTED_ADT.ADT_A03 ? this.extractTimestamp(row.DischargeDateTime) : "";
 
     fields[44] = admitTs;
     fields[45] = dischargeTs;
@@ -251,20 +252,20 @@ export class PsvToHl7Converter {
     const fields: string[] = [];
 
     fields[1] = "1";
-    fields[2] = this.escapeHl7Text(row.patClass || "O");
+    fields[2] = this.escapeHl7Text(row.PatClass || "O");
     fields[3] = this.buildPlFromFacility(row);
     fields[4] = this.isEmergency(row) ? "E" : "R";
-    fields[7] = this.buildXcnFromFullName(row.attendingPhysicianName);
-    fields[8] = this.buildXcnFromFullName(row.referringPhysicianName);
+    fields[7] = this.buildXcnFromFullName(row.AttendingPhysicianName);
+    fields[8] = this.buildXcnFromFullName(row.ReferringPhysicianName);
     fields[10] = this.isEmergency(row) ? "EMER" : "";
-    fields[17] = this.buildXcnFromFullName(row.admittingPhysicianName);
-    fields[18] = this.escapeHl7Text(row.patClass);
+    fields[17] = this.buildXcnFromFullName(row.AdmittingPhysicianName);
+    fields[18] = this.escapeHl7Text(row.PatClass);
     fields[19] = this.buildVisitNumber(
-      row.visitNumber,
-      row.sendingToSystem || PsvToHl7Converter.DEFAULT_RECEIVING_APP,
+      row.VisitNumber,
+      row.SendingToSystem || PsvToHl7Converter.DEFAULT_RECEIVING_APP,
       "VN"
     );
-    fields[39] = this.escapeHl7Text(row.facilityAbbrev || row.facilityName);
+    fields[39] = this.escapeHl7Text(row.FacilityAbbrev || row.FacilityName);
 
     return fields;
   }
@@ -272,17 +273,17 @@ export class PsvToHl7Converter {
   private buildPv2FromRow(row: Row): string {
     const fields: string[] = [];
 
-    const id = row.diagnosisCode;
-    const text = row.diagnosisText;
-    const system = row.diagnosisCodingSystem;
+    const id = row.DiagnosisCode;
+    const text = row.DiagnosisText;
+    const system = row.DiagnosisCodingSystem;
     fields[3] = this.buildCweSimple(id, text, system);
-    fields[8] = this.toHl7Ts(row.admitDateTime);
-    fields[9] = this.toHl7Ts(row.dischargeDateTime);
-    fields[11] = this.calculateLengthOfStay(row.admitDateTime, row.dischargeDateTime);
-    fields[12] = this.escapeHl7Text(row.chiefComplaint);
-    fields[23] = this.escapeHl7Text(row.facilityName);
-    fields[24] = this.buildCweSimple(row.patClass);
-    fields[40] = this.buildCweSimple(row.emergencySeverityLevel, "ESI triage level", "ESI");
+    fields[8] = this.toHl7Ts(row.AdmitDateTime);
+    fields[9] = this.toHl7Ts(row.DischargeDateTime);
+    fields[11] = this.calculateLengthOfStay(row.AdmitDateTime, row.DischargeDateTime);
+    fields[12] = this.escapeHl7Text(row.ChiefComplaint);
+    fields[23] = this.escapeHl7Text(row.FacilityName);
+    fields[24] = this.buildCweSimple(row.PatClass);
+    fields[40] = this.buildCweSimple(row.EmergencySeverityLevel, "ESI triage level", "ESI");
 
     return this.joinFields("PV2", fields);
   }
@@ -293,15 +294,15 @@ export class PsvToHl7Converter {
     fields[1] = "1";
 
     const diagnosisCwe = this.buildCweSimple(
-      row.diagnosisCode,
-      row.diagnosisText,
-      row.diagnosisCodingSystem
+      row.DiagnosisCode,
+      row.DiagnosisText,
+      row.DiagnosisCodingSystem
     );
 
     fields[3] = diagnosisCwe;
-    fields[4] = this.escapeHl7Text(row.diagnosisText);
+    fields[4] = this.escapeHl7Text(row.DiagnosisText);
     fields[5] = this.toHl7Ts(
-      trigger === SUPPORTED_ADT.ADT_A01 ? row.admitDateTime : row.dischargeDateTime
+      trigger === SUPPORTED_ADT.ADT_A01 ? row.AdmitDateTime : row.DischargeDateTime
     );
     fields[6] = trigger === SUPPORTED_ADT.ADT_A01 ? "A" : "F";
     fields[15] = "1";
@@ -373,7 +374,7 @@ export class PsvToHl7Converter {
   }
 
   private buildPlFromFacility(row: Row): string {
-    const facility = row.facilityAbbrev || row.facilityName;
+    const facility = row.FacilityAbbrev || row.FacilityName;
     return `^^^${this.escapeHl7Text(facility)}`;
   }
 
@@ -389,7 +390,7 @@ export class PsvToHl7Converter {
 
   private isEmergency(row: Row): boolean {
     return (
-      !!(row.emergencySeverityLevel && row.emergencySeverityLevel.trim()) || row.patClass === "E"
+      !!(row.EmergencySeverityLevel && row.EmergencySeverityLevel.trim()) || row.PatClass === "E"
     );
   }
 
@@ -400,9 +401,9 @@ export class PsvToHl7Converter {
   }
 
   private getMessageControlId(row: Row): string {
-    const base = row.visitNumber || row.patientID || row.metriplexPatID || "NA";
+    const base = row.VisitNumber || row.PatientID || row.MetriplexPatID || "NA";
     const trigger = this.getTriggerEvent(row);
-    const timeStamp = trigger === SUPPORTED_ADT.ADT_A03 ? row.dischargeDateTime : row.admitDateTime;
+    const timeStamp = trigger === SUPPORTED_ADT.ADT_A03 ? row.DischargeDateTime : row.AdmitDateTime;
     const timestamp = this.toHl7Ts(timeStamp);
     return `${base}_${timestamp}`;
   }
@@ -419,7 +420,7 @@ export class PsvToHl7Converter {
   }
 
   private getTriggerEvent(row: Row): SUPPORTED_ADT {
-    if (row.dischargeDateTime) {
+    if (row.DischargeDateTime) {
       return SUPPORTED_ADT.ADT_A03;
     } else {
       return SUPPORTED_ADT.ADT_A01;

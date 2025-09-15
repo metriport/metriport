@@ -2,7 +2,7 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
 
-import { buildLahieIngestion } from "@metriport/core/command/hl7-subscriptions-sftp-ingestion/hl7-subscriptions-sftp-ingestion-factory";
+import { buildLahieIngestion } from "@metriport/core/command/hl7-sftp-ingestion/hl7-sftp-ingestion-factory";
 import { Config } from "@metriport/core/util/config";
 import { sleep } from "@metriport/core/util/sleep";
 import { S3Utils } from "@metriport/core/external/aws/s3";
@@ -74,15 +74,17 @@ async function main() {
   console.log(`SFTP Bucket Name: ${bucketName}`);
   console.log(`🔄 Starting HL7v2 ingestion in 3 seconds...`); // Give some time for user to cancel just in case.
   await sleep(3000);
-  const handler = await buildLahieIngestion();
-  await handler.execute();
-
-  if (deleteFiles) {
-    const s3Utils = new S3Utils(awsRegion);
-    await s3Utils.deleteFiles({
-      bucket: bucketName,
-      keys: getFileNames(),
-    });
+  try {
+    const handler = await buildLahieIngestion();
+    await handler.execute();
+  } finally {
+    if (deleteFiles) {
+      const s3Utils = new S3Utils(awsRegion);
+      await s3Utils.deleteFiles({
+        bucket: bucketName,
+        keys: getFileNames(),
+      });
+    }
   }
 }
 
