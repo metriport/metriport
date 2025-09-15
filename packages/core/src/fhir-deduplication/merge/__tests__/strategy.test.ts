@@ -1,8 +1,9 @@
-import { Identifier } from "@medplum/fhirtypes";
+import { Identifier, CodeableConcept } from "@medplum/fhirtypes";
 import { chooseMasterOnly, chooseHighestPrecedence } from "../strategy/choose";
 import { concatenateArrays } from "../strategy/concat";
 import { mergeStringArrays } from "../strategy/merge";
 import { mergeIdentifierArrays } from "../strategy/identifier";
+import { mergeCodeableConceptArrays, mergeCodeableConcepts } from "../strategy/codeable-concept";
 
 describe("Merge strategies", () => {
   it("should choose the master resource value", () => {
@@ -96,6 +97,74 @@ describe("Merge strategies", () => {
       { system: "e", value: "f" },
       { system: "g", value: "h" },
       { system: "i", value: "j" },
+    ]);
+  });
+
+  it("should merge codeable concepts without duplicates", () => {
+    const result = mergeCodeableConcepts(
+      {
+        coding: [
+          { code: "a", system: "b" },
+          { code: "c", system: "d" },
+        ],
+      },
+      [
+        {
+          coding: [
+            { code: "a", system: "b" },
+            { code: "a", system: "f" },
+          ],
+        },
+      ]
+    );
+    expect(result).toEqual([
+      {
+        coding: [
+          { code: "a", system: "b" },
+          { code: "c", system: "d" },
+          { code: "a", system: "f" },
+        ],
+      },
+    ]);
+  });
+
+  it("should merge codeable concept arrays without duplicates", () => {
+    const masterCodeableConcepts: CodeableConcept[] = [
+      {
+        coding: [
+          { code: "a", system: "b" },
+          { code: "c", system: "d" },
+        ],
+      },
+    ];
+    const resourceCodeableConcepts: CodeableConcept[][] = [
+      [
+        {
+          coding: [
+            { code: "a", system: "b" },
+            { code: "a", system: "f" },
+          ],
+        },
+      ],
+      [
+        {
+          coding: [
+            { code: "c", system: "d" },
+            { code: "c", system: "h" },
+          ],
+        },
+      ],
+    ];
+    const result = mergeCodeableConceptArrays(masterCodeableConcepts, resourceCodeableConcepts);
+    expect(result).toEqual([
+      {
+        coding: [
+          { code: "a", system: "b" },
+          { code: "c", system: "d" },
+          { code: "a", system: "f" },
+          { code: "c", system: "h" },
+        ],
+      },
     ]);
   });
 });
