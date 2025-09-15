@@ -1,5 +1,5 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
-import { createUploadFilePath, FHIR_BUNDLE_SUFFIX } from "@metriport/core/domain/document/upload";
+import { createUploadFilePath, FHIR_BUNDLE_SUFFIX } from "@metriport/core/shareback/file";
 import { Patient } from "@metriport/core/domain/patient";
 import { toFHIR as toFhirOrganization } from "@metriport/core/external/fhir/organization/conversion";
 import { toFHIR as toFhirPatient } from "@metriport/core/external/fhir/patient/conversion";

@@ -1,5 +1,5 @@
 import { DocumentReference, InboundDocumentRetrievalReq } from "@metriport/ihe-gateway-sdk";
-import { rebuildUploadsFilePath } from "../../../domain/document/upload";
+import { rebuildUploadsFilePath } from "../../../shareback/file";
 import { Config } from "../../../util/config";
 import { S3Utils } from "../../aws/s3";
 import { XDSRegistryError } from "../error";
