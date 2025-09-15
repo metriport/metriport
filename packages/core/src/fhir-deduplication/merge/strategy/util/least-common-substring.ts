@@ -20,7 +20,9 @@ export function mergeWithLeastCommonSubstring(a: string, b: string): string {
     for (let j = 1; j <= m; j++) {
       const dpi = dp[i] as number[];
       const dp_i_minus_1 = dp[i - 1] as number[];
-      if (wordsA[i - 1] === wordsB[j - 1]) {
+      const wordA = wordsA[i - 1] as string;
+      const wordB = wordsB[j - 1] as string;
+      if (equalStrings(wordA, wordB)) {
         dpi[j] = (dp_i_minus_1[j - 1] ?? 0) + 1;
       } else {
         dpi[j] = Math.max(dp_i_minus_1[j] ?? 0, dpi[j - 1] ?? 0);
