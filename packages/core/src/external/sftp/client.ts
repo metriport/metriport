@@ -245,7 +245,7 @@ export class SftpClient implements SftpClientImpl {
     const filesSynced: string[] = [];
     for (const sftpFileName of sftpFileNames) {
       if (!existingReplicaFileNames.has(sftpFileName)) {
-        console.log(`File ${sftpFileName} does not exist in replica, syncing...`);
+        this.log(`File ${sftpFileName} does not exist in replica, syncing...`);
         await this.read(`${remotePath}/${sftpFileName}`);
         filesSynced.push(sftpFileName);
       }
