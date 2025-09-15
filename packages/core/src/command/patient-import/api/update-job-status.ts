@@ -42,7 +42,7 @@ export async function updateJobAtApi(params: UpdateJobAtApiParams): Promise<Pati
   const url = buildUrl(cxId, jobId);
   const payload: UpdateJobSchema = { status, total, successful, failed, forceStatusUpdate };
 
-  if (status == undefined && total == undefined && failed == undefined) {
+  if (status == undefined && total == undefined && failed == undefined && successful == undefined) {
     throw new Error("updateJobAtApi requires at least one of {status,total,failed} to be defined");
   }
 
