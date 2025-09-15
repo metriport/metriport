@@ -117,15 +117,13 @@ describe("Merge strategies", () => {
         },
       ]
     );
-    expect(result).toEqual([
-      {
-        coding: [
-          { code: "a", system: "b" },
-          { code: "c", system: "d" },
-          { code: "a", system: "f" },
-        ],
-      },
-    ]);
+    expect(result).toEqual({
+      coding: [
+        { code: "a", system: "b" },
+        { code: "c", system: "d" },
+        { code: "a", system: "f" },
+      ],
+    });
   });
 
   it("should merge codeable concept arrays without duplicates", () => {
