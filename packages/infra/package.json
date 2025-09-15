@@ -25,7 +25,7 @@
     "@types/prettier": "2.7.1",
     "@typescript-eslint/eslint-plugin": "^5.48.2",
     "@typescript-eslint/parser": "^5.48.2",
-    "aws-cdk": "~2.133.0",
+    "aws-cdk": "~2.1029.1",
     "esbuild": "^0.15.12",
     "eslint": "^8.32.0",
     "eslint-config-prettier": "^8.6.0",
@@ -38,7 +38,7 @@
   "dependencies": {
     "@metriport/core": "file:packages/core",
     "@metriport/shared": "file:packages/shared",
-    "aws-cdk-lib": "~2.133.0",
+    "aws-cdk-lib": "~2.214.0",
     "constructs": "^10.2.69",
     "dotenv": "^16.3.1",
     "source-map-support": "^0.5.21"

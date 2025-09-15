@@ -454,6 +454,10 @@ export function createAPIService({
   // https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html
   // fargateService.taskDefinition.defaultContainer?.addUlimits({ ... });
 
+  // Enable Availability Zone rebalancing for the underlying ECS service
+  (fargateService.service.node.defaultChild as ecs.CfnService).availabilityZoneRebalancing =
+    "ENABLED";
+
   const serverAddress = fargateService.loadBalancer.loadBalancerDnsName;
   const apiUrl = `${props.config.subdomain}.${props.config.domain}`;
   new r53.ARecord(stack, "APIDomainPrivateRecord", {

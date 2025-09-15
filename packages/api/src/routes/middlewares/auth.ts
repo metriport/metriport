@@ -30,7 +30,9 @@ export async function processCxId(req: Request, res: Response, next: NextFunctio
 }
 
 export function getCxIdFromApiKey(encodedApiKey: string | undefined): string {
-  if (!encodedApiKey) throw new ForbiddenError();
+  if (!encodedApiKey || typeof encodedApiKey !== "string" || encodedApiKey.trim().length < 1) {
+    throw new ForbiddenError();
+  }
   const apiKey = base64ToString(encodedApiKey);
   const splitApiKey = apiKey.split(":");
   if (splitApiKey.length !== 2) throw new ForbiddenError();
