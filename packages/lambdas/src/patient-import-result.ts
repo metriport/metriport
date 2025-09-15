@@ -1,5 +1,8 @@
 import { ProcessPatientResult } from "@metriport/core/command/patient-import/steps/result/patient-import-result";
-import { PatientImportResultLocal } from "@metriport/core/command/patient-import/steps/result/patient-import-result-local";
+import {
+  processPatientResult,
+  ProcessPatientResultCommandRequest,
+} from "@metriport/core/command/patient-import/steps/result/patient-import-result-command";
 import { errorToString } from "@metriport/shared";
 import { capture } from "./shared/capture";
 import { getEnvOrFail } from "./shared/env";
@@ -21,8 +24,12 @@ export const handler = capture.wrapHandler(
 
     const startedAt = new Date().getTime();
     try {
-      const patientImportResult = new PatientImportResultLocal(patientImportBucket);
-      await patientImportResult.processJobResult({ cxId, jobId });
+      const processJobResultCmd: ProcessPatientResultCommandRequest = {
+        cxId,
+        jobId,
+        patientImportBucket,
+      };
+      await processPatientResult(processJobResultCmd);
 
       const finishedAt = new Date().getTime();
       log(`Done local duration: ${finishedAt - startedAt}ms`);
