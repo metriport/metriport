@@ -153,7 +153,7 @@ export function mapHl7SystemNameToSystemUrl(systemName: string | undefined): str
   return systemUrl;
 }
 
-export function createFileKeyHl7Message({
+export function createIncomingMessageFileKey({
   cxId,
   patientId,
   messageId,

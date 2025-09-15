@@ -27,7 +27,7 @@ import {
   getMessageUniqueIdentifier,
   getOrCreateMessageDatetime,
 } from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion/msh";
-import { createFileKeyHl7Message } from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
+import { createIncomingMessageFileKey } from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
 import {
   Hl7NotificationSenderParams,
   Hl7NotificationWebhookSender,
@@ -100,7 +100,7 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
     const encounterClass = getEncounterClass(message);
     const facilityName = getFacilityName(message);
 
-    const rawDataFileKey = createFileKeyHl7Message({
+    const rawDataFileKey = createIncomingMessageFileKey({
       cxId,
       patientId,
       timestamp,
