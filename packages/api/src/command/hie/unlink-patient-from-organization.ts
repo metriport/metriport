@@ -227,9 +227,9 @@ function getDocumentsWithOid(
       continue;
     }
 
-    const masterIdentifier = document.masterIdentifier?.value === oid;
+    const masterIdentifier = document.masterIdentifier?.system === oid;
     const potentialMasterIdentifier =
-      document.masterIdentifier?.value?.includes(oid) && !masterIdentifier;
+      document.masterIdentifier?.system?.includes(oid) && !masterIdentifier;
 
     if (masterIdentifier) {
       matchingDocumentRefs.push(document);
