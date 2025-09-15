@@ -316,7 +316,7 @@ export class LambdasNestedStack extends NestedStack {
         ],
       });
 
-      const LahieSftpIngestionLambda = new s3.Bucket(this, "LahieSftpIngestionLambda", {
+      const lahieSftpIngestionBucket = new s3.Bucket(this, "lahieSftpIngestionBucket", {
         bucketName: props.config.hl7Notification.LahieSftpIngestionLambda.bucketName,
         publicReadAccess: false,
         encryption: s3.BucketEncryption.S3_MANAGED,
@@ -344,7 +344,7 @@ export class LambdasNestedStack extends NestedStack {
         secrets: props.secrets,
         config: props.config,
         alarmAction: props.alarmAction,
-        LahieSftpIngestionLambda,
+        lahieSftpIngestionBucket,
       });
     }
 
@@ -1035,7 +1035,7 @@ export class LambdasNestedStack extends NestedStack {
     vpc: ec2.IVpc;
     secrets: Secrets;
     config: EnvConfig;
-    LahieSftpIngestionLambda: s3.IBucket;
+    lahieSftpIngestionBucket: s3.IBucket;
     alarmAction: SnsAction | undefined;
   }): Lambda {
     const envType = ownProps.config.environmentType;
@@ -1069,14 +1069,14 @@ export class LambdasNestedStack extends NestedStack {
       scheduleExpression: "0 15 * * ? *",
       timeout: lambdaTimeout,
       envType,
-      entry: "hl7-sftp-ingestion",
+      entry: "hl7-lahie-sftp-ingestion",
       envVars: {
         LAHIE_INGESTION_PORT: sftpConfig.port.toString(),
         LAHIE_INGESTION_HOST: sftpConfig.host,
         LAHIE_INGESTION_REMOTE_PATH: sftpConfig.remotePath,
         LAHIE_INGESTION_USERNAME: sftpConfig.username,
         LAHIE_INGESTION_PASSWORD_ARN: sftpPasswordSecret.secretArn,
-        LAHIE_INGESTION_BUCKET_NAME: ownProps.LahieSftpIngestionLambda.bucketName,
+        LAHIE_INGESTION_BUCKET_NAME: ownProps.lahieSftpIngestionBucket.bucketName,
         LAHIE_INGESTION_PRIVATE_KEY_ARN: privateKeySecret.secretArn,
         LAHIE_INGESTION_PRIVATE_KEY_PASSPHRASE_ARN: passphraseSecret.secretArn,
       },
@@ -1088,7 +1088,7 @@ export class LambdasNestedStack extends NestedStack {
     sftpPasswordSecret.grantRead(lambda);
     privateKeySecret.grantRead(lambda);
     passphraseSecret.grantRead(lambda);
-    ownProps.LahieSftpIngestionLambda.grantReadWrite(lambda);
+    ownProps.lahieSftpIngestionBucket.grantReadWrite(lambda);
     return lambda;
   }
 

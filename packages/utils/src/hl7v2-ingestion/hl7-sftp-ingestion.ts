@@ -15,7 +15,7 @@ import { S3Utils } from "@metriport/core/external/aws/s3";
  *
  * Input:
  * - Requires a PGP encrypted file(s) containing PSV formatted ADT messages where:
- *   - The header row is exactly as specified in the PSV_HEADER constant. (@metriport/core/command/hl7v2-subscriptions/hl7-subscriptions-sftp-ingestion/psv-to-hl7-converter.ts)
+ *   - The header row is exactly as specified in the PSV_HEADER constant. (@metriport/core/command/hl7-sftp-ingestion/psv-to-hl7-converter.ts)
  *   - The enviornment variables to be set(see right below this comment)
  *
  * Process:
@@ -36,13 +36,13 @@ import { S3Utils } from "@metriport/core/external/aws/s3";
  * 1. Set the enviornment variables.
  * 2. Have a SFTP server with the file(s) in the remote path.
  * 3. Optionally delete the file(s) from S3 after completetion. (see line 54-55)
- * 4. Run the script using: ts-node src/hl7v2-ingestion/hl7-subscriptions-sftp-ingestion.ts
+ * 4. Run the script using: ts-node src/hl7v2-ingestion/hl7-sftp-ingestion.ts
  *
  * Workarounds:
  * - If you want to not use the aws secret manager you must change the logic in the lambda. (remove the getSecretValueOrFail calls)
- *   - Bottom of this file: @metriport/core/command/hl7v2-subscriptions/hl7-subscriptions-sftp-ingestion/hl7-subscriptions-sftp-ingestion-direct.ts
+ *   - Bottom of this file: @metriport/core/command/hl7-sftp-ingestion/hl7-sftp-ingestion-direct.ts
  * - If you want to change the cxId or patientId just add a row.forEach() row.MetriplexPatID = encodedCxIdAndPatientId(cxId, patientId);
- *   - In the "getAllRowsAsync()" function in this file: @metriport/core/command/hl7v2-subscriptions/hl7-subscriptions-sftp-ingestion/psv-to-hl7-converter.ts
+ *   - In the "getAllRowsAsync()" function in this file: @metriport/core/command/hl7-sftp-ingestion/psv-to-hl7-converter.ts
  */
 
 // May comment all Config.[...] out if you want to use the cloud version.
