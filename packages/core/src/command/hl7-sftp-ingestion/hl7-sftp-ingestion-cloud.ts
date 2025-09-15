@@ -1,6 +1,6 @@
 import { getLambdaResultPayload, makeLambdaClient } from "../../external/aws/lambda";
 import { Config } from "../../util/config";
-import { Hl7SubscriptionLahieIngestion } from "./hl7-subscriptions-sftp-ingestion";
+import { Hl7SubscriptionLahieIngestion } from "./hl7-sftp-ingestion";
 
 export class Hl7SubscriptionLahieIngestionCloud implements Hl7SubscriptionLahieIngestion {
   constructor(

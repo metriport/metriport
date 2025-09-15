@@ -6,7 +6,7 @@ import { Config } from "../../util/config";
 import {
   decryptGpgBinaryWithPrivateKey,
   getLahiePrivateKeyAndPassphrase,
-} from "./hl7-subscriptions-sftp-ingestion-direct";
+} from "./hl7-sftp-ingestion-direct";
 
 export type ReplicaConfig = { type: "local"; path: string } | { type: "s3"; bucketName: string };
 

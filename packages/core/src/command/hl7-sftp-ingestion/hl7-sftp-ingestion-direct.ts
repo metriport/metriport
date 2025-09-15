@@ -5,7 +5,7 @@ import { getSecretValueOrFail } from "../../external/aws/secret-manager";
 import { Config } from "../../util/config";
 import { Hl7NotificationSenderParams } from "../hl7-notification/hl7-notification-webhook-sender";
 import { buildHl7NotificationWebhookSender } from "../hl7-notification/hl7-notification-webhook-sender-factory";
-import { HIE_NAME, Hl7SubscriptionLahieIngestion } from "./hl7-subscriptions-sftp-ingestion";
+import { HIE_NAME, Hl7SubscriptionLahieIngestion } from "./hl7-sftp-ingestion";
 import { IdentifiedHl7Message, PsvToHl7Converter } from "./psv-to-hl7-converter";
 import { SftpIngestionClient } from "./sftp-ingestion-client";
 import { asString } from "../hl7-notification/utils";
