@@ -23,7 +23,7 @@ const maxAddresses = 10;
  * @param csvPatient - The CSV patient data.
  * @returns The Metriport patient's addresses, with errors indicated on the errors array.
  */
-export function mapCsvAddresses(csvPatient: Record<string, string>): {
+export function mapCsvAddresses(csvPatient: Record<string, string | undefined>): {
   addresses: Address[];
   errors: ParsingError[];
 } {
@@ -51,7 +51,7 @@ export function mapCsvAddresses(csvPatient: Record<string, string>): {
 }
 
 export function parseAddress(
-  csvPatient: Record<string, string>,
+  csvPatient: Record<string, string | undefined>,
   index?: number | undefined
 ): { address: Address | undefined; errors: ParsingError[] } {
   const { log } = out(`parseAddress`);
