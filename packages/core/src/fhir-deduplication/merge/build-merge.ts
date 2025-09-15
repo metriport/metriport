@@ -52,6 +52,7 @@ function orderByLastUpdated<R extends Resource>(resources: R[]): R[] {
   return [...resources].sort((a, b) => {
     const aUpdated = a.meta?.lastUpdated;
     const bUpdated = b.meta?.lastUpdated;
+    if (!aUpdated && !bUpdated) return 0;
     if (!aUpdated) return -Infinity;
     if (!bUpdated) return Infinity;
     return aUpdated.localeCompare(bUpdated);

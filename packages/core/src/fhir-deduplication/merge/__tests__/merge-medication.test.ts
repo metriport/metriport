@@ -10,7 +10,7 @@ function makeMedication({
   status,
 }: {
   id?: string;
-  lastUpdated: string;
+  lastUpdated?: string;
   source?: string;
   code: CodeableConcept;
   status: Medication["status"];
@@ -18,10 +18,7 @@ function makeMedication({
   return {
     resourceType: "Medication",
     id,
-    meta: {
-      lastUpdated,
-      ...(source ? { source } : {}),
-    },
+    ...(lastUpdated ? { meta: { lastUpdated, ...(source ? { source } : {}) } } : {}),
     ...(code ? { code } : {}),
     ...(status ? { status } : {}),
   };
@@ -63,5 +60,27 @@ describe("Merge medications", () => {
     expect(mergedInDescendingOrder).toEqual(laterMedication);
   });
 
-  // it("should merge multiple medication dispenses that are exact duplicates", () => {});
+  it("should merge multiple medications that do not have meta", () => {
+    const firstMedication = makeMedication({
+      id: "1",
+      status: "active",
+      code: {
+        coding: [{ code: "a", system: "b" }],
+      },
+    });
+
+    const secondMedication = makeMedication({
+      id: "2",
+      status: "inactive",
+      code: {
+        coding: [{ code: "a", system: "b" }],
+      },
+    });
+
+    const merged = mergeMedications([firstMedication, secondMedication]);
+    expect(merged).toEqual(secondMedication);
+
+    const anotherMerged = mergeMedications([secondMedication, firstMedication]);
+    expect(anotherMerged).toEqual(firstMedication);
+  });
 });
