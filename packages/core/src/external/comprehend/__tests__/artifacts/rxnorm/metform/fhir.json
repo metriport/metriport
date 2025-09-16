@@ -1,7 +1,7 @@
 [
   {
     "resourceType": "Medication",
-    "id": "01995032-2b8f-7ee9-b9a2-9544a7c12bb6",
+    "id": "01995066-3468-76fb-b330-38ad2b009cb9",
     "status": "active",
     "code": {
       "text": "Metformin",
@@ -9,7 +9,7 @@
         {
           "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
           "code": "861007",
-          "display": "Metformin"
+          "display": "metformin hydrochloride 500 mg oral tablet"
         }
       ]
     },
@@ -25,10 +25,10 @@
   },
   {
     "resourceType": "MedicationStatement",
-    "id": "01995032-2b8f-7ee9-b9a2-9545f2efb8de",
+    "id": "01995066-3468-76fb-b330-38ae06a46a5f",
     "status": "active",
     "medicationReference": {
-      "reference": "Medication/01995032-2b8f-7ee9-b9a2-9544a7c12bb6"
+      "reference": "Medication/01995066-3468-76fb-b330-38ad2b009cb9"
     },
     "subject": {
       "reference": "Patient/92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa",
@@ -67,7 +67,7 @@
   },
   {
     "resourceType": "Medication",
-    "id": "01995032-2b8f-7ee9-b9a2-9546803bd654",
+    "id": "01995066-3468-76fb-b330-38affc78263d",
     "status": "active",
     "code": {
       "text": "Atorvastatin",
@@ -75,7 +75,7 @@
         {
           "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
           "code": "617310",
-          "display": "Atorvastatin"
+          "display": "atorvastatin 20 mg oral tablet"
         }
       ]
     },
@@ -91,10 +91,10 @@
   },
   {
     "resourceType": "MedicationStatement",
-    "id": "01995032-2b8f-7ee9-b9a2-95477121376d",
+    "id": "01995066-3468-76fb-b330-38b0e77257e4",
     "status": "active",
     "medicationReference": {
-      "reference": "Medication/01995032-2b8f-7ee9-b9a2-9546803bd654"
+      "reference": "Medication/01995066-3468-76fb-b330-38affc78263d"
     },
     "subject": {
       "reference": "Patient/92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa",

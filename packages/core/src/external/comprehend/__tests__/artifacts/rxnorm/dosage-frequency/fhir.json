@@ -1,7 +1,7 @@
 [
   {
     "resourceType": "Medication",
-    "id": "01995032-2b8e-7c1e-9190-6c003c87d742",
+    "id": "01995066-3467-7d98-9815-514876e89c84",
     "status": "active",
     "code": {
       "text": "Hydroxyurea",
@@ -9,7 +9,7 @@
         {
           "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
           "code": "197797",
-          "display": "Hydroxyurea"
+          "display": "hydroxyurea 500 mg oral capsule"
         }
       ]
     },
@@ -25,10 +25,10 @@
   },
   {
     "resourceType": "MedicationStatement",
-    "id": "01995032-2b8e-7c1e-9190-6c01b773478a",
+    "id": "01995066-3467-7d98-9815-5149b4090a5b",
     "status": "active",
     "medicationReference": {
-      "reference": "Medication/01995032-2b8e-7c1e-9190-6c003c87d742"
+      "reference": "Medication/01995066-3467-7d98-9815-514876e89c84"
     },
     "subject": {
       "reference": "Patient/92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa",
@@ -67,7 +67,7 @@
   },
   {
     "resourceType": "Medication",
-    "id": "01995032-2b8e-7c1e-9190-6c02f6325a64",
+    "id": "01995066-3467-7d98-9815-514af6cb024a",
     "status": "active",
     "code": {
       "text": "Metamucil",
@@ -75,7 +75,7 @@
         {
           "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
           "code": "6802",
-          "display": "Metamucil"
+          "display": "metamucil"
         }
       ]
     },
@@ -91,10 +91,10 @@
   },
   {
     "resourceType": "MedicationStatement",
-    "id": "01995032-2b8e-7c1e-9190-6c033bfeaa41",
+    "id": "01995066-3467-7d98-9815-514b114d00cc",
     "status": "active",
     "medicationReference": {
-      "reference": "Medication/01995032-2b8e-7c1e-9190-6c02f6325a64"
+      "reference": "Medication/01995066-3467-7d98-9815-514af6cb024a"
     },
     "subject": {
       "reference": "Patient/92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa",
@@ -117,7 +117,7 @@
   },
   {
     "resourceType": "Medication",
-    "id": "01995032-2b8e-7c1e-9190-6c04bf519c91",
+    "id": "01995066-3467-7d98-9815-514c165d9d19",
     "status": "active",
     "code": {
       "text": "amitriptyline",
@@ -125,7 +125,7 @@
         {
           "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
           "code": "856845",
-          "display": "amitriptyline"
+          "display": "amitriptyline hydrochloride 50 mg oral tablet"
         }
       ]
     },
@@ -141,10 +141,10 @@
   },
   {
     "resourceType": "MedicationStatement",
-    "id": "01995032-2b8e-7c1e-9190-6c05574ab595",
+    "id": "01995066-3467-7d98-9815-514d1da43dad",
     "status": "active",
     "medicationReference": {
-      "reference": "Medication/01995032-2b8e-7c1e-9190-6c04bf519c91"
+      "reference": "Medication/01995066-3467-7d98-9815-514c165d9d19"
     },
     "subject": {
       "reference": "Patient/92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa",
@@ -183,7 +183,7 @@
   },
   {
     "resourceType": "Medication",
-    "id": "01995032-2b8e-7c1e-9190-6c0633a2066f",
+    "id": "01995066-3467-7d98-9815-514eeb019d1a",
     "status": "active",
     "code": {
       "text": "Synthroid",
@@ -191,7 +191,7 @@
         {
           "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
           "code": "966250",
-          "display": "Synthroid"
+          "display": "levothyroxine sodium 0.1 mg oral tablet [synthroid]"
         }
       ]
     },
@@ -207,10 +207,10 @@
   },
   {
     "resourceType": "MedicationStatement",
-    "id": "01995032-2b8e-7c1e-9190-6c074cc39bc9",
+    "id": "01995066-3467-7d98-9815-514f881b59e7",
     "status": "active",
     "medicationReference": {
-      "reference": "Medication/01995032-2b8e-7c1e-9190-6c0633a2066f"
+      "reference": "Medication/01995066-3467-7d98-9815-514eeb019d1a"
     },
     "subject": {
       "reference": "Patient/92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa",
@@ -249,7 +249,7 @@
   },
   {
     "resourceType": "Medication",
-    "id": "01995032-2b8e-7c1e-9190-6c0825d0efb1",
+    "id": "01995066-3467-7d98-9815-5150e8e54e91",
     "status": "active",
     "code": {
       "text": "Ambien",
@@ -257,7 +257,7 @@
         {
           "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
           "code": "854878",
-          "display": "Ambien"
+          "display": "zolpidem tartrate 5 mg oral tablet [ambien]"
         }
       ]
     },
@@ -273,10 +273,10 @@
   },
   {
     "resourceType": "MedicationStatement",
-    "id": "01995032-2b8e-7c1e-9190-6c09f46f0cf7",
+    "id": "01995066-3467-7d98-9815-51513597579b",
     "status": "active",
     "medicationReference": {
-      "reference": "Medication/01995032-2b8e-7c1e-9190-6c0825d0efb1"
+      "reference": "Medication/01995066-3467-7d98-9815-5150e8e54e91"
     },
     "subject": {
       "reference": "Patient/92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa",
@@ -315,7 +315,7 @@
   },
   {
     "resourceType": "Medication",
-    "id": "01995032-2b8e-7c1e-9190-6c0ab3d2706c",
+    "id": "01995066-3467-7d98-9815-5152c8492c54",
     "status": "active",
     "code": {
       "text": "triamterene/hydrochlorothiazide",
@@ -323,7 +323,7 @@
         {
           "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
           "code": "310818",
-          "display": "triamterene/hydrochlorothiazide"
+          "display": "hydrochlorothiazide 50 mg / triamterene 75 mg oral tablet"
         }
       ]
     },
@@ -339,10 +339,10 @@
   },
   {
     "resourceType": "MedicationStatement",
-    "id": "01995032-2b8e-7c1e-9190-6c0be2319237",
+    "id": "01995066-3467-7d98-9815-5153f74b9db3",
     "status": "active",
     "medicationReference": {
-      "reference": "Medication/01995032-2b8e-7c1e-9190-6c0ab3d2706c"
+      "reference": "Medication/01995066-3467-7d98-9815-5152c8492c54"
     },
     "subject": {
       "reference": "Patient/92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa",
@@ -365,7 +365,7 @@
   },
   {
     "resourceType": "Medication",
-    "id": "01995032-2b8e-7c1e-9190-6c0c26509d4b",
+    "id": "01995066-3467-7d98-9815-51546db00bcd",
     "status": "active",
     "code": {
       "text": "Lortab",
@@ -373,7 +373,7 @@
         {
           "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
           "code": "144254",
-          "display": "Lortab"
+          "display": "lortab"
         }
       ]
     },
@@ -389,10 +389,10 @@
   },
   {
     "resourceType": "MedicationStatement",
-    "id": "01995032-2b8e-7c1e-9190-6c0d5279c21f",
+    "id": "01995066-3467-7d98-9815-515590856827",
     "status": "active",
     "medicationReference": {
-      "reference": "Medication/01995032-2b8e-7c1e-9190-6c0c26509d4b"
+      "reference": "Medication/01995066-3467-7d98-9815-51546db00bcd"
     },
     "subject": {
       "reference": "Patient/92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa",

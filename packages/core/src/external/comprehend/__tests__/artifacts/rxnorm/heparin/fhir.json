@@ -1,7 +1,7 @@
 [
   {
     "resourceType": "Medication",
-    "id": "01995032-2b8e-7c1e-9190-6c0e5729b6b0",
+    "id": "01995066-3468-76fb-b330-38a9102a06ba",
     "status": "active",
     "code": {
       "text": "Heparin",
@@ -9,7 +9,7 @@
         {
           "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
           "code": "1659263",
-          "display": "Heparin"
+          "display": "1 ml heparin sodium, porcine 5000 unt/ml injection"
         }
       ]
     },
@@ -25,7 +25,13 @@
         "unit": "mL",
         "system": "http://unitsofmeasure.org",
         "code": "mL"
-      }
+      },
+      "extension": [
+        {
+          "url": "https://metriport.com/data-extraction",
+          "valueString": "1000 units/mL"
+        }
+      ]
     },
     "extension": [
       {
@@ -39,10 +45,10 @@
   },
   {
     "resourceType": "MedicationStatement",
-    "id": "01995032-2b8e-7c1e-9190-6c0f2a2c44df",
+    "id": "01995066-3468-76fb-b330-38aa79e0ecbf",
     "status": "active",
     "medicationReference": {
-      "reference": "Medication/01995032-2b8e-7c1e-9190-6c0e5729b6b0"
+      "reference": "Medication/01995066-3468-76fb-b330-38a9102a06ba"
     },
     "subject": {
       "reference": "Patient/92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa",

@@ -1,7 +1,7 @@
 [
   {
     "resourceType": "Medication",
-    "id": "01995032-2b8b-7099-b474-695505907a7c",
+    "id": "01995066-3465-7176-b8e2-07ab321d489d",
     "status": "active",
     "code": {
       "text": "Acetaminophen",
@@ -9,7 +9,7 @@
         {
           "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
           "code": "198440",
-          "display": "Acetaminophen"
+          "display": "acetaminophen 500 mg oral tablet"
         }
       ]
     },
@@ -28,7 +28,13 @@
         "unit": "mg",
         "system": "http://unitsofmeasure.org",
         "code": "mg"
-      }
+      },
+      "extension": [
+        {
+          "url": "https://metriport.com/data-extraction",
+          "valueString": "500 mg"
+        }
+      ]
     },
     "extension": [
       {
@@ -42,10 +48,10 @@
   },
   {
     "resourceType": "MedicationStatement",
-    "id": "01995032-2b8c-7472-af94-db366b9ec090",
+    "id": "01995066-3465-7176-b8e2-07acc67555f9",
     "status": "active",
     "medicationReference": {
-      "reference": "Medication/01995032-2b8b-7099-b474-695505907a7c"
+      "reference": "Medication/01995066-3465-7176-b8e2-07ab321d489d"
     },
     "subject": {
       "reference": "Patient/92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa",

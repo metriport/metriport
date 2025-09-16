@@ -1,7 +1,7 @@
 [
   {
     "resourceType": "Medication",
-    "id": "01995032-2b8f-7ee9-b9a2-9548e5b47f77",
+    "id": "01995066-3469-7466-b942-c20b8ad42454",
     "status": "active",
     "code": {
       "text": "Amoxicillin",
@@ -9,7 +9,7 @@
         {
           "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
           "code": "239191",
-          "display": "Amoxicillin"
+          "display": "amoxicillin 50 mg/ml oral suspension"
         }
       ]
     },
@@ -34,7 +34,13 @@
         "unit": "mL",
         "system": "http://unitsofmeasure.org",
         "code": "mL"
-      }
+      },
+      "extension": [
+        {
+          "url": "https://metriport.com/data-extraction",
+          "valueString": "250 mg/5 mL"
+        }
+      ]
     },
     "extension": [
       {
@@ -48,10 +54,10 @@
   },
   {
     "resourceType": "MedicationStatement",
-    "id": "01995032-2b8f-7ee9-b9a2-95498af5080b",
+    "id": "01995066-3469-7466-b942-c20cf04552b8",
     "status": "active",
     "medicationReference": {
-      "reference": "Medication/01995032-2b8f-7ee9-b9a2-9548e5b47f77"
+      "reference": "Medication/01995066-3469-7466-b942-c20b8ad42454"
     },
     "subject": {
       "reference": "Patient/92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa",
@@ -75,7 +81,22 @@
               "code": "mL"
             }
           }
-        ]
+        ],
+        "route": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "26643006",
+              "display": "Oral route"
+            }
+          ],
+          "extension": [
+            {
+              "url": "https://metriport.com/data-extraction",
+              "valueString": "oral"
+            }
+          ]
+        }
       }
     ],
     "extension": [
@@ -90,7 +111,7 @@
   },
   {
     "resourceType": "Medication",
-    "id": "01995032-2b8f-7ee9-b9a2-954a4db3224e",
+    "id": "01995066-3469-7466-b942-c20df3483c60",
     "status": "active",
     "code": {
       "text": "Aspirin",
@@ -98,7 +119,7 @@
         {
           "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
           "code": "243670",
-          "display": "Aspirin"
+          "display": "aspirin 81 mg oral tablet"
         }
       ]
     },
@@ -123,10 +144,10 @@
   },
   {
     "resourceType": "MedicationStatement",
-    "id": "01995032-2b8f-7ee9-b9a2-954bc8322ebd",
+    "id": "01995066-3469-7466-b942-c20e339d8141",
     "status": "active",
     "medicationReference": {
-      "reference": "Medication/01995032-2b8f-7ee9-b9a2-954a4db3224e"
+      "reference": "Medication/01995066-3469-7466-b942-c20df3483c60"
     },
     "subject": {
       "reference": "Patient/92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa",
@@ -165,7 +186,7 @@
   },
   {
     "resourceType": "Medication",
-    "id": "01995032-2b8f-7ee9-b9a2-954cfedab787",
+    "id": "01995066-3469-7466-b942-c20f02bf6dcb",
     "status": "active",
     "code": {
       "text": "Heparin",
@@ -173,7 +194,7 @@
         {
           "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
           "code": "1659263",
-          "display": "Heparin"
+          "display": "1 ml heparin sodium, porcine 5000 unt/ml injection"
         }
       ]
     },
@@ -189,7 +210,13 @@
         "unit": "mL",
         "system": "http://unitsofmeasure.org",
         "code": "mL"
-      }
+      },
+      "extension": [
+        {
+          "url": "https://metriport.com/data-extraction",
+          "valueString": "1000 units/mL"
+        }
+      ]
     },
     "extension": [
       {
@@ -203,10 +230,10 @@
   },
   {
     "resourceType": "MedicationStatement",
-    "id": "01995032-2b8f-7ee9-b9a2-954dc4e62e97",
+    "id": "01995066-3469-7466-b942-c210cbfcf27e",
     "status": "active",
     "medicationReference": {
-      "reference": "Medication/01995032-2b8f-7ee9-b9a2-954cfedab787"
+      "reference": "Medication/01995066-3469-7466-b942-c20f02bf6dcb"
     },
     "subject": {
       "reference": "Patient/92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa",

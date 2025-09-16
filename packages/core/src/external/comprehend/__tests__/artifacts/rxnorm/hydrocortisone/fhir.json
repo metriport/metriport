@@ -1,7 +1,7 @@
 [
   {
     "resourceType": "Medication",
-    "id": "01995032-2b8e-7c1e-9190-6c1092e76cc7",
+    "id": "01995066-3468-76fb-b330-38ab3905a6f7",
     "status": "active",
     "code": {
       "text": "Hydrocortisone",
@@ -9,7 +9,7 @@
         {
           "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
           "code": "5492",
-          "display": "Hydrocortisone"
+          "display": "hydrocortisone"
         }
       ]
     },
@@ -34,10 +34,10 @@
   },
   {
     "resourceType": "MedicationStatement",
-    "id": "01995032-2b8e-7c1e-9190-6c1185033cfd",
+    "id": "01995066-3468-76fb-b330-38ac8f00f810",
     "status": "active",
     "medicationReference": {
-      "reference": "Medication/01995032-2b8e-7c1e-9190-6c1092e76cc7"
+      "reference": "Medication/01995066-3468-76fb-b330-38ab3905a6f7"
     },
     "subject": {
       "reference": "Patient/92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa",
