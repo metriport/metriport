@@ -1,4 +1,5 @@
 import { ComprehendClient } from "@metriport/core/external/comprehend/client";
+import { Resource } from "@medplum/fhirtypes";
 import {
   InferICD10CMCommandOutput,
   InferRxNormCommandOutput,
@@ -35,6 +36,19 @@ export function buildArtifact<I extends InferenceApi>(
   fs.writeFileSync(artifactPath, JSON.stringify(artifact, null, 2));
 }
 
+export function writeFhirArtifact<I extends InferenceApi>(
+  api: I,
+  name: string,
+  resources: Resource[]
+): void {
+  const artifactPath = path.join(TEST_DIR, api, name, "fhir.json");
+  const artifactDir = path.dirname(artifactPath);
+  if (!fs.existsSync(artifactDir)) {
+    fs.mkdirSync(artifactDir, { recursive: true });
+  }
+  fs.writeFileSync(artifactPath, JSON.stringify(resources, null, 2));
+}
+
 export function getArtifact<I extends InferenceApi>(api: I, name: string): Artifact<I> {
   const artifactPath = path.join(TEST_DIR, api, name, api + ".json");
   return JSON.parse(fs.readFileSync(artifactPath, "utf8")) as Artifact<I>;
@@ -55,13 +69,15 @@ export async function buildRxNormArtifact({
 }: {
   name: string;
   inputText: string;
-}): Promise<void> {
+}): Promise<Artifact<"rxnorm">> {
   if (artifactExists("rxnorm", name)) {
-    return;
+    return getArtifact("rxnorm", name);
   }
   const client = new ComprehendClient();
   const response = await client.inferRxNorm(inputText);
-  buildArtifact("rxnorm", name, { inputText, response });
+  const artifact = { inputText, response };
+  buildArtifact("rxnorm", name, artifact);
+  return artifact;
 }
 
 export async function buildConditionArtifact({
@@ -70,13 +86,15 @@ export async function buildConditionArtifact({
 }: {
   name: string;
   inputText: string;
-}): Promise<void> {
+}): Promise<Artifact<"icd10cm">> {
   if (artifactExists("icd10cm", name)) {
-    return;
+    return getArtifact("icd10cm", name);
   }
   const client = new ComprehendClient();
   const response = await client.inferICD10CM(inputText);
-  buildArtifact("icd10cm", name, { inputText, response });
+  const artifact = { inputText, response };
+  buildArtifact("icd10cm", name, artifact);
+  return artifact;
 }
 
 export async function buildSnomedCTArtifact({
@@ -85,11 +103,13 @@ export async function buildSnomedCTArtifact({
 }: {
   name: string;
   inputText: string;
-}): Promise<void> {
+}): Promise<Artifact<"snomedct">> {
   if (artifactExists("snomedct", name)) {
-    return;
+    return getArtifact("snomedct", name);
   }
   const client = new ComprehendClient();
   const response = await client.inferSNOMEDCT(inputText);
-  buildArtifact("snomedct", name, { inputText, response });
+  const artifact = { inputText, response };
+  buildArtifact("snomedct", name, artifact);
+  return artifact;
 }
