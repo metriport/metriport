@@ -27,7 +27,7 @@ export type PatientImportUpdateStatusCmd = {
       reason?: never;
     }
   | {
-      status?: "failed";
+      status: "failed";
       reason?: string | undefined;
     }
 );
