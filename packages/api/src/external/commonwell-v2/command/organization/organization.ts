@@ -159,6 +159,7 @@ export async function get(orgOid: string): Promise<CwSdkOrganization | undefined
         ...defaultOptionsRequestNotAccepted.httpCodesToRetry,
         AxiosError.ECONNABORTED,
       ],
+      retryOnTimeout: true,
     });
     debug(`resp getOneOrg: `, JSON.stringify(resp));
     return resp;
