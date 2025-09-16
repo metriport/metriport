@@ -1,6 +1,9 @@
 import { BadRequestError } from "../../../error/bad-request";
 
-export const patientImportJobStatus = ["waiting", "processing", "completed", "failed"] as const;
+export const patientImportJobUpdatableStatus = ["processing", "completed", "failed"] as const;
+export type PatientImportJobUpdatableStatus = (typeof patientImportJobUpdatableStatus)[number];
+
+export const patientImportJobStatus = ["waiting", ...patientImportJobUpdatableStatus] as const;
 export type PatientImportJobStatus = (typeof patientImportJobStatus)[number];
 
 export function isPatientImportDone(status: PatientImportJobStatus): boolean {
