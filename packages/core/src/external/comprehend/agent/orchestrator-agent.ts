@@ -3,7 +3,7 @@ import { Config } from "../../../util/config";
 import { AnthropicAgent } from "../../bedrock/agent/anthropic";
 import { ORCHESTRATOR_PROMPT } from "./prompts";
 import type { ComprehendContext } from "../types";
-import { RxNormAgent } from "./rxnorm-agent";
+import { RxNormAgent } from "./specialized/rxnorm-agent";
 import { buildBundle } from "../../fhir/bundle/bundle";
 import type { SpecializedAgent } from "./specialized-agent";
 
@@ -32,6 +32,11 @@ export class OrchestratorAgent extends AnthropicAgent<"claude-sonnet-3.7"> {
     }
   }
 
+  /**
+   * Extracts FHIR resources from the unstructured text.
+   * @param text - The unstructured text to extract FHIR resources from.
+   * @returns A bundle of FHIR resources extracted from the unstructured text.
+   */
   async extractFhirBundle(text: string): Promise<Bundle> {
     const resultBundle = buildBundle({ type: "collection", entries: [] });
     for (const specializedAgent of this.specializedAgents) {

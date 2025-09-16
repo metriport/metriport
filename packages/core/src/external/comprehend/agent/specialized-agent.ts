@@ -4,22 +4,20 @@ import { Bundle, Resource } from "@medplum/fhirtypes";
 import { AnthropicAgent } from "../../bedrock/agent/anthropic";
 import { Config } from "../../../util/config";
 import type { ComprehendContext } from "../types";
+import type { SpecializedAgentConfig } from "./types";
 import { buildBundleEntry } from "../../fhir/bundle/bundle";
 
+/**
+ * A specialized agent is responsible for extracting a specific type of FHIR resource from the unstructured text.
+ * It might call a separate API or do some manual parsing to extract resources, or it can execute instructions and
+ * tool calls as an Anthropic agent.
+ */
 export abstract class SpecializedAgent extends AnthropicAgent<"claude-sonnet-3.7"> {
   private name: string;
   private description: string;
   private targetBundle?: Bundle;
 
-  constructor({
-    name,
-    description,
-    systemPrompt,
-  }: {
-    name: string;
-    description: string;
-    systemPrompt: string;
-  }) {
+  constructor({ name, description, systemPrompt }: SpecializedAgentConfig) {
     super({
       version: "claude-sonnet-3.7",
       region: Config.getBedrockRegion(),
@@ -58,6 +56,9 @@ export abstract class SpecializedAgent extends AnthropicAgent<"claude-sonnet-3.7
     });
   }
 
+  /**
+   * Sets the target bundle where the specialized agent will add its extracted resources.
+   */
   setTargetBundle(bundle: Bundle): void {
     this.targetBundle = bundle;
   }
