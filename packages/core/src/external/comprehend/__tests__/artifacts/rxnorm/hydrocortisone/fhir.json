@@ -1,7 +1,7 @@
 [
   {
     "resourceType": "Medication",
-    "id": "01995066-3468-76fb-b330-38ab3905a6f7",
+    "id": "01995080-f8f5-739c-acf8-945d559c68df",
     "status": "active",
     "code": {
       "text": "Hydrocortisone",
@@ -28,16 +28,24 @@
         "valueString": "2 grams of Hydrocortisone cream to affected area twice daily",
         "valueReference": {
           "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        },
+        "valueRange": {
+          "low": {
+            "value": 6
+          },
+          "high": {
+            "value": 66
+          }
         }
       }
     ]
   },
   {
     "resourceType": "MedicationStatement",
-    "id": "01995066-3468-76fb-b330-38ac8f00f810",
+    "id": "01995080-f8f5-739c-acf8-945ec3c02f2c",
     "status": "active",
     "medicationReference": {
-      "reference": "Medication/01995066-3468-76fb-b330-38ab3905a6f7"
+      "reference": "Medication/01995080-f8f5-739c-acf8-945d559c68df"
     },
     "subject": {
       "reference": "Patient/92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa",
@@ -54,6 +62,14 @@
         "valueString": "2 grams of Hydrocortisone cream to affected area twice daily",
         "valueReference": {
           "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        },
+        "valueRange": {
+          "low": {
+            "value": 6
+          },
+          "high": {
+            "value": 66
+          }
         }
       }
     ]

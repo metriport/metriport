@@ -1,7 +1,7 @@
 [
   {
     "resourceType": "Medication",
-    "id": "01995066-3465-7176-b8e2-07ab321d489d",
+    "id": "01995080-f8f1-7a11-aeb7-31c6f8e709d9",
     "status": "active",
     "code": {
       "text": "Acetaminophen",
@@ -42,16 +42,24 @@
         "valueString": "Acetaminophen 500 mg tablet",
         "valueReference": {
           "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        },
+        "valueRange": {
+          "low": {
+            "value": 5
+          },
+          "high": {
+            "value": 32
+          }
         }
       }
     ]
   },
   {
     "resourceType": "MedicationStatement",
-    "id": "01995066-3465-7176-b8e2-07acc67555f9",
+    "id": "01995080-f8f2-7d06-9e56-93b25d63c36e",
     "status": "active",
     "medicationReference": {
-      "reference": "Medication/01995066-3465-7176-b8e2-07ab321d489d"
+      "reference": "Medication/01995080-f8f1-7a11-aeb7-31c6f8e709d9"
     },
     "subject": {
       "reference": "Patient/92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa",
@@ -66,6 +74,14 @@
         "valueString": "Acetaminophen 500 mg tablet",
         "valueReference": {
           "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        },
+        "valueRange": {
+          "low": {
+            "value": 5
+          },
+          "high": {
+            "value": 32
+          }
         }
       }
     ]

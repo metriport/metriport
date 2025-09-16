@@ -1,7 +1,7 @@
 [
   {
     "resourceType": "Medication",
-    "id": "01995066-3466-7de6-8830-4404fbca4524",
+    "id": "01995080-f8f3-7f57-b366-8cea9afdc29b",
     "status": "active",
     "code": {
       "text": "Amoxicillin",
@@ -48,16 +48,24 @@
         "valueString": "Amoxicillin 250 mg/5 mL suspension, 10 mL by mouth three times daily for 7 days",
         "valueReference": {
           "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        },
+        "valueRange": {
+          "low": {
+            "value": 11
+          },
+          "high": {
+            "value": 90
+          }
         }
       }
     ]
   },
   {
     "resourceType": "MedicationStatement",
-    "id": "01995066-3466-7de6-8830-44058d2ef387",
+    "id": "01995080-f8f3-7f57-b366-8ceb165f6d71",
     "status": "active",
     "medicationReference": {
-      "reference": "Medication/01995066-3466-7de6-8830-4404fbca4524"
+      "reference": "Medication/01995080-f8f3-7f57-b366-8cea9afdc29b"
     },
     "subject": {
       "reference": "Patient/92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa",
@@ -100,6 +108,14 @@
         "valueString": "Amoxicillin 250 mg/5 mL suspension, 10 mL by mouth three times daily for 7 days",
         "valueReference": {
           "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        },
+        "valueRange": {
+          "low": {
+            "value": 11
+          },
+          "high": {
+            "value": 90
+          }
         }
       }
     ]

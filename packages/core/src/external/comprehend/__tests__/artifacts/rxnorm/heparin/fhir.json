@@ -1,7 +1,7 @@
 [
   {
     "resourceType": "Medication",
-    "id": "01995066-3468-76fb-b330-38a9102a06ba",
+    "id": "01995080-f8f5-739c-acf8-945bc5c69ded",
     "status": "active",
     "code": {
       "text": "Heparin",
@@ -39,16 +39,24 @@
         "valueString": "Heparin 1000 units/mL injection, 5,000 units subcutaneously in the left thigh every 12 hours at a rate of 1 mL/min",
         "valueReference": {
           "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        },
+        "valueRange": {
+          "low": {
+            "value": 11
+          },
+          "high": {
+            "value": 125
+          }
         }
       }
     ]
   },
   {
     "resourceType": "MedicationStatement",
-    "id": "01995066-3468-76fb-b330-38aa79e0ecbf",
+    "id": "01995080-f8f5-739c-acf8-945c53c1a962",
     "status": "active",
     "medicationReference": {
-      "reference": "Medication/01995066-3468-76fb-b330-38a9102a06ba"
+      "reference": "Medication/01995080-f8f5-739c-acf8-945bc5c69ded"
     },
     "subject": {
       "reference": "Patient/92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa",
@@ -81,6 +89,14 @@
         "valueString": "Heparin 1000 units/mL injection, 5,000 units subcutaneously in the left thigh every 12 hours at a rate of 1 mL/min",
         "valueReference": {
           "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        },
+        "valueRange": {
+          "low": {
+            "value": 11
+          },
+          "high": {
+            "value": 125
+          }
         }
       }
     ]

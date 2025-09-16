@@ -1,7 +1,7 @@
 [
   {
     "resourceType": "Medication",
-    "id": "01995066-3468-76fb-b330-38ad2b009cb9",
+    "id": "01995080-f8f5-739c-acf8-945f6ad55368",
     "status": "active",
     "code": {
       "text": "Metformin",
@@ -19,16 +19,24 @@
         "valueString": "Metformin 500 mg twice daily",
         "valueReference": {
           "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        },
+        "valueRange": {
+          "low": {
+            "value": 28
+          },
+          "high": {
+            "value": 56
+          }
         }
       }
     ]
   },
   {
     "resourceType": "MedicationStatement",
-    "id": "01995066-3468-76fb-b330-38ae06a46a5f",
+    "id": "01995080-f8f5-739c-acf8-94608b889099",
     "status": "active",
     "medicationReference": {
-      "reference": "Medication/01995066-3468-76fb-b330-38ad2b009cb9"
+      "reference": "Medication/01995080-f8f5-739c-acf8-945f6ad55368"
     },
     "subject": {
       "reference": "Patient/92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa",
@@ -61,13 +69,21 @@
         "valueString": "Metformin 500 mg twice daily",
         "valueReference": {
           "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        },
+        "valueRange": {
+          "low": {
+            "value": 28
+          },
+          "high": {
+            "value": 56
+          }
         }
       }
     ]
   },
   {
     "resourceType": "Medication",
-    "id": "01995066-3468-76fb-b330-38affc78263d",
+    "id": "01995080-f8f5-739c-acf8-9461635ca5a6",
     "status": "active",
     "code": {
       "text": "Atorvastatin",
@@ -85,16 +101,24 @@
         "valueString": "Atorvastatin 20 mg at bedtime",
         "valueReference": {
           "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        },
+        "valueRange": {
+          "low": {
+            "value": 61
+          },
+          "high": {
+            "value": 90
+          }
         }
       }
     ]
   },
   {
     "resourceType": "MedicationStatement",
-    "id": "01995066-3468-76fb-b330-38b0e77257e4",
+    "id": "01995080-f8f5-739c-acf8-9462da3fc3f7",
     "status": "active",
     "medicationReference": {
-      "reference": "Medication/01995066-3468-76fb-b330-38affc78263d"
+      "reference": "Medication/01995080-f8f5-739c-acf8-9461635ca5a6"
     },
     "subject": {
       "reference": "Patient/92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa",
@@ -127,6 +151,14 @@
         "valueString": "Atorvastatin 20 mg at bedtime",
         "valueReference": {
           "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        },
+        "valueRange": {
+          "low": {
+            "value": 61
+          },
+          "high": {
+            "value": 90
+          }
         }
       }
     ]

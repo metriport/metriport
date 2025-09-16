@@ -1,7 +1,7 @@
 [
   {
     "resourceType": "Medication",
-    "id": "01995066-3467-7d98-9815-514876e89c84",
+    "id": "01995080-f8f4-7ca9-af8c-344cb3d3ed3e",
     "status": "active",
     "code": {
       "text": "Hydroxyurea",
@@ -19,16 +19,24 @@
         "valueString": "Hydroxyurea 500 mg daily",
         "valueReference": {
           "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        },
+        "valueRange": {
+          "low": {
+            "value": 0
+          },
+          "high": {
+            "value": 24
+          }
         }
       }
     ]
   },
   {
     "resourceType": "MedicationStatement",
-    "id": "01995066-3467-7d98-9815-5149b4090a5b",
+    "id": "01995080-f8f4-7ca9-af8c-344da2cbaf9d",
     "status": "active",
     "medicationReference": {
-      "reference": "Medication/01995066-3467-7d98-9815-514876e89c84"
+      "reference": "Medication/01995080-f8f4-7ca9-af8c-344cb3d3ed3e"
     },
     "subject": {
       "reference": "Patient/92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa",
@@ -61,13 +69,21 @@
         "valueString": "Hydroxyurea 500 mg daily",
         "valueReference": {
           "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        },
+        "valueRange": {
+          "low": {
+            "value": 0
+          },
+          "high": {
+            "value": 24
+          }
         }
       }
     ]
   },
   {
     "resourceType": "Medication",
-    "id": "01995066-3467-7d98-9815-514af6cb024a",
+    "id": "01995080-f8f4-7ca9-af8c-344e54b0ab01",
     "status": "active",
     "code": {
       "text": "Metamucil",
@@ -85,16 +101,24 @@
         "valueString": "Metamucil three teaspoons daily",
         "valueReference": {
           "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        },
+        "valueRange": {
+          "low": {
+            "value": 26
+          },
+          "high": {
+            "value": 57
+          }
         }
       }
     ]
   },
   {
     "resourceType": "MedicationStatement",
-    "id": "01995066-3467-7d98-9815-514b114d00cc",
+    "id": "01995080-f8f4-7ca9-af8c-344f94483c72",
     "status": "active",
     "medicationReference": {
-      "reference": "Medication/01995066-3467-7d98-9815-514af6cb024a"
+      "reference": "Medication/01995080-f8f4-7ca9-af8c-344e54b0ab01"
     },
     "subject": {
       "reference": "Patient/92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa",
@@ -111,13 +135,21 @@
         "valueString": "Metamucil three teaspoons daily",
         "valueReference": {
           "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        },
+        "valueRange": {
+          "low": {
+            "value": 26
+          },
+          "high": {
+            "value": 57
+          }
         }
       }
     ]
   },
   {
     "resourceType": "Medication",
-    "id": "01995066-3467-7d98-9815-514c165d9d19",
+    "id": "01995080-f8f4-7ca9-af8c-3450f49ec665",
     "status": "active",
     "code": {
       "text": "amitriptyline",
@@ -135,16 +167,24 @@
         "valueString": "amitriptyline 50 mg at h.s.",
         "valueReference": {
           "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        },
+        "valueRange": {
+          "low": {
+            "value": 59
+          },
+          "high": {
+            "value": 86
+          }
         }
       }
     ]
   },
   {
     "resourceType": "MedicationStatement",
-    "id": "01995066-3467-7d98-9815-514d1da43dad",
+    "id": "01995080-f8f4-7ca9-af8c-34510341d365",
     "status": "active",
     "medicationReference": {
-      "reference": "Medication/01995066-3467-7d98-9815-514c165d9d19"
+      "reference": "Medication/01995080-f8f4-7ca9-af8c-3450f49ec665"
     },
     "subject": {
       "reference": "Patient/92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa",
@@ -177,13 +217,21 @@
         "valueString": "amitriptyline 50 mg at h.s.",
         "valueReference": {
           "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        },
+        "valueRange": {
+          "low": {
+            "value": 59
+          },
+          "high": {
+            "value": 86
+          }
         }
       }
     ]
   },
   {
     "resourceType": "Medication",
-    "id": "01995066-3467-7d98-9815-514eeb019d1a",
+    "id": "01995080-f8f4-7ca9-af8c-3452895c596f",
     "status": "active",
     "code": {
       "text": "Synthroid",
@@ -201,16 +249,24 @@
         "valueString": "Synthroid 0.1 mg daily",
         "valueReference": {
           "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        },
+        "valueRange": {
+          "low": {
+            "value": 88
+          },
+          "high": {
+            "value": 110
+          }
         }
       }
     ]
   },
   {
     "resourceType": "MedicationStatement",
-    "id": "01995066-3467-7d98-9815-514f881b59e7",
+    "id": "01995080-f8f4-7ca9-af8c-3453ec9b2555",
     "status": "active",
     "medicationReference": {
-      "reference": "Medication/01995066-3467-7d98-9815-514eeb019d1a"
+      "reference": "Medication/01995080-f8f4-7ca9-af8c-3452895c596f"
     },
     "subject": {
       "reference": "Patient/92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa",
@@ -243,13 +299,21 @@
         "valueString": "Synthroid 0.1 mg daily",
         "valueReference": {
           "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        },
+        "valueRange": {
+          "low": {
+            "value": 88
+          },
+          "high": {
+            "value": 110
+          }
         }
       }
     ]
   },
   {
     "resourceType": "Medication",
-    "id": "01995066-3467-7d98-9815-5150e8e54e91",
+    "id": "01995080-f8f4-7ca9-af8c-3454ce763a47",
     "status": "active",
     "code": {
       "text": "Ambien",
@@ -267,16 +331,24 @@
         "valueString": "Ambien 5 mg at h.s.",
         "valueReference": {
           "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        },
+        "valueRange": {
+          "low": {
+            "value": 112
+          },
+          "high": {
+            "value": 131
+          }
         }
       }
     ]
   },
   {
     "resourceType": "MedicationStatement",
-    "id": "01995066-3467-7d98-9815-51513597579b",
+    "id": "01995080-f8f4-7ca9-af8c-3455a15fa8b3",
     "status": "active",
     "medicationReference": {
-      "reference": "Medication/01995066-3467-7d98-9815-5150e8e54e91"
+      "reference": "Medication/01995080-f8f4-7ca9-af8c-3454ce763a47"
     },
     "subject": {
       "reference": "Patient/92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa",
@@ -309,13 +381,21 @@
         "valueString": "Ambien 5 mg at h.s.",
         "valueReference": {
           "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        },
+        "valueRange": {
+          "low": {
+            "value": 112
+          },
+          "high": {
+            "value": 131
+          }
         }
       }
     ]
   },
   {
     "resourceType": "Medication",
-    "id": "01995066-3467-7d98-9815-5152c8492c54",
+    "id": "01995080-f8f4-7ca9-af8c-345698fd1db1",
     "status": "active",
     "code": {
       "text": "triamterene/hydrochlorothiazide",
@@ -333,16 +413,24 @@
         "valueString": "triamterene/hydrochlorothiazide 75/50 daily",
         "valueReference": {
           "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        },
+        "valueRange": {
+          "low": {
+            "value": 133
+          },
+          "high": {
+            "value": 176
+          }
         }
       }
     ]
   },
   {
     "resourceType": "MedicationStatement",
-    "id": "01995066-3467-7d98-9815-5153f74b9db3",
+    "id": "01995080-f8f4-7ca9-af8c-3457b7b347f8",
     "status": "active",
     "medicationReference": {
-      "reference": "Medication/01995066-3467-7d98-9815-5152c8492c54"
+      "reference": "Medication/01995080-f8f4-7ca9-af8c-345698fd1db1"
     },
     "subject": {
       "reference": "Patient/92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa",
@@ -359,13 +447,21 @@
         "valueString": "triamterene/hydrochlorothiazide 75/50 daily",
         "valueReference": {
           "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        },
+        "valueRange": {
+          "low": {
+            "value": 133
+          },
+          "high": {
+            "value": 176
+          }
         }
       }
     ]
   },
   {
     "resourceType": "Medication",
-    "id": "01995066-3467-7d98-9815-51546db00bcd",
+    "id": "01995080-f8f4-7ca9-af8c-34582c424ebe",
     "status": "active",
     "code": {
       "text": "Lortab",
@@ -383,16 +479,24 @@
         "valueString": "Lortab 5/500",
         "valueReference": {
           "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        },
+        "valueRange": {
+          "low": {
+            "value": 182
+          },
+          "high": {
+            "value": 194
+          }
         }
       }
     ]
   },
   {
     "resourceType": "MedicationStatement",
-    "id": "01995066-3467-7d98-9815-515590856827",
+    "id": "01995080-f8f4-7ca9-af8c-34599744ff10",
     "status": "active",
     "medicationReference": {
-      "reference": "Medication/01995066-3467-7d98-9815-51546db00bcd"
+      "reference": "Medication/01995080-f8f4-7ca9-af8c-34582c424ebe"
     },
     "subject": {
       "reference": "Patient/92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa",
@@ -409,6 +513,14 @@
         "valueString": "Lortab 5/500",
         "valueReference": {
           "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        },
+        "valueRange": {
+          "low": {
+            "value": 182
+          },
+          "high": {
+            "value": 194
+          }
         }
       }
     ]

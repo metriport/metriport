@@ -1,7 +1,7 @@
 [
   {
     "resourceType": "Medication",
-    "id": "01995066-3469-7466-b942-c2119ff90c43",
+    "id": "01995080-f8f6-7a56-9106-5b3394d86878",
     "status": "active",
     "code": {
       "text": "Prednisone",
@@ -42,16 +42,24 @@
         "valueString": "Prednisone 40 mg tablet, take one tablet by mouth daily for 5 days",
         "valueReference": {
           "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        },
+        "valueRange": {
+          "low": {
+            "value": 0
+          },
+          "high": {
+            "value": 66
+          }
         }
       }
     ]
   },
   {
     "resourceType": "MedicationStatement",
-    "id": "01995066-3469-7466-b942-c2129a7a74a0",
+    "id": "01995080-f8f6-7a56-9106-5b3413e937b4",
     "status": "active",
     "medicationReference": {
-      "reference": "Medication/01995066-3469-7466-b942-c2119ff90c43"
+      "reference": "Medication/01995080-f8f6-7a56-9106-5b3394d86878"
     },
     "subject": {
       "reference": "Patient/92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa",
@@ -94,6 +102,14 @@
         "valueString": "Prednisone 40 mg tablet, take one tablet by mouth daily for 5 days",
         "valueReference": {
           "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        },
+        "valueRange": {
+          "low": {
+            "value": 0
+          },
+          "high": {
+            "value": 66
+          }
         }
       }
     ]

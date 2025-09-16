@@ -1,7 +1,7 @@
 [
   {
     "resourceType": "Medication",
-    "id": "01995066-3469-7466-b942-c20b8ad42454",
+    "id": "01995080-f8f6-7a56-9106-5b2da35d4a55",
     "status": "active",
     "code": {
       "text": "Amoxicillin",
@@ -48,16 +48,24 @@
         "valueString": "Amoxicillin 250 mg/5 mL oral suspension, give 10 mL by mouth three times daily for 7 days as needed",
         "valueReference": {
           "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        },
+        "valueRange": {
+          "low": {
+            "value": 6
+          },
+          "high": {
+            "value": 105
+          }
         }
       }
     ]
   },
   {
     "resourceType": "MedicationStatement",
-    "id": "01995066-3469-7466-b942-c20cf04552b8",
+    "id": "01995080-f8f6-7a56-9106-5b2e66c344c0",
     "status": "active",
     "medicationReference": {
-      "reference": "Medication/01995066-3469-7466-b942-c20b8ad42454"
+      "reference": "Medication/01995080-f8f6-7a56-9106-5b2da35d4a55"
     },
     "subject": {
       "reference": "Patient/92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa",
@@ -105,13 +113,21 @@
         "valueString": "Amoxicillin 250 mg/5 mL oral suspension, give 10 mL by mouth three times daily for 7 days as needed",
         "valueReference": {
           "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        },
+        "valueRange": {
+          "low": {
+            "value": 6
+          },
+          "high": {
+            "value": 105
+          }
         }
       }
     ]
   },
   {
     "resourceType": "Medication",
-    "id": "01995066-3469-7466-b942-c20df3483c60",
+    "id": "01995080-f8f6-7a56-9106-5b2fe1bbf4da",
     "status": "active",
     "code": {
       "text": "Aspirin",
@@ -138,16 +154,24 @@
         "valueString": "Aspirin 81 mg tablet daily",
         "valueReference": {
           "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        },
+        "valueRange": {
+          "low": {
+            "value": 161
+          },
+          "high": {
+            "value": 187
+          }
         }
       }
     ]
   },
   {
     "resourceType": "MedicationStatement",
-    "id": "01995066-3469-7466-b942-c20e339d8141",
+    "id": "01995080-f8f6-7a56-9106-5b305d3b8eb6",
     "status": "active",
     "medicationReference": {
-      "reference": "Medication/01995066-3469-7466-b942-c20df3483c60"
+      "reference": "Medication/01995080-f8f6-7a56-9106-5b2fe1bbf4da"
     },
     "subject": {
       "reference": "Patient/92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa",
@@ -180,13 +204,21 @@
         "valueString": "Aspirin 81 mg tablet daily",
         "valueReference": {
           "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        },
+        "valueRange": {
+          "low": {
+            "value": 161
+          },
+          "high": {
+            "value": 187
+          }
         }
       }
     ]
   },
   {
     "resourceType": "Medication",
-    "id": "01995066-3469-7466-b942-c20f02bf6dcb",
+    "id": "01995080-f8f6-7a56-9106-5b31ac58dd41",
     "status": "active",
     "code": {
       "text": "Heparin",
@@ -224,16 +256,24 @@
         "valueString": "Heparin 1000 units/mL injection, 5,000 units subcutaneously in the left thigh every 12 hours at a rate of 1 mL/min, tapering the dose by 1,000 units every 3 days",
         "valueReference": {
           "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        },
+        "valueRange": {
+          "low": {
+            "value": 206
+          },
+          "high": {
+            "value": 367
+          }
         }
       }
     ]
   },
   {
     "resourceType": "MedicationStatement",
-    "id": "01995066-3469-7466-b942-c210cbfcf27e",
+    "id": "01995080-f8f6-7a56-9106-5b321f52cff4",
     "status": "active",
     "medicationReference": {
-      "reference": "Medication/01995066-3469-7466-b942-c20f02bf6dcb"
+      "reference": "Medication/01995080-f8f6-7a56-9106-5b31ac58dd41"
     },
     "subject": {
       "reference": "Patient/92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa",
@@ -266,6 +306,14 @@
         "valueString": "Heparin 1000 units/mL injection, 5,000 units subcutaneously in the left thigh every 12 hours at a rate of 1 mL/min, tapering the dose by 1,000 units every 3 days",
         "valueReference": {
           "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        },
+        "valueRange": {
+          "low": {
+            "value": 206
+          },
+          "high": {
+            "value": 367
+          }
         }
       }
     ]
