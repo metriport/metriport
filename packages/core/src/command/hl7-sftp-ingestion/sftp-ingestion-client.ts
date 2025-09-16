@@ -117,7 +117,7 @@ export class LahieSftpIngestionClient extends SftpClient {
         passphrase
       );
       this.log("Syncing decrypted content to replica");
-      await this.replica.writeFile(replicaPath, decryptedContent);
+      await super.syncFileToReplica(decryptedContent, replicaPath);
     }
   }
 }
