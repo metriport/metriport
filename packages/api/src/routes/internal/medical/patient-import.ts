@@ -220,7 +220,7 @@ router.post(
       throw new BadRequestError("Waiting status is not allowed on this endpoint");
     }
     const { status: jobStatus, reason } = updateParams;
-    if (jobStatus && jobStatus !== "failed" && reason) {
+    if (reason && jobStatus !== "failed") {
       throw new BadRequestError("Reason is only allowed when status is failed");
     }
 
