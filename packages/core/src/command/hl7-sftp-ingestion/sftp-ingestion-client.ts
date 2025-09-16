@@ -68,9 +68,9 @@ export class LahieSftpIngestionClient extends SftpClient {
       this.log(`No files found in ${remotePath} for date ${dateTimestamp}`);
       return [];
     }
-
-    const replicaFileNamesWithPath = await this.replica.listFileNames(remotePath);
-    const replicaDirectoryLength = remotePath.length + 1;
+    const replicaDirectory = this.replica.getReplicaPath(remotePath);
+    const replicaFileNamesWithPath = await this.replica.listFileNames(replicaDirectory);
+    const replicaDirectoryLength = replicaDirectory.length + 1;
     const existingReplicaFileNames = new Set(
       replicaFileNamesWithPath.map(fileName => fileName.substring(replicaDirectoryLength))
     );
