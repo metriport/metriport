@@ -4,6 +4,7 @@ import { out } from "../../../../../../util/log";
 import { SamlClientResponse, sendSignedXml } from "../../../saml/saml-client";
 import { SamlCertsAndKeys } from "../../../saml/security/types";
 import { SignedXcpdRequest } from "../create/iti55-envelope";
+import { storeXcpdResponses } from "../../../monitor/store";
 
 const { log } = out("Sending XCPD Requests");
 
@@ -38,11 +39,11 @@ export async function sendSignedXcpdRequest({
       }`
     );
     // ENG-1048 Disable S3 storage for IHE raw requests/responses
-    // await storeXcpdResponses({
-    //   response,
-    //   outboundRequest: request.outboundRequest,
-    //   gateway: request.gateway,
-    // });
+    await storeXcpdResponses({
+      response,
+      outboundRequest: request.outboundRequest,
+      gateway: request.gateway,
+    });
     return {
       gateway: request.gateway,
       response,

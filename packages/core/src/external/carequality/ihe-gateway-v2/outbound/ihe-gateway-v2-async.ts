@@ -67,7 +67,7 @@ export class IHEGatewayV2Async extends IHEGatewayV2 {
   }
 
   async startDocumentQueryGatewayV2(params: DQRequestGatewayV2Params): Promise<void> {
-    const { dqRequestsGatewayV2, patientId, cxId, requestId } = params;
+    const { dqRequestsGatewayV2, patientId, cxId, requestId, queryGrantorOid } = params;
     const lambdaClient = makeLambdaClient(Config.getAWSRegion());
     const requestChunks = chunkRequests(
       dqRequestsGatewayV2,
@@ -75,7 +75,7 @@ export class IHEGatewayV2Async extends IHEGatewayV2 {
     );
 
     for (const chunk of requestChunks) {
-      const params = { patientId, cxId, requestId, dqRequestsGatewayV2: chunk };
+      const params = { patientId, cxId, requestId, dqRequestsGatewayV2: chunk, queryGrantorOid };
 
       // intentionally not waiting
       lambdaClient
@@ -95,7 +95,7 @@ export class IHEGatewayV2Async extends IHEGatewayV2 {
   }
 
   async startDocumentRetrievalGatewayV2(params: DRRequestGatewayV2Params): Promise<void> {
-    const { drRequestsGatewayV2, patientId, cxId, requestId } = params;
+    const { drRequestsGatewayV2, patientId, cxId, requestId, queryGrantorOid } = params;
     const lambdaClient = makeLambdaClient(Config.getAWSRegion());
     const requestChunks = chunkRequests(
       drRequestsGatewayV2,
@@ -103,7 +103,7 @@ export class IHEGatewayV2Async extends IHEGatewayV2 {
     );
 
     for (const [i, chunk] of requestChunks.entries()) {
-      const params = { patientId, cxId, requestId, drRequestsGatewayV2: chunk };
+      const params = { patientId, cxId, requestId, drRequestsGatewayV2: chunk, queryGrantorOid };
 
       if (i > 0) {
         await sleep(SLEEP_IN_BETWEEN_DOCUMENT_RETRIEVAL_REQUESTS.asMilliseconds());

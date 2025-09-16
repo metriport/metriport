@@ -7,6 +7,7 @@ import { makeOutboundResultPoller } from "../ihe-gateway/outbound-result-poller-
 import { updatePatientDiscoveryStatus } from "./command/update-patient-discovery-status";
 import { getCQData } from "./patient";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
+import { getFacilityOrFail } from "../../command/medical/facility/get-facility";
 
 dayjs.extend(duration);
 
@@ -17,18 +18,17 @@ export async function processPostRespOutboundPatientDiscoveryResps({
   requestId,
   patientId,
   cxId,
-  queryGrantorOid,
 }: {
   patientId: string;
   requestId: string;
   cxId: string;
-  queryGrantorOid: string | undefined;
 }): Promise<void> {
   const baseLogMessage = `CQ PD post - patientId ${patientId}`;
   const { log } = out(`${baseLogMessage}, requestId: ${requestId}`);
 
   try {
     const patient = await getPatientOrFail({ id: patientId, cxId });
+    const facility = await getFacilityOrFail({ cxId, id: patient.facilityIds[0] ?? "" }); // TODO: handle multiple facilities
     const discoveryStatus = getCQData(patient.data.externalData)?.discoveryStatus;
 
     if (discoveryStatus !== "processing") {
@@ -43,7 +43,7 @@ export async function processPostRespOutboundPatientDiscoveryResps({
         patientId: patient.id,
         cxId: patient.cxId,
         numOfGateways: MAX_SAFE_GWS,
-        queryGrantorOid,
+        queryGrantorOid: facility.cqOboOid ?? undefined,
       });
     }
   } catch (error) {
