@@ -1,7 +1,7 @@
 [
   {
     "resourceType": "Medication",
-    "id": "019930b6-895f-733c-b24e-c8a08a643fb2",
+    "id": "01995032-2b8b-7099-b474-695505907a7c",
     "status": "active",
     "code": {
       "text": "Acetaminophen",
@@ -30,51 +30,37 @@
         "code": "mg"
       }
     },
-    "ingredient": [
+    "extension": [
       {
-        "itemCodeableConcept": {
-          "text": "Acetaminophen",
-          "coding": [
-            {
-              "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
-              "code": "198440",
-              "display": "Acetaminophen"
-            }
-          ]
-        },
-        "isActive": true,
-        "strength": {
-          "numerator": {
-            "value": 500,
-            "unit": "mg",
-            "system": "http://unitsofmeasure.org",
-            "code": "mg"
-          }
+        "url": "https://metriport.com/data-extraction",
+        "valueString": "Acetaminophen 500 mg tablet",
+        "valueReference": {
+          "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
         }
       }
     ]
   },
   {
     "resourceType": "MedicationStatement",
-    "id": "019930b6-8960-7343-a144-fcfd9e6a7eb8",
+    "id": "01995032-2b8c-7472-af94-db366b9ec090",
     "status": "active",
     "medicationReference": {
-      "reference": "Medication/019930b6-895f-733c-b24e-c8a08a643fb2"
+      "reference": "Medication/01995032-2b8b-7099-b474-695505907a7c"
+    },
+    "subject": {
+      "reference": "Patient/92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa",
+      "id": "92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa"
     },
     "dosage": [
+      {}
+    ],
+    "extension": [
       {
-        "doseAndRate": [
-          {
-            "doseQuantity": {
-              "value": 1,
-              "unit": "mg"
-            },
-            "rateQuantity": {
-              "value": 1,
-              "unit": "mg"
-            }
-          }
-        ]
+        "url": "https://metriport.com/data-extraction",
+        "valueString": "Acetaminophen 500 mg tablet",
+        "valueReference": {
+          "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        }
       }
     ]
   }

@@ -1,9 +1,10 @@
 [
   {
     "resourceType": "Medication",
-    "id": "01992c46-a480-78c2-9b5c-33f3dd65053f",
+    "id": "01995032-2b8e-7c1e-9190-6c003c87d742",
     "status": "active",
     "code": {
+      "text": "Hydroxyurea",
       "coding": [
         {
           "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
@@ -11,38 +12,65 @@
           "display": "Hydroxyurea"
         }
       ]
-    }
+    },
+    "extension": [
+      {
+        "url": "https://metriport.com/data-extraction",
+        "valueString": "Hydroxyurea 500 mg daily",
+        "valueReference": {
+          "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        }
+      }
+    ]
   },
   {
     "resourceType": "MedicationStatement",
-    "id": "01992c46-a481-7fbf-a862-5162347f98b5",
+    "id": "01995032-2b8e-7c1e-9190-6c01b773478a",
     "status": "active",
     "medicationReference": {
-      "reference": "Medication/01992c46-a480-78c2-9b5c-33f3dd65053f"
+      "reference": "Medication/01995032-2b8e-7c1e-9190-6c003c87d742"
+    },
+    "subject": {
+      "reference": "Patient/92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa",
+      "id": "92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa"
     },
     "dosage": [
       {
         "text": "500 mg",
         "doseAndRate": [
           {
+            "extension": [
+              {
+                "url": "https://metriport.com/data-extraction",
+                "valueString": "500 mg"
+              }
+            ],
             "doseQuantity": {
-              "value": 1,
-              "unit": "mg"
-            },
-            "rateQuantity": {
-              "value": 1,
-              "unit": "mg"
+              "value": 500,
+              "unit": "mg",
+              "system": "http://unitsofmeasure.org",
+              "code": "mg"
             }
           }
         ]
+      }
+    ],
+    "extension": [
+      {
+        "url": "https://metriport.com/data-extraction",
+        "valueString": "Hydroxyurea 500 mg daily",
+        "valueReference": {
+          "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        }
       }
     ]
   },
   {
     "resourceType": "Medication",
-    "id": "01992c46-a481-7fbf-a862-51632f1b565d",
+    "id": "01995032-2b8e-7c1e-9190-6c02f6325a64",
     "status": "active",
     "code": {
+      "text": "Metamucil",
       "coding": [
         {
           "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
@@ -50,38 +78,49 @@
           "display": "Metamucil"
         }
       ]
-    }
+    },
+    "extension": [
+      {
+        "url": "https://metriport.com/data-extraction",
+        "valueString": "Metamucil three teaspoons daily",
+        "valueReference": {
+          "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        }
+      }
+    ]
   },
   {
     "resourceType": "MedicationStatement",
-    "id": "01992c46-a481-7fbf-a862-5164a76e9926",
+    "id": "01995032-2b8e-7c1e-9190-6c033bfeaa41",
     "status": "active",
     "medicationReference": {
-      "reference": "Medication/01992c46-a481-7fbf-a862-51632f1b565d"
+      "reference": "Medication/01995032-2b8e-7c1e-9190-6c02f6325a64"
+    },
+    "subject": {
+      "reference": "Patient/92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa",
+      "id": "92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa"
     },
     "dosage": [
       {
-        "text": "three teaspoons",
-        "doseAndRate": [
-          {
-            "doseQuantity": {
-              "value": 1,
-              "unit": "mg"
-            },
-            "rateQuantity": {
-              "value": 1,
-              "unit": "mg"
-            }
-          }
-        ]
+        "text": "three teaspoons"
+      }
+    ],
+    "extension": [
+      {
+        "url": "https://metriport.com/data-extraction",
+        "valueString": "Metamucil three teaspoons daily",
+        "valueReference": {
+          "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        }
       }
     ]
   },
   {
     "resourceType": "Medication",
-    "id": "01992c46-a481-7fbf-a862-51655798a177",
+    "id": "01995032-2b8e-7c1e-9190-6c04bf519c91",
     "status": "active",
     "code": {
+      "text": "amitriptyline",
       "coding": [
         {
           "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
@@ -89,38 +128,65 @@
           "display": "amitriptyline"
         }
       ]
-    }
+    },
+    "extension": [
+      {
+        "url": "https://metriport.com/data-extraction",
+        "valueString": "amitriptyline 50 mg at h.s.",
+        "valueReference": {
+          "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        }
+      }
+    ]
   },
   {
     "resourceType": "MedicationStatement",
-    "id": "01992c46-a481-7fbf-a862-5166776ed8f9",
+    "id": "01995032-2b8e-7c1e-9190-6c05574ab595",
     "status": "active",
     "medicationReference": {
-      "reference": "Medication/01992c46-a481-7fbf-a862-51655798a177"
+      "reference": "Medication/01995032-2b8e-7c1e-9190-6c04bf519c91"
+    },
+    "subject": {
+      "reference": "Patient/92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa",
+      "id": "92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa"
     },
     "dosage": [
       {
         "text": "50 mg",
         "doseAndRate": [
           {
+            "extension": [
+              {
+                "url": "https://metriport.com/data-extraction",
+                "valueString": "50 mg"
+              }
+            ],
             "doseQuantity": {
-              "value": 1,
-              "unit": "mg"
-            },
-            "rateQuantity": {
-              "value": 1,
-              "unit": "mg"
+              "value": 50,
+              "unit": "mg",
+              "system": "http://unitsofmeasure.org",
+              "code": "mg"
             }
           }
         ]
+      }
+    ],
+    "extension": [
+      {
+        "url": "https://metriport.com/data-extraction",
+        "valueString": "amitriptyline 50 mg at h.s.",
+        "valueReference": {
+          "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        }
       }
     ]
   },
   {
     "resourceType": "Medication",
-    "id": "01992c46-a481-7fbf-a862-5167f0a95919",
+    "id": "01995032-2b8e-7c1e-9190-6c0633a2066f",
     "status": "active",
     "code": {
+      "text": "Synthroid",
       "coding": [
         {
           "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
@@ -128,38 +194,65 @@
           "display": "Synthroid"
         }
       ]
-    }
+    },
+    "extension": [
+      {
+        "url": "https://metriport.com/data-extraction",
+        "valueString": "Synthroid 0.1 mg daily",
+        "valueReference": {
+          "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        }
+      }
+    ]
   },
   {
     "resourceType": "MedicationStatement",
-    "id": "01992c46-a481-7fbf-a862-5168513b51da",
+    "id": "01995032-2b8e-7c1e-9190-6c074cc39bc9",
     "status": "active",
     "medicationReference": {
-      "reference": "Medication/01992c46-a481-7fbf-a862-5167f0a95919"
+      "reference": "Medication/01995032-2b8e-7c1e-9190-6c0633a2066f"
+    },
+    "subject": {
+      "reference": "Patient/92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa",
+      "id": "92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa"
     },
     "dosage": [
       {
         "text": "0.1 mg",
         "doseAndRate": [
           {
+            "extension": [
+              {
+                "url": "https://metriport.com/data-extraction",
+                "valueString": "0.1 mg"
+              }
+            ],
             "doseQuantity": {
-              "value": 1,
-              "unit": "mg"
-            },
-            "rateQuantity": {
-              "value": 1,
-              "unit": "mg"
+              "value": 0.1,
+              "unit": "mg",
+              "system": "http://unitsofmeasure.org",
+              "code": "mg"
             }
           }
         ]
+      }
+    ],
+    "extension": [
+      {
+        "url": "https://metriport.com/data-extraction",
+        "valueString": "Synthroid 0.1 mg daily",
+        "valueReference": {
+          "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        }
       }
     ]
   },
   {
     "resourceType": "Medication",
-    "id": "01992c46-a481-7fbf-a862-51690152846d",
+    "id": "01995032-2b8e-7c1e-9190-6c0825d0efb1",
     "status": "active",
     "code": {
+      "text": "Ambien",
       "coding": [
         {
           "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
@@ -167,38 +260,65 @@
           "display": "Ambien"
         }
       ]
-    }
+    },
+    "extension": [
+      {
+        "url": "https://metriport.com/data-extraction",
+        "valueString": "Ambien 5 mg at h.s.",
+        "valueReference": {
+          "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        }
+      }
+    ]
   },
   {
     "resourceType": "MedicationStatement",
-    "id": "01992c46-a481-7fbf-a862-516ab45ed151",
+    "id": "01995032-2b8e-7c1e-9190-6c09f46f0cf7",
     "status": "active",
     "medicationReference": {
-      "reference": "Medication/01992c46-a481-7fbf-a862-51690152846d"
+      "reference": "Medication/01995032-2b8e-7c1e-9190-6c0825d0efb1"
+    },
+    "subject": {
+      "reference": "Patient/92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa",
+      "id": "92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa"
     },
     "dosage": [
       {
         "text": "5 mg",
         "doseAndRate": [
           {
+            "extension": [
+              {
+                "url": "https://metriport.com/data-extraction",
+                "valueString": "5 mg"
+              }
+            ],
             "doseQuantity": {
-              "value": 1,
-              "unit": "mg"
-            },
-            "rateQuantity": {
-              "value": 1,
-              "unit": "mg"
+              "value": 5,
+              "unit": "mg",
+              "system": "http://unitsofmeasure.org",
+              "code": "mg"
             }
           }
         ]
+      }
+    ],
+    "extension": [
+      {
+        "url": "https://metriport.com/data-extraction",
+        "valueString": "Ambien 5 mg at h.s.",
+        "valueReference": {
+          "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        }
       }
     ]
   },
   {
     "resourceType": "Medication",
-    "id": "01992c46-a481-7fbf-a862-516ba890df68",
+    "id": "01995032-2b8e-7c1e-9190-6c0ab3d2706c",
     "status": "active",
     "code": {
+      "text": "triamterene/hydrochlorothiazide",
       "coding": [
         {
           "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
@@ -206,38 +326,49 @@
           "display": "triamterene/hydrochlorothiazide"
         }
       ]
-    }
+    },
+    "extension": [
+      {
+        "url": "https://metriport.com/data-extraction",
+        "valueString": "triamterene/hydrochlorothiazide 75/50 daily",
+        "valueReference": {
+          "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        }
+      }
+    ]
   },
   {
     "resourceType": "MedicationStatement",
-    "id": "01992c46-a481-7fbf-a862-516ce53eef0c",
+    "id": "01995032-2b8e-7c1e-9190-6c0be2319237",
     "status": "active",
     "medicationReference": {
-      "reference": "Medication/01992c46-a481-7fbf-a862-516ba890df68"
+      "reference": "Medication/01995032-2b8e-7c1e-9190-6c0ab3d2706c"
+    },
+    "subject": {
+      "reference": "Patient/92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa",
+      "id": "92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa"
     },
     "dosage": [
       {
-        "text": "75/50",
-        "doseAndRate": [
-          {
-            "doseQuantity": {
-              "value": 1,
-              "unit": "mg"
-            },
-            "rateQuantity": {
-              "value": 1,
-              "unit": "mg"
-            }
-          }
-        ]
+        "text": "75/50"
+      }
+    ],
+    "extension": [
+      {
+        "url": "https://metriport.com/data-extraction",
+        "valueString": "triamterene/hydrochlorothiazide 75/50 daily",
+        "valueReference": {
+          "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        }
       }
     ]
   },
   {
     "resourceType": "Medication",
-    "id": "01992c46-a481-7fbf-a862-516d87417f54",
+    "id": "01995032-2b8e-7c1e-9190-6c0c26509d4b",
     "status": "active",
     "code": {
+      "text": "Lortab",
       "coding": [
         {
           "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
@@ -245,30 +376,40 @@
           "display": "Lortab"
         }
       ]
-    }
+    },
+    "extension": [
+      {
+        "url": "https://metriport.com/data-extraction",
+        "valueString": "Lortab 5/500",
+        "valueReference": {
+          "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        }
+      }
+    ]
   },
   {
     "resourceType": "MedicationStatement",
-    "id": "01992c46-a481-7fbf-a862-516e64ad6667",
+    "id": "01995032-2b8e-7c1e-9190-6c0d5279c21f",
     "status": "active",
     "medicationReference": {
-      "reference": "Medication/01992c46-a481-7fbf-a862-516d87417f54"
+      "reference": "Medication/01995032-2b8e-7c1e-9190-6c0c26509d4b"
+    },
+    "subject": {
+      "reference": "Patient/92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa",
+      "id": "92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa"
     },
     "dosage": [
       {
-        "text": "5/500",
-        "doseAndRate": [
-          {
-            "doseQuantity": {
-              "value": 1,
-              "unit": "mg"
-            },
-            "rateQuantity": {
-              "value": 1,
-              "unit": "mg"
-            }
-          }
-        ]
+        "text": "5/500"
+      }
+    ],
+    "extension": [
+      {
+        "url": "https://metriport.com/data-extraction",
+        "valueString": "Lortab 5/500",
+        "valueReference": {
+          "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        }
       }
     ]
   }

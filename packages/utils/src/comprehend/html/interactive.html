@@ -26,8 +26,18 @@
                 </div>
 
                 <div style="display: flex; flex-direction: row; gap: 10px;">
-                    <label for="dateWritten">Date Written</label>
-                    <input type="date" id="dateWritten" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">
+                    <label for="encounterId">Encounter ID</label>
+                    <input type="text" id="encounterId" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">
+                </div>
+
+                <div style="display: flex; flex-direction: row; gap: 10px;">
+                    <label for="diagnosticReportId">Diagnostic Report ID</label>
+                    <input type="text" id="diagnosticReportId" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">
+                </div>
+
+                <div style="display: flex; flex-direction: row; gap: 10px;">
+                    <label for="dateNoteWritten">Date Written</label>
+                    <input type="date" id="dateNoteWritten" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">
                 </div>
             </div>
             <pre id="comprehend" style="margin-top: 20px; padding: 10px; background-color: #f9f9f9; border: 1px solid #ccc; border-radius: 4px;"></pre>
@@ -42,7 +52,9 @@
         const result = document.getElementById("result");
         const comprehendResult = document.getElementById("comprehend");
         const patientId = document.getElementById("patientId");
-        const dateWritten = document.getElementById("dateWritten");
+        const dateNoteWritten = document.getElementById("dateNoteWritten");
+        const encounterId = document.getElementById("encounterId");
+        const diagnosticReportId = document.getElementById("diagnosticReportId");
 
         const inferRxNormCheckbox = document.getElementById("inferRxNorm");
         function shouldInferRxNorm() {
@@ -59,7 +71,9 @@
                     text: text.value,
                     inferRxNorm: shouldInferRxNorm(),
                     patientId: patientId.value,
-                    dateWritten: dateWritten.value,
+                    dateNoteWritten: dateNoteWritten.value,
+                    encounterId: encounterId.value,
+                    diagnosticReportId: diagnosticReportId.value,
                 }),
             });
             const { comprehend, fhir } = await response.json();

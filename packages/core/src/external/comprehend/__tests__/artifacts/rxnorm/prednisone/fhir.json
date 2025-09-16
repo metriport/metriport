@@ -1,15 +1,15 @@
 [
   {
     "resourceType": "Medication",
-    "id": "01995032-2b8c-7472-af94-db3784b6ae37",
+    "id": "01995032-2b8f-7ee9-b9a2-954e2e743a05",
     "status": "active",
     "code": {
-      "text": "Amoxicillin",
+      "text": "Prednisone",
       "coding": [
         {
           "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
-          "code": "239191",
-          "display": "Amoxicillin"
+          "code": "312615",
+          "display": "Prednisone"
         }
       ]
     },
@@ -17,29 +17,23 @@
       "coding": [
         {
           "system": "http://snomed.info/sct",
-          "code": "385024007",
-          "display": "suspension"
+          "code": "385055001",
+          "display": "tablet"
         }
       ]
     },
     "amount": {
       "numerator": {
-        "value": 250,
+        "value": 40,
         "unit": "mg",
         "system": "http://unitsofmeasure.org",
         "code": "mg"
-      },
-      "denominator": {
-        "value": 5,
-        "unit": "mL",
-        "system": "http://unitsofmeasure.org",
-        "code": "mL"
       }
     },
     "extension": [
       {
         "url": "https://metriport.com/data-extraction",
-        "valueString": "Amoxicillin 250 mg/5 mL suspension, 10 mL by mouth three times daily for 7 days",
+        "valueString": "Prednisone 40 mg tablet, take one tablet by mouth daily for 5 days",
         "valueReference": {
           "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
         }
@@ -48,10 +42,10 @@
   },
   {
     "resourceType": "MedicationStatement",
-    "id": "01995032-2b8d-7143-9ff9-8d0808c4bb2c",
+    "id": "01995032-2b90-799c-ad34-822aa4f04403",
     "status": "active",
     "medicationReference": {
-      "reference": "Medication/01995032-2b8c-7472-af94-db3784b6ae37"
+      "reference": "Medication/01995032-2b8f-7ee9-b9a2-954e2e743a05"
     },
     "subject": {
       "reference": "Patient/92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa",
@@ -59,20 +53,20 @@
     },
     "dosage": [
       {
-        "text": "10 mL",
+        "text": "one tablet",
         "doseAndRate": [
           {
             "extension": [
               {
                 "url": "https://metriport.com/data-extraction",
-                "valueString": "10 mL"
+                "valueString": "one tablet"
               }
             ],
             "doseQuantity": {
-              "value": 10,
-              "unit": "mL",
+              "value": 1,
+              "unit": "U",
               "system": "http://unitsofmeasure.org",
-              "code": "mL"
+              "code": "U"
             }
           }
         ]
@@ -82,16 +76,16 @@
       "extension": [
         {
           "url": "https://metriport.com/data-extraction",
-          "valueString": "7 days"
+          "valueString": "5 days"
         }
       ],
       "start": "2025-02-05",
-      "end": "2025-02-12"
+      "end": "2025-02-10"
     },
     "extension": [
       {
         "url": "https://metriport.com/data-extraction",
-        "valueString": "Amoxicillin 250 mg/5 mL suspension, 10 mL by mouth three times daily for 7 days",
+        "valueString": "Prednisone 40 mg tablet, take one tablet by mouth daily for 5 days",
         "valueReference": {
           "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
         }
