@@ -13,7 +13,6 @@ export function buildDosage(entity: RxNormEntity): Dosage | undefined {
   // if (!frequency && !rate) return undefined;
   const dosageText = dosage?.Text;
   const timing = frequency && frequency.Text ? parseTiming(frequency.Text) : undefined;
-
   const doseAndRate = dosageText ? parseDosage(dosageText) : undefined;
 
   return {
