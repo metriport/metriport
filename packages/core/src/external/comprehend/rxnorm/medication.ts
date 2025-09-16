@@ -37,14 +37,16 @@ export function getMedicationReference(medication: Medication): Reference<Medica
 }
 
 function buildMedicationCode(entity: RxNormEntity): CodeableConcept | undefined {
-  const code = getRxNormCode(entity);
-  if (!code) return undefined;
+  const rxNorm = getRxNormCode(entity);
+  if (!rxNorm) return undefined;
 
-  const display = entity.Text;
+  const code = rxNorm.code;
+  const text = entity.Text;
+  const display = rxNorm.display ?? text;
   if (!display) return undefined;
 
   return {
-    text: display,
+    ...(text ? { text } : undefined),
     coding: [{ system: RXNORM_URL, code, display }],
   };
 }

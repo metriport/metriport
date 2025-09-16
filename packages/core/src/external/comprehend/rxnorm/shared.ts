@@ -12,8 +12,14 @@ export function getAttribute(
   return entity.Attributes?.find(attribute => attribute.Type === type);
 }
 
-export function getRxNormCode(entity: RxNormEntity): string | undefined {
-  return entity.RxNormConcepts?.[0]?.Code;
+export function getRxNormCode(
+  entity: RxNormEntity
+): { code: string; display?: string } | undefined {
+  const rxNormConcept = entity.RxNormConcepts?.[0];
+  if (!rxNormConcept || !rxNormConcept.Code) return undefined;
+  const code = rxNormConcept.Code;
+  const display = rxNormConcept.Description;
+  return { code, ...(display ? { display } : undefined) };
 }
 
 // readonly DOSAGE: "DOSAGE";
