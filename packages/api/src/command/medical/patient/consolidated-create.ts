@@ -1,8 +1,8 @@
 import { Bundle, BundleEntry } from "@medplum/fhirtypes";
-import { createUploadFilePath } from "@metriport/core/domain/document/upload";
 import { convertCollectionBundleToTransactionBundle } from "@metriport/core/external/fhir/bundle/convert-to-transaction-bundle";
 import { OPERATION_OUTCOME_EXTENSION_URL } from "@metriport/core/external/fhir/shared/extensions/extension";
 import { uploadFhirBundleToS3 } from "@metriport/core/fhir-to-cda/upload";
+import { createUploadFilePath } from "@metriport/core/shareback/file";
 import { MetriportError } from "@metriport/core/util/error/metriport-error";
 import { out } from "@metriport/core/util/log";
 import { errorToString } from "@metriport/shared";
@@ -57,16 +57,16 @@ export async function createOrUpdateConsolidatedPatientData({
   }
 }
 
-const removeUnwantedFhirData = (data: Bundle): Bundle => {
+function removeUnwantedFhirData(data: Bundle): Bundle {
   return {
     resourceType: data.resourceType,
     id: data.id,
     type: data.type,
     entry: data.entry?.map(replaceCodingSystem),
   };
-};
+}
 
-const replaceCodingSystem = (resourceEntry: BundleEntry): BundleEntry => {
+function replaceCodingSystem(resourceEntry: BundleEntry): BundleEntry {
   return {
     response: {
       ...resourceEntry.response,
@@ -93,4 +93,4 @@ const replaceCodingSystem = (resourceEntry: BundleEntry): BundleEntry => {
         : {}),
     },
   };
-};
+}
