@@ -1,5 +1,6 @@
 import { CodeableConcept } from "@medplum/fhirtypes";
 import { SNOMED_URL } from "@metriport/shared/medical";
+import { buildParserExtension } from "./extension";
 
 /**
  * Gets the standard CodeableConcept for a route code.
@@ -23,6 +24,7 @@ export function getRouteCode(inputText: string): CodeableConcept | undefined {
             display,
           },
         ],
+        extension: [buildParserExtension(inputText)],
       };
     }
   }
@@ -40,6 +42,7 @@ export function getRouteCode(inputText: string): CodeableConcept | undefined {
             display,
           },
         ],
+        extension: [buildParserExtension(inputText)],
       };
     }
   }
