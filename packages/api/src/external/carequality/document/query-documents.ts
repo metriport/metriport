@@ -33,7 +33,6 @@ export async function getDocumentsFromCQ({
   patient,
   forceDownload,
   cqManagingOrgName,
-  queryGrantorOid,
   forcePatientDiscovery = false,
   triggerConsolidated = false,
 }: {
@@ -42,7 +41,6 @@ export async function getDocumentsFromCQ({
   patient: Patient;
   forceDownload?: boolean;
   cqManagingOrgName?: string;
-  queryGrantorOid: string | undefined;
   forcePatientDiscovery?: boolean;
   triggerConsolidated?: boolean;
 }) {
@@ -111,7 +109,6 @@ export async function getDocumentsFromCQ({
           patient,
           facilityId: initiator.facilityId,
           requestId,
-          queryGrantorOid,
         }).catch(processAsyncError("CQ discover"));
       }
 
@@ -172,7 +169,6 @@ export async function getDocumentsFromCQ({
         requestId,
         patientId,
         cxId,
-        queryGrantorOid,
       });
     }
 
@@ -182,7 +178,6 @@ export async function getDocumentsFromCQ({
       cxId: patient.cxId,
       numOfGateways: documentQueryRequestsV2.length,
       forceDownload,
-      queryGrantorOid,
     });
   } catch (error) {
     const msg = `Failed to query and process documents - Carequality`;

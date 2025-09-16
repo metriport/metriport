@@ -19,7 +19,6 @@ export type OutboundPatientDiscoveryRespParam = {
   cxId: string;
   requestId: string;
   results: OutboundPatientDiscoveryResp[];
-  queryGrantorOid: string | undefined;
 };
 
 export type OutboundDocQueryRespParam = {
@@ -27,7 +26,6 @@ export type OutboundDocQueryRespParam = {
   cxId: string;
   requestId: string;
   response: OutboundDocumentQueryResp[];
-  queryGrantorOid: string | undefined;
   forceDownload?: boolean | undefined;
 };
 
@@ -76,14 +74,13 @@ export class OutboundResultPollerDirect extends OutboundResultPoller {
       ...params,
       dbCreds: this.dbCreds,
     });
-    const { requestId, patientId, cxId, queryGrantorOid } = params;
+    const { requestId, patientId, cxId } = params;
 
     const payload: OutboundPatientDiscoveryRespParam = {
       requestId,
       patientId,
       cxId,
       results,
-      queryGrantorOid,
     };
 
     // TODO not sure if should retry on timeout
@@ -100,14 +97,13 @@ export class OutboundResultPollerDirect extends OutboundResultPoller {
       ...params,
       dbCreds: this.dbCreds,
     });
-    const { requestId, patientId, cxId, forceDownload, queryGrantorOid } = params;
+    const { requestId, patientId, cxId, forceDownload } = params;
 
     const payload: OutboundDocQueryRespParam = {
       requestId,
       patientId,
       cxId,
       response,
-      queryGrantorOid,
       forceDownload,
     };
 

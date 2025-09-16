@@ -44,6 +44,7 @@ function createSoapBodyContent({
   identifiers,
   providerId,
   useUrn = true,
+  isDelegated = false,
 }: {
   messageId: string;
   homeCommunityId: string;
@@ -58,6 +59,7 @@ function createSoapBodyContent({
   identifiers: PersonalIdentifier[] | undefined;
   providerId: string | undefined;
   useUrn?: boolean;
+  isDelegated?: boolean;
 }): object {
   const prefix = useUrn ? "urn:" : "";
   const soapBody = {
@@ -121,7 +123,7 @@ function createSoapBodyContent({
               "@_classCode": "ORG",
               "@_determinerCode": "INSTANCE",
               [`${prefix}id`]: {
-                "@_root": METRIPORT_HOME_COMMUNITY_ID_NO_PREFIX,
+                "@_root": isDelegated ? homeCommunityId : METRIPORT_HOME_COMMUNITY_ID_NO_PREFIX,
               },
               [`${prefix}name`]: metriportOrganization,
             },
@@ -239,9 +241,11 @@ function createSoapBodyContent({
 function createSoapBody({
   bodyData,
   createdTimestamp,
+  isDelegated,
 }: {
   bodyData: OutboundPatientDiscoveryReq;
   createdTimestamp: string;
+  isDelegated: boolean;
 }): object {
   const gateway = bodyData.gateways?.[0];
   if (!gateway) {
@@ -275,6 +279,7 @@ function createSoapBody({
       identifiers,
       providerId,
       useUrn,
+      isDelegated,
     }),
   };
   return soapBody;
@@ -283,11 +288,9 @@ function createSoapBody({
 export function createITI5SoapEnvelope({
   bodyData,
   publicCert,
-  queryGrantorOid,
 }: {
   bodyData: OutboundPatientDiscoveryReq;
   publicCert: string;
-  queryGrantorOid: string | undefined;
 }): string {
   const gateway = bodyData.gateways?.[0];
   if (!gateway) {
@@ -299,7 +302,7 @@ export function createITI5SoapEnvelope({
   const subjectRole = bodyData.samlAttributes.subjectRole.display;
   const homeCommunityId = getHomeCommunityId(gateway, bodyData.samlAttributes);
   const purposeOfUse = bodyData.samlAttributes.purposeOfUse;
-
+  const queryGrantorOid = bodyData.samlAttributes.queryGrantorOid;
   const createdTimestamp = dayjs().toISOString();
   const expiresTimestamp = dayjs(createdTimestamp).add(expiresIn, "minute").toISOString();
   const securityHeader = createSecurityHeader({
@@ -315,7 +318,7 @@ export function createITI5SoapEnvelope({
     queryGrantorOid,
   });
 
-  const soapBody = createSoapBody({ bodyData, createdTimestamp });
+  const soapBody = createSoapBody({ bodyData, createdTimestamp, isDelegated: !!queryGrantorOid });
 
   const soapEnvelope = {
     "soap:Envelope": {
@@ -358,8 +361,7 @@ export function createITI5SoapEnvelope({
 
 export function createAndSignBulkXCPDRequests(
   bulkBodyData: OutboundPatientDiscoveryReq,
-  samlCertsAndKeys: SamlCertsAndKeys,
-  queryGrantorOid: string | undefined
+  samlCertsAndKeys: SamlCertsAndKeys
 ): SignedXcpdRequest[] {
   const signedRequests: SignedXcpdRequest[] = [];
 
@@ -372,7 +374,6 @@ export function createAndSignBulkXCPDRequests(
     const xmlString = createITI5SoapEnvelope({
       bodyData,
       publicCert: samlCertsAndKeys.publicCert,
-      queryGrantorOid,
     });
     const useSha1 = doesGatewayUseSha1(gateway.oid);
     const signedRequest = signFullSaml({ xmlString, samlCertsAndKeys, useSha1 });

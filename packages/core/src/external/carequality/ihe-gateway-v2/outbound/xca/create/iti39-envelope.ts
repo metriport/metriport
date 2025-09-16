@@ -24,11 +24,9 @@ export type SignedDrRequest = {
 export function createITI39SoapEnvelope({
   bodyData,
   publicCert,
-  queryGrantorOid,
 }: {
   bodyData: OutboundDocumentRetrievalReq;
   publicCert: string;
-  queryGrantorOid: string | undefined;
 }): string {
   const messageId = wrapIdInUrnUuid(bodyData.id);
   const toUrl = bodyData.gateway.url;
@@ -43,7 +41,7 @@ export function createITI39SoapEnvelope({
   const subjectRole = bodyData.samlAttributes.subjectRole.display;
   const homeCommunityId = getHomeCommunityId(bodyData.gateway, bodyData.samlAttributes);
   const purposeOfUse = bodyData.samlAttributes.purposeOfUse;
-
+  const queryGrantorOid = bodyData.samlAttributes.queryGrantorOid;
   const createdTimestamp = dayjs().toISOString();
   const expiresTimestamp = dayjs(createdTimestamp).add(expiresIn, "minute").toISOString();
 
@@ -103,13 +101,11 @@ export function createITI39SoapEnvelope({
 
 export function createAndSignDRRequest(
   bodyData: OutboundDocumentRetrievalReq,
-  samlCertsAndKeys: SamlCertsAndKeys,
-  queryGrantorOid: string | undefined
+  samlCertsAndKeys: SamlCertsAndKeys
 ): string {
   const xmlString = createITI39SoapEnvelope({
     bodyData,
     publicCert: samlCertsAndKeys.publicCert,
-    queryGrantorOid,
   });
   const useSha1 = doesGatewayUseSha1(bodyData.gateway.homeCommunityId);
   const fullySignedSaml = signFullSaml({ xmlString, samlCertsAndKeys, useSha1 });
@@ -119,16 +115,14 @@ export function createAndSignDRRequest(
 export function createAndSignBulkDRRequests({
   bulkBodyData,
   samlCertsAndKeys,
-  queryGrantorOid,
 }: {
   bulkBodyData: OutboundDocumentRetrievalReq[];
   samlCertsAndKeys: SamlCertsAndKeys;
-  queryGrantorOid: string | undefined;
 }): SignedDrRequest[] {
   const signedRequests: SignedDrRequest[] = [];
 
   for (const bodyData of bulkBodyData) {
-    const signedRequest = createAndSignDRRequest(bodyData, samlCertsAndKeys, queryGrantorOid);
+    const signedRequest = createAndSignDRRequest(bodyData, samlCertsAndKeys);
     signedRequests.push({
       gateway: bodyData.gateway,
       signedRequest,

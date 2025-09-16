@@ -44,7 +44,6 @@ describe("run or schedule patient discovery", () => {
       requestId: "toRun",
       rerunPdOnNewDemographics: undefined,
       forceCarequality: undefined,
-      queryGrantorOid: undefined,
     };
     await runOrScheduleCqPatientDiscovery(params);
     expect(cqDiscover_mock).toBeCalledWith(params);
@@ -76,7 +75,6 @@ describe("run or schedule patient discovery", () => {
       requestId: "toRun",
       rerunPdOnNewDemographics: undefined,
       forceCarequality: undefined,
-      queryGrantorOid: undefined,
     };
     await runOrScheduleCqPatientDiscovery(params);
     expect(cqDiscover_mock).toBeCalledWith(params);
@@ -102,7 +100,6 @@ describe("run or schedule patient discovery", () => {
       requestId: "toRun",
       rerunPdOnNewDemographics: undefined,
       forceCarequality: undefined,
-      queryGrantorOid: undefined,
     };
     await runOrScheduleCqPatientDiscovery(params);
     expect(cqDiscover_mock).toBeCalledWith(params);
@@ -128,7 +125,6 @@ describe("run or schedule patient discovery", () => {
       requestId: "toBeScheduled",
       rerunPdOnNewDemographics: undefined,
       forceCarequality: undefined,
-      queryGrantorOid: undefined,
     };
     await runOrScheduleCqPatientDiscovery(params);
     expect(cqDiscover_mock).not.toBeCalled();
@@ -165,7 +161,6 @@ describe("run or schedule patient discovery", () => {
       requestId: "toNotSchedule",
       rerunPdOnNewDemographics: undefined,
       forceCarequality: undefined,
-      queryGrantorOid: undefined,
     };
     await runOrScheduleCqPatientDiscovery(params);
     expect(cqDiscover_mock).not.toBeCalled();

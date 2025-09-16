@@ -59,7 +59,7 @@ export async function createPatient({
   if (patientExists) return patientExists;
 
   // validate facility exists and cx has access to it
-  const facility = await getFacilityOrFail({ cxId, id: facilityId });
+  await getFacilityOrFail({ cxId, id: facilityId });
 
   const patientCreate: PatientCreate = {
     id: uuidv7(),
@@ -117,7 +117,6 @@ export async function createPatient({
       rerunPdOnNewDemographics,
       forceCarequality,
       forceCommonwell,
-      cqQueryGrantorOid: facility.cqOboOid ?? undefined,
     }).catch(processAsyncError("runInitialPatientDiscoveryAcrossHies"));
   }
   const patientWithIdentifiers = await attachPatientIdentifiers(newPatient.dataValues);

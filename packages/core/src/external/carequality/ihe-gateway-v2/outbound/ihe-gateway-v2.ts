@@ -8,7 +8,6 @@ export type PDRequestGatewayV2Params = {
   patientId: string;
   cxId: string;
   pdRequestGatewayV2: OutboundPatientDiscoveryReq;
-  queryGrantorOid: string | undefined;
 };
 
 export type DQRequestGatewayV2Params = {
@@ -16,7 +15,6 @@ export type DQRequestGatewayV2Params = {
   cxId: string;
   requestId?: string;
   dqRequestsGatewayV2: OutboundDocumentQueryReq[];
-  queryGrantorOid: string | undefined;
 };
 
 export type DRRequestGatewayV2Params = {
@@ -24,7 +22,6 @@ export type DRRequestGatewayV2Params = {
   cxId: string;
   requestId?: string;
   drRequestsGatewayV2: OutboundDocumentRetrievalReq[];
-  queryGrantorOid: string | undefined;
 };
 
 export abstract class IHEGatewayV2 {

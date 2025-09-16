@@ -9,14 +9,12 @@ export async function runOrScheduleCqPatientDiscovery({
   patient,
   facilityId,
   requestId,
-  queryGrantorOid,
   rerunPdOnNewDemographics,
   forceCarequality,
 }: {
   patient: Patient;
   facilityId: string;
   requestId: string;
-  queryGrantorOid: string | undefined;
   rerunPdOnNewDemographics?: boolean;
   // START TODO #1572 - remove
   forceCarequality?: boolean;
@@ -47,7 +45,6 @@ export async function runOrScheduleCqPatientDiscovery({
       requestId,
       forceEnabled: forceCarequality,
       rerunPdOnNewDemographics,
-      queryGrantorOid,
     }).catch(processAsyncError("CQ discovery"));
   }
 }

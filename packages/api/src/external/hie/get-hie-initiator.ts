@@ -1,9 +1,9 @@
+import { isHealthcareItVendor } from "@metriport/core/domain/organization";
 import { Patient } from "@metriport/core/domain/patient";
 import { MedicalDataSource } from "@metriport/core/external/index";
-import { isHealthcareItVendor } from "@metriport/core/domain/organization";
 import { MetriportError } from "@metriport/core/util/error/metriport-error";
-import { isFacilityActiveForHie, Facility } from "../../domain/medical/facility";
 import { getPatientWithDependencies } from "../../command/medical/patient/get-patient";
+import { Facility, isFacilityActiveForHie } from "../../domain/medical/facility";
 
 export type HieInitiator = {
   oid: string;
@@ -11,11 +11,12 @@ export type HieInitiator = {
   npi: string;
   facilityId: string;
   orgName: string;
+  queryGrantorOid?: string | undefined;
 };
 
 export async function getHieInitiator(
   patient: Pick<Patient, "id" | "cxId">,
-  facilityId: string | undefined
+  facilityId?: string
 ): Promise<HieInitiator> {
   const { organization, facilities } = await getPatientWithDependencies(patient);
   const facility = getPatientsFacility(patient.id, facilities, facilityId);
@@ -27,6 +28,7 @@ export async function getHieInitiator(
       npi: facility.data.npi,
       facilityId: facility.id,
       orgName: organization.data.name,
+      queryGrantorOid: facility.cqOboOid ?? undefined,
     };
   }
   return {

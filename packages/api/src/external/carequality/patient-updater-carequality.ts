@@ -1,12 +1,12 @@
 import { PatientUpdater } from "@metriport/core/command/patient-updater";
 import { Patient } from "@metriport/core/domain/patient";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
-import { getPatients } from "../../command/medical/patient/get-patient";
 import { getFacilityOrFail } from "../../command/medical/facility/get-facility";
+import { getPatients } from "../../command/medical/patient/get-patient";
 import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
-import { discover } from "./patient";
 import { errorToString } from "../../shared/log";
 import { capture } from "../../shared/notifications";
+import { discover } from "./patient";
 
 const maxNumberOfParallelRequestsToCQ = 10;
 
@@ -29,10 +29,10 @@ export class PatientUpdaterCarequality extends PatientUpdater {
     async function updatePatient(patient: Patient) {
       try {
         const facilityId = getFacilityIdOrFail(patient);
-        const facility = await getFacilityOrFail({ cxId, id: facilityId });
+        await getFacilityOrFail({ cxId, id: facilityId });
         // WARNING This could overwrite the status for any currently running PD
         // TODO Internal #1832 (rework)
-        await discover({ patient, facilityId, queryGrantorOid: facility.cqOboOid ?? undefined });
+        await discover({ patient, facilityId });
       } catch (error) {
         failedUpdateCount++;
         const msg = `Failed to update CQ patient`;

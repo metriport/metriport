@@ -31,14 +31,12 @@ export async function discover({
   requestId: inputRequestId,
   forceEnabled = false,
   rerunPdOnNewDemographics = false,
-  queryGrantorOid,
 }: {
   patient: Patient;
   facilityId: string;
   requestId?: string;
   forceEnabled?: boolean;
   rerunPdOnNewDemographics?: boolean;
-  queryGrantorOid: string | undefined;
 }): Promise<void> {
   const baseLogMessage = `CQ PD - patientId ${patient.id}`;
   const { log: outerLog } = out(baseLogMessage);
@@ -67,7 +65,6 @@ export async function discover({
       facilityId,
       requestId,
       baseLogMessage,
-      queryGrantorOid,
     });
   }
 }
@@ -77,13 +74,11 @@ async function prepareAndTriggerPD({
   facilityId,
   requestId,
   baseLogMessage,
-  queryGrantorOid,
 }: {
   patient: Patient;
   facilityId: string;
   requestId: string;
   baseLogMessage: string;
-  queryGrantorOid: string | undefined;
 }): Promise<void> {
   try {
     const pdRequestGatewayV2 = await prepareForPatientDiscovery(patient, facilityId, requestId);
@@ -98,7 +93,6 @@ async function prepareAndTriggerPD({
         pdRequestGatewayV2,
         patientId: patient.id,
         cxId: patient.cxId,
-        queryGrantorOid,
       });
     }
 
@@ -109,7 +103,6 @@ async function prepareAndTriggerPD({
       patientId: patient.id,
       cxId: patient.cxId,
       numOfGateways: numGatewaysV2,
-      queryGrantorOid,
     });
   } catch (error) {
     // TODO 1646 Move to a single hit to the DB
@@ -118,7 +111,7 @@ async function prepareAndTriggerPD({
       source: MedicalDataSource.CAREQUALITY,
     });
     await updatePatientDiscoveryStatus({ patient, status: "failed" });
-    await queryDocsIfScheduled({ patientIds: patient, isFailed: true, queryGrantorOid });
+    await queryDocsIfScheduled({ patientIds: patient, isFailed: true });
     const msg = `Error on Patient Discovery`;
     out(baseLogMessage).log(`${msg} - ${errorToString(error)}`);
     capture.error(msg, {

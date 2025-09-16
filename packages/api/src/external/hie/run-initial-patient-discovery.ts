@@ -8,14 +8,12 @@ import { create } from "../commonwell/patient/patient";
 export async function runInitialPatientDiscoveryAcrossHies({
   patient,
   facilityId,
-  cqQueryGrantorOid,
   rerunPdOnNewDemographics,
   forceCommonwell,
   forceCarequality,
 }: {
   patient: Patient;
   facilityId: string;
-  cqQueryGrantorOid: string | undefined;
   rerunPdOnNewDemographics?: boolean;
   forceCommonwell?: boolean;
   forceCarequality?: boolean;
@@ -29,7 +27,6 @@ export async function runInitialPatientDiscoveryAcrossHies({
     requestId,
     forceEnabled: forceCarequality,
     rerunPdOnNewDemographics,
-    queryGrantorOid: cqQueryGrantorOid,
   }).catch(processAsyncError("CQ discovery"));
   // COMMONWELL
   create({

@@ -16,7 +16,6 @@ describe("Full Saml Envelope Signing", () => {
     const soapEnvelope = createITI5SoapEnvelope({
       bodyData: outboundXcpdRequest,
       publicCert: TEST_CERT,
-      queryGrantorOid: undefined,
     });
 
     const signedWithTimestamp = signTimestamp({ xml: soapEnvelope, privateKey: TEST_KEY });
@@ -30,7 +29,6 @@ describe("Full Saml Envelope Signing", () => {
     const soapEnvelope = createITI38SoapEnvelope({
       bodyData: outboundDqRequest,
       publicCert: TEST_CERT,
-      queryGrantorOid: undefined,
     });
 
     const signedWithTimestamp = signTimestamp({ xml: soapEnvelope, privateKey: TEST_KEY });
@@ -44,7 +42,6 @@ describe("Full Saml Envelope Signing", () => {
     const soapEnvelope = createITI39SoapEnvelope({
       bodyData: outboundDrRequest,
       publicCert: TEST_CERT,
-      queryGrantorOid: undefined,
     });
 
     const signedWithTimestamp = signTimestamp({ xml: soapEnvelope, privateKey: TEST_KEY });

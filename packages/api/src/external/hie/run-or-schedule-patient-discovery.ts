@@ -8,7 +8,6 @@ import { processAsyncError } from "@metriport/core/util/error/shared";
 export async function runOrSchedulePatientDiscoveryAcrossHies({
   patient,
   facilityId,
-  cqQueryGrantorOid,
   rerunPdOnNewDemographics,
   forceCommonwell,
   forceCarequality,
@@ -16,7 +15,6 @@ export async function runOrSchedulePatientDiscoveryAcrossHies({
 }: {
   patient: Patient;
   facilityId: string;
-  cqQueryGrantorOid: string | undefined;
   rerunPdOnNewDemographics?: boolean;
   // START TODO #1572 - remove
   forceCommonwell?: boolean;
@@ -32,7 +30,6 @@ export async function runOrSchedulePatientDiscoveryAcrossHies({
     requestId,
     rerunPdOnNewDemographics,
     forceCarequality,
-    queryGrantorOid: cqQueryGrantorOid,
   }).catch(processAsyncError("runOrScheduleCqPatientDiscovery"));
   // COMMONWELL
   runOrScheduleCwPatientDiscovery({

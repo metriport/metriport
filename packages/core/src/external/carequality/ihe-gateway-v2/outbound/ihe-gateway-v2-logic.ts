@@ -144,21 +144,15 @@ export async function createSignSendProcessXCPDRequest({
   samlCertsAndKeys,
   patientId,
   cxId,
-  queryGrantorOid,
 }: {
   pdResponseUrl: string;
   xcpdRequest: OutboundPatientDiscoveryReq;
   samlCertsAndKeys: SamlCertsAndKeys;
   patientId: string;
   cxId: string;
-  queryGrantorOid: string | undefined;
 }): Promise<void> {
   const log = getLog("createSignSendProcessXCPDRequest");
-  const signedRequests = createAndSignBulkXCPDRequests(
-    xcpdRequest,
-    samlCertsAndKeys,
-    queryGrantorOid
-  );
+  const signedRequests = createAndSignBulkXCPDRequests(xcpdRequest, samlCertsAndKeys);
   const resultS3PayloadsWithFilePaths: [string, string][] = [];
   const resultPromises = signedRequests.map(async (signedRequest, index) => {
     const result = await sendProcessXcpdRequest({
@@ -226,21 +220,18 @@ export async function createSignSendProcessDqRequests({
   samlCertsAndKeys,
   patientId,
   cxId,
-  queryGrantorOid,
 }: {
   dqResponseUrl: string;
   dqRequestsGatewayV2: OutboundDocumentQueryReq[];
   samlCertsAndKeys: SamlCertsAndKeys;
   patientId: string;
   cxId: string;
-  queryGrantorOid: string | undefined;
 }): Promise<void> {
   const log = getLog("createSignSendProcessDqRequests");
 
   const signedRequests = createAndSignBulkDQRequests({
     bulkBodyData: dqRequestsGatewayV2,
     samlCertsAndKeys,
-    queryGrantorOid,
   });
 
   const resultPromises = signedRequests.map(async (signedRequest, index) => {
@@ -274,20 +265,17 @@ export async function createSignSendProcessDrRequests({
   samlCertsAndKeys,
   patientId,
   cxId,
-  queryGrantorOid,
 }: {
   drResponseUrl: string;
   drRequestsGatewayV2: OutboundDocumentRetrievalReq[];
   samlCertsAndKeys: SamlCertsAndKeys;
   patientId: string;
   cxId: string;
-  queryGrantorOid: string | undefined;
 }): Promise<void> {
   const log = getLog("createSignSendProcessDrRequests");
   const signedRequests = createAndSignBulkDRRequests({
     bulkBodyData: drRequestsGatewayV2,
     samlCertsAndKeys,
-    queryGrantorOid,
   });
 
   const resultPromises = signedRequests.map(async (signedRequest, index) => {

@@ -863,14 +863,12 @@ router.post(
     const rerunPdOnNewDemographics = getFromQueryAsBoolean("rerunPdOnNewDemographics", req);
     const patient = await getPatientOrFail({ cxId, id });
     const facilityId = patient.facilityIds[0];
-    const facility = await getFacilityOrFail({ cxId, id: facilityId });
 
     await runOrSchedulePatientDiscoveryAcrossHies({
       patient,
       facilityId,
       rerunPdOnNewDemographics,
       requestId,
-      cqQueryGrantorOid: facility.cqOboOid ?? undefined,
     });
     return res.status(status.OK).json({ requestId });
   })

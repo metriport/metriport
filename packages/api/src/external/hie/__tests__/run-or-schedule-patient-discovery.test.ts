@@ -60,7 +60,6 @@ describe("run initial patient discovery", () => {
       ...sharedParams,
       forceCarequality,
       forceCommonwell,
-      cqQueryGrantorOid: undefined,
     });
     expect(cqDiscover_mock).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -88,7 +87,6 @@ describe("run initial patient discovery", () => {
       ...sharedParams,
       forceCarequality,
       forceCommonwell,
-      cqQueryGrantorOid: undefined,
     });
     expect(cqDiscover_mock).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -116,7 +114,6 @@ describe("run initial patient discovery", () => {
       ...sharedParams,
       forceCarequality,
       forceCommonwell,
-      cqQueryGrantorOid: undefined,
     });
     expect(cqDiscover_mock).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -152,7 +149,6 @@ describe("run initial patient discovery", () => {
       ...sharedParams,
       forceCarequality,
       forceCommonwell,
-      cqQueryGrantorOid: undefined,
     });
     expect(cqRunOrSchedule_mock).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -180,7 +176,6 @@ describe("run initial patient discovery", () => {
       ...sharedParams,
       forceCarequality,
       forceCommonwell,
-      cqQueryGrantorOid: undefined,
     });
     expect(cqRunOrSchedule_mock).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -208,7 +203,6 @@ describe("run initial patient discovery", () => {
       ...sharedParams,
       forceCarequality,
       forceCommonwell,
-      cqQueryGrantorOid: undefined,
     });
     expect(cqRunOrSchedule_mock).toHaveBeenCalledWith(
       expect.objectContaining({

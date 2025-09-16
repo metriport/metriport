@@ -13,13 +13,7 @@ const drResponseUrl = `http://${apiUrl}/internal/carequality/document-retrieval/
 
 // TODO move to capture.wrapHandler()
 export const handler = Sentry.AWSLambda.wrapHandler(
-  async ({
-    patientId,
-    cxId,
-    requestId,
-    drRequestsGatewayV2,
-    queryGrantorOid,
-  }: DRRequestGatewayV2Params) => {
+  async ({ patientId, cxId, requestId, drRequestsGatewayV2 }: DRRequestGatewayV2Params) => {
     log(
       `Running with envType: ${getEnvType()}, requestId: ${requestId}, ` +
         `numOfGateways: ${drRequestsGatewayV2.length} cxId: ${cxId} patientId: ${patientId}`
@@ -33,7 +27,6 @@ export const handler = Sentry.AWSLambda.wrapHandler(
       samlCertsAndKeys,
       patientId,
       cxId,
-      queryGrantorOid,
     });
   }
 );

@@ -42,7 +42,7 @@ export async function updatePatient({
   const { cxId, facilityId } = patientUpdate;
 
   // validate facility exists and cx has access to it
-  const facility = await getFacilityOrFail({ cxId, id: facilityId });
+  await getFacilityOrFail({ cxId, id: facilityId });
 
   const patient = await updatePatientWithoutHIEs(patientUpdate, emit);
 
@@ -55,7 +55,6 @@ export async function updatePatient({
     rerunPdOnNewDemographics,
     forceCommonwell,
     forceCarequality,
-    cqQueryGrantorOid: facility.cqOboOid ?? undefined,
   }).catch(processAsyncError("runOrSchedulePatientDiscoveryAcrossHies"));
 
   const patientWithIdentifiers = await attachPatientIdentifiers(patient);

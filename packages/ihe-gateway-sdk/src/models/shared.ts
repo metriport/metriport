@@ -18,6 +18,7 @@ export const oidStringSchema = z
 
 export const SamlAttributesSchema = z.object({
   subjectId: z.string(),
+  queryGrantorOid: z.string().optional(),
   subjectRole: z.object({
     display: z.string(),
     code: z.string(),

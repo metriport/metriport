@@ -3,11 +3,10 @@ import { capture } from "@metriport/core/util/notifications";
 import { errorToString } from "@metriport/shared/common/error";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
+import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { makeOutboundResultPoller } from "../ihe-gateway/outbound-result-poller-factory";
 import { updatePatientDiscoveryStatus } from "./command/update-patient-discovery-status";
 import { getCQData } from "./patient";
-import { getPatientOrFail } from "../../command/medical/patient/get-patient";
-import { getFacilityOrFail } from "../../command/medical/facility/get-facility";
 
 dayjs.extend(duration);
 
@@ -28,7 +27,6 @@ export async function processPostRespOutboundPatientDiscoveryResps({
 
   try {
     const patient = await getPatientOrFail({ id: patientId, cxId });
-    const facility = await getFacilityOrFail({ cxId, id: patient.facilityIds[0] ?? "" }); // TODO: handle multiple facilities
     const discoveryStatus = getCQData(patient.data.externalData)?.discoveryStatus;
 
     if (discoveryStatus !== "processing") {
@@ -43,7 +41,6 @@ export async function processPostRespOutboundPatientDiscoveryResps({
         patientId: patient.id,
         cxId: patient.cxId,
         numOfGateways: MAX_SAFE_GWS,
-        queryGrantorOid: facility.cqOboOid ?? undefined,
       });
     }
   } catch (error) {
