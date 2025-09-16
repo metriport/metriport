@@ -8,6 +8,7 @@ import interactive from "./interactive";
 import buildTest from "./build-test";
 import buildAllTests from "./build-all-tests";
 import findCandidates from "./find-candidates";
+import testAgent from "./test-agent";
 
 /**
  * This is the main command registry for the Comprehend CLI. You should add any new
@@ -19,4 +20,5 @@ program.addCommand(interactive);
 program.addCommand(buildTest);
 program.addCommand(buildAllTests);
 program.addCommand(findCandidates);
+program.addCommand(testAgent);
 program.parse(process.argv);

@@ -5,6 +5,7 @@ import cors from "cors";
 import path from "path";
 import { ComprehendClient } from "@metriport/core/external/comprehend/client";
 import { getFhirResourcesFromRxNormEntities } from "@metriport/core/external/comprehend/rxnorm/fhir-converter";
+import type { ComprehendContext } from "@metriport/core/external/comprehend/types";
 
 /**
  * Interactive tool to test the Comprehend API.
@@ -31,18 +32,19 @@ async function runInteractive({ port = 3000 }: { port?: number } = {}) {
   app.use(bodyParser.json());
   app.post("/analyze", async (req, res) => {
     const { text, patientId, dateNoteWritten, encounterId, diagnosticReportId } = req.body;
-    console.log(req.body);
+    const context: ComprehendContext = {
+      patientId,
+      dateNoteWritten,
+      originalText: text,
+      encounterId,
+      diagnosticReportId,
+    };
+
     const client = new ComprehendClient();
     const comprehend = await client.inferRxNorm(text);
     const fhir = getFhirResourcesFromRxNormEntities(comprehend.Entities ?? [], {
       confidenceThreshold: 0.1,
-      context: {
-        patientId,
-        dateNoteWritten,
-        originalText: text,
-        encounterId,
-        diagnosticReportId,
-      },
+      context,
     });
     res.json({ comprehend, fhir });
   });

@@ -9,7 +9,12 @@ import {
 import { getArtifact, listArtifactIds, writeFhirArtifact } from "./shared";
 
 /**
- * Rebuilds all tests in the `packages/core/src/external/comprehend/__tests__` directory.
+ * Rebuilds all tests in the `packages/core/src/external/comprehend/__tests__/artifacts` directory. After rebuilding,
+ * there should be a manual spot check of the generated resources for each test case, to ensure that the output
+ * is still a valid FHIR representation of the original input text.
+ *
+ * Usually, this command will need to be run when expanding on the supported feature set from Comprehend Medical,
+ * such as supporting a new attribute/trait or FHIR parsing method.
  */
 const command = new Command();
 command.name("build-all-tests");
@@ -18,6 +23,9 @@ command.action(async () => {
   await rebuildAllRxNormTests();
 });
 
+/**
+ * Rebuilds all RxNorm tests in the `packages/core/src/external/comprehend/__tests__/artifacts/rxnorm` directory.
+ */
 async function rebuildAllRxNormTests() {
   const artifactIds = listArtifactIds("rxnorm");
   for (const artifactId of artifactIds) {
