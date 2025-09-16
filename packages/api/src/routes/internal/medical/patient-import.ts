@@ -216,9 +216,6 @@ router.post(
     const updateParams = updateJobSchema.parse(req.body);
     capture.setExtra({ cxId, jobId });
 
-    if (updateParams.status === "waiting") {
-      throw new BadRequestError("Waiting status is not allowed on this endpoint");
-    }
     const { status: jobStatus, reason } = updateParams;
     if (reason && jobStatus !== "failed") {
       throw new BadRequestError("Reason is only allowed when status is failed");

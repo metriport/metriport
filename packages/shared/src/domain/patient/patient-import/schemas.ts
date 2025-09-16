@@ -27,7 +27,9 @@ import { patientImportJobStatus } from "./status";
 // });
 
 export const updateJobSchema = z.object({
-  status: z.enum(patientImportJobStatus).optional(),
+  status: z
+    .enum(patientImportJobStatus.filter(s => s !== "waiting") as [string, ...string[]])
+    .optional(),
   total: z.number().optional(),
   /**
    * Only to be set on dry run mode - on regular mode, the successful count is incremented
