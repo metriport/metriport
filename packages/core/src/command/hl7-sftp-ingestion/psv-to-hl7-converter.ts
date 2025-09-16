@@ -114,13 +114,7 @@ export class PsvToHl7Converter {
             rows.push(parseResult.data);
           } else {
             console.log("Parse error:", parseResult.error);
-            capture.error(parseResult.error, {
-              extra: {
-                facility: trimmedRow.FacilityAbbrev || trimmedRow.FacilityName,
-                patientId: trimmedRow.PatientID || trimmedRow.MetriplexPatID,
-                rawRow: trimmedRow,
-              },
-            });
+            capture.error(parseResult.error);
             rows.push(trimmedRow as Row);
           }
         })
@@ -237,9 +231,9 @@ export class PsvToHl7Converter {
   private buildPv1FromRow(row: Row): string {
     const triggerEvent = this.getTriggerEvent(row);
     const fields = this.buildGeneralPv1FromRow(row);
-    const admitTs = this.extractTimestamp(row.AdmitDateTime);
+    const admitTs = this.toHl7Ts(row.AdmitDateTime);
     const dischargeTs =
-      triggerEvent === SUPPORTED_ADT.ADT_A03 ? this.extractTimestamp(row.DischargeDateTime) : "";
+      triggerEvent === SUPPORTED_ADT.ADT_A03 ? this.toHl7Ts(row.DischargeDateTime) : "";
 
     fields[44] = admitTs;
     fields[45] = dischargeTs;
@@ -335,10 +329,6 @@ export class PsvToHl7Converter {
     return `${name}${PsvToHl7Converter.FIELD_SEPARATOR}${trimmedFields.join(
       PsvToHl7Converter.FIELD_SEPARATOR
     )}`;
-  }
-
-  private extractTimestamp(dateTime?: string): string {
-    return this.digitsOnly(dateTime).slice(0, 14);
   }
 
   private buildCweSimple(id?: string, text?: string, system?: string): string {

@@ -61,9 +61,10 @@ const lambdaName = Config.getLahieIngestionLambdaName(); //eslint-disable-line @
 const privateKeyArn = Config.getLahieIngestionPrivateKeyArn(); //eslint-disable-line @typescript-eslint/no-unused-vars
 const privateKeyPassphraseArn = Config.getLahieIngestionPrivateKeyPassphraseArn(); //eslint-disable-line @typescript-eslint/no-unused-vars
 
-const deleteFiles = true; // Delete files from S3 after completetion
-const fileNames: string[] = ["name.gpg"]; // List of file names to delete from S3 after completetion
-const filename = "name"; // usually done by YYYY-MM-DD but can actually be any filename.
+const deleteFiles = false; // Delete files from S3 after completetion
+const fileNames: string[] = [""]; // List of file names to delete from S3 after completetion
+const filename = ""; // usually done by YYYY-MM-DD but can actually be any filename.
+const password = ""; // Password to use for the SFTP client. ONLY WORKS LOCALLY.
 
 async function main() {
   await sleep(50); // Give some time to avoid mixing logs w/ Node's
@@ -77,7 +78,7 @@ async function main() {
   console.log(`🔄 Starting HL7v2 ingestion in 3 seconds...`); // Give some time for user to cancel just in case.
   await sleep(3000);
   try {
-    const handler = await buildLahieSftpIngestion();
+    const handler = await buildLahieSftpIngestion(password);
     await handler.execute({ dateTimestamp: filename });
   } finally {
     if (deleteFiles) {

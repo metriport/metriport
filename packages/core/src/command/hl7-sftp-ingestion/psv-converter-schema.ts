@@ -2,35 +2,24 @@ import { normalizeZipCodeNewSafe } from "@metriport/shared/domain/address/zip";
 import { normalizePhoneNumberSafe } from "@metriport/shared/domain/contact/phone";
 import { normalizeGenderSafe } from "@metriport/shared/domain/gender";
 import { normalizeSsnSafe } from "@metriport/shared/domain/patient/ssn";
-import { buildDayjs } from "@metriport/shared/common/date";
+import { buildDayjs, isValidISODate } from "@metriport/shared/common/date";
 import { z } from "zod";
 
-const genderSchema = z
-  .string()
-  .transform(val => normalizeGenderSafe(val))
-  .optional();
+const genderSchema = z.string().transform(normalizeGenderSafe).optional();
 const ssnSchema = z
   .string()
-  .transform(val => {
-    const normalized = normalizeSsnSafe(val);
-    if (normalized) {
-      return normalized;
-    }
-    return undefined;
-  })
+  .transform(val => normalizeSsnSafe(val))
   .optional();
-const phoneSchema = z
-  .string()
-  .transform(val => normalizePhoneNumberSafe(val))
-  .optional();
-const zipSchema = z
-  .string()
-  .transform(val => normalizeZipCodeNewSafe(val))
-  .optional();
+const phoneSchema = z.string().transform(normalizePhoneNumberSafe).optional();
+const zipSchema = z.string().transform(normalizeZipCodeNewSafe).optional();
 
 const PatClassEnum = z.enum(["B", "C", "E", "I", "N", "O", "P", "R", "U"]).optional();
 
-const MaritalStatusEnum = z.enum(["single", "married", "divorced", "widowed"]).optional();
+const MaritalStatusEnum = z.enum(["S", "M", "D", "W"]).optional();
+
+const dateSchema = z.string().min(1, "Date is required").refine(isValidISODate, {
+  message: "Date must be a valid ISO 8601 date (YYYY-MM-DD format)",
+});
 
 export const rowSchema = z.object({
   FacilityAbbrev: z.string().min(1, "Facility abbreviation is required"),
@@ -53,16 +42,10 @@ export const rowSchema = z.object({
   MiddleName: z.string().optional(),
   PrimaryPhoneNumber: phoneSchema,
   SSN: ssnSchema,
-  PatientDateofBirth: z
-    .string()
-    .min(1, "Date of birth is required")
-    .transform(val => {
-      const parsed = buildDayjs(val);
-      if (!parsed.isValid()) {
-        throw new Error(`Invalid date format: ${val}`);
-      }
-      return parsed.format("YYYYMMDD");
-    }),
+  PatientDateofBirth: dateSchema.transform((val: string) => {
+    const parsed = buildDayjs(val);
+    return parsed.format("YYYYMMDD");
+  }),
   Gender: genderSchema,
   MaritalStatus: MaritalStatusEnum,
   ZipCode: zipSchema,

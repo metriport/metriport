@@ -15,6 +15,7 @@ import {
 import { toFHIR as toFhirPatient } from "../../external/fhir/patient/conversion";
 import { capture, out } from "../../util";
 import { Config } from "../../util/config";
+import { getHieConfigDictionary } from "../../external/hl7-notification/hie-config-dictionary";
 import { convertHl7v2MessageToFhir } from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion";
 import { getEncounterClass } from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion/adt/encounter";
 import {
@@ -40,6 +41,17 @@ import {
   persistHl7MessageError,
   SupportedTriggerEvent,
 } from "./utils";
+
+function getTimezoneFromHieName(hieName: string): string {
+  const hieConfigDictionary = getHieConfigDictionary();
+  const hieConfig = hieConfigDictionary[hieName];
+
+  if (!hieConfig) {
+    throw new Error(`HIE config not found for name: ${hieName}`);
+  }
+
+  return hieConfig.timezone;
+}
 
 export const dischargeEventCode = "A03";
 
@@ -79,8 +91,9 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
 
     const hl7Message = Hl7Message.parse(params.message);
     let parsedData: ParsedHl7Data;
+    const timezone = getTimezoneFromHieName(params.hieName);
     try {
-      parsedData = await parseHl7Message(hl7Message, params.timezone);
+      parsedData = await parseHl7Message(hl7Message, timezone);
     } catch (parseError: unknown) {
       await persistHl7MessageError(hl7Message, parseError, log);
       throw parseError;
