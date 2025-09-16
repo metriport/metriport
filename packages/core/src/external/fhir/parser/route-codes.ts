@@ -8,7 +8,7 @@ import { SNOMED_URL } from "@metriport/shared/medical";
  * @returns
  */
 export function getRouteCode(display: string): CodeableConcept | undefined {
-  const words = display.split(/\s+/);
+  const words = display.toLowerCase().split(/\s+/);
 
   // First check if any word matches a known route phrase
   for (const word of words) {
@@ -30,8 +30,9 @@ export function getRouteCode(display: string): CodeableConcept | undefined {
   for (const route of ROUTE_CODES_WITH_REGEX) {
     const matchBy = route[2];
     if (!matchBy || !matchBy.regex) continue;
-    const displayMatch = matchBy.regex.test(display);
-    if (displayMatch)
+    const displayMatch = display.match(matchBy.regex);
+    console.log(displayMatch, display);
+    if (displayMatch) {
       return {
         coding: [
           {
@@ -41,19 +42,19 @@ export function getRouteCode(display: string): CodeableConcept | undefined {
           },
         ],
       };
+    }
   }
   return undefined;
 }
 
-type SimpleRouteCode = [string, string];
-type AbbreviatedRouteCode = [string, string, { regex?: RegExp; phrase?: string }];
+type RouteCodeDefinition = [string, string, { regex?: RegExp; phrase?: string }];
 
-const ROUTE_CODES: (SimpleRouteCode | AbbreviatedRouteCode)[] = [
+const ROUTE_CODES: RouteCodeDefinition[] = [
   ["6064005", "Topical route", { phrase: "topical" }],
   ["10547007", "Otic route", { phrase: "otic" }],
   ["12130007", "Intra-articular route", { phrase: "intra-articular" }],
   ["16857009", "Per vagina", { regex: /\b(per vagina|vaginal|p\.?v\.?)\b/gi }],
-  ["26643006", "Oral route", { regex: /\b(oral|p\.?o\.?|per\s+os)\b/gi }],
+  ["26643006", "Oral route", { phrase: "oral", regex: /\b(oral|p\.?o\.?|per\s+os)\b/gi }],
   ["34206005", "Subcutaneous route", { regex: /\b(subcutaneous|s\.?c\.?)\b/gi }],
   ["37161004", "Per rectum", { regex: /\b(per rectum|p\.?r\.?)\b/gi }],
   ["37737002", "Intraluminal route", { phrase: "intraluminal" }],
@@ -111,7 +112,11 @@ const ROUTE_CODES: (SimpleRouteCode | AbbreviatedRouteCode)[] = [
   ["418091004", "Intratympanic route (qualifier value)", { phrase: "intratympanic" }],
   ["418114005", "Intravenous central route (qualifier value)", { phrase: "intravenous central" }],
   ["418133000", "Intramyometrial route (qualifier value)", { phrase: "intramyometrial" }],
-  ["418136008", "Gastro-intestinal stoma route (qualifier value)"],
+  [
+    "418136008",
+    "Gastro-intestinal stoma route (qualifier value)",
+    { phrase: "gastro-intestinal stoma" },
+  ],
   ["418162004", "Colostomy route (qualifier value)", { phrase: "colostomy" }],
   ["418204005", "Periurethral route (qualifier value)", { phrase: "periurethral" }],
   ["418287000", "Intracoronal route (qualifier value)", { phrase: "intracoronal" }],
@@ -243,7 +248,7 @@ const ROUTE_CODES: (SimpleRouteCode | AbbreviatedRouteCode)[] = [
   ["66621000052103", "Sublabial use", { phrase: "sublabial" }],
 ];
 
-const ROUTE_CODES_WITH_REGEX = ROUTE_CODES.filter(route => "match" in route);
+const ROUTE_CODES_WITH_REGEX = ROUTE_CODES.filter(route => route[2].regex);
 const ROUTE_PHRASE_TO_CODE: Record<string, string> = Object.fromEntries(
-  ROUTE_CODES.filter(route => "phrase" in route).map(route => [route[2]?.phrase, route[0]])
+  ROUTE_CODES.filter(route => route[2].phrase).map(route => [route[2].phrase, route[0]])
 );
