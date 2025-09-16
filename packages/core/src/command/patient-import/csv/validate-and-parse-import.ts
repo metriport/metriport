@@ -46,16 +46,18 @@ export async function validateAndParsePatientImportCsvFromS3({
       contents: csvAsString,
     });
 
-    const createHeadersFilePromise = async () => {
+    // eslint-disable-next-line no-inner-declarations
+    async function createHeadersFilePromise() {
       await createHeadersFile({ cxId, jobId, headers, s3BucketName });
-    };
+    }
 
     const result: {
       rowNumber: number;
       status: PatientImportEntryStatus;
     }[] = [];
 
-    const getCreatePatientRecordPromises = () => {
+    // eslint-disable-next-line no-inner-declarations
+    function getCreatePatientRecordPromises() {
       return patients.map(p => {
         return async () => {
           const base = {
@@ -91,7 +93,7 @@ export async function validateAndParsePatientImportCsvFromS3({
           }
         };
       });
-    };
+    }
 
     await executeAsynchronously(
       [createHeadersFilePromise, ...getCreatePatientRecordPromises()],
@@ -154,6 +156,8 @@ export async function validateAndParsePatientImportCsv({
         headers.push(...parsedHeaders);
       })
       .on("data", async data => {
+        // Skip empty lines
+        if (Object.keys(data).length < 1) return;
         try {
           if (++numberOfRows > MAX_NUMBER_ROWS) {
             throw new MetriportError(`CSV has more rows than max (${MAX_NUMBER_ROWS})`);
