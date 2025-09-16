@@ -12,11 +12,11 @@ import { buildDayjs } from "@metriport/shared/common/date";
 
 export class LahieSftpIngestionClient extends SftpClient {
   private readonly FILE_FORMAT = "YYYY-MM-DD";
-  private readonly overridenLog: typeof console.log;
+  protected override readonly log: typeof console.log;
 
-  private constructor(sftpConfig: SftpConfig, overridenLog: typeof console.log) {
+  private constructor(sftpConfig: SftpConfig, log: typeof console.log) {
     super(sftpConfig);
-    this.overridenLog = overridenLog;
+    this.log = log;
 
     const region = Config.getAWSRegion();
     const bucketName = Config.getLahieIngestionBucket();
@@ -25,7 +25,7 @@ export class LahieSftpIngestionClient extends SftpClient {
   }
 
   static async create(
-    overridenLog: typeof console.log,
+    log: typeof console.log,
     givenPassword?: string
   ): Promise<LahieSftpIngestionClient> {
     const host = Config.getLahieIngestionHost();
@@ -40,7 +40,7 @@ export class LahieSftpIngestionClient extends SftpClient {
         username,
         password,
       },
-      overridenLog
+      log
     );
   }
 
@@ -56,7 +56,7 @@ export class LahieSftpIngestionClient extends SftpClient {
         context: "sftp.client.sync",
       });
     }
-    this.overridenLog(`Syncing files in ${remotePath} for files containing ${dateTimestamp}`);
+    this.log(`Syncing files in ${remotePath} for files containing ${dateTimestamp}`);
     const filter: SftpListFilterFunction | undefined = makeSftpListFilter({
       contains: dateTimestamp,
     });
@@ -65,7 +65,7 @@ export class LahieSftpIngestionClient extends SftpClient {
     }
     const sftpFileNames = await this.list(remotePath, filter);
     if (sftpFileNames.length === 0) {
-      this.overridenLog(`No files found in ${remotePath} for date ${dateTimestamp}`);
+      this.log(`No files found in ${remotePath} for date ${dateTimestamp}`);
       return [];
     }
 
@@ -78,7 +78,7 @@ export class LahieSftpIngestionClient extends SftpClient {
     const filesSynced: string[] = [];
     for (const sftpFileName of sftpFileNames) {
       if (!existingReplicaFileNames.has(sftpFileName)) {
-        this.overridenLog(`File ${sftpFileName} does not exist in replica, syncing...`);
+        this.log(`File ${sftpFileName} does not exist in replica, syncing...`);
         await this.read(`${remotePath}/${sftpFileName}`);
         filesSynced.push(sftpFileName);
       }
@@ -87,7 +87,7 @@ export class LahieSftpIngestionClient extends SftpClient {
   }
 
   async safeSyncWithDate(remotePath: string, dateTimestamp?: string): Promise<string[]> {
-    this.overridenLog(`Syncing from remotePath: ${remotePath}`);
+    this.log(`Syncing from remotePath: ${remotePath}`);
 
     const now = dateTimestamp ? dateTimestamp : buildDayjs(Date.now()).format(this.FILE_FORMAT);
     try {
@@ -97,7 +97,7 @@ export class LahieSftpIngestionClient extends SftpClient {
       if (!exists) {
         throw new MetriportError(`Remote path does not exist`, undefined, { remotePath });
       }
-      this.overridenLog("Syncing from remote path to Replica");
+      this.log("Syncing from remote path to Replica");
       const fileNames = await this.syncWithDate(`${remotePath}`, now);
       return fileNames;
     } finally {
@@ -106,17 +106,17 @@ export class LahieSftpIngestionClient extends SftpClient {
   }
 
   override async syncFileToReplica(content: Buffer, remotePath: string): Promise<void> {
-    this.overridenLog("Found a file to sync to replica");
+    this.log("Found a file to sync to replica");
     if (this.replica) {
       const replicaPath = this.replica.getReplicaPath(remotePath);
-      this.overridenLog("Decrypting content");
+      this.log("Decrypting content");
       const { privateKeyArmored, passphrase } = await getLahiePrivateKeyAndPassphrase();
       const decryptedContent = await decryptGpgBinaryWithPrivateKey(
         content,
         privateKeyArmored,
         passphrase
       );
-      this.overridenLog("Syncing decrypted content to replica");
+      this.log("Syncing decrypted content to replica");
       await this.replica.writeFile(replicaPath, decryptedContent);
     }
   }
