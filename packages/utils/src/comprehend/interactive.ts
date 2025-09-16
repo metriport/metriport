@@ -30,7 +30,7 @@ async function runInteractive({ port = 3000 }: { port?: number } = {}) {
 
   app.use(bodyParser.json());
   app.post("/analyze", async (req, res) => {
-    const { text, patientId, dateWritten } = req.body;
+    const { text, patientId, dateNoteWritten, encounterId, diagnosticReportId } = req.body;
     console.log(req.body);
     const client = new ComprehendClient();
     const comprehend = await client.inferRxNorm(text);
@@ -38,7 +38,10 @@ async function runInteractive({ port = 3000 }: { port?: number } = {}) {
       confidenceThreshold: 0.1,
       context: {
         patientId,
-        dateWritten,
+        dateNoteWritten,
+        originalText: text,
+        encounterId,
+        diagnosticReportId,
       },
     });
     res.json({ comprehend, fhir });
