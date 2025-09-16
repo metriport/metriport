@@ -46,7 +46,6 @@ const apiUrl = getEnvVarOrFail("API_URL");
 const filePath = "";
 const fileName = "";
 const hieName = "";
-const timezone = "";
 
 function invokeLambdaLogic() {
   const hl7Text = fs.readFileSync(`${filePath}/${fileName}`, "utf-8");
@@ -65,7 +64,6 @@ function invokeLambdaLogic() {
         message,
         messageReceivedTimestamp: new Date().toISOString(),
         hieName,
-        timezone,
       });
     } catch (err) {
       errors.push({

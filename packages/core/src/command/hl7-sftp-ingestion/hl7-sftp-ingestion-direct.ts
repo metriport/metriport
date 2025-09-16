@@ -8,8 +8,6 @@ import { IdentifiedHl7Message, PsvToHl7Converter } from "./psv-to-hl7-converter"
 import { LahieSftpIngestionClient } from "./sftp-ingestion-client";
 import { asString } from "../hl7-notification/utils";
 
-const TIMEZONE = "America/Chicago";
-
 export class Hl7LahieSftpIngestionDirect implements Hl7LahieSftpIngestion {
   private sftpClient: LahieSftpIngestionClient;
   private log: typeof console.log;
@@ -58,7 +56,6 @@ export class Hl7LahieSftpIngestionDirect implements Hl7LahieSftpIngestion {
         patientId: ptId,
         message: asString(hl7Message),
         messageReceivedTimestamp,
-        timezone: TIMEZONE,
         hieName: HIE_NAME,
       };
       await buildHl7NotificationWebhookSender().execute(hl7NotificationParams);
