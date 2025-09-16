@@ -4,9 +4,9 @@ import { HieSftpConfig } from "@metriport/core/external/sftp/types";
 export interface Hl7NotificationConfig {
   secrets: {
     HL7_BASE64_SCRAMBLER_SEED: string;
-    LA_HIE_INGESTION_PASSPHRASE: string;
-    LA_HIE_INGESTION_PRIVATE_KEY: string;
-    LA_HIE_INGESTION_PASSWORD: string;
+    LAHIE_INGESTION_PASSPHRASE: string;
+    LAHIE_INGESTION_PRIVATE_KEY: string;
+    LAHIE_INGESTION_PASSWORD: string;
   };
   deprecatedIncomingMessageBucketName: string;
   incomingMessageBucketName: string;

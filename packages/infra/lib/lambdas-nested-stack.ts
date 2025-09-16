@@ -1045,20 +1045,20 @@ export class LambdasNestedStack extends NestedStack {
       throw new Error("LahieSftpIngestionLambda is undefined in config.");
     }
 
-    const sftpPasswordSecret = ownProps.secrets["LA_HIE_INGESTION_PASSWORD"];
-    const privateKeySecret = ownProps.secrets["LA_HIE_INGESTION_PRIVATE_KEY"];
-    const passphraseSecret = ownProps.secrets["LA_HIE_INGESTION_PASSPHRASE"];
+    const sftpPasswordSecret = ownProps.secrets["LAHIE_INGESTION_PASSWORD"];
+    const privateKeySecret = ownProps.secrets["LAHIE_INGESTION_PRIVATE_KEY"];
+    const passphraseSecret = ownProps.secrets["LAHIE_INGESTION_PASSPHRASE"];
 
     if (!sftpPasswordSecret) {
-      throw new Error("LA_HIE_INGESTION_PASSWORD is not defined in config.");
+      throw new Error("LAHIE_INGESTION_PASSWORD is not defined in config.");
     }
 
     if (!privateKeySecret) {
-      throw new Error("LA_HIE_INGESTION_PRIVATE_KEY is not defined in config.");
+      throw new Error("LAHIE_INGESTION_PRIVATE_KEY is not defined in config.");
     }
 
     if (!passphraseSecret) {
-      throw new Error("LA_HIE_INGESTION_PASSPHRASE is not defined in config.");
+      throw new Error("LAHIE_INGESTION_PASSPHRASE is not defined in config.");
     }
 
     const sftpConfig = props.sftpConfig;

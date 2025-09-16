@@ -165,9 +165,9 @@ export const config: EnvConfigNonSandbox = {
     },
     secrets: {
       HL7_BASE64_SCRAMBLER_SEED: "your-base64-scrambler-seed",
-      LA_HIE_INGESTION_PASSPHRASE: "your-lahie-ingestion-passphrase",
-      LA_HIE_INGESTION_PRIVATE_KEY: "your-lahie-ingestion-private-key",
-      LA_HIE_INGESTION_PASSWORD: "your-lahie-ingestion-password",
+      LAHIE_INGESTION_PASSPHRASE: "your-lahie-ingestion-passphrase",
+      LAHIE_INGESTION_PRIVATE_KEY: "your-lahie-ingestion-private-key",
+      LAHIE_INGESTION_PASSWORD: "your-lahie-ingestion-password",
     },
     mllpServer: {
       sentryDSN: "your-sentry-dsn",
