@@ -1,4 +1,4 @@
-import { AnthropicAgent } from "../bedrock/agent/anthropic";
+import { AnthropicAgent } from "../../bedrock/agent/anthropic";
 
 // import { buildRxNormTool } from "./rxnorm/tool";
 
