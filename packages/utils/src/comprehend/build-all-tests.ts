@@ -11,7 +11,7 @@ import {
  * Rebuilds all tests in the `packages/core/src/external/comprehend/__tests__` directory.
  */
 const command = new Command();
-command.name("rebuild-all-tests");
+command.name("build-all-tests");
 command.description("Rebuild all tests");
 command.action(async () => {
   await rebuildAllRxNormTests();

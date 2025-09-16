@@ -6,7 +6,7 @@ import { Command } from "commander";
 import rxnorm from "./rxnorm";
 import interactive from "./interactive";
 import buildTest from "./build-test";
-import rebuildAllTests from "./rebuild-all-tests";
+import buildAllTests from "./build-all-tests";
 import findCandidates from "./find-candidates";
 
 /**
@@ -17,6 +17,6 @@ const program = new Command();
 program.addCommand(rxnorm);
 program.addCommand(interactive);
 program.addCommand(buildTest);
-program.addCommand(rebuildAllTests);
+program.addCommand(buildAllTests);
 program.addCommand(findCandidates);
 program.parse(process.argv);
