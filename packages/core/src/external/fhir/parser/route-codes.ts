@@ -7,13 +7,14 @@ import { SNOMED_URL } from "@metriport/shared/medical";
  * @param inputText - the display text to get the route code for
  * @returns
  */
-export function getRouteCode(display: string): CodeableConcept | undefined {
-  const words = display.toLowerCase().split(/\s+/);
+export function getRouteCode(inputText: string): CodeableConcept | undefined {
+  const words = inputText.toLowerCase().split(/\s+/);
 
   // First check if any word matches a known route phrase
   for (const word of words) {
     const code = ROUTE_PHRASE_TO_CODE[word];
     if (code) {
+      const display = ROUTE_CODE_TO_DISPLAY[code] ?? inputText;
       return {
         coding: [
           {
@@ -27,17 +28,15 @@ export function getRouteCode(display: string): CodeableConcept | undefined {
   }
 
   // Then check if the display text matches a known route regex (for abbreviations and complex patterns)
-  for (const route of ROUTE_CODES_WITH_REGEX) {
-    const matchBy = route[2];
-    if (!matchBy || !matchBy.regex) continue;
-    const displayMatch = display.match(matchBy.regex);
-    console.log(displayMatch, display);
+  for (const [code, display, matchBy] of ROUTE_CODES_WITH_REGEX) {
+    if (!matchBy.regex) continue;
+    const displayMatch = inputText.match(matchBy.regex);
     if (displayMatch) {
       return {
         coding: [
           {
             system: SNOMED_URL,
-            code: route[0],
+            code,
             display,
           },
         ],
@@ -251,4 +250,7 @@ const ROUTE_CODES: RouteCodeDefinition[] = [
 const ROUTE_CODES_WITH_REGEX = ROUTE_CODES.filter(route => route[2].regex);
 const ROUTE_PHRASE_TO_CODE: Record<string, string> = Object.fromEntries(
   ROUTE_CODES.filter(route => route[2].phrase).map(route => [route[2].phrase, route[0]])
+);
+const ROUTE_CODE_TO_DISPLAY: Record<string, string> = Object.fromEntries(
+  ROUTE_CODES.map(route => [route[0], route[1]])
 );
