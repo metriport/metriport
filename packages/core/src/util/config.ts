@@ -201,6 +201,17 @@ export class Config {
     return getEnvVarOrFail("PATIENT_IMPORT_RESULT_LAMBDA_NAME");
   }
 
+  static getBasetenApiKey(): string {
+    return getEnvVarOrFail("BASETEN_API_KEY");
+  }
+
+  static getBasetenEmbeddingUrl(): string {
+    return getEnvVarOrFail("BASETEN_EMBEDDING_URL");
+  }
+  static getBasetenRerankUrl(): string {
+    return getEnvVarOrFail("BASETEN_RERANK_URL");
+  }
+
   static getDischargeRequeryQueueUrl(): string {
     return getEnvVarOrFail("DISCHARGE_REQUERY_QUEUE_URL");
   }
