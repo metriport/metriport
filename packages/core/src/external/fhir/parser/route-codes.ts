@@ -8,8 +8,12 @@ import { buildParserExtension } from "./extension";
  * @param inputText - the display text to get the route code for
  * @returns
  */
-export function getRouteCode(inputText: string): CodeableConcept | undefined {
+export function getRouteCode(
+  inputText: string,
+  { includeExtension = true }: { includeExtension?: boolean } = {}
+): CodeableConcept | undefined {
   const words = inputText.toLowerCase().split(/\s+/);
+  const extension = includeExtension ? [buildParserExtension(inputText)] : undefined;
 
   // First check if any word matches a known route phrase
   for (const word of words) {
@@ -24,7 +28,7 @@ export function getRouteCode(inputText: string): CodeableConcept | undefined {
             display,
           },
         ],
-        extension: [buildParserExtension(inputText)],
+        ...(extension ? { extension } : undefined),
       };
     }
   }
@@ -42,7 +46,7 @@ export function getRouteCode(inputText: string): CodeableConcept | undefined {
             display,
           },
         ],
-        extension: [buildParserExtension(inputText)],
+        ...(extension ? { extension } : undefined),
       };
     }
   }
