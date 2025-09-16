@@ -13,9 +13,37 @@ const ssnSchema = z
 const phoneSchema = z.string().transform(normalizePhoneNumberSafe).optional();
 const zipSchema = z.string().transform(normalizeZipCodeNewSafe).optional();
 
-const PatClassEnum = z.enum(["B", "C", "E", "I", "N", "O", "P", "R", "U"]).optional();
+const PatClassEnum = z
+  .string()
+  .optional()
+  .transform(val => {
+    if (!val) return undefined;
+    //Test data has some common patient class names that we need to map to HL7 codes
+    const mapping: Record<string, string> = {
+      OBSERVATION: "O",
+      EMERGENCY: "E",
+      INPATIENT: "I",
+      OUTPATIENT: "O",
+      AMBULATORY: "A",
+      BIRTH: "B",
+      CLINIC: "C",
+      NEWBORN: "N",
+      "PRE-ADMISSION": "P",
+      RECURRING: "R",
+      UNKNOWN: "U",
+    };
+    return mapping[val.toUpperCase()] ?? val;
+  })
+  .refine(val => !val || ["B", "C", "E", "I", "N", "O", "P", "R", "U"].includes(val), {
+    message: "Patient class must be a valid HL7 code (B, C, E, I, N, O, P, R, U)",
+  });
 
-const MaritalStatusEnum = z.enum(["S", "M", "D", "W"]).optional();
+const MaritalStatusEnum = z
+  .string()
+  .optional()
+  .refine(val => !val || ["S", "M", "D", "W"].includes(val), {
+    message: "Marital status must be S, M, D, or W",
+  });
 
 const dateSchema = z.string().min(1, "Date is required").refine(isValidISODate, {
   message: "Date must be a valid ISO 8601 date (YYYY-MM-DD format)",
@@ -28,14 +56,14 @@ export const rowSchema = z.object({
   PatientID: z.string().min(1, "Patient ID is required"),
   LastName: z.string().min(1, "Last name is required"),
   FirstName: z.string().min(1, "First name is required"),
-  StreetAddress: z.string().min(1, "Street address is required"),
+  StreetAddress: z.string().optional(),
   City: z.string().min(1, "City is required"),
   State: z
     .string()
     .min(2, "State must be at least 2 characters")
     .max(2, "State should be 2 characters")
     .transform(val => val.toUpperCase()),
-  AttendingPhysicianName: z.string().min(1, "Attending physician name is required"),
+  AttendingPhysicianName: z.string().optional(),
   SendingToSystem: z.string().min(1, "Sending to system is required"),
   MetriplexPatID: z.string().min(1, "Metriplex patient ID is required"),
   AdmitDateTime: z.string().min(1, "Admit date/time is required"),
@@ -58,8 +86,10 @@ export const rowSchema = z.object({
   DischargeDateTime: z.string().optional(),
   EmergencySeverityLevel: z
     .string()
-    .regex(/^[1-5]$/, "ESI level must be 1-5")
-    .optional(),
+    .optional()
+    .refine(val => !val || /^[1-5]$/.test(val), {
+      message: "ESI level must be 1-5",
+    }),
   PatClass: PatClassEnum,
 });
 
