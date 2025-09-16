@@ -1,5 +1,6 @@
 import { getEnvVarAsRecordOrFail } from "@metriport/shared/common/env-var";
 import { ROSTER_UPLOAD_SFTP_PASSWORD } from "@metriport/shared/domain/tcm-encounter";
+import type { BedrockRegion } from "../external/bedrock/client";
 import { getEnvVar, getEnvVarOrFail } from "./env-var";
 
 /**
@@ -165,8 +166,8 @@ export class Config {
     return getEnvVarOrFail("FHIR_TO_BUNDLE_COUNT_LAMBDA_NAME");
   }
 
-  static getBedrockRegion(): string | undefined {
-    return getEnvVar("BEDROCK_REGION");
+  static getBedrockRegion(): BedrockRegion {
+    return (getEnvVar("BEDROCK_REGION") ?? "us-east-1") as BedrockRegion;
   }
 
   static getBedrockVersion(): string | undefined {

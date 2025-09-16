@@ -12,8 +12,8 @@ export async function inferMedications(
   externalContext: ComprehendContext,
   {
     comprehendClient = new ComprehendClient(),
-    confidenceThreshold = 0.8,
-  }: { comprehendClient?: ComprehendClient; confidenceThreshold?: number }
+    confidenceThreshold = 0.1,
+  }: { comprehendClient?: ComprehendClient; confidenceThreshold?: number } = {}
 ): Promise<Array<Medication | MedicationStatement>> {
   const response = await comprehendClient.inferRxNorm(text);
   const context: ComprehendContext = {
