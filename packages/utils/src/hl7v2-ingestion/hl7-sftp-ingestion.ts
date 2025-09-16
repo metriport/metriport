@@ -2,7 +2,7 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
 
-import { buildLahieIngestion } from "@metriport/core/command/hl7-sftp-ingestion/hl7-sftp-ingestion-factory";
+import { buildLahieSftpIngestion } from "@metriport/core/command/hl7-sftp-ingestion/hl7-sftp-ingestion-factory";
 import { Config } from "@metriport/core/util/config";
 import { sleep } from "@metriport/core/util/sleep";
 import { S3Utils } from "@metriport/core/external/aws/s3";
@@ -34,9 +34,10 @@ import { S3Utils } from "@metriport/core/external/aws/s3";
  *
  * Usage:
  * 1. Set the enviornment variables.
- * 2. Have a SFTP server with the file(s) in the remote path.
- * 3. Optionally delete the file(s) from S3 after completetion. (see line 54-55)
- * 4. Run the script using: ts-node src/hl7v2-ingestion/hl7-sftp-ingestion.ts
+ * 2. Set the dateTimestamp to the date you want to ingest.
+ * 3. Have a SFTP server with the file(s) in the remote path.
+ * 4. Optionally delete the file(s) from S3 after completetion. (see line 54-55)
+ * 5. Run the script using: ts-node src/hl7v2-ingestion/hl7-sftp-ingestion.ts
  *
  * Workarounds:
  * - If you want to not use the aws secret manager you must change the logic in the lambda. (remove the getSecretValueOrFail calls)
@@ -63,6 +64,7 @@ const privateKeyPassphraseArn = Config.getLahieIngestionPrivateKeyPassphraseArn(
 
 const deleteFiles = false; // Delete files from S3 after completetion
 const fileNames: string[] = [""]; // List of file names to delete from S3 after completetion
+const filename = ""; // usually done by YYYY-MM-DD but can actually be any filename.
 
 async function main() {
   await sleep(50); // Give some time to avoid mixing logs w/ Node's
@@ -76,8 +78,8 @@ async function main() {
   console.log(`🔄 Starting HL7v2 ingestion in 3 seconds...`); // Give some time for user to cancel just in case.
   await sleep(3000);
   try {
-    const handler = await buildLahieIngestion();
-    await handler.execute();
+    const handler = await buildLahieSftpIngestion();
+    await handler.execute({ dateTimestamp: filename });
   } finally {
     if (deleteFiles) {
       const s3Utils = new S3Utils(awsRegion);

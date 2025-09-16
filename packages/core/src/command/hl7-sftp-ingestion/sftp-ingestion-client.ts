@@ -1,16 +1,19 @@
-import { MetriportError } from "@metriport/shared";
+import { BadRequestError, MetriportError } from "@metriport/shared";
 import { getSecretValueOrFail } from "../../external/aws/secret-manager";
 import { SftpClient } from "../../external/sftp/client";
-import { SftpConfig } from "../../external/sftp/types";
+import { SftpConfig, SftpListFilterFunction } from "../../external/sftp/types";
+import { makeSftpListFilter } from "../../external/sftp/client";
 import { Config } from "../../util/config";
 import {
   decryptGpgBinaryWithPrivateKey,
   getLahiePrivateKeyAndPassphrase,
-} from "./hl7-sftp-ingestion-direct";
+} from "./hl7-gpg-encryption";
+import { buildDayjs } from "@metriport/shared/common/date";
 
 export type ReplicaConfig = { type: "local"; path: string } | { type: "s3"; bucketName: string };
 
-export class SftpIngestionClient extends SftpClient {
+export class LahieSftpIngestionClient extends SftpClient {
+  private readonly FILE_FORMAT = "YYYY-MM-DD";
   private readonly overridenLog: typeof console.log;
 
   private constructor(sftpConfig: SftpConfig, overridenLog: typeof console.log) {
@@ -26,15 +29,15 @@ export class SftpIngestionClient extends SftpClient {
   static async create(
     overridenLog: typeof console.log,
     isLocal?: boolean
-  ): Promise<SftpIngestionClient> {
+  ): Promise<LahieSftpIngestionClient> {
     const host = Config.getLahieIngestionHost();
     const port = Config.getLahieIngestionPort();
     const username = Config.getLahieIngestionUsername();
     const password = isLocal
-      ? SftpIngestionClient.getLocalPassword()
+      ? LahieSftpIngestionClient.getLocalPassword()
       : await this.getLahiePassword();
 
-    return new SftpIngestionClient(
+    return new LahieSftpIngestionClient(
       {
         host,
         port,
@@ -60,8 +63,46 @@ export class SftpIngestionClient extends SftpClient {
     return { type: "s3", bucketName };
   }
 
-  async safeSync(remotePath: string): Promise<string[]> {
+  async syncWithDate(remotePath: string, dateTimestamp: string): Promise<string[]> {
+    if (!this.replica) {
+      throw new BadRequestError("Replica not set", undefined, {
+        context: "sftp.client.sync",
+      });
+    }
+    this.overridenLog(`Syncing files in ${remotePath} for files containing ${dateTimestamp}`);
+    const filter: SftpListFilterFunction | undefined = makeSftpListFilter({
+      contains: dateTimestamp,
+    });
+    if (!filter) {
+      throw new Error(`No filter was created. Date: ${dateTimestamp}`);
+    }
+    const sftpFileNames = await this.list(remotePath, filter);
+    if (sftpFileNames.length === 0) {
+      this.overridenLog(`No files found in ${remotePath} for date ${dateTimestamp}`);
+      return [];
+    }
+
+    const replicaFileNamesWithPath = await this.replica.listFileNames(remotePath);
+    const replicaDirectoryLength = remotePath.length + 1;
+    const existingReplicaFileNames = new Set(
+      replicaFileNamesWithPath.map(fileName => fileName.substring(replicaDirectoryLength))
+    );
+
+    const filesSynced: string[] = [];
+    for (const sftpFileName of sftpFileNames) {
+      if (!existingReplicaFileNames.has(sftpFileName)) {
+        this.overridenLog(`File ${sftpFileName} does not exist in replica, syncing...`);
+        await this.read(`${remotePath}/${sftpFileName}`);
+        filesSynced.push(sftpFileName);
+      }
+    }
+    return filesSynced;
+  }
+
+  async safeSyncWithDate(remotePath: string, dateTimestamp?: string): Promise<string[]> {
     this.overridenLog(`Syncing from remotePath: ${remotePath}`);
+
+    const now = dateTimestamp ? dateTimestamp : buildDayjs(Date.now()).format(this.FILE_FORMAT);
     try {
       await this.connect();
 
@@ -70,7 +111,7 @@ export class SftpIngestionClient extends SftpClient {
         throw new MetriportError(`Remote path does not exist`, undefined, { remotePath });
       }
       this.overridenLog("Syncing from remote path to Replica");
-      const fileNames = await this.sync(`${remotePath}`);
+      const fileNames = await this.syncWithDate(`${remotePath}`, now);
       return fileNames;
     } finally {
       await this.disconnect();

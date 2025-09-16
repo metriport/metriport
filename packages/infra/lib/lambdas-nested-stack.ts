@@ -120,7 +120,7 @@ export class LambdasNestedStack extends NestedStack {
   readonly fhirConverterConnector: FHIRConverterConnector;
   readonly acmCertificateMonitorLambda: Lambda;
   readonly hl7v2RosterUploadLambdas: Lambda[] | undefined;
-  readonly hl7SubscriptionSftpIngestionLambda: Lambda | undefined;
+  readonly hl7LahieSftpIngestionLambda: Lambda | undefined;
   readonly conversionResultNotifierLambda: Lambda;
   readonly reconversionKickoffLambda: Lambda;
   readonly reconversionKickoffQueue: Queue;
@@ -338,7 +338,7 @@ export class LambdasNestedStack extends NestedStack {
         alarmAction: props.alarmAction,
       });
 
-      this.hl7SubscriptionSftpIngestionLambda = this.setupLahieSftpIngestionLambd({
+      this.hl7LahieSftpIngestionLambda = this.setupLahieSftpIngestionLambd({
         lambdaLayers: props.lambdaLayers,
         vpc: props.vpc,
         secrets: props.secrets,
