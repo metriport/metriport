@@ -277,7 +277,7 @@ router.post(
         requestId: response.id,
         patientId: response.patientId,
         cxId: response.cxId,
-        queryGrantorOid: response.queryGrantorOid,
+        // queryGrantorOid: response.queryGrantorOid,
       }).catch(emptyFunction);
     }
 
