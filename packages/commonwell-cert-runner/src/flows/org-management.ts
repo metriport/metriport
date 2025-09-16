@@ -42,7 +42,7 @@ export async function orgManagement(): Promise<OrgManagementResponse> {
   try {
     let orgId: string | undefined = existingOrgOid;
     if (orgId) {
-      console.log(`>>> Reusing an existing org`);
+      console.log(`>>> Reusing an existing org, oid `, existingOrgOid);
       const org = await getOneOrg(commonWellMember, orgId);
       return buildResponse(org);
     }
@@ -159,7 +159,6 @@ export async function orgManagement(): Promise<OrgManagementResponse> {
 }
 
 function buildResponse(org: Organization): OrgManagementResponse {
-  if (!org.npiType2) throw new Error("Organization is missing NPI Type 2");
   const commonWell = new CommonWell({
     orgCert: orgCertificateString,
     rsaPrivateKey: orgPrivateKeyString,

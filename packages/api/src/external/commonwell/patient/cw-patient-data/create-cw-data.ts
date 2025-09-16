@@ -1,12 +1,8 @@
 import { LinkDemographics } from "@metriport/core/domain/patient-demographics";
 import { executeOnDBTx } from "../../../../models/transaction-wrapper";
-import {
-  CwLink,
-  CwPatientData,
-  CwPatientDataCreate,
-} from "./shared";
 import { CwPatientDataModel } from "../../../commonwell/models/cw-patient-data";
 import { getCwPatientData } from "./get-cw-data";
+import { CwLink, CwPatientData, CwPatientDataCreate } from "./shared";
 import { updateCwPatientDataWithinDBTx } from "./update-cw-data";
 
 export async function createOrUpdateCwPatientData({

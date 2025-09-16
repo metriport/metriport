@@ -1,8 +1,10 @@
 import { PatientImportParseRequest } from "@metriport/core/command/patient-import/steps/parse/patient-import-parse";
-import { PatientImportParseLocal } from "@metriport/core/command/patient-import/steps/parse/patient-import-parse-local";
+import {
+  processJobParse,
+  ProcessJobParseCommandRequest,
+} from "@metriport/core/command/patient-import/steps/parse/patient-import-parse-command";
 import { out } from "@metriport/core/util/log";
 import { errorToString } from "@metriport/shared";
-import * as Sentry from "@sentry/serverless";
 import { capture } from "./shared/capture";
 import { getEnvOrFail } from "./shared/env";
 
@@ -14,8 +16,7 @@ const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
 // Set by us
 const patientImportBucket = getEnvOrFail("PATIENT_IMPORT_BUCKET_NAME");
 
-// TODO move to capture.wrapHandler()
-export const handler = Sentry.AWSLambda.wrapHandler(
+export const handler = capture.wrapHandler(
   async (params: PatientImportParseRequest): Promise<void> => {
     capture.setExtra({ ...params, context: lambdaName });
     const { cxId, jobId } = params;
@@ -24,9 +25,11 @@ export const handler = Sentry.AWSLambda.wrapHandler(
 
     const startedAt = new Date().getTime();
     try {
-      const patientImportParser = new PatientImportParseLocal(patientImportBucket);
-
-      await patientImportParser.processJobParse(params);
+      const cmdParams: ProcessJobParseCommandRequest = {
+        ...params,
+        patientImportBucket,
+      };
+      await processJobParse(cmdParams);
 
       const finishedAt = new Date().getTime();
       log(`Done local duration: ${finishedAt - startedAt}ms`);

@@ -61,7 +61,7 @@ import { NetworkLink } from "./types";
 
 dayjs.extend(duration);
 
-const waitTimeAfterRegisterPatientAndBeforeGetLinks = dayjs.duration(5, "seconds");
+const waitTimeAfterRegisterPatientAndBeforeGetLinks = dayjs.duration(15, "seconds");
 const MAX_ATTEMPTS_PATIENT_LINKING = 3;
 
 const createContext = "cw.patient.create";
@@ -146,25 +146,28 @@ export async function registerAndLinkPatientInCwV2({
         duration: elapsedTimeFromNow(startedAt),
       },
     });
-
     const startedNewPd = await runNextPdIfScheduled({
       patient,
       requestId,
       update,
     });
     if (startedNewPd) return;
+
     await updatePatientDiscoveryStatus({ patient, status: "completed" });
     await queryDocsIfScheduled({ patientIds: patient, getOrgIdExcludeList });
+
     debug("Completed.");
     return { commonwellPatientId };
   } catch (error) {
     // TODO 1646 Move to a single hit to the DB
+
     await resetScheduledPatientDiscovery({
       patient,
       source: MedicalDataSource.COMMONWELL,
     });
     await updatePatientDiscoveryStatus({ patient, status: "failed" });
     await queryDocsIfScheduled({ patientIds: patient, getOrgIdExcludeList, isFailed: true });
+
     const msg = `Failure while creating patient @ CW`;
     const cwRef = commonWell?.lastTransactionId;
     log(
@@ -296,9 +299,12 @@ export async function updatePatientAndLinksInCwV2({
       requestId,
       update,
     });
+
     if (startedNewPd) return;
+
     await updatePatientDiscoveryStatus({ patient, status: "completed" });
     await queryDocsIfScheduled({ patientIds: patient, getOrgIdExcludeList });
+
     debug("Completed.");
   } catch (error) {
     // TODO 1646 Move to a single hit to the DB
@@ -325,7 +331,7 @@ export async function updatePatientAndLinksInCwV2({
   }
 }
 
-export async function runNextPdOnNewDemographics({
+async function runNextPdOnNewDemographics({
   patient,
   facilityId,
   getOrgIdExcludeList,
@@ -388,6 +394,7 @@ export async function runNextPdOnNewDemographics({
       foundNewDemographicsAcrossHies,
     },
   });
+
   return true;
 }
 
@@ -512,7 +519,7 @@ export async function removeInCwV2(patient: Patient, facilityId: string): Promis
 
 async function getCommonwellPatientId(patient: Patient): Promise<string | undefined> {
   const commonwellData = getCWData(patient.data.externalData);
-  if (!commonwellData) return undefined;
+  if (!commonwellData || !commonwellData.patientId) return undefined;
   return getCwV2PatientId(commonwellData.patientId);
 }
 
@@ -626,17 +633,17 @@ async function runPatientLinkingWithRetries({
   validLinks: NetworkLink[];
   invalidLinks: NetworkLink[];
 }> {
-  const { log } = out(`retryPatientLinkingFlow: pt: ${patient.id}`);
+  const { log } = out(`runPatientLinkingWithRetries: pt: ${patient.id}`);
   let validLinks: NetworkLink[] = [];
   let invalidLinks: NetworkLink[] = [];
   let attempt = 0;
 
   while (attempt < MAX_ATTEMPTS_PATIENT_LINKING) {
+    attempt++;
     // CW v2 does not return links immediately after registering a patient yet, so we need to wait.
     const waitTime = waitTimeAfterRegisterPatientAndBeforeGetLinks.asMilliseconds();
     log(`Attempt ${attempt}/${MAX_ATTEMPTS_PATIENT_LINKING} - waiting ${waitTime}ms...`);
     await sleep(waitTime);
-    attempt++;
 
     const existingLinks = await getExistingLinks({
       commonWell,
@@ -918,7 +925,7 @@ function probableLinkToPatientData(networkLink: NetworkLink): PatientData {
   const genderAtBirth = cwGenderToPatientGender(genderCode ?? undefined);
 
   const address = patient.address.map(addr => ({
-    zip: addr.postalCode,
+    zip: addr.postalCode ?? "",
     city: addr.city ?? "",
     state: addr.state as USStateForAddress,
     country: addr.country ?? "USA",

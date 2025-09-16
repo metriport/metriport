@@ -28,14 +28,24 @@ import { invalidToString, patientCreationToString, validToString } from "./share
 /**
  * Creates a mock CSV file with patient data for bulk import.
  *
+ * The output files will be created in the `runs/bulk-import-mock` folder, under the current
+ * timestamp.
+ *
+ * Also, a file named `current-raw.csv` will be created in the `runs/bulk-import-mock` folder,
+ * so the terminal can display a link so that we can open the file with a "cmd+click" on its name.
+ *
  * Usage:
  * - update the constants below
  * - run it with `npm run generate-patient-csv`
  * - the file will be created in the `runs/bulk-import-mock` folder
+ * - optionally, pass the number of patients as an argument
+ *   - `npm run generate-patient-csv 1000`
+ *   - `npm run generate-patient-csv 10000`
+ *   - `npm run generate-patient-csv 100000`
  */
 
 // The amount of patients to generate
-const numberOfPatients = 1_000;
+const numberOfPatients = process.argv[2] ? parseInt(process.argv[2]) : 100;
 
 // The percentage of patients that will have each property:
 const percentageWithExternalId = 0.5;
@@ -77,7 +87,7 @@ async function main() {
   const contents = patients.map(patientToCsv(amountOfAddresses, amountOfContacts)).join("\n");
   const fileContents = [headers, contents].join("\n");
   fs.writeFileSync(outputFileNameFull, fileContents);
-  fs.rmSync(outputCurrentFileNameFull);
+  fs.rmSync(outputCurrentFileNameFull, { force: true });
   fs.writeFileSync(outputCurrentFileNameFull, fileContents);
 
   const { patients: patientsFromValidation } = await validateAndParsePatientImportCsv({

@@ -1,13 +1,13 @@
 import {
   buildDayjsFromCompactDate,
+  convertDateToString,
+  convertDateToTimeString,
   isValidISODate,
   isValidISODateTime,
   validateDateIsAfter1900,
   validateDateOfBirth,
   ValidateDobFn,
   validateIsPastOrPresentSafe,
-  convertDateToString,
-  convertDateToTimeString,
 } from "../date";
 
 describe("shared date functions", () => {
@@ -70,6 +70,10 @@ describe("shared date functions", () => {
       expect(validateDateIsAfter1900("1970-01-31")).toBe(true);
     });
 
+    it("returns true for valid date time in ISO format", () => {
+      expect(validateDateIsAfter1900("1970-01-31T12:30:00Z")).toBe(true);
+    });
+
     it("returns true for 1900-01-01", () => {
       expect(validateDateIsAfter1900("1900-01-01")).toBe(true);
     });
@@ -90,31 +94,35 @@ describe("shared date functions", () => {
       expect(validateDateIsAfter1900("0123-01-01")).toBe(false);
     });
 
-    it("returns false for dates with year 970", () => {
+    it("returns false for dates with 3 digit year", () => {
       expect(validateDateIsAfter1900("970-01-31")).toBe(false);
     });
 
-    it("handles MM/DD/YYYY format incorrectly returning false for valid years", () => {
+    it("returns false for dates with 2 digit year", () => {
+      expect(validateDateIsAfter1900("70-01-31")).toBe(false);
+    });
+
+    it("returns false for dates in MM/DD/YYYY format", () => {
       expect(validateDateIsAfter1900("12/31/2020")).toBe(false);
     });
 
-    it("handles DD/MM/YYYY format incorrectly returning false for valid years", () => {
+    it("returns false for dates in DD/MM/YYYY format", () => {
       expect(validateDateIsAfter1900("31/12/2020")).toBe(false);
     });
 
-    it("handles YYYY.MM.DD format returning true for valid years", () => {
+    it("returns true for dates in YYYY.MM.DD format", () => {
       expect(validateDateIsAfter1900("2020.12.31")).toBe(true);
     });
 
-    it("handles YYYY/MM/DD format returning true for valid years", () => {
+    it("returns true for dates in YYYY/MM/DD format", () => {
       expect(validateDateIsAfter1900("2020/12/31")).toBe(true);
     });
 
-    it("handles textual month format incorrectly", () => {
+    it("returns false for dates in text format", () => {
       expect(validateDateIsAfter1900("Dec 31, 2020")).toBe(false);
     });
 
-    it("handles empty string format incorrectly", () => {
+    it("returns false for empty string", () => {
       expect(validateDateIsAfter1900("")).toBe(false);
     });
   });
@@ -152,6 +160,24 @@ describe("shared date functions", () => {
       expect(validateIsPastOrPresent_mock).not.toHaveBeenCalled();
     });
 
+    it("returns false for date with less than 10 characters with full year and month", () => {
+      expect(validateDateOfBirth("2001-02-0")).toBe(false);
+      expect(validateDateIsAfter1900_mock).not.toHaveBeenCalled();
+      expect(validateIsPastOrPresent_mock).not.toHaveBeenCalled();
+    });
+
+    it("returns false for date with less than 10 characters with full year and day", () => {
+      expect(validateDateOfBirth("2001-9-01")).toBe(false);
+      expect(validateDateIsAfter1900_mock).not.toHaveBeenCalled();
+      expect(validateIsPastOrPresent_mock).not.toHaveBeenCalled();
+    });
+
+    it("returns false for date with less than 10 characters with full month and day", () => {
+      expect(validateDateOfBirth("01-02-01")).toBe(false);
+      expect(validateDateIsAfter1900_mock).not.toHaveBeenCalled();
+      expect(validateIsPastOrPresent_mock).not.toHaveBeenCalled();
+    });
+
     it("returns true when both validateDateIsAfter1900 and validateIsPastOrPresent return true", () => {
       validateDateIsAfter1900_mock.mockReturnValue(true);
       validateIsPastOrPresent_mock.mockReturnValue(true);
@@ -174,6 +200,26 @@ describe("shared date functions", () => {
       expect(validateDob(2000 as unknown as string)).toBe(false);
       expect(validateDateIsAfter1900_mock).not.toHaveBeenCalled();
       expect(validateIsPastOrPresent_mock).not.toHaveBeenCalled();
+    });
+
+    it("returns true when date is valid ISO datetime", () => {
+      expect(validateDob("2004-02-26T12:30:00Z")).toBe(true);
+    });
+
+    it("returns true when date is valid ISO datetime", () => {
+      expect(validateDob("2004-02-26")).toBe(true);
+    });
+
+    it("returns false when date is invalid ISO date", () => {
+      expect(validateDob("85-02-26")).toBe(false);
+    });
+
+    it("returns true when date is valid US datetime", () => {
+      expect(validateDob("02/26/2004")).toBe(true);
+    });
+
+    it("returns false when date is invalid US date", () => {
+      expect(validateDob("02/26/85")).toBe(false);
     });
   });
 
