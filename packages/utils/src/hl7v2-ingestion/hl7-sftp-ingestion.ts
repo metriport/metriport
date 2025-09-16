@@ -51,7 +51,6 @@ const port = Config.getLahieIngestionPort();
 const host = Config.getLahieIngestionHost();
 const username = Config.getLahieIngestionUsername();
 // Password should not be an ARN for local execution.
-const password = Config.getLahieIngestionLocalPassword(); //eslint-disable-line @typescript-eslint/no-unused-vars
 const remotePath = Config.getLahieIngestionRemotePath();
 const bucketName = Config.getLahieIngestionBucket();
 const awsRegion = Config.getAWSRegion();
@@ -62,9 +61,9 @@ const lambdaName = Config.getLahieIngestionLambdaName(); //eslint-disable-line @
 const privateKeyArn = Config.getLahieIngestionPrivateKeyArn(); //eslint-disable-line @typescript-eslint/no-unused-vars
 const privateKeyPassphraseArn = Config.getLahieIngestionPrivateKeyPassphraseArn(); //eslint-disable-line @typescript-eslint/no-unused-vars
 
-const deleteFiles = false; // Delete files from S3 after completetion
-const fileNames: string[] = [""]; // List of file names to delete from S3 after completetion
-const filename = ""; // usually done by YYYY-MM-DD but can actually be any filename.
+const deleteFiles = true; // Delete files from S3 after completetion
+const fileNames: string[] = ["name.gpg"]; // List of file names to delete from S3 after completetion
+const filename = "name"; // usually done by YYYY-MM-DD but can actually be any filename.
 
 async function main() {
   await sleep(50); // Give some time to avoid mixing logs w/ Node's
