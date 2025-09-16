@@ -15,15 +15,15 @@ import { stringify } from "csv-stringify/sync";
 import _ from "lodash";
 import { getFirstNameAndMiddleInitial, Patient } from "../../domain/patient";
 import { S3Utils, storeInS3WithRetries } from "../../external/aws/s3";
-import { out } from "../../util";
+import { capture, out } from "../../util";
 import { Config } from "../../util/config";
 import { CSV_FILE_EXTENSION, CSV_MIME_TYPE } from "../../util/mime";
 import { METRIPORT_ASSIGNING_AUTHORITY_IDENTIFIER } from "./constants";
-import { uploadToRemoteSftp } from "./hl7v2-roster-uploader";
 import {
   trackRosterSizePerCustomer,
   TrackRosterSizePerCustomerParams,
 } from "./hl7v2-roster-analytics";
+import { uploadToRemoteSftp } from "./hl7v2-roster-uploader";
 import {
   HieConfig,
   HiePatientRosterMapping,
@@ -44,6 +44,18 @@ const DEFAULT_ZIP_PLUS_4_EXT = "-0000";
 const FOLDER_DATE_FORMAT = "YYYY-MM-DD";
 const FILE_DATE_FORMAT = "YYYYMMDD";
 
+function isValidRosterRowString(str: string | undefined): boolean {
+  if (str === undefined) return true;
+
+  return !str.includes("�");
+}
+
+function patientHasValidUTF8Addresses(patient: Patient): boolean {
+  return patient.data.address.every(
+    a => isValidRosterRowString(a.addressLine1) && isValidRosterRowString(a.addressLine2)
+  );
+}
+
 export class Hl7v2RosterGenerator {
   private readonly s3Utils: S3Utils;
 
@@ -63,11 +75,30 @@ export class Hl7v2RosterGenerator {
 
     log(`Running with this config: ${JSON.stringify(loggingDetails)}`);
     log(`Getting all subscribed patients...`);
-    const patients = await simpleExecuteWithRetries(
+    const rawPatients = await simpleExecuteWithRetries(
       () => this.getAllSubscribedPatients(hieName),
       log
     );
-    log(`Found ${patients.length} total patients`);
+    log(`Found ${rawPatients.length} total patients`);
+
+    log(`Removing patients with invalid UTF-8 addresses...`);
+    const patients = rawPatients.filter(patientHasValidUTF8Addresses);
+    if (patients.length !== rawPatients.length) {
+      log(`Removed ${rawPatients.length - patients.length} patients with invalid UTF-8 addresses`);
+      capture.message(
+        `${hieName} roster generation dropped ${
+          rawPatients.length - patients.length
+        } patients with invalid UTF-8 addresses`,
+        {
+          extra: {
+            preDroppedRosterSize: rawPatients.length,
+            postDroppedRosterSize: patients.length,
+            hieName,
+            level: "warning",
+          },
+        }
+      );
+    }
 
     if (patients.length === 0) {
       throw new MetriportError("No patients found, skipping roster generation", {
