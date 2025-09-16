@@ -1,8 +1,8 @@
-import { RXNORM_AGENT_PROMPT } from "./prompts";
+import { RXNORM_AGENT_PROMPT } from "../prompts";
 import { Resource } from "@medplum/fhirtypes";
-import { SpecializedAgent } from "./specialized-agent";
-import type { ComprehendContext } from "../types";
-import { inferMedications } from "../rxnorm/fhir-converter";
+import { SpecializedAgent } from "../specialized-agent";
+import type { ComprehendContext } from "../../types";
+import { inferMedications } from "../../rxnorm/fhir-converter";
 
 export class RxNormAgent extends SpecializedAgent {
   constructor() {
