@@ -10,6 +10,7 @@ import { OrganizationData } from "@metriport/core/domain/organization";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import {
+  defaultOptionsRequestNotAccepted,
   errorToString,
   executeWithNetworkRetries,
   getEnvVarOrFail,
@@ -18,6 +19,7 @@ import {
   TreatmentType,
   USState,
 } from "@metriport/shared";
+import { AxiosError } from "axios";
 import { Config } from "../../../../shared/config";
 import { getCertificate, makeCommonWellMemberAPI } from "../../api";
 
@@ -152,7 +154,12 @@ export async function get(orgOid: string): Promise<CwSdkOrganization | undefined
   const { log, debug } = out(`CW.v2.org get - CW Org OID ${orgOid}`);
   const commonWell = makeCommonWellMemberAPI();
   try {
-    const resp = await executeWithNetworkRetries(() => commonWell.getOneOrg(orgOid));
+    const resp = await executeWithNetworkRetries(() => commonWell.getOneOrg(orgOid), {
+      httpCodesToRetry: [
+        ...defaultOptionsRequestNotAccepted.httpCodesToRetry,
+        AxiosError.ECONNABORTED,
+      ],
+    });
     debug(`resp getOneOrg: `, JSON.stringify(resp));
     return resp;
   } catch (error) {
