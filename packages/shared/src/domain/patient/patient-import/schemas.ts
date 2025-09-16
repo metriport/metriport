@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { patientImportJobStatus } from "./status";
+import { patientImportJobStatus, PatientImportJobUpdatableStatus } from "./status";
 
 // TODO 2330 Review this as part of POST /internal/patient/bulk/coverage-assessment
 // export const patientImportPatientSchema = z.object({
@@ -28,7 +28,12 @@ import { patientImportJobStatus } from "./status";
 
 export const updateJobSchema = z.object({
   status: z
-    .enum(patientImportJobStatus.filter(s => s !== "waiting") as [string, ...string[]])
+    .enum(
+      patientImportJobStatus.filter(s => s !== "waiting") as [
+        PatientImportJobUpdatableStatus,
+        ...PatientImportJobUpdatableStatus[]
+      ]
+    )
     .optional(),
   total: z.number().optional(),
   /**

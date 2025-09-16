@@ -1,6 +1,6 @@
 import { errorToString, MetriportError } from "@metriport/shared";
 import { UpdateJobSchema } from "@metriport/shared/domain/patient/patient-import/schemas";
-import { PatientImportJobStatus } from "@metriport/shared/domain/patient/patient-import/status";
+import { PatientImportJobUpdatableStatus } from "@metriport/shared/domain/patient/patient-import/status";
 import { PatientImportJob } from "@metriport/shared/domain/patient/patient-import/types";
 import axios from "axios";
 import { Config } from "../../../util/config";
@@ -10,7 +10,7 @@ import { withDefaultApiErrorHandling } from "../../shared/api/shared";
 export type UpdateJobAtApiParams = {
   cxId: string;
   jobId: string;
-  status?: PatientImportJobStatus;
+  status?: PatientImportJobUpdatableStatus;
   total?: number | undefined;
   /**
    * Only to be set on dry run mode - on regular mode, the successful count is incremented

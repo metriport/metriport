@@ -216,23 +216,16 @@ router.post(
     const updateParams = updateJobSchema.parse(req.body);
     capture.setExtra({ cxId, jobId });
 
-    const { status: jobStatus, reason } = updateParams;
-    if (reason && jobStatus !== "failed") {
-      throw new BadRequestError("Reason is only allowed when status is failed");
-    }
-
-    const baseParams = {
+    const params: PatientImportUpdateStatusCmd = {
       jobId,
       cxId,
+      status: updateParams.status,
+      reason: updateParams.reason,
       total: updateParams.total,
       failed: updateParams.failed,
       successful: updateParams.successful,
       forceStatusUpdate: updateParams.forceStatusUpdate,
     };
-    const params: PatientImportUpdateStatusCmd =
-      jobStatus && jobStatus === "failed"
-        ? { ...baseParams, status: jobStatus, reason }
-        : { ...baseParams, status: jobStatus };
 
     const patientImport = await updatePatientImportTracking(params);
 
