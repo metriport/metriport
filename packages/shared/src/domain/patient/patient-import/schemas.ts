@@ -35,6 +35,7 @@ export const updateJobSchema = z.object({
    */
   successful: z.number().optional(),
   failed: z.number().optional(),
+  reason: z.string().optional(),
   forceStatusUpdate: z.boolean().optional(),
 });
 export type UpdateJobSchema = z.infer<typeof updateJobSchema>;

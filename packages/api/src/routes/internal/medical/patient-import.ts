@@ -34,7 +34,10 @@ import {
   CreatePatientImportMappingCmd,
 } from "../../../command/medical/patient/patient-import/mapping/create";
 import { updatePatientImportParams } from "../../../command/medical/patient/patient-import/update-params";
-import { updatePatientImportTracking } from "../../../command/medical/patient/patient-import/update-tracking";
+import {
+  PatientImportUpdateStatusCmd,
+  updatePatientImportTracking,
+} from "../../../command/medical/patient/patient-import/update-tracking";
 import { getCQData } from "../../../external/carequality/patient";
 import { getCWData } from "../../../external/commonwell-v1/patient";
 import { requestLogger } from "../../helpers/request-logger";
@@ -213,15 +216,28 @@ router.post(
     const updateParams = updateJobSchema.parse(req.body);
     capture.setExtra({ cxId, jobId });
 
-    const patientImport = await updatePatientImportTracking({
+    if (updateParams.status === "waiting") {
+      throw new BadRequestError("Waiting status is not allowed on this endpoint");
+    }
+    const { status: jobStatus, reason } = updateParams;
+    if (jobStatus && jobStatus !== "failed" && reason) {
+      throw new BadRequestError("Reason is only allowed when status is failed");
+    }
+
+    const baseParams = {
       jobId,
       cxId,
-      status: updateParams.status,
       total: updateParams.total,
       failed: updateParams.failed,
       successful: updateParams.successful,
       forceStatusUpdate: updateParams.forceStatusUpdate,
-    });
+    };
+    const params: PatientImportUpdateStatusCmd =
+      jobStatus && jobStatus === "failed"
+        ? { ...baseParams, status: jobStatus, reason }
+        : { ...baseParams, status: jobStatus };
+
+    const patientImport = await updatePatientImportTracking(params);
 
     return res.status(status.OK).json(patientImport);
   })

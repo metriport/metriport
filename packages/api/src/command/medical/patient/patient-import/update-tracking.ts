@@ -1,10 +1,7 @@
 import { out } from "@metriport/core/util/log";
 import { BadRequestError, emptyFunction } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
-import {
-  PatientImportJobStatus,
-  validateNewStatus,
-} from "@metriport/shared/domain/patient/patient-import/status";
+import { validateNewStatus } from "@metriport/shared/domain/patient/patient-import/status";
 import { PatientImportJob } from "@metriport/shared/domain/patient/patient-import/types";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -16,7 +13,6 @@ dayjs.extend(duration);
 export type PatientImportUpdateStatusCmd = {
   cxId: string;
   jobId: string;
-  status?: PatientImportJobStatus;
   total?: number | undefined;
   /**
    * Only to be set on dry run mode - on regular mode, the successful count is incremented
@@ -25,7 +21,16 @@ export type PatientImportUpdateStatusCmd = {
   successful?: number | undefined;
   failed?: number | undefined;
   forceStatusUpdate?: boolean | undefined;
-};
+} & (
+  | {
+      status?: "processing" | "completed";
+      reason?: never;
+    }
+  | {
+      status?: "failed";
+      reason?: string | undefined;
+    }
+);
 
 /**
  * TODO 2330 Refactor this to match PatientJob's updateTracking(). THe current version allows a
@@ -54,6 +59,7 @@ export async function updatePatientImportTracking({
   total,
   successful,
   failed,
+  reason,
   forceStatusUpdate = false,
 }: PatientImportUpdateStatusCmd): Promise<PatientImportJob> {
   const { log } = out(`updatePatientImportTracking - cxId ${cxId} jobId ${jobId}`);
@@ -89,6 +95,7 @@ export async function updatePatientImportTracking({
   }
   if (failed != undefined) {
     jobToUpdate.failed = failed;
+    jobToUpdate.reason = reason;
   }
   if (justTurnedProcessing) {
     jobToUpdate.startedAt = now;
