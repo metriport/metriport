@@ -39,7 +39,8 @@ export function validateDateOfBirth(
     validateIsPastOrPresent?: ValidateDobFn;
   }
 ): boolean {
-  if (!date || typeof date !== "string" || !date.trim()) return false;
+  if (!date || typeof date !== "string") return false;
+  if (date.length < 10) return false;
   const parsedDate = buildDayjs(date);
   if (!parsedDate.isValid()) return false;
   const {
@@ -47,12 +48,12 @@ export function validateDateOfBirth(
     validateIsPastOrPresent: _validateIsPastOrPresent = validateIsPastOrPresent,
   } = options || {};
   return (
-    _validateDateIsAfter1900(parsedDate.format(ISO_DATE)) &&
-    _validateIsPastOrPresent(parsedDate.format(ISO_DATE))
+    _validateDateIsAfter1900(parsedDate.toISOString()) &&
+    _validateIsPastOrPresent(parsedDate.toISOString())
   );
 }
 
-export function validateIsPastOrPresent(date: string): boolean {
+export function validateIsPastOrPresent(date: string): true {
   if (!validateIsPastOrPresentSafe(date)) {
     throw new BadRequestError(`Date can't be in the future`, undefined, { date });
   }
@@ -70,7 +71,7 @@ export function validateDateIsAfter1900(date: string): boolean {
   return year >= 1900;
 }
 
-export function validateDateRange(start: string, end: string): boolean {
+export function validateDateRange(start: string, end: string): true {
   if (buildDayjs(start).isAfter(end)) {
     throw new BadRequestError(`Invalid date range: 'start' must be before 'end'`, undefined, {
       start,

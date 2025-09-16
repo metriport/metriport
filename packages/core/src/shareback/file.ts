@@ -1,14 +1,28 @@
-import { getFileExtension } from "../../util/mime";
-import { createFileName, createFolderName, parseFileName } from "../filename";
+import { createFileName, createFolderName } from "../domain/filename";
+import { getFileExtension } from "../util/mime";
+import { parseFileName } from "../domain/filename";
 
 export const UPLOADS_FOLDER = "uploads";
 export const CCD_SUFFIX = "ccd";
 export const FHIR_BUNDLE_SUFFIX = "FHIR_BUNDLE";
+export const METADATA_SUFFIX = "_metadata.xml";
+
+export function createSharebackFolderName({
+  cxId,
+  patientId,
+}: {
+  cxId: string;
+  patientId: string;
+}) {
+  const folderName = createFolderName(cxId, patientId);
+  const prefix = `${folderName}/${UPLOADS_FOLDER}`;
+  return prefix;
+}
 
 export function createUploadFilePath(cxId: string, patientId: string, docName: string): string {
-  const folderName = createFolderName(cxId, patientId);
+  const sharebackFolderName = createSharebackFolderName({ cxId, patientId });
   const fileName = createFileName(cxId, patientId, docName);
-  return `${folderName}/${UPLOADS_FOLDER}/${fileName}`;
+  return `${sharebackFolderName}/${fileName}`;
 }
 
 export function createUploadMetadataFilePath(
@@ -17,7 +31,7 @@ export function createUploadMetadataFilePath(
   docName: string
 ): string {
   const uploadFilePath = createUploadFilePath(cxId, patientId, docName);
-  return `${uploadFilePath}_metadata.xml`;
+  return `${uploadFilePath}${METADATA_SUFFIX}`;
 }
 
 export function createAttachmentUploadFilePath({

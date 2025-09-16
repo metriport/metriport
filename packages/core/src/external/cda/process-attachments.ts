@@ -12,7 +12,7 @@ import { errorToString, executeWithNetworkRetries, toArray } from "@metriport/sh
 import { buildDayjs } from "@metriport/shared/common/date";
 import { createUuidFromText } from "@metriport/shared/common/uuid";
 import { MedicalDataSource, isMedicalDataSource } from "..";
-import { createAttachmentUploadFilePath } from "../../domain/document/upload";
+import { createAttachmentUploadFilePath } from "../../shareback/file";
 import {
   CdaCodeCv,
   CdaInstanceIdentifier,

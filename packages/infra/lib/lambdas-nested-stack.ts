@@ -20,6 +20,7 @@ import {
   getConsolidatedIngestionConnectorSettings,
   getConsolidatedSearchConnectorSettings,
 } from "./lambdas-nested-stack-settings";
+import { getHieSftpPasswordSecretName } from "./secrets-stack";
 import { addBedrockPolicyToLambda } from "./shared/bedrock";
 import { createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
 import { LambdaLayers } from "./shared/lambda-layers";
@@ -28,7 +29,6 @@ import { buildSecret, Secrets } from "./shared/secrets";
 import { QueueAndLambdaSettings } from "./shared/settings";
 import { createQueue } from "./shared/sqs";
 import { isSandbox } from "./shared/util";
-import { getHieSftpPasswordSecretName } from "./secrets-stack";
 
 export const CDA_TO_VIS_TIMEOUT = Duration.minutes(15);
 
@@ -840,7 +840,6 @@ export class LambdasNestedStack extends NestedStack {
       },
       layers: [lambdaLayers.shared, lambdaLayers.langchain],
       memory: lambdaSettings.memory,
-      ephemeralStorageSize: lambdaSettings.ephemeralStorageSize,
       timeout: lambdaSettings.timeout,
       isEnableInsights: true,
       vpc,

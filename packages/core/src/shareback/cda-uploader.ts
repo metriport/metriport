@@ -1,6 +1,6 @@
-import { Organization, DocumentReference } from "@medplum/fhirtypes";
+import { DocumentReference, Organization } from "@medplum/fhirtypes";
 import { errorToString } from "@metriport/shared";
-import { createUploadFilePath, createUploadMetadataFilePath } from "../domain/document/upload";
+import { createUploadFilePath, createUploadMetadataFilePath } from "../shareback/file";
 import { S3Utils } from "../external/aws/s3";
 import { MetriportError } from "../util/error/metriport-error";
 import { out } from "../util/log";
@@ -26,7 +26,7 @@ export async function cdaDocumentUploaderHandler({
   organization: Organization;
   docId: string;
   docRef?: DocumentReference;
-}): Promise<void> {
+}): Promise<{ filePath: string; metadataFilePath: string }> {
   const { log } = out(`CDA Upload - cxId: ${cxId} - patientId: ${patientId}`);
   const fileSize = sizeInBytes(bundle);
   const s3Utils = new S3Utils(region);
@@ -39,9 +39,8 @@ export async function cdaDocumentUploaderHandler({
       file: Buffer.from(bundle),
       contentType: XML_APP_MIME_TYPE,
     });
-    log(`Successfully uploaded the file to ${medicalDocumentsBucket} with key ${destinationKey}`);
   } catch (error) {
-    const msg = "Error uploading file to medical documents bucket";
+    const msg = "Error uploading shareback CDA file to S3";
     log(`${msg}: ${errorToString(error)}`);
     throw new MetriportError(msg, error, {
       medicalDocumentsBucket,
@@ -63,14 +62,17 @@ export async function cdaDocumentUploaderHandler({
       mimeType: XML_APP_MIME_TYPE,
       docRef,
     });
-
-    log(`Successfully uploaded the metadata file`);
   } catch (error) {
-    const msg = "Failed to create the metadata file of a CDA";
+    const msg = "Failed to create the shareback metadata file of a CDA";
     log(`${msg} - error ${errorToString(error)}`);
     throw new MetriportError(msg, error, {
       medicalDocumentsBucket,
-      destinationKey,
+      destinationKeyOfCdaFile: destinationKey,
     });
   }
+
+  return {
+    filePath: destinationKey,
+    metadataFilePath: metadataFileName,
+  };
 }

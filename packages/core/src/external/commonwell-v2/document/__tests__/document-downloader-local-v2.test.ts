@@ -48,6 +48,7 @@ describe("document-downloader-local", () => {
       jest.spyOn(S3Utils.prototype, "getFileInfoFromS3").mockResolvedValue({
         exists: true,
         size: 0,
+        sizeInBytes: 0,
         contentType: faker.system.mimeType(),
         createdAt: undefined,
         metadata: undefined,
