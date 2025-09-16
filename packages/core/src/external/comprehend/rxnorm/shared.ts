@@ -12,6 +12,13 @@ export function getAttribute(
   return entity.Attributes?.find(attribute => attribute.Type === type);
 }
 
+export function getAllAttributes(
+  entity: RxNormEntity,
+  type: RxNormAttributeType
+): RxNormAttribute[] {
+  return entity.Attributes?.filter(attribute => attribute.Type === type) ?? [];
+}
+
 export function getRxNormCode(
   entity: RxNormEntity
 ): { code: string; display?: string } | undefined {

@@ -14,7 +14,7 @@ export function buildDosage(entity: RxNormEntity): Dosage | undefined {
   const dosageText = dosage?.Text;
   const timing = frequency && frequency.Text ? parseTiming(frequency.Text) : undefined;
   const doseAndRate = dosageText ? parseDosage(dosageText) : undefined;
-  const route = routeOrMode && routeOrMode.Text ? getRouteCode(routeOrMode.Text) : undefined; // TODO: add route code to dosage
+  const route = routeOrMode && routeOrMode.Text ? getRouteCode(routeOrMode.Text) : undefined;
 
   return {
     ...(dosageText ? { text: dosageText } : undefined),
