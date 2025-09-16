@@ -18,8 +18,8 @@ import {
   makePersonalIdentifierSsn,
 } from "@metriport/core/domain/__tests__/patient";
 import { sleep } from "@metriport/shared";
+import { buildDayjs } from "@metriport/shared/common/date";
 import { filterTruthy } from "@metriport/shared/common/filter-map";
-import dayjs from "dayjs";
 import fs from "fs";
 import { elapsedTimeAsStr } from "../shared/duration";
 import { makeDir } from "../shared/fs";
@@ -70,7 +70,7 @@ async function main() {
   const startedAt = Date.now();
   console.log(`############## Started at ${new Date(startedAt).toISOString()} ##############`);
 
-  const timestamp = dayjs().toISOString();
+  const timestamp = buildDayjs().toISOString();
   const outputBaseFolder = `runs/bulk-import-mock`;
   const outputFolderName = `${outputBaseFolder}/${timestamp}`;
   makeDir(outputFolderName);
