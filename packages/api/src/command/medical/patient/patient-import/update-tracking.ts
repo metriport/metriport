@@ -71,6 +71,9 @@ export async function updatePatientImportTracking({
   if (!dryRunCx && !dryRunOps && successful != undefined) {
     throw new BadRequestError("Setting successful count is only allowed on dry-run mode");
   }
+  if (reason && status !== "failed") {
+    throw new BadRequestError("Setting reason is only allowed on failed status");
+  }
 
   const oldStatus = job.status;
   const newStatus = status
@@ -84,6 +87,7 @@ export async function updatePatientImportTracking({
   const jobToUpdate: PatientImportJob = {
     ...job.dataValues,
     status: newStatus ?? oldStatus,
+    reason,
   };
   if (total != undefined) {
     jobToUpdate.total = total;
@@ -95,7 +99,6 @@ export async function updatePatientImportTracking({
   }
   if (failed != undefined) {
     jobToUpdate.failed = failed;
-    jobToUpdate.reason = reason;
   }
   if (justTurnedProcessing) {
     jobToUpdate.startedAt = now;
