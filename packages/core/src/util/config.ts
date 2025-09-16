@@ -446,10 +446,6 @@ export class Config {
     return getEnvVarOrFail("LAHIE_INGESTION_PRIVATE_KEY_PASSPHRASE_ARN");
   }
 
-  static getLahieIngestionLocalPassword(): string {
-    return getEnvVarOrFail("LAHIE_INGESTION_LOCAL_PASSWORD");
-  }
-
   static getInternalServerUrl(): string {
     return getEnvVarOrFail("INTERNAL_SERVER_BASE_URL");
   }

@@ -5,12 +5,14 @@ import { log } from "../../util/log";
 import { Hl7LahieSftpIngestionDirect } from "./hl7-sftp-ingestion-direct";
 import { Hl7LahieSftpIngestion } from "./hl7-sftp-ingestion";
 
-export async function buildLahieSftpIngestion(): Promise<Hl7LahieSftpIngestion> {
+export async function buildLahieSftpIngestion(
+  localPassword?: string
+): Promise<Hl7LahieSftpIngestion> {
   if (Config.isDev()) {
     const logger = log("HL7-SFTP-INGESTION");
     const sftpClient: LahieSftpIngestionClient = await LahieSftpIngestionClient.create(
       logger,
-      true
+      localPassword
     );
     return new Hl7LahieSftpIngestionDirect(sftpClient, logger);
   }

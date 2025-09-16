@@ -10,8 +10,6 @@ import {
 } from "./hl7-gpg-encryption";
 import { buildDayjs } from "@metriport/shared/common/date";
 
-export type ReplicaConfig = { type: "local"; path: string } | { type: "s3"; bucketName: string };
-
 export class LahieSftpIngestionClient extends SftpClient {
   private readonly FILE_FORMAT = "YYYY-MM-DD";
   private readonly overridenLog: typeof console.log;
@@ -28,14 +26,12 @@ export class LahieSftpIngestionClient extends SftpClient {
 
   static async create(
     overridenLog: typeof console.log,
-    isLocal?: boolean
+    givenPassword?: string
   ): Promise<LahieSftpIngestionClient> {
     const host = Config.getLahieIngestionHost();
     const port = Config.getLahieIngestionPort();
     const username = Config.getLahieIngestionUsername();
-    const password = isLocal
-      ? LahieSftpIngestionClient.getLocalPassword()
-      : await this.getLahiePassword();
+    const password = givenPassword ? givenPassword : await this.getLahiePassword();
 
     return new LahieSftpIngestionClient(
       {
@@ -52,15 +48,6 @@ export class LahieSftpIngestionClient extends SftpClient {
     const region = Config.getAWSRegion();
     const passwordArn = Config.getLahieIngestionPasswordArn();
     return await getSecretValueOrFail(passwordArn, region);
-  }
-
-  static getLocalPassword(): string {
-    return Config.getLahieIngestionLocalPassword();
-  }
-
-  static getLahieReplica(): ReplicaConfig {
-    const bucketName = Config.getLahieIngestionBucket();
-    return { type: "s3", bucketName };
   }
 
   async syncWithDate(remotePath: string, dateTimestamp: string): Promise<string[]> {
