@@ -75,5 +75,11 @@ export class Hl7NotificationStack extends MetriportCompositeStack {
       description: "MLLP ECR repository URI",
       value: ecrRepo.repositoryUri,
     });
+
+    new cdk.CfnOutput(this, "Hl7VpcId", {
+      description: "HL7 Notification VPC ID",
+      value: vpc.vpcId,
+      exportName: "Hl7NotificationStack-VpcId",
+    });
   }
 }

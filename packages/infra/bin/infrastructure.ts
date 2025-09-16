@@ -12,6 +12,7 @@ import { LocationServicesStack } from "../lib/location-services-stack";
 import { SecretsStack } from "../lib/secrets-stack";
 import { initConfig } from "../lib/shared/config";
 import { getEnvVar, isSandbox } from "../lib/shared/util";
+import { VpcPeeringStack } from "../lib/vpc-peering-stack";
 
 const app = new cdk.App();
 
@@ -52,7 +53,7 @@ async function deploy(config: EnvConfig) {
   //---------------------------------------------------------------------------------
   // 4. Deploy the API stack once all secrets are defined.
   //---------------------------------------------------------------------------------
-  new APIStack(app, config.stackName, { env, config, version });
+  const apiStack = new APIStack(app, config.stackName, { env, config, version });
 
   //---------------------------------------------------------------------------------
   // 5. Deploy the HL7 Notification Webhook Sender stack.
@@ -79,6 +80,18 @@ async function deploy(config: EnvConfig) {
 
       vpnStack.addDependency(hl7NotificationStack);
     });
+
+    //---------------------------------------------------------------------------------
+    // 5.1. Deploy VPC Peering between API VPC and HL7 VPC
+    //---------------------------------------------------------------------------------
+    const vpcPeeringStack = new VpcPeeringStack(app, "VpcPeeringStack", {
+      env,
+      config,
+    });
+
+    // VPC Peering depends on both API and HL7 stacks being deployed
+    vpcPeeringStack.addDependency(apiStack);
+    vpcPeeringStack.addDependency(hl7NotificationStack);
   }
 
   //---------------------------------------------------------------------------------
