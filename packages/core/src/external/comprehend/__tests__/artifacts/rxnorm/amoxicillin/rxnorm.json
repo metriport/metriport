@@ -1,0 +1,113 @@
+{
+  "inputText": "Administer Amoxicillin 250 mg/5 mL suspension, 10 mL by mouth three times daily for 7 days.",
+  "response": {
+    "$metadata": {
+      "httpStatusCode": 200,
+      "requestId": "be90be82-82aa-42b2-a753-edce77db3e5a",
+      "attempts": 1,
+      "totalRetryDelay": 0
+    },
+    "Entities": [
+      {
+        "Attributes": [
+          {
+            "BeginOffset": 23,
+            "EndOffset": 34,
+            "Id": 2,
+            "RelationshipScore": 0.7223333120346069,
+            "Score": 0.7172441482543945,
+            "Text": "250 mg/5 mL",
+            "Traits": [],
+            "Type": "STRENGTH"
+          },
+          {
+            "BeginOffset": 35,
+            "EndOffset": 45,
+            "Id": 3,
+            "RelationshipScore": 0.7223333120346069,
+            "Score": 0.7172441482543945,
+            "Text": "suspension",
+            "Traits": [],
+            "Type": "FORM"
+          },
+          {
+            "BeginOffset": 47,
+            "EndOffset": 52,
+            "Id": 4,
+            "RelationshipScore": 0.7552722692489624,
+            "Score": 0.7613970637321472,
+            "Text": "10 mL",
+            "Traits": [],
+            "Type": "DOSAGE"
+          },
+          {
+            "BeginOffset": 53,
+            "EndOffset": 61,
+            "Id": 5,
+            "RelationshipScore": 0.8031880259513855,
+            "Score": 0.7950295805931091,
+            "Text": "by mouth",
+            "Traits": [],
+            "Type": "ROUTE_OR_MODE"
+          },
+          {
+            "BeginOffset": 62,
+            "EndOffset": 79,
+            "Id": 7,
+            "RelationshipScore": 0.7814922332763672,
+            "Score": 0.7613970637321472,
+            "Text": "three times daily",
+            "Traits": [],
+            "Type": "FREQUENCY"
+          },
+          {
+            "BeginOffset": 84,
+            "EndOffset": 90,
+            "Id": 8,
+            "RelationshipScore": 0.8031880259513855,
+            "Score": 0.7950295805931091,
+            "Text": "7 days",
+            "Traits": [],
+            "Type": "DURATION"
+          }
+        ],
+        "BeginOffset": 11,
+        "Category": "MEDICATION",
+        "EndOffset": 22,
+        "Id": 1,
+        "RxNormConcepts": [
+          {
+            "Code": "239191",
+            "Description": "amoxicillin 50 mg/ml oral suspension",
+            "Score": 0.8947205543518066
+          },
+          {
+            "Code": "313850",
+            "Description": "amoxicillin 40 mg/ml oral suspension",
+            "Score": 0.6996521949768066
+          },
+          {
+            "Code": "308189",
+            "Description": "amoxicillin 80 mg/ml oral suspension",
+            "Score": 0.6722959876060486
+          },
+          {
+            "Code": "246282",
+            "Description": "amoxicillin 100 mg/ml oral suspension",
+            "Score": 0.6375805735588074
+          },
+          {
+            "Code": "105152",
+            "Description": "amoxicillin 60 mg/ml oral suspension",
+            "Score": 0.5696091055870056
+          }
+        ],
+        "Score": 0.8617406487464905,
+        "Text": "Amoxicillin",
+        "Traits": [],
+        "Type": "GENERIC_NAME"
+      }
+    ],
+    "ModelVersion": "3.1.0.20221107"
+  }
+}
