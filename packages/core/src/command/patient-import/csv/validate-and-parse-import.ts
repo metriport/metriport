@@ -203,7 +203,10 @@ function normalizeData(data: Record<string, string>) {
 }
 
 function normalizeProperty(record: string) {
-  return record.replace(charsToRemove, "").replace(charsToReplaceWithSpace, " ");
+  // Replace chars to remove with space so new lines without any space on either side wouldn't
+  // result in merged words. Duplicate spaces are replaced with a single space on the second
+  // replace anyways.
+  return record.replace(charsToRemove, " ").replace(charsToReplaceWithSpace, " ");
 }
 
 function normalizeCsvRecord(record: string) {
