@@ -20,5 +20,8 @@ export interface ComprehendContext {
   diagnosticReportId?: string;
   encounterId?: string;
   dateNoteWritten?: string;
+  extensionUrl?: string;
+  // The original text that was processed, and the global offset of it within a larger document
   originalText?: string;
+  globalOffsetOfOriginalText?: number;
 }

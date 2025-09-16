@@ -1,14 +1,21 @@
-import { DiagnosticReport, Encounter, Extension, Reference } from "@medplum/fhirtypes";
+import { DiagnosticReport, Encounter, Extension, Reference, Range } from "@medplum/fhirtypes";
 import { RxNormEntity } from "@aws-sdk/client-comprehendmedical";
 import { DATA_EXTRACTION_URL } from "./constants";
 import { ComprehendContext } from "./types";
 
-export function buildComprehendExtensionForEntity(
+export function buildExtensionForEntity(
   entity: RxNormEntity,
-  { originalText, diagnosticReportId, encounterId }: ComprehendContext
+  {
+    originalText,
+    diagnosticReportId,
+    encounterId,
+    extensionUrl,
+    globalOffsetOfOriginalText,
+  }: ComprehendContext
 ): Extension {
   const textRange = getTextRange(entity);
   const valueString = textRange ? originalText?.slice(textRange?.start, textRange?.end) : undefined;
+  const globalOffset = globalOffsetOfOriginalText ?? 0;
 
   const valueReference: Reference<DiagnosticReport | Encounter> | undefined = encounterId
     ? buildEncounterReference(encounterId)
@@ -16,10 +23,13 @@ export function buildComprehendExtensionForEntity(
     ? buildDiagnosticReportReference(diagnosticReportId)
     : undefined;
 
+  const valueRange = textRange ? buildRangeOfOriginalText(textRange, globalOffset) : undefined;
+
   return {
-    url: DATA_EXTRACTION_URL,
+    url: extensionUrl ?? DATA_EXTRACTION_URL,
     ...(valueString ? { valueString } : undefined),
     ...(valueReference ? { valueReference } : undefined),
+    ...(valueRange ? { valueRange } : undefined),
   };
 }
 
@@ -45,4 +55,14 @@ function getTextRange(entity: RxNormEntity): { start: number; end: number } | un
     }
   }
   return { start, end };
+}
+
+function buildRangeOfOriginalText(
+  textRange: { start: number; end: number },
+  globalOffset = 0
+): Range {
+  return {
+    low: { value: textRange.start + globalOffset },
+    high: { value: textRange.end + globalOffset },
+  };
 }

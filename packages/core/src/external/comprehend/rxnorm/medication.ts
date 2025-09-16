@@ -6,7 +6,7 @@ import { getRxNormCode } from "./shared";
 import { ComprehendContext } from "../types";
 import { buildStrengthRatio } from "./attribute/strength";
 import { buildForm } from "./attribute/form";
-import { buildComprehendExtensionForEntity } from "../extension";
+import { buildExtensionForEntity } from "../extension";
 
 export function buildMedication(
   entity: RxNormEntity,
@@ -17,7 +17,7 @@ export function buildMedication(
 
   const amount = buildStrengthRatio(entity);
   const form = buildForm(entity);
-  const extension = [buildComprehendExtensionForEntity(entity, context)];
+  const extension = [buildExtensionForEntity(entity, context)];
 
   return {
     resourceType: "Medication",
