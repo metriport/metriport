@@ -42,12 +42,14 @@ import {
   SupportedTriggerEvent,
 } from "./utils";
 
+type HieConfig = { timezone: string };
+
 function getTimezoneFromHieName(hieName: string): string {
-  const hieConfigDictionary = getHieConfigDictionary();
+  const hieConfigDictionary = getHieConfigDictionary() as Record<string, HieConfig>;
   const hieConfig = hieConfigDictionary[hieName];
 
-  if (!hieConfig) {
-    throw new Error(`HIE config not found for name: ${hieName}`);
+  if (!hieConfig?.timezone) {
+    throw new Error(`HIE timezone not found for HIE: ${hieName}`);
   }
 
   return hieConfig.timezone;
