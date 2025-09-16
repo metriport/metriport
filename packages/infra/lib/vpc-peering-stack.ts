@@ -12,6 +12,11 @@ interface VpcPeeringStackProps extends cdk.StackProps {
  * This allows Client VPN users connected to the API VPC to access HL7 servers
  * in the HL7 Notification VPC on port 2575.
  */
+
+const API_STACK_SUBNAME = "APIVpc";
+
+const HL7_NOTIFICATION_STACK_NAME = "Hl7NotificationStack";
+const HL7_NOTIFICATION_VPC_SUBNAME = "Vpc";
 export class VpcPeeringStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: VpcPeeringStackProps) {
     super(scope, id, props);
@@ -22,13 +27,11 @@ export class VpcPeeringStack extends cdk.Stack {
 
     // Import existing VPCs by their known construct IDs
     const apiVpc = ec2.Vpc.fromLookup(this, "ImportedApiVpc", {
-      tags: {
-        "aws:cloudformation:logical-id": "APIVpc",
-      },
+      vpcName: `${props.config.stackName}/${API_STACK_SUBNAME}`,
     });
 
     const hl7Vpc = ec2.Vpc.fromLookup(this, "ImportedHl7Vpc", {
-      vpcId: cdk.Fn.importValue("Hl7NotificationStack-VpcId"),
+      vpcName: `${HL7_NOTIFICATION_STACK_NAME}/${HL7_NOTIFICATION_VPC_SUBNAME}`,
     });
 
     // Create VPC Peering Connection
@@ -63,11 +66,6 @@ export class VpcPeeringStack extends cdk.Stack {
     new cdk.CfnOutput(this, "Hl7VpcId", {
       description: "HL7 VPC ID",
       value: hl7Vpc.vpcId,
-    });
-
-    new cdk.CfnOutput(this, "PeeringStatus", {
-      description: "Instructions for testing connectivity",
-      value: `Minimal VPC Peering established. VPN clients can access HL7 servers at 10.1.1.20-23:2575`,
     });
   }
 

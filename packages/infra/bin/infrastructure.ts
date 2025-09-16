@@ -33,7 +33,7 @@ async function deploy(config: EnvConfig) {
   // 1. Deploy the secrets stack to initialize all secrets.
   //    Do this first, and then manually set the values in the AWS Secrets Manager.
   //---------------------------------------------------------------------------------
-  new SecretsStack(app, config.secretsStackName, { env, config });
+  const secretsStack = new SecretsStack(app, config.secretsStackName, { env, config });
 
   //---------------------------------------------------------------------------------
   // 2. Deploy the buckets stack to create shared buckets.
@@ -53,7 +53,7 @@ async function deploy(config: EnvConfig) {
   //---------------------------------------------------------------------------------
   // 4. Deploy the API stack once all secrets are defined.
   //---------------------------------------------------------------------------------
-  const apiStack = new APIStack(app, config.stackName, { env, config, version });
+  new APIStack(app, config.stackName, { env, config, version });
 
   //---------------------------------------------------------------------------------
   // 5. Deploy the HL7 Notification Webhook Sender stack.
@@ -78,20 +78,26 @@ async function deploy(config: EnvConfig) {
         description: `VPN Configuration for routing HL7 messages from ${hieConfig.name}`,
       });
 
+      /**
+       * We add explicit dependencies here because the VPN tunnel infra is booted up _outside_ of the standard
+       * develop / master CI pipelines to make the integration process easier + prevent needing to ship changes
+       * back forth through CI in order to get tunnels, networking rules, etc. deployed.
+       */
+      vpnStack.addDependency(secretsStack);
       vpnStack.addDependency(hl7NotificationStack);
     });
 
     //---------------------------------------------------------------------------------
     // 5.1. Deploy VPC Peering between API VPC and HL7 VPC
     //---------------------------------------------------------------------------------
-    const vpcPeeringStack = new VpcPeeringStack(app, "VpcPeeringStack", {
+    // ⚠️ NOTE: VPC Peering depends on both API and HL7 stacks being deployed
+    // But to prevent CI from spending time re-diffing and deploying these stacks,
+    // we assume that these dependencies are being managed and deployed in proper sequence
+    // by the CI pipeline.
+    new VpcPeeringStack(app, "VpcPeeringStack", {
       env,
       config,
     });
-
-    // VPC Peering depends on both API and HL7 stacks being deployed
-    vpcPeeringStack.addDependency(apiStack);
-    vpcPeeringStack.addDependency(hl7NotificationStack);
   }
 
   //---------------------------------------------------------------------------------
