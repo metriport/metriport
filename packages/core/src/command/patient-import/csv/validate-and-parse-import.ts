@@ -15,6 +15,7 @@ const numberOfParallelExecutions = 20;
 
 const columnSeparator = ",";
 const commaRegex = new RegExp(/,/g);
+const charsThatRequireQuotes = [columnSeparator, "\n", "\r", "\t"];
 
 /**
  * Validates and parses a CSV file from S3 for bulk patient import.
@@ -181,7 +182,7 @@ export function csvRecordToParsedPatient(
   rowNumber: number
 ): ParsedPatient {
   const raw = Object.values(data) as string[];
-  const rawNormalized = raw.map(r => (r.includes(columnSeparator) ? `"${r}"` : r));
+  const rawNormalized = raw.map(normalizeRecord);
   const result = mapCsvPatientToMetriportPatient(data);
   const baseParsedPatient = { rowNumber, raw: rawNormalized.join(",") };
   if (Array.isArray(result)) {
@@ -189,6 +190,10 @@ export function csvRecordToParsedPatient(
   } else {
     return { ...baseParsedPatient, parsed: result };
   }
+}
+
+function normalizeRecord(record: string) {
+  return charsThatRequireQuotes.some(char => record.includes(char)) ? `"${record}"` : record;
 }
 
 function stripCommas(input: string, replacement = "") {
