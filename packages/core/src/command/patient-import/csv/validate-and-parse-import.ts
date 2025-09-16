@@ -15,7 +15,9 @@ const numberOfParallelExecutions = 20;
 
 const columnSeparator = ",";
 const commaRegex = new RegExp(/,/g);
-const charsThatRequireQuotes = [columnSeparator, "\n", "\r", "\t"];
+const charsThatRequireQuotes = [columnSeparator, '"', "\n", "\r", "\t"];
+const charsToRemove = /[\n\r\t]/g;
+const charsToReplaceWithSpace = /\s{2,}/g;
 
 /**
  * Validates and parses a CSV file from S3 for bulk patient import.
@@ -158,7 +160,8 @@ export async function validateAndParsePatientImportCsv({
       })
       .on("data", async data => {
         // Skip empty lines
-        if (Object.keys(data).length < 1) return;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        if (Object.values(data).every((v: any) => (v ? String(v) : "").trim() === "")) return;
         try {
           if (++numberOfRows > MAX_NUMBER_ROWS) {
             throw new MetriportError(`CSV has more rows than max (${MAX_NUMBER_ROWS})`);
@@ -181,8 +184,9 @@ export function csvRecordToParsedPatient(
   data: Record<string, string>,
   rowNumber: number
 ): ParsedPatient {
-  const raw = Object.values(data) as string[];
-  const rawNormalized = raw.map(normalizeRecord);
+  const normalizedData = normalizeData(data);
+  const raw = Object.values(normalizedData) as string[];
+  const rawNormalized = raw.map(normalizeCsvRecord);
   const result = mapCsvPatientToMetriportPatient(data);
   const baseParsedPatient = { rowNumber, raw: rawNormalized.join(",") };
   if (Array.isArray(result)) {
@@ -192,7 +196,18 @@ export function csvRecordToParsedPatient(
   }
 }
 
-function normalizeRecord(record: string) {
+function normalizeData(data: Record<string, string>) {
+  return Object.fromEntries(
+    Object.entries(data).map(([key, value]) => [key, normalizeProperty(value)])
+  );
+}
+
+function normalizeProperty(record: string) {
+  return record.replace(charsToRemove, "").replace(charsToReplaceWithSpace, " ");
+}
+
+function normalizeCsvRecord(record: string) {
+  if (record === "") return "";
   return charsThatRequireQuotes.some(char => record.includes(char)) ? `"${record}"` : record;
 }
 
