@@ -5,7 +5,7 @@ import { log } from "../../util/log";
 import { Hl7LahieSftpIngestionDirect } from "./hl7-sftp-ingestion-direct";
 import { Hl7LahieSftpIngestion } from "./hl7-sftp-ingestion";
 
-export async function buildLahieSftpIngestion(
+export async function buildHl7LahieSftpIngestion(
   localPassword?: string
 ): Promise<Hl7LahieSftpIngestion> {
   if (Config.isDev()) {
