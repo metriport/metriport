@@ -112,7 +112,7 @@ const MEDICATION_FORM_MAP: Record<string, string> = Object.fromEntries([
   ["solution for iontophoresis", "385113008"],
   ["transdermal patch", "385114002"],
   ["collodion", "385115001"],
-  ["medicated nail laquer", "385116000"],
+  ["medicated nail lacquer", "385116000"],
   ["poultice", "385117009"],
   ["cutaneous stick", "385118004"],
   ["cutaneous sponge", "385119007"],
