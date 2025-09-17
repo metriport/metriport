@@ -1,6 +1,6 @@
 import { errorToString, MetriportError } from "@metriport/shared";
 import { UpdateJobSchema } from "@metriport/shared/domain/patient/patient-import/schemas";
-import { PatientImportJobStatus } from "@metriport/shared/domain/patient/patient-import/status";
+import { PatientImportJobUpdatableStatus } from "@metriport/shared/domain/patient/patient-import/status";
 import { PatientImportJob } from "@metriport/shared/domain/patient/patient-import/types";
 import axios from "axios";
 import { Config } from "../../../util/config";
@@ -10,7 +10,7 @@ import { withDefaultApiErrorHandling } from "../../shared/api/shared";
 export type UpdateJobAtApiParams = {
   cxId: string;
   jobId: string;
-  status?: PatientImportJobStatus;
+  status?: PatientImportJobUpdatableStatus;
   total?: number | undefined;
   /**
    * Only to be set on dry run mode - on regular mode, the successful count is incremented
@@ -18,6 +18,7 @@ export type UpdateJobAtApiParams = {
    */
   successful?: number | undefined;
   failed?: number | undefined;
+  reason?: string | undefined;
   forceStatusUpdate?: boolean | undefined;
 };
 
@@ -36,11 +37,11 @@ export type UpdateJobAtApiParams = {
  * @throws MetriportError if the update fails.
  */
 export async function updateJobAtApi(params: UpdateJobAtApiParams): Promise<PatientImportJob> {
-  const { cxId, jobId, status, total, successful, failed, forceStatusUpdate } = params;
+  const { cxId, jobId, status, total, successful, failed, reason, forceStatusUpdate } = params;
   const { log } = out(`PatientImport updateJobAtApi - cxId ${cxId} jobId ${jobId}`);
   const api = axios.create({ baseURL: Config.getApiUrl() });
   const url = buildUrl(cxId, jobId);
-  const payload: UpdateJobSchema = { status, total, successful, failed, forceStatusUpdate };
+  const payload: UpdateJobSchema = { status, total, successful, failed, reason, forceStatusUpdate };
 
   if (status == undefined && total == undefined && failed == undefined && successful == undefined) {
     throw new Error("updateJobAtApi requires at least one of {status,total,failed} to be defined");

@@ -60,6 +60,7 @@ export async function processJobParse({
         status: "failed",
         total: failed.length,
         failed: failed.length,
+        reason: "Empty or invalid file",
       });
       return;
     }
@@ -145,7 +146,12 @@ export async function processJobParse({
   } catch (error) {
     const msg = `Failure while parsing the job of patient import @ PatientImport`;
     log(`${msg}. Cause: ${errorToString(error)}`);
-    await updateJobAtApi({ cxId, jobId, status: "failed" });
+    await updateJobAtApi({
+      cxId,
+      jobId,
+      status: "failed",
+      reason: "Unknown error while parsing the inputfile",
+    });
     capture.setExtra({
       cxId,
       jobId,
