@@ -90,7 +90,7 @@ async function deploy(config: EnvConfig) {
     //---------------------------------------------------------------------------------
     // 5.1. Deploy VPC Peering between API VPC and HL7 VPC
     //---------------------------------------------------------------------------------
-    // ⚠️ NOTE: VPC Peering depends on both API and HL7 stacks being deployed
+    // ⚠️ NOTE: VPC Peering depends on both API and HL7 stacks being correct / deployed.
     // But to prevent CI from spending time re-diffing and deploying these stacks,
     // we assume that these dependencies are being managed and deployed in proper sequence
     // by the CI pipeline.
