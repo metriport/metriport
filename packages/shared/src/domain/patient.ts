@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const patientSchema = z.object({
   id: z.string(),
-  externalId: z.string().optional().or(z.null()),
+  externalId: z.string().optional().nullable(),
   facilityIds: z.array(z.string()),
   firstName: z.string(),
   lastName: z.string(),
