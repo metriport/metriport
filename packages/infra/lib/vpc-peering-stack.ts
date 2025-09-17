@@ -22,11 +22,11 @@ export class VpcPeeringStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: VpcPeeringStackProps) {
     super(scope, id, props);
 
+    // Skip if HL7 notifications are not configured
     if (!props.config.hl7Notification) {
-      return; // Skip if HL7 notifications are not configured
+      return;
     }
 
-    // Import existing VPCs by their known construct IDs
     const apiVpc = ec2.Vpc.fromLookup(this, "ImportedApiVpc", {
       vpcName: `${props.config.stackName}/${API_STACK_SUBNAME}`,
     });
@@ -50,22 +50,6 @@ export class VpcPeeringStack extends cdk.Stack {
     this.addRoutesToApiVpc(apiVpc, vpcPeeringConnection);
     this.addRoutesToHl7Vpc(hl7Vpc, apiVpc.vpcCidrBlock, vpcPeeringConnection);
     this.updateHl7NetworkAclForPeering(apiVpc.vpcCidrBlock);
-
-    // Outputs
-    new cdk.CfnOutput(this, "VpcPeeringConnectionId", {
-      description: "VPC Peering Connection ID between API and HL7 VPCs",
-      value: vpcPeeringConnection.ref,
-    });
-
-    new cdk.CfnOutput(this, "ApiVpcId", {
-      description: "API VPC ID",
-      value: apiVpc.vpcId,
-    });
-
-    new cdk.CfnOutput(this, "Hl7VpcId", {
-      description: "HL7 VPC ID",
-      value: hl7Vpc.vpcId,
-    });
   }
 
   private addRoutesToApiVpc(apiVpc: ec2.IVpc, vpcPeeringConnection: ec2.CfnVPCPeeringConnection) {
