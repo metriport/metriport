@@ -8,6 +8,7 @@ import { sleep } from "@metriport/core/util/sleep";
 import {
   getEnvVar,
   isEmailValid,
+  isEmailAPhoneNumber,
   isPhoneValid,
   normalizeDob,
   normalizeEmail,
@@ -292,7 +293,14 @@ export function normalizeEmailUtils(email: string | undefined): string | undefin
   if (email == undefined) return undefined;
   const normalEmail = normalizeEmail(email);
   if (normalEmail.length === 0) return undefined;
-  if (!isEmailValid(normalEmail)) throw new Error("Invalid Email");
+  if (!isEmailValid(normalEmail)) {
+    if (isEmailAPhoneNumber(email)) {
+      throw new Error(
+        "Invalid Email: appears to be a phone number (starts with +1). Please enter a valid email address."
+      );
+    }
+    throw new Error("Invalid Email");
+  }
   return normalEmail;
 }
 
