@@ -162,6 +162,7 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
     outgoingHl7NotificationBucket.grantReadWrite(lambda);
     hl7ConversionBucket.grantReadWrite(lambda);
     incomingHl7NotificationBucket.grantReadWrite(lambda);
+    hl7Base64ScramblerSeed.grantRead(lambda);
 
     lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
     analyticsSecret.grantRead(lambda);
