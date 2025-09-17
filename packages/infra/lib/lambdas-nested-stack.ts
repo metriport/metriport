@@ -1,4 +1,4 @@
-import { Duration, NestedStack, NestedStackProps, Size } from "aws-cdk-lib";
+import { Duration, NestedStack, NestedStackProps, RemovalPolicy, Size } from "aws-cdk-lib";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
@@ -82,6 +82,7 @@ interface LambdasNestedStackProps extends NestedStackProps {
   featureFlagsTable: dynamodb.Table;
   bedrock: { modelId: string; region: string; anthropicVersion: string } | undefined;
   openSearch: OpenSearchConfigForLambdas;
+  hl7NotificationWebhookSenderQueue?: IQueue;
 }
 
 type GenericConsolidatedLambdaProps = {
@@ -120,6 +121,7 @@ export class LambdasNestedStack extends NestedStack {
   readonly fhirConverterConnector: FHIRConverterConnector;
   readonly acmCertificateMonitorLambda: Lambda;
   readonly hl7v2RosterUploadLambdas: Lambda[] | undefined;
+  readonly hl7LahieSftpIngestionLambda: Lambda | undefined;
   readonly conversionResultNotifierLambda: Lambda;
   readonly reconversionKickoffLambda: Lambda;
   readonly reconversionKickoffQueue: Queue;
@@ -315,6 +317,20 @@ export class LambdasNestedStack extends NestedStack {
         ],
       });
 
+      const lahieSftpIngestionBucket = new s3.Bucket(this, "lahieSftpIngestionBucket", {
+        bucketName: props.config.hl7Notification.LahieSftpIngestionLambda.bucketName,
+        publicReadAccess: false,
+        encryption: s3.BucketEncryption.S3_MANAGED,
+        versioned: true,
+        removalPolicy: RemovalPolicy.DESTROY,
+        cors: [
+          {
+            allowedOrigins: ["*"],
+            allowedMethods: [s3.HttpMethods.PUT, s3.HttpMethods.POST],
+          },
+        ],
+      });
+
       this.hl7v2RosterUploadLambdas = this.setupRosterUploadLambdas({
         lambdaLayers: props.lambdaLayers,
         vpc: props.vpc,
@@ -322,6 +338,16 @@ export class LambdasNestedStack extends NestedStack {
         hl7v2RosterBucket,
         config: props.config,
         alarmAction: props.alarmAction,
+      });
+
+      this.hl7LahieSftpIngestionLambda = this.setupLahieSftpIngestionLambd({
+        lambdaLayers: props.lambdaLayers,
+        vpc: props.vpc,
+        secrets: props.secrets,
+        config: props.config,
+        alarmAction: props.alarmAction,
+        lahieSftpIngestionBucket,
+        hl7NotificationWebhookSenderQueue: props.hl7NotificationWebhookSenderQueue,
       });
     }
 
@@ -1005,6 +1031,83 @@ export class LambdasNestedStack extends NestedStack {
     );
 
     return acmCertificateMonitorLambda;
+  }
+
+  private setupLahieSftpIngestionLambd(ownProps: {
+    lambdaLayers: LambdaLayers;
+    vpc: ec2.IVpc;
+    secrets: Secrets;
+    config: EnvConfig;
+    lahieSftpIngestionBucket: s3.IBucket;
+    hl7NotificationWebhookSenderQueue?: IQueue;
+    alarmAction: SnsAction | undefined;
+  }): Lambda {
+    const envType = ownProps.config.environmentType;
+    const props = ownProps.config.hl7Notification?.LahieSftpIngestionLambda;
+    if (!props) {
+      throw new Error("LahieSftpIngestionLambda is undefined in config.");
+    }
+
+    const sftpPasswordSecret = ownProps.secrets["LAHIE_INGESTION_PASSWORD"];
+    const privateKeySecret = ownProps.secrets["LAHIE_INGESTION_PRIVATE_KEY"];
+    const passphraseSecret = ownProps.secrets["LAHIE_INGESTION_PASSPHRASE"];
+
+    if (!sftpPasswordSecret) {
+      throw new Error("LAHIE_INGESTION_PASSWORD is not defined in config.");
+    }
+
+    if (!privateKeySecret) {
+      throw new Error("LAHIE_INGESTION_PRIVATE_KEY is not defined in config.");
+    }
+
+    if (!passphraseSecret) {
+      throw new Error("LAHIE_INGESTION_PASSPHRASE is not defined in config.");
+    }
+
+    const sftpConfig = props.sftpConfig;
+    const lambdaTimeout = Duration.minutes(5);
+    const lambdaMemorySize = 1024;
+    const hl7Base64ScramblerSeed = ownProps.secrets["HL7_BASE64_SCRAMBLER_SEED"];
+
+    if (!hl7Base64ScramblerSeed) {
+      throw new Error("HL7_BASE64_SCRAMBLER_SEED is not defined in config.");
+    }
+
+    const lambda = createScheduledLambda({
+      layers: [ownProps.lambdaLayers.shared],
+      vpc: ownProps.vpc,
+      timeout: lambdaTimeout,
+      memory: lambdaMemorySize,
+      scheduleExpression: "0 15 * * ? *",
+      envType,
+      entry: "hl7-lahie-sftp-ingestion",
+      envVars: {
+        LAHIE_INGESTION_PORT: sftpConfig.port.toString(),
+        LAHIE_INGESTION_HOST: sftpConfig.host,
+        LAHIE_INGESTION_REMOTE_PATH: sftpConfig.remotePath,
+        LAHIE_INGESTION_USERNAME: sftpConfig.username,
+        LAHIE_INGESTION_PASSWORD_ARN: sftpPasswordSecret.secretArn,
+        LAHIE_INGESTION_BUCKET_NAME: ownProps.lahieSftpIngestionBucket.bucketName,
+        LAHIE_INGESTION_PRIVATE_KEY_ARN: privateKeySecret.secretArn,
+        LAHIE_INGESTION_PRIVATE_KEY_PASSPHRASE_ARN: passphraseSecret.secretArn,
+        HL7_BASE64_SCRAMBLER_SEED_ARN: hl7Base64ScramblerSeed.secretArn,
+        HL7_NOTIFICATION_QUEUE_URL: ownProps.hl7NotificationWebhookSenderQueue?.queueUrl ?? "",
+      },
+      stack: this,
+      name: "hl7-sftp-ingestion-Lahie-lambda",
+      alarmSnsAction: ownProps.alarmAction,
+    });
+
+    sftpPasswordSecret.grantRead(lambda);
+    privateKeySecret.grantRead(lambda);
+    passphraseSecret.grantRead(lambda);
+    ownProps.lahieSftpIngestionBucket.grantReadWrite(lambda);
+    hl7Base64ScramblerSeed.grantRead(lambda);
+    if (!ownProps.hl7NotificationWebhookSenderQueue) {
+      throw new Error("HL7_NOTIFICATION_QUEUE_URL is not defined.");
+    }
+    ownProps.hl7NotificationWebhookSenderQueue?.grantSendMessages(lambda);
+    return lambda;
   }
 
   private setupRosterUploadLambdas(ownProps: {

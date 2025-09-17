@@ -13,6 +13,8 @@ import { QueueAndLambdaSettings } from "./shared/settings";
 import { createQueue } from "./shared/sqs";
 import { Secrets } from "./shared/secrets";
 import { ISecret } from "aws-cdk-lib/aws-secretsmanager";
+import { createHieConfigDictionary } from "./shared/hie-config-dictionary";
+import { HieConfig, VpnlessHieConfig } from "@metriport/core/command/hl7v2-subscriptions/types";
 
 function settings() {
   const timeout = Duration.seconds(61);
@@ -74,6 +76,7 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
       outgoingHl7NotificationBucket: props.outgoingHl7NotificationBucket,
       hl7ConversionBucket: props.hl7ConversionBucket,
       analyticsSecret,
+      hieConfigs: props.config.hl7Notification?.hieConfigs ?? {},
     });
 
     this.lambda = setup.lambda;
@@ -88,6 +91,7 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
     outgoingHl7NotificationBucket: s3.IBucket;
     hl7ConversionBucket: s3.IBucket;
     analyticsSecret: ISecret;
+    hieConfigs: Record<string, HieConfig | VpnlessHieConfig>;
   }): { lambda: Lambda } {
     const {
       lambdaLayers,
@@ -98,6 +102,7 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
       outgoingHl7NotificationBucket,
       hl7ConversionBucket,
       analyticsSecret,
+      hieConfigs,
     } = ownProps;
     const {
       name,
@@ -132,6 +137,7 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
         HL7_OUTGOING_MESSAGE_BUCKET_NAME: outgoingHl7NotificationBucket.bucketName,
         HL7_CONVERSION_BUCKET_NAME: hl7ConversionBucket.bucketName,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+        HIE_CONFIG_DICTIONARY: JSON.stringify(createHieConfigDictionary(hieConfigs)),
       },
     });
 
