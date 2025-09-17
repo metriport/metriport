@@ -82,6 +82,7 @@ interface LambdasNestedStackProps extends NestedStackProps {
   featureFlagsTable: dynamodb.Table;
   bedrock: { modelId: string; region: string; anthropicVersion: string } | undefined;
   openSearch: OpenSearchConfigForLambdas;
+  hl7NotificationWebhookSenderQueue?: IQueue;
 }
 
 type GenericConsolidatedLambdaProps = {
@@ -346,6 +347,7 @@ export class LambdasNestedStack extends NestedStack {
         config: props.config,
         alarmAction: props.alarmAction,
         lahieSftpIngestionBucket,
+        hl7NotificationWebhookSenderQueue: props.hl7NotificationWebhookSenderQueue,
       });
     }
 
@@ -1037,6 +1039,7 @@ export class LambdasNestedStack extends NestedStack {
     secrets: Secrets;
     config: EnvConfig;
     lahieSftpIngestionBucket: s3.IBucket;
+    hl7NotificationWebhookSenderQueue?: IQueue;
     alarmAction: SnsAction | undefined;
   }): Lambda {
     const envType = ownProps.config.environmentType;
@@ -1064,6 +1067,11 @@ export class LambdasNestedStack extends NestedStack {
     const sftpConfig = props.sftpConfig;
     const lambdaTimeout = Duration.minutes(5);
     const lambdaMemorySize = 1024;
+    const hl7Base64ScramblerSeed = ownProps.secrets["HL7_BASE64_SCRAMBLER_SEED"];
+
+    if (!hl7Base64ScramblerSeed) {
+      throw new Error("HL7_BASE64_SCRAMBLER_SEED is not defined in config.");
+    }
 
     const lambda = createScheduledLambda({
       layers: [ownProps.lambdaLayers.shared],
@@ -1082,6 +1090,8 @@ export class LambdasNestedStack extends NestedStack {
         LAHIE_INGESTION_BUCKET_NAME: ownProps.lahieSftpIngestionBucket.bucketName,
         LAHIE_INGESTION_PRIVATE_KEY_ARN: privateKeySecret.secretArn,
         LAHIE_INGESTION_PRIVATE_KEY_PASSPHRASE_ARN: passphraseSecret.secretArn,
+        HL7_BASE64_SCRAMBLER_SEED_ARN: hl7Base64ScramblerSeed.secretArn,
+        HL7_NOTIFICATION_QUEUE_URL: ownProps.hl7NotificationWebhookSenderQueue?.queueUrl ?? "",
       },
       stack: this,
       name: "hl7-sftp-ingestion-Lahie-lambda",

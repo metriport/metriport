@@ -12,6 +12,9 @@ const lambdaName = getEnvVarOrFail("AWS_LAMBDA_FUNCTION_NAME");
 
 export const handler = capture.wrapHandler(
   async (params: Hl7LahieSftpIngestionParams): Promise<void> => {
+    const secretArn = Config.getHl7Base64ScramblerSeedArn();
+    const hl7Base64ScramblerSeed = await getSecretValueOrFail(secretArn, Config.getAWSRegion());
+    process.env["HL7_BASE64_SCRAMBLER_SEED"] = hl7Base64ScramblerSeed;
     capture.setExtra({ context: lambdaName, dateTimestamp: params.dateTimestamp });
     const log = prefixedLog("Lahie-ingestion");
     log("Starting ingestion of Lahie ADTs");
