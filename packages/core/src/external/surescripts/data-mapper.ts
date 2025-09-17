@@ -50,6 +50,21 @@ export class SurescriptsDataMapper {
     return { cxId, facility, org, patients };
   }
 
+  async getBatchRequestDataByFacility(
+    cxId: string
+  ): Promise<Record<string, SurescriptsBatchRequestData>> {
+    const customer = await this.getCustomerData(cxId);
+    const facilities = customer.facilities;
+    const batchRequests: Record<string, SurescriptsBatchRequestData> = {};
+    for (const facility of facilities) {
+      const facilityId = facility.id;
+      const patientIds = await this.getPatientIdsForFacility({ cxId, facilityId });
+      const patients = await this.getEachPatientById(cxId, patientIds);
+      batchRequests[facilityId] = { cxId, facility, org: customer.org, patients };
+    }
+    return batchRequests;
+  }
+
   convertBatchRequestToPatientRequests(
     batchRequestData: SurescriptsBatchRequestData
   ): SurescriptsPatientRequestData[] {
