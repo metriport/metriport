@@ -4,6 +4,8 @@ import { getEnvVarOrFail } from "@metriport/shared/common/env-var";
 import { Hl7LahieSftpIngestionDirect } from "@metriport/core/command/hl7-sftp-ingestion/hl7-sftp-ingestion-direct";
 import { Hl7LahieSftpIngestionParams } from "@metriport/core/command/hl7-sftp-ingestion/hl7-sftp-ingestion";
 import { LahieSftpIngestionClient } from "@metriport/core/command/hl7-sftp-ingestion/sftp-ingestion-client";
+import { getSecretValueOrFail } from "@metriport/core/external/aws/secret-manager";
+import { Config } from "@metriport/core/util/config";
 
 capture.init();
 
