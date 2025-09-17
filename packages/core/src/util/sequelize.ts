@@ -35,7 +35,11 @@ export type DbReadReplicaEndpoint = z.infer<typeof dbReadReplicaEndpointSchema>;
 /**
  * This function is used to initialize the DB pool for raw queries that can't rely on Models.
  */
-export function initDbPool(dbCreds: string, poolOptions?: PoolOptions, logging?: boolean) {
+export function initDbPool(
+  dbCreds: string,
+  poolOptions?: PoolOptions,
+  logging?: boolean
+): Sequelize {
   const sqlDBCreds = JSON.parse(dbCreds);
   const parsedDbCreds = dbCredsSchema.parse(sqlDBCreds);
   return initDbPoolFromCreds(parsedDbCreds, poolOptions, logging);
@@ -45,7 +49,11 @@ export function initDbPool(dbCreds: string, poolOptions?: PoolOptions, logging?:
  * This function is used to initialize the DB pool for raw queries that can't rely on Models.
  *
  */
-function initDbPoolFromCreds(dbCreds: DbCreds, poolOptions = defaultPoolOptions, logging = false) {
+function initDbPoolFromCreds(
+  dbCreds: DbCreds,
+  poolOptions = defaultPoolOptions,
+  logging = false
+): Sequelize {
   const sequelize = new Sequelize(dbCreds.dbname, dbCreds.username, dbCreds.password, {
     host: dbCreds.host,
     port: dbCreds.port,
