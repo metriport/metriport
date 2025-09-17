@@ -1,7 +1,6 @@
 import * as cdk from "aws-cdk-lib";
 import { Fn } from "aws-cdk-lib";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
-import * as secret from "aws-cdk-lib/aws-secretsmanager";
 import { Construct } from "constructs";
 import { MLLP_DEFAULT_PORT } from "./constants";
 import { HieConfig } from "@metriport/core/command/hl7v2-subscriptions/types";
@@ -87,16 +86,6 @@ export class VpnStack extends cdk.Stack {
       ]);
     });
 
-    const presharedKey1 = secret.Secret.fromSecretNameV2(
-      this,
-      `PresharedKey1-${hieName}`,
-      `PresharedKey1-${hieName}`
-    );
-    const presharedKey2 = secret.Secret.fromSecretNameV2(
-      this,
-      `PresharedKey2-${hieName}`,
-      `PresharedKey2-${hieName}`
-    );
     /**
      * We use 2 tunnels here because state HIEs often have a failover to a backup IP..
      */
@@ -113,13 +102,13 @@ export class VpnStack extends cdk.Stack {
       ],
       vpnTunnelOptionsSpecifications: [
         {
-          preSharedKey: Fn.sub("{{resolve:secretsmanager:${SecretArn}:SecretString}}", {
-            SecretArn: presharedKey1.secretArn,
+          preSharedKey: Fn.sub("{{resolve:secretsmanager:${SecretName}:SecretString}}", {
+            SecretName: `PresharedKey1-${hieName}`,
           }),
         },
         {
-          preSharedKey: Fn.sub("{{resolve:secretsmanager:${SecretArn}:SecretString}}", {
-            SecretArn: presharedKey2.secretArn,
+          preSharedKey: Fn.sub("{{resolve:secretsmanager:${SecretName}:SecretString}}", {
+            SecretName: `PresharedKey2-${hieName}`,
           }),
         },
       ],
