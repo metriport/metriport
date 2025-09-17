@@ -4,10 +4,10 @@ import {
   normalizeCity as normalizeCityFromShared,
   normalizeUSStateForAddressSafe,
   normalizeZipCodeNewSafe,
-  toTitleCase,
   USStateForAddress,
 } from "@metriport/shared";
 import { filterTruthy } from "@metriport/shared/common/filter-map";
+import { toTitleCaseIfNotMultiCase } from "@metriport/shared/common/title-case";
 import { Address } from "../../../domain/address";
 import { out } from "../../../util";
 import { ParsingError } from "./shared";
@@ -185,7 +185,7 @@ export function normalizeAddressLine(
 
   const withoutInstructions = addressLine.replace(/\(.*?\)/g, " ").replace(/\s+/g, " ");
   const withoutPunctuation = withoutInstructions.replace(/[.,;]/g, " ");
-  const normalized = toTitleCase(withoutPunctuation);
+  const normalized = toTitleCaseIfNotMultiCase(withoutPunctuation);
 
   if (!splitUnit) return normalized;
 

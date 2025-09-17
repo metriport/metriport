@@ -7,9 +7,9 @@ import {
   normalizeExternalId as normalizeExternalIdFromShared,
   normalizeGenderSafe,
   normalizeUSStateForAddressSafe,
-  toTitleCase,
 } from "@metriport/shared";
 import { filterTruthy } from "@metriport/shared/common/filter-map";
+import { toTitleCaseIfNotMultiCase } from "@metriport/shared/common/title-case";
 import { normalizeSsn } from "@metriport/shared/domain/patient/ssn";
 import {
   createDriversLicensePersonalIdentifier,
@@ -122,7 +122,7 @@ export function normalizeNameOrFail(name: string | undefined, propName: string):
   if (trimmedName == undefined || trimmedName.length < 1) {
     throw new BadRequestError(`Missing ` + propName);
   }
-  return toTitleCase(trimmedName);
+  return toTitleCaseIfNotMultiCase(trimmedName);
 }
 
 export function normalizeExternalId(id: string | undefined): string | undefined {

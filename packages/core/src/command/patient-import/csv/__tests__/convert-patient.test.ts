@@ -26,8 +26,35 @@ describe("convert-patient", () => {
         zip: faker.location.zipCode().slice(0, 5),
       };
     }
+
     it("returns patient when all fields are present", () => {
       const csv = makeCsv();
+      const result = mapCsvPatientToMetriportPatient(csv);
+      expect(result).toEqual(
+        expect.objectContaining({
+          firstName: csv.firstName,
+          lastName: csv.lastName,
+          dob: csv.dob?.slice(0, 10),
+          genderAtBirth: csv.gender === "male" ? "M" : "F",
+          address: [
+            expect.objectContaining({
+              addressLine1: csv.addressLine1,
+              city: csv.city,
+              state: csv.state,
+              zip: csv.zip,
+              country: "USA",
+            }),
+          ],
+        })
+      );
+    });
+
+    it("keeps words with original capitalization", () => {
+      const csv = makeCsv();
+      csv.firstName = "John O'Connor";
+      csv.lastName = "FrommageTheThird";
+      csv.addressLine1 = "123 VanBuren St";
+      csv.addressLine2 = "ApT 999";
       const result = mapCsvPatientToMetriportPatient(csv);
       expect(result).toEqual(
         expect.objectContaining({
