@@ -1,3 +1,4 @@
+import _ from "lodash";
 import { NotFoundError } from "@metriport/shared";
 import { CustomerData, FacilityData, OrganizationData } from "@metriport/shared/domain/customer";
 import { Patient } from "@metriport/shared/domain/patient";
@@ -51,16 +52,23 @@ export class SurescriptsDataMapper {
   }
 
   async getBatchRequestDataByFacility(
-    cxId: string
-  ): Promise<Record<string, SurescriptsBatchRequestData>> {
+    cxId: string,
+    batchSize = 100
+  ): Promise<Record<string, SurescriptsBatchRequestData[]>> {
     const customer = await this.getCustomerData(cxId);
     const facilities = customer.facilities;
-    const batchRequests: Record<string, SurescriptsBatchRequestData> = {};
+    const batchRequests: Record<string, SurescriptsBatchRequestData[]> = {};
     for (const facility of facilities) {
       const facilityId = facility.id;
       const patientIds = await this.getPatientIdsForFacility({ cxId, facilityId });
       const patients = await this.getEachPatientById(cxId, patientIds);
-      batchRequests[facilityId] = { cxId, facility, org: customer.org, patients };
+      const batches = _.chunk(patients, batchSize).map(patients => ({
+        cxId,
+        facility,
+        org: customer.org,
+        patients,
+      }));
+      batchRequests[facilityId] = batches;
     }
     return batchRequests;
   }
