@@ -82,7 +82,6 @@ interface LambdasNestedStackProps extends NestedStackProps {
   featureFlagsTable: dynamodb.Table;
   bedrock: { modelId: string; region: string; anthropicVersion: string } | undefined;
   openSearch: OpenSearchConfigForLambdas;
-  hl7NotificationWebhookSenderQueue?: IQueue;
 }
 
 type GenericConsolidatedLambdaProps = {
@@ -340,14 +339,13 @@ export class LambdasNestedStack extends NestedStack {
         alarmAction: props.alarmAction,
       });
 
-      this.hl7LahieSftpIngestionLambda = this.setupLahieSftpIngestionLambd({
+      this.hl7LahieSftpIngestionLambda = this.setupLahieSftpIngestionLambda({
         lambdaLayers: props.lambdaLayers,
         vpc: props.vpc,
         secrets: props.secrets,
         config: props.config,
         alarmAction: props.alarmAction,
         lahieSftpIngestionBucket,
-        hl7NotificationWebhookSenderQueue: props.hl7NotificationWebhookSenderQueue,
       });
     }
 
@@ -1033,13 +1031,12 @@ export class LambdasNestedStack extends NestedStack {
     return acmCertificateMonitorLambda;
   }
 
-  private setupLahieSftpIngestionLambd(ownProps: {
+  private setupLahieSftpIngestionLambda(ownProps: {
     lambdaLayers: LambdaLayers;
     vpc: ec2.IVpc;
     secrets: Secrets;
     config: EnvConfig;
     lahieSftpIngestionBucket: s3.IBucket;
-    hl7NotificationWebhookSenderQueue?: IQueue;
     alarmAction: SnsAction | undefined;
   }): Lambda {
     const envType = ownProps.config.environmentType;
@@ -1051,6 +1048,14 @@ export class LambdasNestedStack extends NestedStack {
     const sftpPasswordSecret = ownProps.secrets["LAHIE_INGESTION_PASSWORD"];
     const privateKeySecret = ownProps.secrets["LAHIE_INGESTION_PRIVATE_KEY"];
     const passphraseSecret = ownProps.secrets["LAHIE_INGESTION_PASSPHRASE"];
+    if (!ownProps.config.hl7Notification) {
+      throw new Error("HL7Notification is undefined in config.");
+    }
+    const queue = ownProps.config.hl7Notification.notificationWebhookSenderQueue;
+
+    if (!queue) {
+      throw new Error("HL7NotificationWebhookSenderQueue is undefined in config.");
+    }
 
     if (!sftpPasswordSecret) {
       throw new Error("LAHIE_INGESTION_PASSWORD is not defined in config.");
@@ -1091,10 +1096,10 @@ export class LambdasNestedStack extends NestedStack {
         LAHIE_INGESTION_PRIVATE_KEY_ARN: privateKeySecret.secretArn,
         LAHIE_INGESTION_PRIVATE_KEY_PASSPHRASE_ARN: passphraseSecret.secretArn,
         HL7_BASE64_SCRAMBLER_SEED_ARN: hl7Base64ScramblerSeed.secretArn,
-        HL7_NOTIFICATION_QUEUE_URL: ownProps.hl7NotificationWebhookSenderQueue?.queueUrl ?? "",
+        HL7_NOTIFICATION_QUEUE_URL: queue.url,
       },
       stack: this,
-      name: "hl7-sftp-ingestion-Lahie-lambda",
+      name: "Hl7SftpIngestionLahie",
       alarmSnsAction: ownProps.alarmAction,
     });
 
@@ -1103,10 +1108,8 @@ export class LambdasNestedStack extends NestedStack {
     passphraseSecret.grantRead(lambda);
     ownProps.lahieSftpIngestionBucket.grantReadWrite(lambda);
     hl7Base64ScramblerSeed.grantRead(lambda);
-    if (!ownProps.hl7NotificationWebhookSenderQueue) {
-      throw new Error("HL7_NOTIFICATION_QUEUE_URL is not defined.");
-    }
-    ownProps.hl7NotificationWebhookSenderQueue?.grantSendMessages(lambda);
+    const webhookSenderQueue = Queue.fromQueueArn(this, "Hl7WebhookSenderQueue", queue.arn);
+    webhookSenderQueue.grantSendMessages(lambda);
     return lambda;
   }
 
