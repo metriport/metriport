@@ -40,6 +40,7 @@ export type RosterRowData = {
   dateTwoMonthsInFutureNoDelimiter: string;
   dateMid2025NoDelimiter: string;
   emptyString: string;
+  addAllCaps: "ADD";
 };
 
 export type HiePatientRosterMapping = {
