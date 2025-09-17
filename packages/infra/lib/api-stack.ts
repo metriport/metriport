@@ -1,11 +1,11 @@
 import {
   Aspects,
-  aws_wafv2 as wafv2,
   CfnOutput,
   Duration,
   RemovalPolicy,
   Stack,
   StackProps,
+  aws_wafv2 as wafv2,
 } from "aws-cdk-lib";
 import * as apig from "aws-cdk-lib/aws-apigateway";
 import { BackupResource } from "aws-cdk-lib/aws-backup";
@@ -43,6 +43,7 @@ import { createDocQueryChecker } from "./api-stack/doc-query-checker";
 import * as documentUploader from "./api-stack/document-upload";
 import { createFHIRConverterService } from "./api-stack/fhir-converter-service";
 import { TerminologyServerNestedStack } from "./api-stack/terminology-server-service";
+import { API_STACK_VPC_NAME } from "./constants";
 import { EhrNestedStack } from "./ehr-nested-stack";
 import { EnvType } from "./env-type";
 import { FeatureFlagsNestedStack } from "./feature-flags-nested-stack";
@@ -54,6 +55,11 @@ import { LambdasLayersNestedStack } from "./lambda-layers-nested-stack";
 import { CDA_TO_VIS_TIMEOUT, LambdasNestedStack } from "./lambdas-nested-stack";
 import { PatientImportNestedStack } from "./patient-import-nested-stack";
 import { PatientMonitoringNestedStack } from "./patient-monitoring-nested-stack";
+import { QuestNestedStack } from "./quest/quest-stack";
+import {
+  createDownloadResponseScheduledLambda,
+  createUploadRosterScheduledLambda,
+} from "./quest/scheduled-lambda";
 import { RateLimitingNestedStack } from "./rate-limiting-nested-stack";
 import { DailyBackup } from "./shared/backup";
 import { addErrorAlarmToLambdaFunc, createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
@@ -64,11 +70,6 @@ import { provideAccessToQueue } from "./shared/sqs";
 import { isProd, isSandbox } from "./shared/util";
 import { wafRules } from "./shared/waf-rules";
 import { SurescriptsNestedStack } from "./surescripts/surescripts-stack";
-import { QuestNestedStack } from "./quest/quest-stack";
-import {
-  createUploadRosterScheduledLambda,
-  createDownloadResponseScheduledLambda,
-} from "./quest/scheduled-lambda";
 
 const FITBIT_LAMBDA_TIMEOUT = Duration.seconds(60);
 
@@ -100,8 +101,7 @@ export class APIStack extends Stack {
     //-------------------------------------------
     // VPC + NAT Gateway.
     //-------------------------------------------
-    const vpcConstructId = "APIVpc";
-    this.vpc = new ec2.Vpc(this, vpcConstructId, {
+    this.vpc = new ec2.Vpc(this, API_STACK_VPC_NAME, {
       flowLogs: {
         apiVPCFlowLogs: { trafficType: ec2.FlowLogTrafficType.REJECT },
       },

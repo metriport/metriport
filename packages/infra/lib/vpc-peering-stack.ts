@@ -3,6 +3,9 @@ import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { Construct } from "constructs";
 import { EnvConfig } from "../config/env-config";
 import { HL7_NLB_CIDR, MLLP_DEFAULT_PORT } from "./hl7-notification-stack/constants";
+import { API_STACK_VPC_NAME } from "./constants";
+import { HL7_NOTIFICATION_STACK_NAME } from "./constants";
+import { HL7_NOTIFICATION_VPC_NAME } from "./constants";
 
 interface VpcPeeringStackProps extends cdk.StackProps {
   config: EnvConfig;
@@ -13,11 +16,6 @@ interface VpcPeeringStackProps extends cdk.StackProps {
  * This allows Client VPN users connected to the API VPC to access HL7 servers
  * in the HL7 Notification VPC on port 2575.
  */
-
-const API_STACK_SUBNAME = "APIVpc";
-const HL7_NOTIFICATION_STACK_NAME = "Hl7NotificationStack";
-const HL7_NOTIFICATION_VPC_SUBNAME = "Vpc";
-
 export class VpcPeeringStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: VpcPeeringStackProps) {
     super(scope, id, props);
@@ -28,11 +26,11 @@ export class VpcPeeringStack extends cdk.Stack {
     }
 
     const apiVpc = ec2.Vpc.fromLookup(this, "ImportedApiVpc", {
-      vpcName: `${props.config.stackName}/${API_STACK_SUBNAME}`,
+      vpcName: `${props.config.stackName}/${API_STACK_VPC_NAME}`,
     });
 
     const hl7Vpc = ec2.Vpc.fromLookup(this, "ImportedHl7Vpc", {
-      vpcName: `${HL7_NOTIFICATION_STACK_NAME}/${HL7_NOTIFICATION_VPC_SUBNAME}`,
+      vpcName: `${HL7_NOTIFICATION_STACK_NAME}/${HL7_NOTIFICATION_VPC_NAME}`,
     });
 
     // Create VPC Peering Connection
