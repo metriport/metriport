@@ -31,6 +31,12 @@ describe("demographicsSchema", () => {
       "user123@metriport.com",
       "123user@metriport.com",
       "user@metriport.com.br",
+      "test!user@example.com",
+      "test+user@example.com",
+      "test_user@example.com",
+      "test-user@example.com",
+      "test.user@example.com",
+      "test_user+test@example.com",
     ];
     const casesToFail: (string | null | undefined)[] = [
       null,
