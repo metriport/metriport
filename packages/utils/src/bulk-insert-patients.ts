@@ -34,6 +34,13 @@ import { dedupPatientCreates, storePatientCreates } from "./shared/patient-creat
 dayjs.extend(duration);
 
 /**
+ * DEPRECATION NOTICE - DEPRECATION NOTICE - DEPRECATION NOTICE - DEPRECATION NOTICE
+ *
+ * THIS SCRIPT IS DEPRECATED - USE THE BULK IMPORT FEATURE INSTEAD.
+ *
+ * DEPRECATION NOTICE - DEPRECATION NOTICE - DEPRECATION NOTICE - DEPRECATION NOTICE
+ *
+ * ----------------------------------------------------------------------------------
  * This script will read patients from a .csv file and insert them into the Metriport API.
  *
  * It outputs the result of processing in the ./runs/bulk-insert/<cx-date>/ folder.
