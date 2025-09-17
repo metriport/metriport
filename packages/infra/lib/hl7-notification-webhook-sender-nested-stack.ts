@@ -51,6 +51,7 @@ interface Hl7NotificationWebhookSenderNestedStackProps extends NestedStackProps 
   lambdaLayers: LambdaLayers;
   outgoingHl7NotificationBucket: s3.IBucket;
   hl7ConversionBucket: s3.IBucket;
+  incomingHl7NotificationBucket: s3.IBucket | undefined;
   secrets: Secrets;
 }
 
@@ -75,6 +76,7 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
       alarmAction: props.alarmAction,
       outgoingHl7NotificationBucket: props.outgoingHl7NotificationBucket,
       hl7ConversionBucket: props.hl7ConversionBucket,
+      incomingHl7NotificationBucket: props.incomingHl7NotificationBucket,
       analyticsSecret,
       hieConfigs: props.config.hl7Notification?.hieConfigs ?? {},
     });
@@ -90,6 +92,7 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
     alarmAction: SnsAction | undefined;
     outgoingHl7NotificationBucket: s3.IBucket;
     hl7ConversionBucket: s3.IBucket;
+    incomingHl7NotificationBucket: s3.IBucket | undefined;
     analyticsSecret: ISecret;
     hieConfigs: Record<string, HieConfig | VpnlessHieConfig>;
   }): { lambda: Lambda } {
@@ -103,6 +106,7 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
       hl7ConversionBucket,
       analyticsSecret,
       hieConfigs,
+      incomingHl7NotificationBucket,
     } = ownProps;
     const {
       name,
@@ -123,6 +127,10 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
       alarmSnsAction: alarmAction,
     });
 
+    if (!incomingHl7NotificationBucket) {
+      throw new Error("Incoming HL7 notification bucket is undefined");
+    }
+
     const lambda = createLambda({
       ...lambdaSettings,
       name,
@@ -136,6 +144,7 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
         // API_URL set on the api-stack after the OSS API is created
         HL7_OUTGOING_MESSAGE_BUCKET_NAME: outgoingHl7NotificationBucket.bucketName,
         HL7_CONVERSION_BUCKET_NAME: hl7ConversionBucket.bucketName,
+        HL7_INCOMING_MESSAGE_BUCKET_NAME: incomingHl7NotificationBucket.bucketName,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
         HIE_CONFIG_DICTIONARY: JSON.stringify(createHieConfigDictionary(hieConfigs)),
       },
@@ -143,6 +152,7 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
 
     outgoingHl7NotificationBucket.grantReadWrite(lambda);
     hl7ConversionBucket.grantReadWrite(lambda);
+    incomingHl7NotificationBucket.grantReadWrite(lambda);
 
     lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
     analyticsSecret.grantRead(lambda);
