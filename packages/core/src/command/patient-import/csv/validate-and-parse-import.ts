@@ -187,7 +187,7 @@ export function csvRecordToParsedPatient(
   const normalizedData = normalizeData(data);
   const raw = Object.values(normalizedData) as string[];
   const rawNormalized = raw.map(normalizeCsvRecord);
-  const result = mapCsvPatientToMetriportPatient(data);
+  const result = mapCsvPatientToMetriportPatient(normalizedData);
   const baseParsedPatient = { rowNumber, raw: rawNormalized.join(",") };
   if (Array.isArray(result)) {
     return { ...baseParsedPatient, error: result.map(e => e.error).join("; ") };
