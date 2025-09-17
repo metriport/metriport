@@ -5,7 +5,7 @@ import { log } from "../../util/log";
 import { Hl7LahieSftpIngestionDirect } from "./hl7-sftp-ingestion-direct";
 import { Hl7LahieSftpIngestion } from "./hl7-sftp-ingestion";
 
-export async function buildLahieSftpIngestion(
+export async function buildHl7LahieSftpIngestion(
   localPassword?: string
 ): Promise<Hl7LahieSftpIngestion> {
   if (Config.isDev()) {
@@ -15,6 +15,11 @@ export async function buildLahieSftpIngestion(
       localPassword
     );
     return new Hl7LahieSftpIngestionDirect(sftpClient, logger);
+  }
+
+  if (Config.isStaging()) {
+    console.log("HL7-SFTP-INGESTION: Staging environment is not supported");
+    throw new Error("Staging environment is not supported for HL7-SFTP-INGESTION");
   }
   return new Hl7LahieSftpIngestionCloud();
 }

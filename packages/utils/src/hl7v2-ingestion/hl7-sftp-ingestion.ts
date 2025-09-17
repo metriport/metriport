@@ -2,7 +2,7 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
 
-import { buildLahieSftpIngestion } from "@metriport/core/command/hl7-sftp-ingestion/hl7-sftp-ingestion-factory";
+import { buildHl7LahieSftpIngestion } from "@metriport/core/command/hl7-sftp-ingestion/hl7-sftp-ingestion-factory";
 import { Config } from "@metriport/core/util/config";
 import { sleep } from "@metriport/core/util/sleep";
 import { S3Utils } from "@metriport/core/external/aws/s3";
@@ -78,7 +78,7 @@ async function main() {
   console.log(`🔄 Starting HL7v2 ingestion in 3 seconds...`); // Give some time for user to cancel just in case.
   await sleep(3000);
   try {
-    const handler = await buildLahieSftpIngestion(password);
+    const handler = await buildHl7LahieSftpIngestion(password);
     await handler.execute({ dateTimestamp: filename });
   } finally {
     if (deleteFiles) {
