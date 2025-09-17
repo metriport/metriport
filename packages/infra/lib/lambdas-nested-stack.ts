@@ -1040,7 +1040,6 @@ export class LambdasNestedStack extends NestedStack {
     alarmAction: SnsAction | undefined;
   }): Lambda {
     const envType = ownProps.config.environmentType;
-    const lambdaTimeout = Duration.seconds(60);
     const props = ownProps.config.hl7Notification?.LahieSftpIngestionLambda;
     if (!props) {
       throw new Error("LahieSftpIngestionLambda is undefined in config.");
@@ -1063,14 +1062,15 @@ export class LambdasNestedStack extends NestedStack {
     }
 
     const sftpConfig = props.sftpConfig;
+    const lambdaTimeout = Duration.minutes(5);
+    const lambdaMemorySize = 1024;
 
     const lambda = createScheduledLambda({
       layers: [ownProps.lambdaLayers.shared],
       vpc: ownProps.vpc,
-      timeout: Duration.seconds(300),
-      memorySize: 1024,
-      scheduleExpression: "0 15 * * ? *",
       timeout: lambdaTimeout,
+      memory: lambdaMemorySize,
+      scheduleExpression: "0 15 * * ? *",
       envType,
       entry: "hl7-lahie-sftp-ingestion",
       envVars: {
