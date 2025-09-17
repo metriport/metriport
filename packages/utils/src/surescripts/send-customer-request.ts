@@ -53,10 +53,6 @@ program
       const facilityIds = Object.keys(batchRequests);
       log(`Sending requests across ${facilityIds.length} facilities`);
 
-      const client = new SurescriptsSftpClient({
-        logLevel: "info",
-      });
-
       const csvOutputPath = writeSurescriptsRunsFile(
         csvOutput,
         `"facility_id","transmission_id","patient_id"\n`
@@ -72,6 +68,11 @@ program
         }
 
         for (const batchRequest of batchesForFacility) {
+          // Create a new client for each batch request
+          // (i.e. do not re-use the client, as per the SFTP client instructions)
+          const client = new SurescriptsSftpClient({
+            logLevel: "info",
+          });
           const identifiers = await client.sendBatchRequest(batchRequest);
           if (!identifiers) {
             log(`No patients requested for facility ${facilityId}`);
