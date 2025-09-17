@@ -7,6 +7,19 @@ import { writeSurescriptsRunsFile, appendToSurescriptsRunsFile } from "./shared"
 /**
  * Sends a request for all patients of the given customer, batching requests by facility. This is the preferred method
  * to accurately send a backfill request to Surescripts for all patients with the minimum number of SFTP transactions.
+ *
+ * Usage:
+ * npm run surescripts -- customer-request --cx-id <cx-id> --csv-output <csv-output> --batch-size <batch-size>
+ *
+ * cx-id: The CX ID of the requester
+ * csv-output: The file to write CSV IDs to
+ * batch-size: The maximum number of patients per batch request - defaults to 100
+ *
+ * Example:
+ * npm run surescripts -- customer-request --cx-id "acme-uuid-1234-sadsjksl" --csv-output "acme-roster.csv" --batch-size 100
+ *
+ * Note: The headers of the CSV output file are "facility_id","transmission_id","patient_id", which are used in scripts
+ * like `convert-customer-responses` to convert the eventual responses from Surescripts into FHIR resources.
  */
 const program = new Command();
 
@@ -38,14 +51,14 @@ program
       const dataMapper = new SurescriptsDataMapper();
       const batchRequests = await dataMapper.getBatchRequestDataByFacility(cxId, batchSize);
       const facilityIds = Object.keys(batchRequests);
-      log(`Customer has ${facilityIds.length} facilities`);
+      log(`Sending requests across ${facilityIds.length} facilities`);
 
       const client = new SurescriptsSftpClient({
         logLevel: "info",
       });
 
       const csvOutputPath = writeSurescriptsRunsFile(
-        csvOutput + ".csv",
+        csvOutput,
         `"facility_id","transmission_id","patient_id"\n`
       );
       let totalRequestedPatients = 0;
@@ -53,14 +66,14 @@ program
       for (const facilityId of facilityIds) {
         const batchesForFacility = batchRequests[facilityId];
         if (!Array.isArray(batchesForFacility)) {
-          log(`No batches for facility ${facilityId}`);
+          log(`No requests for facility ${facilityId}`);
           continue;
         }
 
         for (const batchRequest of batchesForFacility) {
           const identifiers = await client.sendBatchRequest(batchRequest);
           if (!identifiers) {
-            log(`No identifiers sent for facility ${facilityId}`);
+            log(`No patients requested for facility ${facilityId}`);
             continue;
           }
 

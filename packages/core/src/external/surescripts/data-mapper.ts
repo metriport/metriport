@@ -59,16 +59,15 @@ export class SurescriptsDataMapper {
     const facilities = customer.facilities;
     const batchRequests: Record<string, SurescriptsBatchRequestData[]> = {};
     for (const facility of facilities) {
-      const facilityId = facility.id;
-      const patientIds = await this.getPatientIdsForFacility({ cxId, facilityId });
-      const patients = await this.getEachPatientById(cxId, patientIds);
-      const batches = _.chunk(patients, batchSize).map(patients => ({
+      const patientIds = await this.getPatientIdsForFacility({ cxId, facilityId: facility.id });
+      const allPatients = await this.getEachPatientById(cxId, patientIds);
+      const batchesForFacility = _.chunk(allPatients, batchSize).map(patientsInBatch => ({
         cxId,
         facility,
         org: customer.org,
-        patients,
+        patients: patientsInBatch,
       }));
-      batchRequests[facilityId] = batches;
+      batchRequests[facility.id] = batchesForFacility;
     }
     return batchRequests;
   }
