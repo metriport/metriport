@@ -68,6 +68,11 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
       throw new Error("Analytics secret is required");
     }
 
+    const hl7Base64ScramblerSeed = props.secrets["HL7_BASE64_SCRAMBLER_SEED"];
+    if (!hl7Base64ScramblerSeed) {
+      throw new Error("HL7 base64 scrambler seed is undefined");
+    }
+
     const setup = this.setupHl7NotificationWebhookSenderLambda({
       lambdaLayers: props.lambdaLayers,
       vpc: props.vpc,
@@ -79,6 +84,7 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
       incomingHl7NotificationBucket: props.incomingHl7NotificationBucket,
       analyticsSecret,
       hieConfigs: props.config.hl7Notification?.hieConfigs ?? {},
+      hl7Base64ScramblerSeed,
     });
 
     this.lambda = setup.lambda;
@@ -94,6 +100,7 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
     hl7ConversionBucket: s3.IBucket;
     incomingHl7NotificationBucket: s3.IBucket | undefined;
     analyticsSecret: ISecret;
+    hl7Base64ScramblerSeed: ISecret;
     hieConfigs: Record<string, HieConfig | VpnlessHieConfig>;
   }): { lambda: Lambda } {
     const {
@@ -107,6 +114,7 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
       analyticsSecret,
       hieConfigs,
       incomingHl7NotificationBucket,
+      hl7Base64ScramblerSeed,
     } = ownProps;
     const {
       name,
@@ -145,6 +153,7 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
         HL7_OUTGOING_MESSAGE_BUCKET_NAME: outgoingHl7NotificationBucket.bucketName,
         HL7_CONVERSION_BUCKET_NAME: hl7ConversionBucket.bucketName,
         HL7_INCOMING_MESSAGE_BUCKET_NAME: incomingHl7NotificationBucket.bucketName,
+        HL7_BASE64_SCRAMBLER_SEED_ARN: hl7Base64ScramblerSeed.secretArn,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
         HIE_CONFIG_DICTIONARY: JSON.stringify(createHieConfigDictionary(hieConfigs)),
       },
