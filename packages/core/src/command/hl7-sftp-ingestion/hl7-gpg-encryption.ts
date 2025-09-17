@@ -7,10 +7,10 @@ export async function getLahiePrivateKeyAndPassphrase(): Promise<{
   passphrase: string;
 }> {
   const privateKeyArmoredArn = Config.getLahieIngestionPrivateKeyArn();
-  const passphrase = Config.getLahieIngestionPrivateKeyPassphraseArn();
+  const passphraseArn = Config.getLahieIngestionPrivateKeyPassphraseArn();
 
   const privateKeyArmored = await getSecretValueOrFail(privateKeyArmoredArn, Config.getAWSRegion());
-  //const passphrase = await getSecretValueOrFail(passphraseArn, Config.getAWSRegion());
+  const passphrase = await getSecretValueOrFail(passphraseArn, Config.getAWSRegion());
 
   return { privateKeyArmored, passphrase };
 }
