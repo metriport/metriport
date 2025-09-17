@@ -345,7 +345,6 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       name,
       fifo: true,
       createDLQ: true,
-      lambdaLayers: [lambdaLayers.shared],
       envType,
       alarmSnsAction: alarmAction,
     });
@@ -420,7 +419,6 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       name,
       fifo: true,
       createDLQ: true,
-      lambdaLayers: [lambdaLayers.shared],
       envType,
       alarmSnsAction: alarmAction,
       deliveryDelay: queueSettings.deliveryDelay,
@@ -441,7 +439,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
         MEDICAL_DOCUMENTS_BUCKET_NAME: ownProps.medicalDocumentsBucket.bucketName,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
-      layers: [lambdaLayers.shared],
+      layers: [lambdaLayers.shared, lambdaLayers.langchain],
       vpc,
       alarmSnsAction: alarmAction,
     });
@@ -485,7 +483,6 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       name,
       fifo: true,
       createDLQ: true,
-      lambdaLayers: [lambdaLayers.shared],
       envType,
       alarmSnsAction: alarmAction,
     });

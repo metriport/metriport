@@ -484,6 +484,7 @@ export class APIStack extends Stack {
           outgoingHl7NotificationBucket,
           hl7ConversionBucket,
           secrets,
+          incomingHl7NotificationBucket,
         }
       );
 

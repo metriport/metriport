@@ -47,6 +47,7 @@ dayjs.extend(duration);
 const patientIds: string[] = [];
 
 const numberOfParallelExecutions = 30;
+
 const fhirToCsvJobId = "F2C_" + buildDayjs().toISOString().slice(0, 19).replace(/[:.]/g, "-");
 
 const cxId = getEnvVarOrFail("CX_ID");

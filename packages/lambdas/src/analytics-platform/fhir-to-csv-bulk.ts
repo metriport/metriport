@@ -34,12 +34,16 @@ export const handler = capture.wrapHandler(async (event: SQSEvent, context: Cont
     throw new MetriportError(msg, undefined, { cxId, patientId, jobId });
   }
 
-  log(`Invoking lambda ${lambdaName}...`);
+  const timeoutForCsvTransform = context.getRemainingTimeInMillis() - 200;
+
+  log(`Invoking lambda ${lambdaName}... it has ${timeoutForCsvTransform}ms to run`);
+  const startedAt = Date.now();
   const fhirToCsvHandler = new FhirToCsvBulkDirect();
   await fhirToCsvHandler.processFhirToCsvBulk({
     ...parsedBody,
-    timeoutInMillis: context.getRemainingTimeInMillis() - 200,
+    timeoutInMillis: timeoutForCsvTransform,
   });
+  log(`Done in ${Date.now() - startedAt}ms`);
 });
 
 const fhirToCsvSchema = z.object({
