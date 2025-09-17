@@ -4,7 +4,6 @@ import { queryAndProcessDocuments as queryAndProcessDocumentsV2 } from "../../co
 export async function queryAndProcessDocuments({
   patient: patientParam,
   facilityId,
-  forceQuery = false,
   forcePatientDiscovery = false,
   forceDownload,
   ignoreDocRefOnFHIRServer,
@@ -15,7 +14,6 @@ export async function queryAndProcessDocuments({
 }: {
   patient: Patient;
   facilityId?: string | undefined;
-  forceQuery?: boolean;
   forcePatientDiscovery?: boolean;
   forceDownload?: boolean;
   ignoreDocRefOnFHIRServer?: boolean;
@@ -27,7 +25,6 @@ export async function queryAndProcessDocuments({
   await queryAndProcessDocumentsV2({
     patient: patientParam,
     facilityId,
-    forceQuery,
     forcePatientDiscovery,
     forceDownload,
     ignoreDocRefOnFHIRServer,
