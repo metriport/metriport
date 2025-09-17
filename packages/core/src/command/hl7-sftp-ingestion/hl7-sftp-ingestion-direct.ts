@@ -23,6 +23,11 @@ export class Hl7LahieSftpIngestionDirect implements Hl7LahieSftpIngestion {
     const s3Utils = new S3Utils(Config.getAWSRegion());
     const bucketName = Config.getLahieIngestionBucket();
 
+    if (Config.isStaging()) {
+      this.log("Staging environment is not supported. There is no Lahie SFTP staging connection.");
+      return;
+    }
+
     const fileNames = await this.sftpClient.safeSyncWithDate(remotePath, params.dateTimestamp);
 
     this.log(`Reading synced files`);
