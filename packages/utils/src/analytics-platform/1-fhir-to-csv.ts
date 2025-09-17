@@ -11,9 +11,11 @@ import { out } from "@metriport/core/util/log";
 import { errorToString, getEnvVarOrFail, sleep } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import axios from "axios";
+import { Command } from "commander";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import fs from "fs";
+import readline from "readline/promises";
 import { getAllPatientIds } from "../patient/get-ids";
 import { elapsedTimeAsStr } from "../shared/duration";
 import { getCxData } from "../shared/get-cx-data";
@@ -33,24 +35,18 @@ dayjs.extend(duration);
  * - set env vars on .env file
  * - set patientIds array with the patient IDs you want to convert - leave empty to run for all
  *   patients of the customer
- * - optionally, add a file with patient IDs to convert
+ * - optionally, pass the name of a file containing patient IDs to convert with the -f flag
  * - add --check-consolidated to check if the consolidated data exists in S3
  * - run it
- *   - ts-node src/analytics-platform/1-fhir-to-csv.ts
- *   - ts-node src/analytics-platform/1-fhir-to-csv.ts <file-with-patient-ids>
- *   - ts-node src/analytics-platform/1-fhir-to-csv.ts --check-consolidated
+ *   - ts-node src/analytics-platform 1-fhir-to-csv
+ *   - ts-node src/analytics-platform 1-fhir-to-csv -f <file-with-patient-ids>
+ *   - ts-node src/analytics-platform 1-fhir-to-csv --check-consolidated
  */
 
 // Leave empty to run for all patients of the customer
 const patientIds: string[] = [];
 
-// If provided, will read patient IDs from the file and use them instead of the patientIds array
-const fileName: string | undefined = process.argv[2];
-
-const checkConsolidatedExists = process.argv.includes("--check-consolidated");
-
 const numberOfParallelExecutions = 30;
-const confirmationTime = dayjs.duration(10, "seconds");
 const fhirToCsvJobId = "F2C_" + buildDayjs().toISOString().slice(0, 19).replace(/[:.]/g, "-");
 
 const cxId = getEnvVarOrFail("CX_ID");
@@ -61,7 +57,24 @@ const region = getEnvVarOrFail("AWS_REGION");
 const s3Utils = new S3Utils(region);
 const api = axios.create({ baseURL: apiUrl });
 
-async function main() {
+const program = new Command();
+program
+  .name("1-fhir-to-csv")
+  .description(
+    "CLI to trigger the conversion of patients' consolidated data from JSON format to CSV"
+  )
+  .option("-f, --file <path>", "Path to file with patient IDs (optional)")
+  .option("--check-consolidated", "Check if the consolidated data exists in S3")
+  .showHelpAfterError()
+  .action(main);
+
+async function main({
+  file: fileName,
+  checkConsolidated: checkConsolidatedExists,
+}: {
+  file?: string;
+  checkConsolidated?: boolean;
+}) {
   await sleep(100);
   const { log } = out("");
 
@@ -195,8 +208,17 @@ async function displayWarningAndConfirmation(
     `You are about to trigger the conversion of ${patientsToInsert.length} patients of ` +
     `customer ${orgName} (${cxId}) from JSON to CSV, are you sure?${allPatientsMsg}`;
   log(msg);
-  log("Cancel this now if you're not sure.");
-  await sleep(confirmationTime.asMilliseconds());
+  log("Are you sure you want to proceed?");
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+  const answer = await rl.question("Type 'yes' to proceed: ");
+  if (answer !== "yes") {
+    log("Aborting...");
+    process.exit(0);
+  }
+  rl.close();
 }
 
-main();
+export default program;

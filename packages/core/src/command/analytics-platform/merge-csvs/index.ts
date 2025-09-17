@@ -8,11 +8,7 @@ import {
   buildFhirToCsvBulkPatientPrefix,
   parseTableNameFromFhirToCsvBulkFileKey,
 } from "../fhir-to-csv/file-name";
-import {
-  buildMergeCsvsFileGroupKey,
-  buildMergeCsvsJobPrefix,
-  buildMergeInfoPrefix,
-} from "./file-name";
+import { buildMergeCsvsFileGroupKey, buildMergeInfoPrefix } from "./file-name";
 
 export const MB_IN_BYTES = 1024 * 1024;
 
@@ -128,7 +124,7 @@ async function storeInputParams(
   } = params;
 
   const s3Utils = new S3Utils(region);
-  const mergeInfoPrefix = buildMergeCsvsJobPrefix({ cxId, jobId: mergeCsvJobId });
+  const mergeInfoPrefix = buildMergeInfoPrefix({ cxId, jobId: mergeCsvJobId });
   await s3Utils.uploadFile({
     bucket: destinationBucket,
     key: `${mergeInfoPrefix}/${mergeCsvRunId}_params.json`,
@@ -345,7 +341,7 @@ async function mergeFileGroups(
     fileGroups,
     async (fileGroup: FileGroup) => {
       try {
-        const result = await executeWithRetriesS3(() => mergeFileGroup(fileGroup, params, log), {
+        const result = await executeWithRetriesS3(() => mergeFileGroup(fileGroup, params), {
           maxAttempts: 10,
         });
         results.push(result);
@@ -386,16 +382,17 @@ async function mergeFileGroup(
     mergeCsvJobId: string;
     mergeCsvRunId: string;
     region: string;
-  },
-  log: typeof console.log
+  }
 ): Promise<MergeResult> {
   const { files, groupId, tableName } = fileGroup;
   const { cxId, sourceBucket, destinationBucket, mergeCsvJobId, mergeCsvRunId, region } = params;
 
+  const { log } = out(`table ${tableName}, groupId ${groupId}`);
+
   const s3Utils = new S3Utils(region);
   const outputKey = buildMergeCsvsFileGroupKey(fileGroup, { cxId, mergeCsvJobId, mergeCsvRunId });
 
-  log(`Merging ${files.length} files for ${tableName}, groupId ${groupId}`);
+  log(`Merging ${files.length} files`);
 
   // Create a streaming gzip compressor
   const gzip = createGzip();

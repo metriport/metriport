@@ -1,5 +1,8 @@
 import { gzip, gunzip } from "zlib";
 
+/**
+ * Compresses content using gzip compression
+ */
 export async function compressGzip(content: Buffer): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     gzip(content, (err: Error | null, result: Buffer) => {
@@ -9,6 +12,9 @@ export async function compressGzip(content: Buffer): Promise<Buffer> {
   });
 }
 
+/**
+ * Decompresses gzipped content
+ */
 export async function decompressGzip(content: Buffer): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     gunzip(content, (err: Error | null, result: Buffer) => {

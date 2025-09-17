@@ -36,28 +36,32 @@ const genderFieldName = "gender";
  * @returns The Metriport patient data.
  */
 export function mapCsvPatientToMetriportPatient(
-  csvPatient: Record<string, string>
+  csvPatient: Record<string, string | undefined>
 ): PatientPayload | ParsingError[] {
   const errors: ParsingError[] = [];
 
   let firstName: string | undefined = undefined;
   try {
-    firstName = normalizeName(csvPatient.firstname ?? csvPatient.firstName, firstNameFieldName);
+    firstName = normalizeNameOrFail(
+      csvPatient.firstname ?? csvPatient.firstName,
+      firstNameFieldName
+    );
   } catch (error) {
     errors.push({ field: firstNameFieldName, error: errorToString(error) });
   }
 
   let lastName: string | undefined = undefined;
   try {
-    lastName = normalizeName(csvPatient.lastname ?? csvPatient.lastName, lastNameFieldName);
+    lastName = normalizeNameOrFail(csvPatient.lastname ?? csvPatient.lastName, lastNameFieldName);
   } catch (error) {
     errors.push({ field: lastNameFieldName, error: errorToString(error) });
   }
 
   let dob: string | undefined = undefined;
   try {
-    dob = normalizeDobSafe(csvPatient.dob ?? csvPatient.DOB ?? "");
-    if (!dob) throw new BadRequestError(`Missing dob`);
+    const dobValue = csvPatient.dob ?? csvPatient.DOB ?? "";
+    dob = normalizeDobSafe(dobValue);
+    if (!dob) throw new BadRequestError(`Missing/invalid dob`);
   } catch (error) {
     errors.push({ field: dobFieldName, error: errorToString(error) });
   }
@@ -65,13 +69,16 @@ export function mapCsvPatientToMetriportPatient(
   let genderAtBirth: GenderAtBirth | undefined = undefined;
   try {
     genderAtBirth = normalizeGenderSafe(csvPatient.gender ?? csvPatient.genderAtBirth ?? "");
-    if (!genderAtBirth) throw new BadRequestError(`Missing gender`);
+    if (!genderAtBirth) throw new BadRequestError(`Missing/invalid gender`);
   } catch (error) {
     errors.push({ field: genderFieldName, error: errorToString(error) });
   }
 
   const { addresses, errors: addressErrors } = mapCsvAddresses(csvPatient);
   errors.push(...addressErrors);
+  if (addresses.length < 1) {
+    errors.push({ field: "address", error: "Missing address" });
+  }
 
   const { contacts, errors: contactErrors } = mapCsvContacts(csvPatient);
   errors.push(...contactErrors);
@@ -92,9 +99,10 @@ export function mapCsvPatientToMetriportPatient(
     return errors;
   }
   if (!firstName || !lastName || !dob || !genderAtBirth || addresses.length < 1) {
+    // Checking those here again to comply with types
     return [{ field: "general", error: "Missing required fields" }];
   }
-  return {
+  const ptCreate: PatientPayload = {
     externalId,
     firstName,
     lastName,
@@ -104,9 +112,12 @@ export function mapCsvPatientToMetriportPatient(
     contact: contacts,
     personalIdentifiers,
   };
+  // TODO ENG-467 Enable this when we move the validate to packages/core
+  // validate(ptCreate);
+  return ptCreate;
 }
 
-export function normalizeName(name: string | undefined, propName: string): string {
+export function normalizeNameOrFail(name: string | undefined, propName: string): string {
   const trimmedName = name?.trim();
   if (trimmedName == undefined || trimmedName.length < 1) {
     throw new BadRequestError(`Missing ` + propName);
@@ -121,7 +132,7 @@ export function normalizeExternalId(id: string | undefined): string | undefined 
   return normalId;
 }
 
-export function mapCsvSsn(csvPatient: Record<string, string>): {
+export function mapCsvSsn(csvPatient: Record<string, string | undefined>): {
   ssn: PersonalIdentifier | undefined;
   errors: ParsingError[];
 } {
@@ -135,7 +146,7 @@ export function mapCsvSsn(csvPatient: Record<string, string>): {
   }
 }
 
-export function mapCsvDriversLicense(csvPatient: Record<string, string>): {
+export function mapCsvDriversLicense(csvPatient: Record<string, string | undefined>): {
   driversLicense: PersonalIdentifier | undefined;
   errors: ParsingError[];
 } {

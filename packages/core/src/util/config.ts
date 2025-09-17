@@ -1,6 +1,6 @@
 import { getEnvVarAsRecordOrFail } from "@metriport/shared/common/env-var";
-import { ROSTER_UPLOAD_SFTP_PASSWORD } from "@metriport/shared/domain/tcm-encounter";
 import { getEnvVar, getEnvVarOrFail } from "./env-var";
+import { ROSTER_UPLOAD_SFTP_PASSWORD } from "@metriport/shared/domain/tcm-encounter";
 
 /**
  * Shared configs, still defining how to work with this. For now:
@@ -409,9 +409,51 @@ export class Config {
     return getEnvVarOrFail(`${ROSTER_UPLOAD_SFTP_PASSWORD}_ARN`);
   }
 
+  static getLahieIngestionLambdaName(): string {
+    return getEnvVarOrFail("LAHIE_INGESTION_LAMBDA_NAME");
+  }
+
+  static getLahieIngestionRemotePath(): string {
+    return getEnvVarOrFail("LAHIE_INGESTION_REMOTE_PATH");
+  }
+
+  static getLahieConfig(): Record<string, unknown> {
+    return getEnvVarAsRecordOrFail("LAHIE_CONFIG");
+  }
+
+  static getLahieIngestionHost(): string {
+    return getEnvVarOrFail("LAHIE_INGESTION_HOST");
+  }
+
+  static getLahieIngestionUsername(): string {
+    return getEnvVarOrFail("LAHIE_INGESTION_USERNAME");
+  }
+
+  static getLahieIngestionPort(): number {
+    const port = Number.parseInt(getEnvVarOrFail("LAHIE_INGESTION_PORT"));
+    if (isFinite(port)) {
+      return port;
+    }
+    throw new Error("Lahie ingestion port is not a valid number");
+  }
+
+  static getLahieIngestionPasswordArn(): string {
+    return getEnvVarOrFail("LAHIE_INGESTION_PASSWORD_ARN");
+  }
+
+  static getLahieIngestionBucket(): string {
+    return getEnvVarOrFail("LAHIE_INGESTION_BUCKET_NAME");
+  }
+
+  static getLahieIngestionPrivateKeyArn(): string {
+    return getEnvVarOrFail("LAHIE_INGESTION_PRIVATE_KEY_ARN");
+  }
+
+  static getLahieIngestionPrivateKeyPassphraseArn(): string {
+    return getEnvVarOrFail("LAHIE_INGESTION_PRIVATE_KEY_PASSPHRASE_ARN");
+  }
+
   static getInternalServerUrl(): string {
-    // to avoid downtime due to workflow dependencies and environment variables changes, temporary return "".
-    // Alexey Todo: follow up PR to clean up
-    return getEnvVar("INTERNAL_SERVER_BASE_URL") ?? "";
+    return getEnvVarOrFail("INTERNAL_SERVER_BASE_URL");
   }
 }

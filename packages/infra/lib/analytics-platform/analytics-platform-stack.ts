@@ -208,6 +208,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
         alarmAction: props.alarmAction,
         fhirToCsvTransformLambda,
         featureFlagsTable: props.featureFlagsTable,
+        medicalDocumentsBucket: props.medicalDocumentsBucket,
       });
     this.fhirToCsvBulkLambda = fhirToCsvBulkLambda;
     this.fhirToCsvBulkQueue = fhirToCsvBulkQueue;
@@ -224,6 +225,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
         analyticsPlatformBucket,
         fhirToCsvTransformLambda,
         featureFlagsTable: props.featureFlagsTable,
+        medicalDocumentsBucket: props.medicalDocumentsBucket,
       });
     this.fhirToCsvIncrementalLambda = fhirToCsvIncrementalLambda;
     this.fhirToCsvIncrementalQueue = fhirToCsvIncrementalQueue;
@@ -313,6 +315,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
     alarmAction: SnsAction | undefined;
     fhirToCsvTransformLambda: lambda.Function;
     featureFlagsTable: dynamodb.Table;
+    medicalDocumentsBucket: s3.Bucket;
   }): {
     lambda: lambda.DockerImageFunction;
     queue: Queue;
@@ -358,17 +361,19 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
         WAIT_TIME_IN_MILLIS: waitTime.toMilliseconds().toString(),
         FHIR_TO_CSV_TRANSFORM_LAMBDA_NAME: fhirToCsvTransformLambda.functionName,
         FEATURE_FLAGS_TABLE_NAME: featureFlagsTable.tableName,
+        MEDICAL_DOCUMENTS_BUCKET_NAME: ownProps.medicalDocumentsBucket.bucketName,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
-      layers: [lambdaLayers.shared],
+      layers: [lambdaLayers.shared, lambdaLayers.langchain],
       vpc,
       alarmSnsAction: alarmAction,
     });
 
     lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
-    fhirToCsvTransformLambda.grantInvoke(lambda);
 
+    fhirToCsvTransformLambda.grantInvoke(lambda);
     featureFlagsTable.grantReadData(lambda);
+    ownProps.medicalDocumentsBucket.grantRead(lambda);
 
     return { lambda, queue };
   }
@@ -384,6 +389,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
     analyticsPlatformBucket: s3.Bucket;
     fhirToCsvTransformLambda: lambda.Function;
     featureFlagsTable: dynamodb.Table;
+    medicalDocumentsBucket: s3.Bucket;
   }): {
     lambda: lambda.DockerImageFunction;
     queue: Queue;
@@ -432,6 +438,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
         FHIR_TO_CSV_TRANSFORM_LAMBDA_NAME: fhirToCsvTransformLambda.functionName,
         ANALYTICS_S3_BUCKET: analyticsPlatformBucket.bucketName,
         FEATURE_FLAGS_TABLE_NAME: featureFlagsTable.tableName,
+        MEDICAL_DOCUMENTS_BUCKET_NAME: ownProps.medicalDocumentsBucket.bucketName,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared],
@@ -440,10 +447,10 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
     });
 
     lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
+
     fhirToCsvTransformLambda.grantInvoke(lambda);
-
     analyticsPlatformBucket.grantReadWrite(fhirToCsvTransformLambda);
-
+    ownProps.medicalDocumentsBucket.grantRead(fhirToCsvTransformLambda);
     featureFlagsTable.grantReadData(lambda);
 
     return { lambda, queue };

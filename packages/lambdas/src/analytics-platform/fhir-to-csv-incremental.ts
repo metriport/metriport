@@ -1,6 +1,7 @@
 import { FhirToCsvIncrementalDirect } from "@metriport/core/command/analytics-platform/fhir-to-csv/command/fhir-to-csv-incremantal/fhir-to-csv-incremental-direct";
+import { doesConsolidatedDataExist } from "@metriport/core/command/consolidated/consolidated-get";
 import { FeatureFlags } from "@metriport/core/command/feature-flags/ffs-on-dynamodb";
-import { errorToString, getEnvVarOrFail } from "@metriport/shared";
+import { errorToString, getEnvVarOrFail, MetriportError } from "@metriport/shared";
 import { Context, SQSEvent } from "aws-lambda";
 import { z } from "zod";
 import { capture } from "../shared/capture";
@@ -31,6 +32,13 @@ export const handler = capture.wrapHandler(async (event: SQSEvent, context: Cont
 
     const log = prefixedLog(`jobId ${jobId}, cxId ${cxId}, patientId ${patientId}`);
     log(`Parsed: ${JSON.stringify(parsedBody)}`);
+
+    const doesPatientHaveConsolidatedBundle = await doesConsolidatedDataExist(cxId, patientId);
+    if (!doesPatientHaveConsolidatedBundle) {
+      const msg = `Patient does not have a consolidated bundle`;
+      log(msg);
+      throw new MetriportError(msg, undefined, { cxId, patientId, jobId });
+    }
 
     const fhirToCsvHandler = new FhirToCsvIncrementalDirect(analyticsBucketName, region);
     await fhirToCsvHandler.processFhirToCsvIncremental({

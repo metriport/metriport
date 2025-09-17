@@ -1,5 +1,6 @@
 import { FhirToCsvBulkDirect } from "@metriport/core/command/analytics-platform/fhir-to-csv/command/fhir-to-csv-bulk/fhir-to-csv-bulk-direct";
-import { errorToString } from "@metriport/shared";
+import { doesConsolidatedDataExist } from "@metriport/core/command/consolidated/consolidated-get";
+import { MetriportError } from "@metriport/shared";
 import { Context, SQSEvent } from "aws-lambda";
 import { z } from "zod";
 import { capture } from "../shared/capture";
@@ -19,22 +20,26 @@ export const handler = capture.wrapHandler(async (event: SQSEvent, context: Cont
 
   const message = getSingleMessageOrFail(event.Records, lambdaName);
   if (!message) return;
-  try {
-    const parsedBody = parseBody(fhirToCsvSchema, message.body);
-    const { jobId, cxId, patientId } = parsedBody;
 
-    const log = prefixedLog(`jobId ${jobId}, cxId ${cxId}, patientId ${patientId}`);
-    log(`Parsed: ${JSON.stringify(parsedBody)}`);
+  const parsedBody = parseBody(fhirToCsvSchema, message.body);
+  const { jobId, cxId, patientId } = parsedBody;
 
-    const fhirToCsvHandler = new FhirToCsvBulkDirect();
-    await fhirToCsvHandler.processFhirToCsvBulk({
-      ...parsedBody,
-      timeoutInMillis: context.getRemainingTimeInMillis() - 200,
-    });
-  } catch (error) {
-    console.error("Re-throwing error ", errorToString(error));
-    throw error;
+  const log = prefixedLog(`jobId ${jobId}, cxId ${cxId}, patientId ${patientId}`);
+  log(`Parsed: ${JSON.stringify(parsedBody)}`);
+
+  const doesPatientHaveConsolidatedBundle = await doesConsolidatedDataExist(cxId, patientId);
+  if (!doesPatientHaveConsolidatedBundle) {
+    const msg = `Patient does not have a consolidated bundle`;
+    log(msg);
+    throw new MetriportError(msg, undefined, { cxId, patientId, jobId });
   }
+
+  log(`Invoking lambda ${lambdaName}...`);
+  const fhirToCsvHandler = new FhirToCsvBulkDirect();
+  await fhirToCsvHandler.processFhirToCsvBulk({
+    ...parsedBody,
+    timeoutInMillis: context.getRemainingTimeInMillis() - 200,
+  });
 });
 
 const fhirToCsvSchema = z.object({
