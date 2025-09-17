@@ -1067,6 +1067,8 @@ export class LambdasNestedStack extends NestedStack {
     const lambda = createScheduledLambda({
       layers: [ownProps.lambdaLayers.shared],
       vpc: ownProps.vpc,
+      timeout: Duration.seconds(300),
+      memorySize: 1024,
       scheduleExpression: "0 15 * * ? *",
       timeout: lambdaTimeout,
       envType,
