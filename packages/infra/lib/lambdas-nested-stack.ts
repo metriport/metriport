@@ -1102,6 +1102,11 @@ export class LambdasNestedStack extends NestedStack {
     privateKeySecret.grantRead(lambda);
     passphraseSecret.grantRead(lambda);
     ownProps.lahieSftpIngestionBucket.grantReadWrite(lambda);
+    hl7Base64ScramblerSeed.grantRead(lambda);
+    if (!ownProps.hl7NotificationWebhookSenderQueue) {
+      throw new Error("HL7_NOTIFICATION_QUEUE_URL is not defined.");
+    }
+    ownProps.hl7NotificationWebhookSenderQueue?.grantSendMessages(lambda);
     return lambda;
   }
 
