@@ -55,7 +55,7 @@ export async function removeLinks(): Promise<RemoveLinkResult[]> {
   log(`Processing ${patientIds.length} patients with executeAsynchronously`);
 
   await executeAsynchronously(
-    patientIds.slice(1),
+    patientIds,
     async patientId => {
       try {
         await healthieClient.updatePatientQuickNotesWithLink({
