@@ -1,3 +1,4 @@
+import _ from "lodash";
 import { Bundle, BundleEntry, Resource } from "@medplum/fhirtypes";
 import { buildBundle, buildBundleEntry } from "../../fhir/bundle/bundle";
 import { LogFunction } from "../../../util/log";
@@ -79,7 +80,7 @@ function getBundleEntries({ data }: IncomingData<ResponseDetail>): BundleEntry[]
     patient,
     observation,
   });
-  const resources: Array<Resource | undefined> = [
+  const resources: Resource[] = _([
     patient,
     practitioner,
     practitionerRole,
@@ -91,9 +92,9 @@ function getBundleEntries({ data }: IncomingData<ResponseDetail>): BundleEntry[]
     specimen,
     diagnosticReport,
     ...conditions,
-  ];
+  ])
+    .compact()
+    .value();
 
-  return resources.flatMap(resource =>
-    resource && resource.id ? [buildBundleEntry(resource)] : []
-  );
+  return resources.map(resource => buildBundleEntry(resource));
 }
