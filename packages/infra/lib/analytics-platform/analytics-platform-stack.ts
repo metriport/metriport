@@ -273,6 +273,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
         // API_URL set on the api-stack after the OSS API is created
         WAIT_TIME_IN_MILLIS: waitTime.toMilliseconds().toString(),
         FHIR_TO_CSV_TRANSFORM_LAMBDA_NAME: fhirToCsvTransformLambda.functionName,
+        MEDICAL_DOCUMENTS_BUCKET_NAME: ownProps.medicalDocumentsBucket.bucketName,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared, lambdaLayers.langchain],
@@ -283,6 +284,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
     fhirToCsvLambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
     fhirToCsvTransformLambda.grantInvoke(fhirToCsvLambda);
     ownProps.medicalDocumentsBucket.grantRead(fhirToCsvTransformLambda);
+    ownProps.medicalDocumentsBucket.grantRead(fhirToCsvLambda);
 
     return { fhirToCsvLambda, queue };
   }
